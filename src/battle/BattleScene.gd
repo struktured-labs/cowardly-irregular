@@ -369,12 +369,21 @@ func _ready() -> void:
 		RetroFontClass.configure_battle_log(battle_log)
 	# 2026-07-15 playtest: log viewport was ~4.8 lines tall so the top visible line was permanently half-clipped — snap the panel to a whole line count once layout settles.
 	call_deferred("_snap_battle_log_height")
-	# 2026-07-16 smoke: the deferred call can still land before PanelContainer layout settles (size 0 → no-op) — the top log line stayed half-clipped. resized fires after REAL layout; re-snap then. Guard flag keeps it one-shot.
-	if battle_log:
-		battle_log.resized.connect(_snap_battle_log_height)
+	# 2026-10-03 room-to-breathe pass: the ongoing `.resized -> _snap_battle_log_height` hookup
+	# this comment used to describe is GONE — it nudged offset_top by a few px on every resize
+	# with no matching offset_bottom adjustment, which fought _reposition_battle_log_panel_now's
+	# hard CTB-clearance cap and could drift the panel into an overlap after the fact. The panel
+	# is now re-fitted to its EXACT content every time EnemyStatusPanel resizes or turn info
+	# updates, so the one-shot deferred call above is the only snap this file still needs.
 	var log_expand_btn: Button = get_node_or_null("UI/BattleLogPanel/MarginContainer/VBoxContainer/LogHeader/LogExpandButton")
 	if log_expand_btn:
 		log_expand_btn.pressed.connect(_toggle_log_overlay)
+	# EnemyStatusPanel's height varies with the roster (more enemies = taller box) — the
+	# log panel's fixed .tscn offsets are only a FALLBACK until the real enemy panel settles.
+	var enemy_panel_for_log := get_node_or_null("UI/EnemyStatusPanel")
+	if enemy_panel_for_log:
+		enemy_panel_for_log.resized.connect(_reposition_battle_log_panel)
+	call_deferred("_reposition_battle_log_panel")
 
 	# Add padding to PartyStatusPanel so labels don't hug the panel
 	# borders. PanelContainer uses its stylebox content_margin_* for
@@ -1808,6 +1817,11 @@ func reveal_enemy_stats(enemy: Combatant) -> void:
 
 func _update_turn_info() -> void:
 	_ui_manager.update_turn_info()
+	# Rides the same cadence as the CTB/enemy panels it must stay clear of — a resize signal
+	# alone can miss a frame where the enemy panel's size settles to the same value twice in a
+	# row (Control.resized only fires on an actual CHANGE), which left the log panel stranded at
+	# a stale position for some rosters.
+	_reposition_battle_log_panel()
 
 
 ## Shrink the BattleLogPanel by the fractional line so the scrolled-to-bottom log never shows a half-clipped top line (playtest 2026-07-15). Measures the REAL label size post-layout instead of guessing theme metrics.
@@ -1829,6 +1843,64 @@ func _snap_battle_log_height() -> void:
 		var log_panel = get_node_or_null("UI/BattleLogPanel")
 		if log_panel:
 			log_panel.offset_top += frac
+
+
+const LOG_PANEL_HEIGHT := 192.0
+const LOG_PANEL_GAP := 8.0
+## LogHeader row + MarginContainer insets — everything in the panel except the RichTextLabel
+## itself. A PanelContainer can never be sized below its children's combined minimum, so to
+## GUARANTEE no overlap on a tall roster we must shrink the child (battle_log's min height)
+## BEFORE the layout pass, not just request a smaller offset range and hope it's honored.
+const LOG_PANEL_NON_TEXT_OVERHEAD := 64.0
+const LOG_PANEL_MIN_TEXT_HEIGHT := 16.0
+
+## EnemyStatusPanel's real height varies with the roster (a 3-enemy pull is taller than a solo
+## snake) — the .tscn's offset_bottom=280.0 is only a fallback for the first frame. The log panel
+## must always sit strictly between the enemy panel's real bottom edge and the CTB panel's top
+## (BattleUIManager._update_turn_order_strip: offset_top=-230 at the bottom anchor), or the two
+## can overlap on a roster that grows the enemy box past its nominal slot.
+## Deferred: EnemyStatusPanel's Container minimum-size recompute can land one idle-frame after
+## whatever triggered this call (a resize signal fired mid-sort, or _update_turn_info() ran
+## before the SAME frame's box-content changes finished propagating up through the Container
+## chain) — reading enemy_panel.size synchronously here could measure a STALE, smaller height
+## and under-clear the gap. Deferring one tick lets that settle first.
+func _reposition_battle_log_panel() -> void:
+	call_deferred("_reposition_battle_log_panel_now")
+
+
+func _reposition_battle_log_panel_now() -> void:
+	var log_panel := get_node_or_null("UI/BattleLogPanel")
+	var enemy_panel := get_node_or_null("UI/EnemyStatusPanel")
+	if not log_panel or not enemy_panel or not is_instance_valid(enemy_panel):
+		return
+	var enemy_bottom: float = enemy_panel.position.y + enemy_panel.size.y
+	if enemy_bottom <= 0.0:
+		return  # layout not settled yet
+	var top: float = enemy_bottom + LOG_PANEL_GAP
+	var ctb_top_at_current_height: float = get_viewport_rect().size.y - 230.0
+	var hard_bottom_cap: float = ctb_top_at_current_height - LOG_PANEL_GAP
+	var available: float = hard_bottom_cap - top
+	if available < LOG_PANEL_NON_TEXT_OVERHEAD + LOG_PANEL_MIN_TEXT_HEIGHT:
+		# An extreme roster left no safe room at all — hide the condensed strip rather than
+		# overlap the CTB panel. Full history is still one L / expand-button press away.
+		log_panel.visible = false
+		return
+	var desired: float = minf(LOG_PANEL_HEIGHT, available)
+	if battle_log and is_instance_valid(battle_log):
+		battle_log.custom_minimum_size.y = maxf(LOG_PANEL_MIN_TEXT_HEIGHT, desired - LOG_PANEL_NON_TEXT_OVERHEAD)
+	# get_combined_minimum_size() is a PULL computation — it reflects the shrink above
+	# immediately, unlike .size, which only updates on the next SORT_CHILDREN layout pass (that
+	# lag, read through .size instead of this, is what let a taller-than-requested panel slip
+	# past a deferred "verify after the fact" check and still overlap the CTB panel below).
+	var true_min: float = log_panel.get_combined_minimum_size().y
+	var final_height: float = maxf(desired, true_min)
+	if top + final_height > hard_bottom_cap:
+		# Even the TRUE minimum does not fit this gap — hide outright rather than overlap.
+		log_panel.visible = false
+		return
+	log_panel.visible = true
+	log_panel.offset_top = top
+	log_panel.offset_bottom = top + final_height
 
 
 func log_message(message: String) -> void:
@@ -5653,6 +5725,16 @@ func _build_log_overlay() -> void:
 	var panel := PanelContainer.new()
 	panel.name = "FullLogPanel"
 	panel.custom_minimum_size = Vector2(760, 560)
+	var panel_style := StyleBoxFlat.new()
+	panel_style.bg_color = Color(0.07, 0.06, 0.14, 0.97)
+	panel_style.border_color = Color(0.5, 0.45, 0.75, 0.9)
+	panel_style.set_border_width_all(2)
+	panel_style.set_corner_radius_all(4)
+	panel_style.content_margin_left = 14
+	panel_style.content_margin_right = 14
+	panel_style.content_margin_top = 10
+	panel_style.content_margin_bottom = 10
+	panel.add_theme_stylebox_override("panel", panel_style)
 	overlay.add_child(panel)
 
 	var vbox := VBoxContainer.new()

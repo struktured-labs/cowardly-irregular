@@ -33,8 +33,10 @@ func _spawn_battle_and_build_timeline() -> void:
 	_scene = load("res://src/battle/BattleScene.tscn").instantiate()
 	add_child(_scene)
 	await get_tree().process_frame
+	await get_tree().process_frame  # let any auto-triggered turn_info update's queue_free()'d rows flush first
 	_scene._update_turn_info()
 	await get_tree().process_frame
+	await get_tree().process_frame  # flush THIS call's own queue_free()'d rows before the test reads node names
 
 
 func _timeline_cards() -> Array:
@@ -55,32 +57,37 @@ func test_ctb_panel_widened_for_richer_cards() -> void:
 		"CTB panel must be tall enough for portrait + pips + HP bar rows")
 
 
-func test_timeline_builds_at_least_one_entry_card() -> await _spawn_battle_and_build_timeline():
+func test_timeline_builds_at_least_one_entry_card() -> void:
+	await _spawn_battle_and_build_timeline()
 	var cards := _timeline_cards()
 	assert_gt(cards.size(), 0, "a live battle must produce at least one CTB entry")
 	for c in cards:
-		assert_eq(c.name, "CTBEntryCard", "each entry must be the new PanelContainer card, not a bare row")
+		assert_true(str(c.name).begins_with("CTBEntryCard"),
+			"each entry must be the new PanelContainer card, not a bare row")
 
 
-func test_each_card_carries_a_portrait_and_an_hp_bar() -> await _spawn_battle_and_build_timeline():
+func test_each_card_carries_a_portrait_and_an_hp_bar() -> void:
+	await _spawn_battle_and_build_timeline()
 	var cards := _timeline_cards()
 	assert_gt(cards.size(), 0, "CONTROL: need at least one card to inspect")
 	for c in cards:
-		var portrait := c.find_child("Portrait", true, false)
-		assert_not_null(portrait, "%s must carry a Portrait node" % c.name)
+		var card: Node = c
+		var portrait: Node = card.find_child("Portrait", true, false)
+		assert_not_null(portrait, "%s must carry a Portrait node" % card.name)
 		assert_true(portrait is TextureRect, "Portrait must be a TextureRect")
 
-		var hp_bg := c.find_child("HPBarBg", true, false)
-		assert_not_null(hp_bg, "%s must carry an HPBarBg node" % c.name)
-		var hp_fill := hp_bg.find_child("HPBarFill", true, false)
+		var hp_bg: Node = card.find_child("HPBarBg", true, false)
+		assert_not_null(hp_bg, "%s must carry an HPBarBg node" % card.name)
+		var hp_fill: Node = hp_bg.find_child("HPBarFill", true, false)
 		assert_not_null(hp_fill, "HPBarBg must carry an HPBarFill child")
 
-		var pips := c.find_child("APPips", true, false)
-		assert_not_null(pips, "%s must carry an APPips row" % c.name)
+		var pips: Node = card.find_child("APPips", true, false)
+		assert_not_null(pips, "%s must carry an APPips row" % card.name)
 		assert_gt(pips.get_child_count(), 0, "APPips must contain pip nodes")
 
 
-func test_current_actor_card_is_visually_highlighted() -> await _spawn_battle_and_build_timeline():
+func test_current_actor_card_is_visually_highlighted() -> void:
+	await _spawn_battle_and_build_timeline()
 	var cards := _timeline_cards()
 	assert_gt(cards.size(), 0, "CONTROL: need at least one card")
 	var head: PanelContainer = cards[0]
@@ -98,20 +105,23 @@ func test_enemy_hp_bar_respects_fog_of_war_until_revealed() -> void:
 	# Direct unit check on the HP-bar builder itself — the fog-of-war rule
 	# (BattleUIManager._enemy_hp_revealed) must gate what the bar SHOWS,
 	# not just what a Label prints.
-	var ui_mgr_script := load("res://src/battle/BattleUIManager.gd")
+	var ui_mgr_script: GDScript = load("res://src/battle/BattleUIManager.gd")
 	var fake_scene := RefCounted.new()
 	var ui_mgr = ui_mgr_script.new(fake_scene)
-	var enemy := load("res://src/battle/Combatant.gd").new()
+	var combatant_script: GDScript = load("res://src/battle/Combatant.gd")
+	var enemy: Combatant = combatant_script.new()
 	enemy.combatant_name = "Shrouded Foe"
 	enemy.max_hp = 100
 	enemy.current_hp = 10  # would read as near-death if shown
-	var bar := ui_mgr._ctb_hp_bar(enemy, false)
-	var fill := bar.find_child("HPBarFill", true, false)
+	var bar: Control = ui_mgr._ctb_hp_bar(enemy, false)
+	var fill: Node = bar.find_child("HPBarFill", true, false)
 	assert_almost_eq(fill.anchor_right, 1.0, 0.001,
 		"an un-scanned enemy's HP bar must show the UNKNOWN fraction (full-width neutral), not the true 10%")
 
-	ui_mgr.reveal_enemy_stats(enemy)
-	var bar2 := ui_mgr._ctb_hp_bar(enemy, false)
-	var fill2 := bar2.find_child("HPBarFill", true, false)
+	# Direct state write, not reveal_enemy_stats() — that also rebuilds the live enemy status
+	# boxes via _scene.test_enemies, which this bare RefCounted fake_scene doesn't carry.
+	ui_mgr._revealed_enemies[enemy] = true
+	var bar2: Control = ui_mgr._ctb_hp_bar(enemy, false)
+	var fill2: Node = bar2.find_child("HPBarFill", true, false)
 	assert_almost_eq(fill2.anchor_right, 0.1, 0.01,
 		"once revealed, the HP bar must show the real fraction")

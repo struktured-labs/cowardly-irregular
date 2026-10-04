@@ -1031,7 +1031,10 @@ func _animate_ctb_rows(head: Combatant) -> void:
 ## queued-action icon (when known), AP pips and a thin HP bar, with the current actor highlighted.
 func _create_ctb_entry(combatant: Combatant, is_current: bool, is_player: bool, position_idx: int) -> PanelContainer:
 	var card := PanelContainer.new()
-	card.name = "CTBEntryCard"
+	## Suffixed by slot: identical sibling names get silently replaced with an auto-generated
+	## "@PanelContainer@id" by every card after the first, which made find_child("CTBEntryCard")
+	## only ever see the head of the queue.
+	card.name = "CTBEntryCard%d" % position_idx
 	card.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var card_style := StyleBoxFlat.new()
 	card_style.bg_color = Color(0.12, 0.1, 0.22, 0.55) if not is_current else Color(0.22, 0.18, 0.08, 0.75)

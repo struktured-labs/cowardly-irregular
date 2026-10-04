@@ -126,9 +126,11 @@ func test_ticker_taller_by_one_line() -> void:
 	var panel_block: String = scene_src.substr(panel_idx, 600)
 	assert_string_contains(panel_block, "offset_top = 288.0")
 	assert_string_contains(panel_block, "offset_bottom = 480.0")
-	# BattleLog inner min-height matches.
-	assert_string_contains(scene_src, "custom_minimum_size = Vector2(0, 80)",
-		"inner RichTextLabel min-height must grow with the panel or content clips again")
+	# BattleLog inner min-height is just the FIRST-FRAME fallback now — BattleScene.
+	# _reposition_battle_log_panel() overwrites it every frame to whatever fits the actual
+	# gap between EnemyStatusPanel and the CTB panel, so the two can never be made to disagree.
+	assert_string_contains(scene_src, "custom_minimum_size = Vector2(0, 34)",
+		"inner RichTextLabel min-height fallback must still be present before layout settles")
 
 
 func test_ticker_sits_above_hint_bar_with_a_small_gap() -> void:
