@@ -122,5 +122,10 @@ func test_mutant_a_frozen_rules_literal_is_not_the_derived_bar() -> void:
 	var at := src.find("static func hint_text")
 	assert_gt(at, -1, "CONTROL: hint_text must still exist")
 	var body := src.substr(at, src.find("\nfunc ", at + 10) - at)
-	assert_false(body.contains('"[Start]'), "the derived pad bar must not freeze a Start literal for Rules")
-	assert_true(body.contains("rules"), "and must actually reference a derived rules variable")
+	var return_line_at := body.rfind("\n\treturn \"")
+	assert_gt(return_line_at, -1, "CONTROL: must find the derived bar's return line")
+	var return_line := body.substr(return_line_at)
+	for frozen in ["[Start]", "[Plus]", "[Options]", "Start/Plus/Options"]:
+		assert_false(return_line.contains(frozen),
+			"the derived pad bar must not freeze a literal button name for Rules: %s" % return_line)
+	assert_true(return_line.contains("rules]"), "and must actually format in the derived rules variable: %s" % return_line)
