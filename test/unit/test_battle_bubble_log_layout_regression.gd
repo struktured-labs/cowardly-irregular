@@ -50,9 +50,11 @@ func test_battle_log_height_snap_wired() -> void:
 	var src := FileAccess.get_file_as_string("res://src/battle/BattleScene.gd")
 	assert_true("call_deferred(\"_snap_battle_log_height\")" in src,
 		"log-height snap must be deferred post-layout — measuring before layout settles reads a zero size")
-	# 2026-07-16 smoke: deferred alone still raced PanelContainer layout (size 0 → no-op → top line stayed clipped) — resized fires after REAL layout.
-	assert_true("battle_log.resized.connect(_snap_battle_log_height)" in src,
-		"snap must ALSO hook battle_log.resized — the deferred call can run before layout settles")
+	# 2026-07-16's battle_log.resized hook was replaced 2026-10-03: the log now re-fits to content whenever the enemy panel resizes.
+	assert_false("battle_log.resized.connect(_snap_battle_log_height)" in src,
+		"the per-resize snap fought the CTB-clearance re-fit (it moved offset_top alone) and must stay removed")
+	assert_true("enemy_panel_for_log.resized.connect(_reposition_battle_log_panel)" in src,
+		"the log must re-fit after REAL layout, now driven by the enemy panel's resize")
 	var i := src.find("func _snap_battle_log_height")
 	assert_gt(i, -1, "_snap_battle_log_height must exist")
 	var next: int = src.find("\nfunc ", i + 1)

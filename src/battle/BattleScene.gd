@@ -5103,18 +5103,18 @@ func _on_enemy_died(enemy_idx: int) -> void:
 
 func _input(event: InputEvent) -> void:
 	"""Handle high-priority inputs: Select button, battle speed toggle, and repeat actions"""
+	# Tutorial hint capturing input — its dismiss press must not also toggle autobattle/speed/formation.
+	if TutorialHint.is_any_active():
+		return
+	# 2026-07-14 (cowir-music msg 2539): editor owns its input; battle hotkeys (Y-repeat, X-speed, F-formation) leak through otherwise and fire mid-edit.
+	if _active_inline_editor and is_instance_valid(_active_inline_editor) and _active_inline_editor.visible:
+		return
 	# Full log overlay owns input while it's up — cancel closes it, nothing else should leak through.
 	if _log_overlay and is_instance_valid(_log_overlay):
 		if (event.is_action_pressed("ui_cancel") and not event.is_echo()) \
 				or (event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_L):
 			_toggle_log_overlay()
 			get_viewport().set_input_as_handled()
-		return
-	# Tutorial hint capturing input — its dismiss press must not also toggle autobattle/speed/formation.
-	if TutorialHint.is_any_active():
-		return
-	# 2026-07-14 (cowir-music msg 2539): editor owns its input; battle hotkeys (Y-repeat, X-speed, F-formation) leak through otherwise and fire mid-edit.
-	if _active_inline_editor and is_instance_valid(_active_inline_editor) and _active_inline_editor.visible:
 		return
 	# Trust interrupt: cancel during a trust-window claims the turn back.
 	# High priority so nothing else swallows the input while the window
