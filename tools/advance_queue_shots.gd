@@ -74,6 +74,19 @@ func _init() -> void:
 		await create_timer(0.3).timeout
 	await create_timer(0.3).timeout
 	await _save("%s/%s_lower_q4.png" % [OUT, label])
+	## Part 2: commit the lowered menu's queue and catch the run mid-execution.
+	menu._confirm_turn_with_queue()
+	var waited := 0.0
+	while waited < 20.0:
+		var rc = scene.get_node_or_null("AdvanceRunCards")
+		if rc and rc.is_running():
+			break
+		await create_timer(0.1).timeout
+		waited += 0.1
+	print("[SHOT] run live after %.1fs" % waited)
+	for k in 3:
+		await create_timer(0.35).timeout
+		await _save("%s/%s_run%d.png" % [OUT, label, k])
 	print("[SHOT] done %s" % label)
 	quit(0)
 
