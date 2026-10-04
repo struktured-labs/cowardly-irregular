@@ -40,7 +40,13 @@
           150,
           150
         ]
-      }
+      },
+      "secondary_accent": [
+        "#b4202a",
+        "#b83a42",
+        "#8f2537",
+        "#73172d"
+      ]
     },
     "bard_sdxl": {
       "path": "res://assets/sprites/jobs/bard_sdxl",
@@ -111,7 +117,13 @@
           100,
           250
         ]
-      }
+      },
+      "secondary_accent": [
+        "#5b6ee1",
+        "#60a0ff",
+        "#639bff",
+        "#285cc4"
+      ]
     },
     "fighter": {
       "path": "res://assets/sprites/jobs/fighter",
@@ -155,7 +167,13 @@
           250,
           250
         ]
-      }
+      },
+      "secondary_accent": [
+        "#73172d",
+        "#9d3123",
+        "#b4202a",
+        "#511912"
+      ]
     },
     "guardian": {
       "path": "res://assets/sprites/jobs/guardian",
@@ -215,7 +233,12 @@
           80,
           500
         ]
-      }
+      },
+      "secondary_accent": [
+        "#385857",
+        "#1a3838",
+        "#264a48"
+      ]
     },
     "mage_sdxl": {
       "path": "res://assets/sprites/jobs/mage_sdxl",
@@ -307,7 +330,11 @@
           100,
           100
         ]
-      }
+      },
+      "secondary_accent": [
+        "#6d1a22",
+        "#ac3232"
+      ]
     },
     "rogue_artist": {
       "path": "res://assets/sprites/jobs/rogue_artist",

@@ -297,6 +297,52 @@ static func has_artist_sheet(job_id: String) -> bool:
 	return _manifest.has(job_id)
 
 
+## How far a secondary job's colour leans the artist's named accent entries: enough to read at battle scale, never a repaint.
+const SECONDARY_ACCENT_AMOUNT: float = 0.45
+## RGB distance at which an art pixel counts as a named entry — the shader's match rule, set from here.
+const SECONDARY_ACCENT_TOLERANCE: float = 0.04
+## The shader's accent_from array size.
+const SECONDARY_ACCENT_MAX: int = 8
+
+
+## The ARTIST palette entries a sheet lets a secondary job lean (manifest "secondary_accent"); empty when it names none.
+## The secondary used to reach only the procedural sprite, and every starter has an artist sheet, so it never showed.
+static func secondary_accent(job_id: String) -> PackedColorArray:
+	_load_manifest()
+	var out := PackedColorArray()
+	var entry = _manifest.get(job_id, {})
+	if entry is Dictionary:
+		for h in entry.get("secondary_accent", []):
+			if out.size() < SECONDARY_ACCENT_MAX and Color.html_is_valid(str(h)):
+				out.append(Color.html(str(h)))
+	return out
+
+
+## Leans a battle sprite's flash material toward `color` on the primary sheet's named accent entries, at runtime only.
+## Off — the sprite exactly as drawn — with no secondary, the primary itself, or a sheet that names no entries.
+static func apply_secondary_accent(mat: ShaderMaterial, primary_job_id: String, secondary_job_id: String, color: Color) -> bool:
+	if mat == null:
+		return false
+	var entries := PackedColorArray()
+	if secondary_job_id != "" and secondary_job_id != primary_job_id:
+		entries = secondary_accent(primary_job_id)
+	mat.set_shader_parameter("accent_count", entries.size())
+	if entries.is_empty():
+		return false
+	var from := PackedVector3Array()
+	var peak := 0.0
+	for c in entries:
+		from.append(Vector3(c.r, c.g, c.b))
+		peak = maxf(peak, 0.299 * c.r + 0.587 * c.g + 0.114 * c.b)
+	from.resize(SECONDARY_ACCENT_MAX)
+	mat.set_shader_parameter("accent_from", from)
+	mat.set_shader_parameter("accent_to", color)
+	mat.set_shader_parameter("accent_peak", peak)
+	mat.set_shader_parameter("accent_amount", SECONDARY_ACCENT_AMOUNT)
+	mat.set_shader_parameter("accent_tolerance", SECONDARY_ACCENT_TOLERANCE)
+	return true
+
+
 ## Does this sheet need flipping so the monster faces the party (screen right)?
 ##
 ## Frame size is only a PROXY here, and conflating the two cost us twice in one day:
