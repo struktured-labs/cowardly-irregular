@@ -15,7 +15,7 @@ const HINTS = {
 	},
 	"autobattle_intro": {
 		"title": "Autobattle System",
-		"body": "F5 opens the Autobattle Editor anywhere; on a pad, {menu} opens it mid-battle, and Menu → Auto Rules opens it in the field. Design rules — if HP is low, heal. If enemy is weak to fire, cast fire. Let the system fight for you. Not laziness. Enlightenment.",
+		"body": "F5 opens the Autobattle Editor anywhere. In battle, hold Auto on a character (or press {menu_pad} on a pad); in the field, Menu → Auto Rules. Design rules — if HP is low, heal. If enemy is weak to fire, cast fire. Let the system fight for you. Not laziness. Enlightenment.",
 	},
 	"autobattle_toggle": {
 		"title": "Toggle Autobattle",
@@ -218,6 +218,9 @@ static func resolve_tokens(text: String) -> String:
 	out = out.replace("{cancel}", _control_name(ipm, "ui_cancel", "Z"))
 	out = out.replace("{move}", "D-pad, left stick or the arrow keys")
 	out = out.replace("{menu}", _control_name(ipm, "ui_menu", "Enter"))
+	## A PAD's menu button even with no pad attached: "{menu}" fell back to Enter, so the tip said "on a pad, Enter".
+	var start_name: String = ipm.button_name_for_index(JOY_BUTTON_START) if ipm != null and ipm.has_method("button_name_for_index") else ""
+	out = out.replace("{menu_pad}", start_name if start_name != "" else "Start")
 	out = out.replace("{field_menu}", _field_menu_name(ipm))
 	out = out.replace("{defer}", _control_name(ipm, "battle_defer", "Q"))
 	out = out.replace("{advance}", _control_name(ipm, "battle_advance", "W"))

@@ -22,7 +22,8 @@ func _hint_body() -> String:
 
 func test_hint_no_longer_teaches_the_phantom_chord() -> void:
 	assert_eq(_hint_body().find("L+R"), -1, "no L+R chord opens the editor; the hint must not name one")
-	assert_true(_hint_body().contains("{menu}"), "the battle route (Start) must be named via the {menu} token")
+	assert_true(_hint_body().contains("{menu_pad}"), "the battle route (Start) must be named via the PAD-only {menu_pad} token")
+	assert_true(_hint_body().contains("hold Auto"), "the route that works on every device (hold Auto, since .557) must be named")
 	assert_true(_hint_body().contains("Auto Rules"), "the field route (Menu → Auto Rules) must be named")
 	assert_true(_hint_body().contains("F5"), "the keyboard route must survive")
 
@@ -79,3 +80,12 @@ func test_milo_names_the_real_pad_routes_in_both_sources() -> void:
 			assert_true(src.contains(family_name),
 				"%s: the copy must name %s — one family's name is a caption two thirds of pads cannot follow" % [path, family_name])
 		assert_true(src.contains("Auto Rules"), "%s: the field route must be named" % path)
+
+
+## Rendered with no pad attached, the tip said "on a pad, Enter opens it mid-battle": {menu} resolves to the KEYBOARD key without a
+## pad, and Enter never opens the editor in battle. The pad route must name a pad button whatever is plugged in.
+func test_the_rendered_tip_never_calls_a_keyboard_key_a_pad_button() -> void:
+	var text := TutorialHints.resolve_tokens(_hint_body())
+	assert_false(text.contains("{"), "every token resolves: %s" % text)
+	assert_false(text.contains("press Enter on a pad"), "a keyboard key named as the pad route: %s" % text)
+	assert_true(text.contains("on a pad"), "SCOPE: the pad clause is present")
