@@ -1954,7 +1954,7 @@ static func _keyboard_hint_text() -> String:
 		return HINT_KEYBOARD_TEXT
 	# F5 is a raw keycode with no InputMap action (GameLoop checks event.keycode directly), same
 	# as the backtick Speed key above — literal, not derived, because there is nothing to derive.
-	return "[%s] Defer  ·  [%s] Advance  ·  [`] Speed  ·  [%s] Auto  ·  [F5] Rules  ·  [L] Log" % [defer, adv, auto]
+	return "[%s] Defer  ·  [%s] Advance  ·  [`] Speed  ·  [%s] Auto  ·  [F5] Rules" % [defer, adv, auto]
 
 
 static func hint_text() -> String:
