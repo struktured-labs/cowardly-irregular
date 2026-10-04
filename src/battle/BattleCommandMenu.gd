@@ -1419,7 +1419,9 @@ func _on_win98_go_back_requested() -> void:
 ## does NOT run auto (struktured 2026-10-03: "opens that character's rule editor and does NOT
 ## run auto"). Reuses _open_autobattle_editor_for, the same inline editor hold-A opened before.
 func _on_win98_auto_hold_editor_requested(combatant: Variant) -> void:
-	if not (combatant is Combatant) or not is_instance_valid(combatant):
+	## Validity FIRST: `x is T` on a freed instance ABORTS the enclosing function, so checking
+	## it before is_instance_valid makes the validity half unreachable (test_freed_guard_ordering_regression).
+	if not is_instance_valid(combatant) or not (combatant is Combatant):
 		return
 	if _scene and is_instance_valid(_scene) and _scene.has_method("_open_autobattle_editor_for"):
 		_scene._open_autobattle_editor_for(combatant)
