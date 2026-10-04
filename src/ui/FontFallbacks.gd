@@ -16,6 +16,9 @@ const FALLBACK_PATHS := [
 
 
 func _enter_tree() -> void:
+	# Headless roots are 64x64: canvas_items scales them 0.05x and font metrics inflate (16px measures 48), so tests keep the 720p frame.
+	if DisplayServer.get_name() == "headless":
+		get_tree().root.content_scale_mode = Window.CONTENT_SCALE_MODE_VIEWPORT
 	var chain: Array[Font] = []
 	for path in FALLBACK_PATHS:
 		var f = load(path)
