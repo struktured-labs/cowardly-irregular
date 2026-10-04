@@ -961,7 +961,7 @@ func _show_current_line() -> void:
 			portrait_type = portrait_raw.substr(0, portrait_raw.length() - expr.length() - 1)
 			expression = expr
 			break
-	_portrait_image.texture = _create_portrait(portrait_type)
+	_portrait_image.texture = HybridSpriteLoader.fitted_portrait(_create_portrait(portrait_type), _portrait_image.size)
 	# The ground is chosen AFTER the art is known — _create_dialogue_visuals runs before it.
 	if _portrait_bg and is_instance_valid(_portrait_bg):
 		_portrait_bg.color = portrait_ground(_portrait_image.texture, _portrait_theme_bg)

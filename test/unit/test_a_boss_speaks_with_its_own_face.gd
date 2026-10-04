@@ -42,10 +42,12 @@ func _intro_bosses() -> Array:
 
 
 ## Two resolvers cut two AtlasTextures from one sheet; the same face is the same sheet and region.
+## `a` as the box draws it: a painted file is shown resampled to the 72px rect, so that is the face to compare.
 func _same_face(a: Texture2D, b: Texture2D) -> bool:
 	if a is AtlasTexture and b is AtlasTexture:
 		return (a as AtlasTexture).atlas == (b as AtlasTexture).atlas and (a as AtlasTexture).region == (b as AtlasTexture).region
-	return a == b
+	var cell := Vector2(DialogueScript.PORTRAIT_SIZE - 8, DialogueScript.PORTRAIT_SIZE - 8)
+	return a == b or a == HybridSpriteLoader.fitted_portrait(b, cell)
 
 
 ## The five starters' faces. A boss id starting "bard_" once resolved to the Bard through the mood rung.
@@ -118,7 +120,7 @@ func test_a_duel_boss_named_after_a_job_does_not_wear_that_job() -> void:
 	var box = _box([_pc("fighter")])
 	box.show_boss_intro("The Sneering Courtier", ["Courtier: My hall is not a market."], "bard_hostile_courtier")
 	assert_true(box._portrait_frame.visible, "the Courtier's line shows a face")
-	assert_ne(box._portrait_image.texture, _art.portrait_art("bard"), "the Courtier wore the Bard's portrait")
+	assert_false(_same_face(box._portrait_image.texture, _art.portrait_art("bard")), "the Courtier wore the Bard's portrait")
 	assert_true(_same_face(box._portrait_image.texture, _art.monster_art("bard_hostile_courtier")), "the Courtier wears its own bust")
 
 
@@ -137,7 +139,7 @@ func test_a_party_member_named_in_a_line_speaks_as_themselves() -> void:
 	assert_eq(str(e.get("art", "")), "bard", "the Bard's line wears the Bard's face")
 	assert_ne(str(e.get("theme", "")), "enemy", "and not the boss's colours")
 	assert_true(box._portrait_frame.visible)
-	assert_eq(box._portrait_image.texture, _art.portrait_art("bard"))
+	assert_true(_same_face(box._portrait_image.texture, _art.portrait_art("bard")), "the Bard wears the Bard's face")
 
 
 func test_no_boss_art_falls_back_to_a_drawn_face() -> void:
