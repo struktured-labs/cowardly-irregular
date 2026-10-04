@@ -92,3 +92,20 @@ func test_a_self_damage_recoil_popup_shows_what_landed() -> void:
 	var lost := before - caster.current_hp
 	assert_gt(lost, 0, "CONTROL: the overflow must recoil onto the caster")
 	assert_eq(int(_popups.get(caster, 0)), lost, "the recoil popup must read the HP the caster lost")
+
+
+func test_the_group_log_line_agrees_with_the_popup() -> void:
+	## .575 fixed the popups; the "hits X for N" / "blasts X for N" log lines kept the pre-defense number,
+	## so the popup and the log disagreed about the same hit.
+	var lines: Array[String] = []
+	var cb := func(m): lines.append(str(m))
+	BattleManager.battle_log_message.connect(cb)
+	var bad: Array[String] = []
+	bad.append_array(_check("all_out_attack", func(p, f): BattleManager._execute_physical_group(p, [f] as Array[Combatant], "all_out_attack", 0)))
+	var all_out_popup: int = int(_popups.values()[0]) if _popups.size() > 0 else -1
+	bad.append_array(_check("combo_magic", func(p, f): BattleManager._execute_combo_magic(p, [f] as Array[Combatant], 0)))
+	var combo_popup: int = int(_popups.values()[0]) if _popups.size() > 0 else -1
+	BattleManager.battle_log_message.disconnect(cb)
+	var joined := "\n".join(lines)
+	assert_string_contains(joined, "Wall for %d!" % all_out_popup, "the All-Out log line must read the popup's %d" % all_out_popup)
+	assert_string_contains(joined, "Wall for %d!" % combo_popup, "the Combo log line must read the popup's %d" % combo_popup)

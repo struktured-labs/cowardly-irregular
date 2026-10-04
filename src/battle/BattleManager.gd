@@ -4315,7 +4315,7 @@ func _execute_physical_group(participants: Array, alive_enemies: Array[Combatant
 		var enemy_landed: int = enemy.take_damage(mitigated)
 		damage_dealt.emit(enemy, enemy_landed, false, "", 1.0)
 		battle_log_message.emit("[color=orange]Group %s hits %s for %d![/color]" % [
-			group_type, enemy.combatant_name, mitigated])
+			group_type, enemy.combatant_name, enemy_landed])
 
 	if is_limit_break:
 		_limit_break_cleanse(participants)
@@ -4394,7 +4394,7 @@ func _execute_combo_magic(participants: Array, alive_enemies: Array[Combatant], 
 		var enemy_landed: int = enemy.take_damage(final_damage, true)
 		damage_dealt.emit(enemy, enemy_landed, false, combo_element, elemental_mod)
 		battle_log_message.emit("[color=magenta]%s blasts %s for %d![/color]" % [
-			combo_name, enemy.combatant_name, final_damage])
+			combo_name, enemy.combatant_name, enemy_landed])
 
 
 ## The AP BattleCommandMenu gated the row on, so the debit cannot drift from the gate
