@@ -153,8 +153,22 @@ func _build_ui() -> void:
 		badge_rows = int(badge_layout[badge_layout.size() - 1]["row"]) + 1
 	var badge_row_h: float = 40.0 * badge_rows
 	var badge_header_h := 20.0 if all_badges.size() > 0 else 0.0
-	var panel_h = 68.0 + stats_data.size() * row_h + badge_header_h + badge_row_h + 50.0
-	panel_h = min(panel_h, vp_size.y - 40)
+	var rows_per_col: int = stats_data.size()
+	var panel_h = 68.0 + rows_per_col * row_h + badge_header_h + badge_row_h + 50.0
+	## A long session (full party, rule notes, permadeath, badges) stacked past 720 px and hid the grade and the achievements.
+	var max_h: float = vp_size.y - 40
+	if panel_h > max_h:
+		panel_w = minf(vp_size.x - 80, 1000.0)
+		rows_per_col = int(ceil(stats_data.size() / 2.0))
+		badge_layout = _layout_badges(all_badges, panel_w)
+		badge_rows = int(badge_layout[badge_layout.size() - 1]["row"]) + 1 if badge_layout.size() > 0 else 0
+		badge_row_h = 40.0 * badge_rows
+		panel_h = 68.0 + rows_per_col * row_h + badge_header_h + badge_row_h + 50.0
+		if panel_h > max_h:
+			row_h = maxf(18.0, (max_h - 68.0 - badge_header_h - badge_row_h - 50.0) / maxf(rows_per_col, 1))
+			panel_h = 68.0 + rows_per_col * row_h + badge_header_h + badge_row_h + 50.0
+	panel_h = min(panel_h, max_h)
+	var col_w: float = panel_w if rows_per_col >= stats_data.size() else (panel_w - 20.0) / 2.0
 
 	var panel = Control.new()
 	panel.position = Vector2((vp_size.x - panel_w) / 2, (vp_size.y - panel_h) / 2)
@@ -188,24 +202,28 @@ func _build_ui() -> void:
 	panel.add_child(sep)
 
 	var y = 68.0
-	for s in stats_data:
+	for i in stats_data.size():
+		var s: Dictionary = stats_data[i]
+		var col: int = i / maxi(rows_per_col, 1)
+		var x0: float = col * col_w
+		y = 68.0 + (i % maxi(rows_per_col, 1)) * row_h
 		var lbl = Label.new()
 		lbl.text = s["label"]
-		lbl.position = Vector2(30, y)
+		lbl.position = Vector2(x0 + 30, y)
 		lbl.add_theme_font_size_override("font_size", 13)
 		lbl.add_theme_color_override("font_color", LABEL_COLOR)
 		panel.add_child(lbl)
 
 		var val = Label.new()
 		val.text = s["value"]
-		val.position = Vector2(panel_w - 200, y)
+		val.position = Vector2(x0 + col_w - 200, y)
 		val.size = Vector2(170, 20)
 		val.add_theme_font_size_override("font_size", 13)
 		val.add_theme_color_override("font_color", s["color"])
 		val.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 		panel.add_child(val)
 
-		y += row_h
+	y = 68.0 + rows_per_col * row_h
 
 	if all_badges.size() > 0:
 		var badge_header = Label.new()
