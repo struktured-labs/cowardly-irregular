@@ -4834,6 +4834,52 @@ func _retarget_ally(caster: Combatant, original_target: Combatant, include_dead:
 	return valid_targets[0]
 
 
+## True when an item's effect bundle heals HP/MP or cures status — the non-revive half of the
+## same CTB-guess target set BattleCommandMenu._item_allows_any_ally_target builds the menu from.
+func _item_effects_heal(effects: Dictionary) -> bool:
+	for key in ["heal_hp", "heal_hp_percent", "heal_mp", "heal_mp_percent", "cure_status", "cure_all_status"]:
+		if effects.has(key):
+			return true
+	return false
+
+
+## CTB inference (struktured ruling 2026-10-03): a queued single-ally revive is chosen at
+## SELECTION time without knowing execution-time state. If the target is still dead when this
+## resolves, the premise held — revive them. If they're alive again (or missing), infer the
+## first KO'd ally in party order instead of wasting the action. Null if nobody is down. Shared
+## by manual and in-battle autobattle execution (both resolve through this same path).
+func _smart_retarget_revive(caster: Combatant, original_target: Variant) -> Combatant:
+	var ally_party: Array = player_party if caster in player_party else enemy_party
+	if original_target != null and is_instance_valid(original_target) and original_target is Combatant \
+			and original_target in ally_party and not original_target.is_alive:
+		return original_target
+	for member in ally_party:
+		if is_instance_valid(member) and not member.is_alive:
+			return member
+	return null
+
+
+## CTB inference (struktured ruling 2026-10-03): a queued single-ally heal is chosen at
+## SELECTION time without knowing execution-time state. If the target is still alive and hurt,
+## the premise held. Otherwise — they died, OR they're at full HP, OR they're missing — the one
+## rule for "broken premise" is the same either way: redirect to the lowest-HP% ally who is
+## actually below max. Null if nobody qualifies, so the heal doesn't fire (and spends nothing)
+## for a party that is dead-or-full. A dead original target is NOT special-cased to skip the
+## needs-it filter — struktured 2026-10-03 follow-up: "if nobody needs it, it holds, with no
+## cost" applies the same whether the premise broke via death or via a full-HP party.
+func _smart_retarget_heal(caster: Combatant, original_target: Variant) -> Combatant:
+	var ally_party: Array = player_party if caster in player_party else enemy_party
+	var original_valid: bool = original_target != null and is_instance_valid(original_target) \
+			and original_target is Combatant and original_target in ally_party
+	if original_valid and original_target.is_alive and original_target.current_hp < original_target.max_hp:
+		return original_target
+	var needing: Array = ally_party.filter(func(m): return is_instance_valid(m) and m.is_alive and m.current_hp < m.max_hp)
+	if needing.is_empty():
+		return null
+	needing.sort_custom(func(a, b): return a.get_hp_percentage() < b.get_hp_percentage())
+	return needing[0]
+
+
 func _execute_attack(attacker: Combatant, target: Combatant) -> void:
 	"""Execute a basic physical attack (costs 1 AP)"""
 	# AP spent FIRST so fizzled action still commits cost (bug fix 2026-04-30).
@@ -5133,19 +5179,27 @@ func _execute_ability(caster: Combatant, ability_id: String, targets: Array) -> 
 	var is_offensive = ability_type in ["physical", "magic"] or (ability_type == "summon" and aims_at_foes)
 	var is_revival = ability_type == "revival"
 
+	## single_ally heals get the CTB smart-retarget inference (struktured 2026-10-03); other
+	## single_ally abilities (protect/shell/esuna/pray/etc) keep the plain alive-only retarget.
+	var is_smart_heal: bool = (ability_type == "healing" and target_type == "single_ally")
+
 	for target in targets:
 		if is_offensive:
 			var new_target = _retarget_enemy(caster, target)
 			if new_target:
 				retargeted.append(new_target)
 		elif is_revival:
-			# Revival targets dead allies, don't retarget
-			if target:
-				retargeted.append(target)
+			var smart_revive_target = _smart_retarget_revive(caster, target)
+			if smart_revive_target:
+				retargeted.append(smart_revive_target)
 		elif aims_at_foes:
 			var new_foe = _retarget_enemy(caster, target)
 			if new_foe and not retargeted.has(new_foe):
 				retargeted.append(new_foe)
+		elif is_smart_heal:
+			var smart_heal_target = _smart_retarget_heal(caster, target)
+			if smart_heal_target:
+				retargeted.append(smart_heal_target)
 		else:
 			# Healing/support targets allies
 			var new_target = _retarget_ally(caster, target, is_revival)
@@ -5162,6 +5216,17 @@ func _execute_ability(caster: Combatant, ability_id: String, targets: Array) -> 
 		retargeted[0] = _maybe_cover_ally(caster, retargeted[0])
 
 	if retargeted.size() == 0 and targets.size() > 0:
+		## Smart-retarget came up empty: nobody down to Raise, or nobody hurt to heal.
+		## Named distinctly from the generic fizzle below — these are a correct guess
+		## resolving to "no one needed it", not a target dying mid-queue.
+		if is_revival:
+			print("%s holds %s - everyone is standing" % [caster.combatant_name, ability["name"]])
+			battle_log_message.emit("[color=gray]%s holds %s — everyone is standing.[/color]" % [caster.combatant_name, ability["name"]])
+			return
+		if is_smart_heal:
+			print("%s holds %s - no one needs it" % [caster.combatant_name, ability["name"]])
+			battle_log_message.emit("[color=gray]%s holds %s — no one needs it.[/color]" % [caster.combatant_name, ability["name"]])
+			return
 		## Tick 173: ability fizzle in the log. Common scenario:
 		## party member queues an attack on an enemy, that enemy
 		## dies before the action fires (group_attack KO), and
@@ -7746,19 +7811,27 @@ func _execute_item(user: Combatant, item_id: String, targets: Array) -> void:
 		or item_target_type == ItemSystem.TargetType.ALL_ENEMIES
 	)
 
+	## Single-ally heal items get the same CTB smart-retarget inference as abilities
+	## (struktured 2026-10-03); other single-ally items (pure buffs) keep the plain retarget.
+	var is_heal_item: bool = not is_revival_item and not targets_enemies and _item_effects_heal(item_effects)
+
 	# Auto-retarget: revival items need dead allies; damage items need
 	# alive enemies; everything else (heals/cures/buffs) needs alive allies.
 	var retargeted: Array[Combatant] = []
 	for t in targets:
 		if t is Combatant:
 			if is_revival_item:
-				# Revival items should keep dead targets, not retarget to alive
-				if not t.is_alive:
-					retargeted.append(t)
+				var smart_revive_target = _smart_retarget_revive(user, t)
+				if smart_revive_target:
+					retargeted.append(smart_revive_target)
 			elif targets_enemies:
 				var new_enemy = _retarget_enemy(user, t)
 				if new_enemy and not retargeted.has(new_enemy):
 					retargeted.append(new_enemy)
+			elif is_heal_item:
+				var smart_heal_target = _smart_retarget_heal(user, t)
+				if smart_heal_target:
+					retargeted.append(smart_heal_target)
 			else:
 				var new_target = _retarget_ally(user, t, false)
 				if new_target:
@@ -7766,8 +7839,19 @@ func _execute_item(user: Combatant, item_id: String, targets: Array) -> void:
 
 	# An empty list used to miss this check, so use_item still printed and the bag still lost the item. Escape does not need a body.
 	if retargeted.is_empty() and not wants_escape:
-		print("%s's item fizzles - no valid targets!" % user.combatant_name)
+		## Smart-retarget came up empty: nobody down to revive, or nobody hurt to heal —
+		## a correct guess resolving to "no one needed it", named distinctly from a
+		## generic fizzle (which still means the item was wasted and consumed below).
 		var item_display: String = item_id.replace("_", " ").capitalize()
+		if is_revival_item:
+			print("%s holds %s - everyone is standing" % [user.combatant_name, item_display])
+			battle_log_message.emit("[color=gray]%s holds %s — everyone is standing.[/color]" % [user.combatant_name, item_display])
+			return
+		if is_heal_item:
+			print("%s holds %s - no one needs it" % [user.combatant_name, item_display])
+			battle_log_message.emit("[color=gray]%s holds %s — no one needs it.[/color]" % [user.combatant_name, item_display])
+			return
+		print("%s's item fizzles - no valid targets!" % user.combatant_name)
 		battle_log_message.emit("[color=gray]%s's %s fizzles — no valid targets.[/color]" % [user.combatant_name, item_display])
 		return
 

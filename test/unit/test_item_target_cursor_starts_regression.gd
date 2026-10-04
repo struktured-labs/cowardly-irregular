@@ -189,7 +189,10 @@ func test_the_battle_potion_list_opens_on_the_ally_it_can_heal() -> void:
 	bram.add_item("phoenix_down", 1)
 	var rows: Array = await _battle_rows([bram, theron, milo])
 	var potion: Array = _row(rows, "item_menu_potion").get("submenu", [])
-	assert_eq(potion.size(), 2, "CONTROL: a potion offers the living allies, not the KO")
+	## CTB ruling (struktured 2026-10-03): a potion now lists the KO'd ally too — the player is
+	## guessing at execution-time state. The row carries a reject_reason ("Milo is knocked out")
+	## so the cursor still opens on the ally the potion can actually heal.
+	assert_eq(potion.size(), 3, "CONTROL: a potion's target list now includes the KO'd ally")
 	var potion_menu = _menu(potion)
 	assert_eq(str(potion_menu.menu_items[potion_menu.selected_index].get("id", "")), "item_potion_ally_1")
 	var feather: Array = _row(rows, "item_menu_phoenix_down").get("submenu", [])

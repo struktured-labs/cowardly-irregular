@@ -362,15 +362,17 @@ func build_command_menu_items_with_targets(combatant: Combatant) -> Array:
 			var target_type = item.get("target_type", ItemSystem.TargetType.SINGLE_ALLY)
 
 			# For SINGLE_ALLY items, add party member target submenu.
-			# Items with effects.revive (Phoenix Down) include KO'd allies — otherwise a revive item silently drops its whole target list. Struktured playtest 2026-07-13.
+			# CTB ruling (struktured 2026-10-03): a heal or revive item's target menu lets the
+			# player pick ANY ally — selection happens before execution, so the chosen state is
+			# a guess. Non-heal/revive single-ally items (buffs) keep the alive-only filter.
 			if target_type == ItemSystem.TargetType.SINGLE_ALLY:
-				var can_target_dead: bool = bool(item.get("effects", {}).get("revive", false))
+				var can_target_any: bool = _item_allows_any_ally_target(item.get("effects", {}))
 				var ally_targets = []
 				for i in range(_scene.party_members.size()):
 					var member = _scene.party_members[i]
 					if not is_instance_valid(member):
 						continue
-					if not member.is_alive and not can_target_dead:
+					if not member.is_alive and not can_target_any:
 						continue
 					ally_targets.append(_item_ally_row(item_id, member, i))
 				if ally_targets.size() > 0:
@@ -652,12 +654,18 @@ func _build_ability_menu_item(ability_id: String, combatant: Combatant, alive_en
 			"disabled": not can_afford
 		}
 
-	# Single-ally targeting (heal/buff) with party submenu
+	# Single-ally targeting (heal/buff) with party submenu. CTB ruling (struktured
+	# 2026-10-03): a `healing`-typed ability's target list includes EVERY ally, dead or
+	# full-HP — selection happens before execution, so the player is guessing. Non-heal
+	# single_ally abilities (protect/shell/esuna/pray/etc) keep the alive-only filter.
 	if target_type == "single_ally" and can_afford:
+		var is_heal_ability: bool = str(ability.get("type", "")) == "healing"
 		var ally_targets: Array = []
 		for i in range(_scene.party_members.size()):
 			var member = _scene.party_members[i]
-			if not is_instance_valid(member) or not member.is_alive:
+			if not is_instance_valid(member):
+				continue
+			if not member.is_alive and not is_heal_ability:
 				continue
 			var target_pos: Vector2 = Vector2.ZERO
 			if i < _scene.party_sprite_nodes.size():
@@ -665,12 +673,13 @@ func _build_ability_menu_item(ability_id: String, combatant: Combatant, alive_en
 				if is_instance_valid(s):
 					target_pos = s.get_meta("home_position", s.global_position)  # 2026-07-15: prefer home_position (stamped at spawn) so a mid-animation sprite doesn't misalign the highlight box
 			var heal_preview: String = ""
-			if ability.get("type", "") == "healing" and ability.has("heal_amount"):
+			if is_heal_ability and ability.has("heal_amount") and member.is_alive:
 				## Quoted per ALLY: the dial, this member's passives and a curse on them all move it.
 				heal_preview = " ~+%d" % BattleManager.estimate_heal_amount(combatant, member, ability)
+			var hp_text: String = "KO'd" if not member.is_alive else "%d/%d HP" % [member.current_hp, member.max_hp]
 			ally_targets.append({
 				"id": "ability_" + ability_id + "_ally_" + str(i),
-				"label": "%s (%d/%d HP)%s" % [member.combatant_name, member.current_hp, member.max_hp, heal_preview],
+				"label": "%s (%s)%s%s" % [member.combatant_name, hp_text, heal_preview, _ally_state_tag(member)],
 				"data": {"ability_id": ability_id, "target_idx": i, "target_type": "ally", "target_pos": target_pos}
 			})
 		return {
@@ -683,21 +692,24 @@ func _build_ability_menu_item(ability_id: String, combatant: Combatant, alive_en
 			"disabled": not can_afford
 		}
 
-	# Dead-ally targeting (Raise) — only show when KO'd allies exist
+	# Dead-ally targeting (Raise) — CTB ruling (struktured 2026-10-03): shows EVERY
+	# ally, living or KO'd, tagged by state. The player can't know who will still be
+	# standing when a queued Raise resolves, so the guess is theirs to make.
 	if target_type == "dead_ally" and can_afford:
 		var dead_targets: Array = []
 		for i in range(_scene.party_members.size()):
 			var member = _scene.party_members[i]
-			if not is_instance_valid(member) or member.is_alive:
+			if not is_instance_valid(member):
 				continue
 			var target_pos: Vector2 = Vector2.ZERO
 			if i < _scene.party_sprite_nodes.size():
 				var s = _scene.party_sprite_nodes[i]
 				if is_instance_valid(s):
 					target_pos = s.get_meta("home_position", s.global_position)  # 2026-07-15: prefer home_position (stamped at spawn) so a mid-animation sprite doesn't misalign the highlight box
+			var hp_text: String = "KO" if not member.is_alive else "%d/%d HP" % [member.current_hp, member.max_hp]
 			dead_targets.append({
 				"id": "ability_" + ability_id + "_dead_" + str(i),
-				"label": "%s (KO)" % member.combatant_name,
+				"label": "%s (%s)%s" % [member.combatant_name, hp_text, _ally_state_tag(member)],
 				"data": {"ability_id": ability_id, "target_idx": i, "target_type": "dead_ally", "target_pos": target_pos}
 			})
 		if dead_targets.size() > 0:
@@ -887,6 +899,49 @@ func _item_flat_row(item_id: String, item: Dictionary, quantity: int, targets: A
 	}, item_id, targets)
 
 
+## Selection-time confirm gate for an ability target (ally/dead_ally/enemy). CTB ruling
+## (struktured 2026-10-03): a Raise can confirm on any ally, and a healing ability's "ally" row
+## can confirm on any ally — the player is guessing at state the execution phase resolves later.
+## Enemy targeting is unchanged (must be alive).
+func _is_valid_ability_target(ability_id: String, target_type: String, target: Variant) -> bool:
+	if not is_instance_valid(target):
+		return false
+	if target_type == "dead_ally":
+		return true
+	if target_type == "ally":
+		return str(JobSystem.get_ability(ability_id).get("type", "")) == "healing" or target.is_alive
+	return target.is_alive
+
+
+## Selection-time confirm gate for an item target. Mirrors _is_valid_ability_target: a heal or
+## revive item can confirm on any ally; everything else keeps the alive-only gate.
+func _is_valid_item_target(item_id: String, target_type_str: String, target: Variant) -> bool:
+	if not is_instance_valid(target):
+		return false
+	if target_type_str == "ally" and _item_allows_any_ally_target(ItemSystem.get_item(item_id).get("effects", {})):
+		return true
+	return target.is_alive
+
+
+## True when this item's effect bundle heals or revives — CTB ruling (struktured 2026-10-03): its single-ally target list includes every ally regardless of alive/dead/full-HP state.
+func _item_allows_any_ally_target(effects: Dictionary) -> bool:
+	for key in ["revive", "heal_hp", "heal_hp_percent", "heal_mp", "heal_mp_percent", "cure_status", "cure_all_status"]:
+		if effects.has(key):
+			return true
+	return false
+
+
+## Visible state tag for a CTB guess target — picked at selection, resolved at execution. Derived from state, never hardcoded per ally.
+func _ally_state_tag(member: Combatant) -> String:
+	if not is_instance_valid(member):
+		return ""
+	if not member.is_alive:
+		return " [KO]"
+	if member.current_hp >= member.max_hp:
+		return " [Full]"
+	return ""
+
+
 ## One ally row of an item's target list. Landable even when the item would do nothing, so confirm can say why instead of spending it.
 func _item_ally_row(item_id: String, member: Combatant, i: int) -> Dictionary:
 	var target_pos = Vector2.ZERO
@@ -900,7 +955,7 @@ func _item_ally_row(item_id: String, member: Combatant, i: int) -> Dictionary:
 	var heal_quote: String = " ~+%d" % quote if quote > 0 else ""
 	return _with_item_reject({
 		"id": "item_" + item_id + "_ally_" + str(i),
-		"label": "%s (%s)%s" % [member.combatant_name, hp_label, heal_quote],
+		"label": "%s (%s)%s%s" % [member.combatant_name, hp_label, heal_quote, _ally_state_tag(member)],
 		"data": {"item_id": item_id, "target_idx": i, "target_type": "ally", "target_pos": target_pos}
 	}, item_id, [member])
 
@@ -1134,12 +1189,7 @@ func _on_win98_menu_selection(item_id: String, item_data: Variant) -> void:
 				if target_idx < _scene.test_enemies.size():
 					target = _scene.test_enemies[target_idx]
 
-			var is_valid_target = false
-			if is_instance_valid(target):
-				if target_type == "dead_ally":
-					is_valid_target = not target.is_alive
-				else:
-					is_valid_target = target.is_alive
+			var is_valid_target = _is_valid_ability_target(ability_id, target_type, target)
 
 			if is_valid_target:
 				_scene._execute_ability(ability_id, target)
@@ -1185,9 +1235,7 @@ func _on_win98_menu_selection(item_id: String, item_data: Variant) -> void:
 			elif target_type_str == "enemy" and target_idx >= 0 and target_idx < _scene.test_enemies.size():
 				target = _scene.test_enemies[target_idx]
 
-			# 2026-07-14 playtest: Phoenix Down was firing "Target no longer valid!" on KO'd allies — revive items EXPECT dead targets; mirror the same gate the menu-build uses (line 246).
-			var can_revive: bool = bool(ItemSystem.get_item(i_id).get("effects", {}).get("revive", false))
-			var valid: bool = is_instance_valid(target) and (target.is_alive or (can_revive and target_type_str == "ally"))
+			var valid: bool = _is_valid_item_target(i_id, target_type_str, target)
 			if valid:
 				BattleManager.player_item(i_id, [target])
 			else:

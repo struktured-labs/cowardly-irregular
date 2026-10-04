@@ -80,11 +80,15 @@ func test_item_fizzle_uses_prettified_item_name() -> void:
 	var fn_idx: int = src.find("func _execute_item(user: Combatant, item_id: String, targets: Array) -> void:")
 	var next_fn: int = src.find("\nfunc ", fn_idx + 1)
 	var body: String = src.substr(fn_idx, next_fn - fn_idx)
-	# Find the fizzle branch.
-	var fizzle_idx: int = body.find("fizzles — no valid targets")
+	# Find the enclosing no-valid-targets block, then the fizzle branch inside it.
+	# CTB ruling (struktured 2026-10-03) added two earlier returns (revive/heal smart-retarget
+	# coming up empty) ahead of the generic fizzle, so item_display's declaration is now further
+	# from "fizzles" than a fixed char window — pin the whole block instead of a distance.
+	var block_idx: int = body.find("if retargeted.is_empty() and not wants_escape:")
+	assert_gt(block_idx, -1)
+	var fizzle_idx: int = body.find("fizzles — no valid targets", block_idx)
 	assert_gt(fizzle_idx, -1)
-	# Walk backward to confirm item_display variable is computed.
-	var pre: String = body.substr(max(0, fizzle_idx - 300), 300)
+	var pre: String = body.substr(block_idx, fizzle_idx - block_idx)
 	assert_true(pre.contains("var item_display: String = item_id.replace(\"_\", \" \").capitalize()"),
 		"item fizzle must compute prettified item_display before emitting")
 
