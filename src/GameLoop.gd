@@ -4776,7 +4776,7 @@ func _start_battle_async(specific_enemies: Array = [], is_encounter: bool = fals
 	if is_encounter and has_enemies and specific_enemies.all(func(e): return e is Dictionary and bool(e.get("is_mimic", false))):
 		battle_scene.autogrind_enemy_data = specific_enemies.duplicate(true)
 		for k in battle_scene.autogrind_enemy_data.size():
-			battle_scene.autogrind_enemy_data[k]["id"] = "hero_mimic_%d" % k  # each is its own copy: no "A/B/C" duplicate suffix
+			battle_scene.autogrind_enemy_data[k]["id"] = "hero_mimic_%d" % k  # each is its own copy: no lettered duplicate suffix
 
 	# Route enemies to the correct BattleScene property
 	if has_enemies and is_encounter:
