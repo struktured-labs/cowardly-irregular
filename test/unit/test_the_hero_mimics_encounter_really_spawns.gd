@@ -67,3 +67,28 @@ func test_gameloop_routes_an_all_mimic_party_as_data() -> void:
 	assert_gt(route, -1, "an all-mimic encounter must hand its data to the spawner, not reduce it to ids")
 	assert_true(body.contains("e.get(\"is_mimic\", false)"), "the hand-over is keyed on the mimic flag")
 	assert_true(body.contains("\"hero_mimic_%d\" % k"), "each mimic gets its own id")
+
+
+## The rare encounter's 2.5x bonus never paid: _get_battle_reward_multiplier read `_enemy_data`, which nothing writes.
+func test_a_spawned_mimic_carries_its_reward_bonus() -> void:
+	var mimics: Array = EncounterSystem._generate_hero_mimics_party()
+	_scene = load("res://src/battle/BattleScene.tscn").instantiate()
+	_scene.autogrind_enemy_data = mimics.duplicate(true)
+	add_child(_scene)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	assert_gt(_scene.test_enemies.size(), 0, "SCOPE: mimics spawned")
+	var e = _scene.test_enemies[0]
+	assert_true(e.has_meta("reward_multiplier"), "the spawner records the mimic's reward bonus")
+	assert_almost_eq(float(e.get_meta("reward_multiplier", 1.0)), 2.5, 0.001, "the mimic's 2.5x bonus survives the spawn")
+
+
+func test_the_battle_pays_the_bonus() -> void:
+	var foe := Combatant.new()
+	foe.set_meta("reward_multiplier", 2.5)
+	add_child_autofree(foe)
+	var saved: Array = BattleManager.enemy_party.duplicate()
+	BattleManager.enemy_party.assign([foe])
+	var m: float = BattleManager._get_battle_reward_multiplier()
+	BattleManager.enemy_party.assign(saved)
+	assert_almost_eq(m, 2.5, 0.001, "a battle with a 2.5x enemy pays 2.5x")

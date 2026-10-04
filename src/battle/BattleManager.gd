@@ -1240,6 +1240,10 @@ func _get_battle_reward_multiplier() -> float:
 	"""Get reward multiplier from defeated enemies (for rare encounters)"""
 	var max_multiplier = 1.0
 	for enemy in enemy_party:
+		## The spawner records it as meta; the `_enemy_data` read below was never written by anything, so the bonus never paid.
+		if is_instance_valid(enemy) and enemy.has_meta("reward_multiplier"):
+			max_multiplier = max(max_multiplier, float(enemy.get_meta("reward_multiplier")))
+			continue
 		# Check if enemy has reward_multiplier in their data
 		if enemy.has_method("get") and enemy.get("_enemy_data"):
 			var data = enemy.get("_enemy_data")

@@ -396,6 +396,9 @@ func spawn_from_data(enemy_data_array: Array) -> void:
 
 		# Store monster type ID for sprite selection
 		enemy.set_meta("monster_type", type_id)
+		## Rare-encounter bonus (Hero Mimics 2.5x): BattleManager._get_battle_reward_multiplier reads this meta.
+		if data.has("reward_multiplier"):
+			enemy.set_meta("reward_multiplier", float(data["reward_multiplier"]))
 
 		# Add weaknesses/resistances from data
 		for weakness in data.get("weaknesses", []):
