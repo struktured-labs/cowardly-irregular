@@ -6206,8 +6206,10 @@ func _place_victory_banner(labels: Array, other: Node = null) -> void:
 			l.add_theme_font_size_override("font_size", maxi(8, int(l.get_theme_font_size("font_size") * s)))
 		var y := top + (r.position.y - block.position.y) * s
 		## Width scales with the font: placing the unscaled width put a shrunk banner 4px onto the log column.
-		l.offset_left = cx - r.size.x * s / 2.0 - vp.x / 2.0
-		l.offset_right = cx + r.size.x * s / 2.0 - vp.x / 2.0
+		## Never wider than the band: a 400px box whose text fit kept s=1.0 and still spilled 16px onto the log column.
+		var w: float = minf(r.size.x * s, maxf(right - left, 0.0))
+		l.offset_left = cx - w / 2.0 - vp.x / 2.0
+		l.offset_right = cx + w / 2.0 - vp.x / 2.0
 		l.offset_top = y - vp.y / 2.0
 		l.offset_bottom = y + r.size.y * s - vp.y / 2.0
 
