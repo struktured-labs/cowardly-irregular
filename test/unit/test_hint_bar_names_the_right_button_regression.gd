@@ -16,14 +16,14 @@ const CLAIM_TO_ACTION := {
 	"Advance": "battle_advance",
 	"Auto": "battle_toggle_auto",
 	"Rules": "ui_menu",
+	"Log": "battle_open_log",
 }
 
 ## Claims with no input action at all — the button is compared raw in an `if`, so nothing
 ## can resolve the label against a binding. Speed is checked against JOY_BUTTON_Y directly
 ## in BattleScene._unhandled_input. Listed so a NEW unbacked claim fails, and so this entry
 ## goes stale loudly if Speed ever gains an action.
-## Speed and Log are raw buttons (north face, L3), not InputMap actions.
-const CLAIMS_WITHOUT_ACTIONS := ["Speed", "Log"]
+const CLAIMS_WITHOUT_ACTIONS := ["Speed"]
 
 
 func _consts(path: String) -> Dictionary:

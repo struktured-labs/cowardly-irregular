@@ -83,12 +83,12 @@ func test_standard_profile_shoulders_match_the_hint_bar() -> void:
 	)
 
 
+## 2026-10-04 "reuse L3": button 7 moved from ui_menu to battle_open_log on purpose; both must still be listed.
 func test_standard_profile_keeps_both_ui_menu_buttons() -> void:
-	assert_eq(
-		(InputProfileManager.PROFILE_STANDARD["ui_menu"] as Array).size(), 2,
-		"_replace_joypad_buttons is destructive — a profile listing fewer buttons than "
-		+ "project.godot silently DROPS the omitted ones (ui_menu lost button 7 this way)"
-	)
+	assert_eq(InputProfileManager.PROFILE_STANDARD["ui_menu"], [6],
+		"_replace_joypad_buttons is destructive: the profile must list exactly what project.godot binds to ui_menu (START)")
+	assert_eq(InputProfileManager.PROFILE_STANDARD.get("battle_open_log", []), [7],
+		"and L3 must be listed for battle_open_log, or applying the profile silently drops the battle-log button")
 
 
 func test_strukturers_actual_pad_autodetects_to_standard() -> void:

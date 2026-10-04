@@ -1950,11 +1950,12 @@ static func _keyboard_hint_text() -> String:
 	var defer: String = InputProfileManager.hint_for_action("battle_defer")
 	var adv: String = InputProfileManager.hint_for_action("battle_advance")
 	var auto: String = InputProfileManager.hint_for_action("battle_toggle_auto")
-	if defer == "" or adv == "" or auto == "":
+	var log_key: String = InputProfileManager.hint_for_action("battle_open_log")
+	if defer == "" or adv == "" or auto == "" or log_key == "":
 		return HINT_KEYBOARD_TEXT
 	# F5 is a raw keycode with no InputMap action (GameLoop checks event.keycode directly), same
 	# as the backtick Speed key above — literal, not derived, because there is nothing to derive.
-	return "[%s] Defer  ·  [%s] Advance  ·  [`] Speed  ·  [%s] Auto  ·  [F5] Rules  ·  [L] Log" % [defer, adv, auto]
+	return "[%s] Defer  ·  [%s] Advance  ·  [`] Speed  ·  [%s] Auto  ·  [F5] Rules  ·  [%s] Log" % [defer, adv, auto, log_key]
 
 
 static func hint_text() -> String:
@@ -1977,11 +1978,11 @@ static func hint_text() -> String:
 	var adv: String = InputProfileManager.hint_for_action("battle_advance")
 	var auto: String = InputProfileManager.hint_for_action("battle_toggle_auto")
 	var rules: String = InputProfileManager.hint_for_action("ui_menu")
-	## L3 opens the full battle log (struktured 2026-10-04: "reuse L3"); a raw button, so named per family like Speed.
-	var log_btn: String = InputProfileManager.button_name_for_index(JOY_BUTTON_LEFT_STICK)
+	## The full battle log is an action (L3 on a pad, struktured 2026-10-04 "reuse L3"), derived like the others.
+	var log_btn: String = InputProfileManager.hint_for_action("battle_open_log")
 	if defer == "" or adv == "" or auto == "" or rules == "" or log_btn == "":
 		return HINT_DEFAULT_TEXT
-	return "%s Defer  ·  %s Advance  ·  %s Speed  ·  %s Auto  ·  %s Rules  ·  [%s] Log" % [defer, adv, speed, auto, rules, log_btn]
+	return "%s Defer  ·  %s Advance  ·  %s Speed  ·  %s Auto  ·  %s Rules  ·  %s Log" % [defer, adv, speed, auto, rules, log_btn]
 
 var _hint_label_cache: Label = null
 var _hint_showing_reason: bool = false

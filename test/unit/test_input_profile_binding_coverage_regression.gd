@@ -199,16 +199,16 @@ func test_no_profile_silently_reduces_a_binding_count() -> void:
 		"applying a profile erases ALL joypad buttons then re-adds only its own, so a shorter list is silent deletion:\n%s" % "\n".join(losses))
 
 
-## The specific case that regressed. Pinned by name so a future "tidy up, 7 isn't Start" edit has to
-## be deliberate — under Godot 4 button 7 is L3, and project.godot binds it on purpose.
-func test_ui_menu_keeps_both_declared_buttons_in_every_profile() -> void:
-	var declared := _declared_joypad_buttons("ui_menu")
-	assert_eq(declared, [6, 7], "project.godot is expected to declare START and L3 for ui_menu")
+## Pinned by name so an edit to button 7 is deliberate. It was: struktured 2026-10-04 "reuse L3" moved L3 (button 7) from ui_menu
+## to battle_open_log, the full battle log. Every profile must agree with project.godot, or applying one silently undoes the move.
+func test_l3_opens_the_battle_log_and_start_the_menu_in_every_profile() -> void:
+	assert_eq(_declared_joypad_buttons("ui_menu"), [6], "project.godot binds START to ui_menu")
+	assert_eq(_declared_joypad_buttons("battle_open_log"), [7], "project.godot binds L3 to battle_open_log")
 	var profiles := _profiles()
 	for profile_name in profiles:
 		var profile: Dictionary = profiles[profile_name]
-		assert_eq(profile["ui_menu"], [6, 7],
-			"%s must keep both — dropping 7 makes the menu unreachable from L3 with no warning" % profile_name)
+		assert_eq(profile["ui_menu"], [6], "%s: START opens the menu" % profile_name)
+		assert_eq(profile.get("battle_open_log", []), [7], "%s: L3 opens the battle log; omitting it here erases it on apply" % profile_name)
 
 
 ## Remapping must stay LEGAL — the count guard forbids losing bindings, never moving them.

@@ -322,9 +322,15 @@ func test_the_derived_bar_names_no_button_literally() -> void:
 			"the derived bar froze %s again — every button in it must come from InputProfileManager" % frozen)
 
 
-## [L3/L-Stick] Log is a RAW button (no InputMap action): it is true only if BattleScene really handles L3 by opening the log.
-func test_the_log_button_is_actually_wired_to_l3() -> void:
+## [L3/L-Stick] Log is the battle_open_log ACTION: it must carry an L3 joypad binding and BattleScene must open the log on it.
+func test_the_log_hint_is_a_bound_action_that_opens_the_log() -> void:
+	assert_true(InputMap.has_action("battle_open_log"), "the hint bar advertises Log, so battle_open_log must exist")
+	var has_l3 := false
+	for e in InputMap.action_get_events("battle_open_log"):
+		if e is InputEventJoypadButton and (e as InputEventJoypadButton).button_index == JOY_BUTTON_LEFT_STICK:
+			has_l3 = true
+	assert_true(has_l3, "battle_open_log must be bound to L3 on a pad")
 	var src := FileAccess.get_file_as_string("res://src/battle/BattleScene.gd")
-	var i := src.find("elif event.button_index == JOY_BUTTON_LEFT_STICK:")
-	assert_gt(i, -1, "the hint bar advertises L3 Log, so BattleScene must handle JOY_BUTTON_LEFT_STICK")
-	assert_true(src.substr(i, 200).contains("_toggle_log_overlay()"), "and L3 must open the battle log")
+	var i := src.find('if event.is_action_pressed("battle_open_log")')
+	assert_gt(i, -1, "BattleScene must handle battle_open_log")
+	assert_true(src.substr(i, 160).contains("_toggle_log_overlay()"), "and it must open the battle log")

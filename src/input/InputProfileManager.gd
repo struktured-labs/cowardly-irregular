@@ -15,6 +15,7 @@ const REMAPPABLE_ACTIONS = [
 	"battle_defer",
 	"battle_toggle_auto",
 	"ui_menu",
+	"battle_open_log",
 ]
 
 ## Human-readable labels for actions
@@ -25,6 +26,7 @@ const ACTION_LABELS = {
 	"battle_defer": "Defer",
 	"battle_toggle_auto": "Toggle Auto",
 	"ui_menu": "Menu",
+	"battle_open_log": "Battle Log",
 }
 
 ## Confirm sits on the EAST face when true — the SNES layout (Y X / B A). False puts it on
@@ -93,7 +95,8 @@ const PROFILE_STANDARD = {
 	"battle_advance": [10],    # RIGHT_SHOULDER (R) — matches "[R] Advance" hint bar
 	"battle_defer": [9],       # LEFT_SHOULDER (L) — matches "[L] Defer" hint bar
 	"battle_toggle_auto": [4], # BACK (Select/Minus)
-	"ui_menu": [6, 7],         # START + L3 — project.godot binds both; dropping 7 was a silent regression
+	"ui_menu": [6],             # START. L3 moved to battle_open_log 2026-10-04 (struktured: "reuse L3"), deliberately, not dropped
+	"battle_open_log": [7],    # L3 — the full battle log
 }
 
 const PROFILE_SN30 = {
@@ -102,7 +105,8 @@ const PROFILE_SN30 = {
 	"battle_advance": [10],    # RIGHT_SHOULDER (R)
 	"battle_defer": [9],       # LEFT_SHOULDER (L)
 	"battle_toggle_auto": [4], # BACK (Select/Minus)
-	"ui_menu": [6, 7],         # START + L3 — project.godot declares both; dropping 7 here was the same silent loss already fixed in PROFILE_STANDARD
+	"ui_menu": [6],             # START. L3 moved to battle_open_log 2026-10-04 (struktured: "reuse L3"), deliberately, not dropped
+	"battle_open_log": [7],    # L3 — the full battle log
 }
 
 const PROFILE_ULTIMATE_PRO_2 = {
@@ -120,7 +124,8 @@ const PROFILE_ULTIMATE_PRO_2 = {
 	"battle_advance": [10],    # RIGHT_SHOULDER — aligned with Standard and the hint bar
 	"battle_defer": [9],       # LEFT_SHOULDER — aligned with Standard and the hint bar
 	"battle_toggle_auto": [4], # BACK (Select/Minus)
-	"ui_menu": [6, 7],         # START + L3 — project.godot declares both; dropping 7 here was the same silent loss already fixed in PROFILE_STANDARD
+	"ui_menu": [6],             # START. L3 moved to battle_open_log 2026-10-04 (struktured: "reuse L3"), deliberately, not dropped
+	"battle_open_log": [7],    # L3 — the full battle log
 }
 
 ## Profile names
