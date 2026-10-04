@@ -97,8 +97,10 @@ func test_the_turn_order_strip_prints_the_buffed_speed() -> void:
 	var hasted := _person("Hasted", 20)
 	hasted.add_buff("Speed_up", "speed", 1.5, 3)
 	var ui = UIScript.new(null)
-	var row: HBoxContainer = ui._create_ctb_entry(hasted, false, true, 1)
-	var spd := row.get_child(row.get_child_count() - 1) as Label
+	# Room-to-breathe pass (2026-10-03): _create_ctb_entry now returns a PanelContainer card with
+	# a nested SpeedLabel, not a bare HBoxContainer whose last child is the speed number.
+	var card: PanelContainer = ui._create_ctb_entry(hasted, false, true, 1)
+	var spd := card.find_child("SpeedLabel", true, false) as Label
 	assert_eq(spd.text, "30",
 		"the TURN ORDER number is what the player reads as speed — haste must change it")
-	row.free()
+	card.free()

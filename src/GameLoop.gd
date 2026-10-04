@@ -437,6 +437,7 @@ func _ready() -> void:
 	# Arg-gated render smoke — see _maybe_run_battle_smoke.
 	_maybe_run_battle_smoke()
 	_maybe_run_dev_fight()
+	_maybe_run_hud_shots()
 
 
 ## `godot -- --fight=skeleton,skeleton` — boot straight into an interactive battle (dev art/feel testing, struktured 2026-08-17).
@@ -456,6 +457,59 @@ func _maybe_run_dev_fight() -> void:
 			print("[DEV] --fight boot: %s" % [enemies])
 			_start_battle_async(enemies, false)
 			return
+
+
+## `xvfb-run godot -- --hud-shots` — room-to-breathe HUD pass (struktured 2026-10-03) visual
+## proof: condensed log in the left column, the expand overlay, an enriched turn-order card,
+## and a mid-sweep frame of the new victory banner. Saves to user://smoke/hud_*.png.
+func _maybe_run_hud_shots() -> void:
+	if not ("--hud-shots" in OS.get_cmdline_user_args()):
+		return
+	AudioServer.set_bus_mute(0, true)
+	await get_tree().create_timer(1.0).timeout
+	print("[HUD-SHOTS] starting")
+	_close_title_screen()
+	await get_tree().process_frame
+	await get_tree().process_frame
+	_create_party()
+	DirAccess.make_dir_recursive_absolute("user://smoke")
+	# Two enemies — a tall-ish EnemyStatusPanel is the interesting case for the log's clearance.
+	await _start_battle_async(["goblin", "goblin"], true)
+	await get_tree().create_timer(2.5).timeout
+	await _smoke_shot("hud_battle_default")
+
+	# Dismiss the one-time "Battle Controls" tutorial hint — it floats above every battle panel
+	# and would otherwise sit on top of the log overlay in the next shot.
+	_smoke_tap("ui_accept")
+	await get_tree().create_timer(0.3).timeout
+
+	var battle_scene: Node = current_scene
+	if battle_scene and is_instance_valid(battle_scene) and battle_scene.has_method("_toggle_log_overlay"):
+		battle_scene._toggle_log_overlay()
+		await get_tree().create_timer(0.4).timeout
+		await _smoke_shot("hud_log_expanded")
+		battle_scene._toggle_log_overlay()
+		await get_tree().create_timer(0.3).timeout
+
+	# Force a kill so the victory banner plays, and grab it mid-sweep. A direct take_damage()
+	# during PLAYER_SELECTING doesn't by itself re-evaluate the win condition (that normally
+	# happens post-action-resolution) — nudge BattleManager to check right away.
+	if battle_scene and is_instance_valid(battle_scene) and "test_enemies" in battle_scene:
+		for e in battle_scene.test_enemies:
+			if is_instance_valid(e):
+				e.take_damage(99999)
+	if BattleManager and BattleManager.has_method("_check_victory_conditions"):
+		BattleManager._check_victory_conditions()
+	var waited := 0.0
+	while battle_scene and is_instance_valid(battle_scene) and battle_scene.get_node_or_null("VictoryResults") == null and waited < 8.0:
+		await get_tree().create_timer(0.1).timeout
+		waited += 0.1
+	await get_tree().create_timer(0.12).timeout  # catch the sweep band mid-flight, before it settles
+	await _smoke_shot("hud_victory_mid_banner", 0.985)
+	await get_tree().create_timer(1.0).timeout
+	await _smoke_shot("hud_victory_settled")
+	print("[HUD-SHOTS] done")
+	get_tree().quit()
 
 
 ## `xvfb-run godot -- --battle-smoke` (battle only) or `-- --render-smoke` (overworld walk frames + battle) — pixels catch what source pins can't

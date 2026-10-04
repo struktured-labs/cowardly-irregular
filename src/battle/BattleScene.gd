@@ -60,6 +60,12 @@ const ENEMY_SMALL_FRAME_THRESHOLD: int = 128
 @onready var battle_log: RichTextLabel = $UI/BattleLogPanel/MarginContainer/VBoxContainer/BattleLog
 @onready var turn_info: Label = $UI/TurnInfoPanel/TurnInfo
 
+## Full scrollback behind the condensed log strip; condensed view shows only the newest few, fading older ones.
+const LOG_CONDENSED_LINES := 5
+const LOG_HISTORY_CAP := 400
+var _log_history: Array[String] = []
+var _log_overlay: Control = null
+
 ## Action buttons (legacy - hidden when using Win98 menu)
 @onready var action_menu_panel: PanelContainer = $UI/ActionMenuPanel
 @onready var btn_attack: Button = $UI/ActionMenuPanel/MarginContainer/VBoxContainer/AttackButton
@@ -363,9 +369,21 @@ func _ready() -> void:
 		RetroFontClass.configure_battle_log(battle_log)
 	# 2026-07-15 playtest: log viewport was ~4.8 lines tall so the top visible line was permanently half-clipped — snap the panel to a whole line count once layout settles.
 	call_deferred("_snap_battle_log_height")
-	# 2026-07-16 smoke: the deferred call can still land before PanelContainer layout settles (size 0 → no-op) — the top log line stayed half-clipped. resized fires after REAL layout; re-snap then. Guard flag keeps it one-shot.
-	if battle_log:
-		battle_log.resized.connect(_snap_battle_log_height)
+	# 2026-10-03 room-to-breathe pass: the ongoing `.resized -> _snap_battle_log_height` hookup
+	# this comment used to describe is GONE — it nudged offset_top by a few px on every resize
+	# with no matching offset_bottom adjustment, which fought _reposition_battle_log_panel_now's
+	# hard CTB-clearance cap and could drift the panel into an overlap after the fact. The panel
+	# is now re-fitted to its EXACT content every time EnemyStatusPanel resizes or turn info
+	# updates, so the one-shot deferred call above is the only snap this file still needs.
+	var log_expand_btn: Button = get_node_or_null("UI/BattleLogPanel/MarginContainer/VBoxContainer/LogHeader/LogExpandButton")
+	if log_expand_btn:
+		log_expand_btn.pressed.connect(_toggle_log_overlay)
+	# EnemyStatusPanel's height varies with the roster (more enemies = taller box) — the
+	# log panel's fixed .tscn offsets are only a FALLBACK until the real enemy panel settles.
+	var enemy_panel_for_log := get_node_or_null("UI/EnemyStatusPanel")
+	if enemy_panel_for_log:
+		enemy_panel_for_log.resized.connect(_reposition_battle_log_panel)
+	call_deferred("_reposition_battle_log_panel")
 
 	# Add padding to PartyStatusPanel so labels don't hug the panel
 	# borders. PanelContainer uses its stylebox content_margin_* for
@@ -1794,6 +1812,11 @@ func reveal_enemy_stats(enemy: Combatant) -> void:
 
 func _update_turn_info() -> void:
 	_ui_manager.update_turn_info()
+	# Rides the same cadence as the CTB/enemy panels it must stay clear of — a resize signal
+	# alone can miss a frame where the enemy panel's size settles to the same value twice in a
+	# row (Control.resized only fires on an actual CHANGE), which left the log panel stranded at
+	# a stale position for some rosters.
+	_reposition_battle_log_panel()
 
 
 ## Shrink the BattleLogPanel by the fractional line so the scrolled-to-bottom log never shows a half-clipped top line (playtest 2026-07-15). Measures the REAL label size post-layout instead of guessing theme metrics.
@@ -1815,6 +1838,64 @@ func _snap_battle_log_height() -> void:
 		var log_panel = get_node_or_null("UI/BattleLogPanel")
 		if log_panel:
 			log_panel.offset_top += frac
+
+
+const LOG_PANEL_HEIGHT := 192.0
+const LOG_PANEL_GAP := 8.0
+## LogHeader row + MarginContainer insets — everything in the panel except the RichTextLabel
+## itself. A PanelContainer can never be sized below its children's combined minimum, so to
+## GUARANTEE no overlap on a tall roster we must shrink the child (battle_log's min height)
+## BEFORE the layout pass, not just request a smaller offset range and hope it's honored.
+const LOG_PANEL_NON_TEXT_OVERHEAD := 64.0
+const LOG_PANEL_MIN_TEXT_HEIGHT := 16.0
+
+## EnemyStatusPanel's real height varies with the roster (a 3-enemy pull is taller than a solo
+## snake) — the .tscn's offset_bottom=280.0 is only a fallback for the first frame. The log panel
+## must always sit strictly between the enemy panel's real bottom edge and the CTB panel's top
+## (BattleUIManager._update_turn_order_strip: offset_top=-230 at the bottom anchor), or the two
+## can overlap on a roster that grows the enemy box past its nominal slot.
+## Deferred: EnemyStatusPanel's Container minimum-size recompute can land one idle-frame after
+## whatever triggered this call (a resize signal fired mid-sort, or _update_turn_info() ran
+## before the SAME frame's box-content changes finished propagating up through the Container
+## chain) — reading enemy_panel.size synchronously here could measure a STALE, smaller height
+## and under-clear the gap. Deferring one tick lets that settle first.
+func _reposition_battle_log_panel() -> void:
+	call_deferred("_reposition_battle_log_panel_now")
+
+
+func _reposition_battle_log_panel_now() -> void:
+	var log_panel := get_node_or_null("UI/BattleLogPanel")
+	var enemy_panel := get_node_or_null("UI/EnemyStatusPanel")
+	if not log_panel or not enemy_panel or not is_instance_valid(enemy_panel):
+		return
+	var enemy_bottom: float = enemy_panel.position.y + enemy_panel.size.y
+	if enemy_bottom <= 0.0:
+		return  # layout not settled yet
+	var top: float = enemy_bottom + LOG_PANEL_GAP
+	var ctb_top_at_current_height: float = get_viewport_rect().size.y - 230.0
+	var hard_bottom_cap: float = ctb_top_at_current_height - LOG_PANEL_GAP
+	var available: float = hard_bottom_cap - top
+	if available < LOG_PANEL_NON_TEXT_OVERHEAD + LOG_PANEL_MIN_TEXT_HEIGHT:
+		# An extreme roster left no safe room at all — hide the condensed strip rather than
+		# overlap the CTB panel. Full history is still one L / expand-button press away.
+		log_panel.visible = false
+		return
+	var desired: float = minf(LOG_PANEL_HEIGHT, available)
+	if battle_log and is_instance_valid(battle_log):
+		battle_log.custom_minimum_size.y = maxf(LOG_PANEL_MIN_TEXT_HEIGHT, desired - LOG_PANEL_NON_TEXT_OVERHEAD)
+	# get_combined_minimum_size() is a PULL computation — it reflects the shrink above
+	# immediately, unlike .size, which only updates on the next SORT_CHILDREN layout pass (that
+	# lag, read through .size instead of this, is what let a taller-than-requested panel slip
+	# past a deferred "verify after the fact" check and still overlap the CTB panel below).
+	var true_min: float = log_panel.get_combined_minimum_size().y
+	var final_height: float = maxf(desired, true_min)
+	if top + final_height > hard_bottom_cap:
+		# Even the TRUE minimum does not fit this gap — hide outright rather than overlap.
+		log_panel.visible = false
+		return
+	log_panel.visible = true
+	log_panel.offset_top = top
+	log_panel.offset_bottom = top + final_height
 
 
 func log_message(message: String) -> void:
@@ -5022,6 +5103,13 @@ func _on_enemy_died(enemy_idx: int) -> void:
 
 func _input(event: InputEvent) -> void:
 	"""Handle high-priority inputs: Select button, battle speed toggle, and repeat actions"""
+	# Full log overlay owns input while it's up — cancel closes it, nothing else should leak through.
+	if _log_overlay and is_instance_valid(_log_overlay):
+		if (event.is_action_pressed("ui_cancel") and not event.is_echo()) \
+				or (event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_L):
+			_toggle_log_overlay()
+			get_viewport().set_input_as_handled()
+		return
 	# Tutorial hint capturing input — its dismiss press must not also toggle autobattle/speed/formation.
 	if TutorialHint.is_any_active():
 		return
@@ -5104,6 +5192,11 @@ func _input(event: InputEvent) -> void:
 		# F key to cycle party formation
 		elif event.keycode == KEY_F:
 			cycle_formation()
+			get_viewport().set_input_as_handled()
+			return
+		# L key to open the full battle log
+		elif event.keycode == KEY_L:
+			_toggle_log_overlay()
 			get_viewport().set_input_as_handled()
 			return
 
@@ -5532,10 +5625,108 @@ func _flash_screen(color: Color, duration: float) -> void:
 
 
 func _on_battle_log_message(message: String) -> void:
-	"""Display battle log message from BattleManager"""
-	if battle_log:
-		battle_log.append_text(message + "\n")
-		battle_log.scroll_to_line(battle_log.get_line_count())
+	"""Display battle log message from BattleManager — kept in full in _log_history,
+	   the condensed panel only ever shows the newest LOG_CONDENSED_LINES."""
+	_log_history.append(message)
+	if _log_history.size() > LOG_HISTORY_CAP:
+		_log_history.pop_front()
+	_refresh_condensed_log()
+	var full_log: RichTextLabel = _log_overlay.find_child("FullLogText", true, false) if _log_overlay and is_instance_valid(_log_overlay) else null
+	if full_log:
+		full_log.append_text(message + "\n")
+
+
+## The condensed strip: newest LOG_CONDENSED_LINES lines, each dimmer than the one below it —
+## the "older lines fade out" struktured asked for, instead of the old scroll-forever box.
+func _refresh_condensed_log() -> void:
+	if not battle_log or not is_instance_valid(battle_log):
+		return
+	var n := _log_history.size()
+	var shown := mini(n, LOG_CONDENSED_LINES)
+	var out := ""
+	for i in range(shown):
+		var msg: String = _log_history[n - shown + i]
+		var age := shown - 1 - i  # 0 = newest line, largest = oldest visible line
+		var alpha: float = clampf(1.0 - age * 0.22, 0.28, 1.0)
+		out += "[color=#ffffff%02x]%s[/color]\n" % [int(round(alpha * 255.0)), msg]
+	battle_log.text = out
+	battle_log.scroll_to_line(battle_log.get_line_count())
+
+
+## L toggles the full scrollback overlay — no gamepad binding exists (every face button,
+## shoulder, Select and Start are already claimed in battle), so this is keyboard/mouse only,
+## same class of raw un-bound hotkey as the existing `/Y/F battle shortcuts below.
+func _toggle_log_overlay() -> void:
+	if _log_overlay and is_instance_valid(_log_overlay):
+		_log_overlay.queue_free()
+		_log_overlay = null
+		return
+	_build_log_overlay()
+
+
+func _build_log_overlay() -> void:
+	var ui_root := get_node_or_null("UI")
+	if not ui_root:
+		return
+	var overlay := Control.new()
+	overlay.name = "FullLogOverlay"
+	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+
+	var backdrop := ColorRect.new()
+	backdrop.color = Color(0.0, 0.0, 0.0, 0.55)
+	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	overlay.add_child(backdrop)
+
+	var panel := PanelContainer.new()
+	panel.name = "FullLogPanel"
+	panel.custom_minimum_size = Vector2(760, 560)
+	var panel_style := StyleBoxFlat.new()
+	panel_style.bg_color = Color(0.07, 0.06, 0.14, 0.97)
+	panel_style.border_color = Color(0.5, 0.45, 0.75, 0.9)
+	panel_style.set_border_width_all(2)
+	panel_style.set_corner_radius_all(4)
+	panel_style.content_margin_left = 14
+	panel_style.content_margin_right = 14
+	panel_style.content_margin_top = 10
+	panel_style.content_margin_bottom = 10
+	panel.add_theme_stylebox_override("panel", panel_style)
+	overlay.add_child(panel)
+
+	var vbox := VBoxContainer.new()
+	panel.add_child(vbox)
+
+	var header := HBoxContainer.new()
+	vbox.add_child(header)
+	var title := Label.new()
+	title.name = "FullLogTitle"
+	title.text = "BATTLE LOG"
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	header.add_child(title)
+	var close_btn := Button.new()
+	close_btn.name = "CloseButton"
+	close_btn.text = "✕ Close (L)"
+	close_btn.pressed.connect(_toggle_log_overlay)
+	header.add_child(close_btn)
+
+	var scroller := ScrollContainer.new()
+	scroller.name = "FullLogScroll"
+	scroller.custom_minimum_size = Vector2(0, 480)
+	vbox.add_child(scroller)
+	var full_log := RichTextLabel.new()
+	full_log.name = "FullLogText"
+	full_log.bbcode_enabled = true
+	full_log.fit_content = true
+	full_log.custom_minimum_size = Vector2(720, 0)
+	full_log.text = "\n".join(_log_history)
+	scroller.add_child(full_log)
+
+	ui_root.add_child(overlay)
+	panel.position = (get_viewport_rect().size - panel.custom_minimum_size) / 2.0
+	_log_overlay = overlay
+	await get_tree().process_frame
+	if is_instance_valid(scroller) and is_instance_valid(full_log):
+		scroller.scroll_vertical = int(full_log.get_content_height())
 
 
 ## Trust option (a): BM opens a short window before AI takes over on a

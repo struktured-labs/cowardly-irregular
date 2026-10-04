@@ -11,6 +11,12 @@ extends GutTest
 ## Ticker: the bottom-center battle_log widget was ~400×66 clipping
 ## "Fighter selecting..." mid-line. It's now ~520×90, matching the hint-
 ## bar width (msg 2372 recommendation) and rendering one more line.
+## SUPERSEDED 2026-10-03 (room-to-breathe HUD pass, struktured: "get rid of the box
+## on the bottom that shows the battle log, or place in between enemies and turn
+## order"): BattleLogPanel moved out of the bottom-center ticker slot entirely, into
+## the left column between EnemyStatusPanel and the CTB turn-order panel. The three
+## tests below now assert the NEW position instead of the old ticker geometry — see
+## test_battle_log_sits_between_enemies_and_turn_order_regression.gd for the fuller check.
 
 const BS_PATH: String = "res://src/battle/BattleScene.gd"
 const BS_SCENE_PATH: String = "res://src/battle/BattleScene.tscn"
@@ -96,37 +102,43 @@ func test_watchdog_force_spawn_logs_loudly() -> void:
 ## ── Ticker widen ───────────────────────────────────────────────────────
 
 func test_ticker_widened_to_hint_bar_width() -> void:
-	# Ticker is 520px slid LEFT (x 130..650) clear of the Bard slot (2026-07-11). The ticker
-	# must match so "Fighter selecting..." can't clip like it did in the
-	# 2026-07-11 cap.
+	# SUPERSEDED 2026-10-03: the bottom-center ticker is gone. BattleLogPanel is now
+	# a fixed left-column box (x 5..260) anchored top-left, not bottom-center-sized.
 	var scene_src: String = FileAccess.get_file_as_string(BS_SCENE_PATH)
 	var panel_idx: int = scene_src.find("[node name=\"BattleLogPanel\"")
 	assert_gt(panel_idx, -1)
 	var panel_block: String = scene_src.substr(panel_idx, 600)
-	assert_string_contains(panel_block, "offset_left = -510.0",
-		"widen to hint-bar left offset")
-	assert_string_contains(panel_block, "offset_right = 10.0",
-		"widen to hint-bar right offset")
+	assert_string_contains(panel_block, "offset_left = 5.0",
+		"BattleLogPanel now sits in the left column, not centered")
+	assert_string_contains(panel_block, "offset_right = 260.0",
+		"BattleLogPanel's left-column width")
+	assert_string_contains(panel_block, "anchor_top = 0.0",
+		"BattleLogPanel no longer bottom-anchored")
 
 
 func test_ticker_taller_by_one_line() -> void:
+	# SUPERSEDED 2026-10-03: no longer a short bottom ticker. The panel is now tall
+	# enough to sit between EnemyStatusPanel (ends y=280) and the CTB panel (starts
+	# y=490 at 720p), leaving room for the condensed log + its expand button.
 	var scene_src: String = FileAccess.get_file_as_string(BS_SCENE_PATH)
 	var panel_idx: int = scene_src.find("[node name=\"BattleLogPanel\"")
 	assert_gt(panel_idx, -1)
 	var panel_block: String = scene_src.substr(panel_idx, 600)
-	# 90px tall (-128 top, -38 bottom) — +24px vs the old 66, one more line.
-	assert_string_contains(panel_block, "offset_top = -128.0")
-	assert_string_contains(panel_block, "offset_bottom = -38.0")
-	# BattleLog inner min-height matches.
-	assert_string_contains(scene_src, "custom_minimum_size = Vector2(0, 80)",
-		"inner RichTextLabel min-height must grow with the panel or content clips again")
+	assert_string_contains(panel_block, "offset_top = 288.0")
+	assert_string_contains(panel_block, "offset_bottom = 480.0")
+	# BattleLog inner min-height is just the FIRST-FRAME fallback now — BattleScene.
+	# _reposition_battle_log_panel() overwrites it every frame to whatever fits the actual
+	# gap between EnemyStatusPanel and the CTB panel, so the two can never be made to disagree.
+	assert_string_contains(scene_src, "custom_minimum_size = Vector2(0, 34)",
+		"inner RichTextLabel min-height fallback must still be present before layout settles")
 
 
 func test_ticker_sits_above_hint_bar_with_a_small_gap() -> void:
-	# Hint bar top is -34, ticker bottom is -38 → 4px gap. Regressing this
-	# to overlap looks messy on small resolutions (the two panels stack).
+	# SUPERSEDED 2026-10-03: the log no longer sits near the hint bar at all — it's
+	# in the left column now. The invariant that matters is "above the CTB panel",
+	# covered by test_battle_log_sits_between_enemies_and_turn_order_regression.gd.
 	var scene_src: String = FileAccess.get_file_as_string(BS_SCENE_PATH)
 	var panel_idx: int = scene_src.find("[node name=\"BattleLogPanel\"")
 	var panel_block: String = scene_src.substr(panel_idx, 600)
-	assert_string_contains(panel_block, "offset_bottom = -38.0",
-		"ticker bottom must sit above hint-bar top (-34)")
+	assert_string_contains(panel_block, "offset_bottom = 480.0",
+		"BattleLogPanel bottom must sit above the CTB panel's top (y=490 at 720p)")

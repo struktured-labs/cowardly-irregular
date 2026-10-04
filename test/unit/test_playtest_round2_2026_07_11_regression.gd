@@ -105,15 +105,17 @@ func test_select_toggles_autobattle_on_victory_screen() -> void:
 
 
 func test_ticker_sits_clear_of_the_bard_slot() -> void:
-	# The widened ticker (520px centered) met the new diagonal's bottom
-	# slot (Bard, ~x680-860) — "its cutting into the bard". Ticker now
-	# ends at x<=660.
+	# SUPERSEDED 2026-10-03 (room-to-breathe HUD pass): the bottom-center ticker is
+	# gone — BattleLogPanel is now a left-column box anchored top-left (x 5..260),
+	# nowhere near the party formation's bottom slot, so the old centered-offset
+	# math no longer applies. The surviving invariant is "stays left of the
+	# battlefield", asserted here directly instead of via the old centering formula.
 	var src := FileAccess.get_file_as_string("res://src/battle/BattleScene.tscn")
 	var i := src.find("[node name=\"BattleLogPanel\"")
 	var window := src.substr(i, 400)
 	var right := float(window.substr(window.find("offset_right = ") + 15, 8).split("\n")[0])
-	assert_lte(640.0 + right, 660.0,
-		"ticker right edge must clear the bottom party slot (x>680)")
+	assert_lte(right, 300.0,
+		"BattleLogPanel must stay a left-column box, clear of the battlefield/party slots")
 
 
 func test_encounter_roll_yields_to_critical_events() -> void:

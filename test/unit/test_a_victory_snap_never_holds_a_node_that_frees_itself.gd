@@ -1,9 +1,10 @@
 extends GutTest
 
 ## VictoryOverlay records one "snap to the end state" lambda per animation, and complete_now()
-## calls them all on the first accept press. The ring and the letterbox bars free themselves when
-## their tween ends. Their snaps captured the node itself, so letting the animation finish and then
-## pressing accept called a lambda whose capture was already freed. The engine logs
+## calls them all on the first accept press. The sweep bands (the ring's replacement, 2026-10-03
+## room-to-breathe pass) and the letterbox bars free themselves when their tween ends. Their snaps
+## captured the node itself, so letting the animation finish and then pressing accept called a
+## lambda whose capture was already freed. The engine logs
 ## "Lambda capture at index 0 was freed" before the body's is_instance_valid guard can run, and the
 ## shipped .481 build logged exactly that after every victory. A snap now holds a WeakRef.
 ## The self-freeing set is derived from the file's own tween_callback(X.queue_free) calls, so a
@@ -24,7 +25,8 @@ func _self_freeing(src: String) -> Array:
 
 func test_control_the_derived_set_holds_the_nodes_that_shipped() -> void:
 	var nodes := _self_freeing(FileAccess.get_file_as_string(OVERLAY))
-	assert_true(nodes.has("ring"), "CONTROL: the ring frees itself — the derivation must find it")
+	assert_true(nodes.has("band"), "CONTROL: the sweep band frees itself — the derivation must find it")
+	assert_true(nodes.has("band2"), "CONTROL: the counter-sweep band frees itself — the derivation must find it")
 	assert_true(nodes.has("bar"), "CONTROL: the letterbox bars free themselves — the derivation must find them")
 
 

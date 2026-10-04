@@ -934,12 +934,14 @@ func _update_turn_order_strip() -> void:
 		panel_style.content_margin_bottom = 4
 		_ctb_panel.add_theme_stylebox_override("panel", panel_style)
 		# Bottom-LEFT — moved 2026-06-17 to clear the right-side party panel.
+		# Widened + heightened 2026-10-03 (room-to-breathe pass) so each row can carry a
+		## portrait/icon, AP pips and an HP bar — the old 105x170 strip only fit a name+number.
 		_ctb_panel.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
 		_ctb_panel.offset_left = 5
-		_ctb_panel.offset_right = 110
+		_ctb_panel.offset_right = 260
 		_ctb_panel.offset_bottom = -10
-		_ctb_panel.offset_top = -180
-		_ctb_panel.custom_minimum_size = Vector2(100, 0)
+		_ctb_panel.offset_top = -230
+		_ctb_panel.custom_minimum_size = Vector2(255, 0)
 		_ctb_panel.grow_horizontal = Control.GROW_DIRECTION_END
 		_ctb_panel.grow_vertical = Control.GROW_DIRECTION_BEGIN
 		_scene.get_node("UI").add_child(_ctb_panel)
@@ -974,7 +976,7 @@ func _update_turn_order_strip() -> void:
 
 	var shown = 0
 	for combatant in queue:
-		if shown >= 8:
+		if shown >= 5:
 			break
 		if not is_instance_valid(combatant) or not combatant.is_alive:
 			continue
@@ -1025,11 +1027,30 @@ func _animate_ctb_rows(head: Combatant) -> void:
 			t.tween_property(first, "scale", Vector2.ONE, 0.16).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
 
-func _create_ctb_entry(combatant: Combatant, is_current: bool, is_player: bool, position_idx: int) -> HBoxContainer:
-	"""Create a single entry in the CTB timeline"""
-	var row = HBoxContainer.new()
+## Room-to-breathe pass (struktured 2026-10-03): a forecast card, not a name+number row — portrait,
+## queued-action icon (when known), AP pips and a thin HP bar, with the current actor highlighted.
+func _create_ctb_entry(combatant: Combatant, is_current: bool, is_player: bool, position_idx: int) -> PanelContainer:
+	var card := PanelContainer.new()
+	## Suffixed by slot: identical sibling names get silently replaced with an auto-generated
+	## "@PanelContainer@id" by every card after the first, which made find_child("CTBEntryCard")
+	## only ever see the head of the queue.
+	card.name = "CTBEntryCard%d" % position_idx
+	card.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var card_style := StyleBoxFlat.new()
+	card_style.bg_color = Color(0.12, 0.1, 0.22, 0.55) if not is_current else Color(0.22, 0.18, 0.08, 0.75)
+	card_style.border_color = Color(1.0, 0.85, 0.2) if is_current else Color(0.35, 0.3, 0.5, 0.6)
+	card_style.set_border_width_all(2 if is_current else 1)
+	card_style.set_corner_radius_all(3)
+	card_style.content_margin_left = 3
+	card_style.content_margin_right = 3
+	card_style.content_margin_top = 2
+	card_style.content_margin_bottom = 2
+	card.add_theme_stylebox_override("panel", card_style)
+
+	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 4)
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	card.add_child(row)
 
 	# Position indicator (arrow for current, dot for others)
 	var indicator = Label.new()
@@ -1043,17 +1064,31 @@ func _create_ctb_entry(combatant: Combatant, is_current: bool, is_player: bool, 
 		indicator.text = "·"
 		indicator.add_theme_color_override("font_color", Color(0.4, 0.4, 0.4))
 	indicator.add_theme_font_size_override("font_size", TextScale.scaled(12))
-	indicator.custom_minimum_size = Vector2(12, 0)
+	indicator.custom_minimum_size = Vector2(10, 0)
 	indicator.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	row.add_child(indicator)
 
+	row.add_child(_ctb_portrait(combatant, is_player))
+
+	var v := VBoxContainer.new()
+	v.name = "CTBEntryBody"
+	v.add_theme_constant_override("separation", 1)
+	v.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	v.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(v)
+
+	var top := HBoxContainer.new()
+	top.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	v.add_child(top)
+
 	# Name
 	var name_label = Label.new()
+	name_label.name = "NameLabel"
 	var display_name = combatant.combatant_name
-	if display_name.length() > 8:
-		display_name = display_name.substr(0, 7) + "."
+	if display_name.length() > 9:
+		display_name = display_name.substr(0, 8) + "."
 	name_label.text = display_name
-	name_label.custom_minimum_size = Vector2(60, 0)
+	name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 	var name_size = 11 if is_current else 10
@@ -1065,17 +1100,113 @@ func _create_ctb_entry(combatant: Combatant, is_current: bool, is_player: bool, 
 		name_label.add_theme_color_override("font_color", Color(0.5, 0.7, 1.0))
 	else:
 		name_label.add_theme_color_override("font_color", Color(1.0, 0.5, 0.5))
-	row.add_child(name_label)
+	top.add_child(name_label)
+
+	var queued_icon := _ctb_queued_action_icon(combatant)
+	if queued_icon:
+		top.add_child(queued_icon)
 
 	# Speed value (smaller, right-aligned)
 	var spd_label = Label.new()
+	spd_label.name = "SpeedLabel"
 	spd_label.text = "%d" % combatant.get_buffed_stat("speed", combatant.speed)
 	spd_label.add_theme_font_size_override("font_size", TextScale.scaled(9))
 	spd_label.add_theme_color_override("font_color", Color(0.5, 0.5, 0.6))
 	spd_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	row.add_child(spd_label)
+	top.add_child(spd_label)
 
-	return row
+	v.add_child(_ctb_ap_pips(combatant))
+	v.add_child(_ctb_hp_bar(combatant, is_player))
+	return card
+
+
+## A small face: party members get their job portrait, enemies get their battle sheet's idle frame
+## (or a blank-coloured swatch when no sheet is registered — never a guess at an unseen sprite).
+func _ctb_portrait(combatant: Combatant, is_player: bool) -> Control:
+	var chip := TextureRect.new()
+	chip.name = "Portrait"
+	chip.custom_minimum_size = Vector2(22, 22)
+	chip.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	chip.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	chip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var tex: Texture2D = null
+	if is_player:
+		var job_id: String = combatant.job.get("id", "fighter") if combatant.job else "fighter"
+		var path: String = HybridSpriteLoader.portrait_path(job_id)
+		if path != "" and ResourceLoader.exists(path):
+			tex = load(path) as Texture2D
+	else:
+		var monster_id: String = str(combatant.get_meta("monster_type", ""))
+		if monster_id != "":
+			tex = HybridSpriteLoader.monster_frame_texture(monster_id)
+	if tex:
+		chip.texture = tex
+	else:
+		chip.self_modulate = Color(0.5, 0.7, 1.0) if is_player else Color(1.0, 0.5, 0.5)
+	return chip
+
+
+## Defensive: BattleScene.queued_action_display() lands on origin/lane/advance-queue-cards, not
+## main yet. Skip the icon entirely rather than guessing at an API that may not exist here.
+func _ctb_queued_action_icon(combatant: Combatant) -> Control:
+	if not (_scene and _scene.has_method("queued_action_display")):
+		return null
+	var queued: Array = _scene.queued_action_display()
+	for q in queued:
+		if typeof(q) == TYPE_DICTIONARY and q.get("target", null) == combatant:
+			var icon_id: String = str(q.get("icon", q.get("name", "")))
+			if icon_id == "":
+				continue
+			var rect := AbilityIcons.make_rect(icon_id, 16)
+			rect.name = "QueuedActionIcon"
+			return rect
+	return null
+
+
+## AP pips: -4..+4 shown as a row of small squares, lit from the centre out so the sign reads at a glance.
+func _ctb_ap_pips(combatant: Combatant) -> HBoxContainer:
+	var pips := HBoxContainer.new()
+	pips.name = "APPips"
+	pips.add_theme_constant_override("separation", 1)
+	pips.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var ap: int = combatant.current_ap if "current_ap" in combatant else 0
+	for i in range(-4, 5):
+		var pip := ColorRect.new()
+		pip.custom_minimum_size = Vector2(5, 5)
+		pip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var lit: bool = (ap >= 0 and i >= 0 and i <= ap) or (ap < 0 and i <= 0 and i >= ap)
+		if i == 0:
+			pip.color = Color(0.6, 0.6, 0.7) if not lit else Color(0.9, 0.9, 1.0)
+		elif lit:
+			pip.color = Color(1.0, 0.85, 0.2) if ap > 0 else Color(1.0, 0.4, 0.4)
+		else:
+			pip.color = Color(0.25, 0.22, 0.3)
+		pips.add_child(pip)
+	return pips
+
+
+## Thin HP bar — enemies respect the existing fog-of-war rule (BattleUIManager._enemy_hp_revealed):
+## an un-scanned enemy shows a flat "unknown" bar, never its real fraction.
+func _ctb_hp_bar(combatant: Combatant, is_player: bool) -> Control:
+	var bg := ColorRect.new()
+	bg.name = "HPBarBg"
+	bg.color = Color(0.15, 0.12, 0.2)
+	bg.custom_minimum_size = Vector2(0, 4)
+	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var fill := ColorRect.new()
+	fill.name = "HPBarFill"
+	var known: bool = is_player or _enemy_hp_revealed(combatant)
+	if known and combatant.max_hp > 0:
+		var ratio: float = clampf(float(combatant.current_hp) / float(combatant.max_hp), 0.0, 1.0)
+		fill.color = Color(0.2, 0.8, 0.5) if ratio > 0.3 else Color(0.85, 0.25, 0.25)
+		fill.anchor_right = ratio
+	else:
+		fill.color = Color(0.4, 0.4, 0.45)
+		fill.anchor_right = 1.0
+	fill.anchor_bottom = 1.0
+	fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	bg.add_child(fill)
+	return bg
 
 
 ## Round-boundary AP emphasis (struktured 2026-07-16, Bravely Default ref): flash every living member's AP label gold so the +1 grant registers.

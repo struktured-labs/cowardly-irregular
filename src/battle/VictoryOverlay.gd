@@ -235,42 +235,73 @@ func _build_slam(flourish: bool) -> void:
 	_spawn_impact(impact_at, grade, tint)
 
 
-## The echo smear + expanding rings that make the landing read as an IMPACT rather than a fade-in
+## The sweep + punch that makes the landing read as an IMPACT rather than a fade-in. struktured
+## 2026-10-03: "the victory Circle with victory text in the middle is also amateur imho — we need
+## VISUALS" — replaces the old expanding-ring with a bolder band that sweeps the full screen width.
 func _spawn_impact(at: Vector2, grade: int, tint: Color) -> void:
 	BattleJuice.add_trauma(float(GRADE_TRAUMA[grade]))
 	BattleJuice.punch_zoom(get_viewport_rect().size / 2.0, float(GRADE_ZOOM[grade]), 0.22)
 	BattleJuice.spawn_burst(at, Vector2(0, -1), 10 + 8 * grade, tint, 180.0 + 60.0 * grade)
-	for i in range(int(GRADE_RINGS[grade])):
-		_spawn_ring(at, tint, 0.06 * i, grade)
+	_spawn_sweep_band(at, tint, grade)
 	if SoundManager and SoundManager._sfx_manifest.has("victory_slam"):
 		SoundManager.play_battle("victory_slam")
 
 
-func _spawn_ring(at: Vector2, tint: Color, delay: float, grade: int) -> void:
-	var ring := Panel.new()
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0, 0, 0, 0)
-	style.border_color = tint
-	style.set_border_width_all(3)
-	style.set_corner_radius_all(90)
-	ring.add_theme_stylebox_override("panel", style)
-	ring.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	ring.size = Vector2(180, 180)
-	ring.pivot_offset = ring.size / 2.0
-	ring.position = at - ring.pivot_offset
-	ring.scale = Vector2(0.2, 0.2)
-	add_child(ring)
-	## A WeakRef, not the node: the ring frees itself at the tween's end, and calling a lambda that captured it logs an engine error.
-	var ring_ref: WeakRef = weakref(ring)
+## A bolder banner than a ring: a tinted band sweeps the full screen width through the impact
+## point, then narrows and fades as the title finishes its punch-in — a "whoosh", not a circle.
+func _spawn_sweep_band(at: Vector2, tint: Color, grade: int) -> void:
+	var vp := get_viewport_rect().size
+	var h: float = 26.0 + 10.0 * grade
+	var band := ColorRect.new()
+	band.name = "VictorySweepBand"
+	band.color = Color(tint.r, tint.g, tint.b, 0.0)
+	band.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	band.size = Vector2(vp.x * 1.6, h)
+	band.rotation = deg_to_rad(-3.0)
+	band.pivot_offset = Vector2(band.size.x / 2.0, h / 2.0)
+	band.position = Vector2(-vp.x * 0.8, at.y - h / 2.0)
+	add_child(band)
+	## Same as the old ring: the band frees itself at the tween's end, so the snap uses a WeakRef.
+	var band_ref: WeakRef = weakref(band)
 	_snaps.append(func() -> void:
-		var r: Object = ring_ref.get_ref()
-		if r != null:
-			r.queue_free())
+		var b: Object = band_ref.get_ref()
+		if b != null:
+			b.queue_free())
 	var t := _track(create_tween())
-	t.tween_interval(delay)
-	t.tween_property(ring, "scale", Vector2(1.6 + 0.5 * grade, 1.6 + 0.5 * grade), 0.45).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
-	t.parallel().tween_property(ring, "modulate:a", 0.0, 0.45)
-	t.tween_callback(ring.queue_free)
+	t.tween_property(band, "color:a", 0.85, 0.05)
+	t.parallel().tween_property(band, "position:x", vp.x * 0.5 - band.size.x / 2.0, 0.16) \
+		.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	t.tween_property(band, "color:a", 0.0, 0.22 + 0.05 * grade)
+	t.parallel().tween_property(band, "position:x", vp.x * 1.3 - band.size.x / 2.0, 0.26 + 0.05 * grade) \
+		.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
+	t.tween_callback(band.queue_free)
+
+	# A thinner counter-sweep for elite+ grades, same timing, opposite direction — more banner, less circle.
+	if grade < Grade.ELITE:
+		return
+	var band2 := ColorRect.new()
+	band2.name = "VictorySweepBandCounter"
+	band2.color = Color(1.0, 1.0, 1.0, 0.0)
+	band2.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	band2.size = Vector2(vp.x * 1.6, h * 0.4)
+	band2.rotation = deg_to_rad(3.0)
+	band2.pivot_offset = Vector2(band2.size.x / 2.0, band2.size.y / 2.0)
+	band2.position = Vector2(vp.x * 1.3, at.y - band2.size.y / 2.0)
+	add_child(band2)
+	var band2_ref: WeakRef = weakref(band2)
+	_snaps.append(func() -> void:
+		var b2: Object = band2_ref.get_ref()
+		if b2 != null:
+			b2.queue_free())
+	var t2 := _track(create_tween())
+	t2.tween_interval(0.05)
+	t2.tween_property(band2, "color:a", 0.6, 0.05)
+	t2.parallel().tween_property(band2, "position:x", vp.x * 0.5 - band2.size.x / 2.0, 0.16) \
+		.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	t2.tween_property(band2, "color:a", 0.0, 0.2)
+	t2.parallel().tween_property(band2, "position:x", -vp.x * 0.8, 0.24) \
+		.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
+	t2.tween_callback(band2.queue_free)
 
 
 ## Boss kills get billed: the foe's name under the title
