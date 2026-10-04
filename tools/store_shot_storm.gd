@@ -26,9 +26,16 @@ extends SceneTree
 ##
 ## Sandboxed XDG is mandatory — user:// is one directory shared by every cowir-* checkout.
 
-const ABILITY := "thundaga"     ## Fulmen Maximum, mp 32 — top tier buys the most bolts and widest cores
-const RING_BEFORE := 40   ## ~0.7s before
-const RING_AFTER := 80    ## ~1.3s after — the VFX may spawn AFTER damage applies
+## Strongest first: the storm scales with the tier, so the top tier buys the most bolts and widest
+## cores. Only a tier this Mage can REALLY cast is used (JobSystem.can_use_ability): at .555 the
+## starting Mage was refused Fulmen Maximum, and teaching it to her would be a state hack in the
+## frame, like the old MP 999.
+const ABILITY_TIERS: Array[String] = ["thundaga", "thundara", "thunder"]  ## Fulmen Maximum, Maius, Fulmen
+const RING_BEFORE := 10   ## a few frames of context only: nothing visual happens before the hit
+## The trigger is the HP state change, and the full-render cinematic plays AFTER it: measured at .555,
+## the dim and the first bolt arrive ~40 frames past the hit and are still striking at +76. The old
+## 80-frame window cut the storm off mid-strike. 160 covers it (~2.7s at time_scale 0.5).
+const RING_AFTER := 160
 
 
 func _init() -> void:
@@ -46,9 +53,12 @@ func _init() -> void:
 	for i in range(4):
 		await process_frame
 
+	# UNLOCKED, so each member follows the autobattle flag set below. A spotlight-locked PC is
+	# AI-driven whatever its flag says (BattleManager's turn gate), so with this false the Mage
+	# auto-cast Ignis in round 1 and killed the goblin before thundaga could be queued (.555).
 	var gs = root.get_node_or_null("GameState")
 	if gs and "debug_all_pcs_unlocked" in gs:
-		gs.debug_all_pcs_unlocked = false
+		gs.debug_all_pcs_unlocked = true
 
 	if not gl.has_method("_close_title_screen") or not gl.has_method("_create_party") \
 			or not gl.has_method("_start_battle_async"):
@@ -58,6 +68,15 @@ func _init() -> void:
 	await process_frame
 	await process_frame
 	gl._create_party()
+	# Everyone but the Mage fights on autobattle, so the turn order reaches the Mage with no human.
+	# The Fighter's default is MANUAL: once is_mage stopped matching him, his selection waited for
+	# input forever and the Mage wait below timed out at 25s. The substring bug had hidden this by
+	# spending his turn on a refused thundaga. Keys are combatant_name lowercased, as BattleScene reads them.
+	var abs_pre = root.get_node_or_null("AutobattleSystem")
+	if abs_pre and abs_pre.has_method("set_autobattle_enabled") and "party" in gl:
+		for m in gl.party:
+			if m and is_instance_valid(m) and "combatant_name" in m:
+				abs_pre.set_autobattle_enabled(m.combatant_name.to_lower().replace(" ", "_"), not is_mage(m))
 	await gl._start_battle_async(["goblin"], true)
 	await create_timer(2.0).timeout
 
@@ -84,14 +103,15 @@ func _init() -> void:
 		return
 
 	# MP: thundaga costs 32. Top every caster up rather than guessing which one acts — a refused
-	# cast for want of MP looks exactly like a cast that rendered nothing.
+	# cast for want of MP looks exactly like a cast that rendered nothing. To max_mp, NOT 999:
+	# the party panel is in the frame, and 999 rendered as "MP: 999/34" on the shipped store shot.
 	var topped := 0
 	if "party" in gl:
 		for m in gl.party:
-			if m and is_instance_valid(m) and "current_mp" in m:
-				m.current_mp = 999
+			if m and is_instance_valid(m) and "current_mp" in m and "max_mp" in m:
+				m.current_mp = m.max_mp
 				topped += 1
-	print("[SHOT] topped MP on %d party member(s); casting %s at %s" % [topped, ABILITY, str(foes[0].name if "name" in foes[0] else "?")])
+	print("[SHOT] topped MP on %d party member(s); target %s" % [topped, str(foes[0].name if "name" in foes[0] else "?")])
 
 	# ⛔ THE CINEMATIC REQUIRES A MANUAL TURN. `_full_render_active` (BattleScene) returns
 	# false when the caster's autobattle is on, when turbo/console mode is set, or when
@@ -122,19 +142,30 @@ func _init() -> void:
 	var waited := 0.0
 	while waited < 25.0:
 		var cc = bm.current_combatant
-		if cc != null and is_instance_valid(cc):
-			var who := str(cc.name if "name" in cc else "")
-			var job := str(cc.job_name if "job_name" in cc else (cc.job if "job" in cc else ""))
-			if who.to_lower().find("mage") >= 0 or job.to_lower().find("mage") >= 0:
-				caster = cc
-				break
+		if is_mage(cc):
+			caster = cc
+			break
 		await create_timer(0.25).timeout
 		waited += 0.25
 	if caster == null:
-		_die("the Mage never became the active selector within 25s — cannot queue %s as anyone else (player_use_ability casts as current_combatant)" % ABILITY)
+		_die("the Mage never became the active selector within 25s — cannot queue the cast as anyone else (player_use_ability casts as current_combatant)")
 		return
-	print("[SHOT] Mage is selecting after %.1fs — queueing %s" % [waited, ABILITY])
-	bs._execute_ability(ABILITY, foes[0], false)
+	# The target must still be alive, or the hit trigger below fires on frame 1 against a corpse:
+	# at .555 round 1 killed the goblin first and the burst read "KILLING BLOW (hp 0 -> 0)".
+	if not ("current_hp" in foes[0]) or int(foes[0].current_hp) <= 0:
+		_die("the goblin was already dead when the Mage came up — an earlier turn killed it, so there is no strike to photograph")
+		return
+	var js = root.get_node_or_null("JobSystem")
+	var ability := ""
+	for id in ABILITY_TIERS:
+		if js and js.can_use_ability(caster, id):
+			ability = id
+			break
+	if ability == "":
+		_die("the Mage can cast none of %s — no lightning storm to photograph" % str(ABILITY_TIERS))
+		return
+	print("[SHOT] Mage is selecting after %.1fs — queueing %s (strongest tier she can cast)" % [waited, ability])
+	bs._execute_ability(ability, foes[0], false)
 
 	# ── RING BUFFER, TRIGGERED ON THE HIT ────────────────────────────────────
 	# Two earlier attempts failed for the same reason and it was NOT the window length:
@@ -194,6 +225,19 @@ func _init() -> void:
 		im.save_png(path)
 	print("[SHOT] burst complete: %d frames in res://tmp/marketing/storm/ (hit at index %d)" % [all.size(), ring.size() - 1])
 	quit(0)
+
+
+## True only for a combatant whose job id IS "mage". The old test searched str(cc.job) for the
+## substring "mage", and the Fighter's job Dictionary contains "damage": the wait ended at 0.0s on
+## the Fighter, who refused thundaga ("Fighter cannot use Fulmen Maximum"), and the store frame
+## caught the Mage's own tier-1 Fulmen instead. Measured at v3.33.549 and v3.33.555.
+static func is_mage(cc) -> bool:
+	if cc == null or not is_instance_valid(cc) or not ("job" in cc):
+		return false
+	var j = cc.job
+	if j is Dictionary:
+		return str(j.get("id", "")) == "mage"
+	return false
 
 
 func _die(msg: String) -> void:
