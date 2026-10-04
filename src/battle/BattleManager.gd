@@ -827,6 +827,35 @@ func _defer_victory_payout() -> bool:
 	return true
 
 
+## The rest after a won fight (struktured 2026-10-03: 25% HP and MP "feels very generous" and "should
+## be indicated somewhere"). One-line tunable; the results card shows what was actually applied.
+const POST_BATTLE_MP_RESTORE_FRACTION := 0.10
+const POST_BATTLE_HP_RESTORE_FRACTION := 0.0
+
+## {combatant_name: {"mp": n, "hp": n}} actually applied after the battle numbered `serial`.
+var last_post_battle_restore: Dictionary = {}
+var last_post_battle_restore_serial: int = -1
+
+
+## Apply the post-victory rest to `party` and return what each member actually received. Through
+## heal()/restore_mp(), whose return is the real amount: 0 at full, 0 for the KO'd (both refuse a corpse).
+func apply_post_battle_restore(party: Array) -> Dictionary:
+	var out: Dictionary = {}
+	for member in party:
+		if member == null or not is_instance_valid(member) or not (member is Combatant):
+			continue
+		var hp: int = 0
+		var mp: int = 0
+		if member.is_alive and POST_BATTLE_HP_RESTORE_FRACTION > 0.0:
+			hp = member.heal(int(member.max_hp * POST_BATTLE_HP_RESTORE_FRACTION))
+		if member.is_alive and POST_BATTLE_MP_RESTORE_FRACTION > 0.0:
+			mp = member.restore_mp(int(member.max_mp * POST_BATTLE_MP_RESTORE_FRACTION))
+		out[str(member.combatant_name)] = {"hp": hp, "mp": mp}
+	last_post_battle_restore = out
+	last_post_battle_restore_serial = battle_serial
+	return out
+
+
 func end_battle(victory: bool) -> void:
 	"""End the current battle"""
 	_wd_armed = false

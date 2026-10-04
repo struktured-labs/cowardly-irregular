@@ -28,8 +28,10 @@ const GRADE_TINT := {
 ## Set by BattleResultsDisplay when GameLoop reports a live Spotlight Duel: the duelist's name.
 var spotlight_duelist: String = ""
 
-const CARD_W := 210.0
-const CARD_H := 58.0
+## 340, not 210: at 210 the one-line level-up clipped its own stats and the learned spell ("MP +9 M").
+const CARD_W := 340.0
+## Room for the level-up line on EVERY card: at 58 a level-up card grew when its line appeared and overlapped the next.
+const CARD_H := 74.0
 const CARD_GAP := 8.0
 ## Artist party frames display ~315px centred on the slot; a left flourish reaches ~157px past origin (F12 2026-09-20).
 const CARD_SPRITE_GAP := 200.0
@@ -52,6 +54,8 @@ func occupied_rects() -> Array[Rect2]:
 
 ## Where the title rests and sweeps to its dock, and when it has docked: a card that would land there waits (slam -> cards, as documented).
 var _title_rest := Rect2()
+## Where the title SETTLES (docked, at 0.55 scale); the loot strip hangs under it.
+var _title_docked := Rect2()
 var _title_clear_at := 0.0
 
 
@@ -76,9 +80,30 @@ func build(results: Dictionary, scene) -> void:
 	_build_cards(results.get("char_results", []), flourish)
 	_build_loot_strip(results, flourish)
 	_build_prompt()
+	if BattleManager and BattleManager.last_post_battle_restore_serial == BattleManager.battle_serial:
+		show_restores(BattleManager.last_post_battle_restore)
 
 	if not flourish:
 		complete_now()
+
+
+## The post-victory rest on each card ("+12 MP"), from the amounts actually applied. Either order works:
+## GameLoop calls this after applying, and build() reads it if the rest already landed.
+func show_restores(by_name: Dictionary) -> void:
+	for c in get_children():
+		if not (c is PanelContainer) or not c.has_meta("member_name"):
+			continue
+		var line: Label = c.find_child("RestoreLine", true, false)
+		if line == null:
+			continue
+		var got: Dictionary = by_name.get(str(c.get_meta("member_name")), {})
+		var parts: PackedStringArray = []
+		if int(got.get("hp", 0)) > 0:
+			parts.append("+%d HP" % int(got["hp"]))
+		if int(got.get("mp", 0)) > 0:
+			parts.append("+%d MP" % int(got["mp"]))
+		line.text = "  ".join(parts)
+		line.visible = not parts.is_empty()
 
 
 func is_complete() -> bool:
@@ -166,6 +191,7 @@ func _build_slam(flourish: bool) -> void:
 	_occupied.append(Rect2(center, title.size))
 	_occupied.append(Rect2(docked, title.size * 0.55))
 	title.pivot_offset = title.size / 2.0
+	_title_docked = Rect2(docked + title.pivot_offset * 0.45, title.size * 0.55)
 	_snaps.append(func() -> void:
 		if is_instance_valid(title):
 			title.position = docked
@@ -311,14 +337,19 @@ func _build_letterbox(vp: Vector2, grade: int, flourish: bool) -> void:
 
 func _build_cards(char_results: Array, flourish: bool) -> void:
 	var vp := get_viewport_rect().size
+	var column := _column_positions(char_results.size(), vp)
+	## The column enters as ONE cascade, top to bottom. Per-card waits let a card clear of the title slam
+	## arrive alone, mid-column, before the ones above it; if any card must wait, they all start together.
+	var start := 0.5
+	for p in column:
+		if _title_rest.has_area() and Rect2(p, Vector2(CARD_W, CARD_H)).intersects(_title_rest):
+			start = maxf(start, _title_clear_at)
 	for i in range(char_results.size()):
 		var cr: Dictionary = char_results[i]
 		var card := _make_card(cr)
 		add_child(card)
-		card.position = _card_position(i, char_results.size(), vp)
-		var delay := 0.5 + i * 0.15
-		if _title_rest.has_area() and Rect2(card.position, Vector2(CARD_W, CARD_H)).intersects(_title_rest):
-			delay = maxf(delay, _title_clear_at)
+		card.position = column[i]
+		var delay := start + i * 0.12
 		var final_pos := card.position
 		_occupied.append(Rect2(final_pos, Vector2(CARD_W, CARD_H)))
 		_snaps.append(func() -> void:
@@ -327,12 +358,12 @@ func _build_cards(char_results: Array, flourish: bool) -> void:
 				card.modulate.a = 1.0)
 		if flourish:
 			card.modulate.a = 0.0
-			card.position.x += 24.0
+			card.position.x += 48.0
 			var tw := _track(create_tween())
 			tw.tween_interval(delay)
 			tw.tween_property(card, "modulate:a", 1.0, 0.15)
-			tw.parallel().tween_property(card, "position:x", final_pos.x, 0.18) \
-				.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+			tw.parallel().tween_property(card, "position:x", final_pos.x, 0.26) \
+				.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 		_animate_card_content(card, cr, i, delay, flourish)
 
 
@@ -355,6 +386,37 @@ func _card_position(i: int, count: int, vp: Vector2) -> Vector2:
 	pos.x = clampf(pos.x, LOG_CLEAR_X, vp.x - CARD_W - 8.0)
 	pos.y = clampf(pos.y, 56.0, vp.y - STRIP_BOTTOM_MARGIN - CARD_H)
 	return pos
+
+
+## The cards as ONE column: each still at its own character's height, but sharing the leftmost card's x
+## and never closer than a card apart, so a staggered formation no longer scatters them diagonally.
+func _column_positions(count: int, vp: Vector2) -> Array[Vector2]:
+	var raw: Array[Vector2] = []
+	var x := INF
+	for i in range(count):
+		var p := _card_position(i, count, vp)
+		raw.append(p)
+		x = minf(x, p.x)
+	## Evenly spaced, centred on where the party stands: anchored per character, the gaps followed the
+	## formation's stagger and read as scattered. Order still follows the party, top to bottom.
+	var mid := 0.0
+	for p in raw:
+		mid += p.y
+	mid /= maxf(1.0, float(raw.size()))
+	var block_h := count * CARD_H + maxi(0, count - 1) * CARD_GAP
+	var top := mid + CARD_H / 2.0 - block_h / 2.0
+	## Never up into the docked title and the loot strip that hangs under it.
+	top = maxf(top, 150.0)
+	var out: Array[Vector2] = []
+	for i in range(count):
+		out.append(Vector2(x, clampf(top + i * (CARD_H + CARD_GAP), 56.0, vp.y)))
+	## Pushed past the bottom: lift the whole column, keeping the spacing.
+	var bottom_limit := vp.y - STRIP_BOTTOM_MARGIN - CARD_H
+	if out.size() > 0 and out[out.size() - 1].y > bottom_limit:
+		var lift := out[out.size() - 1].y - bottom_limit
+		for i in range(out.size()):
+			out[i].y = maxf(56.0, out[i].y - lift)
+	return out
 
 
 func _make_card(cr: Dictionary) -> PanelContainer:
@@ -405,8 +467,15 @@ func _make_card(cr: Dictionary) -> PanelContainer:
 	top.text = "%s  %s" % [cr.get("name", "?"), "+0 EXP" if alive else "KO"]
 	top.add_theme_font_size_override("font_size", TextScale.scaled(13))
 	top.add_theme_color_override("font_color", Color.WHITE if alive else Color(0.6, 0.45, 0.45))
+	## Outlined so the line reads over any backdrop while the card itself stays translucent.
+	top.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
+	top.add_theme_constant_override("outline_size", 4)
 	top.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	v.add_child(top)
+	top.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var top_row := HBoxContainer.new()
+	top_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	top_row.add_child(top)
+	v.add_child(top_row)
 
 	if alive or earned_down:
 		var bar_bg := ColorRect.new()
@@ -421,6 +490,22 @@ func _make_card(cr: Dictionary) -> PanelContainer:
 		fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		bar_bg.add_child(fill)
 
+	## What the post-victory rest gave this member, filled by show_restores; empty (and hidden) for a KO
+	## or a full bar, because "+0 MP" is noise.
+	var rest := Label.new()
+	rest.name = "RestoreLine"
+	rest.visible = false
+	rest.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	rest.add_theme_font_size_override("font_size", TextScale.scaled(12))
+	rest.add_theme_color_override("font_color", Color(0.45, 0.85, 1.0))
+	rest.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
+	rest.add_theme_constant_override("outline_size", 4)
+	rest.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	## On the NAME row, right-aligned: beside the whole column it took width from the bar and the
+	## one-line level-up, which clipped again.
+	top_row.add_child(rest)
+	card.set_meta("member_name", str(cr.get("name", "")))
+
 	var gains := Label.new()
 	gains.name = "GainsLine"
 	gains.text = ""
@@ -428,6 +513,8 @@ func _make_card(cr: Dictionary) -> PanelContainer:
 	gains.clip_text = true  # one compact line — the 700px 5-level-up clip rule
 	gains.add_theme_font_size_override("font_size", TextScale.scaled(11))
 	gains.add_theme_color_override("font_color", Color(1.0, 1.0, 0.3))
+	gains.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
+	gains.add_theme_constant_override("outline_size", 4)
 	gains.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	v.add_child(gains)
 	return card
@@ -504,10 +591,7 @@ func _gains_line(cr: Dictionary) -> String:
 	if not cr.get("leveled_up", false):
 		return ""
 	var parts: Array = []
-	var gains: Dictionary = cr.get("stat_gains", {})
-	for stat in ["HP", "MP", "ATK", "DEF", "MAG", "SPD"]:
-		if gains.has(stat) and int(gains[stat]) != 0:
-			parts.append("%s +%d" % [stat, int(gains[stat])])
+	## A learned spell FIRST: the line is one clipped line, so whatever is last is what gets cut.
 	var learned: Array = cr.get("learned_abilities", [])
 	if not learned.is_empty():
 		var names: PackedStringArray = []
@@ -515,6 +599,10 @@ func _gains_line(cr: Dictionary) -> String:
 			var ab: Dictionary = JobSystem.get_ability(str(aid)) if JobSystem else {}
 			names.append(str(ab.get("name", str(aid).capitalize())))
 		parts.append("✦ " + ", ".join(names))
+	var gains: Dictionary = cr.get("stat_gains", {})
+	for stat in ["HP", "MP", "ATK", "DEF", "MAG", "SPD"]:
+		if gains.has(stat) and int(gains[stat]) != 0:
+			parts.append("%s +%d" % [stat, int(gains[stat])])
 	return "LEVEL UP!  " + "  ".join(parts)
 
 
@@ -613,7 +701,11 @@ func _build_loot_strip(results: Dictionary, flourish: bool) -> void:
 	await get_tree().process_frame
 	if not is_instance_valid(strip):
 		return
+	## Under the VICTORY title, not over the battle log: the rewards read as the headline's second line.
 	strip.position = Vector2((vp.x - strip.size.x) / 2.0, vp.y - STRIP_BOTTOM_MARGIN - strip.size.y)
+	if _title_docked.has_area():
+		strip.position = Vector2(_title_docked.get_center().x - strip.size.x / 2.0, _title_docked.end.y + 6.0)
+		strip.position.x = clampf(strip.position.x, 8.0, vp.x - strip.size.x - 8.0)
 	_occupied.append(Rect2(strip.position, strip.size))
 	if _complete:
 		return  # snapped mid-layout-frame — labels already carry final text, stay visible
