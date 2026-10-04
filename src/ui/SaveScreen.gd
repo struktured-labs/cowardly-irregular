@@ -605,6 +605,8 @@ func _make_slot_portrait(job_id: String) -> Control:
 	if tex != null:
 		# 2026-07-14 playtest: EXPAND_IGNORE_SIZE + KEEP_ASPECT_CENTERED left the 256×256 portrait rendering at native size — the fighter armor tiled across the whole slot as a chaotic body band. Scale the TextureRect explicitly via .scale so the rendered size honors SLOT_PORTRAIT_SIZE regardless of texture native dims.
 		var rect := TextureRect.new()
+		# Resampled to the slot first: a .scale of 0.125 on 256px art under NEAREST drops 7 pixels in 8.
+		tex = HybridSpriteLoader.fitted_portrait(tex, Vector2(SLOT_PORTRAIT_SIZE, SLOT_PORTRAIT_SIZE))
 		rect.texture = tex
 		rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		var tex_w: float = float(tex.get_width())

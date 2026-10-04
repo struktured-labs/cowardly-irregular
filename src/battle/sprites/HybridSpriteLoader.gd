@@ -540,6 +540,8 @@ static func fitted_portrait(tex: Texture2D, box: Vector2) -> Texture2D:
 	img.convert(Image.FORMAT_RGBA8)
 	img.resize(maxi(1, roundi(img.get_width() * s)), maxi(1, roundi(img.get_height() * s)), Image.INTERPOLATE_LANCZOS)
 	var fitted := ImageTexture.create_from_image(img)
+	# Provenance: a fitted face has no resource_path, so it carries its source art's here.
+	fitted.resource_name = _fit_source(tex)
 	if key != "":
 		_fitted_portraits[key] = fitted
 	return fitted
@@ -547,11 +549,16 @@ static func fitted_portrait(tex: Texture2D, box: Vector2) -> Texture2D:
 
 ## Which art this is, so a bust cut afresh for every battle is one entry, not one per battle; "" leaves it uncached.
 static func _fit_key(tex: Texture2D, box: Vector2) -> String:
-	var src := tex.resource_path
+	var src := _fit_source(tex)
+	return "" if src == "" else "%s@%dx%d" % [src, int(box.x), int(box.y)]
+
+
+## The art a texture shows: its file, or for a sheet bust its sheet and region; "" when it has neither.
+static func _fit_source(tex: Texture2D) -> String:
 	if tex is AtlasTexture:
 		var a := tex as AtlasTexture
-		src = "" if a.atlas == null or a.atlas.resource_path == "" else "%s%s" % [a.atlas.resource_path, a.region]
-	return "" if src == "" else "%s@%dx%d" % [src, int(box.x), int(box.y)]
+		return "" if a.atlas == null or a.atlas.resource_path == "" else "%s%s" % [a.atlas.resource_path, a.region]
+	return tex.resource_path
 
 
 ## The ONE place that knows a portrait's world rule — an avatar surface that builds the path

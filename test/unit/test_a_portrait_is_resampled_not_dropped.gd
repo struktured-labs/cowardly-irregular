@@ -11,69 +11,8 @@ extends GutTest
 
 const CutsceneScript := preload("res://src/cutscene/CutsceneDialogue.gd")
 const BattleScript := preload("res://src/ui/BattleDialogue.gd")
+const Judge := preload("res://test/unit/helpers/portrait_judge.gd")
 const STARTERS := ["fighter", "cleric", "mage", "rogue", "bard"]
-## The shown face's error against the area average, as a fraction of a nearest drop's error on the same art.
-const MAX_ERROR_VS_DROP := 0.5
-## Below this a drop is invisible and so is any fix: the least-detailed authored file measured 0.0104.
-const MIN_DROP_ERROR := 0.005
-
-
-func _box_average(src: Image, w: int, h: int) -> PackedFloat32Array:
-	## Exact area average of premultiplied RGB at w x h: each output pixel is the mean of the source it covers.
-	var sw := src.get_width()
-	var sh := src.get_height()
-	var d := src.get_data()
-	var sx := float(sw) / w
-	var sy := float(sh) / h
-	var rows := PackedFloat32Array()
-	rows.resize(w * sh * 3)
-	for y in sh:
-		for x in w:
-			var a0 := x * sx
-			var a1 := a0 + sx
-			var acc := Vector3.ZERO
-			var i := int(floor(a0))
-			while i < sw and float(i) < a1:
-				var o := (y * sw + i) * 4
-				var k := (minf(a1, i + 1.0) - maxf(a0, float(i))) * d[o + 3] / 255.0 / 255.0
-				acc += Vector3(d[o], d[o + 1], d[o + 2]) * k
-				i += 1
-			for c in 3:
-				rows[(y * w + x) * 3 + c] = acc[c] / sx
-	var out := PackedFloat32Array()
-	out.resize(w * h * 3)
-	for x in w:
-		for y in h:
-			var b0 := y * sy
-			var b1 := b0 + sy
-			var acc := Vector3.ZERO
-			var j := int(floor(b0))
-			while j < sh and float(j) < b1:
-				var k := minf(b1, j + 1.0) - maxf(b0, float(j))
-				acc += Vector3(rows[(j * w + x) * 3], rows[(j * w + x) * 3 + 1], rows[(j * w + x) * 3 + 2]) * k
-				j += 1
-			for c in 3:
-				out[(y * w + x) * 3 + c] = acc[c] / sy
-	return out
-
-
-func _error(img: Image, ref: PackedFloat32Array) -> float:
-	var d := img.get_data()
-	var n := img.get_width() * img.get_height()
-	var t := 0.0
-	for p in n:
-		var al := d[p * 4 + 3] / 255.0
-		for c in 3:
-			t += absf(d[p * 4 + c] / 255.0 * al - ref[p * 3 + c])
-	return t / float(n * 3)
-
-
-func _rgba(tex: Texture2D) -> Image:
-	var img: Image = tex.get_image().duplicate()
-	if img.is_compressed():
-		img.decompress()
-	img.convert(Image.FORMAT_RGBA8)
-	return img
 
 
 func _minified(source: Texture2D, rect: TextureRect) -> bool:
@@ -82,24 +21,7 @@ func _minified(source: Texture2D, rect: TextureRect) -> bool:
 
 ## What a box draws for `source`: "" when the shown face is the source resampled 1:1 and close to its area average.
 func _judge(label: String, rect: TextureRect, source: Texture2D) -> String:
-	var shown: Texture2D = rect.texture
-	if shown == null:
-		return "%s: no face shown" % label
-	var scale: float = minf(rect.size.x / shown.get_width(), rect.size.y / shown.get_height())
-	if absf(scale - 1.0) > 0.001:
-		return "%s: %dx%d art drawn at %.2fx into a %s rect" % [label, shown.get_width(), shown.get_height(), scale, rect.size]
-	var drawn := _rgba(shown)
-	var src := _rgba(source)
-	var ref := _box_average(src, drawn.get_width(), drawn.get_height())
-	var dropped := src.duplicate() as Image
-	dropped.resize(drawn.get_width(), drawn.get_height(), Image.INTERPOLATE_NEAREST)
-	var drop_err := _error(dropped, ref)
-	if drop_err < MIN_DROP_ERROR:
-		return "%s: CONTROL: a pixel drop of this art is only %.4f off, so nothing here can be judged" % [label, drop_err]
-	var err := _error(drawn, ref)
-	if err > drop_err * MAX_ERROR_VS_DROP:
-		return "%s: %.4f off the area average, a pixel drop is %.4f" % [label, err, drop_err]
-	return ""
+	return Judge.judge(label, rect, Judge.pixels(source))
 
 
 func _authored() -> Dictionary:

@@ -99,7 +99,10 @@ func test_every_shop_actually_renders_its_keeper_portrait() -> void:
 		while not stack.is_empty():
 			for c in (stack.pop_back() as Node).get_children():
 				stack.append(c)
-				if c is TextureRect and c.texture and c.texture.resource_path != "":
-					found = c.texture.resource_path
+				# A keeper face is resampled to its 64px box, so it names its art in resource_name, not resource_path.
+				if c is TextureRect and c.texture:
+					var art: String = c.texture.resource_path if c.texture.resource_path != "" else c.texture.resource_name
+					if art != "":
+						found = art
 		assert_true(found.contains(expected[shop_type]),
 			"shop_type %s must render %s.png — got '%s'. An empty string means the keeper fell back to the procedural CharacterPortrait composite struktured asked us to retire." % [shop_type, expected[shop_type], found])

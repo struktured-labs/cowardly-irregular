@@ -211,7 +211,7 @@ func _create_description_panel() -> Control:
 		var keeper_tex: Texture2D = load(keeper_png_path)
 		if keeper_tex:
 			var texrect = TextureRect.new()
-			texrect.texture = keeper_tex
+			texrect.texture = HybridSpriteLoader.fitted_portrait(keeper_tex, Vector2(64, 64))
 			## expand_mode BEFORE size: while it is still the default, minimum size is the
 			## texture's 256x256 and the 64 is clamped straight back up to it.
 			texrect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
