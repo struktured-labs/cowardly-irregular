@@ -736,7 +736,15 @@ func get_ability_mp_cost(combatant: Combatant, ability_id: String) -> int:
 	if ps == null or not ps.has_method("get_passive_mods"):
 		return base
 	var mods: Dictionary = ps.get_passive_mods(combatant)
-	var mult: float = clampf(float(mods.get("mp_cost_multiplier", 1.0)), 0.1, 10.0)
+	var raw_mult: float = float(mods.get("mp_cost_multiplier", 1.0))
+	## A passive scoped to elemental spells (Elemental Affinity) must not discount Bahamut or a heal.
+	if str(ability.get("element", "")) == "" and ps.has_method("get_passive"):
+		for pid in combatant.equipped_passives:
+			var pd: Dictionary = ps.get_passive(pid)
+			var m: float = float(pd.get("stat_mods", {}).get("mp_cost_multiplier", 1.0))
+			if str(pd.get("mp_cost_scope", "")) == "elemental" and m > 0.0:
+				raw_mult /= m
+	var mult: float = clampf(raw_mult, 0.1, 10.0)
 	# max(0, ...) guards against int truncation of a 0.0001 multiplier
 	# accidentally rounding to a 0 cost that lets the player spam an
 	# expensive ability for free.
