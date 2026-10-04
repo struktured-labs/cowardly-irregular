@@ -85,6 +85,15 @@ func _init() -> void:
 	overlay.name = "VictoryResults"
 	scene.add_child(overlay)
 	overlay.build(results, scene)
+	## The post-victory rest, as GameLoop applies it after the overlay is up.
+	for i in scene.party_members.size():
+		var m = scene.party_members[i]
+		m.current_mp = int(m.max_mp * 0.6)
+		if i == 3:
+			m.current_hp = 0
+			m.is_alive = false  # matches the fixture's KO card
+	if bm.has_method("apply_post_battle_restore"):
+		overlay.show_restores(bm.apply_post_battle_restore(scene.party_members))
 	await create_timer(0.9).timeout
 	await _save("%s/%s_entering.png" % [OUT, label])
 	await create_timer(0.55).timeout

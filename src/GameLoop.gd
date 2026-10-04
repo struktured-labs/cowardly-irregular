@@ -3572,13 +3572,13 @@ func _on_battle_ended(victory: bool) -> void:
 		# can pick up cave_rat_king_defeated / boss_flag_key from dungeon_flags.
 		_apply_pending_boss_defeat()
 
-		# Heal party between battles (rest bonus)
+		# Rest between battles: BattleManager owns the amounts, and the results card shows what landed.
+		var restored: Dictionary = BattleManager.apply_post_battle_restore(party)
 		for member in party:
-			var heal_amount = int(member.max_hp * 0.25)
-			member.heal(heal_amount)
-			var mp_restore = int(member.max_mp * 0.25)
-			member.restore_mp(mp_restore)
 			member.current_ap = 0
+		var results_node = current_scene.get_node_or_null("VictoryResults") if current_scene and is_instance_valid(current_scene) else null
+		if results_node and results_node.has_method("show_restores"):
+			results_node.show_restores(restored)
 
 		# Wait for player to confirm before leaving victory screen
 		# (first press completes the overlay's choreography, the next one leaves — victory revamp 2026-08-18)

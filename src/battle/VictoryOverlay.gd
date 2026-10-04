@@ -80,9 +80,30 @@ func build(results: Dictionary, scene) -> void:
 	_build_cards(results.get("char_results", []), flourish)
 	_build_loot_strip(results, flourish)
 	_build_prompt()
+	if BattleManager and BattleManager.last_post_battle_restore_serial == BattleManager.battle_serial:
+		show_restores(BattleManager.last_post_battle_restore)
 
 	if not flourish:
 		complete_now()
+
+
+## The post-victory rest on each card ("+12 MP"), from the amounts actually applied. Either order works:
+## GameLoop calls this after applying, and build() reads it if the rest already landed.
+func show_restores(by_name: Dictionary) -> void:
+	for c in get_children():
+		if not (c is PanelContainer) or not c.has_meta("member_name"):
+			continue
+		var line: Label = c.find_child("RestoreLine", true, false)
+		if line == null:
+			continue
+		var got: Dictionary = by_name.get(str(c.get_meta("member_name")), {})
+		var parts: PackedStringArray = []
+		if int(got.get("hp", 0)) > 0:
+			parts.append("+%d HP" % int(got["hp"]))
+		if int(got.get("mp", 0)) > 0:
+			parts.append("+%d MP" % int(got["mp"]))
+		line.text = "  ".join(parts)
+		line.visible = not parts.is_empty()
 
 
 func is_complete() -> bool:
@@ -450,7 +471,11 @@ func _make_card(cr: Dictionary) -> PanelContainer:
 	top.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
 	top.add_theme_constant_override("outline_size", 4)
 	top.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	v.add_child(top)
+	top.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var top_row := HBoxContainer.new()
+	top_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	top_row.add_child(top)
+	v.add_child(top_row)
 
 	if alive or earned_down:
 		var bar_bg := ColorRect.new()
@@ -464,6 +489,22 @@ func _make_card(cr: Dictionary) -> PanelContainer:
 		fill.color = Color(0.2, 0.8, 0.5)
 		fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		bar_bg.add_child(fill)
+
+	## What the post-victory rest gave this member, filled by show_restores; empty (and hidden) for a KO
+	## or a full bar, because "+0 MP" is noise.
+	var rest := Label.new()
+	rest.name = "RestoreLine"
+	rest.visible = false
+	rest.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	rest.add_theme_font_size_override("font_size", TextScale.scaled(12))
+	rest.add_theme_color_override("font_color", Color(0.45, 0.85, 1.0))
+	rest.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
+	rest.add_theme_constant_override("outline_size", 4)
+	rest.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	## On the NAME row, right-aligned: beside the whole column it took width from the bar and the
+	## one-line level-up, which clipped again.
+	top_row.add_child(rest)
+	card.set_meta("member_name", str(cr.get("name", "")))
 
 	var gains := Label.new()
 	gains.name = "GainsLine"
