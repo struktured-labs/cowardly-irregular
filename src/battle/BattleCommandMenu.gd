@@ -143,6 +143,9 @@ func show_win98_command_menu(combatant: Combatant) -> void:
 	_scene.active_win98_menu.actions_submitted.connect(_on_win98_actions_submitted)
 	_scene.active_win98_menu.defer_requested.connect(_on_win98_defer_requested)
 	_scene.active_win98_menu.go_back_requested.connect(_on_win98_go_back_requested)
+	## Tap-vs-hold on Auto (struktured 2026-10-03): the menu has no scene access, so it emits the
+	## combatant on a HOLD past threshold and we open that character's editor here.
+	_scene.active_win98_menu.auto_hold_editor_requested.connect(_on_win98_auto_hold_editor_requested)
 	## cowir-controller's queue_changed contract (lane/advance-only-queues). Behind has_signal so the
 	## aura lands in either fold order; until then the aura simply never receives a count.
 	if _scene.active_win98_menu.has_signal("queue_changed") and _scene.has_method("_on_advance_queue_changed"):
@@ -1410,6 +1413,16 @@ func _on_win98_go_back_requested() -> void:
 			SoundManager.play_ui("autobattle_off")
 			_scene.log_message("[color=gray]%s: Autobattle disabled (manual control)[/color]" % new_current.combatant_name)
 			_scene._update_ui()
+
+
+## HOLD past threshold on the Auto row: opens the editor for the combatant it was held on and
+## does NOT run auto (struktured 2026-10-03: "opens that character's rule editor and does NOT
+## run auto"). Reuses _open_autobattle_editor_for, the same inline editor hold-A opened before.
+func _on_win98_auto_hold_editor_requested(combatant: Variant) -> void:
+	if not (combatant is Combatant) or not is_instance_valid(combatant):
+		return
+	if _scene and is_instance_valid(_scene) and _scene.has_method("_open_autobattle_editor_for"):
+		_scene._open_autobattle_editor_for(combatant)
 
 
 func _show_scan_popup(enemy: Combatant) -> void:

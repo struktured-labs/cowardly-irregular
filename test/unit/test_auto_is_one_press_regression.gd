@@ -12,6 +12,15 @@ extends GutTest
 const W98 := "res://src/ui/Win98Menu.gd"
 
 
+func before_each() -> void:
+	Input.action_release("ui_accept")
+
+
+func after_each() -> void:
+	Input.action_release("ui_accept")  # the Input singleton leaks across tests
+	Engine.time_scale = 1.0
+
+
 func _auto_row(combatant_marker: String = "pc") -> Dictionary:
 	return {"id": "autobattle", "label": "Auto", "data": {"action": "autobattle", "combatant": combatant_marker}}
 
@@ -129,3 +138,121 @@ func test_mutant_a_frozen_rules_literal_is_not_the_derived_bar() -> void:
 		assert_false(return_line.contains(frozen),
 			"the derived pad bar must not freeze a literal button name for Rules: %s" % return_line)
 	assert_true(return_line.contains("rules]"), "and must actually format in the derived rules variable: %s" % return_line)
+
+
+## ---- Tap vs hold (struktured 2026-10-03): "pressing confirm and releasing before the hold
+## threshold runs auto; holding past ~0.5s wall-clock opens that character's rule editor and does
+## NOT run auto." ----
+
+## THE REQUIRED MUTANT GUARD: a press alone must do NOTHING — neither run auto nor open the
+## editor — until release or the threshold decides which. If a future edit reverts to acting on
+## PRESS (the pre-2026-10-03 shape), this reds immediately, before any release/threshold logic
+## even runs.
+func test_pressing_confirm_alone_does_nothing_until_release_or_threshold() -> void:
+	var m = _menu([_auto_row("pc1")])
+	m.selected_index = 0
+	var ran: Array = []
+	var opened: Array = []
+	m.item_selected.connect(func(id, data): ran.append(id))
+	m.auto_hold_editor_requested.connect(func(c): opened.append(c))
+	Input.action_press("ui_accept")
+	m._begin_auto_hold(0)
+	assert_eq(ran.size(), 0, "a bare press must not run auto yet")
+	assert_eq(opened.size(), 0, "a bare press must not open the editor yet")
+	assert_true(m._auto_hold_active, "CONTROL: the hold is actually armed")
+
+
+func test_tap_runs_auto_and_does_not_open_the_editor() -> void:
+	var m = _menu([_auto_row("pc1")])
+	m.selected_index = 0
+	var ran: Array = []
+	var opened: Array = []
+	m.item_selected.connect(func(id, data): ran.append(id))
+	m.auto_hold_editor_requested.connect(func(c): opened.append(c))
+	Input.action_press("ui_accept")
+	m._begin_auto_hold(0)
+	Input.action_release("ui_accept")  # released almost immediately — well under the threshold
+	m._process(0.016)
+	assert_eq(ran, ["autobattle"], "a tap (release before threshold) must run auto")
+	assert_eq(opened.size(), 0, "a tap must not open the editor")
+	assert_false(m._auto_hold_active, "CONTROL: the hold state is cleared after resolving")
+
+
+func test_hold_opens_the_editor_and_does_not_run_auto() -> void:
+	var m = _menu([_auto_row("pc1")])
+	m.selected_index = 0
+	var ran: Array = []
+	var opened: Array = []
+	m.item_selected.connect(func(id, data): ran.append(id))
+	m.auto_hold_editor_requested.connect(func(c): opened.append(c))
+	Input.action_press("ui_accept")
+	m._begin_auto_hold(0)
+	# Still held, and the wall clock already crossed the threshold.
+	m._auto_hold_start_ms = Time.get_ticks_msec() - (Win98Menu.AUTO_HOLD_THRESHOLD_MS + 50)
+	m._process(0.016)
+	assert_eq(opened, ["pc1"], "a hold past the threshold must open the editor for the held combatant")
+	assert_eq(ran.size(), 0, "a hold must NOT run auto")
+	assert_false(m._auto_hold_active, "CONTROL: the hold state is cleared after resolving")
+
+
+## Battle runs at Engine.time_scale 0.25 by default; a hold measured off accumulated `delta`
+## would need ~4x as long to reach what should be a 0.5s threshold. Feeding a quarter-sized delta
+## (what 0.25 scale actually hands _process) must still fire at the backdated wall-clock mark —
+## proving the decision reads Time.get_ticks_msec(), not delta accumulation.
+func test_hold_threshold_is_wall_clock_not_scaled_by_time_scale() -> void:
+	Engine.time_scale = 0.25
+	var m = _menu([_auto_row("pc1")])
+	m.selected_index = 0
+	var opened: Array = []
+	m.auto_hold_editor_requested.connect(func(c): opened.append(c))
+	Input.action_press("ui_accept")
+	m._begin_auto_hold(0)
+	m._auto_hold_start_ms = Time.get_ticks_msec() - (Win98Menu.AUTO_HOLD_THRESHOLD_MS + 50)
+	m._process(0.004)  # a quarter of a normal 0.016 frame delta, matching time_scale 0.25
+	assert_eq(opened, ["pc1"], "the threshold must fire off real elapsed ms regardless of a scaled delta")
+
+
+func test_progress_indicator_appears_during_a_hold_and_clears_after() -> void:
+	var m = _menu([_auto_row("pc1"), {"id": "attack", "label": "Attack"}])
+	m.selected_index = 0
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var container = m._get_items_container()
+	assert_not_null(container, "CONTROL: the menu built its rows")
+	var row: Control = container.get_child(0)
+	assert_null(row.get_node_or_null("HoldProgress"), "CONTROL: no progress indicator before any hold starts")
+
+	Input.action_press("ui_accept")
+	m._begin_auto_hold(0)
+	m._auto_hold_start_ms = Time.get_ticks_msec() - int(Win98Menu.AUTO_HOLD_THRESHOLD_MS / 2)
+	m._process(0.016)
+	var bar := row.get_node_or_null("HoldProgress")
+	assert_not_null(bar, "a progress indicator must appear on the row while holding")
+	assert_gt((bar as Control).size.x, 0.0, "and it must actually be filling, not a zero-width placeholder")
+
+	# Resolve via the HOLD path (not a tap): a tap runs auto, which submits and force_closes the
+	# whole menu — there would be no `row` left to inspect at all. The hold path only emits a
+	# signal here (BattleScene owns closing the menu for real), so the row survives to check.
+	m._auto_hold_start_ms = Time.get_ticks_msec() - (Win98Menu.AUTO_HOLD_THRESHOLD_MS + 50)
+	m._process(0.016)
+	await get_tree().process_frame  # _clear_auto_hold_progress uses queue_free, not free
+	assert_null(row.get_node_or_null("HoldProgress"), "the progress indicator must clear once the hold resolves")
+	Input.action_release("ui_accept")
+
+
+## Moving the cursor off Auto mid-hold must cancel it silently — neither a tap nor a hold fires
+## for a row the player is no longer on.
+func test_moving_off_auto_mid_hold_cancels_without_acting() -> void:
+	var m = _menu([_auto_row("pc1"), {"id": "attack", "label": "Attack"}])
+	m.selected_index = 0
+	var ran: Array = []
+	var opened: Array = []
+	m.item_selected.connect(func(id, data): ran.append(id))
+	m.auto_hold_editor_requested.connect(func(c): opened.append(c))
+	Input.action_press("ui_accept")
+	m._begin_auto_hold(0)
+	m.selected_index = 1
+	m._process(0.016)
+	assert_false(m._auto_hold_active, "the hold must be cancelled once selection moves away")
+	assert_eq(ran.size(), 0, "no tap fires for a hold that moved off its row")
+	assert_eq(opened.size(), 0, "no editor opens for a hold that moved off its row")

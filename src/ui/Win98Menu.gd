@@ -14,6 +14,10 @@ signal go_back_requested()  # B button at root to go back to previous player
 ## actions_submitted/item_selected, never after: those dispatch turn end, and the next PC's menu can
 ## already exist by the time control comes back. A close emits 0 only if the last count was not 0.
 signal queue_changed(count: int, max_size: int)
+## TAP vs HOLD on the Auto row (struktured 2026-10-03): a tap runs auto, a hold past the
+## threshold opens the rule editor for the combatant instead. Win98Menu has no scene access, so
+## it emits the combatant and the caller (BattleCommandMenu) opens the editor.
+signal auto_hold_editor_requested(combatant: Variant)
 
 
 ## Get currently selected item ID (for hold detection)
@@ -216,6 +220,13 @@ var _submenu_memory: Dictionary = {}  # {menu_id: submenu_item_id} for command m
 var _l_button_pressed: bool = false  # Track if L button is held
 var _l_button_press_time: float = 0.0  # When L was pressed
 const L_HOLD_CONFIRM_TIME: float = 0.15  # Seconds to hold L for confirm (reduced for snappier response)
+## Tap-vs-hold on Auto. Wall clock (Time.get_ticks_msec), not delta — battle runs at
+## Engine.time_scale 0.25 by default and a scaled delta would make a real half-second feel like
+## two to the player holding the button. Mirrors the L_HOLD_CONFIRM_TIME pattern above.
+var _auto_hold_active: bool = false
+var _auto_hold_start_ms: int = 0
+var _auto_hold_row_idx: int = -1
+const AUTO_HOLD_THRESHOLD_MS: int = 500
 var _tooltip_label: Label = null  # Ability tooltip shown below menu
 
 ## Pixel tile size (scaled 1.5x for readability)
@@ -293,6 +304,25 @@ func _process(delta: float) -> void:
 		Win98Menu._defer_axis_held = false
 	if Win98Menu._advance_axis_held and not Input.is_action_pressed("battle_advance"):
 		Win98Menu._advance_axis_held = false
+	# Tap-vs-hold on Auto, same early spot as the L-hold below (before the nav guard can bail).
+	if _auto_hold_active:
+		if selected_index != _auto_hold_row_idx:
+			# Cursor moved off Auto mid-hold (e.g. a stray nav repeat) — cancel silently, no action.
+			_cancel_auto_hold()
+		elif not Input.is_action_pressed("ui_accept"):
+			var row_idx := _auto_hold_row_idx
+			var elapsed_ms := Time.get_ticks_msec() - _auto_hold_start_ms
+			_cancel_auto_hold()
+			if elapsed_ms < AUTO_HOLD_THRESHOLD_MS:
+				_run_auto_tap(row_idx)
+		else:
+			var elapsed_ms := Time.get_ticks_msec() - _auto_hold_start_ms
+			if elapsed_ms >= AUTO_HOLD_THRESHOLD_MS:
+				var row_idx := _auto_hold_row_idx
+				_cancel_auto_hold()
+				_trigger_auto_hold_editor(row_idx)
+			else:
+				_set_auto_hold_progress(_auto_hold_row_idx, float(elapsed_ms) / float(AUTO_HOLD_THRESHOLD_MS))
 	# Hold-to-commit reads BEFORE the nav guard below: a submenu arms the ROOT's timer, and with one open the guard returned first.
 	if _l_button_pressed and battle_mode:
 		var hold_time = Time.get_ticks_msec() / 1000.0 - _l_button_press_time
@@ -1423,6 +1453,78 @@ func _is_autobattle_row(item: Dictionary) -> bool:
 	return data is Dictionary and str((data as Dictionary).get("action", "")) == "autobattle"
 
 
+## Confirm PRESSED on Auto: do not act yet. _process (below) decides tap vs hold on RELEASE or
+## on crossing the threshold, whichever comes first — acting here on press would make every hold
+## a tap (struktured's required mutant: a press-fired arm must red the hold test).
+func _begin_auto_hold(index: int) -> void:
+	_auto_hold_active = true
+	_auto_hold_start_ms = Time.get_ticks_msec()
+	_auto_hold_row_idx = index
+	_set_auto_hold_progress(index, 0.0)
+
+
+func _cancel_auto_hold() -> void:
+	if _auto_hold_row_idx >= 0:
+		_clear_auto_hold_progress(_auto_hold_row_idx)
+	_auto_hold_active = false
+	_auto_hold_row_idx = -1
+
+
+## TAP: released before the threshold. Replays the ordinary no-submenu confirm path.
+func _run_auto_tap(index: int) -> void:
+	if index < 0 or index >= menu_items.size():
+		return
+	var item: Dictionary = menu_items[index]
+	if _row_unavailable(item):
+		_reject_selection(item)
+		return
+	selected_index = index
+	_play_select_sound()
+	_submit_actions()
+
+
+## HOLD: threshold reached while still held. Does NOT run auto — emits the combatant for the
+## caller to open that character's rule editor instead.
+func _trigger_auto_hold_editor(index: int) -> void:
+	if index < 0 or index >= menu_items.size():
+		return
+	var item: Dictionary = menu_items[index]
+	var data = item.get("data", null)
+	var combatant = (data as Dictionary).get("combatant", null) if data is Dictionary else null
+	SoundManager.play_ui("menu_select")
+	auto_hold_editor_requested.emit(combatant)
+
+
+## A filling bar drawn UNDER the row's text/highlight (inserted as child 0, so later siblings —
+## the label, the highlight — draw on top of it). Visible proof the hold is charging, not just a
+## felt delay.
+func _set_auto_hold_progress(index: int, frac: float) -> void:
+	var container := _get_items_container()
+	if not container or index < 0 or index >= container.get_child_count():
+		return
+	var row: Control = container.get_child(index)
+	var bar: ColorRect = row.get_node_or_null("HoldProgress") as ColorRect
+	if not bar or not is_instance_valid(bar):
+		bar = ColorRect.new()
+		bar.name = "HoldProgress"
+		bar.color = Color(1.0, 1.0, 1.0, 0.3)
+		bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		bar.position = Vector2.ZERO
+		row.add_child(bar)
+		row.move_child(bar, 0)
+	bar.size = Vector2(clampf(frac, 0.0, 1.0) * row.size.x, row.size.y)
+
+
+func _clear_auto_hold_progress(index: int) -> void:
+	var container := _get_items_container()
+	if not container or index < 0 or index >= container.get_child_count():
+		return
+	var row: Control = container.get_child(index)
+	var bar := row.get_node_or_null("HoldProgress")
+	if bar and is_instance_valid(bar):
+		bar.queue_free()
+
+
 func _handle_advance_input() -> void:
 	"""Handle R button / Shift+Enter - run Auto, queue current action, or confirm if at limit"""
 	var root = _get_root_menu()
@@ -2166,6 +2268,10 @@ func _input(event: InputEvent) -> void:
 			_play_expand_sound()
 			if not submenu:
 				_do_open_submenu(selected_index, current_item)
+		elif _is_autobattle_row(current_item):
+			# Don't act on press — _process decides tap (run auto) vs hold (open rules) on
+			# release or threshold, whichever comes first.
+			_begin_auto_hold(selected_index)
 		else:
 			_play_select_sound()
 			_submit_actions()
@@ -2211,6 +2317,8 @@ func _input(event: InputEvent) -> void:
 				_play_expand_sound()
 				if not submenu:
 					_do_open_submenu(selected_index, current_item)
+			elif _is_autobattle_row(current_item):
+				_begin_auto_hold(selected_index)
 			else:
 				# No submenu - submit all queued + current
 				_play_select_sound()
