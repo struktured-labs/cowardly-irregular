@@ -53,11 +53,16 @@ func _ready() -> void:
 	var ipm = get_node_or_null("/root/InputProfileManager")
 	if ipm != null:
 		if ipm.has_signal("input_device_changed"):
-			ipm.input_device_changed.connect(func(_connected): _refresh_captions())
+			ipm.input_device_changed.connect(_on_input_device_changed)
 		if ipm.has_signal("bindings_changed"):
 			ipm.bindings_changed.connect(_refresh_captions)
 	_refresh_captions()
 	hide()
+
+
+## A bound method, not a lambda: the autoload outlives this overlay, and only a method connection drops itself when the overlay is freed.
+func _on_input_device_changed(_connected = null) -> void:
+	_refresh_captions()
 
 
 ## Each button names the player's own key or pad button. The scene's "(A)"/"(B)" were Nintendo letters: inverted on Xbox, no key at all on a keyboard.
