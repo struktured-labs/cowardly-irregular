@@ -6166,21 +6166,29 @@ func _place_victory_banner(labels: Array, other: Node = null) -> void:
 	var left := 16.0
 	var top := vp.y * 0.42
 	var bottom := vp.y - 130.0
-	var enemy_panel := find_child("EnemyStatusPanel", true, false) as Control
-	if enemy_panel and enemy_panel.is_visible_in_tree():
-		top = enemy_panel.get_global_rect().end.y + 16.0
-	var log_panel := find_child("BattleLogPanel", true, false) as Control
-	if log_panel and log_panel.is_visible_in_tree():
-		bottom = log_panel.get_global_rect().position.y - 12.0
+	## Since .558 the log and turn order share the LEFT column with the enemy panel: a column panel is a left wall, not a ceiling or floor.
+	for pname in ["EnemyStatusPanel", "BattleLogPanel", "CTBTimeline"]:
+		var p := find_child(pname, true, false) as Control
+		if p == null or not p.is_visible_in_tree():
+			continue
+		var pr := p.get_global_rect()
+		if pr.end.x <= vp.x * 0.3:
+			left = maxf(left, pr.end.x + 12.0)
+		elif pr.end.y <= vp.y * 0.5:
+			top = maxf(top, pr.end.y + 16.0)
+		else:
+			bottom = minf(bottom, pr.position.y - 12.0)
 	if other and is_instance_valid(other):
 		for c in other.get_children():
 			if c is Label:
 				top = maxf(top, _banner_rect(c as Label, vp).end.y + 12.0)
 	var right := vp.x * 0.5
 	var results := get_node_or_null("VictoryResults")
-	if results and results.has_method("occupied_rects"):
+	var band := Rect2(left, top, right - left, bottom - top)
+	## A band with no area made intersects() log "Rect2 size is negative" 112x in one play session.
+	if results and results.has_method("occupied_rects") and band.has_area():
 		for r in results.occupied_rects():
-			if r.intersects(Rect2(left, top, right - left, bottom - top)):
+			if r is Rect2 and (r as Rect2).has_area() and r.intersects(band):
 				right = minf(right, r.position.x - 12.0)
 	var block := Rect2()
 	var need_w := 0.0
@@ -6197,8 +6205,9 @@ func _place_victory_banner(labels: Array, other: Node = null) -> void:
 		if s < 1.0:
 			l.add_theme_font_size_override("font_size", maxi(8, int(l.get_theme_font_size("font_size") * s)))
 		var y := top + (r.position.y - block.position.y) * s
-		l.offset_left = cx - r.size.x / 2.0 - vp.x / 2.0
-		l.offset_right = cx + r.size.x / 2.0 - vp.x / 2.0
+		## Width scales with the font: placing the unscaled width put a shrunk banner 4px onto the log column.
+		l.offset_left = cx - r.size.x * s / 2.0 - vp.x / 2.0
+		l.offset_right = cx + r.size.x * s / 2.0 - vp.x / 2.0
 		l.offset_top = y - vp.y / 2.0
 		l.offset_bottom = y + r.size.y * s - vp.y / 2.0
 
