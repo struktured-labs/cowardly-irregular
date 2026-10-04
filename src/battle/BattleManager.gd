@@ -4312,8 +4312,8 @@ func _execute_physical_group(participants: Array, alive_enemies: Array[Combatant
 			mitigated = max(1, int(raw_damage * lb_dmg_mult))
 		else:
 			mitigated = max(1, raw_damage)
-		enemy.take_damage(mitigated)
-		damage_dealt.emit(enemy, mitigated, false, "", 1.0)
+		var enemy_landed: int = enemy.take_damage(mitigated)
+		damage_dealt.emit(enemy, enemy_landed, false, "", 1.0)
 		battle_log_message.emit("[color=orange]Group %s hits %s for %d![/color]" % [
 			group_type, enemy.combatant_name, mitigated])
 
@@ -4391,8 +4391,8 @@ func _execute_combo_magic(participants: Array, alive_enemies: Array[Combatant], 
 			continue
 
 		var final_damage: int = max(1, int(mitigated * elemental_mod))
-		enemy.take_damage(final_damage, true)
-		damage_dealt.emit(enemy, final_damage, false, combo_element, elemental_mod)
+		var enemy_landed: int = enemy.take_damage(final_damage, true)
+		damage_dealt.emit(enemy, enemy_landed, false, combo_element, elemental_mod)
 		battle_log_message.emit("[color=magenta]%s blasts %s for %d![/color]" % [
 			combo_name, enemy.combatant_name, final_damage])
 
@@ -4436,8 +4436,8 @@ func _execute_formation_special(participants: Array, alive_enemies: Array[Combat
 			for enemy in alive_enemies:
 				if not enemy.is_alive: continue
 				var damage = max(1, int(total_power * scale / max(1.0, float(alive_enemies.size()))))
-				enemy.take_damage(damage)
-				damage_dealt.emit(enemy, damage, false, "", 1.0)
+				var enemy_landed: int = enemy.take_damage(damage)
+				damage_dealt.emit(enemy, enemy_landed, false, "", 1.0)
 			# Heal party 25%
 			for p in participants:
 				if p is Combatant and p.is_alive:
@@ -4461,8 +4461,8 @@ func _execute_formation_special(participants: Array, alive_enemies: Array[Combat
 				if not enemy.is_alive: continue
 				# Ignore resistance — raw magic damage
 				var damage = max(1, int(total_magic * scale / max(1.0, float(alive_enemies.size()))))
-				enemy.take_damage(damage, true)
-				damage_dealt.emit(enemy, damage, false, "arcane", 1.0)
+				var enemy_landed: int = enemy.take_damage(damage, true)
+				damage_dealt.emit(enemy, enemy_landed, false, "arcane", 1.0)
 			battle_log_message.emit("[color=magenta]★ Arcane Tempest — raw magic storm ignores all resistances! ★[/color]")
 
 		"blade_storm":
@@ -4484,8 +4484,8 @@ func _execute_formation_special(participants: Array, alive_enemies: Array[Combat
 				if is_crit:
 					base_dmg = int(base_dmg * 1.5)
 				var damage = max(1, base_dmg)
-				target.take_damage(damage)
-				damage_dealt.emit(target, damage, is_crit, "", 1.0)
+				var target_landed: int = target.take_damage(damage)
+				damage_dealt.emit(target, target_landed, is_crit, "", 1.0)
 			battle_log_message.emit("[color=orange]★ Blade Storm — %d rapid strikes! ★[/color]" % hit_count)
 
 		"iron_wall":
@@ -4500,8 +4500,8 @@ func _execute_formation_special(participants: Array, alive_enemies: Array[Combat
 			for enemy in alive_enemies:
 				if not enemy.is_alive: continue
 				var damage = max(1, int(total_atk * scale * 0.6 / max(1.0, float(alive_enemies.size()))))
-				enemy.take_damage(damage)
-				damage_dealt.emit(enemy, damage, false, "", 1.0)
+				var enemy_landed: int = enemy.take_damage(damage)
+				damage_dealt.emit(enemy, enemy_landed, false, "", 1.0)
 			battle_log_message.emit("[color=cyan]★ Iron Wall — party DEF +50%% (3 turns) + crushing blow! ★[/color]")
 
 		"shadow_strike":
@@ -4515,8 +4515,8 @@ func _execute_formation_special(participants: Array, alive_enemies: Array[Combat
 				var full_hp_bonus = 2.0 if enemy.current_hp == enemy.max_hp else 1.0
 				var damage = int(total_atk * scale * full_hp_bonus / max(1.0, float(alive_enemies.size())))
 				damage = max(1, damage)
-				enemy.take_damage(damage)
-				damage_dealt.emit(enemy, damage, false, "", 1.0)
+				var enemy_landed: int = enemy.take_damage(damage)
+				damage_dealt.emit(enemy, enemy_landed, false, "", 1.0)
 			battle_log_message.emit("[color=purple]★ Shadow Strike — 2x on full HP targets! ★[/color]")
 
 		"chaos_theory":
@@ -4531,8 +4531,8 @@ func _execute_formation_special(participants: Array, alive_enemies: Array[Combat
 				for enemy in alive_enemies:
 					if not enemy.is_alive: continue
 					var damage = max(1, int(total_power * scale * 1.5 / max(1.0, float(alive_enemies.size()))))
-					enemy.take_damage(damage, true)
-					damage_dealt.emit(enemy, damage, false, "", 1.0)
+					var enemy_landed: int = enemy.take_damage(damage, true)
+					damage_dealt.emit(enemy, enemy_landed, false, "", 1.0)
 				battle_log_message.emit("[color=gold]★ Chaos Theory — JACKPOT! Massive damage! ★[/color]")
 			elif roll < 0.7:
 				# Party buff: all stats +30% for 3 turns
@@ -4551,8 +4551,8 @@ func _execute_formation_special(participants: Array, alive_enemies: Array[Combat
 				for enemy in alive_enemies:
 					if not enemy.is_alive: continue
 					var damage = max(1, int(total_power * scale * 0.8 / max(1.0, float(alive_enemies.size()))))
-					enemy.take_damage(damage)
-					damage_dealt.emit(enemy, damage, false, "", 1.0)
+					var enemy_landed: int = enemy.take_damage(damage)
+					damage_dealt.emit(enemy, enemy_landed, false, "", 1.0)
 				for p in participants:
 					if p is Combatant and p.is_alive:
 						var heal = int(p.max_hp * 0.15)
@@ -4563,8 +4563,8 @@ func _execute_formation_special(participants: Array, alive_enemies: Array[Combat
 				for p in participants:
 					if p is Combatant and p.is_alive:
 						var self_dmg = int(p.max_hp * 0.1)
-						p.take_damage(self_dmg)
-						damage_dealt.emit(p, self_dmg, false, "", 1.0)
+						var p_landed: int = p.take_damage(self_dmg)
+						damage_dealt.emit(p, p_landed, false, "", 1.0)
 				# Tick 238: penalty BBCode (Chaos Theory backfire).
 				battle_log_message.emit("[color=%s]★ Chaos Theory — BACKFIRE! Party takes recoil damage! ★[/color]" % AccessibilityPalette.penalty_bbcode())
 
