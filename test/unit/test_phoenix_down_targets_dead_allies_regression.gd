@@ -13,12 +13,17 @@ func test_ally_filter_includes_dead_when_item_has_revive_effect() -> void:
 	var i := src.find("if target_type == ItemSystem.TargetType.SINGLE_ALLY:")
 	assert_gt(i, -1)
 	var body := src.substr(i, 900)
-	assert_true("effects" in body and "revive" in body,
-		"SINGLE_ALLY branch must consult item.effects.revive to decide whether KO'd allies are eligible")
-	assert_true("can_target_dead" in body,
-		"there must be a can_target_dead gate — plain `not is_alive: continue` silently drops every revive item's target list")
-	assert_true("not member.is_alive and not can_target_dead" in body,
-		"filter must be conditional on revive capability — the whole point of a revive item is to target dead allies")
+	assert_true("_item_allows_any_ally_target" in body,
+		"SINGLE_ALLY branch must consult _item_allows_any_ally_target (item.effects.revive/heal/cure) to decide whether KO'd allies are eligible")
+	assert_true("can_target_any" in body,
+		"there must be a can_target_any gate — plain `not is_alive: continue` silently drops every revive/heal item's target list")
+	assert_true("not member.is_alive and not can_target_any" in body,
+		"filter must be conditional on revive/heal capability — the whole point of a revive item is to target dead allies")
+	var helper_idx := src.find("func _item_allows_any_ally_target(")
+	assert_gt(helper_idx, -1, "_item_allows_any_ally_target must exist")
+	var helper_body := src.substr(helper_idx, maxi(0, src.find("\nfunc ", helper_idx + 1) - helper_idx))
+	assert_true("effects" in helper_body and "revive" in helper_body,
+		"the helper must still read item.effects.revive")
 	# UX: KO'd allies should display as "KO'd" not "0/HP" so the target menu reads correctly.
 	## Each ally row is built by _item_ally_row (it also carries the ~+N heal quote), so the label lives there.
 	assert_true("_item_ally_row(item_id, member, i)" in body,
