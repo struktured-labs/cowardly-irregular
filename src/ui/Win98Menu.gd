@@ -1571,6 +1571,11 @@ func _cancel_all_queued() -> void:
 
 
 ## Send the root's queue count to battle. The single emit point, so the contract cannot drift per site.
+## The queued entries ({id, data, label}) for display, read from the root. A copy: readers never write the queue.
+func get_queued_actions() -> Array:
+	return _get_root_menu()._queued_actions.duplicate(true)
+
+
 func _emit_queue_changed() -> void:
 	var root = _get_root_menu()
 	root._last_queue_emit = root._queued_actions.size()
