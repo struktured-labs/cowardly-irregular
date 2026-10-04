@@ -111,13 +111,14 @@ func _build_panel() -> void:
 		InputProfileManager.hint_for_action("ui_cancel"),
 	]
 	_hint_label.position = Vector2(20, PANEL_H - 32)
-	_hint_label.size = Vector2(PANEL_W - 40, 24)
 	_hint_label.add_theme_font_size_override("font_size", 13)
 	_hint_label.add_theme_color_override("font_color", Color(0.6, 0.7, 0.85))
 	_hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_hint_label.clip_text = false
 	_hint_label.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
 	panel.add_child(_hint_label)
+	# Size once IN the tree: detached, the 13px override is not in the theme cache, so the minimum is still the 16px width (544) and the size clamps to it.
+	_hint_label.size = Vector2(PANEL_W - 40, 24)
 
 
 func _populate() -> void:
