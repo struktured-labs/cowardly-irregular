@@ -3319,6 +3319,10 @@ func _on_battle_ended(victory: bool) -> void:
 		print("[MENU-NULL] t=%dms path=battle_ended_cleanup" % Time.get_ticks_msec())
 		active_win98_menu.queue_free()
 		active_win98_menu = null
+	## The header is only rewritten during selection/execution, so "Round 1 - SELECT: Fighter (AP: +1)" sat over VICTORY.
+	var turn_panel := get_node_or_null("UI/TurnInfoPanel") as CanvasItem
+	if turn_panel:
+		turn_panel.visible = false
 
 	# Clear any pending autobattle cancel — if the user queued a "cancel
 	# next turn" via Select during execution but the battle ended before
