@@ -2378,11 +2378,53 @@ var _full_render_dim_rect: ColorRect = null
 ## the wind-up and a pale bloom on release. Musical abilities now defer to the resolver, which is
 ## the authored source; the element arms below keep their hand-tuned Full Render colours.
 ## test_bard_cast_vfx pins the agreement so the two cannot drift apart again.
+## struktured 2026-10-03: "bahamut summon was not nearly wild enough for this game" — eidolons
+## (summon_ifrit/shiva/ramuh/bahamut author type=summon with NO summon_id; monster-spawning
+## summons like royal_summon/pack_call always author one) get the big-screen spectacle shape
+## instead of a plain bloom. Bahamut has no element, so it gets a dedicated dragon-king colour.
+const SPECULATOR_EFFECTS: Array[String] = ["volatility_up_self", "volatility_up_enemy", "volatility_down", "press_the_edge", "forecast", "circuit_breaker"]
+
+## struktured 2026-10-03: "same with bard's status effects ... crazier more dynamic" — each song's
+## landed status gets its own note colour + motion so the animation reads the status, not just
+## "a chord happened". Keyed off the authored `effect` field (sleep/defense_down/mp_restore_and_ap).
+const BARD_STATUS_MOTION: Dictionary = {
+	"sleep": {"color": Color(0.45, 0.4, 0.95), "motion": "drift"},
+	"defense_down": {"color": Color(0.55, 0.85, 0.35), "motion": "dirge"},
+	"attack_down": {"color": Color(0.55, 0.85, 0.35), "motion": "dirge"},
+	"mp_restore_and_ap": {"color": Color(1.0, 0.85, 0.3), "motion": "war"},
+	"blind": {"color": Color(0.6, 0.6, 0.65), "motion": "drift"},
+}
+
 func _full_render_element_style(ability: Dictionary) -> Dictionary:
+	if str(ability.get("type", "")) == "summon" and str(ability.get("summon_id", "")) == "":
+		var elem: String = str(ability.get("element", ""))
+		var eidolon_color: Color = Color(1.1, 0.35, 1.5)  # Bahamut: no element, dragon-king magenta-gold
+		var eidolon_effect: int = EffectSystem.EffectType.DARK
+		match elem:
+			"fire":
+				eidolon_color = Color(1.0, 0.45, 0.15)
+				eidolon_effect = EffectSystem.EffectType.FIRE
+			"ice":
+				eidolon_color = Color(0.55, 0.8, 1.0)
+				eidolon_effect = EffectSystem.EffectType.ICE
+			"lightning":
+				eidolon_color = Color(1.0, 0.95, 0.4)
+				eidolon_effect = EffectSystem.EffectType.LIGHTNING
+		return {"color": eidolon_color, "effect": eidolon_effect, "shape": "eidolon"}
+	if str(ability.get("meta_effect", "")) == "recursive_summon":
+		return {"color": Color(0.7, 0.3, 1.0), "effect": EffectSystem.EffectType.DARK, "shape": "recursive_summon"}
+	var spec_effect: String = str(ability.get("effect", ""))
+	if spec_effect in SPECULATOR_EFFECTS:
+		return {"color": Color(0.3, 1.0, 0.5), "effect": EffectSystem.EffectType.BUFF, "shape": "speculate", "spec_effect": spec_effect}
 	var resolved: Dictionary = AbilityVFX.resolve(ability)
 	if str(resolved.get("shape", "")) == "chord":
 		var mc: Color = resolved["color"] if resolved["color"] is Color else AbilityVFX.MUSIC_COLOR
-		return {"color": mc, "effect": resolved["type"], "shape": "chord"}
+		var motion: String = "swirl"
+		if BARD_STATUS_MOTION.has(spec_effect):
+			var bm: Dictionary = BARD_STATUS_MOTION[spec_effect]
+			mc = bm["color"]
+			motion = bm["motion"]
+		return {"color": mc, "effect": resolved["type"], "shape": "chord", "motion": motion}
 	var is_heal: bool = str(ability.get("type", "")) == "healing" or int(ability.get("power", 0)) < 0
 	match str(ability.get("element", "")):
 		"fire":
@@ -2433,6 +2475,31 @@ func _play_ability_full_render(caster: Combatant, caster_sprite: Node2D, animato
 	_full_render_dmg_attacker = caster
 	_full_render_depth += 1
 	_full_render_set_dim(true)
+
+	# Three dedicated spectacles replace the generic focus/release/impact beat below. Each
+	# flushes its own buffered damage and unwinds the shared depth counter on the way out.
+	var shape: String = str(style.get("shape", ""))
+	if shape == "eidolon":
+		await _play_eidolon_summon(caster_sprite, ability, style, targets)
+		_flush_full_render_damage()
+		_full_render_depth = maxi(0, _full_render_depth - 1)
+		if _full_render_depth == 0:
+			_full_render_set_dim(false)
+		return
+	if shape == "recursive_summon":
+		await _play_recursive_summon(caster, caster_sprite, ability)
+		_flush_full_render_damage()
+		_full_render_depth = maxi(0, _full_render_depth - 1)
+		if _full_render_depth == 0:
+			_full_render_set_dim(false)
+		return
+	if shape == "speculate":
+		await _play_speculator_spectacle(caster_sprite, ability, style, targets)
+		_flush_full_render_damage()
+		_full_render_depth = maxi(0, _full_render_depth - 1)
+		if _full_render_depth == 0:
+			_full_render_set_dim(false)
+		return
 
 	# Focus: caster steps out and glows their element while gather-motes converge.
 	var caster_home: Vector2 = Vector2.ZERO
@@ -2490,6 +2557,324 @@ func _play_ability_full_render(caster: Combatant, caster_sprite: Node2D, animato
 	_full_render_depth = maxi(0, _full_render_depth - 1)
 	if _full_render_depth == 0:
 		_full_render_set_dim(false)
+
+
+## struktured 2026-10-03: "bahamut summon was not nearly wild enough" — the sky crushes near-
+## black, a giant procedural silhouette (no artist sheet exists for the eidolons, so this is a
+## bold shape per data/sprite_manifest.json's fallback rule) rises center screen behind a name
+## banner, charges, then slams the whole field with the element before retreating.
+func _play_eidolon_summon(caster_sprite: Node2D, ability: Dictionary, style: Dictionary, targets: Array) -> void:
+	var color: Color = style["color"]
+	var vp: Vector2 = get_viewport_rect().size
+	var center: Vector2 = vp * 0.5
+
+	if _full_render_dim_rect and is_instance_valid(_full_render_dim_rect):
+		var crush_t := create_tween()
+		crush_t.tween_property(_full_render_dim_rect, "color:a", 0.78, 0.22)
+
+	var banner := Label.new()
+	banner.text = str(ability.get("name", "Summon")).to_upper()
+	banner.add_theme_font_size_override("font_size", 46)
+	banner.add_theme_color_override("font_color", color)
+	banner.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
+	banner.add_theme_constant_override("outline_size", 6)
+	banner.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	banner.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	banner.anchors_preset = Control.PRESET_FULL_RECT
+	banner.modulate.a = 0.0
+	banner.scale = Vector2(0.6, 0.6)
+	banner.pivot_offset = center
+	banner.z_index = 30
+	banner.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(banner)
+	var bt := create_tween()
+	bt.tween_property(banner, "modulate:a", 1.0, 0.18)
+	bt.parallel().tween_property(banner, "scale", Vector2(1.0, 1.0), 0.22).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
+	BattleJuice.add_trauma(0.3, Vector2.UP)
+	await get_tree().create_timer(0.3).timeout
+	if not is_instance_valid(self):
+		return
+
+	var beast := _spawn_eidolon_silhouette(color, center)
+	var rise := create_tween()
+	rise.tween_property(beast, "position:y", center.y - 40.0, 0.4).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	rise.parallel().tween_property(beast, "modulate:a", 1.0, 0.3)
+	await get_tree().create_timer(0.5).timeout
+	if not is_instance_valid(self):
+		_despawn_eidolon(beast, banner)
+		return
+
+	var pulse := create_tween()
+	pulse.tween_property(beast, "scale", beast.scale * 1.12, 0.14).set_trans(Tween.TRANS_SINE)
+	pulse.tween_property(beast, "scale", beast.scale, 0.1)
+	BattleJuice.rumble(0.5)
+	await get_tree().create_timer(0.3).timeout
+	if not is_instance_valid(self):
+		_despawn_eidolon(beast, banner)
+		return
+
+	_spawn_screen_flash(Color(1.0, 1.0, 1.0, 0.65), 0.35)
+	EffectSystem._trigger_screen_shake(14.0, 0.4)
+	BattleJuice.add_trauma(1.0, Vector2.DOWN)
+	for target in targets:
+		var ts = _get_combatant_sprite(target)
+		if ts and is_instance_valid(ts):
+			EffectSystem.spawn_effect(style["effect"], _stable_sprite_anchor(ts), Callable(), 1.6)
+			var ta = _get_combatant_animator(target)
+			if ta and is_instance_valid(ta):
+				ta.play_hit()
+			_apply_hit_flash(ts)
+	await get_tree().create_timer(0.35).timeout
+	_despawn_eidolon(beast, banner)
+	if is_instance_valid(self):
+		await get_tree().create_timer(0.15).timeout
+
+
+## Procedural dragon-king silhouette: a diamond body + two swept wings + glowing element-tinted
+## eyes. No sprite dependency so every eidolon (and any future one) gets the same bold shape.
+func _spawn_eidolon_silhouette(color: Color, center: Vector2) -> Node2D:
+	var beast := Node2D.new()
+	beast.position = center + Vector2(0, 260.0)
+	beast.modulate = Color(1, 1, 1, 0.0)
+	beast.z_index = 20
+	add_child(beast)
+
+	var body := Polygon2D.new()
+	body.color = Color(0.03, 0.03, 0.05, 0.96)
+	body.polygon = PackedVector2Array([
+		Vector2(0, -150), Vector2(55, -40), Vector2(40, 90), Vector2(0, 150),
+		Vector2(-40, 90), Vector2(-55, -40),
+	])
+	beast.add_child(body)
+
+	for side in [-1.0, 1.0]:
+		var wing := Polygon2D.new()
+		wing.color = Color(0.02, 0.02, 0.04, 0.9)
+		wing.polygon = PackedVector2Array([
+			Vector2(0, -30), Vector2(side * 220.0, -140), Vector2(side * 260.0, 10),
+			Vector2(side * 140.0, 40), Vector2(0, 30),
+		])
+		beast.add_child(wing)
+
+	for side in [-1.0, 1.0]:
+		var eye := ColorRect.new()
+		eye.color = Color(color.r * 2.0, color.g * 2.0, color.b * 2.0, 0.95)
+		eye.size = Vector2(10, 5)
+		eye.position = Vector2(side * 14.0 - 5.0, -70.0)
+		eye.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		beast.add_child(eye)
+
+	beast.scale = Vector2(1.6, 1.6)
+	return beast
+
+
+func _despawn_eidolon(beast: Node2D, banner: Label) -> void:
+	if is_instance_valid(beast):
+		var t := create_tween()
+		t.tween_property(beast, "modulate:a", 0.0, 0.2)
+		t.parallel().tween_property(beast, "position:y", beast.position.y + 60.0, 0.2)
+		t.tween_callback(beast.queue_free)
+	if is_instance_valid(banner):
+		var bt := create_tween()
+		bt.tween_property(banner, "modulate:a", 0.0, 0.15)
+		bt.tween_callback(banner.queue_free)
+	if is_instance_valid(self) and _full_render_dim_rect and is_instance_valid(_full_render_dim_rect):
+		var dt := create_tween()
+		dt.tween_property(_full_render_dim_rect, "color:a", 0.38, 0.15)
+
+
+## struktured 2026-10-03: "couldnt tell that u summoned another summoner" — a portal opens, a
+## second summoner visibly steps out of it, and "SUMMON ×N" escalates with the REAL stack depth.
+## Depth is read off the caster's own active_buffs: BattleManager._execute_meta_ability's
+## recursive_summon arm runs SYNCHRONOUSLY right after action_executing.emit() (no await between
+## the emit and the add_buff call), and this coroutine's own first await below already yields —
+## so by the time we read active_buffs here, the real stack for THIS cast is already applied.
+func _play_recursive_summon(caster: Combatant, caster_sprite: Node2D, ability: Dictionary) -> void:
+	var color: Color = Color(0.7, 0.3, 1.0)
+	var home: Vector2 = _stable_sprite_anchor(caster_sprite) if caster_sprite and is_instance_valid(caster_sprite) else get_viewport_rect().size * 0.5
+	var portal_pos: Vector2 = home + Vector2(70.0, 0.0)
+
+	var portal := ColorRect.new()
+	portal.color = Color(color.r, color.g, color.b, 0.0)
+	portal.size = Vector2(4, 4)
+	portal.position = portal_pos
+	portal.z_index = 15
+	portal.pivot_offset = Vector2(2, 2)
+	portal.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(portal)
+	var pt := create_tween()
+	pt.tween_property(portal, "size", Vector2(70, 70), 0.22).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	pt.parallel().tween_property(portal, "position", portal_pos - Vector2(35, 35), 0.22).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	pt.parallel().tween_property(portal, "color:a", 0.85, 0.12)
+	BattleJuice.spawn_burst(portal_pos, Vector2(0, -1), 14, color, 180.0)
+	await get_tree().create_timer(0.26).timeout
+	if not is_instance_valid(self):
+		return
+
+	var depth: int = 1
+	if caster != null and is_instance_valid(caster) and ("active_buffs" in caster):
+		var count: int = 0
+		for b in caster.active_buffs:
+			if str(b.get("effect", "")).begins_with("Recursive Summon"):
+				count += 1
+		depth = maxi(1, count)
+
+	var clone := _spawn_summoner_echo(caster_sprite, portal_pos)
+
+	var caption := Label.new()
+	caption.text = "SUMMON ×%d" % (depth + 1)
+	caption.add_theme_font_size_override("font_size", 30 + depth * 8)
+	caption.add_theme_color_override("font_color", color)
+	caption.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
+	caption.add_theme_constant_override("outline_size", 5)
+	caption.position = portal_pos + Vector2(-70, -90)
+	caption.modulate.a = 0.0
+	caption.scale = Vector2(0.5, 0.5)
+	caption.pivot_offset = Vector2(70, 20)
+	caption.z_index = 30
+	caption.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(caption)
+	var capt := create_tween()
+	capt.tween_property(caption, "modulate:a", 1.0, 0.12)
+	capt.parallel().tween_property(caption, "scale", Vector2(1.0, 1.0), 0.2).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	capt.tween_interval(0.5 + depth * 0.15)
+	capt.parallel().tween_property(caption, "modulate:a", 0.0, 0.25)
+	capt.tween_callback(caption.queue_free)
+
+	EffectSystem._trigger_screen_shake(4.0 + depth * 2.0, 0.2)
+	BattleJuice.add_trauma(0.25 + depth * 0.12, Vector2.ZERO)
+	_spawn_screen_flash(Color(color.r, color.g, color.b, 0.22 + depth * 0.08), 0.22)
+
+	await get_tree().create_timer(0.3 + depth * 0.1).timeout
+	if is_instance_valid(clone):
+		var ft := create_tween()
+		ft.tween_property(clone, "modulate:a", 0.0, 0.18)
+		ft.tween_callback(clone.queue_free)
+	if is_instance_valid(portal):
+		var pft := create_tween()
+		pft.tween_property(portal, "color:a", 0.0, 0.16)
+		pft.parallel().tween_property(portal, "size", Vector2(10, 10), 0.16)
+		pft.tween_callback(portal.queue_free)
+
+
+## A translucent purple echo of the caster's own current frame steps out of the portal — reusing
+## the real texture (not a generic shape) is what makes it read as "another summoner", not a blob.
+func _spawn_summoner_echo(caster_sprite: Node2D, pos: Vector2) -> Node2D:
+	var echo := Node2D.new()
+	echo.position = pos
+	echo.z_index = 16
+	echo.modulate = Color(0.75, 0.55, 1.0, 0.0)
+	add_child(echo)
+	var tex: Texture2D = null
+	if caster_sprite and is_instance_valid(caster_sprite):
+		if caster_sprite is AnimatedSprite2D and caster_sprite.sprite_frames and caster_sprite.sprite_frames.has_animation(caster_sprite.animation):
+			tex = caster_sprite.sprite_frames.get_frame_texture(caster_sprite.animation, caster_sprite.frame)
+		elif caster_sprite is Sprite2D:
+			tex = caster_sprite.texture
+	if tex:
+		var spr := Sprite2D.new()
+		spr.texture = tex
+		echo.add_child(spr)
+	else:
+		var fallback := ColorRect.new()
+		fallback.color = Color(1, 1, 1, 0.9)
+		fallback.size = Vector2(26, 44)
+		fallback.position = Vector2(-13, -44)
+		fallback.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		echo.add_child(fallback)
+	var t := create_tween()
+	t.tween_property(echo, "modulate:a", 1.0, 0.16)
+	return echo
+
+
+## struktured 2026-10-03: "speculators abilities ... crazier more dynamic" — slot reels spin and
+## land on the REAL outcome before the number shows. Speculator abilities are deterministic, so
+## the "roll" is the actual risk/reward state they read: press_the_edge's payout tier is the live
+## volatility band (read at the SAME point BattleManager reads it — before this coroutine's first
+## await, which is also before BattleManager's synchronous band-shift runs), and leverage's self-
+## recoil is scored a loss because it costs its own caster HP for the buff.
+func _play_speculator_spectacle(caster_sprite: Node2D, ability: Dictionary, style: Dictionary, targets: Array) -> void:
+	var effect: String = str(style.get("spec_effect", ""))
+	var win: bool = true
+	var tier: int = 1
+	match effect:
+		"press_the_edge":
+			tier = int(BattleManager.volatility.global_band) + 1 if BattleManager.volatility else 1
+		"circuit_breaker":
+			tier = 3
+		"volatility_down":
+			tier = 2
+		"volatility_up_enemy":
+			tier = 1
+		"volatility_up_self":
+			win = false
+		"forecast":
+			tier = 1
+		_:
+			tier = 1
+
+	var home: Vector2 = _stable_sprite_anchor(caster_sprite) if caster_sprite and is_instance_valid(caster_sprite) else get_viewport_rect().size * 0.5
+	var panel_pos: Vector2 = home + Vector2(0, -70)
+
+	var symbols := ["$", "%", "?", "!", "0"]
+	var final_symbol: String = "$" if win else "!"
+	var reels: Array = []
+	for i in range(3):
+		var reel := Label.new()
+		reel.text = symbols[randi() % symbols.size()]
+		reel.add_theme_font_size_override("font_size", 26)
+		reel.add_theme_color_override("font_color", Color(0.9, 0.9, 0.9))
+		reel.position = panel_pos + Vector2(-30 + i * 30, 0)
+		reel.z_index = 25
+		reel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(reel)
+		reels.append(reel)
+		var spins: int = 4 + i * 2
+		var rt := create_tween()
+		for _s in range(spins):
+			rt.tween_interval(0.05)
+			rt.tween_callback(func(): reel.text = symbols[randi() % symbols.size()])
+		rt.tween_callback(func(): reel.text = final_symbol)
+
+	await get_tree().create_timer(0.05 * 8 + 0.1).timeout
+	if not is_instance_valid(self):
+		for r in reels:
+			if is_instance_valid(r):
+				r.queue_free()
+		return
+
+	var outcome_color: Color = Color(0.3, 1.0, 0.4) if win else Color(1.0, 0.25, 0.25)
+	var ticker := Label.new()
+	ticker.text = "▲ JACKPOT" if (win and tier >= 3) else ("▲ WIN" if win else "▼ LOSS")
+	ticker.add_theme_font_size_override("font_size", 28 + tier * 6)
+	ticker.add_theme_color_override("font_color", outcome_color)
+	ticker.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
+	ticker.add_theme_constant_override("outline_size", 5)
+	ticker.position = panel_pos + Vector2(-70, -40)
+	ticker.modulate.a = 0.0
+	ticker.z_index = 30
+	ticker.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(ticker)
+	var tt := create_tween()
+	tt.tween_property(ticker, "modulate:a", 1.0, 0.1)
+	tt.parallel().tween_property(ticker, "position:y", ticker.position.y + (-26.0 if win else 26.0), 0.3).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tt.tween_interval(0.4)
+	tt.parallel().tween_property(ticker, "modulate:a", 0.0, 0.2)
+	tt.tween_callback(ticker.queue_free)
+
+	_spawn_screen_flash(Color(outcome_color.r, outcome_color.g, outcome_color.b, 0.22 + tier * 0.06), 0.2)
+	if win and tier >= 3:
+		EffectSystem._trigger_screen_shake(8.0, 0.25)
+		BattleJuice.add_trauma(0.5, Vector2.ZERO)
+	for target in targets:
+		var ts = _get_combatant_sprite(target)
+		if ts and is_instance_valid(ts):
+			EffectSystem.spawn_effect(style["effect"], _stable_sprite_anchor(ts), Callable(), 1.2)
+	for r in reels:
+		if is_instance_valid(r):
+			r.queue_free()
+	await get_tree().create_timer(0.2).timeout
 
 
 ## Dim sits between the parallax background (z -100..-10) and combatant sprites (z 0).
@@ -2673,9 +3058,30 @@ func _full_render_release_visual(style: Dictionary, caster_sprite: Node2D, targe
 		"storm":
 			_full_render_storm(color, to, float(style.get("power", 1.0)))
 		"chord":
-			## Bard performance: a bar of staff lines wipes in, note glyphs rise off it, and a
-			## sound-wave ring pushes outward. Built from the same primitives as the other shapes
-			## -- no sprite dependency, so it works for every job that ever plays something.
+			## Bard performance: a bar of staff lines wipes in, note glyphs move off it per the
+			## landed STATUS's motion, and a sound-wave ring pushes outward. struktured 2026-10-03:
+			## "bard's status effects ... crazier more dynamic" -- lullaby's sleep drifts down
+			## slow, a defense-down dirge drips, and an AP/MP buff spikes sharp and fast, so the
+			## motion alone tells you which status landed before any icon does.
+			var motion: String = str(style.get("motion", "swirl"))
+			var note_rise: float = 46.0
+			var note_dur: float = 0.34
+			var note_trans: Tween.TransitionType = Tween.TRANS_SINE
+			var note_sign: float = -1.0  # -1 rises, +1 drips downward
+			match motion:
+				"drift":
+					note_rise = 18.0
+					note_dur = 0.62
+					note_trans = Tween.TRANS_SINE
+				"dirge":
+					note_rise = 30.0
+					note_dur = 0.46
+					note_sign = 1.0
+					note_trans = Tween.TRANS_QUAD
+				"war":
+					note_rise = 70.0
+					note_dur = 0.2
+					note_trans = Tween.TRANS_EXPO
 			for i in range(3):
 				var staff := ColorRect.new()
 				staff.color = Color(color.r, color.g, color.b, 0.0)
@@ -2707,14 +3113,15 @@ func _full_render_release_visual(style: Dictionary, caster_sprite: Node2D, targe
 				var start := to + Vector2(sx, -18.0)
 				head.position = start
 				stem.position = start + Vector2(7, -15)
-				var rise: float = 46.0 + randf_range(-8.0, 12.0)
+				var rise: float = note_rise + randf_range(-8.0, 12.0)
 				var drift: float = randf_range(-14.0, 14.0)
+				var end_offset: Vector2 = Vector2(drift, note_sign * rise)
 				var nt := create_tween()
 				nt.tween_interval(0.04 * i)
-				nt.tween_property(head, "position", start + Vector2(drift, -rise), 0.34).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
-				nt.parallel().tween_property(stem, "position", start + Vector2(drift + 7, -rise - 15), 0.34).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
-				nt.parallel().tween_property(head, "color:a", 0.0, 0.34)
-				nt.parallel().tween_property(stem, "color:a", 0.0, 0.34)
+				nt.tween_property(head, "position", start + end_offset, note_dur).set_trans(note_trans).set_ease(Tween.EASE_OUT)
+				nt.parallel().tween_property(stem, "position", start + end_offset + Vector2(7, -15), note_dur).set_trans(note_trans).set_ease(Tween.EASE_OUT)
+				nt.parallel().tween_property(head, "color:a", 0.0, note_dur)
+				nt.parallel().tween_property(stem, "color:a", 0.0, note_dur)
 				nt.tween_callback(head.queue_free)
 				nt.tween_callback(stem.queue_free)
 			var wave := ColorRect.new()
