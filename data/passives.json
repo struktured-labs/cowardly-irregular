@@ -356,7 +356,8 @@
 		"description": "Elemental spells cost 25% less MP",
 		"stat_mods": {
 			"mp_cost_multiplier": 0.75
-		}
+		},
+		"mp_cost_scope": "elemental"
 	},
 	"boss_insight": {
 		"id": "boss_insight",
