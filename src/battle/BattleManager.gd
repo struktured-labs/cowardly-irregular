@@ -4861,21 +4861,18 @@ func _smart_retarget_revive(caster: Combatant, original_target: Variant) -> Comb
 
 ## CTB inference (struktured ruling 2026-10-03): a queued single-ally heal is chosen at
 ## SELECTION time without knowing execution-time state. If the target is still alive and hurt,
-## the premise held. If they died, fall back to the lowest-HP% ally (the pre-existing
-## dead-target rule, no need-filter). If they're at full HP instead, redirect only to someone
-## who actually needs it — null if nobody does, so the heal doesn't fire for nothing.
+## the premise held. Otherwise — they died, OR they're at full HP, OR they're missing — the one
+## rule for "broken premise" is the same either way: redirect to the lowest-HP% ally who is
+## actually below max. Null if nobody qualifies, so the heal doesn't fire (and spends nothing)
+## for a party that is dead-or-full. A dead original target is NOT special-cased to skip the
+## needs-it filter — struktured 2026-10-03 follow-up: "if nobody needs it, it holds, with no
+## cost" applies the same whether the premise broke via death or via a full-HP party.
 func _smart_retarget_heal(caster: Combatant, original_target: Variant) -> Combatant:
 	var ally_party: Array = player_party if caster in player_party else enemy_party
 	var original_valid: bool = original_target != null and is_instance_valid(original_target) \
 			and original_target is Combatant and original_target in ally_party
 	if original_valid and original_target.is_alive and original_target.current_hp < original_target.max_hp:
 		return original_target
-	if original_valid and not original_target.is_alive:
-		var alive: Array = ally_party.filter(func(m): return is_instance_valid(m) and m.is_alive)
-		if alive.is_empty():
-			return null
-		alive.sort_custom(func(a, b): return a.get_hp_percentage() < b.get_hp_percentage())
-		return alive[0]
 	var needing: Array = ally_party.filter(func(m): return is_instance_valid(m) and m.is_alive and m.current_hp < m.max_hp)
 	if needing.is_empty():
 		return null

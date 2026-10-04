@@ -206,6 +206,23 @@ func test_cure_aimed_at_a_dead_ally_infers_the_lowest_hp_living_ally() -> void:
 	assert_eq(higher.current_hp, 300, "a higher-HP ally must not be the inferred target while a lower one exists")
 
 
+func test_cure_aimed_at_a_dead_ally_with_everyone_else_full_does_not_fire_and_spends_no_mp() -> void:
+	## The dead-target case is not special-cased to skip the needs-it filter: if the chosen
+	## target died AND everyone still standing is already full, the heal must hold rather than
+	## land for 0 and spend MP/the item.
+	var caster := _member("Cleric", 400, 400)
+	var dead_target := _member("Died Mid-Turn", 0, 400)
+	dead_target.is_alive = false
+	var full_one := _member("Full One", 400, 400)
+	var full_two := _member("Full Two", 400, 400)
+	_parties([caster, dead_target, full_one, full_two], [_member("Foe", 999, 999)])
+	var mp_before := caster.current_mp
+	_bm._execute_ability(caster, "cure", [dead_target])
+	assert_eq(caster.current_mp, mp_before, "nobody standing needs healing — Cure must not fire or spend MP")
+	assert_eq(full_one.current_hp, full_one.max_hp, "a full ally must stay full — no phantom 0 heal")
+	assert_eq(full_two.current_hp, full_two.max_hp, "a full ally must stay full — no phantom 0 heal")
+
+
 func test_cure_aimed_at_a_now_full_hp_ally_infers_someone_who_needs_it() -> void:
 	var caster := _member("Cleric", 400, 400)
 	var guessed_full := _member("Topped Off Mid-Turn", 400, 400)  # was hurt at selection, healed by an earlier action
