@@ -76,3 +76,19 @@ func test_defense_is_high_enough_to_matter() -> void:
 	## CONTROL: with 0 defense the computed and landed amounts coincide and the arm above proves nothing.
 	var foe := _c("Wall", 300)
 	assert_lt(foe.damage_preview(500, false), 500, "300 DEF must mitigate a 500 hit")
+
+
+func test_a_self_damage_recoil_popup_shows_what_landed() -> void:
+	## stack_overflow's damage_to_self_pct recoil had the same shape: the popup and the log printed the
+	## pre-defense recoil while take_damage removed less.
+	var caster := _c("Hacker", 0)
+	caster.magic_defense = 400
+	var foe := _c("Dummy", 0)
+	BattleManager.player_party.assign([caster] as Array[Combatant])
+	BattleManager.enemy_party.assign([foe] as Array[Combatant])
+	var before := caster.current_hp
+	_popups = {}
+	BattleManager._execute_magic_ability(caster, JobSystem.get_ability("stack_overflow"), [foe])
+	var lost := before - caster.current_hp
+	assert_gt(lost, 0, "CONTROL: the overflow must recoil onto the caster")
+	assert_eq(int(_popups.get(caster, 0)), lost, "the recoil popup must read the HP the caster lost")

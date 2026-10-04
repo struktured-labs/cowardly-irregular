@@ -5989,9 +5989,10 @@ func _execute_magic_ability(caster: Combatant, ability: Dictionary, targets: Arr
 	var dmg_to_self_pct: float = float(ability.get("damage_to_self_pct", 0.0))
 	if dmg_to_self_pct > 0.0 and total_dealt_for_recoil > 0 and caster != null and is_instance_valid(caster) and caster.is_alive:
 		var recoil: int = max(1, int(round(total_dealt_for_recoil * dmg_to_self_pct)))
-		caster.take_damage(recoil, true)
-		damage_dealt.emit(caster, recoil, false, "", 1.0)
-		battle_log_message.emit("[color=magenta]%s takes %d recoil from the overflow![/color]" % [caster.combatant_name, recoil])
+		## The popup and the log say what landed, not the pre-defense recoil (same fix as the group paths).
+		var recoil_landed: int = caster.take_damage(recoil, true)
+		damage_dealt.emit(caster, recoil_landed, false, "", 1.0)
+		battle_log_message.emit("[color=magenta]%s takes %d recoil from the overflow![/color]" % [caster.combatant_name, recoil_landed])
 
 	## Tick 456: summon ability lingering eidolon. abilities.json
 	## authors summon_duration on summon_ifrit/shiva/ramuh/bahamut
