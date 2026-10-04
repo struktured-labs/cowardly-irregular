@@ -2636,6 +2636,7 @@ func _open_settings_menu() -> void:
 		if _exploration_scene and _exploration_scene.has_method("pause"):
 			_exploration_scene.pause()
 		settings_menu.closed.connect(func():
+			_field_settings_menu = null
 			settings_layer.queue_free()
 			if _exploration_scene and _exploration_scene.has_method("resume"):
 				_exploration_scene.resume()
@@ -5930,8 +5931,9 @@ func _field_modal_open() -> bool:
 	return _ui_is_showing(_field_settings_menu) or _ui_is_showing(_party_chat_menu)
 
 
-static func _ui_is_showing(ui: Node) -> bool:
-	return ui != null and is_instance_valid(ui) and ui.is_inside_tree() and ("visible" in ui) and bool(ui.visible)
+## Untyped on purpose: a typed Node parameter rejects a FREED object before the body runs, aborting the caller's whole check.
+static func _ui_is_showing(ui) -> bool:
+	return ui != null and is_instance_valid(ui) and ui is Node and ui.is_inside_tree() and ("visible" in ui) and bool(ui.visible)
 
 
 ## ONE rule where four symptom-site patches used to live: the encounter guard, the victory
