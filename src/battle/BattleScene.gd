@@ -3298,6 +3298,7 @@ func _get_terrain_battle_track() -> String:
 
 func _on_battle_ended(victory: bool) -> void:
 	"""Handle battle end"""
+	_end_advance_run()
 	_clear_advance_aura()
 	## Tick 428: boss defeat dialogue line. Pre-fix only `intro` was
 	## wired — cave_rat_king, the dragons, etc. never spoke their
@@ -3898,11 +3899,56 @@ func _cue_if_turn_skipped(action: Dictionary) -> bool:
 		return false
 	return SoundManager.play_status_if_authored("status_cannot_act")
 
+## An Advance RUNNING, as the same cards: lit step, peeled done steps with who they really hit, "held"
+## for a step that never fired. Party only; a menu Advance and an autobattle plan arrive identically.
+var _run_cards: AdvanceQueueCards = null
+var _run_actor: Combatant = null
+
+
+func _track_advance_run_begin(combatant: Combatant, action: Dictionary) -> void:
+	var is_advance: bool = str(action.get("type", "")) == "advance"
+	if _run_actor != null and (combatant != _run_actor or is_advance):
+		_end_advance_run()
+	if not is_advance or not (combatant in party_members):
+		return
+	var sprite: Node2D = _get_combatant_sprite(combatant)
+	if sprite == null or not is_instance_valid(sprite):
+		return
+	if _run_cards == null or not is_instance_valid(_run_cards):
+		_run_cards = AdvanceQueueCards.new()
+		_run_cards.name = "AdvanceRunCards"
+		add_child(_run_cards)
+	var at: Vector2 = _stable_sprite_anchor(sprite)
+	_run_actor = combatant
+	_run_cards.run_begin(action.get("actions", []), Rect2(at - Vector2(40, 90), Vector2(80, 120)), _queue_cards_animate())
+
+
+func _track_advance_run_step(combatant: Combatant, action: Dictionary, targets: Array) -> void:
+	if _run_actor == null or combatant != _run_actor or str(action.get("type", "")) == "advance":
+		return
+	if _run_cards == null or not is_instance_valid(_run_cards) or not _run_cards.is_running():
+		return
+	_run_cards.run_step(targets, _queue_cards_animate(), action)
+	if not _run_cards.is_running():
+		_end_advance_run()
+
+
+func _end_advance_run() -> void:
+	if _run_cards and is_instance_valid(_run_cards):
+		_run_cards.run_end(_queue_cards_animate())
+	_run_actor = null
+
+
+func _queue_cards_animate() -> bool:
+	return Engine.time_scale < 4.0 and not turbo_mode
+
+
 func _on_action_executing(combatant: Combatant, action: Dictionary) -> void:
 	"""Handle action executing - play animations here"""
 	# msg 2749 cycle 12: cache the signal-arg combatant so _on_damage_dealt / _play_ability_animation don't have to read the stale BattleManager.current_combatant. Cleared in _on_action_executed so a status-tick damage_dealt emit outside an action (poison at round-end, reactive counter) never carries a stale attribution.
 	_last_acting_combatant = combatant
 	_update_turn_info()
+	_track_advance_run_begin(combatant, action)
 
 	# Placed above the animator lookup deliberately — that guard returns early for any
 	# combatant without one, and losing a turn is exactly as audible either way.
@@ -4671,6 +4717,7 @@ func _show_round_banner(round_num: int) -> void:
 
 func _on_action_executed(combatant: Combatant, action: Dictionary, targets: Array) -> void:
 	"""Handle action execution — play buff/debuff/status sounds based on ability effect"""
+	_track_advance_run_step(combatant, action, targets)
 	_update_ui()
 	_check_masterite_phase2_music_swap()
 	# msg 2749 cycle 12: clear the acting-combatant cache once the action fully resolves. Damage_dealt emits from status ticks / reactive counters that fire OUTSIDE an action window now attribute to null, matching the "no acting combatant" fact rather than the last completed action.

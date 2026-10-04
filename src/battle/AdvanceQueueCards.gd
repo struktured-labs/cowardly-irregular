@@ -185,3 +185,161 @@ static func _style_label(l: Label, color: Color) -> void:
 	l.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
 	l.add_theme_constant_override("outline_size", 4)
 	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+
+## -- Execution: the same cards while an Advance RUNS ------------------------------------------------
+## Beside the acting PC, facing the battlefield: the current action lit, each done one peeling away with
+## the target it ACTUALLY hit (a retarget shows), and any that never fired marked "held". Fed by
+## BattleManager's action_executing (type advance) and the per-step action_executed, so a menu Advance
+## and an autobattle plan show alike.
+
+var _run_index := -1
+var _run_planned: Array[String] = []
+## The action dicts the run was built from: BattleManager emits these SAME dicts per step, so a step is
+## matched by identity, not by count. A held step (a heal/Raise nobody needs) emits nothing.
+var _run_actions: Array = []
+
+
+## A BattleManager action ({type, ability_id/item_id, target/targets}) as a card reads it.
+static func describe_action(action: Dictionary) -> Dictionary:
+	var out := {"name": "?", "target": "", "icon": null}
+	var aid := str(action.get("ability_id", ""))
+	var iid := str(action.get("item_id", ""))
+	if aid != "":
+		out["name"] = AbilityIcons.name_of(aid)
+		out["icon"] = AbilityIcons.tinted(aid)
+	elif iid != "":
+		out["name"] = str(ItemSystem.get_item(iid).get("name", iid.capitalize())) if ItemSystem else iid.capitalize()
+		out["icon"] = ItemIcons.tinted(iid)
+	elif str(action.get("type", "")) == "attack":
+		out["name"] = "Attack"
+	else:
+		out["name"] = str(action.get("type", "?")).capitalize()
+	out["target"] = names_of(_action_targets(action))
+	return out
+
+
+static func _action_targets(action: Dictionary) -> Array:
+	var ts: Array = []
+	if action.get("target") != null:
+		ts.append(action.get("target"))
+	for t in action.get("targets", []):
+		if not ts.has(t):
+			ts.append(t)
+	return ts
+
+
+static func names_of(targets: Array) -> String:
+	var names: PackedStringArray = []
+	for t in targets:
+		if is_instance_valid(t) and "combatant_name" in t:
+			names.append(str(t.combatant_name))
+	if names.size() > 2:
+		return "%d targets" % names.size()
+	return ", ".join(names)
+
+
+func run_begin(actions: Array, beside: Rect2, animate: bool) -> void:
+	clear(false)
+	_run_planned.clear()
+	_run_actions = actions.duplicate()
+	var vp := get_viewport_rect().size
+	for i in actions.size():
+		var info := describe_action(actions[i])
+		_run_planned.append(str(info["target"]))
+		var card := _make_card(i, info)
+		add_child(card)
+		_cards.append(card)
+		_keys.append("run%d" % i)
+		var p := Vector2(beside.position.x - CARD_W - 12.0 - 10.0 * i, beside.position.y + i * (CARD_H + 4.0))
+		p.x = clampf(p.x, 8.0, vp.x - CARD_W - 8.0)
+		p.y = clampf(p.y, TOP_LIMIT, vp.y - CARD_H - 8.0)
+		card.position = p
+		card.modulate.a = 0.55
+	_run_index = 0
+	_light(0, animate)
+
+
+## A step resolved against `targets`: name who it actually hit, peel it, light the next. `action` is the
+## emitted dict; steps passed over before it never fired (held at execution) and say so.
+func run_step(targets: Array, animate: bool, action = null) -> void:
+	if _run_index < 0 or _run_index >= _cards.size():
+		return
+	if action != null:
+		var at := -1
+		for j in range(_run_index, _run_actions.size()):
+			if is_same(_run_actions[j], action):
+				at = j
+				break
+		if at < 0:
+			return  # not one of this run's steps
+		while _run_index < at:
+			_mark_held(_run_index)
+			_peel(_cards[_run_index], animate)
+			_run_index += 1
+	var i := _run_index
+	var hit := names_of(targets)
+	var l: Label = _cards[i].find_child("Text", true, false)
+	if l and hit != "" and hit != _run_planned[i]:
+		l.text = l.text.split("  → ")[0] + "  → " + hit + " (retarget)"
+	elif l and hit != "":
+		l.text = l.text.split("  → ")[0] + "  → " + hit
+	_peel(_cards[i], animate)
+	_run_index += 1
+	if _run_index < _cards.size():
+		_light(_run_index, animate)
+
+
+## The Advance stopped (its actor fell, the battle ended): what never fired says so, then all fade.
+func run_end(animate: bool) -> void:
+	if _run_index < 0:
+		return
+	for i in range(maxi(0, _run_index), _cards.size()):
+		_mark_held(i)
+	_run_index = -1
+	for c in _cards:
+		_peel(c, animate)
+	_cards.clear()
+	_keys.clear()
+
+
+## A step is still to fire.
+func _mark_held(i: int) -> void:
+	if i < 0 or i >= _cards.size() or not is_instance_valid(_cards[i]):
+		return
+	var l: Label = _cards[i].find_child("Text", true, false)
+	if l:
+		l.text = l.text.split("  → ")[0] + "  — held"
+		l.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
+
+
+func is_running() -> bool:
+	return _run_index >= 0 and _run_index < _cards.size()
+
+
+func _light(i: int, animate: bool) -> void:
+	if i < 0 or i >= _cards.size():
+		return
+	var c := _cards[i]
+	c.modulate.a = 1.0
+	var st := c.get_theme_stylebox("panel") as StyleBoxFlat
+	if st:
+		st.border_color = Color(1.0, 0.95, 0.5)
+		st.set_border_width_all(2)
+	if animate:
+		c.pivot_offset = c.size / 2.0
+		c.scale = Vector2(1.08, 1.08)
+		c.create_tween().tween_property(c, "scale", Vector2.ONE, 0.12)
+
+
+func _peel(card: Control, animate: bool) -> void:
+	if not is_instance_valid(card):
+		return
+	if not animate:
+		card.queue_free()
+		return
+	var t := card.create_tween()
+	t.tween_interval(0.25)
+	t.tween_property(card, "position:x", card.position.x - 40.0, 0.18)
+	t.parallel().tween_property(card, "modulate:a", 0.0, 0.18)
+	t.tween_callback(card.queue_free)
