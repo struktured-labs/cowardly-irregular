@@ -28,8 +28,10 @@ const GRADE_TINT := {
 ## Set by BattleResultsDisplay when GameLoop reports a live Spotlight Duel: the duelist's name.
 var spotlight_duelist: String = ""
 
-const CARD_W := 210.0
-const CARD_H := 58.0
+## 340, not 210: at 210 the one-line level-up clipped its own stats and the learned spell ("MP +9 M").
+const CARD_W := 340.0
+## Room for the level-up line on EVERY card: at 58 a level-up card grew when its line appeared and overlapped the next.
+const CARD_H := 74.0
 const CARD_GAP := 8.0
 ## Artist party frames display ~315px centred on the slot; a left flourish reaches ~157px past origin (F12 2026-09-20).
 const CARD_SPRITE_GAP := 200.0
@@ -52,6 +54,8 @@ func occupied_rects() -> Array[Rect2]:
 
 ## Where the title rests and sweeps to its dock, and when it has docked: a card that would land there waits (slam -> cards, as documented).
 var _title_rest := Rect2()
+## Where the title SETTLES (docked, at 0.55 scale); the loot strip hangs under it.
+var _title_docked := Rect2()
 var _title_clear_at := 0.0
 
 
@@ -166,6 +170,7 @@ func _build_slam(flourish: bool) -> void:
 	_occupied.append(Rect2(center, title.size))
 	_occupied.append(Rect2(docked, title.size * 0.55))
 	title.pivot_offset = title.size / 2.0
+	_title_docked = Rect2(docked + title.pivot_offset * 0.45, title.size * 0.55)
 	_snaps.append(func() -> void:
 		if is_instance_valid(title):
 			title.position = docked
@@ -311,14 +316,19 @@ func _build_letterbox(vp: Vector2, grade: int, flourish: bool) -> void:
 
 func _build_cards(char_results: Array, flourish: bool) -> void:
 	var vp := get_viewport_rect().size
+	var column := _column_positions(char_results.size(), vp)
+	## The column enters as ONE cascade, top to bottom. Per-card waits let a card clear of the title slam
+	## arrive alone, mid-column, before the ones above it; if any card must wait, they all start together.
+	var start := 0.5
+	for p in column:
+		if _title_rest.has_area() and Rect2(p, Vector2(CARD_W, CARD_H)).intersects(_title_rest):
+			start = maxf(start, _title_clear_at)
 	for i in range(char_results.size()):
 		var cr: Dictionary = char_results[i]
 		var card := _make_card(cr)
 		add_child(card)
-		card.position = _card_position(i, char_results.size(), vp)
-		var delay := 0.5 + i * 0.15
-		if _title_rest.has_area() and Rect2(card.position, Vector2(CARD_W, CARD_H)).intersects(_title_rest):
-			delay = maxf(delay, _title_clear_at)
+		card.position = column[i]
+		var delay := start + i * 0.12
 		var final_pos := card.position
 		_occupied.append(Rect2(final_pos, Vector2(CARD_W, CARD_H)))
 		_snaps.append(func() -> void:
@@ -327,12 +337,12 @@ func _build_cards(char_results: Array, flourish: bool) -> void:
 				card.modulate.a = 1.0)
 		if flourish:
 			card.modulate.a = 0.0
-			card.position.x += 24.0
+			card.position.x += 48.0
 			var tw := _track(create_tween())
 			tw.tween_interval(delay)
 			tw.tween_property(card, "modulate:a", 1.0, 0.15)
-			tw.parallel().tween_property(card, "position:x", final_pos.x, 0.18) \
-				.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+			tw.parallel().tween_property(card, "position:x", final_pos.x, 0.26) \
+				.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 		_animate_card_content(card, cr, i, delay, flourish)
 
 
@@ -355,6 +365,37 @@ func _card_position(i: int, count: int, vp: Vector2) -> Vector2:
 	pos.x = clampf(pos.x, LOG_CLEAR_X, vp.x - CARD_W - 8.0)
 	pos.y = clampf(pos.y, 56.0, vp.y - STRIP_BOTTOM_MARGIN - CARD_H)
 	return pos
+
+
+## The cards as ONE column: each still at its own character's height, but sharing the leftmost card's x
+## and never closer than a card apart, so a staggered formation no longer scatters them diagonally.
+func _column_positions(count: int, vp: Vector2) -> Array[Vector2]:
+	var raw: Array[Vector2] = []
+	var x := INF
+	for i in range(count):
+		var p := _card_position(i, count, vp)
+		raw.append(p)
+		x = minf(x, p.x)
+	## Evenly spaced, centred on where the party stands: anchored per character, the gaps followed the
+	## formation's stagger and read as scattered. Order still follows the party, top to bottom.
+	var mid := 0.0
+	for p in raw:
+		mid += p.y
+	mid /= maxf(1.0, float(raw.size()))
+	var block_h := count * CARD_H + maxi(0, count - 1) * CARD_GAP
+	var top := mid + CARD_H / 2.0 - block_h / 2.0
+	## Never up into the docked title and the loot strip that hangs under it.
+	top = maxf(top, 150.0)
+	var out: Array[Vector2] = []
+	for i in range(count):
+		out.append(Vector2(x, clampf(top + i * (CARD_H + CARD_GAP), 56.0, vp.y)))
+	## Pushed past the bottom: lift the whole column, keeping the spacing.
+	var bottom_limit := vp.y - STRIP_BOTTOM_MARGIN - CARD_H
+	if out.size() > 0 and out[out.size() - 1].y > bottom_limit:
+		var lift := out[out.size() - 1].y - bottom_limit
+		for i in range(out.size()):
+			out[i].y = maxf(56.0, out[i].y - lift)
+	return out
 
 
 func _make_card(cr: Dictionary) -> PanelContainer:
@@ -405,6 +446,9 @@ func _make_card(cr: Dictionary) -> PanelContainer:
 	top.text = "%s  %s" % [cr.get("name", "?"), "+0 EXP" if alive else "KO"]
 	top.add_theme_font_size_override("font_size", TextScale.scaled(13))
 	top.add_theme_color_override("font_color", Color.WHITE if alive else Color(0.6, 0.45, 0.45))
+	## Outlined so the line reads over any backdrop while the card itself stays translucent.
+	top.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
+	top.add_theme_constant_override("outline_size", 4)
 	top.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	v.add_child(top)
 
@@ -428,6 +472,8 @@ func _make_card(cr: Dictionary) -> PanelContainer:
 	gains.clip_text = true  # one compact line — the 700px 5-level-up clip rule
 	gains.add_theme_font_size_override("font_size", TextScale.scaled(11))
 	gains.add_theme_color_override("font_color", Color(1.0, 1.0, 0.3))
+	gains.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
+	gains.add_theme_constant_override("outline_size", 4)
 	gains.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	v.add_child(gains)
 	return card
@@ -504,10 +550,7 @@ func _gains_line(cr: Dictionary) -> String:
 	if not cr.get("leveled_up", false):
 		return ""
 	var parts: Array = []
-	var gains: Dictionary = cr.get("stat_gains", {})
-	for stat in ["HP", "MP", "ATK", "DEF", "MAG", "SPD"]:
-		if gains.has(stat) and int(gains[stat]) != 0:
-			parts.append("%s +%d" % [stat, int(gains[stat])])
+	## A learned spell FIRST: the line is one clipped line, so whatever is last is what gets cut.
 	var learned: Array = cr.get("learned_abilities", [])
 	if not learned.is_empty():
 		var names: PackedStringArray = []
@@ -515,6 +558,10 @@ func _gains_line(cr: Dictionary) -> String:
 			var ab: Dictionary = JobSystem.get_ability(str(aid)) if JobSystem else {}
 			names.append(str(ab.get("name", str(aid).capitalize())))
 		parts.append("✦ " + ", ".join(names))
+	var gains: Dictionary = cr.get("stat_gains", {})
+	for stat in ["HP", "MP", "ATK", "DEF", "MAG", "SPD"]:
+		if gains.has(stat) and int(gains[stat]) != 0:
+			parts.append("%s +%d" % [stat, int(gains[stat])])
 	return "LEVEL UP!  " + "  ".join(parts)
 
 
@@ -613,7 +660,11 @@ func _build_loot_strip(results: Dictionary, flourish: bool) -> void:
 	await get_tree().process_frame
 	if not is_instance_valid(strip):
 		return
+	## Under the VICTORY title, not over the battle log: the rewards read as the headline's second line.
 	strip.position = Vector2((vp.x - strip.size.x) / 2.0, vp.y - STRIP_BOTTOM_MARGIN - strip.size.y)
+	if _title_docked.has_area():
+		strip.position = Vector2(_title_docked.get_center().x - strip.size.x / 2.0, _title_docked.end.y + 6.0)
+		strip.position.x = clampf(strip.position.x, 8.0, vp.x - strip.size.x - 8.0)
 	_occupied.append(Rect2(strip.position, strip.size))
 	if _complete:
 		return  # snapped mid-layout-frame — labels already carry final text, stay visible
