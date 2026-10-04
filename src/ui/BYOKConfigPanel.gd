@@ -214,7 +214,9 @@ func _build_ui() -> void:
 	_status_label.add_theme_font_size_override("font_size", 12)
 	_status_label.add_theme_color_override("font_color", STATUS_IDLE_COLOR)
 	_status_label.position = Vector2(form_x, row_y + 12)
-	_status_label.size = Vector2(form_w, 22)
+	# A failure names model, endpoint and error; one 22px line ran past the frame, so it wraps in room for three.
+	_status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_status_label.size = Vector2(form_w, 66)
 	add_child(_status_label)
 
 	# Buttons: Test (left), Save (mid-right), Cancel (right).

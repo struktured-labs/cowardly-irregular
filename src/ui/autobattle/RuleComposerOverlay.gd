@@ -36,6 +36,9 @@ func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_prompt_field = get_node_or_null("Panel/VBox/PromptField") as LineEdit
 	_status_label = get_node_or_null("Panel/VBox/StatusLabel") as Label
+	if _status_label != null:
+		# Unwrapped, the no-LLM notice (every web player) set the panel's minimum width and pushed it off the screen.
+		_status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_preview_panel = get_node_or_null("Panel/VBox/PreviewPanel") as Panel
 	_compose_button = get_node_or_null("Panel/VBox/ButtonsHBox/ComposeButton") as Button
 	_regen_button = get_node_or_null("Panel/VBox/ButtonsHBox/RegenButton") as Button
