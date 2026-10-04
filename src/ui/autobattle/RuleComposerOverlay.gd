@@ -50,7 +50,38 @@ func _ready() -> void:
 		_confirm_button.pressed.connect(_on_confirm_pressed)
 	if _cancel_button != null:
 		_cancel_button.pressed.connect(_on_cancel_pressed)
+	var ipm = get_node_or_null("/root/InputProfileManager")
+	if ipm != null:
+		if ipm.has_signal("input_device_changed"):
+			ipm.input_device_changed.connect(func(_connected): _refresh_captions())
+		if ipm.has_signal("bindings_changed"):
+			ipm.bindings_changed.connect(_refresh_captions)
+	_refresh_captions()
 	hide()
+
+
+## Each button names the player's own key or pad button. The scene's "(A)"/"(B)" were Nintendo letters: inverted on Xbox, no key at all on a keyboard.
+func _refresh_captions(device_name: String = "") -> void:
+	var accept := _hint("ui_accept", device_name)
+	if _compose_button != null:
+		_compose_button.text = _caption("Compose", accept)
+	if _regen_button != null:
+		_regen_button.text = _caption("Regenerate", _hint("battle_advance", device_name))
+	if _confirm_button != null:
+		_confirm_button.text = _caption("Confirm", accept)
+	if _cancel_button != null:
+		_cancel_button.text = _caption("Cancel", _hint("ui_cancel", device_name))
+
+
+func _hint(action: String, device_name: String) -> String:
+	var ipm = get_node_or_null("/root/InputProfileManager")
+	if ipm == null or not ipm.has_method("hint_for_action"):
+		return ""
+	return str(ipm.hint_for_action(action, device_name))
+
+
+static func _caption(word: String, hint: String) -> String:
+	return word if hint == "" else "%s (%s)" % [word, hint]
 
 
 func _input(event: InputEvent) -> void:
@@ -83,6 +114,7 @@ func open(domain: String, character_id: String, current_rules: Array) -> void:
 		_confirm_button.disabled = true
 	if _regen_button != null:
 		_regen_button.disabled = true
+	_refresh_captions()
 	show()
 	# Upfront honesty for the no-backend case (every web player): say WHY
 	# Compose will fail BEFORE they type an essay — the grid stays fully manual.
