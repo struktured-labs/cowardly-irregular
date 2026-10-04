@@ -102,8 +102,7 @@ func _create_screen_rect() -> TextureRect:
 	rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	rect.stretch_mode = TextureRect.STRETCH_SCALE
 	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	rect.size = _viewport_size
-	rect.position = Vector2.ZERO
+	## FULL_RECT anchors already cover the screen; a size write on a fully anchored node is refused with a warning every battle start.
 	return rect
 
 
