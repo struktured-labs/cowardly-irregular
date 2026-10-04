@@ -22,7 +22,8 @@ const CLAIM_TO_ACTION := {
 ## can resolve the label against a binding. Speed is checked against JOY_BUTTON_Y directly
 ## in BattleScene._unhandled_input. Listed so a NEW unbacked claim fails, and so this entry
 ## goes stale loudly if Speed ever gains an action.
-const CLAIMS_WITHOUT_ACTIONS := ["Speed"]
+## Speed and Log are raw buttons (north face, L3), not InputMap actions.
+const CLAIMS_WITHOUT_ACTIONS := ["Speed", "Log"]
 
 
 func _consts(path: String) -> Dictionary:

@@ -39,7 +39,7 @@ Back / Select / Minus / Share F6    —                Toggle Autobattle
 X (top face)      ` (backtick)      —                Battle speed
 Y (west face)     Y                 —                [color=lime]Repeat last turn's actions — in battle[/color]
                   F                 —                Cycle party formation (also in the command menu)
-                  L                 —                Battle log: open the full log (also the log panel's button)
+L3 Stick Click    L                 —                Battle log: open the full log in battle (also the log panel's button)
 R3 Stick Click    F1                —                [color=lime]This screen — from anywhere[/color]
                   F2                —                Quick Save
                   F3                —                Quick Load

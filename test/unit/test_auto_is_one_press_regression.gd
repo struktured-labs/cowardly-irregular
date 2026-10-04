@@ -137,7 +137,7 @@ func test_mutant_a_frozen_rules_literal_is_not_the_derived_bar() -> void:
 	for frozen in ["[Start]", "[Plus]", "[Options]", "Start/Plus/Options"]:
 		assert_false(return_line.contains(frozen),
 			"the derived pad bar must not freeze a literal button name for Rules: %s" % return_line)
-	assert_true(return_line.contains("rules]"), "and must actually format in the derived rules variable: %s" % return_line)
+	assert_true(return_line.contains(", rules]") or return_line.contains(", rules,"), "and must actually format in the derived rules variable: %s" % return_line)
 
 
 ## ---- Tap vs hold (struktured 2026-10-03): "pressing confirm and releasing before the hold

@@ -5116,7 +5116,8 @@ func _input(event: InputEvent) -> void:
 	# Full log overlay owns input while it's up — cancel closes it, nothing else should leak through.
 	if _log_overlay and is_instance_valid(_log_overlay):
 		if (event.is_action_pressed("ui_cancel") and not event.is_echo()) \
-				or (event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_L):
+				or (event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_L) \
+				or (event is InputEventJoypadButton and event.pressed and event.button_index == JOY_BUTTON_LEFT_STICK):
 			_toggle_log_overlay()
 			get_viewport().set_input_as_handled()
 		return
@@ -5214,6 +5215,11 @@ func _input(event: InputEvent) -> void:
 		# X button - repeat previous actions
 		elif event.button_index == JOY_BUTTON_X:
 			_repeat_previous_actions()
+			get_viewport().set_input_as_handled()
+			return
+		# L3 opens the full battle log (struktured 2026-10-04: "reuse L3"); handled here so GameLoop's ui_menu never sees it in battle
+		elif event.button_index == JOY_BUTTON_LEFT_STICK:
+			_toggle_log_overlay()
 			get_viewport().set_input_as_handled()
 			return
 

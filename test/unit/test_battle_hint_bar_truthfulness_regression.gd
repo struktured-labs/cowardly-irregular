@@ -127,7 +127,7 @@ func test_every_bracketed_hint_in_the_bar_is_accounted_for() -> void:
 	# [L]/[R]/[Select]/[Start/Plus/Options] are InputMap actions, checked by
 	# test_hint_bar_actions_have_real_joypad_bindings. [X] is a raw button check, covered by
 	# test_speed_toggle_is_actually_wired_to_the_advertised_button.
-	var accounted := {"[L]": true, "[R]": true, "[Select/Back/Share]": true, "[X]": true, "[Start/Plus/Options]": true}
+	var accounted := {"[L]": true, "[R]": true, "[Select/Back/Share]": true, "[X]": true, "[Start/Plus/Options]": true, "[L3/L-Stick]": true}
 	var unaccounted: Array[String] = []
 	for t in tokens:
 		if not accounted.has(t):
@@ -320,3 +320,11 @@ func test_the_derived_bar_names_no_button_literally() -> void:
 	for frozen in ["[L]", "[R]", "[X]", "[Y]", "[Select]", "[Start]", "[A]", "[B]"]:
 		assert_false(derived.contains(frozen),
 			"the derived bar froze %s again — every button in it must come from InputProfileManager" % frozen)
+
+
+## [L3/L-Stick] Log is a RAW button (no InputMap action): it is true only if BattleScene really handles L3 by opening the log.
+func test_the_log_button_is_actually_wired_to_l3() -> void:
+	var src := FileAccess.get_file_as_string("res://src/battle/BattleScene.gd")
+	var i := src.find("elif event.button_index == JOY_BUTTON_LEFT_STICK:")
+	assert_gt(i, -1, "the hint bar advertises L3 Log, so BattleScene must handle JOY_BUTTON_LEFT_STICK")
+	assert_true(src.substr(i, 200).contains("_toggle_log_overlay()"), "and L3 must open the battle log")
