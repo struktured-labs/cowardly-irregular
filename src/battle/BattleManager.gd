@@ -4766,14 +4766,17 @@ func _execute_advance(combatant: Combatant, advance_action: Dictionary) -> void:
 	_execute_next_action()
 
 
-func _retarget_enemy(attacker: Combatant, original_target: Combatant) -> Combatant:
+## original_target is untyped: a typed Combatant parameter rejected a FREED target before the body could retarget (13x in a play log).
+func _retarget_enemy(attacker: Combatant, original_target) -> Combatant:
 	"""Find a new enemy target if original is dead (auto-retarget like most JRPGs)"""
+	if not is_instance_valid(original_target) or not (original_target is Combatant):
+		original_target = null
 	if original_target and original_target.is_alive:
 		return original_target
 
 	# Determine which party to target
 	var target_party = enemy_party if attacker in player_party else player_party
-	var alive_targets = target_party.filter(func(t): return t.is_alive)
+	var alive_targets = target_party.filter(func(t): return is_instance_valid(t) and t.is_alive)
 
 	if alive_targets.size() == 0:
 		return null
@@ -4846,14 +4849,16 @@ func _consume_cover_mitigation(damage: int) -> int:
 	return max(1, reduced)
 
 
-func _retarget_ally(caster: Combatant, original_target: Combatant, include_dead: bool = false) -> Combatant:
+func _retarget_ally(caster: Combatant, original_target, include_dead: bool = false) -> Combatant:
 	"""Find a new ally target if original is invalid"""
+	if not is_instance_valid(original_target) or not (original_target is Combatant):
+		original_target = null
 	if original_target and (original_target.is_alive or include_dead):
 		return original_target
 
 	# Determine which party is allies
 	var ally_party = player_party if caster in player_party else enemy_party
-	var valid_targets = ally_party.filter(func(t): return t.is_alive or include_dead)
+	var valid_targets = ally_party.filter(func(t): return is_instance_valid(t) and (t.is_alive or include_dead))
 
 	if valid_targets.size() == 0:
 		return null
