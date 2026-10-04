@@ -6633,7 +6633,44 @@ var _advance_raised_index: int = -1
 
 ## Driven by the root Win98Menu's queue_changed(count, max_size), emitted after every queue
 ## mutation. Connected behind has_signal in BattleCommandMenu, so this lands in either fold order.
+## Cards for what this turn has queued (struktured 2026-10-03). Information, so shown at every tier;
+## only the motion is gated, at the same 4x line the other battle flourishes use.
+var _queue_cards: AdvanceQueueCards = null
+
+
+## The ONE read of what the choosing PC has queued, for any HUD (the turn-order card's icons):
+## [{name, target, icon}] in queue order. Empty when no menu is open.
+func queued_action_display() -> Array:
+	var menu = active_win98_menu
+	if menu == null or not is_instance_valid(menu):
+		return []
+	var out: Array = []
+	for e in menu.get_queued_actions():
+		out.append(AdvanceQueueCards.describe(e.get("data", {}), self))
+	return out
+
+
+func _update_advance_queue_cards() -> void:
+	var menu = active_win98_menu
+	if menu == null or not is_instance_valid(menu):
+		if _queue_cards and is_instance_valid(_queue_cards):
+			_queue_cards.clear()
+		return
+	if _queue_cards == null or not is_instance_valid(_queue_cards):
+		_queue_cards = AdvanceQueueCards.new()
+		_queue_cards.name = "AdvanceQueueCards"
+		add_child(_queue_cards)
+	var animate: bool = Engine.time_scale < 4.0 and not turbo_mode
+	## The menu's description line hangs under it; count it as the menu so a downward cascade starts below it.
+	var anchor: Rect2 = menu.get_global_rect()
+	var tip = menu.get("_tooltip_label")
+	if is_instance_valid(tip) and tip is Control and tip.is_visible_in_tree():
+		anchor = anchor.merge(tip.get_global_rect())
+	_queue_cards.show_queue(menu.get_queued_actions(), anchor, self, animate)
+
+
 func _on_advance_queue_changed(count: int, max_size: int) -> void:
+	_update_advance_queue_cards()
 	var combatant: Combatant = BattleManager.current_combatant
 	if combatant == null or not (combatant in party_members) or count <= 0:
 		_clear_advance_aura()
