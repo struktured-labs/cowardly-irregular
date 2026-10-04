@@ -51,7 +51,7 @@ func test_each_starter_leader_wears_the_face_their_cutscenes_use() -> void:
 		var box = _shown(job)
 		assert_true(box._portrait_frame.visible, "%s: the leader's line must show a face" % job)
 		assert_true(box._portrait_image.visible, "%s: the art is on the portrait image" % job)
-		assert_eq(box._portrait_image.texture, want, "%s: battle and cutscene must show the same face" % job)
+		assert_eq(box._portrait_image.texture, HybridSpriteLoader.fitted_portrait(want, box._portrait_image.size), "%s: battle and cutscene must show the same face" % job)
 
 
 func test_an_advanced_job_leader_gets_the_bust_cutscenes_cut_for_it() -> void:
@@ -59,7 +59,7 @@ func test_an_advanced_job_leader_gets_the_bust_cutscenes_cut_for_it() -> void:
 	assert_not_null(want, "CONTROL: cutscenes cut a bust for the Guardian from its sheet")
 	var box = _shown("guardian")
 	assert_true(box._portrait_frame.visible, "an advanced-job leader must not be faceless")
-	assert_eq(box._portrait_image.texture, want)
+	assert_eq(box._portrait_image.texture, HybridSpriteLoader.fitted_portrait(want, box._portrait_image.size))
 
 
 func test_the_art_is_drawn_at_the_frame_size() -> void:

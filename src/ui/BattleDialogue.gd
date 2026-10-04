@@ -445,7 +445,7 @@ func _show_current_line() -> void:
 	else:
 		# Use procedural portrait
 		_portrait_image.visible = true
-		_portrait_image.texture = art if art else _create_portrait(portrait_type)
+		_portrait_image.texture = HybridSpriteLoader.fitted_portrait(art, _portrait_image.size) if art else _create_portrait(portrait_type)
 		# Remove any existing custom portrait
 		for child in _portrait_frame.get_children():
 			if child.has_meta("custom_portrait"):

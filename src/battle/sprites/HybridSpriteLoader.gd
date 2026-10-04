@@ -516,6 +516,51 @@ static func world_suffix(world: int = -1) -> String:
 	return WORLD_SUFFIXES[w - 1]
 
 
+## Portrait art resampled ONCE to the box it is drawn in. Under the project's NEAREST filter, 256px art drawn at 72px keeps
+## ~1 source pixel in 3.5, unevenly. Painted files and sheet busts alike have no pixel grid to keep (measured: 88 files,
+## 33 boss busts); a face already at or under the box size passes through untouched.
+static var _fitted_portraits: Dictionary = {}
+
+static func fitted_portrait(tex: Texture2D, box: Vector2) -> Texture2D:
+	if tex == null or tex.get_width() <= 0 or tex.get_height() <= 0:
+		return tex
+	var s: float = minf(box.x / tex.get_width(), box.y / tex.get_height())
+	if s >= 1.0:
+		return tex
+	var key := _fit_key(tex, box)
+	if key != "" and _fitted_portraits.has(key):
+		return _fitted_portraits[key]
+	var got: Image = tex.get_image()
+	if got == null or got.is_empty():
+		return tex
+	# A copy: the headless renderer hands back the texture's OWN image, and resizing that shrinks the source art too.
+	var img: Image = got.duplicate()
+	if img.is_compressed():
+		img.decompress()
+	img.convert(Image.FORMAT_RGBA8)
+	img.resize(maxi(1, roundi(img.get_width() * s)), maxi(1, roundi(img.get_height() * s)), Image.INTERPOLATE_LANCZOS)
+	var fitted := ImageTexture.create_from_image(img)
+	# Provenance: a fitted face has no resource_path, so it carries its source art's here.
+	fitted.resource_name = _fit_source(tex)
+	if key != "":
+		_fitted_portraits[key] = fitted
+	return fitted
+
+
+## Which art this is, so a bust cut afresh for every battle is one entry, not one per battle; "" leaves it uncached.
+static func _fit_key(tex: Texture2D, box: Vector2) -> String:
+	var src := _fit_source(tex)
+	return "" if src == "" else "%s@%dx%d" % [src, int(box.x), int(box.y)]
+
+
+## The art a texture shows: its file, or for a sheet bust its sheet and region; "" when it has neither.
+static func _fit_source(tex: Texture2D) -> String:
+	if tex is AtlasTexture:
+		var a := tex as AtlasTexture
+		return "" if a.atlas == null or a.atlas.resource_path == "" else "%s%s" % [a.atlas.resource_path, a.region]
+	return tex.resource_path
+
+
 ## The ONE place that knows a portrait's world rule — an avatar surface that builds the path
 ## itself serves medieval art in every world, which is how the menu shipped wrong
 static func portrait_path(job_id: String, world: int = -1) -> String:

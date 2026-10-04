@@ -444,8 +444,8 @@ func _make_card(cr: Dictionary) -> PanelContainer:
 	var tex_path: String = HybridSpriteLoader.portrait_path(job_key)
 	if tex_path != "" and ResourceLoader.exists(tex_path):
 		var chip := TextureRect.new()
-		chip.texture = load(tex_path)
 		chip.custom_minimum_size = Vector2(40, 40)
+		chip.texture = HybridSpriteLoader.fitted_portrait(load(tex_path), chip.custom_minimum_size)
 		chip.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		chip.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		chip.mouse_filter = Control.MOUSE_FILTER_IGNORE
