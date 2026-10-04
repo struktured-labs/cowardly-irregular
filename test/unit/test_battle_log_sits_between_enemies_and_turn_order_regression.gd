@@ -202,3 +202,22 @@ func test_MUTATION_old_bottom_center_log_position_reds_the_between_panels_check(
 	var would_pass: bool = old_anchor_top == 0.0 and old_offset_top >= enemy_bottom
 	assert_false(would_pass,
 		"the old bottom-center ticker geometry must NOT satisfy the new left-column position check")
+
+
+## .558 gate red: a tall roster grew the enemy panel to y=515, under the turn-order card's new y=490 top.
+func test_a_tall_enemy_panel_pushes_the_turn_order_card_down() -> void:
+	_scene = _spawn_battle()
+	await get_tree().process_frame
+	_scene._update_turn_info()
+	await get_tree().process_frame
+	var enemy_panel := _scene.get_node_or_null("UI/EnemyStatusPanel") as Control
+	var ctb := _scene.get_node_or_null("UI/CTBTimeline") as Control
+	assert_not_null(ctb, "CONTROL: the turn-order card exists")
+	enemy_panel.custom_minimum_size.y = 455.0
+	await get_tree().process_frame
+	_scene._reposition_battle_log_panel_now()
+	await get_tree().process_frame
+	var e := enemy_panel.get_global_rect()
+	var c := ctb.get_global_rect()
+	assert_gt(e.end.y, 490.0, "SCOPE: the enemy panel really reaches past the card's default top")
+	assert_false(e.intersects(c), "the turn-order card must start below a tall enemy panel (%s vs %s)" % [e, c])

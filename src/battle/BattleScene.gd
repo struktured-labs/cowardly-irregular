@@ -1871,6 +1871,10 @@ func _reposition_battle_log_panel_now() -> void:
 	var enemy_bottom: float = enemy_panel.position.y + enemy_panel.size.y
 	if enemy_bottom <= 0.0:
 		return  # layout not settled yet
+	## A tall roster grows the enemy panel past the turn-order card's default top: push the card down, never under it.
+	var ctb: Control = _ui_manager._ctb_panel if _ui_manager and "_ctb_panel" in _ui_manager else null
+	if ctb and is_instance_valid(ctb):
+		ctb.offset_top = maxf(-230.0, enemy_bottom + LOG_PANEL_GAP - get_viewport_rect().size.y)
 	var top: float = enemy_bottom + LOG_PANEL_GAP
 	var ctb_top_at_current_height: float = get_viewport_rect().size.y - 230.0
 	var hard_bottom_cap: float = ctb_top_at_current_height - LOG_PANEL_GAP
