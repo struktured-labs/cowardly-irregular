@@ -238,6 +238,7 @@ func test_a_repeated_bomb_still_finds_a_living_enemy() -> void:
 	gone.is_alive = false
 	var slime := _make("Slime", 40, 200)
 	_stage([ada], [gone, slime])
+	ada.inventory["bomb_fragment"] = 1  # repeat now refuses an item the bag lacks, so hold the one being repeated
 	_remember(ada, {"type": "item", "item_id": "bomb_fragment", "targets": [gone], "speed": 1.0})
 	_bm._queue_repeated_action(ada)
 	var targets: Array = _queued_targets()
@@ -254,6 +255,7 @@ func test_a_repeated_phoenix_down_keeps_the_corpse() -> void:
 	bo.is_alive = false
 	var slime := _make("Slime", 40, 200)
 	_stage([ada, bo], [slime])
+	ada.inventory["phoenix_down"] = 1  # repeat now refuses an item the bag lacks, so hold the one being repeated
 	_remember(ada, {"type": "item", "item_id": "phoenix_down", "targets": [bo], "speed": 1.0})
 	_bm._queue_repeated_action(ada)
 	var targets: Array = _queued_targets()

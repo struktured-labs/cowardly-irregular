@@ -70,3 +70,22 @@ func test_a_repeat_nothing_covers_becomes_the_attack_repeat_already_falls_back_t
 	var queued := _repeat(_c("Mage", 0), [_fire_advance(2)])
 	assert_eq(str(queued.get("type", "")), "attack",
 		"with no MP for any Fire, repeat queues the basic attack it uses when nothing was saved")
+
+
+
+func test_a_single_repeated_cast_the_mp_cannot_cover_swings_instead() -> void:
+	var queued := _repeat(_c("Mage", 3), [{"type": "ability", "ability_id": "fire", "targets": []}])
+	assert_eq(str(queued.get("type", "")), "attack",
+		"a repeated single Fire on 3 MP must swing, not fail at execution and waste the turn")
+
+
+func test_a_single_repeated_cast_the_mp_covers_is_unchanged() -> void:
+	var queued := _repeat(_c("Mage", 99), [{"type": "ability", "ability_id": "fire", "targets": []}])
+	assert_eq(str(queued.get("ability_id", "")), "fire", "CONTROL: an affordable repeat is left alone")
+
+
+func test_a_repeated_potion_the_bag_no_longer_holds_swings_instead() -> void:
+	var m := _c("Mage", 99)
+	m.inventory = {}
+	var queued := _repeat(m, [{"type": "item", "item_id": "potion", "targets": []}])
+	assert_eq(str(queued.get("type", "")), "attack", "no potion left, so repeat swings rather than queue an empty bag")

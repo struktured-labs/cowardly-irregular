@@ -3672,6 +3672,16 @@ func _queue_repeated_action(combatant: Combatant) -> void:
 				var ruled: Dictionary = _apply_full_bank_rule(combatant, kept)
 				action["actions"] = ruled["actions"]
 				action["full_bank"] = ruled["full_bank"]
+		elif str(action.get("type", "")) in ["ability", "item"]:
+			## A single repeated cast or item gets the same rule: unaffordable now, it swings instead of
+			## failing at execution with "can't use that right now" and spending the turn on nothing.
+			var one: Array[Dictionary] = [action]
+			if _affordable_advance(combatant, one).is_empty():
+				var foes = _get_alive_enemies()
+				action = {"combatant": combatant, "type": "attack",
+					"target": foes[0] if foes.size() > 0 else null,
+					"speed": _compute_action_speed(combatant, "attack")}
+				print("[REPEAT] %s: the saved %s is not affordable now, using attack" % [combatant.combatant_name, str(saved_action.get("type", ""))])
 
 		# Validity check MUST happen before `is Combatant` — a freed
 		# reference makes `is` error with 'Left operand of is is a
