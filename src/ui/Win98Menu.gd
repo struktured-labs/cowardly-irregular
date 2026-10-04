@@ -1804,7 +1804,7 @@ static func _keyboard_hint_text() -> String:
 	var auto: String = InputProfileManager.hint_for_action("battle_toggle_auto")
 	if defer == "" or adv == "" or auto == "":
 		return HINT_KEYBOARD_TEXT
-	return "[%s] Defer  ·  [%s] Advance  ·  [`] Speed  ·  [%s] Auto" % [defer, adv, auto]
+	return "[%s] Defer  ·  [%s] Advance  ·  [`] Speed  ·  [%s] Auto  ·  [L] Log" % [defer, adv, auto]
 
 
 static func hint_text() -> String:

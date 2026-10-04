@@ -271,16 +271,15 @@ func test_battle_ui_manager_ctb_panel_bottom_left_anchor() -> void:
 
 	assert_true(text.find("PRESET_BOTTOM_LEFT") != -1,
 		"BattleUIManager must anchor CTB panel via PRESET_BOTTOM_LEFT (moved 2026-06-17)")
-	# Updated 2026-05-02: CTB shrunk from offset_top=-240 (height 230)
-	# to offset_top=-180 (height 170) AFTER the user reported that the
-	# turn-order panel still clipped over the last party member when
-	# party content overflowed the 420-tall PartyStatusPanel. Shrinking
-	# the CTB widens the buffer between PartyStatusPanel.bottom (y=460
-	# at 720p) and CTBTimeline.top (y=540 at 720p) from 20px → 80px.
+	# Updated 2026-10-03 (room-to-breathe HUD pass): CTB grew from offset_top=-180
+	# (height 170) to offset_top=-230 (height 220) to fit the richer per-entry
+	# cards (portrait, queued-action icon, AP pips, HP bar). PartyStatusPanel
+	# still ends at y=460 at 720p, so the buffer to CTBTimeline.top (y=490 at
+	# 720p) shrinks from 80px to 30px but stays positive — still no overlap.
 	# Still must NOT extend above the party panel, so offset_top must
 	# be > -260 (less negative than that = panel starts at y > 460).
-	assert_true(text.find("_ctb_panel.offset_top = -180") != -1,
-		"BattleUIManager CTB offset_top should be -180 (post-2026-05-02 shrink for party-overlap fix)")
+	assert_true(text.find("_ctb_panel.offset_top = -230") != -1,
+		"BattleUIManager CTB offset_top should be -230 (post-2026-10-03 room-to-breathe widening)")
 
 
 # ===========================================================================
