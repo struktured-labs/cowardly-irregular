@@ -93,7 +93,12 @@ func refresh_footer() -> void:
 
 
 func _footer_text() -> String:
-	return "%s     Keyboard: Z Confirm · X Back · Enter Remap     Mouse: LMB Click · RMB Back" % _gamepad_column()
+	## Keys derived from the live InputMap: this line said "Z Confirm · X Back" after .555 swapped them to X/Z.
+	return "%s     Keyboard: %s Confirm · %s Back · Enter Remap     Mouse: LMB Click · RMB Back" % [
+		_gamepad_column(),
+		InputProfileManager.first_key_label("ui_accept", "X"),
+		InputProfileManager.first_key_label("ui_cancel", "Z"),
+	]
 
 
 ## Brevity when the family is knowable, completeness when it is not — and NEVER a guess: with no
@@ -282,9 +287,13 @@ func _build_ui() -> void:
 	_footer_label = footer
 	footer.text = _footer_text()
 	footer.position = Vector2(16, _panel.size.y - 32)
+	footer.clip_text = true
+	footer.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	footer.add_theme_font_size_override("font_size", 10)
 	footer.add_theme_color_override("font_color", DISABLED_COLOR)
 	_panel.add_child(footer)
+	## Sized AFTER add_child (a detached Label clamps to its 16px-font minimum) and clipped: the line ran 14px past the panel.
+	footer.size = Vector2(_panel.size.x - 32, footer.size.y)
 
 	# Right-click to cancel
 	MenuMouseHelper.add_right_click_cancel(bg, _close_menu)
