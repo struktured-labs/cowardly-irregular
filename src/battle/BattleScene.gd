@@ -1047,9 +1047,11 @@ func _create_battle_sprites() -> void:
 		var armor_id = member.equipped_armor if member.equipped_armor else ""
 		var accessory_id = member.equipped_accessory if member.equipped_accessory else ""
 		var custom = member.get("customization") if "customization" in member else null
-		BattleJuice.ensure_flash_material(sprite)
+		var flash_mat: ShaderMaterial = BattleJuice.ensure_flash_material(sprite)
 		sprite.sprite_frames = HybridSpriteLoaderClass.load_sprite_frames(
 			custom, job_id, sec_job_id, weapon_id, armor_id, accessory_id)
+		# The secondary shows on an artist sheet as a runtime lean of his named accent entries; his PNGs are never touched
+		HybridSpriteLoaderClass.apply_secondary_accent(flash_mat, job_id, sec_job_id, JOB_QUIP_COLORS.get(sec_job_id, Color(0.8, 0.8, 0.8)))
 		# Per-job display height targets (in pixels) for battle sprites.
 		# PARTY_SPRITE_HEIGHT is the strict-5 base (210px, lowered from 280
 		# per BDFFHD layout design). No further density scaling — the base
