@@ -1381,7 +1381,7 @@ func _setup_npcs() -> void:
 				"Gethena: My script drinks a potion at 40% HP. Optimized.",
 			])
 			_create_npc("Pip", "child", Vector2(10, 8), [
-				"Pip: Mister, do you have a coin? I want a phoenix down.",
+				"Pip: Mister, do you have a coin? I want a Resurgo Plume.",
 				"Pip: My older brother says they bring people back from dead!",
 				"Pip: I want to bring back my hamster.",
 				"Pip: *stares at floor* His name was Mr. Biscuit.",

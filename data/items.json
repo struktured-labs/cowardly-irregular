@@ -114,7 +114,7 @@
   },
   "phoenix_down": {
     "id": "phoenix_down",
-    "name": "Phoenix Down",
+    "name": "Resurgo Plume",
     "category": 2,
     "target_type": 0,
     "description": "Revives a fallen ally with 25% HP",

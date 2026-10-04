@@ -177,7 +177,7 @@ func _create_default_items() -> void:
 		},
 		"phoenix_down": {
 			"id": "phoenix_down",
-			"name": "Phoenix Down",
+			"name": "Resurgo Plume",
 			"category": ItemCategory.CURATIVE,
 			"target_type": TargetType.SINGLE_ALLY,
 			"description": "Revives a fallen ally with 25% HP",

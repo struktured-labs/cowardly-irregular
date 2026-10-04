@@ -34,7 +34,7 @@ func after_each() -> void:
 ## BEHAVIOUR, not a source pin: the formatter must resolve, and an id whose raw form differs
 ## visibly from its display name is the only kind that can prove it.
 func test_the_formatter_resolves_display_names() -> void:
-	assert_eq(AutogrindSystem.format_items_consumed({"phoenix_down": 2}), "Phoenix Down x2",
+	assert_eq(AutogrindSystem.format_items_consumed({"phoenix_down": 2}), "%s x2" % str(ItemSystem.get_item("phoenix_down").get("name", "")),
 		"the shared formatter must resolve ids to display names — a raw id here is the defect this file exists for")
 	assert_eq(AutogrindSystem.format_items_consumed({}), "None",
 		"empty must read 'None', which is what every surface showed before and after")
