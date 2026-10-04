@@ -92,6 +92,18 @@ func refresh_footer() -> void:
 		_footer_label.text = _footer_text()
 
 
+## A column label must end inside its column: "R / RB / R1 (Right Shoulder)" ran into the Keyboard column. Sized after add_child
+## (a detached Label measures at the default font), the font steps down to 10px to fit, and an ellipsis is the last resort.
+func _fit_column_label(l: Label, width: float) -> void:
+	var fs: int = l.get_theme_font_size("font_size")
+	while fs > 10 and l.get_theme_font("font").get_string_size(l.text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x > width:
+		fs -= 1
+		l.add_theme_font_size_override("font_size", fs)
+	l.clip_text = true
+	l.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	l.size = Vector2(width, l.size.y)
+
+
 func _footer_text() -> String:
 	## Keys derived from the live InputMap: this line said "Z Confirm · X Back" after .555 swapped them to X/Z.
 	return "%s     Keyboard: %s Confirm · %s Back · Enter Remap     Mouse: LMB Click · RMB Back" % [
@@ -367,6 +379,7 @@ func _add_row(index: int, y: float, label_text: String, value_text: String, is_p
 		value.add_theme_color_override("font_color", OPTION_SELECTED)
 		value.name = "ValueLabel"
 		highlight.add_child(value)
+		_fit_column_label(value, 160.0)
 		highlight.set_meta("value_label", value)
 
 		# Profile, Nintendo Mode and How to Play sit above the actions, so the offset is ROW_ACTION_FIRST.
@@ -382,6 +395,7 @@ func _add_row(index: int, y: float, label_text: String, value_text: String, is_p
 			# Slightly muted color since it's not remappable here
 			kb_label.add_theme_color_override("font_color", Color(0.85, 0.85, 0.95))
 			highlight.add_child(kb_label)
+			_fit_column_label(kb_label, 110.0)
 
 			var mouse_label_text := InputProfileManager.get_action_mouse_label(action_id)
 			var mouse_label = Label.new()
@@ -391,6 +405,7 @@ func _add_row(index: int, y: float, label_text: String, value_text: String, is_p
 			mouse_label.add_theme_font_size_override("font_size", 13)
 			mouse_label.add_theme_color_override("font_color", Color(0.85, 0.85, 0.95))
 			highlight.add_child(mouse_label)
+			_fit_column_label(mouse_label, 120.0)
 
 	# Mouse support
 	MenuMouseHelper.make_clickable(highlight, index, _panel.size.x - 16, ROW_HEIGHT,
