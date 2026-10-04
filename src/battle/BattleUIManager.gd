@@ -282,6 +282,7 @@ func _create_character_status_box(idx: int, member: Combatant) -> VBoxContainer:
 	hp_bar.max_value = member.max_hp
 	hp_bar.value = member.current_hp
 	hp_bar.show_percentage = false
+	_style_party_bar(hp_bar, Color(0.16, 0.52, 0.24))
 	box.add_child(hp_bar)
 
 	# HP label inside bar
@@ -289,9 +290,9 @@ func _create_character_status_box(idx: int, member: Combatant) -> VBoxContainer:
 	hp_label.name = "HPLabel"
 	hp_label.text = "HP: %d/%d" % [member.current_hp, member.max_hp]
 	hp_label.add_theme_font_size_override("font_size", TextScale.scaled(15))
+	_outline_bar_label(hp_label)
 	hp_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hp_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	hp_label.set_anchors_preset(Control.PRESET_FULL_RECT)
 	hp_bar.add_child(hp_label)
 
 	# MP bar
@@ -301,6 +302,7 @@ func _create_character_status_box(idx: int, member: Combatant) -> VBoxContainer:
 	mp_bar.max_value = member.max_mp
 	mp_bar.value = member.current_mp
 	mp_bar.show_percentage = false
+	_style_party_bar(mp_bar, Color(0.18, 0.34, 0.68))
 	box.add_child(mp_bar)
 
 	# MP label inside bar
@@ -308,9 +310,9 @@ func _create_character_status_box(idx: int, member: Combatant) -> VBoxContainer:
 	mp_label.name = "MPLabel"
 	mp_label.text = "MP: %d/%d" % [member.current_mp, member.max_mp]
 	mp_label.add_theme_font_size_override("font_size", TextScale.scaled(13))
+	_outline_bar_label(mp_label)
 	mp_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	mp_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	mp_label.set_anchors_preset(Control.PRESET_FULL_RECT)
 	mp_bar.add_child(mp_label)
 
 	# AP/Status label
@@ -1232,3 +1234,27 @@ func log_message(message: String) -> void:
 
 	if _scene.battle_log:
 		_scene.battle_log.append_text(message + "\n")
+
+
+## A party bar that reads as a bar: a dark track and a coloured fill (the default theme drew both grey,
+## so a full bar looked empty), clipped so its number can never spill onto the next bar.
+func _style_party_bar(bar: ProgressBar, fill_color: Color) -> void:
+	var bg := StyleBoxFlat.new()
+	bg.bg_color = Color(0.06, 0.06, 0.1, 0.85)
+	bg.set_corner_radius_all(3)
+	var fill := StyleBoxFlat.new()
+	fill.bg_color = fill_color
+	fill.set_corner_radius_all(3)
+	bar.add_theme_stylebox_override("background", bg)
+	bar.add_theme_stylebox_override("fill", fill)
+	bar.clip_contents = true
+
+
+func _outline_bar_label(label: Label) -> void:
+	label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.95))
+	label.add_theme_constant_override("outline_size", 4)
+	## Centred on the bar, growing both ways. Anchored full-rect, the fallback chain's ~2x line box
+	## grew DOWN from the bar's top, so the HP number sat on the seam with the MP bar and the MP number
+	## below its own; the digits themselves fit the ruled 16/12 bars (15/13 px, the readability ruling).
+	label.set_anchors_and_offsets_preset(Control.PRESET_HCENTER_WIDE)
+	label.grow_vertical = Control.GROW_DIRECTION_BOTH
