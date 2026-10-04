@@ -362,8 +362,8 @@ func _create_ability_row(ability: Dictionary, index: int) -> Control:
 	name_label.add_theme_color_override("font_color", _get_ability_color(data))
 	row.add_child(name_label)
 
-	# MP cost
-	var mp_cost = data.get("mp_cost", 0)
+	# MP cost: what the engine will CHARGE this character, passives included
+	var mp_cost = _charged_mp(ability, data)
 	if mp_cost > 0:
 		var mp_label = Label.new()
 		mp_label.text = "%d MP" % mp_cost
@@ -451,7 +451,7 @@ func _create_ability_details_panel(panel_size: Vector2) -> Control:
 
 	# MP Cost
 	var mp_label = Label.new()
-	mp_label.text = "MP Cost: %d" % data.get("mp_cost", 0)
+	mp_label.text = "MP Cost: %d" % _charged_mp(ability, data)
 	mp_label.position = Vector2(12, 64)
 	mp_label.add_theme_font_size_override("font_size", 10)
 	mp_label.add_theme_color_override("font_color", DISABLED_COLOR)
@@ -848,3 +848,11 @@ func _close_menu() -> void:
 	SoundManager.play_ui("menu_close")
 	closed.emit()
 	queue_free()
+
+
+## The price JobSystem.get_ability_mp_cost will charge (an mp_efficiency passive at 0.75x, magic_amplifier
+## at 2.5x): the battle menu was routed through it in tick 374 and this screen still read the authored cost.
+func _charged_mp(ability: Dictionary, data: Dictionary) -> int:
+	if character != null and is_instance_valid(character) and JobSystem:
+		return int(JobSystem.get_ability_mp_cost(character, str(ability.get("id", ""))))
+	return int(data.get("mp_cost", 0))
