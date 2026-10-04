@@ -78,6 +78,8 @@ func _ready() -> void:
 ## retry post-victory, long enough not to spam can_quick_save() every
 ## frame.
 const AUTO_SAVE_RETRY_BACKOFF: float = 30.0
+## The last party-state refusal already warned about; cleared when a save gets past the party check.
+var _last_party_refusal: String = ""
 
 
 func _process(delta: float) -> void:
@@ -157,8 +159,12 @@ func save_game(slot: int = -1) -> bool:
 		party_reason = "Cannot save with the whole party down"
 	if party_reason != "":
 		_restore_party_snapshot(party_before_sync)
-		push_warning("[SAVE] save_game refused: %s" % party_reason)
+		## Once per streak: a game-over screen left idle retried every 30 s and logged this 292 times in one session.
+		if party_reason != _last_party_refusal:
+			push_warning("[SAVE] save_game refused: %s" % party_reason)
+		_last_party_refusal = party_reason
 		return false
+	_last_party_refusal = ""
 
 	save_started.emit()
 
