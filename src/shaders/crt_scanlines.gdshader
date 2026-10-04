@@ -10,10 +10,14 @@ uniform float line_spacing : hint_range(1.0, 8.0) = 3.0;
 // Opacity of each dark line (0.0 = invisible, 1.0 = opaque black).
 uniform float line_intensity : hint_range(0.0, 1.0) = 0.18;
 
+// The game's design height. Under canvas_items stretch FRAGCOORD counts WINDOW pixels, so rows are
+// converted back to game pixels; otherwise a 1440p window draws the lines half as thick.
+uniform float canvas_height = 720.0;
+
 void fragment() {
 	// SCREEN_PIXEL_SIZE.y would sample viewport size; use FRAGCOORD.y for
 	// pixel-accurate vertical banding regardless of scaling.
-	float row = floor(FRAGCOORD.y);
+	float row = floor(FRAGCOORD.y * SCREEN_PIXEL_SIZE.y * canvas_height);
 	// mod() is stable here because line_spacing is >= 1.0 by hint_range.
 	float darken = (mod(row, line_spacing) < 1.0) ? line_intensity : 0.0;
 	COLOR = vec4(0.0, 0.0, 0.0, darken);

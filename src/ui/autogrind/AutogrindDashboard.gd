@@ -345,6 +345,7 @@ func _build_mini_battle_panel(panel_size: Vector2, pos: Vector2) -> void:
 	scan_overlay.color = Color(1, 1, 1, 1)  # shader overrides via COLOR
 	var scan_mat := ShaderMaterial.new()
 	scan_mat.shader = preload("res://src/shaders/crt_scanlines.gdshader")
+	scan_mat.set_shader_parameter("canvas_height", float(ProjectSettings.get_setting("display/window/size/viewport_height", 720)))
 	scan_overlay.material = scan_mat
 	panel.add_child(scan_overlay)
 
