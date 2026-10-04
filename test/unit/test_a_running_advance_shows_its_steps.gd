@@ -73,24 +73,26 @@ func test_an_advance_shows_its_steps_with_the_first_lit() -> void:
 
 
 func test_a_step_names_who_it_actually_hit_including_a_retarget() -> void:
-	_scene._track_advance_run_begin(_hero, _advance())
+	var adv := _advance()
+	_scene._track_advance_run_begin(_hero, adv)
 	var run := _run()
 	if run == null:
 		fail_test("no run cards")
 		return
-	_scene._track_advance_run_step(_hero, {"type": "attack", "target": _a}, [_a])
-	_scene._track_advance_run_step(_hero, {"type": "ability", "ability_id": "fire"}, [_b])
+	_scene._track_advance_run_step(_hero, adv["actions"][0], [_a])
+	_scene._track_advance_run_step(_hero, adv["actions"][1], [_b])
 	assert_string_contains(run.card_text(0), "Goblin A", "step 1 hit who it planned")
 	assert_string_contains(run.card_text(1), "Goblin B (retarget)", "step 2 planned Goblin A and hit Goblin B, so the card says so")
 
 
 func test_a_run_cut_short_marks_what_never_fired_held() -> void:
-	_scene._track_advance_run_begin(_hero, _advance())
+	var adv := _advance()
+	_scene._track_advance_run_begin(_hero, adv)
 	var run := _run()
 	if run == null:
 		fail_test("no run cards")
 		return
-	_scene._track_advance_run_step(_hero, {"type": "attack", "target": _a}, [_a])
+	_scene._track_advance_run_step(_hero, adv["actions"][0], [_a])
 	var texts_before_end: Array = [run.card_text(1), run.card_text(2)]
 	_scene._track_advance_run_begin(_a, {"type": "attack", "target": _hero})  # the next actor starts
 	assert_false(run.is_running(), "another actor starting ends the run")
@@ -127,3 +129,21 @@ func test_the_battle_signals_feed_the_run() -> void:
 		assert_gt(at, -1, "%s must exist" % pair[0])
 		var body := src.substr(at, src.find("\nfunc ", at + 1) - at)
 		assert_true(body.contains(pair[1]), "%s must call %s" % [pair[0], pair[1]])
+
+
+func test_a_held_step_is_marked_held_and_the_next_step_lands_on_its_own_card() -> void:
+	## .557: a heal/Raise nobody needs is HELD at execution and emits no action_executed. Counting events
+	## would have pinned step 3's target on step 2's card and called step 3 "held".
+	var adv := _advance()
+	var cards := AdvanceQueueCards.new()
+	add_child_autofree(cards)
+	cards.run_begin(adv["actions"], Rect2(Vector2(900, 200), Vector2(80, 120)), true)
+	var c1: Control = cards._cards[1]
+	var c2: Control = cards._cards[2]
+	cards.run_step([_a], true, adv["actions"][0])
+	cards.run_step([_b], true, adv["actions"][2])  # step 2 (index 1) was held: no event
+	var t1: String = (c1.find_child("Text", true, false) as Label).text
+	var t2: String = (c2.find_child("Text", true, false) as Label).text
+	assert_string_contains(t1, "held", "the skipped step must read held: '%s'" % t1)
+	assert_string_contains(t2, "Goblin B", "step 3 names its own target: '%s'" % t2)
+	assert_false(t2.contains("held"), "and is not the one called held")

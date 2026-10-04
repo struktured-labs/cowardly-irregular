@@ -195,6 +195,9 @@ static func _style_label(l: Label, color: Color) -> void:
 
 var _run_index := -1
 var _run_planned: Array[String] = []
+## The action dicts the run was built from: BattleManager emits these SAME dicts per step, so a step is
+## matched by identity, not by count. A held step (a heal/Raise nobody needs) emits nothing.
+var _run_actions: Array = []
 
 
 ## A BattleManager action ({type, ability_id/item_id, target/targets}) as a card reads it.
@@ -239,6 +242,7 @@ static func names_of(targets: Array) -> String:
 func run_begin(actions: Array, beside: Rect2, animate: bool) -> void:
 	clear(false)
 	_run_planned.clear()
+	_run_actions = actions.duplicate()
 	var vp := get_viewport_rect().size
 	for i in actions.size():
 		var info := describe_action(actions[i])
@@ -256,10 +260,23 @@ func run_begin(actions: Array, beside: Rect2, animate: bool) -> void:
 	_light(0, animate)
 
 
-## Step `_run_index` resolved against `targets`: name who it actually hit, peel it, light the next.
-func run_step(targets: Array, animate: bool) -> void:
+## A step resolved against `targets`: name who it actually hit, peel it, light the next. `action` is the
+## emitted dict; steps passed over before it never fired (held at execution) and say so.
+func run_step(targets: Array, animate: bool, action = null) -> void:
 	if _run_index < 0 or _run_index >= _cards.size():
 		return
+	if action != null:
+		var at := -1
+		for j in range(_run_index, _run_actions.size()):
+			if is_same(_run_actions[j], action):
+				at = j
+				break
+		if at < 0:
+			return  # not one of this run's steps
+		while _run_index < at:
+			_mark_held(_run_index)
+			_peel(_cards[_run_index], animate)
+			_run_index += 1
 	var i := _run_index
 	var hit := names_of(targets)
 	var l: Label = _cards[i].find_child("Text", true, false)
@@ -278,10 +295,7 @@ func run_end(animate: bool) -> void:
 	if _run_index < 0:
 		return
 	for i in range(maxi(0, _run_index), _cards.size()):
-		var l: Label = _cards[i].find_child("Text", true, false)
-		if l:
-			l.text = l.text.split("  → ")[0] + "  — held"
-			l.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
+		_mark_held(i)
 	_run_index = -1
 	for c in _cards:
 		_peel(c, animate)
@@ -290,6 +304,15 @@ func run_end(animate: bool) -> void:
 
 
 ## A step is still to fire.
+func _mark_held(i: int) -> void:
+	if i < 0 or i >= _cards.size() or not is_instance_valid(_cards[i]):
+		return
+	var l: Label = _cards[i].find_child("Text", true, false)
+	if l:
+		l.text = l.text.split("  → ")[0] + "  — held"
+		l.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
+
+
 func is_running() -> bool:
 	return _run_index >= 0 and _run_index < _cards.size()
 

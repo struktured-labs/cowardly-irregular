@@ -3928,7 +3928,7 @@ func _track_advance_run_step(combatant: Combatant, action: Dictionary, targets: 
 		return
 	if _run_cards == null or not is_instance_valid(_run_cards) or not _run_cards.is_running():
 		return
-	_run_cards.run_step(targets, _queue_cards_animate())
+	_run_cards.run_step(targets, _queue_cards_animate(), action)
 	if not _run_cards.is_running():
 		_end_advance_run()
 
