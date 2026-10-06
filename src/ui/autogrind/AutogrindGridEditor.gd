@@ -1769,7 +1769,15 @@ func _open_rule_composer_overlay() -> void:
 		_rule_composer_overlay = null
 		## Cancelling performs no action, so nothing else would rebuild and the legend would stay
 		## stale for the rest of the session. The install path reloads on its own.
-		if _pad_change_pending:
+		if rules.is_empty():
+			# The empty-profile splash opened the composer before any grid existed; cancelling must leave one to edit.
+			rules.append(_create_default_rule())
+			cursor_row = 0
+			cursor_col = 0
+			_pad_change_pending = false
+			_build_ui()
+			_refresh_grid()
+		elif _pad_change_pending:
 			_pad_change_pending = false
 			_build_ui()
 	)
