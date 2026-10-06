@@ -55,6 +55,7 @@ const ENEMY_SCALE_BUMP: float = 2.5
 const NAME_LABEL_GAP: float = 6.0
 const NAME_LABEL_WIDTH: float = 200.0
 const NAME_LABEL_PX := 16  # on-screen size for every monster, whatever its sprite scale
+const ENEMY_HP_BAR_SIZE := Vector2(60, 5)  # on-screen, whatever the sprite scale
 const NAME_LABEL_Z := 5  # over every monster (0), under the damage popups (100+)
 const ENEMY_SMALL_FRAME_THRESHOLD: int = 128
 
@@ -1279,30 +1280,37 @@ func _add_enemy_click_target(sprite: AnimatedSprite2D, enemy_idx: int) -> void:
 
 func _create_enemy_hp_bar(enemy: Combatant, sprite: AnimatedSprite2D) -> void:
 	"""Create a small HP bar below the enemy sprite name label"""
+	# Like the name above it, the bar undoes the sprite's scale: it read ~100px under Mordaine and a sliver under Pyrroth.
+	var s := sprite.scale
+	var unscale := Vector2(1.0 / maxf(absf(s.x), 0.01), 1.0 / maxf(absf(s.y), 0.01))
+	var span := ENEMY_HP_BAR_SIZE * unscale
 	# Placed FROM the name, which sits on the figure: a fixed (-20, 52) floated on any body whose feet were elsewhere.
-	var at := Vector2(-20, 52)
+	var at := Vector2(-span.x * 0.5, 52)
 	var name_label := sprite.get_node_or_null("NameLabel") as Label
 	if name_label:
-		at = Vector2(name_label.position.x + name_label.size.x * name_label.scale.x * 0.5 - 20.0, name_label.position.y + name_label.get_minimum_size().y * name_label.scale.y + 2.0)
+		at = Vector2(name_label.position.x + name_label.size.x * name_label.scale.x * 0.5 - span.x * 0.5, name_label.position.y + name_label.get_minimum_size().y * name_label.scale.y + 2.0 * unscale.y)
 	var bar_bg = ColorRect.new()
 	bar_bg.color = Color(0.2, 0.1, 0.1, 0.7)
-	bar_bg.size = Vector2(40, 4)
+	bar_bg.size = ENEMY_HP_BAR_SIZE
 	bar_bg.position = at
+	bar_bg.scale = unscale
 	bar_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	sprite.add_child(bar_bg)
 
 	# Chip-damage trail: pale bar that lags the fill so the lost chunk stays visible for a beat
 	var bar_trail = ColorRect.new()
 	bar_trail.color = Color(1.0, 0.72, 0.5, 0.65)
-	bar_trail.size = Vector2(40, 4)
+	bar_trail.size = ENEMY_HP_BAR_SIZE
 	bar_trail.position = at
+	bar_trail.scale = unscale
 	bar_trail.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	sprite.add_child(bar_trail)
 
 	var bar_fill = ColorRect.new()
 	bar_fill.color = Color(0.8, 0.2, 0.2)  # Red for enemies
-	bar_fill.size = Vector2(40, 4)
+	bar_fill.size = ENEMY_HP_BAR_SIZE
 	bar_fill.position = at
+	bar_fill.scale = unscale
 	bar_fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	sprite.add_child(bar_fill)
 
@@ -1319,7 +1327,7 @@ func _update_enemy_hp_bars() -> void:
 		if not bar_fill or not is_instance_valid(bar_fill):
 			continue
 		var ratio = float(enemy.current_hp) / float(max(1, enemy.max_hp))
-		var target_w: float = 40.0 * ratio
+		var target_w: float = ENEMY_HP_BAR_SIZE.x * ratio
 		var bar_trail: ColorRect = bars.get("bar_trail")
 		if _tier() == BattleJuice.Tier.OFF or not BattleJuice.flag("chip_hp_bars") or absf(bar_fill.size.x - target_w) < 0.5:
 			bar_fill.size.x = target_w
