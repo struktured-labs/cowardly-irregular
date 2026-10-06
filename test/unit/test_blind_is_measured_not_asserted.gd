@@ -22,8 +22,7 @@ func _combatant(cname: String, spd: int = 10) -> Combatant:
 ## Swing N times and count the zeros. The target is healed each swing so it cannot die mid-sample
 ## and turn later swings into early returns — which would read as misses and inflate BOTH arms.
 func _miss_rate(blinded: bool) -> float:
-	var r = RESOLVER.new()
-	add_child_autofree(r)
+	var r = RESOLVER.new()  # RefCounted: freed with its last reference, never parented
 	var atk := _combatant("Swinger")
 	var tgt := _combatant("Bag")
 	if blinded:
@@ -68,8 +67,7 @@ func test_the_sample_can_distinguish_at_all() -> void:
 func test_the_status_is_what_moves_it_not_the_combatant() -> void:
 	## Same combatant, measured twice — blind added between. Rules out the two arms differing
 	## because the fixtures differ rather than because the status does anything.
-	var r = RESOLVER.new()
-	add_child_autofree(r)
+	var r = RESOLVER.new()  # RefCounted: freed with its last reference, never parented
 	var atk := _combatant("Twice")
 	var tgt := _combatant("Bag2")
 	var before: int = 0
