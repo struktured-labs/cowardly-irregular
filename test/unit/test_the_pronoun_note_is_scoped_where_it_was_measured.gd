@@ -81,6 +81,12 @@ const EXEMPT: Dictionary = {
 		"returns an option number (choose() guards it to the labels); the spoken line is authored text, never generated",
 }
 
+## Prose, but written before its battle and given no names to say.
+const NAMELESS: Dictionary = {
+	"build_pooled_party_line":
+		"takes no roster, enemy or event input; the prompt forbids naming anyone and VoicePool discards a line that does",
+}
+
 
 func _events_naming_her() -> Array:
 	return [{"type": "story", "summary": "%s sealed the castle gates." % HER}]
@@ -150,7 +156,7 @@ func test_every_declared_builder_is_classified() -> void:
 		"CONTROL: the source scan derived only %d builders — the derivation is broken" % declared.size())
 	var unclassified: Array[String] = []
 	for b in declared:
-		if CARRIES.has(b) or WITHHELD.has(b) or EXEMPT.has(b):
+		if CARRIES.has(b) or WITHHELD.has(b) or EXEMPT.has(b) or NAMELESS.has(b):
 			continue
 		unclassified.append(b)
 	assert_eq(unclassified, ([] as Array[String]),
@@ -165,7 +171,7 @@ func test_the_classification_has_not_gone_stale() -> void:
 	for b in CARRIES:
 		if not declared.has(b):
 			ghosts.append(b)
-	for d in [WITHHELD, EXEMPT]:
+	for d in [WITHHELD, EXEMPT, NAMELESS]:
 		for b in d:
 			if not declared.has(str(b)):
 				ghosts.append(str(b))
@@ -175,7 +181,7 @@ func test_the_classification_has_not_gone_stale() -> void:
 
 func test_every_withheld_and_exempt_builder_states_its_reason() -> void:
 	## You explain a classification here; you cannot flag one.
-	for d in [WITHHELD, EXEMPT]:
+	for d in [WITHHELD, EXEMPT, NAMELESS]:
 		for b in d:
 			assert_gt(str(d[b]).length(), 30,
 				"'%s' is classified with no usable reason" % str(b))

@@ -310,6 +310,11 @@ func complete(prompt: String, fallback: String, opts: Dictionary = {}) -> Varian
 	return guarded
 
 
+## True when nothing is in flight or queued: the voice pool's cue that the GPU is free.
+func is_idle() -> bool:
+	return _inflight_id == "" and _queue.is_empty()
+
+
 ## JSON-mode completion validated against `schema`.
 ## `schema` keys are required; primitive type and enum constraints are checked.
 ## Returns `fallback` on any failure.
