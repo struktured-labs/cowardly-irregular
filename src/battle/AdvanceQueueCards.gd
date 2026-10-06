@@ -62,7 +62,7 @@ func show_queue(entries: Array, anchor: Rect2, scene, animate: bool) -> void:
 	for e in entries:
 		keys.append(str(e.get("id", "")) + "|" + str(e.get("data", {})))
 	var keep := 0
-	while keep < mini(keys.size(), _keys.size()) and keys[keep] == _keys[keep]:
+	while keep < mini(keys.size(), _keys.size()) and keys[keep] == _keys[keep] and is_instance_valid(_cards[keep]):
 		keep += 1
 	while _cards.size() > keep:
 		_pop(_cards.pop_back(), animate)
@@ -74,7 +74,8 @@ func show_queue(entries: Array, anchor: Rect2, scene, animate: bool) -> void:
 		_keys.append(keys[i])
 		_place(card, i, anchor, animate)
 	for i in range(keep):
-		_cards[i].position = _slot(i, anchor)
+		if is_instance_valid(_cards[i]):
+			_cards[i].position = _slot(i, anchor)
 
 
 func clear(animate: bool = false) -> void:
@@ -86,7 +87,7 @@ func card_count() -> int:
 
 
 func card_text(i: int) -> String:
-	if i < 0 or i >= _cards.size():
+	if i < 0 or i >= _cards.size() or not is_instance_valid(_cards[i]):
 		return ""
 	var l: Label = _cards[i].find_child("Text", true, false)
 	return l.text if l else ""
@@ -120,19 +121,19 @@ func _place(card: Control, i: int, anchor: Rect2, animate: bool) -> void:
 	## Out of the menu's corner to its slot, so each Advance visibly LEAVES a card behind.
 	card.position = Vector2(rest.x, anchor.position.y if rest.y < anchor.position.y else anchor.end.y - CARD_H)
 	card.modulate.a = 0.0
-	var t := card.create_tween()
+	var t: Tween = card.create_tween()
 	t.set_parallel(true)
 	t.tween_property(card, "position", rest, 0.16).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	t.tween_property(card, "modulate:a", 1.0, 0.10)
 
 
-func _pop(card: Control, animate: bool) -> void:
+func _pop(card, animate: bool) -> void:  # untyped: a freed card must reach the validity check
 	if not is_instance_valid(card):
 		return
 	if not animate:
 		card.queue_free()
 		return
-	var t := card.create_tween()
+	var t: Tween = card.create_tween()
 	t.set_parallel(true)
 	t.tween_property(card, "position:y", card.position.y - 14.0, 0.12)
 	t.tween_property(card, "modulate:a", 0.0, 0.12)
@@ -279,7 +280,7 @@ func run_step(targets: Array, animate: bool, action = null) -> void:
 			_run_index += 1
 	var i := _run_index
 	var hit := names_of(targets)
-	var l: Label = _cards[i].find_child("Text", true, false)
+	var l: Label = _cards[i].find_child("Text", true, false) if is_instance_valid(_cards[i]) else null
 	if l and hit != "" and hit != _run_planned[i]:
 		l.text = l.text.split("  → ")[0] + "  → " + hit + " (retarget)"
 	elif l and hit != "":
@@ -318,7 +319,7 @@ func is_running() -> bool:
 
 
 func _light(i: int, animate: bool) -> void:
-	if i < 0 or i >= _cards.size():
+	if i < 0 or i >= _cards.size() or not is_instance_valid(_cards[i]):
 		return
 	var c := _cards[i]
 	c.modulate.a = 1.0
@@ -332,13 +333,13 @@ func _light(i: int, animate: bool) -> void:
 		c.create_tween().tween_property(c, "scale", Vector2.ONE, 0.12)
 
 
-func _peel(card: Control, animate: bool) -> void:
+func _peel(card, animate: bool) -> void:  # untyped: a freed card must reach the validity check
 	if not is_instance_valid(card):
 		return
 	if not animate:
 		card.queue_free()
 		return
-	var t := card.create_tween()
+	var t: Tween = card.create_tween()
 	t.tween_interval(0.25)
 	t.tween_property(card, "position:x", card.position.x - 40.0, 0.18)
 	t.parallel().tween_property(card, "modulate:a", 0.0, 0.18)
