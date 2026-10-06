@@ -127,10 +127,9 @@ const OUT_OF_SCOPE := {
 ##   condition · threshold                  desperate_bite, see DECLARED_ORPHANS
 ##   next_crit                              shadow_step's guaranteed crit IS wired, by status rather
 ##                                          than by this key (`BattleManager._calculate_crit_chance`) — decorative, not dead
-##   reflect_damage_element                 frost_armor, held for struktured
 ##   trigger                                counter, see DECLARED_ORPHANS
 const UNREAD_BY_THE_LIVE_ENGINE := ["bp_cost", "bp_gain", "condition", "damage_reduction",
-	"next_crit", "reflect_damage_element", "threshold", "trigger"]
+	"next_crit", "threshold", "trigger"]
 
 ## key -> ability ids whose own executor does not read it, and who holds the call.
 ## Every entry is a BALANCE decision, not an oversight to fix quietly.
@@ -152,7 +151,6 @@ const DECLARED_ORPHANS := {
 	"damage_reduction:default": "support; see bp_cost:brave",
 	"next_crit:shadow_step": "support; DECORATIVE, not dead — the guaranteed crit is wired through the shadow_step STATUS (`BattleManager._calculate_crit_chance` returns 1.0 for it), so the behaviour the description promises does happen and this key is simply not how. Wiring it would be a refactor with no player-visible change",
 	"evasion_bonus:shadow_step": "support; same shape — the 100%% dodge is wired through the status (`BattleManager._target_dodges_physical` — QUALIFIED: the grind has a twin of that name), not through this key",
-	"reflect_damage_element:frost_armor": "support; the retaliation itself is unwired and HELD for struktured (lane/frost-armor-bites-back). This key only names the element the retaliation would use, so it cannot be assessed before the retaliation is",
 	"secondary_modifier:subset_drain": "magic; travels with secondary_effect and is read in the same helper. Wiring one without the other is meaningless",
 	## ── surfaced 2026-09-17 when TYPE_EXECUTOR stopped naming six of the ten authored types ──
 	"penalty:warp_to_boss": "meta; the FIRST finding from a type that had never been routed. `penalty: no_dungeon_loot` has no reader, and the arm handling this ability says so in its own comment (BattleManager:6799 — enforcement 'lives in the warp implementation, a future tick'). The warp is itself a pending flag, so the penalty cannot be enforced before the thing it penalises exists. Declared, not held: there is no decision until the warp lands",

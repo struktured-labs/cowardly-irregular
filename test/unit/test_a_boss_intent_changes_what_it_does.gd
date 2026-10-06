@@ -11,9 +11,9 @@ const CAP := 1.5
 ## Pyrroth and Glacius read the tank ladder, Voltharion the assassin one. Umbraxis (caster) is armed by alias; the duels run elsewhere.
 const DRAGONS := ["pyrroth", "glacius", "voltharion"]
 ## An ability alone in its pool cannot be favoured by a within-pool tilt; only a gate change could, and that is struktured's call.
-const DESIGN_GAPS := {
-	"frost_turtle": "frost_armor is the only utility ability in Glacius's tank pool, entered at a fixed 40% — favouring it needs a gate change",
-}
+## frost_turtle was here ("needs a gate change"); struktured 2026-10-06 approved it and the tank gate now
+## scales with a utility bias, so the intent is armed. Kept as a named-gap slot for future authored intents.
+const DESIGN_GAPS := {}
 
 var _bm = null
 
@@ -172,3 +172,31 @@ func test_control_no_bias_keeps_the_ladders_own_odds() -> void:
 		tilted[str(_bm._pick_biased_by_power(pool, {"c": 1.5}).get("id"))] += 1
 	assert_almost_eq(float(tilted["c"]) / ROLLS, 0.375 / 1.125, 0.04,
 		"a 1.5x bias on the weakest must lift it from 1/4 to 1/3 of the picks, no more")
+
+
+
+## Frost Turtle names frost_armor, alone in Glacius's utility pool behind the tank's 40% gate. The gate now
+## scales with that bias, so the posture shows: more of his turns are Frost Armor.
+func _share_of_all(persona: String, intent: String, ability: String) -> float:
+	var boss := _boss(persona)
+	if intent != "":
+		boss.set_meta("llm_intent", intent)
+	var foes := _party()
+	var hits := 0
+	for _i in ROLLS:
+		boss.current_mp = boss.max_mp
+		boss.set_meta("_utility_spent", {})
+		if str(_bm._make_ai_decision(boss, [boss], foes).get("ability_id", "")) == ability:
+			hits += 1
+	return float(hits) / float(ROLLS)
+
+
+func test_frost_turtle_makes_glacius_reach_for_frost_armor() -> void:
+	var boss := _boss("glacius")
+	assert_true((boss.job["abilities"] as Array).has("frost_armor"), "CONTROL: Glacius must own frost_armor")
+	var without := _share_of_all("glacius", "", "frost_armor")
+	var with_intent := _share_of_all("glacius", "frost_turtle", "frost_armor")
+	assert_gt(without, 0.0, "CONTROL: Glacius casts Frost Armor at all without the intent")
+	assert_gt(with_intent, without + MIN_SHARE_GAIN,
+		"Frost Turtle must raise Frost Armor's share of Glacius's turns (%.3f vs %.3f without)" % [with_intent, without])
+	assert_lt(with_intent, without * 1.6, "and by no more than the 1.5x cap allows (%.3f vs %.3f)" % [with_intent, without])

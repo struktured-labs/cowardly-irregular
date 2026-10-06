@@ -331,7 +331,7 @@ const PER_BATTLE_METAS: Array[String] = [
 	"_mind_swap_controller", "_steal_response_consumed", "_swayed_stacks", "_utility_spent",
 	"_signature_fired", "_base_speed", "_boss_face_index", "_calibrant_recalibrated",
 	"_learned_adaptation", "_learns_element_counts", "_last_ability_against", "_bark_n",
-	"_in_shared_damage_redirect", "_shadow_step_unswung",
+	"_in_shared_damage_redirect", "_shadow_step_unswung", "_armor_thorns_element",
 	## ⚠️ TRAILING UNDERSCORE = PREFIX, and these two are why the clear cannot be exact-match only:
 	## the boss-bark trackers are COMPOSED (`"_bark_adv_" + face_key`), so removing the literal string
 	## would remove nothing. My own ratchet caught them on its first run, one minute after I wrote it —
@@ -2906,7 +2906,13 @@ func _ai_tank(combatant: Combatant, abilities: Array, alive_allies: Array, alive
 
 	var bias: Dictionary = _intent_ability_bias(combatant)
 	# Use defensive/buff ability if available (40% chance)
-	if defensive_abilities.size() > 0 and randf() < 0.4:
+	## An intent naming a utility ability also lifts this gate by its bias (capped 1.5x, so 60%): a lone
+	## frost_armor could not be favoured WITHIN its pool, and Glacius's Frost Turtle changed nothing
+	## (struktured 2026-10-06). No bias on the pool leaves exactly 0.4 and the same single draw.
+	var utility_gate: float = 0.4
+	for a in defensive_abilities:
+		utility_gate = maxf(utility_gate, 0.4 * minf(float(bias.get(str(a.get("id", "")), 1.0)), 1.5))
+	if defensive_abilities.size() > 0 and randf() < utility_gate:
 		var buff = _pick_uniform(defensive_abilities, bias)
 		## Lure, Infinite Loop, and Performance Review were aimed at the caster or a wounded ally.
 		var targets: Array = _utility_targets(combatant, buff, alive_allies, alive_enemies)
@@ -4608,6 +4614,41 @@ func _apply_vulnerability_window(participants: Array) -> void:
 	battle_log_message.emit("[color=%s]All participants are now exposed! (-2 AP, 1.5x damage taken)[/color]" % AccessibilityPalette.penalty_bbcode())
 
 
+## Armour that bites back. `frost_armor` (Glacius) authors `reflect_damage_element: "ice"` and its
+## description promises "raising defense AND damaging attackers" — only the defense half existed, so the
+## key was decoration on a W1 boss's signature move. Generic by element: any defensive ability that
+## declares one retaliates in it.
+const ARMOR_THORNS_PCT: float = 0.25
+
+
+func _apply_armor_thorns(target: Combatant, ability: Dictionary, duration: int) -> void:
+	var element: String = str(ability.get("reflect_damage_element", ""))
+	if element == "" or target == null or not is_instance_valid(target):
+		return
+	target.add_status("armor_thorns", duration)
+	## The element rides on the combatant, not on the status string, so one status serves every element.
+	target.set_meta("_armor_thorns_element", element)
+	battle_log_message.emit("[color=cyan]%s's armor will bite back![/color] (%s)" % [target.combatant_name, element.capitalize()])
+
+
+## A physical hit on thorned armour costs the attacker a fraction of what it dealt, in the armour's own
+## element — so an attacker resistant to it takes less, and one weak to it takes more.
+func _retaliate_armor_thorns(attacker: Combatant, defender: Combatant, damage_dealt_to_defender: int) -> void:
+	if attacker == null or not is_instance_valid(attacker) or not attacker.is_alive:
+		return
+	if defender == null or not is_instance_valid(defender) or not defender.has_status("armor_thorns"):
+		return
+	var element: String = str(defender.get_meta("_armor_thorns_element", ""))
+	if element == "":
+		return
+	var bite: int = maxi(1, int(damage_dealt_to_defender * ARMOR_THORNS_PCT))
+	var taken: int = attacker.take_elemental_damage(bite, element)
+	if taken <= 0:
+		return
+	damage_dealt.emit(attacker, taken, false, element, 1.0)
+	battle_log_message.emit("[color=%s]%s's frost bites %s for %d![/color]" % [AccessibilityPalette.penalty_bbcode(), defender.combatant_name, attacker.combatant_name, taken])
+
+
 func _get_party_elements(participants: Array) -> Array[String]:
 	"""Scan participants' magic abilities and return unique elements"""
 	var elements: Array[String] = []
@@ -5079,6 +5120,8 @@ func _execute_attack(attacker: Combatant, target: Combatant) -> void:
 	damage = _consume_cover_mitigation(damage)
 	var actual_damage = actual_target.take_damage(damage, false)
 	damage_dealt.emit(actual_target, actual_damage, is_crit, "", 1.0)
+	## Retaliation, not negation: the hit lands in full and then the armour bites back.
+	_retaliate_armor_thorns(attacker, actual_target, actual_damage)
 
 	# Track first damage for one-shot detection
 	if actual_target in enemy_party:
@@ -6716,6 +6759,7 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 				if target and is_instance_valid(target) and target.is_alive:
 					target.add_buff("Praesidium", "defense", stat_modifier, duration)
 					battle_log_message.emit("[color=cyan]%s gains Protect![/color] (DEF +%d%% for %d turns)" % [target.combatant_name, int((stat_modifier - 1.0) * 100), duration])
+					_apply_armor_thorns(target, ability, duration)
 		## Shell — the magic mirror of Protect. take_damage reads magic_defense for magical hits and defense for physical ones, so Protect gave no magic mitigation and nothing raised magic_defense at all: soul_wail could sap it, no ability restored it.
 		"magic_defense_up":
 			for target in targets:
