@@ -192,7 +192,7 @@ func test_every_built_enemy_label_sits_on_its_own_figure() -> void:
 		var body_centre: float = float(used.position.x) + float(used.size.x) * 0.5 - float(tex.get_width()) * 0.5
 		if spr.flip_h:
 			body_centre = -body_centre
-		assert_almost_eq(label.position.x + label.size.x * 0.5, body_centre, 1.0,
+		assert_almost_eq(label.position.x + label.size.x * label.scale.x * 0.5, body_centre, 1.0,
 			"%s: the label must centre on its own body" % spr.name)
 	pads.sort()
 	gut.p("built enemies measured: %d · air removed under each name: %s px" % [pads.size(), str(pads)])

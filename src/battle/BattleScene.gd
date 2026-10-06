@@ -54,6 +54,7 @@ const ENEMY_SCALE_BUMP: float = 2.5
 ## Air between a figure's feet and its name label, and the label's own box width (centred on the body).
 const NAME_LABEL_GAP: float = 6.0
 const NAME_LABEL_WIDTH: float = 200.0
+const NAME_LABEL_PX := 16  # on-screen size for every monster, whatever its sprite scale
 const NAME_LABEL_Z := 5  # over every monster (0), under the damage popups (100+)
 const ENEMY_SMALL_FRAME_THRESHOLD: int = 128
 
@@ -1282,7 +1283,7 @@ func _create_enemy_hp_bar(enemy: Combatant, sprite: AnimatedSprite2D) -> void:
 	var at := Vector2(-20, 52)
 	var name_label := sprite.get_node_or_null("NameLabel") as Label
 	if name_label:
-		at = Vector2(name_label.position.x + name_label.size.x * 0.5 - 20.0, name_label.position.y + name_label.get_minimum_size().y + 2.0)
+		at = Vector2(name_label.position.x + name_label.size.x * name_label.scale.x * 0.5 - 20.0, name_label.position.y + name_label.get_minimum_size().y * name_label.scale.y + 2.0)
 	var bar_bg = ColorRect.new()
 	bar_bg.color = Color(0.2, 0.1, 0.1, 0.7)
 	bar_bg.size = Vector2(40, 4)
@@ -1498,7 +1499,7 @@ func _add_sprite_label(sprite: AnimatedSprite2D, text: String, fallback_drop: fl
 			# flip_h mirrors the drawn frame but not its children, so the body centre mirrors with it.
 			if sprite.flip_h:
 				centre_x = -centre_x
-	label.add_theme_font_size_override("font_size", TextScale.scaled(10))
+	label.add_theme_font_size_override("font_size", TextScale.scaled(NAME_LABEL_PX))
 	# Tick 219: 1px outline + shadow — name labels sit below sprites on the Mode 7 floor and need edge protection vs grid lines (matches tick 218 contrast scheme, scaled down for 10pt).
 	label.add_theme_constant_override("outline_size", 1)
 	label.add_theme_color_override("font_outline_color", Color.BLACK)
@@ -1507,10 +1508,13 @@ func _add_sprite_label(sprite: AnimatedSprite2D, text: String, fallback_drop: fl
 	label.add_theme_constant_override("shadow_offset_y", 1)
 	# Over every monster (z 0), under the damage popups (100+): a later-drawn neighbour hid "GOBLIN A" down to "GOBLI".
 	label.z_index = NAME_LABEL_Z
+	# Undo the sprite's scale: a child label grew with it, so Mordaine's name read ~25px into the log panel and Pyrroth's ~7px.
+	var s := sprite.scale
+	label.scale = Vector2(1.0 / maxf(absf(s.x), 0.01), 1.0 / maxf(absf(s.y), 0.01))
 	sprite.add_child(label)
 	# Sized and placed AFTER the add so the width is the clamped real one — an auto-width label at a fixed x put its own centre at x + width/2, which drifted right as the name got longer (BAT -10px, PYRROTH +50px).
 	label.size = Vector2(NAME_LABEL_WIDTH, 0.0)
-	label.position = Vector2(centre_x - label.size.x * 0.5, drop)
+	label.position = Vector2(centre_x - label.size.x * label.scale.x * 0.5, drop)
 
 
 ## Status effect icon display system
