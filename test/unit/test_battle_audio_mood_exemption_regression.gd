@@ -55,7 +55,11 @@ func test_speed_indicator_never_fades() -> void:
 	assert_true("panel.modulate.a = 1.0" in body, "full opacity, always")
 
 
-func test_speed_indicator_bottom_left() -> void:
+## Was a COORDINATE pin ("size.y - 222", bottom-left). That spot rendered BEHIND the TURN ORDER box once
+## the CTB timeline moved (frame measured 2026-10-06), and the function was never even called, so the pin
+## was green over an indicator nobody could see. The relationship is now guarded behaviourally by
+## test_the_battle_speed_shows_on_screen_regression (no overlap at any speed); this only pins the anchor.
+func test_speed_indicator_hangs_under_the_auto_badge() -> void:
 	var body := _body_of(SCENE, "_create_speed_indicator")
-	assert_true("get_viewport_rect().size.y - 222" in body,
-		"indicator sits bottom-left above the turn-order box — top-left buried it under the ENEMIES panel")
+	assert_true("BattleUIManagerClass.AUTO_BADGE_BOTTOM" in body,
+		"the speed readout hangs under the AUTO badge, from the badge's own anchor constants")

@@ -415,6 +415,8 @@ func _ready() -> void:
 	# (User feedback 2026-05-20: "I dont know what button defers
 	# (besides the menu option)".)
 	_build_input_hint_bar()
+	# The speed readout: built nowhere since 32f42379f (2026-03-24) removed its only call, so speed showed only in the log.
+	_create_speed_indicator()
 	_build_weather_layer()
 
 	# Connect to BattleManager signals (CTB system)
@@ -641,11 +643,15 @@ func set_command_menu_visible(visible: bool) -> void:
 
 
 func _create_speed_indicator() -> void:
-	"""Create battle speed indicator — bottom-left above the turn-order box (struktured 2026-07-17: top-left buried it under the ENEMIES panel)"""
+	"""Create battle speed indicator — under the AUTO badge, top-right. Bottom-left (2026-07-17) now sits behind the TURN ORDER box (rendered frame, 2026-10-06)."""
 	# Background panel for readability
 	var panel = PanelContainer.new()
 	panel.name = "SpeedPanel"
-	panel.position = Vector2(8, get_viewport_rect().size.y - 222)
+	panel.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	panel.offset_left = BattleUIManagerClass.AUTO_BADGE_LEFT
+	panel.offset_right = BattleUIManagerClass.AUTO_BADGE_RIGHT
+	panel.offset_top = BattleUIManagerClass.AUTO_BADGE_BOTTOM + 4.0
+	panel.grow_horizontal = Control.GROW_DIRECTION_BEGIN  # wider labels (16x-64x) grow left, never into the PARTY panel
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var style = StyleBoxFlat.new()
 	style.bg_color = Color(0.0, 0.0, 0.0, 0.5)
@@ -809,7 +815,8 @@ func _animate_speed_change() -> void:
 	var panel = $UI.get_node_or_null("SpeedPanel")
 	if not panel:
 		return
-	# Scale pop: 1.0 -> 1.25 -> 1.0
+	# Scale pop: 1.0 -> 1.25 -> 1.0, around the TOP-RIGHT corner: the default top-left pivot swelled it into the PARTY panel.
+	panel.pivot_offset = Vector2(panel.size.x, 0.0)
 	var tween = create_tween()
 	tween.tween_property(panel, "scale", Vector2(1.25, 1.25), 0.08).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	tween.tween_property(panel, "scale", Vector2(1.0, 1.0), 0.12)
@@ -3344,6 +3351,9 @@ func _on_battle_ended(victory: bool) -> void:
 	var hint_bar := get_node_or_null("UI/InputHintBar") as CanvasItem
 	if hint_bar:
 		hint_bar.visible = false
+	var speed_panel := get_node_or_null("UI/SpeedPanel") as CanvasItem
+	if speed_panel:
+		speed_panel.visible = false
 
 	# Clear any pending autobattle cancel — if the user queued a "cancel
 	# next turn" via Select during execution but the battle ended before
