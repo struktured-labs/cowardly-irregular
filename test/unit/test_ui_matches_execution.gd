@@ -182,7 +182,7 @@ func test_no_shipped_damaging_ability_previews_wildly_wrong() -> void:
 		## take_damage calls; magic reads MAG and lands once. Assuming ATK for every physical ability was
 		## the preview defect this file missed, because the replica assumed it too.
 		var amount: int = int(caster.magic * mult) if t == "magic" else bm._physical_ability_amount(caster, a)
-		var hits: int = 1 if t == "magic" else maxi(1, int(a.get("hits", 1)))
+		var hits: int = maxi(1, int(a.get("hits", 1)))  # both executors read hits since 2026-10-06
 		var actual: int = _target(99999, 100).take_damage(amount, t == "magic") * hits
 		if abs(previewed - actual) > maxi(2, int(actual * 0.15)):
 			offenders.append("%s (%s %.1fx): previewed %d, executed %d" % [id, t, mult, previewed, actual])
