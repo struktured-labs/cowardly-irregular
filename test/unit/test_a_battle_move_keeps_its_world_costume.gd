@@ -1,15 +1,15 @@
 extends GutTest
 
 ## Sibling of test_a_victory_keeps_its_world_costume. Past world 1 a starter's idle and victory wear the world's
-## costume, but every swing and every spell snapped back to medieval armour mid-battle: the loader takes
+## costume, but every swing, spell, flinch and fall snapped back to medieval armour mid-battle: the loader takes
 ## <anim>_<suffix>.png only when it exists, and only idle and victory had them (cowir-main, 2026-10-05: "attack,
-## cast, hit and the rest revert mid-battle too"). attack and cast now have world sheets built from the artist's own
-## poses at his frame count, so the move plays at his speed. hit and dead are deliberately not here yet (reaction
-## poses need a pilot). Judged through the real loader in each world.
+## cast, hit and the rest revert mid-battle too"). attack, cast, hit and dead now have world sheets built from the
+## artist's own poses at his frame count, so each plays at his speed (hit/dead after a pilot showed reaction poses
+## transfer when SHOWN). Judged through the real loader in each world.
 
 const Loader := preload("res://src/battle/sprites/HybridSpriteLoader.gd")
 const STARTERS := ["fighter", "cleric", "mage", "rogue", "bard"]
-const MOVES := [&"attack", &"cast"]
+const MOVES := [&"attack", &"cast", &"hit", &"dead"]
 
 var _pre_world: int = -1
 var _saved_world: int = -1
@@ -59,7 +59,7 @@ func test_a_move_wears_the_costume_its_idle_wears() -> void:
 				var got := _sheet_of(sf, move)
 				if not got.ends_with("%s_%s.png" % [move, pair[1]]):
 					bad.append("%s %s in %s: idle is dressed, the %s plays %s" % [job, move, pair[1], move, got.get_file()])
-	assert_gt(judged, 40, "CONTROL: dressed starters' moves were judged (%d)" % judged)
+	assert_gt(judged, 80, "CONTROL: dressed starters' moves were judged (%d)" % judged)
 	assert_eq(bad, [], "moves that snap back to medieval mid-battle: %s" % str(bad))
 
 
