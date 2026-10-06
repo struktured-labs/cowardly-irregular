@@ -50,6 +50,7 @@ const DECLARED := {
 	"summon_message": "battle-log flavour for a spawn the grind does not perform",
 	"element_boost": "UNREACHABLE in a grind, measured not assumed: inferno_rage is the only ability authoring it, fire_dragon its only caster, and fire_dragon is not autogrind_spawned (only two monsters are, neither casts it), not in any encounter pool, not in any job kit. Live wired it (BattleManager:5833) after finding it inert; the grind needs it the day a caster becomes reachable, which DECLARED_UNREACHABLE re-measures every run",
 	"element_boost_modifier": "see element_boost — the magnitude half of the same unreachable key",
+	"reflect_damage_element": "UNREACHABLE in a grind, measured not assumed: frost_armor is the only ability authoring it and ice_dragon (Glacius) its only caster, a W1 boss that is not autogrind_spawned, in no encounter pool and no job kit. Live wired the retaliation 2026-10-06 (struktured, 'do them all'); the grind needs it the day a caster becomes reachable, which DECLARED_UNREACHABLE re-measures every run",
 	"corruption_risk": "SAVE corruption from meta abilities during automated play is a stakes ruling (CLAUDE.md: 'save corruption: actual mechanic, not just flavor'), not a parity repair",
 	"corruption_amount": "see corruption_risk — same stakes ruling",
 	## Same presentation class as `name`/`description`, but it earned a measurement rather than an
@@ -167,6 +168,7 @@ const UNEXAMINED := []
 const DECLARED_UNREACHABLE := {
 	"element_boost": "no autogrind_spawned monster, encounter-pool monster or job kit casts an ability authoring it",
 	"element_boost_modifier": "rides on element_boost — same casters, same measurement",
+	"reflect_damage_element": "no autogrind_spawned monster, encounter-pool monster or job kit casts an ability authoring it",
 }
 
 ## ⛔ THE THIRD STATE, and it exists because I published a backlog number my instrument could not
