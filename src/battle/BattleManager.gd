@@ -406,6 +406,16 @@ func _get_terrain_modifiers(terrain: String) -> Dictionary:
 			return {"boost": ["holy"], "reduce": ["dark"]}
 		"boss":
 			return {"boost": ["dark"], "reduce": []}
+		## The four W1 dragon caves (struktured 2026-10-06): each favours its dragon's element. Boost only;
+		## a reduce on the opposite element would also blunt the party's natural counter (Ice vs Pyrroth).
+		"lava_cave":
+			return {"boost": ["fire"], "reduce": []}
+		"ice_cave":
+			return {"boost": ["ice"], "reduce": []}
+		"storm_cave":
+			return {"boost": ["lightning"], "reduce": []}
+		"dark_cave":
+			return {"boost": ["dark"], "reduce": []}
 		_:  # "plains" and default
 			return {"boost": [], "reduce": []}
 
