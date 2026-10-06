@@ -90,8 +90,8 @@ func _send(m: Node, ev: InputEvent) -> void:
 
 
 func _row(i: int) -> Dictionary:
-	return {"id": "probe_%d" % i, "name": "Probe %d" % i,
-		"data": {"name": "Probe %d" % i, "type": "item", "category": 0, "mp_cost": 0}}
+	return {"id": "probe_%d" % i, "name": "Probe %d" % i, "title": "Probe %d" % i, "level": 1, "epithet": "",
+		"quantity": 1, "data": {"name": "Probe %d" % i, "type": "item", "category": 0, "mp_cost": 0}}
 
 
 func _open(spec: Dictionary) -> Node:
@@ -104,7 +104,7 @@ func _open(spec: Dictionary) -> Node:
 		if arr is Array:
 			for i in range(FILL):
 				if spec["fill"][member] == "node":
-					var c := Control.new()
+					var c := Label.new()  # the menus' rows are Labels; a bare Control aborted _highlight before it scrolled
 					add_child_autofree(c)
 					arr.append(c)
 				else:
