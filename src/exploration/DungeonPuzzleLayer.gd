@@ -320,7 +320,7 @@ func _spawn_switches(floor_num: int) -> void:
 
 func _on_plate_entered(body: Node2D, sw_id: String) -> void:
 	if body.has_method("set_can_move"):
-		activate_switch(sw_id)
+		activate_switch.call_deferred(sw_id)  # rebuild_floor adds areas; never during a physics flush
 
 
 ## Public so LeverTrigger.interact() and plate body_entered can both call it.
