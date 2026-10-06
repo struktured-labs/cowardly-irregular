@@ -1251,9 +1251,14 @@ func _create_weapon_wall_rack(pos: Vector2) -> void:
 	decorations.add_child(rack)
 
 
+## Two stacked 22px crates; the image was 40 tall, so the lower crate's last 4 rows wrote out of bounds (152 errors per blacksmith visit).
+const WEAPON_CRATE_H := 22
+
+
 func _create_weapon_crates(pos: Vector2) -> void:
 	var crates = Sprite2D.new()
-	var img = Image.create(TILE_SIZE * 2, TILE_SIZE + 8, false, Image.FORMAT_RGBA8)
+	crates.name = "WeaponCrates"
+	var img = Image.create(TILE_SIZE * 2, WEAPON_CRATE_H * 2, false, Image.FORMAT_RGBA8)
 	img.fill(Color.TRANSPARENT)
 
 	var crate_wood  := Color(0.48, 0.34, 0.18)
@@ -1263,10 +1268,10 @@ func _create_weapon_crates(pos: Vector2) -> void:
 
 	# Two stacked crates
 	for crate_idx in range(2):
-		var cy2 = crate_idx * 22
+		var cy2 = crate_idx * WEAPON_CRATE_H
 		var cx2 = crate_idx * 6
 		var cw2 = 38 - crate_idx * 4
-		var ch2 = 22
+		var ch2 = WEAPON_CRATE_H
 		for y in range(cy2, cy2 + ch2):
 			for x in range(cx2, cx2 + cw2):
 				var plank3 = (x - cx2) / 8 % 2
@@ -1290,7 +1295,7 @@ func _create_weapon_crates(pos: Vector2) -> void:
 				img.set_pixel(svx + 1, y, handle3)
 
 	crates.texture = ImageTexture.create_from_image(img)
-	crates.position = pos
+	crates.position = pos + Vector2(0, (WEAPON_CRATE_H * 2 - (TILE_SIZE + 8)) / 2.0)  # top edge stays where the 40px image put it
 	decorations.add_child(crates)
 
 
