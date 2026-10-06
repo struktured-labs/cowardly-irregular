@@ -115,7 +115,9 @@ func _ready() -> void:
 	# any dragon cave / Castle Harmonia / Assembly Core / Null Chamber
 	# reloads on floor 1 and has to re-descend. The key is scoped by
 	# cave_id so each dungeon persists independently.
-	if GameState and cave_id != "":
+	## A battle return rebuilds the cave on the floor the fight started on; neither the saved key nor the boss-cleared reset may move it.
+	var restoring: bool = has_meta("restoring_floor")
+	if GameState and cave_id != "" and not restoring:
 		var floor_key := cave_id + "_floor"
 		if GameState.game_constants.has(floor_key):
 			var saved_floor: int = int(GameState.game_constants[floor_key])

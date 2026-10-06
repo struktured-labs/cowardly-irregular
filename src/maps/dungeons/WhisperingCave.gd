@@ -203,7 +203,9 @@ func _ready() -> void:
 	# 5 reloads on floor 1 and has to re-descend — the cave doesn't
 	# survive save/load. GameLoop's _current_cave_floor handles in-session
 	# battle re-entry; this handles full save/load cycles.
-	if GameState and GameState.game_constants.has("whispering_cave_floor"):
+	## A battle return rebuilds the cave on the floor the fight started on; neither the saved key nor the boss-cleared reset may move it.
+	var restoring: bool = has_meta("restoring_floor")
+	if not restoring and GameState and GameState.game_constants.has("whispering_cave_floor"):
 		var saved_floor: int = int(GameState.game_constants["whispering_cave_floor"])
 		if saved_floor >= 1 and saved_floor <= 6:
 			current_floor = saved_floor
@@ -211,7 +213,7 @@ func _ready() -> void:
 	## saved floor to 1 so re-entering doesn't drop the player in
 	## the empty floor-6 boss room. Same UX rationale as the
 	## DragonCave base — completed dungeons re-entry from floor 1.
-	if boss_defeated and current_floor != 1 and GameState:
+	if not restoring and boss_defeated and current_floor != 1 and GameState:
 		current_floor = 1
 		GameState.game_constants["whispering_cave_floor"] = 1
 

@@ -67,7 +67,7 @@ func test_whispering_cave_resets_floor_on_boss_defeated() -> void:
 	var body: String = src.substr(idx, next_fn - idx)
 	# Reset block — same shape, but uses literal "whispering_cave_floor"
 	# key since WhisperingCave doesn't have cave_id.
-	assert_true(body.contains("if boss_defeated and current_floor != 1 and GameState:"),
+	assert_true(body.contains("if not restoring and boss_defeated and current_floor != 1 and GameState:"),
 		"WhisperingCave._ready must reset floor when Cave Rat King defeated AND floor != 1")
 	assert_true(body.contains("GameState.game_constants[\"whispering_cave_floor\"] = 1"),
 		"WhisperingCave reset must clear the persisted key too")
