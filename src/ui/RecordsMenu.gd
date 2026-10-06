@@ -49,7 +49,7 @@ func _collect_records() -> Array:
 		["Quests Complete", str(_quests_complete()), "The paperwork was the real quest."],
 		["Crystals Attuned", str(GameState.activated_crystals.size() if GameState else 0), "Each one remembers you saving."],
 		["Fool Card Marks", "%d / 5" % marks, "The card is counting." if marks > 0 else "The card is patient."],
-		["Autogrind Sessions", str(sessions), "Enlightenment, quantified."],
+		["Autogrind Sessions", str(sessions), "All saves. Enlightenment, quantified."],  # lifetime by design: autogrind_history.json is machine-global (#193)
 		["Full Banks", str(banks), "The fifth one was never paid for." if banks > 0 else "Bank four. Spend five. Not yet."],
 		["Gold", "%d G" % (GameState.party_gold if GameState else 0), "The economy notices."],
 		["Corruption", "%.1f" % (GameState.corruption_level if GameState else 0.0), "Within acceptable variance." if (GameState and GameState.corruption_level < 2.0) else "The variance is no longer acceptable."],
