@@ -240,7 +240,8 @@ dark outlines, soft cel shading, limited palette. No floating pixels, no duplica
 no scenery, no ground shadow. A distinct readable head with a visible face, clearly
 separated from the body. Every limb readable as its own shape at small size.
 Match the reference sprite's proportions and line weight exactly, and keep the class
-silhouette unmistakable through the costume change."""
+silhouette unmistakable through the costume change. The figure is SOLID: every garment and all
+skin filled with opaque colour, pale skin and white cloth included; nothing see-through.{costume}"""
 
 
 def ref_bytes(path: Path, first_frame: bool = False) -> bytes:
@@ -263,9 +264,15 @@ def main() -> int:
     ap.add_argument("--quality", choices=["low", "medium", "high"], default="medium")
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--force", action="store_true")
+    ap.add_argument("--costume-from", choices=list(STRIP_ANIMS), default=None,
+                    help="idle only: dress exactly like this world's <anim>_<suffix>.png frame 0, so a re-rolled idle "
+                         "matches strips already built from the old one")
+    ap.add_argument("--selftest", action="store_true", help="in-memory checks of the keying decisions; no API, no writes")
     ap.add_argument("--from-raw", action="store_true",
                     help="victory only: rebuild sheets from tmp/world_job_gen/*_victory_raw.png, no API call")
     args = ap.parse_args()
+    if args.selftest:
+        return selftest()
 
     bad = [j for j in args.jobs if j not in JOB_CORE] + [w for w in args.worlds if w not in WORLD_DRESS]
     if bad:
@@ -338,6 +345,15 @@ def main() -> int:
             refs.append(("ref_identity.png", ref_bytes(base_idle, first_frame=True), "image/png"))
         if asset == "overworld" and base_ow.exists():
             refs.append(("ref_format.png", ref_bytes(base_ow), "image/png"))
+        costume_note = ""
+        if asset == "idle" and args.costume_from:
+            worn = JOBS_DIR / job / f"{args.costume_from}_{world}.png"
+            if not worn.exists():
+                print(f"  SKIP {job}/{world}/idle: --costume-from {args.costume_from} but {worn.name} is absent", file=sys.stderr)
+                continue
+            refs.append(("ref_costume.png", ref_bytes(worn, first_frame=True), "image/png"))
+            costume_note = ("\nDress the character EXACTLY as in the last reference image: the same garments, "
+                            "colours and accessories. Only the pose comes from the first reference.")
         if not refs:
             print(f"  SKIP {job}/{world}/{asset}: no reference art", file=sys.stderr)
             continue
@@ -347,7 +363,8 @@ def main() -> int:
                  "garments must be rendered in " + JOB_SIGNATURE[job] + ". The world changes the "
                  "CUT and MATERIAL of the clothing, never its hue. This character must remain "
                  "instantly distinguishable from the rest of the party by colour alone.")
-        prompt = tmpl.format(core=JOB_CORE[job], dress=dress)
+        prompt = (tmpl.format(core=JOB_CORE[job], dress=dress) if asset == "overworld"
+                  else tmpl.format(core=JOB_CORE[job], dress=dress, costume=costume_note))
         print(f"[{job}/{world}/{asset}] gpt-image-1 {args.quality} (${unit:.3f}) "
               f"{len(refs)} ref(s)")
         try:
@@ -378,10 +395,12 @@ def main() -> int:
             locked.append((f"{job}/{world}", n))
             print(f"  head-lock: locked {n} frame(s) to the gate's own band")
         else:
-            if _has_real_alpha(raw):
-                frame = _rap.downscale(raw, 256)
-            else:
-                frame = _rap.transparent_bg(_rap.downscale(_key_backdrop(raw), 256))
+            frame, why = idle_frame(raw)
+            if frame is None:
+                print(f"  REFUSED {job}/{world}/idle: {why} -- re-roll (${unit:.3f} spent on it)", file=sys.stderr)
+                total += unit
+                refused.append(f"{job}/{world}/{asset}")
+                continue
             strip = Image.new("RGBA", (512, 256), (0, 0, 0, 0))
             strip.paste(frame, (0, 0)); strip.paste(frame, (256, 1))
             assert_writable(out)
@@ -547,6 +566,7 @@ def normalize_idle_to_base(strip: Path, base: Path) -> tuple:
 
 VICTORY_POSE_IOU = 0.85
 FRAME = 256
+NO_ALPHA = "the model returned no real alpha; keying it would erase pale skin and white cloth"
 
 ## Battle anims dressed as a pose grid, and what their poses ARE (for the prompt).
 ## ⚠️ hit/dead are PILOT-GATED: described rather than shown, gpt-image turned reaction poses into rotated, sprawled
@@ -634,42 +654,6 @@ def _pose_grid(frames: list, keys: list, cols: int) -> bytes:
     return buf.getvalue()
 
 
-def _key_backdrop(cell: Image.Image, tol: float = 40.0) -> Image.Image:
-    """Clear the backdrop by FLOOD from the cell's border through anything near its colour.
-
-    transparent_bg keys R,G,B >= 240 only. The pilot fighter's backdrop was an off-white whose noise dips
-    just under that on one channel, so a sparse speckle survived across every cell: invisible, but it
-    made the figure's box span the whole cell (221 of 256 rows) and threw both the scale and the footing.
-    Flooding from the border reaches only backdrop, so an enclosed white (an eye, a highlight) survives."""
-    from collections import deque
-    im = cell.convert("RGBA")
-    px = im.load()
-    W, H = im.size
-    border = [px[x, y] for x in range(W) for y in (0, H - 1)] + [px[x, y] for y in range(H) for x in (0, W - 1)]
-    bg = tuple(sorted(c[i] for c in border)[len(border) // 2] for i in range(3))
-    near = lambda c: c[3] < 16 or ((c[0] - bg[0]) ** 2 + (c[1] - bg[1]) ** 2 + (c[2] - bg[2]) ** 2) ** 0.5 <= tol
-    seen = bytearray(W * H)
-    q = deque()
-    for x in range(W):
-        for y in (0, H - 1):
-            q.append((x, y))
-    for y in range(H):
-        for x in (0, W - 1):
-            q.append((x, y))
-    while q:
-        x, y = q.popleft()
-        if seen[y * W + x]:
-            continue
-        seen[y * W + x] = 1
-        if not near(px[x, y]):
-            continue
-        px[x, y] = (0, 0, 0, 0)
-        for nx, ny in ((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)):
-            if 0 <= nx < W and 0 <= ny < H and not seen[ny * W + nx]:
-                q.append((nx, ny))
-    return im
-
-
 def _main_figure(cell: Image.Image, reach: int = 6) -> tuple:
     """(the cell's figure alone, whether it touches the cell's top or bottom edge).
 
@@ -727,23 +711,29 @@ def _main_figure(cell: Image.Image, reach: int = 6) -> tuple:
 
 
 def _has_real_alpha(raw: Image.Image) -> bool:
-    """The model returned real transparency: its border is clear. Then nothing is keyed — keying by colour
-    against the RGB hidden under clear pixels ate a dark rogue through his own outlines, and the white key
-    would delete every highlight brighter than 240."""
+    """The model returned real transparency: its border is clear. Idle and strip raws WITHOUT it are refused, never
+    keyed: the white key (R,G,B >= 240) erased the steampunk bard's pale face and shredded the digital bard, and
+    colour-keying against the RGB under clear pixels ate a dark rogue through his own outlines."""
     a = raw.convert("RGBA").getchannel("A").resize((256, 256), Image.BOX)
     edge = [a.getpixel((x, y)) for x in range(256) for y in (0, 255)] + [a.getpixel((x, y)) for y in range(256) for x in (0, 255)]
     return sum(1 for v in edge if v < 16) >= 0.9 * len(edge)
 
 
 def _cells(raw: Image.Image, n: int, cols: int) -> list:
-    clear = _has_real_alpha(raw)
     raw = raw.convert("RGBA").resize((1024, 1024), Image.LANCZOS)
     cell = 1024 // cols
     out = []
     for slot in range(n):
         c = raw.crop(((slot % cols) * cell, (slot // cols) * cell, (slot % cols) * cell + cell, (slot // cols) * cell + cell))
-        out.append(_rap.downscale(c, FRAME) if clear else _rap.transparent_bg(_rap.downscale(_key_backdrop(c), FRAME)))
+        out.append(_rap.downscale(c, FRAME))
     return out
+
+
+def idle_frame(raw: Image.Image) -> tuple:
+    """(the 256px idle frame, "") or (None, why it was refused). No keying, ever: see _has_real_alpha."""
+    if not _has_real_alpha(raw):
+        return None, NO_ALPHA
+    return _rap.downscale(raw, FRAME), ""
 
 
 def _bbox(img: Image.Image):
@@ -789,30 +779,10 @@ def _place(cell: Image.Image, k: float, base: Image.Image) -> Image.Image:
     return out
 
 
-def _backdrop_is_plain(raw: Image.Image) -> str:
-    """"" when the raw stands on plain near-white; else why not. The keying assumes white: rogue/digital and
-    rogue/abstract came back on a painted brown gradient, the flood ate into the figures and the strips
-    shipped as fragments that every later check measured as a small, oddly-footed sprite."""
-    rgba = raw.convert("RGBA").resize((256, 256), Image.BOX)
-    edge = [(x, y) for x in range(256) for y in (0, 1, 254, 255)] + [(x, y) for y in range(256) for x in (0, 1, 254, 255)]
-    if sum(1 for p in edge if rgba.getpixel(p)[3] < 16) >= 0.9 * len(edge):
-        return ""  # a real transparent backdrop
-    im = rgba.convert("RGB")
-    border = [im.getpixel(p) for p in edge]
-    med = tuple(sorted(c[i] for c in border)[len(border) // 2] for i in range(3))
-    if min(med) < 225:
-        return f"the backdrop is {med}, not plain white"
-    near = sum(1 for c in border if sum((c[i] - med[i]) ** 2 for i in range(3)) ** 0.5 <= 40) / float(len(border))
-    if near < 0.9:
-        return f"only {near:.0%} of the border is backdrop -- something reaches the canvas edge"
-    return ""
-
-
 def assemble_strip(raw: Image.Image, plan: dict) -> tuple:
     """(strip, "") or (None, why it was refused). No API call: also rebuilds a sheet from a saved raw."""
-    why = _backdrop_is_plain(raw)
-    if why:
-        return None, why
+    if not _has_real_alpha(raw):
+        return None, NO_ALPHA
     keys, cols = plan["keys"], plan["cols"]
     cells = []
     for slot, c in enumerate(_cells(raw, len(keys), cols)):
@@ -890,6 +860,46 @@ def _dressed_strip(client, job: str, world: str, anim: str, out: Path, quality: 
     strip.save(out)
     print(f"  -> {out.relative_to(GAME_REPO)}  ({len(plan['frames'])} frames, poses {plan['assign']})")
     return unit, True
+
+
+## ---------------------------------------------------------------------------
+## --selftest. In memory only: no API call, no file written, no directory walked, no subprocess, no git. It
+## reaches only what importing this module already loads (regen_archetype_portraits.py, fix_head_lock.py,
+## tools/artist_guard.py).
+def selftest() -> int:
+    from PIL import ImageDraw
+    fails = []
+
+    def figure(clear: bool) -> Image.Image:
+        # a dark body with a PALE face (every channel >= 240) enclosed by it, on clear or on opaque white
+        im = Image.new("RGBA", (1024, 1024), (0, 0, 0, 0) if clear else (255, 255, 255, 255))
+        d = ImageDraw.Draw(im)
+        d.rectangle([400, 300, 620, 900], fill=(40, 30, 60, 255))
+        d.rectangle([450, 330, 570, 450], fill=(250, 246, 242, 255))
+        return im
+
+    def face_kept(frame: Image.Image) -> bool:
+        return frame.getpixel((127, 97))[3] >= 128  # the face's centre at 256px
+
+    if not _has_real_alpha(figure(True)) or _has_real_alpha(figure(False)):
+        fails.append("_has_real_alpha cannot tell a clear backdrop from an opaque one")
+    frame, why = idle_frame(figure(True))
+    if frame is None:
+        fails.append(f"a real-alpha idle raw was refused: {why}")
+    elif not face_kept(frame):
+        fails.append("a real-alpha idle lost its pale face (the steampunk bard's defect)")
+    if idle_frame(figure(False))[0] is not None:
+        fails.append("an idle raw with no real alpha was keyed instead of refused")
+    plan = {"keys": [0], "cols": 1, "frames": [Image.new("RGBA", (FRAME, FRAME))], "assign": [0], "base": None}
+    if assemble_strip(figure(False), plan)[0] is not None:
+        fails.append("a strip raw with no real alpha was assembled instead of refused")
+    # CONTROL: the white key really does erase that face, so a kept face above is evidence, not luck
+    if face_kept(_rap.transparent_bg(_rap.downscale(figure(True), FRAME))):
+        fails.append("CONTROL: the white key no longer erases the pale face, so the face checks prove nothing")
+    for f in fails:
+        print("SELFTEST FAIL:", f)
+    print("selftest:", "ok" if not fails else f"{len(fails)} failure(s)")
+    return 1 if fails else 0
 
 
 if __name__ == "__main__":

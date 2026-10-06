@@ -18,7 +18,6 @@ Cost: 7 × $0.167 (high) = ~$1.17
 """
 import argparse, base64, io, os, sys, time
 from pathlib import Path
-from openai import OpenAI
 from PIL import Image
 
 PROJECT = Path(__file__).resolve().parent.parent
@@ -366,6 +365,7 @@ def main():
         return 0
 
     OUT_DIR.mkdir(parents=True, exist_ok=True)
+    from openai import OpenAI  # here, not at import: tools that load this module for its helpers must not need the SDK
     client = OpenAI(); unit = COST[args.quality]; total = 0.0
     style_bytes = load_ref_bytes(STYLE_ANCHOR)
     for pid in ids:
