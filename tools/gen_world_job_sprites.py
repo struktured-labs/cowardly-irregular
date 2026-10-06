@@ -348,7 +348,10 @@ def main() -> int:
         print(f"[{job}/{world}/{asset}] gpt-image-1 {args.quality} (${unit:.3f}) "
               f"{len(refs)} ref(s)")
         try:
-            raw = _rap.call_gpt(client, prompt, refs, args.quality)
+            # idle asks for real alpha like victory: the white-keyed bard/idle_digital shipped shredded (54% of her
+            # figure outside its main body). overworld keeps its keyed 128px grid pipeline.
+            raw = _rap.call_gpt(client, prompt, refs, args.quality,
+                                background="transparent" if asset == "idle" else None)
         except Exception as e:
             print(f"  FAILED {job}/{world}/{asset}: {e}", file=sys.stderr)
             continue
@@ -372,7 +375,10 @@ def main() -> int:
             locked.append((f"{job}/{world}", n))
             print(f"  head-lock: locked {n} frame(s) to the gate's own band")
         else:
-            frame = _rap.transparent_bg(_rap.downscale(raw, 256))
+            if _has_real_alpha(raw):
+                frame = _rap.downscale(raw, 256)
+            else:
+                frame = _rap.transparent_bg(_rap.downscale(_key_backdrop(raw), 256))
             strip = Image.new("RGBA", (512, 256), (0, 0, 0, 0))
             strip.paste(frame, (0, 0)); strip.paste(frame, (256, 1))
             assert_writable(out)
