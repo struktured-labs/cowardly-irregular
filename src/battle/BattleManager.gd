@@ -5897,19 +5897,28 @@ func _execute_magic_ability(caster: Combatant, ability: Dictionary, targets: Arr
 		var elemental_mod = target.calculate_elemental_modifier(element) if element != "" else 1.0
 		if ignores_resistance and elemental_mod < 1.0:
 			elemental_mod = 1.0
-		if element:
-			if ignores_resistance:
-				# Skip the elemental damage path so 0.5x resistance and
-				# 0.0x immunity don't get re-applied inside take_elemental_damage.
-				actual_damage = target.take_damage(damage, true)
+		## `hits` on a spell (temporal_strike: 2) was read only by the physical executor, so it landed once
+		## live while the grind looped it; struktured 2026-10-06: wire it. Each hit is its own take, popup
+		## and death check, as on the physical path; the total feeds drain, recoil and the log below.
+		var hits: int = max(1, int(ability.get("hits", 1)))
+		for hit_idx in range(hits):
+			if not target.is_alive:
+				break
+			var hit_damage: int = 0
+			if element:
+				if ignores_resistance:
+					# Skip the elemental damage path so 0.5x resistance and
+					# 0.0x immunity don't get re-applied inside take_elemental_damage.
+					hit_damage = target.take_damage(damage, true)
+				else:
+					hit_damage = target.take_elemental_damage(damage, element)
 			else:
-				actual_damage = target.take_elemental_damage(damage, element)
-		else:
-			actual_damage = target.take_damage(damage, true)
+				hit_damage = target.take_damage(damage, true)
+			actual_damage += hit_damage
+			damage_dealt.emit(target, hit_damage, false, element, elemental_mod)
 		if ignores_defense or ignores_resistance:
 			battle_log_message.emit("[color=magenta]✦ %s pierces through %s's defenses![/color]" % [caster.combatant_name, target.combatant_name])
 
-		damage_dealt.emit(target, actual_damage, false, element, elemental_mod)
 		## Tick 432: accumulate for damage_to_self_pct recoil.
 		total_dealt_for_recoil += actual_damage
 
@@ -6155,8 +6164,8 @@ func estimate_ability_breakdown(attacker: Combatant, target: Combatant, ability:
 	formula += "; %d² ÷ (%d + %s %d) = %d" % [incoming, incoming, def_name, def_val, mitigated]
 	var landed: int = target.damage_preview(incoming, is_magical)
 	formula += _target_side_clause(target, max(1, mitigated), landed)
-	## Only the physical executor reads `hits`: one take_damage per hit, same amount each.
-	var hits: int = 1 if is_magical else max(1, int(ability.get("hits", 1)))
+	## Both executors read `hits` (magic since 2026-10-06): one take_damage per hit, same amount each.
+	var hits: int = max(1, int(ability.get("hits", 1)))
 	if hits > 1:
 		formula += " ×%d hits = %d" % [hits, landed * hits]
 	return {"damage": landed * hits, "formula": formula}

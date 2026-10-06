@@ -139,7 +139,6 @@ const DECLARED_ORPHANS := {
 	"scales_with:complement": "magic; scales_with is read only in _execute_physical_ability, and `target_defense` has no reader anywhere — it scales from attack in both engines. Caster empty_set is POOLED (cowir-autogrind 11601)",
 	"scales_with:player_knowledge": "magic; same reader, and `most_used_ability` has no reader anywhere either",
 	"drain_percentage:dark_slash": "physical; drain_percentage is read only in _execute_magic_ability, so the one physical drain heals its caster nothing",
-	"hits:temporal_strike": "magic; hits is read only in _execute_physical_ability, so the one magic multi-hit lands once in LIVE. ⚠️ The GRIND now loops both arms (cowir-autogrind 04f2b2f8), so this ability is the one place the grind hits HARDER than live — flagged to that lane",
 	"effect_chance:bark": "support; effect_chance is read in the physical and magic executors. Support rolls `success_rate` instead, which defaults to 1.0 — so the authored chance is ignored and the effect always lands",
 	"effect_chance:peace_sign": "support; same",
 	"effect_chance:puppy_eyes": "support; same",
