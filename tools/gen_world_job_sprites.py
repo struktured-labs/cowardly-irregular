@@ -401,6 +401,13 @@ def main() -> int:
                 total += unit
                 refused.append(f"{job}/{world}/{asset}")
                 continue
+            if base_idle.exists():
+                base0 = Image.open(base_idle).convert("RGBA").crop((0, 0, FRAME, FRAME))
+                m = facing_margin(frame, base0)
+                if m < MIRRORED_BELOW:
+                    from PIL import ImageOps
+                    frame = ImageOps.mirror(frame)
+                    print(f"  mirrored: drawn facing the other way from the artist's idle (margin {m:+.2f})")
             strip = Image.new("RGBA", (512, 256), (0, 0, 0, 0))
             strip.paste(frame, (0, 0)); strip.paste(frame, (256, 1))
             assert_writable(out)
@@ -747,6 +754,50 @@ def _median(xs: list) -> float:
     return xs[len(xs) // 2] if len(xs) % 2 else (xs[len(xs) // 2 - 1] + xs[len(xs) // 2]) / 2.0
 
 
+## A dressed pose that matches the MIRRORED artist pose this much better than the pose itself is drawn facing the other
+## way. Measured 2026-10-06 over 195 world sheets: clear mirrors (staff/weapon on the wrong side) reached -0.38, and
+## nothing legitimate (front-facing or symmetric figures, after the mirrors were fixed) went below -0.10.
+MIRRORED_BELOW = -0.15
+## Strips judged MIRRORED by eye (artist | world | world-mirrored, 2026-10-06) whose silhouette margin sat just above
+## MIRRORED_BELOW: the mage's staff on the wrong side, the rogue hunched facing right. Applied at assembly, so a
+## --from-raw rebuild keeps the decision. A reviewed fact, not a heuristic: add to it only after looking.
+MIRROR_REVIEWED = {
+    ("mage", "victory", "abstract"), ("mage", "cast", "abstract"),
+    ("rogue", "hit", "digital"), ("rogue", "hit", "steampunk"),
+}
+## A pose whose box is this much wider (relative to its height) than the artist's pose is two figures or a sprawl.
+TOO_WIDE = 1.6
+
+
+def _mask48(fr: Image.Image):
+    bb = _bbox(fr)
+    return None if bb is None else fr.getchannel("A").point(lambda v: 255 if v >= 128 else 0).crop(bb).resize((48, 48), Image.NEAREST)
+
+
+def _iou48(a, b) -> float:
+    pa, pb = a.load(), b.load()
+    both = either = 0
+    for y in range(48):
+        for x in range(48):
+            p, q = pa[x, y] > 0, pb[x, y] > 0
+            both += p and q
+            either += p or q
+    return both / max(either, 1)
+
+
+def facing_margin(fig: Image.Image, base: Image.Image) -> float:
+    """IoU with the artist's pose minus IoU with its MIRROR, both fitted to one box. Negative: drawn facing the other way.
+
+    Battle sets flip_h ONCE per character from the job's declared facing, so a world sheet drawn mirrored faces AWAY
+    from the enemy; the August world idles of the mage, fighter and cleric all did, and the strips that took their
+    costume from them inherited it."""
+    a, b = _mask48(fig), _mask48(base)
+    if a is None or b is None:
+        return 0.0
+    from PIL import ImageOps
+    return _iou48(a, b) - _iou48(a, ImageOps.mirror(b))
+
+
 def strip_scale(cells: list, bases: list) -> float:
     """ONE scale for the whole strip, so the dressed body never swells or shrinks between frames.
 
@@ -762,7 +813,7 @@ def strip_scale(cells: list, bases: list) -> float:
     return ratios[0] if abs(ratios[0] - med) <= 0.25 * med else med
 
 
-def _place(cell: Image.Image, k: float, base: Image.Image) -> Image.Image:
+def _place(cell: Image.Image, k: float, base: Image.Image, dx: int = 0) -> Image.Image:
     """The pose at scale k, centred where the AI put it, its FEET on this base frame's footing.
 
     Footing is per frame: the pilot fighter's later poses sat 17px high in their cells and the held
@@ -773,7 +824,7 @@ def _place(cell: Image.Image, k: float, base: Image.Image) -> Image.Image:
     out = Image.new("RGBA", (FRAME, FRAME), (0, 0, 0, 0))
     if cb is None or bb is None:
         return out
-    x = round(FRAME / 2.0 - big.width / 2.0)
+    x = round(FRAME / 2.0 - big.width / 2.0) + dx
     # paste with the image as its own mask: clips at the frame edge where alpha_composite would refuse
     out.paste(big, (x, bb[3] - cb[3]), big)
     return out
@@ -802,11 +853,41 @@ def assemble_strip(raw: Image.Image, plan: dict) -> tuple:
         why = _backdrop_residue(c)
         if why:
             return None, f"pose {slot}: {why}"
+        # Twins: with one pose the grid is the whole canvas and the AI composed two figures (rogue/bard hits)
+        aspect = (bb[2] - bb[0]) / float(bb[3] - bb[1])
+        want_aspect = (want[2] - want[0]) / float(want[3] - want[1]) if want else aspect
+        # dead is exempt: a collapse lying more stretched than the artist's curl is the pose, not a second figure
+        if plan.get("anim") != "dead" and aspect > TOO_WIDE * want_aspect + 0.15:
+            return None, f"pose {slot} is {aspect:.2f} wide per height against the artist's {want_aspect:.2f}: two figures or a sprawl"
+    margin = sum(facing_margin(c, plan["frames"][kk]) for c, kk in zip(cells, keys)) / len(cells)
+    if margin < MIRRORED_BELOW or (plan.get("job"), plan.get("anim"), plan.get("world")) in MIRROR_REVIEWED:
+        from PIL import ImageOps
+        cells = [ImageOps.mirror(c) for c in cells]
+        print(f"  mirrored: the poses came back facing the other way (margin {margin:+.2f})")
     k = strip_scale(cells, [plan["frames"][kk] for kk in keys])
     slot_of = {kk: slot for slot, kk in enumerate(keys)}
+    # ONE horizontal offset for the strip: frame 0's figure sits where the artist's does, relative travel is the AI's.
+    # Centring the cell instead left one-pose strips (a 1x1 grid is the whole canvas) up to 100px off and clipped.
+    first = _place(cells[slot_of[plan["assign"][0]]], k, plan["frames"][0])
+    fb, bb0 = _bbox(first), _bbox(plan["frames"][0])
+    dx = 0 if fb is None or bb0 is None else round((bb0[0] + bb0[2]) / 2.0 - (fb[0] + fb[2]) / 2.0)
+    # ...clamped so the shift never pushes a frame off an edge the artist's frame stays clear of (a wide swing)
+    lo, hi = -FRAME, FRAME
+    for i, base_fr in enumerate(plan["frames"]):
+        pb, ab = _bbox(_place(cells[slot_of[plan["assign"][i]]], k, base_fr)), _bbox(base_fr)
+        if pb and ab:
+            if ab[0] > 2:
+                lo = max(lo, 1 - pb[0])
+            if ab[2] < FRAME - 2:
+                hi = min(hi, FRAME - 1 - pb[2])
+    dx = min(max(dx, lo), hi) if lo <= hi else dx
     strip = Image.new("RGBA", (FRAME * len(plan["frames"]), FRAME), (0, 0, 0, 0))
     for i, base_fr in enumerate(plan["frames"]):
-        strip.alpha_composite(_place(cells[slot_of[plan["assign"][i]]], k, base_fr), (i * FRAME, 0))
+        placed = _place(cells[slot_of[plan["assign"][i]]], k, base_fr, dx)
+        pb, ab = _bbox(placed), _bbox(base_fr)
+        if pb and ab and ((pb[0] <= 0 < ab[0] - 2) or (pb[2] >= FRAME > ab[2] + 2)):
+            return None, f"frame {i} runs off the frame's side where the artist's does not"
+        strip.alpha_composite(placed, (i * FRAME, 0))
     base_w = Image.open(plan["base"]).width
     if strip.width != base_w:
         return None, f"{strip.width}px strip for a {base_w}px base"
@@ -824,7 +905,7 @@ def strip_plan(job: str, world: str, anim: str = "victory") -> dict:
     keys, assign = victory_key_poses(frames)
     cols, rows = _grid_shape(len(keys))
     return {"base": base, "costume": costume, "frames": frames, "keys": keys, "assign": assign, "cols": cols, "rows": rows,
-            "anim": anim}
+            "anim": anim, "job": job, "world": world}
 
 
 def _dressed_strip(client, job: str, world: str, anim: str, out: Path, quality: str) -> tuple:
@@ -893,6 +974,14 @@ def selftest() -> int:
     plan = {"keys": [0], "cols": 1, "frames": [Image.new("RGBA", (FRAME, FRAME))], "assign": [0], "base": None}
     if assemble_strip(figure(False), plan)[0] is not None:
         fails.append("a strip raw with no real alpha was assembled instead of refused")
+    # facing: an asymmetric figure (an arm out to one side) against itself and against its mirror
+    from PIL import ImageOps
+    side = Image.new("RGBA", (FRAME, FRAME), (0, 0, 0, 0))
+    ds = ImageDraw.Draw(side)
+    ds.rectangle([100, 60, 150, 200], fill=(40, 30, 60, 255))
+    ds.rectangle([40, 90, 100, 104], fill=(40, 30, 60, 255))
+    if facing_margin(side, side) < 0.3 or facing_margin(ImageOps.mirror(side), side) >= MIRRORED_BELOW:
+        fails.append("facing_margin cannot tell a figure from its mirror")
     # CONTROL: the white key really does erase that face, so a kept face above is evidence, not luck
     if face_kept(_rap.transparent_bg(_rap.downscale(figure(True), FRAME))):
         fails.append("CONTROL: the white key no longer erases the pale face, so the face checks prove nothing")
