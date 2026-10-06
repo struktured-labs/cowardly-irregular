@@ -1089,10 +1089,10 @@ func _create_ctb_entry(combatant: Combatant, is_current: bool, is_player: bool, 
 	# Name
 	var name_label = Label.new()
 	name_label.name = "NameLabel"
-	var display_name = combatant.combatant_name
-	if display_name.length() > 9:
-		display_name = display_name.substr(0, 8) + "."
-	name_label.text = display_name
+	# The full name, trimmed to the row's REAL width: a fixed 9-char cut showed "Chancell." with a third of the row empty.
+	name_label.text = combatant.combatant_name
+	name_label.clip_text = true
+	name_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
