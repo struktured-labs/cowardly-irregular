@@ -548,13 +548,19 @@ def normalize_idle_to_base(strip: Path, base: Path) -> tuple:
 VICTORY_POSE_IOU = 0.85
 FRAME = 256
 
-## Battle anims dressed as a pose grid, and what their poses ARE (for the prompt). hit/dead are NOT here on
-## purpose: gpt-image turns reaction poses into rotated, sprawled figures (0 for 3) -- pilot them first.
+## Battle anims dressed as a pose grid, and what their poses ARE (for the prompt).
+## ⚠️ hit/dead are PILOT-GATED: described rather than shown, gpt-image turned reaction poses into rotated, sprawled
+## figures (0 for 3). Here it is shown the artist's exact poses; do not batch them until a pilot has been looked at.
 STRIP_ANIMS = {
     "victory": "victory celebration",
     "attack": "melee attack, wind-up through follow-through",
     "cast": "spell-casting, gathering power through release",
+    "hit": "flinch from a blow: staggered and recoiling but still on their feet",
+    "dead": "defeat: sinking to the knees, then collapsing to lie on the ground exactly as each reference pose shows",
 }
+## ⚠️ Real alpha's failure mode is HOLLOWNESS, worst on pale cloth: the cleric's white robes came back as outlines or
+## with holes through the body (abstract idle; suburban/digital dead; abstract hit). Hence the SOLID rule in the
+## prompt. Check a batch on a RED backdrop -- an outline is one connected body, so the one-figure guard passes it.
 
 STRIP_PROMPT = """Image 1 is a reference sheet: a {cols}x{rows} grid of {n} POSES from a 16-bit SNES-era JRPG
 battle sprite's {what}, read left-to-right, top-to-bottom. {empty}
@@ -571,6 +577,8 @@ Rules:
     height — with clear empty space above the head and below the feet. No figure may touch or cross its cell's
     edges; a figure drawn too large is cut off and wasted.
   - The costume is IDENTICAL in every cell; only the pose changes between cells.
+  - Every figure is SOLID: each garment filled with opaque colour, white and pale cloth included. Nothing
+    see-through, no hollow outlines, no holes through the body.
   - Clean pixel art, bold dark outlines, limited palette. No scenery and no ground shadow. A weapon trail or
     spell effect the reference pose shows may stay, but only touching the figure; no glow or light spill
     across the cell."""
@@ -814,8 +822,13 @@ def assemble_strip(raw: Image.Image, plan: dict) -> tuple:
         cells.append(fig)
     for slot, c in enumerate(cells):
         bb = _bbox(c)
-        if bb is None or (bb[3] - bb[1]) < FRAME * 0.2:
-            return None, f"pose {slot} came back empty or tiny"
+        # "Tiny" is judged against THIS pose's own artist height: the reference draws it at POSE_IN_CELL of the cell, and
+        # a body lying flat is short by design (rogue dead 48px, cleric 54px). A fixed 20%-of-cell floor refused two
+        # correct cleric collapses and selected for a taller, wrong one.
+        want = _bbox(plan["frames"][keys[slot]])
+        floor = 0.3 * (want[3] - want[1]) if want else FRAME * 0.2
+        if bb is None or (bb[3] - bb[1]) < floor:
+            return None, f"pose {slot} came back empty or tiny ({0 if bb is None else bb[3] - bb[1]}px, floor {floor:.0f}px)"
         why = _backdrop_residue(c)
         if why:
             return None, f"pose {slot}: {why}"

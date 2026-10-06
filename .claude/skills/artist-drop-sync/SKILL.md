@@ -174,7 +174,12 @@ Record which in the manifest `source` string, and say plainly when a
 mapping is a REUSE rather than authored art. "Registered" and "authored"
 are different facts and only the first is machine-visible.
 
-> ### ⛔ gpt-image CANNOT do reaction poses. Three for three.
+> ### ⛔ gpt-image CANNOT do reaction poses FROM A DESCRIPTION. Three for three.
+> ✅ **Narrowed 2026-10-06: SHOWN the poses, it can.** Handed the artist's own hit/dead frames as a pose grid
+> (`tools/gen_world_job_sprites.py --asset hit|dead`), the fighter's suburban pilot came back upright for the
+> recoil and LYING DOWN for the collapse, matching his sequence frame for frame (box 104x98 vs his 106x98, footing
+> within 1px). The failures below were all text-described reactions with no pose reference. So: a reaction the
+> artist has already drawn can be RE-COSTUMED; a reaction he has not drawn is still an artist ask.
 > ```
 > Mordaine hit/dead   attempt 1              → rotated 90°, sprawled horizontally
 > Mordaine hit/dead   attempt 2, explicit
