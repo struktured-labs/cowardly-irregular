@@ -768,6 +768,8 @@ func _build_footer(vp_size: Vector2) -> void:
 
 func _refresh_grid() -> void:
 	"""Rebuild the visual grid from rules data"""
+	if _grid_container == null:
+		return  # not built yet (_ready has not run); the rules are drawn when it does
 	for child in _grid_container.get_children():
 		child.queue_free()
 
@@ -1173,6 +1175,8 @@ func _format_action(action: Dictionary) -> String:
 
 func _update_cursor() -> void:
 	"""Update cursor visual"""
+	if _cursor == null or _grid_container == null:
+		return
 	for child in _cursor.get_children():
 		child.queue_free()
 
@@ -1223,6 +1227,8 @@ func _update_cursor() -> void:
 
 func _get_cell_at_cursor() -> Control:
 	"""Get cell at current cursor position"""
+	if _grid_container == null:
+		return null
 	for child in _grid_container.get_children():
 		if child.has_meta("row") and child.get_meta("row") == cursor_row:
 			var cell_type = child.get_meta("cell_type")
