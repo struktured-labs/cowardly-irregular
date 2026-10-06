@@ -80,6 +80,8 @@ func _ready() -> void:
 const AUTO_SAVE_RETRY_BACKOFF: float = 30.0
 ## The last party-state refusal already warned about; cleared when a save gets past the party check.
 var _last_party_refusal: String = ""
+## Save slots whose old-scale migration has already been reported this session (the slot list re-reads every file).
+var _migration_reported: Dictionary = {}
 
 
 func _process(delta: float) -> void:
@@ -1027,7 +1029,7 @@ func _read_save_file(slot: int) -> Dictionary:
 		push_warning("[SaveSystem] _read_save_file: '%s' parsed but root is not a Dictionary (type=%s) — invalid save" % [file_path, typeof(json.data)])
 		return {}
 
-	return _migrate_stat_denomination(json.data)
+	return _migrate_stat_denomination(json.data, slot)
 
 
 ## Bring a save written at an older stat scale up to the current one.
@@ -1036,7 +1038,7 @@ func _read_save_file(slot: int) -> Dictionary:
 ## tests, time-rewind restore and in-memory snapshots whose values are already current, and
 ## migrating there multiplied fixtures that were never saves (14 red tests said so).
 ## A file on disk is the only input that can predate the denomination.
-func _migrate_stat_denomination(data: Dictionary) -> Dictionary:
+func _migrate_stat_denomination(data: Dictionary, slot: int = -1) -> Dictionary:
 	var gs: Variant = data.get("game_state")
 	if not (gs is Dictionary):
 		return data
@@ -1052,7 +1054,8 @@ func _migrate_stat_denomination(data: Dictionary) -> Dictionary:
 		(party as Array)[i] = Combatant.migrate_stat_scale(entry as Dictionary)
 		if int(((party as Array)[i] as Dictionary).get("max_hp", 0)) != before:
 			migrated += 1
-	if migrated > 0:
+	if migrated > 0 and (slot < 0 or not _migration_reported.has(slot)):
+		_migration_reported[slot] = true
 		push_warning("[SaveSystem] migrated %d party member(s) to stat scale ×%d — this save "
 			% [migrated, Combatant.STAT_SCALE]
 			+ "predates the 2026-07-29 re-denomination and would otherwise load at 1/10th strength")

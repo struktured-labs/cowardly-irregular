@@ -107,7 +107,7 @@ func test_the_migration_runs_at_the_FILE_boundary_not_in_from_dict() -> void:
 	# pre-scale save. A file on disk is the ONLY input that can predate the denomination, so the
 	# migration belongs where a file is parsed and nowhere else.
 	var save_src := FileAccess.get_file_as_string("res://src/save/SaveSystem.gd")
-	assert_string_contains(save_src, "_migrate_stat_denomination(json.data)",
+	assert_string_contains(save_src, "_migrate_stat_denomination(json.data, slot)",
 		"_read_save_file is the single point every save on disk passes through")
 	var comb_src := FileAccess.get_file_as_string("res://src/battle/Combatant.gd")
 	assert_false(comb_src.contains("data = migrate_stat_scale(data)"),
@@ -144,7 +144,7 @@ func test_the_gamestate_snapshot_inherits_the_migration() -> void:
 	# Migrating twice would be harmless (the marker makes it idempotent) but would state the
 	# ownership wrongly — the file boundary owns this, and one owner is the point.
 	var src := FileAccess.get_file_as_string("res://src/save/SaveSystem.gd")
-	var mig: int = src.find("_migrate_stat_denomination(json.data)")
+	var mig: int = src.find("_migrate_stat_denomination(json.data, slot)")
 	var handoff: int = src.find('GameState.from_dict(data["game_state"])')
 	assert_gt(mig, -1, "the file boundary must migrate")
 	assert_gt(handoff, -1, "SaveSystem must hand game_state to GameState — if this call moved, "
