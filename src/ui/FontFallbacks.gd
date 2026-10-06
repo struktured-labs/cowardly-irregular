@@ -32,3 +32,12 @@ func _enter_tree() -> void:
 	var base := ThemeDB.fallback_font
 	if base != null:
 		base.fallbacks = chain
+
+
+## How far the symbol fallbacks stretch a line past the base font's own height (NotoSansSymbols: 28 vs ~18 at 13px), as a line_spacing correction.
+static func line_spacing_correction(font: Font, font_size: int) -> int:
+	if font == null or font.fallbacks.is_empty():
+		return 0
+	var solo: Font = font.duplicate()
+	solo.fallbacks = []
+	return mini(0, int(solo.get_height(font_size) - font.get_height(font_size)))

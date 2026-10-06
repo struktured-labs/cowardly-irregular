@@ -541,12 +541,30 @@ func _update_tooltip() -> void:
 		_tooltip_label.z_index = z_index + 2
 		_tooltip_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		_tooltip_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		# struktured 2026-10-03: the description "is hard to read" -- it floated bare over sky and grass with double-spaced lines.
+		_tooltip_label.add_theme_stylebox_override("normal", _tooltip_backing())
+		_tooltip_label.add_theme_constant_override("line_spacing", FontFallbacks.line_spacing_correction(_tooltip_label.get_theme_font("font"), TextScale.scaled(13)))
 		call_deferred("_add_tooltip_to_parent")
 
 	_tooltip_label.text = tooltip_text
 	_tooltip_label.visible = true
 	_tooltip_label.position = Vector2(position.x, position.y + size.y + 4)
-	_tooltip_label.size = Vector2(maxi(int(size.x), 160), 36)
+	_tooltip_label.size = Vector2(maxi(int(size.x), 160), 0)  # height fits the wrapped text
+
+
+## The menu's own panel colours behind the description, so it reads over any battlefield.
+func _tooltip_backing() -> StyleBoxFlat:
+	var sb := StyleBoxFlat.new()
+	var bg: Color = style.get("bg", Color(0.1, 0.1, 0.2))
+	sb.bg_color = Color(bg.r, bg.g, bg.b, 0.88)
+	sb.border_color = Color(style.get("border", Color.WHITE), 0.5)
+	sb.set_border_width_all(1)
+	sb.set_corner_radius_all(3)
+	sb.content_margin_left = 8
+	sb.content_margin_right = 8
+	sb.content_margin_top = 4
+	sb.content_margin_bottom = 4
+	return sb
 
 
 func _add_tooltip_to_parent() -> void:
