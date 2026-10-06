@@ -168,13 +168,16 @@ WORLD_DRESS = {
     # old palette clause. With JOB_SIGNATURE holding the hue, minimalism can read as a
     # deliberate style instead of unfinished art, but only if it keeps a crisp outline and a
     # few value steps: truly flat at 256px downscales to a silhouette with no interior form.
+    # Asked on a TRANSPARENT background, "minimal" also came back HOLLOW: the cleric's abstract idle (Aug batch)
+    # and all three of her strips drawn from it were outlines with see-through robes. Hence "filled, opaque".
     "abstract":   ("MINIMALIST ABSTRACT dress — the costume reduced to its essential "
                    "geometric shapes, bold flat colour blocks with only two or three value "
                    "steps, no fabric texture and no small ornament, but a CRISP DARK "
                    "OUTLINE and clearly separated forms so it reads as a deliberate "
                    "graphic style rather than an unfinished sprite. The silhouette must "
                    "remain unmistakably this class, and the figure must never read as a "
-                   "flat grey or untextured blank. "),
+                   "flat grey or untextured blank. Every shape is FILLED with solid opaque colour: "
+                   "never outlines only, and no part of the body or garments is see-through. "),
 }
 
 ## Per-job identity that must survive every costume change.
@@ -256,7 +259,7 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--jobs", nargs="+", default=["fighter"])
     ap.add_argument("--worlds", nargs="+", default=WORLDS)
-    ap.add_argument("--asset", choices=["overworld", "idle", "victory", "both"], default="overworld")
+    ap.add_argument("--asset", choices=["overworld", "idle", "both"] + list(STRIP_ANIMS), default="overworld")
     ap.add_argument("--quality", choices=["low", "medium", "high"], default="medium")
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--force", action="store_true")
@@ -281,18 +284,18 @@ def main() -> int:
                     todo.append((job, world, asset, out))
 
     if args.from_raw:
-        if args.asset != "victory":
-            print("ERROR: --from-raw rebuilds victory sheets only", file=sys.stderr)
+        if args.asset not in STRIP_ANIMS:
+            print(f"ERROR: --from-raw rebuilds {sorted(STRIP_ANIMS)} sheets only", file=sys.stderr)
             return 2
         rebuilt = 0
         for job in args.jobs:
             for world in args.worlds:
-                rawp = RAW_DIR / f"{job}_{world}_victory_raw.png"
-                plan = victory_plan(job, world)
+                rawp = RAW_DIR / f"{job}_{world}_{args.asset}_raw.png"
+                plan = strip_plan(job, world, args.asset)
                 if not rawp.exists() or "skip" in plan:
                     continue
-                strip, why = assemble_victory(Image.open(rawp), plan)
-                out = JOBS_DIR / job / f"victory_{world}.png"
+                strip, why = assemble_strip(Image.open(rawp), plan)
+                out = JOBS_DIR / job / f"{args.asset}_{world}.png"
                 if strip is None:
                     print(f"  REFUSED {job}/{world}: {why}", file=sys.stderr)
                     continue
@@ -307,8 +310,8 @@ def main() -> int:
     if args.dry_run:
         for job, world, asset, out in todo:
             note = ""
-            if asset == "victory":
-                plan = victory_plan(job, world)
+            if asset in STRIP_ANIMS:
+                plan = strip_plan(job, world, asset)
                 note = plan["skip"] if "skip" in plan else (
                     f"{len(plan['keys'])} pose(s), {plan['cols']}x{plan['rows']} grid, {len(plan['frames'])} frames")
             print(f"  {job:13s} {world:11s} {asset:9s} -> {out.relative_to(GAME_REPO)}  {note}")
@@ -325,8 +328,8 @@ def main() -> int:
     for job, world, asset, out in todo:
         base_ow = JOBS_DIR / job / "overworld.png"
         base_idle = JOBS_DIR / job / "idle.png"
-        if asset == "victory":
-            cost, ok = _victory(client, job, world, out, args.quality)
+        if asset in STRIP_ANIMS:
+            cost, ok = _dressed_strip(client, job, world, asset, out, args.quality)
             total += cost  # a refused roll was still paid for
             (made if ok else refused).append(f"{job}/{world}/{asset}")
             continue
@@ -545,8 +548,16 @@ def normalize_idle_to_base(strip: Path, base: Path) -> tuple:
 VICTORY_POSE_IOU = 0.85
 FRAME = 256
 
-VICTORY_PROMPT = """Image 1 is a reference sheet: a {cols}x{rows} grid of {n} POSES from a 16-bit SNES-era JRPG
-battle sprite's victory celebration, read left-to-right, top-to-bottom. {empty}
+## Battle anims dressed as a pose grid, and what their poses ARE (for the prompt). hit/dead are NOT here on
+## purpose: gpt-image turns reaction poses into rotated, sprawled figures (0 for 3) -- pilot them first.
+STRIP_ANIMS = {
+    "victory": "victory celebration",
+    "attack": "melee attack, wind-up through follow-through",
+    "cast": "spell-casting, gathering power through release",
+}
+
+STRIP_PROMPT = """Image 1 is a reference sheet: a {cols}x{rows} grid of {n} POSES from a 16-bit SNES-era JRPG
+battle sprite's {what}, read left-to-right, top-to-bottom. {empty}
 Image 2 is the SAME character dressed for this world: {dress}
 
 Redraw image 1 cell for cell. The SAME grid, the SAME pose in each cell, at the SAME position,
@@ -560,8 +571,9 @@ Rules:
     height — with clear empty space above the head and below the feet. No figure may touch or cross its cell's
     edges; a figure drawn too large is cut off and wasted.
   - The costume is IDENTICAL in every cell; only the pose changes between cells.
-  - Clean pixel art, bold dark outlines, limited palette. No scenery, no ground shadow, and no glow
-    or light spill beyond the character's own outline."""
+  - Clean pixel art, bold dark outlines, limited palette. No scenery and no ground shadow. A weapon trail or
+    spell effect the reference pose shows may stay, but only touching the figure; no glow or light spill
+    across the cell."""
 
 
 def _frames(path: Path) -> list:
@@ -788,7 +800,7 @@ def _backdrop_is_plain(raw: Image.Image) -> str:
     return ""
 
 
-def assemble_victory(raw: Image.Image, plan: dict) -> tuple:
+def assemble_strip(raw: Image.Image, plan: dict) -> tuple:
     """(strip, "") or (None, why it was refused). No API call: also rebuilds a sheet from a saved raw."""
     why = _backdrop_is_plain(raw)
     if why:
@@ -818,47 +830,48 @@ def assemble_victory(raw: Image.Image, plan: dict) -> tuple:
     return strip, ""
 
 
-def victory_plan(job: str, world: str) -> dict:
-    base = JOBS_DIR / job / "victory.png"
+def strip_plan(job: str, world: str, anim: str = "victory") -> dict:
+    base = JOBS_DIR / job / f"{anim}.png"
     costume = JOBS_DIR / job / f"idle_{world}.png"
     if not base.exists():
-        return {"skip": f"no artist victory.png for {job}"}
+        return {"skip": f"no artist {anim}.png for {job}"}
     if not costume.exists():
         return {"skip": f"no idle_{world}.png to take the costume from — dress idle first"}
     frames = _frames(base)
     keys, assign = victory_key_poses(frames)
     cols, rows = _grid_shape(len(keys))
-    return {"base": base, "costume": costume, "frames": frames, "keys": keys, "assign": assign, "cols": cols, "rows": rows}
+    return {"base": base, "costume": costume, "frames": frames, "keys": keys, "assign": assign, "cols": cols, "rows": rows,
+            "anim": anim}
 
 
-def _victory(client, job: str, world: str, out: Path, quality: str) -> tuple:
-    plan = victory_plan(job, world)
+def _dressed_strip(client, job: str, world: str, anim: str, out: Path, quality: str) -> tuple:
+    plan = strip_plan(job, world, anim)
     if "skip" in plan:
-        print(f"  SKIP {job}/{world}/victory: {plan['skip']}", file=sys.stderr)
+        print(f"  SKIP {job}/{world}/{anim}: {plan['skip']}", file=sys.stderr)
         return 0.0, False
     keys, cols, rows = plan["keys"], plan["cols"], plan["rows"]
     empty = (f"Poses repeat to fill the grid: draw EVERY cell, each one with its own reference pose."
              if cols * rows > len(keys) else "")
     dress = WORLD_DRESS[world] + " Keep this character's identity colour: " + JOB_SIGNATURE[job] + "."
-    prompt = VICTORY_PROMPT.format(cols=cols, rows=rows, n=len(keys), empty=empty, dress=dress,
+    prompt = STRIP_PROMPT.format(cols=cols, rows=rows, n=len(keys), what=STRIP_ANIMS[anim], empty=empty, dress=dress,
                                    signature=JOB_SIGNATURE[job], core=JOB_CORE[job])
     refs = [("ref_poses.png", _pose_grid(plan["frames"], keys, cols), "image/png"),
             ("ref_costume.png", ref_bytes(plan["costume"], first_frame=True), "image/png")]
     unit = _rap.COST[quality]
-    print(f"[{job}/{world}/victory] gpt-image-1 {quality} (${unit:.3f}) {len(keys)} pose(s) in a {cols}x{rows} grid "
+    print(f"[{job}/{world}/{anim}] gpt-image-1 {quality} (${unit:.3f}) {len(keys)} pose(s) in a {cols}x{rows} grid "
           f"for {len(plan['frames'])} frames")
     try:
         # Real alpha, not white-then-keyed: 8 of the first 25 rolls came back on a painted backdrop
         raw = _rap.call_gpt(client, prompt, refs, quality, background="transparent")
     except Exception as e:
-        print(f"  FAILED {job}/{world}/victory: {e}", file=sys.stderr)
+        print(f"  FAILED {job}/{world}/{anim}: {e}", file=sys.stderr)
         return 0.0, False
-    rawp = RAW_DIR / f"{job}_{world}_victory_raw.png"
+    rawp = RAW_DIR / f"{job}_{world}_{anim}_raw.png"
     assert_writable(rawp)
     raw.save(rawp)
-    strip, why = assemble_victory(raw, plan)
+    strip, why = assemble_strip(raw, plan)
     if strip is None:
-        print(f"  REFUSED {job}/{world}: {why} -- re-roll (${unit:.3f} spent on it)", file=sys.stderr)
+        print(f"  REFUSED {job}/{world}/{anim}: {why} -- re-roll (${unit:.3f} spent on it)", file=sys.stderr)
         return unit, False
     assert_writable(out)
     strip.save(out)

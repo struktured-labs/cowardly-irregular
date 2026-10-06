@@ -77,7 +77,8 @@ func test_every_world_costume_is_one_figure() -> void:
 		if not ResourceLoader.exists(path):
 			continue
 		var tex := load(path) as Texture2D
-		var fw := tex.get_height() if path.get_file().begins_with("idle_") or path.get_file().begins_with("victory_") else 0
+		# Battle sheets are square-framed strips; overworld_ sheets are 32px walk grids, a different shape entirely
+		var fw := 0 if path.get_file().begins_with("overworld_") else tex.get_height()
 		if fw <= 0:
 			continue
 		judged += 1
@@ -86,7 +87,7 @@ func test_every_world_costume_is_one_figure() -> void:
 			var share := _main_body_share(tex, i, fw)
 			if share < MIN_MAIN_BODY:
 				bad.append("%s frame %d: main body holds %.0f%% of the figure" % [path.trim_prefix("res://assets/sprites/jobs/"), i, share * 100.0])
-	assert_gt(judged, 90, "CONTROL: idle and victory world sheets were judged (%d)" % judged)
+	assert_gt(judged, 90, "CONTROL: the world battle sheets were judged (%d)" % judged)
 	assert_eq(bad, [], "world costumes that are shreds, not a figure: %s" % str(bad))
 
 
