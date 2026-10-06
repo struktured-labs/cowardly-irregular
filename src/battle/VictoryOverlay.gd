@@ -42,6 +42,7 @@ var _scene = null
 var _snaps: Array[Callable] = []
 var _tweens: Array[Tween] = []
 var _complete := false
+var _age := 0.0
 
 
 ## Where this overlay settles: the title at rest and docked, every card, the loot strip. Other victory chrome reads it to stay clear.
@@ -108,6 +109,22 @@ func show_restores(by_name: Dictionary) -> void:
 
 func is_complete() -> bool:
 	return _complete
+
+
+## A cascade watched to its end is complete too; else the first press "finished" nothing and continuing took a second one.
+func _process(delta: float) -> void:
+	_age += delta
+	if not _complete and _age > 0.5 and _settled():
+		complete_now()
+
+
+func _settled() -> bool:
+	if _tweens.is_empty():
+		return false
+	for t in _tweens:
+		if t and t.is_valid() and t.is_running():
+			return false
+	return true
 
 
 ## First accept press lands here: every animation jumps to its end state.
@@ -804,17 +821,22 @@ func _build_prompt() -> void:
 	var prompt := Label.new()
 	var tok: String = _confirm_token()
 	prompt.text = "%s: finish · %s: continue" % [tok, tok]
-	prompt.add_theme_font_size_override("font_size", TextScale.scaled(11))
-	prompt.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5))
+	prompt.add_theme_font_size_override("font_size", TextScale.scaled(14))
+	prompt.add_theme_color_override("font_color", Color(0.92, 0.92, 0.85))
+	prompt.add_theme_constant_override("outline_size", 3)
+	prompt.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.85))
+	prompt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	prompt.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(prompt)
 	var vp := get_viewport_rect().size
-	prompt.position = Vector2(vp.x - 220.0, vp.y - 26.0)
+	# Bottom-centre above the hint bar; it sat at 11px grey on the grass under the party panel's corner.
+	prompt.size = Vector2(320.0, 0.0)
+	prompt.position = Vector2((vp.x - 320.0) / 2.0, vp.y - 58.0)
 	_snaps.append(func() -> void:
 		if is_instance_valid(prompt):
 			prompt.text = "%s: continue" % _confirm_token()
 			prompt.modulate.a = 1.0)
-	var blink := _track(create_tween())
+	var blink := create_tween()  # untracked: an endless loop must not hold the cascade open
 	blink.set_loops()
-	blink.tween_property(prompt, "modulate:a", 0.3, 0.8)
+	blink.tween_property(prompt, "modulate:a", 0.55, 0.8)
 	blink.tween_property(prompt, "modulate:a", 1.0, 0.8)
