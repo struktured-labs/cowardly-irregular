@@ -5712,6 +5712,7 @@ func _create_cave_scene() -> Node:
 	var cave_scene = WhisperingCaveRes.instantiate()
 	if _current_cave_floor > 1 and "current_floor" in cave_scene:
 		cave_scene.current_floor = _current_cave_floor
+		cave_scene.set_meta("restoring_floor", true)  # the cave must not override the floor it is being restored to
 		print("[CAVE] Restoring to floor %d" % _current_cave_floor)
 	# 2026-07-15 (task #23): floor descent must re-trigger the story
 	# cutscene check so the floor-gated ch.3 spotlights (rogue→mage→
@@ -5798,6 +5799,7 @@ func _create_dragon_cave(script_path: String) -> Node:
 		# Restore the floor we were on before battle
 		if _current_cave_floor > 1 and "current_floor" in cave_scene:
 			cave_scene.current_floor = _current_cave_floor
+			cave_scene.set_meta("restoring_floor", true)  # the cave must not override the floor it is being restored to
 			print("[CAVE] Restoring to floor %d" % _current_cave_floor)
 		return cave_scene
 	push_warning("%s not found, falling back to overworld" % script_path)
@@ -5809,6 +5811,7 @@ func _create_dragon_cave_from_script(script_res: GDScript) -> Node:
 	var cave_scene = script_res.new()
 	if _current_cave_floor > 1 and "current_floor" in cave_scene:
 		cave_scene.current_floor = _current_cave_floor
+		cave_scene.set_meta("restoring_floor", true)  # the cave must not override the floor it is being restored to
 		print("[CAVE] Restoring to floor %d" % _current_cave_floor)
 	return cave_scene
 
