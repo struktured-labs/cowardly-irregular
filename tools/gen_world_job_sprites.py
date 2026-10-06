@@ -29,6 +29,18 @@ garble goes and the rhythm survives.
 
   python3 tools/gen_world_job_sprites.py --jobs fighter --dry-run
   python3 tools/gen_world_job_sprites.py --jobs fighter --asset overworld
+
+VICTORY (struktured 2026-10-05: "victory animations arent replaced in suburban / alternate
+worlds either, still ones from medeivail"). idle was the only battle anim with a world
+sheet, so in W2+ the costume snapped back to medieval the moment victory played.
+  --asset victory  ->  jobs/<job>/victory_<suffix>.png, SAME frame count and width as the
+  artist's victory.png (kept untouched as the fallback), so frame_durations_ms still applies.
+ONE call per job x world, not one per frame: separate calls redraw the costume differently
+each time and an 11-frame flourish at 110ms flickers. The call is handed the job's DISTINCT
+poses as a grid (frames clustered by silhouette, IoU >= 0.85) and the shipped
+idle_<suffix> frame as the costume, so victory matches idle in the same world. Each base
+frame then takes its pose's cell, normalised to THAT frame's height, footing and centre, so
+the artist's timing and travel survive. Needs idle_<suffix>.png first.
 """
 import argparse, importlib.util, io, os, sys
 from pathlib import Path
@@ -244,10 +256,12 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--jobs", nargs="+", default=["fighter"])
     ap.add_argument("--worlds", nargs="+", default=WORLDS)
-    ap.add_argument("--asset", choices=["overworld", "idle", "both"], default="overworld")
+    ap.add_argument("--asset", choices=["overworld", "idle", "victory", "both"], default="overworld")
     ap.add_argument("--quality", choices=["low", "medium", "high"], default="medium")
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--force", action="store_true")
+    ap.add_argument("--from-raw", action="store_true",
+                    help="victory only: rebuild sheets from tmp/world_job_gen/*_victory_raw.png, no API call")
     args = ap.parse_args()
 
     bad = [j for j in args.jobs if j not in JOB_CORE] + [w for w in args.worlds if w not in WORLD_DRESS]
@@ -266,11 +280,38 @@ def main() -> int:
                 if args.force or not out.exists():
                     todo.append((job, world, asset, out))
 
+    if args.from_raw:
+        if args.asset != "victory":
+            print("ERROR: --from-raw rebuilds victory sheets only", file=sys.stderr)
+            return 2
+        rebuilt = 0
+        for job in args.jobs:
+            for world in args.worlds:
+                rawp = RAW_DIR / f"{job}_{world}_victory_raw.png"
+                plan = victory_plan(job, world)
+                if not rawp.exists() or "skip" in plan:
+                    continue
+                strip, why = assemble_victory(Image.open(rawp), plan)
+                out = JOBS_DIR / job / f"victory_{world}.png"
+                if strip is None:
+                    print(f"  REFUSED {job}/{world}: {why}", file=sys.stderr)
+                    continue
+                assert_writable(out)
+                strip.save(out)
+                rebuilt += 1
+                print(f"  rebuilt {out.relative_to(GAME_REPO)} from its raw")
+        print(f"rebuilt {rebuilt} sheet(s), spent $0")
+        return 0
     unit = _rap.COST[args.quality]
     print(f"{len(todo)} sheet(s) at {args.quality} — est ${unit*len(todo):.2f}")
     if args.dry_run:
         for job, world, asset, out in todo:
-            print(f"  {job:13s} {world:11s} {asset:9s} -> {out.relative_to(GAME_REPO)}")
+            note = ""
+            if asset == "victory":
+                plan = victory_plan(job, world)
+                note = plan["skip"] if "skip" in plan else (
+                    f"{len(plan['keys'])} pose(s), {plan['cols']}x{plan['rows']} grid, {len(plan['frames'])} frames")
+            print(f"  {job:13s} {world:11s} {asset:9s} -> {out.relative_to(GAME_REPO)}  {note}")
         return 0
     if not os.environ.get("OPENAI_API_KEY"):
         print("ERROR: OPENAI_API_KEY not set (source setenv.sh)", file=sys.stderr)
@@ -284,6 +325,11 @@ def main() -> int:
     for job, world, asset, out in todo:
         base_ow = JOBS_DIR / job / "overworld.png"
         base_idle = JOBS_DIR / job / "idle.png"
+        if asset == "victory":
+            cost, ok = _victory(client, job, world, out, args.quality)
+            total += cost  # a refused roll was still paid for
+            (made if ok else refused).append(f"{job}/{world}/{asset}")
+            continue
         refs = []
         if base_idle.exists():
             refs.append(("ref_identity.png", ref_bytes(base_idle, first_frame=True), "image/png"))
@@ -344,7 +390,7 @@ def main() -> int:
     if locked:
         print(f"head-lock repairs: {locked}")
     if refused:
-        print(f"REFUSED for backdrop residue (re-roll these): {refused}", file=sys.stderr)
+        print(f"REFUSED (reason printed with each; re-roll these): {refused}", file=sys.stderr)
     if len(made) != len(todo):
         return 1
     return 0
@@ -485,6 +531,333 @@ def normalize_idle_to_base(strip: Path, base: Path) -> tuple:
     assert_writable(strip)
     out.save(strip)
     return (target_fill, target_bottom)
+
+
+## ---------------------------------------------------------------------------
+## Victory: one call per job x world, the distinct poses as a grid, the world idle as costume.
+
+VICTORY_POSE_IOU = 0.85
+FRAME = 256
+
+VICTORY_PROMPT = """Image 1 is a reference sheet: a {cols}x{rows} grid of {n} POSES from a 16-bit SNES-era JRPG
+battle sprite's victory celebration, read left-to-right, top-to-bottom. {empty}
+Image 2 is the SAME character dressed for this world: {dress}
+
+Redraw image 1 cell for cell. The SAME grid, the SAME pose in each cell, at the SAME position,
+size and facing within its cell (the character faces LEFT), but wearing EXACTLY the costume of
+image 2 — its garments, materials and colours ({signature}). The character is {core}.
+
+Rules:
+  - 1024x1024 canvas, a FULLY TRANSPARENT background, the same {cols}x{rows} grid of equal square cells.
+    Draw NO grid lines, borders, gutters, labels or text.
+  - One full-body figure per cell, head to feet, at the SAME SIZE as in image 1 — about two thirds of its cell's
+    height — with clear empty space above the head and below the feet. No figure may touch or cross its cell's
+    edges; a figure drawn too large is cut off and wasted.
+  - The costume is IDENTICAL in every cell; only the pose changes between cells.
+  - Clean pixel art, bold dark outlines, limited palette. No scenery, no ground shadow, and no glow
+    or light spill beyond the character's own outline."""
+
+
+def _frames(path: Path) -> list:
+    im = Image.open(path).convert("RGBA")
+    return [im.crop((i * FRAME, 0, i * FRAME + FRAME, FRAME)) for i in range(im.width // FRAME)]
+
+
+def _mask(fr: Image.Image) -> set:
+    return {i for i, v in enumerate(fr.getchannel("A").getdata()) if v >= 128}
+
+
+def victory_key_poses(frames: list) -> tuple:
+    """Greedy silhouette clusters: (key frame indices, the key each frame takes). Deterministic, in frame order."""
+    masks = [_mask(f) for f in frames]
+    keys, assign = [], []
+    for i, m in enumerate(masks):
+        hit = next((k for k in keys if len(m & masks[k]) / max(1, len(m | masks[k])) >= VICTORY_POSE_IOU), None)
+        if hit is None:
+            keys.append(i)
+            hit = i
+        assign.append(hit)
+    return keys, assign
+
+
+def _grid_shape(n: int) -> tuple:
+    cols = 1
+    while cols * cols < n:
+        cols += 1
+    rows = (n + cols - 1) // cols
+    return cols, max(rows, cols)  # always square, so every cell is square in the 1024 canvas
+
+
+## The reference draws each pose at this share of its cell. The AI enlarges what it is shown, and drawn at
+## full cell size the first batch's rogue and bard poses ran off their cells' bottom edges; assembly rescales
+## to the artist's size anyway, so the reference's scale costs nothing.
+POSE_IN_CELL = 0.7
+
+
+def _pose_grid(frames: list, keys: list, cols: int) -> bytes:
+    """EVERY cell filled: poses repeat to fill the grid. Given a 2x2 with two empty cells the AI ignored the
+    grid and drew two large figures across the whole canvas (bard, first batch)."""
+    cell = 1024 // cols
+    canvas = Image.new("RGBA", (1024, 1024), (255, 255, 255, 255))
+    side = round(cell * POSE_IN_CELL)
+    for slot in range(cols * cols):
+        fr = frames[keys[slot % len(keys)]].resize((side, side), Image.NEAREST)
+        canvas.alpha_composite(fr, ((slot % cols) * cell + (cell - side) // 2, (slot // cols) * cell + (cell - side) // 2))
+    buf = io.BytesIO()
+    canvas.save(buf, format="PNG")
+    return buf.getvalue()
+
+
+def _key_backdrop(cell: Image.Image, tol: float = 40.0) -> Image.Image:
+    """Clear the backdrop by FLOOD from the cell's border through anything near its colour.
+
+    transparent_bg keys R,G,B >= 240 only. The pilot fighter's backdrop was an off-white whose noise dips
+    just under that on one channel, so a sparse speckle survived across every cell: invisible, but it
+    made the figure's box span the whole cell (221 of 256 rows) and threw both the scale and the footing.
+    Flooding from the border reaches only backdrop, so an enclosed white (an eye, a highlight) survives."""
+    from collections import deque
+    im = cell.convert("RGBA")
+    px = im.load()
+    W, H = im.size
+    border = [px[x, y] for x in range(W) for y in (0, H - 1)] + [px[x, y] for y in range(H) for x in (0, W - 1)]
+    bg = tuple(sorted(c[i] for c in border)[len(border) // 2] for i in range(3))
+    near = lambda c: c[3] < 16 or ((c[0] - bg[0]) ** 2 + (c[1] - bg[1]) ** 2 + (c[2] - bg[2]) ** 2) ** 0.5 <= tol
+    seen = bytearray(W * H)
+    q = deque()
+    for x in range(W):
+        for y in (0, H - 1):
+            q.append((x, y))
+    for y in range(H):
+        for x in (0, W - 1):
+            q.append((x, y))
+    while q:
+        x, y = q.popleft()
+        if seen[y * W + x]:
+            continue
+        seen[y * W + x] = 1
+        if not near(px[x, y]):
+            continue
+        px[x, y] = (0, 0, 0, 0)
+        for nx, ny in ((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)):
+            if 0 <= nx < W and 0 <= ny < H and not seen[ny * W + nx]:
+                q.append((nx, ny))
+    return im
+
+
+def _main_figure(cell: Image.Image, reach: int = 6) -> tuple:
+    """(the cell's figure alone, whether it touches the cell's top or bottom edge).
+
+    The AI does not respect cell walls: on the first batch rogue/suburban drew poses straddling two cells, so
+    the crops held a hood in one frame and floating feet in the next, and rogue/abstract filled all 9 cells of
+    a 7-pose grid, its feet spilling into the cells below. Keeps the largest 8-connected blob at alpha >= 128
+    plus any blob within `reach` px of it (a blade or a slash arc keyed loose from the hand); clears the rest."""
+    from collections import deque
+    im = cell.convert("RGBA")
+    px = im.load()
+    W, H = im.size
+    label = [[-1] * W for _ in range(H)]
+    blobs = []
+    for sy in range(H):
+        for sx in range(W):
+            if label[sy][sx] != -1 or px[sx, sy][3] < 128:
+                continue
+            idx = len(blobs)
+            pts = []
+            q = deque([(sx, sy)])
+            label[sy][sx] = idx
+            while q:
+                x, y = q.popleft()
+                pts.append((x, y))
+                for dx in (-1, 0, 1):
+                    for dy in (-1, 0, 1):
+                        nx, ny = x + dx, y + dy
+                        if 0 <= nx < W and 0 <= ny < H and label[ny][nx] == -1 and px[nx, ny][3] >= 128:
+                            label[ny][nx] = idx
+                            q.append((nx, ny))
+            xs = [p[0] for p in pts]
+            ys = [p[1] for p in pts]
+            blobs.append((len(pts), (min(xs), min(ys), max(xs), max(ys))))
+    if not blobs:
+        return im, False
+    main = max(range(len(blobs)), key=lambda i: blobs[i][0])
+    mb = blobs[main][1]
+    keep = set()
+    for i, (_, b) in enumerate(blobs):
+        if i == main or (b[0] <= mb[2] + reach and b[2] >= mb[0] - reach and b[1] <= mb[3] + reach and b[3] >= mb[1] - reach):
+            keep.add(i)
+    for y in range(H):
+        for x in range(W):
+            lab = label[y][x]
+            # faint fringe (alpha < 128) is kept only beside a kept pixel, so the outline's soft edge survives
+            if lab == -1:
+                if px[x, y][3] > 0 and not any(0 <= x + dx < W and 0 <= y + dy < H and label[y + dy][x + dx] in keep
+                                              for dx in (-1, 0, 1) for dy in (-1, 0, 1)):
+                    px[x, y] = (0, 0, 0, 0)
+            elif lab not in keep:
+                px[x, y] = (0, 0, 0, 0)
+    top = min(blobs[i][1][1] for i in keep)
+    bottom = max(blobs[i][1][3] for i in keep)
+    return im, top <= 0 or bottom >= H - 1
+
+
+def _has_real_alpha(raw: Image.Image) -> bool:
+    """The model returned real transparency: its border is clear. Then nothing is keyed — keying by colour
+    against the RGB hidden under clear pixels ate a dark rogue through his own outlines, and the white key
+    would delete every highlight brighter than 240."""
+    a = raw.convert("RGBA").getchannel("A").resize((256, 256), Image.BOX)
+    edge = [a.getpixel((x, y)) for x in range(256) for y in (0, 255)] + [a.getpixel((x, y)) for y in range(256) for x in (0, 255)]
+    return sum(1 for v in edge if v < 16) >= 0.9 * len(edge)
+
+
+def _cells(raw: Image.Image, n: int, cols: int) -> list:
+    clear = _has_real_alpha(raw)
+    raw = raw.convert("RGBA").resize((1024, 1024), Image.LANCZOS)
+    cell = 1024 // cols
+    out = []
+    for slot in range(n):
+        c = raw.crop(((slot % cols) * cell, (slot // cols) * cell, (slot % cols) * cell + cell, (slot // cols) * cell + cell))
+        out.append(_rap.downscale(c, FRAME) if clear else _rap.transparent_bg(_rap.downscale(_key_backdrop(c), FRAME)))
+    return out
+
+
+def _bbox(img: Image.Image):
+    """The figure's box at alpha >= 128. A raw alpha getbbox() counts every faint resample halo and keying
+    remnant, so one near-invisible pixel below the feet moved the pilot fighter's footing by 15px."""
+    return img.getchannel("A").point(lambda v: 255 if v >= 128 else 0).getbbox()
+
+
+def _median(xs: list) -> float:
+    xs = sorted(xs)
+    return xs[len(xs) // 2] if len(xs) % 2 else (xs[len(xs) // 2 - 1] + xs[len(xs) // 2]) / 2.0
+
+
+def strip_scale(cells: list, bases: list) -> float:
+    """ONE scale for the whole strip, so the dressed body never swells or shrinks between frames.
+
+    Per-frame fitting to each base bbox was the pilot's first defect: the fighter's box grows when his
+    sword goes up and the bard's when her notes rise. Taken from the FIRST pose, the frame the player
+    sees straight after idle, so the idle->victory cut does not pop (the median undersized the pilot
+    fighter by ~10% against his world idle); the median stands in only if that pose is an outlier."""
+    ratios = []
+    for c, b in zip(cells, bases):
+        cb, bb = _bbox(c), _bbox(b)
+        ratios.append((bb[3] - bb[1]) / float(cb[3] - cb[1]))
+    med = _median(ratios)
+    return ratios[0] if abs(ratios[0] - med) <= 0.25 * med else med
+
+
+def _place(cell: Image.Image, k: float, base: Image.Image) -> Image.Image:
+    """The pose at scale k, centred where the AI put it, its FEET on this base frame's footing.
+
+    Footing is per frame: the pilot fighter's later poses sat 17px high in their cells and the held
+    final frame floated; a real jump in the artist's frames still lifts, because his footing does."""
+    big = cell.resize((max(1, round(FRAME * k)), max(1, round(FRAME * k))), Image.LANCZOS)
+    cb = _bbox(big)
+    bb = _bbox(base)
+    out = Image.new("RGBA", (FRAME, FRAME), (0, 0, 0, 0))
+    if cb is None or bb is None:
+        return out
+    x = round(FRAME / 2.0 - big.width / 2.0)
+    # paste with the image as its own mask: clips at the frame edge where alpha_composite would refuse
+    out.paste(big, (x, bb[3] - cb[3]), big)
+    return out
+
+
+def _backdrop_is_plain(raw: Image.Image) -> str:
+    """"" when the raw stands on plain near-white; else why not. The keying assumes white: rogue/digital and
+    rogue/abstract came back on a painted brown gradient, the flood ate into the figures and the strips
+    shipped as fragments that every later check measured as a small, oddly-footed sprite."""
+    rgba = raw.convert("RGBA").resize((256, 256), Image.BOX)
+    edge = [(x, y) for x in range(256) for y in (0, 1, 254, 255)] + [(x, y) for y in range(256) for x in (0, 1, 254, 255)]
+    if sum(1 for p in edge if rgba.getpixel(p)[3] < 16) >= 0.9 * len(edge):
+        return ""  # a real transparent backdrop
+    im = rgba.convert("RGB")
+    border = [im.getpixel(p) for p in edge]
+    med = tuple(sorted(c[i] for c in border)[len(border) // 2] for i in range(3))
+    if min(med) < 225:
+        return f"the backdrop is {med}, not plain white"
+    near = sum(1 for c in border if sum((c[i] - med[i]) ** 2 for i in range(3)) ** 0.5 <= 40) / float(len(border))
+    if near < 0.9:
+        return f"only {near:.0%} of the border is backdrop -- something reaches the canvas edge"
+    return ""
+
+
+def assemble_victory(raw: Image.Image, plan: dict) -> tuple:
+    """(strip, "") or (None, why it was refused). No API call: also rebuilds a sheet from a saved raw."""
+    why = _backdrop_is_plain(raw)
+    if why:
+        return None, why
+    keys, cols = plan["keys"], plan["cols"]
+    cells = []
+    for slot, c in enumerate(_cells(raw, len(keys), cols)):
+        fig, cut = _main_figure(c)
+        if cut:
+            return None, f"pose {slot} runs off its cell's top or bottom edge -- the AI drew it across two cells"
+        cells.append(fig)
+    for slot, c in enumerate(cells):
+        bb = _bbox(c)
+        if bb is None or (bb[3] - bb[1]) < FRAME * 0.2:
+            return None, f"pose {slot} came back empty or tiny"
+        why = _backdrop_residue(c)
+        if why:
+            return None, f"pose {slot}: {why}"
+    k = strip_scale(cells, [plan["frames"][kk] for kk in keys])
+    slot_of = {kk: slot for slot, kk in enumerate(keys)}
+    strip = Image.new("RGBA", (FRAME * len(plan["frames"]), FRAME), (0, 0, 0, 0))
+    for i, base_fr in enumerate(plan["frames"]):
+        strip.alpha_composite(_place(cells[slot_of[plan["assign"][i]]], k, base_fr), (i * FRAME, 0))
+    base_w = Image.open(plan["base"]).width
+    if strip.width != base_w:
+        return None, f"{strip.width}px strip for a {base_w}px base"
+    return strip, ""
+
+
+def victory_plan(job: str, world: str) -> dict:
+    base = JOBS_DIR / job / "victory.png"
+    costume = JOBS_DIR / job / f"idle_{world}.png"
+    if not base.exists():
+        return {"skip": f"no artist victory.png for {job}"}
+    if not costume.exists():
+        return {"skip": f"no idle_{world}.png to take the costume from — dress idle first"}
+    frames = _frames(base)
+    keys, assign = victory_key_poses(frames)
+    cols, rows = _grid_shape(len(keys))
+    return {"base": base, "costume": costume, "frames": frames, "keys": keys, "assign": assign, "cols": cols, "rows": rows}
+
+
+def _victory(client, job: str, world: str, out: Path, quality: str) -> tuple:
+    plan = victory_plan(job, world)
+    if "skip" in plan:
+        print(f"  SKIP {job}/{world}/victory: {plan['skip']}", file=sys.stderr)
+        return 0.0, False
+    keys, cols, rows = plan["keys"], plan["cols"], plan["rows"]
+    empty = (f"Poses repeat to fill the grid: draw EVERY cell, each one with its own reference pose."
+             if cols * rows > len(keys) else "")
+    dress = WORLD_DRESS[world] + " Keep this character's identity colour: " + JOB_SIGNATURE[job] + "."
+    prompt = VICTORY_PROMPT.format(cols=cols, rows=rows, n=len(keys), empty=empty, dress=dress,
+                                   signature=JOB_SIGNATURE[job], core=JOB_CORE[job])
+    refs = [("ref_poses.png", _pose_grid(plan["frames"], keys, cols), "image/png"),
+            ("ref_costume.png", ref_bytes(plan["costume"], first_frame=True), "image/png")]
+    unit = _rap.COST[quality]
+    print(f"[{job}/{world}/victory] gpt-image-1 {quality} (${unit:.3f}) {len(keys)} pose(s) in a {cols}x{rows} grid "
+          f"for {len(plan['frames'])} frames")
+    try:
+        # Real alpha, not white-then-keyed: 8 of the first 25 rolls came back on a painted backdrop
+        raw = _rap.call_gpt(client, prompt, refs, quality, background="transparent")
+    except Exception as e:
+        print(f"  FAILED {job}/{world}/victory: {e}", file=sys.stderr)
+        return 0.0, False
+    rawp = RAW_DIR / f"{job}_{world}_victory_raw.png"
+    assert_writable(rawp)
+    raw.save(rawp)
+    strip, why = assemble_victory(raw, plan)
+    if strip is None:
+        print(f"  REFUSED {job}/{world}: {why} -- re-roll (${unit:.3f} spent on it)", file=sys.stderr)
+        return unit, False
+    assert_writable(out)
+    strip.save(out)
+    print(f"  -> {out.relative_to(GAME_REPO)}  ({len(plan['frames'])} frames, poses {plan['assign']})")
+    return unit, True
 
 
 if __name__ == "__main__":

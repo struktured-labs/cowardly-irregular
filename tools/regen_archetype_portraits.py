@@ -331,12 +331,14 @@ def transparent_bg(img: Image.Image, threshold: int = 240) -> Image.Image:
     return img
 
 
-def call_gpt(client, prompt, refs, quality, max_retries=3):
+def call_gpt(client, prompt, refs, quality, max_retries=3, background=None):
+    # background="transparent" asks the model for real alpha; None keeps every existing caller's request unchanged
+    extra = {"background": background} if background else {}
     for attempt in range(max_retries):
         try:
             resp = client.images.edit(model="gpt-image-1", image=refs,
                                        prompt=prompt, size="1024x1024",
-                                       quality=quality, n=1)
+                                       quality=quality, n=1, **extra)
             return Image.open(io.BytesIO(base64.b64decode(resp.data[0].b64_json)))
         except Exception as e:
             msg = str(e).lower()
