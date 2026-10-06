@@ -54,6 +54,7 @@ const ENEMY_SCALE_BUMP: float = 2.5
 ## Air between a figure's feet and its name label, and the label's own box width (centred on the body).
 const NAME_LABEL_GAP: float = 6.0
 const NAME_LABEL_WIDTH: float = 200.0
+const NAME_LABEL_Z := 5  # over every monster (0), under the damage popups (100+)
 const ENEMY_SMALL_FRAME_THRESHOLD: int = 128
 
 ## UI References
@@ -1504,6 +1505,8 @@ func _add_sprite_label(sprite: AnimatedSprite2D, text: String, fallback_drop: fl
 	label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.8))
 	label.add_theme_constant_override("shadow_offset_x", 1)
 	label.add_theme_constant_override("shadow_offset_y", 1)
+	# Over every monster (z 0), under the damage popups (100+): a later-drawn neighbour hid "GOBLIN A" down to "GOBLI".
+	label.z_index = NAME_LABEL_Z
 	sprite.add_child(label)
 	# Sized and placed AFTER the add so the width is the clamped real one — an auto-width label at a fixed x put its own centre at x + width/2, which drifted right as the name got longer (BAT -10px, PYRROTH +50px).
 	label.size = Vector2(NAME_LABEL_WIDTH, 0.0)
