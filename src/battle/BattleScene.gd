@@ -3327,6 +3327,10 @@ func _on_battle_ended(victory: bool) -> void:
 	var turn_panel := get_node_or_null("UI/TurnInfoPanel") as CanvasItem
 	if turn_panel:
 		turn_panel.visible = false
+	## Defer/Advance/Speed/Auto mean nothing on the results screen, whose own prompt names the one key that does.
+	var hint_bar := get_node_or_null("UI/InputHintBar") as CanvasItem
+	if hint_bar:
+		hint_bar.visible = false
 
 	# Clear any pending autobattle cancel — if the user queued a "cancel
 	# next turn" via Select during execution but the battle ended before
