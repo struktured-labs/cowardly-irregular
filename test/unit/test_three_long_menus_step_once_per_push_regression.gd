@@ -99,7 +99,7 @@ func _items() -> Node:
 	m.mode = 0
 	m._item_list = []
 	for i in range(20):
-		m._item_list.append({"id": "i_%d" % i, "data": {"name": "I %d" % i}, "count": 1})
+		m._item_list.append({"id": "i_%d" % i, "quantity": 1, "data": {"name": "I %d" % i}})
 	m.selected_item_index = 0
 	return m
 

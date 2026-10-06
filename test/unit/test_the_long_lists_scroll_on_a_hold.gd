@@ -101,7 +101,7 @@ func test_holding_down_walks_the_item_list() -> void:
 	var m := _menu(ITEMS)
 	var items: Array = []
 	for i in range(30):
-		items.append({"data": {}, "count": 1})
+		items.append({"id": "probe_%d" % i, "quantity": 1, "data": {"name": "Probe %d" % i, "category": 0}})
 	m.set("_item_list", items)
 	m.set("selected_item_index", 0)
 	m.set("mode", 0)
@@ -113,7 +113,7 @@ func test_a_hidden_item_list_does_not_walk() -> void:
 	var m := _menu(ITEMS)
 	var items: Array = []
 	for i in range(30):
-		items.append({"data": {}, "count": 1})
+		items.append({"id": "probe_%d" % i, "quantity": 1, "data": {"name": "Probe %d" % i, "category": 0}})
 	m.set("_item_list", items)
 	m.set("selected_item_index", 5)
 	m.set("mode", 0)
@@ -136,7 +136,7 @@ func test_holding_down_walks_the_ability_list() -> void:
 	var m := _menu(ABILITIES)
 	var abilities: Array = []
 	for i in range(30):
-		abilities.append({"id": "a%d" % i, "name": "A%d" % i})
+		abilities.append({"id": "a%d" % i, "data": {"name": "A%d" % i, "type": "magic", "mp_cost": 0}})
 	m.set("_abilities_list", abilities)
 	m.set("selected_index", 0)
 	assert_gt(_hold(m, "selected_index", "ui_down"), 0,
@@ -147,7 +147,7 @@ func test_a_hidden_ability_list_does_not_walk() -> void:
 	var m := _menu(ABILITIES)
 	var abilities: Array = []
 	for i in range(30):
-		abilities.append({"id": "a%d" % i, "name": "A%d" % i})
+		abilities.append({"id": "a%d" % i, "data": {"name": "A%d" % i, "type": "magic", "mp_cost": 0}})
 	m.set("_abilities_list", abilities)
 	m.set("selected_index", 5)
 	m.visible = false
