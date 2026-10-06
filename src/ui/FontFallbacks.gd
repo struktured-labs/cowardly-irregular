@@ -32,6 +32,44 @@ func _enter_tree() -> void:
 	var base := ThemeDB.fallback_font
 	if base != null:
 		base.fallbacks = chain
+	get_tree().node_added.connect(_on_node_added)
+
+
+## Every Label inherits the stretch below; correct each one that has not chosen its own line_spacing.
+func _on_node_added(n: Node) -> void:
+	if not (n is Label):
+		return
+	_correct_label(n)
+	if not n.theme_changed.is_connected(_correct_label.bind(n)):
+		n.theme_changed.connect(_correct_label.bind(n))
+
+
+## Marked with LSC_META so a label's OWN line_spacing override is never replaced, and a font-size change re-measures.
+const LSC_META := &"fallback_line_spacing"
+
+
+func _correct_label(l: Label) -> void:
+	if not is_instance_valid(l):
+		return
+	if l.has_theme_constant_override("line_spacing") and not l.has_meta(LSC_META):
+		return
+	var v: int = cached_correction(l.get_theme_font("font"), l.get_theme_font_size("font_size"))
+	if l.has_meta(LSC_META) and int(l.get_meta(LSC_META)) == v:
+		return
+	l.set_meta(LSC_META, v)
+	l.add_theme_constant_override("line_spacing", v)
+
+
+static var _corrections: Dictionary = {}
+
+
+static func cached_correction(font: Font, font_size: int) -> int:
+	if font == null:
+		return 0
+	var key := "%d:%d" % [font.get_instance_id(), font_size]
+	if not _corrections.has(key):
+		_corrections[key] = line_spacing_correction(font, font_size)
+	return int(_corrections[key])
 
 
 ## How far the symbol fallbacks stretch a line past the base font's own height (NotoSansSymbols: 28 vs ~18 at 13px), as a line_spacing correction.
