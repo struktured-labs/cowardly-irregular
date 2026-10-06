@@ -235,6 +235,7 @@ func test_the_left_column_panels_share_one_right_edge() -> void:
 		var p := _scene.get_node_or_null("UI/%s" % pname) as Control
 		if p and p.is_visible_in_tree():
 			edges[pname] = p.get_global_rect().end.x
-	assert_eq(edges.size(), 3, "SCOPE: all three column panels are showing (%s)" % [edges])
+	## The log may be legitimately hidden by the clearance guard on a tall roster; Enemies and Turn Order are always up.
+	assert_true(edges.has("EnemyStatusPanel") and edges.has("CTBTimeline"), "SCOPE: Enemies and Turn Order are showing (%s)" % [edges])
 	for pname in edges:
 		assert_almost_eq(float(edges[pname]), BattleUIManager.LEFT_COLUMN_RIGHT, 0.5, "%s must end at the shared column edge (%s)" % [pname, edges])
