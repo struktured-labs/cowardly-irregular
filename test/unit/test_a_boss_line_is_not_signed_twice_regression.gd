@@ -11,7 +11,7 @@ const WRAPPED := "^[^:'\"]{1,40}: ['\"].*['\"]$"
 class ProbeScene extends "res://src/battle/BattleScene.gd":
 	var bubbles: Array = []
 	var logged: Array = []
-	func _spawn_quip_bubble(_sprite: Node2D, _speaker_name: String, line: String, _border_color: Color = Color(1.0, 0.85, 0.2), _hold_time: float = 1.5, _audio_key: String = "") -> void:
+	func _spawn_quip_bubble(_sprite: Node2D, _speaker_name: String, line: String, _border_color: Color = Color(1.0, 0.85, 0.2), _hold_time: float = 1.5, _audio_key: String = "", _voice_stream: AudioStream = null) -> void:
 		bubbles.append(line)
 	func log_message(message: String) -> void:
 		logged.append(message)
