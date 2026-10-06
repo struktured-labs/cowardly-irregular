@@ -6242,6 +6242,17 @@ func _combatant_for_headless(data: Dictionary) -> Combatant:
 	var mtype: String = str(data.get("id", ""))
 	if mtype != "":
 		enemy.set_meta("monster_type", mtype)
+	# The spawner row carries these and the live spawner applies them; dropped here, every ground monster only ever
+	# basic-attacked and had no elemental weakness or resistance.
+	for w in data.get("weaknesses", []):
+		enemy.elemental_weaknesses.append(str(w))
+	for r in data.get("resistances", []):
+		enemy.elemental_resistances.append(str(r))
+	var kit: Variant = data.get("abilities", [])
+	if kit is Array and not (kit as Array).is_empty():
+		enemy.job = {"abilities": (kit as Array).duplicate(), "name": str(data.get("name", "Enemy"))}
+		for aid in kit:
+			enemy.learned_abilities.append(str(aid))
 	return enemy
 
 
