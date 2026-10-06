@@ -2896,7 +2896,13 @@ func _ai_tank(combatant: Combatant, abilities: Array, alive_allies: Array, alive
 
 	var bias: Dictionary = _intent_ability_bias(combatant)
 	# Use defensive/buff ability if available (40% chance)
-	if defensive_abilities.size() > 0 and randf() < 0.4:
+	## An intent naming a utility ability also lifts this gate by its bias (capped 1.5x, so 60%): a lone
+	## frost_armor could not be favoured WITHIN its pool, and Glacius's Frost Turtle changed nothing
+	## (struktured 2026-10-06). No bias on the pool leaves exactly 0.4 and the same single draw.
+	var utility_gate: float = 0.4
+	for a in defensive_abilities:
+		utility_gate = maxf(utility_gate, 0.4 * minf(float(bias.get(str(a.get("id", "")), 1.0)), 1.5))
+	if defensive_abilities.size() > 0 and randf() < utility_gate:
 		var buff = _pick_uniform(defensive_abilities, bias)
 		## Lure, Infinite Loop, and Performance Review were aimed at the caster or a wounded ally.
 		var targets: Array = _utility_targets(combatant, buff, alive_allies, alive_enemies)

@@ -565,6 +565,7 @@
       {
         "id": "frost_turtle",
         "name": "Frost Turtle",
+        "bias": {"frost_armor": 1.5},
         "conditions": {
           "min_phase": 1,
           "weight": 0.9
