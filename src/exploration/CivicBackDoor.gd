@@ -76,6 +76,7 @@ func _setup_indicator() -> void:
 	_indicator.add_theme_color_override("font_color", Color(0.7, 0.72, 0.78))
 	_indicator.visible = false
 	_indicator.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	Mode7Prompt.style_interact_prompt(_indicator)
 	add_child(_indicator)
 
 

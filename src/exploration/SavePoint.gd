@@ -36,7 +36,7 @@ static func player_at_any(tree: SceneTree) -> bool:
 
 ## Mode 7 warps world-space text; the save prompt is read standing on the crystal.
 const FLAT_INDICATOR_OFFSET := Vector2(-56, -28)
-const FLAT_INDICATOR_FONT: int = 10
+const FLAT_INDICATOR_FONT: int = Mode7Prompt.INTERACT_FONT
 var _prompt_layer: CanvasLayer
 
 
@@ -120,7 +120,7 @@ func _setup_indicator() -> void:
 	_indicator.add_theme_font_size_override("font_size", 10)
 	_indicator.add_theme_color_override("font_color", Color(0.7, 0.85, 1.0))
 	_indicator.visible = false
-	Mode7Prompt.pin_above_sprites(_indicator)
+	Mode7Prompt.style_interact_prompt(_indicator)
 	_indicator.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_indicator)
 

@@ -69,3 +69,18 @@ static func drop_control(owner: Node, layer: CanvasLayer, ctrl: Control, offset:
 static func pin_above_sprites(label: Label) -> void:
 	label.z_index = WORLD_Z
 	label.z_as_relative = false
+
+
+## The world interactables' "<key> <action>" prompts: 10px tinted text with no edge, drawn under the player standing
+## at them. Keep each tint, but give every one the exit labels' legibility: 12px, outlined, over the sprites.
+const INTERACT_FONT: int = 12
+
+
+static func style_interact_prompt(label: Label) -> void:
+	label.add_theme_font_size_override("font_size", INTERACT_FONT)
+	label.add_theme_constant_override("outline_size", 3)
+	label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
+	label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.6))
+	label.add_theme_constant_override("shadow_offset_x", 1)
+	label.add_theme_constant_override("shadow_offset_y", 1)
+	pin_above_sprites(label)
