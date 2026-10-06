@@ -258,7 +258,9 @@ func build_command_menu_items_with_targets(combatant: Combatant) -> Array:
 	# the rules decide the action count, not the player (re-enabled when the queue empties).
 	items.append({
 		"id": "autobattle",
-		"label": "Auto",
+		## The two rows sit side by side; the label says how LONG each lasts (struktured 2026-10-06,
+		## after asking what "Trust: ON/OFF vs Run Auto" meant).
+		"label": "Auto: this turn",
 		"tooltip": "Run this character's autobattle script for this turn",
 		"data": {"action": "autobattle", "combatant": combatant}
 	})
@@ -270,7 +272,7 @@ func build_command_menu_items_with_targets(combatant: Combatant) -> Array:
 	# nested under Auto — the submenu it lived in is gone). Off-surface for
 	# CLEARING (queue #4): Settings → Party Trust per-PC row (added same
 	# ticket) so the toggle isn't one-way once ON.
-	var trust_label: String = "Trust: ON" if combatant.player_trust else "Trust: OFF"
+	var trust_label: String = "Trust (every turn): ON" if combatant.player_trust else "Trust (every turn): OFF"
 	items.append({
 		"id": "trust_toggle",
 		"label": trust_label,

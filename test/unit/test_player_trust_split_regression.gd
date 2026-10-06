@@ -83,5 +83,5 @@ func test_command_menu_trust_toggle_writes_player_trust() -> void:
 	var src: String = FileAccess.get_file_as_string(CMD_PATH)
 	assert_string_contains(src, "combatant_for_trust.player_trust = not combatant_for_trust.player_trust",
 		"Trust toggle must flip player_trust, not autobattle_locked (spotlight field)")
-	assert_string_contains(src, "\"Trust: ON\" if combatant.player_trust",
+	assert_string_contains(src, "\"Trust (every turn): ON\" if combatant.player_trust",
 		"Trust label reflects player_trust so the row shows player intent")

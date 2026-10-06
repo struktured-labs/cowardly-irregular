@@ -38,7 +38,7 @@ func test_trust_menu_item_appended_after_autobattle_rules() -> void:
 	assert_gt(trust_idx, -1,
 		"build_command_menu_items_with_targets must append a 'trust_toggle' menu item")
 	# Label must be dynamic — ON when player_trust, OFF otherwise.
-	assert_true(body.find("\"Trust: ON\" if combatant.player_trust else \"Trust: OFF\"") > -1,
+	assert_true(body.find("\"Trust (every turn): ON\" if combatant.player_trust else \"Trust (every turn): OFF\"") > -1,
 		"trust_toggle label must read state from combatant.player_trust")
 
 
