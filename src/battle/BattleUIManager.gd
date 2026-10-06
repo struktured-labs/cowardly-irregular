@@ -915,6 +915,9 @@ func update_turn_info() -> void:
 ## CTB Timeline — vertical turn order display (FFX-style) on right side
 var _ctb_last_head_id: int = 0
 var _ctb_timeline: VBoxContainer = null
+## One right edge for the whole left column (Enemies, Log, Turn Order). struktured 2026-10-05: "a bit too wide ... some are different widths than others".
+## BattleScene.tscn's EnemyStatusPanel and BattleLogPanel use the same 205.
+const LEFT_COLUMN_RIGHT := 205.0
 var _ctb_panel: PanelContainer = null
 
 func _update_turn_order_strip() -> void:
@@ -940,10 +943,10 @@ func _update_turn_order_strip() -> void:
 		## portrait/icon, AP pips and an HP bar — the old 105x170 strip only fit a name+number.
 		_ctb_panel.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
 		_ctb_panel.offset_left = 5
-		_ctb_panel.offset_right = 260
+		_ctb_panel.offset_right = LEFT_COLUMN_RIGHT
 		_ctb_panel.offset_bottom = -10
 		_ctb_panel.offset_top = -230
-		_ctb_panel.custom_minimum_size = Vector2(255, 0)
+		_ctb_panel.custom_minimum_size = Vector2(LEFT_COLUMN_RIGHT - 5.0, 0)
 		_ctb_panel.grow_horizontal = Control.GROW_DIRECTION_END
 		_ctb_panel.grow_vertical = Control.GROW_DIRECTION_BEGIN
 		_scene.get_node("UI").add_child(_ctb_panel)

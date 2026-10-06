@@ -48,7 +48,7 @@ func test_battle_log_panel_is_left_column_top_anchored() -> void:
 	var block := src.substr(i, 400)
 	assert_string_contains(block, "anchor_top = 0.0", "BattleLogPanel must be top-anchored, not bottom-center")
 	assert_string_contains(block, "offset_left = 5.0")
-	assert_string_contains(block, "offset_right = 260.0")
+	assert_string_contains(block, "offset_right = 205.0")
 
 
 func test_battle_log_panel_sits_below_enemies_and_above_turn_order_source() -> void:
@@ -221,3 +221,20 @@ func test_a_tall_enemy_panel_pushes_the_turn_order_card_down() -> void:
 	var c := ctb.get_global_rect()
 	assert_gt(e.end.y, 490.0, "SCOPE: the enemy panel really reaches past the card's default top")
 	assert_false(e.intersects(c), "the turn-order card must start below a tall enemy panel (%s vs %s)" % [e, c])
+
+
+## struktured 2026-10-05: the left column was "a bit too wide" and "some are different widths than others" (Enemies 175px,
+## Log and Turn Order 255px). One shared right edge now: BattleUIManager.LEFT_COLUMN_RIGHT.
+func test_the_left_column_panels_share_one_right_edge() -> void:
+	_scene = _spawn_battle()
+	for i in 6:
+		_scene._update_turn_info()
+		await get_tree().process_frame
+	var edges: Dictionary = {}
+	for pname in ["EnemyStatusPanel", "BattleLogPanel", "CTBTimeline"]:
+		var p := _scene.get_node_or_null("UI/%s" % pname) as Control
+		if p and p.is_visible_in_tree():
+			edges[pname] = p.get_global_rect().end.x
+	assert_eq(edges.size(), 3, "SCOPE: all three column panels are showing (%s)" % [edges])
+	for pname in edges:
+		assert_almost_eq(float(edges[pname]), BattleUIManager.LEFT_COLUMN_RIGHT, 0.5, "%s must end at the shared column edge (%s)" % [pname, edges])

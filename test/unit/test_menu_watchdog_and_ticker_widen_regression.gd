@@ -103,14 +103,14 @@ func test_watchdog_force_spawn_logs_loudly() -> void:
 
 func test_ticker_widened_to_hint_bar_width() -> void:
 	# SUPERSEDED 2026-10-03: the bottom-center ticker is gone. BattleLogPanel is now
-	# a fixed left-column box (x 5..260) anchored top-left, not bottom-center-sized.
+	# a fixed left-column box (x 5..205, the shared LEFT_COLUMN_RIGHT) anchored top-left, not bottom-center-sized.
 	var scene_src: String = FileAccess.get_file_as_string(BS_SCENE_PATH)
 	var panel_idx: int = scene_src.find("[node name=\"BattleLogPanel\"")
 	assert_gt(panel_idx, -1)
 	var panel_block: String = scene_src.substr(panel_idx, 600)
 	assert_string_contains(panel_block, "offset_left = 5.0",
 		"BattleLogPanel now sits in the left column, not centered")
-	assert_string_contains(panel_block, "offset_right = 260.0",
+	assert_string_contains(panel_block, "offset_right = 205.0",
 		"BattleLogPanel's left-column width")
 	assert_string_contains(panel_block, "anchor_top = 0.0",
 		"BattleLogPanel no longer bottom-anchored")

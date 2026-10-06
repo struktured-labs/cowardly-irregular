@@ -51,7 +51,7 @@ func _timeline_cards() -> Array:
 
 func test_ctb_panel_widened_for_richer_cards() -> void:
 	var src := FileAccess.get_file_as_string("res://src/battle/BattleUIManager.gd")
-	assert_string_contains(src, "_ctb_panel.offset_right = 260",
+	assert_string_contains(src, "_ctb_panel.offset_right = LEFT_COLUMN_RIGHT",
 		"CTB panel must be widened past the old 110px name+number strip")
 	assert_string_contains(src, "_ctb_panel.offset_top = -230",
 		"CTB panel must be tall enough for portrait + pips + HP bar rows")
