@@ -56,6 +56,9 @@ const NAME_LABEL_GAP: float = 6.0
 const NAME_LABEL_WIDTH: float = 200.0
 const NAME_LABEL_PX := 16  # on-screen size for every monster, whatever its sprite scale
 const ENEMY_HP_BAR_SIZE := Vector2(60, 5)  # on-screen, whatever the sprite scale
+const STATUS_ROW_WIDTH := 120.0  # badges centre in it over the figure (row units, x STATUS_ROW_ZOOM on screen)
+const STATUS_ROW_ZOOM := 1.6  # the badges' ~9px text, read at ~14px on every monster
+const STATUS_ROW_LIFT := 16.0  # row units from the figure's top to the badge row's top
 const NAME_LABEL_Z := 5  # over every monster (0), under the damage popups (100+)
 const ENEMY_SMALL_FRAME_THRESHOLD: int = 128
 
@@ -1579,8 +1582,24 @@ func _setup_status_icons(combatant: Combatant, sprite: AnimatedSprite2D) -> void
 	"""Create status icon container above a combatant's sprite and connect signals"""
 	var container = HBoxContainer.new()
 	container.add_theme_constant_override("separation", 2)
-	container.position = Vector2(-30, -55)  # Above sprite
 	container.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# A fixed (-30, -55) at the sprite's scale put x2.5 monsters' badges huge and far off the figure, Pyrroth's tiny on his head.
+	var sc := sprite.scale
+	var unscale := Vector2(1.0 / maxf(absf(sc.x), 0.01), 1.0 / maxf(absf(sc.y), 0.01)) * STATUS_ROW_ZOOM
+	container.scale = unscale
+	container.alignment = BoxContainer.ALIGNMENT_CENTER
+	container.size = Vector2(STATUS_ROW_WIDTH, 0.0)
+	var top := -55.0
+	var centre_x := 0.0
+	if sprite.sprite_frames and sprite.sprite_frames.has_animation(&"idle") and sprite.sprite_frames.get_frame_count(&"idle") > 0:
+		var idle_tex = sprite.sprite_frames.get_frame_texture(&"idle", 0)
+		if idle_tex:
+			var fig: Rect2 = AdvanceAuraClass.figure_rect_of(idle_tex)
+			top = fig.position.y - float(idle_tex.get_height()) * 0.5
+			centre_x = fig.get_center().x - float(idle_tex.get_width()) * 0.5
+			if sprite.flip_h:
+				centre_x = -centre_x
+	container.position = Vector2(centre_x - STATUS_ROW_WIDTH * unscale.x * 0.5, top - STATUS_ROW_LIFT * unscale.y)
 	sprite.add_child(container)
 	_status_icon_containers[combatant] = container
 
