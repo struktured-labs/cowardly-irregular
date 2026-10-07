@@ -21,20 +21,22 @@ func after_each() -> void:
 		_bm.restore()
 
 
+## Read with NO frame between: _ready runs inside add_child, while other files' leftovers are only freed at a frame
+## boundary (they moved a frame-spanning count by -3 in the gate), so this delta is the scene's own orphans.
 func _orphans() -> int:
 	return int(Performance.get_monitor(Performance.OBJECT_ORPHAN_NODE_COUNT))
 
 
 func test_a_script_built_scene_orphans_no_speed_panel() -> void:
-	var before := _orphans()
 	var scene = BattleSceneScript.new()
+	var before := _orphans()
 	add_child(scene)
-	await get_tree().process_frame
+	var leaked := _orphans() - before
 	assert_null(scene.get_node_or_null("UI"), "SCOPE: a script-built scene has no UI node")
 	remove_child(scene)
 	scene.free()
-	await get_tree().process_frame
-	assert_eq(_orphans() - before, 0, "building and freeing a UI-less scene must leave no orphaned speed panel behind")
+	# The scene was itself an orphan until add_child: -1 is "the scene left the orphan set and nothing joined it".
+	assert_eq(leaked, -1, "a UI-less scene's _ready must leave no orphaned speed panel behind")
 
 
 func test_the_real_scene_still_builds_its_speed_readout() -> void:
