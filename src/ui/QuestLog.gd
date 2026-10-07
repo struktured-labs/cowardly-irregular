@@ -103,6 +103,13 @@ var _total_lines: int = 0
 var _initial_scroll_applied: bool = false
 
 
+## The page legend, both shoulders named and separated ("Q/W: Page", "LB/RB: Page"); glued, a pad read "LBRB".
+static func page_hint(device_name: String = "") -> String:
+	return "%s/%s: Page" % [
+		InputProfileManager.hint_for_action("battle_defer", device_name),
+		InputProfileManager.hint_for_action("battle_advance", device_name)]
+
+
 func _ready() -> void:
 	call_deferred("_build_ui")
 
@@ -245,10 +252,8 @@ func _build_ui() -> void:
 	# "B" was right on Nintendo only, and a keyboard player was offered only a mouse.
 	## The page control must be ADVERTISED and DERIVED — MenuPaging binds battle_defer/battle_advance,
 	## which three families print as L/LB/L1 and R/RB/R1, so a literal would be right on one pad only.
-	footer.text = "↑↓/D-pad / Wheel: Scroll    %s%s: Page    %s / RClick: Close" % [
-		InputProfileManager.hint_for_action("battle_defer"),
-		InputProfileManager.hint_for_action("battle_advance"),
-		InputProfileManager.hint_for_action("ui_cancel")]
+	footer.text = "↑↓/D-pad / Wheel: Scroll    %s    %s / RClick: Close" % [
+		page_hint(), InputProfileManager.hint_for_action("ui_cancel")]
 	footer.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	footer.position = Vector2(0, footer_y)
 	footer.size = Vector2(vp_size.x, footer_h)

@@ -97,9 +97,14 @@ func test_the_footer_advertises_the_pager_and_derives_it() -> void:
 	var at := src.find("footer.text")
 	assert_gt(at, -1, "the Quest Log must still have a footer legend")
 	var line := src.substr(at, 320)
+	# The legend may live in page_hint(); follow the call so the pin judges the derivation, wherever it sits.
+	if line.contains("page_hint("):
+		var fn := src.find("func page_hint")
+		assert_gt(fn, -1, "the footer calls page_hint(), which must exist")
+		line += src.substr(fn, 320)
 	assert_true(line.find("Page") > -1, "the page control must be advertised at all")
-	assert_true(line.find('hint_for_action("battle_defer")') > -1
-			and line.find('hint_for_action("battle_advance")') > -1,
+	assert_true(line.find('hint_for_action("battle_defer"') > -1
+			and line.find('hint_for_action("battle_advance"') > -1,
 		"both page tokens must be DERIVED per connected pad")
 	for frozen in ["L1", "LB", "R1", "RB"]:
 		assert_eq(line.find(frozen), -1,
