@@ -1,8 +1,9 @@
 extends DragonCave
 class_name ShadowDragonCaveScene
 
-## Abyssal Hollow - Shadow Dragon Umbraxis awaits on Floor 5 (struktured 2026-09-06 depth pass).
-## A true maze with disorienting same-floor portals; one lever vault, one mimic, one ambush plate, philosophical signposts.
+## Abyssal Hollow - Shadow Dragon Umbraxis awaits on Floor 5 (struktured 2026-09-06 depth pass; 2026-10-06 maze pass).
+## A true maze with disorienting same-floor portals; one lever vault, one mimic, one ambush plate, philosophical
+## signposts, and an optional blast-charge vault (Q/Z) on floor 3.
 
 func _init() -> void:
 	cave_name = "Abyssal Hollow"
@@ -53,18 +54,18 @@ func _init() -> void:
 		3: [
 			"MMMMMMMMMMMMMMMMMMMM",
 			"MMMMMMMMMMMMMMMMMMMM",
-			"MM................MM",
-			"MM................MM",
-			"MM..T.........S...MM",
-			"MM................MM",
-			"MM................MM",
-			"MM................MM",
-			"MM................MM",
-			"MM................MM",
-			"MM................MM",
-			"MM................MM",
-			"MM..D.....U.......MM",
-			"MM................MM",
+			"M............M.....M",
+			"M.....M......M.....M",
+			"M..T..M......M..Q..M",
+			"M.....M............M",
+			"M.....M......M.....M",
+			"M.....M......M..Z..M",
+			"M.....M......M.....M",
+			"M.....M.........S..M",
+			"M.....M......M.....M",
+			"M..D.....U...M.....M",
+			"M.....M......M..T..M",
+			"M.....M......M.....M",
 			"MMMMMMMMMMMMMMMMMMMM",
 			"MMMMMMMMMMMMMMMMMMMM",
 		],

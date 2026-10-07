@@ -1,8 +1,9 @@
 extends DragonCave
 class_name FireDragonCaveScene
 
-## Infernal Grotto - Fire Dragon Pyrroth awaits on Floor 5 (struktured 2026-09-06 depth pass).
-## Lava chokepoints (l), a caldera boss arena, one lever shortcut, one portal shortcut, one ambush plate.
+## Infernal Grotto - Fire Dragon Pyrroth awaits on Floor 5 (struktured 2026-09-06 depth pass; 2026-10-06 maze pass).
+## Lava chokepoints (l), a caldera boss arena, one lever shortcut, one portal shortcut, one ambush plate,
+## and an optional small-key vault (K/G) on floor 2 -- the first dungeon to showcase DungeonMechanics.
 
 func _init() -> void:
 	cave_name = "Infernal Grotto"
@@ -32,25 +33,25 @@ func _init() -> void:
 			"MMMMMMMMMMMMMMMMMMMM",
 			"MMMMMMMMMMMMMMMMMMMM",
 		],
-		2: [
-			"MMMMMMMMMMMMMMMMMMMM",
-			"MMMMMMMMMMMMMMMMMMMM",
-			"MM................MM",
-			"MM................MM",
-			"MM..T..........a..MM",
-			"MM................MM",
-			"MM....llllllll....MM",
-			"MM....llllllll....MM",
-			"MM....llllllll....MM",
-			"MM....llllllll....MM",
-			"MM...........T....MM",
-			"MM................MM",
-			"MM..D.....U.......MM",
-			"MM................MM",
-			"MMMMMMMMMMMMMMMMMMMM",
-			"MMMMMMMMMMMMMMMMMMMM",
-		],
-		3: [
+			2: [
+				"MMMMMMMMMMMMMMMMMMMM",
+				"M..................M",
+				"M..M.....M..M..M...M",
+				"M..M..M..M.....M...M",
+				"M..M..M..MllMT.M...M",
+				"M..M..M..MllM..M...M",
+				"M..M..M...llM..M...M",
+				"M...U.M..M..M..M...M",
+				"M..M..M..M.....M...M",
+				"M..M.....M..M..MK..M",
+				"M..M..M..M..M..MG..M",
+				"M..M..M.....M..M...M",
+				"M..M..M..M..M...T..M",
+				"M.D............a...M",
+				"MMMMMMMMMMMMMMMMMMMM",
+				"MMMMMMMMMMMMMMMMMMMM",
+			],
+			3: [
 			"MMMMMMMMMMMMMMMMMMMM",
 			"MMMMMMMMMMMMMMMMMMMM",
 			"MM................MM",
@@ -73,15 +74,15 @@ func _init() -> void:
 			"MMMMMMMMMMMMMMMMMMMM",
 			"MMMMMMMMMMMMMMMMMMMM",
 			"MMMMMMMMMMMMMMMMMMMM",
-			"MM................MM",
-			"MM................MM",
-			"MM..D...........a.MM",
-			"MM................MM",
-			"MM.......T........MM",
-			"MM................MM",
-			"MM........U.......MM",
-			"MM................MM",
-			"MM................MM",
+			"M..................M",
+			"M...D...........a..M",
+			"M.MM.MMMMMMMM.MMMM.M",
+			"M.ll...............M",
+			"M.ll...............M",
+			"M.MMMMM.MMMMMMM.MM.M",
+			"M....T...T...U.....M",
+			"M..................M",
+			"MMMMMMMMMMMMMMMMMMMM",
 			"MMMMMMMMMMMMMMMMMMMM",
 			"MMMMMMMMMMMMMMMMMMMM",
 			"MMMMMMMMMMMMMMMMMMMM",

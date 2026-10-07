@@ -1,8 +1,9 @@
 extends DragonCave
 class_name LightningDragonCaveScene
 
-## Stormspire Cavern — Lightning Dragon Voltharion awaits on Floor 5 (struktured 2026-09-06 depth pass).
-## Wide, short storm-lattice floors for a vertical/airy feel; one lever shortcut, one wind-funnel portal, one discharge trap.
+## Stormspire Cavern — Lightning Dragon Voltharion awaits on Floor 5 (struktured 2026-09-06 depth pass; 2026-10-06 maze pass).
+## Wide, short storm-lattice floors for a vertical/airy feel; one lever shortcut, one wind-funnel portal, one discharge
+## trap, and an optional small-key vault (K/G) on floor 3.
 
 func _init() -> void:
 	cave_name = "Stormspire Cavern"
@@ -53,18 +54,18 @@ func _init() -> void:
 		3: [
 			"MMMMMMMMMMMMMMMMMMMM",
 			"MMMMMMMMMMMMMMMMMMMM",
-			"MM................MM",
-			"MM................MM",
-			"MM..T.............MM",
-			"MM................MM",
-			"MM................MM",
-			"MM................MM",
-			"MM................MM",
-			"MM................MM",
-			"MM................MM",
-			"MM................MM",
-			"MM..D.....U.......MM",
-			"MM................MM",
+			"M..................M",
+			"M...T..............M",
+			"M..................M",
+			"M.M.MMMMMMMMMMM.MM.M",
+			"M..................M",
+			"M...............K..M",
+			"M..................M",
+			"M.MMMMMM.MMMMMMM.M.M",
+			"M..................M",
+			"M..D....U.......G..M",
+			"M...............T..M",
+			"M..................M",
 			"MMMMMMMMMMMMMMMMMMMM",
 			"MMMMMMMMMMMMMMMMMMMM",
 		],

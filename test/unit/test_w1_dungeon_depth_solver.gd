@@ -88,25 +88,75 @@ func _entrance_cell(cave) -> Vector2i:
 
 
 func _offer(queue: Array, seen: Dictionary, state: Array) -> void:
-	var key := "%d:%d:%d:%d" % state
+	var key := "%d:%d:%d:%d:%d" % state
 	if seen.has(key):
 		return
 	seen[key] = true
 	queue.append(state)
 
 
+## DungeonMechanics pickups (K/Q) and locks (G/Z) each get one bit in a second mask, same
+## shape as _switch_bit_index -- pickup bits are set on first visit, lock bits are set once
+## DungeonMechanics.resource_available says a matching resource hasn't already been spent.
+func _mech_bit_index(cave) -> Dictionary:
+	var out := {}
+	var i := 0
+	for pk in DungeonMechanics.scan_pickups(cave.floor_layouts):
+		out[str(pk["id"])] = i
+		i += 1
+	for lk in DungeonMechanics.scan_locks(cave.floor_layouts):
+		out[str(lk["id"])] = i
+		i += 1
+	assert_lt(i, 20, "sanity: mechanics bitmask assumes a small pickup/lock count")
+	return out
+
+
+func _mech_dicts(mech_mask: int, mech_bits: Dictionary, pickups: Array, locks: Array) -> Array:
+	var collected := {}
+	var opened := {}
+	var pk_ids := {}
+	for pk in pickups:
+		pk_ids[str(pk["id"])] = true
+	for id in mech_bits:
+		if not (mech_mask & (1 << int(mech_bits[id]))):
+			continue
+		if pk_ids.has(id):
+			collected[id] = true
+		else:
+			opened[id] = true
+	return [collected, opened]
+
+
+## True if `n` can be entered given the base cave mechanics plus DungeonMechanics locks --
+## a G/Z cell is walkable only once DungeonMechanics.resource_available cleared it.
+func _walkable_with_mechanics(cave, f: int, n: Vector2i, active: Dictionary, opened: Dictionary, locks: Array) -> bool:
+	var ch := _char_here(cave, f, n)
+	if ch == "":
+		return false
+	if DungeonMechanics.RESOURCE_FOR_LOCK.has(ch):
+		var lid := DungeonMechanics.lock_id_at(locks, f, n)
+		return lid != "" and bool(opened.get(lid, false))
+	return DungeonPuzzleLayer.is_walkable(cave.floor_layouts, cave.switch_effects, f, n, active)
+
+
 ## Mirrors DragonCave._transition_to_floor's landing rule exactly: ascend via
 ## 'U' lands on the next floor's 'D', descend via 'D' on floor > 1 lands on
 ## the floor below's 'U' (floor 1's landing is the authored entrance).
-func _solve(cave, allow_portals: bool, disabled_switches: Array = []) -> Dictionary:
+func _solve(cave, allow_portals: bool, disabled_switches: Array = [], disabled_pickups: Array = []) -> Dictionary:
 	var bit_index := _switch_bit_index(cave)
 	for sw_id in disabled_switches:
 		bit_index.erase(sw_id)
+	var mech_bits := _mech_bit_index(cave)
+	for pk_id in disabled_pickups:
+		mech_bits.erase(pk_id)
+	var pickups := DungeonMechanics.scan_pickups(cave.floor_layouts)
+	var locks := DungeonMechanics.scan_locks(cave.floor_layouts)
 	var start_cell := _entrance_cell(cave)
-	var seen := {"1:%d:%d:0" % [start_cell.x, start_cell.y]: true}
-	var queue: Array = [[1, start_cell.x, start_cell.y, 0]]
+	var seen := {"1:%d:%d:0:0" % [start_cell.x, start_cell.y]: true}
+	var queue: Array = [[1, start_cell.x, start_cell.y, 0, 0]]
 	var boss_cell := _boss_cell(cave)
 	var reached_boss := false
+	var visited_cells := {}
 	var head := 0
 	while head < queue.size():
 		var state: Array = queue[head]
@@ -114,40 +164,61 @@ func _solve(cave, allow_portals: bool, disabled_switches: Array = []) -> Diction
 		var f: int = state[0]
 		var cell := Vector2i(state[1], state[2])
 		var mask: int = state[3]
+		var mech_mask: int = state[4]
+		visited_cells["%d:%d:%d" % [f, cell.x, cell.y]] = true
 		if f == cave.total_floors and cell == boss_cell:
 			reached_boss = true
 		var active := _active_dict(mask, bit_index)
+		var mech_dicts := _mech_dicts(mech_mask, mech_bits, pickups, locks)
+		var collected: Dictionary = mech_dicts[0]
+		var opened: Dictionary = mech_dicts[1]
 
 		for d in DIRS:
 			var n: Vector2i = cell + d
-			if DungeonPuzzleLayer.is_walkable(cave.floor_layouts, cave.switch_effects, f, n, active):
-				_offer(queue, seen, [f, n.x, n.y, mask])
+			if _walkable_with_mechanics(cave, f, n, active, opened, locks):
+				_offer(queue, seen, [f, n.x, n.y, mask, mech_mask])
 
 		var ch_here := _char_here(cave, f, cell)
 		if ch_here == "U" and f + 1 <= cave.total_floors:
 			var land := _find_char(cave, f + 1, "D")
 			if land != Vector2i(-1, -1):
-				_offer(queue, seen, [f + 1, land.x, land.y, mask])
+				_offer(queue, seen, [f + 1, land.x, land.y, mask, mech_mask])
 		elif ch_here == "D" and f > 1:
 			var land2 := _find_char(cave, f - 1, "U")
 			if land2 == Vector2i(-1, -1) and f - 1 == 1:
 				land2 = start_cell
 			if land2 != Vector2i(-1, -1):
-				_offer(queue, seen, [f - 1, land2.x, land2.y, mask])
+				_offer(queue, seen, [f - 1, land2.x, land2.y, mask, mech_mask])
 
 		var sw_id := _switch_id_at(cave, f, cell)
 		if sw_id != "" and bit_index.has(sw_id):
 			var new_mask: int = mask | (1 << int(bit_index[sw_id]))
 			if new_mask != mask:
-				_offer(queue, seen, [f, cell.x, cell.y, new_mask])
+				_offer(queue, seen, [f, cell.x, cell.y, new_mask, mech_mask])
+
+		var pk_id := DungeonMechanics.pickup_id_at(pickups, f, cell)
+		if pk_id != "" and mech_bits.has(pk_id) and not (mech_mask & (1 << int(mech_bits[pk_id]))):
+			_offer(queue, seen, [f, cell.x, cell.y, mask, mech_mask | (1 << int(mech_bits[pk_id]))])
+
+		for lk in locks:
+			if int(lk["floor"]) != f:
+				continue
+			var lcell: Vector2i = lk["cell"]
+			var lid: String = str(lk["id"])
+			if not mech_bits.has(lid) or (mech_mask & (1 << int(mech_bits[lid]))):
+				continue
+			if absi(cell.x - lcell.x) + absi(cell.y - lcell.y) > 1:
+				continue  # must be standing on or adjacent to the lock to interact with it
+			if DungeonMechanics.resource_available(str(lk["resource"]), pickups, locks, collected, opened):
+				_offer(queue, seen, [f, cell.x, cell.y, mask, mech_mask | (1 << int(mech_bits[lid]))])
 
 		if allow_portals:
 			var dest := DungeonPuzzleLayer.portal_destination(cave.floor_layouts, cave.portal_links, f, cell)
 			if not dest.is_empty() and DungeonPuzzleLayer.portal_usable(cave.switch_effects, cave.floor_layouts, f, cell, active):
 				var dcell: Vector2i = dest["cell"]
-				_offer(queue, seen, [int(dest["floor"]), dcell.x, dcell.y, mask])
+				_offer(queue, seen, [int(dest["floor"]), dcell.x, dcell.y, mask, mech_mask])
 
-	return {"reached_boss": reached_boss, "states_explored": queue.size()}
+	return {"reached_boss": reached_boss, "states_explored": queue.size(), "visited_cells": visited_cells}
 
 
 func test_control_boss_cell_and_entrance_are_found_in_every_dungeon() -> void:
@@ -164,6 +235,32 @@ func test_boss_is_reachable_from_the_entrance_in_every_dungeon() -> void:
 		assert_gt(int(result["states_explored"]), 20,
 			"%s: CONTROL: too few states explored (%d) -- the BFS itself is probably broken" % [id, int(result["states_explored"])])
 		assert_true(bool(result["reached_boss"]), "%s: the boss must be reachable from the entrance using the full mechanic set" % id)
+
+
+## Mutation control (struktured 2026-10-06 maze pass): proves the solver's lock modeling is
+## load-bearing, not vacuous. With the matching pickup disabled, every DungeonMechanics lock
+## cell in the dungeon must drop OUT of the reachable set; with it enabled, it must be IN.
+func test_a_locked_cell_is_reachable_only_once_its_resource_is_collectible() -> void:
+	var dungeons_with_locks := 0
+	for id in DUNGEONS:
+		var cave = _caves[id]
+		var locks := DungeonMechanics.scan_locks(cave.floor_layouts)
+		if locks.is_empty():
+			continue
+		dungeons_with_locks += 1
+		var pickups := DungeonMechanics.scan_pickups(cave.floor_layouts)
+		var pickup_ids: Array = []
+		for pk in pickups:
+			pickup_ids.append(str(pk["id"]))
+		var without := _solve(cave, true, [], pickup_ids)
+		var with_resource := _solve(cave, true, [], [])
+		for lk in locks:
+			var key := "%d:%d:%d" % [int(lk["floor"]), (lk["cell"] as Vector2i).x, (lk["cell"] as Vector2i).y]
+			assert_false((without["visited_cells"] as Dictionary).has(key),
+				"%s: lock '%s' must NOT be steppable with its resource disabled -- the solver's lock gating is a no-op otherwise" % [id, str(lk["id"])])
+			assert_true((with_resource["visited_cells"] as Dictionary).has(key),
+				"%s: lock '%s' must be steppable once its resource is collectible" % [id, str(lk["id"])])
+	assert_gt(dungeons_with_locks, 0, "CONTROL: at least one W1 dungeon must carry a DungeonMechanics lock, or this test is vacuous")
 
 
 func test_floor_count_is_at_least_four_in_every_dungeon() -> void:
@@ -260,6 +357,29 @@ func test_every_trap_chest_key_matches_a_real_treasure_marker() -> void:
 			assert_true(placed.has(key), "%s: trap_chests entry '%s' has no matching T marker" % [id, key])
 		var real_chests: int = placed.size() - (cave.trap_chests as Array).size()
 		assert_gte(real_chests, 2, "%s: must keep at least two REAL (non-mimic) chests" % id)
+
+
+## Data-integrity companion to the mutation control above: a lock with no matching pickup anywhere
+## in the dungeon is a dead prop by construction, independent of maze shape -- authored, not derived.
+func test_every_lock_has_at_least_one_matching_resource_pickup() -> void:
+	var checked := 0
+	for id in DUNGEONS:
+		var cave = _caves[id]
+		var pickups := DungeonMechanics.scan_pickups(cave.floor_layouts)
+		var locks := DungeonMechanics.scan_locks(cave.floor_layouts)
+		var have_counts := {}
+		for pk in pickups:
+			var r: String = str(pk["resource"])
+			have_counts[r] = int(have_counts.get(r, 0)) + 1
+		var need_counts := {}
+		for lk in locks:
+			var r2: String = str(lk["resource"])
+			need_counts[r2] = int(need_counts.get(r2, 0)) + 1
+		for r3 in need_counts:
+			checked += 1
+			assert_gte(int(have_counts.get(r3, 0)), int(need_counts[r3]),
+				"%s: %d '%s' lock(s) but only %d matching pickup(s) -- at least one lock is unopenable" % [id, int(need_counts[r3]), r3, int(have_counts.get(r3, 0))])
+	assert_gt(checked, 0, "CONTROL: at least one W1 dungeon must declare a lock, or this test is vacuous")
 
 
 func _resolvable_item_ids() -> Dictionary:
