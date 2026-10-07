@@ -79,3 +79,19 @@ static func line_spacing_correction(font: Font, font_size: int) -> int:
 	var solo: Font = font.duplicate()
 	solo.fallbacks = []
 	return mini(0, int(solo.get_height(font_size) - font.get_height(font_size)))
+
+
+static var _baseline_lifts: Dictionary = {}
+
+
+## How far to raise a top-aligned single-line Label so the BASE font's glyphs sit centred in a row of row_h (NotoSansSymbols lifts the chain ascent 18 -> 24 at 16px).
+static func row_label_y(font: Font, font_size: int, row_h: float) -> int:
+	if font == null:
+		return 0
+	var key := "%d:%d:%d" % [font.get_instance_id(), font_size, int(row_h)]
+	if not _baseline_lifts.has(key):
+		var solo: Font = font.duplicate()
+		solo.fallbacks = []
+		var glyph_h: float = solo.get_ascent(font_size) + solo.get_descent(font_size)
+		_baseline_lifts[key] = roundi((row_h - glyph_h) * 0.5 + solo.get_ascent(font_size) - font.get_ascent(font_size))
+	return int(_baseline_lifts[key])

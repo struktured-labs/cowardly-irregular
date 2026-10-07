@@ -1066,9 +1066,11 @@ func _create_menu_item(index: int, item: Dictionary, content_width: int = 120) -
 	text_label.name = "Label"
 	text_label.clip_text = true
 	text_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	text_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER if icon_advance > 0 else VERTICAL_ALIGNMENT_TOP
+	text_label.vertical_alignment = VERTICAL_ALIGNMENT_TOP
 	text_label.add_theme_font_size_override("font_size", _row_label_font_size())
 	text_label.size = Vector2(label_w, row_h)
+	# The symbol fallbacks put the baseline AT the 24px clip's edge, cutting every descender; seat the base font's glyphs mid-row.
+	text_label.position.y = FontFallbacks.row_label_y(_menu_font(), _row_label_font_size(), row_h)
 	if has_submenu:
 		text_label.text = label + " >"
 	else:
@@ -1090,9 +1092,10 @@ func _create_menu_item(index: int, item: Dictionary, content_width: int = 120) -
 		cost_label.name = "Cost"
 		cost_label.text = "%d MP" % int(item["cost"])
 		cost_label.add_theme_font_size_override("font_size", _cost_label_font_size())
-		cost_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER if icon_advance > 0 else VERTICAL_ALIGNMENT_TOP
+		cost_label.vertical_alignment = VERTICAL_ALIGNMENT_TOP
 		cost_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 		cost_label.size = Vector2(_cost_column_width - 4, row_h)
+		cost_label.position.y = FontFallbacks.row_label_y(_menu_font(), _cost_label_font_size(), row_h)
 		var affordable: bool = bool(item.get("cost_affordable", true))
 		cost_label.add_theme_color_override("font_color", COST_COLOR if affordable else COST_COLOR_UNAFFORDABLE)
 		var cost_clip := Control.new()
