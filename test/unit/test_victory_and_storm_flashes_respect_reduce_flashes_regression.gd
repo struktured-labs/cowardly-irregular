@@ -54,7 +54,10 @@ func test_banner_and_sky_flashes_are_suppressed_when_reduce_flashes_is_on() -> v
 	storm._full_render_storm(Color(0.7, 0.85, 1.0), Vector2(200, 200), 1.0)
 	assert_eq(_direct_rects(storm).size(), 0,
 		"the lightning storm still drops a full-screen dark sky while Reduce Flashes is on")
-	await get_tree().create_timer(0.10).timeout
+	# Poll, bounded: a fixed 0.10s timer raced the 0.06s strike tween and lost on a loaded box (one frame > 0.1s).
+	var t0 := Time.get_ticks_msec()
+	while _line_count(storm) == 0 and Time.get_ticks_msec() - t0 < 1500:
+		await get_tree().process_frame
 	assert_gt(_line_count(storm), 0,
 		"the storm's bolts must still strike when only the sky overlay is skipped")
 	assert_eq(_direct_rects(storm).size(), 0,
@@ -88,7 +91,9 @@ func test_banner_and_sky_flashes_still_play_when_reduce_flashes_is_off() -> void
 	assert_eq(skies.size(), 1, "the storm must still drop its dark sky when Reduce Flashes is off")
 	assert_true(skies[0].color.is_equal_approx(Color(0.05, 0.06, 0.14, 0.0)),
 		"the sky is the dark full-screen drop, not a bolt or a bright flash")
-	await get_tree().create_timer(0.10).timeout
+	var t1 := Time.get_ticks_msec()
+	while (_line_count(storm) == 0 or _bright_rects(storm) == 0) and Time.get_ticks_msec() - t1 < 1500:
+		await get_tree().process_frame
 	assert_gt(_line_count(storm), 0, "the storm's bolts still strike when the setting is off")
 	assert_gt(_bright_rects(storm), 0, "the white bolt flash still plays when the setting is off")
 
