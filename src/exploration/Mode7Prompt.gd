@@ -17,6 +17,8 @@ const ROW_INFO: float = 168.0
 const ROW_POPUP: float = 96.0
 ## Prompts draw over the player, never under: you arrive standing on the thing that prompts you.
 const WORLD_Z: int = 100
+## Screen-space prompts wrap inside this margin on each side.
+const SCREEN_MARGIN: float = 48.0
 
 
 ## Moves any Control onto its own CanvasLayer above the overlay — the chest's loot popup is a
@@ -46,13 +48,16 @@ static func place_control(ctrl: Control, viewport: Vector2, row: float) -> void:
 
 ## Spans the viewport so HORIZONTAL_ALIGNMENT_CENTER puts the text over the player's head.
 static func place(label: Label, viewport: Vector2, row: float) -> void:
-	label.size.x = viewport.x
-	label.position = Vector2(0.0, viewport.y * 0.75 - row)
+	# A long lore line ran past both screen edges as one 18px line; wrap inside a margin instead.
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	label.size.x = viewport.x - SCREEN_MARGIN * 2.0
+	label.position = Vector2(SCREEN_MARGIN, viewport.y * 0.75 - row)
 
 
 ## Returns the label to world space; a scene can leave Mode 7 while a prompt is up.
 static func drop(owner: Node, layer: CanvasLayer, label: Label, offset: Vector2, font_size: int) -> void:
 	drop_control(owner, layer, label, offset)
+	label.autowrap_mode = TextServer.AUTOWRAP_OFF
 	label.size.x = 0.0
 	label.add_theme_font_size_override("font_size", font_size)
 	label.add_theme_constant_override("outline_size", 0)

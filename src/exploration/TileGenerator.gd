@@ -164,12 +164,13 @@ const PALETTES: Dictionary = {
 		"grout": Color(0.44, 0.38, 0.30),
 		"polish": Color(0.82, 0.74, 0.58)
 	},
+	## Floor lifted and walls sunk (2026-10-07): at 0.28 vs 0.35 the maze read as one dark field under dungeon lighting.
 	TileType.CAVE_FLOOR: {
-		"base": Color(0.28, 0.26, 0.24),
-		"light": Color(0.38, 0.36, 0.34),
-		"mid": Color(0.32, 0.30, 0.28),
-		"dark": Color(0.22, 0.20, 0.18),
-		"deep": Color(0.15, 0.14, 0.12),
+		"base": Color(0.38, 0.35, 0.31),
+		"light": Color(0.48, 0.45, 0.40),
+		"mid": Color(0.42, 0.39, 0.35),
+		"dark": Color(0.31, 0.28, 0.25),
+		"deep": Color(0.23, 0.21, 0.18),
 		"wet": Color(0.25, 0.28, 0.30),
 		"puddle": Color(0.18, 0.25, 0.35),
 		"crystal": Color(0.45, 0.38, 0.62),
@@ -177,11 +178,11 @@ const PALETTES: Dictionary = {
 		"moss": Color(0.25, 0.35, 0.22)
 	},
 	TileType.CAVE_WALL: {
-		"base": Color(0.35, 0.32, 0.28),
-		"light": Color(0.48, 0.45, 0.40),
-		"mid": Color(0.40, 0.38, 0.34),
-		"dark": Color(0.25, 0.22, 0.20),
-		"deep": Color(0.15, 0.14, 0.12),
+		"base": Color(0.19, 0.17, 0.16),
+		"light": Color(0.28, 0.26, 0.24),
+		"mid": Color(0.23, 0.21, 0.19),
+		"dark": Color(0.13, 0.12, 0.11),
+		"deep": Color(0.08, 0.07, 0.07),
 		"vein": Color(0.42, 0.38, 0.50),
 		"ore": Color(0.55, 0.45, 0.25),
 		"ore_light": Color(0.70, 0.58, 0.32),
@@ -1998,10 +1999,15 @@ func _draw_cave_wall(img: Image, palette: Dictionary, variant: int) -> void:
 ## 3/4-view face split: top band catches ambient light, bottom band is the
 ## wall's own shadowed face, and a drop-shadow row at the very base reads as
 ## where the wall meets the floor it sits on (SNES Zelda/CrossCode convention).
+## A bright rim on every wall top, so a corridor's edge reads in the dark.
+const WALL_RIM_ROWS := 7
+const WALL_RIM_LIFT := 0.38
+
+
 func _apply_wall_face_depth(img: Image) -> void:
 	for x in range(TILE_SIZE):
-		for y in range(6):
-			img.set_pixel(x, y, img.get_pixel(x, y).lightened(0.14 * (1.0 - y / 6.0)))
+		for y in range(WALL_RIM_ROWS):
+			img.set_pixel(x, y, img.get_pixel(x, y).lightened(WALL_RIM_LIFT * (1.0 - float(y) / WALL_RIM_ROWS)))
 		for y in range(TILE_SIZE - 7, TILE_SIZE - 2):
 			img.set_pixel(x, y, img.get_pixel(x, y).darkened(0.10))
 		for y in range(TILE_SIZE - 2, TILE_SIZE):

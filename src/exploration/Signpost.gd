@@ -90,7 +90,23 @@ func _setup_label() -> void:
 	_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	# Without this the sign reads from under the player who walked up to read it.
 	Mode7Prompt.pin_above_sprites(_label)
+	_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	add_child(_label)
+	_layout_flat.call_deferred()  # the one-line minimum width is cached until the label has settled
+
+
+## Lore signs carry whole sentences: wrap at FLAT_WIDTH, centred over the post, growing upward from it.
+const FLAT_WIDTH: float = 220.0
+const FLAT_BOTTOM: float = -18.0
+
+
+func _layout_flat() -> void:
+	if _label == null or not is_instance_valid(_label) or _prompt_layer != null:
+		return
+	_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_label.update_minimum_size()
+	_label.size = Vector2(FLAT_WIDTH, 0.0)
+	_label.position = Vector2(-FLAT_WIDTH * 0.5, FLAT_BOTTOM - _label.get_minimum_size().y)
 
 
 ## Directions are info, not an action, so they take the upper row and never collide with an entrance prompt.
@@ -106,12 +122,27 @@ func _process(_delta: float) -> void:
 		Mode7Prompt.drop(self, _prompt_layer, _label, FLAT_OFFSET, FLAT_FONT)
 		_label.visible = _player_nearby
 		_prompt_layer = null
+		_layout_flat.call_deferred()
 
 
 func _on_body_entered(body: Node2D) -> void:
 	if body.has_method("set_can_move") or body.is_in_group("player"):
 		_player_nearby = true
 		_label.visible = true
+		_keep_flat_label_on_screen()
+
+
+## A sign by the map's top edge grew its wrapped text up off the screen; read it below the post there instead.
+const FLAT_BELOW: float = 22.0
+
+
+func _keep_flat_label_on_screen() -> void:
+	if _prompt_layer != null or not is_inside_tree():
+		return
+	_layout_flat()
+	var top: float = _label.get_global_transform_with_canvas().origin.y
+	if top < 0.0:
+		_label.position.y = FLAT_BELOW
 
 
 func _on_body_exited(body: Node2D) -> void:
