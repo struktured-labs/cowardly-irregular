@@ -647,6 +647,10 @@ func set_command_menu_visible(visible: bool) -> void:
 
 func _create_speed_indicator() -> void:
 	"""Create battle speed indicator — under the AUTO badge, top-right. Bottom-left (2026-07-17) now sits behind the TURN ORDER box (rendered frame, 2026-10-06)."""
+	# A BattleScene built from its script has no UI node: 67 errors per gate and an orphaned panel each (.605).
+	var ui := get_node_or_null("UI")
+	if ui == null:
+		return
 	# Background panel for readability
 	var panel = PanelContainer.new()
 	panel.name = "SpeedPanel"
@@ -667,7 +671,7 @@ func _create_speed_indicator() -> void:
 	style.content_margin_top = 2
 	style.content_margin_bottom = 2
 	panel.add_theme_stylebox_override("panel", style)
-	$UI.add_child(panel)
+	ui.add_child(panel)
 
 	_speed_indicator = RichTextLabel.new()
 	_speed_indicator.name = "SpeedIndicator"
@@ -692,7 +696,7 @@ func _create_speed_indicator() -> void:
 	_battle_counter_label.add_theme_font_size_override("normal_font_size", TextScale.scaled(14))
 	_battle_counter_label.position = Vector2(8, 34)
 	_battle_counter_label.visible = false
-	$UI.add_child(_battle_counter_label)
+	ui.add_child(_battle_counter_label)
 
 	_update_speed_indicator()
 
