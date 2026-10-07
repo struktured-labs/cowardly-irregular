@@ -468,17 +468,14 @@ func _process(_delta: float) -> void:
 	var cell := Vector2i(int(player.position.x) / tile, int(player.position.y) / tile)
 	if _char_at(_cave.floor_layouts, int(_cave.current_floor), cell) != SLIDE_ICE_CHAR:
 		return
-	var dir := Vector2i.ZERO
-	if Input.is_action_pressed("ui_right"):
-		dir = Vector2i(1, 0)
-	elif Input.is_action_pressed("ui_left"):
-		dir = Vector2i(-1, 0)
-	elif Input.is_action_pressed("ui_down"):
-		dir = Vector2i(0, 1)
-	elif Input.is_action_pressed("ui_up"):
-		dir = Vector2i(0, -1)
-	if dir == Vector2i.ZERO:
+	var axis := Input.get_vector("ui_left", "ui_right", "ui_up", "ui_down")
+	if axis == Vector2.ZERO:
 		return
+	var dir := Vector2i.ZERO
+	if absf(axis.x) > absf(axis.y):
+		dir = Vector2i(1, 0) if axis.x > 0.0 else Vector2i(-1, 0)
+	else:
+		dir = Vector2i(0, 1) if axis.y > 0.0 else Vector2i(0, -1)
 	var landing := ice_slide_landing(_cave.floor_layouts, int(_cave.current_floor), cell, dir)
 	if landing == cell:
 		return

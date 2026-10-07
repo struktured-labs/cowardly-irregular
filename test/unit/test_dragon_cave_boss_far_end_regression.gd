@@ -132,11 +132,19 @@ func test_dungeon_carries_treasure_across_the_full_descent() -> void:
 ## walkable cell on that floor via plain movement (ignores puzzle-layer
 ## switches/portals, which test_w1_dungeon_depth_solver.gd covers). Catches
 ## the layout-authoring trap where a whole room ends up sealed behind walls.
+## struktured 2026-10-07 ruling ("Required, Zelda-style"): floors 2-4 now each gate their own
+## exit behind a REQUIRED puzzle (key/door, lever, pylon+block, timed plate, mirror, ice-slide) --
+## `_flood_reach`'s "every switch solved" model has no notion of any of those, so a real required
+## gate reads here exactly like the sealed-room bug this test exists to catch. Certified instead
+## by test_w1_dungeon_depth_solver.gd, which models every one of those mechanics plus a mutation
+## control proving each gate actually blocks.
 func test_every_floor_is_internally_connected_from_its_landing_point() -> void:
 	for entry in DRAGON_CAVES:
 		var script = load(entry[0])
 		var inst = script.new()
 		for f in (inst.floor_layouts as Dictionary):
+			if int(f) >= 2 and int(f) <= 4:
+				continue
 			var layout: Array = inst.floor_layouts[f]
 			var landing: Vector2i = _find_char(layout, "D")
 			if landing == Vector2i(-1, -1):
