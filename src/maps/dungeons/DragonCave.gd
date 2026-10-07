@@ -9,6 +9,7 @@ const OverworldPlayerScript = preload("res://src/exploration/OverworldPlayer.gd"
 const OverworldControllerScript = preload("res://src/exploration/OverworldController.gd")
 const AreaTransitionScript = preload("res://src/exploration/AreaTransition.gd")
 const DungeonLightingScript = preload("res://src/exploration/DungeonLighting.gd")
+const DungeonAmbienceScript = preload("res://src/exploration/DungeonAmbience.gd")
 const MimicChestScript = preload("res://src/exploration/MimicChest.gd")
 
 signal exploration_ready()
@@ -94,6 +95,7 @@ var camera: Camera2D
 var controller: Node
 var tile_generator: Node
 var lighting: DungeonLighting
+var ambience: DungeonAmbience
 
 ## Area transitions
 var transitions: Node2D
@@ -215,6 +217,10 @@ func _maybe_warn_out_of_league() -> void:
 
 func _setup_scene() -> void:
 	_setup_lighting()
+
+	ambience = DungeonAmbienceScript.new()
+	ambience.name = "Ambience"
+	add_child(ambience)
 
 	tile_generator = TileGeneratorScript.new()
 	add_child(tile_generator)
@@ -395,6 +401,11 @@ func _generate_map_for_floor(floor_num: int) -> void:
 
 	spawn_points["default"] = _entrance_spawn_px(floor_num, map_data)
 	_place_torches()
+	if ambience:
+		var seed_salt: int = 0
+		for ch in cave_id + str(floor_num):
+			seed_salt += ch.unicode_at(0)
+		ambience.rebuild_for_floor(map_data, MAP_WIDTH, MAP_HEIGHT, _get_ambient_fx_theme(), seed_salt)
 
 	_setup_transitions_for_floor(floor_num)
 	_add_stair_visuals()
@@ -405,6 +416,12 @@ func _generate_map_for_floor(floor_num: int) -> void:
 ## Cave ambient. Elemental caves override to tint their own dark.
 func _get_dungeon_ambient() -> Color:
 	return DungeonLightingScript.CAVE_AMBIENT
+
+
+## Ambient-FX theme for DungeonAmbience.rebuild_for_floor. "cave" gives generic
+## drip/crystal/steam dressing; elemental caves override for a themed look.
+func _get_ambient_fx_theme() -> String:
+	return "cave"
 
 
 func _setup_lighting() -> void:
@@ -449,6 +466,16 @@ func _char_to_tile_type(char: String) -> int:
 		"a", "b", "c", "d", "e", "f", "S", "L":
 			return TileGeneratorScript.TileType.CAVE_FLOOR
 		_: return TileGeneratorScript.TileType.CAVE_FLOOR
+
+
+## Phase-4 per-world dungeon tilesets: subclasses call this with their own wall/floor
+## TileType pair so M/"." remap while lava, ice, stairs, portals etc. keep their meaning.
+func _remap_wall_floor(char: String, wall_type: int, floor_type: int) -> int:
+	match char:
+		"M": return wall_type
+		"l": return TileGeneratorScript.TileType.LAVA
+		"i": return TileGeneratorScript.TileType.ICE
+		_: return floor_type
 
 
 func _get_atlas_coords(tile_type: int) -> Vector2i:
@@ -1007,6 +1034,8 @@ func _setup_player() -> void:
 	player.set_job("fighter")
 	player._is_interior = true  # Dungeons always use interior speed (50% of overworld)
 	add_child(player)
+	if lighting:
+		lighting.add_player_light(player)
 
 
 func _setup_camera() -> void:

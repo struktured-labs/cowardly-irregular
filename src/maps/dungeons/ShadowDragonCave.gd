@@ -190,5 +190,11 @@ func _get_boss_intro_dialogue() -> Array:
 
 
 ## the darkest of the four
+## Brightened from (0.20, 0.19, 0.28) -- the darkest W1 ambient read as barely
+## visible even with lamps lit; still the dimmest cave, now actually readable.
 func _get_dungeon_ambient() -> Color:
-	return Color(0.20, 0.19, 0.28)
+	return Color(0.26, 0.25, 0.34)
+
+
+func _get_ambient_fx_theme() -> String:
+	return "shadow"

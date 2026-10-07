@@ -149,6 +149,11 @@ func _get_music_area_id() -> String:
 	return "suburban_dungeon"
 
 
+## Phase-4 tileset: storm-drain concrete, not the medieval cave look.
+func _char_to_tile_type(char: String) -> int:
+	return _remap_wall_floor(char, TileGeneratorScript.TileType.SUBURBAN_WALL, TileGeneratorScript.TileType.SUBURBAN_FLOOR)
+
+
 const _LORE := {
 	1: [
 		{"pos": Vector2(3, 6), "text": "STORM DRAIN ACCESS — Property of the Maple Heights HOA. Trespassers will be documented."},
