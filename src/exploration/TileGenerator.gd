@@ -29,7 +29,19 @@ enum TileType {
 	VILLAGE_PATH,
 	VILLAGE_DIRT,
 	VILLAGE_FLOWER,
-	VILLAGE_HEDGE
+	VILLAGE_HEDGE,
+	## Phase-4 per-world dungeon tilesets (2026-10-06) -- distinct looks for the
+	## later-world dungeons that used to render with the medieval CAVE_WALL/CAVE_FLOOR.
+	STEAMPUNK_WALL,
+	STEAMPUNK_FLOOR,
+	INDUSTRIAL_WALL,
+	INDUSTRIAL_FLOOR,
+	DIGITAL_WALL,
+	DIGITAL_FLOOR,
+	ABSTRACT_WALL,
+	ABSTRACT_FLOOR,
+	SUBURBAN_WALL,
+	SUBURBAN_FLOOR
 }
 
 ## FF4/5/6 era color palettes - rich, vibrant, with full 24-bit depth
@@ -335,6 +347,100 @@ const PALETTES: Dictionary = {
 		"berry": Color(0.72, 0.18, 0.15),
 		"berry_light": Color(0.85, 0.28, 0.22),
 		"trunk": Color(0.38, 0.26, 0.14)
+	},
+	TileType.STEAMPUNK_WALL: {
+		"base": Color(0.34, 0.24, 0.16),
+		"light": Color(0.62, 0.46, 0.22),
+		"mid": Color(0.46, 0.33, 0.18),
+		"dark": Color(0.22, 0.15, 0.10),
+		"deep": Color(0.12, 0.08, 0.06),
+		"brass": Color(0.78, 0.60, 0.28),
+		"brass_light": Color(0.92, 0.76, 0.40),
+		"rivet": Color(0.55, 0.42, 0.20),
+		"pipe": Color(0.40, 0.40, 0.44)
+	},
+	TileType.STEAMPUNK_FLOOR: {
+		"base": Color(0.28, 0.22, 0.16),
+		"light": Color(0.42, 0.34, 0.22),
+		"mid": Color(0.34, 0.27, 0.18),
+		"dark": Color(0.18, 0.14, 0.10),
+		"deep": Color(0.10, 0.08, 0.06),
+		"plate": Color(0.46, 0.38, 0.24),
+		"rivet": Color(0.60, 0.46, 0.22)
+	},
+	TileType.INDUSTRIAL_WALL: {
+		"base": Color(0.32, 0.32, 0.33),
+		"light": Color(0.50, 0.50, 0.52),
+		"mid": Color(0.40, 0.40, 0.42),
+		"dark": Color(0.20, 0.20, 0.21),
+		"deep": Color(0.12, 0.12, 0.13),
+		"hazard_yellow": Color(0.82, 0.68, 0.12),
+		"hazard_black": Color(0.08, 0.08, 0.08),
+		"rust": Color(0.48, 0.30, 0.16)
+	},
+	TileType.INDUSTRIAL_FLOOR: {
+		"base": Color(0.26, 0.26, 0.27),
+		"light": Color(0.40, 0.40, 0.42),
+		"mid": Color(0.32, 0.32, 0.34),
+		"dark": Color(0.16, 0.16, 0.17),
+		"deep": Color(0.09, 0.09, 0.10),
+		"hazard_yellow": Color(0.76, 0.62, 0.10),
+		"seam": Color(0.14, 0.14, 0.15)
+	},
+	TileType.DIGITAL_WALL: {
+		"base": Color(0.08, 0.10, 0.18),
+		"light": Color(0.16, 0.20, 0.32),
+		"mid": Color(0.11, 0.14, 0.24),
+		"dark": Color(0.04, 0.05, 0.10),
+		"deep": Color(0.02, 0.02, 0.05),
+		"circuit": Color(0.25, 0.85, 0.95),
+		"circuit_bright": Color(0.55, 1.0, 1.0),
+		"node": Color(0.90, 0.35, 0.80)
+	},
+	TileType.DIGITAL_FLOOR: {
+		"base": Color(0.05, 0.07, 0.13),
+		"light": Color(0.11, 0.14, 0.22),
+		"mid": Color(0.08, 0.10, 0.17),
+		"dark": Color(0.03, 0.04, 0.08),
+		"deep": Color(0.01, 0.02, 0.04),
+		"grid": Color(0.18, 0.55, 0.65),
+		"grid_bright": Color(0.30, 0.90, 0.95)
+	},
+	TileType.ABSTRACT_WALL: {
+		"base": Color(0.14, 0.10, 0.22),
+		"light": Color(0.28, 0.20, 0.40),
+		"mid": Color(0.19, 0.14, 0.30),
+		"dark": Color(0.08, 0.05, 0.14),
+		"deep": Color(0.03, 0.02, 0.07),
+		"line": Color(0.75, 0.55, 0.95),
+		"line_bright": Color(0.92, 0.80, 1.0)
+	},
+	TileType.ABSTRACT_FLOOR: {
+		"base": Color(0.10, 0.07, 0.17),
+		"light": Color(0.20, 0.15, 0.30),
+		"mid": Color(0.14, 0.10, 0.22),
+		"dark": Color(0.06, 0.04, 0.11),
+		"deep": Color(0.02, 0.01, 0.05),
+		"line": Color(0.60, 0.42, 0.78)
+	},
+	TileType.SUBURBAN_WALL: {
+		"base": Color(0.30, 0.31, 0.30),
+		"light": Color(0.46, 0.47, 0.45),
+		"mid": Color(0.37, 0.38, 0.37),
+		"dark": Color(0.19, 0.20, 0.19),
+		"deep": Color(0.11, 0.12, 0.11),
+		"moss": Color(0.28, 0.38, 0.22),
+		"rust": Color(0.50, 0.32, 0.18),
+		"stain": Color(0.22, 0.26, 0.24)
+	},
+	TileType.SUBURBAN_FLOOR: {
+		"base": Color(0.26, 0.27, 0.27),
+		"light": Color(0.38, 0.39, 0.38),
+		"mid": Color(0.31, 0.32, 0.32),
+		"dark": Color(0.16, 0.17, 0.17),
+		"deep": Color(0.09, 0.10, 0.10),
+		"puddle": Color(0.20, 0.28, 0.32),
+		"puddle_light": Color(0.35, 0.48, 0.55)
 	}
 }
 
@@ -363,14 +469,19 @@ func _get_tile_order() -> Array:
 		# Row 6: Village tiles (warm, cozy starting village)
 		TileType.VILLAGE_GRASS, TileType.VILLAGE_PATH, TileType.VILLAGE_DIRT, TileType.VILLAGE_FLOWER, TileType.VILLAGE_HEDGE,
 		# Row 7: Village tile variants
-		TileType.VILLAGE_GRASS, TileType.VILLAGE_PATH, TileType.VILLAGE_DIRT, TileType.VILLAGE_FLOWER, TileType.VILLAGE_GRASS
+		TileType.VILLAGE_GRASS, TileType.VILLAGE_PATH, TileType.VILLAGE_DIRT, TileType.VILLAGE_FLOWER, TileType.VILLAGE_GRASS,
+		# Row 8: Phase-4 per-world dungeon tiles (steampunk/industrial/digital)
+		TileType.STEAMPUNK_WALL, TileType.STEAMPUNK_FLOOR, TileType.INDUSTRIAL_WALL, TileType.INDUSTRIAL_FLOOR, TileType.DIGITAL_WALL,
+		# Row 9: Phase-4 per-world dungeon tiles (digital/abstract/suburban)
+		TileType.DIGITAL_FLOOR, TileType.ABSTRACT_WALL, TileType.ABSTRACT_FLOOR, TileType.SUBURBAN_WALL, TileType.SUBURBAN_FLOOR
 	]
 
 func _get_impassable_types() -> Array:
 	# Water and mountain are visually impassable so they must block — forest stays walkable for traversal flexibility.
 	# VILLAGE_HEDGE is a decorative barrier used in HarmoniaVillage's border ("e" tile) — comment in that
 	# layout explicitly calls it "impassable decorative border" but it was missing from this list.
-	return [TileType.WALL, TileType.CAVE_WALL, TileType.LAVA, TileType.WATER, TileType.MOUNTAIN, TileType.VILLAGE_HEDGE]
+	return [TileType.WALL, TileType.CAVE_WALL, TileType.LAVA, TileType.WATER, TileType.MOUNTAIN, TileType.VILLAGE_HEDGE,
+		TileType.STEAMPUNK_WALL, TileType.INDUSTRIAL_WALL, TileType.DIGITAL_WALL, TileType.ABSTRACT_WALL, TileType.SUBURBAN_WALL]
 
 ## Playtested W1 values; MOUNTAIN and WATER are inert — _get_impassable_types() blocks both.
 ## 2026-08-26 struktured "do the change": FOREST was the only terrain on W1 that altered movement, so ~62% of the map was one surface wearing seven colours. Values stay in (0,1] — this API slows, it never speeds up.
@@ -387,7 +498,7 @@ func _get_rough_terrain_speeds() -> Dictionary:
 	}
 
 func _get_atlas_dimensions() -> Vector2i:
-	return Vector2i(5, 8)
+	return Vector2i(5, 10)
 
 func _get_tile_variants() -> Dictionary:
 	return {
@@ -470,6 +581,26 @@ func _draw_tile(img: Image, tile_type: int, palette: Dictionary, variant: int) -
 			_draw_village_flower(img, palette, variant)
 		TileType.VILLAGE_HEDGE:
 			_draw_village_hedge(img, palette, variant)
+		TileType.STEAMPUNK_WALL:
+			_draw_steampunk_wall(img, palette, variant)
+		TileType.STEAMPUNK_FLOOR:
+			_draw_steampunk_floor(img, palette, variant)
+		TileType.INDUSTRIAL_WALL:
+			_draw_industrial_wall(img, palette, variant)
+		TileType.INDUSTRIAL_FLOOR:
+			_draw_industrial_floor(img, palette, variant)
+		TileType.DIGITAL_WALL:
+			_draw_digital_wall(img, palette, variant)
+		TileType.DIGITAL_FLOOR:
+			_draw_digital_floor(img, palette, variant)
+		TileType.ABSTRACT_WALL:
+			_draw_abstract_wall(img, palette, variant)
+		TileType.ABSTRACT_FLOOR:
+			_draw_abstract_floor(img, palette, variant)
+		TileType.SUBURBAN_WALL:
+			_draw_suburban_wall(img, palette, variant)
+		TileType.SUBURBAN_FLOOR:
+			_draw_suburban_floor(img, palette, variant)
 
 
 ## Grass tile - FF4/5/6 quality with detailed blades, shading, and seamless tiling
@@ -1731,6 +1862,8 @@ func _draw_cave_floor(img: Image, palette: Dictionary, variant: int) -> void:
 					if mx + dx < TILE_SIZE and my + dy < TILE_SIZE and rng.randf() < 0.5:
 						img.set_pixel(mx + dx, my + dy, moss)
 
+	_apply_floor_ao_band(img)
+
 
 ## Cave wall tile - FF4/5/6 quality rocky walls with ore veins, dripping water, and detail
 func _draw_cave_wall(img: Image, palette: Dictionary, variant: int) -> void:
@@ -1858,6 +1991,233 @@ func _draw_cave_wall(img: Image, palette: Dictionary, variant: int) -> void:
 		for dx in range(edge_w):
 			if ex + dx < TILE_SIZE and ey + 1 >= 0 and ey + 1 < TILE_SIZE:
 				img.set_pixel(ex + dx, ey + 1, deep)
+
+	_apply_wall_face_depth(img)
+
+
+## 3/4-view face split: top band catches ambient light, bottom band is the
+## wall's own shadowed face, and a drop-shadow row at the very base reads as
+## where the wall meets the floor it sits on (SNES Zelda/CrossCode convention).
+func _apply_wall_face_depth(img: Image) -> void:
+	for x in range(TILE_SIZE):
+		for y in range(6):
+			img.set_pixel(x, y, img.get_pixel(x, y).lightened(0.14 * (1.0 - y / 6.0)))
+		for y in range(TILE_SIZE - 7, TILE_SIZE - 2):
+			img.set_pixel(x, y, img.get_pixel(x, y).darkened(0.10))
+		for y in range(TILE_SIZE - 2, TILE_SIZE):
+			img.set_pixel(x, y, img.get_pixel(x, y).darkened(0.30))
+
+
+## Ambient occlusion band along a floor tile's top edge -- the convention that a floor tile is
+## usually read against a wall above it, so a soft shadow belongs there regardless of this
+## tile's own neighbours (the renderer is per-type, not per-cell-neighbour).
+func _apply_floor_ao_band(img: Image) -> void:
+	for x in range(TILE_SIZE):
+		for y in range(5):
+			img.set_pixel(x, y, img.get_pixel(x, y).darkened(0.22 * (1.0 - y / 5.0)))
+
+
+## W3 steampunk dungeon wall -- riveted brass plating over a dark iron frame.
+func _draw_steampunk_wall(img: Image, palette: Dictionary, variant: int) -> void:
+	img.fill(palette["base"])
+	var rng = RandomNumberGenerator.new()
+	rng.seed = variant * 51515
+	for y in range(TILE_SIZE):
+		for x in range(TILE_SIZE):
+			var n = sin(x * 0.4 + variant) * cos(y * 0.35 + variant * 0.7)
+			if n > 0.35:
+				img.set_pixel(x, y, palette["light"])
+			elif n > 0.1:
+				img.set_pixel(x, y, palette["mid"])
+			elif n < -0.3:
+				img.set_pixel(x, y, palette["dark"])
+	# Brass plate seams
+	for seam_y in [10, 22]:
+		for x in range(TILE_SIZE):
+			img.set_pixel(x, seam_y, palette["brass"])
+	# Rivets at seam intersections
+	for rx in [4, 16, 28]:
+		for ry in [10, 22]:
+			if rx < TILE_SIZE and ry < TILE_SIZE:
+				img.set_pixel(rx, ry, palette["rivet"])
+				if rx + 1 < TILE_SIZE:
+					img.set_pixel(rx + 1, ry, palette["brass_light"])
+	# A vertical pipe seam
+	var px = rng.randi_range(2, TILE_SIZE - 4)
+	for y in range(TILE_SIZE):
+		if px < TILE_SIZE:
+			img.set_pixel(px, y, palette["pipe"])
+		if px + 1 < TILE_SIZE:
+			img.set_pixel(px + 1, y, palette["pipe"].lightened(0.15))
+	_apply_wall_face_depth(img)
+
+
+## W3 steampunk dungeon floor -- diamond-plate brass flooring.
+func _draw_steampunk_floor(img: Image, palette: Dictionary, variant: int) -> void:
+	img.fill(palette["base"])
+	for y in range(TILE_SIZE):
+		for x in range(TILE_SIZE):
+			var diamond = (x % 8 + y % 8)
+			if diamond == 8 or diamond == 0:
+				img.set_pixel(x, y, palette["plate"])
+	for rx in [6, 22]:
+		for ry in [6, 22]:
+			if rx < TILE_SIZE and ry < TILE_SIZE:
+				img.set_pixel(rx, ry, palette["rivet"])
+	_apply_floor_ao_band(img)
+
+
+## W4 industrial dungeon wall -- cracked concrete panel with a hazard-stripe accent band.
+func _draw_industrial_wall(img: Image, palette: Dictionary, variant: int) -> void:
+	img.fill(palette["base"])
+	var rng = RandomNumberGenerator.new()
+	rng.seed = variant * 62626
+	for y in range(TILE_SIZE):
+		for x in range(TILE_SIZE):
+			var n = sin(x * 0.5 + y * 0.3 + variant) * 0.5 + rng.randf() * 0.2
+			if n > 0.35:
+				img.set_pixel(x, y, palette["light"])
+			elif n < -0.25:
+				img.set_pixel(x, y, palette["dark"])
+	# Hazard stripe band near the base (diagonal yellow/black)
+	for y in range(TILE_SIZE - 10, TILE_SIZE - 4):
+		for x in range(TILE_SIZE):
+			if (x + y) % 6 < 3:
+				img.set_pixel(x, y, palette["hazard_yellow"])
+			else:
+				img.set_pixel(x, y, palette["hazard_black"])
+	# Rust streaks
+	if variant % 2 == 0:
+		var rx = rng.randi_range(4, TILE_SIZE - 6)
+		for y in range(0, TILE_SIZE - 10):
+			if rx < TILE_SIZE:
+				img.set_pixel(rx, y, palette["rust"])
+	_apply_wall_face_depth(img)
+
+
+## W4 industrial dungeon floor -- grooved concrete slabs with a hazard dash.
+func _draw_industrial_floor(img: Image, palette: Dictionary, variant: int) -> void:
+	img.fill(palette["base"])
+	for x in range(TILE_SIZE):
+		img.set_pixel(x, 0, palette["seam"])
+		img.set_pixel(0, x, palette["seam"])
+	for x in range(2, TILE_SIZE - 2, 10):
+		for y in range(TILE_SIZE):
+			if y % 6 < 2:
+				img.set_pixel(x, y, palette["hazard_yellow"])
+	_apply_floor_ao_band(img)
+
+
+## W5 digital dungeon wall -- near-black panel etched with glowing circuit traces.
+func _draw_digital_wall(img: Image, palette: Dictionary, variant: int) -> void:
+	img.fill(palette["base"])
+	var rng = RandomNumberGenerator.new()
+	rng.seed = variant * 73737
+	for gx in range(0, TILE_SIZE, 8):
+		for y in range(TILE_SIZE):
+			img.set_pixel(gx, y, palette["mid"])
+	for gy in range(0, TILE_SIZE, 8):
+		for x in range(TILE_SIZE):
+			img.set_pixel(x, gy, palette["mid"])
+	# A lit circuit trace, L-shaped
+	var cx = rng.randi_range(4, TILE_SIZE - 12)
+	var cy = rng.randi_range(4, TILE_SIZE - 12)
+	for i in range(8):
+		if cx + i < TILE_SIZE:
+			img.set_pixel(cx + i, cy, palette["circuit"])
+	for i in range(8):
+		if cy + i < TILE_SIZE:
+			img.set_pixel(cx + 8, cy + i, palette["circuit"])
+	img.set_pixel(cx, cy, palette["node"])
+	if cx + 8 < TILE_SIZE:
+		img.set_pixel(cx + 8, cy, palette["node"])
+	_apply_wall_face_depth(img)
+
+
+## W5 digital dungeon floor -- faint circuit-grid tile.
+func _draw_digital_floor(img: Image, palette: Dictionary, variant: int) -> void:
+	img.fill(palette["base"])
+	for gx in range(0, TILE_SIZE, 16):
+		for y in range(TILE_SIZE):
+			img.set_pixel(gx, y, palette["grid"])
+	for gy in range(0, TILE_SIZE, 16):
+		for x in range(TILE_SIZE):
+			img.set_pixel(x, gy, palette["grid"])
+	if variant % 3 == 0:
+		img.set_pixel(16, 16, palette["grid_bright"])
+	_apply_floor_ao_band(img)
+
+
+## W6 abstract dungeon wall -- void gradient with disputed geometric line fragments.
+func _draw_abstract_wall(img: Image, palette: Dictionary, variant: int) -> void:
+	for y in range(TILE_SIZE):
+		var t: float = float(y) / float(TILE_SIZE)
+		var row_color: Color = palette["base"].lerp(palette["mid"], t)
+		for x in range(TILE_SIZE):
+			img.set_pixel(x, y, row_color)
+	var rng = RandomNumberGenerator.new()
+	rng.seed = variant * 84848
+	for i in range(3):
+		var ax = rng.randi_range(2, TILE_SIZE - 10)
+		var ay = rng.randi_range(2, TILE_SIZE - 10)
+		var len_ = rng.randi_range(6, 12)
+		for d in range(len_):
+			if ax + d < TILE_SIZE:
+				img.set_pixel(ax + d, ay, palette["line"])
+			if ax + d < TILE_SIZE and ay + d < TILE_SIZE:
+				img.set_pixel(ax + d, ay + d, palette["line_bright"])
+	_apply_wall_face_depth(img)
+
+
+## W6 abstract dungeon floor -- a flat void plane with a faint disputed grid.
+func _draw_abstract_floor(img: Image, palette: Dictionary, variant: int) -> void:
+	img.fill(palette["base"])
+	for gx in range(0, TILE_SIZE, 11):
+		for y in range(TILE_SIZE):
+			img.set_pixel(gx, y, palette["line"])
+	_apply_floor_ao_band(img)
+
+
+## W2 suburban-underground wall -- wet storm-drain concrete with moss and a rust streak.
+func _draw_suburban_wall(img: Image, palette: Dictionary, variant: int) -> void:
+	img.fill(palette["base"])
+	var rng = RandomNumberGenerator.new()
+	rng.seed = variant * 95959
+	for y in range(TILE_SIZE):
+		for x in range(TILE_SIZE):
+			var n = sin(x * 0.3 + y * 0.4 + variant) * 0.5 + rng.randf() * 0.15
+			if n > 0.3:
+				img.set_pixel(x, y, palette["light"])
+			elif n < -0.25:
+				img.set_pixel(x, y, palette["dark"])
+	if variant % 2 == 0:
+		for i in range(rng.randi_range(2, 4)):
+			var mx = rng.randi_range(2, TILE_SIZE - 4)
+			var my = rng.randi_range(TILE_SIZE / 2, TILE_SIZE - 3)
+			img.set_pixel(mx, my, palette["moss"])
+			if mx + 1 < TILE_SIZE:
+				img.set_pixel(mx + 1, my, palette["stain"])
+	var rx = rng.randi_range(3, TILE_SIZE - 4)
+	for y in range(0, TILE_SIZE - 6):
+		if rx < TILE_SIZE:
+			img.set_pixel(rx, y, palette["rust"])
+	_apply_wall_face_depth(img)
+
+
+## W2 suburban-underground floor -- wet concrete with a standing puddle.
+func _draw_suburban_floor(img: Image, palette: Dictionary, variant: int) -> void:
+	img.fill(palette["base"])
+	var rng = RandomNumberGenerator.new()
+	rng.seed = variant * 46464
+	if variant % 3 != 2:
+		var px = rng.randi_range(6, TILE_SIZE - 12)
+		var py = rng.randi_range(6, TILE_SIZE - 12)
+		for dy in range(6):
+			for dx in range(8):
+				if px + dx < TILE_SIZE and py + dy < TILE_SIZE:
+					img.set_pixel(px + dx, py + dy, palette["puddle"])
+		img.set_pixel(px + 2, py + 1, palette["puddle_light"])
+	_apply_floor_ao_band(img)
 
 
 ## Sand tile - FF4/5/6 quality golden desert sand with grain texture, ripples, and dunes
@@ -3023,6 +3383,16 @@ static func get_tile_id(type: TileType) -> int:
 		TileType.VILLAGE_DIRT: return 32
 		TileType.VILLAGE_FLOWER: return 33
 		TileType.VILLAGE_HEDGE: return 34
+		TileType.STEAMPUNK_WALL: return 40
+		TileType.STEAMPUNK_FLOOR: return 41
+		TileType.INDUSTRIAL_WALL: return 42
+		TileType.INDUSTRIAL_FLOOR: return 43
+		TileType.DIGITAL_WALL: return 44
+		TileType.DIGITAL_FLOOR: return 45
+		TileType.ABSTRACT_WALL: return 46
+		TileType.ABSTRACT_FLOOR: return 47
+		TileType.SUBURBAN_WALL: return 48
+		TileType.SUBURBAN_FLOOR: return 49
 	return 0
 
 

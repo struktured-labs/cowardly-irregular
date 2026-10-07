@@ -304,6 +304,19 @@ shapes; unknown tags red.
 
 ## Piece 2b — Voiced party and boss lines, with prefetch
 
+> **Status (2026-10-06, `llm/voiced-lines-with-prefetch`, plan
+> `docs/superpowers/plans/2026-10-06-voiced-lines-with-prefetch.md`).** 2b.1 and 2b.2 are
+> implemented **for the party**: `BattleSpeechBubble.spawn(..., voice_stream)`, the
+> `VoicePool` autoload over `VoicePoolStore`, and picker step 3 in
+> `BattleManager._run_party_line_async` (a moment line outranks the pool; a pooled line rides
+> to the bubble as a one-shot `pool:<n>` token). The pool runs only on desktop with both live
+> voice and LLM party lines on. **2b.3 is deferred**: `data/voice_cast.json` casts no boss,
+> and boss taunts are bound to the intent they announce, so a generic pooled taunt would
+> contradict the posture the boss just declared. Bosses need a cast entry, a ruling from
+> cowir-story on which boss pools may take a pooled line, `VoicePool._speakers()` extended
+> beyond `player_party`, and a pool step on the bark path. The gloat rule already holds:
+> since `.533` a gloat emits once.
+
 ### 2b.1 Bubble integration
 
 `BattleSpeechBubble.spawn` gains an optional `voice_stream: AudioStream`. When present,
@@ -348,6 +361,29 @@ and the same picker and pool. Two render surfaces, both verified in code:
   **non-blocking by design**: the shipped line emits at once, and an LLM re-narration
   replaces it if it arrives. **A late re-narration replaces the text only, never the voice**;
   otherwise the boss speaks twice. The voice is chosen once, at the first emit.
+
+**Which boss pools may take a generic pooled line (cowir-story ruling, 2026-10-06).** Only the
+end-of-fight lines. Every other pool states a fact the pooled line cannot know:
+
+| pool | pooled line? | why |
+|---|---|---|
+| taunt | no | bound to the intent it announces |
+| phase transition | no | narrates a specific phase change and mechanic |
+| steal / key / backstab crack | no | tied to the Lockward steal mechanic and its outcome |
+| opening / intro | no | authored staging; several carry the party's own lines |
+| automation | only if pooled **per tier** | it answers how far the fight was handed to scripts |
+| victory / defeat | yes, **split by outcome** | conceding and gloating over a wipe are opposites |
+
+Same rules as the party pool for every boss line: name no party member, job or ability. A defeat
+line also makes no claim about the party's state ("all of you", "nobody left"), since the party
+can win with someone KO'd.
+
+**The party pool never repeats itself (cowir-story ruling, 2026-10-06; shipped on
+`llm/pool-no-repeat`).** A generated line whose normalized text matches anything the speaker has
+ready, or said this session, is discarded before synthesis. At most one ready line per speaker
+quotes a signature phrase, where a quote means the whole phrase or one of its whole sentences of
+two or more words. Shared vocabulary ("the Loop", "the math", "heist") is the persona and never
+counts. The prompt's avoid list covers the speaker's other slots, so fewer lines are wasted.
 
 ---
 

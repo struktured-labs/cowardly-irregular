@@ -108,7 +108,7 @@ static func head_lift(sprite: Node2D) -> float:
 static func spawn(parent: Node, anchor_global_pos: Vector2, speaker_name: String, line: String,
 		border_color: Color = Color(1.0, 0.85, 0.2), hold_time: float = 1.5,
 		audio_key: String = "", prefer_right: bool = true, speaker_half_width: float = 0.0,
-		ceiling_y: float = TOP_MARGIN, keep_out: Callable = Callable()) -> BattleSpeechBubble:
+		ceiling_y: float = TOP_MARGIN, keep_out: Callable = Callable(), voice_stream: AudioStream = null) -> BattleSpeechBubble:
 	if parent == null or not is_instance_valid(parent):
 		return null
 	if Engine.time_scale >= SUPPRESS_TIME_SCALE:
@@ -132,7 +132,7 @@ static func spawn(parent: Node, anchor_global_pos: Vector2, speaker_name: String
 	parent.add_child(b)
 	## BEFORE _present, which builds the fade tween from _hold_time. The voice extends the hold,
 	## and a tween created first would keep the old 2.0s and fade over a line still being spoken.
-	b._play_voice(audio_key)
+	b._play_voice(audio_key, voice_stream)
 	b._speaker_half_width = maxf(0.0, speaker_half_width)
 	b._ceiling_y = maxf(TOP_MARGIN, ceiling_y)
 	b._keep_out = keep_out
@@ -317,14 +317,18 @@ func _build_tail(pointer: Polygon2D, bubble_size: Vector2, anchor_local_x: float
 		Vector2(tip_x, bh + 16.0),
 	])
 
-## Plays the clip and holds the bubble for as long as the line actually lasts.
-func _play_voice(audio_key: String) -> void:
-	if audio_key == "":
+## Plays the line's audio (a synthesized stream wins over a shipped clip) and holds the bubble for as long as it lasts.
+func _play_voice(audio_key: String, voice_stream: AudioStream = null) -> void:
+	if audio_key == "" and voice_stream == null:
 		return
 	var sm := get_node_or_null("/root/SoundManager")
-	if sm == null or not sm.has_method("play_voice"):
+	if sm == null:
 		return
-	var clip_len: float = sm.play_voice(audio_key)
+	var clip_len: float = 0.0
+	if voice_stream != null and sm.has_method("play_voice_stream"):
+		clip_len = sm.play_voice_stream(voice_stream)
+	elif audio_key != "" and sm.has_method("play_voice"):
+		clip_len = sm.play_voice(audio_key)
 	if clip_len <= 0.0:
 		return
 	## The clip plays in REAL seconds, so this hold is real seconds too — and _present puts a voiced

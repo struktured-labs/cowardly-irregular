@@ -56,6 +56,9 @@ const NAME_LABEL_GAP: float = 6.0
 const NAME_LABEL_WIDTH: float = 200.0
 const NAME_LABEL_PX := 16  # on-screen size for every monster, whatever its sprite scale
 const ENEMY_HP_BAR_SIZE := Vector2(60, 5)  # on-screen, whatever the sprite scale
+const STATUS_ROW_WIDTH := 120.0  # badges centre in it over the figure (row units, x STATUS_ROW_ZOOM on screen)
+const STATUS_ROW_ZOOM := 1.6  # the badges' ~9px text, read at ~14px on every monster
+const STATUS_ROW_LIFT := 16.0  # row units from the figure's top to the badge row's top
 const NAME_LABEL_Z := 5  # over every monster (0), under the damage popups (100+)
 const ENEMY_SMALL_FRAME_THRESHOLD: int = 128
 
@@ -415,6 +418,8 @@ func _ready() -> void:
 	# (User feedback 2026-05-20: "I dont know what button defers
 	# (besides the menu option)".)
 	_build_input_hint_bar()
+	# The speed readout: built nowhere since 32f42379f (2026-03-24) removed its only call, so speed showed only in the log.
+	_create_speed_indicator()
 	_build_weather_layer()
 
 	# Connect to BattleManager signals (CTB system)
@@ -641,11 +646,15 @@ func set_command_menu_visible(visible: bool) -> void:
 
 
 func _create_speed_indicator() -> void:
-	"""Create battle speed indicator — bottom-left above the turn-order box (struktured 2026-07-17: top-left buried it under the ENEMIES panel)"""
+	"""Create battle speed indicator — under the AUTO badge, top-right. Bottom-left (2026-07-17) now sits behind the TURN ORDER box (rendered frame, 2026-10-06)."""
 	# Background panel for readability
 	var panel = PanelContainer.new()
 	panel.name = "SpeedPanel"
-	panel.position = Vector2(8, get_viewport_rect().size.y - 222)
+	panel.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	panel.offset_left = BattleUIManagerClass.AUTO_BADGE_LEFT
+	panel.offset_right = BattleUIManagerClass.AUTO_BADGE_RIGHT
+	panel.offset_top = BattleUIManagerClass.AUTO_BADGE_BOTTOM + 4.0
+	panel.grow_horizontal = Control.GROW_DIRECTION_BEGIN  # wider labels (16x-64x) grow left, never into the PARTY panel
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var style = StyleBoxFlat.new()
 	style.bg_color = Color(0.0, 0.0, 0.0, 0.5)
@@ -809,7 +818,8 @@ func _animate_speed_change() -> void:
 	var panel = $UI.get_node_or_null("SpeedPanel")
 	if not panel:
 		return
-	# Scale pop: 1.0 -> 1.25 -> 1.0
+	# Scale pop: 1.0 -> 1.25 -> 1.0, around the TOP-RIGHT corner: the default top-left pivot swelled it into the PARTY panel.
+	panel.pivot_offset = Vector2(panel.size.x, 0.0)
 	var tween = create_tween()
 	tween.tween_property(panel, "scale", Vector2(1.25, 1.25), 0.08).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	tween.tween_property(panel, "scale", Vector2(1.0, 1.0), 0.12)
@@ -1579,8 +1589,24 @@ func _setup_status_icons(combatant: Combatant, sprite: AnimatedSprite2D) -> void
 	"""Create status icon container above a combatant's sprite and connect signals"""
 	var container = HBoxContainer.new()
 	container.add_theme_constant_override("separation", 2)
-	container.position = Vector2(-30, -55)  # Above sprite
 	container.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# A fixed (-30, -55) at the sprite's scale put x2.5 monsters' badges huge and far off the figure, Pyrroth's tiny on his head.
+	var sc := sprite.scale
+	var unscale := Vector2(1.0 / maxf(absf(sc.x), 0.01), 1.0 / maxf(absf(sc.y), 0.01)) * STATUS_ROW_ZOOM
+	container.scale = unscale
+	container.alignment = BoxContainer.ALIGNMENT_CENTER
+	container.size = Vector2(STATUS_ROW_WIDTH, 0.0)
+	var top := -55.0
+	var centre_x := 0.0
+	if sprite.sprite_frames and sprite.sprite_frames.has_animation(&"idle") and sprite.sprite_frames.get_frame_count(&"idle") > 0:
+		var idle_tex = sprite.sprite_frames.get_frame_texture(&"idle", 0)
+		if idle_tex:
+			var fig: Rect2 = AdvanceAuraClass.figure_rect_of(idle_tex)
+			top = fig.position.y - float(idle_tex.get_height()) * 0.5
+			centre_x = fig.get_center().x - float(idle_tex.get_width()) * 0.5
+			if sprite.flip_h:
+				centre_x = -centre_x
+	container.position = Vector2(centre_x - STATUS_ROW_WIDTH * unscale.x * 0.5, top - STATUS_ROW_LIFT * unscale.y)
 	sprite.add_child(container)
 	_status_icon_containers[combatant] = container
 
@@ -3344,6 +3370,9 @@ func _on_battle_ended(victory: bool) -> void:
 	var hint_bar := get_node_or_null("UI/InputHintBar") as CanvasItem
 	if hint_bar:
 		hint_bar.visible = false
+	var speed_panel := get_node_or_null("UI/SpeedPanel") as CanvasItem
+	if speed_panel:
+		speed_panel.visible = false
 
 	# Clear any pending autobattle cancel — if the user queued a "cancel
 	# next turn" via Select during execution but the battle ended before
@@ -5842,11 +5871,14 @@ func _on_party_combat_line(combatant: Combatant, line: String, voice_trigger: St
 		# msg 2105: voice key derived as voice_<job>_<trigger>; manifest-gated
 		# in SoundManager (silent skip when the voice pack isn't authored).
 		var audio_key: String = ""
-		if voice_trigger != "" and combatant.job is Dictionary:
+		var voice_stream: AudioStream = null
+		if voice_trigger.begins_with("pool:"):
+			voice_stream = VoicePool.claim_stream(voice_trigger)
+		elif voice_trigger != "" and combatant.job is Dictionary:
 			var job_id: String = str(combatant.job.get("id", ""))
 			if job_id != "":
 				audio_key = "voice_%s_%s" % [job_id, voice_trigger]
-		_spawn_quip_bubble(sprite, combatant.combatant_name, line, _get_job_quip_color(combatant), 2.0, audio_key)
+		_spawn_quip_bubble(sprite, combatant.combatant_name, line, _get_job_quip_color(combatant), 2.0, audio_key, voice_stream)
 
 
 # ── Wave E — Boss dialogue surface ───────────────────────────────────────────
@@ -5951,7 +5983,7 @@ func _show_address_banner(text: String) -> void:
 	tween.tween_callback(panel.queue_free)
 
 
-func _spawn_quip_bubble(sprite: Node2D, speaker_name: String, line: String, border_color: Color = Color(1.0, 0.85, 0.2), hold_time: float = 1.5, audio_key: String = "") -> void:
+func _spawn_quip_bubble(sprite: Node2D, speaker_name: String, line: String, border_color: Color = Color(1.0, 0.85, 0.2), hold_time: float = 1.5, audio_key: String = "", voice_stream: AudioStream = null) -> void:
 	"""Speech bubble above a sprite — party lines, boss taunts, quips, trash talk.
 	Delegates to BattleSpeechBubble (playtest brief msg 2101): viewport-clamped
 	out of the top-right party-panel column, suppressed only at 4x+ (pre-fix
@@ -5987,7 +6019,7 @@ func _spawn_quip_bubble(sprite: Node2D, speaker_name: String, line: String, bord
 	# The top party slot's head is above the old 48px clamp, and clamped bubbles covered the SELECT banner (store capture v3.33.345) — ceiling is the banner's real bottom.
 	var banner: Control = turn_info.get_parent() as Control if turn_info else null
 	var ceiling: float = banner.get_global_rect().end.y + 6.0 if banner and banner.is_visible_in_tree() else BattleSpeechBubble.TOP_MARGIN
-	BattleSpeechBubble.spawn(self, anchor, speaker_name, line, border_color, hold_time, audio_key, prefer_right, half_w, ceiling, _bubble_keep_out_rects)
+	BattleSpeechBubble.spawn(self, anchor, speaker_name, line, border_color, hold_time, audio_key, prefer_right, half_w, ceiling, _bubble_keep_out_rects, voice_stream)
 
 
 ## Screen rects a bubble must slide past: the open command menu, its submenus and tooltip (siblings under this scene, not children).

@@ -150,6 +150,19 @@ func _get_music_area_id() -> String:
 	return "digital_dungeon"
 
 
+## Phase-4 tileset: grid/circuit, not the medieval cave look.
+func _char_to_tile_type(char: String) -> int:
+	return _remap_wall_floor(char, TileGeneratorScript.TileType.DIGITAL_WALL, TileGeneratorScript.TileType.DIGITAL_FLOOR)
+
+
+func _get_dungeon_ambient() -> Color:
+	return Color(0.20, 0.26, 0.34)
+
+
+func _get_ambient_fx_theme() -> String:
+	return "storm"
+
+
 const _LORE := {
 	1: [
 		{"pos": Vector2(3, 6), "text": "SEGMENTATION FAULT (core dumped somewhere behind you, probably)."},

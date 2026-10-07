@@ -149,6 +149,11 @@ func _get_music_area_id() -> String:
 	return "industrial_dungeon"
 
 
+## Phase-4 tileset: concrete/hazard stripes, not the medieval cave look.
+func _char_to_tile_type(char: String) -> int:
+	return _remap_wall_floor(char, TileGeneratorScript.TileType.INDUSTRIAL_WALL, TileGeneratorScript.TileType.INDUSTRIAL_FLOOR)
+
+
 const _LORE := {
 	1: [
 		{"pos": Vector2(3, 6), "text": "QUOTA REMINDER: the line does not stop for lunch. The line does not know what lunch is."},

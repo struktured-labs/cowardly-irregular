@@ -941,6 +941,21 @@ static func build_party_line(
 	)
 
 
+## A line for the pool: written before its battle, so it must be true in any battle it plays in.
+static func build_pooled_party_line(persona: String, signature_phrases: Array, speaker_job: String, trigger: String, avoid: Array = []) -> String:
+	var p := "You voice the party's %s in the meta-aware JRPG 'Cowardly Irregular'.\n" % speaker_job
+	p += "Persona: %s\n" % persona
+	if not signature_phrases.is_empty():
+		p += "Signature phrases (flavour, do not repeat verbatim): %s\n" % ", ".join(signature_phrases.map(func(x): return str(x)))
+	p += "Write ONE short spoken line (under 90 characters) for the moment: %s.\n" % trigger
+	p += "Do NOT name anyone: no party member, no job, no enemy, no monster. Do NOT state who is alive, down, hurt or winning.\n"
+	p += "It must stay true in any battle, so react with attitude, not facts.\n"
+	if not avoid.is_empty():
+		p += "Do not repeat these: %s\n" % " | ".join(avoid.map(func(x): return str(x)))
+	p += "Reply as JSON: {\"line\": \"...\", \"mood\": \"neutral\"}"
+	return p
+
+
 ## The LLM picks which authored line fits; every option is already true, so it only judges fit.
 static func build_party_line_choice(persona: String, signature_phrases: Array, ctx: Dictionary, lines: Array) -> String:
 	var speaker: String = str(ctx.get("speaker_name", "the character"))

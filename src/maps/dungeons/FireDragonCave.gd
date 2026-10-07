@@ -197,3 +197,7 @@ func _get_boss_intro_dialogue() -> Array:
 ## embers in the rock
 func _get_dungeon_ambient() -> Color:
 	return Color(0.42, 0.26, 0.24)
+
+
+func _get_ambient_fx_theme() -> String:
+	return "lava"

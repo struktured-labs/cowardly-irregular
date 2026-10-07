@@ -191,3 +191,7 @@ func _get_boss_intro_dialogue() -> Array:
 ## blue under the frost
 func _get_dungeon_ambient() -> Color:
 	return Color(0.28, 0.36, 0.48)
+
+
+func _get_ambient_fx_theme() -> String:
+	return "frost"
