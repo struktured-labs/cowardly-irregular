@@ -366,47 +366,171 @@ func _trap_warp_player() -> void:
 	_cave.puzzle_warp_to(int(pick["floor"]), landing)
 
 
-## Procedural "glowing vial" marker -- one portal char, one hue, deterministic.
+## Procedural glowing rune portal -- one portal char, one hue, deterministic; no text, ever.
 func _create_portal_marker(pos: Vector2, ch: String) -> Node2D:
 	var marker := Node2D.new()
 	marker.position = pos
 	var hue: float = float(ch.unicode_at(0) % 6) / 6.0
-	var tint := Color.from_hsv(hue, 0.65, 0.95, 0.85)
-	var bg := ColorRect.new()
-	bg.size = Vector2(20, 26)
-	bg.position = Vector2(-10, -22)
-	bg.color = tint
-	marker.add_child(bg)
-	var label := Label.new()
-	label.text = ch.to_upper()
-	label.position = Vector2(-6, -20)
-	label.add_theme_font_size_override("font_size", 14)
-	label.add_theme_color_override("font_color", Color.WHITE)
-	marker.add_child(label)
+	var tint := Color.from_hsv(hue, 0.65, 0.95, 1.0)
+	var base := Sprite2D.new()
+	base.texture = _portal_ring_texture(tint)
+	base.centered = true
+	marker.add_child(base)
+	var core := Sprite2D.new()
+	core.texture = _portal_core_texture(tint)
+	core.centered = true
+	marker.add_child(core)
 	marker.ready.connect(func():
-		var tween := marker.create_tween()
-		tween.set_loops()
-		tween.tween_property(bg, "modulate:a", 0.5, 0.6)
-		tween.tween_property(bg, "modulate:a", 1.0, 0.6)
+		var spin := marker.create_tween()
+		spin.set_loops()
+		spin.tween_property(core, "rotation", TAU, 2.4).from(0.0)
+		var pulse := marker.create_tween()
+		pulse.set_loops()
+		pulse.tween_property(core, "modulate:a", 0.55, 0.6)
+		pulse.tween_property(core, "modulate:a", 1.0, 0.6)
 	)
 	return marker
 
 
+## Stone ring + hue ticks, one per portal pair -- the hue is the ONLY identity a pair shares.
+func _portal_ring_texture(tint: Color) -> ImageTexture:
+	var size := 32
+	var img := Image.create(size, size, false, Image.FORMAT_RGBA8)
+	img.fill(Color.TRANSPARENT)
+	var center := Vector2(size / 2.0, size / 2.0)
+	var stone := Color(0.30, 0.30, 0.34, 0.95)
+	var stone_dark := Color(0.16, 0.16, 0.20, 0.95)
+	var ring := tint
+	ring.a = 0.9
+	for y in range(size):
+		for x in range(size):
+			var d := Vector2(x + 0.5, y + 0.5).distance_to(center)
+			if d > 15.0 and d <= 16.5:
+				img.set_pixel(x, y, stone_dark)
+			elif d > 12.5 and d <= 15.0:
+				img.set_pixel(x, y, stone)
+			elif d > 10.0 and d <= 12.5:
+				var ang := atan2(y + 0.5 - center.y, x + 0.5 - center.x)
+				var tick := fmod(ang + PI, PI / 3.0) < 0.35
+				img.set_pixel(x, y, ring if tick else stone_dark)
+	return ImageTexture.create_from_image(img)
+
+
+## The spiral swirl that rotates and pulses -- deterministic shape, hue from the portal's pair.
+func _portal_core_texture(tint: Color) -> ImageTexture:
+	var size := 14
+	var img := Image.create(size, size, false, Image.FORMAT_RGBA8)
+	img.fill(Color.TRANSPARENT)
+	var center := Vector2(size / 2.0, size / 2.0)
+	var glow := tint
+	glow.a = 0.95
+	var bright := tint.lightened(0.5)
+	bright.a = 1.0
+	for y in range(size):
+		for x in range(size):
+			var p := Vector2(x + 0.5, y + 0.5)
+			var d := p.distance_to(center)
+			if d > 6.0:
+				continue
+			var ang := atan2(p.y - center.y, p.x - center.x)
+			var spiral := fmod(ang * 2.0 + d * 1.6, TAU)
+			if spiral < 1.4:
+				img.set_pixel(x, y, bright if d < 3.0 else glow)
+	return ImageTexture.create_from_image(img)
+
+
+## Stone plate (depresses when thrown) or lever (flips when thrown) -- no text, ever.
 func _create_switch_marker(pos: Vector2, kind: String, thrown: bool) -> Node2D:
 	var marker := Node2D.new()
 	marker.position = pos
-	var bg := ColorRect.new()
-	bg.size = Vector2(24, 24)
-	bg.position = Vector2(-12, -12)
-	bg.color = Color(0.35, 0.35, 0.35, 0.8) if thrown else Color(0.75, 0.65, 0.15, 0.9)
-	marker.add_child(bg)
-	var label := Label.new()
-	label.text = "P" if kind == "plate" else "L"
-	label.position = Vector2(-5, -11)
-	label.add_theme_font_size_override("font_size", 14)
-	label.add_theme_color_override("font_color", Color.BLACK if not thrown else Color.WHITE)
-	marker.add_child(label)
+	var spr := Sprite2D.new()
+	spr.texture = _pressure_plate_texture(thrown) if kind == "plate" else _lever_texture(thrown)
+	spr.centered = true
+	marker.add_child(spr)
+	if thrown:
+		spr.scale = Vector2(1.0, 0.7)  # one-shot settle: it visibly locks down / flips into place
+		marker.ready.connect(func():
+			var tween := marker.create_tween()
+			tween.tween_property(spr, "scale", Vector2.ONE, 0.25).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		)
+	else:
+		marker.ready.connect(func():
+			var tween := marker.create_tween()
+			tween.set_loops()
+			tween.tween_property(spr, "modulate:a", 0.75, 0.8)
+			tween.tween_property(spr, "modulate:a", 1.0, 0.8)
+		)
 	return marker
+
+
+## Octagonal stone plate; thrown = sunken, darker, with a locked metal latch bar across it.
+func _pressure_plate_texture(thrown: bool) -> ImageTexture:
+	var size := 28
+	var img := Image.create(size, size, false, Image.FORMAT_RGBA8)
+	img.fill(Color.TRANSPARENT)
+	var stone := Color(0.30, 0.28, 0.22) if thrown else Color(0.55, 0.52, 0.40)
+	var stone_light := Color(0.38, 0.35, 0.28) if thrown else Color(0.70, 0.66, 0.50)
+	var stone_dark := Color(0.18, 0.16, 0.12) if thrown else Color(0.35, 0.32, 0.22)
+	var outline := Color(0.10, 0.09, 0.06)
+	for y in range(size):
+		for x in range(size):
+			if (x < 3 and y < 3) or (x < 3 and y > size - 4) or (x > size - 4 and y < 3) or (x > size - 4 and y > size - 4):
+				continue  # clipped corners -- octagon, not a square
+			if x == 2 or x == size - 3 or y == 2 or y == size - 3:
+				img.set_pixel(x, y, outline)
+			elif thrown and y > size - 10:
+				img.set_pixel(x, y, stone_dark)
+			elif not thrown and y < 10:
+				img.set_pixel(x, y, stone_light)
+			else:
+				img.set_pixel(x, y, stone)
+	if thrown:
+		var metal := Color(0.72, 0.68, 0.35)
+		var metal_dark := Color(0.45, 0.42, 0.18)
+		for x in range(5, size - 5):
+			img.set_pixel(x, size / 2 - 1, metal)
+			img.set_pixel(x, size / 2, metal)
+		img.set_pixel(4, size / 2 - 1, metal_dark)
+		img.set_pixel(size - 5, size / 2 - 1, metal_dark)
+	return ImageTexture.create_from_image(img)
+
+
+## Stone base + metal arm; the arm angle MIRRORS across vertical when thrown -- an actual flip.
+func _lever_texture(thrown: bool) -> ImageTexture:
+	var size := 28
+	var img := Image.create(size, size, false, Image.FORMAT_RGBA8)
+	img.fill(Color.TRANSPARENT)
+	var base_stone := Color(0.32, 0.30, 0.34)
+	var base_dark := Color(0.18, 0.17, 0.20)
+	for y in range(size - 8, size):
+		for x in range(6, size - 6):
+			img.set_pixel(x, y, base_dark if (x == 6 or x == size - 7 or y == size - 1) else base_stone)
+	var metal := Color(0.75, 0.65, 0.22) if not thrown else Color(0.55, 0.78, 0.40)
+	var metal_bright := Color(0.92, 0.85, 0.45) if not thrown else Color(0.75, 0.95, 0.55)
+	var pivot := Vector2(size / 2.0, size - 8.0)
+	var tip_angle := deg_to_rad(-135.0) if not thrown else deg_to_rad(-45.0)
+	var tip := pivot + Vector2(cos(tip_angle), sin(tip_angle)) * 16.0
+	_stamp_thick_line(img, pivot, tip, metal, 2)
+	_stamp_disc(img, tip, 2.2, metal_bright)
+	_stamp_disc(img, pivot, 1.6, metal)
+	return ImageTexture.create_from_image(img)
+
+
+static func _stamp_disc(img: Image, center: Vector2, radius: float, color: Color) -> void:
+	var r := int(ceil(radius))
+	for y in range(int(center.y) - r, int(center.y) + r + 1):
+		for x in range(int(center.x) - r, int(center.x) + r + 1):
+			if x < 0 or y < 0 or x >= img.get_width() or y >= img.get_height():
+				continue
+			if Vector2(x + 0.5, y + 0.5).distance_to(center) <= radius:
+				img.set_pixel(x, y, color)
+
+
+static func _stamp_thick_line(img: Image, from_pt: Vector2, to_pt: Vector2, color: Color, thickness: int) -> void:
+	var steps := int(ceil(from_pt.distance_to(to_pt)))
+	for i in range(steps + 1):
+		var t := float(i) / maxf(1.0, float(steps))
+		_stamp_disc(img, from_pt.lerp(to_pt, t), float(thickness) / 2.0, color)
 
 
 ## Lever = requires interact(), unlike a pressure plate's auto-trigger.
