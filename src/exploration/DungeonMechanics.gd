@@ -719,26 +719,73 @@ func _block_dest_open(floor_num: int, cell: Vector2i) -> bool:
 
 
 ## Procedural stone block -- no letters.
+## A stone plate with a flame glyph: step on it and the fire gate opens for TIMED_PLATE_SECONDS.
 func _create_timed_plate_marker(pos: Vector2) -> Node2D:
 	var marker := Node2D.new()
 	marker.position = pos
-	var bg := ColorRect.new()
-	bg.size = Vector2(22, 22)
-	bg.position = Vector2(-11, -11)
-	bg.color = Color(0.85, 0.42, 0.18, 0.9)
-	marker.add_child(bg)
+	marker.set_meta(&"dm_role", "timed_plate")
+	var spr := Sprite2D.new()
+	spr.texture = _timed_plate_texture()
+	marker.add_child(spr)
 	return marker
 
 
+static func _timed_plate_texture() -> ImageTexture:
+	var img := Image.create(26, 26, false, Image.FORMAT_RGBA8)
+	var stone := Color(0.46, 0.40, 0.36)
+	img.fill(stone)
+	for i in 26:
+		for k in 2:
+			img.set_pixel(i, k, stone.lightened(0.3))
+			img.set_pixel(k, i, stone.lightened(0.2))
+			img.set_pixel(i, 25 - k, stone.darkened(0.45))
+			img.set_pixel(25 - k, i, stone.darkened(0.35))
+	var flame := Color(1.0, 0.55, 0.15)
+	var core := Color(1.0, 0.88, 0.4)
+	for y in range(6, 21):
+		var half: int = int(round(5.0 * sin(PI * float(y - 6) / 15.0)))
+		for x in range(13 - half, 13 + half + 1):
+			img.set_pixel(x, y, core if absi(x - 13) < half - 2 and y > 11 else flame)
+	return ImageTexture.create_from_image(img)
+
+
+## A framed mirror on a pedestal: bright when it is turned (the hidden route open), dull when not.
 func _create_mirror_marker(pos: Vector2, active: bool) -> Node2D:
 	var marker := Node2D.new()
 	marker.position = pos
-	var bg := ColorRect.new()
-	bg.size = Vector2(20, 24)
-	bg.position = Vector2(-10, -20)
-	bg.color = Color(0.55, 0.2, 0.7, 0.9) if active else Color(0.3, 0.1, 0.4, 0.9)
-	marker.add_child(bg)
+	marker.set_meta(&"dm_role", "mirror")
+	var spr := Sprite2D.new()
+	spr.texture = _mirror_texture(active)
+	spr.position = Vector2(0, -6)
+	marker.add_child(spr)
+	if not active:
+		marker.ready.connect(func():
+			var t := marker.create_tween()
+			t.set_loops()
+			t.tween_property(spr, "modulate:a", 0.65, 0.8)
+			t.tween_property(spr, "modulate:a", 1.0, 0.8))
 	return marker
+
+
+static func _mirror_texture(active: bool) -> ImageTexture:
+	var img := Image.create(24, 32, false, Image.FORMAT_RGBA8)
+	var frame := Color(0.62, 0.5, 0.78)
+	var glass := Color(0.85, 0.8, 1.0) if active else Color(0.32, 0.28, 0.42)
+	var c := Vector2(11.5, 11.5)
+	for y in 24:
+		for x in 24:
+			var d := Vector2((x - c.x) / 10.5, (y - c.y) / 11.5).length()
+			if d <= 1.0:
+				img.set_pixel(x, y, glass if d < 0.78 else frame)
+	for x in range(5, 7):
+		for y in range(4, 9):
+			img.set_pixel(x + (y - 4), y, Color(1, 1, 1, 0.8 if active else 0.35))
+	for y in range(23, 32):
+		for x in range(9, 15):
+			img.set_pixel(x, y, frame.darkened(0.35))
+	for x in range(5, 19):
+		img.set_pixel(x, 31, frame.darkened(0.5))
+	return ImageTexture.create_from_image(img)
 
 
 ## Lever-style interactable for the mirror toggle.
@@ -756,12 +803,24 @@ class TimedGateRing extends Node2D:
 	var layer: DungeonMechanics = null
 	var cell: Vector2i = Vector2i.ZERO
 	var _arc: ColorRect = null
+	var _barrier: Sprite2D = null
 
 	func _ready() -> void:
+		set_meta(&"dm_role", "timed_gate")
+		# Closed, the gate read as plain wall; it now burns as a barrier until the plate opens it.
+		_barrier = Sprite2D.new()
+		_barrier.texture = DungeonMechanics._barrier_texture()
+		_barrier.modulate = Color(1.6, 0.7, 0.3)
+		add_child(_barrier)
+		var track := ColorRect.new()
+		track.size = Vector2(28, 4)
+		track.position = Vector2(-14, -22)
+		track.color = Color(0.1, 0.06, 0.04, 0.8)
+		add_child(track)
 		_arc = ColorRect.new()
-		_arc.size = Vector2(6, 26)
-		_arc.position = Vector2(-3, -13)
-		_arc.color = Color(1.0, 0.75, 0.3, 0.9)
+		_arc.size = Vector2(28, 4)
+		_arc.position = Vector2(-14, -22)
+		_arc.color = Color(1.0, 0.75, 0.3, 0.95)
 		add_child(_arc)
 
 	func _process(_delta: float) -> void:
@@ -769,13 +828,15 @@ class TimedGateRing extends Node2D:
 			return
 		var until: int = int(layer._timed_open_until.get(int(layer._cave.current_floor), 0))
 		var remaining: float = max(0.0, float(until - Time.get_ticks_msec()) / 1000.0)
-		visible = remaining > 0.0
-		if visible:
-			_arc.size.x = lerp(1.0, 6.0, remaining / TIMED_PLATE_SECONDS)
+		var open := remaining > 0.0
+		_barrier.visible = not open
+		for c in get_children():
+			if c is ColorRect:
+				c.visible = open
+		if open:
+			_arc.size.x = 28.0 * remaining / TIMED_PLATE_SECONDS
 
 
-## Pushable block: walking into it from the correct side shoves it one tile toward its
-## target plate/pylon; once it touches the target the linked gate opens permanently.
 ## A carved stone block: lit top-left bevel, shadowed bottom-right, an amber rune that says "this moves".
 static func _block_texture() -> ImageTexture:
 	var img := Image.create(28, 28, false, Image.FORMAT_RGBA8)
@@ -795,6 +856,8 @@ static func _block_texture() -> ImageTexture:
 	return ImageTexture.create_from_image(img)
 
 
+## Pushable block: walking into it from the correct side shoves it one tile toward its
+## target plate/pylon; once it touches the target the linked gate opens permanently.
 class PushBlock extends StaticBody2D:
 	var block_id: String = ""
 	var layer: DungeonMechanics = null
