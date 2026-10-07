@@ -73,9 +73,26 @@ func test_wall_and_floor_tile_ids_resolve_to_distinct_atlas_cells() -> void:
 		assert_gt(wall_id, 0, "%s: wall tile id fell back to the atlas's id-0 default" % name)
 
 
+## GUT leaks held input across files: a stuck move key walked the player 8px past its light in one gate (.616).
+func _release_movement() -> void:
+	for a in ["ui_up", "ui_down", "ui_left", "ui_right", "move_up", "move_down", "move_left", "move_right"]:
+		if InputMap.has_action(a):
+			Input.action_release(a)
+
+
+func before_each() -> void:
+	_release_movement()
+
+
+func after_each() -> void:
+	_release_movement()
+
+
 func test_every_dungeon_carries_a_light_that_follows_the_player() -> void:
 	for name in DUNGEONS:
 		var c: Node = await _cave(DUNGEONS[name])
+		if c.player and c.player.has_method("set_can_move"):
+			c.player.set_can_move(false)
 		assert_not_null(c.lighting, "%s built no lighting rig" % name)
 		assert_not_null(c.lighting._player_light, "%s has no player-following light" % name)
 		assert_eq(c.lighting._player_light.get_parent(), c.lighting,
