@@ -9,6 +9,7 @@ const STASH_CAP := 8
 
 var store: VoicePoolStore
 var discarded: int = 0
+var repeated: int = 0
 var _filling := false
 var _retry_after_msec := 0
 var _stash: Dictionary = {}
@@ -108,13 +109,17 @@ func _fill(speaker: String, trigger: String) -> bool:
 	if pp == null or llm == null or vs == null:
 		return false
 	var key := VoicePoolStore.slot_key(speaker, trigger)
-	var prompt := DialoguePrompts.build_pooled_party_line(str(pp.get_persona(speaker)), pp.get_signature_phrases(speaker), speaker, trigger, _recent.get(key, []))
+	var phrases: Array = pp.get_signature_phrases(speaker)
+	var prompt := DialoguePrompts.build_pooled_party_line(str(pp.get_persona(speaker)), phrases, speaker, trigger, _held_lines(speaker).slice(-8))
 	var raw: Variant = await llm.complete_json(prompt, DialoguePrompts.SCHEMA_PARTY_LINE, DialoguePrompts.FALLBACK_PARTY_LINE, {"cache": false})
 	var line := str(DialoguePrompts.validate_party_line(raw).get("line", ""))
 	if line == "" or not is_enabled():
 		return false
 	if VoicePoolStore.names_anyone(line, forbidden_names()):
 		discarded += 1
+		return false
+	if _repeats_the_pool(speaker, line, phrases):
+		repeated += 1
 		return false
 	var stream: AudioStream = await vs.synthesize(speaker, line, SYNTH_TIMEOUT_SEC)
 	if stream == null:
@@ -126,6 +131,46 @@ func _fill(speaker: String, trigger: String) -> bool:
 	recent.append(line)
 	_recent[key] = recent.slice(-5)
 	return true
+
+
+## Every line this speaker has ready, plus what it already said this session.
+func _held_lines(speaker: String) -> Array:
+	var out: Array = store.lines_for(speaker)
+	for k in _recent:
+		if str(k).begins_with(speaker + "|"):
+			out.append_array(_recent[k])
+	return out
+
+
+## cowir-story 2026-10-06: never the same line twice from one speaker, and at most one pooled line per speaker quoting a signature phrase.
+func _repeats_the_pool(speaker: String, line: String, phrases: Array) -> bool:
+	var n := normalized(line)
+	for held in _held_lines(speaker):
+		if normalized(str(held)) == n:
+			return true
+	if not quotes_phrase(line, phrases):
+		return false
+	return store.lines_for(speaker).any(func(l): return quotes_phrase(l, phrases))
+
+
+## Lowercase letters and digits, single-spaced: a repeat is a repeat whatever its punctuation.
+static func normalized(line: String) -> String:
+	var re := RegEx.new()
+	re.compile("[^a-z0-9]+")
+	return re.sub(line.to_lower(), " ", true).strip_edges()
+
+
+## A line quotes a phrase when it carries a whole sentence of it (two words or more); shared vocabulary does not count.
+static func quotes_phrase(line: String, phrases: Array) -> bool:
+	var hay := " %s " % normalized(line)
+	var split := RegEx.new()
+	split.compile("[.!?\u2026]+")
+	for p in phrases:
+		for sentence in [str(p)] + Array(split.sub(str(p), "|", true).split("|")):
+			var s := normalized(sentence)
+			if s.split(" ").size() >= 2 and hay.contains(" %s " % s):
+				return true
+	return false
 
 
 ## A ready line and a one-shot token for its audio. {} when the pool has nothing playable.

@@ -8,11 +8,13 @@ const DIR := "user://test_voice_pool_cache"
 class JsonModel extends LLMBackend:
 	var reply: String = "{\"line\": \"Steady hands, loud heart.\", \"mood\": \"neutral\"}"
 	var submitted: int = 0
+	var last_prompt: String = ""
 	func backend_id() -> String: return "json_model"
 	func is_ready() -> bool: return true
 	func supports_json() -> bool: return true
-	func submit(id: String, _p: String, _o: Dictionary = {}) -> void:
+	func submit(id: String, p: String, _o: Dictionary = {}) -> void:
 		submitted += 1
+		last_prompt = p
 		var r := reply
 		(func(): request_finished.emit(id, true, r, "")).call_deferred()
 
@@ -36,7 +38,11 @@ func before_each() -> void:
 		"store": VoicePool.store, "tts": GameState.tts_live_enabled, "pld": GameState.party_llm_dialogue_enabled,
 		"party": GameState.player_party.duplicate(true), "backends": LLMService._backends.duplicate(),
 		"active": LLMService._active_backend, "llm_on": LLMService.llm_enabled,
+		"bard_persona": (PartyPersonas._data.get("bard", {}) as Dictionary).duplicate(true),
 	}
+	var persona: Dictionary = (_saved["bard_persona"] as Dictionary).duplicate(true)
+	persona["signature_phrases"] = ["Hold for applause. No? Tough room.", "Verse two, with feeling!"]
+	PartyPersonas._data["bard"] = persona
 	VoiceService.cache = VoiceCache.new(DIR, 10_000_000)
 	VoiceService._cast = {"bard": {"voice": "bard.wav", "rev": 1}}
 	_replay = Replay.new()
@@ -44,6 +50,7 @@ func before_each() -> void:
 	VoiceService.install_backend(_replay)
 	VoicePool.store = VoicePoolStore.new(DIR + "/pool.json")
 	VoicePool.discarded = 0
+	VoicePool.repeated = 0
 	VoicePool._retry_after_msec = 0
 	VoicePool._recent = {}
 	VoicePool.set_process(false)
@@ -77,6 +84,7 @@ func after_each() -> void:
 	GameState.tts_live_enabled = _saved["tts"]
 	GameState.party_llm_dialogue_enabled = _saved["pld"]
 	GameState.player_party.assign(_saved["party"])
+	PartyPersonas._data["bard"] = _saved["bard_persona"]
 	_wipe()
 
 
@@ -144,3 +152,45 @@ func test_an_idle_pool_fills_on_its_own() -> void:
 	while VoicePool._filling and Time.get_ticks_msec() - t0 < 6000:
 		await get_tree().process_frame
 	assert_true(VoicePool.store.has_line("bard", "turn_start"), "an idle pool with a ready server never filled its first slot")
+
+
+## cowir-story 2026-10-06: a line may never be heard twice from one speaker, whatever slot it came from.
+func test_a_line_already_pooled_in_another_slot_is_never_synthesized_again() -> void:
+	VoicePool.store.put("bard", "big_hit_taken", "Tempo up.", "bard.wav", 1)
+	_model.reply = "{\"line\": \"TEMPO up!\", \"mood\": \"neutral\"}"
+	assert_false(await VoicePool.fill_slot("bard", "turn_start"), "the same line, punctuated differently, was pooled twice for one speaker")
+	assert_eq(VoicePool.repeated, 1)
+	assert_eq(_replay.requests.size(), 0, "the repeat was sent to the TTS server anyway")
+
+
+func test_a_spoken_line_is_not_pooled_again_this_session() -> void:
+	VoicePool._recent = {"bard|victory": ["Encore, encore."]}
+	_model.reply = "{\"line\": \"Encore, encore.\", \"mood\": \"neutral\"}"
+	assert_false(await VoicePool.fill_slot("bard", "turn_start"), "a line the bard already said this session came back")
+
+
+func test_only_one_pooled_line_per_speaker_quotes_a_signature_phrase() -> void:
+	if SoundManager.wav_commit_refused():
+		pending("mixer latched: a synthesized line cannot decode")
+		return
+	_model.reply = "{\"line\": \"Verse two, with feeling!\", \"mood\": \"neutral\"}"
+	assert_true(await VoicePool.fill_slot("bard", "turn_start"), "CONTROL: the first signature line fills")
+	VoicePool._retry_after_msec = 0
+	_model.reply = "{\"line\": \"Hold for applause!\", \"mood\": \"neutral\"}"
+	assert_false(await VoicePool.fill_slot("bard", "big_hit_taken"), "a second line quoting a whole sentence of a signature phrase joined the pool")
+	assert_false(VoicePool.store.has_line("bard", "big_hit_taken"))
+
+
+func test_the_prompt_avoids_the_speakers_other_slots() -> void:
+	VoicePool.store.put("bard", "victory", "Bow and curtain.", "bard.wav", 1)
+	await VoicePool.fill_slot("bard", "turn_start")
+	assert_string_contains(_model.last_prompt, "Bow and curtain.", "the model was not told what this speaker already has ready")
+
+
+## cowir-story 2026-10-06: a quote is a whole SENTENCE of the phrase; shared vocabulary ("the Loop") is the persona, not a repeat.
+func test_control_shared_vocabulary_is_not_a_quote() -> void:
+	var cleric := ["The Loop provides. Hold still."]
+	assert_true(VoicePool.quotes_phrase("The Loop provides.", cleric), "CONTROL: one whole sentence of the phrase is a quote")
+	assert_false(VoicePool.quotes_phrase("The Loop turns. So do I.", cleric), "the Cleric's own vocabulary counted as quoting her phrase")
+	assert_false(VoicePool.quotes_phrase("No.", ["Hold for applause. No? Tough room."]), "a one-word sentence of a phrase counted as a quote")
+	assert_true(VoicePool.quotes_phrase("Stitched. Logged. Forgiven.", ["Stitched. Logged. Forgiven."]), "the whole phrase, made of one-word sentences, escaped the cap")

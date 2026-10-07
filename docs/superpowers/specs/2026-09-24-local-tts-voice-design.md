@@ -362,6 +362,29 @@ and the same picker and pool. Two render surfaces, both verified in code:
   replaces it if it arrives. **A late re-narration replaces the text only, never the voice**;
   otherwise the boss speaks twice. The voice is chosen once, at the first emit.
 
+**Which boss pools may take a generic pooled line (cowir-story ruling, 2026-10-06).** Only the
+end-of-fight lines. Every other pool states a fact the pooled line cannot know:
+
+| pool | pooled line? | why |
+|---|---|---|
+| taunt | no | bound to the intent it announces |
+| phase transition | no | narrates a specific phase change and mechanic |
+| steal / key / backstab crack | no | tied to the Lockward steal mechanic and its outcome |
+| opening / intro | no | authored staging; several carry the party's own lines |
+| automation | only if pooled **per tier** | it answers how far the fight was handed to scripts |
+| victory / defeat | yes, **split by outcome** | conceding and gloating over a wipe are opposites |
+
+Same rules as the party pool for every boss line: name no party member, job or ability. A defeat
+line also makes no claim about the party's state ("all of you", "nobody left"), since the party
+can win with someone KO'd.
+
+**The party pool never repeats itself (cowir-story ruling, 2026-10-06; shipped on
+`llm/pool-no-repeat`).** A generated line whose normalized text matches anything the speaker has
+ready, or said this session, is discarded before synthesis. At most one ready line per speaker
+quotes a signature phrase, where a quote means the whole phrase or one of its whole sentences of
+two or more words. Shared vocabulary ("the Loop", "the math", "heist") is the persona and never
+counts. The prompt's avoid list covers the speaker's other slots, so fewer lines are wasted.
+
 ---
 
 ## Piece 3 — Live NPC voice

@@ -37,6 +37,14 @@ func take(speaker: String, trigger: String) -> Dictionary:
 	return slot
 
 
+func lines_for(speaker: String) -> Array[String]:
+	var out: Array[String] = []
+	for k in slots.keys():
+		if str(k).begins_with(speaker + "|"):
+			out.append(str((slots[k] as Dictionary).get("line", "")))
+	return out
+
+
 ## A slot whose voice was recast or uncast holds audio in a voice the speaker no longer has.
 func drop_stale(cast: Dictionary) -> int:
 	var dropped := 0
