@@ -188,3 +188,7 @@ func _get_boss_intro_dialogue() -> Array:
 ## storm-violet
 func _get_dungeon_ambient() -> Color:
 	return Color(0.32, 0.30, 0.46)
+
+
+func _get_ambient_fx_theme() -> String:
+	return "storm"

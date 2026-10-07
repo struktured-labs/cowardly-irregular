@@ -160,6 +160,15 @@ func _get_music_area_id() -> String:
 	return "steampunk_dungeon"
 
 
+## Phase-4 tileset: brass/rivets/pipes, not the medieval cave look.
+func _char_to_tile_type(char: String) -> int:
+	return _remap_wall_floor(char, TileGeneratorScript.TileType.STEAMPUNK_WALL, TileGeneratorScript.TileType.STEAMPUNK_FLOOR)
+
+
+func _get_ambient_fx_theme() -> String:
+	return "steam"
+
+
 const _LORE := {
 	1: [
 		{"pos": Vector2(3, 6), "text": "A brass plaque: 'THE MECHANISM HAS ALWAYS BEEN RUNNING. NOBODY REMEMBERS STARTING IT.'"},

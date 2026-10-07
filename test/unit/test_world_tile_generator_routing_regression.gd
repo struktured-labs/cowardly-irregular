@@ -167,5 +167,10 @@ func test_derivation_agrees_with_the_medieval_hand_list_it_replaced() -> void:
 	var src := FileAccess.get_file_as_string("res://src/maps/villages/HarmoniaVillage.gd")
 	var derived: Array = GS.derived_impassable(src)
 	derived.sort()
-	var hand := ["CAVE_WALL", "LAVA", "MOUNTAIN", "VILLAGE_HEDGE", "WALL", "WATER"]
+	# 2026-10-06: phase-4 per-world dungeon tilesets added five new impassable wall types
+	# to this shared generator (steampunk/industrial/digital/abstract/suburban dungeon
+	# walls must block like every other wall) -- a real growth of the medieval generator's
+	# own list, not drift away from it.
+	var hand := ["ABSTRACT_WALL", "CAVE_WALL", "DIGITAL_WALL", "INDUSTRIAL_WALL", "LAVA",
+		"MOUNTAIN", "STEAMPUNK_WALL", "SUBURBAN_WALL", "VILLAGE_HEDGE", "WALL", "WATER"]
 	assert_eq(derived, hand, "medieval derivation drifted from the list it replaced")

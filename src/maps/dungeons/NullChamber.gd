@@ -119,6 +119,19 @@ func _get_music_area_id() -> String:
 	return "abstract_dungeon"
 
 
+## Phase-4 tileset: void/geometry, not the medieval cave look.
+func _char_to_tile_type(char: String) -> int:
+	return _remap_wall_floor(char, TileGeneratorScript.TileType.ABSTRACT_WALL, TileGeneratorScript.TileType.ABSTRACT_FLOOR)
+
+
+func _get_dungeon_ambient() -> Color:
+	return Color(0.22, 0.19, 0.32)
+
+
+func _get_ambient_fx_theme() -> String:
+	return "shadow"
+
+
 const _LORE := {
 	1: [
 		{"pos": Vector2(10, 3), "text": "Two doors that lead to the same nowhere. Take whichever one you already took."},
