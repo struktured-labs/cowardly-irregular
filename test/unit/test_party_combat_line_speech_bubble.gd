@@ -99,5 +99,5 @@ func test_bubble_hold_time_2_seconds() -> void:
 	var idx: int = src.find("func _on_party_combat_line")
 	var next_fn: int = src.find("\nfunc ", idx + 1)
 	var body: String = src.substr(idx, next_fn - idx) if next_fn > -1 else src.substr(idx)
-	assert_true(body.contains("_get_job_quip_color(combatant), 2.0, audio_key)"),
+	assert_true(body.contains("_get_job_quip_color(combatant), 2.0, audio_key"),
 		"party combat line bubble must hold for 2.0s — longer than the 1.5s default for shorter quips")

@@ -5842,11 +5842,14 @@ func _on_party_combat_line(combatant: Combatant, line: String, voice_trigger: St
 		# msg 2105: voice key derived as voice_<job>_<trigger>; manifest-gated
 		# in SoundManager (silent skip when the voice pack isn't authored).
 		var audio_key: String = ""
-		if voice_trigger != "" and combatant.job is Dictionary:
+		var voice_stream: AudioStream = null
+		if voice_trigger.begins_with("pool:"):
+			voice_stream = VoicePool.claim_stream(voice_trigger)
+		elif voice_trigger != "" and combatant.job is Dictionary:
 			var job_id: String = str(combatant.job.get("id", ""))
 			if job_id != "":
 				audio_key = "voice_%s_%s" % [job_id, voice_trigger]
-		_spawn_quip_bubble(sprite, combatant.combatant_name, line, _get_job_quip_color(combatant), 2.0, audio_key)
+		_spawn_quip_bubble(sprite, combatant.combatant_name, line, _get_job_quip_color(combatant), 2.0, audio_key, voice_stream)
 
 
 # ── Wave E — Boss dialogue surface ───────────────────────────────────────────
