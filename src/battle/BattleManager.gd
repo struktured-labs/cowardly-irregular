@@ -9826,6 +9826,14 @@ func _run_party_line_async(combatant: Combatant, event_kind: String, event_data:
 			_emit_party_line(combatant, fallback, fallback_key)
 		return
 
+	## Spec 2a.1 step 3: a moment line outranks the pool; otherwise a ready pooled line speaks with its own synthesized audio.
+	var vp = get_node_or_null("/root/VoicePool")
+	if vp != null and not (pp != null and pp.has_method("has_moment_line") and pp.has_moment_line(job_id, event_kind, ctx)):
+		var pooled: Dictionary = vp.take_line(job_id, event_kind)
+		if not pooled.is_empty():
+			_emit_party_line(combatant, str(pooled["line"]), str(pooled["token"]))
+			return
+
 	var llm = get_node_or_null("/root/LLMService")
 	if llm == null or not llm.has_method("is_available") or not llm.is_available():
 		if not fallback.is_empty():

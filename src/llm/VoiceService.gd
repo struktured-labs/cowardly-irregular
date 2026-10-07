@@ -84,6 +84,11 @@ func cast_speakers() -> Array[String]:
 	return out
 
 
+## A synthesis is in flight; the voice pool waits for the server to be free.
+func is_busy() -> bool:
+	return not _pending.is_empty()
+
+
 func is_live_ready() -> bool:
 	return _backend != null and _backend.is_ready()
 

@@ -5871,11 +5871,14 @@ func _on_party_combat_line(combatant: Combatant, line: String, voice_trigger: St
 		# msg 2105: voice key derived as voice_<job>_<trigger>; manifest-gated
 		# in SoundManager (silent skip when the voice pack isn't authored).
 		var audio_key: String = ""
-		if voice_trigger != "" and combatant.job is Dictionary:
+		var voice_stream: AudioStream = null
+		if voice_trigger.begins_with("pool:"):
+			voice_stream = VoicePool.claim_stream(voice_trigger)
+		elif voice_trigger != "" and combatant.job is Dictionary:
 			var job_id: String = str(combatant.job.get("id", ""))
 			if job_id != "":
 				audio_key = "voice_%s_%s" % [job_id, voice_trigger]
-		_spawn_quip_bubble(sprite, combatant.combatant_name, line, _get_job_quip_color(combatant), 2.0, audio_key)
+		_spawn_quip_bubble(sprite, combatant.combatant_name, line, _get_job_quip_color(combatant), 2.0, audio_key, voice_stream)
 
 
 # ── Wave E — Boss dialogue surface ───────────────────────────────────────────
@@ -5980,7 +5983,7 @@ func _show_address_banner(text: String) -> void:
 	tween.tween_callback(panel.queue_free)
 
 
-func _spawn_quip_bubble(sprite: Node2D, speaker_name: String, line: String, border_color: Color = Color(1.0, 0.85, 0.2), hold_time: float = 1.5, audio_key: String = "") -> void:
+func _spawn_quip_bubble(sprite: Node2D, speaker_name: String, line: String, border_color: Color = Color(1.0, 0.85, 0.2), hold_time: float = 1.5, audio_key: String = "", voice_stream: AudioStream = null) -> void:
 	"""Speech bubble above a sprite — party lines, boss taunts, quips, trash talk.
 	Delegates to BattleSpeechBubble (playtest brief msg 2101): viewport-clamped
 	out of the top-right party-panel column, suppressed only at 4x+ (pre-fix
@@ -6016,7 +6019,7 @@ func _spawn_quip_bubble(sprite: Node2D, speaker_name: String, line: String, bord
 	# The top party slot's head is above the old 48px clamp, and clamped bubbles covered the SELECT banner (store capture v3.33.345) — ceiling is the banner's real bottom.
 	var banner: Control = turn_info.get_parent() as Control if turn_info else null
 	var ceiling: float = banner.get_global_rect().end.y + 6.0 if banner and banner.is_visible_in_tree() else BattleSpeechBubble.TOP_MARGIN
-	BattleSpeechBubble.spawn(self, anchor, speaker_name, line, border_color, hold_time, audio_key, prefer_right, half_w, ceiling, _bubble_keep_out_rects)
+	BattleSpeechBubble.spawn(self, anchor, speaker_name, line, border_color, hold_time, audio_key, prefer_right, half_w, ceiling, _bubble_keep_out_rects, voice_stream)
 
 
 ## Screen rects a bubble must slide past: the open command menu, its submenus and tooltip (siblings under this scene, not children).

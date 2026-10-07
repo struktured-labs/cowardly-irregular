@@ -97,9 +97,9 @@ func test_the_voice_is_read_before_the_fade_tween_is_built() -> void:
 	## passes because _hold_time is correct by then; only the TWEEN read the stale value.
 	var code: String = GdSource.code_of(BUBBLE_SRC)
 	assert_ne(code, "", "CONTROL: BattleSpeechBubble source must survive the comment strip")
-	var voice_at: int = code.find("_play_voice(audio_key)")
+	var voice_at: int = code.find("_play_voice(audio_key, voice_stream)")
 	var present_at: int = code.find("_present(anchor_global_pos")
-	assert_gt(voice_at, -1, "the spawn path no longer calls _play_voice(audio_key) — this file's subject is gone")
+	assert_gt(voice_at, -1, "the spawn path no longer calls _play_voice(audio_key, voice_stream) — this file's subject is gone")
 	assert_gt(present_at, -1, "the spawn path no longer calls _present(anchor_global_pos ...)")
 	assert_lt(voice_at, present_at,
 		"_play_voice is called AFTER _present, so the fade tween is built from the pre-voice hold and a voiced bubble fades mid-line")

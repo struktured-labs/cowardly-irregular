@@ -91,6 +91,14 @@ func eligible_trigger_entries(job_id: String, event_kind: String, ctx: PartyComb
 	return moments if not moments.is_empty() else eligible
 
 
+## A line written for a MOMENT that holds now; it outranks the pool (spec 2a.1 step 2). Preconditions never count.
+func has_moment_line(job_id: String, event_kind: String, ctx: PartyCombatLineContext) -> bool:
+	if ctx == null:
+		return false
+	return get_trigger_entries(job_id, event_kind).any(func(e): return VoiceLineTags.is_eligible(e["tags"], ctx) \
+		and (e["tags"] as Array).any(func(t): return VoiceLineTags.is_moment_tag(str(t))))
+
+
 ## {"line", "voice_key"}: a random eligible entry, never the same one twice running.
 func pick_trigger_voice(job_id: String, event_kind: String, ctx: PartyCombatLineContext = null) -> Dictionary:
 	var entries: Array = eligible_trigger_entries(job_id, event_kind, ctx)
