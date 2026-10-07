@@ -101,4 +101,6 @@ func test_a_mode7_signpost_lifts_its_text_off_the_ground_plane() -> void:
 	await get_tree().process_frame
 	await get_tree().process_frame
 	assert_eq(lbl.get_parent(), post, "the sign text never came back from its screen layer")
-	assert_eq(lbl.position, Signpost.FLAT_OFFSET, "the sign text came back to the wrong offset")
+	# The flat layout centres the wrapped text on the post (.606), so pin that relationship, not a coordinate.
+	assert_almost_eq(lbl.position.x + lbl.size.x * 0.5, 0.0, 1.0, "the sign text came back off-centre from its post")
+	assert_lt(lbl.position.y, 0.0, "the sign text came back below its post instead of above it")
