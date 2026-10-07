@@ -304,6 +304,19 @@ shapes; unknown tags red.
 
 ## Piece 2b — Voiced party and boss lines, with prefetch
 
+> **Status (2026-10-06, `llm/voiced-lines-with-prefetch`, plan
+> `docs/superpowers/plans/2026-10-06-voiced-lines-with-prefetch.md`).** 2b.1 and 2b.2 are
+> implemented **for the party**: `BattleSpeechBubble.spawn(..., voice_stream)`, the
+> `VoicePool` autoload over `VoicePoolStore`, and picker step 3 in
+> `BattleManager._run_party_line_async` (a moment line outranks the pool; a pooled line rides
+> to the bubble as a one-shot `pool:<n>` token). The pool runs only on desktop with both live
+> voice and LLM party lines on. **2b.3 is deferred**: `data/voice_cast.json` casts no boss,
+> and boss taunts are bound to the intent they announce, so a generic pooled taunt would
+> contradict the posture the boss just declared. Bosses need a cast entry, a ruling from
+> cowir-story on which boss pools may take a pooled line, `VoicePool._speakers()` extended
+> beyond `player_party`, and a pool step on the bark path. The gloat rule already holds:
+> since `.533` a gloat emits once.
+
 ### 2b.1 Bubble integration
 
 `BattleSpeechBubble.spawn` gains an optional `voice_stream: AudioStream`. When present,

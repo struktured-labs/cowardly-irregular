@@ -26,7 +26,7 @@
 
 **In:** 2b.1 (bubble plays a synthesized stream) and 2b.2 (the ready pool) for the party.
 
-**Deferred, 2b.3 (bosses), for two measured reasons.** (1) `data/voice_cast.json` casts no boss, so a boss pool could never produce audio and its tests would only exercise fakes. (2) Boss taunts are bound to the intent they announce (`_update_boss_dialogue_phase` emits the taunt of the picked intent), so a generic pooled taunt would contradict the posture the boss just declared. Which boss pools can take a pooled line is a cowir-story question. The gloat half of 2b.3 ("the voice is chosen once") already holds: since `.533` a gloat emits exactly once (`GLOAT_WAIT_SEC`), and gloats render in the battle log, not a bubble. The pool below is keyed by speaker id, not job, so bosses become a data addition once cast.
+**Deferred, 2b.3 (bosses), for two measured reasons.** (1) `data/voice_cast.json` casts no boss, so a boss pool could never produce audio and its tests would only exercise fakes. (2) Boss taunts are bound to the intent they announce (`_update_boss_dialogue_phase` emits the taunt of the picked intent), so a generic pooled taunt would contradict the posture the boss just declared. Which boss pools can take a pooled line is a cowir-story question. The gloat half of 2b.3 ("the voice is chosen once") already holds: since `.533` a gloat emits exactly once (`GLOAT_WAIT_SEC`), and gloats render in the battle log, not a bubble. The store is keyed by speaker id, so boss slots fit it, but bosses are not only data once cast: `VoicePool._speakers()` reads `player_party`, and the bark path has no pool step.
 
 ## File Structure
 
