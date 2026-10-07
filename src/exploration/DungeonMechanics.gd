@@ -538,6 +538,85 @@ func _spawn_blocks(floor_num: int) -> void:
 		block.position = Vector2(cell.x * int(_cave.TILE_SIZE) + int(_cave.TILE_SIZE) / 2, cell.y * int(_cave.TILE_SIZE) + int(_cave.TILE_SIZE) / 2)
 		_container.add_child(block)
 		block.build()
+		var solved: bool = bool(_block_pushed.get(bid, false))
+		var tc: Vector2i = bp["target_cell"]
+		_container.add_child(_create_block_target_marker(_cell_centre(tc), solved))
+		if not solved:
+			for gc in (bp["gate_cells"] as Array):
+				_container.add_child(_create_block_gate_marker(_cell_centre(gc)))
+
+
+## The push puzzle drew only a plain brown square: no target, and its gate was an ordinary wall.
+func _cell_centre(c: Vector2i) -> Vector2:
+	var tile: int = int(_cave.TILE_SIZE)
+	return Vector2(c.x * tile + tile / 2, c.y * tile + tile / 2)
+
+
+## A pylon socket: a dark ring with a contact that glows once the block is seated on it.
+func _create_block_target_marker(pos: Vector2, lit: bool) -> Node2D:
+	var marker := Node2D.new()
+	marker.name = "BlockTarget"
+	marker.set_meta(&"dm_role", "block_target")
+	marker.position = pos
+	var spr := Sprite2D.new()
+	spr.texture = _socket_texture(lit)
+	marker.add_child(spr)
+	if not lit:
+		marker.ready.connect(func():
+			var t := marker.create_tween()
+			t.set_loops()
+			t.tween_property(spr, "modulate:a", 0.55, 0.7)
+			t.tween_property(spr, "modulate:a", 1.0, 0.7))
+	return marker
+
+
+static func _socket_texture(lit: bool) -> ImageTexture:
+	var img := Image.create(28, 28, false, Image.FORMAT_RGBA8)
+	var c := Vector2(13.5, 13.5)
+	var glow := Color(1.0, 0.85, 0.3) if lit else Color(0.45, 0.75, 1.0)
+	for y in 28:
+		for x in 28:
+			var d := Vector2(x, y).distance_to(c)
+			if d <= 13.0 and d > 10.0:
+				img.set_pixel(x, y, Color(0.12, 0.12, 0.16, 0.95))
+			elif d <= 10.0 and d > 8.5:
+				img.set_pixel(x, y, glow.darkened(0.35))
+			elif d <= 4.0:
+				img.set_pixel(x, y, glow)
+	return ImageTexture.create_from_image(img)
+
+
+## The gate a seated block opens: crackling bars across the wall cell, gone once it opens.
+func _create_block_gate_marker(pos: Vector2) -> Node2D:
+	var marker := Node2D.new()
+	marker.name = "BlockGate"
+	marker.set_meta(&"dm_role", "block_gate")
+	marker.position = pos
+	var spr := Sprite2D.new()
+	spr.texture = _barrier_texture()
+	marker.add_child(spr)
+	marker.ready.connect(func():
+		var t := marker.create_tween()
+		t.set_loops()
+		t.tween_property(spr, "modulate", Color(1.3, 1.3, 1.6), 0.25)
+		t.tween_property(spr, "modulate", Color(1, 1, 1), 0.45))
+	return marker
+
+
+static func _barrier_texture() -> ImageTexture:
+	var img := Image.create(32, 32, false, Image.FORMAT_RGBA8)
+	var bar := Color(0.55, 0.8, 1.0, 0.9)
+	var frame := Color(0.3, 0.32, 0.4, 1.0)
+	for y in 32:
+		for x in [1, 2, 29, 30]:
+			img.set_pixel(x, y, frame)
+		for bx in [8, 15, 22]:
+			img.set_pixel(bx, y, bar)
+			img.set_pixel(bx + 1, y, bar.darkened(0.3))
+	for x in range(1, 31):
+		img.set_pixel(x, 1, frame)
+		img.set_pixel(x, 30, frame)
+	return ImageTexture.create_from_image(img)
 
 
 func _spawn_timed_plates_and_gates(floor_num: int) -> void:
@@ -697,6 +776,25 @@ class TimedGateRing extends Node2D:
 
 ## Pushable block: walking into it from the correct side shoves it one tile toward its
 ## target plate/pylon; once it touches the target the linked gate opens permanently.
+## A carved stone block: lit top-left bevel, shadowed bottom-right, an amber rune that says "this moves".
+static func _block_texture() -> ImageTexture:
+	var img := Image.create(28, 28, false, Image.FORMAT_RGBA8)
+	var face := Color(0.52, 0.48, 0.42)
+	img.fill(face)
+	for i in 28:
+		for k in 3:
+			img.set_pixel(i, k, face.lightened(0.35))
+			img.set_pixel(k, i, face.lightened(0.25))
+			img.set_pixel(i, 27 - k, face.darkened(0.45))
+			img.set_pixel(27 - k, i, face.darkened(0.35))
+	var rune := Color(1.0, 0.72, 0.2)
+	for p in [Vector2i(15, 7), Vector2i(14, 8), Vector2i(13, 9), Vector2i(12, 10), Vector2i(11, 11), Vector2i(12, 12), Vector2i(13, 12),
+			Vector2i(14, 12), Vector2i(15, 12), Vector2i(16, 13), Vector2i(15, 14), Vector2i(14, 15), Vector2i(13, 16), Vector2i(12, 17)]:
+		img.set_pixel(p.x, p.y, rune)
+		img.set_pixel(p.x + 1, p.y, rune.darkened(0.25))
+	return ImageTexture.create_from_image(img)
+
+
 class PushBlock extends StaticBody2D:
 	var block_id: String = ""
 	var layer: DungeonMechanics = null
@@ -712,10 +810,9 @@ class PushBlock extends StaticBody2D:
 		rect.size = Vector2(28, 28)
 		shape.shape = rect
 		add_child(shape)
-		var body := ColorRect.new()
-		body.size = Vector2(28, 28)
-		body.position = Vector2(-14, -14)
-		body.color = Color(0.5, 0.42, 0.32, 1.0)
+		var body := Sprite2D.new()
+		body.name = "Body"
+		body.texture = DungeonMechanics._block_texture()
 		add_child(body)
 		var detector := Area2D.new()
 		detector.collision_layer = InteractGeometry.LAYER_INTERACTABLE
