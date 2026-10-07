@@ -22,6 +22,11 @@ var _panels_themed: bool = false  # one-shot guard for transparency theming
 var _auto_toggle_button: Button = null  # Clickable global autobattle toggle (mouse path)
 
 
+## The AUTO badge's top-right anchor offsets. BattleScene hangs the speed readout under it from these.
+const AUTO_BADGE_LEFT := -340.0
+const AUTO_BADGE_RIGHT := -210.0
+const AUTO_BADGE_BOTTOM := 36.0
+
 func _init(scene) -> void:
 	_scene = scene
 
@@ -87,10 +92,10 @@ func _create_auto_toggle_button() -> void:
 	# Sit above the PartyStatusPanel (which starts at y=40, offset_left=-200).
 	# Slightly bigger now (was 100×24) for discoverability — wide enough
 	# for "AUTO: OFF" without text clipping at 14pt.
-	_auto_toggle_button.offset_left = -340
+	_auto_toggle_button.offset_left = AUTO_BADGE_LEFT
 	_auto_toggle_button.offset_top = 6
-	_auto_toggle_button.offset_right = -210
-	_auto_toggle_button.offset_bottom = 36
+	_auto_toggle_button.offset_right = AUTO_BADGE_RIGHT
+	_auto_toggle_button.offset_bottom = AUTO_BADGE_BOTTOM
 	_auto_toggle_button.add_theme_font_size_override("font_size", TextScale.scaled(14))
 	# Themed background so it doesn't fade into the battlefield. Two
 	# styleboxes — one for normal/hover, one for pressed.
