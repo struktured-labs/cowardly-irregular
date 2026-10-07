@@ -273,6 +273,7 @@ func _two_hop_offenders() -> Array[String]:
 ## Owned by other lanes, measured 2026-09-17 to write nothing today, reported in-channel. A SUBSET
 ## check, not equality: a new exposure reds, and a lane fixing one of theirs never reds mine.
 const OTHER_LANE_KNOWN: Array[String] = [
+	"test_a_missing_spotlight_flag_reads_false.gd",
 	"test_an_empty_grid_has_no_row_minus_one.gd",
 	"test_autobattle_editor_pad_value_dial_regression.gd",
 	"test_battle_captions_are_not_nintendo_only.gd",
