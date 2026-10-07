@@ -15,11 +15,15 @@ const FLAT_FONT: int = 10
 var _sprite: Sprite2D
 var _label: Label
 var _player_nearby: bool = false
+var _near_player: Node2D = null
+## Signs in range of one player yield to the nearest: two side by side drew one text over the other.
+const SIGN_GROUP := &"signposts"
 ## Mode 7 warps every world-space pixel, and a 10px sign label came out as an unreadable smudge.
 var _prompt_layer: CanvasLayer
 
 
 func _ready() -> void:
+	add_to_group(SIGN_GROUP)
 	_setup_sprite()
 	_setup_collision()
 	_setup_label()
@@ -113,6 +117,8 @@ func _layout_flat() -> void:
 func _process(_delta: float) -> void:
 	if _label == null:
 		return
+	if _player_nearby:
+		_label.visible = not _a_nearer_sign_has(_near_player)
 	if InteractGeometry.is_mode7():
 		if _prompt_layer == null:
 			_prompt_layer = Mode7Prompt.lift(self, _label)
@@ -120,14 +126,29 @@ func _process(_delta: float) -> void:
 			Mode7Prompt.place(_label, get_viewport_rect().size, Mode7Prompt.ROW_INFO)
 	elif _prompt_layer != null:
 		Mode7Prompt.drop(self, _prompt_layer, _label, FLAT_OFFSET, FLAT_FONT)
-		_label.visible = _player_nearby
+		_label.visible = _player_nearby and not _a_nearer_sign_has(_near_player)
 		_prompt_layer = null
 		_layout_flat.call_deferred()
+
+
+func _a_nearer_sign_has(player: Node2D) -> bool:
+	if player == null or not is_instance_valid(player) or not is_inside_tree():
+		return false
+	var mine: float = global_position.distance_to(player.global_position)
+	for other in get_tree().get_nodes_in_group(SIGN_GROUP):
+		if other == self or not other._player_nearby or other._near_player != player:
+			continue
+		var theirs: float = other.global_position.distance_to(player.global_position)
+		# A tie (player square between two posts) goes to one sign, never both.
+		if theirs < mine - 0.5 or (absf(theirs - mine) <= 0.5 and other.get_instance_id() < get_instance_id()):
+			return true
+	return false
 
 
 func _on_body_entered(body: Node2D) -> void:
 	if body.has_method("set_can_move") or body.is_in_group("player"):
 		_player_nearby = true
+		_near_player = body
 		_label.visible = true
 		_keep_flat_label_on_screen()
 
