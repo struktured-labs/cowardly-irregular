@@ -216,52 +216,132 @@ func try_open(lock_id: String) -> void:
 
 
 ## Procedural diamond (key) / circle-with-fuse (bomb) marker -- no letters.
+## Pickups that read on any cave floor: an outlined gold key, a round black bomb with a lit fuse. Each bobs and glints.
 func _create_pickup_marker(pos: Vector2, resource: String) -> Node2D:
 	var marker := Node2D.new()
 	marker.position = pos
-	if resource == "key":
-		var head := ColorRect.new()
-		head.size = Vector2(12, 12)
-		head.position = Vector2(-6, -16)
-		head.rotation = PI / 4.0
-		head.color = Color(0.95, 0.82, 0.25, 0.95)
-		marker.add_child(head)
-		var shaft := ColorRect.new()
-		shaft.size = Vector2(4, 14)
-		shaft.position = Vector2(-2, -6)
-		shaft.color = Color(0.95, 0.82, 0.25, 0.95)
-		marker.add_child(shaft)
-	else:
-		var body := ColorRect.new()
-		body.size = Vector2(18, 18)
-		body.position = Vector2(-9, -14)
-		body.color = Color(0.15, 0.14, 0.16, 0.95)
-		marker.add_child(body)
-		var fuse := ColorRect.new()
-		fuse.size = Vector2(3, 8)
-		fuse.position = Vector2(-1, -22)
-		fuse.rotation = 0.3
-		fuse.color = Color(0.85, 0.55, 0.2, 0.95)
-		marker.add_child(fuse)
+	marker.set_meta(&"dm_role", "pickup_" + resource)
+	var spr := Sprite2D.new()
+	spr.texture = _key_texture() if resource == "key" else _bomb_texture()
+	spr.position = Vector2(0, -6)
+	marker.add_child(spr)
 	marker.ready.connect(func():
-		var tween := marker.create_tween()
-		tween.set_loops()
-		tween.tween_property(marker, "modulate:a", 0.55, 0.7)
-		tween.tween_property(marker, "modulate:a", 1.0, 0.7)
+		var bob := marker.create_tween()
+		bob.set_loops()
+		bob.tween_property(spr, "position:y", -9.0, 0.6).set_trans(Tween.TRANS_SINE)
+		bob.tween_property(spr, "position:y", -6.0, 0.6).set_trans(Tween.TRANS_SINE)
+		var glint := marker.create_tween()
+		glint.set_loops()
+		glint.tween_property(spr, "modulate", Color(1.35, 1.3, 1.1), 0.5)
+		glint.tween_property(spr, "modulate", Color(1, 1, 1), 0.9)
 	)
 	return marker
 
 
-## A dim plaque over the wall tile hinting a lock lives there -- no letters.
+static func _outline(img: Image, ink: Color) -> void:
+	var src := img.duplicate() as Image
+	for y in img.get_height():
+		for x in img.get_width():
+			if src.get_pixel(x, y).a > 0.1:
+				continue
+			for d in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+				var q: Vector2i = Vector2i(x, y) + d
+				if q.x >= 0 and q.y >= 0 and q.x < img.get_width() and q.y < img.get_height() and src.get_pixel(q.x, q.y).a > 0.1:
+					img.set_pixel(x, y, ink)
+					break
+
+
+static func _key_texture() -> ImageTexture:
+	var img := Image.create(16, 26, false, Image.FORMAT_RGBA8)
+	var gold := Color(1.0, 0.84, 0.25)
+	var hi := Color(1.0, 0.96, 0.7)
+	var c := Vector2(7.5, 6.5)
+	for y in 14:
+		for x in 16:
+			var d := Vector2(x, y).distance_to(c)
+			if d <= 5.5 and d > 2.5:
+				img.set_pixel(x, y, gold if d > 3.5 else hi)
+	for y in range(12, 24):
+		img.set_pixel(7, y, gold)
+		img.set_pixel(8, y, gold.darkened(0.2))
+	for y in [17, 18, 21, 22]:
+		img.set_pixel(9, y, gold)
+		img.set_pixel(10, y, gold.darkened(0.15))
+	_outline(img, Color(0.25, 0.15, 0.02))
+	return ImageTexture.create_from_image(img)
+
+
+static func _bomb_texture() -> ImageTexture:
+	var img := Image.create(22, 24, false, Image.FORMAT_RGBA8)
+	var c := Vector2(10.5, 14.5)
+	for y in 24:
+		for x in 22:
+			var d := Vector2(x, y).distance_to(c)
+			if d <= 8.5:
+				img.set_pixel(x, y, Color(0.12, 0.12, 0.15) if d > 2.0 or y > 13 else Color(0.5, 0.5, 0.58))
+	for p in [Vector2i(13, 5), Vector2i(14, 4), Vector2i(15, 3), Vector2i(16, 3)]:
+		img.set_pixel(p.x, p.y, Color(0.75, 0.55, 0.3))
+	for p in [Vector2i(17, 2), Vector2i(18, 1), Vector2i(17, 1), Vector2i(18, 2)]:
+		img.set_pixel(p.x, p.y, Color(1.0, 0.75, 0.2))
+	img.set_pixel(19, 0, Color(1.0, 0.95, 0.6))
+	_outline(img, Color(0.55, 0.5, 0.6))
+	return ImageTexture.create_from_image(img)
+
+
+## The lock in the wall: a bound door with a keyhole for a key, crack lines across the masonry for a charge.
 func _create_lock_marker(pos: Vector2, resource: String) -> Node2D:
 	var marker := Node2D.new()
 	marker.position = pos
-	var plaque := ColorRect.new()
-	plaque.size = Vector2(22, 8)
-	plaque.position = Vector2(-11, -4)
-	plaque.color = Color(0.85, 0.75, 0.2, 0.8) if resource == "key" else Color(0.55, 0.22, 0.18, 0.85)
-	marker.add_child(plaque)
+	marker.set_meta(&"dm_role", "lock_" + resource)
+	var spr := Sprite2D.new()
+	spr.texture = _door_texture() if resource == "key" else _crack_texture()
+	marker.add_child(spr)
 	return marker
+
+
+static func _door_texture() -> ImageTexture:
+	var img := Image.create(30, 30, false, Image.FORMAT_RGBA8)
+	var wood := Color(0.45, 0.28, 0.14)
+	img.fill(wood)
+	for x in range(0, 30, 6):
+		for y in 30:
+			img.set_pixel(x, y, wood.darkened(0.4))
+	var iron := Color(0.35, 0.35, 0.4)
+	for y in [5, 24]:
+		for x in 30:
+			img.set_pixel(x, y, iron)
+			img.set_pixel(x, y + 1, iron.darkened(0.3))
+	var brass := Color(0.95, 0.78, 0.3)
+	for y in range(10, 20):
+		for x in range(11, 19):
+			img.set_pixel(x, y, brass)
+	for p in [Vector2i(14, 12), Vector2i(15, 12), Vector2i(14, 13), Vector2i(15, 13), Vector2i(14, 14), Vector2i(15, 14), Vector2i(14, 15), Vector2i(15, 15), Vector2i(14, 16), Vector2i(15, 16), Vector2i(13, 13), Vector2i(16, 13)]:
+		img.set_pixel(p.x, p.y, Color(0.08, 0.05, 0.03))
+	return ImageTexture.create_from_image(img)
+
+
+static func _crack_texture() -> ImageTexture:
+	var img := Image.create(32, 32, false, Image.FORMAT_RGBA8)
+	var crack := Color(0.05, 0.04, 0.04, 0.95)
+	var lip := Color(0.75, 0.68, 0.6, 0.85)
+	var paths := [[Vector2i(16, 2), Vector2i(13, 9), Vector2i(17, 15), Vector2i(12, 22), Vector2i(15, 30)],
+		[Vector2i(17, 15), Vector2i(25, 12), Vector2i(30, 16)], [Vector2i(13, 9), Vector2i(5, 7), Vector2i(1, 11)],
+		[Vector2i(12, 22), Vector2i(4, 25)]]
+	for path in paths:
+		for i in range(path.size() - 1):
+			var a: Vector2i = path[i]
+			var b: Vector2i = path[i + 1]
+			var steps: int = maxi(absi(b.x - a.x), absi(b.y - a.y))
+			for k in steps + 1:
+				var t: float = float(k) / float(maxi(steps, 1))
+				var x := int(round(lerp(float(a.x), float(b.x), t)))
+				var y := int(round(lerp(float(a.y), float(b.y), t)))
+				img.set_pixel(x, y, crack)
+				if x + 1 < 32:
+					img.set_pixel(x + 1, y, crack)
+				if y > 0:
+					img.set_pixel(x, y - 1, lip)
+	return ImageTexture.create_from_image(img)
 
 
 ## Lever-style interactable: requires interact(), standing adjacent to the wall tile.
