@@ -48,7 +48,10 @@ const FIRST_ARRIVAL_FLOOR := 2
 ## mechanic, including a mutation control proving each gate actually blocks). W2-W6 dungeons are
 ## UNCHANGED and still owned by this plain sweep -- see test_later_world_dungeon_depth_solver.gd's
 ## own header for why they stay simpler.
-const W1_REQUIRED_GATE_FILES := ["FireDragonCave.gd", "IceDragonCave.gd", "LightningDragonCave.gd", "ShadowDragonCave.gd"]
+## WhisperingCave.gd joined 2026-10-07: floor 3 teaches a required lever, floor 4 a required
+## key-and-door -- same invisible-to-this-sweep shape, certified instead by
+## test_whispering_cave_teaches_its_gates.gd.
+const W1_REQUIRED_GATE_FILES := ["FireDragonCave.gd", "IceDragonCave.gd", "LightningDragonCave.gd", "ShadowDragonCave.gd", "WhisperingCave.gd"]
 
 
 func _dungeon_sources() -> Dictionary:
@@ -150,7 +153,7 @@ func test_descending_never_strands_the_player() -> void:
 ## gate without removing the exemption, THIS test would catch the resulting false pass.
 func test_the_w1_exemption_is_earned_by_a_real_gate_this_sweep_cannot_see() -> void:
 	var srcs := _dungeon_sources()
-	assert_eq(W1_REQUIRED_GATE_FILES.size(), 4, "sanity: exactly the four W1 dragon caves are exempt")
+	assert_eq(W1_REQUIRED_GATE_FILES.size(), 5, "sanity: the four W1 dragon caves plus Whispering Cave are exempt")
 	var proven := 0
 	for f in W1_REQUIRED_GATE_FILES:
 		assert_true(srcs.has(f), "%s: must exist in the dungeon corpus for the exemption to mean anything" % f)

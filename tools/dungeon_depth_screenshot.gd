@@ -27,17 +27,37 @@ func _init() -> void:
 	root.add_child(scene)
 	for i in range(4):
 		await process_frame
+	# Keep a random encounter from stealing the shot (the Whispering Cave hangs here if a
+	# battle fires mid-transition, since nothing in this script drives the battle UI).
+	if scene.get("controller") != null:
+		scene.controller.encounter_enabled = false
 	DirAccess.make_dir_recursive_absolute("res://tmp/screens")
+	var has_real_transition: bool = scene.has_method("_transition_to_floor")
 	for idx in range(floors.size()):
 		var target_floor: int = floors[idx]
 		var vantage: Vector2 = vantages[idx] if idx < vantages.size() else Vector2(10, 7)
 		if target_floor != scene.current_floor:
-			scene.current_floor = target_floor
-			scene.tile_map.clear()
-			scene._generate_map_for_floor(target_floor)
-			scene._update_floor_encounters(target_floor)
+			if has_real_transition:
+				# The real path -- rebuilds spawn_points, re-runs the puzzle/mechanics layers,
+				# and repositions the player/camera the same way a live stair walk does. The
+				# old hand-rolled regenerate skipped all of that, which is how a stale camera
+				# (still smoothing toward the PREVIOUS floor's last position) read as a stale
+				# floor even though the tilemap underneath was already correct.
+				await scene._transition_to_floor(target_floor, "")
+			else:
+				scene.current_floor = target_floor
+				scene.tile_map.clear()
+				scene._generate_map_for_floor(target_floor)
+				scene._update_floor_encounters(target_floor)
+			if scene.get("controller") != null:
+				scene.controller.encounter_enabled = false
 		scene.player.teleport(vantage * 32 + Vector2(16, 16))
-		for i in range(10):
+		# Camera is a child of the player and smooths toward it (DragonCave/WhisperingCave both
+		# set position_smoothing_enabled); without a snap here, a short frame wait can render
+		# mid-pan, which is the other half of "sometimes renders a stale floor."
+		if scene.get("camera") != null:
+			scene.camera.reset_smoothing()
+		for i in range(15):
 			await process_frame
 		var img := root.get_texture().get_image()
 		var out := "res://tmp/screens/%s_f%d.png" % [scene.cave_id, target_floor]

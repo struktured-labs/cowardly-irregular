@@ -24,6 +24,25 @@ var current_floor: int = 1
 var boss_defeated: bool = false
 var _transitioning: bool = false  # Prevent rapid re-triggering
 
+## struktured 2026-10-07: the first cave now teaches the Zelda-style gates the W1 dragon
+## caves require, so it needs the same duck-typed surface DungeonPuzzleLayer/DungeonMechanics
+## read off a DragonCave -- cave_id for persistence keys, switch_effects for the floor-3
+## lever, wrap_floors/portal_links/mirror_effects so the layers' generic code never crashes
+## reaching for a knob this cave doesn't use.
+var cave_id: String = "whispering_cave"
+## Matches the hardcoded 1..6 range checks below -- a duck-typed cave_id now makes this
+## cave visible to sweeps that probe every cave_id-bearing dungeon's total_floors (e.g.
+## test_a_corrupt_saved_floor_never_survives_the_build).
+var total_floors: int = 6
+var switch_effects: Dictionary = {
+	"sw0": {"flip": [[11, 10]]},
+}
+var portal_links: Dictionary = {}
+var mirror_effects: Dictionary = {}
+var wrap_floors: Array[int] = []
+var _puzzle_layer: DungeonPuzzleLayer = null
+var _mechanics_layer: DungeonMechanics = null
+
 ## Scene components
 var tile_map: TileMapLayer
 var player: Node2D  # OverworldPlayer
@@ -101,20 +120,20 @@ var floor_layouts: Dictionary = {
 		"M.M.................M...M",
 		"M.MMMMMMMMM.MMMMMMMMM...M",
 		"M...........D...........M",
-		"M.......................M",
-		"M.....MMM..U..MMM.......M",
-		"M.....M.........M.......M",
-		"M.....M.........M.......M",
-		"M.....MMM.....MMM.......M",
-		"M.......................M",
-		"M.......................M",
-		"M.......................M",
-		"M.......................M",
+		"MMMMMLMMMMMMMMMMMMMMMMMMM",
+		"MMMMMMMMMMMUMMMMMMMMMMMMM",
+		"MMMMMMMMMMMMMMMMMMMMMMMMM",
+		"MMMMMMMMMMMMMMMMMMMMMMMMM",
+		"MMMMMMMMMMMMMMMMMMMMMMMMM",
+		"MMMMMMMMMMMMMMMMMMMMMMMMM",
+		"MMMMMMMMMMMMMMMMMMMMMMMMM",
+		"MMMMMMMMMMMMMMMMMMMMMMMMM",
+		"MMMMMMMMMMMMMMMMMMMMMMMMM",
 		"MMMMMMMMMMMMMMMMMMMMMMMMM"
 	],
 	4: [  # Maze-like with optional areas
 		"MMMMMMMMMMMMMMMMMMMMMMMMM",
-		"M.......................M",
+		"M...........T...........M",
 		"M.MMMMM.MMMMM.MMMMM.MMM.M",
 		"M.M...M.M...M.M...M...M.M",
 		"M.M.M.M.M.M.M.M.M.MMM.M.M",
@@ -122,16 +141,16 @@ var floor_layouts: Dictionary = {
 		"M.M.M...M.M...M.MMMMMMM.M",
 		"M.M.MMMMM.MMMMM.........M",
 		"M.M.....................M",
-		"M.MMMMMMMMM.........MMM.M",
-		"M.....D...M.....U.......M",
-		"M.MMMMMMMMM.........MMM.M",
-		"M.........M.............M",
-		"M.MMMMMM..M..MMMMMMMMMM.M",
-		"M.M....M..M..M........M.M",
-		"M.M.T..M.....M....T...M.M",
-		"M.M....M.....M........M.M",
-		"M.MMMMMM.....MMMMMMMMMM.M",
-		"M.......................M",
+		"M.....D.................M",
+		"MKMMMMGMMMMMMMMMMMMMMMMMM",
+		"MMMMMMUMMMMMMMMMMMMMMMMMM",
+		"MMMMMMMMMMMMMMMMMMMMMMMMM",
+		"MMMMMMMMMMMMMMMMMMMMMMMMM",
+		"MMMMMMMMMMMMMMMMMMMMMMMMM",
+		"MMMMMMMMMMMMMMMMMMMMMMMMM",
+		"MMMMMMMMMMMMMMMMMMMMMMMMM",
+		"MMMMMMMMMMMMMMMMMMMMMMMMM",
+		"MMMMMMMMMMMMMMMMMMMMMMMMM",
 		"MMMMMMMMMMMMMMMMMMMMMMMMM"
 	],
 	5: [  # Linear challenge gauntlet
@@ -260,6 +279,17 @@ func _setup_scene() -> void:
 	stair_sprites.name = "StairSprites"
 	add_child(stair_sprites)
 
+	# Same reusable layers DragonCave wires -- floor 3's lever and floor 4's key/door ride them.
+	_puzzle_layer = DungeonPuzzleLayer.new()
+	_puzzle_layer.name = "PuzzleLayer"
+	add_child(_puzzle_layer)
+	_puzzle_layer.attach(self)
+
+	_mechanics_layer = DungeonMechanics.new()
+	_mechanics_layer.name = "MechanicsLayer"
+	add_child(_mechanics_layer)
+	_mechanics_layer.attach(self)
+
 
 func _generate_map_for_floor(floor_num: int) -> void:
 	"""Generate map for specific floor"""
@@ -303,6 +333,11 @@ func _generate_map_for_floor(floor_num: int) -> void:
 	# Add visual markers for stairs
 	_add_stair_visuals()
 
+	if _puzzle_layer:
+		_puzzle_layer.rebuild_floor(floor_num)
+	if _mechanics_layer:
+		_mechanics_layer.rebuild_floor(floor_num)
+
 
 func _char_to_tile_type(char: String) -> int:
 	match char:
@@ -313,6 +348,12 @@ func _char_to_tile_type(char: String) -> int:
 		"U": return TileGeneratorScript.TileType.CAVE_FLOOR  # Stairs up (floor)
 		"D": return TileGeneratorScript.TileType.CAVE_FLOOR  # Stairs down (floor)
 		"X": return TileGeneratorScript.TileType.CAVE_FLOOR  # Exit (floor)
+		# DungeonPuzzleLayer vocabulary: pressure plate S, lever L -- floor, same as DragonCave.
+		"S", "L": return TileGeneratorScript.TileType.CAVE_FLOOR
+		# DungeonMechanics vocabulary: K/Q resource pickups are floor; G/Z locks render as wall
+		# until opened, when the mechanics layer flips the specific cell via tile_map.set_cell.
+		"K", "Q": return TileGeneratorScript.TileType.CAVE_FLOOR
+		"G", "Z": return TileGeneratorScript.TileType.CAVE_WALL
 		_: return TileGeneratorScript.TileType.CAVE_FLOOR
 
 
@@ -322,11 +363,29 @@ func _get_atlas_coords(tile_type: int) -> Vector2i:
 	return Vector2i(tile_id % 5, tile_id / 5)
 
 
+## struktured 2026-10-07: floor 3 teaches the lever, floor 4 teaches the key-and-door --
+## gently, in the game's own dry comic voice, beside the thing it's talking about.
+const _LORE := {
+	3: [
+		{"pos": Vector2(5, 9), "text": "A lever. Levers are for pulling. This is the whole tutorial."},
+	],
+	4: [
+		{"pos": Vector2(1, 9), "text": "A key. It opens a door. You are growing up so fast."},
+	],
+}
+
+
 func _setup_transitions_for_floor(floor_num: int) -> void:
 	"""Setup area transitions for current floor"""
 	# Clear existing transitions
 	for child in transitions.get_children():
 		child.queue_free()
+
+	for entry in (_LORE.get(floor_num, []) as Array):
+		var sign := Signpost.new()
+		sign.sign_text = str(entry["text"])
+		sign.position = (entry["pos"] as Vector2) * TILE_SIZE
+		transitions.add_child(sign)
 
 	# Place treasure chest per floor (progressively better loot)
 	_place_floor_treasure(floor_num)
