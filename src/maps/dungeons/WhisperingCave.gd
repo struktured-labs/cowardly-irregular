@@ -41,6 +41,7 @@ var stair_sprites: Node2D
 const DungeonLightingScript = preload("res://src/exploration/DungeonLighting.gd")
 
 var lighting: DungeonLighting
+var ambience: DungeonAmbience  # drips and crystal glints, as every DragonCave has had since .605
 var spawn_points: Dictionary = {}
 
 ## Floor layouts (U = stairs up, D = stairs down, B = boss)
@@ -236,6 +237,9 @@ func _setup_scene() -> void:
 	# neither, so the tutorial dungeon was the one flat-lit room in a game where every later
 	# cave has atmosphere.
 	_setup_lighting()
+	ambience = DungeonAmbience.new()
+	ambience.name = "Ambience"
+	add_child(ambience)
 
 	tile_generator = TileGeneratorScript.new()
 	add_child(tile_generator)
@@ -292,6 +296,8 @@ func _generate_map_for_floor(floor_num: int) -> void:
 
 	# Setup transitions for this floor
 	_place_torches()
+	if ambience:
+		ambience.rebuild_for_floor(map_data, MAP_WIDTH, MAP_HEIGHT, "cave", 4000 + floor_num)
 	_setup_transitions_for_floor(floor_num)
 
 	# Add visual markers for stairs
@@ -731,6 +737,9 @@ func _setup_player() -> void:
 	player.set_job("fighter")
 	player._is_interior = true  # Dungeons always use interior speed
 	add_child(player)
+	# .605 gave every DragonCave a light that follows the player; this cave extends Node2D and was left dark.
+	if lighting:
+		lighting.add_player_light(player)
 
 
 func _setup_camera() -> void:
