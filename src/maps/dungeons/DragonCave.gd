@@ -84,6 +84,9 @@ var _puzzle_layer: DungeonPuzzleLayer = null
 var _mechanics_layer: DungeonMechanics = null
 ## Round 2 (struktured 2026-10-07 ruling): mirror lever id (DungeonMechanics MIRROR_LEVER_CHAR scan order) -> {"a":[[x,y],...], "b":[[x,y],...]}.
 var mirror_effects: Dictionary = {}
+## Maze-density guard exemption (struktured 2026-10-07, "more maze complexity"): floor number ->
+## Array of {"rect":[x0,y0,x1,y1], "reason":"..."} deliberate open rooms the guard must not flag.
+var puzzle_chambers: Dictionary = {}
 
 ## Floor state
 var current_floor: int = 1

@@ -729,3 +729,138 @@ func test_the_mechanics_aware_solver_is_what_certifies_w1_dragon_cave_connectivi
 		var cave = _caves[id]
 		var result := _solve(cave, true)
 		assert_true(bool(result["reached_boss"]), "%s: mechanics-aware solver must still reach the boss after the required-gate pass" % id)
+
+
+## ---- round 3: maze-complexity guard (struktured 2026-10-07, "we need more maze complexity,
+## puzzles like zelda") ----
+## A required gate embedded in two big open rooms is not a maze -- it undoes round 1's corridor
+## work. This guard catches that regression independently of whether the gate itself blocks.
+
+const DIRS4 := [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]
+
+
+## True if the 4x4 block at (x,y)..(x+3,y+3) is fully inside a declared puzzle_chambers rect for
+## `floor_num` -- the one kind of "big open room" this guard permits, and only because it is named.
+func _in_declared_chamber(cave, floor_num: int, x: int, y: int) -> bool:
+	for entry in (cave.puzzle_chambers.get(floor_num, []) as Array):
+		var rect: Array = entry["rect"]
+		var x0: int = int(rect[0])
+		var y0: int = int(rect[1])
+		var x1: int = int(rect[2])
+		var y1: int = int(rect[3])
+		if x >= x0 and y >= y0 and x + 3 <= x1 and y + 3 <= y1:
+			return true
+	return false
+
+
+## Every 4x4 all-open window on `floor_num`, minus any fully inside a declared chamber.
+func _open4_spots(cave, floor_num: int) -> Array:
+	var rows: Array = cave.floor_layouts[floor_num]
+	var h: int = rows.size()
+	var w: int = (rows[0] as String).length()
+	var spots: Array = []
+	for y in range(h - 3):
+		for x in range(w - 3):
+			var all_open := true
+			for dy in range(4):
+				for dx in range(4):
+					if (rows[y + dy] as String)[x + dx] == "M":
+						all_open = false
+						break
+				if not all_open:
+					break
+			if all_open and not _in_declared_chamber(cave, floor_num, x, y):
+				spots.append(Vector2i(x, y))
+	return spots
+
+
+## Cells with exactly one open orthogonal neighbor -- plain maze-shape dead ends, independent of
+## any lock/switch state (a dead-end alcove is a dead end whether or not its chest is reachable yet).
+func _dead_end_cells(cave, floor_num: int) -> Array:
+	var rows: Array = cave.floor_layouts[floor_num]
+	var out: Array = []
+	for y in range(rows.size()):
+		var row: String = rows[y]
+		for x in range(row.length()):
+			if row[x] == "M":
+				continue
+			var n := 0
+			for d in DIRS4:
+				if _char_here(cave, floor_num, Vector2i(x, y) + d) not in ["", "M"]:
+					n += 1
+			if n == 1:
+				out.append(Vector2i(x, y))
+	return out
+
+
+## Shortest D->U walk on `floor_num` treating every mechanic as already solved: any non-'M' char
+## is open; a mirror lever's "b" set (closed by default) and every lever/flip switch's "flip" list
+## count as open too, since "solved" means every toggle that opens them was thrown. Pure
+## maze-shape distance, no masks, no portals -- matches test_dragon_cave_boss_far_end_regression.gd's
+## "every switch already thrown" model.
+func _solved_shortest_path(cave, floor_num: int) -> int:
+	var rows: Array = cave.floor_layouts[floor_num]
+	var extra_open := {}
+	for mr in DungeonMechanics.scan_mirror_levers(cave.floor_layouts):
+		if int(mr["floor"]) != floor_num:
+			continue
+		var eff: Dictionary = (cave.mirror_effects as Dictionary).get(str(mr["id"]), {})
+		for pair in (eff.get("a", []) as Array):
+			extra_open[Vector2i(int(pair[0]), int(pair[1]))] = true
+		for pair in (eff.get("b", []) as Array):
+			extra_open[Vector2i(int(pair[0]), int(pair[1]))] = true
+	for sw_id in (cave.switch_effects as Dictionary):
+		for pair in ((cave.switch_effects[sw_id] as Dictionary).get("flip", []) as Array):
+			extra_open[Vector2i(int(pair[0]), int(pair[1]))] = true
+	var start := _find_char(cave, floor_num, "D")
+	var goal := _find_char(cave, floor_num, "U")
+	if start == Vector2i(-1, -1) or goal == Vector2i(-1, -1):
+		return -1
+	var seen := {start: true}
+	var queue: Array = [[start, 0]]
+	var head := 0
+	while head < queue.size():
+		var state: Array = queue[head]
+		head += 1
+		var cell: Vector2i = state[0]
+		var d: int = state[1]
+		if cell == goal:
+			return d
+		for dir in DIRS4:
+			var n: Vector2i = cell + dir
+			var ch := _char_here(cave, floor_num, n)
+			if ch == "":
+				continue
+			if ch == "M" and not extra_open.has(n):
+				continue
+			if seen.has(n):
+				continue
+			seen[n] = true
+			queue.append([n, d + 1])
+	return -1
+
+
+func test_every_w1_dragon_cave_required_floor_is_a_real_maze() -> void:
+	var checked := 0
+	for cave_id in REQUIRED_GATE_KIND:
+		var cave = _caves[cave_id]
+		for floor_num in (REQUIRED_GATE_KIND[cave_id] as Dictionary):
+			checked += 1
+			var f: int = int(floor_num)
+			var open4 := _open4_spots(cave, f)
+			assert_eq(open4, [] as Array,
+				"%s floor %d: %d undeclared 4x4-or-larger open area(s) at %s -- not a maze; declare a puzzle_chambers entry if this is deliberate" % [cave_id, f, open4.size(), str(open4)])
+
+			var deads := _dead_end_cells(cave, f)
+			assert_gte(deads.size(), 3, "%s floor %d: only %d dead end(s), need at least 3" % [cave_id, f, deads.size()])
+
+			var start := _find_char(cave, f, "D")
+			var goal := _find_char(cave, f, "U")
+			assert_ne(start, Vector2i(-1, -1), "%s floor %d: no 'D' marker" % [cave_id, f])
+			assert_ne(goal, Vector2i(-1, -1), "%s floor %d: no 'U' marker" % [cave_id, f])
+			var man: int = absi(start.x - goal.x) + absi(start.y - goal.y)
+			var dist := _solved_shortest_path(cave, f)
+			assert_gt(dist, -1, "%s floor %d: D cannot reach U at all even with puzzles solved" % [cave_id, f])
+			assert_gte(float(dist), 1.5 * float(man),
+				"%s floor %d: shortest solved path is %d tiles, Manhattan is %d -- ratio %.2f is below the 1.5x maze-complexity floor" % [cave_id, f, dist, man, float(dist) / float(man) if man > 0 else 0.0])
+	assert_eq(checked, 12, "CONTROL: expected exactly 12 required floors (4 caves x floors 2-4), checked %d" % checked)
