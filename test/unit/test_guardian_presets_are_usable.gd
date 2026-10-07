@@ -114,7 +114,8 @@ func test_the_live_validator_accepts_every_rule() -> void:
 		for r in ((t as Dictionary).get("rules", []) as Array):
 			checked += 1
 			var res = abs_node.validate_rule(r)
-			var ok: bool = res if res is bool else bool((res as Dictionary).get("valid", true))
+			# validate_rule returns Array[String] errors; a Dictionary cast here aborted silently and validated nothing.
+			var ok: bool = (res as Array).is_empty()
 			if not ok:
 				refused.append("%s rule %d: %s" % [str((t as Dictionary).get("id", "")), checked, str(res)])
 	assert_gt(checked, 8, "CONTROL: rules were actually submitted to the validator (%d)" % checked)
