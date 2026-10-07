@@ -37,6 +37,18 @@ const DIRS := [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]
 const WALL := "M"
 ## Floor 1 is entered via `entrance`; only floors above it spawn you on `stairs_up`.
 const FIRST_ARRIVAL_FLOOR := 2
+## struktured 2026-10-07 ruling ("Required, Zelda-style"): every W1 dragon cave floor from 2 up
+## to the boss floor now gates its exit stairs behind a REQUIRED puzzle (key/door, lever/flip,
+## pushable block + pylon, timed plate/gate, mirror lever, or an ice-slide crossing). This plain
+## ASCII sweep has no notion of locks/switches/mechanics state -- it treats a 'G'/'Z'/'O'/'W' char
+## as open (not "M", so not WALL) but a lever/mirror gate is a literal 'M' until its switch fires,
+## which this sweep can never see opening. Both shapes would read as "stranding" here for a
+## floor that is actually fully solvable. These four files are certified instead by the
+## mechanics-aware solver in test_w1_dungeon_depth_solver.gd (which models every required
+## mechanic, including a mutation control proving each gate actually blocks). W2-W6 dungeons are
+## UNCHANGED and still owned by this plain sweep -- see test_later_world_dungeon_depth_solver.gd's
+## own header for why they stay simpler.
+const W1_REQUIRED_GATE_FILES := ["FireDragonCave.gd", "IceDragonCave.gd", "LightningDragonCave.gd", "ShadowDragonCave.gd"]
 
 
 func _dungeon_sources() -> Dictionary:
@@ -112,6 +124,8 @@ func test_descending_never_strands_the_player() -> void:
 	var checked := 0
 	var offenders: Array = []
 	for f in srcs:
+		if W1_REQUIRED_GATE_FILES.has(f):
+			continue  # certified by test_w1_dungeon_depth_solver.gd instead -- see this file's const doc
 		for b in _floors(srcs[f]):
 			if int(b["floor"]) < FIRST_ARRIVAL_FLOOR:
 				continue
@@ -128,3 +142,33 @@ func test_descending_never_strands_the_player() -> void:
 	assert_gt(checked, 10, "checked %d arrival floors — too few to be a sweep" % checked)
 	assert_true(offenders.is_empty(),
 		"%d dungeon floor(s) strand the player on arrival:\n  %s" % [offenders.size(), "\n  ".join(offenders)])
+
+
+## The exemption above is earned, not convenient: every excluded file really does carry a
+## required gate this plain sweep cannot see past (a lever/mirror gate is a literal 'M' until a
+## switch/lever fires, invisible to this file's WALL-only model) -- if a future edit removed the
+## gate without removing the exemption, THIS test would catch the resulting false pass.
+func test_the_w1_exemption_is_earned_by_a_real_gate_this_sweep_cannot_see() -> void:
+	var srcs := _dungeon_sources()
+	assert_eq(W1_REQUIRED_GATE_FILES.size(), 4, "sanity: exactly the four W1 dragon caves are exempt")
+	var proven := 0
+	for f in W1_REQUIRED_GATE_FILES:
+		assert_true(srcs.has(f), "%s: must exist in the dungeon corpus for the exemption to mean anything" % f)
+		var src: String = srcs[f]
+		var gated_floor_found := false
+		for b in _floors(src):
+			if int(b["floor"]) < FIRST_ARRIVAL_FLOOR:
+				continue
+			var rows: Array = b["rows"]
+			var arrival := _find(rows, "U")
+			var exit_stair := _find(rows, "D")
+			if arrival.x < 0 or exit_stair.x < 0:
+				continue
+			# Naive reach treats every non-'M' char (including this engine's own G/Z/O/W lock
+			# glyphs) as open -- so if THIS still fails to connect them, a real wall ('M', only
+			# opened by a lever/mirror switch this sweep never evaluates) is in the way.
+			if not _reachable_from(rows, arrival).has(exit_stair):
+				gated_floor_found = true
+				proven += 1
+		assert_true(gated_floor_found, "%s: expected at least one floor where the naive (mechanics-blind) sweep is actually blocked" % f)
+	assert_gte(proven, 4, "CONTROL: expected at least one proven gate per exempt file, found %d" % proven)

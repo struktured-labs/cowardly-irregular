@@ -81,6 +81,8 @@ var wrap_floors: Array[int] = []
 var _puzzle_layer: DungeonPuzzleLayer = null
 ## DungeonMechanics opt-in (struktured 2026-10-06): K/Q resource pickups, G/Z locks that spend them. Empty by default.
 var _mechanics_layer: DungeonMechanics = null
+## Round 2 (struktured 2026-10-07 ruling): mirror lever id (DungeonMechanics MIRROR_LEVER_CHAR scan order) -> {"a":[[x,y],...], "b":[[x,y],...]}.
+var mirror_effects: Dictionary = {}
 
 ## Floor state
 var current_floor: int = 1
@@ -368,10 +370,10 @@ static func _layout_blocked(rows: Array, x: int, y: int, map_w: int, map_h: int)
 	if x >= row.length():
 		return true
 	var ch := row[x]
-	# G/Z (DungeonMechanics locks) render as wall by default; this fallback-landing helper
-	# has no access to persisted open-state and every real floor authors a fixed entrance,
-	# so treating them as blocked here (like a freshly-generated, unopened floor) is correct.
-	return ch == "M" or ch == "l" or ch == "G" or ch == "Z"
+	# G/Z/O/W (DungeonMechanics locks/gates) render as wall by default; this fallback-landing
+	# helper has no access to persisted open-state and every real floor authors a fixed
+	# entrance, so treating them as blocked here (like a freshly-generated, unopened floor) is correct.
+	return ch == "M" or ch == "l" or ch == "G" or ch == "Z" or ch == "O" or ch == "W"
 
 
 func _generate_map_for_floor(floor_num: int) -> void:
@@ -454,7 +456,7 @@ func _char_to_tile_type(char: String) -> int:
 	match char:
 		"M": return TileGeneratorScript.TileType.CAVE_WALL
 		"l": return TileGeneratorScript.TileType.LAVA
-		"i": return TileGeneratorScript.TileType.ICE
+		"i", "j": return TileGeneratorScript.TileType.ICE
 		".", "T", "B", "U", "D", "X":
 			return TileGeneratorScript.TileType.CAVE_FLOOR
 		# DungeonPuzzleLayer vocabulary: portals a-f, pressure plate S, lever L -- all floor.
@@ -465,6 +467,12 @@ func _char_to_tile_type(char: String) -> int:
 		"K", "Q":
 			return TileGeneratorScript.TileType.CAVE_FLOOR
 		"G", "Z":
+			return TileGeneratorScript.TileType.CAVE_WALL
+		# round 2 vocabulary (DungeonMechanics): J target/Y plate/R lever are floor; O/W gates
+		# render as wall until their puzzle opens them.
+		"J", "Y", "R":
+			return TileGeneratorScript.TileType.CAVE_FLOOR
+		"O", "W":
 			return TileGeneratorScript.TileType.CAVE_WALL
 		_: return TileGeneratorScript.TileType.CAVE_FLOOR
 

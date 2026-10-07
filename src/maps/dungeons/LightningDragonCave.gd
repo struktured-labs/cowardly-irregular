@@ -1,9 +1,10 @@
 extends DragonCave
 class_name LightningDragonCaveScene
 
-## Stormspire Cavern — Lightning Dragon Voltharion awaits on Floor 5 (struktured 2026-09-06 depth pass; 2026-10-06 maze pass).
-## Wide, short storm-lattice floors for a vertical/airy feel; one lever shortcut, one wind-funnel portal, one discharge
-## trap, and an optional small-key vault (K/G) on floor 3.
+## Stormspire Cavern — Lightning Dragon Voltharion awaits on Floor 5 (struktured 2026-09-06 depth pass; 2026-10-06
+## maze pass; 2026-10-07 required-gate pass). Wide, short storm-lattice floors; one lever shortcut on floor 1,
+## one wind-funnel portal. Floors 2-4 each gate the stairs down: floor 2 a conductor pylon powered by pushing a
+## block onto it, floor 3 a small-key vault (K/G), floor 4 a lever (flip).
 
 func _init() -> void:
 	cave_name = "Stormspire Cavern"
@@ -17,7 +18,7 @@ func _init() -> void:
 	floor_layouts = {
 		1: [
 			"MMMMMMMMMMMMMMMMMMMM",
-			"MM..............M..M",
+			"MM.c.........c..M..M",
 			"MM.....L..U.....M.TM",
 			"MM..............M..M",
 			"MM..............MMMM",
@@ -35,55 +36,55 @@ func _init() -> void:
 		],
 		2: [
 			"MMMMMMMMMMMMMMMMMMMM",
-			"MMMMMMMMMMMMMMMMMMMM",
-			"MM................MM",
-			"MM................MM",
-			"MM..S.............MM",
-			"MM....M......M.T..MM",
-			"MM.......M........MM",
-			"MM................MM",
-			"MM....M......M....MM",
-			"MM.........M......MM",
-			"MM.............c..MM",
-			"MM................MM",
-			"MM..D.....U.......MM",
-			"MM................MM",
+			"M..................M",
+			"M..D...........T...M",
+			"M..................M",
+			"M....MJM...........M",
+			"M....MXM...........M",
+			"M..................M",
+			"MMMMMMMMMMOMMMMMMMMM",
+			"M..................M",
+			"M..................M",
+			"M..............S...M",
+			"M..................M",
+			"M.U................M",
+			"M..................M",
 			"MMMMMMMMMMMMMMMMMMMM",
 			"MMMMMMMMMMMMMMMMMMMM",
 		],
 		3: [
 			"MMMMMMMMMMMMMMMMMMMM",
-			"MMMMMMMMMMMMMMMMMMMM",
 			"M..................M",
-			"M...T..............M",
+			"M..D...........T...M",
 			"M..................M",
-			"M.M.MMMMMMMMMMM.MM.M",
 			"M..................M",
-			"M...............K..M",
+			"M.............K....M",
+			"MMMMMMMMMGMMMMMMMMMM",
 			"M..................M",
-			"M.MMMMMM.MMMMMMM.M.M",
 			"M..................M",
-			"M..D....U.......G..M",
-			"M...............T..M",
 			"M..................M",
+			"M..................M",
+			"M..................M",
+			"M..................M",
+			"M.U................M",
 			"MMMMMMMMMMMMMMMMMMMM",
 			"MMMMMMMMMMMMMMMMMMMM",
 		],
 		4: [
 			"MMMMMMMMMMMMMMMMMMMM",
-			"MM.....MMMMMMMMMMMMM",
-			"MM..T..MMMMMMMMMMMMM",
-			"MM.....MMMMMMMMMMMMM",
-			"MM.....MMMMMMMMMMMMM",
+			"M..................M",
+			"M..D...........T...M",
+			"M...L..............M",
+			"M..................M",
+			"M..................M",
+			"M..................M",
 			"MMMMMMMMMMMMMMMMMMMM",
-			"MM................MM",
-			"MM..L.............MM",
-			"MM..D...........c.MM",
-			"MM................MM",
-			"MM........U.......MM",
-			"MMMMMMMMMMMMMMMMMMMM",
-			"MMMMMMMMMMMMMMMMMMMM",
-			"MMMMMMMMMMMMMMMMMMMM",
+			"M..................M",
+			"M..................M",
+			"M..................M",
+			"M..................M",
+			"M.U................M",
+			"M..................M",
 			"MMMMMMMMMMMMMMMMMMMM",
 			"MMMMMMMMMMMMMMMMMMMM",
 		],
@@ -122,7 +123,7 @@ func _init() -> void:
 	switch_effects = {
 		"sw0": {"flip": [[16, 2]]},
 		"sw1": {"trap": "encounter"},
-		"sw2": {"flip": [[4, 5]]},
+		"sw2": {"flip": [[10, 7]]},
 	}
 	forced_item_chests = {
 		"lightning_dragon_cave_f1_c0": "equipment:thunder_rod",
@@ -136,11 +137,13 @@ const _LORE := {
 		{"pos": Vector2(9, 1), "text": "Stormspire Cavern. The lever hums. So does everything else, unfortunately."},
 	],
 	2: [
-		{"pos": Vector2(9, 2), "text": "Tesla Lattice: the pillars aren't decoration, they're insurance."},
-		{"pos": Vector2(4, 12), "text": "A wind funnel. It goes up. Whether YOU go up with it is your problem."},
+		{"pos": Vector2(3, 3), "text": "The pylon needs weight on it. There's a block for that."},
 	],
 	3: [
-		{"pos": Vector2(9, 2), "text": "The Charged Court. Surprisingly calm. Suspiciously calm."},
+		{"pos": Vector2(3, 3), "text": "The door south is locked. The key is somewhere you can already reach."},
+	],
+	4: [
+		{"pos": Vector2(3, 4), "text": "A lever, conveniently unlabeled. What could possibly go wrong."},
 	],
 	5: [
 		{"pos": Vector2(9, 11), "text": "Spire Summit. Voltharion has been counting the milliseconds until you arrived."},

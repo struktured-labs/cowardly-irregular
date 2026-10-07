@@ -1,9 +1,10 @@
 extends DragonCave
 class_name FireDragonCaveScene
 
-## Infernal Grotto - Fire Dragon Pyrroth awaits on Floor 5 (struktured 2026-09-06 depth pass; 2026-10-06 maze pass).
-## Lava chokepoints (l), a caldera boss arena, one lever shortcut, one portal shortcut, one ambush plate,
-## and an optional small-key vault (K/G) on floor 2 -- the first dungeon to showcase DungeonMechanics.
+## Infernal Grotto - Fire Dragon Pyrroth awaits on Floor 5 (struktured 2026-09-06 depth pass; 2026-10-06 maze
+## pass; 2026-10-07 required-gate pass per struktured's "Required, Zelda-style" ruling). Lava chokepoints (l),
+## a caldera boss arena, one lever shortcut on floor 1. Floors 2-4 each gate the stairs down behind a REQUIRED
+## puzzle: floor 2 a small-key vault (K/G), floor 3 a timed plate/gate (Y/W), floor 4 a lever (flip).
 
 func _init() -> void:
 	cave_name = "Infernal Grotto"
@@ -17,7 +18,7 @@ func _init() -> void:
 	floor_layouts = {
 		1: [
 			"MMMMMMMMMMMMMMMMMMMM",
-			"MM..............M..M",
+			"MM.a.........a..M..M",
 			"MM.....L..U.....M.TM",
 			"MM..............M..M",
 			"MM...............MMM",
@@ -36,57 +37,57 @@ func _init() -> void:
 			2: [
 				"MMMMMMMMMMMMMMMMMMMM",
 				"M..................M",
-				"M..M.....M..M..M...M",
-				"M..M..M..M.....M...M",
-				"M..M..M..MllMT.M...M",
-				"M..M..M..MllM..M...M",
-				"M..M..M...llM..M...M",
-				"M...U.M..M..M..M...M",
-				"M..M..M..M.....M...M",
-				"M..M.....M..M..MK..M",
-				"M..M..M..M..M..MG..M",
-				"M..M..M.....M..M...M",
-				"M..M..M..M..M...T..M",
-				"M.D............a...M",
+				"M..D...........T...M",
+				"M..................M",
+				"M..................M",
+				"M.............K....M",
+				"MMMMMMMMMGMMMMMMMMMM",
+				"M..................M",
+				"M..................M",
+				"M..................M",
+				"M..............S...M",
+				"M..................M",
+				"M..................M",
+				"M.U................M",
 				"MMMMMMMMMMMMMMMMMMMM",
 				"MMMMMMMMMMMMMMMMMMMM",
 			],
 			3: [
-			"MMMMMMMMMMMMMMMMMMMM",
-			"MMMMMMMMMMMMMMMMMMMM",
-			"MM................MM",
-			"MM.MMM.MMMMMMMMMM.MM",
-			"MM.MMM.MMMMMMMMMM.MM",
-			"MM.M............M.MM",
-			"MM.M.MMM.S..MMM.M.MM",
-			"MM.M.MMM.T..MMM.M.MM",
-			"MM.M.MMM....MMM.M.MM",
-			"MM.M.MMM....MMM.M.MM",
-			"MM.M............M.MM",
-			"MM.MMMMMMMMMM.MMM.MM",
-			"MM.MMMMMMMMMM.MMM.MM",
-			"MM..D.....U.......MM",
-			"MMMMMMMMMMMMMMMMMMMM",
-			"MMMMMMMMMMMMMMMMMMMM",
-		],
-		4: [
-			"MMMMMMMMMMMMMMMMMMMM",
-			"MMMMMMMMMMMMMMMMMMMM",
-			"MMMMMMMMMMMMMMMMMMMM",
-			"MMMMMMMMMMMMMMMMMMMM",
-			"M..................M",
-			"M...D...........a..M",
-			"M.MM.MMMMMMMM.MMMM.M",
-			"M.ll...............M",
-			"M.ll...............M",
-			"M.MMMMM.MMMMMMM.MM.M",
-			"M....T...T...U.....M",
-			"M..................M",
-			"MMMMMMMMMMMMMMMMMMMM",
-			"MMMMMMMMMMMMMMMMMMMM",
-			"MMMMMMMMMMMMMMMMMMMM",
-			"MMMMMMMMMMMMMMMMMMMM",
-		],
+				"MMMMMMMMMMMMMMMMMMMM",
+				"M........M.........M",
+				"M..D.....M.....T...M",
+				"M........M.........M",
+				"M........M.........M",
+				"M........M.........M",
+				"M........M.........M",
+				"M......Y.W.........M",
+				"M........M..U......M",
+				"M........M.........M",
+				"M........M.........M",
+				"M........M.........M",
+				"M........M.........M",
+				"M........M.........M",
+				"MMMMMMMMMMMMMMMMMMMM",
+				"MMMMMMMMMMMMMMMMMMMM",
+			],
+			4: [
+				"MMMMMMMMMMMMMMMMMMMM",
+				"M..................M",
+				"M..D...........T...M",
+				"M...L..............M",
+				"M..................M",
+				"M..................M",
+				"M..................M",
+				"MMMMMMMMMMMMMMMMMMMM",
+				"M..................M",
+				"M..................M",
+				"M..................M",
+				"M..................M",
+				"M.U................M",
+				"M..................M",
+				"MMMMMMMMMMMMMMMMMMMM",
+				"MMMMMMMMMMMMMMMMMMMM",
+			],
 		5: [
 			"MMMMMMMMMMMMMMMMMMMM",
 			"M..................M",
@@ -122,6 +123,7 @@ func _init() -> void:
 	switch_effects = {
 		"sw0": {"flip": [[16, 2]]},
 		"sw1": {"trap": "encounter"},
+		"sw2": {"flip": [[10, 7]]},
 	}
 	trap_chests = ["fire_dragon_cave_f2_c0"]
 	forced_item_chests = {
@@ -137,11 +139,13 @@ const _LORE := {
 		{"pos": Vector2(9, 11), "text": "A lever, conveniently unlabeled. What could possibly go wrong."},
 	],
 	2: [
-		{"pos": Vector2(9, 3), "text": "The chest by the door is bait. The one across the vent isn't. Probably."},
+		{"pos": Vector2(3, 3), "text": "The door south is locked. The key is somewhere you can already reach."},
 	],
 	3: [
-		{"pos": Vector2(9, 2), "text": "The Slag Maze: designed by a dragon with a grudge against cartography."},
-		{"pos": Vector2(9, 12), "text": "Something ahead is guarding treasure. Something behind you is louder."},
+		{"pos": Vector2(3, 3), "text": "The plate opens the gate for a few seconds, no more. Run."},
+	],
+	4: [
+		{"pos": Vector2(3, 4), "text": "A lever, conveniently unlabeled. What could possibly go wrong."},
 	],
 	5: [
 		{"pos": Vector2(9, 11), "text": "The Caldera. Pyrroth has been rehearsing his entrance for weeks."},

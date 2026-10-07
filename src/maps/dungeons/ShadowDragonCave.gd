@@ -1,9 +1,10 @@
 extends DragonCave
 class_name ShadowDragonCaveScene
 
-## Abyssal Hollow - Shadow Dragon Umbraxis awaits on Floor 5 (struktured 2026-09-06 depth pass; 2026-10-06 maze pass).
-## A true maze with disorienting same-floor portals; one lever vault, one mimic, one ambush plate, philosophical
-## signposts, and an optional blast-charge vault (Q/Z) on floor 3.
+## Abyssal Hollow - Shadow Dragon Umbraxis awaits on Floor 5 (struktured 2026-09-06 depth pass; 2026-10-06 maze
+## pass; 2026-10-07 required-gate pass). A lever vault and disorienting same-floor portal on floor 1/2.
+## Floors 2-4 each gate the stairs down: floor 2 a mirror lever (swaps which of two doorways is open), floor 3
+## a blast-charge vault (Q/Z) with a mimic chest, floor 4 a lever (flip).
 
 func _init() -> void:
 	cave_name = "Abyssal Hollow"
@@ -35,55 +36,55 @@ func _init() -> void:
 		],
 		2: [
 			"MMMMMMMMMMMMMMMMMMMM",
-			"MMMMMMMMMMMMMMMMMMMM",
-			"MM................MM",
-			"MM.MMM.MMMMMMMMMM.MM",
-			"MM.MMM.MMMMMMMMMM.MM",
-			"MM.M.....T......M.MM",
-			"MM.M.MMMMMMMMMM.M.MM",
-			"MM.MdMMMMMMMMMM.M.MM",
-			"MM.M.MMMMMMMMMMdM.MM",
-			"MM.M.MMMMMMMMMM.M.MM",
-			"MM.M............M.MM",
-			"MM.MMMMMMMMMM.MMM.MM",
-			"MM.MMMMMMMMMM.MMM.MM",
-			"MM..D.....U.......MM",
+			"M..................M",
+			"M..D...........T...M",
+			"M...R...........d..M",
+			"M...............d..M",
+			"M..................M",
+			"M..................M",
+			"MMMMMMMMMMMMM.MMMMMM",
+			"M..........MM......M",
+			"M..........MM......M",
+			"M..........MM......M",
+			"M..........MM......M",
+			"M.U........MM......M",
+			"M..........MM......M",
 			"MMMMMMMMMMMMMMMMMMMM",
 			"MMMMMMMMMMMMMMMMMMMM",
 		],
 		3: [
 			"MMMMMMMMMMMMMMMMMMMM",
-			"MMMMMMMMMMMMMMMMMMMM",
-			"M............M.....M",
-			"M.....M......M.....M",
-			"M..T..M......M..Q..M",
-			"M.....M............M",
-			"M.....M......M.....M",
-			"M.....M......M..Z..M",
-			"M.....M......M.....M",
-			"M.....M.........S..M",
-			"M.....M......M.....M",
-			"M..D.....U...M.....M",
-			"M.....M......M..T..M",
-			"M.....M......M.....M",
+			"M..................M",
+			"M..D...........T...M",
+			"M..................M",
+			"M..................M",
+			"M.............Q....M",
+			"MMMMMMMMMZMMMMMMMMMM",
+			"M..................M",
+			"M..................M",
+			"M..................M",
+			"M..............S...M",
+			"M..................M",
+			"M..................M",
+			"M.U................M",
 			"MMMMMMMMMMMMMMMMMMMM",
 			"MMMMMMMMMMMMMMMMMMMM",
 		],
 		4: [
 			"MMMMMMMMMMMMMMMMMMMM",
+			"M..................M",
+			"M..D...........T...M",
+			"M...L..............M",
+			"M..................M",
+			"M..................M",
+			"M..................M",
 			"MMMMMMMMMMMMMMMMMMMM",
-			"MM................MM",
-			"MM.MMM.MMMMMMMMMM.MM",
-			"MM.MMM.MMMMMMMMMM.MM",
-			"MM.M............M.MM",
-			"MM.M.MMMMMMMMMM.M.MM",
-			"MM.M.MMMMMMMMMM.M.MM",
-			"MM.MLMMMMMMMMMM.M.MM",
-			"MM.M.MMMMMMMMMM.M.MM",
-			"MM.M............M.MM",
-			"MM.MMMMMMMMMM.MMM..M",
-			"MM.MMMMMMMMMM.MMM.TM",
-			"MM..D.....U........M",
+			"M..................M",
+			"M..................M",
+			"M..................M",
+			"M..................M",
+			"M.U................M",
+			"M..................M",
 			"MMMMMMMMMMMMMMMMMMMM",
 			"MMMMMMMMMMMMMMMMMMMM",
 		],
@@ -122,7 +123,10 @@ func _init() -> void:
 	switch_effects = {
 		"sw0": {"flip": [[16, 2]]},
 		"sw1": {"trap": "encounter"},
-		"sw2": {"flip": [[16, 12]]},
+		"sw2": {"flip": [[10, 7]]},
+	}
+	mirror_effects = {
+		"mr0": {"a": [[13, 7]], "b": [[7, 7]]},
 	}
 	trap_chests = ["shadow_dragon_cave_f3_c0"]
 	forced_item_chests = {
@@ -136,14 +140,13 @@ const _LORE := {
 		{"pos": Vector2(9, 1), "text": "Abyssal Hollow. The lever is real. Whether pulling it is your idea is less certain."},
 	],
 	2: [
-		{"pos": Vector2(9, 2), "text": "Twisting Dark: the two doorways marked 'd' do not agree on where they go."},
-		{"pos": Vector2(4, 5), "text": "If you are lost, you were always lost. The maze just made it visible."},
+		{"pos": Vector2(3, 4), "text": "Pull the lever and the walls remember differently. Pull it again and they forget."},
 	],
 	3: [
-		{"pos": Vector2(9, 2), "text": "That chest looks too easy. Everything down here looks too easy."},
+		{"pos": Vector2(3, 3), "text": "That chest looks too easy. Everything down here looks too easy."},
 	],
 	4: [
-		{"pos": Vector2(9, 2), "text": "Whispering Maze: it doesn't whisper anything useful. Umbraxis finds that funny."},
+		{"pos": Vector2(3, 4), "text": "A lever, conveniently unlabeled. What could possibly go wrong."},
 	],
 	5: [
 		{"pos": Vector2(9, 11), "text": "The Abyss doesn't stare back. It already knows what it will see."},

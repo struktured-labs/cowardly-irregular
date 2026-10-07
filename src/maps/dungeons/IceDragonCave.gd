@@ -1,9 +1,10 @@
 extends DragonCave
 class_name IceDragonCaveScene
 
-## Glacial Sanctum - Ice Dragon Glacius awaits on Floor 5 (struktured 2026-09-06 depth pass; 2026-10-06 maze pass).
-## Frozen-lake open floors (i) alternate with narrow crevasse corridors; one lever, one portal shortcut, one ambush
-## plate, and an optional blast-charge vault (Q/Z) on floor 3 -- the second dungeon to showcase DungeonMechanics.
+## Glacial Sanctum - Ice Dragon Glacius awaits on Floor 5 (struktured 2026-09-06 depth pass; 2026-10-06 maze
+## pass; 2026-10-07 required-gate pass). Frozen-lake open floors (i) and a lever shortcut on floor 1. Floors
+## 2-4 each gate the stairs down: floor 2 a lever (flip), floor 3 an ice-slide crossing over a lava barrier
+## (only crossable while sliding), floor 4 a blast-charge vault (Q/Z).
 
 func _init() -> void:
 	cave_name = "Glacial Sanctum"
@@ -35,55 +36,55 @@ func _init() -> void:
 		],
 		2: [
 			"MMMMMMMMMMMMMMMMMMMM",
+			"M..................M",
+			"M..D...........T...M",
+			"M...L..............M",
+			"M..................M",
+			"M..................M",
+			"M..................M",
 			"MMMMMMMMMMMMMMMMMMMM",
-			"MM................MM",
-			"MM.MMMMMMMMMMMMMM.MM",
-			"MMSMMMMMMMMMMMMMM.MM",
-			"MM.MMMMMMMMMMMMMM.MM",
-			"MM.......MMMMMMMM.MM",
-			"MM.MMMMM.MMMMMMMM.MM",
-			"MM.MMMMM.MMMMMMMM.MM",
-			"MM.MMMMM.MMMMMMMM.MM",
-			"MM.MMMMM......T...MM",
-			"MM.MMMMMMMMMMMMMMMMM",
-			"MM.MMMMMMMMMMMMMMMMM",
-			"MM..D.....U.......MM",
+			"M..................M",
+			"M..................M",
+			"M..............S...M",
+			"M..................M",
+			"M.U................M",
+			"M..................M",
 			"MMMMMMMMMMMMMMMMMMMM",
 			"MMMMMMMMMMMMMMMMMMMM",
 		],
 		3: [
 			"MMMMMMMMMMMMMMMMMMMM",
-			"MMMMMMMMMMMMMMMMMMMM",
-			"MiiiiMiiiiMiiiMiiiiM",
-			"MiiiiiiiiiMiiiMiiQiM",
-			"MiiTiMiiiiMiiiiiiiiM",
-			"MiiiiMiiiiMiiiMiiiiM",
-			"MiiiiMiiiiiiiiMiiZiM",
-			"MiiiiMiiiiMiiiMiiiiM",
-			"MiiiiMiiiiMiiiMiiTiM",
-			"MiiiiMiiiiMiiiiiiiiM",
-			"MiiiiiiiiiMiiiMibiiM",
-			"MiiiiMiiiiMiiiMiiiiM",
-			"MiiDiMiUiiiiiiMiiiiM",
-			"MiiiiMiiiiMiiiMiiiiM",
+			"M..................M",
+			"M..D...........T...M",
+			"M..................M",
+			"M..................M",
+			"M..................M",
+			"M..................M",
+			"MMMMMMMMMMjMMMMMMMMM",
+			"MjjjjjjjjjjjjjjjjjjM",
+			"MjjjjjjjjjjjjjjjjjjM",
+			"MllllllllllllllllllM",
+			"MjjjjjjjjjjjjjjjjjjM",
+			"MjjjjjjjjjjjjjjjjjjM",
+			"MjUjjjjjjjjjjjjjjjjM",
 			"MMMMMMMMMMMMMMMMMMMM",
 			"MMMMMMMMMMMMMMMMMMMM",
 		],
 		4: [
 			"MMMMMMMMMMMMMMMMMMMM",
-			"MMMMMMMMMMMMMMMMMMMM",
-			"MM..D...........MMMM",
-			"MM..............MMMM",
-			"MM........H.....MMMM",
-			"MMMMMMMMM.MMMMMMMMMM",
-			"MMMMMMMMM.MMMMMMMMMM",
-			"MM..............MMMM",
-			"MM..............MMMM",
-			"MM..............MMMM",
-			"MMMMMMMMMMMMMM.MMMMM",
-			"MM..............M..M",
-			"MM..L...........M.TM",
-			"MM........U.....M..M",
+			"M..................M",
+			"M..D...........T...M",
+			"M..................M",
+			"M..................M",
+			"M.............Q....M",
+			"MMMMMMMMMZMMMMMMMMMM",
+			"M..................M",
+			"M..................M",
+			"M...............b..M",
+			"M..................M",
+			"M..................M",
+			"M..................M",
+			"M.U................M",
 			"MMMMMMMMMMMMMMMMMMMM",
 			"MMMMMMMMMMMMMMMMMMMM",
 		],
@@ -121,8 +122,8 @@ func _init() -> void:
 
 	switch_effects = {
 		"sw0": {"flip": [[16, 2]]},
-		"sw1": {"trap": "encounter"},
-		"sw2": {"flip": [[16, 12]]},
+		"sw1": {"flip": [[10, 7]]},
+		"sw2": {"trap": "encounter"},
 	}
 	forced_item_chests = {
 		"ice_dragon_cave_f1_c0": "equipment:ice_blade",
@@ -137,10 +138,13 @@ const _LORE := {
 		{"pos": Vector2(4, 1), "text": "A lever, half-buried in frost. Someone clearly meant to come back for it."},
 	],
 	2: [
-		{"pos": Vector2(9, 2), "text": "The Crevasse: mind the gap. The gap does not mind you."},
+		{"pos": Vector2(3, 4), "text": "A lever, half-buried in frost. Someone clearly meant to come back for it."},
 	],
 	3: [
-		{"pos": Vector2(9, 2), "text": "The lake widens here. So does the dragon's patience, allegedly."},
+		{"pos": Vector2(3, 3), "text": "Ice doesn't let you stop. Aim before you push off."},
+	],
+	4: [
+		{"pos": Vector2(3, 3), "text": "A crack in the far wall. Something nearby surely blasts things open."},
 	],
 	5: [
 		{"pos": Vector2(9, 11), "text": "The Frozen Throne. Glacius has read every strategy guide ever written about her."},
