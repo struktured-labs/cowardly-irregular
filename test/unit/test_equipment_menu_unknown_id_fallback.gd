@@ -91,20 +91,13 @@ func test_runtime_unknown_equipped_returns_resolver_output() -> void:
 	var script_class = load(EQUIPMENT_MENU)
 	var inst: Node = script_class.new()
 	add_child_autofree(inst)
-	# Build a minimal mock character.
-	var mock = RefCounted.new()
-	# Combatant has these three fields directly accessible.
-	# Use a fake Combatant-shaped object via a script.
-	var mock_script := GDScript.new()
-	mock_script.source_code = """
-extends RefCounted
-var equipped_weapon: String = \"definitely_unknown_xyz\"
-var equipped_armor: String = \"\"
-var equipped_accessory: String = \"\"
-"""
-	var err: int = mock_script.reload()
-	assert_eq(err, OK, "mock script must compile")
-	inst.character = mock_script.new()
+	# A real Combatant: a RefCounted stand-in could not be assigned to the typed `character`, and that error aborted
+	# this test after its first assert, so the two below had never run (the file read green on a mock compile).
+	var c := Combatant.new()
+	autofree(c)
+	c.equipped_weapon = "definitely_unknown_xyz"
+	inst.character = c
+	assert_eq(inst.character, c, "SCOPE: the character really is attached")
 	var name_text: String = inst._get_equipped_name(0)
 	assert_ne(name_text, "(empty)",
 		"unknown equipped weapon must NOT render as '(empty)' — that misleads the player")

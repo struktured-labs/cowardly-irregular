@@ -9,8 +9,8 @@ var _bm = null
 func before_each() -> void:
 	_bm = preload("res://src/battle/BattleManager.gd").new()
 	add_child_autofree(_bm)
-	_bm.player_party = []
-	_bm.enemy_party = []
+	_bm.player_party.clear()  # typed Array[Combatant]: assigning [] errored and cut before_each short
+	_bm.enemy_party.clear()
 
 func test_data_grants_the_widened_threshold_and_the_reduction() -> void:
 	var raw := FileAccess.get_file_as_string("res://data/passives.json")
