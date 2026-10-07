@@ -80,6 +80,8 @@ var forced_item_chests: Dictionary = {}
 ## Floor numbers where the player wraps off one edge and appears on the opposite edge.
 var wrap_floors: Array[int] = []
 var _puzzle_layer: DungeonPuzzleLayer = null
+## DungeonMechanics opt-in (struktured 2026-10-06): K/Q resource pickups, G/Z locks that spend them. Empty by default.
+var _mechanics_layer: DungeonMechanics = null
 
 ## Floor state
 var current_floor: int = 1
@@ -244,6 +246,11 @@ func _setup_scene() -> void:
 	add_child(_puzzle_layer)
 	_puzzle_layer.attach(self)
 
+	_mechanics_layer = DungeonMechanics.new()
+	_mechanics_layer.name = "MechanicsLayer"
+	add_child(_mechanics_layer)
+	_mechanics_layer.attach(self)
+
 
 ## Authored entrances stay at the tile's top-left. An unauthored floor whose fixed fallback tile is a wall or a stair sensor lands on the crystal tile instead (two tiles west of the up stair).
 func _entrance_spawn_px(floor_num: int, rows: Array) -> Vector2:
@@ -367,7 +374,10 @@ static func _layout_blocked(rows: Array, x: int, y: int, map_w: int, map_h: int)
 	if x >= row.length():
 		return true
 	var ch := row[x]
-	return ch == "M" or ch == "l"
+	# G/Z (DungeonMechanics locks) render as wall by default; this fallback-landing helper
+	# has no access to persisted open-state and every real floor authors a fixed entrance,
+	# so treating them as blocked here (like a freshly-generated, unopened floor) is correct.
+	return ch == "M" or ch == "l" or ch == "G" or ch == "Z"
 
 
 func _generate_map_for_floor(floor_num: int) -> void:
@@ -411,6 +421,8 @@ func _generate_map_for_floor(floor_num: int) -> void:
 	_add_stair_visuals()
 	if _puzzle_layer:
 		_puzzle_layer.rebuild_floor(floor_num)
+	if _mechanics_layer:
+		_mechanics_layer.rebuild_floor(floor_num)
 
 
 ## Cave ambient. Elemental caves override to tint their own dark.
@@ -465,6 +477,12 @@ func _char_to_tile_type(char: String) -> int:
 		# DungeonPuzzleLayer vocabulary: portals a-f, pressure plate S, lever L -- all floor.
 		"a", "b", "c", "d", "e", "f", "S", "L":
 			return TileGeneratorScript.TileType.CAVE_FLOOR
+		# DungeonMechanics vocabulary: K/Q resource pickups are floor; G/Z locks render as wall
+		# until opened, when the mechanics layer flips the specific cell via tile_map.set_cell.
+		"K", "Q":
+			return TileGeneratorScript.TileType.CAVE_FLOOR
+		"G", "Z":
+			return TileGeneratorScript.TileType.CAVE_WALL
 		_: return TileGeneratorScript.TileType.CAVE_FLOOR
 
 

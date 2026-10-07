@@ -1,8 +1,9 @@
 extends DragonCave
 class_name IceDragonCaveScene
 
-## Glacial Sanctum - Ice Dragon Glacius awaits on Floor 5 (struktured 2026-09-06 depth pass).
-## Frozen-lake open floors (i) alternate with narrow crevasse corridors; one lever, one portal shortcut, one ambush plate.
+## Glacial Sanctum - Ice Dragon Glacius awaits on Floor 5 (struktured 2026-09-06 depth pass; 2026-10-06 maze pass).
+## Frozen-lake open floors (i) alternate with narrow crevasse corridors; one lever, one portal shortcut, one ambush
+## plate, and an optional blast-charge vault (Q/Z) on floor 3 -- the second dungeon to showcase DungeonMechanics.
 
 func _init() -> void:
 	cave_name = "Glacial Sanctum"
@@ -53,18 +54,18 @@ func _init() -> void:
 		3: [
 			"MMMMMMMMMMMMMMMMMMMM",
 			"MMMMMMMMMMMMMMMMMMMM",
-			"MMiiiiiiiiiiiiiiiiMM",
-			"MMiiiiiiiiiiiiiiiiMM",
-			"MMiiTiiiiiiiiiiiiiMM",
-			"MMiiiiiiiiiiiiiiiiMM",
-			"MMiiiiiiiiiiiiiiiiMM",
-			"MMiiiiiiiiiiiiiiiiMM",
-			"MMiiiiiiiiiiiiiiiiMM",
-			"MMiiiiiiiiiiiiiiiiMM",
-			"MMiiiiiiiiiiiiibiiMM",
-			"MMiiiiiiiiiiiiiiiiMM",
-			"MMiiDiiiiiUiiiiiiiMM",
-			"MMiiiiiiiiiiiiiiiiMM",
+			"MiiiiMiiiiMiiiMiiiiM",
+			"MiiiiiiiiiMiiiMiiQiM",
+			"MiiTiMiiiiMiiiiiiiiM",
+			"MiiiiMiiiiMiiiMiiiiM",
+			"MiiiiMiiiiiiiiMiiZiM",
+			"MiiiiMiiiiMiiiMiiiiM",
+			"MiiiiMiiiiMiiiMiiTiM",
+			"MiiiiMiiiiMiiiiiiiiM",
+			"MiiiiiiiiiMiiiMibiiM",
+			"MiiiiMiiiiMiiiMiiiiM",
+			"MiiDiMiUiiiiiiMiiiiM",
+			"MiiiiMiiiiMiiiMiiiiM",
 			"MMMMMMMMMMMMMMMMMMMM",
 			"MMMMMMMMMMMMMMMMMMMM",
 		],
