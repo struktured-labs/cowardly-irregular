@@ -52,7 +52,7 @@ func test_the_consumable_bag_is_the_party_when_gameloop_has_no_spotlight_flag() 
 	var typed: Array[Combatant] = [lead]
 	bm.set("player_party", typed)
 	assert_true(lead in (bm.get("player_party") as Array), "CONTROL: the lead is in the party, so the flag line is reached")
-	var bag: Array = bm.call("consumable_bag", lead)
+	var bag: Array = (bm.call("consumable_bag", lead) as Array).duplicate()  # it returns player_party itself
 	(bm.get("player_party") as Array).assign(saved_party)
 	# Aborted, this returns Array's default []; the guarded path returns the party.
 	assert_eq(bag.size(), 1, "the consumable bag is the party (%d)" % bag.size())
