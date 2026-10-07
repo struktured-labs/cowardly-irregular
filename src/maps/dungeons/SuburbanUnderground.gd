@@ -24,60 +24,60 @@ func _init() -> void:
 	overworld_exit_map = "suburban_overworld"
 	unlock_story_flag = "w2_dungeon_cleared"
 
-	# struktured 2026-09-06: 4 floors now — entrance -> endless parking (wrap, portal, mimic) -> lever-gated vault maze -> warden.
+	# struktured 2026-10-07 ("we need more maze complexity"): entrance maze -> drain-junction maze (portal pair, mimic) -> lever-gated vault maze -> warden. Corridors are 1-wide throughout; the old wrap-floor/open-hall shape is gone.
 	floor_layouts = {
 		1: [
 			"MMMMMMMMMMMMMMMMMMMM",
+			"MU..MT........MT..MM",
+			"MMM.MMMMM.MMM.MMM.MM",
+			"M...M.....M.......MM",
+			"M.M.M.MMMMM.MMM.M.MM",
+			"M...M.M.M...M...M.MM",
+			"MMM.M.M.M.M.MMM.M.MM",
+			"M...M.M...M.....M.MM",
+			"M.MMM.M.MMM.M.MMMMMM",
+			"M.....M.M...M.M...MM",
+			"MMMMMMM.M.MMM.M.M.MM",
+			"M.....M.M...M...M.MM",
+			"M...MMM.MMMMMMMMM.MM",
+			"MDM...............MM",
 			"MMMMMMMMMMMMMMMMMMMM",
-			"MM...MMMMMMMMMM...MM",
-			"MM.T.MMMMMMMMMM.T.MM",
-			"MM...MMMMMMMMMM...MM",
-			"MMM.MMMMMMMMMMMM.MMM",
-			"M..................M",
-			"M..................M",
-			"MMMMMMMMM..MMMMMMMMM",
-			"MMMMMMMMM.U.MMMMMMMM",
-			"MMMMMMMMM...MMMMMMMM",
-			"MMMMMMMMM..MMMMMMMMM",
-			"M..................M",
-			"M.........D........M",
-			"M..................M",
 			"MMMMMMMMMMMMMMMMMMMM",
 		],
 		2: [
-			"....................",
-			"....................",
-			"..M..............M..",
-			".....D..........a...",
-			"....................",
-			"...M.....M.M........",
-			"....................",
-			".....M....T...M.....",
-			"....................",
-			".....M........M.....",
-			"....................",
-			".........M.M....M...",
-			"...a..........U.....",
-			"..M...............M.",
-			"....................",
-			"....................",
+			"MMMMMMMMMMMMMMMMMMMM",
+			"MUM.......Ma......MM",
+			"M.M.M.MMM.MMM.MMM.MM",
+			"M.M...........M...MM",
+			"M.MMM.M.MMMMMMM.MMMM",
+			"M...M.M.......M.MDMM",
+			"MMM.M.MMMMM.M.M.M..M",
+			"MaM.M.M.....M...M..M",
+			"M.M.M.M.MMMMM.MMM.MM",
+			"M...M.M.....M...M.MM",
+			"M.MMM.MMMMM.MMM.M.MM",
+			"M.MT..M.....M.M.M.MM",
+			"M.MMMMM.MMMMM.M.M.MM",
+			"M.......M.........MM",
+			"MMMMMMMMMMMMMMMMMMMM",
+			"MMMMMMMMMMMMMMMMMMMM",
 		],
 		3: [
 			"MMMMMMMMMMMMMMMMMMMM",
-			"M..................M",
-			"M..................M",
-			"M..................M",
-			"M..................M",
-			"M..................M",
-			"MMMM...............M",
-			"MMTM.L.............M",
-			"MM.M...M..MM.......M",
-			"MMMM...M.U.M.......M",
-			"M......M...M.......M",
-			"M......M..MM.......M",
-			"M....D.............M",
-			"M..................M",
-			"M..................M",
+			"MMMMMMMMMMMMMMMMMMMM",
+			"MM...M..........LMTM",
+			"MM.M.M.MMMMMMM.M.MMM",
+			"MM.M.....M...M.M.MMM",
+			"MM.MMMMM.MMM.M.M.MMM",
+			"MM...M.......M.M.MMM",
+			"MMMM.MMMMMMM.M.MMMMM",
+			"MM.M...M.....M...MMM",
+			"MM.MMM.M.MMMMMMM.MMM",
+			"MM.M...M..UM.....MMM",
+			"MM.M.MMMMMMM.M.M.MMM",
+			"MM...........MD..MMM",
+			"MMMMMMMMMMMMMMM..MMM",
+			"MMMMMMMMMMMMMMMMMMMM",
 			"MMMMMMMMMMMMMMMMMMMM",
 		],
 		4: [
@@ -101,9 +101,9 @@ func _init() -> void:
 	}
 
 	floor_spawn_points = {
-		1: {"entrance": Vector2(10, 12)},
-		2: {"entrance": Vector2(10, 10)},
-		3: {"entrance": Vector2(9, 12)},
+		1: {"entrance": Vector2(2, 12)},
+		2: {"entrance": Vector2(18, 7)},
+		3: {"entrance": Vector2(16, 13)},
 		4: {"entrance": Vector2(3, 7)},
 	}
 
@@ -114,10 +114,8 @@ func _init() -> void:
 		4: [],
 	}
 
-	# Floor 2, "Level P-Infinity": edge-wraps; two 'a' decals auto-pair as a shortcut.
-	wrap_floors = [2]
-	# sw0 is floor3's lever (5,7) -- it flips open the vault door at (3,7).
-	switch_effects = {"sw0": {"flip": [[3, 7]]}}
+	# sw0 is floor3's lever (16,2) -- it flips open the vault door at (17,2).
+	switch_effects = {"sw0": {"flip": [[17, 2]]}}
 	trap_chests = ["suburban_underground_f2_c0"]
 	forced_item_chests = {
 		"suburban_underground_f1_c1": "expired_coupon",
@@ -156,14 +154,14 @@ func _char_to_tile_type(char: String) -> int:
 
 const _LORE := {
 	1: [
-		{"pos": Vector2(3, 6), "text": "STORM DRAIN ACCESS — Property of the Maple Heights HOA. Trespassers will be documented."},
-		{"pos": Vector2(16, 6), "text": "This alcove smells like a decade of unopened mail."},
+		{"pos": Vector2(6, 1), "text": "STORM DRAIN ACCESS — Property of the Maple Heights HOA. Trespassers will be documented."},
+		{"pos": Vector2(16, 1), "text": "This alcove smells like a decade of unopened mail."},
 	],
 	2: [
-		{"pos": Vector2(10, 10), "text": "LEVEL P-INFINITY. Your car is not here. Your car was never here."},
+		{"pos": Vector2(17, 6), "text": "The pipes fork, double back, and fork again. Somewhere down here is the HOA's missing architect."},
 	],
 	3: [
-		{"pos": Vector2(5, 6), "text": "The lever is labeled 'DO NOT PULL' in handwriting that is unmistakably your own."},
+		{"pos": Vector2(15, 12), "text": "The lever is labeled 'DO NOT PULL' in handwriting that is unmistakably your own."},
 	],
 }
 

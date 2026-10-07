@@ -32,60 +32,60 @@ func _init() -> void:
 	overworld_exit_map = "steampunk_overworld"
 	unlock_story_flag = "w3_dungeon_cleared"
 
-	# struktured 2026-09-06: 4 floors now — entrance -> Gear Room (two lever-vaults) -> catwalk with a portal shortcut -> Tempo.
+	# struktured 2026-10-07 ("we need more maze complexity"): entrance maze -> gear-cell maze (two lever-vaults) -> catwalk maze with a portal shortcut -> Tempo. Corridors are 1-wide throughout; the old wide-open halls are gone.
 	floor_layouts = {
 		1: [
 			"MMMMMMMMMMMMMMMMMMMM",
+			"MT....MTM.........MM",
+			"MMMMM.M.M.MMMMM.M.MM",
+			"M..DM.M...M.M...M.MM",
+			"M..MM.M.MMM.M.MMM.MM",
+			"M.M...M.....M.M...MM",
+			"M.M.MMM.M.M.M.MMM.MM",
+			"M.M.M...M.......M.MM",
+			"M.M.M.M.M.MMMMM.M.MM",
+			"M.M...M.M...M...MUMM",
+			"M.MMMMM.MMM.M.MMMMMM",
+			"M.M...M.M...M.....MM",
+			"M.M.M.M.MMMMMMMMM.MM",
+			"M...M.............MM",
 			"MMMMMMMMMMMMMMMMMMMM",
-			"MM...MMMMMMMMMM...MM",
-			"MM.T.MMMMMMMMMM.T.MM",
-			"MM...MMMMMMMMMM...MM",
-			"MMM.MMMMMMMMMMMM.MMM",
-			"M..................M",
-			"M..................M",
-			"MMMMMMMMM..MMMMMMMMM",
-			"MMMMMMMMM.U.MMMMMMMM",
-			"MMMMMMMMM...MMMMMMMM",
-			"MMMMMMMMM..MMMMMMMMM",
-			"M..................M",
-			"M.........D........M",
-			"M..................M",
 			"MMMMMMMMMMMMMMMMMMMM",
 		],
 		2: [
 			"MMMMMMMMMMMMMMMMMMMM",
-			"M..................M",
-			"M..................M",
-			"M...D..............M",
-			"M..................M",
-			"M..................M",
-			"MMMM...............M",
-			"MMTM.L.............M",
-			"MMMM...............M",
-			"M..................M",
-			"M.............U....M",
-			"M..............MMM.M",
-			"M............L.MTM.M",
-			"M..............MMM.M",
-			"M..................M",
+			"MMMMMMMMMMMMMMMMMMMM",
+			"MMU..MD......M..LMTM",
+			"MMMM.MM..MMM.M.M.MMM",
+			"MM.M.M.........MLMTM",
+			"MM.M.M.MMM.MMM.M.MMM",
+			"MM.M.M.........M.MMM",
+			"MM.M.MMMMMMMMM.M.MMM",
+			"MM.M...M.....M.M.MMM",
+			"MM.MMM.M.MMM.MMM.MMM",
+			"MM...M.M...M.M...MMM",
+			"MM.MMM.MMM.M.M.M.MMM",
+			"MM.........M...M.MMM",
+			"MMMMMMMMMMMMMMMMMMMM",
+			"MMMMMMMMMMMMMMMMMMMM",
 			"MMMMMMMMMMMMMMMMMMMM",
 		],
 		3: [
 			"MMMMMMMMMMMMMMMMMMMM",
-			"M..................M",
-			"M..................M",
-			"M..................M",
-			"M.............U....M",
-			"M..................M",
-			"M..................M",
-			"M..a............a..M",
-			"M..................M",
-			"M..................M",
-			"M..................M",
-			"M..................M",
-			"M...D..............M",
-			"M..................M",
-			"M..................M",
+			"MU......M...M.....MM",
+			"MMMMMMM.M.M.M.MMM.MM",
+			"M...MDM...M...MaM.MM",
+			"M.M.M..MMMMMMMM.M.MM",
+			"M.M.M...........M.MM",
+			"M.M.M.M.MMMMMMM.M.MM",
+			"M.M...M.M.......M.MM",
+			"M.MMMMM.M.MMMMM.M.MM",
+			"M.M...M.M...Ma..M.MM",
+			"M.M.M.M.MMM.MMM.M.MM",
+			"M.M.M.M...M.M.....MM",
+			"M.M.M.M.M.M.M.MMMMMM",
+			"M...M.....M.......MM",
+			"MMMMMMMMMMMMMMMMMMMM",
 			"MMMMMMMMMMMMMMMMMMMM",
 		],
 		4: [
@@ -109,9 +109,9 @@ func _init() -> void:
 	}
 
 	floor_spawn_points = {
-		1: {"entrance": Vector2(10, 12)},
-		2: {"entrance": Vector2(13, 12)},
-		3: {"entrance": Vector2(13, 12)},
+		1: {"entrance": Vector2(2, 4)},
+		2: {"entrance": Vector2(8, 3)},
+		3: {"entrance": Vector2(6, 5)},
 		4: {"entrance": Vector2(3, 7)},
 	}
 
@@ -122,10 +122,10 @@ func _init() -> void:
 		4: [],
 	}
 
-	# sw0 (lever 5,7 -> door 3,7) and sw1 (lever 13,12 -> door 15,12): optional walkway-vault detours, neither gates the main route.
+	# sw0 (lever 16,2 -> door 17,2) and sw1 (lever 16,4 -> door 17,4): optional gear-cell vault detours, neither gates the main route.
 	switch_effects = {
-		"sw0": {"flip": [[3, 7]]},
-		"sw1": {"flip": [[15, 12]]},
+		"sw0": {"flip": [[17, 2]]},
+		"sw1": {"flip": [[17, 4]]},
 	}
 	trap_chests = ["steampunk_mechanism_f2_c0"]
 	forced_item_chests = {
@@ -171,14 +171,14 @@ func _get_ambient_fx_theme() -> String:
 
 const _LORE := {
 	1: [
-		{"pos": Vector2(3, 6), "text": "A brass plaque: 'THE MECHANISM HAS ALWAYS BEEN RUNNING. NOBODY REMEMBERS STARTING IT.'"},
-		{"pos": Vector2(16, 6), "text": "This alcove ticks in 7/8 time. So does your pulse, now."},
+		{"pos": Vector2(2, 1), "text": "A brass plaque: 'THE MECHANISM HAS ALWAYS BEEN RUNNING. NOBODY REMEMBERS STARTING IT.'"},
+		{"pos": Vector2(7, 2), "text": "This alcove ticks in 7/8 time. So does your pulse, now."},
 	],
 	2: [
-		{"pos": Vector2(6, 10), "text": "Two levers, two vaults. The Mechanism insists this is a choice, and technically it is."},
+		{"pos": Vector2(7, 2), "text": "Two levers, two vaults. The Mechanism insists this is a choice, and technically it is."},
 	],
 	3: [
-		{"pos": Vector2(9, 10), "text": "The portal pads skip half the catwalk. Nobody has explained why they were ever installed on a floor with a catwalk."},
+		{"pos": Vector2(5, 4), "text": "The portal pads skip half the catwalk. Nobody has explained why they were ever installed on a floor with a catwalk."},
 	],
 }
 

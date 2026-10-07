@@ -24,60 +24,60 @@ func _init() -> void:
 	# SuburbanUnderground; see 40c54ae for the underlying class of bug.)
 	defeat_cutscene_flags = ["cutscene_flag_warden_industrial_defeated"]
 
-	# struktured 2026-09-06: 4 floors now — sealed D-room forces the plate (encounter) -> lever-vault floor -> portal catwalk -> warden.
+	# struktured 2026-10-07 ("we need more maze complexity"): entrance maze -> plate-forced encounter + lever-vault maze -> portal-catwalk maze -> warden. Corridors are 1-wide throughout; the old open rooms are gone.
 	floor_layouts = {
 		1: [
 			"MMMMMMMMMMMMMMMMMMMM",
+			"MU................MM",
+			"MMMMMMMMMMMMMMM.M.MM",
+			"M.....MTM...M.....MM",
+			"M.MMM.M.M.M.M.MMMMMM",
+			"M...M...M.M...MD..MM",
+			"M.M.M.MMM.MMMMMM..MM",
+			"MTM.M.M...M.......MM",
+			"MMM.M.M.MMMMM.MMM.MM",
+			"M...M.M.....M.M...MM",
+			"M.M.M.MMMMM.M.MMMMMM",
+			"M...M.M.....M.....MM",
+			"M.M.M.M.MMMMMMMMM.MM",
+			"M.M...............MM",
 			"MMMMMMMMMMMMMMMMMMMM",
-			"MM...MMMMMMMMMM...MM",
-			"MM.T.MMMMMMMMMM.T.MM",
-			"MM...MMMMMMMMMM...MM",
-			"MMM.MMMMMMMMMMMM.MMM",
-			"M..................M",
-			"M..................M",
-			"MMMMMMMMM..MMMMMMMMM",
-			"MMMMMMMMM.U.MMMMMMMM",
-			"MMMMMMMMM...MMMMMMMM",
-			"MMMMMMMMM..MMMMMMMMM",
-			"M..................M",
-			"M.........D........M",
-			"M..................M",
 			"MMMMMMMMMMMMMMMMMMMM",
 		],
 		2: [
 			"MMMMMMMMMMMMMMMMMMMM",
 			"MMMMMMMMMMMMMMMMMMMM",
-			"MM......MMMMMMMMMMMM",
-			"MM..D...MMMMMMMMMMMM",
-			"MM......MMMMMMMMMMMM",
-			"MMMMSMMMMMMMMMMMMMMM",
-			"M..................M",
-			"M..................M",
-			"M..................M",
-			"M..................M",
-			"M.............U....M",
-			"M..............MMM.M",
-			"M............L.MTM.M",
-			"M..............MMM.M",
-			"M..................M",
+			"MM..............SMMM",
+			"MM.MMMMM.MMM.MMMMMMM",
+			"MM.....M.M.M....LMTM",
+			"MMMMMM.M.M.MMMMM.MMM",
+			"MM..UM.M.....M...MMM",
+			"MM.MMM.MMMMMMM.M.MMM",
+			"MM...M.M.......M.MMM",
+			"MM.M.M.M.MMMMMMM.MMM",
+			"MM.M.M.M...MDM...MMM",
+			"MM.M.M.MMM.M...M.MMM",
+			"MM.M.......M.....MMM",
+			"MMMMMMMMMMMMMMMMMMMM",
+			"MMMMMMMMMMMMMMMMMMMM",
 			"MMMMMMMMMMMMMMMMMMMM",
 		],
 		3: [
 			"MMMMMMMMMMMMMMMMMMMM",
-			"M..................M",
-			"M..................M",
-			"M..................M",
-			"M.............U....M",
-			"M..................M",
-			"M..................M",
-			"M..a............a..M",
-			"M..................M",
-			"M..................M",
-			"M..................M",
-			"M..................M",
-			"M...D..............M",
-			"M..................M",
-			"M..................M",
+			"MaMU.....aM.......MM",
+			"M.MMM.M.MMM.MMMMM.MM",
+			"M...M.M.........M.MM",
+			"MMM.M.MMMMMMMMMMM.MM",
+			"M.M.M.M...M.......MM",
+			"M.M.M.M.M.M.MMMMM.MM",
+			"M.M.....M...M.....MM",
+			"M.M.MMMMMMMMM.MMMMMM",
+			"M.....M.....M.M...MM",
+			"M.MMM.M.M.M.M.M...MM",
+			"M...M.M.M.M.M.MDM.MM",
+			"MMM.M.M.M.MMM.MMM.MM",
+			"M...M...M.........MM",
+			"MMMMMMMMMMMMMMMMMMMM",
 			"MMMMMMMMMMMMMMMMMMMM",
 		],
 		4: [
@@ -101,9 +101,9 @@ func _init() -> void:
 	}
 
 	floor_spawn_points = {
-		1: {"entrance": Vector2(10, 12)},
-		2: {"entrance": Vector2(6, 3)},
-		3: {"entrance": Vector2(13, 12)},
+		1: {"entrance": Vector2(17, 6)},
+		2: {"entrance": Vector2(13, 12)},
+		3: {"entrance": Vector2(16, 10)},
 		4: {"entrance": Vector2(3, 7)},
 	}
 
@@ -114,10 +114,10 @@ func _init() -> void:
 		4: [],
 	}
 
-	# sw0: floor2's plate (4,5), the room's only exit -- unavoidable encounter. sw1: floor2's lever (13,12) -- optional bonus-vault door.
+	# sw0: floor2's plate (16,2) -- forces an encounter when crossed. sw1: floor2's lever (16,4) -- optional bonus-vault door.
 	switch_effects = {
 		"sw0": {"trap": "encounter"},
-		"sw1": {"flip": [[15, 12]]},
+		"sw1": {"flip": [[17, 4]]},
 	}
 	forced_item_chests = {
 		"assembly_core_f1_c1": "scrap_metal",
@@ -156,14 +156,14 @@ func _char_to_tile_type(char: String) -> int:
 
 const _LORE := {
 	1: [
-		{"pos": Vector2(3, 6), "text": "QUOTA REMINDER: the line does not stop for lunch. The line does not know what lunch is."},
-		{"pos": Vector2(16, 6), "text": "A defective unit was here. Management assures you it has been 'processed'."},
+		{"pos": Vector2(7, 4), "text": "QUOTA REMINDER: the line does not stop for lunch. The line does not know what lunch is."},
+		{"pos": Vector2(1, 6), "text": "A defective unit was here. Management assures you it has been 'processed'."},
 	],
 	2: [
-		{"pos": Vector2(3, 2), "text": "INSPECTION CHECKPOINT AHEAD. Compliance is not optional. Neither, it turns out, is the corridor."},
+		{"pos": Vector2(12, 11), "text": "INSPECTION CHECKPOINT AHEAD. Compliance is not optional. Neither, it turns out, is the corridor."},
 	],
 	3: [
-		{"pos": Vector2(9, 12), "text": "The express portal skips the line. Management would very much like to know how you found it."},
+		{"pos": Vector2(15, 10), "text": "The express portal skips the line. Management would very much like to know how you found it."},
 	],
 }
 

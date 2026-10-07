@@ -269,3 +269,137 @@ func test_every_trap_chest_key_matches_a_real_treasure_marker_and_the_real_count
 		var real_chests: int = placed.size() - (cave.trap_chests as Array).size()
 		assert_gte(real_chests, 2, "%s must keep at least two REAL (non-mimic) chests" % name)
 		assert_lte(real_chests, 3, "%s should keep 2-3 real chests, not turn into a loot pinata" % name)
+
+
+## ---- round 2: maze-complexity guard (struktured 2026-10-07, "we need more maze complexity") ----
+## Same shape as test_w1_dungeon_depth_solver.gd's round-3 guard, generalized to every
+## non-boss floor of the five W2-W6 dungeons. UNLIKE the W1 guard, no floor here is
+## required to be mazed by game design -- but the ticket asks for real mazes throughout,
+## so this guard holds every floor 1..total_floors-1 to the same bar: no undeclared 4x4
+## open area, at least 3 dead ends, and a plain-walk (no mechanics) shortest D<->U path at
+## least 1.5x the Manhattan distance. The boss floor (total_floors) is exempt by design --
+## CLAUDE.md: "Boss floors may stay open arenas."
+##
+## Proven to red on the pre-2026-10-07 open-room layouts: reverting the five dungeon
+## scripts to their prior committed versions and running this test fails with dozens of
+## undeclared 4x4 opens, near-zero dead ends, and ratios pinned at ~1.0 (a straight-line
+## walk from D to U through an open hall). Measured by hand before authoring this guard.
+
+const DIRS4 := [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]
+
+
+func _in_declared_chamber(cave, floor_num: int, x: int, y: int) -> bool:
+	for entry in (cave.puzzle_chambers.get(floor_num, []) as Array):
+		var rect: Array = entry["rect"]
+		var x0: int = int(rect[0])
+		var y0: int = int(rect[1])
+		var x1: int = int(rect[2])
+		var y1: int = int(rect[3])
+		if x >= x0 and y >= y0 and x + 3 <= x1 and y + 3 <= y1:
+			return true
+	return false
+
+
+func _open4_spots(cave, floor_num: int) -> Array:
+	var rows: Array = cave.floor_layouts[floor_num]
+	var h: int = rows.size()
+	var w: int = (rows[0] as String).length()
+	var spots: Array = []
+	for y in range(h - 3):
+		for x in range(w - 3):
+			var all_open := true
+			for dy in range(4):
+				for dx in range(4):
+					if (rows[y + dy] as String)[x + dx] == "M":
+						all_open = false
+						break
+				if not all_open:
+					break
+			if all_open and not _in_declared_chamber(cave, floor_num, x, y):
+				spots.append(Vector2i(x, y))
+	return spots
+
+
+## Cells with exactly one open orthogonal neighbor -- plain maze-shape dead ends.
+func _dead_end_cells(cave, floor_num: int) -> Array:
+	var rows: Array = cave.floor_layouts[floor_num]
+	var out: Array = []
+	for y in range(rows.size()):
+		var row: String = rows[y]
+		for x in range(row.length()):
+			if row[x] == "M":
+				continue
+			var n := 0
+			for d in DIRS4:
+				if _char_here(cave, floor_num, Vector2i(x, y) + d) not in ["", "M"]:
+					n += 1
+			if n == 1:
+				out.append(Vector2i(x, y))
+	return out
+
+
+## Plain D->U walk, no mechanics -- every switch/lever's locked side stays locked. These
+## five dungeons' main routes never need a switch (round-1's "still reachable with X
+## disabled" guarantees that), so the plain-walk distance IS the real solved distance.
+func _plain_shortest_path(cave, floor_num: int) -> int:
+	var start := _find_char(cave, floor_num, "D")
+	var goal := _find_char(cave, floor_num, "U")
+	if start == Vector2i(-1, -1) or goal == Vector2i(-1, -1):
+		return -1
+	var seen := {start: true}
+	var queue: Array = [[start, 0]]
+	var head := 0
+	while head < queue.size():
+		var state: Array = queue[head]
+		head += 1
+		var cell: Vector2i = state[0]
+		var d: int = state[1]
+		if cell == goal:
+			return d
+		for dir in DIRS4:
+			var n: Vector2i = cell + dir
+			var ch := _char_here(cave, floor_num, n)
+			if ch == "" or ch == "M":
+				continue
+			if seen.has(n):
+				continue
+			seen[n] = true
+			queue.append([n, d + 1])
+	return -1
+
+
+func test_every_w2_w6_non_boss_floor_is_a_real_maze() -> void:
+	var checked := 0
+	for name in DUNGEONS:
+		var cave = _build(DUNGEONS[name])
+		for f in range(1, int(cave.total_floors)):
+			checked += 1
+			var open4 := _open4_spots(cave, f)
+			assert_eq(open4, [] as Array,
+				"%s floor %d: %d undeclared 4x4-or-larger open area(s) at %s -- not a maze; declare a puzzle_chambers entry if this is deliberate" % [name, f, open4.size(), str(open4)])
+
+			var deads := _dead_end_cells(cave, f)
+			assert_gte(deads.size(), 3, "%s floor %d: only %d dead end(s), need at least 3" % [name, f, deads.size()])
+
+			var start := _find_char(cave, f, "D")
+			var goal := _find_char(cave, f, "U")
+			assert_ne(start, Vector2i(-1, -1), "%s floor %d: no 'D' marker" % [name, f])
+			assert_ne(goal, Vector2i(-1, -1), "%s floor %d: no 'U' marker" % [name, f])
+			var man: int = absi(start.x - goal.x) + absi(start.y - goal.y)
+			var dist := _plain_shortest_path(cave, f)
+			assert_gt(dist, -1, "%s floor %d: D cannot reach U at all by plain walking" % [name, f])
+			assert_gte(float(dist), 1.5 * float(man),
+				"%s floor %d: shortest plain-walk path is %d tiles, Manhattan is %d -- ratio %.2f is below the 1.5x maze-complexity floor" % [name, f, dist, man, float(dist) / float(man) if man > 0 else 0.0])
+	assert_gt(checked, 10, "checked %d non-boss floors -- too few to be the sweep" % checked)
+
+
+## Boss floors (the arena) are exempt by design -- CONTROL proving this guard does not
+## accidentally also demand a maze there, which would contradict "boss floors may stay
+## open arenas".
+func test_boss_floors_remain_exempt_from_the_maze_guard() -> void:
+	for name in DUNGEONS:
+		var cave = _build(DUNGEONS[name])
+		var boss_floor: int = int(cave.total_floors)
+		var open4 := _open4_spots(cave, boss_floor)
+		assert_gt(open4.size(), 0,
+			"CONTROL: %s's boss floor %d has no open area at all -- the exemption is untested" % [name, boss_floor])

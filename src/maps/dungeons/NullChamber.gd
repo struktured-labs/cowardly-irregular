@@ -18,42 +18,43 @@ func _init() -> void:
 	overworld_exit_map = "abstract_overworld"
 	unlock_story_flag = "w6_dungeon_cleared"
 
-	# struktured 2026-09-06: stays modest by design (Vertex Apex is the true minimalist finale) -- a portal pair, a lever, a maybe-chest.
+	# struktured 2026-10-07 ("we need more maze complexity"): stays modest by design (Vertex
+	# Apex is the true minimalist finale) -- a portal pair, a lever, a maybe-chest, now real mazes.
 	floor_layouts = {
 		1: [
 			"MMMMMMMMMMMMMMMMMMMM",
-			"M..a............a..M",
-			"M..................M",
-			"M..T...............M",
-			"M..................M",
-			"M..................M",
-			"M.......M.M........M",
-			"M.......MUM........M",
-			"M.......M.M........M",
-			"M.......M.M........M",
-			"M..................M",
-			"M..................M",
-			"M..................M",
-			"M.........D........M",
-			"M..................M",
+			"MU..M............aMM",
+			"MMM.M.MMMMMMM.M.MMMM",
+			"M...M.....M...M...MM",
+			"M.MMMMMMM.M.M.MMM.MM",
+			"M...........M...M.MM",
+			"MMMMMMMMMMMMMMM.M.MM",
+			"M..........aM...M.MM",
+			"M.MMMMM.M.MMM.MMM.MM",
+			"M.M.....M.M...MT..MM",
+			"M.M.MMMMM.M.MMMMM.MM",
+			"M...M.....M.M.....MM",
+			"M...MMMMMMM.M.M.M.MM",
+			"MDM...........M...MM",
+			"MMMMMMMMMMMMMMMMMMMM",
 			"MMMMMMMMMMMMMMMMMMMM",
 		],
 		2: [
 			"MMMMMMMMMMMMMMMMMMMM",
-			"M..................M",
-			"M..................M",
-			"M..T......D........M",
-			"M..................M",
-			"M..................M",
-			"M..................M",
-			"M..................M",
-			"M..................M",
-			"M..................M",
-			"M.............MMM..M",
-			"M...........L.MTM..M",
-			"M........U....MMM..M",
-			"M..................M",
-			"M..................M",
+			"MMMMMMMMMMMMMMMMMMMM",
+			"MMT..M..........LMTM",
+			"MMMM.M..MM.MMMMM.MMM",
+			"MM...MDM.........MMM",
+			"MM.M.MMM.MMMMMMMMMMM",
+			"MM.M...M.........MMM",
+			"MM.M.M.MMMMMMMMM.MMM",
+			"MM.M.M.........M.MMM",
+			"MM.M.MMMMMMMMM.M.MMM",
+			"MM.M.....M.M...M.MMM",
+			"MM.MMMMM.M.M.MMM.MMM",
+			"MM..U....M.......MMM",
+			"MMMMMMMMMMMMMMMMMMMM",
+			"MMMMMMMMMMMMMMMMMMMM",
 			"MMMMMMMMMMMMMMMMMMMM",
 		],
 		3: [
@@ -77,8 +78,8 @@ func _init() -> void:
 	}
 
 	floor_spawn_points = {
-		1: {"entrance": Vector2(10, 12)},
-		2: {"entrance": Vector2(5, 7)},
+		1: {"entrance": Vector2(2, 12)},
+		2: {"entrance": Vector2(7, 3)},
 		3: {"entrance": Vector2(3, 7)},
 	}
 
@@ -88,8 +89,8 @@ func _init() -> void:
 		3: [],
 	}
 
-	# sw0: floor2's lever (12,11) -- flips open the door at (14,11) to an uncatalogued chest. Entirely optional.
-	switch_effects = {"sw0": {"flip": [[14, 11]]}}
+	# sw0: floor2's lever (16,2) -- flips open the door at (17,2) to an uncatalogued chest. Entirely optional.
+	switch_effects = {"sw0": {"flip": [[17, 2]]}}
 	trap_chests = ["null_chamber_f2_c1"]
 	forced_item_chests = {
 		"null_chamber_f1_c0": "void_dust",
@@ -134,10 +135,10 @@ func _get_ambient_fx_theme() -> String:
 
 const _LORE := {
 	1: [
-		{"pos": Vector2(10, 3), "text": "Two doors that lead to the same nowhere. Take whichever one you already took."},
+		{"pos": Vector2(1, 12), "text": "Two doors that lead to the same nowhere. Take whichever one you already took."},
 	],
 	2: [
-		{"pos": Vector2(9, 8), "text": "A locked door implies a locked thing. The Curator finds this reasoning charming."},
+		{"pos": Vector2(6, 3), "text": "A locked door implies a locked thing. The Curator finds this reasoning charming."},
 	],
 	3: [
 		{"pos": Vector2(4, 7), "text": "You are the only thing in this room still being rendered."},

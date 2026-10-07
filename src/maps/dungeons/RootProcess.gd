@@ -25,60 +25,60 @@ func _init() -> void:
 	overworld_exit_map = "futuristic_overworld"
 	unlock_story_flag = "w5_dungeon_cleared"
 
-	# struktured 2026-09-06: 4 floors now — entrance -> wrap floor w/ a cross-floor portal + mimic -> lever-gated vault -> arbiter.
+	# struktured 2026-10-07 ("we need more maze complexity"): entrance maze -> branching kernel-page maze (portal pair + mimic) -> lever-gated vault maze -> arbiter. Corridors are 1-wide throughout; the old wrap-floor/open-hall shape is gone.
 	floor_layouts = {
 		1: [
 			"MMMMMMMMMMMMMMMMMMMM",
+			"MU....M.......M....M",
+			"MMMMM.M.MMMMM.M.M..M",
+			"M.....M...MT....MDMM",
+			"M.MMMMM.M.MMM.MMMMMM",
+			"M.MTM...M...M.M...MM",
+			"M.M.M.MMMMM.MMM.M.MM",
+			"M.M.......M.....M.MM",
+			"M.MMM.MMM.MMMMMMM.MM",
+			"M...M.....M...M...MM",
+			"MMM.MMMMM.M.M.M.MMMM",
+			"M...M.......M.M...MM",
+			"M.MMM.M.MMMMMMMMM.MM",
+			"M.................MM",
 			"MMMMMMMMMMMMMMMMMMMM",
-			"MM...MMMMMMMMMM...MM",
-			"MM.T.MMMMMMMMMM.T.MM",
-			"MM...MMMMMMMMMM...MM",
-			"MMM.MMMMMMMMMMMM.MMM",
-			"M..................M",
-			"M..................M",
-			"MMMMMMMMM..MMMMMMMMM",
-			"MMMMMMMMM.U.MMMMMMMM",
-			"MMMMMMMMM...MMMMMMMM",
-			"MMMMMMMMM..MMMMMMMMM",
-			"M..................M",
-			"M.........D........M",
-			"M..................M",
 			"MMMMMMMMMMMMMMMMMMMM",
 		],
 		2: [
-			"....................",
-			"....................",
-			".........M..........",
-			".....D..........b...",
-			"....M..........M....",
-			"....................",
-			"............M.......",
-			"..M.......T......M..",
-			"....................",
-			".......M............",
-			"....................",
-			"....M..........M....",
-			"...b..........U.....",
-			".........M..........",
-			"....................",
-			"....................",
+			"MMMMMMMMMMMMMMMMMMMM",
+			"MU....Mb..........MM",
+			"MMMMM.MMM.MMMMM.M.MM",
+			"M...M...MbM...MTM.MM",
+			"M.M.MMM.MMM.M.MMM.MM",
+			"M.M.M...M...M.....MM",
+			"MMM.M.MMM.MMMMMMM.MM",
+			"M.....M...M...M...MM",
+			"M.MMM.M.MMM.M.M.MMMM",
+			"M.....M.M.....M.M.MM",
+			"M.MMMMM.M.MMM.M.M.MM",
+			"M.M.....M.M...M...MM",
+			"M.M.MMMMM.M.M.MMM.MM",
+			"M...MD......M.....MM",
+			"MMMMMM..MMMMMMMMMMMM",
+			"MMMMMMMMMMMMMMMMMMMM",
 		],
 		3: [
 			"MMMMMMMMMMMMMMMMMMMM",
-			"M..................M",
-			"M..................M",
-			"M..................M",
-			"M..................M",
-			"M..................M",
-			"MMMM...............M",
-			"MMTM.L.............M",
-			"MM.M...M..MM.......M",
-			"MMMM...M.U.M.......M",
-			"M......M...M.......M",
-			"M......M..MM.......M",
-			"M....D.............M",
-			"M..................M",
-			"M..................M",
+			"MMMMMMMMMMMMMMMMMMMM",
+			"MMUM...........MDMMM",
+			"MM.M.MMMMM.MMM..LMTM",
+			"MM.M.M.....M.M...MMM",
+			"MM.MMM.MMM.M.M.M.MMM",
+			"MM.M...M.....M...MMM",
+			"MM.M.MMM.M.MMMMM.MMM",
+			"MM.M...M.M...M...MMM",
+			"MM.MMM.M.MMM.M.MMMMM",
+			"MM.M...M...M...M.MMM",
+			"MM.M.MMMMM.MMMMM.MMM",
+			"MM...............MMM",
+			"MMMMMMMMMMMMMMMMMMMM",
+			"MMMMMMMMMMMMMMMMMMMM",
 			"MMMMMMMMMMMMMMMMMMMM",
 		],
 		4: [
@@ -102,9 +102,9 @@ func _init() -> void:
 	}
 
 	floor_spawn_points = {
-		1: {"entrance": Vector2(10, 12)},
-		2: {"entrance": Vector2(10, 8)},
-		3: {"entrance": Vector2(9, 12)},
+		1: {"entrance": Vector2(18, 2)},
+		2: {"entrance": Vector2(7, 14)},
+		3: {"entrance": Vector2(16, 4)},
 		4: {"entrance": Vector2(3, 7)},
 	}
 
@@ -115,10 +115,9 @@ func _init() -> void:
 		4: [],
 	}
 
-	# Floor 2 is edge-wrapping memory; its 'b' pair connects nowhere the geometry implies -- a pointer into the wrong page.
-	wrap_floors = [2]
-	# sw0 is floor3's lever (5,7) -- flips open the vault door at (3,7). Optional.
-	switch_effects = {"sw0": {"flip": [[3, 7]]}}
+	# Floor 2's 'b' pair connects two branches of the page maze -- a pointer into the wrong page.
+	# sw0 is floor3's lever (16,3) -- flips open the vault door at (17,3). Optional.
+	switch_effects = {"sw0": {"flip": [[17, 3]]}}
 	trap_chests = ["root_process_f2_c0"]
 	forced_item_chests = {
 		"root_process_f1_c1": "corrupted_data",
@@ -165,14 +164,14 @@ func _get_ambient_fx_theme() -> String:
 
 const _LORE := {
 	1: [
-		{"pos": Vector2(3, 6), "text": "SEGMENTATION FAULT (core dumped somewhere behind you, probably)."},
-		{"pos": Vector2(16, 6), "text": "This memory page was freed and reused. You are standing in someone else's variable."},
+		{"pos": Vector2(12, 3), "text": "SEGMENTATION FAULT (core dumped somewhere behind you, probably)."},
+		{"pos": Vector2(3, 6), "text": "This memory page was freed and reused. You are standing in someone else's variable."},
 	],
 	2: [
-		{"pos": Vector2(10, 5), "text": "0xDEAD0002 -- the portal at the edge of this page dereferences somewhere it was never told to."},
+		{"pos": Vector2(6, 13), "text": "0xDEAD0002 -- the portal pair on this page dereferences somewhere it was never told to."},
 	],
 	3: [
-		{"pos": Vector2(5, 5), "text": "The lever's label has been garbage-collected. Pull anyway."},
+		{"pos": Vector2(16, 3), "text": "The lever's label has been garbage-collected. Pull anyway."},
 	],
 }
 
