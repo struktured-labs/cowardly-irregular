@@ -1534,6 +1534,8 @@ func _cycle_action_profile(direction: int) -> void:
 
 func _add_and_condition() -> void:
 	"""Add an AND condition to current row"""
+	if cursor_row < 0 or cursor_row >= rules.size():
+		return
 	var rule = rules[cursor_row]
 	var conditions = rule.get("conditions", [])
 
@@ -1551,6 +1553,8 @@ func _add_and_condition() -> void:
 
 func _add_action() -> void:
 	"""Add a new action to current rule"""
+	if cursor_row < 0 or cursor_row >= rules.size():
+		return
 	var rule = rules[cursor_row]
 	var conditions = rule.get("conditions", [])
 	var actions = rule.get("actions", [])
@@ -1619,6 +1623,8 @@ func _toggle_row_enabled() -> void:
 
 func _delete_current_cell() -> void:
 	"""Delete the current cell"""
+	if cursor_row < 0 or cursor_row >= rules.size():
+		return
 	var rule = rules[cursor_row]
 	var conditions = rule.get("conditions", [])
 	var actions = rule.get("actions", [])

@@ -10100,7 +10100,7 @@ func consumable_bag(user: Combatant) -> Array:
 	if not (user in player_party):
 		return [user]
 	var gl: Node = get_tree().root.get_node_or_null("GameLoop") if is_inside_tree() else null
-	if gl != null and bool(gl.get("_spotlight_duel_active")):
+	if gl != null and gl.get("_spotlight_duel_active") == true:
 		var saved: Variant = gl.get("_spotlight_saved_party")
 		if saved is Array and not (saved as Array).is_empty():
 			return saved
@@ -10110,7 +10110,7 @@ func consumable_bag(user: Combatant) -> Array:
 ## During a spotlight the battle party is the duelist. The bag is the benched roster's first member — the same pocket chests, shops, and quest rewards pay.
 func _drop_bag_holder(party: Array) -> Variant:
 	var gl: Node = get_tree().root.get_node_or_null("GameLoop") if is_inside_tree() else null
-	if gl != null and bool(gl.get("_spotlight_duel_active")):
+	if gl != null and gl.get("_spotlight_duel_active") == true:
 		var saved: Variant = gl.get("_spotlight_saved_party")
 		if saved is Array and not (saved as Array).is_empty():
 			var lead: Variant = (saved as Array)[0]
