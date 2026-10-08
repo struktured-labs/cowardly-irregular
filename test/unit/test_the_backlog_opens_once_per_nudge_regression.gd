@@ -185,7 +185,8 @@ func test_one_nudge_toggles_the_log_once_while_the_llm_thinks() -> void:
 func test_one_nudge_scrolls_the_open_log_once() -> void:
 	_two_lines()
 	for i in 30:
-		_box._record_in_backlog("Speaker%d" % i, "a backlog line, number %d, long enough to wrap" % i)
+		# Long enough to wrap several times: BACKLOG_MAX keeps 12, and at the true line pitch two-line entries barely scroll.
+		_box._record_in_backlog("Speaker%d" % i, "a backlog line, number %d, long enough to wrap across the panel more than once so the twelve kept entries overflow the log and leave real range to scroll back through" % i)
 	_box.open_backlog()
 	await _frames(6)
 	assert_true(_box.is_backlog_open(), "precondition: the log is open")
@@ -207,7 +208,7 @@ func test_one_nudge_scrolls_the_open_log_once() -> void:
 		"CutsceneDialogue must still expose _backlog_scroll — renamed, this arm aborts AFTER its " +
 		"asserts and scores green with the scroll never measured")
 	var start: int = _box._backlog_scroll.scroll_vertical
-	assert_gt(start, 100,
+	assert_gt(start, 160,
 		"ANTI-VACUITY: open_backlog scrolls to the end, so there must be range to scroll BACK " +
 		"through — read %d, and at 0 this arm cannot tell one scroll from four" % start)
 
