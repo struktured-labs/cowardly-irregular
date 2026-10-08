@@ -398,7 +398,7 @@ func _generate_map_for_floor(floor_num: int) -> void:
 		for x in range(MAP_WIDTH):
 			var char = row[x] if x < row.length() else "M"
 			var tile_type = _char_to_tile_type(char)
-			var atlas_coords = _get_atlas_coords(tile_type)
+			var atlas_coords = _get_atlas_coords_at(tile_type, Vector2i(x, y))
 			tile_map.set_cell(Vector2i(x, y), 0, atlas_coords)
 
 			if char == "U":
@@ -509,6 +509,12 @@ func _remap_wall_floor(char: String, wall_type: int, floor_type: int) -> int:
 
 func _get_atlas_coords(tile_type: int) -> Vector2i:
 	var tile_id = TileGeneratorScript.get_tile_id(tile_type)
+	return Vector2i(tile_id % 5, tile_id / 5)
+
+
+## Every floor cell drew the one CAVE_FLOOR tile, so its puddle and crystal fleck repeated on a 64px grid; pick a variant per cell, stable across rebuilds.
+func _get_atlas_coords_at(tile_type: int, cell: Vector2i) -> Vector2i:
+	var tile_id = TileGeneratorScript.get_tile_id_variant(tile_type, cell.x * 73856093 ^ cell.y * 19349663)
 	return Vector2i(tile_id % 5, tile_id / 5)
 
 
