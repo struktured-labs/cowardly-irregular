@@ -61,6 +61,8 @@ const DungeonLightingScript = preload("res://src/exploration/DungeonLighting.gd"
 
 var lighting: DungeonLighting
 var ambience: DungeonAmbience  # drips and crystal glints, as every DragonCave has had since .605
+## Cells a sign or prop already claimed on this floor (Signpost.floor_spot).
+var _sign_taken: Dictionary = {}
 var spawn_points: Dictionary = {}
 
 ## Floor layouts (U = stairs up, D = stairs down, B = boss)
@@ -381,11 +383,11 @@ func _setup_transitions_for_floor(floor_num: int) -> void:
 	for child in transitions.get_children():
 		child.queue_free()
 
-	var sign_taken := Signpost.taken_by_spawns(spawn_points, TILE_SIZE)
+	_sign_taken = Signpost.taken_by_spawns(spawn_points, TILE_SIZE)
 	for entry in (_LORE.get(floor_num, []) as Array):
 		var sign := Signpost.new()
 		sign.sign_text = str(entry["text"])
-		sign.position = Signpost.floor_spot(floor_layouts.get(floor_num, floor_layouts[1]), Vector2i(entry["pos"] as Vector2), TILE_SIZE, sign_taken)
+		sign.position = Signpost.floor_spot(floor_layouts.get(floor_num, floor_layouts[1]), Vector2i(entry["pos"] as Vector2), TILE_SIZE, _sign_taken)
 		transitions.add_child(sign)
 
 	# Place treasure chest per floor (progressively better loot)
@@ -749,7 +751,8 @@ func _place_floor_treasure(floor_num: int) -> void:
 	chest.gold_amount = data["gold"]
 	# Place near stairs_up or center of floor
 	var pos = spawn_points.get("stairs_up", Vector2(8 * TILE_SIZE, 5 * TILE_SIZE))
-	chest.position = pos + Vector2(TILE_SIZE * 3, 0)
+	# A fixed three-tiles-right put floors 3 and 4's chests inside a wall.
+	chest.position = Signpost.floor_spot(floor_layouts.get(floor_num, floor_layouts[1]), Vector2i(pos / TILE_SIZE) + Vector2i(3, 0), TILE_SIZE, _sign_taken)
 	chest.chest_opened.connect(func(_contents):
 		GameState.set_story_flag("chest_" + data["id"])
 	)

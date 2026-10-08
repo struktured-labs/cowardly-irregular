@@ -179,7 +179,8 @@ const SIGN_GROUND := [".", "i"]
 ## Dungeon signs were set at a cell's top-left CORNER (pos * TILE_SIZE), straddling four cells and half in walls or stairs;
 ## stand one centred on the nearest unclaimed plain-floor cell to its mark instead. Marks the chosen cell in `taken`.
 static func floor_spot(rows: Array, mark: Vector2i, tile: int, taken: Dictionary) -> Vector2:
-	for r in 6:
+	# Whole-map reach: the Ice cave's boss-stair corner has no plain floor within 6 cells (slide ice and lava all round).
+	for r in 48:
 		for dy in range(-r, r + 1):
 			for dx in range(-r, r + 1):
 				if maxi(absi(dx), absi(dy)) != r:

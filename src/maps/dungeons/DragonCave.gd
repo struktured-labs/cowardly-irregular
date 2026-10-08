@@ -521,6 +521,8 @@ func _get_atlas_coords_at(tile_type: int, cell: Vector2i) -> Vector2i:
 func _setup_transitions_for_floor(floor_num: int) -> void:
 	for child in transitions.get_children():
 		child.queue_free()
+	# One claimed-cell set per floor, shared by chest, signs and crystal so no two props stand on one cell.
+	_sign_taken = Signpost.taken_by_spawns(spawn_points, TILE_SIZE)
 
 	# Treasure chests at each T marker on the floor (plus boss-floor drop)
 	_place_floor_treasure(floor_num)
@@ -933,7 +935,8 @@ func _place_floor_treasure(floor_num: int) -> void:
 
 	# Fallback: if no T markers, drop one chest near stairs_up (legacy behavior)
 	if treasure_positions.is_empty() and floor_num < total_floors:
-		treasure_positions.append(spawn_points.get("stairs_up", Vector2(8 * TILE_SIZE, 4 * TILE_SIZE)) + Vector2(TILE_SIZE * 2, TILE_SIZE))
+		var near: Vector2 = spawn_points.get("stairs_up", Vector2(8 * TILE_SIZE, 4 * TILE_SIZE))
+		treasure_positions.append(_sign_position(_cell_of(near) + Vector2i(2, 1), floor_num))
 
 	# Loot variety: alternate gold / item by position index and floor depth
 	var item_pool = ["potion", "ether", "hi_potion", "antidote"]
@@ -1000,7 +1003,6 @@ func _place_hidden_passages(floor_num: int) -> void:
 
 func _place_dungeon_signposts(floor_num: int) -> void:
 	"""Orientation helpers inside the cave: floor number, stair direction, boss warning."""
-	_sign_taken = Signpost.taken_by_spawns(spawn_points, TILE_SIZE)
 	var floor_label = Signpost.new()
 	floor_label.sign_text = "%s · Floor %d / %d" % [cave_name, floor_num, total_floors]
 	var default_pos = spawn_points.get("default", Vector2(10 * TILE_SIZE, 12 * TILE_SIZE))
