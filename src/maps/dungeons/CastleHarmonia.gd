@@ -279,3 +279,8 @@ func _trigger_warden_battle() -> void:
 		"dungeon_flag": WARDEN_FLAG,
 	}
 	battle_triggered.emit([WARDEN_ID])
+
+
+## Ambient FX: castle halls: dust motes, not cave crystals.
+func _get_ambient_fx_theme() -> String:
+	return "castle"

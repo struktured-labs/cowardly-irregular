@@ -173,3 +173,8 @@ func _setup_transitions_for_floor(floor_num: int) -> void:
 		sign.sign_text = str(entry["text"])
 		sign.position = _sign_position(Vector2i(entry["pos"] as Vector2), floor_num)
 		transitions.add_child(sign)
+
+
+## Ambient FX: storm drain: drips and puddle glints, not cave crystals.
+func _get_ambient_fx_theme() -> String:
+	return "drain"

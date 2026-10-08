@@ -39,6 +39,8 @@ func _process(delta: float) -> void:
 				spr.modulate.a = clampf(1.0 - fall / 22.0, 0.0, 1.0)
 			"crystal":
 				spr.modulate.a = 0.55 + 0.3 * sin(_t * 1.8 + phase)
+			"puddle":
+				spr.modulate.a = 0.25 + 0.35 * maxf(0.0, sin(_t * 1.3 + phase))
 			"vent":
 				var rise: float = fmod(_t * 11.0 + phase * 8.0, 24.0)
 				spr.position.y = e["base_pos"].y - rise
@@ -63,7 +65,7 @@ func _add(kind: String, pos: Vector2, color: Color, size: Vector2, phase: float)
 
 
 ## Scans a floor's ASCII rows and seeds a bounded, deterministic set of ambient props.
-## theme in {"cave","lava","frost","storm","shadow","steam"}. Layout-agnostic: reads
+## theme in {"cave","lava","frost","storm","shadow","steam","drain","castle"}. Layout-agnostic: reads
 ## whatever rows the floor actually has, so a redesigned floor picks this up for free.
 func rebuild_for_floor(rows: Array, map_w: int, map_h: int, theme: String, seed_salt: int) -> void:
 	clear()
@@ -94,6 +96,15 @@ func rebuild_for_floor(rows: Array, map_w: int, map_h: int, theme: String, seed_
 				var h := (x * 37 + y * 19 + seed_salt) % 97
 				if theme == "shadow" and h % 29 == 0:
 					_add("mote", Vector2(cx, cy), Color(0.35, 0.15, 0.45, 0.6), Vector2(4, 4), phase)
+				# Off-cave themes had no floor branch, so a storm drain and a factory grew cave crystals.
+				elif theme == "steam" and (h % 31 == 0 or h % 37 == 0):
+					_add("vent", Vector2(cx, cy), Color(0.85, 0.85, 0.85, 0.35), Vector2(5, 10), phase)
+				elif theme == "drain" and (h % 31 == 0 or h % 37 == 0):
+					_add("puddle", Vector2(cx, cy + 8), Color(0.45, 0.65, 0.85, 0.6), Vector2(12, 3), phase)
+				elif theme == "castle" and (h % 31 == 0 or h % 37 == 0):
+					_add("mote", Vector2(cx, cy), Color(0.9, 0.85, 0.7, 0.45), Vector2(3, 3), phase)
+				elif theme in ["steam", "drain", "castle"]:
+					pass
 				elif h % 31 == 0:
 					_add("crystal", Vector2(cx, cy - 6), Color(0.6, 0.8, 1.0, 0.65), Vector2(5, 5), phase)
 				elif h % 37 == 0:
