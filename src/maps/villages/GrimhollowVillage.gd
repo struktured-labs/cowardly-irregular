@@ -338,7 +338,7 @@ func _setup_npcs() -> void:
 		"quest_w1_grimhollow_foremans_ledger_accepted", "Read the ledger",
 		"'Reallocated.' The word sits in a column that used to say WHERE. Not the foreman's hand — the letters lean like a court clerk's.",
 		"The mine office. A ledger lies open, turned to a page nobody here wrote.",
-		Vector2(21 * TILE_SIZE,10 * TILE_SIZE))
+		Vector2(21.5 * TILE_SIZE,10.5 * TILE_SIZE))
 
 
 ## Arbiter of Steel — L8 masterite guarding the mine approach as a

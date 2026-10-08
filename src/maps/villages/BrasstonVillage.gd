@@ -343,12 +343,12 @@ func _setup_npcs() -> void:
 		"quest_world3_delay_in_everything_gear_examined", "Examine the gear cluster",
 		"The replacement gear is one unit too large. Exactly one gear-tooth of lag per cycle — seven seconds, every cycle, for six months. Too precise to be an accident.",
 		"A maintenance panel stands open at Sprocket's shoulder. The cluster inside turns a half-beat behind the rest.",
-		Vector2(11 * TILE_SIZE,7 * TILE_SIZE))
+		Vector2(11.5 * TILE_SIZE,7.5 * TILE_SIZE))
 	_add_quest_examine_point("world3_delay_in_everything",
 		"quest_world3_delay_in_everything_record_found", "Read the depot record",
 		"The entry is there, in the margin, in a clerk's hand: 'substituted — standard gauge unavailable. Approved: Calibrant Logistics.' The order date precedes the maintenance incident.",
 		"The supply depot's ledger, open to a page of part numbers nobody has needed to read in six months.",
-		Vector2(13 * TILE_SIZE,14 * TILE_SIZE))
+		Vector2(13.5 * TILE_SIZE,14.5 * TILE_SIZE))
 
 	# Clem's route: 5 stops on the map's own `f` gas-lamp tiles, at the landmarks his offer names
 	# (mill, Copper Street twice, skip the arcade, bridge, back to the arcade). Each reads as a

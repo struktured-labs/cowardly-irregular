@@ -355,7 +355,7 @@ func _setup_npcs() -> void:
 		"quest_w1_eldertree_rangers_empty_house_accepted", "Search the rangers' house",
 		"Every arrow in the quiver sits at the same rotation. Rangers never store arrows that way. Someone who has never held a bow TIDIED this.",
 		"The rangers' house, at the top of the path. Empty, and in perfect order.",
-		Vector2(22 * TILE_SIZE,5 * TILE_SIZE))
+		Vector2(22.5 * TILE_SIZE,5.5 * TILE_SIZE))
 
 
 ## Tempo of the Hunt — L7 masterite ranging Eldertree's forest edge after

@@ -367,7 +367,7 @@ func _setup_npcs() -> void:
 		"quest_w1_ironhaven_flame_speaks_wrong_accepted", "Listen to the flame",
 		"It leans east, and it SPEAKS — fragments, in a measured beat. Not a flame's cadence. A court's.",
 		"Six hundred years it burned straight up. Now it leans, and the lean has a direction.",
-		Vector2(16 * TILE_SIZE,4 * TILE_SIZE))
+		Vector2(16.5 * TILE_SIZE,4.5 * TILE_SIZE))
 
 
 ## Curator of the Flame — L8 masterite tending the warped temple flame in
