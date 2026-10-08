@@ -105,7 +105,12 @@ func _open(spec: Dictionary) -> Node:
 			for i in range(FILL):
 				if spec["fill"][member] == "node":
 					var c := Label.new()  # the menus' rows are Labels; a bare Control aborted _highlight before it scrolled
-					add_child_autofree(c)
+					# Rows live inside the menu's scroll in the game; outside it, ensure_control_visible logs "Must be an ancestor".
+					var scroll = m.get("_scroll")
+					if scroll is ScrollContainer:
+						(scroll.get_child(0) if scroll.get_child_count() > 0 else scroll).add_child(c)
+					else:
+						add_child_autofree(c)
 					arr.append(c)
 				else:
 					arr.append(_row(i))

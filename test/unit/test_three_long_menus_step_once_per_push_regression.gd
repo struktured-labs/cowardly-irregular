@@ -134,9 +134,14 @@ func _party_chat() -> Node:
 	m.visible = true
 	m._chats = []
 	m._row_nodes = []
+	# Rows live inside the menu's scroll in the game; unparented they leaked and ensure_control_visible logged "Must be an ancestor".
+	var scroll = m.get("_scroll")
+	var host: Node = (scroll.get_child(0) if scroll.get_child_count() > 0 else scroll) if scroll is ScrollContainer else m
 	for i in range(10):
 		m._chats.append({"id": "c_%d" % i, "title": "C %d" % i, "world": 1})
-		m._row_nodes.append(Label.new())
+		var row := Label.new()
+		host.add_child(row)
+		m._row_nodes.append(row)
 	m._selection = 0
 	return m
 
