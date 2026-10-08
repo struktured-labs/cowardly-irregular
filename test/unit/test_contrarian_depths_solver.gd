@@ -104,6 +104,7 @@ func _solve(allow_portals: bool, disabled_switches: Array = []) -> Dictionary:
 	var queue: Array = [[1, start_cell.x, start_cell.y, 0]]
 	var boss_cell := _boss_cell()
 	var reached_boss := false
+	var visited_cells := {}
 	var head := 0
 	while head < queue.size():
 		var state: Array = queue[head]
@@ -111,6 +112,7 @@ func _solve(allow_portals: bool, disabled_switches: Array = []) -> Dictionary:
 		var f: int = state[0]
 		var cell := Vector2i(state[1], state[2])
 		var mask: int = state[3]
+		visited_cells["%d:%d:%d" % [f, cell.x, cell.y]] = true
 		if f == _cave.total_floors and cell == boss_cell:
 			reached_boss = true
 		var active := _active_dict(mask, bit_index)
@@ -144,7 +146,7 @@ func _solve(allow_portals: bool, disabled_switches: Array = []) -> Dictionary:
 				var dcell: Vector2i = dest["cell"]
 				_offer(queue, seen, [int(dest["floor"]), dcell.x, dcell.y, mask])
 
-	return {"reached_boss": reached_boss, "states_explored": queue.size()}
+	return {"reached_boss": reached_boss, "states_explored": queue.size(), "visited_cells": visited_cells}
 
 
 func test_control_boss_cell_and_entrance_are_found() -> void:
@@ -219,3 +221,33 @@ func test_every_trap_chest_key_matches_a_real_treasure_marker() -> void:
 		assert_true(placed.has(key), "trap_chests entry '%s' has no matching T marker" % key)
 	var real_chests: int = placed.size() - (_cave.trap_chests as Array).size()
 	assert_gte(real_chests, 2, "the showcase dungeon must keep at least two REAL (non-mimic) chests")
+
+
+## Same guard as both depth-solver files: every chest, crystal, sign and quest point on every floor must stand on or
+## beside a cell the solved route visits. Its portals cross floors, so a plain per-floor flood calls two chests sealed.
+func test_every_prop_stands_where_the_solver_can_reach_it() -> void:
+	var visited: Dictionary = _solve(true)["visited_cells"]
+	assert_false(visited.has("1:0:0"), "CONTROL: the border corner is not visited, so 'reached' can say no")
+	var vp := SubViewport.new()
+	vp.size = Vector2i(64, 64)
+	add_child_autofree(vp)
+	var live = ContrarianDepthsScript.new()
+	vp.add_child(live)
+	await get_tree().process_frame
+	var tile: int = live.TILE_SIZE
+	var checked := 0
+	for f in range(1, int(live.total_floors) + 1):
+		live._generate_map_for_floor(f)
+		live._setup_transitions_for_floor(f)
+		for c in live.transitions.get_children():
+			if c.is_queued_for_deletion() or not (c is SavePoint or c is TreasureChest or c is QuestExaminePoint or c is Signpost):
+				continue
+			checked += 1
+			var cell := Vector2i(c.position / tile)
+			var ok := false
+			for d in [Vector2i.ZERO] + DIRS:
+				if visited.has("%d:%d:%d" % [f, cell.x + d.x, cell.y + d.y]):
+					ok = true
+			var kind: String = c.get_script().get_global_name() if c.get_script() else c.get_class()
+			assert_true(ok, "floor %d %s at %s stands where no solved route reaches" % [f, kind, str(cell)])
+	assert_gt(checked, 8, "CONTROL: the walk reached real props (%d)" % checked)

@@ -53,7 +53,7 @@ func test_confirm_on_the_piano_plays_it() -> void:
 	_face(player, _away_from_stairs(player))
 	var feet: Array = _zones_at(player, player.global_position)
 	assert_true(feet.has("PianoInteractable") and feet.has("LockedStairs"),
-		"the player is standing in the piano/stairs overlap — otherwise the press never meets the swallow, got %s" % feet)
+		"the player is standing in the piano/stairs overlap — otherwise the press never meets the swallow, got %s" % [feet])
 	if not (feet.has("PianoInteractable") and feet.has("LockedStairs")):
 		return
 	_press_confirm()
@@ -72,9 +72,9 @@ func test_facing_the_stairs_still_shows_the_locked_message() -> void:
 	_face(player, _toward_stairs(player))
 	var aimed: Array = _zones_at(player, _probe_point(player))
 	assert_true(aimed.has("LockedStairs"),
-		"facing the stairs must put the probe in the locked zone, got %s" % aimed)
+		"facing the stairs must put the probe in the locked zone, got %s" % [aimed])
 	assert_false(aimed.has("PianoInteractable"),
-		"that probe must clear the piano box, or nearest-of-both still picks the piano underfoot, got %s" % aimed)
+		"that probe must clear the piano box, or nearest-of-both still picks the piano underfoot, got %s" % [aimed])
 	if not aimed.has("LockedStairs") or aimed.has("PianoInteractable"):
 		return
 	_press_confirm()

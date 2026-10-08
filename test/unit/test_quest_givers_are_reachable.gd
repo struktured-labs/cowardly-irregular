@@ -383,8 +383,8 @@ func test_the_dead_end_list_still_describes_the_corpus() -> void:
 	unplaced.sort()
 	gone.sort()
 
-	assert_eq(fixed, [], "GOOD NEWS, STALE LIST: every custom step of %s now has an emitter — the quest is "
-		+ "finishable. Delete its line from DEAD_END_CUSTOM_STEPS." % [fixed])
-	assert_eq(unplaced, [], "%s is listed as a startable dead end but its giver is no longer placed, so it "
-		+ "cannot be started at all. That is a different debt — move it to AUTHORED_AHEAD, or restore the giver." % [unplaced])
+	assert_eq(fixed, [], ("GOOD NEWS, STALE LIST: every custom step of %s now has an emitter — the quest is "
+		+ "finishable. Delete its line from DEAD_END_CUSTOM_STEPS.") % [fixed])
+	assert_eq(unplaced, [], ("%s is listed as a startable dead end but its giver is no longer placed, so it "
+		+ "cannot be started at all. That is a different debt — move it to AUTHORED_AHEAD, or restore the giver.") % [unplaced])
 	assert_eq(gone, [], "DEAD_END_CUSTOM_STEPS names a quest that no longer exists: %s. Delete the line." % [gone])
