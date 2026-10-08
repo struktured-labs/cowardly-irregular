@@ -125,14 +125,21 @@ func test_contrarian_depths_lever_opens_the_vault_wall() -> void:
 ## Floor 1 uses those same coordinates for the sealed wing's west wall. A thrown
 ## lever was painting that wall into floor on the way back upstairs, so the wing
 ## the portal exists to reach could be walked into from the hall.
+## Walls draw one of several variant tiles, so "is a wall" is the TYPE behind the cell's atlas slot, not one coordinate.
+func _type_at(cave: Node, cell: Vector2i) -> int:
+	var gen := TileGeneratorClass.new()
+	var ac: Vector2i = cave.tile_map.get_cell_atlas_coords(cell)
+	return int(gen._get_tile_order()[ac.y * gen._get_atlas_dimensions().x + ac.x])
+
+
 func test_the_vault_lever_does_not_unseal_the_wing_upstairs() -> void:
 	var cave := _build_cave()
 	await get_tree().process_frame
 	var wing := Vector2i(14, 3)
 	var wing_b := Vector2i(14, 4)
 	cave._generate_map_for_floor(1)
-	var wall_atlas: Vector2i = cave._get_atlas_coords(cave._char_to_tile_type("M"))
-	assert_eq(cave.tile_map.get_cell_atlas_coords(wing), wall_atlas,
+	var wall_type: int = cave._char_to_tile_type("M")
+	assert_eq(_type_at(cave, wing), wall_type,
 		"control: the sealed wing's west wall starts as a wall")
 	cave._generate_map_for_floor(3)
 	cave._puzzle_layer.activate_switch("sw2")
@@ -141,9 +148,9 @@ func test_the_vault_lever_does_not_unseal_the_wing_upstairs() -> void:
 		"control: the floor 3 vault door must still open")
 	# Leaving floor 3 and coming back to floor 1 rebuilds that floor from the persisted switches.
 	cave._generate_map_for_floor(1)
-	assert_eq(cave.tile_map.get_cell_atlas_coords(wing), wall_atlas,
+	assert_eq(_type_at(cave, wing), wall_type,
 		"returning to floor 1 after the floor 3 lever must leave the sealed wing walled off")
-	assert_eq(cave.tile_map.get_cell_atlas_coords(wing_b), wall_atlas,
+	assert_eq(_type_at(cave, wing_b), wall_type,
 		"the second sealed-wing cell must stay a wall too")
 	var active: Dictionary = cave._puzzle_layer._active
 	assert_false(DungeonPuzzleLayer.is_walkable(cave.floor_layouts, cave.switch_effects, 1, wing, active),

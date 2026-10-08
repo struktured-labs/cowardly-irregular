@@ -3,7 +3,7 @@ extends GutTest
 ## struktured asked for "visual depth" in the dungeons. Every W1 cave floor cell drew the ONE CAVE_FLOOR atlas tile, so
 ## its puddle and crystal fleck repeated on an exact 64px grid and a maze floor read as a dotted sheet (W2's storm drain:
 ## one blue puddle per tile). Floors now pick
-## a variant per cell (stable across rebuilds); walls stay single because HiddenPassage disguises itself as the base wall.
+## a variant per cell (stable across rebuilds); walls too, since HiddenPassage draws its own disguise.
 
 const FireCave := preload("res://src/maps/dungeons/FireDragonCave.gd")
 
@@ -52,19 +52,31 @@ func test_a_cave_floor_uses_several_tiles() -> void:
 	assert_gt(floors.size(), 3, "floor cells draw from several tiles, not one stamp: %s" % str(floors))
 
 
-func test_the_walls_stay_one_tile_so_a_hidden_passage_still_hides() -> void:
+func test_the_walls_vary_too() -> void:
+	# HiddenPassage draws its own procedural disguise (with a deliberate crack tell), never the atlas wall, so walls can vary.
 	var cave := _cave()
 	await get_tree().process_frame
 	var walls := _coords_of(cave, TileGenerator.TileType.CAVE_WALL)
-	assert_gt(walls.size(), 0, "CONTROL: the floor has walls")
-	assert_eq(walls.size(), 1, "every wall is the base tile HiddenPassage copies: %s" % str(walls))
+	assert_gt(walls.size(), 3, "wall cells draw from several tiles, not one stamp: %s" % str(walls))
+
+
+func test_every_wall_variant_blocks_movement() -> void:
+	var gen := TileGenerator.new()
+	var ts: TileSet = gen.create_tileset()
+	var atlas: TileSetAtlasSource = ts.get_source(ts.get_source_id(0))
+	var cols: int = gen._get_atlas_dimensions().x
+	var ids: Array = TileGenerator.VARIANT_IDS.get(TileGenerator.TileType.CAVE_WALL, [])
+	assert_gt(ids.size(), 3, "CONTROL: cave wall has variant slots to check")
+	for id in ids:
+		var td: TileData = atlas.get_tile_data(Vector2i(id % cols, id / cols), 0)
+		assert_gt(td.get_collision_polygons_count(0) if td else 0, 0, "wall slot %d carries collision" % id)
 
 
 func test_the_floor_variants_actually_look_different() -> void:
 	var gen := TileGenerator.new()
 	var order: Array = gen._get_tile_order()
 	var variants: Dictionary = gen._get_tile_variants()
-	for t in [TileGenerator.TileType.CAVE_FLOOR, TileGenerator.TileType.SUBURBAN_FLOOR]:
+	for t in [TileGenerator.TileType.CAVE_FLOOR, TileGenerator.TileType.SUBURBAN_FLOOR, TileGenerator.TileType.CAVE_WALL]:
 		var ids: Array = TileGenerator.VARIANT_IDS.get(t, [])
 		assert_gt(ids.size(), 2, "CONTROL: floor %d has variant slots" % t)
 		var seen := {}
