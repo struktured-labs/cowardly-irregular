@@ -80,6 +80,7 @@ func show_zone(zone_id: String) -> void:
 
 	var display_name = ZONE_NAMES.get(zone_id, zone_id.replace("_", " ").capitalize())
 	_label.text = display_name
+	_fit_banner_to(display_name)
 
 	# Cancel previous animation
 	if _tween and _tween.is_valid():
@@ -98,3 +99,19 @@ func reserved_rect() -> Rect2:
 	if _bg == null or not is_instance_valid(_bg) or _bg.modulate.a <= 0.01:
 		return Rect2()
 	return _bg.get_rect()
+
+
+## Side padding around the zone name inside its backing strip.
+const BANNER_PAD: float = 48.0
+
+
+## A full-width strip on layer 90 darkened the minimap and the quest tracker on every zone change; the backing now
+## spans just the name, centred, so the corners stay clear.
+func _fit_banner_to(text: String) -> void:
+	var font: Font = _label.get_theme_font("font")
+	var w: float = font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, _label.get_theme_font_size("font_size")).x if font else 320.0
+	var half: float = w * 0.5 + BANNER_PAD
+	_bg.anchor_left = 0.5
+	_bg.anchor_right = 0.5
+	_bg.offset_left = -half
+	_bg.offset_right = half
