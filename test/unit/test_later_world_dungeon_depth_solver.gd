@@ -111,6 +111,7 @@ func _solve(cave, allow_portals: bool, disabled_switches: Array = []) -> Diction
 	var queue: Array = [[1, start_cell.x, start_cell.y, 0]]
 	var boss_cell := _boss_cell(cave)
 	var reached_boss := false
+	var visited_cells := {}
 	var head := 0
 	while head < queue.size():
 		var state: Array = queue[head]
@@ -118,6 +119,7 @@ func _solve(cave, allow_portals: bool, disabled_switches: Array = []) -> Diction
 		var f: int = state[0]
 		var cell := Vector2i(state[1], state[2])
 		var mask: int = state[3]
+		visited_cells["%d:%d:%d" % [f, cell.x, cell.y]] = true
 		if f == cave.total_floors and cell == boss_cell:
 			reached_boss = true
 		var active := _active_dict(mask, bit_index)
@@ -151,7 +153,7 @@ func _solve(cave, allow_portals: bool, disabled_switches: Array = []) -> Diction
 				var dcell: Vector2i = dest["cell"]
 				_offer(queue, seen, [int(dest["floor"]), dcell.x, dcell.y, mask])
 
-	return {"reached_boss": reached_boss, "states_explored": queue.size()}
+	return {"reached_boss": reached_boss, "states_explored": queue.size(), "visited_cells": visited_cells}
 
 
 func test_every_dungeon_meets_the_floor_depth_requirement() -> void:
@@ -403,3 +405,34 @@ func test_boss_floors_remain_exempt_from_the_maze_guard() -> void:
 		var open4 := _open4_spots(cave, boss_floor)
 		assert_gt(open4.size(), 0,
 			"CONTROL: %s's boss floor %d has no open area at all -- the exemption is untested" % [name, boss_floor])
+
+
+## Same guard as the W1 solver file: every chest, crystal, sign and quest point of every floor must stand on or beside
+## a cell the solved route visits -- placed on open floor is not the same as reachable.
+func test_every_prop_stands_where_the_solver_can_reach_it() -> void:
+	var checked := 0
+	for name in DUNGEONS:
+		var visited: Dictionary = _solve(_build(DUNGEONS[name]), true)["visited_cells"]
+		assert_false(visited.has("1:0:0"), "CONTROL: %s's border corner is not visited, so 'reached' can say no" % name)
+		var vp := SubViewport.new()
+		vp.size = Vector2i(64, 64)
+		add_child_autofree(vp)
+		var live = load(DUNGEONS[name]).new()
+		vp.add_child(live)
+		await get_tree().process_frame
+		var tile: int = live.TILE_SIZE
+		for f in range(1, int(live.total_floors) + 1):
+			live._generate_map_for_floor(f)
+			live._setup_transitions_for_floor(f)
+			for c in live.transitions.get_children():
+				if c.is_queued_for_deletion() or not (c is SavePoint or c is TreasureChest or c is QuestExaminePoint or c is Signpost):
+					continue
+				checked += 1
+				var cell := Vector2i(c.position / tile)
+				var ok := false
+				for d in [Vector2i.ZERO] + DIRS:
+					if visited.has("%d:%d:%d" % [f, cell.x + d.x, cell.y + d.y]):
+						ok = true
+				var kind: String = c.get_script().get_global_name() if c.get_script() else c.get_class()
+				assert_true(ok, "%s floor %d %s at %s stands where no solved route reaches" % [name, f, kind, str(cell)])
+	assert_gt(checked, 40, "CONTROL: the walk reached real props (%d)" % checked)

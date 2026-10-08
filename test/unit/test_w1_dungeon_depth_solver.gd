@@ -864,3 +864,36 @@ func test_every_w1_dragon_cave_required_floor_is_a_real_maze() -> void:
 			assert_gte(float(dist), 1.5 * float(man),
 				"%s floor %d: shortest solved path is %d tiles, Manhattan is %d -- ratio %.2f is below the 1.5x maze-complexity floor" % [cave_id, f, dist, man, float(dist) / float(man) if man > 0 else 0.0])
 	assert_eq(checked, 12, "CONTROL: expected exactly 12 required floors (4 caves x floors 2-4), checked %d" % checked)
+
+
+## Standing on a floor cell is not being reachable: a chest, crystal, sign or quest point placed on the nearest open
+## cell to its mark could sit in a pocket no puzzle opens. With the full mechanic set solved, every prop of every
+## floor must stand on or beside a cell the solver visits. (A plain flood that ignores levers reds ~20 times on
+## reward rooms the levers DO open; that is why this lives beside the solver.)
+func test_every_prop_stands_where_the_solver_can_reach_it() -> void:
+	var checked := 0
+	for id in DUNGEONS:
+		var visited: Dictionary = _solve(_caves[id], true)["visited_cells"]
+		assert_false(visited.has("1:0:0"), "CONTROL: %s's border corner is not visited, so 'reached' can say no" % id)
+		var vp := SubViewport.new()
+		vp.size = Vector2i(64, 64)
+		add_child_autofree(vp)
+		var live = load(DUNGEON_DIR + DUNGEONS[id]).new()
+		vp.add_child(live)
+		await get_tree().process_frame
+		var tile: int = live.TILE_SIZE
+		for f in range(1, int(live.total_floors) + 1):
+			live._generate_map_for_floor(f)
+			live._setup_transitions_for_floor(f)
+			for c in live.transitions.get_children():
+				if c.is_queued_for_deletion() or not (c is SavePoint or c is TreasureChest or c is QuestExaminePoint or c is Signpost):
+					continue
+				checked += 1
+				var cell := Vector2i(c.position / tile)
+				var ok := false
+				for d in [Vector2i.ZERO] + DIRS:
+					if visited.has("%d:%d:%d" % [f, cell.x + d.x, cell.y + d.y]):
+						ok = true
+				var kind: String = c.get_script().get_global_name() if c.get_script() else c.get_class()
+				assert_true(ok, "%s floor %d %s at %s stands where no solved route reaches" % [id, f, kind, str(cell)])
+	assert_gt(checked, 40, "CONTROL: the walk reached real props (%d)" % checked)
