@@ -44,12 +44,23 @@ func get_alive_enemies() -> Array[Combatant]:
 ## chain a leak path left behind (struktured's 2026-08-14 cap: bouncing between players stacked
 ## three menus + an orphaned tooltip) so every future leak self-heals at the next menu spawn.
 func _sweep_stray_menus() -> void:
+	for stray in _stray_menus():
+		print("[MENU-NULL] t=%dms path=stray_sweep freeing=%s" % [Time.get_ticks_msec(), _instance_id(stray)])
+		stray.force_close()
+
+
+## A menu close_win98_menu just closed stays in the group until its queue_free lands; it is not a leak, and logging it as one hid real leaks (977 lines in his sessions).
+func _stray_menus() -> Array:
+	var out: Array = []
 	if not _scene or not is_instance_valid(_scene):
-		return
+		return out
 	for stray in _scene.get_tree().get_nodes_in_group("win98_menus"):
-		if is_instance_valid(stray) and _scene.is_ancestor_of(stray):
-			print("[MENU-NULL] t=%dms path=stray_sweep freeing=%s" % [Time.get_ticks_msec(), _instance_id(stray)])
-			stray.force_close()
+		if not is_instance_valid(stray) or not _scene.is_ancestor_of(stray):
+			continue
+		if stray.is_queued_for_deletion() or stray.get("_is_closing") == true:
+			continue
+		out.append(stray)
+	return out
 
 
 func show_win98_command_menu(combatant: Combatant) -> void:
