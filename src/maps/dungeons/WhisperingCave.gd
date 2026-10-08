@@ -381,10 +381,11 @@ func _setup_transitions_for_floor(floor_num: int) -> void:
 	for child in transitions.get_children():
 		child.queue_free()
 
+	var sign_taken := Signpost.taken_by_spawns(spawn_points, TILE_SIZE)
 	for entry in (_LORE.get(floor_num, []) as Array):
 		var sign := Signpost.new()
 		sign.sign_text = str(entry["text"])
-		sign.position = (entry["pos"] as Vector2) * TILE_SIZE
+		sign.position = Signpost.floor_spot(floor_layouts.get(floor_num, floor_layouts[1]), Vector2i(entry["pos"] as Vector2), TILE_SIZE, sign_taken)
 		transitions.add_child(sign)
 
 	# Place treasure chest per floor (progressively better loot)

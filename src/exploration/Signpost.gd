@@ -170,3 +170,35 @@ func _on_body_exited(body: Node2D) -> void:
 	if body.has_method("set_can_move") or body.is_in_group("player"):
 		_player_nearby = false
 		_label.visible = false
+
+
+## Layout chars a sign may stand on: plain floor and decorative ice ("i" never slides; slide ice "j" is a puzzle cell).
+const SIGN_GROUND := [".", "i"]
+
+
+## Dungeon signs were set at a cell's top-left CORNER (pos * TILE_SIZE), straddling four cells and half in walls or stairs;
+## stand one centred on the nearest unclaimed plain-floor cell to its mark instead. Marks the chosen cell in `taken`.
+static func floor_spot(rows: Array, mark: Vector2i, tile: int, taken: Dictionary) -> Vector2:
+	for r in 6:
+		for dy in range(-r, r + 1):
+			for dx in range(-r, r + 1):
+				if maxi(absi(dx), absi(dy)) != r:
+					continue
+				var c := mark + Vector2i(dx, dy)
+				if c.y < 0 or c.y >= rows.size() or c.x < 0 or c.x >= str(rows[c.y]).length():
+					continue
+				if not (str(rows[c.y])[c.x] in SIGN_GROUND) or taken.has(c):
+					continue
+				taken[c] = true
+				return (Vector2(c) + Vector2(0.5, 0.5)) * tile
+	return (Vector2(mark) + Vector2(0.5, 0.5)) * tile
+
+
+## The cells a sign must never take: every spawn point (stairs, chests, the landing spot).
+static func taken_by_spawns(spawn_points: Dictionary, tile: int) -> Dictionary:
+	var taken := {}
+	for k in spawn_points:
+		var p: Variant = spawn_points[k]
+		if p is Vector2:
+			taken[Vector2i((p as Vector2) / tile)] = true
+	return taken

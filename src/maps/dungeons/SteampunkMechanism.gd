@@ -190,7 +190,7 @@ func _setup_transitions_for_floor(floor_num: int) -> void:
 	for entry in (_LORE.get(floor_num, []) as Array):
 		var sign := Signpost.new()
 		sign.sign_text = str(entry["text"])
-		sign.position = (entry["pos"] as Vector2) * TILE_SIZE
+		sign.position = _sign_position(Vector2i(entry["pos"] as Vector2), floor_num)
 		transitions.add_child(sign)
 	if floor_num != 2:
 		return

@@ -999,10 +999,11 @@ func _place_hidden_passages(floor_num: int) -> void:
 
 func _place_dungeon_signposts(floor_num: int) -> void:
 	"""Orientation helpers inside the cave: floor number, stair direction, boss warning."""
+	_sign_taken = Signpost.taken_by_spawns(spawn_points, TILE_SIZE)
 	var floor_label = Signpost.new()
 	floor_label.sign_text = "%s · Floor %d / %d" % [cave_name, floor_num, total_floors]
 	var default_pos = spawn_points.get("default", Vector2(10 * TILE_SIZE, 12 * TILE_SIZE))
-	floor_label.position = default_pos + Vector2(0, -TILE_SIZE)
+	floor_label.position = _sign_position(_cell_of(default_pos) + Vector2i(0, -1), floor_num)
 	transitions.add_child(floor_label)
 
 	if spawn_points.has("stairs_up"):
@@ -1011,7 +1012,7 @@ func _place_dungeon_signposts(floor_num: int) -> void:
 			up_sign.sign_text = "▲ Boss floor ahead ⚠"
 		else:
 			up_sign.sign_text = "▲ Floor %d" % (floor_num + 1)
-		up_sign.position = spawn_points["stairs_up"] + Vector2(-TILE_SIZE * 2, 0)
+		up_sign.position = _sign_position(_cell_of(spawn_points["stairs_up"]) + Vector2i(-2, 0), floor_num)
 		transitions.add_child(up_sign)
 
 	if spawn_points.has("stairs_down"):
@@ -1020,8 +1021,21 @@ func _place_dungeon_signposts(floor_num: int) -> void:
 			down_sign.sign_text = "▼ Exit to Overworld"
 		else:
 			down_sign.sign_text = "▼ Floor %d" % (floor_num - 1)
-		down_sign.position = spawn_points["stairs_down"] + Vector2(-TILE_SIZE * 2, 0)
+		down_sign.position = _sign_position(_cell_of(spawn_points["stairs_down"]) + Vector2i(-2, 0), floor_num)
 		transitions.add_child(down_sign)
+
+
+var _sign_taken: Dictionary = {}
+
+
+## Centre of the nearest free plain-floor cell to `mark` on this floor (see Signpost.floor_spot); subclasses' lore signs use it too.
+func _sign_position(mark: Vector2i, floor_num: int) -> Vector2:
+	var rows: Array = floor_layouts.get(floor_num, floor_layouts.get(1, []))
+	return Signpost.floor_spot(rows, mark, TILE_SIZE, _sign_taken)
+
+
+func _cell_of(px: Vector2) -> Vector2i:
+	return Vector2i(px / TILE_SIZE)
 
 
 # (Tick 105: _on_boss_defeated removed. It was dead code with no caller in
