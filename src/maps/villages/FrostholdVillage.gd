@@ -296,7 +296,8 @@ func _setup_npcs() -> void:
 	npcs.add_child(helga)
 
 	# Scholar Fynn (lore)
-	var fynn = _create_npc("Scholar Fynn", "scholar", Vector2(6 * TILE_SIZE,13 * TILE_SIZE), [
+	# (6,13) was the Warden Hut door's own tile: he stood in the doorway. Two cells west, same row.
+	var fynn = _create_npc("Scholar Fynn", "scholar", Vector2(4 * TILE_SIZE,13 * TILE_SIZE), [
 		"Legend says four dragons guard four elemental scales.",
 		"Collect them all and... actually, nobody remembers what happens next.",
 		"The ancient texts just say 'TODO: implement endgame.'",

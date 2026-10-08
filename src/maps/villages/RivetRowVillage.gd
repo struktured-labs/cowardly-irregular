@@ -295,7 +295,8 @@ func _setup_npcs() -> void:
 	npcs.add_child(dorrit)
 
 	# Madame Orrery — giver for world4_deviation_report. Same merchant, W4 consulting office.
-	var orrery = _create_npc("Madame Orrery", "mysterious", Vector2(8 * TILE_SIZE,12 * TILE_SIZE), [
+	# (8,12) was the Union Hall door's press zone, under its gate; one cell west, same row.
+	var orrery = _create_npc("Madame Orrery", "mysterious", Vector2(7 * TILE_SIZE,12 * TILE_SIZE), [
 		"Close the door. Doors are the last technology in this building that still works for the occupant.",
 		"I sold goods across worlds. Here they gave me a title and an office and called it a promotion.",
 		"'Consultant.' It means they file what I write and never read it.",

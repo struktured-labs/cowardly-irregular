@@ -339,7 +339,8 @@ func _setup_npcs() -> void:
 		"I don't like keeping the list. I keep it anyway. Somebody should.",
 		"Lava Lager's still warm. Everything here is warm. You're the good kind today."
 	]
-	var ember = _create_npc("Barkeep Ember", "villager", Vector2(6 * TILE_SIZE,16 * TILE_SIZE), _ember_post if _after_cave_done else _ember_pre)
+	# (6,16) sat inside the Strike Registry door's press zone; two cells east, same row.
+	var ember = _create_npc("Barkeep Ember", "villager", Vector2(8 * TILE_SIZE,16 * TILE_SIZE), _ember_post if _after_cave_done else _ember_pre)
 	npcs.add_child(ember)
 
 	# Mysterious Stranger (foreshadowing)
