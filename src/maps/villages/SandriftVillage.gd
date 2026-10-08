@@ -179,7 +179,8 @@ func _setup_buildings() -> void:
 	bazaar_weapons.shop_name = "Bazaar Arms"
 	bazaar_weapons.shop_type = VillageShopScript.ShopType.BLACKSMITH
 	bazaar_weapons.keeper_name = "Dune"
-	bazaar_weapons.position = Vector2(17 * TILE_SIZE,7.5 * TILE_SIZE)
+	# (17,7.5) is the Rain Ledger door's press zone and its exit spawn; two cells east, same front row.
+	bazaar_weapons.position = Vector2(19 * TILE_SIZE,7.5 * TILE_SIZE)
 	buildings.add_child(bazaar_weapons)
 
 	# === GLASSMAKER'S WORKSHOP DOOR ===

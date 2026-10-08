@@ -5,7 +5,8 @@ const MapScripts := preload("res://test/unit/helpers/map_scripts.gd")
 
 ## An interior door's press zone is a 2 x 1.5-tile box on the approach below its gate. Frosthold authored Scholar
 ## Fynn on the Warden Hut door's own tile, (6, 13): he stood in the doorway, and a press there went to whichever of
-## the two the nearest-wins router picked. Every village is built; no talking NPC may stand inside a door's zone.
+## the two the nearest-wins router picked. Every village is built; no talking NPC -- nor shop, chest, save point or
+## examine point (Sandrift's weapons stall stood on the Rain Ledger door's zone and exit spawn) -- may stand in one.
 
 const VILLAGE_DIR := "res://src/maps/villages"
 const BODY_REACH := 8.0
@@ -15,7 +16,7 @@ func _collect(n: Node, doors: Array, npcs: Array) -> void:
 	for c in n.get_children():
 		if c is AreaTransition and c.get("require_interaction") == true:
 			doors.append(c)
-		elif c.has_method("get_npc_id"):
+		elif c.has_method("get_npc_id") or c is VillageShop or c is TreasureChest or c is SavePoint or c is QuestExaminePoint:
 			npcs.append(c)
 		_collect(c, doors, npcs)
 
@@ -54,10 +55,11 @@ func test_no_villager_stands_in_a_doors_press_zone() -> void:
 				# A villager's body is ~half a tile: standing on the zone's edge still puts it in the doorway.
 				var p: Vector2 = (n as Node2D).global_position
 				if z.grow(BODY_REACH).has_point(p):
-					inside.append("%s: %s in %s" % [path.get_file(), str(n.get("npc_name")), d.name])
+					var who = n.get("npc_name") if n.has_method("get_npc_id") else n.get_script().get_global_name()
+					inside.append("%s: %s @%s in %s" % [path.get_file(), str(who), str((n as Node2D).global_position / 32.0), d.name])
 	assert_gt(villages, 10, "CONTROL: the walk built the villages (%d)" % villages)
 	assert_gt(doors_seen, 15, "CONTROL: interior doors with a press zone were found (%d)" % doors_seen)
-	assert_eq(inside, [], "a villager stands in a doorway: %s" % [inside])
+	assert_eq(inside, [], "an interactable stands in a doorway: %s" % [inside])
 
 
 func after_all() -> void:
