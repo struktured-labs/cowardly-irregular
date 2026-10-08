@@ -536,7 +536,8 @@ func _setup_transitions_for_floor(floor_num: int) -> void:
 		var save_pt = SavePoint.new()
 		var anchor = "stairs_up" if floor_num == 1 else "stairs_up"
 		var pos = spawn_points.get(anchor, Vector2(6 * TILE_SIZE, 6 * TILE_SIZE))
-		save_pt.position = pos + Vector2(-TILE_SIZE * 2, 0)
+		# A fixed two-tiles-left landed in a wall or the map border in 7 maze floors, some the rest stop before a boss.
+		save_pt.position = _sign_position(_cell_of(pos) + Vector2i(-2, 0), floor_num)
 		save_pt.save_requested.connect(func():
 			if SaveSystem and SaveSystem.has_method("quick_save"):
 				SaveSystem.quick_save()
