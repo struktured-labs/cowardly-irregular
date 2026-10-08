@@ -23,6 +23,7 @@ var _prompt_layer: CanvasLayer
 
 
 func _ready() -> void:
+	add_to_group(Mode7Prompt.INFO_GROUP)
 	add_to_group(SIGN_GROUP)
 	_setup_sprite()
 	_setup_collision()
@@ -129,6 +130,11 @@ func _process(_delta: float) -> void:
 		_label.visible = _player_nearby and not _a_nearer_sign_has(_near_player)
 		_prompt_layer = null
 		_layout_flat.call_deferred()
+	Mode7Prompt.share_info_row(self, _label, InteractGeometry.is_mode7())
+
+
+func _info_row_label() -> CanvasItem:
+	return _label
 
 
 func _a_nearer_sign_has(player: Node2D) -> bool:

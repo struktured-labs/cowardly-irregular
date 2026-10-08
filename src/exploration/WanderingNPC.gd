@@ -79,6 +79,7 @@ const HEAVY_TOP_SPRITE_Y_OFFSET: float = 4.0
 
 
 func _ready() -> void:
+	add_to_group(Mode7Prompt.INFO_GROUP)
 	_setup_sprite()
 	_setup_collision()
 	_setup_label()
@@ -114,6 +115,11 @@ func _drive_line_prompt() -> void:
 	elif _prompt_layer != null:
 		Mode7Prompt.drop(self, _prompt_layer, _label, FLAT_LABEL_OFFSET, FLAT_LABEL_FONT)
 		_prompt_layer = null
+	Mode7Prompt.share_info_row(self, _label, InteractGeometry.is_mode7())
+
+
+func _info_row_label() -> CanvasItem:
+	return _label
 
 
 func _process(delta: float) -> void:

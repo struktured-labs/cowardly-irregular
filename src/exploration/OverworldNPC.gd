@@ -190,6 +190,7 @@ static var _persona_cache_loaded: bool = false
 
 
 func _ready() -> void:
+	add_to_group(Mode7Prompt.INFO_GROUP)
 	# Wave D: hydrate persona & fallback lines from data/cutscenes/
 	# npc_showcase_personas.json for dynamic-opt-in showcase NPCs (design
 	# doc :157). Must run BEFORE sprite generation so the resolved persona
@@ -336,6 +337,11 @@ func _drive_name_prompt() -> void:
 	elif _prompt_layer != null:
 		Mode7Prompt.drop(self, _prompt_layer, name_label, FLAT_NAME_OFFSET, FLAT_NAME_FONT)
 		_prompt_layer = null
+	Mode7Prompt.share_info_row(self, name_label, InteractGeometry.is_mode7())
+
+
+func _info_row_label() -> CanvasItem:
+	return name_label
 
 
 func _process(delta: float) -> void:

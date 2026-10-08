@@ -89,3 +89,33 @@ static func style_interact_prompt(label: Label) -> void:
 	label.add_theme_constant_override("shadow_offset_x", 1)
 	label.add_theme_constant_override("shadow_offset_y", 1)
 	pin_above_sprites(label)
+
+
+## Every ROW_INFO owner (NPC names, wanderer remarks, signs) lifts its label to ONE screen row, so two in range drew
+## on top of each other ("Guard Paulsen" over a second name in W4). Owners join this group and implement
+## `_info_row_label()`; only the one nearest the player draws, the rest are muted (self_modulate) until it leaves.
+const INFO_GROUP := &"mode7_info_row"
+
+
+static func owns_info_row(owner: Node2D) -> bool:
+	if not owner.is_inside_tree():
+		return true
+	var player := owner.get_tree().get_first_node_in_group("player") as Node2D
+	if player == null:
+		return true
+	var mine: float = owner.global_position.distance_to(player.global_position)
+	for other in owner.get_tree().get_nodes_in_group(INFO_GROUP):
+		if other == owner or not is_instance_valid(other) or not other.has_method("_info_row_label"):
+			continue
+		var l = other._info_row_label()
+		if not (l is CanvasItem) or not (l as CanvasItem).is_visible_in_tree():
+			continue
+		var theirs: float = (other as Node2D).global_position.distance_to(player.global_position)
+		if theirs < mine - 0.5 or (absf(theirs - mine) <= 0.5 and other.get_instance_id() < owner.get_instance_id()):
+			return false
+	return true
+
+
+## Draws `label` on the shared info row only while `owner` holds it; restores full alpha when not in Mode 7.
+static func share_info_row(owner: Node2D, label: CanvasItem, in_mode7: bool) -> void:
+	label.self_modulate.a = 1.0 if (not in_mode7 or owns_info_row(owner)) else 0.0
