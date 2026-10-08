@@ -1,7 +1,8 @@
 extends GutTest
 
 ## struktured asked for "visual depth" in the dungeons. Every W1 cave floor cell drew the ONE CAVE_FLOOR atlas tile, so
-## its puddle and crystal fleck repeated on an exact 64px grid and a maze floor read as a dotted sheet. Floors now pick
+## its puddle and crystal fleck repeated on an exact 64px grid and a maze floor read as a dotted sheet (W2's storm drain:
+## one blue puddle per tile). Floors now pick
 ## a variant per cell (stable across rebuilds); walls stay single because HiddenPassage disguises itself as the base wall.
 
 const FireCave := preload("res://src/maps/dungeons/FireDragonCave.gd")
@@ -61,12 +62,26 @@ func test_the_walls_stay_one_tile_so_a_hidden_passage_still_hides() -> void:
 
 func test_the_floor_variants_actually_look_different() -> void:
 	var gen := TileGenerator.new()
-	var ids: Array = TileGenerator.VARIANT_IDS.get(TileGenerator.TileType.CAVE_FLOOR, [])
-	assert_gt(ids.size(), 3, "CONTROL: cave floor has variant slots")
+	var order: Array = gen._get_tile_order()
 	var variants: Dictionary = gen._get_tile_variants()
-	var seen := {}
-	for id in ids:
-		var img := Image.create(TileGenerator.TILE_SIZE, TileGenerator.TILE_SIZE, false, Image.FORMAT_RGBA8)
-		gen._draw_tile(img, TileGenerator.TileType.CAVE_FLOOR, TileGenerator.PALETTES[TileGenerator.TileType.CAVE_FLOOR], int(variants.get(id, 0)))
-		seen[hash(img.get_data())] = true
-	assert_eq(seen.size(), ids.size(), "each variant slot draws a distinct tile")
+	for t in [TileGenerator.TileType.CAVE_FLOOR, TileGenerator.TileType.SUBURBAN_FLOOR]:
+		var ids: Array = TileGenerator.VARIANT_IDS.get(t, [])
+		assert_gt(ids.size(), 2, "CONTROL: floor %d has variant slots" % t)
+		var seen := {}
+		for id in ids:
+			assert_eq(order[id], t, "slot %d holds the floor it is listed for" % id)
+			var img := Image.create(TileGenerator.TILE_SIZE, TileGenerator.TILE_SIZE, false, Image.FORMAT_RGBA8)
+			gen._draw_tile(img, t, TileGenerator.PALETTES[t], int(variants.get(id, 0)))
+			seen[hash(img.get_data())] = true
+		assert_eq(seen.size(), ids.size(), "each variant slot of floor %d draws a distinct tile" % t)
+
+
+func test_a_storm_drain_floor_uses_several_tiles() -> void:
+	var vp := SubViewport.new()
+	vp.size = Vector2i(64, 64)
+	add_child_autofree(vp)
+	var cave = load("res://src/maps/dungeons/SuburbanUnderground.gd").new()
+	vp.add_child(cave)
+	await get_tree().process_frame
+	var floors := _coords_of(cave, TileGenerator.TileType.SUBURBAN_FLOOR)
+	assert_gt(floors.size(), 2, "the W2 storm drain's floor draws from several tiles: %s" % str(floors))

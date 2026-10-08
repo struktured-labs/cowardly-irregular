@@ -476,7 +476,9 @@ func _get_tile_order() -> Array:
 		# Row 9: Phase-4 per-world dungeon tiles (digital/abstract/suburban)
 		TileType.DIGITAL_FLOOR, TileType.ABSTRACT_WALL, TileType.ABSTRACT_FLOOR, TileType.SUBURBAN_WALL, TileType.SUBURBAN_FLOOR,
 		# Row 10: cave floor variants (walls stay single: HiddenPassage disguises itself as the base wall)
-		TileType.CAVE_FLOOR, TileType.CAVE_FLOOR, TileType.CAVE_FLOOR, TileType.CAVE_FLOOR, TileType.CAVE_FLOOR
+		TileType.CAVE_FLOOR, TileType.CAVE_FLOOR, TileType.CAVE_FLOOR, TileType.CAVE_FLOOR, TileType.CAVE_FLOOR,
+		# Row 11: storm-drain floor variants (the other later-world floors are seamless patterns or a deliberate grid)
+		TileType.SUBURBAN_FLOOR, TileType.SUBURBAN_FLOOR, TileType.SUBURBAN_FLOOR, TileType.SUBURBAN_FLOOR, TileType.SUBURBAN_FLOOR
 	]
 
 func _get_impassable_types() -> Array:
@@ -501,7 +503,7 @@ func _get_rough_terrain_speeds() -> Dictionary:
 	}
 
 func _get_atlas_dimensions() -> Vector2i:
-	return Vector2i(5, 11)
+	return Vector2i(5, 12)
 
 func _get_tile_variants() -> Dictionary:
 	return {
@@ -522,6 +524,7 @@ func _get_tile_variants() -> Dictionary:
 		38: 1,  # Village flower variant 1
 		39: 2,  # Village grass variant 2
 		50: 1, 51: 2, 52: 3, 53: 4, 54: 5,  # Cave floor variants
+		55: 1, 56: 2, 57: 4, 58: 7, 59: 10,  # Suburban floor variants
 	}
 
 func _get_debug_atlas_name() -> String:
@@ -3418,6 +3421,7 @@ const VARIANT_IDS := {
 	TileType.VILLAGE_DIRT: [32, 37],
 	TileType.VILLAGE_FLOWER: [33, 38],
 	TileType.CAVE_FLOOR: [10, 50, 51, 52, 53, 54],
+	TileType.SUBURBAN_FLOOR: [49, 55, 56, 57, 58, 59],
 }
 
 
