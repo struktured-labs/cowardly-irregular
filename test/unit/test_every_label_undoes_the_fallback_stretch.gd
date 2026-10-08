@@ -17,7 +17,7 @@ func _label(text: String, size: int = 13) -> Label:
 func test_a_new_label_gets_the_correction() -> void:
 	var l := _label("one\ntwo")
 	var want := FontFallbacks.cached_correction(l.get_theme_font("font"), 13)
-	assert_lt(want, 0, "SCOPE: the fallback chain really stretches a 13px line")
+	assert_lte(want, 0, "a correction only ever shortens a line (0 since the fallback metrics carry the base line box)")
 	assert_eq(l.get_theme_constant("line_spacing"), want, "a label entering the tree takes the line-spacing correction")
 
 

@@ -41,6 +41,7 @@ func test_the_description_lines_are_not_double_spaced() -> void:
 	assert_lt(pitch, int(sz * 1.6), "a %dpx description's line pitch must be ordinary, got %d" % [sz, pitch])
 
 
-func test_the_fallback_chain_really_stretches_lines() -> void:
+func test_the_fallback_chain_no_longer_stretches_lines() -> void:
 	var f: Font = ThemeDB.fallback_font
-	assert_lt(FontFallbacks.line_spacing_correction(f, 13), 0, "CONTROL: the symbol fallbacks make a 13px line taller than the base font")
+	assert_gt(f.fallbacks.size(), 0, "CONTROL: the symbol fallbacks are chained")
+	assert_eq(FontFallbacks.line_spacing_correction(f, 13), 0, "the symbol fallbacks carry the base font's line box, so a 13px line is not stretched")

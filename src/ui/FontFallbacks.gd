@@ -72,7 +72,7 @@ static func cached_correction(font: Font, font_size: int) -> int:
 	return int(_corrections[key])
 
 
-## How far the symbol fallbacks stretch a line past the base font's own height (NotoSansSymbols: 28 vs ~18 at 13px), as a line_spacing correction.
+## How far the fallbacks stretch a line past the base font's height, as a line_spacing correction; 0 since their metrics were rewritten to Open Sans's.
 static func line_spacing_correction(font: Font, font_size: int) -> int:
 	if font == null or font.fallbacks.is_empty():
 		return 0
@@ -84,7 +84,7 @@ static func line_spacing_correction(font: Font, font_size: int) -> int:
 static var _baseline_lifts: Dictionary = {}
 
 
-## How far to raise a top-aligned single-line Label so the BASE font's glyphs sit centred in a row of row_h (NotoSansSymbols lifts the chain ascent 18 -> 24 at 16px).
+## Where a top-aligned single-line Label sits so the BASE font's glyphs are centred in a row of row_h, whatever the fallbacks' metrics.
 static func row_label_y(font: Font, font_size: int, row_h: float) -> int:
 	if font == null:
 		return 0

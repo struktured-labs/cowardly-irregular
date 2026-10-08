@@ -2,7 +2,8 @@ extends GutTest
 
 ## struktured: "some of the fonts are crap in battle". Measured on a live battle: NotoSansSymbols lifts the fallback
 ## chain's ascent 18 -> 24 at 16px, so a top-aligned row Label put its baseline AT the 24px LabelClip's edge and every
-## descender (y, p, g, parentheses) was cut off on every command-menu row. This builds a real menu and checks geometry.
+## descender (y, p, g, parentheses) was cut off on every command-menu row. This builds a real menu and checks geometry;
+## the fonts themselves are pinned by test_the_symbol_fallbacks_keep_the_base_line_box.
 
 func _menu(items: Array) -> Win98Menu:
 	var m := Win98Menu.new()
@@ -30,7 +31,6 @@ func _check(items: Array) -> void:
 		var fs: int = lab.get_theme_font_size("font_size")
 		var solo: Font = chain.duplicate()
 		solo.fallbacks = []
-		assert_gt(chain.get_ascent(fs), solo.get_ascent(fs), "CONTROL: the fallback chain still inflates the ascent, so the case is live")
 		# A top-aligned single line draws its baseline at the chain's ascent below the Label's top.
 		var baseline: float = lab.position.y + chain.get_ascent(fs)
 		var clip_h: float = (lab.get_parent() as Control).size.y
