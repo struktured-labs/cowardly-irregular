@@ -36,7 +36,8 @@ func _get_map_pixel_size() -> Vector2i:
 
 func _get_save_point_position() -> Vector2:
 	# 2026-09-06: (12,8) sat inside the VVVVVVV chemical-barrel block — unreachable; moved clear.
-	return Vector2(17 * TILE_SIZE,8 * TILE_SIZE)
+	# (17,8) was Factory Kid Pell's own tile, so he stood on the crystal; two cells east is open floor.
+	return Vector2(19 * TILE_SIZE,8 * TILE_SIZE)
 
 
 func _get_player_spawn_fallback() -> Vector2:
