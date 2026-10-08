@@ -119,6 +119,7 @@ func show_hint(hint_id: String, title: String, body: String, min_dismiss: float 
 	_min_dismiss_timer = maxf(0.0, min_dismiss)
 	_update_dismiss_label()
 	visible = true
+	_panel.position.y = PANEL_TOP
 
 	# Input is blocked by _input consuming all events while _active
 	_active = true
@@ -162,6 +163,9 @@ func _exit_tree() -> void:
 func _process(delta: float) -> void:
 	if not _active:
 		return
+	# Down only while shown: the arrival banner fades out under the hint, and a panel that climbed back would jump.
+	_panel.size = Vector2(_panel.size.x, 0.0)  # A PanelContainer only grows; measure its real content height each frame.
+	_panel.position.y = maxf(_panel.position.y, top_clear_of(_panel.position.x, _panel.size, _reserved_rects()))
 
 	if _min_dismiss_timer > 0.0:
 		_min_dismiss_timer = maxf(0.0, _min_dismiss_timer - delta)
@@ -192,3 +196,30 @@ func _input(event: InputEvent) -> void:
 		_dismiss()
 	elif event is InputEventMouseButton and event.pressed:
 		_dismiss()
+
+
+## The panel's resting top; on a world arrival it shares that band with the quest tracker and the zone banner.
+const PANEL_TOP: float = 8.0
+
+
+func _reserved_rects() -> Array:
+	var out: Array = []
+	if not is_inside_tree():
+		return out
+	for n in get_tree().get_nodes_in_group(OverworldMinimap.HUD_GROUP):
+		if n.has_method("reserved_rect"):
+			var r: Rect2 = n.reserved_rect()
+			if r.has_area():
+				out.append(r)
+	return out
+
+
+## The "New World" hint covered the arrival banner and cut the quest tracker off mid-word: start below any
+## reserved HUD block in the panel's columns that would overlap it at PANEL_TOP.
+static func top_clear_of(panel_x: float, panel_size: Vector2, reserved: Array) -> float:
+	var y := PANEL_TOP
+	for r in reserved:
+		var band := Rect2(panel_x, y, panel_size.x, maxf(panel_size.y, 1.0))
+		if band.intersects(r):
+			y = r.end.y + 6.0
+	return y

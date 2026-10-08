@@ -56,6 +56,7 @@ const OBJECTIVES: Array = [
 
 
 func setup(parent: Node) -> void:
+	add_to_group(OverworldMinimap.HUD_GROUP)
 	_canvas = CanvasLayer.new()
 	_canvas.name = "QuestTracker"
 	_canvas.layer = 85
@@ -233,3 +234,13 @@ func _is_flag_set(flag: String) -> bool:
 	return GameState.get_story_flag(flag) \
 		or GameState.game_constants.get("cutscene_flag_" + flag, false) \
 		or GameState.game_constants.get(flag, false)
+
+
+## The block the tracker draws in (both lines), for HUD that must keep off it (TutorialHint, ObjectiveArrow).
+func reserved_rect() -> Rect2:
+	if _canvas == null or not _canvas.visible or _bg == null or not _bg.is_visible_in_tree():
+		return Rect2()
+	var r := _bg.get_rect()
+	if _side_label != null and _side_label.is_visible_in_tree() and _side_label.text != "":
+		r = r.merge(_side_label.get_rect())
+	return r

@@ -38,6 +38,7 @@ const FADE_OUT: float = 0.6
 
 
 func setup(parent: Node) -> void:
+	add_to_group(OverworldMinimap.HUD_GROUP)
 	_canvas = CanvasLayer.new()
 	_canvas.name = "ZonePopup"
 	_canvas.layer = 90  # Above Mode 7, below menus
@@ -90,3 +91,10 @@ func show_zone(zone_id: String) -> void:
 	_tween.tween_interval(HOLD)
 	_tween.tween_property(_label, "modulate:a", 0.0, FADE_OUT)
 	_tween.parallel().tween_property(_bg, "modulate:a", 0.0, FADE_OUT)
+
+
+## The arrival banner, while it is showing at all, for HUD that must keep off it (TutorialHint).
+func reserved_rect() -> Rect2:
+	if _bg == null or not is_instance_valid(_bg) or _bg.modulate.a <= 0.01:
+		return Rect2()
+	return _bg.get_rect()
