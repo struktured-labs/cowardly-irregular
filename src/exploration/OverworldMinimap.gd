@@ -6,6 +6,9 @@ class_name OverworldMinimap
 ## Helps with navigation on Mode 7 view where landmarks are hard to see.
 
 const MAP_SIZE: float = 120.0  # Minimap display size in pixels
+## Screen blocks other HUD must keep off (ObjectiveArrow): the map panel plus its legend.
+const HUD_GROUP := &"hud_reserved"
+var _legend_rect := Rect2()
 const DOT_SIZE: float = 4.0
 const PLAYER_DOT_SIZE: float = 6.0
 
@@ -79,6 +82,7 @@ func setup(parent: Node, player: Node2D, map_w: int, map_h: int, tile_size: int,
 	_canvas.name = "Minimap"
 	_canvas.layer = 85
 	parent.add_child(_canvas)
+	add_to_group(HUD_GROUP)
 
 	# Background
 	_bg = ColorRect.new()
@@ -142,6 +146,7 @@ func setup(parent: Node, player: Node2D, map_w: int, map_h: int, tile_size: int,
 		["Portal", DOT_COLORS["portal"]],
 		["Castle", DOT_COLORS["castle"]],
 	]
+	_legend_rect = Rect2(legend_x, legend_y - 2, _bg.size.x, legend_items.size() * 14 + 4)
 	for i in range(legend_items.size()):
 		var item = legend_items[i]
 		var y_off = legend_y + i * 14
@@ -296,3 +301,9 @@ func update(player_pos: Vector2) -> void:
 		_pulse_time += 0.05
 		var alpha = 0.4 + 0.6 * abs(sin(_pulse_time * 3.0))
 		_objective_dot.color = Color(OBJECTIVE_COLOR.r, OBJECTIVE_COLOR.g, OBJECTIVE_COLOR.b, alpha)
+
+
+func reserved_rect() -> Rect2:
+	if _bg == null or not is_instance_valid(_bg) or _canvas == null or not _canvas.visible:
+		return Rect2()
+	return Rect2(_bg.position, _bg.size).merge(_legend_rect)

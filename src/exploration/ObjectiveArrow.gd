@@ -93,6 +93,31 @@ func update(player_pos: Vector2) -> void:
 	var edge_x = clampf(vp_size.x / 2.0 + norm_dir.x * (vp_size.x / 2.0 - ARROW_MARGIN), ARROW_MARGIN, vp_size.x - ARROW_MARGIN - 80)
 	var edge_y = clampf(vp_size.y / 2.0 + norm_dir.y * (vp_size.y / 2.0 - ARROW_MARGIN), ARROW_MARGIN, vp_size.y - ARROW_MARGIN)
 
-	_arrow_label.position = Vector2(edge_x, edge_y)
+	_arrow_label.position = clear_of_hud(Rect2(edge_x, edge_y, 120, 20), _reserved_rects(), vp_size)
 	_arrow_label.size = Vector2(120, 20)
 	_arrow_label.visible = true
+
+
+func _reserved_rects() -> Array:
+	var out: Array = []
+	if _arrow_label == null or not _arrow_label.is_inside_tree():
+		return out
+	for n in _arrow_label.get_tree().get_nodes_in_group(OverworldMinimap.HUD_GROUP):
+		if n.has_method("reserved_rect"):
+			var r: Rect2 = n.reserved_rect()
+			if r.has_area():
+				out.append(r)
+	return out
+
+
+## Up-right objectives put the arrow on the minimap legend ("Objective >" over "Cave"); step below a reserved
+## HUD block, or to its left when below would leave the screen.
+static func clear_of_hud(arrow: Rect2, reserved: Array, vp_size: Vector2) -> Vector2:
+	for r in reserved:
+		if not arrow.intersects(r):
+			continue
+		if r.end.y + 4.0 + arrow.size.y <= vp_size.y:
+			arrow.position.y = r.end.y + 4.0
+		else:
+			arrow.position.x = r.position.x - arrow.size.x - 4.0
+	return arrow.position
