@@ -208,15 +208,14 @@ func _create_stats_panel(panel_size: Vector2) -> Control:
 	var row_height = 28
 
 	# Core stats with breakdown. Magic Defense is the magical-hit divisor; equipment and job screens already print it.
-	var stats = [
-		{"name": "Attack", "current": character.attack, "base": character.base_attack},
-		{"name": "Defense", "current": character.defense, "base": character.base_defense},
-		{"name": "Magic", "current": character.magic, "base": character.base_magic},
-		{"name": "Magic Defense", "current": character.magic_defense, "base": character.base_magic_defense},
-		{"name": "Speed", "current": character.speed, "base": character.base_speed},
-		{"name": "Max HP", "current": character.max_hp, "base": character.base_max_hp},
-		{"name": "Max MP", "current": character.max_mp, "base": character.base_max_mp},
-	]
+	# The breakdown is (without gear +gear). base_* are placeholder defaults that recalculate_stats replaces with the job's
+	# own values, so "(10 +404)" put the whole job into the bonus and "(50 -16)" invented an MP penalty.
+	var gear: Dictionary = EquipmentSystem.get_equipment_mods(character) if EquipmentSystem else {}
+	var stats = []
+	for row_spec in [["Attack", "attack"], ["Defense", "defense"], ["Magic", "magic"], ["Magic Defense", "magic_defense"],
+			["Speed", "speed"], ["Max HP", "max_hp"], ["Max MP", "max_mp"]]:
+		var current: int = int(character.get(row_spec[1]))
+		stats.append({"name": row_spec[0], "current": current, "base": current - int(gear.get(row_spec[1], 0))})
 
 	# "Magic Defense" is wider than Attack/Defense. The number used to sit at x=100, which is where that label ends.
 	var name_size := TextScale.scaled(12)
@@ -293,7 +292,7 @@ func _create_stat_row(stat: Dictionary, y_pos: int, value_x: float = 100.0, brea
 	value_label.add_theme_color_override("font_color", TEXT_COLOR)
 	row.add_child(value_label)
 
-	# Breakdown (base + bonus)
+	# Breakdown (without gear + gear)
 	var diff = stat["current"] - stat["base"]
 	if diff != 0:
 		var breakdown_label = Label.new()

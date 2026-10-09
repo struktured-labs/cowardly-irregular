@@ -70,6 +70,9 @@ func _text_width(lbl: Label, text: String) -> float:
 
 func test_status_screen_lists_magic_defense_not_a_copy_of_defense() -> void:
 	var c := _member("Mira", 16, 77)
+	# The breakdown is (without gear +gear) since base_* turned out to be placeholders; give her gear that moves it.
+	c.equipped_accessory = "barrier_ring"
+	var ring_mdef: int = int(EquipmentSystem.get_equipment_mods(c).get("magic_defense", 0))
 	var menu: StatusMenu = SM.new()
 	add_child_autofree(menu)
 	menu.character = c
@@ -88,14 +91,16 @@ func test_status_screen_lists_magic_defense_not_a_copy_of_defense() -> void:
 		"77 must sit on the Magic Defense row, not on some other stat")
 	var defense_value := _label_named(labels, "16")
 	assert_not_null(defense_value, "Defense 16 must still be listed — adding Magic Defense must not replace it")
-	# Breakdown uses base_magic_defense (8) and the signed delta, same shape as Attack/Defense.
-	var breakdown := _label_named(labels, "(8 +69)")
-	assert_not_null(breakdown, "Magic Defense must show the base-plus-bonus breakdown (8 +69), got %s" % _texts(labels))
+	# Same (without gear +gear) shape as Attack/Defense, from the ring's own magic defense.
+	assert_gt(ring_mdef, 0, "CONTROL: the barrier ring adds magic defense")
+	var want := "(%d +%d)" % [77 - ring_mdef, ring_mdef]
+	var breakdown := _label_named(labels, want)
+	assert_not_null(breakdown, "Magic Defense must show the gear breakdown %s, got %s" % [want, _texts(labels)])
 	var name_w := _text_width(name_lbl, name_lbl.text)
 	assert_gt(name_w, 40.0, "the Magic Defense label must actually measure — a 0 width would make the overlap check vacuous")
 	assert_lte(name_lbl.position.x + name_w + 8.0, value_lbl.position.x,
 		"Magic Defense (%.0fpx) must end before its number at x=%.0f, or the two draw on top of each other" % [name_lbl.position.x + name_w, value_lbl.position.x])
-	# The number and the "(8 +69)" note must also stay inside the panel.
+	# The number and its breakdown note must also stay inside the panel.
 	var note_w := _text_width(breakdown, breakdown.text) if breakdown != null else 0.0
 	if breakdown != null:
 		assert_lte(breakdown.position.x + note_w, panel.size.x - 4.0,
