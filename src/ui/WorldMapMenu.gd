@@ -155,14 +155,10 @@ func _build_ui() -> void:
 			func() -> void: _on_card_clicked(),
 			func() -> void: _on_card_hovered(i))
 
-	# Current location — prefer the current map id, else fall back to a
-	# blank string (the get_current_location_name() API referenced here
-	# historically was never implemented).
+	# Name the current world from the same table its card reads. MapSystem.current_map_id is unset on the overworld and
+	# stale in interiors, so the footer said "World 1 — Unknown" under a card titled The Old Kingdom.
 	var loc := Label.new()
-	var loc_name := "Unknown"
-	if MapSystem and MapSystem.current_map_id:
-		loc_name = MapSystem.current_map_id.capitalize()
-	loc.text = "Current: World %d — %s" % [_current_world, loc_name]
+	loc.text = "Current: World %d — %s" % [_current_world, world_name(_current_world)]
 	loc.position = Vector2(24, vp.y - 56)
 	loc.size = Vector2(vp.x - 48, 20)
 	loc.add_theme_font_size_override("font_size", 14)
@@ -370,3 +366,10 @@ func _close() -> void:
 		SoundManager.play_ui("menu_close")
 	closed.emit()
 	queue_free()
+
+
+static func world_name(world_id: int) -> String:
+	for w in WORLD_DATA:
+		if int(w["id"]) == world_id:
+			return str(w["name"])
+	return "Unknown"
