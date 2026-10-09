@@ -36,6 +36,8 @@ const BORDER_SHADOW = RetroPanel.BORDER_SHADOW
 const SELECTED_COLOR = Color(0.2, 0.3, 0.5)
 const TEXT_COLOR = Color(1.0, 1.0, 1.0)
 const DISABLED_COLOR = Color(0.4, 0.4, 0.4)
+## A slot's title (Weapon / Armor / Accessory): subdued, but readable on the selected row's blue (DISABLED_COLOR ~1.5:1).
+const SUBTITLE_COLOR = Color(0.72, 0.75, 0.85)
 const POSITIVE_COLOR = Color(0.4, 0.9, 0.4)
 const NEGATIVE_COLOR = Color(0.9, 0.4, 0.4)
 const WEAPON_COLOR = Color(1.0, 0.6, 0.3)
@@ -308,7 +310,7 @@ func _create_slot_row(slot_index: int) -> Control:
 	slot_label.text = SLOTS[slot_index]
 	slot_label.position = Vector2(24, 0)
 	slot_label.add_theme_font_size_override("font_size", 10)
-	slot_label.add_theme_color_override("font_color", DISABLED_COLOR)
+	slot_label.add_theme_color_override("font_color", SUBTITLE_COLOR)
 	row.add_child(slot_label)
 
 	# Current equipment, icon and name on one line under the slot title
