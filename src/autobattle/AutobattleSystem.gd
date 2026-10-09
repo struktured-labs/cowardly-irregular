@@ -2481,12 +2481,12 @@ func _get_lowest_magic_defense_enemy(combatant: Combatant) -> Combatant:
 
 
 func _get_highest_atk_enemy(combatant: Combatant) -> Combatant:
-	"""Get enemy with highest base_attack — the biggest threat to a tank"""
+	"""Get enemy with the highest live attack — the biggest threat to a tank (base_attack is a placeholder, 10 on every monster)"""
 	var enemies = _get_enemies_for(combatant)
 	if enemies.size() == 0:
 		return null
 
-	enemies.sort_custom(func(a, b): return a.base_attack > b.base_attack)
+	enemies.sort_custom(func(a, b): return a.attack > b.attack)
 	return enemies[0]
 
 
