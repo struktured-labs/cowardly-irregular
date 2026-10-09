@@ -802,6 +802,10 @@ func _update_enemy_member_status(idx: int, enemy: Combatant) -> void:
 		# planning ("you've beaten this, you know it's weak to fire").
 		if not is_dead:
 			hp_label.text += _enemy_intel_hint(enemy)
+		# One line per enemy, not two: a five-enemy roster ran the panel into the TURN ORDER card. The HP node keeps its text.
+		hp_label.visible = false
+		if ap_label and ap_label is RichTextLabel:
+			ap_label.text = hp_label.text if is_dead else ap_label.text + " · " + hp_label.text
 
 
 ## Bestiary intel for a monster you've DEFEATED before: " · Weak: Fire ·
