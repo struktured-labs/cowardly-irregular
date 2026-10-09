@@ -91,6 +91,9 @@ const BORDER_SHADOW = RetroPanel.BORDER_SHADOW
 const SELECTED_COLOR = Color(0.2, 0.3, 0.5)
 const TEXT_COLOR = Color(1.0, 1.0, 1.0)
 const DISABLED_COLOR = Color(0.4, 0.4, 0.4)
+## A party card's job line: subdued under the white name, but readable on the selected card's blue too
+## (DISABLED_COLOR there measured ~1.5:1 and the job vanished on whichever card you were on).
+const SUBTITLE_COLOR = Color(0.72, 0.75, 0.85)
 
 
 ## The pad button that toggles the overworld menu: the NORTH face, this game's "X". The west
@@ -349,7 +352,7 @@ func _create_character_card(member: Combatant, index: int) -> Control:
 	job_label.text = member.job.get("name", "Fighter") if member.job else "Fighter"
 	job_label.position = Vector2(58, 20)
 	job_label.add_theme_font_size_override("font_size", TextScale.scaled(10))
-	job_label.add_theme_color_override("font_color", DISABLED_COLOR)
+	job_label.add_theme_color_override("font_color", SUBTITLE_COLOR)
 	card.add_child(job_label)
 
 	# HP Bar
