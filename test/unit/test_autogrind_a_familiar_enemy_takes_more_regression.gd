@@ -48,11 +48,14 @@ func _enemy(name: String, mtype: String) -> Combatant:
 ## Median damage over n swings, so the ±15% damage roll cannot decide the comparison.
 func _median_hit(attacker: Combatant, target: Combatant, n: int) -> float:
 	var rolls: Array = []
+	# PAIRED: every arm replays the same roll sequence. Unseeded, two medians of the same distribution landed 50 vs 54 and red a .652 gate.
+	seed(20261010)
 	for i in n:
 		target.current_hp = target.max_hp
 		var d: int = _res._resolve_attack(attacker, target)
 		if d > 0:
 			rolls.append(d)
+	randomize()
 	rolls.sort()
 	return float(rolls[rolls.size() / 2]) if rolls.size() > 0 else 0.0
 
