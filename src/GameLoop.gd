@@ -1407,6 +1407,7 @@ func _on_autobattle_editor_closed() -> void:
 	if _autobattle_layer and is_instance_valid(_autobattle_layer):
 		_autobattle_layer.queue_free()
 		_autobattle_layer = null
+	_set_field_hud_hidden(false)
 	# Show battle menu again
 	_set_battle_menu_visible(true)
 	# Resume exploration if we were in exploration mode
@@ -1538,14 +1539,21 @@ func _derive_current_scene_music_key() -> String:
 func _on_overworld_menu_closed() -> void:
 	"""Handle overworld menu close — teardown + resume exploration. Called when user backs out to the field (no submenu follows). Music restore lives inside _teardown_overworld_menu_widget so every exit path catches it, not just this one."""
 	_teardown_overworld_menu_widget()
+	if _day_clock:
+		_day_clock.set_menu_open(false)
+	# The menu emits its action THEN closed: an editor it just opened owns the pause, and resuming here let the player walk (and monsters roam) under it.
+	if _field_editor_open():
+		return
 
 	# Resume exploration
 	if _exploration_scene and _exploration_scene.has_method("resume"):
 		_exploration_scene.resume()
 	_set_field_hud_hidden(false)
-	if _day_clock:
-		_day_clock.set_menu_open(false)
 	_flush_chat_toasts()
+
+
+func _field_editor_open() -> bool:
+	return (_autobattle_editor != null and is_instance_valid(_autobattle_editor)) or _autogrind_ui_open()
 
 
 ## Field-HUD props on exploration scenes; each is either a CanvasItem or a Node wrapping a _canvas CanvasLayer (minimap/tracker/arrows all sit on layers ABOVE the menu's 50).
@@ -1560,7 +1568,7 @@ func _set_field_hud_hidden(hidden: bool) -> void:
 				n.visible = true
 		_menu_hidden_hud.clear()
 		return
-	_menu_hidden_hud.clear()
+	# Never cleared on a second hide: the menu hides, then an editor it opens hides again, and the first list is the one to restore.
 	if _exploration_scene == null or not is_instance_valid(_exploration_scene):
 		return
 	for prop in _FIELD_HUD_PROPS:
@@ -1729,6 +1737,8 @@ func _open_autobattle_for_character(char_id: String, char_name: String, combatan
 	if _exploration_scene and _exploration_scene.has_method("pause"):
 		_exploration_scene.pause()
 
+	# The minimap, quest tracker and objective arrow sit on layers above 50 and drew over the editor's title and profile row.
+	_set_field_hud_hidden(true)
 	_autobattle_layer = CanvasLayer.new()
 	_autobattle_layer.layer = 50
 	add_child(_autobattle_layer)
@@ -5956,6 +5966,7 @@ func _open_autogrind_ui() -> void:
 	if _exploration_scene and _exploration_scene.has_method("pause"):
 		_exploration_scene.pause()
 
+	_set_field_hud_hidden(true)
 	# Create UI overlay in CanvasLayer
 	_autogrind_ui_layer = CanvasLayer.new()
 	_autogrind_ui_layer.layer = 50
@@ -6026,6 +6037,7 @@ func _on_autogrind_ui_closed() -> void:
 	if _autogrind_ui_layer and is_instance_valid(_autogrind_ui_layer):
 		_autogrind_ui_layer.queue_free()
 		_autogrind_ui_layer = null
+	_set_field_hud_hidden(false)
 
 	# If not grinding, resume exploration
 	if not _is_autogrinding:
@@ -6035,6 +6047,7 @@ func _on_autogrind_ui_closed() -> void:
 
 func _start_autogrind(config: Dictionary) -> void:
 	"""Start the autogrind session"""
+	_set_field_hud_hidden(false)
 	current_state = LoopState.AUTOGRIND
 	_is_autogrinding = true
 
