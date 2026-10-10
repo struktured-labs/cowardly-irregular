@@ -438,8 +438,8 @@ var _archetype_id: String = ""
 ## the convention, so a consumer that IGNORES the declaration renders identically and only an
 ## injected order discriminates.
 var _archetype_rows: Dictionary = {"walk_down": 0, "walk_left": 1, "walk_right": 2, "walk_up": 3}
-const _ARCHETYPE_FRAME_W: int = 32
-const _ARCHETYPE_FRAME_H: int = 32
+## The sheet's own cell size; 32px for the placeholders, taller for an artist walker (never resampled).
+var _archetype_frame := Vector2i(32, 32)
 
 
 ## Load the archetype overworld sheet and slice the (facing_direction, frame 0)
@@ -450,6 +450,7 @@ func _try_load_archetype_sprite(archetype: String) -> bool:
 		return false
 	_archetype_id = path.get_base_dir().get_file()
 	_archetype_rows = HybridSpriteLoader.overworld_walk_rows("overworld_npc_sheets", _archetype_id)
+	_archetype_frame = HybridSpriteLoader.overworld_sheet_frame_size("overworld_npc_sheets", _archetype_id)
 	var tex = load(path) as Texture2D
 	if not tex:
 		# The file EXISTS, so somebody meant it to load — silence hands the artist a chibi and no
@@ -459,8 +460,8 @@ func _try_load_archetype_sprite(archetype: String) -> bool:
 		push_warning("[OverworldNPC] '%s' exists at %s but did not load as a Texture2D — falling back to procedural" % [archetype, path])
 		return false
 	var img = tex.get_image()
-	if not img or img.get_width() < 128 or img.get_height() < 128:
-		push_warning("[OverworldNPC] '%s' sheet is %s, under the 128x128 floor for a 4x4 grid of 32x32 frames — falling back to procedural" % [archetype, ("unreadable" if not img else "%dx%d" % [img.get_width(), img.get_height()])])
+	if not img or img.get_width() < _archetype_frame.x * 4 or img.get_height() < _archetype_frame.y * 4:
+		push_warning("[OverworldNPC] '%s' sheet is %s, under the floor for a 4x4 grid of %dx%d frames — falling back to procedural" % [archetype, ("unreadable" if not img else "%dx%d" % [img.get_width(), img.get_height()]), _archetype_frame.x, _archetype_frame.y])
 		return false
 	_archetype_sheet = img
 	_apply_facing()
@@ -488,10 +489,11 @@ func _apply_facing() -> void:
 		2: anim = "walk_left"
 		3: anim = "walk_right"
 	var sheet_row := int(_archetype_rows.get(anim, 0))
-	var region := Rect2i(0, sheet_row * _ARCHETYPE_FRAME_H,
-		_ARCHETYPE_FRAME_W, _ARCHETYPE_FRAME_H)
+	var region := Rect2i(0, sheet_row * _archetype_frame.y, _archetype_frame.x, _archetype_frame.y)
 	var frame_img := _archetype_sheet.get_region(region)
 	sprite.texture = ImageTexture.create_from_image(frame_img)
+	# A cell taller than 32px is lifted so the feet stand where a 32px walker's do
+	sprite.offset.y = -(_archetype_frame.y - 32) / 2.0
 
 
 ## Point this NPC at target_pos (struktured msg 2764 item 1: "when you
