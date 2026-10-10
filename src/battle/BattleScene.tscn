@@ -31,13 +31,13 @@ offset_bottom = 200.0
 grow_vertical = 2
 
 [node name="Enemy1Pos" type="Marker2D" parent="BattleField/EnemyArea"]
-position = Vector2(120, 100)
+position = Vector2(115, 55)
 
 [node name="Enemy2Pos" type="Marker2D" parent="BattleField/EnemyArea"]
-position = Vector2(170, 200)
+position = Vector2(210, 205)
 
 [node name="Enemy3Pos" type="Marker2D" parent="BattleField/EnemyArea"]
-position = Vector2(110, 300)
+position = Vector2(150, 355)
 
 [node name="PartyArea" type="Control" parent="BattleField"]
 layout_mode = 1

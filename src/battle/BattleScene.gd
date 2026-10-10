@@ -1167,7 +1167,8 @@ func _create_battle_sprites() -> void:
 		# FACING decision — separate on purpose. Manifest "flip_h" wins; frame size is only the
 		# fallback convention (128px artist sheets are authored facing left, 256px facing right).
 		sprite.flip_h = HybridSpriteLoader.monster_faces_party(monster_id, _small_frame)
-		var base_enemy_pos = enemy_positions[i].global_position if i < enemy_positions.size() else Vector2(200 + i * 100, 300)
+		var slot: int = formation_slot(i, test_enemies.size())
+		var base_enemy_pos = enemy_positions[slot].global_position if slot < enemy_positions.size() else Vector2(200 + i * 100, 300)
 		base_enemy_pos.y += enemy_y_stagger
 		sprite.position = base_enemy_pos
 		sprite.set_meta("home_position", base_enemy_pos)  # 2026-07-14: attack tweens read this so a hit landing while target is mid-return still aims for the settled home
@@ -6458,8 +6459,9 @@ func _present_summoned_enemy(enemy: Combatant, monster_type: String, new_idx: in
 
 	# Position near the summoner or in an available slot
 	var base_pos = Vector2(200, 300)
-	if enemy_positions.size() > new_idx:
-		sprite.position = enemy_positions[new_idx].global_position
+	var free_slot: int = _freest_enemy_slot()
+	if free_slot >= 0:
+		sprite.position = enemy_positions[free_slot].global_position
 	else:
 		# Calculate position based on existing enemies
 		sprite.position = base_pos + Vector2(new_idx * 80, (new_idx % 2) * 50)
@@ -7119,3 +7121,29 @@ func show_brave_quip(combatant: Combatant, action_count: int) -> void:
 		var pool = BRAVE_QUIPS[job_id]
 		var quip = pool[randi() % pool.size()]
 		log_message("[color=#ffcc44]%s:[/color] \"%s\"" % [combatant.combatant_name, quip])
+
+
+## Which marker enemy i of `count` stands on: one enemy takes the middle of the field, two take the ends, three take all.
+## (Slot = index put a lone boss in the top slot, up in the sky, and stacked three ~200px sprites 85px apart.)
+static func formation_slot(i: int, count: int) -> int:
+	if count == 1:
+		return 1
+	if count == 2:
+		return 0 if i == 0 else 2
+	return i
+
+
+## The marker farthest from every enemy already standing, for a mid-battle summon; -1 when all are crowded.
+func _freest_enemy_slot() -> int:
+	var best := -1
+	var best_d := 80.0
+	for s in enemy_positions.size():
+		var p: Vector2 = enemy_positions[s].global_position
+		var nearest := INF
+		for node in enemy_sprite_nodes:
+			if is_instance_valid(node) and node.visible:
+				nearest = minf(nearest, node.position.distance_to(p))
+		if nearest > best_d:
+			best_d = nearest
+			best = s
+	return best
