@@ -123,6 +123,8 @@ const BORDER_SHADOW = RetroPanel.BORDER_SHADOW
 const SELECTED_COLOR = Color(0.2, 0.3, 0.5)
 const TEXT_COLOR = Color(1.0, 1.0, 1.0)
 const DISABLED_COLOR = Color(0.4, 0.4, 0.4)
+## In-row information on a row that can be highlighted: readable on SELECTED_COLOR, where the disabled grey is ~1.5:1.
+const SUBTITLE_COLOR = Color(0.72, 0.75, 0.85)
 const OPTION_BG = Color(0.15, 0.15, 0.2)
 const OPTION_SELECTED = Color(0.3, 0.5, 0.8)
 
@@ -734,7 +736,7 @@ func _create_option_setting(label_text: String, description: String, options: Ar
 	desc.text = description
 	desc.position = Vector2(8, 22)
 	desc.add_theme_font_size_override("font_size", TextScale.scaled(10))
-	desc.add_theme_color_override("font_color", DISABLED_COLOR)
+	desc.add_theme_color_override("font_color", SUBTITLE_COLOR)
 	container.add_child(desc)
 
 	# Options row
@@ -795,7 +797,7 @@ func _create_volume_setting(label_text: String, description: String, options: Ar
 	desc.text = description
 	desc.position = Vector2(8, 22)
 	desc.add_theme_font_size_override("font_size", TextScale.scaled(10))
-	desc.add_theme_color_override("font_color", DISABLED_COLOR)
+	desc.add_theme_color_override("font_color", SUBTITLE_COLOR)
 	container.add_child(desc)
 
 	# Options row
@@ -861,7 +863,7 @@ func _create_option_setting_small(label_text: String, description: String, optio
 	desc.text = description
 	desc.position = Vector2(8, 22)
 	desc.add_theme_font_size_override("font_size", TextScale.scaled(10))
-	desc.add_theme_color_override("font_color", DISABLED_COLOR)
+	desc.add_theme_color_override("font_color", SUBTITLE_COLOR)
 	container.add_child(desc)
 
 	# Options row
@@ -920,7 +922,7 @@ func _create_toggle_setting(label_text: String, description: String, is_on: bool
 	desc.text = description
 	desc.position = Vector2(8, 22)
 	desc.add_theme_font_size_override("font_size", TextScale.scaled(10))
-	desc.add_theme_color_override("font_color", DISABLED_COLOR)
+	desc.add_theme_color_override("font_color", SUBTITLE_COLOR)
 	container.add_child(desc)
 
 	# Toggle display
@@ -993,7 +995,7 @@ func _create_action_button_neutral(label_text: String, description: String, inde
 	desc.text = description
 	desc.position = Vector2(8, 22)
 	desc.add_theme_font_size_override("font_size", TextScale.scaled(10))
-	desc.add_theme_color_override("font_color", DISABLED_COLOR)
+	desc.add_theme_color_override("font_color", SUBTITLE_COLOR)
 	container.add_child(desc)
 
 	var hint = Label.new()
@@ -1032,7 +1034,7 @@ func _create_action_button(label_text: String, description: String, index: int) 
 	desc.text = description
 	desc.position = Vector2(8, 22)
 	desc.add_theme_font_size_override("font_size", TextScale.scaled(10))
-	desc.add_theme_color_override("font_color", DISABLED_COLOR)
+	desc.add_theme_color_override("font_color", SUBTITLE_COLOR)
 	container.add_child(desc)
 
 	# Action hint — right-aligned with the title row, no vertical overlap

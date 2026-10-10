@@ -20,8 +20,11 @@ const PANEL_COLOR := Color(0.1, 0.1, 0.15)
 const SELECTED_COLOR := Color(0.2, 0.3, 0.5)
 const TEXT_COLOR := Color(1.0, 1.0, 1.0)
 const DIM_COLOR := Color(0.45, 0.45, 0.5)
+## A lens's effect text sits on a row that can be highlighted: readable on SELECTED_COLOR, where DIM_COLOR is ~1.9:1.
+const SUBTITLE_COLOR := Color(0.72, 0.75, 0.85)
 const OWNED_COLOR := Color(0.6, 0.9, 0.6)
-const LOCKED_COLOR := Color(0.7, 0.5, 0.5)
+## Lightened from (0.7, 0.5, 0.5): a locked lens's name and unlock hint were 2.6:1 on the selected row.
+const LOCKED_COLOR := Color(0.95, 0.7, 0.7)
 const CRAFTABLE_COLOR := Color(1.0, 0.85, 0.35)
 
 var party: Array = []
@@ -129,7 +132,7 @@ func _build_row(index: int, y: float) -> Dictionary:
 	passive_lbl.position = Vector2(10, 46)
 	passive_lbl.size = Vector2(holder.size.x - 20, 18)
 	passive_lbl.add_theme_font_size_override("font_size", 10)
-	passive_lbl.add_theme_color_override("font_color", DIM_COLOR)
+	passive_lbl.add_theme_color_override("font_color", SUBTITLE_COLOR)
 	holder.add_child(passive_lbl)
 
 	return {"holder": holder, "hl": hl, "name": name_lbl, "state": state_lbl, "passive": passive_lbl}
@@ -155,7 +158,7 @@ func _refresh() -> void:
 			row["state"].add_theme_color_override("font_color", CRAFTABLE_COLOR if blocked == "" else DIM_COLOR)
 		else:
 			row["name"].add_theme_color_override("font_color", LOCKED_COLOR)
-			row["state"].text = "Unknown — defeat a %s Masterite" % axis.capitalize()
+			row["state"].text = "Unknown — defeat %s %s Masterite" % [LensSystem.article_for(axis), axis.capitalize()]
 			row["state"].add_theme_color_override("font_color", LOCKED_COLOR)
 
 		# The passive is the Lens's identity for two of the four axes, so it always shows.

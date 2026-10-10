@@ -102,8 +102,8 @@ func test_create_party_member_display_uses_ko_branch() -> void:
 		"name_label must tint to KO_NAME_COLOR when ko")
 	assert_true(src.contains("hp_text.text = \"— KO —\" if ko else \"%d/%d\" % [hp, max_hp]"),
 		"hp_text must read '— KO —' when ko, else 'hp/max_hp'")
-	assert_true(src.contains("KO_NAME_COLOR if ko else DISABLED_COLOR"),
-		"hp_text color must use KO_NAME_COLOR when ko else DISABLED_COLOR")
+	assert_true(src.contains("KO_NAME_COLOR if ko else SUBTITLE_COLOR"),
+		"hp_text color must use KO_NAME_COLOR when ko else SUBTITLE_COLOR (the disabled grey was ~1.9:1 on a highlighted slot)")
 
 
 # ── Negative pins: pre-fix binary color path gone ─────────────────────

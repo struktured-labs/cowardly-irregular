@@ -53,8 +53,9 @@ func test_load_mode_color_is_disabled() -> void:
 	# Pin: LOAD mode uses DISABLED_COLOR (greyed out) for the
 	# label so it visually reads as not-a-target.
 	var body := _empty_body()
-	assert_true(body.contains("EMPTY_COLOR if current_mode == Mode.SAVE else DISABLED_COLOR"),
-		"empty label color must switch to DISABLED_COLOR in LOAD mode")
+	# The colours are SUBTITLE_COLOR / NO_SAVE_COLOR since the disabled grey measured ~1.9:1 on the highlighted slot.
+	assert_true(body.contains("SUBTITLE_COLOR if current_mode == Mode.SAVE else NO_SAVE_COLOR"),
+		"empty label color must switch to the dimmer NO_SAVE_COLOR in LOAD mode")
 
 
 # ── Subhint ───────────────────────────────────────────────────────────
@@ -67,8 +68,8 @@ func test_load_mode_adds_subhint() -> void:
 		"LOAD-mode subhint must be guarded by current_mode == Mode.LOAD")
 	assert_true(body.contains("hint.text = \"(nothing to load)\""),
 		"subhint must read '(nothing to load)'")
-	assert_true(body.contains("hint.add_theme_color_override(\"font_color\", DISABLED_COLOR)"),
-		"subhint must use DISABLED_COLOR")
+	assert_true(body.contains("hint.add_theme_color_override(\"font_color\", NO_SAVE_COLOR)"),
+		"subhint must use NO_SAVE_COLOR")
 
 
 func test_save_mode_no_subhint() -> void:
@@ -92,8 +93,8 @@ func test_slot_label_unchanged() -> void:
 	# Slot N / Quick Save header still present, color still DISABLED_COLOR.
 	assert_true(body.contains("_slot_label(slot)"),
 		"slot header label preserved (unified helper covers Slot N / Quick Save / Autosave)")
-	assert_true(body.contains("slot_label.add_theme_color_override(\"font_color\", DISABLED_COLOR)"),
-		"slot header color preserved")
+	assert_true(body.contains("slot_label.add_theme_color_override(\"font_color\", SUBTITLE_COLOR)"),
+		"slot header uses the readable subtitle colour")
 
 
 func test_load_handler_still_shows_toast_fallback() -> void:

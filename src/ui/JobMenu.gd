@@ -31,6 +31,8 @@ const BORDER_SHADOW = RetroPanel.BORDER_SHADOW
 const SELECTED_COLOR = Color(0.2, 0.3, 0.5)
 const TEXT_COLOR = Color(1.0, 1.0, 1.0)
 const DISABLED_COLOR = Color(0.4, 0.4, 0.4)
+## In-row information on a row that can be highlighted: readable on SELECTED_COLOR, where the disabled grey is ~1.5:1.
+const SUBTITLE_COLOR = Color(0.72, 0.75, 0.85)
 const PRIMARY_COLOR = Color(1.0, 0.85, 0.3)
 const SECONDARY_COLOR = Color(0.6, 0.8, 1.0)
 const POSITIVE_COLOR = Color(0.4, 0.9, 0.4)
@@ -231,7 +233,7 @@ func _create_slot_row(slot_index: int) -> Control:
 	slot_label.text = SLOTS[slot_index]
 	slot_label.position = Vector2(24, 4)
 	slot_label.add_theme_font_size_override("font_size", 10)
-	slot_label.add_theme_color_override("font_color", DISABLED_COLOR)
+	slot_label.add_theme_color_override("font_color", SUBTITLE_COLOR)
 	row.add_child(slot_label)
 
 	# Current job
@@ -251,7 +253,7 @@ func _create_slot_row(slot_index: int) -> Control:
 		desc_label.text = desc
 		desc_label.position = Vector2(24, 34)
 		desc_label.add_theme_font_size_override("font_size", 9)
-		desc_label.add_theme_color_override("font_color", DISABLED_COLOR)
+		desc_label.add_theme_color_override("font_color", SUBTITLE_COLOR)
 		row.add_child(desc_label)
 
 	# Mouse click overlay
