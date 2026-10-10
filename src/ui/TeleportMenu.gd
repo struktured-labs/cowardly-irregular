@@ -88,6 +88,8 @@ const SELECTED_COLOR = Color(0.20, 0.30, 0.50)
 const TEXT_COLOR = Color(1.00, 1.00, 1.00)
 const SECTION_COLOR = Color(0.85, 0.75, 0.30)
 const DISABLED_COLOR = Color(0.40, 0.40, 0.40)
+## A destination's area line sits on a row that can be highlighted (disabled grey: ~1.5:1 there).
+const SUBTITLE_COLOR = Color(0.72, 0.75, 0.85)
 
 var _selected: int = 0
 var _row_refs: Array = []          # Control nodes per destination
@@ -229,7 +231,7 @@ func _add_row(idx: int, y: float) -> void:
 	id_label.size = Vector2(216, ROW_HEIGHT - 4)
 	id_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	id_label.add_theme_font_size_override("font_size", 10)
-	id_label.add_theme_color_override("font_color", DISABLED_COLOR)
+	id_label.add_theme_color_override("font_color", SUBTITLE_COLOR)
 	item.add_child(id_label)
 
 	# Per-row mouse: hover + click both work

@@ -4,14 +4,21 @@ extends GutTest
 ## information printed in the "disabled" grey on rows that turn SELECTED_COLOR blue: ~1.5:1. On the row you were ON,
 ## you could not read an item's quantity, a job's description, a setting's help text or a lens's effect. Each of those
 ## labels now uses a subtitle colour that clears WCAG AA on the highlight. Locked lens text was 2.6:1; lightened.
+## The Save/Load screen had it on every line inside a slot card -- location, time, date, job, HP -- and Teleport on
+## a destination's area line.
 
 const SITES := [
 	["res://src/ui/ItemsMenu.gd", "qty_label.add_theme_color_override(\"font_color\", "],
 	["res://src/ui/JobMenu.gd", "slot_label.add_theme_color_override(\"font_color\", "],
 	["res://src/ui/JobMenu.gd", "desc_label.add_theme_color_override(\"font_color\", "],
 	["res://src/ui/LensMenu.gd", "passive_lbl.add_theme_color_override(\"font_color\", "],
+	["res://src/ui/TeleportMenu.gd", "id_label.add_theme_color_override(\"font_color\", "],
+	["res://src/ui/SaveScreen.gd", "loc_label.add_theme_color_override(\"font_color\", "],
+	["res://src/ui/SaveScreen.gd", "time_label.add_theme_color_override(\"font_color\", "],
+	["res://src/ui/SaveScreen.gd", "empty_label.add_theme_color_override(\"font_color\", "],
 ]
-const MENUS := ["res://src/ui/ItemsMenu.gd", "res://src/ui/JobMenu.gd", "res://src/ui/SettingsMenu.gd", "res://src/ui/LensMenu.gd"]
+const MENUS := ["res://src/ui/ItemsMenu.gd", "res://src/ui/JobMenu.gd", "res://src/ui/SettingsMenu.gd", "res://src/ui/LensMenu.gd",
+	"res://src/ui/TeleportMenu.gd", "res://src/ui/SaveScreen.gd"]
 
 
 func _chan(v: float) -> float:
@@ -53,3 +60,9 @@ func test_a_locked_lens_reads_on_the_highlight_and_takes_the_right_article() -> 
 	assert_eq(LensSystem.article_for("arbiter"), "an", "an Arbiter")
 	assert_eq(LensSystem.article_for("warden"), "a", "a Warden")
 	assert_eq(LensSystem.article_for("Curator"), "a", "a Curator")
+
+
+func test_load_modes_empty_slot_stays_dimmer_but_legible() -> void:
+	var ss = load("res://src/ui/SaveScreen.gd")
+	assert_gte(_contrast(ss.NO_SAVE_COLOR, ss.SELECTED_COLOR), 3.0, "'- No save -' on the highlighted slot (%.2f:1)" % _contrast(ss.NO_SAVE_COLOR, ss.SELECTED_COLOR))
+	assert_lt(_lum(ss.NO_SAVE_COLOR), _lum(ss.SUBTITLE_COLOR), "LOAD mode's empty slot is still dimmer than SAVE mode's: it is not a target")

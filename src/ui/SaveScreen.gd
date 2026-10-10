@@ -42,6 +42,11 @@ const SELECTED_COLOR = Color(0.2, 0.25, 0.4)
 const TEXT_COLOR = Color(1.0, 1.0, 1.0)
 const DISABLED_COLOR = Color(0.4, 0.4, 0.4)
 const EMPTY_COLOR = Color(0.5, 0.5, 0.5)
+## Everything inside a slot card (location, time, date, job, HP) sits on a card that can be highlighted; the disabled
+## grey was ~1.9:1 there, on the very slot you are about to save over or load.
+const SUBTITLE_COLOR = Color(0.72, 0.75, 0.85)
+## LOAD mode's empty slot stays visibly dimmer than SAVE mode's (it is not a target), but legible on the highlight.
+const NO_SAVE_COLOR = Color(0.6, 0.6, 0.66)
 # Tick 198: HP-bar 3-tier band + KO visual.
 const HP_HIGH_COLOR := Color(0.35, 0.90, 0.35)    # green: >= 60%
 const HP_MID_COLOR := Color(0.95, 0.85, 0.30)     # yellow: 30..60%
@@ -188,7 +193,7 @@ func _build_empty_slot(panel: Control, panel_size: Vector2, slot: int) -> void:
 	slot_label.text = slot_text
 	slot_label.position = Vector2(12, 8)
 	slot_label.add_theme_font_size_override("font_size", TextScale.scaled(14))
-	slot_label.add_theme_color_override("font_color", DISABLED_COLOR)
+	slot_label.add_theme_color_override("font_color", SUBTITLE_COLOR)
 	panel.add_child(slot_label)
 
 	# Tick 196: in SAVE mode "- Empty -" means "available target"; in LOAD mode it means "unavailable". Differentiate the two visually so LOAD users don't click + get an error Toast.
@@ -196,7 +201,7 @@ func _build_empty_slot(panel: Control, panel_size: Vector2, slot: int) -> void:
 	empty_label.text = "- Empty -" if current_mode == Mode.SAVE else "- No save -"
 	empty_label.position = Vector2(panel_size.x / 2 - 40, panel_size.y / 2 - 14)
 	empty_label.add_theme_font_size_override("font_size", TextScale.scaled(16))
-	empty_label.add_theme_color_override("font_color", EMPTY_COLOR if current_mode == Mode.SAVE else DISABLED_COLOR)
+	empty_label.add_theme_color_override("font_color", SUBTITLE_COLOR if current_mode == Mode.SAVE else NO_SAVE_COLOR)
 	panel.add_child(empty_label)
 	if current_mode == Mode.LOAD:
 		# Add a dimmer subhint so the unloadable state reads at a glance.
@@ -204,7 +209,7 @@ func _build_empty_slot(panel: Control, panel_size: Vector2, slot: int) -> void:
 		hint.text = "(nothing to load)"
 		hint.position = Vector2(panel_size.x / 2 - 58, panel_size.y / 2 + 10)
 		hint.add_theme_font_size_override("font_size", TextScale.scaled(11))
-		hint.add_theme_color_override("font_color", DISABLED_COLOR)
+		hint.add_theme_color_override("font_color", NO_SAVE_COLOR)
 		panel.add_child(hint)
 
 
@@ -249,7 +254,7 @@ func _build_filled_slot(panel: Control, panel_size: Vector2, slot: int, save_inf
 	loc_label.position = Vector2(80, 20)
 	loc_label.size = Vector2(panel_size.x - 180, 14)
 	loc_label.add_theme_font_size_override("font_size", TextScale.scaled(11))
-	loc_label.add_theme_color_override("font_color", DISABLED_COLOR)
+	loc_label.add_theme_color_override("font_color", SUBTITLE_COLOR)
 	loc_label.clip_text = false
 	loc_label.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
 	panel.add_child(loc_label)
@@ -260,7 +265,7 @@ func _build_filled_slot(panel: Control, panel_size: Vector2, slot: int, save_inf
 	time_label.text = play_time
 	time_label.position = Vector2(panel_size.x - 90, 4)
 	time_label.add_theme_font_size_override("font_size", TextScale.scaled(12))
-	time_label.add_theme_color_override("font_color", DISABLED_COLOR)
+	time_label.add_theme_color_override("font_color", SUBTITLE_COLOR)
 	panel.add_child(time_label)
 
 	# Save date
@@ -271,7 +276,7 @@ func _build_filled_slot(panel: Control, panel_size: Vector2, slot: int, save_inf
 		date_label.text = _format_save_date(save_date)
 		date_label.position = Vector2(panel_size.x - 90, 22)
 		date_label.add_theme_font_size_override("font_size", TextScale.scaled(10))
-		date_label.add_theme_color_override("font_color", DISABLED_COLOR)
+		date_label.add_theme_color_override("font_color", SUBTITLE_COLOR)
 		panel.add_child(date_label)
 
 	# Party portraits and info (pushed below the story + location rows)
@@ -295,7 +300,7 @@ func _build_filled_slot(panel: Control, panel_size: Vector2, slot: int, save_inf
 		no_party.text = "(No party data)"
 		no_party.position = Vector2(16, 56)
 		no_party.add_theme_font_size_override("font_size", TextScale.scaled(11))
-		no_party.add_theme_color_override("font_color", DISABLED_COLOR)
+		no_party.add_theme_color_override("font_color", SUBTITLE_COLOR)
 		panel.add_child(no_party)
 
 
@@ -347,7 +352,7 @@ func _create_party_member_display(member: Dictionary, _index: int) -> Control:
 	job_label.text = "Lv.%d %s" % [level, job]
 	job_label.position = Vector2(36, 14)
 	job_label.add_theme_font_size_override("font_size", TextScale.scaled(10))
-	job_label.add_theme_color_override("font_color", DISABLED_COLOR)
+	job_label.add_theme_color_override("font_color", SUBTITLE_COLOR)
 	container.add_child(job_label)
 
 	# HP bar
@@ -375,7 +380,7 @@ func _create_party_member_display(member: Dictionary, _index: int) -> Control:
 	hp_text.text = "— KO —" if ko else "%d/%d" % [hp, max_hp]
 	hp_text.position = Vector2(36, 40)
 	hp_text.add_theme_font_size_override("font_size", TextScale.scaled(9))
-	hp_text.add_theme_color_override("font_color", KO_NAME_COLOR if ko else DISABLED_COLOR)
+	hp_text.add_theme_color_override("font_color", KO_NAME_COLOR if ko else SUBTITLE_COLOR)
 	container.add_child(hp_text)
 
 	return container
