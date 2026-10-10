@@ -817,10 +817,14 @@ func _confirm_token() -> String:
 	return hint if hint != "" else "Z"
 
 
+static func tally_prompt(tok: String) -> String:
+	return "%s: skip" % tok
+
+
 func _build_prompt() -> void:
 	var prompt := Label.new()
-	var tok: String = _confirm_token()
-	prompt.text = "%s: finish · %s: continue" % [tok, tok]
+	# One key, one job at a time: the old line named the confirm button twice, for finish and then for continue.
+	prompt.text = tally_prompt(_confirm_token())
 	prompt.add_theme_font_size_override("font_size", TextScale.scaled(14))
 	prompt.add_theme_color_override("font_color", Color(0.92, 0.92, 0.85))
 	prompt.add_theme_constant_override("outline_size", 3)
