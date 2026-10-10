@@ -22,7 +22,7 @@ const BORDER_SHADOW := RetroPanel.BORDER_SHADOW
 const TEXT_COLOR := Color(1.0, 1.0, 1.0)
 const DIM_COLOR := Color(0.55, 0.55, 0.65)
 const ACCENT := Color(1.0, 0.92, 0.55)
-const LOCKED_COLOR := Color(0.3, 0.3, 0.35)
+const LOCKED_COLOR := Color(0.46, 0.46, 0.54)
 
 const WORLD_NAMES := {
 	1: "Medieval", 2: "Suburban", 3: "Steampunk",

@@ -35,7 +35,9 @@ const ROW_PROFILE := 0
 const ROW_NINTENDO := 1
 const ROW_HELP := 2
 const ROW_ACTION_FIRST := 3
-const ROW_HEIGHT = 40
+const ROW_HEIGHT = 32
+## The column header's own band, between the option rows and the action rows.
+const HEADER_BAND = 18
 const ROW_START_Y = 48
 
 var _row_reset: int = 0
@@ -221,25 +223,25 @@ func _build_ui() -> void:
 	# the right-hand columns mean. Drawn just above the first action row.
 	var col_header_pad = Label.new()
 	col_header_pad.text = "Action"
-	col_header_pad.position = Vector2(12, ROW_START_Y + ROW_HEIGHT - 4)
+	col_header_pad.position = Vector2(12, ROW_START_Y + ROW_ACTION_FIRST * ROW_HEIGHT + 1)
 	col_header_pad.add_theme_font_size_override("font_size", 10)
 	col_header_pad.add_theme_color_override("font_color", Color(0.55, 0.55, 0.65))
 	_panel.add_child(col_header_pad)
 	var col_header_pad_btn = Label.new()
 	col_header_pad_btn.text = "Gamepad"
-	col_header_pad_btn.position = Vector2(320, ROW_START_Y + ROW_HEIGHT - 4)
+	col_header_pad_btn.position = Vector2(320, ROW_START_Y + ROW_ACTION_FIRST * ROW_HEIGHT + 1)
 	col_header_pad_btn.add_theme_font_size_override("font_size", 10)
 	col_header_pad_btn.add_theme_color_override("font_color", Color(0.55, 0.55, 0.65))
 	_panel.add_child(col_header_pad_btn)
 	var col_header_kb = Label.new()
 	col_header_kb.text = "Keyboard"
-	col_header_kb.position = Vector2(490, ROW_START_Y + ROW_HEIGHT - 4)
+	col_header_kb.position = Vector2(490, ROW_START_Y + ROW_ACTION_FIRST * ROW_HEIGHT + 1)
 	col_header_kb.add_theme_font_size_override("font_size", 10)
 	col_header_kb.add_theme_color_override("font_color", Color(0.55, 0.55, 0.65))
 	_panel.add_child(col_header_kb)
 	var col_header_mouse = Label.new()
 	col_header_mouse.text = "Mouse"
-	col_header_mouse.position = Vector2(610, ROW_START_Y + ROW_HEIGHT - 4)
+	col_header_mouse.position = Vector2(610, ROW_START_Y + ROW_ACTION_FIRST * ROW_HEIGHT + 1)
 	col_header_mouse.add_theme_font_size_override("font_size", 10)
 	col_header_mouse.add_theme_color_override("font_color", Color(0.55, 0.55, 0.65))
 	_panel.add_child(col_header_mouse)
@@ -258,7 +260,7 @@ func _build_ui() -> void:
 	# The full reference, reachable from inside the game. Sits here rather than only on the
 	# title screen because that copy is unreachable once a session starts.
 	_add_row(ROW_HELP, y, "How to Play", "View full reference", true)
-	y += ROW_HEIGHT + 8
+	y += ROW_HEIGHT + HEADER_BAND
 
 	var row_idx = ROW_ACTION_FIRST
 	for action in InputProfileManager.REMAPPABLE_ACTIONS:
@@ -280,7 +282,7 @@ func _build_ui() -> void:
 
 	# Conflict display
 	_conflict_label = Label.new()
-	_conflict_label.position = Vector2(16, _panel.size.y - 52)
+	_conflict_label.position = Vector2(16, _panel.size.y - 62)
 	_conflict_label.add_theme_font_size_override("font_size", 10)
 	_conflict_label.add_theme_color_override("font_color", Color(1.0, 0.8, 0.3))
 	_panel.add_child(_conflict_label)
@@ -288,7 +290,7 @@ func _build_ui() -> void:
 
 	# Flash message label (for "Switch to Custom" hint)
 	_flash_label = Label.new()
-	_flash_label.position = Vector2(16, _panel.size.y - 68)
+	_flash_label.position = Vector2(16, _panel.size.y - 78)
 	_flash_label.add_theme_font_size_override("font_size", 10)
 	_flash_label.add_theme_color_override("font_color", Color(1.0, 0.6, 0.3))
 	_flash_label.visible = false
@@ -298,14 +300,14 @@ func _build_ui() -> void:
 	var footer = Label.new()
 	_footer_label = footer
 	footer.text = _footer_text()
-	footer.position = Vector2(16, _panel.size.y - 32)
-	footer.clip_text = true
-	footer.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	footer.position = Vector2(16, _panel.size.y - 44)
+	footer.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	footer.max_lines_visible = 2
 	footer.add_theme_font_size_override("font_size", 10)
 	footer.add_theme_color_override("font_color", DISABLED_COLOR)
 	_panel.add_child(footer)
-	## Sized AFTER add_child (a detached Label clamps to its 16px-font minimum) and clipped: the line ran 14px past the panel.
-	footer.size = Vector2(_panel.size.x - 32, footer.size.y)
+	## Sized AFTER add_child (a detached Label clamps to its 16px-font minimum); wraps to two lines, since one cut the mouse hints off.
+	footer.size = Vector2(_panel.size.x - 32, 36)
 
 	# Right-click to cancel
 	MenuMouseHelper.add_right_click_cancel(bg, _close_menu)
@@ -364,12 +366,15 @@ func _add_row(index: int, y: float, label_text: String, value_text: String, is_p
 	elif not is_action_btn and value_text != "":
 		# Dots + gamepad button label
 		var dots = Label.new()
-		var dot_count = max(1, 30 - label_text.length())
-		dots.text = ".".repeat(dot_count)
-		dots.position = Vector2(12 + label_text.length() * 9, 8)
+		dots.text = ".".repeat(120)
+		dots.clip_text = true
 		dots.add_theme_font_size_override("font_size", 10)
 		dots.add_theme_color_override("font_color", Color(0.3, 0.3, 0.4))
 		highlight.add_child(dots)
+		# Runs from the end of the measured name to the binding column (it used to guess 9px a letter and stop short).
+		var name_end: float = 12.0 + label.get_theme_font("font").get_string_size(label_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 14).x + 8.0
+		dots.position = Vector2(name_end, 6)
+		dots.size = Vector2(maxf(0.0, 312.0 - name_end), dots.size.y)
 
 		var value = Label.new()
 		value.text = value_text
