@@ -5459,6 +5459,32 @@
       "frame_height": 32,
       "tier": "T1",
       "source": "gpt-image-1, identity anchored to overworld.png (2026-09-07 phase 2; archetype was requested by maps but had NO sheet — rendered procedural)"
+    },
+    "rotha": {
+      "path": "res://assets/sprites/npcs/rotha/overworld.png",
+      "frame_width": 48,
+      "frame_height": 48,
+      "fps": 4,
+      "tier": "T2",
+      "source": "artist aseprite drop 2026-10-08 — Villagers/Villager_Rotha.aseprite, 16 frames / 4 tags (South, East, West, North; 250ms each). The artist's FIRST overworld walker. Exported at NATIVE size by tools/export_artist_overworld_walker.py: figure 24x47 in 48px cells, backdrop 'Layer 13' left out, no resampling. ⚠️ Her 'West' tag faces RIGHT and 'East' faces LEFT, so rows are mapped by the picture (--left-tag East --right-tag West).",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      }
     }
   },
   "overworld_player_sheets": {

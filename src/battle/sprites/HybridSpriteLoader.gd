@@ -162,6 +162,19 @@ static func _manifest_section(section: String) -> Dictionary:
 ## ⛔ ONE OWNER, NOT ONE PER SECTION. A third near-identical copy is how this fleet ended up
 ## measuring 18 redundant private comment-strippers in a day; the sections differ by KEY, not by
 ## rule.
+## The cell size an overworld walk sheet DECLARES (frame_width/frame_height), else the 32px the placeholders use.
+## The artist's walkers are drawn taller than 32px and are never resampled, so a renderer must slice by this.
+static func overworld_sheet_frame_size(section: String, id: String) -> Vector2i:
+	_load_manifest()
+	var store: Dictionary = _manifest_section(section)
+	var entry = store.get(id, {})
+	if not (entry is Dictionary):
+		return Vector2i(32, 32)
+	var w: int = int((entry as Dictionary).get("frame_width", 32))
+	var h: int = int((entry as Dictionary).get("frame_height", 32))
+	return Vector2i(w, h) if w > 0 and h > 0 else Vector2i(32, 32)
+
+
 static func overworld_walk_rows(section: String, id: String) -> Dictionary:
 	_load_manifest()
 	var convention := {"walk_down": 0, "walk_left": 1, "walk_right": 2, "walk_up": 3}

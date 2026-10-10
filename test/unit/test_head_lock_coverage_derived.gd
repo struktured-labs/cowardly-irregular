@@ -37,7 +37,9 @@ const HEAD_LOCK_TEST := "res://test/unit/test_overworld_head_lock_regression.gd"
 ## OWN helpers all five measure 0, so they never failed it and the exemptions
 ## were unearned the moment I wrote them. Caught by the expiry test, not by
 ## re-reading — which is the whole argument for having one.
-const EXEMPT := {}
+const EXEMPT := {
+	"rotha": "ARTIST-drawn (T2, 2026-10-08): 48px cells and a walk whose head bobs by his hand. The head-lock gate repairs GENERATED 32px grids; it must never be run over his frames.",
+}
 
 
 func _sheet_names(dir_path: String) -> Array:
@@ -204,6 +206,8 @@ func test_every_sheet_is_actually_MEASURABLE_not_just_listed() -> void:
 		if img == null:
 			unmeasurable.append("%s: texture yields no Image" % [sheet])
 			continue
+		if EXEMPT.has(sheet):
+			continue  # an exempt sheet is not the gate's to measure; its reason says why
 		if img.get_width() != 128 or img.get_height() != 128:
 			unmeasurable.append("%s: %dx%d not 128x128" % [sheet, img.get_width(), img.get_height()])
 	unmeasurable.sort()

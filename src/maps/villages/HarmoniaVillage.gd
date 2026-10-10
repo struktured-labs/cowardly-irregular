@@ -746,6 +746,21 @@ func _setup_npcs() -> void:
 	)
 	npcs.add_child(wandering_scholar)
 
+	# Rotha — the artist's first overworld villager (2026-10-08 drop), on the open lower-left ground, clear of the exit road and the other loops.
+	var rotha_loop: Array[Vector2] = [
+		Vector2(3 * TILE_SIZE,23 * TILE_SIZE),
+		Vector2(8 * TILE_SIZE,23 * TILE_SIZE),
+	]
+	var rotha = _create_wandering_npc(
+		"Rotha",
+		"rotha",
+		"Everyone here walks the same four steps and calls it a life. I at least vary the route.",
+		rotha_loop,
+		"villager",
+		"villager"
+	)
+	npcs.add_child(rotha)
+
 
 ## Spawn a QuestChicken for the one_chicken_problem 7-catch puzzle.
 func _place_chicken(chicken_id: String, pos: Vector2, catch_line: String = "") -> void:

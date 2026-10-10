@@ -46,15 +46,22 @@ func _list_archetypes() -> Array[String]:
 	return out
 
 
+## A sheet's own cell size: every one is a 4x4 grid, so the cell is a quarter of the sheet. 32px for the generated
+## placeholders, 48px for the artist's Rotha; measuring her at 32 cut her into pieces and read them as empty frames.
+func _cell(img: Image) -> int:
+	return maxi(1, img.get_width() / COLS)
+
+
 func _row_has_content(img: Image, row: int) -> bool:
+	var fr := _cell(img)
 	for col in COLS:
 		var opaque: int = 0
-		for y in FRAME:
-			for x in FRAME:
-				var pixel_color := img.get_pixel(col * FRAME + x, row * FRAME + y)
+		for y in fr:
+			for x in fr:
+				var pixel_color := img.get_pixel(col * fr + x, row * fr + y)
 				if pixel_color.a > 0.0:
 					opaque += 1
-		var ratio := float(opaque) / float(FRAME * FRAME)
+		var ratio := float(opaque) / float(fr * fr)
 		if ratio >= OPACITY_THRESHOLD:
 			return true
 	return false
@@ -174,11 +181,12 @@ func _frame_occupancy(img: Image) -> Array:
 	var data := img.get_data()
 	var w := img.get_width()
 	var out: Array = []
-	for row in range(img.get_height() / FRAME):
-		for col in range(w / FRAME):
+	var fr := _cell(img)
+	for row in range(img.get_height() / fr):
+		for col in range(w / fr):
 			var n := 0
-			for y in range(row * FRAME, (row + 1) * FRAME):
-				for x in range(col * FRAME, (col + 1) * FRAME):
+			for y in range(row * fr, (row + 1) * fr):
+				for x in range(col * fr, (col + 1) * fr):
 					if data[(y * w + x) * 4 + 3] > 10:
 						n += 1
 			out.append({"n": n, "at": Vector2i(col, row)})
@@ -299,18 +307,19 @@ func test_no_npc_frame_is_fully_opaque() -> void:
 	var solid: Array = []
 	var fullest := 0.0
 	var measured: Array = []
-	var cap := int(float(FRAME * FRAME) * MAX_OPAQUE_FRACTION_PER_FRAME)
 	for n in names:
 		var img := Image.load_from_file("%s/%s/overworld.png" % [NPCS_DIR, n])
 		if img == null:
 			continue
 		measured.append(n)
+		var area := _cell(img) * _cell(img)
+		var cap := int(float(area) * MAX_OPAQUE_FRACTION_PER_FRAME)
 		for c in _frame_occupancy(img):
 			var px: int = int(c["n"])
-			fullest = max(fullest, float(px) / float(FRAME * FRAME))
+			fullest = max(fullest, float(px) / float(area))
 			if px > cap:
 				solid.append("%s frame (col %d,row %d) is %d/%d opaque — background not keyed out" % [
-					n, c["at"].x, c["at"].y, px, FRAME * FRAME])
+					n, c["at"].x, c["at"].y, px, area])
 
 	_assert_corpus_covers_the_register(measured, "the opacity-ceiling sweep")
 	assert_lt(fullest, 1.0,
@@ -375,89 +384,45 @@ func test_the_npc_probe_can_see_an_unkeyed_frame() -> void:
 		"CONTROL: and the row check calls this sheet HEALTHY — it has no MAX side at all")
 
 
-## THREE copies of the number 32 crop these sheets: WanderingNPC's ARCHETYPE_FRAME_W/H (village
-## NPCs), CutsceneActor's FRAME_SIZE (staged puppets), and this file's own FRAME. Nothing asserted
-## they agree -- so a consumer could change its crop and every sweep above would keep measuring 32
-## and keep passing, having become irrelevant rather than wrong. The sibling monster corpus has had
-## exactly this guard since 2026-09-09 (test_both_consumers_crop_with_the_same_frame_size); the NPC
-## corpus, cropped by two consumers instead of one, did not.
-##
-## Asserted as AGREEMENT rather than as the value 32: if the art is reauthored at a new frame size
-## the fix is one number in each consumer, and this should red until they match -- not pin 32
-## forever. The manifest is NOT the authority here: overworld_npc_sheets declares frame_width 32 on
-## all 145 entries and has ZERO readers in src/ (measured 2026-09-11), so it is a register, not a
-## consumer, and guarding it would guard a field nothing reads.
+## Three consumers cut these sheets: WanderingNPC (village walkers), OverworldNPC (standing NPCs) and CutsceneActor
+## (staged puppets). They used to carry three hand copies of the number 32, guarded only for agreeing with each other.
+## The artist's first walker (Rotha, 48px cells) made "one agreed number" the wrong invariant: the size belongs to the
+## SHEET. The two NPC renderers now ask HybridSpriteLoader.overworld_sheet_frame_size, CutsceneActor measures the
+## sheet it loaded, and the manifest is the authority, so it is checked against the files it describes.
 const NPC_CROP_CONSUMERS := {
-	"res://src/exploration/WanderingNPC.gd": ["ARCHETYPE_FRAME_W", "ARCHETYPE_FRAME_H"],
-	"res://src/cutscene/CutsceneActor.gd": ["FRAME_SIZE", "FRAME_SIZE"],
-	"res://src/exploration/OverworldNPC.gd": ["_ARCHETYPE_FRAME_W", "_ARCHETYPE_FRAME_H"],
+	"res://src/exploration/WanderingNPC.gd": "overworld_sheet_frame_size(",
+	"res://src/exploration/OverworldNPC.gd": "overworld_sheet_frame_size(",
+	"res://src/cutscene/CutsceneActor.gd": "_frame_px",
 }
 
 
-## The ledger above shipped with TWO entries and there were THREE. OverworldNPC._apply_facing
-## re-slices the same archetype grid for the dialogue portrait, and my sweep for crop constants
-## was `const [A-Z_]+` -- the leading underscore on _ARCHETYPE_FRAME_W walked straight through it.
-##
-## A hand-list with no premise is how that stays wrong. Deriving the population instead does NOT
-## work here and I measured rather than assumed: ".gd files naming an npcs sheet path AND building
-## a Rect2" returns HybridSpriteLoader and CutsceneDialogue (neither crops this grid) and MISSES
-## both WanderingNPC and CutsceneActor, which assemble the path from a template const. One true
-## positive, two false, two missed -- worse than the list it would replace.
-##
-## So the list stays, with a premise aimed at exactly the failure that produced it: any script
-## declaring an ARCHETYPE_FRAME constant must be IN the ledger. That vocabulary is specific to this
-## sheet family (measured: OverworldNPC and WanderingNPC, nothing else), so it cannot over-match the
-## way the path heuristic did -- and CutsceneActor's FRAME_SIZE is hand-listed and declared as such
-## rather than pretended to be derived.
-func test_no_archetype_crop_constant_is_missing_from_the_ledger() -> void:
-	var found: Array = []
-	var stack: Array = ["res://src"]
-	var scanned := 0
-	while not stack.is_empty():
-		var d: String = stack.pop_back()
-		var dir := DirAccess.open(d)
-		if dir == null:
-			continue
-		for sub in dir.get_directories():
-			stack.append("%s/%s" % [d, sub])
-		for f in dir.get_files():
-			if not f.ends_with(".gd"):
-				continue
-			scanned += 1
-			var path: String = "%s/%s" % [d, f]
-			var src := FileAccess.get_file_as_string(path)
-			if src.contains("ARCHETYPE_FRAME_W") and src.contains("const"):
-				found.append(path)
-	assert_gt(scanned, 100,
-		"CONTROL: only %d .gd files scanned under res://src -- the walk is broken and any clean result below is free" % scanned)
-	found.sort()
-	var unlisted: Array = []
-	for path in found:
-		if not NPC_CROP_CONSUMERS.has(path):
-			unlisted.append(path)
-	assert_eq(unlisted, [],
-		("a script declares an ARCHETYPE_FRAME constant and is not in NPC_CROP_CONSUMERS -- it crops " +
-		 "these sheets with its own copy of the number and nothing checks that copy: %s") % str(unlisted))
-	assert_gt(found.size(), 1,
-		"CONTROL: found %d scripts with an ARCHETYPE_FRAME constant (2 at time of writing) -- if this drops to 0 the scan matched nothing and the zero above is free" % found.size())
-
-
-func test_every_npc_sheet_consumer_crops_with_the_same_frame_size() -> void:
-	var sizes: Dictionary = {}
+func test_every_npc_sheet_consumer_takes_the_cell_size_from_the_sheet() -> void:
+	var bad: Array = []
 	for path in NPC_CROP_CONSUMERS:
-		var consts: Dictionary = load(path).get_script_constant_map()
-		var names: Array = NPC_CROP_CONSUMERS[path]
-		assert_true(consts.has(names[0]) and consts.has(names[1]),
-			"%s no longer declares %s -- it crops by some other means now and this ledger is stale" % [path.get_file(), str(names)])
-		if consts.has(names[0]) and consts.has(names[1]):
-			sizes[path.get_file()] = Vector2i(int(consts[names[0]]), int(consts[names[1]]))
-	assert_eq(sizes.size(), NPC_CROP_CONSUMERS.size(),
-		"CONTROL: only %d of %d consumers reported a frame size -- a silent drop makes the agreement below free" % [sizes.size(), NPC_CROP_CONSUMERS.size()])
+		var src := FileAccess.get_file_as_string(path)
+		assert_ne(src, "", "CONTROL: %s is readable" % path.get_file())
+		if not src.contains(NPC_CROP_CONSUMERS[path]):
+			bad.append("%s no longer derives its crop via %s" % [path.get_file(), NPC_CROP_CONSUMERS[path]])
+		if src.contains("ARCHETYPE_FRAME_W"):
+			bad.append("%s declares a hand copy of the cell size again" % path.get_file())
+	assert_eq(bad, [], "a consumer crops NPC sheets by its own number, so a sheet at another size is cut into pieces: %s" % str(bad))
 
-	var disagree: Array = []
-	var first := Vector2i(FRAME, FRAME)
-	for f in sizes:
-		if sizes[f] != first:
-			disagree.append("%s crops %s, this guard measures %s" % [f, str(sizes[f]), str(first)])
-	assert_eq(disagree, [],
-		"a consumer crops NPC sheets at a size no other consumer or guard uses -- it draws the wrong region of every sheet, and the sprite still renders so nothing looks broken: %s" % str(disagree))
+
+func test_every_registered_sheet_is_the_grid_its_entry_declares() -> void:
+	## The renderers trust the manifest's frame size, so an entry that disagrees with its file draws the wrong region.
+	var m = JSON.parse_string(FileAccess.get_file_as_string("res://data/sprite_manifest.json"))
+	var sheets: Dictionary = m.get("overworld_npc_sheets", {})
+	assert_gt(sheets.size(), 100, "CONTROL: the register was read (%d)" % sheets.size())
+	var bad: Array = []
+	var sizes := {}
+	for id in sheets:
+		var path := str(sheets[id].get("path", ""))
+		if not ResourceLoader.exists(path):
+			continue
+		var want := HybridSpriteLoader.overworld_sheet_frame_size("overworld_npc_sheets", str(id))
+		var tex := load(path) as Texture2D
+		sizes[want] = true
+		if Vector2i(tex.get_size()) != want * 4:
+			bad.append("%s: declares %s cells, the sheet is %s" % [id, str(want), str(tex.get_size())])
+	assert_gt(sizes.size(), 1, "CONTROL: more than one cell size is in use, so this is not checking a constant against itself")
+	assert_eq(bad, [], "manifest entries whose cell size is not a quarter of their sheet: %s" % str(bad.slice(0, 8)))

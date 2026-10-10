@@ -64,8 +64,8 @@ var _current_dir: int = 0  # last computed direction (for sheet row pick)
 ## have nudged the wrong direction's headroom. Identity by default, so an undeclared sheet keeps
 ## exactly the old behaviour.
 var _dir_to_row: PackedInt32Array = PackedInt32Array([0, 1, 2, 3])
-const ARCHETYPE_FRAME_W: int = 32
-const ARCHETYPE_FRAME_H: int = 32
+## The sheet's own cell size; 32px for the placeholders, taller for an artist walker (never resampled).
+var _archetype_frame := Vector2i(32, 32)
 
 ## Per-direction top-density (opaque pixels in the top row of each frame),
 ## sampled at sheet load. When a direction is "heavy top" — head fills the
@@ -258,6 +258,9 @@ func _setup_sprite() -> void:
 func _try_load_archetype() -> bool:
 	var path = HybridSpriteLoader.npc_overworld_path(sprite_archetype)
 	_resolve_dir_to_row(path)
+	_archetype_frame = HybridSpriteLoader.overworld_sheet_frame_size("overworld_npc_sheets", path.get_base_dir().get_file())
+	var fw := _archetype_frame.x
+	var fh := _archetype_frame.y
 	if not ResourceLoader.exists(path):
 		return false
 	var tex = load(path) as Texture2D
@@ -269,21 +272,20 @@ func _try_load_archetype() -> bool:
 		push_warning("[WanderingNPC] '%s' exists at %s but did not load as a Texture2D — falling back to procedural" % [sprite_archetype, path])
 		return false
 	var img = tex.get_image()
-	if not img or img.get_width() < 128 or img.get_height() < 128:
-		push_warning("[WanderingNPC] '%s' sheet is %s, under the 128x128 floor for a 4x4 grid of 32x32 frames — falling back to procedural" % [sprite_archetype, ("unreadable" if not img else "%dx%d" % [img.get_width(), img.get_height()])])
+	if not img or img.get_width() < fw * 4 or img.get_height() < fh * 4:
+		push_warning("[WanderingNPC] '%s' sheet is %s, under the floor for a 4x4 grid of %dx%d frames — falling back to procedural" % [sprite_archetype, ("unreadable" if not img else "%dx%d" % [img.get_width(), img.get_height()]), fw, fh])
 		return false
 	# 4×4 grid, 32x32 frames. Sheet rows: 0=down, 1=left, 2=right, 3=up.
 	for row in range(4):
 		# Sample top-row opaque density from col-0 idle frame — one cheap
 		# per-sheet check, applied per-direction at frame-swap time.
 		var top_density := 0
-		for x in range(ARCHETYPE_FRAME_W):
-			if img.get_pixel(x, row * ARCHETYPE_FRAME_H).a > 0.5:
+		for x in range(fw):
+			if img.get_pixel(x, row * fh).a > 0.5:
 				top_density += 1
 		_archetype_row_top_density[row] = top_density
 		for col in range(4):
-			var region = Rect2i(col * ARCHETYPE_FRAME_W, row * ARCHETYPE_FRAME_H,
-				ARCHETYPE_FRAME_W, ARCHETYPE_FRAME_H)
+			var region = Rect2i(col * fw, row * fh, fw, fh)
 			var frame_img = img.get_region(region)
 			_archetype_frames["%d_%d" % [row, col]] = ImageTexture.create_from_image(frame_img)
 	return true
@@ -306,7 +308,8 @@ func _update_archetype_frame() -> void:
 		# by the viewport top. Belt-and-suspenders alongside the art fix
 		# tracked by test_archetype_sheet_top_density_ratchet.
 		var top: int = int(_archetype_row_top_density.get(row, 0))
-		_sprite.offset.y = HEAVY_TOP_SPRITE_Y_OFFSET if top > HEAVY_TOP_DENSITY else 0.0
+		# A cell taller than 32px is lifted so the feet stand where a 32px walker's do
+		_sprite.offset.y = (HEAVY_TOP_SPRITE_Y_OFFSET if top > HEAVY_TOP_DENSITY else 0.0) - (_archetype_frame.y - 32) / 2.0
 
 
 ## Read the sheet's declared walk rows into the direction map. `_current_dir` is this file's own
