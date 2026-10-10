@@ -163,7 +163,7 @@ func craft_blocked_reason(axis: String) -> String:
 	if not lenses.has(axis):
 		return "No such Lens."
 	if not is_recipe_unlocked(axis):
-		return "Recipe not yet unlocked — defeat a %s masterite." % axis
+		return "Recipe not yet unlocked — defeat %s %s masterite." % [article_for(axis), axis]
 	if owns_lens(axis):
 		return "You already hold this Lens."
 	var recipe := get_recipe(axis)
@@ -317,3 +317,8 @@ func get_lens_meta_effects(char_id: String) -> Dictionary:
 func get_voice_tint(char_id: String) -> String:
 	var axis := get_equipped(char_id)
 	return "" if axis == "" else str(get_lens(axis).get("voice_tint", ""))
+
+
+## "a Warden" but "an Arbiter": the unlock hints read "defeat a Arbiter Masterite".
+static func article_for(word: String) -> String:
+	return "an" if word.strip_edges().left(1).to_lower() in ["a", "e", "i", "o", "u"] else "a"

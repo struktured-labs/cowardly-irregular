@@ -32,6 +32,8 @@ const BORDER_SHADOW = RetroPanel.BORDER_SHADOW
 const SELECTED_COLOR = Color(0.2, 0.3, 0.5)
 const TEXT_COLOR = Color(1.0, 1.0, 1.0)
 const DISABLED_COLOR = Color(0.4, 0.4, 0.4)
+## In-row information on a row that can be highlighted: readable on SELECTED_COLOR, where the disabled grey is ~1.5:1.
+const SUBTITLE_COLOR = Color(0.72, 0.75, 0.85)
 const HEAL_COLOR = Color(0.4, 0.9, 0.4)
 const MP_COLOR = Color(0.4, 0.8, 1.0)
 const BUFF_COLOR = Color(1.0, 0.8, 0.3)
@@ -267,7 +269,7 @@ func _create_item_row(item: Dictionary, index: int) -> Control:
 	qty_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	qty_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	qty_label.add_theme_font_size_override("font_size", TextScale.scaled(12))
-	qty_label.add_theme_color_override("font_color", DISABLED_COLOR)
+	qty_label.add_theme_color_override("font_color", SUBTITLE_COLOR)
 	qty_label.name = "Quantity"
 	row.add_child(qty_label)
 
