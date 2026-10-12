@@ -261,12 +261,17 @@ static func _options_name(ipm) -> String:
 ## The opener reads a raw index, so it is named by index like {options}; `device_name` is the same
 ## test seam hint_for_action has.
 static func _field_menu_name(ipm, device_name: String = "") -> String:
-	var key := OS.get_keycode_string(OverworldMenu.TOGGLE_KEY)
+	## From the BINDING since 2026-10-12, so a rebind moves this hint with it. The consts are only
+	## the defaults the action ships with.
 	if ipm == null or not ipm.has_method("face_glyph_for_index"):
-		return key
+		return OS.get_keycode_string(OverworldMenu.TOGGLE_KEY)
+	var key: String = ipm.first_key_label(OverworldMenu.FIELD_MENU_ACTION,
+		OS.get_keycode_string(OverworldMenu.TOGGLE_KEY))
 	if device_name == "" and Input.get_connected_joypads().is_empty():
 		return key
-	var pad: String = str(ipm.face_glyph_for_index(OverworldMenu.TOGGLE_PAD_BUTTON, device_name))
+	var bound: Array = ipm.get_current_button_indices(OverworldMenu.FIELD_MENU_ACTION)
+	var idx: int = int(bound[0]) if not bound.is_empty() else OverworldMenu.TOGGLE_PAD_BUTTON
+	var pad: String = str(ipm.face_glyph_for_index(idx, device_name))
 	return "%s / %s" % [pad, key] if pad != "" and pad != "?" else key
 
 

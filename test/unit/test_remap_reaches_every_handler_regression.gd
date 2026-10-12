@@ -13,6 +13,42 @@ const PROFILES_OWNER := "res://src/input/InputProfileManager.gd"
 ## The value is the argument for the exemption, not a mute switch — a bare allowlist gets
 ## waved through by muscle memory on the second entry.
 const RAW_SITES_WITH_REASONS := {
+	## ⛔ THREE MORE NORTH-FACE SITES, DECLARED TOGETHER. ui_field_menu became remappable on
+	## 2026-10-12 and it defaults to the north face, so every raw read of that face is now a
+	## "shadow" by this guard's rule. Each is listed with WHY it cannot collide, not waived.
+	## (Two files that READ the token are NOT listed, because this guard rejects an exemption for a
+	## file it does not count as a handler and a dead entry is a lie: OverworldMenu's own
+	## `const TOGGLE_PAD_BUTTON`, and VirtualGamepad, which SYNTHESISES that press rather than
+	## handling it — an on-screen pad is an input source, so a rebound menu receives it correctly.)
+	"src/ui/autobattle/AutobattleGridEditor.gd::JOY_BUTTON_Y":
+		"cycle operator / delete cell in the autobattle grid. The editor is modal and GameLoop's "
+		+ "opener refuses while it is up (measured: neither the north face nor S reaches the "
+		+ "opener), so a field-menu press cannot arrive here.",
+	"src/ui/autogrind/AutogrindGridEditor.gd::JOY_BUTTON_Y":
+		"the same cell verb in the autogrind grid; same modal reasoning as the autobattle editor.",
+	"src/ui/autogrind/AutogrindUI.gd::JOY_BUTTON_Y":
+		"the grind console. GameLoop's opener returns early on _autogrind_ui_open(), so the field "
+		+ "menu never opens over the console and the two cannot answer one press.",
+	"src/ui/RebalanceReviewPanel.gd::JOY_BUTTON_Y":
+		"DISMISS ONE ENTRY in the rebalance review, a raw read its own comment already calls out. "
+		+ "It shares the north face with ui_field_menu, remappable since 2026-10-12, but the panel "
+		+ "is modal over Settings and the field menu opens only from EXPLORATION — one press cannot "
+		+ "reach both.",
+	"src/ui/CharacterCreationScreen.gd::JOY_BUTTON_Y":
+		"SKIP CREATION on the north face, pinned by test_a_pad_player_can_skip_creation. It shares "
+		+ "that face with ui_field_menu, remappable since 2026-10-12, but character creation runs "
+		+ "before a field exists and the menu opens only from EXPLORATION — one press cannot reach "
+		+ "both, and a field-menu rebind should not move the skip button.",
+	"src/battle/BattleScene.gd::JOY_BUTTON_Y":
+		"BATTLE SPEED, raw by design (CLAUDE.md Battle UX: it has no action, which is why the hint "
+		+ "bar names it through face_glyph_for_index). It shares the north face with ui_field_menu, "
+		+ "remappable since 2026-10-12, but speed is read only in battle and the field menu only "
+		+ "opens from exploration — one press can never reach both.",
+	"src/GameLoop.gd::JOY_BUTTON_Y":
+		"autogrind TURBO, inside the LoopState.AUTOGRIND arm. It shares the north face with "
+		+ "ui_field_menu, which became remappable on 2026-10-12 — but the field menu only opens "
+		+ "from EXPLORATION and the opener refuses while the grind console is up, so the two can "
+		+ "never both answer one press. A field-menu rebind should not move the turbo toggle.",
 	"src/GameLoop.gd::JOY_BUTTON_LEFT_SHOULDER":
 		"L+R chord cycles the autogrind tier — guarded by is_joy_button_pressed on BOTH, so it "
 		+ "is a physical two-button gesture, not a single action a player can rebind.",

@@ -96,22 +96,31 @@ const DISABLED_COLOR = Color(0.4, 0.4, 0.4)
 const SUBTITLE_COLOR = Color(0.72, 0.75, 0.85)
 
 
-## The pad button that toggles the overworld menu: the NORTH face, this game's "X". The west
-## face was accepted too and is `dash`, so every dash opened the menu.
+## The field menu is a real binding since 2026-10-12, so it follows a rebind and the Controls screen
+## lists it. These two stay as the DEFAULTS the action ships with — the north face (this game's "X";
+## the west face was accepted too and is `dash`, so every dash opened the menu) and S (the north face
+## of the emulator keyboard layout, since X is Confirm there). Read the ACTION for what is bound now.
+const FIELD_MENU_ACTION := "ui_field_menu"
 const TOGGLE_PAD_BUTTON := JOY_BUTTON_Y
-
-## The keyboard key for that button: S, the north face of the emulator (RetroArch) keyboard layout
-## (struktured 2026-09-29) — X is Confirm in that layout, so X can no longer open the menu.
 const TOGGLE_KEY := KEY_S
 
 
 ## The input that opens the overworld menu from exploration. One definition, so the
 ## opener in GameLoop and the pad close path in _input read the same button.
 static func is_toggle_event(event: InputEvent) -> bool:
+	## The binding first, so a rebind moves the opener AND everything that names it. The defaults
+	## below answer when the action is absent (a scene loaded without project.godot's InputMap).
+	if InputMap.has_action(FIELD_MENU_ACTION):
+		if event.is_action_pressed(FIELD_MENU_ACTION) and not event.is_echo():
+			return true
+	elif event is InputEventKey and event.pressed and event.keycode == TOGGLE_KEY:
+		return true
+	elif event is InputEventJoypadButton and event.pressed and event.button_index == TOGGLE_PAD_BUTTON:
+		return true
+	## Escape stays outside the binding: it is the universal back-out, already shared with ui_cancel
+	## and ui_menu, and a player who rebinds the menu should not lose it.
 	if event is InputEventKey and event.pressed:
-		return event.keycode == TOGGLE_KEY or event.keycode == KEY_ESCAPE
-	if event is InputEventJoypadButton and event.pressed:
-		return event.button_index == TOGGLE_PAD_BUTTON
+		return event.keycode == KEY_ESCAPE
 	if event is InputEventMouseButton and event.pressed:
 		return event.button_index == MOUSE_BUTTON_RIGHT
 	return false

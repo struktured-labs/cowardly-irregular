@@ -123,6 +123,8 @@ const ADVERTISED_AS := {
 	"ui_accept": "Confirm",
 	"ui_cancel": "Cancel",
 	"ui_menu": "Start",
+	# The field-menu row the reference gained on 2026-10-12, when this became a real action.
+	"ui_field_menu": "Open the menu",
 	"battle_advance": "Advance",
 	"battle_defer": "Defer",
 	"battle_toggle_auto": "Back / Select / Minus / Share",  # the ROW's gamepad cell — "Toggle Autobattle" also appears in prose below the table
