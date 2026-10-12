@@ -29,8 +29,6 @@ func after_all() -> void:
 ## has neither button; on a DualSense those are Cross and Circle.
 ##
 ##   AutogrindSummary       "Press A or B to continue"     accepts ui_accept OR ui_cancel
-##   AutogrindHistoryScreen "Press B or Esc to return"     accepts ui_cancel
-##   AutogrindTemplatePicker"Press B or Esc to close"      accepts ui_cancel
 ##   AutobattleGridEditor   "D-Pad:Select A:Confirm B:Cancel"
 ##
 ## @cowir-controller found these while correcting the reach of their own ratchet, which matches
@@ -57,8 +55,6 @@ func after_all() -> void:
 ##   AutogrindSummary         GameLoop loads it                          ANCHORED
 ##   AutogrindGridEditor      AutogrindUI.gd                              ANCHORED
 ##   AutobattleGridEditor     GameLoop + BattleScene                      ANCHORED
-##   AutogrindHistoryScreen   MenuScene.gd ONLY                           ⛔ DEAD HUB
-##   AutogrindTemplatePicker  MenuScene.gd ONLY                           ⛔ DEAD HUB
 ##
 ## MenuScene.tscn is referenced by NOTHING and MenuScene.gd is instantiated nowhere in src/
 ## (verified independently of @cowir-controller's report). So two of these captions are correct on
@@ -170,7 +166,6 @@ const DEFERRED := {}
 ##   docstring branch removed, # cut kept    Failing 1   the docstring case, alone
 ##   # cut removed, docstring branch kept    Failing 2   the 5 stripper cases AND the reachability
 ##                                                       arm — without the strip, COMMENTS naming
-##                                                       AutogrindHistoryScreen count as callers, so
 ##                                                       `measured 2` flips the dead-hub verdict.
 ##                                                       Fails toward ALARM, not a false clean.
 ##   whole function -> `return src`          Failing 2   IDENTICAL signature to removing only the
@@ -240,8 +235,6 @@ const REACHABILITY := {
 	"AutogrindSummary.gd": true,
 	"AutogrindGridEditor.gd": true,
 	"AutobattleGridEditor.gd": true,
-	"AutogrindHistoryScreen.gd": false,
-	"AutogrindTemplatePicker.gd": false,
 	## Added when the set-difference arm below reded on its FIRST run and named it — AutogrindUI
 	## derives glyphs (it gained hint_for_action in the .296 fold) and my hand-written table had
 	## never classified it. Anchored via GameLoop, which is the main scene's script.
@@ -398,12 +391,12 @@ func test_no_face_button_letter_is_frozen_into_a_caption() -> void:
 		% "\n  ".join(frozen))
 
 
-func test_the_four_repaired_surfaces_actually_ask_the_authority() -> void:
+func test_the_repaired_surfaces_actually_ask_the_authority() -> void:
 	# The census above proves no frozen letter remains; this proves the replacement DERIVES rather
 	# than having simply deleted the caption.
+	## Was four surfaces; the two unreachable grind screens were retired 2026-10-12 (struktured's
+	## ruling) and a file that no longer exists cannot be asked whether it derives its glyphs.
 	for f in ["res://src/ui/autogrind/AutogrindSummary.gd",
-			  "res://src/ui/autogrind/AutogrindHistoryScreen.gd",
-			  "res://src/ui/autogrind/AutogrindTemplatePicker.gd",
 			  "res://src/ui/autobattle/AutobattleGridEditor.gd"]:
 		var raw := FileAccess.get_file_as_string(f)
 		assert_gt(raw.length(), 500, "CONTROL: %s was read" % f.get_file())

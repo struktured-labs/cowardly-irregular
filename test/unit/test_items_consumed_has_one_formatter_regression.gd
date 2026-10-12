@@ -1,6 +1,6 @@
 extends GutTest
 
-## AutogrindHistoryScreen rendered "potion_minor x3" where AutogrindSummary rendered
+## The retired history screen rendered "potion_minor x3" where AutogrindSummary rendered
 ## "Potion Minor x3" — the SAME dict, two screens, one showing the raw id. Three surfaces each
 ## rolled their own formatter for {item_id: count} and one of them skipped name resolution.
 ##
@@ -19,7 +19,6 @@ extends GutTest
 ## test_autogrind_summary_items_canonical_name pins its exact expression. Changing it would red a
 ## guard to make identical output, which is a helper-name pin taxing a refactor rather than a defect.
 
-const HISTORY := "res://src/ui/autogrind/AutogrindHistoryScreen.gd"
 const LANE_DIRS := ["res://src/ui/autogrind", "res://src/ui/autobattle"]
 
 

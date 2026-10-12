@@ -2885,7 +2885,7 @@ func check_new_injuries() -> int:
 
 
 ## ONE formatter for an {item_id: count} dict, live or from a snapshot. Three surfaces each rolled
-## their own and AutogrindHistoryScreen's used str(item_id) — raw ids where the others resolve names.
+## their own and the retired history screen's used str(item_id) — raw ids where the others resolve names.
 ## ItemNameResolver's own docstring is the precedent: ticks 130-134 made three near-identical copies
 ## and tick 133 found a typo locked in by one of them. int() because a snapshot loaded from JSON
 ## carries floats where live state carries ints.
