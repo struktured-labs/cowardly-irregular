@@ -34,17 +34,31 @@ set -uo pipefail
 # makes "was tracing on?" an exact question rather than a threshold on line count.
 _TRACED='^\[SFX\] [^ ]+ -> [^ ]+ pitch='
 _PROC='^\[SFX\] procedural '
+# THE THIRD KIND, from @cowir-sfx's lane/a-suppressed-cue-says-so:
+#   [SFX] <key> SUPPRESSED (cooldown, <N> ms since last)
+# ⛔ THIS TOOL DROPPED IT SILENTLY AND THAT DEFEATED THE REPORT IT EXISTS FOR. A cue swallowed by
+# the 80ms per-key cooldown returns ~30 lines above the trace print, so an archived log read "1"
+# whether the code fired once or once per participant. @cowir-sfx surfaced the already-tracked
+# state as a log line; my two patterns are positive matches, so the new line was not MISFILED (as
+# it was in their own classifier, which keyed on `pitch=`) — it simply vanished, and "2 plays" is
+# a true sentence that loses the only evidence that answers the question.
+# Measured on a fixture before fixing: 2 plays + 2 suppressions reported as "2 cue play(s)".
+_SUPP='^\[SFX\] [^ ]+ SUPPRESSED \(cooldown'
+# ...and anything else beginning [SFX] that is none of the above. A classifier with N branches and
+# no else does not ignore the N+1th kind safely — it loses it. The next kind now ANNOUNCES itself
+# instead of being absorbed. (The boot lines are excluded by name because they are known and dull.)
+_BOOT='^\[SFX\] (Loaded sfx manifest|Derived [0-9]+ (ability|item) cues)'
 
 report() {
     local traced=0 logs=0 f
     local tmp; tmp="$(mktemp -d "$PWD/tmp/cuetrace.XXXXXX" 2>/dev/null || mktemp -d)"
     trap 'rm -rf "$tmp"' RETURN
-    : > "$tmp/pairs"
+    : > "$tmp/pairs"; : > "$tmp/supp"; : > "$tmp/unknown"
     for f in "$@"; do
         [ -f "$f" ] || { echo "[cue] BLOCKED: ${f} does not exist" >&2; return 2; }
         logs=$((logs+1))
         local n
-        n="$(command grep -acE -- "$_TRACED" "$f" || true)"
+        n="$(command grep -acE -- "$_TRACED|$_SUPP" "$f" || true)"
         case "$n" in ''|*[!0-9]*) n=0 ;; esac
         if [ "$n" -eq 0 ]; then
             echo "[cue] ${f##*/}: no per-cue lines — this log was produced WITHOUT COWIR_SFX_LOG_CUES=1"
@@ -58,6 +72,12 @@ report() {
             | sed -E 's/^\[SFX\] ([^ ]+) -> ([^ ]+) pitch=.*/\1\t\2/' >> "$tmp/pairs"
         command grep -aoE -- "$_PROC[^ ]+" "$f" \
             | sed -E 's/^\[SFX\] procedural ([^ ]+).*/procedural:\1\tprocedural:\1/' >> "$tmp/pairs" || true
+        command grep -aE -- "$_SUPP" "$f" \
+            | sed -E 's/^\[SFX\] ([^ ]+) SUPPRESSED.*/\1/' >> "$tmp/supp" || true
+        # Every [SFX] line that matched none of the four known shapes.
+        command grep -aE '^\[SFX\] ' "$f" \
+            | command grep -avE -- "$_TRACED" | command grep -avE -- "$_PROC" \
+            | command grep -avE -- "$_SUPP"   | command grep -avE -- "$_BOOT" >> "$tmp/unknown" || true
     done
     [ "$traced" -gt 0 ] || { echo "[cue] no log carried cue tracing — nothing to report" >&2; return 3; }
 
@@ -94,6 +114,28 @@ report() {
         echo "[cue]   no substitutions: every cue resolved to itself or to a _vN variant of itself"
     fi
     [ "${vars:-0}" -gt 0 ] && echo "[cue]   (${vars} variant rotation(s) like key -> key_v2, which is the manifest working)"
+
+    # SUPPRESSIONS ARE THE COUNT EVIDENCE. plays + suppressions is a LOWER BOUND on calls for that
+    # key: the cooldown swallows a repeat within 80ms, so a key showing 1 play and 1 suppression was
+    # asked for at least twice. This is the column that makes "once per window" (2 keys, 2 plays, 0
+    # suppressions) distinguishable from "once per participant" (2 keys, 2 plays, 2 suppressions at
+    # N=2) — @cowir-battle's correction to my own arithmetic, which I had as 1+0 vs 1+1.
+    if [ -s "$tmp/supp" ]; then
+        local sn; sn="$(wc -l < "$tmp/supp")"
+        echo "[cue]   ${sn} suppression(s) by the 80ms per-key cooldown — plays+suppressions is a"
+        echo "[cue]   LOWER BOUND on calls, so a key below was asked for at least that many times:"
+        sort "$tmp/supp" | uniq -c | sort -rn | head -20 | sed 's/^/        /'
+    else
+        echo "[cue]   0 suppressions recorded (either nothing repeated inside 80ms, or this log"
+        echo "[cue]   predates the SUPPRESSED line — tracing alone does not imply it)"
+    fi
+
+    # An [SFX] shape this tool does not know about is REPORTED, never absorbed.
+    if [ -s "$tmp/unknown" ]; then
+        echo "[cue]   ⚠️ $(wc -l < "$tmp/unknown") [SFX] line(s) of an UNRECOGNISED shape — this tool"
+        echo "[cue]   does not classify them, so they are counted nowhere above. Add the shape:"
+        sort -u "$tmp/unknown" | head -5 | sed 's/^/        /'
+    fi
 
     # The coverage bound, DERIVED from the log rather than asserted, so the artifact carries it.
     local f1="$1" shots battles group
@@ -182,6 +224,50 @@ selftest() {
     # Several logs: the union, with the untraced one counted but not reported.
     out="$("$self" "$dir/traced.log" "$dir/untraced.log" "$dir/clean.log" 2>&1)"
     chk "a mixed set says how many logs carried tracing"  'OBSERVED in 2 of 3'         0
+
+    # ── THE THIRD KIND: @cowir-sfx's SUPPRESSED line, which this tool dropped silently ──────
+    # The signatures @cowir-battle's prediction turns on, both directions, at N=2:
+    #   once per window      2 keys, 2 plays, 0 suppressions
+    #   once per participant 2 keys, 2 plays, 2 suppressions
+    {   printf '[SFX] status_exposed -> status_exposed pitch=1.00 (SFXPlayer1)\n'
+        printf '[SFX] status_exposed SUPPRESSED (cooldown, 12 ms since last)\n'
+        printf '[SFX] status_cannot_defer -> status_cannot_defer pitch=1.00 (SFXPlayer2)\n'
+        printf '[SFX] status_cannot_defer SUPPRESSED (cooldown, 9 ms since last)\n'
+    } > "$dir/perparticipant.log"
+    out="$("$self" "$dir/perparticipant.log" 2>&1)"
+    chk "suppressions are COUNTED"                        '2 suppression(s)'           0
+    chk "...and named per key"                            'status_exposed'             0
+    chk "...and NOT counted as plays"                     '2 cue play(s)'              0
+    chk "...with the lower-bound reading stated"          'LOWER BOUND on calls'       0
+    {   printf '[SFX] status_exposed -> status_exposed pitch=1.00 (SFXPlayer1)\n'
+        printf '[SFX] status_cannot_defer -> status_cannot_defer pitch=1.00 (SFXPlayer2)\n'
+    } > "$dir/perwindow.log"
+    out="$("$self" "$dir/perwindow.log" 2>&1)"
+    chk "once-per-window reports ZERO suppressions"       '0 suppressions recorded'    0
+    chk "...and does not claim a lower bound"             'LOWER BOUND'                1
+    # A log of ONLY suppressions is still a traced log — the detector must not call it untraced.
+    printf '[SFX] menu_move SUPPRESSED (cooldown, 3 ms since last)\n' > "$dir/onlysupp.log"
+    out="$("$self" "$dir/onlysupp.log" 2>&1)"
+    chk "a suppression-only log counts as TRACED"          'WITHOUT COWIR_SFX_LOG_CUES' 1
+
+    # ⛔ THE STRUCTURAL ARM: a FOURTH [SFX] shape must be REPORTED, not absorbed. @cowir-sfx's own
+    # classifier MISFILED the new kind (it keyed on `pitch=` and fell through to a boot-summary
+    # arm); mine lost it instead, which is quieter and no better. A branch set with no else does
+    # not handle the next kind safely.
+    {   printf '[SFX] menu_move -> menu_move pitch=1.00 (SFXPlayer1)\n'
+        printf '[SFX] something_new_nobody_told_me_about key=1 (SFXPlayer9)\n'
+    } > "$dir/fourth.log"
+    out="$("$self" "$dir/fourth.log" 2>&1)"
+    chk "an UNRECOGNISED [SFX] shape is reported"          'UNRECOGNISED shape'         0
+    chk "...and quoted so the shape can be added"          'something_new_nobody_told'  0
+    # CONTROL: the known-and-dull boot lines must NOT trip that warning, or it fires on every log.
+    {   printf '[SFX] Loaded sfx manifest: 951 sounds\n'
+        printf '[SFX] Derived 101 ability cues from abilities.json (hand map: 25)\n'
+        printf '[SFX] Derived 17 item cues from items.json\n'
+        printf '[SFX] menu_move -> menu_move pitch=1.00 (SFXPlayer1)\n'
+    } > "$dir/boot.log"
+    out="$("$self" "$dir/boot.log" 2>&1)"
+    chk "boot lines do NOT trip the unrecognised warning"  'UNRECOGNISED shape'         1
 
     out="$("$self" "$dir/nope.log" 2>&1)"; local ec2=$?
     [ "$ec2" -eq 2 ] && { pass=$((pass+1)); printf '  ok    %-56s\n' "a missing log exits 2"; } \
