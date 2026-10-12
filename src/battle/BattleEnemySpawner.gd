@@ -657,6 +657,15 @@ func spawn_encounter_enemies() -> void:
 		if ability_source.has("abilities"):
 			enemy.job = {"abilities": ability_source["abilities"], "name": str(stats.get("name", base_id))}
 
+		# Every exploration battle arrives here: GameLoop passes is_encounter=true
+		# for ALL of them, bosses included, so the dragons / Warden / Mordaine
+		# took this path and never got the flag spawn_forced_enemies sets at :481.
+		if monster_data.get("boss", false) or monster_data.get("miniboss", false):
+			enemy.set_meta("is_boss", true)
+			enemy.set_meta("is_miniboss", true)
+			if monster_data.has("dialogue"):
+				_scene._boss_dialogue_data = monster_data["dialogue"]
+
 		# Store Masterite metadata for specialized AI
 		if monster_data.get("masterite", false):
 			enemy.set_meta("masterite", true)
