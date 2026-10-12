@@ -16,6 +16,10 @@ var _bank_player: AudioStreamPlayer  # dedicated voice: full_bank_unleash replac
 var _refuse_player: AudioStreamPlayer  # dedicated voice: a refused Advance press lands while the job's 3s fifth rung is still ringing (2026-09-14)
 var _weather_player: AudioStreamPlayer  # dedicated voice: a 4s thunder clap shared the channel every attack hit lands on (2026-09-18)
 var _ability_player: AudioStreamPlayer
+## Per-cue tracing. OFF by default: it was 27-41% of struktured's play logs (4,175-5,998 lines a
+## session, measured 2026-10-05), burying the errors those logs exist to surface. `COWIR_SFX_LOG_CUES=1`
+## or setting this true restores it; the boot summaries and every push_warning are never gated.
+var log_cues: bool = false
 var _music_player: AudioStreamPlayer
 var _music_player_b: AudioStreamPlayer  # Second player for crossfade
 var _ambient_player: AudioStreamPlayer  # Looping weather/environment ambience
@@ -204,6 +208,8 @@ var _ability_sounds: Dictionary = {}
 
 
 func _ready() -> void:
+	if OS.get_environment("COWIR_SFX_LOG_CUES") == "1":
+		log_cues = true
 	_load_sfx_manifest()
 	_setup_audio_players()
 	_setup_default_ability_sounds()
@@ -985,7 +991,8 @@ func _try_play_sfx_from_manifest(player: AudioStreamPlayer, sound_key: String, v
 				player.volume_db = volume_db_override
 			player.pitch_scale = final_pitch
 			player.play()
-			print("[SFX] %s -> %s pitch=%.2f (%s)" % [sound_key, resolved_key, final_pitch, player.name])
+			if log_cues:
+				print("[SFX] %s -> %s pitch=%.2f (%s)" % [sound_key, resolved_key, final_pitch, player.name])
 			return true
 		var cached_fallback: String = str(entry.get("fallback_to", ""))
 		if cached_fallback != "" and cached_fallback != sound_key and _sfx_manifest.has(cached_fallback):
@@ -1007,7 +1014,8 @@ func _try_play_sfx_from_manifest(player: AudioStreamPlayer, sound_key: String, v
 		player.volume_db = volume_db_override
 	player.pitch_scale = final_pitch
 	player.play()
-	print("[SFX] %s -> %s pitch=%.2f (%s)" % [sound_key, resolved_key, final_pitch, player.name])
+	if log_cues:
+		print("[SFX] %s -> %s pitch=%.2f (%s)" % [sound_key, resolved_key, final_pitch, player.name])
 	return true
 
 
@@ -1772,7 +1780,8 @@ func _play_sound(player: AudioStreamPlayer, params: Dictionary) -> void:
 	## an inherited pitch_scale applies the same bias a second time.
 	player.pitch_scale = 1.0
 	player.play()
-	print("[SFX] procedural %s freq=%s dur=%s (%s)" % [sound_type, str(freq), str(duration), player.name])
+	if log_cues:
+		print("[SFX] procedural %s freq=%s dur=%s (%s)" % [sound_type, str(freq), str(duration), player.name])
 
 	var playback = player.get_stream_playback()
 	if not playback:
