@@ -40,6 +40,7 @@ func _wipe() -> void:
 
 
 func before_each() -> void:
+	PartyPersonas._recent_spoken.clear()  # the pick window leaks across FILES; see test_a_voice_store_is_left_as_it_was_found
 	_wipe()
 	_saved = {
 		"cast": VoiceService._cast.duplicate(true), "cache": VoiceService.cache, "store": VoicePool.store,
@@ -73,6 +74,7 @@ func before_each() -> void:
 
 
 func after_each() -> void:
+	PartyPersonas._recent_spoken.clear()  # the pick window leaks across FILES; see test_a_voice_store_is_left_as_it_was_found
 	BattleManager.party_combat_line.disconnect(_on_line)
 	LLMService.cancel_all("pool picker fixture teardown")
 	_model.request_finished.disconnect(LLMService._on_backend_finished)

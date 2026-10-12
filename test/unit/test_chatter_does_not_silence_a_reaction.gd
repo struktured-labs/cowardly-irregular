@@ -36,7 +36,12 @@ var _bm
 var _pc: Combatant
 
 
+func after_each() -> void:
+	PartyPersonas._recent_spoken.clear()  # the pick window leaks across FILES; see test_a_voice_store_is_left_as_it_was_found
+
+
 func before_each() -> void:
+	PartyPersonas._recent_spoken.clear()  # the pick window leaks across FILES; see test_a_voice_store_is_left_as_it_was_found
 	_bm = load("res://src/battle/BattleManager.gd").new()
 	add_child_autofree(_bm)
 	_pc = Combatant.new()

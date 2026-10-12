@@ -13,6 +13,7 @@ var _saved_round: int
 
 
 func before_each() -> void:
+	PartyPersonas._recent_spoken.clear()  # the pick window leaks across FILES; see test_a_voice_store_is_left_as_it_was_found
 	_saved_rogue = (PartyPersonas._data.get("rogue", {}) as Dictionary).duplicate(true)
 	_saved_last = PartyPersonas._last_variant.duplicate()
 	_saved_llm = GameState.party_llm_dialogue_enabled
@@ -21,6 +22,7 @@ func before_each() -> void:
 
 
 func after_each() -> void:
+	PartyPersonas._recent_spoken.clear()  # the pick window leaks across FILES; see test_a_voice_store_is_left_as_it_was_found
 	PartyPersonas._data["rogue"] = _saved_rogue
 	PartyPersonas._last_variant = _saved_last
 	GameState.party_llm_dialogue_enabled = _saved_llm
