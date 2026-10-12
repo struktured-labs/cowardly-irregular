@@ -32,6 +32,17 @@ extends GutTest
 const CASTLE := "res://src/maps/dungeons/CastleHarmonia.gd"
 const PACK := "res://data/castle_harmonia_narrative.json"
 
+var _snap: Dictionary = {}
+
+
+## The floor is cross-test state; `CastleFloor` names it and puts it back.
+func before_each() -> void:
+	_snap = CastleFloor.snapshot()
+
+
+func after_each() -> void:
+	CastleFloor.restore(_snap)
+
 
 func _pack() -> Dictionary:
 	var raw := FileAccess.get_file_as_string(PACK)
@@ -41,10 +52,28 @@ func _pack() -> Dictionary:
 	return parsed as Dictionary if parsed is Dictionary else {}
 
 
+## ⛔ THE CODE HALF — AND THIS GUARD WAS MEASURED FULLY SILENT WITHOUT IT. Attack: delete the
+## FLOOR-3 servant's mark outright and name her in a quoted comment inside `_NPC_MARKS`.
+##
+##     before   EC=0 · 7/7 PASSING   an authored NPC reaches nobody and nothing says so
+##     after    EC=1 · Failing 2     the placement arm names her, the floor-3 build arm counts her
+##
+## Two independent causes, which is why one fix was not enough: `src.contains(npc_id)` is an
+## ACCEPTANCE assert that prose satisfies (@cowir-story's split), and the build arm below used to
+## measure ONE floor — whichever an earlier test left set — so a loss on any other was invisible.
+##
+## 🔑 The controls are the pair this file's shape supports: `GdSource.split` puts only `"""` regions
+## in `doc` and CastleHarmonia.gd has zero of them (measured doc len=0), so the usual doc floor
+## would red on a correct strip. One control proves code survived, the other that prose did not.
 func _source() -> String:
-	var src := FileAccess.get_file_as_string(CASTLE)
-	assert_ne(src, "", "CONTROL: CastleHarmonia.gd must be readable")
-	return src
+	var raw := FileAccess.get_file_as_string(CASTLE)
+	assert_ne(raw, "", "CONTROL: CastleHarmonia.gd must be readable")
+	var code: String = str(GdSource.split(raw)["code"])
+	assert_true(code.contains("func _place_castle_npcs"),
+		"CONTROL: the strip must keep real code; every arm here is vacuous if it ate the placer")
+	assert_false(code.contains("##"),
+		"CONTROL: no comment may survive into the code half, or a presence assert is still prose-satisfiable")
+	return code
 
 
 func test_the_pack_has_a_consumer_at_all() -> void:
@@ -127,53 +156,63 @@ func test_a_broken_pack_places_nobody_rather_than_a_silent_npc() -> void:
 		"a missing pack must degrade loudly and leave the castle's existing narration intact")
 
 
-## ⛔ THE ARM THAT MATTERS, because every arm above reads SOURCE. A source guard certifies spelling:
-## it would pass with `_place_castle_npcs` never called, with the pack path wrong at runtime, or with
-## `_sign_position` returning the same cell five times. This one builds the castle and counts bodies.
-func test_the_castle_actually_builds_its_npcs() -> void:
-	var vp := SubViewport.new()
-	vp.size = Vector2i(64, 64)
-	vp.world_2d = World2D.new()
-	add_child_autofree(vp)
-	var castle = load(CASTLE).new()
-	vp.add_child(castle)
-	await get_tree().physics_frame
-	await get_tree().physics_frame
-
-	var found: Dictionary = {}
-	var cells: Dictionary = {}
-	var stack: Array = [castle]
-	while not stack.is_empty():
-		var n = stack.pop_back()
-		for c in n.get_children():
-			stack.append(c)
-		if n is OverworldNPC and str(n.name).begins_with("CastleNPC_"):
-			found[str(n.npc_id)] = n
-			var cell: String = str(Vector2i(n.position / float(castle.TILE_SIZE)))
-			if cells.has(cell):
-				fail_test("two castle NPCs on cell %s: '%s' and '%s' — nearest-wins would make one unreachable" % [
-					cell, str(cells[cell]), str(n.npc_id)])
-			cells[cell] = str(n.npc_id)
-
+## ⛔ THE ARM THAT MATTERS, because every arm above reads SOURCE — and a source arm would pass with
+## `_place_castle_npcs` never called, the pack path wrong at runtime, or `_sign_position` returning
+## one cell five times. This builds the castle on EVERY floor and counts bodies, including floor 4,
+## where the pack authors nobody: placing every NPC on every floor is caught, not merely unlikely.
+func test_the_castle_builds_each_floors_npcs_and_no_others() -> void:
 	var authored: Dictionary = _pack().get("npcs", {})
-	var on_this_floor: Array = []
-	for npc_id in authored.keys():
-		if int((authored[npc_id] as Dictionary).get("floor", 0)) == int(castle.current_floor):
-			on_this_floor.append(str(npc_id))
-	on_this_floor.sort()
-	assert_gt(on_this_floor.size(), 0,
-		"CONTROL: the pack must author someone on floor %d, or this arm proves nothing" % int(castle.current_floor))
+	assert_gt(authored.size(), 0, "CONTROL: the pack must author somebody")
+	var covered: Array = []
+	var placed_total := 0
+	for floor_num in [1, 2, 3, 4]:
+		var castle = await CastleFloor.build(self, floor_num)
+		assert_not_null(castle, "CONTROL: the castle must build on floor %d" % floor_num)
+		if castle == null:
+			continue
+		assert_eq(int(castle.total_floors), 4,
+			"CONTROL: this arm walks floors 1-4; the castle now has %d" % int(castle.total_floors))
+		assert_eq(int(castle.current_floor), floor_num,
+			"CONTROL: floor %d was asked for and the castle built %d, so the rest of this arm would measure the wrong floor" % [
+				floor_num, int(castle.current_floor)])
 
-	var built: Array = found.keys()
-	built.sort()
-	assert_eq(built, on_this_floor,
-		"floor %d should hold exactly the NPCs the pack assigns it. built=%s authored=%s" % [
-			int(castle.current_floor), str(built), str(on_this_floor)])
+		var want: Array = []
+		for npc_id in authored.keys():
+			if int((authored[npc_id] as Dictionary).get("floor", 0)) == floor_num:
+				want.append(str(npc_id))
+		want.sort()
 
-	for npc_id in found.keys():
-		var npc = found[npc_id]
-		assert_gt((npc.dialogue_lines as Array).size(), 0,
-			"'%s' was placed with no lines — a silent NPC advertises a talk it cannot have" % str(npc_id))
-		assert_true(npc.is_in_group("interactables"),
-			"'%s' must be interactable or the player cannot reach its lines" % str(npc_id))
+		var found: Dictionary = {}
+		var cells: Dictionary = {}
+		var stack: Array = [castle]
+		while not stack.is_empty():
+			var n = stack.pop_back()
+			for c in n.get_children():
+				stack.append(c)
+			if n is OverworldNPC and str(n.name).begins_with("CastleNPC_"):
+				found[str(n.npc_id)] = n
+				var cell: String = str(Vector2i(n.position / float(castle.TILE_SIZE)))
+				if cells.has(cell):
+					fail_test("floor %d: two castle NPCs on cell %s: '%s' and '%s' — nearest-wins would make one unreachable" % [
+						floor_num, cell, str(cells[cell]), str(n.npc_id)])
+				cells[cell] = str(n.npc_id)
 
+		var built: Array = found.keys()
+		built.sort()
+		assert_eq(built, want,
+			"floor %d should hold exactly the NPCs the pack assigns it. built=%s authored=%s" % [
+				floor_num, str(built), str(want)])
+		for npc_id in found.keys():
+			var npc = found[npc_id]
+			assert_gt((npc.dialogue_lines as Array).size(), 0,
+				"'%s' was placed with no lines — a silent NPC advertises a talk it cannot have" % str(npc_id))
+			assert_true(npc.is_in_group("interactables"),
+				"'%s' must be interactable or the player cannot reach its lines" % str(npc_id))
+		placed_total += want.size()
+		covered.append("f%d: %d" % [floor_num, want.size()])
+
+	assert_eq(covered.size(), 4, "CONTROL: all four floors must have been measured, got %s" % str(covered))
+	assert_eq(placed_total, authored.size(),
+		"CONTROL: the floors together must account for all %d authored NPCs, not %d — one assigned to no floor reaches nobody" % [
+			authored.size(), placed_total])
+	gut.p("  " + ", ".join(covered))
