@@ -160,14 +160,35 @@ func test_a_suppressed_cue_says_so_under_full_tracing() -> void:
 		"the suppression line must be gated on log_cues ALONE — a suppression is a repeat by definition, so the per-cue cap would re-create the ambiguity it exists to remove")
 
 
-func test_the_suppression_line_is_quiet_in_normal_play() -> void:
-	## The cap arms above prove each cue still appears; this proves the new line does not ride along.
-	## A suppressed cue is the COMMON case at 4x speed, so leaking these into play would undo .654.
+## ⛔ THIS ARM USED TO BE A CLAUSE THAT CANNOT FAIL. It set `log_cues = false` and then asserted
+## `not SoundManager.log_cues` two lines later — tautological, never touching the suppression path,
+## under a confident comment claiming it proved the new line does not leak into play. Found 2026-10-12
+## by turning @cowir-battle's lens (an anchor that was right with an INERT control defending it) on my
+## own shipped guards. The gating claim is covered by the source arm above; what was missing is the
+## one that actually matters:
+##
+## THE SUPPRESSION MUST STILL HAPPEN WHEN THE LOGGING IS OFF. The flag and the print sit three lines
+## apart in the same block, so moving state INSIDE `if log_cues:` would make the cooldown work only
+## while tracing is on — and every arm in this file would stay green, because they all run with
+## tracing either on or irrelevant. Mutation: move `_sfx_suppressed_by_cooldown = true` under the
+## gate and this reds; nothing else does.
+func test_a_cue_is_still_suppressed_when_the_logging_is_off() -> void:
 	var was: bool = SoundManager.log_cues
 	SoundManager.log_cues = false
 	SoundManager._cue_log_counts.clear()
-	SoundManager._sfx_cooldowns["probe_supp"] = Time.get_ticks_msec()
-	var gated: bool = not SoundManager.log_cues
-	SoundManager._sfx_cooldowns.erase("probe_supp")
+	SoundManager._sfx_cooldowns.erase("menu_move")
+	SoundManager._sfx_suppressed_by_cooldown = false
+	var first: bool = SoundManager._try_play_sfx_from_manifest(
+		SoundManager._ui_player, "menu_move", SoundManager.SFX_UI_BASE_DB)
+	var flag_after_first: bool = SoundManager._sfx_suppressed_by_cooldown
+	var second: bool = SoundManager._try_play_sfx_from_manifest(
+		SoundManager._ui_player, "menu_move", SoundManager.SFX_UI_BASE_DB)
+	var flag_after_second: bool = SoundManager._sfx_suppressed_by_cooldown
+	SoundManager._sfx_cooldowns.erase("menu_move")
+	SoundManager._sfx_suppressed_by_cooldown = false
 	SoundManager.log_cues = was
-	assert_true(gated, "log_cues must be off for this arm to mean anything")
+	assert_true(first, "CONTROL: the first play must land, or the second proves nothing")
+	assert_false(flag_after_first, "CONTROL: the first play of a cleared key is not a suppression")
+	assert_true(second, "a suppressed cue still returns true, so the procedural fallback stays quiet")
+	assert_true(flag_after_second,
+		"the second play inside the cooldown window was NOT recorded as suppressed while log_cues is off — the cooldown's STATE now depends on the logging flag, so an archived play log and the live behaviour disagree")
