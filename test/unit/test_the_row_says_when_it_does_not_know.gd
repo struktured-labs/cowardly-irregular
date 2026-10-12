@@ -22,6 +22,7 @@ extends GutTest
 
 const BACKEND_SRC := "res://src/llm/HTTPBackend.gd"
 const SETTINGS_SRC := "res://src/ui/SettingsMenu.gd"
+const GdSource := preload("res://test/unit/helpers/gd_source.gd")
 const PRODUCER := "unavailable_kind"
 const CONSUMER := "_get_llm_status_subtitle"
 
@@ -57,29 +58,26 @@ func _body_of(src: String, fn: String) -> String:
 	return src.substr(at, nxt - at) if nxt > -1 else src.substr(at)
 
 
-## [tokens, unreadable] — the three states kept apart.
-##   a quoted literal with content -> a MEMBER
-##   `return ""`                   -> readable, NOT a member (the healthy-backend case)
-##   anything else returning       -> UNREADABLE, reported so the caller can refuse
-## `[^"]*` cannot cross a quote, so the bound is structural rather than remembered. An imperative
-## `find("\"", i)` walks to the next quote ANYWHERE and imports an unrelated string.
-func _returned_literals(body: String) -> Array:
-	var tokens: Array[String] = []
-	var unreadable: Array[String] = []
-	var literal := RegEx.create_from_string('^\\s*return\\s+"([^"]*)"\\s*$')
-	var any_return := RegEx.create_from_string('^\\s*return\\b')
-	for raw in body.split("\n"):
-		var line: String = raw.split("#")[0]
-		if any_return.search(line) == null:
-			continue
-		var m: RegExMatch = literal.search(line)
-		if m == null:
-			unreadable.append(line.strip_edges())
-			continue
-		var tok: String = m.get_string(1)
-		if tok != "":
-			tokens.append(tok)
-	return [tokens, unreadable]
+## The kinds the backend can produce, READ THROUGH THE CLASS rather than parsed out of its source.
+## A const read cannot be defeated by prose, by a bracket in a type annotation, or by a bounding
+## slip: the engine already parsed the declaration. Replaces a text extractor that needed four
+## assertions to be trustworthy — three lanes converged on this as the top rung on 2026-10-12.
+func _producible_kinds() -> Array[String]:
+	var out: Array[String] = []
+	for v in HTTPBackend.KIND_FOR_CODE.values():
+		if not out.has(str(v)):
+			out.append(str(v))
+	if not out.has(HTTPBackend.KIND_FALLBACK):
+		out.append(HTTPBackend.KIND_FALLBACK)
+	return out
+
+
+## The consumer's source with comments AND docstring regions removed, via the shared stripper.
+## `split("#")[0]` was a private line-pass: a `#` inside a string truncated the line, and it could
+## not touch a `"""` region at all — no tighter pattern reaches one, because the construct spans
+## lines. Every arm and control below routes through HERE, never through GdSource directly.
+func _consumer_code() -> String:
+	return str(GdSource.split(_read(SETTINGS_SRC))["code"])
 
 
 ## [arms, unreadable] — the consumer side gets the SAME three states as the producer side.
@@ -93,12 +91,11 @@ func _match_arms(body: String) -> Array:
 	var literal := RegEx.create_from_string('^\\s*"([^"]*)"\\s*:\\s*$')
 	var ident := RegEx.create_from_string('^\\t\\t([A-Za-z][A-Za-z0-9_]*)\\s*:\\s*$')
 	for raw in body.split("\n"):
-		var line: String = raw.split("#")[0]
-		var m: RegExMatch = literal.search(line)
+		var m: RegExMatch = literal.search(raw)
 		if m != null:
 			arms.append(m.get_string(1))
 			continue
-		var u: RegExMatch = ident.search(line)
+		var u: RegExMatch = ident.search(raw)
 		if u != null:
 			unreadable.append(u.get_string(1))
 	return [arms, unreadable]
@@ -107,18 +104,22 @@ func _match_arms(body: String) -> Array:
 # ── 1. the derivation: produced ⊆ branched ───────────────────────────────────────────────────────
 
 func test_every_kind_the_backend_can_produce_has_its_own_row_message() -> void:
-	var produced: Array = _returned_literals(_body_of(_read(BACKEND_SRC), PRODUCER))
-	var kinds: Array = produced[0]
-	assert_eq(produced[1], [], "the producer has a return this guard cannot read: %s — see the refusal arm" % [produced[1]])
-	assert_gt(kinds.size(), 3,
-		"CONTROL: derived only %d kinds from %s — the extractor is broken, and an empty set makes the assert below vacuous" % [kinds.size(), PRODUCER])
-	var consumed: Array = _match_arms(_body_of(_read(SETTINGS_SRC), CONSUMER))
+	var kinds: Array[String] = _producible_kinds()
+	## CONTENT floor, not a magnitude one: a wrong range can fake a count. SettingsMenu holds 9
+	## quoted arm labels, 5 in this function and 4 in another match — so a shifted bound could
+	## total 5 from the wrong place and pass `>= 5`. Naming two members cannot be faked that way.
+	for must in ["key_rejected", "unreachable"]:
+		assert_true(kinds.has(must),
+			"CONTROL: %s is not in the producer's kind table — the read is broken, and an empty set makes the assert below vacuous" % must)
+	var consumed: Array = _match_arms(_body_of(_consumer_code(), CONSUMER))
 	var arms: Array = consumed[0]
 	assert_eq(consumed[1], [],
 		("the row has match patterns this guard cannot read: %s. They route exactly as a literal "
 		+ "does, so a kind behind one would read as UNBRANCHED and this arm would blame the wrong "
 		+ "thing. Use a literal, or teach the scan to resolve the const.") % [consumed[1]])
-	assert_gt(arms.size(), 3, "CONTROL: found only %d match arms in %s" % [arms.size(), CONSUMER])
+	for must in ["key_rejected", "unreachable"]:
+		assert_true(arms.has(must),
+			"CONTROL: the row's own %s arm was not read — the extraction is wrong, not the row" % must)
 	var unbranched: Array[String] = []
 	for k in kinds:
 		if not arms.has(k):
@@ -131,7 +132,7 @@ func test_every_kind_the_backend_can_produce_has_its_own_row_message() -> void:
 func test_the_catch_all_is_not_shared_with_a_real_kind() -> void:
 	## THE DEFECT ITSELF, as a relation: `unreachable` must have its OWN arm. While it lived in the
 	## catch-all, an unknown kind inherited its message — and that message is an instruction.
-	var arms: Array = (_match_arms(_body_of(_read(SETTINGS_SRC), CONSUMER)))[0]
+	var arms: Array = (_match_arms(_body_of(_consumer_code(), CONSUMER)))[0]
 	assert_true(arms.has("unreachable"),
 		"'unreachable' has no arm of its own, so it is sharing the catch-all with every kind this screen does not know — got %s" % [arms])
 
@@ -197,67 +198,38 @@ func test_the_real_kinds_still_read_as_before() -> void:
 
 # ── 3. the extractor, which is the half nobody points an arm at ──────────────────────────────────
 
-func test_the_extractor_refuses_a_return_it_cannot_read() -> void:
-	## "I found no members" and "I cannot read this" must not share a value. A derivation that
-	## silently skips an unparseable return reports a SHORT set and the produced⊆branched assert
-	## then passes about the members it happened to see.
-	var synthetic: String = ("func unavailable_kind() -> String:\n"
-		+ "\tif _ready_flag:\n\t\treturn \"\"\n"
-		+ "\tmatch _last_probe_code:\n"
-		+ "\t\t0:\n\t\t\treturn \"unreachable\"\n"
-		+ "\t\t_:\n\t\t\treturn _kind_for(_last_probe_code)\n")
-	var got: Array = _returned_literals(synthetic)
-	assert_eq(got[0], (["unreachable"] as Array[String]), "the readable member must still be found")
-	assert_eq((got[1] as Array).size(), 1,
-		"a NON-LITERAL return was skipped silently instead of reported — got unreadable=%s" % [got[1]])
-	assert_true(str((got[1] as Array)[0]).contains("_kind_for"),
-		"the refusal must name the return it could not read: %s" % [got[1]])
-
-
-func test_an_empty_literal_is_readable_and_simply_not_a_kind() -> void:
-	## ⛔ THE FALSE RED THIS ARM EXISTS FOR. `unavailable_kind` returns "" for an AVAILABLE backend —
-	## an empty LITERAL, readable, and not a member. @cowir-overworld's first refusal used `[a-z_]+`
-	## and fired on exactly this shape, on a clean tree: the refusal tripped on the case it exists to
-	## allow. `[^"]*` reads it; the empty capture is then dropped as a non-member.
-	var got: Array = _returned_literals("func f() -> String:\n\treturn \"\"\n")
-	assert_eq(got[0], ([] as Array[String]), "an empty literal is not a kind")
-	assert_eq(got[1], [], "an empty literal is READABLE — refusing it reds a correct producer")
-
-
-func test_the_extractor_cannot_import_a_string_from_elsewhere_in_the_function() -> void:
-	## The unbounded-scan defect, as a control. An imperative find() for the next quote walks past
-	## the return and imports whatever string comes next — yielding a phantom member that either
-	## fails naming something that does not exist, or passes because the phantom is in the other set.
-	var hostile: String = ("func unavailable_kind() -> String:\n"
-		+ "\t\t\treturn \"unreachable\"\n"
-		+ "\tif debug:\n\t\tprint(\"MUST NOT BE IMPORTED AS A KIND\")\n")
-	var got: Array = _returned_literals(hostile)
-	assert_eq(got[0], (["unreachable"] as Array[String]),
-		"the extractor imported a string that is not a return value: %s" % [got[0]])
-
-
 func test_the_body_bound_stops_at_the_next_function() -> void:
-	## CONTROL on the bound: a neighbouring function's returns must not enter the set, or adding a
-	## function below the producer silently grows the derived kinds.
-	var two: String = ("func unavailable_kind() -> String:\n\t\t\treturn \"unreachable\"\n"
-		+ "\nfunc something_else() -> String:\n\t\t\treturn \"not_a_kind\"\n")
-	var got: Array = _returned_literals(_body_of(two, PRODUCER))
-	assert_eq(got[0], (["unreachable"] as Array[String]),
-		"the bound leaked into the next function: %s" % [got[0]])
+	## CONTROL on the bound, on a SYNTHETIC source that CONTAINS the hazard: a neighbouring match
+	## must not leak in, or adding a function below the consumer silently grows the derived arms.
+	var two: String = ("func " + CONSUMER + "() -> String:\n\tmatch x:\n\t\t\"mine\":\n\t\t\treturn \"a\"\n"
+		+ "\nfunc something_else() -> String:\n\tmatch y:\n\t\t\"theirs\":\n\t\t\treturn \"b\"\n")
+	var got: Array = _match_arms(_body_of(two, CONSUMER))
+	assert_true((got[0] as Array).has("mine"), "the bound dropped the consumer's own arm: %s" % [got[0]])
+	assert_false((got[0] as Array).has("theirs"), "the bound leaked into the next function: %s" % [got[0]])
 
 
-func test_the_arm_scan_reports_a_match_pattern_it_cannot_read() -> void:
-	## Symmetry with the producer side: "no arm for X" and "an arm exists that I cannot read" are
-	## different facts and must not share a value. A const pattern routes identically to a literal,
-	## so without this the guard reds blaming a missing arm that is actually present.
-	var synthetic: String = ("func _get_llm_status_subtitle() -> String:\n"
-		+ "\tmatch str(info.get(\"kind\", \"\")):\n"
-		+ "\t\t\"unreachable\":\n\t\t\treturn \"a\"\n"
-		+ "\t\tKIND_KEY_REJECTED:\n\t\t\treturn \"b\"\n"
-		+ "\t\t_:\n\t\t\treturn \"c\"\n")
-	var got: Array = _match_arms(synthetic)
-	assert_eq(got[0], (["unreachable"] as Array[String]), "the literal arm must still be read")
-	assert_eq((got[1] as Array), ["KIND_KEY_REJECTED"],
-		"a const match pattern was not reported as unreadable — got %s" % [got[1]])
-	## And `_:` is NOT unreadable: it is the catch-all, read by its own arm above.
-	assert_false(str(got[1]).contains("_:"), "the catch-all must not be reported as an unreadable pattern")
+# ── 4. the strip the consumer side rests on ──────────────────────────────────────────────────────
+
+func test_the_strip_this_guard_rests_on_removes_prose_and_keeps_code() -> void:
+	## FOUR ASSERTIONS, FOUR BLIND SPOTS — each satisfied by a defect in another direction, and all
+	## routed through _consumer_code() rather than GdSource, because a control scoped to the HELPER
+	## stays green when the caller is swapped back to a raw read (@cowir-battle measured that).
+	var raw: String = _read(SETTINGS_SRC)
+	var code: String = _consumer_code()
+	## 1. a known CODE site SURVIVES — catches over-stripping; satisfied by a strip that never ran.
+	assert_true(code.contains("func " + CONSUMER),
+		"MUST-SURVIVE: the strip ate the consumer's own declaration, so every arm above judges nothing")
+	## 2. a known # comment is GONE — catches no-strip; this is the arm a raw-read mutant trips.
+	assert_true(raw.contains("# Naming the retry is the point"),
+		"CONTROL: the raw source must still carry the comment this arm looks for")
+	assert_false(code.contains("# Naming the retry is the point"),
+		"the # pass did not run: prose reaches the extractor, so a kind named only in a comment would count")
+	## 3. a PROPORTIONAL floor — catches a clever over-strip that kept the line assertion 1 names.
+	assert_gt(code.length(), raw.length() / 2,
+		"the strip kept %d of %d chars — it ate the bulk, which arm 1 cannot see if the one line it names survived" % [code.length(), raw.length()])
+	## 4. a DOCSTRING token is GONE — catches a dropped REGION split, which the # pass alone passes.
+	## Real for THIS subject: SettingsMenu carries 48 docstring lines. HTTPBackend has none, so the
+	## same assert there would be decorative — a subject with no regions has nothing to miss.
+	assert_true(raw.contains('\u0022\u0022\u0022'), "CONTROL: the subject must carry docstring regions for this arm to mean anything")
+	assert_false(code.contains('\u0022\u0022\u0022'),
+		"the region split did not run: docstring text reaches the extractor, and prose containing `func ` would forge a FALSE bound for _body_of")
