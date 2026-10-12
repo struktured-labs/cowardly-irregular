@@ -379,8 +379,16 @@ func _populate_item_details(panel: Control, panel_size: Vector2) -> void:
 	desc_label.add_theme_font_size_override("font_size", TextScale.scaled(11))
 	desc_label.add_theme_color_override("font_color", TEXT_COLOR)
 	desc_label.autowrap_mode = TextServer.AUTOWRAP_WORD
-	desc_label.size = Vector2(panel_size.x - 32, 36)
+	## ⛔ SIZE AFTER add_child, NOT BEFORE. Measured in isolation on a plain Control host:
+	##     assigned 584 wide, text 24 chars  — size (584, 36)   looks correct
+	##     assigned 584 wide, text 141 chars — size (1068, 48)  THE ASSIGNMENT IS LOST
+	##     same label, .size set AFTER add_child — (584, ...)    correct at any length
+	## A Label entering the tree recomputes its rect, and the content width wins over an
+	## offset assigned beforehand. So the identical four lines wrap correctly for short text
+	## and silently overflow for long text — which is why this reads as right in review and
+	## why the bug only ever shows on the longest string in the data.
 	panel.add_child(desc_label)
+	desc_label.size = Vector2(panel_size.x - 32, 36)
 
 	## Tick 430: surface authored item flavor text. 146 items in
 	## items.json author a `flavor` string (e.g. potion's "A dusty
@@ -399,8 +407,18 @@ func _populate_item_details(panel: Control, panel_size: Vector2) -> void:
 		# Dimmed text — flavor reads as background lore, not gameplay info.
 		flavor_label.add_theme_color_override("font_color", DISABLED_COLOR)
 		flavor_label.autowrap_mode = TextServer.AUTOWRAP_WORD
-		flavor_label.size = Vector2(panel_size.x - 32, 48)
+		## Same ordering fix as the description above, and THIS is the one that was visibly
+		## broken: rendered at 1280x720 the flavour ran past the DETAILS panel and off the right
+		## edge of the SCREEN, cut mid-word. Found by rendering the bag and looking at it.
 		panel.add_child(flavor_label)
+		flavor_label.size = Vector2(panel_size.x - 32, 48)
+		## ⚠ THE 60px BAND BELOW IS LEFT ALONE ON PURPOSE. Deriving it from the wrapped height
+		## looks like the natural companion fix, and I built it and then removed it: the longest
+		## flavour in items.json (228 chars) wraps to three lines at this width and font, about
+		## 42px, so nothing authored today can reach the 60px the effects row is pushed by. I
+		## could not write an arm that discriminates a derived offset from this constant using
+		## real items — two attempts, both green under the mutation they named — and an
+		## untestable change beside a tested one is how the tested one stops being trusted.
 		# Push effects breakdown down to avoid overlap.
 		effects_y_offset = 60
 
