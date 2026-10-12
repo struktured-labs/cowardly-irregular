@@ -1191,7 +1191,14 @@ func play_voice(sound_key: String) -> float:
 	## below is a contract: a stream of natural length L at pitch p is audible for L/p seconds, so
 	## a detuned line handed BattleSpeechBubble a length it does not have (10.90s reported against
 	## 11.29s heard at p=0.965). Unity pitch settles both — there is no length to correct.
-	if not _try_play_sfx_from_manifest(_voice_player, sound_key, VOICE_PLAYER_BASE_DB, 1.0, false):
+	## PER-LINE LEVEL, from the manifest entry's own `gain_db`. The free-engine packs are not
+	## loudness-normalised and the ElevenLabs one is: measured EBU R128 over 654 clips, the Fighter
+	## (ElevenLabs) sits in a 0.4 LU band while the four free packs span 3.5-4.6 LU each, and their
+	## MEDIANS differ by 2.1 LU — so the Cleric is systematically quieter than the Rogue in a party
+	## where both speak. A gain here rather than a re-render because struktured approved these files
+	## by ear: this changes their LEVEL, is one JSON field per clip, and reverts by deleting it.
+	var gain: float = float((_sfx_manifest.get(sound_key, {}) as Dictionary).get("gain_db", 0.0))
+	if not _try_play_sfx_from_manifest(_voice_player, sound_key, VOICE_PLAYER_BASE_DB + gain, 1.0, false):
 		return 0.0
 	## The erase above only clears the OUTER key; a fallback_to target can still be cooled, and a
 	## suppressed return leaves the PREVIOUS line's stream on the player for get_length() to time.
