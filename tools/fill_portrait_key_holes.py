@@ -10,6 +10,7 @@ A hole here is a clear region the figure fully encloses. What the key removed wa
 - a hole of 5..MAX_HOLE px (an eye white, a row of teeth) is filled near-white;
 - a speck of up to 4 px takes the commonest colour on its own rim (a white dot in dark hair would
   be a new defect, and a speck that small is a lost highlight of its surroundings);
+- a hole listed in EYES_LEFT_CLEAR is skipped: a whole eye with no pupil left, which white would blind;
 - a hole larger than MAX_HOLE is LEFT and reported: a whole keyed face or veil needs an eye on it,
   and a real opening (staff to body) must not be painted shut. REVIEWED_LARGE raises the cap for the
   portraits that were looked at one by one; LEFT_OPEN names the ones deliberately not filled.
@@ -52,6 +53,23 @@ REVIEWED_LARGE = {
     "summoner_suburban.png": 221, "time_mage.png": 295, "time_mage_industrial.png": 344,
     "time_mage_steampunk.png": 195, "time_mage_suburban.png": 333,
 }
+# Whole EYES the key took, pupil and all: nothing of the eye survives, and painted white they read as blind
+# (seen on the elder, Brutus and Boris after the second pass, 2026-10-12). Left clear, where the dark dialogue
+# panel reads as a dark eye, until the portrait is redrawn. Each point is the centre of a hole to skip.
+EYES_LEFT_CLEAR = {
+    "bossbinder.png": ((91, 66), (162, 65)),
+    "keepers/brutus.png": ((102, 103), (153, 103)),
+    "keepers/mortimer.png": ((104, 109), (150, 108)),
+    "ninja.png": ((100, 122), (153, 122)),
+    "npcs/boris.png": ((105, 113), (151, 113)),
+    "npcs/child.png": ((96, 102), (152, 102), (101, 122), (151, 122), (85, 124), (166, 123)),
+    "npcs/elder.png": ((103, 106), (151, 106)),
+    "npcs/rowan.png": ((105, 87), (150, 87), (104, 101), (151, 101)),
+    "npcs/shopkeeper.png": ((102, 112), (153, 112)),
+    "npcs/villager.png": ((103, 128), (154, 128)),
+    "npcs/villager_f.png": ((106, 93), (152, 93), (106, 109), (151, 109), (83, 114), (175, 114)),
+}
+EYE_MATCH = 5
 # Left open on purpose: a real gap between a staff and a body, or a whole face whose fill is an art decision.
 LEFT_OPEN = ("mage_abstract.png", "mage_industrial.png", "mage_suburban.png", "masterite_curator_medieval.png",
              "ninja.png", "npcs/fairy.png", "npcs/hooded_mage.png", "npcs/mysterious.png")
@@ -89,11 +107,19 @@ def holes(rgba: np.ndarray) -> list:
     return out
 
 
-def fill(img: Image.Image, cap: int = MAX_HOLE):
-    """(new image, pixels filled, [sizes of holes left as too large]). cap is the largest hole to fill."""
+def _is_listed_eye(region: list, eyes: tuple) -> bool:
+    cy = sum(y for y, _ in region) / len(region)
+    cx = sum(x for _, x in region) / len(region)
+    return any(abs(cx - ex) <= EYE_MATCH and abs(cy - ey) <= EYE_MATCH for ex, ey in eyes)
+
+
+def fill(img: Image.Image, cap: int = MAX_HOLE, eyes: tuple = ()):
+    """(new image, pixels filled, [sizes of holes left as too large]). cap is the largest hole to fill; eyes are skipped."""
     rgba = np.asarray(img.convert("RGBA")).copy()
     filled, left = 0, []
     for region, rim in holes(rgba):
+        if _is_listed_eye(region, eyes):
+            continue
         if len(region) > cap:
             left.append(len(region))
             continue
@@ -140,6 +166,8 @@ def selftest() -> int:
     wide, n3, left3 = fill(img, 400)
     assert not left3 and wide.getpixel((35, 45)) == (*KEYED_WHITE, 255), "a reviewed cap fills the larger hole too"
     assert not set(REVIEWED_LARGE) & set(ARTIST_DERIVED), "no artist bust is on the reviewed list"
+    kept, n4, _ = fill(img, 400, ((19.5, 21.5),))
+    assert kept.getpixel((18, 21))[3] == 0 and kept.getpixel((35, 45)) == (*KEYED_WHITE, 255), "a listed eye is left clear, the rest is filled"
     print("selftest ok")
     return 0
 
@@ -155,7 +183,8 @@ def main() -> int:
     total = files = 0
     for rel in portraits():
         img = Image.open(ROOT / rel)
-        out, n, left = fill(img, max(MAX_HOLE, REVIEWED_LARGE.get(os.path.relpath(rel, PORTRAITS), 0)))
+        key = os.path.relpath(rel, PORTRAITS)
+        out, n, left = fill(img, max(MAX_HOLE, REVIEWED_LARGE.get(key, 0)), EYES_LEFT_CLEAR.get(key, ()))
         if left:
             print("LEFT %s: %d hole(s) too large to fill blind, %s px" % (rel, len(left), sorted(left, reverse=True)[:4]))
         if not n:
