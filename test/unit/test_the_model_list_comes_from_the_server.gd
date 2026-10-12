@@ -99,12 +99,15 @@ func test_a_listing_never_cancels_an_IN_FLIGHT_reachability_probe() -> void:
 	assert_not_null(b._probe_request, "PREMISE: the probe must be in flight for this arm to mean anything")
 	var probe_node: HTTPRequest = b._probe_request
 	b.list_models()
+	## A FRAME IS LOAD-BEARING: sharing the node makes the listing's own _cleanup_list queue_free
+	## it and null _list_request, so in the SAME frame every assert below still passes — the node
+	## is valid until the deferred free runs. Measured: without this await the mutation went green.
+	await get_tree().process_frame
 	assert_eq(b._probe_request, probe_node, "the listing replaced the probe's own request node")
-	assert_true(is_instance_valid(probe_node), "the listing freed the in-flight probe's request")
+	assert_true(is_instance_valid(probe_node),
+		"the listing FREED the in-flight probe's request node, so availability can never resolve")
 	assert_true(probe_node.request_completed.is_connected(b._on_probe_completed),
-		"the listing disconnected the probe's completion handler, so availability would never resolve")
-	assert_ne(b._list_request, probe_node,
-		"one node for both means a model listing aborts the availability probe mid-flight")
+		"the listing disconnected the probe's completion handler")
 
 
 # ── the merge: the field stays authoritative ─────────────────────────────────────────────────────
