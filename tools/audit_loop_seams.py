@@ -132,17 +132,32 @@ def main():
     tracks = data.get("tracks", data)
 
     rows = []
+    ## EVERY skip is COUNTED, not just taken. The four `continue`s below used to drop entries
+    ## silently, so a path change or a filter bug could shrink the corpus from 146 to 12 and this
+    ## tool would print "ALREADY OK 12 ... CLEAN" with its classifier control still passing —
+    ## the control proves the INSTRUMENT works and says nothing about the SUBJECT.
+    ## @cowir-deploy paid 443 GiB for that exact shape on 2026-10-12, and the CORRECTED cause is the
+    ## sharper one: their cleanup probe runs with cwd inside a release worktree and nothing sets its
+    ## root, so it scanned that tree's own tmp/ and returned 0 — a correct instrument pointed at the
+    ## wrong subject. At 909 MB free against a 5000 MB floor it then certified "the space is held
+    ## outside this lane" while the lane sat on hundreds of GB. (Their first diagnosis blamed a
+    ## prefix default and they retracted it after measuring; the prefix was not load-bearing.)
+    skips = {"file missing": 0, "stinger": 0, "loop=false": 0, "under 5s": 0}
     for tid in sorted(tracks):
         entry = tracks[tid]
         path = str(entry.get("file", ""))
         if not path or not os.path.exists(path):
+            skips["file missing"] += 1
             continue
         if tid.startswith("stinger_"):
+            skips["stinger"] += 1
             continue                       # stingers are MEANT to end
         if not entry.get("loop", True):
+            skips["loop=false"] += 1
             continue                       # non-looping by declaration
         dur = duration(path)
         if dur < 5:
+            skips["under 5s"] += 1
             continue
         verdict, delta, trim = classify(path, dur)
         rows.append((tid, verdict, delta, dur, trim))
@@ -152,6 +167,25 @@ def main():
 
     if not rows:
         sys.exit("no looping beds measured -- manifest or paths wrong, NOT a clean result")
+
+    ## SUBJECT CONTROL, the twin of self_check()'s instrument control. This is the tool's own
+    ## docstring principle ("138 == the corpus, which is the check on these three") applied to
+    ## corpus SELECTION rather than to the verdict buckets.
+    corpus_ok = True
+    accounted = len(rows) + sum(skips.values())
+    print("\ncorpus: %d manifest entries = %d measured + %s"
+          % (len(tracks), len(rows), " + ".join("%d %s" % (v, k) for k, v in skips.items() if v)))
+    if accounted != len(tracks):
+        corpus_ok = False
+        print("  ⛔ ACCOUNTING DOES NOT CLOSE: %d measured + %d skipped = %d against %d entries."
+              % (len(rows), sum(skips.values()), accounted, len(tracks)))
+        print("     An entry left the corpus for a reason this tool does not enumerate. Fix that")
+        print("     before reading any verdict below.")
+    if skips["file missing"]:
+        corpus_ok = False
+        print("  ⛔ %d manifest entr%s name a file that is not on disk. That is a DEFECT, not a"
+              % (skips["file missing"], "y" if skips["file missing"] == 1 else "ies"))
+        print("     skip: those beds cannot be measured and cannot play.")
 
     buckets = {}
     for _, v, _, _, _ in rows:
@@ -177,7 +211,10 @@ def main():
     if len(buckets) < 2:
         only = list(buckets)[0]
         ok, detail = self_check()
-        if ok and only == "ALREADY OK":
+        if ok and not corpus_ok:
+            print("\n  WITHHELD: the classifier is proven (%s) but the CORPUS is wrong -- see above."
+                  "\n            A verdict over the wrong subject is not a verdict." % detail)
+        elif ok and only == "ALREADY OK":
             print("\n  CLEAN: every bed loops without a fade, and the classifier is PROVEN to "
                   "discriminate\n         (%s).\n         The 2026-08-05 defect -- 97 of 138 beds "
                   "fading at the loop point -- is repaired." % detail)
