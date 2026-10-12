@@ -68,6 +68,13 @@ if [ -z "${CHANGED//[[:space:]]/}" ]; then
   fi
 fi
 
+# ONE PATH PER LINE from here on. PRE_READY_PATHS is documented as space-separated, and every
+# derivation below reads lines — so a multi-path value arrived as ONE line, `awk -F/ '{print $1}'`
+# returned only the FIRST path's tree, and the per-file legs got the whole string as a filename and
+# were skipped by the `-f` test. Measured: a src+test set derived "src" alone and ran none of the ten
+# test-dir guards, which are exactly what an added test file needs. (@cowir-ai, 2026-10-12)
+CHANGED="$(printf '%s\n' "$CHANGED" | tr '[:space:]' '\n' | grep -v '^$' || true)"
+
 if [ -z "${CHANGED//[[:space:]]/}" ]; then
   mapfile -t TREES < <(printf 'test\nsrc\ndata\nassets\ntools\naddons\n')
   WHY="no changed paths$( [ "$STATED" = 1 ] && printf ' were stated' || printf " vs ${PRE_READY_BASE:-origin/main}" ) — every tree"
