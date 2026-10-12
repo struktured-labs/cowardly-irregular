@@ -46,6 +46,20 @@ var auto_save_interval: float = 300.0  # 5 minutes
 ## Auto-save timer
 var time_since_last_auto_save: float = 0.0
 
+## Why the last load_game() refused, in player-facing form, for a caller that FALLS BACK instead
+## of stopping. `load_failed` carries a reason and has had ZERO listeners since the signal was
+## declared — the state `save_failed` was in before tick 76 wired it to a toast.
+##
+## A PULL accessor rather than a second broadcast listener on purpose: SaveScreen's load path
+## already writes its own banner, so a global handler would double-toast the one case that is
+## already covered while fixing the one that is not.
+##
+## Read it IMMEDIATELY after load_game(), which clears it on entry. It is not a durable record:
+## `_read_save_file` is also reached from get_save_info() and is_slot_resumable(), and those
+## calls write this field too.
+var _last_load_reason: String = ""
+
+
 ## One-shot tracking records
 var one_shot_records: Dictionary = {}  # {monster_id: {count: int, best_rank: String, best_setup: int}}
 
@@ -411,15 +425,26 @@ func _current_location_display_name() -> String:
 
 func load_game(slot: int) -> bool:
 	"""Load a saved game"""
+	## ⛔ EVERY `return false` NAMES ITS REASON, AND load_failed CARRIES IT. The signal was
+	## declared with a `reason: String` payload and emitted two fixed strings to nobody; the four
+	## specific diagnoses — could not open, JSON parse error, root is not a Dictionary — were
+	## computed one frame earlier in `_read_save_file` and handed to push_warning. Tick 181's own
+	## comment there says what that costs: "load silently returned {} which the title-screen
+	## CONTINUE button treated as 'no save'; player saw their save disappear with no hint why."
+	_last_load_reason = ""
 	if not save_exists(slot):
-		load_failed.emit("Save file not found")
+		_last_load_reason = "slot %d has no save file" % slot
+		load_failed.emit(_last_load_reason)
 		return false
 
 	load_started.emit()
 
 	var save_data = _read_save_file(slot)
 	if save_data.is_empty():
-		load_failed.emit("Failed to read save file")
+		## _read_save_file set the specific diagnosis; only fall back if it somehow did not.
+		if _last_load_reason == "":
+			_last_load_reason = "the save in slot %d could not be read" % slot
+		load_failed.emit(_last_load_reason)
 		return false
 
 	# Apply save data
@@ -432,6 +457,11 @@ func load_game(slot: int) -> bool:
 	load_completed.emit(slot)
 	print("Game loaded from slot %d" % slot)
 	return true
+
+
+## Why the last load_game() returned false, or "" when it succeeded.
+func last_load_reason() -> String:
+	return _last_load_reason
 
 
 func save_exists(slot: int) -> bool:
@@ -1013,6 +1043,7 @@ func _read_save_file(slot: int) -> Dictionary:
 		## only — load silently returned {} which the title-screen
 		## CONTINUE button treated as "no save"; player saw their
 		## save disappear with no hint why.
+		_last_load_reason = "the save file could not be opened (%s)" % error_string(FileAccess.get_open_error())
 		push_warning("[SaveSystem] _read_save_file: could not open '%s' for read (error: %s)" % [file_path, FileAccess.get_open_error()])
 		return {}
 
@@ -1021,11 +1052,15 @@ func _read_save_file(slot: int) -> Dictionary:
 
 	var json = JSON.new()
 	if json.parse(json_string) != OK:
+		## +1 because JSON.get_error_line() is 0-BASED and anything the player opens the file in
+		## counts from 1. A "line 0" is a number that cannot be found.
+		_last_load_reason = "the save file is not valid JSON — %s (line %d)" % [json.get_error_message(), json.get_error_line() + 1]
 		push_warning("[SaveSystem] _read_save_file: failed to parse '%s' as JSON: %s" % [file_path, json.get_error_message()])
 		return {}
 
 	# Validate that parsed data is a Dictionary
 	if not json.data is Dictionary:
+		_last_load_reason = "the save file is valid JSON but not a save — its top level is a %s, not an object" % ["list" if json.data is Array else "single value"]
 		push_warning("[SaveSystem] _read_save_file: '%s' parsed but root is not a Dictionary (type=%s) — invalid save" % [file_path, typeof(json.data)])
 		return {}
 
