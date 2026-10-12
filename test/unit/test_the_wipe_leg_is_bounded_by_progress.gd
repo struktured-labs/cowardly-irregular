@@ -111,6 +111,15 @@ func test_an_ended_battle_is_not_reported_as_a_stall() -> void:
 ## guarded is that someone adds a fifth reason and not a fifth message, which a hand-list cannot
 ## see because they would add to the list in the same edit.
 ##
+## 🔑 AND A STATIC DERIVATION IS NOT MERELY THE STRONGER CHOICE HERE, IT IS THE ONLY ONE THAT CAN
+## APPLY (@cowir-ai, 2026-10-12, sharpening this guard's own justification). THE CONSUMER'S INPUT
+## DOMAIN IS CLOSED BY THE PRODUCER: `smoke_wipe_verdict` emits exactly these tokens, so the
+## dispatch can only ever receive one of them. **A fifth reason is not an input somebody forgot to
+## try — it does not exist until the producer is edited**, so no runtime arm, however carefully its
+## inputs are chosen, can reach the unbranched case. Driving an unknown token would mean stubbing
+## the producer, i.e. asserting against a fiction. `producer returns ⊆ consumer branches`, checked
+## in the source, is the whole instrument available for this class.
+##
 ## The leg shipped in .658 with a `match` that had NO default arm: a reason with no branch printed
 ## nothing, and the two lines after the match still set `_smoke_failed` and returned — so the gate
 ## would have reported a bare `VERDICT: FAIL` with the explanation missing. That is the exact defect
