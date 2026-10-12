@@ -15,6 +15,10 @@ const PANEL_W := 440.0
 const PANEL_H := 260.0
 ## One extra text line on the card, measured: a font-11 Label clamps to ~34px with theme margins.
 const EXTRA_LINE_H := 36.0
+## The description's band, and the font it is measured at. Named because panel_h, the band and
+## the hint's offset all have to agree, and three bare numbers in three places is how they stop.
+const DESC_BAND_H := 44.0
+const DESC_FONT_SIZE := 12
 const BG_COLOR := Color(0.03, 0.03, 0.08, 0.75)
 const PANEL_COLOR := Color(0.12, 0.10, 0.18)
 const BORDER_LIGHT := Color(1.0, 0.85, 0.4)
@@ -107,7 +111,29 @@ func _present(item: Dictionary) -> void:
 	var shown_name: String = str(item.get("name", ""))
 	var show_bag: bool = bag_name != "" \
 		and bag_name.strip_edges().to_lower() != shown_name.strip_edges().to_lower()
-	var panel_h: float = PANEL_H + (EXTRA_LINE_H if show_bag else 0.0)
+	## ⛔ THE CARD GROWS FOR A LONG DESCRIPTION TOO, AND IT HAS TO BE MEASURED BEFORE THE PANEL
+	## EXISTS — RetroPanel.add_border draws from _panel.size at construction, so growing the
+	## panel afterwards leaves the border behind. The description band is a flat 44px and the
+	## continue hint is pinned at panel_h - 22; the longest authored key-item description is 245
+	## characters, which wraps to four lines, overruns the band and is drawn THROUGH the hint and
+	## past the card's bottom border. Rendered at 1280x720 the last line and "[Z] Continue" sit on
+	## top of each other.
+	##
+	## Measured with the label's OWN resolved font rather than a default: a throwaway Label is
+	## parented here first so the theme chain is the one it will actually have inside the panel.
+	var desc_text: String = str(item.get("description", ""))
+	var desc_h: float = DESC_BAND_H
+	if desc_text != "":
+		var probe := Label.new()
+		probe.add_theme_font_size_override("font_size", DESC_FONT_SIZE)
+		add_child(probe)
+		var pf: Font = probe.get_theme_font("font")
+		if pf != null:
+			desc_h = maxf(DESC_BAND_H, pf.get_multiline_string_size(
+				desc_text, HORIZONTAL_ALIGNMENT_CENTER, PANEL_W - 40.0, DESC_FONT_SIZE).y)
+		remove_child(probe)
+		probe.queue_free()
+	var panel_h: float = PANEL_H + (EXTRA_LINE_H if show_bag else 0.0) + (desc_h - DESC_BAND_H)
 
 	# Panel
 	_panel = Control.new()
@@ -208,8 +234,8 @@ func _present(item: Dictionary) -> void:
 	desc.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	desc.position = Vector2(20, desc_y)
-	desc.size = Vector2(PANEL_W - 40, 44.0)
-	desc.add_theme_font_size_override("font_size", 12)
+	desc.size = Vector2(PANEL_W - 40, desc_h)
+	desc.add_theme_font_size_override("font_size", DESC_FONT_SIZE)
 	desc.add_theme_color_override("font_color", DESC_COLOR)
 	_panel.add_child(desc)
 

@@ -453,6 +453,13 @@ func _on_test_pressed() -> void:
 	var res: Array = await _await_probe(probe)
 	var elapsed_ms: int = Time.get_ticks_msec() - start_ms
 
+	# Ask for the model list BEFORE freeing the probe: queue_free is deferred, and _await_models
+	# yields across frames, so a listing requested after this point would never answer and would
+	# stall the full PROBE_TIMEOUT_SEC before reporting nothing.
+	var listed: Array = []
+	if res.size() >= 1 and bool(res[0]):
+		listed = await _await_models(probe)
+
 	probe.cancel_all()
 	probe.queue_free()
 
@@ -464,7 +471,10 @@ func _on_test_pressed() -> void:
 		_set_status("Status: FAILED — %s: %s" % [where, str(res[2])], STATUS_FAIL_COLOR)
 	else:
 		var preview: String = str(res[1]).strip_edges().substr(0, 32)
-		_set_status("Status: OK (%d ms) — %s replied \"%s\"" % [elapsed_ms, where, preview], STATUS_OK_COLOR)
+		var extra: String = ""
+		if listed.size() >= 2 and bool(listed[0]):
+			extra = " " + _merge_live_models(listed[1])
+		_set_status("Status: OK (%d ms) — %s replied \"%s\".%s" % [elapsed_ms, where, preview, extra], STATUS_OK_COLOR)
 	_testing = false
 	if is_instance_valid(_test_btn):
 		_test_btn.disabled = false
@@ -504,6 +514,54 @@ func _await_probe(probe: HTTPBackend) -> Array:
 		await get_tree().create_timer(0.1).timeout
 		waited += 0.1
 	return done
+
+
+## The server's own model list, or [] and a reason. Bounded like _await_probe.
+func _await_models(probe: HTTPBackend) -> Array:
+	var done: Array = []
+	var cb := func(ok: bool, models: PackedStringArray, err: String) -> void:
+		done.append_array([ok, models, err])
+	probe.models_listed.connect(cb, CONNECT_ONE_SHOT)
+	probe.list_models()
+	var waited: float = 0.0
+	while done.is_empty() and waited < PROBE_TIMEOUT_SEC:
+		await get_tree().create_timer(0.1).timeout
+		waited += 0.1
+	return done
+
+
+## Put the server's models at the top of the picker, keeping the static list below as a fallback.
+## The field stays AUTHORITATIVE: a model the player typed is never overwritten, and one the server
+## does not list is reported rather than silently replaced.
+func _merge_live_models(models: PackedStringArray) -> String:
+	if models.is_empty():
+		return ""
+	var typed: String = _model_field.text.strip_edges()
+	var statics: Array = []
+	var pi: int = _provider_picker.selected
+	if pi > 0 and pi < PROVIDER_PRESETS.size():
+		statics = PROVIDER_PRESETS[pi].get("models", [])
+	_model_picker.clear()
+	for m in models:
+		_model_picker.add_item(str(m))
+	var extra: Array = []
+	for m in statics:
+		if not models.has(str(m)):
+			extra.append(str(m))
+	if not extra.is_empty():
+		_model_picker.add_separator("not installed")
+		for m in extra:
+			_model_picker.add_item(str(m))
+	_model_picker.add_item(CUSTOM_MODEL_LABEL)
+	if typed != "" and models.has(typed):
+		_select_model_in_picker(typed)
+		return "%d model(s) on the server; %s is one of them." % [models.size(), typed]
+	if typed != "":
+		_select_model_in_picker(typed)
+		return "%d model(s) on the server, and %s is NOT among them." % [models.size(), typed]
+	_model_picker.selected = 0
+	_model_field.text = str(models[0])
+	return "%d model(s) on the server; picked %s." % [models.size(), models[0]]
 
 
 func _set_status(msg: String, color: Color) -> void:
