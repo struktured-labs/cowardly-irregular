@@ -145,7 +145,7 @@ func test_every_screen_the_menu_opens_closes_on_one_back() -> void:
 ## unparseable shape is loud instead of quietly shrinking the comparison.
 func _rows_in(text: String) -> Dictionary:
 	var rx := RegEx.new()
-	rx.compile('"id"\\s*:\\s*"([a-z_]+)"')
+	rx.compile('"id"\\s*:\\s*"([A-Za-z0-9_]+)"')
 	var found: Array[String] = []
 	var unreadable: Array[String] = []
 	for line in text.split("\n"):
@@ -161,7 +161,7 @@ func _rows_in(text: String) -> Dictionary:
 
 func _arms_in(text: String) -> Dictionary:
 	var rx := RegEx.new()
-	rx.compile('^\\t\\t"([a-z_]+)":\\s*$')
+	rx.compile('^\\t\\t"([A-Za-z0-9_]+)":\\s*$')
 	var found: Array[String] = []
 	var unreadable: Array[String] = []
 	var inside := false
@@ -203,6 +203,16 @@ func test_the_extractors_report_what_they_cannot_read() -> void:
 	## And the readable shapes still read, or the arm above passes by breaking the extractor.
 	var ok: Dictionary = _rows_in('\t{"id": "journal", "label": "Journal"},')
 	assert_eq(ok["found"], ["journal"] as Array[String], "CONTROL: a literal row still parses")
+
+	## ⛔ AND THE REFUSAL MUST NOT FIRE ON A SHAPE IT EXISTS TO ALLOW. The class was [a-z_]+, so a
+	## perfectly ordinary literal id carrying a DIGIT — `world2_map`, in a codebase that names things
+	## world2_/world3_ everywhere — would have been reported as unreadable. @cowir-overworld hit the
+	## same false positive one level down (their `[a-z_]+` rejected a legitimate `return ""`), which
+	## is the distinction the refusal is about, missed inside the refusal.
+	var numbered: Dictionary = _rows_in('\t{"id": "world2_map", "label": "W2 Map"},')
+	assert_eq(numbered["found"], ["world2_map"] as Array[String],
+		"a literal id with a digit is READABLE — the refusal must not fire on what it exists to allow")
+	assert_eq(numbered["unreadable"], [] as Array[String], "...and must not be reported as unreadable")
 
 
 func test_every_menu_row_has_a_dispatch_arm() -> void:
