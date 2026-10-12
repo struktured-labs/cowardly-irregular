@@ -37,6 +37,9 @@ extends LLMBackend
 ## Emitted whenever reachability changes (and once when the boot probe resolves).
 signal availability_changed(available: bool)
 
+## Emitted once per list_models() call; models is empty when ok is false.
+signal models_listed(ok: bool, models: PackedStringArray, err: String)
+
 
 # ── Internal state ────────────────────────────────────────────────────────────
 # Maps request_id → HTTPRequest node.
@@ -47,6 +50,9 @@ var _ready_flag: bool = false
 
 # Probe HTTPRequest reference (kept alive until probe completes).
 var _probe_request: HTTPRequest = null
+
+# Separate from _probe_request: a model listing must never cancel a reachability probe.
+var _list_request: HTTPRequest = null
 
 # Engine-msec stamp of the last RESOLVED probe; drives the re-probe interval.
 var _last_probe_msec: int = 0
@@ -145,6 +151,73 @@ func probe_headers() -> PackedStringArray:
 	if api_key != "":
 		headers.append("Authorization: Bearer " + api_key)
 	return headers
+
+
+## The models the SERVER reports. The reachability probe already GETs this exact endpoint and
+## discards the body; parsing it is the difference between a player guessing a model name and
+## picking one they actually have. Shapes follow _probe_url's own branching, so the two agree.
+static func parse_model_list(api_format: String, raw: String) -> PackedStringArray:
+	var out: PackedStringArray = []
+	var parsed: Variant = JSON.parse_string(raw)
+	if typeof(parsed) != TYPE_DICTIONARY:
+		return out
+	var is_ollama: bool = api_format == "ollama"
+	var rows: Variant = (parsed as Dictionary).get("models" if is_ollama else "data", [])
+	if typeof(rows) != TYPE_ARRAY:
+		return out
+	var field: String = "name" if is_ollama else "id"
+	for r in (rows as Array):
+		if typeof(r) != TYPE_DICTIONARY:
+			continue
+		var id: String = str((r as Dictionary).get(field, "")).strip_edges()
+		if id != "" and not out.has(id):
+			out.append(id)
+	return out
+
+
+## Ask the server what it has. Answers exactly once through models_listed.
+func list_models() -> void:
+	if _list_request != null and is_instance_valid(_list_request):
+		models_listed.emit(false, PackedStringArray(), "a model listing is already in flight")
+		return
+	_list_request = HTTPRequest.new()
+	_list_request.name = "ModelList"
+	_list_request.timeout = PROBE_TIMEOUT_SEC
+	add_child(_list_request)
+	_list_request.request_completed.connect(_on_list_completed)
+	# Bound to a local like _start_probe's: a local assigned from a key-carrying call registers as
+	# an alias of that container, and every warning interpolating it then reads as a key leak.
+	var auth: PackedStringArray = probe_headers()
+	var err: int = _list_request.request(_probe_url(), auth, HTTPClient.METHOD_GET, "")
+	if err != OK:
+		# The request never started, so _on_list_completed will never fire; answer anyway.
+		_cleanup_list()
+		models_listed.emit(false, PackedStringArray(), "could not reach %s (error %d)" % [_probe_url(), err])
+
+
+func _on_list_completed(result: int, response_code: int, _headers: PackedStringArray, body: PackedByteArray) -> void:
+	_cleanup_list()
+	if result != HTTPRequest.RESULT_SUCCESS:
+		models_listed.emit(false, PackedStringArray(), "%s did not answer" % _probe_url())
+		return
+	if response_code < 200 or response_code >= 300:
+		# Reuses the probe's own vocabulary so one HTTP status reads the same on both surfaces.
+		_last_probe_code = response_code
+		models_listed.emit(false, PackedStringArray(), unavailable_reason())
+		return
+	var models: PackedStringArray = parse_model_list(api_format, body.get_string_from_utf8())
+	if models.is_empty():
+		models_listed.emit(false, models, "%s listed no models" % _probe_url())
+		return
+	models_listed.emit(true, models, "")
+
+
+func _cleanup_list() -> void:
+	if _list_request != null and is_instance_valid(_list_request):
+		if _list_request.request_completed.is_connected(_on_list_completed):
+			_list_request.request_completed.disconnect(_on_list_completed)
+		_list_request.queue_free()
+	_list_request = null
 
 
 func _on_probe_completed(result: int, response_code: int, _headers: PackedStringArray, _body: PackedByteArray) -> void:
