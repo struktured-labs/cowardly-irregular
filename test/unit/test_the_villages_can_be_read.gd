@@ -92,7 +92,16 @@ func _func_body(src: String, decl: String) -> String:
 	var end := src.find("\nfunc ", at + decl.length())
 	if end < 0:
 		end = src.length()
-	return src.substr(at, end - at)
+	var body := src.substr(at, end - at)
+	## \u26d4 DERIVED, because `length() > 0` is the control that cannot see an OVER-RUN
+	## (@cowir-battle, 2026-10-12: an anchor can be CORRECT while the assertion defending it is
+	## inert). The placer is currently the LAST function, so the EOF fallback is the live path — add
+	## a function below it with a broken close anchor and the slice would swallow it silently, and
+	## every assert about "the placer's body" would then be about someone else's.
+	assert_eq(body.count("\nfunc "), 0,
+		"the slice for '%s' holds %d further function header(s) — it over-ran, so every assert about this body is about the wrong code" % [
+			decl, body.count("\nfunc ")])
+	return body
 
 
 func test_the_pack_has_a_consumer() -> void:
