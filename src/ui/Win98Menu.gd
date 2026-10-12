@@ -228,6 +228,7 @@ var _auto_hold_start_ms: int = 0
 var _auto_hold_row_idx: int = -1
 const AUTO_HOLD_THRESHOLD_MS: int = 500
 var _tooltip_label: Label = null  # Ability tooltip shown below menu
+var _panel_fill: ColorRect = null
 
 ## Pixel tile size (scaled 1.5x for readability)
 const TILE_SIZE = 6
@@ -262,6 +263,7 @@ var _width_cap: int = 0
 ## floor and bright battle backgrounds. A menu you cannot read is worse than one that covers
 ## scenery, and fading the border is what costs legibility, not fading the fill.
 const PANEL_ALPHA := 0.55
+const OVERLAP_PANEL_ALPHA := 0.94
 const SUBMENU_DELAY = 0.12  # Delay before submenu expands
 
 
@@ -930,6 +932,11 @@ func _build_menu() -> void:
 	_can_close_on_click = true
 
 
+func _set_fill_alpha(alpha: float) -> void:
+	if _panel_fill and is_instance_valid(_panel_fill):
+		_panel_fill.color.a = style.bg.a * alpha
+
+
 func _create_retro_panel(w: int, h: int) -> Control:
 	"""Create a retro-style panel with pixel tile borders"""
 	var panel = Control.new()
@@ -942,6 +949,7 @@ func _create_retro_panel(w: int, h: int) -> Control:
 	bg.position = Vector2(TILE_SIZE, TILE_SIZE)
 	bg.size = Vector2(w - TILE_SIZE * 2, h - TILE_SIZE * 2)
 	panel.add_child(bg)
+	_panel_fill = bg
 
 	# Draw pixel borders using ColorRects for crisp pixels
 	# Top border
@@ -1282,14 +1290,21 @@ func _submenu_width_cap() -> int:
 	if not expand_left or not is_inside_tree():
 		return half
 	# Leave the enemy status panel uncovered. A target row wider than this gap ellipsizes instead of covering it or the command menu.
-	var left := float(MENU_SCREEN_MARGIN)
-	var panel := get_tree().root.find_child("EnemyStatusPanel", true, false) as Control
-	if panel and is_instance_valid(panel) and panel.is_visible_in_tree():
-		left = maxf(left, panel.get_global_rect().end.x + 8.0)
-	var room := int(floor(global_position.x - 6.0 - left))
+	var room := int(floor(global_position.x - 6.0 - _submenu_left_bound()))
 	if room < 210:
 		return half
 	return mini(half, room)
+
+
+## The leftmost x a submenu may rest at: clear of the enemy status panel when one is showing, else the screen margin.
+func _submenu_left_bound() -> float:
+	var left := float(MENU_SCREEN_MARGIN)
+	if not is_inside_tree():
+		return left
+	var panel := get_tree().root.find_child("EnemyStatusPanel", true, false) as Control
+	if panel and is_instance_valid(panel) and panel.is_visible_in_tree():
+		left = maxf(left, panel.get_global_rect().end.x + 8.0)
+	return left
 
 
 func _submenu_rest_position(parent_index: int, submenu_size: Vector2) -> Vector2:
@@ -1306,7 +1321,9 @@ func _submenu_rest_position(parent_index: int, submenu_size: Vector2) -> Vector2
 	else:
 		pos.y = global_position.y + item_y
 	var vp := get_viewport_rect().size if is_inside_tree() else Vector2(1280, 720)
-	pos.x = clampf(pos.x, 10.0, maxf(10.0, vp.x - submenu_size.x - 10.0))
+	# A third-level list has no room left of its parent: it overlaps the (dimmed) parent rather than the enemy panel.
+	var min_x := _submenu_left_bound() if expand_left else 10.0
+	pos.x = clampf(pos.x, min_x, maxf(min_x, vp.x - submenu_size.x - 10.0))
 	pos.y = clampf(pos.y, 10.0, maxf(10.0, vp.y - submenu_size.y - 10.0))
 	return pos
 
@@ -1335,6 +1352,9 @@ func _open_submenu(parent_index: int, item: Dictionary) -> void:
 	)
 	var submenu_pos := _submenu_rest_position(parent_index, submenu.size)
 	submenu.position = submenu_pos + start_offset
+	# A list resting ON its parent would show the parent's rows through its own; only the open battlefield reads through a fill.
+	if Rect2(submenu_pos, submenu.size).intersects(Rect2(global_position, size)):
+		submenu._set_fill_alpha(OVERLAP_PANEL_ALPHA)
 
 	# Pass submenu memory for nested command memory
 	var item_id = item.get("id", "")
