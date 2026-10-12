@@ -5112,6 +5112,9 @@ func _update_buff_debuff_visuals(_delta: float) -> void:
 	all_combatants.append_array(BattleManager.enemy_party)
 
 	for combatant in all_combatants:
+		# Validity first: BattleManager can still hold the LAST battle's freed enemies while this scene waits on a boss intro.
+		if not is_instance_valid(combatant):
+			continue
 		if not (combatant is Combatant) or not combatant.is_alive:
 			_remove_buff_visual(combatant)
 			continue
