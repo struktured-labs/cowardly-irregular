@@ -704,7 +704,11 @@ if [ ! -x tools/check_profile_untouched.sh ]; then
   exit 3
 fi
 _REAL_SIG_BEFORE="$(./tools/check_profile_untouched.sh --sig "$_REAL_UD")"
-SMOKE_CMD=(env "XDG_DATA_HOME=$_SMOKE_XDG" xvfb-run -a timeout 300 godot --rendering-driver opengl3 --audio-driver Dummy -- --render-smoke)
+## COWIR_SFX_LOG_CUES: per-cue [SFX] tracing is off in normal play (it was 27-41% of struktured's own
+## logs) and ON here, because this log is machine-read and archived per publish rather than scrolled.
+## A cue with ONE emitter is a stack frame, not noise: @cowir-overworld located the lever/physics crash
+## from a `surprised_chime` line, which is played in exactly one function. Their call, 2026-10-12.
+SMOKE_CMD=(env "XDG_DATA_HOME=$_SMOKE_XDG" "COWIR_SFX_LOG_CUES=1" xvfb-run -a timeout 300 godot --rendering-driver opengl3 --audio-driver Dummy -- --render-smoke)
 if ! "${SMOKE_CMD[@]}" > tmp/deploy_smoke.log 2>&1; then
   cp tmp/deploy_smoke.log tmp/deploy_smoke.attempt1.log
   echo "[deploy] smoke attempt 1 failed (xvfb flake?) — retrying once"
