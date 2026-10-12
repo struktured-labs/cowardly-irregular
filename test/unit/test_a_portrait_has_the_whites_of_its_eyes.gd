@@ -42,16 +42,24 @@ const LEFT_OPEN := {
 ## redrawn. Each point is the centre of a hole that must still be open; nothing else on the portrait may be.
 const EYES_LEFT_CLEAR := {
 	"bossbinder.png": [Vector2i(91, 66), Vector2i(162, 65)],
+	"npcs/child.png": [Vector2i(96, 102), Vector2i(152, 102), Vector2i(85, 124), Vector2i(166, 123)],
+	"npcs/rowan.png": [Vector2i(105, 87), Vector2i(150, 87)],
+	"npcs/villager_f.png": [Vector2i(106, 93), Vector2i(152, 93), Vector2i(83, 114), Vector2i(175, 114)],
+}
+## Third pass: where the keyed hole IS the eye (one clean pair per face) it is filled near-white and given a pupil by
+## rule, so the speaker has eyes whatever colour the dialogue panel is. Each point is the centre of a drawn eye.
+const PUPIL := Color8(46, 30, 24)
+const EYES_DRAWN := {
 	"keepers/brutus.png": [Vector2i(102, 103), Vector2i(153, 103)],
 	"keepers/mortimer.png": [Vector2i(104, 109), Vector2i(150, 108)],
 	"ninja.png": [Vector2i(100, 122), Vector2i(153, 122)],
 	"npcs/boris.png": [Vector2i(105, 113), Vector2i(151, 113)],
-	"npcs/child.png": [Vector2i(96, 102), Vector2i(152, 102), Vector2i(101, 122), Vector2i(151, 122), Vector2i(85, 124), Vector2i(166, 123)],
+	"npcs/child.png": [Vector2i(101, 122), Vector2i(151, 122)],
 	"npcs/elder.png": [Vector2i(103, 106), Vector2i(151, 106)],
-	"npcs/rowan.png": [Vector2i(105, 87), Vector2i(150, 87), Vector2i(104, 101), Vector2i(151, 101)],
+	"npcs/rowan.png": [Vector2i(104, 101), Vector2i(151, 101)],
 	"npcs/shopkeeper.png": [Vector2i(102, 112), Vector2i(153, 112)],
 	"npcs/villager.png": [Vector2i(103, 128), Vector2i(154, 128)],
-	"npcs/villager_f.png": [Vector2i(106, 93), Vector2i(152, 93), Vector2i(106, 109), Vector2i(151, 109), Vector2i(83, 114), Vector2i(175, 114)],
+	"npcs/villager_f.png": [Vector2i(106, 109), Vector2i(151, 109)],
 }
 const EYE_MATCH := 5
 const ARTIST_DERIVED := ["fighter.png", "cleric.png", "mage.png", "rogue.png", "bard.png", "mordaine.png", "chancellor_mordaine.png", "calibrant.png"]
@@ -167,6 +175,28 @@ func test_a_blank_eye_is_left_clear_not_painted_white() -> void:
 			if not found.has(i):
 				missing.append(eyes[i])
 		assert_eq(missing, [], "%s: these eyes are filled now. If the portrait was redrawn with real eyes, drop them from EYES_LEFT_CLEAR; if a fill painted them white, that is the defect" % key)
+
+
+func test_a_drawn_eye_has_a_white_and_a_pupil() -> void:
+	## A socket painted one flat colour is the blind eye this file already refused once: an eye needs both.
+	var blank: Array = []
+	for key in EYES_DRAWN:
+		assert_true(ResourceLoader.exists(PORTRAITS + key), "CONTROL: %s is a portrait" % key)
+		var img := _rgba(PORTRAITS + key)
+		for eye in EYES_DRAWN[key]:
+			# The pupil sits at the socket's BOX centre, the listed point is its centroid: look near it, not at it
+			var dark := false
+			var white := false
+			for dy in range(-7, 8):
+				for dx in range(-9, 10):
+					var q := img.get_pixel(eye.x + dx, eye.y + dy)
+					if q.a > 0.5 and q.r8 == 246 and q.g8 == 246 and q.b8 == 246:
+						white = true
+					elif q.a > 0.5 and q.r8 == PUPIL.r8 and q.g8 == PUPIL.g8 and q.b8 == PUPIL.b8:
+						dark = true
+			if not (dark and white):
+				blank.append("%s at %s: pupil %s, white %s" % [key, str(eye), str(dark), str(white)])
+	assert_eq(blank, [], "drawn eyes that are not an eye (a pupil on a white): %s" % str(blank))
 
 
 func test_the_measure_tells_a_keyed_eye_from_the_backdrop() -> void:
