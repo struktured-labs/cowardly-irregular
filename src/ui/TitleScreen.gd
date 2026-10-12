@@ -515,13 +515,23 @@ func _vp_size() -> Vector2:
 ## Static and pure so a test can pin the VALUE without building a title screen.
 ## Takes the rendered CELL, not a glyph — a caller with no pad attached must be able to put a
 ## family-neutral name here instead of one family's glyph.
+## The KEYBOARD cell for an action, every key it binds. Frozen "Z / Enter" / "X / Escape" here taught
+## the INVERSE of the truth for ten days after the 2026-09-29 emulator layout swapped Confirm to X.
+static func keys_cell(action: String, fallback: String) -> String:
+	if not InputProfileManager:
+		return fallback
+	var label: String = InputProfileManager.get_action_key_label(action)
+	return fallback if label == "" or label == "—" else label
+
+
 static func build_confirm_cancel_rows(cell_accept: String, cell_cancel: String) -> String:
 	return """[b][color=yellow]CONTROLS[/color][/b]
 [color=gray]Gamepad          Keyboard          Mouse[/color]
 D-Pad             Arrow Keys        —                Navigate
-%-17s Z / Enter         L-Click          Confirm / Select
-%-17s X / Escape        R-Click          Cancel / Back""" % [
-		cell_accept, cell_cancel]
+%-17s %-17s L-Click          Confirm / Select
+%-17s %-17s R-Click          Cancel / Back""" % [
+		cell_accept, keys_cell("ui_accept", "X / Enter"),
+		cell_cancel, keys_cell("ui_cancel", "Z / Escape")]
 
 
 func _show_help_overlay() -> void:

@@ -54,9 +54,11 @@ func test_the_reference_is_shared_not_duplicated() -> void:
 	# Two copies would drift, and the glyph fix would land on only one of them.
 	var overlay := _read(OverlayPath)
 	var title := _read("res://src/ui/TitleScreen.gd")
-	assert_true(overlay.contains("Defer / Party Chat"),
+	# Canary for "the body lives here". Was "Defer / Party Chat" until that row was split per key
+	# (2026-10-12) — pick a token off a row that exists, not one a correct edit can retire.
+	assert_true(overlay.contains("Defer (in battle)"),
 		"the overlay must own the reference body")
-	assert_false(title.contains("Defer / Party Chat"),
+	assert_false(title.contains("Defer (in battle)"),
 		"TitleScreen must delegate to the overlay rather than keep a second copy")
 	assert_true(title.contains("HowToPlayOverlay.new()"),
 		"TitleScreen must open the shared overlay")

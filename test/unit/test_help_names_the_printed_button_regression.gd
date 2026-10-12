@@ -78,7 +78,8 @@ func test_the_renderer_list_names_a_file_that_actually_renders_a_row() -> void:
 	# Control for the loop above: if a path 404s or the row moves again, the guard must go
 	# red rather than sweep an empty corpus. Names a known-present member, not a count.
 	var overlay: String = FileAccess.get_file_as_string("res://src/ui/HowToPlayOverlay.gd")
-	assert_true(overlay.contains("Defer / Party Chat"),
+	# Was "Defer / Party Chat" until that row was split per key (2026-10-12).
+	assert_true(overlay.contains("Defer (in battle)"),
 		"HowToPlayOverlay must actually carry the controls table this guard is defending")
 
 ## ⛔ HERMETIC ABOUT THE PROFILE. This file asks InputProfileManager for a name or glyph, so it

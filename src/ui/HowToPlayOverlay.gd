@@ -24,16 +24,43 @@ const HELP_SCROLL_STEP_PX: float = 48.0
 var _scroll_target: RichTextLabel = null
 
 
+## Every key bound to an action, as the reference prints it. The rows below were hand-written
+## letters and went INVERSE of the truth when the keyboard moved to the emulator layout
+## (2026-09-29) and the shoulders to Q/W (2026-09-25): "L Key — Defer" sent the player to the
+## party chat for ten days, and nothing caught it because every controls guard sweeps ACTIONS.
+static func _keys(action: String, fallback: String) -> String:
+	return TitleScreen.keys_cell(action, fallback)
+
+
+## The pad cell for a RAW button index — the field-menu toggle has no action to derive from.
+static func _face_cell_for_index(index: int, fallback_face: String) -> String:
+	if not InputProfileManager or Input.get_connected_joypads().is_empty():
+		return "%s face" % fallback_face
+	var g: String = InputProfileManager.face_glyph_for_index(index)
+	return "%s face" % fallback_face if g == "" or g == "?" else "%s Button" % g
+
+
+## The rows whose buttons are BOUND, so they follow a rebind. The field-menu row is first because
+## it is the control a new player needs first, and it was named on no screen at all until now.
+## Defer and Party Chat get a row each: they share the pad's L shoulder but no longer share a KEY
+## (Q vs L), so one row naming one key taught the wrong one for whichever half you were reading.
+static func _bound_rows() -> String:
+	return "%-17s %-17s R-Click          [color=lime]Open the menu — party, items, quests, save[/color]\n" % [
+		_face_cell_for_index(OverworldMenu.TOGGLE_PAD_BUTTON, "North"),
+		"%s / Escape" % OS.get_keycode_string(OverworldMenu.TOGGLE_KEY)] \
+		+ "Y (west face)     %-17s —                [color=lime]Run — hold to move 1.7x faster[/color]\n" % _keys("dash", "Shift") \
+		+ "L Shoulder        %-17s —                Defer (in battle)\n" % _keys("battle_defer", "Q") \
+		+ "L Shoulder        %-17s —                Party Chat (in the field)\n" % _keys("party_chat", "L") \
+		+ "R Shoulder        %-17s —                Advance (queue action)" % _keys("battle_advance", "W")
+
+
 ## The reference body. Static so a test can pin the VALUE without building a scene tree,
 ## and so callers can render it into their own container if they'd rather not use ours.
 static func build_text() -> String:
 	# Guarded because test bootstrap and very early init can reach here before the
 	# autoload exists; the fallback letters are only ever seen in that window.
 	return TitleScreen.build_confirm_cancel_rows(
-		_face_cell("ui_accept", "East"), _face_cell("ui_cancel", "South")) + """
-Y (west face)     Shift             —                [color=lime]Run — hold to move 1.7x faster[/color]
-L Shoulder        L Key             —                Defer / Party Chat
-R Shoulder        R Key             —                Advance (queue action)
+		_face_cell("ui_accept", "East"), _face_cell("ui_cancel", "South")) + "\n" + _bound_rows() + """
 Start / Plus / Options F5           —                Open Autobattle Editor
 Back / Select / Minus / Share F6    —                Toggle Autobattle
 X (top face)      ` (backtick)      —                Battle speed
@@ -55,8 +82,8 @@ R3 Stick Click    F1                —                [color=lime]This screen �
 Each turn you choose: [color=lime]Attack[/color], use [color=cyan]Magic[/color], or strategize with AP.
 
 [color=white]AP (Action Points)[/color] range from -4 to +4.
-  [color=lime]Defer (L)[/color]: Skip your turn. Gain +1 AP, take less damage.
-  [color=cyan]Advance (R)[/color]: Queue extra actions. Each costs 1 AP.
+  [color=lime]Defer (""" + _keys("battle_defer", "Q") + """)[/color]: Skip your turn. Gain +1 AP, take less damage.
+  [color=cyan]Advance (""" + _keys("battle_advance", "W") + """)[/color]: Queue extra actions. Each costs 1 AP.
     Queue up to """ + str(BattleManager.ADVANCE_CAP) + """ actions, or """ + str(BattleManager.FULL_BANK_ACTIONS) + """ at a full bank (+""" + str(BattleManager.FULL_BANK_AP) + """ AP) — the last one is free.
     Press Confirm to commit the queue; they all execute at once!
 
