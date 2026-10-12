@@ -31,6 +31,16 @@ extends GutTest
 ## It does not. The missing-slot exit needs no writes and is exercised for real; the three
 ## `_read_save_file` exits are covered by shape, behind a floor and a control.
 
+## ⛔ THE SHARED STRIPPER, NOT A PRIVATE ONE. My first version of this file stripped only
+## line-start `#`, which cannot touch a `"""` docstring — and this helper's own header records
+## that exact defect, names it ".325", and names THIS LANE as somewhere a hand-rolled toggle lost
+## five verdicts. A presence assert over raw source is satisfied by PROSE ABOUT the code, so
+## every arm below would have been satisfiable by a docstring that merely mentions the token.
+## Measured before switching: 0 of the five files my guards scan currently have a multiline
+## docstring carrying a column-0 `func `, so nothing was mis-cut today — the exposure was by
+## construction, not yet realised.
+const GdSource := preload("res://test/unit/helpers/gd_source.gd")
+
 const SAVE_SRC := "res://src/save/SaveSystem.gd"
 const GAMELOOP_SRC := "res://src/GameLoop.gd"
 
@@ -131,33 +141,41 @@ func test_a_later_load_does_not_inherit_an_earlier_refusals_reason() -> void:
 		"the second refusal carried the first slot's reason: '%s'" % [why])
 
 
-func _code_without_comments(path: String) -> String:
-	## A source scan must look at CODE. This fix's comments QUOTE the sentences it replaced and
-	## the `_create_party()` fallback it fixed, so a scan over raw text reads the retired shape as
-	## still live. Measured twice on the share surface: two arms failed on their first run for
-	## exactly this.
-	var out: PackedStringArray = PackedStringArray()
-	for line in FileAccess.get_file_as_string(path).split("\n"):
-		if str(line).strip_edges().begins_with("#"):
-			continue
-		out.append(str(line))
-	return "\n".join(out)
+func _code_of(path: String) -> String:
+	## A source scan must look at CODE, and this fix's own comments QUOTE the sentences it
+	## replaced and the `_create_party()` fallback it fixed — so a scan over raw text reads the
+	## retired shape as still live. Measured twice on the share surface: two arms there failed on
+	## their first run for exactly that.
+	return str(GdSource.split(FileAccess.get_file_as_string(path))["code"])
 
 
-func test_control_the_comment_stripper_keeps_code_and_drops_comments() -> void:
-	var code: String = _code_without_comments(SAVE_SRC)
-	assert_gt(code.length(), 2000, "CONTROL: stripping comments must leave the code behind")
-	assert_true(code.find("func load_game(") != -1, "CONTROL: code lines must survive")
-	var raw_comments: int = 0
-	for line in FileAccess.get_file_as_string(SAVE_SRC).split("\n"):
-		if str(line).strip_edges().begins_with("#"):
-			raw_comments += 1
-	var left: int = 0
-	for line in code.split("\n"):
-		if str(line).strip_edges().begins_with("#"):
-			left += 1
-	assert_gt(raw_comments, 20, "CONTROL: the file must have comments to strip, found %d" % [raw_comments])
-	assert_eq(left, 0, "CONTROL: %d comment line(s) survived, so the arms below measure the documentation" % [left])
+func test_control_the_shared_stripper_keeps_code_and_removes_prose() -> void:
+	## The helper's header requires every caller to prove a known code site SURVIVED, because
+	## over-stripping and a correct strip are the same green. It also requires flooring the DOC
+	## half, because an empty doc side satisfies "the prose is gone" by construction.
+	for path in [SAVE_SRC, GAMELOOP_SRC]:
+		var halves: Dictionary = GdSource.split(FileAccess.get_file_as_string(str(path)))
+		var code: String = str(halves["code"])
+		var doc: String = str(halves["doc"])
+		assert_gt(code.length(), 2000, "CONTROL: %s must leave a code half behind" % [path])
+		## ⚠ CONDITIONAL, because an unconditional floor measures the helper's INPUT. Learned on
+		## the share-surface twin an hour ago: ScriptShareManager.gd has ZERO `"""` regions, so an
+		## empty doc half is the CORRECT answer there and the floor red on correct code. Both of
+		## the files here DO carry docstrings today — 29 regions in SaveSystem.gd, 100 in
+		## GameLoop.gd — so the floor applies; the branch is what keeps it honest if that changes.
+		var raw: String = FileAccess.get_file_as_string(str(path))
+		if raw.count("\"\"\"") > 0:
+			assert_gt(doc.length(), 200,
+				"CONTROL: %s carries docstrings, so the doc half must be non-empty or 'the prose was removed' is vacuous" % [path])
+		else:
+			assert_eq(doc.length(), 0,
+				"CONTROL: %s has no docstrings, so a non-empty doc half means parity invented a region" % [path])
+		assert_eq(code.count("\"\"\""), 0,
+			"CONTROL: a docstring delimiter survived in %s's code half — parity desynced" % [path])
+	var save_code: String = _code_of(SAVE_SRC)
+	assert_true(save_code.find("func load_game(") != -1, "CONTROL: a known code site must survive")
+	assert_true(_code_of(GAMELOOP_SRC).find("func _show_game_over_screen(") != -1,
+		"CONTROL: a known code site must survive in GameLoop too")
 
 
 func _body_of(code: String, signature: String) -> String:
@@ -174,7 +192,7 @@ func _body_of(code: String, signature: String) -> String:
 func test_every_read_failure_records_which_failure_it_was() -> void:
 	## Three exits, three different diagnoses, and load_game used to flatten them to one
 	## sentence. Shape rather than behaviour because SAVE_DIR is a const (see the header).
-	var code: String = _code_without_comments(SAVE_SRC)
+	var code: String = _code_of(SAVE_SRC)
 	var body: String = _body_of(code, "func _read_save_file(")
 	assert_ne(body, "", "CONTROL: _read_save_file must still be a func of that name")
 	if body == "":
@@ -199,7 +217,7 @@ func test_every_read_failure_records_which_failure_it_was() -> void:
 func test_both_load_game_refusals_carry_their_reason_on_the_signal() -> void:
 	## load_failed's payload is the point of the signal. It emitted two fixed strings; a listener
 	## added later would have inherited the same flattening.
-	var code: String = _code_without_comments(SAVE_SRC)
+	var code: String = _code_of(SAVE_SRC)
 	var body: String = _body_of(code, "func load_game(")
 	assert_ne(body, "", "CONTROL: load_game must still be a func of that name")
 	if body == "":
@@ -215,7 +233,7 @@ func test_both_load_game_refusals_carry_their_reason_on_the_signal() -> void:
 func test_the_game_over_continue_fallback_is_not_silent() -> void:
 	## THE LIVE DEFECT. Per branch, not per file: GameLoop reports on the title-screen Continue
 	## and on quick-load, so a file-level scan was green while this branch said nothing.
-	var code: String = _code_without_comments(GAMELOOP_SRC)
+	var code: String = _code_of(GAMELOOP_SRC)
 	var body: String = _body_of(code, "func _show_game_over_screen(")
 	assert_ne(body, "", "CONTROL: _show_game_over_screen must still be a func of that name")
 	if body == "":
@@ -237,7 +255,7 @@ func test_the_game_over_continue_fallback_is_not_silent() -> void:
 func test_control_the_title_screen_continue_still_reports() -> void:
 	## The sibling that already had the fix, and the positive control for the scan above: without
 	## it, a scan that can never find a Toast would report the branch above as green.
-	var code: String = _code_without_comments(GAMELOOP_SRC)
+	var code: String = _code_of(GAMELOOP_SRC)
 	var body: String = _body_of(code, "func _title_load_slot(")
 	assert_ne(body, "", "CONTROL: _title_load_slot must still be a func of that name")
 	if body == "":
@@ -252,7 +270,7 @@ func test_control_the_title_screen_continue_still_reports() -> void:
 func test_every_load_game_caller_in_gameloop_can_say_why() -> void:
 	## Derived, so the next caller is judged without editing this arm. Per function, because each
 	## of these both calls and reports.
-	var code: String = _code_without_comments(GAMELOOP_SRC)
+	var code: String = _code_of(GAMELOOP_SRC)
 	var checked: int = 0
 	var mute: Array = []
 	for chunk in code.split("\nfunc "):
