@@ -51,10 +51,19 @@ func test_cutscene_director_uses_fade_out_music_not_stop_music() -> void:
 	# is empty in any map that uses play_area_music, so the post-cutscene
 	# restore silently no-opped). This test is about fade-vs-hard-cut, which
 	# is unchanged — so it should not re-break when the capture shape evolves.
-	var save_idx = text.find("_pre_cutscene_music = SoundManager.")
+	# The capture may sit behind a helper (2026-10-12: _world_bed_snapshot(), so a chained scene
+	# cannot hand the next one the PREVIOUS scene's theme as the world's bed). Anchor on the
+	# assignment and follow the helper, so this stays about fade-vs-hard-cut.
+	var save_idx = text.find("_pre_cutscene_music = ")
 	assert_true(save_idx > -1, "pre-cutscene music save line must be present")
-	# Walk forward 300 chars from save line — should hit fade_out_music, not stop_music.
 	var window = text.substr(save_idx, 300)
+	var helper_idx = text.find("func _world_bed_snapshot")
+	if window.find("_world_bed_snapshot()") > -1 and helper_idx > -1:
+		assert_true(text.substr(helper_idx, 400).find("capture_music_state") > -1,
+			"the capture helper must still read SoundManager's music state")
+	else:
+		assert_true(window.find("SoundManager.") > -1,
+			"the save line must capture from SoundManager, got: '%s'" % window)
 	assert_true(window.find("fade_out_music") > -1,
 		"Pre-cutscene block must transition to fade_out_music, got: '%s'" % window)
 	assert_false(window.find("SoundManager.stop_music(") > -1,

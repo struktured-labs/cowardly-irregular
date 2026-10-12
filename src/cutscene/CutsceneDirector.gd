@@ -63,6 +63,10 @@ var _replay: bool = false
 ## True once THIS scene authored a stop_music: a later cue that is absent from the build then stays silent (authored intent), instead of bringing the world's bed back.
 var _music_stopped_by_step: bool = false
 
+## The track a cutscene step started. A CHAINED scene opens with this still playing, and capturing it
+## as the "pre-cutscene bed" makes that scene's end-restore put a cutscene theme back over the map.
+var _own_music_track: String = ""
+
 ## Configuration
 const LETTERBOX_HEIGHT: int = 40
 const LETTERBOX_ANIM_DURATION: float = 0.4
@@ -362,7 +366,7 @@ func play_cutscene(cutscene_id: String, replay: bool = false) -> void:
 	# When it IS true we skip the snapshot too, so the restore below correctly
 	# no-ops: nothing was faded, so nothing needs putting back.
 	if _should_fade_music_for(data):
-		_pre_cutscene_music = SoundManager.capture_music_state()
+		_pre_cutscene_music = _world_bed_snapshot()
 		SoundManager.fade_out_music(0.3)
 		await get_tree().create_timer(0.3).timeout
 
@@ -860,6 +864,19 @@ func _step_screen_flash(step: Dictionary) -> void:
 ## ambient beat back in dead air with every test green (verified by mutation,
 ## 2026-07-29). @cowir-ai's class: a pin on the code's spelling where the
 ## claim is about its behaviour.
+## The bed to put back when this scene ends — the WORLD's, never another cutscene's. A chained scene
+## opens with the previous scene's theme still playing; restoring that drops a cutscene cue onto the
+## map the player walks out into (measured on the W1 ending: Mordaine's dissolution theme over Castle
+## Harmonia). Empty means "this scene owes the world nothing", which leaves its authored ending intact.
+func _world_bed_snapshot() -> Dictionary:
+	if not SoundManager or not SoundManager.has_method("capture_music_state"):
+		return {}
+	var snapshot: Dictionary = SoundManager.capture_music_state()
+	if _own_music_track != "" and str(snapshot.get("track", "")) == _own_music_track:
+		return {}
+	return snapshot
+
+
 func _should_fade_music_for(data: Dictionary) -> bool:
 	if not SoundManager or not SoundManager._music_playing:
 		return false
@@ -885,6 +902,7 @@ func _step_play_music(step: Dictionary) -> void:
 			push_warning("[cutscene] music '%s' is not in this build — the scene stays as it is" % track)
 		return
 	SoundManager.play_music(track)
+	_own_music_track = track
 
 
 ## Seam: will play_music(track) make sound in THIS build? Overridable so a test can stand in for a web export.
@@ -896,6 +914,7 @@ func _cue_is_available(track: String) -> bool:
 
 func _step_stop_music(_step: Dictionary) -> void:
 	_music_stopped_by_step = true
+	_own_music_track = ""
 	if SoundManager:
 		SoundManager.stop_music()
 
