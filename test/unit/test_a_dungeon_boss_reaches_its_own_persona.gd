@@ -6,11 +6,8 @@ extends GutTest
 ## What DragonCave and CastleHarmonia emit at `battle_triggered.emit([boss_id])`, not persona names.
 const DUNGEON_BOSS_IDS: Array[String] = [
 	"fire_dragon", "ice_dragon", "lightning_dragon", "shadow_dragon", "chancellor_mordaine",
+	"cave_rat_king",
 ]
-
-## Authored gap, not a wiring bug: no boss_dialogue.json section exists for the tutorial boss, so it
-## has no intents and no gloat by authoring. cowir-story's call; drop it here once a section lands.
-const NO_SECTION_AUTHORED: Array[String] = ["cave_rat_king"]
 
 var _saved_enemies: Array = []
 
@@ -84,13 +81,10 @@ func test_a_trash_mob_resolves_nothing() -> void:
 		"a slime resolved a boss gloat")
 
 
-func test_the_unauthored_boss_is_still_unauthored() -> void:
-	## Pins the content gap so it cannot be mistaken for this wiring bug, and reds when a section is
-	## authored — at which point the id moves into DUNGEON_BOSS_IDS above.
-	for id in NO_SECTION_AUTHORED:
-		var persona: String = BattleManager._boss_persona_id(_as_encounter_spawn(id))
-		assert_false(BossDialogue.has_entry(persona),
-			"'%s' now has an authored section as '%s' — move it into DUNGEON_BOSS_IDS" % [id, persona])
+func test_the_rat_king_is_his_own_persona() -> void:
+	## His section key IS his monster id (no boss_llm_persona_id bridge), so the id must resolve to itself.
+	assert_eq(BattleManager._boss_persona_id(_as_encounter_spawn("cave_rat_king")), "cave_rat_king",
+		"the Rat King's monster id no longer lands on his boss_dialogue section")
 
 
 # ── the player's jailbreak has to reach the same persona ──────────────────────────────────────────
