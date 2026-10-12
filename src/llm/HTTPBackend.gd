@@ -95,7 +95,13 @@ func _start_probe() -> void:
 
 	var url: String = _probe_url()
 	var method: int = _probe_method()
-	var err: int = _probe_request.request(url, probe_headers(), method, "")
+	# Bound to a local rather than called inline: test_the_byok_log_never_carries_the_key
+	# treats a local assigned from a key-carrying function as an alias of that container, so
+	# `var err = request(url, probe_headers(), ...)` made the INT err an alias and the warning
+	# below, which interpolates err, read as a credential leak. Naming the container is also
+	# clearer about what crosses the wire.
+	var auth: PackedStringArray = probe_headers()
+	var err: int = _probe_request.request(url, auth, method, "")
 	if err != OK:
 		# The request never started (malformed or empty base_url, bad host), so
 		# _on_probe_completed will NEVER fire. Leaving _first_probe_done false
