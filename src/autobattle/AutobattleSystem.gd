@@ -548,6 +548,18 @@ func validate_rule(rule: Dictionary, deep_check_character_id: String = "") -> Ar
 		errors.append("'actions' must be an array")
 	if errors.size() > 0:
 		return errors
+	## ⛔ A RULE-LEVEL `logic` OTHER THAN "AND" IS REFUSED, BECAUSE THE LIVE EVALUATOR
+	## IGNORES THE KEY. `_evaluate_grid_rule` hard-ANDs its conditions and never reads
+	## `logic`; the only function that honours it, `_evaluate_rule`, is dead (its own
+	## comment says so, and it has no caller in src/). `create_rule` writes
+	## `"logic": "AND"`, so the key IS part of the shared format — which is why a
+	## hand-edited or imported script could carry "OR", validate clean, and then fire
+	## only when EVERY condition held. Silently inverted, not rejected.
+	## The validator is the right layer: ScriptShareManager runs every imported rule
+	## through here, so the player hears about it at import instead of wondering why a
+	## rule never triggers.
+	if rule.has("logic") and str(rule["logic"]).strip_edges().to_upper() != "AND":
+		errors.append("rule 'logic' is '%s', but only 'AND' is evaluated — every condition must hold. For OR, split the rule into one rule per branch: rules are tried top-to-bottom and the first match wins, so separate rules ARE the or." % [rule["logic"]])
 	for c in rule["conditions"]:
 		if typeof(c) != TYPE_DICTIONARY:
 			errors.append("condition must be a dictionary: %s" % [c])
@@ -2235,9 +2247,11 @@ func _evaluate_rule(combatant: Combatant, rule: Dictionary) -> bool:
 
 	var conditions = rule["conditions"]
 	## ⛔ "OR" IS NOT SUPPORTED AND THIS FUNCTION IS DEAD — `_evaluate_grid_rule` is the live path
-	## and hard-ANDs its conditions. `validate_rule` whitelists no rule-level key, so a rule
-	## carrying logic:"OR" VALIDATES, shares, and then runs as AND — silently inverted, not
-	## rejected. `.455` ships a pass that expands OR into separate rules because of this.
+	## and hard-ANDs its conditions. This branch below is the ONLY code that honours `logic`,
+	## and nothing calls it, which is why a rule carrying logic:"OR" used to validate, share,
+	## and then run as AND — silently inverted. `validate_rule` now REFUSES a rule-level
+	## `logic` other than "AND", so that no longer reaches a player; do not read this `if`
+	## as evidence that OR works. `.455` ships a pass that expands OR into separate rules.
 	var logic = rule.get("logic", "AND")
 
 	var results = []
