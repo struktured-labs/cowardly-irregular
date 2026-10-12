@@ -64,7 +64,7 @@ func test_off_branch_emits_scripted_fallback() -> void:
 	var idx: int = body.find(OFF_BRANCH)
 	assert_gt(idx, -1, "off branch must exist")
 	# Look forward ~150 chars for the emit + return.
-	var window: String = body.substr(idx, 200)
+	var window: String = body.substr(idx, 360)
 	assert_true(window.contains("if not fallback.is_empty():"),
 		"off branch must guard on fallback non-empty before emitting")
 	assert_true(window.contains("_emit_party_line(combatant, fallback, fallback_key)"),

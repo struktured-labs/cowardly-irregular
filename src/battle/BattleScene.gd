@@ -1389,7 +1389,7 @@ func _retire_enemy_hp_bar(enemy: Combatant) -> void:
 			running.kill()
 	for key in ["bar_bg", "bar_trail", "bar_fill"]:
 		var piece = bars.get(key)
-		if not (piece is CanvasItem) or not is_instance_valid(piece):
+		if not is_instance_valid(piece) or not (piece is CanvasItem):
 			continue
 		var fade: Tween = piece.create_tween()  # dies with the rect a grind restart frees
 		fade.tween_property(piece, "modulate:a", 0.0, ENEMY_HP_BAR_FADE)
