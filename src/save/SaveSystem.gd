@@ -59,6 +59,22 @@ var time_since_last_auto_save: float = 0.0
 ## calls write this field too.
 var _last_load_reason: String = ""
 
+## Why the last save attempt produced no file, in player-facing form. `_write_save_file` has
+## three failure exits — the file would not open, the write came up short, the rename into place
+## failed — and all three diagnose precisely, push to `push_warning`, and return `false`.
+## `save_game` then emitted the fixed string "Failed to write save file" to a toast that IS
+## already wired (GameLoop._on_any_save_failed), so the player got a real notification carrying
+## none of the diagnosis.
+##
+## 🔑 AND THE HALF BEING THROWN AWAY IS THE ONE THAT MATTERS MOST: two of those push_warnings end
+## "the previous save in slot %d is intact and this save did not happen." A player whose save has
+## just failed needs to know their OLD save survived, and that sentence never left the log.
+##
+## Sibling of `_last_load_reason` directly above, and of `last_import_reason()` /
+## `last_export_reason()` on the share surface. Read it immediately after save_game(), which
+## clears it on entry.
+var _last_save_reason: String = ""
+
 
 ## One-shot tracking records
 var one_shot_records: Dictionary = {}  # {monster_id: {count: int, best_rank: String, best_setup: int}}
@@ -133,10 +149,15 @@ func force_quick_save(slot: int = -1) -> bool:
 
 func save_game(slot: int = -1) -> bool:
 	"""Save the current game state to a slot"""
+	## Cleared on entry so `last_save_reason()` always describes THIS attempt, and every exit
+	## below sets it — including the block path, because otherwise a blocked save would be
+	## captioned by an older disk failure: specific, plausible, and about a different thing.
+	_last_save_reason = ""
 	if slot == -1:
 		slot = current_save_slot
 
 	if slot < 0:
+		_last_save_reason = "no save slot was selected"
 		save_failed.emit("No save slot selected")
 		return false
 
@@ -153,6 +174,7 @@ func save_game(slot: int = -1) -> bool:
 	_meta_save_bypass = false
 	if not bypass_gate and not can_quick_save():
 		var reason: String = _save_block_reason()
+		_last_save_reason = reason
 		save_failed.emit(reason)
 		print("[SAVE] save_game refused: %s" % reason)
 		return false
@@ -224,7 +246,12 @@ func save_game(slot: int = -1) -> bool:
 		print("Game saved to slot %d" % slot)
 		return true
 	else:
-		save_failed.emit("Failed to write save file")
+		## ⛔ "Failed to write save file" WAS THE WHOLE MESSAGE, on a toast that is wired, to a
+		## player who just pressed Save. _write_save_file had already named which of its three
+		## failures it was AND whether the previous save survived. Both stopped at push_warning.
+		if _last_save_reason == "":
+			_last_save_reason = "the save file could not be written"
+		save_failed.emit(_last_save_reason)
 		return false
 
 
@@ -561,6 +588,11 @@ func get_save_info(slot: int) -> Dictionary:
 		if party is Array and not (party as Array).is_empty():
 			info["party_summary"] = summarize_party(party)
 	return info
+
+
+## Why the last save attempt wrote no file, or "" when it wrote one.
+func last_save_reason() -> String:
+	return _last_save_reason
 
 
 func delete_save(slot: int) -> bool:
@@ -992,6 +1024,10 @@ func _deserialize_party(party_data: Array) -> void:
 ## File I/O
 func _write_save_file(slot: int, data: Dictionary) -> bool:
 	"""Write save data to file"""
+	## Cleared here as well as in save_game: the three exits below are the only places that know
+	## WHICH failure it was, and a private helper that depends on every caller having cleared is
+	## the dependence the share channel had to remove. Several tests call this directly.
+	_last_save_reason = ""
 	var file_path = _get_save_path(slot)
 
 	## Serialized BEFORE any open: FileAccess.WRITE truncates on open, so every line between
@@ -1008,6 +1044,7 @@ func _write_save_file(slot: int, data: Dictionary) -> bool:
 		## false, the save UI sometimes still showed "Saved!" toast
 		## depending on caller. push_warning + FileAccess error code
 		## gives diagnostic surface (perms / disk full / RO FS).
+		_last_save_reason = "the save file could not be created (%s) — your previous save in slot %d is intact and this save did not happen" % [error_string(FileAccess.get_open_error()), slot]
 		push_warning("[SaveSystem] _write_save_file: could not open '%s' for write (error: %s)" % [staged, FileAccess.get_open_error()])
 		return false
 
@@ -1020,12 +1057,14 @@ func _write_save_file(slot: int, data: Dictionary) -> bool:
 	var werr: int = file.get_error()
 	file.close()
 	if werr != OK:
+		_last_save_reason = "only part of the save reached the disk (%s) — it may be full. Your previous save in slot %d is intact and this save did not happen" % [error_string(werr), slot]
 		push_warning("[SaveSystem] _write_save_file: write to '%s' FAILED (error: %d) — disk full or quota. The previous save in slot %d is intact and this save did not happen." % [staged, werr, slot])
 		DirAccess.remove_absolute(staged)
 		return false
 
 	var err := DirAccess.rename_absolute(staged, file_path)
 	if err != OK:
+		_last_save_reason = "the new save could not be moved into place (%s) — your previous save in slot %d is intact and this save did not happen" % [error_string(err), slot]
 		push_warning("[SaveSystem] _write_save_file: could not move '%s' into place (error: %d) — the previous save in slot %d is intact and this save did not happen." % [staged, err, slot])
 		DirAccess.remove_absolute(staged)
 		return false
