@@ -279,8 +279,14 @@ func auto_save() -> bool:
 	if not can_quick_save():
 		return false
 
-	print("Auto-saving...")
+	if _announces_autosave():
+		print("Auto-saving...")
 	return save_game(AUTO_SAVE_SLOT)
+
+
+## Quiet inside a refusal streak: an idle game-over screen printed "Auto-saving..." 1401 times in one session.
+func _announces_autosave() -> bool:
+	return _last_party_refusal == ""
 
 
 func can_quick_save() -> bool:

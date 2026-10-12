@@ -64,3 +64,30 @@ func test_the_warning_is_guarded_by_the_streak() -> void:
 	var i := src.find("if party_reason != _last_party_refusal:")
 	assert_gt(i, -1, "the warning must be guarded by the streak marker")
 	assert_true(src.substr(i, 120).contains("push_warning"), "the guarded line is the refusal warning")
+
+
+## struktured's 10-05 log: 1401 "Auto-saving..." lines beside 1401 refusals, 9% of the session's log.
+func test_a_refused_streak_stops_announcing_the_autosave() -> void:
+	assert_true(SaveSystem._announces_autosave(), "CONTROL: outside a streak the autosave says it is saving")
+	_set_party(false)
+	SaveSystem.pre_save_sync.connect(_flush_wipe)
+	assert_false(SaveSystem.save_game(SLOT), "SCOPE: the flushed wipe is refused")
+	assert_false(SaveSystem._announces_autosave(), "the retries that follow a refusal are quiet")
+	SaveSystem.pre_save_sync.disconnect(_flush_wipe)
+	_set_party(false)
+	SaveSystem.save_game(SLOT)
+	assert_true(SaveSystem._announces_autosave(), "a save that gets past the party check announces again")
+
+
+func test_the_announcement_is_guarded_by_the_streak() -> void:
+	var code: String = load("res://test/unit/helpers/gd_source.gd").code_of("res://src/save/SaveSystem.gd")
+	var i := code.find("func auto_save()")
+	var j := code.find("\nfunc ", i + 1)
+	assert_gt(i, -1, "auto_save must exist")
+	assert_gt(j, i, "auto_save must end at a next function")
+	var body := code.substr(i, j - i)
+	var g := body.find("if _announces_autosave():")
+	assert_gt(g, -1, "the announcement must ask the streak first")
+	assert_gt(body.find("print(", g), g, "the print sits under the guard")
+	assert_eq(body.count("print("), 1, "one announcement, and it is the guarded one")
+
