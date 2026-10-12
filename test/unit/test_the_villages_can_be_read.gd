@@ -182,12 +182,32 @@ func test_the_text_is_not_copied_into_the_script() -> void:
 	var src := _source()
 	var by_scene := _pack_by_scene()
 	var copied: Array = []
+	var skipped: Array = []
 	for scene in by_scene.keys():
 		for examine_id in (by_scene[scene] as Dictionary).keys():
 			var text: String = str(((by_scene[scene] as Dictionary)[examine_id] as Dictionary).get("text", ""))
-			if text.length() >= 30 and src.contains(text.substr(0, 30)):
+			## \u26d4 THE 30-CHAR FLOOR IS A REAL EXEMPTION AND IT MUST BE REPORTED, NOT HIDDEN. A short
+			## text is skipped deliberately: matching on too few characters is how a supersession check
+			## of mine scored 51 phantom hits off one `'...'` line earlier today. But a silent skip means
+			## a future short examine could be copied into the script with nothing to say so, so the arm
+			## PRINTS what it exempted. Vacuous today \u2014 measured, the shortest authored text is 131 chars.
+			if text.length() < 30:
+				skipped.append(str(examine_id))
+				continue
+			if src.contains(text.substr(0, 30)):
 				copied.append(str(examine_id))
 	assert_eq(copied, [], "authored prose is duplicated in the script: %s" % ", ".join(copied))
+	gut.p("  copy check: %d entries, %d exempt as under 30 chars%s" % [
+		_village_entry_count(by_scene), skipped.size(),
+		("" if skipped.is_empty() else " \u2014 UNCHECKED: " + ", ".join(skipped))])
+
+
+## Named rather than inlined so the count in the report above cannot drift from the set checked.
+func _village_entry_count(by_scene: Dictionary) -> int:
+	var n := 0
+	for scene in by_scene.keys():
+		n += (by_scene[scene] as Dictionary).size()
+	return n
 
 
 ## The offsets are a RELATIONSHIP to the arrival spawn, not coordinates. An absolute cell here would
