@@ -59,8 +59,10 @@ func test_both_sites_derive_the_key_the_same_way() -> void:
 	## ⚠️ THE SIBLING LIST IS MEASURED, NOT GUESSED. My first version named `_maybe_emit_boss_insight`
 	## from memory and this arm red on it — that function reads neither key. These six are every
 	## function in BattleManager that reads `llm_persona_id`, derived rather than recalled.
+	## `_resolve_gloat_boss_persona` moved to the shared-reader arm below on 2026-10-12: it now calls
+	## `_boss_persona_id` instead of deriving inline, which is this file's thesis taken further.
 	for fn in ["_maybe_boss_phase_bark", "_boss_persona_id", "_on_boss_jailbreak_succeeded",
-			"try_player_jailbreak_directive", "_resolve_gloat_boss_persona", "_resolve_boss_display_name"]:
+			"try_player_jailbreak_directive", "_resolve_boss_display_name"]:
 		var body: String = _body(fn)
 		var persona_at: int = body.find("llm_persona_id")
 		var type_at: int = body.find("monster_type")
@@ -72,6 +74,18 @@ func test_both_sites_derive_the_key_the_same_way() -> void:
 
 ## The phase path and the intent bias reach the key through _boss_persona_id (2026-09-29), so they must still call it.
 func test_the_phase_and_intent_paths_resolve_through_the_shared_reader() -> void:
-	for fn in ["_update_boss_dialogue_phase", "_intent_ability_bias"]:
+	for fn in ["_update_boss_dialogue_phase", "_intent_ability_bias", "_resolve_gloat_boss_persona"]:
 		assert_true(_body(fn).contains("_boss_persona_id("),
 			"%s no longer resolves the boss through _boss_persona_id, so it can drop the persona override" % fn)
+
+
+## The shared reader carries the catalog bridge (2026-10-12), so delegating to it is what earns the
+## dragons their persona. A site that derives inline would resolve "fire_dragon" and find no section.
+func test_the_shared_reader_is_what_bridges_a_boss_id_to_its_persona() -> void:
+	var body: String = _body("_boss_persona_id")
+	assert_true(body.contains("boss_llm_persona_id"),
+		"_boss_persona_id must consult monsters.json's boss_llm_persona_id — without it the four dragons resolve their own id, which is not a boss_dialogue key")
+	var bridge_at: int = body.find("boss_llm_persona_id")
+	var type_return: int = body.rfind("return monster_id")
+	assert_gt(type_return, bridge_at,
+		"the bare monster id must be the LAST resort, after the catalog bridge")
