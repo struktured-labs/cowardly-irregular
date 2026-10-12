@@ -434,6 +434,8 @@ func _ready() -> void:
 	# Log startup
 	if DebugLogOverlay:
 		DebugLogOverlay.log("[GAME] Started")
+	# Every worktree shares one user://logs, so a log has to say which build wrote it (semver + commit in a source run).
+	print("[GAME] Build %s" % Version.display())
 
 	# Arg-gated render smoke — see _maybe_run_battle_smoke.
 	_maybe_run_battle_smoke()
