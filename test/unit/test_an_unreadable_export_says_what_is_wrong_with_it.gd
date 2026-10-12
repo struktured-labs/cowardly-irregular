@@ -116,8 +116,42 @@ func test_a_file_that_is_gone_names_the_file_rather_than_the_character() -> void
 	assert_true(data.is_empty(), "precondition: a missing file must be refused")
 	var why: String = SSM.last_import_reason()
 	assert_ne(why, "", "a missing file must record a reason, not leave 'Could not apply X to <character>'")
-	assert_true(why.find("probe_never_existed.json") != -1,
-		"and the reason must name the FILE, which is the thing that is wrong: '%s'" % [why])
+	## ⛔ THE REASON MUST *NOT* NAME THE FILE, AND THIS ARM USED TO REQUIRE THAT IT DID.
+	## Both display sites already name it — "Could not apply %s: %s" and "%s could not be
+	## read%s" — so a reason that also embedded it printed the filename TWICE on screen:
+	##     Could not apply party_autobattle.json: 'party_autobattle.json' is not valid JSON
+	## Every arm here passed, because the claim they tested ("names the file") was true. It took
+	## RENDERING the refusal and reading it. Inverted deliberately, so the duplication cannot
+	## come back.
+	assert_false(why.find("probe_never_existed.json") != -1,
+		"the reason repeats the filename the caller already printed: '%s'" % [why])
+
+
+func test_no_refusal_repeats_the_filename_its_caller_prints() -> void:
+	## Derived over every exit rather than spot-checked: the caller owns the subject, the reason
+	## owns the diagnosis, and a reason that names the file makes the player read it twice.
+	var repeats: Array = []
+	var cases: Dictionary = {
+		"probe_dup_absent.json": "",
+		"probe_dup_bad.json": "{{{",
+		"probe_dup_list.json": "[1,2,3]",
+		"probe_dup_head.json": "{\"gold\": 4}",
+	}
+	for fname in cases:
+		var body: String = str(cases[fname])
+		if body != "":
+			if not _write(str(fname), body):
+				continue
+		assert_true(SSM.import_file(str(fname)).is_empty(), "precondition: %s must be refused" % [fname])
+		var why: String = SSM.last_import_reason()
+		assert_ne(why, "", "precondition: %s must record a reason" % [fname])
+		if why.find(str(fname)) != -1:
+			repeats.append("%s -> '%s'" % [fname, why])
+		if body != "":
+			_drop(str(fname))
+	assert_eq(repeats, [],
+		"these reasons name the file their caller already named, so the player reads it twice: %s"
+		% [str(repeats)])
 
 
 func test_malformed_json_carries_the_parsers_own_message_and_line() -> void:

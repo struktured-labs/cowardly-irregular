@@ -147,6 +147,12 @@ static func import_file(filename: String) -> Dictionary:
 	## without this the caller would caption it with the previous import's reason.
 	last_import_errors = []
 	last_import_advisories = []
+	## ⚠ THE REASONS DO NOT NAME THE FILE. Both display sites already do — the grid editor's
+	## "Could not apply %s: %s" and the autogrind loop's "%s could not be read%s" — so embedding
+	## it here printed it twice: "Could not apply party_autobattle.json: 'party_autobattle.json'
+	## is not valid JSON". Found by RENDERING the refusal and reading it, which is the only way
+	## that shows: every arm asserting the reason "names the file" passed, because it did.
+	## A reason is a reason; the caller supplies the subject.
 	## ⛔ EVERY `return {}` RECORDS A REASON. All five used to return with `last_import_errors`
 	## empty while both callers ask for one. AutobattleGridEditor's share picker falls back to
 	## "Could not apply <file> to <character>", which blames a character/script mismatch for what
@@ -158,13 +164,13 @@ static func import_file(filename: String) -> Dictionary:
 	if not FileAccess.file_exists(path):
 		## Reachable from the picker: `list_exports()` builds the row list, and the file can be
 		## gone by the time the player presses accept.
-		last_import_errors = ["'%s' is not there any more — it may have been moved or deleted since the list was built" % filename]
+		last_import_errors = ["it is not there any more — it may have been moved or deleted since the list was built"]
 		push_warning("[SHARE] Import file not found: %s" % path)
 		return {}
 
 	var file = FileAccess.open(path, FileAccess.READ)
 	if not file:
-		last_import_errors = ["'%s' is there but could not be opened for reading (error %d)" % [filename, FileAccess.get_open_error()]]
+		last_import_errors = ["it is there but could not be opened for reading (%s)" % error_string(FileAccess.get_open_error())]
 		push_warning("[SHARE] Import file exists but FileAccess.open failed: %s" % path)
 		return {}
 
@@ -177,7 +183,7 @@ static func import_file(filename: String) -> Dictionary:
 		## keeping: a hand-edited share file gets the parser's message AND the line it gave up on.
 		## +1 because JSON.get_error_line() is 0-BASED and every text editor the player will open
 		## the file in is 1-based — measured: a one-line broken file reports line 0.
-		last_import_errors = ["'%s' is not valid JSON — %s (line %d)" % [filename, json.get_error_message(), json.get_error_line() + 1]]
+		last_import_errors = ["not valid JSON — %s (line %d)" % [json.get_error_message(), json.get_error_line() + 1]]
 		push_warning("[SHARE] Import file '%s' JSON parse error: %s" % [filename, json.get_error_message()])
 		return {}
 
@@ -185,13 +191,13 @@ static func import_file(filename: String) -> Dictionary:
 		## "list" rather than "Array": the likeliest shape here is a bare rules array that someone
 		## copied out of the middle of an export, and the player is reading a status flash.
 		var shape: String = "list" if json.data is Array else "single value"
-		last_import_errors = ["'%s' is valid JSON but not an export — the top level is a %s, not an object" % [filename, shape]]
+		last_import_errors = ["valid JSON, but not an export — the top level is a %s, not an object" % shape]
 		push_warning("[SHARE] Import file '%s' parsed but root is not a Dictionary — expected a script/bundle export" % filename)
 		return {}
 
 	var data: Dictionary = json.data
 	if not data.has("type") or not data.has("version"):
-		last_import_errors = ["'%s' has no 'type'/'version' header — it is a .json in the export folder but not a share export" % filename]
+		last_import_errors = ["no 'type'/'version' header — a .json in the export folder, but not a share export"]
 		push_warning("[SHARE] Import file '%s' missing required 'type' or 'version' fields — not a valid export" % filename)
 		return {}
 
