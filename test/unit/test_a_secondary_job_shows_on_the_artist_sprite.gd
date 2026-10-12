@@ -17,6 +17,8 @@ const STARTERS := ["fighter", "cleric", "mage", "rogue", "bard"]
 ## Share of an idle figure's opaque pixels the named entries reach: enough to read, never most of the sprite.
 const MIN_SHARE := 0.02
 const MAX_SHARE := 0.25
+## Sheets with no trim colour of their own to lean, each with the reason.
+const NO_ACCENT := {"speculator": "his only trim brown is also his hair; the suit is over the share cap"}
 
 var _guard: RefCounted = null
 var _scene: Node = null
@@ -61,16 +63,41 @@ func _count(mat: ShaderMaterial) -> int:
 	return int(v) if v != null else 0
 
 
+## Every job a party member can be that draws from a manifest sheet, starters first.
+func _sheet_jobs() -> Array:
+	var out: Array = STARTERS.duplicate()
+	var ids: Array = JobSystem.jobs.keys()
+	ids.sort()
+	for job in ids:
+		if not out.has(job) and HybridSpriteLoader.has_artist_sheet(str(job)):
+			out.append(str(job))
+	return out
+
+
 func _accented() -> Array:
 	var out: Array = []
-	for job in STARTERS:
+	for job in _sheet_jobs():
 		if not HybridSpriteLoader.secondary_accent(job).is_empty():
 			out.append(job)
 	return out
 
 
 func test_every_artist_starter_names_an_accent() -> void:
-	assert_eq(_accented(), STARTERS, "every artist starter sheet names the entries a secondary may lean")
+	for job in STARTERS:
+		assert_false(HybridSpriteLoader.secondary_accent(job).is_empty(), "the %s's artist sheet names the entries a secondary may lean" % job)
+
+
+func test_every_sheet_job_names_an_accent_or_says_why_not() -> void:
+	## The advanced and meta jobs drew from sheets with no accent, so their secondary never showed (found 2026-10-05).
+	var jobs := _sheet_jobs()
+	assert_gt(jobs.size(), 12, "CONTROL: the sheet-drawn jobs were found (%d)" % jobs.size())
+	var silent: Array = []
+	for job in jobs:
+		if HybridSpriteLoader.secondary_accent(job).is_empty() and not NO_ACCENT.has(job):
+			silent.append(job)
+	assert_eq(silent, [], "jobs whose sprite ignores their secondary: %s" % str(silent))
+	for job in NO_ACCENT:
+		assert_true(jobs.has(job) and HybridSpriteLoader.secondary_accent(job).is_empty(), "%s is exempt but names an accent: drop it from NO_ACCENT" % job)
 
 
 func test_each_artist_job_wears_its_secondary() -> void:

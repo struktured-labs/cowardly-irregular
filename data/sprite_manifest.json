@@ -76,7 +76,13 @@
         "idle"
       ],
       "tier": "T1",
-      "_note": "AI-generated (gpt-image-1, artist fighter idle as style anchor). idle only — no walk/attack/cast yet, so BattleScene falls back per-animation. Flagged for artist review before any T2 promotion."
+      "_note": "AI-generated (gpt-image-1, artist fighter idle as style anchor). idle only — no walk/attack/cast yet, so BattleScene falls back per-animation. Flagged for artist review before any T2 promotion.",
+      "secondary_accent": [
+        "#612223",
+        "#742623",
+        "#8e2d23",
+        "#842a24"
+      ]
     },
     "cleric": {
       "path": "res://assets/sprites/jobs/cleric",
@@ -192,7 +198,13 @@
         "walk"
       ],
       "tier": "T1",
-      "generator": "gen_full_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "generator": "gen_full_sweep.py (v2 jrpg_pixel_style LoRA)",
+      "secondary_accent": [
+        "#eaa72c",
+        "#eeb82e",
+        "#ffb43c",
+        "#fedc64"
+      ]
     },
     "mage": {
       "path": "res://assets/sprites/jobs/mage",
@@ -268,7 +280,13 @@
         "idle"
       ],
       "tier": "T1",
-      "_note": "AI-generated (gpt-image-1, artist fighter idle as style anchor). idle only — no walk/attack/cast yet, so BattleScene falls back per-animation. Flagged for artist review before any T2 promotion."
+      "_note": "AI-generated (gpt-image-1, artist fighter idle as style anchor). idle only — no walk/attack/cast yet, so BattleScene falls back per-animation. Flagged for artist review before any T2 promotion.",
+      "secondary_accent": [
+        "#5f6745",
+        "#454f37",
+        "#4d573b",
+        "#565f40"
+      ]
     },
     "ninja": {
       "path": "res://assets/sprites/jobs/ninja",
@@ -287,7 +305,13 @@
         "walk"
       ],
       "tier": "T1",
-      "generator": "gen_full_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "generator": "gen_full_sweep.py (v2 jrpg_pixel_style LoRA)",
+      "secondary_accent": [
+        "#b4202a",
+        "#ff2828",
+        "#851627",
+        "#c81414"
+      ]
     },
     "rogue": {
       "path": "res://assets/sprites/jobs/rogue",
@@ -375,7 +399,14 @@
         "idle"
       ],
       "tier": "T1",
-      "_note": "AI-generated (gpt-image-1, artist fighter idle as style anchor). idle only — no walk/attack/cast yet, so BattleScene falls back per-animation. Flagged for artist review before any T2 promotion."
+      "_note": "AI-generated (gpt-image-1, artist fighter idle as style anchor). idle only — no walk/attack/cast yet, so BattleScene falls back per-animation. Flagged for artist review before any T2 promotion.",
+      "secondary_accent": [
+        "#8fa46c",
+        "#849866",
+        "#7b8d62",
+        "#98af70",
+        "#6f825a"
+      ]
     },
     "skiptrotter": {
       "path": "res://assets/sprites/jobs/skiptrotter",
@@ -386,7 +417,11 @@
         "idle"
       ],
       "tier": "T1",
-      "_note": "AI-generated (gpt-image-1, artist fighter idle as style anchor). idle only — no walk/attack/cast yet, so BattleScene falls back per-animation. Flagged for artist review before any T2 promotion."
+      "_note": "AI-generated (gpt-image-1, artist fighter idle as style anchor). idle only — no walk/attack/cast yet, so BattleScene falls back per-animation. Flagged for artist review before any T2 promotion.",
+      "secondary_accent": [
+        "#536684",
+        "#4e5f76"
+      ]
     },
     "speculator": {
       "path": "res://assets/sprites/jobs/speculator",
@@ -424,7 +459,10 @@
         "walk"
       ],
       "tier": "T1",
-      "generator": "gen_full_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "generator": "gen_full_sweep.py (v2 jrpg_pixel_style LoRA)",
+      "secondary_accent": [
+        "#249fde"
+      ]
     },
     "time_mage": {
       "path": "res://assets/sprites/jobs/time_mage",
@@ -435,7 +473,12 @@
         "idle"
       ],
       "tier": "T1",
-      "_note": "AI-generated (gpt-image-1, artist fighter idle as style anchor). idle only — no walk/attack/cast yet, so BattleScene falls back per-animation. Flagged for artist review before any T2 promotion."
+      "_note": "AI-generated (gpt-image-1, artist fighter idle as style anchor). idle only — no walk/attack/cast yet, so BattleScene falls back per-animation. Flagged for artist review before any T2 promotion.",
+      "secondary_accent": [
+        "#d39a41",
+        "#905926",
+        "#aa7c3e"
+      ]
     }
   },
   "party_sheets": {},
