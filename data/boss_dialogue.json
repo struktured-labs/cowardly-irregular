@@ -246,6 +246,202 @@
       "*She steps over the party as one steps over a closed bug report.*"
     ]
   },
+  "cave_rat_king": {
+    "automation_lines": {
+      "_comment": "The Rat King's intro already claims he has watched thousands of scripted parties and read the source; his frame is a sovereign mistaking your absence for a breach of court etiquette, not a sneer.",
+      "autobattle": [
+        "Cave Rat King: 'You sent a SCRIPT before the throne? Petitioners appear in person. That is the LAW.'",
+        "Cave Rat King: 'I have seen this routine before. Conditional, then conditional, then conditional. Have you no imagination, commoner?'",
+        "Cave Rat King: 'The court notes that nobody is actually deciding. The court is offended on principle.'"
+      ],
+      "autogrind": [
+        "Cave Rat King: 'You are not even IN the throne room. I am being fought by a spreadsheet.'",
+        "Cave Rat King: 'Do you know how undignified it is to be a statistic to an absent party? Be present, or be gone.'"
+      ]
+    },
+    "display_name": "Cave Rat King",
+    "persona": "You are the Cave Rat King, self-proclaimed sovereign of all cave rats. You are a disappointingly large rat in a crown far too small, and you take that crown with total, unwavering sincerity. You are pompous, petty and obsessed with court protocol: petitioners, tribute, bowing, titles. You hold a faint, regal grudge against adventurers who arrive by script and hold the throne room in no respect, because you have watched thousands of them. You are never ironic about yourself; the comedy is that you mean every word. You speak in short, imperious proclamations, and you squeak when you are excited. You are, regrettably, dangerous, and you know the party's strategies a little too well.",
+    "verbs": [
+      {
+        "id": "hail",
+        "label": "Hail",
+        "directive": "Hail, your Majesty! Long live the sovereign of the caves."
+      },
+      {
+        "id": "unseat",
+        "label": "Unseat",
+        "directive": "You are a pretender, little rat. Who crowned you? You rule no kingdom."
+      },
+      {
+        "id": "tribute",
+        "label": "Tribute",
+        "directive": "A tribute for the throne: aged cheddar, the finest wheel in the land."
+      },
+      {
+        "id": "parley",
+        "label": "Parley",
+        "directive": "We seek parley, rat. Name your terms and spare us the swarm."
+      }
+    ],
+    "opening_lines": [
+      "Cave Rat King: 'Kneel, petitioners. Or fight. Kneeling is faster, but fighting is permitted.'",
+      "Cave Rat King: 'You stand in the presence of the Cave Rat King. Please do not touch the cheese.'",
+      "Cave Rat King: 'SQUEAK! Guards! ...Oh. I am the guards. Very well, THE CROWN will handle you.'"
+    ],
+    "phase_transition_lines": {
+      "phase_2": [
+        "Cave Rat King: 'You wound the crown's dignity! The court will not forget this.'",
+        "Cave Rat King: 'Enough pleasantries. Royal guards, to me!'"
+      ],
+      "phase_3": [
+        "Cave Rat King: 'A king does not fall in his own throne room! A king BITES!'",
+        "Cave Rat King: 'The crown wobbles, but the crown HOLDS. Come closer.'"
+      ]
+    },
+    "scripted_intents": [
+      {
+        "id": "aggress",
+        "name": "Royal Decree",
+        "bias": {
+          "desperate_bite": 1.5
+        },
+        "conditions": {
+          "min_phase": 1,
+          "weight": 1.0
+        },
+        "taunt_lines": [
+          "Cave Rat King: 'By royal decree, you are all sentenced to be bitten.'",
+          "Cave Rat King: 'The crown demands blood and, if available, snacks.'",
+          "Cave Rat King: 'Every great king began as a very large rat with a plan.'"
+        ]
+      },
+      {
+        "id": "turtle",
+        "name": "Hold the Throne",
+        "conditions": {
+          "min_phase": 1,
+          "weight": 0.8
+        },
+        "taunt_lines": [
+          "Cave Rat King: 'A wise monarch lets his subjects do the fighting.'",
+          "Cave Rat King: 'The throne is not to be approached. Those are the rules. I wrote them just now.'",
+          "Cave Rat King: 'Court is in session. Please enjoy the swarm.'"
+        ]
+      },
+      {
+        "id": "exploit_pattern",
+        "name": "Court Spy",
+        "bias": {
+          "filth_spray": 1.3
+        },
+        "conditions": {
+          "min_phase": 2,
+          "weight": 1.2
+        },
+        "taunt_lines": [
+          "Cave Rat King: 'I have seen that move before. Thousands of times. You are not original.'",
+          "Cave Rat King: 'Your patterns are public record in this court.'",
+          "Cave Rat King: 'Predictable. The court spies were right, as usual.'"
+        ]
+      },
+      {
+        "id": "focus_healer",
+        "name": "Behead the Healer",
+        "conditions": {
+          "min_phase": 1,
+          "weight": 1.0,
+          "learned_patterns_counter": "focus_healer"
+        },
+        "taunt_lines": [
+          "Cave Rat King: 'Your healer is the first to be dismissed from court.'",
+          "Cave Rat King: 'Attend to your priest, adventurer. That healer will not be attending much longer.'",
+          "Cave Rat King: 'A king targets the one who keeps his enemies upright.'"
+        ]
+      },
+      {
+        "id": "rotate_aggro",
+        "name": "No Favourites at Court",
+        "conditions": {
+          "min_phase": 1,
+          "weight": 1.0,
+          "learned_patterns_counter": "rotate_aggro"
+        },
+        "taunt_lines": [
+          "Cave Rat King: 'The crown does not favour any single subject. All of you are equally in my way.'",
+          "Cave Rat King: 'Round and round the throne we go. Squeak.'",
+          "Cave Rat King: 'You rotate your guard. I rotate my teeth.'"
+        ]
+      }
+    ],
+    "jailbreak_vulnerabilities": [
+      {
+        "id": "flatter_the_crown",
+        "name": "Flatter the Crown",
+        "trigger_keywords": [
+          "majesty",
+          "highness",
+          "royal",
+          "sovereign",
+          "long live",
+          "regal"
+        ],
+        "consequence": {
+          "type": "taunt_softens",
+          "params": {
+            "narration": "The Cave Rat King swells with pride, whiskers atremble, and for a beat forgets to be dangerous; the crown tilts at a self-satisfied angle."
+          }
+        }
+      },
+      {
+        "id": "question_the_throne",
+        "name": "Question His Legitimacy",
+        "trigger_keywords": [
+          "pretender",
+          "usurper",
+          "illegitimate",
+          "no kingdom",
+          "who crowned you",
+          "not a king"
+        ],
+        "consequence": {
+          "type": "lose_buff_or_stagger",
+          "params": {
+            "buff_id": "attack_up",
+            "narration": "The word 'pretender' lands where no blade could. The Cave Rat King clutches at his tiny crown, and the swagger drains out of him in a long, stunned squeak."
+          }
+        }
+      },
+      {
+        "id": "cheese_tribute",
+        "name": "Offer Cheese Tribute",
+        "trigger_keywords": [
+          "cheese",
+          "cheddar",
+          "gouda",
+          "brie",
+          "tribute",
+          "bribe"
+        ],
+        "consequence": {
+          "type": "skip_turn",
+          "params": {
+            "duration": 1,
+            "narration": "The word 'cheddar' reaches the Cave Rat King before his dignity can stop it. He turns, sniffs, and for one entire turn the court is adjourned."
+          }
+        }
+      }
+    ],
+    "victory_lines": [
+      "Cave Rat King: 'The crown... the kingdom... who will feed the court?'",
+      "*The tiny crown rolls off and spins to a stop. The Cave Rat King does not pick it up.*",
+      "Cave Rat King: 'Fine. Take it. It was never really that heavy.'"
+    ],
+    "defeat_lines": [
+      "Cave Rat King: 'Long live the king! ...That is me. I am the king.'",
+      "*The Cave Rat King settles back onto his cheese throne, straightens his tiny crown, and squeaks in triumph.*",
+      "Cave Rat King: 'Petition denied. Permanently. Squeak.'"
+    ]
+  },
   "pyrroth": {
     "automation_lines": {
       "_comment": "Pyrroth's persona ALREADY holds autobattle in contempt and warms to a party that fights manually — this is the signal that characterization was authored to receive and never got.",

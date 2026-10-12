@@ -44,6 +44,7 @@ const EXCLUDED: Dictionary = {
 	"rogue_lockward": DUEL_OPPONENT_REASON,
 	"mage_prismatic_construct": DUEL_OPPONENT_REASON,
 	"bard_hostile_courtier": DUEL_OPPONENT_REASON,
+	"cave_rat_king": "Tutorial boss: scripted taunts and jailbreaks only; his intents are authored to the ladder and LLM refinement was never opted in.",
 }
 
 
