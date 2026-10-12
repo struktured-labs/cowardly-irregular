@@ -38,6 +38,9 @@ var transitions: Node2D
 ## NPC container
 var npcs: Node2D
 
+## Owns the landmark providers; freeing it would empty every page.
+var _lore: W2Landmarks
+
 ## Spawn points
 var spawn_points: Dictionary = {}
 
@@ -103,6 +106,7 @@ func _ready() -> void:
 
 	_place_signposts()
 	_place_landmarks()
+	_place_landmark_lore()
 	_place_wanderers()
 	_place_village_markers()
 	_place_treasure_chests()
@@ -283,17 +287,37 @@ func _place_signposts() -> void:
 
 
 func _place_landmarks() -> void:
-	var landmarks = [
-		{"pos": Vector2(25, 5), "type": Landmark.Type.FIRE_HYDRANT},
-		{"pos": Vector2(40, 30), "type": Landmark.Type.BUS_STOP},
-		{"pos": Vector2(10, 35), "type": Landmark.Type.FIRE_HYDRANT},
-		{"pos": Vector2(35, 15), "type": Landmark.Type.BUS_STOP},
-	]
-	for l in landmarks:
+	## Cell and art type come from W2Landmarks.table(), which also holds what each one SAYS — one
+	## source, so moving a landmark moves the readable standing on it (W1's rule, same reason).
+	for row in _get_lore().table():
 		var lm = Landmark.new()
-		lm.landmark_type = l["type"]
-		lm.position = Vector2(l["pos"].x * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, l["pos"].y * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
+		lm.landmark_type = row["type"]
+		lm.position = _cell_center(row["cell"])
 		add_child(lm)
+
+
+## The four pieces of street furniture W2 draws, every one of which answered nothing until now.
+## A player who presses the first two and gets silence stops pressing, and every readable placed
+## in the sprawl afterwards inherits that. _lore is held on the scene because the providers are
+## its METHODS: drop the object, drop the pages.
+func _place_landmark_lore() -> void:
+	for row in _get_lore().table():
+		var prop := ReadableProp.new()
+		prop.name = "Lore_" + str(row["fn"])
+		prop.position = _cell_center(row["cell"])
+		prop.setup(str(row["name"]), Callable(_get_lore(), str(row["fn"])))
+		add_child(prop)
+
+
+func _get_lore() -> W2Landmarks:
+	if _lore == null:
+		_lore = W2Landmarks.new()
+	return _lore
+
+
+## The map-cell -> pixel conversion every entity in this scene authors in.
+func _cell_center(cell: Vector2) -> Vector2:
+	return Vector2(cell.x * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, cell.y * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
 
 
 func _place_wanderers() -> void:
