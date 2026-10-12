@@ -260,9 +260,11 @@ func test_the_predicate_that_picks_the_music_sees_the_boss() -> void:
 
 func test_the_boss_banner_reaches_the_battle_log() -> void:
 	## The other half of what he saw: no 👑 BOSS BATTLE 👑 banner in the whole
-	## session (`grep -c` = 0). The banner is written by spawn_forced_enemies
-	## off its own `is_boss_battle` local, so this arm pins the route that still
-	## has one — a regression there would silence the banner everywhere.
+	## session (`grep -c` = 0). This arm is the FORCED route, which always had
+	## one; the encounter route is the arm below, and it is where the banner was
+	## actually missing. Both now go through _announce_boss_banner so they
+	## cannot drift — the original defect was exactly a banner gated on a LOCAL
+	## that only one of the two functions had.
 	var host := _host()
 	var spawner := BattleEnemySpawner.new(host)
 	host.forced_enemies = ["chancellor_mordaine"]
@@ -333,3 +335,40 @@ func test_the_track_each_boss_now_reaches_is_real_audio() -> void:
 
 	assert_eq(wrong.size(), 0,
 		"a boss key did not load its own audio (%d): %s — struktured heard battle_medieval.ogg for all four of these on 2026-10-05" % [wrong.size(), wrong])
+
+
+func test_a_boss_reached_from_exploration_gets_the_banner_too() -> void:
+	## ⚠️ MY OWN REPORT OVERSTATED THIS AND @cowir-battle CAUGHT IT. The first
+	## version of this fix set the metas and stopped, so Mordaine got her music,
+	## the right victory grade and the LLM strategy loop — and was still
+	## announced "[color=gray]1 Chancellor Mordaine appeared![/color]", in the
+	## same shape as an Imp. The metas and the banner are two separate
+	## mechanisms: `is_boss_battle` was a LOCAL inside spawn_forced_enemies, so
+	## no amount of meta fixed the line the player reads.
+	var host := _host()
+	var spawner := BattleEnemySpawner.new(host)
+	host.encounter_enemies = ["chancellor_mordaine"]
+	spawner.spawn_encounter_enemies()
+	var joined: String = "\n".join(host.log_lines)
+	assert_gt(host.log_lines.size(), 0, "SCOPE control: the encounter path logged nothing at all")
+	assert_true(joined.contains("BOSS BATTLE"),
+		"a boss reached from EXPLORATION still has no banner. Lines: %s" % [host.log_lines])
+	assert_false(joined.contains("[color=gray]"),
+		"the boss line is still gray — the banner printed but the name is still styled like a random encounter. Lines: %s" % [host.log_lines])
+
+	## CONTROL: the plain encounter must keep its gray single-line form, and
+	## must NOT acquire a banner. Without this the assert above passes for a
+	## version that banners every slime.
+	var plain := _host()
+	var pspawner := BattleEnemySpawner.new(plain)
+	plain.encounter_enemies = ["slime", "slime"]
+	pspawner.spawn_encounter_enemies()
+	var pjoined: String = "\n".join(plain.log_lines)
+	assert_false(pjoined.contains("BOSS BATTLE"),
+		"CONTROL: two slimes got the BOSS BATTLE banner. Lines: %s" % [plain.log_lines])
+	assert_true(pjoined.contains("[color=gray]"),
+		"CONTROL: the ordinary encounter line lost its gray styling. Lines: %s" % [plain.log_lines])
+	## And the plural phrasing must survive the refactor — the banner change
+	## moved the call that test_encounter_plural_regression pins.
+	assert_true(pjoined.contains("2 Slimes appeared!"),
+		"the encounter phrase is no longer pluralised through encounter_count_phrase. Lines: %s" % [plain.log_lines])
