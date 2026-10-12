@@ -225,22 +225,40 @@ func test_the_strip_this_guard_rests_on_is_live() -> void:
 	assert_true(code.contains("if event.pressed:"),
 		"...and real code either side of it has to survive, or this passes on an empty read")
 
-	## ⛔ VACUITY FLOOR, AND IT IS NOT REDUNDANT WITH THE MUST-SURVIVE ABOVE. That assert names ONE
-	## line, so an over-strip that happens to keep that line walks straight past it. MEASURED on this
-	## file: a stripper returning only `"if event.pressed:"` left BOTH controls green — detection
-	## survived purely because unrelated arms needed the rest of the file, and their messages name
-	## HINT_DEFAULT_TEXT and the log branch rather than the stripper. @cowir-deploy reasoned this and
-	## @cowir-overworld measured the same on their own guard within the hour.
+	## ⛔ FLOOR, AND IT IS NOT REDUNDANT WITH THE MUST-SURVIVE ABOVE. That assert names ONE line, so
+	## an over-strip that keeps that line walks past it. MEASURED here: a stripper returning only
+	## `"if event.pressed:"` left BOTH controls green — detection survived only because unrelated
+	## arms needed the rest of the file, and their messages blamed HINT_DEFAULT_TEXT, not the strip.
 	##
-	## A RELATIONSHIP, not a magnitude: comments are ~1/3 of these files (measured, BattleScene 0.673
-	## and Win98Menu 0.656 code-to-raw), so half the raw size is a floor with real margin that cannot
-	## go stale as the file grows.
+	## 🔑 DERIVED, NOT A RATIO. My first version was `code > raw/2`, and @cowir-overworld measured
+	## that a ratio is a PER-FILE property: 35% margin here, 14% on their CastleHarmonia, where
+	## ~2.7 KB of added comments — one guard header in this repo — would red it falsely. A func
+	## count is read from the same file on the same run, so it cannot go stale as the file grows,
+	## and a mutant cannot game it without preserving essentially the whole body.
 	var raw_battle := _read_raw(BATTLE_PATH)
 	var code_battle := _read(BATTLE_PATH)
-	assert_gt(code_battle.length(), raw_battle.length() / 2,
-		"the strip kept %d of %d bytes — an over-strip that preserves the one line a must-survive "
-		% [code_battle.length(), raw_battle.length()]
-		+ "names is invisible to it, and the arms that notice will blame the subject, not the strip")
+	assert_eq(_func_count(code_battle), _func_count(raw_battle),
+		"the strip kept %d of %d func declarations — an over-strip that preserves the one line a "
+		% [_func_count(code_battle), _func_count(raw_battle)]
+		+ "must-survive names is invisible to it, and the arms that notice will blame the subject")
+
+	## ⛔ THE REGION SPLIT, WHICH THE `#` PASS ALONE DOES NOT DO — and this file is exposed: 132
+	## `"""` lines in BattleScene, 57 in Win98Menu. A #-only strip leaves every docstring in the
+	## code half, and that mutant passed ALL THREE of my other assertions. It is GdSource's own
+	## documented .325 defect, which @cowir-autogrind hit in a guard written the same evening to be
+	## careful about exactly this.
+	assert_false(code_battle.contains("Repeat all players"),
+		"a `\"\"\"` docstring survived into the code half — the region split was dropped, so every "
+		+ "token named in prose is back to being accepted as evidence that a control is wired")
+
+
+## Line-anchored: a comment cannot begin with `func `, so this counts declarations and not mentions.
+func _func_count(text: String) -> int:
+	var n := 0
+	for line in text.split("\n"):
+		if line.begins_with("func "):
+			n += 1
+	return n
 
 
 func test_speed_toggle_is_actually_wired_to_the_advertised_button() -> void:
