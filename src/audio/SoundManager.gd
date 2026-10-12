@@ -1748,7 +1748,8 @@ func play_footstep(terrain: String = "grass") -> void:
 
 
 func play_status(status_name: String) -> void:
-	"""Play sound for a status effect application (poison, sleep, confuse, paralyze, etc.)"""
+	## Examples from abilities.json, not from an add_status("literal") grep (0 for poison/sleep/confuse/burn, all reachable); paralyze is 0 in both and read as an unreachable cue.
+	"""Play sound for a status effect application (poison, sleep, confuse, burn, stun, etc.)"""
 	var key = "status_" + status_name.to_lower()
 	var level: float = _battle_level(key)
 	if _try_play_sfx_from_manifest(_battle_player, key, level):
