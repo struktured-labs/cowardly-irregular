@@ -79,6 +79,10 @@ func test_no_action_the_game_reads_shares_a_button_with_the_menu_toggle() -> voi
 		+ "and turn this arm into a silent green")
 	var clashes := []
 	for action in InputMap.get_actions():
+		## The toggle's OWN action is not a clash with itself. It became a real binding on
+		## 2026-10-12; before that the toggle was a raw index and could not appear here at all.
+		if action == OverworldMenu.FIELD_MENU_ACTION:
+			continue
 		if not code.contains('"%s"' % action):
 			continue
 		for ev in InputMap.action_get_events(action):

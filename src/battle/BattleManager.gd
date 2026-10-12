@@ -9385,9 +9385,7 @@ func _on_boss_jailbreak_succeeded(boss_id: String, vulnerability_id: String, con
 	for e in enemy_party:
 		if not is_instance_valid(e) or not e.is_alive:
 			continue
-		var persona_id: String = e.get_meta("llm_persona_id", "")
-		if persona_id == "":
-			persona_id = e.get_meta("monster_type", "")
+		var persona_id: String = _boss_persona_id(e)
 		if persona_id == boss_id:
 			boss = e
 			break
@@ -9470,9 +9468,7 @@ func try_player_jailbreak_directive(directive_text: String) -> bool:
 	for e in enemy_party:
 		if not is_instance_valid(e) or not e.is_alive:
 			continue
-		var persona_id: String = e.get_meta("llm_persona_id", "")
-		if persona_id == "":
-			persona_id = e.get_meta("monster_type", "")
+		var persona_id: String = _boss_persona_id(e)
 		if persona_id != "" and boss_dlg.has_entry(persona_id):
 			return boss_dlg.try_apply_jailbreak(persona_id, directive_text)
 	return false
@@ -9675,9 +9671,7 @@ func _resolve_boss_display_name(persona_id: String) -> String:
 	for e in enemy_party:
 		if not is_instance_valid(e):
 			continue
-		var pid: String = e.get_meta("llm_persona_id", "")
-		if pid == "":
-			pid = e.get_meta("monster_type", "")
+		var pid: String = _boss_persona_id(e)
 		if pid == persona_id and e.combatant_name != "":
 			return e.combatant_name
 	var boss_dlg = get_node_or_null("/root/BossDialogue")
@@ -9782,6 +9776,14 @@ static func _party_line_wants_llm(llm_dialogue_on: bool, voice_test: bool) -> bo
 	return llm_dialogue_on and not voice_test
 
 
+## A pooled line's whole value is its pre-synthesized VOICE, and turbo or 4x+ suppresses the bubble
+## that would play it — so the slot is worth keeping rather than spending on text alone. Keyed to the
+## bubble's own threshold rather than a copy. The LLM call is NOT gated on this: its line still
+## reaches the battle log, which the player can read at speed.
+func _party_line_voice_can_be_heard() -> bool:
+	return not turbo_mode and Engine.time_scale < BattleSpeechBubble.SUPPRESS_TIME_SCALE
+
+
 func _battle_is_live() -> bool:
 	return not (current_state in [BattleState.VICTORY, BattleState.DEFEAT, BattleState.INACTIVE])
 
@@ -9832,7 +9834,7 @@ func _run_party_line_async(combatant: Combatant, event_kind: String, event_data:
 		return
 
 	## Spec 2a.1 step 3: a moment line outranks the pool; otherwise a ready pooled line speaks with its own synthesized audio.
-	var vp = get_node_or_null("/root/VoicePool")
+	var vp = get_node_or_null("/root/VoicePool") if _party_line_voice_can_be_heard() else null
 	if vp != null and not (pp != null and pp.has_method("has_moment_line") and pp.has_moment_line(job_id, event_kind, ctx)):
 		var pooled: Dictionary = vp.take_line(job_id, event_kind)
 		if not pooled.is_empty():
@@ -10559,9 +10561,7 @@ func _maybe_boss_phase_bark(combatant: Combatant, action: Dictionary) -> void:
 		## ⚠️ LATENT when fixed: only `the_calibrant` authors phase_barks today (6 faces) and it has no
 		## override, so nothing changes now. The trigger is ordinary content work — author a phase bark
 		## for any dragon and it would never have fired (cowir-ai).
-		var mt: String = str(e.get_meta("llm_persona_id", "")) if e.has_meta("llm_persona_id") else ""
-		if mt == "":
-			mt = str(e.get_meta("monster_type", "")) if e.has_meta("monster_type") else ""
+		var mt: String = _boss_persona_id(e)
 		if mt == "":
 			continue
 		var barks: Dictionary = boss_dlg.get_phase_barks(mt)

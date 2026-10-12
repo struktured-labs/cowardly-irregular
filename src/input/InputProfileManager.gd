@@ -16,10 +16,12 @@ const REMAPPABLE_ACTIONS = [
 	"battle_toggle_auto",
 	"ui_menu",
 	"battle_open_log",
+	"ui_field_menu",
 ]
 
 ## Human-readable labels for actions
 const ACTION_LABELS = {
+	"ui_field_menu": "Menu",
 	"ui_accept": "Confirm",
 	"ui_cancel": "Cancel",
 	"battle_advance": "Advance",
@@ -97,6 +99,7 @@ const PROFILE_STANDARD = {
 	"battle_toggle_auto": [4], # BACK (Select/Minus)
 	"ui_menu": [6],             # START. L3 moved to battle_open_log 2026-10-04 (struktured: "reuse L3"), deliberately, not dropped
 	"battle_open_log": [7],    # L3 — the full battle log
+	"ui_field_menu": [3],     # NORTH face — the field menu, rebindable since 2026-10-12
 }
 
 const PROFILE_SN30 = {
@@ -107,6 +110,7 @@ const PROFILE_SN30 = {
 	"battle_toggle_auto": [4], # BACK (Select/Minus)
 	"ui_menu": [6],             # START. L3 moved to battle_open_log 2026-10-04 (struktured: "reuse L3"), deliberately, not dropped
 	"battle_open_log": [7],    # L3 — the full battle log
+	"ui_field_menu": [3],     # NORTH face — the field menu, rebindable since 2026-10-12
 }
 
 const PROFILE_ULTIMATE_PRO_2 = {
@@ -126,6 +130,7 @@ const PROFILE_ULTIMATE_PRO_2 = {
 	"battle_toggle_auto": [4], # BACK (Select/Minus)
 	"ui_menu": [6],             # START. L3 moved to battle_open_log 2026-10-04 (struktured: "reuse L3"), deliberately, not dropped
 	"battle_open_log": [7],    # L3 — the full battle log
+	"ui_field_menu": [3],     # NORTH face — the field menu, rebindable since 2026-10-12
 }
 
 ## Profile names
@@ -457,23 +462,59 @@ func _replace_joypad_buttons(action: String, button_indices: Array) -> void:
 ## does not. Every other conflict is survivable and stays the player's business; this one removes
 ## the only way to undo itself, on the one screen where you would be standing when you made it.
 ## Keyboard X/Escape still works, which is exactly the consolation a couch player does not have.
+## ⛔ SECOND REFUSED PAIR, 2026-10-12: the field menu on Confirm or Cancel. struktured's first
+## controls report was "I enter the overworld menu with a confirm button or something" — dash shared
+## the opener's face, so every dash opened the menu. Making the menu REBINDABLE hands a player the
+## same defect to build by hand, on the two buttons they press most, so it is refused like the
+## lock-in rather than left as "the player's business" (struktured's call, 2026-10-12).
+## PAIRS, not a Dictionary of Arrays: the binding-coverage guard derives "a profile" from VALUE
+## SHAPE (deliberately, so a profile cannot hide by being named oddly), and a dict-of-arrays const
+## here read as a fourth profile whose buttons were action names.
+const FIELD_MENU_ACTION_ID := "ui_field_menu"
+
+const REFUSED_SHARES := [
+	["ui_accept", "ui_cancel"],
+]
+
+## Moving the MENU onto one of these is refused (struktured 2026-10-12). DIRECTIONAL, deliberately:
+## ⛔ I had it symmetric first and measured the cost — it also forbids moving CONFIRM onto the north
+## face, which is a binding players have always been allowed and which three existing guards use as
+## their free parking button. The asked-for rule was "refuse binding the menu onto Confirm/Cancel",
+## and the reverse direction is not a lock-in (Cancel still cancels, the Controls screen still
+## closes), so it stays the player's business like every other survivable conflict in this file.
+const FIELD_MENU_REFUSES := ["ui_accept", "ui_cancel"]
+
+
+## The actions that may not share a button with `action`.
+func _refused_partners(action: String) -> Array:
+	var out: Array = []
+	for pair in REFUSED_SHARES:
+		if pair[0] == action:
+			out.append(pair[1])
+		elif pair[1] == action:
+			out.append(pair[0])
+	if action == FIELD_MENU_ACTION_ID:
+		out.append_array(FIELD_MENU_REFUSES)
+	return out
+
+
 func binding_would_trap_the_player(action: String, button_indices: Array) -> Dictionary:
-	var other := ""
-	if action == "ui_cancel":
-		other = "ui_accept"
-	elif action == "ui_accept":
-		other = "ui_cancel"
-	if other == "":
-		return {"trapped": false, "reason": ""}
-	var other_buttons: Array = get_current_button_indices(other)
-	for b in button_indices:
-		if int(b) in other_buttons:
-			return {
-				"trapped": true,
-				"reason": "%s and %s would share %s — the Controls screen could not be closed on a pad"
-					% [ACTION_LABELS.get(action, action), ACTION_LABELS.get(other, other),
-					   get_button_label(int(b))],
-			}
+	for other in _refused_partners(action):
+		var other_buttons: Array = get_current_button_indices(other)
+		for b in button_indices:
+			if int(b) in other_buttons:
+				var why := "the Controls screen could not be closed on a pad"
+				if action == "ui_field_menu" or other == "ui_field_menu":
+					## Name the button the PLAYER presses, which is whichever of the pair is not the
+					## menu — "every Menu press would also open the field menu" says nothing.
+					var presser: String = other if action == "ui_field_menu" else action
+					why = "every %s press would also open the field menu" % ACTION_LABELS.get(presser, presser)
+				return {
+					"trapped": true,
+					"reason": "%s and %s would share %s — %s"
+						% [ACTION_LABELS.get(action, action), ACTION_LABELS.get(other, other),
+						   get_button_label(int(b)), why],
+				}
 	return {"trapped": false, "reason": ""}
 
 

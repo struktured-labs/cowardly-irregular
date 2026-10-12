@@ -302,6 +302,7 @@ var _is_autogrinding: bool = false
 var _autogrind_dashboard: Control = null
 var _autogrind_overlay: Control = null
 var _autogrind_overlay_layer: CanvasLayer = null
+var _autogrind_paused_layer: CanvasLayer = null
 var _autogrind_battle_summaries: Array = []
 var _autogrind_summary: Control = null
 var _controller_overlay: ControllerOverlay = null
@@ -433,6 +434,8 @@ func _ready() -> void:
 	# Log startup
 	if DebugLogOverlay:
 		DebugLogOverlay.log("[GAME] Started")
+	# Every worktree shares one user://logs, so a log has to say which build wrote it (semver + commit in a source run).
+	print("[GAME] Build %s" % Version.display())
 
 	# Arg-gated render smoke — see _maybe_run_battle_smoke.
 	_maybe_run_battle_smoke()
@@ -6542,6 +6545,10 @@ func _start_autogrind_battle(enemy_data: Array) -> void:
 	# Wait for scene to be ready
 	await get_tree().process_frame
 
+	## A stop during that frame frees this scene, and battle_scene is untyped -- the calls below then dereference freed memory and SEGV instead of erroring.
+	if not _is_autogrinding or not is_instance_valid(battle_scene) or current_scene != battle_scene:
+		return
+
 	## The controls legend anchors bottom-right, which is where this scene's PARTY panel ends: measured
 	## 33,616 px of overlap at 720p, hiding the last two members' HP/MP for the whole grind.
 	_keep_controller_overlay_off_the_party_panel(battle_scene)
@@ -6914,7 +6921,9 @@ func _on_autogrind_paused() -> void:
 
 	if _autogrind_dashboard and is_instance_valid(_autogrind_dashboard) and _autogrind_dashboard.has_method("set_paused"):
 		_autogrind_dashboard.set_paused(true)
-	_show_autogrind_toast("Autogrind paused. Press %s to resume." % AutogrindInputHelper.pause_hint())
+	## One derivation shared by both surfaces, so the badge can never name a different button than the
+	## toast did -- and so the count this file's pause-hint guard pins does not move.
+	_show_autogrind_paused_badge("Autogrind paused. Press %s to resume." % AutogrindInputHelper.pause_hint())
 	SoundManager.play_ui("grind_stop_manual")
 	print("[AUTOGRIND] Session paused")
 
@@ -6927,6 +6936,7 @@ func _on_autogrind_resumed() -> void:
 	if summary:
 		summary.add_theme_color_override("font_color", Color(1.0, 1.0, 0.4))
 
+	_hide_autogrind_paused_badge()
 	SoundManager.play_ui("autobattle_on")
 	SoundManager.play_music("autogrind")
 	print("[AUTOGRIND] Session resumed")
@@ -7359,6 +7369,7 @@ func _update_autogrind_overlay(stats: Dictionary) -> void:
 
 
 func _destroy_autogrind_overlay() -> void:
+	_hide_autogrind_paused_badge()
 	if _autogrind_overlay and is_instance_valid(_autogrind_overlay):
 		_autogrind_overlay.queue_free()
 		_autogrind_overlay = null
@@ -7717,6 +7728,66 @@ func _pluralize_monster_name(name: String) -> String:
 
 func _on_bestiary_kill_milestone(_monster_id: String, monster_name: String, count: int) -> void:
 	Toast.show_success(self, "%d %s defeated!" % [count, _pluralize_monster_name(monster_name)])
+
+
+## A paused grind returns the player to the overworld, and its ONLY paused signal was a toast that
+## fades after 2.8s -- so a paused session became indistinguishable from a lost one. Same place, same
+## styling as that toast; it simply never fades out.
+func _show_autogrind_paused_badge(text: String) -> void:
+	_hide_autogrind_paused_badge()
+	_autogrind_paused_layer = CanvasLayer.new()
+	_autogrind_paused_layer.layer = 80
+	add_child(_autogrind_paused_layer)
+
+	var vp_size: Vector2 = get_viewport().get_visible_rect().size
+	if vp_size.x == 0:
+		vp_size = Vector2(1280, 720)
+
+	## It carries its OWN background instead of hunting for a free band. Measured: the first two
+	## placements both landed on the battle hint panel (y 8..110) or the toast lane (y=80), and a
+	## permanent badge cannot win a fight for space against transient panels it does not know about.
+	var panel := PanelContainer.new()
+	panel.name = "PausedBadgePanel"
+	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var box := StyleBoxFlat.new()
+	box.bg_color = Color(0.06, 0.05, 0.02, 0.93)
+	box.border_color = Color(1.0, 0.7, 0.3, 0.95)
+	box.set_border_width_all(2)
+	box.set_corner_radius_all(6)
+	box.content_margin_left = 18.0
+	box.content_margin_right = 18.0
+	box.content_margin_top = 6.0
+	box.content_margin_bottom = 6.0
+	panel.add_theme_stylebox_override("panel", box)
+
+	var label := Label.new()
+	label.name = "PausedBadgeLabel"
+	label.text = text
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	label.add_theme_font_size_override("font_size", 20)
+	## The colour the orphaned overlay's own paused label used, kept so the intent survives it.
+	label.add_theme_color_override("font_color", Color(1.0, 0.7, 0.3))
+	panel.add_child(label)
+
+	_autogrind_paused_layer.add_child(panel)
+	panel.reset_size()
+	panel.position = Vector2(roundf((vp_size.x - panel.size.x) * 0.5), 20.0)
+	panel.modulate.a = 0.0
+
+	var fade := create_tween()
+	fade.tween_property(panel, "modulate:a", 1.0, 0.3)
+	## Bound to the panel so a teardown kills the loop instead of leaving it tweening a freed node.
+	var pulse := create_tween().bind_node(panel).set_loops()
+	pulse.tween_interval(0.3)
+	pulse.tween_property(panel, "modulate:a", 0.6, 0.8)
+	pulse.tween_property(panel, "modulate:a", 1.0, 0.8)
+
+
+func _hide_autogrind_paused_badge() -> void:
+	if _autogrind_paused_layer and is_instance_valid(_autogrind_paused_layer):
+		_autogrind_paused_layer.queue_free()
+	_autogrind_paused_layer = null
 
 
 func _show_autogrind_toast(text: String) -> void:

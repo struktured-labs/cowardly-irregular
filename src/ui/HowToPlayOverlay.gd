@@ -32,22 +32,14 @@ static func _keys(action: String, fallback: String) -> String:
 	return TitleScreen.keys_cell(action, fallback)
 
 
-## The pad cell for a RAW button index — the field-menu toggle has no action to derive from.
-static func _face_cell_for_index(index: int, fallback_face: String) -> String:
-	if not InputProfileManager or Input.get_connected_joypads().is_empty():
-		return "%s face" % fallback_face
-	var g: String = InputProfileManager.face_glyph_for_index(index)
-	return "%s face" % fallback_face if g == "" or g == "?" else "%s Button" % g
-
-
 ## The rows whose buttons are BOUND, so they follow a rebind. The field-menu row is first because
 ## it is the control a new player needs first, and it was named on no screen at all until now.
 ## Defer and Party Chat get a row each: they share the pad's L shoulder but no longer share a KEY
 ## (Q vs L), so one row naming one key taught the wrong one for whichever half you were reading.
 static func _bound_rows() -> String:
 	return "%-17s %-17s R-Click          [color=lime]Open the menu — party, items, quests, save[/color]\n" % [
-		_face_cell_for_index(OverworldMenu.TOGGLE_PAD_BUTTON, "North"),
-		"%s / Escape" % OS.get_keycode_string(OverworldMenu.TOGGLE_KEY)] \
+		_face_cell(OverworldMenu.FIELD_MENU_ACTION, "North"),
+		"%s / Escape" % _keys(OverworldMenu.FIELD_MENU_ACTION, OS.get_keycode_string(OverworldMenu.TOGGLE_KEY))] \
 		+ "Y (west face)     %-17s —                [color=lime]Run — hold to move 1.7x faster[/color]\n" % _keys("dash", "Shift") \
 		+ "L Shoulder        %-17s —                Defer (in battle)\n" % _keys("battle_defer", "Q") \
 		+ "L Shoulder        %-17s —                Party Chat (in the field)\n" % _keys("party_chat", "L") \

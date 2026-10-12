@@ -268,13 +268,23 @@ func test_an_autogrind_type_mismatch_does_not_inherit_a_reason() -> void:
 	SSM.last_import_errors = ["rule 7: a reason belonging to an earlier import"]
 	assert_false(SSM.apply_autogrind_rules({"type": "autobattle_script", "rules": []}),
 		"precondition: the wrong type must be refused")
-	assert_eq(SSM.last_import_reason(), "",
-		"a type-mismatch refusal carried an older reason: %s" % SSM.last_import_reason())
+	## ⚠️ ASSERTION WIDENED, SUBJECT UNCHANGED. This arm's subject is that the exit does not
+	## INHERIT the planted reason. It asserted EMPTINESS as the proxy, which was exact while
+	## the exit recorded nothing — and emptiness also forbids a CORRECT fresh reason, which is
+	## what this file's own thesis asks every refusal to carry. The exit now names the type it
+	## got, so the proxy is wrong and the subject is not.
+	var why: String = SSM.last_import_reason()
+	assert_true(why.find("rule 7") == -1 and why.find("earlier import") == -1,
+		"a type-mismatch refusal carried an older reason: %s" % [why])
+	assert_ne(why, "", "and it must still say SOMETHING — a silent refusal is the defect this file is about")
 
 
 func test_an_empty_autogrind_rule_set_does_not_inherit_a_reason() -> void:
 	SSM.last_import_errors = ["rule 7: a reason belonging to an earlier import"]
 	assert_false(SSM.apply_autogrind_rules({"type": "autogrind_rules", "rules": []}),
 		"precondition: an empty rule set must be refused")
-	assert_eq(SSM.last_import_reason(), "",
-		"an empty-rules refusal carried an older reason: %s" % SSM.last_import_reason())
+	## Same widening as the arm above, same reason.
+	var why: String = SSM.last_import_reason()
+	assert_true(why.find("rule 7") == -1 and why.find("earlier import") == -1,
+		"an empty-rules refusal carried an older reason: %s" % [why])
+	assert_ne(why, "", "and it must still say SOMETHING — a silent refusal is the defect this file is about")

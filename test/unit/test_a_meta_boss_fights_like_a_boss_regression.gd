@@ -14,7 +14,8 @@ const STUB_SCENE := """
 extends Node2D
 var enemy_positions: Array = [Vector2(100, 100), Vector2(200, 100), Vector2(300, 100)]
 var test_enemies: Array = []
-func log_message(_t): pass
+var lines: Array = []
+func log_message(t): lines.append(t)
 func _update_ui(): pass
 func _on_enemy_died(_e): pass
 func _on_enemy_hp_changed(_a, _b): pass
@@ -36,12 +37,16 @@ func after_each() -> void:
 	AutogrindState.restore(_ag)
 
 
+var _scene_ref: Node2D = null
+
+
 func _spawn(data: Array) -> Array:
 	var script := GDScript.new()
 	script.source_code = STUB_SCENE
 	script.reload()
 	var scene: Node2D = script.new()
 	add_child_autofree(scene)
+	_scene_ref = scene
 	var spawner = SpawnerScript.new(scene)
 	spawner.spawn_from_data(data)
 	return scene.test_enemies
@@ -90,3 +95,25 @@ func test_a_mixed_wave_tags_only_the_boss() -> void:
 	assert_eq(spawned.size(), 2, "CONTROL: both enemies must spawn")
 	assert_false(_is_boss(spawned[0]), "the escort must stay an ordinary enemy")
 	assert_true(_is_boss(spawned[1]), "while the meta-boss beside it is a boss")
+
+
+## is_boss alone could never reach this: the BOSS BATTLE banner is emitted by the spawn path, not derived
+## from the metas, so the grind announced "META-BOSS APPEARS" and then introduced it in the ordinary grey
+## line. The banner lives in cowir-music's shared _announce_boss_banner (on main since .654).
+func test_a_meta_boss_is_announced_with_the_boss_banner() -> void:
+	_spawn([AutogrindSystem.build_meta_boss_enemy_data(false)])
+	var joined: String = "\n".join(_scene_ref.lines)
+	assert_string_contains(joined, "BOSS BATTLE", "a meta-boss must be announced with the boss banner")
+	assert_false(joined.contains("[color=gray]"), "and not ALSO in the ordinary grey encounter line")
+
+
+func test_an_ordinary_grind_wave_keeps_the_plain_line() -> void:
+	_spawn([{"id": "slime", "name": "Slime", "max_hp": 60}])
+	var joined: String = "\n".join(_scene_ref.lines)
+	assert_string_contains(joined, "Slime appeared!", "CONTROL: an ordinary wave keeps its plain announcement")
+	assert_false(joined.contains("BOSS BATTLE"), "and must not raise the banner, or every battle shouts")
+
+
+func test_a_collapse_boss_is_announced_too() -> void:
+	_spawn([AutogrindSystem.build_meta_boss_enemy_data(true)])
+	assert_string_contains("\n".join(_scene_ref.lines), "BOSS BATTLE", "the permadeath-capable collapse boss must announce itself")

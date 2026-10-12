@@ -2531,20 +2531,28 @@ func add_rule(script: Dictionary, rule: Dictionary) -> void:
 	script["rules"].append(rule)
 
 
-func create_rule(description: String, conditions: Array, action_type: ActionType, action_data: Dictionary = {}) -> Dictionary:
-	"""Create a rule with conditions and action"""
-	var rule = {
-		"description": description,
-		"conditions": conditions,
-		"logic": "AND",
-		"action_type": action_type
-	}
-
-	# Merge action_data into rule
-	for key in action_data:
-		rule[key] = action_data[key]
-
-	return rule
+## ⛔ `create_rule` IS REMOVED, NOT MOVED. It was a pre-grid fossil that emitted a shape
+## this file's own `validate_rule` refuses, measured through the real autoload:
+##
+##     create_rule(...) -> ["description", "conditions", "logic", "action_type"]
+##     validate_rule(that) -> ["missing 'actions' array"]
+##
+## Every rule the engine evaluates today carries an `actions` ARRAY and a string action
+## `type`; `create_rule` wrote the old `ActionType` ENUM under `action_type` and no
+## `actions` at all, so anything it built was rejected the moment it reached the
+## validator — and `validate_imported_script` runs every imported rule through there.
+## It had zero callers in src/, test/ and tools/, which is why nobody hit it.
+##
+## It was also the last writer of the rule-level `logic` key, which `validate_rule` now
+## refuses on any value but "AND": a builder stamping a key the validator rejects is a
+## contradiction to leave in a public API. The matching reader, `_evaluate_rule`, is the
+## other half of the same fossil and is likewise dead: nothing in src/ CALLS it, only its
+## own definition declares it. It is left in place HERE only to keep this change to one
+## symbol; removing a function and rewriting its last reader are two reviews, not one.
+##
+## If a rule builder is wanted again, build the GRID shape and assert it against
+## `validate_rule` in the same test — see `test_a_builder_emits_what_the_validator_accepts`.
+## (This note is about the REMOVED create_rule, not about create_condition below.)
 
 
 func create_condition(type: ConditionType, compare_op: CompareOp, value: Variant, extra_data: Dictionary = {}) -> Dictionary:

@@ -349,6 +349,7 @@ func spawn_enemies() -> void:
 func spawn_from_data(enemy_data_array: Array) -> void:
 	"""Spawn enemies from pre-configured data dictionaries (used by autogrind system)"""
 	var enemy_names: Dictionary = {}
+	var encounter_has_boss: bool = false
 	var max_enemies = mini(enemy_data_array.size(), _scene.enemy_positions.size())
 
 	for i in range(max_enemies):
@@ -403,6 +404,7 @@ func spawn_from_data(enemy_data_array: Array) -> void:
 				or data.get("boss", false) or data.get("miniboss", false):
 			enemy.set_meta("is_boss", true)
 			enemy.set_meta("is_miniboss", true)  # For music selection, as spawn_forced_enemies does
+			encounter_has_boss = true
 		## Rare-encounter bonus (Hero Mimics 2.5x): BattleManager._get_battle_reward_multiplier reads this meta.
 		if data.has("reward_multiplier"):
 			enemy.set_meta("reward_multiplier", float(data["reward_multiplier"]))
@@ -438,7 +440,12 @@ func spawn_from_data(enemy_data_array: Array) -> void:
 		else:
 			enemy_names[type_name] = 1
 
-	_scene.log_message("[color=gray]%s appeared![/color]" % encounter_count_phrase(enemy_names))
+	var phrase: String = encounter_count_phrase(enemy_names)
+	## Same tail as spawn_forced_enemies: the banner is emitted here, so the metas alone never reach it.
+	if encounter_has_boss:
+		_announce_boss_banner(["[color=yellow]   %s appeared![/color]" % phrase])
+	else:
+		_scene.log_message("[color=gray]%s appeared![/color]" % phrase)
 
 	_scene._update_ui()
 

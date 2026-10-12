@@ -201,6 +201,7 @@ var _bm_snapshot: Dictionary = {}
 
 
 func before_each() -> void:
+	PartyPersonas._recent_spoken.clear()  # the pick window leaks across FILES; see test_a_voice_store_is_left_as_it_was_found
 	var bm: Node = get_node_or_null("/root/BattleManager")
 	if bm == null:
 		return
@@ -216,6 +217,7 @@ func before_each() -> void:
 
 
 func after_each() -> void:
+	PartyPersonas._recent_spoken.clear()  # the pick window leaks across FILES; see test_a_voice_store_is_left_as_it_was_found
 	var bm: Node = get_node_or_null("/root/BattleManager")
 	if bm == null or _bm_snapshot.is_empty():
 		return
