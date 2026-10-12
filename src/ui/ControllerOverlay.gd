@@ -79,9 +79,31 @@ func _reanchor() -> void:
 	var vp: Vector2 = get_viewport().get_visible_rect().size
 	if vp.x <= 0.0 or vp.y <= 0.0:
 		return
-	position = Vector2(
+	var pos := Vector2(
 		maxf(0.0, vp.x - OVERLAY_SIZE.x - SCREEN_MARGIN),
 		maxf(0.0, vp.y - OVERLAY_SIZE.y - SCREEN_MARGIN))
+	## The bottom-right corner is also where the battle's PARTY panel ends, so the legend sat on top of
+	## the last two members' HP/MP for the whole grind. Slide left of whatever the caller protects.
+	if keep_clear_rect.get_area() > 0.0 and Rect2(pos, OVERLAY_SIZE).intersects(keep_clear_rect):
+		pos.x = keep_clear_rect.position.x - OVERLAY_SIZE.x - SCREEN_MARGIN
+		## A viewport too narrow to hold both keeps the overlay ON SCREEN: a legend pushed to a negative
+		## corner is exactly the off-screen defect this function already exists to prevent.
+		pos.x = maxf(0.0, pos.x)
+	position = pos
+
+
+## A screen rect this overlay must not cover. Zero area means no constraint, which is every caller that
+## does not set one, so the bottom-right corner is unchanged for them.
+var keep_clear_rect: Rect2 = Rect2()
+
+
+## Set by the owner that can see BOTH surfaces; this overlay cannot find a battle's panel by itself.
+func set_keep_clear_rect(rect: Rect2) -> void:
+	if rect.is_equal_approx(keep_clear_rect):
+		return
+	keep_clear_rect = rect
+	if is_inside_tree():
+		_reanchor()
 
 
 ## A pad arriving or leaving changes every face letter _draw resolves, and nothing else asks.
