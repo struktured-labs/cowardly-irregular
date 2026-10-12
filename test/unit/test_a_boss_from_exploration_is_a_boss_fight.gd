@@ -239,7 +239,7 @@ func test_the_predicate_that_picks_the_music_sees_the_boss() -> void:
 	## first run of this file. Coerce element by element.
 	var typed: Array[Combatant] = []
 	for e in host.test_enemies:
-		if e is Combatant:
+		if is_instance_valid(e) and e is Combatant:
 			typed.append(e as Combatant)
 	assert_eq(typed.size(), host.test_enemies.size(),
 		"SCOPE control: %d of %d spawned enemies are not Combatants, so the predicate reads a short pack" % [typed.size(), host.test_enemies.size()])
