@@ -225,6 +225,23 @@ func test_the_strip_this_guard_rests_on_is_live() -> void:
 	assert_true(code.contains("if event.pressed:"),
 		"...and real code either side of it has to survive, or this passes on an empty read")
 
+	## ⛔ VACUITY FLOOR, AND IT IS NOT REDUNDANT WITH THE MUST-SURVIVE ABOVE. That assert names ONE
+	## line, so an over-strip that happens to keep that line walks straight past it. MEASURED on this
+	## file: a stripper returning only `"if event.pressed:"` left BOTH controls green — detection
+	## survived purely because unrelated arms needed the rest of the file, and their messages name
+	## HINT_DEFAULT_TEXT and the log branch rather than the stripper. @cowir-deploy reasoned this and
+	## @cowir-overworld measured the same on their own guard within the hour.
+	##
+	## A RELATIONSHIP, not a magnitude: comments are ~1/3 of these files (measured, BattleScene 0.673
+	## and Win98Menu 0.656 code-to-raw), so half the raw size is a floor with real margin that cannot
+	## go stale as the file grows.
+	var raw_battle := _read_raw(BATTLE_PATH)
+	var code_battle := _read(BATTLE_PATH)
+	assert_gt(code_battle.length(), raw_battle.length() / 2,
+		"the strip kept %d of %d bytes — an over-strip that preserves the one line a must-survive "
+		% [code_battle.length(), raw_battle.length()]
+		+ "names is invisible to it, and the arms that notice will blame the subject, not the strip")
+
 
 func test_speed_toggle_is_actually_wired_to_the_advertised_button() -> void:
 	var lines := _read(BATTLE_PATH).split("\n")
