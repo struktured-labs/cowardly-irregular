@@ -20,6 +20,28 @@ extends GutTest
 ## rather than the three that reddened.
 var _saved_profile: String = ""
 
+## ⛔ THE CENTRING ARM INSTANTIATES THE REAL BattleScene.tscn, WHICH STARTS A BATTLE — and a battle
+## left running in the autoload outlives this FILE. cowir-main's pre-fold sweep caught it:
+## test_battle_state_not_leaked_by_tests red right after us with state=3. My own 3/3 stability check
+## ran this file ALONE, which is the one arrangement that cannot see a leak into the next file —
+## the same blind spot I fixed in someone else's fixture this morning, reproduced in my own hours
+## later. The established cure is the shared helper, as test_the_results_screen_drops_the_battle_
+## shortcuts already uses it: snapshot per test, restore per test.
+const BattleStateHelper := preload("res://test/unit/helpers/battle_state.gd")
+
+var _bm: RefCounted = null
+
+
+func before_each() -> void:
+	_bm = BattleStateHelper.new()
+	_bm.snapshot()
+
+
+func after_each() -> void:
+	if _bm != null:
+		_bm.restore()
+	_bm = null
+
 
 func before_all() -> void:
 	_saved_profile = InputProfileManager.active_profile
@@ -113,6 +135,42 @@ func test_the_families_disagree_at_the_repeat_index() -> void:
 	gut.p("index %d -> nintendo %s · xbox %s · playstation %s" % [REPEAT_INDEX, g["nintendo"], g["xbox"], g["playstation"]])
 
 
+## ⛔ THE FALLBACK BAR RENDERED OFF-CENTRE, AND ONLY UNRECOGNISED PADS EVER SAW IT. A
+## PanelContainer EXPANDS past its offsets when the label needs more room, and the default grow
+## direction is END — rightward only — so the LONGEST bar drifts right of a preset whose own name is
+## CENTER_BOTTOM. The fallback is the longest because it hedges every family at once
+## ("[Select/Back/Share]", "[Start/Plus/Options]"). Measured on rendered 1280x720 frames:
+##     derived keyboard   599 px   centred 640.0   (frame centre 640)
+##     fallback const     726 px   centred 703.5   -> 63.5 px RIGHT
+##     fallback, fixed    728 px   centred 640.5
+## Behavioural on the REAL panel: a source pin could not see a layout property stop taking effect.
+func test_the_bar_stays_centred_when_its_text_outgrows_the_panel() -> void:
+	var scene: Node = load("res://src/battle/BattleScene.tscn").instantiate()
+	add_child_autofree(scene)
+	await get_tree().process_frame
+	var bar := scene.get_node_or_null("UI/InputHintBar") as Control
+	assert_not_null(bar, "PRECONDITION: the hint bar must exist, or this arm proves nothing")
+	if bar == null:
+		return
+	var label := bar.get_node_or_null("HintLabel") as Label
+	assert_not_null(label, "PRECONDITION: the bar must carry its label")
+	if label == null:
+		return
+	var configured := bar.size.x
+	label.text = Win98Menu.HINT_DEFAULT_TEXT + "  ·  [Start/Plus/Options] Rules  ·  [L3/L-Stick] Log"
+	await get_tree().process_frame
+	await get_tree().process_frame
+	## POSITIVE CONTROL: if the panel did not actually outgrow its offsets there is no bug to catch
+	## here, and a centred reading would be about a bar that never moved.
+	assert_gt(bar.size.x, configured,
+		"CONTROL: the panel must have GROWN past its configured width (%d), else this arm is vacuous" % int(configured))
+	var centre: float = bar.position.x + bar.size.x / 2.0
+	var want: float = bar.get_parent_area_size().x / 2.0
+	assert_almost_eq(centre, want, 2.0,
+		"a grown hint bar must stay centred — grow_horizontal must be GROW_DIRECTION_BOTH, or the "
+		+ "longest bar (the unrecognised-pad fallback) drifts right of a CENTER_BOTTOM preset")
+
+
 ## The literal that caused it must not come back. "[X] Speed" is correct for exactly one family.
 func test_the_hardcoded_nintendo_letter_is_gone_from_the_render_path() -> void:
 	for path in ["res://src/ui/Win98Menu.gd", "res://src/battle/BattleScene.gd"]:
@@ -121,6 +179,43 @@ func test_the_hardcoded_nintendo_letter_is_gone_from_the_render_path() -> void:
 			"%s must render via hint_text(), not the frozen const" % path)
 		assert_false(src.contains("Win98Menu.HINT_DEFAULT_TEXT"),
 			"%s must not reach past the accessor to the const" % path)
+
+
+## ⛔ THE ARM ABOVE IS ALL NEGATIVES, AND A NEGATIVE SOURCE ASSERTION CANNOT TELL "FIXED" FROM
+## "SPELLED DIFFERENTLY". Both of its checks forbid a literal; neither requires the live call, so the
+## defect this whole file exists for walks past it under any third spelling. MEASURED 2026-10-12:
+## `label.text = Win98Menu.HINT_KEYBOARD_TEXT` in the render path — a frozen const reaching every
+## player, the shape that shipped "[X] Speed" to PlayStation players — passed BOTH hint-bar files
+## 19/19.
+##
+## ⚠️ DERIVED FROM THE FILE, NOT A HAND LIST, because my first two attempts each covered less than
+## they read as covering. (1) `src.contains("Win98Menu.hint_text()")` PASSED under the mutation:
+## BattleScene calls the deriver again at :2052 in _refresh_input_hint_bar, so the file MENTIONS it
+## while the BUILD path uses a const — a pattern matching the wrong occurrence. (2) Pinning the one
+## BUILD assignment then left :2052 — the REFRESH path, which re-derives when a pad is plugged in
+## mid-battle — with the identical exposure. There are TWO assignment sites and a hand list covers
+## whichever I happened to read. This rule covers any number: the only Win98Menu value allowed into
+## a .text assignment is the deriver.
+func test_every_hint_assignment_in_the_render_path_derives() -> void:
+	var src := FileAccess.get_file_as_string("res://src/battle/BattleScene.gd")
+	assert_ne(src, "", "PRECONDITION: BattleScene source must be readable")
+	var sites: Array[String] = []
+	for line in src.split("\n"):
+		var t := line.strip_edges()
+		if t.begins_with("#") or not t.contains(".text = Win98Menu."):
+			continue
+		sites.append(t)
+	## POSITIVE CONTROL: both the BUILD and the REFRESH assignment must be FOUND, or an empty scan
+	## reports a clean sweep of nothing — the exact shape of a guard aimed at a path nobody uses.
+	assert_gt(sites.size(), 1,
+		"CONTROL: BattleScene must carry at least the BUILD and REFRESH hint assignments; found %d" % sites.size())
+	var frozen: Array[String] = []
+	for site in sites:
+		if not site.contains("Win98Menu.hint_text()"):
+			frozen.append(site)
+	assert_eq(frozen, [] as Array[String],
+		"a hint assignment takes a FROZEN Win98Menu const instead of the deriver — that bar ignores "
+		+ "the player's pad family and their bindings for the rest of the battle: %s" % str(frozen))
 
 
 ## CONTROL: the const survives as a fallback, so an unplugged/unknown pad still gets a bar.
