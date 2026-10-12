@@ -1633,9 +1633,22 @@ func _get_llm_status_subtitle() -> String:
 	var model: String = str(info.get("model", "?"))
 	if bool(info.get("available", false)):
 		return "Connected — %s. Select to re-check." % model
-	# Naming the retry is the point: the player must know this self-heals.
+	# Naming the retry is the point: the player must know this self-heals — EXCEPT
+	# where it cannot. A rejected key retried forever is the one case where the old
+	# single "UNREACHABLE" line sent the player to wait instead of to the key field.
 	var every: int = int(info.get("probe_interval_sec", 30))
-	return "UNREACHABLE (%s) — retrying every %ds. Select to re-check now." % [model, every]
+	var code: int = int(info.get("probe_code", 0))
+	match str(info.get("kind", "unreachable")):
+		"key_rejected":
+			return "KEY REJECTED (HTTP %d) — server is up. Fix it in Configure BYOK; retrying will not." % code
+		"not_found":
+			return "NO MODELS AT THAT URL (404) — check the Base URL in Configure BYOK."
+		"rate_limited":
+			return "RATE LIMITED (429) — clears on its own; retrying every %ds." % every
+		"http_error":
+			return "SERVER ERROR (HTTP %d) on %s — retrying every %ds." % [code, model, every]
+		_:
+			return "UNREACHABLE (%s) — retrying every %ds. Select to re-check now." % [model, every]
 
 
 ## "Test connection" — force an immediate probe, then refresh the row.

@@ -51,6 +51,12 @@ var _probe_request: HTTPRequest = null
 # Engine-msec stamp of the last RESOLVED probe; drives the re-probe interval.
 var _last_probe_msec: int = 0
 
+# HTTP status of the last resolved probe, 0 if it never reached a server. A 401/403
+# means the endpoint ANSWERED and refused the credential, which is a different repair
+# from "unreachable" - and telling the player to wait for a retry that cannot succeed
+# is the worse of the two wrong answers.
+var _last_probe_code: int = 0
+
 # False until the boot probe resolves, so boot isn't reported as a transition.
 var _first_probe_done: bool = false
 
@@ -89,7 +95,7 @@ func _start_probe() -> void:
 
 	var url: String = _probe_url()
 	var method: int = _probe_method()
-	var err: int = _probe_request.request(url, PackedStringArray(), method, "")
+	var err: int = _probe_request.request(url, probe_headers(), method, "")
 	if err != OK:
 		# The request never started (malformed or empty base_url, bad host), so
 		# _on_probe_completed will NEVER fire. Leaving _first_probe_done false
@@ -103,6 +109,8 @@ func _start_probe() -> void:
 			push_warning("[HTTPBackend] probe could not start for %s (error %d) — check base_url. Retrying every %ds; no restart needed once it is valid." % [url, err, int(PROBE_INTERVAL_SEC)])
 		_first_probe_done = true
 		_last_probe_msec = Time.get_ticks_msec()
+		# Never reached a server, so no status survives from the previous endpoint.
+		_last_probe_code = 0
 		_cleanup_probe()
 
 
@@ -119,17 +127,32 @@ func _probe_method() -> int:
 	return HTTPClient.METHOD_GET
 
 
+## The probe GETs the provider's MODEL-LISTING endpoint, which every paid provider
+## authenticates: measured unauthenticated 2026-10-12, api.openai.com / api.groq.com /
+## api.deepseek.com / api.together.xyz all answer 401 (OpenRouter's list is public).
+## It sent no headers until now, so a VALID key read as "server unreachable" for the
+## whole session while the BYOK panel's Test Connection - which does send the key - said OK.
+## No Content-Type: a GET carries no body, and an empty array keeps local Ollama, which
+## authenticates nothing, byte-for-byte as it was.
+func probe_headers() -> PackedStringArray:
+	var headers: PackedStringArray = []
+	if api_key != "":
+		headers.append("Authorization: Bearer " + api_key)
+	return headers
+
+
 func _on_probe_completed(result: int, response_code: int, _headers: PackedStringArray, _body: PackedByteArray) -> void:
 	var now_ready: bool = result == HTTPRequest.RESULT_SUCCESS and response_code >= 200 and response_code < 300
 	var was_ready: bool = _ready_flag
 	_ready_flag = now_ready
 	_last_probe_msec = Time.get_ticks_msec()
+	_last_probe_code = response_code if result == HTTPRequest.RESULT_SUCCESS else 0
 	_cleanup_probe()
 	# Boot resolution isn't a "transition" — announce state, but only warn if unreachable.
 	if not _first_probe_done:
 		_first_probe_done = true
 		if not now_ready:
-			push_warning("[HTTPBackend] LLM server unreachable at %s — dynamic dialogue will use fallbacks. Re-probing every %ds; no restart needed once it's up." % [_probe_url(), int(PROBE_INTERVAL_SEC)])
+			push_warning("[HTTPBackend] %s" % unavailable_reason())
 		availability_changed.emit(now_ready)
 		return
 	if was_ready == now_ready:
@@ -138,8 +161,48 @@ func _on_probe_completed(result: int, response_code: int, _headers: PackedString
 	if now_ready:
 		print("[HTTPBackend] LLM server reachable again at %s — dynamic dialogue restored." % _probe_url())
 	else:
-		push_warning("[HTTPBackend] LLM server became unreachable at %s — falling back to scripted dialogue." % _probe_url())
+		push_warning("[HTTPBackend] %s Falling back to scripted dialogue." % unavailable_reason())
 	availability_changed.emit(now_ready)
+
+
+## WHAT KIND of unavailable, as one token. The log wants a paragraph and a Settings
+## subtitle has about eighty columns, so the two surfaces must not share a STRING -
+## they share this FACT and each phrases it. Pinning the code->kind map pins both
+## without pinning either one's prose.
+func unavailable_kind() -> String:
+	# An available backend has no kind at all. Guarding HERE rather than at the readout
+	# means no caller can be handed "http_error" for a healthy 200.
+	if _ready_flag:
+		return ""
+	match _last_probe_code:
+		0:
+			return "unreachable"
+		401, 403:
+			return "key_rejected"
+		404:
+			return "not_found"
+		429:
+			return "rate_limited"
+		_:
+			return "http_error"
+
+
+## Why the backend is unavailable, for the log. The credential case is split out because
+## "retrying every 30s" is a promise a 401 can never keep: no amount of waiting fixes a
+## rejected key, and the player has to go edit it.
+func unavailable_reason() -> String:
+	var every: int = int(PROBE_INTERVAL_SEC)
+	match unavailable_kind():
+		"key_rejected":
+			return "%s rejected the API key (HTTP %d) - the server IS reachable, so re-check the key in Configure BYOK. Retrying cannot fix this one." % [_probe_url(), _last_probe_code]
+		"not_found":
+			return "%s answered HTTP 404 - the host is reachable but lists no models at that path, so check the Base URL against your provider's docs." % _probe_url()
+		"rate_limited":
+			return "%s answered HTTP 429 (rate limited) - re-probing every %ds; this one does clear on its own." % [_probe_url(), every]
+		"http_error":
+			return "LLM server at %s answered HTTP %d - dynamic dialogue will use fallbacks. Re-probing every %ds." % [_probe_url(), _last_probe_code, every]
+		_:
+			return "LLM server unreachable at %s - dynamic dialogue will use fallbacks. Re-probing every %ds; no restart needed once it's up." % [_probe_url(), every]
 
 
 func _cleanup_probe() -> void:
@@ -202,6 +265,8 @@ func get_availability_info() -> Dictionary:
 		"probe_url": _probe_url(),
 		"model": model,
 		"probed": _first_probe_done,
+		"probe_code": _last_probe_code,
+		"kind": unavailable_kind(),
 		"seconds_since_probe": (Time.get_ticks_msec() - _last_probe_msec) / 1000.0 if _first_probe_done else -1.0,
 		"probe_interval_sec": PROBE_INTERVAL_SEC,
 	}
