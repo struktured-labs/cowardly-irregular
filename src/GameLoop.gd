@@ -6474,6 +6474,10 @@ func _start_autogrind_battle(enemy_data: Array) -> void:
 	# Wait for scene to be ready
 	await get_tree().process_frame
 
+	## A stop during that frame frees this scene, and battle_scene is untyped -- the calls below then dereference freed memory and SEGV instead of erroring.
+	if not _is_autogrinding or not is_instance_valid(battle_scene) or current_scene != battle_scene:
+		return
+
 	## The controls legend anchors bottom-right, which is where this scene's PARTY panel ends: measured
 	## 33,616 px of overlap at 720p, hiding the last two members' HP/MP for the whole grind.
 	_keep_controller_overlay_off_the_party_panel(battle_scene)
