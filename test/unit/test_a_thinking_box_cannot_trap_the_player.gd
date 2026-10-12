@@ -105,3 +105,28 @@ func test_the_owner_wires_cancel_to_abort() -> void:
 	var wrapper: String = FileAccess.get_file_as_string("res://src/cutscene/NPCDialogue.gd")
 	assert_true(wrapper.contains("thinking_cancelled"),
 		"NPCDialogue must forward the box's cancel, or the owner never hears it")
+
+
+## ⛔ THE ARM THAT RESISTS THE OBVIOUS SIBLING FIX. `DialogueChoiceMenu.choice_cancelled` has no
+## listener, which reads like the same gap thinking_cancelled had — and wiring it to abort() is
+## wrong. Measured: that signal also fires on ORDINARY cancellation, where `_do_player_turn`'s await
+## returns CHOICE_CANCELLED and the loop exits through run()'s bottom. abort() clears `_active`
+## first, and that bottom block is gated `if _active`, so every normal cancel would lose
+## `_maybe_grant_reward()` and `ConversationMemory.remember()`.
+##
+## The choice-menu door is also not a soft-lock: cancel sets _active false, `_drop_field_lock` pops
+## the lock immediately, and the overworld menu becomes reachable — unlike the thinking box, whose
+## heartbeat could never be reaped. If this arm ever reds, re-read that before deleting it.
+func test_the_choice_menu_cancel_is_not_wired_to_abort() -> void:
+	var owner_src: String = FileAccess.get_file_as_string("res://src/llm/DynamicConversation.gd")
+	assert_ne(owner_src, "", "CONTROL: the owner must be readable")
+	assert_false(owner_src.contains("choice_cancelled.connect(abort)"),
+		"choice_cancelled fires on ordinary cancellation too — aborting there skips the reward check and the memory write for every player who backs out of a conversation")
+	## CONTROL: the sibling signal that IS safe to wire must still be wired, or this arm passes by
+	## the whole mechanism being gone rather than by the distinction being kept.
+	assert_true(owner_src.contains("thinking_cancelled.connect(abort)"),
+		"CONTROL: the thinking-box escape must still be connected")
+	## And the choice menu must keep its own release, which is why its door is recoverable.
+	var menu_src: String = FileAccess.get_file_as_string("res://src/llm/DialogueChoiceMenu.gd")
+	assert_true(menu_src.contains("_drop_field_lock()"),
+		"the choice menu must release its field lock, or cancelling it would strand the overworld menu too")
