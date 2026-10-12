@@ -278,3 +278,58 @@ func test_the_boss_banner_reaches_the_battle_log() -> void:
 	pspawner.spawn_forced_enemies()
 	assert_false("\n".join(plain.log_lines).contains("BOSS BATTLE"),
 		"CONTROL: a slime got the BOSS BATTLE banner, so the assert above passes for everything")
+
+
+func test_the_track_each_boss_now_reaches_is_real_audio() -> void:
+	## The audible half, measured through the real resolver rather than derived.
+	##
+	## The fix only moves these fights INTO the boss-music block; what they then
+	## hear is that block's ladder, whose final else asks for the GENERIC id
+	## "boss" — and "boss" is not a manifest key. So this arm exists to answer
+	## one question: does the fix land these fights on real audio, or on a
+	## second dead key? Measured: play_music("boss") loads boss_medieval.ogg.
+	##
+	## ⚠️ THIS IS AN OUTCOME PIN, NOT A MUTATION-VERIFIED GUARD, and the two
+	## mutations I expected to red it both stayed GREEN at 8/8:
+	##   - "boss" removed from has_music_track's allowlist -> still green, because
+	##     that function ends in `track.begins_with("boss")`, which catches it.
+	##   - play_music's `"boss": manifest_track_id = "boss_" + suffix` arm deleted
+	##     -> still green, because the id then falls through to `match track:
+	##     "boss": _start_boss_music()`, which does its OWN
+	##     _try_play_from_manifest("boss_" + suffix) and lands on the same bed.
+	## Three independent routes reach boss_medieval, so no single edit can break
+	## it. That is CLAUDE.md's redundant case (a): assert the OUTCOME the player
+	## gets, never model which route won. The mutation-verified half of this file
+	## is the meta/predicate arms above — those red twice with distinct
+	## signatures. Do not read this arm as covering the ladder.
+	var cases := {
+		"boss": "boss_medieval",          # the four dragons + the Warden, via the generic arm
+		"boss_mordaine": "boss_mordaine",  # her own authored track
+		"boss_rat_king": "boss_rat_king",
+		"boss_curator_medieval": "boss_curator_medieval",
+	}
+	var wrong: Array[String] = []
+	for key in cases.keys():
+		var want: String = str(cases[key])
+		assert_true(SoundManager.has_music_track(str(key)),
+			"has_music_track(\"%s\") is false, so play_music returns early and keeps the previous bed" % key)
+		SoundManager.play_music(str(key))
+		await get_tree().process_frame
+		var stream: Variant = SoundManager._music_player.stream
+		var got: String = stream.resource_path.get_file().get_basename() if stream != null else "<silence>"
+		if got != want:
+			wrong.append("%s -> %s (expected %s)" % [key, got, want])
+
+	## CONTROL: the generic rewrite must be a rewrite, not a coincidence. If
+	## "boss" and "battle" landed on the same stream the arm above is inert.
+	SoundManager.play_music("battle")
+	await get_tree().process_frame
+	var battle_stream: Variant = SoundManager._music_player.stream
+	var battle_file: String = battle_stream.resource_path.get_file().get_basename() if battle_stream != null else "<silence>"
+	assert_eq(battle_file, "battle_medieval",
+		"CONTROL: the generic \"battle\" alias resolved to '%s'; the world rewrite is not working, so the \"boss\" arm proves nothing" % battle_file)
+	assert_ne(battle_file, "boss_medieval",
+		"CONTROL: \"battle\" and \"boss\" land on the same stream, so this file cannot tell a boss bed from an encounter bed")
+
+	assert_eq(wrong.size(), 0,
+		"a boss key did not load its own audio (%d): %s — struktured heard battle_medieval.ogg for all four of these on 2026-10-05" % [wrong.size(), wrong])
