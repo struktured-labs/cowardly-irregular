@@ -126,7 +126,11 @@ const ADVERTISED_AS := {
 	"battle_advance": "Advance",
 	"battle_defer": "Defer",
 	"battle_toggle_auto": "Back / Select / Minus / Share",  # the ROW's gamepad cell — "Toggle Autobattle" also appears in prose below the table
-	"party_chat": "Defer / Party Chat",  # the ROW's description cell — "PARTY CHAT" is also a section header
+	# The ROW's full description cell. Was "Defer / Party Chat" until that row was SPLIT (2026-10-12):
+	# Defer and Party Chat share the pad's L shoulder but not a key (Q vs L), so one row named the
+	# wrong key for whichever half you read. Not the bare words — "PARTY CHAT" is also a section
+	# header, so a bare token would pass with the row gone.
+	"party_chat": "Party Chat (in the field)",
 	"dash": "1.7x",
 	"battle_open_log": "Battle log",  # the multiplier, unique to its row — "Run" also matches "Turbo — run it faster"
 }
