@@ -160,3 +160,27 @@ func test_control_the_original_lockout_is_still_refused() -> void:
 	var trap: Dictionary = m.binding_would_trap_the_player("ui_accept", [int(cancel[0])])
 	assert_true(bool(trap.get("trapped", false)),
 		"Confirm onto Cancel must still be refused — that one removes the way to undo itself")
+
+## ⛔ THE UPGRADE PATH, and it is struktured's own config shape: every saved controls.json on disk
+## predates ui_field_menu. His (Custom profile, written 2026-09-23) names six actions and not this
+## one. If apply_profile treated "absent" as "bind nothing", loading it would ERASE the menu button
+## and the control would simply stop working for every existing player — silently, on upgrade.
+## apply_profile skips an action its bindings do not mention, so the project default survives; this
+## pins that, because the failure mode is invisible until someone presses the button.
+func test_an_existing_config_that_never_heard_of_this_action_still_opens_the_menu() -> void:
+	var m: Node = _ipm()
+	var before: Array = m.get_current_button_indices(OverworldMenu.FIELD_MENU_ACTION)
+	assert_false(before.is_empty(), "PRECONDITION: the menu is bound before the old config loads")
+	## His six, verbatim in shape — no ui_field_menu key, which is the whole point.
+	m.custom_bindings = {
+		"battle_advance": [10], "battle_defer": [9], "battle_toggle_auto": [4],
+		"ui_accept": [1], "ui_cancel": [0], "ui_menu": [6, 7],
+	}
+	m.active_profile = "Custom"
+	m.apply_profile("Custom")
+	assert_eq(m.get_current_button_indices(OverworldMenu.FIELD_MENU_ACTION), before,
+		"an old config must leave the menu button alone, not unbind it")
+	assert_true(OverworldMenu.is_toggle_event(_joy(int(before[0]))),
+		"and the button must still open the menu after that config is applied")
+	assert_true(OverworldMenu.is_toggle_event(_key(OverworldMenu.TOGGLE_KEY)),
+		"…and so must the key, which no saved config has ever carried")
