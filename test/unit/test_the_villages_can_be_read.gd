@@ -195,6 +195,23 @@ func test_the_placement_is_relative_to_the_spawn() -> void:
 		"and through the cell-centring helper — a 28px prop on a cell corner draws and cannot be pressed")
 
 
+## ⛔ THE DRIFT BOUND IN THE BUILD ARM IS DERIVED FROM `_EXAMINE_SEARCH_RADIUS`, SO IT CANNOT
+## CATCH A CHANGE TO THAT CONST — raise it to 40 and the bound rises with it. Measured: that mutation
+## was GREEN across all eight arms. The claim "a nudge, not a relocation" is therefore a SECOND claim
+## about the const itself, and it needs its own assert.
+##
+## 🔑 Read through the class, not as text, and bounded by DESIGN INTENT rather than by the
+## implementation's current number: 4 may become 5 without this reding, 40 may not. A self-derived
+## bound is the fixture testing its own claim.
+func test_the_search_nudges_rather_than_relocates() -> void:
+	var consts: Dictionary = load(BASE).get_script_constant_map()
+	assert_true(consts.has("_EXAMINE_SEARCH_RADIUS"), "the search radius must be a named const")
+	var r: int = int(consts["_EXAMINE_SEARCH_RADIUS"])
+	assert_gt(r, 0, "a radius of 0 cannot route around a building, so a resize would place nothing")
+	assert_lte(r, 6,
+		"radius %d turns the resolver from a NUDGE into a relocation: an examine would land cells away from the spot it was authored for, still walkable and still wrong, with nothing to say so" % r)
+
+
 ## ⛔ THE ARM THAT MATTERS: every arm above reads SOURCE. This builds all eleven villages and counts
 ## what a player would actually find.
 func test_every_village_actually_builds_its_examines() -> void:
