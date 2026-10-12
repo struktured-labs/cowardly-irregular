@@ -358,10 +358,18 @@ static func apply_autogrind_rules(data: Dictionary) -> bool:
 	## dependence on every caller remembering, which nothing in the function stated.
 	last_import_errors = []
 	last_import_advisories = []
+	## ⛔ EVERY `return false` RECORDS A REASON. Three of these four used to return with
+	## `last_import_errors` empty, and both callers ask for it: the file path prints
+	## `_refusal_suffix()`, which renders the literal "(no reason recorded)", and the
+	## clipboard path falls back to "Clipboard has no valid autogrind share code" — which
+	## is WRONG for an empty rule set, because the code decoded fine and simply had no
+	## rules in it. The reason existed in every case; only the rule-error exit passed it on.
 	if data.get("type") != "autogrind_rules":
+		last_import_errors = ["not an autogrind rule export (type is '%s')" % str(data.get("type", ""))]
 		return false
 	var rules = data.get("rules", [])
 	if rules.is_empty():
+		last_import_errors = ["the export contains no autogrind rules — nothing to import"]
 		return false
 	var errs := validate_imported_autogrind_rules(rules)
 	if not errs.is_empty():
@@ -370,6 +378,9 @@ static func apply_autogrind_rules(data: Dictionary) -> bool:
 		return false
 	# Defense-in-depth: the choke point revalidates. If it rejects after our pre-check passed the validators drifted — surface it instead of lying to the user.
 	if not AutogrindSystem.set_autogrind_rules(rules):
+		## The comment above says "surface it instead of lying to the user", and the
+		## push_warning only reached the console: the player got "(no reason recorded)".
+		last_import_errors = ["the rules passed the import check but the engine refused them — this is a bug, please report it"]
 		push_warning("[SHARE] Import pre-check passed but choke point rejected — validator drift between validate_imported_autogrind_rules and AutogrindSystem.validate_rule?")
 		return false
 	print("[SHARE] Applied autogrind rules (%d rules)" % rules.size())
