@@ -152,6 +152,30 @@ func test_the_reverse_direction_is_deliberately_still_allowed() -> void:
 		"moving Confirm onto the menu's button stays the player's business: %s" % str(trap.get("reason", "")))
 
 
+## ⛔ ESCAPE IS OUTSIDE THE BINDING ON PURPOSE AND NOTHING PINNED THAT PAST THE DEFAULTS. Three
+## files drive Escape at the field menu and ALL THREE do it on the default binding, so routing every
+## toggle through `ui_field_menu` — the obvious tidy-up now that the binding exists — would leave the
+## whole suite green. The only loud signal is cowir-deploy's web smoke, which opens the menu with
+## Escape at stage 3 (`tools/web_smoke.mjs:127`, 12 retries) and would red on every web publish
+## looking like a menu bug rather than an input one. Raised by cowir-main off the .657 publish.
+##
+## The keyboard key is here for a second reason: `set_custom_binding` calls `_replace_joypad_buttons`,
+## so a PAD rebind must not take the KEY with it. That is a claim about the replacement's scope, and
+## the method name is not the measurement.
+func test_escape_and_the_key_outlive_a_rebind_of_the_menu_button() -> void:
+	var m: Node = _ipm()
+	var free_button := 8
+	assert_false(OverworldMenu.is_toggle_event(_joy(free_button)),
+		"PRECONDITION: the target button must not already open the menu")
+	m.set_custom_binding(OverworldMenu.FIELD_MENU_ACTION, [free_button])
+	assert_true(OverworldMenu.is_toggle_event(_joy(free_button)),
+		"PRECONDITION: the rebind must have TAKEN — if it silently failed, everything below is a fact about the defaults")
+	assert_true(OverworldMenu.is_toggle_event(_key(KEY_ESCAPE)),
+		"Escape must still open the field menu after the button moves — it is the universal back-out, and the web smoke presses it")
+	assert_true(OverworldMenu.is_toggle_event(_key(OverworldMenu.TOGGLE_KEY)),
+		"and a PAD rebind must not unbind the KEY — _replace_joypad_buttons touches joypad events only")
+
+
 ## The lock-in this check was written for must survive the table it now lives in.
 func test_control_the_original_lockout_is_still_refused() -> void:
 	var m: Node = _ipm()
