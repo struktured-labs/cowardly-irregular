@@ -28,11 +28,17 @@ const PAD := "Xbox Series Controller"
 
 var _saved_nintendo: bool = false
 var _saved_profile: String = ""
+## The controls file as this file found it: its bytes, or absent. set_nintendo_mode SAVES, and a file left behind is read at the next boot.
+var _config_existed: bool = false
+var _config_bytes: PackedByteArray = PackedByteArray()
 
 
 func before_all() -> void:
 	_saved_nintendo = InputProfileManager.nintendo_mode
 	_saved_profile = InputProfileManager.active_profile
+	_config_existed = FileAccess.file_exists(InputProfileManager.CONFIG_PATH)
+	if _config_existed:
+		_config_bytes = FileAccess.get_file_as_bytes(InputProfileManager.CONFIG_PATH)
 
 
 ## set_nintendo_mode calls apply_profile AND save_config, so this restores through the same door it
@@ -41,6 +47,18 @@ func before_all() -> void:
 func after_all() -> void:
 	InputProfileManager.set_nintendo_mode(_saved_nintendo)
 	InputProfileManager.apply_profile(_saved_profile)
+	_put_the_controls_file_back()
+
+
+## The door above saves on the way out too, so the file is restored LAST: byte-for-byte, or removed if there was none.
+func _put_the_controls_file_back() -> void:
+	if _config_existed:
+		var f := FileAccess.open(InputProfileManager.CONFIG_PATH, FileAccess.WRITE)
+		if f:
+			f.store_buffer(_config_bytes)
+			f.close()
+	elif FileAccess.file_exists(InputProfileManager.CONFIG_PATH):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(InputProfileManager.CONFIG_PATH))
 
 
 func _labels(n: Node, out: Array) -> void:
