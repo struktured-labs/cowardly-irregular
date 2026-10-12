@@ -12,17 +12,30 @@ extends GutTest
 
 const EXAMINES := "res://data/examine_texts.json"
 const TELEPORT := "res://src/ui/TeleportMenu.gd"
+const LOCATIONS := "res://data/locations.json"
 const GdSource := preload("res://test/unit/helpers/gd_source.gd")
-const MIN_MAP_IDS := 40
+const MIN_MAP_IDS := 55
 
 
-## Every map id the teleport menu can reach — the one place in src/ that enumerates them.
+## ⛔ THE UNION, AND THE FIRST VERSION OF THIS FILE GOT IT WRONG. TeleportMenu enumerates the
+## TELEPORTABLE maps, which is a SUBSET: 15 real maps are reachable only by walking into them
+## (blacksmith_interior, dungeon_cave, eldertree_grafting_house...) and appear only as a `map_id` in
+## locations.json, which SaveSystem reads to name the place the player is standing in. A corpus
+## narrower than the thing it judges reds a legitimate key — and a guard that reds on correct data
+## is one somebody deletes.
 func _map_ids() -> Array[String]:
 	var out: Array[String] = []
-	var code: String = GdSource.code_of(TELEPORT)
 	var rx := RegEx.create_from_string('"id"\\s*:\\s*"([a-z0-9_]+)"')
-	for m in rx.search_all(code):
+	for m in rx.search_all(GdSource.code_of(TELEPORT)):
 		out.append(m.get_string(1))
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(LOCATIONS))
+	if parsed is Dictionary:
+		for key in (parsed as Dictionary):
+			var entry: Variant = (parsed as Dictionary)[key]
+			if entry is Dictionary:
+				var mid: String = str((entry as Dictionary).get("map_id", ""))
+				if mid != "" and not out.has(mid):
+					out.append(mid)
 	return out
 
 
@@ -38,6 +51,10 @@ func test_the_map_id_corpus_is_real() -> void:
 	assert_gt(ids.size(), MIN_MAP_IDS, "CONTROL: the teleport menu lists %d map ids" % ids.size())
 	for expected in ["harmonia_village", "castle_harmonia", "abstract_overworld"]:
 		assert_true(ids.has(expected), "CONTROL: %s must be a known map id" % expected)
+	## The half a TeleportMenu-only corpus would have missed: walked into, never teleported to.
+	for walked_only in ["blacksmith_interior", "eldertree_grafting_house"]:
+		assert_true(ids.has(walked_only),
+			"CONTROL: %s is a real map reached only on foot; a corpus without it reds correct data" % walked_only)
 
 
 func test_every_examine_names_a_real_map() -> void:
