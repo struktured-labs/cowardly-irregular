@@ -47,6 +47,17 @@ func _build(world: String) -> Node2D:
 	vp.add_child(w)
 	await get_tree().physics_frame
 	await get_tree().physics_frame
+	## ⛔ ASSERT THE MODE HERE, IN THE BUILDER, NOT ONLY IN ITS OWN ARM. `Mode7Overlay.is_active` is a
+	## GLOBAL autoload flag and the census reads it to choose its probe reach (80 vs 40). A separate
+	## arm checking the flag does not protect the arms that MEASURE with it: if a neighbouring test
+	## left it stale, every census arm would pass while having measured the wrong world's geometry,
+	## and nothing in the numbers would say so. @cowir-deploy's .661 block is this exact shape one
+	## layer out — their fixture's LOCATION decided which branch the arm measured, and it passed
+	## either way. The environment belongs in the setup every measurement inherits.
+	## Measured: the W6-declares-Mode-7 mutation red 2 arms before this change and 5 after.
+	assert_eq(Mode7Overlay.is_active, bool(WORLDS[world]["mode7"]),
+		"[%s] built with Mode 7 = %s, expected %s — every press number below would be measured at the wrong reach" % [
+			world, str(Mode7Overlay.is_active), str(WORLDS[world]["mode7"])])
 	_census = Census.new()
 	_census.setup(vp, float(int(w.MAP_SCALE) * int(w.TILE_SIZE)))
 	return w
