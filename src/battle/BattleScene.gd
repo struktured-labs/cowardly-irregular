@@ -2065,6 +2065,12 @@ func _build_input_hint_bar() -> void:
 	hint_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	# Anchor bottom-center
 	hint_panel.set_anchors_preset(Control.PRESET_CENTER_BOTTOM, true)
+	## ⛔ GROW BOTH WAYS OR THE BAR IS NOT CENTRED. A PanelContainer EXPANDS past these offsets when
+	## its label needs more, and the default grow direction is END — rightward only. Measured on a
+	## rendered frame: the derived bar is 599px centred at 640, the FALLBACK const is 726px centred
+	## at 704, i.e. 64px right of a bar whose whole anchor preset is CENTER_BOTTOM. Only players
+	## whose pad family is unrecognised ever see the fallback, so this went unnoticed.
+	hint_panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	## 520px held SIX tokens edge to edge; Repeat (2026-10-12) makes seven, so the bar is 600 wide.
 	## Measured on a rendered 1280x720 frame, not computed: seven fit on ONE line, which is why the
 	## 28px height is unchanged. Do not add autowrap — a second line cannot be shown at this height.
