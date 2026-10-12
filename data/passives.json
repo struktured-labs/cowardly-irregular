@@ -170,7 +170,7 @@
 		"id": "autobattle_verbs",
 		"name": "Autobattle Verbs",
 		"category": 4,
-		"description": "Unlocks advanced autobattle conditionals",
+		"description": "Unlocks advanced autobattle conditionals (Currently no effect)",
 		"meta_effects": {
 			"autobattle_advanced": true
 		}
