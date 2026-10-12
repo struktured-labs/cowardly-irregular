@@ -20,6 +20,28 @@ extends GutTest
 ## rather than the three that reddened.
 var _saved_profile: String = ""
 
+## ⛔ THE CENTRING ARM INSTANTIATES THE REAL BattleScene.tscn, WHICH STARTS A BATTLE — and a battle
+## left running in the autoload outlives this FILE. cowir-main's pre-fold sweep caught it:
+## test_battle_state_not_leaked_by_tests red right after us with state=3. My own 3/3 stability check
+## ran this file ALONE, which is the one arrangement that cannot see a leak into the next file —
+## the same blind spot I fixed in someone else's fixture this morning, reproduced in my own hours
+## later. The established cure is the shared helper, as test_the_results_screen_drops_the_battle_
+## shortcuts already uses it: snapshot per test, restore per test.
+const BattleStateHelper := preload("res://test/unit/helpers/battle_state.gd")
+
+var _bm: RefCounted = null
+
+
+func before_each() -> void:
+	_bm = BattleStateHelper.new()
+	_bm.snapshot()
+
+
+func after_each() -> void:
+	if _bm != null:
+		_bm.restore()
+	_bm = null
+
 
 func before_all() -> void:
 	_saved_profile = InputProfileManager.active_profile
