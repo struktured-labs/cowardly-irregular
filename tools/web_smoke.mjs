@@ -140,14 +140,30 @@ if (booted && errors.length === 0) {
 // step at a time and are defeated by a Director-driven one. "Never clears a cutscene" is true of the
 // Director's skip and false of the box.
 //
-// ⛔ AND THE HOLD HAS ITS OWN HAZARD, WHICH IS WHY IT RUNS LAST AND ONLY ON A DOOMED PATH.
-// OverworldMenu.is_toggle_event's Escape branch has NO is_echo() guard
-// (`if event is InputEventKey and event.pressed: return event.keycode == KEY_ESCAPE`,
-// OverworldMenu.gd:121-122), so a HELD Escape re-fires the toggle at OS key-repeat rate and can
-// open and close the menu an even number of times — leaving it shut with the marker already
-// printed, which stage 4 would then drive blind. So: taps first, exactly as before; the hold is
-// reached ONLY after the taps have failed, i.e. only on a path that is already a guaranteed RED,
-// where it cannot make a passing publish fail. After the hold, tap again to open the menu.
+// THE ORDERING: TAPS FIRST, AND THE HOLD ONLY AFTER THEY FAIL. Two independent reasons, and the
+// second outlives the first — @cowir-controller has landed `lane/a-held-escape-is-one-press`
+// (df44b4476), which adds the missing `not event.is_echo()` to that Escape branch.
+//
+// 1. UNTIL THAT FOLDS: OverworldMenu.is_toggle_event's Escape branch has no is_echo() guard
+//    (`if event is InputEventKey and event.pressed: return event.keycode == KEY_ESCAPE`), so a
+//    HELD Escape re-fires the toggle at OS key-repeat rate and can open and close the menu an
+//    EVEN number of times — leaving it shut with "[MENU] Overworld menu opened" already printed,
+//    which stage 4 would then drive blind. Once df44b4476 is in the tree, a held Escape is one
+//    toggle and this reason is gone.
+// 2. AFTER IT FOLDS, THE ORDERING STAYS, because the reason that matters is not about echo at
+//    all: the hold is a NEW input shape on a path that 400+ publishes have passed with taps. Put
+//    it first and every green publish starts taking a code path none of them has taken. Behind
+//    the taps it is reachable only where the gate was already going to RED, so it cannot cost a
+//    passing publish — which is the only ordering a deploy gate should accept.
+//
+// ⚠️ WHAT I DO NOT KNOW, AND WHY 12 STAYS 12: how many taps the normal path actually needs. It has
+// never needed a hold, so the count is somewhere in 1..12 and the log never said. Tightening the
+// pre-hold budget to reach a cutscene faster would trade a known-good path for a faster failure
+// path on a guess, so the count is PRINTED below instead, and the next person can tighten it with
+// a number. Measuring before tuning, rather than tuning and then measuring the result.
+// FIRST DATA POINT, .660 build, idle box: "menu opened after 2 Escape tap(s)". One sample, so it
+// bounds nothing yet — but 2 of 12 is where the slack is, and a few more publishes make 5 a
+// defensible budget. Do not tighten on this line alone.
 if (booted && errors.length === 0) {
   let holds = 0, taps = 0;
   for (let tries = 0; tries < 12 && !menuOpened; tries++) {
@@ -172,7 +188,8 @@ if (booted && errors.length === 0) {
   if (!menuOpened) errors.push(`stage3: overworld menu never opened after ${taps} Escape tap(s) `
     + `and ${holds} hold(s) of 1700ms (a hold past CutsceneDirector's 1.5s skip threshold) — `
     + `input locked, a cutscene that neither a tap nor a hold dismisses, or the menu print removed`);
-  else if (holds > 0) console.log(`[WEB-SMOKE] stage3 needed ${holds} Escape HOLD(s) — something had the screen; a tap-only gate would have failed here`);
+  else if (holds > 0) console.log(`[WEB-SMOKE] stage3 needed ${holds} Escape HOLD(s) and ${taps} tap(s) — something had the screen; a tap-only gate would have failed here`);
+  else console.log(`[WEB-SMOKE] stage3: menu opened after ${taps} Escape tap(s), no hold needed`);
 }
 
 // Stage 4: save → reload → Continue. THE web-only stakes path: user:// on
