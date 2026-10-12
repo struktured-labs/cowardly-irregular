@@ -4,7 +4,7 @@ extends GutTest
 ## typically 34/30/30/30 instead of 32/32/32/32. The game cuts every sheet at y = 32, 64, 96, so walking left, right or
 ## up drew the previous row's feet floating over a figure whose own feet were cut off. Nothing failed: the file loads,
 ## the manifest matches, the frames are 32px. Found by eye 2026-10-12 while auditing white-keyed grids.
-## tools/reseat_overworld_rows.py moved the rows of 28 sheets onto the grid. The other 41 cannot be shuffled into
+## tools/reseat_overworld_rows.py moved the rows of 27 sheets onto the grid. The other 42 cannot be shuffled into
 ## shape (two or three rows of figures, rows that touch, a row cut short) and need a re-roll: they are named below
 ## with the reason, and the list may only shrink.
 ## The measure: a cell holding a DETACHED body of >= MIN_PIECE px on its top or bottom edge holds another row's figure.
@@ -51,6 +51,7 @@ const NEEDS_A_REROLL := {
 	"npcs/noblewoman_abstract/overworld": "its rows touch: no gap to cut at",
 	"npcs/old_man_suburban/overworld": "rows of unequal height: one was cut short",
 	"npcs/old_woman_suburban/overworld": "its rows touch: no gap to cut at",
+	"npcs/priestess/overworld": "its rows are not the four facings (three side views, no back): re-seated, the facing guard can see that",
 	"npcs/phil/overworld": "2 rows of figures, not 4",
 	"npcs/soldier_digital/overworld": "its rows touch: no gap to cut at",
 	"npcs/soldier_steampunk/overworld": "rows of unequal height: one was cut short",
