@@ -533,18 +533,29 @@ func spawn_forced_enemies() -> void:
 
 	# Announcement based on battle type
 	if is_boss_battle:
-		_scene.log_message("")
-		_scene.log_message("[color=%s]═══════════════════════════════[/color]" % AccessibilityPalette.penalty_bbcode())
-		_scene.log_message("[color=orange]   👑  BOSS BATTLE!  👑[/color]")
+		var boss_lines: Array[String] = []
 		for enemy_name in enemy_names:
-			_scene.log_message("[color=yellow]   %s appeared![/color]" % enemy_name)
-		_scene.log_message("[color=%s]═══════════════════════════════[/color]" % AccessibilityPalette.penalty_bbcode())
-		_scene.log_message("")
+			boss_lines.append("[color=yellow]   %s appeared![/color]" % enemy_name)
+		_announce_boss_banner(boss_lines)
 	else:
 		for enemy_name in enemy_names:
 			_scene.log_message("[color=yellow]%s appeared![/color]" % enemy_name)
 
 	_scene._update_ui()
+
+
+## Shared so the two spawn paths cannot drift. This was a block gated on a LOCAL
+## inside spawn_forced_enemies, so a boss reached from exploration got no banner
+## at all — zero in struktured's whole 2026-10-05 session, Mordaine included.
+func _announce_boss_banner(body: Array[String]) -> void:
+	var rule: String = "[color=%s]═══════════════════════════════[/color]" % AccessibilityPalette.penalty_bbcode()
+	_scene.log_message("")
+	_scene.log_message(rule)
+	_scene.log_message("[color=orange]   👑  BOSS BATTLE!  👑[/color]")
+	for line in body:
+		_scene.log_message(line)
+	_scene.log_message(rule)
+	_scene.log_message("")
 
 
 ## "<species>@elite" is not a catalog key. The base species is. Empty when this id is not that marker.
@@ -593,6 +604,7 @@ func spawn_encounter_enemies() -> void:
 
 	var max_enemies = mini(valid_ids.size(), _scene.enemy_positions.size())
 	var enemy_names: Dictionary = {}
+	var encounter_has_boss: bool = false
 
 	for i in range(max_enemies):
 		var enemy_id: String = str(valid_ids[i])
@@ -657,6 +669,16 @@ func spawn_encounter_enemies() -> void:
 		if ability_source.has("abilities"):
 			enemy.job = {"abilities": ability_source["abilities"], "name": str(stats.get("name", base_id))}
 
+		# Every exploration battle arrives here: GameLoop passes is_encounter=true
+		# for ALL of them, bosses included, so the dragons / Warden / Mordaine
+		# took this path and never got the flag spawn_forced_enemies sets at :481.
+		if monster_data.get("boss", false) or monster_data.get("miniboss", false):
+			enemy.set_meta("is_boss", true)
+			enemy.set_meta("is_miniboss", true)
+			encounter_has_boss = true
+			if monster_data.has("dialogue"):
+				_scene._boss_dialogue_data = monster_data["dialogue"]
+
 		# Store Masterite metadata for specialized AI
 		if monster_data.get("masterite", false):
 			enemy.set_meta("masterite", true)
@@ -692,7 +714,11 @@ func spawn_encounter_enemies() -> void:
 		else:
 			enemy_names[display_name] = 1
 
-	_scene.log_message("[color=gray]%s appeared![/color]" % encounter_count_phrase(enemy_names))
+	var phrase: String = encounter_count_phrase(enemy_names)
+	if encounter_has_boss:
+		_announce_boss_banner(["[color=yellow]   %s appeared![/color]" % phrase])
+	else:
+		_scene.log_message("[color=gray]%s appeared![/color]" % phrase)
 
 	_scene._update_ui()
 
