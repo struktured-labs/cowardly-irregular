@@ -31,21 +31,11 @@ const QUOTES := '"""'
 ## A cue may be authored ahead of its path ONLY with a reason. Not a suppression flag: the entry has
 ## to say why, and it EXPIRES — an exempted cue that becomes reachable reds, so the list cannot
 ## outlive the decision it records.
+## ⚠️ `festered` and `pacify` were listed here and the expiry arm DELETED THEM BY NAME when
+## cowir-sfx's 70ea3c923 landed in .666 — their effects left the generic debuff arm, so both now
+## fall through to the `_:` arm and reach their own cues (festered via the amplify_poison alias).
+## That is this guard's whole point working on its own author, inside an hour of being written.
 const AUTHORED_AHEAD := {
-	"cured":
-		"IN FLIGHT on cowir-sfx's lane/a-voice-clip-is-as-long-as-its-line @ 8ee15b0cd. A NAME"
-		+ " mismatch, not a missing arm: the cue is keyed `cured` while the effect is named `cleanse`,"
-		+ " so no status_<effect> lookup could reach it, and the buff arm made Purgatio sound like a"
-		+ " stat buff. Cued from the executor there, which is the only place that knows whether an"
-		+ " ailment actually came off. This entry EXPIRES when that branch lands.",
-	"festered":
-		"IN FLIGHT on cowir-sfx's lane/a-status-arm-that-cannot-be-read-says-so @ 70ea3c923, which"
-		+ " moves amplify_poison out of the debuff arm so its bespoke cue is reachable. Swallowed"
-		+ " today by play_battle(\"debuff\"). This entry EXPIRES when that branch lands.",
-	"pacify":
-		"IN FLIGHT on cowir-sfx's lane/a-status-arm-that-cannot-be-read-says-so @ 70ea3c923, same"
-		+ " mechanism as festered: the effect is listed in the generic debuff arm, so its own cue"
-		+ " cannot be reached. This entry EXPIRES when that branch lands.",
 	"paralyze":
 		"Deliberately unwired (cowir-story + cowir-main, 2026-10-12): the mechanic a paralyze status"
 		+ " would express — a combatant that cannot take its turn — already exists TWICE as `stun` and"
