@@ -2798,10 +2798,23 @@ func _import_scripts() -> void:
 			continue
 		match data.get("type", ""):
 			"autobattle_bundle":
+				## A bundle is the only import that can PARTLY succeed, and it used to report
+				## only its successes — "Imported 3 autobattle scripts", in the success colour,
+				## whether the bundle held three scripts or five. The skipped ones kept their
+				## old scripts and nothing said so.
+				var total: int = data.get("scripts", {}).size()
 				var count = ScriptShareManager.apply_script_bundle(data)
 				if count == 0:
 					refused += 1
-					_log_message("[color=yellow]%s: no script in the bundle could be applied.[/color]" % filename)
+					_log_message("[color=yellow]%s: no script in the bundle could be applied%s[/color]"
+						% [filename, _refusal_suffix()])
+				elif count < total:
+					## Both counters: some party members changed and some did not, and the
+					## player needs to know which half they got.
+					imported += count
+					refused += 1
+					_log_message("[color=yellow]Imported %d of %d autobattle scripts from %s — %d skipped%s[/color]"
+						% [count, total, filename, total - count, _refusal_suffix()])
 				else:
 					imported += count
 					_log_message("[color=%s]Imported %d autobattle scripts from %s[/color]" % [AccessibilityPalette.bonus_bbcode(), count, filename])
