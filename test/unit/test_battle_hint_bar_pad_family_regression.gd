@@ -159,6 +159,27 @@ func test_the_hardcoded_nintendo_letter_is_gone_from_the_render_path() -> void:
 			"%s must not reach past the accessor to the const" % path)
 
 
+## ⛔ THE ARM ABOVE IS ALL NEGATIVES, AND A NEGATIVE SOURCE ASSERTION CANNOT TELL "FIXED" FROM
+## "SPELLED DIFFERENTLY". Both of its checks forbid a literal; neither requires the live call. So the
+## defect this whole file exists for walks straight past it under any other spelling. MEASURED
+## 2026-10-12 — `label.text = Win98Menu.HINT_KEYBOARD_TEXT` in the render path, a frozen const
+## reaching every player, passed BOTH hint-bar files 19/19. This is the positive half: the render
+## path must CALL the deriver, which is the question absence can never answer.
+func test_the_render_path_actually_calls_the_deriver() -> void:
+	var src := FileAccess.get_file_as_string("res://src/battle/BattleScene.gd")
+	assert_ne(src, "", "PRECONDITION: BattleScene source must be readable")
+	## ⚠️ THE ASSIGNMENT, NOT THE CALL. My first version asserted the file merely CONTAINS
+	## "Win98Menu.hint_text()" and it PASSED under the mutation — BattleScene calls the deriver again
+	## in _refresh_input_hint_bar, so the file mentions it while the BUILD path uses a const. A
+	## pattern that matches the wrong occurrence is the same defect this arm exists to catch.
+	## A reformat of this assignment REDS here, loudly, which is the contract — see the stale
+	## DERIVED_BAR_MARKER in the truthfulness file for what a silent version costs.
+	assert_true(src.contains("label.text = Win98Menu.hint_text()"),
+		"BattleScene must ASSIGN the bar's text from Win98Menu.hint_text() — forbidding two frozen "
+		+ "spellings does not require the derived one, and a third spelling is invisible to every "
+		+ "other arm in this file")
+
+
 ## CONTROL: the const survives as a fallback, so an unplugged/unknown pad still gets a bar.
 func test_the_const_remains_as_a_fallback() -> void:
 	var src := FileAccess.get_file_as_string("res://src/ui/Win98Menu.gd")
