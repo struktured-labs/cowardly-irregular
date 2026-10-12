@@ -27,6 +27,43 @@ extends GutTest
 
 const CASTLE := "res://src/maps/dungeons/CastleHarmonia.gd"
 const PACK := "res://data/examine_texts.json"
+const FLOOR_KEY := "castle_harmonia_floor"
+const BOSS_FLAG := "world1_mordaine_defeated"
+
+var _had_floor := false
+var _saved_floor: int = 0
+var _had_flag := false
+var _saved_flag = null
+
+
+## `current_floor` is restored from GameState, so which floor these arms measure is whatever an
+## EARLIER TEST left behind. Measured: floor 1 run alone, floor 2 inside the full sweep. Floor 4 is
+## authored BARE on purpose, so a leak to 4 would red the control instead of the subject. The arms
+## below name their floor; this pair keeps the naming from leaking back out.
+func before_each() -> void:
+	var gs := get_node_or_null("/root/GameState")
+	if gs == null:
+		return
+	_had_floor = gs.game_constants.has(FLOOR_KEY)
+	_saved_floor = int(gs.game_constants.get(FLOOR_KEY, 0))
+	var flags: Dictionary = gs.game_constants.get("dungeon_flags", {})
+	_had_flag = flags.has(BOSS_FLAG)
+	_saved_flag = flags.get(BOSS_FLAG, null)
+
+
+func after_each() -> void:
+	var gs := get_node_or_null("/root/GameState")
+	if gs == null:
+		return
+	if _had_floor:
+		gs.game_constants[FLOOR_KEY] = _saved_floor
+	else:
+		gs.game_constants.erase(FLOOR_KEY)
+	var flags: Dictionary = gs.game_constants.get("dungeon_flags", {})
+	if _had_flag:
+		flags[BOSS_FLAG] = _saved_flag
+	else:
+		flags.erase(BOSS_FLAG)
 
 
 func _castle_entries() -> Dictionary:
@@ -41,6 +78,25 @@ func _castle_entries() -> Dictionary:
 		if e is Dictionary and str((e as Dictionary).get("scene", "")) == "castle_harmonia":
 			mine[str(k)] = e
 	return mine
+
+
+## Build the castle ON A NAMED FLOOR, rather than on whichever one the sweep left set.
+func _build_on_floor(floor_num: int) -> Node:
+	var gs := get_node_or_null("/root/GameState")
+	if gs != null:
+		gs.game_constants[FLOOR_KEY] = floor_num
+		var flags: Dictionary = gs.game_constants.get("dungeon_flags", {})
+		flags[BOSS_FLAG] = false
+		gs.game_constants["dungeon_flags"] = flags
+	var vp := SubViewport.new()
+	vp.size = Vector2i(64, 64)
+	vp.world_2d = World2D.new()
+	add_child_autofree(vp)
+	var castle = load(CASTLE).new()
+	vp.add_child(castle)
+	await get_tree().physics_frame
+	await get_tree().physics_frame
+	return castle
 
 
 func _source() -> String:
@@ -119,70 +175,78 @@ func test_the_kind_split_is_driven_by_the_pack() -> void:
 		"placement must share the signposts' allocator, or an examine can land on a sign or an NPC")
 
 
-## ⛔ THE ARM THAT MATTERS: every arm above reads SOURCE. This builds the castle and counts what a
-## player would actually find, including that nothing shares a cell.
-func test_the_castle_actually_builds_its_examines() -> void:
-	var vp := SubViewport.new()
-	vp.size = Vector2i(64, 64)
-	vp.world_2d = World2D.new()
-	add_child_autofree(vp)
-	var castle = load(CASTLE).new()
-	vp.add_child(castle)
-	await get_tree().physics_frame
-	await get_tree().physics_frame
-
+## ⛔ THE ARM THAT MATTERS: every arm above reads SOURCE. This builds the castle on EVERY floor
+## and counts what a player would actually find — including floor 4, which is authored BARE, so
+## placing every examine on every floor is caught rather than merely unlikely. A room beat is
+## checked by its authored TEXT on a Signpost, because `DragonCave` adds signposts of its own
+## (floor label, stairs) and a count of them would not be the castle's.
+func test_the_castle_builds_each_floors_examines_and_no_others() -> void:
 	var authored := _castle_entries()
-	var floor_num: int = int(castle.current_floor)
-	var expected: Array = []
-	for examine_id in authored.keys():
-		if (castle._EXAMINE_MARKS.get(floor_num, {}) as Dictionary).has(examine_id):
-			expected.append(str(examine_id))
-	expected.sort()
-	assert_gt(expected.size(), 0,
-		"CONTROL: floor %d must carry examines, or this arm proves nothing" % floor_num)
+	var covered: Array = []
+	var placed_total := 0
+	for floor_num in [1, 2, 3, 4]:
+		var castle = await _build_on_floor(floor_num)
+		assert_not_null(castle, "CONTROL: the castle must build on floor %d" % floor_num)
+		if castle == null:
+			continue
+		assert_eq(int(castle.total_floors), 4,
+			"CONTROL: this arm walks floors 1-4; the castle now has %d" % int(castle.total_floors))
+		assert_eq(int(castle.current_floor), floor_num,
+			"CONTROL: floor %d was asked for and the castle built %d, so the rest of this arm would measure the wrong floor" % [
+				floor_num, int(castle.current_floor)])
 
-	var readables: Array = []
-	var cells: Dictionary = {}
-	var stack: Array = [castle]
-	while not stack.is_empty():
-		var n = stack.pop_back()
-		for c in n.get_children():
-			stack.append(c)
-		if n is Node2D and (n is ReadableProp or n is Signpost):
-			var cell: String = str(Vector2i((n as Node2D).position / float(castle.TILE_SIZE)))
-			if cells.has(cell):
-				fail_test("two readable things on cell %s: '%s' and '%s' — nearest-wins would hide one" % [
-					cell, str(cells[cell]), str(n.name)])
-			cells[cell] = str(n.name)
-		if n is ReadableProp and str(n.name).begins_with("Examine_"):
-			readables.append(str(n.name).trim_prefix("Examine_"))
+		var marks: Dictionary = castle._EXAMINE_MARKS.get(floor_num, {})
+		var want_props: Array = []
+		var want_beats: Array = []
+		for examine_id in marks.keys():
+			var entry: Dictionary = authored.get(examine_id, {}) if authored.get(examine_id, {}) is Dictionary else {}
+			if str((entry as Dictionary).get("prop", "")) == "room_beat":
+				want_beats.append(str((entry as Dictionary).get("text", "")))
+			else:
+				want_props.append(str(examine_id))
+		want_props.sort()
 
-	var room_beats: Array = []
-	var objects: Array = []
-	for examine_id in expected:
-		if str((authored[examine_id] as Dictionary).get("prop", "")) == "room_beat":
-			room_beats.append(examine_id)
-		else:
-			objects.append(examine_id)
-	readables.sort()
-	objects.sort()
-	assert_eq(readables, objects,
-		"floor %d should hold a ReadableProp for exactly its non-room_beat examines. built=%s expected=%s" % [
-			floor_num, str(readables), str(objects)])
-	gut.p("  floor %d: %d object examines as props, %d room beats as signposts" % [
-		floor_num, objects.size(), room_beats.size()])
+		var built_props: Array = []
+		var sign_texts: Array = []
+		var cells: Dictionary = {}
+		var stack: Array = [castle]
+		while not stack.is_empty():
+			var n = stack.pop_back()
+			for c in n.get_children():
+				stack.append(c)
+			if n is Node2D and (n is ReadableProp or n is Signpost):
+				var cell: String = str(Vector2i((n as Node2D).position / float(castle.TILE_SIZE)))
+				if cells.has(cell):
+					fail_test("floor %d: two readable things on cell %s: '%s' and '%s' — nearest-wins would hide one" % [
+						floor_num, cell, str(cells[cell]), str(n.name)])
+				cells[cell] = str(n.name)
+			if n is Signpost:
+				sign_texts.append(str((n as Signpost).sign_text))
+			if n is ReadableProp and str(n.name).begins_with("Examine_"):
+				built_props.append(str(n.name).trim_prefix("Examine_"))
+		built_props.sort()
+		assert_eq(built_props, want_props,
+			"floor %d should hold a ReadableProp for exactly its non-room_beat examines. built=%s expected=%s" % [
+				floor_num, str(built_props), str(want_props)])
+		for beat in want_beats:
+			assert_true(beat in sign_texts,
+				"floor %d: a room beat must reach the player as a Signpost carrying its authored text, and none does" % floor_num)
+		placed_total += want_props.size() + want_beats.size()
+		covered.append("f%d: %d props + %d beats" % [floor_num, want_props.size(), want_beats.size()])
+
+	assert_eq(covered.size(), 4, "CONTROL: all four floors must have been measured, got %s" % str(covered))
+	assert_eq(placed_total, authored.size(),
+		"CONTROL: the floors together must account for all %d authored entries, not %d — a mark on no floor reaches nobody" % [
+			authored.size(), placed_total])
+	gut.p("  " + ", ".join(covered))
 
 
 ## And one must actually open with the authored text, not an empty panel.
 func test_an_examine_opens_with_its_authored_text() -> void:
-	var vp := SubViewport.new()
-	vp.size = Vector2i(64, 64)
-	vp.world_2d = World2D.new()
-	add_child_autofree(vp)
-	var castle = load(CASTLE).new()
-	vp.add_child(castle)
-	await get_tree().physics_frame
-	await get_tree().physics_frame
+	var castle = await _build_on_floor(1)
+	assert_not_null(castle, "CONTROL: the castle must build on floor 1")
+	if castle == null:
+		return
 
 	var authored := _castle_entries()
 	var found: ReadableProp = null
