@@ -12,6 +12,7 @@ extends GutTest
 const BUBBLE_PATH := "res://src/battle/BattleSpeechBubble.gd"
 const BATTLE_SCENE_PATH := "res://src/battle/BattleScene.gd"
 const BATTLE_MANAGER_PATH := "res://src/battle/BattleManager.gd"
+const BATTLE_SCENE_SCRIPT = preload("res://src/battle/BattleScene.gd")
 
 
 func _read(p: String) -> String:
@@ -32,11 +33,20 @@ func test_component_exists_with_spawn_api() -> void:
 
 func test_suppression_threshold_is_4x_not_2x() -> void:
 	# THE user-facing bug: >= 2.0 hid every bubble for 2x-speed players.
+	## This arm pinned the source text "SUPPRESS_TIME_SCALE: float = 4.0" until 2026-10-12, so it
+	## passed for three months while the constant meant the 16x LABEL: a label is engine*4 under
+	## speed scale v3, and nothing rescaled this constant when that landed. A literal cannot carry
+	## which unit it is in, so the threshold is asserted against the ladder it has to agree with.
 	var src := _read(BUBBLE_PATH)
-	assert_true(src.contains("SUPPRESS_TIME_SCALE: float = 4.0"),
-		"Bubble suppression must kick in at 4x, not 2x — 2x players must still see bubbles")
 	assert_true(src.contains("Engine.time_scale >= SUPPRESS_TIME_SCALE"),
 		"spawn must gate on the SUPPRESS_TIME_SCALE const")
+	var speeds: Array = BATTLE_SCENE_SCRIPT.BATTLE_SPEEDS
+	var labels: Array = BATTLE_SCENE_SCRIPT.BATTLE_SPEED_LABELS
+	var i_4x: int = labels.find("4x")
+	assert_gt(i_4x, 0, "CONTROL: the speed ladder must carry a 4x label")
+	assert_almost_eq(BattleSpeechBubble.SUPPRESS_TIME_SCALE, float(speeds[i_4x]), 0.0001,
+		"suppression must begin AT the ladder's 4x entry (engine %s), not engine %s (label %sx)" \
+			% [speeds[i_4x], BattleSpeechBubble.SUPPRESS_TIME_SCALE, BattleSpeechBubble.SUPPRESS_TIME_SCALE * 4.0])
 	# The old hard-coded 2.0 gate must be gone from the delegate too.
 	var scene := _read(BATTLE_SCENE_PATH)
 	var fn_idx: int = scene.find("func _spawn_quip_bubble")
@@ -111,3 +121,25 @@ func test_llm_lines_stay_text_only() -> void:
 	var count: int = mgr.count("_emit_party_line(combatant, fallback, fallback_key)")
 	assert_eq(count, 5,
 		"All 5 deterministic fallback emit sites must pass the variant's voice key (got %d)" % count)
+
+
+## The rule as a player meets it: at 2x a bubble appears, at 4x it does not.
+func test_a_player_at_2x_sees_a_bubble_and_at_4x_does_not() -> void:
+	var speeds: Array = BATTLE_SCENE_SCRIPT.BATTLE_SPEEDS
+	var labels: Array = BATTLE_SCENE_SCRIPT.BATTLE_SPEED_LABELS
+	var saved: float = Engine.time_scale
+	var host := Control.new()
+	host.size = Vector2(1280, 720)
+	add_child_autofree(host)
+	var seen: Dictionary = {}
+	for want in ["1x", "2x", "4x", "8x"]:
+		var i: int = labels.find(want)
+		assert_gte(i, 0, "CONTROL: the ladder must carry a %s label" % want)
+		Engine.time_scale = float(speeds[i])
+		BattleSpeechBubble._live.clear()
+		seen[want] = BattleSpeechBubble.spawn(host, Vector2(320, 400), "Fighter", "A line.") != null
+	Engine.time_scale = saved
+	assert_true(seen["1x"], "a bubble must show at 1x")
+	assert_true(seen["2x"], "a bubble must show at 2x — this was the invisible-dialogue complaint")
+	assert_false(seen["4x"], "4x must suppress the bubble; the doc'd rule is 4x and up")
+	assert_false(seen["8x"], "8x must suppress the bubble")

@@ -84,10 +84,12 @@ func test_the_bubble_holds_for_the_whole_line() -> void:
 	var parent := Node2D.new()
 	add_child_autofree(parent)
 	var prior: float = Engine.time_scale
-	Engine.time_scale = 1.0
+	Engine.time_scale = BattleSpeechBubble.SUPPRESS_TIME_SCALE * 0.5
 	var b = BattleSpeechBubble.spawn(parent, Vector2(200, 200), "Mage", "...", Color.WHITE, 2.0, VOICE_KEY)
+	## The silent CONTROL is a spawn too, so it is taken before the restore (default 1.0 = 4x = suppressed).
+	var silent = BattleSpeechBubble.spawn(parent, Vector2(300, 200), "Fighter", "...", Color.WHITE, 2.0, "")
 	Engine.time_scale = prior
-	assert_not_null(b, "CONTROL: the bubble must spawn at 1x — a null here makes the assert below vacuous")
+	assert_not_null(b, "CONTROL: the bubble must spawn below the suppression threshold — a null here makes the assert below vacuous")
 	if b == null:
 		return
 	var clip: float = sm.play_voice(VOICE_KEY)
@@ -97,7 +99,6 @@ func test_the_bubble_holds_for_the_whole_line() -> void:
 		"the bubble held %.2fs, shorter than the %.2fs clip" % [b._hold_time, clip])
 	## CONTROL: a bubble with NO voice keeps the caller's hold. Without this the assert above is
 	## satisfied by any change that simply made all bubbles longer.
-	var silent = BattleSpeechBubble.spawn(parent, Vector2(300, 200), "Fighter", "...", Color.WHITE, 2.0, "")
 	assert_not_null(silent, "CONTROL: the silent bubble must spawn too")
 	if silent != null:
 		assert_almost_eq(silent._hold_time, 2.0 / maxf(1.0, Engine.time_scale), 0.01,

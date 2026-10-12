@@ -15,7 +15,7 @@ var _time_scale_before: float = 1.0
 func before_each() -> void:
 	BattleSpeechBubble._live.clear()
 	_time_scale_before = Engine.time_scale
-	Engine.time_scale = 1.0
+	Engine.time_scale = BattleSpeechBubble.SUPPRESS_TIME_SCALE * 0.5
 	_host = Control.new()
 	add_child_autofree(_host)
 

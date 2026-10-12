@@ -17,13 +17,21 @@ const BubbleScript = preload("res://src/battle/BattleSpeechBubble.gd")
 
 var _font: Font
 var _fsz: int
+var _saved_scale: float = 1.0
 
 
 func before_each() -> void:
+	## Label 2x by construction: below the suppression threshold whatever that threshold becomes.
+	_saved_scale = Engine.time_scale
+	Engine.time_scale = BattleSpeechBubble.SUPPRESS_TIME_SCALE * 0.5
 	var lbl := Label.new()
 	add_child_autofree(lbl)
 	_font = lbl.get_theme_font("font")
 	_fsz = TextScale.scaled(13)
+
+
+func after_each() -> void:
+	Engine.time_scale = _saved_scale
 
 
 func _rows(text: String, width: float) -> int:
