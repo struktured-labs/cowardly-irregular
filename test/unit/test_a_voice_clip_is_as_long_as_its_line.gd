@@ -101,10 +101,20 @@ func test_every_clip_runs_at_a_plausible_speaking_rate() -> void:
 	var median: float = rates[rates.size() / 2]
 	## A broken join would make every line length 0 or 1 and the median absurd; 0.03..0.30 brackets
 	## every plausible speaking rate and nothing else.
-	assert_between(median, 0.03, 0.30,
-		"the median rate is %.4f s/char, which is not a speaking rate — the line join is broken, so the band below means nothing" % median)
+	## ⛔ THE REFERENCE ITSELF IS BOUNDED, because a relative band goes blind exactly when everything
+	## breaks at once: regenerate the whole pack against a cold server and the median moves WITH the
+	## corpus, so every empty clip reads as 1.0x of an empty median (@cowir-music raised this; the
+	## scenario is reachable — a full 627-clip regeneration, where a 56-clip Fighter recast is only 9%
+	## and reds per-clip). MEASURED with 320 of 627 planted empty: the median collapses to 0.0044 and
+	## this fires. Two bounds, not one — the clip against the median, and the median against reality.
+	var median_is_sane: bool = median >= 0.03 and median <= 0.30
+	assert_true(median_is_sane,
+		("the median rate is %.4f s/char, which is not a speaking rate at all, so the per-clip band below has no reference and is not run. TWO causes, and the per-clip floor tells you which: if many clips are also under %.2fs, the RENDERS are bad (a whole pack regenerated against a cold or misconfigured server); if they are fine, the line JOIN is broken and the denominators are wrong.") % [median, MIN_CLIP_S])
 	var odd: Array = []
-	for c in clips:
+	## Only while the reference means something. With a collapsed median the band inverts and names
+	## the HEALTHY clips as outliers — a long list pointing at the files that are fine, next to the one
+	## message that names the true cause. The run is red either way; this keeps it red for one reason.
+	for c in (clips if median_is_sane else []):
 		var n: int = str(c["line"]).length()
 		if n < MIN_LINE_CHARS:
 			continue
