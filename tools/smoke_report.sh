@@ -271,8 +271,14 @@ sys.exit(0 if b'\x00' in open('$dir/nul.log','rb').read() else 1)" \
         local others; others="$(command grep -aoE 'print\("\[SMOKE\] [A-Za-z_]+' <<< "$code" \
             | sed -E 's/.*\[SMOKE\] //' | sort -u | command grep -avE '^(VERDICT|FAIL|wipe)$' | tr '\n' ' ')"
         printf '  info  other [SMOKE] kinds in the emitter: %s\n' "${others:-none}"
+    elif git rev-parse --show-toplevel >/dev/null 2>&1; then
+        # Same shape as cue_trace.sh above. Here a moved emitter WAS caught — by the
+        # _prefixes_present control arm, not by this skip. Detection via a neighbour costs the
+        # explanation (@cowir-overworld), so this says it directly.
+        fail=$((fail+1))
+        printf '  FAIL  %-54s\n' "the emitter MOVED — $src is gone from this tree"
     else
-        printf '  SKIP  %-54s (no %s from this cwd)\n' "emitter prefixes still exist" "$src"
+        printf '  SKIP  %-54s (not in a git tree; the chain always is)\n' "emitter prefixes still exist"
     fi
 
     echo
