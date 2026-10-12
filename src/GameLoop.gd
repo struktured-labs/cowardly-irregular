@@ -875,7 +875,12 @@ func _on_llm_inference_failed(_mode: String, reason: String) -> void:
 	surface the "unavailable" breadcrumb for genuine backend-availability
 	failures; quiet otherwise (whitelist, so a future outage reason simply won't
 	toast rather than mis-toast as available)."""
-	const _AVAILABILITY_REASONS := ["no ready backend", "request failed or cancelled", "client_timeout"]
+	## "backend cannot produce JSON" belongs here: only NullBackend declares supports_json() false
+	## (HTTPBackend returns true unconditionally), and NullBackend being ACTIVE means no real backend
+	## is ready — so it cannot mis-toast a healthy one. Without it a player whose only LLM feature is
+	## JSON-mode (Boss Strategy alone) heard nothing, because text and choose never ran to fail.
+	const _AVAILABILITY_REASONS := ["no ready backend", "request failed or cancelled", "client_timeout",
+		"backend cannot produce JSON"]
 	if reason not in _AVAILABILITY_REASONS:
 		return  # quiet: guard rejection from a working backend, not an outage
 	if _llm_notice_shown:
