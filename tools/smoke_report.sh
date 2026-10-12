@@ -163,10 +163,16 @@ sys.exit(0 if b'\x00' in open('$dir/nul.log','rb').read() else 1)" \
     local src="src/GameLoop.gd"
     if [ -f "$src" ]; then
         local sites miss=0 pfx
-        sites="$(command grep -ac 'print("\[SMOKE\] \(VERDICT:\|FAIL:\|wipe:\)' "$src" || true)"
+        sites="$(command grep -ac '^[^#]*print("\[SMOKE\] \(VERDICT:\|FAIL:\|wipe:\)' "$src" || true)"
         case "$sites" in ''|*[!0-9]*) sites=0 ;; esac
         for pfx in 'VERDICT:' 'FAIL:' 'wipe:'; do
-            command grep -aq "print(\"\[SMOKE\] ${pfx}" "$src" || {
+            # ⛔ THE QUIET DIRECTION, AND IT IS THE DANGEROUS ONE. This asks "does the emitter
+            # still print this prefix", and a COMMENT mentioning the prefix answers YES. Measured:
+            # a file whose only FAIL: mention is `# the gate greps for print("[SMOKE] FAIL: …")`
+            # reported present=1 with real prints=0 — the dead-pattern guard passes while the
+            # extraction matches nothing. Same class as @cowir-music's phantom, opposite
+            # direction: theirs reds loudly, this one goes green and certifies a dead pattern.
+            command grep -aq "^[^#]*print(\"\[SMOKE\] ${pfx}" "$src" || {
                 miss=$((miss+1))
                 printf '  FAIL  %-54s\n' "the emitter no longer prints [SMOKE] ${pfx}"
             }
