@@ -709,19 +709,14 @@ func _maybe_run_battle_smoke() -> void:
 		for m in party:
 			if m and is_instance_valid(m):
 				m.current_hp = 1
+		# Top of the speed ladder for this leg only: Engine.time_scale multiplies delta, so a
+		# saturated box advances more game time per rendered frame instead of fewer rounds.
+		var _speed_was: int = BattleSceneScript._battle_speed_index
+		BattleSceneScript._battle_speed_index = BattleSceneScript.BATTLE_SPEEDS.size() - 1
 		await _start_battle_async(["shadow_dragon"], true)
-		var game_over_node: Node = null
-		while game_over_node == null and Time.get_ticks_msec() < SMOKE_WIPE_DEADLINE_MS:
-			await get_tree().create_timer(0.5).timeout
-			for c in get_children():
-				if c is GameOverScreen:
-					game_over_node = c
-					break
-		if game_over_node == null:
-			var fighting: bool = BattleManager.current_state != BattleManager.BattleState.INACTIVE
-			print("[SMOKE] game_over screen never appeared by %.0fs process age (%s)" % [Time.get_ticks_msec() / 1000.0, "battle still running" if fighting else "battle ended without a game over"])
-			_smoke_failed = true
-		else:
+		var game_over_node: Node = await _smoke_await_wipe()
+		BattleSceneScript._battle_speed_index = _speed_was
+		if game_over_node != null:
 			await get_tree().create_timer(1.0).timeout
 			await _smoke_shot("game_over", 0.97)
 	await get_tree().create_timer(0.2).timeout
@@ -729,8 +724,27 @@ func _maybe_run_battle_smoke() -> void:
 	get_tree().quit(1 if _smoke_failed else 0)
 
 
-## The wipe waits on wall clock up to this process age: a loaded box took 73-95s where 30 game-seconds sufficed quiet; kept inside deploy_web.sh's `timeout 300`.
-const SMOKE_WIPE_DEADLINE_MS := 280000
+## ⛔ THE WIPE LEG WAS BOUNDED BY ABSOLUTE PROCESS AGE AND IT CONFLATED TWO OUTCOMES.
+## Measured 2026-10-12 at load 23.84/24: the leg got 192.7s of its 280s budget, advanced rounds the
+## whole time, produced no game over, and printed "game_over screen never appeared" — which reads as
+## a game-over REGRESSION and was a slow box. Same wedge-read-as-a-red substitution as exit 124.
+##
+## Two independent bounds now, because they mean opposite things, and the ORDER is the semantics:
+##   ended_without_game_over  the battle finished and no screen came up. A real bug.
+##   stalled   no round advanced in SMOKE_WIPE_STALL_MS -> the battle stopped progressing. A real bug.
+##   budget    rounds still advancing but the leg outran SMOKE_WIPE_BUDGET_MS -> a slow box, not a bug.
+## Stall is checked BEFORE budget so a frozen battle is never reported as a slow box. Both are
+## measured on Time.get_ticks_msec() (unscaled by Engine.time_scale) and RELATIVE to the leg's own
+## start, so legs added upstream can no longer eat this one's window — the old absolute form
+## silently shrank it by every second anything before it spent.
+const SMOKE_WIPE_BUDGET_MS := 90000
+const SMOKE_WIPE_STALL_MS := 25000
+## The verdict must print before deploy_web.sh's outer `timeout 300` SIGTERMs us: a kill at 300s
+## leaves no VERDICT line, which is indistinguishable from a crash.
+const SMOKE_VERDICT_FLOOR_MS := 285000
+## Which bound tripped, for the smoke's own report and for the guard — the distinction this fix
+## exists to make is state, not only a print.
+var _smoke_wipe_reason: String = ""
 var _smoke_failed: bool = false
 
 
@@ -795,6 +809,60 @@ func _smoke_tap(action: String) -> void:
 ## (cowir-deploy, .265 web) — and it got worse today because several dead-lookup repairs turned
 ## monster moods and elite spawning on for the first time. Re-applied per shot: every map leg
 ## builds a fresh scene with a fresh spawner.
+## Which bound (if any) has tripped. STATIC and pure so the guard can drive every branch without a
+## GameLoop: no test can instantiate one, and a loop that only reports by `print` is not assertable.
+static func smoke_wipe_verdict(elapsed_ms: int, since_progress_ms: int, fighting: bool,
+		budget_ms: int, stall_ms: int) -> String:
+	if not fighting:
+		return "ended_without_game_over"
+	if since_progress_ms >= stall_ms:
+		return "stalled"
+	if elapsed_ms >= budget_ms:
+		return "budget"
+	return ""
+
+
+## Wait for the party wipe to produce a GameOverScreen, bounded by PROGRESS rather than by the clock.
+## Returns the screen, or null having already said which bound tripped and what it means.
+func _smoke_await_wipe() -> Node:
+	var leg_start: int = Time.get_ticks_msec()
+	var last_round: int = -1
+	var last_progress: int = leg_start
+	## Constant for the leg: its own budget, clamped so the VERDICT still prints before the outer
+	## `timeout 300`. maxi keeps it positive if an upstream leg has already spent the floor.
+	var budget: int = mini(SMOKE_WIPE_BUDGET_MS, maxi(1000, SMOKE_VERDICT_FLOOR_MS - leg_start))
+	_smoke_wipe_reason = ""
+	while true:
+		for c in get_children():
+			if c is GameOverScreen:
+				_smoke_wipe_reason = "game_over"
+				print("[SMOKE] wipe: game over after %.1fs at round %d" % [
+					(Time.get_ticks_msec() - leg_start) / 1000.0, BattleManager.current_round])
+				return c
+		await get_tree().create_timer(0.25).timeout
+		var now: int = Time.get_ticks_msec()
+		if BattleManager.current_round != last_round:
+			last_round = BattleManager.current_round
+			last_progress = now
+		var fighting: bool = BattleManager.current_state != BattleManager.BattleState.INACTIVE
+		_smoke_wipe_reason = smoke_wipe_verdict(now - leg_start, now - last_progress, fighting,
+			budget, SMOKE_WIPE_STALL_MS)
+		match _smoke_wipe_reason:
+			"":
+				continue
+			"ended_without_game_over":
+				print("[SMOKE] FAIL: wipe battle ended at round %d with no game over screen" % last_round)
+			"stalled":
+				print("[SMOKE] FAIL: wipe STALLED — no round advanced in %.0fs (stuck at round %d, %.1fs into the leg)" % [
+					(now - last_progress) / 1000.0, last_round, (now - leg_start) / 1000.0])
+			"budget":
+				print("[SMOKE] FAIL: wipe leg OUTRAN ITS BUDGET after %.1fs while still advancing (round %d) — a slow box, not a missing game over" % [
+					(now - leg_start) / 1000.0, last_round])
+		_smoke_failed = true
+		return null
+	return null
+
+
 func _smoke_quiet_the_roamers() -> void:
 	if current_scene == null or not is_instance_valid(current_scene):
 		return
