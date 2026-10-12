@@ -54,7 +54,7 @@ const DECLARED := {
 		"three summary numbers about the music corpus (median_lufs / n_tracks / outlier_bound_lu); its own guard records that NOTHING invokes tools/audit_loudness.py, which is the larger gap and is out of scope here",
 		"res://test/unit/test_the_loudness_baseline_still_describes_the_corpus.gd"],
 	"victory_downbeats.json": ["BASELINE",
-		"per-bed first-downbeat offsets, compared against the audio to catch a re-trim. Its guard's header also records an intent that never landed — the victory overlay's title slam landing ON the downbeat, and VictoryOverlay._build_slam reads nothing. Recorded so it is not rediscovered as a gap: @cowir-sfx's ruling is that aligning the slam is a feature idea, not an unshipped feature",
+		"per-bed first-downbeat offsets, compared against the audio to catch a re-trim. It is ALSO becoming runtime input — @cowir-music's lane/the-victory-slam-lands-on-the-downbeat reads it so the title slam lands on the beat, authorised by struktured — and it stays declared here because a baseline with a reader is still a baseline. Two of the seven beds have no agreed downbeat and return 'do not wait', so the pack records its purpose AND the reason that purpose is only half servable",
 		"res://test/unit/test_victory_downbeats_match_the_audio_regression.gd"],
 	"examine_texts.json": ["UNWIRED",
 		"26 examines / 915 words; 11 key to castle_harmonia, a real map id, and 15 to village_harmonia-style hints that name the MUSIC BEDS, not the maps (harmonia_village). @cowir-overworld's ruling: re-key the pack rather than teach the consumer a second source of truth for map identity",
@@ -129,16 +129,28 @@ func test_every_data_pack_is_reached_from_src_or_declared() -> void:
 		"a content pack no src path loads is prose the player cannot reach — wire it, or declare it here with its reason: %s" % [silent])
 
 
-func test_no_declaration_outlives_the_gap_it_describes() -> void:
-	## A declaration must expire with the gap. Wire examine_texts.json and this reds until its line
-	## goes — which is the only thing that keeps the roster from becoming a list of excuses.
+## The PENDING kinds — the ones whose declaration describes something still missing.
+const PENDING_KINDS: Array[String] = ["UNWIRED", "SUPERSEDED"]
+
+
+func test_no_pending_declaration_outlives_the_gap_it_describes() -> void:
+	## A PENDING declaration must expire with its gap. Wire examine_texts.json and this reds until
+	## its line goes — the only thing that keeps the roster from becoming a list of excuses.
+	##
+	## ⛔ SCOPED TO THE PENDING KINDS, AND THE SCOPE IS THE POINT. A BASELINE's gap is not "nothing
+	## reads it" — it is a claim about an artifact, and its expiry condition is its CITATION, checked
+	## below. A baseline may also become runtime input without ceasing to be a baseline: measured
+	## 2026-10-12, @cowir-music's lane/the-victory-slam-lands-on-the-downbeat gives
+	## victory_downbeats.json a reader (SoundManager.seconds_until_victory_downbeat) while
+	## test_victory_downbeats_match_the_audio_regression keeps comparing it to the audio. An
+	## unscoped version of this arm would have red THEIR branch and pointed at MY file for the fix.
 	var code: String = str(_reach()["code"])
 	var stale: Array[String] = []
 	for f in DECLARED:
-		if code.contains(str(f)):
+		if str(DECLARED[f][0]) in PENDING_KINDS and code.contains(str(f)):
 			stale.append(str(f))
 	assert_eq(stale, ([] as Array[String]),
-		"these packs are loaded by src/ now, so their declarations are excuses for a gap that is closed: %s" % [stale])
+		"these packs are loaded by src/ now, so their pending declarations describe a gap that is closed: %s" % [stale])
 
 
 func test_every_declaration_names_a_pack_that_exists() -> void:
@@ -196,7 +208,7 @@ func test_the_pending_packs_stay_named() -> void:
 		var kind: String = str(DECLARED[f][0])
 		if not (kind in kinds):
 			kinds.append(kind)
-		if kind in ["UNWIRED", "SUPERSEDED"]:
+		if kind in PENDING_KINDS:
 			pending_packs.append("%s [%s] — %s" % [f, kind, DECLARED[f][1]])
 	for kind in kinds:
 		assert_true(kind in ["BASELINE", "TOOLING", "UNWIRED", "SUPERSEDED"],
