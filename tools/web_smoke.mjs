@@ -111,7 +111,13 @@ if (booted && errors.length === 0) {
   await page.keyboard.press('Enter');   // Press Start
   await page.waitForTimeout(2000);
   await page.keyboard.press('Enter');   // confirm first menu row (New Game)
-  await page.waitForTimeout(12000);     // prologue cutscene / scene load
+  // 12s of scene load. NOT a prologue: `_on_title_new_game` ends "Go straight to exploration —
+  // prologue triggers on first Theron interaction" (GameLoop.gd:2060), so a New Game lands on the
+  // overworld with no cutscene. The old comment here said "prologue cutscene", and that stale word
+  // is why this gate's green history was read as evidence that stage 3 can clear a cutscene. It is
+  // not: since the prologue moved, NOTHING in this path has put one up, so the retry loop below has
+  // not been exercised against one since v3.33.199.
+  await page.waitForTimeout(12000);
   await page.screenshot({ path: 'tmp/web_smoke_ingame.png' });
 }
 
@@ -122,13 +128,51 @@ if (booted && errors.length === 0) {
 // the pck grew — Escape landed mid-cutscene, did nothing, and stage 4's arrows
 // walked the character into an encounter. Now we press Escape until the
 // engine-side "[MENU] Overworld menu opened" line confirms, up to ~24s.
+// ⛔ A TAP CANNOT SKIP A CUTSCENE, SO MORE TAPS ARE NOT MORE PROGRESS. CutsceneDirector skips on
+// ui_cancel HELD for SKIP_THRESHOLD = 1.5s, accumulated in _process and reset to 0 on any frame the
+// key is not down (CutsceneDirector.gd:280-295) — `keyboard.press()` is down+up in one go, so it
+// contributes nothing and twelve of them contribute nothing twelve times. (@cowir-controller
+// measured the threshold, @cowir-main relayed it.)
+//
+// ⚠️ A tap is not INERT, though, and the distinction matters for the failure text: while the
+// dialogue box is up, ui_cancel reaches CutsceneDialogue._input and calls _finish_dialogue(), which
+// ends the CURRENT queue (CutsceneDialogue.gd:1279). So taps walk a dialogue-only scene forward one
+// step at a time and are defeated by a Director-driven one. "Never clears a cutscene" is true of the
+// Director's skip and false of the box.
+//
+// ⛔ AND THE HOLD HAS ITS OWN HAZARD, WHICH IS WHY IT RUNS LAST AND ONLY ON A DOOMED PATH.
+// OverworldMenu.is_toggle_event's Escape branch has NO is_echo() guard
+// (`if event is InputEventKey and event.pressed: return event.keycode == KEY_ESCAPE`,
+// OverworldMenu.gd:121-122), so a HELD Escape re-fires the toggle at OS key-repeat rate and can
+// open and close the menu an even number of times — leaving it shut with the marker already
+// printed, which stage 4 would then drive blind. So: taps first, exactly as before; the hold is
+// reached ONLY after the taps have failed, i.e. only on a path that is already a guaranteed RED,
+// where it cannot make a passing publish fail. After the hold, tap again to open the menu.
 if (booted && errors.length === 0) {
+  let holds = 0, taps = 0;
   for (let tries = 0; tries < 12 && !menuOpened; tries++) {
     await page.keyboard.press('Escape');
+    taps++;
     await page.waitForTimeout(2000);
   }
+  // Only a cutscene (or a wedge) gets us here. HOLD past SKIP_THRESHOLD, then tap for the menu.
+  for (let round = 0; round < 2 && !menuOpened; round++) {
+    await page.keyboard.down('Escape');
+    await page.waitForTimeout(1700);        // > 1.5s, with margin for a slow frame under load
+    await page.keyboard.up('Escape');
+    holds++;
+    await page.waitForTimeout(1000);
+    for (let tries = 0; tries < 3 && !menuOpened; tries++) {
+      await page.keyboard.press('Escape');
+      taps++;
+      await page.waitForTimeout(1500);
+    }
+  }
   await page.screenshot({ path: 'tmp/web_smoke_menu.png' });
-  if (!menuOpened) errors.push('stage3: overworld menu never opened after 12 Escape retries — input locked, cutscene wedged, or menu print removed');
+  if (!menuOpened) errors.push(`stage3: overworld menu never opened after ${taps} Escape tap(s) `
+    + `and ${holds} hold(s) of 1700ms (a hold past CutsceneDirector's 1.5s skip threshold) — `
+    + `input locked, a cutscene that neither a tap nor a hold dismisses, or the menu print removed`);
+  else if (holds > 0) console.log(`[WEB-SMOKE] stage3 needed ${holds} Escape HOLD(s) — something had the screen; a tap-only gate would have failed here`);
 }
 
 // Stage 4: save → reload → Continue. THE web-only stakes path: user:// on
