@@ -298,15 +298,19 @@ func _build_equipment_column(member, x: float, y: float, w: float, h: float) -> 
 	section_title.add_theme_color_override("font_color", LABEL)
 	_detail_panel.add_child(section_title)
 
+	## ⛔ THE STRIDE IS WHAT THE ROW ACTUALLY USED, NOT A FIXED 44. A row draws its slot label
+	## at y, the item name at y+32 and the description at y+32 — so a description that wraps to
+	## two lines reaches y+56 and lands ON TOP of the next slot's label at y+44. Rendered with
+	## The Returned Sword equipped, "Armor" and the description's second line are overprinted
+	## into unreadable mush. 44 was only ever enough for a one-line description.
 	var cy := y + 28.0
-	_add_equipment_row("Weapon", member.equipped_weapon if "equipped_weapon" in member else "", WEAPON_COLOR, x, cy, w)
-	cy += 44
-	_add_equipment_row("Armor", member.equipped_armor if "equipped_armor" in member else "", ARMOR_COLOR, x, cy, w)
-	cy += 44
+	cy += _add_equipment_row("Weapon", member.equipped_weapon if "equipped_weapon" in member else "", WEAPON_COLOR, x, cy, w)
+	cy += _add_equipment_row("Armor", member.equipped_armor if "equipped_armor" in member else "", ARMOR_COLOR, x, cy, w)
 	_add_equipment_row("Accessory", member.equipped_accessory if "equipped_accessory" in member else "", ACCESSORY_COLOR, x, cy, w)
 
 
-func _add_equipment_row(slot_label: String, item_id: String, color: Color, x: float, y: float, w: float) -> void:
+## Returns the vertical space this row consumed, so the caller can place the next one below it.
+func _add_equipment_row(slot_label: String, item_id: String, color: Color, x: float, y: float, w: float) -> float:
 	var slot := Label.new()
 	slot.text = slot_label
 	slot.position = Vector2(x, y)
@@ -329,15 +333,27 @@ func _add_equipment_row(slot_label: String, item_id: String, color: Color, x: fl
 	name_label.add_theme_color_override("font_color", color)
 	_detail_panel.add_child(name_label)
 
-	if item_desc != "":
-		var desc := Label.new()
-		desc.text = item_desc
-		desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		desc.position = Vector2(x, y + 32)
-		desc.size = Vector2(w, 30)
-		desc.add_theme_font_size_override("font_size", TextScale.scaled(10))
-		desc.add_theme_color_override("font_color", MUTED)
-		_detail_panel.add_child(desc)
+	if item_desc == "":
+		return 44.0
+
+	var desc := Label.new()
+	desc.text = item_desc
+	desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	desc.position = Vector2(x, y + 32)
+	desc.add_theme_font_size_override("font_size", TextScale.scaled(10))
+	desc.add_theme_color_override("font_color", MUTED)
+	_detail_panel.add_child(desc)
+	## Measured AFTER add_child so the theme font resolves, and the row's height comes from the
+	## wrapped text rather than from a guess. 30 was the band; 44 was the stride; neither moved
+	## when the text needed a second line.
+	var fnt: Font = desc.get_theme_font("font")
+	var fsz: int = desc.get_theme_font_size("font_size")
+	var wrapped: Vector2 = Vector2(w, 14.0)
+	if fnt != null:
+		wrapped = fnt.get_multiline_string_size(item_desc, HORIZONTAL_ALIGNMENT_LEFT, w, fsz)
+	var desc_h: float = maxf(wrapped.y, 14.0)
+	desc.size = Vector2(w, desc_h)
+	return maxf(44.0, 32.0 + desc_h + 6.0)
 
 
 func _build_abilities_column(member, x: float, y: float, w: float, h: float) -> void:
