@@ -67,10 +67,19 @@ func test_the_wipe_waits_on_wall_clock_not_game_time() -> void:
 
 ## The .498 demand, now structural: a run that gave up must say WHICH bound tripped, because a slow
 ## box and a hung battle want opposite responses — re-run, versus fix the tree.
+##
+## ⛔ THE PATTERN CARRIES THE COLON ON PURPOSE. This arm first read `contains('"stalled"')`, which the
+## verdict function satisfies all by itself with `return "stalled"` — so renaming the MATCH ARM that
+## prints the stall message left this green. Measured: with the bare string, renaming `"stalled":`
+## passed 12/12 across both guard files; with the colon it reds and names this arm. The arm this
+## replaced in .498 was scoped to the wipe BLOCK, and the file-scoped version I shipped in .658 was
+## weaker than what it replaced while reading as stronger — @cowir-battle's rule, that a guard you
+## edit to go green must prove it still catches what it was written for, is what surfaced it.
+## `":"` is the whole difference between "this token appears somewhere" and "this branch exists".
 func test_slow_and_hung_stay_distinguishable() -> void:
 	var src := FileAccess.get_file_as_string("res://src/GameLoop.gd")
 	for reason in ["stalled", "budget", "ended_without_game_over"]:
-		assert_true(src.contains('"%s"' % reason),
+		assert_true(src.contains('"%s":' % reason),
 			"the wipe must be able to report '%s'; collapsing the reasons is what made a slow box read as a regression" % reason)
 	assert_true(src.contains("a slow box, not a missing game over"),
 		"the budget message must say in words that this is not a game-over defect")
