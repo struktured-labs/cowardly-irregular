@@ -198,6 +198,20 @@ const _LORE := {
 }
 
 
+## Where each authored castle NPC stands. The LINES are not here — they live in
+## `data/castle_harmonia_narrative.json`, which has been authored and unreachable since 2026-07-13
+## (cowir-story's census: 510 words, no `src` consumer). Floor and role come from the pack too; this
+## table carries only what the pack cannot know, which is the cell.
+const _NPC_MARKS := {
+	"castle_guard_young": Vector2(6, 8),
+	"castle_guard_captain": Vector2(14, 6),
+	"castle_guard_bureaucrat": Vector2(7, 5),
+	"castle_servant_witness": Vector2(13, 4),
+	"castle_guard_husk": Vector2(8, 2),
+}
+const _NARRATIVE_PACK := "res://data/castle_harmonia_narrative.json"
+
+
 func _setup_transitions_for_floor(floor_num: int) -> void:
 	super._setup_transitions_for_floor(floor_num)
 	for entry in (_LORE.get(floor_num, []) as Array):
@@ -205,6 +219,70 @@ func _setup_transitions_for_floor(floor_num: int) -> void:
 		sign.sign_text = str(entry["text"])
 		sign.position = _sign_position(Vector2i(entry["pos"] as Vector2), floor_num)
 		transitions.add_child(sign)
+	_place_castle_npcs(floor_num)
+
+
+## The castle had ZERO NPCs — success criterion 4 of `docs/design/w1-progression-expansion.md` is
+## "fighting corrupt guards, reading environmental storytelling, then face Mordaine", and only the
+## fighting and the signposts had landed.
+##
+## ⛔ PLACED THROUGH `_sign_position`, NOT BY RAW CELL, and that is the whole reason this cannot
+## stack. It resolves a mark to a walkable floor spot and consumes `_sign_taken`, the same set the
+## signposts draw from — so an NPC can never land on a sign's cell or another NPC's, and interaction
+## is nearest-wins, which is exactly how two Harmonia librarians made one of them unreachable
+## (`InteriorPlacementSweep`, .344). Reusing the signs' allocator gets that for free rather than
+## reserving cells a second way.
+##
+## Same container as the signposts on purpose: the castle rebuilds per floor, and anything parented
+## elsewhere would survive a floor change and show up on the wrong one.
+func _place_castle_npcs(floor_num: int) -> void:
+	var pack: Dictionary = _load_narrative_pack()
+	var npcs: Dictionary = pack.get("npcs", {}) if pack.get("npcs", {}) is Dictionary else {}
+	for npc_id in _NPC_MARKS.keys():
+		var authored: Dictionary = npcs.get(npc_id, {}) if npcs.get(npc_id, {}) is Dictionary else {}
+		if authored.is_empty():
+			push_warning("[castle_harmonia] no authored entry for '%s' — placing nothing rather than an NPC with no lines" % npc_id)
+			continue
+		if int(authored.get("floor", 0)) != floor_num:
+			continue
+		var lines: Array = authored.get("lines", []) if authored.get("lines", []) is Array else []
+		if lines.is_empty():
+			push_warning("[castle_harmonia] '%s' is authored with no lines — a silent NPC advertises a talk it cannot have" % npc_id)
+			continue
+		var npc := OverworldNPC.new()
+		npc.name = "CastleNPC_" + str(npc_id)
+		npc.npc_id = str(npc_id)
+		npc.npc_name = str(authored.get("display_name", _display_name_for(str(npc_id))))
+		npc.npc_type = "guard" if str(authored.get("role", "")) == "corrupt_guard" else "villager"
+		var typed: Array = []
+		for l in lines:
+			typed.append(str(l))
+		npc.dialogue_lines = typed
+		npc.position = _sign_position(Vector2i(_NPC_MARKS[npc_id] as Vector2), floor_num)
+		transitions.add_child(npc)
+
+
+## The pack carries no display names, so they are derived from the id rather than duplicated:
+## a second copy of a name is a second thing to keep in step.
+func _display_name_for(npc_id: String) -> String:
+	var trimmed: String = npc_id.trim_prefix("castle_")
+	var words: PackedStringArray = trimmed.split("_")
+	var out: Array = []
+	for w in words:
+		out.append(str(w).capitalize())
+	return " ".join(out)
+
+
+func _load_narrative_pack() -> Dictionary:
+	if not FileAccess.file_exists(_NARRATIVE_PACK):
+		push_warning("[castle_harmonia] %s is missing — the castle falls back to signposts only" % _NARRATIVE_PACK)
+		return {}
+	var raw: String = FileAccess.get_file_as_string(_NARRATIVE_PACK)
+	var parsed = JSON.parse_string(raw)
+	if not (parsed is Dictionary):
+		push_warning("[castle_harmonia] %s did not parse as a dictionary" % _NARRATIVE_PACK)
+		return {}
+	return parsed as Dictionary
 
 
 func _ready() -> void:
