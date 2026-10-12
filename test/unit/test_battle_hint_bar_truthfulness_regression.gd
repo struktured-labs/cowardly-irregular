@@ -16,6 +16,19 @@ extends GutTest
 const WIN98_PATH := "res://src/ui/Win98Menu.gd"
 const BATTLE_PATH := "res://src/battle/BattleScene.gd"
 
+## The marker that finds the DERIVED bar in Win98Menu's source. It was "Speed  ·  %s Auto" — an
+## ADJACENCY, which is exactly the coincidental pin this suite forbids elsewhere: adding Repeat
+## between Speed and Auto (2026-10-12) broke it, and the two arms below went to a PRECONDITION
+## rather than checking the live bar. Anchored at the bar's HEAD instead, because tokens are
+## appended at the tail; the brackets are what keep it off the keyboard bar's "[%s] Defer".
+const DERIVED_BAR_MARKER := "%s Defer  ·  %s Advance"
+
+## And the FOURTH bar: _keyboard_hint_text's format string, which is what a keyboard player
+## actually reads (the const above it is only its fallback). Adding Repeat meant editing four
+## bars while this arm checked three — the unchecked one being the live surface, which is this
+## file's own stated defect class. The brackets distinguish it from the pad bar's "%s Defer".
+const DERIVED_KEYBOARD_MARKER := "[%s] Defer  ·  [%s] Advance"
+
 
 func _read(path: String) -> String:
 	var text := FileAccess.get_file_as_string(path)
@@ -125,9 +138,9 @@ func test_every_bracketed_hint_in_the_bar_is_accounted_for() -> void:
 	assert_gt(tokens.size(), 3, "positive control: the bar must yield its bracketed hints")
 
 	# [L]/[R]/[Select]/[Start/Plus/Options] are InputMap actions, checked by
-	# test_hint_bar_actions_have_real_joypad_bindings. [X] is a raw button check, covered by
-	# test_speed_toggle_is_actually_wired_to_the_advertised_button.
-	var accounted := {"[L]": true, "[R]": true, "[Select/Back/Share]": true, "[X]": true, "[Start/Plus/Options]": true, "[L3/L-Stick]": true}
+	# test_hint_bar_actions_have_real_joypad_bindings. [X] and [Y] are the two RAW buttons, covered by
+	# test_speed_toggle_ and test_repeat_is_actually_wired_to_the_advertised_button respectively.
+	var accounted := {"[L]": true, "[R]": true, "[Select/Back/Share]": true, "[X]": true, "[Y]": true, "[Start/Plus/Options]": true, "[L3/L-Stick]": true}
 	var unaccounted: Array[String] = []
 	for t in tokens:
 		if not accounted.has(t):
@@ -176,6 +189,26 @@ func test_speed_toggle_is_actually_wired_to_the_advertised_button() -> void:
 			kb_wired = true
 	assert_true(kb_wired,
 		"the keyboard half (` key) must call _toggle_battle_speed, same reasoning")
+
+
+## Repeat joined the bar on 2026-10-12 and is the SECOND raw claim in it, so it needs its own
+## check for the same reason Speed does: there is no action to resolve, the button is compared
+## raw in an `if`, and the token would otherwise be a promise nothing in this file verifies.
+func test_repeat_is_actually_wired_to_the_advertised_button() -> void:
+	var lines := _read(BATTLE_PATH).split("\n")
+	var wired := false
+	for i in lines.size():
+		if lines[i].contains("JOY_BUTTON_X") and _calls_within_block(lines, i, "_repeat_previous_actions("):
+			wired = true
+	assert_true(wired,
+		"the [Y] hint promises the WEST face repeats last turn's actions — JOY_BUTTON_X must actually CALL _repeat_previous_actions")
+
+	var kb_wired := false
+	for i in lines.size():
+		if lines[i].contains("KEY_Y") and _calls_within_block(lines, i, "_repeat_previous_actions("):
+			kb_wired = true
+	assert_true(kb_wired,
+		"the keyboard half (Y key) must call _repeat_previous_actions, same reasoning")
 
 
 ## The source comment claimed "Tab or ` key" for speed. Tab is battle_toggle_auto, so that comment
@@ -299,7 +332,7 @@ func _authored_bar(marker: String) -> String:
 func test_every_authored_bar_names_the_same_controls() -> void:
 	var fallback := _authored_bar("HINT_DEFAULT_TEXT :=")
 	var keyboard := _authored_bar("HINT_KEYBOARD_TEXT :=")
-	var derived := _authored_bar("Speed  ·  %s Auto")
+	var derived := _authored_bar(DERIVED_BAR_MARKER)
 	assert_ne(fallback, "", "PRECONDITION: could not read HINT_DEFAULT_TEXT")
 	assert_ne(keyboard, "", "PRECONDITION: could not read HINT_KEYBOARD_TEXT")
 	assert_ne(derived, "", "PRECONDITION: could not read the DERIVED bar — if hint_text() was " +
@@ -311,11 +344,16 @@ func test_every_authored_bar_names_the_same_controls() -> void:
 	assert_eq(_controls_named_in(keyboard), want,
 		"the KEYBOARD bar advertises different controls: %s vs %s"
 			% [str(_controls_named_in(keyboard)), str(want)])
+	var kb_derived := _authored_bar(DERIVED_KEYBOARD_MARKER)
+	assert_ne(kb_derived, "", "PRECONDITION: could not read the DERIVED KEYBOARD bar")
+	assert_eq(_controls_named_in(kb_derived), want,
+		"the DERIVED KEYBOARD bar (what a keyboard player sees) advertises different controls: %s vs %s"
+			% [str(_controls_named_in(kb_derived)), str(want)])
 
 
 ## The derived bar must not reintroduce a frozen pad name — the defect the derivation removed.
 func test_the_derived_bar_names_no_button_literally() -> void:
-	var derived := _authored_bar("Speed  ·  %s Auto")
+	var derived := _authored_bar(DERIVED_BAR_MARKER)
 	assert_ne(derived, "", "PRECONDITION: could not read the derived bar")
 	for frozen in ["[L]", "[R]", "[X]", "[Y]", "[Select]", "[Start]", "[A]", "[B]"]:
 		assert_false(derived.contains(frozen),

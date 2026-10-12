@@ -32,6 +32,7 @@ func after_all() -> void:
 
 
 const SPEED_INDEX := JOY_BUTTON_Y  # 3, north face — what BattleScene actually binds
+const REPEAT_INDEX := JOY_BUTTON_X  # 2, WEST face — what BattleScene binds for Repeat
 
 
 ## The three families genuinely differ at the index Speed uses. If this ever collapses to one
@@ -77,6 +78,39 @@ func test_the_hint_bar_is_derived_not_frozen() -> void:
 		if expected != "?":
 			assert_true(bar.contains(expected),
 				"with a pad the bar must print the live family's Speed glyph (%s), got: %s" % [expected, bar])
+
+
+## ⛔ REPEAT WAS A SECRET UNTIL 2026-10-12. One button replays last turn's entire queue — the
+## cheapest control in the battle — and it was advertised ONLY on the How to Play screen, so a
+## player who never opened that screen never learned it existed. It is in the bar now, which makes
+## it the SECOND raw claim there and gives it Speed's exact problem: the WEST face is Ⓨ on
+## Nintendo, Ⓧ on Xbox and □ on PlayStation, so one frozen letter is wrong for two families.
+func test_the_bar_advertises_repeat() -> void:
+	var bar: String = Win98Menu.hint_text()
+	assert_true(bar.contains("Repeat"),
+		"the bar must name Repeat, or the control stays undiscoverable to anyone who skips How to Play: %s" % bar)
+	# Unobservable headless (run_tests.sh hides the host's pads), so conditional like the Speed arm.
+	if Input.get_connected_joypads().is_empty():
+		assert_eq(Win98Menu.repeat_hint(), "Y",
+			"with no pad Repeat must name the Y KEY, not a pad glyph")
+		assert_true(bar.contains("[Y]"), "and the bar must print it bracketed like its neighbours: %s" % bar)
+	else:
+		var expected: String = InputProfileManager.face_glyph_for_index(REPEAT_INDEX)
+		if expected != "?":
+			assert_true(bar.contains(expected),
+				"with a pad Repeat must print the live family's west-face glyph (%s), got: %s" % [expected, bar])
+
+
+## POSITIVE CONTROL for the arm above: if the families ever agreed at the west face there would be
+## nothing to derive, and repeat_hint could be a frozen letter without anyone noticing.
+func test_the_families_disagree_at_the_repeat_index() -> void:
+	var g := {}
+	for fam in ["nintendo", "xbox", "playstation"]:
+		g[fam] = str(InputProfileManager.FACE_GLYPHS[fam][REPEAT_INDEX])
+	assert_ne(g["nintendo"], g["xbox"], "the west face must differ Nintendo vs Xbox, else Repeat needs no derivation")
+	assert_ne(g["nintendo"], g["playstation"], "and Nintendo vs PlayStation")
+	assert_ne(REPEAT_INDEX, SPEED_INDEX, "CONTROL: Repeat and Speed must be different buttons")
+	gut.p("index %d -> nintendo %s · xbox %s · playstation %s" % [REPEAT_INDEX, g["nintendo"], g["xbox"], g["playstation"]])
 
 
 ## The literal that caused it must not come back. "[X] Speed" is correct for exactly one family.

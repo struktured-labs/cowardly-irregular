@@ -2065,8 +2065,11 @@ func _build_input_hint_bar() -> void:
 	hint_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	# Anchor bottom-center
 	hint_panel.set_anchors_preset(Control.PRESET_CENTER_BOTTOM, true)
-	hint_panel.offset_left = -260
-	hint_panel.offset_right = 260
+	## 520px held SIX tokens edge to edge; Repeat (2026-10-12) makes seven, so the bar is 600 wide.
+	## Measured on a rendered 1280x720 frame, not computed: seven fit on ONE line, which is why the
+	## 28px height is unchanged. Do not add autowrap — a second line cannot be shown at this height.
+	hint_panel.offset_left = -300
+	hint_panel.offset_right = 300
 	hint_panel.offset_top = -34
 	hint_panel.offset_bottom = -6
 
