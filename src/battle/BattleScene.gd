@@ -3877,19 +3877,8 @@ const ACTIVE_PC_DIM_COLOR: Color = Color(0.55, 0.55, 0.65, 1.0)
 
 ## Which party slot is standing stepped-out for its selection turn (-1 = nobody).
 var _stepped_out_idx: int = -1
-
-
-## Where party member i is standing for targeting: home, or stepped out if it is their turn. Vector2.ZERO = no sprite.
-func ally_target_anchor(i: int) -> Vector2:
-	if i < 0 or i >= party_sprite_nodes.size():
-		return Vector2.ZERO
-	var s = party_sprite_nodes[i]
-	if not is_instance_valid(s):
-		return Vector2.ZERO
-	var anchor: Vector2 = s.get_meta("home_position", s.global_position)
-	if i == _stepped_out_idx:
-		anchor.x += ACTIVE_PC_STEP_OUT_OFFSET
-	return anchor
+## How far that slot stands from home; BattleCommandMenu adds it to the target box.
+var _stepped_out_shift: Vector2 = Vector2(ACTIVE_PC_STEP_OUT_OFFSET, 0.0)
 
 
 func _mark_stepped_out(idx: int, step_out: bool) -> void:
