@@ -56,6 +56,7 @@ const NAME_LABEL_GAP: float = 6.0
 const NAME_LABEL_WIDTH: float = 200.0
 const NAME_LABEL_PX := 16  # on-screen size for every monster, whatever its sprite scale
 const ENEMY_HP_BAR_SIZE := Vector2(60, 5)  # on-screen, whatever the sprite scale
+const ENEMY_HP_BAR_FADE := 0.4  # under the 0.5s dissolve it leaves with
 const STATUS_ROW_WIDTH := 120.0  # badges centre in it over the figure (row units, x STATUS_ROW_ZOOM on screen)
 const STATUS_ROW_ZOOM := 1.6  # the badges' ~9px text, read at ~14px on every monster
 const STATUS_ROW_LIFT := 16.0  # row units from the figure's top to the badge row's top
@@ -1373,6 +1374,26 @@ func _update_enemy_hp_bars() -> void:
 			bar_fill.color = AccessibilityPalette.hp_mid()
 		else:
 			bar_fill.color = AccessibilityPalette.hp_low()
+
+
+## A defeated enemy's bar fades out and goes. The modulate fallback path hides the rects for free
+## (children inherit modulate) but still leaks the registry entry _update_enemy_hp_bars walks.
+func _retire_enemy_hp_bar(enemy: Combatant) -> void:
+	if not _enemy_hp_bars.has(enemy):
+		return
+	var bars: Dictionary = _enemy_hp_bars[enemy]
+	_enemy_hp_bars.erase(enemy)
+	for key in ["fill_tween", "trail_tween"]:
+		var running = bars.get(key)
+		if running is Tween and running.is_valid():
+			running.kill()
+	for key in ["bar_bg", "bar_trail", "bar_fill"]:
+		var piece = bars.get(key)
+		if not (piece is CanvasItem) or not is_instance_valid(piece):
+			continue
+		var fade: Tween = piece.create_tween()  # dies with the rect a grind restart frees
+		fade.tween_property(piece, "modulate:a", 0.0, ENEMY_HP_BAR_FADE)
+		fade.tween_callback(piece.queue_free)
 
 
 func _get_monster_sprite_frames(monster_id: String) -> SpriteFrames:
@@ -5244,6 +5265,9 @@ func _on_enemy_died(enemy_idx: int) -> void:
 				container.queue_free()
 			_status_icon_containers.erase(enemy)
 		_remove_buff_visual(enemy)
+		## The floating HP bar is three ColorRects parented to the SPRITE, and the death visual is a
+		## shader that draws the sprite's own texture only — the red fill hung at its last width.
+		_retire_enemy_hp_bar(enemy)
 
 		if enemy_idx < enemy_animators.size() and enemy_idx < enemy_sprite_nodes.size():
 			var animator = enemy_animators[enemy_idx]
