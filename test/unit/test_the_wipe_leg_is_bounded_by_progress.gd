@@ -111,6 +111,15 @@ func test_an_ended_battle_is_not_reported_as_a_stall() -> void:
 ## guarded is that someone adds a fifth reason and not a fifth message, which a hand-list cannot
 ## see because they would add to the list in the same edit.
 ##
+## 🔑 AND A STATIC DERIVATION IS NOT MERELY THE STRONGER CHOICE HERE, IT IS THE ONLY ONE THAT CAN
+## APPLY (@cowir-ai, 2026-10-12, sharpening this guard's own justification). THE CONSUMER'S INPUT
+## DOMAIN IS CLOSED BY THE PRODUCER: `smoke_wipe_verdict` emits exactly these tokens, so the
+## dispatch can only ever receive one of them. **A fifth reason is not an input somebody forgot to
+## try — it does not exist until the producer is edited**, so no runtime arm, however carefully its
+## inputs are chosen, can reach the unbranched case. Driving an unknown token would mean stubbing
+## the producer, i.e. asserting against a fiction. `producer returns ⊆ consumer branches`, checked
+## in the source, is the whole instrument available for this class.
+##
 ## The leg shipped in .658 with a `match` that had NO default arm: a reason with no branch printed
 ## nothing, and the two lines after the match still set `_smoke_failed` and returned — so the gate
 ## would have reported a bare `VERDICT: FAIL` with the explanation missing. That is the exact defect
@@ -127,12 +136,37 @@ func test_every_reason_the_verdict_returns_has_a_branch_that_prints_it() -> void
 	assert_gt(vend, vat, "CONTROL: the verdict function ends before the next one")
 	var verdict := src.substr(vat, vend - vat)
 
-	var re := RegEx.create_from_string('return "([a-z_]+)"')
+	## ⛔ THE EXTRACTOR MUST REFUSE WHAT IT CANNOT READ, not silently return fewer members.
+	## @cowir-ai's point, measured here: a derived-relation guard has TWO failure modes and only the
+	## RELATION is ever tested — nobody points an arm at the DERIVATION. Planted `return
+	## _stall_token()` in the producer and this scan reported the same three reasons as before,
+	## having silently skipped a fourth. **"I found no member" and "I cannot read this" must not
+	## share a value**, because the first is a fact and the second is an absence of one.
+	##
+	## ⚠️ Two behavioural arms above DID catch that plant, because it changed a (input -> reason)
+	## pair they assert — so this file was safer than @cowir-battle's and @cowir-ai's cases, whose
+	## consumers are only reachable through production code. It was NOT safe: a fifth reason added
+	## on an input branch no arm drives would be invisible to both halves.
+	var total_returns: int = 0
+	for line in verdict.split("\n"):
+		if str(line).strip_edges().begins_with("return "):
+			total_returns += 1
+	## `[a-z_]*` not `+`: the "keep waiting" return is `return ""`, a LITERAL with an empty token.
+	## With `+` the scan read 3 of 4 returns and this very assertion red on a clean tree — my own
+	## refusal firing on the shape it was meant to allow. An empty capture is READABLE and is simply
+	## not a reason, which is a different fact from "I could not parse this".
+	var re := RegEx.create_from_string('return "([a-z_]*)"')
 	var reasons: Array = []
+	var readable: int = 0
 	for m in re.search_all(verdict):
-		if not reasons.has(m.get_string(1)):
+		readable += 1
+		if m.get_string(1) != "" and not reasons.has(m.get_string(1)):
 			reasons.append(m.get_string(1))
 	reasons.sort()
+	assert_eq(readable, total_returns,
+		"the verdict has %d return statement(s) and this scan could read %d as literals — the " % [total_returns, readable] +
+		"unreadable one(s) are reasons with no branch requirement, so the arm below would pass " +
+		"while a reason went unbranched. Make the return a literal, or teach this extractor the shape")
 	assert_gte(reasons.size(), 3,
 		"CONTROL: derived only %d reasons from the verdict function — the scan is broken and the [] below is free: %s" % [
 			reasons.size(), str(reasons)])
