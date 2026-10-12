@@ -5,7 +5,7 @@
   "giver": {
     "npc_id": "firewall_attendant_w5",
     "display_name": "The Firewall Attendant",
-    "location": {"map_id": "node_prime", "near": "firewall_checkpoint"},
+    "location": {"map_id": "node_prime_village", "near": "firewall_checkpoint"},
     "spawn_flag": ""
   },
   "description": "The stack overflow has been running since before the party arrived. The firewall attendant uses it as cover and said 'don't' when the Compiler offered to fix it. It's protecting seventeen other processes. The question worth asking is: what's actually in the stack?",

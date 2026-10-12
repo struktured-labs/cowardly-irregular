@@ -7,7 +7,7 @@
     "npc_id": "mail_carrier_w2",
     "display_name": "The Mail Carrier",
     "location": {
-      "map_id": "maple_heights",
+      "map_id": "maple_heights_village",
       "near": "mail_route"
     },
     "spawn_flag": ""

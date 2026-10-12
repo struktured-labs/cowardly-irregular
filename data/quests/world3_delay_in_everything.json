@@ -6,7 +6,7 @@
     "npc_id": "sprocket_brasston",
     "display_name": "Sprocket",
     "location": {
-      "map_id": "brasston",
+      "map_id": "brasston_village",
       "near": "maintenance_yard"
     },
     "spawn_flag": ""

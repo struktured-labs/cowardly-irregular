@@ -5,7 +5,7 @@
   "giver": {
     "npc_id": "community_bulletin_board",
     "display_name": "Community Bulletin Board",
-    "location": {"map_id": "maple_heights_community_center", "near": "front_entrance"},
+    "location": {"map_id": "maple_community_center", "near": "front_entrance"},
     "spawn_flag": ""
   },
   "description": "One notice on the community center board reads: CITIZEN COMPLAINT RESOLUTION — ESTIMATED WAIT TIME 14-18 MONTHS. Forty-seven unresolved complaints sit in the HOA's backlog. Seven are flagged red. None have ever been processed.",

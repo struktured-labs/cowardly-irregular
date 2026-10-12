@@ -6,7 +6,7 @@
   "giver": {
     "npc_id": "dorrit_w4",
     "display_name": "Dorrit",
-    "location": {"map_id": "rivet_row", "near": "assembly_line"},
+    "location": {"map_id": "rivet_row_village", "near": "assembly_line"},
     "spawn_flag": ""
   },
   "description": "Dorrit wants to formally document what the recalibration training did to her. The exception report requires a counter-signature from a supervisor. Her supervisor is the person the exception is about. The system makes documenting the system impossible — which is, itself, worth documenting.",

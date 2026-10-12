@@ -6,7 +6,7 @@
     "npc_id": "gerald_w2",
     "display_name": "Gerald",
     "location": {
-      "map_id": "maple_heights",
+      "map_id": "maple_heights_village",
       "near": "gerald_front_lawn"
     },
     "spawn_flag": ""

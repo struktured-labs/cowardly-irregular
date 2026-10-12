@@ -6,7 +6,7 @@
   "giver": {
     "npc_id": "traveler_w6",
     "display_name": "The Traveler",
-    "location": {"map_id": "the_vertex", "near": "calibrant_approach"},
+    "location": {"map_id": "vertex_village", "near": "calibrant_approach"},
     "spawn_flag": ""
   },
   "description": "The traveler has been walking between worlds since before the party started. They can describe every world after the party passed through it. They cannot describe where they started. They think they started somewhere specific. It's just very far back.",
