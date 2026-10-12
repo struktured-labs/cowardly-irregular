@@ -9,6 +9,7 @@ const AutogrindState := preload("res://test/unit/helpers/autogrind_state.gd")
 const ABProfiles := preload("res://test/unit/helpers/autobattle_profiles.gd")
 const BattleStateGuard := preload("res://test/unit/helpers/battle_state.gd")
 const GAMELOOP_SRC := "res://src/GameLoop.gd"
+const GdSource := preload("res://test/unit/helpers/gd_source.gd")
 
 var _ag: Dictionary
 var _prof: Dictionary
@@ -98,7 +99,10 @@ func test_an_uninterrupted_start_still_opens_the_console() -> void:
 ## The freed-object half cannot be asserted behaviourally, so pin the guard between BOTH boundaries:
 ## the await it protects and the first call it protects. Weaker than a behavioural arm by design.
 func test_the_validity_guard_sits_between_the_await_and_the_first_call() -> void:
-	var src: String = FileAccess.get_file_as_string(GAMELOOP_SRC)
+	## CODE only. This arm is satisfied by the mere PRESENCE of the guard's text, so a comment in the
+	## same slice mentioning it would stand in for the guard itself -- and the thing it protects is a
+	## segfault. Measured by @cowir-music 2026-10-12: prose in a scanned file IS input to the scanner.
+	var src: String = GdSource.code_of(GAMELOOP_SRC)
 	assert_gt(src.length(), 0, "FLOOR: GameLoop source must be readable")
 	var fn: int = src.find("func _start_autogrind_battle(")
 	assert_gt(fn, -1, "FLOOR: _start_autogrind_battle must exist")
@@ -109,3 +113,14 @@ func test_the_validity_guard_sits_between_the_await_and_the_first_call() -> void
 	var between: String = src.substr(await_at, call_at - await_at)
 	assert_true(between.contains("is_instance_valid(battle_scene)"),
 		"the freed scene is unobservable from a test (it segfaults), so this guard must stay between the await and the call")
+
+
+## The stripper is an instrument too, and over-stripping reads exactly like a correct strip.
+func test_the_guard_reads_code_not_prose() -> void:
+	var code: String = GdSource.code_of(GAMELOOP_SRC)
+	var raw: String = FileAccess.get_file_as_string(GAMELOOP_SRC)
+	assert_gt(code.length(), 0, "FLOOR: the stripped source must not be empty")
+	assert_lt(code.length(), raw.length(), "CONTROL: GameLoop has comments, so stripping must remove something")
+	assert_true(code.contains("func _start_autogrind_battle("), "and must not have eaten the code the arms above read")
+	assert_false(code.contains("## A stop during that frame frees this scene"),
+		"the comment beside the guard must be gone -- it names the very literal those arms look for")
