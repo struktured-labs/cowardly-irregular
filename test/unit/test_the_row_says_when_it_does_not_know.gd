@@ -138,6 +138,15 @@ func test_the_catch_all_is_not_shared_with_a_real_kind() -> void:
 
 
 # ── 2. honesty: the unknown case must not borrow a real kind's message ───────────────────────────
+#
+# ⛔ THESE ARMS ARE LOAD-BEARING, NOT REDUNDANT WITH THE DERIVATION ABOVE. Measured 2026-10-12:
+# a `"""` phantom widens the ACCEPTANCE set (`_match_arms`) and BOTH derivation arms go GREEN,
+# because an extracted set you assert AGAINST passes vacuously when it is wrong — only a runtime
+# arm reds. Deleting these as "covered by the derivation" converts caught into silent.
+# 🔑 And a second reason beyond coverage: when the phantom widened the set, the arm that caught it
+# said "key_rejected must keep its message" — which names the SYMPTOM and sends a reader to the
+# row's wiring rather than to the stripper that actually failed. A sibling catch costs you the
+# EXPLANATION even when it costs no coverage, so these keep their own messages.
 
 func _subtitle_for(kind: String, code: int) -> String:
 	var svc: Node = get_node_or_null("/root/LLMService")
