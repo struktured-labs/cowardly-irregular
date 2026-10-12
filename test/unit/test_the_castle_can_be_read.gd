@@ -247,3 +247,48 @@ func test_an_examine_opens_with_its_authored_text() -> void:
 		"the panel must show the AUTHORED text for %s, not a placeholder" % examine_id)
 	found._close_panel()
 	assert_false(found.is_open(), "the panel must close, releasing the input lock")
+
+
+## ⚠️ A READABLE IS ALLOCATED ONTO ANY WALKABLE CELL, AND A STAIR CELL IS WALKABLE.
+## `Signpost.floor_spot` consumes `_sign_taken` and checks the floor layout, so it cannot stack two
+## readables — it knows nothing about the floor's Area2Ds. A prop on a stair would make the step
+## that changes floor also open a panel, and a prop on the boss trigger would sit in front of
+## Mordaine. Neither is checked by anything else, and neither is visible in the pack.
+func test_no_examine_sits_on_a_door_or_a_spawn() -> void:
+	var clashes: Array = []
+	var readable_total := 0
+	var area_total := 0
+	for floor_num in [1, 2, 3, 4]:
+		var castle = await CastleFloor.build(self, floor_num)
+		assert_not_null(castle, "CONTROL: the castle must build on floor %d" % floor_num)
+		if castle == null:
+			continue
+		var ts: float = float(castle.TILE_SIZE)
+		var reads: Dictionary = {}
+		var areas: Dictionary = {}
+		var stack: Array = [castle]
+		while not stack.is_empty():
+			var n = stack.pop_back()
+			for c in n.get_children():
+				stack.append(c)
+			if not (n is Node2D):
+				continue
+			var cell: String = str(Vector2i((n as Node2D).position / ts))
+			if n is ReadableProp or n is Signpost:
+				reads[cell] = str(n.name)
+			elif n is Area2D:
+				areas[cell] = str(n.name)
+		readable_total += reads.size()
+		area_total += areas.size()
+		for cell in reads.keys():
+			if areas.has(cell):
+				clashes.append("floor %d cell %s: '%s' on '%s'" % [floor_num, cell, reads[cell], areas[cell]])
+		var spawns: Dictionary = castle.spawn_points if "spawn_points" in castle else {}
+		for k in spawns.keys():
+			var pc: String = str(Vector2i((spawns[k] as Vector2) / ts))
+			if reads.has(pc):
+				clashes.append("floor %d cell %s: '%s' on the '%s' spawn" % [floor_num, pc, reads[pc], str(k)])
+	assert_gt(readable_total, 0, "CONTROL: readables must have been found, or this arm proves nothing")
+	assert_gt(area_total, 0, "CONTROL: the floors must carry Area2Ds, or the clash test cannot fire")
+	assert_eq(clashes, [], "a readable shares a cell with a door, a stair or a spawn: %s" % ", ".join(clashes))
+	gut.p("  %d readable cells vs %d area cells across 4 floors" % [readable_total, area_total])
