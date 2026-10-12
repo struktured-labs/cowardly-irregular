@@ -396,6 +396,13 @@ func spawn_from_data(enemy_data_array: Array) -> void:
 
 		# Store monster type ID for sprite selection
 		enemy.set_meta("monster_type", type_id)
+		## Autogrind builds its enemies as inline dicts, so there is no catalog entry to read `boss` from -- the
+		## flags ARE the dict. Without this an autogrind meta-boss fought as a random encounter: no boss banner,
+		## no boss music, no boss HP treatment, and the boss-damage passive and boss memory both stayed dark.
+		if data.get("is_meta_boss", false) or data.get("is_collapse_boss", false) \
+				or data.get("boss", false) or data.get("miniboss", false):
+			enemy.set_meta("is_boss", true)
+			enemy.set_meta("is_miniboss", true)  # For music selection, as spawn_forced_enemies does
 		## Rare-encounter bonus (Hero Mimics 2.5x): BattleManager._get_battle_reward_multiplier reads this meta.
 		if data.has("reward_multiplier"):
 			enemy.set_meta("reward_multiplier", float(data["reward_multiplier"]))
