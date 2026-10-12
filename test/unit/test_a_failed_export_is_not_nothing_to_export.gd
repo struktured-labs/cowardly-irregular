@@ -40,6 +40,15 @@ extends GutTest
 ## and the "nothing to write" arms use an unknown character id and an empty party. EXPORT_DIR
 ## is redirected per process as the three sibling share tests do.
 
+## ⛔ FOLLOW-UP, 2026-10-12: THIS GUARD'S SOURCE ARMS USED A PRIVATE `#`-ONLY STRIPPER.
+## `test/unit/helpers/gd_source.gd` is the shared one, and its own header records why a private
+## one is not enough: **a presence assert over raw source is satisfied by PROSE ABOUT the code**,
+## a `#`-only pass cannot touch a `"""` docstring, and it names THIS LANE as somewhere a
+## hand-rolled toggle lost five verdicts. Measured before switching: 0 of the five files my
+## reason-channel guards scan currently carry a multiline docstring with a column-0 `func `, so
+## nothing was mis-cut — the exposure was by construction, not yet realised. Switched anyway,
+## because "not yet" is the whole of the difference.
+const GdSource := preload("res://test/unit/helpers/gd_source.gd")
 const SSM := preload("res://src/autobattle/ScriptShareManager.gd")
 const MANAGER_SRC := "res://src/autobattle/ScriptShareManager.gd"
 const AUTOGRIND_UI_SRC := "res://src/ui/autogrind/AutogrindUI.gd"
@@ -164,36 +173,40 @@ func test_a_successful_export_clears_an_earlier_failures_reason() -> void:
 
 
 func _code_without_comments(path: String) -> String:
-	## A source scan must look at CODE. This fix's comments quote the strings it retired —
-	## "Nothing to export" appears in three of them — so a scan over raw text reads the old
-	## wording as still live and the new assignments as absent. Measured on the import side of
-	## this same channel: two arms failed on their first run for exactly this.
-	var out: PackedStringArray = PackedStringArray()
-	for line in FileAccess.get_file_as_string(path).split("\n"):
-		if str(line).strip_edges().begins_with("#"):
-			continue
-		out.append(str(line))
-	return "\n".join(out)
+	## Delegated to the SHARED stripper. See the follow-up note in the header: a private
+	## `#`-only pass leaves `"""` docstrings in the "code", and every arm below is a presence
+	## assert, which prose about the code satisfies.
+	return str(GdSource.split(FileAccess.get_file_as_string(path))["code"])
 
-
-func test_control_the_comment_stripper_keeps_code_and_drops_comments() -> void:
-	## Without this the source arms below could pass on an empty string, or on a stripper that
-	## removed nothing. Counted rather than matched against a phrase, which would stop proving
-	## anything the moment somebody reworded a comment.
-	var code: String = _code_without_comments(MANAGER_SRC)
-	assert_gt(code.length(), 2000, "CONTROL: stripping comments must leave the code behind")
-	assert_true(code.find("static func _write_export(") != -1, "CONTROL: code lines must survive")
-	var raw_comments: int = 0
-	for line in FileAccess.get_file_as_string(MANAGER_SRC).split("\n"):
-		if str(line).strip_edges().begins_with("#"):
-			raw_comments += 1
-	var left: int = 0
-	for line in code.split("\n"):
-		if str(line).strip_edges().begins_with("#"):
-			left += 1
-	assert_gt(raw_comments, 20, "CONTROL: the manager must have comments to strip, found %d" % [raw_comments])
-	assert_eq(left, 0, "CONTROL: %d comment line(s) survived, so the arms below measure the documentation" % [left])
-
+func test_control_the_shared_stripper_keeps_code_and_removes_prose() -> void:
+	## The helper's header REQUIRES every caller to prove a known code site survived, because
+	## over-stripping and a correct strip are the same green. It also requires flooring the DOC
+	## half, because an empty doc side satisfies "the prose is gone" by construction.
+	var raw: String = FileAccess.get_file_as_string(MANAGER_SRC)
+	var halves: Dictionary = GdSource.split(raw)
+	var code: String = str(halves["code"])
+	var doc: String = str(halves["doc"])
+	assert_gt(code.length(), 2000, "CONTROL: the strip must leave a code half behind")
+	assert_eq(code.count("\"\"\""), 0,
+		"CONTROL: a docstring delimiter survived in the code half — parity desynced")
+	## ⚠ THE DOC HALF IS ONLY FLOORABLE WHEN THE FILE HAS DOCSTRINGS, and my first version of
+	## this control floored it unconditionally. It RED on the first run and it was right to:
+	## ScriptShareManager.gd contains ZERO `"""` regions, so an empty doc half is the correct
+	## answer and the helper's own contract says so ("a file with NO `"""` also qualifies: one
+	## part, even index, passes through whole"). I was measuring the helper's INPUT, not its
+	## behaviour. Both regimes are asserted now, so neither is a free pass.
+	if raw.count("\"\"\"") > 0:
+		assert_gt(doc.length(), 200,
+			"CONTROL: a file WITH docstrings must leave a non-empty doc half, or 'the prose was removed' is vacuous")
+	else:
+		assert_eq(doc.length(), 0,
+			"CONTROL: a file with no docstrings must leave an EMPTY doc half — anything else means parity invented a region")
+		## With no docstrings, the only work the strip can do is the `#` pass. Prove it did it.
+		assert_gt(raw.count("\n\t##"), 20, "CONTROL: the file must have comments to strip, found %d" % [raw.count("\n\t##")])
+		assert_lt(code.length(), raw.length() - 1000,
+			"CONTROL: the strip removed almost nothing (%d of %d bytes) — the comment pass is not running"
+			% [raw.length() - code.length(), raw.length()])
+	assert_true(code.find("static func _write_export(") != -1, "CONTROL: a known code site must survive the strip")
 
 func _body_of(code: String, signature: String) -> String:
 	var start: int = code.find(signature)
