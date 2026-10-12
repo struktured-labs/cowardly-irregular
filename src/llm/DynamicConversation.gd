@@ -698,6 +698,11 @@ func _ensure_npc_dialogue() -> void:
 	_npc_dialogue.name = "DynConvNPCDialogue"
 	add_child(_npc_dialogue)
 	## The player's way out of a strand: cancel on the thinking box aborts, which unfreezes them.
+	## ⛔ DO NOT WIRE `DialogueChoiceMenu.choice_cancelled` THE SAME WAY, however alike they look.
+	## That one fires on ORDINARY cancellation too, where the await returns CHOICE_CANCELLED and the
+	## loop exits through its bottom; abort() clears `_active` first, so run()'s `if _active` block
+	## would be skipped and every normal cancel would lose its reward check and its memory write.
+	## Thinking-cancel is safe precisely because it can only fire mid-await, where aborting is right.
 	if _npc_dialogue.has_signal("thinking_cancelled"):
 		_npc_dialogue.thinking_cancelled.connect(abort)
 
