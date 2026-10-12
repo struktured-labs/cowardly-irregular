@@ -742,6 +742,9 @@ func _maybe_run_battle_smoke() -> void:
 ## silently shrank it by every second anything before it spent.
 const SMOKE_WIPE_BUDGET_MS := 90000
 const SMOKE_WIPE_STALL_MS := 25000
+## How long after the battle goes INACTIVE the screen may still take to appear. The defeat sequence
+## runs between the two, so this is not slack — it is the width of a real gap.
+const SMOKE_WIPE_GRACE_MS := 15000
 ## The verdict must print before deploy_web.sh's outer `timeout 300` SIGTERMs us: a kill at 300s
 ## leaves no VERDICT line, which is indistinguishable from a crash.
 const SMOKE_VERDICT_FLOOR_MS := 285000
@@ -814,10 +817,16 @@ func _smoke_tap(action: String) -> void:
 ## builds a fresh scene with a fresh spawner.
 ## Which bound (if any) has tripped. STATIC and pure so the guard can drive every branch without a
 ## GameLoop: no test can instantiate one, and a loop that only reports by `print` is not assertable.
-static func smoke_wipe_verdict(elapsed_ms: int, since_progress_ms: int, fighting: bool,
-		budget_ms: int, stall_ms: int) -> String:
-	if not fighting:
-		return "ended_without_game_over"
+## `since_inactive_ms` is -1 while the battle is live. A GRACE window after it ends is load-bearing:
+## the GameOverScreen is added SEVERAL FRAMES AFTER the battle goes INACTIVE, so concluding at the
+## first inactive poll reports a wiped party as a missing screen. Measured — this function's first
+## version did exactly that and the smoke printed "ended at round 5 with no game over screen" one
+## line after the engine logged "=== DEFEAT ===". The unit arms passed, because they encoded the
+## same wrong model as the code; only the real run disagreed.
+static func smoke_wipe_verdict(elapsed_ms: int, since_progress_ms: int, since_inactive_ms: int,
+		budget_ms: int, stall_ms: int, grace_ms: int) -> String:
+	if since_inactive_ms >= 0:
+		return "ended_without_game_over" if since_inactive_ms >= grace_ms else ""
 	if since_progress_ms >= stall_ms:
 		return "stalled"
 	if elapsed_ms >= budget_ms:
@@ -831,6 +840,7 @@ func _smoke_await_wipe() -> Node:
 	var leg_start: int = Time.get_ticks_msec()
 	var last_round: int = -1
 	var last_progress: int = leg_start
+	var inactive_since: int = -1
 	## Constant for the leg: its own budget, clamped so the VERDICT still prints before the outer
 	## `timeout 300`. maxi keeps it positive if an upstream leg has already spent the floor.
 	var budget: int = mini(SMOKE_WIPE_BUDGET_MS, maxi(1000, SMOKE_VERDICT_FLOOR_MS - leg_start))
@@ -848,13 +858,18 @@ func _smoke_await_wipe() -> Node:
 			last_round = BattleManager.current_round
 			last_progress = now
 		var fighting: bool = BattleManager.current_state != BattleManager.BattleState.INACTIVE
-		_smoke_wipe_reason = smoke_wipe_verdict(now - leg_start, now - last_progress, fighting,
-			budget, SMOKE_WIPE_STALL_MS)
+		if fighting:
+			inactive_since = -1
+		elif inactive_since < 0:
+			inactive_since = now
+		_smoke_wipe_reason = smoke_wipe_verdict(now - leg_start, now - last_progress,
+			-1 if fighting else now - inactive_since, budget, SMOKE_WIPE_STALL_MS, SMOKE_WIPE_GRACE_MS)
 		match _smoke_wipe_reason:
 			"":
 				continue
 			"ended_without_game_over":
-				print("[SMOKE] FAIL: wipe battle ended at round %d with no game over screen" % last_round)
+				print("[SMOKE] FAIL: wipe battle ended at round %d and no game over screen came up within %.0fs" % [
+					last_round, SMOKE_WIPE_GRACE_MS / 1000.0])
 			"stalled":
 				print("[SMOKE] FAIL: wipe STALLED — no round advanced in %.0fs (stuck at round %d, %.1fs into the leg)" % [
 					(now - last_progress) / 1000.0, last_round, (now - leg_start) / 1000.0])

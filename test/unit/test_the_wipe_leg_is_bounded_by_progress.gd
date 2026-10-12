@@ -29,41 +29,43 @@ const GameLoopScript := preload("res://src/GameLoop.gd")
 
 const BUDGET := 90000
 const STALL := 25000
+const GRACE := 15000
 
-
-func _verdict(elapsed_ms: int, since_progress_ms: int, fighting: bool) -> String:
-	return GameLoopScript.smoke_wipe_verdict(elapsed_ms, since_progress_ms, fighting, BUDGET, STALL)
+## -1 for since_inactive_ms means the battle is still live.
+func _verdict(elapsed_ms: int, since_progress_ms: int, since_inactive_ms: int) -> String:
+	return GameLoopScript.smoke_wipe_verdict(elapsed_ms, since_progress_ms, since_inactive_ms,
+		BUDGET, STALL, GRACE)
 
 
 func test_a_running_battle_making_progress_keeps_waiting() -> void:
-	assert_eq(_verdict(1000, 0, true), "",
+	assert_eq(_verdict(1000, 0, -1), "",
 		"CONTROL: a fresh, advancing battle must not trip any bound, or every arm below is free")
-	assert_eq(_verdict(BUDGET - 1, STALL - 1, true), "",
+	assert_eq(_verdict(BUDGET - 1, STALL - 1, -1), "",
 		"one millisecond inside both bounds is still waiting — the leg may not end early")
 
 
 func test_a_battle_that_ended_without_a_screen_is_a_real_bug() -> void:
-	assert_eq(_verdict(1000, 0, false), "ended_without_game_over",
-		"the battle finished and no GameOverScreen came up; that is the defect the leg exists to catch")
-	assert_eq(_verdict(BUDGET + 9999, STALL + 9999, false), "ended_without_game_over",
+	assert_eq(_verdict(1000, 0, GRACE), "ended_without_game_over",
+		"the battle finished, the grace window passed, and no GameOverScreen came up; that is the defect")
+	assert_eq(_verdict(BUDGET + 9999, STALL + 9999, GRACE + 1), "ended_without_game_over",
 		"an ended battle outranks both clocks — reporting it as a slow box would hide a real bug")
 
 
 func test_a_frozen_battle_reports_stalled() -> void:
-	assert_eq(_verdict(1000, STALL, true), "stalled",
+	assert_eq(_verdict(1000, STALL, -1), "stalled",
 		"no round advanced for the stall window while the battle is live — progress stopped")
 
 
 ## The arm that pins the ORDER. Both bounds are tripped at once; `stalled` must win.
 func test_a_frozen_battle_is_never_excused_as_a_slow_box() -> void:
-	var both: String = _verdict(BUDGET + 1, STALL + 1, true)
+	var both: String = _verdict(BUDGET + 1, STALL + 1, -1)
 	assert_eq(both, "stalled",
 		"with BOTH bounds tripped the verdict must be 'stalled': a frozen battle reported as " +
 		"'budget' tells the reader their box is slow when the game is wedged")
 
 
 func test_a_slow_box_is_not_reported_as_a_missing_game_over() -> void:
-	assert_eq(_verdict(BUDGET, STALL - 1, true), "budget",
+	assert_eq(_verdict(BUDGET, STALL - 1, -1), "budget",
 		"rounds still advancing and the leg outran its budget — that is a slow box, and saying so " +
 		"is the whole point of the change")
 
@@ -79,3 +81,26 @@ func test_the_bounds_are_relative_to_the_leg_not_the_process() -> void:
 		"the wait must timestamp its own start, so its budget is its own")
 	assert_true(src.contains("SMOKE_VERDICT_FLOOR_MS"),
 		"the verdict must still be clamped to print before deploy_web.sh's outer timeout 300")
+
+
+## ⛔ THE ARM THAT PINS THE RACE MY FIRST VERSION SHIPPED. The GameOverScreen is added SEVERAL
+## FRAMES AFTER the battle goes INACTIVE, so concluding at the first inactive poll calls a correctly
+## wiped party a missing screen. The real smoke printed "ended at round 5 with no game over screen"
+## one line after the engine logged "=== DEFEAT ===". My unit arms PASSED through that, because they
+## asserted the same wrong model the code had — a guard written from the author's belief tests the
+## belief. Only the end-to-end run disagreed.
+func test_an_ended_battle_is_given_the_grace_the_defeat_sequence_needs() -> void:
+	assert_eq(_verdict(1000, 0, 0), "",
+		"the battle has only just gone inactive — the defeat sequence has not had a frame yet")
+	assert_eq(_verdict(1000, 0, GRACE - 1), "",
+		"one millisecond inside the grace window must still be waiting for the screen")
+	assert_eq(_verdict(1000, 0, GRACE), "ended_without_game_over",
+		"and the grace window must END, or a genuinely missing screen waits forever")
+
+
+## A battle that goes inactive INSIDE the grace must not be judged by the fighting-side bounds:
+## the stall clock keeps ticking once rounds stop, so without the inactive branch first, a normal
+## defeat would be reported as a stall 25s later.
+func test_an_ended_battle_is_not_reported_as_a_stall() -> void:
+	assert_eq(_verdict(1000, STALL + 9999, 1), "",
+		"rounds stopped because the battle ENDED; that is not a stall and must not be called one")
