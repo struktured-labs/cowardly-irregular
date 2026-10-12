@@ -11,7 +11,8 @@ A hole here is a clear region the figure fully encloses. What the key removed wa
 - a speck of up to 4 px takes the commonest colour on its own rim (a white dot in dark hair would
   be a new defect, and a speck that small is a lost highlight of its surroundings);
 - a hole larger than MAX_HOLE is LEFT and reported: a whole keyed face or veil needs an eye on it,
-  and a real opening (staff to body) must not be painted shut.
+  and a real opening (staff to body) must not be painted shut. REVIEWED_LARGE raises the cap for the
+  portraits that were looked at one by one; LEFT_OPEN names the ones deliberately not filled.
 Portraits cut from the artist's own sheets are never touched (ARTIST_DERIVED): a hole in those is his.
 
 Usage:
@@ -36,6 +37,24 @@ MAX_HOLE = 160
 SPECK = 4
 KEYED_WHITE = (246, 246, 246)
 NEIGHBOURS = ((-1, 0), (1, 0), (0, -1), (0, 1))
+# Holes above MAX_HOLE, zoomed one portrait at a time on 2026-10-12 and found to be keyed white (eye whites just
+# over the cap, teeth, a white veil, hood lining, collar or hair): the largest hole each may have filled.
+REVIEWED_LARGE = {
+    "bossbinder.png": 492, "cleric_abstract.png": 5398, "cleric_digital.png": 397,
+    "cleric_industrial.png": 785, "cleric_steampunk.png": 954, "cleric_suburban.png": 2056,
+    "keepers/brutus.png": 200, "keepers/lenora.png": 2527, "masterite_arbiter_medieval.png": 1197,
+    "ninja.png": 295, "npcs/boris.png": 328, "npcs/bram.png": 175,
+    "npcs/child.png": 251, "npcs/dr_temporal.png": 246, "npcs/elder.png": 247,
+    "npcs/guard.png": 196, "npcs/knight.png": 176, "npcs/nervous.png": 271,
+    "npcs/pilgrim.png": 892, "npcs/pip.png": 198, "npcs/rowan.png": 426,
+    "npcs/shopkeeper.png": 340, "npcs/villager_f.png": 351, "npcs/young_woman.png": 173,
+    "scriptweaver.png": 337, "skiptrotter.png": 193, "speculator_abstract.png": 181,
+    "summoner_suburban.png": 221, "time_mage.png": 295, "time_mage_industrial.png": 344,
+    "time_mage_steampunk.png": 195, "time_mage_suburban.png": 333,
+}
+# Left open on purpose: a real gap between a staff and a body, or a whole face whose fill is an art decision.
+LEFT_OPEN = ("mage_abstract.png", "mage_industrial.png", "mage_suburban.png", "masterite_curator_medieval.png",
+             "ninja.png", "npcs/fairy.png", "npcs/hooded_mage.png", "npcs/mysterious.png")
 # Busts cut from the artist's battle sheets (the five starters, Mordaine and her other face): never filled.
 ARTIST_DERIVED = ("fighter.png", "cleric.png", "mage.png", "rogue.png", "bard.png", "mordaine.png",
                   "chancellor_mordaine.png", "calibrant.png")
@@ -70,12 +89,12 @@ def holes(rgba: np.ndarray) -> list:
     return out
 
 
-def fill(img: Image.Image):
-    """(new image, pixels filled, [sizes of holes left as too large])."""
+def fill(img: Image.Image, cap: int = MAX_HOLE):
+    """(new image, pixels filled, [sizes of holes left as too large]). cap is the largest hole to fill."""
     rgba = np.asarray(img.convert("RGBA")).copy()
     filled, left = 0, []
     for region, rim in holes(rgba):
-        if len(region) > MAX_HOLE:
+        if len(region) > cap:
             left.append(len(region))
             continue
         if len(region) <= SPECK:
@@ -118,6 +137,9 @@ def selftest() -> int:
     out2, n2, _ = fill(speck)
     assert n2 == 1 and out2.getpixel((30, 30)) == (30, 20, 20, 255), "a speck takes its rim's colour, not white"
     assert fill(out)[1] == 0, "a second pass fills nothing"
+    wide, n3, left3 = fill(img, 400)
+    assert not left3 and wide.getpixel((35, 45)) == (*KEYED_WHITE, 255), "a reviewed cap fills the larger hole too"
+    assert not set(REVIEWED_LARGE) & set(ARTIST_DERIVED), "no artist bust is on the reviewed list"
     print("selftest ok")
     return 0
 
@@ -133,7 +155,7 @@ def main() -> int:
     total = files = 0
     for rel in portraits():
         img = Image.open(ROOT / rel)
-        out, n, left = fill(img)
+        out, n, left = fill(img, max(MAX_HOLE, REVIEWED_LARGE.get(os.path.relpath(rel, PORTRAITS), 0)))
         if left:
             print("LEFT %s: %d hole(s) too large to fill blind, %s px" % (rel, len(left), sorted(left, reverse=True)[:4]))
         if not n:
