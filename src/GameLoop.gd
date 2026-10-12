@@ -899,6 +899,15 @@ func _smoke_await_wipe() -> Node:
 			"budget":
 				print("[SMOKE] FAIL: wipe leg OUTRAN ITS BUDGET after %.1fs while still advancing (round %d) — a slow box, not a missing game over" % [
 					(now - leg_start) / 1000.0, last_round])
+			_:
+				## ⛔ A BRANCH SET WITH NO ELSE DOES NOT HANDLE THE NEXT KIND SAFELY — it fails
+				## SILENTLY. Without this arm a fifth reason from `smoke_wipe_verdict` printed
+				## nothing at all and the two lines below still failed the smoke, so the gate would
+				## have reported a bare VERDICT: FAIL with the explanation missing — which is the
+				## exact defect this leg was built to remove, reintroduced by the leg's own dispatch.
+				## @cowir-deploy's generalisation of @cowir-sfx's three-kinds-of-print lesson.
+				print("[SMOKE] FAIL: wipe leg stopped for an UNRECOGNISED reason '%s' at round %d, %.1fs in — add a branch for it" % [
+					_smoke_wipe_reason, last_round, (now - leg_start) / 1000.0])
 		_smoke_failed = true
 		return null
 	return null

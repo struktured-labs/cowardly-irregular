@@ -104,3 +104,56 @@ func test_an_ended_battle_is_given_the_grace_the_defeat_sequence_needs() -> void
 func test_an_ended_battle_is_not_reported_as_a_stall() -> void:
 	assert_eq(_verdict(1000, STALL + 9999, 1), "",
 		"rounds stopped because the battle ENDED; that is not a stall and must not be called one")
+
+
+## ⛔ EVERY REASON THE VERDICT CAN RETURN MUST HAVE A BRANCH THAT PRINTS IT, and the list is DERIVED
+## from the verdict function's own `return` literals rather than written here — the defect being
+## guarded is that someone adds a fifth reason and not a fifth message, which a hand-list cannot
+## see because they would add to the list in the same edit.
+##
+## The leg shipped in .658 with a `match` that had NO default arm: a reason with no branch printed
+## nothing, and the two lines after the match still set `_smoke_failed` and returned — so the gate
+## would have reported a bare `VERDICT: FAIL` with the explanation missing. That is the exact defect
+## this leg exists to remove, reintroduced by the leg's own dispatch. @cowir-sfx measured the same
+## shape as a classifier MISFILING a third kind of print; @cowir-deploy's tool LOST it instead;
+## generalised: a branch set with no else does not handle the next kind safely, it fails silently.
+func test_every_reason_the_verdict_returns_has_a_branch_that_prints_it() -> void:
+	var src := FileAccess.get_file_as_string("res://src/GameLoop.gd")
+	assert_ne(src, "", "CONTROL: GameLoop.gd must be readable")
+
+	var vat := src.find("static func smoke_wipe_verdict")
+	assert_gt(vat, -1, "CONTROL: the verdict function must exist")
+	var vend := src.find("\nfunc ", vat + 10)
+	assert_gt(vend, vat, "CONTROL: the verdict function ends before the next one")
+	var verdict := src.substr(vat, vend - vat)
+
+	var re := RegEx.create_from_string('return "([a-z_]+)"')
+	var reasons: Array = []
+	for m in re.search_all(verdict):
+		if not reasons.has(m.get_string(1)):
+			reasons.append(m.get_string(1))
+	reasons.sort()
+	assert_gte(reasons.size(), 3,
+		"CONTROL: derived only %d reasons from the verdict function — the scan is broken and the [] below is free: %s" % [
+			reasons.size(), str(reasons)])
+	gut.p("  reasons the verdict can return: %s" % ", ".join(reasons))
+
+	var lat := src.find("match _smoke_wipe_reason:")
+	assert_gt(lat, -1, "the wait must dispatch on the reason")
+	var lend := src.find("_smoke_failed = true", lat)
+	assert_gt(lend, lat, "CONTROL: the dispatch ends before the failure is recorded")
+	var dispatch := src.substr(lat, lend - lat)
+
+	var unbranched: Array = []
+	for reason in reasons:
+		if not dispatch.contains('"%s":' % reason):
+			unbranched.append(str(reason))
+	unbranched.sort()
+	assert_eq(unbranched, [],
+		"these reasons can be returned and have no branch that prints them, so the smoke would fail " +
+		"with no explanation: %s" % ", ".join(unbranched))
+
+	assert_true(dispatch.contains("_:"),
+		"the dispatch must have a DEFAULT arm; without one the NEXT reason added fails silently, " +
+		"which is the defect this leg was written to remove")
+
