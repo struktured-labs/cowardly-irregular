@@ -27,6 +27,10 @@
 # Exit:   0 reported · 2 usage / unreadable · 3 no log carried cue tracing
 set -uo pipefail
 
+# Prose in a scanned file is input. ONE shared stripper, never a private copy — see
+# tools/gd_code_lines.sh for the measurements and for what it does not close.
+. "$(cd "$(dirname "$0")" && pwd)/gd_code_lines.sh"
+
 # The two traced forms, from SoundManager (`if log_cues:` at :995 and :1018, procedural at :1784):
 #   [SFX] <requested> -> <resolved> pitch=<f> (<player>)
 #   [SFX] procedural <type> freq=<f> dur=<d> (<player>)
@@ -144,6 +148,20 @@ report() {
     group="$(command grep -aci 'group' "$f1" || true)"
     echo "[cue]   COVERAGE of ${f1##*/}: ${shots} shot(s), ${battles} battle marker(s), ${group} 'group' mention(s)."
     echo "[cue]   A key absent from the set above may simply be on a path the smoke never walks."
+    # ⛔ AND THE CORPUS IS CHOSEN BY RNG, NOT BY THE CODE — so DIFFING TWO PUBLISHES' CENSUSES IS
+    # NOT A REGRESSION TEST. @cowir-overworld's point that a behavioural arm is loud only about a
+    # corpus that COULD have contained the defect, applied to this artifact: the smoke fights a
+    # real battle, and what it casts varies run to run. Measured across archived publishes, with
+    # .663 and .664 both carrying the group-action leg:
+    #     .662  wipe round 7   49 distinct cues  0 status_ cues
+    #     .663  wipe round 13  51 distinct cues  3 status_ cues   <- status_silence appeared
+    #     .664  wipe round 8   46 distinct cues  2 status_ cues   <- and did not
+    # `status_silence` comes from a shadow_dragon casting null_field, which is not deterministic.
+    # A key present in one publish and absent in the next is therefore NOT a signal on its own.
+    echo "[cue]   ⚠️ The battle this walks is STOCHASTIC — cue sets differ between publishes of the"
+    echo "[cue]   SAME code (measured: 51 vs 46 distinct cues, 3 vs 2 status_ cues, .663 vs .664)."
+    echo "[cue]   Diff two censuses and you are reading RNG. Use the UNION over many runs, which is"
+    echo "[cue]   what passing several logs to this tool is for."
     return 0
 }
 
@@ -294,12 +312,51 @@ selftest() {
                 printf '  FAIL  %-56s\n' "a producer shape my patterns cannot classify"
                 printf '          %s\n' "$line"
             }
-        done < <(command grep -aoE 'print\("\[SFX\][^"]*"' "$prod" | sed -e 's/^print("//' -e 's/"$//' | sort -u)
+        # ⛔ PROSE IN THE SCANNED FILE IS INPUT, AND THIS ARM IS IN THE PUBLISH CORPUS — so a
+        # COMMENT in SoundManager.gd mentioning a print shape would red gate 0d and BLOCK A
+        # PUBLISH. @cowir-music measured the cheapest instance of the class: they wrote
+        # `add_status("literal")` in a comment explaining that guards key on that shape, and a
+        # guard extracted `literal` as a real status. Measured on a fixture here: the line
+        # `# guards key on the print("[SFX] mystery kind=1") shape` was extracted as a 2nd shape.
+        # @cowir-battle's census puts 454 of 691 source-reading guards in this bucket.
+        #
+        # The pre-filter keeps only lines with no `#` before the print, covering a full-line AND
+        # a trailing comment. ⚠️ Not quote-aware: a `#` inside a string earlier on the same line
+        # excludes the line. The repo's GdSource helper IS quote- and escape-aware with 228
+        # consumers, and is GDScript — unreachable from a shell tool, so this is the bash
+        # approximation with its hole stated rather than a private stripper pretending otherwise.
+        # It fails toward NOT extracting, which for this arm is the loud direction: a missing
+        # shape reds the classifier check rather than passing it.
+        done < <(gd_code_lines "$prod" \
+                 | command grep -aoE 'print\("\[SFX\][^"]*"' | sed -e 's/^print("//' -e 's/"$//' | sort -u)
         if [ "$shapes" -ge 3 ] && [ "$unmatched" -eq 0 ]; then
             pass=$((pass+1)); printf '  ok    %-56s (%s shape(s))\n' "every [SFX] shape the producer emits is classified" "$shapes"
         else
             fail=$((fail+1)); printf '  FAIL  %-56s (%s shapes, %s unmatched)\n' "producer shapes vs my patterns" "$shapes" "$unmatched"
         fi
+
+        # A COMMENT MUST NOT INVENT A SHAPE — and the control must show the same text UNcommented
+        # IS extracted, or the arm passes on anything. Synthetic producer, because the real one
+        # has no prose of that form today, which is exactly why it needs an arm not an inspection.
+        local cdir; cdir="$(mktemp -d "$PWD/tmp/cue_cmt.XXXXXX")"
+        mkdir -p "$cdir/src/audio"
+        {   printf 'func _play(k):\n'
+            printf '\tprint("[SFX] %%s -> %%s pitch=%%.2f (%%s)" %% [k, r, p, n])\n'
+            printf '\t# guards key on the print("[SFX] mystery kind=1") shape, do not change it\n'
+        } > "$cdir/src/audio/SoundManager.gd"
+        _cnt() { gd_code_lines "$1" | command grep -aoE 'print\("\[SFX\][^"]*"' | wc -l; }
+        if [ "$(_cnt "$cdir/src/audio/SoundManager.gd")" -eq 1 ]; then
+            pass=$((pass+1)); printf '  ok    %-56s\n' "a print shape in a COMMENT is not extracted"
+        else
+            fail=$((fail+1)); printf '  FAIL  %-56s (%s, want 1)\n' "a commented print shape was extracted" "$(_cnt "$cdir/src/audio/SoundManager.gd")"
+        fi
+        sed -i 's/^\t# guards key on the /\t/' "$cdir/src/audio/SoundManager.gd"
+        if [ "$(_cnt "$cdir/src/audio/SoundManager.gd")" -eq 2 ]; then
+            pass=$((pass+1)); printf '  ok    %-56s\n' "...and UNcommented, the same shape IS extracted"
+        else
+            fail=$((fail+1)); printf '  FAIL  %-56s (%s, want 2)\n' "the uncommented control did not extract" "$(_cnt "$cdir/src/audio/SoundManager.gd")"
+        fi
+        rm -rf "$cdir"
 
         # ⛔ "I FOUND NO SHAPE" AND "I CANNOT READ THIS PRINT" MUST NOT SHARE A VALUE. A print whose
         # first argument is not a literal cannot be read, and its text could carry an [SFX] line I
@@ -311,8 +368,8 @@ selftest() {
         # producer have a literal first argument, 0 non-literal, so the clean tree is silent and
         # the refusal is still not vacuous.
         local tot lit nonlit
-        tot="$(command grep -ac 'print(' "$prod" || true)"
-        lit="$(command grep -acE 'print\("' "$prod" || true)"
+        tot="$(gd_code_lines "$prod" | command grep -ac 'print(' || true)"
+        lit="$(gd_code_lines "$prod" | command grep -acE 'print\("' || true)"
         nonlit=$(( ${tot:-0} - ${lit:-0} ))
         if [ "$nonlit" -eq 0 ]; then
             pass=$((pass+1)); printf '  ok    %-56s (%s/%s literal)\n' "every print in the producer is READABLE" "$lit" "$tot"
