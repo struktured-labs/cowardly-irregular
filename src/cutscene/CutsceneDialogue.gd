@@ -12,6 +12,8 @@ signal dialogue_advanced()
 ## LLM calls (Wave C).
 signal thinking_started()
 signal thinking_ended()
+## The player asked out while the box was thinking; the conversation owner must abort.
+signal thinking_cancelled()
 
 ## Dialogue queue
 var _dialogue_queue: Array = []
@@ -122,6 +124,13 @@ var _advance_hint: Label
 ## place of the dialogue body while the LLM is fetching a line. The advance
 ## hint is hidden and input is swallowed so the player can't blow past an
 ## empty box. Toggled by set_thinking(active: bool).
+## Past this, a thinking box stops blocking the field — see _conversation_blocks_field.
+const THINKING_BLOCK_MAX_MS: int = 15000
+## The live bound. Separate from the const ONLY so a test can drive the elapsed case without
+## sleeping 15s; nothing in production writes it. Back-dating the stamp instead goes NEGATIVE in a
+## fresh process (ticks start near zero), which the started-yet guard below correctly rejects.
+var thinking_block_max_ms: int = THINKING_BLOCK_MAX_MS
+var _thinking_since_ms: int = 0
 var _thinking_label: Label
 var _thinking_timer: Timer
 var _thinking_dots_step: int = 0
@@ -431,12 +440,26 @@ func _field_lock_node() -> Node:
 
 
 ## True while this box is actually on screen. An empty hidden panel must not keep the field frozen.
+## ⛔ A THINKING BOX STOPS BLOCKING AFTER THINKING_BLOCK_MAX_MS, and that bound is load-bearing.
+## _process heartbeats the field lock while this is true, and a heartbeated lock can never be
+## reaped — so an owner stranded mid-await (DynamicConversation's documented entry-latch) used to
+## hold the lock forever: player frozen, overworld menu refused because its gate reads is_locked(),
+## and the only recovery (abort_all_conversations) needs a scene change the frozen player cannot
+## cause. Measured before this bound: is_locked() stayed true past the reaper's timeout indefinitely.
 func _conversation_blocks_field() -> bool:
 	if not visible:
 		return false
-	if is_backlog_open() or is_thinking():
+	if is_backlog_open():
 		return true
+	if is_thinking():
+		return not _thinking_outlived_its_welcome()
 	return not _dialogue_queue.is_empty()
+
+
+## True once a thinking state has run longer than any real reply should take. LLMService's own
+## CLIENT_TIMEOUT_SEC is 6s, so this sits well above it: a slow backend is not a strand.
+func _thinking_outlived_its_welcome() -> bool:
+	return _thinking_since_ms > 0 and Time.get_ticks_msec() - _thinking_since_ms > thinking_block_max_ms
 
 
 func _hold_field_lock() -> void:
@@ -911,6 +934,7 @@ func set_thinking(active: bool) -> void:
 		_thinking_dots_step = 0
 		_thinking_label.text = THINKING_FRAMES[0]
 		_thinking_label.visible = true
+		_thinking_since_ms = Time.get_ticks_msec()
 		if _thinking_timer and is_instance_valid(_thinking_timer):
 			_thinking_timer.start()
 		visible = true  # Make sure the dialogue panel is on-screen.
@@ -1200,7 +1224,11 @@ func _input(event: InputEvent) -> void:
 		# Also swallow ui_cancel (B / Esc) so the player can't skip the queue
 		# out from under an in-flight LLM response — the thinking guard must
 		# block fast-exit just as it blocks advance.
+		## Cancel is the player's way OUT while the box thinks, not a way to skip the reply: it
+		## asks the owner to abort (which unfreezes and drops this lock) rather than advancing.
 		if event.is_action_pressed("ui_cancel") and not event.is_echo():
+			set_thinking(false)
+			thinking_cancelled.emit()
 			get_viewport().set_input_as_handled()
 			return
 		if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:

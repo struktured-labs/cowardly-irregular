@@ -15,6 +15,8 @@ class_name NPCDialogue
 ##   ])
 
 signal conversation_finished()
+## Forwarded from the dialogue box: the player asked out while it was thinking.
+signal thinking_cancelled()
 
 var _dialogue: Node = null
 var _active: bool = false
@@ -83,3 +85,5 @@ func _ensure_dialogue() -> void:
 		return
 	_dialogue = CutsceneDialogueClass.new()
 	add_child(_dialogue)
+	if _dialogue.has_signal("thinking_cancelled"):
+		_dialogue.thinking_cancelled.connect(func(): thinking_cancelled.emit())
