@@ -7204,6 +7204,10 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 						print("  → %s failed to steal from %s!" % [caster.combatant_name, target.combatant_name])
 						battle_log_message.emit("[color=gray]%s couldn't steal anything from %s.[/color]" % [caster.combatant_name, target.combatant_name])
 		"cleanse":
+			## status_cured.ogg was composed and NOTHING played it: the cue is keyed `cured` while the
+			## effect is named `cleanse`, so no status_<effect> lookup could ever reach it, and
+			## BattleScene's arm played the generic buff instead (@cowir-story found the orphan).
+			var any_cleansed := false
 			for target in targets:
 				if target and is_instance_valid(target) and target.is_alive:
 					var cleansed: Array[String] = []
@@ -7216,9 +7220,20 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 						if "doom" not in cleansed:
 							cleansed.append("doom")
 					if cleansed.size() > 0:
+						any_cleansed = true
 						battle_log_message.emit("[color=cyan]%s cleansed %s![/color] (%s)" % [caster.combatant_name, target.combatant_name, ", ".join(cleansed)])
 					else:
 						battle_log_message.emit("[color=gray]%s has no ailments to cleanse.[/color]" % target.combatant_name)
+			## ONCE per cure ACTION, outside both loops — four ailments off two allies is one cure, and
+			## a per-status cue would be four plays of which the 80 ms cooldown swallows three, so the
+			## log would read "1" either way and only the SUPPRESSED trace could tell them apart.
+			## Cued HERE rather than in BattleScene because this is the only place that knows whether
+			## an ailment actually came off: a cure that cured nothing must not sound like one.
+			if SoundManager:
+				if any_cleansed:
+					SoundManager.play_status("cured")
+				else:
+					SoundManager.play_battle("buff")
 		"regen":
 			## Tick 436: honor authored regen_per_turn override.
 			## regenerate ability authors 40 (flat) but pre-fix the
