@@ -27,43 +27,17 @@ extends GutTest
 
 const CASTLE := "res://src/maps/dungeons/CastleHarmonia.gd"
 const PACK := "res://data/examine_texts.json"
-const FLOOR_KEY := "castle_harmonia_floor"
-const BOSS_FLAG := "world1_mordaine_defeated"
-
-var _had_floor := false
-var _saved_floor: int = 0
-var _had_flag := false
-var _saved_flag = null
+var _snap: Dictionary = {}
 
 
-## `current_floor` is restored from GameState, so which floor these arms measure is whatever an
-## EARLIER TEST left behind. Measured: floor 1 run alone, floor 2 inside the full sweep. Floor 4 is
-## authored BARE on purpose, so a leak to 4 would red the control instead of the subject. The arms
-## below name their floor; this pair keeps the naming from leaking back out.
+## The floor is cross-test state; `CastleFloor` names it and puts it back. That helper's header
+## carries the two measurements, including a 7/7 GREEN with a floor-3 placement deleted outright.
 func before_each() -> void:
-	var gs := get_node_or_null("/root/GameState")
-	if gs == null:
-		return
-	_had_floor = gs.game_constants.has(FLOOR_KEY)
-	_saved_floor = int(gs.game_constants.get(FLOOR_KEY, 0))
-	var flags: Dictionary = gs.game_constants.get("dungeon_flags", {})
-	_had_flag = flags.has(BOSS_FLAG)
-	_saved_flag = flags.get(BOSS_FLAG, null)
+	_snap = CastleFloor.snapshot()
 
 
 func after_each() -> void:
-	var gs := get_node_or_null("/root/GameState")
-	if gs == null:
-		return
-	if _had_floor:
-		gs.game_constants[FLOOR_KEY] = _saved_floor
-	else:
-		gs.game_constants.erase(FLOOR_KEY)
-	var flags: Dictionary = gs.game_constants.get("dungeon_flags", {})
-	if _had_flag:
-		flags[BOSS_FLAG] = _saved_flag
-	else:
-		flags.erase(BOSS_FLAG)
+	CastleFloor.restore(_snap)
 
 
 func _castle_entries() -> Dictionary:
@@ -78,25 +52,6 @@ func _castle_entries() -> Dictionary:
 		if e is Dictionary and str((e as Dictionary).get("scene", "")) == "castle_harmonia":
 			mine[str(k)] = e
 	return mine
-
-
-## Build the castle ON A NAMED FLOOR, rather than on whichever one the sweep left set.
-func _build_on_floor(floor_num: int) -> Node:
-	var gs := get_node_or_null("/root/GameState")
-	if gs != null:
-		gs.game_constants[FLOOR_KEY] = floor_num
-		var flags: Dictionary = gs.game_constants.get("dungeon_flags", {})
-		flags[BOSS_FLAG] = false
-		gs.game_constants["dungeon_flags"] = flags
-	var vp := SubViewport.new()
-	vp.size = Vector2i(64, 64)
-	vp.world_2d = World2D.new()
-	add_child_autofree(vp)
-	var castle = load(CASTLE).new()
-	vp.add_child(castle)
-	await get_tree().physics_frame
-	await get_tree().physics_frame
-	return castle
 
 
 ## ⛔ THE CODE HALF, NOT THE FILE — measured on THIS guard rather than inherited from the thread.
@@ -208,7 +163,7 @@ func test_the_castle_builds_each_floors_examines_and_no_others() -> void:
 	var covered: Array = []
 	var placed_total := 0
 	for floor_num in [1, 2, 3, 4]:
-		var castle = await _build_on_floor(floor_num)
+		var castle = await CastleFloor.build(self, floor_num)
 		assert_not_null(castle, "CONTROL: the castle must build on floor %d" % floor_num)
 		if castle == null:
 			continue
@@ -266,7 +221,7 @@ func test_the_castle_builds_each_floors_examines_and_no_others() -> void:
 
 ## And one must actually open with the authored text, not an empty panel.
 func test_an_examine_opens_with_its_authored_text() -> void:
-	var castle = await _build_on_floor(1)
+	var castle = await CastleFloor.build(self, 1)
 	assert_not_null(castle, "CONTROL: the castle must build on floor 1")
 	if castle == null:
 		return
