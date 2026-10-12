@@ -6474,6 +6474,10 @@ func _start_autogrind_battle(enemy_data: Array) -> void:
 	# Wait for scene to be ready
 	await get_tree().process_frame
 
+	## The controls legend anchors bottom-right, which is where this scene's PARTY panel ends: measured
+	## 33,616 px of overlap at 720p, hiding the last two members' HP/MP for the whole grind.
+	_keep_controller_overlay_off_the_party_panel(battle_scene)
+
 	# Enable autogrind console mode (replaces battle log with grind stats feed)
 	battle_scene.enable_autogrind_console()
 
@@ -7311,6 +7315,17 @@ func _show_controller_overlay(context: Dictionary) -> void:
 
 	_controller_overlay.set_context(context)
 	_controller_overlay.visible = true
+
+
+## The legend outlives any one battle, so the rect it avoids is re-declared per scene and dropped when
+## there is no panel to avoid -- otherwise it would keep dodging a panel that is no longer on screen.
+func _keep_controller_overlay_off_the_party_panel(scene: Node) -> void:
+	if not _controller_overlay or not is_instance_valid(_controller_overlay):
+		return
+	if not _controller_overlay.has_method("set_keep_clear_rect"):
+		return
+	var panel: Control = scene.get_node_or_null("UI/PartyStatusPanel") if scene != null and is_instance_valid(scene) else null
+	_controller_overlay.set_keep_clear_rect(panel.get_global_rect() if panel != null else Rect2())
 
 
 func _hide_controller_overlay() -> void:

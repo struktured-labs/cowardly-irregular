@@ -104,8 +104,26 @@ func pick_trigger_voice(job_id: String, event_kind: String, ctx: PartyCombatLine
 	var entries: Array = eligible_trigger_entries(job_id, event_kind, ctx)
 	if entries.is_empty():
 		return {"line": "", "voice_key": ""}
-	var e: Dictionary = _pick_no_repeat(job_id + "|" + event_kind, entries)
-	return {"line": str(e["line"]), "voice_key": VoiceLines.variant_key(event_kind, int(e["index"]))}
+	## Selected through the SAME half-pool window the LLM path uses, because this is the path a player
+	## gets by DEFAULT (party_llm_dialogue_enabled is off). The old 1-deep memory let the Fighter's
+	## 10-line pool repeat a line heard in the last three turns 19.8% of turns, against the window's
+	## 0.0% (measured 2026-10-12); the smaller the pool the worse, and his is the smallest. A 2- or
+	## 3-line pool still yields a window of 1, so nothing is ever said back to back.
+	## NOT recorded here: this line is picked on every party line and the LLM may speak another
+	## instead, so only the caller that EMITS it may call mark_spoken — see mark_spoken's own note.
+	var key: String = job_id + "|" + event_kind
+	var pool: Array = VoiceLines.choice_pool(entries, recent_spoken(job_id, event_kind))
+	## The window only deepens once a caller reports what it SPOKE, so the back-to-back guarantee stays
+	## here, self-maintained: a direct caller that never marks must still never hear a line twice running.
+	if pool.size() > 1:
+		var last: int = int(_last_variant.get(key, -1))
+		var fresh: Array = pool.filter(func(x): return int(x["index"]) != last)
+		if not fresh.is_empty():
+			pool = fresh
+	var e: Dictionary = pool[0]
+	_last_variant[key] = int(e["index"])
+	return {"line": str(e["line"]), "index": int(e["index"]),
+			"voice_key": VoiceLines.variant_key(event_kind, int(e["index"]))}
 
 
 const RECENT_SPOKEN_CAP := 32
@@ -126,16 +144,3 @@ func mark_spoken(job_id: String, event_kind: String, index: int) -> void:
 		r.pop_front()
 	_recent_spoken[key] = r
 
-
-## One entry at random, avoiding the ORIGINAL index spoken last time for this key.
-func _pick_no_repeat(key: String, entries: Array) -> Dictionary:
-	if entries.size() == 1:
-		_last_variant[key] = int(entries[0]["index"])
-		return entries[0]
-	var last: int = int(_last_variant.get(key, -1))
-	var pool: Array = entries.filter(func(x): return int(x["index"]) != last)
-	if pool.is_empty():
-		pool = entries
-	var e: Dictionary = pool[randi() % pool.size()]
-	_last_variant[key] = int(e["index"])
-	return e

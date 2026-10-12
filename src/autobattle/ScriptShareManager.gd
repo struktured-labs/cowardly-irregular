@@ -294,21 +294,44 @@ static func apply_character_script(character_id: String, data: Dictionary) -> bo
 
 
 ## Apply an imported autobattle bundle to all matching characters.
+##
+## ⛔ A PARTIAL BUNDLE USED TO REPORT ONLY ITS SUCCESSES. Skipping a malformed entry is
+## right — one bad script should not sink the rest — but the skip went to `push_warning`
+## alone, so the only number that reached the player was the count that worked. Import a
+## five-character bundle with two bad scripts and the log said "Imported 3 autobattle
+## scripts", in the success colour, with nothing to distinguish it from a clean import of
+## three. Two party members silently kept their old scripts.
+##
+## The per-character reason is now recorded in `last_import_errors`, the same place the
+## single-script path puts it and the same place `last_import_reason()` reads, so the
+## caller can name what was skipped and why. Cleared at ENTRY for the reason
+## `apply_character_script` states: a stale reason from the PREVIOUS import is specific,
+## plausible and about a different file.
 static func apply_script_bundle(data: Dictionary) -> int:
+	last_import_errors = []
+	last_import_advisories = []
 	if data.get("type") != "autobattle_bundle":
 		return 0
 	var scripts = data.get("scripts", {})
 	var count = 0
+	var skipped: Array = []
 	for char_id in scripts:
 		var errs := validate_imported_script(scripts[char_id])
 		if not errs.is_empty():
 			# Skip the malformed one, keep importing the rest — a single bad
 			# entry shouldn't sink an otherwise-good bundle.
+			skipped.append(char_id)
+			## Named per character: with several bad entries, "the reason" is useless
+			## unless it says WHOSE script it is about.
+			last_import_errors.append("%s: %s" % [char_id, str(errs[0])])
 			push_warning("[SHARE] Skipped bundled script for %s — %d invalid rule(s): %s" % [char_id, errs.size(), str(errs)])
 			continue
 		AutobattleSystem.set_character_script(char_id, scripts[char_id])
 		count += 1
-	print("[SHARE] Applied %d scripts from bundle" % count)
+	if skipped.is_empty():
+		print("[SHARE] Applied %d scripts from bundle" % count)
+	else:
+		print("[SHARE] Applied %d scripts from bundle, skipped %d (%s)" % [count, skipped.size(), ", ".join(PackedStringArray(skipped))])
 	return count
 
 
