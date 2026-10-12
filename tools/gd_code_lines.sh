@@ -65,6 +65,7 @@ _selftest() {
         printf '\t"""\n'
         printf '\t"""inline doc with print("[SMOKE] FAIL: z")"""\n'
         printf '\tprint("[SMOKE] VERDICT: %%s" %% v)   # a trailing comment\n'
+        printf '\tprint("[SMOKE] wipe: game over after %%.1fs" %% t)\n'
     } > "$d/f.gd"
     out="$(gd_code_lines "$d/f.gd")"
 
@@ -84,10 +85,24 @@ _selftest() {
     # at all would pass them.
     chk "a real code site SURVIVES"                  'VERDICT'              0
     chk "...and its trailing comment is gone"        'a trailing comment'   1
-    # And the vacuity floor: stripping must not empty the file.
-    if [ "$(printf '%s' "$out" | command grep -ac 'print(' )" -ge 1 ]; then
-        pass=$((pass+1)); printf '  ok    %-52s\n' "output still contains code"
-    else fail=$((fail+1)); printf '  FAIL  %-52s\n' "stripping emptied the file"; fi
+    # ⛔ A FLOOR THAT NAMES ONE LINE IS GAMED BY A MUTANT THAT READ IT. @cowir-overworld measured
+    # this on their own file and I then measured it here: a stripper emitting ONLY the line the
+    # must-survive arm names passed five of six arms, and the one that caught it was
+    # "its trailing comment is gone" — true, and pointing at comment handling rather than at a
+    # stripper returning one line of eight. Detection by a sibling arm costs you the EXPLANATION
+    # even when it costs no coverage.
+    #
+    # So the floor is PROPORTIONAL, over MULTIPLE sites: every code `print(` in the input must
+    # survive, counted. A mutant must then preserve essentially all code to pass — which is the
+    # correct behaviour. [[a-factorial-with-a-missing-cell]]
+    local want_prints got_prints
+    want_prints=2   # the two real code prints in the fixture above; the other three are prose
+    got_prints="$(printf '%s' "$out" | command grep -ac 'print(')"
+    if [ "${got_prints:-0}" -eq "$want_prints" ]; then
+        pass=$((pass+1)); printf '  ok    %-52s (%s/%s)\n' "EVERY code print survives, counted" "$got_prints" "$want_prints"
+    else
+        fail=$((fail+1)); printf '  FAIL  %-52s (%s, want %s — the strip ate or kept too much)\n' "code prints surviving" "${got_prints:-0}" "$want_prints"
+    fi
 
     echo; echo "selftest: ${pass} passed, ${fail} failed"
     [ "$fail" -eq 0 ]
