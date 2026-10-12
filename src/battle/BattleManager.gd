@@ -8946,9 +8946,17 @@ func _resolve_party_automation_tier() -> String:
 ## Persona lookup: explicit override first (set by dungeon subclass via llm_persona_id meta), else monster_type.
 func _boss_persona_id(combatant: Combatant) -> String:
 	var persona_id: String = str(combatant.get_meta("llm_persona_id", ""))
-	if persona_id == "":
-		persona_id = str(combatant.get_meta("monster_type", ""))
-	return persona_id
+	if persona_id != "":
+		return persona_id
+	var monster_id: String = str(combatant.get_meta("monster_type", ""))
+	## A boss id is not always its persona ("fire_dragon" -> "pyrroth"): monsters.json authors that
+	## bridge and only spawn_forced_enemies read it, so dungeon bosses arrived with no persona at all.
+	if monster_id != "" and EncounterSystem != null and not EncounterSystem.monster_database.is_empty():
+		var row: Dictionary = EncounterSystem.monster_database.get(monster_id, {})
+		var mapped: String = str(row.get("boss_llm_persona_id", ""))
+		if mapped != "":
+			return mapped
+	return monster_id
 
 
 ## The current intent's authored bias over this boss's own abilities (boss_dialogue.json). {} for no intent or none authored.
@@ -9485,20 +9493,12 @@ func _resolve_gloat_boss_persona() -> String:
 	for e in enemy_party:
 		if not is_instance_valid(e):
 			continue
-		var is_boss: bool = false
-		if e.has_meta("is_boss") and e.get_meta("is_boss"):
-			is_boss = true
-		elif e.has_meta("is_miniboss") and e.get_meta("is_miniboss"):
-			is_boss = true
-		var persona_id: String = e.get_meta("llm_persona_id", "")
-		if persona_id == "":
-			persona_id = e.get_meta("monster_type", "")
+		var persona_id: String = _boss_persona_id(e)
 		if persona_id == "":
 			continue
-		# An explicit persona handle (set by a dungeon subclass) counts as a boss
-		# even without the is_boss meta; otherwise require the boss/miniboss flag.
-		if not is_boss and not e.has_meta("llm_persona_id"):
-			continue
+		## An authored boss_dialogue section IS the boss test — every section in that file belongs to
+		## a boss or a duel miniboss. Requiring is_boss/llm_persona_id on top kept every dungeon
+		## boss silent, because the encounter spawn path sets neither.
 		if boss_dlg.has_entry(persona_id):
 			return persona_id
 	return ""
