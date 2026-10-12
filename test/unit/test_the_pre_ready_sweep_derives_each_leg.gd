@@ -151,3 +151,38 @@ func test_the_walk_scan_carries_its_own_positive_control() -> void:
 	assert_true(src.contains("MIN_WALKERS=") and src.contains("-lt \"$MIN_WALKERS\""),
 		"the positive control on the walk regex is not both declared and APPLIED — a pattern that matches nothing would read as a clean sweep")
 	assert_true(src.contains("exit 2"), "the broken-derivation refusal is gone")
+
+
+## project.godot is read by 39 test guards and derived ZERO of them: the per-file leg takes an
+## extension allowlist (gd|json|tscn|cfg|tres) and `.godot` was not in it, so a project-settings
+## change — input map, autoloads, logging — swept nothing and the tool said "nothing applies", exit 0.
+func test_a_project_settings_change_derives_its_readers() -> void:
+	var text := _list("project.godot")
+	assert_true(text.contains("project.godot ->"),
+		"project.godot derived no dependents, so an input-map or autoload change sweeps nothing:\n%s" % text)
+	var idx: int = text.find("project.godot ->")
+	var by_path: int = _leg_number(text.substr(idx, 90), "by path")
+	## RELATIONSHIP, not the 39 measured today: this grows whenever a guard starts reading the file.
+	assert_gt(by_path, 10,
+		"only %d guards derived for project.godot; it was 39 when written, so the allowlist or the path grep has drifted" % by_path)
+
+
+## The allowlist is a branch set with no else, and before 2026-10-12 the kind it did not list was
+## DROPPED rather than reported — the same shape @cowir-overworld found in a `match` with no default
+## and @cowir-deploy in a positive-match counter, all three in one afternoon. A reader can act on a
+## named gap and cannot act on an absence.
+func test_a_changed_path_no_leg_can_see_is_named() -> void:
+	var text := _list("README.md")
+	assert_true(text.contains("NO LEG CAN SEE"),
+		"a root-level unrecognised kind derived nothing and said nothing — a green sweep then covers a file it never considered:\n%s" % text)
+	assert_true(text.contains("README.md"), "the warning does not NAME the path, so it cannot be acted on:\n%s" % text)
+
+
+## CONTROL: a warning that fires on every run is a warning nobody reads. A fully covered path must
+## not trip it — and this is the arm that separates "the report works" from "the report always fires".
+func test_a_fully_covered_change_is_not_warned_about() -> void:
+	var text := _list("src/audio/SoundManager.gd")
+	assert_false(text.contains("NO LEG CAN SEE"),
+		"a path both legs cover was reported as underivable, so the warning fires on every sweep and gets ignored:\n%s" % text)
+	assert_false(text.contains("guards for: docs"),
+		"the summary names a tree that yielded no guards — a plausible label contradicting the warning above it")

@@ -79,19 +79,23 @@ if [ -z "${CHANGED//[[:space:]]/}" ]; then
   mapfile -t TREES < <(printf 'test\nsrc\ndata\nassets\ntools\naddons\n')
   WHY="no changed paths$( [ "$STATED" = 1 ] && printf ' were stated' || printf " vs ${PRE_READY_BASE:-origin/main}" ) — every tree"
   mapfile -t TOUCHED < <(printf '')
+  mapfile -t CHANGED_PATHS < <(printf '')   # no stated paths: nothing to account for
 else
   mapfile -t TREES < <(printf '%s\n' "$CHANGED" | awk -F/ 'NF>1 && $1 != "" {print $1}' | sort -u)
   WHY="$(printf '%s ' "${TREES[@]}")"
-  mapfile -t TOUCHED < <(printf '%s\n' "$CHANGED" | grep -E '\.(gd|json|tscn|cfg|tres)$' | sort -u)
+  mapfile -t TOUCHED < <(printf '%s\n' "$CHANGED" | grep -E '\.(gd|json|tscn|cfg|tres|godot|sh|py)$' | sort -u)
+  mapfile -t CHANGED_PATHS < <(printf '%s\n' "$CHANGED" | grep -vE '^[[:space:]]*$' | sort -u)
 fi
 
 FILES=()
+COVERED_TREES=()
 
 for t in ${TREES[@]+"${TREES[@]}"}; do
   [ -n "$t" ] || continue
   mapfile -t L < <(printf '%s\n' "${ALL_WALKERS[@]}" | xargs -r grep -lE "\"res://$t" 2>/dev/null | sort)
   [ "${#L[@]}" -gt 0 ] || continue
   echo "pre_ready_guards: ${#L[@]} guards walk res://$t"
+  COVERED_TREES+=("$t")
   FILES+=("${L[@]}")
 done
 
@@ -115,12 +119,42 @@ for f in ${TOUCHED[@]+"${TOUCHED[@]}"}; do
   cn=""
 done
 
+# EVERY changed path is accounted for, or named. The per-file leg takes an extension allowlist, which
+# is a branch set with no else: before 2026-10-12 a kind it did not list was dropped in silence, so a
+# project.godot change derived 0 of the 39 guards that read it and the tool said "nothing applies".
+# A path is covered if the per-file leg considered it, or its tree yielded walkers. Anything else is
+# reported rather than absorbed — a reader can act on a named gap and cannot act on an absence.
+UNSEEN=()
+for c in ${CHANGED_PATHS[@]+"${CHANGED_PATHS[@]}"}; do
+  [ -n "$c" ] || continue
+  seen=0
+  for f in ${TOUCHED[@]+"${TOUCHED[@]}"}; do [ "$f" = "$c" ] && seen=1 && break; done
+  if [ "$seen" = 0 ] && [ "${c%%/*}" != "$c" ]; then
+    for t in ${COVERED_TREES[@]+"${COVERED_TREES[@]}"}; do [ "$t" = "${c%%/*}" ] && seen=1 && break; done
+  fi
+  [ "$seen" = 1 ] || UNSEEN+=("$c")
+done
+if [ "${#UNSEEN[@]}" -gt 0 ]; then
+  echo "pre_ready_guards: ${#UNSEEN[@]} changed path(s) NO LEG CAN SEE — derived from nowhere above, so a green here says nothing about them:"
+  printf 'pre_ready_guards:     %s\n' "${UNSEEN[@]}"
+fi
+
 if [ "${#FILES[@]}" -eq 0 ]; then
   echo "pre_ready_guards: no tree guard and no dependent can see this change ($WHY) — nothing directory- or file-scoped applies"
   exit 0
 fi
 
 mapfile -t FILES < <(printf '%s\n' "${FILES[@]}" | sort -u)
-echo "pre_ready_guards: ${#FILES[@]} distinct guards for: $WHY"
+# Name the trees that actually YIELDED guards, not every tree in the change set: with a stated docs/
+# path the summary read "guards for: docs src" two lines under a warning saying docs is seen by
+# nothing — a plausible label contradicting the true one directly above it. A root-level file has no
+# tree at all, so branch on the array COUNT, not on a string: `printf '%s '` over an empty array
+# yields a SPACE, so `${X:-fallback}` never fires and the label looked empty while it was not.
+if [ "${#COVERED_TREES[@]}" -gt 0 ]; then
+  LABEL="$(printf '%s ' "${COVERED_TREES[@]}")"
+else
+  LABEL="per-file dependents only (no tree in the change set)"
+fi
+echo "pre_ready_guards: ${#FILES[@]} distinct guards for: $LABEL"
 [ "$LIST_ONLY" = 1 ] && exit 0
 exec tools/run_tests.sh "${FILES[@]/#/res://}"
