@@ -192,7 +192,10 @@ func _build_ui() -> void:
 	# Main panel
 	_panel = Control.new()
 	_panel.position = Vector2(size.x * 0.2, size.y * 0.1)
-	_panel.size = Vector2(size.x * 0.6, size.y * 0.8)
+	## 0.80 until 2026-10-12: the field-menu row made eight remappable rows and the last one
+	## ended 24px BELOW the conflict line. The footer lines are placed from the panel's bottom, so
+	## growing the panel restores the gap without moving a single row.
+	_panel.size = Vector2(size.x * 0.6, size.y * 0.88)
 	add_child(_panel)
 
 	var panel_bg = ColorRect.new()

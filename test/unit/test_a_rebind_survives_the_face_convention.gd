@@ -187,8 +187,10 @@ func test_a_real_collision_is_reported_by_detect_conflicts() -> void:
 ## ⛔ THE ONE A PLAYER MEETS WITHOUT DOING ANYTHING UNUSUAL: rebind, restart, it moved.
 func test_a_rebind_to_a_swapped_index_survives_a_reapply() -> void:
 	var m: Node = _xbox_convention()
-	## Move Cancel aside so binding Confirm to a swap index is legal rather than a trap.
-	m.set_custom_binding("ui_cancel", [3])
+	## Move Cancel aside so binding Confirm to a swap index is legal rather than a trap. Parked on
+	## the WEST face: 3 (north) became the field menu's default on 2026-10-12 and Cancel sharing it
+	## is now refused, so parking there silently no-opped this setup and failed the arms below.
+	m.set_custom_binding("ui_cancel", [2])
 	var accept_now: Array = _bound("ui_accept")
 	assert_false(3 in accept_now, "CONTROL: Confirm must not already be on 3")
 
