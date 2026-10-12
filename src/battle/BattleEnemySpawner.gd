@@ -684,7 +684,12 @@ func spawn_encounter_enemies() -> void:
 			enemy.set_meta("is_miniboss", true)
 			encounter_has_boss = true
 			if monster_data.has("dialogue"):
-				_scene._boss_dialogue_data = monster_data["dialogue"]
+				## The dungeon's boss_cutscene_id is the intro on this path (12 of 12 declare one), and an
+				## in-battle intro ALSO skips BattleManager.start_battle at BattleScene:885. Copy, never
+				## erase in place: load_monsters_data returns the cached EncounterSystem.monster_database.
+				var dlg: Dictionary = (monster_data["dialogue"] as Dictionary).duplicate(true)
+				dlg.erase("intro")
+				_scene._boss_dialogue_data = dlg
 
 		# Store Masterite metadata for specialized AI
 		if monster_data.get("masterite", false):
