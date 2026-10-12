@@ -54,7 +54,13 @@ func press_lands_on(feet: Vector2, facing: Vector2) -> Node:
 	if _vp == null or _vp.world_2d == null:
 		return null
 	var space := _vp.world_2d.direct_space_state
-	for point in [feet + facing * InteractGeometry.PROBE_REACH_MODE7, feet]:
+	## MIRROR THE CONSUMER, do not pick one: `OverworldController:237` reads
+	## `PROBE_REACH_MODE7 if Mode7Overlay.is_active else PROBE_REACH_FLAT`, and the two differ 2x
+	## (80 vs 40). This helper hardcoded the Mode 7 reach, which is right for the Mode 7 overworlds
+	## it was written against and WRONG for any flat caller — W6 runs no Mode 7, and villages are
+	## flat too. A hardcoded reach measures a press the player cannot make, or misses one they can.
+	var reach: float = InteractGeometry.PROBE_REACH_MODE7 if Mode7Overlay.is_active else InteractGeometry.PROBE_REACH_FLAT
+	for point in [feet + facing * reach, feet]:
 		var q := PhysicsPointQueryParameters2D.new()
 		q.position = point
 		q.collide_with_areas = true
