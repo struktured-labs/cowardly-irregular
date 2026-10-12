@@ -209,6 +209,17 @@ func test_no_authored_ahead_entry_has_quietly_come_alive() -> void:
 		"an exemption has come alive and is now misleading: %s — remove the AUTHORED_AHEAD entry, the item is real content now" % str(alive))
 
 
+## An exempted curative is still SOLD: the shelf must say it does nothing while the buyer is choosing.
+func test_an_authored_ahead_curative_discloses_it_on_the_shelf() -> void:
+	var items: Dictionary = _items()
+	assert_false(AUTHORED_AHEAD.is_empty(), "no exemptions left — delete this arm with the table")
+	for id in AUTHORED_AHEAD.keys():
+		var v: Variant = items.get(str(id), {})
+		var desc: String = str((v as Dictionary).get("description", "")) if v is Dictionary else ""
+		assert_string_contains(desc, "(Currently no effect)",
+			"'%s' is sold but cures nothing that can happen — its description must disclose that" % id)
+
+
 ## FLOOR: the symbols this file reaches on a runtime receiver. GdSource is a class_name const reached
 ## at parse time (a missing member exits 3, nothing ran), so it is deliberately not floored here.
 func test_floor_the_symbols_this_file_drives_exist() -> void:
