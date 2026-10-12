@@ -660,6 +660,9 @@ func _maybe_run_battle_smoke() -> void:
 	if xform.origin != Vector2.ZERO:
 		_smoke_failed = true
 	await _smoke_shot("battle_smoke")
+	# A GROUP ACTION, before autobattle takes the wheel — the party is in PLAYER_SELECTING here and
+	# nowhere else in this smoke, so this is the only window the leg can run in.
+	await _smoke_group_action()
 	# auto-play only AFTER battle_smoke: with no input the party waits in PLAYER_SELECTING forever
 	for m in party:
 		if m and is_instance_valid(m) and "player_trust" in m:
@@ -996,6 +999,71 @@ func _smoke_player_path_battle() -> void:
 	elif not (current_scene != null and is_instance_valid(current_scene) and "monster_spawner" in current_scene):
 		print("[SMOKE] FAIL: the player-path battle ended but exploration never came back in %.1fs" % rewind)
 		_smoke_failed = true
+
+
+## Pool the party's AP into one strike — the design pillar nothing in automation had ever executed.
+##
+## ⛔ WHAT THIS COVERS AND WHAT IT DOES NOT, because the distinction is the whole design. It drives
+## `player_group_attack` -> `_execute_group_action` -> `_apply_vulnerability_window`, which had no
+## runtime coverage at all: @cowir-deploy measured **0 occurrences of "group"** in the archived .660
+## smoke log, and two authored status cues reachable only from that window have never played.
+## It does NOT drive the command menu's group row. That is deliberate: @cowir-controller measured
+## `Win98Menu:937` deaf for 80ms after every spawn, with `ignore_time_scale = true` — so the window
+## is 80ms of WALL CLOCK at any speed, it re-arms per character (~203 spawns in one session), and a
+## press that lands in it reads as "no group row" rather than as a mistimed press. The menu has its
+## own guards on their surface; adding a flake here to re-cover it would be a bad trade.
+##
+## 🔑 EVERY FAILURE BELOW SAYS WHETHER THE SETUP OR THE FEATURE BROKE. A leg whose arrangement can
+## fail silently reports a working feature as broken — my own wipe leg called a correctly-wiped party
+## a missing game-over screen, and @cowir-deploy's probe arm passed 17 runs while measuring the wrong
+## branch. `all_out_attack` is chosen for the same reason: limit_break needs 4 AP from every
+## participant and combo_magic needs 2 AP plus two distinct elements, so either would make the leg's
+## setup a precondition the smoke has to ARRANGE, and an unmet arrangement is indistinguishable from
+## a broken gate unless something asserts it first.
+func _smoke_group_action() -> void:
+	if BattleManager.current_state == BattleManager.BattleState.INACTIVE:
+		print("[SMOKE] FAIL: group-action leg has no live battle — SETUP, not the feature")
+		_smoke_failed = true
+		return
+
+	var waited: float = 0.0
+	while BattleManager.current_state != BattleManager.BattleState.PLAYER_SELECTING and waited < 20.0:
+		await get_tree().create_timer(0.25).timeout
+		waited += 0.25
+	if BattleManager.current_state != BattleManager.BattleState.PLAYER_SELECTING:
+		print("[SMOKE] FAIL: never reached PLAYER_SELECTING in %.1fs (state=%s) — SETUP, not the feature: the leg could not get a turn to spend" % [
+			waited, str(BattleManager.current_state)])
+		_smoke_failed = true
+		return
+
+	var participants: Array = BattleManager.group_participants()
+	if participants.size() < 2:
+		print("[SMOKE] FAIL: only %d group participant(s) available — SETUP, not the feature: a group action needs the party to pool, and this smoke's party should supply several" % participants.size())
+		_smoke_failed = true
+		return
+
+	## Observational, like the roamer leg's `battle_triggered`: the signal is the proof the execution
+	## path ran, rather than the absence of an error.
+	var fired: Array = [false, 0]
+	BattleManager.group_attack_executing.connect(
+		func(parts, _gt, _tg, _fid): fired[0] = true; fired[1] = (parts as Array).size(),
+		CONNECT_ONE_SHOT)
+
+	BattleManager.player_group_attack("all_out_attack")
+	var settle: float = 0.0
+	while not fired[0] and settle < 20.0:
+		await get_tree().create_timer(0.25).timeout
+		settle += 0.25
+	if not fired[0]:
+		print("[SMOKE] FAIL: player_group_attack(all_out_attack) with %d participants ready never reached _execute_group_action in %.1fs — THE FEATURE, not the setup" % [
+			participants.size(), settle])
+		_smoke_failed = true
+		return
+
+	print("[SMOKE] group action: %d of %d participants struck together in %.1fs" % [
+		int(fired[1]), participants.size(), settle])
+	await get_tree().create_timer(0.8).timeout
+	await _smoke_shot("group_attack")
 
 
 func _smoke_quiet_the_roamers() -> void:
