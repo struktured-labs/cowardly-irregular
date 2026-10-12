@@ -801,6 +801,22 @@ func _boss_combatant() -> Node:
 
 func _start_battle_after_dialogue() -> void:
 	"""Start the battle after dialogue is finished"""
+	## The confirm that dismisses an intro can arrive AFTER the battle it was introducing has
+	## already ended, and this is the only path left that starts a battle from the scene's own
+	## arrays — so it restarted a finished one against freed enemies. _waiting_for_dialogue is a
+	## one-way latch, so clearing it at battle end is not enough on its own: anything that ends a
+	## battle before its intro is dismissed arms this again.
+	if _battle_ended:
+		push_warning("[BATTLE] intro confirm arrived after the battle ended — not restarting it")
+		return
+	for enemy in test_enemies:
+		if not is_instance_valid(enemy):
+			push_warning("[BATTLE] intro confirm arrived with a freed enemy — not starting a battle")
+			return
+	for member in party_members:
+		if not is_instance_valid(member):
+			push_warning("[BATTLE] intro confirm arrived with a freed party member — not starting a battle")
+			return
 	BattleManager.start_battle(party_members, test_enemies)
 
 
@@ -3491,6 +3507,9 @@ func _on_battle_ended(victory: bool) -> void:
 	_update_ui()
 	_battle_ended = true
 	_battle_victory = victory
+	## The intro latch outlived the battle it was set for: nothing else clears it, so a confirm
+	## press long after a victory still read as "now start the fight".
+	_waiting_for_dialogue = false
 
 
 ## Flee and Smoke Bomb end through end_battle(false) like a wipe; any PC still standing makes it an escape, the same rule GameLoop routes by.
