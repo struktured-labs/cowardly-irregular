@@ -558,6 +558,26 @@ func _maybe_run_battle_smoke() -> void:
 			await _smoke_enter_map(_iid)
 			await get_tree().create_timer(0.8).timeout
 			await _smoke_shot(_iid)
+		# W2 and W3: five worlds ship and the smoke had only ever entered W1 and one W6 room, so
+		# every suburban/steampunk regression was invisible to pixels. Two walks in W2 because the
+		# garbled-walk sprite class only shows while moving; one still frame each elsewhere.
+		await _smoke_enter_map("suburban_overworld")
+		await get_tree().create_timer(1.5).timeout
+		for w2_dir in ["ui_right", "ui_down"]:
+			Input.action_press(w2_dir)
+			await get_tree().create_timer(0.7).timeout
+			await _smoke_shot("w2_walk_%s" % w2_dir.trim_prefix("ui_"))
+			Input.action_release(w2_dir)
+		await _smoke_player_path_battle()
+		await _smoke_enter_map("maple_heights_village")
+		await get_tree().create_timer(1.2).timeout
+		await _smoke_shot("w2_village")
+		await _smoke_enter_map("steampunk_overworld")
+		await get_tree().create_timer(1.5).timeout
+		await _smoke_shot("w3_overworld")
+		await _smoke_enter_map("brasston_village")
+		await get_tree().create_timer(1.2).timeout
+		await _smoke_shot("w3_village")
 		# The Vertex Apex — the LAST ROOM IN THE GAME had never had a screenshot taken of it
 		# by anything, human or automated, until this leg (struktured's go, wishlist item).
 		await _smoke_enter_map("vertex_apex")
@@ -879,6 +899,103 @@ func _smoke_await_wipe() -> Node:
 		_smoke_failed = true
 		return null
 	return null
+
+
+## A battle entered the way a PLAYER enters one. EVERY other battle in this smoke is started by
+## `_start_battle_async`, which bypasses `_on_exploration_battle_triggered` and the battle
+## transition entirely — so the whole roamer -> touch -> trigger -> transition chain shipped with no
+## pixel or integration coverage, and .654's rollback lived in exactly that region.
+##
+## ⚠️ `_smoke_enter_map` calls `_smoke_quiet_the_roamers`, and `MonsterSpawner.set_enabled(false)`
+## DESPAWNS as well as stopping spawns — so this leg re-arms the spawner and waits for one to
+## appear rather than expecting to find one. Without the re-arm there is nothing to touch and the
+## leg would pass by measuring an empty map.
+##
+## The touch is a real physics overlap, not a handler call: the player is moved onto the roamer and
+## `body_entered` fires on its own. Walking there with `Input.action_press` would be the same chain
+## with aiming added, and aiming at a wandering target is what makes a smoke leg flaky.
+func _smoke_player_path_battle() -> void:
+	var scene: Node = current_scene
+	if scene == null or not is_instance_valid(scene) or not scene.has_signal("battle_triggered"):
+		print("[SMOKE] FAIL: player-path battle leg has no exploration scene to drive")
+		_smoke_failed = true
+		return
+	var spawner: Node = scene.get("monster_spawner") if "monster_spawner" in scene else null
+	if spawner == null or not is_instance_valid(spawner) or not spawner.has_method("set_enabled"):
+		print("[SMOKE] FAIL: player-path battle leg found no monster spawner")
+		_smoke_failed = true
+		return
+	spawner.set_enabled(true)
+
+	var roamer: Node2D = null
+	var waited: float = 0.0
+	while roamer == null and waited < 6.0:
+		await get_tree().create_timer(0.25).timeout
+		waited += 0.25
+		for m in (spawner.get("_monsters") if "_monsters" in spawner else []):
+			if m is Node2D and is_instance_valid(m):
+				roamer = m
+				break
+	if roamer == null:
+		print("[SMOKE] FAIL: no roamer spawned in %.1fs — the player-path battle leg measured an empty map" % waited)
+		_smoke_failed = true
+		return
+
+	## Observational proof the SCENE emitted it: a battle that appeared without this signal came
+	## from somewhere other than the path a player takes, which is the thing being covered.
+	var fired: Array = [false]
+	scene.battle_triggered.connect(func(_e, _t): fired[0] = true, CONNECT_ONE_SHOT)
+
+	var p: Node2D = scene.get("player") if "player" in scene else null
+	if p == null or not is_instance_valid(p):
+		print("[SMOKE] FAIL: player-path battle leg has no player to move")
+		_smoke_failed = true
+		return
+	p.global_position = roamer.global_position
+	var settle: float = 0.0
+	while not fired[0] and settle < 4.0:
+		await get_tree().physics_frame
+		await get_tree().create_timer(0.1).timeout
+		settle += 0.1
+	if not fired[0]:
+		print("[SMOKE] FAIL: touched a roamer and the scene never emitted battle_triggered — the player path is broken")
+		_smoke_failed = true
+		return
+
+	var armed: float = 0.0
+	while BattleManager.current_state == BattleManager.BattleState.INACTIVE and armed < 12.0:
+		await get_tree().create_timer(0.25).timeout
+		armed += 0.25
+	if BattleManager.current_state == BattleManager.BattleState.INACTIVE:
+		print("[SMOKE] FAIL: battle_triggered fired but no battle began within %.1fs — the transition dropped it" % armed)
+		_smoke_failed = true
+		return
+	await get_tree().create_timer(1.2).timeout
+	await _smoke_shot("w2_roamer_battle")
+	print("[SMOKE] player-path battle: trigger -> transition -> battle in %.1fs" % (settle + armed))
+
+	## Hand the fight back immediately. The leg covers the ENTRY, and a real fight here would cost
+	## the wipe leg's budget for coverage the goblin leg already has.
+	BattleManager.end_battle(true)
+	var back: float = 0.0
+	while BattleManager.current_state != BattleManager.BattleState.INACTIVE and back < 15.0:
+		_smoke_tap("ui_accept")
+		await get_tree().create_timer(0.5).timeout
+		back += 0.5
+	## Back on a map, not just out of the battle: `_smoke_enter_map` early-returns while a battle
+	## scene is up, so a leg that stopped at INACTIVE would leave every later leg shooting this one.
+	## An exploration scene is the thing that owns a monster_spawner.
+	var rewind: float = 0.0
+	while rewind < 15.0 and not (current_scene != null and is_instance_valid(current_scene) and "monster_spawner" in current_scene):
+		_smoke_tap("ui_accept")
+		await get_tree().create_timer(0.5).timeout
+		rewind += 0.5
+	if BattleManager.current_state != BattleManager.BattleState.INACTIVE:
+		print("[SMOKE] FAIL: the player-path battle never ended — every later leg would bail")
+		_smoke_failed = true
+	elif not (current_scene != null and is_instance_valid(current_scene) and "monster_spawner" in current_scene):
+		print("[SMOKE] FAIL: the player-path battle ended but exploration never came back in %.1fs" % rewind)
+		_smoke_failed = true
 
 
 func _smoke_quiet_the_roamers() -> void:
