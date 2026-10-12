@@ -116,6 +116,8 @@ func test_the_manager_still_sets_the_flag_on_load() -> void:
 			"custom_bindings": {},
 			"profile_chosen_by_user": want,
 		}
+		# A fresh user:// has no input/ yet; the manager makes it on save, a fixture has to make it itself.
+		DirAccess.make_dir_recursive_absolute(InputProfileManager.CONFIG_PATH.get_base_dir())
 		var f := FileAccess.open(InputProfileManager.CONFIG_PATH, FileAccess.WRITE)
 		assert_not_null(f, "CONTROL: the fixture config must be writable")
 		f.store_string(JSON.stringify(cfg, "\t"))
