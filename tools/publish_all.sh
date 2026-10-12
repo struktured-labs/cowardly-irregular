@@ -355,36 +355,29 @@ case "$_avail_mb" in
             # selftest arms assert that exact string in both directions. Counted from a real
             # file, never a pipeline, because $? across a pipe has bitten this file before.
             _short_mb=$(( PUBLISH_MIN_FREE_MB - _avail_mb ))
+            # ⛔ DELEGATED, AND THE DELEGATION IS THE FIX. This block used to run the reaper
+            # itself with no REAP_ROOT, from a cwd that IS a release worktree — so the reaper
+            # rooted itself at tmp/pub<N>, scanned that tree's own empty tmp/, and returned
+            # zero. Measured 2026-10-12: zero from there, 121 removable from the lane root with
+            # the same default prefix. On 2026-09-19, at 909 MB free, that zero printed
+            # "the space is held outside this lane" while this lane held 443 GiB.
+            #
+            # It also threw away the reaper's own qualification. The reaper says "0 of 221
+            # registered worktree(s) are under this root — if the population you meant lives
+            # elsewhere, set REAP_ROOT"; this block counted `would remove` lines only, so a
+            # guard saying "I may be looking in the wrong place" was reported as "the space is
+            # not here". Both now live in tools/reap_probe.sh, which has arms for all three
+            # outcomes — including the one where the probe could not see anything, which is the
+            # arm nobody writes until it has cost them a disk.
             _reap_log="tmp/reap_probe.$$.log"
             mkdir -p tmp
-            _reap_ec=0
-            timeout 120 ./tools/reap_release_worktrees.sh > "$_reap_log" 2>&1 || _reap_ec=$?
-            _cands=0
-            if [ -f "$_reap_log" ]; then
-                _cands=$(command grep -ac 'would remove' "$_reap_log" || true)
-            fi
-            case "$_cands" in ''|*[!0-9]*) _cands=0 ;; esac
-            if [ "$_reap_ec" -ne 0 ] && [ "$_reap_ec" -ne 1 ]; then
-                # Could not ask. Say so and fall back to the old advice rather than inventing
-                # a verdict -- "the reaper cannot help" is a CLAIM and an unrunnable probe
-                # does not support it.
-                echo "[pub]   COULD NOT ASK THE REAPER (exit ${_reap_ec}) whether cleanup here could help." >&2
-                echo "[pub]   Treat the next two lines as unverified:" >&2
-                echo "[pub]     tools/reap_release_worktrees.sh            # dry run, names what it would remove" >&2
-                echo "[pub]     tools/reap_release_worktrees.sh --apply    # only trees rebuildable from a tag on origin" >&2
-            elif [ "$_cands" -eq 0 ]; then
-                echo "[pub]   ⛔ CLEANUP HERE CANNOT CLEAR THIS FLOOR, SO DO NOT START ONE." >&2
-                echo "[pub]     The reaper has 0 removable trees; it would free 0 MB against a" >&2
-                echo "[pub]     ${_short_mb} MB shortfall. It is the ONLY cleanup this lane is" >&2
-                echo "[pub]     permitted to do, so there is nothing here to reclaim. The space" >&2
-                echo "[pub]     is held outside this lane and freeing it is struktured's call." >&2
-                echo "[pub]     Probe: ${_reap_log}" >&2
+            if [ -x ./tools/reap_probe.sh ]; then
+                ./tools/reap_probe.sh "$_short_mb" "$_reap_log" 2>&1 \
+                    | while IFS= read -r _l; do echo "[pub]   ${_l}" >&2; done
             else
-                echo "[pub]   The reaper names ${_cands} removable tree(s) against a ${_short_mb} MB" >&2
-                echo "[pub]   shortfall. Whether that is ENOUGH is not known until you read the" >&2
-                echo "[pub]   dry run -- the count is trees, not megabytes:" >&2
-                echo "[pub]     cat ${_reap_log}                          # what it would remove, already measured" >&2
-                echo "[pub]     tools/reap_release_worktrees.sh --apply    # only trees rebuildable from a tag on origin" >&2
+                echo "[pub]   tools/reap_probe.sh missing — cannot say whether cleanup here" >&2
+                echo "[pub]   would help. Treat the next line as unverified:" >&2
+                echo "[pub]     REAP_ROOT=<lane checkout> tools/reap_release_worktrees.sh" >&2
             fi
             echo "[pub]" >&2
             echo "[pub]   ⛔ Do NOT delete outside this lane. Those are struktured's other projects" >&2
