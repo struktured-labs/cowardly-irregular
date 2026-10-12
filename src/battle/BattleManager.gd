@@ -4601,15 +4601,26 @@ func _apply_vulnerability_window(participants: Array) -> void:
 	  2. Status duration of 1 expired at the very next end_turn (start of next round),
 	     before any enemy could exploit the vulnerability window. Bumped to 2 so
 	     enemies actually get to land hits during the exposed state."""
+	var exposed_any: bool = false
 	for p in participants:
 		if not (p is Combatant) or not p.is_alive:
 			continue
 		p.add_status("exposed", 2)
 		p.add_status("cannot_defer", 2)
+		exposed_any = true
 		var old_ap = p.current_ap
 		p.current_ap = clampi(p.current_ap - 2, -4, 4)
 		if p.has_signal("ap_changed"):
 			p.ap_changed.emit(old_ap, p.current_ap)
+	## Both statuses have AUTHORED cues that had never played (cowir-music, measured): this window is
+	## reached only from _execute_group_action, whose action carries "type": "group", and BattleScene's
+	## status-cue dispatch at :4916 is gated on "ability". Same gate the counter-status site at :5228
+	## already works around with a direct call — this was the sibling it did not reach.
+	## ONCE for the window, not once per participant: 2 x N calls in one frame are deduped by the
+	## per-key cooldown, so the naive form is ARBITRARY rather than silent, which is worse to debug.
+	if exposed_any and SoundManager:
+		SoundManager.play_status_if_authored("status_exposed")
+		SoundManager.play_status_if_authored("status_cannot_defer")
 	# Tick 238: penalty BBCode (group-exposure debuff).
 	battle_log_message.emit("[color=%s]All participants are now exposed! (-2 AP, 1.5x damage taken)[/color]" % AccessibilityPalette.penalty_bbcode())
 
