@@ -117,6 +117,29 @@ func test_list_runs_no_tests() -> void:
 	assert_false(text.contains("Totals"), "--list ran the suite; it must only print the derivation:\n%s" % text)
 
 
+## PRE_READY_PATHS is documented space-separated, and every derivation reads LINES. A multi-path value
+## arrived as one line, so `awk -F/ '{print $1}'` returned only the FIRST path's tree and the per-file
+## legs got the whole string as a filename and were skipped by the -f test. Measured by @cowir-ai on a
+## src+test set: "src" alone, none of the ten test-dir guards, EC=0 — and the add-a-test-file case is
+## exactly when a lane also touches src, so the normal shape was the under-derived one.
+func test_a_multi_path_set_derives_every_tree_in_it() -> void:
+	var text := _list("src/cutscene/CutsceneDialogue.gd test/unit/test_a_thinking_box_cannot_trap_the_player.gd")
+	assert_true(text.contains("walk res://src"), "the src tree is missing from a mixed set:\n%s" % text)
+	assert_true(text.contains("walk res://test"),
+		"the TEST tree is missing from a mixed set — only the first path's tree derived, so an added test file runs none of the guards that judge it:\n%s" % text)
+
+
+func test_every_stated_path_gets_its_own_per_file_leg() -> void:
+	## The same defect's other half: the per-file legs read the whole string as one filename, so a
+	## multi-path set produced no dependents at all.
+	var text := _list("src/cutscene/CutsceneDialogue.gd src/llm/DynamicConversation.gd")
+	var legs := 0
+	for raw in text.split("\n"):
+		if raw.contains(" -> ") and raw.contains("by path"):
+			legs += 1
+	assert_eq(legs, 2, "expected one per-file leg per stated path, got %d:\n%s" % [legs, text])
+
+
 func test_the_walk_scan_carries_its_own_positive_control() -> void:
 	## A per-tree floor cannot work (addons/ legitimately derives 0), so the control is on the REGEX:
 	## if the walk pattern matches implausibly little, the derivation is broken rather than the branch.
