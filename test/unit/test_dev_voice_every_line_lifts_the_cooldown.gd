@@ -11,12 +11,14 @@ var _saved_flag: Variant
 
 
 func before_each() -> void:
+	PartyPersonas._recent_spoken.clear()  # the pick window leaks across FILES; see test_a_voice_store_is_left_as_it_was_found
 	_saved_party = BattleManager.player_party.duplicate()
 	_saved_round = BattleManager.current_round
 	_saved_flag = GameState.game_constants.get("dev_voice_every_line", null)
 
 
 func after_each() -> void:
+	PartyPersonas._recent_spoken.clear()  # the pick window leaks across FILES; see test_a_voice_store_is_left_as_it_was_found
 	BattleManager.player_party.assign(_saved_party.filter(func(c): return is_instance_valid(c)))
 	BattleManager.current_round = _saved_round
 	BattleManager._party_line_cooldowns.clear()

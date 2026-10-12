@@ -36,6 +36,7 @@ class SlowModel extends LLMBackend:
 
 
 func before_each() -> void:
+	PartyPersonas._recent_spoken.clear()  # the pick window leaks across FILES; see test_a_voice_store_is_left_as_it_was_found
 	_llm = get_tree().root.get_node("LLMService")
 	_orig_enabled = _llm.llm_enabled
 	_orig_backends = _llm._backends.duplicate()
@@ -67,6 +68,7 @@ func before_each() -> void:
 
 
 func after_each() -> void:
+	PartyPersonas._recent_spoken.clear()  # the pick window leaks across FILES; see test_a_voice_store_is_left_as_it_was_found
 	BattleManager.party_combat_line.disconnect(_on_line)
 	BattleManager.boss_taunt.disconnect(_on_taunt)
 	BattleManager.current_state = _orig_state
