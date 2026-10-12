@@ -6549,7 +6549,7 @@ func _resolve_headless_battle(enemy_data: Array) -> void:
 	if victory:
 		for member in party:
 			member.current_ap = 0
-			if member.is_alive and member.current_hp < member.max_hp:
+			if _autogrind_should_drink(member):
 				_autogrind_heal_member(member)
 			if member.is_alive and member.current_mp < member.max_mp * 0.5:
 				_autogrind_restore_mp(member)
@@ -6777,7 +6777,7 @@ func _on_autogrind_battle_ended(victory: bool) -> void:
 		# Heal party using items (no free healing)
 		for member in party:
 			member.current_ap = 0
-			if member.is_alive and member.current_hp < member.max_hp:
+			if _autogrind_should_drink(member):
 				_autogrind_heal_member(member)
 			if member.is_alive and member.current_mp < member.max_mp * 0.5:
 				_autogrind_restore_mp(member)
@@ -7656,6 +7656,21 @@ func _autogrind_item_bag(member: Combatant) -> Array:
 
 
 ## Between battles the drink is the item itself, taken from the shared bag. The leader holds the drops.
+## A scratch used to be enough: every damaged member drank after every fight, and seven starting
+## items were gone by battle 2-3, which ended sessions on the item_depleted rule rather than on play.
+## Half, matching the MP line directly below both call sites, which has always gated at 0.5.
+const AUTOGRIND_HEAL_AT: float = 0.5
+
+
+## Shared by BOTH post-battle heal loops -- they are the sibling pair this rule must not drift across.
+func _autogrind_should_drink(member: Combatant) -> bool:
+	if member == null or not is_instance_valid(member) or not member.is_alive:
+		return false
+	if member.max_hp <= 0:
+		return false
+	return float(member.current_hp) < float(member.max_hp) * AUTOGRIND_HEAL_AT
+
+
 func _autogrind_heal_member(member: Combatant) -> void:
 	var bag: Array = _autogrind_item_bag(member)
 	for item_id in AutogrindSystem.heal_items_by_preference(member, bag):
