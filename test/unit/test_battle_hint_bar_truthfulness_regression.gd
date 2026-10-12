@@ -368,7 +368,17 @@ func test_the_log_hint_is_a_bound_action_that_opens_the_log() -> void:
 		if e is InputEventJoypadButton and (e as InputEventJoypadButton).button_index == JOY_BUTTON_LEFT_STICK:
 			has_l3 = true
 	assert_true(has_l3, "battle_open_log must be bound to L3 on a pad")
-	var src := FileAccess.get_file_as_string("res://src/battle/BattleScene.gd")
-	var i := src.find('if event.is_action_pressed("battle_open_log")')
-	assert_gt(i, -1, "BattleScene must handle battle_open_log")
-	assert_true(src.substr(i, 160).contains("_toggle_log_overlay()"), "and it must open the battle log")
+	## ⚠️ BOUNDED BY STRUCTURE, NOT BY WIDTH. This read `src.substr(i, 160)`, and the call it asserts
+	## sits at +73 — SIXTY-SIX characters of headroom, about one line. Any insertion between the `if`
+	## and the call (a comment, a guard, a log line) pushed it out of the window and red THIS file,
+	## naming the log hint, when nothing about the log hint had changed. @cowir-music measured the
+	## same shape costing a debugging detour today. _calls_within_block is indentation-scoped and is
+	## what the Speed and Repeat arms above already use — no new mechanism, just the right one.
+	var lines := _read(BATTLE_PATH).split("\n")
+	var opens_log := false
+	for i in lines.size():
+		if lines[i].contains('is_action_pressed("battle_open_log")') \
+				and _calls_within_block(lines, i, "_toggle_log_overlay()"):
+			opens_log = true
+	assert_true(opens_log,
+		"BattleScene must handle battle_open_log AND open the log inside that branch")
