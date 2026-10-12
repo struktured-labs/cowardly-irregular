@@ -256,7 +256,7 @@ func _create_default_passives() -> void:
 			"id": "autobattle_verbs",
 			"name": "Autobattle Verbs",
 			"category": PassiveCategory.META,
-			"description": "Unlocks advanced autobattle conditionals",
+			"description": "Unlocks advanced autobattle conditionals (Currently no effect)",
 			"meta_effects": {
 				"autobattle_advanced": true
 			}
