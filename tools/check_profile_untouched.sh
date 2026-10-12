@@ -51,13 +51,17 @@ set -uo pipefail
 # profile path contains a space ("Cowardly Irregular"), so this is not hypothetical.
 # `logs/` IS EXCLUDED, AND THE REASON IS THE SAME PROPERTY THIS FILE EXISTS FOR.
 #
-# Godot rotates user://logs/ with a fixed cap — measured on his profile: exactly 5 files, a
-# new one written on each run and the oldest deleted. So the COUNT never moves while the
-# CONTENT changes every time any godot process touches the real profile.
+# Godot rotates user://logs/ with a fixed cap — a new log on each run, the oldest deleted.
+# The cap was the engine default 5 until 2026-10-12 and is now 25 (project.godot
+# debug/file_logging/max_log_files, raised because two banner-only headless runs that morning
+# spent 2 of his 5 crash traces). So the COUNT is stuck at the cap once it is reached and
+# CLIMBS before that, while the CONTENT changes every time any godot process touches the real
+# profile.
 #
-# That single property defeats both instruments, in opposite directions:
-#   a COUNT check is BLIND to it   (5 -> 5, "profile untouched", and it would be blind to a
-#                                   save overwrite for exactly the same reason)
+# That defeats both instruments, in opposite directions:
+#   a COUNT check is BLIND at the cap (25 -> 25, "profile untouched", and it would be blind to
+#                                   a save overwrite for exactly the same reason) and NOISY
+#                                   below it, which is no better
 #   a naive SIGNATURE check is NOISY on it (reds on routine log churn, every publish)
 #
 # Discovered by running the real gate chain rather than reasoning about it: my pre-chain
