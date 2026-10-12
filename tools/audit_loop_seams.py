@@ -40,6 +40,7 @@ USAGE
 """
 import json
 import os
+import shutil
 import subprocess
 import sys
 
@@ -174,8 +175,61 @@ def main():
     # Control: the classifier must be able to say more than one thing. A run that
     # labels everything identically is a broken measurement wearing a clean result.
     if len(buckets) < 2:
-        print("\n  WARNING: every track classified '%s' -- the classifier is not "
-              "discriminating and this output should not be trusted" % list(buckets)[0])
+        only = list(buckets)[0]
+        ok, detail = self_check()
+        if ok and only == "ALREADY OK":
+            print("\n  CLEAN: every bed loops without a fade, and the classifier is PROVEN to "
+                  "discriminate\n         (%s).\n         The 2026-08-05 defect -- 97 of 138 beds "
+                  "fading at the loop point -- is repaired." % detail)
+        elif ok:
+            print("\n  WARNING: every track classified '%s'. The classifier discriminates (%s), "
+                  "so this is a real\n           single-bucket corpus rather than a broken scan -- "
+                  "but one bucket of '%s' is not a state\n           this tool was written to "
+                  "expect. Read the rows." % (only, detail, only))
+        else:
+            print("\n  BROKEN: every track classified '%s' AND the classifier failed its own "
+                  "control\n          (%s). This output means nothing. Fix the scan, not the "
+                  "corpus." % (only, detail))
+
+
+def self_check():
+    """Classify a PLANTED fade and a flat tone. Returns (trustworthy, detail).
+
+    WHY THIS EXISTS
+        "Every track is ALREADY OK" has two causes -- a repaired corpus and a
+        classifier that cannot say anything else -- and for sixteen days this tool
+        printed the pessimistic one unconditionally. On 2026-10-12 the corpus was
+        genuinely clean (146/146) and the output told the reader not to trust it,
+        which costs the next lane either a wasted re-measurement or the belief that
+        the loop seams are still broken.
+
+        A control the corpus cannot influence is the only thing that separates the
+        two, so this builds its own inputs: 20 s of tone, one with a 5 s fade-out
+        (the defect) and one without. The faded one MUST be flagged and the flat one
+        MUST be cleared. Measured when written: TRIM-SAFE at tail -15.3 dB, and
+        ALREADY OK at 0.0 dB.
+    """
+    import tempfile
+    if shutil.which("ffmpeg") is None:
+        return False, "ffmpeg is not on PATH, so the control could not run"
+    with tempfile.TemporaryDirectory(prefix="seam_selfcheck_") as d:
+        faded = os.path.join(d, "faded.ogg")
+        flat = os.path.join(d, "flat.ogg")
+        base = ["ffmpeg", "-hide_banner", "-loglevel", "error", "-y",
+                "-f", "lavfi", "-i", "sine=frequency=220:duration=20"]
+        if subprocess.run(base + ["-af", "afade=t=out:st=15:d=5", "-c:a", "libvorbis", faded],
+                          capture_output=True).returncode != 0:
+            return False, "ffmpeg could not synthesise the control input"
+        if subprocess.run(base + ["-c:a", "libvorbis", flat],
+                          capture_output=True).returncode != 0:
+            return False, "ffmpeg could not synthesise the control input"
+        fv, fd, _ = classify(faded, duration(faded))
+        nv, nd, _ = classify(flat, duration(flat))
+    if fv == "ALREADY OK":
+        return False, "a planted 5 s fade-out was cleared as ALREADY OK at %+.1f dB" % fd
+    if nv != "ALREADY OK":
+        return False, "a flat tone with no fade was flagged %s at %+.1f dB" % (nv, nd)
+    return True, "a planted fade reads %s at %+.1f dB, a flat tone reads ALREADY OK at %+.1f dB" % (fv, fd, nd)
 
 
 if __name__ == "__main__":
