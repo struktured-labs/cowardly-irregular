@@ -3,6 +3,32 @@ extends GutTest
 ## Authored village-introduction scenes reached no player: nothing dispatched them, so their lines were unreachable and their Theater rows could never unlock.
 
 const GdSource := preload("res://test/unit/helpers/gd_source.gd")
+## Bounds the beat walk below: a scene that cannot set its own flag would spin, and a hung test
+## reads as infrastructure rather than as a red.
+const STORY_WALK_CAP := 12
+
+var _loop: Node
+var _saved: Dictionary = {}
+
+
+func before_each() -> void:
+	_saved = GameState.game_constants.duplicate(true)
+	_loop = load("res://src/GameLoop.gd").new()
+	## Every intro's gate flag cleared, so each arm starts from a player who has never been there.
+	for map_id in _intros():
+		GameState.game_constants.erase("cutscene_flag_%s_complete" % str(_intros()[map_id]))
+
+
+func after_each() -> void:
+	if is_instance_valid(_loop):
+		_loop.free()
+	GameState.game_constants = _saved
+
+
+## The real gate, driven exactly as GameLoop drives it on a map entry.
+func _pending_on(map_id: String) -> String:
+	_loop._current_map_id = map_id
+	return _loop._get_pending_story_cutscene()
 
 
 func _intros() -> Dictionary:
@@ -156,3 +182,63 @@ func test_an_unwired_intro_keeps_no_completion_flag() -> void:
 		if str(cid).ends_with("_npcs") and not (str(cid) in wired):
 			stale.append(str(cid))
 	assert_eq(stale, [], "a village intro nothing fires still carries a completion flag: %s" % [stale])
+
+
+# ── BEHAVIOUR, not shape: the arms above prove the table is well-formed, which is not the same ────
+
+## The flag that stops a scene being offered again: the engine's own map where it has one.
+func _completion_flag_of(cid: String) -> String:
+	var flags: Dictionary = _completion_flags()
+	return str(flags[cid]) if flags.has(cid) else "cutscene_flag_%s_complete" % cid
+
+
+func test_a_village_eventually_introduces_itself() -> void:
+	## ⛔ THE ARM THIS FILE WAS MISSING, AND ITS FIRST VERSION WAS WRONG IN A WAY WORTH KEEPING IN
+	## THE HEADER. Everything above reads the table, the flags and the source ORDER; none of it asks
+	## the gate what it RETURNS. A table can be perfect and the scene still unreachable — which is
+	## exactly how these scenes sat unplayed for months. But asserting the intro is pending on the
+	## FIRST entry is false by design: the prologue claims harmonia_village and story beats must win,
+	## which test_an_intro_cannot_pre_empt_a_story_beat requires. So this walks the player's real
+	## path — play whatever the gate offers, let it set its flag, enter again — and asserts the intro
+	## is reached. Bounded, because a scene that cannot set its own flag would otherwise spin here.
+	var unreachable: Array[String] = []
+	for map_id in _intros():
+		var cid: String = str(_intros()[map_id])
+		var seen: Array[String] = []
+		var reached := false
+		for _step in STORY_WALK_CAP:
+			var got: String = _pending_on(str(map_id))
+			if got == cid:
+				reached = true
+				break
+			if got == "" or seen.has(got):
+				break
+			seen.append(got)
+			GameState.game_constants[_completion_flag_of(got)] = true
+		if not reached:
+			unreachable.append("%s: played %s and never reached %s" % [map_id, seen, cid])
+	assert_eq(unreachable, ([] as Array[String]),
+		"a player who plays every beat these maps offer never gets the introduction: %s" % [unreachable])
+
+
+func test_an_intro_does_not_come_back_after_it_has_played() -> void:
+	## The Elder Theron loop: a scene whose gate flag it cannot set replays on every entry.
+	var looping: Array[String] = []
+	for map_id in _intros():
+		var cid: String = str(_intros()[map_id])
+		GameState.game_constants["cutscene_flag_%s_complete" % cid] = true
+		if _pending_on(str(map_id)) == cid:
+			looping.append(cid)
+	assert_eq(looping, ([] as Array[String]), "these intros stay pending after completing: %s" % [looping])
+
+
+func test_no_intro_is_pending_on_a_map_it_was_not_written_for() -> void:
+	## The Oak Street failure in behavioural form: an intro answering on the wrong map takes an entry
+	## some other scene wanted. Overworlds are the ones that matter — transitions queue there.
+	var leaked: Array[String] = []
+	for map_id in ["overworld", "suburban_overworld", "steampunk_overworld", "industrial_overworld",
+			"futuristic_overworld", "abstract_overworld", "whispering_cave", "castle_harmonia"]:
+		var got: String = _pending_on(map_id)
+		if got != "" and (got in _intros().values()):
+			leaked.append("%s -> %s" % [map_id, got])
+	assert_eq(leaked, ([] as Array[String]), "a village intro is pending on a map that is not its village: %s" % [leaked])
