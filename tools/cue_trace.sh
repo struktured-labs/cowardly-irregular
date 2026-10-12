@@ -27,6 +27,10 @@
 # Exit:   0 reported · 2 usage / unreadable · 3 no log carried cue tracing
 set -uo pipefail
 
+# Prose in a scanned file is input. ONE shared stripper, never a private copy — see
+# tools/gd_code_lines.sh for the measurements and for what it does not close.
+. "$(cd "$(dirname "$0")" && pwd)/gd_code_lines.sh"
+
 # The two traced forms, from SoundManager (`if log_cues:` at :995 and :1018, procedural at :1784):
 #   [SFX] <requested> -> <resolved> pitch=<f> (<player>)
 #   [SFX] procedural <type> freq=<f> dur=<d> (<player>)
@@ -309,7 +313,7 @@ selftest() {
         # approximation with its hole stated rather than a private stripper pretending otherwise.
         # It fails toward NOT extracting, which for this arm is the loud direction: a missing
         # shape reds the classifier check rather than passing it.
-        done < <(command grep -aE '^[^#]*print\("\[SFX\]' "$prod" \
+        done < <(gd_code_lines "$prod" \
                  | command grep -aoE 'print\("\[SFX\][^"]*"' | sed -e 's/^print("//' -e 's/"$//' | sort -u)
         if [ "$shapes" -ge 3 ] && [ "$unmatched" -eq 0 ]; then
             pass=$((pass+1)); printf '  ok    %-56s (%s shape(s))\n' "every [SFX] shape the producer emits is classified" "$shapes"
@@ -326,8 +330,7 @@ selftest() {
             printf '\tprint("[SFX] %%s -> %%s pitch=%%.2f (%%s)" %% [k, r, p, n])\n'
             printf '\t# guards key on the print("[SFX] mystery kind=1") shape, do not change it\n'
         } > "$cdir/src/audio/SoundManager.gd"
-        _cnt() { command grep -aE '^[^#]*print\("\[SFX\]' "$1" \
-            | command grep -aoE 'print\("\[SFX\][^"]*"' | wc -l; }
+        _cnt() { gd_code_lines "$1" | command grep -aoE 'print\("\[SFX\][^"]*"' | wc -l; }
         if [ "$(_cnt "$cdir/src/audio/SoundManager.gd")" -eq 1 ]; then
             pass=$((pass+1)); printf '  ok    %-56s\n' "a print shape in a COMMENT is not extracted"
         else
@@ -351,8 +354,8 @@ selftest() {
         # producer have a literal first argument, 0 non-literal, so the clean tree is silent and
         # the refusal is still not vacuous.
         local tot lit nonlit
-        tot="$(command grep -ac 'print(' "$prod" || true)"
-        lit="$(command grep -acE 'print\("' "$prod" || true)"
+        tot="$(gd_code_lines "$prod" | command grep -ac 'print(' || true)"
+        lit="$(gd_code_lines "$prod" | command grep -acE 'print\("' || true)"
         nonlit=$(( ${tot:-0} - ${lit:-0} ))
         if [ "$nonlit" -eq 0 ]; then
             pass=$((pass+1)); printf '  ok    %-56s (%s/%s literal)\n' "every print in the producer is READABLE" "$lit" "$tot"
