@@ -125,7 +125,20 @@ selftest() {
     local pass=0 fail=0 self dir out
     self="$(cd "$(dirname "$0")" && pwd)/$(basename "$0")"
     local repo; repo="$(cd "$(dirname "$0")/.." && pwd)"
-    dir="$(mktemp -d "${TMPDIR:-/tmp}/reapprobe.XXXXXX")"
+    # ⛔ THE FIXTURE MUST LIVE INSIDE THE REPO, AND THIS LINE IS WHY THIS TOOL BLOCKED A PUBLISH.
+    # It was `mktemp -d "${TMPDIR:-/tmp}/reapprobe.XXXXXX"`, and I ran the selftest with
+    # TMPDIR=<worktree>/tmp. That put the fixture INSIDE a git worktree, so the reaper — which
+    # cd's to its own copy's parent — could run `git worktree list` and reported "0 of 221
+    # registered worktree(s) are under this root": the blind case the arm below is about.
+    # The publish chain sets no TMPDIR, mktemp chose /tmp, which is not a repo, the population was
+    # 0 of 0, and the probe correctly took the "nothing to reclaim" branch instead. 14 passed,
+    # 3 failed, gate 0d refused the publish, and the store sat at .660 until a new tag.
+    #
+    # MY OWN PREAMBLE SUPPLIED THE PRECONDITION THE FILE LACKED. The production path always runs
+    # inside a worktree, so the repo-local tmp/ is the FAITHFUL location, not merely the one that
+    # works. [[the-harness-supplies-what-the-file-lacks]]
+    mkdir -p tmp
+    dir="$(mktemp -d "$PWD/tmp/reapprobe.XXXXXX")"
     # shellcheck disable=SC2064
     trap "rm -rf '$dir'" EXIT
 
@@ -143,6 +156,17 @@ selftest() {
     mkdir -p "$repo_wt/tmp" "$dir/caller/tools"
     cp "$self" "$dir/caller/tools/"
     cp "$repo/tools/reap_release_worktrees.sh" "$dir/caller/tools/"
+
+    # PRECONDITION, ASSERTED. The blind arm needs a NON-EMPTY registered population — that is what
+    # makes "0 of N" different from "0 of 0". If the fixture ever lands outside the repo again, the
+    # arm does not fail honestly, it silently starts testing the OTHER branch. So check it, and
+    # fail loudly rather than measuring the wrong case.
+    local reg; reg="$(cd "$dir" && git worktree list 2>/dev/null | wc -l)"
+    if [ "${reg:-0}" -gt 1 ]; then
+        pass=$((pass+1)); printf '  ok    %-56s (%s registered)\n' "the fixture sees a non-empty worktree population" "$reg"
+    else
+        fail=$((fail+1)); printf '  FAIL  %-56s (%s) — the blind arm below is VOID\n' "the fixture must sit inside the repo" "${reg:-0}"
+    fi
 
     # THE CASE THAT PRODUCED THE WRONG VERDICT: a root whose own tmp/ holds no worktrees while
     # the repo's registered population is large. The REAL reaper runs here.
