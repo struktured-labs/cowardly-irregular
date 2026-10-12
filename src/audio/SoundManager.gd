@@ -2842,6 +2842,9 @@ func stop_music() -> void:
 			_music_player.finished.disconnect(c["callable"])
 	_stinger_resume_state = {}
 	discard_interrupted_area_bed()
+	## THIRD member of the same set, and the one this function missed: play_area_music defers its
+	## real start, so a stop with one armed went silent and the bed returned two frames later.
+	_invalidate_pending_area_start()
 	if _music_player:
 		_music_player.stop()
 	if _music_player_b:
@@ -2885,6 +2888,9 @@ func fade_out_music(duration: float = CROSSFADE_DURATION) -> void:
 	## chest stinger + fade(0.45) -> overworld_medieval back at full volume over the silence.
 	for c in _music_player.finished.get_connections():
 		_music_player.finished.disconnect(c["callable"])
+	## Same parity, the other disarm: a deferred area start fires mid-ramp and enters at FULL level,
+	## which is louder than whatever the caller was fading away from.
+	_invalidate_pending_area_start()
 	if _crossfade_tween and _crossfade_tween.is_valid():
 		_crossfade_tween.kill()
 	_crossfade_tween = create_tween()
@@ -5890,9 +5896,7 @@ func play_area_music(area_type: String, resume_at: float = 0.0, home_area: Strin
 	reset_danger()
 	_current_area = area_type
 	_current_world_suffix = _get_current_world_suffix()
-	_pending_music_area = area_type
-	## Parked for the deferred start one frame from now. stop_music() has already run, so nothing
-	## else can consume it in between; _try_play_from_manifest clears it as it uses it.
+	## Parked for the deferred start one frame from now; _try_play_from_manifest clears it as it uses it.
 	## Not clamped here: the `> 0.0` at the use site is the single guard, and two would mean a
 	## mutation to either one survives. `play(-12)` is not harmless — measured, it reports a
 	## playback position of 89,466 s.
@@ -5906,6 +5910,10 @@ func play_area_music(area_type: String, resume_at: float = 0.0, home_area: Strin
 	## beside the resume position and consumed by _start_interior_music's COLD START only — see there.
 	_pending_home_area = home_area
 	stop_music()
+	## AFTER the stop, which now disarms a pending area start too — arming before it would cancel
+	## our own. The resume read above must stay before it, because stop_music discards the
+	## interrupted bed it reads.
+	_pending_music_area = area_type
 
 	call_deferred("_start_area_music_deferred", area_type)
 
