@@ -549,6 +549,12 @@ func _tick_fade(delta: float) -> void:
 		_active = false
 		_fading = false
 		_sprite.visible = false
+		## Bare, not `set_deferred`, and that is CORRECT despite the deferred write at the fade-out
+		## in `deactivate()`. This runs from `_process` (:294 -> :302), never inside a physics query
+		## flush, so there is nothing to defer around — and deferring would cost a frame of live
+		## collision on a monster that has already gone invisible. Checked 2026-10-12 while hunting a
+		## real flush error that turned out to be a dungeon lever; @cowir-battle flagged these two as
+		## a smell and they are not one. Do not "make it consistent".
 		_collision.disabled = true
 		_respawn_timer = randf_range(RESPAWN_TIME_MIN, RESPAWN_TIME_MAX)
 
@@ -566,6 +572,7 @@ func _respawn() -> void:
 	_fade_timer = 0.0
 	_sprite.visible = true
 	_sprite.modulate.a = 1.0
+	## Bare for the same reason as the fade write above: `_process`-driven, never in a flush.
 	_collision.disabled = false
 	_mood = Mood.CALM
 	_show_tell()
