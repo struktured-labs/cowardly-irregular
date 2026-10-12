@@ -194,6 +194,38 @@ func test_hint_bar_actions_have_real_joypad_bindings() -> void:
 ## speed. A source-text pin is a claim about the code's SPELLING; the word doing the work in the old
 ## assertion was "handled", and nothing exercised it. (cowir-ai's class, cowir-music's Mordaine guard,
 ## same shape.)
+## ⛔ THE STRIP THIS FILE RESTS ON HAD NO ARM ON IT. The wiring arms below are ACCEPTANCE sets, so
+## they are only safe because `_read` returns stripped CODE — and reverting that one line to a raw
+## read was SILENT: 10 passing, EC=0. Two halves compounding, which @cowir-deploy named after
+## building the same pair tonight: my attacks were MUTATIONS I ran by hand rather than arms, and the
+## real BattleScene.gd carries no inline-comment hazard, so stripping removes nothing observable.
+##
+## 🔑 AND IT MUST DRIVE `_read`, NOT GdSource. An arm scoped to the shared helper cannot see its
+## CALLER stop using it — the helper keeps working, the arm keeps passing, the guard reads raw text.
+## That is the defect three lanes shipped tonight, including me, in the plant for the menu guard.
+func test_the_strip_this_guard_rests_on_is_live() -> void:
+	var fixture := "user://truthfulness_strip_probe.gd"
+	var planted := "func _unhandled_input(event):\n\tif event.pressed:\n\t\tpass  # was _toggle_battle_speed()\n"
+	var f := FileAccess.open(fixture, FileAccess.WRITE)
+	assert_not_null(f, "PRECONDITION: must be able to write the probe fixture")
+	if f == null:
+		return
+	f.store_string(planted)
+	f.close()
+
+	var code := _read(fixture)
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(fixture))
+
+	## The hazard: a wiring token living only in an inline comment. A raw read keeps it, and every
+	## arm below would then accept prose as evidence that the control is wired.
+	assert_false(code.contains("_toggle_battle_speed()"),
+		"_read must return CODE — a wiring token in an INLINE comment reached the acceptance arms, "
+		+ "so reverting the strip was silent and the bar could advertise a dead button")
+	## MUST-SURVIVE: over-stripping and a correct strip are the same green.
+	assert_true(code.contains("if event.pressed:"),
+		"...and real code either side of it has to survive, or this passes on an empty read")
+
+
 func test_speed_toggle_is_actually_wired_to_the_advertised_button() -> void:
 	var lines := _read(BATTLE_PATH).split("\n")
 	var wired := false
