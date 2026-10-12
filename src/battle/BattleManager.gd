@@ -9385,9 +9385,7 @@ func _on_boss_jailbreak_succeeded(boss_id: String, vulnerability_id: String, con
 	for e in enemy_party:
 		if not is_instance_valid(e) or not e.is_alive:
 			continue
-		var persona_id: String = e.get_meta("llm_persona_id", "")
-		if persona_id == "":
-			persona_id = e.get_meta("monster_type", "")
+		var persona_id: String = _boss_persona_id(e)
 		if persona_id == boss_id:
 			boss = e
 			break
@@ -9470,9 +9468,7 @@ func try_player_jailbreak_directive(directive_text: String) -> bool:
 	for e in enemy_party:
 		if not is_instance_valid(e) or not e.is_alive:
 			continue
-		var persona_id: String = e.get_meta("llm_persona_id", "")
-		if persona_id == "":
-			persona_id = e.get_meta("monster_type", "")
+		var persona_id: String = _boss_persona_id(e)
 		if persona_id != "" and boss_dlg.has_entry(persona_id):
 			return boss_dlg.try_apply_jailbreak(persona_id, directive_text)
 	return false
@@ -9675,9 +9671,7 @@ func _resolve_boss_display_name(persona_id: String) -> String:
 	for e in enemy_party:
 		if not is_instance_valid(e):
 			continue
-		var pid: String = e.get_meta("llm_persona_id", "")
-		if pid == "":
-			pid = e.get_meta("monster_type", "")
+		var pid: String = _boss_persona_id(e)
 		if pid == persona_id and e.combatant_name != "":
 			return e.combatant_name
 	var boss_dlg = get_node_or_null("/root/BossDialogue")
@@ -10542,9 +10536,7 @@ func _maybe_boss_phase_bark(combatant: Combatant, action: Dictionary) -> void:
 		## ⚠️ LATENT when fixed: only `the_calibrant` authors phase_barks today (6 faces) and it has no
 		## override, so nothing changes now. The trigger is ordinary content work — author a phase bark
 		## for any dragon and it would never have fired (cowir-ai).
-		var mt: String = str(e.get_meta("llm_persona_id", "")) if e.has_meta("llm_persona_id") else ""
-		if mt == "":
-			mt = str(e.get_meta("monster_type", "")) if e.has_meta("monster_type") else ""
+		var mt: String = _boss_persona_id(e)
 		if mt == "":
 			continue
 		var barks: Dictionary = boss_dlg.get_phase_barks(mt)

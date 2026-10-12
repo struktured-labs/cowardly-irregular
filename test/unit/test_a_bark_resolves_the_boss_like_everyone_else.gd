@@ -47,34 +47,50 @@ func test_some_boss_actually_carries_an_override() -> void:
 
 
 func test_the_bark_site_consults_the_override() -> void:
-	var body: String = _body("_maybe_boss_phase_bark")
-	assert_true(body.contains("llm_persona_id"),
+	## Same subject as before, one layer up: the bark site used to derive the key itself and this arm
+	## pinned both reads. On 2026-10-12 it delegates instead, so the override reaches it through the
+	## shared reader — which is what the arm was ever really asserting.
+	assert_true(_body("_maybe_boss_phase_bark").contains("_boss_persona_id("),
 		"the bark site must resolve the boss the way every other BossDialogue site does — reading monster_type alone looks up the wrong key for the four dragons and continues in silence")
-	assert_true(body.contains("monster_type"),
-		"and must still FALL BACK to monster_type, or every boss without an override loses its barks")
 
 
-## Anti-drift: the two sites must agree, so fixing one and not the other cannot pass.
-func test_both_sites_derive_the_key_the_same_way() -> void:
-	## ⚠️ THE SIBLING LIST IS MEASURED, NOT GUESSED. My first version named `_maybe_emit_boss_insight`
-	## from memory and this arm red on it — that function reads neither key. These six are every
-	## function in BattleManager that reads `llm_persona_id`, derived rather than recalled.
-	## `_resolve_gloat_boss_persona` moved to the shared-reader arm below on 2026-10-12: it now calls
-	## `_boss_persona_id` instead of deriving inline, which is this file's thesis taken further.
-	for fn in ["_maybe_boss_phase_bark", "_boss_persona_id", "_on_boss_jailbreak_succeeded",
-			"try_player_jailbreak_directive", "_resolve_boss_display_name"]:
-		var body: String = _body(fn)
-		var persona_at: int = body.find("llm_persona_id")
-		var type_at: int = body.find("monster_type")
-		assert_gt(persona_at, -1, "%s must read llm_persona_id" % fn)
-		assert_gt(type_at, -1, "%s must read monster_type" % fn)
-		assert_lt(persona_at, type_at,
-			"%s must read the OVERRIDE FIRST and monster_type as the fallback — the reverse order makes the override dead" % fn)
+## ⛔ ONE DERIVATION FOR THE WHOLE SUBSYSTEM. This arm used to list every function that derived the
+## key inline and require each to read the override before the fallback. As of 2026-10-12 exactly one
+## function derives it, so the invariant is stronger and shorter: nobody else may read the override.
+func test_only_the_shared_reader_derives_the_boss_key() -> void:
+	var code: String = GdSourceHelper.code_of(BM_PATH)
+	var offenders: Array[String] = []
+	var at: int = code.find('get_meta("llm_persona_id"')
+	while at > -1:
+		var fn_at: int = code.rfind("\nfunc ", at)
+		var fn_end: int = code.find("(", fn_at + 6)
+		var fn: String = code.substr(fn_at + 6, fn_end - fn_at - 6) if fn_at > -1 and fn_end > fn_at else "(top level)"
+		if fn != "_boss_persona_id" and not offenders.has(fn):
+			offenders.append(fn)
+		at = code.find('get_meta("llm_persona_id"', at + 1)
+	assert_gt(code.find('get_meta("llm_persona_id"'), -1,
+		"VOID: no function reads the override at all, so this arm cannot see a second one appear")
+	assert_eq(offenders, ([] as Array[String]),
+		"these derive the boss key themselves instead of calling _boss_persona_id, so they miss the catalog bridge and resolve a dragon's monster id: %s" % ", ".join(offenders))
+
+
+func test_the_shared_reader_reads_the_override_before_any_fallback() -> void:
+	var body: String = _body("_boss_persona_id")
+	var persona_at: int = body.find("llm_persona_id")
+	var bridge_at: int = body.find("boss_llm_persona_id")
+	assert_gt(persona_at, -1, "the shared reader must read the explicit override")
+	assert_lt(persona_at, bridge_at,
+		"the override must be read BEFORE the catalog bridge — the reverse order makes the override dead")
+	## Bridge-before-bare-return is pinned by test_the_shared_reader_is_what_bridges_a_boss_id_to_its_persona.
+	## Reading monster_type is not the same as falling back to it: the id is read early to look the
+	## bridge up, and only RETURNED last. My first version asserted on the read and red on correct code.
 
 
 ## The phase path and the intent bias reach the key through _boss_persona_id (2026-09-29), so they must still call it.
 func test_the_phase_and_intent_paths_resolve_through_the_shared_reader() -> void:
-	for fn in ["_update_boss_dialogue_phase", "_intent_ability_bias", "_resolve_gloat_boss_persona"]:
+	for fn in ["_update_boss_dialogue_phase", "_intent_ability_bias", "_resolve_gloat_boss_persona",
+			"_maybe_boss_phase_bark", "_on_boss_jailbreak_succeeded", "try_player_jailbreak_directive",
+			"_resolve_boss_display_name"]:
 		assert_true(_body(fn).contains("_boss_persona_id("),
 			"%s no longer resolves the boss through _boss_persona_id, so it can drop the persona override" % fn)
 

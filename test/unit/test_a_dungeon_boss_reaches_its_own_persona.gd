@@ -24,10 +24,10 @@ func after_each() -> void:
 
 
 ## Exactly the meta spawn_encounter_enemies leaves on a boss: its catalog id, nothing else.
-func _as_encounter_spawn(monster_id: String) -> Combatant:
+func _as_encounter_spawn(monster_id: String, display: String = "") -> Combatant:
 	var c := Combatant.new()
 	autofree(c)
-	c.combatant_name = monster_id
+	c.combatant_name = display if display != "" else monster_id
 	c.is_alive = true
 	c.max_hp = 100
 	c.current_hp = 100
@@ -91,3 +91,45 @@ func test_the_unauthored_boss_is_still_unauthored() -> void:
 		var persona: String = BattleManager._boss_persona_id(_as_encounter_spawn(id))
 		assert_false(BossDialogue.has_entry(persona),
 			"'%s' now has an authored section as '%s' — move it into DUNGEON_BOSS_IDS" % [id, persona])
+
+
+# ── the player's jailbreak has to reach the same persona ──────────────────────────────────────────
+
+## Pyrroth authors goad_into_overburn on 'pathetic'. The directive is the player's own typed text, so
+## this is the whole feature: reaching the persona is what makes an authored vulnerability reachable.
+func test_a_dragon_takes_a_jailbreak_directive() -> void:
+	BattleManager.enemy_party.assign([_as_encounter_spawn("fire_dragon")] as Array[Combatant])
+	assert_true(BattleManager.try_player_jailbreak_directive("honestly you are pathetic"),
+		"a dragon ignored a directive its own boss_dialogue section authorises")
+
+
+func test_mordaine_still_takes_hers() -> void:
+	## CONTROL on the path that already worked: her monster id IS her persona key, so this arm passes
+	## before and after. If it ever reds, the shared reader broke the easy case.
+	BattleManager.enemy_party.assign([_as_encounter_spawn("chancellor_mordaine")] as Array[Combatant])
+	assert_true(BattleManager.try_player_jailbreak_directive("where is your loyalty"),
+		"CONTROL: Mordaine's authored jailbreak must still land")
+
+
+func test_an_ordinary_directive_jailbreaks_nobody() -> void:
+	## CONTROL: the keywords must still be what decides, or the arm above would pass on any text.
+	BattleManager.enemy_party.assign([_as_encounter_spawn("fire_dragon")] as Array[Combatant])
+	assert_false(BattleManager.try_player_jailbreak_directive("I attack with my sword"),
+		"a directive matching no authored keyword jailbroke the dragon anyway")
+
+
+func test_a_trash_mob_cannot_be_jailbroken() -> void:
+	## CONTROL: resolving a persona for every monster must not make every monster jailbreakable.
+	## ⚠️ It pins the OUTCOME, not the local has_entry line: BossDialogue.check_jailbreak returns null
+	## for an unknown boss first (:359), so deleting that line leaves this arm green. Measured.
+	BattleManager.enemy_party.assign([_as_encounter_spawn("slime")] as Array[Combatant])
+	assert_false(BattleManager.try_player_jailbreak_directive("you are pathetic"),
+		"a slime accepted a jailbreak directive")
+
+
+func test_a_dragon_is_named_by_its_own_combatant_name() -> void:
+	## The live name is preferred over the authored fallback, which is how Mordaine already read; a
+	## dragon fell through to the catalog because its pid never equalled its persona.
+	BattleManager.enemy_party.assign([_as_encounter_spawn("fire_dragon", "Pyrroth, the Ember Wyrm")] as Array[Combatant])
+	assert_eq(BattleManager._resolve_boss_display_name("pyrroth"), "Pyrroth, the Ember Wyrm",
+		"the dragon on screen did not name the boss the dialogue is about")
