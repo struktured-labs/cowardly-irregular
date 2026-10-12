@@ -51,6 +51,21 @@ set -uo pipefail
 # VERDICT) rather than in an order this script invents.
 _PAT='^\[SMOKE\] (VERDICT:|FAIL:|wipe:)'
 
+# ⛔ THE CHECK THE ARMS COULD NOT REACH. The emitter-prefix logic below used to live only inside
+# selftest(), reading the REAL src/GameLoop.gd — a file with no prose-only prefix, so replacing
+# `gd_code_lines` with a raw `cat` changed nothing any arm could see. MEASURED: with the stripper
+# bypassed in the production path, the selftest stayed 17/17 GREEN. My planted "acceptance attack"
+# called gd_code_lines ITSELF, so it certified the HELPER and said nothing about the CALLER.
+# (@cowir-battle found the identical scoping defect in their own guard and that is what sent me to
+# mutate mine.) Extracted so an arm can point it at a planted file and watch it fail.
+_prefixes_present() {   # <file> -> prints each prefix that is NOT present in its CODE
+    local src="$1" pfx code
+    code="$(gd_code_lines "$src")"
+    for pfx in 'VERDICT:' 'FAIL:' 'wipe:'; do
+        command grep -aq "print(\"\[SMOKE\] ${pfx}" <<< "$code" || printf '%s\n' "$pfx"
+    done
+}
+
 report() {
     local log="$1" out
     if [ ! -f "$log" ]; then
@@ -177,6 +192,24 @@ sys.exit(0 if b'\x00' in open('$dir/nul.log','rb').read() else 1)" \
     else
         fail=$((fail+1)); printf '  FAIL  %-54s (prose %s, code %s)\n' "the comment-blind and code-only counts agree — plant is void" "${prose_hits:-0}" "${real_hits:-0}"
     fi
+    # ⛔ AND NOW DRIVEN THROUGH THE REAL CHECK, not around it. A file whose ONLY `FAIL:` mention is
+    # prose must make the prefix report MISSING — which is exactly what breaks if the stripper is
+    # ever dropped from that path.
+    local missing_planted missing_real
+    missing_planted="$(_prefixes_present "$adir/src/GameLoop.gd" | tr '\n' ' ')"
+    case "$missing_planted" in
+        *FAIL:*) pass=$((pass+1)); printf '  ok    %-54s\n' "the CHECK itself reports a prose-only prefix missing" ;;
+        *) fail=$((fail+1)); printf '  FAIL  %-54s (missing: %s)\n' "the check did not notice a prose-only prefix" "${missing_planted:-none}" ;;
+    esac
+    # CONTROL: against the REAL emitter the same check must report nothing missing, or the arm
+    # above passes on a check that is simply broken.
+    missing_real="$(_prefixes_present src/GameLoop.gd | tr '\n' ' ')"
+    if [ -z "$missing_real" ]; then
+        pass=$((pass+1)); printf '  ok    %-54s\n' "...and reports NOTHING missing for the real emitter"
+    else
+        fail=$((fail+1)); printf '  FAIL  %-54s (missing: %s)\n' "the check reports the real emitter incomplete" "$missing_real"
+    fi
+
     # CONTROL: uncomment it and the code-only count must find it, or the arm above passes on
     # anything that merely fails to match.
     sed -i 's|^\t# the gate greps for ||' "$adir/src/GameLoop.gd"
@@ -208,6 +241,8 @@ sys.exit(0 if b'\x00' in open('$dir/nul.log','rb').read() else 1)" \
         # (It is also one awk run instead of five.)
         local sites miss=0 pfx code
         code="$(gd_code_lines "$src")"
+        # (the same logic is reachable as _prefixes_present below, so an arm can drive it
+        #  against a planted file instead of only against the real emitter)
         sites="$(command grep -ac 'print("\[SMOKE\] \(VERDICT:\|FAIL:\|wipe:\)' <<< "$code" || true)"
         case "$sites" in ''|*[!0-9]*) sites=0 ;; esac
         for pfx in 'VERDICT:' 'FAIL:' 'wipe:'; do
