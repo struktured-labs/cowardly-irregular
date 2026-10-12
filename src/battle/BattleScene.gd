@@ -60,6 +60,9 @@ const STATUS_ROW_WIDTH := 120.0  # badges centre in it over the figure (row unit
 const STATUS_ROW_ZOOM := 1.6  # the badges' ~9px text, read at ~14px on every monster
 const STATUS_ROW_LIFT := 16.0  # row units from the figure's top to the badge row's top
 const NAME_LABEL_Z := 5  # over every monster (0), under the damage popups (100+)
+const NAME_PLATE_COLOR := Color(0.04, 0.03, 0.08, 0.72)  # reads over sky, floor grid and a neighbour's body alike
+const NAME_PLATE_PAD_X := 5.0
+const NAME_PLATE_PAD_Y := 1.0
 const ENEMY_SMALL_FRAME_THRESHOLD: int = 128
 
 ## UI References
@@ -1538,6 +1541,37 @@ func _add_sprite_label(sprite: AnimatedSprite2D, text: String, fallback_drop: fl
 	# Sized and placed AFTER the add so the width is the clamped real one — an auto-width label at a fixed x put its own centre at x + width/2, which drifted right as the name got longer (BAT -10px, PYRROTH +50px).
 	label.size = Vector2(NAME_LABEL_WIDTH, 0.0)
 	label.position = Vector2(centre_x - label.size.x * label.scale.x * 0.5, drop)
+	_add_name_plate(sprite, label)
+
+
+## A plate behind the name, sized to the TEXT. The outline and shadow were sized against grid lines; a
+## neighbour's body is a different problem — ENEMY_SCALE_BUMP draws a 256px bat 608px tall, so SLIME's
+## name landed on the bat's wing and read as the bat's (struktured's slime/bat/goblin frame). The plate
+## is what makes a name read as a TAG rather than as text lying on whatever is behind it.
+func _add_name_plate(sprite: AnimatedSprite2D, label: Label) -> void:
+	var font := label.get_theme_font(&"font")
+	if font == null:
+		return
+	var px := label.get_theme_font_size(&"font_size")
+	var text_w: float = font.get_string_size(label.text, HORIZONTAL_ALIGNMENT_CENTER, -1, px).x
+	var text_h: float = label.get_minimum_size().y
+	if text_w <= 0.0 or text_h <= 0.0:
+		return
+	var plate := Panel.new()
+	plate.name = "NamePlate"
+	plate.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var style := StyleBoxFlat.new()
+	style.bg_color = NAME_PLATE_COLOR
+	style.set_corner_radius_all(3)
+	plate.add_theme_stylebox_override("panel", style)
+	plate.z_index = NAME_LABEL_Z  # same rung as the name; added first, so it draws beneath it
+	plate.scale = label.scale
+	plate.size = Vector2(text_w + NAME_PLATE_PAD_X * 2.0, text_h + NAME_PLATE_PAD_Y * 2.0)
+	sprite.add_child(plate)
+	sprite.move_child(plate, label.get_index())
+	var centre_x: float = label.position.x + label.size.x * label.scale.x * 0.5
+	plate.position = Vector2(centre_x - plate.size.x * plate.scale.x * 0.5,
+		label.position.y - NAME_PLATE_PAD_Y * plate.scale.y)
 
 
 ## Status effect icon display system
@@ -4416,6 +4450,25 @@ func _on_round_started_snap_home(_round_num: int) -> void:
 				tween.tween_property(sprite, "position", home, 0.15).set_trans(Tween.TRANS_CUBIC)
 
 
+## Fade a dying enemy's name label out with its figure. Its own tween when the caller has none, so a
+## test (and any later caller) gets the same fade the death path runs.
+func _fade_dying_name(sprite: Node2D, tween: Tween = null) -> void:
+	## The PLATE goes with the name: it is a sibling node, so a dark box would otherwise hang over the
+	## empty floor (and over the victory cards) exactly as the bare name did.
+	var dying: Array[Node] = []
+	for child_name in ["NameLabel", "NamePlate"]:
+		var n := sprite.get_node_or_null(child_name)
+		if n != null:
+			dying.append(n)
+	if dying.is_empty():
+		return
+	var t: Tween = tween if tween != null else sprite.create_tween()
+	for n in dying:
+		if tween != null or n != dying[0]:
+			t.parallel()
+		t.tween_property(n, "modulate:a", 0.0, 0.4)
+
+
 ## Round-boundary presentation reset — every juice tween (squash/hitstop/flash/dissolve) is interruptible, so restore the canonical state each round
 func _reset_presentation_state(sprite: Node2D) -> void:
 	if not is_instance_valid(sprite):
@@ -4427,6 +4480,12 @@ func _reset_presentation_state(sprite: Node2D) -> void:
 	if sprite.material is ShaderMaterial:
 		sprite.material.set_shader_parameter("flash_amount", 0.0)
 		sprite.material.set_shader_parameter("dissolve_amount", 0.0)
+	## Symmetric with the dissolve above: a death faded the name label itself (the shader cannot), so the
+	## canonical restore puts it back. Dying sprites never reach here — the caller skips them.
+	for child_name in ["NameLabel", "NamePlate"]:
+		var n := sprite.get_node_or_null(child_name)
+		if n != null:
+			n.modulate.a = 1.0
 
 
 func _try_play_formation_sfx(formation_key: String) -> bool:
@@ -5197,6 +5256,11 @@ func _on_enemy_died(enemy_idx: int) -> void:
 					tween.tween_method(func(v: float) -> void:
 						if is_instance_valid(sprite) and sprite.material is ShaderMaterial:
 							sprite.material.set_shader_parameter("dissolve_amount", v), 0.0, 1.0, 0.5)
+					## The shader dissolves the sprite's own texture and nothing else: a child Label draws
+					## itself, so the name hung over empty floor for the whole 0.5s — and at NAME_LABEL_Z (5)
+					## it drew THROUGH the victory cards (z 0) whenever the kill ended the battle. The
+					## modulate fallback below needs none of this; children inherit modulate.
+					_fade_dying_name(sprite, tween)
 				else:
 					for i in range(6):
 						tween.tween_property(sprite, "modulate:a", 0.1, 0.06)
