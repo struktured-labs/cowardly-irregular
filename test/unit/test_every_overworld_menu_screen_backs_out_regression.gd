@@ -134,34 +134,91 @@ func test_every_screen_the_menu_opens_closes_on_one_back() -> void:
 ## 📌 This is a RELATION between two sets in one text, not a spelling pin: a rename moves both sides
 ## and it stays green, which is why reading source is legitimate here. It is NOT a liveness check —
 ## gut the arms' bodies and it still passes. The runtime arm above is that half of the pair.
-func test_every_menu_row_has_a_dispatch_arm() -> void:
-	var src := FileAccess.get_file_as_string("res://src/ui/OverworldMenu.gd")
-	assert_ne(src, "", "PRECONDITION: OverworldMenu source must be readable")
-	var id_rx := RegEx.new()
-	id_rx.compile('"id"\\s*:\\s*"([a-z_]+)"')
-	var rows: Array[String] = []
-	var lines := src.split("\n")
-	for line in lines:
+## ⛔ THE EXTRACTOR IS THE HALF WITH NO ARM ON IT. @cowir-deploy measured this in another lane's
+## derivation and @cowir-ai generalised it: a derived-relation guard has TWO failure modes — the
+## RELATION it asserts, and the DERIVATION nobody points a test at. Mine had both directions wrong
+## and one was silent. Measured by feeding the extractors shapes they could meet:
+##     {"id": row_id, "label": "Computed"}   -> SILENTLY DROPPED, that row is never compared
+##     "save", "load":   (a legal multi-arm) -> dropped -> a FALSE red naming them dead rows
+## 🔑 "I cannot parse this" and "there is nothing here" must not share a return value. Both helpers
+## now REPORT what they could not read, and the arm below requires that report to be empty — so an
+## unparseable shape is loud instead of quietly shrinking the comparison.
+func _rows_in(text: String) -> Dictionary:
+	var rx := RegEx.new()
+	rx.compile('"id"\\s*:\\s*"([a-z_]+)"')
+	var found: Array[String] = []
+	var unreadable: Array[String] = []
+	for line in text.split("\n"):
 		if not (line.contains('"id"') and line.contains('"label"')):
 			continue
-		var m := id_rx.search(line)
+		var m := rx.search(line)
 		if m:
-			rows.append(m.get_string(1))
+			found.append(m.get_string(1))
+		else:
+			unreadable.append(line.strip_edges())
+	return {"found": found, "unreadable": unreadable}
 
-	var arm_rx := RegEx.new()
-	arm_rx.compile('^\\t\\t"([a-z_]+)":\\s*$')
-	var arms: Array[String] = []
+
+func _arms_in(text: String) -> Dictionary:
+	var rx := RegEx.new()
+	rx.compile('^\\t\\t"([a-z_]+)":\\s*$')
+	var found: Array[String] = []
+	var unreadable: Array[String] = []
 	var inside := false
-	for line in lines:
+	for line in text.split("\n"):
 		if line.strip_edges() == "match action_id:":
 			inside = true
 			continue
-		if inside:
-			if line.strip_edges() != "" and not line.begins_with("\t\t"):
-				break
-			var a := arm_rx.search(line)
-			if a:
-				arms.append(a.get_string(1))
+		if not inside:
+			continue
+		if line.strip_edges() != "" and not line.begins_with("\t\t"):
+			break
+		var m := rx.search(line)
+		if m:
+			found.append(m.get_string(1))
+		elif line.begins_with("\t\t") and not line.begins_with("\t\t\t") \
+				and line.strip_edges().ends_with(":") and line.strip_edges() != "_:":
+			## An arm shape this cannot read — a multi-pattern arm, or a constant. Reported,
+			## never dropped: dropping it invents a dead row that is actually handled.
+			unreadable.append(line.strip_edges())
+	return {"found": found, "unreadable": unreadable}
+
+
+## THE REFUSAL NEEDS ITS OWN ARM, or it is an untested branch in the instrument everything else
+## rests on. Driven against synthetic text rather than the live file, because the live file is
+## (correctly) all literals and so cannot exercise it.
+func test_the_extractors_report_what_they_cannot_read() -> void:
+	var computed := '\t{"id": row_id, "label": "Computed", "enabled": true},'
+	var r: Dictionary = _rows_in(computed)
+	assert_eq((r["found"] as Array).size(), 0, "CONTROL: a computed id yields no literal")
+	assert_eq((r["unreadable"] as Array).size(), 1,
+		"a row whose id is not a literal must be REPORTED, not silently dropped from the comparison")
+
+	var multi := "match action_id:\n\t\t\"save\", \"load\":\n\t\t\tpass\n"
+	var a: Dictionary = _arms_in(multi)
+	assert_eq((a["found"] as Array).size(), 0, "CONTROL: a multi-pattern arm yields no single literal")
+	assert_eq((a["unreadable"] as Array).size(), 1,
+		"a multi-pattern arm must be REPORTED — dropping it invents a dead row that is handled")
+
+	## And the readable shapes still read, or the arm above passes by breaking the extractor.
+	var ok: Dictionary = _rows_in('\t{"id": "journal", "label": "Journal"},')
+	assert_eq(ok["found"], ["journal"] as Array[String], "CONTROL: a literal row still parses")
+
+
+func test_every_menu_row_has_a_dispatch_arm() -> void:
+	var src := FileAccess.get_file_as_string("res://src/ui/OverworldMenu.gd")
+	assert_ne(src, "", "PRECONDITION: OverworldMenu source must be readable")
+	var row_scan: Dictionary = _rows_in(src)
+	var arm_scan: Dictionary = _arms_in(src)
+	var rows: Array[String] = row_scan["found"]
+	var arms: Array[String] = arm_scan["found"]
+
+	## THE DERIVATION'S OWN FAILURE MODE, asserted before the relation it feeds: a shape neither
+	## helper can read must stop this arm, not quietly shrink the sets it compares.
+	assert_eq(row_scan["unreadable"], [] as Array[String],
+		"row shapes this guard cannot read — it would compare a SMALLER set and still pass: %s" % str(row_scan["unreadable"]))
+	assert_eq(arm_scan["unreadable"], [] as Array[String],
+		"arm shapes this guard cannot read — it would invent dead rows that are handled: %s" % str(arm_scan["unreadable"]))
 
 	## POSITIVE CONTROLS: an empty derivation on either side reports perfect agreement about nothing,
 	## which is the shape of every guard aimed at a pattern that stopped matching.
