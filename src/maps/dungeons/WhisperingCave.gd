@@ -452,6 +452,7 @@ func _setup_transitions_for_floor(floor_num: int) -> void:
 			var BossTriggerScript = load("res://src/maps/dungeons/BossTrigger.gd")
 			var boss_area = BossTriggerScript.new()
 			boss_area.name = "BossTrigger"
+			boss_area.boss_for_log = "cave_rat_king"
 			boss_area.position = spawn_points["boss"]
 			boss_area.cave_ref = self
 			_setup_transition_collision(boss_area, Vector2(TILE_SIZE * 2, TILE_SIZE * 2))
