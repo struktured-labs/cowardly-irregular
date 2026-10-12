@@ -9,7 +9,7 @@
     "npc_id": "madame_orrery_w3",
     "display_name": "Madame Orrery",
     "location": {
-      "map_id": "brasston",
+      "map_id": "brasston_village",
       "near": "clockwork_booth"
     },
     "spawn_flag": ""

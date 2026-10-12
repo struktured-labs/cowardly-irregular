@@ -66,6 +66,29 @@ report() {
         return 0
     fi
     printf '%s\n' "$out"
+
+    # ⛔ A FAIL WITH NO REASON IS THE .654 EXPERIENCE, AND THIS TOOL USED TO REPRODUCE IT SILENTLY.
+    # Extracting "what is there" is right, but when the verdict is FAIL and no `[SMOKE] FAIL:` line
+    # accompanies it, the reader gets a bare `VERDICT: FAIL` — indistinguishable from the state this
+    # file was written to end. Measured on a fixture: output was exactly one line.
+    #
+    # It is a REAL state, not a hypothetical: @cowir-overworld found their own wipe leg shipped in
+    # .658 with a `match _smoke_wipe_reason` that had NO DEFAULT ARM, so an unbranched reason
+    # printed nothing while the two lines after it still set _smoke_failed and returned. Their fix
+    # is lane/an-unrecognised-reason-says-so; this is the same hole seen from the reporting end, and
+    # mine should say so whether or not theirs has folded — a reader of the log cannot tell which
+    # tag they are looking at.
+    case "$out" in
+        *'VERDICT: FAIL'*)
+            case "$out" in
+                *'[SMOKE] FAIL:'*) : ;;
+                *)  echo "[smoke] ⚠️ the verdict is FAIL and NO '[SMOKE] FAIL:' line explains it." >&2
+                    echo "        The engine prints a reason per failure mode; an absent one means a" >&2
+                    echo "        failure mode with no message — not a failure with no cause. Look at" >&2
+                    echo "        the dispatch that chooses the reason before reading the log as" >&2
+                    echo "        evidence about the game." >&2 ;;
+            esac ;;
+    esac
     return 0
 }
 
@@ -104,6 +127,21 @@ selftest() {
     out="$("$self" "$dir/fail.log" 2>&1)"
     chk "a FAIL reason reaches the report"             'wipe STALLED'       0
     chk "...alongside the verdict"                     'VERDICT: FAIL'      0
+
+    # A FAIL WITH NO REASON must be NAMED, not reproduced. (@cowir-overworld's default-arm gap,
+    # from the reporting end.)
+    {   printf '[SMOKE] cave saved err=0\n'
+        printf '[SMOKE] VERDICT: FAIL\n'
+    } > "$dir/noreason.log"
+    out="$("$self" "$dir/noreason.log" 2>&1)"
+    chk "a FAIL with no reason line is CALLED OUT"     'NO .\[SMOKE\] FAIL:. line explains it'  0
+    chk "...and points at the dispatch, not the game"  'dispatch that chooses the reason'   0
+    # CONTROL: it must NOT fire when a reason IS present, or it fires on every real failure.
+    out="$("$self" "$dir/fail.log" 2>&1)"
+    chk "a FAIL WITH a reason does not trip it"        'NO .\[SMOKE\] FAIL:. line explains it'  1
+    # CONTROL: nor on a PASS, which needs no reason at all.
+    out="$("$self" "$dir/pass.log" 2>&1)"
+    chk "a PASS does not trip it"                      'NO .\[SMOKE\] FAIL:. line explains it'  1
 
     # ⛔ THE NUL ARM, AND ITS CONTROL MUST WATCH THE BARE FORM FAIL. (@cowir-sfx asked for
     # exactly this: a `-a` that was never tested against a binary-judged file is a flag someone

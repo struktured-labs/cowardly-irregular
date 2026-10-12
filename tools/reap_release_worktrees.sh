@@ -281,6 +281,39 @@ _drop_fixture() {
     return 0
 }
 
+# ⛔ A FIXTURE THAT FAILS TO BUILD MUST SAY SO. Every `git worktree add` below used to end in
+# `>/dev/null 2>&1 || true`, so a failed add produced NO fixture and the behavioural arm about it
+# failed under its own name — "at a tag ON ORIGIN outside PREFIX is reapable" reads as a defect in
+# the reaping rule when the truth is that the tree was never created.
+#
+# MEASURED 2026-10-12, by me and independently by @cowir-main: this selftest is NONDETERMINISTIC on
+# this box. My three runs failed 3, 2 and 0 arms; their six failed 5, 0, 3, 2, 1, 1 — different arms
+# each time. It is in the publish corpus, so gate 0d blocks a publish on a coin flip.
+#
+# ⚠️ I COULD NOT REPRODUCE IT AFTERWARDS and I am not claiming a cause. Ruled out by measurement:
+# my own instrumentation (original and instrumented both 3/3 clean later), two CONCURRENT runs in
+# different worktrees (both 30/30), and registry churn during the failing window (226 worktrees,
+# stable across 30s of sampling). So the trigger is still unnamed.
+#
+# What this change does is make the NEXT occurrence diagnostic instead of misleading: the add's
+# error is captured and the arms that depend on a missing fixture are reported VOID, by name, with
+# git's own message. The selftest still exits nonzero — a guard whose fixtures cannot be built is
+# untrustworthy, not absent, which is the chain's own rule — but it now blocks under the correct
+# noun. A flake that explains itself is one bug report away from a fix; this one has cost two lanes
+# an afternoon of guessing.
+_VOID_FIXTURES=0
+_wt_add() { # label -- then the git worktree add arguments
+    local label="$1"; shift
+    local err
+    if err="$(git worktree add "$@" 2>&1)"; then
+        return 0
+    fi
+    _VOID_FIXTURES=$((_VOID_FIXTURES+1))
+    printf '  VOID  fixture %-46s could not be built\n' "$label"
+    printf '%s\n' "$err" | head -3 | sed 's/^/          git: /'
+    return 1
+}
+
 selftest() {
     # SELFTEST FIXTURES LIVE UNDER THEIR OWN SCAN ROOT, AND THAT IS LOAD-BEARING.
     # This selftest calls --apply. While admission was decided by a path PREFIX, real
@@ -328,7 +361,7 @@ selftest() {
     # reason. Branch fixture sorts FIRST, dirty next, detached tags fill the rest.
     local i=2
     for t in $tags; do
-        git worktree add --detach "${pfx}${i}" "$t" >/dev/null 2>&1 || true
+        _wt_add "${pfx}${i}" --detach "${pfx}${i}" "$t" || true
         i=$((i+1))
     done
     # ⛔ CUT FROM origin/main, NOT HEAD. This fixture exists to exercise the UNPUSHED rule, and
@@ -336,7 +369,7 @@ selftest() {
     # unpushed check when HEAD happens to BE origin/main — so the moment you run --selftest on a
     # branch carrying one local commit it reds on "NOT merged" and reads as a regression you
     # caused. The arm was passing on where HEAD sat rather than on the rule it names.
-    git worktree add -b reaptest/branch-${sfx} "${pfx}0" origin/main >/dev/null 2>&1 || true
+    _wt_add "${pfx}0 (branch)" -b reaptest/branch-${sfx} "${pfx}0" origin/main || true
     echo "scratch" > "${pfx}2/REAPTEST_DIRTY.md" 2>/dev/null
     ( cd "${pfx}2" && git add REAPTEST_DIRTY.md >/dev/null 2>&1 )
 
@@ -386,7 +419,7 @@ selftest() {
     # Fixtures for the three branch states. The reapable one is DERIVED — any local branch
     # already merged into origin/main, present on origin, and not checked out anywhere — so
     # this arm cannot quietly become a skip if one hardcoded branch is ever deleted.
-    git worktree add -b reaptest/unmerged-${sfx} "${pfx}1" HEAD >/dev/null 2>&1 || true
+    _wt_add "${pfx}1 (unmerged branch)" -b reaptest/unmerged-${sfx} "${pfx}1" HEAD || true
     ( cd "${pfx}1" && git commit --allow-empty -qm "reaptest: not in origin/main" >/dev/null 2>&1 )
 
     # ⛔ THIS FIXTURE NEEDS A *REAL* BRANCH -- merged into origin/main, pushed, and not already
@@ -444,8 +477,8 @@ selftest() {
     # root — the same shape as cowir-deploy-wt/tmp/. Note ${REAP_SCAN:-tmp/} substitutes on EMPTY
     # as well as unset, so REAP_SCAN="" cannot be used to flatten the scan.
     mkdir -p "$nest/tmp"
-    git worktree add --detach "${nest}/tmp/rel-9001" "$firsttag" >/dev/null 2>&1 || true
-    git worktree add -b reaptest/rootbranch-${sfx} "${nest}/tmp/other-9002" HEAD >/dev/null 2>&1 || true
+    _wt_add "rel-9001 (widened root)" --detach "${nest}/tmp/rel-9001" "$firsttag" || true
+    _wt_add "other-9002 (widened root, branch)" -b reaptest/rootbranch-${sfx} "${nest}/tmp/other-9002" HEAD || true
 
     # A zero must name the population it is a zero over. The old message said "no worktrees under
     # ${PREFIX}" while the filter is ROOT/SCAN, so a run rooted at the wrong tree was indistinguishable
@@ -499,9 +532,9 @@ selftest() {
         fail=$((fail+1)); printf '  FAIL  could not build the reconstructibility fixtures (rtag=%s u1=%s u2=%s)\n' "${rtag:-none}" "${u1:-none}" "${u2:-none}"
     else
         git tag reaptest-localonly-${sfx} "$u1" >/dev/null 2>&1 || true
-        git worktree add --detach "${scan}"reaptest-recon-9    "$rtag"            >/dev/null 2>&1 || true
-        git worktree add --detach "${scan}"reaptest-localtag-9 reaptest-localonly-${sfx} >/dev/null 2>&1 || true
-        git worktree add --detach "${scan}"reaptest-scratch-9  "$u2"              >/dev/null 2>&1 || true
+        _wt_add "reaptest-recon-9 (tag on origin)" --detach "${scan}"reaptest-recon-9 "$rtag" || true
+        _wt_add "reaptest-localtag-9 (local-only tag)" --detach "${scan}"reaptest-localtag-9 reaptest-localonly-${sfx} || true
+        _wt_add "reaptest-scratch-9 (untagged)" --detach "${scan}"reaptest-scratch-9 "$u2" || true
 
         out="$(REAP_SCAN="$scan" REAP_PREFIX="$pfx" "$self" --keep 1 2>&1)"
         chk "at a tag ON ORIGIN outside PREFIX is reapable" "would remove reaptest-recon-9"                      0
@@ -512,7 +545,7 @@ selftest() {
         # to a real publish worktree, and parked OUTSIDE the fixture scan. If a selftest run
         # ever names it, the confinement has failed and the destructive arms are pointed at
         # this lane's real worktrees again.
-        git worktree add --detach tmp/reaptest-decoy-9 "$rtag" >/dev/null 2>&1 || true
+        _wt_add "reaptest-decoy-9 (confinement decoy)" --detach tmp/reaptest-decoy-9 "$rtag" || true
 
         # The protected slots must cover the ADMITTED set, not the prefix. With a prefix that
         # matches nothing, every position-based KEEP has to come from reconstructibility --
@@ -537,6 +570,13 @@ selftest() {
 
     echo
     echo "selftest: ${pass} passed, ${fail} failed"
+    if [ "$_VOID_FIXTURES" -gt 0 ]; then
+        echo "selftest: ⛔ ${_VOID_FIXTURES} FIXTURE(S) COULD NOT BE BUILT — the failures above are" >&2
+        echo "          about missing test worktrees, NOT about the reaping rules. Fix the build" >&2
+        echo "          problem (git's message is printed beside each VOID line) before reading any" >&2
+        echo "          arm above as a defect in this tool." >&2
+        return 1
+    fi
     [ "$fail" -eq 0 ]
 }
 

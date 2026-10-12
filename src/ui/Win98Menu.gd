@@ -1338,6 +1338,23 @@ func _submenu_rest_position(parent_index: int, submenu_size: Vector2) -> Vector2
 	var min_x := _submenu_left_bound() if expand_left else 10.0
 	pos.x = clampf(pos.x, min_x, maxf(min_x, vp.x - submenu_size.x - 10.0))
 	pos.y = clampf(pos.y, 10.0, maxf(10.0, vp.y - submenu_size.y - 10.0))
+	return _clear_of_turn_banner(pos, submenu_size, vp)
+
+
+## A list that would rest across the "Round N - SELECT" banner drops just below it, so neither covers the other.
+func _clear_of_turn_banner(pos: Vector2, submenu_size: Vector2, vp: Vector2) -> Vector2:
+	if not is_inside_tree():
+		return pos
+	var banner := get_tree().root.find_child("TurnInfoPanel", true, false) as Control
+	if banner == null or not is_instance_valid(banner) or not banner.is_visible_in_tree():
+		return pos
+	var rect := banner.get_global_rect()
+	if not Rect2(pos, submenu_size).intersects(rect):
+		return pos
+	var below := rect.end.y + 4.0
+	if below + submenu_size.y > vp.y - 10.0:
+		return pos
+	pos.y = below
 	return pos
 
 

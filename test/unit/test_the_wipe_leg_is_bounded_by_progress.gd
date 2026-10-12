@@ -104,3 +104,90 @@ func test_an_ended_battle_is_given_the_grace_the_defeat_sequence_needs() -> void
 func test_an_ended_battle_is_not_reported_as_a_stall() -> void:
 	assert_eq(_verdict(1000, STALL + 9999, 1), "",
 		"rounds stopped because the battle ENDED; that is not a stall and must not be called one")
+
+
+## ⛔ EVERY REASON THE VERDICT CAN RETURN MUST HAVE A BRANCH THAT PRINTS IT, and the list is DERIVED
+## from the verdict function's own `return` literals rather than written here — the defect being
+## guarded is that someone adds a fifth reason and not a fifth message, which a hand-list cannot
+## see because they would add to the list in the same edit.
+##
+## 🔑 AND A STATIC DERIVATION IS NOT MERELY THE STRONGER CHOICE HERE, IT IS THE ONLY ONE THAT CAN
+## APPLY (@cowir-ai, 2026-10-12, sharpening this guard's own justification). THE CONSUMER'S INPUT
+## DOMAIN IS CLOSED BY THE PRODUCER: `smoke_wipe_verdict` emits exactly these tokens, so the
+## dispatch can only ever receive one of them. **A fifth reason is not an input somebody forgot to
+## try — it does not exist until the producer is edited**, so no runtime arm, however carefully its
+## inputs are chosen, can reach the unbranched case. Driving an unknown token would mean stubbing
+## the producer, i.e. asserting against a fiction. `producer returns ⊆ consumer branches`, checked
+## in the source, is the whole instrument available for this class.
+##
+## The leg shipped in .658 with a `match` that had NO default arm: a reason with no branch printed
+## nothing, and the two lines after the match still set `_smoke_failed` and returned — so the gate
+## would have reported a bare `VERDICT: FAIL` with the explanation missing. That is the exact defect
+## this leg exists to remove, reintroduced by the leg's own dispatch. @cowir-sfx measured the same
+## shape as a classifier MISFILING a third kind of print; @cowir-deploy's tool LOST it instead;
+## generalised: a branch set with no else does not handle the next kind safely, it fails silently.
+func test_every_reason_the_verdict_returns_has_a_branch_that_prints_it() -> void:
+	var src := FileAccess.get_file_as_string("res://src/GameLoop.gd")
+	assert_ne(src, "", "CONTROL: GameLoop.gd must be readable")
+
+	var vat := src.find("static func smoke_wipe_verdict")
+	assert_gt(vat, -1, "CONTROL: the verdict function must exist")
+	var vend := src.find("\nfunc ", vat + 10)
+	assert_gt(vend, vat, "CONTROL: the verdict function ends before the next one")
+	var verdict := src.substr(vat, vend - vat)
+
+	## ⛔ THE EXTRACTOR MUST REFUSE WHAT IT CANNOT READ, not silently return fewer members.
+	## @cowir-ai's point, measured here: a derived-relation guard has TWO failure modes and only the
+	## RELATION is ever tested — nobody points an arm at the DERIVATION. Planted `return
+	## _stall_token()` in the producer and this scan reported the same three reasons as before,
+	## having silently skipped a fourth. **"I found no member" and "I cannot read this" must not
+	## share a value**, because the first is a fact and the second is an absence of one.
+	##
+	## ⚠️ Two behavioural arms above DID catch that plant, because it changed a (input -> reason)
+	## pair they assert — so this file was safer than @cowir-battle's and @cowir-ai's cases, whose
+	## consumers are only reachable through production code. It was NOT safe: a fifth reason added
+	## on an input branch no arm drives would be invisible to both halves.
+	var total_returns: int = 0
+	for line in verdict.split("\n"):
+		if str(line).strip_edges().begins_with("return "):
+			total_returns += 1
+	## `[a-z_]*` not `+`: the "keep waiting" return is `return ""`, a LITERAL with an empty token.
+	## With `+` the scan read 3 of 4 returns and this very assertion red on a clean tree — my own
+	## refusal firing on the shape it was meant to allow. An empty capture is READABLE and is simply
+	## not a reason, which is a different fact from "I could not parse this".
+	var re := RegEx.create_from_string('return "([a-z_]*)"')
+	var reasons: Array = []
+	var readable: int = 0
+	for m in re.search_all(verdict):
+		readable += 1
+		if m.get_string(1) != "" and not reasons.has(m.get_string(1)):
+			reasons.append(m.get_string(1))
+	reasons.sort()
+	assert_eq(readable, total_returns,
+		"the verdict has %d return statement(s) and this scan could read %d as literals — the " % [total_returns, readable] +
+		"unreadable one(s) are reasons with no branch requirement, so the arm below would pass " +
+		"while a reason went unbranched. Make the return a literal, or teach this extractor the shape")
+	assert_gte(reasons.size(), 3,
+		"CONTROL: derived only %d reasons from the verdict function — the scan is broken and the [] below is free: %s" % [
+			reasons.size(), str(reasons)])
+	gut.p("  reasons the verdict can return: %s" % ", ".join(reasons))
+
+	var lat := src.find("match _smoke_wipe_reason:")
+	assert_gt(lat, -1, "the wait must dispatch on the reason")
+	var lend := src.find("_smoke_failed = true", lat)
+	assert_gt(lend, lat, "CONTROL: the dispatch ends before the failure is recorded")
+	var dispatch := src.substr(lat, lend - lat)
+
+	var unbranched: Array = []
+	for reason in reasons:
+		if not dispatch.contains('"%s":' % reason):
+			unbranched.append(str(reason))
+	unbranched.sort()
+	assert_eq(unbranched, [],
+		"these reasons can be returned and have no branch that prints them, so the smoke would fail " +
+		"with no explanation: %s" % ", ".join(unbranched))
+
+	assert_true(dispatch.contains("_:"),
+		"the dispatch must have a DEFAULT arm; without one the NEXT reason added fails silently, " +
+		"which is the defect this leg was written to remove")
+

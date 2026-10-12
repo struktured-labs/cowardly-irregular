@@ -9,7 +9,7 @@
     "npc_id": "madame_orrery_w4",
     "display_name": "Madame Orrery",
     "location": {
-      "map_id": "rivet_row",
+      "map_id": "rivet_row_village",
       "near": "consultant_office"
     },
     "spawn_flag": ""

@@ -5,7 +5,7 @@
   "giver": {
     "npc_id": "last_shopkeeper_w6",
     "display_name": "The Shopkeeper",
-    "location": {"map_id": "the_vertex", "near": "the_counter"},
+    "location": {"map_id": "vertex_village", "near": "the_counter"},
     "spawn_flag": ""
   },
   "description": "In six worlds, the shopkeeper has sold things, given things, stocked things — and never once been asked what they need. The quest is not the counter or the goods. The quest is the question.",

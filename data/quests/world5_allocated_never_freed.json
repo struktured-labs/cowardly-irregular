@@ -5,7 +5,7 @@
   "giver": {
     "npc_id": "memory_leak_district",
     "display_name": "The Stuttering District",
-    "location": {"map_id": "node_prime", "near": "residential_sector"},
+    "location": {"map_id": "node_prime_village", "near": "residential_sector"},
     "spawn_flag": ""
   },
   "description": "A district of Node Prime loads slower than the rest of the world. The frame rate stutters. Something is allocating without freeing, and the timestamps say it has been running since World 1. It started small. It's growing.",

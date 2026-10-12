@@ -80,3 +80,40 @@ func test_without_an_enemy_panel_the_screen_margin_is_the_bound() -> void:
 		return
 	assert_gte(leaf.global_position.x, 10.0, "the list stays on screen")
 	assert_lt(leaf.global_position.x, 200.0, "and is free to use the left column when nothing is there")
+
+
+func _turn_banner() -> Control:
+	var p := Control.new()
+	p.name = "TurnInfoPanel"
+	p.position = Vector2(440, 10)
+	p.size = Vector2(400, 40)
+	add_child_autofree(p)
+	return p
+
+
+func test_a_list_that_would_cross_the_turn_banner_drops_below_it() -> void:
+	var banner := _turn_banner()
+	var c: Array = await _chain(true)
+	var leaf = c[2]
+	assert_not_null(leaf, "CONTROL: the third-level list opened")
+	if leaf == null:
+		return
+	var leaf_rect := Rect2(leaf.global_position, leaf.size)
+	var banner_rect := banner.get_global_rect()
+	assert_gt(leaf_rect.end.x, banner_rect.position.x, "CONTROL: the list is wide enough to reach the banner's column")
+	assert_false(leaf_rect.intersects(banner_rect), "the target list %s does not cover the turn banner %s" % [str(leaf_rect), str(banner_rect)])
+	assert_false(leaf_rect.intersects(_panel.get_global_rect()), "and it still keeps off the enemy panel")
+
+
+func test_a_list_clear_of_the_banner_is_not_moved() -> void:
+	var with_banner_far := Control.new()
+	with_banner_far.name = "TurnInfoPanel"
+	with_banner_far.position = Vector2(900, 600)
+	with_banner_far.size = Vector2(200, 40)
+	add_child_autofree(with_banner_far)
+	var c: Array = await _chain(true)
+	var leaf = c[2]
+	assert_not_null(leaf, "CONTROL: the third-level list opened")
+	if leaf == null:
+		return
+	assert_almost_eq(leaf.global_position.y, 10.0, 12.0, "a banner nowhere near leaves the list where the tree put it")

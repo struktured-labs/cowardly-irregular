@@ -730,6 +730,15 @@ fi
 ## holding one NUL byte it returns EMPTY WITH EXIT 0 — a publish that reports no verdict and
 ## passes. See tools/smoke_report.sh for both measurements and for why the gate itself is
 ## unaffected (GameLoop.gd:747 quits 1 on a FAIL, so the `if !` above already blocks).
+## Which cues actually fired, to a FILE rather than to this log: the set is ~40 lines and belongs in
+## the archived evidence, not in the publish narrative. One summary line here so a reader knows it
+## exists. Only meaningful with COWIR_SFX_LOG_CUES=1 on SMOKE_CMD above; the tool names an untraced
+## log rather than reporting an empty set from it.
+if [ -x tools/cue_trace.sh ]; then
+  ./tools/cue_trace.sh tmp/deploy_smoke.log > tmp/cue_trace.log 2>&1 || true
+  command grep -a 'distinct key(s)\|SUBSTITUTED\|WITHOUT COWIR_SFX_LOG_CUES' tmp/cue_trace.log \
+    | head -3 | sed 's/^/[deploy] /' || true
+fi
 if [ -x tools/smoke_report.sh ]; then
   ./tools/smoke_report.sh tmp/deploy_smoke.log || true
 else

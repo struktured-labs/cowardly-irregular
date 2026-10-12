@@ -9,7 +9,11 @@ extends GutTest
 func test_detection_drops_the_web_blanket() -> void:
 	var src := FileAccess.get_file_as_string("res://src/ui/VirtualGamepad.gd")
 	var i := src.find("func _is_touch_device")
-	var body := src.substr(i, 500)
+	assert_gt(i, -1, "PRECONDITION: _is_touch_device must exist, or the window below is empty")
+	## Bounded by the NEXT function rather than a fixed 500: the subject sits at +270, so three
+	## inserted lines would have pushed it out and red this file for someone else's edit.
+	var next_fn := src.find("\nfunc ", i + 1)
+	var body := src.substr(i, (next_fn - i) if next_fn > -1 else -1)
 	assert_false("has_feature(\"web\")" in body,
 		"the web blanket must stay gone — desktop-browser players get a clean screen")
 	assert_true("is_touchscreen_available()" in body, "real detection remains")

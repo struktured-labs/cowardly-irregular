@@ -8,7 +8,7 @@
   "giver": {
     "npc_id": "madame_orrery_w6",
     "display_name": "Something That Feels Like Waiting",
-    "location": {"map_id": "the_vertex", "near": "near_the_traveler_but_not_quite"},
+    "location": {"map_id": "vertex_village", "near": "near_the_traveler_but_not_quite"},
     "spawn_flag": "quest_wiring_fool_card_five_marks"
   },
   "description": "In The Vertex there is something that feels like waiting. It's near the traveler but not quite there. If the Fool Card carries all five marks, it has begun to pulse — gently, the way a thing pulses when it has been patient for six worlds and is almost allowed to stop.",

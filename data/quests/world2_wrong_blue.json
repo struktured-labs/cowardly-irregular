@@ -6,7 +6,7 @@
   "giver": {
     "npc_id": "casper_kid",
     "display_name": "Casper",
-    "location": {"map_id": "maple_heights", "near": "casper_home"},
+    "location": {"map_id": "maple_heights_village", "near": "casper_home"},
     "spawn_flag": "quest_world2_relocated_complete"
   },
   "description": "The sky in Maple Heights is the wrong blue. The Mage noticed it on day one. Casper saw it on the Coordinator's monitor. Not wrong like a mistake — wrong like someone picked the wrong hex code.",
