@@ -874,7 +874,9 @@
         }
       },
       "tier": "T1",
-      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)",
+      "flip_h": true,
+      "flip_h_reason": "idle drawn facing LEFT, away from the party at screen right, unlike the 256px convention; judged by eye at zoom 2026-10-12 (re-review if the art is redrawn)"
     },
     "bard_hostile_courtier": {
       "path": "res://assets/sprites/monsters/bard_hostile_courtier.png",
@@ -953,7 +955,9 @@
       },
       "tier": "T1",
       "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)",
-      "source": "2026-09-06 facing audit (struktured: 'lots of backward sprites'): drawn facing LEFT, flip baked into the pixels per-frame; monsters face RIGHT."
+      "source": "2026-09-06 facing audit (struktured: 'lots of backward sprites'): drawn facing LEFT, flip baked into the pixels per-frame; monsters face RIGHT.",
+      "flip_h": true,
+      "flip_h_reason": "idle drawn facing LEFT, away from the party at screen right, unlike the 256px convention; judged by eye at zoom 2026-10-12 (re-review if the art is redrawn)"
     },
     "brass_golem": {
       "path": "res://assets/sprites/monsters/brass_golem.png",
@@ -1189,7 +1193,9 @@
         }
       },
       "tier": "T1",
-      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)",
+      "flip_h": true,
+      "flip_h_reason": "idle drawn facing LEFT, away from the party at screen right, unlike the 256px convention; judged by eye at zoom 2026-10-12 (re-review if the art is redrawn)"
     },
     "corrupted_guardian": {
       "path": "res://assets/sprites/monsters/corrupted_guardian.png",
@@ -1269,7 +1275,9 @@
       },
       "tier": "T1",
       "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)",
-      "source": "2026-09-06 facing audit (struktured: 'lots of backward sprites'): drawn facing LEFT, flip baked into the pixels per-frame; monsters face RIGHT."
+      "source": "2026-09-06 facing audit (struktured: 'lots of backward sprites'): drawn facing LEFT, flip baked into the pixels per-frame; monsters face RIGHT.",
+      "flip_h": true,
+      "flip_h_reason": "idle drawn facing LEFT, away from the party at screen right, unlike the 256px convention; judged by eye at zoom 2026-10-12 (re-review if the art is redrawn)"
     },
     "crystal_golem": {
       "path": "res://assets/sprites/monsters/crystal_golem.png",
@@ -1321,7 +1329,9 @@
         }
       },
       "tier": "T1",
-      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)",
+      "flip_h": true,
+      "flip_h_reason": "idle drawn facing LEFT, away from the party at screen right, unlike the 256px convention; judged by eye at zoom 2026-10-12 (re-review if the art is redrawn)"
     },
     "data_wraith": {
       "path": "res://assets/sprites/monsters/data_wraith.png",
@@ -1505,7 +1515,9 @@
         }
       },
       "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)",
-      "source": "2026-09-06 facing audit (struktured: 'lots of backward sprites'): drawn facing LEFT, flip baked into the pixels per-frame; monsters face RIGHT."
+      "source": "2026-09-06 facing audit (struktured: 'lots of backward sprites'): drawn facing LEFT, flip baked into the pixels per-frame; monsters face RIGHT.",
+      "flip_h": true,
+      "flip_h_reason": "idle drawn facing LEFT, away from the party at screen right, unlike the 256px convention; judged by eye at zoom 2026-10-12 (re-review if the art is redrawn)"
     },
     "firewall_sentinel": {
       "path": "res://assets/sprites/monsters/firewall_sentinel.png",
@@ -1716,7 +1728,9 @@
         }
       },
       "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)",
-      "source": "2026-09-06 facing audit (struktured: 'lots of backward sprites'): drawn facing LEFT, flip baked into the pixels per-frame; monsters face RIGHT."
+      "source": "2026-09-06 facing audit (struktured: 'lots of backward sprites'): drawn facing LEFT, flip baked into the pixels per-frame; monsters face RIGHT.",
+      "flip_h": true,
+      "flip_h_reason": "idle drawn facing LEFT, away from the party at screen right, unlike the 256px convention; judged by eye at zoom 2026-10-12 (re-review if the art is redrawn)"
     },
     "ice_wolf": {
       "path": "res://assets/sprites/monsters/ice_wolf.png",
@@ -1795,7 +1809,9 @@
         }
       },
       "tier": "T1",
-      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)",
+      "flip_h": true,
+      "flip_h_reason": "idle drawn facing LEFT, away from the party at screen right, unlike the 256px convention; judged by eye at zoom 2026-10-12 (re-review if the art is redrawn)"
     },
     "lightning_dragon": {
       "path": "res://assets/sprites/monsters/lightning_dragon.png",
@@ -2861,7 +2877,9 @@
         }
       },
       "tier": "T1",
-      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)",
+      "flip_h": true,
+      "flip_h_reason": "idle drawn facing LEFT, away from the party at screen right, unlike the 256px convention; judged by eye at zoom 2026-10-12 (re-review if the art is redrawn)"
     },
     "script_error": {
       "path": "res://assets/sprites/monsters/script_error.png",
@@ -3542,7 +3560,9 @@
         }
       },
       "tier": "T1",
-      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)",
+      "flip_h": true,
+      "flip_h_reason": "idle drawn facing LEFT, away from the party at screen right, unlike the 256px convention; judged by eye at zoom 2026-10-12 (re-review if the art is redrawn)"
     },
     "unassuming_dog": {
       "path": "res://assets/sprites/monsters/unassuming_dog.png",
@@ -3595,7 +3615,9 @@
         }
       },
       "tier": "T1",
-      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)",
+      "flip_h": true,
+      "flip_h_reason": "idle drawn facing LEFT, away from the party at screen right, unlike the 256px convention; judged by eye at zoom 2026-10-12 (re-review if the art is redrawn)"
     },
     "wolf": {
       "path": "res://assets/sprites/monsters/wolf.png",
