@@ -368,11 +368,15 @@ func test_the_log_hint_is_a_bound_action_that_opens_the_log() -> void:
 		if e is InputEventJoypadButton and (e as InputEventJoypadButton).button_index == JOY_BUTTON_LEFT_STICK:
 			has_l3 = true
 	assert_true(has_l3, "battle_open_log must be bound to L3 on a pad")
-	## ⚠️ BOUNDED BY STRUCTURE, NOT BY WIDTH. This read `src.substr(i, 160)`, and the call it asserts
-	## sits at +73 — SIXTY-SIX characters of headroom, about one line. Any insertion between the `if`
+	## ⚠️ BOUNDED BY STRUCTURE, NOT BY WIDTH. This read a fixed 160-character source window, and
+	## the call it asserts sits at +73 — SIXTY-SIX characters of headroom, about one line. Any insertion between the `if`
 	## and the call (a comment, a guard, a log line) pushed it out of the window and red THIS file,
 	## naming the log hint, when nothing about the log hint had changed. @cowir-music measured the
-	## same shape costing a debugging detour today. _calls_within_block is indentation-scoped and is
+	## same shape costing a debugging detour today. ⛔ THE PROSE DELIBERATELY DOES NOT SPELL THE
+	## IDIOM: the fixed-width census three lanes are running scans test/unit for that call shape,
+	## and writing it here makes THIS file a phantom hit in the very place the real one was
+	## removed (@cowir-music, same hour, had a comment extracted as a real status).
+	## _calls_within_block is indentation-scoped and is
 	## what the Speed and Repeat arms above already use — no new mechanism, just the right one.
 	var lines := _read(BATTLE_PATH).split("\n")
 	var opens_log := false
