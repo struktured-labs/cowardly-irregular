@@ -5,7 +5,7 @@
   "giver": {
     "npc_id": "brigadier_flux",
     "display_name": "Brigadier Flux",
-    "location": {"map_id": "brasston", "near": "flux_workshop"},
+    "location": {"map_id": "brasston_village", "near": "flux_workshop"},
     "spawn_flag": ""
   },
   "description": "The old chief engineer vanished the day the Regulator arrived. Nobody looked into it, because the Regulator was immediately so much more competent than the old engineer had been. Nobody looks for what the Regulator replaced.",

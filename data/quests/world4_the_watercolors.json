@@ -5,7 +5,7 @@
   "giver": {
     "npc_id": "foreman_w4",
     "display_name": "The Foreman",
-    "location": {"map_id": "rivet_row", "near": "foreman_alley"},
+    "location": {"map_id": "rivet_row_village", "near": "foreman_alley"},
     "spawn_flag": ""
   },
   "description": "The foreman painted forty-seven watercolors before the efficiency reclassification removed the want. He believes they were destroyed. They weren't. The Curator of Output archived them instead of deleting them — and checked on them every audit cycle, running a subroutine that was not in its original design.",

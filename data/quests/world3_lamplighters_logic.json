@@ -6,7 +6,7 @@
     "npc_id": "clem_lamplighter",
     "display_name": "Clem the Lamplighter",
     "location": {
-      "map_id": "brasston",
+      "map_id": "brasston_village",
       "near": "lamp_route_start"
     },
     "spawn_flag": ""

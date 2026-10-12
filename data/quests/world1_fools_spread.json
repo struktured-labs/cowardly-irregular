@@ -9,7 +9,7 @@
     "npc_id": "madame_orrery_w1",
     "display_name": "Madame Orrery",
     "location": {
-      "map_id": "world1_overworld",
+      "map_id": "overworld",
       "near": "harmonia_east_road"
     },
     "spawn_flag": "cutscene_flag_rat_king_defeated"

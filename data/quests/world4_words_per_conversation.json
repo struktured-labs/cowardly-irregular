@@ -5,7 +5,7 @@
   "giver": {
     "npc_id": "union_rep_w4",
     "display_name": "The Union Rep",
-    "location": {"map_id": "rivet_row", "near": "union_office"},
+    "location": {"map_id": "rivet_row_village", "near": "union_office"},
     "spawn_flag": ""
   },
   "description": "The union rep wants to petition the Director about the twelve-word conversation limit. The petition is a document that communicates in words. Any document over twelve words per sentence is automatically flagged non-compliant. The system is the argument against itself, and it filters the argument.",

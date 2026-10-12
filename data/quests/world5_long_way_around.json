@@ -9,7 +9,7 @@
     "npc_id": "madame_orrery_w5",
     "display_name": "Orrery_v5",
     "location": {
-      "map_id": "node_prime",
+      "map_id": "node_prime_village",
       "near": "market_district"
     },
     "spawn_flag": ""
