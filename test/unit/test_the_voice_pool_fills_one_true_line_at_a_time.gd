@@ -67,6 +67,7 @@ func before_each() -> void:
 
 
 func after_each() -> void:
+	VoicePool._recent = {}  # one arm plants a value; autoload state outlives the FILE
 	LLMService.cancel_all("voice pool test teardown")
 	_model.request_finished.disconnect(LLMService._on_backend_finished)
 	LLMService.remove_child(_model)

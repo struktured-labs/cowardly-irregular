@@ -16,10 +16,25 @@ extends GutTest
 ## files of which 2 were false hits (one scans BattleManager's source text for the string, one has it
 ## in a comment); the real set is 10, via the battle entry points as well.
 
+const STORE := "_recent_spoken"
+## The runtime calls that can WRITE it. The battle entry points are here because the file that caused
+## the measured red names no store API at all — its emit sites call mark_spoken transitively.
 const CALLS := ["pick_trigger_voice(", "mark_spoken(", "_run_party_line_async(",
 		"_dispatch_victory_party_line(", "maybe_fire_party_line("]
-const STORE := "_recent_spoken"
 const DIR := "res://test/unit"
+
+var _restore_job := ""
+var _restore_trig := ""
+var _restore_lines: Variant = null
+
+
+## This file drives the store too, so it obeys the rule it enforces.
+func after_each() -> void:
+	if _restore_job != "" and _restore_lines != null:
+		PartyPersonas._data[_restore_job]["trigger_voices"][_restore_trig] = _restore_lines
+		_restore_job = ""
+	PartyPersonas._recent_spoken.clear()
+	PartyPersonas._last_variant.clear()
 
 
 ## A call named inside a double-quoted string is a SOURCE SCAN, not a call: three of this corpus's
@@ -43,6 +58,23 @@ func _runtime_call_count(src: String) -> int:
 			if bare.contains(c):
 				n += 1
 	return n
+
+
+## MENTIONING the store is not restoring it — a file that WRITES it contains the name too, and an
+## earlier version of this guard passed on that basis (it survived its own mutation, because deleting
+## the reset left the planting line behind). So require an emptying write INSIDE before_each or
+## after_each: that is the behaviour, where the name is only the spelling.
+func _resets_in_a_fixture(src: String, store: String) -> bool:
+	for fn in ["before_each", "after_each"]:
+		var at: int = src.find("func %s(" % fn)
+		if at < 0:
+			continue
+		var end: int = src.find("\nfunc ", at + 1)
+		var body: String = src.substr(at, (end - at) if end > at else -1)
+		if body.contains("%s.clear()" % store) or body.contains("%s = {}" % store) \
+				or body.contains("%s = " % store):          # snapshot/restore is equally valid
+			return true
+	return false
 
 
 func _test_files() -> Array:
@@ -70,13 +102,13 @@ func test_every_file_that_can_write_the_store_puts_it_back() -> void:
 		if _runtime_call_count(src) == 0:
 			continue
 		drivers.append(name)
-		if not src.contains(STORE):
+		if not _resets_in_a_fixture(src, STORE):
 			leaking.append(name)
 	## Without this a renamed entry point would empty the corpus and the arm would pass checking nothing.
 	assert_gt(drivers.size(), 5,
 		"VOID: only %d files derived as store writers — the entry-point names in CALLS have drifted, so this arm is no longer checking the corpus it describes" % drivers.size())
 	assert_eq(leaking, [],
-		"these test files can write PartyPersonas.%s and never put it back, so they leak the pick window into whatever file GUT runs next (%d of %d drivers): %s" % [STORE, leaking.size(), drivers.size(), leaking])
+		"these test files can write PartyPersonas.%s and never put it back in a fixture, so they leak the pick window into whatever file GUT runs next (%d of %d drivers): %s" % [STORE, leaking.size(), drivers.size(), leaking])
 
 
 func test_the_store_is_actually_read_by_the_pick() -> void:
@@ -96,6 +128,9 @@ func test_a_leaked_index_really_does_hide_a_variant() -> void:
 	var saved: Variant = PartyPersonas._data[job]["trigger_voices"].get(trig, null)
 	var saved_recent: Dictionary = PartyPersonas._recent_spoken.duplicate(true)
 	var saved_last: Dictionary = PartyPersonas._last_variant.duplicate(true)
+	_restore_job = job
+	_restore_trig = trig
+	_restore_lines = saved
 	PartyPersonas._data[job]["trigger_voices"][trig] = ["zero", "one"]
 	PartyPersonas._recent_spoken.clear()
 	PartyPersonas._last_variant.clear()
