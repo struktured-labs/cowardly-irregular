@@ -377,8 +377,19 @@ selftest() {
             fail=$((fail+1)); printf '  FAIL  %-56s (%s unreadable)\n' "a print I cannot read may emit an [SFX] shape" "$nonlit"
             command grep -anE 'print\([^"]' "$prod" | head -3 | sed 's/^/          /'
         fi
+    elif git rev-parse --show-toplevel >/dev/null 2>&1; then
+        # ⛔ A SKIP THAT SHARES ITS VERDICT WITH A PASS. Measured: with the producer RENAMED this
+        # arm printed SKIP and the selftest reported "30 passed, 0 failed" — a vacuous green on the
+        # one arm that runs in the publish corpus. @cowir-sfx hit the identical shape (an arm
+        # `continue`-ing on a subject it could not locate by name) and @cowir-ai's rule is the cure:
+        # "I cannot do this" must not share an exit with "done".
+        #
+        # The SKIP is honest in ONE case only — run from outside the repo, which the chain never is.
+        # So: inside a git tree, a missing subject is a MOVED FILE and fails; outside one, it skips.
+        fail=$((fail+1))
+        printf '  FAIL  %-56s\n' "the producer MOVED — $prod is gone from this tree"
     else
-        printf '  SKIP  %-56s (no %s from this cwd)\n' "producer shapes vs my patterns" "$prod"
+        printf '  SKIP  %-56s (not in a git tree; the chain always is)\n' "producer shapes vs my patterns"
     fi
 
     out="$("$self" "$dir/nope.log" 2>&1)"; local ec2=$?
