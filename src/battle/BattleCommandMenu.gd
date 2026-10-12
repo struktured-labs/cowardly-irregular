@@ -667,11 +667,7 @@ func _build_ability_menu_item(ability_id: String, combatant: Combatant, alive_en
 				continue
 			if not member.is_alive and not is_heal_ability:
 				continue
-			var target_pos: Vector2 = Vector2.ZERO
-			if i < _scene.party_sprite_nodes.size():
-				var s = _scene.party_sprite_nodes[i]
-				if is_instance_valid(s):
-					target_pos = s.get_meta("home_position", s.global_position)  # 2026-07-15: prefer home_position (stamped at spawn) so a mid-animation sprite doesn't misalign the highlight box
+			var target_pos: Vector2 = _scene.ally_target_anchor(i)
 			var heal_preview: String = ""
 			if is_heal_ability and ability.has("heal_amount") and member.is_alive:
 				## Quoted per ALLY: the dial, this member's passives and a curse on them all move it.
@@ -701,11 +697,7 @@ func _build_ability_menu_item(ability_id: String, combatant: Combatant, alive_en
 			var member = _scene.party_members[i]
 			if not is_instance_valid(member):
 				continue
-			var target_pos: Vector2 = Vector2.ZERO
-			if i < _scene.party_sprite_nodes.size():
-				var s = _scene.party_sprite_nodes[i]
-				if is_instance_valid(s):
-					target_pos = s.get_meta("home_position", s.global_position)  # 2026-07-15: prefer home_position (stamped at spawn) so a mid-animation sprite doesn't misalign the highlight box
+			var target_pos: Vector2 = _scene.ally_target_anchor(i)
 			var hp_text: String = "KO" if not member.is_alive else "%d/%d HP" % [member.current_hp, member.max_hp]
 			dead_targets.append({
 				"id": "ability_" + ability_id + "_dead_" + str(i),
@@ -950,11 +942,7 @@ func _ally_state_tag(member: Combatant) -> String:
 
 ## One ally row of an item's target list. Landable even when the item would do nothing, so confirm can say why instead of spending it.
 func _item_ally_row(item_id: String, member: Combatant, i: int) -> Dictionary:
-	var target_pos = Vector2.ZERO
-	if i < _scene.party_sprite_nodes.size():
-		var s = _scene.party_sprite_nodes[i]
-		if is_instance_valid(s):
-			target_pos = s.get_meta("home_position", s.global_position)  # 2026-07-15: prefer home_position (stamped at spawn) so a mid-animation sprite doesn't misalign the highlight box
+	var target_pos: Vector2 = _scene.ally_target_anchor(i)
 	var hp_label: String = "KO'd" if not member.is_alive else "%d/%d HP" % [member.current_hp, member.max_hp]
 	## Same "~+N" an ability heal's row carries, from the heal() chain the item will run.
 	var quote: int = ItemSystem.estimate_item_heal(item_id, member) if member.is_alive else ItemSystem.estimate_item_revive(item_id, member)
