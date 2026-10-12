@@ -113,3 +113,71 @@ func test_every_screen_the_menu_opens_closes_on_one_back() -> void:
 		"one Back closed these screens AND the overworld menu behind them: %s" % [double_close])
 	assert_eq(dead, [],
 		"these rows opened no screen, closed nothing and emitted nothing — pressing them does nothing: %s" % [dead])
+
+
+## ⛔ AN ARM WITH NO ROW IS DEAD DISPATCH CODE, AND THE RUNTIME ARM ABOVE CANNOT SEE IT — it walks
+## `_menu_options`, so it only ever asks about rows that EXIST. That direction is what this adds.
+##
+## ⚠️ I BUILT THIS FOR THE OTHER DIRECTION AND MEASURED THAT IT WAS ALREADY COVERED. Adding a row
+## with no arm reds `test_every_screen_the_menu_opens_closes_on_one_back` too — its `dead` list
+## catches exactly that, at runtime, on the real menu:
+##     MUTATION: a "journal" row with no arm -> BOTH arms red
+## So the dead-row half of this guard is redundant, said plainly rather than left for a reader to
+## discover. It is kept because it comes free from the same two derived sets, it names the cause
+## without instantiating a menu or waiting 0.25s per row, and it is deterministic.
+##
+## 🔑 DERIVED FROM BOTH DECLARATION SITES, NOT A HAND LIST. The defect is someone adding a row and
+## not an arm — and they would add it to a hand list in the same edit. Rows are any dict literal
+## carrying BOTH "id" and "label", which covers the BASE_MENU_OPTIONS const AND the dynamic
+## `teleport` append at :179, and a third site nobody has written yet. Measured: 21 = 21.
+##
+## 📌 This is a RELATION between two sets in one text, not a spelling pin: a rename moves both sides
+## and it stays green, which is why reading source is legitimate here. It is NOT a liveness check —
+## gut the arms' bodies and it still passes. The runtime arm above is that half of the pair.
+func test_every_menu_row_has_a_dispatch_arm() -> void:
+	var src := FileAccess.get_file_as_string("res://src/ui/OverworldMenu.gd")
+	assert_ne(src, "", "PRECONDITION: OverworldMenu source must be readable")
+	var id_rx := RegEx.new()
+	id_rx.compile('"id"\\s*:\\s*"([a-z_]+)"')
+	var rows: Array[String] = []
+	var lines := src.split("\n")
+	for line in lines:
+		if not (line.contains('"id"') and line.contains('"label"')):
+			continue
+		var m := id_rx.search(line)
+		if m:
+			rows.append(m.get_string(1))
+
+	var arm_rx := RegEx.new()
+	arm_rx.compile('^\\t\\t"([a-z_]+)":\\s*$')
+	var arms: Array[String] = []
+	var inside := false
+	for line in lines:
+		if line.strip_edges() == "match action_id:":
+			inside = true
+			continue
+		if inside:
+			if line.strip_edges() != "" and not line.begins_with("\t\t"):
+				break
+			var a := arm_rx.search(line)
+			if a:
+				arms.append(a.get_string(1))
+
+	## POSITIVE CONTROLS: an empty derivation on either side reports perfect agreement about nothing,
+	## which is the shape of every guard aimed at a pattern that stopped matching.
+	assert_gt(rows.size(), 15, "CONTROL: must find the authored menu rows, got %d" % rows.size())
+	assert_gt(arms.size(), 15, "CONTROL: must find the dispatch arms, got %d" % arms.size())
+
+	var dead_rows: Array[String] = []
+	for r in rows:
+		if not arms.has(r):
+			dead_rows.append(r)
+	assert_eq(dead_rows, [] as Array[String],
+		"these menu rows have NO arm in _handle_menu_action — selecting them does nothing: %s" % str(dead_rows))
+
+	var orphan_arms: Array[String] = []
+	for a in arms:
+		if not rows.has(a):
+			orphan_arms.append(a)
+	assert_eq(orphan_arms, [] as Array[String],
+		"these dispatch arms answer no authored row — dead code, or a row that was renamed: %s" % str(orphan_arms))

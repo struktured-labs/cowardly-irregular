@@ -922,6 +922,11 @@ func _handle_menu_action(action_id: String) -> void:
 			_open_settings()
 		"teleport":
 			_open_teleport_menu()
+		_:
+			## A row with no arm is a DEAD ROW: the player selects it and nothing happens, silently.
+			## Four lanes hit this shape on 2026-10-12 (a match with no else, a two-branch
+			## classifier, a positive-match set, a shared `_:`); this one was correct and unguarded.
+			push_warning("[OverworldMenu] no dispatch arm for menu row '%s' — the row does nothing" % action_id)
 
 
 func _open_cutscene_gallery() -> void:
