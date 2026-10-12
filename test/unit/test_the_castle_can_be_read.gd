@@ -99,10 +99,33 @@ func _build_on_floor(floor_num: int) -> Node:
 	return castle
 
 
+## ⛔ THE CODE HALF, NOT THE FILE — measured on THIS guard rather than inherited from the thread.
+## Every source arm below is satisfied by the mere PRESENCE of an id, which @cowir-story's split
+## names an ACCEPTANCE set: a phantom does not red, it WIDENS what passes. The attack, run here:
+## delete `castle_harmonia_glyphs`' mark and name it in a QUOTED comment inside the mark table.
+##
+##     test_every_authored_castle_examine_is_placed      GREEN   fooled (src.contains(id))
+##     test_every_mark_names_a_real_authored_entry       GREEN   fooled (the regex needs only quotes)
+##     test_the_castle_builds_each_floors_examines...    RED     "account for all 11 ... not 10"
+##
+## ⚠️ ONE arm spoke, and it was the RUNTIME one. So the behavioural arm is not redundant with these
+## source arms — it is the only thing covering their blind spot, and pruning it as duplication would
+## turn this from caught into silent. @cowir-ai measured the same inversion on their own guard.
+##
+## 🔑 The two controls below are what this file's shape supports, and the usual `doc`-half floor is
+## NOT: `GdSource.split` puts only `"""` regions in `doc`, GDScript comments are `##`, and this file
+## has zero triple-quotes — measured `doc len=0`, so flooring it would red on a correct strip.
+## Over-stripping and a correct strip are the same green, so one control proves code survived and
+## the other proves prose did not.
 func _source() -> String:
-	var src := FileAccess.get_file_as_string(CASTLE)
-	assert_ne(src, "", "CONTROL: CastleHarmonia.gd must be readable")
-	return src
+	var raw := FileAccess.get_file_as_string(CASTLE)
+	assert_ne(raw, "", "CONTROL: CastleHarmonia.gd must be readable")
+	var code: String = str(GdSource.split(raw)["code"])
+	assert_true(code.contains("func _place_castle_examines"),
+		"CONTROL: the strip must keep real code; every arm here is vacuous if it ate the placer")
+	assert_false(code.contains("##"),
+		"CONTROL: no comment may survive into the code half, or a presence assert is still prose-satisfiable")
+	return code
 
 
 func test_the_pack_has_a_consumer() -> void:
