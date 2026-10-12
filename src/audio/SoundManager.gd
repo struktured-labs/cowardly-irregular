@@ -2549,6 +2549,8 @@ func play_music(track: String, exact: bool = false, resume_at: float = 0.0) -> v
 		## Measured 2026-09-17 on the shipped code — play battle_medieval, fade 0.3 s, ask for the
 		## SAME track: playing=true at the call, playing=false 0.6 s on.
 		_cancel_pending_fade()
+		## No invalidation here: play_area_music's own stop_music() clears _current_music
+		## and _music_playing, so this return is unreachable while an area start is armed.
 		return  # Already playing
 
 	## An id that resolves to nothing must not tear down the bed it cannot replace.
@@ -2574,6 +2576,11 @@ func play_music(track: String, exact: bool = false, resume_at: float = 0.0) -> v
 
 	# Clear area tracking so play_area_music() doesn't skip after battle/victory
 	_current_area = ""
+	## NOT covered by clearing _current_area: play_area_music parks the area in
+	## _pending_music_area and defers the real start, and that call's only guard is
+	## against a NEWER AREA — so one armed before this request fired a frame later and
+	## replaced it. Measured 5x in struktured's 2026-10-05 logs, every one a boss fight.
+	_invalidate_pending_area_start()
 
 	# Kill any existing crossfade
 	if _crossfade_tween and _crossfade_tween.is_valid():
@@ -5818,6 +5825,13 @@ var _current_world_suffix: String = "medieval"
 var _pending_music_area: String = ""
 ## Where the field bed was when play_music took it over. Victory and game-over leave it; stop, the title, and a loaded save drop it.
 var _interrupted_area_bed: Dictionary = {}
+
+## One call site, in play_music's main body. NOT the unknown-track return (that path
+## changes nothing, so the armed start is still the caller's live intent) and not the
+## already-playing return (unreachable — see test_an_armed_area_start_cannot_meet_it).
+func _invalidate_pending_area_start() -> void:
+	_pending_music_area = ""
+
 
 func discard_interrupted_area_bed() -> void:
 	_interrupted_area_bed = {}
