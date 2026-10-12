@@ -720,7 +720,18 @@ if ! ./tools/check_profile_untouched.sh --verify "$_REAL_UD" "$_REAL_SIG_BEFORE"
   echo "        keep running the game against his live save data." >&2
   exit 3
 fi
-grep "VERDICT" tmp/deploy_smoke.log
+## The verdict AND the reason, through a reader that survives a log judged binary. The line this
+## replaced was `grep "VERDICT" tmp/deploy_smoke.log`: it discarded @cowir-overworld's three
+## distinct wipe failures (the thing that separates "re-run it" from "fix the tree"), and on a log
+## holding one NUL byte it returns EMPTY WITH EXIT 0 — a publish that reports no verdict and
+## passes. See tools/smoke_report.sh for both measurements and for why the gate itself is
+## unaffected (GameLoop.gd:747 quits 1 on a FAIL, so the `if !` above already blocks).
+if [ -x tools/smoke_report.sh ]; then
+  ./tools/smoke_report.sh tmp/deploy_smoke.log || true
+else
+  echo "[deploy] note: tools/smoke_report.sh missing — falling back to a raw extract" >&2
+  command grep -a "VERDICT" tmp/deploy_smoke.log || true
+fi
 
 echo "[deploy] gate 5/5: web boot smoke (the ACTUAL WASM build in headless chromium)"
 # Retry once: headless chromium occasionally dies mid-run when the box is
