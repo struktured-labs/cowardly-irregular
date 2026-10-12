@@ -3323,7 +3323,13 @@ func _on_battle_started() -> void:
 			var mon_track: String = declared if declared != "" else "battle_" + dominant_monster
 			_base_music_track = mon_track
 			SoundManager.play_music(mon_track)
-			print("[MUSIC] Playing %s battle theme (%s)" % [dominant_monster, mon_track])
+			## Name what RESOLVED, not what was asked for: 27 pool-reachable monsters have no bed.
+			var heard: String = SoundManager.playing_track_stem()
+			if heard != "" and heard != mon_track:
+				print("[MUSIC] Playing %s battle theme (%s requested, %s playing)"
+					% [dominant_monster, mon_track, heard])
+			else:
+				print("[MUSIC] Playing %s battle theme (%s)" % [dominant_monster, mon_track])
 		else:
 			# Use terrain-specific battle music for areas that have one,
 			# otherwise fall back to generic battle music
