@@ -1073,6 +1073,17 @@ func _create_battle_sprites() -> void:
 			sprite.queue_free()
 	enemy_sprite_nodes.clear()
 
+	## All three registries are keyed by the COMBATANT and hold nodes parented to a sprite that is now
+	## freed — so they are emptied here and refilled by the two loops below (buff visuals by the
+	## per-frame _update_buff_debuff_visuals). This is also the restart path's only cleanup:
+	## _restart_battle frees the enemy Combatants themselves and ends by calling this function, so a
+	## second clear there was measurably unobservable.
+	## _buff_visual_nodes is the one with no other way out: _remove_buff_visual is only ever reached
+	## for a combatant still in BattleManager's parties, so a replaced enemy is never visited again.
+	_status_icon_containers.clear()
+	_enemy_hp_bars.clear()
+	_buff_visual_nodes.clear()
+
 	for animator in enemy_animators:
 		if is_instance_valid(animator):
 			animator.queue_free()
