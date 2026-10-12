@@ -231,8 +231,20 @@ func test_keep_music_defaults_off_for_every_other_scene() -> void:
 		var parsed = JSON.parse_string(_read("%s/%s" % [CUTSCENE_DIR, f]))
 		if parsed is Dictionary and bool(parsed.get("keep_music", false)):
 			opted.append(f)
-	assert_eq(opted, ["world1_mordaine_watch_road.json"],
-		"only the ambient road beat should opt out of the music fade so far — a new opt-in is fine, but it's a deliberate audio change worth noticing: %s" % str(opted))
+	## The six village introductions joined 2026-10-12: each plays on first entry to a village that has
+	## just armed its OWN bed (village_harmonia, village_maple_heights...), so fading it out to play a
+	## GENERIC world bed scored the player's first impression with the wrong music and handed the
+	## village its theme back only once the scene ended. They keep the bed instead of naming one.
+	assert_eq(opted, [
+			"world1_eldertree_npcs.json",
+			"world1_harmonia_npcs.json",
+			"world1_mordaine_watch_road.json",
+			"world2_maple_heights_npcs.json",
+			"world2_oak_street_npcs.json",
+			"world3_brasston_npcs.json",
+			"world4_rivet_row_npcs.json",
+		],
+		"a new keep_music opt-in is fine, but it is a deliberate audio change worth noticing — declare it here: %s" % str(opted))
 
 
 func test_spawn_actor_consumes_at_offset() -> void:

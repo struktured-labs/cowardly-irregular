@@ -2,6 +2,7 @@
   "id": "world4_rivet_row_npcs",
   "title": "Rivet Row",
   "world": 4,
+  "keep_music": true,
   "trigger": "world4_rivet_row_entry",
   "background": "industrial_factory",
   "description": "Industrial world. A union rep on his mandated fifteen-minute break. A shift worker who came back from communication efficiency training with fewer questions. A foreman who used to paint watercolors.",
@@ -11,12 +12,8 @@
       "duration": 0.4
     },
     {
-      "type": "play_music",
-      "track": "village_industrial"
-    },
-    {
       "type": "narration",
-      "text": "Rivet Row was not a town. It was a process. Housing blocks identical and numbered, arranged in grids. Streets straight and wide. People moving the way the streets did \u2014 straight, purposeful, empty of anything that wasn't productive."
+      "text": "Rivet Row was not a town. It was a process. Housing blocks identical and numbered, arranged in grids. Streets straight and wide. People moving the way the streets did — straight, purposeful, empty of anything that wasn't productive."
     },
     {
       "type": "wait",
@@ -117,7 +114,7 @@
         },
         {
           "speaker": "Foreman",
-          "text": "She doesn't punish inefficiency \u2014 she eliminates it. Not the people. The inefficiency itself. She restructures your role, your shift, your route, your meals, your sleep schedule, until you are performing at peak output.",
+          "text": "She doesn't punish inefficiency — she eliminates it. Not the people. The inefficiency itself. She restructures your role, your shift, your route, your meals, your sleep schedule, until you are performing at peak output.",
           "theme": "mysterious",
           "portrait": "mysterious"
         },

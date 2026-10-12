@@ -2,6 +2,7 @@
   "id": "world1_eldertree_npcs",
   "title": "Eldertree Village",
   "world": 1,
+  "keep_music": true,
   "trigger": "world1_eldertree_entry",
   "background": "prologue_forest",
   "description": "Forest-edge village with dying sacred trees. Forest Keeper Anya watches the corruption spread. A refugee from Scriptura speaks of something that measures, something that calibrates. Old Fen sells herbs that heal in the correct direction.",
@@ -9,10 +10,6 @@
     {
       "type": "letterbox_in",
       "duration": 0.4
-    },
-    {
-      "type": "play_music",
-      "track": "village_medieval"
     },
     {
       "type": "narration",

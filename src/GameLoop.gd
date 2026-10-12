@@ -2580,10 +2580,13 @@ func _get_pending_story_cutscene() -> String:
 	# village it is written about, which is what its `trigger` field names. Placed at the end of
 	# this function on purpose: every story gate above returns first, so an intro can never
 	# pre-empt a chapter beat on the same entry.
-	for vid in _VILLAGE_INTROS:
-		var intro: String = str(_VILLAGE_INTROS[vid])
-		if _current_map_id == vid and not flags.get("cutscene_flag_%s_complete" % intro, false):
-			return intro
+	# ...and never as a CHAIN target: a story beat finishing in a village must not hand the entry
+	# straight to flavour, which is the same cross-entry pacing rule the spotlight gates use.
+	if not _chaining_story_cutscene:
+		for vid in _VILLAGE_INTROS:
+			var intro: String = str(_VILLAGE_INTROS[vid])
+			if _current_map_id == vid and not flags.get("cutscene_flag_%s_complete" % intro, false):
+				return intro
 
 	# ===== GUIDANCE HINTS — disabled (now opt-in via party chat) =====
 	# These were auto-triggering too aggressively. Guidance hints are now

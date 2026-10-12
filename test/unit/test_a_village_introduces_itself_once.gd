@@ -80,3 +80,54 @@ func test_no_two_villages_claim_the_same_scene() -> void:
 			dupes.append("%s is claimed by %s and %s" % [cid, seen[cid], map_id])
 		seen[cid] = map_id
 	assert_eq(dupes, [], "two maps firing one scene means the second can never play it: %s" % [dupes])
+
+
+func test_an_intro_never_takes_a_chained_entry() -> void:
+	## A story beat finishing in a village must not hand the entry straight to flavour.
+	var code: String = GdSource.code_of("res://src/GameLoop.gd")
+	var loop_at: int = code.find("for vid in _VILLAGE_INTROS")
+	assert_gt(loop_at, -1, "CONTROL: the intro loop must exist")
+	var before: String = code.substr(max(0, loop_at - 220), 220)
+	assert_true(before.contains("not _chaining_story_cutscene"),
+		"the intro loop must refuse to fire as a chain target, or an intro stacks on a story beat")
+
+
+func test_a_new_game_cannot_land_on_a_wired_village() -> void:
+	## New Game sets the map id before the opening cutscenes; if that id were ever a village key,
+	## an intro would stack onto the opening and onto the web smoke's fresh-game path.
+	var code: String = GdSource.code_of("res://src/GameLoop.gd")
+	var at: int = code.find("func _on_title_new_game")
+	assert_gt(at, -1, "CONTROL: the new-game entry point must exist")
+	var body: String = code.substr(at, 2000)
+	var set_at: int = body.find("_set_current_map_id(")
+	assert_gt(set_at, -1, "CONTROL: New Game must set a map id")
+	var landed: String = body.substr(set_at, 60)
+	for vid in _intros():
+		assert_false(landed.contains("\"%s\"" % str(vid)),
+			"New Game lands on %s, which is wired to an intro — it would stack on the opening" % [vid])
+
+
+## The village arms its OWN bed on entry (village_harmonia, village_maple_heights...). An intro that
+## plays a generic world bed scores the player's first impression with the wrong music and only hands
+## the village its theme back when the scene ends.
+func test_an_intro_does_not_score_itself_with_the_generic_bed() -> void:
+	var wrong: Array = []
+	var checked := 0
+	for map_id in _intros():
+		var cid: String = str(_intros()[map_id])
+		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/cutscenes/%s.json" % cid))
+		assert_true(parsed is Dictionary, "CONTROL: %s must parse" % cid)
+		var data: Dictionary = parsed
+		checked += 1
+		var beds: Array = []
+		for step in data.get("steps", []):
+			if step is Dictionary and str((step as Dictionary).get("type", "")) == "play_music":
+				beds.append(str((step as Dictionary).get("track", "")))
+		var village: String = str(map_id).trim_suffix("_village")
+		for bed in beds:
+			if bed != "village_%s" % village:
+				wrong.append("%s plays %s" % [cid, bed])
+		if beds.is_empty() and not bool(data.get("keep_music", false)):
+			wrong.append("%s names no bed and does not keep_music, so it plays to dead air" % cid)
+	assert_gt(checked, 5, "CONTROL: every wired intro must be read, saw %d" % checked)
+	assert_eq(wrong, [], "an intro must keep the village's bed or name that village's own theme: %s" % [wrong])

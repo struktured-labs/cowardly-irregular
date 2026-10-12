@@ -2,6 +2,7 @@
   "id": "world2_maple_heights_npcs",
   "title": "Maple Heights",
   "world": 2,
+  "keep_music": true,
   "trigger": "world2_maple_heights_entry",
   "background": "suburban_neighborhood",
   "description": "First suburban village. A shopkeeper who stocks medieval items and knows about the portal. A mail carrier who's seen the appliances go rogue. A lawn-watering man who thinks Thursday is the answer to everything. A kid on a bicycle with opinions about cosplay.",
@@ -11,12 +12,8 @@
       "duration": 0.4
     },
     {
-      "type": "play_music",
-      "track": "village_suburban"
-    },
-    {
       "type": "narration",
-      "text": "Maple Heights existed in a state of aggressive normalcy. Every house was a variation on the same house. Every lawn was the same shade of green. The sky was blue, but it was the wrong blue \u2014 not wrong in a way you could point to, but wrong in a way you could feel."
+      "text": "Maple Heights existed in a state of aggressive normalcy. Every house was a variation on the same house. Every lawn was the same shade of green. The sky was blue, but it was the wrong blue — not wrong in a way you could point to, but wrong in a way you could feel."
     },
     {
       "type": "wait",
@@ -33,7 +30,7 @@
         },
         {
           "speaker": "Fighter",
-          "text": "We're not\u2014",
+          "text": "We're not—",
           "theme": "fighter",
           "portrait": "fighter"
         },
@@ -93,7 +90,7 @@
       "lines": [
         {
           "speaker": "Mail Carrier",
-          "text": "It's been like this for months. Appliances going rogue. Kids disappearing \u2014 not missing, just relocated. The HOA says it's 'community restructuring.' Nobody questions it because nobody questions the HOA.",
+          "text": "It's been like this for months. Appliances going rogue. Kids disappearing — not missing, just relocated. The HOA says it's 'community restructuring.' Nobody questions it because nobody questions the HOA.",
           "theme": "elder",
           "portrait": "elder"
         },
