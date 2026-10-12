@@ -66,8 +66,10 @@ static func decode_share_code(code: String) -> Dictionary:
 ## Export a character's active autobattle script to a JSON file.
 ## Returns the file path on success, empty string on failure.
 static func export_character_script(character_id: String) -> String:
+	last_export_errors = []
 	var script = AutobattleSystem.get_character_script(character_id)
 	if script.is_empty():
+		last_export_errors = ["%s has no autobattle script yet — build one in the editor first" % character_id]
 		print("[SHARE] No script found for %s" % character_id)
 		return ""
 
@@ -85,6 +87,7 @@ static func export_character_script(character_id: String) -> String:
 
 ## Export all party autobattle scripts as a single bundle.
 static func export_all_scripts(party: Array) -> String:
+	last_export_errors = []
 	var scripts: Dictionary = {}
 	for member in party:
 		if member is Combatant:
@@ -94,6 +97,7 @@ static func export_all_scripts(party: Array) -> String:
 				scripts[char_id] = script
 
 	if scripts.is_empty():
+		last_export_errors = ["no party member has an autobattle script yet — there is nothing to bundle"]
 		print("[SHARE] No scripts to export")
 		return ""
 
@@ -110,8 +114,10 @@ static func export_all_scripts(party: Array) -> String:
 
 ## Export autogrind rules to a JSON file.
 static func export_autogrind_rules() -> String:
+	last_export_errors = []
 	var rules = AutogrindSystem.get_autogrind_rules()
 	if rules.is_empty():
+		last_export_errors = ["there are no autogrind rules to export yet — add some in the editor first"]
 		print("[SHARE] No autogrind rules to export")
 		return ""
 
@@ -212,6 +218,26 @@ static func last_import_reason() -> String:
 	var first: String = str(last_import_errors[0])
 	if last_import_errors.size() > 1:
 		return "%s (+%d more)" % [first, last_import_errors.size() - 1]
+	return first
+
+
+## Why the last EXPORT produced no file, for the UI to show. Symmetric with `last_import_errors`
+## and added for the same reason one direction over: `_write_export` has three failure exits —
+## the file would not open, the write was short, the rename into place failed — and each one
+## computes a precise reason, pushes it to `push_warning`, and returns a bare "". Every caller
+## reads "" as "there was nothing to write", so BOTH export UIs told a player whose disk was full
+## or whose export folder was unwritable "Nothing to export". In the grid editor that is said
+## about a script they are looking at on screen.
+static var last_export_errors: Array = []
+
+
+## Why the last export wrote no file, in player-facing form, or "" when it wrote one.
+static func last_export_reason() -> String:
+	if last_export_errors.is_empty():
+		return ""
+	var first: String = str(last_export_errors[0])
+	if last_export_errors.size() > 1:
+		return "%s (+%d more)" % [first, last_export_errors.size() - 1]
 	return first
 
 
@@ -460,6 +486,10 @@ static func get_export_summary(filename: String) -> String:
 
 ## Internal: write export data to file.
 static func _write_export(filename: String, data: Dictionary) -> String:
+	## Clear at ENTRY as well as in every public caller: the three exits below are the only places
+	## that know WHY nothing landed, and a private helper that depends on each caller having
+	## cleared is the dependence `apply_autogrind_rules` had to remove one direction over.
+	last_export_errors = []
 	if not DirAccess.dir_exists_absolute(EXPORT_DIR):
 		DirAccess.make_dir_recursive_absolute(EXPORT_DIR)
 
@@ -475,7 +505,11 @@ static func _write_export(filename: String, data: Dictionary) -> String:
 		## Export failures matter: the player triggered the export
 		## expecting a file to land. Silent failure breaks the
 		## share workflow (they hand a friend a path that doesn't
-		## exist).
+		## exist). Which is also why "Nothing to export" is the one
+		## sentence that cannot be true at this exit.
+		## error_string() rather than the bare enum: measured, the number a player would have been
+		## asked to quote is "12", and the sentence they can act on is "File: Can't open".
+		last_export_errors = ["could not create %s — the export folder is not writable (%s)" % [filename, error_string(FileAccess.get_open_error())]]
 		push_warning("[SHARE] Could not open %s for write — export will fail (error: %s)" % [staged, FileAccess.get_open_error()])
 		return ""
 
@@ -490,10 +524,12 @@ static func _write_export(filename: String, data: Dictionary) -> String:
 		chk.close()
 	if werr != OK or written != json_string.to_utf8_buffer().size():
 		DirAccess.remove_absolute(staged)
+		last_export_errors = ["only %d of %d bytes of %s reached the disk — it may be full; your previous export was left intact" % [written, json_string.to_utf8_buffer().size(), filename]]
 		push_warning("[SHARE] Short write to %s (%d of %d bytes, error %d) — previous export left intact" % [staged, written, json_string.to_utf8_buffer().size(), werr])
 		return ""
 	if DirAccess.rename_absolute(staged, path) != OK:
 		DirAccess.remove_absolute(staged)
+		last_export_errors = ["%s was written but could not be moved into place — your previous export was left intact" % filename]
 		push_warning("[SHARE] Could not rename %s into place — previous export left intact" % staged)
 		return ""
 	print("[SHARE] Exported to %s" % path)
