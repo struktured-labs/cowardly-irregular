@@ -16,6 +16,7 @@ extends GutTest
 const SFX_MANIFEST := "res://data/sfx_manifest.json"
 const ABILITIES := "res://data/abilities.json"
 const BATTLE_SCENE := "res://src/battle/BattleScene.gd"
+const SOUND_MANAGER := "res://src/audio/SoundManager.gd"
 const GdSource := preload("res://test/unit/helpers/gd_source.gd")
 ## The docstring delimiter, as a const so it never appears inline and confuses a reader or a scanner.
 ## EVERY arm and EVERY control reads source through HERE, never GdSource.code_of directly. An arm
@@ -36,12 +37,6 @@ const QUOTES := '"""'
 ## fall through to the `_:` arm and reach their own cues (festered via the amplify_poison alias).
 ## That is this guard's whole point working on its own author, inside an hour of being written.
 const AUTHORED_AHEAD := {
-	"cured":
-		"IN FLIGHT on cowir-sfx's lane/a-voice-clip-is-as-long-as-its-line @ 8ee15b0cd. A NAME"
-		+ " mismatch, not a missing arm: the cue is keyed `cured` while the effect is named `cleanse`,"
-		+ " so no status_<effect> lookup could reach it, and the buff arm made Purgatio sound like a"
-		+ " stat buff. Cued from the executor there, which is the only place that knows whether an"
-		+ " ailment actually came off. This entry EXPIRES when that branch lands.",
 	"paralyze":
 		"Deliberately unwired (cowir-story + cowir-main, 2026-10-12): the mechanic a paralyze status"
 		+ " would express — a combatant that cannot take its turn — already exists TWICE as `stun` and"
@@ -125,6 +120,19 @@ func _generic_arms_read() -> int:
 
 
 ## Every way a status cue can actually be reached, derived. See the module docstring.
+## Read as a CONST through the class: scanning the source for its brackets lands in `Array[Array]`.
+func _cued_from_items() -> Dictionary:
+	var out: Dictionary = {}
+	var rows: Array = load(SOUND_MANAGER).get_script_constant_map().get("_ITEM_EFFECT_SFX", [])
+	for row in rows:
+		if not (row is Array) or (row as Array).size() < 2:
+			continue
+		var cue := str((row as Array)[1])
+		if cue.begins_with("status_"):
+			out[cue.substr(7)] = true
+	return out
+
+
 func _reachable() -> Dictionary:
 	var out := {}
 	var files: Array = _gd_files("res://src")
@@ -145,17 +153,12 @@ func _reachable() -> Dictionary:
 			for m in re_proc.search_all(l):
 				out[m.get_string(1)] = true
 
-	## 3. the item cue map, scoped to its own const and read as PAIRS. ⚠️ A loose scan for any
+	## 3. the item cue map, read through the class by _cued_from_items(). ⚠️ A loose scan for any
 	## `"status_x"` literal in src counts SoundManager's procedural SOUNDS entries — which are an
 	## alternative RENDERER, not a path to the cue — and that invented a path for `paralyze`, whose
 	## only appearance in src is `"status_paralyze": {"freq": 800, ...}` at SoundManager:213.
-	var sm_src: String = _code("res://src/audio/SoundManager.gd")
-	var ci: int = sm_src.find("const _ITEM_EFFECT_SFX")
-	if ci >= 0:
-		var ce: int = sm_src.find("]", sm_src.find("[", ci))
-		var pair := RegEx.create_from_string("\\[\\s*\"[a-z_]+\"\\s*,\\s*\"status_([a-z_]+)\"\\s*\\]")
-		for m in pair.search_all(sm_src.substr(ci, (ce - ci) if ce > ci else 1200)):
-			out[m.get_string(1)] = true
+	for s in _cued_from_items().keys():
+		out[str(s)] = true
 
 	## 4. an ability effect that reaches the catch-all, which calls play_status(effect).
 	var swallowed: Dictionary = _swallowed_by_a_generic_arm()
@@ -272,3 +275,15 @@ func test_the_prose_this_guard_reads_past_was_really_stripped() -> void:
 	assert_ne(doc_body, "", "CONTROL: no docstring line over 40 chars found; this input carries 116 regions, so a miss means the region scan is wrong")
 	assert_false(code.contains(doc_body),
 		"a docstring line survived the strip — the REGION half of the stripper is not running, which is also what a #-only pass produces: %s" % doc_body.substr(0, 60))
+
+func test_the_item_cue_map_leg_reads_its_const() -> void:
+	var from_items: Dictionary = _cued_from_items()
+	assert_true(from_items.has("cured"),
+		("CONTENT FLOOR: _ITEM_EFFECT_SFX names status_cured on two rows (cure_all_status, " +
+		"cure_status), so this leg must yield `cured`; it yielded %s. This leg read ZERO for its " +
+		"whole life because find(\"[\") landed inside the `Array[Array]` annotation.")
+		% [from_items.keys()])
+	var merged: Dictionary = _reachable()
+	for s in from_items.keys():
+		assert_true(merged.has(str(s)),
+			"item-leg cue `%s` was dropped between the leg and _reachable()" % [str(s)])
