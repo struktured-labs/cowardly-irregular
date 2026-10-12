@@ -2211,7 +2211,7 @@ func _page_selection(dir: int) -> void:
 ## Every reason this menu must not act on navigation, in ONE place. _input and the
 ## hold-to-repeat in _process both consult it: they were separate lists, and the repeat
 ## path silently bypassed four of the five guards the press path had.
-func _nav_is_blocked() -> bool:
+func _nav_is_blocked(ignore_delay: bool = false) -> bool:
 	# A closing/queued-free menu still receives _input until freed — bail so one press isn't handled twice (double Advance / menu overlap).
 	if is_queued_for_deletion() or _is_closing:
 		return true
@@ -2222,7 +2222,7 @@ func _nav_is_blocked() -> bool:
 	if TutorialHint.is_any_active():
 		return true
 	# Wait for input delay to prevent accidental selection
-	if not _can_accept_input:
+	if not ignore_delay and not _can_accept_input:
 		return true
 	# If submenu is open, let it handle input instead
 	if submenu and is_instance_valid(submenu):
@@ -2235,9 +2235,25 @@ func _nav_is_blocked() -> bool:
 	return false
 
 
+## A Defer pressed in the menu's 80ms open delay was LOST — measured, and this menu respawns for
+## EVERY character's turn, so that is one deaf window per character per round. The delay exists to
+## stop an accidental SELECTION (a confirm landing on a row that may not be drawn yet); Defer
+## ignores the highlighted row entirely, so it is not that hazard. Only the delay is waived — every
+## other reason _nav_is_blocked() gives still blocks, which is why it is re-asked with the delay
+## ignored rather than its list restated here. Confirm and Advance stay blocked: both act ON the
+## highlighted row, which is the thing that may not be drawn yet.
+## 📌 The `_nav_is_blocked(true)` clause is a SECOND line of defence, measured unobservable today:
+## drop it and a hidden, closing, submenu-owning or hint-blocked menu STILL refuses the defer,
+## because each of those is enforced again downstream. Kept because it is free and it is the only
+## guard that stays correct if a downstream check ever moves — not because a test can see it.
+func _defer_survives_the_open_delay(event: InputEvent) -> bool:
+	return battle_mode and not _can_accept_input and not event.is_echo() \
+			and event.is_action_pressed("battle_defer") and not _nav_is_blocked(true)
+
+
 func _input(event: InputEvent) -> void:
 	"""Handle input for menu navigation"""
-	if _nav_is_blocked():
+	if _nav_is_blocked() and not _defer_survives_the_open_delay(event):
 		return
 
 	# DON'T consume battle_toggle_auto - let it pass through to BattleScene
