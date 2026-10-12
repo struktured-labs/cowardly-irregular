@@ -16,10 +16,32 @@ var _bank_player: AudioStreamPlayer  # dedicated voice: full_bank_unleash replac
 var _refuse_player: AudioStreamPlayer  # dedicated voice: a refused Advance press lands while the job's 3s fifth rung is still ringing (2026-09-14)
 var _weather_player: AudioStreamPlayer  # dedicated voice: a 4s thunder clap shared the channel every attack hit lands on (2026-09-18)
 var _ability_player: AudioStreamPlayer
-## Per-cue tracing. OFF by default: it was 27-41% of struktured's play logs (4,175-5,998 lines a
-## session, measured 2026-10-05), burying the errors those logs exist to surface. `COWIR_SFX_LOG_CUES=1`
-## or setting this true restores it; the boot summaries and every push_warning are never gated.
+## Per-cue tracing. FULL tracing is off by default: it was 27-41% of struktured's play logs (4,175-5,998
+## lines a session, measured 2026-10-05), burying the errors those logs exist to surface.
+## `COWIR_SFX_LOG_CUES=1` or setting this true restores every line.
 var log_cues: bool = false
+## ...but each cue still logs its FIRST few plays, because a cue line is a LOCATOR, not just noise:
+## @cowir-overworld found a lever/physics crash from a single `surprised_chime` line (one emitter, so
+## the line was the stack frame) after the error alone was not enough. Measured over his three logs:
+## a cap of 3 keeps 1,336 of 12,899 cue lines (10%) and EVERY cue still appears — 218-264 distinct
+## cues per session. A derived "single-emitter cues always log" list was the other candidate and is
+## worse twice over: the busiest single-emitter cues are per-turn UI (player_turn 381, defer 113),
+## useless as locators, and a list drifts from what it enumerates with nothing to notice.
+## ⚠️ This buys a CENSUS of what fired, not a timeline: a cue past its cap is silent, so for a
+## sequence near a specific failure set COWIR_SFX_LOG_CUES=1 and get every line.
+const CUE_LOG_FIRST_N: int = 3
+## Bounded by the distinct cue keys the session touches (218-264 measured), never cleared on purpose:
+## "first N per session" is the contract, and clearing it mid-session would re-open the flood.
+var _cue_log_counts: Dictionary = {}
+
+
+## True while this cue is still inside its per-session quota, or when full tracing is on.
+func _should_log_cue(resolved_key: String) -> bool:
+	if log_cues:
+		return true
+	var n: int = int(_cue_log_counts.get(resolved_key, 0)) + 1
+	_cue_log_counts[resolved_key] = n
+	return n <= CUE_LOG_FIRST_N
 var _music_player: AudioStreamPlayer
 var _music_player_b: AudioStreamPlayer  # Second player for crossfade
 var _ambient_player: AudioStreamPlayer  # Looping weather/environment ambience
@@ -991,7 +1013,7 @@ func _try_play_sfx_from_manifest(player: AudioStreamPlayer, sound_key: String, v
 				player.volume_db = volume_db_override
 			player.pitch_scale = final_pitch
 			player.play()
-			if log_cues:
+			if _should_log_cue(resolved_key):
 				print("[SFX] %s -> %s pitch=%.2f (%s)" % [sound_key, resolved_key, final_pitch, player.name])
 			return true
 		var cached_fallback: String = str(entry.get("fallback_to", ""))
@@ -1014,7 +1036,7 @@ func _try_play_sfx_from_manifest(player: AudioStreamPlayer, sound_key: String, v
 		player.volume_db = volume_db_override
 	player.pitch_scale = final_pitch
 	player.play()
-	if log_cues:
+	if _should_log_cue(resolved_key):
 		print("[SFX] %s -> %s pitch=%.2f (%s)" % [sound_key, resolved_key, final_pitch, player.name])
 	return true
 
@@ -1780,7 +1802,7 @@ func _play_sound(player: AudioStreamPlayer, params: Dictionary) -> void:
 	## an inherited pitch_scale applies the same bias a second time.
 	player.pitch_scale = 1.0
 	player.play()
-	if log_cues:
+	if _should_log_cue("procedural_" + sound_type):
 		print("[SFX] procedural %s freq=%s dur=%s (%s)" % [sound_type, str(freq), str(duration), player.name])
 
 	var playback = player.get_stream_playback()

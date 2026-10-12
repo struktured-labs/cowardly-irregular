@@ -47,7 +47,7 @@ func test_every_per_cue_trace_sits_under_the_flag() -> void:
 		traces.append(i + 1)
 		## The gate is the line above, at one less indent: `if log_cues:` then the print.
 		var guard := str(lines[i - 1]).strip_edges() if i > 0 else ""
-		if guard != "if log_cues:":
+		if not (guard == "if log_cues:" or guard.begins_with("if _should_log_cue(")):
 			ungated.append(i + 1)
 	assert_gt(traces.size(), 0,
 		"VOID: no per-cue trace found in SoundManager at all — either they were deleted outright or the shape this derives from changed, and this arm is now checking nothing")
@@ -64,7 +64,7 @@ func test_the_boot_summaries_are_not_gated() -> void:
 		var t := str(lines[i]).strip_edges()
 		if t.begins_with("print(\"[SFX]") and not _is_per_cue_trace(str(lines[i])):
 			summaries += 1
-			assert_ne(str(lines[i - 1]).strip_edges(), "if log_cues:",
+			assert_false(str(lines[i - 1]).strip_edges().begins_with("if log_cues") or str(lines[i - 1]).strip_edges().begins_with("if _should_log_cue"),
 				"boot summary at line %d got gated: it fires once and names the loaded manifest" % (i + 1))
 	assert_gt(summaries, 0, "VOID: no boot summary found, so this arm checked nothing")
 
@@ -73,7 +73,67 @@ func test_a_cue_still_plays_with_tracing_off() -> void:
 	## The gate must not have become the play path: a silenced log is not a silenced game.
 	var was: bool = SoundManager.log_cues
 	SoundManager.log_cues = false
+	SoundManager._cue_log_counts.clear()
 	var played: bool = SoundManager._try_play_sfx_from_manifest(
 		SoundManager._ui_player, "menu_move", SoundManager.SFX_UI_BASE_DB)
 	SoundManager.log_cues = was
 	assert_true(played, "menu_move stopped playing with tracing off — the gate swallowed the cue, not just its log line")
+
+
+## Each cue logs its FIRST few plays even with full tracing off, because a cue line is a locator:
+## @cowir-overworld found a lever/physics crash from one `surprised_chime` line. Measured over
+## struktured's three logs, a cap of 3 keeps 10% of cue lines and every cue still appears.
+func test_each_cue_logs_its_first_plays_then_goes_quiet() -> void:
+	var was: bool = SoundManager.log_cues
+	SoundManager.log_cues = false
+	SoundManager._cue_log_counts.clear()
+	var allowed: int = 0
+	var refused: int = 0
+	for i in SoundManager.CUE_LOG_FIRST_N + 4:
+		if SoundManager._should_log_cue("probe_cue"):
+			allowed += 1
+		else:
+			refused += 1
+	SoundManager._cue_log_counts.clear()
+	SoundManager.log_cues = was
+	assert_eq(allowed, SoundManager.CUE_LOG_FIRST_N,
+		"a cue must log exactly its first %d plays, logged %d" % [SoundManager.CUE_LOG_FIRST_N, allowed])
+	assert_eq(refused, 4, "past the cap a cue must go quiet, refused %d of the 4 extra" % refused)
+
+
+func test_the_quota_is_per_cue_not_global() -> void:
+	## The whole point: a flood of one cue must not spend another cue's locator. A global counter would
+	## pass the arm above and lose the rare cue that matters.
+	var was: bool = SoundManager.log_cues
+	SoundManager.log_cues = false
+	SoundManager._cue_log_counts.clear()
+	for i in 50:
+		SoundManager._should_log_cue("noisy_cue")
+	var rare_logged: bool = SoundManager._should_log_cue("rare_cue")
+	SoundManager._cue_log_counts.clear()
+	SoundManager.log_cues = was
+	assert_true(rare_logged,
+		"a rare cue was refused after 50 plays of an unrelated one — the quota is global, so the loudest cue spends everyone's budget")
+
+
+func test_full_tracing_still_overrides_the_cap() -> void:
+	var was: bool = SoundManager.log_cues
+	SoundManager._cue_log_counts.clear()
+	SoundManager.log_cues = true
+	var all_allowed := true
+	for i in SoundManager.CUE_LOG_FIRST_N + 5:
+		if not SoundManager._should_log_cue("probe_cue2"):
+			all_allowed = false
+	SoundManager._cue_log_counts.clear()
+	SoundManager.log_cues = was
+	assert_true(all_allowed, "COWIR_SFX_LOG_CUES must still give EVERY line; the cap applies only when it is off")
+
+
+func test_the_cap_is_a_real_number_in_both_directions() -> void:
+	## The arms above compare against CUE_LOG_FIRST_N itself, so they hold for ANY value — a cap of 0
+	## passed two of them while logging nothing at all, which is the whole locator purpose removed
+	## silently. A self-referential expectation needs an absolute floor beside it.
+	assert_gt(SoundManager.CUE_LOG_FIRST_N, 0,
+		"a cap of %d means no cue ever logs, so no cue can locate a bug — that is the .654 gate again, not an improvement" % SoundManager.CUE_LOG_FIRST_N)
+	assert_lt(SoundManager.CUE_LOG_FIRST_N, 11,
+		"a cap of %d is on the way back to the flood: measured, cap 3 keeps 10%% of cue lines and cap 5 keeps 13%%" % SoundManager.CUE_LOG_FIRST_N)
