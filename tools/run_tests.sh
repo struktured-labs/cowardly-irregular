@@ -17,6 +17,15 @@ set -uo pipefail
 cd "$(cd "$(dirname "$0")/.." && pwd)"
 mkdir -p tmp
 
+# SANDBOX BY DEFAULT. This script honoured XDG_DATA_HOME and never set it, so a bare run pointed
+# godot at struktured's REAL user:// — it rotated his logs and moved his controls.json, and on
+# 2026-10-12 that blocked a store rollback mid-flight. An unset XDG_DATA_HOME now means tmp/xdg.
+# A caller's own value always wins; RUN_TESTS_REAL_PROFILE=1 is the deliberate opt-out.
+if [ -z "${XDG_DATA_HOME:-}" ] && [ "${RUN_TESTS_REAL_PROFILE:-0}" != "1" ]; then
+  export XDG_DATA_HOME="$PWD/tmp/xdg"
+  echo "run_tests.sh: XDG_DATA_HOME was unset — sandboxed to tmp/xdg (RUN_TESTS_REAL_PROFILE=1 opts out)" >&2
+fi
+
 # PER-PROCESS LOG PATHS. These were shared (tmp/gut_manual_godot.log and tmp/run_tests_last.log),
 # and up to 6 lanes/agents run this concurrently. A neighbour's run truncates the file between our
 # write and our read, so the outcome assertion below finds no "Tests" line and reports exit 3 —
