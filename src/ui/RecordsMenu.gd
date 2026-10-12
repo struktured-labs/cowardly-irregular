@@ -23,6 +23,31 @@ func _fmt_playtime() -> String:
 	return "%dh %02dm %02ds" % [secs / 3600, (secs % 3600) / 60, secs % 60]
 
 
+## autogrind_history.json records twelve fields per session and the page showed only how many
+## sessions there were. Same machine-global scope as the count beside them (#193).
+func _grind_highlights() -> Dictionary:
+	var out := {"best": {}, "total_sec": 0.0}
+	if AutogrindSystem == null or not ("session_history" in AutogrindSystem):
+		return out
+	for entry in AutogrindSystem.session_history:
+		if typeof(entry) != TYPE_DICTIONARY:
+			continue
+		out["total_sec"] = float(out["total_sec"]) + float(entry.get("duration_sec", 0.0))
+		var best: Dictionary = out["best"]
+		if best.is_empty() or float(entry.get("exp_per_min", 0.0)) > float(best.get("exp_per_min", 0.0)):
+			out["best"] = entry
+	return out
+
+
+func _fmt_span(secs: float) -> String:
+	var t := int(secs)
+	if t < 60:
+		return "%ds" % t
+	if t < 3600:
+		return "%dm %02ds" % [t / 60, t % 60]
+	return "%dh %02dm" % [t / 3600, (t % 3600) / 60]
+
+
 func _quests_complete() -> int:
 	var n := 0
 	if GameState and "quests" in GameState:
@@ -42,6 +67,14 @@ func _collect_records() -> Array:
 	var banks := 0
 	if GameState and "full_banks_unleashed" in GameState:
 		banks = int(GameState.full_banks_unleashed)
+	var grind: Dictionary = _grind_highlights()
+	var best: Dictionary = grind["best"]
+	var best_value: String = "—"
+	var best_quip: String = "No session has been graded yet."
+	if not best.is_empty():
+		best_value = "%d battles · %d EXP/min" % [int(best.get("battles", 0)), int(round(float(best.get("exp_per_min", 0.0))))]
+		best_quip = "Ended: %s." % str(best.get("reason", "Unknown"))
+	var automated: float = float(grind["total_sec"])
 	return [
 		["Playtime", _fmt_playtime(), "The Meltwater Clock agrees."],
 		["Battles Won", str(GameState.battles_won if GameState else 0), "Filed, in advance, under 'survivable'."],
@@ -50,6 +83,8 @@ func _collect_records() -> Array:
 		["Crystals Attuned", str(GameState.activated_crystals.size() if GameState else 0), "Each one remembers you saving."],
 		["Fool Card Marks", "%d / 5" % marks, "The card is counting." if marks > 0 else "The card is patient."],
 		["Autogrind Sessions", str(sessions), "All saves. Enlightenment, quantified."],  # lifetime by design: autogrind_history.json is machine-global (#193)
+		["Best Grind", best_value, best_quip],
+		["Time Automated", _fmt_span(automated) if automated > 0.0 else "—", "Hours you did not have to be here." if automated > 0.0 else "You have not delegated anything yet."],
 		["Full Banks", str(banks), "The fifth one was never paid for." if banks > 0 else "Bank four. Spend five. Not yet."],
 		["Gold", "%d G" % (GameState.party_gold if GameState else 0), "The economy notices."],
 		["Corruption", "%.1f" % (GameState.corruption_level if GameState else 0.0), "Within acceptable variance." if (GameState and GameState.corruption_level < 2.0) else "The variance is no longer acceptable."],
@@ -85,29 +120,35 @@ func _build_ui() -> void:
 	add_child(title)
 
 	var y := 72.0
-	for rec in _collect_records():
+	var records: Array = _collect_records()
+	## The pitch was a hardcoded 56 and the page was EXACTLY full at eleven rows (72 + 11*56 = 688,
+	## the hint's own line), so the twelfth record anyone added fell off the bottom unseen. Derived
+	## from the space that actually exists, clamped so a short list keeps its roomy spacing.
+	var row_space: float = max(100.0, (vp.y - 40.0) - y)
+	var pitch: float = clampf(row_space / float(max(1, records.size())), 40.0, 56.0)
+	for rec in records:
 		var row := Control.new()
 		row.position = Vector2(panel_x, y)
-		row.size = Vector2(panel_w, 56)
+		row.size = Vector2(panel_w, pitch)
 		var row_bg := ColorRect.new()
 		row_bg.color = Color(0.12, 0.12, 0.20, 0.9)
-		row_bg.size = Vector2(panel_w, 50)
+		row_bg.size = Vector2(panel_w, pitch - 6.0)
 		row.add_child(row_bg)
 
 		var name_label := Label.new()
 		name_label.text = str(rec[0])
 		name_label.add_theme_font_size_override("font_size", TextScale.scaled(14))
 		name_label.add_theme_color_override("font_color", Color(0.9, 0.9, 0.95))
-		name_label.position = Vector2(16, 6)
-		name_label.size = Vector2(panel_w * 0.5, 20)
+		name_label.position = Vector2(16, 4)
+		name_label.size = Vector2(panel_w * 0.5, 19)
 		row.add_child(name_label)
 
 		var value_label := Label.new()
 		value_label.text = str(rec[1])
 		value_label.add_theme_font_size_override("font_size", TextScale.scaled(15))
 		value_label.add_theme_color_override("font_color", Color(1.0, 0.9, 0.5))
-		value_label.position = Vector2(panel_w - 236, 6)
-		value_label.size = Vector2(220, 20)
+		value_label.position = Vector2(panel_w - 236, 4)
+		value_label.size = Vector2(220, 19)
 		value_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 		row.add_child(value_label)
 
@@ -115,13 +156,14 @@ func _build_ui() -> void:
 		quip.text = str(rec[2])
 		quip.add_theme_font_size_override("font_size", TextScale.scaled(10))
 		quip.add_theme_color_override("font_color", Color(0.6, 0.62, 0.72))
-		quip.position = Vector2(16, 28)
-		quip.size = Vector2(panel_w - 32, 16)
+		## Anchored to the row's BOTTOM so it tracks the derived pitch instead of a fixed 28.
+		quip.position = Vector2(16, pitch - 22.0)
+		quip.size = Vector2(panel_w - 32, 15)
 		row.add_child(quip)
 
 		_rows.append(row)
 		add_child(row)
-		y += 56.0
+		y += pitch
 
 	var hint := Label.new()
 	hint.text = "%s Close" % InputProfileManager.hint_for_action("ui_cancel")
