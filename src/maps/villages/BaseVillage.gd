@@ -422,6 +422,48 @@ var relocated_count: int = 0
 var placements_validated: bool = false
 
 
+## An OverworldNPC never sets its node name, so the relocation warning said `@Area2D@17548` and was
+## unreadable — the same thing that made a shop_interior log line take twenty minutes to attribute.
+func _placement_label(n: Node) -> String:
+	for key in ["npc_name", "display_name"]:
+		if n.get(key) != null and str(n.get(key)) != "":
+			return str(n.get(key))
+	return str(n.name)
+
+
+func _cell_of(pos: Vector2) -> Vector2i:
+	return Vector2i(int(floor(pos.x / TILE_SIZE)), int(floor(pos.y / TILE_SIZE)))
+
+
+## Who already stands on `cell`, by label, or "". Read LIVE so an NPC this same pass already moved
+## counts as occupying its new cell rather than its authored one.
+func _occupant_of_cell(cell: Vector2i, except: Node) -> String:
+	if npcs == null:
+		return ""
+	for other in npcs.get_children():
+		if other == except or not (other is Node2D):
+			continue
+		if _cell_of((other as Node2D).position) == cell:
+			return _placement_label(other)
+	return ""
+
+
+## ⛔ THE WARNING NAMES THE OCCUPANT, AND THE SWEEP DELIBERATELY DOES NOT AVOID THEM.
+## Three NPCs have been relocated onto a prop's cell — MapleHeights/Gerald (onto Neighborhood Dad's
+## tile), Grimhollow/Creepy Child Wednesday, Sandrift/Sand Sage Mirage. Gerald is a quest giver and
+## interaction is nearest-wins, so the far one of two NPCs on one cell may never be selected.
+## All three were fixed by moving the PROP: a planter is decoration, a quest giver's position is
+## content. Reserving a free cell here instead was considered and REJECTED (cowir-main 2026-10-12) —
+## it would quietly produce a placement no author chose, trading a loud authoring error for a silent
+## content change. So this says what happened and what to do, and leaves the fix to the author.
+static func relocation_warning(area_id: String, who: String, from: Vector2, to: Vector2,
+		occupant: String) -> String:
+	var base: String = "[%s] relocated '%s' off impassable tile %s -> %s" % [area_id, who, from, to]
+	if occupant == "":
+		return base
+	return base + ", ONTO '%s' — interaction is nearest-wins, so one of them may be unreachable; move the PROP, not the NPC" % occupant
+
+
 func _validate_placements() -> void:
 	if npcs == null:
 		return
@@ -434,7 +476,8 @@ func _validate_placements() -> void:
 		else:
 			var fixed := _find_walkable_near(n.position)
 			if fixed != n.position:
-				push_warning("[%s] relocated '%s' off impassable tile %s -> %s" % [_get_area_id(), n.name, n.position, fixed])
+				push_warning(relocation_warning(_get_area_id(), _placement_label(n), n.position, fixed,
+					_occupant_of_cell(_cell_of(fixed), n)))
 				relocated_count += 1
 				n.position = fixed
 
