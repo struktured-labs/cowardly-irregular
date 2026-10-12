@@ -561,11 +561,11 @@ func spawn_forced_enemies() -> void:
 ## Shared so the two spawn paths cannot drift. This was a block gated on a LOCAL
 ## inside spawn_forced_enemies, so a boss reached from exploration got no banner
 ## at all — zero in struktured's whole 2026-10-05 session, Mordaine included.
-func _announce_boss_banner(body: Array[String]) -> void:
+func _announce_boss_banner(body: Array[String], title: String = "[color=orange]   👑  BOSS BATTLE!  👑[/color]") -> void:
 	var rule: String = "[color=%s]═══════════════════════════════[/color]" % AccessibilityPalette.penalty_bbcode()
 	_scene.log_message("")
 	_scene.log_message(rule)
-	_scene.log_message("[color=orange]   👑  BOSS BATTLE!  👑[/color]")
+	_scene.log_message(title)
 	for line in body:
 		_scene.log_message(line)
 	_scene.log_message(rule)
@@ -788,6 +788,10 @@ func spawn_miniboss() -> void:
 
 	# Store monster type ID for sprite selection
 	enemy.set_meta("monster_type", boss_type["id"])
+	## BOTH, as the other three spawn paths do for any monster flagged boss or miniboss. These two ARE
+	## flagged miniboss in monsters.json, so the same Cave Troll was a boss through an encounter and an
+	## ordinary enemy through this door -- five is_boss consumers have no is_miniboss fallback.
+	enemy.set_meta("is_boss", true)
 	enemy.set_meta("is_miniboss", true)
 
 	# Add weaknesses/resistances
@@ -807,12 +811,9 @@ func spawn_miniboss() -> void:
 
 	_scene.test_enemies.append(enemy)
 
-	# Epic announcement!
-	_scene.log_message("")
-	_scene.log_message("[color=%s]═══════════════════════════════[/color]" % AccessibilityPalette.penalty_bbcode())
-	_scene.log_message("[color=orange]   ⚔️  MINIBOSS BATTLE!  ⚔️[/color]")
-	_scene.log_message("[color=yellow]   %s appeared![/color]" % boss_type["name"])
-	_scene.log_message("[color=%s]═══════════════════════════════[/color]" % AccessibilityPalette.penalty_bbcode())
-	_scene.log_message("")
+	## Through the shared banner, keeping its own title: a hand-rolled copy of these six lines is what
+	## the helper's "so the two spawn paths cannot drift" comment exists to prevent.
+	_announce_boss_banner(["[color=yellow]   %s appeared![/color]" % boss_type["name"]],
+		"[color=orange]   ⚔️  MINIBOSS BATTLE!  ⚔️[/color]")
 
 	_scene._update_ui()
