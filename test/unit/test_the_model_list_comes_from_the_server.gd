@@ -82,16 +82,28 @@ func test_an_unreachable_endpoint_answers_once_and_not_ok() -> void:
 	assert_ne(str(got[0][2]), "", "a failure must say why")
 
 
-func test_a_listing_never_cancels_the_reachability_probe() -> void:
+## A blackhole address: the connection neither completes nor is refused, so the probe stays
+## IN FLIGHT long enough to test what a listing does to it. REFUSED fails instantly and leaves
+## _probe_request null, which made the first version of this arm vacuous — its mutation passed.
+const BLACKHOLE := "http://10.255.255.1:65000"
+
+
+func test_a_listing_never_cancels_an_IN_FLIGHT_reachability_probe() -> void:
 	## They would share one HTTPRequest if _list_request did not exist, and a player opening the
-	## panel would knock the live backend's availability probe over.
+	## panel would knock the live backend's availability probe over mid-flight.
 	var b := HTTPBackend.new()
-	b.base_url = REFUSED
+	b.base_url = BLACKHOLE
 	add_child_autofree(b)
-	assert_true("_list_request" in b, "the listing must own its own request node")
-	assert_true("_probe_request" in b, "CONTROL: the reachability probe still owns its own")
+	b._start_probe()
+	## PREMISE: without an in-flight probe there is nothing for a listing to disturb.
+	assert_not_null(b._probe_request, "PREMISE: the probe must be in flight for this arm to mean anything")
+	var probe_node: HTTPRequest = b._probe_request
 	b.list_models()
-	assert_ne(b._list_request, b._probe_request,
+	assert_eq(b._probe_request, probe_node, "the listing replaced the probe's own request node")
+	assert_true(is_instance_valid(probe_node), "the listing freed the in-flight probe's request")
+	assert_true(probe_node.request_completed.is_connected(b._on_probe_completed),
+		"the listing disconnected the probe's completion handler, so availability would never resolve")
+	assert_ne(b._list_request, probe_node,
 		"one node for both means a model listing aborts the availability probe mid-flight")
 
 
@@ -135,6 +147,10 @@ func test_the_servers_models_come_before_the_ones_it_does_not_have() -> void:
 		if statics.has(texts[i]) and not ["live-a", "live-b"].has(texts[i]):
 			first_static = i
 			break
+	## PRESENCE FIRST: find() returns -1 for an absent item, and -1 < any index — so dropping the
+	## live models entirely satisfied the ordering assert below. Measured: that mutation passed.
+	assert_gt(texts.find("live-a"), -1, "the server's models must appear in the picker at all")
+	assert_gt(texts.find("live-b"), -1, "both of them")
 	assert_lt(texts.find("live-a"), first_static, "a model the server HAS must sort above one it does not")
 	assert_lt(texts.find("live-b"), first_static, "both of them")
 	assert_eq(texts[texts.size() - 1], p.CUSTOM_MODEL_LABEL, "Custom… stays last")
