@@ -108,28 +108,83 @@ func test_no_two_villages_claim_the_same_scene() -> void:
 	assert_eq(dupes, [], "two maps firing one scene means the second can never play it: %s" % [dupes])
 
 
+## The body of one function: anchor to the next `func ` rather than a character count.
+##
+## ⛔ A FIXED-WIDTH WINDOW REDS ON AN UNRELATED INSERTION AND NAMES THIS FILE. @cowir-music measured
+## it on their own branch 2026-10-12: a hold added to the TOP of show_victory_results pushed the
+## subject of a 1200-char window from +607 to +1690, and the arm went red in a file whose subject
+## nothing had touched. This file had two such windows (220 back from the intro loop, 2000 forward
+## from _on_title_new_game). A function-bounded slice cannot drift: it grows with its function.
+func _function_body(code: String, signature: String) -> String:
+	var at: int = code.find(signature)
+	if at < 0:
+		return ""
+	var end: int = code.find("\nfunc ", at + 1)
+	return code.substr(at, (end - at) if end > at else -1)
+
+
+## Walks the beats a map offers until the intro is what the gate returns; "" if it never is.
+func _walk_to_intro(map_id: String, cid: String) -> bool:
+	var seen: Array[String] = []
+	for _step in STORY_WALK_CAP:
+		var got: String = _pending_on(map_id)
+		if got == cid:
+			return true
+		if got == "" or seen.has(got):
+			return false
+		seen.append(got)
+		GameState.game_constants[_completion_flag_of(got)] = true
+	return false
+
+
 func test_an_intro_never_takes_a_chained_entry() -> void:
 	## A story beat finishing in a village must not hand the entry straight to flavour.
-	var code: String = GdSource.code_of("res://src/GameLoop.gd")
-	var loop_at: int = code.find("for vid in _VILLAGE_INTROS")
-	assert_gt(loop_at, -1, "CONTROL: the intro loop must exist")
-	var before: String = code.substr(max(0, loop_at - 220), 220)
-	assert_true(before.contains("not _chaining_story_cutscene"),
-		"the intro loop must refuse to fire as a chain target, or an intro stacks on a story beat")
+	##
+	## ⛔ THIS WAS A SOURCE-ORDER ASSERT AND IT HAD NO TEETH. It searched the gate's body for
+	## `not _chaining_story_cutscene` before the loop — and that function contains SEVEN of them
+	## (four spotlight gates, a comment, the loop's own, the declaration). Deleting the loop's guard
+	## left the arm satisfied by a spotlight gate's: mutant M3 stayed GREEN with the refusal gone.
+	## Behaviour instead — set the flag the chain sets and ask the gate.
+	var blocked_ok: Array[String] = []
+	for map_id in _intros():
+		var cid: String = str(_intros()[map_id])
+		if not _walk_to_intro(str(map_id), cid):
+			continue
+		_loop._chaining_story_cutscene = true
+		var got: String = _pending_on(str(map_id))
+		_loop._chaining_story_cutscene = false
+		if got == cid:
+			blocked_ok.append(str(map_id))
+	assert_eq(blocked_ok, ([] as Array[String]),
+		"an intro fires as a chain target on these maps, so it stacks onto the story beat that just ended: %s" % [blocked_ok])
+
+
+func test_control_the_chain_flag_is_the_only_thing_that_changed() -> void:
+	## Pairs with the arm above: without the flag the intro IS returned, so a green there means the
+	## refusal works and not that the walk failed to reach an intro.
+	var reached := 0
+	for map_id in _intros():
+		if _walk_to_intro(str(map_id), str(_intros()[map_id])):
+			reached += 1
+	assert_eq(reached, _intros().size(),
+		"CONTROL: the walk must reach every intro with the chain flag down, reached %d of %d" % [reached, _intros().size()])
 
 
 func test_a_new_game_cannot_land_on_a_wired_village() -> void:
 	## New Game sets the map id before the opening cutscenes; if that id were ever a village key,
 	## an intro would stack onto the opening and onto the web smoke's fresh-game path.
 	var code: String = GdSource.code_of("res://src/GameLoop.gd")
-	var at: int = code.find("func _on_title_new_game")
-	assert_gt(at, -1, "CONTROL: the new-game entry point must exist")
-	var body: String = code.substr(at, 2000)
-	var set_at: int = body.find("_set_current_map_id(")
-	assert_gt(set_at, -1, "CONTROL: New Game must set a map id")
-	var landed: String = body.substr(set_at, 60)
+	var body: String = _function_body(code, "func _on_title_new_game")
+	assert_ne(body, "", "CONTROL: the new-game entry point must exist")
+	## EVERY map id New Game sets, not just the first — a second call below the first was outside the
+	## old 2000-char window entirely, and the arm would have had nothing to say about it.
+	var rx := RegEx.create_from_string('_set_current_map_id\\(\\s*"([a-z0-9_]+)"')
+	var landed: Array[String] = []
+	for m in rx.search_all(body):
+		landed.append(m.get_string(1))
+	assert_gt(landed.size(), 0, "CONTROL: New Game must set a map id")
 	for vid in _intros():
-		assert_false(landed.contains("\"%s\"" % str(vid)),
+		assert_false(landed.has(str(vid)),
 			"New Game lands on %s, which is wired to an intro — it would stack on the opening" % [vid])
 
 
