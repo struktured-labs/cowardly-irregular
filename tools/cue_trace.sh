@@ -148,6 +148,20 @@ report() {
     group="$(command grep -aci 'group' "$f1" || true)"
     echo "[cue]   COVERAGE of ${f1##*/}: ${shots} shot(s), ${battles} battle marker(s), ${group} 'group' mention(s)."
     echo "[cue]   A key absent from the set above may simply be on a path the smoke never walks."
+    # ⛔ AND THE CORPUS IS CHOSEN BY RNG, NOT BY THE CODE — so DIFFING TWO PUBLISHES' CENSUSES IS
+    # NOT A REGRESSION TEST. @cowir-overworld's point that a behavioural arm is loud only about a
+    # corpus that COULD have contained the defect, applied to this artifact: the smoke fights a
+    # real battle, and what it casts varies run to run. Measured across archived publishes, with
+    # .663 and .664 both carrying the group-action leg:
+    #     .662  wipe round 7   49 distinct cues  0 status_ cues
+    #     .663  wipe round 13  51 distinct cues  3 status_ cues   <- status_silence appeared
+    #     .664  wipe round 8   46 distinct cues  2 status_ cues   <- and did not
+    # `status_silence` comes from a shadow_dragon casting null_field, which is not deterministic.
+    # A key present in one publish and absent in the next is therefore NOT a signal on its own.
+    echo "[cue]   ⚠️ The battle this walks is STOCHASTIC — cue sets differ between publishes of the"
+    echo "[cue]   SAME code (measured: 51 vs 46 distinct cues, 3 vs 2 status_ cues, .663 vs .664)."
+    echo "[cue]   Diff two censuses and you are reading RNG. Use the UNION over many runs, which is"
+    echo "[cue]   what passing several logs to this tool is for."
     return 0
 }
 
