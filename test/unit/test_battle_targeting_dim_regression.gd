@@ -42,4 +42,12 @@ func test_audio_liveness_probe_wired() -> void:
 	assert_true("func audio_liveness_check" in sm, "probe exists")
 	assert_true("playback position frozen" in sm, "probe names the frozen-mixer class loudly")
 	var bs := FileAccess.get_file_as_string("res://src/battle/BattleScene.gd")
-	assert_true("SoundManager.audio_liveness_check()" in bs, "probe runs every battle round")
+	## ⚠️ THIS IS A SPELLING CANARY, NOT A REACH GUARD, and its message used to claim otherwise
+	## ("probe runs every battle round"). `in` over the whole file is satisfied by a comment, a dead
+	## function, or a handler nothing connects — cowir-music demonstrated it by moving the call into
+	## an uncalled function, which left this arm 3/3 GREEN while the mixer-death detector was
+	## unreachable. The reach is guarded properly
+	## in test_the_mixer_death_detector_is_reachable (cowir-music, .661); this arm stays because it
+	## is three lines and cheap, now saying what it does.
+	assert_true("SoundManager.audio_liveness_check()" in bs,
+		"the call appears in BattleScene.gd (spelling only — reach is cowir-music's guard)")
