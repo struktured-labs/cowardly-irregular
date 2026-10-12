@@ -37,7 +37,12 @@ CLEAR_LEAN = 0.10
 # The head is the top share of the figure; hands below it are skin too and point nowhere useful.
 HEAD_SHARE = 0.6
 # Weak-lean sheets checked by eye on 2026-10-12 and found swapped.
-REVIEWED_SWAPPED = ("fairy", "blacksmith_abstract", "old_woman_steampunk")
+REVIEWED_SWAPPED = (
+    "fairy", "blacksmith_abstract", "old_woman_steampunk",
+    # Second pass: leans of 0.08-0.10, each zoomed.
+    "blacksmith", "dr_temporal", "fairy_industrial", "fisherman_industrial", "fisherman_steampunk",
+    "young_man_abstract", "king_industrial", "noble_abstract", "old_man_industrial", "priestess_steampunk",
+)
 
 
 def _skin(cell: np.ndarray) -> np.ndarray:
