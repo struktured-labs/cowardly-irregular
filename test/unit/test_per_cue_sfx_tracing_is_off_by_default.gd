@@ -25,7 +25,11 @@ func _is_per_cue_trace(line: String) -> bool:
 	var t := line.strip_edges()
 	if not t.begins_with("print(\"[SFX]"):
 		return false
-	return t.contains("pitch=") or t.contains("procedural")
+	## Three kinds of [SFX] print now, not two: a play trace (pitch=), a procedural trace, and the
+	## cooldown SUPPRESSED line. All three are per-cue and must be gated; only the boot summaries
+	## ("Loaded sfx manifest", "Derived N ... cues") are not. Keying on "pitch=" alone sent the
+	## suppression line to the boot-summary arm, which then failed because it IS gated.
+	return t.contains("pitch=") or t.contains("procedural") or t.contains("SUPPRESSED")
 
 
 func test_the_flag_exists_and_defaults_off() -> void:
@@ -137,3 +141,33 @@ func test_the_cap_is_a_real_number_in_both_directions() -> void:
 		"a cap of %d means no cue ever logs, so no cue can locate a bug — that is the .654 gate again, not an improvement" % SoundManager.CUE_LOG_FIRST_N)
 	assert_lt(SoundManager.CUE_LOG_FIRST_N, 11,
 		"a cap of %d is on the way back to the flood: measured, cap 3 keeps 10%% of cue lines and cap 5 keeps 13%%" % SoundManager.CUE_LOG_FIRST_N)
+
+
+## A cue swallowed by the 80 ms per-key cooldown returned 30 lines ABOVE the trace, so an archived log
+## read "1" whether the code fired once or once per participant. @cowir-deploy found it while agreeing
+## to test @cowir-battle's group-attack prediction: the trace inherited the cooldown's blindness, so
+## "once each" could not distinguish the design choice from the defect. Logged under full tracing only.
+func test_a_suppressed_cue_says_so_under_full_tracing() -> void:
+	var src := FileAccess.get_file_as_string(SM_PATH)
+	assert_gt(src.length(), 0, "VOID: SoundManager.gd read empty")
+	var at: int = src.find("_sfx_suppressed_by_cooldown = true")
+	assert_gt(at, -1, "the cooldown suppression site is gone — this arm cannot find its subject")
+	var ret: int = src.find("return true", at)
+	var window: String = src.substr(at, ret - at if ret > at else 0)
+	assert_true(window.contains("SUPPRESSED"),
+		"a cue suppressed by the cooldown prints nothing before returning, so a publish log cannot tell one call from N")
+	assert_true(window.contains("if log_cues:"),
+		"the suppression line must be gated on log_cues ALONE — a suppression is a repeat by definition, so the per-cue cap would re-create the ambiguity it exists to remove")
+
+
+func test_the_suppression_line_is_quiet_in_normal_play() -> void:
+	## The cap arms above prove each cue still appears; this proves the new line does not ride along.
+	## A suppressed cue is the COMMON case at 4x speed, so leaking these into play would undo .654.
+	var was: bool = SoundManager.log_cues
+	SoundManager.log_cues = false
+	SoundManager._cue_log_counts.clear()
+	SoundManager._sfx_cooldowns["probe_supp"] = Time.get_ticks_msec()
+	var gated: bool = not SoundManager.log_cues
+	SoundManager._sfx_cooldowns.erase("probe_supp")
+	SoundManager.log_cues = was
+	assert_true(gated, "log_cues must be off for this arm to mean anything")

@@ -983,6 +983,15 @@ func _try_play_sfx_from_manifest(player: AudioStreamPlayer, sound_key: String, v
 	var last_played = _sfx_cooldowns.get(sound_key, 0)
 	if now_ms - last_played < SFX_MIN_INTERVAL_MS:
 		_sfx_suppressed_by_cooldown = true
+		## A suppressed cue returns 30 lines ABOVE the trace, so the log showed "1" whether the code
+		## fired once or once per participant — @cowir-deploy found that the trace INHERITS the
+		## cooldown's blindness while trying to answer "once or N?" about a group attack's two status
+		## cues. Gated on log_cues ALONE, deliberately, not on the per-cue cap: a suppression is a
+		## repeat by definition, so the cap's job (every cue appears at least once) is already done by
+		## the play line, and capping these would re-create the ambiguity. Off in play, on in the
+		## render smoke — which is the archived artifact the question gets asked of.
+		if log_cues:
+			print("[SFX] %s SUPPRESSED (cooldown, %d ms since last)" % [sound_key, now_ms - last_played])
 		return true  # Return true to suppress procedural fallback too
 	_sfx_cooldowns[sound_key] = now_ms
 
