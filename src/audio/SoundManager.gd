@@ -5836,7 +5836,14 @@ var _interrupted_area_bed: Dictionary = {}
 ## changes nothing, so the armed start is still the caller's live intent) and not the
 ## already-playing return (unreachable — see test_an_armed_area_start_cannot_meet_it).
 func _invalidate_pending_area_start() -> void:
+	## ALL THREE, because play_area_music arms all three and the deferred start consumes all three.
+	## Clearing only the area left the resume position parked for whatever played next: measured, an
+	## abandoned overworld start at 12.0 s made the NEXT battle bed open at 12.00 s. The position has
+	## 37 consumers through _try_play_from_manifest and exactly one of them parks a value first, so a
+	## survivor is read by the other 36 as if it were theirs.
 	_pending_music_area = ""
+	_pending_resume_position = 0.0
+	_pending_home_area = ""
 
 
 func discard_interrupted_area_bed() -> void:
@@ -5905,14 +5912,15 @@ func play_area_music(area_type: String, resume_at: float = 0.0, home_area: Strin
 	if resume_from <= 0.0 and str(_interrupted_area_bed.get("area", "")) == area_type:
 		resume_from = float(_interrupted_area_bed.get("position", 0.0))
 	_interrupted_area_bed = {}
+	stop_music()
+	## ALL THREE armed AFTER the stop, for the reason the area line already gave: arming before it
+	## would cancel our own. The resume READ above must stay before the stop (it discards the
+	## interrupted bed), but the assignment belongs here — parking it earlier is what let an
+	## abandoned start leave it behind for an unrelated bed to consume.
 	_pending_resume_position = resume_from
 	## ⛔ WHICH VILLAGE THE ROOM BELONGS TO, WHICH IS THE ONE FACT THIS FILE CANNOT DERIVE. Parked
 	## beside the resume position and consumed by _start_interior_music's COLD START only — see there.
 	_pending_home_area = home_area
-	stop_music()
-	## AFTER the stop, which now disarms a pending area start too — arming before it would cancel
-	## our own. The resume read above must stay before it, because stop_music discards the
-	## interrupted bed it reads.
 	_pending_music_area = area_type
 
 	call_deferred("_start_area_music_deferred", area_type)
