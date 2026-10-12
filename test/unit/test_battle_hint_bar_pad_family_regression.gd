@@ -160,24 +160,40 @@ func test_the_hardcoded_nintendo_letter_is_gone_from_the_render_path() -> void:
 
 
 ## ⛔ THE ARM ABOVE IS ALL NEGATIVES, AND A NEGATIVE SOURCE ASSERTION CANNOT TELL "FIXED" FROM
-## "SPELLED DIFFERENTLY". Both of its checks forbid a literal; neither requires the live call. So the
-## defect this whole file exists for walks straight past it under any other spelling. MEASURED
-## 2026-10-12 — `label.text = Win98Menu.HINT_KEYBOARD_TEXT` in the render path, a frozen const
-## reaching every player, passed BOTH hint-bar files 19/19. This is the positive half: the render
-## path must CALL the deriver, which is the question absence can never answer.
-func test_the_render_path_actually_calls_the_deriver() -> void:
+## "SPELLED DIFFERENTLY". Both of its checks forbid a literal; neither requires the live call, so the
+## defect this whole file exists for walks past it under any third spelling. MEASURED 2026-10-12:
+## `label.text = Win98Menu.HINT_KEYBOARD_TEXT` in the render path — a frozen const reaching every
+## player, the shape that shipped "[X] Speed" to PlayStation players — passed BOTH hint-bar files
+## 19/19.
+##
+## ⚠️ DERIVED FROM THE FILE, NOT A HAND LIST, because my first two attempts each covered less than
+## they read as covering. (1) `src.contains("Win98Menu.hint_text()")` PASSED under the mutation:
+## BattleScene calls the deriver again at :2052 in _refresh_input_hint_bar, so the file MENTIONS it
+## while the BUILD path uses a const — a pattern matching the wrong occurrence. (2) Pinning the one
+## BUILD assignment then left :2052 — the REFRESH path, which re-derives when a pad is plugged in
+## mid-battle — with the identical exposure. There are TWO assignment sites and a hand list covers
+## whichever I happened to read. This rule covers any number: the only Win98Menu value allowed into
+## a .text assignment is the deriver.
+func test_every_hint_assignment_in_the_render_path_derives() -> void:
 	var src := FileAccess.get_file_as_string("res://src/battle/BattleScene.gd")
 	assert_ne(src, "", "PRECONDITION: BattleScene source must be readable")
-	## ⚠️ THE ASSIGNMENT, NOT THE CALL. My first version asserted the file merely CONTAINS
-	## "Win98Menu.hint_text()" and it PASSED under the mutation — BattleScene calls the deriver again
-	## in _refresh_input_hint_bar, so the file mentions it while the BUILD path uses a const. A
-	## pattern that matches the wrong occurrence is the same defect this arm exists to catch.
-	## A reformat of this assignment REDS here, loudly, which is the contract — see the stale
-	## DERIVED_BAR_MARKER in the truthfulness file for what a silent version costs.
-	assert_true(src.contains("label.text = Win98Menu.hint_text()"),
-		"BattleScene must ASSIGN the bar's text from Win98Menu.hint_text() — forbidding two frozen "
-		+ "spellings does not require the derived one, and a third spelling is invisible to every "
-		+ "other arm in this file")
+	var sites: Array[String] = []
+	for line in src.split("\n"):
+		var t := line.strip_edges()
+		if t.begins_with("#") or not t.contains(".text = Win98Menu."):
+			continue
+		sites.append(t)
+	## POSITIVE CONTROL: both the BUILD and the REFRESH assignment must be FOUND, or an empty scan
+	## reports a clean sweep of nothing — the exact shape of a guard aimed at a path nobody uses.
+	assert_gt(sites.size(), 1,
+		"CONTROL: BattleScene must carry at least the BUILD and REFRESH hint assignments; found %d" % sites.size())
+	var frozen: Array[String] = []
+	for site in sites:
+		if not site.contains("Win98Menu.hint_text()"):
+			frozen.append(site)
+	assert_eq(frozen, [] as Array[String],
+		"a hint assignment takes a FROZEN Win98Menu const instead of the deriver — that bar ignores "
+		+ "the player's pad family and their bindings for the rest of the battle: %s" % str(frozen))
 
 
 ## CONTROL: the const survives as a fallback, so an unplugged/unknown pad still gets a bar.
