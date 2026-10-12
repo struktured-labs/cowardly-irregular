@@ -16,7 +16,12 @@ const RIGHT_ROW := 2
 const CLEAR_LEAN := 0.10
 const HEAD_SHARE := 0.6
 ## Weak-lean sheets checked by eye and found swapped: after the fix their left row leans left at all.
-const REVIEWED := ["fairy", "blacksmith_abstract", "old_woman_steampunk"]
+const REVIEWED := [
+	"fairy", "blacksmith_abstract", "old_woman_steampunk",
+	# Second pass 2026-10-12: leans of 0.08-0.10, each zoomed and found walking left facing right.
+	"blacksmith", "dr_temporal", "fairy_industrial", "fisherman_industrial", "fisherman_steampunk",
+	"young_man_abstract", "king_industrial", "noble_abstract", "old_man_industrial", "priestess_steampunk",
+]
 ## Still facing the wrong way, each with why it was not swapped.
 const LEFT_AS_IS := {
 	"innkeeper_abstract": "its rows are cut in the wrong place (see test_an_overworld_walker_is_cut_at_its_own_rows)",
