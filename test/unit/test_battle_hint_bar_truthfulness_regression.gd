@@ -13,6 +13,8 @@ extends GutTest
 ## implement is worse than no hint, because it sends the player to a dead key and they conclude the
 ## FEATURE is broken rather than the label.
 
+const GdSource := preload("res://test/unit/helpers/gd_source.gd")
+
 const WIN98_PATH := "res://src/ui/Win98Menu.gd"
 const BATTLE_PATH := "res://src/battle/BattleScene.gd"
 
@@ -30,7 +32,25 @@ const DERIVED_BAR_MARKER := "%s Defer  ·  %s Advance"
 const DERIVED_KEYBOARD_MARKER := "[%s] Defer  ·  [%s] Advance"
 
 
+## ⛔ CODE, NOT RAW TEXT — AND THIS GUARD WAS FOOLED BY ITS OWN SHAPE. The wiring arms assert
+## `assert_true(wired)`, so they are ACCEPTANCE sets (@cowir-story's split): prose WIDENS what they
+## accept. `_calls_within_block` skips lines that BEGIN with `#`, which an INLINE comment does not.
+## Measured on the shipped guard, with the real call removed:
+##     elif event.button_index == JOY_BUTTON_X:
+##         pass  # was _repeat_previous_actions()
+##     -> 10 passing, EC=0. The bar advertises Repeat, the button does nothing, the guard agrees.
+## That arm shipped in .658 and is live. Delegated to the shared helper rather than teaching the
+## private one about inline comments — a `"""` region needs state no per-line pattern can carry.
 func _read(path: String) -> String:
+	var text := FileAccess.get_file_as_string(path)
+	assert_ne(text, "", "must be able to read %s" % path)
+	return GdSource.split(text)["code"]
+
+
+## The RAW bytes, for the two arms whose subject genuinely is the authored text: _authored_bar reads
+## a const's literal, and the frozen-token arm asserts a string is ABSENT (a requirement, where
+## prose can only ever make it louder).
+func _read_raw(path: String) -> String:
 	var text := FileAccess.get_file_as_string(path)
 	assert_ne(text, "", "must be able to read %s" % path)
 	return text
