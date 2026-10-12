@@ -23,11 +23,18 @@ const MIN_MAP_IDS := 55
 ## locations.json, which SaveSystem reads to name the place the player is standing in. A corpus
 ## narrower than the thing it judges reds a legitimate key — and a guard that reds on correct data
 ## is one somebody deletes.
-func _map_ids() -> Array[String]:
+## The ONE accessor: every arm and every control reads ids through this, so a swap here is visible
+## to the arm below rather than only to a helper nobody asserts about.
+func _ids_in(path: String) -> Array[String]:
 	var out: Array[String] = []
 	var rx := RegEx.create_from_string('"id"\\s*:\\s*"([a-z0-9_]+)"')
-	for m in rx.search_all(GdSource.code_of(TELEPORT)):
+	for m in rx.search_all(GdSource.code_of(path)):
 		out.append(m.get_string(1))
+	return out
+
+
+func _map_ids() -> Array[String]:
+	var out: Array[String] = _ids_in(TELEPORT)
 	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(LOCATIONS))
 	if parsed is Dictionary:
 		for key in (parsed as Dictionary):
@@ -95,3 +102,39 @@ func test_every_entry_still_carries_the_text_that_is_the_point() -> void:
 			thin.append(str(key))
 	assert_eq(thin, ([] as Array[String]), "an entry lost its text, name or prop: %s" % [thin])
 	assert_gt(words, 850, "the pack carried 915 words of prose; only %d survive" % words)
+
+
+## ⛔ THE INSTRUMENT'S OWN WIRING, PINNED IN BOTH DIRECTIONS. Measured 2026-10-12: swapping
+## _ids_in's accessor to a raw FileAccess read left this file 7 passing / 0 failing — the corpus is
+## an ACCEPTANCE set, so prose reaching it WIDENS what the guard accepts and a scene keyed to a
+## commented id would pass. Three lanes found the same hole in their own prose guards the same hour
+## (@cowir-battle's _window_body, @cowir-deploy's gd_code_lines, @cowir-autogrind's controls), and in
+## every case the control called the HELPER directly, so it certified GdSource and said nothing about
+## what the arm used. This routes through _ids_in, the accessor the real arm uses.
+##
+## 🔑 AND BOTH DIRECTIONS, because either assertion alone is satisfied by a defect in the other
+## (@cowir-autogrind): "a real id survives" passes a strip that never happened, and "the commented id
+## is absent" passes a strip that ate the file.
+func test_the_accessor_this_guard_uses_strips_prose_both_ways() -> void:
+	var probe := "user://examine_map_id_probe.gd"
+	var f := FileAccess.open(probe, FileAccess.WRITE)
+	assert_not_null(f, "CONTROL: the probe file must be writable")
+	f.store_string("\n".join([
+		"extends Node",
+		"## a comment showing the shape: {\"id\": \"zz_prose_only_map\"}",
+		"const MAP_IDS := [",
+		"\t{\"id\": \"zz_real_map\", \"label\": \"Real\"},",
+		"]",
+		"\"\"\"",
+		"a docstring naming {\"id\": \"zz_docstring_map\"}",
+		"\"\"\"",
+	]))
+	f.close()
+	var got: Array[String] = _ids_in(probe)
+	assert_true(got.has("zz_real_map"),
+		"the real id did not survive, so the accessor is over-stripping and every verdict here is vacuous")
+	assert_false(got.has("zz_prose_only_map"),
+		"a `#` comment reached the accepted-id set: prose would widen what this guard accepts")
+	assert_false(got.has("zz_docstring_map"),
+		"a \"\"\" docstring reached the accepted-id set — code_of() strips comments by LINE and regions by split()")
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(probe))
