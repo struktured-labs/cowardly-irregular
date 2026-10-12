@@ -1724,12 +1724,22 @@ func play_status(status_name: String) -> void:
 		return
 	if SOUNDS.has(key):
 		_play_sound(_battle_player, _synth_params(key, level))
-	else:
-		# Fallback: generic descending blip for unknown statuses
-		## The generic blip is the DESIGNED fallback for an unauthored status, so it is the most
-		## reachable of these — measured 2026-09-18: after corruption_ap_flicker (-6) it played at
-		## -12.00 instead of -6.00, inheriting whatever the previous battle cue left.
-		_play_sound(_battle_player, {"freq": 350, "duration": 0.2, "type": "descending", "volume_db": level})
+		return
+	## Two vocabularies arrive here — BattleScene passes the ability's EFFECT (memory_leak_status) and BattleManager the status the engine STORES — so resolve through the applier's own map, as every autobattle/autogrind rule path already does. Exact key first is load-bearing: status_burn is authored, status_burning is not.
+	var canonical: String = Combatant.resolve_status_alias(status_name.to_lower())
+	if canonical != status_name.to_lower():
+		var alias_key: String = "status_" + canonical
+		var alias_level: float = _battle_level(alias_key)
+		if _try_play_sfx_from_manifest(_battle_player, alias_key, alias_level):
+			return
+		if SOUNDS.has(alias_key):
+			_play_sound(_battle_player, _synth_params(alias_key, alias_level))
+			return
+	# Fallback: generic descending blip for unknown statuses
+	## The generic blip is the DESIGNED fallback for an unauthored status, so it is the most
+	## reachable of these — measured 2026-09-18: after corruption_ap_flicker (-6) it played at
+	## -12.00 instead of -6.00, inheriting whatever the previous battle cue left.
+	_play_sound(_battle_player, {"freq": 350, "duration": 0.2, "type": "descending", "volume_db": level})
 
 
 ## Manifest-gated status cue for callers that must stay SILENT when unauthored — the blip above is struktured's ruling-15 "not even close to good", and buffs fire far too often to spend it on them.
