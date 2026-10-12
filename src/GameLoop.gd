@@ -2764,8 +2764,11 @@ func _title_load_slot(slot: int) -> void:
 		# Continue expecting to resume, gets a brand-new party with no
 		# explanation, and assumes their progress is gone. Toast the failure
 		# so they at least know what happened before the fresh game begins.
+		## "save load failed (slot N)" was all this said while SaveSystem had already diagnosed
+		## WHICH failure — could not open, not valid JSON with a line number, or a file whose
+		## root is not an object. Same sentence, with the part the player can act on.
 		var why: String = "no save found" if slot < 0 \
-			else ("save load failed (slot %d)" % slot) if not loaded \
+			else _load_failure_reason(slot) if not loaded \
 			else ("save restored but party data was empty (slot %d)" % slot)
 		print("[GAME] Continue: %s — creating default party" % why)
 		Toast.show_warning(self, "Continue: %s. Starting fresh." % why)
@@ -4158,11 +4161,24 @@ func _show_game_over_screen() -> void:
 	else:
 		# Continue: Load most recent save and rehydrate the live party from it.
 		var loaded = false
+		var slot: int = -1
 		if SaveSystem and SaveSystem.has_method("load_game"):
-			var slot = SaveSystem.get_most_recent_slot() if SaveSystem.has_method("get_most_recent_slot") else -1
+			slot = SaveSystem.get_most_recent_slot() if SaveSystem.has_method("get_most_recent_slot") else -1
 			if slot >= 0:
 				loaded = SaveSystem.load_game(slot)
 		if not (loaded and _restore_party_from_save_data()):
+			## ⛔ THE SILENT FALLBACK _title_load_slot ALREADY CALLS A UX TRAP, IN WORDS: "the
+			## player clicks Continue expecting to resume, gets a brand-new party with no
+			## explanation, and assumes their progress is gone." That repair reached the TITLE
+			## screen's Continue and not this one — and this one is worse. The game-over screen
+			## only OFFERS Continue when has_save() is true, so the player picked it knowing a
+			## save exists, having just been wiped, and landed in a fresh game with no sentence
+			## anywhere saying the save is still on disk.
+			var why: String = "no save to continue from" if slot < 0 \
+				else _load_failure_reason(slot) if not loaded \
+				else ("the save loaded but its party data was empty (slot %d)" % slot)
+			print("[GAME] Game over Continue: %s — creating default party" % why)
+			Toast.show_warning(self, "Continue: %s. Starting fresh." % why)
 			_create_party()
 		await _start_exploration()
 
@@ -5682,7 +5698,7 @@ func _quick_load_with_toast() -> void:
 		return
 	var ok: bool = SaveSystem.load_game(slot)
 	if not ok:
-		Toast.show_warning(self, "Quick-load failed")
+		Toast.show_warning(self, "Quick-load failed: %s" % _load_failure_reason(slot))
 		return
 	# Rehydrate party + transition into the saved map (mirrors Continue path).
 	if not _restore_party_from_save_data():
@@ -7632,6 +7648,19 @@ func _get_milestone_text(battles: int) -> String:
 		50: return "DEEP GRIND — Maximum adaptation reached!"
 		100: return "LEGENDARY SESSION — Reality is bending..."
 		_: return "Milestone: %d battles!" % battles
+
+
+func _load_failure_reason(slot: int) -> String:
+	"""SaveSystem's own diagnosis of the last failed load, or a bounded fallback.
+
+	Pulled rather than taken from a `load_failed` listener: SaveScreen's load path already
+	writes its own banner, so a broadcast handler would double-toast the case that is already
+	covered. Read immediately after load_game(), which clears the field on entry.
+	"""
+	var why: String = ""
+	if SaveSystem and SaveSystem.has_method("last_load_reason"):
+		why = str(SaveSystem.last_load_reason())
+	return why if why != "" else "the save in slot %d would not load" % slot
 
 
 func _on_any_save_failed(reason: String) -> void:
