@@ -37,8 +37,11 @@ MIN_PIECE = 10
 # Bands this short are specks (a halo, a spark), not a row of figures.
 MIN_BAND = 6
 # Four rows of figures are comparable in height; a band under this share of the tallest is not a row.
-MIN_BAND_SHARE = 0.7
+# 0.6 admits a last row the image edge cut 5px short (25 of 37): it is still that row, minus its feet.
+MIN_BAND_SHARE = 0.6
 ALPHA = 128
+# Sheets a re-seat would make worse, by label, each with why.
+NEVER = {"overworld_npc_sheets priestess": "not the four facings (three side views, no back); seated, the facing guard reds"}
 
 
 def _components(mask: np.ndarray):
@@ -112,7 +115,7 @@ def row_bands(alpha: np.ndarray):
     heights = [b[1] - b[0] for b in split]
     if min(heights) < MIN_BAND_SHARE * max(heights):
         return "rows of unequal height %s" % heights
-    return split
+    return split, len(bands) == ROWS
 
 
 def reseat(img: Image.Image):
@@ -120,9 +123,10 @@ def reseat(img: Image.Image):
     if img.size != (CELL * ROWS, CELL * ROWS):
         return None, "size %s is not a 4x4 grid of %dpx cells" % (img.size, CELL)
     alpha = np.asarray(img)[..., 3] >= ALPHA
-    bands = row_bands(alpha)
-    if isinstance(bands, str):
-        return None, bands
+    found = row_bands(alpha)
+    if isinstance(found, str):
+        return None, found
+    bands, gapped = found
     out = Image.new("RGBA", img.size, (0, 0, 0, 0))
     notes = []
     for r, (y0, y1) in enumerate(bands):
@@ -132,8 +136,11 @@ def reseat(img: Image.Image):
             notes.append("row %d squashed %d->%d" % (r, y1 - y0, CELL))
         out.paste(band, (0, (r + 1) * CELL - band.height))
     left = cut_cells(np.asarray(out)[..., 3] >= ALPHA)
-    if left:
+    if left and not gapped:
         return None, "still cut after re-seating (cells %s): the columns are off too" % left[:4]
+    if left:
+        # Every row had clear space around it, so a loose piece in a cell now is that figure's own (shredded legs).
+        notes.append("its own figure is in pieces in cells %s" % left[:4])
     return out, "; ".join(notes) or "moved, no pixel changed"
 
 
@@ -177,6 +184,11 @@ def selftest() -> int:
         assert int(alpha(fixed).sum()) == int(alpha(bad).sum()), "%s: a move keeps every pixel" % name
         for r in range(4):
             assert alpha(fixed)[(r + 1) * 32 - 1].any(), "%s: row %d stands on its cell's floor" % (name, r)
+    shredded = sheet([0, 36, 67, 99], height=29)
+    for x in range(10, 22):
+        shredded.putpixel((x, 92), (0, 0, 0, 0))
+    seated, note = reseat(shredded)
+    assert seated is not None and "its own figure" in note, "rows with clear space between them are seated even with a loose piece (%s)" % note
     three, why = reseat(sheet([4, 46, 88], height=38))
     assert three is None and "3 rows" in why, "three rows of figures are refused, not shuffled (%s)" % why
     wrong, why = reseat(Image.new("RGBA", (192, 192)))
@@ -206,6 +218,9 @@ def main() -> int:
             continue
         if tier != "T1":
             refused.append((label, "tier %s: artist art is not re-seated" % tier))
+            continue
+        if label in NEVER:
+            refused.append((label, NEVER[label]))
             continue
         out, note = reseat(img)
         if out is None:

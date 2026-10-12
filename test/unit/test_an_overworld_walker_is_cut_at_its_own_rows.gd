@@ -7,6 +7,8 @@ extends GutTest
 ## tools/reseat_overworld_rows.py moved the rows of 27 sheets onto the grid. The other 42 cannot be shuffled into
 ## shape (two or three rows of figures, rows that touch, a row cut short) and need a re-roll: they are named below
 ## with the reason, and the list may only shrink.
+## 2026-10-12, second pass: six more seated, five of them with a last row the image edge had cut 5px short.
+## Those walk up without feet until re-rolled and are named in UP_ROW_CUT_SHORT.
 ## The measure: a cell holding a DETACHED body of >= MIN_PIECE px on its top or bottom edge holds another row's figure.
 
 const SECTIONS := ["overworld_npc_sheets", "overworld_player_sheets", "overworld_monster_sheets"]
@@ -17,14 +19,14 @@ const MIN_PIECE := 10
 const NEEDS_A_REROLL := {
 	"jobs/bard/overworld_industrial": "3 rows of figures, not 4",
 	"jobs/fighter/overworld_abstract": "a detached piece still sits on a cell edge after re-seating",
-	"jobs/fighter/overworld_digital": "rows of unequal height: one was cut short",
-	"jobs/fighter/overworld_steampunk": "rows of unequal height: one was cut short",
+	"jobs/fighter/overworld_digital": "seated on the grid, but its own legs are in loose pieces on some frames (key damage)",
+	"jobs/fighter/overworld_steampunk": "seated on the grid, but its own legs are in loose pieces on some frames (key damage)",
 	"jobs/guardian/overworld_abstract": "3 rows of figures, not 4",
 	"jobs/guardian/overworld_digital": "2 rows of figures, not 4",
 	"jobs/guardian/overworld_industrial": "3 rows of figures, not 4",
 	"jobs/guardian/overworld_steampunk": "3 rows of figures, not 4",
 	"jobs/guardian/overworld_suburban": "3 rows of figures, not 4",
-	"jobs/mage/overworld_abstract": "still cut after re-seating, (1, 3)]): the columns are off too",
+	"jobs/mage/overworld_abstract": "seated on the grid, but its own legs are in loose pieces on some frames (key damage)",
 	"jobs/mage/overworld_steampunk": "a detached piece still sits on a cell edge after re-seating",
 	"jobs/ninja/overworld_abstract": "3 rows of figures, not 4",
 	"jobs/ninja/overworld_digital": "3 rows of figures, not 4",
@@ -41,7 +43,6 @@ const NEEDS_A_REROLL := {
 	"jobs/summoner/overworld_steampunk": "2 rows of figures, not 4",
 	"jobs/summoner/overworld_suburban": "2 rows of figures, not 4",
 	"npcs/chancellor_mordaine/overworld": "5 rows of figures, not 4",
-	"npcs/child_digital/overworld": "rows of unequal height: one was cut short",
 	"npcs/ghost_suburban/overworld": "still cut after re-seating, (1, 3)]): the columns are off too",
 	"npcs/guard_suburban/overworld": "rows of unequal height: one was cut short",
 	"npcs/innkeeper_abstract/overworld": "still cut after re-seating, (1, 2)]): the columns are off too",
@@ -49,15 +50,21 @@ const NEEDS_A_REROLL := {
 	"npcs/monk/overworld": "rows of unequal height: one was cut short",
 	"npcs/noblewoman/overworld": "rows of unequal height: one was cut short",
 	"npcs/noblewoman_abstract/overworld": "its rows touch: no gap to cut at",
-	"npcs/old_man_suburban/overworld": "rows of unequal height: one was cut short",
 	"npcs/old_woman_suburban/overworld": "its rows touch: no gap to cut at",
 	"npcs/priestess/overworld": "its rows are not the four facings (three side views, no back): re-seated, the facing guard can see that",
 	"npcs/phil/overworld": "2 rows of figures, not 4",
 	"npcs/soldier_digital/overworld": "its rows touch: no gap to cut at",
-	"npcs/soldier_steampunk/overworld": "rows of unequal height: one was cut short",
 	"npcs/traveler_steampunk/overworld": "rows of unequal height: one was cut short",
 	"npcs/young_woman/overworld": "rows of unequal height: one was cut short",
 }
+
+## Seated sheets whose up-facing row lost its feet to the image edge: that row stands shorter than the down row.
+const UP_ROW_CUT_SHORT := [
+	"jobs/fighter/overworld_digital", "jobs/fighter/overworld_steampunk",
+	"npcs/child_digital/overworld", "npcs/old_man_suburban/overworld", "npcs/soldier_steampunk/overworld",
+]
+## An up row at most this share of the down row's height has lost its feet.
+const SHORT_SHARE := 0.82
 
 
 func _alpha(img: Image) -> PackedByteArray:
@@ -159,6 +166,28 @@ func test_every_overworld_walker_is_cut_at_its_own_rows() -> void:
 func test_the_list_names_real_sheets() -> void:
 	for key in NEEDS_A_REROLL:
 		assert_true(ResourceLoader.exists(SPRITES + key + ".png"), "%s is listed but is not a sheet" % key)
+
+
+func _row_height(img: Image, row: int) -> int:
+	## Rows of the cell band that hold any opaque pixel.
+	var a := _alpha(img)
+	var w := img.get_width()
+	var n := 0
+	for y in range(row * CELL, (row + 1) * CELL):
+		for x in w:
+			if a[y * w + x]:
+				n += 1
+				break
+	return n
+
+
+func test_a_footless_up_row_is_named_until_it_is_redrawn() -> void:
+	for key in UP_ROW_CUT_SHORT:
+		var path: String = SPRITES + key + ".png"
+		assert_true(ResourceLoader.exists(path), "CONTROL: %s is a sheet" % key)
+		var img := _rgba(path)
+		assert_lte(float(_row_height(img, 3)), SHORT_SHARE * _row_height(img, 0),
+			"%s walks up with its feet now: drop it from UP_ROW_CUT_SHORT" % key)
 
 
 func _synthetic(tops: Array) -> Image:
