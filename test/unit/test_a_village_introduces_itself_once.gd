@@ -92,7 +92,14 @@ func test_an_intro_cannot_pre_empt_a_story_beat() -> void:
 	var intro_at: int = code.find("for vid in _VILLAGE_INTROS", fn_at)
 	var prologue_at: int = code.find("\"world1_prologue\"", fn_at)
 	var chapter_at: int = code.find("\"world1_chapter1\"", fn_at)
+	## ⛔ EVERY OFFSET NEEDS ITS OWN FLOOR, AND THIS ARM SHIPPED WITHOUT TWO OF THEM. `find` returns
+	## -1 when the anchor is gone, and -1 compares as EARLIER THAN EVERYTHING — so `intro_at >
+	## prologue_at` is satisfied by a prologue anchor that no longer exists. MEASURED: renaming every
+	## `"world1_prologue"` inside the gate left this file 15 passing / 0 failing, with the ordering
+	## claim asserting nothing. A sentinel read as data, which is the shape four lanes spent tonight on.
 	assert_gt(intro_at, -1, "the intro loop must live inside the pending-cutscene gate")
+	assert_gt(prologue_at, -1, "the prologue gate is no longer found inside the gate, so the ordering claim below would compare against -1 and pass for free")
+	assert_gt(chapter_at, -1, "the chapter-1 gate is no longer found inside the gate, so the ordering claim below would compare against -1 and pass for free")
 	assert_gt(intro_at, prologue_at, "the prologue gate must be reached before any village intro")
 	assert_gt(intro_at, chapter_at, "the chapter-1 gate must be reached before any village intro")
 
