@@ -538,6 +538,12 @@ class LeverTrigger extends Area2D:
 	var switch_id: String = ""
 	var layer: DungeonPuzzleLayer = null
 
+	## ⛔ DEFERRED FOR THE SAME REASON THE PRESSURE PLATE IS (:323), which was fixed and this was not.
+	## `activate_switch` -> `rebuild_floor` -> `_spawn_portals`/`_spawn_switches` construct `Area2D`s
+	## with shapes, and `interact()` is dispatched from OverworldController right after its
+	## `intersect_point` query — so building them here errored with "Can't change this state while
+	## flushing queries ... area_set_shape_disabled". One occurrence in struktured's 2026-10-12
+	## session, immediately after the trap's `surprised_chime`, which is what located it.
 	func interact(_player: Node2D) -> void:
 		if layer and is_instance_valid(layer):
-			layer.activate_switch(switch_id)
+			layer.activate_switch.call_deferred(switch_id)
