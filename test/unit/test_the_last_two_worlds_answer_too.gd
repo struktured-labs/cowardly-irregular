@@ -288,3 +288,74 @@ func test_every_overworld_with_landmarks_has_a_lore_table() -> void:
 	assert_eq(mute, [],
 		"an overworld draws landmarks and wires no lore table, so its scenery teaches the player to " +
 		"stop pressing: %s" % ", ".join(mute))
+
+
+## ⛔ THE MUTE REASON MUST STILL BE TRUE, OR IT EXPIRES. @cowir-story's roster contract applied to my
+## own table: their declarations shrink when a pack gets wired and a BASELINE's excuse dies with its
+## comparing guard, so the roster cannot become a list of excuses. My `mute_reason` was free text
+## checked only for length — **if the condition that justified it ever stopped holding, the row would
+## stay mute forever with a stale explanation and nothing would red.** A reason that cannot expire is
+## a list of excuses with extra steps.
+##
+## The claim is measurable, so it is measured: place a probe readable on the muted row's cell and
+## verify it STILL takes the entrance's presses. If it stops — the entrance moves, the probe reach
+## changes, `READABLE_BOX_FLAT` is retuned — this reds and says to un-mute the row.
+##
+## ⚠️ Scoped to rows that carry a reason NAMING a victim. A future mute for some other cause would
+## need its own check, and the arm says so rather than silently passing it.
+func test_a_mute_reason_is_still_true() -> void:
+	var lore := _lore("w5")
+	var muted: Array = []
+	for row in lore.table():
+		if str(row.get("fn", "")) == "":
+			muted.append(row)
+	if muted.is_empty():
+		pass_test("no muted rows in W5 — nothing to re-justify")
+		return
+
+	var w = await _build("w5")
+	var others: Array = []
+	_census.scene_interactables(w, others)
+
+	var unjustified: Array = []
+	for row in muted:
+		var reason: String = str(row.get("mute_reason", ""))
+		var victim: Node2D = null
+		for o in others:
+			if reason.contains(str(o.name)):
+				victim = o
+				break
+		if victim == null:
+			unjustified.append("%s names no interactable this scene contains, so its reason cannot be re-checked: '%s'" % [
+				str(row.get("name", "?")), reason])
+			continue
+
+		## The entrance's presses BEFORE a readable exists on the muted cell.
+		var before: Dictionary = _census.face_split(victim)
+		var baseline: Array = (before["bad"] as Array) + (before["yielded"] as Array)
+
+		var probe := ReadableProp.new()
+		probe.name = "MuteProbe"
+		probe.position = w._cell_center(row["cell"])
+		probe.setup("probe", func(): return ["probe"])
+		w.add_child(probe)
+		await get_tree().physics_frame
+		await get_tree().physics_frame
+
+		var after: Dictionary = _census.face_split(victim)
+		var taken: Array = []
+		for cell in ((after["bad"] as Array) + (after["yielded"] as Array)):
+			if not baseline.has(cell) and str(cell).contains("MuteProbe"):
+				taken.append(str(cell))
+		probe.free()
+		await get_tree().physics_frame
+
+		gut.p("  mute re-check: %s -> probe takes %d of %s's cells %s" % [
+			str(row.get("name", "?")), taken.size(), str(victim.name), str(taken)])
+		if taken.is_empty():
+			unjustified.append("%s is muted because a readable there would take %s's presses — it NO LONGER DOES. Un-mute the row, or replace the reason with one that is true" % [
+				str(row.get("name", "?")), str(victim.name)])
+	assert_eq(unjustified, [],
+		"a mute reason has expired; a row that draws without answering must be justified by a " +
+		"condition that still holds: %s" % ", ".join(unjustified))
+
