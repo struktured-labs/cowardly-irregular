@@ -3524,6 +3524,45 @@ func _generate_battle_music_buffer(rate: int, duration: float, bpm: float) -> Pa
 	return _apply_reverb(buffer, 0.25, 0.14)
 
 
+var _victory_downbeat_rows: Dictionary = {}
+var _victory_downbeats_read: bool = false
+
+
+## data/victory_downbeats.json, read once. Measured by tools/measure_victory_downbeats.py.
+func _victory_downbeats() -> Dictionary:
+	if not _victory_downbeats_read:
+		_victory_downbeats_read = true
+		var text: String = FileAccess.get_file_as_string("res://data/victory_downbeats.json")
+		var parsed = JSON.parse_string(text) if text != "" else null
+		if parsed is Dictionary:
+			_victory_downbeat_rows = parsed
+	return _victory_downbeat_rows
+
+
+## Seconds until the PLAYING victory bed's measured first downbeat, or -1.0 for "do not wait".
+## Keyed off the live stream's filename, never off _current_music: that holds the unexpanded
+## request ("victory") while the bed playing in W1 is victory_medieval, so a key lookup reads the
+## wrong row. -1.0 covers every honest unknown — no bed, a procedural bed, no measurement, a
+## measurement whose estimators disagreed (spread_ms 665/784 on medieval/suburban), or a downbeat
+## already past. Callers must treat -1.0 as "keep today's timing", not as zero.
+func seconds_until_victory_downbeat() -> float:
+	if _music_player == null or not _music_player.playing or _music_player.stream == null:
+		return -1.0
+	## A procedural bed carries no resource_path; "" basenames to "", which no row is keyed by, so
+	## the lookup below already answers -1.0 for it. An explicit empty-path guard here was REDUNDANT
+	## — removing it left the arm that drives a generator stream green (measured), so it protected
+	## nothing and only read as protection.
+	var path: String = str(_music_player.stream.resource_path)
+	var entry = _victory_downbeats().get(path.get_file().get_basename(), null)
+	if not (entry is Dictionary) or not bool((entry as Dictionary).get("agree", false)):
+		return -1.0
+	var ms = (entry as Dictionary).get("downbeat_ms", null)
+	if ms == null:
+		return -1.0
+	var remain: float = float(ms) / 1000.0 - _music_player.get_playback_position()
+	return remain if remain > 0.0 else -1.0
+
+
 func _start_victory_music() -> void:
 	"""Play victory fanfare intro then loop into 80s rock victory theme"""
 	_music_playing = true
