@@ -3341,23 +3341,48 @@ func _export_script() -> void:
 	# Persist any in-progress edits first so the exported file is current.
 	_save_script()
 
+	## ⛔ "NOTHING TO EXPORT" IS SAID ABOUT A SCRIPT THE PLAYER IS LOOKING AT. _write_export
+	## returns "" when the file would not open, when the write came up short, and when the rename
+	## into place failed — each with a precise reason that reached push_warning only — and "" also
+	## means "there was nothing to write". Those are opposite situations and the player got one
+	## sentence for both, contradicted by the grid on screen. Read the reason right after each
+	## call: both of them clear the channel on entry, so the second erases the first's reason.
 	var exported := 0
+	var refusals: Array = []
 	var char_path := ScriptShareManager.export_character_script(character_id)
 	if char_path != "":
 		exported += 1
+	else:
+		refusals.append(ScriptShareManager.last_export_reason())
 
 	# Also write a party bundle when a party is available — enables one-file sharing.
 	if party.size() > 0:
 		var bundle_path := ScriptShareManager.export_all_scripts(party)
 		if bundle_path != "":
 			exported += 1
+		else:
+			refusals.append(ScriptShareManager.last_export_reason())
 
-	if exported > 0:
+	if exported > 0 and refusals.is_empty():
 		_flash_status("Exported %d file(s) to script_exports/" % exported, Color.LIME)
 		SoundManager.play_ui("menu_select")
-	else:
-		_flash_status("Nothing to export", Color.YELLOW)
+	elif exported > 0:
+		## PARTIAL. The character script landing while the party bundle's write failed used to
+		## read as an unqualified success — the same defect as the bundle IMPORT fixed in .655.
+		_flash_status("Exported %d file(s), %d not written: %s" % [exported, refusals.size(), _first_export_reason(refusals)], Color.YELLOW)
 		SoundManager.play_ui("menu_error")
+	else:
+		_flash_status("Nothing exported: %s" % _first_export_reason(refusals), Color.YELLOW)
+		SoundManager.play_ui("menu_error")
+
+
+func _first_export_reason(refusals: Array) -> String:
+	"""First non-empty export refusal reason — _flash_status is one line, so one reason."""
+	for r in refusals:
+		if str(r) != "":
+			return str(r)
+	## Visible, not silent: an empty reason has to LOOK empty or a mute refusal reads as designed.
+	return "no reason recorded"
 
 
 func _open_share_picker() -> void:

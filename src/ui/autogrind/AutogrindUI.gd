@@ -2709,7 +2709,14 @@ func _export_scripts() -> void:
 		_log_message("[color=yellow]Cannot export while grinding.[/color]")
 		return
 
+	## ⛔ "NOTHING TO EXPORT." ASSERTED A CAUSE IT DID NOT KNOW. Both export calls return "" when
+	## the file could not be opened, when the write came up short, and when the rename into place
+	## failed — and "" also means "there was nothing to write". A player whose disk is full, or
+	## whose export folder is not writable, was told they had nothing to share. The reason exists
+	## at every one of those exits now, so read it immediately after each call: both of them clear
+	## the channel on entry, so the second call erases the first's reason.
 	var exported = 0
+	var refused = 0
 
 	# Export party autobattle scripts as a bundle
 	if _party.size() > 0:
@@ -2717,15 +2724,27 @@ func _export_scripts() -> void:
 		if path != "":
 			exported += 1
 			_log_message("[color=%s]Exported party autobattle scripts[/color]" % AccessibilityPalette.bonus_bbcode())
+		else:
+			refused += 1
+			_log_message("[color=yellow]No party bundle%s[/color]" % _export_refusal_suffix())
 
 	# Export autogrind rules
 	var rules_path = ScriptShareManager.export_autogrind_rules()
 	if rules_path != "":
 		exported += 1
 		_log_message("[color=%s]Exported autogrind rules[/color]" % AccessibilityPalette.bonus_bbcode())
+	else:
+		refused += 1
+		_log_message("[color=yellow]No autogrind rules file%s[/color]" % _export_refusal_suffix())
 
 	if exported == 0:
-		_log_message("[color=yellow]Nothing to export.[/color]")
+		_log_message("[color=yellow]Nothing was exported.[/color]")
+	elif refused > 0:
+		## PARTIAL, and the old line reported only the good half — the same defect as the bundle
+		## IMPORT fixed in .655, one direction over.
+		_log_message("[color=yellow]%d file(s) exported to script_exports/, %d not written.[/color]"
+			% [exported, refused])
+		TutorialHints.show(self, "autogrind_export")
 	else:
 		_log_message("[color=%s]%d file(s) exported to script_exports/[/color]" % [AccessibilityPalette.bonus_bbcode(), exported])
 		TutorialHints.show(self, "autogrind_export")
@@ -2768,6 +2787,13 @@ func _paste_rules_share_code() -> void:
 
 ## The refusal reason ScriptShareManager recorded, as a sentence tail, or "" when it recorded
 ## none — its non-rule-error exits (empty payload, choke-point reject) leave it unset.
+func _export_refusal_suffix() -> String:
+	## Mirrors _refusal_suffix() on the import side, including the visible "(no reason recorded)":
+	## an empty reason has to LOOK empty, or a silent refusal reads as a designed one.
+	var why := str(ScriptShareManager.last_export_reason())
+	return " — " + why if why != "" else " (no reason recorded)"
+
+
 func _refusal_suffix() -> String:
 	var why := str(ScriptShareManager.last_import_reason())
 	return " — " + why if why != "" else " (no reason recorded)"
