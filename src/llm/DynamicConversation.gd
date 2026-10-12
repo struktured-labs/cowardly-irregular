@@ -210,11 +210,16 @@ func setup(
 ## screen after the player walked through an area transition". It drives a DummyConv, so it pins
 ## the REGISTRY rather than the real freeze/restore, and the caveat below is unaddressed there.
 ##
-## ⛔ THE CAVEAT, which is the part worth not re-deriving: that recovery fires on a SCENE CHANGE,
-## and the strand freezes the player — who is normally what causes scene changes. It stays
-## reachable through the menu (`set_can_move(false)` gates movement, not menu input), so a player
-## who thinks to open it recovers. Reasoned from `_can_move()`'s composition, NOT driven; closing
-## that needs a live-input test. A timer-based recovery would not have this dependency at all.
+## ⛔ THE CAVEAT, CORRECTED 2026-10-12 — the earlier note said the overworld menu stays reachable
+## so a player recovers. IT DOES NOT, and that note was reasoned from `_can_move()` rather than
+## driven. The menu's gate (GameLoop:1244) reads `InputLockManager.is_locked()`, not can_move, and a
+## thinking dialogue box HEARTBEATS its field lock every frame in `CutsceneDialogue._process` — a
+## heartbeated lock can never be reaped. Measured: `is_locked()` stayed true past the reaper's
+## timeout indefinitely while the box kept beating, and went false the moment the beat stopped.
+## So a strand meant frozen player + refused menu + no scene change + no recovery: a force-quit.
+## Closed from two sides rather than by this function: `CutsceneDialogue` now stops blocking the
+## field once a thinking state outlives THINKING_BLOCK_MAX_MS, and cancel on a thinking box emits
+## `thinking_cancelled`, wired to `abort()` above, which unfreezes and releases the lock.
 func run(player: Node) -> void:
 	if _active:
 		return
@@ -692,6 +697,9 @@ func _ensure_npc_dialogue() -> void:
 	_npc_dialogue = NPCDialogueClass.new()
 	_npc_dialogue.name = "DynConvNPCDialogue"
 	add_child(_npc_dialogue)
+	## The player's way out of a strand: cancel on the thinking box aborts, which unfreezes them.
+	if _npc_dialogue.has_signal("thinking_cancelled"):
+		_npc_dialogue.thinking_cancelled.connect(abort)
 
 
 ## Wave C: toggle the dialogue thinking indicator. Lazy-init's the NPCDialogue
