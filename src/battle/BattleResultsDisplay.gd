@@ -168,6 +168,26 @@ func show_victory_results() -> void:
 	var gl: Node = _scene.get_node_or_null("/root/GameLoop") if is_instance_valid(_scene) else null
 	if gl != null and "_spotlight_duel_active" in gl and bool(gl._spotlight_duel_active) and BattleManager.player_party.size() == 1:
 		overlay.spotlight_duelist = str(BattleManager.player_party[0].combatant_name)
+	## The slam IS the downbeat. The hold sits here — the overlay above is still an ORPHAN, so no
+	## VictoryResults node ever enters the tree EMPTY; 14 src sites key on its presence and a
+	## confirm press in that window would land on an empty overlay (cowir-battle/cowir-main).
+	## It is also BELOW the duel-flag lines, which test_spotlight_victory_sequence_regression
+	## locates with a fixed 1200-char window from this function's head — inserting above them
+	## pushed both markers to +1690 and red that file (measured 2026-10-12).
+	if VictoryOverlay.wants_flourish(_scene) and SoundManager:
+		var downbeat_wait: float = SoundManager.seconds_until_victory_downbeat()
+		if downbeat_wait > 0.0:
+			var serial: int = int(BattleManager.battle_serial)
+			await _scene.get_tree().create_timer(downbeat_wait, true, false, true).timeout
+			## The hold can span a scene teardown or the next battle starting; the orphan would
+			## leak if we simply returned, so free it on every bail.
+			var stale: bool = not is_instance_valid(_scene) or not _scene.is_inside_tree() \
+					or int(BattleManager.battle_serial) != serial \
+					or BattleManager.get_battle_results().is_empty()
+			if stale:
+				overlay.free()
+				return
+			results = BattleManager.get_battle_results()
 	_scene.add_child(overlay)
 	overlay.build(results, _scene)
 

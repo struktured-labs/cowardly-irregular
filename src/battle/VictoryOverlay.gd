@@ -60,16 +60,21 @@ var _title_docked := Rect2()
 var _title_clear_at := 0.0
 
 
+## Whether this victory gets the slam at all. Shared, because BattleResultsDisplay holds for the
+## downbeat before building and must not reach a different answer than build() then acts on.
+static func wants_flourish(scene) -> bool:
+	if scene and scene.has_method("_tier"):
+		return int(scene._tier()) <= BattleJuice.Tier.REDUCED and Engine.time_scale < 4.0 \
+				and BattleJuice.flag("victory_flourish")
+	return true
+
+
 func build(results: Dictionary, scene) -> void:
 	_scene = scene
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 
-	var flourish: bool = true
-	if scene and scene.has_method("_tier"):
-		var tier: int = scene._tier()
-		flourish = tier <= BattleJuice.Tier.REDUCED and Engine.time_scale < 4.0 \
-				and BattleJuice.flag("victory_flourish")
+	var flourish: bool = wants_flourish(scene)
 
 	var backdrop := ColorRect.new()
 	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
