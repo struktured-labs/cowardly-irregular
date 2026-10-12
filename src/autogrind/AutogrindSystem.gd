@@ -1866,6 +1866,11 @@ func reset_autogrind_profiles_to_defaults() -> Dictionary:
 	}
 
 
+## A rule action may target every CURRENT party member. A shipped default has no other way to reach
+## one: _party_character_ids derives ids from each member's name.
+const ALL_PARTY: String = "*"
+
+
 func _create_default_autogrind_rules() -> Array:
 	"""Create a sensible default autogrind ruleset"""
 	return [
@@ -1873,8 +1878,7 @@ func _create_default_autogrind_rules() -> Array:
 		{
 			"conditions": [{"type": "party_hp_avg", "op": "<", "value": 30}],
 			"actions": [
-				{"type": "switch_profile", "character_id": "hero", "profile_index": 1},
-				{"type": "switch_profile", "character_id": "mira", "profile_index": 0}
+				{"type": "switch_profile", "character_id": ALL_PARTY, "profile_index": 1}
 			],
 			"enabled": true
 		},
@@ -1888,8 +1892,7 @@ func _create_default_autogrind_rules() -> Array:
 		{
 			"conditions": [{"type": "always"}],
 			"actions": [
-				{"type": "switch_profile", "character_id": "hero", "profile_index": 0},
-				{"type": "switch_profile", "character_id": "mira", "profile_index": 0}
+				{"type": "switch_profile", "character_id": ALL_PARTY, "profile_index": 0}
 			],
 			"enabled": true
 		}
@@ -1901,7 +1904,7 @@ func _create_empty_autogrind_rules() -> Array:
 	return [
 		{
 			"conditions": [{"type": "always"}],
-			"actions": [{"type": "switch_profile", "character_id": "hero", "profile_index": 0}],
+			"actions": [{"type": "switch_profile", "character_id": ALL_PARTY, "profile_index": 0}],
 			"enabled": true
 		}
 	]
@@ -2605,8 +2608,19 @@ func apply_autogrind_actions(actions: Array) -> void:
 			"switch_profile":
 				var char_id = action.get("character_id", "")
 				var profile_idx = action.get("profile_index", 0)
-				## The shipped defaults name "hero" and "mira", who are in no party. set_active_profile created and SAVED a profile for them.
-				if char_id != "" and not _party_character_ids().has(str(char_id)):
+				## A party id is derived from the member's NAME, so a SHIPPED default cannot name one --
+				## which is why the originals said "hero"/"mira" and reached nobody. "*" means everyone here now.
+				if char_id == ALL_PARTY:
+					var reached: Array = _party_character_ids()
+					if reached.is_empty():
+						_note_rule_noop("Switch Profile: no party to switch")
+					var autobattle_all = get_node_or_null("/root/AutobattleSystem")
+					for pid in reached:
+						if autobattle_all:
+							autobattle_all.set_active_profile(str(pid), profile_idx)
+					print("[AUTOGRIND] Switched %d party member(s) to profile %d" % [reached.size(), profile_idx])
+				## The shipped defaults named "hero" and "mira", who are in no party. set_active_profile created and SAVED a profile for them.
+				elif char_id != "" and not _party_character_ids().has(str(char_id)):
 					print("[AUTOGRIND] switch_profile skipped: no party member '%s'" % char_id)
 					_note_rule_noop("Switch Profile: no party member \"%s\"" % char_id)
 				elif char_id != "":
