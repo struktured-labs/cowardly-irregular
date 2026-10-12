@@ -42,15 +42,44 @@ func _steps(r: MenuRepeat, seconds: float) -> int:
 	return n
 
 
+## ⛔ DRAIN FIRST, THEN PRESS — THE ORDER IS THE WHOLE FIXTURE. This read `press` then `flush`, and
+## the flush was what broke it: a previous FILE can leave a joypad-axis event QUEUED (parse_input_event
+## does not apply immediately), so our own flush applied THEIR centred stick AFTER our press and
+## released the direction. Measured 2026-10-12, probing this exact before_each:
+##     entry   held=false
+##     pressed held=true     <- action_press worked
+##     flushed held=false    <- our flush executed someone else's stale event
+## All three arms below then failed on a file that passes alone, which reads as a flake in MenuRepeat
+## and is a fixture ordering bug. The leak is also fixed at its source in
+## test_a_held_direction_repeats_on_both_routes; this half is what makes the file order-independent.
 func before_each() -> void:
-	Input.action_press(HELD)
 	Input.flush_buffered_events()
+	Input.action_press(HELD)
 
 
 func after_each() -> void:
 	for a in InputMap.get_actions():
 		Input.action_release(a)
 	Input.flush_buffered_events()
+
+
+## ⛔ REGRESSION GUARD, AND IT DRIVES THE REAL `before_each` RATHER THAN RESTATING ITS STEPS.
+## A guard that re-typed "flush, press, assert" would pin MY sequence and stay green if the fixture
+## itself were reordered — which is precisely the change that caused the bug. Calling the subject is
+## what makes this fail when the drain moves back below the press.
+func test_the_fixture_drains_before_it_presses() -> void:
+	Input.action_release(HELD)
+	var centred := InputEventJoypadMotion.new()
+	centred.device = 0
+	centred.axis = JOY_AXIS_LEFT_Y
+	centred.axis_value = 0.0
+	Input.parse_input_event(centred)
+	assert_false(Input.is_action_pressed(HELD),
+		"PRECONDITION: the direction starts released, so a pass below cannot be left over")
+	before_each()
+	assert_true(Input.is_action_pressed(HELD),
+		"before_each must DRAIN inbound events before it presses — a queued axis-centre applied "
+		+ "after the press releases the direction and every arm in this file goes red at random")
 
 
 ## ⛔ THE CONTROL, and it has to come first: if a held direction does not repeat while FOCUSED,

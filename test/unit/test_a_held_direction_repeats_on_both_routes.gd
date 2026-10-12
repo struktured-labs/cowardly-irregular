@@ -49,6 +49,11 @@ func _centre() -> void:
 	for a in ["ui_down", "ui_up"]:
 		Input.action_release(a)
 	Input.parse_input_event(_motion(0.0))
+	## ⛔ FLUSH, OR THE CENTRING OUTLIVES THIS FILE. parse_input_event QUEUES; without this the
+	## axis-0.0 event is still buffered when the NEXT test file starts, and the first flush over
+	## there applies it — releasing whatever direction that file just pressed. Measured 2026-10-12:
+	## this file alone made test_a_menu_does_not_scroll_while_you_are_away red, deterministically.
+	Input.flush_buffered_events()
 	MenuNav.step(_motion(0.0))
 
 
