@@ -4930,8 +4930,14 @@ func _on_action_executed(combatant: Combatant, action: Dictionary, targets: Arra
 				"defense_up", "attack_up", "volatility_up_self", "volatility_down", "magic_defense_up", "regen", "barrier", "buff":
 					SoundManager.play_battle("buff")
 				# stat reductions share the generic debuff cue (cowir-sfx rec) — bespoke cues reserved for the scary/unique statuses
+				# ⛔ SO AN EFFECT WITH A BESPOKE AUTHORED CUE DOES NOT BELONG IN THIS ARM, and two were sitting here:
+				# pacify (status_pacify.ogg) and amplify_poison (status_festered.ogg, via Combatant.STATUS_ALIASES).
+				# Neither is a stat reduction, both had a cue on disk, and this arm swallowed both — the authored
+				# file never played. Removed; they fall to the catch-all, which does the status_<name> lookup.
+				# test_a_bespoke_status_cue_is_not_a_stat_reduction derives this from the manifest, so a future
+				# addition with its own cue reds instead of going quiet.
 				# dispel_and_self_buff is target_type single_ally and HOSTILE to that ally (BattleManager strips their buffs, logged in penalty_bbcode) — it sits here with its base effect `dispel` because the target_type rule below would send it to the buff cue
-				"defense_down", "volatility_up", "attack_down", "magic_down", "magic_defense_down", "speed_down", "all_stats_down", "random_debuff", "dispel", "dispel_and_self_buff", "pacify", "amplify_poison", "debuff":
+				"defense_down", "volatility_up", "attack_down", "magic_down", "magic_defense_down", "speed_down", "all_stats_down", "random_debuff", "dispel", "dispel_and_self_buff", "debuff":
 					SoundManager.play_battle("debuff")
 				## cleanse is cued by BattleManager's cleanse executor, which is the only place that knows
 				## whether an ailment actually came off. Cueing here too would double it.

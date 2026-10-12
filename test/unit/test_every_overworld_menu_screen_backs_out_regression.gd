@@ -1,5 +1,7 @@
 extends GutTest
 
+const GdSource := preload("res://test/unit/helpers/gd_source.gd")
+
 ## struktured, 2026-09-23: "I enter the overworld menu… and get stuck in it", and to cowir-deploy
 ## "B is not back… wait it sometimes works". The menu-level cause (the pad button that opened the
 ## menu did not close it) is fixed and pinned in test_the_dash_button_does_not_open_the_overworld_menu.
@@ -77,6 +79,27 @@ func test_every_screen_the_menu_opens_closes_on_one_back() -> void:
 	await _frames(1)
 	assert_gt(ids.size(), 0, "PRECONDITION: the menu offers rows")
 
+	## ⛔ THE BACKSTOP'S CORPUS MUST BE PINNED, NOT ASSUMED. `> 0` accepts this arm walking ONE row
+	## of twenty-one and still reporting that every screen backs out. @cowir-overworld measured the
+	## cost of exactly that tonight: their behavioural arm covered 1 castle floor of 4, and WHICH one
+	## was decided by cross-test state they did not control — so an authored NPC reached nobody and
+	## 7/7 passed. A behavioural arm is loud only about a corpus that could have contained the
+	## defect, and an unpinned corpus is an acceptance-shaped claim wearing a runtime badge.
+	##
+	## Today the row set is state-independent — BASE_MENU_OPTIONS is copied whole and `teleport` is
+	## appended unconditionally ("always visible", struktured 2026-08-22) — so this pins a property
+	## that holds rather than repairing one that does not. It reds the day a row becomes conditional.
+	var live_ids: Array[String] = []
+	for id in ids:
+		live_ids.append(str(id))
+	var authored: Array[String] = _rows_of_source(
+		FileAccess.get_file_as_string("res://src/ui/OverworldMenu.gd"))["found"]
+	live_ids.sort()
+	authored.sort()
+	assert_eq(live_ids, authored,
+		"the live menu must offer EVERY authored row, or this arm is a backstop over a subset it "
+		+ "did not choose: live %s vs authored %s" % [str(live_ids), str(authored)])
+
 	var screens := 0
 	var stuck := []
 	var double_close := []
@@ -113,3 +136,181 @@ func test_every_screen_the_menu_opens_closes_on_one_back() -> void:
 		"one Back closed these screens AND the overworld menu behind them: %s" % [double_close])
 	assert_eq(dead, [],
 		"these rows opened no screen, closed nothing and emitted nothing — pressing them does nothing: %s" % [dead])
+
+
+## ⛔ AN ARM WITH NO ROW IS DEAD DISPATCH CODE, AND THE RUNTIME ARM ABOVE CANNOT SEE IT — it walks
+## `_menu_options`, so it only ever asks about rows that EXIST. That direction is what this adds.
+##
+## ⚠️ I BUILT THIS FOR THE OTHER DIRECTION AND MEASURED THAT IT WAS ALREADY COVERED. Adding a row
+## with no arm reds `test_every_screen_the_menu_opens_closes_on_one_back` too — its `dead` list
+## catches exactly that, at runtime, on the real menu:
+##     MUTATION: a "journal" row with no arm -> BOTH arms red
+## So the dead-row half of this guard is redundant, said plainly rather than left for a reader to
+## discover. It is kept because it comes free from the same two derived sets, it names the cause
+## without instantiating a menu or waiting 0.25s per row, and it is deterministic.
+##
+## 🔑 DERIVED FROM BOTH DECLARATION SITES, NOT A HAND LIST. The defect is someone adding a row and
+## not an arm — and they would add it to a hand list in the same edit. Rows are any dict literal
+## carrying BOTH "id" and "label", which covers the BASE_MENU_OPTIONS const AND the dynamic
+## `teleport` append at :179, and a third site nobody has written yet. Measured: 21 = 21.
+##
+## 📌 This is a RELATION between two sets in one text, not a spelling pin: a rename moves both sides
+## and it stays green, which is why reading source is legitimate here. It is NOT a liveness check —
+## gut the arms' bodies and it still passes. The runtime arm above is that half of the pair.
+## ⛔ THE EXTRACTOR IS THE HALF WITH NO ARM ON IT. @cowir-deploy measured this in another lane's
+## derivation and @cowir-ai generalised it: a derived-relation guard has TWO failure modes — the
+## RELATION it asserts, and the DERIVATION nobody points a test at. Mine had both directions wrong
+## and one was silent. Measured by feeding the extractors shapes they could meet:
+##     {"id": row_id, "label": "Computed"}   -> SILENTLY DROPPED, that row is never compared
+##     "save", "load":   (a legal multi-arm) -> dropped -> a FALSE red naming them dead rows
+## 🔑 "I cannot parse this" and "there is nothing here" must not share a return value. Both helpers
+## now REPORT what they could not read, and the arm below requires that report to be empty — so an
+## unparseable shape is loud instead of quietly shrinking the comparison.
+## ⚠️ THE ARM BELOW MUST DRIVE THE SAME PATH THE GUARD DOES. My first version of the plant called
+## GdSource itself, which proves the STRIPPER works and says nothing about whether this file USES
+## it — revert the delegation and that arm stays green. One function strips and extracts, so the
+## plant cannot pass while the guard reads raw.
+func _rows_of_source(src: String) -> Dictionary:
+	return _rows_in(GdSource.split(src)["code"])
+
+
+func _arms_of_source(src: String) -> Dictionary:
+	return _arms_in(GdSource.split(src)["code"])
+
+
+func _rows_in(text: String) -> Dictionary:
+	var rx := RegEx.new()
+	rx.compile('"id"\\s*:\\s*"([A-Za-z0-9_]+)"')
+	var found: Array[String] = []
+	var unreadable: Array[String] = []
+	for line in text.split("\n"):
+		if not (line.contains('"id"') and line.contains('"label"')):
+			continue
+		var m := rx.search(line)
+		if m:
+			found.append(m.get_string(1))
+		else:
+			unreadable.append(line.strip_edges())
+	return {"found": found, "unreadable": unreadable}
+
+
+func _arms_in(text: String) -> Dictionary:
+	var rx := RegEx.new()
+	rx.compile('^\\t\\t"([A-Za-z0-9_]+)":\\s*$')
+	var found: Array[String] = []
+	var unreadable: Array[String] = []
+	var inside := false
+	for line in text.split("\n"):
+		if line.strip_edges() == "match action_id:":
+			inside = true
+			continue
+		if not inside:
+			continue
+		if line.strip_edges() != "" and not line.begins_with("\t\t"):
+			break
+		var m := rx.search(line)
+		if m:
+			found.append(m.get_string(1))
+		elif line.begins_with("\t\t") and not line.begins_with("\t\t\t") \
+				and line.strip_edges().ends_with(":") and line.strip_edges() != "_:":
+			## An arm shape this cannot read — a multi-pattern arm, or a constant. Reported,
+			## never dropped: dropping it invents a dead row that is actually handled.
+			unreadable.append(line.strip_edges())
+	return {"found": found, "unreadable": unreadable}
+
+
+## THE REFUSAL NEEDS ITS OWN ARM, or it is an untested branch in the instrument everything else
+## rests on. Driven against synthetic text rather than the live file, because the live file is
+## (correctly) all literals and so cannot exercise it.
+## ⛔ THE PLANT THAT WAS SILENT UNTIL THIS BRANCH: comment out a row, leave its dispatch arm.
+## Measured on the shipped guard — 3 passing, EC=0, the dead arm invisible. `dead_rows` treats the
+## row set as a REQUIREMENT (a phantom reds, loudly) but `orphan_arms` asserts AGAINST it, so the
+## same phantom WIDENS what is accepted. @cowir-story's split; I had ranked the whole guard by the
+## loud assert and generalised it to the file.
+func test_a_commented_out_row_is_not_a_row() -> void:
+	var planted := "\t# {\"id\": \"ghost\", \"label\": \"Ghost\"},\n\t{\"id\": \"real\", \"label\": \"Real\"},\n"
+	var raw: Dictionary = _rows_in(planted)
+	assert_true((raw["found"] as Array).has("ghost"),
+		"CONTROL: raw text DOES yield the phantom — if this stops being true the arm below proves nothing")
+
+	var stripped: Dictionary = _rows_of_source(planted)
+	assert_false((stripped["found"] as Array).has("ghost"),
+		"a commented-out row must not enter the row set — it would SATISFY its own stale dispatch arm")
+	assert_true((stripped["found"] as Array).has("real"),
+		"MUST-SURVIVE: the live row has to survive the strip, or over-stripping reads as a clean pass")
+
+	## ⛔ THE SECOND INJECTION SHAPE, measured rather than assumed — a `"""` region is what defeated
+	## another lane's private `split("#")[0]` tonight, and it is a thirty-second plant.
+	var doc := '"""\n\t{"id": "phantom", "label": "Phantom"},\n"""\n\t{"id": "real", "label": "Real"},\n'
+	var from_doc: Dictionary = _rows_of_source(doc)
+	assert_false((from_doc["found"] as Array).has("phantom"),
+		"a row inside a docstring region must not enter the row set either")
+	assert_true((from_doc["found"] as Array).has("real"),
+		"MUST-SURVIVE: and the live row outside the region still has to survive")
+
+
+func test_the_extractors_report_what_they_cannot_read() -> void:
+	var computed := '\t{"id": row_id, "label": "Computed", "enabled": true},'
+	var r: Dictionary = _rows_in(computed)
+	assert_eq((r["found"] as Array).size(), 0, "CONTROL: a computed id yields no literal")
+	assert_eq((r["unreadable"] as Array).size(), 1,
+		"a row whose id is not a literal must be REPORTED, not silently dropped from the comparison")
+
+	var multi := "match action_id:\n\t\t\"save\", \"load\":\n\t\t\tpass\n"
+	var a: Dictionary = _arms_in(multi)
+	assert_eq((a["found"] as Array).size(), 0, "CONTROL: a multi-pattern arm yields no single literal")
+	assert_eq((a["unreadable"] as Array).size(), 1,
+		"a multi-pattern arm must be REPORTED — dropping it invents a dead row that is handled")
+
+	## And the readable shapes still read, or the arm above passes by breaking the extractor.
+	var ok: Dictionary = _rows_in('\t{"id": "journal", "label": "Journal"},')
+	assert_eq(ok["found"], ["journal"] as Array[String], "CONTROL: a literal row still parses")
+
+	## ⛔ AND THE REFUSAL MUST NOT FIRE ON A SHAPE IT EXISTS TO ALLOW. The class was [a-z_]+, so a
+	## perfectly ordinary literal id carrying a DIGIT — `world2_map`, in a codebase that names things
+	## world2_/world3_ everywhere — would have been reported as unreadable. @cowir-overworld hit the
+	## same false positive one level down (their `[a-z_]+` rejected a legitimate `return ""`), which
+	## is the distinction the refusal is about, missed inside the refusal.
+	var numbered: Dictionary = _rows_in('\t{"id": "world2_map", "label": "W2 Map"},')
+	assert_eq(numbered["found"], ["world2_map"] as Array[String],
+		"a literal id with a digit is READABLE — the refusal must not fire on what it exists to allow")
+	assert_eq(numbered["unreadable"], [] as Array[String], "...and must not be reported as unreadable")
+
+
+func test_every_menu_row_has_a_dispatch_arm() -> void:
+	var src := FileAccess.get_file_as_string("res://src/ui/OverworldMenu.gd")
+	assert_ne(src, "", "PRECONDITION: OverworldMenu source must be readable")
+	## ⛔ CODE, NOT RAW SOURCE. A commented-out row was extracted as a real one, and the direction
+	## that matters is the one I first reported as impossible: `orphan_arms` asserts AGAINST this
+	## set, so a phantom row SATISFIES an arm and dead dispatch code ships silently.
+	## Delegated to the shared helper rather than a tenth private stripper (@cowir-ai, @cowir-battle).
+	var row_scan: Dictionary = _rows_of_source(src)
+	var arm_scan: Dictionary = _arms_of_source(src)
+	var rows: Array[String] = row_scan["found"]
+	var arms: Array[String] = arm_scan["found"]
+
+	## THE DERIVATION'S OWN FAILURE MODE, asserted before the relation it feeds: a shape neither
+	## helper can read must stop this arm, not quietly shrink the sets it compares.
+	assert_eq(row_scan["unreadable"], [] as Array[String],
+		"row shapes this guard cannot read — it would compare a SMALLER set and still pass: %s" % str(row_scan["unreadable"]))
+	assert_eq(arm_scan["unreadable"], [] as Array[String],
+		"arm shapes this guard cannot read — it would invent dead rows that are handled: %s" % str(arm_scan["unreadable"]))
+
+	## POSITIVE CONTROLS: an empty derivation on either side reports perfect agreement about nothing,
+	## which is the shape of every guard aimed at a pattern that stopped matching.
+	assert_gt(rows.size(), 15, "CONTROL: must find the authored menu rows, got %d" % rows.size())
+	assert_gt(arms.size(), 15, "CONTROL: must find the dispatch arms, got %d" % arms.size())
+
+	var dead_rows: Array[String] = []
+	for r in rows:
+		if not arms.has(r):
+			dead_rows.append(r)
+	assert_eq(dead_rows, [] as Array[String],
+		"these menu rows have NO arm in _handle_menu_action — selecting them does nothing: %s" % str(dead_rows))
+
+	var orphan_arms: Array[String] = []
+	for a in arms:
+		if not rows.has(a):
+			orphan_arms.append(a)
+	assert_eq(orphan_arms, [] as Array[String],
+		"these dispatch arms answer no authored row — dead code, or a row that was renamed: %s" % str(orphan_arms))

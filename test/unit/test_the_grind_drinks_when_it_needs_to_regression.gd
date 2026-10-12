@@ -5,6 +5,7 @@ extends GutTest
 ## The MP line directly below both call sites has always gated at 0.5; HP now matches it.
 ## struktured's ruling, 2026-10-12: heal below 50%.
 const GAMELOOP := "res://src/GameLoop.gd"
+const GdSource := preload("res://test/unit/helpers/gd_source.gd")
 
 var _gl: Node
 
@@ -63,8 +64,13 @@ func test_the_dead_and_the_malformed_are_skipped() -> void:
 ## Both post-battle loops are the sibling pair this rule must not drift across -- the whole defect
 ## class I fixed twice today is one path getting a rule its twin did not.
 func test_both_post_battle_loops_ask_the_same_question() -> void:
-	var src: String = FileAccess.get_file_as_string(GAMELOOP)
+	## CODE only: a count over raw source counts PROSE. A comment naming either literal would supply
+	## a call site that does not exist, or an old gate that is not there -- and the first direction
+	## is a false GREEN on the arm that pins both loops to the shared predicate.
+	var src: String = GdSource.code_of(GAMELOOP)
 	assert_gt(src.length(), 1000, "FLOOR: GameLoop must be readable")
+	assert_true(src.contains("func _autogrind_should_drink("),
+		"CONTROL: over-stripping and a correct strip are the same green, so a known code site must survive")
 	assert_eq(src.count("_autogrind_should_drink(member)"), 2,
 		"both post-battle heal loops must go through the shared predicate")
 	assert_eq(src.count("current_hp < member.max_hp:"), 0,

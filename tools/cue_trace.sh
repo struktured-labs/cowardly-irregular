@@ -269,6 +269,61 @@ selftest() {
     out="$("$self" "$dir/boot.log" 2>&1)"
     chk "boot lines do NOT trip the unrecognised warning"  'UNRECOGNISED shape'         1
 
+    # ── THE DERIVATION HALF: can my classifier even SEE every shape the producer emits? ──────
+    # @cowir-ai's sentence, and it is the half with no arm on it anywhere: "a derived-relation
+    # guard has two failure modes and only one is ever tested — the relation, and the derivation
+    # nobody points an arm at." The arms above test the relation (an unrecognised line is
+    # reported). This tests whether a shape can reach me at all — which is exactly how I lost
+    # @cowir-sfx's SUPPRESSED line after thirty passing arms: no log contained it yet, so no
+    # runtime arm could have covered it. A producer's new kind is not an input I failed to try.
+    #
+    # Extraction is a NEGATED CLASS, never a forward search for a delimiter. `[^"]*` cannot cross
+    # a quote, so the bound is structural; an imperative `find(quote, i)` has no bound unless you
+    # give it one, and that form imported an unrelated string 40 lines away in @cowir-battle's
+    # _literals (measured on a reimplementation, not read).
+    local prod="src/audio/SoundManager.gd"
+    if [ -f "$prod" ]; then
+        local shapes=0 unmatched=0 line probe
+        while IFS= read -r line; do
+            [ -n "$line" ] || continue
+            shapes=$((shapes+1))
+            # Substitute the format specifiers so a shape can be tested as a LINE.
+            probe="$(printf '%s' "$line" | sed -e 's/%\.[0-9]f/1.00/g' -e 's/%d/7/g' -e 's/%s/xkey/g')"
+            printf '%s\n' "$probe" | command grep -aqE -- "$_TRACED|$_PROC|$_SUPP|$_BOOT" || {
+                unmatched=$((unmatched+1))
+                printf '  FAIL  %-56s\n' "a producer shape my patterns cannot classify"
+                printf '          %s\n' "$line"
+            }
+        done < <(command grep -aoE 'print\("\[SFX\][^"]*"' "$prod" | sed -e 's/^print("//' -e 's/"$//' | sort -u)
+        if [ "$shapes" -ge 3 ] && [ "$unmatched" -eq 0 ]; then
+            pass=$((pass+1)); printf '  ok    %-56s (%s shape(s))\n' "every [SFX] shape the producer emits is classified" "$shapes"
+        else
+            fail=$((fail+1)); printf '  FAIL  %-56s (%s shapes, %s unmatched)\n' "producer shapes vs my patterns" "$shapes" "$unmatched"
+        fi
+
+        # ⛔ "I FOUND NO SHAPE" AND "I CANNOT READ THIS PRINT" MUST NOT SHARE A VALUE. A print whose
+        # first argument is not a literal cannot be read, and its text could carry an [SFX] line I
+        # would never see. @cowir-overworld hit this as `return _stall_token()` silently skipped.
+        #
+        # ⚠️ AND THE CONTROL THAT THEIR FIRST VERSION FAILED: on a clean tree this must NOT fire.
+        # Their refusal red on `return ""` — readable, simply not a reason — i.e. it fired on the
+        # shape it exists to allow. Measured here before writing it: all 28 print( calls in the
+        # producer have a literal first argument, 0 non-literal, so the clean tree is silent and
+        # the refusal is still not vacuous.
+        local tot lit nonlit
+        tot="$(command grep -ac 'print(' "$prod" || true)"
+        lit="$(command grep -acE 'print\("' "$prod" || true)"
+        nonlit=$(( ${tot:-0} - ${lit:-0} ))
+        if [ "$nonlit" -eq 0 ]; then
+            pass=$((pass+1)); printf '  ok    %-56s (%s/%s literal)\n' "every print in the producer is READABLE" "$lit" "$tot"
+        else
+            fail=$((fail+1)); printf '  FAIL  %-56s (%s unreadable)\n' "a print I cannot read may emit an [SFX] shape" "$nonlit"
+            command grep -anE 'print\([^"]' "$prod" | head -3 | sed 's/^/          /'
+        fi
+    else
+        printf '  SKIP  %-56s (no %s from this cwd)\n' "producer shapes vs my patterns" "$prod"
+    fi
+
     out="$("$self" "$dir/nope.log" 2>&1)"; local ec2=$?
     [ "$ec2" -eq 2 ] && { pass=$((pass+1)); printf '  ok    %-56s\n' "a missing log exits 2"; } \
         || { fail=$((fail+1)); printf '  FAIL  %-56s (exit %s)\n' "a missing log exits 2" "$ec2"; }

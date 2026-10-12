@@ -7499,6 +7499,18 @@ func _replay_last_ability(caster: Combatant, targets: Array) -> void:
 	_execute_ability(caster, _last_ability_cast_id, targets)
 
 
+## A meta ability applies its status HERE, not through an action the cue dispatch can see:
+## BattleScene keys on ability.effect and four of these arms carry none, so status_mind_swap /
+## status_controlled / status_permakilled were authored, on disk, and never once played. The cue
+## is centralised rather than the APPLICATION, because two guards derive the engine's status set
+## from the quoted-literal application shape, and wrapping it made them report the opposite of
+## the truth. Do not write that shape in prose here: a guard scans this file for it and a comment
+## naming one invents a status (measured — my first wording added a phantom called `literal`).
+func _cue_status(status: String) -> void:
+	if SoundManager:
+		SoundManager.play_status(status)
+
+
 func _execute_meta_ability(caster: Combatant, ability: Dictionary, targets: Array) -> void:
 	var meta_effect = ability.get("meta_effect", "")
 	var corruption_risk = ability.get("corruption_risk", 0.0)
@@ -7619,6 +7631,7 @@ func _execute_meta_ability(caster: Combatant, ability: Dictionary, targets: Arra
 			for target in targets:
 				if target and is_instance_valid(target) and target.is_alive:
 					target.add_status("mind_swap", int(ability.get("duration", 5)))
+					_cue_status("mind_swap")
 					## Tick 442: stash the controller so the
 					## shared_damage passive (boss_damage_share
 					## meta_effect) can find them when the boss takes
@@ -7654,6 +7667,7 @@ func _execute_meta_ability(caster: Combatant, ability: Dictionary, targets: Arra
 			for target in targets:
 				if target and is_instance_valid(target) and target.is_alive:
 					target.add_status("controlled", int(ability.get("duration", 1)))
+					_cue_status("controlled")
 					battle_log_message.emit("[color=magenta]✦ %s overrides %s's control![/color]" % [caster.combatant_name, target.combatant_name])
 			GameState.add_corruption(corruption_risk)
 		"ng_plus_warp":
@@ -7754,12 +7768,14 @@ func _execute_meta_ability(caster: Combatant, ability: Dictionary, targets: Arra
 			if caster != null and is_instance_valid(caster) and caster.is_alive:
 				caster.die()
 				caster.add_status("permakilled")
+				_cue_status("permakilled")
 				battle_log_message.emit("[color=%s]☠ %s has been PERMANENTLY KILLED![/color]" % [AccessibilityPalette.penalty_bbcode(), caster.combatant_name])
 			# Targets die + permakilled (same shape as permanent_death).
 			for target in targets:
 				if target and is_instance_valid(target) and target.is_alive:
 					target.die()
 					target.add_status("permakilled")
+					_cue_status("permakilled")
 					battle_log_message.emit("[color=%s]☠ %s has been PERMANENTLY KILLED![/color]" % [AccessibilityPalette.penalty_bbcode(), target.combatant_name])
 			GameState.add_corruption(corruption_risk)
 		## Tick 398: corrupt_save (save_deletion ability — boss-only
@@ -7816,6 +7832,7 @@ func _execute_meta_ability(caster: Combatant, ability: Dictionary, targets: Arra
 			for target in targets:
 				if target and is_instance_valid(target) and target.is_alive:
 					target.add_status("stun", ts_dur)
+					_cue_status("stun")
 					battle_log_message.emit("[color=magenta]✦ Time stops for %s![/color] (stunned for %d turns)" % [target.combatant_name, ts_dur])
 		"permanent_death":
 			print("  → %s casts PERMAKILL!" % caster.combatant_name)
@@ -7824,6 +7841,7 @@ func _execute_meta_ability(caster: Combatant, ability: Dictionary, targets: Arra
 				if target and is_instance_valid(target) and target.is_alive:
 					target.die()
 					target.add_status("permakilled")
+					_cue_status("permakilled")
 					# permakill's second promise: the SPECIES never spawns again (enemies only — PCs carry no monster_type)
 					var pk_type: String = str(target.get_meta("monster_type", "")) if target.has_meta("monster_type") else ""
 					if pk_type != "" and GameState and not pk_type in GameState.permakilled_monster_types:
