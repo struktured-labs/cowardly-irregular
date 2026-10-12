@@ -636,7 +636,7 @@ func set_command_menu_visible(visible: bool) -> void:
 	if visible:
 		if active_win98_menu and is_instance_valid(active_win98_menu):
 			print("[MENU-HIDE] t=%dms visible=%s (called from set_command_menu_visible)" % [Time.get_ticks_msec(), visible])
-			active_win98_menu.visible = true
+			active_win98_menu.set_chain_visible(true)
 			active_win98_menu.grab_focus()
 		return
 	# Submenus are SIBLINGS of the root; hiding only the root left a live-battle ability list taking confirm.
@@ -646,7 +646,8 @@ func set_command_menu_visible(visible: bool) -> void:
 		if sub and is_instance_valid(sub):
 			sub.force_close()
 			active_win98_menu.submenu = null
-		active_win98_menu.visible = false
+		## The tooltip and the target highlight are siblings too, and hiding the root never reached them.
+		active_win98_menu.set_chain_visible(false)
 
 
 func _create_speed_indicator() -> void:

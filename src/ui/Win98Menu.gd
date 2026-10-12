@@ -575,6 +575,19 @@ func _add_tooltip_to_parent() -> void:
 		get_parent().add_child(_tooltip_label)
 
 
+## THREE nodes in this chain are SIBLINGS rather than children — the tooltip, the target highlight
+## and the submenu are each added to get_parent() for draw order — so NONE of them inherits this
+## menu's `visible`. Hiding the menu alone left a tooltip and a target box over the battlefield.
+## The submenu stays the caller's business: it is force_closed, which is not the same as hidden.
+func set_chain_visible(v: bool) -> void:
+	visible = v
+	if _tooltip_label and is_instance_valid(_tooltip_label):
+		## Empty text is how _update_tooltip says "this row has none" — do not resurrect it.
+		_tooltip_label.visible = v and _tooltip_label.text != ""
+	if _target_highlight and is_instance_valid(_target_highlight):
+		_target_highlight.visible = v
+
+
 func _fade_target_highlight(on_complete: Callable = Callable()) -> void:
 	"""Fade out the target highlight with animation"""
 	if not _target_highlight or not is_instance_valid(_target_highlight):

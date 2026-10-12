@@ -143,7 +143,7 @@ func show_win98_command_menu(combatant: Combatant) -> void:
 	## layout frees the right edge. 0.85 keeps the text legible and the actor readable underneath.
 	_scene.active_win98_menu.modulate.a = MENU_ALPHA_OVER_ACTOR
 	# Starts hidden under an active boss dialogue; _on_dialogue_finished re-shows it.
-	_scene.active_win98_menu.visible = not _dialogue_owns_screen
+	_scene.active_win98_menu.set_chain_visible(not _dialogue_owns_screen)
 	_scene.add_child(_scene.active_win98_menu)
 	_scene.active_win98_menu.setup(combatant.combatant_name, menu_items, menu_pos, job_id)
 	_animate_menu_open(_scene.active_win98_menu)

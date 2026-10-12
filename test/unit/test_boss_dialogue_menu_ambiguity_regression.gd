@@ -79,5 +79,8 @@ func test_dialogue_finish_restores_the_menu_only_mid_selection() -> void:
 func test_menu_spawning_under_active_dialogue_starts_hidden() -> void:
 	var src := FileAccess.get_file_as_string("res://src/battle/BattleCommandMenu.gd")
 	assert_true("_dialogue_owns_screen" in src, "spawn-time dialogue check exists")
-	assert_true("visible = not _dialogue_owns_screen" in src,
+	## The call was `visible = not _dialogue_owns_screen` until the chain setter landed. The tooltip
+	## and target highlight are SIBLINGS of the menu and never inherited its `visible`, so the root
+	## alone was not enough; set_chain_visible carries all three. Subject unchanged, spelling moved.
+	assert_true("set_chain_visible(not _dialogue_owns_screen)" in src,
 		"a menu created while the boss is speaking must start hidden — else the ambiguity returns through the spawn path")
