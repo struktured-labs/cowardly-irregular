@@ -9,7 +9,17 @@ func _bubble(stream: AudioStream, key: String = ""):
 		true, 0.0, BattleSpeechBubble.TOP_MARGIN, Callable(), stream)
 
 
+var _saved_scale: float = 1.0
+
+
+func before_each() -> void:
+	## Label 2x by construction: below the suppression threshold whatever that threshold becomes.
+	_saved_scale = Engine.time_scale
+	Engine.time_scale = BattleSpeechBubble.SUPPRESS_TIME_SCALE * 0.5
+
+
 func after_each() -> void:
+	Engine.time_scale = _saved_scale
 	if SoundManager._voice_player != null and SoundManager._voice_player.playing and not SoundManager.wav_commit_refused():
 		SoundManager.stop_voice()
 

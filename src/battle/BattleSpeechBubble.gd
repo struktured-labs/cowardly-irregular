@@ -27,7 +27,10 @@ const SIDE_GAP_PX: float = 22.0
 ## Speaker counts as covered when it falls inside the bubble span plus this slack.
 const CLEAR_SLACK_PX: float = 10.0
 ## Suppress only at 4x+ (doc'd intent); pre-fix code suppressed at 2x so users at 2x saw no bubbles.
-const SUPPRESS_TIME_SCALE: float = 4.0
+const SUPPRESS_AT_LABEL: float = 4.0
+## A label is engine*4 (speed scale v3): the bare 4.0 here used to read as the label and meant 16x.
+const LABEL_PER_ENGINE: float = 4.0
+const SUPPRESS_TIME_SCALE: float = SUPPRESS_AT_LABEL / LABEL_PER_ENGINE
 
 ## The figure-bounds scan has ONE owner; the aura disc seats on the same measurement.
 const AdvanceAuraClass = preload("res://src/battle/AdvanceAura.gd")

@@ -26,7 +26,7 @@ func before_each() -> void:
 	## ESTABLISHED, not asserted: spawn() returns null at or above SUPPRESS_TIME_SCALE, and a prior
 	## file leaving 4x would make every arm here vacuously skip.
 	_saved_scale = Engine.time_scale
-	Engine.time_scale = 1.0
+	Engine.time_scale = BattleSpeechBubble.SUPPRESS_TIME_SCALE * 0.5
 	BattleSpeechBubble._live.clear()
 	_parent = Node.new()
 	add_child(_parent)

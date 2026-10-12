@@ -9,7 +9,7 @@ extends GutTest
 
 func before_each() -> void:
 	BattleSpeechBubble._live.clear()
-	Engine.time_scale = 1.0
+	Engine.time_scale = BattleSpeechBubble.SUPPRESS_TIME_SCALE * 0.5
 
 
 func _host() -> Control:
@@ -48,7 +48,7 @@ func test_same_speaker_replaces_own_bubble() -> void:
 
 func test_suppressed_at_4x_still() -> void:
 	var host := _host()
-	Engine.time_scale = 4.0
+	Engine.time_scale = BattleSpeechBubble.SUPPRESS_TIME_SCALE
 	var b = BattleSpeechBubble.spawn(host, Vector2(100, 100), "Mage", "quiet")
-	Engine.time_scale = 1.0
+	Engine.time_scale = BattleSpeechBubble.SUPPRESS_TIME_SCALE * 0.5
 	assert_null(b, "4x+ suppression must survive the cap change")

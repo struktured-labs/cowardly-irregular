@@ -12,11 +12,19 @@ extends GutTest
 const RESERVED_RIGHT_PX: float = 210.0
 
 var _b: BattleSpeechBubble = null
+var _saved_scale: float = 1.0
 
 
 func before_each() -> void:
+	## Label 2x by construction: below the suppression threshold whatever that threshold becomes.
+	_saved_scale = Engine.time_scale
+	Engine.time_scale = BattleSpeechBubble.SUPPRESS_TIME_SCALE * 0.5
 	_b = BattleSpeechBubble.new()
 	add_child_autofree(_b)
+
+
+func after_each() -> void:
+	Engine.time_scale = _saved_scale
 
 
 func _vp_w() -> float:
@@ -102,7 +110,7 @@ func test_a_spawned_bubble_lands_beside_the_speaker_not_on_them() -> void:
 	add_child_autofree(host)
 	var anchor := Vector2(320, 400)
 	var b = BattleSpeechBubble.spawn(host, anchor, "Fighter", "Testing placement end to end.", Color(1, 0.85, 0.2), 5.0, "", true)
-	assert_not_null(b, "spawn must return a bubble at default time_scale")
+	assert_not_null(b, "spawn must return a bubble at a speed below the suppression threshold")
 	for i in 6:
 		await get_tree().process_frame
 	var panel: PanelContainer = null
