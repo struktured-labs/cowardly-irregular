@@ -56,3 +56,53 @@ func test_the_two_cases_are_distinguishable_in_a_log() -> void:
 	assert_ne(plain, onto, "the collision case must not render identically to the ordinary one")
 	assert_true(onto.begins_with(plain),
 			"the collision message should EXTEND the plain one, so an existing log grep still matches")
+
+
+## ---- the call-site halves, which the message arms above cannot reach ----
+
+## A bare BaseVillage, never added to the tree, so `_ready` does not build a village.
+func _bare_village() -> Node2D:
+	var v = BaseVillageScript.new()
+	autofree(v)
+	return v
+
+
+## An Area2D, because OverworldNPC extends Area2D — a Node2D silently fails to take the script and
+## every label then reads "" from an aborted lookup rather than from a missing name.
+func _stub_npc(label: String, at: Vector2) -> Node2D:
+	var n = preload("res://src/exploration/OverworldNPC.gd").new()
+	n.name = "GeneratedNodeName"
+	n.npc_name = label
+	n.position = at
+	return n
+
+
+func test_the_label_prefers_the_npc_name_over_the_generated_node_name() -> void:
+	var v = _bare_village()
+	var n := _stub_npc("Gerald", Vector2.ZERO)
+	autofree(n)
+	assert_eq(v._placement_label(n), "Gerald",
+		"an OverworldNPC never sets its node name, so the warning printed '@Area2D@17548' and was unattributable")
+	n.npc_name = ""
+	assert_eq(v._placement_label(n), "GeneratedNodeName",
+		"with no npc_name the node name is all there is — the fallback must still say something")
+
+
+func test_the_occupant_lookup_finds_a_stacked_npc_and_ignores_the_mover() -> void:
+	var v = _bare_village()
+	v.npcs = Node2D.new()
+	autofree(v.npcs)
+	var dad := _stub_npc("Neighborhood Dad", Vector2(304, 464))
+	var gerald := _stub_npc("Gerald", Vector2(304, 464))
+	v.npcs.add_child(dad)
+	v.npcs.add_child(gerald)
+
+	var cell: Vector2i = v._cell_of(Vector2(304, 464))
+	assert_eq(cell, Vector2i(9, 14), "CONTROL: 304/32 = 9.5 and 464/32 = 14.5, so the cell is (9,14)")
+	assert_eq(v._occupant_of_cell(cell, gerald), "Neighborhood Dad",
+		"the occupant of the destination must be found, and named")
+	assert_eq(v._occupant_of_cell(cell, dad), "Gerald",
+		"and the lookup must EXCLUDE the mover rather than reporting them as their own obstacle")
+	assert_eq(v._occupant_of_cell(Vector2i(0, 0), gerald), "",
+		"CONTROL: an empty cell has no occupant, or the arms above pass on everything")
+
