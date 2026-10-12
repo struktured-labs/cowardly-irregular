@@ -82,15 +82,26 @@ func _returned_literals(body: String) -> Array:
 	return [tokens, unreadable]
 
 
-## The quoted `match` arm labels inside one function.
-func _match_arms(body: String) -> Array[String]:
+## [arms, unreadable] — the consumer side gets the SAME three states as the producer side.
+## A match pattern may legally be a CONST, which routes exactly as the literal does; that is
+## invisible to a quoted-literal scan. Without the second return value the kind read as UNBRANCHED
+## and the guard blamed the wrong thing — "no arm for key_rejected" when an arm existed and only
+## the reader could not see it. Measured by planting one (@cowir-sfx hit the same shape, silently).
+func _match_arms(body: String) -> Array:
 	var arms: Array[String] = []
-	var arm := RegEx.create_from_string('^\\s*"([^"]*)"\\s*:\\s*$')
+	var unreadable: Array[String] = []
+	var literal := RegEx.create_from_string('^\\s*"([^"]*)"\\s*:\\s*$')
+	var ident := RegEx.create_from_string('^\\t\\t([A-Za-z][A-Za-z0-9_]*)\\s*:\\s*$')
 	for raw in body.split("\n"):
-		var m: RegExMatch = arm.search(raw.split("#")[0])
+		var line: String = raw.split("#")[0]
+		var m: RegExMatch = literal.search(line)
 		if m != null:
 			arms.append(m.get_string(1))
-	return arms
+			continue
+		var u: RegExMatch = ident.search(line)
+		if u != null:
+			unreadable.append(u.get_string(1))
+	return [arms, unreadable]
 
 
 # ── 1. the derivation: produced ⊆ branched ───────────────────────────────────────────────────────
@@ -101,7 +112,12 @@ func test_every_kind_the_backend_can_produce_has_its_own_row_message() -> void:
 	assert_eq(produced[1], [], "the producer has a return this guard cannot read: %s — see the refusal arm" % [produced[1]])
 	assert_gt(kinds.size(), 3,
 		"CONTROL: derived only %d kinds from %s — the extractor is broken, and an empty set makes the assert below vacuous" % [kinds.size(), PRODUCER])
-	var arms: Array[String] = _match_arms(_body_of(_read(SETTINGS_SRC), CONSUMER))
+	var consumed: Array = _match_arms(_body_of(_read(SETTINGS_SRC), CONSUMER))
+	var arms: Array = consumed[0]
+	assert_eq(consumed[1], [],
+		("the row has match patterns this guard cannot read: %s. They route exactly as a literal "
+		+ "does, so a kind behind one would read as UNBRANCHED and this arm would blame the wrong "
+		+ "thing. Use a literal, or teach the scan to resolve the const.") % [consumed[1]])
 	assert_gt(arms.size(), 3, "CONTROL: found only %d match arms in %s" % [arms.size(), CONSUMER])
 	var unbranched: Array[String] = []
 	for k in kinds:
@@ -115,7 +131,7 @@ func test_every_kind_the_backend_can_produce_has_its_own_row_message() -> void:
 func test_the_catch_all_is_not_shared_with_a_real_kind() -> void:
 	## THE DEFECT ITSELF, as a relation: `unreachable` must have its OWN arm. While it lived in the
 	## catch-all, an unknown kind inherited its message — and that message is an instruction.
-	var arms: Array[String] = _match_arms(_body_of(_read(SETTINGS_SRC), CONSUMER))
+	var arms: Array = (_match_arms(_body_of(_read(SETTINGS_SRC), CONSUMER)))[0]
 	assert_true(arms.has("unreachable"),
 		"'unreachable' has no arm of its own, so it is sharing the catch-all with every kind this screen does not know — got %s" % [arms])
 
@@ -228,3 +244,20 @@ func test_the_body_bound_stops_at_the_next_function() -> void:
 	var got: Array = _returned_literals(_body_of(two, PRODUCER))
 	assert_eq(got[0], (["unreachable"] as Array[String]),
 		"the bound leaked into the next function: %s" % [got[0]])
+
+
+func test_the_arm_scan_reports_a_match_pattern_it_cannot_read() -> void:
+	## Symmetry with the producer side: "no arm for X" and "an arm exists that I cannot read" are
+	## different facts and must not share a value. A const pattern routes identically to a literal,
+	## so without this the guard reds blaming a missing arm that is actually present.
+	var synthetic: String = ("func _get_llm_status_subtitle() -> String:\n"
+		+ "\tmatch str(info.get(\"kind\", \"\")):\n"
+		+ "\t\t\"unreachable\":\n\t\t\treturn \"a\"\n"
+		+ "\t\tKIND_KEY_REJECTED:\n\t\t\treturn \"b\"\n"
+		+ "\t\t_:\n\t\t\treturn \"c\"\n")
+	var got: Array = _match_arms(synthetic)
+	assert_eq(got[0], (["unreachable"] as Array[String]), "the literal arm must still be read")
+	assert_eq((got[1] as Array), ["KIND_KEY_REJECTED"],
+		"a const match pattern was not reported as unreadable — got %s" % [got[1]])
+	## And `_:` is NOT unreadable: it is the catch-all, read by its own arm above.
+	assert_false(str(got[1]).contains("_:"), "the catch-all must not be reported as an unreadable pattern")
