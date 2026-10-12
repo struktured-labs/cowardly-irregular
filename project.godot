@@ -52,6 +52,10 @@ PartyPersonas="*res://src/llm/PartyPersonas.gd"
 VoiceService="*res://src/llm/VoiceService.gd"
 VoicePool="*res://src/llm/VoicePool.gd"
 
+[debug]
+
+file_logging/max_log_files=25
+
 [display]
 
 window/size/viewport_width=1280
