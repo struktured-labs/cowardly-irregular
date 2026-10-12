@@ -2,6 +2,7 @@
   "id": "world2_oak_street_npcs",
   "title": "Oak Street",
   "world": 2,
+  "keep_music": true,
   "trigger": "world2_oak_street_entry",
   "background": "suburban_school",
   "description": "The garage sale lady whose items fight back. The crossing guard who's been at her post longer than the neighborhood has existed. The school loudspeaker that has opinions about permanent records.",
@@ -9,10 +10,6 @@
     {
       "type": "letterbox_in",
       "duration": 0.4
-    },
-    {
-      "type": "play_music",
-      "track": "village_suburban"
     },
     {
       "type": "narration",
@@ -45,7 +42,7 @@
         },
         {
           "speaker": "Garage Sale Lady",
-          "text": "Fair warning \u2014 the gnome bites. The sweater has opinions. The bread maker has been waiting for its moment for three years.",
+          "text": "Fair warning — the gnome bites. The sweater has opinions. The bread maker has been waiting for its moment for three years.",
           "theme": "shopkeeper",
           "portrait": "shopkeeper"
         }

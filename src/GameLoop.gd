@@ -2233,6 +2233,23 @@ func _epilogue_done_or_unwired(epilogue_id: String, flags: Dictionary) -> bool:
 	return bool(flags.get(_CUTSCENE_COMPLETION_FLAGS[epilogue_id], false))
 
 
+## Village -> the introduction scene written about it. The map id is the trigger: each scene's own
+## `trigger` field names a village entry event, and nothing else in the tree dispatches these.
+## ⛔ NO OVERWORLD MAY APPEAR HERE, and world2_oak_street_npcs is the scene that proves it. Oak
+## Street is a LOCATION inside suburban_overworld with no map of its own, so the overworld was the
+## only home to infer — and an overworld is where the world-TRANSITION scenes queue.
+## test_world_transition_scenes_wired_regression requires nothing pending on suburban_overworld both
+## before and after W2 completes; an intro keyed there reds it twice. Oak Street stays unwired until
+## it gets a trigger of its own (an interaction, as the prologue has), which is a separate change.
+const _VILLAGE_INTROS := {
+	"harmonia_village": "world1_harmonia_npcs",
+	"eldertree_village": "world1_eldertree_npcs",
+	"maple_heights_village": "world2_maple_heights_npcs",
+	"brasston_village": "world3_brasston_npcs",
+	"rivet_row_village": "world4_rivet_row_npcs",
+}
+
+
 func _get_pending_story_cutscene() -> String:
 	"""Check if a story cutscene should play based on flags.
 	Returns cutscene ID or empty string."""
@@ -2628,6 +2645,20 @@ func _get_pending_story_cutscene() -> String:
 				and not flags.get("cutscene_flag_%s_complete" % fid, false):
 			return fid
 
+	# ===== VILLAGE INTRODUCTIONS — last, so a story beat always wins the entry =====
+	# Six authored scenes reached no player: nothing dispatched them, so ~90 lines were
+	# unreachable (struktured 2026-10-12, "wire all six"). Each fires ONCE, on first entry to the
+	# village it is written about, which is what its `trigger` field names. Placed at the end of
+	# this function on purpose: every story gate above returns first, so an intro can never
+	# pre-empt a chapter beat on the same entry.
+	# ...and never as a CHAIN target: a story beat finishing in a village must not hand the entry
+	# straight to flavour, which is the same cross-entry pacing rule the spotlight gates use.
+	if not _chaining_story_cutscene:
+		for vid in _VILLAGE_INTROS:
+			var intro: String = str(_VILLAGE_INTROS[vid])
+			if _current_map_id == vid and not flags.get("cutscene_flag_%s_complete" % intro, false):
+				return intro
+
 	# ===== GUIDANCE HINTS — disabled (now opt-in via party chat) =====
 	# These were auto-triggering too aggressively. Guidance hints are now
 	# available via NPC dialogue hints instead of forced cutscenes.
@@ -2723,6 +2754,12 @@ const _CUTSCENE_COMPLETION_FLAGS := {
 	"world1_prologue":                  "cutscene_flag_prologue_complete",
 	"world1_chapter1":                  "cutscene_flag_chapter1_complete",
 	"world1_bram_shield":               "cutscene_flag_world1_bram_shield_complete",
+	## Village introductions — without these the gate that fires them never sees a completion flag and loops.
+	"world1_harmonia_npcs":             "cutscene_flag_world1_harmonia_npcs_complete",
+	"world1_eldertree_npcs":            "cutscene_flag_world1_eldertree_npcs_complete",
+	"world2_maple_heights_npcs":        "cutscene_flag_world2_maple_heights_npcs_complete",
+	"world3_brasston_npcs":             "cutscene_flag_world3_brasston_npcs_complete",
+	"world4_rivet_row_npcs":            "cutscene_flag_world4_rivet_row_npcs_complete",
 	# Mordaine escalation — a missing entry here does NOT fail loudly, it re-fires the beat on
 	# every qualifying entry (the original Elder Theron loop). Four beats, four entries.
 	"world1_mordaine_watch_road":       "cutscene_flag_world1_mordaine_watch_road_complete",

@@ -9,7 +9,8 @@ extends GutTest
 ##     4 x world1_*_encounter   titled beats ("The Arbiter of Steel"), letterboxed, music-cued,
 ##                              assigned as an NPC's cutscene_id in three villages + TallyWall
 ##     8 x world*_guidance_*    PartyChatSystem.REGISTRY, player-initiated from PartyChatMenu
-##     6 x world*_npcs          the only genuinely unplayed ones, 0 callers
+##     6 x world*_npcs          WERE the only unplayed ones; wired 2026-10-12 (struktured: "wire
+##                              all six") to fire once on first entry, so all 18 are now LIVE
 ##
 ## ⚠️ THIS GUARD DOES NOT RULE ON THAT. Whether the twelve belong in the Theater is struktured's
 ## and cowir-story's call, not a test's. What it refuses is the SILENCE: a substring over ids
@@ -44,12 +45,12 @@ const HIDDEN := {
 	"world4_guidance_director": "LIVE",
 	"world5_guidance_core": "LIVE",
 	"world6_guidance_question": "LIVE",
-	"world1_eldertree_npcs": "UNPLAYED",
-	"world1_harmonia_npcs": "UNPLAYED",
-	"world2_maple_heights_npcs": "UNPLAYED",
-	"world2_oak_street_npcs": "UNPLAYED",
-	"world3_brasston_npcs": "UNPLAYED",
-	"world4_rivet_row_npcs": "UNPLAYED",
+	"world1_eldertree_npcs": "LIVE",             # GameLoop._VILLAGE_INTROS, first entry to eldertree_village
+	"world1_harmonia_npcs": "LIVE",              # GameLoop._VILLAGE_INTROS, first entry to harmonia_village
+	"world2_maple_heights_npcs": "LIVE",         # GameLoop._VILLAGE_INTROS, maple_heights_village
+	"world2_oak_street_npcs": "UNPLAYED",        # Oak St has no map; an intro on suburban_overworld reds the W2 transition guard
+	"world3_brasston_npcs": "LIVE",              # GameLoop._VILLAGE_INTROS, brasston_village
+	"world4_rivet_row_npcs": "LIVE",             # GameLoop._VILLAGE_INTROS, rivet_row_village
 }
 
 const SRC_DIRS := ["res://src/"]
