@@ -1,37 +1,42 @@
 extends GutTest
 
-## Every quest's `giver.location.map_id` is where that quest's giver stands, and 21 of 33 named
-## something that is not a map: `brasston` for `brasston_village`, `rivet_row`, `maple_heights`,
-## `node_prime`, `the_vertex`, `world1_overworld`. Nothing reads the field today, so nothing failed —
-## the same shape as data/examine_texts.json keying 15 entries to the MUSIC BED names, found an hour
-## earlier. A near-miss id is harmless until the day something looks the map up, and then it is a
-## giver who stands nowhere.
+## ⛔ READ THIS BEFORE WIDENING THE FILE. `giver.location.map_id` IS RUNTIME-INERT. Measured again on
+## today's tree: `src/` reads `giver.npc_id` (QuestSystem:125/425/446, OverworldNPC:1361) and
+## `giver.display_name` (QuestLog:391) and `giver.spawn_flag` — and NOTHING reads `giver.location`.
+## A previous pass in this lane already found 8 of these mismatches, checked the consumer, and ruled
+## AGAINST guarding the field: a ratchet on prose enforces consistency in prose and reds on a correct
+## change. That ruling stands, and this file is deliberately one arm rather than the five I first
+## wrote (every giver on a real map · a declaration roster for places with no map · its expiry · its
+## ghost check). Those taxed authoring: a quest written in a place that has no map yet — the W4
+## tunnels, inner Node Prime — is legitimate authoring and had to buy a declaration to stay green.
 ##
-## 🔑 TWO VALUES ARE LEFT ALONE AND DECLARED BELOW, because a rename would be an invented placement:
-## they name places with no map at all. That distinction is the whole reason this is a roster and not
-## a substitution table — `rivet_row_tunnels` wants a map or a design decision, not a spelling fix.
+## 🔑 THE ONE ARM THAT SURVIVES THE RULING IS SAFE BY CONSTRUCTION, WHICH IS WHY IT IS NOT THE SAME
+## GUARD. It fires only when the authored value becomes a REAL map id by adding a `_village` /
+## `_overworld` / `_city` suffix — `brasston` where `brasston_village` exists. That is never an
+## intentional authoring act: a writer who means a real map writes its id, and a writer who means a
+## place with no map writes something no suffix completes (`rivet_row_tunnels`, `node_prime_inner` —
+## both silent here, both correct, neither declared anywhere). So it cannot red on a correct change,
+## and it catches the only mistake in this field that is always a mistake.
 ##
-## 📌 _map_ids() is the same derivation as test_an_examine_names_a_real_map's, deliberately copied
-## rather than shared: that file is in flight on another branch, and rewiring two guards to a new
-## helper across a fold is a bigger change than the duplication. If a third consumer appears, move it
-## into test/unit/helpers/ and delete both copies.
+## 21 of 33 quests carried a bad value before 2026-10-12; 19 were this near-miss shape. The same
+## shape as data/examine_texts.json keying 15 entries to the MUSIC BED names, found an hour earlier.
 
 const QUESTS := "res://data/quests"
 const TELEPORT := "res://src/ui/TeleportMenu.gd"
 const LOCATIONS := "res://data/locations.json"
 const GdSource := preload("res://test/unit/helpers/gd_source.gd")
+const SUFFIXES: Array[String] = ["_village", "_overworld", "_city"]
 const MIN_MAP_IDS := 55
 const MIN_QUESTS := 25
 
-## A giver placed somewhere no map exists: the reason says what would retire the entry.
-const NO_SUCH_MAP := {
-	"rivet_row_tunnels": "world4_below_specification — the W4 tunnels the clockwork rats overheat in. Rivet Row has a village and a union hall; the tunnels are not a map. Retired by building them, or by moving the junction into one that exists",
-	"node_prime_inner": "world5_mutual_exclusion — 'inner' Node Prime, at a shared_resource_node. Node Prime has a village and a daemon lounge; this is neither. Retired by a map or by re-placing the race condition",
-}
-
 
 ## TeleportMenu enumerates the TELEPORTABLE maps; 15 more are reached only on foot and appear as a
-## `map_id` in locations.json, which SaveSystem reads to name the place the player stands in.
+## `map_id` in locations.json, which SaveSystem reads to name the place the player stands in. A
+## corpus of the menu alone reds correct data — and that is this file's own near-miss to make.
+##
+## 📌 Same derivation as test_an_examine_names_a_real_map's, deliberately copied rather than shared:
+## that file is in flight on another branch, and rewiring two guards to a new helper across a fold is
+## a bigger change than the duplication. A third consumer moves it into test/unit/helpers/.
 func _map_ids() -> Array[String]:
 	var out: Array[String] = []
 	var rx := RegEx.create_from_string('"id"\\s*:\\s*"([a-z0-9_]+)"')
@@ -72,58 +77,41 @@ func _giver_maps() -> Dictionary:
 
 
 func test_the_corpora_are_real() -> void:
-	## Over-stripping, a bad regex and an unreadable directory are all an empty collection, which
-	## would pass every arm below.
+	## Over-stripping, a bad regex and an unreadable directory are all an empty collection, and an
+	## empty collection passes the arm below for the wrong reason.
 	var ids: Array[String] = _map_ids()
 	assert_gt(ids.size(), MIN_MAP_IDS, "CONTROL: the map-id union has only %d entries" % ids.size())
 	for walked_only in ["blacksmith_interior", "eldertree_grafting_house"]:
 		assert_true(ids.has(walked_only),
-			"CONTROL: %s is a real map reached only on foot; a corpus without it reds correct data" % walked_only)
+			"CONTROL: %s is a real map reached only on foot; a corpus without it would miss near misses of it" % walked_only)
 	assert_gt(_giver_maps().size(), MIN_QUESTS, "CONTROL: only %d quests name a giver location" % _giver_maps().size())
 
 
-func test_every_giver_stands_on_a_real_map() -> void:
-	var ids: Array[String] = _map_ids()
-	var nowhere: Array[String] = []
-	for f in _giver_maps():
-		var mid: String = str(_giver_maps()[f])
-		if not ids.has(mid) and not NO_SUCH_MAP.has(mid):
-			nowhere.append("%s -> %s" % [f, mid])
-	assert_eq(nowhere, ([] as Array[String]),
-		"these quest givers stand on something that is not a map, so nothing can place them: %s" % [nowhere])
-
-
-func test_no_declaration_outlives_its_gap() -> void:
-	## Build the tunnels and this reds until the entry goes — the roster must shrink, not accumulate.
-	var ids: Array[String] = _map_ids()
-	var stale: Array[String] = []
-	for mid in NO_SUCH_MAP:
-		if ids.has(str(mid)):
-			stale.append(str(mid))
-	assert_eq(stale, ([] as Array[String]), "these maps exist now, so their declarations are excuses: %s" % [stale])
-
-
-func test_every_declaration_is_still_claimed_by_a_quest() -> void:
-	## A declaration for a value no quest uses any more hides nothing and misleads a reader.
-	var used: Array = _giver_maps().values()
-	var ghosts: Array[String] = []
-	for mid in NO_SUCH_MAP:
-		if not (str(mid) in used):
-			ghosts.append(str(mid))
-	assert_eq(ghosts, ([] as Array[String]), "no quest places a giver here any more: %s" % [ghosts])
-
-
 func test_no_giver_map_is_a_near_miss_of_a_real_one() -> void:
-	## The specific defect, named: `brasston` is not a map and `brasston_village` is, so the id reads
-	## correct to a human and resolves to nothing. Any value that becomes a real map by adding or
-	## removing a `_village`/`_overworld` suffix is that mistake, declared or not.
 	var ids: Array[String] = _map_ids()
 	var near: Array[String] = []
 	for f in _giver_maps():
 		var mid: String = str(_giver_maps()[f])
 		if ids.has(mid):
 			continue
-		for suffix in ["_village", "_overworld", "_city"]:
+		for suffix in SUFFIXES:
 			if ids.has(mid + suffix):
-				near.append("%s -> %s, but %s exists" % [f, mid, mid + suffix])
-	assert_eq(near, ([] as Array[String]), "a near-miss map id reads correct and resolves to nothing: %s" % [near])
+				near.append("%s -> '%s', but '%s' is the map" % [f, mid, mid + suffix])
+	assert_eq(near, ([] as Array[String]),
+		"a near-miss map id reads correct to a human and names nothing: %s" % [near])
+
+
+func test_a_place_with_no_map_is_left_alone() -> void:
+	## The other half of "safe by construction", kept as an arm so a future widening has to break it
+	## on purpose: values naming a place with no map must pass, undeclared. If someone makes this
+	## file demand that every giver stand on a real map, this arm is what reds.
+	var ids: Array[String] = _map_ids()
+	var unmapped: Array[String] = []
+	for f in _giver_maps():
+		var mid: String = str(_giver_maps()[f])
+		if not ids.has(mid):
+			unmapped.append("%s -> %s" % [f, mid])
+	assert_gt(unmapped.size(), 0,
+		"CONTROL: quests are authored in places with no map yet, and this file must stay silent about them")
+	for row in unmapped:
+		gut.p("NO MAP YET (correct, not a defect): %s" % row)
