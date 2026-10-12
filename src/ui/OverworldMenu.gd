@@ -779,7 +779,13 @@ func _input(event: InputEvent) -> void:
 
 	# Ignore input during the 0.15s fade-in tween so a held confirm can't
 	# pick a stale option while the panel is invisible.
+	## LEAVING is exempt. The guard defends against picking an UNSEEN ROW, which closing is not, and
+	## it swallowed Back for the whole fade — measured ~160ms, every press in it silently lost. Open
+	## the menu, change your mind, press Back, nothing happens. Confirm and navigation stay blocked.
 	if modulate.a < 1.0:
+		if not event.is_echo() and (event.is_action_pressed("ui_cancel") or is_toggle_event(event)):
+			_close_menu()
+			get_viewport().set_input_as_handled()
 		return
 
 	# Submenus handle their own input now (including the standalone
