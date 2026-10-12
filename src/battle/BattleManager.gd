@@ -9782,6 +9782,14 @@ static func _party_line_wants_llm(llm_dialogue_on: bool, voice_test: bool) -> bo
 	return llm_dialogue_on and not voice_test
 
 
+## A pooled line's whole value is its pre-synthesized VOICE, and turbo or 4x+ suppresses the bubble
+## that would play it — so the slot is worth keeping rather than spending on text alone. Keyed to the
+## bubble's own threshold rather than a copy. The LLM call is NOT gated on this: its line still
+## reaches the battle log, which the player can read at speed.
+func _party_line_voice_can_be_heard() -> bool:
+	return not turbo_mode and Engine.time_scale < BattleSpeechBubble.SUPPRESS_TIME_SCALE
+
+
 func _battle_is_live() -> bool:
 	return not (current_state in [BattleState.VICTORY, BattleState.DEFEAT, BattleState.INACTIVE])
 
@@ -9827,7 +9835,7 @@ func _run_party_line_async(combatant: Combatant, event_kind: String, event_data:
 		return
 
 	## Spec 2a.1 step 3: a moment line outranks the pool; otherwise a ready pooled line speaks with its own synthesized audio.
-	var vp = get_node_or_null("/root/VoicePool")
+	var vp = get_node_or_null("/root/VoicePool") if _party_line_voice_can_be_heard() else null
 	if vp != null and not (pp != null and pp.has_method("has_moment_line") and pp.has_moment_line(job_id, event_kind, ctx)):
 		var pooled: Dictionary = vp.take_line(job_id, event_kind)
 		if not pooled.is_empty():
