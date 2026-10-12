@@ -12,6 +12,8 @@ and right on a right-facing one. A sheet is swapped only when both rows lean cle
 front-facing, masked or flat placeholder figures give a weak lean and are left alone. T1 sheets only,
 and never a sheet whose rows are still cut in the wrong place.
 
+Roaming monsters are judged the same way by their EYE (wolf and snake, 2026-10-12).
+
 Usage:
     python3 tools/fix_overworld_side_facing.py --audit
     python3 tools/fix_overworld_side_facing.py --apply
@@ -70,6 +72,30 @@ def row_lean(rgba: np.ndarray, row: int):
     return float(np.mean(leans)) if leans else None
 
 
+# A roaming monster has no skin to find a face by: its bright yellow or orange EYE says which way it looks.
+CLEAR_EYE_LEAN = 0.15
+
+
+def eye_lean(rgba: np.ndarray, row: int):
+    """Mean over the row's frames of (eye centroid - figure centre) / figure width; + looks right. None if no eye."""
+    leans = []
+    for col in range(rgba.shape[1] // CELL):
+        cell = rgba[row * CELL:(row + 1) * CELL, col * CELL:(col + 1) * CELL]
+        opaque = cell[..., 3] >= ALPHA
+        xs = np.nonzero(opaque)[1]
+        r, g, b = (cell[..., i].astype(int) for i in range(3))
+        ex = np.nonzero(opaque & (r >= 180) & (g >= 120) & (b <= 90) & (r - b >= 120))[1]
+        if len(xs) < 20 or len(ex) == 0:
+            continue
+        leans.append((ex.mean() - (xs.min() + xs.max()) / 2) / max(1, xs.max() - xs.min()))
+    return float(np.mean(leans)) if leans else None
+
+
+def monster_is_swapped(rgba: np.ndarray) -> bool:
+    left, right = eye_lean(rgba, LEFT_ROW), eye_lean(rgba, RIGHT_ROW)
+    return left is not None and right is not None and left >= CLEAR_EYE_LEAN and right <= -CLEAR_EYE_LEAN
+
+
 def is_swapped(rgba: np.ndarray, floor: float = CLEAR_LEAN) -> bool:
     left, right = row_lean(rgba, LEFT_ROW), row_lean(rgba, RIGHT_ROW)
     return left is not None and right is not None and left >= floor and right <= -floor
@@ -118,6 +144,16 @@ def selftest() -> int:
     assert (fixed[0:32] == bad[0:32]).all() and (fixed[96:128] == bad[96:128]).all(), "down and up rows are untouched"
     front = np.asarray(sheet(0))
     assert not is_swapped(front), "a front-facing figure gives no lean and is left alone"
+    beast = Image.new("RGBA", (128, 128), (0, 0, 0, 0))
+    for row, ex in ((LEFT_ROW, 24), (RIGHT_ROW, 6)):
+        for col in range(4):
+            for y in range(row * 32 + 10, row * 32 + 24):
+                for x in range(col * 32 + 4, col * 32 + 28):
+                    beast.putpixel((x, y), (90, 90, 90, 255))
+            beast.putpixel((col * 32 + ex, row * 32 + 12), (240, 200, 20, 255))
+    assert monster_is_swapped(np.asarray(beast)), "a beast whose left row looks right is seen by its eye"
+    assert not monster_is_swapped(np.asarray(swap_side_rows(beast))), "swapping its rows turns it round"
+    assert eye_lean(np.asarray(sheet(5)), LEFT_ROW) is None, "no eye, no verdict"
     masked = np.asarray(Image.new("RGBA", (128, 128), (60, 50, 90, 255)))
     assert row_lean(masked, LEFT_ROW) is None and not is_swapped(masked), "no face, no verdict"
     print("selftest ok")
@@ -153,6 +189,23 @@ def main() -> int:
         n += 1
         print("%s %s: left row leans %+.2f, right row %+.2f%s" % ("SWAPPED" if args.apply else "CAN SWAP", key,
             row_lean(rgba, LEFT_ROW), row_lean(rgba, RIGHT_ROW), " (reviewed by eye)" if reviewed else ""))
+        if args.apply:
+            swap_side_rows(img).save(path)
+    manifest = json.load(open(ROOT / "data" / "sprite_manifest.json"))
+    for key, entry in sorted(manifest.get("overworld_monster_sheets", {}).items()):
+        path = ROOT / entry["path"].replace("res://", "")
+        rows = {name: anim.get("row") for name, anim in entry.get("animations", {}).items()}
+        if not path.exists() or (rows.get("walk_left"), rows.get("walk_right")) != (LEFT_ROW, RIGHT_ROW):
+            continue
+        img = Image.open(path).convert("RGBA")
+        rgba = np.asarray(img)
+        if img.size != (CELL * 4, CELL * 4) or not monster_is_swapped(rgba):
+            continue
+        if entry.get("tier", "") != "T1":
+            print("REFUSED monster %s: tier %s, artist art is not rearranged" % (key, entry.get("tier")))
+            continue
+        n += 1
+        print("%s monster %s: eye leans %+.2f on its left row" % ("SWAPPED" if args.apply else "CAN SWAP", key, eye_lean(rgba, LEFT_ROW)))
         if args.apply:
             swap_side_rows(img).save(path)
     print("%d sheet(s) %s" % (n, "swapped" if args.apply else "to swap"))
