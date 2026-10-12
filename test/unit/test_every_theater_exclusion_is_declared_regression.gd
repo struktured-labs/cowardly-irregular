@@ -48,7 +48,7 @@ const HIDDEN := {
 	"world1_eldertree_npcs": "LIVE",             # GameLoop._VILLAGE_INTROS, first entry to eldertree_village
 	"world1_harmonia_npcs": "LIVE",              # GameLoop._VILLAGE_INTROS, first entry to harmonia_village
 	"world2_maple_heights_npcs": "LIVE",         # GameLoop._VILLAGE_INTROS, maple_heights_village
-	"world2_oak_street_npcs": "LIVE",            # GameLoop._VILLAGE_INTROS, suburban_overworld (Oak St has no map)
+	"world2_oak_street_npcs": "UNPLAYED",        # Oak St has no map; an intro on suburban_overworld reds the W2 transition guard
 	"world3_brasston_npcs": "LIVE",              # GameLoop._VILLAGE_INTROS, brasston_village
 	"world4_rivet_row_npcs": "LIVE",             # GameLoop._VILLAGE_INTROS, rivet_row_village
 }

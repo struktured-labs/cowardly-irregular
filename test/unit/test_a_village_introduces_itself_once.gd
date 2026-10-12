@@ -1,6 +1,6 @@
 extends GutTest
 
-## Six authored village-introduction scenes reached no player: nothing dispatched them, so ~90 lines were unreachable and their Theater rows could never unlock.
+## Authored village-introduction scenes reached no player: nothing dispatched them, so their lines were unreachable and their Theater rows could never unlock.
 
 const GdSource := preload("res://test/unit/helpers/gd_source.gd")
 
@@ -26,7 +26,7 @@ func _authored_flag(cid: String) -> String:
 
 func test_every_wired_intro_names_a_scene_on_disk() -> void:
 	var intros: Dictionary = _intros()
-	assert_gt(intros.size(), 5, "CONTROL: the village intro table must be populated, saw %d" % intros.size())
+	assert_gt(intros.size(), 4, "CONTROL: the village intro table must be populated, saw %d" % intros.size())
 	var missing: Array = []
 	for map_id in intros:
 		if not FileAccess.file_exists("res://data/cutscenes/%s.json" % str(intros[map_id])):
@@ -129,5 +129,30 @@ func test_an_intro_does_not_score_itself_with_the_generic_bed() -> void:
 				wrong.append("%s plays %s" % [cid, bed])
 		if beds.is_empty() and not bool(data.get("keep_music", false)):
 			wrong.append("%s names no bed and does not keep_music, so it plays to dead air" % cid)
-	assert_gt(checked, 5, "CONTROL: every wired intro must be read, saw %d" % checked)
+	assert_gt(checked, 4, "CONTROL: every wired intro must be read, saw %d" % checked)
 	assert_eq(wrong, [], "an intro must keep the village's bed or name that village's own theme: %s" % [wrong])
+
+
+## ⛔ MEASURED, not stylistic: an overworld is where the world-TRANSITION scenes queue, and
+## test_world_transition_scenes_wired_regression requires NOTHING pending on suburban_overworld
+## both before and after W2 completes. Keying world2_oak_street_npcs there red it twice on the fold
+## — on a surface this file cannot see, because it reads the intro table and never the transitions.
+func test_no_intro_is_keyed_to_an_overworld() -> void:
+	var wrong: Array = []
+	for map_id in _intros():
+		if str(map_id) == "overworld" or str(map_id).ends_with("_overworld"):
+			wrong.append("%s -> %s" % [map_id, _intros()[map_id]])
+	assert_eq(wrong, [], "an intro on an overworld competes with that world's transition scenes: %s" % [wrong])
+
+
+## The other half of the same ruling: a scene nothing dispatches must not keep a completion flag,
+## because _epilogue_done_or_unwired reads absence as "unwired" and a stale entry would hold a chain
+## open for a flag that can never be set.
+func test_an_unwired_intro_keeps_no_completion_flag() -> void:
+	var wired: Array = _intros().values().map(func(c): return str(c))
+	var flags: Dictionary = _completion_flags()
+	var stale: Array = []
+	for cid in flags:
+		if str(cid).ends_with("_npcs") and not (str(cid) in wired):
+			stale.append(str(cid))
+	assert_eq(stale, [], "a village intro nothing fires still carries a completion flag: %s" % [stale])

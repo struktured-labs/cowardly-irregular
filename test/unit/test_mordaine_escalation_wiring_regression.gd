@@ -231,10 +231,12 @@ func test_keep_music_defaults_off_for_every_other_scene() -> void:
 		var parsed = JSON.parse_string(_read("%s/%s" % [CUTSCENE_DIR, f]))
 		if parsed is Dictionary and bool(parsed.get("keep_music", false)):
 			opted.append(f)
-	## The six village introductions joined 2026-10-12: each plays on first entry to a village that has
+	## The village introductions joined 2026-10-12: each plays on first entry to a village that has
 	## just armed its OWN bed (village_harmonia, village_maple_heights...), so fading it out to play a
 	## GENERIC world bed scored the player's first impression with the wrong music and handed the
 	## village its theme back only once the scene ended. They keep the bed instead of naming one.
+	## world2_oak_street_npcs keeps its entry while UNWIRED: the opt-in is a property of the scene,
+	## which still plays inside a map that owns a bed, not of whether GameLoop dispatches it today.
 	assert_eq(opted, [
 			"world1_eldertree_npcs.json",
 			"world1_harmonia_npcs.json",
