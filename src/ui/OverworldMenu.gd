@@ -119,7 +119,10 @@ static func is_toggle_event(event: InputEvent) -> bool:
 		return true
 	## Escape stays outside the binding: it is the universal back-out, already shared with ui_cancel
 	## and ui_menu, and a player who rebinds the menu should not lose it.
-	if event is InputEventKey and event.pressed:
+	## ⛔ ...but it needs the echo guard the binding branch above already has: without it OS key-repeat
+	## re-fired the toggle, so HOLDING Escape flickered the menu open/closed and an even count left it
+	## shut after something had already logged it open (@cowir-deploy, hardening the web smoke).
+	if event is InputEventKey and event.pressed and not event.is_echo():
 		return event.keycode == KEY_ESCAPE
 	if event is InputEventMouseButton and event.pressed:
 		return event.button_index == MOUSE_BUTTON_RIGHT

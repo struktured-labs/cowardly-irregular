@@ -152,6 +152,31 @@ func test_the_reverse_direction_is_deliberately_still_allowed() -> void:
 		"moving Confirm onto the menu's button stays the player's business: %s" % str(trap.get("reason", "")))
 
 
+## ⛔ A HELD ESCAPE WAS MANY PRESSES. The binding branch above guards `not event.is_echo()`; the
+## Escape fallback did not, so OS key-repeat re-fired the toggle and the field menu opened and closed
+## at repeat rate — an EVEN number of toggles leaves it shut after printing that it opened. Found by
+## @cowir-deploy while hardening the web smoke to outlast a cutscene: their hold had to put taps
+## first to work around it. One function, two paths, one of them guarded — the asymmetry is the bug.
+func test_a_held_escape_is_one_press_not_many() -> void:
+	var first := _key(KEY_ESCAPE)
+	assert_true(OverworldMenu.is_toggle_event(first),
+		"CONTROL: the FIRST Escape must still toggle the menu — this arm must not pass by breaking Escape")
+	var repeat := _key(KEY_ESCAPE)
+	repeat.echo = true
+	assert_false(OverworldMenu.is_toggle_event(repeat),
+		"an OS key-repeat must NOT re-toggle the field menu: holding Escape flickers it open/closed, "
+		+ "and an even count leaves it shut after something already logged that it opened")
+
+
+## The same question asked of the KEY fallback, which is reachable only when the action is absent.
+## Checked because a fix that guards one path and not its sibling is the shape this file keeps finding.
+func test_the_key_fallback_also_ignores_a_repeat() -> void:
+	var repeat := _key(OverworldMenu.TOGGLE_KEY)
+	repeat.echo = true
+	assert_false(OverworldMenu.is_toggle_event(repeat),
+		"a held %s must not re-toggle the menu either" % OS.get_keycode_string(OverworldMenu.TOGGLE_KEY))
+
+
 ## ⛔ ESCAPE IS OUTSIDE THE BINDING ON PURPOSE AND NOTHING PINNED THAT PAST THE DEFAULTS. Three
 ## files drive Escape at the field menu and ALL THREE do it on the default binding, so routing every
 ## toggle through `ui_field_menu` — the obvious tidy-up now that the binding exists — would leave the
