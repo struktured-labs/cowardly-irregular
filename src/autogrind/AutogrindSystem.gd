@@ -2889,13 +2889,24 @@ func check_new_injuries() -> int:
 ## ItemNameResolver's own docstring is the precedent: ticks 130-134 made three near-identical copies
 ## and tick 133 found a typo locked in by one of them. int() because a snapshot loaded from JSON
 ## carries floats where live state carries ints.
-static func format_items_consumed(items: Dictionary) -> String:
-	if items.is_empty():
+static func format_items_consumed(items: Dictionary, max_entries: int = 0) -> String:
+	var parts: Array = items_consumed_parts(items)
+	if parts.is_empty():
 		return "None"
+	## 0 keeps every caller's existing string; the Summary passes a cap so a long list cannot run off its panel.
+	if max_entries > 0 and parts.size() > max_entries:
+		var kept: Array = parts.slice(0, max_entries)
+		kept.append("+%d more" % (parts.size() - max_entries))
+		return ", ".join(kept)
+	return ", ".join(parts)
+
+
+## One "<Name> xN" per consumed item, so a caller that must FIT the text can drop entries itself.
+static func items_consumed_parts(items: Dictionary) -> Array:
 	var parts: Array = []
 	for item_id in items:
 		parts.append("%s x%d" % [ItemNameResolver.resolve(item_id), int(items[item_id])])
-	return ", ".join(parts)
+	return parts
 
 
 func get_items_consumed_summary() -> String:

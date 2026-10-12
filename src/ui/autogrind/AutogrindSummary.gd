@@ -117,6 +117,8 @@ func _build_ui() -> void:
 	stats_data.append({
 		"label": "Items Used",
 		"value": AutogrindSystem.format_items_consumed(_stats.get("items_consumed", {})),
+		## Fitted against the real font once the row's box width is known; a 5-item session needed 438 px in a 170-px box.
+		"fit_items": _stats.get("items_consumed", {}),
 		"color": LABEL_COLOR,
 	})
 
@@ -215,13 +217,21 @@ func _build_ui() -> void:
 		panel.add_child(lbl)
 
 		var val = Label.new()
-		val.text = s["value"]
-		val.position = Vector2(x0 + col_w - 200, y)
-		val.size = Vector2(170, 20)
+		## Set BEFORE the text: an unclipped Label's minimum width is its whole string, and a size assigned
+		## under that minimum is silently clamped UP — which is how a 310-px box became a 540-px one off-panel.
+		val.clip_text = true
 		val.add_theme_font_size_override("font_size", 13)
 		val.add_theme_color_override("font_color", s["color"])
 		val.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		val.text = s["value"]
+		## The box used to be a fixed 170 px while the panel offers far more, so a long value ran off the SCREEN.
+		var box_w: float = maxf(170.0, col_w - VALUE_BOX_LEFT - 30.0)
+		val.position = Vector2(x0 + col_w - 30.0 - box_w, y)
+		val.size = Vector2(box_w, 20)
 		panel.add_child(val)
+		if s.has("fit_items"):
+			val.text = _fit_items(val, s["fit_items"], box_w)
+			val.size = Vector2(box_w, 20)
 
 	y = 68.0 + rows_per_col * row_h
 
@@ -297,6 +307,26 @@ func _rules_summary() -> String:
 	if checks <= 0:
 		return "%d authored, never evaluated" % authored
 	return "%d of %d fired (%d checks)" % [fired, authored, checks]
+
+
+## Where a value box may start, measured from the column's left edge: clear of the longest authored row label.
+const VALUE_BOX_LEFT := 150.0
+
+
+## Drops trailing entries until the list fits `max_w` in the label's OWN font, so the cap follows the font rather than a guess.
+func _fit_items(val: Label, items: Dictionary, max_w: float) -> String:
+	var parts: Array = AutogrindSystem.items_consumed_parts(items)
+	if parts.is_empty():
+		return "None"
+	var font: Font = val.get_theme_font("font")
+	var size: int = val.get_theme_font_size("font_size")
+	if font == null:
+		return AutogrindSystem.format_items_consumed(items)
+	for keep in range(parts.size(), 0, -1):
+		var text: String = AutogrindSystem.format_items_consumed(items, 0 if keep == parts.size() else keep)
+		if font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, size).x <= max_w:
+			return text
+	return "%d items" % parts.size()
 
 
 const RULE_NOOP_ROWS_MAX := 3
