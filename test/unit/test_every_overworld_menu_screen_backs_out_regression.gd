@@ -1,5 +1,7 @@
 extends GutTest
 
+const GdSource := preload("res://test/unit/helpers/gd_source.gd")
+
 ## struktured, 2026-09-23: "I enter the overworld menu… and get stuck in it", and to cowir-deploy
 ## "B is not back… wait it sometimes works". The menu-level cause (the pad button that opened the
 ## menu did not close it) is fixed and pinned in test_the_dash_button_does_not_open_the_overworld_menu.
@@ -143,6 +145,18 @@ func test_every_screen_the_menu_opens_closes_on_one_back() -> void:
 ## 🔑 "I cannot parse this" and "there is nothing here" must not share a return value. Both helpers
 ## now REPORT what they could not read, and the arm below requires that report to be empty — so an
 ## unparseable shape is loud instead of quietly shrinking the comparison.
+## ⚠️ THE ARM BELOW MUST DRIVE THE SAME PATH THE GUARD DOES. My first version of the plant called
+## GdSource itself, which proves the STRIPPER works and says nothing about whether this file USES
+## it — revert the delegation and that arm stays green. One function strips and extracts, so the
+## plant cannot pass while the guard reads raw.
+func _rows_of_source(src: String) -> Dictionary:
+	return _rows_in(GdSource.split(src)["code"])
+
+
+func _arms_of_source(src: String) -> Dictionary:
+	return _arms_in(GdSource.split(src)["code"])
+
+
 func _rows_in(text: String) -> Dictionary:
 	var rx := RegEx.new()
 	rx.compile('"id"\\s*:\\s*"([A-Za-z0-9_]+)"')
@@ -187,6 +201,33 @@ func _arms_in(text: String) -> Dictionary:
 ## THE REFUSAL NEEDS ITS OWN ARM, or it is an untested branch in the instrument everything else
 ## rests on. Driven against synthetic text rather than the live file, because the live file is
 ## (correctly) all literals and so cannot exercise it.
+## ⛔ THE PLANT THAT WAS SILENT UNTIL THIS BRANCH: comment out a row, leave its dispatch arm.
+## Measured on the shipped guard — 3 passing, EC=0, the dead arm invisible. `dead_rows` treats the
+## row set as a REQUIREMENT (a phantom reds, loudly) but `orphan_arms` asserts AGAINST it, so the
+## same phantom WIDENS what is accepted. @cowir-story's split; I had ranked the whole guard by the
+## loud assert and generalised it to the file.
+func test_a_commented_out_row_is_not_a_row() -> void:
+	var planted := "\t# {\"id\": \"ghost\", \"label\": \"Ghost\"},\n\t{\"id\": \"real\", \"label\": \"Real\"},\n"
+	var raw: Dictionary = _rows_in(planted)
+	assert_true((raw["found"] as Array).has("ghost"),
+		"CONTROL: raw text DOES yield the phantom — if this stops being true the arm below proves nothing")
+
+	var stripped: Dictionary = _rows_of_source(planted)
+	assert_false((stripped["found"] as Array).has("ghost"),
+		"a commented-out row must not enter the row set — it would SATISFY its own stale dispatch arm")
+	assert_true((stripped["found"] as Array).has("real"),
+		"MUST-SURVIVE: the live row has to survive the strip, or over-stripping reads as a clean pass")
+
+	## ⛔ THE SECOND INJECTION SHAPE, measured rather than assumed — a `"""` region is what defeated
+	## another lane's private `split("#")[0]` tonight, and it is a thirty-second plant.
+	var doc := '"""\n\t{"id": "phantom", "label": "Phantom"},\n"""\n\t{"id": "real", "label": "Real"},\n'
+	var from_doc: Dictionary = _rows_of_source(doc)
+	assert_false((from_doc["found"] as Array).has("phantom"),
+		"a row inside a docstring region must not enter the row set either")
+	assert_true((from_doc["found"] as Array).has("real"),
+		"MUST-SURVIVE: and the live row outside the region still has to survive")
+
+
 func test_the_extractors_report_what_they_cannot_read() -> void:
 	var computed := '\t{"id": row_id, "label": "Computed", "enabled": true},'
 	var r: Dictionary = _rows_in(computed)
@@ -218,8 +259,12 @@ func test_the_extractors_report_what_they_cannot_read() -> void:
 func test_every_menu_row_has_a_dispatch_arm() -> void:
 	var src := FileAccess.get_file_as_string("res://src/ui/OverworldMenu.gd")
 	assert_ne(src, "", "PRECONDITION: OverworldMenu source must be readable")
-	var row_scan: Dictionary = _rows_in(src)
-	var arm_scan: Dictionary = _arms_in(src)
+	## ⛔ CODE, NOT RAW SOURCE. A commented-out row was extracted as a real one, and the direction
+	## that matters is the one I first reported as impossible: `orphan_arms` asserts AGAINST this
+	## set, so a phantom row SATISFIES an arm and dead dispatch code ships silently.
+	## Delegated to the shared helper rather than a tenth private stripper (@cowir-ai, @cowir-battle).
+	var row_scan: Dictionary = _rows_of_source(src)
+	var arm_scan: Dictionary = _arms_of_source(src)
 	var rows: Array[String] = row_scan["found"]
 	var arms: Array[String] = arm_scan["found"]
 
