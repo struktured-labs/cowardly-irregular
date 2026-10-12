@@ -79,6 +79,27 @@ func test_every_screen_the_menu_opens_closes_on_one_back() -> void:
 	await _frames(1)
 	assert_gt(ids.size(), 0, "PRECONDITION: the menu offers rows")
 
+	## ⛔ THE BACKSTOP'S CORPUS MUST BE PINNED, NOT ASSUMED. `> 0` accepts this arm walking ONE row
+	## of twenty-one and still reporting that every screen backs out. @cowir-overworld measured the
+	## cost of exactly that tonight: their behavioural arm covered 1 castle floor of 4, and WHICH one
+	## was decided by cross-test state they did not control — so an authored NPC reached nobody and
+	## 7/7 passed. A behavioural arm is loud only about a corpus that could have contained the
+	## defect, and an unpinned corpus is an acceptance-shaped claim wearing a runtime badge.
+	##
+	## Today the row set is state-independent — BASE_MENU_OPTIONS is copied whole and `teleport` is
+	## appended unconditionally ("always visible", struktured 2026-08-22) — so this pins a property
+	## that holds rather than repairing one that does not. It reds the day a row becomes conditional.
+	var live_ids: Array[String] = []
+	for id in ids:
+		live_ids.append(str(id))
+	var authored: Array[String] = _rows_of_source(
+		FileAccess.get_file_as_string("res://src/ui/OverworldMenu.gd"))["found"]
+	live_ids.sort()
+	authored.sort()
+	assert_eq(live_ids, authored,
+		"the live menu must offer EVERY authored row, or this arm is a backstop over a subset it "
+		+ "did not choose: live %s vs authored %s" % [str(live_ids), str(authored)])
+
 	var screens := 0
 	var stuck := []
 	var double_close := []
