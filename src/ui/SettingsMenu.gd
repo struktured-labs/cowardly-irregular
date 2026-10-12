@@ -1638,7 +1638,8 @@ func _get_llm_status_subtitle() -> String:
 	# single "UNREACHABLE" line sent the player to wait instead of to the key field.
 	var every: int = int(info.get("probe_interval_sec", 30))
 	var code: int = int(info.get("probe_code", 0))
-	match str(info.get("kind", "unreachable")):
+	# Default "" on purpose: an absent key is UNKNOWN, not a diagnosis.
+	match str(info.get("kind", "")):
 		"key_rejected":
 			return "KEY REJECTED (HTTP %d) — server is up. Fix it in Configure BYOK; retrying will not." % code
 		"not_found":
@@ -1647,8 +1648,11 @@ func _get_llm_status_subtitle() -> String:
 			return "RATE LIMITED (429) — clears on its own; retrying every %ds." % every
 		"http_error":
 			return "SERVER ERROR (HTTP %d) on %s — retrying every %ds." % [code, model, every]
-		_:
+		"unreachable":
 			return "UNREACHABLE (%s) — retrying every %ds. Select to re-check now." % [model, every]
+		_:
+			# Says so rather than borrowing UNREACHABLE's retry promise, and names the token so whoever added it knows where to add a message.
+			return "UNAVAILABLE (%s) — reason '%s' is one this screen does not know; HTTP %d. Select to re-check." % [model, str(info.get("kind", "")), code]
 
 
 ## "Test connection" — force an immediate probe, then refresh the row.
