@@ -2794,7 +2794,12 @@ func _import_scripts() -> void:
 		var data = ScriptShareManager.import_file(filename)
 		if data.is_empty():
 			refused += 1
-			_log_message("[color=yellow]%s could not be read — not valid export JSON.[/color]" % filename)
+			## "not valid export JSON" was asserted, not known: `import_file` refuses for five
+			## reasons and only one of them is bad JSON — a file that vanished since
+			## `list_exports()` ran, and a well-formed .json with no 'type'/'version' header,
+			## both read as a syntax error here. It records the reason now, so say that instead
+			## of guessing, exactly as the four other refusals in this loop already do.
+			_log_message("[color=yellow]%s could not be read%s[/color]" % [filename, _refusal_suffix()])
 			continue
 		match data.get("type", ""):
 			"autobattle_bundle":
