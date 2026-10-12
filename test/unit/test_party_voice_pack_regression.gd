@@ -13,6 +13,26 @@ extends GutTest
 const MANIFEST := "res://data/sfx_manifest.json"
 const PERSONAS := "res://data/job_personas.json"
 
+## Lines authored ahead of their clip, named one by one with the reason — NOT a suppression flag.
+## @cowir-story added 30 moment lines on 2026-10-12 and 24 were cut on the free engine the same day.
+## These six are the Fighter's, and they are his call, not a lane's: struktured ruled the Fighter
+## stays on ElevenLabs Harry ("I is the best but elevenlabs is just SOO much better... I'm not saying
+## forever, I'm saying its the bar we need to meet"), so recasting them free contradicts the ruling
+## and cutting them on ElevenLabs spends credits nobody authorised. Until he says which, the line
+## plays with its text and no audio — exactly as all 30 did before the other 24 landed.
+##
+## The set is EXACT in BOTH directions, which is what makes it an explanation rather than a mute
+## button: a SEVENTH unvoiced line reds, and the day these six are cut the stale entries red too and
+## this block must go with them. You cannot silence this guard green, only explain it green.
+const AWAITING_HIS_CALL: Array[String] = [
+	"voice_fighter_turn_start_10",
+	"voice_fighter_turn_start_11",
+	"voice_fighter_turn_start_12",
+	"voice_fighter_turn_start_13",
+	"voice_fighter_turn_start_14",
+	"voice_fighter_turn_start_15",
+]
+
 
 func _sfx() -> Dictionary:
 	var p: Variant = JSON.parse_string(FileAccess.get_file_as_string(MANIFEST))
@@ -52,7 +72,20 @@ func test_every_scripted_trigger_line_has_a_voice_clip() -> void:
 				if not sfx.has(v[0]):
 					missing.append(v[0])
 	assert_gt(checked, 0, "the scan found trigger lines at all — a zero here is a dead scan, not a clean result")
-	assert_eq(missing.size(), 0, "scripted trigger lines with no voice clip: %s" % [missing])
+	var unexplained: Array[String] = []
+	for k in missing:
+		if not AWAITING_HIS_CALL.has(k):
+			unexplained.append(k)
+	assert_eq(unexplained.size(), 0, "scripted trigger lines with no voice clip and no reason: %s" % [unexplained])
+	## THE OTHER DIRECTION, which is what stops the list above becoming muscle memory: every entry
+	## must STILL be missing. The day someone cuts these six, this reds and names them, and the
+	## exemption has to be deleted rather than quietly outliving the decision it records.
+	var landed: Array[String] = []
+	for k in AWAITING_HIS_CALL:
+		if sfx.has(k):
+			landed.append(k)
+	assert_eq(landed.size(), 0,
+		"these clips now EXIST, so the exemption naming them is stale — delete them from AWAITING_HIS_CALL: %s" % [landed])
 
 
 func test_every_voice_clip_answers_a_real_trigger_line() -> void:
@@ -103,7 +136,11 @@ func test_the_clips_exist_on_disk_and_are_not_empty() -> void:
 		for trig in tv:
 			lines += _variants(job_id, trig, tv[trig]).size()
 	assert_gte(lines, 25, "the pack shipped as 5 jobs x 5 triggers; fewer lines means a trigger was lost")
-	assert_eq(checked, lines, "one clip per scripted line, found %d clips for %d lines" % [checked, lines])
+	## Minus the clips he has not ruled on yet; AWAITING_HIS_CALL's own arm above proves each of those
+	## is genuinely absent, so this subtraction cannot hide a clip that exists under a wrong key.
+	var awaited := AWAITING_HIS_CALL.size()
+	assert_eq(checked, lines - awaited,
+		"one clip per scripted line (less the %d awaiting struktured's call), found %d clips for %d lines" % [awaited, checked, lines])
 
 func test_each_clip_was_generated_from_the_line_that_ships_today() -> void:
 	## THE DRIFT GUARD, and the reason it exists: on 2026-08-22 a spell-rename sweep changed

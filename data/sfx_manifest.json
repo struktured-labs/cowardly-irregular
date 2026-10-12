@@ -7742,6 +7742,222 @@
       "voice_gender": "female",
       "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
       "seed": 1946542462
+    },
+    "voice_cleric_turn_start_50": {
+      "description": "Cleric party voice line — turn start (variant 50)",
+      "file": "assets/audio/sfx/voice_cleric_turn_start_50.ogg",
+      "source_sha": "fc055c8de63fb736",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 1826987129
+    },
+    "voice_cleric_turn_start_51": {
+      "description": "Cleric party voice line — turn start (variant 51)",
+      "file": "assets/audio/sfx/voice_cleric_turn_start_51.ogg",
+      "source_sha": "139f2aa77e14f33b",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 1587833441
+    },
+    "voice_cleric_turn_start_52": {
+      "description": "Cleric party voice line — turn start (variant 52)",
+      "file": "assets/audio/sfx/voice_cleric_turn_start_52.ogg",
+      "source_sha": "3ae23af9c830dc2e",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 1080835058
+    },
+    "voice_cleric_turn_start_53": {
+      "description": "Cleric party voice line — turn start (variant 53)",
+      "file": "assets/audio/sfx/voice_cleric_turn_start_53.ogg",
+      "source_sha": "4ad1fbc9b718771b",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 1069693418
+    },
+    "voice_cleric_turn_start_54": {
+      "description": "Cleric party voice line — turn start (variant 54)",
+      "file": "assets/audio/sfx/voice_cleric_turn_start_54.ogg",
+      "source_sha": "822e7ca3a087fd5f",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 1467140585
+    },
+    "voice_cleric_turn_start_55": {
+      "description": "Cleric party voice line — turn start (variant 55)",
+      "file": "assets/audio/sfx/voice_cleric_turn_start_55.ogg",
+      "source_sha": "78b4b8e10b0d043a",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 1903347690
+    },
+    "voice_mage_turn_start_50": {
+      "description": "Mage party voice line — turn start (variant 50)",
+      "file": "assets/audio/sfx/voice_mage_turn_start_50.ogg",
+      "source_sha": "478cfd093580d9e1",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 449793859
+    },
+    "voice_mage_turn_start_51": {
+      "description": "Mage party voice line — turn start (variant 51)",
+      "file": "assets/audio/sfx/voice_mage_turn_start_51.ogg",
+      "source_sha": "4b12d7903c61f8fd",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 240760682
+    },
+    "voice_mage_turn_start_52": {
+      "description": "Mage party voice line — turn start (variant 52)",
+      "file": "assets/audio/sfx/voice_mage_turn_start_52.ogg",
+      "source_sha": "6eceafa400012e56",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 6566114
+    },
+    "voice_mage_turn_start_53": {
+      "description": "Mage party voice line — turn start (variant 53)",
+      "file": "assets/audio/sfx/voice_mage_turn_start_53.ogg",
+      "source_sha": "bb8296ae0e5ff356",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 1853749989
+    },
+    "voice_mage_turn_start_54": {
+      "description": "Mage party voice line — turn start (variant 54)",
+      "file": "assets/audio/sfx/voice_mage_turn_start_54.ogg",
+      "source_sha": "e47e392a9d7c6091",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 1215626542
+    },
+    "voice_mage_turn_start_55": {
+      "description": "Mage party voice line — turn start (variant 55)",
+      "file": "assets/audio/sfx/voice_mage_turn_start_55.ogg",
+      "source_sha": "09d9744f40e9d992",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 153966921
+    },
+    "voice_rogue_turn_start_50": {
+      "description": "Rogue party voice line — turn start (variant 50)",
+      "file": "assets/audio/sfx/voice_rogue_turn_start_50.ogg",
+      "source_sha": "ee09cc70d6d90ad0",
+      "voice": "Chatterbox clone of LibriTTS-R speaker 8224 (CC BY 4.0), reference +1.5 st, voice_refs/rogue.wav",
+      "voice_gender": "ambiguous",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.55 cfg 0.4",
+      "seed": 1524883610
+    },
+    "voice_rogue_turn_start_51": {
+      "description": "Rogue party voice line — turn start (variant 51)",
+      "file": "assets/audio/sfx/voice_rogue_turn_start_51.ogg",
+      "source_sha": "d74e010638984dbd",
+      "voice": "Chatterbox clone of LibriTTS-R speaker 8224 (CC BY 4.0), reference +1.5 st, voice_refs/rogue.wav",
+      "voice_gender": "ambiguous",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.55 cfg 0.4",
+      "seed": 357202177
+    },
+    "voice_rogue_turn_start_52": {
+      "description": "Rogue party voice line — turn start (variant 52)",
+      "file": "assets/audio/sfx/voice_rogue_turn_start_52.ogg",
+      "source_sha": "8bb594611b9e2a17",
+      "voice": "Chatterbox clone of LibriTTS-R speaker 8224 (CC BY 4.0), reference +1.5 st, voice_refs/rogue.wav",
+      "voice_gender": "ambiguous",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.55 cfg 0.4",
+      "seed": 824163428
+    },
+    "voice_rogue_turn_start_53": {
+      "description": "Rogue party voice line — turn start (variant 53)",
+      "file": "assets/audio/sfx/voice_rogue_turn_start_53.ogg",
+      "source_sha": "5c74445b200b5ebd",
+      "voice": "Chatterbox clone of LibriTTS-R speaker 8224 (CC BY 4.0), reference +1.5 st, voice_refs/rogue.wav",
+      "voice_gender": "ambiguous",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.55 cfg 0.4",
+      "seed": 339785042
+    },
+    "voice_rogue_turn_start_54": {
+      "description": "Rogue party voice line — turn start (variant 54)",
+      "file": "assets/audio/sfx/voice_rogue_turn_start_54.ogg",
+      "source_sha": "abb997df988cb026",
+      "voice": "Chatterbox clone of LibriTTS-R speaker 8224 (CC BY 4.0), reference +1.5 st, voice_refs/rogue.wav",
+      "voice_gender": "ambiguous",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.55 cfg 0.4",
+      "seed": 289234908
+    },
+    "voice_rogue_turn_start_55": {
+      "description": "Rogue party voice line — turn start (variant 55)",
+      "file": "assets/audio/sfx/voice_rogue_turn_start_55.ogg",
+      "source_sha": "f905d304f7377a0a",
+      "voice": "Chatterbox clone of LibriTTS-R speaker 8224 (CC BY 4.0), reference +1.5 st, voice_refs/rogue.wav",
+      "voice_gender": "ambiguous",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.55 cfg 0.4",
+      "seed": 465065807
+    },
+    "voice_bard_turn_start_50": {
+      "description": "Bard party voice line — turn start (variant 50)",
+      "file": "assets/audio/sfx/voice_bard_turn_start_50.ogg",
+      "source_sha": "0cc079989b5540ca",
+      "voice": "Chatterbox clone of LibriTTS-R 3575 (+2.5 st) blended with 4507 (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 907078663
+    },
+    "voice_bard_turn_start_51": {
+      "description": "Bard party voice line — turn start (variant 51)",
+      "file": "assets/audio/sfx/voice_bard_turn_start_51.ogg",
+      "source_sha": "3d4bcdb3a7ec6ec4",
+      "voice": "Chatterbox clone of LibriTTS-R 3575 (+2.5 st) blended with 4507 (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 2025075170
+    },
+    "voice_bard_turn_start_52": {
+      "description": "Bard party voice line — turn start (variant 52)",
+      "file": "assets/audio/sfx/voice_bard_turn_start_52.ogg",
+      "source_sha": "7ef854f60273d846",
+      "voice": "Chatterbox clone of LibriTTS-R 3575 (+2.5 st) blended with 4507 (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 787390041
+    },
+    "voice_bard_turn_start_53": {
+      "description": "Bard party voice line — turn start (variant 53)",
+      "file": "assets/audio/sfx/voice_bard_turn_start_53.ogg",
+      "source_sha": "48000b012985b6ec",
+      "voice": "Chatterbox clone of LibriTTS-R 3575 (+2.5 st) blended with 4507 (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 1769963532
+    },
+    "voice_bard_turn_start_54": {
+      "description": "Bard party voice line — turn start (variant 54)",
+      "file": "assets/audio/sfx/voice_bard_turn_start_54.ogg",
+      "source_sha": "b893cc03699f563e",
+      "voice": "Chatterbox clone of LibriTTS-R 3575 (+2.5 st) blended with 4507 (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 168804498
+    },
+    "voice_bard_turn_start_55": {
+      "description": "Bard party voice line — turn start (variant 55)",
+      "file": "assets/audio/sfx/voice_bard_turn_start_55.ogg",
+      "source_sha": "76f3104c9fc58022",
+      "voice": "Chatterbox clone of LibriTTS-R 3575 (+2.5 st) blended with 4507 (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 1643533239
     }
   }
 }

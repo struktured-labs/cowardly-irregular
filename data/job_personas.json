@@ -27,6 +27,30 @@
 					{
 						"line": "Bard's humming again. Noted. Ignored.",
 						"when": "ally_alive:bard"
+					},
+					{
+						"line": "Someone's down. Close the gap.",
+						"when": "ally_down"
+					},
+					{
+						"line": "Get them up. I'll hold here.",
+						"when": "ally_down"
+					},
+					{
+						"line": "One of ours is down. That ends now.",
+						"when": "ally_down"
+					},
+					{
+						"line": "Everyone's down. Then it's me.",
+						"when": "last_standing"
+					},
+					{
+						"line": "Alone. Fine. Still standing.",
+						"when": "last_standing"
+					},
+					{
+						"line": "Just me left. Still enough.",
+						"when": "last_standing"
 					}
 				],
 				"low_hp": [
@@ -162,7 +186,31 @@
 					"Firm hands. Gentle work.",
 					"Watch the numbers. They tell the truth.",
 					"Mercy is a stat. Let's spend it.",
-					"Begin."
+					"Begin.",
+					{
+						"line": "A verse cut short. I will finish it.",
+						"when": "ally_down"
+					},
+					{
+						"line": "Down is not gone. Hold on to me.",
+						"when": "ally_down"
+					},
+					{
+						"line": "The Loop is not taking that one today.",
+						"when": "ally_down"
+					},
+					{
+						"line": "The last voice in the verse. So be it.",
+						"when": "last_standing"
+					},
+					{
+						"line": "Alone with the Loop. It has seen worse.",
+						"when": "last_standing"
+					},
+					{
+						"line": "All of them down. I keep counting.",
+						"when": "last_standing"
+					}
 				],
 				"low_hp": [
 					"My HP bar is asking impolite questions of the engine. I will answer it with a long breath.",
@@ -337,7 +385,31 @@
 					"Tick. My move.",
 					"Documenting this for posterity. Watch.",
 					"This will be educational. For them.",
-					"Calculating. Calculating. Right."
+					"Calculating. Calculating. Right.",
+					{
+						"line": "Casualty logged. Recalculating priorities.",
+						"when": "ally_down"
+					},
+					{
+						"line": "That was not in the model. Correcting.",
+						"when": "ally_down"
+					},
+					{
+						"line": "One down. The math just got personal.",
+						"when": "ally_down"
+					},
+					{
+						"line": "Sample size: one. Me.",
+						"when": "last_standing"
+					},
+					{
+						"line": "Alone. Statistically grim. Proceeding.",
+						"when": "last_standing"
+					},
+					{
+						"line": "No variables left but me.",
+						"when": "last_standing"
+					}
 				],
 				"low_hp": [
 					{
@@ -512,7 +584,31 @@
 					"Rules are suggestions. I've read them.",
 					"Pick a card. Any card. Wrong.",
 					"One clean job. Then snacks.",
-					"Business as usual. Crime, mostly."
+					"Business as usual. Crime, mostly.",
+					{
+						"line": "Someone's on the floor. Rude.",
+						"when": "ally_down"
+					},
+					{
+						"line": "Heist has gone sideways. Fixing it.",
+						"when": "ally_down"
+					},
+					{
+						"line": "Down one. I work better angry.",
+						"when": "ally_down"
+					},
+					{
+						"line": "Just me. Classic heist, then.",
+						"when": "last_standing"
+					},
+					{
+						"line": "Everyone is down. Guess I improvise.",
+						"when": "last_standing"
+					},
+					{
+						"line": "Alone. Fine. I prefer the room quiet.",
+						"when": "last_standing"
+					}
 				],
 				"low_hp": [
 					"Twenty-five percent is just dramatic pacing. Relax.",
@@ -681,7 +777,31 @@
 					"Here comes the hook.",
 					"Every hero needs a theme. Here's mine.",
 					"Strings sing. Enemies wince.",
-					"Let's give the critics something to write about."
+					"Let's give the critics something to write about.",
+					{
+						"line": "That is not the song I was writing!",
+						"when": "ally_down"
+					},
+					{
+						"line": "Down but not out. Hold the note.",
+						"when": "ally_down"
+					},
+					{
+						"line": "Somebody has missed their cue. Fix it!",
+						"when": "ally_down"
+					},
+					{
+						"line": "Solo act, then. Unplanned.",
+						"when": "last_standing"
+					},
+					{
+						"line": "Everyone is down. The encore is mine.",
+						"when": "last_standing"
+					},
+					{
+						"line": "Last one standing. Dramatic. Typical.",
+						"when": "last_standing"
+					}
 				],
 				"low_hp": [
 					{
