@@ -21,9 +21,10 @@ const CLAIM_TO_ACTION := {
 
 ## Claims with no input action at all — the button is compared raw in an `if`, so nothing
 ## can resolve the label against a binding. Speed is checked against JOY_BUTTON_Y directly
-## in BattleScene._unhandled_input. Listed so a NEW unbacked claim fails, and so this entry
-## goes stale loudly if Speed ever gains an action.
-const CLAIMS_WITHOUT_ACTIONS := ["Speed"]
+## in BattleScene._unhandled_input; Repeat the same way against JOY_BUTTON_X (the WEST face)
+## and KEY_Y, both verified in test_battle_hint_bar_truthfulness_regression. Listed so a NEW
+## unbacked claim fails, and so an entry goes stale loudly if either ever gains an action.
+const CLAIMS_WITHOUT_ACTIONS := ["Repeat", "Speed"]
 
 
 func _consts(path: String) -> Dictionary:

@@ -1965,13 +1965,26 @@ func _apply_command_memory() -> void:
 ## game targets — plus the ` key. BattleScene.gd carries the same string; keep them in step.
 ## Rules (struktured 2026-10-03): Auto Rules is a BUTTON, not a menu row — Start/Plus/Options in
 ## battle opens the rule editor (ui_menu), F5 on keyboard (a raw key, no action, like Speed).
-const HINT_DEFAULT_TEXT := "[L] Defer  ·  [R] Advance  ·  [X] Speed  ·  [Select/Back/Share] Auto  ·  [Start/Plus/Options] Rules  ·  [L3/L-Stick] Log"
-const HINT_KEYBOARD_TEXT := "[Q] Defer  ·  [W] Advance  ·  [`] Speed  ·  [Tab] Auto  ·  [F5] Rules  ·  [L] Log"
+const HINT_DEFAULT_TEXT := "[L] Defer  ·  [R] Advance  ·  [X] Speed  ·  [Y] Repeat  ·  [Select/Back/Share] Auto  ·  [Start/Plus/Options] Rules  ·  [L3/L-Stick] Log"
+const HINT_KEYBOARD_TEXT := "[Q] Defer  ·  [W] Advance  ·  [`] Speed  ·  [Y] Repeat  ·  [Tab] Auto  ·  [F5] Rules  ·  [L] Log"
 
 
 ## The bar is on screen for the whole game and named Nintendo face letters unconditionally. Speed
 ## is raw JOY_BUTTON_Y (index 3) — Ⓧ on Nintendo, Ⓨ on Xbox, △ on PlayStation — so a PlayStation
 ## player reading "[X] Speed" presses ✕, which is Cancel. Derived per family; const is the fallback.
+## REPEAT last turn's actions: raw JOY_BUTTON_X (the WEST face) and the Y key, no InputMap action —
+## the same shape as speed_hint below, and the same reason it needs its own namer. Advertised in the
+## bar since 2026-10-12 (struktured): it is the cheapest control in the battle and it appeared only
+## on the How to Play screen, so a player who never opened that screen never learned it existed.
+static func repeat_hint() -> String:
+	if Input.get_connected_joypads().is_empty():
+		return "Y"
+	if not InputProfileManager:
+		return "Y"
+	var g: String = InputProfileManager.face_glyph_for_index(JOY_BUTTON_X)
+	return "Y" if g == "?" or g == "" else g
+
+
 ## The Speed token alone, for callers that need it outside the bar. Speed is raw JOY_BUTTON_Y with
 ## no InputMap action, so hint_for_action cannot reach it — this is the one place that knows.
 static func speed_hint() -> String:
@@ -1994,9 +2007,9 @@ static func _keyboard_hint_text() -> String:
 	var log_key: String = InputProfileManager.hint_for_action("battle_open_log")
 	if defer == "" or adv == "" or auto == "" or log_key == "":
 		return HINT_KEYBOARD_TEXT
-	# F5 is a raw keycode with no InputMap action (GameLoop checks event.keycode directly), same
-	# as the backtick Speed key above — literal, not derived, because there is nothing to derive.
-	return "[%s] Defer  ·  [%s] Advance  ·  [`] Speed  ·  [%s] Auto  ·  [F5] Rules  ·  [%s] Log" % [defer, adv, auto, log_key]
+	# F5, the backtick and the Y of Repeat are raw keycodes with no InputMap action (the handlers
+	# check event.keycode directly) — literal, not derived, because there is nothing to derive.
+	return "[%s] Defer  ·  [%s] Advance  ·  [`] Speed  ·  [Y] Repeat  ·  [%s] Auto  ·  [F5] Rules  ·  [%s] Log" % [defer, adv, auto, log_key]
 
 
 static func hint_text() -> String:
@@ -2023,7 +2036,8 @@ static func hint_text() -> String:
 	var log_btn: String = InputProfileManager.hint_for_action("battle_open_log")
 	if defer == "" or adv == "" or auto == "" or rules == "" or log_btn == "":
 		return HINT_DEFAULT_TEXT
-	return "%s Defer  ·  %s Advance  ·  %s Speed  ·  %s Auto  ·  %s Rules  ·  %s Log" % [defer, adv, speed, auto, rules, log_btn]
+	return "%s Defer  ·  %s Advance  ·  %s Speed  ·  %s Repeat  ·  %s Auto  ·  %s Rules  ·  %s Log" % [
+		defer, adv, speed, repeat_hint(), auto, rules, log_btn]
 
 var _hint_label_cache: Label = null
 var _hint_showing_reason: bool = false
