@@ -1,5 +1,5 @@
 {
-  "description": "Environmental examine texts for props the player can interact with. 29 entries. `scene` is a REAL map id as TeleportMenu.MAP_IDS and GameLoop list them -- it was authored against the MUSIC BED namespace (village_harmonia) and re-keyed 2026-10-12, because a consumer that translated bed names to map ids would be a second source of truth for map identity. Each entry has a prop type, a display name, and the text shown on examine.",
+  "description": "Environmental examine texts for props the player can interact with. 35 entries. `scene` is a REAL map id as TeleportMenu.MAP_IDS and GameLoop list them -- it was authored against the MUSIC BED namespace (village_harmonia) and re-keyed 2026-10-12, because a consumer that translated bed names to map ids would be a second source of truth for map identity. Each entry has a prop type, a display name, and the text shown on examine.",
   "schema_version": 2,
   "examines": {
     "harmonia_well": {
@@ -204,6 +204,48 @@
       "prop": "lantern_post",
       "name": "The Lantern Ledger",
       "text": "A slate hung from the lantern post, tallying who owes light to whom. Most marks are paid off. One line has been owed so long the chalk has gone into the stone. Nobody has rubbed it out, which tells you the debt is still considered open."
+    },
+    "brasston_redundancy_index": {
+      "world": 3,
+      "scene": "brasston_village",
+      "prop": "card_catalogue",
+      "name": "The Redundancy Index",
+      "text": "A card catalogue listing every backup the archive holds, and the backups of those. Item one is the index itself. Item two is a backup of item one. The drawer is full and the entries are all accounted for, which is the most worrying thing about it."
+    },
+    "ironhaven_strike_ledger": {
+      "world": 3,
+      "scene": "ironhaven_village",
+      "prop": "ledger",
+      "name": "The Strike Registry",
+      "text": "STRIKE RECORD: every entry carries a start date and a resolution date. In each one, the resolution comes first. A later hand has added a column headed WHY THIS IS FINE. The column is ruled but empty, and the ruling was done carefully."
+    },
+    "maple_heights_appendix_form": {
+      "world": 2,
+      "scene": "maple_heights_village",
+      "prop": "form_box",
+      "name": "Appendix C Request Form",
+      "text": "FORM 14: To request a copy of Appendix C, state which section of Appendix C you are citing. Attach the relevant extract. A pen is chained to the box. The chain is longer than the form requires, as though someone expected people to stand here a while."
+    },
+    "rivet_row_incident_numbers": {
+      "world": 4,
+      "scene": "rivet_row_village",
+      "prop": "notice_board",
+      "name": "The Incident Board",
+      "text": "INCIDENTS THIS QUARTER: 41, 42, 44, 45, 49. A note at the bottom reads: gaps are not incidents. A second note, in different handwriting, reads: gaps are where the incidents go. Neither note has been taken down."
+    },
+    "sandrift_rain_tally": {
+      "world": 1,
+      "scene": "sandrift_village",
+      "prop": "ledger",
+      "name": "The Rain Ledger",
+      "text": "Three columns: rain that fell, rain that was promised, rain that was promised and did not come. The third column runs down the page and onto the back. The second column is in a hand that presses hard. The first is barely there at all."
+    },
+    "vertex_threshold_tally": {
+      "world": 6,
+      "scene": "vertex_village",
+      "prop": "sign",
+      "name": "The Turning Count",
+      "text": "A sign set before the threshold: YOU MAY STILL GO BACK. Beneath it, a tally of those who did. The tally reads none. The wood under the tally has been scraped thin, the way a surface gets when a number is rewritten often enough."
     }
   }
 }
