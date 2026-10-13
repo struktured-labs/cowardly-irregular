@@ -418,6 +418,9 @@ func _resolve_archetype() -> String:
 ## Roles that only BORROW another role's walk sheet and have a portrait drawn for the role itself: the face is theirs.
 const ROLE_KEEPS_ITS_OWN_FACE := ["maid", "knight", "pilgrim", "hooded_mage", "nervous", "herbalist", "apprentice", "bartender", "adventurer"]
 
+## A face that is not the sprite's: a shop's pictured keeper walks as a merchant and speaks as themselves.
+var portrait_override: String = ""
+
 ## Portrait key for dialogue — the ARCHETYPE, not the npc_type (struktured 2026-07-31).
 ## Phil the Lost is _create_npc(..., "villager") with sprite_archetype "phil": his sprite
 ## was Phil and his portrait was "villager", so phil.png never rendered once in the
@@ -425,6 +428,8 @@ const ROLE_KEEPS_ITS_OWN_FACE := ["maid", "knight", "pilgrim", "hooded_mage", "n
 ## _resolve_archetype makes the face match the sprite the player is looking at,
 ## including the name-hash pick for plain villagers.
 func _portrait_key() -> String:
+	if portrait_override != "":
+		return portrait_override
 	if sprite_archetype == "" and npc_type in ROLE_KEEPS_ITS_OWN_FACE:
 		return npc_type
 	var key: String = _resolve_archetype()

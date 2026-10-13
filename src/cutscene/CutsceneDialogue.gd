@@ -1389,6 +1389,11 @@ const PORTRAIT_SPRITES = {
 	# `villager` is the npc_type of 55 placed NPCs and had no art — Phil, Young Pip, Milo,
 	# Flora, Sprocket and 50 more all rendered the generic shopkeeper procedural.
 	"villager": "res://assets/sprites/portraits/npcs/villager.png",
+	# Harmonia's four pictured keepers, so the NPC behind the counter speaks with the face the wares screen shows (ShopScene.PICTURED_KEEPERS).
+	"keeper_willow": "res://assets/sprites/portraits/keepers/willow.png",
+	"keeper_mortimer": "res://assets/sprites/portraits/keepers/mortimer.png",
+	"keeper_lenora": "res://assets/sprites/portraits/keepers/lenora.png",
+	"keeper_brutus": "res://assets/sprites/portraits/keepers/brutus.png",
 	# The artist's own villagers: busts cut from HIS walk frames (tools/derive_walker_portrait.py), not the generic generated face.
 	"rotha": "res://assets/sprites/portraits/npcs/rotha.png",
 	"roy": "res://assets/sprites/portraits/npcs/roy.png",

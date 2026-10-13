@@ -1373,6 +1373,8 @@ func _setup_npcs() -> void:
 		if child.get("npc_name") == keeper_name:
 			keeper_npc = child
 			break
+	if keeper_npc:
+		keeper_npc.portrait_override = load("res://src/exploration/ShopScene.gd").pictured_keeper_key(shop_type, keeper_name)
 	if keeper_npc and keeper_npc.has_signal("dialogue_ended"):
 		keeper_npc.dialogue_ended.connect(func(_n): _on_browse_request())
 
@@ -1651,6 +1653,7 @@ func _open_wares() -> void:
 
 	var shop_scene = ShopSceneScript.new()
 	var keeper_custom = ShopkeeperDataScript.get_shopkeeper_for_type(shop_type)
+	shop_scene.keeper_name = keeper_name
 	shop_scene.setup(shop_type, shop_name, _get_inventory(), keeper_custom)
 
 	if player and player.has_method("set_can_move"):
