@@ -39,6 +39,9 @@ func _ready() -> void:
 	_setup_tilemap()
 	_setup_decorations()
 	_setup_npcs()
+	## Before the sweep by design: an examine is placed like an NPC, so the furniture/wall sweep
+	## relocates it on the same code path rather than through a second resolver of its own.
+	_place_authored_examines()
 	_validate_placements()
 	_setup_transitions()
 	_setup_player()
@@ -351,3 +354,119 @@ func _maybe_apply_night_modulation() -> void:
 ## TavernInterior) all share the same code path (struktured msg 2764).
 func _validate_placements() -> void:
 	InteriorPlacementSweep.sweep(self, npcs, decorations, _get_layout(), _get_area_id())
+
+
+## ---- Authored examines (data/examine_texts.json) ----
+
+## Villages, Castle Harmonia, AssemblyCore and the W6 overworld each read this pack; interiors did
+## not, so a row keyed to a room could be authored and reach nobody. The contract is BaseVillage's:
+## `scene` == the interior's own `_get_area_id()`, an offset table, and a `push_warning` plus a
+## guard when a row has no offset.
+##
+## 🔑 OFFSETS FROM `spawn_points["entrance"]` — THE DOOR THE PLAYER ACTUALLY WALKS THROUGH, which in
+## an interior is an AUTHORED ABSOLUTE rather than a derived one. `_init_spawn_points` below computes
+## `(width / 2, height - 2)`, and I first argued the anchor was safe because of that; @cowir-story
+## measured that ALL 27 rooms override it with a hardcoded cell, so the derivation is reached by none
+## of them — chapel 18x13 derives (9,11) and authors (8,11), library (10,12) vs (9,12). So the honest
+## reason is narrower: an offset is relative to the door, which is the one cell a room's author is
+## certainly thinking about, and the entrance moves with any re-author of the door. It is NOT
+## immune to a re-authored grid that leaves the spawn behind — `test_an_interior_reads_its_own_
+## examines` pins every room's entrance as walkable in its own layout, because that is the failure
+## this anchor can actually have.
+const _EXAMINE_OFFSETS := {}
+
+const _EXAMINE_PACK := "res://data/examine_texts.json"
+
+## ⛔ `BaseInterior._get_area_id()` RETURNS THIS, so a room that forgets to override it would match
+## every row keyed to the default and silently serve another room's prose — the two-sources-one-
+## surface class. It is also the one interior id outside the 63-id union
+## `test_an_examine_names_a_real_map` judges against, so no legitimate row can carry it.
+const _EXAMINE_SCENE_DEFAULT := "interior"
+
+
+## ⚠️ THE TABLE IS REACHED THROUGH THIS, NOT READ DIRECTLY, so a subclass naming its own offsets is
+## actually consulted. BaseVillage gates on `_EXAMINE_OFFSETS.has(id)` while its comment invites
+## subclasses to override `_examine_offset_for` — a const resolves in the base scope, so that
+## override can never be reached for a row the base table lacks. Harmless there today (every
+## shipped row is in the base table) and reported, not fixed from here.
+func _examine_offsets() -> Dictionary:
+	return _EXAMINE_OFFSETS
+
+
+func _examine_offset_for(examine_id: String) -> Vector2i:
+	return _examine_offsets().get(examine_id, Vector2i.ZERO)
+
+
+## Only this room's rows, so a pack-wide key change cannot pull another scene's text in.
+func _load_examine_pack() -> Dictionary:
+	if not FileAccess.file_exists(_EXAMINE_PACK):
+		push_warning("[%s] %s is missing — the room keeps its other props" % [_get_area_id(), _EXAMINE_PACK])
+		return {}
+	var parsed = JSON.parse_string(FileAccess.get_file_as_string(_EXAMINE_PACK))
+	if not (parsed is Dictionary):
+		push_warning("[%s] %s did not parse" % [_get_area_id(), _EXAMINE_PACK])
+		return {}
+	return _rows_for_this_scene((parsed as Dictionary).get("examines", {}))
+
+
+## ⛔ SEPARATE FROM THE FILE READ BECAUSE THE DEFAULT-ID REFUSAL IS OTHERWISE UNTESTABLE, and I only
+## found that by mutating it: deleting the refusal left the arm GREEN, because no shipped row carries
+## `scene: "interior"` — `test_an_examine_names_a_real_map` forbids it — so `{}` came from the
+## ordinary filter and said nothing about the refusal. A guard whose only failing input cannot exist
+## in the data is not a guard. Driving THIS with a synthetic row makes it one.
+func _rows_for_this_scene(all: Dictionary) -> Dictionary:
+	var scene_id := _get_area_id()
+	if scene_id == _EXAMINE_SCENE_DEFAULT:
+		if not all.is_empty():
+			push_warning("[%s] a room left _get_area_id() at the default, so it claims no rows" % scene_id)
+		return {}
+	var mine: Dictionary = {}
+	for k in all.keys():
+		var e = all[k]
+		if e is Dictionary and str((e as Dictionary).get("scene", "")) == scene_id:
+			mine[str(k)] = e
+	return mine
+
+
+## Cell-CENTRED, and that is load-bearing rather than tidy: a 28px readable parked on a cell CORNER
+## sits 24px off every axis-aligned probe, so it draws and cannot be pressed (BaseVillage:869).
+func _examine_px(cell: Vector2i) -> Vector2:
+	return Vector2(cell.x * TILE_SIZE + TILE_SIZE / 2, cell.y * TILE_SIZE + TILE_SIZE / 2)
+
+
+func _place_authored_examines() -> void:
+	_place_examines(_load_examine_pack())
+
+
+## Separate from the file read so a guard can drive it with a synthetic pack — the shipped data has
+## no interior rows yet, and a guard that waits for content is a guard that is never exercised.
+## Returns the number placed. A row with no text or no offset is SKIPPED WITH A WARNING rather than
+## placed: a readable with no text advertises a read it cannot give, which is the mute-interactable
+## class, and a row with no offset has no cell to be at.
+func _place_examines(authored: Dictionary) -> int:
+	if authored.is_empty() or npcs == null:
+		return 0
+	var scene_id := _get_area_id()
+	var offsets: Dictionary = _examine_offsets()
+	var entrance: Vector2 = spawn_points.get("entrance", Vector2(_get_map_width() / 2, _get_map_height() - 2))
+	var placed := 0
+	for examine_id in authored.keys():
+		var entry = authored[examine_id]
+		if not (entry is Dictionary):
+			push_warning("[%s] examine '%s' is not a row" % [scene_id, examine_id])
+			continue
+		var text: String = str((entry as Dictionary).get("text", ""))
+		if text == "":
+			push_warning("[%s] examine '%s' is authored with no text" % [scene_id, examine_id])
+			continue
+		if not offsets.has(examine_id):
+			push_warning("[%s] examine '%s' has no offset, so it has no cell" % [scene_id, examine_id])
+			continue
+		var cell := Vector2i(entrance) + _examine_offset_for(str(examine_id))
+		var prop := ReadableProp.new()
+		prop.name = "Examine_" + str(examine_id)
+		prop.position = _examine_px(cell)
+		prop.setup(str((entry as Dictionary).get("name", "Examine")), func(): return [text])
+		npcs.add_child(prop)
+		placed += 1
+	return placed
