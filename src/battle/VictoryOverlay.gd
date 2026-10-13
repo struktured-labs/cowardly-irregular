@@ -33,6 +33,9 @@ const CARD_W := 340.0
 ## Room for the level-up line on EVERY card: at 58 a level-up card grew when its line appeared and overlapped the next.
 const CARD_H := 74.0
 const CARD_GAP := 8.0
+## Cards grow with Text Size so the post-tween top line ("Name  +99999 EXP  ★ Lv.11") still fits,
+## but never past what the screen can stack. Set once per build from the party count.
+var _cscale: float = 1.0
 ## Artist party frames display ~315px centred on the slot; a left flourish reaches ~157px past origin (F12 2026-09-20).
 const CARD_SPRITE_GAP := 200.0
 const LOG_CLEAR_X := 190.0
@@ -49,6 +52,46 @@ var _age := 0.0
 var _occupied: Array[Rect2] = []
 
 
+## The Text Size multiplier itself. `TextScale.scaled` rounds to an int, so it is sampled at a
+## large base to keep the ratio exact.
+func _raw_text_scale() -> float:
+	return float(TextScale.scaled(1000)) / 1000.0
+
+
+## How much the cards may grow. Only ever GROWS — at 80% Text Size the cards stay exactly as they
+## are today, so 100% and below are pixel-identical to before this change.
+##
+## The cap is the point of the function: at 200% five cards would need 5*148 + 4*16 = 804px of the
+## 600px the stack has between the y=56 clamp and the bottom strip, so an uncapped scale would push
+## the party's own cards off the screen to fix a text overflow.
+func _fit_card_scale(count: int, vp_y: float) -> float:
+	var want: float = maxf(1.0, _raw_text_scale())
+	if count <= 0:
+		return want
+	var room: float = vp_y - _stack_top() - STRIP_BOTTOM_MARGIN - float(maxi(0, count - 1)) * CARD_GAP
+	var cap: float = room / (float(count) * CARD_H)
+	return clampf(want, 1.0, maxf(1.0, cap))
+
+
+## The first y a card may occupy: below the docked title, and below the loot strip if there is one.
+## Both of those grow with Text Size, which is why this is derived rather than the old literal 150.
+func _stack_top() -> float:
+	var y := 56.0
+	if _title_docked.has_area():
+		y = maxf(y, _title_docked.end.y + CARD_GAP)
+	if _strip_rect.has_area():
+		y = maxf(y, _strip_rect.end.y + CARD_GAP)
+	return y
+
+
+func _cw() -> float:
+	return CARD_W * _cscale
+
+
+func _ch() -> float:
+	return CARD_H * _cscale
+
+
 func occupied_rects() -> Array[Rect2]:
 	return _occupied.duplicate()
 
@@ -57,6 +100,9 @@ func occupied_rects() -> Array[Rect2]:
 var _title_rest := Rect2()
 ## Where the title SETTLES (docked, at 0.55 scale); the loot strip hangs under it.
 var _title_docked := Rect2()
+## Where the loot strip lands. The card stack hangs under THIS, so the column is title -> strip
+## -> cards, each strictly below the last at every text size.
+var _strip_rect := Rect2()
 var _title_clear_at := 0.0
 
 
@@ -82,9 +128,12 @@ func build(results: Dictionary, scene) -> void:
 	backdrop.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(backdrop)
 
+	## Order matters: the strip's rect feeds both the stack's top and the fit cap, so it has to
+	## exist before a single card is placed. Cards were built first before this change, which is
+	## why nothing could keep them clear of it.
 	_build_slam(flourish)
-	_build_cards(results.get("char_results", []), flourish)
 	_build_loot_strip(results, flourish)
+	_build_cards(results.get("char_results", []), flourish)
 	_build_prompt()
 	if BattleManager and BattleManager.last_post_battle_restore_serial == BattleManager.battle_serial:
 		show_restores(BattleManager.last_post_battle_restore)
@@ -389,13 +438,15 @@ func _build_letterbox(vp: Vector2, grade: int, flourish: bool) -> void:
 ## -- Stage 2: character cards ----------------------------------------------
 
 func _build_cards(char_results: Array, flourish: bool) -> void:
+	_cscale = _fit_card_scale(char_results.size(),
+		get_viewport().get_visible_rect().size.y if get_viewport() else 720.0)
 	var vp := get_viewport_rect().size
 	var column := _column_positions(char_results.size(), vp)
 	## The column enters as ONE cascade, top to bottom. Per-card waits let a card clear of the title slam
 	## arrive alone, mid-column, before the ones above it; if any card must wait, they all start together.
 	var start := 0.5
 	for p in column:
-		if _title_rest.has_area() and Rect2(p, Vector2(CARD_W, CARD_H)).intersects(_title_rest):
+		if _title_rest.has_area() and Rect2(p, Vector2(_cw(), _ch())).intersects(_title_rest):
 			start = maxf(start, _title_clear_at)
 	for i in range(char_results.size()):
 		var cr: Dictionary = char_results[i]
@@ -404,7 +455,7 @@ func _build_cards(char_results: Array, flourish: bool) -> void:
 		card.position = column[i]
 		var delay := start + i * 0.12
 		var final_pos := card.position
-		_occupied.append(Rect2(final_pos, Vector2(CARD_W, CARD_H)))
+		_occupied.append(Rect2(final_pos, Vector2(_cw(), _ch())))
 		_snaps.append(func() -> void:
 			if is_instance_valid(card):
 				card.position = final_pos
@@ -422,7 +473,7 @@ func _build_cards(char_results: Array, flourish: bool) -> void:
 
 ## Card hangs LEFT of its sprite (party faces left). CARD_SPRITE_GAP clears the centred 315px flourish.
 func _card_position(i: int, count: int, vp: Vector2) -> Vector2:
-	var y_fallback := vp.y * 0.18 + i * (CARD_H + CARD_GAP)
+	var y_fallback := _stack_top() + i * (_ch() + CARD_GAP)
 	var pos := Vector2(vp.x * 0.42, y_fallback)
 	if _scene and i < _scene.party_sprite_nodes.size():
 		var sprite = _scene.party_sprite_nodes[i]
@@ -435,9 +486,14 @@ func _card_position(i: int, count: int, vp: Vector2) -> Vector2:
 				var home = sprite.get_meta("home_position")
 				if home is Vector2:
 					sp += (home - sprite.position)
-			pos = Vector2(sp.x - CARD_W - CARD_SPRITE_GAP, sp.y - CARD_H / 2.0)
-	pos.x = clampf(pos.x, LOG_CLEAR_X, vp.x - CARD_W - 8.0)
-	pos.y = clampf(pos.y, 56.0, vp.y - STRIP_BOTTOM_MARGIN - CARD_H)
+			pos = Vector2(sp.x - _cw() - CARD_SPRITE_GAP, sp.y - _ch() / 2.0)
+	pos.x = clampf(pos.x, LOG_CLEAR_X, vp.x - _cw() - 8.0)
+	## ⚠️ FLOOR STAYS AT 56, NOT _stack_top(). This function PLACES NOTHING — `_column_positions`
+	## calls it only to average the party's anchored ys into the column's centre. Raising this floor
+	## lifted the topmost sprite's y and dragged that average with it, moving the whole 100% column
+	## down 3px (155 -> 158) for a clamp that keeps no card clear of anything. The floor that does
+	## the work is the one on the column itself.
+	pos.y = clampf(pos.y, 56.0, vp.y - STRIP_BOTTOM_MARGIN - _ch())
 	return pos
 
 
@@ -456,25 +512,25 @@ func _column_positions(count: int, vp: Vector2) -> Array[Vector2]:
 	for p in raw:
 		mid += p.y
 	mid /= maxf(1.0, float(raw.size()))
-	var block_h := count * CARD_H + maxi(0, count - 1) * CARD_GAP
-	var top := mid + CARD_H / 2.0 - block_h / 2.0
+	var block_h := float(count) * _ch() + float(maxi(0, count - 1)) * CARD_GAP
+	var top := mid + _ch() / 2.0 - block_h / 2.0
 	## Never up into the docked title and the loot strip that hangs under it.
-	top = maxf(top, 150.0)
+	top = maxf(top, _stack_top())
 	var out: Array[Vector2] = []
 	for i in range(count):
-		out.append(Vector2(x, clampf(top + i * (CARD_H + CARD_GAP), 56.0, vp.y)))
+		out.append(Vector2(x, clampf(top + i * (_ch() + CARD_GAP), _stack_top(), vp.y)))
 	## Pushed past the bottom: lift the whole column, keeping the spacing.
-	var bottom_limit := vp.y - STRIP_BOTTOM_MARGIN - CARD_H
+	var bottom_limit := vp.y - STRIP_BOTTOM_MARGIN - _ch()
 	if out.size() > 0 and out[out.size() - 1].y > bottom_limit:
 		var lift := out[out.size() - 1].y - bottom_limit
 		for i in range(out.size()):
-			out[i].y = maxf(56.0, out[i].y - lift)
+			out[i].y = maxf(_stack_top(), out[i].y - lift)
 	return out
 
 
 func _make_card(cr: Dictionary) -> PanelContainer:
 	var card := PanelContainer.new()
-	card.custom_minimum_size = Vector2(CARD_W, CARD_H)
+	card.custom_minimum_size = Vector2(_cw(), _ch())
 	card.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color(0.08, 0.06, 0.15, 0.50)
@@ -514,6 +570,14 @@ func _make_card(cr: Dictionary) -> PanelContainer:
 
 	var top := Label.new()
 	top.name = "TopLine"
+	## LAST RESORT, after the growth above. Once the fit cap is measured against the room left
+	## under the loot strip, the capped card at 200% holds the worst authored line with 0px to
+	## spare — so a longer name or a 6-digit award would draw outside it again. Trimming on a WORD
+	## boundary keeps "Scriptweaver  +99999 EXP" readable and drops the tail rather than cutting a
+	## number in half. `clip_text` is what makes the width binding at all: without it the Label's
+	## minimum size is its own content width and the box is only a suggestion.
+	top.clip_text = true
+	top.text_overrun_behavior = TextServer.OVERRUN_TRIM_WORD_ELLIPSIS
 	var alive: bool = cr.get("is_alive", true)
 	# A KO who was paid still needs the bar. A KO with +0 stays bar-less so the card keeps reading "KO".
 	var earned_down: bool = not alive and (int(cr.get("exp_gained", 0)) > 0 or bool(cr.get("leveled_up", false)))
@@ -587,7 +651,7 @@ func _animate_card_content(card: PanelContainer, cr: Dictionary, idx: int, delay
 
 	var exp_before: int = int(cr.get("job_exp_before", 0))
 	var exp_to_next: int = maxi(1, int(cr.get("exp_to_next", 100)))
-	var bar_w := CARD_W - 76.0
+	var bar_w := _cw() - 76.0
 	var start_ratio := clampf(float(exp_before) / float(exp_to_next), 0.0, 1.0)
 	var end_ratio: float
 	if leveled:
@@ -750,6 +814,19 @@ func _build_loot_strip(results: Dictionary, flourish: bool) -> void:
 			h.add_child(lbl)
 		labels.append(lbl)
 
+	## ⚠️ RESERVE THE SPACE BEFORE THE AWAIT. The card stack hangs under this strip and `_build_cards`
+	## runs in the SAME frame, so it cannot wait for the layout pass below — reordering the two calls
+	## in `build()` achieved nothing on its own, because this function returns at the await and
+	## `_strip_rect` was still set a frame too late. `get_combined_minimum_size()` is what the
+	## container will size itself to, available without a pass. The authoritative rect is still taken
+	## after the await; this only has to reserve the right room.
+	var pre_size := strip.get_combined_minimum_size()
+	var pre_pos := Vector2((vp.x - pre_size.x) / 2.0, vp.y - STRIP_BOTTOM_MARGIN - pre_size.y)
+	if _title_docked.has_area():
+		pre_pos = Vector2(_title_docked.get_center().x - pre_size.x / 2.0, _title_docked.end.y + 6.0)
+		pre_pos.x = clampf(pre_pos.x, 8.0, vp.x - pre_size.x - 8.0)
+	_strip_rect = Rect2(pre_pos, pre_size)
+
 	# center-bottom, above the hint bar
 	await get_tree().process_frame
 	if not is_instance_valid(strip):
@@ -759,7 +836,8 @@ func _build_loot_strip(results: Dictionary, flourish: bool) -> void:
 	if _title_docked.has_area():
 		strip.position = Vector2(_title_docked.get_center().x - strip.size.x / 2.0, _title_docked.end.y + 6.0)
 		strip.position.x = clampf(strip.position.x, 8.0, vp.x - strip.size.x - 8.0)
-	_occupied.append(Rect2(strip.position, strip.size))
+	_strip_rect = Rect2(strip.position, strip.size)
+	_occupied.append(_strip_rect)
 	if _complete:
 		return  # snapped mid-layout-frame — labels already carry final text, stay visible
 
