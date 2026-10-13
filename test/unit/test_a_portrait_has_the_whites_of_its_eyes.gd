@@ -34,8 +34,6 @@ const LEFT_OPEN := {
 	"masterite_curator_medieval.png": "the face under the hood is keyed out; white or shadow is an art call",
 	"ninja.png": "the ring round the eye slit is keyed out; what colour it was is not recoverable by rule",
 	"npcs/fairy.png": "the patch by her raised hand may be the gap between arm and body",
-	"npcs/hooded_mage.png": "the whole face is keyed out; a white mask or a shadow is an art call",
-	"npcs/mysterious.png": "the whole face is keyed out; a white mask or a shadow is an art call",
 }
 ## Whole eyes the key took, pupil and all. Painted white they read as blind (the elder, Brutus and Boris after the
 ## second pass), so they are left clear, where the dark dialogue panel reads as a dark eye, until the portrait is
@@ -197,6 +195,27 @@ func test_a_drawn_eye_has_a_white_and_a_pupil() -> void:
 			if not (dark and white):
 				blank.append("%s at %s: pupil %s, white %s" % [key, str(eye), str(dark), str(white)])
 	assert_eq(blank, [], "drawn eyes that are not an eye (a pupil on a white): %s" % str(blank))
+
+
+func test_a_portrait_on_the_lifted_ground_has_no_window_in_it() -> void:
+	## The dialogue box lifts its backdrop to grey behind a DARK portrait so the figure reads. A large keyed hole then
+	## shows that grey: the mysterious figure and the hooded mage spoke with the backdrop where a face should be.
+	var Dialogue := load("res://src/cutscene/CutsceneDialogue.gd")
+	var dark_theme := Color(0.04, 0.04, 0.08)
+	var lifted := 0
+	var windows: Array = []
+	for path in _portraits(PORTRAITS):
+		var tex := load(path) as Texture2D
+		if Dialogue.portrait_ground(tex, dark_theme) != Dialogue.PORTRAIT_LIFTED_BG:
+			continue
+		lifted += 1
+		var key: String = path.trim_prefix(PORTRAITS)
+		var big := small_hole_pixels(_rgba(path), 1 << 30, MAX_HOLE + 1)
+		# A named real opening (staff to robe) is SUPPOSED to show the backdrop
+		if big > 0 and not LEFT_OPEN.has(key):
+			windows.append("%s: %d px" % [key, big])
+	assert_gt(lifted, 3, "CONTROL: some portraits take the lifted ground (%d)" % lifted)
+	assert_eq(windows, [], "dark portraits with a hole the grey backdrop shows through: %s" % str(windows))
 
 
 func test_the_measure_tells_a_keyed_eye_from_the_backdrop() -> void:
