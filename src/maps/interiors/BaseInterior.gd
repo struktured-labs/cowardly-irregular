@@ -373,7 +373,29 @@ func _validate_placements() -> void:
 ## immune to a re-authored grid that leaves the spawn behind — `test_an_interior_reads_its_own_
 ## examines` pins every room's entrance as walkable in its own layout, because that is the failure
 ## this anchor can actually have.
-const _EXAMINE_OFFSETS := {}
+const _EXAMINE_OFFSETS := {
+	## cowir-story 2026-10-13 — two rows each for the first FIVE W1 rooms a player enters.
+	## Offsets run UP and SIDEWAYS from the door: y+1 is the entrance row itself, and a blocked
+	## cell is relocated by InteriorPlacementSweep with a warning rather than placed silently.
+	## harmonia_cartographer is deliberately absent: it is the one W1 room that reads live state
+	## (GameState.activated_crystals) and its Living Map NPC already speaks that count, so an
+	## examine there would duplicate a beat the player already gets.
+	## blacksmith_interior
+	"blacksmith_order_board": Vector2i(-4, -2),
+	"blacksmith_quench_barrel": Vector2i(4, -2),
+	## harmonia_chapel
+	"harmonia_chapel_ledger": Vector2i(3, -1),
+	"harmonia_chapel_requests": Vector2i(-3, -2),
+	## harmonia_library
+	"harmonia_library_catalog": Vector2i(-3, -2),
+	"harmonia_library_returns": Vector2i(3, -1),
+	## scriptura_bookshop
+	"scriptura_bookshop_bookmark": Vector2i(-3, -2),
+	"scriptura_bookshop_curtain": Vector2i(2, -2),
+	## scriptura_guild
+	"scriptura_guild_edicts": Vector2i(-3, -2),
+	"scriptura_guild_orrery": Vector2i(3, -2),
+}
 
 const _EXAMINE_PACK := "res://data/examine_texts.json"
 
