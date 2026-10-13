@@ -1336,6 +1336,11 @@ func _add_pixel_border(parent: Control, size: Vector2) -> void:
 
 func _input(event: InputEvent) -> void:
 	"""Handle input"""
+	## The rules editor is our SIBLING, not our child, so hiding does not cover it and
+	## set_input_as_handled does not either -- it gates _unhandled_input, and both of these are
+	## _input. Above the escape hatch below: with the editor up the player is not wedged.
+	if _rules_editor_open != null and is_instance_valid(_rules_editor_open) and _rules_editor_open.visible:
+		return
 	if not visible:
 		## A grind hides the console, and every route back runs through GameLoop calling
 		## set_grinding(false). Hidden with NO grind running is the wedge state struktured hit
@@ -3211,6 +3216,11 @@ func _on_monitor_adjust_rules() -> void:
 ## ⛔ Parented to our PARENT, not to us. `_toggle_grinding` sets `visible = false` for the whole
 ## grind and only restores it at stop, so `add_child(editor)` put the editor inside an invisible
 ## node: nothing could ever see it, on the one path that reached here.
+## The open editor, so our _input can stand down for it. A grind that STOPS mid-edit calls
+## set_grinding(false), which sets `visible = true` again -- then both screens read every press.
+var _rules_editor_open: Control = null
+
+
 func open_rules_editor() -> Control:
 	if _monitor and is_instance_valid(_monitor):
 		_monitor.visible = false
@@ -3221,10 +3231,12 @@ func open_rules_editor() -> Control:
 	var host: Node = get_parent()
 	add_child(editor) if host == null else host.add_child(editor)
 	editor.setup(_party)
+	_rules_editor_open = editor
 
 	# When the editor closes, sync its saved rules back into our local rules array
 	# and restore the monitor
 	editor.closed.connect(func() -> void:
+		_rules_editor_open = null
 		rules = AutogrindSystem.get_autogrind_rules().duplicate(true)
 		editor.queue_free()
 		if _is_grinding and _monitor and is_instance_valid(_monitor):
