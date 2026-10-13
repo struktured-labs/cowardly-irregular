@@ -25,6 +25,7 @@ const WIRED := {
 	"assembly_core": "res://src/maps/dungeons/AssemblyCore.gd",
 	"abstract_overworld": "res://src/exploration/AbstractOverworld.gd",
 	"_villages": "res://src/maps/villages/BaseVillage.gd",
+	"_interiors": "res://src/maps/interiors/BaseInterior.gd",
 }
 
 
@@ -51,6 +52,43 @@ func _scene_keys() -> Dictionary:
 	return out
 
 
+## ⛔ THIS REPLACED `scene.ends_with("_village")`, AND THE SUFFIX WAS WRONG IN BOTH DIRECTIONS.
+## It missed every base-placed id that is not spelled `*_village` — `maple_heights_strip_mall` and
+## `scriptura_plaza` are both BaseVillage subclasses and neither matches, so a pack row for either
+## would have read as an orphan on correct content. And it would have accepted any NEW scene merely
+## spelled `*_village` with no placer at all. A suffix is a guess about a name; this asks the code.
+##
+## 🔑 Derived per BASE PLACER: for each `_`-prefixed WIRED entry, the ids that `_get_area_id()`
+## overrides declare in that placer's own directory. Villages live beside BaseVillage, interiors
+## beside BaseInterior. A subclass filed somewhere else is NOT counted, so it reds here and a human
+## reads it — the safe direction, since the alternative is a scene silently reading as reached.
+##
+## ⚠️ Deliberately duplicated from `test_a_wired_pack_can_still_be_unread`'s accessor derivation
+## rather than shared: that file resolves the `extends` chain, this one scopes by directory, and the
+## two guards answer OPPOSITE questions about the same pack — that one asks whether a scene is
+## placed and used to OVER-credit; this one asks whether it is reached and used to UNDER-credit.
+## A third consumer moves a common form into test/unit/helpers/.
+func _base_placed_scenes() -> Array[String]:
+	var out: Array[String] = []
+	var rx := RegEx.create_from_string('func _get_area_id\\(\\)[^"]*return "([a-z0-9_]+)"')
+	for key in WIRED.keys():
+		if not str(key).begins_with("_"):
+			continue
+		var dir: String = str(WIRED[key]).get_base_dir()
+		var d := DirAccess.open(dir)
+		if d == null:
+			continue
+		for f in d.get_files():
+			if not f.ends_with(".gd"):
+				continue
+			var code: String = str(GdSource.split(FileAccess.get_file_as_string("%s/%s" % [dir, f]))["code"])
+			for m in rx.search_all(code):
+				var id: String = m.get_string(1)
+				if not out.has(id):
+					out.append(id)
+	return out
+
+
 ## ⛔ THE ARM THE OTHER THREE GUARDS CANNOT MAKE: every scene the pack names must have a consumer.
 ## A village scene counts through BaseVillage, which serves all eleven from one placer.
 func test_every_scene_the_pack_names_has_a_consumer() -> void:
@@ -59,8 +97,8 @@ func test_every_scene_the_pack_names_has_a_consumer() -> void:
 	for scene in by_scene.keys():
 		if WIRED.has(scene):
 			continue
-		## A village key is served by BaseVillage's placer rather than by a per-scene file.
-		if scene.ends_with("_village"):
+		## A key served by a BASE-CLASS placer rather than a per-scene file.
+		if _base_placed_scenes().has(scene):
 			continue
 		orphans.append("%s (%d entr%s)" % [scene, (by_scene[scene] as Array).size(),
 			"y" if (by_scene[scene] as Array).size() == 1 else "ies"])

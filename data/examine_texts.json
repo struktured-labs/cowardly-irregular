@@ -1,5 +1,5 @@
 {
-  "description": "Environmental examine texts for props the player can interact with. 35 entries. `scene` is a REAL map id as TeleportMenu.MAP_IDS and GameLoop list them -- it was authored against the MUSIC BED namespace (village_harmonia) and re-keyed 2026-10-12, because a consumer that translated bed names to map ids would be a second source of truth for map identity. Each entry has a prop type, a display name, and the text shown on examine.",
+  "description": "Environmental examine texts for props the player can interact with. 45 entries. `scene` is a REAL map id as TeleportMenu.MAP_IDS and GameLoop list them -- it was authored against the MUSIC BED namespace (village_harmonia) and re-keyed 2026-10-12, because a consumer that translated bed names to map ids would be a second source of truth for map identity. Each entry has a prop type, a display name, and the text shown on examine.",
   "schema_version": 2,
   "examines": {
     "harmonia_well": {
@@ -246,6 +246,76 @@
       "prop": "sign",
       "name": "The Turning Count",
       "text": "A sign set before the threshold: YOU MAY STILL GO BACK. Beneath it, a tally of those who did. The tally reads none. The wood under the tally has been scraped thin, the way a surface gets when a number is rewritten often enough."
+    },
+    "harmonia_chapel_requests": {
+      "world": 1,
+      "scene": "harmonia_chapel",
+      "prop": "prayer_request_board",
+      "name": "The Prayer Request Board",
+      "text": "Slips pinned in rows, most asking for small things — a safe road, a good harvest, a brother's cough. Near the bottom, in a steady hand, someone has written only: the same again, please. It has been pinned long enough that the paper has gone soft."
+    },
+    "harmonia_chapel_ledger": {
+      "world": 1,
+      "scene": "harmonia_chapel",
+      "prop": "guest_ledger",
+      "name": "The Guest Ledger",
+      "text": "Everyone who comes to pray is asked to sign. Most sign once. One name recurs down the whole column in the same careful letters, dated across years, and every date falls in the same season. Whoever it is only comes when the nights get long."
+    },
+    "harmonia_library_catalog": {
+      "world": 1,
+      "scene": "harmonia_library",
+      "prop": "card_catalog",
+      "name": "The Card Catalog",
+      "text": "Drawer after drawer of cards, each naming a book and the shelf that holds it. One drawer is labelled with a question mark. The cards inside are in the same hand as all the others, and every one of them points at a shelf that is not in this room."
+    },
+    "harmonia_library_returns": {
+      "world": 1,
+      "scene": "harmonia_library",
+      "prop": "returns_cart",
+      "name": "The Returns Cart",
+      "text": "Books waiting to be shelved. The slip in the top one says it has been returned, reshelved and returned again four times this month — always by a different borrower, always within two days. Nobody keeps it. Nobody stops taking it out."
+    },
+    "scriptura_bookshop_curtain": {
+      "world": 1,
+      "scene": "scriptura_bookshop",
+      "prop": "banned_shelf",
+      "name": "The Shelf Behind the Curtain",
+      "text": "A curtain, and behind it a shelf of plain boards with no titles stamped on the spines. Nothing on it is dangerous to hold. The bookseller keeps it under the counter not for what the books say, but because of who decided they should not say it."
+    },
+    "scriptura_bookshop_bookmark": {
+      "world": 1,
+      "scene": "scriptura_bookshop",
+      "prop": "loose_bookmark",
+      "name": "The Loose Bookmark",
+      "text": "A ribbon left in a book nobody bought, marking a page in the middle of a sentence. The sentence is about something else entirely. Somebody stopped reading here and did not come back, and the shop has kept the place for them ever since."
+    },
+    "scriptura_guild_edicts": {
+      "world": 1,
+      "scene": "scriptura_guild",
+      "prop": "sealed_edict_rack",
+      "name": "The Sealed Edict Rack",
+      "text": "Edicts, each rolled and sealed, each stamped with the date it became binding. The seals are unbroken. A note on the rack explains that an edict need not be read to be in force, which saves a great deal of time for everyone except the people it applies to."
+    },
+    "scriptura_guild_orrery": {
+      "world": 1,
+      "scene": "scriptura_guild",
+      "prop": "clockwork_orrery",
+      "name": "The Clockwork Orrery",
+      "text": "Brass spheres on brass arms, turning slowly and accurately. One of the outer spheres is a different brass from the rest, fitted later. It keeps perfect time with the others. The plaque lists every body in the model, and that one is not on the list."
+    },
+    "blacksmith_order_board": {
+      "world": 1,
+      "scene": "blacksmith_interior",
+      "prop": "order_board",
+      "name": "The Order Board",
+      "text": "Commissions chalked up in the order they arrived — a plough share, a hinge, a hoop for a barrel. Three near the top are for blades, written smaller than the rest, and all three were paid in advance. None of the three has been crossed off."
+    },
+    "blacksmith_quench_barrel": {
+      "world": 1,
+      "scene": "blacksmith_interior",
+      "prop": "quenching_corner",
+      "name": "The Quenching Barrel",
+      "text": "The barrel the smith drops hot steel into. The water is black and still faintly warm. Scale and cinder have settled at the bottom in a layer deep enough to stand a bar upright in, which means nobody has emptied it in a working lifetime."
     }
   }
 }
