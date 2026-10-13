@@ -211,7 +211,8 @@ func try_open(lock_id: String) -> void:
 	_save_persisted_state()
 	var sm := get_node_or_null("/root/SoundManager")
 	if sm:
-		sm.play_ui("door_open")
+		# A blast charge is not a door. The failure toast and the sprite already differentiate the lock kinds; this is the third surface.
+		sm.play_ui("door_open" if resource == "key" else "wall_blast")
 	rebuild_floor(int(_cave.current_floor))
 
 
