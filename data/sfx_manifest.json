@@ -1386,6 +1386,13 @@
       "duration_seconds": 0.5,
       "prompt_influence": 0.6
     },
+    "plate_engage": {
+      "file": "assets/audio/sfx/plate_engage.ogg",
+      "source": "sox_synth",
+      "prompt": "A timed pressure plate engaging (DungeonMechanics._on_timed_plate_entered). AUTHORED because that site played `door_open` — a heavy wooden door creaking — for a stone plate being stepped on. Second of the four door_open sites to get its own voice (after wall_blast); a rotating mirror and a block landing on its target are still creaking. SYNTHESISED with sox: a 200/180 stone press, a 420/380 grind, a 2900/1400 latch tick at 0.17s, two faint rings (523/784Hz) and a 98Hz settle; 0.55s, peak -4.6 dBFS, rms -19.2, inside the door family's -18.9..-22.8 — measured on the SHIPPED ogg, and the level was nudged 0.5 dB after a first encode came out 0.2 dB ABOVE that range, which would have made this sentence false. ⚠️ Thinned once: the first build was rms -13.9, six dB hotter than the family, which matters for a cue a player triggers repeatedly — the sustained layers were cut rather than the whole thing turned down, so the latch keeps its transient. SEPARATION, measured: LOW-MID dominant (-21.7) where door_open is MID-HI and wall_blast is SUB with 15dB less low-mid. Three sites, three dominant bands. Shorter than both (0.55s vs 1.00/0.95) because a plate click is quick where a door and a blast are events.",
+      "duration_seconds": 0.55,
+      "prompt_influence": 0.0
+    },
     "player_turn": {
       "file": "assets/audio/sfx/player_turn.ogg",
       "prompt": "Quick bright marimba two-note ping, warm wooden mallet on resonant bar, clean melodic notification",

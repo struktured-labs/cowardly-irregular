@@ -735,7 +735,8 @@ func _on_timed_plate_entered(body: Node2D, floor_num: int) -> void:
 	_timed_open_until[floor_num] = int(Time.get_ticks_msec()) + int(TIMED_PLATE_SECONDS * 1000.0)
 	var sm := get_node_or_null("/root/SoundManager")
 	if sm:
-		sm.play_ui("door_open")
+		# A stone plate underfoot is not a wooden door. Second of the four door_open sites to get its own voice.
+		sm.play_ui("plate_engage")
 	if not was_open and int(_cave.current_floor) == floor_num:
 		rebuild_floor(floor_num)
 
