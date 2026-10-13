@@ -43,8 +43,46 @@ const DIR := "user://test_pool_spend_cache"
 const LINE := "Hold for applause. No? Tough room."
 const SPEAKER := "bard"
 const TRIGGER := "turn_start"
+## ⚠️ NO HOSTILE BED HERE, and that is measured rather than an omission: `play_music` yields no
+## live advancing bed in 240 headless frames (`_live_bed()` stayed null), and with the pin removed
+## and a bed played the arm still did NOT red. A fixture that cannot create its hazard implies
+## coverage it does not have. The pin below does not need one — it defeats the clear structurally.
+const PINNED_POS := 0.0026666666
 
 var _saved := {}
+var _planted: bool = false
+
+
+## ⛔ THE .672 GATE RED. This file set `_audio_mixer_wedged = true` and read it one call later.
+## `note_mixer_progress()` runs from SoundManager._process EVERY FRAME and CLEARS the latch when a
+## live bed's playhead advanced — so the fixture held only while NOTHING was playing. Alone that is
+## true (`_live_bed()` returns null and the function early-returns); in a 2675-script process an
+## earlier audio file left a bed playing 4.18s in, the step cleared my latch, and the premise
+## failed. My READY said the flag "survives note_mixer_progress" — measured in a probe with no bed,
+## which is the probe's corpus being its intent rather than the suite's conditions.
+##
+## The seam is `_mixer_pos_override`, consumed BEFORE the step is computed. Pin it AND the watch's
+## last-seen position and `step` stays 0, so the clear cannot fire whatever is playing. Shape taken
+## from test_a_wedged_mixer_does_not_lock_the_suite rather than invented.
+func _wedge() -> void:
+	SoundManager._mixer_pos_override = PINNED_POS
+	SoundManager._mixer_watch_pos = PINNED_POS
+	SoundManager._mixer_watch_msec = Time.get_ticks_msec()
+	SoundManager._audio_mixer_wedged = true
+	_planted = true
+	## Prove the fixture OWNS the wedge rather than assuming it: a progress tick must not clear it.
+	SoundManager.note_mixer_progress()
+	assert_true(SoundManager.wav_commit_refused(),
+		"the fixture does not own its wedge — note_mixer_progress cleared it before the arm could read it")
+
+
+func _unwedge() -> void:
+	SoundManager._mixer_pos_override = -1.0
+	if _planted:
+		SoundManager._audio_mixer_wedged = false
+		SoundManager._mixer_watch_pos = -1.0
+		SoundManager._mixer_watch_msec = 0
+		_planted = false
 
 
 func _wipe() -> void:
@@ -71,9 +109,11 @@ func before_each() -> void:
 	GameState.tts_live_enabled = true
 	GameState.party_llm_dialogue_enabled = true
 	SoundManager._audio_mixer_wedged = false
+	_planted = false
 
 
 func after_each() -> void:
+	_unwedge()
 	SoundManager._audio_mixer_wedged = bool(_saved["wedged"])
 	VoiceService._cast = _saved["cast"]
 	VoiceService.cache = _saved["cache"]
@@ -106,7 +146,7 @@ func _slot_on_disk() -> bool:
 
 func test_has_cached_separates_a_wedged_mixer_from_a_missing_blob() -> void:
 	_arm_ready_slot()
-	SoundManager._audio_mixer_wedged = true
+	_wedge()
 	assert_null(VoiceService.get_cached(SPEAKER, LINE),
 		"PREMISE: a wedged mixer must refuse the decode, or this file tests nothing")
 	assert_true(VoiceService.has_cached(SPEAKER, LINE),
@@ -132,7 +172,7 @@ func test_both_readers_derive_the_key_from_one_place() -> void:
 
 func test_a_wedged_mixer_does_not_spend_the_pooled_line() -> void:
 	_arm_ready_slot()
-	SoundManager._audio_mixer_wedged = true
+	_wedge()
 	var got: Dictionary = VoicePool.take_line(SPEAKER, TRIGGER)
 	assert_true(got.is_empty(), "PREMISE: a refused decode must still yield no line this turn")
 	assert_true(VoicePool.store.has_line(SPEAKER, TRIGGER),
@@ -144,9 +184,13 @@ func test_a_wedged_mixer_does_not_spend_the_pooled_line() -> void:
 func test_the_line_still_speaks_once_the_mixer_recovers() -> void:
 	## The consequence that makes the arm above worth having: the player gets the voiced line back.
 	_arm_ready_slot()
-	SoundManager._audio_mixer_wedged = true
+	_wedge()
 	assert_true(VoicePool.take_line(SPEAKER, TRIGGER).is_empty(), "PREMISE: refused while wedged")
-	SoundManager._audio_mixer_wedged = false
+	## Through the helper, so the POSITION PIN is released too — a recovered mixer is one whose
+	## playhead moves again, not just a cleared flag. A bare clear leaves the pin set, and the
+	## stall branch would re-arm the latch after _MIXER_STALL_MSEC of a frozen position.
+	_unwedge()
+	assert_false(SoundManager.wav_commit_refused(), "PREMISE: the mixer must really be recovered")
 	var got: Dictionary = VoicePool.take_line(SPEAKER, TRIGGER)
 	assert_false(got.is_empty(), "the kept slot must speak once the mixer recovers")
 	assert_eq(str(got.get("line", "")), LINE, "and it must be the line that was prefetched")
@@ -159,7 +203,7 @@ func test_a_transient_miss_leaves_the_pool_file_alone() -> void:
 	_arm_ready_slot()
 	var before: String = FileAccess.get_file_as_string(DIR + "/pool.json")
 	assert_ne(before, "", "PREMISE: the pool file must exist to compare")
-	SoundManager._audio_mixer_wedged = true
+	_wedge()
 	VoicePool.take_line(SPEAKER, TRIGGER)
 	assert_eq(FileAccess.get_file_as_string(DIR + "/pool.json"), before,
 		"a transient miss rewrote pool.json")
