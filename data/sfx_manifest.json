@@ -984,135 +984,153 @@
     },
     "footstep_grass": {
       "file": "assets/audio/sfx/footstep_grass.ogg",
-      "prompt": "Single soft footstep on grass, quiet shoe on lawn, gentle earthy step",
-      "duration_seconds": 0.5,
+      "prompt": "A single footstep on grass. ⛔ SOURCE-LOCKED: this asset is SYNTHESISED with sox and must NOT be regenerated from this prompt. struktured rejected the ElevenLabs footsteps TWICE — \"kind of awful\" and \"harsh crunching\" — and all 18 (6 terrains x 3 variants) were rebuilt as short filtered noise bursts, SNES-style soft taps, in commit 3767131e3 (2026-04-16): muffled pink noise, 1.2kHz lowpass — carpet-like, normalised to -24 LUFS so they sit under combat SFX, with randomised bandwidth and duration per variant. A --force regen would request the retired sound and restore exactly what he turned down. THE RETIRED ELEVENLABS REQUEST, kept so the rejection is legible rather than lost: 'Single soft footstep on grass, quiet shoe on lawn, gentle earthy step'. ⚠️ `duration_seconds` is now the SHIPPED length, 0.046s, read back through Godot's own AudioStream.get_length() — the number every in-repo consumer sees. It was 0.5, the retired request, 8-16x the real asset, and that gap is the evidence this file never came from it.",
+      "duration_seconds": 0.046,
       "prompt_influence": 0.7,
       "variants": [
         "footstep_grass_v2",
         "footstep_grass_v3"
-      ]
+      ],
+      "source": "sox_synth"
     },
     "footstep_grass_v2": {
       "file": "assets/audio/sfx/footstep_grass_v2.ogg",
-      "prompt": "Single footstep crunching dry grass, quiet boot on meadow, soft natural step",
-      "duration_seconds": 0.5,
-      "prompt_influence": 0.7
+      "prompt": "A single footstep on grass. ⛔ SOURCE-LOCKED: this asset is SYNTHESISED with sox and must NOT be regenerated from this prompt. struktured rejected the ElevenLabs footsteps TWICE — \"kind of awful\" and \"harsh crunching\" — and all 18 (6 terrains x 3 variants) were rebuilt as short filtered noise bursts, SNES-style soft taps, in commit 3767131e3 (2026-04-16): muffled pink noise, 1.2kHz lowpass — carpet-like, normalised to -24 LUFS so they sit under combat SFX, with randomised bandwidth and duration per variant. A --force regen would request the retired sound and restore exactly what he turned down. THE RETIRED ELEVENLABS REQUEST, kept so the rejection is legible rather than lost: 'Single footstep crunching dry grass, quiet boot on meadow, soft natural step'. ⚠️ `duration_seconds` is now the SHIPPED length, 0.046s, read back through Godot's own AudioStream.get_length() — the number every in-repo consumer sees. It was 0.5, the retired request, 8-16x the real asset, and that gap is the evidence this file never came from it.",
+      "duration_seconds": 0.046,
+      "prompt_influence": 0.7,
+      "source": "sox_synth"
     },
     "footstep_grass_v3": {
       "file": "assets/audio/sfx/footstep_grass_v3.ogg",
-      "prompt": "Single footstep on dewy grass, quiet shoe pressing wet lawn, muffled green step",
-      "duration_seconds": 0.5,
-      "prompt_influence": 0.7
+      "prompt": "A single footstep on grass. ⛔ SOURCE-LOCKED: this asset is SYNTHESISED with sox and must NOT be regenerated from this prompt. struktured rejected the ElevenLabs footsteps TWICE — \"kind of awful\" and \"harsh crunching\" — and all 18 (6 terrains x 3 variants) were rebuilt as short filtered noise bursts, SNES-style soft taps, in commit 3767131e3 (2026-04-16): muffled pink noise, 1.2kHz lowpass — carpet-like, normalised to -24 LUFS so they sit under combat SFX, with randomised bandwidth and duration per variant. A --force regen would request the retired sound and restore exactly what he turned down. THE RETIRED ELEVENLABS REQUEST, kept so the rejection is legible rather than lost: 'Single footstep on dewy grass, quiet shoe pressing wet lawn, muffled green step'. ⚠️ `duration_seconds` is now the SHIPPED length, 0.050s, read back through Godot's own AudioStream.get_length() — the number every in-repo consumer sees. It was 0.5, the retired request, 8-16x the real asset, and that gap is the evidence this file never came from it.",
+      "duration_seconds": 0.05,
+      "prompt_influence": 0.7,
+      "source": "sox_synth"
     },
     "footstep_metal": {
       "file": "assets/audio/sfx/footstep_metal.ogg",
-      "prompt": "Single boot step on metal grate, industrial steel floor clang, short hollow metallic footfall",
-      "duration_seconds": 0.5,
+      "prompt": "A single footstep on metal. ⛔ SOURCE-LOCKED: this asset is SYNTHESISED with sox and must NOT be regenerated from this prompt. struktured rejected the ElevenLabs footsteps TWICE — \"kind of awful\" and \"harsh crunching\" — and all 18 (6 terrains x 3 variants) were rebuilt as short filtered noise bursts, SNES-style soft taps, in commit 3767131e3 (2026-04-16): white noise plus a ring sine, 3.5kHz lowpass — a bright tap, normalised to -24 LUFS so they sit under combat SFX, with randomised bandwidth and duration per variant. A --force regen would request the retired sound and restore exactly what he turned down. THE RETIRED ELEVENLABS REQUEST, kept so the rejection is legible rather than lost: 'Single boot step on metal grate, industrial steel floor clang, short hollow metallic footfall'. ⚠️ `duration_seconds` is now the SHIPPED length, 0.039s, read back through Godot's own AudioStream.get_length() — the number every in-repo consumer sees. It was 0.5, the retired request, 8-16x the real asset, and that gap is the evidence this file never came from it.",
+      "duration_seconds": 0.039,
       "prompt_influence": 0.7,
       "variants": [
         "footstep_metal_v2",
         "footstep_metal_v3"
-      ]
+      ],
+      "source": "sox_synth"
     },
     "footstep_metal_v2": {
       "file": "assets/audio/sfx/footstep_metal_v2.ogg",
-      "prompt": "Single step on metal catwalk, light ringing steel platform footstep, factory floor tap",
-      "duration_seconds": 0.5,
-      "prompt_influence": 0.7
+      "prompt": "A single footstep on metal. ⛔ SOURCE-LOCKED: this asset is SYNTHESISED with sox and must NOT be regenerated from this prompt. struktured rejected the ElevenLabs footsteps TWICE — \"kind of awful\" and \"harsh crunching\" — and all 18 (6 terrains x 3 variants) were rebuilt as short filtered noise bursts, SNES-style soft taps, in commit 3767131e3 (2026-04-16): white noise plus a ring sine, 3.5kHz lowpass — a bright tap, normalised to -24 LUFS so they sit under combat SFX, with randomised bandwidth and duration per variant. A --force regen would request the retired sound and restore exactly what he turned down. THE RETIRED ELEVENLABS REQUEST, kept so the rejection is legible rather than lost: 'Single step on metal catwalk, light ringing steel platform footstep, factory floor tap'. ⚠️ `duration_seconds` is now the SHIPPED length, 0.035s, read back through Godot's own AudioStream.get_length() — the number every in-repo consumer sees. It was 0.5, the retired request, 8-16x the real asset, and that gap is the evidence this file never came from it.",
+      "duration_seconds": 0.035,
+      "prompt_influence": 0.7,
+      "source": "sox_synth"
     },
     "footstep_metal_v3": {
       "file": "assets/audio/sfx/footstep_metal_v3.ogg",
-      "prompt": "Single heavy boot on iron plate, deep dull metallic thud, industrial walkway step",
-      "duration_seconds": 0.5,
-      "prompt_influence": 0.7
+      "prompt": "A single footstep on metal. ⛔ SOURCE-LOCKED: this asset is SYNTHESISED with sox and must NOT be regenerated from this prompt. struktured rejected the ElevenLabs footsteps TWICE — \"kind of awful\" and \"harsh crunching\" — and all 18 (6 terrains x 3 variants) were rebuilt as short filtered noise bursts, SNES-style soft taps, in commit 3767131e3 (2026-04-16): white noise plus a ring sine, 3.5kHz lowpass — a bright tap, normalised to -24 LUFS so they sit under combat SFX, with randomised bandwidth and duration per variant. A --force regen would request the retired sound and restore exactly what he turned down. THE RETIRED ELEVENLABS REQUEST, kept so the rejection is legible rather than lost: 'Single heavy boot on iron plate, deep dull metallic thud, industrial walkway step'. ⚠️ `duration_seconds` is now the SHIPPED length, 0.041s, read back through Godot's own AudioStream.get_length() — the number every in-repo consumer sees. It was 0.5, the retired request, 8-16x the real asset, and that gap is the evidence this file never came from it.",
+      "duration_seconds": 0.041,
+      "prompt_influence": 0.7,
+      "source": "sox_synth"
     },
     "footstep_sand": {
       "file": "assets/audio/sfx/footstep_sand.ogg",
-      "prompt": "Single footstep in soft sand, quiet shoe sinking into dry beach sand, muffled granular step",
-      "duration_seconds": 0.5,
+      "prompt": "A single footstep on sand. ⛔ SOURCE-LOCKED: this asset is SYNTHESISED with sox and must NOT be regenerated from this prompt. struktured rejected the ElevenLabs footsteps TWICE — \"kind of awful\" and \"harsh crunching\" — and all 18 (6 terrains x 3 variants) were rebuilt as short filtered noise bursts, SNES-style soft taps, in commit 3767131e3 (2026-04-16): diffuse brown noise, 900Hz lowpass — a shuffle, normalised to -24 LUFS so they sit under combat SFX, with randomised bandwidth and duration per variant. A --force regen would request the retired sound and restore exactly what he turned down. THE RETIRED ELEVENLABS REQUEST, kept so the rejection is legible rather than lost: 'Single footstep in soft sand, quiet shoe sinking into dry beach sand, muffled granular step'. ⚠️ `duration_seconds` is now the SHIPPED length, 0.060s, read back through Godot's own AudioStream.get_length() — the number every in-repo consumer sees. It was 0.5, the retired request, 8-16x the real asset, and that gap is the evidence this file never came from it.",
+      "duration_seconds": 0.06,
       "prompt_influence": 0.7,
       "variants": [
         "footstep_sand_v2",
         "footstep_sand_v3"
-      ]
+      ],
+      "source": "sox_synth"
     },
     "footstep_sand_v2": {
       "file": "assets/audio/sfx/footstep_sand_v2.ogg",
-      "prompt": "Single boot step in desert sand, dry shifting grains under foot, soft arid step",
-      "duration_seconds": 0.5,
-      "prompt_influence": 0.7
+      "prompt": "A single footstep on sand. ⛔ SOURCE-LOCKED: this asset is SYNTHESISED with sox and must NOT be regenerated from this prompt. struktured rejected the ElevenLabs footsteps TWICE — \"kind of awful\" and \"harsh crunching\" — and all 18 (6 terrains x 3 variants) were rebuilt as short filtered noise bursts, SNES-style soft taps, in commit 3767131e3 (2026-04-16): diffuse brown noise, 900Hz lowpass — a shuffle, normalised to -24 LUFS so they sit under combat SFX, with randomised bandwidth and duration per variant. A --force regen would request the retired sound and restore exactly what he turned down. THE RETIRED ELEVENLABS REQUEST, kept so the rejection is legible rather than lost: 'Single boot step in desert sand, dry shifting grains under foot, soft arid step'. ⚠️ `duration_seconds` is now the SHIPPED length, 0.064s, read back through Godot's own AudioStream.get_length() — the number every in-repo consumer sees. It was 0.5, the retired request, 8-16x the real asset, and that gap is the evidence this file never came from it.",
+      "duration_seconds": 0.064,
+      "prompt_influence": 0.7,
+      "source": "sox_synth"
     },
     "footstep_sand_v3": {
       "file": "assets/audio/sfx/footstep_sand_v3.ogg",
-      "prompt": "Single footstep on sandy dirt path, dry earth and loose sand underfoot, quiet dusty step",
-      "duration_seconds": 0.5,
-      "prompt_influence": 0.7
+      "prompt": "A single footstep on sand. ⛔ SOURCE-LOCKED: this asset is SYNTHESISED with sox and must NOT be regenerated from this prompt. struktured rejected the ElevenLabs footsteps TWICE — \"kind of awful\" and \"harsh crunching\" — and all 18 (6 terrains x 3 variants) were rebuilt as short filtered noise bursts, SNES-style soft taps, in commit 3767131e3 (2026-04-16): diffuse brown noise, 900Hz lowpass — a shuffle, normalised to -24 LUFS so they sit under combat SFX, with randomised bandwidth and duration per variant. A --force regen would request the retired sound and restore exactly what he turned down. THE RETIRED ELEVENLABS REQUEST, kept so the rejection is legible rather than lost: 'Single footstep on sandy dirt path, dry earth and loose sand underfoot, quiet dusty step'. ⚠️ `duration_seconds` is now the SHIPPED length, 0.055s, read back through Godot's own AudioStream.get_length() — the number every in-repo consumer sees. It was 0.5, the retired request, 8-16x the real asset, and that gap is the evidence this file never came from it.",
+      "duration_seconds": 0.055,
+      "prompt_influence": 0.7,
+      "source": "sox_synth"
     },
     "footstep_snow": {
       "file": "assets/audio/sfx/footstep_snow.ogg",
-      "prompt": "Single footstep crunching fresh snow, quiet boot compressing powder, crisp cold winter step",
-      "duration_seconds": 0.5,
+      "prompt": "A single footstep on snow. ⛔ SOURCE-LOCKED: this asset is SYNTHESISED with sox and must NOT be regenerated from this prompt. struktured rejected the ElevenLabs footsteps TWICE — \"kind of awful\" and \"harsh crunching\" — and all 18 (6 terrains x 3 variants) were rebuilt as short filtered noise bursts, SNES-style soft taps, in commit 3767131e3 (2026-04-16): very muffled white noise, 700Hz lowpass — a soft crunch, normalised to -24 LUFS so they sit under combat SFX, with randomised bandwidth and duration per variant. A --force regen would request the retired sound and restore exactly what he turned down. THE RETIRED ELEVENLABS REQUEST, kept so the rejection is legible rather than lost: 'Single footstep crunching fresh snow, quiet boot compressing powder, crisp cold winter step'. ⚠️ `duration_seconds` is now the SHIPPED length, 0.055s, read back through Godot's own AudioStream.get_length() — the number every in-repo consumer sees. It was 0.5, the retired request, 8-16x the real asset, and that gap is the evidence this file never came from it.",
+      "duration_seconds": 0.055,
       "prompt_influence": 0.7,
       "variants": [
         "footstep_snow_v2",
         "footstep_snow_v3"
-      ]
+      ],
+      "source": "sox_synth"
     },
     "footstep_snow_v2": {
       "file": "assets/audio/sfx/footstep_snow_v2.ogg",
-      "prompt": "Single boot step in deep snow, muffled crunch of packed ice crystals, heavy winter footfall",
-      "duration_seconds": 0.5,
-      "prompt_influence": 0.7
+      "prompt": "A single footstep on snow. ⛔ SOURCE-LOCKED: this asset is SYNTHESISED with sox and must NOT be regenerated from this prompt. struktured rejected the ElevenLabs footsteps TWICE — \"kind of awful\" and \"harsh crunching\" — and all 18 (6 terrains x 3 variants) were rebuilt as short filtered noise bursts, SNES-style soft taps, in commit 3767131e3 (2026-04-16): very muffled white noise, 700Hz lowpass — a soft crunch, normalised to -24 LUFS so they sit under combat SFX, with randomised bandwidth and duration per variant. A --force regen would request the retired sound and restore exactly what he turned down. THE RETIRED ELEVENLABS REQUEST, kept so the rejection is legible rather than lost: 'Single boot step in deep snow, muffled crunch of packed ice crystals, heavy winter footfall'. ⚠️ `duration_seconds` is now the SHIPPED length, 0.050s, read back through Godot's own AudioStream.get_length() — the number every in-repo consumer sees. It was 0.5, the retired request, 8-16x the real asset, and that gap is the evidence this file never came from it.",
+      "duration_seconds": 0.05,
+      "prompt_influence": 0.7,
+      "source": "sox_synth"
     },
     "footstep_snow_v3": {
       "file": "assets/audio/sfx/footstep_snow_v3.ogg",
-      "prompt": "Single light step on icy snow crust, thin crackle of frozen surface breaking, delicate winter step",
-      "duration_seconds": 0.5,
-      "prompt_influence": 0.7
+      "prompt": "A single footstep on snow. ⛔ SOURCE-LOCKED: this asset is SYNTHESISED with sox and must NOT be regenerated from this prompt. struktured rejected the ElevenLabs footsteps TWICE — \"kind of awful\" and \"harsh crunching\" — and all 18 (6 terrains x 3 variants) were rebuilt as short filtered noise bursts, SNES-style soft taps, in commit 3767131e3 (2026-04-16): very muffled white noise, 700Hz lowpass — a soft crunch, normalised to -24 LUFS so they sit under combat SFX, with randomised bandwidth and duration per variant. A --force regen would request the retired sound and restore exactly what he turned down. THE RETIRED ELEVENLABS REQUEST, kept so the rejection is legible rather than lost: 'Single light step on icy snow crust, thin crackle of frozen surface breaking, delicate winter step'. ⚠️ `duration_seconds` is now the SHIPPED length, 0.054s, read back through Godot's own AudioStream.get_length() — the number every in-repo consumer sees. It was 0.5, the retired request, 8-16x the real asset, and that gap is the evidence this file never came from it.",
+      "duration_seconds": 0.054,
+      "prompt_influence": 0.7,
+      "source": "sox_synth"
     },
     "footstep_stone": {
       "file": "assets/audio/sfx/footstep_stone.ogg",
-      "prompt": "Single boot step on stone floor, hard sole on cobblestone, quick dry tap on rock surface",
-      "duration_seconds": 0.5,
+      "prompt": "A single footstep on stone. ⛔ SOURCE-LOCKED: this asset is SYNTHESISED with sox and must NOT be regenerated from this prompt. struktured rejected the ElevenLabs footsteps TWICE — \"kind of awful\" and \"harsh crunching\" — and all 18 (6 terrains x 3 variants) were rebuilt as short filtered noise bursts, SNES-style soft taps, in commit 3767131e3 (2026-04-16): brighter pink noise, 2.4kHz lowpass — a tap, normalised to -24 LUFS so they sit under combat SFX, with randomised bandwidth and duration per variant. A --force regen would request the retired sound and restore exactly what he turned down. THE RETIRED ELEVENLABS REQUEST, kept so the rejection is legible rather than lost: 'Single boot step on stone floor, hard sole on cobblestone, quick dry tap on rock surface'. ⚠️ `duration_seconds` is now the SHIPPED length, 0.037s, read back through Godot's own AudioStream.get_length() — the number every in-repo consumer sees. It was 0.5, the retired request, 8-16x the real asset, and that gap is the evidence this file never came from it.",
+      "duration_seconds": 0.037,
       "prompt_influence": 0.7,
       "variants": [
         "footstep_stone_v2",
         "footstep_stone_v3"
-      ]
+      ],
+      "source": "sox_synth"
     },
     "footstep_stone_v2": {
       "file": "assets/audio/sfx/footstep_stone_v2.ogg",
-      "prompt": "Single footstep on marble floor, hard heel click on polished stone, crisp indoor step",
-      "duration_seconds": 0.5,
-      "prompt_influence": 0.7
+      "prompt": "A single footstep on stone. ⛔ SOURCE-LOCKED: this asset is SYNTHESISED with sox and must NOT be regenerated from this prompt. struktured rejected the ElevenLabs footsteps TWICE — \"kind of awful\" and \"harsh crunching\" — and all 18 (6 terrains x 3 variants) were rebuilt as short filtered noise bursts, SNES-style soft taps, in commit 3767131e3 (2026-04-16): brighter pink noise, 2.4kHz lowpass — a tap, normalised to -24 LUFS so they sit under combat SFX, with randomised bandwidth and duration per variant. A --force regen would request the retired sound and restore exactly what he turned down. THE RETIRED ELEVENLABS REQUEST, kept so the rejection is legible rather than lost: 'Single footstep on marble floor, hard heel click on polished stone, crisp indoor step'. ⚠️ `duration_seconds` is now the SHIPPED length, 0.041s, read back through Godot's own AudioStream.get_length() — the number every in-repo consumer sees. It was 0.5, the retired request, 8-16x the real asset, and that gap is the evidence this file never came from it.",
+      "duration_seconds": 0.041,
+      "prompt_influence": 0.7,
+      "source": "sox_synth"
     },
     "footstep_stone_v3": {
       "file": "assets/audio/sfx/footstep_stone_v3.ogg",
-      "prompt": "Single boot on gravel path, crunchy stone step, small rocks shifting under foot",
-      "duration_seconds": 0.5,
-      "prompt_influence": 0.7
+      "prompt": "A single footstep on stone. ⛔ SOURCE-LOCKED: this asset is SYNTHESISED with sox and must NOT be regenerated from this prompt. struktured rejected the ElevenLabs footsteps TWICE — \"kind of awful\" and \"harsh crunching\" — and all 18 (6 terrains x 3 variants) were rebuilt as short filtered noise bursts, SNES-style soft taps, in commit 3767131e3 (2026-04-16): brighter pink noise, 2.4kHz lowpass — a tap, normalised to -24 LUFS so they sit under combat SFX, with randomised bandwidth and duration per variant. A --force regen would request the retired sound and restore exactly what he turned down. THE RETIRED ELEVENLABS REQUEST, kept so the rejection is legible rather than lost: 'Single boot on gravel path, crunchy stone step, small rocks shifting under foot'. ⚠️ `duration_seconds` is now the SHIPPED length, 0.044s, read back through Godot's own AudioStream.get_length() — the number every in-repo consumer sees. It was 0.5, the retired request, 8-16x the real asset, and that gap is the evidence this file never came from it.",
+      "duration_seconds": 0.044,
+      "prompt_influence": 0.7,
+      "source": "sox_synth"
     },
     "footstep_wood": {
       "file": "assets/audio/sfx/footstep_wood.ogg",
-      "prompt": "Single footstep on wooden floorboard, warm hollow wood tap, tavern floor step",
-      "duration_seconds": 0.5,
+      "prompt": "A single footstep on wood. ⛔ SOURCE-LOCKED: this asset is SYNTHESISED with sox and must NOT be regenerated from this prompt. struktured rejected the ElevenLabs footsteps TWICE — \"kind of awful\" and \"harsh crunching\" — and all 18 (6 terrains x 3 variants) were rebuilt as short filtered noise bursts, SNES-style soft taps, in commit 3767131e3 (2026-04-16): pink noise plus a hollow sine resonance, 2kHz lowpass, normalised to -24 LUFS so they sit under combat SFX, with randomised bandwidth and duration per variant. A --force regen would request the retired sound and restore exactly what he turned down. THE RETIRED ELEVENLABS REQUEST, kept so the rejection is legible rather than lost: 'Single footstep on wooden floorboard, warm hollow wood tap, tavern floor step'. ⚠️ `duration_seconds` is now the SHIPPED length, 0.048s, read back through Godot's own AudioStream.get_length() — the number every in-repo consumer sees. It was 0.5, the retired request, 8-16x the real asset, and that gap is the evidence this file never came from it.",
+      "duration_seconds": 0.048,
       "prompt_influence": 0.7,
       "variants": [
         "footstep_wood_v2",
         "footstep_wood_v3"
-      ]
+      ],
+      "source": "sox_synth"
     },
     "footstep_wood_v2": {
       "file": "assets/audio/sfx/footstep_wood_v2.ogg",
-      "prompt": "Single step on creaky wooden plank, old floorboard groaning softly, rustic cabin step",
-      "duration_seconds": 0.5,
-      "prompt_influence": 0.7
+      "prompt": "A single footstep on wood. ⛔ SOURCE-LOCKED: this asset is SYNTHESISED with sox and must NOT be regenerated from this prompt. struktured rejected the ElevenLabs footsteps TWICE — \"kind of awful\" and \"harsh crunching\" — and all 18 (6 terrains x 3 variants) were rebuilt as short filtered noise bursts, SNES-style soft taps, in commit 3767131e3 (2026-04-16): pink noise plus a hollow sine resonance, 2kHz lowpass, normalised to -24 LUFS so they sit under combat SFX, with randomised bandwidth and duration per variant. A --force regen would request the retired sound and restore exactly what he turned down. THE RETIRED ELEVENLABS REQUEST, kept so the rejection is legible rather than lost: 'Single step on creaky wooden plank, old floorboard groaning softly, rustic cabin step'. ⚠️ `duration_seconds` is now the SHIPPED length, 0.049s, read back through Godot's own AudioStream.get_length() — the number every in-repo consumer sees. It was 0.5, the retired request, 8-16x the real asset, and that gap is the evidence this file never came from it.",
+      "duration_seconds": 0.049,
+      "prompt_influence": 0.7,
+      "source": "sox_synth"
     },
     "footstep_wood_v3": {
       "file": "assets/audio/sfx/footstep_wood_v3.ogg",
-      "prompt": "Single boot on wooden deck, solid timber thump, ship deck or bridge footstep",
-      "duration_seconds": 0.5,
-      "prompt_influence": 0.7
+      "prompt": "A single footstep on wood. ⛔ SOURCE-LOCKED: this asset is SYNTHESISED with sox and must NOT be regenerated from this prompt. struktured rejected the ElevenLabs footsteps TWICE — \"kind of awful\" and \"harsh crunching\" — and all 18 (6 terrains x 3 variants) were rebuilt as short filtered noise bursts, SNES-style soft taps, in commit 3767131e3 (2026-04-16): pink noise plus a hollow sine resonance, 2kHz lowpass, normalised to -24 LUFS so they sit under combat SFX, with randomised bandwidth and duration per variant. A --force regen would request the retired sound and restore exactly what he turned down. THE RETIRED ELEVENLABS REQUEST, kept so the rejection is legible rather than lost: 'Single boot on wooden deck, solid timber thump, ship deck or bridge footstep'. ⚠️ `duration_seconds` is now the SHIPPED length, 0.042s, read back through Godot's own AudioStream.get_length() — the number every in-repo consumer sees. It was 0.5, the retired request, 8-16x the real asset, and that gap is the evidence this file never came from it.",
+      "duration_seconds": 0.042,
+      "prompt_influence": 0.7,
+      "source": "sox_synth"
     },
     "formation_arcane_tempest": {
       "file": "assets/audio/sfx/formation_arcane_tempest.ogg",
