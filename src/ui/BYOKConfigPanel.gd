@@ -381,10 +381,14 @@ func _on_save_pressed() -> void:
 		closed.emit()
 		queue_free()
 		return
-	GameState.llm_custom_base_url = _base_url_field.text
-	GameState.llm_custom_api_format = "ollama" if _format_picker.selected == 1 else "openai"
-	GameState.llm_custom_model = _model_field.text
-	GameState.llm_custom_api_key = _api_key_field.text
+	# Persisted from _typed_config, the SAME dictionary Test Connection probes: Save used to
+	# re-read the raw fields, so a pasted value with edge whitespace passed Test and then
+	# stored something Test had never tried. One source cannot disagree with itself.
+	var cfg: Dictionary = _typed_config()
+	GameState.llm_custom_base_url = str(cfg["base_url"])
+	GameState.llm_custom_api_format = str(cfg["api_format"])
+	GameState.llm_custom_model = str(cfg["model"])
+	GameState.llm_custom_api_key = str(cfg["api_key"])
 	# "Save & Apply": a usable endpoint turns BYOK on; the Settings toggle refuses ON until one exists.
 	if GameState.has_method("byok_config_complete") and GameState.byok_config_complete():
 		GameState.llm_custom_backend_enabled = true
@@ -400,7 +404,7 @@ func _on_save_pressed() -> void:
 	if SoundManager:
 		SoundManager.play_ui("menu_select")
 	# An incomplete config silently falls back to local Ollama — say so at save time.
-	var problem: String = _config_problem(_typed_config())
+	var problem: String = _config_problem(cfg)
 	if Toast:
 		if problem != "" and not bool(GameState.llm_custom_backend_enabled):
 			Toast.show(self, "BYOK INCOMPLETE — %s" % problem, STATUS_FAIL_COLOR)
@@ -486,7 +490,7 @@ func _typed_config() -> Dictionary:
 		"base_url": _base_url_field.text.strip_edges(),
 		"api_format": "ollama" if _format_picker.selected == 1 else "openai",
 		"model": _model_field.text.strip_edges(),
-		"api_key": _api_key_field.text,
+		"api_key": _api_key_field.text.strip_edges(),
 	}
 
 
