@@ -70,11 +70,65 @@ func test_the_inert_hold_divisor_does_not_come_back() -> void:
 	## mechanism (see the "must not re-add the 2x suppression" arm). The INVARIANT that makes the
 	## removal safe — no spawnable engine scale exceeds 1.0 — is derived and mutation-pinned in
 	## test_a_bubble_hold_divisor_that_cannot_divide, which reds if that stops being true.
+	##
+	## ⛔ AND THE POSITIVE ARM I SHIPPED HERE WAS SATISFIED BY THE DEFECT IT NAMED. Measured:
+	##   needle "b._hold_time = hold_time"   in the ORIGINAL defective line   -> TRUE
+	##                                        in "= hold_time / some_other()" -> TRUE
+	##                                        in "= hold_time * 2.0"          -> TRUE
+	## It is a PREFIX of every variant, so a differently-spelled divisor passed it AND slipped the
+	## exact-expression arm below. Now asserted on the EXTRACTED right-hand side, which is a
+	## relation rather than a spelling: any arithmetic reds, a comment or extra spaces do not.
 	var src := _read(BUBBLE_PATH)
+	var found: Dictionary = _spawn_hold_assignment(src)
+	assert_eq(int(found["count"]), 1,
+		"spawn must assign b._hold_time exactly once — two assignments would let a good one satisfy this arm while the other carried a divisor")
+	assert_eq(str(found["rhs"]), "hold_time",
+		"spawn must pass the requested hold through UNSCALED; it reads '%s'. The tween already carries battle speed, and any divisor here is inert anyway because suppression fires first above engine 1.0" % [str(found["rhs"])])
 	assert_false(src.contains("hold_time / maxf(1.0, Engine.time_scale)"),
-		"the inert divisor is back: it divides by 1.0 at every speed a bubble can spawn at, because suppression fires first — what bounds a bubble against a fast turn is SUPPRESS_TIME_SCALE, not this")
-	assert_true(src.contains("b._hold_time = hold_time"),
-		"spawn must pass the requested hold through unscaled — the tween already carries battle speed")
+		"the inert divisor is back verbatim: it divides by 1.0 at every speed a bubble can spawn at, because suppression fires first — what bounds a bubble against a fast turn is SUPPRESS_TIME_SCALE, not this")
+
+
+## The right-hand side of spawn's `b._hold_time =` assignment, comment and whitespace stripped,
+## plus how many such assignments exist. Keyed to the RECEIVER `b.` so the voiced extension
+## (`_hold_time = maxf(...)` on self, a different subject) cannot be swept in, and requiring `=`
+## after the name so `b._hold_time_other` is not mistaken for it.
+func _spawn_hold_assignment(src: String) -> Dictionary:
+	const TARGET := "b._hold_time"
+	var found: Array[String] = []
+	for line in src.split("\n"):
+		var t: String = line.strip_edges()
+		if not t.begins_with(TARGET):
+			continue
+		var rest: String = t.substr(TARGET.length()).strip_edges()
+		if not rest.begins_with("="):
+			continue
+		var rhs: String = rest.substr(1)
+		var hash_at: int = rhs.find("#")
+		if hash_at > -1:
+			rhs = rhs.substr(0, hash_at)
+		found.append(rhs.strip_edges())
+	return {"count": found.size(), "rhs": found[0] if found.size() > 0 else ""}
+
+
+func test_the_hold_extractor_can_see_a_divisor_it_is_meant_to_catch() -> void:
+	## POSITIVE CONTROL, and the thing the shipped arm lacked: an extractor that silently returned
+	## "" would make the arm above pass for "assignment absent" instead of "assignment correct".
+	## Driven against planted text so each row is a claim about the extractor, not about the file.
+	assert_eq(str(_spawn_hold_assignment("\tb._hold_time = hold_time")["rhs"]), "hold_time",
+		"the shipped form must read as the bare hold")
+	assert_eq(str(_spawn_hold_assignment("\tb._hold_time  =  hold_time  # why")["rhs"]), "hold_time",
+		"a comment and extra spaces are cosmetic and must not red")
+	assert_eq(str(_spawn_hold_assignment("\tb._hold_time = hold_time / maxf(1.0, Engine.time_scale)")["rhs"]),
+		"hold_time / maxf(1.0, Engine.time_scale)", "the original divisor must be visible")
+	assert_eq(str(_spawn_hold_assignment("\tb._hold_time = hold_time / other()")["rhs"]),
+		"hold_time / other()", "a DIFFERENT divisor must be visible — the one the old needle missed")
+	assert_eq(str(_spawn_hold_assignment("\tb._hold_time = hold_time * 2.0")["rhs"]),
+		"hold_time * 2.0", "a multiplier too")
+	assert_eq(int(_spawn_hold_assignment("\tb._hold_time_other = hold_time / 2.0")["count"]), 0,
+		"a near-named symbol must not be mistaken for the assignment")
+	assert_eq(int(_spawn_hold_assignment("\t_hold_time = maxf(_hold_time, clip_len)")["count"]), 0,
+		"the voiced extension on self is a different subject and must not be swept in")
+	assert_eq(int(_spawn_hold_assignment("\tvar x := 1")["count"]), 0, "absent means absent")
 
 
 func test_right_column_clamp() -> void:
