@@ -24,6 +24,13 @@ const SoundState := preload("res://test/unit/helpers/sound_state.gd")
 ## label on proximity and are supposed to. Only areas that CHANGE THE WORLD on touch count: a stair,
 ## an `AreaTransition` with `require_interaction == false`, a BossTrigger.
 ##
+## ⛔ AND THE CRYSTAL IS NOT THE ONLY PRESS TARGET THIS CAN HAPPEN TO. `DragonCave._place_treasure
+## _chests` falls back to `_sign_position(_cell_of(stairs_up) + Vector2i(2, 1))` on any floor with no
+## `T` marker — the SAME resolver with the SAME spawn-cells-only exclusion that put the crystal
+## beside the stairs. A chest or a mimic there has the identical failure: you walk up to open it and
+## the floor changes instead. So the last arm asks the question of EVERY press target, and the
+## crystal arms above are the special case that found it.
+##
 ## ✅ AND THE SECOND ARM EXISTS BECAUSE THE FIRST FIX BROKE IT. Avoiding the stairs alone left
 ## Shadow's pre-boss crystal with ONE standable approach cell — "move it until it stops colliding"
 ## is satisfiable by moving it where nobody can stand, the same half-fix that bit the W1 chests.
@@ -241,6 +248,66 @@ func test_the_detector_can_see_a_crystal_on_a_stair() -> void:
 	assert_gt(seen, 0,
 		"a crystal one cell from the stairs must be reported — if it is not, the clean sweep means nothing")
 	await _teardown(d)
+
+
+## ⛔ THE WIDENING: anything that needs a PRESS, not just the save crystal. A press target whose
+## approach cells are inside a touch trigger cannot be used — the trigger fires first, every time,
+## because it needs no input. Found by asking why the crystal was special and finding it is not.
+func test_no_press_target_is_approached_only_through_a_trigger() -> void:
+	var bad: Array = []
+	var targets := 0
+	var gates := 0
+	for s in SUBJECTS:
+		for fl in (s["floors"] as Array):
+			var d = await _build(str(s["path"]), int(fl))
+			if d == null:
+				continue
+			var nm := str(s["path"]).get_file().get_basename()
+			var stack: Array = [d]
+			while not stack.is_empty():
+				var n = stack.pop_back()
+				for c in n.get_children():
+					stack.append(c)
+				if not (n is Node2D) or not n.has_method("interact"):
+					continue
+				## A touch trigger is not itself a press target; an AreaTransition that DOES want a
+				## press is, and it is judged like any other.
+				var b := _base(n)
+				if b == "BossTrigger" or str(n.name).begins_with("Stairs") or str(n.name).begins_with("Exit"):
+					continue
+				targets += 1
+				var rows: Array = _approaches(n as Node2D)
+				if rows.is_empty():
+					continue
+				## \u26d4 A PRESS TARGET ON A **GATE** TILE IS A DOOR, AND ITS APPROACHES ARE WHAT IT
+				## CONNECTS. `DungeonMechanics.LockTrigger` is placed on the layout's `G`/`Z` lock
+				## character, which renders as wall until the puzzle opens it \u2014 Whispering Cave floor 4
+				## has one at (6,10) with the DOWN stairs at (6,9) and the UP stairs at (6,11), so both
+				## its approaches being staircases is the entire design. A strict rule with that one
+				## named as an exception would be a suppression list; the TILE is structural and needs
+				## nothing kept current.
+				## \u2705 ASKED OF THE COLLIDER, NOT OF A CHARACTER SET. My first version tested the cell's
+				## layout char against `Signpost.SIGN_GROUND` \u2014 which is `[".", "i"]`, the cells a SIGN
+				## may take, not "is this floor". A chest sitting on its own `T` marker tile read as
+				## non-floor, and 60 of 79 targets were exempted instead of 2. The real question is
+				## whether a player can stand where the target is: a gate cannot be stood on.
+				if not _fits((n as Node2D).global_position):
+					gates += 1
+					continue
+				for row in rows:
+					for f in (row["fires"] as Array):
+						bad.append("%s floor %d: %s '%s' can be approached from %s, which is INSIDE %s and fires on touch \u2014 the player is moved instead of reaching it" % [
+							nm, int(fl), b, str(n.name), str(row["cell"]), str(f)])
+			await _teardown(d)
+	assert_gt(targets, 20,
+		"CONTROL: only %d press targets found across the dungeon floors; the arm would clear vacuously" % targets)
+	bad.sort()
+	for b in bad:
+		gut.p("TOUCHED %s" % str(b))
+	assert_eq(bad, [], "a press target is approached through a touch trigger: %s" % "; ".join(bad))
+	assert_gt(gates, 0,
+		"CONTROL: %d gate-tile targets excluded — if none is found the structural exemption is not being exercised and the rule is stricter than it reads" % gates)
+	gut.p("  %d floor-standing press targets clean, %d gate-tile doors exempt by their own tile" % [targets - gates, gates])
 
 
 ## Every dungeon floor's build calls play_area_music, so this file writes SoundManager's area/world

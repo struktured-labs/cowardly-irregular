@@ -201,6 +201,39 @@ static func floor_spot(rows: Array, mark: Vector2i, tile: int, taken: Dictionary
 	return (Vector2(mark) + Vector2(0.5, 0.5)) * tile
 
 
+## ⛔ THE HALO AROUND ANYTHING THAT FIRES ON TOUCH, for callers placing a PRESS TARGET.
+## `taken_by_spawns` below excludes each spawn's OWN cell and nothing around it, which is right for a
+## signpost (a passive label, harmless beside a stair) and wrong for anything needing a press: land a
+## chest or a save crystal in the cell next to a stair and the stair becomes one of its approach
+## cells, firing on touch before the player can press anything.
+##
+## Measured 2026-10-13: it put the Ice and Shadow pre-boss save crystals one cell from StairsUp, and
+## it put a Whispering Cave chest where one of its only two approaches fires StairsDown — in the
+## tutorial dungeon. Three subjects, one resolver, so the exclusion belongs here rather than being
+## copied a third time.
+##
+## ✅ ONE RING IS PROVABLY ENOUGH: a stair's box is 48 px (24 px half) against 32 px cells, so a
+## target two cells out has its nearest approach 32 px from the stair centre, outside the box; one
+## cell out puts an approach ON it. The number comes from STAIRS_BOX, not from a map.
+static func trigger_halo(spawn_points: Dictionary, tile: int, keys: Array) -> Dictionary:
+	var out: Dictionary = {}
+	for k in keys:
+		if not spawn_points.has(k):
+			continue
+		var p: Variant = spawn_points[k]
+		if not (p is Vector2):
+			continue
+		var c := Vector2i((p as Vector2) / float(tile))
+		for dy in range(-1, 2):
+			for dx in range(-1, 2):
+				out[c + Vector2i(dx, dy)] = true
+	return out
+
+
+## Keys whose spawn teleports or starts a fight on touch.
+const TOUCH_SPAWNS := ["stairs_up", "stairs_down", "entrance", "boss"]
+
+
 ## The cells a sign must never take: every spawn point (stairs, chests, the landing spot).
 static func taken_by_spawns(spawn_points: Dictionary, tile: int) -> Dictionary:
 	var taken := {}

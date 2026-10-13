@@ -937,7 +937,9 @@ func _place_floor_treasure(floor_num: int) -> void:
 	# Fallback: if no T markers, drop one chest near stairs_up (legacy behavior)
 	if treasure_positions.is_empty() and floor_num < total_floors:
 		var near: Vector2 = spawn_points.get("stairs_up", Vector2(8 * TILE_SIZE, 4 * TILE_SIZE))
-		treasure_positions.append(_sign_position(_cell_of(near) + Vector2i(2, 1), floor_num))
+		## Same hazard as the save crystal: a chest resolved into the cell beside the stairs makes
+		## the stair one of its approach cells, and a stair fires on touch.
+		treasure_positions.append(_save_crystal_position(_cell_of(near) + Vector2i(2, 1), floor_num))
 
 	# Loot variety: alternate gold / item by position index and floor depth
 	var item_pool = ["potion", "ether", "hi_potion", "antidote"]
@@ -1055,13 +1057,7 @@ func _sign_position(mark: Vector2i, floor_num: int) -> Vector2:
 ## the actual overlap rather than this distance, so a changed STAIRS_BOX reds there rather than here.
 func _save_crystal_position(mark: Vector2i, floor_num: int) -> Vector2:
 	var blocked: Dictionary = _sign_taken.duplicate()
-	for key in ["stairs_up", "stairs_down", "entrance", "boss"]:
-		if not spawn_points.has(key):
-			continue
-		var sc: Vector2i = _cell_of(spawn_points[key])
-		for ny in range(-1, 2):
-			for nx in range(-1, 2):
-				blocked[sc + Vector2i(nx, ny)] = true
+	blocked.merge(Signpost.trigger_halo(spawn_points, TILE_SIZE, Signpost.TOUCH_SPAWNS))
 	var rows: Array = floor_layouts.get(floor_num, floor_layouts.get(1, []))
 	## ⚠️ AND IT MUST NOT BE SHOVED SOMEWHERE USELESS. Avoiding the stairs alone left Shadow's
 	## pre-boss crystal with ONE standable approach cell — the other half of the chest lesson, where

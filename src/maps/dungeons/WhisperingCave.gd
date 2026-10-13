@@ -753,7 +753,14 @@ func _place_floor_treasure(floor_num: int) -> void:
 	# Place near stairs_up or center of floor
 	var pos = spawn_points.get("stairs_up", Vector2(8 * TILE_SIZE, 5 * TILE_SIZE))
 	# A fixed three-tiles-right put floors 3 and 4's chests inside a wall.
-	chest.position = Signpost.floor_spot(floor_layouts.get(floor_num, floor_layouts[1]), Vector2i(pos / TILE_SIZE) + Vector2i(3, 0), TILE_SIZE, _sign_taken)
+	## ⛔ THE HALO MATTERS HERE AND `_sign_taken` ALONE DID NOT HAVE IT: measured on floor 3, this
+	## chest had TWO standable approaches and one of them fired StairsDown — half the ways to reach a
+	## chest in the tutorial dungeon sent the player down a floor. Signposts keep the plain
+	## `_sign_taken`, because a label beside a stair costs nothing.
+	var chest_taken: Dictionary = _sign_taken.duplicate()
+	chest_taken.merge(Signpost.trigger_halo(spawn_points, TILE_SIZE, Signpost.TOUCH_SPAWNS))
+	chest.position = Signpost.floor_spot(floor_layouts.get(floor_num, floor_layouts[1]), Vector2i(pos / TILE_SIZE) + Vector2i(3, 0), TILE_SIZE, chest_taken)
+	_sign_taken[Vector2i(chest.position / TILE_SIZE)] = true
 	chest.chest_opened.connect(func(_contents):
 		GameState.set_story_flag("chest_" + data["id"])
 	)
