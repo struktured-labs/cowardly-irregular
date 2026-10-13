@@ -387,7 +387,10 @@ const _EXAMINE_OFFSETS := {
 	"harmonia_chapel_ledger": Vector2i(3, -1),
 	"harmonia_chapel_requests": Vector2i(-3, -2),
 	## harmonia_library
-	"harmonia_library_catalog": Vector2i(-3, -2),
+	## (-3,-2) is cell (6,10) and a decoration sits there — the sweep relocated it to (5,10) at
+	## runtime, which test_every_npc_stands_where_it_is_authored correctly refuses. Authored where
+	## it stands instead of leaning on the relocation.
+	"harmonia_library_catalog": Vector2i(-4, -2),
 	"harmonia_library_returns": Vector2i(3, -1),
 	## scriptura_bookshop
 	"scriptura_bookshop_bookmark": Vector2i(-3, -2),
