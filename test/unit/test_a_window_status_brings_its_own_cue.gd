@@ -65,13 +65,90 @@ func _first_args(body: String, call: String) -> Array:
 	return out
 
 
+## ⛔ THE ONE LAYER THIS WHOLE FILE RESTS ON, pinned THROUGH THE ACCESSOR IT PROTECTS. Every verdict
+## here compares statuses PRODUCED against cues FIRED, both read out of BattleManager AS TEXT, and
+## prose is not input only because `_window_body` goes through GdSource. Swap it for a raw
+## FileAccess.get_file_as_string and a commented-out play_status_if_authored("status_x") WIDENS the
+## cued set, so a genuinely uncued status reads as covered.
+##
+## ⚠️ MEASURED SCOPE, because the first version of this arm asserted about `code_of` DIRECTLY and so
+## stayed green through exactly the swap it claimed to catch — a guard scoped to the helper instead
+## of to its caller. It now slices the SAME range from the raw file and compares, so the stripped
+## side is whatever `_window_body` actually returns.
+##
+## 📌 And the hazard is NARROWER than it first looks, which is worth stating rather than overclaiming:
+## a prose-named cue that is NOT authored already reds test_every_cue_the_window_fires_is_authored
+## (measured — that is the arm that fires under the swap). The genuinely SILENT case is a prose
+## mention of an AUTHORED key, and this arm is what stands in front of it.
+func test_the_body_this_guard_reads_has_had_its_prose_stripped() -> void:
+	var raw: String = FileAccess.get_file_as_string(BM_PATH)
+	assert_false(raw.is_empty(), "CONTROL: the raw file must be readable, else neither side means anything")
+	var at: int = raw.find(FN)
+	assert_gt(at, -1, "CONTROL: the function must be findable in the RAW text too")
+	if at < 0:
+		return
+	var nxt: int = raw.find("\nfunc ", at + FN.length())
+	var raw_body: String = raw.substr(at, (nxt - at) if nxt > at else -1)
+	var raw_comments: int = 0
+	for ln in raw_body.split("\n"):
+		if ln.strip_edges().begins_with("#"):
+			raw_comments += 1
+	assert_gt(raw_comments, 0,
+		"CONTROL: the raw window body must actually carry comment lines, else a clean strip proves nothing")
+	assert_true(raw_body.contains("\"\"\""),
+		"CONTROL: and a docstring region, else the parity half of the strip is untested here")
+	var body: String = _window_body()
+	var left: int = 0
+	for ln in body.split("\n"):
+		if ln.strip_edges().begins_with("#"):
+			left += 1
+	assert_eq(left, 0,
+		"the body THIS GUARD reasons about must carry no comment lines — %d survived, so prose is input and a comment can widen the cued set" % left)
+	assert_false(body.contains("\"\"\""),
+		"nor any docstring fence — a surviving region means the parity split did not run on what this guard reads")
+
+
+## WHY that strip is load-bearing, demonstrated on one input rather than asserted — and the two
+## shapes need DIFFERENT machinery, which is the trap. `strip_comments` is a line pass and cannot
+## touch a `"""` region; only the parity split in `split()` can, and `code_of` is
+## `split(...)["code"]` for exactly that reason. I reached for `strip_comments` first because the
+## NAME sounds like the whole job: it passes the `#` case and leaves the docstring cue standing.
+## So this arm pins that `code_of` must never be "simplified" to the `#`-only pass — the helper's
+## own header records that same reduction as this lane's `.325` defect.
+func test_a_cue_named_only_in_prose_is_not_a_fired_cue() -> void:
+	var hash_form: String = "func _a():\n\t## play_status_if_authored(\"status_slowed\")\n\tp.add_status(\"slowed\", 2)\n"
+	var doc_form: String = "func _b():\n\t\"\"\"\n\tplay_status_if_authored(\"status_frozen\")\n\t\"\"\"\n\tp.add_status(\"frozen\", 2)\n"
+	for pair in [[hash_form, "slowed", "status_slowed", "# comment"], [doc_form, "frozen", "status_frozen", "docstring"]]:
+		var text: String = str(pair[0])
+		var status: String = str(pair[1])
+		var cue: String = str(pair[2])
+		var shape: String = str(pair[3])
+		assert_true(str(status) in _first_args(text, "add_status("),
+			"CONTROL (%s): the REAL add_status must be visible to the extractor, else this input tests nothing" % shape)
+		assert_true(str(cue) in _first_args(text, "play_status_if_authored("),
+			"CONTROL (%s): on RAW text the prose cue IS counted — the hazard must be reproducible here, or the arm below proves nothing" % shape)
+		var code_half: String = str(GdSource.split(text)["code"])
+		assert_false(str(cue) in _first_args(code_half, "play_status_if_authored("),
+			"through the accessor this guard actually uses, a cue named only in a %s must NOT count as fired" % shape)
+	## The reduction that would silently reopen it, named as its own assertion rather than left to
+	## the comment above: the `#`-only pass is NOT sufficient for a docstring.
+	assert_true("status_frozen" in _first_args(GdSource.strip_comments(doc_form), "play_status_if_authored("),
+		"strip_comments is a LINE pass — if this ever stops counting the docstring cue it has gained region handling, and the note above is stale")
+
+
 ## CONTROL, must pass on both trees: the body is found and is not the whole file. Without it every
 ## assertion below is about an empty string.
 func test_control_the_window_body_is_isolated() -> void:
 	var body: String = _window_body()
 	assert_ne(body, "", "the function must be found by name")
 	assert_true(body.begins_with(FN), "the body starts at the header")
-	assert_false(body.contains("\nfunc _execute_group_action"), "and stops before the next function")
+	## DERIVED, and the literal it replaces was INERT: it named `_execute_group_action`, which sits 387
+	## lines EARLIER in the file, so a range starting at this function could never contain it. The one
+	## assertion whose job was the range's END could not fail. Measured: break the close anchor and
+	## three SUBJECT arms red while that control stayed green — coverage without the explanation.
+	## A second `func ` header inside the range is the defect itself, whoever happens to follow.
+	assert_false(body.contains("\nfunc "),
+		"the range must hold ONE function — a second header means the close anchor over-ran")
 	assert_gt(body.length(), 200, "and is not truncated to nothing")
 
 

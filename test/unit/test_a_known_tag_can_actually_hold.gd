@@ -101,6 +101,38 @@ func test_an_ally_alive_tag_can_hold_for_every_job_a_line_may_name() -> void:
 			"ally_alive:%s resolves the alias now; if that changed deliberately, the authored tags may use either id" % old_id)
 
 
+func test_an_old_saves_cleric_still_answers_ally_alive_cleric() -> void:
+	## THE PROPERTY THAT MAKES CANONICAL IDS THE RIGHT THING TO AUTHOR. `tag_holds` compares the tag's
+	## job to a party member's job_id with no alias map, so if a save from before the rename could put
+	## `white_mage` on the wire, all 15 authored ally_alive tags would be mute for that player — and
+	## nothing would say so. It cannot: JobSystem.assign_job calls resolve_job_id BEFORE the lookup
+	## (JobSystem:494) and assigns the canonical job dict, so `_resolve_party_job_id` only ever sees
+	## the new id. Driven through the production path rather than asserted from reading it, because
+	## removing that one line would mute the lines silently for exactly the players with old saves.
+	var aliases: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/job_aliases.json"))
+	assert_true(aliases is Dictionary and not (aliases as Dictionary).is_empty(), "CONTROL: the alias table must parse and be non-empty")
+	for old_id in (aliases as Dictionary):
+		var new_id: String = str((aliases as Dictionary)[old_id])
+		var ally := Combatant.new()
+		autofree(ally)
+		ally.combatant_name = "Saved Ally"
+		assert_true(JobSystem.assign_job(ally, str(old_id)),
+			"CONTROL: assign_job must accept the retired id %s, or an old save cannot load at all" % old_id)
+		assert_eq(str((ally.job as Dictionary).get("id", "")), new_id,
+			"assign_job left the retired id %s on the combatant, so every ally_alive:%s line goes mute for old saves" % [old_id, new_id])
+		var me := Combatant.new()
+		autofree(me)
+		me.combatant_name = "Brom"
+		JobSystem.assign_job(me, "fighter")
+		var ctx := PartyCombatLineContext.new()
+		ctx.speaker_name = "Brom"
+		ctx.party = [_m("Brom", str((me.job as Dictionary).get("id", ""))),
+			_m("Saved Ally", str((ally.job as Dictionary).get("id", "")))]
+		ctx.enemies = [_e("Slime")]
+		assert_true(TAGS.tag_holds("ally_alive:%s" % new_id, ctx),
+			"an ally loaded from a save that called them %s does not answer ally_alive:%s" % [old_id, new_id])
+
+
 func test_no_authored_ally_alive_tag_names_a_job_that_cannot_answer() -> void:
 	## The content half: a tag naming a retired or misspelled job is accepted by every other guard and
 	## never holds. 15 such tags are authored today and all name a live job.

@@ -162,16 +162,29 @@ func test_an_intro_never_takes_a_chained_entry() -> void:
 	## (four spotlight gates, a comment, the loop's own, the declaration). Deleting the loop's guard
 	## left the arm satisfied by a spotlight gate's: mutant M3 stayed GREEN with the refusal gone.
 	## Behaviour instead — set the flag the chain sets and ask the gate.
+	##
+	## ⛔ AND THE CORPUS IS ASSERTED INSIDE THE ARM, which it was not when this shipped. Every village
+	## whose walk fails is `continue`d, so if cross-test state stopped the walk reaching ANY intro the
+	## arm passed having tested NOTHING. MEASURED by making _walk_to_intro return false: 13 passing,
+	## 1 failing — and the one that spoke was the CONTROL in the next function, not this arm.
+	## A neighbouring control is weaker than an in-arm count: it is a separate test that a reasonable
+	## cleanup can prune as "duplicate", and this arm would then go silent with nothing saying so.
+	## (@cowir-overworld, 2026-10-12: a behavioural arm is loud only about a corpus that could have
+	## contained the defect — theirs covered 1 castle floor of 4, chosen by whatever ran before it.)
 	var blocked_ok: Array[String] = []
+	var reached: Array[String] = []
 	for map_id in _intros():
 		var cid: String = str(_intros()[map_id])
 		if not _walk_to_intro(str(map_id), cid):
 			continue
+		reached.append(str(map_id))
 		_loop._chaining_story_cutscene = true
 		var got: String = _pending_on(str(map_id))
 		_loop._chaining_story_cutscene = false
 		if got == cid:
 			blocked_ok.append(str(map_id))
+	assert_eq(reached.size(), _intros().size(),
+		"this arm only speaks about villages whose walk reached the intro, and it reached %d of %d — the rest were skipped, so a pass here would assert nothing about them: %s" % [reached.size(), _intros().size(), reached])
 	assert_eq(blocked_ok, ([] as Array[String]),
 		"an intro fires as a chain target on these maps, so it stacks onto the story beat that just ended: %s" % [blocked_ok])
 

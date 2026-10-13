@@ -912,7 +912,10 @@ func _create_rule_trigger_row(desc: String, count: int, max_count: int,
 ## ═══════════════════════════════════════════════════════════════════════
 
 func _input(event: InputEvent) -> void:
-	if not visible:
+	## is_visible_in_tree, NOT `visible`: this screen is a CHILD of AutogrindUI, which sets its own
+	## `visible = false` for the whole grind -- so our own flag stays true while nothing is on screen
+	## and this handler kept emitting pause/exit/tier_cycle from a screen the player cannot see.
+	if not is_visible_in_tree():
 		return
 	var action = AutogrindInputHelper.classify_event(event)
 	match action:

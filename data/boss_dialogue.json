@@ -420,7 +420,10 @@
           "gouda",
           "brie",
           "tribute",
-          "bribe"
+          "bribe",
+          "parley",
+          "name your terms",
+          "spare us"
         ],
         "consequence": {
           "type": "skip_turn",
@@ -498,7 +501,10 @@
       {
         "id": "scorch",
         "name": "Scorch",
-        "bias": {"fire_breath": 1.5, "magma_eruption": 1.3},
+        "bias": {
+          "fire_breath": 1.5,
+          "magma_eruption": 1.3
+        },
         "conditions": {
           "min_phase": 1,
           "weight": 1.2
@@ -512,7 +518,9 @@
       {
         "id": "guard_scales",
         "name": "Guard Scales",
-        "bias": {"flame_wall": 1.5},
+        "bias": {
+          "flame_wall": 1.5
+        },
         "conditions": {
           "min_phase": 1,
           "weight": 0.7
@@ -525,7 +533,9 @@
       {
         "id": "ember_judge",
         "name": "Ember Judge",
-        "bias": {"magma_eruption": 1.5},
+        "bias": {
+          "magma_eruption": 1.5
+        },
         "conditions": {
           "min_phase": 2,
           "weight": 1.1
@@ -651,7 +661,10 @@
           "no macro",
           "no auto",
           "no script",
-          "fair fight"
+          "fair fight",
+          "realest fight",
+          "burn us cleanly",
+          "we'll thank you"
         ],
         "consequence": {
           "type": "taunt_softens",
@@ -747,7 +760,10 @@
       {
         "id": "deep_freeze",
         "name": "Deep Freeze",
-        "bias": {"ice_prison": 1.5, "absolute_zero": 1.3},
+        "bias": {
+          "ice_prison": 1.5,
+          "absolute_zero": 1.3
+        },
         "conditions": {
           "min_phase": 1,
           "weight": 1.1
@@ -761,7 +777,9 @@
       {
         "id": "frost_turtle",
         "name": "Frost Turtle",
-        "bias": {"frost_armor": 1.5},
+        "bias": {
+          "frost_armor": 1.5
+        },
         "conditions": {
           "min_phase": 1,
           "weight": 0.9
@@ -774,7 +792,10 @@
       {
         "id": "savor",
         "name": "Savor",
-        "bias": {"ice_prison": 1.5, "crystal_shatter": 1.3},
+        "bias": {
+          "ice_prison": 1.5,
+          "crystal_shatter": 1.3
+        },
         "conditions": {
           "min_phase": 2,
           "weight": 1.2
@@ -901,7 +922,10 @@
           "dull",
           "tedious",
           "predictable",
-          "more of the same"
+          "more of the same",
+          "defer and stall",
+          "outlast a glacier",
+          "frozen data"
         ],
         "consequence": {
           "type": "lose_buff_or_stagger",
@@ -996,7 +1020,10 @@
       {
         "id": "blitz",
         "name": "Blitz",
-        "bias": {"lightning_dash": 1.5, "chain_lightning": 1.3},
+        "bias": {
+          "lightning_dash": 1.5,
+          "chain_lightning": 1.3
+        },
         "conditions": {
           "min_phase": 1,
           "weight": 1.3
@@ -1010,7 +1037,9 @@
       {
         "id": "static_taunt",
         "name": "Static Taunt",
-        "bias": {"static_field": 1.5},
+        "bias": {
+          "static_field": 1.5
+        },
         "conditions": {
           "min_phase": 1,
           "weight": 0.8
@@ -1023,7 +1052,10 @@
       {
         "id": "overdrive",
         "name": "Overdrive",
-        "bias": {"overcharge": 1.5, "thunder_breath": 1.3},
+        "bias": {
+          "overcharge": 1.5,
+          "thunder_breath": 1.3
+        },
         "conditions": {
           "min_phase": 2,
           "weight": 1.2
@@ -1150,7 +1182,10 @@
           "max speed",
           "redline",
           "overcharge",
-          "full power"
+          "full power",
+          "out-advance",
+          "chaining turns",
+          "bet we can"
         ],
         "consequence": {
           "type": "enrage_briefly",
@@ -1398,7 +1433,9 @@
           "it's okay",
           "comfort",
           "not alone",
-          "valid"
+          "valid",
+          "remember you",
+          "persist in memory"
         ],
         "consequence": {
           "type": "taunt_softens",

@@ -37,6 +37,9 @@ extends LLMBackend
 ## Emitted whenever reachability changes (and once when the boot probe resolves).
 signal availability_changed(available: bool)
 
+## Emitted once per list_models() call; models is empty when ok is false.
+signal models_listed(ok: bool, models: PackedStringArray, err: String)
+
 
 # ── Internal state ────────────────────────────────────────────────────────────
 # Maps request_id → HTTPRequest node.
@@ -48,8 +51,15 @@ var _ready_flag: bool = false
 # Probe HTTPRequest reference (kept alive until probe completes).
 var _probe_request: HTTPRequest = null
 
+# Separate from _probe_request: a model listing must never cancel a reachability probe.
+var _list_request: HTTPRequest = null
+
 # Engine-msec stamp of the last RESOLVED probe; drives the re-probe interval.
 var _last_probe_msec: int = 0
+
+# The models the last probe's own response listed. The probe GETs the listing endpoint and used
+# to discard the body, so this costs no extra request. Empty means "not known", never "none".
+var _server_models: PackedStringArray = []
 
 # HTTP status of the last resolved probe, 0 if it never reached a server. A 401/403
 # means the endpoint ANSWERED and refused the credential, which is a different repair
@@ -147,12 +157,89 @@ func probe_headers() -> PackedStringArray:
 	return headers
 
 
-func _on_probe_completed(result: int, response_code: int, _headers: PackedStringArray, _body: PackedByteArray) -> void:
+## The models the SERVER reports. The reachability probe already GETs this exact endpoint and
+## discards the body; parsing it is the difference between a player guessing a model name and
+## picking one they actually have. Shapes follow _probe_url's own branching, so the two agree.
+static func parse_model_list(api_format: String, raw: String) -> PackedStringArray:
+	var out: PackedStringArray = []
+	var parsed: Variant = JSON.parse_string(raw)
+	if typeof(parsed) != TYPE_DICTIONARY:
+		return out
+	var is_ollama: bool = api_format == "ollama"
+	var rows: Variant = (parsed as Dictionary).get("models" if is_ollama else "data", [])
+	if typeof(rows) != TYPE_ARRAY:
+		return out
+	var field: String = "name" if is_ollama else "id"
+	for r in (rows as Array):
+		if typeof(r) != TYPE_DICTIONARY:
+			continue
+		var id: String = str((r as Dictionary).get(field, "")).strip_edges()
+		if id != "" and not out.has(id):
+			out.append(id)
+	return out
+
+
+## Whether the configured model is one the server listed. UNKNOWN (true) when the listing was
+## empty or unparsed: absence of evidence must not read as evidence of absence, because a provider
+## may serve a model its /v1/models does not enumerate for this key.
+func model_is_on_server() -> bool:
+	if _server_models.is_empty() or model == "":
+		return true
+	return model in _server_models
+
+
+## Ask the server what it has. Answers exactly once through models_listed.
+func list_models() -> void:
+	if _list_request != null and is_instance_valid(_list_request):
+		models_listed.emit(false, PackedStringArray(), "a model listing is already in flight")
+		return
+	_list_request = HTTPRequest.new()
+	_list_request.name = "ModelList"
+	_list_request.timeout = PROBE_TIMEOUT_SEC
+	add_child(_list_request)
+	_list_request.request_completed.connect(_on_list_completed)
+	# Bound to a local like _start_probe's: a local assigned from a key-carrying call registers as
+	# an alias of that container, and every warning interpolating it then reads as a key leak.
+	var auth: PackedStringArray = probe_headers()
+	var err: int = _list_request.request(_probe_url(), auth, HTTPClient.METHOD_GET, "")
+	if err != OK:
+		# The request never started, so _on_list_completed will never fire; answer anyway.
+		_cleanup_list()
+		models_listed.emit(false, PackedStringArray(), "could not reach %s (error %d)" % [_probe_url(), err])
+
+
+func _on_list_completed(result: int, response_code: int, _headers: PackedStringArray, body: PackedByteArray) -> void:
+	_cleanup_list()
+	if result != HTTPRequest.RESULT_SUCCESS:
+		models_listed.emit(false, PackedStringArray(), "%s did not answer" % _probe_url())
+		return
+	if response_code < 200 or response_code >= 300:
+		# Reuses the probe's own vocabulary so one HTTP status reads the same on both surfaces.
+		_last_probe_code = response_code
+		models_listed.emit(false, PackedStringArray(), unavailable_reason())
+		return
+	var models: PackedStringArray = parse_model_list(api_format, body.get_string_from_utf8())
+	if models.is_empty():
+		models_listed.emit(false, models, "%s listed no models" % _probe_url())
+		return
+	models_listed.emit(true, models, "")
+
+
+func _cleanup_list() -> void:
+	if _list_request != null and is_instance_valid(_list_request):
+		if _list_request.request_completed.is_connected(_on_list_completed):
+			_list_request.request_completed.disconnect(_on_list_completed)
+		_list_request.queue_free()
+	_list_request = null
+
+
+func _on_probe_completed(result: int, response_code: int, _headers: PackedStringArray, body: PackedByteArray) -> void:
 	var now_ready: bool = result == HTTPRequest.RESULT_SUCCESS and response_code >= 200 and response_code < 300
 	var was_ready: bool = _ready_flag
 	_ready_flag = now_ready
 	_last_probe_msec = Time.get_ticks_msec()
 	_last_probe_code = response_code if result == HTTPRequest.RESULT_SUCCESS else 0
+	_server_models = parse_model_list(api_format, body.get_string_from_utf8()) if now_ready else PackedStringArray()
 	_cleanup_probe()
 	# Boot resolution isn't a "transition" — announce state, but only warn if unreachable.
 	if not _first_probe_done:
@@ -171,26 +258,28 @@ func _on_probe_completed(result: int, response_code: int, _headers: PackedString
 	availability_changed.emit(now_ready)
 
 
-## WHAT KIND of unavailable, as one token. The log wants a paragraph and a Settings
-## subtitle has about eighty columns, so the two surfaces must not share a STRING -
-## they share this FACT and each phrases it. Pinning the code->kind map pins both
-## without pinning either one's prose.
+## The kind each probe status means, as DATA so a guard can read the set through this class
+## instead of parsing the source for it. 0 is "no server answered", not a status.
+const KIND_FOR_CODE := {
+	0: "unreachable",
+	401: "key_rejected",
+	403: "key_rejected",
+	404: "not_found",
+	429: "rate_limited",
+}
+
+## Any status the table does not name. A reachable backend reports "" instead.
+const KIND_FALLBACK := "http_error"
+
+
+## WHAT KIND of unavailable, as one token. The log wants a paragraph and a Settings subtitle has
+## about eighty columns, so the two surfaces must not share a STRING — they share this FACT and
+## each phrases it. Pinning the code->kind table pins both without pinning either one's prose.
 func unavailable_kind() -> String:
-	# An available backend has no kind at all. Guarding HERE rather than at the readout
-	# means no caller can be handed "http_error" for a healthy 200.
+	# Guarded HERE rather than at the readout: no caller can be handed a kind for a healthy 200.
 	if _ready_flag:
 		return ""
-	match _last_probe_code:
-		0:
-			return "unreachable"
-		401, 403:
-			return "key_rejected"
-		404:
-			return "not_found"
-		429:
-			return "rate_limited"
-		_:
-			return "http_error"
+	return str(KIND_FOR_CODE.get(_last_probe_code, KIND_FALLBACK))
 
 
 ## Why the backend is unavailable, for the log. The credential case is split out because
@@ -272,6 +361,8 @@ func get_availability_info() -> Dictionary:
 		"model": model,
 		"probed": _first_probe_done,
 		"probe_code": _last_probe_code,
+		"model_present": model_is_on_server(),
+		"server_model_count": _server_models.size(),
 		"kind": unavailable_kind(),
 		"seconds_since_probe": (Time.get_ticks_msec() - _last_probe_msec) / 1000.0 if _first_probe_done else -1.0,
 		"probe_interval_sec": PROBE_INTERVAL_SEC,

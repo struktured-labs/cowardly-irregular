@@ -3323,7 +3323,13 @@ func _on_battle_started() -> void:
 			var mon_track: String = declared if declared != "" else "battle_" + dominant_monster
 			_base_music_track = mon_track
 			SoundManager.play_music(mon_track)
-			print("[MUSIC] Playing %s battle theme (%s)" % [dominant_monster, mon_track])
+			## Name what RESOLVED, not what was asked for: 27 pool-reachable monsters have no bed.
+			var heard: String = SoundManager.playing_track_stem()
+			if heard != "" and heard != mon_track:
+				print("[MUSIC] Playing %s battle theme (%s requested, %s playing)"
+					% [dominant_monster, mon_track, heard])
+			else:
+				print("[MUSIC] Playing %s battle theme (%s)" % [dominant_monster, mon_track])
 		else:
 			# Use terrain-specific battle music for areas that have one,
 			# otherwise fall back to generic battle music
@@ -4927,7 +4933,7 @@ func _on_action_executed(combatant: Combatant, action: Dictionary, targets: Arra
 			match effect:
 				# magic_defense_up/regen/barrier/cleanse reached the catch-all and drew the DESCENDING blip — a buff sounding negative; magic_defense_down was listed and its own opposite was not
 				# "buff" is 4 Masterites' literal effect string; the lookup asks for status_buff, which does not exist, so the authored buff cue was never reached
-				"defense_up", "attack_up", "volatility_up_self", "volatility_down", "magic_defense_up", "regen", "barrier", "cleanse", "buff":
+				"defense_up", "attack_up", "volatility_up_self", "volatility_down", "magic_defense_up", "regen", "barrier", "buff":
 					SoundManager.play_battle("buff")
 				# stat reductions share the generic debuff cue (cowir-sfx rec) — bespoke cues reserved for the scary/unique statuses
 				# ⛔ SO AN EFFECT WITH A BESPOKE AUTHORED CUE DOES NOT BELONG IN THIS ARM, and two were sitting here:
@@ -4939,6 +4945,10 @@ func _on_action_executed(combatant: Combatant, action: Dictionary, targets: Arra
 				# dispel_and_self_buff is target_type single_ally and HOSTILE to that ally (BattleManager strips their buffs, logged in penalty_bbcode) — it sits here with its base effect `dispel` because the target_type rule below would send it to the buff cue
 				"defense_down", "volatility_up", "attack_down", "magic_down", "magic_defense_down", "speed_down", "all_stats_down", "random_debuff", "dispel", "dispel_and_self_buff", "debuff":
 					SoundManager.play_battle("debuff")
+				## cleanse is cued by BattleManager's cleanse executor, which is the only place that knows
+				## whether an ailment actually came off. Cueing here too would double it.
+				"cleanse":
+					pass
 				"ability_silence", "silence":
 					SoundManager.play_status("silence")
 				"":
@@ -5621,6 +5631,15 @@ func _on_damage_dealt(target: Combatant, amount: int, is_crit: bool, element: St
 				if _battle_dialogue and _battle_dialogue.has_method("show_boss_intro"):
 					_show_boss_dialogue(target.combatant_name, _boss_dialogue_data["low_hp"])
 
+	## A crit is a property of the hit that HAPPENED, not a second hit, so it is signalled above the
+	## return below. That return stops an ability stacking a weapon layer on its own cue — it was
+	## discarding the crit too, so a Shadow-Step Backstab (crit_chance forced to 1.0, 2.0x damage)
+	## sounded identical to a normal one. play_crit_thud uses its own _sub_player and is built to
+	## stack under the cue that is already playing.
+	# Sub-layer UNDER the crit cue, which already carries its own pitch/echo identity — this adds body, it does not re-hit the transient.
+	if is_crit and _intent_tier() == BattleJuice.Tier.FULL and BattleJuice.flag("audio_crit_thud"):
+		SoundManager.play_crit_thud()
+
 	# Skip hit sounds for abilities — ability sound already played at cast time
 	if _current_ability_id != "":
 		return
@@ -5630,9 +5649,6 @@ func _on_damage_dealt(target: Combatant, amount: int, is_crit: bool, element: St
 		return
 	var weapon_type = EquipmentSystem.get_weapon_type(attacker)
 	SoundManager.play_attack_hit(weapon_type, is_crit)
-	# Sub-layer UNDER the crit cue, which already carries its own pitch/echo identity — this adds body, it does not re-hit the transient.
-	if is_crit and _intent_tier() == BattleJuice.Tier.FULL and BattleJuice.flag("audio_crit_thud"):
-		SoundManager.play_crit_thud()
 	# msg 2796 cycle 20: layer the elemental strike voice ON TOP of the weapon hit, per cowir-sfx's shape — the sword still sounds like a sword, the element rides over it. Only reachable on basic attacks: the `_current_ability_id != ""` early-return above means an ability already played its own cast sound, so a Fire spell won't also fire strike_fire.
 	var weapon_element: String = _weapon_element_for(attacker)
 	if weapon_element != "":

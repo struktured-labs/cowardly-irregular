@@ -998,10 +998,15 @@ func _smoke_player_path_battle() -> void:
 	## scene is up, so a leg that stopped at INACTIVE would leave every later leg shooting this one.
 	## An exploration scene is the thing that owns a monster_spawner.
 	var rewind: float = 0.0
+	var polls: int = 0
 	while rewind < 15.0 and not (current_scene != null and is_instance_valid(current_scene) and "monster_spawner" in current_scene):
-		_smoke_tap("ui_accept")
-		await get_tree().create_timer(0.5).timeout
-		rewind += 0.5
+		if polls % 5 == 0:
+			_smoke_tap("ui_accept")
+		polls += 1
+		await get_tree().create_timer(0.1).timeout
+		rewind += 0.1
+	## The map that comes back has a fresh ENABLED spawner: .669's pre-gate took a second roamer battle here and five legs bailed.
+	_smoke_quiet_the_roamers()
 	if BattleManager.current_state != BattleManager.BattleState.INACTIVE:
 		print("[SMOKE] FAIL: the player-path battle never ended — every later leg would bail")
 		_smoke_failed = true
@@ -1806,8 +1811,10 @@ func _derive_current_scene_music_key() -> String:
 	fallback for bug 2801 when the pause-menu snapshot was lost. Tries the
 	BaseVillage convention first (_get_music_area_id), then the BaseInterior
 	convention (_get_music_track), then the OverworldScene hardcoded default.
-	Returns "" only if _exploration_scene is null/freed, in which case the
-	caller leaves menu playing (nothing sensible to swap to)."""
+	Returns "" only if _exploration_scene is null/freed. The menu-close caller
+	then leaves the menu bed playing; the two autogrind-stop callers do NOT —
+	they fall back to _current_map_id, which play_area_music may not have an
+	arm for (it then starts the world's overworld bed)."""
 	if _exploration_scene == null or not is_instance_valid(_exploration_scene):
 		return ""
 	if _exploration_scene.has_method("_get_music_area_id"):
@@ -5848,18 +5855,52 @@ func _write_feedback_bundle() -> void:
 		Toast.show(self, "Bug report saved to %s" % path)
 
 
+const SCREENSHOT_DIR := "user://screenshots"
+
+
+## F12's write half, separated from the capture so that a FAILURE CAN BE OBSERVED. `_take_screenshot`
+## cannot be driven in a test: a headless run has no viewport texture, so `get_image()` returns null
+## and the function returns before it ever writes. Taking the Image as an argument is the same shape
+## as `FeedbackBundle.write_bundle`, which is tested exactly this way.
+##
+## Returns {"path": <absolute path, or "" if nothing was written>, "reason": <"" on success>}.
+## Every refusal fills `reason`; see the sibling F8 bundle, which already told the player when it
+## failed while F12 flashed the success cue either way.
+static func write_screenshot(img: Image, out_dir: String = SCREENSHOT_DIR) -> Dictionary:
+	if img == null or img.is_empty():
+		return {"path": "", "reason": "there was nothing on screen to capture"}
+	## Deliberately NOT branching on make_dir's error. A folder that cannot be created makes the
+	## save below fail too, so a separate message for it would be a nicer sentence on a branch no
+	## test can reach — and `save_png`'s return is the one whose absence WAS the defect, so it is
+	## the one that has to be exercised. Both exits here are reachable and both are covered.
+	DirAccess.make_dir_recursive_absolute(out_dir)
+	var timestamp: String = Time.get_datetime_string_from_system().replace(":", "-").replace("T", "_")
+	var path: String = "%s/screenshot_%s.png" % [out_dir, timestamp]
+	var err: int = img.save_png(path)
+	if err != OK:
+		return {"path": "", "reason": "the file could not be written (%s)" % error_string(err)}
+	return {"path": ProjectSettings.globalize_path(path), "reason": ""}
+
+
 func _take_screenshot() -> void:
 	"""Save a screenshot to user://screenshots/ with timestamp"""
-	var img = get_viewport().get_texture().get_image()
+	var tex: ViewportTexture = get_viewport().get_texture() if get_viewport() else null
+	var img: Image = tex.get_image() if tex else null
 	if not img:
 		print("[SCREENSHOT] Failed to capture viewport")
+		if Toast:
+			Toast.show_warning(self, "Screenshot failed — there was nothing on screen to capture")
 		return
-	DirAccess.make_dir_recursive_absolute("user://screenshots")
-	var timestamp = Time.get_datetime_string_from_system().replace(":", "-").replace("T", "_")
-	var path = "user://screenshots/screenshot_%s.png" % timestamp
-	img.save_png(path)
-	var abs_path = ProjectSettings.globalize_path(path)
-	print("[SCREENSHOT] Saved: %s" % abs_path)
+	## The write was unchecked and the flash below fired regardless, so a screenshot that never
+	## landed looked exactly like one that did — and the log line claimed a path that held no file.
+	var wrote: Dictionary = write_screenshot(img)
+	if String(wrote.get("path", "")) == "":
+		var why: String = String(wrote.get("reason", ""))
+		push_warning("[SCREENSHOT] FAILED: %s" % why)
+		if Toast:
+			Toast.show_warning(self, "Screenshot failed — %s" % why)
+		return
+	print("[SCREENSHOT] Saved: %s" % wrote["path"])
 	# Flash feedback
 	var flash = ColorRect.new()
 	flash.color = Color(1, 1, 1, 0.5)

@@ -39,6 +39,13 @@ const MIN_SOURCE_FILES := 200
 ##                shape that hides one.)
 ##   TOOLING    — the runtime has no business reading it and no guard compares it either.
 ##   UNWIRED    — authored for a consumer that never landed. Expires when the wiring lands.
+##
+## 📌 TWO ENTRIES EXPIRED HERE AND WERE REMOVED, WHICH IS THE MECHANISM WORKING RATHER THAN A
+## MAINTENANCE CHORE. `castle_harmonia_narrative.json` (the castle's 5 NPCs) and
+## `examine_texts.json` (its 11 examines) both have `src` consumers as of this branch, so this
+## guard red — and that red is what told me to shrink the roster. @cowir-main removed the first on
+## the .664 fold for the same reason. The roster cannot become a list of excuses because closing a
+## gap costs the excuse its place, and the guard is what collects the debt.
 ##   SUPERSEDED — the beat ships elsewhere; wiring it as-is would duplicate a scene.
 ##
 ## ⚠️ A KIND THAT CANNOT EXPIRE IS THE DANGEROUS ONE. Nothing is pending for BASELINE or TOOLING, so
@@ -56,9 +63,6 @@ const DECLARED := {
 	"victory_downbeats.json": ["BASELINE",
 		"per-bed first-downbeat offsets, compared against the audio to catch a re-trim. It is ALSO becoming runtime input — @cowir-music's lane/the-victory-slam-lands-on-the-downbeat reads it so the title slam lands on the beat, authorised by struktured — and it stays declared here because a baseline with a reader is still a baseline. Two of the seven beds have no agreed downbeat and return 'do not wait', so the pack records its purpose AND the reason that purpose is only half servable",
 		"res://test/unit/test_victory_downbeats_match_the_audio_regression.gd"],
-	"examine_texts.json": ["UNWIRED",
-		"26 examines / 915 words; 11 key to castle_harmonia, a real map id, and 15 to village_harmonia-style hints that name the MUSIC BEDS, not the maps (harmonia_village). @cowir-overworld's ruling: re-key the pack rather than teach the consumer a second source of truth for map identity",
-		""],
 	"world2_coordinator_memos.json": ["SUPERSEDED",
 		"6 memos / 944 words; 7 of its 8 beats already ship inside the world2_chapter8_memos CUTSCENE in different words, so wiring it as-is duplicates the beat. What is unshipped is its DESIGN: six memos scattered in Maple Heights. A design call, not a wiring task",
 		""],

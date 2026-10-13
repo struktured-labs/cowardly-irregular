@@ -34,14 +34,38 @@ const LEFT_OPEN := {
 	"masterite_curator_medieval.png": "the face under the hood is keyed out; white or shadow is an art call",
 	"ninja.png": "the ring round the eye slit is keyed out; what colour it was is not recoverable by rule",
 	"npcs/fairy.png": "the patch by her raised hand may be the gap between arm and body",
-	"npcs/hooded_mage.png": "the whole face is keyed out; a white mask or a shadow is an art call",
-	"npcs/mysterious.png": "the whole face is keyed out; a white mask or a shadow is an art call",
 }
+## Whole eyes the key took, pupil and all. Painted white they read as blind (the elder, Brutus and Boris after the
+## second pass), so they are left clear, where the dark dialogue panel reads as a dark eye, until the portrait is
+## redrawn. Each point is the centre of a hole that must still be open; nothing else on the portrait may be.
+const EYES_LEFT_CLEAR := {
+	"bossbinder.png": [Vector2i(91, 66), Vector2i(162, 65)],
+	"npcs/child.png": [Vector2i(96, 102), Vector2i(152, 102), Vector2i(85, 124), Vector2i(166, 123)],
+	"npcs/rowan.png": [Vector2i(105, 87), Vector2i(150, 87)],
+	"npcs/villager_f.png": [Vector2i(106, 93), Vector2i(152, 93), Vector2i(83, 114), Vector2i(175, 114)],
+}
+## Third pass: where the keyed hole IS the eye (one clean pair per face) it is filled near-white and given a pupil by
+## rule, so the speaker has eyes whatever colour the dialogue panel is. Each point is the centre of a drawn eye.
+const PUPIL := Color8(46, 30, 24)
+const EYES_DRAWN := {
+	"keepers/brutus.png": [Vector2i(102, 103), Vector2i(153, 103)],
+	"keepers/mortimer.png": [Vector2i(104, 109), Vector2i(150, 108)],
+	"ninja.png": [Vector2i(100, 122), Vector2i(153, 122)],
+	"npcs/boris.png": [Vector2i(105, 113), Vector2i(151, 113)],
+	"npcs/child.png": [Vector2i(101, 122), Vector2i(151, 122)],
+	"npcs/elder.png": [Vector2i(103, 106), Vector2i(151, 106)],
+	"npcs/rowan.png": [Vector2i(104, 101), Vector2i(151, 101)],
+	"npcs/shopkeeper.png": [Vector2i(102, 112), Vector2i(153, 112)],
+	"npcs/villager.png": [Vector2i(103, 128), Vector2i(154, 128)],
+	"npcs/villager_f.png": [Vector2i(106, 109), Vector2i(151, 109)],
+}
+const EYE_MATCH := 5
 const ARTIST_DERIVED := ["fighter.png", "cleric.png", "mage.png", "rogue.png", "bard.png", "mordaine.png", "chancellor_mordaine.png", "calibrant.png"]
 
 
-func small_hole_pixels(img: Image, cap: int = MAX_HOLE, floor: int = 1) -> int:
+func small_hole_pixels(img: Image, cap: int = MAX_HOLE, floor: int = 1, eyes: Array = [], found: Array = []) -> int:
 	## Clear pixels in regions the figure fully encloses (4-connected) whose size is within floor..cap.
+	## A hole centred on one of eyes is not counted; its index is appended to found.
 	var w := img.get_width()
 	var h := img.get_height()
 	var d := img.get_data()
@@ -55,19 +79,31 @@ func small_hole_pixels(img: Image, cap: int = MAX_HOLE, floor: int = 1) -> int:
 		var stack := PackedInt32Array([start])
 		var size := 0
 		var enclosed := true
+		var sum_x := 0
+		var sum_y := 0
 		while not stack.is_empty():
 			var p := stack[stack.size() - 1]
 			stack.remove_at(stack.size() - 1)
 			size += 1
 			var x := p % w
 			var y := p / w
+			sum_x += x
+			sum_y += y
 			if x == 0 or y == 0 or x == w - 1 or y == h - 1:
 				enclosed = false
 			for q in [p - 1 if x > 0 else -1, p + 1 if x < w - 1 else -1, p - w if y > 0 else -1, p + w if y < h - 1 else -1]:
 				if q >= 0 and not seen[q] and d[q * 4 + 3] < 128:
 					seen[q] = 1
 					stack.append(q)
-		if enclosed and size <= cap and size >= floor:
+		if not enclosed:
+			continue
+		var listed := -1
+		for i in eyes.size():
+			if absf(float(sum_x) / size - eyes[i].x) <= EYE_MATCH and absf(float(sum_y) / size - eyes[i].y) <= EYE_MATCH:
+				listed = i
+		if listed >= 0:
+			found.append(listed)
+		elif size <= cap and size >= floor:
 			total += size
 	return total
 
@@ -95,7 +131,7 @@ func test_no_portrait_has_a_keyed_hole_in_its_face() -> void:
 	assert_gt(paths.size(), 140, "CONTROL: the portraits were found (%d)" % paths.size())
 	var holed: Array = []
 	for path in paths:
-		var n := small_hole_pixels(_rgba(path))
+		var n := small_hole_pixels(_rgba(path), MAX_HOLE, 1, EYES_LEFT_CLEAR.get(path.trim_prefix(PORTRAITS), []))
 		if n > 0:
 			holed.append("%s: %d px" % [path.trim_prefix(PORTRAITS), n])
 	assert_eq(holed, [], "%d portrait(s) with see-through eyes or teeth (tools/fill_portrait_key_holes.py): %s" % [holed.size(), str(holed.slice(0, 8))])
@@ -106,7 +142,7 @@ func test_a_reviewed_portrait_has_its_larger_holes_filled() -> void:
 	for key in REVIEWED_LARGE:
 		assert_true(ResourceLoader.exists(PORTRAITS + key), "CONTROL: %s is a portrait" % key)
 		assert_false(ARTIST_DERIVED.has(str(key).get_file()), "%s is an artist bust and must not be on this list" % key)
-		var n := small_hole_pixels(_rgba(PORTRAITS + key), int(REVIEWED_LARGE[key]))
+		var n := small_hole_pixels(_rgba(PORTRAITS + key), int(REVIEWED_LARGE[key]), 1, EYES_LEFT_CLEAR.get(key, []))
 		if n > 0:
 			holed.append("%s: %d px" % [key, n])
 	assert_eq(holed, [], "reviewed portraits that still show the panel through a keyed patch: %s" % str(holed))
@@ -124,6 +160,62 @@ func test_a_portrait_left_open_is_named_with_its_reason() -> void:
 		elif big > 0 and int(REVIEWED_LARGE.get(key, 0)) <= MAX_HOLE:
 			unnamed.append("%s: %d px" % [key, big])
 	assert_eq(unnamed, [], "portraits with a large see-through patch nobody has looked at: %s" % str(unnamed))
+
+
+func test_a_blank_eye_is_left_clear_not_painted_white() -> void:
+	for key in EYES_LEFT_CLEAR:
+		assert_true(ResourceLoader.exists(PORTRAITS + key), "CONTROL: %s is a portrait" % key)
+		var eyes: Array = EYES_LEFT_CLEAR[key]
+		var found: Array = []
+		small_hole_pixels(_rgba(PORTRAITS + key), 1 << 30, 1, eyes, found)
+		var missing: Array = []
+		for i in eyes.size():
+			if not found.has(i):
+				missing.append(eyes[i])
+		assert_eq(missing, [], "%s: these eyes are filled now. If the portrait was redrawn with real eyes, drop them from EYES_LEFT_CLEAR; if a fill painted them white, that is the defect" % key)
+
+
+func test_a_drawn_eye_has_a_white_and_a_pupil() -> void:
+	## A socket painted one flat colour is the blind eye this file already refused once: an eye needs both.
+	var blank: Array = []
+	for key in EYES_DRAWN:
+		assert_true(ResourceLoader.exists(PORTRAITS + key), "CONTROL: %s is a portrait" % key)
+		var img := _rgba(PORTRAITS + key)
+		for eye in EYES_DRAWN[key]:
+			# The pupil sits at the socket's BOX centre, the listed point is its centroid: look near it, not at it
+			var dark := false
+			var white := false
+			for dy in range(-7, 8):
+				for dx in range(-9, 10):
+					var q := img.get_pixel(eye.x + dx, eye.y + dy)
+					if q.a > 0.5 and q.r8 == 246 and q.g8 == 246 and q.b8 == 246:
+						white = true
+					elif q.a > 0.5 and q.r8 == PUPIL.r8 and q.g8 == PUPIL.g8 and q.b8 == PUPIL.b8:
+						dark = true
+			if not (dark and white):
+				blank.append("%s at %s: pupil %s, white %s" % [key, str(eye), str(dark), str(white)])
+	assert_eq(blank, [], "drawn eyes that are not an eye (a pupil on a white): %s" % str(blank))
+
+
+func test_a_portrait_on_the_lifted_ground_has_no_window_in_it() -> void:
+	## The dialogue box lifts its backdrop to grey behind a DARK portrait so the figure reads. A large keyed hole then
+	## shows that grey: the mysterious figure and the hooded mage spoke with the backdrop where a face should be.
+	var Dialogue := load("res://src/cutscene/CutsceneDialogue.gd")
+	var dark_theme := Color(0.04, 0.04, 0.08)
+	var lifted := 0
+	var windows: Array = []
+	for path in _portraits(PORTRAITS):
+		var tex := load(path) as Texture2D
+		if Dialogue.portrait_ground(tex, dark_theme) != Dialogue.PORTRAIT_LIFTED_BG:
+			continue
+		lifted += 1
+		var key: String = path.trim_prefix(PORTRAITS)
+		var big := small_hole_pixels(_rgba(path), 1 << 30, MAX_HOLE + 1)
+		# A named real opening (staff to robe) is SUPPOSED to show the backdrop
+		if big > 0 and not LEFT_OPEN.has(key):
+			windows.append("%s: %d px" % [key, big])
+	assert_gt(lifted, 3, "CONTROL: some portraits take the lifted ground (%d)" % lifted)
+	assert_eq(windows, [], "dark portraits with a hole the grey backdrop shows through: %s" % str(windows))
 
 
 func test_the_measure_tells_a_keyed_eye_from_the_backdrop() -> void:

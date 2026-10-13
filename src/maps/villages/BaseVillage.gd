@@ -87,6 +87,7 @@ func _ready() -> void:
 	_setup_buildings()
 	_setup_treasures()
 	_setup_npcs()
+	_place_authored_examines()
 	_validate_placements()
 	_setup_player()
 	_setup_camera()
@@ -789,3 +790,136 @@ func restore_place_ambient() -> void:
 
 func _get_ambient_key() -> String:
 	return "ambient_village"
+
+
+## ---- Authored examines (data/examine_texts.json) ----
+
+## `data/examine_texts.json` has been authored since 2026-04-21 and read by nobody. Eleven of its
+## entries are this castle's and landed with CastleHarmonia; THESE THIRTEEN are the village half,
+## and every village has been walking past its own authored prose for six months.
+##
+## 🔑 OFFSETS FROM THE ARRIVAL SPAWN, NOT ABSOLUTE CELLS. A village resize shifts every `.gd`
+## Vector2 and touches no data file, which is the documented trap for staged-cutscene coords — and
+## an absolute cell is the coincidental value this repo warns about. The spawn MOVES WITH ITS MAP,
+## so an offset keeps its meaning ("three cells in from where the player arrives") when a
+## coordinate would not. The resolver then degrades to the nearest walkable free cell, so the worst
+## case of a regenerated map is "a few cells off", never "inside a building".
+##
+## ⚠️ PLACEMENT IS ON THE ARRIVAL APPROACH BY DESIGN, not a per-map thematic survey. These are
+## signs, boards, wells and monuments in village squares, and the player arrives in the square;
+## discoverability is the point for prose that has reached nobody. Where a map wants one somewhere
+## specific, override `_examine_offset_for`.
+const _EXAMINE_OFFSETS := {
+	"harmonia_well": Vector2i(-2, -3),
+	"harmonia_statue": Vector2i(2, -3),
+	"eldertree_gravestone": Vector2i(0, -3),
+	"frosthold_cairn": Vector2i(0, -3),
+	"grimhollow_warning": Vector2i(0, 3),
+	"sandrift_caravan_post": Vector2i(0, -3),
+	"brasston_clocktower_plaque": Vector2i(0, -3),
+	"ironhaven_furnace_log": Vector2i(0, -3),
+	"maple_heights_hoa_board": Vector2i(0, -3),
+	"rivet_row_union_board": Vector2i(0, -3),
+	"node_prime_terminal": Vector2i(-2, -3),
+	"node_prime_sticky": Vector2i(2, -3),
+	"vertex_monolith": Vector2i(0, -3),
+	## cowir-story 2026-10-13 — second looks for three villages that had one each. Offsets kept
+	## clear of the first entry's cell in each village; the resolver still walks to a free cell.
+	"eldertree_grafted_branch": Vector2i(-3, 1),
+	"frosthold_meltwater_mark": Vector2i(3, 1),
+	"grimhollow_lantern_ledger": Vector2i(-3, -1),
+}
+
+const _EXAMINE_PACK := "res://data/examine_texts.json"
+const _EXAMINE_SEARCH_RADIUS: int = 4
+
+
+## Subclasses may name a different offset for one entry without touching the table.
+func _examine_offset_for(examine_id: String) -> Vector2i:
+	return _EXAMINE_OFFSETS.get(examine_id, Vector2i.ZERO)
+
+
+## Only this village's entries, so a pack-wide key change cannot pull another scene's text in.
+func _load_examine_pack() -> Dictionary:
+	if not FileAccess.file_exists(_EXAMINE_PACK):
+		push_warning("[%s] %s is missing — the village keeps its other props" % [_get_area_id(), _EXAMINE_PACK])
+		return {}
+	var parsed = JSON.parse_string(FileAccess.get_file_as_string(_EXAMINE_PACK))
+	if not (parsed is Dictionary):
+		push_warning("[%s] %s did not parse" % [_get_area_id(), _EXAMINE_PACK])
+		return {}
+	var all: Dictionary = (parsed as Dictionary).get("examines", {})
+	var mine: Dictionary = {}
+	for k in all.keys():
+		var e = all[k]
+		if e is Dictionary and str((e as Dictionary).get("scene", "")) == _get_area_id():
+			mine[str(k)] = e
+	return mine
+
+
+## Cell-CENTRED, and that is load-bearing rather than tidy: a 28px readable parked on a cell CORNER
+## sits 24px off every axis-aligned probe, so it draws and cannot be pressed (HarmoniaVillage:478).
+func _examine_px(cell: Vector2i) -> Vector2:
+	return Vector2(cell.x * TILE_SIZE + TILE_SIZE / 2, cell.y * TILE_SIZE + TILE_SIZE / 2)
+
+
+## The cells already holding something a player can interact with — an examine may not share one,
+## because interaction is nearest-wins and the loser becomes unreachable (.344, two librarians).
+func _occupied_interact_cells() -> Array:
+	var taken: Array = []
+	if npcs == null:
+		return taken
+	for n in npcs.get_children():
+		if n is Node2D:
+			taken.append(Vector2i((n as Node2D).position / float(TILE_SIZE)))
+	return taken
+
+
+## Resolve an intended cell to the nearest walkable, unoccupied one. Returns the intended cell
+## itself when it is already good, and Vector2i(-1, -1) when nothing within the radius works.
+func _resolve_examine_cell(want: Vector2i, taken: Array) -> Vector2i:
+	for r in range(0, _EXAMINE_SEARCH_RADIUS + 1):
+		for dy in range(-r, r + 1):
+			for dx in range(-r, r + 1):
+				if max(abs(dx), abs(dy)) != r:
+					continue
+				var c := want + Vector2i(dx, dy)
+				if c.x < 0 or c.y < 0:
+					continue
+				if c in taken:
+					continue
+				if _is_cell_walkable(c):
+					return c
+	return Vector2i(-1, -1)
+
+
+## Place this village's authored examines. A missing entry, an empty text or a cell with nowhere to
+## go is SKIPPED WITH A WARNING rather than placed — a readable with no text advertises a read it
+## cannot give, which is the mute-interactable class.
+func _place_authored_examines() -> void:
+	var authored: Dictionary = _load_examine_pack()
+	if authored.is_empty():
+		return
+	var spawn: Vector2 = spawn_points.get("default", Vector2.ZERO)
+	var spawn_cell := Vector2i(spawn / float(TILE_SIZE))
+	var taken: Array = _occupied_interact_cells()
+	for examine_id in authored.keys():
+		var entry: Dictionary = authored[examine_id]
+		var text: String = str(entry.get("text", ""))
+		if text == "":
+			push_warning("[%s] examine '%s' is authored with no text" % [_get_area_id(), examine_id])
+			continue
+		if not _EXAMINE_OFFSETS.has(examine_id):
+			push_warning("[%s] examine '%s' has no offset, so it has no cell" % [_get_area_id(), examine_id])
+			continue
+		var cell := _resolve_examine_cell(spawn_cell + _examine_offset_for(str(examine_id)), taken)
+		if cell.x < 0:
+			push_warning("[%s] examine '%s' found no walkable free cell near %s" % [
+				_get_area_id(), examine_id, str(spawn_cell + _examine_offset_for(str(examine_id)))])
+			continue
+		taken.append(cell)
+		var prop := ReadableProp.new()
+		prop.name = "Examine_" + str(examine_id)
+		prop.position = _examine_px(cell)
+		prop.setup(str(entry.get("name", "Examine")), func(): return [text])
+		npcs.add_child(prop)

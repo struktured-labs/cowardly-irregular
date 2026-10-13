@@ -536,7 +536,20 @@ if [ "${PCK}" -ge "${PCK_LIMIT}" ]; then
   exit 2
 fi
 if [ "${PCK}" -ge "${PCK_WARN}" ]; then
-  echo "[deploy] WARNING: pck within 20 MB of the itch limit — plan the next diet now."
+  # ⛔ THE BAND IS THE CONSTANT, NOT A REMEMBERED NUMBER. This line said "within 20 MB" while
+  # PCK_WARN tested a 19 MB band (PCK_LIMIT-PCK_WARN = 199e6-180e6), so a reader planning a diet
+  # from the warning's own text was 1 MB out in the UNSAFE direction: there is a 1 MB window in
+  # which the pck IS within 20 MB of the limit and this line stays silent. At v3.33.666-alpha the
+  # pck was 178,729,264 B — 270,736 B from entering that window, so it was about to bite.
+  # Everything below is DERIVED from PCK_WARN/PCK_LIMIT and cannot drift from them again; the
+  # actionable number is HEADROOM, which the old text did not carry at all.
+  # Two-decimal MiB in bash: scale by 100, then split. No awk — this file has none, and the
+  # chain's awk users (publish_all.sh, pck_cache_report.sh) are no reason to add a first one
+  # here. Integer division TRUNCATES, so headroom reads 0.01 MiB LOW at worst (18.11 where
+  # rounding gives 18.12) — the safe direction for a figure you plan a diet against.
+  _mib() { printf '%d.%02d' "$(( $1 * 100 / 1048576 / 100 ))" "$(( $1 * 100 / 1048576 % 100 ))"; }
+  printf '[deploy] WARNING: pck %s MiB — %s MiB of headroom to the %s MiB itch embed limit (warn band %s MiB). Plan the next diet now.\n' \
+    "$(_mib "${PCK}")" "$(_mib "$(( PCK_LIMIT - PCK ))")" "$(_mib "${PCK_LIMIT}")" "$(_mib "$(( PCK_LIMIT - PCK_WARN ))")"
 fi
 # gate 3b: the pck's own file table must show the tier this run asked for. make_web_stage.sh
 # already refuses a tier with the wrong TRACK COUNT, but counting cannot tell 40k files from 48k

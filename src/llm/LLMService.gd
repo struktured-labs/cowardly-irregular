@@ -179,10 +179,15 @@ func apply_byok_config() -> bool:
 	if http == null:
 		return false
 	if gs.llm_custom_backend_enabled and gs.byok_config_complete():
-		http.base_url = str(gs.llm_custom_base_url)
+		# Stripped HERE because this is the one funnel every saved config comes through: a
+		# pasted key or URL carries invisible whitespace, and Godot either refuses the
+		# request outright (space -> error 31) or sends it and gets HTTP 400 (newline).
+		# Both surface as a retry promise no amount of waiting can keep. Edges only, so a
+		# value with an inner space is left exactly as the player typed it.
+		http.base_url = str(gs.llm_custom_base_url).strip_edges()
 		http.api_format = str(gs.llm_custom_api_format)
-		http.model = str(gs.llm_custom_model)
-		http.api_key = str(gs.llm_custom_api_key)
+		http.model = str(gs.llm_custom_model).strip_edges()
+		http.api_key = str(gs.llm_custom_api_key).strip_edges()
 		_log_byok_applied(http)
 	else:
 		# Enabled-but-incomplete is the silent-fallback trap: the toggle reads ON,

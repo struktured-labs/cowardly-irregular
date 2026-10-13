@@ -210,6 +210,43 @@ const _NPC_MARKS := {
 	"castle_guard_husk": Vector2(8, 2),
 }
 const _NARRATIVE_PACK := "res://data/castle_harmonia_narrative.json"
+const _EXAMINE_PACK := "res://data/examine_texts.json"
+const _ROOM_BEAT := "room_beat"
+
+## Where each authored castle examine is READ FROM. The TEXT is not here — it lives in
+## `data/examine_texts.json`, authored 2026-04-21 and reachable by nobody since.
+##
+## ⛔ THE FLOOR IS MINE, NOT THE PACK'S, recorded rather than implied: the pack carries
+## `world / scene / prop / name / text` and NO floor, so these are my inference, anchored to the
+## castle's own `_LORE` rooms — floor 1 the entrance hall, floor 2 "The Petrified Court", floor 3
+## the archives and apartments, floor 4 the Mordaine approach left deliberately bare.
+## @cowir-story flagged four of their fifteen re-keys as inferences; these eleven floors are eleven
+## more, and a reader should be able to tell which facts came from the author.
+##
+## 🔑 THE CELL IS THE TILE THE PLAYER STANDS ON, NOT THE OBJECT'S OWN — @cowir-story's design and
+## the flat geometry agreeing. Every text is written in second person doing the looking, and
+## `DragonCave` sets `Mode7Overlay.is_active = false`, so `READABLE_BOX_FLAT` (28px) means a
+## readable here is pressable only by STANDING ON IT. Keying to the looking-tile makes that the
+## correct behaviour rather than a compromise.
+const _EXAMINE_MARKS := {
+	1: {
+		"castle_harmonia_foyer_narration": Vector2(10, 7),
+		"castle_harmonia_overpainted_tapestry": Vector2(5, 6),
+		"castle_harmonia_frozen_captain": Vector2(15, 8),
+	},
+	2: {
+		"castle_harmonia_council_narration": Vector2(11, 6),
+		"castle_harmonia_petrified_courtier": Vector2(7, 4),
+		"castle_harmonia_broken_seal": Vector2(16, 7),
+		"castle_harmonia_abandoned_desk": Vector2(5, 9),
+	},
+	3: {
+		"castle_harmonia_apartments_narration": Vector2(12, 5),
+		"castle_harmonia_relocked_door": Vector2(8, 3),
+		"castle_harmonia_worn_wax": Vector2(14, 9),
+		"castle_harmonia_glyphs": Vector2(6, 7),
+	},
+}
 
 
 func _setup_transitions_for_floor(floor_num: int) -> void:
@@ -220,6 +257,59 @@ func _setup_transitions_for_floor(floor_num: int) -> void:
 		sign.position = _sign_position(Vector2i(entry["pos"] as Vector2), floor_num)
 		transitions.add_child(sign)
 	_place_castle_npcs(floor_num)
+	_place_castle_examines(floor_num)
+
+
+## Place this floor's authored examines. A `room_beat` is the ROOM speaking, so it reads from
+## anywhere sensible in it — which is what a Signpost does (proximity, no press) and what the castle
+## already uses for `_LORE`. Everything else is a thing you stop at, so it is a ReadableProp you
+## stand on.
+##
+## Same allocator as the signposts and the NPCs: `_sign_position` consumes `_sign_taken`, so an
+## examine cannot land on a sign's cell, an NPC's, or another examine's. Interaction is nearest-wins,
+## which is how two Harmonia librarians made one of them unreachable (.344).
+func _place_castle_examines(floor_num: int) -> void:
+	var authored: Dictionary = _load_examine_pack()
+	var marks: Dictionary = _EXAMINE_MARKS.get(floor_num, {})
+	for examine_id in marks.keys():
+		var entry: Dictionary = authored.get(examine_id, {}) if authored.get(examine_id, {}) is Dictionary else {}
+		if entry.is_empty():
+			push_warning("[castle_harmonia] examine '%s' has a cell but no authored entry — placing nothing rather than an empty panel" % examine_id)
+			continue
+		var text: String = str(entry.get("text", ""))
+		if text == "":
+			push_warning("[castle_harmonia] examine '%s' is authored with no text" % examine_id)
+			continue
+		var at: Vector2 = _sign_position(Vector2i(marks[examine_id] as Vector2), floor_num)
+		if str(entry.get("prop", "")) == _ROOM_BEAT:
+			var sign := Signpost.new()
+			sign.sign_text = text
+			sign.position = at
+			transitions.add_child(sign)
+			continue
+		var prop := ReadableProp.new()
+		prop.name = "Examine_" + str(examine_id)
+		prop.position = at
+		prop.setup(str(entry.get("name", "Examine")), func(): return [text])
+		transitions.add_child(prop)
+
+
+## Only this castle's entries, so a pack-wide key change cannot quietly pull another scene's text in.
+func _load_examine_pack() -> Dictionary:
+	if not FileAccess.file_exists(_EXAMINE_PACK):
+		push_warning("[castle_harmonia] %s is missing — the castle keeps its signposts" % _EXAMINE_PACK)
+		return {}
+	var parsed = JSON.parse_string(FileAccess.get_file_as_string(_EXAMINE_PACK))
+	if not (parsed is Dictionary):
+		push_warning("[castle_harmonia] %s did not parse as a dictionary" % _EXAMINE_PACK)
+		return {}
+	var all: Dictionary = (parsed as Dictionary).get("examines", {})
+	var mine: Dictionary = {}
+	for k in all.keys():
+		var e = all[k]
+		if e is Dictionary and str((e as Dictionary).get("scene", "")) == "castle_harmonia":
+			mine[str(k)] = e
+	return mine
 
 
 ## The castle had ZERO NPCs — success criterion 4 of `docs/design/w1-progression-expansion.md` is

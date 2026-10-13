@@ -1,5 +1,5 @@
 {
-  "description": "Environmental examine texts for props the player can interact with. 26 entries. `scene` is a REAL map id as TeleportMenu.MAP_IDS and GameLoop list them -- it was authored against the MUSIC BED namespace (village_harmonia) and re-keyed 2026-10-12, because a consumer that translated bed names to map ids would be a second source of truth for map identity. Each entry has a prop type, a display name, and the text shown on examine.",
+  "description": "Environmental examine texts for props the player can interact with. 29 entries. `scene` is a REAL map id as TeleportMenu.MAP_IDS and GameLoop list them -- it was authored against the MUSIC BED namespace (village_harmonia) and re-keyed 2026-10-12, because a consumer that translated bed names to map ids would be a second source of truth for map identity. Each entry has a prop type, a display name, and the text shown on examine.",
   "schema_version": 2,
   "examines": {
     "harmonia_well": {
@@ -183,6 +183,27 @@
       "prop": "sigil",
       "name": "Red Glyphs",
       "text": "The glyphs are fresh. The paint is red the way paint is red when it isn't paint. They are drawn very neatly. The neatness is the part that unsettles."
+    },
+    "eldertree_grafted_branch": {
+      "world": 1,
+      "scene": "eldertree_village",
+      "prop": "tree",
+      "name": "The Grafted Branch",
+      "text": "A branch from some other tree, bound into this one years ago and healed over. The graft took. The bark above it grows in a different direction from the bark below, as though the tree is still arguing with the part of itself that came from elsewhere."
+    },
+    "frosthold_meltwater_mark": {
+      "world": 1,
+      "scene": "frosthold_village",
+      "prop": "post",
+      "name": "The Meltwater Mark",
+      "text": "A notch cut into the post where the meltwater reached. Below it, older notches, each one higher than the last. Someone has been carving them in the wrong order on purpose, so that the record reads as though the thaw is retreating."
+    },
+    "grimhollow_lantern_ledger": {
+      "world": 1,
+      "scene": "grimhollow_village",
+      "prop": "lantern_post",
+      "name": "The Lantern Ledger",
+      "text": "A slate hung from the lantern post, tallying who owes light to whom. Most marks are paid off. One line has been owed so long the chalk has gone into the stone. Nobody has rubbed it out, which tells you the debt is still considered open."
     }
   }
 }

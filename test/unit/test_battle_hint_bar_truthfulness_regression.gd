@@ -13,6 +13,8 @@ extends GutTest
 ## implement is worse than no hint, because it sends the player to a dead key and they conclude the
 ## FEATURE is broken rather than the label.
 
+const GdSource := preload("res://test/unit/helpers/gd_source.gd")
+
 const WIN98_PATH := "res://src/ui/Win98Menu.gd"
 const BATTLE_PATH := "res://src/battle/BattleScene.gd"
 
@@ -30,7 +32,25 @@ const DERIVED_BAR_MARKER := "%s Defer  ·  %s Advance"
 const DERIVED_KEYBOARD_MARKER := "[%s] Defer  ·  [%s] Advance"
 
 
+## ⛔ CODE, NOT RAW TEXT — AND THIS GUARD WAS FOOLED BY ITS OWN SHAPE. The wiring arms assert
+## `assert_true(wired)`, so they are ACCEPTANCE sets (@cowir-story's split): prose WIDENS what they
+## accept. `_calls_within_block` skips lines that BEGIN with `#`, which an INLINE comment does not.
+## Measured on the shipped guard, with the real call removed:
+##     elif event.button_index == JOY_BUTTON_X:
+##         pass  # was _repeat_previous_actions()
+##     -> 10 passing, EC=0. The bar advertises Repeat, the button does nothing, the guard agrees.
+## That arm shipped in .658 and is live. Delegated to the shared helper rather than teaching the
+## private one about inline comments — a `"""` region needs state no per-line pattern can carry.
 func _read(path: String) -> String:
+	var text := FileAccess.get_file_as_string(path)
+	assert_ne(text, "", "must be able to read %s" % path)
+	return GdSource.split(text)["code"]
+
+
+## The RAW bytes, for the two arms whose subject genuinely is the authored text: _authored_bar reads
+## a const's literal, and the frozen-token arm asserts a string is ABSENT (a requirement, where
+## prose can only ever make it louder).
+func _read_raw(path: String) -> String:
 	var text := FileAccess.get_file_as_string(path)
 	assert_ne(text, "", "must be able to read %s" % path)
 	return text
@@ -174,6 +194,73 @@ func test_hint_bar_actions_have_real_joypad_bindings() -> void:
 ## speed. A source-text pin is a claim about the code's SPELLING; the word doing the work in the old
 ## assertion was "handled", and nothing exercised it. (cowir-ai's class, cowir-music's Mordaine guard,
 ## same shape.)
+## ⛔ THE STRIP THIS FILE RESTS ON HAD NO ARM ON IT. The wiring arms below are ACCEPTANCE sets, so
+## they are only safe because `_read` returns stripped CODE — and reverting that one line to a raw
+## read was SILENT: 10 passing, EC=0. Two halves compounding, which @cowir-deploy named after
+## building the same pair tonight: my attacks were MUTATIONS I ran by hand rather than arms, and the
+## real BattleScene.gd carries no inline-comment hazard, so stripping removes nothing observable.
+##
+## 🔑 AND IT MUST DRIVE `_read`, NOT GdSource. An arm scoped to the shared helper cannot see its
+## CALLER stop using it — the helper keeps working, the arm keeps passing, the guard reads raw text.
+## That is the defect three lanes shipped tonight, including me, in the plant for the menu guard.
+func test_the_strip_this_guard_rests_on_is_live() -> void:
+	var fixture := "user://truthfulness_strip_probe.gd"
+	var planted := "func _unhandled_input(event):\n\tif event.pressed:\n\t\tpass  # was _toggle_battle_speed()\n"
+	var f := FileAccess.open(fixture, FileAccess.WRITE)
+	assert_not_null(f, "PRECONDITION: must be able to write the probe fixture")
+	if f == null:
+		return
+	f.store_string(planted)
+	f.close()
+
+	var code := _read(fixture)
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(fixture))
+
+	## The hazard: a wiring token living only in an inline comment. A raw read keeps it, and every
+	## arm below would then accept prose as evidence that the control is wired.
+	assert_false(code.contains("_toggle_battle_speed()"),
+		"_read must return CODE — a wiring token in an INLINE comment reached the acceptance arms, "
+		+ "so reverting the strip was silent and the bar could advertise a dead button")
+	## MUST-SURVIVE: over-stripping and a correct strip are the same green.
+	assert_true(code.contains("if event.pressed:"),
+		"...and real code either side of it has to survive, or this passes on an empty read")
+
+	## ⛔ FLOOR, AND IT IS NOT REDUNDANT WITH THE MUST-SURVIVE ABOVE. That assert names ONE line, so
+	## an over-strip that keeps that line walks past it. MEASURED here: a stripper returning only
+	## `"if event.pressed:"` left BOTH controls green — detection survived only because unrelated
+	## arms needed the rest of the file, and their messages blamed HINT_DEFAULT_TEXT, not the strip.
+	##
+	## 🔑 DERIVED, NOT A RATIO. My first version was `code > raw/2`, and @cowir-overworld measured
+	## that a ratio is a PER-FILE property: 35% margin here, 14% on their CastleHarmonia, where
+	## ~2.7 KB of added comments — one guard header in this repo — would red it falsely. A func
+	## count is read from the same file on the same run, so it cannot go stale as the file grows,
+	## and a mutant cannot game it without preserving essentially the whole body.
+	var raw_battle := _read_raw(BATTLE_PATH)
+	var code_battle := _read(BATTLE_PATH)
+	assert_eq(_func_count(code_battle), _func_count(raw_battle),
+		"the strip kept %d of %d func declarations — an over-strip that preserves the one line a "
+		% [_func_count(code_battle), _func_count(raw_battle)]
+		+ "must-survive names is invisible to it, and the arms that notice will blame the subject")
+
+	## ⛔ THE REGION SPLIT, WHICH THE `#` PASS ALONE DOES NOT DO — and this file is exposed: 132
+	## `"""` lines in BattleScene, 57 in Win98Menu. A #-only strip leaves every docstring in the
+	## code half, and that mutant passed ALL THREE of my other assertions. It is GdSource's own
+	## documented .325 defect, which @cowir-autogrind hit in a guard written the same evening to be
+	## careful about exactly this.
+	assert_false(code_battle.contains("Repeat all players"),
+		"a `\"\"\"` docstring survived into the code half — the region split was dropped, so every "
+		+ "token named in prose is back to being accepted as evidence that a control is wired")
+
+
+## Line-anchored: a comment cannot begin with `func `, so this counts declarations and not mentions.
+func _func_count(text: String) -> int:
+	var n := 0
+	for line in text.split("\n"):
+		if line.begins_with("func "):
+			n += 1
+	return n
+
+
 func test_speed_toggle_is_actually_wired_to_the_advertised_button() -> void:
 	var lines := _read(BATTLE_PATH).split("\n")
 	var wired := false
@@ -368,11 +455,15 @@ func test_the_log_hint_is_a_bound_action_that_opens_the_log() -> void:
 		if e is InputEventJoypadButton and (e as InputEventJoypadButton).button_index == JOY_BUTTON_LEFT_STICK:
 			has_l3 = true
 	assert_true(has_l3, "battle_open_log must be bound to L3 on a pad")
-	## ⚠️ BOUNDED BY STRUCTURE, NOT BY WIDTH. This read `src.substr(i, 160)`, and the call it asserts
-	## sits at +73 — SIXTY-SIX characters of headroom, about one line. Any insertion between the `if`
+	## ⚠️ BOUNDED BY STRUCTURE, NOT BY WIDTH. This read a fixed 160-character source window, and
+	## the call it asserts sits at +73 — SIXTY-SIX characters of headroom, about one line. Any insertion between the `if`
 	## and the call (a comment, a guard, a log line) pushed it out of the window and red THIS file,
 	## naming the log hint, when nothing about the log hint had changed. @cowir-music measured the
-	## same shape costing a debugging detour today. _calls_within_block is indentation-scoped and is
+	## same shape costing a debugging detour today. ⛔ THE PROSE DELIBERATELY DOES NOT SPELL THE
+	## IDIOM: the fixed-width census three lanes are running scans test/unit for that call shape,
+	## and writing it here makes THIS file a phantom hit in the very place the real one was
+	## removed (@cowir-music, same hour, had a comment extracted as a real status).
+	## _calls_within_block is indentation-scoped and is
 	## what the Speed and Repeat arms above already use — no new mechanism, just the right one.
 	var lines := _read(BATTLE_PATH).split("\n")
 	var opens_log := false
