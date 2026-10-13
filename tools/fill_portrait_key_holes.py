@@ -16,6 +16,8 @@ A hole here is a clear region the figure fully encloses. What the key removed wa
 - a hole larger than MAX_HOLE is LEFT and reported: a whole keyed face or veil needs an eye on it,
   and a real opening (staff to body) must not be painted shut. REVIEWED_LARGE raises the cap for the
   portraits that were looked at one by one; LEFT_OPEN names the ones deliberately not filled.
+- a portrait in SHIRT_OPEN_BELOW lost a white shirt that ran to the bust's lower edge: no hole encloses it, so
+  from the listed row down every clear pixel between the figure's outermost drawn pixels is filled near-white.
 Portraits cut from the artist's own sheets are never touched (ARTIST_DERIVED): a hole in those is his.
 
 Usage:
@@ -94,6 +96,26 @@ ARTIST_DERIVED = ("fighter.png", "cleric.png", "mage.png", "rogue.png", "bard.pn
                   "chancellor_mordaine.png", "calibrant.png")
 
 
+# portrait -> first row of a keyed-out shirt that is open at the bottom of the bust (not enclosed, so not a hole).
+SHIRT_OPEN_BELOW = {"npcs/shopkeeper.png": 176}
+
+
+def close_shirt(rgba: np.ndarray, first_row: int) -> int:
+    """Fill, from first_row to the last drawn row, every clear pixel between a row's outermost drawn pixels. Returns the count."""
+    drawn = rgba[..., 3] >= ALPHA
+    rows = np.nonzero(drawn.any(axis=1))[0]
+    filled = 0
+    for y in range(first_row, int(rows.max()) + 1 if len(rows) else 0):
+        xs = np.nonzero(drawn[y])[0]
+        if len(xs) < 2:
+            continue
+        for x in range(int(xs.min()) + 1, int(xs.max())):
+            if not drawn[y, x]:
+                rgba[y, x] = (*KEYED_WHITE, 255)
+                filled += 1
+    return filled
+
+
 def holes(rgba: np.ndarray) -> list:
     """[(pixels, rim pixels)] for every clear region the figure fully encloses (4-connected)."""
     opaque = rgba[..., 3] >= ALPHA
@@ -149,11 +171,14 @@ def _darkest(rgba: np.ndarray, rim: set) -> tuple:
     return min(common, key=sum)
 
 
-def fill(img: Image.Image, cap: int = MAX_HOLE, eyes: tuple = (), drawn: tuple = (), shadow: bool = False):
+def fill(img: Image.Image, cap: int = MAX_HOLE, eyes: tuple = (), drawn: tuple = (), shadow: bool = False, shirt_row: int = -1):
     """(new image, pixels filled, [sizes of holes left as too large]). cap is the largest hole to fill;
-    eyes are skipped; drawn are filled as an eye with a pupil; shadow fills holes above cap with the rim's darkest colour."""
+    eyes are skipped; drawn are filled as an eye with a pupil; shadow fills holes above cap with the rim's darkest colour;
+    shirt_row >= 0 closes a keyed-out shirt from that row down."""
     rgba = np.asarray(img.convert("RGBA")).copy()
     filled, left = 0, []
+    if shirt_row >= 0:
+        filled += close_shirt(rgba, shirt_row)
     for region, rim in holes(rgba):
         if shadow and len(region) > cap:
             colour = _darkest(rgba, rim)
@@ -221,6 +246,15 @@ def selftest() -> int:
     assert not (set(FACE_IN_SHADOW) & set(LEFT_OPEN)) and not (set(FACE_IN_SHADOW) & set(ARTIST_DERIVED)), "a shadowed face is on no other list"
     kept, n4, _ = fill(img, 400, ((19.5, 21.5),))
     assert kept.getpixel((18, 21))[3] == 0 and kept.getpixel((35, 45)) == (*KEYED_WHITE, 255), "a listed eye is left clear, the rest is filled"
+    vest = Image.new("RGBA", (40, 40), (0, 0, 0, 0))
+    for y in range(20, 36):
+        for x in list(range(4, 14)) + list(range(26, 36)):
+            vest.putpixel((x, y), (140, 30, 30, 255))
+    shirted, n6, _ = fill(vest, MAX_HOLE, (), (), False, 20)
+    assert n6 == 16 * 12 and shirted.getpixel((20, 30)) == (*KEYED_WHITE, 255), "a shirt open at the bottom is closed between the vest's halves"
+    assert shirted.getpixel((20, 10))[3] == 0 and shirted.getpixel((2, 30))[3] == 0 and shirted.getpixel((20, 38))[3] == 0, "nothing above, beside or below the bust is painted"
+    assert fill(vest, MAX_HOLE)[1] == 0, "without a listed row the open gap is not a hole and is left"
+    assert not (set(SHIRT_OPEN_BELOW) & set(ARTIST_DERIVED)), "no artist bust has a shirt painted on it"
     print("selftest ok")
     return 0
 
@@ -238,7 +272,7 @@ def main() -> int:
         img = Image.open(ROOT / rel)
         key = os.path.relpath(rel, PORTRAITS)
         out, n, left = fill(img, max(MAX_HOLE, REVIEWED_LARGE.get(key, 0)), EYES_LEFT_CLEAR.get(key, ()), EYES_DRAWN.get(key, ()),
-                            key in FACE_IN_SHADOW)
+                            key in FACE_IN_SHADOW, SHIRT_OPEN_BELOW.get(key, -1))
         if left:
             print("LEFT %s: %d hole(s) too large to fill blind, %s px" % (rel, len(left), sorted(left, reverse=True)[:4]))
         if not n:
