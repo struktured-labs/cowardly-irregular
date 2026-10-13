@@ -825,8 +825,16 @@ const _TYPE_SFX: Dictionary = {
 const _ITEM_EFFECT_SFX: Array[Array] = [
 	["revive", "ability_revive"],
 	["escape_battle", "ability_flee"],
+	## Repel is BATTLE-USABLE (ineffective_use_reason:640 — "Damage and repel do something the moment
+	## they are used"), so it is consumed and played nothing. A repel field is a ward, which is why it
+	## takes the WARD cue rather than the generic `buff` — @cowir-music left the character call to this
+	## lane and `buff` reads wrong for a field effect. Reuse of an ability cue by an item is the
+	## established pattern here (revive, escape_battle, heal_mp all do it).
+	["repel_steps", "ability_shell"],
 	["cure_all_status", "status_cured"],
 	["cure_status", "status_cured"],
+	## A buff item was SILENT: power_drink/speed_tonic/defense_tonic/magic_tonic are shop stock (VillageShop:43) and two are BRAVE/QUICK starting kit, their only effect key is add_buff, play_item returns early on an unmapped id, and they deal no damage so nothing else sounds — while the authored `buff` cue the ABILITY path already uses for the same effect sat unreached
+	["add_buff", "buff"],
 	["heal_mp", "ability_mp_restore"],
 	["heal_mp_percent", "ability_mp_restore"],
 	## LAST, so a hybrid item (elixir restores HP and MP) takes the MP cue above rather than this.
