@@ -1359,6 +1359,9 @@ const PORTRAIT_SPRITES = {
 	"courtier": "res://assets/sprites/portraits/npcs/courtier.png",
 	# W1 bosses.
 	"boss_rat_king": "res://assets/sprites/portraits/npcs/boss_rat_king.png",
+	# The MONSTER ids their boss intros ask by: each speaks in a cutscene straight before the fight, with this same face.
+	"cave_rat_king": "res://assets/sprites/portraits/npcs/boss_rat_king.png",
+	"bard_hostile_courtier": "res://assets/sprites/portraits/npcs/courtier.png",
 	# Pre-registered pending art (same pattern as the masterite variants). NOT on disk — assets/sprites/npcs/dr_temporal/ is his OVERWORLD sheet dir, not a portrait; PR #155 registered this claiming otherwise. Renders the mysterious procedural until a real bust lands here.
 	"dr_temporal": "res://assets/sprites/portraits/npcs/dr_temporal.png",
 	# Generic archetype pool — the ARCHETYPE values OverworldNPC._portrait_key() resolves, NOT npc_type (struktured 2026-07-31: npc_type meant phil.png never rendered). Aliased to closest existing procedural via the archetype prefix arm; cowir-sprites replaces individually as art lands.
