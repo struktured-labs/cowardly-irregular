@@ -1335,6 +1335,7 @@ const PORTRAIT_SPRITES = {
 	"masterite_curator_abstract": "res://assets/sprites/portraits/masterite_curator_abstract.png",
 	# Story-tier figures — major recurring speakers with >30 dialogue lines each. Root path per Masterite convention (PR #154). Interim: fall through to mysterious procedural via named-principal prefix arm.
 	"calibrant": "res://assets/sprites/portraits/calibrant.png",
+	"the_calibrant": "res://assets/sprites/portraits/calibrant.png",  # the monster id her boss intro asks by: one character, one face
 	"orrery": "res://assets/sprites/portraits/orrery.png",
 	"mordaine": "res://assets/sprites/portraits/npcs/chancellor_mordaine.png",  # was the Batch-A knight placeholder; her real face lived under the chancellor_ key only
 	# Named W1 principals (currently appear in cutscenes) — cowir-sprites Batch B target.

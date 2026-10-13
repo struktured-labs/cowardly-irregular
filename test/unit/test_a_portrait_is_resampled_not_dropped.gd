@@ -126,12 +126,17 @@ func test_a_face_at_or_under_the_box_keeps_its_pixels() -> void:
 	autofree(art)
 	var cell := Vector2(72, 72)
 	var small: Texture2D = null
-	for id in _intro_bosses():
-		var t: Texture2D = art.monster_art(id)
+	# Every monster, not only the intro bosses: the Calibrant was the one boss with a small bust until her intro
+	# took her portrait (2026-10-12), and a control that lives on one boss dies with it. Slime, bat and goblin remain.
+	var parsed = JSON.parse_string(FileAccess.get_file_as_string("res://data/monsters.json"))
+	var monsters: Dictionary = parsed.get("monsters", parsed) if parsed is Dictionary else {}
+	assert_gt(monsters.size(), 90, "CONTROL: the monsters were read (%d)" % monsters.size())
+	for id in monsters:
+		var t: Texture2D = art.monster_art(str(id))
 		if t is AtlasTexture and t.get_width() <= cell.x and t.get_height() <= cell.y:
 			small = t
 			break
-	assert_not_null(small, "CONTROL: a boss bust no bigger than the box exists")
+	assert_not_null(small, "CONTROL: a monster bust no bigger than the box exists")
 	if small != null:
 		assert_eq(HybridSpriteLoader.fitted_portrait(small, cell), small, "a bust under the box keeps its pixels")
 	var drawn := ImageTexture.create_from_image(Image.create(72, 72, false, Image.FORMAT_RGBA8))

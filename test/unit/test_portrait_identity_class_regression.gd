@@ -15,6 +15,8 @@ const KNOWN_PAIRS := {
 	"mordaine": "chancellor_mordaine",
 	"theron": "elder_theron",
 	"milo": "scholar_milo",
+	# Cutscene key vs the MONSTER id her boss intro asks by (2026-10-12): see test_the_calibrant_wears_one_face.
+	"calibrant": "the_calibrant",
 }
 
 
