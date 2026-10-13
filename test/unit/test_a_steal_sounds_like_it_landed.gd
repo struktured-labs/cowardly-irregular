@@ -148,9 +148,20 @@ func test_steal_is_deferred_out_of_battlescene_and_the_executor_honours_it() -> 
 	assert_true(body.contains("\"cleanse\", \"steal\":"),
 		"`steal` is no longer in the deferred arm, so it falls to the catch-all's else branch and draws the generic descending blip again")
 
+	## ⛔ SCOPED TO THE FUNCTION, AND IT WAS NOT. These started as file-wide `contains` over a
+	## 7,000-line file, which is a QUANTIFIER error rather than a weak anchor: both can be satisfied
+	## at two UNRELATED sites, so the cue could move to the victory path and this control would stay
+	## green while its own message claimed co-location. Tightening the strings would not fix that
+	## (@cowir-controller / @cowir-music, same class, three lanes in one evening). The half of this
+	## arm above was already scoped to _on_action_executed; this half was not.
 	var bm: String = GdSource.code_of("res://src/battle/BattleManager.gd")
 	assert_ne(bm, "", "CONTROL: BattleManager code must survive the comment strip")
-	assert_true(bm.contains("SoundManager.play_pickup(\"%s\")" % GOLD),
-		"steal is deferred out of BattleScene and NOTHING in BattleManager cues the reward, so a landed steal is silent")
-	assert_true(bm.contains("func _award_stolen_gold"),
-		"CONTROL: the cue above must sit with the gold award, or it is pinned to an unrelated call site")
+	var award: int = bm.find("func _award_stolen_gold")
+	assert_gt(award, -1,
+		"CONTROL: _award_stolen_gold is gone — it is the one place that knows gold was credited, and where the cue has to live")
+	if award < 0:
+		return
+	var award_end: int = bm.find("\nfunc ", award + 1)
+	var award_body: String = bm.substr(award, award_end - award) if award_end > award else bm.substr(award)
+	assert_true(award_body.contains("SoundManager.play_pickup(\"%s\")" % GOLD),
+		"the reward cue is not INSIDE _award_stolen_gold. Either nothing cues a landed steal, or the cue moved somewhere that does not know gold was credited — and a file-wide check cannot tell those apart")
