@@ -916,6 +916,8 @@ func start_autogrind(party: Array[Combatant], enemy_template: Dictionary, config
 	if is_grinding:
 		push_warning("[AUTOGRIND] start_autogrind called while grind already active — refusing double-start (caller bug: stop_autogrind first)")
 		return false
+	## A stop clears this, but a session that never reached a check would inherit the previous one's rule.
+	last_interrupt_rule = ""
 	# Empty-party guard — a session with 0 alive members has no meaningful loop and would trip fatigue/collapse math with div-by-zero-shaped defaults.
 	var live_count: int = 0
 	for m in party:
