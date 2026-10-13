@@ -486,3 +486,31 @@ func test_the_static_cue_is_its_own_asset_and_not_the_cutscene_burst() -> void:
 	assert_ne(str((man["status_static"] as Dictionary).get("file", "")),
 		str((man["static_burst"] as Dictionary).get("file", "")),
 		"status_static and static_burst now point at ONE file — they are a World 1 status cue and a World 4 cutscene one-shot, and the prompts say so")
+
+
+## ⛔ THE TWO ARMS ABOVE PROVE REGISTRATION, NOT PLAYBACK, AND THAT IS THE DISTINCTION THIS WHOLE
+## FILE EXISTS FOR. A key in the manifest whose file will not load falls straight through to the
+## generic descending blip, and every assertion about the manifest still passes — so the cue reads
+## as fixed while the player hears exactly what shipped before.
+##
+## The discriminator is free: `_try_play_sfx_from_manifest` stamps `_sfx_cooldowns[key]` at the
+## cooldown gate and returns, so a stamp means the MANIFEST entry was reached. The procedural
+## fallback never stamps. Then the stream's own LENGTH says which file arrived, which no amount of
+## key-checking can.
+func test_the_static_cue_actually_plays_rather_than_falling_through() -> void:
+	SoundManager._sfx_cooldowns.erase("status_static")
+	SoundManager._sfx_suppressed_by_cooldown = false
+	SoundManager.play_status("static")
+	assert_true(SoundManager._sfx_cooldowns.has("status_static"),
+		"play_status(\"static\") did not reach the manifest entry, so it fell through to the generic descending blip — the key can be registered and the file still unreachable (an un-imported asset does exactly this)")
+	var p: AudioStreamPlayer = SoundManager._battle_player
+	assert_not_null(p, "CONTROL: the battle player must exist or the assertion below reads nothing")
+	if p == null:
+		return
+	assert_not_null(p.stream,
+		"the cue stamped its cooldown but left no stream on the player, so nothing was actually loaded")
+	if p.stream == null:
+		return
+	assert_almost_eq(p.stream.get_length(), 0.70, 0.06,
+		"the stream on the player is %.2fs, not the 0.70s cue authored for this ailment — a different file is answering to status_static" % p.stream.get_length())
+	SoundManager._sfx_cooldowns.erase("status_static")
