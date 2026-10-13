@@ -6,18 +6,22 @@
       "members": {
         "ability_fire": {
           "lufs": -15.7,
-          "ch": 1
+          "ch": 1,
+          "lufs_mono": -15.7
         },
         "ability_fire_v2": {
           "lufs": -17.8,
-          "ch": 1
+          "ch": 1,
+          "lufs_mono": -17.8
         },
         "ability_fire_v3": {
           "lufs": -15.0,
-          "ch": 1
+          "ch": 1,
+          "lufs_mono": -15.0
         }
       },
       "spread": 2.8,
+      "spread_mono": 2.8,
       "unmeasurable": false,
       "mixed_channels": false
     },
@@ -25,18 +29,22 @@
       "members": {
         "ability_heal": {
           "lufs": -17.8,
-          "ch": 1
+          "ch": 1,
+          "lufs_mono": -17.8
         },
         "ability_heal_v2": {
           "lufs": -10.6,
-          "ch": 2
+          "ch": 2,
+          "lufs_mono": -16.1
         },
         "ability_heal_v3": {
           "lufs": -11.4,
-          "ch": 2
+          "ch": 2,
+          "lufs_mono": -14.4
         }
       },
       "spread": 7.2,
+      "spread_mono": 3.4,
       "unmeasurable": false,
       "mixed_channels": true
     },
@@ -44,18 +52,22 @@
       "members": {
         "ability_ice": {
           "lufs": -15.4,
-          "ch": 1
+          "ch": 1,
+          "lufs_mono": -15.4
         },
         "ability_ice_v2": {
           "lufs": -17.8,
-          "ch": 1
+          "ch": 1,
+          "lufs_mono": -17.8
         },
         "ability_ice_v3": {
           "lufs": -12.6,
-          "ch": 1
+          "ch": 1,
+          "lufs_mono": -12.6
         }
       },
       "spread": 5.2,
+      "spread_mono": 5.2,
       "unmeasurable": false,
       "mixed_channels": false
     },
@@ -63,18 +75,22 @@
       "members": {
         "ability_lightning": {
           "lufs": -16.4,
-          "ch": 1
+          "ch": 1,
+          "lufs_mono": -16.4
         },
         "ability_lightning_v2": {
           "lufs": -17.8,
-          "ch": 1
+          "ch": 1,
+          "lufs_mono": -17.8
         },
         "ability_lightning_v3": {
           "lufs": -15.7,
-          "ch": 1
+          "ch": 1,
+          "lufs_mono": -15.7
         }
       },
       "spread": 2.1,
+      "spread_mono": 2.1,
       "unmeasurable": false,
       "mixed_channels": false
     },
@@ -82,18 +98,22 @@
       "members": {
         "buff": {
           "lufs": -11.1,
-          "ch": 2
+          "ch": 2,
+          "lufs_mono": -14.2
         },
         "buff_v2": {
           "lufs": -18.1,
-          "ch": 1
+          "ch": 1,
+          "lufs_mono": -18.1
         },
         "buff_v3": {
           "lufs": -16.1,
-          "ch": 1
+          "ch": 1,
+          "lufs_mono": -16.1
         }
       },
       "spread": 7.0,
+      "spread_mono": 3.9,
       "unmeasurable": false,
       "mixed_channels": true
     },
@@ -101,18 +121,22 @@
       "members": {
         "debuff": {
           "lufs": -10.0,
-          "ch": 2
+          "ch": 2,
+          "lufs_mono": -13.1
         },
         "debuff_v2": {
           "lufs": -15.9,
-          "ch": 1
+          "ch": 1,
+          "lufs_mono": -15.9
         },
         "debuff_v3": {
           "lufs": -16.1,
-          "ch": 1
+          "ch": 1,
+          "lufs_mono": -16.1
         }
       },
       "spread": 6.1,
+      "spread_mono": 3.0,
       "unmeasurable": false,
       "mixed_channels": true
     },
@@ -120,18 +144,22 @@
       "members": {
         "footstep_grass": {
           "lufs": null,
-          "ch": 2
+          "ch": 2,
+          "lufs_mono": null
         },
         "footstep_grass_v2": {
           "lufs": null,
-          "ch": 2
+          "ch": 2,
+          "lufs_mono": null
         },
         "footstep_grass_v3": {
           "lufs": null,
-          "ch": 2
+          "ch": 2,
+          "lufs_mono": null
         }
       },
       "spread": null,
+      "spread_mono": null,
       "unmeasurable": true,
       "mixed_channels": false
     },
@@ -139,18 +167,22 @@
       "members": {
         "footstep_metal": {
           "lufs": null,
-          "ch": 2
+          "ch": 2,
+          "lufs_mono": null
         },
         "footstep_metal_v2": {
           "lufs": null,
-          "ch": 2
+          "ch": 2,
+          "lufs_mono": null
         },
         "footstep_metal_v3": {
           "lufs": null,
-          "ch": 2
+          "ch": 2,
+          "lufs_mono": null
         }
       },
       "spread": null,
+      "spread_mono": null,
       "unmeasurable": true,
       "mixed_channels": false
     },
@@ -158,18 +190,22 @@
       "members": {
         "footstep_sand": {
           "lufs": null,
-          "ch": 2
+          "ch": 2,
+          "lufs_mono": null
         },
         "footstep_sand_v2": {
           "lufs": null,
-          "ch": 2
+          "ch": 2,
+          "lufs_mono": null
         },
         "footstep_sand_v3": {
           "lufs": null,
-          "ch": 2
+          "ch": 2,
+          "lufs_mono": null
         }
       },
       "spread": null,
+      "spread_mono": null,
       "unmeasurable": true,
       "mixed_channels": false
     },
@@ -177,18 +213,22 @@
       "members": {
         "footstep_snow": {
           "lufs": null,
-          "ch": 2
+          "ch": 2,
+          "lufs_mono": null
         },
         "footstep_snow_v2": {
           "lufs": null,
-          "ch": 2
+          "ch": 2,
+          "lufs_mono": null
         },
         "footstep_snow_v3": {
           "lufs": null,
-          "ch": 2
+          "ch": 2,
+          "lufs_mono": null
         }
       },
       "spread": null,
+      "spread_mono": null,
       "unmeasurable": true,
       "mixed_channels": false
     },
@@ -196,18 +236,22 @@
       "members": {
         "footstep_stone": {
           "lufs": null,
-          "ch": 2
+          "ch": 2,
+          "lufs_mono": null
         },
         "footstep_stone_v2": {
           "lufs": null,
-          "ch": 2
+          "ch": 2,
+          "lufs_mono": null
         },
         "footstep_stone_v3": {
           "lufs": null,
-          "ch": 2
+          "ch": 2,
+          "lufs_mono": null
         }
       },
       "spread": null,
+      "spread_mono": null,
       "unmeasurable": true,
       "mixed_channels": false
     },
@@ -215,18 +259,22 @@
       "members": {
         "footstep_wood": {
           "lufs": null,
-          "ch": 2
+          "ch": 2,
+          "lufs_mono": null
         },
         "footstep_wood_v2": {
           "lufs": null,
-          "ch": 2
+          "ch": 2,
+          "lufs_mono": null
         },
         "footstep_wood_v3": {
           "lufs": null,
-          "ch": 2
+          "ch": 2,
+          "lufs_mono": null
         }
       },
       "spread": null,
+      "spread_mono": null,
       "unmeasurable": true,
       "mixed_channels": false
     },
@@ -234,18 +282,22 @@
       "members": {
         "heal": {
           "lufs": -6.7,
-          "ch": 2
+          "ch": 2,
+          "lufs_mono": -12.0
         },
         "heal_v2": {
           "lufs": -9.9,
-          "ch": 2
+          "ch": 2,
+          "lufs_mono": -15.1
         },
         "heal_v3": {
           "lufs": -11.9,
-          "ch": 2
+          "ch": 2,
+          "lufs_mono": -21.9
         }
       },
       "spread": 5.2,
+      "spread_mono": 9.9,
       "unmeasurable": false,
       "mixed_channels": false
     }

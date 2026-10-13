@@ -1394,6 +1394,9 @@ const PORTRAIT_SPRITES = {
 	"keeper_mortimer": "res://assets/sprites/portraits/keepers/mortimer.png",
 	"keeper_lenora": "res://assets/sprites/portraits/keepers/lenora.png",
 	"keeper_brutus": "res://assets/sprites/portraits/keepers/brutus.png",
+	# The artist's own villagers: busts cut from HIS walk frames (tools/derive_walker_portrait.py), not the generic generated face.
+	"rotha": "res://assets/sprites/portraits/npcs/rotha.png",
+	"roy": "res://assets/sprites/portraits/npcs/roy.png",
 	"mysterious": "res://assets/sprites/portraits/npcs/mysterious.png",
 	# Name-hash pair targets — OverworldNPC picks these for villager/elder npc_types.
 	"young_man": "res://assets/sprites/portraits/npcs/young_man.png",
