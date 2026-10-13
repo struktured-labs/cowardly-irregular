@@ -28,6 +28,9 @@ const GdSource := preload("res://test/unit/helpers/gd_source.gd")
 const SUFFIXES: Array[String] = ["_village", "_overworld", "_city"]
 const MIN_MAP_IDS := 55
 const MIN_QUESTS := 25
+## Named once so the arm and the teardown cannot drift apart, and named for THIS file:
+## two guards sharing one probe path is shared mutable state keyed by nothing.
+const PROBE := "user://quest_giver_map_id_probe.gd"
 
 
 ## TeleportMenu enumerates the TELEPORTABLE maps; 15 more are reached only on foot and appear as a
@@ -136,7 +139,7 @@ func test_a_place_with_no_map_is_left_alone() -> void:
 ## (@cowir-autogrind): "a real id survives" passes a strip that never happened, and "the commented id
 ## is absent" passes a strip that ate the file.
 func test_the_accessor_this_guard_uses_strips_prose_both_ways() -> void:
-	var probe := "user://examine_map_id_probe.gd"
+	var probe := PROBE
 	var f := FileAccess.open(probe, FileAccess.WRITE)
 	assert_not_null(f, "CONTROL: the probe file must be writable")
 	f.store_string("\n".join([
@@ -158,3 +161,11 @@ func test_the_accessor_this_guard_uses_strips_prose_both_ways() -> void:
 	assert_false(got.has("zz_docstring_map"),
 		"a \"\"\" docstring reached the accepted-id set — code_of() strips comments by LINE and regions by split()")
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(probe))
+
+
+## The plant is erased HERE, not only at the end of the arm: a GDScript error inside the arm aborts
+## the enclosing function, so the inline remove never runs and the plant survives into the next run.
+## A persisting plant is the one thing that can make this guard lie in the direction it rules out.
+func after_each() -> void:
+	if FileAccess.file_exists(PROBE):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(PROBE))

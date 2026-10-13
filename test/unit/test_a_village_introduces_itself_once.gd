@@ -6,6 +6,9 @@ const GdSource := preload("res://test/unit/helpers/gd_source.gd")
 ## Bounds the beat walk below: a scene that cannot set its own flag would spin, and a hung test
 ## reads as infrastructure rather than as a red.
 const STORY_WALK_CAP := 12
+## Named once so the arm and the teardown cannot drift apart, and named for THIS file:
+## two guards sharing one probe path is shared mutable state keyed by nothing.
+const PROBE := "user://village_intro_strip_probe.gd"
 
 var _loop: Node
 var _saved: Dictionary = {}
@@ -20,6 +23,9 @@ func before_each() -> void:
 
 
 func after_each() -> void:
+	## Erased FIRST: free() below can abort this function, which would strand the plant.
+	if FileAccess.file_exists(PROBE):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(PROBE))
 	if is_instance_valid(_loop):
 		_loop.free()
 	GameState.game_constants = _saved
@@ -336,7 +342,7 @@ func test_no_intro_is_pending_on_a_map_it_was_not_written_for() -> void:
 ## alone is satisfied by a defect in the other: "real code survives" passes a strip that never
 ## happened, "the comment is gone" passes a strip that ate the file.
 func test_the_accessor_these_arms_use_strips_prose_both_ways() -> void:
-	var probe := "user://village_intro_strip_probe.gd"
+	var probe := PROBE
 	var f := FileAccess.open(probe, FileAccess.WRITE)
 	assert_not_null(f, "CONTROL: the probe file must be writable")
 	f.store_string("\n".join([
