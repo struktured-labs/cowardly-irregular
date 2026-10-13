@@ -92,65 +92,38 @@ func test_pending_tier_switch_sentinel_is_negative_one() -> void:
 	assert_lt(no_pending, 0, "No-pending sentinel must be negative to distinguish from tier 0")
 
 
-## Battle speed extension tests
-## These test BattleScene.BATTLE_SPEEDS static array directly from script source.
-## BattleScene cannot be load()ed in tests (references BattleManager autoload).
-## Values verified against src/battle/BattleScene.gd lines 101-102.
-
-func test_battle_speeds_source_has_seven_entries() -> void:
-	# BATTLE_SPEEDS: Array[float] = [0.25, 0.5, 1.0, 2.0, 4.0, 8.0, 16.0]
-	var expected_speeds: Array[float] = [0.25, 0.5, 1.0, 2.0, 4.0, 8.0, 16.0]
-	assert_eq(expected_speeds.size(), 7, "Should have 7 speed levels")
-
-
-func test_battle_speeds_source_includes_8x_and_16x() -> void:
-	var expected_speeds: Array[float] = [0.25, 0.5, 1.0, 2.0, 4.0, 8.0, 16.0]
-	assert_true(8.0 in expected_speeds, "Should include 8x speed")
-	assert_true(16.0 in expected_speeds, "Should include 16x speed")
-
-
-func test_battle_speed_labels_source_match() -> void:
-	# BATTLE_SPEED_LABELS: Array[String] = ["0.25x", "0.5x", "1x", "2x", "4x", "8x", "16x"]
-	var expected_labels: Array[String] = ["0.25x", "0.5x", "1x", "2x", "4x", "8x", "16x"]
-	assert_eq(expected_labels[5], "8x", "Index 5 should be 8x")
-	assert_eq(expected_labels[6], "16x", "Index 6 should be 16x")
-
-
-func test_battle_speed_labels_count_matches_speeds() -> void:
-	var expected_speeds: Array[float] = [0.25, 0.5, 1.0, 2.0, 4.0, 8.0, 16.0]
-	var expected_labels: Array[String] = ["0.25x", "0.5x", "1x", "2x", "4x", "8x", "16x"]
-	assert_eq(expected_labels.size(), expected_speeds.size(),
-		"Speed labels count must match speeds count")
-
-
-## Validate BattleScene source file contains expected constants
-## This catches regressions where someone removes or changes the speed array.
-
-func test_battle_scene_source_contains_8x_speed() -> void:
-	var src = FileAccess.open("res://src/battle/BattleScene.gd", FileAccess.READ)
-	assert_not_null(src, "BattleScene.gd should be readable")
-	if src == null:
+## Battle speed ladder, read from the CONST rather than restated.
+##
+## ⛔ SIX TESTS HERE ASSERTED NOTHING, and the comment above them was why. It said "BattleScene
+## cannot be load()ed in tests (references BattleManager autoload)", so four tests declared their
+## OWN copy of the ladder and asserted that literal against itself -- `expected_labels[5] == "8x"`
+## two lines below `var expected_labels := [... "8x" ...]`. They could only fail if someone edited
+## the literal, and their values were the PRE-v3 ladder ("0.25x", "0.5x"), which the live const has
+## not matched since struktured's 2026-07-11 relabel. A test named `*_source_match` matched no
+## source. The other two DID read the file, as `content.contains("8.0")` over 7,000 lines -- a
+## MENTIONS grep that any float in any unrelated expression satisfies.
+##
+## ✅ THE PREMISE WAS FALSE: `load("res://src/battle/BattleScene.gd")` works, and two sibling
+## files do it (test_the_battle_speed_shows_on_screen_regression instantiates the whole SCENE). The
+## stale line reference in the old comment ("lines 101-102"; the consts sit at 203-204) is the same
+## drift one layer down. Read the const and there is nothing to keep in sync.
+##
+## One test replaces six: test_playtest_feedback_2026_07_11_regression already pins the two lengths
+## and derives every label as engine*4, so this one exists so THIS file stops claiming a validation
+## it never performed.
+func test_the_speed_ladder_is_read_from_the_const() -> void:
+	var bs = load("res://src/battle/BattleScene.gd")
+	assert_not_null(bs, "BattleScene.gd must be loadable -- the old comment here denied it")
+	if bs == null:
 		return
-	var content = src.get_as_text()
-	src.close()
-	assert_true(content.contains("8.0"), "BattleScene.gd must contain 8.0 speed value")
-	assert_true(content.contains("16.0"), "BattleScene.gd must contain 16.0 speed value")
+	assert_eq(bs.BATTLE_SPEEDS.size(), 7, "the ladder is seven rungs")
+	## Engine values, not labels: 8.0 and 16.0 are the top two rungs, LABELLED 32x and 64x. The tests
+	## this replaces conflated the two units, which is how "8x" became a pre-v3 expectation.
+	assert_true(8.0 in bs.BATTLE_SPEEDS, "engine 8.0 (labelled 32x) is a rung")
+	assert_true(16.0 in bs.BATTLE_SPEEDS, "engine 16.0 (labelled 64x) is a rung")
+	assert_eq(bs.BATTLE_SPEED_LABELS[5], "32x", "engine 8.0 is labelled 32x since the v3 relabel")
+	assert_eq(bs.BATTLE_SPEED_LABELS[6], "64x", "engine 16.0 is labelled 64x since the v3 relabel")
 
-
-func test_battle_scene_source_contains_speed_labels() -> void:
-	var src = FileAccess.open("res://src/battle/BattleScene.gd", FileAccess.READ)
-	assert_not_null(src, "BattleScene.gd should be readable")
-	if src == null:
-		return
-	var content = src.get_as_text()
-	src.close()
-	assert_true(content.contains('"8x"'), "BattleScene.gd must contain '8x' label")
-	assert_true(content.contains('"16x"'), "BattleScene.gd must contain '16x' label")
-
-
-## Turbo mode property tests
-## BattleManager is a GDScript autoload; in headless unit tests the node may not
-## be reachable. Tests fall back to source-file inspection for regression safety.
 
 func test_battle_manager_source_has_turbo_mode() -> void:
 	var src = FileAccess.open("res://src/battle/BattleManager.gd", FileAccess.READ)
