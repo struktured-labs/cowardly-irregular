@@ -17,11 +17,18 @@ extends GutTest
 ## (the v2 raw-label reset and the v3 `speed_scale_v3` migration both live in SaveSystem). So this
 ## guards a future edit, which is the whole of its value -- it is not a bug he hit.
 ##
-## 🔑 The two arrays are PARALLEL AND READ FROM THREE FILES: GameLoop derives an index from
-## `BATTLE_SPEEDS`, the readout indexes `BATTLE_SPEED_LABELS` with it, SettingsMenu aliases both.
-## A shorter LABELS is an out-of-bounds read, which ABORTS `_update_speed_indicator` -- so the
-## readout freezes on the PREVIOUS speed and every line after the abort is skipped. Pinning the
-## lengths is what makes the index safe to pass between them.
+## ✅ WHAT THIS DOES **NOT** CLAIM, corrected by @cowir-ai within the hour: the two arrays are NOT
+## unpinned. `test_playtest_feedback_2026_07_11_regression:29` already asserts their lengths agree,
+## and :30-33 derives every label as `engine * 4`, so a tier added to SPEEDS without a coherent
+## label is caught there -- with a better-aimed message than a frozen readout. I had written the
+## opposite, from a grep that searched `BATTLE_SPEEDS.size() ==` and `assert_eq(BS.BATTLE`: the real
+## line is `assert_eq(BattleSceneScript.BATTLE_SPEEDS.size(), ...)`, so the pattern was wrong in the
+## RECEIVER ALIAS and in the COMPARISON FORM at once, and a true zero answered the wrong question.
+##
+## 🔑 THE HOLE THAT SURVIVES THAT PIN, which is the whole of this file's coverage: satisfying the
+## older guard requires a label, NOT an arm. Add an eighth tier WITH its correct `"128x"` label and
+## every existing assertion stays green while the readout renders EMPTY -- the arms live in
+## `_update_speed_indicator` and nothing pinned them. That is the gap, and it is one arm wide.
 
 const BattleStateHelper := preload("res://test/unit/helpers/battle_state.gd")
 const SoundState := preload("res://test/unit/helpers/sound_state.gd")
@@ -91,11 +98,10 @@ func test_the_readout_builder_is_still_called_what_these_arms_call_it() -> void:
 		+ "and a rename would abort them one line in, after their first assert, scoring green")
 
 
-func test_the_speed_ladder_arrays_agree() -> void:
-	assert_eq(BS.BATTLE_SPEEDS.size(), BS.BATTLE_SPEED_LABELS.size(),
-		"BATTLE_SPEEDS and BATTLE_SPEED_LABELS are indexed by ONE counter across three files: "
-		+ "GameLoop derives it from SPEEDS, the readout indexes LABELS with it. A shorter LABELS "
-		+ "is an out-of-bounds read that aborts _update_speed_indicator, freezing the readout")
+## ⛔ NO SIZE-PIN ARM HERE ON PURPOSE. I wrote one, measured it against the corpus, and deleted it:
+## `test_playtest_feedback_2026_07_11_regression:29` already pins the two lengths and reds with a
+## clearer message. A second detector for one defect is maintenance with no coverage -- this note
+## exists so the next reader does not re-add it on the same reasoning I did.
 
 
 ## Derived over the ladder, so a tier added tomorrow is covered without touching this file.
