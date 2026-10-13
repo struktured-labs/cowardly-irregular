@@ -120,12 +120,31 @@ func test_strike_element_skipped_when_no_element() -> void:
 	# Empty string means a plain weapon. play_strike_element already
 	# early-returns on "", but calling it unconditionally would make
 	# the intent unreadable at the call site.
+	## EVERY call site, checked against ITS OWN argument. The old form read one 300-char window
+	## from a bare find() and asserted the literal `if weapon_element != "":`, which pinned the
+	## FIRST site's VARIABLE NAME rather than the property. A second route was added for physical
+	## abilities (2026-10-13, cowir-music) whose variable is `phys_element`, and the old arm red
+	## on a call site that satisfies the intent perfectly. Deriving the name from the call cannot
+	## go stale against a third site either.
 	var src: String = FileAccess.get_file_as_string(BS_PATH)
-	var idx: int = src.find("SoundManager.play_strike_element(")
-	assert_gt(idx, -1)
-	var before: String = src.substr(maxi(0, idx - 300), 300)
-	assert_string_contains(before, "if weapon_element != \"\":",
-		"guard the call on a non-empty element so the call site reads as intended")
+	var needle: String = "SoundManager.play_strike_element("
+	var from: int = 0
+	var sites: int = 0
+	while true:
+		var idx: int = src.find(needle, from)
+		if idx < 0:
+			break
+		sites += 1
+		var arg_start: int = idx + needle.length()
+		var arg_end: int = src.find(")", arg_start)
+		var arg: String = src.substr(arg_start, maxi(0, arg_end - arg_start)).strip_edges()
+		var before: String = src.substr(maxi(0, idx - 300), 300)
+		assert_string_contains(before, "if %s != \"\":" % arg,
+			("call site %d passes `%s` but is not guarded on it being non-empty within 300 chars — "
+			+ "play_strike_element early-returns on \"\" anyway, so this is about the call site "
+			+ "reading as intended") % [sites, arg])
+		from = idx + 1
+	assert_gt(sites, 0, "no play_strike_element call site in BattleScene at all")
 
 
 func test_strike_element_uses_signal_cache_attacker() -> void:

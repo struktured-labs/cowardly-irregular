@@ -5640,6 +5640,18 @@ func _on_damage_dealt(target: Combatant, amount: int, is_crit: bool, element: St
 	if is_crit and _intent_tier() == BattleJuice.Tier.FULL and BattleJuice.flag("audio_crit_thud"):
 		SoundManager.play_crit_thud()
 
+	## The weapon's element belongs to the THING STRIKING, and on a PHYSICAL ability the weapon
+	## strikes exactly as it does on a swing — _weapon_element_for's own note is "the cue is a strike
+	## voice, so only the thing doing the striking counts". The return below excluded it for a reason
+	## stated about SPELLS ("a Fire spell won't also fire strike_fire"), which stays true: gated on
+	## type == physical, so a Fire spell is untouched while a Flame Sword's Cleave is no longer mute.
+	if _current_ability_id != "" and _last_acting_combatant != null:
+		var phys_ability: Dictionary = JobSystem.get_ability(_current_ability_id) if JobSystem else {}
+		if str(phys_ability.get("type", "")) == "physical":
+			var phys_element: String = _weapon_element_for(_last_acting_combatant)
+			if phys_element != "":
+				SoundManager.play_strike_element(phys_element)
+
 	# Skip hit sounds for abilities — ability sound already played at cast time
 	if _current_ability_id != "":
 		return
@@ -5649,7 +5661,7 @@ func _on_damage_dealt(target: Combatant, amount: int, is_crit: bool, element: St
 		return
 	var weapon_type = EquipmentSystem.get_weapon_type(attacker)
 	SoundManager.play_attack_hit(weapon_type, is_crit)
-	# msg 2796 cycle 20: layer the elemental strike voice ON TOP of the weapon hit, per cowir-sfx's shape — the sword still sounds like a sword, the element rides over it. Only reachable on basic attacks: the `_current_ability_id != ""` early-return above means an ability already played its own cast sound, so a Fire spell won't also fire strike_fire.
+	# msg 2796 cycle 20: layer the elemental strike voice ON TOP of the weapon hit, per cowir-sfx's shape — the sword still sounds like a sword, the element rides over it. THIS site is basic attacks only; a PHYSICAL ability reaches the same cue from the block above the early-return, because the weapon strikes there too. A MAGIC ability still never does — it already played its own cast sound, so a Fire spell won't also fire strike_fire, which is the part of this note that is load-bearing.
 	var weapon_element: String = _weapon_element_for(attacker)
 	if weapon_element != "":
 		SoundManager.play_strike_element(weapon_element)
