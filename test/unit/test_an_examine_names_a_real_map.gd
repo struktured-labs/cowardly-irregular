@@ -82,13 +82,36 @@ func test_every_examine_names_a_real_map() -> void:
 
 
 func test_no_examine_is_keyed_to_a_music_bed() -> void:
-	## The specific defect, named: a bed name reads like a map id and is not one. SoundManager's beds
-	## are `village_<place>`; map ids are `<place>_village`. Nothing else distinguishes them.
+	## The specific defect, named: a bed name reads like a map id and is not one.
+	##
+	## ⛔ THE SHAPE IS NOT THE DISCRIMINATOR, AND THE COMMENT THAT SAID IT WAS IS FALSE. This arm
+	## used to flag any `village_*` / `overworld_*` / `dungeon_*` scene, resting on "beds are
+	## `village_<place>`, map ids are `<place>_village`, nothing else distinguishes them". FOUR REAL
+	## MAP IDS CARRY THE BED SHAPE -- `village_starter`, `village_capital`, `dungeon_cave`,
+	## `dungeon_forest`, all `map_id` values in locations.json and all present in `_map_ids()`. So the
+	## old predicate RED ON A LEGITIMATE KEY, in the one file whose header says a guard that reds on
+	## correct data is one somebody deletes. Measured: planting `village_starter` as a scene red the
+	## old arm (Failing 1, naming that key) and passes the new one.
+	##
+	## 🔑 THE REAL PREDICATE IS BED-SHAPED **AND NOT A MAP**. That makes this arm a refinement of
+	## test_every_examine_names_a_real_map rather than a second opinion: that one says "not a map",
+	## this one says "and it is a bed name, here is the swap". Both fire together on a real mistake.
+	var ids: Array[String] = _map_ids()
 	var bad: Array[String] = []
+	var checked := 0
 	for key in _examines():
 		var scene: String = str((_examines()[key] as Dictionary).get("scene", ""))
+		checked += 1
+		if ids.has(scene):
+			continue
 		if scene.begins_with("village_") or scene.begins_with("overworld_") or scene.begins_with("dungeon_"):
 			bad.append("%s -> %s" % [key, scene])
+	## ⛔ THIS ARM HAD NO FLOOR OF ITS OWN. Its subject is an ABSENCE, so a broken `_examines()`
+	## yields an empty `bad` and a green -- and a control in a sibling arm does not cover this frame.
+	assert_gt(checked, 20, "CONTROL: every entry must be read, saw %d -- without this an empty verdict below means nothing" % checked)
+	## And the exclusion needs its own floor: if `_map_ids()` ever returned [], every scene would miss
+	## `ids.has` and this arm would silently go back to reding on the four real bed-shaped maps.
+	assert_gt(ids.size(), MIN_MAP_IDS, "CONTROL: the map-id union must be populated, saw %d" % ids.size())
 	assert_eq(bad, ([] as Array[String]),
 		"these name the audio namespace, not a map (harmonia_village, not village_harmonia): %s" % [bad])
 
