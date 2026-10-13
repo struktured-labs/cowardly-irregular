@@ -1169,15 +1169,34 @@ butler status struktured/cowardly-irregular 2>&1 | grep -aE 'CHANNEL|linux|windo
 # advisory — which is only defensible if something store-wide is authoritative, and printing a
 # table is not that. A human reads a table; a gate reads an exit code.
 #
-# store_status.sh checks ALL THREE channels against the newest tag on origin and exits 1 when
-# any is behind. That is exactly the question "did this batch land", and it is immune to one
-# channel's processing lag because it runs after the last push.
+# store_status.sh checks ALL THREE channels against the newest tag on origin. That is exactly
+# the question "did this batch land".
+#
+# ⛔ THIS COMMENT USED TO CLAIM THE CHECK WAS "immune to one channel's processing lag because
+# it runs after the last push." THAT IS FALSE AND IT COST AN ec=1 ON A SOUND BUILD. The lag is
+# ITCH-SIDE and continues long after butler returns. Measured 2026-10-13 on v3.33.675-alpha: the
+# web push succeeded ("3.28 MiB patch, Build is now processing"), this check sampled 20 minutes
+# later and said BEHIND, and itch served the build 42 MINUTES after the push. Running after the
+# push buys nothing against a queue you do not control.
+#
+# So the check now answers in THREE verdicts and this caller honours them:
+#   0 CURRENT  every channel serving the tag           -> report LIVE
+#   3 PENDING  behind, but OUR build is QUEUED there   -> report PENDING, never LIVE, exit non-zero
+#   1 BLOCKED  behind with nothing of ours queued      -> that channel did not ship
+# PENDING is NOT success: it exits non-zero, and no caller may read it as published.
 if [ -x tools/store_status.sh ]; then
-    if ! ./tools/store_status.sh; then
+    _ss_ec=0
+    ./tools/store_status.sh || _ss_ec=$?
+    if [ "$_ss_ec" -eq 3 ]; then
+        echo "[pub] PENDING: every channel that is behind has THIS build queued at itch." >&2
+        echo "      The upload succeeded; delivery has not finished. Do NOT report LIVE." >&2
+        echo "      Re-run tools/store_status.sh until it reads CURRENT (0); if a queued build" >&2
+        echo "      disappears without serving, that is a BLOCK and not a wait." >&2
+        echo "[pub] his saves after: $(_saves_cksum)  (before: ${SAVES_BEFORE})" >&2
+        exit 3
+    elif [ "$_ss_ec" -ne 0 ]; then
         echo "[pub] BLOCKED: the store is NOT current after publishing ${PUBLISHED}." >&2
-        echo "      One or more channels did not register. If a channel was still processing," >&2
-        echo "      re-run tools/store_status.sh in a few minutes before concluding it failed;" >&2
-        echo "      if it stays behind, that channel did not ship." >&2
+        echo "      A channel is behind with nothing of ours queued there — it did not ship." >&2
         echo "[pub] his saves after: $(_saves_cksum)  (before: ${SAVES_BEFORE})" >&2
         exit 1
     fi
