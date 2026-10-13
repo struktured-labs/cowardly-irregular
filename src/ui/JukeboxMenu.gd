@@ -14,6 +14,8 @@ var TRACKS: Array = []  # [[id, display_name], ...] populated by _load_manifest_
 ## How many rows to show at once in the scroll window
 const VISIBLE_ROWS = 14
 const ROW_HEIGHT = 32
+## Reserved under the list for the "Now Playing" line and the footer, at 100%.
+const BOTTOM_RESERVE := 56.0
 
 ## Style (matches SettingsMenu / ControlsMenu)
 const BG_COLOR = Color(0.05, 0.05, 0.1, 0.95)
@@ -204,6 +206,13 @@ func _build_ui() -> void:
 
 	RetroPanel.add_border(_panel, _panel.size, BORDER_LIGHT, BORDER_SHADOW)
 
+	## Every y and every band below is a literal sized for the 100% font, while each label's font
+	## is TextScale.scaled(...). At 150% the row text is taller than its highlight and at 200% the
+	## title is drawn through the subtitle and the footer through the panel's bottom border.
+	## Scaling the layout by the same factor as the font keeps them in step; floored at 1.0 so 100%
+	## and below are byte-identical to before.
+	var us: float = _ui_scale()
+
 	var title = Label.new()
 	title.text = "JUKEBOX"
 	title.position = Vector2(16, 8)
@@ -213,17 +222,17 @@ func _build_ui() -> void:
 
 	var subtitle = Label.new()
 	subtitle.text = "[DEBUG] Music track browser"
-	subtitle.position = Vector2(16, 30)
+	subtitle.position = Vector2(16, 30.0 * us)
 	subtitle.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	subtitle.add_theme_color_override("font_color", DISABLED_COLOR)
 	_panel.add_child(subtitle)
 
 	# Track list area
-	var list_y: float = 52.0
-	for i in range(VISIBLE_ROWS):
+	var list_y: float = 52.0 * us
+	for i in range(_rows_shown()):
 		var highlight = ColorRect.new()
-		highlight.position = Vector2(8, list_y + i * ROW_HEIGHT)
-		highlight.size = Vector2(_panel.size.x - 16, ROW_HEIGHT - 2)
+		highlight.position = Vector2(8, list_y + float(i) * _row_h())
+		highlight.size = Vector2(_panel.size.x - 16, _row_h() - 2.0)
 		highlight.color = Color.TRANSPARENT
 		highlight.name = "Row_%d" % i
 		_panel.add_child(highlight)
@@ -236,14 +245,14 @@ func _build_ui() -> void:
 		highlight.add_child(lbl)
 		_row_labels.append(lbl)
 
-		MenuMouseHelper.make_clickable(highlight, i, _panel.size.x - 16, ROW_HEIGHT - 2,
+		MenuMouseHelper.make_clickable(highlight, i, _panel.size.x - 16, _row_h() - 2.0,
 			_on_row_click.bind(i), _on_row_hover.bind(i))
 
 	# Scroll hint (arrow indicators)
 	var scroll_up_lbl = Label.new()
 	scroll_up_lbl.name = "ScrollUp"
 	scroll_up_lbl.text = ""
-	scroll_up_lbl.position = Vector2(_panel.size.x - 24, 52)
+	scroll_up_lbl.position = Vector2(_panel.size.x - 24, list_y)
 	scroll_up_lbl.add_theme_font_size_override("font_size", TextScale.scaled(12))
 	scroll_up_lbl.add_theme_color_override("font_color", DISABLED_COLOR)
 	_panel.add_child(scroll_up_lbl)
@@ -251,15 +260,15 @@ func _build_ui() -> void:
 	var scroll_dn_lbl = Label.new()
 	scroll_dn_lbl.name = "ScrollDown"
 	scroll_dn_lbl.text = ""
-	scroll_dn_lbl.position = Vector2(_panel.size.x - 24, 52 + VISIBLE_ROWS * ROW_HEIGHT - ROW_HEIGHT)
+	scroll_dn_lbl.position = Vector2(_panel.size.x - 24, list_y + float(_rows_shown() - 1) * _row_h())
 	scroll_dn_lbl.add_theme_font_size_override("font_size", TextScale.scaled(12))
 	scroll_dn_lbl.add_theme_color_override("font_color", DISABLED_COLOR)
 	_panel.add_child(scroll_dn_lbl)
 
 	# "Now Playing" status bar
 	_now_playing_label = Label.new()
-	_now_playing_label.position = Vector2(16, _panel.size.y - 48)
-	_now_playing_label.size = Vector2(_panel.size.x - 32, 18)
+	_now_playing_label.position = Vector2(16, _panel.size.y - 48.0 * us)
+	_now_playing_label.size = Vector2(_panel.size.x - 32, 18.0 * us)
 	_now_playing_label.add_theme_font_size_override("font_size", TextScale.scaled(11))
 	_now_playing_label.add_theme_color_override("font_color", PLAYING_COLOR)
 	_now_playing_label.name = "NowPlaying"
@@ -269,7 +278,7 @@ func _build_ui() -> void:
 	# Footer
 	var footer = Label.new()
 	footer.text = build_footer_text()
-	footer.position = Vector2(16, _panel.size.y - 28)
+	footer.position = Vector2(16, _panel.size.y - 28.0 * us)
 	footer.add_theme_font_size_override("font_size", TextScale.scaled(12))
 	footer.add_theme_color_override("font_color", DISABLED_COLOR)
 	_panel.add_child(footer)
@@ -282,7 +291,7 @@ func _build_ui() -> void:
 
 func _refresh_list() -> void:
 	var total = TRACKS.size()
-	for i in range(VISIBLE_ROWS):
+	for i in range(_rows_shown()):
 		var track_idx = scroll_offset + i
 		if track_idx < total:
 			# Tick 200: append M:SS duration so the player can spot long vs short loops at a glance.
@@ -304,12 +313,12 @@ func _refresh_list() -> void:
 	if up_lbl:
 		up_lbl.text = "^" if scroll_offset > 0 else ""
 	if dn_lbl:
-		dn_lbl.text = "v" if (scroll_offset + VISIBLE_ROWS) < total else ""
+		dn_lbl.text = "v" if (scroll_offset + _rows_shown()) < total else ""
 
 
 func _update_selection() -> void:
 	var local_row = selected_index - scroll_offset
-	for i in range(VISIBLE_ROWS):
+	for i in range(_rows_shown()):
 		_row_highlights[i].color = SELECTED_COLOR if i == local_row else Color.TRANSPARENT
 
 
@@ -421,12 +430,32 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 
+## The layout multiplier: the same factor the fonts take, never below 1.0 so 100% is unchanged.
+func _ui_scale() -> float:
+	return maxf(1.0, float(TextScale.scaled(1000)) / 1000.0)
+
+
+## A row's band, scaled with its label's font.
+func _row_h() -> float:
+	return float(ROW_HEIGHT) * _ui_scale()
+
+
+## How many rows actually fit between the list's top and the bottom chrome. Capped at VISIBLE_ROWS,
+## so at 100% this is exactly VISIBLE_ROWS and nothing about the scroll window changes; at 200% the
+## rows are twice as tall and fewer fit, which is what scrolling is for.
+func _rows_shown() -> int:
+	var us: float = _ui_scale()
+	var panel_h: float = _panel.size.y if _panel != null else size.y * 0.88
+	var room: float = panel_h - 52.0 * us - BOTTOM_RESERVE * us
+	return clampi(int(floor(room / _row_h())), 1, VISIBLE_ROWS)
+
+
 func _clamp_scroll() -> void:
 	if selected_index < scroll_offset:
 		scroll_offset = selected_index
-	elif selected_index >= scroll_offset + VISIBLE_ROWS:
-		scroll_offset = selected_index - VISIBLE_ROWS + 1
-	scroll_offset = clampi(scroll_offset, 0, max(0, TRACKS.size() - VISIBLE_ROWS))
+	elif selected_index >= scroll_offset + _rows_shown():
+		scroll_offset = selected_index - _rows_shown() + 1
+	scroll_offset = clampi(scroll_offset, 0, max(0, TRACKS.size() - _rows_shown()))
 
 
 func _on_row_click(local_row: int) -> void:
