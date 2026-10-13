@@ -823,6 +823,11 @@ const _EXAMINE_OFFSETS := {
 	"node_prime_terminal": Vector2i(-2, -3),
 	"node_prime_sticky": Vector2i(2, -3),
 	"vertex_monolith": Vector2i(0, -3),
+	## cowir-story 2026-10-13 — second looks for three villages that had one each. Offsets kept
+	## clear of the first entry's cell in each village; the resolver still walks to a free cell.
+	"eldertree_grafted_branch": Vector2i(-3, 1),
+	"frosthold_meltwater_mark": Vector2i(3, 1),
+	"grimhollow_lantern_ledger": Vector2i(-3, -1),
 }
 
 const _EXAMINE_PACK := "res://data/examine_texts.json"
