@@ -11,7 +11,7 @@ extends SceneTree
 ##
 ## Autoloads register after this script parses, so every menu is load()'d after two frames.
 ##
-## Covers fifteen screens. Still uncovered and worth adding when someone needs them: MenuScene (see
+## Covers sixteen screens. Still uncovered and worth adding when someone needs them: MenuScene (see
 ## below), ShopScene and EquipmentMenu (tools/item_icon_screenshot.gd has those), StatusMenu,
 ## and anything that needs a live battle.
 
@@ -158,11 +158,29 @@ func _init() -> void:
 		m.setup("Rename Autogrind Profile", "Scriptweaver Profile", 20)
 		return m)
 
-	## Win98Menu is deliberately NOT shot. Its only caller is MenuScene, which nothing preloads,
-	## loads or changes scene to — `test_autogrind_prompts_follow_the_pad_regression` records the
-	## ruling ("unreachable is not the same as worth removing"). Rendering a screen no player can
-	## reach is not coverage, and driving it needs a menu_items shape this tool would have to
-	## invent: the entries are Dictionaries read for "id"/"data"/"tooltip"/"submenu".
+	## Win98Menu is the BATTLE COMMAND MENU and the SHOP MENU — `BattleCommandMenu:136` and
+	## `ShopScene:479` both instantiate it. An earlier version of this file claimed it was
+	## unreachable and skipped it; that was wrong, and the cause is worth keeping: the grep behind
+	## the claim was piped through `head -4`, which cut the results off at MenuScene (the one caller
+	## that IS dead). A bounded search answered "none below my cutoff" and was read as "none".
+	##
+	## Items are Dictionaries, the shape ShopScene builds: {"id": ..., "label": ...}.
+	await _shoot(out_dir, "win98_menu", func():
+		var host := Control.new()
+		host.set_anchors_preset(Control.PRESET_FULL_RECT)
+		root.add_child(host)
+		var m = load("res://src/ui/Win98Menu.gd").new()
+		m.battle_mode = true
+		m.is_root_menu = true
+		host.add_child(m)
+		m.setup("Bram", [
+			{"id": "attack", "label": "Attack"},
+			{"id": "abilities", "label": "Abilities"},
+			{"id": "items", "label": "Items"},
+			{"id": "defend", "label": "Defend"},
+			{"id": "run", "label": "Run"},
+		], Vector2(80, 120), "fighter")
+		return host)
 
 	quit(0)
 
