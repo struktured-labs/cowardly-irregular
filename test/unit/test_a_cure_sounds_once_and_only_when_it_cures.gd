@@ -149,3 +149,80 @@ func test_the_item_cure_path_is_cued_too() -> void:
 	## The derivation must not be vacuously wide either: an item that cures nothing must not map here.
 	assert_ne(str(SoundManager._item_sounds.get("potion", "")), CUE,
 		"a plain healing potion maps to %s, so the cue no longer means 'an ailment came off'" % CUE)
+
+
+## THE SIBLING THE FIRST FIX LEFT BEHIND. The `cleanse` executor above was the ability path; the
+## Limit Break cleanses too (`_limit_break_cleanse`, the hidden half of what 4x AP buys) and played
+## nothing, so the one mechanic a player cannot see had no cue either. Two existing guards are NAMED
+## for this emit — `test_limit_break_cleanse_emit_preserved` and
+## `test_limit_break_cleanse_per_participant_log_preserved` — and both assert only that the literal
+## string is present in the source, so the emit's POLARITY was never pinned by either: it fired for
+## every alive participant, and a healthy party of five read five "is cleansed by the Limit Break!"
+## lines on a Limit Break that cured nobody. Those two stay green; they pin spelling, not behaviour.
+##
+## `play_flourish("group_limit_break")` already covers the ACTION, so the cue added here is not
+## about audibility of the attack — it means the same thing it means on the ability path: an ailment
+## came off. Which is why it must not fire when none did.
+func test_the_limit_break_cleanse_floor() -> void:
+	## Own arm on purpose: the two arms below touch _limit_break_cleanse AFTER their fixture
+	## preconditions, so a rename would abort them with an assert already passed — green, silent.
+	## This arm names the symbol instead, and reds with it.
+	assert_true(_bm.has_method("_limit_break_cleanse"),
+		"BattleManager no longer has _limit_break_cleanse — re-point the two arms below rather than deleting them")
+	assert_true(SoundManager.has_method("play_status"),
+		"SoundManager.play_status is gone, so the cue the arms below assert cannot be played by anything")
+
+
+func test_the_limit_break_cue_fires_once_and_names_only_who_was_cured() -> void:
+	## TWO ailing allies on purpose: with one, a cue moved INSIDE the participant loop still plays
+	## exactly once and this arm cannot tell the difference. Two make the second play land inside the
+	## 80 ms window, where only the suppression flag sees it.
+	var ailing := _ally("Poisoned")
+	var also := _ally("Cursed")
+	var healthy := _ally("Fine")
+	ailing.add_status("poison", 3)
+	ailing.add_status("blind", 3)
+	also.add_status("curse", 3)
+	assert_eq(ailing.status_effects.size(), 2, "VOID: the fixture did not land two ailments")
+	assert_eq(also.status_effects.size(), 1, "VOID: the second ally is not ailing, so the once-per-action claim is untested")
+	var lines: Array[String] = []
+	_bm.battle_log_message.connect(func(m: String) -> void: lines.append(m))
+	_reset_audio()
+	_bm._limit_break_cleanse([ailing, also, healthy])
+	assert_eq(ailing.status_effects.size(), 0, "the Limit Break must actually remove the ailments")
+	assert_eq(also.status_effects.size(), 0, "the Limit Break cleansed the first ally but not the second")
+	assert_true(SoundManager._sfx_cooldowns.has(CUE),
+		"a Limit Break that cleansed two ailments played no %s — the ability path cues this and the Limit Break is the same event" % CUE)
+	assert_false(SoundManager._sfx_suppressed_by_cooldown,
+		"%s played more than once for ONE Limit Break; two ailments off one ally is one cure, and the 80 ms cooldown would hide the repeat" % CUE)
+	var cleanse_lines: Array[String] = []
+	for l in lines:
+		if l.contains("is cleansed by the Limit Break"):
+			cleanse_lines.append(l)
+	assert_eq(cleanse_lines.size(), 2,
+		"the cleanse announced %d party members when TWO of three were ailing — a healthy member is told 'is cleansed' about nothing: %s" % [cleanse_lines.size(), cleanse_lines])
+	var announced := ", ".join(cleanse_lines)
+	assert_false(announced.contains("Fine"),
+		"the healthy ally was announced as cleansed: %s" % announced)
+	assert_true(announced.contains("Poisoned") and announced.contains("Cursed"),
+		"the cleanse lines do not name both allies who were actually cured: %s" % announced)
+
+
+func test_a_limit_break_that_cured_nobody_is_silent_and_says_nothing() -> void:
+	## A buff is the right negative: it will never be added to the cleansable list, so this arm
+	## cannot red on a correct widening of that list the way naming a specific ailment would.
+	var p := _ally("Blessed")
+	p.add_status("regen", 3)
+	var lines: Array[String] = []
+	_bm.battle_log_message.connect(func(m: String) -> void: lines.append(m))
+	_reset_audio()
+	_bm._limit_break_cleanse([p])
+	assert_true(p.has_status("regen"), "the Limit Break stripped a BUFF — the cleansable list is an inclusion list")
+	assert_false(SoundManager._sfx_cooldowns.has(CUE),
+		"%s played for a Limit Break that cured nothing, so the cue stops meaning 'an ailment came off'" % CUE)
+	var cleanse_lines: Array[String] = []
+	for l in lines:
+		if l.contains("is cleansed by the Limit Break"):
+			cleanse_lines.append(l)
+	assert_eq(cleanse_lines, [],
+		"the log announced a cleanse for a party member who had nothing to cleanse: %s" % cleanse_lines)
