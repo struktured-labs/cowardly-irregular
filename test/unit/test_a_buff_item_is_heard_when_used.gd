@@ -14,12 +14,6 @@ extends GutTest
 ## (category BUFF, not META) and `ineffective_use_reason(..., in_battle = true)` returns "" for
 ## `add_buff` by its own arm — "In battle the buff still lands, including at full HP."
 ##
-## ⚠️ REPORTED, NOT FIXED: `repel` (`repel_steps`) is the one other battle-usable, damage-free,
-## unmapped item, so it is still silent. Not mapped here because no authored cue fits a field-only
-## effect and inventing one is cowir-sfx's call, not this guard's. It is named in arm 4 so the
-## number cannot drift quietly, rather than allowlisted — a guard whose correct case needs a skip
-## flag is not a guard.
-
 const ITEMS: String = "res://data/items.json"
 const BUFF_ITEMS: Array[String] = ["power_drink", "speed_tonic", "defense_tonic", "magic_tonic"]
 
@@ -95,9 +89,17 @@ func test_the_buff_items_map_onto_an_authored_cue() -> void:
 			"%s maps to \"%s\", which is not an authored cue" % [item_id, cue])
 
 
-## The REST of the silent set, named so it cannot grow quietly. `repel` is the known member and is
-## reported rather than mapped; a SECOND member means something new went silent and wants a look.
-func test_the_rest_of_the_silent_set_is_only_repel() -> void:
+## No battle-usable item is silent. Was pinned to ["repel"] while repel was unmapped; @cowir-sfx
+## mapped repel_steps -> ability_shell (the WARD cue; the generic `buff` reads wrong for a field
+## effect), so the correct assertion is EMPTY — a pinned member would red on exactly that fix.
+## Edited by @cowir-sfx with @cowir-music's authorisation, reconciling two branches into one SHA
+## rather than at the gate (@cowir-main's instruction).
+##
+## ⚠️ SINGLE OWNER OF THIS DERIVATION. An equivalent arm existed in
+## test_sfx_fallback_chain_regression and was REMOVED rather than left to agree by coincidence —
+## two owners of one derived fact is the shape where a later edit changes one and nothing reds.
+## That file keeps the repel CHARACTER pin, which this derivation cannot express.
+func test_no_battle_usable_item_is_silent() -> void:
 	var silent: Array[String] = []
 	for row in _battle_usable_items():
 		var effects: Dictionary = row[1]
@@ -107,8 +109,9 @@ func test_the_rest_of_the_silent_set_is_only_repel() -> void:
 			continue
 		silent.append(str(row[0]))
 	silent.sort()
-	assert_eq(silent, ["repel"] as Array[String],
-		"the silent battle-usable set changed — expected only `repel` (field-only effect, no authored cue fits it; cowir-sfx's call), got: %s" % ", ".join(silent))
+	assert_eq(silent.size(), 0,
+		"%d battle-usable item(s) deal no damage and resolve to no cue, so using them is silent: %s"
+		% [silent.size(), ", ".join(silent)])
 
 
 ## id -> effects, for every item ItemSystem will let a player use in a battle.

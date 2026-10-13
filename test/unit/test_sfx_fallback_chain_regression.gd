@@ -220,66 +220,14 @@ func test_every_item_cue_names_a_real_key_and_a_real_effect() -> void:
 		"these item-cue pairs name an effect no item authors, so the row can never fire and reads as coverage it does not provide: %s" % [dead])
 
 
-## USING A CONSUMABLE IN BATTLE AND HEARING NOTHING. `play_item` returns early on an id the item-cue
-## map does not cover, and a consumable that deals no damage has nothing else to sound — so the item
-## is spent and the player gets silence, which reads as the input not registering.
+## THE CHARACTER CALL, which the derived silent-set arm cannot express. That derivation lives in
+## test_a_buff_item_is_heard_when_used.gd (@cowir-music's file) and is satisfied by ANY mapping; this
+## pins WHICH cue. Repel is battle-usable (ineffective_use_reason:640 — "Damage and repel do something
+## the moment they are used"), so it is consumed, and it played nothing until 2026-10-13.
 ##
-## Derived from the REAL rule rather than a list: `ItemSystem.ineffective_use_reason` decides what is
-## usable in battle (`:640` — "Damage and repel do something the moment they are used"), and an item
-## whose effects include `damage` is excluded because the damage cue sounds for it. What is left is
-## exactly the set that must carry a cue. On today's catalog: 25 battle-usable, 4 excluded as
-## damage-dealers, and the remainder must all map.
-##
-## ⛔ IT FOUND ITS OWN SET INDEPENDENTLY, WHICH IS WHY I TRUST IT: the derivation names the four
-## `add_buff` tonics @cowir-music fixed in `039754232` (not yet in main) and `repel`, which this
-## commit maps. Two lanes, two routes, one set.
-const BUFF_PENDING := "add_buff"
-
-
-func test_a_battle_usable_consumable_that_deals_no_damage_has_a_cue() -> void:
-	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items.json"))
-	assert_true(parsed is Dictionary, "VOID: items.json did not parse")
-	if not (parsed is Dictionary):
-		return
-	var items: Dictionary = (parsed as Dictionary).get("items", parsed)
-	var mapped: Dictionary = SoundManager._item_sounds
-	assert_gt(mapped.size(), 5,
-		"VOID: only %d items carry a cue, so the map was not built and every assert below is vacuous" % mapped.size())
-
-	var silent: Array[String] = []
-	var pending: Array[String] = []
-	var checked: int = 0
-	for iid in items.keys():
-		var it: Variant = items[iid]
-		if not (it is Dictionary):
-			continue
-		var eff: Variant = (it as Dictionary).get("effects", {})
-		if not (eff is Dictionary) or (eff as Dictionary).is_empty():
-			continue
-		## the real rule, asked of the real function rather than re-implemented
-		if str(ItemSystem.ineffective_use_reason(str(iid), [], true)) != "":
-			continue
-		checked += 1
-		if (eff as Dictionary).has("damage"):
-			continue  # the damage cue sounds for it
-		if mapped.has(str(iid)):
-			continue
-		if (eff as Dictionary).has(BUFF_PENDING):
-			pending.append(str(iid))
-			continue
-		silent.append(str(iid))
-	assert_gt(checked, 8,
-		"CONTROL: only %d items were judged battle-usable, so this arm is reading almost nothing — ineffective_use_reason's signature or rule changed" % checked)
-	assert_eq(silent, [],
-		"these consumables are usable in battle, deal no damage, and carry NO cue — the item is spent and the player hears nothing: %s" % [silent])
-
-	## ⛔ SELF-RETIRING. @cowir-music's 039754232 maps the add_buff tonics and is not in main yet, so
-	## they are declared rather than asserted. The moment it lands this reds and the exclusion must be
-	## deleted in the same commit — a declaration that outlives its fact is worse than none.
-	assert_gt(pending.size(), 0,
-		"no add_buff item is unmapped any more, so 039754232 (or an equivalent) has landed: delete BUFF_PENDING and the branch that skips it, and let the main assert cover them")
-
-
+## ⛔ My own derived copy of the silent-set arm was REMOVED from this file in the same change rather
+## than left to agree with theirs by coincidence. Two owners of one derived fact is the shape where a
+## later edit changes only one of them, and nothing reds.
 func test_repel_is_cued_and_takes_the_ward_not_the_generic_buff() -> void:
 	## Named because the derived arm above is satisfied by ANY mapping. Repel is a field effect used
 	## in battle; `buff` reads wrong for it, and @cowir-music left that character call to this lane.
