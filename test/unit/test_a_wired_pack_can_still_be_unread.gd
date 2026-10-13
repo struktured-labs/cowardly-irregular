@@ -27,10 +27,8 @@ const GdSource := preload("res://test/unit/helpers/gd_source.gd")
 const MIN_ENTRIES := 20
 
 ## A scene whose entries no placement path reads yet. Value is the BLOCKER, never just the world.
-const UNPLACED_SCENES := {
-	"abstract_overworld": "NOT a village, so BaseVillage's `scene == _get_area_id()` filter does not serve it, and the W6 overworld exposes no equivalent accessor. Also one of cowir-story's four inferred re-keys (was overworld_vertex — a single footprint in white sand, world 6)",
-	"assembly_core": "NOT a village: the W4 dungeon, inferred from the entry's own world number (was dungeon_pipeline, a pressure gauge). CastleHarmonia shows the dungeon shape — a literal scene filter — so this one needs that, not an accessor",
-}
+## Empty since .670: cowir-overworld placed the last two (assembly_core, abstract_overworld). A new unread scene goes here WITH its blocker.
+const UNPLACED_SCENES := {}
 
 
 func _entries() -> Dictionary:
@@ -174,7 +172,7 @@ func test_the_unread_prose_stays_counted() -> void:
 		if UNPLACED_SCENES.has(str(e.get("scene", ""))):
 			n += 1
 			words += str(e.get("text", "")).split(" ", false).size()
-	assert_gt(n, 0, "CONTROL: this arm reports the unread entries; an empty roster means they are all placed")
+	assert_eq(n == 0, UNPLACED_SCENES.is_empty(), "a rostered scene must own entries, and an empty roster must count none")
 	gut.p("UNREAD: %d of %d examines, %d words, across %d scenes" % [n, _entries().size(), words, UNPLACED_SCENES.size()])
 
 
