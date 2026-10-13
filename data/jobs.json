@@ -53,7 +53,7 @@
     "id": "cleric",
     "name": "Cleric",
     "type": 0,
-    "description": "A devoted healer who channels restorative light. Low HP but high magic, keeps the party alive through faith and prayer.",
+    "description": "A devoted healer who channels restorative light. Low attack but high magic, keeps the party alive through faith and prayer.",
     "stat_modifiers": {
       "max_hp": 1080,
       "max_mp": 70,
@@ -122,7 +122,7 @@
     "id": "mage",
     "name": "Mage",
     "type": 0,
-    "description": "A scholar of the arcane arts who wields destructive elemental magic. Low HP but devastating magical damage.",
+    "description": "A scholar of the arcane arts who wields destructive elemental magic. Low attack but devastating magical damage.",
     "stat_modifiers": {
       "max_hp": 970,
       "max_mp": 80,
