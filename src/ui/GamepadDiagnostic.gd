@@ -61,7 +61,22 @@ func _input(event: InputEvent) -> void:
 		visible = _active
 
 
+## ⛔ GATED ON `_active`, WHICH `_process` ALREADY WAS AND THIS WAS NOT. GameLoop adds this overlay
+## to EVERY session (`:401`, unconditional), so these prints ran in every shipped build whether or
+## not anyone opened the overlay. Measured in struktured's 2026-10-12 session: 1,889 `[GAMEPAD]`
+## lines — a line per unhandled pad button, per stick sample past 0.1, per mouse move past 5px.
+##
+## ⚠️ THE COST IS HIS CRASH TRACE, NOT DISK. `user://logs` is a 5-file FIFO, so a session that
+## spends ~12% of its lines on input telemetry crowds out the thing the fleet mines those logs for.
+## Every `print` persists regardless of the file-logging setting.
+##
+## 📌 WHAT THIS TRADES, SAID RATHER THAN HIDDEN: a tester who hits a pad problem and only THEN
+## presses F11 no longer has the preceding events in the log. Nothing documented that as the intent
+## — `_process` guards and this did not, which is an asymmetry rather than a design — but if the
+## retroactive capture WAS the point, reverse this with that reason recorded.
 func _unhandled_input(event: InputEvent) -> void:
+	if not _active:
+		return
 	if event is InputEventJoypadMotion:
 		var e = event as InputEventJoypadMotion
 		if abs(e.axis_value) > 0.1:
