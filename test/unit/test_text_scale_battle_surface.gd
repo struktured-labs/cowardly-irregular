@@ -60,11 +60,19 @@ func test_battle_scene_uses_text_scale_at_all_sites() -> void:
 func test_battle_results_display_uses_text_scale() -> void:
 	# 2026-08-18 revamp: the victory surface moved to VictoryOverlay; the two files
 	# together must keep every font_size site scaled (was 11 in the old panel).
+	var total := 0
 	for path in [BATTLE_RESULTS_DISPLAY, "res://src/battle/VictoryOverlay.gd"]:
 		var src := _read(path)
 		var overrides := src.count("add_theme_font_size_override(")
-		assert_eq(_count_calls(src), overrides,
+		## Not an equality: TextScale.scaled() also sizes geometry (the .673 victory cards), so there
+		## can be MORE scaled calls than overrides. What must hold is that no override takes a bare number.
+		assert_gte(_count_calls(src), overrides,
 			"%s: every font_size override must route through TextScale.scaled (found %d overrides)" % [path, overrides])
+		var bare := RegEx.new()
+		bare.compile("add_theme_font_size_override\\(\\s*\"font_size\"\\s*,\\s*\\d+\\s*\\)")
+		assert_eq(bare.search_all(src).size(), 0, "%s: a font_size override passes a bare integer" % path)
+		total += overrides
+	assert_gt(total, 0, "CONTROL: the victory surface still sets font sizes somewhere")
 
 
 # ── Negative pins: no bare integer font_size remaining ──────────────

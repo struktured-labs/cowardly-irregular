@@ -27,7 +27,8 @@ func test_panel_height_is_clamped() -> void:
 	# above the loot strip — 5 simultaneous level-ups cannot clip off-screen.
 	var src := FileAccess.get_file_as_string("res://src/battle/VictoryOverlay.gd")
 	assert_true("clampf(pos.y" in src, "card Y is clamped into the viewport")
-	assert_true("STRIP_BOTTOM_MARGIN - CARD_H" in src,
+	## The card height is `_ch()` since .673 (it grows with Text Size); the reserve is the same band.
+	assert_true("clampf(pos.y, 56.0, vp.y - STRIP_BOTTOM_MARGIN - _ch())" in src,
 		"card clamp reserves the loot strip + hint bar band at the bottom")
 
 
