@@ -75,14 +75,41 @@ while [ $# -gt 0 ]; do
     esac
 done
 
+# The remote these calls ask. Indirected ONLY so the selftest can point at a local bare repo
+# and stop depending on github being reachable six times; production leaves it as "origin".
+ORIGIN="${REAP_ORIGIN:-origin}"
+
+# \u26d4 AN UNREACHABLE ORIGIN IS NOT AN EMPTY TAG SET. These used to be
+#     git ls-remote ... 2>/dev/null
+# with no exit-code check, so a failed network call returned NOTHING and every caller read that
+# as "no tag on origin points at this tree" -- i.e. not reconstructible. Diagnosed 2026-10-13:
+# the reaper selftest red 3 arms in 1 run of 6 on a quiet box, and GIT_SSH_COMMAND=/bin/false
+# reproduces it on demand (4 arms). It had been recorded as a flake with "cause never found"
+# for weeks, because `2>/dev/null` deleted git's "could not read from remote repository" and
+# left only arm failures that read as logic errors. CLAUDE.md names the hazard exactly:
+# "don't 2>/dev/null a measurement command -- it deletes the warning and keeps the wrong number."
+#
+# Now: the failure is its own LOUD verdict and it means UNKNOWN, which for a tool that deletes
+# worktrees must read as KEEP. Exit 3 is "could not determine", never "nothing is reconstructible".
+_remote_unreachable() { # $1 = git's stderr, $2 = exit code
+    echo "[reap] BLOCKED: cannot reach ${ORIGIN} — reconstructibility is UNKNOWN." >&2
+    echo "       Nothing is reaped. An unreachable remote is not evidence that a tree is" >&2
+    echo "       unreconstructible; treating it as such is how a tool that deletes gets it wrong." >&2
+    echo "       git ls-remote exited $2: $(printf '%s' "$1" | head -2 | tr '\n' ' ')" >&2
+}
+
 _newest_tag_on_origin() {
-    git ls-remote --tags origin 'refs/tags/v3.33.*' 2>/dev/null \
-        | grep -v '\^{}' | awk '{print $2}' | sed 's#refs/tags/##' | sort -V | tail -1
+    local out ec
+    out="$(git ls-remote --tags "$ORIGIN" 'refs/tags/v3.33.*' 2>&1)"; ec=$?
+    [ "$ec" -eq 0 ] || { _remote_unreachable "$out" "$ec"; return 3; }
+    printf '%s\n' "$out" | grep -v '\^{}' | awk '{print $2}' | sed 's#refs/tags/##' | sort -V | tail -1
 }
 
 _origin_tags() {
-    git ls-remote --tags origin 'refs/tags/*' 2>/dev/null \
-        | grep -v '\^{}' | awk '{print $2}' | sed 's#refs/tags/##'
+    local out ec
+    out="$(git ls-remote --tags "$ORIGIN" 'refs/tags/*' 2>&1)"; ec=$?
+    [ "$ec" -eq 0 ] || { _remote_unreachable "$out" "$ec"; return 3; }
+    printf '%s\n' "$out" | grep -v '\^{}' | awk '{print $2}' | sed 's#refs/tags/##'
 }
 
 # Reconstructible: HEAD is pointed at by a tag that EXISTS ON ORIGIN, so
@@ -126,9 +153,20 @@ _candidates() {
 
 reap() {
     local newest_tag total=0 kept=0 removed=0 refused=0
-    newest_tag="$(_newest_tag_on_origin)"
-    local origin_tags; origin_tags="$(_origin_tags)"
-    [ -z "$origin_tags" ] && echo "[reap] note: no tags readable from origin — every detached worktree outside ${PREFIX} will be kept" >&2
+    # \u26d4 ABORT, do not proceed with an unknown. Exit 3 from either call means the remote could
+    # not be reached, and with no tag list every tree outside PREFIX silently stops being
+    # reconstructible -- which in a --apply run is the difference between "keep it, I cannot tell"
+    # and "delete it, I found no tag". The verdict has already been printed by the helper.
+    local _tec=0
+    newest_tag="$(_newest_tag_on_origin)" || _tec=$?
+    local origin_tags _oec=0
+    origin_tags="$(_origin_tags)" || _oec=$?
+    if [ "$_tec" -eq 3 ] || [ "$_oec" -eq 3 ]; then
+        echo "[reap] refusing to judge ${total:-0} worktree(s) against a remote it cannot read." >&2
+        return 3
+    fi
+    # A reachable origin that genuinely has no tags is a different thing and stays a note.
+    [ -z "$origin_tags" ] && echo "[reap] note: no tags readable from ${ORIGIN} — every detached worktree outside ${PREFIX} will be kept" >&2
 
     local rows; rows="$(_candidates)"
     if [ -z "$rows" ]; then
@@ -177,7 +215,7 @@ reap() {
                 reason="on a branch (${br}) — may hold unpushed work; --merged-branches to consider it"
             elif ! git merge-base --is-ancestor "$br" origin/main 2>/dev/null; then
                 reason="branch ${br} is NOT merged into origin/main"
-            elif ! git ls-remote --exit-code --heads origin "$br" >/dev/null 2>&1; then
+            elif ! git ls-remote --exit-code --heads "$ORIGIN" "$br" >/dev/null 2>&1; then
                 reason="branch ${br} is not on origin — its ref would be local-only"
             fi
         fi
@@ -347,6 +385,21 @@ selftest() {
         return 2
     fi
 
+    # \u26d4 THE SELFTEST MUST NOT NEED THE NETWORK. This is a gate-0d check: when it asked github
+    # six times, one lost call red 3 arms and blocked a publish on a sound build (1 run in 6,
+    # measured 2026-10-13). A local bare clone gives the same refs over a filesystem path, so the
+    # arms are deterministic and say something about the TOOL rather than about connectivity.
+    # --local hardlinks the object store, so this costs no meaningful disk or time.
+    local _bare="tmp/reapself-${sfx}-origin.git"
+    if git clone --bare --local --quiet . "$_bare" 2>/dev/null; then
+        export REAP_ORIGIN="$_bare"
+        ORIGIN="$_bare"
+        echo "[reap] selftest: origin = local bare clone (no network)"
+    else
+        echo "[reap] selftest: could not build the local bare origin — falling back to the real" >&2
+        echo "       remote, so these arms depend on connectivity and may red on a lost call." >&2
+    fi
+
     mkdir -p "$scan"
     for _d in "${pfx}"*; do [ -e "$_d" ] && _drop_fixture "$_d"; done
     # a crashed earlier run can leave an admin entry with no directory; clear ONLY ours
@@ -437,7 +490,7 @@ selftest() {
     for b in $(git for-each-ref --format='%(refname:short)' refs/heads/ 2>/dev/null); do
         case "$b" in reaptest/*) continue ;; esac
         git merge-base --is-ancestor "$b" origin/main 2>/dev/null || continue
-        git ls-remote --exit-code --heads origin "$b" >/dev/null 2>&1 || continue
+        git ls-remote --exit-code --heads "$ORIGIN" "$b" >/dev/null 2>&1 || continue
         git worktree list --porcelain 2>/dev/null | grep -qx "branch refs/heads/$b" && continue
         git worktree add "${pfx}8" "$b" >/dev/null 2>&1 || continue
         mb="$b"; break
@@ -521,7 +574,7 @@ selftest() {
     # reconstructibility would have to pass for all three, and they disagree.
     local rtag="" c u1="" u2=""
     for t in $tags; do
-        git ls-remote --exit-code --tags origin "$t" >/dev/null 2>&1 && rtag="$t"
+        git ls-remote --exit-code --tags "$ORIGIN" "$t" >/dev/null 2>&1 && rtag="$t"
     done
     for c in $(git rev-list --max-count=60 origin/main 2>/dev/null); do
         [ -n "$(git tag --points-at "$c" 2>/dev/null)" ] && continue
@@ -569,6 +622,31 @@ selftest() {
     rmdir "$scan" 2>/dev/null || true
 
     echo
+    # \u26d4 THE ONE ARM THAT MUST STILL TOUCH THE UNREACHABLE PATH. Every arm above now runs
+    # against a local bare clone, which is what makes them deterministic -- but a selftest that
+    # can no longer reach the failure mode cannot prove the fix for it. So: force an unreachable
+    # remote and assert the LOUD verdict, not an empty tag set quietly reclassifying every tree.
+    # A bad path is the right forcing here; GIT_SSH_COMMAND only bites a remote that uses ssh,
+    # and with a local origin it does nothing.
+    local _un _uec=0
+    _un="$(REAP_ORIGIN=/nonexistent/origin.git "$self" 2>&1)" || _uec=$?
+    if printf '%s' "$_un" | grep -q 'BLOCKED: cannot reach .* reconstructibility is UNKNOWN'; then
+        pass=$((pass+1)); printf '  ok    %s\n' "an unreachable origin is a BLOCKED verdict"
+    else
+        fail=$((fail+1)); printf '  FAIL  %s\n' "an unreachable origin is a BLOCKED verdict"
+    fi
+    if [ "$_uec" -eq 3 ]; then
+        pass=$((pass+1)); printf '  ok    %s\n' "  ...and exits 3 (unknown), never 0"
+    else
+        fail=$((fail+1)); printf '  FAIL  %s (exit %s, wanted 3)\n' "  ...and exits 3 (unknown), never 0" "$_uec"
+    fi
+    # And it must NOT claim anything about reconstructibility while it cannot read the remote.
+    if printf '%s' "$_un" | grep -q 'would remove'; then
+        fail=$((fail+1)); printf '  FAIL  %s\n' "an unreachable origin proposes no removals"
+    else
+        pass=$((pass+1)); printf '  ok    %s\n' "an unreachable origin proposes no removals"
+    fi
+
     echo "selftest: ${pass} passed, ${fail} failed"
     if [ "$_VOID_FIXTURES" -gt 0 ]; then
         echo "selftest: ⛔ ${_VOID_FIXTURES} FIXTURE(S) COULD NOT BE BUILT — the failures above are" >&2
