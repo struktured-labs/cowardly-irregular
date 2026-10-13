@@ -93,12 +93,28 @@ func is_live_ready() -> bool:
 	return _backend != null and _backend.is_ready()
 
 
-## Synchronous: a battle bubble must have its audio before it builds its fade tween.
-func get_cached(speaker_id: String, text: String) -> AudioStream:
+## The cache key this speaker's line lives under, or "" when the voice cannot be resolved.
+## Shared with has_cached so the two cannot derive it differently.
+func cache_key_for(speaker_id: String, text: String) -> String:
 	var v := voice_for(speaker_id)
 	if v.is_empty() or cache == null:
+		return ""
+	return VoiceCache.key_for(str(v["voice"]), int(v["rev"]), text)
+
+
+## Whether the BLOB is still on disk, which is a different question from get_cached returning a
+## stream: a wedged mix refuses the lock and yields null while the key is deliberately kept. The
+## pool needs the distinction to decide whether its slot can ever play again.
+func has_cached(speaker_id: String, text: String) -> bool:
+	var key := cache_key_for(speaker_id, text)
+	return key != "" and cache.has(key)
+
+
+## Synchronous: a battle bubble must have its audio before it builds its fade tween.
+func get_cached(speaker_id: String, text: String) -> AudioStream:
+	var key := cache_key_for(speaker_id, text)
+	if key == "":
 		return null
-	var key := VoiceCache.key_for(str(v["voice"]), int(v["rev"]), text)
 	var bytes: PackedByteArray = cache.read(key)
 	if bytes.is_empty():
 		return null
