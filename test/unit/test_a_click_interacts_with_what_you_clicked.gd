@@ -49,6 +49,21 @@ func _source(path: String) -> String:
 	return code
 
 
+## ⛔ BOUND AT THE ENCLOSING FUNCTION, NEVER A CHARACTER COUNT. The first version of this file used
+## `substr(at, 700)` and `substr(at, 200)`. Measured on the RAW file, 700 chars covers 53% of the
+## click handler and does NOT reach the walk hand-off — it only passed because `_source` strips
+## comments first, so the window was comment-immune by luck of the accessor rather than by design.
+## A code addition in the handler would push an assertion out of the window and red a correct change.
+func _slice_from(code: String, anchor: String) -> String:
+	var at := code.find(anchor)
+	if at < 0:
+		return ""
+	var end := code.find("\nfunc ", at)
+	if end < 0:
+		end = code.length()
+	return code.substr(at, end - at)
+
+
 ## The signal that loses the target. If this ever gains a parameter the defect is structurally gone
 ## and this arm should be revisited rather than deleted.
 func test_the_signal_the_click_path_uses_carries_no_target() -> void:
@@ -57,7 +72,8 @@ func test_the_signal_the_click_path_uses_carries_no_target() -> void:
 		"the click path routes through interaction_requested; a target-carrying signal would change this guard's subject")
 	var at := code.find("MOUSE_BUTTON_LEFT")
 	assert_gt(at, -1, "the click path must exist, or this guard has no subject")
-	var slice := code.substr(at, 420)
+	var slice := _slice_from(code, "MOUSE_BUTTON_LEFT")
+	assert_gt(slice.length(), 0, "CONTROL: the click handler must be sliceable")
 	assert_true(slice.contains("_find_clicked_interactable"),
 		"the click path must still choose a target")
 	assert_true(slice.contains("interaction_requested.emit()"),
@@ -134,12 +150,14 @@ func test_the_click_path_hands_its_target_over() -> void:
 	var code := _source(PLAYER)
 	var at := code.find("MOUSE_BUTTON_LEFT")
 	assert_gt(at, -1, "the click path must exist")
-	var slice := code.substr(at, 700)
+	var slice := _slice_from(code, "MOUSE_BUTTON_LEFT")
+	assert_gt(slice.length(), 0, "CONTROL: the click handler must be sliceable")
+	assert_eq(slice.count("\nfunc "), 0, "CONTROL: the slice over-ran into another function")
 	assert_true(slice.contains("pending_click_target = target_npc"),
 		"an immediate click must hand its chosen node to the controller")
 	assert_true(slice.contains("_click_walk_target = target_npc"),
 		"a click-walk must remember WHICH node it is walking to, not just where it stood")
 	var arrival := code.find("_interact_on_arrival = false")
 	assert_gt(arrival, -1, "the arrival path must exist")
-	assert_true(code.substr(arrival, 200).contains("pending_click_target = _click_walk_target"),
+	assert_true(_slice_from(code, "_interact_on_arrival = false").contains("pending_click_target = _click_walk_target"),
 		"arrival must hand over the node it walked to — otherwise you walk to a distant NPC and talk to whatever you end up beside")
