@@ -81,6 +81,9 @@ func after_each() -> void:
 	VoiceService.apply_config()
 	VoicePool.store = _saved["store"]
 	VoicePool._retry_after_msec = 0
+	## New autoload state, same reason as the line above: a debt left here escalates a LATER
+	## file's first cooldown, and this file's own header warns autoload state outlives it.
+	VoicePool.consecutive_failures = 0
 	VoicePool.set_process(true)
 	GameState.tts_live_enabled = _saved["tts"]
 	GameState.party_llm_dialogue_enabled = _saved["pld"]
