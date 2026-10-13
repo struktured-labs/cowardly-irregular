@@ -1119,8 +1119,14 @@ func _handle_capture_input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 			return
 		InputProfileManager.set_custom_binding(_capture_action, [btn])
+		## The bind STANDS -- this only names a cost the player cannot otherwise discover: the two
+		## battle controls on the north and west faces have no InputMap action, so they are absent
+		## from every row on this screen and go dead silently when an action is moved on top.
+		var shadow: Dictionary = InputProfileManager.binding_would_shadow_a_fixed_control(_capture_action, [btn])
 		_cancel_capture()
 		_update_all_labels()
+		if shadow.get("shadows", false):
+			_show_flash(str(shadow.get("reason", "")))
 		if SoundManager:
 			SoundManager.play_ui("menu_select")
 		get_viewport().set_input_as_handled()
