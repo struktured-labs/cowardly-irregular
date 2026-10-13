@@ -20,6 +20,15 @@ class_name ReadableProp
 
 const PANEL_W: float = 420.0
 const PANEL_H: float = 240.0
+## ⛔ THE BODY BOX AND ITS FONT, NAMED ONCE. `test_an_examine_fits_the_panel_that_shows_it` has to
+## render every authored examine at exactly this geometry to know whether its tail is reachable, and
+## a guard that copied `PANEL_W - 28` and `12` would keep measuring the old box after a resize and
+## pass prose that no longer fits. Both are read, not duplicated.
+const BODY_FONT: int = 12
+
+
+static func body_box() -> Vector2:
+	return Vector2(PANEL_W - 28.0, PANEL_H - 74.0)
 const LOCK_NAME: String = "readable_prop"
 ## ⛔ NOT Signpost's recipe — this copied its two CONSTANTS and not its LAYOUT, and the comment here
 ## used to claim "verbatim", which is what hid the gap. Signpost's `_layout_flat` sets a width and
@@ -212,8 +221,8 @@ func _open_panel() -> void:
 
 	_body_label = Label.new()
 	_body_label.position = Vector2(14, 38)
-	_body_label.size = Vector2(PANEL_W - 28, PANEL_H - 74)
-	_body_label.add_theme_font_size_override("font_size", 12)
+	_body_label.size = body_box()
+	_body_label.add_theme_font_size_override("font_size", BODY_FONT)
 	_body_label.add_theme_color_override("font_color", Color(0.88, 0.86, 0.80))
 	_body_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_body_label.vertical_alignment = VERTICAL_ALIGNMENT_TOP

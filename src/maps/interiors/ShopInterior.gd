@@ -1367,7 +1367,7 @@ func _setup_npcs() -> void:
 	add_child(npcs)
 
 	# Shopkeeper behind counter — talking to them opens the wares menu after the greeting line closes (playtest 2026-07-14: user talked to shopkeeper repeatedly but couldn't figure out how to buy — the standalone BrowseService tile in front of the counter was the only purchase gate).
-	_create_npc(keeper_name, "shopkeeper", Vector2(8, 3), _keeper_dialogue())
+	_create_npc(keeper_name, "shopkeeper", Vector2(8, 3), _keeper_dialogue(), load("res://src/exploration/ShopScene.gd").pictured_keeper_sheet(shop_type, keeper_name))
 	var keeper_npc: Node = null
 	for child in npcs.get_children():
 		if child.get("npc_name") == keeper_name:
@@ -1480,12 +1480,13 @@ func _keeper_dialogue_for(origin_map_id: String) -> Array:
 	return [keeper_name + ": Welcome. Browse my wares."]
 
 
-func _create_npc(npc_name: String, npc_type: String, grid_pos: Vector2, dialogue: Array) -> void:
+func _create_npc(npc_name: String, npc_type: String, grid_pos: Vector2, dialogue: Array, sprite_archetype_override: String = "") -> void:
 	var OverworldNPCScript = load("res://src/exploration/OverworldNPC.gd")
 	if OverworldNPCScript:
 		var npc = OverworldNPCScript.new()
 		npc.npc_name = npc_name
 		npc.npc_type = npc_type
+		npc.sprite_archetype = sprite_archetype_override
 		npc.dialogue_lines = dialogue
 		npc.position = grid_pos * TILE_SIZE
 		npcs.add_child(npc)

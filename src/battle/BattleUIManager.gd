@@ -467,11 +467,15 @@ func _update_member_status(idx: int, member: Combatant) -> void:
 		# Check if this member is currently selecting and has queued actions in menu
 		var queued_count = 0
 		var committed_count = 0
+		## A defer is queueable and free, so the bill is not the count (BattleManager owns which).
+		var queued_billable: int = 0
+		var committed_billable: int = 0
 		var is_current_selecting = (member == BattleManager.current_combatant and
 			BattleManager.current_state == BattleManager.BattleState.PLAYER_SELECTING and
 			_scene.active_win98_menu and is_instance_valid(_scene.active_win98_menu))
 		if is_current_selecting:
 			queued_count = _scene.active_win98_menu.get_queue_count()
+			queued_billable = _scene.active_win98_menu.get_queue_billable_count()
 
 		# Check for committed actions in BattleManager.pending_actions
 		var is_deferring = false
@@ -481,8 +485,10 @@ func _update_member_status(idx: int, member: Combatant) -> void:
 					# Advance has multiple sub-actions
 					var sub_actions = action.get("actions", [])
 					committed_count = sub_actions.size()
+					committed_billable = BattleManager.billable_actions(sub_actions)
 				elif action.get("type") in ["attack", "ability", "item"]:
 					committed_count = 1
+					committed_billable = 1
 				elif action.get("type") == "defer":
 					# Defer keeps the +1 natural gain
 					is_deferring = true
@@ -508,17 +514,17 @@ func _update_member_status(idx: int, member: Combatant) -> void:
 				## Full Bank: the fifth action is free, so the preview has to ASK what the turn costs
 				## rather than subtract the count. This panel had the same arithmetic as the menu and
 				## therefore told the same lie, for every party member rather than just the acting one.
-				var billed = BattleManager.billed_ap(ap_value, queued_count)
+				var billed = BattleManager.billed_ap(ap_value, queued_count, queued_billable)
 				var new_ap = ap_value - billed
 				var new_color = "yellow" if new_ap >= 0 else "orange"
-				var bank_tag = (" [color=%s]★[/color]" % _ap_bbcode(BattleManager.FULL_BANK_AP)) if billed < queued_count else ""
+				var bank_tag = (" [color=%s]★[/color]" % _ap_bbcode(BattleManager.FULL_BANK_AP)) if BattleManager.is_full_bank(ap_value, queued_count) else ""
 				status_text = "[color=%s]AP: %+d[/color][color=%s]→%+d[/color] [color=aqua][%d][/color]%s" % [ap_color, ap_value, new_color, new_ap, queued_count, bank_tag]
 			elif is_deferring:
 				# Deferring keeps +1 natural gain: "AP: +1 (+1)"
 				status_text = "[color=%s]AP: %+d[/color] [color=cyan](+1)[/color]" % [ap_color, ap_value]
 			elif committed_count > 0:
 				# Already committed actions: "AP: +1 (-4)"
-				status_text = "[color=%s]AP: %+d[/color] [color=gray](-%d)[/color]" % [ap_color, ap_value, BattleManager.billed_ap(ap_value, committed_count)]
+				status_text = "[color=%s]AP: %+d[/color] [color=gray](-%d)[/color]" % [ap_color, ap_value, BattleManager.billed_ap(ap_value, committed_count, committed_billable)]
 			else:
 				status_text = "[color=%s]AP: %+d[/color]" % [ap_color, ap_value]
 
@@ -539,12 +545,12 @@ func _update_member_status(idx: int, member: Combatant) -> void:
 				## Third copy of the same subtraction, in the plain-Label fallback. My test caught it
 				## only because it asserted the ABSENCE of the pattern rather than the presence of
 				## the fix — I had already "fixed" this branch by rewriting the line below it.
-				var new_ap = ap_value - BattleManager.billed_ap(ap_value, queued_count)
-				ap_label.text = "AP: %+d→%+d [%d]" % [ap_value, ap_value - BattleManager.billed_ap(ap_value, queued_count), queued_count]
+				var new_ap = ap_value - BattleManager.billed_ap(ap_value, queued_count, queued_billable)
+				ap_label.text = "AP: %+d→%+d [%d]" % [ap_value, ap_value - BattleManager.billed_ap(ap_value, queued_count, queued_billable), queued_count]
 			elif is_deferring:
 				ap_label.text = "AP: %+d (+1)" % ap_value
 			elif committed_count > 0:
-				ap_label.text = "AP: %+d (-%d)" % [ap_value, BattleManager.billed_ap(ap_value, committed_count)]
+				ap_label.text = "AP: %+d (-%d)" % [ap_value, BattleManager.billed_ap(ap_value, committed_count, committed_billable)]
 			else:
 				ap_label.text = "AP: %+d" % ap_value
 

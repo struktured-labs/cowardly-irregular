@@ -528,6 +528,72 @@ func binding_would_trap_the_player(action: String, button_indices: Array) -> Dic
 	return {"trapped": false, "reason": ""}
 
 
+## ⛔ PAD BUTTONS HANDLED RAW IN BATTLE BY CONTROLS THAT HAVE NO InputMap ACTION. Battle speed is
+## `JOY_BUTTON_Y` and Repeat-last-turn is `JOY_BUTTON_X`, both read straight off the event in
+## `BattleScene._input` -- so neither can be rebound and neither appears on the Controls screen.
+##
+## ⛔ A REMAPPABLE ACTION MOVED ONTO ONE OF THESE WINS, AND THE FIXED CONTROL GOES SILENTLY DEAD.
+## `BattleScene._input` checks the action arms FIRST (`:5390`-`:5458`) and the raw arms after
+## (`:5483`/`:5488`), and every arm calls `set_input_as_handled()` and returns. So rebinding the
+## battle log onto the north face opens the log and battle speed simply stops working -- with no
+## warning, nothing on the Controls screen naming it, and no way to discover the cause.
+## `binding_would_trap_the_player` cannot see this: it compares against other ACTIONS' indices, and
+## these are not actions at all.
+## ⛔ PAIRS, NOT A DICTIONARY OF ARRAYS -- the same choice `REFUSED_SHARES` makes above, for the
+## same reason, and I made the opposite one here and had the branch dropped from `.681` for it.
+## `test_input_profile_binding_coverage_regression._profiles()` derives "a profile" from VALUE
+## SHAPE -- any non-empty Dictionary whose every value is an Array -- deliberately, so a profile
+## cannot hide by being named oddly. A dict-of-arrays here IS that shape, so it was counted as a
+## fourth pad profile whose buttons were control names, and every arm demanding a profile cover
+## `ui_accept`/`ui_cancel` red.
+##
+## ⚠️ ONE BUTTON CAN CARRY MORE THAN ONE FIXED CONTROL, and they are lost in DIFFERENT contexts
+## from the same rebind (@cowir-autogrind, verified in GameLoop): `JOY_BUTTON_Y` is battle speed in
+## `BattleScene._input` AND the autogrind turbo toggle at `GameLoop._input:1279`, gated on
+## `LoopState.AUTOGRIND` with `ui_cancel` consuming above it at `:1274`. So the names stay a LIST --
+## the pair's second element -- and only the outer container changed.
+const FIXED_PAD_CONTROLS := [
+	[JOY_BUTTON_Y, ["Battle speed", "the autogrind turbo toggle"]],
+	[JOY_BUTTON_X, ["Repeat last turn"]],
+]
+
+
+## The control names a given pad button carries, or an empty list.
+func fixed_controls_on(button_index: int) -> Array:
+	for pair in FIXED_PAD_CONTROLS:
+		if int(pair[0]) == button_index:
+			return pair[1]
+	return []
+
+## The remappable actions whose arm runs BEFORE the raw arms in `BattleScene._input`, and which can
+## therefore shadow one. PINNED HERE, DERIVED IN THE GUARD: `test_a_rebind_cannot_silently_kill_a_
+## fixed_control` reads BattleScene's own source and reds if this list and the arm order disagree,
+## because the ordering lives in that file and a copy here would drift the day an arm moves.
+const SHADOWING_ACTIONS := ["ui_cancel", "battle_open_log", "battle_toggle_auto"]
+
+
+## ✅ A WARNING, NOT A REFUSAL, and the asymmetry is deliberate. This is recoverable -- the player
+## rebinds away and the fixed control returns -- and the north face is a binding players have always
+## been allowed (see FIELD_MENU_REFUSES for why the symmetric rule was rejected). What is missing is
+## not permission but INFORMATION: the shadowed control is absent from the Controls screen, so the
+## player cannot find out what they broke. So this names the cost and lets them choose.
+func binding_would_shadow_a_fixed_control(action: String, button_indices: Array) -> Dictionary:
+	if action not in SHADOWING_ACTIONS:
+		return {"shadows": false, "reason": ""}
+	for b in button_indices:
+		var idx := int(b)
+		var names: Array = fixed_controls_on(idx)
+		if not names.is_empty():
+			var lost: String = " and ".join(PackedStringArray(names))
+			var label: String = str(ACTION_LABELS.get(action, action))
+			return {
+				"shadows": true,
+				"reason": "%s is now %s, which also triggers %s. That cannot be rebound, so it will stop working until you move %s."
+					% [label, get_button_label(idx), lost, label],
+			}
+	return {"shadows": false, "reason": ""}
+
+
 func set_custom_binding(action: String, button_indices: Array) -> void:
 	if action not in REMAPPABLE_ACTIONS:
 		return

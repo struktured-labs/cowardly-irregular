@@ -594,7 +594,7 @@
 		"mp_amulet": {
 			"id": "mp_amulet",
 			"name": "MP Amulet",
-			"description": "Boosts maximum magic",
+			"description": "Boosts maximum MP",
 			"cost": 1000,
 			"stat_mods": {
 				"max_mp": 30

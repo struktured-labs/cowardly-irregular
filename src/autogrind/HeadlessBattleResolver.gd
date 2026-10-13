@@ -344,7 +344,10 @@ func _selection_phase() -> Array[Dictionary]:
 			for sub in ruled:
 				kept.append(sub)
 			raw = kept
-			var ap_cost: int = BattleManager.billed_ap(combatant.current_ap, raw.size())
+			## A queued defer costs no AP in the live engine, so the lump must not bill it either:
+			## this charged 2 for [attack, defer] where live charges 1.
+			var ap_cost: int = BattleManager.billed_ap(combatant.current_ap, raw.size(),
+					BattleManager.billable_actions(raw))
 			if combatant.can_brave(ap_cost):
 				combatant.spend_ap(ap_cost)
 				for sub in raw:
