@@ -8578,6 +8578,62 @@
       "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
       "seed": 1643533239,
       "gain_db": -0.3
+    },
+    "ability_protect": {
+      "file": "assets/audio/sfx/ability_protect.ogg",
+      "source": "sox_synth",
+      "prompt": "Authored because `support`-type abilities are SKIPPED by the derived cue pass (support is not in _TYPE_SFX), so play_ability fell back to ability_physical — A SWORD UNSHEATHING — for the Cleric's whole support kit. 84 support abilities do this; 8 are reachable in normal play. Fixed the way _TYPE_SFX's own comment says to ('buff cues are keyed on the ability id, not the type'), i.e. per-ability rather than by adding a generic type arm. Measured to the ability-cue family first: rms median -13.4 (range -12.8..-17.8), peak median -1.5, duration median 0.90s. SYNTHESISED with sox, not generated. A physical ward settling: sine 196Hz body + 294Hz fifth (both lowpassed), a 1568Hz rim tap at -20dB and a faint 1800/1200 noise band. LOW-dominant and very dark above 2kHz (-51.8dB), which is what separates it from shell.",
+      "duration_seconds": 0.78,
+      "prompt_influence": 0.0
+    },
+    "ability_shell": {
+      "file": "assets/audio/sfx/ability_shell.ogg",
+      "source": "sox_synth",
+      "prompt": "Authored because `support`-type abilities are SKIPPED by the derived cue pass (support is not in _TYPE_SFX), so play_ability fell back to ability_physical — A SWORD UNSHEATHING — for the Cleric's whole support kit. 84 support abilities do this; 8 are reachable in normal play. Fixed the way _TYPE_SFX's own comment says to ('buff cues are keyed on the ability id, not the type'), i.e. per-ability rather than by adding a generic type arm. Measured to the ability-cue family first: rms median -13.4 (range -12.8..-17.8), peak median -1.5, duration median 0.90s. SYNTHESISED with sox, not generated. A magical ward: stacked 440/880/1320Hz with a 6000/3000 noise shimmer at -27dB. The only MID-dominant cue of the four (-18.8dB at 500-2k), glassy where protect is solid.",
+      "duration_seconds": 0.78,
+      "prompt_influence": 0.0
+    },
+    "ability_regen": {
+      "file": "assets/audio/sfx/ability_regen.ogg",
+      "source": "sox_synth",
+      "prompt": "Authored because `support`-type abilities are SKIPPED by the derived cue pass (support is not in _TYPE_SFX), so play_ability fell back to ability_physical — A SWORD UNSHEATHING — for the Cleric's whole support kit. 84 support abilities do this; 8 are reachable in normal play. Fixed the way _TYPE_SFX's own comment says to ('buff cues are keyed on the ability id, not the type'), i.e. per-ability rather than by adding a generic type arm. Measured to the ability-cue family first: rms median -13.4 (range -12.8..-17.8), peak median -1.5, duration median 0.90s. SYNTHESISED with sox, not generated. A slow bloom, two soft pulses: 330Hz then 392Hz with long fade-ins, over a 165Hz triangle and a faint 1320Hz air at -30dB. The darkest of the four by design (-66.8dB above 2kHz); the air was added after measuring -84.2dB, which is past warm into filtered.",
+      "duration_seconds": 0.9,
+      "prompt_influence": 0.0
+    },
+    "ability_esuna": {
+      "file": "assets/audio/sfx/ability_esuna.ogg",
+      "source": "sox_synth",
+      "prompt": "Authored because `support`-type abilities are SKIPPED by the derived cue pass (support is not in _TYPE_SFX), so play_ability fell back to ability_physical — A SWORD UNSHEATHING — for the Cleric's whole support kit. 84 support abilities do this; 8 are reachable in normal play. Fixed the way _TYPE_SFX's own comment says to ('buff cues are keyed on the ability id, not the type'), i.e. per-ability rather than by adding a generic type arm. Measured to the ability-cue family first: rms median -13.4 (range -12.8..-17.8), peak median -1.5, duration median 0.90s. SYNTHESISED with sox, not generated. An upward clearing sweep: 392->784Hz glide with a 2600/2000 noise sweep and a 1046Hz bell. Has the MOST high content of the four (-35.8dB above 2kHz) because it is a clearing gesture. Note the EFFECT already cues status_cured from BattleManager's cleanse executor; this is the CAST.",
+      "duration_seconds": 0.72,
+      "prompt_influence": 0.0
+    },
+    "ability_scan": {
+      "file": "assets/audio/sfx/ability_scan.ogg",
+      "source": "sox_synth",
+      "prompt": "Authored because `support`-type abilities are SKIPPED by the derived cue pass, so play_ability fell back to ability_physical — a sword unsheathing. Completes the EIGHT abilities reachable in normal play (the Cleric's four landed first); 65 monster-only and 11 debug-gated support abilities still thump, which is the generic-vs-per-ability question still open with struktured. Id-keyed per _TYPE_SFX's own comment: 'buff cues are keyed on the ability id, not the type'. Measured to the ability family: rms -12.8..-17.8, peak median -1.5. SYNTHESISED with sox. A focusing lens: 880Hz then 1174Hz ping over a 3400/2600 noise sweep and a 294Hz floor. MID-dominant. ⚠️ Deliberately NOT the Scriptweaver's ability_analyze_code, which is also mid-dominant: this one carries 12.7dB more energy below 500Hz and is darker above 2kHz, so the Rogue's lens and the Scriptweaver's terminal readout do not twin.",
+      "duration_seconds": 0.66,
+      "prompt_influence": 0.0
+    },
+    "ability_shadow_step": {
+      "file": "assets/audio/sfx/ability_shadow_step.ogg",
+      "source": "sox_synth",
+      "prompt": "Authored because `support`-type abilities are SKIPPED by the derived cue pass, so play_ability fell back to ability_physical — a sword unsheathing. Completes the EIGHT abilities reachable in normal play (the Cleric's four landed first); 65 monster-only and 11 debug-gated support abilities still thump, which is the generic-vs-per-ability question still open with struktured. Id-keyed per _TYPE_SFX's own comment: 'buff cues are keyed on the ability id, not the type'. Measured to the ability family: rms -12.8..-17.8, peak median -1.5. SYNTHESISED with sox. A dissolve: 1500/1200 noise swish over a 392->147Hz downward glide and a 98Hz sub. LOW-dominant and dark in both upper bands — the only downward-gliding cue in the set.",
+      "duration_seconds": 0.74,
+      "prompt_influence": 0.0
+    },
+    "ability_smoke_bomb": {
+      "file": "assets/audio/sfx/ability_smoke_bomb.ogg",
+      "source": "sox_synth",
+      "prompt": "Authored because `support`-type abilities are SKIPPED by the derived cue pass, so play_ability fell back to ability_physical — a sword unsheathing. Completes the EIGHT abilities reachable in normal play (the Cleric's four landed first); 65 monster-only and 11 debug-gated support abilities still thump, which is the generic-vs-per-ability question still open with struktured. Id-keyed per _TYPE_SFX's own comment: 'buff cues are keyed on the ability id, not the type'. Measured to the ability family: rms -12.8..-17.8, peak median -1.5. SYNTHESISED with sox. A thick low puff: 700/600 noise burst, a 1600/1400 tail and a 110Hz thump. ⚠️ LOW-dominant ON PURPOSE because status_blind — which this ability INFLICTS — is the highpassed MID-dominant cue ('vision closing'). Cast and effect must not be the same sound; measured 6dB apart below 500Hz and on opposite sides of the mid/low split.",
+      "duration_seconds": 0.7,
+      "prompt_influence": 0.0
+    },
+    "ability_provoke": {
+      "file": "assets/audio/sfx/ability_provoke.ogg",
+      "source": "sox_synth",
+      "prompt": "Authored because `support`-type abilities are SKIPPED by the derived cue pass, so play_ability fell back to ability_physical — a sword unsheathing. Completes the EIGHT abilities reachable in normal play (the Cleric's four landed first); 65 monster-only and 11 debug-gated support abilities still thump, which is the generic-vs-per-ability question still open with struktured. Id-keyed per _TYPE_SFX's own comment: 'buff cues are keyed on the ability id, not the type'. Measured to the ability family: rms -12.8..-17.8, peak median -1.5. SYNTHESISED with sox. A shout-shaped rise: 147->196Hz body, a 900/800 growl and a 330->494Hz edge, all lowpassed. LOW-dominant with 21dB more energy below 500Hz than ability_physical and 29dB less above 2kHz — the measurable reason a taunt no longer reads as a blade.",
+      "duration_seconds": 0.68,
+      "prompt_influence": 0.0
     }
   }
 }
