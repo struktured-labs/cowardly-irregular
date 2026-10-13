@@ -26,7 +26,9 @@ const TYPE_SFX: Dictionary = {
 const MUST_STILL_THUMP: Dictionary = {
 	"cleave": "physical",
 	"power_strike": "physical",
-	"provoke": "support",
+	## Was provoke until .673, when the eight support abilities a player can reach got their own cues.
+	## defensive_stance is support, debug-gated, and still on the fallback — the scope control it was.
+	"defensive_stance": "support",
 }
 
 

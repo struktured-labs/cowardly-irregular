@@ -66,9 +66,7 @@ extends GutTest
 ## "GOOD NEWS, STALE LIST" -- which is the bidirectional half working: a debt list that only grows
 ## becomes a lie about the game the moment someone pays one down.
 const BASELINE: Dictionary = {
-	"fighter": 1,       # provoke — a taunt is not a weapon hit
 	"guardian": 3,
-	"ninja": 3,
 	"speculator": 6,
 	"time_mage": 5,     # the entire meta kit
 }
