@@ -780,7 +780,8 @@ func mark_block_on_target(block_id: String) -> void:
 	_save_round2_state()
 	var sm := get_node_or_null("/root/SoundManager")
 	if sm:
-		sm.play_ui("door_open")
+		# Stone seating into stone, not oak on hinges. Last of the four door_open sites.
+		sm.play_ui("block_seat")
 	if _cave and is_instance_valid(_cave):
 		Toast.show_success(_cave, "The pylon hums to life.")
 	rebuild_floor(int(_cave.current_floor))
