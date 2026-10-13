@@ -757,7 +757,7 @@ func _setup_npcs() -> void:
 		"Everyone here walks the same four steps and calls it a life. I at least vary the route.",
 		rotha_loop,
 		"villager",
-		"villager"
+		"rotha"
 	)
 	npcs.add_child(rotha)
 
@@ -772,7 +772,7 @@ func _setup_npcs() -> void:
 		"I walk this side. Rotha walks that side. We have never discussed it.",
 		roy_loop,
 		"villager",
-		"villager"
+		"roy"
 	)
 	npcs.add_child(roy)
 
