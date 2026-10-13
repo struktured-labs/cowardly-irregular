@@ -56,10 +56,25 @@ func test_suppression_threshold_is_4x_not_2x() -> void:
 		"_spawn_quip_bubble must not re-add the 2x suppression — that was the invisible-dialogue bug")
 
 
-func test_hold_time_scales_with_battle_speed() -> void:
+func test_the_inert_hold_divisor_does_not_come_back() -> void:
+	## This arm asserted the SOURCE TEXT "hold_time / maxf(1.0, Engine.time_scale)" under the
+	## message "Bubble hold must shrink at faster battle speeds". Both halves were wrong: a string
+	## is not a behaviour, and that divisor could only divide above engine 1.0 — where the
+	## suppression gate has already returned null. It was 1.0 at every spawnable speed.
+	##
+	## ⚠️ The arm two above was converted off a string pin on 2026-10-12 for the identical reason
+	## (a literal cannot carry its unit). This is the sibling that fix left behind, in the same
+	## file, found by a corpus run the same night. A fix hides its own siblings.
+	##
+	## Kept as a DO-NOT-RE-ADD ratchet, which is this file's existing convention for a removed
+	## mechanism (see the "must not re-add the 2x suppression" arm). The INVARIANT that makes the
+	## removal safe — no spawnable engine scale exceeds 1.0 — is derived and mutation-pinned in
+	## test_a_bubble_hold_divisor_that_cannot_divide, which reds if that stops being true.
 	var src := _read(BUBBLE_PATH)
-	assert_true(src.contains("hold_time / maxf(1.0, Engine.time_scale)"),
-		"Bubble hold must shrink at faster battle speeds so bubbles never outlive their turn")
+	assert_false(src.contains("hold_time / maxf(1.0, Engine.time_scale)"),
+		"the inert divisor is back: it divides by 1.0 at every speed a bubble can spawn at, because suppression fires first — what bounds a bubble against a fast turn is SUPPRESS_TIME_SCALE, not this")
+	assert_true(src.contains("b._hold_time = hold_time"),
+		"spawn must pass the requested hold through unscaled — the tween already carries battle speed")
 
 
 func test_right_column_clamp() -> void:
