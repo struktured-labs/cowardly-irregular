@@ -5,6 +5,9 @@ extends Node
 const TRIGGER_ORDER := ["turn_start", "big_hit_taken", "low_hp", "used_signature_ability", "victory"]
 const SYNTH_TIMEOUT_SEC := 20.0
 const FAIL_COOLDOWN_MSEC := 5000
+## Ceiling for the backoff below. Five minutes still recovers from a server blip within
+## one battle, and bounds a hopeless model to 12 attempts an hour instead of 720.
+const FAIL_BACKOFF_CAP_MSEC := 300000
 const STASH_CAP := 8
 
 var store: VoicePoolStore
@@ -12,6 +15,11 @@ var discarded: int = 0
 var repeated: int = 0
 var _filling := false
 var _retry_after_msec := 0
+## Consecutive failed fills, reset by the first success. Every attempt is an UNCACHED
+## completion (`{"cache": false}` in _fill), so a flat 5s retry on a model that cannot
+## produce a usable line spent 12 round trips a minute, indefinitely, on the player's own
+## key — and `next_empty_slot` keeps handing back the same empty slot, so it never stops.
+var consecutive_failures: int = 0
 var _stash: Dictionary = {}
 var _stash_order: Array[String] = []
 var _next_token := 0
@@ -97,9 +105,20 @@ func fill_slot(speaker: String, trigger: String) -> bool:
 	_filling = true
 	var ok := await _fill(speaker, trigger)
 	_filling = false
-	if not ok:
-		_retry_after_msec = Time.get_ticks_msec() + FAIL_COOLDOWN_MSEC
+	if ok:
+		## A success clears the debt: one blip must never leave prefetch permanently slow.
+		consecutive_failures = 0
+	else:
+		consecutive_failures += 1
+		_retry_after_msec = Time.get_ticks_msec() + fail_cooldown_msec()
 	return ok
+
+
+## 5s doubling to the cap: 5, 10, 20, 40, 80, 160, 300, 300… The first failure is unchanged,
+## because the common case is a transient one and should still retry promptly.
+func fail_cooldown_msec() -> int:
+	var shift: int = mini(maxi(consecutive_failures - 1, 0), 16)
+	return mini(FAIL_COOLDOWN_MSEC << shift, FAIL_BACKOFF_CAP_MSEC)
 
 
 func _fill(speaker: String, trigger: String) -> bool:
