@@ -12,10 +12,22 @@ class_name HowToPlayOverlay
 ## pad reads "Ⓑ Button — Confirm" rather than the hardcoded Xbox lettering. The autogrind
 ## block comes from AutogrindInputHelper.grind_reference_rows() for the same reason.
 ##
-## ⚠️ The rows still written out below are NOT derived and several are Nintendo-only spellings
-## ("Start (Plus)", "Back (Minus)", "Y (west face)" for a north-face button). They belong to the
-## battle/autobattle lanes. The whole body is one returned multi-line string, which is why every
-## caption census in the fleet skipped this file as a docstring and nothing flagged them.
+## ✅ EVERY FACE CELL IS NOW DERIVED (2026-10-12). Three were Nintendo-only letters -- Battle
+## speed "X (top face)", Repeat and Dash "Y (west face)" -- and because the two faces trade letters
+## between the families (Nintendo north Ⓧ / west Ⓨ; Xbox north Ⓨ / west Ⓧ) an Xbox player following
+## those rows pressed the OTHER of the two controls, in both directions. Speed and Repeat have no
+## InputMap action, so they go through `_face_cell_for_index`; Dash has one and uses `_face_cell`.
+##
+## ⚠️ WHAT IS STILL WRITTEN BY HAND, and is correct that way: "Start / Plus / Options" and
+## "Back / Select / Minus / Share" NAME EVERY FAMILY rather than picking one, and the two stick-click
+## rows describe a press no family letters. Those need no derivation. The note that used to sit here
+## called Start/Back "Nintendo-only" after they had been widened, and attributed "Y (west face)" to a
+## north-face button when both its users were WEST -- so the caption census it warned about would
+## have been aimed at the wrong rows by the warning itself.
+##
+## ⚠️ The body is one returned multi-line string, which is why every caption census in the
+## fleet skipped this file as a docstring. A guard that reads it must call `build_text()`, not scan
+## the source: `test_the_reference_does_not_invert_the_face_buttons` does, per ROW.
 
 signal closed()
 
@@ -40,7 +52,8 @@ static func _bound_rows() -> String:
 	return "%-17s %-17s R-Click          [color=lime]Open the menu — party, items, quests, save[/color]\n" % [
 		_face_cell(OverworldMenu.FIELD_MENU_ACTION, "North"),
 		"%s / Escape" % _keys(OverworldMenu.FIELD_MENU_ACTION, OS.get_keycode_string(OverworldMenu.TOGGLE_KEY))] \
-		+ "Y (west face)     %-17s —                [color=lime]Run — hold to move 1.7x faster[/color]\n" % _keys("dash", "Shift") \
+		+ "%-17s %-17s —                [color=lime]Run — hold to move 1.7x faster[/color]\n" % [
+			_face_cell("dash", "West"), _keys("dash", "Shift")] \
 		+ "L Shoulder        %-17s —                Defer (in battle)\n" % _keys("battle_defer", "Q") \
 		+ "L Shoulder        %-17s —                Party Chat (in the field)\n" % _keys("party_chat", "L") \
 		+ "R Shoulder        %-17s —                Advance (queue action)" % _keys("battle_advance", "W")
@@ -55,8 +68,8 @@ static func build_text() -> String:
 		_face_cell("ui_accept", "East"), _face_cell("ui_cancel", "South")) + "\n" + _bound_rows() + """
 Start / Plus / Options F5           —                Open Autobattle Editor
 Back / Select / Minus / Share F6    —                Toggle Autobattle
-X (top face)      ` (backtick)      —                Battle speed
-Y (west face)     Y                 —                [color=lime]Repeat last turn's actions — in battle[/color]
+%-17s ` (backtick)      —                Battle speed
+%-17s Y                 —                [color=lime]Repeat last turn's actions — in battle[/color]
                   F                 —                Cycle party formation (also in the command menu)
 L3 Stick Click    L                 —                Battle log: open the full log in battle (also the log panel's button)
 R3 Stick Click    F1                —                [color=lime]This screen — from anywhere[/color]
@@ -69,7 +82,7 @@ R3 Stick Click    F1                —                [color=lime]This screen �
 
 [b][color=yellow]WHILE AUTOGRINDING[/color][/b]
 [color=gray]Gamepad          Keyboard          Description[/color]
-""" + AutogrindInputHelper.grind_reference_rows() + """
+""" % [_face_cell_for_index(JOY_BUTTON_Y, "North"), _face_cell_for_index(JOY_BUTTON_X, "West")] + AutogrindInputHelper.grind_reference_rows() + """
 [b][color=yellow]BATTLE SYSTEM (CTB)[/color][/b]
 Each turn you choose: [color=lime]Attack[/color], use [color=cyan]Magic[/color], or strategize with AP.
 
@@ -180,6 +193,22 @@ static func _face_cell(action: String, fallback_face: String) -> String:
 		var pos: String = InputProfileManager.face_position_for_action(action)
 		return "%s face" % (pos if pos != "" else fallback_face)
 	return "%s Button" % InputProfileManager.glyph_for_action(action)
+
+
+## The INDEX-keyed sibling of _face_cell, for the two controls that have no InputMap action at all:
+## battle speed is raw JOY_BUTTON_Y and Repeat is raw JOY_BUTTON_X, so hint_for_action cannot reach
+## either. Without this the only way to fill those cells is a hardcoded letter, which is how they
+## came to read "X (top face)" and "Y (west face)" -- correct on a Nintendo pad and INVERTED on an
+## Xbox one, on the single screen whose job is telling the player which button to press.
+static func _face_cell_for_index(button_index: int, fallback_face: String) -> String:
+	if not InputProfileManager:
+		return "%s face" % fallback_face
+	if Input.get_connected_joypads().is_empty():
+		return "%s face" % InputProfileManager.FACE_POSITIONS.get(button_index, fallback_face)
+	var g: String = InputProfileManager.face_glyph_for_index(button_index)
+	if g == "?" or g == "":
+		return "%s face" % fallback_face
+	return "%s Button" % g
 
 
 static func _close_glyph() -> String:
