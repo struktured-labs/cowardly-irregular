@@ -802,16 +802,27 @@ func _place_village_markers() -> void:
 
 
 func _place_treasure_chests() -> void:
+	## ⛔ THESE CELLS ARE THE OLD 100x70 FRAME — they render at `pos * MAP_SCALE * TILE_SIZE`, so the
+	## map cell is TWICE the literal. Three chests here were authored in PNG-cell coordinates and
+	## never rescaled by the 2026-08-22 resize, so they rendered at double and sat ~40-50 cells from
+	## the places they are named for: village_potion in open sand, village_gold and cave_hipotion in
+	## forest, none with a landmark within six cells.
+	## `test_a_chest_is_near_the_place_it_is_named_for` pins the relationship rather than a distance.
+	## ⚠️ AND A CHEST IS NOT PLACED RELATIVE TO THE LANDMARK MARK — it is placed relative to the DOOR,
+	## which sits 96 px north of its mark and grabs presses at CHEST_GRAB_RADIUS_MODE7 = 128 px. My
+	## first re-homing measured against the mark, so cave_hipotion landed 115 px from CaveEntrance and
+	## robbed its faced press. Measured floor: the six correct chests sit 194-1089 px from the nearest
+	## door, so these three were given ~257 px, and 345+ px from each other so none robs a sibling.
 	const TreasureChestScript = preload("res://src/exploration/TreasureChest.gd")
 	var chests = [
 		# Near Harmonia Village — early game help
-		{"id": "w1_village_potion", "pos": Vector2(6, 50), "type": "item", "item": "potion", "amount": 3},
-		{"id": "w1_village_gold", "pos": Vector2(8, 48), "type": "gold", "gold": 150},
+		{"id": "w1_village_potion", "pos": Vector2(7, 29), "type": "item", "item": "potion", "amount": 3},
+		{"id": "w1_village_gold", "pos": Vector2(2, 27), "type": "gold", "gold": 150},
 		# Forest path — reward for exploring north
 		{"id": "w1_forest_ether", "pos": Vector2(32, 8), "type": "item", "item": "ether", "amount": 2},
 		{"id": "w1_forest_antidote", "pos": Vector2(40, 12), "type": "item", "item": "antidote", "amount": 3},
 		# Near cave entrance — preparation supplies
-		{"id": "w1_cave_hipotion", "pos": Vector2(7, 41), "type": "item", "item": "hi_potion", "amount": 2},
+		{"id": "w1_cave_hipotion", "pos": Vector2(7, 19), "type": "item", "item": "hi_potion", "amount": 2},
 		# Central crossroads — off the beaten path
 		{"id": "w1_central_gold", "pos": Vector2(45, 18), "type": "gold", "gold": 300},
 		{"id": "w1_central_phoenix", "pos": Vector2(50, 30), "type": "item", "item": "phoenix_down", "amount": 1},
