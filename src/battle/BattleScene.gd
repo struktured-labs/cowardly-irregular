@@ -6743,7 +6743,16 @@ func _check_danger_music() -> void:
 			print("[MUSIC] party recovered into authored silence - staying quiet")
 		else:
 			SoundManager.play_music(_base_music_track)
-			print("[MUSIC] Switched back to %s music - party recovered" % _base_music_track)
+			## SECOND announcement site. The battle-start one was fixed in .669 and this was left
+			## naming the REQUEST: his 2026-10-05 log reads "Switched back to battle_dark_knight
+			## music" on the line after battle_medieval loaded, because 27 pool-reachable monsters
+			## have no bed of their own and _base_music_track keeps the id that was asked for.
+			var heard: String = SoundManager.playing_track_stem()
+			if heard != "" and heard != _base_music_track:
+				print("[MUSIC] Switched back to %s music - party recovered (%s playing)"
+					% [_base_music_track, heard])
+			else:
+				print("[MUSIC] Switched back to %s music - party recovered" % _base_music_track)
 
 
 ## ======================== BATTLE QUIPS ========================
