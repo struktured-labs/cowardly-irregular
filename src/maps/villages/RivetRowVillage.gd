@@ -304,6 +304,7 @@ func _setup_npcs() -> void:
 		"Camouflage is just knowing what a thing is WORTH to the person holding it.",
 		"You have the look of someone who travels between worlds. I'm documenting that."
 	])
+	orrery.sprite_archetype = "traveler"  # the travelling merchant keeps her look; plain "mysterious" is the hooded figure
 	# Re-enabled: union_rep_w4 now answers to Voss, so deviation_report step 2 can complete.
 	orrery.npc_id = "madame_orrery_w4"
 	npcs.add_child(orrery)

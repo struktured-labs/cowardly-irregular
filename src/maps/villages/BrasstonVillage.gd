@@ -328,6 +328,7 @@ func _setup_npcs() -> void:
 		"A potion here might be called 'Gatorade' somewhere else.",
 		"Same effect, different branding."
 	])
+	merchant.sprite_archetype = "traveler"  # the travelling merchant keeps her look; plain "mysterious" is the hooded figure
 	# Without this the quest is UNSTARTABLE — QuestSystem matches npc_id to giver.npc_id.
 	merchant.npc_id = "madame_orrery_w3"
 	npcs.add_child(merchant)

@@ -36,9 +36,14 @@ func _get_map_pixel_size() -> Vector2i:
 	return Vector2i(MAP_WIDTH * TILE_SIZE, MAP_HEIGHT * TILE_SIZE)
 
 
+## ⛔ WAS (13,10) — "near village fountain", and that is exactly what MUTED the fountain. The basin
+## is a 5x5 block of unwalkable cells (x13-17, y8-12), so the nearest ground is x11-12; the crystal
+## sat at (13,10) BETWEEN that ground and the fountain, and interaction is nearest-by-anchor. From
+## (12,10) a faced press hits both, crystal anchor 22.6 px away against the fountain's 48, so the
+## crystal won every approach and the fountain's five rotating lines could never be read.
+## Three cells south keeps it at the fountain's edge, where it steals nothing.
 func _get_save_point_position() -> Vector2:
-	# Near village fountain
-	return Vector2(13 * TILE_SIZE,10 * TILE_SIZE)
+	return Vector2(13 * TILE_SIZE, 13 * TILE_SIZE)
 
 
 func _get_player_spawn_fallback() -> Vector2:
@@ -757,7 +762,7 @@ func _setup_npcs() -> void:
 		"Everyone here walks the same four steps and calls it a life. I at least vary the route.",
 		rotha_loop,
 		"villager",
-		"villager"
+		"rotha"
 	)
 	npcs.add_child(rotha)
 
@@ -772,7 +777,7 @@ func _setup_npcs() -> void:
 		"I walk this side. Rotha walks that side. We have never discussed it.",
 		roy_loop,
 		"villager",
-		"villager"
+		"roy"
 	)
 	npcs.add_child(roy)
 

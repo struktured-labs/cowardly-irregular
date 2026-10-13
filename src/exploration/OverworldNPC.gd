@@ -109,7 +109,7 @@ const NPC_TYPE_TO_ARCHETYPE: Dictionary = {
 	"pilgrim": "monk",            # hooded traveling holy figure
 	"apprentice": "young_man",    # blacksmith journeyman, plain workwear
 	"knight": "soldier",          # armored infantry — closest existing sheet
-	"mysterious": "traveler",     # hooded stranger — traveler sheet has the cloak silhouette
+	"mysterious": "mysterious",   # its own hooded sheet (2026-09-07); it borrowed the traveler's brown hat until 2026-10-13
 	"bartender": "innkeeper",     # apron behind counter, same silhouette family
 	"maid": "young_woman",        # apron-and-dress silhouette
 	"adventurer": "traveler",     # cloaked wanderer
@@ -415,6 +415,9 @@ func _resolve_archetype() -> String:
 	return ""
 
 
+## Roles that only BORROW another role's walk sheet and have a portrait drawn for the role itself: the face is theirs.
+const ROLE_KEEPS_ITS_OWN_FACE := ["maid", "knight", "pilgrim", "hooded_mage", "nervous", "herbalist", "apprentice", "bartender", "adventurer"]
+
 ## Portrait key for dialogue — the ARCHETYPE, not the npc_type (struktured 2026-07-31).
 ## Phil the Lost is _create_npc(..., "villager") with sprite_archetype "phil": his sprite
 ## was Phil and his portrait was "villager", so phil.png never rendered once in the
@@ -422,6 +425,8 @@ func _resolve_archetype() -> String:
 ## _resolve_archetype makes the face match the sprite the player is looking at,
 ## including the name-hash pick for plain villagers.
 func _portrait_key() -> String:
+	if sprite_archetype == "" and npc_type in ROLE_KEEPS_ITS_OWN_FACE:
+		return npc_type
 	var key: String = _resolve_archetype()
 	return key if key != "" else npc_type
 
