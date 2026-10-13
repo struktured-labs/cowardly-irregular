@@ -10,6 +10,7 @@ A hole here is a clear region the figure fully encloses. What the key removed wa
 - a hole of 5..MAX_HOLE px (an eye white, a row of teeth) is filled near-white;
 - a speck of up to 4 px takes the commonest colour on its own rim (a white dot in dark hair would
   be a new defect, and a speck that small is a lost highlight of its surroundings);
+- on a FACE_IN_SHADOW portrait a hole above MAX_HOLE is filled with the darkest colour on its rim;
 - a hole listed in EYES_DRAWN is filled as an eye: near-white with a dark pupil;
 - a hole listed in EYES_LEFT_CLEAR is skipped: a whole eye with no pupil left, which white would blind;
 - a hole larger than MAX_HOLE is LEFT and reported: a whole keyed face or veil needs an eye on it,
@@ -83,7 +84,11 @@ PUPIL = (46, 30, 24)
 EYE_MATCH = 5
 # Left open on purpose: a real gap between a staff and a body, or a whole face whose fill is an art decision.
 LEFT_OPEN = ("mage_abstract.png", "mage_industrial.png", "mage_suburban.png", "masterite_curator_medieval.png",
-             "ninja.png", "npcs/fairy.png", "npcs/hooded_mage.png", "npcs/mysterious.png")
+             "ninja.png", "npcs/fairy.png")
+# Hooded figures whose whole face the key took. The dialogue box lifts its backdrop to grey behind a dark portrait,
+# so a clear face showed the BACKDROP through the hood (seen in a real render, 2026-10-12). A face under a hood is
+# in shadow: every large hole on these is filled with the darkest colour on its own rim.
+FACE_IN_SHADOW = ("npcs/hooded_mage.png", "npcs/mysterious.png")
 # Busts cut from the artist's battle sheets (the five starters, Mordaine and her other face): never filled.
 ARTIST_DERIVED = ("fighter.png", "cleric.png", "mage.png", "rogue.png", "bard.png", "mordaine.png",
                   "chancellor_mordaine.png", "calibrant.png")
@@ -138,12 +143,24 @@ def _draw_eye(rgba: np.ndarray, region: list) -> None:
         rgba[glint] = (*KEYED_WHITE, 255)
 
 
-def fill(img: Image.Image, cap: int = MAX_HOLE, eyes: tuple = (), drawn: tuple = ()):
+def _darkest(rgba: np.ndarray, rim: set) -> tuple:
+    """The darkest colour among the rim's five commonest: the hood's own shadow, not a stray pixel."""
+    common = [c for c, _ in Counter(tuple(int(v) for v in rgba[y, x, :3]) for y, x in rim).most_common(5)]
+    return min(common, key=sum)
+
+
+def fill(img: Image.Image, cap: int = MAX_HOLE, eyes: tuple = (), drawn: tuple = (), shadow: bool = False):
     """(new image, pixels filled, [sizes of holes left as too large]). cap is the largest hole to fill;
-    eyes are skipped; drawn are filled as an eye with a pupil."""
+    eyes are skipped; drawn are filled as an eye with a pupil; shadow fills holes above cap with the rim's darkest colour."""
     rgba = np.asarray(img.convert("RGBA")).copy()
     filled, left = 0, []
     for region, rim in holes(rgba):
+        if shadow and len(region) > cap:
+            colour = _darkest(rgba, rim)
+            for y, x in region:
+                rgba[y, x] = (*colour, 255)
+            filled += len(region)
+            continue
         if _is_listed_eye(region, eyes):
             continue
         if _is_listed_eye(region, drawn):
@@ -199,6 +216,9 @@ def selftest() -> int:
     eyed, _, _ = fill(img, 400, (), ((19.5, 21.5),))
     assert eyed.getpixel((20, 22))[:3] == PUPIL and eyed.getpixel((16, 20))[:3] == KEYED_WHITE, "a drawn eye is white with a dark pupil"
     assert not (set(EYES_DRAWN) & set(ARTIST_DERIVED)), "no artist bust has an eye drawn on it"
+    shaded, _, left5 = fill(img, MAX_HOLE, (), (), True)
+    assert not left5 and shaded.getpixel((35, 45)) == (200, 150, 120, 255), "a face in shadow takes the rim's darkest colour and leaves no window"
+    assert not (set(FACE_IN_SHADOW) & set(LEFT_OPEN)) and not (set(FACE_IN_SHADOW) & set(ARTIST_DERIVED)), "a shadowed face is on no other list"
     kept, n4, _ = fill(img, 400, ((19.5, 21.5),))
     assert kept.getpixel((18, 21))[3] == 0 and kept.getpixel((35, 45)) == (*KEYED_WHITE, 255), "a listed eye is left clear, the rest is filled"
     print("selftest ok")
@@ -217,7 +237,8 @@ def main() -> int:
     for rel in portraits():
         img = Image.open(ROOT / rel)
         key = os.path.relpath(rel, PORTRAITS)
-        out, n, left = fill(img, max(MAX_HOLE, REVIEWED_LARGE.get(key, 0)), EYES_LEFT_CLEAR.get(key, ()), EYES_DRAWN.get(key, ()))
+        out, n, left = fill(img, max(MAX_HOLE, REVIEWED_LARGE.get(key, 0)), EYES_LEFT_CLEAR.get(key, ()), EYES_DRAWN.get(key, ()),
+                            key in FACE_IN_SHADOW)
         if left:
             print("LEFT %s: %d hole(s) too large to fill blind, %s px" % (rel, len(left), sorted(left, reverse=True)[:4]))
         if not n:
