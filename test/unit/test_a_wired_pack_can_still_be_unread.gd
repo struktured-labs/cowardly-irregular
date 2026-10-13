@@ -46,15 +46,43 @@ func _entries() -> Dictionary:
 	return (parsed as Dictionary).get("examines", {})
 
 
-## The scenes some src path actually reads entries FOR. Derived from the placement code, not listed:
-## the castle names its scene as a literal in the comment-stripped source.
+## The scenes some src path actually reads entries FOR — derived from EVERY file that loads the pack,
+## never from one.
+##
+## ⛔ THIS SCANNED ONLY THE CASTLE AND THAT WAS A SILENT HOLE, found by asking what happens when
+## @cowir-overworld's village placement folds. Their path lives in `BaseVillage`, which a
+## castle-only scan never reads — so the 13 village scenes would have stayed "UNPLACED" in the
+## roster while being placed in fact, and `test_no_declaration_outlives_its_placement` would have
+## PASSED. A declaration outliving its gap, silently, which is the one thing that arm exists to stop.
+## The derivation's corpus was one file; the subject was the whole placement surface.
+func _placement_sources() -> Array[String]:
+	var out: Array[String] = []
+	var stack: Array[String] = ["res://src"]
+	while not stack.is_empty():
+		var dir: String = stack.pop_back()
+		var d := DirAccess.open(dir)
+		if d == null:
+			continue
+		for sub in d.get_directories():
+			stack.append("%s/%s" % [dir, sub])
+		for f in d.get_files():
+			if not f.ends_with(".gd"):
+				continue
+			var path: String = "%s/%s" % [dir, f]
+			if GdSource.code_of(path).contains("examine_texts.json"):
+				out.append(path)
+	return out
+
+
 func _placed_scenes() -> Array[String]:
 	var out: Array[String] = []
-	var code: String = GdSource.code_of(CASTLE)
-	assert_true(code.contains("_EXAMINE_PACK"), "CONTROL: the castle must still load the pack in CODE, not prose")
-	for scene in _scenes():
-		if code.contains('"%s"' % scene):
-			out.append(scene)
+	var srcs: Array[String] = _placement_sources()
+	assert_gt(srcs.size(), 0, "CONTROL: some src path must load the pack in CODE, not prose")
+	for path in srcs:
+		var code: String = GdSource.code_of(path)
+		for scene in _scenes():
+			if code.contains('"%s"' % scene) and not out.has(scene):
+				out.append(scene)
 	return out
 
 
@@ -120,3 +148,31 @@ func test_the_unread_prose_stays_counted() -> void:
 			words += str(e.get("text", "")).split(" ", false).size()
 	assert_gt(n, 0, "CONTROL: this arm reports the unread entries; an empty roster means they are all placed")
 	gut.p("UNREAD: %d of %d examines, %d words, across %d scenes" % [n, _entries().size(), words, UNPLACED_SCENES.size()])
+
+
+## ⛔ AND WHEN THE DERIVATION CANNOT SEE A PLACEMENT MECHANISM, IT MUST SAY SO LOUDLY RATHER THAN
+## REPORT A ROSTER IT CAN NO LONGER TRUST. Measured by simulating @cowir-overworld's village
+## placement before it folds: their path lives in `BaseVillage`, which loads the pack but names NO
+## scene — each subclass supplies its id through `_get_area_id()`. So a derivation that asks "does a
+## pack-loading file contain this scene's literal" sees nothing, the 13 village scenes stay
+## "UNPLACED" in the roster while being placed in fact, and every arm above PASSES. I widened the
+## scan from one file to all of them and the simulation still passed, because the hole is not the
+## file count — it is that a literal scan cannot follow an ACCESSOR.
+##
+## 🔑 So this arm watches for the mechanism rather than for the scenes: a pack-loading file that
+## resolves its scene through an accessor means the roster is no longer derivable here and needs a
+## human. It reds in the SAME fold that lands the placement, which is the only moment the roster can
+## be corrected honestly.
+func test_no_placement_path_resolves_its_scene_by_an_accessor() -> void:
+	var opaque: Array[String] = []
+	for path in _placement_sources():
+		var code: String = GdSource.code_of(path)
+		var names_a_scene := false
+		for scene in _scenes():
+			if code.contains('"%s"' % scene):
+				names_a_scene = true
+				break
+		if not names_a_scene and (code.contains("_get_area_id()") or code.contains("get_area_id(")):
+			opaque.append(path)
+	assert_eq(opaque, ([] as Array[String]),
+		"these files load the pack but resolve the scene through an accessor, so UNPLACED_SCENES above can no longer be derived and must be re-read by hand in this change: %s" % [opaque])
