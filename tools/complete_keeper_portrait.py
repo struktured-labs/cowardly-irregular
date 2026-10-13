@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Give a shop keeper's portrait the body its generation left out, keeping the face it already has.
+"""Give a portrait the body its generation left out, keeping the face it already has.
 
 Mortimer, the black-magic dealer, shipped as a floating face: his July generation drew a face and a few
 wisps of hair on a transparent ground and no neck, shoulders or robe, though the prompt asked for all
@@ -26,7 +26,9 @@ import numpy as np
 from PIL import Image
 
 ROOT = Path(__file__).resolve().parent.parent
-KEEPERS = ROOT / "assets" / "sprites" / "portraits" / "keepers"
+PORTRAITS = ROOT / "assets" / "sprites" / "portraits"
+# Where each completed portrait lives, under assets/sprites/portraits/.
+WHERE = {"mortimer": "keepers/mortimer.png", "maid": "npcs/maid.png"}
 RAW_DIR = ROOT / "tmp" / "keeper_portrait_regen"
 SIZE = 256
 ALPHA = 128
@@ -43,6 +45,15 @@ MISSING = {
         "and falling past the shoulders as solid opaque locks, not thin wisps. Bold dark outlines, soft cel "
         "shading, solid filled shapes with no see-through areas inside the figure. Fully transparent background, "
         "no scenery, no text."
+    ),
+    # Tilly at the inn: the white key that cut her out took her white apron and collar with the ground.
+    "maid": (
+        "Complete this 16-bit JRPG pixel-art character portrait bust. KEEP the head exactly as it is: same position, "
+        "same size, same round face with rosy cheeks, same brown eyes, same brown hair pulled back into a low bun, "
+        "no hat. ADD what is missing below the neck: shoulders in a plain dark-gray maid's dress with a small "
+        "cream-white collar and a cream-white apron bib over the chest, filling the bottom of the frame edge to "
+        "edge. Bold dark outlines, soft cel shading, solid filled shapes with no see-through areas inside the "
+        "figure. Fully transparent background, no scenery, no text."
     ),
 }
 
@@ -134,7 +145,7 @@ def main() -> int:
         return selftest()
     if not args.keeper:
         ap.error("name a keeper")
-    path = KEEPERS / (args.keeper + ".png")
+    path = PORTRAITS / WHERE[args.keeper]
     shipped = Image.open(path).convert("RGBA")
     RAW_DIR.mkdir(parents=True, exist_ok=True)
     raw_path = RAW_DIR / (args.keeper + "_body_raw.png")

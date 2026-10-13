@@ -41,6 +41,14 @@ func test_every_keeper_portrait_has_shoulders() -> void:
 	assert_eq(bad, [], "%d keeper(s) are a face with no body: %s" % [bad.size(), str(bad)])
 
 
+func test_the_inn_maid_has_shoulders() -> void:
+	## Tilly was a head on a neck: the white key that cut her portrait out took her apron and collar (0.08 drawn).
+	var img := Image.load_from_file(ProjectSettings.globalize_path("res://assets/sprites/portraits/npcs/maid.png"))
+	assert_not_null(img, "CONTROL: the maid's portrait is on disk")
+	img.convert(Image.FORMAT_RGBA8)
+	assert_gt(body_share(img), MIN_BODY, "the maid's portrait holds her shoulders (%.2f of the lower third)" % body_share(img))
+
+
 func test_the_measure_tells_a_bust_from_a_floating_face() -> void:
 	var face := Image.create(64, 64, false, Image.FORMAT_RGBA8)
 	face.fill_rect(Rect2i(20, 10, 24, 28), Color.WHITE)
