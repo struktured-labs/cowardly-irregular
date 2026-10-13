@@ -8578,6 +8578,34 @@
       "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
       "seed": 1643533239,
       "gain_db": -0.3
+    },
+    "ability_protect": {
+      "file": "assets/audio/sfx/ability_protect.ogg",
+      "source": "sox_synth",
+      "prompt": "Authored because `support`-type abilities are SKIPPED by the derived cue pass (support is not in _TYPE_SFX), so play_ability fell back to ability_physical — A SWORD UNSHEATHING — for the Cleric's whole support kit. 84 support abilities do this; 8 are reachable in normal play. Fixed the way _TYPE_SFX's own comment says to ('buff cues are keyed on the ability id, not the type'), i.e. per-ability rather than by adding a generic type arm. Measured to the ability-cue family first: rms median -13.4 (range -12.8..-17.8), peak median -1.5, duration median 0.90s. SYNTHESISED with sox, not generated. A physical ward settling: sine 196Hz body + 294Hz fifth (both lowpassed), a 1568Hz rim tap at -20dB and a faint 1800/1200 noise band. LOW-dominant and very dark above 2kHz (-51.8dB), which is what separates it from shell.",
+      "duration_seconds": 0.78,
+      "prompt_influence": 0.0
+    },
+    "ability_shell": {
+      "file": "assets/audio/sfx/ability_shell.ogg",
+      "source": "sox_synth",
+      "prompt": "Authored because `support`-type abilities are SKIPPED by the derived cue pass (support is not in _TYPE_SFX), so play_ability fell back to ability_physical — A SWORD UNSHEATHING — for the Cleric's whole support kit. 84 support abilities do this; 8 are reachable in normal play. Fixed the way _TYPE_SFX's own comment says to ('buff cues are keyed on the ability id, not the type'), i.e. per-ability rather than by adding a generic type arm. Measured to the ability-cue family first: rms median -13.4 (range -12.8..-17.8), peak median -1.5, duration median 0.90s. SYNTHESISED with sox, not generated. A magical ward: stacked 440/880/1320Hz with a 6000/3000 noise shimmer at -27dB. The only MID-dominant cue of the four (-18.8dB at 500-2k), glassy where protect is solid.",
+      "duration_seconds": 0.78,
+      "prompt_influence": 0.0
+    },
+    "ability_regen": {
+      "file": "assets/audio/sfx/ability_regen.ogg",
+      "source": "sox_synth",
+      "prompt": "Authored because `support`-type abilities are SKIPPED by the derived cue pass (support is not in _TYPE_SFX), so play_ability fell back to ability_physical — A SWORD UNSHEATHING — for the Cleric's whole support kit. 84 support abilities do this; 8 are reachable in normal play. Fixed the way _TYPE_SFX's own comment says to ('buff cues are keyed on the ability id, not the type'), i.e. per-ability rather than by adding a generic type arm. Measured to the ability-cue family first: rms median -13.4 (range -12.8..-17.8), peak median -1.5, duration median 0.90s. SYNTHESISED with sox, not generated. A slow bloom, two soft pulses: 330Hz then 392Hz with long fade-ins, over a 165Hz triangle and a faint 1320Hz air at -30dB. The darkest of the four by design (-66.8dB above 2kHz); the air was added after measuring -84.2dB, which is past warm into filtered.",
+      "duration_seconds": 0.9,
+      "prompt_influence": 0.0
+    },
+    "ability_esuna": {
+      "file": "assets/audio/sfx/ability_esuna.ogg",
+      "source": "sox_synth",
+      "prompt": "Authored because `support`-type abilities are SKIPPED by the derived cue pass (support is not in _TYPE_SFX), so play_ability fell back to ability_physical — A SWORD UNSHEATHING — for the Cleric's whole support kit. 84 support abilities do this; 8 are reachable in normal play. Fixed the way _TYPE_SFX's own comment says to ('buff cues are keyed on the ability id, not the type'), i.e. per-ability rather than by adding a generic type arm. Measured to the ability-cue family first: rms median -13.4 (range -12.8..-17.8), peak median -1.5, duration median 0.90s. SYNTHESISED with sox, not generated. An upward clearing sweep: 392->784Hz glide with a 2600/2000 noise sweep and a 1046Hz bell. Has the MOST high content of the four (-35.8dB above 2kHz) because it is a clearing gesture. Note the EFFECT already cues status_cured from BattleManager's cleanse executor; this is the CAST.",
+      "duration_seconds": 0.72,
+      "prompt_influence": 0.0
     }
   }
 }

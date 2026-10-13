@@ -741,6 +741,15 @@ func _setup_default_ability_sounds() -> void:
 	_ability_sounds["dark"] = "ability_dark"
 	_ability_sounds["drain"] = "ability_dark"
 
+	# Cleric support kit — id-keyed, which is what _TYPE_SFX's comment says support cues must be
+	# ("buff cues are keyed on the ability id, not the type"). Unmapped support abilities are SKIPPED
+	# by the derived pass and fall back to ability_physical, a sword unsheathing: Protect, Shell,
+	# Regen and Esuna all cast with a weapon thump. 84 support abilities do, 8 reachable in play.
+	_ability_sounds["protect"] = "ability_protect"
+	_ability_sounds["shell"] = "ability_shell"
+	_ability_sounds["regen"] = "ability_regen"
+	_ability_sounds["esuna"] = "ability_esuna"
+
 	# Physical abilities
 	_ability_sounds["slash"] = "ability_physical"
 	_ability_sounds["steal"] = "ability_physical"
