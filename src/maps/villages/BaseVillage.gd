@@ -874,13 +874,10 @@ func _examine_px(cell: Vector2i) -> Vector2:
 ## The cells already holding something a player can interact with — an examine may not share one,
 ## because interaction is nearest-wins and the loser becomes unreachable (.344, two librarians).
 func _occupied_interact_cells() -> Array:
-	var taken: Array = []
-	if npcs == null:
-		return taken
-	for n in npcs.get_children():
-		if n is Node2D:
-			taken.append(Vector2i((n as Node2D).position / float(TILE_SIZE)))
-	return taken
+	## ⛔ WAS `npcs.get_children()`, WHICH MISSED THE SAVE CRYSTAL AND EVERY DOOR. The crystal is
+	## parented to the scene root and doors sit under `transitions`, so the scan that exists to stop
+	## an examine landing on a contested cell could not see the two things it most needed to.
+	return InteractGeometry.occupied_cells(self, float(TILE_SIZE))
 
 
 ## Resolve an intended cell to the nearest walkable, unoccupied one. Returns the intended cell

@@ -175,6 +175,11 @@ func test_a_readable_does_not_stack_on_an_npcs_cell() -> void:
 	var squatter := Area2D.new()
 	squatter.name = "Occupant"
 	squatter.position = Vector2(3 * 32 + 16, 3 * 32 + 16)
+	## ⚠️ IN THE GROUP ON PURPOSE. The occupancy scan counts only what a PRESS CAN LAND ON, so a
+	## bare Area2D is correctly ignored — my first fixture planted one and the arm failed, which is
+	## the fixture being wrong rather than the scan. Real NPCs qualify by having `interact()`;
+	## ReadableProp qualifies by joining this group in `_ready`.
+	squatter.add_to_group("interactables")
 	r.npcs.add_child(squatter)
 	var occupied := Vector2i(3, 3)
 	assert_eq(Vector2i(squatter.position / 32.0), occupied, "CONTROL: the squatter holds cell (3,3)")

@@ -171,3 +171,33 @@ static func setup_trigger_collision(area: Area2D, size: Vector2, offset: Vector2
 	area.collision_mask = MASK_PLAYER
 	area.monitoring = true
 	area.monitorable = true
+
+
+## ⛔ EVERY CELL A PRESS CAN LAND ON, found by walking the scene — because the two callers that
+## needed this both wrote `npcs.get_children()` and were therefore blind to the things most likely
+## to be contested. `BaseVillage._setup_save_point` parents the crystal to the VILLAGE ROOT and
+## doors live under `transitions`, so a scan over `npcs` cannot see either, while its own comment
+## claimed "the cells already holding something a player can interact with". Measured 2026-10-13:
+## ten press contests across Frosthold, NodePrime and Vertex where an authored examine lost its
+## prose to the save crystal, none of them visible to that scan.
+static func occupied_cells(root: Node, tile: float, except: Node = null) -> Array:
+	var out: Array = []
+	if root == null:
+		return out
+	var root_pos: Vector2 = (root as Node2D).global_position if root is Node2D else Vector2.ZERO
+	var stack: Array = [root]
+	while not stack.is_empty():
+		var n = stack.pop_back()
+		for c in n.get_children():
+			stack.append(c)
+		if n == except or not (n is Node2D):
+			continue
+		if not (n.has_method("interact") or n.is_in_group("interactables")):
+			continue
+		## ⚠️ RELATIVE TO THE ROOT, NOT GLOBAL. Callers place content in coordinates local to the
+		## scene (`prop.position = cell * TILE + TILE/2` under an `npcs` container at the origin), so
+		## a global-derived cell and a local-derived wanted cell agree only while the root sits at
+		## (0,0). It does today; subtracting the root's own position means it does not have to.
+		var local: Vector2 = (n as Node2D).global_position - root_pos
+		out.append(Vector2i(local / tile))
+	return out

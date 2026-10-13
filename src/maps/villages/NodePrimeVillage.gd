@@ -34,8 +34,11 @@ func _get_map_pixel_size() -> Vector2i:
 	return Vector2i(MAP_WIDTH * TILE_SIZE, MAP_HEIGHT * TILE_SIZE)
 
 
+## ⛔ WAS (10,10), WHERE the terminal examine lost four cells to the crystal and the Daemon Lounge DOOR lost one. Interaction is nearest-by-anchor and SAVE_RADIUS is 48 px — 1.5
+## cells — so a crystal contests presses well beyond its own tile. Smallest move that resolves
+## correctly in BOTH directions under the real probe, out of candidates ordered by distance.
 func _get_save_point_position() -> Vector2:
-	return Vector2(10 * TILE_SIZE,10 * TILE_SIZE)
+	return Vector2(10 * TILE_SIZE, 12 * TILE_SIZE)
 
 
 func _get_player_spawn_fallback() -> Vector2:

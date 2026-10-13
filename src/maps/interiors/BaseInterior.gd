@@ -517,13 +517,12 @@ func _place_examines(authored: Dictionary) -> int:
 ## is authored. That is exactly what BaseVillage already does with the same two helpers — this is
 ## the interior half catching up, not a new policy.
 func _occupied_interact_cells() -> Array:
-	var taken: Array = []
-	if npcs == null:
-		return taken
-	for n in npcs.get_children():
-		if n is Node2D:
-			taken.append(Vector2i((n as Node2D).position / float(TILE_SIZE)))
-	return taken
+	## ⛔ I WROTE THIS AS `npcs.get_children()` THREE HOURS AGO, COPYING BaseVillage, AND IT IS THE
+	## SAME BLINDNESS IN BOTH: an interior's DOORS live under `transitions`, not `npcs`, so the scan
+	## that exists to stop an examine landing on a contested cell could not see the exits. A village's
+	## save crystal is parented to the scene root and was invisible the same way — measured as ten
+	## real press contests across three villages.
+	return InteractGeometry.occupied_cells(self, float(TILE_SIZE))
 
 
 ## Nearest walkable, unoccupied cell to `want`; `want` itself when it is already good, and
