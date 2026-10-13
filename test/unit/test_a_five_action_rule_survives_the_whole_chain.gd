@@ -103,8 +103,12 @@ func test_headless_applies_the_same_bound() -> void:
 	## compare headless to a remembered string, and the string was remembered wrong.
 	var src := FileAccess.get_file_as_string("res://src/autogrind/HeadlessBattleResolver.gd")
 	assert_gt(src.length(), 1000, "CONTROL: read the resolver")
-	assert_string_contains(src, "BattleManager.billed_ap(combatant.current_ap, raw.size())",
+	## Prefix only. This pinned the full arg list and went stale the moment the call gained the
+	## billable count — the exact failure this file's own header warns about four lines up.
+	assert_string_contains(src, "BattleManager.billed_ap(combatant.current_ap, raw.size()",
 		"headless must ASK the live pricing rule, not restate it")
+	assert_string_contains(src, "BattleManager.billable_actions(raw)",
+		"and must pass the composition, or the lump bills a defer the live engine does not")
 	assert_false(src.contains("raw.size() - 1"),
 		"a local subtraction is a second authority — billed_ap exists because two surfaces already did this")
 	## This used to require `BattleManager.ADVANCE_CAP` in the resolver, which pinned the RESTATED

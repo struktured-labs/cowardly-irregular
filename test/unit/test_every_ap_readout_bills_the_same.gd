@@ -71,5 +71,9 @@ func test_the_party_panel_marks_the_free_action() -> void:
 	## A number that is quietly smaller reads as a bug. The panel shows a star when the turn is
 	## being billed less than it queues, the same way the menu names it.
 	var panel := FileAccess.get_file_as_string("res://src/battle/BattleUIManager.gd")
-	assert_string_contains(panel, "billed < queued_count",
+	## RE-PINNED 2026-10-13: this required `billed < queued_count`, a PROXY for the full bank
+	## that held only while the full bank was the one reason to bill less. An unbilled defer is
+	## a second reason, so the proxy would star a two-action queue. Intent kept — the panel must
+	## know WHEN the discount applied — now against the predicate, which cannot gain a cause.
+	assert_string_contains(panel, "is_full_bank(",
 		"the panel must know when the discount applied, not just apply it")

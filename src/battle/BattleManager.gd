@@ -2111,10 +2111,26 @@ func player_defer() -> bool:
 ## readout must ask this rather than computing `queued` itself: the menu and the party panel each
 ## had their own subtraction, and both told the player a full-bank turn ends at -1 when it ends at 0.
 ## One authority, three surfaces (Win98Menu, BattleUIManager, and the queue cap below).
-static func billed_ap(current_ap: int, queued: int) -> int:
-	if current_ap >= FULL_BANK_AP and queued >= FULL_BANK_ACTIONS:
-		return queued - 1
-	return queued
+## The full-bank GATE is an action count; BILLING is a billable count. Two numbers, so two params.
+static func is_full_bank(current_ap: int, queued: int) -> bool:
+	return current_ap >= FULL_BANK_AP and queued >= FULL_BANK_ACTIONS
+
+
+## A defer costs no AP anywhere else in the game, so it must not be billed inside a queue either.
+static func billable_actions(actions: Array) -> int:
+	var n: int = 0
+	for a in actions:
+		if a is Dictionary and str((a as Dictionary).get("type", "")) == "defer":
+			continue
+		n += 1
+	return n
+
+
+static func billed_ap(current_ap: int, queued: int, billable: int = -1) -> int:
+	var b: int = billable if billable >= 0 else queued
+	if is_full_bank(current_ap, queued):
+		return maxi(0, b - 1)
+	return b
 
 
 ## ONE rule for both queueing paths (manual menu, autobattle script). A fifth action is honoured
