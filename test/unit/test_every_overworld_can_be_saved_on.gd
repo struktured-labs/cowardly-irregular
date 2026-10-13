@@ -153,20 +153,19 @@ func test_every_save_point_is_standable_and_approachable() -> void:
 	assert_eq(bad, [], "a save crystal cannot be reached: %s" % ", ".join(bad))
 
 
-## ⛔ SCOPED TO FOUR OF THE SIX WORLDS, AND THE SCOPE IS THE CLAIM RATHER THAN A SUPPRESSION. Run
-## across all six, this probe finds TWO PRE-EXISTING CLASHES, both between a save crystal and an
-## authored OverworldNPC (whose Mode 7 talk radius is 128 px), one in each direction:
+## ✅ ALL SIX WORLDS NOW. This arm shipped covering four, because when it was written two worlds
+## FAILED it on pre-existing placements and the remedy was not mine to choose:
 ##
-##     industrial  standing (1,1) at an NPC and facing it SAVES instead of talking
-##     steampunk   standing (-1,-1) at the crystal and facing it TALKS instead of saving
+##     industrial  standing (1,1) at an NPC and facing it SAVED instead of talking   (113 px apart)
+##     steampunk   standing (-1,-1) at the crystal and facing it TALKED instead      (plaza NPC)
 ##
-## Both are real and player-visible, and neither is mine to fix here: the remedy is a placement
-## decision about authored NPC content (move the crystal, move the NPC, or revisit the pinned
-## radius). I got it wrong twice trying — nudging W4 by one of its own cells FLIPPED the clash
-## direction instead of clearing it, and my sweep for a replacement cell used a 64 px grid on a world
-## whose MAP_SCALE is 3. So they are REPORTED with this evidence and `_PRESS_CHECKED` widens by one
-## line once the two placements are decided. W1's new crystal PASSES this probe, which is what makes
-## its cell a measurement rather than a choice.
+## cowir-main's route: move the CRYSTAL, never the authored NPC and never the pinned
+## NPC_TALK_RADIUS_MODE7. Both cells came from the same sweep W1's did — fits a body, all eight
+## neighbours standable, >= 220 px from every other interactable — and then every surviving candidate
+## was PRESS-TESTED in both directions, which is the only acceptance criterion. Steampunk cleared one
+## cell south (smallest of 55 candidates, stays in the plaza); industrial needed four (smallest of
+## 64; one cell FLIPPED the clash direction instead of clearing it, which is why the probe decides
+## and not the distance). So the scope constant is gone and the claim is the whole set again.
 ##
 ## ⚠️ AND IT SIMULATES THE PRESS RATHER THAN MEASURING A DISTANCE. My first version used a floor of SAVE_RADIUS + PROBE_REACH and flagged
 ## W4's crystal at 113 px from an NPC, and the proxy turned out to be RIGHT — which is luck, not
@@ -222,17 +221,11 @@ func _base_of(n: Node) -> String:
 	return str(n.get_script().resource_path).get_file().get_basename()
 
 
-## The worlds whose crystal placement this guard asserts; see the header for the two it does not.
-const _PRESS_CHECKED := ["medieval", "suburban", "futuristic", "abstract"]
-
-
 func test_no_save_crystal_steals_or_loses_a_faced_press() -> void:
 	var robbed: Array = []
 	var checked := 0
 	var cells := 0
-	assert_gt(_PRESS_CHECKED.size(), 3,
-		"CONTROL: %d worlds press-checked — the arm must cover more than the one it was written for" % _PRESS_CHECKED.size())
-	for world in _PRESS_CHECKED:
+	for world in WORLDS.keys():
 		var w = await _build(str(WORLDS[world]))
 		if w == null:
 			continue
@@ -264,8 +257,8 @@ func test_no_save_crystal_steals_or_loses_a_faced_press() -> void:
 		await get_tree().process_frame
 		_vp.queue_free()
 		await get_tree().process_frame
-	assert_eq(checked, _PRESS_CHECKED.size(),
-		"CONTROL: %d crystals examined for %d worlds" % [checked, _PRESS_CHECKED.size()])
+	assert_eq(checked, WORLDS.size(),
+		"CONTROL: %d crystals press-checked for %d worlds" % [checked, WORLDS.size()])
 	assert_gt(cells, 20, "CONTROL: only %d approach cells probed; the arm would clear vacuously" % cells)
 	robbed.sort()
 	for r in robbed:
