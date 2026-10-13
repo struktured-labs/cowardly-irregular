@@ -1250,14 +1250,19 @@ func _party_interrupt(members: Array, bag: Array) -> Dictionary:
 			## a death was reported as an HP stop, and turning "stop on death" OFF could not keep a grind
 			## running. A wiped party is still stopped by the controller's own "No party available" guard.
 			if member is Combatant and member.is_alive and member.get_hp_percentage() < interrupt_rules["hp_threshold"]:
-				return {"rule": "hp_threshold", "reason": "HP threshold reached (%d%%)" % interrupt_rules["hp_threshold"],
+				## Names WHO and at what, like the start-refusal beside it: the member was already computed
+				## here and discarded at the caller, so a stop at battle 40 said less than the refusal to start.
+				return {"rule": "hp_threshold",
+					"reason": "HP threshold reached (%d%%) — %s at %d%%" % [
+						interrupt_rules["hp_threshold"], member.combatant_name, int(member.get_hp_percentage())],
 					"member": member.combatant_name}
 
 	# Check party death
 	if interrupt_rules.get("party_death", false):
 		for member in members:
 			if member is Combatant and not member.is_alive:
-				return {"rule": "party_death", "reason": "Party member died", "member": member.combatant_name}
+				return {"rule": "party_death", "reason": "Party member died — %s" % member.combatant_name,
+					"member": member.combatant_name}
 
 	# Check item depletion
 	if interrupt_rules.get("item_depleted", false):
