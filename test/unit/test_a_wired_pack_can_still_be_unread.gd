@@ -162,18 +162,36 @@ func test_every_declared_scene_is_one_the_pack_uses() -> void:
 	assert_eq(ghosts, ([] as Array[String]), "no examine names these scenes any more: %s" % [ghosts])
 
 
-func test_the_unread_prose_stays_counted() -> void:
-	## Not a pin on a number: the roster names the scenes, and this reports what is still unread so
-	## the cost is visible in the output rather than inferred from a list's length.
+func test_the_prose_that_reaches_a_player_is_still_there() -> void:
+	## This arm was built to report what is UNREAD, and as of .670 nothing is: @cowir-overworld placed
+	## the last two scenes and @cowir-main emptied the roster on the fold. So it needed a new subject,
+	## and the stopgap control it was given cannot fail.
+	##
+	## ⛔ `assert_eq(n == 0, UNPLACED_SCENES.is_empty())` IS TAUTOLOGICAL GIVEN THE ARM ABOVE IT.
+	## `n` counts entries whose scene is rostered, and test_every_declared_scene_is_one_the_pack_uses
+	## forbids a rostered scene with no entry — so a non-empty roster forces n > 0 and an empty one
+	## forces n = 0. The two sides cannot disagree while that sibling passes. It was the right
+	## stopgap for a fold (the old `assert_gt(n, 0)` was FALSE the moment the pack was fully read, and
+	## had to change in that commit); it is not a claim worth keeping.
+	##
+	## ✅ THE SUBJECT THIS FILE ACTUALLY HAS LEFT: the prose reaches a player, so the thing to guard
+	## is that there is still prose. Arm 1 derives that every entry is PLACED; nothing asserted the
+	## entries still carry their text. An entry placed with an empty string is a ReadableProp that
+	## opens on nothing — and BaseVillage only warns about it, which is a line in a log that is
+	## already 9% warning. Measured 2026-10-13 BY THIS ARM (GDScript split, not my shell): 29 entries, 1,045 words, shortest 24.
 	var words := 0
-	var n := 0
+	var thin: Array[String] = []
 	for key in _entries():
-		var e: Dictionary = _entries()[key]
-		if UNPLACED_SCENES.has(str(e.get("scene", ""))):
-			n += 1
-			words += str(e.get("text", "")).split(" ", false).size()
-	assert_eq(n == 0, UNPLACED_SCENES.is_empty(), "a rostered scene must own entries, and an empty roster must count none")
-	gut.p("UNREAD: %d of %d examines, %d words, across %d scenes" % [n, _entries().size(), words, UNPLACED_SCENES.size()])
+		var text: String = str((_entries()[key] as Dictionary).get("text", ""))
+		var n: int = text.split(" ", false).size()
+		words += n
+		if n < 10:
+			thin.append("%s (%d words)" % [key, n])
+	assert_eq(thin, ([] as Array[String]),
+		"an examine placed with almost no text opens a panel on nothing, and the engine only warns: %s" % [thin])
+	assert_gt(words, 800,
+		"the pack carried 1,045 words of placed prose; only %d survive, so this file's subject is being deleted out from under it" % words)
+	gut.p("PLACED PROSE: %d examines, %d words, %d scene(s) still unread" % [_entries().size(), words, UNPLACED_SCENES.size()])
 
 
 ## ⛔ AND WHEN THE DERIVATION CANNOT SEE A PLACEMENT MECHANISM, IT MUST SAY SO LOUDLY RATHER THAN
