@@ -74,6 +74,7 @@ var _zone_popup: ZoneNamePopup
 var _danger_zone: DangerZone
 var _minimap: OverworldMinimap
 var _zone_particles: ZoneParticles
+var _save_point: SavePoint
 var _quest_tracker: QuestTracker
 var _weather: WeatherSystem
 var _border_indicator: MapBorderIndicator
@@ -170,6 +171,9 @@ func _ready() -> void:
 
 	# Treasure chests with loot
 	_place_treasure_chests()
+
+	# Save crystal at the central crossroads — the one thing W2-W6 had and W1 did not
+	_place_save_point()
 
 	# Ambient details (chimney smoke, campfire glow)
 	_place_ambient_effects()
@@ -799,6 +803,27 @@ func _place_village_markers() -> void:
 		marker.roof_color = v["roof"]
 		marker.position = pos
 		add_child(marker)
+
+
+## ⛔ W1 WAS THE ONLY WORLD OF SIX WITH NO OVERWORLD SAVE POINT. SuburbanOverworld:230,
+## SteampunkOverworld:223, IndustrialOverworld:221, FuturisticOverworld:226 and
+## AbstractOverworld:250 each place one at a crossroads or plaza; `OverworldScene.gd` contained
+## zero references to SavePoint. So the first world every player crosses — and the largest map,
+## 200x140 against the others' smaller grids — was the one where you could not save between a
+## village and a dragon cave. `test_every_overworld_can_be_saved_on` derives the set rather than
+## naming W1, so a seventh world cannot ship without one either.
+##
+## ⚠️ CELL CHOSEN BY A PHYSICS SWEEP, NOT OFF THE PAINTED MAP — the Mode 7 collider clone is
+## displaced, so painted terrain and standable terrain are two different grids (the rule
+## test_overworld_secrets_are_reachable's header records). Of 225 cells that fit a body, had all
+## eight neighbours standable AND sat >= 220 px from every other interactable, this is the closest
+## to the arrival spawn: 2.8 cells away, 320 px clear of the nearest (the `crossroads_fire`
+## readable). The 220 px floor is SAVE_RADIUS 48 plus a faced probe's reach, so no approach to the
+## crystal can be contested and the crystal contests nothing.
+func _place_save_point() -> void:
+	_save_point = SavePoint.new()
+	_save_point.position = Vector2(41 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 26 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
+	add_child(_save_point)
 
 
 func _place_treasure_chests() -> void:
