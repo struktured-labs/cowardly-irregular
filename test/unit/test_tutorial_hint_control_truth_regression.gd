@@ -62,6 +62,37 @@ func test_no_autogrind_hint_dictates_a_raw_key_for_a_ring_owned_verb() -> void:
 		"autogrind hints must point at {options} or the on-screen strip, not a raw key: %s" % str(offenders))
 
 
+## ⛔ THE SAME DETECTOR, OVER EVERY HINT -- because the arm above had the right pattern and a
+## corpus of FIVE. `first_formation` read "Press F to cycle formations", shipped, and was never in
+## `AUTOGRIND_HINTS`, so nothing here could see it. Formation cycling has NO InputMap action (raw
+## `KEY_F` at BattleScene:5475) and a pad reaches it ONLY via the `cycle_formation` command-menu row
+## -- whose own comment records that someone fixed the pad REACHABILITY and left the hint naming the
+## key. Worse, the hint fires from inside `cycle_formation()` (BattleScene:3762), so the pad player
+## who just cycled via the menu was then told to press a key their hardware does not have.
+##
+## ✅ THE EXEMPTION IS THE DELIVERABLE, NOT A SUPPRESSION: a body may name a key as long as it
+## also names the route a pad player has. You cannot silence this green, only explain it green --
+## and the explanation is the repair.
+func test_no_hint_at_all_dictates_a_raw_key_without_a_pad_route() -> void:
+	var re := RegEx.new()
+	re.compile("[Pp]ress [A-Z][0-9]?\\b")
+	var offenders: Array[String] = []
+	for hint_id in TH.HINTS.keys():
+		var body: String = _body(str(hint_id))
+		if re.search(body) == null:
+			continue
+		var names_pad_route: bool = body.contains("{") or body.contains("command menu") \
+			or body.contains("Menu \u2192") or body.contains("on a pad") or body.contains("shoulder")
+		if not names_pad_route:
+			offenders.append(str(hint_id))
+	assert_eq(offenders.size(), 0,
+		"a hint naming a bare key must also name the pad route (a {token}, the command menu, or the "
+		+ "strip) -- a pad has no letter keys: %s" % str(offenders))
+	## CONTROL: the corpus must be the whole catalog, not the five this file already covered.
+	assert_gt(TH.HINTS.keys().size(), 20,
+		"CONTROL: this arm's value IS its corpus; %d hints is not the catalog" % TH.HINTS.keys().size())
+
+
 func test_the_raw_key_detector_can_actually_fire() -> void:
 	# ARM+ for the scan above: a regex that matched nothing would pass it vacuously.
 	var re := RegEx.new()
