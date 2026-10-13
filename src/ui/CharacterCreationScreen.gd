@@ -18,7 +18,14 @@ var party_customizations: Array = []  # Array of CharacterCustomization objects
 
 ## UI constants
 const PANEL_WIDTH: int = 620
-const PANEL_HEIGHT: int = 440
+## 85 (where the option list starts) + 11 rows x OPTION_HEIGHT + 10 x 4 separation = 389, plus 70
+## for the instruction line at -60 and the buttons at -35.
+##
+## At 440 the list ended at 389 and the instructions start at 380, so "[↑↓] Option  [←→] Change …"
+## was drawn straight through the "Job 2" row — on the second screen a player ever sees, at the
+## DEFAULT text size. A guard arm computes this requirement from OPTIONS, so adding a twelfth
+## option reds rather than silently overlapping again.
+const PANEL_HEIGHT: int = 460
 const OPTION_HEIGHT: int = 24
 const MAX_NAME_LENGTH: int = 8
 
