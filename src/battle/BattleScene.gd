@@ -729,6 +729,12 @@ func _update_speed_indicator() -> void:
 			text = "[color=#cc22cc]▸▸▸▸▸[/color] [color=#ff00ff]%s[/color] [color=#aa00aa]◂◂◂◂◂[/color]" % speed_label
 		6:  # 64x - maximum (bright magenta)
 			text = "[color=#ff22ff]▸▸▸▸▸▸[/color] [color=#ff44ff]%s[/color] [color=#cc00cc]◂◂◂◂◂◂[/color]" % speed_label
+		_:
+			## An eighth tier would render BLANK here, not wrong: no arm sets `text`, so the readout
+			## empties while the battle genuinely runs faster. Degrade to the plain label instead --
+			## losing the colour ramp is survivable, losing the number is the bug struktured reported.
+			push_warning("[BATTLE] speed index %d has no readout arm; falling back to the bare label" % _battle_speed_index)
+			text = "[color=#ffffff]%s[/color]" % speed_label
 
 	if turbo_mode:
 		text += " [color=#ff4444]TURBO[/color]"
