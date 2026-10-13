@@ -1071,17 +1071,6 @@ const _BATTLE_VOLUME_TRIM_DB: Dictionary = {
 	"corruption_ap_flicker": -6.0,
 	## Pre-attenuated asset (-22.9 dB rms), like menu_error's +6.6: without this the undo sits ~20 dB under the press it undoes.
 	"advance_undo": 6.0,
-	## ⛔ THE ROGUE'S LADDER RAN BACKWARDS. `rung := clampi(depth, 1, 5)` (Win98Menu:651) makes the
-	## rung the Advance DEPTH, and BattleScene calls these "five escalating cues" — so 4 and 5 are
-	## the big moments, the ones struktured asked for ("we need a new sound for 4th time you
-	## advance", 2026-09-09). Measured peak across all 37 advance cues, median -1.8 dB, band
-	## -0.2..-6.1 — and the two QUIETEST of the 37 were rogue_4 (-11.2) and rogue_5 (-8.0). The
-	## Rogue's climax was its faintest cue: rung 1 peaks -1.5, rung 5 peaks -8.0.
-	## Same shape as advance_undo above — a pre-attenuated asset, fixed by trim rather than by
-	## re-rendering art that is otherwise fine. These land both inside the ladder's own band
-	## (-5.2 and -4.0), matching cleric_4's -5.1 rather than pushing them to the top.
-	"advance_rogue_4": 6.0,
-	"advance_rogue_5": 4.0,
 }
 
 
