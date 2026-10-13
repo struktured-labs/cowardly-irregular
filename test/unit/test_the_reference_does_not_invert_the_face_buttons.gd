@@ -26,6 +26,14 @@ extends GutTest
 ## docstring and nothing flagged them."* The gap was documented and assigned away; the helper that
 ## fixes it (`_face_cell`) was already in the same file, used by three other rows.
 ##
+## ⛔ AND A SECOND GUARD ALREADY READ THIS FILE AND WAS CORRECTLY GREEN:
+## `test_no_pad_means_no_guess_regression:123` loads HowToPlayOverlay and scans every surface for a
+## leaked family glyph without a pad. It passes because it scans `FACE_GLYPHS` -- the CIRCLED forms
+## `Ⓐ Ⓑ Ⓧ Ⓨ ✕ ○ □ △` -- and the defect was plain ASCII `X` and `Y` inside a caption. **Two guards
+## looked at this screen and neither could see it: one covered 2 rows of 17, the other watched a
+## different CHARACTER CLASS.** Worth stating so the next reader does not take the glyph scanner as
+## cover for captions; it is not, and it never claimed to be.
+##
 ## 📌 ASSERTS PER ROW, not per file. A file-wide "contains North face" passes if BOTH cells derive
 ## the same index -- which is the likeliest way to break this while fixing it.
 
@@ -67,6 +75,12 @@ func test_the_two_faces_trade_letters_between_the_families() -> void:
 ## No pad is attached under the test wrapper (it tmpfs's /dev/input), so every face cell must name
 ## the POSITION. That is the branch a player without a pad sees, and it is deterministic here.
 func test_each_row_names_the_face_it_actually_uses() -> void:
+	## The convention at test_no_pad_means_no_guess_regression:118 -- state the precondition rather
+	## than depend on it. run_tests.sh tmpfs's /dev/input, so no pad is attached; with RUN_TESTS_SEE_PADS=1
+	## the cells become GLYPHS and the asserts below would fail naming "North face", which reads as a
+	## derivation bug. This line makes the real cause the first thing printed.
+	assert_true(Input.get_connected_joypads().is_empty(),
+		"PRECONDITION: this arm's subject is the no-pad branch, which is what the wrapper runs as")
 	var speed := _row_naming("Battle speed")
 	var repeat := _row_naming("Repeat last turn")
 	var dash := _row_naming("hold to move")
