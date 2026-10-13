@@ -42,10 +42,19 @@ R128_FLOOR = -69.0          # anything at or below this is the floor, not a meas
 SPREAD_LIMIT = 3.0          # LU; fire (2.8) and lightning (2.1) are the healthy references
 
 
-def lufs(path):
-    """Integrated LUFS, or None when the cue is too short for R128 to have an opinion."""
-    out = subprocess.run(["ffmpeg", "-v", "info", "-i", path, "-filter_complex",
-                          "ebur128=framelog=quiet", "-f", "null", "-"],
+def lufs(path, downmix=False):
+    """Integrated LUFS, or None when the cue is too short for R128 to have an opinion.
+
+    ⛔ `downmix` EXISTS BECAUSE THE WEB BUILD SHIPS MONO. tools/make_web_audio.sh:121 transcodes
+    every master with `-ac 1`, so a mixed-channel family has a DIFFERENT spread on each platform and
+    no flat gain can fix both. Measured on ability_heal: 7.2 LU as-is, 3.4 LU downmixed.
+    ⚠️ NEVER pass downmix on a MONO input: `pan=mono|c0=0.5*c0+0.5*c1` references a channel that
+    does not exist and silently halves amplitude, a flat -6.02 dB. That bug cost @cowir-music two
+    retracted numbers on 2026-10-13; the caller below guards it on the channel count."""
+    af = "ebur128=framelog=quiet"
+    if downmix:
+        af = "pan=mono|c0=0.5*c0+0.5*c1," + af
+    out = subprocess.run(["ffmpeg", "-v", "info", "-i", path, "-af", af, "-f", "null", "-"],
                          capture_output=True, text=True, timeout=120).stderr
     hits = re.findall(r"I:\s*(-?[0-9.]+) LUFS", out)
     if not hits:
@@ -77,12 +86,18 @@ def measure():
             if not f or not os.path.exists(f):
                 rows[m] = {"lufs": None, "ch": 0, "why": "no file on disk"}
                 continue
-            rows[m] = {"lufs": lufs(f), "ch": channels(f)}
+            ch = channels(f)
+            ## mono input is already its own downmix; running the filter on it is the -6.02 dB bug
+            rows[m] = {"lufs": lufs(f), "ch": ch,
+                       "lufs_mono": lufs(f) if ch == 1 else lufs(f, downmix=True)}
         vals = [r["lufs"] for r in rows.values() if r["lufs"] is not None]
+        monos = [r.get("lufs_mono") for r in rows.values() if r.get("lufs_mono") is not None]
         measurable = len(vals) == len(rows) and len(vals) >= 2
         out[base] = {
             "members": rows,
             "spread": round(max(vals) - min(vals), 1) if measurable else None,
+            ## what the WEB build ships, which differs wherever a family mixes channel counts
+            "spread_mono": round(max(monos) - min(monos), 1) if (measurable and len(monos) == len(rows)) else None,
             "unmeasurable": not measurable,
             "mixed_channels": len({r["ch"] for r in rows.values() if r["ch"]}) > 1,
         }

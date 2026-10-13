@@ -31,14 +31,24 @@ const LIMIT := 3.0
 ## only the base was). For these four the reference member is ambiguous — the BASE is the loud one
 ## and the long-standing sound — and `buff`/`debuff` fire on every buff and debuff in the game, so
 ## picking a target is an audible change to the game's most-played cues and belongs to struktured.
+## ⛔ TWO NUMBERS PER FAMILY, BECAUSE THE WEB BUILD SHIPS MONO. make_web_audio.sh:121 transcodes
+## every master with `-ac 1`, so wherever a family mixes channel counts its spread DIFFERS BY
+## PLATFORM — and NO FLAT GAIN FIXES BOTH TIERS. Matching ability_heal on desktop (-7.2 on the
+## variants) leaves the web build mismatched ~5.5 dB the other way.
+##   [desktop LUFS as-is, web LUFS mono-downmixed]
 const WIDE_PENDING := {
-	## The one @cowir-music found and I am NOT fixing: the repair exists on
-	## lane/a-voice-clip-is-as-long-as-its-line @ 415e433fc, held for struktured with four options.
-	"ability_heal": 7.2,
-	"buff": 7.0,
-	"debuff": 6.1,
-	"ability_ice": 5.2,
-	"heal": 5.2,
+	## @cowir-music's find. Repair held at 415e433fc; a fifth option exists that none of
+	## @cowir-main's four covers — make the channel counts consistent, which is a content change.
+	"ability_heal": [7.2, 3.4],
+	"buff": [7.0, 3.9],
+	## wide on DESKTOP only; the mono tier is inside the limit
+	"debuff": [6.1, 3.0],
+	## all-mono, so the two tiers agree — a flat gain WOULD fix this one on both
+	"ability_ice": [5.2, 5.2],
+	## ⛔ THE ONE THAT GETS WORSE ON WEB: 5.2 desktop, 9.9 MONO. All-stereo members with different
+	## stereo widths, so the downmix pushes them APART. Nobody had seen this; it is the largest
+	## variant mismatch in the bank and it only exists in the shipped web build.
+	"heal": [5.2, 9.9],
 }
 
 
@@ -86,9 +96,13 @@ func test_no_family_jumps_level_between_its_variants() -> void:
 		if bool(row.get("unmeasurable", false)):
 			continue
 		var spread: float = float(row.get("spread", 0.0))
+		var spread_mono: float = float(row.get("spread_mono", -1.0))
 		if WIDE_PENDING.has(name):
-			if absf(spread - float(WIDE_PENDING[name])) > 0.15:
-				moved.append("%s declared %.1f, measured %.1f" % [name, float(WIDE_PENDING[name]), spread])
+			var want: Array = WIDE_PENDING[name]
+			if absf(spread - float(want[0])) > 0.15:
+				moved.append("%s desktop declared %.1f, measured %.1f" % [name, float(want[0]), spread])
+			if spread_mono >= 0.0 and absf(spread_mono - float(want[1])) > 0.15:
+				moved.append("%s WEB declared %.1f, measured %.1f" % [name, float(want[1]), spread_mono])
 			continue
 		if spread > LIMIT:
 			wide.append("%s %.1f LU" % [name, spread])
@@ -110,6 +124,8 @@ func test_the_heal_family_is_the_open_case_and_still_measures_what_was_reported(
 	var row: Dictionary = fx["ability_heal"]
 	assert_false(bool(row.get("unmeasurable", false)),
 		"ability_heal became unmeasurable; it was 7.2 LU apart and measurable, so the instrument changed rather than the assets")
+	assert_almost_eq(float(row.get("spread_mono", -1.0)), 3.4, 0.15,
+		"ability_heal's WEB spread moved off 3.4 LU. The web build ships mono, so this is the number a browser player hears and it is tracked separately from desktop's 7.2")
 	assert_almost_eq(float(row.get("spread", -1.0)), 7.2, 0.15,
 		"ability_heal's spread moved off the 7.2 LU that was reported to struktured. If this is his ruling landing, update WIDE_PENDING (or remove the family from it) in the same commit as the assets")
 	assert_true(WIDE_PENDING.has("ability_heal"),
@@ -129,3 +145,37 @@ func test_the_unmeasurable_families_are_named_not_passed() -> void:
 			floored.append(str(name))
 	assert_gt(floored.size(), 0,
 		"no family is marked unmeasurable, but the six footstep families are all under 0.4s — either the tool stopped detecting the R128 floor, or it is now reporting a 0.0 spread for three floored values")
+
+
+## ⛔ THE CONTROL ON THE DOWNMIX ITSELF, guarding the bug that cost @cowir-music two retracted
+## numbers on 2026-10-13: `pan=mono|c0=0.5*c0+0.5*c1` on a MONO input references a channel that does
+## not exist and silently halves amplitude — a flat -6.02 dB that looks like a real measurement.
+##
+## ⚠️ COMPARED PER MEMBER, NOT PER SPREAD, AND THAT CORRECTION CAME FROM A SURVIVING MUTATION. My
+## first version compared the family's as-is spread against its downmixed spread — and a UNIFORM
+## -6.02 dB on every member leaves the spread IDENTICAL, so the arm could not see the very bug its
+## comment claimed to guard. It passed the mutation; the ledger arms caught it instead, via the
+## mixed-channel families where the per-member shifts differ. A spread is a difference, and a
+## difference is blind to anything applied equally to both sides.
+func test_the_downmix_is_a_no_op_on_every_mono_member() -> void:
+	var fx := _fixture()
+	var checked := 0
+	var broken: Array[String] = []
+	for name in fx.keys():
+		var row: Dictionary = fx[name]
+		if bool(row.get("unmeasurable", false)):
+			continue
+		var members: Dictionary = row.get("members", {})
+		for m in members.keys():
+			var mem: Dictionary = members[m]
+			if int(mem.get("ch", 0)) != 1:
+				continue
+			var a: float = float(mem.get("lufs", -999.0))
+			var b: float = float(mem.get("lufs_mono", -998.0))
+			checked += 1
+			if absf(a - b) > 0.05:
+				broken.append("%s %.1f -> %.1f" % [m, a, b])
+	assert_gt(checked, 5,
+		"CONTROL: only %d mono members checked, so this arm cannot see a downmix regression" % checked)
+	assert_eq(broken, [],
+		"the downmix is NOT a no-op on these MONO members, so the tool is running pan=mono on a mono input and halving amplitude by ~6 dB — every web figure it reports is wrong by that much: %s" % [broken])
