@@ -4951,7 +4951,8 @@ func _on_action_executed(combatant: Combatant, action: Dictionary, targets: Arra
 				# dispel_and_self_buff is target_type single_ally and HOSTILE to that ally (BattleManager strips their buffs, logged in penalty_bbcode) — it sits here with its base effect `dispel` because the target_type rule below would send it to the buff cue
 				# dispel_one (remove_element) and volatility_up_enemy (overexpose) were in NO arm: enemy-targeted, so the catch-all took the `else` branch to play_status(effect), no status_<effect> on disk, generic DESCENDING blip — while each one's own siblings sat in this list
 				# ability_weaken (deprecate) adds TWO stat debuffs and is declared in BattleManager's own SUPPORT_DEBUFFS, and still drew the generic blip — this arm hand-lists what that const already names
-				"defense_down", "volatility_up", "volatility_up_enemy", "attack_down", "magic_down", "magic_defense_down", "speed_down", "all_stats_down", "random_debuff", "dispel", "dispel_one", "dispel_and_self_buff", "ability_weaken", "debuff":
+				# taunt (Lure/Provoke/Taunt) · scan · press_the_edge · erase (Null Touch) were in NO arm: all single_enemy, so the catch-all's else branch drew the DESCENDING blip over their own cast cue — struktured heard it 22x on 2026-10-12. Membership here is enemy-DIRECTED, not SUPPORT_DEBUFFS (volatility_up is in neither const and has always sat here)
+				"defense_down", "volatility_up", "volatility_up_enemy", "attack_down", "magic_down", "magic_defense_down", "speed_down", "all_stats_down", "random_debuff", "dispel", "dispel_one", "dispel_and_self_buff", "ability_weaken", "debuff", "taunt", "scan", "press_the_edge", "erase":
 					SoundManager.play_battle("debuff")
 				## cleanse and steal are cued by their BattleManager executors, which are the only places
 				## that know the OUTCOME — whether an ailment came off, whether the steal landed. Cueing
