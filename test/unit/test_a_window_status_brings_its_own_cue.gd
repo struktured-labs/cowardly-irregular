@@ -142,7 +142,13 @@ func test_control_the_window_body_is_isolated() -> void:
 	var body: String = _window_body()
 	assert_ne(body, "", "the function must be found by name")
 	assert_true(body.begins_with(FN), "the body starts at the header")
-	assert_false(body.contains("\nfunc _execute_group_action"), "and stops before the next function")
+	## DERIVED, and the literal it replaces was INERT: it named `_execute_group_action`, which sits 387
+	## lines EARLIER in the file, so a range starting at this function could never contain it. The one
+	## assertion whose job was the range's END could not fail. Measured: break the close anchor and
+	## three SUBJECT arms red while that control stayed green — coverage without the explanation.
+	## A second `func ` header inside the range is the defect itself, whoever happens to follow.
+	assert_false(body.contains("\nfunc "),
+		"the range must hold ONE function — a second header means the close anchor over-ran")
 	assert_gt(body.length(), 200, "and is not truncated to nothing")
 
 

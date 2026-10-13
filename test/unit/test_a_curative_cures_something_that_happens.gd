@@ -24,6 +24,19 @@ extends GutTest
 ## from BOTH sides: a NEW uninflictable curative fails, and an exemption that has become live fails
 ## too, so wiring petrify forces the entry out rather than leaving a stale excuse behind.
 
+## ⚠️ WHAT A GREEN HERE MEANS, because the inflictable set is a DELIBERATE OVER-APPROXIMATION: it
+## counts every authored ability effect/secondary_effect name as a status that can land. Measured
+## 2026-10-12 — 66 effect names, 23 of which are treated as a status anywhere in src and 43 of which
+## are not. The set is ~43 names wider than reality, so this guard fails toward "no offender found",
+## the direction that costs a defect. gold_needle cleared even the generous bar, which is what makes
+## that finding strong rather than marginal.
+##
+## ⛔ THE TIGHTER RULE WAS MEASURED AND REJECTED, not overlooked. Requiring (effect AND status-ish)
+## clears all three live curatives and still flags petrify — but `cure_status: ["attack_down"]` is a
+## legitimate debuff cure, and attack_down sits in no status const and no has_status literal, so the
+## tighter rule calls it DEAD. It trades a hypothetical false-clean for a plausible false alarm on a
+## CORRECT change, which is the wrong side of that asymmetry.
+
 const GdSource := preload("res://test/unit/helpers/gd_source.gd")
 
 ## id -> why it is allowed to cure something unreachable. A REASON, never a bare flag: this cannot be
@@ -53,15 +66,6 @@ func _literals_in(code: String) -> Dictionary:
 	lit.compile("add_status\\(\\s*\"([a-z_]+)\"")
 	for m in lit.search_all(code):
 		out[m.get_string(1)] = true
-	var at: int = code.find("STATUS_ALIASES")
-	if at >= 0:
-		var close: int = code.find("}", at)
-		var blk: String = code.substr(at, (close - at) if close > at else 400)
-		var alias := RegEx.new()
-		alias.compile("\"([a-z_]+)\"\\s*:\\s*\"([a-z_]+)\"")
-		for m in alias.search_all(blk):
-			out[m.get_string(1)] = true
-			out[m.get_string(2)] = true
 	return out
 
 
@@ -78,6 +82,16 @@ func _applier_code() -> String:
 ## Every status the game can actually inflict. Derived, never hand-listed.
 func _inflictable() -> Dictionary:
 	var out: Dictionary = _literals_in(_applier_code())
+	## ALIASES COME FROM THE PARSED CONST, NOT FROM TEXT. @cowir-autogrind's prior step: a guard that
+	## wants a const's MEMBERS does not need the source, and reading them as text buys a whole bug
+	## class for nothing — an extraction anchored on a delimiter after the const NAME lands inside a
+	## TYPE (`Array[String]`, `Dictionary[String, int]`). My own ad-hoc version of that read 0 names
+	## and scored `poison` a non-status. Through the class the engine has already parsed it, so no
+	## delimiter is searched and a commented alias pair cannot widen this either. Verified equivalent
+	## to the text read it replaces: 5 pairs, 10 distinct names, same names.
+	for k in Combatant.STATUS_ALIASES.keys():
+		out[str(k)] = true
+		out[str(Combatant.STATUS_ALIASES[k])] = true
 	var text: String = FileAccess.get_file_as_string("res://data/abilities.json")
 	var parsed: Variant = JSON.parse_string(text)
 	if parsed is Dictionary:
