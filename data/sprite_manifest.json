@@ -5550,6 +5550,32 @@
           "frames": 4
         }
       }
+    },
+    "roy": {
+      "path": "res://assets/sprites/npcs/roy/overworld.png",
+      "frame_width": 64,
+      "frame_height": 64,
+      "fps": 4,
+      "tier": "T2",
+      "source": "artist aseprite drop 2026-10-11 — Villagers/Villager_Roy.aseprite, 16 frames / 4 tags (South, West, East, North; 250ms each). The artist's SECOND overworld walker. Exported at NATIVE size by tools/export_artist_overworld_walker.py: figure 26x54 in 64px cells, all six layers, no resampling. His West and East tags face the way they say (checked by eye), unlike Rotha's.",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      }
     }
   },
   "overworld_player_sheets": {

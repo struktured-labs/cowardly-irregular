@@ -761,6 +761,21 @@ func _setup_npcs() -> void:
 	)
 	npcs.add_child(rotha)
 
+	# Roy — the artist's second overworld villager (2026-10-11 drop), on the lower-right green opposite Rotha.
+	var roy_loop: Array[Vector2] = [
+		Vector2(25 * TILE_SIZE,24 * TILE_SIZE),
+		Vector2(30 * TILE_SIZE,24 * TILE_SIZE),
+	]
+	var roy = _create_wandering_npc(
+		"Roy",
+		"roy",
+		"I walk this side. Rotha walks that side. We have never discussed it.",
+		roy_loop,
+		"villager",
+		"villager"
+	)
+	npcs.add_child(roy)
+
 
 ## Spawn a QuestChicken for the one_chicken_problem 7-catch puzzle.
 func _place_chicken(chicken_id: String, pos: Vector2, catch_line: String = "") -> void:
