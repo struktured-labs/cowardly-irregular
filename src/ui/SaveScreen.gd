@@ -263,9 +263,22 @@ func _build_filled_slot(panel: Control, panel_size: Vector2, slot: int, save_inf
 	var play_time = save_info.get("play_time_formatted", "00:00:00")
 	var time_label = Label.new()
 	time_label.text = play_time
-	time_label.position = Vector2(panel_size.x - 90, 4)
+	## The 90px reserve was flat while the font scales with Text Size, so the timestamp ran past
+	## the panel's right edge: measured -46/-35/-18/-7/+20 px of clearance across the five presets,
+	## i.e. it crosses at 200%. Scaling the reserve by the same factor as the font leaves 100%
+	## pixel-identical and keeps the text inside at every size; clip_text makes spilling impossible
+	## even if a future format is longer, because an assigned width is otherwise clamped up to the
+	## text's own content width.
+	## ⚠️ ORDER: everything that feeds the minimum size — clip_text and the font override — is set
+	## BEFORE `size`, because an assigned width is clamped up to the minimum AS IT STANDS AT THAT
+	## MOMENT. Assigning size first (with clip_text still false and the default font 16 in force)
+	## clamps it straight back to the content width, which measured +16px past the panel at 80%.
+	time_label.clip_text = true
+	time_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	time_label.add_theme_font_size_override("font_size", TextScale.scaled(12))
 	time_label.add_theme_color_override("font_color", SUBTITLE_COLOR)
+	time_label.position = Vector2(panel_size.x - float(TextScale.scaled(90)), 4)
+	time_label.size = Vector2(float(TextScale.scaled(90)) - 12.0, float(TextScale.scaled(16)))
 	panel.add_child(time_label)
 
 	# Save date
@@ -274,9 +287,13 @@ func _build_filled_slot(panel: Control, panel_size: Vector2, slot: int, save_inf
 		var date_label = Label.new()
 		# Tick 197: derive via helper — pre-fix the inner if/else had a fall-through (>=2 parts but malformed ymd/hms left text empty, silent UX).
 		date_label.text = _format_save_date(save_date)
-		date_label.position = Vector2(panel_size.x - 90, 22)
+		## Same reserve and the same ordering rule as the play time above it.
+		date_label.clip_text = true
+		date_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 		date_label.add_theme_font_size_override("font_size", TextScale.scaled(10))
 		date_label.add_theme_color_override("font_color", SUBTITLE_COLOR)
+		date_label.position = Vector2(panel_size.x - float(TextScale.scaled(90)), 22)
+		date_label.size = Vector2(float(TextScale.scaled(90)) - 12.0, float(TextScale.scaled(14)))
 		panel.add_child(date_label)
 
 	# Party portraits and info (pushed below the story + location rows)
