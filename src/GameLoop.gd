@@ -1811,8 +1811,10 @@ func _derive_current_scene_music_key() -> String:
 	fallback for bug 2801 when the pause-menu snapshot was lost. Tries the
 	BaseVillage convention first (_get_music_area_id), then the BaseInterior
 	convention (_get_music_track), then the OverworldScene hardcoded default.
-	Returns "" only if _exploration_scene is null/freed, in which case the
-	caller leaves menu playing (nothing sensible to swap to)."""
+	Returns "" only if _exploration_scene is null/freed. The menu-close caller
+	then leaves the menu bed playing; the two autogrind-stop callers do NOT —
+	they fall back to _current_map_id, which play_area_music may not have an
+	arm for (it then starts the world's overworld bed)."""
 	if _exploration_scene == null or not is_instance_valid(_exploration_scene):
 		return ""
 	if _exploration_scene.has_method("_get_music_area_id"):
