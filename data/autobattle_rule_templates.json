@@ -1202,23 +1202,6 @@
         {
           "conditions": [
             {
-              "type": "mp_percent",
-              "op": "<",
-              "value": 20
-            }
-          ],
-          "actions": [
-            {
-              "type": "ability",
-              "id": "riff",
-              "target": "highest_atk_enemy"
-            }
-          ],
-          "enabled": true
-        },
-        {
-          "conditions": [
-            {
               "type": "not_enemy_has_status",
               "status": "sleep"
             },
@@ -1302,23 +1285,6 @@
               "type": "ability",
               "id": "battle_hymn",
               "target": "all_allies"
-            }
-          ],
-          "enabled": true
-        },
-        {
-          "conditions": [
-            {
-              "type": "mp_percent",
-              "op": "<",
-              "value": 15
-            }
-          ],
-          "actions": [
-            {
-              "type": "ability",
-              "id": "riff",
-              "target": "highest_atk_enemy"
             }
           ],
           "enabled": true
