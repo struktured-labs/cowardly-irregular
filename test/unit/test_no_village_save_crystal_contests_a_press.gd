@@ -149,13 +149,36 @@ func _contests(sp: Node2D, others: Array) -> Array:
 		if won != null and won != sp:
 			bad.append("standing %s at the crystal and facing it opens %s instead — the player cannot save there" % [
 				str(row["cell"]), _label(won)])
+	## ⛔ THE OTHER SIDE ASKS "IS IT STILL PRESSABLE AT ALL", NOT "DOES IT LOSE ANY CELL". Losing a
+	## cell is often CORRECT: stand two tiles from an NPC, press, and the nearer save crystal
+	## answering is nearest-by-anchor working as designed. The defect is being FULLY SHADOWED — no
+	## standable cell anywhere from which a faced press reaches you.
+	##
+	## ⚠️ AND `_winners`' RING OF 8 CANNOT ASK IT. Harmonia's fountain is a 2x2 trigger inside a 5x5
+	## basin, so it has no standable neighbour and the ring was EMPTY — this file called Harmonia clean
+	## while the crystal, parked at (13,10) between the only ground and the basin, took every press
+	## that would have reached the fountain's five rotating lines. A prop can be pressable from two
+	## cells out and adjacent to nothing, so the search is over GROUND, not over adjacency.
 	for o in others:
 		if (o as Node2D).global_position.distance_to(sp.global_position) > 5.0 * _step:
 			continue
-		for row in _winners(o as Node2D):
-			if row["won"] == sp:
-				bad.append("standing %s at %s and facing it SAVES instead — the crystal took its press" % [
-					str(row["cell"]), _label(o)])
+		var near := Vector2i((o as Node2D).global_position / _step)
+		var reachable := false
+		for dy in range(-3, 4):
+			for dx in range(-3, 4):
+				var feet: Vector2 = Vector2((near.x + dx) * _step + _step / 2.0, (near.y + dy) * _step + _step / 2.0)
+				if not _fits(feet):
+					continue
+				for fc in [Vector2(1, 0), Vector2(-1, 0), Vector2(0, 1), Vector2(0, -1)]:
+					if _press(feet, fc) == o:
+						reachable = true
+						break
+				if reachable:
+					break
+			if reachable:
+				break
+		if not reachable:
+			bad.append("%s is fully shadowed — no standable cell can press it, the save crystal answers every approach" % _label(o))
 	return bad
 
 
