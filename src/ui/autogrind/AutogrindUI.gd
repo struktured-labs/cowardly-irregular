@@ -3423,8 +3423,28 @@ func _on_corruption_increased(level: float) -> void:
 		_log_message("[color=%s]Corruption critical: %.1f[/color]" % [AccessibilityPalette.penalty_bbcode(), level])
 
 
+## Standalone wording, NOT the refusal's clauses -- those are written to follow a situation sentence and do not read alone.
+func _interrupt_advice(rule: String) -> String:
+	match rule:
+		"hp_threshold":
+			return "Heal before grinding again, or lower \"Stop at HP\" in Options."
+		"party_death":
+			return "Revive them, or turn \"Stop on Death\" off in Options."
+		"item_depleted":
+			return "Restock healing items, or turn \"Stop when Out of Items\" off in Options."
+		"max_battles":
+			return "Raise \"Stop after\" in Options to grind longer."
+		"corruption_limit":
+			return "No Options row changes this one -- it guards system collapse. Corruption clears with a fresh session."
+	return ""
+
+
 func _on_interrupt_triggered(reason: String) -> void:
 	_log_message("[color=yellow]INTERRUPT: %s[/color]" % reason)
+	# The stop says WHAT and (since .669) WHO; this says what to change.
+	var advice: String = _interrupt_advice(str(AutogrindSystem.last_interrupt_rule))
+	if advice != "":
+		_log_message("[color=#9fd3ff]%s[/color]" % advice)
 	if _monitor and is_instance_valid(_monitor):
 		_monitor.add_highlight("INTERRUPT: %s" % reason, "danger")
 	_is_grinding = false
