@@ -57,6 +57,10 @@ var _list_request: HTTPRequest = null
 # Engine-msec stamp of the last RESOLVED probe; drives the re-probe interval.
 var _last_probe_msec: int = 0
 
+# The models the last probe's own response listed. The probe GETs the listing endpoint and used
+# to discard the body, so this costs no extra request. Empty means "not known", never "none".
+var _server_models: PackedStringArray = []
+
 # HTTP status of the last resolved probe, 0 if it never reached a server. A 401/403
 # means the endpoint ANSWERED and refused the credential, which is a different repair
 # from "unreachable" - and telling the player to wait for a retry that cannot succeed
@@ -175,6 +179,15 @@ static func parse_model_list(api_format: String, raw: String) -> PackedStringArr
 	return out
 
 
+## Whether the configured model is one the server listed. UNKNOWN (true) when the listing was
+## empty or unparsed: absence of evidence must not read as evidence of absence, because a provider
+## may serve a model its /v1/models does not enumerate for this key.
+func model_is_on_server() -> bool:
+	if _server_models.is_empty() or model == "":
+		return true
+	return model in _server_models
+
+
 ## Ask the server what it has. Answers exactly once through models_listed.
 func list_models() -> void:
 	if _list_request != null and is_instance_valid(_list_request):
@@ -220,12 +233,13 @@ func _cleanup_list() -> void:
 	_list_request = null
 
 
-func _on_probe_completed(result: int, response_code: int, _headers: PackedStringArray, _body: PackedByteArray) -> void:
+func _on_probe_completed(result: int, response_code: int, _headers: PackedStringArray, body: PackedByteArray) -> void:
 	var now_ready: bool = result == HTTPRequest.RESULT_SUCCESS and response_code >= 200 and response_code < 300
 	var was_ready: bool = _ready_flag
 	_ready_flag = now_ready
 	_last_probe_msec = Time.get_ticks_msec()
 	_last_probe_code = response_code if result == HTTPRequest.RESULT_SUCCESS else 0
+	_server_models = parse_model_list(api_format, body.get_string_from_utf8()) if now_ready else PackedStringArray()
 	_cleanup_probe()
 	# Boot resolution isn't a "transition" — announce state, but only warn if unreachable.
 	if not _first_probe_done:
@@ -347,6 +361,8 @@ func get_availability_info() -> Dictionary:
 		"model": model,
 		"probed": _first_probe_done,
 		"probe_code": _last_probe_code,
+		"model_present": model_is_on_server(),
+		"server_model_count": _server_models.size(),
 		"kind": unavailable_kind(),
 		"seconds_since_probe": (Time.get_ticks_msec() - _last_probe_msec) / 1000.0 if _first_probe_done else -1.0,
 		"probe_interval_sec": PROBE_INTERVAL_SEC,
