@@ -16,6 +16,7 @@ extends GutTest
 const SFX_MANIFEST := "res://data/sfx_manifest.json"
 const ABILITIES := "res://data/abilities.json"
 const BATTLE_SCENE := "res://src/battle/BattleScene.gd"
+const SOUND_MANAGER := "res://src/audio/SoundManager.gd"
 const GdSource := preload("res://test/unit/helpers/gd_source.gd")
 ## The docstring delimiter, as a const so it never appears inline and confuses a reader or a scanner.
 ## EVERY arm and EVERY control reads source through HERE, never GdSource.code_of directly. An arm
@@ -76,25 +77,47 @@ func _authored() -> Dictionary:
 
 ## The dispatch's own arm lists, read from its source. An effect named in the buff or debuff arm
 ## plays play_battle(), never a status cue — so it buys NO reachability for a status_<effect> cue.
-func _swallowed_by_a_generic_arm() -> Dictionary:
+## Each dispatch arm paired with the body that belongs to IT, bounded by the next arm rather than by
+## a character count. A 160-char window read PAST the last arm into three others and left the two
+## generic arms only +142 of margin -- two comment lines from a silent false negative.
+func _dispatch_arms() -> Array:
 	var src: String = _code(BATTLE_SCENE)
 	var i: int = src.find("var effect = ability.get(\"effect\", \"\")")
 	if i < 0:
-		return {}
+		return []
 	var j: int = src.find("\nfunc ", i)
-	var blk: String = src.substr(i, (j - i) if j > i else src.length() - i)
-	var out := {}
+	var lines: Array = src.substr(i, (j - i) if j > i else src.length() - i).split("\n")
 	var re := RegEx.create_from_string("^\\t+((?:\"[a-z_]+\",?\\s*)+):\\s*$")
-	for line in blk.split("\n"):
-		var m := re.search(line)
+	var out: Array = []
+	var k := 0
+	while k < lines.size():
+		var label: String = str(lines[k])
+		var m := re.search(label)
 		if m == null:
+			k += 1
 			continue
-		## Only the arms whose body plays a GENERIC cue swallow their effects.
-		var at: int = blk.find(line)
-		var body: String = blk.substr(at + line.length(), 160)
-		if not body.contains("play_battle("):
+		var depth: int = label.length() - label.lstrip("\t").length()
+		var body: String = ""
+		var n: int = k + 1
+		while n < lines.size():
+			var l: String = str(lines[n])
+			if l.strip_edges() != "" and (l.length() - l.lstrip("\t").length()) <= depth:
+				break
+			body += l + "\n"
+			n += 1
+		out.append({"effects": m.get_string(1), "body": body})
+		k = n
+	return out
+
+
+## Only the arms whose own body plays a GENERIC cue swallow their effects.
+func _swallowed_by_a_generic_arm() -> Dictionary:
+	var out := {}
+	var eff := RegEx.create_from_string("\"([a-z_]+)\"")
+	for arm in _dispatch_arms():
+		if not str((arm as Dictionary)["body"]).contains("play_battle("):
 			continue
-		for n in RegEx.create_from_string("\"([a-z_]+)\"").search_all(m.get_string(1)):
+		for n in eff.search_all(str((arm as Dictionary)["effects"])):
 			out[n.get_string(1)] = true
 	return out
 
@@ -102,20 +125,25 @@ func _swallowed_by_a_generic_arm() -> Dictionary:
 ## How many arms playing a GENERIC cue the scan found. Structural control for the subtraction above:
 ## naming a member breaks when that member is correctly re-routed, as `cleanse` was tonight.
 func _generic_arms_read() -> int:
-	var src: String = _code(BATTLE_SCENE)
-	var i: int = src.find("var effect = ability.get(\"effect\", \"\")")
-	if i < 0:
-		return 0
-	var j: int = src.find("\nfunc ", i)
-	var blk: String = src.substr(i, (j - i) if j > i else src.length() - i)
 	var n := 0
-	var re := RegEx.create_from_string("^\\t+((?:\"[a-z_]+\",?\\s*)+):\\s*$")
-	for line in blk.split("\n"):
-		if re.search(line) == null:
-			continue
-		if blk.substr(blk.find(line) + line.length(), 160).contains("play_battle("):
+	for arm in _dispatch_arms():
+		if str((arm as Dictionary)["body"]).contains("play_battle("):
 			n += 1
 	return n
+
+
+## The item cue map, read as a CONST through the class: scanning the source for its brackets lands
+## inside the `Array[Array]` type annotation, which is why this leg read zero for its whole life.
+func _cued_from_items() -> Dictionary:
+	var out: Dictionary = {}
+	var rows: Array = load(SOUND_MANAGER).get_script_constant_map().get("_ITEM_EFFECT_SFX", [])
+	for row in rows:
+		if not (row is Array) or (row as Array).size() < 2:
+			continue
+		var cue := str((row as Array)[1])
+		if cue.begins_with("status_"):
+			out[cue.substr(7)] = true
+	return out
 
 
 ## Every way a status cue can actually be reached, derived. See the module docstring.
@@ -139,17 +167,12 @@ func _reachable() -> Dictionary:
 			for m in re_proc.search_all(l):
 				out[m.get_string(1)] = true
 
-	## 3. the item cue map, scoped to its own const and read as PAIRS. ⚠️ A loose scan for any
+	## 3. the item cue map, read through the class by _cued_from_items(). ⚠️ A loose scan for any
 	## `"status_x"` literal in src counts SoundManager's procedural SOUNDS entries — which are an
 	## alternative RENDERER, not a path to the cue — and that invented a path for `paralyze`, whose
 	## only appearance in src is `"status_paralyze": {"freq": 800, ...}` at SoundManager:213.
-	var sm_src: String = _code("res://src/audio/SoundManager.gd")
-	var ci: int = sm_src.find("const _ITEM_EFFECT_SFX")
-	if ci >= 0:
-		var ce: int = sm_src.find("]", sm_src.find("[", ci))
-		var pair := RegEx.create_from_string("\\[\\s*\"[a-z_]+\"\\s*,\\s*\"status_([a-z_]+)\"\\s*\\]")
-		for m in pair.search_all(sm_src.substr(ci, (ce - ci) if ce > ci else 1200)):
-			out[m.get_string(1)] = true
+	for s in _cued_from_items().keys():
+		out[str(s)] = true
 
 	## 4. an ability effect that reaches the catch-all, which calls play_status(effect).
 	var swallowed: Dictionary = _swallowed_by_a_generic_arm()
@@ -266,3 +289,15 @@ func test_the_prose_this_guard_reads_past_was_really_stripped() -> void:
 	assert_ne(doc_body, "", "CONTROL: no docstring line over 40 chars found; this input carries 116 regions, so a miss means the region scan is wrong")
 	assert_false(code.contains(doc_body),
 		"a docstring line survived the strip — the REGION half of the stripper is not running, which is also what a #-only pass produces: %s" % doc_body.substr(0, 60))
+
+func test_the_item_cue_map_leg_reads_its_const() -> void:
+	var from_items: Dictionary = _cued_from_items()
+	assert_true(from_items.has("cured"),
+		("CONTENT FLOOR: _ITEM_EFFECT_SFX names status_cured on two rows (cure_all_status, " +
+		"cure_status), so this leg must yield `cured`; it yielded %s. This leg read ZERO for its " +
+		"whole life because find(\"[\") landed inside the `Array[Array]` annotation.")
+		% [from_items.keys()])
+	var merged: Dictionary = _reachable()
+	for s in from_items.keys():
+		assert_true(merged.has(str(s)),
+			"item-leg cue `%s` was dropped between the leg and _reachable()" % [str(s)])

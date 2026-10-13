@@ -27,8 +27,13 @@ extends GutTest
 
 
 const MARK := "(Currently no effect)"
+## ⛔ `autobattle_verbs` ADDED 2026-10-12, and the reason it was absent for 2.5 months is a defect in
+## _src_reads below, not an oversight in this list: PassiveSystem.gd carries a HARDCODED FALLBACK COPY
+## of passives.json, so `"autobattle_advanced"` appeared in src/ as a string literal and the derived
+## arm read the data's own copy as a consumer. Measured: of 35 meta_effects keys, exactly 2
+## self-satisfied that way.
 const UNWIRED := ["double_jump", "wall_climb", "optional_detector", "debug_mode",
-	"undead_affinity"]
+	"undead_affinity", "autobattle_verbs"]
 ## Passives that WORK but ignore one authored parameter. Materially different: the promise is
 ## kept, a knob is unread. Not disclosed, because the description is true.
 ##   time_sense      live preview_enemy_actions   dead preview_turns
@@ -49,6 +54,12 @@ func _meta_keys(pid: String) -> Array:
 	return (me as Dictionary).keys() if me is Dictionary else []
 
 
+## ⛔ SKIPS PassiveSystem.gd, WHICH IS THE DATA AND NOT A CONSUMER. It holds a fallback copy of
+## passives.json for the unreadable-file path, so every key it declares used to satisfy this walk and
+## read as wired. That is what hid `autobattle_verbs`.
+const DATA_NOT_CONSUMER := "PassiveSystem.gd"
+
+
 func _src_reads(key: String) -> bool:
 	# Walks src/ for the key as an authored string, the way any consumer would name it.
 	var dirs: Array = ["res://src"]
@@ -62,7 +73,33 @@ func _src_reads(key: String) -> bool:
 		for f in da.get_files():
 			if not f.ends_with(".gd"):
 				continue
+			if f == DATA_NOT_CONSUMER:
+				continue
 			if FileAccess.get_file_as_string(d + "/" + f).contains('"%s"' % key):
+				return true
+	return false
+
+
+## THE SECOND CONSUMPTION MECHANISM. A passive can be read by ID rather than by effect key —
+## `"market_sense" in combatant.equipped_passives` at BattleManager:6550 — and a check covering only
+## effect keys certifies nothing about it. Fixing _src_reads WITHOUT this turns one missed defect into
+## one false alarm, because market_sense's only meta key is self-satisfied too.
+## ⛔ JobSystem.gd is EXCLUDED: its `passive_abilities` rosters declare which job may EQUIP a passive,
+## which is not consumption. 7 of 45 passives are rostered — `autobattle_verbs` among them — so
+## counting that file would read the very passive this fix is for as consumed.
+func _id_consumed(pid: String) -> bool:
+	var dirs: Array = ["res://src"]
+	while not dirs.is_empty():
+		var d: String = dirs.pop_back()
+		var da := DirAccess.open(d)
+		if da == null:
+			continue
+		for sub in da.get_directories():
+			dirs.append(d + "/" + sub)
+		for f in da.get_files():
+			if not f.ends_with(".gd") or f == DATA_NOT_CONSUMER or f == "JobSystem.gd":
+				continue
+			if FileAccess.get_file_as_string(d + "/" + f).contains('"%s"' % pid):
 				return true
 	return false
 
@@ -119,10 +156,11 @@ func test_a_FIFTH_unwired_passive_cannot_appear_unnoticed() -> void:
 		var me: Variant = (p[pid] as Dictionary).get("meta_effects")
 		if not (me is Dictionary):
 			continue
+		var by_id: bool = _id_consumed(str(pid))
 		for key in (me as Dictionary):
 			scanned += 1
-			if not _src_reads(str(key)):
-				offenders.append("%s.%s has no consumer in src/" % [pid, key])
+			if not _src_reads(str(key)) and not by_id:
+				offenders.append("%s.%s has no consumer in src/ by key OR by id" % [pid, key])
 	assert_gt(scanned, 10, "positive control — meta_effects keys must actually be walked")
 	assert_eq(offenders, [],
 		"a passive promising something nothing performs, undisclosed:\n  %s" % "\n  ".join(offenders))
@@ -145,3 +183,25 @@ func test_a_PARTIAL_passive_still_has_a_working_key() -> void:
 			offenders.append("%s has no consumed key left — it is now a false promise, move it to "
 				% pid + "UNWIRED and disclose it")
 	assert_eq(offenders, [], "a PARTIAL exemption has expired:\n  %s" % "\n  ".join(offenders))
+
+
+## CONTROL for the second mechanism, and the regression guard against the false alarm this fix would
+## otherwise have caused: market_sense's ONLY meta key is self-satisfied by the fallback copy, so once
+## _src_reads stops counting that file the passive is invisible to mechanism 1 entirely. It is wired —
+## by id, at BattleManager:6550 — and memory records someone already false-flagging it once.
+func test_control_a_passive_wired_only_BY_ID_reads_as_consumed() -> void:
+	assert_false(_src_reads("volatility_scaling"),
+		"market_sense's effect key must have NO key-side consumer — if this fails the premise below is gone")
+	assert_true(_id_consumed("market_sense"),
+		"market_sense is consumed by ID at BattleManager:6550 — without this arm the fix above false-flags it")
+
+
+## NEGATIVE control, the one that catches a naive id-check: being OFFERED by a job is not consumption.
+## autobattle_verbs sits in JobSystem's Scriptweaver roster, so an _id_consumed that counted that file
+## would read it as wired and this whole fix would be a no-op that looked like a fix.
+func test_control_a_job_roster_is_not_a_consumer() -> void:
+	var js: String = FileAccess.get_file_as_string("res://src/jobs/JobSystem.gd")
+	assert_true(js.contains('"autobattle_verbs"'),
+		"CONTROL: the passive must really be named in a job roster, else this arm proves nothing")
+	assert_false(_id_consumed("autobattle_verbs"),
+		"a roster entry declares who MAY equip it, not that anything reads it — counting JobSystem would hide the defect this file was just extended for")

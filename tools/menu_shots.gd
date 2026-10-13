@@ -10,6 +10,10 @@ extends SceneTree
 ## That class is invisible to source review and to every headless guard; it needs a frame.
 ##
 ## Autoloads register after this script parses, so every menu is load()'d after two frames.
+##
+## Covers ten screens. Still uncovered and worth adding when someone needs them: MenuScene (see
+## below), ShopScene and EquipmentMenu (tools/item_icon_screenshot.gd has those), StatusMenu,
+## and anything that needs a live battle.
 
 func _init() -> void:
 	var out_dir := "res://tmp/menu_shots"
@@ -41,6 +45,36 @@ func _init() -> void:
 		m.set_anchors_preset(Control.PRESET_FULL_RECT)
 		root.add_child(m)
 		m.setup([pc])
+		return m)
+
+	## The autogrind and autobattle editors, the quest log and the bestiary. Added after the first
+	## six found two defects: these four were rendered ad-hoc to check them, came back clean, and
+	## then were covered by nothing {E} so a regression in them would be found by a player.
+	await _shoot(out_dir, "autogrind_ui", func():
+		var m = load("res://src/ui/autogrind/AutogrindUI.gd").new()
+		m.set_anchors_preset(Control.PRESET_FULL_RECT)
+		root.add_child(m)
+		m.setup([pc], "Harmonia Fields")
+		return m)
+
+	await _shoot(out_dir, "autobattle_grid_editor", func():
+		var m = load("res://src/ui/autobattle/AutobattleGridEditor.gd").new()
+		m.set_anchors_preset(Control.PRESET_FULL_RECT)
+		root.add_child(m)
+		m.setup("bram", "Bram", pc, [pc])
+		return m)
+
+	await _shoot(out_dir, "quest_log", func():
+		var m = load("res://src/ui/QuestLog.gd").new()
+		m.set_anchors_preset(Control.PRESET_FULL_RECT)
+		root.add_child(m)
+		m.setup()
+		return m)
+
+	await _shoot(out_dir, "bestiary", func():
+		var m = load("res://src/ui/BestiaryMenu.gd").new()
+		m.set_anchors_preset(Control.PRESET_FULL_RECT)
+		root.add_child(m)
 		return m)
 
 	## ⚠ MenuScene is NOT shot here. It reaches for @onready paths from its .tscn

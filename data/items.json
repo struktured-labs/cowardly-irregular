@@ -240,7 +240,7 @@
     "name": "Gold Needle",
     "category": 2,
     "target_type": 0,
-    "description": "Cures petrification",
+    "description": "Cures petrification (Currently no effect)",
     "effects": {
       "cure_status": [
         "petrify"
