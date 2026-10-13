@@ -458,6 +458,7 @@ func _show_shop_menu(player: Node2D) -> void:
 	var shop_scene = preload("res://src/exploration/ShopScene.gd").new()
 	var ShopkeeperDataScript = preload("res://src/exploration/ShopkeeperData.gd")
 	var keeper_custom = ShopkeeperDataScript.get_shopkeeper_for_type(shop_type)
+	shop_scene.keeper_name = keeper_name
 	shop_scene.setup(_get_shop_type_enum(), shop_name, _get_inventory(), keeper_custom)
 
 	# Disable player movement

@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+# Probe the gate's godot once if its log stops growing; read-only /proc, no ptrace.
+cd @REPO@
+R=tmp/gate@NNN@.raw; OUT=tmp/wedge@NNN@_probe.txt; last=-1; still=0; probed=0
+while ! command grep -aq '^GATE@NNN@ EC=' tmp/gate@NNN@.out 2>/dev/null; do
+  sleep 15
+  pid=""; for p in $(pgrep godot 2>/dev/null); do
+    [ "$(basename "$(readlink /proc/$p/exe 2>/dev/null)")" = godot ] || continue
+    [ "$(readlink /proc/$p/cwd 2>/dev/null)" = "$PWD" ] || continue
+    tr '\0' ' ' < /proc/$p/cmdline 2>/dev/null | command grep -q gut_cmdln && pid=$p; done
+  sz=$(stat -c %s "$R" 2>/dev/null || echo 0)
+  if [ "$sz" = "$last" ]; then still=$((still+15)); else still=0; last=$sz; fi
+  if [ -n "$pid" ] && [ $still -ge 150 ] && [ $probed -eq 0 ]; then
+    { echo "PROBE pid=$pid exe=$(readlink /proc/$pid/exe) log_still=${still}s at $(date -u +%H:%M:%SZ)"
+      echo "last file: $(tr -d '\0' < $R | command grep -ao 'res://test/unit/test_[a-z_0-9]*\.gd' | tail -1)"
+      echo "--- per-thread comm/state/wchan/utime+stime"
+      echo "tid comm state cpu_ticks start_ticks wchan syscall"
+      for t in /proc/$pid/task/*; do echo "$(basename $t) $(cat $t/comm) $(awk '{print $3, $14+$15, $22}' $t/stat) wchan=$(cat $t/wchan 2>/dev/null) syscall=$(cut -d' ' -f1 $t/syscall 2>/dev/null)"; done
+      echo "--- cadence: voluntary_ctxt_switches/s per thread over 5s (audio mix thread = ~10.7/s under Dummy@44.1k; a MISSING cadence names the spinner)"
+      declare -A v0; for t in /proc/$pid/task/*; do v0[$(basename $t)]=$(awk '/^voluntary_ctxt_switches/{print $2}' $t/status 2>/dev/null); done
+      sleep 5
+      for t in /proc/$pid/task/*; do id=$(basename $t); v1=$(awk '/^voluntary_ctxt_switches/{print $2}' $t/status 2>/dev/null); [ -n "${v0[$id]}" ] && [ -n "$v1" ] && awk -v a="${v0[$id]}" -v b="$v1" -v id="$id" 'BEGIN{printf "%s %.1f/s\n", id, (b-a)/5}'; done | sort -k2 -t' ' -rn
+      echo "--- wedge_probe.sh"; timeout 60 tools/wedge_probe.sh $pid 5 2>&1
+      echo "--- main kernel stack (if readable)"; cat /proc/$pid/stack 2>&1 | head -20
+    } > $OUT 2>&1; probed=1
+    ## Wedge fingerprint (both halves): main S+futex AND an off-main thread R at >=90% CPU. A healthy slow test has MAIN hot.
+    mainw=$(cat /proc/$pid/wchan 2>/dev/null)
+    hot=$(awk -v pid=$pid 'f && NF>=6 && $1!=pid && $2+0>=90 && $5=="R" {print $1; exit} /^TID +CPU%/{f=1}' $OUT)
+    if [ "$mainw" = "futex_do_wait" ] && [ -n "$hot" ] && [ "$(basename "$(readlink /proc/$pid/exe 2>/dev/null)")" = godot ]; then
+      echo "AUTO-KILL: main futex_do_wait + off-main spinner $hot R>=90% -> TERM $pid at $(date -u +%H:%M:%SZ)" >> $OUT
+      kill -TERM $pid 2>/dev/null
+    fi
+  fi
+done
+echo "watch done probed=$probed" >> tmp/wedge@NNN@_watch.log

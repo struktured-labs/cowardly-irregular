@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+cd @REPO@
+{
+  echo "authored: @AUTHORED@"
+  ec=0
+  start_sha=$(git rev-parse HEAD); start_dirty=$(git status --porcelain -- src test project.godot | wc -l)
+  RUN_TESTS_TIMEOUT=1200 XDG_DATA_HOME=$PWD/tmp/xdg tools/spinwatch.sh -- tools/run_tests.sh > tmp/gate@NNN@.raw 2>&1 || ec=$?
+  echo "GATE@NNN@ EC=$ec sha=$(git rev-parse HEAD)"
+  end_sha=$(git rev-parse HEAD); end_dirty=$(git status --porcelain -- src test project.godot | wc -l)
+  [ "$start_sha" = "$end_sha" ] && [ "$start_dirty" = "0" ] && [ "$end_dirty" = "0" ] && echo "TREE: unmoved $start_sha, clean" || echo "TREE MOVED OR DIRTY: start=$start_sha end=$end_sha dirty $start_dirty->$end_dirty -- VERDICT VOID"
+  command grep -aE '^(Scripts|Tests|  Passing|  Failing|  Risky/Pending|Time)[ ]+[0-9.]+s?$' tmp/gate@NNN@.raw
+  echo "FILES_REACHED: $(tr -d '\0' < tmp/gate@NNN@.raw | command grep -ao 'res://test/unit/test_[a-z_0-9]*\.gd' | awk '!s[$0]++' | wc -l)"
+  ## Mirror EVERY static pre-build check publish_all.sh runs: a tag the publish would refuse must not be cut.
+  pub_bad=0; pub_line=""
+  for c in check_polling_bounded check_godot_bounded check_exit_capture check_user_data_sandboxed check_publish_is_optin check_lfs_blobs_current; do
+    st=0; python3 tools/$c.py --selftest > tmp/gate@NNN@.$c.selftest 2>&1 || st=$?
+    sc=0; python3 tools/$c.py > tmp/gate@NNN@.$c.scan 2>&1 || sc=$?
+    pub_line="$pub_line $c=$st/$sc"; [ $st -ne 0 ] || [ $sc -ne 0 ] && pub_bad=1
+  done
+  uvst=0; python3 tools/check_unbound_vars_selftest.py > tmp/gate@NNN@.uv_selftest 2>&1 || uvst=$?
+  uvc=0; python3 tools/check_unbound_vars.py $(git ls-files 'tools/*.sh') > tmp/gate@NNN@.uv_check 2>&1 || uvc=$?
+  pub_line="$pub_line check_unbound_vars=$uvst/$uvc"; [ $uvst -ne 0 ] || [ $uvc -ne 0 ] && pub_bad=1
+  echo "PUBLISH-STATIC (selftest/scan):$pub_line -> $( [ $pub_bad -eq 0 ] && echo ALL-OK || echo FAIL )"
+  echo "PAD LINE: $(command grep -a 'host controllers' tmp/gate@NNN@.raw | head -1)"
+} > tmp/gate@NNN@.out 2>&1

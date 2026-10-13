@@ -328,6 +328,9 @@ func audio_liveness_check() -> bool:
 
 func _process(_delta: float) -> void:
 	note_mixer_progress()
+	## The envelope's wobble (a sine of WALL CLOCK) and flicker (randf) only advance when the renderer RUNS, and it ran only while a meter tweened — so both froze at an arbitrary phase for as long as corruption sat at one level; skipped while a crossfade owns volume_db, which this would otherwise fight
+	if _corruption_intensity > 0.0 and not (_crossfade_tween != null and _crossfade_tween.is_valid()):
+		_render_music_envelope()
 
 
 ## Public so a test waiting on playback can sample between frames. _process does the same.
