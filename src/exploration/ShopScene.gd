@@ -27,12 +27,12 @@ const KEEPER_PORTRAIT_PATHS: Dictionary = {
 	ShopType.WHITE_MAGIC: "res://assets/sprites/portraits/keepers/lenora.png",
 	ShopType.BLACKSMITH:  "res://assets/sprites/portraits/keepers/brutus.png",
 }
-## Who each of those portraits PICTURES, and the dialogue key their own NPC speaks with.
+## Who each of those portraits PICTURES, the dialogue key their own NPC speaks with, and the walk sheet that looks like them ("" = none does).
 const PICTURED_KEEPERS: Dictionary = {
-	ShopType.ITEM:        ["Willow", "keeper_willow"],
-	ShopType.BLACK_MAGIC: ["Mortimer", "keeper_mortimer"],
-	ShopType.WHITE_MAGIC: ["Sister Lenora", "keeper_lenora"],
-	ShopType.BLACKSMITH:  ["Brutus", "keeper_brutus"],
+	ShopType.ITEM:        ["Willow", "keeper_willow", ""],
+	ShopType.BLACK_MAGIC: ["Mortimer", "keeper_mortimer", ""],
+	ShopType.WHITE_MAGIC: ["Sister Lenora", "keeper_lenora", "priestess"],
+	ShopType.BLACKSMITH:  ["Brutus", "keeper_brutus", "blacksmith"],
 }
 ## The face every other keeper speaks with behind their counter (npc_type "shopkeeper" walks as a merchant).
 const OTHER_KEEPER_PORTRAIT := "res://assets/sprites/portraits/npcs/merchant.png"
@@ -43,7 +43,13 @@ var keeper_name: String = ""
 ## Dialogue portrait key for the keeper of this shop, or "" when they are not one of the four pictured.
 static func pictured_keeper_key(type: int, keeper: String) -> String:
 	var who: Array = PICTURED_KEEPERS.get(type, [])
-	return str(who[1]) if who.size() == 2 and keeper == str(who[0]) else ""
+	return str(who[1]) if who.size() == 3 and keeper == str(who[0]) else ""
+
+
+## Walk sheet for the keeper of this shop when they are pictured and a sheet matches the picture, else "".
+static func pictured_keeper_sheet(type: int, keeper: String) -> String:
+	var who: Array = PICTURED_KEEPERS.get(type, [])
+	return str(who[2]) if who.size() == 3 and keeper == str(who[0]) else ""
 
 
 ## The portrait the wares screen shows: the pictured keeper's own, or the face a differently-named keeper spoke with.
