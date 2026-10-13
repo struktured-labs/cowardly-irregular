@@ -293,3 +293,98 @@ func test_the_descending_fallback_still_exists_for_afflictions() -> void:
 	var src: String = FileAccess.get_file_as_string(SCENE_SRC)
 	assert_true(src.contains("SoundManager.play_status(effect)"),
 		"the `_:` fallback arm is gone — the buff repair narrowed which effects reach it and never removed it")
+
+
+## THIRD CORPUS, SAME DEFECT, AND BOTH DERIVATIONS ABOVE ARE BLIND TO IT BY CONSTRUCTION.
+## The polarity-pair arm needs an X_up/X_down twin; the no-twin arm filters on `target_type` being
+## ALLY-ish. An ENEMY-targeted effect with no arm takes the catch-all's `else` branch —
+## play_status(effect) -> no status_<effect> on disk -> the generic DESCENDING blip — and nothing
+## here looked. Two were sitting there, each with its own siblings already in the debuff arm:
+##   dispel_one          (remove_element)  while dispel + dispel_and_self_buff route to debuff
+##   volatility_up_enemy (overexpose)      while volatility_up routes to debuff, _self to buff
+##
+## ⛔ THE BLIP IS NOT ALWAYS WRONG, which is why this cannot be "every unrouted effect". It is the
+## DESIGNED fallback for an unauthored affliction (pinned by the arm below this one), so `static`,
+## `taunt`, `scan`, `steal`, `erase` and `press_the_edge` reach it legitimately — some are statuses,
+## the rest are actions nobody has authored a cue for. Measured: 9 effects reach the blip, and only
+## these 2 are defects.
+##
+## ✅ SO THE DISCRIMINATOR IS A FAMILY, NOT A COUNT: if a routed effect is a PREFIX of an unrouted
+## one, they are the same mechanic and the unrouted one was forgotten. Derived from the source and
+## the catalog, so the next `dispel_two` or `volatility_up_party` reds the day it lands. On today's
+## catalog this admits exactly the two above and nothing else — verified by the anti-vacuity arm.
+func _enemy_targeted_effects() -> Dictionary:
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(ABILITIES))
+	if not (parsed is Dictionary):
+		return {}
+	var abilities: Variant = parsed.get("abilities", parsed)
+	var ally: Array[String] = ["self", "ally", "single_ally", "all_allies", "party"]
+	var out: Dictionary = {}
+	for aid in abilities.keys():
+		var a: Variant = abilities[aid]
+		if not (a is Dictionary):
+			continue
+		var e: String = str(a.get("effect", ""))
+		if e.is_empty() or str(a.get("target_type", "")) in ally:
+			continue
+		out[e] = out.get(e, []) + [str(aid)]
+	return out
+
+
+## Unrouted effects that share a stem with a ROUTED one, as [effect, the routed sibling].
+func _orphaned_family_members() -> Array:
+	var routed: Dictionary = _routed_effects()
+	var enemy: Dictionary = _enemy_targeted_effects()
+	var out: Array = []
+	for e in enemy.keys():
+		if routed.has(e):
+			continue
+		for r in routed.keys():
+			if str(e).begins_with(str(r) + "_"):
+				out.append([str(e), str(r)])
+				break
+	return out
+
+
+func test_an_enemy_targeted_effect_whose_FAMILY_is_routed_must_be_routed_too() -> void:
+	var routed: Dictionary = _routed_effects()
+	var enemy: Dictionary = _enemy_targeted_effects()
+	assert_gt(enemy.size(), 10,
+		"PREMISE: only %d enemy-targeted effects parsed — this arm would be vacuous" % enemy.size())
+	assert_true(routed.has("dispel"),
+		"CONTROL: `dispel` is not routed, so no stem exists for the family rule to match against")
+
+	var orphans: Array = _orphaned_family_members()
+	var msg: Array[String] = []
+	for o in orphans:
+		msg.append("%s (sibling `%s` is routed to '%s')" % [o[0], o[1], str(routed.get(o[1], ""))])
+	assert_eq(msg, [],
+		"%d enemy-targeted effect(s) share a stem with a routed effect but have no arm, so they take the catch-all's else branch and draw the generic DESCENDING blip while their own family plays an authored cue: %s" % [msg.size(), msg])
+
+
+func test_the_two_repaired_effects_route_to_the_DEBUFF_cue() -> void:
+	## Named, because the family rule above is satisfied by routing them ANYWHERE. Both remove or
+	## destabilise something on an enemy, so `debuff` is the cue their siblings already use — the
+	## buff cue would be the original defect with the opposite sign.
+	var routed: Dictionary = _routed_effects()
+	for e in ["dispel_one", "volatility_up_enemy"]:
+		assert_eq(str(routed.get(e, "")), "debuff",
+			"%s must route to the debuff cue like the rest of its family, not '%s'" % [e, str(routed.get(e, ""))])
+
+
+func test_the_family_rule_admits_only_what_was_actually_broken() -> void:
+	## ⛔ ANTI-VACUITY IN THE OTHER DIRECTION: a prefix rule is cheap to write too wide, and a wide
+	## one would demand an arm for every affliction that correctly reaches the blip. This pins the
+	## rule's REACH rather than its verdict — if a future catalog makes it claim a third effect, the
+	## claim is read before it is obeyed.
+	var routed: Dictionary = _routed_effects()
+	var enemy: Dictionary = _enemy_targeted_effects()
+	var claimed: Array[String] = []
+	for e in enemy.keys():
+		for r in routed.keys():
+			if str(e).begins_with(str(r) + "_"):
+				claimed.append(str(e))
+				break
+	claimed.sort()
+	assert_eq(claimed, ["dispel_one", "volatility_up_enemy"],
+		"the family rule now reaches a different set than the two it was derived for: %s. Read them before routing them — the blip is CORRECT for an unauthored affliction." % [claimed])

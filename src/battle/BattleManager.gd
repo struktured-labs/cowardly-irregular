@@ -6379,6 +6379,9 @@ func _award_stolen_gold(caster: Combatant, target: Combatant, verb: String = "st
 	print("  → Stole %d gold from %s!" % [credited, target.combatant_name])
 	battle_log_message.emit("[color=yellow]%s %s %d gold from %s![/color]" % [
 		caster.combatant_name, verb, credited, target.combatant_name])
+	# Every other gold gain cues this (victory count-up, treasure chests); a steal credited it in silence.
+	if SoundManager:
+		SoundManager.play_pickup("gold_pickup")
 
 
 ## The ONE place a steal rate is composed. Two paths roll for a steal — the pure Steal handler and Mug's physical branch — and each grew its own inline clamp, so tick 462 wired thiefs_glove into one and the steal_boost passive reached one. A Rogue equipping a passive promising "+30% steal success" got it on Steal and not on Mug, which reads as randomness rather than as a bug.
@@ -7213,6 +7216,9 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 					else:
 						print("  → %s failed to steal from %s!" % [caster.combatant_name, target.combatant_name])
 						battle_log_message.emit("[color=gray]%s couldn't steal anything from %s.[/color]" % [caster.combatant_name, target.combatant_name])
+						# A whiff, and it sounded the same as a success — BattleScene picks by effect name and cannot know which happened.
+						if SoundManager:
+							SoundManager.play_battle("attack_miss")
 		"cleanse":
 			## status_cured.ogg was composed and NOTHING played it: the cue is keyed `cured` while the
 			## effect is named `cleanse`, so no status_<effect> lookup could ever reach it, and
