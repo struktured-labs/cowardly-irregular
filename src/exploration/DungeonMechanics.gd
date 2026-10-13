@@ -766,7 +766,8 @@ func toggle_mirror(mirror_id: String) -> void:
 	_save_round2_state()
 	var sm := get_node_or_null("/root/SoundManager")
 	if sm:
-		sm.play_ui("door_open")
+		# Glass and metal on a pivot, not oak on hinges. Third of the four door_open sites to get its own voice.
+		sm.play_ui("mirror_turn")
 	rebuild_floor(int(_cave.current_floor))
 
 
