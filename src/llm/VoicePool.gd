@@ -177,12 +177,22 @@ static func quotes_phrase(line: String, phrases: Array) -> bool:
 func take_line(speaker: String, trigger: String) -> Dictionary:
 	if not is_enabled() or not store.has_line(speaker, trigger):
 		return {}
-	var slot := store.take(speaker, trigger)
-	store.save()
+	## PEEK, not take: the slot was spent before the audio was resolved, so every miss destroyed a
+	## line that cost an LLM call and a synthesis. A wedged mix is the case the cache itself guards
+	## against — get_cached keeps the key on purpose — and the slot was thrown away anyway.
+	var slot := store.peek(speaker, trigger)
 	var vs := get_node_or_null("/root/VoiceService")
 	var stream: AudioStream = vs.get_cached(speaker, str(slot["line"])) if vs != null else null
 	if stream == null:
+		## Blob gone (evicted, unreadable, or the voice changed under it) — the slot can never
+		## play, so spend it and let the filler replace it. Blob still there means a transient
+		## refusal: keep the slot and try again next turn rather than wedging it forever.
+		if vs == null or not vs.has_cached(speaker, str(slot["line"])):
+			store.take(speaker, trigger)
+			store.save()
 		return {}
+	store.take(speaker, trigger)
+	store.save()
 	_next_token += 1
 	var token := "pool:%d" % _next_token
 	_stash[token] = stream
