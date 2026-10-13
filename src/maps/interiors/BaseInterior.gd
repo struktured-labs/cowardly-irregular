@@ -474,6 +474,7 @@ func _place_examines(authored: Dictionary) -> int:
 	var scene_id := _get_area_id()
 	var offsets: Dictionary = _examine_offsets()
 	var entrance: Vector2 = spawn_points.get("entrance", Vector2(_get_map_width() / 2, _get_map_height() - 2))
+	var taken: Array = _occupied_interact_cells()
 	var placed := 0
 	for examine_id in authored.keys():
 		var entry = authored[examine_id]
@@ -487,7 +488,13 @@ func _place_examines(authored: Dictionary) -> int:
 		if not offsets.has(examine_id):
 			push_warning("[%s] examine '%s' has no offset, so it has no cell" % [scene_id, examine_id])
 			continue
-		var cell := Vector2i(entrance) + _examine_offset_for(str(examine_id))
+		var want := Vector2i(entrance) + _examine_offset_for(str(examine_id))
+		var cell := _resolve_examine_cell(want, taken)
+		if cell.x < 0:
+			push_warning("[%s] examine '%s' found no free walkable cell near %s" % [
+				scene_id, examine_id, str(want)])
+			continue
+		taken.append(cell)
 		var prop := ReadableProp.new()
 		prop.name = "Examine_" + str(examine_id)
 		prop.position = _examine_px(cell)
@@ -495,3 +502,46 @@ func _place_examines(authored: Dictionary) -> int:
 		npcs.add_child(prop)
 		placed += 1
 	return placed
+
+## ⛔ I SHIPPED THIS LOADER WITHOUT THIS AND IT WAS A REAL HOLE. The readable is added to `npcs`
+## AFTER `_setup_npcs`, so an offset landing on an NPC's cell stacked on it — and the placement sweep
+## does NOT rescue that: `_is_position_clear` answers about walls and furniture, never about who is
+## already standing there, so two nodes on one ALREADY-CLEAR cell both pass and neither moves.
+## Interaction is nearest-by-anchor and identical anchors never tie in the loser's favour, so one of
+## the two becomes unreachable while the sprites simply overlap on screen.
+##
+## ✅ AND THE DIRECTION IS THE 2026-10-12 RULING'S, NOT MY OWN PREFERENCE. cowir-main REJECTED
+## teaching the sweep to avoid the occupant, because moving an NPC trades a loud authoring error for
+## a silent content change (`test_a_relocation_says_when_the_cell_is_taken`'s header). So the sweep
+## is untouched: the EXAMINE steps aside, because its cell is DERIVED from an offset, while an NPC's
+## is authored. That is exactly what BaseVillage already does with the same two helpers — this is
+## the interior half catching up, not a new policy.
+func _occupied_interact_cells() -> Array:
+	var taken: Array = []
+	if npcs == null:
+		return taken
+	for n in npcs.get_children():
+		if n is Node2D:
+			taken.append(Vector2i((n as Node2D).position / float(TILE_SIZE)))
+	return taken
+
+
+## Nearest walkable, unoccupied cell to `want`; `want` itself when it is already good, and
+## Vector2i(-1, -1) when nothing within the radius works. Radius 2 rather than BaseVillage's 4: a
+## village square absorbs "a few cells off", and in a 20x16 room four cells is a quarter of the map.
+const _EXAMINE_SEARCH_RADIUS: int = 2
+
+
+func _resolve_examine_cell(want: Vector2i, taken: Array) -> Vector2i:
+	var layout: Array = _get_layout()
+	for r in range(0, _EXAMINE_SEARCH_RADIUS + 1):
+		for dy in range(-r, r + 1):
+			for dx in range(-r, r + 1):
+				if max(abs(dx), abs(dy)) != r:
+					continue
+				var c := want + Vector2i(dx, dy)
+				if c.x < 0 or c.y < 0 or c in taken:
+					continue
+				if InteriorPlacementSweep._is_cell_walkable(c, layout):
+					return c
+	return Vector2i(-1, -1)

@@ -156,6 +156,62 @@ func test_a_room_can_name_its_own_offset() -> void:
 		"and it must gate placement, not just answer a lookup")
 
 
+## ⛔ THE HOLE I SHIPPED WITH THE LOADER, and the sweep does not rescue it. A readable is added to
+## `npcs` AFTER `_setup_npcs`, so an offset landing on an NPC's cell stacked on it. The placement
+## sweep looks clear-cell-wise correct and is not competent here: `_is_position_clear` answers about
+## walls and furniture and never about who is already standing there, so two nodes on one
+## ALREADY-CLEAR cell both pass and NEITHER becomes a mover. Nearest-by-anchor with identical
+## anchors never ties in the loser's favour — one of the two is unreachable and on screen the
+## sprites just overlap.
+##
+## ✅ THE EXAMINE IS WHAT MOVES, PER cowir-main's 2026-10-12 RULING. Teaching the sweep to dodge the
+## occupant was proposed and REJECTED for villages, because moving an NPC trades a loud authoring
+## error for a silent content change (`test_a_relocation_says_when_the_cell_is_taken`'s header). A
+## readable's cell is DERIVED from an offset; an NPC's is authored. So the sweep is untouched and the
+## loader resolves, which is what BaseVillage has always done with the same two helpers.
+func test_a_readable_does_not_stack_on_an_npcs_cell() -> void:
+	var r = await _room()
+	## The entrance is (5,6); put a standing NPC exactly where the offset would land.
+	var squatter := Area2D.new()
+	squatter.name = "Occupant"
+	squatter.position = Vector2(3 * 32 + 16, 3 * 32 + 16)
+	r.npcs.add_child(squatter)
+	var occupied := Vector2i(3, 3)
+	assert_eq(Vector2i(squatter.position / 32.0), occupied, "CONTROL: the squatter holds cell (3,3)")
+
+	r.offsets = {"wants_a_taken_cell": Vector2i(-2, -3)}
+	assert_eq(Vector2i(5, 6) + Vector2i(-2, -3), occupied,
+		"CONTROL: the offset resolves to the squatter's cell, or this arm proves nothing")
+	assert_eq(r._place_examines({"wants_a_taken_cell": {"name": "N", "text": "prose"}}), 1,
+		"the row must still be placed — refusing it would lose authored prose")
+
+	var props := _readables(r)
+	assert_eq(props.size(), 1, "CONTROL: one readable to inspect")
+	if props.is_empty():
+		return
+	var at := Vector2i(props[0].position / 32.0)
+	assert_ne(at, occupied,
+		"the readable stacked on the NPC at %s — one of the two answers every approach cell and the other is unreachable" % str(at))
+	assert_true(Sweep._is_cell_walkable(at, r._get_layout()),
+		"it stepped aside onto a non-floor cell %s" % str(at))
+	assert_eq(squatter.position, Vector2(3 * 32 + 16, 3 * 32 + 16),
+		"the AUTHORED NPC must not have moved — the derived position is the one that yields")
+
+
+## And the control that keeps the resolver from becoming a relocator: an offset on a FREE cell lands
+## exactly there. A resolver that nudges everything passes the arm above and silently moves content.
+func test_a_free_cell_is_used_exactly_as_authored() -> void:
+	var r = await _room()
+	r.offsets = {"free_cell": Vector2i(-2, -3)}
+	assert_eq(r._place_examines({"free_cell": {"name": "N", "text": "prose"}}), 1, "CONTROL: placed")
+	var props := _readables(r)
+	assert_eq(props.size(), 1, "CONTROL: one readable")
+	if props.is_empty():
+		return
+	assert_eq(props[0].position, Vector2(3 * 32 + 16, 3 * 32 + 16),
+		"an unobstructed offset must land on its own cell, centred — the resolver may only move a BLOCKED one")
+
+
 ## ⛔ THE REFUSALS cowir-main named. Each is a row that would otherwise place a prop with nothing
 ## behind it — a mute interactable, which is worse than an absent one because it answers a press.
 func test_a_row_with_no_offset_and_a_row_with_no_text_are_both_refused() -> void:
@@ -250,25 +306,66 @@ func test_examines_are_placed_before_the_placement_sweep() -> void:
 		"examines must be placed BEFORE the sweep, or a readable authored onto a table stays on it")
 
 
-## And the consequence, measured rather than inferred from the order above: a readable whose offset
-## lands on a wall is moved onto floor by the shared sweep.
-func test_a_readable_on_a_wall_is_relocated_by_the_shared_sweep() -> void:
+## ✅ THE TWO LAYERS DIVIDE THE WORK, AND THIS PAIR OF ARMS IS WHY THE ORDER STILL MATTERS. The
+## loader resolves WALLS and OCCUPANCY, because it is the thing that knows the layout and who is
+## already in `npcs`. It does NOT know furniture — the rects come from `decorations` sprites, which
+## is the sweep's business. So a wall offset never reaches the sweep, and a FURNITURE offset only the
+## sweep can fix.
+##
+## ⚠️ THIS ARM USED TO ASSERT THE SWEEP MOVED A READABLE OFF A WALL, AND ADDING THE RESOLVER MADE IT
+## FAIL — correctly. The loader now resolves the wall cell before placement, so the sweep has nothing
+## left to move and the position legitimately does not change. A premise can go stale because the
+## code got BETTER, and the honest repair is to point each arm at the layer that actually owns its
+## case rather than to loosen the assert.
+func test_the_loader_resolves_a_wall_offset_itself() -> void:
 	var r = await _room()
 	## entrance (5,6) + (-5,-6) = (0,0), the top-left corner, which this room's layout walls.
 	r.offsets = {"on_a_wall": Vector2i(-5, -6)}
+	assert_false(Sweep._is_cell_walkable(Vector2i(0, 0), r._get_layout()),
+		"CONTROL: the target cell really is a wall, or this arm proves nothing")
 	assert_eq(r._place_examines({"on_a_wall": {"name": "W", "text": "t"}}), 1, "CONTROL: it was placed")
 	var props := _readables(r)
 	assert_eq(props.size(), 1, "CONTROL: one readable to follow")
 	if props.is_empty():
 		return
+	var at := Vector2i(props[0].position / 32.0)
+	assert_ne(at, Vector2i(0, 0), "the readable was placed on the wall cell")
+	assert_true(Sweep._is_cell_walkable(at, r._get_layout()),
+		"and it must land on floor, not merely elsewhere: %s" % str(at))
+
+
+## ⛔ THE HALF ONLY THE SWEEP CAN DO: furniture. `_resolve_examine_cell` reads the layout and knows
+## nothing about decoration rects, so a readable on a table is placed and then relocated — which is
+## the whole reason the loader runs BEFORE `_validate_placements` instead of after it.
+func test_a_readable_on_furniture_is_relocated_by_the_shared_sweep() -> void:
+	var r = await _room()
+	## A 48x48 table on cell (3,3) — past MIN_FURNITURE_SIZE_PX, on FLOOR, so the loader's own
+	## walkability check cannot see it and will happily place there.
+	var tex := ImageTexture.create_from_image(Image.create(48, 48, false, Image.FORMAT_RGBA8))
+	var table := Sprite2D.new()
+	table.name = "Table"
+	table.texture = tex
+	table.centered = true
+	table.position = Vector2(3 * 32 + 16, 3 * 32 + 16)
+	r.decorations.add_child(table)
+	await get_tree().physics_frame
+	assert_true(Sweep._is_cell_walkable(Vector2i(3, 3), r._get_layout()),
+		"CONTROL: the table's cell is FLOOR — if it were wall the loader would catch it and this arm would prove nothing")
+
+	r.offsets = {"on_a_table": Vector2i(-2, -3)}
+	assert_eq(r._place_examines({"on_a_table": {"name": "T", "text": "t"}}), 1, "CONTROL: placed")
+	var props := _readables(r)
+	assert_eq(props.size(), 1, "CONTROL: one readable")
+	if props.is_empty():
+		return
 	var before: Vector2 = props[0].position
-	assert_false(Sweep._is_cell_walkable(Vector2i(0, 0), r._get_layout()),
-		"CONTROL: the chosen cell really is a wall, or this arm proves nothing")
+	assert_eq(Vector2i(before / 32.0), Vector2i(3, 3),
+		"CONTROL: the loader placed it ON the table, which is what makes the sweep the subject here")
 	r._validate_placements()
 	var after: Vector2 = props[0].position
-	assert_ne(after, before, "the sweep must move a readable off a wall cell")
+	assert_ne(after, before, "the sweep must move a readable off a furniture rect")
 	assert_true(Sweep._is_cell_walkable(Vector2i(after / 32.0), r._get_layout()),
-		"and it must land on floor, not merely somewhere else: %s" % str(after))
+		"and onto floor: %s" % str(after))
 
 
 ## ⛔ THE INVARIANT THAT MAKES AN OFFSET ANCHOR WORTH HAVING, and it was unguarded. Every room
