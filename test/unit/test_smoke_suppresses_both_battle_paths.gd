@@ -72,3 +72,20 @@ func test_the_spawner_really_has_that_api_and_despawns() -> void:
 	var body := src.substr(i, 200)
 	assert_true(body.contains("_despawn_all()"),
 		"disabling must also clear roamers already on the map, or the ones already spawned still collide")
+
+
+## .669 pre-gate: the roamer leg re-arms the spawner, fights, and comes back to a fresh ENABLED one.
+## A second roamer started a battle before the next map leg and five legs bailed.
+func test_the_roamer_leg_quiets_the_map_it_comes_back_to() -> void:
+	var code: String = load("res://test/unit/helpers/gd_source.gd").code_of(GL_SRC)
+	var at: int = code.find("func _smoke_player_path_battle")
+	var end: int = code.find("\nfunc ", at + 1)
+	assert_gt(at, -1, "CONTROL: the roamer leg exists")
+	assert_gt(end, at, "CONTROL: the roamer leg ends at a next function")
+	var body: String = code.substr(at, end - at)
+	var rearm: int = body.find("set_enabled(true)")
+	assert_gt(rearm, -1, "CONTROL: the leg re-arms the spawner, which is why it must quiet again")
+	var back: int = body.find("\"monster_spawner\" in current_scene", rearm)
+	assert_gt(back, rearm, "CONTROL: the leg waits for an exploration scene to come back")
+	assert_gt(body.find("_smoke_quiet_the_roamers()", back), back,
+		"the map the fight returns to has a live spawner — quiet it before the leg hands back")

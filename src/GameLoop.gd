@@ -998,10 +998,15 @@ func _smoke_player_path_battle() -> void:
 	## scene is up, so a leg that stopped at INACTIVE would leave every later leg shooting this one.
 	## An exploration scene is the thing that owns a monster_spawner.
 	var rewind: float = 0.0
+	var polls: int = 0
 	while rewind < 15.0 and not (current_scene != null and is_instance_valid(current_scene) and "monster_spawner" in current_scene):
-		_smoke_tap("ui_accept")
-		await get_tree().create_timer(0.5).timeout
-		rewind += 0.5
+		if polls % 5 == 0:
+			_smoke_tap("ui_accept")
+		polls += 1
+		await get_tree().create_timer(0.1).timeout
+		rewind += 0.1
+	## The map that comes back has a fresh ENABLED spawner: .669's pre-gate took a second roamer battle here and five legs bailed.
+	_smoke_quiet_the_roamers()
 	if BattleManager.current_state != BattleManager.BattleState.INACTIVE:
 		print("[SMOKE] FAIL: the player-path battle never ended — every later leg would bail")
 		_smoke_failed = true
