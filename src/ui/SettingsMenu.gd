@@ -313,7 +313,7 @@ func _build_ui() -> void:
 	# Debug Log toggle
 	var debug_item = _create_toggle_setting(
 		"Debug Log",
-		"Show debug messages on screen",
+		"Show debug messages on screen — also unlocks Advanced/Meta jobs and the debug actions below",
 		debug_log_enabled,
 		1
 	)
