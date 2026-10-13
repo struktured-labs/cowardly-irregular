@@ -1,6 +1,22 @@
 #!/usr/bin/env bash
 # Print what a human needs from a render-smoke log: the verdict, and WHY.
 #
+# ⚠️ WHAT A GREEN FROM THIS LOG DOES NOT COVER: DWELL. The render smoke REACHES states and
+# captures them — the wipe leg emits `[SMOKE] wipe: game over after 0.7s at round 5`, saves the
+# frame, and the run ends on the next line. It never SITS anywhere. So any defect whose trigger
+# is "still here N seconds later" is structurally invisible here and a PASS is not weak evidence
+# of its absence, it is NO evidence. Measured 2026-10-12 on the v3.33.667-alpha log: 10 party_ko
+# and 3 game_over occurrences, and ZERO of @cowir-music's 1401 `save_game refused` lines from
+# struktured's 10-05 session — whose cause was a retry firing once per 30s across ~11.7h idle at
+# the defeat prompt (11.7*3600/30 = 1,404 vs 1,401 observed). Entering the state is all this
+# smoke does.
+#
+# ⛔ And do not 'fix' it with a dwell in the smoke: a leg long enough to see a 30s period costs
+# that on every publish forever, and the emitting leg is in src/GameLoop.gd, not in tools/. The
+# shape that works is @cowir-main's from the remove_status case — a GUT arm that ADVANCES the
+# timer in-process. The first dwell I proposed was 'a few seconds', which observes 0 retries at
+# a 30s period: it would have asserted 0, passed, and proved nothing.
+#
 # WHY THIS IS A TOOL AND NOT A GREP
 # ---------------------------------
 # deploy_web.sh used to end the render-smoke gate with
