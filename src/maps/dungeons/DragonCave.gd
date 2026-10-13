@@ -539,7 +539,7 @@ func _setup_transitions_for_floor(floor_num: int) -> void:
 		var anchor = "stairs_up" if floor_num == 1 else "stairs_up"
 		var pos = spawn_points.get(anchor, Vector2(6 * TILE_SIZE, 6 * TILE_SIZE))
 		# A fixed two-tiles-left landed in a wall or the map border in 7 maze floors, some the rest stop before a boss.
-		save_pt.position = _sign_position(_cell_of(pos) + Vector2i(-2, 0), floor_num)
+		save_pt.position = _save_crystal_position(_cell_of(pos) + Vector2i(-2, 0), floor_num)
 		save_pt.save_requested.connect(func():
 			if SaveSystem and SaveSystem.has_method("quick_save"):
 				SaveSystem.quick_save()
@@ -1036,6 +1036,58 @@ var _sign_taken: Dictionary = {}
 func _sign_position(mark: Vector2i, floor_num: int) -> Vector2:
 	var rows: Array = floor_layouts.get(floor_num, floor_layouts.get(1, []))
 	return Signpost.floor_spot(rows, mark, TILE_SIZE, _sign_taken)
+
+
+## ⛔ A SAVE CRYSTAL MAY NOT BE APPROACHABLE FROM A CELL THAT TELEPORTS YOU. `_sign_position`
+## resolves a mark to the nearest plain-floor cell and its `taken` set excludes each spawn's OWN
+## cell — but not the cells AROUND it. So when the authored two-tiles-left mark is not plain floor,
+## the ring search lands the crystal in the cell next to the stairs, and the stair becomes one of the
+## crystal's approach cells. Stairs fire on `body_entered`, with no input from the player.
+##
+## Measured 2026-10-13 on Ice and Shadow floor 4 — the PRE-BOSS rest crystal: StairsUp at (560,432)
+## with a 48x48 box, crystal resolved to (528,432), so the cell one step east of the crystal IS the
+## stair centre. Walking to the save point from that side sent the player UP to the boss floor
+## instead of letting them save before the fight. Fire and Lightning were clean, by layout luck.
+##
+## ✅ TWO CELLS IS PROVABLY ENOUGH AND THE NUMBER COMES FROM THE BOX, NOT THE MAP: a stair's half
+## extent is 24 px and cells are 32, so a crystal two cells out puts its nearest approach cell 32 px
+## from the stair centre, outside the box. One cell out puts an approach cell ON it. The guard checks
+## the actual overlap rather than this distance, so a changed STAIRS_BOX reds there rather than here.
+func _save_crystal_position(mark: Vector2i, floor_num: int) -> Vector2:
+	var blocked: Dictionary = _sign_taken.duplicate()
+	for key in ["stairs_up", "stairs_down", "entrance", "boss"]:
+		if not spawn_points.has(key):
+			continue
+		var sc: Vector2i = _cell_of(spawn_points[key])
+		for ny in range(-1, 2):
+			for nx in range(-1, 2):
+				blocked[sc + Vector2i(nx, ny)] = true
+	var rows: Array = floor_layouts.get(floor_num, floor_layouts.get(1, []))
+	## ⚠️ AND IT MUST NOT BE SHOVED SOMEWHERE USELESS. Avoiding the stairs alone left Shadow's
+	## pre-boss crystal with ONE standable approach cell — the other half of the chest lesson, where
+	## "move it until it stops colliding" is satisfiable by moving it where nobody can stand. So keep
+	## asking for the next candidate until one has real access.
+	##
+	## ✅ ACCESS IS COUNTED IN `Signpost.SIGN_GROUND`, THE RESOLVER'S OWN GROUND SET, rather than in a
+	## second copy of the tile vocabulary. `_dungeon_tile_type` maps a dozen characters and falls
+	## through to FLOOR, so a private re-implementation here would be a second model of the thing
+	## being checked — which is how three of my guards this week ended up agreeing with themselves.
+	var spot: Vector2 = Vector2.ZERO
+	for attempt in 8:
+		spot = Signpost.floor_spot(rows, mark, TILE_SIZE, blocked)
+		var c: Vector2i = _cell_of(spot)
+		var access := 0
+		for n in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+			var q: Vector2i = c + n
+			if q.y < 0 or q.y >= rows.size() or q.x < 0 or q.x >= str(rows[q.y]).length():
+				continue
+			if str(rows[q.y])[q.x] in Signpost.SIGN_GROUND:
+				access += 1
+		if access >= 2:
+			break
+		blocked[c] = true
+	_sign_taken[_cell_of(spot)] = true
+	return spot
 
 
 func _cell_of(px: Vector2) -> Vector2i:
