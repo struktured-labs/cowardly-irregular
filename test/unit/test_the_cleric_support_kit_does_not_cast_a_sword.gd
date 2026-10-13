@@ -17,14 +17,12 @@ extends GutTest
 ## The CAST was the sword.
 
 const SWORD := "ability_physical"
-const KIT := ["protect", "shell", "regen", "esuna"]
+const KIT := ["protect", "shell", "regen", "esuna",
+		"scan", "shadow_step", "smoke_bomb", "provoke"]
 
 ## Still unmapped, so still thumping. A LEDGER, not an aspiration: it reds when someone maps one of
 ## these, which is the point — the next lane to fix a Rogue or Fighter cue must update this line, and
 ## a declaration that outlives its fact is worse than none.
-const STILL_THUMPING := ["scan", "shadow_step", "smoke_bomb", "provoke"]
-
-
 func _manifest() -> Dictionary:
 	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/sfx_manifest.json"))
 	assert_true(parsed is Dictionary, "VOID: sfx_manifest.json did not parse")
@@ -97,13 +95,47 @@ func test_the_cue_that_actually_plays_is_the_authored_one() -> void:
 		"these abilities do not play their own authored cue: %s" % [wrong])
 
 
-func test_the_rest_of_the_reachable_gap_is_still_named() -> void:
-	## The ledger. These four are reachable in normal play and still cast a sword; naming them is how
-	## the gap stays visible instead of being rediscovered. If one gains a cue this arm reds — move it
-	## out of STILL_THUMPING and into KIT in the same commit.
-	var wired: Array[String] = []
-	for id in STILL_THUMPING:
-		if SoundManager._ability_sounds.has(id):
-			wired.append("%s -> %s" % [id, str(SoundManager._ability_sounds[id])])
-	assert_eq(wired, [],
-		"these now have a cue, which is good — move them from STILL_THUMPING into KIT so this ledger keeps matching the tree: %s" % [wired])
+func test_every_support_ability_a_PLAYER_can_cast_has_a_cue_of_its_own() -> void:
+	## ⛔ THIS WAS A HAND-LIST OF STILL-THUMPING IDS AND I EMPTIED IT IN THE SAME COMMIT THAT FIXED
+	## THE LAST FOUR — which made the arm iterate nothing and pass trivially, while its comment
+	## claimed it "still reds if someone re-adds a reachable ability". A control that cannot fail,
+	## written by me, two minutes old, and caught only by asking what its mutation would be.
+	##
+	## Derived instead, so it cannot go vacuous: REACHABLE = support-typed AND owned by a starter
+	## job. Every member must carry an id-keyed cue, because the derived pass skips `support` and
+	## play_ability's default is ability_physical, a sword. A new reachable support ability reds this
+	## the day it lands; the 65 monster-only and 11 debug-gated ones are out of scope by the same
+	## derivation rather than by a list someone has to remember to update.
+	const STARTERS := ["fighter", "cleric", "mage", "rogue", "bard"]
+	var ap: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/abilities.json"))
+	var jp: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/jobs.json"))
+	assert_true(ap is Dictionary and jp is Dictionary, "VOID: abilities.json or jobs.json did not parse")
+	if not (ap is Dictionary and jp is Dictionary):
+		return
+	var abilities: Dictionary = (ap as Dictionary).get("abilities", ap)
+	var jobs: Dictionary = (jp as Dictionary).get("jobs", jp)
+
+	var owned_by_starter: Dictionary = {}
+	for jid in jobs.keys():
+		if not (str(jid) in STARTERS):
+			continue
+		var blob: String = JSON.stringify(jobs[jid])
+		for aid in abilities.keys():
+			if blob.contains("\"%s\"" % str(aid)):
+				owned_by_starter[str(aid)] = true
+
+	var reachable: Array[String] = []
+	for aid in abilities.keys():
+		var a: Variant = abilities[aid]
+		if a is Dictionary and str((a as Dictionary).get("type", "")) == "support" and owned_by_starter.has(str(aid)):
+			reachable.append(str(aid))
+	reachable.sort()
+	assert_gt(reachable.size(), 4,
+		"CONTROL: derived only %d reachable support abilities — the derivation broke and this arm is vacuous, which is exactly what the hand-list it replaced became" % reachable.size())
+
+	var thumping: Array[String] = []
+	for aid in reachable:
+		if not SoundManager._ability_sounds.has(aid):
+			thumping.append(aid)
+	assert_eq(thumping, [],
+		"these support abilities are castable by a starter job and have no id-keyed cue, so play_ability falls back to ability_physical and they cast a SWORD: %s" % [thumping])
