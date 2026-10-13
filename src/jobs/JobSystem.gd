@@ -575,7 +575,12 @@ func learn_abilities_for_level(combatant: Combatant, new_level: int) -> Array:
 
 ## First meeting learns each passive_abilities id and equips it when a slot is free.
 ## Already-learned ids are left alone, so an unequip and every later Continue stay put.
+## Passive ids the last grant taught but could not equip (bar full). The job menu reads it to tell the player.
+var last_grant_left_unequipped: Array[String] = []
+
+
 func _grant_roster_passives(combatant: Combatant, job: Dictionary) -> void:
+	last_grant_left_unequipped.clear()
 	if combatant == null or not is_instance_valid(combatant):
 		return
 	var ids: Variant = job.get("passive_abilities", [])
@@ -592,6 +597,7 @@ func _grant_roster_passives(combatant: Combatant, job: Dictionary) -> void:
 			combatant.learn_passive(passive_id)
 		## Learned either way; equipped only into a free slot. A full bar warned once per passive on every job change.
 		if combatant.equipped_passives.size() >= combatant.max_passive_slots:
+			last_grant_left_unequipped.append(passive_id)
 			continue
 		if passive_system != null and passive_system.has_method("equip_passive"):
 			passive_system.equip_passive(combatant, passive_id)

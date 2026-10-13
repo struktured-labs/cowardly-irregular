@@ -724,13 +724,25 @@ func _assign_selected_job() -> void:
 		success = JobSystem.assign_secondary_job(character, job_id)
 
 	if success:
+		var waiting: String = unequipped_grant_notice(JobSystem.last_grant_left_unequipped.size())
 		_adopt_job_profile(old_key, owned_gear)
 		job_changed.emit(character, job_id, selected_slot == 1)
 		SoundManager.play_ui("menu_select")
 		mode = Mode.SLOT_SELECT
 		_build_ui()
+		if waiting != "":
+			Toast.show(self, waiting)
 	else:
 		SoundManager.play_ui("menu_error")
+
+
+## What the player is told when a job taught passives the full bar could not take. "" when there is nothing to say.
+static func unequipped_grant_notice(count: int) -> String:
+	if count <= 0:
+		return ""
+	if count == 1:
+		return "Learned 1 passive — your passive slots are full. Equip it from Abilities."
+	return "Learned %d passives — your passive slots are full. Equip them from Abilities." % count
 
 
 ## One owner for the profile swap. load_profile recalculates; fork_profile does not, so every arm recalcs after the swap.
