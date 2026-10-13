@@ -711,15 +711,56 @@ func _build_ui() -> void:
 	_update_selection()
 
 
+## Padding inside an option chip, around the widest option string.
+const CHIP_PAD_X := 14.0
+const CHIP_PAD_Y := 6.0
+## Gap between the description's last line and the option row.
+const DESC_TO_OPTIONS_GAP := 6.0
+
+
+## The font these rows actually draw with. Measured equal to a Label's own `get_theme_font("font")`
+## (both resolve to Open Sans SemiBold here), and available without a node in the tree.
+func _row_font() -> Font:
+	return ThemeDB.fallback_font
+
+
+func _line_h(font_size: int) -> float:
+	var f: Font = _row_font()
+	return float(font_size) * 1.4 if f == null else f.get_height(font_size)
+
+
+## A chip big enough for the longest option AT THE CURRENT TEXT SIZE.
+##
+## The literals this replaces (40x24, and chip_w x20 in the small variant) were sized for 100%
+## while the option label's font is `TextScale.scaled(10)`, so the text drew outside its own box as
+## soon as the player raised Text Size. Measured against the real rows: option text over its box by
+## +8px at 125%, +15px at 150%, +33px at 200% — a box 40 wide holding 73px of text.
+func _chip_size(options: Array, base_w: float, base_h: float, font_size: int) -> Vector2:
+	var f: Font = _row_font()
+	if f == null:
+		return Vector2(base_w, base_h)
+	var widest := 0.0
+	for o in options:
+		widest = maxf(widest, f.get_string_size(str(o), HORIZONTAL_ALIGNMENT_CENTER, -1, font_size).x)
+	return Vector2(maxf(base_w, widest + CHIP_PAD_X), maxf(base_h, f.get_height(font_size) + CHIP_PAD_Y))
+
+
 func _create_option_setting(label_text: String, description: String, options: Array, current_index: int, index: int) -> Control:
 	"""Create an option selector setting control"""
+	## Geometry up front: the row's height depends on the chips, which depend on the text size, and
+	## the container has to be created with its final minimum size.
+	var opt_fs: int = TextScale.scaled(10)
+	var chip: Vector2 = _chip_size(options, 40.0, 24.0, opt_fs)
+	var options_y: float = 22.0 + _line_h(opt_fs) + DESC_TO_OPTIONS_GAP
+	var row_h: float = maxf(80.0, options_y + chip.y + 8.0)
+
 	var container = Control.new()
-	container.custom_minimum_size = Vector2(400, 80)
+	container.custom_minimum_size = Vector2(400, row_h)
 
 	# Selection highlight
 	var highlight = ColorRect.new()
 	highlight.color = SELECTED_COLOR if index == selected_index else Color.TRANSPARENT
-	highlight.size = Vector2(400, 80)
+	highlight.size = Vector2(400, row_h)
 	highlight.name = "Highlight"
 	container.add_child(highlight)
 
@@ -741,13 +782,15 @@ func _create_option_setting(label_text: String, description: String, options: Ar
 
 	# Options row
 	var options_container = HBoxContainer.new()
-	options_container.position = Vector2(8, 44)
+	## Derived, not 44: the description above uses a SCALED font, so a literal y put the options
+	## row through the description's last line at 125% and above (+2px at 125%, +12px at 200%).
+	options_container.position = Vector2(8, options_y)
 	options_container.name = "OptionsContainer"
 	container.add_child(options_container)
 
 	for i in range(options.size()):
 		var option_bg = ColorRect.new()
-		option_bg.custom_minimum_size = Vector2(40, 24)  # Smaller boxes to fit all 7
+		option_bg.custom_minimum_size = chip  # was a flat 40x24, which the scaled text outgrew
 		option_bg.color = OPTION_SELECTED if i == current_index else OPTION_BG
 		option_bg.name = "OptionBG_%d" % i
 		options_container.add_child(option_bg)
@@ -756,9 +799,13 @@ func _create_option_setting(label_text: String, description: String, options: Ar
 		option_label.text = options[i]
 		option_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		option_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		option_label.size = Vector2(40, 24)
+		## The chip is sized to fit, and this makes it impossible for the label to draw outside it
+		## anyway: an assigned size is otherwise clamped up to the text's own content width.
+		option_label.clip_text = true
+		option_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+		option_label.size = chip
 		option_label.position = Vector2(0, 0)
-		option_label.add_theme_font_size_override("font_size", TextScale.scaled(10))  # Smaller font
+		option_label.add_theme_font_size_override("font_size", opt_fs)
 		option_label.add_theme_color_override("font_color", Color.YELLOW if i == current_index else TEXT_COLOR)
 		option_label.name = "OptionLabel_%d" % i
 		option_bg.add_child(option_label)
@@ -774,13 +821,23 @@ func _create_option_setting(label_text: String, description: String, options: Ar
 
 func _create_volume_setting(label_text: String, description: String, options: Array, current_index: int, index: int) -> Control:
 	"""Create a volume slider setting control"""
+	## The chips show `options[i] + "%"`, so they are measured against what is DRAWN, not the raw
+	## option — a chip sized for "80" is too narrow for "80%".
+	var opt_fs: int = TextScale.scaled(10)
+	var shown: Array = []
+	for o in options:
+		shown.append(str(o) + "%")
+	var chip: Vector2 = _chip_size(shown, 50.0, 20.0, opt_fs)
+	var options_y: float = 22.0 + _line_h(opt_fs) + DESC_TO_OPTIONS_GAP
+	var row_h: float = maxf(60.0, options_y + chip.y + 8.0)
+
 	var container = Control.new()
-	container.custom_minimum_size = Vector2(400, 60)
+	container.custom_minimum_size = Vector2(400, row_h)
 
 	# Selection highlight
 	var highlight = ColorRect.new()
 	highlight.color = SELECTED_COLOR if index == selected_index else Color.TRANSPARENT
-	highlight.size = Vector2(400, 60)
+	highlight.size = Vector2(400, row_h)
 	highlight.name = "Highlight"
 	container.add_child(highlight)
 
@@ -802,13 +859,14 @@ func _create_volume_setting(label_text: String, description: String, options: Ar
 
 	# Options row
 	var options_container = HBoxContainer.new()
-	options_container.position = Vector2(8, 38)
+	## Derived for the same reason as the other option rows.
+	options_container.position = Vector2(8, options_y)
 	options_container.name = "OptionsContainer"
 	container.add_child(options_container)
 
 	for i in range(options.size()):
 		var option_bg = ColorRect.new()
-		option_bg.custom_minimum_size = Vector2(50, 20)
+		option_bg.custom_minimum_size = chip  # was a flat 50x20
 		option_bg.color = OPTION_SELECTED if i == current_index else OPTION_BG
 		option_bg.name = "OptionBG_%d" % i
 		options_container.add_child(option_bg)
@@ -817,8 +875,12 @@ func _create_volume_setting(label_text: String, description: String, options: Ar
 		option_label.text = options[i] + "%"
 		option_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		option_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		option_label.size = Vector2(50, 20)
-		option_label.add_theme_font_size_override("font_size", TextScale.scaled(10))
+		## The chip is sized to fit, and this makes it impossible for the label to draw outside it
+		## anyway: an assigned size is otherwise clamped up to the text's own content width.
+		option_label.clip_text = true
+		option_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+		option_label.size = chip
+		option_label.add_theme_font_size_override("font_size", opt_fs)
 		option_label.add_theme_color_override("font_color", Color.YELLOW if i == current_index else TEXT_COLOR)
 		option_label.name = "OptionLabel_%d" % i
 		option_bg.add_child(option_label)
@@ -840,13 +902,18 @@ func _battle_speed_chip_width() -> int:
 
 func _create_option_setting_small(label_text: String, description: String, options: Array, current_index: int, index: int, chip_w: int = 60) -> Control:
 	"""Create a smaller option selector setting control"""
+	var opt_fs: int = TextScale.scaled(10)
+	var chip: Vector2 = _chip_size(options, float(chip_w), 20.0, opt_fs)
+	var options_y: float = 22.0 + _line_h(opt_fs) + DESC_TO_OPTIONS_GAP
+	var row_h: float = maxf(60.0, options_y + chip.y + 8.0)
+
 	var container = Control.new()
-	container.custom_minimum_size = Vector2(400, 60)
+	container.custom_minimum_size = Vector2(400, row_h)
 
 	# Selection highlight
 	var highlight = ColorRect.new()
 	highlight.color = SELECTED_COLOR if index == selected_index else Color.TRANSPARENT
-	highlight.size = Vector2(400, 60)
+	highlight.size = Vector2(400, row_h)
 	highlight.name = "Highlight"
 	container.add_child(highlight)
 
@@ -868,13 +935,14 @@ func _create_option_setting_small(label_text: String, description: String, optio
 
 	# Options row
 	var options_container = HBoxContainer.new()
-	options_container.position = Vector2(8, 38)
+	## Derived for the same reason as the full-size row above.
+	options_container.position = Vector2(8, options_y)
 	options_container.name = "OptionsContainer"
 	container.add_child(options_container)
 
 	for i in range(options.size()):
 		var option_bg = ColorRect.new()
-		option_bg.custom_minimum_size = Vector2(chip_w, 20)
+		option_bg.custom_minimum_size = chip  # chip_w is the FLOOR now, not the width
 		option_bg.color = OPTION_SELECTED if i == current_index else OPTION_BG
 		option_bg.name = "OptionBG_%d" % i
 		options_container.add_child(option_bg)
@@ -883,8 +951,12 @@ func _create_option_setting_small(label_text: String, description: String, optio
 		option_label.text = options[i]
 		option_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		option_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		option_label.size = Vector2(chip_w, 20)
-		option_label.add_theme_font_size_override("font_size", TextScale.scaled(10))
+		## The chip is sized to fit, and this makes it impossible for the label to draw outside it
+		## anyway: an assigned size is otherwise clamped up to the text's own content width.
+		option_label.clip_text = true
+		option_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+		option_label.size = chip
+		option_label.add_theme_font_size_override("font_size", opt_fs)
 		option_label.add_theme_color_override("font_color", Color.YELLOW if i == current_index else TEXT_COLOR)
 		option_label.name = "OptionLabel_%d" % i
 		option_bg.add_child(option_label)
