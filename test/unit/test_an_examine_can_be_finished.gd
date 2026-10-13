@@ -75,7 +75,7 @@ func _toast_strings() -> Array:
 				var t: String = str(node.get(field))
 				var words: int = t.split(" ", false).size()
 				if words >= PROSE_WORDS:
-					out.append({"map": path.get_file(), "field": field, "words": words})
+					out.append({"map": path.get_file(), "field": field, "words": words, "text": t})
 	_corpus = out
 	_corpus_built = true
 	return out
@@ -130,3 +130,87 @@ func test_the_hold_tracks_the_text() -> void:
 func test_a_prose_string_outlasts_the_old_whole_lifetime() -> void:
 	assert_gt(QuestExaminePoint.toast_hold_for(20), 3.2,
 		"a 20-word examine holds only %.2fs — the label used to live 3.2s, so this is not an improvement" % QuestExaminePoint.toast_hold_for(20))
+
+
+## ⛔ THE RECT WAS A LIE: a flat `Vector2(300, 36)` for a block that measures 296x80px at that width
+## and font — five lines in a two-line box, +44px past it. A Label does not clip by default, so the
+## overflow drew DOWNWARD from y=-58 over the prop being examined and the player beside it.
+func test_every_toast_string_gets_a_rect_that_holds_it() -> void:
+	var rows: Array = await _toast_strings()
+	var grew := 0
+	for r in rows:
+		if QuestExaminePoint.toast_height_for(str(r["text"])) > QuestExaminePoint.TOAST_MIN_HEIGHT:
+			grew += 1
+	assert_gt(grew, 0,
+		"not one of the %d toast strings needs more than the authored two-line box — either the corpus is wrong or the rect was never the problem" % rows.size())
+	gut.p("  strings needing more than the %.0fpx two-line box: %d of %d" % [
+		QuestExaminePoint.TOAST_MIN_HEIGHT, grew, rows.size()])
+
+
+## 🔑 THE PLAYER-FACING INVARIANT: the label grows UPWARD. Its bottom edge must sit where the
+## authored rect's bottom sat for EVERY string, so a longer line rises away from the player instead
+## of covering them. This is the arm that would fail if someone grew the rect downward instead.
+func test_a_longer_toast_grows_upward_not_over_the_player() -> void:
+	var want: float = QuestExaminePoint.TOAST_BASELINE_Y + QuestExaminePoint.TOAST_MIN_HEIGHT
+	var drifted: Array = []
+	for r in await _toast_strings():
+		## Both halves come from the SHIPPED seams. An earlier version of this arm recomputed the
+		## position here, which reduces to BASELINE + MIN algebraically — it could not fail.
+		var h: float = QuestExaminePoint.toast_height_for(str(r["text"]))
+		var bottom: float = QuestExaminePoint.toast_position_for(str(r["text"])).y + h
+		if absf(bottom - want) > 0.01:
+			drifted.append("%s.%s (bottom %.1f, want %.1f)" % [r["map"], r["field"], bottom, want])
+	assert_eq(drifted, [], "these toasts would extend below the authored baseline, over the player: %s" % [drifted])
+
+
+## The floor still holds for a prompt-length string, so a short idle_text is not given a tall box.
+func test_a_short_string_stays_at_the_floor() -> void:
+	assert_eq(QuestExaminePoint.toast_height_for("Locked."), QuestExaminePoint.TOAST_MIN_HEIGHT,
+		"a seven-character string must sit at the floor, not be measured below it")
+
+
+## ⛔ THE SETTLED RECT, READ ONE LAYOUT PASS LATER — the arm @cowir-adhoc's bench thread earned.
+## `Control.size` returns what you just assigned; the clamp to `get_minimum_size()` lands on the
+## NEXT layout pass, so an immediate read agrees with the assignment on every ordering and proves
+## nothing. Three in-repo benches disagreed because they read at different moments.
+##
+## 🔑 HEIGHT is structurally safe here and WIDTH is the open axis: the clamp only raises `size` UP to
+## the minimum, and this toast assigns the MEASURED content height, so it cannot be raised past it.
+## But if `autowrap_mode` were not live when `size` landed, the minimum WIDTH would be the content
+## width and 300 would be raised to it — `ItemsMenu`'s 1068. This drives the real `_toast` and reads
+## the rect after two frames, so it answers for the shipped path rather than for a bench label.
+func test_the_settled_rect_is_the_one_the_toast_asked_for() -> void:
+	var rows: Array = await _toast_strings()
+	assert_gt(rows.size(), 0, "CONTROL: no corpus to drive the toast with")
+	var longest: Dictionary = rows[0]
+	for r in rows:
+		if int(r["words"]) > int(longest["words"]):
+			longest = r
+	var text: String = str(longest["text"])
+
+	var point := QuestExaminePoint.new()
+	add_child_autofree(point)
+	## ⚠️ `_ready` already builds an INDICATOR Label (`:76`), so "the Label child" is ambiguous and
+	## picking the last one found would silently measure the wrong node. Snapshot first, then take
+	## the child that appeared.
+	var before: Array = point.get_children()
+	point._toast(text)
+	var lbl: Label = null
+	for kid in point.get_children():
+		if kid is Label and not (kid in before):
+			lbl = kid
+	assert_not_null(lbl, "CONTROL: _toast must have ADDED a Label, distinct from the indicator, or this arm judges nothing")
+	var immediate: Vector2 = lbl.size
+	for _i in 2:
+		await get_tree().process_frame
+
+	var want_h: float = QuestExaminePoint.toast_height_for(text)
+	gut.p("  %d words: immediate %s -> settled %s  (asked %.0fx%.0f)" % [
+		int(longest["words"]), str(immediate), str(lbl.size), QuestExaminePoint.TOAST_WIDTH, want_h])
+	assert_almost_eq(lbl.size.x, QuestExaminePoint.TOAST_WIDTH, 0.5,
+		"the settled WIDTH is not the one assigned — autowrap was not live when size landed, so the minimum became the content width (ItemsMenu's 1068 shape)")
+	assert_almost_eq(lbl.size.y, want_h, 0.5,
+		"the settled HEIGHT is not what the font query predicted, so the position that holds the bottom edge is wrong by the difference")
+	assert_almost_eq(lbl.position.y + lbl.size.y,
+		QuestExaminePoint.TOAST_BASELINE_Y + QuestExaminePoint.TOAST_MIN_HEIGHT, 0.5,
+		"the settled bottom edge left the authored baseline, so a long examine draws over the prop and the player")

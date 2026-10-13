@@ -9,6 +9,10 @@ const WORDS_PER_SECOND := 4.0   ## a relaxed 240 wpm
 const MIN_HOLD_SECONDS := 1.2   ## keeps a short idle_text feeling like a toast
 const MAX_HOLD_SECONDS := 10.0  ## stops a pathological row pinning a label on screen
 const FADE_SECONDS := 1.2
+const TOAST_WIDTH := 300.0
+const TOAST_FONT_SIZE := 11
+const TOAST_MIN_HEIGHT := 36.0  ## the authored two-line box, now a FLOOR rather than the whole rect
+const TOAST_BASELINE_Y := -58.0  ## where the authored rect's top sat; the bottom edge is held here
 
 @export var quest_id: String = ""
 @export var flag: String = ""
@@ -189,6 +193,32 @@ static func toast_hold_for(word_count: int) -> float:
 	return clampf(float(word_count) / WORDS_PER_SECOND, MIN_HOLD_SECONDS, MAX_HOLD_SECONDS)
 
 
+## Height the wrapped block needs at TOAST_WIDTH and TOAST_FONT_SIZE, floored at the authored
+## two-line box. A STATIC seam so a guard can ask for the real strings' heights without building a
+## scene; it takes the font from a throwaway Label because that is where the theme default lives.
+static func toast_height_for(text: String) -> float:
+	var probe := Label.new()
+	var font: Font = probe.get_theme_font("font")
+	var h: float = TOAST_MIN_HEIGHT
+	if font != null:
+		h = maxf(font.get_multiline_string_size(
+			text, HORIZONTAL_ALIGNMENT_CENTER, TOAST_WIDTH, TOAST_FONT_SIZE).y, TOAST_MIN_HEIGHT)
+	probe.free()
+	return h
+
+
+## Where the label's top-left goes. Paired with toast_height_for so the BOTTOM edge lands on the
+## authored baseline for every string — a longer line rises away from the player rather than
+## covering them. A seam so a guard can assert that pairing against the SHIPPED arithmetic instead
+## of re-deriving it (a test that recomputes the formula cannot fail).
+static func toast_position_for(text: String) -> Vector2:
+	return Vector2(-TOAST_WIDTH / 2.0, TOAST_BASELINE_Y - (toast_height_for(text) - TOAST_MIN_HEIGHT))
+
+
+func _toast_height(text: String) -> float:
+	return toast_height_for(text)
+
+
 func _toast(text: String) -> void:
 	if text == "":
 		return
@@ -196,17 +226,33 @@ func _toast(text: String) -> void:
 	lbl.text = text
 	lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	lbl.position = Vector2(-150, -58)
-	lbl.size = Vector2(300, 36)
-	lbl.add_theme_font_size_override("font_size", 11)
+	## ⛔ FONT OVERRIDE BEFORE `size`, AND `size` BEFORE `add_child`. The height below is measured
+	## from the font, so the override has to be in place first or it is measured at the theme
+	## default — and a wrapping Label that enters the tree before its width wraps one character per
+	## line and caches a minimum the assignment can no longer get under (@cowir-adhoc's JOBS panel).
+	lbl.add_theme_font_size_override("font_size", TOAST_FONT_SIZE)
 	lbl.add_theme_color_override("font_color", Color(0.95, 0.9, 0.7))
+	## ⛔ THE RECT WAS A LIE AND THE PROSE DREW OVER THE WORLD. It was a flat `Vector2(300, 36)` —
+	## two lines — while the longest string that reaches here measures 296x80px at this width and
+	## font, five lines, +44px past the rect. A Label does not clip by default, so the overflow drew
+	## DOWNWARD from y=-58 over the prop being examined and over the player beside it.
+	##
+	## 🔑 The block is measured and the label GROWS UPWARD: the bottom edge stays where it was
+	## authored, so a longer line rises away from the player instead of covering them.
+	var height: float = _toast_height(text)
+	lbl.size = Vector2(TOAST_WIDTH, height)
+	lbl.position = toast_position_for(text)
 	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(lbl)
 	## ⛔ THE HOLD IS DERIVED FROM THE TEXT. It was a flat 2.2s with the fade starting at 1.0s, so a
-	## toast was gone 3.2s after the press — and 35 of the 45 authored examines come through here
-	## carrying a median of 36 words, which is ~8.6s of reading at 250 wpm. The player got 1-2.5s of
-	## it. The same pack's 10 interior rows go through ReadableProp, a paged panel they dismiss
-	## themselves, and are readable; this path was the only one that timed the player out.
+	## toast was gone 3.2s after the press — and the strings that reach here run to 43 words, about
+	## 10s of reading at 250 wpm. The player got 1-2.5s of it.
+	##
+	## ⚠️ THE POPULATION IS THE QUEST EXAMINE POINTS, not the authored pack. I first wrote "35 of the
+	## 45 authored examines" here and it was wrong: `data/examine_texts.json` is placed as
+	## `ReadableProp` — a paged panel the player dismisses — by BOTH `BaseVillage:904` and
+	## `BaseInterior`, so none of those 45 rows ever reaches this renderer. Measured from the live
+	## tree: 24 prose strings across 6 maps arrive here, through `examine_text` and `idle_text`.
 	##
 	## 🔑 4 words/sec is a relaxed 240 wpm. The floor keeps short idle_text feeling like a toast; the
 	## ceiling stops a pathological row pinning a label on screen. Nothing is gated on this label
