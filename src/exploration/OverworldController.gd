@@ -227,6 +227,18 @@ func _on_interaction_requested() -> void:
 		push_warning("[OverworldController] _on_interaction_requested: player ref is null — @export var player likely unwired in the scene setup")
 		return
 
+	## ⛔ A CLICK CARRIES A TARGET; THE PROBE BELOW EXISTS FOR THE CASE THAT DOES NOT. The click path
+	## chose a node and verified the player was close enough to it, then emitted a parameterless
+	## signal — so this function re-picked the NEAREST to the player and clicking the farther of two
+	## interactables talked to the nearer one. Consumed ONCE, and cleared even when it is unusable,
+	## so a stale click can never be honoured by a later key press.
+	var clicked: Node = player.pending_click_target
+	player.pending_click_target = null
+	if clicked != null and is_instance_valid(clicked) and clicked is Node2D and clicked.has_method("interact"):
+		_dlog("[INTERACT] Found: %s (clicked target)" % clicked.name)
+		clicked.interact(player)
+		return
+
 	_dlog("[INTERACT] At pos: %s" % player.global_position)
 
 	# Get nearby Area2D nodes and try to interact

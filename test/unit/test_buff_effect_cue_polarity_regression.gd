@@ -20,6 +20,7 @@ const SCENE_SRC: String = "res://src/battle/BattleScene.gd"
 const ABILITIES: String = "res://data/abilities.json"
 const ANCHOR: String = "func _on_action_executed"
 const GdSource := preload("res://test/unit/helpers/gd_source.gd")
+const BattleManagerScript := preload("res://src/battle/BattleManager.gd")
 
 
 ## Extracts effect -> cue for every match arm in _on_action_executed.
@@ -388,3 +389,128 @@ func test_the_family_rule_admits_only_what_was_actually_broken() -> void:
 	claimed.sort()
 	assert_eq(claimed, ["dispel_one", "volatility_up_enemy"],
 		"the family rule now reaches a different set than the two it was derived for: %s. Read them before routing them — the blip is CORRECT for an unauthored affliction." % [claimed])
+
+
+## ✅ THE DERIVATION THAT SUPERSEDES THE PREFIX RULE ABOVE, AND IT FOUND WHAT THE PREFIX RULE COULD
+## NOT. The engine already DECLARES the answer: BattleManager.SUPPORT_DEBUFFS names every effect it
+## treats as a named debuff ("A stat modifier below 1.0 is not enough: volatility_down is 0.5 and
+## lands as a buff"). BattleScene then hand-lists the same thing for the cue, and the two disagreed:
+## `ability_weaken` (deprecate) is IN that const, adds TWO stat debuffs — add_debuff Atk + add_debuff
+## Mag — and had no arm, so it drew the generic descending blip.
+##
+## The prefix rule one arm up cannot see it: `ability_weaken` shares no stem with any routed effect
+## (`ability_silence` is routed, and neither is a prefix of the other). A heuristic over NAMES found
+## two; the engine's own declaration finds the third and needs no heuristic at all.
+##
+## ⛔ TWO MEMBERS ARE ABSENT FROM THAT ARM ON PURPOSE and must stay passing: amplify_poison and
+## memory_leak_status have bespoke authored cues reached through Combatant.STATUS_ALIASES
+## (status_festered, status_memory_leak), and BattleScene's own comment records that they were REMOVED
+## from the debuff arm so the authored file could play. So the rule is "routed to debuff OR has a
+## bespoke cue", never "must be in the arm" — and the control below keeps the alias branch honest.
+func test_every_effect_the_engine_CALLS_a_debuff_sounds_like_one() -> void:
+	var declared: Array = BattleManagerScript.SUPPORT_DEBUFFS
+	assert_gt(declared.size(), 5,
+		"PREMISE: read only %d entries from BattleManager.SUPPORT_DEBUFFS — the const moved or renamed, and this arm is vacuous" % declared.size())
+	var routed: Dictionary = _routed_effects()
+	var wrong: Array[String] = []
+	var by_alias: int = 0
+	for e in declared:
+		var k: String = str(e)
+		if str(routed.get(k, "")) == "debuff":
+			continue
+		var canonical: String = Combatant.resolve_status_alias(k)
+		if SoundManager._sfx_manifest.has("status_" + canonical):
+			by_alias += 1
+			continue
+		wrong.append("%s (cue '%s', no status_%s on disk)" % [k, str(routed.get(k, "<unrouted>")), canonical])
+	assert_gt(by_alias, 0,
+		"CONTROL: no declared debuff reaches a bespoke cue by alias, so that branch of this rule is untested and the two deliberate exclusions are no longer what this arm thinks they are")
+	assert_eq(wrong, [],
+		"%d effect(s) that BattleManager's own SUPPORT_DEBUFFS calls a debuff neither route to the debuff cue nor have a bespoke cue on disk, so each draws the generic DESCENDING blip over its own cast cue: %s" % [wrong.size(), wrong])
+
+
+## ⛔ THE SAME CROSS-FILE QUESTION ASKED OF AILMENTS, WHERE THE ANSWER IS AN ASSET RATHER THAN AN ARM.
+## BattleManager.SUPPORT_AILMENTS declares what the engine can inflict; an ailment with no authored
+## cue reaches play_status's generic DESCENDING blip, which is struktured's ruling #15 "not even
+## close to good". `static` was the one member with no cue of its own: `static_field` (effect
+## "static", all_enemies, duration 3) is cast by corrupted_sprite AND the W1 lightning dragon, so it
+## is reachable in World 1, and tick 379 gave `static` its gameplay arm in BattleManager while its
+## audio was never added — the same two-dispatch-tables gap as dispel_one, one table over.
+##
+## 🔑 COVERAGE IS A THREE-WAY TEST, NOT A KEY LOOKUP, because play_status tries the EXACT key first
+## and only then the alias. My first pass resolved the alias FIRST and reported `burn` uncovered,
+## which is backwards: `status_burn` is authored and `status_burning` is not, and `burn` is what the
+## effect string says. So an ailment is covered if its own key is authored, OR its alias target's is,
+## OR it is the alias TARGET of an authored source (`burning` is reached only as `burn`).
+func test_every_inflictable_ailment_has_a_cue_of_its_own() -> void:
+	var ailments: Array = BattleManagerScript.SUPPORT_AILMENTS
+	assert_gt(ailments.size(), 8,
+		"PREMISE: read only %d entries from BattleManager.SUPPORT_AILMENTS — the const moved, and this arm is vacuous" % ailments.size())
+	var aliases: Dictionary = Combatant.STATUS_ALIASES
+	assert_gt(aliases.size(), 0, "CONTROL: STATUS_ALIASES is empty, so the two alias branches below are untestable")
+
+	var blip: Array[String] = []
+	var by_alias_source: int = 0
+	for a in ailments:
+		var name_: String = str(a)
+		if SoundManager._sfx_manifest.has("status_" + name_):
+			continue
+		if aliases.has(name_) and SoundManager._sfx_manifest.has("status_" + str(aliases[name_])):
+			continue
+		var covered_by_source: bool = false
+		for src in aliases.keys():
+			if str(aliases[src]) == name_ and SoundManager._sfx_manifest.has("status_" + str(src)):
+				covered_by_source = true
+				break
+		if covered_by_source:
+			by_alias_source += 1
+			continue
+		blip.append(name_)
+	assert_gt(by_alias_source, 0,
+		"CONTROL: no ailment is covered only as an alias TARGET, so that branch is dead — `burning` was the case it exists for, and if it stopped applying this rule is stricter than intended")
+	assert_eq(blip, [],
+		"these ailments the engine can inflict have no cue of their own and reach the generic DESCENDING blip, which ruling #15 rejected: %s" % [blip])
+
+
+func test_the_static_cue_is_its_own_asset_and_not_the_cutscene_burst() -> void:
+	## The cue I authored for the ailment, and the one it must never be confused with. `static_burst`
+	## is a W4 CUTSCENE one-shot (0.35s) whose own prompt says so; measured, it is 1-2kHz dominant
+	## while the ailment cue is 3-6kHz dominant. A future tidy-up that pointed one at the other would
+	## silence a World 1 boss's status or re-pitch a cutscene, and nothing else would notice.
+	var man: Dictionary = SoundManager._sfx_manifest
+	for key in ["status_static", "static_burst"]:
+		assert_true(man.has(key), "%s is no longer registered" % key)
+		var f: String = str((man.get(key, {}) as Dictionary).get("file", ""))
+		var res: String = f if f.begins_with("res://") else "res://" + f
+		assert_true(FileAccess.file_exists(res), "%s is registered as %s but the file is not there" % [key, f])
+	assert_ne(str((man["status_static"] as Dictionary).get("file", "")),
+		str((man["static_burst"] as Dictionary).get("file", "")),
+		"status_static and static_burst now point at ONE file — they are a World 1 status cue and a World 4 cutscene one-shot, and the prompts say so")
+
+
+## ⛔ THE TWO ARMS ABOVE PROVE REGISTRATION, NOT PLAYBACK, AND THAT IS THE DISTINCTION THIS WHOLE
+## FILE EXISTS FOR. A key in the manifest whose file will not load falls straight through to the
+## generic descending blip, and every assertion about the manifest still passes — so the cue reads
+## as fixed while the player hears exactly what shipped before.
+##
+## The discriminator is free: `_try_play_sfx_from_manifest` stamps `_sfx_cooldowns[key]` at the
+## cooldown gate and returns, so a stamp means the MANIFEST entry was reached. The procedural
+## fallback never stamps. Then the stream's own LENGTH says which file arrived, which no amount of
+## key-checking can.
+func test_the_static_cue_actually_plays_rather_than_falling_through() -> void:
+	SoundManager._sfx_cooldowns.erase("status_static")
+	SoundManager._sfx_suppressed_by_cooldown = false
+	SoundManager.play_status("static")
+	assert_true(SoundManager._sfx_cooldowns.has("status_static"),
+		"play_status(\"static\") did not reach the manifest entry, so it fell through to the generic descending blip — the key can be registered and the file still unreachable (an un-imported asset does exactly this)")
+	var p: AudioStreamPlayer = SoundManager._battle_player
+	assert_not_null(p, "CONTROL: the battle player must exist or the assertion below reads nothing")
+	if p == null:
+		return
+	assert_not_null(p.stream,
+		"the cue stamped its cooldown but left no stream on the player, so nothing was actually loaded")
+	if p.stream == null:
+		return
+	assert_almost_eq(p.stream.get_length(), 0.70, 0.06,
+		"the stream on the player is %.2fs, not the 0.70s cue authored for this ailment — a different file is answering to status_static" % p.stream.get_length())
+	SoundManager._sfx_cooldowns.erase("status_static")

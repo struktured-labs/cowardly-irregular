@@ -3,17 +3,35 @@ extends GutTest
 ## Unit tests for Multi-Tier Autogrind System
 ## Tests GrindTier enum values, battle speed constants, turbo mode, SparklineChart
 ##
-## NOTE: AutogrindController cannot be instantiated in unit tests because it
-## references AutogrindSystem (autoload) in function bodies, which causes GDScript
-## compilation to fail when loaded via load() outside the normal game startup.
-## Controller tier switching logic is covered by integration tests.
-## These unit tests cover: known enum values, BattleScene constants, BattleManager
-## turbo_mode property, and SparklineChart ring buffer behavior.
+## ⛔ THE NOTE THAT USED TO SIT HERE WAS FALSE AND IT COST THIS FILE ITS TESTS: "AutogrindController
+## cannot be instantiated in unit tests ... compilation to fail when loaded via load()". Eight sibling
+## files `preload(...).new()` it and it has no _ready. Believing it, 13 of 36 tests here touched
+## NOTHING outside their own body -- `assert_eq(0, 0, "ACCELERATED sentinel value is 0")` -- and eight
+## more grepped the source as text. Three of them were FACTUALLY WRONG about the code and stayed green
+## because they never read it: the delay pair claimed 1.0s/0.5s (both tiers return 0.1), and
+## `*_labels_source_match` claimed index 5 is "8x" (it is "32x" since the v3 relabel).
+## A test that cannot fail cannot be wrong either, which is why "36 passing" read as cover for years.
 
 var _party: Array[Combatant] = []
 
 
+const CTRL := preload("res://src/autogrind/AutogrindController.gd")
+const AutogrindState := preload("res://test/unit/helpers/autogrind_state.gd")
+
+var _ag: Dictionary
+
+
+## The controller the old comment said could not exist. Eight sibling files build one the same way.
+func _controller() -> Node:
+	var c: Node = CTRL.new()
+	add_child_autofree(c)
+	return c
+
+
 func before_each() -> void:
+	_ag = AutogrindState.snapshot()
+	AutogrindSystem._test_disable_persistence = true
+	AutobattleSystem._test_disable_persistence = true
 	_party.clear()
 	for i in range(4):
 		var member = Combatant.new()
@@ -30,148 +48,135 @@ func before_each() -> void:
 		_party.append(member)
 
 
-## GrindTier enum value tests
-## Verifies integer values defined in AutogrindController.GrindTier enum.
-## These are load-bearing: switch_tier/cycle_tier arithmetic depends on them.
-
-func test_grind_tier_accelerated_is_zero() -> void:
-	# ACCELERATED must be 0 — cycle_tier uses (current + 1) % 2
-	assert_eq(0, 0, "ACCELERATED sentinel value is 0")
+func after_each() -> void:
+	AutogrindState.restore(_ag)
 
 
-func test_grind_tier_dashboard_is_one() -> void:
-	# DASHBOARD must be 1 — cycle_tier wraps at modulo 2
-	assert_eq(1, 1, "DASHBOARD sentinel value is 1")
+## Tier ladder, read from the CONTROLLER rather than restated as literals.
+
+func test_the_tier_enum_is_what_the_cycle_arithmetic_assumes() -> void:
+	var tiers: Dictionary = CTRL.GrindTier
+	assert_eq(int(tiers["ACCELERATED"]), 0, "ACCELERATED must be 0 -- cycle_tier uses (current + 1) % 2")
+	assert_eq(int(tiers["DASHBOARD"]), 1, "DASHBOARD must be 1 -- the same modulo wraps onto it")
+	assert_eq(tiers.size(), 2, "cycle_tier hardcodes % 2, so a third tier silently becomes unreachable")
 
 
-func test_grind_tier_count_is_two() -> void:
-	# cycle_tier() uses % 2 hard-coded — must match actual tier count
-	var tier_count = 2
-	assert_eq(tier_count, 2, "Only 2 tiers defined (SIMULATION reserved for future)")
+func test_cycle_tier_walks_the_ladder_and_wraps() -> void:
+	var c := _controller()
+	assert_eq(int(c._current_tier), int(CTRL.GrindTier["ACCELERATED"]), "FLOOR: a fresh controller starts ACCELERATED")
+	c.cycle_tier()
+	assert_eq(int(c._current_tier), int(CTRL.GrindTier["DASHBOARD"]), "cycling from ACCELERATED reaches DASHBOARD")
+	c.cycle_tier()
+	assert_eq(int(c._current_tier), int(CTRL.GrindTier["ACCELERATED"]), "and wraps back rather than running off the end")
 
 
-func test_cycle_arithmetic_from_accelerated() -> void:
-	var current = 0  # ACCELERATED
-	var next = (current + 1) % 2
-	assert_eq(next, 1, "Cycling from ACCELERATED (0) yields DASHBOARD (1)")
+func test_switching_tier_announces_it() -> void:
+	var c := _controller()
+	watch_signals(c)
+	c.switch_tier(CTRL.GrindTier["DASHBOARD"])
+	assert_signal_emitted(c, "tier_changed", "a tier change nobody is told about cannot move the dashboard")
 
 
-func test_cycle_arithmetic_from_dashboard() -> void:
-	var current = 1  # DASHBOARD
-	var next = (current + 1) % 2
-	assert_eq(next, 0, "Cycling from DASHBOARD (1) yields ACCELERATED (0)")
+## The delay the tiers actually produce. ⚠️ BOTH TIERS RETURN 0.1 -- the tests this replaces asserted
+## 1.0 and 0.5 and that DASHBOARD was the faster of the two. None of that is in the source; whether
+## the tiers SHOULD differ is struktured's call, and this pins what the code does today.
+func test_the_between_battle_delay_comes_from_the_tier() -> void:
+	var c := _controller()
+	c.headless_mode = false
+	c._current_tier = CTRL.GrindTier["ACCELERATED"]
+	assert_eq(c._get_between_battle_delay(), 0.1, "ACCELERATED delay")
+	c._current_tier = CTRL.GrindTier["DASHBOARD"]
+	assert_eq(c._get_between_battle_delay(), 0.1, "DASHBOARD delay -- equal to ACCELERATED, not faster")
+	c.headless_mode = true
+	assert_eq(c._get_between_battle_delay(), 0.0, "ludicrous speed removes the delay entirely")
 
 
-## Between-battle delay values
-
-func test_delay_accelerated_value() -> void:
-	# Value read from AutogrindController._get_between_battle_delay()
-	var delay_accelerated = 1.0
-	assert_eq(delay_accelerated, 1.0, "ACCELERATED delay is 1.0s")
-
-
-func test_delay_dashboard_value() -> void:
-	# Value read from AutogrindController._get_between_battle_delay()
-	var delay_dashboard = 0.5
-	assert_eq(delay_dashboard, 0.5, "DASHBOARD delay is 0.5s")
+func test_the_tier_api_is_on_the_object_not_just_in_the_text() -> void:
+	var c := _controller()
+	assert_true(c.has_signal("tier_changed"), "tier_changed must be a real signal")
+	assert_true(c.has_method("switch_tier"), "switch_tier must be a real method")
+	assert_true(c.has_method("cycle_tier"), "cycle_tier must be a real method")
+	assert_true("_pending_tier_switch" in c, "the queue sentinel must be a real property")
+	## CONTROL: `in` on an Object is a property lookup, not a substring. The greps this replaces used
+	## content.contains("_pending_tier_switch"), which a rename to _pending_tier_switch_id satisfies.
+	assert_false("_pending_tier_switch_id" in c, "CONTROL: a near-miss name must NOT satisfy this")
+	assert_false(c.has_method("switch_tier_to"), "CONTROL: nor a near-miss method name")
 
 
-func test_delay_dashboard_is_faster_than_accelerated() -> void:
-	var delay_accelerated = 1.0
-	var delay_dashboard = 0.5
-	assert_lt(delay_dashboard, delay_accelerated,
-		"DASHBOARD delay should be shorter than ACCELERATED for faster chaining")
+func test_a_queued_tier_switch_is_cleared_when_the_grind_stops() -> void:
+	var c := _controller()
+	assert_eq(int(c._pending_tier_switch), -1, "FLOOR: -1 is the no-switch-queued sentinel")
+	c._state = CTRL.State["BETWEEN_BATTLES"]
+	c._pending_tier_switch = int(CTRL.GrindTier["DASHBOARD"])
+	c.stop_grind("test")
+	assert_eq(int(c._pending_tier_switch), -1,
+		"a queued switch must not survive the stop, or the next grind starts in a tier nobody chose")
 
 
-## Pending tier switch sentinel value
-
-func test_pending_tier_switch_sentinel_is_negative_one() -> void:
-	# _pending_tier_switch = -1 means no switch is queued
-	# This prevents accidental tier 0 being applied on stop
-	var no_pending = -1
-	assert_lt(no_pending, 0, "No-pending sentinel must be negative to distinguish from tier 0")
-
-
-## Battle speed extension tests
-## These test BattleScene.BATTLE_SPEEDS static array directly from script source.
-## BattleScene cannot be load()ed in tests (references BattleManager autoload).
-## Values verified against src/battle/BattleScene.gd lines 101-102.
-
-func test_battle_speeds_source_has_seven_entries() -> void:
-	# BATTLE_SPEEDS: Array[float] = [0.25, 0.5, 1.0, 2.0, 4.0, 8.0, 16.0]
-	var expected_speeds: Array[float] = [0.25, 0.5, 1.0, 2.0, 4.0, 8.0, 16.0]
-	assert_eq(expected_speeds.size(), 7, "Should have 7 speed levels")
+## ⚠️ The reset above is reachable ONLY from a non-IDLE state: stop_grind returns early when IDLE,
+## above the line that clears it. The text grep could not express that and read as unconditional.
+func test_a_stop_from_idle_returns_before_the_reset() -> void:
+	var c := _controller()
+	c._state = CTRL.State["IDLE"]
+	c._pending_tier_switch = 1
+	c.stop_grind("test")
+	assert_eq(int(c._pending_tier_switch), 1,
+		"documents the early return -- an IDLE stop does not reach the reset, so start_grind must not assume it did")
 
 
-func test_battle_speeds_source_includes_8x_and_16x() -> void:
-	var expected_speeds: Array[float] = [0.25, 0.5, 1.0, 2.0, 4.0, 8.0, 16.0]
-	assert_true(8.0 in expected_speeds, "Should include 8x speed")
-	assert_true(16.0 in expected_speeds, "Should include 16x speed")
-
-
-func test_battle_speed_labels_source_match() -> void:
-	# BATTLE_SPEED_LABELS: Array[String] = ["0.25x", "0.5x", "1x", "2x", "4x", "8x", "16x"]
-	var expected_labels: Array[String] = ["0.25x", "0.5x", "1x", "2x", "4x", "8x", "16x"]
-	assert_eq(expected_labels[5], "8x", "Index 5 should be 8x")
-	assert_eq(expected_labels[6], "16x", "Index 6 should be 16x")
-
-
-func test_battle_speed_labels_count_matches_speeds() -> void:
-	var expected_speeds: Array[float] = [0.25, 0.5, 1.0, 2.0, 4.0, 8.0, 16.0]
-	var expected_labels: Array[String] = ["0.25x", "0.5x", "1x", "2x", "4x", "8x", "16x"]
-	assert_eq(expected_labels.size(), expected_speeds.size(),
-		"Speed labels count must match speeds count")
-
-
-## Validate BattleScene source file contains expected constants
-## This catches regressions where someone removes or changes the speed array.
-
-func test_battle_scene_source_contains_8x_speed() -> void:
-	var src = FileAccess.open("res://src/battle/BattleScene.gd", FileAccess.READ)
-	assert_not_null(src, "BattleScene.gd should be readable")
-	if src == null:
+## Battle speed ladder, read from the CONST rather than restated.
+##
+## ⛔ SIX TESTS HERE ASSERTED NOTHING, and the comment above them was why. It said "BattleScene
+## cannot be load()ed in tests (references BattleManager autoload)", so four tests declared their
+## OWN copy of the ladder and asserted that literal against itself -- `expected_labels[5] == "8x"`
+## two lines below `var expected_labels := [... "8x" ...]`. They could only fail if someone edited
+## the literal, and their values were the PRE-v3 ladder ("0.25x", "0.5x"), which the live const has
+## not matched since struktured's 2026-07-11 relabel. A test named `*_source_match` matched no
+## source. The other two DID read the file, as `content.contains("8.0")` over 7,000 lines -- a
+## MENTIONS grep that any float in any unrelated expression satisfies.
+##
+## ✅ THE PREMISE WAS FALSE: `load("res://src/battle/BattleScene.gd")` works, and two sibling
+## files do it (test_the_battle_speed_shows_on_screen_regression instantiates the whole SCENE). The
+## stale line reference in the old comment ("lines 101-102"; the consts sit at 203-204) is the same
+## drift one layer down. Read the const and there is nothing to keep in sync.
+##
+## One test replaces six: test_playtest_feedback_2026_07_11_regression already pins the two lengths
+## and derives every label as engine*4, so this one exists so THIS file stops claiming a validation
+## it never performed.
+func test_the_speed_ladder_is_read_from_the_const() -> void:
+	var bs = load("res://src/battle/BattleScene.gd")
+	assert_not_null(bs, "BattleScene.gd must be loadable -- the old comment here denied it")
+	if bs == null:
 		return
-	var content = src.get_as_text()
-	src.close()
-	assert_true(content.contains("8.0"), "BattleScene.gd must contain 8.0 speed value")
-	assert_true(content.contains("16.0"), "BattleScene.gd must contain 16.0 speed value")
+	assert_eq(bs.BATTLE_SPEEDS.size(), 7, "the ladder is seven rungs")
+	## Engine values, not labels: 8.0 and 16.0 are the top two rungs, LABELLED 32x and 64x. The tests
+	## this replaces conflated the two units, which is how "8x" became a pre-v3 expectation.
+	assert_true(8.0 in bs.BATTLE_SPEEDS, "engine 8.0 (labelled 32x) is a rung")
+	assert_true(16.0 in bs.BATTLE_SPEEDS, "engine 16.0 (labelled 64x) is a rung")
+	assert_eq(bs.BATTLE_SPEED_LABELS[5], "32x", "engine 8.0 is labelled 32x since the v3 relabel")
+	assert_eq(bs.BATTLE_SPEED_LABELS[6], "64x", "engine 16.0 is labelled 64x since the v3 relabel")
 
 
-func test_battle_scene_source_contains_speed_labels() -> void:
-	var src = FileAccess.open("res://src/battle/BattleScene.gd", FileAccess.READ)
-	assert_not_null(src, "BattleScene.gd should be readable")
-	if src == null:
+## Turbo mode, read from the live autoload. BattleManager is an autoload (project.godot:32), so the
+## object is reachable in every test and the source-text greps here never needed to exist.
+
+func test_battle_manager_turbo_mode_is_a_real_bool_property() -> void:
+	assert_true("turbo_mode" in BattleManager, "BattleManager must expose turbo_mode")
+	## CONTROL: `in` is a property lookup, not a substring. The grep this replaces was
+	## content.contains("var turbo_mode"), which `var turbo_mode_enabled` satisfies -- a false green
+	## on exactly the rename it existed to catch. (cowir-controller, 2026-10-13)
+	assert_false("turbo_mode_enabled" in BattleManager, "CONTROL: a longer name must NOT satisfy this")
+	assert_eq(typeof(BattleManager.turbo_mode), TYPE_BOOL, "turbo_mode must be a bool, not a truthy int")
+
+
+func test_battle_manager_turbo_mode_defaults_false() -> void:
+	var fresh = load("res://src/battle/BattleManager.gd").new()
+	assert_not_null(fresh, "FLOOR: BattleManager.gd must be instantiable to read its default")
+	if fresh == null:
 		return
-	var content = src.get_as_text()
-	src.close()
-	assert_true(content.contains('"8x"'), "BattleScene.gd must contain '8x' label")
-	assert_true(content.contains('"16x"'), "BattleScene.gd must contain '16x' label")
-
-
-## Turbo mode property tests
-## BattleManager is a GDScript autoload; in headless unit tests the node may not
-## be reachable. Tests fall back to source-file inspection for regression safety.
-
-func test_battle_manager_source_has_turbo_mode() -> void:
-	var src = FileAccess.open("res://src/battle/BattleManager.gd", FileAccess.READ)
-	assert_not_null(src, "BattleManager.gd should be readable")
-	if src == null:
-		return
-	var content = src.get_as_text()
-	src.close()
-	assert_true(content.contains("var turbo_mode"),
-		"BattleManager.gd must declare turbo_mode variable")
-
-
-func test_battle_manager_turbo_mode_defaults_false_in_source() -> void:
-	var src = FileAccess.open("res://src/battle/BattleManager.gd", FileAccess.READ)
-	assert_not_null(src, "BattleManager.gd should be readable")
-	if src == null:
-		return
-	var content = src.get_as_text()
-	src.close()
-	assert_true(content.contains("turbo_mode: bool = false"),
-		"BattleManager.gd turbo_mode must default to false")
+	autofree(fresh)
+	assert_false(fresh.turbo_mode,
+		"a fresh BattleManager must not be in turbo -- the autoload's live value is whatever ran last")
 
 
 func test_battle_manager_turbo_mode_runtime() -> void:
@@ -183,80 +188,6 @@ func test_battle_manager_turbo_mode_runtime() -> void:
 	assert_true(bm.turbo_mode, "turbo_mode should be settable to true at runtime")
 	bm.turbo_mode = false
 	assert_false(bm.turbo_mode, "turbo_mode should be resettable to false at runtime")
-
-
-## AutogrindController source-level regression tests
-## Verify the source file contains critical tier switching logic.
-## Catches regressions where someone accidentally removes the pending tier logic.
-
-func test_controller_source_has_pending_tier_switch_var() -> void:
-	var src = FileAccess.open("res://src/autogrind/AutogrindController.gd", FileAccess.READ)
-	assert_not_null(src, "AutogrindController.gd should be readable")
-	if src == null:
-		return
-	var content = src.get_as_text()
-	src.close()
-	assert_true(content.contains("_pending_tier_switch"),
-		"AutogrindController must have _pending_tier_switch variable")
-
-
-func test_controller_source_has_tier_changed_signal() -> void:
-	var src = FileAccess.open("res://src/autogrind/AutogrindController.gd", FileAccess.READ)
-	assert_not_null(src, "AutogrindController.gd should be readable")
-	if src == null:
-		return
-	var content = src.get_as_text()
-	src.close()
-	assert_true(content.contains("signal tier_changed"),
-		"AutogrindController must emit tier_changed signal")
-
-
-func test_controller_source_has_grind_tier_enum() -> void:
-	var src = FileAccess.open("res://src/autogrind/AutogrindController.gd", FileAccess.READ)
-	assert_not_null(src, "AutogrindController.gd should be readable")
-	if src == null:
-		return
-	var content = src.get_as_text()
-	src.close()
-	assert_true(content.contains("enum GrindTier"),
-		"AutogrindController must define GrindTier enum")
-	assert_true(content.contains("ACCELERATED"),
-		"GrindTier must have ACCELERATED value")
-	assert_true(content.contains("DASHBOARD"),
-		"GrindTier must have DASHBOARD value")
-
-
-func test_controller_source_has_switch_tier_function() -> void:
-	var src = FileAccess.open("res://src/autogrind/AutogrindController.gd", FileAccess.READ)
-	assert_not_null(src, "AutogrindController.gd should be readable")
-	if src == null:
-		return
-	var content = src.get_as_text()
-	src.close()
-	assert_true(content.contains("func switch_tier"),
-		"AutogrindController must define switch_tier function")
-
-
-func test_controller_source_has_cycle_tier_function() -> void:
-	var src = FileAccess.open("res://src/autogrind/AutogrindController.gd", FileAccess.READ)
-	assert_not_null(src, "AutogrindController.gd should be readable")
-	if src == null:
-		return
-	var content = src.get_as_text()
-	src.close()
-	assert_true(content.contains("func cycle_tier"),
-		"AutogrindController must define cycle_tier function")
-
-
-func test_controller_source_stop_grind_resets_pending() -> void:
-	var src = FileAccess.open("res://src/autogrind/AutogrindController.gd", FileAccess.READ)
-	assert_not_null(src, "AutogrindController.gd should be readable")
-	if src == null:
-		return
-	var content = src.get_as_text()
-	src.close()
-	assert_true(content.contains("_pending_tier_switch = -1"),
-		"stop_grind must reset _pending_tier_switch to -1")
 
 
 ## SparklineChart tests

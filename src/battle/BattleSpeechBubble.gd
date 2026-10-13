@@ -126,8 +126,10 @@ static func spawn(parent: Node, anchor_global_pos: Vector2, speaker_name: String
 		if is_instance_valid(oldest["bubble"]):
 			oldest["bubble"].queue_free()
 	var b := BattleSpeechBubble.new()
-	# Faster battle speed shortens the hold so bubbles never outlive their turn.
-	b._hold_time = hold_time / maxf(1.0, Engine.time_scale)
+	# No divisor: `/ maxf(1.0, Engine.time_scale)` could only divide above engine 1.0, which is
+	# exactly where the suppression above has already returned null — inert at every spawnable
+	# speed. The tween already scales, so a voiceless hold is 2 BATTLE seconds at any of them.
+	b._hold_time = hold_time
 	b.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	# Below the command menu (100) and target highlight (99): flavor never covers the
 	# player's selection (struktured 2026-09-02: "cant see ur selection until it fades").

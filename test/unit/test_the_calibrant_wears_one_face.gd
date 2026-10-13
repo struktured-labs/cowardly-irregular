@@ -53,3 +53,28 @@ func test_a_the_named_monster_shares_its_portrait_keys_face() -> void:
 			split.append("%s shows %s, its cutscene key '%s' shows %s" % [id, face.resource_path.get_file() if face else "nothing", key, want.get_file()])
 	assert_gt(pairs, 0, "CONTROL: the Calibrant pair was reached (%d)" % pairs)
 	assert_eq(split, [], "one character, two faces across cutscene and battle: %s" % str(split))
+
+
+## Bosses fought straight after a cutscene in which they speak, where the cutscene asks for one portrait key and the
+## battle asks by a differently named monster id: monster id -> [cutscene file, the portrait key it uses for them].
+## Found by listing every portrait key that shares a name with a monster that has no key of its own (2026-10-12).
+const FOUGHT_AFTER_THEIR_CUTSCENE := {
+	"cave_rat_king": ["world1_rat_king_intro", "boss_rat_king"],
+	"bard_hostile_courtier": ["world1_spotlight_bard_ch7", "courtier"],
+}
+
+
+func test_a_boss_keeps_the_face_from_the_cutscene_before_the_fight() -> void:
+	var split: Array = []
+	for id in FOUGHT_AFTER_THEIR_CUTSCENE:
+		var cutscene: String = FOUGHT_AFTER_THEIR_CUTSCENE[id][0]
+		var key: String = FOUGHT_AFTER_THEIR_CUTSCENE[id][1]
+		var text := FileAccess.get_file_as_string("res://data/cutscenes/%s.json" % cutscene)
+		assert_string_contains(text, '"portrait": "%s"' % key, "CONTROL: %s still shows the '%s' portrait" % [cutscene, key])
+		assert_true(_monster_ids().has(id), "CONTROL: %s is a monster" % id)
+		var want := str(Dialogue.PORTRAIT_SPRITES.get(key, ""))
+		assert_true(ResourceLoader.exists(want), "CONTROL: the key '%s' names a real portrait" % key)
+		var face: Texture2D = _art.monster_art(id)
+		if face == null or face.resource_path != want:
+			split.append("%s: cutscene shows %s, boss intro shows %s" % [id, want.get_file(), face.resource_path.get_file() if face and face.resource_path != "" else "a cut-out of its battle sheet"])
+	assert_eq(split, [], "a boss changes faces between its cutscene and its fight: %s" % str(split))

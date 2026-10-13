@@ -916,6 +916,8 @@ func start_autogrind(party: Array[Combatant], enemy_template: Dictionary, config
 	if is_grinding:
 		push_warning("[AUTOGRIND] start_autogrind called while grind already active — refusing double-start (caller bug: stop_autogrind first)")
 		return false
+	## A stop clears this, but a session that never reached a check would inherit the previous one's rule.
+	last_interrupt_rule = ""
 	# Empty-party guard — a session with 0 alive members has no meaningful loop and would trip fatigue/collapse math with div-by-zero-shaped defaults.
 	var live_count: int = 0
 	for m in party:
@@ -1212,12 +1214,26 @@ func _increase_efficiency() -> void:
 	corruption_increased.emit(meta_corruption_level)
 
 
+## Which rule produced the last reason -- the dict carries it, the String return drops it, so no consumer could key advice on it.
+var last_interrupt_rule: String = ""
+
+
+## Shared with stop_before_first_battle so the two cannot disagree about what they just reported.
+func _session_rule_for(reason: String) -> String:
+	if reason == "":
+		return ""
+	return "max_battles" if reason.begins_with("Max battles") else "corruption_limit"
+
+
 func _check_interrupt_conditions() -> String:
 	"""Check if any interrupt conditions are met, returns reason or empty string"""
 	var party_stop: Dictionary = _party_interrupt(grind_party, _party_bag(null))
 	if not party_stop.is_empty():
+		last_interrupt_rule = str(party_stop.get("rule", ""))
 		return str(party_stop["reason"])
-	return _session_interrupt_reason(meta_corruption_level, battles_completed)
+	var session_reason: String = _session_interrupt_reason(meta_corruption_level, battles_completed)
+	last_interrupt_rule = _session_rule_for(session_reason)
+	return session_reason
 
 
 ## Why a grind would stop before its FIRST battle, read with the rules and filtering a real start uses; {} means it would fight.
@@ -1239,7 +1255,7 @@ func stop_before_first_battle(party: Array) -> Dictionary:
 	var reason: String = _session_interrupt_reason(0.0, 0)
 	if reason == "":
 		return {}
-	return {"rule": "max_battles" if reason.begins_with("Max battles") else "corruption_limit", "reason": reason}
+	return {"rule": _session_rule_for(reason), "reason": reason}
 
 
 func _party_interrupt(members: Array, bag: Array) -> Dictionary:

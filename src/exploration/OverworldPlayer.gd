@@ -6,6 +6,13 @@ class_name OverworldPlayer
 
 signal moved(steps: int)
 signal interaction_requested()
+## ⛔ A CLICK CARRIES A TARGET; A KEY PRESS DOES NOT. `interaction_requested` is parameterless, so
+## the click path used to choose a target, verify the player was close enough to it, and then throw
+## it away — the controller re-picked the NEAREST to the player, and clicking the farther of two
+## interactables talked to the nearer one. Set ONLY by the click path, consumed ONCE by
+## OverworldController, and cleared by every key-press path so the gamepad's nearest-wins
+## arbitration (the 2026-07-18 audit) is unchanged for the case that genuinely has no target.
+var pending_click_target: Node = null
 signal menu_requested()
 
 ## Movement configuration
@@ -48,6 +55,9 @@ static var _static_sprite_cache: Dictionary = {}
 var _click_target: Vector2 = Vector2.ZERO
 var _moving_to_click: bool = false
 var _interact_on_arrival: bool = false
+## The NODE a click-walk is heading to. `_click_target` is only its POSITION, which is why arrival
+## had no target to honour. Cleared when consumed, and when manual input cancels the walk.
+var _click_walk_target: Node = null
 const CLICK_ARRIVE_DIST: float = 8.0
 const INTERACT_ARRIVE_DIST: float = 40.0  # Close enough for 48px interaction range
 
@@ -403,6 +413,8 @@ func _physics_process(delta: float) -> void:
 			_moving_to_click = false
 			if _interact_on_arrival:
 				_interact_on_arrival = false
+				pending_click_target = _click_walk_target
+				_click_walk_target = null
 				interaction_requested.emit()
 		else:
 			input_dir = to_target.normalized()
@@ -412,6 +424,7 @@ func _physics_process(delta: float) -> void:
 		# overrides queued click-to-move).
 		_moving_to_click = false
 		_interact_on_arrival = false
+		_click_walk_target = null
 
 	# Rotate input to match camera direction so "up" moves forward visually
 	if input_dir != Vector2.ZERO and Mode7Overlay.camera_angle != 0.0:
@@ -511,6 +524,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 
 	if event.is_action_pressed("ui_accept"):
+		pending_click_target = null
 		interaction_requested.emit()
 
 	if event.is_action_pressed("ui_cancel"):
@@ -522,13 +536,21 @@ func _unhandled_input(event: InputEvent) -> void:
 		var click_pos = get_global_mouse_position()
 		var target_npc = _find_clicked_interactable(click_pos)
 		if target_npc:
-			var dist_to_npc = global_position.distance_to(target_npc.global_position)
+			## InteractGeometry.anchor, not global_position: an offset CollisionShape2D means the
+			## node's origin is not its interaction point, which is why the press path uses the
+			## anchor. Measuring differently here made the two paths disagree about what is near.
+			var dist_to_npc = global_position.distance_to(InteractGeometry.anchor(target_npc))
 			if dist_to_npc < INTERACT_ARRIVE_DIST:
-				# Already close enough — interact immediately
+				# Already close enough — interact immediately, with the clicked node as the target
+				pending_click_target = target_npc
 				interaction_requested.emit()
 			else:
-				# Walk to the NPC, then interact on arrival
-				_click_target = target_npc.global_position
+				# Walk to the NPC, then interact on arrival — remembering WHICH node, not just
+				# where it stood. `_click_target` is a POSITION, so on arrival the controller had
+				# nothing to honour and re-picked the nearest: walking to a distant NPC could
+				# talk to whatever you ended up standing beside.
+				_click_walk_target = target_npc
+				_click_target = InteractGeometry.anchor(target_npc)
 				_moving_to_click = true
 				_interact_on_arrival = true
 		else:
