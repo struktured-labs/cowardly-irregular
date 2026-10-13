@@ -52,8 +52,14 @@ func test_the_accessor_reports_the_resolved_bed_not_the_request() -> void:
 		var requested: String = str(sm._current_music)
 		assert_eq(requested, key,
 			"precondition: _current_music holds the REQUEST; if this changed, the arm below is testing something else")
+		## PRECONDITION, labelled: an empty stem has TWO causes and this arm cannot tell them apart.
+		## Unlabelled it blamed the fallback DERIVATION, when no-playback-in-this-process is just as
+		## likely — note_mixer_progress runs from _process and an earlier test can leave the mixer
+		## wedged, which is what red the .672 gate on another lane's fixture.
 		assert_ne(stem, "",
-			"%s resolved to no stream at all — the fallback bed is not playing" % key)
+			("precondition: %s must resolve to SOME playing stream or the arm below judges nothing. "
+			+ "An empty stem means no playback in THIS process — not that the fallback derivation "
+			+ "is broken.") % key)
 		assert_ne(stem, key,
 			("%s has no bed of its own, so the stem must name the bed that actually plays, not the "
 			+ "request. Got %s, which is the lie the announcement used to print.") % [key, stem])

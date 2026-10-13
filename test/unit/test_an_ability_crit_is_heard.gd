@@ -100,6 +100,25 @@ func test_a_physical_ability_can_actually_crit() -> void:
 			declared.append(str(aid))
 	assert_true(declared.has("backstab"),
 		"backstab no longer declares a crit_chance; physical abilities that can crit are now %s" % [declared])
+	## ⛔ THIS WAS TWO FILE-WIDE `contains` ANDed, which is two defects at once: they could be
+	## satisfied at UNRELATED sites (a quantifier error no better pattern fixes), and
+	## `crit_chance = 1.0 if cond else 0.5` satisfies the substring while making the crit
+	## CONDITIONAL — a false green on the arm's own word, "forces". Co-located, and the value is
+	## PARSED rather than prefixed.
 	var bm: String = GdSource.code_of(BATTLE_MANAGER)
-	assert_true(bm.contains('has_status("shadow_step")') and bm.contains("crit_chance = 1.0"),
-		"BattleManager no longer forces crit_chance for shadow_step — the guaranteed-crit route this guard cites is gone")
+	var at: int = bm.find('has_status("shadow_step")')
+	assert_gt(at, -1, "FLOOR: BattleManager no longer tests for the shadow_step status at all")
+	if at < 0:
+		return
+	var near: String = bm.substr(at, 240)
+	var forced: int = near.find("crit_chance = 1.0")
+	assert_gt(forced, -1,
+		("the crit_chance forcing is not within 240 chars of the shadow_step test, so the two "
+		+ "halves of the guaranteed-crit route are no longer the same site"))
+	if forced < 0:
+		return
+	var nl: int = near.find("\n", forced)
+	var stmt: String = near.substr(forced, (nl - forced) if nl > forced else 60).strip_edges()
+	assert_eq(stmt, "crit_chance = 1.0",
+		("the forcing line is `%s`; anything past the bare assignment makes the crit CONDITIONAL, "
+		+ "and this guard's premise is that shadow_step FORCES it") % stmt)
