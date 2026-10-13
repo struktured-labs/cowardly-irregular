@@ -27,6 +27,30 @@ const KEEPER_PORTRAIT_PATHS: Dictionary = {
 	ShopType.WHITE_MAGIC: "res://assets/sprites/portraits/keepers/lenora.png",
 	ShopType.BLACKSMITH:  "res://assets/sprites/portraits/keepers/brutus.png",
 }
+## Who each of those portraits PICTURES, and the dialogue key their own NPC speaks with.
+const PICTURED_KEEPERS: Dictionary = {
+	ShopType.ITEM:        ["Willow", "keeper_willow"],
+	ShopType.BLACK_MAGIC: ["Mortimer", "keeper_mortimer"],
+	ShopType.WHITE_MAGIC: ["Sister Lenora", "keeper_lenora"],
+	ShopType.BLACKSMITH:  ["Brutus", "keeper_brutus"],
+}
+## The face every other keeper speaks with behind their counter (npc_type "shopkeeper" walks as a merchant).
+const OTHER_KEEPER_PORTRAIT := "res://assets/sprites/portraits/npcs/merchant.png"
+## Set by whoever opens the shop; "" = unnamed, shown as the type's own keeper.
+var keeper_name: String = ""
+
+
+## Dialogue portrait key for the keeper of this shop, or "" when they are not one of the four pictured.
+static func pictured_keeper_key(type: int, keeper: String) -> String:
+	var who: Array = PICTURED_KEEPERS.get(type, [])
+	return str(who[1]) if who.size() == 2 and keeper == str(who[0]) else ""
+
+
+## The portrait the wares screen shows: the pictured keeper's own, or the face a differently-named keeper spoke with.
+static func keeper_portrait_path(type: int, keeper: String) -> String:
+	if keeper == "" or pictured_keeper_key(type, keeper) != "":
+		return str(KEEPER_PORTRAIT_PATHS.get(type, ""))
+	return OTHER_KEEPER_PORTRAIT
 
 ## Purchase-feedback tuning (struktured msg 2775). Success flash is a
 ## deliberately different colour + a scale beat from the red error flash
@@ -206,7 +230,7 @@ func _create_description_panel() -> Control:
 	# Shopkeeper portrait (left side of panel) — prefer a bespoke PNG at
 	# KEEPER_PORTRAIT_PATHS[shop_type]; fall through to procedural if absent.
 	var text_x = 16
-	var keeper_png_path: String = KEEPER_PORTRAIT_PATHS.get(shop_type, "")
+	var keeper_png_path: String = keeper_portrait_path(shop_type, keeper_name)
 	if keeper_png_path != "" and ResourceLoader.exists(keeper_png_path):
 		var keeper_tex: Texture2D = load(keeper_png_path)
 		if keeper_tex:
