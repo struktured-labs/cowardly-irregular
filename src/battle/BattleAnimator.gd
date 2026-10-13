@@ -529,7 +529,10 @@ func play_named_animation(anim_name: String, on_complete: Callable = Callable())
 				play_mug(on_complete)
 			"flee":
 				play_item(on_complete)
-			"battle_hymn", "lullaby", "discord", "inspiring_melody", "riff":
+			"riff":
+				# Bard free-move — physical 1.0x and replaces_attack, so it swings like Strike (not cast)
+				play_attack(on_complete)
+			"battle_hymn", "lullaby", "discord", "inspiring_melody":
 				play_cast(on_complete)
 			"pray", "channel":
 				play_cast(on_complete)
