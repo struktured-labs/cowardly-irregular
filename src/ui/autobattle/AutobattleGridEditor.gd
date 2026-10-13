@@ -3393,7 +3393,13 @@ func _open_share_picker() -> void:
 
 	var files := ScriptShareManager.list_exports()
 	if files.is_empty():
-		_flash_status("No export files found — press E to export first", Color.YELLOW)
+		## A pad player reached this picker through More Actions, and was then told to press a key
+		## their hardware does not have — for the verb sitting one row ABOVE the one they just used.
+		## The pad route already exists (`_open_more_actions`, whose own comment says "nine verbs
+		## below were raw KEY_* only, so a pad could not export... this is the pad's route to them");
+		## only this message was left naming the key.
+		_flash_status("No export files found — export one first (E, or More Actions ▸ Export)",
+			Color.YELLOW)
 		SoundManager.play_ui("menu_error")
 		return
 
