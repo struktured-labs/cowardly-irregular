@@ -36,10 +36,9 @@ func before_each() -> void:
 		"db": _sm._music_player.volume_db if _sm._music_player else 0.0,
 	}
 	_kill_tweens()
-	## ZEROED, not merely saved: the danger meter also writes pitch (1.0 + danger * 0.15), so a tree
-	## that left it raised pushes pitch ABOVE 1.0 and reds the flat-drift arm for a reason unrelated to
-	## corruption. HARDENING, not a fixed bug — the exposure is cross-FILE (after_each below restores
-	## within this file, so a planted control comes back green), and the 28-file corpus is clean today.
+	## ZEROED, not merely saved: the danger meter also writes pitch (1.0 + danger * 0.15), so a test
+	## that left it raised would push pitch ABOVE 1.0 and red the flat-drift arm for a reason that has
+	## nothing to do with corruption — passing today only by coincidence of suite order.
 	_sm._danger_intensity = 0.0
 	_sm._corruption_intensity = 0.0
 	_sm._grind_corruption = 0.0
@@ -73,6 +72,10 @@ func _sample_pitch(n: int) -> Array:
 	var out: Array = []
 	for i in range(n):
 		await get_tree().create_timer(SETTLE_S).timeout
+		## The timer is load-bearing (the sine advances in REAL time, so awaiting frames alone would
+		## move it by almost nothing headless); this frame is what GUARANTEES a render happened at the
+		## new time, instead of trusting that >= 1 _process landed inside the gap.
+		await get_tree().process_frame
 		out.append(_sm._music_player.pitch_scale)
 	return out
 
@@ -100,9 +103,13 @@ func test_a_settled_corruption_still_wobbles_the_pitch() -> void:
 ## then sample — pre-fix the pitch sits detuned at the phase the final tween step happened to hit.
 func test_the_wobble_survives_the_settling_tween() -> void:
 	_sm.set_corruption_intensity(1.0)
-	## Past the 1.5s tween with margin, so nothing but the per-frame render can still be moving it.
-	await get_tree().create_timer(2.0).timeout
-	assert_almost_eq(_sm._corruption_intensity, 1.0, 0.01, "the meter did not reach 1.0 — the arm below would sample a clean envelope")
+	## POLLED, not slept. A fixed wait past the 1.5s tween is the shape that flaked test_menu_input
+	## twice in long runs, and 2.0/1.5 = 1.33x was TIGHTER than the 0.2/0.13 = 1.54x that failed there.
+	var waited: float = 0.0
+	while _sm._corruption_intensity < 0.999 and waited < 5.0:
+		await get_tree().create_timer(0.05).timeout
+		waited += 0.05
+	assert_almost_eq(_sm._corruption_intensity, 1.0, 0.01, "the meter did not reach 1.0 in %.2fs — the arms below would sample a clean envelope" % waited)
 	var seen: Array = await _sample_pitch(4)
 	assert_lt(float(seen[0]), 1.0, "corruption must drift the pitch FLAT (below 1.0); got %s" % str(seen))
 	var distinct: Dictionary = {}
