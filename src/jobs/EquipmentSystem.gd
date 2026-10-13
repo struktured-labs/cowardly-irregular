@@ -278,7 +278,7 @@ func _create_default_equipment() -> void:
 		"mp_amulet": {
 			"id": "mp_amulet",
 			"name": "MP Amulet",
-			"description": "Boosts maximum magic",
+			"description": "Boosts maximum MP",
 			"stat_mods": {
 				"max_mp": 30
 			}
