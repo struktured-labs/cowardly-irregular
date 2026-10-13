@@ -15,6 +15,9 @@ extends Node
 ##   pick_intent_async(ctx: BossIntentContext) -> Dictionary  [awaitable]
 ##       returns { intent_id, taunt_line, reason } — LLM-aware; falls
 ##       through to the deterministic pick_intent on any failure.
+##   taunt_for_intent(boss_id, intent_id) -> String
+##       one authored taunt for that intent, or "" — the async path's line
+##       when the LLM picks a posture but writes no taunt.
 ##   check_jailbreak(boss_id, directive_text) -> Variant
 ##       returns null OR { vulnerability_id, consequence }
 ##
@@ -281,6 +284,30 @@ func pick_intent(boss_id: String, phase: int, _game_state: Variant = null, _llm_
 	}
 
 
+## A random authored taunt belonging to ONE intent, or "" when that intent has
+## none. The async path speaks this when the LLM picks a posture but writes no
+## taunt, so the line matches the posture the boss actually adopted.
+func taunt_for_intent(boss_id: String, intent_id: String) -> String:
+	if intent_id.is_empty():
+		return ""
+	# has_entry is a bare _data.has(), and the file's root holds a prose key
+	# beside the boss ids — read the entry defensively rather than abort on it.
+	var entry: Variant = _data.get(boss_id, {})
+	if not (entry is Dictionary):
+		return ""
+	var intents = (entry as Dictionary).get("scripted_intents", [])
+	if not (intents is Array):
+		return ""
+	for it in intents:
+		if not (it is Dictionary) or str(it.get("id", "")) != intent_id:
+			continue
+		var taunts = it.get("taunt_lines", [])
+		if taunts is Array and taunts.size() > 0:
+			return str(taunts[randi() % taunts.size()])
+		return ""
+	return ""
+
+
 ## pick_intent_async — LLM-aware variant. Builds the
 ## DialoguePrompts.build_boss_intent prompt off the given context,
 ## awaits LLMService.complete_json with SCHEMA_BOSS_INTENT, and validates
@@ -294,7 +321,8 @@ func pick_intent(boss_id: String, phase: int, _game_state: Variant = null, _llm_
 ##
 ## Returns { intent_id, taunt_line, reason }. `reason` is empty in the
 ## fallback path. `taunt_line` may also be empty if the boss has no
-## authored taunts for the deterministic pick.
+## authored taunts for the intent that was picked. `reason` reaches no
+## consumer today — BattleManager reads intent_id and taunt_line only.
 ##
 ## MUST be awaited.
 func pick_intent_async(ctx: BossIntentContext) -> Dictionary:
@@ -335,10 +363,11 @@ func pick_intent_async(ctx: BossIntentContext) -> Dictionary:
 		# Validator rejected — keep the deterministic envelope.
 		return det_envelope
 
-	# Successful LLM pick. The taunt the LLM wrote takes priority over the
-	# authored taunt_lines (which the deterministic path picked at random).
+	# Successful LLM pick. A taunt the LLM wrote outranks the authored pool.
 	var llm_taunt: String = str(validated.get("taunt", ""))
-	var final_taunt: String = llm_taunt if not llm_taunt.is_empty() else det_envelope.get("taunt_line", "")
+	# An unwritten one speaks the CHOSEN intent's authored line, never the
+	# deterministic roll's — that belongs to a posture the boss did not adopt.
+	var final_taunt: String = llm_taunt if not llm_taunt.is_empty() else taunt_for_intent(ctx.boss_id, chosen_id)
 
 	return {
 		"intent_id":  chosen_id,
