@@ -3628,23 +3628,34 @@ func _save_previous_actions() -> void:
 			previous_round_actions[combatant_id].append(saved_action)
 
 
+## ⛔ THE REASON A REPEAT WAS REFUSED, FOR THE PLAYER, NOT THE CONSOLE. Each `return false` below
+## had a `print()` beside it and nothing else, so the hint bar advertised Repeat, the press did
+## nothing, and the one fact that would have explained it went to stdout. Set here because this is
+## where the condition is known; duplicating these tests in BattleScene would be two sources.
+var last_repeat_refusal: String = ""
+
+
 func repeat_previous_actions() -> bool:
 	"""Fill remembered actions for party members still choosing, then let the rest of the round select. Returns true if successful."""
 	_track_manual_player_turn()  # Repeat is a manual action, not autobattle
 
 	if previous_round_actions.is_empty():
 		print("[REPEAT] No previous actions to repeat")
+		last_repeat_refusal = "Nothing to repeat yet — this is the first round."
 		return false
 
 	if current_state != BattleState.SELECTION_PHASE and current_state != BattleState.PLAYER_SELECTING:
 		print("[REPEAT] Can only repeat during selection phase")
+		last_repeat_refusal = "Repeat only works while you are choosing actions."
 		return false
 
 	if current_combatant == null or not (current_combatant in player_party):
 		print("[REPEAT] Can only repeat on a party member's turn")
+		last_repeat_refusal = "Repeat only works on a party member's turn."
 		return false
 
 	print("[REPEAT] Repeating previous round's actions for players still choosing")
+	last_repeat_refusal = ""
 	# Menu is already open, so this character's AP was granted. Later allies are filled after theirs.
 	_filling_repeat = true
 	_queue_repeated_action(current_combatant)
