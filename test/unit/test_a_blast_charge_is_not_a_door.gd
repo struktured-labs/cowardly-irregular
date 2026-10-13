@@ -10,21 +10,26 @@ extends GutTest
 ##
 ## ⛔ AND IT IS ONE OF FOUR. `door_open` is played at FOUR sites in that file, for four different
 ## physical events — this lock path, a TIMED PRESSURE PLATE (`_on_timed_plate_entered`), a MIRROR
-## ROTATING (`toggle_mirror`) and a BLOCK PUSHED ONTO A TARGET (`mark_block_on_target`). Three now
-## have their own voice — wall_blast, plate_engage, mirror_turn — authored ONE PER TICK so each was
-## separately vetoable by ear rather than landing as a batch. The block is the one still creaking.
-## The ledger arm below pins the COUNT so that fixing another one is a deliberate act, not a drift.
+## ROTATING (`toggle_mirror`) and a BLOCK PUSHED ONTO A TARGET (`mark_block_on_target`). ALL FOUR now
+## have their own voice — wall_blast, plate_engage, mirror_turn, block_seat — authored ONE PER TICK so
+## each was separately vetoable by ear rather than landing as a batch. The ledger arm below is now a
+## FLOOR AT ZERO: no mechanic in this file may reach for door_open again without its own cue.
 
 const SRC := "res://src/exploration/DungeonMechanics.gd"
 const GdSource := preload("res://test/unit/helpers/gd_source.gd")
 
-## ⛔ THE LENGTHS OF ALL FOUR, BECAUSE A TOLERANCE WIDER THAN THE GAP IS NOT A DISCRIMINATOR.
+## ⛔ THE LENGTHS OF ALL FIVE, BECAUSE A TOLERANCE WIDER THAN THE GAP IS NOT A DISCRIMINATOR.
 ## Each "is it really my file" arm below first read `assert_almost_eq(len, <mine>, 0.06)` — and the
 ## nearest neighbour is 0.05 away (0.55 plate / 0.60 mirror, 0.95 blast / 1.00 door), so EVERY arm
 ## admitted a different cue of the same family. The number was right and the window was wider than
-## the thing it had to separate. Asking which of the four is NEAREST cannot drift that way: it is
-## the relationship, and adding a fifth cue of a similar length tightens it instead of loosening it.
-const CUE_SECS := {"door_open": 1.00, "wall_blast": 0.95, "mirror_turn": 0.60, "plate_engage": 0.55}
+## the thing it had to separate. Asking which of the set is NEAREST cannot drift that way: it is
+## the relationship, and a new cue of a similar length tightens it instead of loosening it.
+##
+## ⚠️ AND ITS REACH IS THIS SET, NOT THE BANK. `ability_bypass_puzzle` is 0.340s against block_seat's
+## 0.335s, so a repoint at that file is nearest block_seat here and passes both length bounds. That
+## hole is covered by the path EQUALITY in _assert_stream_is, not by any window — which is the whole
+## point: the repoint is an edit to an INPUT, and an input takes no tolerance.
+const CUE_SECS := {"door_open": 1.00, "wall_blast": 0.95, "mirror_turn": 0.60, "plate_engage": 0.55, "block_seat": 0.335}
 const NEAR_ENOUGH := 0.08
 
 
@@ -51,6 +56,14 @@ func test_the_length_oracle_can_actually_separate_the_set() -> void:
 		"NEAR_ENOUGH is %.2f but the closest pair (%s) is only %.3fs apart: the plausibility bound now reaches past a sibling, which is the defect this file was repaired for" % [NEAR_ENOUGH, pair, worst])
 
 
+func _manifest_entry(key: String) -> Dictionary:
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/sfx_manifest.json"))
+	assert_true(parsed is Dictionary, "VOID: the sfx manifest did not parse")
+	var sfx: Dictionary = (parsed as Dictionary).get("sfx", {}) if parsed is Dictionary else {}
+	assert_true(sfx.has(key), "%s is not registered in the sfx manifest at all" % key)
+	return sfx.get(key, {})
+
+
 func _nearest_cue(secs: float) -> String:
 	var best: String = ""
 	var bd: float = 1e9
@@ -68,10 +81,20 @@ func _assert_stream_is(key: String) -> void:
 	## will not load falls through to the procedural path with every manifest assertion still green.
 	##
 	## ⚠️ A HELPER ABSORBS AN ABORT, so a renamed `SoundManager` member kills this frame and lets the
-	## caller score whatever it already asserted. TWO of the three callers (plate, mirror) reach here
-	## with NOTHING asserted yet, so they go Risky and `run_tests.sh` exits 4 — loud. The blast caller
-	## has three manifest asserts above and would pass silently on its own. Do not hoist a precondition
-	## above the plate or mirror call: that is the whole cover, and it is a property of their emptiness.
+	## caller score whatever it already asserted. ALL FOUR callers now reach here with NOTHING asserted
+	## yet, so an abort leaves each of them Risky and `run_tests.sh` exits 4 — loud. ⛔ DO NOT HOIST A
+	## PRECONDITION ABOVE ANY OF THESE CALLS: the cover is a property of their EMPTINESS, and one
+	## assert above the call is the whole difference between EC=4 and a silent green.
+	## ⛔ AN EQUALITY ON THE INPUT, BESIDE THE TOLERANCE ON THE OUTPUT — and designing a mutation is
+	## what found the need for it. The length oracle below separates the FIVE cues in CUE_SECS from
+	## each other, and that is all it can do: `ability_bypass_puzzle` is 0.340s against block_seat's
+	## 0.335s, so a manifest repoint at THAT file is nearest block_seat among the five and passes both
+	## length bounds. The repoint hazard is an edit to an INPUT, and an input takes no tolerance.
+	## Two arms, two failure modes: this one catches the manifest pointing elsewhere, exactly; the
+	## length arms catch the file at the right path holding the wrong audio.
+	var entry: Dictionary = _manifest_entry(key)
+	assert_eq(str(entry.get("file", "")), "assets/audio/sfx/%s.ogg" % key,
+		"the manifest entry for %s points at %s — a cue of a similar length is indistinguishable by stream length alone, which is why this is an equality and not a window" % [key, entry.get("file", "<missing>")])
 	SoundManager._sfx_cooldowns.erase(key)
 	SoundManager.play_ui(key)
 	assert_true(SoundManager._sfx_cooldowns.has(key),
@@ -85,7 +108,7 @@ func _assert_stream_is(key: String) -> void:
 	assert_eq(_nearest_cue(secs), key,
 		"the stream on the UI player is %.2fs, which is nearest %s, not %s — a sibling cue's file answers to this key (%s)" % [secs, _nearest_cue(secs), key, CUE_SECS])
 	assert_lt(absf(secs - float(CUE_SECS[key])), NEAR_ENOUGH,
-		"the stream is %.2fs where %s is %.2fs: nearest of the four, but far enough off that it is some other file entirely" % [secs, key, float(CUE_SECS[key])])
+		"the stream is %.2fs where %s is %.2fs: nearest of the set, but far enough off that it is some other file entirely" % [secs, key, float(CUE_SECS[key])])
 	SoundManager._sfx_cooldowns.erase(key)
 
 
@@ -105,18 +128,17 @@ func test_the_two_lock_kinds_do_not_share_a_cue() -> void:
 
 
 func test_the_blast_cue_is_authored_and_plays() -> void:
-	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/sfx_manifest.json"))
-	assert_true(parsed is Dictionary, "VOID: manifest did not parse")
-	var sfx: Dictionary = (parsed as Dictionary).get("sfx", {}) if parsed is Dictionary else {}
-	assert_true(sfx.has("wall_blast"), "wall_blast is no longer authored")
+	## The three manifest asserts that used to sit here are now inside _manifest_entry, and removing
+	## them is not just de-duplication: they were the ONLY thing making this arm rung 3, so an abort
+	## in the helper left it green on whatever it had already asserted. All four playback arms now
+	## reach the helper with nothing asserted, which is what keeps a renamed member loud.
 	_assert_stream_is("wall_blast")
 
 
 func test_the_last_door_open_site_is_still_counted() -> void:
-	## A LEDGER over what is left, pinned by COUNT so the next cue arriving is deliberate. One site
-	## remains: a BLOCK PUSHED ONTO A TARGET, a stone slab seating into a socket, which a wooden door
-	## on hinges is the wrong sound for. If it gains its own cue this reds and the number must come
-	## down in the same commit; if a NEW mechanic reaches for door_open it reds too, which is the point.
+	## THE LEDGER, NOW AT ZERO. Every one of the four non-door mechanics has its own cue, so any
+	## `play_ui("door_open")` appearing in this file again is a new mechanic borrowing a wooden door
+	## for something that is not one. It reds, and the fix is a cue rather than a bigger number.
 	##
 	## ⚠️ IT COUNTS THE LITERAL `play_ui("door_open")`, WHICH EXCLUDES THE KEY PATH ON PURPOSE. `try_open`
 	## spells its choice as a ternary — `play_ui("door_open" if resource == "key" else "wall_blast")` —
@@ -132,9 +154,15 @@ func test_the_last_door_open_site_is_still_counted() -> void:
 	## reds with "not the 1 declared", which names the wrong cause.
 	assert_true(code.contains("func toggle_mirror"),
 		"CONTROL: the comment strip ate the code half, so this count is about nothing")
+	## ⛔ AND WITH THE EXPECTED COUNT AT ZERO, A CONTROL ON THE NEEDLE IS MANDATORY, not optional:
+	## "absent" and "unfindable" are the same number. The key path's ternary is the ONE door_open
+	## mention that must survive — a door opened with a key is the single site where a wooden door is
+	## the right sound — so it doubles as proof that a door_open string in this file is still findable.
+	assert_true(code.contains("play_ui(\"door_open\" if resource"),
+		"CONTROL: the key path's ternary is gone, so a count of 0 says this file no longer mentions door_open at all — which is not the same claim as four mechanics each having their own cue")
 	var n: int = code.count("play_ui(\"door_open\")")
-	assert_eq(n, 1,
-		"DungeonMechanics plays door_open at %d sites, not the 1 declared. The last one is a BLOCK LANDING ON ITS TARGET, which a heavy wooden door is the wrong sound for; if you fixed it, bring this number to 0, and if you added a site it needs its own cue." % n)
+	assert_eq(n, 0,
+		"DungeonMechanics plays door_open at %d site(s). All four non-door mechanics have their own cue now (wall_blast, plate_engage, mirror_turn, block_seat), so a new one here is a mechanic borrowing a wooden door for something that is not a door — give it a cue instead of raising this number." % n)
 
 
 ## SECOND OF THE FOUR, authored on @cowir-main's "one per tick" instruction: a stone pressure plate
@@ -182,3 +210,28 @@ func test_the_mirror_has_its_own_voice() -> void:
 
 func test_the_mirror_cue_is_authored_and_plays() -> void:
 	_assert_stream_is("mirror_turn")
+
+
+## FOURTH AND LAST. `mark_block_on_target` fires when a pushed stone block seats into its socket, and
+## it played `door_open` — oak on iron hinges — for stone settling into stone.
+##
+## 📌 THE BAND IT TOOK WAS THE ONE NOBODY HELD: 1k-2k, dominant at 68.9% of its own energy, where
+## wall_blast and door_open are 40-250, plate_engage is 250Hz-1k and mirror_turn is 2k-8k. That is a
+## design constraint and not an accident — and the honest remainder is that wall_blast and door_open
+## STILL share 40-250 at 0.95s against 1.00s, which this cue does not fix and does not pretend to.
+func test_the_block_has_its_own_voice() -> void:
+	var code: String = GdSource.code_of(SRC)
+	var at: int = code.find("func mark_block_on_target")
+	assert_gt(at, -1, "CONTROL: mark_block_on_target is gone — re-point this arm")
+	if at < 0:
+		return
+	var nxt: int = code.find("\nfunc ", at + 1)
+	var body: String = code.substr(at, nxt - at) if nxt > at else code.substr(at)
+	assert_true(body.contains("block_seat"),
+		"the block no longer plays block_seat, so stone seating into stone sounds like a wooden door again")
+	assert_false(body.contains("door_open"),
+		"the block plays door_open again")
+
+
+func test_the_block_cue_is_authored_and_plays() -> void:
+	_assert_stream_is("block_seat")
