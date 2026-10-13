@@ -54,6 +54,7 @@ const SRC := "res://src/autogrind/AutogrindSystem.gd"
 ## you cannot silence an entry green, only explain it green. It also fails on a STALE entry, so
 ## a field that later becomes symmetric must be removed from here.
 const CLASSIFIED := {
+	"last_fired_rule_index": "which rule row last matched, for the stop reason; evaluate_autogrind_rules rewrites or clears it on every pass, and a resume re-evaluates at AutogrindController:89 before its next battle, so a restored value would be overwritten unread",
 	"is_grinding": "lifecycle flag, not a tally; a snapshot only exists while it is true",
 	"grind_party": "rebuilt from the LIVE party every start -- AutogrindController:122-127 types _party and passes it in, and resume goes through that same start",
 	"grind_enemy_template": "passed in by the same start_autogrind call that rebuilds grind_party",
