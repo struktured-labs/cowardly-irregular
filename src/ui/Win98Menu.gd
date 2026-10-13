@@ -1908,6 +1908,12 @@ func get_queue_count() -> int:
 	return _queued_actions.size()
 
 
+## Queued actions that actually cost AP. A defer is queueable and free, so the count and the
+## bill are two numbers; asks BattleManager rather than restating which types are free.
+func get_queue_billable_count() -> int:
+	return BattleManager.billable_actions(_queued_actions)
+
+
 func set_max_queue_size(max_size: int) -> void:
 	"""Set max queue size based on available AP"""
 	_max_queue_size = max_size
@@ -2176,7 +2182,8 @@ func _update_ap_label() -> void:
 	## at 0. A cost readout that overstates the cost suppresses the exact move the mechanic exists
 	## to reward, and the player has no way to discover it is wrong.
 	var full_bank: bool = _current_ap >= BattleManager.FULL_BANK_AP
-	var billed: int = BattleManager.billed_ap(_current_ap, queued_count)
+	var billed: int = BattleManager.billed_ap(_current_ap, queued_count,
+			BattleManager.billable_actions(root._queued_actions))
 
 	if queued_count == 0:
 		if full_bank:
@@ -2192,7 +2199,9 @@ func _update_ap_label() -> void:
 		# Show AP change preview: "+1→-2" (compact)
 		var new_ap = _current_ap - billed
 		var color = Color.YELLOW if new_ap >= 0 else Color.ORANGE_RED
-		if billed < queued_count:
+		## Was `billed < queued_count`, a PROXY for the full bank, true only while the full bank was
+		## the one reason to bill less. An unbilled defer is a second reason, so it showed a false star.
+		if BattleManager.is_full_bank(_current_ap, queued_count):
 			## The free action is the payoff — name it rather than just quietly costing less.
 			color = Color(1.0, 0.85, 0.3)
 			_ap_label.text = "%+d→%+d [%d] ★ 5th FREE" % [_current_ap, new_ap, queued_count]
