@@ -641,8 +641,29 @@ func _create_item_row(item_id: String, index: int) -> Control:
 	# Description. A 12px gap under a 21px stat line painted "(no change)" through this.
 	var desc_label = Label.new()
 	desc_label.name = "Description"
-	desc_label.text = item_data.get("description", "")
-	desc_label.position = Vector2(54, _choice_desc_y())
+	desc_label.text = str(item_data.get("description", ""))
+	## ANCHORED, not positioned-and-sized. The description had no width and no wrap, so it drew at
+	## CONTENT width: `returned_sword` ends at 897px inside an 800px row, and nothing in this menu
+	## sets clip_contents, so it painted over the border and off a 1280 screen.
+	##
+	## The row is sized by the caller AFTER this returns, so the label's right edge has to FOLLOW
+	## the row rather than take a width assigned here — an assigned width is clamped up to the
+	## minimum size as it stands in that frame, which is the content width at the DEFAULT font
+	## (1499px for this text at 16, against 843 at the overridden 9), and `size` keeps the clamped
+	## value after the minimum settles. `clip_text` is what removes the text from the minimum size
+	## at all; without it the overrun behaviour alone cannot hold a width.
+	##
+	## Same shape as ItemsMenu's name label, which is the established idiom here — anchor_right,
+	## offsets, clip_text, ellipsis. Trimmed to one line rather than wrapped because
+	## `_choice_stride()` budgets exactly ONE description line; the full string stays in `text` and
+	## the status screen wraps it.
+	desc_label.anchor_right = 1.0
+	desc_label.offset_left = 54
+	desc_label.offset_top = _choice_desc_y()
+	desc_label.offset_right = -8
+	desc_label.offset_bottom = _choice_desc_y() + _ui_line_height(9)
+	desc_label.clip_text = true
+	desc_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	desc_label.add_theme_font_size_override("font_size", 9)
 	desc_label.add_theme_color_override("font_color", DISABLED_COLOR)
 	row.add_child(desc_label)
