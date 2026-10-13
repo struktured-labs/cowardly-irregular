@@ -179,7 +179,7 @@ func test_the_limit_break_cue_fires_once_and_names_only_who_was_cured() -> void:
 	## 80 ms window, where only the suppression flag sees it.
 	var ailing := _ally("Poisoned")
 	var also := _ally("Cursed")
-	var healthy := _ally("Fine")
+	var healthy := _ally("Unafflicted")
 	ailing.add_status("poison", 3)
 	ailing.add_status("blind", 3)
 	also.add_status("curse", 3)
@@ -202,7 +202,9 @@ func test_the_limit_break_cue_fires_once_and_names_only_who_was_cured() -> void:
 	assert_eq(cleanse_lines.size(), 2,
 		"the cleanse announced %d party members when TWO of three were ailing — a healthy member is told 'is cleansed' about nothing: %s" % [cleanse_lines.size(), cleanse_lines])
 	var announced := ", ".join(cleanse_lines)
-	assert_false(announced.contains("Fine"),
+	## A distinctive fixture name on purpose: "Fine" was the original and it is a substring of
+	## "Finer", which occurs in src. Zero live exposure, and a better discriminator for free.
+	assert_false(announced.contains("Unafflicted"),
 		"the healthy ally was announced as cleansed: %s" % announced)
 	assert_true(announced.contains("Poisoned") and announced.contains("Cursed"),
 		"the cleanse lines do not name both allies who were actually cured: %s" % announced)

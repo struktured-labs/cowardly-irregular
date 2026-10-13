@@ -729,6 +729,12 @@ func _update_speed_indicator() -> void:
 			text = "[color=#cc22cc]▸▸▸▸▸[/color] [color=#ff00ff]%s[/color] [color=#aa00aa]◂◂◂◂◂[/color]" % speed_label
 		6:  # 64x - maximum (bright magenta)
 			text = "[color=#ff22ff]▸▸▸▸▸▸[/color] [color=#ff44ff]%s[/color] [color=#cc00cc]◂◂◂◂◂◂[/color]" % speed_label
+		_:
+			## An eighth tier would render BLANK here, not wrong: no arm sets `text`, so the readout
+			## empties while the battle genuinely runs faster. Degrade to the plain label instead --
+			## losing the colour ramp is survivable, losing the number is the bug struktured reported.
+			push_warning("[BATTLE] speed index %d has no readout arm; falling back to the bare label" % _battle_speed_index)
+			text = "[color=#ffffff]%s[/color]" % speed_label
 
 	if turbo_mode:
 		text += " [color=#ff4444]TURBO[/color]"
@@ -4944,7 +4950,8 @@ func _on_action_executed(combatant: Combatant, action: Dictionary, targets: Arra
 				# addition with its own cue reds instead of going quiet.
 				# dispel_and_self_buff is target_type single_ally and HOSTILE to that ally (BattleManager strips their buffs, logged in penalty_bbcode) — it sits here with its base effect `dispel` because the target_type rule below would send it to the buff cue
 				# dispel_one (remove_element) and volatility_up_enemy (overexpose) were in NO arm: enemy-targeted, so the catch-all took the `else` branch to play_status(effect), no status_<effect> on disk, generic DESCENDING blip — while each one's own siblings sat in this list
-				"defense_down", "volatility_up", "volatility_up_enemy", "attack_down", "magic_down", "magic_defense_down", "speed_down", "all_stats_down", "random_debuff", "dispel", "dispel_one", "dispel_and_self_buff", "debuff":
+				# ability_weaken (deprecate) adds TWO stat debuffs and is declared in BattleManager's own SUPPORT_DEBUFFS, and still drew the generic blip — this arm hand-lists what that const already names
+				"defense_down", "volatility_up", "volatility_up_enemy", "attack_down", "magic_down", "magic_defense_down", "speed_down", "all_stats_down", "random_debuff", "dispel", "dispel_one", "dispel_and_self_buff", "ability_weaken", "debuff":
 					SoundManager.play_battle("debuff")
 				## cleanse and steal are cued by their BattleManager executors, which are the only places
 				## that know the OUTCOME — whether an ailment came off, whether the steal landed. Cueing
@@ -6736,7 +6743,16 @@ func _check_danger_music() -> void:
 			print("[MUSIC] party recovered into authored silence - staying quiet")
 		else:
 			SoundManager.play_music(_base_music_track)
-			print("[MUSIC] Switched back to %s music - party recovered" % _base_music_track)
+			## SECOND announcement site. The battle-start one was fixed in .669 and this was left
+			## naming the REQUEST: his 2026-10-05 log reads "Switched back to battle_dark_knight
+			## music" on the line after battle_medieval loaded, because 27 pool-reachable monsters
+			## have no bed of their own and _base_music_track keeps the id that was asked for.
+			var heard: String = SoundManager.playing_track_stem()
+			if heard != "" and heard != _base_music_track:
+				print("[MUSIC] Switched back to %s music - party recovered (%s playing)"
+					% [_base_music_track, heard])
+			else:
+				print("[MUSIC] Switched back to %s music - party recovered" % _base_music_track)
 
 
 ## ======================== BATTLE QUIPS ========================

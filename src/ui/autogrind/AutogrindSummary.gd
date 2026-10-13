@@ -10,6 +10,8 @@ const BORDER_SHADOW = Color(0.2, 0.15, 0.25)
 const TEXT_COLOR = Color(0.9, 0.9, 0.9)
 const HEADER_COLOR = Color(1.0, 1.0, 0.4)
 const LABEL_COLOR = Color(0.6, 0.6, 0.7)
+## Same blue the console uses for advice, so the two surfaces read as one voice.
+const ADVICE_COLOR = Color(0.624, 0.827, 1.0)
 const VALUE_COLOR = Color(0.4, 0.9, 0.4)
 const BAD_COLOR = Color(0.9, 0.3, 0.3)
 const BADGE_NEW_COLOR = Color(1.0, 0.85, 0.2)
@@ -49,6 +51,22 @@ func setup(stats: Dictionary, reason: String) -> void:
 	_stats = stats
 	_reason = reason
 	call_deferred("_build_ui")
+
+
+## Standalone wording, NOT the start refusal's clauses -- those follow a situation sentence and do not read alone.
+func _interrupt_advice(rule: String) -> String:
+	match rule:
+		"hp_threshold":
+			return "Heal before grinding again, or lower \"Stop at HP\" in Options."
+		"party_death":
+			return "Revive them, or turn \"Stop on Death\" off in Options."
+		"item_depleted":
+			return "Restock healing items, or turn \"Stop when Out of Items\" off in Options."
+		"max_battles":
+			return "Raise \"Stop after\" in Options to grind longer."
+		"corruption_limit":
+			return "No Options row changes this one -- it guards system collapse. Corruption clears with a fresh session."
+	return ""
 
 
 func _build_ui() -> void:
@@ -155,8 +173,11 @@ func _build_ui() -> void:
 		badge_rows = int(badge_layout[badge_layout.size() - 1]["row"]) + 1
 	var badge_row_h: float = 40.0 * badge_rows
 	var badge_header_h := 20.0 if all_badges.size() > 0 else 0.0
+	var advice: String = _interrupt_advice(str(AutogrindSystem.last_interrupt_rule))
+	## Header is 68 px bare, 86 with the advice line; every stats offset derives from it so the panel cannot overflow.
+	var head_h: float = 68.0 if advice == "" else 86.0
 	var rows_per_col: int = stats_data.size()
-	var panel_h = 68.0 + rows_per_col * row_h + badge_header_h + badge_row_h + 50.0
+	var panel_h = head_h + rows_per_col * row_h + badge_header_h + badge_row_h + 50.0
 	## A long session (full party, rule notes, permadeath, badges) stacked past 720 px and hid the grade and the achievements.
 	var max_h: float = vp_size.y - 40
 	if panel_h > max_h:
@@ -165,10 +186,10 @@ func _build_ui() -> void:
 		badge_layout = _layout_badges(all_badges, panel_w)
 		badge_rows = int(badge_layout[badge_layout.size() - 1]["row"]) + 1 if badge_layout.size() > 0 else 0
 		badge_row_h = 40.0 * badge_rows
-		panel_h = 68.0 + rows_per_col * row_h + badge_header_h + badge_row_h + 50.0
+		panel_h = head_h + rows_per_col * row_h + badge_header_h + badge_row_h + 50.0
 		if panel_h > max_h:
-			row_h = maxf(18.0, (max_h - 68.0 - badge_header_h - badge_row_h - 50.0) / maxf(rows_per_col, 1))
-			panel_h = 68.0 + rows_per_col * row_h + badge_header_h + badge_row_h + 50.0
+			row_h = maxf(18.0, (max_h - head_h - badge_header_h - badge_row_h - 50.0) / maxf(rows_per_col, 1))
+			panel_h = head_h + rows_per_col * row_h + badge_header_h + badge_row_h + 50.0
 	panel_h = min(panel_h, max_h)
 	var col_w: float = panel_w if rows_per_col >= stats_data.size() else (panel_w - 20.0) / 2.0
 
@@ -197,18 +218,26 @@ func _build_ui() -> void:
 	reason_lbl.add_theme_color_override("font_color", LABEL_COLOR)
 	panel.add_child(reason_lbl)
 
+	if advice != "":
+		var advice_lbl = Label.new()
+		advice_lbl.text = advice
+		advice_lbl.position = Vector2(20, 56)
+		advice_lbl.add_theme_font_size_override("font_size", 11)
+		advice_lbl.add_theme_color_override("font_color", ADVICE_COLOR)
+		panel.add_child(advice_lbl)
+
 	var sep = ColorRect.new()
 	sep.color = BORDER_LIGHT
-	sep.position = Vector2(16, 58)
+	sep.position = Vector2(16, head_h - 10)
 	sep.size = Vector2(panel_w - 32, 1)
 	panel.add_child(sep)
 
-	var y = 68.0
+	var y = head_h
 	for i in stats_data.size():
 		var s: Dictionary = stats_data[i]
 		var col: int = i / maxi(rows_per_col, 1)
 		var x0: float = col * col_w
-		y = 68.0 + (i % maxi(rows_per_col, 1)) * row_h
+		y = head_h + (i % maxi(rows_per_col, 1)) * row_h
 		var lbl = Label.new()
 		lbl.text = s["label"]
 		lbl.position = Vector2(x0 + 30, y)
@@ -233,7 +262,7 @@ func _build_ui() -> void:
 			val.text = _fit_items(val, s["fit_items"], box_w)
 			val.size = Vector2(box_w, 20)
 
-	y = 68.0 + rows_per_col * row_h
+	y = head_h + rows_per_col * row_h
 
 	if all_badges.size() > 0:
 		var badge_header = Label.new()

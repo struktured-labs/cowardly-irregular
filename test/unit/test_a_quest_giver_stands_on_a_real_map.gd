@@ -28,6 +28,9 @@ const GdSource := preload("res://test/unit/helpers/gd_source.gd")
 const SUFFIXES: Array[String] = ["_village", "_overworld", "_city"]
 const MIN_MAP_IDS := 55
 const MIN_QUESTS := 25
+## Named once so the arm and the teardown cannot drift apart, and named for THIS file:
+## two guards sharing one probe path is shared mutable state keyed by nothing.
+const PROBE := "user://quest_giver_map_id_probe.gd"
 
 
 ## TeleportMenu enumerates the TELEPORTABLE maps; 15 more are reached only on foot and appear as a
@@ -37,11 +40,18 @@ const MIN_QUESTS := 25
 ## 📌 Same derivation as test_an_examine_names_a_real_map's, deliberately copied rather than shared:
 ## that file is in flight on another branch, and rewiring two guards to a new helper across a fold is
 ## a bigger change than the duplication. A third consumer moves it into test/unit/helpers/.
-func _map_ids() -> Array[String]:
+## The ONE accessor: every arm and every control reads ids through this, so a swap here is visible
+## to the arm below rather than only to a helper nobody asserts about.
+func _ids_in(path: String) -> Array[String]:
 	var out: Array[String] = []
 	var rx := RegEx.create_from_string('"id"\\s*:\\s*"([a-z0-9_]+)"')
-	for m in rx.search_all(GdSource.code_of(TELEPORT)):
+	for m in rx.search_all(GdSource.code_of(path)):
 		out.append(m.get_string(1))
+	return out
+
+
+func _map_ids() -> Array[String]:
+	var out: Array[String] = _ids_in(TELEPORT)
 	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(LOCATIONS))
 	if parsed is Dictionary:
 		for key in (parsed as Dictionary):
@@ -115,3 +125,47 @@ func test_a_place_with_no_map_is_left_alone() -> void:
 		"CONTROL: quests are authored in places with no map yet, and this file must stay silent about them")
 	for row in unmapped:
 		gut.p("NO MAP YET (correct, not a defect): %s" % row)
+
+
+## ⛔ THE INSTRUMENT'S OWN WIRING, PINNED IN BOTH DIRECTIONS. Measured 2026-10-12: swapping
+## _ids_in's accessor to a raw FileAccess read left this file 7 passing / 0 failing — the corpus is
+## an ACCEPTANCE set, so prose reaching it WIDENS what the guard accepts and a scene keyed to a
+## commented id would pass. Three lanes found the same hole in their own prose guards the same hour
+## (@cowir-battle's _window_body, @cowir-deploy's gd_code_lines, @cowir-autogrind's controls), and in
+## every case the control called the HELPER directly, so it certified GdSource and said nothing about
+## what the arm used. This routes through _ids_in, the accessor the real arm uses.
+##
+## 🔑 AND BOTH DIRECTIONS, because either assertion alone is satisfied by a defect in the other
+## (@cowir-autogrind): "a real id survives" passes a strip that never happened, and "the commented id
+## is absent" passes a strip that ate the file.
+func test_the_accessor_this_guard_uses_strips_prose_both_ways() -> void:
+	var probe := PROBE
+	var f := FileAccess.open(probe, FileAccess.WRITE)
+	assert_not_null(f, "CONTROL: the probe file must be writable")
+	f.store_string("\n".join([
+		"extends Node",
+		"## a comment showing the shape: {\"id\": \"zz_prose_only_map\"}",
+		"const MAP_IDS := [",
+		"\t{\"id\": \"zz_real_map\", \"label\": \"Real\"},",
+		"]",
+		"\"\"\"",
+		"a docstring naming {\"id\": \"zz_docstring_map\"}",
+		"\"\"\"",
+	]))
+	f.close()
+	var got: Array[String] = _ids_in(probe)
+	assert_true(got.has("zz_real_map"),
+		"the real id did not survive, so the accessor is over-stripping and every verdict here is vacuous")
+	assert_false(got.has("zz_prose_only_map"),
+		"a `#` comment reached the accepted-id set: prose would widen what this guard accepts")
+	assert_false(got.has("zz_docstring_map"),
+		"a \"\"\" docstring reached the accepted-id set — code_of() strips comments by LINE and regions by split()")
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(probe))
+
+
+## The plant is erased HERE, not only at the end of the arm: a GDScript error inside the arm aborts
+## the enclosing function, so the inline remove never runs and the plant survives into the next run.
+## A persisting plant is the one thing that can make this guard lie in the direction it rules out.
+func after_each() -> void:
+	if FileAccess.file_exists(PROBE):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(PROBE))

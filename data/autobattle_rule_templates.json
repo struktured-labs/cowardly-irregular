@@ -1152,7 +1152,7 @@
       "job_id": "bard",
       "stance": "defensive",
       "name": "Defensive",
-      "description": "Battle Hymn on turn 1, keep the biggest threat asleep, Riff MP back for the party.",
+      "description": "Battle Hymn on turn 1, keep the biggest threat asleep, Riff otherwise — a free strike that blinds.",
       "rules": [
         {
           "conditions": [
@@ -1202,23 +1202,6 @@
         {
           "conditions": [
             {
-              "type": "mp_percent",
-              "op": "<",
-              "value": 20
-            }
-          ],
-          "actions": [
-            {
-              "type": "ability",
-              "id": "riff",
-              "target": "highest_atk_enemy"
-            }
-          ],
-          "enabled": true
-        },
-        {
-          "conditions": [
-            {
               "type": "not_enemy_has_status",
               "status": "sleep"
             },
@@ -1245,8 +1228,9 @@
           ],
           "actions": [
             {
-              "type": "attack",
-              "target": "lowest_hp_enemy"
+              "type": "ability",
+              "target": "lowest_hp_enemy",
+              "id": "riff"
             }
           ],
           "enabled": true
@@ -1258,7 +1242,7 @@
       "job_id": "bard",
       "stance": "balanced",
       "name": "Balanced",
-      "description": "Battle Hymn opener, Lullaby the biggest threat in crowds, Riff when MP dips, attack otherwise.",
+      "description": "Battle Hymn opener, Lullaby the biggest threat in crowds, Riff otherwise — free damage plus a blind.",
       "rules": [
         {
           "conditions": [
@@ -1308,23 +1292,6 @@
         {
           "conditions": [
             {
-              "type": "mp_percent",
-              "op": "<",
-              "value": 15
-            }
-          ],
-          "actions": [
-            {
-              "type": "ability",
-              "id": "riff",
-              "target": "highest_atk_enemy"
-            }
-          ],
-          "enabled": true
-        },
-        {
-          "conditions": [
-            {
               "type": "not_enemy_has_status",
               "status": "sleep"
             },
@@ -1356,8 +1323,9 @@
           ],
           "actions": [
             {
-              "type": "attack",
-              "target": "lowest_hp_enemy"
+              "type": "ability",
+              "target": "lowest_hp_enemy",
+              "id": "riff"
             }
           ],
           "enabled": true
@@ -1369,7 +1337,7 @@
       "job_id": "bard",
       "stance": "aggressive",
       "name": "Aggressive",
-      "description": "Hymn the party up, then double-strike with spare AP and keep swinging.",
+      "description": "Hymn the party up, then double-Riff with spare AP and keep striking — every swing can blind.",
       "rules": [
         {
           "conditions": [
@@ -1426,12 +1394,14 @@
           ],
           "actions": [
             {
-              "type": "attack",
-              "target": "lowest_hp_enemy"
+              "type": "ability",
+              "target": "lowest_hp_enemy",
+              "id": "riff"
             },
             {
-              "type": "attack",
-              "target": "lowest_hp_enemy"
+              "type": "ability",
+              "target": "lowest_hp_enemy",
+              "id": "riff"
             }
           ],
           "enabled": true
@@ -1444,8 +1414,9 @@
           ],
           "actions": [
             {
-              "type": "attack",
-              "target": "lowest_hp_enemy"
+              "type": "ability",
+              "target": "lowest_hp_enemy",
+              "id": "riff"
             }
           ],
           "enabled": true

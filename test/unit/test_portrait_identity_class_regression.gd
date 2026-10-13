@@ -17,6 +17,9 @@ const KNOWN_PAIRS := {
 	"milo": "scholar_milo",
 	# Cutscene key vs the MONSTER id her boss intro asks by (2026-10-12): see test_the_calibrant_wears_one_face.
 	"calibrant": "the_calibrant",
+	# The same class for two more bosses fought straight after a cutscene they speak in.
+	"boss_rat_king": "cave_rat_king",
+	"courtier": "bard_hostile_courtier",
 }
 
 
@@ -211,6 +214,7 @@ func test_every_resolved_portrait_file_exists() -> void:
 ## mage.png, which is the same "two characters, one face" defect in the other direction.
 const DISTINCT_CHARACTERS := {
 	"boss_rat_king": "the Cave Rat King is a boss, not the king of Harmonia",
+	"cave_rat_king": "the same boss under his monster id: still not the king of Harmonia",
 	"hooded_mage": "a distinct NPC, not the Mage job portrait",
 	"time_mage": "the Time Mage job, not the Mage job",
 }
