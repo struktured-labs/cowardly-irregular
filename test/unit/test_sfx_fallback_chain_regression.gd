@@ -148,3 +148,73 @@ func test_every_hand_mapped_ability_cue_names_a_real_key() -> void:
 		"CONTROL: matched only %d hand-mapped ability cues, so this arm is reading almost nothing" % mapped)
 	assert_eq(dangling, [],
 		"these hand-mapped ability cues name a manifest key that does not exist, so the ability falls back to ability_physical — a sword thump, audible and plausible, which is why it went unnoticed for months last time: %s" % [dangling])
+
+
+## THE SIBLING MAP, AND THE EXCLUSIONS ARE REASONED RATHER THAN SKIPPED. SoundManager holds six
+## cue-naming indirections; I audited all six clean and am guarding two, because the consequence of
+## a broken entry differs and only some of them can go quiet:
+##   _ability_sounds      GUARDED above — falls through to ability_physical, a SWORD THUMP: audible,
+##                        plausible, and the documented instance lasted months.
+##   _ITEM_EFFECT_SFX     GUARDED here — play_item sends the cue to play_battle, so a target that
+##                        resolves to nothing makes USING AN ITEM silent. This file's own history
+##                        records that exact defect ("potions were silent in battle").
+##   _ELEMENT_SFX
+##   _TYPE_SFX            NOT guarded, and SELF-GUARDING BY CONSTRUCTION: the derived pass tests
+##                        `if c != "" and _sfx_manifest.has(c)` before adopting a candidate, so a
+##                        target that stops resolving is skipped rather than played. A guard here
+##                        would duplicate a check the code already makes on every boot.
+##   _UI_VOLUME_TRIM_DB
+##   _BATTLE_VOLUME_TRIM_DB  NOT guarded: a key naming no cue is INERT — nothing looks it up, so
+##                        nothing changes. Worth knowing, not worth an arm. (This is where the
+##                        2026-10-12 Rogue advance-trim went wrong, and the keys were never the
+##                        problem there — the metric was.)
+##
+## ⛔ AND THE REASON THIS IS A HAND-LIST OF MAP NAMES RATHER THAN A DERIVATION: enumerating these by
+## pattern is blind, and I proved it on myself. A regex for `map["k"] = "cue"` found 3 of the 6 —
+## `_ITEM_EFFECT_SFX` is an `Array[Array]` of pairs and `_item_sounds` is populated at runtime from
+## items.json, so neither has that shape. The scan reported full coverage of the part it could see.
+func test_every_item_cue_names_a_real_key_and_a_real_effect() -> void:
+	var sfx := _manifest()
+	var src := _source()
+	var start: int = src.find("const _ITEM_EFFECT_SFX")
+	assert_gt(start, -1, "CONTROL: _ITEM_EFFECT_SFX is gone — re-point this arm rather than deleting it")
+	if start < 0:
+		return
+	var body: String = src.substr(start, src.find("\n]", start) - start)
+	var rx := RegEx.create_from_string("\\[\\s*\"([a-z_0-9]+)\"\\s*,\\s*\"([a-z_0-9]+)\"\\s*\\]")
+	var pairs: Array = rx.search_all(body)
+	assert_gt(pairs.size(), 4,
+		"CONTROL: parsed only %d item-cue pairs, so this arm is reading almost nothing" % pairs.size())
+
+	var dangling: Array[String] = []
+	for m in pairs:
+		var cue: String = m.get_string(2)
+		if not sfx.has(cue) and not src.contains("\"%s\":" % cue):
+			dangling.append("%s -> %s" % [m.get_string(1), cue])
+	assert_eq(dangling, [],
+		"these item cues name a key that resolves to nothing, so play_item sends it to play_battle and USING THE ITEM IS SILENT — the defect this file's own header records: %s" % [dangling])
+
+	## And the other direction: a pair whose EFFECT no item authors is dead weight that reads as
+	## coverage. All 8 matched a real item effect when this was written.
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items.json"))
+	assert_true(parsed is Dictionary, "VOID: items.json did not parse")
+	var items: Dictionary = (parsed as Dictionary).get("items", parsed) if parsed is Dictionary else {}
+	var authored: Dictionary = {}
+	for iid in items.keys():
+		var it: Variant = items[iid]
+		if not (it is Dictionary):
+			continue
+		for e in (it as Dictionary).get("effects", []):
+			if e is Dictionary:
+				authored[str((e as Dictionary).get("type", (e as Dictionary).get("effect", "")))] = true
+			else:
+				authored[str(e)] = true
+		if (it as Dictionary).has("effect"):
+			authored[str((it as Dictionary)["effect"])] = true
+	assert_gt(authored.size(), 5, "CONTROL: only %d item effects parsed from items.json" % authored.size())
+	var dead: Array[String] = []
+	for m in pairs:
+		if not authored.has(m.get_string(1)):
+			dead.append(m.get_string(1))
+	assert_eq(dead, [],
+		"these item-cue pairs name an effect no item authors, so the row can never fire and reads as coverage it does not provide: %s" % [dead])
