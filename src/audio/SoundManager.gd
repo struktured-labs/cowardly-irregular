@@ -827,6 +827,8 @@ const _ITEM_EFFECT_SFX: Array[Array] = [
 	["escape_battle", "ability_flee"],
 	["cure_all_status", "status_cured"],
 	["cure_status", "status_cured"],
+	## A buff item was SILENT: power_drink/speed_tonic/defense_tonic/magic_tonic are shop stock (VillageShop:43) and two are BRAVE/QUICK starting kit, their only effect key is add_buff, play_item returns early on an unmapped id, and they deal no damage so nothing else sounds — while the authored `buff` cue the ABILITY path already uses for the same effect sat unreached
+	["add_buff", "buff"],
 	["heal_mp", "ability_mp_restore"],
 	["heal_mp_percent", "ability_mp_restore"],
 	## LAST, so a hybrid item (elixir restores HP and MP) takes the MP cue above rather than this.
