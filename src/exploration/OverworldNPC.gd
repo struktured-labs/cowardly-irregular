@@ -109,7 +109,7 @@ const NPC_TYPE_TO_ARCHETYPE: Dictionary = {
 	"pilgrim": "monk",            # hooded traveling holy figure
 	"apprentice": "young_man",    # blacksmith journeyman, plain workwear
 	"knight": "soldier",          # armored infantry — closest existing sheet
-	"mysterious": "traveler",     # hooded stranger — traveler sheet has the cloak silhouette
+	"mysterious": "mysterious",   # its own hooded sheet (2026-09-07); it borrowed the traveler's brown hat until 2026-10-13
 	"bartender": "innkeeper",     # apron behind counter, same silhouette family
 	"maid": "young_woman",        # apron-and-dress silhouette
 	"adventurer": "traveler",     # cloaked wanderer

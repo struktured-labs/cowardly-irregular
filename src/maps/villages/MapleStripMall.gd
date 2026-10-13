@@ -210,5 +210,6 @@ func _setup_npcs() -> void:
 		"Your energy profile is familiar. The cards remember you even here.",
 		"The mall rearranges. My booth does not. Draw your own conclusions.",
 	])
+	orrery.sprite_archetype = "traveler"  # the travelling merchant keeps her look; plain "mysterious" is the hooded figure
 	orrery.npc_id = "madame_orrery_w2"
 	npcs.add_child(orrery)
