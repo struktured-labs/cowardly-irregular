@@ -825,6 +825,12 @@ const _TYPE_SFX: Dictionary = {
 const _ITEM_EFFECT_SFX: Array[Array] = [
 	["revive", "ability_revive"],
 	["escape_battle", "ability_flee"],
+	## Repel is BATTLE-USABLE (ineffective_use_reason:640 — "Damage and repel do something the moment
+	## they are used"), so it is consumed and played nothing. A repel field is a ward, which is why it
+	## takes the WARD cue rather than the generic `buff` — @cowir-music left the character call to this
+	## lane and `buff` reads wrong for a field effect. Reuse of an ability cue by an item is the
+	## established pattern here (revive, escape_battle, heal_mp all do it).
+	["repel_steps", "ability_shell"],
 	["cure_all_status", "status_cured"],
 	["cure_status", "status_cured"],
 	["heal_mp", "ability_mp_restore"],
