@@ -1,0 +1,253 @@
+{
+  "_note": "written by tools/audit_variant_levels.py --write; test_a_variant_varies_texture_not_level.gd pins these",
+  "_spread_limit": 3.0,
+  "families": {
+    "ability_fire": {
+      "members": {
+        "ability_fire": {
+          "lufs": -15.7,
+          "ch": 1
+        },
+        "ability_fire_v2": {
+          "lufs": -17.8,
+          "ch": 1
+        },
+        "ability_fire_v3": {
+          "lufs": -15.0,
+          "ch": 1
+        }
+      },
+      "spread": 2.8,
+      "unmeasurable": false,
+      "mixed_channels": false
+    },
+    "ability_heal": {
+      "members": {
+        "ability_heal": {
+          "lufs": -17.8,
+          "ch": 1
+        },
+        "ability_heal_v2": {
+          "lufs": -10.6,
+          "ch": 2
+        },
+        "ability_heal_v3": {
+          "lufs": -11.4,
+          "ch": 2
+        }
+      },
+      "spread": 7.2,
+      "unmeasurable": false,
+      "mixed_channels": true
+    },
+    "ability_ice": {
+      "members": {
+        "ability_ice": {
+          "lufs": -15.4,
+          "ch": 1
+        },
+        "ability_ice_v2": {
+          "lufs": -17.8,
+          "ch": 1
+        },
+        "ability_ice_v3": {
+          "lufs": -12.6,
+          "ch": 1
+        }
+      },
+      "spread": 5.2,
+      "unmeasurable": false,
+      "mixed_channels": false
+    },
+    "ability_lightning": {
+      "members": {
+        "ability_lightning": {
+          "lufs": -16.4,
+          "ch": 1
+        },
+        "ability_lightning_v2": {
+          "lufs": -17.8,
+          "ch": 1
+        },
+        "ability_lightning_v3": {
+          "lufs": -15.7,
+          "ch": 1
+        }
+      },
+      "spread": 2.1,
+      "unmeasurable": false,
+      "mixed_channels": false
+    },
+    "buff": {
+      "members": {
+        "buff": {
+          "lufs": -11.1,
+          "ch": 2
+        },
+        "buff_v2": {
+          "lufs": -18.1,
+          "ch": 1
+        },
+        "buff_v3": {
+          "lufs": -16.1,
+          "ch": 1
+        }
+      },
+      "spread": 7.0,
+      "unmeasurable": false,
+      "mixed_channels": true
+    },
+    "debuff": {
+      "members": {
+        "debuff": {
+          "lufs": -10.0,
+          "ch": 2
+        },
+        "debuff_v2": {
+          "lufs": -15.9,
+          "ch": 1
+        },
+        "debuff_v3": {
+          "lufs": -16.1,
+          "ch": 1
+        }
+      },
+      "spread": 6.1,
+      "unmeasurable": false,
+      "mixed_channels": true
+    },
+    "footstep_grass": {
+      "members": {
+        "footstep_grass": {
+          "lufs": null,
+          "ch": 2
+        },
+        "footstep_grass_v2": {
+          "lufs": null,
+          "ch": 2
+        },
+        "footstep_grass_v3": {
+          "lufs": null,
+          "ch": 2
+        }
+      },
+      "spread": null,
+      "unmeasurable": true,
+      "mixed_channels": false
+    },
+    "footstep_metal": {
+      "members": {
+        "footstep_metal": {
+          "lufs": null,
+          "ch": 2
+        },
+        "footstep_metal_v2": {
+          "lufs": null,
+          "ch": 2
+        },
+        "footstep_metal_v3": {
+          "lufs": null,
+          "ch": 2
+        }
+      },
+      "spread": null,
+      "unmeasurable": true,
+      "mixed_channels": false
+    },
+    "footstep_sand": {
+      "members": {
+        "footstep_sand": {
+          "lufs": null,
+          "ch": 2
+        },
+        "footstep_sand_v2": {
+          "lufs": null,
+          "ch": 2
+        },
+        "footstep_sand_v3": {
+          "lufs": null,
+          "ch": 2
+        }
+      },
+      "spread": null,
+      "unmeasurable": true,
+      "mixed_channels": false
+    },
+    "footstep_snow": {
+      "members": {
+        "footstep_snow": {
+          "lufs": null,
+          "ch": 2
+        },
+        "footstep_snow_v2": {
+          "lufs": null,
+          "ch": 2
+        },
+        "footstep_snow_v3": {
+          "lufs": null,
+          "ch": 2
+        }
+      },
+      "spread": null,
+      "unmeasurable": true,
+      "mixed_channels": false
+    },
+    "footstep_stone": {
+      "members": {
+        "footstep_stone": {
+          "lufs": null,
+          "ch": 2
+        },
+        "footstep_stone_v2": {
+          "lufs": null,
+          "ch": 2
+        },
+        "footstep_stone_v3": {
+          "lufs": null,
+          "ch": 2
+        }
+      },
+      "spread": null,
+      "unmeasurable": true,
+      "mixed_channels": false
+    },
+    "footstep_wood": {
+      "members": {
+        "footstep_wood": {
+          "lufs": null,
+          "ch": 2
+        },
+        "footstep_wood_v2": {
+          "lufs": null,
+          "ch": 2
+        },
+        "footstep_wood_v3": {
+          "lufs": null,
+          "ch": 2
+        }
+      },
+      "spread": null,
+      "unmeasurable": true,
+      "mixed_channels": false
+    },
+    "heal": {
+      "members": {
+        "heal": {
+          "lufs": -6.7,
+          "ch": 2
+        },
+        "heal_v2": {
+          "lufs": -9.9,
+          "ch": 2
+        },
+        "heal_v3": {
+          "lufs": -11.9,
+          "ch": 2
+        }
+      },
+      "spread": 5.2,
+      "unmeasurable": false,
+      "mixed_channels": false
+    }
+  }
+}

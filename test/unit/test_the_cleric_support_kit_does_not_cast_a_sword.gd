@@ -16,6 +16,7 @@ extends GutTest
 ## `buff` for protect/shell/regen, and esuna's cure is cued from BattleManager's cleanse executor.
 ## The CAST was the sword.
 
+const SfxState := preload("res://test/unit/helpers/sfx_state.gd")
 const SWORD := "ability_physical"
 const KIT := ["protect", "shell", "regen", "esuna",
 		"scan", "shadow_step", "smoke_bomb", "provoke"]
@@ -23,6 +24,24 @@ const KIT := ["protect", "shell", "regen", "esuna",
 ## Still unmapped, so still thumping. A LEDGER, not an aspiration: it reds when someone maps one of
 ## these, which is the point — the next lane to fix a Rogue or Fighter cue must update this line, and
 ## a declaration that outlives its fact is worse than none.
+## ⛔ THIS FILE PLAYS EIGHT CUES AND SHIPPED WITH NO TEARDOWN. A full suite is ONE process, so the
+## last stream stays on the shared _ability_player, and sfx_state.gd's own measured note is that a
+## leaked stream satisfies any other file's `assert_true(player.stream != null, "CONTROL: ...")`
+## exactly as a real cue does — it disabled three arms in a sibling lane. My steal guard adopted this
+## helper earlier the same session; I did not carry it here, which is the half of a rule you forget
+## precisely because you already applied it once.
+##
+## ⚠️ NOT the mixer-wedge class that red .672: `_live_bed()` covers music / music_b / ambient /
+## VOICE, and _ability_player is none of those, so this file cannot leave a bed that clears someone's
+## stall latch. Two different pollution routes through the same autoload — naming which one this is
+## so the next reader does not widen the fix.
+func after_each() -> void:
+	for id in KIT:
+		SoundManager._sfx_cooldowns.erase("ability_" + id)
+	SoundManager._sfx_suppressed_by_cooldown = false
+	SfxState.release_streams()
+
+
 func _manifest() -> Dictionary:
 	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/sfx_manifest.json"))
 	assert_true(parsed is Dictionary, "VOID: sfx_manifest.json did not parse")
