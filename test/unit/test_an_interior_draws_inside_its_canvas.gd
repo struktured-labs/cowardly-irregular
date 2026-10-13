@@ -58,18 +58,32 @@ func test_every_interior_builds_for_the_log_to_be_read() -> void:
 	for f in scripts:
 		gut.p("PROBE_INTERIOR_BEGIN %s" % f)
 		var scr = load(DIR + f)
-		if scr == null:
+		## \u26d4 `load() == null` DOES NOT CATCH A COMPILE ERROR \u2014 measured, not assumed: I planted
+		## invalid GDScript in HarmoniaChapelInterior (a use-before-declaration) and the first version
+		## of this arm still reported "30 built, failed == []". A probe that reports a clean build for
+		## a script that cannot compile is a dead detector, and it made my 30-interior zero worthless.
+		## `can_instantiate()` is the question `== null` was standing in for.
+		if scr == null or not (scr is GDScript) or not scr.can_instantiate():
 			failed.append(f)
-			gut.p("PROBE_INTERIOR_SKIP %s (script would not load)" % f)
+			gut.p("PROBE_INTERIOR_SKIP %s (script would not load or cannot instantiate)" % f)
 			continue
 		var vp := SubViewport.new()
 		vp.size = Vector2i(64, 64)
 		vp.world_2d = World2D.new()
 		add_child_autofree(vp)
 		var room = scr.new()
+		if room == null:
+			failed.append(f)
+			gut.p("PROBE_INTERIOR_SKIP %s (new() returned null)" % f)
+			continue
 		vp.add_child(room)
 		await get_tree().physics_frame
 		await get_tree().physics_frame
+		## A room that built NOTHING cannot have overrun a canvas, so it would clear vacuously.
+		if room.get_child_count() == 0:
+			failed.append(f)
+			gut.p("PROBE_INTERIOR_SKIP %s (built no children \u2014 it would clear vacuously)" % f)
+			continue
 		built += 1
 		gut.p("PROBE_INTERIOR_END %s" % f)
 		vp.queue_free()
@@ -77,4 +91,7 @@ func test_every_interior_builds_for_the_log_to_be_read() -> void:
 
 	assert_eq(failed, [], "these interior scripts would not load: %s" % ", ".join(failed))
 	assert_gt(built, 25, "CONTROL: %d interiors built; the sweep must cover the set to clear it" % built)
-	gut.p("  built %d interiors — now grep the run log for 'out of bounds' and read the marker above it" % built)
+	## \u26d4 THIS LINE USED TO CONTAIN THE PHRASE THE GREP LOOKS FOR, so the grep matched the probe's
+	## own output and reported 1 "finding" that was this sentence. Third self-matching needle of the
+	## night on my side; the cure is to not name the pattern in the file that the pattern is run over.
+	gut.p("  built %d interiors \u2014 now grep BOTH the captured stdout AND run_tests.sh's $GUT_LOG for 'Index p_y'" % built)
