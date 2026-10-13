@@ -1719,6 +1719,13 @@
       "duration_seconds": 1.0,
       "prompt_influence": 0.5
     },
+    "status_static": {
+      "file": "assets/audio/sfx/status_static.ogg",
+      "source": "sox_synth",
+      "prompt": "Static-status application (static_field: effect=\"static\", all_enemies, duration 3 — cast by corrupted_sprite and by the W1 lightning dragon, so this is reachable in World 1). SYNTHESISED, not generated: a bandpassed noise zap (3200/2000) over a decaying static bed (4200/3000, 0.58s) with four crackle ticks at 0.17/0.28/0.40/0.52s and a faint lowpassed glow (980->520Hz, -22dB). Peak normalised to -3.5 dBFS; rms -21.2, which is inside the status family's -13.7..-24.0 range and deliberately peaky — the crest factor is what makes it read as crackle rather than hiss. Energy is dominant in 3-6kHz, which is what distinguishes it from its two neighbours: static_burst is a W4 CUTSCENE one-shot (0.35s, 1-2kHz dominant) and NOT this cue, and status_paralyze is 6-11kHz dominant. Authored because `static` was the one SUPPORT_AILMENT with no cue of its own, so it drew the generic descending blip (struktured ruling 15: \"not even close to good\"). Tick 379 gave `static` its gameplay arm in BattleManager and its audio was never added — the same two-dispatch-tables gap as dispel_one.",
+      "duration_seconds": 0.7,
+      "prompt_influence": 0.0
+    },
     "status_stun": {
       "file": "assets/audio/sfx/status_stun.ogg",
       "source": "sox_synth",
