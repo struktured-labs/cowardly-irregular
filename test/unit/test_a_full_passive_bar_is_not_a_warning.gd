@@ -99,16 +99,57 @@ func test_the_notice_counts_and_names_where_to_go() -> void:
 		assert_string_contains(text, "Abilities", "the notice names the menu that equips them")
 
 
-func test_the_job_menu_shows_the_notice_after_a_job_change() -> void:
-	var code: String = GdSource.code_of("res://src/ui/JobMenu.gd")
-	var at := code.find("success = JobSystem.assign_job(character, job_id)")
-	var end := code.find("\nfunc ", at + 1)
-	assert_gt(at, -1, "the assign call this arm reads from")
-	assert_gt(end, at, "bounded at the next function")
-	var body := code.substr(at, end - at)
-	var read := body.find("unequipped_grant_notice(JobSystem.last_grant_left_unequipped.size())")
-	var swap := body.find("_adopt_job_profile(")
-	var toast := body.find("Toast.show(self, waiting)")
-	assert_gt(read, -1, "the menu reads what the grant could not fit")
-	assert_gt(swap, read, "and reads it BEFORE the profile swap, which may run another grant")
-	assert_gt(toast, body.find("_build_ui()", swap), "the toast goes up after the rebuild, or the rebuild would free it")
+func _labels_under(n: Node, out: Array) -> void:
+	for c in n.get_children():
+		if c is Label:
+			out.append(c)
+		_labels_under(c, out)
+
+
+func _job_that_teaches(c: Combatant, menu: JobMenu) -> int:
+	var jobs: Array = menu._get_available_jobs()
+	for i in range(jobs.size()):
+		var roster: Variant = JobSystem.jobs.get(str(jobs[i]), {}).get("passive_abilities", [])
+		if not (roster is Array):
+			continue
+		for pid in roster:
+			if not (str(pid) in c.learned_passives):
+				return i
+	return -1
+
+
+## Driven, not read: the menu is built, a job is assigned onto a full bar, and the toast is looked for in the tree.
+func test_the_job_menu_puts_the_notice_on_screen_and_a_rebuild_does_not_eat_it() -> void:
+	var host := Control.new()
+	add_child_autofree(host)
+	var c := _member(5)
+	JobSystem.assign_job(c, "fighter")
+	while c.equipped_passives.size() < c.max_passive_slots:
+		for id in PassiveSystem.passives.keys():
+			if not (str(id) in c.equipped_passives):
+				c.learned_passives.append(str(id))
+				c.equipped_passives.append(str(id))
+				break
+	var menu := JobMenu.new()
+	host.add_child(menu)
+	menu.setup(c)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	menu.selected_slot = 0
+	var idx := _job_that_teaches(c, menu)
+	assert_gt(idx, -1, "SCOPE: some available job teaches a passive this member has not learned")
+	if idx < 0:
+		return
+	menu.selected_job_index = idx
+	menu._assign_selected_job()
+	assert_gt(JobSystem.last_grant_left_unequipped.size(), 0, "SCOPE: the grant left something waiting")
+	menu._build_ui()
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var labels: Array = []
+	_labels_under(host, labels)
+	var seen := false
+	for l in labels:
+		if is_instance_valid(l) and not l.is_queued_for_deletion() and str(l.text).begins_with("Learned ") and str(l.text).contains("Abilities"):
+			seen = true
+	assert_true(seen, "the notice is a live label on screen after the job change AND after the menu rebuilds")

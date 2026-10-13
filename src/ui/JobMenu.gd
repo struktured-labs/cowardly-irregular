@@ -731,7 +731,9 @@ func _assign_selected_job() -> void:
 		mode = Mode.SLOT_SELECT
 		_build_ui()
 		if waiting != "":
-			Toast.show(self, waiting)
+			## On the PARENT: this menu frees its own children on every rebuild, and the next keypress rebuilds.
+			var host: Node = get_parent() if get_parent() != null else self
+			Toast.show(host, waiting)
 	else:
 		SoundManager.play_ui("menu_error")
 
