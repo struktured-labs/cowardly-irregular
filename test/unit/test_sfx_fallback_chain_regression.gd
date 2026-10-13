@@ -218,20 +218,3 @@ func test_every_item_cue_names_a_real_key_and_a_real_effect() -> void:
 			dead.append(m.get_string(1))
 	assert_eq(dead, [],
 		"these item-cue pairs name an effect no item authors, so the row can never fire and reads as coverage it does not provide: %s" % [dead])
-
-
-## THE CHARACTER CALL, which the derived silent-set arm cannot express. That derivation lives in
-## test_a_buff_item_is_heard_when_used.gd (@cowir-music's file) and is satisfied by ANY mapping; this
-## pins WHICH cue. Repel is battle-usable (ineffective_use_reason:640 — "Damage and repel do something
-## the moment they are used"), so it is consumed, and it played nothing until 2026-10-13.
-##
-## ⛔ My own derived copy of the silent-set arm was REMOVED from this file in the same change rather
-## than left to agree with theirs by coincidence. Two owners of one derived fact is the shape where a
-## later edit changes only one of them, and nothing reds.
-func test_repel_is_cued_and_takes_the_ward_not_the_generic_buff() -> void:
-	## Named because the derived arm above is satisfied by ANY mapping. Repel is a field effect used
-	## in battle; `buff` reads wrong for it, and @cowir-music left that character call to this lane.
-	assert_eq(str(SoundManager._item_sounds.get("repel", "")), "ability_shell",
-		"repel no longer takes the ward cue; it is a field effect and the generic buff cue reads wrong for it")
-	assert_true(SoundManager._sfx_manifest.has("ability_shell"),
-		"ability_shell is not authored, so the mapping above resolves to nothing and repel is silent again")

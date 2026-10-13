@@ -4150,11 +4150,6 @@ func _get_summon_type(combatant: Combatant) -> String:
 
 func _execute_summon(combatant: Combatant, monster_type: String) -> void:
 	"""Execute summon action - spawn a new enemy"""
-	## Re-check: the ceiling is measured at SELECTION, so two summoners in one round both passed it.
-	if _alive_enemy_count() >= MAX_FIELD_ENEMIES:
-		battle_log_message.emit("[color=purple]%s calls for reinforcements — no room on the field![/color]"
-			% combatant.combatant_name)
-		return
 	## Tick 177: announce in the battle log. Pre-fix the new enemy
 	## sprite appeared via the monster_summoned signal but no log
 	## line said "X summons a Goblin!" — players got confused why
@@ -10105,13 +10100,11 @@ func _on_damage_dealt_for_party_dialogue(target: Combatant, amount: int, is_crit
 	var post_hp_pct: float = target.get_hp_percentage()
 	var pre_hp_pct: float = clampf(float(target.current_hp + amount) / float(maxi(target.max_hp, 1)) * 100.0, 0.0, 100.0)
 	var big: bool = is_crit or amount > int(float(target.max_hp) * BIG_HIT_HP_PCT_THRESHOLD)
-	var crossing: bool = pre_hp_pct >= LOW_HP_PCT_THRESHOLD and post_hp_pct < LOW_HP_PCT_THRESHOLD
-	## Both on one hit -> low_hp: the rarer, one-shot edge, where big_hit_taken repeats (struktured 2026-10-13).
-	if crossing:
-		_maybe_fire_party_line(target, "low_hp", {"hp_pct": post_hp_pct})
-		return
 	if big:
 		_maybe_fire_party_line(target, "big_hit_taken", {"damage": amount, "is_crit": is_crit})
+		return
+	if pre_hp_pct >= LOW_HP_PCT_THRESHOLD and post_hp_pct < LOW_HP_PCT_THRESHOLD:
+		_maybe_fire_party_line(target, "low_hp", {"hp_pct": post_hp_pct})
 
 
 ## Tick 144: parallel handler for status-tick damage (poison/burn).
@@ -10132,13 +10125,11 @@ func _on_status_tick_damage_for_party_dialogue(amount: int, source: String, targ
 	var post_hp_pct: float = target.get_hp_percentage()
 	var pre_hp_pct: float = clampf(float(target.current_hp + amount) / float(maxi(target.max_hp, 1)) * 100.0, 0.0, 100.0)
 	var big: bool = amount > int(float(target.max_hp) * BIG_HIT_HP_PCT_THRESHOLD)
-	var crossing: bool = pre_hp_pct >= LOW_HP_PCT_THRESHOLD and post_hp_pct < LOW_HP_PCT_THRESHOLD
-	## Both on one hit -> low_hp: the rarer, one-shot edge, where big_hit_taken repeats (struktured 2026-10-13).
-	if crossing:
-		_maybe_fire_party_line(target, "low_hp", {"hp_pct": post_hp_pct, "source": source})
-		return
 	if big:
 		_maybe_fire_party_line(target, "big_hit_taken", {"damage": amount, "is_crit": false, "source": source})
+		return
+	if pre_hp_pct >= LOW_HP_PCT_THRESHOLD and post_hp_pct < LOW_HP_PCT_THRESHOLD:
+		_maybe_fire_party_line(target, "low_hp", {"hp_pct": post_hp_pct, "source": source})
 
 
 ## Drop routing helpers — equipment IDs go to GameLoop.equipment_pool, not

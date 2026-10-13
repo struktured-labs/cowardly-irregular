@@ -38,16 +38,6 @@ const SECONDARY_COLOR = Color(0.6, 0.8, 1.0)
 const POSITIVE_COLOR = Color(0.4, 0.9, 0.4)
 const NEGATIVE_COLOR = Color(0.9, 0.4, 0.4)
 
-## Slot-row geometry. The description WRAPS, so a row is as tall as its own text needs and the
-## rows stack by accumulation — see _create_slot_row for why the old fixed pitch could not hold.
-const SLOT_ROW_MIN_HEIGHT := 56.0
-const SLOT_ROW_GAP := 4.0
-const SLOT_DESC_X := 24.0
-const SLOT_DESC_Y := 34.0
-const SLOT_DESC_FONT_SIZE := 9
-const SLOT_DESC_RIGHT_PAD := 8.0
-const SLOT_DESC_BOTTOM_PAD := 6.0
-
 
 func _ready() -> void:
 	call_deferred("_build_ui")
@@ -203,28 +193,21 @@ func _create_jobs_panel(panel_size: Vector2) -> Control:
 	if not character:
 		return panel
 
-	# Job slots. A row is as tall as its own wrapped description needs, so `y` ACCUMULATES instead
-	# of multiplying a fixed pitch — with a fixed pitch a two-line description draws over the slot
-	# underneath it. The panel has the room: it is viewport.y - 200 tall for two slots.
+	# Job slots
 	var y_offset = 32
-	var row_width: float = panel_size.x - 8
-	var y: float = y_offset
+	var slot_height = 60
 
 	for i in range(SLOTS.size()):
-		var slot_row = _create_slot_row(i, row_width)
-		var row_h: float = float(slot_row.get_meta("row_height", SLOT_ROW_MIN_HEIGHT))
-		slot_row.position = Vector2(4, y)
-		slot_row.size = Vector2(row_width, row_h)
+		var slot_row = _create_slot_row(i)
+		slot_row.position = Vector2(4, y_offset + i * slot_height)
+		slot_row.size = Vector2(panel_size.x - 8, slot_height - 4)
 		panel.add_child(slot_row)
 		_slot_labels.append(slot_row)
-		y += row_h + SLOT_ROW_GAP
 
 	return panel
 
 
-## `row_width` is passed in because the description WRAPS to it, and a Label's wrap width has to
-## be known before the Label enters the tree — see the ordering note on the description below.
-func _create_slot_row(slot_index: int, row_width: float) -> Control:
+func _create_slot_row(slot_index: int) -> Control:
 	"""Create a job slot row"""
 	var row = Control.new()
 
@@ -264,42 +247,17 @@ func _create_slot_row(slot_index: int, row_width: float) -> Control:
 	row.add_child(equip_label)
 
 	# Description
-	## ⛔ THIS LABEL HAD NO WIDTH, NO `clip_text` AND NO `autowrap_mode`, so it drew at its full
-	## CONTENT width inside a panel that is 35% of the viewport. Measured at 1280: 12 of the 14 jobs
-	## ran off the panel and over the screen behind it, cleric by 115px and speculator by 111px;
-	## even fighter's, the shortest, was 2px past. This is the screen a player opens to choose a job
-	## and the description is what they read to choose, so clipping the tail is not an option here —
-	## it wraps, and the row grows.
-	##
-	## 🔑 THE ORDER IS LOAD-BEARING. `Control.size` is clamped UP to the minimum size as it stands
-	## at the instant you assign it, so every input to that minimum — `autowrap_mode`, `text` and the
-	## font-size OVERRIDE — is set first, and `size` is set BEFORE `add_child`. A wrapping Label that
-	## enters the tree at width 0 wraps one character per line and caches a minimum the assignment
-	## can no longer get under. (For a label that does NOT wrap the rule is the opposite way round,
-	## which is why this one spells it out.)
 	var desc = _get_current_job_desc(slot_index)
-	var row_height: float = SLOT_ROW_MIN_HEIGHT
 	if desc != "":
 		var desc_label = Label.new()
-		desc_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		desc_label.text = desc
-		desc_label.add_theme_font_size_override("font_size", SLOT_DESC_FONT_SIZE)
-		var avail: float = maxf(32.0, row_width - SLOT_DESC_X - SLOT_DESC_RIGHT_PAD)
-		## A width-limited query is the RIGHT instrument here precisely because the label wraps:
-		## it answers "how tall is this text at that width", which is what the row must reserve.
-		var wrapped_h: float = desc_label.get_theme_font("font").get_multiline_string_size(
-			desc, HORIZONTAL_ALIGNMENT_LEFT, avail, SLOT_DESC_FONT_SIZE).y
-		desc_label.position = Vector2(SLOT_DESC_X, SLOT_DESC_Y)
-		desc_label.size = Vector2(avail, wrapped_h)
+		desc_label.position = Vector2(24, 34)
+		desc_label.add_theme_font_size_override("font_size", 9)
 		desc_label.add_theme_color_override("font_color", SUBTITLE_COLOR)
 		row.add_child(desc_label)
-		row_height = maxf(SLOT_ROW_MIN_HEIGHT, SLOT_DESC_Y + wrapped_h + SLOT_DESC_BOTTOM_PAD)
-	row.set_meta("row_height", row_height)
 
 	# Mouse click overlay
-	## Height from the ROW, not a literal 56: a two-line description makes the row taller and the
-	## bottom of a highlighted row would otherwise not answer a click.
-	MenuMouseHelper.make_clickable(row, slot_index, 200, row_height,
+	MenuMouseHelper.make_clickable(row, slot_index, 200, 56,
 		_on_job_slot_click.bind(slot_index), _on_job_slot_hover.bind(slot_index))
 
 	return row

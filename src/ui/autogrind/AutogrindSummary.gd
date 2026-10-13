@@ -12,6 +12,8 @@ const HEADER_COLOR = Color(1.0, 1.0, 0.4)
 const LABEL_COLOR = Color(0.6, 0.6, 0.7)
 ## Same blue the console uses for advice, so the two surfaces read as one voice.
 const ADVICE_COLOR = Color(0.624, 0.827, 1.0)
+## One source for the size the header RESERVES and the label DRAWS at -- two numbers drifted here before.
+const ADVICE_FONT_SIZE := 11
 const VALUE_COLOR = Color(0.4, 0.9, 0.4)
 const BAD_COLOR = Color(0.9, 0.3, 0.3)
 const BADGE_NEW_COLOR = Color(1.0, 0.85, 0.2)
@@ -175,7 +177,13 @@ func _build_ui() -> void:
 	var badge_header_h := 20.0 if all_badges.size() > 0 else 0.0
 	var advice: String = _interrupt_advice(str(AutogrindSystem.last_interrupt_rule))
 	## Header is 68 px bare, 86 with the advice line; every stats offset derives from it so the panel cannot overflow.
-	var head_h: float = 68.0 if advice == "" else 86.0
+	## Derived from the WRAPPED height, against the NARROW panel width -- 520 is the worst case and
+	## panel_w only ever widens below, so over-reserving is the safe direction and overlap is not.
+	var advice_h: float = 0.0
+	if advice != "":
+		advice_h = ThemeDB.fallback_font.get_multiline_string_size(
+			advice, HORIZONTAL_ALIGNMENT_LEFT, panel_w - 40.0, ADVICE_FONT_SIZE).y
+	var head_h: float = 68.0 if advice == "" else 56.0 + maxf(advice_h, float(ADVICE_FONT_SIZE)) + 14.0
 	var rows_per_col: int = stats_data.size()
 	var panel_h = head_h + rows_per_col * row_h + badge_header_h + badge_row_h + 50.0
 	## A long session (full party, rule notes, permadeath, badges) stacked past 720 px and hid the grade and the achievements.
@@ -220,10 +228,15 @@ func _build_ui() -> void:
 
 	if advice != "":
 		var advice_lbl = Label.new()
+		## WRAP, not clip: this sentence is the remedy, and half of it is no remedy. autowrap, text
+		## and the font override all precede `size`, and `size` precedes add_child -- a wrapping Label
+		## that enters the tree at width 0 caches a minimum the assignment can no longer get under.
+		advice_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		advice_lbl.text = advice
-		advice_lbl.position = Vector2(20, 56)
-		advice_lbl.add_theme_font_size_override("font_size", 11)
+		advice_lbl.add_theme_font_size_override("font_size", ADVICE_FONT_SIZE)
 		advice_lbl.add_theme_color_override("font_color", ADVICE_COLOR)
+		advice_lbl.position = Vector2(20, 56)
+		advice_lbl.size = Vector2(panel_w - 40.0, maxf(advice_h, float(ADVICE_FONT_SIZE)))
 		panel.add_child(advice_lbl)
 
 	var sep = ColorRect.new()

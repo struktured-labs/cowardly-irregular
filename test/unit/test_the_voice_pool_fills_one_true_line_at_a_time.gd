@@ -52,7 +52,6 @@ func before_each() -> void:
 	VoicePool.discarded = 0
 	VoicePool.repeated = 0
 	VoicePool._retry_after_msec = 0
-	VoicePool._next_fill_msec = 0
 	VoicePool._recent = {}
 	VoicePool.set_process(false)
 	GameState.tts_live_enabled = true
@@ -82,7 +81,6 @@ func after_each() -> void:
 	VoiceService.apply_config()
 	VoicePool.store = _saved["store"]
 	VoicePool._retry_after_msec = 0
-	VoicePool._next_fill_msec = 0
 	## New autoload state, same reason as the line above: a debt left here escalates a LATER
 	## file's first cooldown, and this file's own header warns autoload state outlives it.
 	VoicePool.consecutive_failures = 0
@@ -130,7 +128,6 @@ func test_a_line_naming_a_party_member_is_never_synthesized() -> void:
 
 func test_nothing_fills_while_the_llm_is_busy() -> void:
 	VoicePool._retry_after_msec = 0
-	VoicePool._next_fill_msec = 0
 	assert_true(VoicePool.can_fill(), "CONTROL: an idle LLM and a ready server must allow a fill")
 	LLMService._inflight_id = "someone_else"
 	var can := VoicePool.can_fill()
@@ -183,7 +180,6 @@ func test_only_one_pooled_line_per_speaker_quotes_a_signature_phrase() -> void:
 	_model.reply = "{\"line\": \"Verse two, with feeling!\", \"mood\": \"neutral\"}"
 	assert_true(await VoicePool.fill_slot("bard", "turn_start"), "CONTROL: the first signature line fills")
 	VoicePool._retry_after_msec = 0
-	VoicePool._next_fill_msec = 0
 	_model.reply = "{\"line\": \"Hold for applause!\", \"mood\": \"neutral\"}"
 	assert_false(await VoicePool.fill_slot("bard", "big_hit_taken"), "a second line quoting a whole sentence of a signature phrase joined the pool")
 	assert_false(VoicePool.store.has_line("bard", "big_hit_taken"))

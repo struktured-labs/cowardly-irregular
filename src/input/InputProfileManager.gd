@@ -21,17 +21,7 @@ const REMAPPABLE_ACTIONS = [
 
 ## Human-readable labels for actions
 const ACTION_LABELS = {
-	## ⛔ WAS "Menu" — THE SAME STRING ui_menu CARRIES, on the screen whose entire job is naming
-	## controls. Settings → Controls listed two rows both reading "Menu", one bound to the north face
-	## and one to Start, with nothing on either row saying which opened what; the conflict line and
-	## the Test Buttons overlay read them out of the same table, so sharing a button printed
-	## "Menu & Menu". The same ambiguity already cost a hint: TutorialHints' quest-log line used
-	## {menu} — ui_menu, which opens SETTINGS in the field — and sent a lost player to a menu with no
-	## Quest Log. This action only ever opens the overworld menu (party, items, quests, save), and
-	## "field" is already player-facing vocabulary in the controls reference ("Party Chat (in the
-	## field)"). ui_menu keeps the bare "Menu": it is context-dependent (Settings in exploration,
-	## the autobattle editor in battle, the grind toggle in autogrind), so no one screen name fits.
-	"ui_field_menu": "Field Menu",
+	"ui_field_menu": "Menu",
 	"ui_accept": "Confirm",
 	"ui_cancel": "Cancel",
 	"battle_advance": "Advance",

@@ -1386,13 +1386,6 @@
       "duration_seconds": 0.5,
       "prompt_influence": 0.6
     },
-    "plate_engage": {
-      "file": "assets/audio/sfx/plate_engage.ogg",
-      "source": "sox_synth",
-      "prompt": "A timed pressure plate engaging (DungeonMechanics._on_timed_plate_entered). AUTHORED because that site played `door_open` — a heavy wooden door creaking — for a stone plate being stepped on. Second of the four door_open sites to get its own voice (after wall_blast); a rotating mirror and a block landing on its target are still creaking. SYNTHESISED with sox: a 200/180 stone press, a 420/380 grind, a 2900/1400 latch tick at 0.17s, two faint rings (523/784Hz) and a 98Hz settle; 0.55s, peak -4.6 dBFS, rms -19.2, inside the door family's -18.9..-22.8 — measured on the SHIPPED ogg, and the level was nudged 0.5 dB after a first encode came out 0.2 dB ABOVE that range, which would have made this sentence false. ⚠️ Thinned once: the first build was rms -13.9, six dB hotter than the family, which matters for a cue a player triggers repeatedly — the sustained layers were cut rather than the whole thing turned down, so the latch keeps its transient. SEPARATION, measured: LOW-MID dominant (-21.7) where door_open is MID-HI and wall_blast is SUB with 15dB less low-mid. Three sites, three dominant bands. Shorter than both (0.55s vs 1.00/0.95) because a plate click is quick where a door and a blast are events.",
-      "duration_seconds": 0.55,
-      "prompt_influence": 0.0
-    },
     "player_turn": {
       "file": "assets/audio/sfx/player_turn.ogg",
       "prompt": "Quick bright marimba two-note ping, warm wooden mallet on resonant bar, clean melodic notification",
@@ -8640,13 +8633,6 @@
       "source": "sox_synth",
       "prompt": "Authored because `support`-type abilities are SKIPPED by the derived cue pass, so play_ability fell back to ability_physical — a sword unsheathing. Completes the EIGHT abilities reachable in normal play (the Cleric's four landed first); 65 monster-only and 11 debug-gated support abilities still thump, which is the generic-vs-per-ability question still open with struktured. Id-keyed per _TYPE_SFX's own comment: 'buff cues are keyed on the ability id, not the type'. Measured to the ability family: rms -12.8..-17.8, peak median -1.5. SYNTHESISED with sox. A shout-shaped rise: 147->196Hz body, a 900/800 growl and a 330->494Hz edge, all lowpassed. LOW-dominant with 21dB more energy below 500Hz than ability_physical and 29dB less above 2kHz — the measurable reason a taunt no longer reads as a blade.",
       "duration_seconds": 0.68,
-      "prompt_influence": 0.0
-    },
-    "wall_blast": {
-      "file": "assets/audio/sfx/wall_blast.ogg",
-      "source": "sox_synth",
-      "prompt": "Blast charge opening a cracked wall (DungeonMechanics lock kind `Z`/bomb). AUTHORED because try_open played `door_open` — a heavy wooden door creaking — for BOTH lock kinds, while the function's own failure toast and its sprite already differentiate them ('You need a blast charge' / _crack_texture). @cowir-music found it and left the character call to this lane. SYNTHESISED with sox: a 72->52Hz thud, a 1400/2200 rupture burst, a 3400/3000 crack, three debris ticks at 0.26/0.41/0.57s and a 900/1200 rubble tail; peak -2.5 dBFS, rms -20.0, 0.95s. ⚠️ Rebalanced once: the first build was SUB-ONLY and measured within 1dB of ability_smoke_bomb, which would have twinned a dungeon wall with a Rogue's smoke bomb. Raising the rupture and debris puts it at SUB+MID-HI (-23.1 sub / -31.3 mid-hi) where smoke_bomb is sub-only and door_open is mid — a crack with weight, a muffled puff, and a wooden creak, three shapes.",
-      "duration_seconds": 0.95,
       "prompt_influence": 0.0
     }
   }
