@@ -21,7 +21,17 @@ class_name ReadableProp
 const PANEL_W: float = 420.0
 const PANEL_H: float = 240.0
 const LOCK_NAME: String = "readable_prop"
-## Signpost's recipe verbatim — one label treatment for the two classes that are the same object.
+## ⛔ NOT Signpost's recipe — this copied its two CONSTANTS and not its LAYOUT, and the comment here
+## used to claim "verbatim", which is what hid the gap. Signpost's `_layout_flat` sets a width and
+## then positions at `-width * 0.5`; this class set neither, so the name drew at content width from
+## a fixed `-40`. That x only centres a label 80 px wide. Measured across the shipped examines:
+##     "Stone Well"                    52 px  ->  centre 14.0 px LEFT of the prop
+##     "The Order Board"               81 px  ->  centre  0.5 px right   (the accidental good case)
+##     "The Prayer Request Board"     126 px  ->  centre 23.0 px right
+##     "The Shelf Behind the Curtain" 139 px  ->  centre 29.5 px right — nearly a whole tile
+## `horizontal_alignment = CENTER` was already set and is a NO-OP at content width, so the intent
+## was never in doubt; only the width was missing. `_layout_name_label` below is the one place that
+## owns it, because `Mode7Prompt.drop` re-applies the raw offset on every return to flat.
 const FLAT_OFFSET := Vector2(-40, -32)
 const FLAT_FONT: int = 10
 
@@ -55,6 +65,8 @@ func setup(prop_name: String, provider: Callable) -> void:
 	_provider = provider
 	if _label != null:
 		_label.text = display_name
+		## The name is what the width is derived FROM, so a later name needs a later centring.
+		_layout_name_label.call_deferred()
 
 
 func _ready() -> void:
@@ -84,6 +96,9 @@ func _setup_label() -> void:
 	_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	Mode7Prompt.pin_above_sprites(_label)
 	add_child(_label)
+	## Deferred because a one-line minimum width is not resolved until the label has settled in the
+	## tree — Signpost's `_layout_flat` carries the same note for the same reason.
+	_layout_name_label.call_deferred()
 
 
 ## ROW_ACTION, not ROW_INFO: this is a thing you press, so it stacks with signs rather than over them.
@@ -98,6 +113,9 @@ func _process(_delta: float) -> void:
 			Mode7Prompt.place(_label, get_viewport_rect().size, Mode7Prompt.ROW_ACTION)
 	elif _prompt_layer != null:
 		Mode7Prompt.drop(self, _prompt_layer, _label, FLAT_OFFSET, FLAT_FONT)
+		## `drop` restores the raw offset and zeroes the width, so the centring has to be redone or
+		## it only ever holds until the player's first trip through a Mode 7 map.
+		_layout_name_label.call_deferred()
 		_label.visible = _player_nearby and not is_open()
 		_prompt_layer = null
 	else:
@@ -271,3 +289,18 @@ func _unhandled_input(event: InputEvent) -> void:
 		_page = maxi(_page - 1, 0)
 		_render_page()
 		get_viewport().set_input_as_handled()
+
+## Centre the floating name on the prop it names, at whatever width the name needs. Measured, not
+## assumed: the label's parent is this Area2D rather than a layout container, so an assigned `size`
+## is not overwritten (@cowir-controller, 2026-10-13 — a container parent sizes its own children and
+## `custom_minimum_size` would be the only lever there).
+func _layout_name_label() -> void:
+	if _label == null or not is_instance_valid(_label) or _prompt_layer != null:
+		return
+	_label.autowrap_mode = TextServer.AUTOWRAP_OFF
+	_label.update_minimum_size()
+	var w: float = _label.get_minimum_size().x
+	if w <= 0.0:
+		return
+	_label.size = Vector2(w, 0.0)
+	_label.position = Vector2(-w * 0.5, FLAT_OFFSET.y)
