@@ -35,7 +35,11 @@ const CARD_H := 74.0
 const CARD_GAP := 8.0
 ## Cards grow with Text Size so the post-tween top line ("Name  +99999 EXP  ★ Lv.11") still fits,
 ## but never past what the screen can stack. Set once per build from the party count.
+## Width and height are bounded by DIFFERENT things, so they scale separately. The stack is
+## height-constrained — five cards have to fit between the loot strip and the bottom bar — while
+## the width has most of the screen spare to the right of the column.
 var _cscale: float = 1.0
+var _wscale: float = 1.0
 ## Artist party frames display ~315px centred on the slot; a left flourish reaches ~157px past origin (F12 2026-09-20).
 const CARD_SPRITE_GAP := 200.0
 const LOG_CLEAR_X := 190.0
@@ -58,8 +62,8 @@ func _raw_text_scale() -> float:
 	return float(TextScale.scaled(1000)) / 1000.0
 
 
-## How much the cards may grow. Only ever GROWS — at 80% Text Size the cards stay exactly as they
-## are today, so 100% and below are pixel-identical to before this change.
+## How much the cards may grow IN HEIGHT. Only ever GROWS — at 80% Text Size the cards stay exactly
+## as they are today, so 100% and below are pixel-identical to before this change.
 ##
 ## The cap is the point of the function: at 200% five cards would need 5*148 + 4*16 = 804px of the
 ## 600px the stack has between the y=56 clamp and the bottom strip, so an uncapped scale would push
@@ -84,8 +88,20 @@ func _stack_top() -> float:
 	return y
 
 
+## How wide the cards may grow: the FULL text scale, clamped only by the screen.
+##
+## The card's RIGHT edge is anchored to the party sprite minus a fixed gap (`sp.x - _cw() - GAP`,
+## so `pos.x + _cw()` is `sp.x - GAP` whatever the width) — growing a card moves its LEFT edge
+## toward the battle log, not its right edge toward the screen edge. So the only real bound is
+## that the column still starts clear of the log.
+func _fit_card_width_scale(vp_x: float) -> float:
+	var want: float = maxf(1.0, _raw_text_scale())
+	var cap: float = (vp_x - 8.0 - LOG_CLEAR_X) / CARD_W
+	return clampf(want, 1.0, maxf(1.0, cap))
+
+
 func _cw() -> float:
-	return CARD_W * _cscale
+	return CARD_W * _wscale
 
 
 func _ch() -> float:
@@ -438,8 +454,9 @@ func _build_letterbox(vp: Vector2, grade: int, flourish: bool) -> void:
 ## -- Stage 2: character cards ----------------------------------------------
 
 func _build_cards(char_results: Array, flourish: bool) -> void:
-	_cscale = _fit_card_scale(char_results.size(),
-		get_viewport().get_visible_rect().size.y if get_viewport() else 720.0)
+	var _vp_for_scale := get_viewport().get_visible_rect().size if get_viewport() else Vector2(1280, 720)
+	_cscale = _fit_card_scale(char_results.size(), _vp_for_scale.y)
+	_wscale = _fit_card_width_scale(_vp_for_scale.x)
 	var vp := get_viewport_rect().size
 	var column := _column_positions(char_results.size(), vp)
 	## The column enters as ONE cascade, top to bottom. Per-card waits let a card clear of the title slam

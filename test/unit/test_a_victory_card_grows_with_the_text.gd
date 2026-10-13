@@ -25,8 +25,15 @@ extends GutTest
 ## it docks, mid-screen, and every card passes through it during the slam. The settled layout is
 ## what a player reads, so the arms pin the DOCKED title and the strip.
 ##
-## Once capped, the card at 200% can no longer hold the worst authored line (+101px of content), so
-## the TopLine trims on a WORD boundary — the last resort, applied to what is left after growth.
+## WIDTH AND HEIGHT ARE BOUNDED BY DIFFERENT THINGS, so they scale separately. The stack is
+## height-constrained — five cards must fit between the loot strip and the bottom bar, which is the
+## 1.159 cap at 200% — while the width had most of the screen spare: the column ends at x=560 of
+## 1280 at 100%. Scaling width by the FULL text scale makes the worst authored line fit UNTRIMMED
+## at every preset (-186px of slack at 200%), so the ★ Lv.N badge survives. The word-ellipsis stays
+## as a backstop for a string longer than anything authored today.
+##
+## The card's RIGHT edge is anchored to the party sprite minus a fixed gap, so growing a card moves
+## its LEFT edge toward the battle log rather than its right edge off the screen.
 
 const OverlayScript = preload("res://src/battle/VictoryOverlay.gd")
 const PRESETS: Array = [0.8, 1.0, 1.25, 1.5, 2.0]
@@ -149,12 +156,12 @@ func test_the_post_tween_top_line_is_never_drawn_outside_its_card() -> void:
 				"Text Size %s: the top line's box ends outside its card" % [LABELS[i]])
 
 
-func test_growth_alone_holds_the_whole_line_up_to_one_fifty() -> void:
-	## What the GROWTH buys, separately from the trim: through 150% the worst authored line fits
-	## with nothing cut. Before the change it was already +55px over at 150%. Only at 200%, where
-	## the fit cap binds hardest, does anything need trimming — the trim is the last resort, not
-	## the mechanism.
-	for i in 4:
+func test_growth_alone_holds_the_whole_line_at_every_size() -> void:
+	## What the GROWTH buys, and the reason the badge survives: at EVERY preset the worst authored
+	## line fits with nothing cut, so the trim never fires on anything the game can produce today.
+	## Before the width was scaled this failed at 200% by 101px and the "★ Lv.11" was the tail that
+	## got dropped.
+	for i in PRESETS.size():
 		var o: Control = await _overlay_at(PRESETS[i])
 		var cards: Array = []
 		_cards(o, cards)
@@ -253,3 +260,31 @@ func test_the_top_line_trims_on_a_word_when_even_the_grown_card_is_too_small() -
 			"the top line must clip, or its width is undone by its own minimum size")
 		assert_eq(top.text_overrun_behavior, TextServer.OVERRUN_TRIM_WORD_ELLIPSIS,
 			"and must trim on a WORD boundary, so a number is not cut in half")
+
+
+func test_the_cards_stay_on_screen_horizontally() -> void:
+	## Width is no longer held down by the height cap, so the horizontal bound needs its own arm.
+	for i in PRESETS.size():
+		var o: Control = await _overlay_at(PRESETS[i])
+		var cards: Array = []
+		_cards(o, cards)
+		assert_gt(cards.size(), 0, "PRECONDITION: cards must exist")
+		for c in cards:
+			var cc := c as Control
+			assert_gte(cc.global_position.x, 0.0,
+				"Text Size %s: a card starts off the left of the screen" % [LABELS[i]])
+			assert_lte(cc.global_position.x + cc.size.x, 1280.0,
+				"Text Size %s: a card ends at %.0f, past the 1280px screen" % [
+					LABELS[i], cc.global_position.x + cc.size.x])
+
+
+func test_width_follows_the_text_and_height_follows_the_fit_cap() -> void:
+	## The split itself. Tying width to the HEIGHT cap is what forced the trim, and a single scale
+	## would satisfy every other arm here except the untrimmed one — so this names the mechanism.
+	var o: Control = await _overlay_at(2.0)
+	assert_almost_eq(o._wscale, o._raw_text_scale(), 0.001,
+		"width must follow the full text scale (%.3f), got %.3f" % [o._raw_text_scale(), o._wscale])
+	assert_lt(o._cscale, o._raw_text_scale(),
+		"height must still be held by the fit cap, got %.3f" % [o._cscale])
+	assert_gt(o._wscale, o._cscale,
+		"and width must be free to exceed the height cap, got w=%.3f h=%.3f" % [o._wscale, o._cscale])
