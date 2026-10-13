@@ -4150,6 +4150,11 @@ func _get_summon_type(combatant: Combatant) -> String:
 
 func _execute_summon(combatant: Combatant, monster_type: String) -> void:
 	"""Execute summon action - spawn a new enemy"""
+	## Re-check: the ceiling is measured at SELECTION, so two summoners in one round both passed it.
+	if _alive_enemy_count() >= MAX_FIELD_ENEMIES:
+		battle_log_message.emit("[color=purple]%s calls for reinforcements — no room on the field![/color]"
+			% combatant.combatant_name)
+		return
 	## Tick 177: announce in the battle log. Pre-fix the new enemy
 	## sprite appeared via the monster_summoned signal but no log
 	## line said "X summons a Goblin!" — players got confused why
