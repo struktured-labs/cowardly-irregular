@@ -42,11 +42,14 @@ func test_win98_menu_input_delay_flag() -> void:
 	var items = [{"id": "test", "label": "Test"}]
 	menu.setup("Test", items, Vector2.ZERO, "fighter")
 
-	# Wait for input delay timers (0.08 + 0.05 = 0.13 seconds)
-	await get_tree().create_timer(0.2).timeout
-
-	# Now _can_accept_input should be true
-	assert_true(menu._can_accept_input, "_can_accept_input should be true after delay")
+	# The delay timers total 0.13 s. A fixed 0.2 s wait red twice on 2026-10-13 in long runs (one frame
+	# hitch is enough), so wait for the flag itself, bounded: it must open, and it must not be open at once.
+	assert_false(menu._can_accept_input, "CONTROL: the menu is still deaf right after setup — the delay exists")
+	var waited := 0.0
+	while not menu._can_accept_input and waited < 3.0:
+		await get_tree().process_frame
+		waited += get_process_delta_time()
+	assert_true(menu._can_accept_input, "_can_accept_input should be true after delay (waited %.2fs)" % waited)
 
 
 ## Test: Win98Menu L button state should reset on close
