@@ -4340,14 +4340,24 @@ func _execute_physical_group(participants: Array, alive_enemies: Array[Combatant
 func _limit_break_cleanse(participants: Array) -> void:
 	## Named statuses only. The Group-menu tooltip calls this an ultimate assault and promises no full cleanse.
 	var cleansable: Array[String] = ["poison", "burning", "blind", "fear", "sleep", "stun", "curse", "charm", "pacify", "silence"]
+	var any_cleansed := false
 	for p in participants:
 		if not (p is Combatant) or not p.is_alive:
 			continue
+		var cleansed: Array[String] = []
 		for status in cleansable:
 			if p.has_status(status):
+				cleansed.append(status)
 				p.remove_status(status)
+		# A healthy participant was told "is cleansed" too — five false lines per Limit Break.
+		if cleansed.is_empty():
+			continue
+		any_cleansed = true
 		# Tick 238: bonus BBCode (Limit Break cleanse).
 		battle_log_message.emit("[color=%s]%s is cleansed by the Limit Break![/color]" % [AccessibilityPalette.bonus_bbcode(), p.combatant_name])
+	# Once per Limit Break and only when an ailment came off — same rule as the `cleanse` executor.
+	if any_cleansed and SoundManager:
+		SoundManager.play_status("cured")
 
 
 func _execute_combo_magic(participants: Array, alive_enemies: Array[Combatant], ap_cost: int) -> void:
