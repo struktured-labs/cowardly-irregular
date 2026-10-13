@@ -68,3 +68,47 @@ func test_the_grant_asks_for_a_free_slot_before_equipping() -> void:
 	var equip := body.find("equip_passive(combatant")
 	assert_gt(guard, -1, "the grant reads the slot limit")
 	assert_gt(equip, guard, "and reads it BEFORE it asks PassiveSystem to equip, which warns on a full bar")
+
+
+## The quiet half had a cost: a job taught passives and nothing said they were waiting in the menu.
+func test_a_full_bar_records_what_it_could_not_fit() -> void:
+	var c := _member(5)
+	var ids := _fresh_ids(c, 3)
+	JobSystem._grant_roster_passives(c, {"passive_abilities": ids})
+	assert_eq(JobSystem.last_grant_left_unequipped.size(), 3, "all three were learned and none fitted")
+	for id in ids:
+		assert_true(id in JobSystem.last_grant_left_unequipped, "%s is named as waiting" % id)
+
+
+func test_a_grant_that_fits_leaves_nothing_to_say() -> void:
+	var full := _member(5)
+	JobSystem._grant_roster_passives(full, {"passive_abilities": _fresh_ids(full, 2)})
+	assert_eq(JobSystem.last_grant_left_unequipped.size(), 2, "SCOPE: the previous grant left two waiting")
+	var c := _member(0)
+	JobSystem._grant_roster_passives(c, {"passive_abilities": _fresh_ids(c, 2)})
+	assert_eq(JobSystem.last_grant_left_unequipped.size(), 0, "a later grant that fits must not inherit the earlier count")
+
+
+func test_the_notice_counts_and_names_where_to_go() -> void:
+	assert_eq(JobMenu.unequipped_grant_notice(0), "", "nothing waiting, nothing said")
+	var one: String = JobMenu.unequipped_grant_notice(1)
+	var four: String = JobMenu.unequipped_grant_notice(4)
+	assert_string_contains(one, "1 passive ", "one is singular")
+	assert_string_contains(four, "4 passives", "several are counted")
+	for text in [one, four]:
+		assert_string_contains(text, "Abilities", "the notice names the menu that equips them")
+
+
+func test_the_job_menu_shows_the_notice_after_a_job_change() -> void:
+	var code: String = GdSource.code_of("res://src/ui/JobMenu.gd")
+	var at := code.find("success = JobSystem.assign_job(character, job_id)")
+	var end := code.find("\nfunc ", at + 1)
+	assert_gt(at, -1, "the assign call this arm reads from")
+	assert_gt(end, at, "bounded at the next function")
+	var body := code.substr(at, end - at)
+	var read := body.find("unequipped_grant_notice(JobSystem.last_grant_left_unequipped.size())")
+	var swap := body.find("_adopt_job_profile(")
+	var toast := body.find("Toast.show(self, waiting)")
+	assert_gt(read, -1, "the menu reads what the grant could not fit")
+	assert_gt(swap, read, "and reads it BEFORE the profile swap, which may run another grant")
+	assert_gt(toast, body.find("_build_ui()", swap), "the toast goes up after the rebuild, or the rebuild would free it")
