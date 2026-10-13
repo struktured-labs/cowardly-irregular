@@ -12,6 +12,9 @@ const DANGER_COLOR := Color(1.0, 0.4, 0.4)
 # Tick 205: row offset between stacked toasts. Font-size 20 + 28px breathing room reads cleanly without crowding the screen.
 const STACK_ROW_HEIGHT := 48.0
 const BASE_Y := 80.0
+const FONT_SIZE := 20
+# The band a single-line toast occupies. STACK_ROW_HEIGHT - LINE_BAND is the gap between rows.
+const LINE_BAND := 40.0
 # Tick 206: hard cap on visible stack so a burst of events (corruption cascade, status proc storm) can't fill the screen. Newer events are usually more relevant — evict oldest.
 const MAX_STACK := 5
 
@@ -31,6 +34,11 @@ static func show(parent: Node, text: String, color: Color = DEFAULT_COLOR, hold_
 		if is_instance_valid(oldest):
 			oldest.queue_free()
 	var stack_offset: float = _active_layers.size() * STACK_ROW_HEIGHT
+	# Tick 207: a wrapped message is taller than one row, so the count above under-counts the
+	# space already taken and the next toast printed through it. Each layer records what it used
+	# beyond one row; a single-line toast records 0, leaving the stride exactly as it was.
+	for live in _active_layers:
+		stack_offset += float(live.get_meta("toast_extra_h", 0.0))
 
 	var layer := CanvasLayer.new()
 	layer.layer = 80
@@ -50,22 +58,46 @@ static func show(parent: Node, text: String, color: Color = DEFAULT_COLOR, hold_
 	var shadow := Label.new()
 	shadow.text = text
 	shadow.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	shadow.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	shadow.position = Vector2(2, y + 2)
-	shadow.size = Vector2(vp_size.x, 40)
-	shadow.add_theme_font_size_override("font_size", 20)
+	shadow.add_theme_font_size_override("font_size", FONT_SIZE)
 	shadow.add_theme_color_override("font_color", Color(0, 0, 0, 0.6))
+
+	## Tick 207: neither label carried an autowrap_mode, so a message of ANY length was drawn as
+	## ONE line at content width and the ends fell off both screen edges. That is not a
+	## hypothetical length: GameLoop's bug-report toast interpolates an ABSOLUTE path on purpose
+	## ("a tester cannot act on user://"), so the length is the player's home directory. Measured
+	## at font size 20 in Open Sans SemiBold, that message is 1282px wide on a 1280px viewport —
+	## it clips once the username reaches 9 characters.
+	##
+	## Both labels are sized BEFORE add_child, which is correct ONLY because they now wrap:
+	## with autowrap the content can never be wider than the width assigned, so there is nothing
+	## for the Control to expand to. Assigning the width while wrap is still OFF instead lets the
+	## content win (measured: 1280 became 1331, and it then wrapped at 1331 and still clipped),
+	## and assigning the size AFTER add_child leaves the minimum size that was cached at width
+	## zero, giving a correct 2-line draw inside a 3892px rect.
+	var band_h: float = LINE_BAND
+	var font: Font = shadow.get_theme_font("font")
+	if font != null:
+		band_h = maxf(LINE_BAND, font.get_multiline_string_size(
+			text, HORIZONTAL_ALIGNMENT_CENTER, vp_size.x, FONT_SIZE).y)
+
+	shadow.size = Vector2(vp_size.x, band_h)
 	shadow.modulate.a = 0.0
 	layer.add_child(shadow)
 
 	var label := Label.new()
 	label.text = text
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	label.position = Vector2(0, y)
-	label.size = Vector2(vp_size.x, 40)
-	label.add_theme_font_size_override("font_size", 20)
+	label.size = Vector2(vp_size.x, band_h)
+	label.add_theme_font_size_override("font_size", FONT_SIZE)
 	label.add_theme_color_override("font_color", color)
 	label.modulate.a = 0.0
 	layer.add_child(label)
+
+	layer.set_meta("toast_extra_h", band_h - LINE_BAND)
 
 	var tween := layer.create_tween()
 	tween.tween_property(label, "modulate:a", 1.0, 0.3)
