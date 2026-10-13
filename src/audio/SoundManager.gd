@@ -1217,6 +1217,12 @@ func play_voice_stream(stream: AudioStream) -> float:
 	if wav_commit_refused():
 		push_warning("[AUDIO] skipped voice stream — mixer is wedged")
 		return 0.0
+	## One player, so a second line REPLACED the one still speaking. Victory bypasses the
+	## per-character party-line cooldown, so four of five lines were fragments. Refuse: the later
+	## line keeps its bubble and text and loses only audio, which is every unvoiced line's normal
+	## state. Its own player would let two PCs talk over each other, which is worse.
+	if _voice_player.playing and not _voice_player.stream_paused:
+		return 0.0
 	_voice_player.stream = stream
 	_voice_player.volume_db = VOICE_PLAYER_BASE_DB
 	_voice_player.pitch_scale = 1.0
