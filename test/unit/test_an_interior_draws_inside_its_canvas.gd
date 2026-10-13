@@ -21,6 +21,27 @@ extends GutTest
 ##
 ##     command grep -a -B2 "out of bounds" tmp/gut_manual_godot.<pid>.log
 ##
+## ✅ **RESOLVED 2026-10-13: IT DOES NOT REPRODUCE ON MAIN. The finding was a fact about HIS TREE.**
+## Measured on `f7d7953d1`, with the detector PROVEN first rather than afterwards:
+##
+##     CONTROL   4 rows x 38 cols planted past the medallion's 40-tall canvas
+##               -> 152 stdout hits, localised to "PROBE_INTERIOR_BEGIN HarmoniaChapelInterior.gd"
+##               -> and 152 is EXACTLY struktured's count, which pins the shape: 4 x 38
+##     MAIN      0 hits · 30 interiors built · 0 vacuous skips
+##
+## ⛔ MY FIRST ATTEMPT AT THIS WAS A FALSE CLEAN THREE TIMES OVER, and the arm below carries all
+## three repairs: `load() == null` missed a compile error (I planted invalid GDScript and still got
+## "30 built, failed == []"); nothing checked the room drew anything; and the summary line contained
+## the phrase the grep searched for, so the grep matched the PROBE'S OWN OUTPUT. The invalid plant
+## plus a missing `--import` is why the control read dead. **Engine errors go to STDOUT, not to
+## `run_tests.sh`'s `$GUT_LOG` — measured, no gut log is written at all.**
+##
+## 🔑 SO WHAT THIS FILE IS NOW: a BUILD SMOKE for all 30 interiors, not a p_y guard. It cannot assert
+## on an engine error from GDScript, so it asserts what it can — every interior compiles,
+## instantiates, and draws at least one child — and the p_y class is caught by re-running it and
+## grepping stdout, with the control above as the recipe. An interior that stops compiling or draws
+## nothing reds here, which is player-visible: that room is empty or broken on entry.
+##
 ## 📌 AND IT ANSWERS THE PRIOR QUESTION AT THE SAME TIME, which is the one nobody had answered:
 ## **does main still do it?** His log predates a week of fixes and carries no Build line — exactly
 ## how the 1401 save refusals turned out to be a stale-tree artifact (@cowir-battle's discriminator).
