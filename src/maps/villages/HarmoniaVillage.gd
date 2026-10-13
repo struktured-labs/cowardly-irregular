@@ -761,10 +761,10 @@ func _setup_npcs() -> void:
 	)
 	npcs.add_child(rotha)
 
-	# Roy — the artist's second overworld villager (2026-10-11 drop), on the lower-right green opposite Rotha.
+	# Roy — the artist's second overworld villager (2026-10-11 drop), on the lower-right green opposite Rotha, clear of the crate and barrel at (24-25, 24) with a tile to spare.
 	var roy_loop: Array[Vector2] = [
-		Vector2(25 * TILE_SIZE,24 * TILE_SIZE),
-		Vector2(30 * TILE_SIZE,24 * TILE_SIZE),
+		Vector2(27 * TILE_SIZE,24 * TILE_SIZE),
+		Vector2(31 * TILE_SIZE,24 * TILE_SIZE),
 	]
 	var roy = _create_wandering_npc(
 		"Roy",

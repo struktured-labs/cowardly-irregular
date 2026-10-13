@@ -85,6 +85,8 @@ func test_roy_walks_harmonia_on_open_ground() -> void:
 	if found == null:
 		return
 	assert_eq(str(found.get("npc_name")), "Roy")
+	# A patrol authored through a prop is clipped at runtime (a barrel stood on his first cell): nothing here may need that.
+	assert_eq(int(village.relocated_count), 0, "no patrol or spot in Harmonia had to be moved off a prop or wall")
 	var a := Vector2i((found as Node2D).position / 32.0)
 	var blocked: Array = []
 	for x in range(a.x, a.x + LOOP_CELLS):
