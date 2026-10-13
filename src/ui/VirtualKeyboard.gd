@@ -74,6 +74,8 @@ const CURSOR_COLOR = Color(1.0, 1.0, 0.3, 0.5)
 
 const KEY_SIZE = Vector2(40, 40)
 const KEY_SPACING = 4
+## Where the key grid starts inside the container — under the title and the input field.
+const KEY_GRID_TOP := 60.0
 
 
 func _ready() -> void:
@@ -119,7 +121,12 @@ func _build_ui() -> void:
 	# Main container centered
 	var container = Control.new()
 	var container_width = KEY_SIZE.x * 10 + KEY_SPACING * 9 + 40
-	var container_height = 200
+	## Derived, not 200. The key grid sits at y=60 and each row is KEY_SIZE.y + KEY_SPACING, so a
+	## 4-row layout ends at 232 — but the literal 200 put the help line at 210, i.e. 22px INSIDE
+	## the bottom row, drawn straight through "4 5 6 7 8 9 ⌫ ⇧ OK". Reading the layout means a
+	## fifth row cannot reintroduce it either.
+	var _rows: int = maxi(1, _get_current_layout().size())
+	var container_height = int(KEY_GRID_TOP + float(_rows) * KEY_SIZE.y + float(_rows - 1) * KEY_SPACING)
 	container.position = Vector2((size.x - container_width) / 2, (size.y - container_height) / 2)
 	container.size = Vector2(container_width, container_height)
 	add_child(container)
@@ -161,7 +168,7 @@ func _build_ui() -> void:
 
 	# Keyboard grid
 	_key_grid = Control.new()
-	_key_grid.position = Vector2(0, 60)
+	_key_grid.position = Vector2(0, KEY_GRID_TOP)
 	container.add_child(_key_grid)
 
 	# Create cursor highlight

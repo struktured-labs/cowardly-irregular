@@ -11,7 +11,7 @@ extends SceneTree
 ##
 ## Autoloads register after this script parses, so every menu is load()'d after two frames.
 ##
-## Covers ten screens. Still uncovered and worth adding when someone needs them: MenuScene (see
+## Covers fifteen screens. Still uncovered and worth adding when someone needs them: MenuScene (see
 ## below), ShopScene and EquipmentMenu (tools/item_icon_screenshot.gd has those), StatusMenu,
 ## and anything that needs a live battle.
 
@@ -122,6 +122,47 @@ func _init() -> void:
 		load("res://src/ui/KeyItemPopup.gd").show_item(host, {
 			"id": "probe", "name": "Probe Relic", "description": longest})
 		return host)
+
+	## The six screens still rendered by nothing. The first two are the first two screens a player
+	## ever sees, and neither had any automated render until now.
+	await _shoot(out_dir, "title_screen", func():
+		var m = load("res://src/ui/TitleScreen.gd").new()
+		m.set_anchors_preset(Control.PRESET_FULL_RECT)
+		root.add_child(m)
+		return m)
+
+	await _shoot(out_dir, "character_creation", func():
+		var m = load("res://src/ui/CharacterCreationScreen.gd").new()
+		m.set_anchors_preset(Control.PRESET_FULL_RECT)
+		root.add_child(m)
+		return m)
+
+	await _shoot(out_dir, "controls_menu", func():
+		var m = load("res://src/ui/ControlsMenu.gd").new()
+		m.set_anchors_preset(Control.PRESET_FULL_RECT)
+		root.add_child(m)
+		return m)
+
+	await _shoot(out_dir, "job_menu", func():
+		var m = load("res://src/ui/JobMenu.gd").new()
+		m.set_anchors_preset(Control.PRESET_FULL_RECT)
+		root.add_child(m)
+		m.setup(pc)
+		return m)
+
+	## The rename flow, at its cap: a 20-char name is what AutogrindGridEditor allows.
+	await _shoot(out_dir, "virtual_keyboard", func():
+		var m = load("res://src/ui/VirtualKeyboard.gd").new()
+		m.set_anchors_preset(Control.PRESET_FULL_RECT)
+		root.add_child(m)
+		m.setup("Rename Autogrind Profile", "Scriptweaver Profile", 20)
+		return m)
+
+	## Win98Menu is deliberately NOT shot. Its only caller is MenuScene, which nothing preloads,
+	## loads or changes scene to — `test_autogrind_prompts_follow_the_pad_regression` records the
+	## ruling ("unreachable is not the same as worth removing"). Rendering a screen no player can
+	## reach is not coverage, and driving it needs a menu_items shape this tool would have to
+	## invent: the entries are Dictionaries read for "id"/"data"/"tooltip"/"submenu".
 
 	quit(0)
 
