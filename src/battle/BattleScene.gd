@@ -4940,9 +4940,11 @@ func _on_action_executed(combatant: Combatant, action: Dictionary, targets: Arra
 				# dispel_one (remove_element) and volatility_up_enemy (overexpose) were in NO arm: enemy-targeted, so the catch-all took the `else` branch to play_status(effect), no status_<effect> on disk, generic DESCENDING blip — while each one's own siblings sat in this list
 				"defense_down", "volatility_up", "volatility_up_enemy", "attack_down", "magic_down", "magic_defense_down", "speed_down", "all_stats_down", "random_debuff", "dispel", "dispel_one", "dispel_and_self_buff", "debuff":
 					SoundManager.play_battle("debuff")
-				## cleanse is cued by BattleManager's cleanse executor, which is the only place that knows
-				## whether an ailment actually came off. Cueing here too would double it.
-				"cleanse":
+				## cleanse and steal are cued by their BattleManager executors, which are the only places
+				## that know the OUTCOME — whether an ailment came off, whether the steal landed. Cueing
+				## here too would double it, and cueing here INSTEAD is what made a failed steal and a
+				## successful one sound identical (and negative: the catch-all's descending blip).
+				"cleanse", "steal":
 					pass
 				"ability_silence", "silence":
 					SoundManager.play_status("silence")
