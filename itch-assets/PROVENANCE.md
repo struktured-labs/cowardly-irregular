@@ -227,3 +227,48 @@ losing the first.
 swings **3.37%** between two runs of the same build — so a single-capture comparison would have
 reported it MOVED at −4.5% and been wrong. Ten of the eleven swing 0.00–0.03%; that one frame is
 the reason the second directory is not optional.
+
+## 2026-09-20 — `title_screen.png` re-shot at `v3.33.468-alpha`
+
+The store's primary image displayed **`v3.33.215-alpha (62a1a2d6)`** in its bottom-right corner
+while the store served `v3.33.468-alpha` — **253 releases stale**, on the first image a
+prospective player sees. Re-shot from a worktree AT the shipped tag (`e2c65092`), sandboxed,
+so the frame depicts what players actually download. New stamp: `v3.33.468-alpha (e2c65092)`.
+The superseded image is kept at `capture-history/shots-62a1a2d6/title_screen.png`.
+
+⚠️ **AND THE MEASUREMENT THAT MATTERS FOR THE OTHER NINETEEN: THE ART DID NOT CHANGE.**
+Old vs new, same 1280x720 frame:
+
+```
+pixels differing >8 : 898 of 921,600  (0.1%)
+  in the version-label box : 656
+  everywhere else          : 242       (0.026% of the frame)
+```
+
+`tools/store_shot_staleness.py` reports `title_screen` as **changed** because
+`src/ui/TitleScreen.gd` moved between the two tags — and it is right, and its own caveat is
+the important half: *"changed -> a candidate for a re-shoot, NOT proof the image is wrong."*
+Here the script moved and the rendered frame did not. **A script-level signal over-predicts
+frame change; only a pixel diff answers "does this image need re-taking".** So the standing
+"11 of 20 depict a scene script that changed" is a candidate list, not a work list, and
+anyone planning a re-shoot should diff the frames first — the method is one `ImageChops`
+call and it cost minutes here.
+
+## 2026-09-29 — `capture-history/shots-549/`, a full era at `v3.33.549-alpha`, and two rescues
+
+Twelve captures, the whole `marketing_shots.gd` set, from `<lane>/tmp/pub549` (the publish's own
+worktree at the tag, which the store served on all three channels at the time). Same command as
+`.356` but `-s "-screen 0 1280x720x24" ... --resolution 1280x720`; XDG prefix on both runs, his saves
+checksum `575677167` before and after. No gamepad was connected to the host.
+
+Eleven of them replaced the shipped frame; `CAPTIONS.md`'s last section has the per-shot PIXEL
+deltas and why the byte-size comparison could not be used to decide. Every replaced frame was
+already in `capture-history/` byte for byte before the swap (checked per file by cksum).
+
+Two directories hold frames that were shipped but never archived, found by searching
+`capture-history/` for each shipped frame's cksum:
+
+```
+shots-293/          field_elite_medieval, field_elite_prompt_medieval   (the .293 re-shoot)
+shots-483-export/   title_screen                                        (the exported .483 binary)
+```
