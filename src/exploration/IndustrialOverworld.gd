@@ -218,10 +218,16 @@ func _place_treasure_chests() -> void:
 		add_child(chest)
 
 
+## ⛔ WAS (36,20), WHERE THE CRYSTAL STOLE A PRESS: an NPC stood 113 px north, so standing
+## south-east of that NPC and facing it SAVED instead of talking. The break room is crowded enough
+## that one cell was not enough — I tried it, and the clash FLIPPED DIRECTION rather than clearing.
+## Four cells south is the smallest move of 64 geometric candidates that resolves correctly in BOTH
+## directions under the real press probe; it keeps the authored column and is 429 px clear. The NPC
+## did not move: authored content and the pinned radius are both off limits (cowir-main's route).
 func _place_save_point() -> void:
 	# Save crystal in break room (safer refuge)
 	_save_point = SavePoint.new()
-	_save_point.position = Vector2(36 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 20 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
+	_save_point.position = Vector2(36 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 24 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
 	add_child(_save_point)
 
 

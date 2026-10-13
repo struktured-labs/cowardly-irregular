@@ -220,10 +220,16 @@ func _place_treasure_chests() -> void:
 		add_child(chest)
 
 
+## ⛔ WAS (22,20), WHERE THE CRYSTAL LOST A PRESS IT SHOULD HAVE WON: standing north-west of it and
+## facing it TALKED to a plaza NPC instead of saving, because an OverworldNPC grabs at 128 px and
+## interaction is nearest-wins. One cell south clears it — the smallest move of 55 geometric
+## candidates that resolves correctly in BOTH directions under the real press probe, and it stays in
+## the plaza. 400 px clear of the nearest interactable. The NPC did not move: authored content and
+## the pinned NPC_TALK_RADIUS_MODE7 are both off limits (cowir-main's route).
 func _place_save_point() -> void:
 	# Save crystal at central plaza (safe hub area)
 	_save_point = SavePoint.new()
-	_save_point.position = Vector2(22 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 20 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
+	_save_point.position = Vector2(22 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 21 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
 	add_child(_save_point)
 
 
