@@ -1632,6 +1632,10 @@ func _get_llm_status_subtitle() -> String:
 		return "Checking connection..."
 	var model: String = str(info.get("model", "?"))
 	if bool(info.get("available", false)):
+		# A reachable server says nothing about the MODEL: the probe GETs the listing endpoint,
+		# which carries no model, so a bogus one read as "Connected" while every line fell back.
+		if not bool(info.get("model_present", true)):
+			return "SERVER IS UP but it has no model called %s (it listed %d) — pick one in Configure BYOK." % [model, int(info.get("server_model_count", 0))]
 		return "Connected — %s. Select to re-check." % model
 	# Naming the retry is the point: the player must know this self-heals — EXCEPT
 	# where it cannot. A rejected key retried forever is the one case where the old

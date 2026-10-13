@@ -589,7 +589,51 @@ func _setup_transition_collision(trans: Area2D, size: Vector2) -> void:
 	trans.add_child(collision)
 
 
+## The pack's `abstract_overworld` entry — `vertex_footprint`, authored 2026-04-21 and read by
+## nobody until now. With the castle's 11, the villages' 13 and the Assembly Core's gauge, this is
+## the 26th and last entry in `data/examine_texts.json` to reach a player.
+##
+## 🔑 PLACED BY THE PACK, NOT BY ME: the text is "A single footprint in the white sand. It is your
+## size exactly. The angle of the toe matches your gait. You have not walked here." — so it belongs
+## on the APPROACH, somewhere the player is walking when they have not walked there. Two cells off
+## the arrival path rather than beside an NPC, and it reads before the Last Noun does.
+##
+## ⚠️ W6 IS FLAT (`MAP_SCALE` 2, 64px cells), so `READABLE_BOX_FLAT` is 28px and a readable is
+## pressable ONLY BY STANDING ON IT — measured on W6's crystals, four presses each, one per facing
+## from their own cell. Cell-CENTRED for the same reason the villages are: a 28px prop parked on a
+## cell corner sits 24px off every axis-aligned probe.
+const _EXAMINE_PACK := "res://data/examine_texts.json"
+const _EXAMINE_ID := "vertex_footprint"
+const _EXAMINE_CELL := Vector2i(13, 15)
+
+
+func _place_authored_footprint() -> void:
+	if not FileAccess.file_exists(_EXAMINE_PACK):
+		push_warning("[abstract_overworld] %s is missing" % _EXAMINE_PACK)
+		return
+	var parsed = JSON.parse_string(FileAccess.get_file_as_string(_EXAMINE_PACK))
+	if not (parsed is Dictionary):
+		push_warning("[abstract_overworld] %s did not parse" % _EXAMINE_PACK)
+		return
+	var all: Dictionary = (parsed as Dictionary).get("examines", {})
+	var entry = all.get(_EXAMINE_ID, null)
+	if not (entry is Dictionary) or str((entry as Dictionary).get("scene", "")) != "abstract_overworld":
+		push_warning("[abstract_overworld] '%s' is not authored for this scene" % _EXAMINE_ID)
+		return
+	var text: String = str((entry as Dictionary).get("text", ""))
+	if text == "":
+		push_warning("[abstract_overworld] '%s' is authored with no text" % _EXAMINE_ID)
+		return
+	var step: int = MAP_SCALE * TILE_SIZE
+	var prop := ReadableProp.new()
+	prop.name = "Examine_" + _EXAMINE_ID
+	prop.position = Vector2(_EXAMINE_CELL.x * step + step / 2, _EXAMINE_CELL.y * step + step / 2)
+	prop.setup(str((entry as Dictionary).get("name", "Examine")), func(): return [text])
+	npcs.add_child(prop)
+
+
 func _setup_npcs() -> void:
+	_place_authored_footprint()
 	# === The Last Noun - The Remnant (center area) ===
 	# An entity that used to be a person, now just a concept. Speaks in fragments.
 	var last_noun = _create_npc("The Last Noun", "elder", Vector2(15 * MAP_SCALE * TILE_SIZE, 13 * MAP_SCALE * TILE_SIZE), [

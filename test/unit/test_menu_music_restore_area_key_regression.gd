@@ -81,7 +81,9 @@ func test_every_source_of_the_derived_key_is_an_area_key() -> void:
 	var src := _loop_src()
 	var start := src.find("func _derive_current_scene_music_key")
 	assert_gt(start, 0, "_derive_current_scene_music_key must exist")
-	var body := src.substr(start, 900)
+	var end := src.find("\nfunc ", start + 1)
+	assert_gt(end, start, "the function must end at a next function, not at a character count")
+	var body := src.substr(start, end - start)
 	for source in ["_get_music_area_id", "_get_music_track"]:
 		assert_true(body.contains(source), "%s must remain a source of the derived key" % source)
 	assert_true(body.contains('return "overworld"'),

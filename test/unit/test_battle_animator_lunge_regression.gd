@@ -171,10 +171,10 @@ func test_pray_and_channel_fall_back_to_cast() -> void:
 		"'channel' should fall back to cast animation")
 
 
-func test_riff_falls_back_to_cast() -> void:
-	"""Bard 'riff' free-move animation should fall back to cast
-	(musical performance = cast-like) when no dedicated animation exists."""
+func test_riff_falls_back_to_attack() -> void:
+	"""Riff is the Bard's attack row and a physical strike since 2026-08-22, so with no dedicated
+	animation it swings. This arm pinned 'cast' from 2026-05-10, when Riff was a musical free move."""
 	var animator = _make_animator_with_anims(["idle", "attack", "cast"])
 	animator.play_named_animation("riff", func(): pass)
-	assert_eq(animator.sprite.animation, &"cast",
-		"'riff' should fall back to cast animation (Bard free-move)")
+	assert_eq(animator.sprite.animation, &"attack",
+		"'riff' should fall back to the attack animation (the Bard's strike)")

@@ -175,6 +175,66 @@ func _setup_transitions_for_floor(floor_num: int) -> void:
 		sign.sign_text = str(entry["text"])
 		sign.position = _sign_position(Vector2i(entry["pos"] as Vector2), floor_num)
 		transitions.add_child(sign)
+	_place_core_examines(floor_num)
+
+
+## ---- The authored examine (data/examine_texts.json) ----
+
+## `pipeline_gauge` has been authored since **2026-04-21** and read by nobody. It is the LAST of the
+## pack's 26 entries to reach a player: the castle took 11, the villages 13, and this plus W6's
+## footprint are the two that live in neither a village nor the castle.
+##
+## ⚠️ SECOND COPY OF THIS LOADER, DELIBERATELY. `CastleHarmonia` has the first, and lifting it into
+## `DragonCave` so both inherit is the better shape — except that `test_the_castle_can_be_read`
+## asserts the castle's OWN source names the pack, so the lift reds a guard on main and belongs in
+## its own change. This repo's rule for exactly this situation is `GdSource`'s: a second copy is
+## tolerated, **a third consumer moves it to the base class and deletes the copies.**
+##
+## 🔑 Floor 2 is the inspection checkpoint, which is where a gauge whose own tolerance is "under
+## review" belongs — its neighbour sign reads "COMPLIANCE IS NOT OPTIONAL". The mark resolves
+## through `_sign_position`, so it cannot land on a sign, a stair or another prop.
+const _EXAMINE_PACK := "res://data/examine_texts.json"
+const _EXAMINE_MARKS := {
+	2: {"pipeline_gauge": Vector2(10, 8)},
+}
+
+
+## Only this dungeon's entries, so a pack-wide key change cannot pull another scene's text in.
+func _load_examine_pack() -> Dictionary:
+	if not FileAccess.file_exists(_EXAMINE_PACK):
+		push_warning("[%s] %s is missing — the core keeps its signposts" % [cave_id, _EXAMINE_PACK])
+		return {}
+	var parsed = JSON.parse_string(FileAccess.get_file_as_string(_EXAMINE_PACK))
+	if not (parsed is Dictionary):
+		push_warning("[%s] %s did not parse" % [cave_id, _EXAMINE_PACK])
+		return {}
+	var all: Dictionary = (parsed as Dictionary).get("examines", {})
+	var mine: Dictionary = {}
+	for k in all.keys():
+		var e = all[k]
+		if e is Dictionary and str((e as Dictionary).get("scene", "")) == cave_id:
+			mine[str(k)] = e
+	return mine
+
+
+## A mark with no authored entry, or an entry with no text, is SKIPPED WITH A WARNING rather than
+## placed — a readable with nothing to read advertises a read it cannot give.
+func _place_core_examines(floor_num: int) -> void:
+	var authored: Dictionary = _load_examine_pack()
+	for examine_id in (_EXAMINE_MARKS.get(floor_num, {}) as Dictionary).keys():
+		var entry: Dictionary = authored.get(examine_id, {}) if authored.get(examine_id, {}) is Dictionary else {}
+		if entry.is_empty():
+			push_warning("[%s] examine '%s' has a cell but no authored entry" % [cave_id, examine_id])
+			continue
+		var text: String = str(entry.get("text", ""))
+		if text == "":
+			push_warning("[%s] examine '%s' is authored with no text" % [cave_id, examine_id])
+			continue
+		var prop := ReadableProp.new()
+		prop.name = "Examine_" + str(examine_id)
+		prop.position = _sign_position(Vector2i((_EXAMINE_MARKS[floor_num] as Dictionary)[examine_id] as Vector2), floor_num)
+		prop.setup(str(entry.get("name", "Examine")), func(): return [text])
+		transitions.add_child(prop)
 
 
 ## Ambient FX: factory floor: vents, not cave crystals.

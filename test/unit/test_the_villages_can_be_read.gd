@@ -1,7 +1,7 @@
 extends GutTest
 
 ## `data/examine_texts.json` — authored since **2026-04-21**, read by nobody until this release.
-## CastleHarmonia took its 11 entries an hour ago; these are the VILLAGE half: **13 entries across
+## CastleHarmonia took its 11 entries an hour ago; these are the VILLAGE half: **16 entries across
 ## 11 villages**, every one of which has had a well, a statue, a notice board or a monument authored
 ## for it and walked past by every player for six months.
 ##
@@ -140,7 +140,11 @@ func test_every_authored_village_examine_has_an_offset() -> void:
 			total += 1
 			if not src.contains(str(examine_id)):
 				missing.append(str(examine_id))
-	assert_eq(total, 13, "CONTROL: the pack must still carry 13 village entries, found %d" % total)
+	## ⛔ WAS `assert_eq(total, 13)` AND IT RED ON CORRECT NEW CONTENT within hours of landing
+	## (cowir-story's three second-look examines took it to 16). The teeth are the `missing` assert
+	## below — every authored examine must have an offset — and a total is only a vacuity floor for
+	## the walk above it. A floor cannot ratchet against authoring; an equality pin can and did.
+	assert_gt(total, 10, "CONTROL: the walk found only %d village entries, so the offset check below judges almost nothing" % total)
 	missing.sort()
 	assert_eq(missing, [], "these authored examines have no offset, so their text reaches no player: %s" % ", ".join(missing))
 
@@ -301,8 +305,16 @@ func test_every_village_actually_builds_its_examines() -> void:
 		built_total += built.size()
 		report.append("%s:%d" % [scene.trim_suffix("_village"), built.size()])
 
-	assert_eq(built_total, 13,
-		"all 13 authored village examines must reach a player, built %d" % built_total)
+	## DERIVED, not pinned: the authored count is the pack's own, so new content moves both sides
+	## together. The per-village `assert_eq(built, want)` above already carries the teeth — this is
+	## the whole-pack total, and pinning it to a literal red on correct authoring (see the floor note
+	## at the first CONTROL in this file).
+	var authored_total: int = 0
+	for scene in by_scene.keys():
+		authored_total += (by_scene[scene] as Dictionary).size()
+	assert_gt(authored_total, 10, "CONTROL: only %d authored village examines read; this total would judge nothing" % authored_total)
+	assert_eq(built_total, authored_total,
+		"every authored village examine must reach a player: authored %d, built %d" % [authored_total, built_total])
 	gut.p("  " + ", ".join(report))
 
 
