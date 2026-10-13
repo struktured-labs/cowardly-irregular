@@ -64,6 +64,7 @@ const CLASSIFIED := {
 	"efficiency_growth_rate": "DERIVED from permadeath_staking_enabled, which IS snapshotted; restoring the flag through enable_permadeath_staking re-derives the rate",
 	"_ability_learned_conns": "signal bookkeeping rebuilt from the live party; Callables cannot round-trip JSON",
 	"_rare_drop_conn": "signal bookkeeping rebuilt from the live BattleManager; a Callable, not state",
+	"last_interrupt_rule": "which rule the LAST interrupt check tripped, rewritten (or cleared) by every _check_interrupt_conditions pass; a resumed grind re-checks before its next battle, so there is no value worth carrying across",
 }
 
 ## Writer entries whose value legitimately reads NO member var. The reason is required here for
