@@ -21,6 +21,23 @@ extends GutTest
 ## test_bard_songs_resolve_to_a_playable_anim covers the four songs only — so the contradiction
 ## between a pinned datum and the routing had no arm on it.
 
+## ⛔ DO NOT "MAKE THE AUDIO MATCH": Riff's CUE IS DELIBERATELY BESPOKE AND MUST NOT ROUTE TO THE
+## PHYSICAL ONE. `SoundManager:719` maps `_ability_sounds["riff"] = "ability_riff"` (verified here),
+## and that cue's prompt records the MIRROR of the defect fixed above — audio had classified Riff by
+## its `type: physical` and played `ability_physical`, "A SWORD UNSHEATHING, against its own shipped
+## description". cowir-music fixed it with a struck dissonant chord. **My error grouped Riff by WHO
+## uses it; theirs grouped it by WHAT IT IS TYPED AS. Both neighbours are wrong for it.** Reading the
+## fix above as "Riff is just a physical attack" and following that into the cue table would undo
+## their fix — the GESTURE is a swing, the SOUND is not a sword.
+##
+## ✅ AND THE SWING IS RIGHT RATHER THAN MERELY AVAILABLE (cowir-sprites, their lane's fact): the
+## Bard's artist `attack` strip is her swinging the INSTRUMENT — a keyboard-edged scythe, notes
+## flying off the arc — so `play_attack` renders an instrument strike, which is what Riff's
+## description asks for. **No bespoke `riff` sheet is wanted from the art lane, so this routing is
+## the final answer and not an interim.** What I verified myself: the sheet is T2 ("artist aseprite
+## drop 2026-08-28 — Bard B"), `attack.png` is present, and `attack_<world>.png` costume variants
+## exist, so the swing stays in costume past W1. The pixel content is their observation, not mine.
+
 const SONGS := ["battle_hymn", "lullaby", "discord", "inspiring_melody"]
 
 
