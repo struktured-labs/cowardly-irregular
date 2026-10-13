@@ -1071,6 +1071,15 @@ const _BATTLE_VOLUME_TRIM_DB: Dictionary = {
 	"corruption_ap_flicker": -6.0,
 	## Pre-attenuated asset (-22.9 dB rms), like menu_error's +6.6: without this the undo sits ~20 dB under the press it undoes.
 	"advance_undo": 6.0,
+	## The asset CONTRADICTS ITS OWN PROMPT, which asks for "present and forceful, not distant".
+	## Measured mono-summed rms over all 23 status_* cues: this is the SECOND QUIETEST at -27.2,
+	## against a family median of -21.7 and 13.5 dB under the three that carry an explicit ~-14 LUFS
+	## target (doom/curse/silence, all three hitting it). It marks LOSING A TURN -- the cue whose
+	## reachability BattleScene._cue_if_turn_skipped was deliberately hoisted above the animator
+	## guard to protect, "losing a turn is exactly as audible either way". +6.0 lands it at -21.2,
+	## the family median, and is the same magnitude as advance_undo above: base -6.0 + 6.0 = 0.0 dB
+	## on the player, where the asset's own peak is -6.4 dBFS, so there is no clipping.
+	"status_cannot_act": 6.0,
 }
 
 
