@@ -244,26 +244,28 @@ func _on_probe_completed(result: int, response_code: int, _headers: PackedString
 	availability_changed.emit(now_ready)
 
 
-## WHAT KIND of unavailable, as one token. The log wants a paragraph and a Settings
-## subtitle has about eighty columns, so the two surfaces must not share a STRING -
-## they share this FACT and each phrases it. Pinning the code->kind map pins both
-## without pinning either one's prose.
+## The kind each probe status means, as DATA so a guard can read the set through this class
+## instead of parsing the source for it. 0 is "no server answered", not a status.
+const KIND_FOR_CODE := {
+	0: "unreachable",
+	401: "key_rejected",
+	403: "key_rejected",
+	404: "not_found",
+	429: "rate_limited",
+}
+
+## Any status the table does not name. A reachable backend reports "" instead.
+const KIND_FALLBACK := "http_error"
+
+
+## WHAT KIND of unavailable, as one token. The log wants a paragraph and a Settings subtitle has
+## about eighty columns, so the two surfaces must not share a STRING — they share this FACT and
+## each phrases it. Pinning the code->kind table pins both without pinning either one's prose.
 func unavailable_kind() -> String:
-	# An available backend has no kind at all. Guarding HERE rather than at the readout
-	# means no caller can be handed "http_error" for a healthy 200.
+	# Guarded HERE rather than at the readout: no caller can be handed a kind for a healthy 200.
 	if _ready_flag:
 		return ""
-	match _last_probe_code:
-		0:
-			return "unreachable"
-		401, 403:
-			return "key_rejected"
-		404:
-			return "not_found"
-		429:
-			return "rate_limited"
-		_:
-			return "http_error"
+	return str(KIND_FOR_CODE.get(_last_probe_code, KIND_FALLBACK))
 
 
 ## Why the backend is unavailable, for the log. The credential case is split out because
