@@ -5,6 +5,10 @@ class_name QuestExaminePoint
 ## skips type "custom" — so a step with no emitter strands the quest permanently.
 
 const TILE_SIZE: int = 32
+const WORDS_PER_SECOND := 4.0   ## a relaxed 240 wpm
+const MIN_HOLD_SECONDS := 1.2   ## keeps a short idle_text feeling like a toast
+const MAX_HOLD_SECONDS := 10.0  ## stops a pathological row pinning a label on screen
+const FADE_SECONDS := 1.2
 
 @export var quest_id: String = ""
 @export var flag: String = ""
@@ -178,6 +182,13 @@ func _job_variant_text(qs: Node) -> String:
 	return str(variant.get("examine_text", ""))
 
 
+## Seconds a toast stays at full opacity for a line of `word_count` words. A STATIC seam rather
+## than an inline expression so a guard can call it with the pack's real word counts instead of
+## pinning the spelling of a literal.
+static func toast_hold_for(word_count: int) -> float:
+	return clampf(float(word_count) / WORDS_PER_SECOND, MIN_HOLD_SECONDS, MAX_HOLD_SECONDS)
+
+
 func _toast(text: String) -> void:
 	if text == "":
 		return
@@ -191,10 +202,22 @@ func _toast(text: String) -> void:
 	lbl.add_theme_color_override("font_color", Color(0.95, 0.9, 0.7))
 	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(lbl)
+	## ⛔ THE HOLD IS DERIVED FROM THE TEXT. It was a flat 2.2s with the fade starting at 1.0s, so a
+	## toast was gone 3.2s after the press — and 35 of the 45 authored examines come through here
+	## carrying a median of 36 words, which is ~8.6s of reading at 250 wpm. The player got 1-2.5s of
+	## it. The same pack's 10 interior rows go through ReadableProp, a paged panel they dismiss
+	## themselves, and are readable; this path was the only one that timed the player out.
+	##
+	## 🔑 4 words/sec is a relaxed 240 wpm. The floor keeps short idle_text feeling like a toast; the
+	## ceiling stops a pathological row pinning a label on screen. Nothing is gated on this label
+	## (MOUSE_FILTER_IGNORE, no input lock), so a long hold costs the player nothing but a readable
+	## line that drifts away on its own.
+	var hold: float = toast_hold_for(text.split(" ", false).size())
+	var fade: float = FADE_SECONDS
 	var tw := create_tween()
 	tw.set_parallel(true)
-	tw.tween_property(lbl, "position:y", lbl.position.y - 20.0, 2.2)
-	tw.tween_property(lbl, "modulate:a", 0.0, 2.2).set_delay(1.0)
+	tw.tween_property(lbl, "position:y", lbl.position.y - 20.0, hold + fade)
+	tw.tween_property(lbl, "modulate:a", 0.0, fade).set_delay(hold)
 	tw.chain().tween_callback(func():
 		if is_instance_valid(lbl):
 			lbl.queue_free())
