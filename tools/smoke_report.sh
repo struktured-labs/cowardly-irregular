@@ -43,9 +43,28 @@
 # Exit:   0 reported · 2 usage / unreadable log
 set -uo pipefail
 
+# Prose in a scanned file is input. ONE shared stripper, never a private copy — see
+# tools/gd_code_lines.sh for the measurements and for what it does not close.
+. "$(cd "$(dirname "$0")" && pwd)/gd_code_lines.sh"
+
 # Order-preserving: one pass, so the lines arrive as the run produced them (wipe/FAIL before the
 # VERDICT) rather than in an order this script invents.
 _PAT='^\[SMOKE\] (VERDICT:|FAIL:|wipe:)'
+
+# ⛔ THE CHECK THE ARMS COULD NOT REACH. The emitter-prefix logic below used to live only inside
+# selftest(), reading the REAL src/GameLoop.gd — a file with no prose-only prefix, so replacing
+# `gd_code_lines` with a raw `cat` changed nothing any arm could see. MEASURED: with the stripper
+# bypassed in the production path, the selftest stayed 17/17 GREEN. My planted "acceptance attack"
+# called gd_code_lines ITSELF, so it certified the HELPER and said nothing about the CALLER.
+# (@cowir-battle found the identical scoping defect in their own guard and that is what sent me to
+# mutate mine.) Extracted so an arm can point it at a planted file and watch it fail.
+_prefixes_present() {   # <file> -> prints each prefix that is NOT present in its CODE
+    local src="$1" pfx code
+    code="$(gd_code_lines "$src")"
+    for pfx in 'VERDICT:' 'FAIL:' 'wipe:'; do
+        command grep -aq "print(\"\[SMOKE\] ${pfx}" <<< "$code" || printf '%s\n' "$pfx"
+    done
+}
 
 report() {
     local log="$1" out
@@ -189,6 +208,57 @@ sys.exit(0 if b'\x00' in open('$dir/nul.log','rb').read() else 1)" \
         fail=$((fail+1)); printf '  FAIL  %-54s (%s/%s)\n' "both refusals exit 2" "$ec1" "$ec2"
     fi
 
+    # ⛔ THE ACCEPTANCE ATTACK, PLANTED RATHER THAN REASONED ABOUT. The prefix check above is an
+    # ACCEPTANCE set in @cowir-story's sense — it asks "does the emitter still print this", and a
+    # phantom answer of YES keeps a dead pattern looking alive. That is the direction that ships a
+    # defect, and I had only measured it by hand in a shell. Four lanes planted this attack against
+    # their own guards tonight (three immune via GdSource, one fooled), so mine gets the same plant.
+    local adir; adir="$(mktemp -d "$PWD/tmp/smoke_cmt.XXXXXX")"
+    mkdir -p "$adir/src"
+    {   printf 'func _verdict():\n'
+        printf '\t# the gate greps for print("[SMOKE] FAIL: <reason>") so keep that spelling\n'
+        printf '\tprint("[SMOKE] VERDICT: %%s" %% v)\n'
+        printf '\tprint("[SMOKE] wipe: game over after %%.1fs at round %%d" %% [t, r])\n'
+    } > "$adir/src/GameLoop.gd"
+    # FAIL: exists ONLY in prose here, so a comment-blind check reports it present (measured: 1)
+    # while the real print count is 0.
+    local prose_hits real_hits
+    prose_hits="$(command grep -ac 'print("\[SMOKE\] FAIL:' "$adir/src/GameLoop.gd" || true)"
+    real_hits="$(gd_code_lines "$adir/src/GameLoop.gd" | command grep -ac 'print("\[SMOKE\] FAIL:' || true)"
+    if [ "${prose_hits:-0}" -ge 1 ] && [ "${real_hits:-0}" -eq 0 ]; then
+        pass=$((pass+1)); printf '  ok    %-54s (prose %s, code %s)\n' "a prefix in a COMMENT does not count as present" "$prose_hits" "$real_hits"
+    else
+        fail=$((fail+1)); printf '  FAIL  %-54s (prose %s, code %s)\n' "the comment-blind and code-only counts agree — plant is void" "${prose_hits:-0}" "${real_hits:-0}"
+    fi
+    # ⛔ AND NOW DRIVEN THROUGH THE REAL CHECK, not around it. A file whose ONLY `FAIL:` mention is
+    # prose must make the prefix report MISSING — which is exactly what breaks if the stripper is
+    # ever dropped from that path.
+    local missing_planted missing_real
+    missing_planted="$(_prefixes_present "$adir/src/GameLoop.gd" | tr '\n' ' ')"
+    case "$missing_planted" in
+        *FAIL:*) pass=$((pass+1)); printf '  ok    %-54s\n' "the CHECK itself reports a prose-only prefix missing" ;;
+        *) fail=$((fail+1)); printf '  FAIL  %-54s (missing: %s)\n' "the check did not notice a prose-only prefix" "${missing_planted:-none}" ;;
+    esac
+    # CONTROL: against the REAL emitter the same check must report nothing missing, or the arm
+    # above passes on a check that is simply broken.
+    missing_real="$(_prefixes_present src/GameLoop.gd | tr '\n' ' ')"
+    if [ -z "$missing_real" ]; then
+        pass=$((pass+1)); printf '  ok    %-54s\n' "...and reports NOTHING missing for the real emitter"
+    else
+        fail=$((fail+1)); printf '  FAIL  %-54s (missing: %s)\n' "the check reports the real emitter incomplete" "$missing_real"
+    fi
+
+    # CONTROL: uncomment it and the code-only count must find it, or the arm above passes on
+    # anything that merely fails to match.
+    sed -i 's|^\t# the gate greps for ||' "$adir/src/GameLoop.gd"
+    real_hits="$(gd_code_lines "$adir/src/GameLoop.gd" | command grep -ac 'print("\[SMOKE\] FAIL:' || true)"
+    if [ "${real_hits:-0}" -ge 1 ]; then
+        pass=$((pass+1)); printf '  ok    %-54s\n' "...and UNcommented it IS counted"
+    else
+        fail=$((fail+1)); printf '  FAIL  %-54s (%s)\n' "the uncommented control was not counted" "${real_hits:-0}"
+    fi
+    rm -rf "$adir"
+
     # ⛔ A DEAD PATTERN IS THE FAILURE THAT LOOKS LIKE SILENCE. If `[SMOKE] FAIL:` is ever
     # renamed, _PAT matches nothing, the report goes quiet, and the symptom is a FAIL that
     # explains nothing — the .654 experience this tool exists to prevent.
@@ -200,11 +270,27 @@ sys.exit(0 if b'\x00' in open('$dir/nul.log','rb').read() else 1)" \
     # use them — a rename takes that count to zero.
     local src="src/GameLoop.gd"
     if [ -f "$src" ]; then
-        local sites miss=0 pfx
-        sites="$(command grep -ac 'print("\[SMOKE\] \(VERDICT:\|FAIL:\|wipe:\)' "$src" || true)"
+        # ⛔ STRIP ONCE INTO A VARIABLE, AND NEVER PIPE INTO `grep -q` UNDER pipefail.
+        # `grep -q` exits on the FIRST match and closes the pipe; the awk producer then takes
+        # SIGPIPE and exits non-zero, and `set -o pipefail` reports the pipeline as FAILED
+        # BECAUSE IT MATCHED. That is how three arms came to say "the emitter no longer prints
+        # [SMOKE] VERDICT:" while the same pattern matched 1/17/1 when run by hand — a verdict
+        # about the EMITTER produced by my own plumbing. A herestring has no pipeline at all.
+        # (It is also one awk run instead of five.)
+        local sites miss=0 pfx code
+        code="$(gd_code_lines "$src")"
+        # (the same logic is reachable as _prefixes_present below, so an arm can drive it
+        #  against a planted file instead of only against the real emitter)
+        sites="$(command grep -ac 'print("\[SMOKE\] \(VERDICT:\|FAIL:\|wipe:\)' <<< "$code" || true)"
         case "$sites" in ''|*[!0-9]*) sites=0 ;; esac
         for pfx in 'VERDICT:' 'FAIL:' 'wipe:'; do
-            command grep -aq "print(\"\[SMOKE\] ${pfx}" "$src" || {
+            # ⛔ THE QUIET DIRECTION, AND IT IS THE DANGEROUS ONE. This asks "does the emitter
+            # still print this prefix", and a COMMENT mentioning the prefix answers YES. Measured:
+            # a file whose only FAIL: mention is `# the gate greps for print("[SMOKE] FAIL: …")`
+            # reported present=1 with real prints=0 — the dead-pattern guard passes while the
+            # extraction matches nothing. Same class as @cowir-music's phantom, opposite
+            # direction: theirs reds loudly, this one goes green and certifies a dead pattern.
+            command grep -aq "print(\"\[SMOKE\] ${pfx}" <<< "$code" || {
                 miss=$((miss+1))
                 printf '  FAIL  %-54s\n' "the emitter no longer prints [SMOKE] ${pfx}"
             }
@@ -220,11 +306,17 @@ sys.exit(0 if b'\x00' in open('$dir/nul.log','rb').read() else 1)" \
         # INFORMATION, not an arm: the other [SMOKE] kinds, so a reason introduced under a NEW
         # prefix is visible here rather than invisible in a publish log. Ordinary shot lines
         # legitimately live in this set and other lanes add them freely, so it cannot be a verdict.
-        local others; others="$(command grep -aoE 'print\("\[SMOKE\] [A-Za-z_]+' "$src" \
+        local others; others="$(command grep -aoE 'print\("\[SMOKE\] [A-Za-z_]+' <<< "$code" \
             | sed -E 's/.*\[SMOKE\] //' | sort -u | command grep -avE '^(VERDICT|FAIL|wipe)$' | tr '\n' ' ')"
         printf '  info  other [SMOKE] kinds in the emitter: %s\n' "${others:-none}"
+    elif git rev-parse --show-toplevel >/dev/null 2>&1; then
+        # Same shape as cue_trace.sh above. Here a moved emitter WAS caught — by the
+        # _prefixes_present control arm, not by this skip. Detection via a neighbour costs the
+        # explanation (@cowir-overworld), so this says it directly.
+        fail=$((fail+1))
+        printf '  FAIL  %-54s\n' "the emitter MOVED — $src is gone from this tree"
     else
-        printf '  SKIP  %-54s (no %s from this cwd)\n' "emitter prefixes still exist" "$src"
+        printf '  SKIP  %-54s (not in a git tree; the chain always is)\n' "emitter prefixes still exist"
     fi
 
     echo

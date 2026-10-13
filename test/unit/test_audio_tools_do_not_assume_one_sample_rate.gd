@@ -28,7 +28,28 @@ extends GutTest
 ## and the guard should be retired deliberately, not patched.
 
 const MANIFEST := "res://data/music_manifest.json"
-const REWRITERS := ["res://tools/crossfade_loop.py", "res://tools/trim_wrap_padding.py"]
+const REWRITERS := ["res://tools/crossfade_loop.py", "res://tools/trim_wrap_padding.py",
+		"res://tools/true_peak_limit.py"]
+## Every tool carrying an ffmpeg ENCODE flag must be either audited above or excluded here WITH A
+## REASON. A hand list audited 2 of the 14 encoders in tools/ and its drain test only noticed the
+## list EMPTYING, never a tool that was never added — which is how true_peak_limit.py forced
+## `-ar 48000` on both its decode and its output for months, unaudited, the identical defect this
+## file was written for (measured 2026-10-12: a 44.1 kHz master went in and a 48 kHz file came out).
+## @cowir-music flagged the short list; the fix is that the UNION must cover every encoder.
+const NOT_A_REWRITER := {
+	"audit_loop_seams.py": "reads and reports; its encode is a temp decode for analysis",
+	"elevenlabs_sfx.py": "GENERATES from the API — no master is its input",
+	"gen_chiptune_sfx.py": "GENERATES; a fixed synthesis rate is the source of truth, not an assumption",
+	"gen_steam_bed.py": "GENERATES; same",
+	"seam_loop_beds.py": "reads and reports seam figures",
+	"suno_api.py": "DOWNLOADS a new track",
+	"suno_browser.py": "DOWNLOADS a new track",
+	"suno_gen.py": "DOWNLOADS a new track",
+	"trim_loop_seams.py": "reads and reports; the trim is applied by trim_wrap_padding.py",
+	"make_web_audio.sh": "derives a WEB TIER beside the masters and never writes one (cowir-deploy's)",
+	"make_web_voice.sh": "derives the web VOICE tier; 24 kHz is the deliberate tier rate, not an assumption",
+	"voice_spectrum.py": "DECODES only, for analysis — writes no audio",
+}
 
 
 func _tools_dir_source(path: String) -> String:
@@ -111,8 +132,20 @@ func test_the_assertion_runs_BEFORE_the_decode_that_would_mask_it() -> void:
 	for path in REWRITERS:
 		var src: String = _tools_dir_source(path)
 		var probe_at: int = src.find("encoder changed the format")
-		var decode_at: int = src.find("decode(tmp")
-		if probe_at < 0 or decode_at < 0:
+		## ⛔ THE MASKING DECODE, IN ANY OF ITS SHAPES — and NOT FOUND is a refusal, not a skip.
+		## `continue` here meant a tool whose re-read is spelled differently passed this arm without
+		## being looked at: true_peak_limit.py re-reads with `_read(args.dst`, so adding it to the
+		## list above would have bought a vacuous green on the one claim that is the actual fix.
+		var decode_at: int = -1
+		for shape in ["decode(tmp", "_read(args.dst", "_read(tmp"]:
+			var at: int = src.find(shape)
+			if at > -1 and (decode_at < 0 or at < decode_at):
+				decode_at = at
+		if probe_at < 0:
+			wrong.append("%s (NO post-encode assertion at all)" % path.get_file())
+			continue
+		if decode_at < 0:
+			wrong.append("%s (its re-read of the output is spelled in a shape this arm does not know, so the ORDERING is unchecked — add the shape rather than letting it pass)" % path.get_file())
 			continue
 		if probe_at > decode_at:
 			wrong.append("%s (assert at %d, masking decode at %d)" % [path.get_file(), probe_at, decode_at])
@@ -129,3 +162,47 @@ func test_the_rewriter_list_has_not_drained() -> void:
 	for path in REWRITERS:
 		assert_true(FileAccess.file_exists(path),
 			"REWRITERS names %s and it is not on disk — audit a tool that exists, or drop the entry" % path)
+
+
+## THE UNION, which is what makes the list above a derivation rather than a snapshot: every tool in
+## tools/ that carries an ffmpeg encode flag is audited or excluded with a reason. A new audio tool
+## reds this until someone classifies it — which is the thing the drain test could never notice.
+func test_every_encoding_tool_is_audited_or_excluded_with_a_reason() -> void:
+	var d := DirAccess.open("res://tools")
+	assert_not_null(d, "VOID: cannot open res://tools")
+	if d == null:
+		return
+	var encoders: Array[String] = []
+	d.list_dir_begin()
+	var f := d.get_next()
+	while f != "":
+		if f.ends_with(".py") or f.ends_with(".sh"):
+			var src: String = FileAccess.get_file_as_string("res://tools/" + f)
+			## Comment lines stripped: this file's own prose names "-c:a" and would classify itself.
+			var code := ""
+			for line in src.split("\n"):
+				var t := str(line).strip_edges()
+				if not (t.begins_with("#") or t.begins_with("##")):
+					code += str(line) + "\n"
+			if code.contains("-c:a") or code.contains("libvorbis") or code.contains("-acodec"):
+				encoders.append(f)
+		f = d.get_next()
+	d.list_dir_end()
+	assert_gt(encoders.size(), 5,
+		"VOID: only %d encoding tool(s) derived from res://tools — the scan is broken, and a short list here would read as full coverage" % encoders.size())
+	var audited := {}
+	for path in REWRITERS:
+		audited[str(path).get_file()] = true
+	var unclassified: Array[String] = []
+	for name in encoders:
+		if not audited.has(name) and not NOT_A_REWRITER.has(name):
+			unclassified.append(name)
+	assert_eq(unclassified, [],
+		"these tools encode audio and are neither audited by this file nor excluded with a reason (%d of %d encoders): %s — classify each one; an unclassified encoder is how true_peak_limit.py carried `-ar 48000` unnoticed" % [unclassified.size(), encoders.size(), unclassified])
+	## And the exclusions must name REAL files, or the map is a place for stale names to hide.
+	var ghosts: Array[String] = []
+	for name in NOT_A_REWRITER:
+		if not FileAccess.file_exists("res://tools/" + str(name)):
+			ghosts.append(str(name))
+	assert_eq(ghosts, [],
+		"NOT_A_REWRITER names tools that no longer exist, so its reasons defend nothing: %s" % [ghosts])

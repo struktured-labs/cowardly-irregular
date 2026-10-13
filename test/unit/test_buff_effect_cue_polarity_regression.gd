@@ -175,6 +175,11 @@ func test_a_beneficial_effect_with_no_polarity_TWIN_still_avoids_the_blip() -> v
 
 	var unrouted: Array[String] = []
 	for e in ally.keys():
+		## DEFERRED effects are not unrouted: cleanse has an explicit arm that plays nothing here
+		## because its executor owns the cue. Counting it would name it in a message that says it
+		## draws the descending blip, which is false and sends the reader to the wrong file.
+		if e == "cleanse":
+			continue
 		if not routed.has(e):
 			unrouted.append("%s (%s)" % [e, str(ally[e][0])])
 	assert_gt(unrouted.size(), 0,
@@ -219,14 +224,38 @@ func test_an_ally_TARGETED_but_ally_HOSTILE_effect_keeps_the_debuff_cue() -> voi
 		"Reduce Overhead strips a party member's buffs. It is aimed AT an ally and hostile TO them, so target_type routes it to the buff cue — an ascending fanfare over the player losing every buff they had")
 
 
-func test_the_four_repaired_effects_route_to_the_BUFF_cue() -> void:
+func test_the_repaired_effects_route_to_the_BUFF_cue() -> void:
 	## Pins VALUES, not presence. "the effect is routed somewhere" was true of the bug —
 	## `_:` is a route. Only naming the expected cue catches a beneficial effect wired to
 	## the debuff arm, which is the same defect wearing the other sign.
+	##
+	## ⚠️ WAS FOUR. `cleanse` left this list on 2026-10-12 — see the arm below. The name said
+	## "four" and the list is three; a count in a test NAME is the same drift this file's own
+	## header warns about in prose.
 	var routed: Dictionary = _routed_effects()
-	for effect in ["magic_defense_up", "regen", "barrier", "cleanse"]:
+	for effect in ["magic_defense_up", "regen", "barrier"]:
 		assert_eq(str(routed.get(effect, "<unrouted>")), "buff",
-			"'%s' is beneficial (Shell / Regen / Guardian Wall / Esuna) and must play the ascending buff cue" % effect)
+			"'%s' is beneficial (Shell / Regen / Guardian Wall) and must play the ascending buff cue" % effect)
+
+
+## `cleanse` (Esuna, Garbage Collect) is DEFERRED to BattleManager's cleanse executor, which is the
+## only place that knows whether an ailment actually came off: `status_cured.ogg` was composed for
+## this event and reached nothing, because the cue is keyed `cured` while the effect is named
+## `cleanse`, so no `status_<effect>` lookup could find it. A cure that cured NOTHING must not sound
+## like one, and BattleScene cannot tell. Cueing in both places would double it.
+##
+## So this arm replaces the buff-cue pin with the two halves that make the deferral honest: nothing
+## cues it here, and the named owner DOES. A deferral nobody verifies is just a deletion.
+func test_cleanse_is_deferred_to_its_executor_and_the_executor_cues_it() -> void:
+	var routed: Dictionary = _routed_effects()
+	assert_eq(str(routed.get("cleanse", "<unrouted>")), "<unrouted>",
+		"cleanse plays a cue in BattleScene again, so a cure now sounds twice — once here and once from BattleManager's executor, and the 80 ms per-key cooldown hides the second from any log")
+	var bm: String = GdSource.code_of("res://src/battle/BattleManager.gd")
+	assert_ne(bm, "", "CONTROL: BattleManager code must survive the comment strip")
+	assert_true(bm.contains("SoundManager.play_status(\"cured\")"),
+		"cleanse is deferred out of BattleScene and NOTHING in BattleManager cues it, so every cure is now silent — the deferral must be honoured by its owner")
+	assert_true(bm.contains("ESUNA_AILMENTS"),
+		"CONTROL: the cleanse executor must still be the thing that reads ESUNA_AILMENTS, or the check above is pinned to an unrelated call site")
 
 
 func test_an_effect_NAMED_after_an_authored_cue_must_route_to_it() -> void:

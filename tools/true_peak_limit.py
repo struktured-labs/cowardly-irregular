@@ -73,16 +73,33 @@ def limit(x: np.ndarray, sr: int, ceiling_db: float = -1.0,
     return _downsample4(up * env, len(x))
 
 
-def _read(path: str) -> tuple[np.ndarray, int, int]:
+def probe(path: str) -> tuple[int, int]:
+    """(sample_rate, channels) of the file on disk. The FILE's own format, never a default:
+    this tool forced `-ar 48000` on decode and wrote its output from that, so a 44.1 kHz master
+    came back resampled — the same defect test_audio_tools_do_not_assume_one_sample_rate was
+    written for after crossfade_loop.py carried `SR = 48000`. Measured 2026-10-12: 19 of 161 music
+    masters are 44.1 kHz, and in the sfx bank 114 of 200 sampled are STEREO with 54 at 192 kHz."""
+    out = subprocess.run(["ffprobe", "-v", "error", "-select_streams", "a:0", "-show_entries",
+                          "stream=sample_rate,channels", "-of", "csv=p=0", path],
+                         capture_output=True, text=True, check=True).stdout.strip()
+    parts = [x for x in out.replace("\n", ",").split(",") if x]
+    if len(parts) < 2:
+        raise RuntimeError("ffprobe gave no rate/channels for %s: %r" % (path, out))
+    return int(parts[0]), int(parts[1])
+
+
+def _read(path: str, sr: int) -> tuple[np.ndarray, int]:
+    """Decode at the file's OWN rate. `sr` is passed in rather than chosen here so one probe
+    answers for both the decode and the encode, and they cannot drift apart."""
     with tempfile.NamedTemporaryFile(suffix=".wav") as tmp:
         subprocess.run(["ffmpeg", "-y", "-v", "error", "-i", path,
-                        "-ar", "48000", tmp.name], check=True)
+                        "-ar", str(sr), tmp.name], check=True)
         w = wave.open(tmp.name)
         d = np.frombuffer(w.readframes(w.getnframes()), dtype=np.int16).astype(np.float64)
         ch = w.getnchannels()
         if ch == 2:
             d = d.reshape(-1, 2).mean(axis=1)
-        return d / 32768.0, 48000, ch
+        return d / 32768.0, ch
 
 
 def main() -> int:
@@ -92,7 +109,19 @@ def main() -> int:
     ap.add_argument("--ceiling-db", type=float, default=-1.0)
     args = ap.parse_args()
 
-    x, sr, _ = _read(args.src)
+    sr, ch = probe(args.src)
+    ## ⛔ REFUSE a stereo master rather than silently downmixing it. The limiter works on a mono
+    ## sum by construction, and the encode below forces `-ac 1`, so a stereo source came out MONO
+    ## with no warning — a destructive change nobody asked a peak limiter for. 114 of 200 sampled
+    ## sfx masters are stereo, including the three this file's own cost note was measured on, so
+    ## this is the common case and not an edge. "I cannot do this" must not share an exit with
+    ## "done": refusing costs a rerun, downmixing costs the master.
+    if ch != 1:
+        print("REFUSED: %s is %d-channel and this limiter is mono-only — it would ship a MONO "
+              "file over your master. Downmix deliberately first, or extend the limiter to apply "
+              "its envelope per channel." % (args.src, ch), file=sys.stderr)
+        return 2
+    x, _ = _read(args.src, sr)
     before = true_peak_db(x)
 
     ## The vorbis encode RAISES true peak (measured 0.3-0.9 dB on W3-W5 cues), so
@@ -110,9 +139,20 @@ def main() -> int:
                 w.setsampwidth(2)
                 w.setframerate(sr)
                 w.writeframes((np.clip(y, -1.0, 1.0) * 32767).astype(np.int16).tobytes())
+            ## -ar is EXPLICIT so the output carries the input's rate rather than whatever the
+            ## intermediate wav happened to be written at.
             subprocess.run(["ffmpeg", "-y", "-v", "error", "-i", tmp.name,
-                            "-c:a", "libvorbis", "-q:a", "5", "-ac", "1", args.dst], check=True)
-        shipped, _, _ = _read(args.dst)
+                            "-c:a", "libvorbis", "-q:a", "5", "-ac", "1",
+                            "-ar", str(sr), args.dst], check=True)
+        ## ASSERT THE FORMAT ON THE ARTIFACT, BEFORE the decode that would mask it: re-reading at
+        ## `sr` makes a resampled file agree with expectation, which is exactly how crossfade_loop's
+        ## 48 kHz assumption verified itself clean for months.
+        out_sr, out_ch = probe(args.dst)
+        if out_sr != sr or out_ch != 1:
+            print("the encoder changed the format: %s is %d Hz/%dch from a %d Hz/1ch source"
+                  % (args.dst, out_sr, out_ch, sr), file=sys.stderr)
+            return 3
+        shipped, _ = _read(args.dst, sr)
         after = true_peak_db(shipped)
         if after <= target:
             print(f"  true peak {before:+.1f} -> {after:+.1f} dBTP "

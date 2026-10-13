@@ -4927,7 +4927,7 @@ func _on_action_executed(combatant: Combatant, action: Dictionary, targets: Arra
 			match effect:
 				# magic_defense_up/regen/barrier/cleanse reached the catch-all and drew the DESCENDING blip — a buff sounding negative; magic_defense_down was listed and its own opposite was not
 				# "buff" is 4 Masterites' literal effect string; the lookup asks for status_buff, which does not exist, so the authored buff cue was never reached
-				"defense_up", "attack_up", "volatility_up_self", "volatility_down", "magic_defense_up", "regen", "barrier", "cleanse", "buff":
+				"defense_up", "attack_up", "volatility_up_self", "volatility_down", "magic_defense_up", "regen", "barrier", "buff":
 					SoundManager.play_battle("buff")
 				# stat reductions share the generic debuff cue (cowir-sfx rec) — bespoke cues reserved for the scary/unique statuses
 				# ⛔ SO AN EFFECT WITH A BESPOKE AUTHORED CUE DOES NOT BELONG IN THIS ARM, and two were sitting here:
@@ -4939,6 +4939,10 @@ func _on_action_executed(combatant: Combatant, action: Dictionary, targets: Arra
 				# dispel_and_self_buff is target_type single_ally and HOSTILE to that ally (BattleManager strips their buffs, logged in penalty_bbcode) — it sits here with its base effect `dispel` because the target_type rule below would send it to the buff cue
 				"defense_down", "volatility_up", "attack_down", "magic_down", "magic_defense_down", "speed_down", "all_stats_down", "random_debuff", "dispel", "dispel_and_self_buff", "debuff":
 					SoundManager.play_battle("debuff")
+				## cleanse is cued by BattleManager's cleanse executor, which is the only place that knows
+				## whether an ailment actually came off. Cueing here too would double it.
+				"cleanse":
+					pass
 				"ability_silence", "silence":
 					SoundManager.play_status("silence")
 				"":

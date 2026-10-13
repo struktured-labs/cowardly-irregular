@@ -7,6 +7,12 @@ extends GutTest
 const GAMELOOP := "res://src/GameLoop.gd"
 const GdSource := preload("res://test/unit/helpers/gd_source.gd")
 
+
+## One read for the arm and its control both — see the sibling guard: a control scoped to the
+## HELPER stays green when the ARM alone is swapped to a raw read.
+func _gameloop_code() -> String:
+	return GdSource.code_of(GAMELOOP)
+
 var _gl: Node
 
 
@@ -67,10 +73,18 @@ func test_both_post_battle_loops_ask_the_same_question() -> void:
 	## CODE only: a count over raw source counts PROSE. A comment naming either literal would supply
 	## a call site that does not exist, or an old gate that is not there -- and the first direction
 	## is a false GREEN on the arm that pins both loops to the shared predicate.
-	var src: String = GdSource.code_of(GAMELOOP)
+	var src: String = _gameloop_code()
 	assert_gt(src.length(), 1000, "FLOOR: GameLoop must be readable")
-	assert_true(src.contains("func _autogrind_should_drink("),
+	assert_true(_gameloop_code().contains("func _autogrind_should_drink("),
 		"CONTROL: over-stripping and a correct strip are the same green, so a known code site must survive")
+	## And the strip must actually HAVE HAPPENED. Without this the control passes on a raw read --
+	## measured: swapping the accessor to FileAccess left this file green while the sibling guard red.
+	assert_false(_gameloop_code().contains("## A scratch used to be enough"),
+		"a known comment in GameLoop must be gone, or the accessor is not stripping at all")
+	## The other shape: a `#`-only strip cannot touch a `"""` region, and GameLoop has 119 of those
+	## lines. Without this, dropping the region split leaves every docstring in the "code".
+	assert_false(_gameloop_code().contains("Idempotent — won't double-connect on a re-entrant call."),
+		"a docstring region must be stripped too, not just the # comments")
 	assert_eq(src.count("_autogrind_should_drink(member)"), 2,
 		"both post-battle heal loops must go through the shared predicate")
 	assert_eq(src.count("current_hp < member.max_hp:"), 0,

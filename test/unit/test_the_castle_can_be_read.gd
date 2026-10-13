@@ -83,6 +83,32 @@ func _source() -> String:
 	return code
 
 
+## \u26d4 THIS SLICE WAS ONE-SIDED AND UNCONTROLLED UNTIL NOW, and it is the sibling of the bug I had
+## just fixed in the village guard \u2014 found by re-auditing with @cowir-deploy's WIDENED pattern after
+## they corrected their own sweep from 4 hits to 109. `src.find("\\nfunc ", at + 10)` returns -1 for
+## the LAST function in a file, `substr(at, -1 - at)` yields nothing, and the arm then passes
+## vacuously. LATENT rather than live here \u2014 measured: `_load_examine_pack` follows the placer, so
+## the slice captures 26 lines with 0 further headers \u2014 but one reorder away from silent, and the
+## `at + 10` was a magic offset standing in for the declaration's own length.
+##
+## 🔑 The anchor is a DECLARATION, not a delimiter (@cowir-autogrind's rung above `= [` / `\\n]`): a
+## statement cannot appear inside a type annotation or a nested value, so there is no plausible
+## wrong place for it to land. Second copy of this helper, deliberately \u2014 a third consumer should
+## extract it, which is `GdSource`'s own rule for the same situation.
+func _func_body(src: String, decl: String) -> String:
+	var at := src.find(decl)
+	if at < 0:
+		return ""
+	var end := src.find("\nfunc ", at + decl.length())
+	if end < 0:
+		end = src.length()
+	var body := src.substr(at, end - at)
+	assert_eq(body.count("\nfunc "), 0,
+		"the slice for '%s' holds %d further function header(s) — it over-ran, so every assert about this body is about the wrong code" % [
+			decl, body.count("\nfunc ")])
+	return body
+
+
 func test_the_pack_has_a_consumer() -> void:
 	var src := _source()
 	assert_true(src.contains("examine_texts.json"),
@@ -143,8 +169,8 @@ func test_the_text_is_not_copied_into_the_script() -> void:
 ## The two-kinds split must come from the PACK's `prop`, not from a list in the script.
 func test_the_kind_split_is_driven_by_the_pack() -> void:
 	var src := _source()
-	var at := src.find("func _place_castle_examines")
-	var body := src.substr(at, src.find("\nfunc ", at + 10) - at)
+	var body := _func_body(src, "func _place_castle_examines")
+	assert_gt(body.length(), 0, "CONTROL: the placer's body must be sliceable, or every assert below is vacuous")
 	assert_true(body.contains('entry.get("prop", "")') and body.contains("_ROOM_BEAT"),
 		"the Signpost-vs-ReadableProp choice must read the pack's own `prop` field")
 	assert_true(body.contains("Signpost.new()") and body.contains("ReadableProp.new()"),

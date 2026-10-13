@@ -194,6 +194,73 @@ func test_hint_bar_actions_have_real_joypad_bindings() -> void:
 ## speed. A source-text pin is a claim about the code's SPELLING; the word doing the work in the old
 ## assertion was "handled", and nothing exercised it. (cowir-ai's class, cowir-music's Mordaine guard,
 ## same shape.)
+## ⛔ THE STRIP THIS FILE RESTS ON HAD NO ARM ON IT. The wiring arms below are ACCEPTANCE sets, so
+## they are only safe because `_read` returns stripped CODE — and reverting that one line to a raw
+## read was SILENT: 10 passing, EC=0. Two halves compounding, which @cowir-deploy named after
+## building the same pair tonight: my attacks were MUTATIONS I ran by hand rather than arms, and the
+## real BattleScene.gd carries no inline-comment hazard, so stripping removes nothing observable.
+##
+## 🔑 AND IT MUST DRIVE `_read`, NOT GdSource. An arm scoped to the shared helper cannot see its
+## CALLER stop using it — the helper keeps working, the arm keeps passing, the guard reads raw text.
+## That is the defect three lanes shipped tonight, including me, in the plant for the menu guard.
+func test_the_strip_this_guard_rests_on_is_live() -> void:
+	var fixture := "user://truthfulness_strip_probe.gd"
+	var planted := "func _unhandled_input(event):\n\tif event.pressed:\n\t\tpass  # was _toggle_battle_speed()\n"
+	var f := FileAccess.open(fixture, FileAccess.WRITE)
+	assert_not_null(f, "PRECONDITION: must be able to write the probe fixture")
+	if f == null:
+		return
+	f.store_string(planted)
+	f.close()
+
+	var code := _read(fixture)
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(fixture))
+
+	## The hazard: a wiring token living only in an inline comment. A raw read keeps it, and every
+	## arm below would then accept prose as evidence that the control is wired.
+	assert_false(code.contains("_toggle_battle_speed()"),
+		"_read must return CODE — a wiring token in an INLINE comment reached the acceptance arms, "
+		+ "so reverting the strip was silent and the bar could advertise a dead button")
+	## MUST-SURVIVE: over-stripping and a correct strip are the same green.
+	assert_true(code.contains("if event.pressed:"),
+		"...and real code either side of it has to survive, or this passes on an empty read")
+
+	## ⛔ FLOOR, AND IT IS NOT REDUNDANT WITH THE MUST-SURVIVE ABOVE. That assert names ONE line, so
+	## an over-strip that keeps that line walks past it. MEASURED here: a stripper returning only
+	## `"if event.pressed:"` left BOTH controls green — detection survived only because unrelated
+	## arms needed the rest of the file, and their messages blamed HINT_DEFAULT_TEXT, not the strip.
+	##
+	## 🔑 DERIVED, NOT A RATIO. My first version was `code > raw/2`, and @cowir-overworld measured
+	## that a ratio is a PER-FILE property: 35% margin here, 14% on their CastleHarmonia, where
+	## ~2.7 KB of added comments — one guard header in this repo — would red it falsely. A func
+	## count is read from the same file on the same run, so it cannot go stale as the file grows,
+	## and a mutant cannot game it without preserving essentially the whole body.
+	var raw_battle := _read_raw(BATTLE_PATH)
+	var code_battle := _read(BATTLE_PATH)
+	assert_eq(_func_count(code_battle), _func_count(raw_battle),
+		"the strip kept %d of %d func declarations — an over-strip that preserves the one line a "
+		% [_func_count(code_battle), _func_count(raw_battle)]
+		+ "must-survive names is invisible to it, and the arms that notice will blame the subject")
+
+	## ⛔ THE REGION SPLIT, WHICH THE `#` PASS ALONE DOES NOT DO — and this file is exposed: 132
+	## `"""` lines in BattleScene, 57 in Win98Menu. A #-only strip leaves every docstring in the
+	## code half, and that mutant passed ALL THREE of my other assertions. It is GdSource's own
+	## documented .325 defect, which @cowir-autogrind hit in a guard written the same evening to be
+	## careful about exactly this.
+	assert_false(code_battle.contains("Repeat all players"),
+		"a `\"\"\"` docstring survived into the code half — the region split was dropped, so every "
+		+ "token named in prose is back to being accepted as evidence that a control is wired")
+
+
+## Line-anchored: a comment cannot begin with `func `, so this counts declarations and not mentions.
+func _func_count(text: String) -> int:
+	var n := 0
+	for line in text.split("\n"):
+		if line.begins_with("func "):
+			n += 1
+	return n
+
+
 func test_speed_toggle_is_actually_wired_to_the_advertised_button() -> void:
 	var lines := _read(BATTLE_PATH).split("\n")
 	var wired := false

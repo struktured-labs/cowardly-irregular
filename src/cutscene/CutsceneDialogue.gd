@@ -1304,7 +1304,7 @@ const PORTRAIT_SPRITES = {
 	"rogue": "res://assets/sprites/portraits/rogue.png",
 	# NPC portraits cropped from sprite sheets (first frame, upper body)
 	"elder": "res://assets/sprites/portraits/npcs/elder.png",
-	"scholar": "res://assets/sprites/portraits/npcs/scholar.png",
+	"scholar": "res://assets/sprites/portraits/npcs/scholarly.png",  # the bust; npcs/scholar.png is a 192x166 standing figure
 	"shopkeeper": "res://assets/sprites/portraits/npcs/shopkeeper.png",
 	"brigadier": "res://assets/sprites/portraits/npcs/brigadier.png",
 	"guard": "res://assets/sprites/portraits/npcs/guard.png",
