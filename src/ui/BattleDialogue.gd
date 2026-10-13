@@ -13,6 +13,19 @@ signal dialogue_advanced()
 
 ## Dialogue queue
 var _dialogue_queue: Array = []  # Array of {speaker: String, text: String, portrait: String}
+## A line taller than the box is silently CUT: scroll_active is false, clip_contents is true, and
+## nothing here paged. CutsceneDialogue — which its own header calls "adapted from BattleDialogue"
+## — grew paging for exactly this hazard and the original was left behind. Long lines now page.
+##
+## ⚠️ LATENT TODAY, AND SAID PLAINLY BECAUSE A COMMENT THAT OVERSTATES IT WOULD AGE BADLY:
+## measured against the real box, 0 of 382 authored boss lines overflow, at ALL FIVE Text Size
+## presets (80/100/125/150/200% — body_h scales with the line height, so capacity stays ~4.1 lines).
+## This is parity with the sibling, not a bug a player hits now. What makes it worth having is that
+## reaching it needs only a LONGER AUTHORED LINE, and the sibling's own guard measured 1 of 3276 of
+## its strings already over its box — the margin does get crossed as content is written. LLM boss
+## taunts do NOT arrive here (they go to the bubble over the sprite); this surface is authored text.
+var _pages: PackedStringArray = PackedStringArray()
+var _page_index: int = 0
 var _current_index: int = 0
 var _is_typing: bool = false
 var _typing_speed: float = 0.03  # Seconds per character; each line re-reads Settings text speed
@@ -459,8 +472,52 @@ func _show_current_line() -> void:
 		_text_label.position.x = full_x
 		_text_label.size.x = _dialogue_box.size.x - full_x - TILE_SIZE * 4
 
+	## Paginated here rather than in _begin_page: this is after the narrator/enemy branch above has
+	## reclaimed the portrait's width, so _text_label.size is final and the page breaks match what
+	## will actually be drawn.
+	_pages = _paginate(str(entry.get("text", "")))
+	_page_index = 0
+	_begin_page(_pages[0] if _pages.size() > 0 else "")
+
+
+## Splits one line into box-sized pages. Mirrors CutsceneDialogue._paginate, including measuring the
+## raw string: no authored line uses bbcode today, and a future tag would only break a page EARLY,
+## never hide text.
+func _paginate(text: String) -> PackedStringArray:
+	var out := PackedStringArray()
+	if text.is_empty() or _text_label == null or not is_instance_valid(_text_label):
+		out.append(text)
+		return out
+	var font: Font = _text_label.get_theme_font("normal_font")
+	var w: float = _text_label.size.x
+	var h: float = _text_label.size.y
+	if font == null or w <= 0.0 or h <= 0.0:
+		out.append(text)
+		return out
+	## The size the label was actually given in _build_metrics, not a literal — Text Size changes it.
+	var fsz: int = _text_label.get_theme_font_size("normal_font_size")
+	if fsz <= 0:
+		fsz = 13
+	if font.get_multiline_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, w, fsz).y <= h:
+		out.append(text)
+		return out
+	var cur: String = ""
+	for word in text.split(" "):
+		var probe: String = word if cur.is_empty() else cur + " " + word
+		if not cur.is_empty() and font.get_multiline_string_size(probe, HORIZONTAL_ALIGNMENT_LEFT, w, fsz).y > h:
+			out.append(cur)
+			cur = word
+		else:
+			cur = probe
+	if not cur.is_empty():
+		out.append(cur)
+	return out
+
+
+## Types one page. The portrait, theme and speaker belong to the LINE and are not rebuilt here.
+func _begin_page(text: String) -> void:
 	# Same Text Speed presets as cutscenes, including Instant's full-line reveal.
-	_current_text = entry.get("text", "")
+	_current_text = text
 	_displayed_chars = 0
 	_text_label.text = ""
 	_advance_hint.visible = false
@@ -499,8 +556,13 @@ func _finish_typing() -> void:
 	_is_typing = false
 	if _text_label and is_instance_valid(_text_label):
 		_text_label.text = _current_text
+		# Mouse-wheel fallback for the residue paging cannot split: a single word wider than the box.
+		_text_label.scroll_active = true
 	if _advance_hint and is_instance_valid(_advance_hint):
 		_advance_hint.text = advance_hint_text()  # re-resolved per line, same reason as CutsceneDialogue
+		# A paged line must say so, or the player cannot tell a full box from a continued one.
+		if _pages.size() > 1:
+			_advance_hint.text = "%s  (%d/%d)" % [_advance_hint.text, _page_index + 1, _pages.size()]
 		_place_advance_hint()
 		_advance_hint.visible = true
 
@@ -508,8 +570,12 @@ func _finish_typing() -> void:
 func _advance_dialogue() -> void:
 	"""Move to next dialogue line"""
 	if _is_typing:
-		# Skip to end of current line
+		# Skip to end of current page
 		_finish_typing()
+	elif _page_index + 1 < _pages.size():
+		# A page turn is not a new line: no dialogue_advanced, no portrait rebuild, no queue re-read.
+		_page_index += 1
+		_begin_page(_pages[_page_index])
 	else:
 		# Move to next line
 		_current_index += 1
