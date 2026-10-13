@@ -590,6 +590,9 @@ func _grant_roster_passives(combatant: Combatant, job: Dictionary) -> void:
 			continue
 		if combatant.has_method("learn_passive"):
 			combatant.learn_passive(passive_id)
+		## Learned either way; equipped only into a free slot. A full bar warned once per passive on every job change.
+		if combatant.equipped_passives.size() >= combatant.max_passive_slots:
+			continue
 		if passive_system != null and passive_system.has_method("equip_passive"):
 			passive_system.equip_passive(combatant, passive_id)
 
