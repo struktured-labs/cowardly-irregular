@@ -108,6 +108,43 @@ _selftest() {
     run "an exotic code passes through"   42 "code 42" "WEDGED" \
         -- --label exotic --budget 20 --log "$dir/h.log" -- bash -c 'exit 42'
 
+    # ⛔ THE ARM THAT CATCHES THE DEFECT, and it needs a real process to be worth anything.
+    # The survivors line claims "the bound reaped what it STARTED". The scan measured "is any
+    # godot in this directory", and the CALLER'S OWN tree shares $PWD -- so @cowir-main's pre-gate
+    # godot red this arm (16/17) on a sound tree. Cross-lane was never possible (different cwd);
+    # same-tree always was. At gate 0d that is a publish worktree with a godot still up from an
+    # earlier stage, blocking a release on a build with nothing wrong with it.
+    #
+    # A fake is REQUIRED: the selftest substitutes the command and so spawns no godot, and with
+    # nothing godot-shaped alive the broken and the fixed scan both report 0 -- the arm cannot
+    # tell them apart. /bin/bash copied to a godot-named path gives a real /proc/<pid>/exe match.
+    # `; true` defeats bash's implicit-exec, which otherwise replaces the process with `sleep` and
+    # makes this arm silently vacuous. It did exactly that twice while this was being written, and
+    # a control on the fixture (exe godot-named AND cwd == $PWD) is what caught it both times.
+    local _fake="$dir/godot_SELFTEST_FAKE_not_an_engine" _fpid="" _fexe="" _fcwd=""
+    if cp /bin/bash "$_fake" 2>/dev/null; then
+        ( cd "$PWD" && "$_fake" -c 'sleep 8; true' ) & _fpid=$!
+        sleep 1
+        _fexe="$(readlink "/proc/${_fpid}/exe" 2>/dev/null || true)"
+        _fcwd="$(readlink "/proc/${_fpid}/cwd" 2>/dev/null || true)"
+        case "$_fexe" in
+            *godot*)
+                if [ "$_fcwd" = "$PWD" ]; then
+                    run "a PRE-EXISTING godot here is not our survivor" 124 \
+                        "survivors in .*: 0" "-" \
+                        -- --label pre --budget 1 --log "$dir/p.log" -- sleep 3
+                else
+                    echo "  SKIP  pre-existing-godot arm: fixture cwd is not the tool's \$PWD"
+                fi ;;
+            *) echo "  SKIP  pre-existing-godot arm: fixture exe not godot-named (${_fexe##*/})" ;;
+        esac
+        kill "$_fpid" 2>/dev/null || true
+        wait "$_fpid" 2>/dev/null || true
+        rm -f "$_fake"
+    else
+        echo "  SKIP  pre-existing-godot arm: could not build the fixture"
+    fi
+
     echo "[bound] selftest — the bound fails CLOSED when it is unusable"
     run "no --budget"                      2 "no --budget for 'nb'" "-"  -- --label nb --log "$dir/i.log" -- true
     run "non-numeric --budget"             2 "--budget 'soon' .* is not a whole number" "-" -- --label nn --budget soon --log "$dir/j.log" -- true
@@ -166,6 +203,23 @@ case "$BUDGET" in ''|*[!0-9]*) _die "--budget '$BUDGET' for '$LABEL' is not a wh
 mkdir -p "$(dirname "$LOG")" || _die "could not create the log directory for '$LOG'."
 : > "$LOG" || _die "could not write the log '$LOG' for '$LABEL'."
 
+# \u26d4 SNAPSHOT FIRST. The survivor scan below says "the bound reaped what it STARTED", but it
+# measured "is any godot in this directory" -- and the caller's own tree has the same $PWD. Measured
+# 2026-10-13 by @cowir-main: running --selftest while their own pre-gate godot was alive in the same
+# tree red the survivors arm, 16/17. Cross-lane contamination was never possible (different cwd);
+# the caller's OWN godot always was. At gate 0d that is a publish worktree with a godot still up
+# from an earlier stage, i.e. a selftest that reds on a sound build.
+# This records which godots were ALREADY here, so the scan can report only new ones.
+_godots_here() {
+    local _p _exe
+    for _p in /proc/[0-9]*; do
+        _exe="$(readlink "${_p}/exe" 2>/dev/null || true)"
+        case "$_exe" in *godot*) ;; *) continue ;; esac
+        [ "$(readlink "${_p}/cwd" 2>/dev/null || true)" = "$PWD" ] || continue
+        printf '%s\n' "${_p##*/}"
+    done
+}
+_PRE_GODOTS="$(_godots_here)"
 _t0=$(date +%s)
 timeout "$BUDGET" "$@" > "$LOG" 2>&1
 EC=$?
@@ -180,13 +234,14 @@ if [ "$_elapsed" -ge "$BUDGET" ]; then
     # and the exit code cannot tell them apart (see the 124/137 note above). So look at /proc.
     # By exe, not by pattern: `timeout`'s argv contains godot's argv, and so does this script's.
     _surv=0
-    for _p in /proc/[0-9]*; do
-        _exe="$(readlink "${_p}/exe" || true)"
-        case "$_exe" in *godot*) ;; *) continue ;; esac
-        [ "$(readlink "${_p}/cwd" || true)" = "$PWD" ] || continue
+    _pre_n=0; [ -n "$_PRE_GODOTS" ] && _pre_n=$(printf '%s\n' "$_PRE_GODOTS" | grep -c .)
+    for _pid in $(_godots_here); do
+        # Only a godot that was NOT here before this run can be something this bound started.
+        case $'\n'"$_PRE_GODOTS"$'\n' in *$'\n'"$_pid"$'\n'*) continue ;; esac
         _surv=$(( _surv + 1 ))
-        echo "[bound]   SURVIVOR: pid ${_p##*/} still running ${_exe} in ${PWD}" >&2
+        echo "[bound]   SURVIVOR: pid ${_pid} still running $(readlink "/proc/${_pid}/exe" 2>/dev/null) in ${PWD}" >&2
     done
+    [ "$_pre_n" -gt 0 ] && echo "[bound]   (${_pre_n} godot(s) were already running here before this bound started; not counted)" >&2
     [ "$_surv" -eq 0 ] && echo "[bound]   survivors in ${PWD}: 0 — the bound reaped what it started." >&2
     exit 124
 fi
