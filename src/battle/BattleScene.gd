@@ -5625,6 +5625,15 @@ func _on_damage_dealt(target: Combatant, amount: int, is_crit: bool, element: St
 				if _battle_dialogue and _battle_dialogue.has_method("show_boss_intro"):
 					_show_boss_dialogue(target.combatant_name, _boss_dialogue_data["low_hp"])
 
+	## A crit is a property of the hit that HAPPENED, not a second hit, so it is signalled above the
+	## return below. That return stops an ability stacking a weapon layer on its own cue — it was
+	## discarding the crit too, so a Shadow-Step Backstab (crit_chance forced to 1.0, 2.0x damage)
+	## sounded identical to a normal one. play_crit_thud uses its own _sub_player and is built to
+	## stack under the cue that is already playing.
+	# Sub-layer UNDER the crit cue, which already carries its own pitch/echo identity — this adds body, it does not re-hit the transient.
+	if is_crit and _intent_tier() == BattleJuice.Tier.FULL and BattleJuice.flag("audio_crit_thud"):
+		SoundManager.play_crit_thud()
+
 	# Skip hit sounds for abilities — ability sound already played at cast time
 	if _current_ability_id != "":
 		return
@@ -5634,9 +5643,6 @@ func _on_damage_dealt(target: Combatant, amount: int, is_crit: bool, element: St
 		return
 	var weapon_type = EquipmentSystem.get_weapon_type(attacker)
 	SoundManager.play_attack_hit(weapon_type, is_crit)
-	# Sub-layer UNDER the crit cue, which already carries its own pitch/echo identity — this adds body, it does not re-hit the transient.
-	if is_crit and _intent_tier() == BattleJuice.Tier.FULL and BattleJuice.flag("audio_crit_thud"):
-		SoundManager.play_crit_thud()
 	# msg 2796 cycle 20: layer the elemental strike voice ON TOP of the weapon hit, per cowir-sfx's shape — the sword still sounds like a sword, the element rides over it. Only reachable on basic attacks: the `_current_ability_id != ""` early-return above means an ability already played its own cast sound, so a Fire spell won't also fire strike_fire.
 	var weapon_element: String = _weapon_element_for(attacker)
 	if weapon_element != "":
