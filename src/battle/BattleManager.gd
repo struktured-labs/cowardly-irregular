@@ -4799,6 +4799,8 @@ func _execute_advance(combatant: Combatant, advance_action: Dictionary) -> void:
 
 	# Execute all actions in sequence (each will spend 1 AP)
 	var executed: int = 0
+	## A queued defer ends the turn, which is what the editor means by graying the rest.
+	var queue_ended: bool = false
 	for action in actions:
 		if not combatant.is_alive:
 			break
@@ -4816,6 +4818,10 @@ func _execute_advance(combatant: Combatant, advance_action: Dictionary) -> void:
 			"item":
 				_execute_item(combatant, action.get("item_id", ""), action.get("targets", []))
 				combatant.spend_restriction_clocks()
+			## ACTION_TYPES has four members and this match had three, so a rule's defer was skipped.
+			"defer":
+				_execute_defer(combatant)
+				queue_ended = true
 			_:
 				# Shared/imported autobattle scripts are player-editable
 				# JSON — a typo'd sub-action type was silently eaten
@@ -4834,6 +4840,8 @@ func _execute_advance(combatant: Combatant, advance_action: Dictionary) -> void:
 			await get_tree().create_timer(_consume_presentation_hold(0.075)).timeout
 		if not is_instance_valid(self):
 			return
+		if queue_ended:
+			break
 
 	## The fifth action was spent like the other four (each executor charges 1); refund it here
 	## so a full-bank Advance nets 4 AP. After, not before: gain_ap at the +4 cap is a no-op.
