@@ -17,9 +17,22 @@ const MAP_IMAGE: String = "res://data/maps/overworld_w1.png"
 const MAP_WORLD: String = "medieval"
 ## The 2026-08-22 resize (14f6722d) doubled the MAP and updated exactly five values;
 ## every literal content coordinate below it (chests, patrols, signs, landmarks, hidden
-## passages, Madame Orrery) stayed in the old 100x70 frame -- proven by the H markers
-## sitting at exactly 2x the passage literals. Legacy tile coords scale by this at their
-## tile->pixel conversion. Sites reading spawn_points or the PNG scan are already right.
+## passages, Madame Orrery) stayed in the old 100x70 frame. Legacy tile coords scale by this
+## at their tile->pixel conversion. Sites reading spawn_points or the PNG scan are already right.
+##
+## ⛔ THIS USED TO CITE "the H markers sitting at exactly 2x the passage literals" AS THE PROOF,
+## AND THAT EVIDENCE IS FALSE. Measured 2026-10-13 by decoding the PNG against map_palette.json:
+## the two `H` cells are (12,4) and (162,100); 2x the passage literals would be (34,134) and
+## (10,12). Neither matches, at 1x or 2x. The H cells are legacy or serve something else, and a
+## HiddenPassage needs no PNG marker at all -- it is a sprite over terrain that is already walkable.
+##
+## ✅ THE x2 FRAME ITSELF IS CORRECT; what evidences it is that the literals x2 land on terrain
+## that matches what each passage CLAIMS to be, which a wrong frame could not produce:
+##     w1_frozen_alcove  (5,6)  x2 -> (10,12)   ICE, 8 cells west of Frosthold's gate at (18,12)
+##     w1_sunken_ring   (17,67) x2 -> (34,134)  SAND, in the only gap (cols 33-34) through a
+##                                              mountain ridge that is solid either side
+## `test_the_resize_frame_still_lands_on_its_terrain` pins exactly that, so the frame is checkable
+## rather than asserted -- a resize that breaks it reds instead of needing this paragraph believed.
 const MAP_SCALE: int = 2
 
 signal exploration_ready()
