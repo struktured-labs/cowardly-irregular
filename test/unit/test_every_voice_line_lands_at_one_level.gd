@@ -79,6 +79,33 @@ func test_only_voice_lines_carry_a_gain() -> void:
 		"these non-voice cues carry a gain_db that nothing reads — only play_voice applies it: %s" % strays)
 
 
+## ⛔ `voice_blip_*` SHARES THE PREFIX AND IS A DIFFERENT ASSET CLASS. The arm above excludes
+## non-`voice_` cues and would pass if a future levelling pass gained the blips — @cowir-deploy
+## censused the shipped tree and found the partition exact: 654 mono LINE entries (613 gained + 41
+## at target) and 6 STEREO blips, consumed by CutsceneDialogue._voice_blip_player per speaker.
+##
+## The mono premise the 613 gains rest on holds for the 654 and NOT for the 6, and @cowir-music
+## measured why that matters: on a stereo asset, all-samples RMS and channel-averaged RMS diverge by
+## ~0 dB where the channels are correlated and ~6 dB where they are not. So a pass that widened from
+## "voice_ LINE entries" to "the voice_ PREFIX" would silently measure 6 files with an instrument
+## whose assumption no longer applies — and the widening is the easy mistake, because the prefix is
+## the obvious way to name the set.
+func test_the_stereo_blips_are_not_in_the_levelled_set() -> void:
+	var sfx := _sfx()
+	var gained_blips: Array[String] = []
+	var blips := 0
+	for key in sfx:
+		if not str(key).begins_with("voice_blip_"):
+			continue
+		blips += 1
+		if (sfx[key] as Dictionary).has("gain_db"):
+			gained_blips.append(str(key))
+	assert_gt(blips, 0,
+		"VOID: no voice_blip_* entries found, so this arm is not guarding the boundary it describes")
+	assert_eq(gained_blips, [],
+		"these text-advance blips carry a gain_db: they are STEREO and a different asset class, so the mono premise the 613 line gains were measured under does not hold for them. If blips are to be levelled, meter them channel-averaged and say so: %s" % gained_blips)
+
+
 func test_the_tool_and_the_engine_agree_on_the_channel_base() -> void:
 	## ⛔ THE CROSS-FILE INVARIANT, and the one a future edit will break: every gain was computed
 	## against the voice player's base level, because the headroom for a positive gain is
