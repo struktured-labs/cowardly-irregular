@@ -6,6 +6,9 @@ const GdSource := preload("res://test/unit/helpers/gd_source.gd")
 ## Bounds the beat walk below: a scene that cannot set its own flag would spin, and a hung test
 ## reads as infrastructure rather than as a red.
 const STORY_WALK_CAP := 12
+## Named once so the arm and the teardown cannot drift apart, and named for THIS file:
+## two guards sharing one probe path is shared mutable state keyed by nothing.
+const PROBE := "user://village_intro_strip_probe.gd"
 
 var _loop: Node
 var _saved: Dictionary = {}
@@ -20,6 +23,9 @@ func before_each() -> void:
 
 
 func after_each() -> void:
+	## Erased FIRST: free() below can abort this function, which would strand the plant.
+	if FileAccess.file_exists(PROBE):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(PROBE))
 	if is_instance_valid(_loop):
 		_loop.free()
 	GameState.game_constants = _saved
@@ -86,13 +92,20 @@ func test_each_intro_is_in_the_completion_flag_map() -> void:
 func test_an_intro_cannot_pre_empt_a_story_beat() -> void:
 	## Ordering is the whole safety property: every story gate returns before the intro loop, so
 	## an intro can never take an entry a chapter beat wanted.
-	var code: String = GdSource.code_of("res://src/GameLoop.gd")
+	var code: String = _gameloop_code()
 	assert_true(code.contains("func _get_pending_story_cutscene"), "CONTROL: GameLoop code must survive comment-stripping")
 	var fn_at: int = code.find("func _get_pending_story_cutscene")
 	var intro_at: int = code.find("for vid in _VILLAGE_INTROS", fn_at)
 	var prologue_at: int = code.find("\"world1_prologue\"", fn_at)
 	var chapter_at: int = code.find("\"world1_chapter1\"", fn_at)
+	## ⛔ EVERY OFFSET NEEDS ITS OWN FLOOR, AND THIS ARM SHIPPED WITHOUT TWO OF THEM. `find` returns
+	## -1 when the anchor is gone, and -1 compares as EARLIER THAN EVERYTHING — so `intro_at >
+	## prologue_at` is satisfied by a prologue anchor that no longer exists. MEASURED: renaming every
+	## `"world1_prologue"` inside the gate left this file 15 passing / 0 failing, with the ordering
+	## claim asserting nothing. A sentinel read as data, which is the shape four lanes spent tonight on.
 	assert_gt(intro_at, -1, "the intro loop must live inside the pending-cutscene gate")
+	assert_gt(prologue_at, -1, "the prologue gate is no longer found inside the gate, so the ordering claim below would compare against -1 and pass for free")
+	assert_gt(chapter_at, -1, "the chapter-1 gate is no longer found inside the gate, so the ordering claim below would compare against -1 and pass for free")
 	assert_gt(intro_at, prologue_at, "the prologue gate must be reached before any village intro")
 	assert_gt(intro_at, chapter_at, "the chapter-1 gate must be reached before any village intro")
 
@@ -106,6 +119,16 @@ func test_no_two_villages_claim_the_same_scene() -> void:
 			dupes.append("%s is claimed by %s and %s" % [cid, seen[cid], map_id])
 		seen[cid] = map_id
 	assert_eq(dupes, [], "two maps firing one scene means the second can never play it: %s" % [dupes])
+
+
+## The ONE accessor for GameLoop's code: every arm below reads through this, so swapping the strip is
+## visible to an arm rather than only to a helper nobody asserts about.
+func _code_of(path: String) -> String:
+	return GdSource.code_of(path)
+
+
+func _gameloop_code() -> String:
+	return _code_of("res://src/GameLoop.gd")
 
 
 ## The body of one function: anchor to the next `func ` rather than a character count.
@@ -186,7 +209,7 @@ func test_control_the_chain_flag_is_the_only_thing_that_changed() -> void:
 func test_a_new_game_cannot_land_on_a_wired_village() -> void:
 	## New Game sets the map id before the opening cutscenes; if that id were ever a village key,
 	## an intro would stack onto the opening and onto the web smoke's fresh-game path.
-	var code: String = GdSource.code_of("res://src/GameLoop.gd")
+	var code: String = _gameloop_code()
 	var body: String = _function_body(code, "func _on_title_new_game")
 	assert_ne(body, "", "CONTROL: the new-game entry point must exist")
 	## EVERY map id New Game sets, not just the first — a second call below the first was outside the
@@ -310,3 +333,45 @@ func test_no_intro_is_pending_on_a_map_it_was_not_written_for() -> void:
 		if got != "" and (got in _intros().values()):
 			leaked.append("%s -> %s" % [map_id, got])
 	assert_eq(leaked, ([] as Array[String]), "a village intro is pending on a map that is not its village: %s" % [leaked])
+
+
+## ⛔ THE STRIP, PINNED IN BOTH DIRECTIONS AND AT THE CALLER. Measured on a sibling guard the same
+## hour: swapping the accessor to a raw read left that file 7 passing / 0 failing. Three lanes hit the
+## identical hole tonight and in every case the control called GdSource DIRECTLY, certifying the
+## helper while saying nothing about what the arm used. Both directions, because either assertion
+## alone is satisfied by a defect in the other: "real code survives" passes a strip that never
+## happened, "the comment is gone" passes a strip that ate the file.
+func test_the_accessor_these_arms_use_strips_prose_both_ways() -> void:
+	var probe := PROBE
+	var f := FileAccess.open(probe, FileAccess.WRITE)
+	assert_not_null(f, "CONTROL: the probe file must be writable")
+	f.store_string("\n".join([
+		"extends Node",
+		"## prose naming for vid in _VILLAGE_INTROS and not _chaining_story_cutscene",
+		"func zz_real_site() -> void:",
+		"\tpass",
+		"\"\"\"",
+		"a docstring naming zz_doc_only_site",
+		"\"\"\"",
+	]))
+	f.close()
+	var code: String = _code_of(probe)
+	assert_true(code.contains("zz_real_site"),
+		"real code did not survive the strip, so every source arm in this file is vacuous")
+	assert_false(code.contains("for vid in _VILLAGE_INTROS"),
+		"a `#` comment reached the code half — the ordering and chain-refusal arms read prose as code")
+	assert_false(code.contains("zz_doc_only_site"),
+		"a \"\"\" docstring reached the code half; strip_comments is a LINE pass, split() drops the region")
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(probe))
+	## ⛔ A FOURTH ASSERTION, AND IT CAME FROM A MUTANT WALKING PAST THE THREE ABOVE. An accessor that
+	## keeps only the lines these arms NAME satisfies every one of them — real site present, no
+	## comment, no docstring — and left this file 15 passing / 0 failing. @cowir-autogrind predicted
+	## it and @cowir-deploy named why a `> 0` floor is gameable: the mutant can read your control.
+	## A PROPORTIONAL floor cannot be gamed that way. Measured on GameLoop.gd 2026-10-12:
+	## raw 393,035 chars -> code 247,795 = 0.630, with 119 `\"\"\"` lines. The bar is 0.40, far below
+	## the real ratio and far above anything a keep-the-named-lines strip can produce (~0.001).
+	var raw_len: int = FileAccess.get_file_as_string("res://src/GameLoop.gd").length()
+	var code_len: int = _gameloop_code().length()
+	assert_gt(raw_len, 100000, "CONTROL: GameLoop.gd must be read at all, got %d chars" % raw_len)
+	assert_gt(float(code_len) / float(maxi(raw_len, 1)), 0.40,
+		"the strip left only %d of %d chars (%.3f): it is keeping the named lines and discarding the file, so every source arm here reads a corpus chosen by its own assertions" % [code_len, raw_len, float(code_len) / float(maxi(raw_len, 1))])
