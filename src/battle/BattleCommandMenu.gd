@@ -241,12 +241,14 @@ func _animate_menu_open(menu: Node) -> void:
 		return
 	var ctl: Control = menu
 	var rest: Vector2 = ctl.position
+	## Fade to the alpha the CALLER chose: the spawn sets MENU_ALPHA_OVER_ACTOR deliberately.
+	var target_a: float = ctl.modulate.a
 	ctl.position = rest + Vector2(0, 10)
 	ctl.modulate.a = 0.0
 	var t := ctl.create_tween()
 	t.set_parallel(true)
 	t.tween_property(ctl, "position", rest, 0.12).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	t.tween_property(ctl, "modulate:a", 1.0, 0.12)
+	t.tween_property(ctl, "modulate:a", target_a, 0.12)
 
 
 func build_command_menu_items_with_targets(combatant: Combatant) -> Array:
