@@ -12,6 +12,10 @@ extends GutTest
 ## partially-consumed pack, and nothing else was watching. This is the finer unit, and it is a
 ## DIFFERENT guard rather than a widening, because the file-level question is still worth asking.
 ##
+## ✅ UPDATED .668: @cowir-overworld's village path landed and 13 scenes left this roster — the expiry
+## arm RED and named them, which is the contract working rather than a surprise. 24 of 26 entries are
+## placed now; the two left are not villages and need a dungeon-shaped literal filter instead.
+##
 ## 📌 It shrinks as placement lands: @cowir-overworld is taking the 13 village scenes through ONE
 ## path (`BaseVillage._get_area_id()`, 11 of 11 matching by place after the re-key). Each entry that
 ## gains a placement must leave UNPLACED_SCENES or this reds — the same expiry contract the
@@ -24,19 +28,8 @@ const MIN_ENTRIES := 20
 
 ## A scene whose entries no placement path reads yet. Value is the BLOCKER, never just the world.
 const UNPLACED_SCENES := {
-	"harmonia_village": "13 village scenes await ONE BaseVillage path on _get_area_id() — @cowir-overworld",
-	"eldertree_village": "as harmonia_village",
-	"frosthold_village": "as harmonia_village",
-	"grimhollow_village": "as harmonia_village",
-	"ironhaven_village": "as harmonia_village",
-	"maple_heights_village": "as harmonia_village",
-	"node_prime_village": "as harmonia_village",
-	"rivet_row_village": "as harmonia_village",
-	"sandrift_village": "as harmonia_village",
-	"brasston_village": "as harmonia_village",
-	"vertex_village": "as harmonia_village",
-	"abstract_overworld": "NOT a village: an overworld, so _get_area_id() does not serve it. Also one of cowir-story's four inferred re-keys (was overworld_vertex, a footprint in white sand, world 6)",
-	"assembly_core": "NOT a village: the W4 dungeon, inferred from the entry's own world number (was dungeon_pipeline, a pressure gauge). Needs its own accessor check before placement",
+	"abstract_overworld": "NOT a village, so BaseVillage's `scene == _get_area_id()` filter does not serve it, and the W6 overworld exposes no equivalent accessor. Also one of cowir-story's four inferred re-keys (was overworld_vertex — a single footprint in white sand, world 6)",
+	"assembly_core": "NOT a village: the W4 dungeon, inferred from the entry's own world number (was dungeon_pipeline, a pressure gauge). CastleHarmonia shows the dungeon shape — a literal scene filter — so this one needs that, not an accessor",
 }
 
 
@@ -74,14 +67,49 @@ func _placement_sources() -> Array[String]:
 	return out
 
 
+## Every scene id an override of `_get_area_id()` returns, anywhere under src/maps — the ids a
+## village-style loader can select on. Derived, so a new village registers itself.
+func _accessor_scene_ids() -> Array[String]:
+	var out: Array[String] = []
+	var rx := RegEx.create_from_string('func _get_area_id\\(\\)[^"]*return "([a-z0-9_]+)"')
+	var stack: Array[String] = ["res://src/maps"]
+	while not stack.is_empty():
+		var dir: String = stack.pop_back()
+		var d := DirAccess.open(dir)
+		if d == null:
+			continue
+		for sub in d.get_directories():
+			stack.append("%s/%s" % [dir, sub])
+		for f in d.get_files():
+			if not f.ends_with(".gd"):
+				continue
+			for m in rx.search_all(GdSource.code_of("%s/%s" % [dir, f])):
+				var id: String = m.get_string(1)
+				if not out.has(id):
+					out.append(id)
+	return out
+
+
+## TWO placement mechanisms, both derived, because a literal scan cannot follow an accessor:
+##   the castle names its scene as a LITERAL in the file that loads the pack
+##   a village loader filters `scene == _get_area_id()`, and each subclass supplies the id
+## Measured 2026-10-12 before the village path folded: a literal-only scan left 13 placed scenes
+## reading as UNPLACED and every arm in this file PASSING — a declaration outliving its gap in
+## silence. Widening the scan from one file to all of them did NOT fix it; the mechanism did.
 func _placed_scenes() -> Array[String]:
 	var out: Array[String] = []
 	var srcs: Array[String] = _placement_sources()
 	assert_gt(srcs.size(), 0, "CONTROL: some src path must load the pack in CODE, not prose")
+	var accessor_ids: Array[String] = _accessor_scene_ids()
 	for path in srcs:
 		var code: String = GdSource.code_of(path)
+		var selects_by_accessor: bool = code.contains("_get_area_id()")
 		for scene in _scenes():
-			if code.contains('"%s"' % scene) and not out.has(scene):
+			if out.has(scene):
+				continue
+			if code.contains('"%s"' % scene):
+				out.append(scene)
+			elif selects_by_accessor and accessor_ids.has(scene):
 				out.append(scene)
 	return out
 
@@ -172,7 +200,7 @@ func test_no_placement_path_resolves_its_scene_by_an_accessor() -> void:
 			if code.contains('"%s"' % scene):
 				names_a_scene = true
 				break
-		if not names_a_scene and (code.contains("_get_area_id()") or code.contains("get_area_id(")):
+		if not names_a_scene and not code.contains("_get_area_id()"):
 			opaque.append(path)
 	assert_eq(opaque, ([] as Array[String]),
-		"these files load the pack but resolve the scene through an accessor, so UNPLACED_SCENES above can no longer be derived and must be re-read by hand in this change: %s" % [opaque])
+		"these files load the pack by a THIRD mechanism — neither a scene literal nor _get_area_id() — so UNPLACED_SCENES can no longer be derived and must be re-read by hand in this change: %s" % [opaque])
