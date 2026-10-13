@@ -239,7 +239,9 @@ func _build_ui() -> void:
 
 	_stats_strip = AutogrindStatsStrip.new()
 	_stats_strip.position = Vector2(8, content_y)
-	_stats_strip.size = Vector2(stats_w, 42)
+	## Reserve what the strip will actually USE at this width, not a literal 42: at the column's 296
+	## it wraps to two rows and a 42 cut "Region Crack:" off mid-word.
+	_stats_strip.size = Vector2(stats_w, AutogrindStatsStrip.height_for_width(stats_w))
 	add_child(_stats_strip)
 
 	_build_battle_log_panel(Vector2(proj_w, 42), Vector2(mini_w + 16, content_y))

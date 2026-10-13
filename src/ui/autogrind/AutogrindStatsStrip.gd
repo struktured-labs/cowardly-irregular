@@ -28,6 +28,74 @@ var _adaptation_label: Label
 var _crack_label: Label
 
 
+## ⛔ Every field used to sit at an ABSOLUTE x, authored for GameLoop's full-width consumer
+## (vp_size.x - 8, ~1272). AutogrindDashboard:242 gives the same component stats_w = mini_w = 296,
+## where the authored row needs ~422 -- so "Region Crack:" drew cut off mid-word. The strip now lays
+## itself out from the width it is GIVEN: authored positions while a group fits, flow-and-wrap when
+## it does not, and it reports the height it used so a caller can reserve it.
+const PAD := 8.0
+const ROW_H := 18.0
+const GAP := 16.0
+const BAR_W := 140.0
+const BAR_GAP := 6.0
+
+## group -> [title, sample value, title font, value font, authored title x, authored value x, has bar]
+const FIELDS := [
+	[["CSI", "0.000", 9, 10, 8.0, 176.0, true],
+	 ["Yield:", "100%", 10, 10, 240.0, 280.0, false],
+	 ["Affinity:", "0.000", 10, 10, 340.0, 396.0, false]],
+	[["Corruption:", "0.00", 9, 9, 8.0, 76.0, false],
+	 ["Adaptation:", "0.00", 9, 9, 140.0, 210.0, false],
+	 ["Region Crack:", "Lv.0", 9, 9, 280.0, 360.0, false]],
+]
+
+var _used_height: float = 42.0
+
+
+static func _text_w(t: String, fs: int) -> float:
+	return ThemeDB.fallback_font.get_string_size(t, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+
+
+## The single layout computation. Both the builder and height_for_width() read it, so a caller's
+## reserved height cannot disagree with what is drawn.
+static func compute_layout(strip_w: float) -> Dictionary:
+	var rows: Array = []
+	var y: float = 4.0
+	for g in FIELDS.size():
+		var group: Array = FIELDS[g]
+		var authored_right: float = 0.0
+		for f in group:
+			authored_right = maxf(authored_right, float(f[5]) + _text_w(str(f[1]), int(f[3])))
+		var placed: Array = []
+		if authored_right <= strip_w - PAD:
+			for f in group:
+				placed.append({"title_x": float(f[4]), "value_x": float(f[5]), "y": y, "bar": bool(f[6])})
+		else:
+			var cx: float = PAD
+			for f in group:
+				var tw: float = _text_w(str(f[0]), int(f[2]))
+				var vw: float = _text_w(str(f[1]), int(f[3]))
+				var bar: float = (BAR_W + BAR_GAP) if bool(f[6]) else 0.0
+				var fw: float = tw + 4.0 + bar + vw
+				if cx > PAD and cx + fw > strip_w - PAD:
+					cx = PAD
+					y += ROW_H
+				placed.append({"title_x": cx, "value_x": cx + tw + 4.0 + bar, "y": y, "bar": bool(f[6])})
+				cx += fw + GAP
+		rows.append(placed)
+		y += ROW_H
+	return {"rows": rows, "height": y + 2.0}
+
+
+## What a caller must reserve. AutogrindDashboard used a literal 42 and cut the strip off.
+static func height_for_width(strip_w: float) -> float:
+	return float(compute_layout(strip_w)["height"])
+
+
+func get_used_height() -> float:
+	return _used_height
+
+
 func _ready() -> void:
 	call_deferred("_build_strip")
 
@@ -46,101 +114,45 @@ func _build_strip() -> void:
 	add_child(bg)
 	_add_border(strip_size)
 
-	var csi_title = Label.new()
-	csi_title.text = "CSI"
-	csi_title.position = Vector2(8, 4)
-	csi_title.add_theme_font_size_override("font_size", 9)
-	csi_title.add_theme_color_override("font_color", LABEL_COLOR)
-	add_child(csi_title)
-
-	var bar_bg = ColorRect.new()
-	bar_bg.color = Color(0.1, 0.1, 0.15)
-	bar_bg.position = Vector2(30, 4)
-	bar_bg.size = Vector2(140, 12)
-	add_child(bar_bg)
-
-	_csi_bar_fill = ColorRect.new()
-	_csi_bar_fill.color = CSI_COLOR_LOW
-	_csi_bar_fill.position = Vector2(30, 4)
-	_csi_bar_fill.size = Vector2(0, 12)
-	add_child(_csi_bar_fill)
-
-	_csi_label = Label.new()
-	_csi_label.text = "0.000"
-	_csi_label.position = Vector2(176, 2)
-	_csi_label.add_theme_font_size_override("font_size", 10)
-	_csi_label.add_theme_color_override("font_color", TEXT_COLOR)
-	add_child(_csi_label)
-
-	var yield_title = Label.new()
-	yield_title.text = "Yield:"
-	yield_title.position = Vector2(240, 4)
-	yield_title.add_theme_font_size_override("font_size", 10)
-	yield_title.add_theme_color_override("font_color", LABEL_COLOR)
-	add_child(yield_title)
-
-	_yield_label = Label.new()
-	_yield_label.text = "100%"
-	_yield_label.position = Vector2(280, 4)
-	_yield_label.add_theme_font_size_override("font_size", 10)
-	_yield_label.add_theme_color_override("font_color", COLOR_GOOD)
-	add_child(_yield_label)
-
-	var aa_title = Label.new()
-	aa_title.text = "Affinity:"
-	aa_title.position = Vector2(340, 4)
-	aa_title.add_theme_font_size_override("font_size", 10)
-	aa_title.add_theme_color_override("font_color", LABEL_COLOR)
-	add_child(aa_title)
-
-	_aa_label = Label.new()
-	_aa_label.text = "0.000"
-	_aa_label.position = Vector2(396, 4)
-	_aa_label.add_theme_font_size_override("font_size", 10)
-	_aa_label.add_theme_color_override("font_color", COLOR_NEUTRAL)
-	add_child(_aa_label)
-
-	var corr_title = Label.new()
-	corr_title.text = "Corruption:"
-	corr_title.position = Vector2(8, 22)
-	corr_title.add_theme_font_size_override("font_size", 9)
-	corr_title.add_theme_color_override("font_color", LABEL_COLOR)
-	add_child(corr_title)
-
-	_corruption_label = Label.new()
-	_corruption_label.text = "0.00"
-	_corruption_label.position = Vector2(76, 22)
-	_corruption_label.add_theme_font_size_override("font_size", 9)
-	_corruption_label.add_theme_color_override("font_color", COLOR_GOOD)
-	add_child(_corruption_label)
-
-	var adapt_title = Label.new()
-	adapt_title.text = "Adaptation:"
-	adapt_title.position = Vector2(140, 22)
-	adapt_title.add_theme_font_size_override("font_size", 9)
-	adapt_title.add_theme_color_override("font_color", LABEL_COLOR)
-	add_child(adapt_title)
-
-	_adaptation_label = Label.new()
-	_adaptation_label.text = "0.00"
-	_adaptation_label.position = Vector2(210, 22)
-	_adaptation_label.add_theme_font_size_override("font_size", 9)
-	_adaptation_label.add_theme_color_override("font_color", COLOR_NEUTRAL)
-	add_child(_adaptation_label)
-
-	var crack_title = Label.new()
-	crack_title.text = "Region Crack:"
-	crack_title.position = Vector2(280, 22)
-	crack_title.add_theme_font_size_override("font_size", 9)
-	crack_title.add_theme_color_override("font_color", LABEL_COLOR)
-	add_child(crack_title)
-
-	_crack_label = Label.new()
-	_crack_label.text = "Lv.0"
-	_crack_label.position = Vector2(360, 22)
-	_crack_label.add_theme_font_size_override("font_size", 9)
-	_crack_label.add_theme_color_override("font_color", COLOR_NEUTRAL)
-	add_child(_crack_label)
+	var lay: Dictionary = compute_layout(strip_size.x)
+	_used_height = float(lay["height"])
+	var rows: Array = lay["rows"]
+	var colors: Array = [[LABEL_COLOR, TEXT_COLOR], [LABEL_COLOR, COLOR_GOOD], [LABEL_COLOR, COLOR_NEUTRAL]]
+	var value_sink: Array = []
+	for g in FIELDS.size():
+		for i in (FIELDS[g] as Array).size():
+			var f: Array = FIELDS[g][i]
+			var at: Dictionary = rows[g][i]
+			var title := Label.new()
+			title.text = str(f[0])
+			title.position = Vector2(float(at["title_x"]), float(at["y"]))
+			title.add_theme_font_size_override("font_size", int(f[2]))
+			title.add_theme_color_override("font_color", LABEL_COLOR)
+			add_child(title)
+			if bool(at["bar"]):
+				var bar_bg := ColorRect.new()
+				bar_bg.color = Color(0.1, 0.1, 0.15)
+				bar_bg.position = Vector2(float(at["title_x"]) + 22.0, float(at["y"]))
+				bar_bg.size = Vector2(BAR_W, 12)
+				add_child(bar_bg)
+				_csi_bar_fill = ColorRect.new()
+				_csi_bar_fill.color = CSI_COLOR_LOW
+				_csi_bar_fill.position = bar_bg.position
+				_csi_bar_fill.size = Vector2(0, 12)
+				add_child(_csi_bar_fill)
+			var val := Label.new()
+			val.text = str(f[1])
+			val.position = Vector2(float(at["value_x"]), float(at["y"]) - (2.0 if g == 0 and i == 0 else 0.0))
+			val.add_theme_font_size_override("font_size", int(f[3]))
+			val.add_theme_color_override("font_color", colors[i][1] if g == 0 else (COLOR_GOOD if i == 0 else COLOR_NEUTRAL))
+			add_child(val)
+			value_sink.append(val)
+	_csi_label = value_sink[0]
+	_yield_label = value_sink[1]
+	_aa_label = value_sink[2]
+	_corruption_label = value_sink[3]
+	_adaptation_label = value_sink[4]
+	_crack_label = value_sink[5]
 
 
 func refresh(stats: Dictionary, region_id: String) -> void:
