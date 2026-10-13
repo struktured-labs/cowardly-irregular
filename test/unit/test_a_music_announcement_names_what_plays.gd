@@ -80,15 +80,34 @@ func test_the_accessor_is_empty_when_nothing_plays() -> void:
 		"the stream stays ASSIGNED after a stop, so an ungated accessor names a bed nobody hears")
 
 
-func test_the_battle_announcement_derives_from_the_accessor() -> void:
-	## SPELLING, not behaviour: the print itself cannot be observed from here. This reds if the
-	## announcement goes back to naming only the request.
+## The [MUSIC] announcements that interpolate a REQUESTED track id. Hand-listed deliberately: two
+## derivations were tried and both were wrong in opposite directions — proximity flagged five prints
+## that merely sit below `_base_music_track = ...` (two of which interpolate nothing at all), and
+## parsing the `%` args missed the WRAPPED print whose operator is on the next line. Parsing
+## GDScript interpolation inside GDScript is more machinery than a diagnostic guard earns. The
+## floor below is what keeps this honest: if either text moves, the arm reds and names it.
+const ANNOUNCEMENTS := ["battle theme", "party recovered"]
+
+
+func test_EVERY_music_announcement_derives_from_the_accessor() -> void:
+	## SPELLING, not behaviour: the print cannot be observed from here.
+	##
+	## ⛔ THIS ARM USED TO BE `src.contains("playing_track_stem()")` — FILE-WIDE, so it passed as
+	## soon as ONE site asked. The battle-start announcement was fixed and the danger-RECOVERY
+	## announcement kept naming the request, with this arm green the whole time. A file-wide
+	## contains cannot tell one site from all sites, which is the hole it left.
 	var src: String = _code(BATTLE_SCENE)
-	var i: int = src.find("battle theme")
-	assert_true(i > 0, "FLOOR: BattleScene no longer announces a 'battle theme' — this arm is stale")
-	if i < 0:
-		return
-	assert_true(src.contains("playing_track_stem()"),
-		"BattleScene must ask what RESOLVED; printing mon_track alone is how the 10-05 log came to name a bed that was not playing")
+	for text in ANNOUNCEMENTS:
+		var at: int = src.find(text)
+		assert_gt(at, -1,
+			("FLOOR: no [MUSIC] announcement contains `%s` any more — this arm is stale and would "
+			+ "pass on a file that announces nothing.") % text)
+		if at < 0:
+			continue
+		var around: String = src.substr(maxi(0, at - 500), 1000)
+		assert_true(around.contains("playing_track_stem()"),
+			("the announcement containing `%s` has no playing_track_stem() within 500 chars, so it "
+			+ "names the REQUEST — how the 10-05 log came to read \"Switched back to "
+			+ "battle_dark_knight music\" on the line after battle_medieval loaded.") % text)
 	assert_true(src.contains("requested, %s playing"),
-		"the announcement must say BOTH names when they differ, or the reader cannot tell a fallback from a hit")
+		"the battle announcement must say BOTH names when they differ, or a reader cannot tell a fallback from a hit")
