@@ -58,7 +58,9 @@ func test_handler_fires_low_hp_on_threshold_crossing() -> void:
 	# Same logic as the regular damage handler — don't refire if
 	# already below threshold.
 	var body := _fn_body("_on_status_tick_damage_for_party_dialogue")
-	assert_true(body.contains("if pre_hp_pct >= LOW_HP_PCT_THRESHOLD and post_hp_pct < LOW_HP_PCT_THRESHOLD:"),
+	## The crossing moved into a named local when low_hp took precedence (2026-10-13). Same
+	## subject; the BEHAVIOUR is pinned in test_the_low_hp_line_wins_the_moment_regression.
+	assert_true(body.contains("var crossing: bool = pre_hp_pct >= LOW_HP_PCT_THRESHOLD and post_hp_pct < LOW_HP_PCT_THRESHOLD"),
 		"low_hp must fire only on downward threshold crossing — not re-fire if already below")
 	assert_true(body.contains("_maybe_fire_party_line(target, \"low_hp\", {\"hp_pct\": post_hp_pct, \"source\": source})"),
 		"low_hp trigger must pass hp_pct + source string")
@@ -81,19 +83,30 @@ func test_handler_guards_target_valid_and_alive_and_in_party() -> void:
 # ── big_hit_taken takes priority over low_hp ─────────────────────────────
 
 func test_big_hit_short_circuits_low_hp() -> void:
-	# Pin: if big, return early — don't ALSO fire low_hp on the
-	# same tick. Matches the damage_dealt handler's semantics.
-	var body := _fn_body("_on_status_tick_damage_for_party_dialogue")
-	# The big branch must `return` before reaching the low_hp branch.
-	var big_idx: int = body.find("if big:")
-	var low_idx: int = body.find("if pre_hp_pct >=")
-	assert_gt(big_idx, -1)
-	assert_gt(low_idx, -1)
-	assert_lt(big_idx, low_idx, "big branch must be checked first")
-	# Pin the return inside big branch (between big_idx and low_idx).
-	var window: String = body.substr(big_idx, low_idx - big_idx)
-	assert_true(window.contains("return"),
-		"big_hit branch must `return` — prevents firing both quips on the same tick")
+	## RE-PINNED BEHAVIOURALLY 2026-10-13. This arm asserted the SOURCE ORDER — big before low_hp,
+	## with a return between — which pinned the defect itself: a blow from healthy to critical spoke
+	## big_hit_taken and the one-shot low_hp edge was destroyed. Intent kept (never both on one
+	## tick); the winner is now low_hp, the rarer event (struktured via cowir-main).
+	var bm = load("res://src/battle/BattleManager.gd").new()
+	add_child_autofree(bm)
+	for handler in ["attack", "dot"]:
+		var c := Combatant.new()
+		autofree(c)
+		c.combatant_name = "Victim_%s" % handler
+		c.max_hp = 100
+		c.current_hp = 15
+		bm.player_party.append(c)
+		## 90% -> 15%: big AND crossing, the collision this arm is about.
+		match handler:
+			"attack":
+				bm._on_damage_dealt_for_party_dialogue(c, 75, false, "", 1.0)
+			"dot":
+				bm._on_status_tick_damage_for_party_dialogue(75, "poison", c)
+		var kinds: Array = bm._party_line_last_kind.keys().filter(
+			func(k): return str(k) == str(c.combatant_name))
+		assert_eq(kinds.size(), 1, "exactly one line for this PC on one tick (%s)" % handler)
+		assert_eq(str(bm._party_line_last_kind.get(str(c.combatant_name), "")), "low_hp",
+			"and it must be low_hp, not big_hit_taken (%s handler)" % handler)
 
 
 # ── Connect site at start_battle ─────────────────────────────────────────
