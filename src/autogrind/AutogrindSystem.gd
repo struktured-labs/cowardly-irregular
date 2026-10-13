@@ -918,6 +918,8 @@ func start_autogrind(party: Array[Combatant], enemy_template: Dictionary, config
 		return false
 	## A stop clears this, but a session that never reached a check would inherit the previous one's rule.
 	last_interrupt_rule = ""
+	## Same reason, and it also puts the field in a set the symmetry ratchet can SEE -- in zero sets it is invisible there.
+	last_fired_rule_index = -1
 	# Empty-party guard — a session with 0 alive members has no meaningful loop and would trip fatigue/collapse math with div-by-zero-shaped defaults.
 	var live_count: int = 0
 	for m in party:
@@ -2112,6 +2114,10 @@ func reset_rule_fire_counts() -> void:
 	_rule_eval_count = 0
 
 
+## Which rule row last matched, 0-based; -1 when none did. A rule-triggered stop said only "Autogrind rule triggered stop" -- true, and it named neither the row nor anything the player could open.
+var last_fired_rule_index: int = -1
+
+
 func evaluate_autogrind_rules(party: Array) -> Dictionary:
 	"""Evaluate autogrind rules against current party state.
 	Returns the first matching rule's action set, or empty dict if none match."""
@@ -2128,8 +2134,10 @@ func evaluate_autogrind_rules(party: Array) -> Dictionary:
 
 		if _evaluate_party_rule(party, rule):
 			_rule_fire_counts[i] = int(_rule_fire_counts.get(i, 0)) + 1
+			last_fired_rule_index = i
 			return rule
 
+	last_fired_rule_index = -1
 	return {}
 
 
@@ -2620,6 +2628,14 @@ func _maybe_suggest_region_rotation() -> void:
 	region_rotation_suggested.emit(current_region_id, suggested, monster_adaptation_level)
 
 
+## The player sees this on the Summary. Rules have no name field -- the row number is what the rule
+## editor shows, so it is the one handle that leads back to the rule that did it.
+func stop_rule_reason() -> String:
+	if last_fired_rule_index < 0:
+		return "Autogrind rule triggered stop"
+	return "Your rule #%d stopped the grind" % (last_fired_rule_index + 1)
+
+
 func apply_autogrind_actions(actions: Array) -> void:
 	"""Apply autogrind rule actions (switch profiles, stop grinding, heal party, flee, etc.)"""
 	for action in actions:
@@ -2651,7 +2667,7 @@ func apply_autogrind_actions(actions: Array) -> void:
 					print("[AUTOGRIND] Switched %s to profile %d" % [char_id, profile_idx])
 
 			"stop_grinding":
-				stop_autogrind("Autogrind rule triggered stop")
+				stop_autogrind(stop_rule_reason())
 
 			"member_ability":
 				## struktured 2026-09-06: "if mage is dead, have cleric [use] restorative". The
