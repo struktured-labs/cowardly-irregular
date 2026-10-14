@@ -159,15 +159,35 @@ func test_a_declared_drift_still_drifts() -> void:
 ## sox. A --force run would have restored precisely what he turned down. Fixed in this commit: labelled
 ## `sox_synth` (so the generator refuses them) and re-declared to their shipped lengths.
 ##
+## ⛔ `_trim_seconds` IS THE DECLARED EXPLANATION, AND HONOURING IT IS THE FIRST THING THAT READS IT.
+## Four entries were in this ledger with the note "the generator of the shipped file is not recorded
+## in the commit". It WAS recorded — in the entry itself, in a field I had not read:
+##     exp_bar_tick_ramp_hi/lo/mid   declared 0.500   _trim_seconds 0.120   actual 0.120
+##     loot_pop                      declared 0.500   _trim_seconds 0.250   actual 0.250
+## The declared value is the ElevenLabs REQUEST and the trim is deliberate, so the discrepancy was
+## declared in the data all along. `_trim_seconds` had ZERO readers (src 0, tools 0, test 0); the arm
+## below is its first consumer, which is the right shape — a field whose job is to document a
+## discrepancy should be what silences the discrepancy check.
+##
+## ✅ AND IT CANNOT BE USED AS A SUPPRESSION FLAG, which is the only reason an exemption belongs here
+## at all. The exemption requires `_trim_seconds` to MATCH THE SHIPPED ASSET, so you cannot silence a
+## real mismatch by adding the field — you can only state the truth, and stating the truth is the
+## fix. A wrong trim value reds in `test_a_declared_trim_describes_its_asset` below rather than
+## quietly widening the exemption. "You can't silence it green, only explain it green."
+##
+## ⚠️ THE RESIDUAL HOLE, NAMED RATHER THAN PRETENDED AWAY: a matching `_trim_seconds` proves the
+## NUMBER is true, not that a TRIM is what produced it. `menu_move` is 0.50 declared against a 0.320
+## asset because 554fbfaa3 pitched it up 50% (0.50 / 1.5 = 0.333), so a `_trim_seconds: 0.32` there
+## would be an accurate number attached to the wrong mechanism, and this arm would exempt it. No
+## check over this data can tell a trim from a pitch raise — the asset is short either way. What the
+## exemption does buy is that the discrepancy must be DECLARED and the declaration must be
+## arithmetically true, which is strictly more than the silence it replaces.
+##
 ## ⚠️ THE 1.5x FIGURE IS A REVIEW TRIGGER, NOT A BOUND — the assertion is the SET, exactly as the
 ## door_open ledger works. No threshold is derivable here (see the note by TOLERANCE_SECONDS), so a
 ## number that merely decides what gets LOOKED AT is honest where a number deciding pass/fail is not.
 ## A new name appearing reds; a resolved name must leave in the same commit.
 const REGEN_MISMATCH := {
-	"exp_bar_tick_ramp_hi": "relanded as an asset from an unfolded branch (60f1a83e7, 'the victory sequence has been SILENT since the revamp shipped'); the 0.50 is that branch's request and the generator of the shipped 0.12s file is not recorded in the commit. Needs its provenance established, then a label or a corrected declaration",
-	"exp_bar_tick_ramp_lo": "same reland as exp_bar_tick_ramp_hi (60f1a83e7), same unrecorded generator",
-	"exp_bar_tick_ramp_mid": "same reland as exp_bar_tick_ramp_hi (60f1a83e7), same unrecorded generator",
-	"loot_pop": "same reland as the exp_bar ramps (60f1a83e7); declared 0.50, shipped 0.25",
 	"menu_move": "a DERIVED asset: 554fbfaa3 is a user-directed iteration — 'low bubbly wobble with dampened highs and 50% pitch raise'. 0.50 / 1.5 = 0.333 against the shipped 0.320, so the pitch raise accounts for the length exactly. A regen would restore the un-pitched version he asked to change; it wants an ffmpeg_derive-class label, not a new number",
 	"advance_rogue_2": "source IS elevenlabs_foley, so deliberately regenerable — but b05d114b5 records the shipped asset as 'range compressed + floor raised after struktured flagged the set read quieter than fighter/cleric', i.e. post-processed AFTER generation. A regen loses a change his feedback caused. Whether the label should still say elevenlabs is his call, not this guard's",
 }
@@ -188,6 +208,7 @@ func test_a_regenerable_cue_is_plausibly_the_output_of_its_request() -> void:
 	var locked := 0
 	var untimed := 0
 	var undecodable := 0
+	var trim_declared := 0
 	for k in sfx.keys():
 		var e: Dictionary = sfx[k] if sfx[k] is Dictionary else {}
 		if not _regenerable(e):
@@ -204,6 +225,11 @@ func test_a_regenerable_cue_is_plausibly_the_output_of_its_request() -> void:
 		var declared: float = float(e["duration_seconds"])
 		if declared <= 0.0:
 			continue
+		## a declared trim that matches the shipped asset IS the explanation — the declared value is
+		## the request, the trim is what was kept, and both are recorded
+		if e.has("_trim_seconds") and absf(float(e["_trim_seconds"]) - actual) <= 0.03:
+			trim_declared += 1
+			continue
 		var ratio: float = maxf(declared / actual, actual / declared)
 		if ratio >= 1.5:
 			flagged.append(str(k))
@@ -212,6 +238,10 @@ func test_a_regenerable_cue_is_plausibly_the_output_of_its_request() -> void:
 		"the buckets do not sum (%d locked + %d untimed + %d undecodable + %d considered != %d entries), so some entry fell into an unnamed void" % [locked, untimed, undecodable, considered, sfx.size()])
 	assert_gt(considered, 100,
 		"only %d regenerable cues carried a declared duration AND a loadable asset — the corpus is too small for the set comparison below to mean anything" % considered)
+	## FLOOR on the exemption: if nothing is exempted the arm above is judging a corpus that no longer
+	## contains the four entries this mechanism was built for, so the exemption is untested.
+	assert_gt(trim_declared, 0,
+		"no entry was exempted by a matching _trim_seconds, so that branch ran on nothing and the four cues it was written for have changed shape")
 	flagged.sort()
 	var expected: Array[String] = []
 	for k in REGEN_MISMATCH.keys():
@@ -271,3 +301,28 @@ func test_the_rejected_footsteps_cannot_be_regenerated() -> void:
 		"these footstep cues are regenerable again — a --force run restores the ElevenLabs footsteps struktured called \"kind of awful\" and \"harsh crunching\": %s" % [unprotected])
 	assert_eq(mis_declared, [],
 		"these footstep declarations no longer describe their assets: %s" % [mis_declared])
+
+
+func test_a_declared_trim_describes_its_asset() -> void:
+	## ⛔ WHAT STOPS THE EXEMPTION ABOVE BEING A SUPPRESSION FLAG. `_trim_seconds` forgives a
+	## declared/actual mismatch, so a WRONG trim value would forgive it falsely and quietly. Every
+	## entry carrying the field must have it match the shipped asset — then adding the field can only
+	## ever state the truth, and the exemption is earned per entry rather than granted.
+	var sfx: Dictionary = _sfx()
+	var wrong: Array[String] = []
+	var seen := 0
+	for k in sfx.keys():
+		var e: Dictionary = sfx[k] if sfx[k] is Dictionary else {}
+		if not e.has("_trim_seconds"):
+			continue
+		var actual: float = _length_of(str(e.get("file", "")))
+		if actual <= 0.0:
+			continue
+		seen += 1
+		var trim: float = float(e["_trim_seconds"])
+		if absf(trim - actual) > 0.03:
+			wrong.append("%s declares a %.3fs trim for a %.3fs asset" % [str(k), trim, actual])
+	assert_gt(seen, 0,
+		"no entry carries a _trim_seconds with a loadable asset, so this arm judges nothing — and the exemption in the arm above would then be unguarded")
+	assert_eq(wrong, [],
+		"a declared trim does not match its asset. This field EXEMPTS an entry from the request-vs-asset check, so a wrong value here silences a real mismatch: %s" % [wrong])
