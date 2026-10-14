@@ -186,3 +186,19 @@ func test_a_fully_covered_change_is_not_warned_about() -> void:
 		"a path both legs cover was reported as underivable, so the warning fires on every sweep and gets ignored:\n%s" % text)
 	assert_false(text.contains("guards for: docs"),
 		"the summary names a tree that yielded no guards — a plausible label contradicting the warning above it")
+
+
+## A flag the tool does not read must be refused before any guard runs: `--help` once fell through to a
+## full 300-script sweep during a fold gate (cowir-overworld, 2026-10-14). Bounded so a regression costs 20s.
+func test_an_unknown_flag_is_refused_before_anything_runs() -> void:
+	var root := ProjectSettings.globalize_path("res://").trim_suffix("/")
+	for flag in ["--help", "-h", "--list extra"]:
+		var out: Array = []
+		var cmd := "cd %s && PRE_READY_PATHS=tools/pre_ready_guards.sh timeout 20 bash %s %s 2>&1" % [root, TOOL, flag]
+		var ec: int = OS.execute("bash", ["-c", cmd], out, true)
+		var text := "\n".join(out)
+		assert_eq(ec, 2, "%s must exit 2 (refused), got %d:\n%s" % [flag, ec, text])
+		assert_true(text.contains("unknown argument"), "%s was not named as unknown:\n%s" % [flag, text])
+		assert_false(text.contains("Totals") or text.contains("Scripts "), "%s RAN guards instead of refusing:\n%s" % [flag, text])
+	var control := _list("tools/pre_ready_guards.sh")
+	assert_true(control.contains("distinct guards"), "CONTROL: --list must still answer, or the refusal arm proves nothing:\n%s" % control)
