@@ -155,24 +155,35 @@ func test_every_real_turn_line_fits_the_strip_at_every_preset() -> void:
 		assert_false(panel == null or label == null, "fixture: both must exist at %sx" % str(s))
 		if panel == null or label == null:
 			return
+		var ui = _scene._ui_manager
 		var f := label.get_theme_font(&"font")
-		var px: int = label.get_theme_font_size(&"font_size")
+		assert_true(ui != null and ui.has_method("_fit_turn_info"),
+			"FLOOR: the shrink-to-fit the strip relies on must exist and be reachable at %sx" % str(s))
 		assert_false(f == null, "fixture: the strip must resolve a font at %sx" % str(s))
-		if f == null:
+		if f == null or ui == null or not ui.has_method("_fit_turn_info"):
 			return
 		var avail: float = panel.size.x
+		var over: Array = []
 		var worst: String = ""
 		var worst_w: float = 0.0
 		for line in lines:
+			## ⛔ DRIVE THE REAL FIT PER LINE. Measuring every line at ONE font size asks whether the
+			## strip would fit WITHOUT the fit — that is the defect, not the contract. The game sets the
+			## text and calls _fit_turn_info on every turn update, so this arm does exactly that.
+			label.text = line
+			ui._fit_turn_info()
+			var px: int = label.get_theme_font_size(&"font_size")
 			var w: float = f.get_string_size(line, HORIZONTAL_ALIGNMENT_CENTER, -1, px).x
 			if w > worst_w:
 				worst_w = w
-				worst = line
-		gut.p("%sx widest real line: %.0fpx of %.0f — '%s'" % [str(s), worst_w, avail, worst])
-		assert_true(worst_w <= avail,
-			("at %sx the widest REAL turn line needs %.0fpx in a %.0fpx strip: '%s'. Measured by "
-			+ "width over every authored name, not by len() over one invented sample.")
-			% [str(s), worst_w, avail, worst])
+				worst = "'%s' @%dpx" % [line, px]
+			if w > avail + 0.5:
+				over.append("'%s' @%dpx needs %.0f of %.0f" % [line, px, w, avail])
+		gut.p("%sx widest fitted line: %.0fpx of %.0f — %s" % [str(s), worst_w, avail, worst])
+		assert_eq(over, [],
+			("at %sx a REAL turn line still overflowed the strip AFTER the fit ran: %s. The corpus is "
+			+ "every authored monster name through every format update_turn_info writes, measured by "
+			+ "width rather than by len() over one invented sample.") % [str(s), str(over)])
 		_scene.queue_free()
 		_scene = null
 		await get_tree().process_frame
@@ -209,3 +220,58 @@ func test_scaling_the_turn_strip_leaves_the_logs_budget_alone() -> void:
 		"fixture: the enemy panel must have settled to a real height at both ends: %s" % str(seen))
 	assert_true(bool(seen[0]["log"]) and bool(seen[1]["log"]),
 		"and the log must stay visible at both ends with a default roster: %s" % str(seen))
+
+
+## CONTROL — the fit must ENGAGE on a long line and SPARE a short one. Without this, "every real
+## line fits" is satisfied by a strip that shrank everything to the 8px floor.
+func test_the_fit_engages_on_a_long_line_and_spares_a_short_one() -> void:
+	_scene = await _build(2.0)
+	var label: Label = _scene.get_node_or_null(TURN_INFO)
+	var ui = _scene._ui_manager
+	assert_false(label == null or ui == null, "fixture: the strip and its UI manager must exist")
+	if label == null or ui == null:
+		return
+	var full: int = int(label.get_meta(&"base_font_px", 0))
+	assert_gt(full, 0, "FLOOR: the scale capture must have run, or there is no base to recover to")
+	var scaled: int = TextScale.scaled(full)
+	label.text = "Round 99 - SELECT: Glacius, the Frozen Sovereign (AP: +4)"
+	ui._fit_turn_info()
+	var long_px: int = label.get_theme_font_size(&"font_size")
+	assert_lt(long_px, scaled,
+		"the longest real line must be SHRUNK at 200%%: got %d, unfitted it would be %d"
+		% [long_px, scaled])
+	assert_gt(long_px, 8, "and not collapsed to the floor: got %d" % long_px)
+	label.text = "Round 7"
+	ui._fit_turn_info()
+	assert_eq(label.get_theme_font_size(&"font_size"), scaled,
+		"CONTROL: a SHORT line must keep the full scaled size (%d), or the fit is just a smaller font"
+		% scaled)
+
+
+## ⛔ THE RECOVERY ARM, AND IT REDS ON A BUG THIS FIX SHIPPED WITH. _fit_turn_info read the meta
+## key `text_scale_base_font_size`, which NOTHING writes — _scale_themed_font captures `base_font_px`
+## — so the lookup's default fired and handed it the already-shrunken override as the "base". Two
+## spellings for one quantity, in two files, with the function's own note forbidding exactly that.
+## update_turn_info runs EVERY turn, so one long enemy name shrank the strip and no later turn
+## recovered it, at any Text Size including the shipped default.
+func test_a_long_line_does_not_shrink_the_strip_forever() -> void:
+	_scene = await _build(1.0)
+	var label: Label = _scene.get_node_or_null(TURN_INFO)
+	var ui = _scene._ui_manager
+	assert_false(label == null or ui == null, "fixture: the strip and its UI manager must exist")
+	if label == null or ui == null:
+		return
+	var scaled: int = TextScale.scaled(int(label.get_meta(&"base_font_px", 0)))
+	assert_gt(scaled, 0, "FLOOR: there must be a captured base to recover to")
+	var seen: Array = []
+	for i in range(4):
+		label.text = "Round %d - SELECT: Glacius, the Frozen Sovereign (AP: +4)" % (i + 1)
+		ui._fit_turn_info()
+		label.text = "Round %d" % (i + 1)
+		ui._fit_turn_info()
+		seen.append(label.get_theme_font_size(&"font_size"))
+	for v in seen:
+		assert_eq(int(v), scaled,
+			("after a long line, a SHORT line must return to the full size %d. Got %s across four "
+			+ "turns — a fit that compounds never recovers, so the strip stays tiny for the rest of "
+			+ "the battle.") % [scaled, str(seen)])

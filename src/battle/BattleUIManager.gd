@@ -917,10 +917,26 @@ func _fit_turn_info() -> void:
 	var font := label.get_theme_font(&"font")
 	if font == null:
 		return
+	## ⛔ A PRE-LAYOUT RECT IS NOT A MEASUREMENT. TurnInfoPanel is a PanelContainer that sizes its
+	## child during its own sort step, so on the FIRST call — at scene build, before any layout pass
+	## — label.size.x is the Label's own TEXT minimum (~85px for "Round 1"), not the strip's 400. The
+	## fit shrank against that and hit the `px > 8` floor, and nothing re-fits until the next turn, so
+	## every battle opened with an 8px strip at EVERY Text Size. The panel's width comes from its
+	## anchors at _ready, so it is credible immediately; the inset is derived from its own stylebox
+	## rather than assumed to be zero.
 	var avail: float = label.size.x
+	var strip := label.get_parent() as Control
+	if strip != null:
+		var sb := strip.get_theme_stylebox(&"panel")
+		var inset: float = (sb.get_margin(SIDE_LEFT) + sb.get_margin(SIDE_RIGHT)) if sb != null else 0.0
+		avail = maxf(avail, strip.size.x - inset)
 	if avail <= 0.0:
-		return  ## pre-layout; the next turn update fits it, and turn info updates every turn
-	var base: int = int(label.get_meta(&"text_scale_base_font_size",
+		return  ## genuinely sizeless; the next turn update fits it, and turn info updates every turn
+	## ⛔ THE KEY MUST BE THE ONE THE CAPTURE WRITES. This read `text_scale_base_font_size`, which
+	## nothing writes — _scale_themed_font captures `base_font_px` — so the default fired and the
+	## "base" WAS the shrunken override: one long name shrank the strip and no later turn recovered it.
+	## Exactly what the note above forbids, in the line below it.
+	var base: int = int(label.get_meta(&"base_font_px",
 		label.get_theme_font_size(&"font_size")))
 	var px: int = TextScale.scaled(base)
 	while px > 8 and font.get_string_size(label.text, HORIZONTAL_ALIGNMENT_CENTER, -1, px).x > avail:
