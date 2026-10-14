@@ -1884,7 +1884,7 @@
           "end": 5
         },
         "dead": {
-          "start": 6,
+          "start": 7,
           "end": 7
         }
       },
@@ -2218,11 +2218,11 @@
           "end": 3
         },
         "hit": {
-          "start": 4,
+          "start": 5,
           "end": 5
         },
         "dead": {
-          "start": 6,
+          "start": 7,
           "end": 7
         }
       },
@@ -2352,7 +2352,7 @@
           "end": 5
         },
         "dead": {
-          "start": 6,
+          "start": 7,
           "end": 7
         }
       },
@@ -2561,7 +2561,7 @@
           "end": 5
         },
         "dead": {
-          "start": 6,
+          "start": 7,
           "end": 7
         }
       },
