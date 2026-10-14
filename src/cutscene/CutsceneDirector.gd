@@ -923,9 +923,11 @@ func _step_stop_music(_step: Dictionary) -> void:
 
 
 func _step_play_sfx(step: Dictionary) -> void:
+	## Its OWN voice, not play_ui: _advance_dialogue plays menu_select on the UI player on EVERY press,
+	## so a cue authored here died on the player's next line turn. 18 of our 44 cues exceed 1s.
 	var sfx = step.get("sfx", "")
 	if sfx != "" and SoundManager:
-		SoundManager.play_ui(sfx)
+		SoundManager.play_cutscene_sfx(sfx)
 
 
 func _step_set_flag(step: Dictionary) -> void:

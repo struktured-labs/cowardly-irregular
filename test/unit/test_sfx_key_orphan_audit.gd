@@ -42,7 +42,7 @@ const SRC_DIR := "res://src"
 # call site passes one today, which is the only reason this has never bitten.
 # `sfx` here is the CUTSCENE JSON step type, not a method — no `func play_sfx` exists, so it matches nothing in src and the JSON scanner covers those refs separately.
 # Hoisted so the scope guard can READ this alternation — play_death escaped the audit for months because the list was restated by hand and nothing compared it to SoundManager.
-const SFX_CALL_PATTERN := "play_(?:ui|battle|battle_scaled|ability|attack_hit|sfx|death|ambient|voice|flourish|pickup|advance_state|status_if_authored|weather_oneshot)\\(\\s*\"([a-zA-Z_0-9]+)\""
+const SFX_CALL_PATTERN := "play_(?:ui|battle|battle_scaled|ability|attack_hit|sfx|cutscene_sfx|death|ambient|voice|flourish|pickup|advance_state|status_if_authored|weather_oneshot)\\(\\s*\"([a-zA-Z_0-9]+)\""
 const CUTSCENES_DIR := "res://data/cutscenes"
 
 # Snapshot 2026-05-25 — sfx keys called from somewhere but resolving via
@@ -230,6 +230,11 @@ func test_every_sfx_key_resolves_or_is_allowlisted() -> void:
 	assert_false(resolvable.has("__never_authored_sfx_probe__"),
 		"a fabricated key reads as RESOLVABLE — the resolution set is polluted and every real orphan below will be silently absorbed")
 
+	# play_cutscene_sfx is in the ALTERNATION and not in this pair list, for play_voice's reason:
+	# its one call site is CutsceneDirector._step_play_sfx passing the JSON step's own value, so
+	# no literal reaches it and a named-key control here could only ever fail. The cues it plays
+	# ARE audited — by the cutscene JSON walk above, whose own canary is boss_defeat_stinger.
+	# It stays in the alternation so a hardcoded key would be caught the day one appears.
 	# play_voice is in the ALTERNATION but not in this pair list, for play_status's reason: its key
 	# is built by the CALLER (BattleSpeechBubble passes the party-chat audio_key through), so no
 	# literal ever appears at a call site and a named-key control here could only ever fail. It
