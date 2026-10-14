@@ -152,7 +152,13 @@ func test_the_small_and_default_sizes_render_the_shipped_layout() -> void:
 	for key in ["ROW_HEIGHT", "ROW_START_Y"]:
 		assert_true(consts.has(key),
 			"FLOOR: %s must still exist, or this arm is vacuous" % key)
-	for scale in [0.8, 1.0]:
+	## ⛔ DERIVED, NOT `[0.8, 1.0]`. Converting the ladder const left this SECOND literal behind,
+	## and it carries no 1.25 so every ladder-keyed census is blind to it — yet this is the arm
+	## that decides whether a new SUB-UNITY preset is ever checked (@cowir-music, 2026-10-14).
+	var at_or_below: Array = _presets().filter(func(p): return float(p) <= 1.0)
+	assert_gt(at_or_below.size(), 1,
+		"CONTROL: the sub-unity set must derive more than one step from the shipped ladder, or this loop iterates nothing and passes: " + str(at_or_below))
+	for scale in at_or_below:
 		var m: Control = await _menu_at(scale)
 		assert_eq(int(m._row_h()), int(consts["ROW_HEIGHT"]),
 			"at %.0f%% the row height must be the authored %d" % [scale * 100.0, consts["ROW_HEIGHT"]])
