@@ -1118,6 +1118,22 @@ func _read_save_file(slot: int) -> Dictionary:
 ## tests, time-rewind restore and in-memory snapshots whose values are already current, and
 ## migrating there multiplied fixtures that were never saves (14 red tests said so).
 ## A file on disk is the only input that can predate the denomination.
+## The values a load just APPLIED, for the log: a setting is otherwise visible only when changed. Never BYOK.
+const LOGGED_SETTINGS := ["text_size_scale", "color_blind_mode", "reduce_flashes", "screen_shake_enabled", "default_battle_speed", "encounter_rate_multiplier", "dash_always_on", "llm_enabled"]
+
+
+static func applied_settings_summary() -> String:
+	var tree := Engine.get_main_loop() as SceneTree
+	var gs: Node = tree.root.get_node_or_null("GameState") if tree and tree.root else null
+	if gs == null:
+		return "GameState unavailable"
+	var parts: PackedStringArray = []
+	for key in LOGGED_SETTINGS:
+		if key in gs:
+			parts.append("%s=%s" % [key, str(gs.get(key))])
+	return ", ".join(parts)
+
+
 func _migrate_stat_denomination(data: Dictionary, slot: int = -1) -> Dictionary:
 	var gs: Variant = data.get("game_state")
 	if not (gs is Dictionary):
@@ -1423,4 +1439,4 @@ func load_settings() -> void:
 			if settings.has("tts_model") and "tts_model" in GameState and str(settings["tts_model"]).strip_edges() != "":
 				GameState.tts_model = str(settings["tts_model"]).strip_edges()
 
-	print("[SAVE] Settings loaded")
+	print("[SAVE] Settings loaded (%s)" % applied_settings_summary())
