@@ -160,7 +160,8 @@ func _on_pickup_entered(body: Node2D, pid: String, marker: Node2D) -> void:
 		marker.queue_free()
 	var sm := get_node_or_null("/root/SoundManager")
 	if sm:
-		sm.play_ui("chest_open")
+		# A key on the floor is not a chest: no box, no lid, no latch.
+		sm.play_ui("pickup_small")
 	var resource := ""
 	for pk in scan_pickups(_cave.floor_layouts):
 		if str(pk["id"]) == pid:
