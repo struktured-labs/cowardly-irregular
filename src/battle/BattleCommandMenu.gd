@@ -602,7 +602,25 @@ func _ability_deals_damage(ability: Dictionary) -> bool:
 	return false
 
 
+## The ENGINE gates an ability on JobSystem.can_use_ability, which also refuses on silence
+## (JobSystem:770). The menu quoted MP alone, so a silenced caster's rows read as available and the
+## turn was spent to learn otherwise — the exact waste struktured named when menu_error was added
+## ("a wasted action because of insufficient resources ... should have a noise and/or text").
+## Affordability keeps its own path: _reject_selection gives a custom reason PRIORITY over the MP
+## line, so setting one here when MP is the cause would replace the number the player needs.
+## One place rather than six return sites, and it ASKS the authority, so a later gate added to
+## can_use_ability makes the row unavailable instead of silently costing a turn.
 func _build_ability_menu_item(ability_id: String, combatant: Combatant, alive_enemies: Array[Combatant], canvas_transform: Transform2D) -> Dictionary:
+	var item: Dictionary = _build_ability_row(ability_id, combatant, alive_enemies, canvas_transform)
+	if item.is_empty() or combatant == null or not is_instance_valid(combatant):
+		return item
+	if bool(item.get("cost_affordable", true)) and not JobSystem.can_use_ability(combatant, ability_id):
+		item["reject_reason"] = "Silenced — no abilities" if combatant.has_status("silence") \
+				else "Can't use that right now"
+	return item
+
+
+func _build_ability_row(ability_id: String, combatant: Combatant, alive_enemies: Array[Combatant], canvas_transform: Transform2D) -> Dictionary:
 	"""Build a single ability menu item (with target submenu if needed).
 	   Returns {} for invalid abilities so callers can skip empty entries."""
 	var ability = JobSystem.get_ability(ability_id)
