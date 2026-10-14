@@ -147,7 +147,11 @@ func _sort_passives(a: Dictionary, b: Dictionary) -> bool:
 
 func _build_ui() -> void:
 	"""Build the menu UI"""
+	## ⛔ REMOVE, THEN FREE — see JobMenu._build_ui. `queue_free()` leaves the old children NAMED
+	## until the frame ends, so a second build renames the new `ScreenFooter` and a name lookup
+	## finds nothing. `EquipmentMenu` is immune for exactly this reason.
 	for child in get_children():
+		remove_child(child)
 		child.queue_free()
 	_ability_labels.clear()
 	_passive_labels.clear()

@@ -62,7 +62,10 @@ func _ready() -> void:
 
 
 func _build_ui() -> void:
+	## ⛔ REMOVE, THEN FREE — see JobMenu._build_ui. LensMenu builds once today, so this is a belt;
+	## it costs nothing and makes a future second build safe for a name lookup.
 	for c in get_children():
+		remove_child(c)
 		c.queue_free()
 	_rows.clear()
 

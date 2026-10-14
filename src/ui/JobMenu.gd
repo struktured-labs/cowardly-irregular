@@ -76,7 +76,14 @@ func setup(target: Combatant) -> void:
 
 func _build_ui() -> void:
 	"""Build the menu UI"""
+	## ⛔ REMOVE, THEN FREE. `queue_free()` only MARKS: the old children keep their names until the
+	## end of the frame, so a second build in one frame collides on `ScreenFooter` and Godot renames
+	## the NEWCOMER — a name lookup then finds nothing. Measured: 40 "missing ScreenFooter" across
+	## every preset, while `ScreenTitle` was found every time because it lives inside a freshly
+	## built panel rather than beside the node being freed. `EquipmentMenu._build_ui` has done it
+	## this way all along, which is why it is the one menu immune to it.
 	for child in get_children():
+		remove_child(child)
 		child.queue_free()
 	_slot_labels.clear()
 	_job_labels.clear()
