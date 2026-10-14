@@ -182,6 +182,14 @@ func _play_effect_sound(effect_type: EffectType, power: float = 1.0, weapon_type
 		EffectType.POISON:
 			sound_key = "ability_dark"
 
+	## The generic polarity sting is REDUNDANT when BattleScene already played an authored status_* cue for
+	## the same action — different keys, so the per-key cooldown cannot collapse them and the player hears
+	## both (his 10-13 log: status_sleep then debuff, 3x). Scoped to these two keys: every other arm is a
+	## specific cue, and a monster-spawn flash or group-attack impact has no status cue before it.
+	if sound_key in ["buff", "debuff"] and SoundManager and SoundManager.has_method("status_cue_just_played") \
+			and SoundManager.status_cue_just_played():
+		sound_key = ""
+
 	if sound_key != "" and SoundManager:
 		# Scale volume based on power (more powerful = slightly louder)
 		var volume_db = lerp(-3.0, 3.0, (power - POWER_MIN) / (POWER_MAX - POWER_MIN))
