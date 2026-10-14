@@ -196,3 +196,33 @@ func test_a_withheld_quest_is_not_even_a_locked_refusal() -> void:
 			resurrected.append("%s (%s)" % [qid, giver])
 	gut.p("  %d withheld quests carry authored 'locked' dialogue" % checked)
 	assert_eq(resurrected, [], "a withheld quest came back through the locked-refusal fallback: %s" % [resurrected])
+
+## ⛔ THE INVARIANT THIS FIX OWES ANOTHER GUARD. `test_quest_givers_are_reachable.gd` has carried
+## the ratchet for this exact defect since before 2026-10-14 — *"this quest CAN be accepted and can
+## NEVER be finished: its giver is placed and a custom step's flag is emitted by nothing in src/"* —
+## and all three of the reachable cases sit on its `DEAD_END_CUSTOM_STEPS` allowlist with reasons
+## better than mine: the blocker is an absent `rivet_row_tunnels` MAP, not a missing emitter.
+##
+## ⚠️ So the strand was found, documented and deliberately parked. What the allowlist does NOT do
+## is withhold the OFFER — the player still accepts the quest and it still sits in the log forever.
+## `wiring_pending` closes that half, and this arm ties the two records together so neither can
+## drift: a quest documented as a startable dead end must be one this fix withholds. Without it,
+## that guard's own message ("listed as a startable dead end") is a claim my commit falsified.
+func test_every_documented_dead_end_is_withheld() -> void:
+	var other = load("res://test/unit/test_quest_givers_are_reachable.gd")
+	assert_not_null(other, "the dead-end allowlist's file must load, or this arm proves nothing")
+	if other == null:
+		return
+	var listed: Dictionary = other.DEAD_END_CUSTOM_STEPS
+	assert_gt(listed.size(), 0, "VOID: the allowlist is empty, so this arm examined nobody")
+	var open_dead_ends: Array = []
+	for qid in listed:
+		var q: Dictionary = _quests.get(str(qid), {})
+		if q.is_empty():
+			continue          ## that guard's own `gone` arm owns a stale name
+		if not bool(q.get("wiring_pending", false)):
+			open_dead_ends.append(str(qid))
+	gut.p("  %d documented dead ends, all withheld" % listed.size())
+	assert_eq(open_dead_ends, [], "these are documented as startable dead ends and are still "
+		+ "OFFERABLE — the player can accept one and it can never finish. Add \"wiring_pending\": "
+		+ "true, or remove the line from DEAD_END_CUSTOM_STEPS: %s" % [open_dead_ends])
