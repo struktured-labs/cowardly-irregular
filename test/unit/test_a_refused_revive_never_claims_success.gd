@@ -273,9 +273,17 @@ func test_every_revive_caller_accounts_for_the_refusal() -> void:
 				var body: String = _enclosing_function(lines, i)
 				## AFTER means after THIS call, by line index. body.find(".revive(") finds the FIRST
 				## occurrence in the function, which a header comment can own.
-				var accounted: bool = ("can_be_revived" in body) \
+				## ⛔ THE CALL FORM, AND is_alive CONSULTED RATHER THAN MENTIONED. Token presence
+				## accepted three shapes that gate nothing: `has_method("can_be_revived")`, a string
+				## literal naming the predicate, and `is_alive` ASSIGNED after the call. cowir-story
+				## measured this family in three guards here — a mention certified as a use, 121 of
+				## 124 with no write shape anywhere. Verdicts on both real trees are unchanged
+				## (pre-fix 3 offenders, fixed 0), so the tightening costs nothing.
+				## Residual, named rather than papered over: a string literal containing the CALL
+				## text would still pass. code_of strips comments, not strings.
+				var accounted: bool = ("can_be_revived()" in body) \
 					or ('remove_status("permakilled")' in body) \
-					or ("is_alive" in _after_the_call(lines, i))
+					or _checks_is_alive_after(lines, i)
 				if not accounted:
 					offenders.append("%s:%d — %s" % [path, i + 1, line])
 	assert_gt(checked, 4,
@@ -285,6 +293,15 @@ func test_every_revive_caller_accounts_for_the_refusal() -> void:
 		+ "never happened — consult can_be_revived(), strip the marker first, or re-check is_alive "
 		+ "after. Found: %s") % str(offenders))
 
+
+## `is_alive` read in a CONDITIONAL after the call — the post-revive idiom GameLoop and InnInterior
+## use. An assignment to it gates nothing and must not count.
+func _checks_is_alive_after(lines: PackedStringArray, at: int) -> bool:
+	for raw in _after_the_call(lines, at).split("\n"):
+		var l: String = raw.strip_edges()
+		if "is_alive" in l and (l.begins_with("if ") or l.begins_with("elif ") or " if " in l):
+			return true
+	return false
 
 ## The function's text from line `at` onward — the region in which a post-revive is_alive check
 ## must appear. Keyed to the caller's own line, so no earlier mention can move the anchor.
