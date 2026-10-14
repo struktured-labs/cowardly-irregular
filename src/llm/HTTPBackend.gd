@@ -251,10 +251,11 @@ func _on_probe_completed(result: int, response_code: int, _headers: PackedString
 	if was_ready == now_ready:
 		return
 	# Silent-failure guard (struktured 2026-07-25): the state must never change unannounced.
+	var consequence: String = dialogue_consequence(now_ready, dialogue_enabled())
 	if now_ready:
-		print("[HTTPBackend] LLM server reachable again at %s — dynamic dialogue restored." % _probe_url())
+		print("[HTTPBackend] LLM server reachable again at %s. %s" % [_probe_url(), consequence])
 	else:
-		push_warning("[HTTPBackend] %s Falling back to scripted dialogue." % unavailable_reason())
+		push_warning("[HTTPBackend] %s %s" % [unavailable_reason(), consequence])
 	availability_changed.emit(now_ready)
 
 
@@ -298,6 +299,21 @@ func unavailable_reason() -> String:
 			return "LLM server at %s answered HTTP %d - dynamic dialogue will use fallbacks. Re-probing every %ds." % [_probe_url(), _last_probe_code, every]
 		_:
 			return "LLM server unreachable at %s - dynamic dialogue will use fallbacks. Re-probing every %ds; no restart needed once it's up." % [_probe_url(), every]
+
+
+## The player-facing consequence of a reachability change; the toggle is LLMService's, not ours.
+static func dialogue_consequence(now_ready: bool, dialogue_on: bool) -> String:
+	if not dialogue_on:
+		return "Dynamic dialogue stays off — the Settings toggle is off."
+	if now_ready:
+		return "Dynamic dialogue restored."
+	return "Falling back to scripted dialogue."
+
+
+## Read the Dynamic Dialogue toggle off the service, the way RuleComposer does.
+func dialogue_enabled() -> bool:
+	var svc: Node = get_node_or_null("/root/LLMService")
+	return svc != null and "llm_enabled" in svc and bool(svc.llm_enabled)
 
 
 func _cleanup_probe() -> void:
