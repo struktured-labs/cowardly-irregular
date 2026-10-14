@@ -42,22 +42,43 @@ static func height_for(text: String, width: float, min_h: float) -> float:
 	return h
 
 
-## ⛔ THE AUTHORED BOTTOM EDGE IS HELD AND GROWTH GOES UPWARD. `baseline_top` is where the authored
+## ⛔ THE ONE PLACE THE ORIGIN IS SPELLED. It takes an ALREADY-MEASURED height because `show` has
+## one and must not pay for a second measurement — and because the alternative is two expressions
+## for one quantity inside the helper whose whole purpose is collapsing eleven of them. `show` had
+## exactly that: an inline `Vector2(-width * 0.5, baseline_top - (h - min_h))` beside this. They
+## agreed, so it was not a bug; it was the CONDITION for one, since changing the rule here would
+## have left `show` silently on the old one. Found by cowir-story reading the pair, and it is the
+## same shape as @cowir-adhoc's lens overrun — a floor applied on one side of a quantity only.
+##
+## 🔑 THE AUTHORED BOTTOM EDGE IS HELD AND GROWTH GOES UPWARD. `baseline_top` is where the authored
 ## rect's top sat, so `baseline_top + min_h` is its bottom; a taller block rises away from the
-## player rather than covering them. Today the top is pinned instead, which is why the overflow
-## lands on the prop.
-static func top_for(text: String, width: float, baseline_top: float, min_h: float) -> float:
-	return baseline_top - (height_for(text, width, min_h) - min_h)
-
-
+## player rather than covering them. Pinning the top is the defect this replaces.
+##
 ## Every caller's x was already `-width / 2` to the pixel — 300 -> -150, 260 -> -130, 240 -> -120,
-## 380 -> -190 — so this is derivation replacing eleven hand-computed literals, not a new rule.
+## 380 -> -190 — so that term is derivation replacing eleven hand-computed literals, not a new rule.
+static func origin_for_height(h: float, width: float, baseline_top: float, min_h: float) -> Vector2:
+	return Vector2(-width * 0.5, baseline_top - (h - min_h))
+
+
+## The measuring entry points. Both route through `origin_for_height`, so a change to the rule
+## reaches `show` and cowir-story's delegated `toast_position_for` together or not at all.
 static func origin_for(text: String, width: float, baseline_top: float, min_h: float) -> Vector2:
-	return Vector2(-width * 0.5, top_for(text, width, baseline_top, min_h))
+	return origin_for_height(height_for(text, width, min_h), width, baseline_top, min_h)
+
+
+static func top_for(text: String, width: float, baseline_top: float, min_h: float) -> float:
+	return origin_for(text, width, baseline_top, min_h).y
 
 
 ## Height already occupied by this host's live toasts, so a second one stacks above the first
 ## instead of over it. Only QuestChicken asks for this; it is its behaviour, kept.
+##
+## ⚠️ IT COUNTS EVERY SIBLING `Label`, WHICH IS CORRECT ONLY BECAUSE QuestChicken HAS NO OTHER
+## ONE. Nine of the twelve props build an `_indicator` Label in `_ready` -- the world-space press
+## prompt -- and a caller with `stack = true` AND an indicator would stack its toast above its own
+## prompt. Measured: QuestChicken is the one prop with zero indicator Labels, which is also how the
+## guard for this file came to be measuring press prompts instead of toasts for nine callers.
+## A future stacking caller needs a narrower rule than "is a Label" before it passes `stack`.
 static func stack_offset(host: Node, exclude: Node) -> float:
 	var used := 0.0
 	for c in host.get_children():
@@ -89,7 +110,7 @@ static func show(host: Node2D, text: String, width: float, baseline_top: float, 
 	lbl.add_theme_color_override("font_color", col)
 	var h: float = height_for(text, width, min_h)
 	lbl.size = Vector2(width, h)
-	var at: Vector2 = Vector2(-width * 0.5, baseline_top - (h - min_h))
+	var at: Vector2 = origin_for_height(h, width, baseline_top, min_h)
 	host.add_child(lbl)
 	if stack:
 		at.y -= stack_offset(host, lbl)

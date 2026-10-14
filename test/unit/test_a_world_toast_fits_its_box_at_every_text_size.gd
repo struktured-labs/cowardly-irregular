@@ -190,3 +190,41 @@ func test_a_taller_toast_grows_upward() -> void:
 	assert_almost_eq(tall_top + tall_h, short_top + 18.0, 0.5,
 		"the authored BOTTOM edge must be held: %.0f vs %.0f" % [tall_top + tall_h, short_top + 18.0])
 	gut.p("  floor top %.0f; %.0f px block tops at %.0f, same bottom edge" % [short_top, tall_h, tall_top])
+
+
+## ⛔ THE SEAM AND THE BUILT NODE MUST AGREE, AND THIS ARM EXISTS BECAUSE THEY ONCE COULD NOT
+## DISAGREE. `show` re-derived the origin inline beside `origin_for` — two expressions for one
+## quantity, in the helper whose purpose is collapsing eleven of them. They matched, so nothing
+## could fail; that is the CONDITION for a drift, not a drift, and changing the rule in one place
+## would have left the other silently on the old one. Both now route through `origin_for_height`,
+## and this compares what `show` BUILT against what the public seam PREDICTS so they cannot part.
+##
+## 📌 No await between `show` and the read: the tween it starts animates `position:y`, so a frame
+## of settling would measure the animation rather than the placement.
+func test_show_places_the_label_where_the_seam_says() -> void:
+	_scale(1.0)
+	var host := Node2D.new()
+	add_child_autofree(host)
+	await get_tree().process_frame
+	var pairs := 0
+	for text in ["Short.", LONG]:
+		for mh in [18.0, 34.0, 48.0]:
+			var want: Vector2 = WorldToast.origin_for(text, 260.0, -52.0, mh)
+			var lbl: Label = WorldToast.show(host, text, 260.0, -52.0, Color.WHITE, mh, 20.0, 1.6, 0.6)
+			assert_not_null(lbl, "CONTROL: show must build a Label (%d chars, floor %.0f)" % [text.length(), mh])
+			if lbl == null:
+				continue
+			pairs += 1
+			assert_almost_eq(lbl.position.x, want.x, 0.01,
+				"x drifted: show built %.2f, the seam says %.2f" % [lbl.position.x, want.x])
+			assert_almost_eq(lbl.position.y, want.y, 0.01,
+				"y drifted: show built %.2f, the seam says %.2f (%d chars, floor %.0f)" % [
+					lbl.position.y, want.y, text.length(), mh])
+			lbl.queue_free()
+			await get_tree().process_frame
+	assert_eq(pairs, 6, "CONTROL: all six (text x floor) pairs must have been built, got %d" % pairs)
+	## And the long string must actually exceed at least one floor, or every pair is the trivial case.
+	assert_gt(WorldToast.height_for(LONG, 260.0, 18.0), 18.0,
+		"CONTROL: the long string must exceed the 18 px floor, else the arm only tests h == min_h")
+	gut.p("  %d (text x floor) pairs, show and the seam agree on every one" % pairs)
+
