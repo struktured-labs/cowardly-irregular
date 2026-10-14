@@ -330,8 +330,10 @@ func _spawn_impact(at: Vector2, grade: int, tint: Color) -> void:
 	BattleJuice.punch_zoom(get_viewport_rect().size / 2.0, float(GRADE_ZOOM[grade]), 0.22)
 	BattleJuice.spawn_burst(at, Vector2(0, -1), 10 + 8 * grade, tint, 180.0 + 60.0 * grade)
 	_spawn_sweep_band(at, tint, grade)
+	## Its OWN voice: on _battle_player this slam replaced the victory fanfare it lands on, and
+	## in W1/W2 (no agreed downbeat, so no wait) it did so in the same frame.
 	if SoundManager and SoundManager._sfx_manifest.has("victory_slam"):
-		SoundManager.play_battle("victory_slam")
+		SoundManager.play_victory_sfx("victory_slam")
 
 
 ## A bolder banner than a ring: a tinted band sweeps the full screen width through the impact

@@ -17,6 +17,7 @@ var _refuse_player: AudioStreamPlayer  # dedicated voice: a refused Advance pres
 var _weather_player: AudioStreamPlayer  # dedicated voice: a 4s thunder clap shared the channel every attack hit lands on (2026-09-18)
 var _ability_player: AudioStreamPlayer
 var _cutscene_player: AudioStreamPlayer  # dedicated voice: _advance_dialogue plays menu_select on _ui_player every press, so a cutscene's own cue died on the next line turn (2026-10-14)
+var _victory_player: AudioStreamPlayer  # dedicated voice: victory_slam replaced the 0.99s victory_stinger on _battle_player in the SAME frame — 100% of it lost in W1/W2, whose beds have no agreed downbeat (2026-10-14)
 ## Per-cue tracing. FULL tracing is off by default: it was 27-41% of struktured's play logs (4,175-5,998
 ## lines a session, measured 2026-10-05), burying the errors those logs exist to surface.
 ## `COWIR_SFX_LOG_CUES=1` or setting this true restores every line.
@@ -688,6 +689,13 @@ func _setup_audio_players() -> void:
 	_weather_player.bus = SFX_BUS
 	add_child(_weather_player)
 
+	_victory_player = AudioStreamPlayer.new()
+	_victory_player.name = "VictoryPlayer"
+	## The battle base, like every other voice carved off _battle_player: the slam IS a battle cue, it just needed to stop replacing the fanfare it lands on.
+	_victory_player.volume_db = SFX_BATTLE_BASE_DB
+	_victory_player.bus = SFX_BUS
+	add_child(_victory_player)
+
 	_ability_player = AudioStreamPlayer.new()
 	_ability_player.name = "AbilityPlayer"
 	_ability_player.volume_db = SFX_ABILITY_BASE_DB  # Ability SFX: same level as music — spells should be felt
@@ -1350,6 +1358,15 @@ func _play_battle_on(player: AudioStreamPlayer, sound_key: String) -> void:
 ## places _battle_player is busiest. NOT play_ambient — that would stop the 9.50s bed it lands over.
 func play_weather_oneshot(sound_key: String) -> void:
 	_play_battle_on(_weather_player, sound_key)
+
+
+## The VICTORY banner's impact slam on its own voice. It is scheduled on the victory bed's
+## downbeat (BattleResultsDisplay), and EVERY agreed downbeat is shorter than the fanfare it
+## landed on: 34/57/116/188/243 ms against a 0.99s stinger whose energy is 50% spent by 50ms.
+## victory_medieval and victory_suburban have no agreed downbeat at all, so there the wait is
+## skipped and the two played in ONE frame — the W1 and W2 fanfare was never audible.
+func play_victory_sfx(sound_key: String) -> void:
+	_play_battle_on(_victory_player, sound_key)
 
 
 func play_battle_scaled(sound_key: String, volume_db: float = 0.0, pitch_scale: float = 1.0) -> void:
