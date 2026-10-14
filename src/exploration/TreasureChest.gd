@@ -474,33 +474,18 @@ func _clamp_dialogue_box_to_viewport() -> void:
 	dialogue_box.position = delta
 
 
-func _open_chest(player: Node2D) -> void:
-	_is_opened = true
-	_showing_loot = true
-	var gen := _next_popup()
-	GameState.set_story_flag("chest_" + chest_id)
-
-	# Play sound
-	if SoundManager:
-		SoundManager.play_ui("chest_open")
-
-	# Update sprite — the SAME art convention _generate_sprite uses. Without this
-	# an artist-rendered chest snaps to the procedural drawing the moment it opens.
-	var art := "res://assets/sprites/objects/chest_open.png"
-	if ResourceLoader.exists(art):
-		sprite.texture = load(art)
-	else:
-		var image = Image.create(TILE_SIZE, TILE_SIZE, false, Image.FORMAT_RGBA8)
-		_draw_chest(image)
-		sprite.texture = ImageTexture.create_from_image(image)
-
-	# Update label
-	name_label.text = "(Empty)"
-	name_label.add_theme_color_override("font_color", Color.GRAY)
-	name_label.visible = true
-
-	# Give contents to player
-	var contents_text = ""
+## ⛔ THE GRANT, LIFTED OUT SO IT CAN RUN BEFORE THE CHEST COMMITS TO BEING OPEN. It returns the
+## PANEL TEXT and nothing else, so `granted` is DERIVED from it (`!= NOTHING_ADDED`) rather than
+## carried beside it — one fact, one source. A second `ok` field would be the two-sources hazard
+## this project's own CLAUDE.md names: they would agree today, which is the condition for a bug
+## rather than a bug.
+func _grant_contents() -> String:
+	## ⛔ SEEDED AS A REFUSAL, NOT AS "". An empty string is not equal to NOTHING_ADDED, so an
+	## unassigned path would read as GRANTED and consume the chest — the fail-OPEN direction, on the
+	## one predicate the whole commit hangs from. All four arms assign today, so this is the default
+	## nobody reaches; seeding it here means a FIFTH arm that forgets to assign refuses instead of
+	## silently eating a reward.
+	var contents_text := NOTHING_ADDED
 	match contents_type:
 		"gold":
 			# Actually add the gold to the party. Pre-fix the comment said
@@ -569,14 +554,65 @@ func _open_chest(player: Node2D) -> void:
 			# panel is the one outcome that cannot be told from a working chest.
 			push_warning("[TreasureChest] %s has unknown contents_type '%s' — nothing granted" % [chest_id, contents_type])
 			contents_text = claim_for(contents_type, "", 0)
+	return contents_text
+
+## ⛔ A GRANT THAT DID NOTHING NO LONGER CONSUMES THE CHEST. `_is_opened = true` and the
+## save-persisted `set_story_flag` used to be the FIRST two statements, above the grant — so any
+## nothing-happened path left a permanently-opened chest and the item gone. The stake was never the
+## caption; it was a lost reward behind a flag that survives a reload.
+##
+## 🔑 THE SUCCESS PATH IS DELIBERATELY UNCHANGED, STATEMENT FOR STATEMENT. All 39 chest
+## configuration sites in `src/` carry valid data today (derived, not assumed — the six overworlds
+## constrain the type with `if c["type"] == "gold" … else`, and WhisperingCave's five floors are all
+## item/gold with positive amounts), so `granted` is true for every chest in the game and this
+## restructure cannot regress one. The refusal branch is reachable only from a future data edit,
+## which is exactly the arrival it exists to meet.
+func _open_chest(player: Node2D) -> void:
+	## The grant happens FIRST. Everything below it is the commit, and the commit is conditional.
+	var contents_text := _grant_contents()
+	var granted := contents_text != NOTHING_ADDED
+	_showing_loot = true
+	var gen := _next_popup()
+	if granted:
+		_is_opened = true
+		GameState.set_story_flag("chest_" + chest_id)
+
+	# Play sound
+	if SoundManager:
+		SoundManager.play_ui("chest_open")
+
+	# Update sprite — the SAME art convention _generate_sprite uses. Without this
+	# an artist-rendered chest snaps to the procedural drawing the moment it opens.
+	# ⚠️ AND IT ONLY LOOKS OPEN IF IT IS. An unconditional swap drew an open, "(Empty)" chest over
+	# a chest that still holds its contents — the player's one cue that it is worth pressing again.
+	if granted:
+		var art := "res://assets/sprites/objects/chest_open.png"
+		if ResourceLoader.exists(art):
+			sprite.texture = load(art)
+		else:
+			var image = Image.create(TILE_SIZE, TILE_SIZE, false, Image.FORMAT_RGBA8)
+			_draw_chest(image)
+			sprite.texture = ImageTexture.create_from_image(image)
+
+		# Update label
+		name_label.text = "(Empty)"
+		name_label.add_theme_color_override("font_color", Color.GRAY)
+		name_label.visible = true
 
 	# Show dialogue. The icon sits above the pinned 240x60 panel so the label geometry stays put.
 	_clamp_dialogue_box_to_viewport()
 	dialogue_box.visible = true
 	dialogue_label.text = contents_text
-	_set_loot_icon(contents_id if contents_type == "item" or contents_type == "equipment" else "")
+	## The icon DEPICTS A RECEIVED ITEM, so it answers to the effect like the panel and the cue.
+	## The `chest_open` lid sound above deliberately does NOT: the press registered, and @cowir-sfx's
+	## ruling on the examine chime is that silence cannot say so.
+	_set_loot_icon(contents_id if granted and (contents_type == "item" or contents_type == "equipment") else "")
 
-	chest_opened.emit({"type": contents_type, "id": contents_id, "amount": contents_amount})
+	## ⛔ AND THE SIGNAL. `chest_opened` is what listeners credit from — WhisperingCave:764 connects
+	## it — so emitting it after a grant that did nothing invites a SECOND phantom credit on top of
+	## the panel's. It fires only on a real grant.
+	if granted:
+		chest_opened.emit({"type": contents_type, "id": contents_id, "amount": contents_amount})
 	# Content-aware "loot received" cue. Pre-fix this also played
 	# "chest_open" — the same sound the opening at line 331 already fired,
 	# so every chest played chest_open TWICE. Gold gets the canonical
@@ -589,7 +625,9 @@ func _open_chest(player: Node2D) -> void:
 	# loop for any "stinger_" id regardless of the manifest, and all five entries
 	# now also carry loop=false. Consumables stay quiet — a fanfare per potion is
 	# what makes a fanfare stop meaning anything.
-	if SoundManager:
+	## The loot cue answers to the effect too — the same rule as the examine chime, one lane item
+	## earlier: a fanfare for a grant that did not happen is the audio half of the same lie.
+	if SoundManager and granted:
 		match contents_type:
 			"gold":
 				SoundManager.play_pickup("gold_pickup")

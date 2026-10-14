@@ -173,3 +173,72 @@ func test_the_contents_type_match_has_a_default_arm() -> void:
 			break
 	assert_true(has_default,
 		"match contents_type must carry a `_:` arm — contents_type comes from data at WhisperingCave:749")
+
+
+## ⛔ THE SECOND HALF, LANDED AFTER ALL: the grant now runs BEFORE the chest commits to being open.
+## `_is_opened = true` and the save-persisted `set_story_flag` used to be the FIRST two statements
+## of `_open_chest`, above the grant — so a nothing-happened path left a permanently-opened chest
+## and the reward gone. The stake was never the caption.
+##
+## 🔑 WHY THESE ARMS READ SOURCE, WHICH IS NORMALLY THE WEAK INSTRUMENT: this project's own rule is
+## that a source guard certifies SPELLING, not that anything RUNS. That objection does not apply to
+## a STATEMENT-ORDER invariant, because the order IS the defect — "the commit happens after the
+## grant" is a fact about the text and nothing else can see it. Driving it instead would need a
+## built TreasureChest with its sprite, label and dialogue children plus a live GameState, and would
+## still only observe the order indirectly.
+func test_the_chest_commits_only_after_and_only_if_the_grant_landed() -> void:
+	var src := _source()
+	var at := src.find("func _open_chest(")
+	assert_gt(at, -1, "_open_chest must still exist")
+	var fn := src.substr(at)
+	var nxt := fn.find("\nfunc ", 1)
+	if nxt > -1:
+		fn = fn.substr(0, nxt)
+
+	var i_grant := fn.find("_grant_contents()")
+	var i_flag := fn.find("set_story_flag")
+	var i_open := fn.find("_is_opened = true")
+	assert_gt(i_grant, -1, "_open_chest must call _grant_contents")
+	assert_gt(i_flag, -1, "_open_chest must still write the chest's story flag")
+	assert_gt(i_open, -1, "_open_chest must still mark the chest opened")
+
+	## THE ORDERING INVARIANT — this is the defect, stated.
+	assert_lt(i_grant, i_flag, "the grant must run BEFORE the save-persisted flag is written")
+	assert_lt(i_grant, i_open, "the grant must run BEFORE the chest is marked opened")
+
+	## AND THE GATE — ordering alone is not enough; an unconditional commit after the grant still
+	## consumes the chest. Both commits must sit under `if granted`.
+	assert_string_contains(fn, "if granted:", "the commit must be gated on the grant")
+	var gate := fn.find("if granted:")
+	assert_lt(gate, i_flag, "the flag write must sit under the gate, not above it")
+	assert_lt(gate, i_open, "the opened mark must sit under the gate, not above it")
+
+	## The signal is what listeners credit from (WhisperingCave:764 connects it), so a phantom
+	## credit on top of the panel's is the one thing worse than a wrong panel.
+	var i_emit := fn.find("chest_opened.emit")
+	assert_gt(i_emit, -1, "chest_opened must still be emitted")
+	assert_lt(gate, i_emit, "chest_opened must not fire for a grant that did nothing")
+
+
+func test_the_grant_defaults_to_a_refusal_not_an_empty_string() -> void:
+	## FAIL-CLOSED, and the direction matters: `"" != NOTHING_ADDED`, so a `contents_text` seeded
+	## empty would read as GRANTED and consume the chest. That is the fail-OPEN direction on the one
+	## predicate the whole commit hangs from. All four arms assign today, so this default is
+	## unreachable — its job is that a FIFTH arm which forgets to assign refuses rather than
+	## silently eating a reward.
+	var src := _source()
+	var at := src.find("func _grant_contents(")
+	assert_gt(at, -1, "_grant_contents must exist")
+	var fn := src.substr(at)
+	var nxt := fn.find("\nfunc ", 1)
+	if nxt > -1:
+		fn = fn.substr(0, nxt)
+	assert_string_contains(fn, "var contents_text := NOTHING_ADDED",
+		"the grant's default must be a refusal, not \"\" — \"\" reads as granted")
+
+	## CONTROL: the predicate the default feeds must actually be the inequality, or seeding it
+	## correctly defends nothing.
+	var open_at := src.find("func _open_chest(")
+	var open_fn := src.substr(open_at)
+	assert_string_contains(open_fn, "contents_text != NOTHING_ADDED",
+		"`granted` must be derived from the text, so there is one source of truth and not two")
