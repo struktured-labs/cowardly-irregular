@@ -45,9 +45,18 @@ func _test_files() -> Array:
 	return out
 
 
+## ⛔ EXCLUDES ITSELF, and not for tidiness: this file DECLARES the pattern it searches for
+## (`const ASSIGN := "text_size_scale ="`), so it matches its own source and appeared in its own
+## offenders corpus. A guard that audits itself reports on the wrong subject -- and the control that
+## caught it is the one asserting this file is NOT a writer.
+const SELF := "test_zz_text_size_scale_not_leaked_by_tests.gd"
+
+
 func _writers() -> Array:
 	var out: Array = []
 	for f in _test_files():
+		if f == SELF:
+			continue
 		var src := FileAccess.get_file_as_string("%s/%s" % [TEST_DIR, f])
 		if src != "" and src.contains(ASSIGN):
 			out.append(f)
@@ -72,8 +81,8 @@ func test_the_sweep_can_actually_find_writers() -> void:
 	## NAME rather than by a total that other files keep above the floor.
 	assert_true(w.has("test_text_size_scale_accessibility.gd"),
 		"the sweep must still match test_text_size_scale_accessibility, a known writer: %s" % [w])
-	assert_false(w.has("test_zz_text_size_scale_not_leaked_by_tests.gd"),
-		"this guard must not write the scale itself, or it would be auditing its own leak")
+	assert_false(w.has(SELF),
+		"this guard must be excluded from its own corpus -- it declares the pattern it searches for")
 
 
 ## THE LOAD-BEARING ARM, order-independent: every writer must put the scale back somehow.
