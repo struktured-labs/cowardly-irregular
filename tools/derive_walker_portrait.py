@@ -23,7 +23,7 @@ SIZE = 256
 # Share of the figure's height, from the top of the head, that makes the bust.
 BUST_SHARE = 0.46
 # npc id -> cell size of its 4x4 walk sheet (row 0 = south).
-WALKERS = {"rotha": 48, "roy": 64}
+WALKERS = {"rotha": 48, "roy": 64, "kid_acrees": 48}
 
 
 def bust(sheet: Image.Image, cell: int) -> Image.Image:

@@ -32,6 +32,9 @@ def main() -> int:
     ap.add_argument("--ignore-layer", action="append", default=[], help="backdrop layers to leave out")
     ap.add_argument("--left-tag", default="west", help="tag whose frames FACE LEFT; check by eye, a file can mislabel them")
     ap.add_argument("--right-tag", default="east", help="tag whose frames FACE RIGHT")
+    ap.add_argument("--mirror-right-from-left", action="store_true",
+                    help="the file's right-facing tag is a copy of the left one: write the right row as the left row "
+                         "mirrored, pixel for pixel (struktured 2026-10-14, Kid Acrees)")
     ap.add_argument("--dry-run", action="store_true")
     args = ap.parse_args()
 
@@ -69,7 +72,12 @@ def main() -> int:
             print(f"ERROR: tag {direction} has {b - a + 1} frames, the walk grid takes 4", file=sys.stderr)
             return 2
         for col in range(4):
-            out.paste(frames[a + col].crop((left, top, left + cell, top + cell)), (col * cell, row * cell))
+            if args.mirror_right_from_left and direction == args.right_tag.lower():
+                la, _ = tags[args.left_tag.lower()]
+                piece = frames[la + col].crop((left, top, left + cell, top + cell)).transpose(Image.FLIP_LEFT_RIGHT)
+            else:
+                piece = frames[a + col].crop((left, top, left + cell, top + cell))
+            out.paste(piece, (col * cell, row * cell))
     dest = PROJECT / "assets" / "sprites" / "npcs" / args.npc_id / "overworld.png"
     print(f"{args.npc_id}: figure {x1 - x0}x{y1 - y0} in a {fw}x{fh} canvas -> {cell}px cells, sheet {out.size}, "
           f"{len(set(out.getdata()))} colours -> {dest.relative_to(PROJECT)}")

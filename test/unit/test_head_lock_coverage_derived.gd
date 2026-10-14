@@ -40,6 +40,7 @@ const HEAD_LOCK_TEST := "res://test/unit/test_overworld_head_lock_regression.gd"
 const EXEMPT := {
 	"rotha": "ARTIST-drawn (T2, 2026-10-08): 48px cells and a walk whose head bobs by his hand. The head-lock gate repairs GENERATED 32px grids; it must never be run over his frames.",
 	"roy": "ARTIST-drawn (T2, 2026-10-11): 64px cells and a walk whose head bobs by his hand, as Rotha's does. Never run the head-lock repair over his frames.",
+	"kid_acrees": "ARTIST-drawn (T2, 2026-10-13): 48px cells and a walk whose head bobs by his hand, as Rotha's does. Never run the head-lock repair over his frames.",
 }
 
 
