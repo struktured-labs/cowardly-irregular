@@ -21,13 +21,15 @@ func _statuses_in_source() -> Array:
 	var i: int = src.find("func request_llm_proposal(")
 	assert_gt(i, 0, "CONTROL: request_llm_proposal not found, so this file derives nothing")
 	var body: String = src.substr(i, src.find("\nfunc ", i + 10) - i)
+	# WHITESPACE-TOLERANT. The first version split on a one-space literal and missed
+	# `proposal["status"]     = "proposed"` (aligned with padding at :264) -- the control caught it.
 	var out: Array = []
-	for part in body.split('proposal["status"] = "'):
-		var q: int = part.find('"')
-		if q > 0 and not part.begins_with("func"):
-			var st: String = part.substr(0, q)
-			if st != "" and not out.has(st):
-				out.append(st)
+	var re := RegEx.new()
+	re.compile('proposal\\["status"\\]\\s*=\\s*"([a-z_]+)"')
+	for m in re.search_all(body):
+		var st: String = m.get_string(1)
+		if st != "" and not out.has(st):
+			out.append(st)
 	return out
 
 
