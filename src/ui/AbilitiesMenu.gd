@@ -201,6 +201,8 @@ func _build_ui() -> void:
 	if current_tab == Tab.PASSIVES:
 		footer_text = "←→/Click: Tab  ↑↓: Select  %s/Click: Equip/Unequip  %s/RClick: Back" % [accept_hint, cancel_hint]
 	var footer = Label.new()
+	## The house chrome name; the footer text differs per tab, so the guard selects by name.
+	footer.name = "ScreenFooter"
 	footer.text = footer_text
 	footer.position = Vector2(16, viewport_size.y - 32)
 	footer.add_theme_font_size_override("font_size", 12)
@@ -293,6 +295,7 @@ func _create_abilities_panel(panel_size: Vector2) -> Control:
 
 	# Title
 	var title = Label.new()
+	title.name = "ScreenTitle"
 	title.text = "LEARNED ABILITIES"
 	title.position = Vector2(8, 4)
 	title.add_theme_font_size_override("font_size", 12)
@@ -488,6 +491,7 @@ func _create_passives_panel(panel_size: Vector2) -> Control:
 
 	# Title
 	var title = Label.new()
+	title.name = "ScreenTitle"
 	title.text = "PASSIVES"
 	title.position = Vector2(8, 4)
 	title.add_theme_font_size_override("font_size", 12)

@@ -83,6 +83,7 @@ func _build_ui() -> void:
 	RetroPanel.add_border(_panel, _panel.size, RetroPanel.BORDER_LIGHT, RetroPanel.BORDER_SHADOW)
 
 	var title := Label.new()
+	title.name = "ScreenTitle"
 	title.text = "LENSES"
 	title.position = Vector2(16, 10)
 	title.add_theme_font_size_override("font_size", TextScale.scaled(TITLE_FONT))
@@ -116,6 +117,9 @@ func _build_ui() -> void:
 	_panel.add_child(_status)
 
 	var hint := Label.new()
+	## The house chrome name: the hint text is device-dependent (InputProfileManager), so the
+	## chrome guard cannot select it by text.
+	hint.name = "ScreenFooter"
 	hint.text = "[Up/Down] Select   %s Craft   [Left/Right] Assign   %s Back" % [InputProfileManager.hint_for_action("ui_accept"), InputProfileManager.hint_for_action("ui_cancel")]
 	hint.position = Vector2(16, _panel.size.y - _line_h(HINT_FONT) - 10.0)
 	hint.add_theme_font_size_override("font_size", TextScale.scaled(HINT_FONT))

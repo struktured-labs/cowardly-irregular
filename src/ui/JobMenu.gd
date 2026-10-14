@@ -130,6 +130,9 @@ func _build_ui() -> void:
 	var _no: String = InputProfileManager.hint_for_action("ui_cancel")
 	var footer_text = ("↑↓/D-pad: Select Slot  %s/Click: Change  %s/RClick: Back" % [_ok, _no]) if mode == Mode.SLOT_SELECT else ("↑↓/D-pad: Select  %s/Click: Assign  %s/RClick: Cancel" % [_ok, _no])
 	var footer = Label.new()
+	## The house chrome name, so `test_menu_chrome_visible_at_every_text_size_regression` can
+	## select this label by node name instead of by text — the text is mode-dependent.
+	footer.name = "ScreenFooter"
 	footer.text = footer_text
 	## A literal 32 off the bottom drew 722 in a 720px viewport at 200%. Floored at 32 so a 100%
 	## render does not move it.
@@ -313,6 +316,7 @@ func _create_jobs_panel(panel_size: Vector2) -> Control:
 
 	# Title
 	var title = Label.new()
+	title.name = "ScreenTitle"
 	title.text = "JOBS"
 	title.position = Vector2(8, 4)
 	title.add_theme_font_size_override("font_size", TextScale.scaled(14))
