@@ -189,6 +189,19 @@ func test_the_settled_rect_is_the_one_the_toast_asked_for() -> void:
 	var text: String = str(longest["text"])
 
 	var point := QuestExaminePoint.new()
+	## ⛔ PLACE IT WHERE THE GAME PLACES PROPS. A bare `add_child_autofree` leaves the node at (0,0),
+	## i.e. SCREEN y=0, and `WorldToast.show` now clamps a toast whose risen top would leave the
+	## viewport (cowir-overworld, `573119452`: these are world-space labels under a camera at zoom
+	## 2.0-2.5 with `limit_top = 0`, so a prop near a map's top edge draws high on screen and a long
+	## examine ran off the top — at 100% text size for Frosthold). This string needs 122 px above its
+	## prop (58 baseline + 44 growth + 20 rise), so at y=0 the clamp correctly fires and lowers the
+	## label 126 px, and the baseline assert below would then be measuring the clamp.
+	##
+	## 🔑 The FIXTURE was the unrealistic half, not the clamp: the game cannot put a prop at screen
+	## y=0 — row 0 is wall and the camera clamps at the map edge — so the nearest real geometry is a
+	## prop with headroom beneath the top of the view.
+	point.position = Vector2(0.0,
+		float(ProjectSettings.get_setting("display/window/size/viewport_height", 720)) * 0.75)
 	add_child_autofree(point)
 	## ⚠️ `_ready` already builds an INDICATOR Label (`:76`), so "the Label child" is ambiguous and
 	## picking the last one found would silently measure the wrong node. Snapshot first, then take
@@ -211,6 +224,12 @@ func test_the_settled_rect_is_the_one_the_toast_asked_for() -> void:
 		"the settled WIDTH is not the one assigned — autowrap was not live when size landed, so the minimum became the content width (ItemsMenu's 1068 shape)")
 	assert_almost_eq(lbl.size.y, want_h, 0.5,
 		"the settled HEIGHT is not what the font query predicted, so the position that holds the bottom edge is wrong by the difference")
+	## CONTROL, and it names a cause the assert below would otherwise misattribute: a toast sitting
+	## BELOW its prop means the on-screen clamp fired, which is a fixture-headroom problem rather
+	## than the growth rule failing. Without this line a clamped toast reds the next assert with the
+	## message "draws over the prop", which is true of the pixels and wrong about the reason.
+	assert_lt(lbl.position.y + lbl.size.y, 0.0,
+		"CONTROL: the toast sits BELOW its prop (bottom %.0f), so WorldToast's on-screen clamp fired — give the fixture more headroom; the baseline assert below is about the growth rule, not the clamp" % (lbl.position.y + lbl.size.y))
 	assert_almost_eq(lbl.position.y + lbl.size.y,
 		QuestExaminePoint.TOAST_BASELINE_Y + QuestExaminePoint.TOAST_MIN_HEIGHT, 0.5,
 		"the settled bottom edge left the authored baseline, so a long examine draws over the prop and the player")
