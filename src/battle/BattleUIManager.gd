@@ -898,6 +898,36 @@ func update_action_buttons() -> void:
 		_scene.btn_bide.disabled = true
 
 
+## Scale to the player's setting, then shrink only if THIS line still does not fit — the same
+## shrink-to-fit shape _place_victory_banner uses, so a short line ("Round 1") keeps the chosen size
+## and only a long one gives any back.
+##
+## Reads the CAPTURED base from meta, never the current override: get_theme_font_size() returns the
+## override once set, so starting from it would shrink cumulatively and never recover when the line
+## gets shorter again. Measured on the shared helper: re-reading takes 16px to 512 in five calls.
+##
+## A font query is correct here rather than a node read: the Label is single-line, so the default
+## break flags are the ones it draws with, and its rect is the thing being fitted TO.
+func _fit_turn_info() -> void:
+	if _scene == null or not is_instance_valid(_scene):
+		return
+	var label: Label = _scene.turn_info
+	if label == null or not is_instance_valid(label):
+		return
+	var font := label.get_theme_font(&"font")
+	if font == null:
+		return
+	var avail: float = label.size.x
+	if avail <= 0.0:
+		return  ## pre-layout; the next turn update fits it, and turn info updates every turn
+	var base: int = int(label.get_meta(&"text_scale_base_font_size",
+		label.get_theme_font_size(&"font_size")))
+	var px: int = TextScale.scaled(base)
+	while px > 8 and font.get_string_size(label.text, HORIZONTAL_ALIGNMENT_CENTER, -1, px).x > avail:
+		px -= 1
+	label.add_theme_font_size_override(&"font_size", px)
+
+
 func update_turn_info() -> void:
 	"""Update turn information display for CTB system"""
 	var state = BattleManager.current_state
@@ -922,6 +952,11 @@ func update_turn_info() -> void:
 			_scene.turn_info.text = "Round %d - Execution Phase" % BattleManager.current_round
 	else:
 		_scene.turn_info.text = "Round %d" % BattleManager.current_round
+
+	## The strip is a single-line Label with no autowrap in a 400px panel, so a long line overflows
+	## SIDEWAYS rather than wrapping. "Round 99 - SELECT: Glacius, the Frozen Sovereign (AP: +4)" is
+	## 57 chars and does not fit at the larger presets.
+	_fit_turn_info()
 
 	# Update turn order strip
 	_update_turn_order_strip()
