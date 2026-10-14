@@ -543,6 +543,18 @@ func format_for_review(proposal: Dictionary) -> String:
 ## `applied_changes` already carried `before`, `after` and a `clamped` flag; the
 ## flag was written at both apply sites and read NOWHERE in src/. The data to
 ## tell the truth was there, and only the formatter ignored it.
+## ONE derivation of "did anything actually move" — the panel's colour and cue read this, so they cannot contradict the text summarize_applied words from the same rows.
+func applied_moved_count(proposal: Dictionary) -> int:
+	var moved: int = 0
+	for c in proposal.get("applied_changes", []):
+		var before: float = float(c.get("before", 0.0))
+		var after: float = float(c.get("after", 0.0))
+		if is_equal_approx(before, after) or is_zero_approx(before):
+			continue
+		moved += 1
+	return moved
+
+
 func summarize_applied(proposal: Dictionary) -> String:
 	var verdict: String = str(proposal.get("verdict", ""))
 	var status: String = str(proposal.get("status", ""))
@@ -564,7 +576,6 @@ func summarize_applied(proposal: Dictionary) -> String:
 	# REPORT WHAT LANDED, not what was asked for. `multiplier` is the LLM's
 	# request; the cumulative band can shrink or erase it at write time.
 	var parts: Array[String] = []
-	var moved: int = 0
 	for c in changes:
 		var name: String = str(c.get("constant", "?"))
 		var before: float = float(c.get("before", 0.0))
@@ -572,14 +583,13 @@ func summarize_applied(proposal: Dictionary) -> String:
 		if is_equal_approx(before, after) or is_zero_approx(before):
 			parts.append("%s already at its safe limit" % name)
 			continue
-		moved += 1
 		var actual_pct: int = int(round((after / before - 1.0) * 100.0))
 		var asked_pct: int = int(round((float(c.get("multiplier", 1.0)) - 1.0) * 100.0))
 		var text: String = "%s %s%d%%" % [name, _sign(actual_pct), actual_pct]
 		if actual_pct != asked_pct:
 			text += " (limited from %s%d%%)" % [_sign(asked_pct), asked_pct]
 		parts.append(text)
-	if moved == 0:
+	if applied_moved_count(proposal) == 0:
 		return "Auto-rebalance: no change — " + ", ".join(parts) + "."
 	return "Auto-rebalance: " + ", ".join(parts)
 
