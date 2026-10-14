@@ -1675,7 +1675,8 @@ func _save_text_speed() -> void:
 func _save_text_size_scale() -> void:
 	"""Save text size scale setting"""
 	if GameState:
-		GameState.text_size_scale = text_size_scale
+		## Through the setter so a kept HUD is told. A bare assignment is silent and was the defect.
+		GameState.set_text_size_scale(text_size_scale)
 	settings_changed.emit("text_size_scale", text_size_scale)
 	print("[SETTINGS] Text size scale set to %s%%" % int(text_size_scale * 100))
 	_persist_settings()

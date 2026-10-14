@@ -1355,7 +1355,9 @@ func load_settings() -> void:
 			GameState.text_speed = ts if ts in VALID_TEXT_SPEEDS else "normal"
 		if settings.has("text_size_scale"):
 			# Tick 222: clamp to the valid preset range [0.8, 2.0] — defends against legacy/corrupt saves.
-			GameState.text_size_scale = clampf(float(settings["text_size_scale"]), 0.8, 2.0)
+			## Also through the setter: loading a save changes the scale as surely as Settings does, and the
+			## setter clamps to the same [0.8, 2.0] range this line did.
+			GameState.set_text_size_scale(float(settings["text_size_scale"]))
 		if settings.has("color_blind_mode"):
 			# Tick 226: bool flag, no clamping needed but coerce to bool defensively.
 			GameState.color_blind_mode = bool(settings["color_blind_mode"])

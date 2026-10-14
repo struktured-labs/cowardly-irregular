@@ -898,6 +898,52 @@ func update_action_buttons() -> void:
 		_scene.btn_bide.disabled = true
 
 
+## Scale to the player's setting, then shrink only if THIS line still does not fit — the same
+## shrink-to-fit shape _place_victory_banner uses, so a short line ("Round 1") keeps the chosen size
+## and only a long one gives any back.
+##
+## Reads the CAPTURED base from meta, never the current override: get_theme_font_size() returns the
+## override once set, so starting from it would shrink cumulatively and never recover when the line
+## gets shorter again. Measured on the shared helper: re-reading takes 16px to 512 in five calls.
+##
+## A font query is correct here rather than a node read: the Label is single-line, so the default
+## break flags are the ones it draws with, and its rect is the thing being fitted TO.
+func _fit_turn_info() -> void:
+	if _scene == null or not is_instance_valid(_scene):
+		return
+	var label: Label = _scene.turn_info
+	if label == null or not is_instance_valid(label):
+		return
+	var font := label.get_theme_font(&"font")
+	if font == null:
+		return
+	## ⛔ A PRE-LAYOUT RECT IS NOT A MEASUREMENT. TurnInfoPanel is a PanelContainer that sizes its
+	## child during its own sort step, so on the FIRST call — at scene build, before any layout pass
+	## — label.size.x is the Label's own TEXT minimum (~85px for "Round 1"), not the strip's 400. The
+	## fit shrank against that and hit the `px > 8` floor, and nothing re-fits until the next turn, so
+	## every battle opened with an 8px strip at EVERY Text Size. The panel's width comes from its
+	## anchors at _ready, so it is credible immediately; the inset is derived from its own stylebox
+	## rather than assumed to be zero.
+	var avail: float = label.size.x
+	var strip := label.get_parent() as Control
+	if strip != null:
+		var sb := strip.get_theme_stylebox(&"panel")
+		var inset: float = (sb.get_margin(SIDE_LEFT) + sb.get_margin(SIDE_RIGHT)) if sb != null else 0.0
+		avail = maxf(avail, strip.size.x - inset)
+	if avail <= 0.0:
+		return  ## genuinely sizeless; the next turn update fits it, and turn info updates every turn
+	## ⛔ THE KEY MUST BE THE ONE THE CAPTURE WRITES. This read `text_scale_base_font_size`, which
+	## nothing writes — _scale_themed_font captures `base_font_px` — so the default fired and the
+	## "base" WAS the shrunken override: one long name shrank the strip and no later turn recovered it.
+	## Exactly what the note above forbids, in the line below it.
+	var base: int = int(label.get_meta(&"base_font_px",
+		label.get_theme_font_size(&"font_size")))
+	var px: int = TextScale.scaled(base)
+	while px > 8 and font.get_string_size(label.text, HORIZONTAL_ALIGNMENT_CENTER, -1, px).x > avail:
+		px -= 1
+	label.add_theme_font_size_override(&"font_size", px)
+
+
 func update_turn_info() -> void:
 	"""Update turn information display for CTB system"""
 	var state = BattleManager.current_state
@@ -922,6 +968,11 @@ func update_turn_info() -> void:
 			_scene.turn_info.text = "Round %d - Execution Phase" % BattleManager.current_round
 	else:
 		_scene.turn_info.text = "Round %d" % BattleManager.current_round
+
+	## The strip is a single-line Label with no autowrap in a 400px panel, so a long line overflows
+	## SIDEWAYS rather than wrapping. "Round 99 - SELECT: Glacius, the Frozen Sovereign (AP: +4)" is
+	## 57 chars and does not fit at the larger presets.
+	_fit_turn_info()
 
 	# Update turn order strip
 	_update_turn_order_strip()

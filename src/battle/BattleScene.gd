@@ -388,6 +388,14 @@ func _ready() -> void:
 	var log_expand_btn: Button = get_node_or_null("UI/BattleLogPanel/MarginContainer/VBoxContainer/LogHeader/LogExpandButton")
 	if log_expand_btn:
 		log_expand_btn.pressed.connect(_toggle_log_overlay)
+	## The log header is the panel CHROME, so these two only became safe to scale once the reserve was
+	## derived rather than the 64 literal — scaling them against the literal hides the whole panel.
+	_scale_themed_font(get_node_or_null("UI/BattleLogPanel/MarginContainer/VBoxContainer/LogHeader/LogTitle"), &"font_size")
+	_scale_themed_font(log_expand_btn, &"font_size")
+	## TurnInfo is its own panel and feeds no other surface's budget — probed: scaling it leaves
+	## enemy_bottom and the log panel untouched, unlike EnemyStatusPanel's title, which moves the
+	## log's 68px budget by 7px and is held with the enemy-panel trade.
+	_scale_themed_font(turn_info, &"font_size")
 	# EnemyStatusPanel's height varies with the roster (more enemies = taller box) — the
 	# log panel's fixed .tscn offsets are only a FALLBACK until the real enemy panel settles.
 	var enemy_panel_for_log := get_node_or_null("UI/EnemyStatusPanel")
@@ -2001,8 +2009,35 @@ const LOG_PANEL_MIN_TEXT_HEIGHT := 16.0
 ## before the SAME frame's box-content changes finished propagating up through the Container
 ## chain) — reading enemy_panel.size synchronously here could measure a STALE, smaller height
 ## and under-clear the gap. Deferring one tick lets that settle first.
+## Scale a THEMED node's font from its OWN current size, captured once in meta. Self-calibrating,
+## so 100% is identical to before the change and no base has to be guessed from the engine default.
+## Idempotent: re-reading get_theme_font_size() after an override would compound, so the base is
+## read once and every later call scales that, which lets a settings change re-apply safely.
+func _scale_themed_font(c: Control, key: StringName) -> void:
+	if c == null or not is_instance_valid(c):
+		return
+	if not c.has_meta(&"base_font_px"):
+		c.set_meta(&"base_font_px", c.get_theme_font_size(key))
+	var base: int = int(c.get_meta(&"base_font_px"))
+	if base > 0:
+		c.add_theme_font_size_override(key, TextScale.scaled(base))
+
+
 func _reposition_battle_log_panel() -> void:
 	call_deferred("_reposition_battle_log_panel_now")
+
+
+## The chrome is DERIVED, never the 64 literal: LogTitle and LogExpandButton live in LogHeader and
+## are themed nodes, so their own Text Size fix would silently make any hand-measured constant wrong
+## and push the panel into the hide branch below. Zero the text min, pull the panel minimum, restore.
+func _log_panel_chrome(log_panel: Control) -> float:
+	if not battle_log or not is_instance_valid(battle_log):
+		return LOG_PANEL_NON_TEXT_OVERHEAD
+	var saved: float = battle_log.custom_minimum_size.y
+	battle_log.custom_minimum_size.y = 0.0
+	var chrome: float = log_panel.get_combined_minimum_size().y
+	battle_log.custom_minimum_size.y = saved
+	return maxf(0.0, chrome)
 
 
 func _reposition_battle_log_panel_now() -> void:
@@ -2021,14 +2056,19 @@ func _reposition_battle_log_panel_now() -> void:
 	var ctb_top_at_current_height: float = get_viewport_rect().size.y - 230.0
 	var hard_bottom_cap: float = ctb_top_at_current_height - LOG_PANEL_GAP
 	var available: float = hard_bottom_cap - top
-	if available < LOG_PANEL_NON_TEXT_OVERHEAD + LOG_PANEL_MIN_TEXT_HEIGHT:
+	var chrome: float = _log_panel_chrome(log_panel)
+	## DELIBERATELY the literal, not a scaled line: see the regression guard. Raising this floor to a
+	## whole scaled line makes the panel HIDE in a squeeze where it could still show a clipped row, and
+	## a clipped newest line beats no log at all.
+	var min_text: float = LOG_PANEL_MIN_TEXT_HEIGHT
+	if available < chrome + min_text:
 		# An extreme roster left no safe room at all — hide the condensed strip rather than
 		# overlap the CTB panel. Full history is still one L / expand-button press away.
 		log_panel.visible = false
 		return
 	var desired: float = minf(LOG_PANEL_HEIGHT, available)
 	if battle_log and is_instance_valid(battle_log):
-		battle_log.custom_minimum_size.y = maxf(LOG_PANEL_MIN_TEXT_HEIGHT, desired - LOG_PANEL_NON_TEXT_OVERHEAD)
+		battle_log.custom_minimum_size.y = maxf(min_text, desired - chrome)
 	# get_combined_minimum_size() is a PULL computation — it reflects the shrink above
 	# immediately, unlike .size, which only updates on the next SORT_CHILDREN layout pass (that
 	# lag, read through .size instead of this, is what let a taller-than-requested panel slip
