@@ -865,10 +865,16 @@ func _repeat_previous_actions() -> void:
 	"""Repeat all players' previous turn actions (Y button)"""
 	var is_in_selection = BattleManager.current_state == BattleManager.BattleState.SELECTION_PHASE or \
 						  BattleManager.current_state == BattleManager.BattleState.PLAYER_SELECTING
-	if is_in_selection:
-		if BattleManager.repeat_previous_actions():
-			_close_win98_menu()
-			log_message("[color=yellow]>>> Repeating previous actions![/color]")
+	## The bar advertises Repeat at all times, so every refusal must reach the LOG, not just stdout.
+	if not is_in_selection:
+		log_message("[color=gray]Repeat only works while you are choosing actions.[/color]")
+		return
+	if BattleManager.repeat_previous_actions():
+		_close_win98_menu()
+		log_message("[color=yellow]>>> Repeating previous actions![/color]")
+	else:
+		var why: String = str(BattleManager.last_repeat_refusal)
+		log_message("[color=gray]%s[/color]" % (why if why != "" else "Repeat is not available right now."))
 
 
 func _start_test_battle() -> void:
