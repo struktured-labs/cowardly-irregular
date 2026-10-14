@@ -40,6 +40,7 @@ const NOT_A_REWRITER := {
 	"audit_loop_seams.py": "reads and reports; its encode is a temp decode for analysis",
 	"elevenlabs_sfx.py": "GENERATES from the API — no master is its input",
 	"gen_chiptune_sfx.py": "GENERATES; a fixed synthesis rate is the source of truth, not an assumption",
+	"gen_freight_lift.sh": "GENERATES freight_lift.ogg from sox synthesis; 44.1 kHz is the rate the samples are MADE at, so no master's rate can disagree with it. Its `sox -R` seed is load-bearing for provenance, not its rate",
 	"gen_steam_bed.py": "GENERATES; same",
 	"seam_loop_beds.py": "reads and reports seam figures",
 	"suno_api.py": "DOWNLOADS a new track",

@@ -199,8 +199,9 @@ func _setup_buildings() -> void:
 	_add_interior_door("IncidentBoardDoor", "rivet_row_incident_board", "Enter Incident Board", Vector2(15 * TILE_SIZE,6.5 * TILE_SIZE))
 
 	# === FREIGHT ELEVATOR === hauls pallets (and the player) up to the dock tier, alongside the ramp at row2.
+	# armor_clank was a medieval plate-armour SALUTE (its W1 warden cue); this is a W4 pallet lift.
 	var freight_lift = VillageElevatorScript.create(VillageElevatorScript.Style.HAZARD,
-		Vector2(18 * TILE_SIZE,3 * TILE_SIZE), Vector2(18 * TILE_SIZE,1 * TILE_SIZE), "armor_clank")
+		Vector2(18 * TILE_SIZE,3 * TILE_SIZE), Vector2(18 * TILE_SIZE,1 * TILE_SIZE), "freight_lift")
 	freight_lift.name = "FreightElevator"
 	buildings.add_child(freight_lift)
 
