@@ -136,6 +136,13 @@ func _unhandled_input(event: InputEvent) -> void:
 		_busy = false
 
 
+## ⛔ ONE PLACE THE CUE IS CHOSEN, and it is a STATIC SEAM so a guard can drive the decision without
+## standing up a QuestSystem with an active quest. A discovery cue for a press that advanced
+## nothing is the defect; `soft_chime` is the "registered, nothing new" voice (@cowir-sfx).
+static func cue_for(advanced: bool) -> String:
+	return "secret_found" if advanced else "soft_chime"
+
+
 func _examine() -> void:
 	if not _is_live():
 		if SoundManager:
@@ -143,11 +150,34 @@ func _examine() -> void:
 		_toast(idle_text)
 		return
 	var qs = get_node_or_null("/root/QuestSystem")
-	if SoundManager:
-		SoundManager.play_ui("secret_found")
 	var job_line := _job_variant_text(qs)
-	if group_size > 0 and member_index > 0 and not _group_complete_after_marking():
-		_toast("%s\n\n(%d of %d documented)" % [examine_text, _group_done(), group_size])
+	## ⛔ THE CUE ANSWERS TO THE EFFECT, NOT TO THE PRESS. `secret_found` used to fire HERE, before
+	## any work — the same cue AnnexLiberation, CivicBackDoor and CivicFrontDesk use for a genuine
+	## discovery. But `_is_live()` keys on the QUEST OBJECTIVE's `required_flag`, not on this
+	## member's own flag, so every member of a group stays pressable until the whole set is done;
+	## and `_group_complete_after_marking` sets `<flag>_<n>`, which is IDEMPOTENT. So re-pressing a
+	## lamp you had already read played a discovery chime and reprinted the same count — the status
+	## said "found something" and the effect was nothing. Reachable at the shipped defaults on
+	## Brasston's five-lamp route (`group_size = 5`, five `_add_quest_route_point` calls).
+	##
+	## Found by @cowir-story, who declined it; verified here independently before taking it.
+	## Shape and remedy follow @cowir-ai's `applied_moved_count` precedent — paint the success from
+	## the EFFECT — and @cowir-sfx's ruling that the audio answer is a softer cue, not silence,
+	## because the press DID register and silence cannot say so.
+	var is_group: bool = group_size > 0 and member_index > 0
+	var advanced := true
+	var complete := true
+	if is_group:
+		var before: int = _group_done()
+		complete = _group_complete_after_marking()
+		advanced = _group_done() > before
+	if SoundManager:
+		SoundManager.play_ui(cue_for(advanced))
+	if is_group and not complete:
+		## A re-read says so rather than reprinting a number that did not move: the count alone is
+		## accurate and still cannot tell the player whether their press registered.
+		var head: String = examine_text if advanced else "%s\n\n(already documented)" % examine_text
+		_toast("%s\n\n(%d of %d documented)" % [head, _group_done(), group_size])
 		return
 	GameState.set_story_flag(flag)
 	qs.notify_flag(flag)
