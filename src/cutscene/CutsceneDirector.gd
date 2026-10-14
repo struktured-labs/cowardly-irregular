@@ -1672,6 +1672,53 @@ func _apply_skipped_choice(step: Dictionary) -> void:
 		return
 
 
+## ⛔ THE LARGEST TEXT IN THE GAME DID NOT SCALE, AND ITS SUBTITLE OFFSET WAS A HARDCODED GUESS AT
+## THE TITLE'S HEIGHT. Both cards set their fonts raw — boss name 36 / subtitle 16, chapter title
+## 28 / subtitle 18 — and then placed the subtitle at a fixed `+48` / `+44`, a number that is only
+## right at the base size. `clip_text` is false on all four, so at 200% the title's glyphs overrun
+## their 50px/40px boxes and print through the subtitle beneath them.
+##
+## 🔑 A player on 200% was reading SCALED dialogue under an UNSCALED boss name on the same screen —
+## CutsceneDialogue has scaled since tick 222 and these cards never did.
+##
+## ⚠️ AND SCALING THE FONTS ALONE IS THE DEFECT, NOT THE FIX: that is what `_box_metrics` and the
+## backlog header were both about earlier today. The gap below is derived from the title's MEASURED
+## glyph height, so the subtitle sits under the title at every size instead of under an assumption.
+##
+## At 100% and 80% every number is the authored one, so the default cards do not move.
+## STATIC so a guard can ask for the metrics at each Text Size without building a cutscene.
+static func card_metrics(title_px: int, sub_px: int, base_title_px: int, base_sub_px: int,
+		base_title_h: float, base_gap: float, base_sub_h: float) -> Dictionary:
+	var title_h: float = base_title_h
+	var gap: float = base_gap
+	var sub_h: float = base_sub_h
+	## ⛔ ONLY DERIVE ABOVE THE BASE SIZE. The authored 48px gap is SMALLER than the 36pt glyph box
+	## it sits under, so deriving unconditionally returned 50 at 100% and moved the default card by
+	## 2px. My own "the default must not move" arm caught that on the first run — the same
+	## above-base guard `_box_metrics` carries, which I left out here.
+	if title_px <= base_title_px and sub_px <= base_sub_px:
+		return {"title_h": title_h, "gap": gap, "sub_h": sub_h}
+	var font: Font = ThemeDB.fallback_font
+	if font != null:
+		var th: float = float(font.get_height(title_px))
+		var sh: float = float(font.get_height(sub_px))
+		var base_th: float = maxf(float(font.get_height(base_title_px)), 1.0)
+		## ⛔ PROPORTIONAL, NOT `th + 2`. An additive gap clears the glyphs but SHRINKS the authored
+		## breathing room as the font grows: the chapter card ships 44px under a 39px glyph box — five
+		## px of air — and `th + 2` turned that into two px at 125% and stayed at two for every size
+		## above it. The card stopped looking like itself well before it collided.
+		##
+		## 🔑 A 200% card should read as the 100% card SCALED, so each number carries its authored
+		## ratio to the measured glyph height, floored at the authored value (the default never
+		## shrinks) and at `th + 2` (a card whose authored gap is TIGHTER than its glyphs, like the
+		## boss name's 48-under-50, still clears them once it starts growing).
+		var ratio: float = th / base_th
+		title_h = maxf(base_title_h, maxf(th, base_title_h * ratio))
+		gap = maxf(base_gap, maxf(th + 2.0, base_gap * ratio))
+		sub_h = maxf(base_sub_h, maxf(sh, base_sub_h * ratio))
+	return {"title_h": title_h, "gap": gap, "sub_h": sub_h}
+
+
 func _step_chapter_title(step: Dictionary) -> void:
 	"""Show a cinematic chapter title card that fades in, holds, then fades out.
 	Usage: {"type": "chapter_title", "title": "Chapter 3", "subtitle": "The Whispering Cave"}"""
@@ -1704,11 +1751,14 @@ func _step_chapter_title(step: Dictionary) -> void:
 	title_label.text = title_text
 	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	var ch_title_px: int = TextScale.scaled(28)
+	var ch_sub_px: int = TextScale.scaled(18)
+	var chm: Dictionary = card_metrics(ch_title_px, ch_sub_px, 28, 18, 40.0, 44.0, 30.0)
 	title_label.position = Vector2(0, screen_size.y * 0.36)
-	title_label.size = Vector2(screen_size.x, 40)
+	title_label.size = Vector2(screen_size.x, float(chm["title_h"]))
 	title_label.clip_text = false
 	title_label.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
-	title_label.add_theme_font_size_override("font_size", 28)
+	title_label.add_theme_font_size_override("font_size", ch_title_px)
 	title_label.add_theme_color_override("font_color", Color(0.95, 0.90, 0.70))
 	title_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	container.add_child(title_label)
@@ -1719,11 +1769,11 @@ func _step_chapter_title(step: Dictionary) -> void:
 		sub_label.text = subtitle_text
 		sub_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		sub_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		sub_label.position = Vector2(0, screen_size.y * 0.36 + 44)
-		sub_label.size = Vector2(screen_size.x, 30)
+		sub_label.position = Vector2(0, screen_size.y * 0.36 + float(chm["gap"]))
+		sub_label.size = Vector2(screen_size.x, float(chm["sub_h"]))
 		sub_label.clip_text = false
 		sub_label.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
-		sub_label.add_theme_font_size_override("font_size", 18)
+		sub_label.add_theme_font_size_override("font_size", ch_sub_px)
 		sub_label.add_theme_color_override("font_color", Color(0.75, 0.72, 0.60))
 		sub_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		container.add_child(sub_label)
@@ -1773,11 +1823,14 @@ func _step_boss_intro(step: Dictionary) -> void:
 	var name_label = Label.new()
 	name_label.text = boss_name
 	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	var bi_name_px: int = TextScale.scaled(36)
+	var bi_title_px: int = TextScale.scaled(16)
+	var bim: Dictionary = card_metrics(bi_name_px, bi_title_px, 36, 16, 50.0, 48.0, 30.0)
 	name_label.position = Vector2(0, screen_size.y * 0.4)
-	name_label.size = Vector2(screen_size.x, 50)
+	name_label.size = Vector2(screen_size.x, float(bim["title_h"]))
 	name_label.clip_text = false
 	name_label.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
-	name_label.add_theme_font_size_override("font_size", 36)
+	name_label.add_theme_font_size_override("font_size", bi_name_px)
 	name_label.add_theme_color_override("font_color", Color(0.95, 0.3, 0.2))
 	name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	name_label.modulate.a = 0.0
@@ -1789,11 +1842,11 @@ func _step_boss_intro(step: Dictionary) -> void:
 		title_label = Label.new()
 		title_label.text = boss_title
 		title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		title_label.position = Vector2(0, screen_size.y * 0.4 + 48)
-		title_label.size = Vector2(screen_size.x, 30)
+		title_label.position = Vector2(0, screen_size.y * 0.4 + float(bim["gap"]))
+		title_label.size = Vector2(screen_size.x, float(bim["sub_h"]))
 		title_label.clip_text = false
 		title_label.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
-		title_label.add_theme_font_size_override("font_size", 16)
+		title_label.add_theme_font_size_override("font_size", bi_title_px)
 		title_label.add_theme_color_override("font_color", Color(0.7, 0.6, 0.5))
 		title_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		title_label.modulate.a = 0.0
