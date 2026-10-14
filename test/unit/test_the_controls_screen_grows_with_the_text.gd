@@ -22,7 +22,13 @@ extends GutTest
 ## it fits and stops. True 2.0x here needs scrolling, which is a separate item.
 
 const CM := "res://src/ui/ControlsMenu.gd"
-const PRESETS: Array = [0.8, 1.0, 1.25, 1.5, 2.0]
+## ⛔ DERIVED FROM THE CONSUMER'S OWN LIST, NOT A COPY. A hardcoded [0.8, 1.0, 1.25, 1.5, 2.0] goes
+## quietly stale the day a preset is added, and the arms below then never visit the new step. NO
+## FALLBACK DEFAULT: a rename must red, and a fallback would make these pass against a ladder the
+## player cannot select.
+static func _presets() -> Array:
+	var consts: Dictionary = (load("res://src/ui/SettingsMenu.gd") as GDScript).get_script_constant_map()
+	return consts.get("TEXT_SIZE_PRESETS", [])
 
 var _saved = null
 
@@ -105,7 +111,7 @@ func test_the_row_font_follows_the_setting() -> void:
 ## `_fit_column_label` sets `clip_text`, so an overflow here is text the player loses to an ellipsis.
 func test_no_binding_label_spills_its_column_at_any_preset() -> void:
 	var bad: Array = []
-	for scale in PRESETS:
+	for scale in _presets():
 		var m: Control = await _menu_at(float(scale))
 		var w: Array = m._col_w()
 		for pair in _binding_labels(m):
@@ -125,7 +131,7 @@ func test_no_binding_label_spills_its_column_at_any_preset() -> void:
 ## four versions of the fix failed, each for a different missing term.
 func test_the_rows_never_reach_the_bottom_labels() -> void:
 	var bad: Array = []
-	for scale in PRESETS:
+	for scale in _presets():
 		var m: Control = await _menu_at(float(scale))
 		var lowest: float = 0.0
 		for h in m._highlight_refs:
@@ -166,7 +172,7 @@ func test_the_small_and_default_sizes_render_the_shipped_layout() -> void:
 ## Button's own minimum is 8px, so nothing clamps and the comparison is exact.
 func test_the_click_target_matches_the_drawn_row() -> void:
 	var bad: Array = []
-	for scale in PRESETS:
+	for scale in _presets():
 		var m: Control = await _menu_at(float(scale))
 		for h in m._highlight_refs:
 			if not (h and is_instance_valid(h)):
@@ -226,3 +232,13 @@ func test_the_capped_size_is_still_an_increase() -> void:
 	assert_lt(int(big["row_font"]), int(big["want_font"]),
 		"this arm documents a CAP; if 200%% now reaches the full %d the cap is gone and this "
 			% int(big["want_font"]) + "file's header is stale")
+
+
+## FLOOR for the preset derivation — without it an empty list makes every preset loop above iterate
+## ZERO times and pass, which is the shrinking-corpus shape a derived guard fails into silently.
+func test_the_preset_list_derives_from_settings() -> void:
+	var p: Array = _presets()
+	assert_gt(p.size(), 1,
+		"FLOOR: SettingsMenu.TEXT_SIZE_PRESETS must still resolve and hold more than one step — a "
+		+ "rename leaves every preset loop here iterating nothing and passing. Got " + str(p))
+	assert_true(p.has(1.0), "the derived presets must include the 1.0 default: " + str(p))

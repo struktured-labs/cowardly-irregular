@@ -16,7 +16,13 @@ extends GutTest
 ## places (the build loop AND `_update_list`), so both writers had to be derived.
 
 const BS := "res://src/ui/BossSelectorMenu.gd"
-const PRESETS: Array = [0.8, 1.0, 1.25, 1.5, 2.0]
+## ⛔ DERIVED FROM THE CONSUMER'S OWN LIST, NOT A COPY. A hardcoded [0.8, 1.0, 1.25, 1.5, 2.0] goes
+## quietly stale the day a preset is added, and the arms below then never visit the new step. NO
+## FALLBACK DEFAULT: a rename must red, and a fallback would make these pass against a ladder the
+## player cannot select.
+static func _presets() -> Array:
+	var consts: Dictionary = (load("res://src/ui/SettingsMenu.gd") as GDScript).get_script_constant_map()
+	return consts.get("TEXT_SIZE_PRESETS", [])
 
 var _saved = null
 
@@ -75,7 +81,7 @@ func test_the_row_font_follows_the_setting() -> void:
 ## the whole design turns on: a row below the footer is a boss the player cannot see.
 func test_the_window_fits_above_the_footer_at_every_preset() -> void:
 	var bad: Array = []
-	for scale in PRESETS:
+	for scale in _presets():
 		var m: Control = await _menu_at(float(scale))
 		var bottom: float = m._list_y() + float(int(m._visible_rows()) * int(m._row_h()))
 		var limit: float = m._panel.size.y - m._footer_gap()
@@ -97,7 +103,7 @@ func test_the_window_fits_above_the_footer_at_every_preset() -> void:
 ## `_clamp_scroll()`, and asks whether that entry is inside the window.
 func test_the_last_boss_is_reachable_at_every_preset() -> void:
 	var bad: Array = []
-	for scale in PRESETS:
+	for scale in _presets():
 		var m: Control = await _menu_at(float(scale))
 		var total: int = (m._display_list as Array).size()
 		if total <= 0:
@@ -130,7 +136,7 @@ func test_the_last_boss_is_reachable_at_every_preset() -> void:
 ## VERIFICATION that saw a tenth of them.
 func test_every_boss_name_keeps_margin_from_the_world_column() -> void:
 	var bad: Array = []
-	for scale in PRESETS:
+	for scale in _presets():
 		var m: Control = await _menu_at(float(scale))
 		var asked: float = float(m._world_col_w())
 		var roster: Array = m.BOSSES
@@ -190,7 +196,7 @@ func test_the_small_and_default_sizes_render_the_shipped_layout() -> void:
 ## ARM 6 — the click target and the drawn row are ONE height.
 func test_the_click_target_matches_the_drawn_row() -> void:
 	var bad: Array = []
-	for scale in PRESETS:
+	for scale in _presets():
 		var m: Control = await _menu_at(float(scale))
 		for hl in m._row_highlights:
 			if not (hl and is_instance_valid(hl)):
@@ -234,7 +240,7 @@ func test_the_header_band_scales_with_the_text() -> void:
 ## regression from every arm that measures the WINDOW.
 func test_no_row_text_overflows_its_row() -> void:
 	var bad: Array = []
-	for scale in PRESETS:
+	for scale in _presets():
 		var m: Control = await _menu_at(float(scale))
 		var h: float = float(m._row_h())
 		for i in range(m._row_highlights.size()):
@@ -246,3 +252,13 @@ func test_no_row_text_overflows_its_row() -> void:
 					bad.append("%.2fx: '%s' ends %.0f in a %.0f row"
 						% [scale, lbl.text, lbl.position.y + drawn, h])
 	assert_eq(bad, [], "row text must stay inside its row at every Text Size: %s" % [bad])
+
+
+## FLOOR for the preset derivation — without it an empty list makes every preset loop above iterate
+## ZERO times and pass, which is the shrinking-corpus shape a derived guard fails into silently.
+func test_the_preset_list_derives_from_settings() -> void:
+	var p: Array = _presets()
+	assert_gt(p.size(), 1,
+		"FLOOR: SettingsMenu.TEXT_SIZE_PRESETS must still resolve and hold more than one step — a "
+		+ "rename leaves every preset loop here iterating nothing and passing. Got " + str(p))
+	assert_true(p.has(1.0), "the derived presets must include the 1.0 default: " + str(p))

@@ -11,7 +11,13 @@ extends GutTest
 ## The fix is kept PARALLEL to TeleportMenu's deliberately, since that ratchet exists.
 
 const FT := "res://src/ui/FastTravelMenu.gd"
-const PRESETS: Array = [0.8, 1.0, 1.25, 1.5, 2.0]
+## ⛔ DERIVED FROM THE CONSUMER'S OWN LIST, NOT A COPY. A hardcoded [0.8, 1.0, 1.25, 1.5, 2.0] goes
+## quietly stale the day a preset is added, and the arms below then never visit the new step. NO
+## FALLBACK DEFAULT: a rename must red, and a fallback would make these pass against a ladder the
+## player cannot select.
+static func _presets() -> Array:
+	var consts: Dictionary = (load("res://src/ui/SettingsMenu.gd") as GDScript).get_script_constant_map()
+	return consts.get("TEXT_SIZE_PRESETS", [])
 
 var _saved = null
 var _saved_gold: int = -1
@@ -110,7 +116,7 @@ func test_the_row_font_follows_the_setting() -> void:
 ## ARM 2 — the drawn row text fits its row at every preset.
 func test_no_row_text_overflows_its_row() -> void:
 	var bad: Array = []
-	for scale in PRESETS:
+	for scale in _presets():
 		var m: Control = await _menu_at(float(scale))
 		var h: float = float(m._row_h())
 		for row in _rows_of(m):
@@ -128,7 +134,7 @@ func test_no_row_text_overflows_its_row() -> void:
 ## instead of the asked width compared a clamped value with itself.
 func test_the_name_keeps_margin_from_the_cost_column() -> void:
 	var bad: Array = []
-	for scale in PRESETS:
+	for scale in _presets():
 		var m: Control = await _menu_at(float(scale))
 		var asked: float = float(m._cost_col_w())
 		for row in _rows_of(m):
@@ -183,7 +189,7 @@ func test_the_small_and_default_sizes_render_the_shipped_layout() -> void:
 ## ARM 5 — the click target and the drawn row are ONE height.
 func test_the_click_target_matches_the_drawn_row() -> void:
 	var bad: Array = []
-	for scale in PRESETS:
+	for scale in _presets():
 		var m: Control = await _menu_at(float(scale))
 		for row in _rows_of(m):
 			var item: Control = row["item"] as Control
@@ -206,7 +212,7 @@ func test_the_click_target_matches_the_drawn_row() -> void:
 ## own copy of ROW_HEIGHT, and the row positions come from the copy that was already correct.
 func test_the_last_row_scrolls_into_view_at_every_preset() -> void:
 	var bad: Array = []
-	for scale in PRESETS:
+	for scale in _presets():
 		var m: Control = await _menu_at(float(scale))
 		m.set("_selected", (m.get("_rows") as Array).size() - 1)
 		m._update_selection()
@@ -249,7 +255,7 @@ func test_the_header_band_scales_with_the_text() -> void:
 ## can afford a jump from this number, so a clipped one is worse than a cramped one.
 func test_the_gold_readout_fits_its_band() -> void:
 	var bad: Array = []
-	for scale in PRESETS:
+	for scale in _presets():
 		var m: Control = await _menu_at(float(scale))
 		var asked: float = float(m._gold_col_w())
 		var gold: Label = null
@@ -278,3 +284,13 @@ func test_the_gold_readout_fits_its_band() -> void:
 			bad.append("%.2fx: gold '%s' needs %.0f in a %.0f band"
 				% [scale, gold.text, drawn, asked])
 	assert_eq(bad, [], "the gold readout must fit the band the layout asked for: %s" % [bad])
+
+
+## FLOOR for the preset derivation — without it an empty list makes every preset loop above iterate
+## ZERO times and pass, which is the shrinking-corpus shape a derived guard fails into silently.
+func test_the_preset_list_derives_from_settings() -> void:
+	var p: Array = _presets()
+	assert_gt(p.size(), 1,
+		"FLOOR: SettingsMenu.TEXT_SIZE_PRESETS must still resolve and hold more than one step — a "
+		+ "rename leaves every preset loop here iterating nothing and passing. Got " + str(p))
+	assert_true(p.has(1.0), "the derived presets must include the 1.0 default: " + str(p))
