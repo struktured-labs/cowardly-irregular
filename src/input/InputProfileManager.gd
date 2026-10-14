@@ -39,6 +39,12 @@ const ACTION_LABELS = {
 	"battle_toggle_auto": "Toggle Auto",
 	"ui_menu": "Menu",
 	"battle_open_log": "Battle Log",
+	## Not remappable, and present only so a conflict LINE can name them: `_update_conflict_display`
+	## reads this table with `.get(a, a)`, so without these a nav collision printed a raw action id.
+	"ui_up": "D-pad Up",
+	"ui_down": "D-pad Down",
+	"ui_left": "D-pad Left",
+	"ui_right": "D-pad Right",
 }
 
 ## Confirm sits on the EAST face when true — the SNES layout (Y X / B A). False puts it on
@@ -520,6 +526,29 @@ const REFUSED_SHARES := [
 ## closes), so it stays the player's business like every other survivable conflict in this file.
 const FIELD_MENU_REFUSES := ["ui_accept", "ui_cancel"]
 
+## ⛔ UNIVERSAL-CONTEXT ACTIONS. Every menu reads these in every state, so a remappable action
+## landing on one collides EVERYWHERE rather than on one screen -- and they are not remappable
+## themselves, which is exactly why `detect_conflicts` could not see them: its corpus was
+## REMAPPABLE_ACTIONS alone, so it reported "Conflicts: None" for a collision it had no way to
+## reach. Adding them costs nothing at stock: no remappable action sits on 11-14.
+const NAVIGATION_ACTIONS := ["ui_up", "ui_down", "ui_left", "ui_right"]
+
+## ⛔ CONFIRM ON A NAVIGATION BUTTON LEAVES NO *PAD* WAY BACK, which is why this is a REFUSAL and
+## the other seven are only reported. Measured rather than asserted, because the first version of
+## this note claimed "every menu" and "no way back" and both were too strong:
+##   `MenuNav.step` precedes the `ui_accept` check in 21 of the 34 menus that read it -- the
+##   CONTROLS SCREEN among them (nav at :1196, accept at :1224), which is the only one that matters
+##   here, since it is where the bind would be undone. 5 menus check accept FIRST and 8 never
+##   check it, so the general claim was false and the load-bearing one is not.
+## On that screen the direction consumes the event and the accept arm below it never runs, so no
+## pad press can activate a row -- Reset included.
+##
+## ⚠️ TWO NON-PAD ESCAPES EXIST AND THE REFUSAL IS STILL RIGHT: the capture replaces JOYPAD events
+## only, so keyboard Confirm survives; and `ControlsMenu._on_row_click` activates a row from a
+## MOUSE click. So the stranded player is specifically pad-only -- which CLAUDE.md's "NO
+## MOUSE/CLICKING required" makes a designed-for population, not an edge case.
+const NAV_REFUSED_FOR := "ui_accept"
+
 
 ## The actions that may not share a button with `action`.
 func _refused_partners(action: String) -> Array:
@@ -531,6 +560,8 @@ func _refused_partners(action: String) -> Array:
 			out.append(pair[0])
 	if action == FIELD_MENU_ACTION_ID:
 		out.append_array(FIELD_MENU_REFUSES)
+	if action == NAV_REFUSED_FOR:
+		out.append_array(NAVIGATION_ACTIONS)
 	return out
 
 
@@ -540,7 +571,11 @@ func binding_would_trap_the_player(action: String, button_indices: Array) -> Dic
 		for b in button_indices:
 			if int(b) in other_buttons:
 				var why := "the Controls screen could not be closed on a pad"
-				if action == "ui_field_menu" or other == "ui_field_menu":
+				if other in NAVIGATION_ACTIONS:
+					## Names what the player LOSES, not the collision: "shares D-pad Up" does not
+					## say that nothing can be confirmed afterwards.
+					why = "moving the cursor would also confirm, and no row could be activated to undo it"
+				elif action == "ui_field_menu" or other == "ui_field_menu":
 					## Name the button the PLAYER presses, which is whichever of the pair is not the
 					## menu — "every Menu press would also open the field menu" says nothing.
 					var presser: String = other if action == "ui_field_menu" else action
@@ -752,7 +787,11 @@ func detect_conflicts() -> Array:
 	var conflicts = []
 	var button_to_actions: Dictionary = {}
 
-	for action in REMAPPABLE_ACTIONS:
+	## ⛔ REMAPPABLE **PLUS** UNIVERSAL-CONTEXT. The corpus was the remappable eight, so a collision
+	## with a navigation direction -- which every menu reads -- was structurally invisible and the
+	## screen said "Conflicts: None". Reporting one it cannot offer to rebind is strictly better
+	## than claiming none: the player can still move the REMAPPABLE half off it.
+	for action in REMAPPABLE_ACTIONS + NAVIGATION_ACTIONS:
 		var live: Array = get_current_button_indices(action)
 		if live.is_empty():
 			continue
