@@ -606,10 +606,73 @@ func _build_ui() -> void:
 	_create_dialogue_visuals(CHARACTER_THEMES["narrator"])
 
 
+## ⛔ THE PANEL DID NOT GROW WITH ITS OWN FONTS, AND AT 200% TEXT SIZE 344 OF 535 AUTHORED
+## DIALOGUE STEPS WERE CLIPPED. The three fonts here have scaled through TextScale since tick 222,
+## but `BOX_HEIGHT` is a const and `_text_label` is `clip_contents = true`, so the box held 150px at
+## every setting while the line height doubled. Measured on the real panel at 1248px wide:
+##
+##   scale  font  line_h  box holds  authored steps clipped (of 535)
+##   1.00    16    23.0    4 lines           0        <- why nobody saw it
+##   1.25    20    28.0    3 lines          19
+##   1.50    24    34.0    3 lines          52
+##   2.00    32    45.0    2 lines         344        <- 64% of the game's dialogue
+##
+## 🔑 `BattleDialogue._dialogue_metrics` ALREADY CARRIES THIS FIX, and its own comment cites THIS
+## file as the model: "Text Size uses the same TextScale helper as cutscene dialogue. The panel
+## grows with it so the line stays inside the box." The sibling was repaired and the surface it was
+## copied from was not — so this mirrors that shape rather than inventing one.
+##
+## At 100% and 80% every slot is the authored number exactly, so the default panel does not move.
+func _box_metrics() -> Dictionary:
+	var speaker_px := _scaled_font_size(18)
+	var body_px := _scaled_font_size(16)
+	var hint_px := _scaled_font_size(12)
+	var font: Font = ThemeDB.fallback_font
+	var speaker_h := 26.0
+	var line_h := 23.0
+	var line_base := 23.0
+	var hint_h := 16.0
+	if font:
+		speaker_h = float(font.get_height(speaker_px))
+		line_h = maxf(1.0, float(font.get_height(body_px)))
+		line_base = maxf(1.0, float(font.get_height(16)))
+		hint_h = float(font.get_height(hint_px))
+	var text_y := float(TILE_SIZE * 2 + 22)
+	var text_h := float(BOX_HEIGHT - TILE_SIZE * 4 - 30)
+	var box_h := float(BOX_HEIGHT)
+	var hint_y := box_h - 20.0
+	if speaker_px > 18 or body_px > 16 or hint_px > 12:
+		var hint_block: float = hint_h + 6.0
+		text_y = float(TILE_SIZE * 2 - 8) + speaker_h + 4.0
+		## ⛔ THE RATIO IS SQUARED, AND PROPORTIONAL GROWTH WAS NOT ENOUGH. Measured: growing the
+		## rect by line_h/line_base alone kept the box at four lines and still clipped 55 of 535
+		## steps at 200%. A larger font is also WIDER, so characters-per-line falls by the same
+		## ratio and the REQUIRED line count rises by it — the needed height scales with the
+		## square. One factor buys taller lines, the other buys more of them.
+		var growth: float = line_h / line_base
+		text_h = ceil(float(BOX_HEIGHT - TILE_SIZE * 4 - 30) * growth * growth)
+		box_h = text_y + text_h + hint_block
+		hint_y = box_h - hint_block
+		## The panel can never exceed the viewport: a 200% setting on a short window would
+		## otherwise push the box off the top rather than clip inside it.
+		var cap: float = get_viewport().get_visible_rect().size.y - float(MARGIN * 2)
+		if cap >= float(BOX_HEIGHT) and box_h > cap:
+			text_h = maxf(line_h, text_h - (box_h - cap))
+			box_h = cap
+			hint_y = box_h - hint_block
+	return {"box_h": box_h, "text_y": text_y, "text_h": text_h, "hint_y": hint_y, "speaker_h": speaker_h}
+
+
 func _create_dialogue_visuals(theme: Dictionary) -> void:
 	for child in _dialogue_box.get_children():
 		child.queue_free()
 
+	## The panel is re-sized here rather than only in _build_ui because this runs on every theme
+	## change and TextScale is read live — a Text Size change applies on the next cutscene.
+	var m: Dictionary = _box_metrics()
+	var screen_h: float = get_viewport().get_visible_rect().size.y
+	_dialogue_box.size.y = float(m["box_h"])
+	_dialogue_box.position.y = screen_h - float(m["box_h"]) - float(MARGIN)
 	var box_width = _dialogue_box.size.x
 	var box_height = _dialogue_box.size.y
 
@@ -667,8 +730,8 @@ func _create_dialogue_visuals(theme: Dictionary) -> void:
 	# reveal would fight scrollbar) but enables in _finish_typing so the
 	# player can scroll any overflow before advancing.
 	_text_label = RichTextLabel.new()
-	_text_label.position = Vector2(text_x, TILE_SIZE * 2 + 22)
-	_text_label.size = Vector2(text_width, box_height - TILE_SIZE * 4 - 30)
+	_text_label.position = Vector2(text_x, float(m["text_y"]))
+	_text_label.size = Vector2(text_width, float(m["text_h"]))
 	_text_label.bbcode_enabled = true
 	_text_label.scroll_active = false
 	_text_label.clip_contents = true
@@ -681,7 +744,7 @@ func _create_dialogue_visuals(theme: Dictionary) -> void:
 	# what works. (Pre-2026-05-03 only mentioned gamepad/keyboard.)
 	_advance_hint = Label.new()
 	_advance_hint.text = advance_hint_text()
-	_advance_hint.position = Vector2(box_width - 140, box_height - 20)
+	_advance_hint.position = Vector2(box_width - 140, float(m["hint_y"]))
 	# Tick 222: scale.
 	_advance_hint.add_theme_font_size_override("font_size", _scaled_font_size(12))
 	_advance_hint.add_theme_color_override("font_color", theme["text"].darkened(0.4))
