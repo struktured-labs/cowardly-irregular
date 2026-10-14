@@ -1,9 +1,17 @@
 extends GutTest
 
-## Every list menu paints the row you are standing on with SELECTED_COLOR and prints the row's
-## detail — MP cost, item description, a job's ability list — in DISABLED_COLOR. Measured against
-## each other those two are **1.46:1**, so the detail on the row you selected is the one that
+## List menus paint the row you are standing on with SELECTED_COLOR and print the row's detail —
+## MP cost, item description, a job's ability list — in DISABLED_COLOR. Measured against each
+## other those two are **1.46:1**, so the detail on the row you selected is the one that
 ## disappears, while the same text stays legible on every row you are NOT on (3.01:1).
+##
+## ⚠️ SCOPE — THIS FILE WATCHES THREE MENUS: AbilitiesMenu, EquipmentMenu and JobMenu (both of its
+## modes). It opened with "every list menu", which claimed a reach its arms do not have: a reader
+## would take SettingsMenu, LensMenu, JukeboxMenu, ControlsMenu, BossSelectorMenu and OverworldMenu
+## as covered, and they are not. They were swept STATICALLY and are clean — a ternary-aware scan
+## for DISABLED_COLOR plus a resolution of every colour-RETURNING function — but a static sweep is
+## a one-time measurement, not a watch. A new low-contrast label in any of those six would not red
+## anything here.
 ##
 ##   DISABLED_COLOR on SELECTED_COLOR   1.46:1     <- the defect
 ##   SUBTITLE_COLOR on SELECTED_COLOR   4.61:1     <- the repo's own fix, already in JobMenu
@@ -126,6 +134,33 @@ func test_the_selected_equipment_row_shows_its_description() -> void:
 	var bad := _unreadable(m, m.SELECTED_COLOR, "EquipmentMenu")
 	assert_eq(bad, [] as Array[String],
 		"a highlighted equipment row hides its own detail: %s" % [", ".join(bad)])
+
+
+## ⛔ THE ARM BELOW BUILDS JobMenu IN ITS DEFAULT MODE, WHICH DRAWS ONLY THE TWO SLOT ROWS. The
+## JOB LIST — `_create_job_row`, where you actually pick a job — is built only in JOB_SELECT, so
+## when this file shipped in .687 those rows were never constructed and never measured. Two of
+## their labels were at 2.17:1 from an inline `Color(0.5, 0.5, 0.6)`, invisible both to the
+## DISABLED_COLOR sweep (wrong spelling) and to this guard (wrong mode).
+##
+## 🔑 A screen with modes is not covered until every mode that BUILDS ROWS has been entered. The
+## arm passing told me JobMenu was clean; it told me one of JobMenu's two screens was clean.
+func test_the_selected_job_LIST_row_shows_its_detail() -> void:
+	var m = JobMenuScript.new()
+	m.set_anchors_preset(Control.PRESET_FULL_RECT)
+	add_child_autofree(m)
+	m.setup(_character())
+	m.mode = JobMenu.Mode.JOB_SELECT
+	await get_tree().process_frame
+	await get_tree().process_frame
+	assert_gt(m._job_labels.size(), 0,
+		"PRECONDITION: JOB_SELECT must build job rows, or this arm repeats the gap it exists to "
+		+ "close")
+	var rows: Array = []
+	_highlighted_rows(m, m.SELECTED_COLOR, rows)
+	assert_gt(rows.size(), 0, "PRECONDITION: a job list row must be highlighted")
+	var bad := _unreadable(m, m.SELECTED_COLOR, "JobMenu/JOB_SELECT")
+	assert_eq(bad, [] as Array[String],
+		"the job list row you are standing on hides its own description: %s" % [", ".join(bad)])
 
 
 func test_the_selected_job_row_shows_its_detail() -> void:

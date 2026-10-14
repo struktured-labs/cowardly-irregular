@@ -546,7 +546,12 @@ func _create_job_row(job_id: String, index: int) -> Control:
 		none_desc.text = "Remove secondary job"
 		none_desc.position = Vector2(24, 22)
 		none_desc.add_theme_font_size_override("font_size", 9)
-		none_desc.add_theme_color_override("font_color", Color(0.5, 0.5, 0.6))
+		## ⛔ WAS AN INLINE `Color(0.5, 0.5, 0.6)` — 2.17:1 on SELECTED_COLOR. Same defect as the
+		## one fixed across three menus in .687, and these two survived it because they are a
+		## LITERAL rather than DISABLED_COLOR, so the sweep that found the others could not see
+		## them, and because `_create_job_row` only builds in JOB_SELECT mode, which that guard
+		## never entered. SUBTITLE_COLOR reads 4.61:1 here and 9.47:1 off the highlight.
+		none_desc.add_theme_color_override("font_color", SUBTITLE_COLOR)
 		row.add_child(none_desc)
 		return row
 
@@ -608,7 +613,7 @@ func _create_job_row(job_id: String, index: int) -> Control:
 		desc_label.text = desc
 		desc_label.position = Vector2(24, 50)
 		desc_label.add_theme_font_size_override("font_size", 9)
-		desc_label.add_theme_color_override("font_color", Color(0.5, 0.5, 0.6))
+		desc_label.add_theme_color_override("font_color", SUBTITLE_COLOR)
 		row.add_child(desc_label)
 
 	# Mouse click overlay
