@@ -547,6 +547,19 @@ func _on_cancel_pressed() -> void:
 ## LLMService.complete() — which uses whatever was last Save & Applied — so a
 ## blank form tested Ollama and printed OK. struktured ran that for weeks
 ## believing it validated his OpenAI key (2026-09-07).
+## The cue a finished probe earns. A VALUE, not a play_ui call, because the three outcomes are
+## only reachable through a live HTTP probe and a cue nobody can assert is a cue nobody checks.
+## Before this, all three were audibly IDENTICAL: only the PRESS played anything, so a probe
+## that timed out after PROBE_TIMEOUT_SEC sounded exactly like one that replied -- on an async
+## operation the player has every reason to look away from while it runs.
+static func probe_result_cue(res: Array) -> String:
+	if res.is_empty():
+		return "menu_error"          # timed out: no answer at all
+	if not bool(res[0]):
+		return "menu_error"          # answered, and the answer was a failure
+	return "menu_select"
+
+
 func _on_test_pressed() -> void:
 	if _testing:
 		return
@@ -595,6 +608,8 @@ func _on_test_pressed() -> void:
 		if listed.size() >= 2 and bool(listed[0]):
 			extra = " " + _merge_live_models(listed[1])
 		_set_status("Status: OK (%d ms) — %s replied \"%s\".%s" % [elapsed_ms, where, preview, extra], STATUS_OK_COLOR)
+	if SoundManager:
+		SoundManager.play_ui(probe_result_cue(res))
 	_testing = false
 	if is_instance_valid(_test_btn):
 		_test_btn.disabled = false
