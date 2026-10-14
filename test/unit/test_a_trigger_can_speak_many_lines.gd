@@ -12,7 +12,13 @@ var _saved_party: Array
 var _saved_round: int
 
 
+## Callables connected to BattleManager.party_combat_line, so after_each can take them off
+## whatever happens in the arm that connected them.
+var _tracked_lines: Array[Callable] = []
+
+
 func before_each() -> void:
+	_tracked_lines.clear()
 	PartyPersonas._recent_spoken.clear()  # the pick window leaks across FILES; see test_a_voice_store_is_left_as_it_was_found
 	_saved_rogue = (PartyPersonas._data.get("rogue", {}) as Dictionary).duplicate(true)
 	_saved_last = PartyPersonas._last_variant.duplicate()
@@ -22,6 +28,16 @@ func before_each() -> void:
 
 
 func after_each() -> void:
+	## ⛔ DISCONNECT FIRST, before any restore below can fail. An inline connect/disconnect pair in a
+	## test body is only balanced on the HAPPY path: a GDScript error in the call between them aborts
+	## the enclosing function (CLAUDE.md's abort rule) and the disconnect never runs, leaving a lambda
+	## on an autoload signal for every later FILE. Found 2026-10-14 by running @cowir-battle's
+	## signal-leak class on this lane after their drop; their own fix orders the disconnect first for
+	## the same reason.
+	for cb in _tracked_lines:
+		if BattleManager.party_combat_line.is_connected(cb):
+			BattleManager.party_combat_line.disconnect(cb)
+	_tracked_lines.clear()
 	PartyPersonas._recent_spoken.clear()  # the pick window leaks across FILES; see test_a_voice_store_is_left_as_it_was_found
 	PartyPersonas._data["rogue"] = _saved_rogue
 	PartyPersonas._last_variant = _saved_last
@@ -92,9 +108,11 @@ func test_the_battle_line_carries_the_variant_clip() -> void:
 	c.current_hp = 100
 	var heard: Array = []
 	var cb := func(_who, line, trigger): heard.append([line, trigger])
+	_tracked_lines.append(cb)
 	BattleManager.party_combat_line.connect(cb)
 	BattleManager._run_party_line_async(c, "turn_start", {})
 	BattleManager.party_combat_line.disconnect(cb)
+	_tracked_lines.erase(cb)
 	assert_eq(heard.size(), 1, "the scripted line must be emitted")
 	if heard.size() == 1:
 		assert_eq(heard[0], ["one", "turn_start_1"],
