@@ -44,9 +44,17 @@ extends GutTest
 ## that goes stale the day a preset is added, and then every arm written to catch "it broke at
 ## 125%" never visits the new rung. @cowir-controller found the same copy in two of their guards.
 ##
-## ⚠️ NO FALLBACK DEFAULT, DELIBERATELY: a rename must RED. A `.get(..., [0.8, …])` would leave the
-## arms passing against a ladder nobody can select, which is strictly worse than the copy it
-## replaces — the copy at least fails visibly when someone compares the two lists.
+## ⚠️ NO FALLBACK DEFAULT, DELIBERATELY. A `.get(..., [0.8, …])` would leave the arms passing
+## against a ladder nobody can select, which is strictly worse than the copy it replaces — the copy
+## at least fails visibly when someone compares the two lists.
+##
+## ⛔ BUT "A RENAME MUST RED" IS THE WRONG WORD FOR WHAT HAPPENS, AND THE RIGHT ONE MATTERS AT THE
+## DIAGNOSIS MOMENT (@cowir-music). `SettingsMenu.TEXT_SIZE_PRESETS` is a `class_name` const, so it
+## resolves at PARSE time: renaming or removing it does not fail an assert, it stops this file
+## RUNNING, which `run_tests.sh` reports as `EC=3 NOT ALL TEST FILES RAN` — and that tool lists the
+## unimported-worktree cause FIRST. So the honest statement is "a rename is impossible to miss, and
+## it looks exactly like a skipped `--import`". **On a mass EC=3 across Text Size files, check this
+## const before re-importing**; ~17 test files share this single parse-time dependency.
 ## ⛔ THE FLOOR LIVES HERE, NOT ONLY IN ITS OWN ARM, and the difference is DURABILITY rather than
 ## detection. A standalone floor arm reds the FILE on an empty ladder — which is what a gate reads —
 ## but every `for sc in _presets()` loop below still passes vacuously and is individually
