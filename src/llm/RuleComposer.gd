@@ -18,11 +18,30 @@ const DOMAIN_AUTOGRIND  := "autogrind"
 
 const _VALID_DOMAINS := [DOMAIN_AUTOBATTLE, DOMAIN_AUTOGRIND]
 
+## The no-backend notice: names the problem, BOTH remedies, and the reassurance. One copy,
+## because two of has_llm()'s branches mean the same thing — and because dropping "Ollama"
+## from one of two copies is exactly what test_composer_no_backend_notice_regression caught.
+const NO_BACKEND_NOTICE := "No LLM backend reachable — Compose needs one (Settings → Configure BYOK, or local Ollama). The rule grid and presets work fine without it."
+
+## Said when the model answered but the answer was not rules. The player's prompt is not at
+## fault, so the line must not read as "your prompt was rejected".
+const UNREADABLE_REPLY := "The model's answer could not be read as rules — try Regenerate, or rephrase."
+
 
 const DialoguePromptsScript := preload("res://src/llm/DialoguePrompts.gd")
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
+
+## Why has_llm() said no, in the player's words. Mirrors has_llm()'s OWN branches so the
+## reason cannot drift from the refusal it explains, and names a place to act in each case.
+func llm_unavailable_reason() -> String:
+	if OS.has_feature("web"):
+		return "No LLM backend reachable: web builds cannot run one. The rule grid and presets work fine without it."
+	var svc = get_node_or_null("/root/LLMService")
+	if svc != null and "llm_enabled" in svc and not bool(svc.llm_enabled):
+		return "No LLM backend reachable: Dynamic Dialogue is off — turn it on in Settings, then set a server (Configure BYOK, or local Ollama). The rule grid and presets work fine without it."
+	return NO_BACKEND_NOTICE
 
 func has_llm() -> bool:
 	if OS.has_feature("web"):
@@ -58,7 +77,7 @@ func compose_async(domain: String, prompt_text: String, character_id: String = "
 		return e
 
 	if not has_llm():
-		var res = _fallback_result(domain, character_id)
+		var res = _fallback_result(domain, character_id, llm_unavailable_reason())
 		composition_failed.emit("no_llm", {})
 		composition_ready.emit(res)
 		return res
@@ -89,7 +108,7 @@ func compose_async(domain: String, prompt_text: String, character_id: String = "
 	)
 
 	if is_fallback:
-		var res_fb: Dictionary = _fallback_result(domain, character_id)
+		var res_fb: Dictionary = _fallback_result(domain, character_id, UNREADABLE_REPLY)
 		composition_failed.emit("invalid_json", {})
 		composition_ready.emit(res_fb)
 		return res_fb
@@ -232,12 +251,18 @@ func _empty_result(domain: String, character_id: String, source: String) -> Dict
 		"character_id": character_id,
 	}
 
-func _fallback_result(domain: String, character_id: String) -> Dictionary:
+## `reason` rides in `errors`, which RuleComposerOverlay already renders as "Error: ..." — a
+## zero-rule fallback with an EMPTY errors list fell through to its generic "No rules were
+## composed.", so every unreachable-model and unreadable-reply failure read the same.
+func _fallback_result(domain: String, character_id: String, reason: String = "") -> Dictionary:
+	var errs: Array[String] = []
+	if reason != "":
+		errs.append(reason)
 	return {
 		"name": DialoguePromptsScript.FALLBACK_RULE_COMPOSITION["name"],
 		"description": DialoguePromptsScript.FALLBACK_RULE_COMPOSITION["description"],
 		"rules": [],
-		"errors": [] as Array[String],
+		"errors": errs,
 		"notes": [] as Array[String],
 		"source": "fallback",
 		"domain": domain,

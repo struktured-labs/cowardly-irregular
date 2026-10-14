@@ -129,7 +129,16 @@ func open(domain: String, character_id: String, current_rules: Array) -> void:
 	var rc = get_node_or_null("/root/RuleComposer")
 	if rc == null or not rc.has_method("has_llm") or not rc.has_llm():
 		if _status_label != null:
-			_status_label.text = "No LLM backend reachable — Compose needs one (Settings → Configure BYOK, or local Ollama). The rule grid and presets work fine without it."
+			## The REASON comes from the composer, which derives it from has_llm()'s own branches —
+			## this used to name BYOK unconditionally, which is the wrong place to send a player
+			## whose Dynamic Dialogue toggle is simply off. The reassurance stays here.
+			## The whole notice comes from the composer, which derives it from has_llm()'s own
+			## branches. It used to be a local literal naming BYOK unconditionally — the wrong
+			## place to send a player whose Dynamic Dialogue toggle is simply off.
+			var notice: String = "No LLM backend reachable — Compose needs one (Settings → Configure BYOK, or local Ollama). The rule grid and presets work fine without it."
+			if rc != null and rc.has_method("llm_unavailable_reason"):
+				notice = str(rc.llm_unavailable_reason())
+			_status_label.text = notice
 			_status_label.add_theme_color_override("font_color", Color(0.95, 0.80, 0.40))
 	if _prompt_field != null:
 		_prompt_field.grab_focus()
