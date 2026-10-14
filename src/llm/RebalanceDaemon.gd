@@ -210,8 +210,6 @@ func build_prompt(trigger_type: String, context: Dictionary, recent_events: Arra
 ## sixth outcome arriving without a line is a visible "" rather than a silent omission.
 static func outcome_line(trigger: String, status: String, proposal: Dictionary = {}) -> String:
 	match status:
-		"awaiting_llm":
-			return "[REBALANCE] %s asked the model for a proposal" % trigger
 		"failed_no_tree":
 			return "[REBALANCE] %s produced no proposal — no scene tree" % trigger
 		"failed_unavailable":

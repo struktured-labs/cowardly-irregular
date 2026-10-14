@@ -43,8 +43,19 @@ func test_every_outcome_the_request_path_sets_has_a_line() -> void:
 	for known in ["failed_no_tree", "failed_unavailable", "failed_fallback", "awaiting_llm", "proposed"]:
 		assert_true(statuses.has(known),
 			"CONTROL: the derivation missed %s, so this arm judges a subset of the outcomes" % known)
+	# EXEMPT, not skipped silently: :93 requires awaiting_llm to stay EMPTY because it is the
+	# transient in-flight state and a line for it would fire on every request. The derivation must
+	# still FIND it (asserted above), so an exemption here cannot hide a parser that missed it.
+	var transient: Array = ["awaiting_llm"]
+	for ex in transient:
+		assert_true(statuses.has(ex),
+			"CONTROL: %s must be DERIVED and then exempted, not absent from the derivation" % ex)
+		assert_eq(Daemon.outcome_line("level_up", ex), "",
+			"%s is transient; :93 pins it empty and this arm must agree rather than contradict it" % ex)
 	var silent: Array = []
 	for st in statuses:
+		if transient.has(str(st)):
+			continue
 		var line: String = Daemon.outcome_line("level_up", str(st), {"verdict": "nudge_easier", "confidence": 0.6, "deltas": []})
 		if line == "":
 			silent.append(str(st))
