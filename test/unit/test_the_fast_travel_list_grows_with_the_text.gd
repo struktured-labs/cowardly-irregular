@@ -45,10 +45,20 @@ func _menu_at(scale: float, row_count: int = 24) -> Control:
 	m.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child_autofree(m)
 	m.size = Vector2(1280, 720)
+	## ⛔ THE REAL DESTINATIONS, NOT INVENTED ONES. This first built "Whispering Cave Depths %d" --
+	## 25 chars against a real worst of 31 ("Community Center (MapleHeights)"), so the arm that
+	## checks the name clears the cost column was testing a string SHORTER than the game produces.
+	## Same flaw as the grid's worst-by-length corpus of one, and @cowir-battle declared the
+	## identical thing in their TurnInfo arm within the hour: a fit arm on a string the game never
+	## shows. The FIX was always derived from `DESTINATIONS` itself, so it is sound by construction;
+	## it is the VERIFICATION that was under-sized.
 	var rows: Array = []
-	for i in range(row_count):
-		rows.append({"id": "m%d" % i, "label": "Whispering Cave Depths %d" % i,
-			"spawn": "default", "cost": 50 + i * 100, "affordable": true})
+	var src: Array = TeleportMenu.DESTINATIONS
+	for i in range(maxi(row_count, src.size())):
+		var d: Dictionary = src[i % src.size()] as Dictionary
+		rows.append({"id": str(d.get("id", "m%d" % i)), "label": str(d.get("label", "")),
+			"spawn": str(d.get("spawn", "default")), "cost": 50 + (i % 6) * 100,
+			"affordable": true})
 	m.set("_rows", rows)
 	m.set("_selected", 0)
 	m._build_ui()

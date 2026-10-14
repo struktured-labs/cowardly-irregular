@@ -123,6 +123,73 @@ func _build_display_list() -> void:
 		_display_list.append({"type": "boss", "index": i})
 
 
+## ⛔ DERIVED, UPWARD ONLY. This list is WINDOWED -- `VISIBLE_ROWS` rows with its own scroll
+## indicators and no ScrollContainer -- so growth is bounded by space like ControlsMenu's. The
+## difference is that this screen can already SCROLL, so the honest answer is to show FEWER rows at
+## a larger size rather than cap the font: every boss stays reachable, just not all at once.
+func _tf() -> float:
+	return maxf(1.0, float(TextScale.scaled(100)) / 100.0)
+
+
+func _line_h(base: int) -> float:
+	var fnt: Font = get_theme_font("font", "Label")
+	return fnt.get_height(TextScale.scaled(base)) if fnt else float(base) + 4.0
+
+
+## ⛔ THE INSET IS PART OF THE BUDGET. This first read `_line_h(13) + 6`, which is the TEXT's height
+## and not the row's: the labels sit at an inset that scales too, so a row's deepest ink is
+## `offset + line height`. Measured at 1.25x -- "Cave Rat King" ended at 33 inside a 32px row, with
+## the fonts scaled and the row still at its floor. Same shape as an icon allowance that stops being
+## a line allowance once the text beside it outgrows the icon.
+## Both row shapes are budgeted: a boss row insets at 8, a header row's label at 6.
+func _row_h() -> int:
+	var deepest: float = maxf(8.0 * _tf() + _line_h(13), 6.0 * _tf() + _line_h(10))
+	return int(maxf(float(ROW_HEIGHT), deepest + 2.0))
+
+
+func _sub_y() -> float:
+	return 30.0 * _tf()
+
+
+func _list_y() -> float:
+	return maxf(52.0, _sub_y() + _line_h(10) + 6.0)
+
+
+func _footer_gap() -> float:
+	return maxf(28.0, _line_h(12) + 12.0)
+
+
+## ⛔ THE WINDOW SHRINKS INSTEAD OF THE FONT. Floored at 1 row and capped at the authored 14, so
+## 100% shows exactly what it ships with today.
+func _visible_rows() -> int:
+	if not (_panel and is_instance_valid(_panel)):
+		return VISIBLE_ROWS
+	var avail: float = _panel.size.y - _footer_gap() - _list_y()
+	if avail <= 0.0:
+		return VISIBLE_ROWS
+	return clampi(int(floor(avail / float(_row_h()))), 1, VISIBLE_ROWS)
+
+
+## The right-hand world column on a boss row, measured from the world names it shows. 110 is the
+## authored width and the floor.
+## ⚠️ MEASURED AS NOT CURRENTLY BINDING, said rather than implied: the roster's world names are
+## short enough that the 110 floor wins at every preset, so pinning this at 110 reds nothing. Its
+## mutation is INERT by measurement, not by a missing arm -- unlike TeleportMenu's id column, where
+## the identical derivation does bind (216 -> 286 at 2.0x). DEFENSIVE, and kept because the roster
+## is data-driven (`load_boss_roster()`): a longer world name would need it the day it lands. Same shape as TeleportMenu's id column and FastTravelMenu's cost
+## column: a fixed right-anchored column closes on a growing left-anchored name from both sides.
+func _world_col_w() -> float:
+	var fnt: Font = get_theme_font("font", "Label")
+	if fnt == null:
+		return 110.0
+	var px: int = TextScale.scaled(10)
+	var w: float = 0.0
+	for boss in BOSSES:
+		w = maxf(w, fnt.get_string_size(str((boss as Dictionary).get("world", "")),
+			HORIZONTAL_ALIGNMENT_LEFT, -1, px).x)
+	return maxf(110.0, w + 10.0)
+
+
 func _build_ui() -> void:
 	for child in get_children():
 		child.queue_free()
@@ -150,7 +217,7 @@ func _build_ui() -> void:
 	var title = Label.new()
 	title.text = "FIGHT BOSS"
 	title.position = Vector2(16, 8)
-	title.add_theme_font_size_override("font_size", 18)
+	title.add_theme_font_size_override("font_size", TextScale.scaled(18))
 	title.add_theme_color_override("font_color", TEXT_COLOR)
 	_panel.add_child(title)
 
@@ -159,59 +226,61 @@ func _build_ui() -> void:
 		InputProfileManager.hint_for_action("battle_defer"),
 		InputProfileManager.hint_for_action("battle_advance"),
 	]
-	subtitle.position = Vector2(16, 30)
-	subtitle.add_theme_font_size_override("font_size", 10)
+	subtitle.position = Vector2(16, _sub_y())
+	subtitle.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	subtitle.add_theme_color_override("font_color", DISABLED_COLOR)
 	_panel.add_child(subtitle)
 
-	var list_y: float = 52.0
-	for i in range(VISIBLE_ROWS):
+	var list_y: float = _list_y()
+	for i in range(_visible_rows()):
 		var highlight = ColorRect.new()
-		highlight.position = Vector2(8, list_y + i * ROW_HEIGHT)
-		highlight.size = Vector2(_panel.size.x - 16, ROW_HEIGHT - 2)
+		highlight.position = Vector2(8, list_y + i * _row_h())
+		highlight.size = Vector2(_panel.size.x - 16, _row_h() - 2)
 		highlight.color = Color.TRANSPARENT
 		highlight.name = "Row_%d" % i
 		_panel.add_child(highlight)
 		_row_highlights.append(highlight)
 
 		var world_lbl = Label.new()
-		world_lbl.position = Vector2(10, 6)
-		world_lbl.add_theme_font_size_override("font_size", 10)
+		world_lbl.position = Vector2(10, 6.0 * _tf())
+		world_lbl.add_theme_font_size_override("font_size", TextScale.scaled(10))
 		world_lbl.add_theme_color_override("font_color", WORLD_HEADER_COLOR)
 		world_lbl.name = "WorldLabel_%d" % i
 		highlight.add_child(world_lbl)
 		_row_world_labels.append(world_lbl)
 
 		var lbl = Label.new()
-		lbl.position = Vector2(10, 10)
-		lbl.add_theme_font_size_override("font_size", 13)
+		lbl.position = Vector2(10, 10.0 * _tf())
+		lbl.add_theme_font_size_override("font_size", TextScale.scaled(13))
 		lbl.add_theme_color_override("font_color", BOSS_NAME_COLOR)
 		highlight.add_child(lbl)
 		_row_labels.append(lbl)
 
-		MenuMouseHelper.make_clickable(highlight, i, _panel.size.x - 16, ROW_HEIGHT - 2,
+		## One height for the click target and the drawn row.
+		MenuMouseHelper.make_clickable(highlight, i, _panel.size.x - 16, _row_h() - 2,
 			_on_row_click.bind(i), _on_row_hover.bind(i))
 
 	var scroll_up_lbl = Label.new()
 	scroll_up_lbl.name = "ScrollUp"
 	scroll_up_lbl.text = ""
-	scroll_up_lbl.position = Vector2(_panel.size.x - 24, 52)
-	scroll_up_lbl.add_theme_font_size_override("font_size", 12)
+	scroll_up_lbl.position = Vector2(_panel.size.x - 24, _list_y())
+	scroll_up_lbl.add_theme_font_size_override("font_size", TextScale.scaled(12))
 	scroll_up_lbl.add_theme_color_override("font_color", DISABLED_COLOR)
 	_panel.add_child(scroll_up_lbl)
 
 	var scroll_dn_lbl = Label.new()
 	scroll_dn_lbl.name = "ScrollDown"
 	scroll_dn_lbl.text = ""
-	scroll_dn_lbl.position = Vector2(_panel.size.x - 24, 52 + VISIBLE_ROWS * ROW_HEIGHT - ROW_HEIGHT)
-	scroll_dn_lbl.add_theme_font_size_override("font_size", 12)
+	scroll_dn_lbl.position = Vector2(_panel.size.x - 24,
+		_list_y() + float((_visible_rows() - 1) * _row_h()))
+	scroll_dn_lbl.add_theme_font_size_override("font_size", TextScale.scaled(12))
 	scroll_dn_lbl.add_theme_color_override("font_color", DISABLED_COLOR)
 	_panel.add_child(scroll_dn_lbl)
 
 	var footer = Label.new()
 	footer.text = "↑↓/D-pad: Navigate   %s: Fight   %s: Back" % [InputProfileManager.hint_for_action("ui_accept"), InputProfileManager.hint_for_action("ui_cancel")]
-	footer.position = Vector2(16, _panel.size.y - 28)
-	footer.add_theme_font_size_override("font_size", 12)
+	footer.position = Vector2(16, _panel.size.y - _footer_gap())
+	footer.add_theme_font_size_override("font_size", TextScale.scaled(12))
 	footer.add_theme_color_override("font_color", DISABLED_COLOR)
 	_panel.add_child(footer)
 
@@ -223,7 +292,7 @@ func _build_ui() -> void:
 
 func _refresh_list() -> void:
 	var total = _display_list.size()
-	for i in range(VISIBLE_ROWS):
+	for i in range(_visible_rows()):
 		var list_idx = scroll_offset + i
 		var highlight = _row_highlights[i]
 		var lbl = _row_labels[i]
@@ -234,16 +303,16 @@ func _refresh_list() -> void:
 			highlight.modulate.a = 1.0
 			if entry["type"] == "header":
 				world_lbl.text = "-- %s --" % entry["world"]
-				world_lbl.position = Vector2(10, 6)
+				world_lbl.position = Vector2(10, 6.0 * _tf())
 				lbl.text = ""
-				lbl.position = Vector2(10, 10)
+				lbl.position = Vector2(10, 10.0 * _tf())
 				highlight.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			else:
 				var boss = BOSSES[entry["index"]]
 				world_lbl.text = boss["world"]
-				world_lbl.position = Vector2(_panel.size.x - 110, 8)
+				world_lbl.position = Vector2(_panel.size.x - _world_col_w(), 8.0 * _tf())
 				lbl.text = boss["name"]
-				lbl.position = Vector2(10, 8)
+				lbl.position = Vector2(10, 8.0 * _tf())
 				highlight.mouse_filter = Control.MOUSE_FILTER_PASS
 		else:
 			world_lbl.text = ""
@@ -256,11 +325,11 @@ func _refresh_list() -> void:
 	if up_lbl:
 		up_lbl.text = "^" if scroll_offset > 0 else ""
 	if dn_lbl:
-		dn_lbl.text = "v" if (scroll_offset + VISIBLE_ROWS) < total else ""
+		dn_lbl.text = "v" if (scroll_offset + _visible_rows()) < total else ""
 
 
 func _update_selection() -> void:
-	for i in range(VISIBLE_ROWS):
+	for i in range(_visible_rows()):
 		var list_idx = scroll_offset + i
 		var is_selected = (list_idx == _get_display_index_for_selected())
 		_row_highlights[i].color = SELECTED_COLOR if is_selected else Color.TRANSPARENT
@@ -338,9 +407,9 @@ func _clamp_scroll() -> void:
 	var display_idx = _get_display_index_for_selected()
 	if display_idx < scroll_offset:
 		scroll_offset = display_idx
-	elif display_idx >= scroll_offset + VISIBLE_ROWS:
-		scroll_offset = display_idx - VISIBLE_ROWS + 1
-	scroll_offset = clampi(scroll_offset, 0, max(0, _display_list.size() - VISIBLE_ROWS))
+	elif display_idx >= scroll_offset + _visible_rows():
+		scroll_offset = display_idx - _visible_rows() + 1
+	scroll_offset = clampi(scroll_offset, 0, max(0, _display_list.size() - _visible_rows()))
 
 
 func _on_row_click(local_row: int) -> void:

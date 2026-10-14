@@ -5,7 +5,7 @@ extends Node
 ## Persists custom bindings to user://input/controls.json.
 
 const CONFIG_PATH = "user://input/controls.json"
-const CONFIG_VERSION = 2
+const CONFIG_VERSION = 3
 
 ## Remappable actions (gamepad only - keyboard stays fixed)
 const REMAPPABLE_ACTIONS = [
@@ -831,6 +831,48 @@ func save_config() -> void:
 	print("[InputProfileManager] Config saved")
 
 
+## ⛔ ENFORCES STRUKTURED'S 2026-10-04 RULING ON CONFIGS THAT PREDATE IT. That day L3 moved from
+## `ui_menu` to `battle_open_log` ("reuse L3" — see PROFILE_STANDARD's own comment, "moved,
+## deliberately, not dropped"). The DEFAULTS were updated; saved Customs were not, and no version
+## bump migrated them. Measured on his own machine from the .684 log:
+##
+##     ui_menu         -> buttons [6, 7]      6 = START, 7 = L3
+##     battle_open_log -> buttons [7]         7 = L3
+##
+## Button 7 serves both, and in battle `GameLoop`'s ui_menu branch wins and opens the AUTOBATTLE
+## EDITOR instead of the log, consuming the press. The comment beside that branch records the same
+## shape being read before as "a pause menu he could not escape".
+##
+## 🔑 KEYED ON THE COLLISION AND ON THE DEFAULT, NOT ON THE BUTTON NUMBER. A button is reclaimed
+## only if it is in `ui_menu`, ALSO in `battle_open_log`, and NOT in the default `ui_menu` — i.e.
+## this config is holding a copy the default has since moved. That keeps a deliberate rebind: one
+## made AFTER this fix is written at version 3 and never reaches this code, and 6 (START) survives
+## because the default still claims it.
+func _migrate_moved_log_button(cfg_version: int) -> void:
+	if cfg_version >= 3:
+		return
+	if not (custom_bindings.has("ui_menu") and custom_bindings.has("battle_open_log")):
+		return
+	var menu: Array = custom_bindings["ui_menu"]
+	var log_btns: Array = custom_bindings["battle_open_log"]
+	var default_menu: Array = PROFILE_STANDARD.get("ui_menu", [])
+	var reclaimed: Array = []
+	for btn in menu.duplicate():
+		if btn in log_btns and not (btn in default_menu):
+			menu.erase(btn)
+			reclaimed.append(btn)
+	if reclaimed.is_empty():
+		return
+	## ⚠️ NEVER LEAVE ui_menu EMPTY. A config with ui_menu == battle_open_log exactly would strip
+	## every button and leave the player no way to open the menu — worse than the collision.
+	if menu.is_empty():
+		custom_bindings["ui_menu"] = default_menu.duplicate()
+		print("[InputProfileManager] ui_menu would have been emptied by the 2026-10-04 L3 move; restored the default %s" % str(default_menu))
+		return
+	custom_bindings["ui_menu"] = menu
+	print("[InputProfileManager] moved %s from Menu to Battle Log, per the 2026-10-04 default" % str(reclaimed))
+
+
 func load_config() -> void:
 	## Tick 167: file-missing stays silent (legitimate first-launch
 	## state — no config yet to load). FileAccess.open-fail and
@@ -885,7 +927,13 @@ func load_config() -> void:
 		## same reasoning as the unrecognised-profile warning above. Presence of the key IS the
 		## discriminator, so no version bump is needed: absent means pre-fix.
 		profile_chosen_by_user = bool(data.get("profile_chosen_by_user", true))
-		# v1 hardcoded "8BitDo Ultimate Pro 2" as the startup default, so a persisted copy of it is indistinguishable from a real choice — treat it as unset so autodetect can correct the L/R inversion it carries.
+		# v1 hardcoded "8BitDo Ultimate Pro 2" as the startup default, so a persisted copy of it is indistinguishable from a real choice — treat it as unset and let autodetect decide.
+		# ⚠️ ITS ORIGINAL REASON IS STALE AND SAYING SO IS THE POINT: this read "so autodetect can
+		# correct the L/R inversion it carries". That inversion came from a7bcec0d, which encoded one
+		# device's quirk and applied it to every pad; it was reverted, and PROFILE_ULTIMATE_PRO_2 is
+		# now byte-identical to PROFILE_STANDARD. So the migration no longer corrects any BINDING —
+		# what it still does is clear a choice the player never made, which is reason enough to keep
+		# it. A comment that justifies code by a mechanism that no longer exists is read as current.
 		var cfg_version: int = int(data.get("version", 1))
 		if cfg_version < 2 and active_profile == "8BitDo Ultimate Pro 2":
 			profile_chosen_by_user = false
@@ -912,5 +960,9 @@ func load_config() -> void:
 			else:
 				coerced.append(int(val))
 			custom_bindings[action] = coerced
+
+	## cfg_version is declared inside a nested block above, so it is OUT OF SCOPE here -- read the
+	## version again from `data`, which is function-level.
+	_migrate_moved_log_button(int(data.get("version", 1)))
 
 	print("[InputProfileManager] Config loaded (profile: %s)" % active_profile)
