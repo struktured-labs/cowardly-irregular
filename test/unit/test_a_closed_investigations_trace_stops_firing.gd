@@ -70,9 +70,16 @@ func _scan() -> Dictionary:
 ## missing one is a parse error and run_tests.sh exits 3 — louder than any floor — but the
 ## predicate is also read by arms below through the preload, so pin it.
 func test_the_symbols_this_file_drives_exist() -> void:
-	assert_true(MenuScript.has_method("trace_menu"),
-		"FLOOR: trace_menu is the single gate every trace site routes through")
-	assert_true(MenuScript.has_method("tracing_menu_lifecycle"),
+	## ⛔ NOT has_method: both are STATICS on a preloaded script, and no test in this repo pins a
+	## static that way (every has_method here is on an autoload INSTANCE). Whether has_method reports
+	## a script's statics is unverified, so that arm could red on a CORRECT tree with a message
+	## claiming the symbol is missing. Reach them the way the arms below do instead -- a direct call,
+	## whose return type is the assertion. A rename is then a parse error and run_tests.sh exits 3,
+	## which helpers/guard_subject.gd measured as LOUDER than any floor for exactly this shape.
+	GameState.debug_log_enabled = false
+	assert_true(MenuScript.trace_menu("floor probe") is bool,
+		"FLOOR: trace_menu is the single gate every trace site routes through, and it answers a bool")
+	assert_true(MenuScript.tracing_menu_lifecycle() is bool,
 		"FLOOR: the gate's decision must be observable, or a guard can only pin spelling")
 	assert_true("debug_log_enabled" in GameState,
 		"FLOOR: the flag the gate reads")
