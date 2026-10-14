@@ -50,7 +50,15 @@ var party_gold: int = 500  # Starting gold
 
 ## Settings (exposed to UI)
 var encounter_rate_multiplier: float = 1.0  # 0.0 to 2.0, controlled via settings menu
-var debug_log_enabled: bool = true  # Show debug log overlay (default on)
+var debug_log_enabled: bool = true  # Show debug log overlay (default on) — THE OVERLAY ONLY; see debug_mode
+## Debug MODE, split from debug_log_enabled 2026-10-14. That flag is named and commented for an
+## on-screen overlay and was also the gate for advanced/meta job unlocking and the "[DEBUG]" action
+## batch — one switch for three unrelated concepts, papered over by the toggle's own subtitle.
+## ⚠️ SEEDED BY MIGRATION, not by this default: SaveSystem copies the persisted debug_log_enabled
+## into it on the first load that lacks it. A constant default would have handed all nine gated jobs
+## to every save that had turned the overlay OFF — struktured's own settings.json reads false, so his
+## six live unlock gates would have silently opened.
+var debug_mode: bool = true  # Dev shortcuts: advanced/meta jobs unlocked + the [DEBUG] action batch
 var debug_all_pcs_unlocked: bool = false  # Bypass spotlight gates (autobattle_locked) on all PCs; off by default so the W1 spotlight-unlock arc plays normally
 var show_controller_overlay: bool = true  # Show controller hint overlay during autogrind/battle
 var music_volume: int = 100  # 0-100 percent

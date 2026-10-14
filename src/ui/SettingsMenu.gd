@@ -33,7 +33,8 @@ const TEXT_SIZE_LABELS: Array = ["80%", "100%", "125%", "150%", "200%"]
 ## Current settings
 var encounter_rate: float = 1.0  # Default 100%
 var encounter_preset_index: int = 4  # Index into ENCOUNTER_PRESETS (100%)
-var debug_log_enabled: bool = true  # Default on
+var debug_log_enabled: bool = true  # Default on — THE OVERLAY ONLY
+var debug_mode: bool = true  # Dev shortcuts (advanced/meta jobs + the [DEBUG] batch); split from the overlay flag 2026-10-14
 var show_controller_overlay: bool = true  # Default on
 var music_volume: int = 100  # 0-100
 var music_volume_index: int = 4
@@ -82,7 +83,7 @@ var boss_llm_strategy_enabled: bool = false  # Phase 1 boss-AI strategic-intent 
 var party_llm_dialogue_enabled: bool = false  # Party LLM combat-line toggle (opt-in)
 var llm_custom_backend_enabled: bool = false  # tick 40: BYOK master switch (opt-in; web build hides entirely)
 var llm_rebalance_enabled: bool = false  # tick 42: LLM-guided rebalance daemon (opt-in)
-var debug_all_pcs_unlocked: bool = false  # Bypass spotlight gates; only visible when debug_log_enabled
+var debug_all_pcs_unlocked: bool = false  # Bypass spotlight gates; ALWAYS visible since 2026-06-04 (its own build site says why)
 var dev_full_kits: bool = false  # Item 18: grant all level-gated abilities to the party (testing)
 var dev_voice_every_line: bool = false  # Every party-line trigger speaks, no cooldown (testing the voice pack)
 
@@ -137,6 +138,8 @@ func _ready() -> void:
 			encounter_preset_index = _find_closest_preset(encounter_rate)
 		if "debug_log_enabled" in GameState:
 			debug_log_enabled = GameState.debug_log_enabled
+		if "debug_mode" in GameState:
+			debug_mode = GameState.debug_mode
 		if "show_controller_overlay" in GameState:
 			show_controller_overlay = GameState.show_controller_overlay
 		if "music_volume" in GameState:
@@ -313,7 +316,7 @@ func _build_ui() -> void:
 	# Debug Log toggle
 	var debug_item = _create_toggle_setting(
 		"Debug Log",
-		"Show debug messages on screen — also unlocks Advanced/Meta jobs and the debug actions below",
+		"Show debug messages on screen",
 		debug_log_enabled,
 		1
 	)
@@ -553,6 +556,22 @@ func _build_ui() -> void:
 	# find it; user feedback 2026-06-04 "couldn't find settings/debug menu
 	# where to unlock entire party"). The Jukebox / Fight Boss / Debug Teleport
 	# actions below remain debug-gated.
+	## ⚠️ ALWAYS VISIBLE, and that is load-bearing rather than a style choice: the "[DEBUG]" action
+	## batch below is gated on this flag, so a toggle hidden behind it would be a one-way door —
+	## migrate to false and dev mode could never be turned back on. The flag it was split from was
+	## always visible for the same reason.
+	var debug_mode_idx: int = _settings_items.size()
+	var debug_mode_item = _create_toggle_setting(
+		"Debug Mode",
+		"Dev shortcuts — Advanced/Meta jobs unlocked, plus the debug actions below",
+		debug_mode,
+		debug_mode_idx
+	)
+	vbox.add_child(debug_mode_item)
+	_settings_items.append({"control": debug_mode_item, "type": "toggle", "id": "debug_mode"})
+	MenuMouseHelper.make_clickable(debug_mode_item, debug_mode_idx, 400, 60,
+		_on_setting_click.bind(debug_mode_idx), _on_setting_hover.bind(debug_mode_idx))
+
 	var debug_unlock_idx: int = _settings_items.size()
 	var debug_unlock_item = _create_toggle_setting(
 		"Debug: Unlock All Party",
@@ -675,8 +694,8 @@ func _build_ui() -> void:
 			"Rebalance History",
 			"View what the daemon has done (%d entries)" % history_count,
 			"rebalance_history")
-	# Debug-only batch
-	if debug_log_enabled:
+	# Debug-only batch — debug_mode, not the overlay flag (2026-10-14 split)
+	if debug_mode:
 		# Tick 235: live subtitles. Jukebox shows the currently-playing track; Debug Teleport shows the current map. Both surface useful at-a-glance state without entering the submenu.
 		add_action.call("Jukebox", _get_jukebox_subtitle(), "jukebox")
 		add_action.call("Fight Boss", "[DEBUG] Battle a Masterite boss", "fight_boss")
@@ -1396,6 +1415,12 @@ func _adjust_setting(delta: int) -> void:
 		_save_llm_rebalance_setting()
 		if SoundManager:
 			SoundManager.play_ui("menu_move")
+	elif item["id"] == "debug_mode":
+		debug_mode = not debug_mode
+		_update_toggle_display(selected_index, debug_mode)
+		_save_debug_mode_setting()
+		if SoundManager:
+			SoundManager.play_ui("menu_move")
 	elif item["id"] == "debug_all_pcs_unlocked":
 		debug_all_pcs_unlocked = not debug_all_pcs_unlocked
 		_update_toggle_display(selected_index, debug_all_pcs_unlocked)
@@ -1584,6 +1609,14 @@ func _save_llm_custom_backend_setting() -> void:
 	print("[SETTINGS] BYOK %s (key=%s)" % [
 		"enabled" if llm_custom_backend_enabled else "disabled",
 		masked_key])
+	_persist_settings()
+
+
+func _save_debug_mode_setting() -> void:
+	if GameState:
+		GameState.debug_mode = debug_mode
+	settings_changed.emit("debug_mode", debug_mode)
+	print("[SETTINGS] Debug mode %s" % ("enabled" if debug_mode else "disabled"))
 	_persist_settings()
 
 

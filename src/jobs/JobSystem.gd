@@ -800,7 +800,8 @@ func is_job_unlocked(job_id: String) -> bool:
 	if job_type == 0:
 		return true
 	var gs: Node = get_node_or_null("/root/GameState")
-	if gs != null and "debug_log_enabled" in gs and bool(gs.debug_log_enabled):
+	## Dev shortcut, on debug_mode rather than the overlay flag it used to share (2026-10-14).
+	if gs != null and "debug_mode" in gs and bool(gs.debug_mode):
 		return true
 	var cond: Variant = job_data.get("unlock_condition", {})
 	if not (cond is Dictionary) or (cond as Dictionary).is_empty():

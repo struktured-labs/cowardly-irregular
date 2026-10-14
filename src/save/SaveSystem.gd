@@ -1215,6 +1215,7 @@ func save_settings() -> void:
 		settings["advance_commits_at_limit"] = GameState.advance_commits_at_limit
 		settings["default_battle_speed"] = GameState.default_battle_speed
 		settings["debug_log_enabled"] = GameState.debug_log_enabled
+		settings["debug_mode"] = GameState.debug_mode
 		settings["debug_all_pcs_unlocked"] = GameState.debug_all_pcs_unlocked
 		# Wave C: persist the dynamic-dialogue master switch alongside other
 		# UX preferences so the SettingsMenu toggle survives a relaunch.
@@ -1282,6 +1283,26 @@ func save_settings() -> void:
 			## A same-named staging file IS truncated by the next save — but a player who
 			## configures BYOK once may never trigger another one, so this orphan is unbounded.
 			push_error("[SaveSystem] save_settings: '%s' could NOT be removed (error: %d) and may contain your API key in plaintext. Delete it manually." % [staged, rm])
+
+
+## ⛔ THE debug_mode MIGRATION, AND IT IS WHY A CONSTANT DEFAULT IS THE WRONG MECHANISM. Until
+## 2026-10-14 `debug_log_enabled` — a flag named and commented for an on-screen overlay — ALSO gated
+## advanced/meta job unlocking, so an existing save's value for it IS that save's debug-mode choice.
+## A `debug_mode` defaulting true would have opened all nine gated jobs on every save that had the
+## overlay off; struktured's own settings.json reads false, so his six live unlock gates would have
+## silently opened. An explicit `debug_mode` always wins, so a later deliberate choice is never
+## re-migrated.
+##
+## 📌 A STATIC SEAM ON A DICTIONARY, DELIBERATELY, so a guard drives the real decision with no file
+## I/O. The alternative is a test that writes `user://settings.json` to exercise it — which is the
+## class CLAUDE.md documents as having overwritten real player data for nine deploys, and no
+## per-test override path exists for settings the way it does for script_exports.
+static func debug_mode_from(settings: Dictionary, fallback: bool) -> bool:
+	if settings.has("debug_mode"):
+		return bool(settings["debug_mode"])
+	if settings.has("debug_log_enabled"):
+		return bool(settings["debug_log_enabled"])
+	return fallback
 
 
 func load_settings() -> void:
@@ -1398,6 +1419,7 @@ func load_settings() -> void:
 			GameState.debug_log_enabled = bool(settings["debug_log_enabled"])
 			if DebugLogOverlay and DebugLogOverlay.has_method("set_enabled"):
 				DebugLogOverlay.set_enabled(GameState.debug_log_enabled)
+		GameState.debug_mode = debug_mode_from(settings, GameState.debug_mode)
 		if settings.has("debug_all_pcs_unlocked"):
 			GameState.debug_all_pcs_unlocked = bool(settings["debug_all_pcs_unlocked"])
 		# Wave C: dynamic-dialogue preference. Push to LLMService so the

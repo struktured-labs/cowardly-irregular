@@ -641,11 +641,10 @@ func _create_job_list_panel(panel_size: Vector2) -> Control:
 
 func _get_available_jobs() -> Array:
 	"""Get all available job IDs, excluding the other slot's current job.
-	Advanced (type 1) and Meta (type 2) jobs require debug mode."""
+	Advanced (type 1) and Meta (type 2) jobs require their unlock_condition;
+	debug mode is a shortcut PAST that, applied inside is_job_unlocked."""
 	var jobs_list = []
 	var exclude_id = ""
-	var debug_mode = GameState.debug_log_enabled if GameState else false
-
 	# Don't allow same job in both slots
 	if selected_slot == 0 and character.secondary_job_id != "":
 		exclude_id = character.secondary_job_id
@@ -665,9 +664,17 @@ func _get_available_jobs() -> Array:
 		## count / completion / achievement) so progressing through
 		## the story actually surfaces advanced + meta jobs at the
 		## right narrative beats. Debug mode still passes the check
-		## (preserves the dev shortcut). debug_mode local kept as a
-		## belt-and-suspenders for callers that toggle mid-frame.
-		if not JobSystem.is_job_unlocked(job_id) and not debug_mode:
+		## inside the helper, which is the ONLY gate now.
+		##
+		## ⛔ A SECOND GATE LIVED HERE AND WAS DEAD IN BOTH FLAG STATES, WHICH IS WHY IT SURVIVED:
+		## with the flag true `is_job_unlocked` short-circuited so the `and` was never evaluated,
+		## and with it false the local was false too, so the clause reduced to the helper. It would
+		## have COME ALIVE as the exact coupling the 2026-10-14 split removes — debug_mode false plus
+		## the overlay on would have listed every job here, in the one screen where it shows. Found
+		## by @cowir-adhoc; repointing it at the new flag would have preserved the bypass renamed.
+		## The claimed "belt-and-suspenders for callers that toggle mid-frame" had no window: the
+		## local was read once above and the helper reads the autoload per job, same synchronous loop.
+		if not JobSystem.is_job_unlocked(job_id):
 			continue
 		jobs_list.append(job_id)
 
