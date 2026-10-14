@@ -22,7 +22,13 @@ func _member(n: String, alive: bool) -> Combatant:
 	var c := Combatant.new()
 	c.initialize({"name": n, "max_hp": 100, "max_mp": 40, "attack": 10, "defense": 10, "magic": 10, "speed": 10})
 	add_child_autofree(c)
-	c.current_hp = 60 if alive else 0
+	## is_alive is its OWN bool (Combatant:89), NOT derived from current_hp -- setting hp to 0 left
+	## every "corpse" ALIVE, so two arms tested the wrong state and the third could not reach the
+	## revive branch at all. die() is what the codebase uses.
+	if alive:
+		c.current_hp = 60
+	else:
+		c.die()
 	return c
 
 
@@ -30,7 +36,10 @@ func _member(n: String, alive: bool) -> Combatant:
 ## and a bare resolver has an empty _player_party -- so the user's own stock IS the bag.
 func _resolver():
 	var r = HeadlessBattleResolver.new()
-	add_child_autofree(r)
+	## Only parent it if it is a Node -- `add_child_autofree(<non-Node>)` raises "p_child is null",
+	## which is non-fatal here but noise in the log and a real abort if it ever moves earlier.
+	if r is Node:
+		add_child_autofree(r)
 	return r
 
 
