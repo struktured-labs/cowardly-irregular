@@ -15,6 +15,8 @@ extends GutTest
 
 const MANIFEST := "res://data/sfx_manifest.json"
 const TOLERANCE_SECONDS := 2.0
+## derived in the note above the ledger: floor 2.11x legitimate, ceiling 7.8x observed defect
+const TRIGGER_RATIO := 3.5
 
 ## Measured 2026-09-17: authored 5.0, file 8.0. CAUSE FOUND (cowir-music, from the entry's own
 ## `prompt`): the 5.0 is not a stale measurement of this file, it is the length of the RETIRED
@@ -183,14 +185,35 @@ func test_a_declared_drift_still_drifts() -> void:
 ## exemption does buy is that the discrepancy must be DECLARED and the declaration must be
 ## arithmetically true, which is strictly more than the silence it replaces.
 ##
-## ⚠️ THE 1.5x FIGURE IS A REVIEW TRIGGER, NOT A BOUND — the assertion is the SET, exactly as the
-## door_open ledger works. No threshold is derivable here (see the note by TOLERANCE_SECONDS), so a
-## number that merely decides what gets LOOKED AT is honest where a number deciding pass/fail is not.
-## A new name appearing reds; a resolved name must leave in the same commit.
-const REGEN_MISMATCH := {
-	"menu_move": "a DERIVED asset: 554fbfaa3 is a user-directed iteration — 'low bubbly wobble with dampened highs and 50% pitch raise'. 0.50 / 1.5 = 0.333 against the shipped 0.320, so the pitch raise accounts for the length exactly. A regen would restore the un-pitched version he asked to change; it wants an ffmpeg_derive-class label, not a new number",
-	"advance_rogue_2": "source IS elevenlabs_foley, so deliberately regenerable — but b05d114b5 records the shipped asset as 'range compressed + floor raised after struktured flagged the set read quieter than fighter/cleric', i.e. post-processed AFTER generation. A regen loses a change his feedback caused. Whether the label should still say elevenlabs is his call, not this guard's",
-}
+## ✅ AND THE TRIGGER IS NOW DERIVED, 3.5x, WITH TWO BOUNDS FROM TWO SOURCES — because separating the
+## two populations correctly made a real corridor appear where 1.5x had none. The earlier attempt
+## compared "all drift" against "all drift" and found a smooth tail; the populations that matter are:
+##     FLOOR    worst LEGITIMATE shortfall      2.11x   advance_rogue_2 (0.55 requested, 0.261 given)
+##              — the API routinely returns less than the requested duration, and a regen requests
+##                the same thing again, so this is not a defect in either direction
+##     CEILING  smallest TRUE defect observed   7.8x    the sox-rebuilt footsteps, when they still
+##                                                      declared the retired 0.5s ElevenLabs request
+## 3.5x sits with 1.7x margin below the ceiling and 1.7x above the floor. ⚠️ NAMED BLIND SPOT: the
+## ceiling is the smallest defect SEEN, not the smallest possible — a future process swap that
+## happens to land within 3.5x of its request passes this arm. The guard against that is the source
+## label, not this ratio.
+## The assertion is still the SET, so a new name reds and a resolved name must leave in the same
+## commit; the set is simply empty today.
+## ✅ EMPTY, AND THAT IS THE RESOLVED STATE RATHER THAN AN UNWRITTEN ONE. Both remaining entries
+## turned out to be EXPECTED ElevenLabs behaviour once I looked at the right evidence:
+##   menu_move        prompt_influence 0.95, and 554fbfaa3 rewrote its PROMPT in the same commit as
+##                    the asset — the signature of a regeneration. Its prompt describes the sound
+##                    that shipped ("low bubbly boing tick … dampened highs, pitched up 50%").
+##   advance_rogue_2  source elevenlabs_foley, prompt written with the asset, describes it.
+## ⛔ I HAD CLAIMED menu_move WAS A POST-PROCESSED DERIVATIVE — "0.50 / 1.5 = 0.333 against a shipped
+## 0.320, so the pitch raise accounts for the length exactly" — AND THE SPECTRUM REFUTES IT. A 1.5x
+## pitch raise multiplies frequency by 1.5; measured against the pre-554fbfaa3 asset the peak went
+## DOWN 10x (7201 Hz -> 691 Hz), centroid 7714 -> 777. It is a different sound, regenerated from a
+## rewritten prompt, and "pitched up 50%" is TEXT SENT TO THE API, not an operation applied after.
+## The arithmetic I rested on was a coincidence fit: 0.50/0.320 is 1.5625, which I rounded to 1.5 and
+## then called exact. See the trigger note below — this is why the trigger moved.
+const REGEN_MISMATCH := {}
+
 
 
 func _regenerable(entry: Dictionary) -> bool:
@@ -231,7 +254,7 @@ func test_a_regenerable_cue_is_plausibly_the_output_of_its_request() -> void:
 			trim_declared += 1
 			continue
 		var ratio: float = maxf(declared / actual, actual / declared)
-		if ratio >= 1.5:
+		if ratio >= TRIGGER_RATIO:
 			flagged.append(str(k))
 	## Buckets must sum, the same discipline as the arm above: a silent skip is a finding.
 	assert_eq(locked + untimed + undecodable + considered, sfx.size(),
@@ -254,6 +277,10 @@ func test_a_regenerable_cue_is_plausibly_the_output_of_its_request() -> void:
 func test_every_declared_regen_mismatch_still_mismatches() -> void:
 	## No stale allowlist, mirroring test_a_declared_drift_still_drifts: an entry that has been fixed
 	## must leave the ledger, or the ledger starts vouching for cues nobody has looked at.
+	## ⚠️ THE LEDGER IS EMPTY TODAY, so this arm's loop runs zero times and it is deliberately NOT
+	## floored on a non-empty ledger — empty is the resolved state, and demanding an entry would mean
+	## demanding an unfixed cue. It becomes load-bearing again the moment a name is added, which is
+	## the only way a name can be added: the set arm above reds first.
 	var sfx: Dictionary = _sfx()
 	var resolved: Array[String] = []
 	for k in REGEN_MISMATCH.keys():
@@ -270,7 +297,7 @@ func test_every_declared_regen_mismatch_still_mismatches() -> void:
 		var declared: float = float(e.get("duration_seconds", 0.0))
 		if actual <= 0.0 or declared <= 0.0:
 			continue
-		if maxf(declared / actual, actual / declared) < 1.5:
+		if maxf(declared / actual, actual / declared) < TRIGGER_RATIO:
 			resolved.append(key)
 	assert_eq(resolved, [],
 		"these cues no longer contradict their request and must leave REGEN_MISMATCH: %s" % [resolved])
@@ -294,7 +321,7 @@ func test_the_rejected_footsteps_cannot_be_regenerated() -> void:
 			unprotected.append(key)
 		var actual: float = _length_of(str(e.get("file", "")))
 		var declared: float = float(e.get("duration_seconds", 0.0))
-		if actual > 0.0 and declared > 0.0 and maxf(declared / actual, actual / declared) >= 1.5:
+		if actual > 0.0 and declared > 0.0 and maxf(declared / actual, actual / declared) >= TRIGGER_RATIO:
 			mis_declared.append("%s declares %.3f for a %.3fs asset" % [key, declared, actual])
 	assert_eq(seen, 18, "expected 18 footstep cues (6 terrains x 3 variants), found %d" % seen)
 	assert_eq(unprotected, [],
