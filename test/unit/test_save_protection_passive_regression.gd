@@ -14,6 +14,47 @@ extends GutTest
 const GAME_STATE_PATH := "res://src/meta/GameState.gd"
 
 
+var _prior_level: float = 0.0
+var _prior_effects: Array = []
+
+
+## ⛔ THE THREE RUNTIME ARMS BELOW CALL gs.add_corruption ON THE LIVE AUTOLOAD, AND THAT CALL DOES
+## MORE THAN IT SAYS. Each already snapshots and restores `corruption_level` — carefully, three times
+## over — and `add_corruption` ends with `if corruption_level > old_level: _apply_random_corruption_
+## effect()`, which APPENDS a uniformly random one of five effects to `corruption_effects`. Three
+## calls, three rolls, so P(ability_corruption lands at least once) = 1 - (4/5)^3 = 48.8%.
+##
+## That leak red `test_target_any_ally_and_guess` during the .692 chain and only in a sweep: with
+## `ability_corruption` set, BattleManager misfires 10% of player casts, so a Cleric's heal
+## occasionally became a Raise on a living ally and landed nothing. The other four effects leak at
+## the same odds — stat_drain erodes stats per round, encounter_surge changes spawn rates,
+## bp_instability jitters AP gain — so this file could seed intermittent reds in three subsystems.
+##
+## 🔑 THE AUTHOR RESTORED WHAT THEY SET, NOT WHAT THE CALL DID. `corruption_level` is assigned here
+## and was restored; `corruption_effects` is never named in this file and was appended to by the
+## callee. Restoring your own writes is not the same as restoring the state you disturbed.
+func before_each() -> void:
+	_prior_level = 0.0
+	_prior_effects = []
+	var gs = Engine.get_main_loop().root.get_node_or_null("GameState") if Engine.get_main_loop() else null
+	if gs == null:
+		return
+	_prior_level = float(gs.corruption_level)
+	_prior_effects = (gs.corruption_effects as Array).duplicate()
+
+
+## FIRST in the teardown and order-independent: it finds the autoload itself and needs nothing to
+## have run before it, so an error in a later line cannot skip it.
+func after_each() -> void:
+	var gs = Engine.get_main_loop().root.get_node_or_null("GameState") if Engine.get_main_loop() else null
+	if gs == null:
+		return
+	gs.corruption_level = _prior_level
+	## assign(), never `=`: corruption_effects is Array[String] and a plain Array assignment is a
+	## SCRIPT ERROR that aborts this function, leaving every later restore silently unrun.
+	(gs.corruption_effects as Array).assign(_prior_effects)
+
+
 func _read(p: String) -> String:
 	return FileAccess.get_file_as_string(p)
 
