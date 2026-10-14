@@ -27,8 +27,18 @@ static func _view_size() -> Vector2:
 
 ## ⛔ DERIVED FROM THE CONSUMER'S OWN LIST, NOT A COPY. A hardcoded [0.8, 1.0, 1.25, 1.5, 2.0] goes
 ## quietly stale the day a preset is added, and the arm meant to catch "it broke at 125%" then never
-## visits the new step. NO FALLBACK DEFAULT: a rename must red, and a fallback would make this pass
-## against a ladder the player cannot select.
+## visits the new step.
+##
+## 📌 NO FALLBACK TO A HARDCODED LADDER — the EMPTY default one line below is deliberate and is not
+## the same thing. A fallback ladder would make these arms pass against a set the player cannot
+## select; the empty default hands the floor something it can fail on, by name.
+##
+## ⚠️ AND THIS REACH IS RUNTIME, WHICH IS WHY "a rename reds" IS TRUE HERE and would be FALSE of a
+## `class_name` const reach. `SettingsMenu.TEXT_SIZE_PRESETS` as a static reach resolves at PARSE
+## time, so a rename stops the file RUNNING — `run_tests.sh` EC=3, whose first listed cause is a
+## stale import cache, which cannot fix it. Keyed by string off `get_script_constant_map()`, a
+## rename yields `[]` and the floor reds as an ordinary named failure (@cowir-music's finding;
+## @cowir-overworld corrected the same sentence in their own file).
 ##
 ## ⛔ THE FLOOR LIVES IN HERE, NOT ONLY IN ITS OWN ARM. An empty or renamed ladder makes every
 ## `for scale in _presets()` iterate ZERO times and pass green; asserting inside the helper makes
