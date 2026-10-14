@@ -14,8 +14,9 @@ static func configure_battle_log(rich_text_label: RichTextLabel) -> void:
 	"""Configure a RichTextLabel for retro battle log appearance"""
 
 	# Set font
-	rich_text_label.add_theme_font_size_override("normal_font_size", 12)
-	rich_text_label.add_theme_font_size_override("bold_font_size", 12)
+	## The battle log carries every refusal, damage and bark line, so it is the one surface a player who raised Text Size most needs; it was pinned at 12 whatever they set.
+	rich_text_label.add_theme_font_size_override("normal_font_size", TextScale.scaled(12))
+	rich_text_label.add_theme_font_size_override("bold_font_size", TextScale.scaled(12))
 
 	# Colors
 	rich_text_label.add_theme_color_override("default_color", Color(0.9, 0.9, 1.0))
