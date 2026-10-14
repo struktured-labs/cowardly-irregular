@@ -35,8 +35,12 @@ func _cell(rows: Dictionary, label: String, field: String) -> String:
 	return str((row as Dictionary).get(field, "<missing>"))
 
 
+## total_exp is DERIVED from the rate and the duration, not omitted: _record_session writes thirteen
+## fields and this helper wrote four, so a fixture without it reads 0 for every session and whichever
+## ranking is in force picks the first entry by accident rather than on merit.
 func _session(battles: int, epm: float, secs: float, reason: String) -> Dictionary:
-	return {"battles": battles, "exp_per_min": epm, "duration_sec": secs, "reason": reason}
+	return {"battles": battles, "exp_per_min": epm, "duration_sec": secs, "reason": reason,
+		"total_exp": int(round(epm * secs / 60.0))}
 
 
 func test_the_best_grind_is_the_best_one_not_the_last_one() -> void:
