@@ -35,6 +35,7 @@ extends GutTest
 ## and 0 villages override the "inn_interior" default (verified from source, not from the comment
 ## that says so). Fixed for symmetry; only InnInterior's lie reached a player.
 
+const GdSource := preload("res://test/unit/helpers/gd_source.gd")
 const BattleManagerScript = preload("res://src/battle/BattleManager.gd")
 const MenuScript = preload("res://src/battle/BattleCommandMenu.gd")
 const ResolverScript = preload("res://src/autogrind/HeadlessBattleResolver.gd")
@@ -252,7 +253,13 @@ func test_every_revive_caller_accounts_for_the_refusal() -> void:
 			if not f.ends_with(".gd"):
 				continue
 			var path: String = "%s/%s" % [d, f]
-			var lines: PackedStringArray = FileAccess.get_file_as_string(path).split("\n")
+			## ⛔ THE CODE HALF, NOT THE RAW FILE. Measured on this very ratchet: pre-fix,
+			## _execute_revival_ability's own header says "Pre-fix revive only called target.revive()",
+			## so a raw text search for ".revive(" anchored on that COMMENT, swept in the loop guard's
+			## is_alive below it, and the WORST defect in this change read as accounted for. The
+			## ratchet would not have caught the bug it exists to catch. strip_comments keeps the
+			## pre-comment part of every line, so indices still align.
+			var lines: PackedStringArray = GdSource.code_of(path).split("\n")
 			for i in lines.size():
 				var line: String = lines[i].strip_edges()
 				if line.begins_with("#") or line.begins_with("##"):
@@ -264,9 +271,11 @@ func test_every_revive_caller_accounts_for_the_refusal() -> void:
 					continue
 				checked += 1
 				var body: String = _enclosing_function(lines, i)
+				## AFTER means after THIS call, by line index. body.find(".revive(") finds the FIRST
+				## occurrence in the function, which a header comment can own.
 				var accounted: bool = ("can_be_revived" in body) \
 					or ('remove_status("permakilled")' in body) \
-					or ("is_alive" in body.substr(body.find(".revive(")))
+					or ("is_alive" in _after_the_call(lines, i))
 				if not accounted:
 					offenders.append("%s:%d — %s" % [path, i + 1, line])
 	assert_gt(checked, 4,
@@ -275,6 +284,20 @@ func test_every_revive_caller_accounts_for_the_refusal() -> void:
 		("revive() refuses a permakilled ally. A caller that ignores that announces a revive which "
 		+ "never happened — consult can_be_revived(), strip the marker first, or re-check is_alive "
 		+ "after. Found: %s") % str(offenders))
+
+
+## The function's text from line `at` onward — the region in which a post-revive is_alive check
+## must appear. Keyed to the caller's own line, so no earlier mention can move the anchor.
+func _after_the_call(lines: PackedStringArray, at: int) -> String:
+	var stop: int = lines.size()
+	for i in range(at + 1, lines.size()):
+		if lines[i].begins_with("func ") or lines[i].begins_with("static func "):
+			stop = i
+			break
+	var out: PackedStringArray = []
+	for i in range(at, stop):
+		out.append(lines[i])
+	return "\n".join(out)
 
 
 ## The text of the function containing line `at`, from its `func` header to the next one.
