@@ -66,9 +66,15 @@ static func stack_offset(host: Node, exclude: Node) -> float:
 	return used
 
 
+## ⛔ `fade_dur` IS APPENDED, NOT INSERTED, and it exists for exactly one caller. Eleven of the
+## twelve toasts fade over the same span they rise over — identical in every census row — so the
+## default keeps `dur` and none of their argument lists move. `QuestExaminePoint` is the twelfth:
+## it rises over `hold + fade` while fading over `fade` alone after a `hold` delay, where hold is
+## derived from the string's word count. That is a reading time, not a notice, and flattening it
+## would change what cowir-story measured as 24 prose strings' legibility.
 static func show(host: Node2D, text: String, width: float, baseline_top: float, col: Color,
 		min_h: float = 18.0, rise: float = 20.0, dur: float = 1.6, delay: float = 0.6,
-		stack: bool = false, label_name: String = "WorldToast") -> Label:
+		stack: bool = false, label_name: String = "WorldToast", fade_dur: float = -1.0) -> Label:
 	if text == "" or host == null or not host.is_inside_tree():
 		return null
 	var lbl := Label.new()
@@ -91,7 +97,7 @@ static func show(host: Node2D, text: String, width: float, baseline_top: float, 
 	var tw := host.create_tween()
 	tw.set_parallel(true)
 	tw.tween_property(lbl, "position:y", at.y - rise, dur)
-	tw.tween_property(lbl, "modulate:a", 0.0, dur).set_delay(delay)
+	tw.tween_property(lbl, "modulate:a", 0.0, (dur if fade_dur < 0.0 else fade_dur)).set_delay(delay)
 	tw.chain().tween_callback(func():
 		if is_instance_valid(lbl):
 			lbl.queue_free())

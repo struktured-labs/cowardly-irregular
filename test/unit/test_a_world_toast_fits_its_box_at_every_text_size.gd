@@ -37,6 +37,9 @@ const CALLERS := {
 	"SwordInscription": ["res://src/exploration/SwordInscription.gd", 260.0],
 	"TallyWall": ["res://src/exploration/TallyWall.gd", 240.0],
 	"WildflowerPatch": ["res://src/exploration/WildflowerPatch.gd", 260.0],
+	## cowir-story's, converted to a caller 2026-10-14 (cowir-main's ruling). It is the one caller
+	## whose fade span differs from its rise span, so it also covers `show`'s `fade_dur`.
+	"QuestExaminePoint": ["res://src/exploration/QuestExaminePoint.gd", 300.0],
 }
 
 var _vp: SubViewport = null
@@ -162,8 +165,8 @@ func test_every_toast_fits_its_box_at_every_preset() -> void:
 		if absf(hi - lo) > 0.5:
 			bad.append("%s bottom edge MOVES across presets: %.0f..%.0f — a taller toast grew DOWN over the prop instead of up (%s)" % [
 				name, lo, hi, str(per)])
-	assert_eq(authored, 9,
-		"CONTROL: 9 of the 11 callers must carry authored toast literals (found %d); the other two build theirs at runtime" % authored)
+	assert_eq(authored, 10,
+		"CONTROL: 10 of the 12 callers must carry authored toast literals (found %d); FireplaceSecret and LockedDoorFlavor build theirs at runtime" % authored)
 	assert_gt(checked, 90,
 		"CONTROL: only %d toasts were built across %d callers x %d presets; the sweep did not run" % [checked, CALLERS.size(), PRESETS.size()])
 	bad.sort()
