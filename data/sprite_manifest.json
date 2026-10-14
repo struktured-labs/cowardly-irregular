@@ -972,8 +972,8 @@
       "tier": "T1",
       "source": "tools/derive_overworld_roamer_sheets.py: autocrop + BOX downscale of the battle idle",
       "derived_from_idle": {
-        "start": 5,
-        "end": 5
+        "start": 3,
+        "end": 3
       }
     },
     "rogue_process": {
@@ -2865,8 +2865,8 @@
       "fps": 8,
       "animations": {
         "idle": {
-          "start": 5,
-          "end": 5
+          "start": 3,
+          "end": 3
         },
         "attack": {
           "start": 2,
