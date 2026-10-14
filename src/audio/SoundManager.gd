@@ -1113,9 +1113,24 @@ const _BATTLE_VOLUME_TRIM_DB: Dictionary = {
 
 
 func play_ui(sound_key: String) -> void:
-	"""Play a UI sound effect — file-based if available, else procedural"""
+	"""Play a UI sound effect — world variant first, then default, else procedural"""
 	# Always pass an explicit volume — otherwise a prior trimmed play sticks (volume_db persists on the AudioStreamPlayer).
+	## The TRIM is read off the BASE key, matching play_battle's _battle_level: a trim corrects a
+	## cue's ROLE on this channel, and a world variant of the same role inherits it rather than
+	## needing its own entry. A variant that wants a different level declares its own trim.
 	var trim: float = float(_UI_VOLUME_TRIM_DB.get(sound_key, 0.0))
+	## ⛔ VARIANT FIRST, EXACTLY AS play_battle DOES IT, AND THIS CHANNEL HAD NO WORLD LOOKUP AT ALL.
+	## play_battle's own comment records the twin: "Cycle #13: play_ability was the ONLY prefix-aware
+	## path, so an authored w4_enemy_death could never be reached from the battle side." The same held
+	## here — an authored w5_door_open was unreachable, so the 12 interior doors outside World 1 all
+	## opened with `door_open`, whose prompt is "medieval dungeon door, old iron hinges".
+	##
+	## A PROVABLE NO-OP WHEN IT LANDED: measured over the 49 cue keys a literal play_ui reaches,
+	## ZERO had a w2_-w6_ variant in the manifest, so this changed the sound of nothing. It is the
+	## reachability that was missing, not the assets — which is why it ships before any of them.
+	var world_key: String = _get_world_sfx_prefix() + sound_key
+	if world_key != sound_key and _try_play_sfx_from_manifest(_ui_player, world_key, SFX_UI_BASE_DB + trim):
+		return
 	if _try_play_sfx_from_manifest(_ui_player, sound_key, SFX_UI_BASE_DB + trim):
 		return
 	if not SOUNDS.has(sound_key):
