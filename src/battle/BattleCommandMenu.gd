@@ -191,8 +191,12 @@ func show_win98_command_menu(combatant: Combatant) -> void:
 			if JobSystem.can_use_ability(combatant, remembered_ability_id):
 				submenu_memory["ability_menu"] = combatant.last_ability_selection
 			else:
+				## ⛔ SKIP IT THIS TURN, DO NOT ERASE IT. `can_use_ability` refuses for TRANSIENT
+				## reasons too -- `has_status("silence")` at JobSystem:761 and the MP cost at :766 --
+				## so clearing here made a two-turn silence forget the player's position FOREVER.
+				## A stale key is harmless: it is only ever applied when this same check passes, so
+				## an ability genuinely lost to a job change is skipped every turn and never used.
 				print("[CMD MEM] Skipping invalid ability memory '%s' for %s" % [remembered_ability_id, combatant.combatant_name])
-				combatant.last_ability_selection = ""
 		if combatant.last_item_selection != "":
 			submenu_memory["item_menu"] = combatant.last_item_selection
 		print("[CMD MEM] Submenu memory: %s" % str(submenu_memory))

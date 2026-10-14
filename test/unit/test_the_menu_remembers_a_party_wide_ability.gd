@@ -43,7 +43,10 @@ func test_no_store_branch_keeps_a_raw_row_id() -> void:
 			continue
 		## The three legitimate forms: the suffix-strip, the normalising concat, and a guarded
 		## fallback that only applies when there is no ability_id to normalise with.
-		var ok: bool = l.contains("ability_menu_") or l.contains(".substr(") or l.contains('= ""')
+		## ⚠️ `= ""` IS NOT ALLOWED HERE ANY MORE. It was, while the validator erased the memory
+		## on a refusal; that erase is gone (see the arm below) and all six assignments in this file
+		## are now store forms. Leaving the allowance in would let the erase return invisibly.
+		var ok: bool = l.contains("ability_menu_") or l.contains(".substr(")
 		if not ok:
 			offenders.append(l.strip_edges())
 	assert_eq(offenders, [],
@@ -51,14 +54,46 @@ func test_no_store_branch_keeps_a_raw_row_id() -> void:
 		+ "survives the validator's strip and is rejected as an unknown ability: %s" % [offenders])
 
 
+## ⛔ SECOND HALF: A TRANSIENT REFUSAL MUST NOT ERASE THE MEMORY. `can_use_ability` refuses for
+## reasons that pass — `has_status("silence")` at JobSystem:761, and the MP cost at :766 — and the
+## validator used to answer by blanking `last_ability_selection`. So a two-turn silence forgot the
+## player's position permanently, and my normalisation above made that newly reachable for the
+## party-wide abilities that previously never persisted at all.
+##
+## ⚠️ EVIDENCE DIFFERS FROM THE FIRST HALF, and I am not blurring them: the format mismatch is in
+## HIS log twice, named by the game. This half is a code read — his session contains no
+## silence-driven clear, so it is reachable rather than observed.
+##
+## ✅ Skipping without erasing is safe because the key is only ever APPLIED when this same check
+## passes: an ability truly lost to a job change is skipped every turn and never used.
+func test_a_refusal_skips_the_memory_without_erasing_it() -> void:
+	var code: String = _code()
+	var at: int = code.find("Skipping invalid ability memory")
+	assert_gt(at, 0, "PRECONDITION: the refusal branch must still be findable")
+	if at <= 0:
+		return
+	## Bounded at the next statement block, not a fixed width.
+	var upto: int = code.find("if combatant.last_item_selection", at)
+	assert_gt(upto, at, "PRECONDITION: the refusal branch must be bounded by the next field's check")
+	if upto <= at:
+		return
+	var branch: String = code.substr(at, upto - at)
+	assert_false(branch.contains('last_ability_selection = ""'),
+		"a refusal must SKIP the memory for this turn, not erase it — silence and an MP shortfall "
+		+ "both pass, and erasing makes a temporary condition permanent")
+
+
 ## SIDE TWO: the validator still strips exactly that prefix. If it ever strips something else, the
 ## store above is emitting the wrong format and this arm is the warning.
 func test_the_validator_still_strips_that_exact_prefix() -> void:
 	var code: String = _code()
-	assert_string_contains(code, 'replace("ability_menu_", "")',
+	## assert_true, not assert_string_contains: on failure the latter prints the whole 4000-line
+	## haystack and buries the reason. A guard whose red is unreadable costs the next reader more
+	## than it saves.
+	assert_true(code.contains('replace("ability_menu_", "")'),
 		"the validator must still strip 'ability_menu_' — the store format above is chosen to "
 		+ "match it, so a change here without a change there silently breaks the memory again")
-	assert_string_contains(code, "can_use_ability",
+	assert_true(code.contains("can_use_ability"),
 		"and must still ask whether the remembered id is usable, which is what the strip feeds")
 
 
