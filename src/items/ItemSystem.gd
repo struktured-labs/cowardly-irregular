@@ -401,7 +401,13 @@ func _apply_item_effects(user: Combatant, target: Combatant, item: Dictionary) -
 			# bonus_bbcode swaps to cyan — heal-positive lines stayed
 			# inaccessible. Matches BattleManager's tick-237 pattern.
 			var _bonus: String = AccessibilityPalette.bonus_bbcode()
-			if _heal_consumed_by_revive:
+			## revive() refuses a permakilled ally: the popup above is guarded by revived_amount, this
+			## log never was. Every caller IS gated by ineffective_use_reason, so this is the backstop.
+			if not target.is_alive:
+				print("  → %s is permakilled; the revive refused" % target.combatant_name)
+				if BattleManager:
+					BattleManager.battle_log_message.emit("[color=gray]%s is beyond reviving — that death is permanent.[/color]" % target.combatant_name)
+			elif _heal_consumed_by_revive:
 				print("  → %s was revived with %d HP!" % [target.combatant_name, target.current_hp])
 				if BattleManager:
 					BattleManager.battle_log_message.emit("  → [color=%s]%s[/color] was revived with [color=%s]%d[/color] HP!" % [_bonus, target.combatant_name, _bonus, target.current_hp])

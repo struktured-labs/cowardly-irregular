@@ -5014,11 +5014,14 @@ func _item_effects_heal(effects: Dictionary) -> bool:
 ## by manual and in-battle autobattle execution (both resolve through this same path).
 func _smart_retarget_revive(caster: Combatant, original_target: Variant) -> Combatant:
 	var ally_party: Array = player_party if caster in player_party else enemy_party
+	## can_be_revived, not just !is_alive: a permakilled ally used to satisfy both branches, so a
+	## Phoenix Down was CONSUMED on a corpse it could never raise. Fall through to one it can.
 	if original_target != null and is_instance_valid(original_target) and original_target is Combatant \
-			and original_target in ally_party and not original_target.is_alive:
+			and original_target in ally_party and not original_target.is_alive \
+			and original_target.can_be_revived():
 		return original_target
 	for member in ally_party:
-		if is_instance_valid(member) and not member.is_alive:
+		if is_instance_valid(member) and not member.is_alive and member.can_be_revived():
 			return member
 	return null
 
@@ -6679,10 +6682,20 @@ func _execute_revival_ability(caster: Combatant, ability: Dictionary, targets: A
 	## Matches the _execute_healing_ability emit shape.
 	var revive_pct = ability.get("revive_percentage", 50)
 
+	var any_revived: bool = false
+	var refused: Array[String] = []
 	for target in targets:
 		if not target or not is_instance_valid(target) or target.is_alive:
 			continue
 
+		## revive() refuses a permakilled ally and the emits below fired regardless — a green popup
+		## plus "is revived with 0 HP!" over a corpse that never stood up. Say what happened instead.
+		if not target.can_be_revived():
+			refused.append(str(target.combatant_name))
+			print("  → %s is permakilled; revive refused" % target.combatant_name)
+			continue
+
+		any_revived = true
 		var revive_hp = int(target.max_hp * revive_pct / 100.0)
 		target.revive(revive_hp)
 		# The actual HP after revive may differ from revive_hp due
@@ -6693,6 +6706,12 @@ func _execute_revival_ability(caster: Combatant, ability: Dictionary, targets: A
 		var revive_log: String = "  → [color=%s]%s[/color] is revived with [color=%s]%d[/color] HP!" % [_bonus, target.combatant_name, _bonus, target.current_hp]
 		battle_log_message.emit(revive_log)
 		print("  → %s is revived with %d HP!" % [target.combatant_name, target.current_hp])
+
+	## One line per refused ally, after the loop, so a mixed target set still reports both halves.
+	for who in refused:
+		battle_log_message.emit("[color=gray]%s is beyond reviving — that death is permanent.[/color]" % who)
+	if not any_revived and refused.is_empty():
+		battle_log_message.emit("[color=gray]%s's revival finds no one to raise.[/color]" % caster.combatant_name)
 
 
 ## Named debuffs. A stat modifier below 1.0 is not enough: volatility_down is 0.5 and lands as a buff.
@@ -8060,6 +8079,18 @@ func _execute_item(user: Combatant, item_id: String, targets: Array) -> void:
 		## generic fizzle (which still means the item was wasted and consumed below).
 		var item_display: String = item_id.replace("_", " ").capitalize()
 		if is_revival_item:
+			## "everyone is standing" is false when a corpse IS present and merely unraisable, which
+			## is now how a permakilled-only party reaches here. Name the real reason; keep the item.
+			var ally_party: Array = player_party if user in player_party else enemy_party
+			var unraisable: bool = false
+			for m in ally_party:
+				if is_instance_valid(m) and not m.is_alive and not m.can_be_revived():
+					unraisable = true
+					break
+			if unraisable:
+				print("%s holds %s - the fallen are beyond reviving" % [user.combatant_name, item_display])
+				battle_log_message.emit("[color=gray]%s holds %s — the fallen are beyond reviving.[/color]" % [user.combatant_name, item_display])
+				return
 			print("%s holds %s - everyone is standing" % [user.combatant_name, item_display])
 			battle_log_message.emit("[color=gray]%s holds %s — everyone is standing.[/color]" % [user.combatant_name, item_display])
 			return

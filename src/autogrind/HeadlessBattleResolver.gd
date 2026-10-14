@@ -1574,6 +1574,11 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 			for target in targets:
 				if target == null or not is_instance_valid(target) or target.is_alive:
 					continue
+				## Parity with the live executor: revive() refuses a permakilled PC, so logging the
+				## revive unconditionally printed "revives X with 0 HP" over a corpse.
+				if not target.can_be_revived():
+					_log("%s cannot raise %s — that death is permanent" % [caster.combatant_name, target.combatant_name])
+					continue
 				target.revive(int(target.max_hp * revive_pct / 100.0))
 				_log("%s revives %s with %d HP" % [caster.combatant_name, target.combatant_name, target.current_hp])
 
