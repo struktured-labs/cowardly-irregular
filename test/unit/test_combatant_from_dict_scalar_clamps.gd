@@ -46,11 +46,19 @@ func test_current_mp_clamps_against_max_mp() -> void:
 		"current_mp must clamp to [0, max_mp]")
 
 
-func test_current_ap_clamps_to_negative_4_to_4() -> void:
-	# Game-design range per CLAUDE.md combat section.
-	var src := _read(COMBATANT)
-	assert_true(src.contains("current_ap = clampi(int(data[\"current_ap\"]), -4, 4)"),
-		"current_ap must clamp to [-4, 4] — the Defer/Advance system locks this range")
+## Was a source pin on the literal `-4, 4`, which certified a SPELLING: naming the bounds
+## (AP_FLOOR/AP_CEILING) broke it while the clamp was intact. Behavioural and derived now.
+func test_current_ap_clamps_to_the_engine_range() -> void:
+	var high := Combatant.new()
+	autofree(high)
+	high.from_dict({"current_ap": 99})
+	assert_eq(high.current_ap, Combatant.AP_CEILING,
+		"a corrupt save must not leave AP above the ceiling the Advance queue assumes")
+	var low := Combatant.new()
+	autofree(low)
+	low.from_dict({"current_ap": -99})
+	assert_eq(low.current_ap, Combatant.AP_FLOOR,
+		"nor below the floor — can_brave reads that bound to decide what a queue can pay for")
 
 
 func test_job_level_floored_at_1() -> void:

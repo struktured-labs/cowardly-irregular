@@ -79,7 +79,12 @@ static func migrate_stat_scale(data: Dictionary) -> Dictionary:
 ## Current state
 var current_hp: int
 var current_mp: int
-var current_ap: int = 0  # Action Points: -4 to +4 range
+## The AP window. Named because six sites hard-coded these bounds (can_brave the floor alone, the
+## four clamps both) and the invariant is not expressible without them: a queue is payable only
+## while AP_FLOOR + ADVANCE_CAP <= 0.
+const AP_FLOOR: int = -4
+const AP_CEILING: int = 4
+var current_ap: int = 0  # Action Points: AP_FLOOR to AP_CEILING
 var is_defending: bool = false
 var is_alive: bool = true
 
@@ -205,8 +210,8 @@ func initialize(stats: Dictionary) -> void:
 
 ## Brave/Default system
 func can_brave(ap_cost: int) -> bool:
-	# Can go into AP debt up to -4
-	return (current_ap - ap_cost) >= -4
+	# Can go into AP debt up to AP_FLOOR
+	return (current_ap - ap_cost) >= AP_FLOOR
 
 
 func spend_ap(amount: int) -> bool:
@@ -224,13 +229,17 @@ func spend_ap(amount: int) -> bool:
 		push_warning("[Combatant] spend_ap() called with negative amount %d on %s — refused, returning false (use gain_ap for AP gain)" % [amount, combatant_name])
 		return false
 	if not can_brave(amount):
+		## NOT ONE of the live callers checks this bool, and the executors act BEFORE asking — so a
+		## refusal here is a FREE action, silently. Unreachable today only because AP_FLOOR +
+		## ADVANCE_CAP == 0 exactly and nothing drains AP mid-queue; both are one edit from false.
+		push_warning("[Combatant] spend_ap(%d) refused on %s at AP %d (floor %d) — the action was NOT paid for; caller does not check the return" % [amount, combatant_name, current_ap, AP_FLOOR])
 		return false
 
 	# Tick 286: guard ap_changed.emit on actual change. spend_ap(0)
 	# was a spurious emit; gain_ap(1) at cap was the worse case.
 	# UI listeners shouldn't see "ap changed" for a no-op tick.
 	var old_ap = current_ap
-	current_ap = clampi(current_ap - amount, -4, 4)
+	current_ap = clampi(current_ap - amount, AP_FLOOR, AP_CEILING)
 	if current_ap != old_ap:
 		ap_changed.emit(old_ap, current_ap)
 	return true
@@ -249,7 +258,7 @@ func gain_ap(amount: int) -> void:
 	# repainted needlessly each turn after reaching cap. Guard on
 	# actual change.
 	var old_ap = current_ap
-	current_ap = clampi(current_ap + amount, -4, 4)
+	current_ap = clampi(current_ap + amount, AP_FLOOR, AP_CEILING)
 	if current_ap != old_ap:
 		ap_changed.emit(old_ap, current_ap)
 
@@ -1399,7 +1408,7 @@ func from_dict(data: Dictionary) -> void:
 		current_mp = clampi(int(data["current_mp"]), 0, max_mp)
 	if data.has("current_ap"):
 		# AP design range: -4 to +4 (CLAUDE.md combat section).
-		current_ap = clampi(int(data["current_ap"]), -4, 4)
+		current_ap = clampi(int(data["current_ap"]), AP_FLOOR, AP_CEILING)
 	if data.has("attack"):
 		attack = max(0, int(data["attack"]))
 	if data.has("defense"):
