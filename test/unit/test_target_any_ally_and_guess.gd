@@ -20,11 +20,21 @@ class FakeScene extends Node2D:
 
 
 var _bm = null
+var _saved_corruption: Array = []
 
 
+## A leaked "ability_corruption" makes 10% of casts swap Cure for Raise, which does nothing to a living ally — a sweep-only flake (.692 pre-gate).
 func before_each() -> void:
+	_saved_corruption = GameState.corruption_effects.duplicate()
+	GameState.corruption_effects.clear()
 	_bm = BattleManagerScript.new()
 	add_child_autofree(_bm)
+
+
+func after_each() -> void:
+	GameState.corruption_effects.clear()
+	for e in _saved_corruption:
+		GameState.corruption_effects.append(str(e))
 
 
 func _member(cname: String, hp: int, max_hp: int) -> Combatant:
