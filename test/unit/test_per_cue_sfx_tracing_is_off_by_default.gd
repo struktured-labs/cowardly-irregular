@@ -120,6 +120,47 @@ func test_the_quota_is_per_cue_not_global() -> void:
 		"a rare cue was refused after 50 plays of an unrelated one — the quota is global, so the loudest cue spends everyone's budget")
 
 
+## ⛔ THE AXIS THE ARM ABOVE DOES NOT TEST, AND ITS OWN NAME CLAIMS. `test_the_quota_is_per_cue_not_global`
+## drives two UNRELATED cue names, so it proves the tally is not one global counter and says nothing
+## about one cue's own variants. The quota was keyed to the ASSET the variant RNG chose, so a
+## three-variant cue spent three budgets: measured in his 2026-10-13 log as 9 lines each for
+## footstep_wood/stone/grass (3 per variant) and 8 for metal, 35 of 187 play lines, and 78 per session
+## once all 13 variant families are exercised. The cooldown stamp 40 lines above keys on the cue and
+## always did; only the trace quota diverged.
+##
+## 🔑 IT HAS TO DRIVE THE REAL PATH. The defect is in the ARGUMENT production passes, so no direct
+## call to _should_log_cue can see it — a unit-level arm picks the key itself and then agrees with
+## whatever it picked, which is how the arm above stayed green through this.
+func test_one_cues_variants_share_one_quota() -> void:
+	var cue := "footstep_grass"
+	var entry: Dictionary = SoundManager._sfx_manifest.get(cue, {})
+	var variants: Array = Array(entry.get("variants", []))
+	## Scope control: with no variants there is one asset, and a per-asset quota is then
+	## indistinguishable from a per-cue one, so a green would be about nothing.
+	assert_gt(variants.size(), 0,
+		"VOID: %s carries no variants, so this arm cannot see a per-asset quota at all" % cue)
+	var was: bool = SoundManager.log_cues
+	SoundManager.log_cues = false
+	SoundManager._cue_log_counts.clear()
+	var plays: int = 8 * (variants.size() + 1)
+	for i in plays:
+		## The cooldown returns 30 lines ABOVE the trace, so without this erase every play after the
+		## first is suppressed and the arm measures ONE play while reading as if it measured `plays`.
+		SoundManager._sfx_cooldowns.erase(cue)
+		SoundManager._try_play_sfx_from_manifest(SoundManager._footstep_player, cue, 0.0)
+	var keys: Array = SoundManager._cue_log_counts.keys()
+	var counted: int = int(SoundManager._cue_log_counts.get(cue, 0))
+	SoundManager._cue_log_counts.clear()
+	SoundManager._sfx_cooldowns.erase(cue)
+	SoundManager.log_cues = was
+	assert_eq(keys, [cue],
+		"the quota is keyed to the ASSET the variant RNG chose rather than the cue the caller named, so %s spends one budget per variant and logs up to %d lines where the cap promises %d. Keys tallied: %s" % [cue, SoundManager.CUE_LOG_FIRST_N * (variants.size() + 1), SoundManager.CUE_LOG_FIRST_N, keys])
+	## Not decoration: if the plays never reached the gate (a failed load, a stale cooldown) the
+	## assert above passes on an EMPTY dictionary, which is the same green as a correct quota.
+	assert_eq(counted, plays,
+		"%s was played %d times and its own tally reads %d, so plays were counted against another key or never reached the gate" % [cue, plays, counted])
+
+
 func test_full_tracing_still_overrides_the_cap() -> void:
 	var was: bool = SoundManager.log_cues
 	SoundManager._cue_log_counts.clear()

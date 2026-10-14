@@ -36,11 +36,11 @@ var _cue_log_counts: Dictionary = {}
 
 
 ## True while this cue is still inside its per-session quota, or when full tracing is on.
-func _should_log_cue(resolved_key: String) -> bool:
+func _should_log_cue(cue_key: String) -> bool:
 	if log_cues:
 		return true
-	var n: int = int(_cue_log_counts.get(resolved_key, 0)) + 1
-	_cue_log_counts[resolved_key] = n
+	var n: int = int(_cue_log_counts.get(cue_key, 0)) + 1
+	_cue_log_counts[cue_key] = n
 	return n <= CUE_LOG_FIRST_N
 var _music_player: AudioStreamPlayer
 var _music_player_b: AudioStreamPlayer  # Second player for crossfade
@@ -1049,7 +1049,7 @@ func _try_play_sfx_from_manifest(player: AudioStreamPlayer, sound_key: String, v
 				player.volume_db = volume_db_override
 			player.pitch_scale = final_pitch
 			player.play()
-			if _should_log_cue(resolved_key):
+			if _should_log_cue(sound_key):
 				print("[SFX] %s -> %s pitch=%.2f (%s)" % [sound_key, resolved_key, final_pitch, player.name])
 			return true
 		var cached_fallback: String = str(entry.get("fallback_to", ""))
@@ -1072,7 +1072,7 @@ func _try_play_sfx_from_manifest(player: AudioStreamPlayer, sound_key: String, v
 		player.volume_db = volume_db_override
 	player.pitch_scale = final_pitch
 	player.play()
-	if _should_log_cue(resolved_key):
+	if _should_log_cue(sound_key):
 		print("[SFX] %s -> %s pitch=%.2f (%s)" % [sound_key, resolved_key, final_pitch, player.name])
 	return true
 
