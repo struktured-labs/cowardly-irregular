@@ -151,6 +151,15 @@ func test_control_the_ladder_itself_is_the_players() -> void:
 	assert_gt(PRESETS.size(), 2, "the preset ladder derived %d rungs" % PRESETS.size())
 	assert_true(PRESETS.has(1.0), "the ladder has no 100%% rung: %s" % [PRESETS])
 	assert_gt(float(PRESETS.max()), 1.0, "the ladder tops out at %s, so nothing scales up" % [PRESETS.max()])
+	## ⛔ ASCENDING IS LOAD-BEARING, not cosmetic (@cowir-overworld pinned the same thing):
+	## test_the_roll_scrolls_far_enough asserts the extent NEVER SHRINKS between rungs, and bounds
+	## the LAST rung's extent by `base * PRESETS.max()`. Both are only meaningful on a sorted
+	## ladder -- reorder it and a CORRECT tree reds, which is the coincidental-value ratchet one
+	## layer out from the assertion. Pinned here so the reorder reds THIS arm by name instead.
+	var ascending: Array = PRESETS.duplicate()
+	ascending.sort()
+	assert_eq(ascending, PRESETS as Array,
+		"the ladder is not ascending (%s); the extent arms below assume it is" % [PRESETS])
 	## ⛔ NOT `_label(0) == "%d%%" % PRESETS[0] * 100` — that restates _label's own body and is a
 	## clause that cannot fail. These two can: a label that collapses across rungs would make every
 	## failure message below name the wrong size, and the 100% rung is the one with a known name.
