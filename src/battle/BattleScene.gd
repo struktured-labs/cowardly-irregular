@@ -388,6 +388,10 @@ func _ready() -> void:
 	var log_expand_btn: Button = get_node_or_null("UI/BattleLogPanel/MarginContainer/VBoxContainer/LogHeader/LogExpandButton")
 	if log_expand_btn:
 		log_expand_btn.pressed.connect(_toggle_log_overlay)
+	## The log header is the panel CHROME, so these two only became safe to scale once the reserve was
+	## derived rather than the 64 literal — scaling them against the literal hides the whole panel.
+	_scale_themed_font(get_node_or_null("UI/BattleLogPanel/MarginContainer/VBoxContainer/LogHeader/LogTitle"), &"font_size")
+	_scale_themed_font(log_expand_btn, &"font_size")
 	# EnemyStatusPanel's height varies with the roster (more enemies = taller box) — the
 	# log panel's fixed .tscn offsets are only a FALLBACK until the real enemy panel settles.
 	var enemy_panel_for_log := get_node_or_null("UI/EnemyStatusPanel")
@@ -2001,6 +2005,20 @@ const LOG_PANEL_MIN_TEXT_HEIGHT := 16.0
 ## before the SAME frame's box-content changes finished propagating up through the Container
 ## chain) — reading enemy_panel.size synchronously here could measure a STALE, smaller height
 ## and under-clear the gap. Deferring one tick lets that settle first.
+## Scale a THEMED node's font from its OWN current size, captured once in meta. Self-calibrating,
+## so 100% is identical to before the change and no base has to be guessed from the engine default.
+## Idempotent: re-reading get_theme_font_size() after an override would compound, so the base is
+## read once and every later call scales that, which lets a settings change re-apply safely.
+func _scale_themed_font(c: Control, key: StringName) -> void:
+	if c == null or not is_instance_valid(c):
+		return
+	if not c.has_meta(&"base_font_px"):
+		c.set_meta(&"base_font_px", c.get_theme_font_size(key))
+	var base: int = int(c.get_meta(&"base_font_px"))
+	if base > 0:
+		c.add_theme_font_size_override(key, TextScale.scaled(base))
+
+
 func _reposition_battle_log_panel() -> void:
 	call_deferred("_reposition_battle_log_panel_now")
 
