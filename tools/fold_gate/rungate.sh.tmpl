@@ -1,6 +1,8 @@
 cd @REPO@
 ## Wait (bounded, 60 min) until no publish is in flight (cowir-deploy: publish.log exists and publish.ec does not) AND no godot runs. Not a load figure: ten idle sessions hold load near 9.
-for i in $(seq 240); do busy=0; for d in /home/struktured/projects/cowir-deploy-wt/tmp/_detached/v3.33.*/; do [ -f "$d/publish.log" ] && [ ! -f "$d/publish.ec" ] && busy=1; done; for p in /proc/[0-9]*; do [ "$(readlink $p/exe 2>/dev/null)" = "/usr/bin/godot" ] && busy=1; done; [ $busy -eq 0 ] && break; sleep 15; done
+for i in $(seq 240); do busy=0; why=""; for d in /home/struktured/projects/cowir-deploy-wt/tmp/_detached/v3.33.*/; do [ -f "$d/publish.log" ] && [ ! -f "$d/publish.ec" ] && { busy=1; why="$why publish:$(basename "$d")"; }; done; for p in /proc/[0-9]*; do [ "$(readlink $p/exe 2>/dev/null)" = "/usr/bin/godot" ] && { busy=1; why="$why godot:${p#/proc/}@$(readlink $p/cwd 2>/dev/null)"; }; done; [ $busy -eq 0 ] && break; sleep 15; done
+## The wait is bounded, so it can expire with the box still busy: say so, or a contended gate reads as a quiet one.
+[ $busy -eq 0 ] || echo "WAIT EXPIRED after 60 min, gate started on a BUSY box:$why"
 echo "gate start load=$(cut -d' ' -f1-3 /proc/loadavg) at $(date -u +%H:%M:%SZ)"
 setsid bash tmp/gate@NNN@.sh < /dev/null > /dev/null 2>&1 &
 sleep 2; bash tmp/wedgewatch@NNN@.sh
