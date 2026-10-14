@@ -2419,6 +2419,11 @@ func _apply_action_type(new_type: String, ctx: Dictionary) -> void:
 			actions[idx]["target"] = new_target
 		else:
 			actions[idx].erase("target")
+	## A defer ENDS the turn: the grid stops drawing after it, the editor refuses to add past it,
+	## and _execute_advance breaks there. Setting a MIDDLE slot to defer was the one path that
+	## left actions behind it — invisible, unreachable, never run, and still billed AP.
+	if new_type == "defer" and actions.size() > start + count:
+		actions.resize(start + count)
 	_refresh_grid()
 
 
@@ -2535,6 +2540,7 @@ func _open_target_picker() -> void:
 	var action: Dictionary = ctx["action"]
 	if action.get("type", "") == "defer":
 		SoundManager.play_ui("menu_error")
+		_flash_status("Defer has no target.", Color.YELLOW)
 		return
 	var target_keys: Array = AutobattleSystem.TARGET_TYPES.keys()
 	var rows: Array = []
@@ -2880,6 +2886,7 @@ func _add_or_row() -> void:
 	"""Add a new OR rule row"""
 	if rules.size() >= MAX_RULES:
 		SoundManager.play_ui("menu_error")
+		_flash_status("Rule limit reached — %d rows max." % MAX_RULES, Color.YELLOW)
 		return
 	var new_rule = _create_default_rule()
 	rules.insert(cursor_row + 1, new_rule)
@@ -2893,6 +2900,7 @@ func _insert_row_after(row_idx: int) -> void:
 	"""Insert a new rule row after the specified row index"""
 	if rules.size() >= MAX_RULES:
 		SoundManager.play_ui("menu_error")
+		_flash_status("Rule limit reached — %d rows max." % MAX_RULES, Color.YELLOW)
 		return
 	var new_rule = {
 		"conditions": [{"type": "always"}],
@@ -2946,10 +2954,12 @@ func _add_action() -> void:
 	# Check if last action is defer - can't add after defer
 	if actions.size() > 0 and actions[-1].get("type") == "defer":
 		SoundManager.play_ui("menu_error")
+		_flash_status("Nothing can follow Defer — it ends the turn.", Color.YELLOW)
 		return
 
 	if actions.size() >= MAX_ACTIONS:
 		SoundManager.play_ui("menu_error")
+		_flash_status("This rule is full — %d actions max." % MAX_ACTIONS, Color.YELLOW)
 		return
 
 	# Duplicate the last action (or default to attack if no actions exist)

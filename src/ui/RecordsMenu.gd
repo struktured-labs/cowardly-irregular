@@ -33,8 +33,16 @@ func _grind_highlights() -> Dictionary:
 		if typeof(entry) != TYPE_DICTIONARY:
 			continue
 		out["total_sec"] = float(out["total_sec"]) + float(entry.get("duration_sec", 0.0))
+		## ⛔ RANKED BY TOTAL EXP, NOT BY RATE. exp_per_min divides by a duration that can be a
+		## fraction of a second, so it grows without bound as a session gets shorter: in his real
+		## history a 2-battle 1.12s run scored 48,737/min and outranked a 15-battle run that earned
+		## six times the EXP. MIN_RATE_WINDOW_MINUTES floors the divisor at one second, which is far
+		## too small to make two sessions of different lengths comparable.
+		## A session that fought nothing is an aborted start, not a grind -- 4 of his 10 are.
+		if int(float(entry.get("battles", 0))) < 1:
+			continue
 		var best: Dictionary = out["best"]
-		if best.is_empty() or float(entry.get("exp_per_min", 0.0)) > float(best.get("exp_per_min", 0.0)):
+		if best.is_empty() or float(entry.get("total_exp", 0.0)) > float(best.get("total_exp", 0.0)):
 			out["best"] = entry
 	return out
 

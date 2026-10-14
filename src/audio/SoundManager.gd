@@ -1826,6 +1826,16 @@ func play_status(status_name: String) -> void:
 
 
 ## Manifest-gated status cue for callers that must stay SILENT when unauthored — the blip above is struktured's ruling-15 "not even close to good", and buffs fire far too often to spend it on them.
+## True when a SPECIFIC status_* cue was served within the window. EffectSystem's generic BUFF/DEBUFF
+## sting asks this so it cannot double an authored cue that BattleScene already played for the same action.
+func status_cue_just_played(window_ms: int = 120) -> bool:
+	var now: int = Time.get_ticks_msec()
+	for key in _sfx_cooldowns:
+		if str(key).begins_with("status_") and now - int(_sfx_cooldowns[key]) <= window_ms:
+			return true
+	return false
+
+
 func play_status_if_authored(sound_key: String) -> bool:
 	## HEARD, not HANDLED. _try_play_sfx_from_manifest returns true for a cooldown suppression too,
 	## and this return is documented by its caller (BattleScene._cue_if_turn_skipped) as "whether the

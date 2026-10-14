@@ -830,16 +830,30 @@ func open_backlog() -> void:
 	_backlog_layer.add_child(panel)
 
 	var title := Label.new()
+	## ⛔ THE HEADER HAD A FIXED 28px BOX AND A SCALED FONT, so at Text Size 150% and 200% it drew
+	## DOWN into the scroll container that starts at y=48 and overlapped the first backlog row.
+	## Measured: font height 23 / 28 / 34 / 45 at 100 / 125 / 150 / 200%. A Label does not clip by
+	## default, so nothing was hidden — the title simply printed through the newest line.
+	##
+	## 🔑 The pairing is why it is worth fixing rather than noting: the backlog exists to re-read a
+	## line you missed, and a player on 200% text is the one most likely to have missed it. Same
+	## defect family as the dialogue panel itself (`_box_metrics`), one surface over.
+	var title_h: float = 28.0
+	var title_font: Font = ThemeDB.fallback_font
+	if title_font != null:
+		title_h = maxf(28.0, float(title_font.get_height(_scaled_font_size(18))))
 	title.text = "Already said"
 	title.position = Vector2(20, 12)
-	title.size = Vector2(BACKLOG_PANEL_W - 40, 28)
+	title.size = Vector2(BACKLOG_PANEL_W - 40, title_h)
 	title.add_theme_font_size_override("font_size", _scaled_font_size(18))
 	title.add_theme_color_override("font_color", Color(0.9, 0.85, 0.6))
 	panel.add_child(title)
 
 	_backlog_scroll = ScrollContainer.new()
-	_backlog_scroll.position = Vector2(16, 48)
-	_backlog_scroll.size = Vector2(BACKLOG_PANEL_W - 32, BACKLOG_PANEL_H - 92)
+	## The rows start BELOW whatever the header actually needs, not below a hardcoded 48.
+	var scroll_y: float = maxf(48.0, 12.0 + title_h + 8.0)
+	_backlog_scroll.position = Vector2(16, scroll_y)
+	_backlog_scroll.size = Vector2(BACKLOG_PANEL_W - 32, float(BACKLOG_PANEL_H) - scroll_y - 44.0)
 	_backlog_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	panel.add_child(_backlog_scroll)
 
@@ -863,8 +877,14 @@ func open_backlog() -> void:
 		InputProfileManager.hint_for_action("ui_down"),
 		InputProfileManager.hint_for_action("ui_cancel"),
 	]
-	hint.position = Vector2(20, BACKLOG_PANEL_H - 34)
-	hint.size = Vector2(BACKLOG_PANEL_W - 40, 24)
+	## And the close prompt sits on its own measured height rather than a fixed 24 at a fixed
+	## offset — at 200% the old numbers put its bottom edge exactly on the panel edge, with no
+	## margin left for a font whose metrics differ by a pixel.
+	var hint_h: float = 24.0
+	if title_font != null:
+		hint_h = maxf(24.0, float(title_font.get_height(_scaled_font_size(12))))
+	hint.position = Vector2(20, float(BACKLOG_PANEL_H) - hint_h - 10.0)
+	hint.size = Vector2(BACKLOG_PANEL_W - 40, hint_h)
 	hint.add_theme_font_size_override("font_size", _scaled_font_size(12))
 	hint.add_theme_color_override("font_color", Color(0.65, 0.65, 0.75))
 	panel.add_child(hint)
