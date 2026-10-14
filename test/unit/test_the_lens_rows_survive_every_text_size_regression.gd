@@ -41,10 +41,15 @@ func after_each() -> void:
 
 
 func test_the_sweep_matches_the_shipped_presets() -> void:
-	var settings := load("res://src/ui/SettingsMenu.gd")
-	assert_eq(TEXT_SCALES, settings.TEXT_SIZE_PRESETS as Array,
-		"this file sweeps %s but SettingsMenu offers %s"
-		% [str(TEXT_SCALES), str(settings.TEXT_SIZE_PRESETS)])
+	## ⛔ READ THROUGH `get_script_constant_map()`, NOT `settings.TEXT_SIZE_PRESETS`. A direct const
+	## read on a renamed or removed constant is a RUNTIME ERROR mid-arm, and GUT scores an aborted
+	## body as a PASS — so this pin would go GREEN in precisely the case it exists for. The map form
+	## yields [] and reds by name. And if the map form were wrong the other way round it would red
+	## on a CLEAN tree, which is the safe direction for an instrument change.
+	var settings: Script = load("res://src/ui/SettingsMenu.gd")
+	var shipped: Array = settings.get_script_constant_map().get("TEXT_SIZE_PRESETS", [])
+	assert_eq(TEXT_SCALES, shipped,
+		"this file sweeps %s but SettingsMenu offers %s" % [str(TEXT_SCALES), str(shipped)])
 
 
 ## ARM 1: the setting must reach the text at all.
