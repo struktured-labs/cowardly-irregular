@@ -116,37 +116,56 @@ func test_the_last_boss_is_reachable_at_every_preset() -> void:
 		"the last boss must be inside the window after the real clamp runs: %s" % [bad])
 
 
-## ARM 4 — a boss NAME must keep margin from the right-anchored world column, and the world label
-## must fit the column the layout asked for. Measured on the twin lists: a fixed right column left
-## exactly ZERO margin at 2.0x, which a `>` test passes while the next longer name overlaps.
-func test_the_boss_name_keeps_margin_from_the_world_column() -> void:
+## ARM 4 — a boss NAME must keep margin from the right-anchored world column, OVER THE WHOLE
+## ROSTER. Measured on the twin lists: a fixed right column left exactly ZERO margin at 2.0x, which
+## a `>` test passes while the next longer name overlaps.
+##
+## ⛔ ITS FIRST VERSION ITERATED `_row_highlights` -- THE VISIBLE WINDOW -- WHICH IS ~10 OF 53.
+## The display list interleaves group headers, so one screenful never reaches the long names:
+## `Glacius, the Frozen Sovereign` (29), `Voltharion, the Storm's Edge` (28),
+## `Warden of the Assembly Line` (27). @cowir-adhoc's line is the one that applies -- "drives real
+## data" is not the same claim as "drives the WORST real data" -- and it is the third instance of
+## this in my own work within the hour, after the grid's corpus of one and the fast travel
+## fixture's invented labels. The FIX always iterated every boss (`_world_col_w` does); it was the
+## VERIFICATION that saw a tenth of them.
+func test_every_boss_name_keeps_margin_from_the_world_column() -> void:
 	var bad: Array = []
 	for scale in PRESETS:
 		var m: Control = await _menu_at(float(scale))
 		var asked: float = float(m._world_col_w())
-		for i in range(m._row_highlights.size()):
-			var name_lbl: Label = m._row_labels[i] as Label
-			var world_lbl: Label = m._row_world_labels[i] as Label
-			if name_lbl == null or world_lbl == null:
-				continue
-			if name_lbl.text == "" or world_lbl.text == "":
-				continue
-			var fnt: Font = name_lbl.get_theme_font("font")
-			if fnt == null:
-				continue
-			var ends: float = name_lbl.position.x + fnt.get_string_size(name_lbl.text,
-				HORIZONTAL_ALIGNMENT_LEFT, -1, name_lbl.get_theme_font_size("font_size")).x
-			if ends > world_lbl.position.x - 4.0:
+		var roster: Array = m.BOSSES
+		assert_gt(roster.size(), 20,
+			"PRECONDITION: the roster must be loaded, got %d" % roster.size())
+		var probe := Label.new()
+		probe.add_theme_font_size_override("font_size", TextScale.scaled(13))
+		m.add_child(probe)
+		var wprobe := Label.new()
+		wprobe.add_theme_font_size_override("font_size", TextScale.scaled(10))
+		m.add_child(wprobe)
+		await get_tree().process_frame
+		var fnt: Font = probe.get_theme_font("font")
+		var wfnt: Font = wprobe.get_theme_font("font")
+		if fnt == null or wfnt == null:
+			continue
+		## the geometry a boss row is built with: name at x=10, world right-anchored
+		var row_w: float = m._panel.size.x - 16.0
+		var world_x: float = row_w - asked
+		for b in roster:
+			var nm: String = str((b as Dictionary).get("name", ""))
+			var wd: String = str((b as Dictionary).get("world", ""))
+			var ends: float = 10.0 + fnt.get_string_size(nm, HORIZONTAL_ALIGNMENT_LEFT, -1,
+				TextScale.scaled(13)).x
+			if ends > world_x - 4.0:
 				bad.append("%.2fx: '%s' ends %.0f, world column starts %.0f"
-					% [scale, name_lbl.text, ends, world_lbl.position.x])
-			var wf: Font = world_lbl.get_theme_font("font")
-			if wf != null:
-				var ww: float = wf.get_string_size(world_lbl.text, HORIZONTAL_ALIGNMENT_LEFT, -1,
-					world_lbl.get_theme_font_size("font_size")).x
-				if ww > asked + 1.0:
-					bad.append("%.2fx: world '%s' needs %.0f in a %.0f column"
-						% [scale, world_lbl.text, ww, asked])
-	assert_eq(bad, [], "a boss name must clear the world column: %s" % [bad])
+					% [scale, nm, ends, world_x])
+			var ww: float = wfnt.get_string_size(wd, HORIZONTAL_ALIGNMENT_LEFT, -1,
+				TextScale.scaled(10)).x
+			if ww > asked + 1.0:
+				bad.append("%.2fx: world '%s' needs %.0f in a %.0f column" % [scale, wd, ww, asked])
+		probe.queue_free()
+		wprobe.queue_free()
+	assert_eq(bad, [],
+		"every boss name in the roster must clear the world column: %s" % [bad.slice(0, 6)])
 
 
 ## ARM 5 — the state the fix did NOT set out to change, both directions.
