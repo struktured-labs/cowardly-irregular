@@ -78,11 +78,14 @@ case "${1:-}" in
 esac
 
 if [ "${1:-}" = "--wait" ]; then
-  end=$(( $(date +%s) + $2 ))
-  while r="$(busy_reason)"; do
-    [ "$(date +%s)" -ge "$end" ] && { echo "BUSY (gave up after ${2}s): $r"; exit 1; }
+  ## The bound sits in the loop condition, where check_polling_bounded can read it (.693 pre-gate).
+  waited=0
+  while [ "$waited" -lt "$2" ]; do
+    r="$(busy_reason)" || { echo "FREE"; exit 0; }
     sleep 20
+    waited=$(( waited + 20 ))
   done
+  if r="$(busy_reason)"; then echo "BUSY (gave up after ${2}s): $r"; exit 1; fi
   echo "FREE"; exit 0
 fi
 
