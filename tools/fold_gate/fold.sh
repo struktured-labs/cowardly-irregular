@@ -9,7 +9,8 @@
 # way, .681). A conflicting merge is aborted and reported, never committed. Exit 0 = every tip merged;
 # 1 = some tip was skipped (the fold still exists, built from the rest, so read the report); 2 = usage.
 set -uo pipefail
-cd "$(cd "$(dirname "$0")/../.." && pwd)"
+## FOLD_REPO points the fold at another checkout (fold_selftest.sh uses a throwaway worktree).
+cd "${FOLD_REPO:-$(cd "$(dirname "$0")/../.." && pwd)}" || exit 2
 NNN="${1:-}"
 case "$NNN" in ''|*[!0-9]*) echo "usage: tools/fold_gate/fold.sh <release number> branch:sha ..." >&2; exit 2 ;; esac
 shift
