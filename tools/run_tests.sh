@@ -190,14 +190,21 @@ require_test_dir() {
 # and the fix passes every test you write for it. The run also scored `1/1 passed`: the error
 # aborted the function AFTER its one assert, so EC=4 (which keys off [Risky] NAMES) cannot see it.
 # `dirty=N` is the count git status reports; N>0 means the SHA does not describe what ran.
+# ⛔ THE FIELD WAS NAMED `TREE` AND HELD A COMMIT. Harmless until the 2026-10-14 ruling made %T
+# load-bearing in a READY: a lane reads "TREE <sha>" from its own log, quotes it as the tree, and it
+# can never match a tree hash -- and across a tree-identical amend that field CHANGES while the tree
+# does not, inverting the one thing %T is there to prove. Both printed now, each named for what it
+# is. check_tree_unmoved.sh was never affected: it asks git directly and does not parse this line.
 _tree_stamp() {
-  local sha branch dirty
+  local sha tree branch dirty
   sha="$(git rev-parse --short=9 HEAD 2>/dev/null)"
+  tree="$(git rev-parse HEAD^{tree} 2>/dev/null)"
   branch="$(git rev-parse --abbrev-ref HEAD 2>/dev/null)"
   # wc, not `grep -c .`: grep exits 1 on zero matches, so a CLEAN tree would take the error branch.
   dirty="$(git status --porcelain 2>/dev/null | wc -l | tr -dc '0-9')"
   [ -n "$sha" ] || { sha="unknown"; branch="unknown"; dirty="?"; }
-  echo "run_tests.sh: TREE ${sha} (${branch}) dirty=${dirty} at $(date -Is)"
+  [ -n "$tree" ] || tree="unknown"
+  echo "run_tests.sh: HEAD ${sha} tree ${tree} (${branch}) dirty=${dirty} at $(date -Is)"
 }
 
 # kill(1) delivers SIGKILL. `timeout --signal=KILL` on this box does not.
