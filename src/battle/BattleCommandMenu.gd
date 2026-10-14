@@ -1068,8 +1068,13 @@ func _on_win98_menu_selection(item_id: String, item_data: Variant) -> void:
 					current.last_ability_selection = item_id.substr(0, item_id.find("_enemy_") if "_enemy_" in item_id else item_id.length())
 				elif "_enemy_" in item_id or "_ally_" in item_id:
 					current.last_ability_selection = "ability_menu_" + ability_id
+				## ⛔ NORMALISE, because the validator strips exactly "ability_menu_" and a raw
+				## "ability_<id>" survives that strip with the prefix attached, so can_use_ability
+				## is asked about "ability_battle_hymn" and the memory is discarded. AoE, [All],
+				## self-target and unaffordable rows all take this branch -- they carry no
+				## _enemy_/_ally_ suffix, so they never reached the elif that already does this.
 				else:
-					current.last_ability_selection = item_id
+					current.last_ability_selection = ("ability_menu_" + ability_id) if ability_id != "" else item_id
 			print("[CMD MEM] %s -> ability_menu / %s (single action)" % [current.combatant_name, current.last_ability_selection])
 		elif item_id.begins_with("item_"):
 			current.last_menu_selection = "item_menu"
@@ -1358,8 +1363,13 @@ func _on_win98_actions_submitted(actions: Array) -> void:
 					current.last_ability_selection = mem_action_id.substr(0, mem_action_id.find("_enemy_") if "_enemy_" in mem_action_id else mem_action_id.length())
 				elif "_enemy_" in mem_action_id or "_ally_" in mem_action_id:
 					current.last_ability_selection = "ability_menu_" + ability_id
+				## ⛔ NORMALISE, because the validator strips exactly "ability_menu_" and a raw
+				## "ability_<id>" survives that strip with the prefix attached, so can_use_ability
+				## is asked about "ability_battle_hymn" and the memory is discarded. AoE, [All],
+				## self-target and unaffordable rows all take this branch -- they carry no
+				## _enemy_/_ally_ suffix, so they never reached the elif that already does this.
 				else:
-					current.last_ability_selection = mem_action_id
+					current.last_ability_selection = ("ability_menu_" + ability_id) if ability_id != "" else mem_action_id
 			print("[CMD MEM] %s -> ability_menu / %s (advance)" % [current.combatant_name, current.last_ability_selection])
 		elif mem_action_id.begins_with("item_"):
 			current.last_menu_selection = "item_menu"
