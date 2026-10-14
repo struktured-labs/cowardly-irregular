@@ -26,9 +26,18 @@ const CM := "res://src/ui/ControlsMenu.gd"
 ## quietly stale the day a preset is added, and the arms below then never visit the new step. NO
 ## FALLBACK DEFAULT: a rename must red, and a fallback would make these pass against a ladder the
 ## player cannot select.
-static func _presets() -> Array:
+##
+## ⛔ THE FLOOR LIVES IN HERE, NOT ONLY IN ITS OWN ARM. An empty or renamed ladder makes every
+## `for scale in _presets()` iterate ZERO times and pass green; asserting inside the helper makes
+## each sweeping arm red BY ITS OWN NAME, and it cannot be separated from the loops by a later edit
+## the way a standalone floor arm can (@cowir-autogrind named the gap, @cowir-story the repair).
+func _presets() -> Array:
 	var consts: Dictionary = (load("res://src/ui/SettingsMenu.gd") as GDScript).get_script_constant_map()
-	return consts.get("TEXT_SIZE_PRESETS", [])
+	var p: Array = consts.get("TEXT_SIZE_PRESETS", [])
+	assert_gt(p.size(), 1,
+		"FLOOR: SettingsMenu.TEXT_SIZE_PRESETS must resolve and hold more than one step, or this "
+		+ "arm's preset loop iterates nothing and passes. Got " + str(p))
+	return p
 
 var _saved = null
 
