@@ -205,6 +205,26 @@ func build_prompt(trigger_type: String, context: Dictionary, recent_events: Arra
 
 ## Async: ask the LLM to fill in a pending proposal. Caller is a Node
 ## that can await — see GameLoop's wipe / boss-defeat handlers.
+## The line a player's log gets for each outcome. A `print` is invisible to a unit test, so the
+## MESSAGE is a value and only the printing is untestable -- the five exits cannot drift apart, and a
+## sixth outcome arriving without a line is a visible "" rather than a silent omission.
+static func outcome_line(trigger: String, status: String, proposal: Dictionary = {}) -> String:
+	match status:
+		"failed_no_tree":
+			return "[REBALANCE] %s produced no proposal — no scene tree" % trigger
+		"failed_unavailable":
+			return "[REBALANCE] %s produced no proposal — no LLM backend reachable" % trigger
+		"failed_fallback":
+			return "[REBALANCE] %s produced no proposal — the model's reply was not usable" % trigger
+		"proposed":
+			var deltas: Variant = proposal.get("deltas", [])
+			var n_deltas: int = (deltas as Array).size() if deltas is Array else 0
+			return "[REBALANCE] %s -> %s (confidence %.0f%%, %d delta(s))" % [
+				trigger, str(proposal.get("verdict", "?")),
+				float(proposal.get("confidence", 0.0)) * 100.0, n_deltas]
+	return ""
+
+
 ## Returns true on success (proposal updated with deltas), false if
 ## the proposal idx is invalid OR LLM unavailable OR fallback was hit.
 func request_llm_proposal(proposal_idx: int, recent_events: Array = []) -> bool:
@@ -223,15 +243,18 @@ func request_llm_proposal(proposal_idx: int, recent_events: Array = []) -> bool:
 	var tree: SceneTree = Engine.get_main_loop() as SceneTree
 	if tree == null or tree.root == null:
 		proposal["status"] = "failed_no_tree"
+		print(outcome_line(str(trigger), str(proposal["status"]), proposal))
 		return false
 	var svc: Node = tree.root.get_node_or_null("LLMService")
 	if svc == null or not svc.has_method("complete_json") or not svc.is_available():
 		proposal["status"] = "failed_unavailable"
+		print(outcome_line(str(trigger), str(proposal["status"]), proposal))
 		return false
 	var fallback: Variant = null
 	var result: Variant = await svc.complete_json(prompt, REBALANCE_SCHEMA, fallback)
 	if not (result is Dictionary):
 		proposal["status"] = "failed_fallback"
+		print(outcome_line(str(trigger), str(proposal["status"]), proposal))
 		return false
 	var r: Dictionary = result as Dictionary
 	proposal["verdict"]    = str(r.get("verdict", "no_change"))
@@ -239,6 +262,7 @@ func request_llm_proposal(proposal_idx: int, recent_events: Array = []) -> bool:
 	proposal["deltas"]     = r.get("deltas", [])
 	proposal["reason"]     = str(r.get("reason", ""))
 	proposal["status"]     = "proposed"
+	print(outcome_line(str(trigger), str(proposal["status"]), proposal))
 	return true
 
 
@@ -344,6 +368,7 @@ func try_auto_apply(proposal_idx: int) -> String:
 	proposal["status"] = "applied"
 	proposal["applied_changes"] = applied_changes
 	_move_to_applied(proposal_idx)
+	print("[REBALANCE] auto-applied %s — %s" % [str(proposal.get("verdict", "?")), summarize_applied(proposal)])
 	return APPLY_APPLIED
 
 
@@ -397,6 +422,7 @@ func force_apply(proposal_idx: int) -> String:
 	proposal["applied_changes"] = applied_changes
 	proposal["force_applied"] = true
 	_move_to_applied(proposal_idx)
+	print("[REBALANCE] applied on request %s — %s" % [str(proposal.get("verdict", "?")), summarize_applied(proposal)])
 	return APPLY_APPLIED
 
 
