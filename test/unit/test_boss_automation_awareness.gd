@@ -56,6 +56,62 @@ func _llm_bosses() -> Array:
 	return out
 
 
+## Three helpers in this file take BattleManager and AutobattleSystem state and put it back INLINE,
+## below calls that can abort -- and a GDScript error aborts only the enclosing function, so the
+## restores below it never run and the signal connection is stranded on the autoload for every later
+## FILE. The inline restores are fine on the happy path; this is the net for the other one.
+var _saved_party: Array = []
+var _saved_autobattle: bool = false
+var _saved_ab_flags: Dictionary = {}
+var _watched: Array = []
+## Only restore what was actually captured: an abort in before_each would otherwise leave the
+## snapshot empty and let after_each CLEAR player_party and put nothing back -- destroying the party
+## for every later file while fixing a leak.
+var _snapshot_ok: bool = false
+
+
+func before_each() -> void:
+	# Snapshot FIRST, so nothing below it can be skipped by an error above the restore.
+	_watched.clear()
+	_snapshot_ok = false
+	_saved_party = []
+	for m in BattleManager.player_party:
+		_saved_party.append(m)
+	_saved_autobattle = BattleManager.is_autobattle_enabled
+	_saved_ab_flags = {}
+	for who in ["alpha", "beta"]:
+		_saved_ab_flags[who] = AutobattleSystem.is_autobattle_enabled(str(who))
+	# Last line: reached only if every capture above succeeded.
+	_snapshot_ok = true
+
+
+func after_each() -> void:
+	# Disconnect FIRST: a restore below must not be able to strand a live connection.
+	for pair in _watched:
+		var sig: Signal = pair[0]
+		var cb: Callable = pair[1]
+		if sig.is_connected(cb):
+			sig.disconnect(cb)
+	_watched.clear()
+	if not _snapshot_ok:
+		return
+	BattleManager.is_autobattle_enabled = _saved_autobattle
+	BattleManager.player_party.clear()
+	for m in _saved_party:
+		BattleManager.player_party.append(m)
+	for who in _saved_ab_flags.keys():
+		# Only when it actually moved: the setter fires event_flag_first_autobattle_enabled on `true`,
+		# so a no-op restore would trip a story flag the test never meant to touch.
+		if AutobattleSystem.is_autobattle_enabled(str(who)) != bool(_saved_ab_flags[who]):
+			AutobattleSystem.set_autobattle_enabled(str(who), bool(_saved_ab_flags[who]))
+
+
+## Records the Callable BEFORE connecting it, so the teardown can always undo it.
+func _watch(sig: Signal, cb: Callable) -> void:
+	_watched.append([sig, cb])
+	sig.connect(cb)
+
+
 func test_llm_boss_set_is_derived_and_non_vacuous() -> void:
 	# If the discriminator stops discriminating, every loop below iterates
 	# nothing and this whole file passes while checking no boss at all.
@@ -329,7 +385,7 @@ func _taunts_across_two_phases() -> Array:
 
 	var heard: Array = []
 	var sink := func(_c, line): heard.append(str(line))
-	BattleManager.boss_taunt.connect(sink)
+	_watch(BattleManager.boss_taunt, sink)
 	boss.current_hp = 600
 	BattleManager._update_boss_dialogue_phase(boss)   # -> phase 2
 	boss.current_hp = 200
