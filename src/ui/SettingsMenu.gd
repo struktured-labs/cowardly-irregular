@@ -758,9 +758,16 @@ func _create_option_setting(label_text: String, description: String, options: Ar
 	container.custom_minimum_size = Vector2(400, row_h)
 
 	# Selection highlight
+	## ⛔ WAS A HARDCODED `size = Vector2(400, row_h)` AT ALL SIX ROW BUILDERS. These rows live
+	## in a VBoxContainer with SIZE_EXPAND_FILL, which stretches each row to the panel width, so
+	## the highlight on the row you are standing on stopped at 400 of 760 — measured on all 50
+	## rows — and `battle_speed`'s chips reached 439, drawing the options you are choosing
+	## between OUTSIDE the selection. Every sibling menu already anchors (JobMenu and
+	## AbilitiesMenu, four sites), which follows the row at any width and any text scale;
+	## SettingsMenu was the one screen that did not.
 	var highlight = ColorRect.new()
 	highlight.color = SELECTED_COLOR if index == selected_index else Color.TRANSPARENT
-	highlight.size = Vector2(400, row_h)
+	highlight.set_anchors_preset(Control.PRESET_FULL_RECT)
 	highlight.name = "Highlight"
 	container.add_child(highlight)
 
@@ -837,7 +844,7 @@ func _create_volume_setting(label_text: String, description: String, options: Ar
 	# Selection highlight
 	var highlight = ColorRect.new()
 	highlight.color = SELECTED_COLOR if index == selected_index else Color.TRANSPARENT
-	highlight.size = Vector2(400, row_h)
+	highlight.set_anchors_preset(Control.PRESET_FULL_RECT)
 	highlight.name = "Highlight"
 	container.add_child(highlight)
 
@@ -913,7 +920,7 @@ func _create_option_setting_small(label_text: String, description: String, optio
 	# Selection highlight
 	var highlight = ColorRect.new()
 	highlight.color = SELECTED_COLOR if index == selected_index else Color.TRANSPARENT
-	highlight.size = Vector2(400, row_h)
+	highlight.set_anchors_preset(Control.PRESET_FULL_RECT)
 	highlight.name = "Highlight"
 	container.add_child(highlight)
 
@@ -977,7 +984,7 @@ func _create_toggle_setting(label_text: String, description: String, is_on: bool
 	# Selection highlight
 	var highlight = ColorRect.new()
 	highlight.color = SELECTED_COLOR if index == selected_index else Color.TRANSPARENT
-	highlight.size = Vector2(400, 60)
+	highlight.set_anchors_preset(Control.PRESET_FULL_RECT)
 	highlight.name = "Highlight"
 	container.add_child(highlight)
 
@@ -1052,7 +1059,7 @@ func _create_action_button_neutral(label_text: String, description: String, inde
 
 	var highlight = ColorRect.new()
 	highlight.color = SELECTED_COLOR if index == selected_index else Color.TRANSPARENT
-	highlight.size = Vector2(400, 56)
+	highlight.set_anchors_preset(Control.PRESET_FULL_RECT)
 	highlight.name = "Highlight"
 	container.add_child(highlight)
 
@@ -1089,7 +1096,7 @@ func _create_action_button(label_text: String, description: String, index: int) 
 	# Selection highlight
 	var highlight = ColorRect.new()
 	highlight.color = SELECTED_COLOR if index == selected_index else Color.TRANSPARENT
-	highlight.size = Vector2(400, 56)
+	highlight.set_anchors_preset(Control.PRESET_FULL_RECT)
 	highlight.name = "Highlight"
 	container.add_child(highlight)
 
