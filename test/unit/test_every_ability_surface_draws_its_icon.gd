@@ -240,6 +240,12 @@ func test_no_cell_text_starts_under_its_icon() -> void:
 			var font := label.get_theme_font("font")
 			var fs := label.get_theme_font_size("font_size")
 			var tw := font.get_string_size(first, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+			# ⛔ A WRAPPING LABEL NEVER DRAWS A LINE WIDER THAN ITS BOX, so the raw string width is not
+			# the drawn width: for one it reported a line starting at -40 in a 112px box, which the
+			# label does not draw. Clamped to the box, the leftmost a centred line can start is the
+			# box's own left edge -- which is the real question for an icon sitting beside it.
+			if label.autowrap_mode != TextServer.AUTOWRAP_OFF:
+				tw = minf(tw, label.size.x)
 			var start := label.position.x + (label.size.x - tw) / 2.0
 			judged += 1
 			if start < icon.position.x + icon.size.x:
