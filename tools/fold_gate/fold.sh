@@ -40,6 +40,9 @@ for pair in "$@"; do
   bad=""
   for d in $dels; do case " ${FOLD_ALLOW_DELETE:-} " in *" $d "*) ;; *) bad="$bad $d" ;; esac; done
   if [ -n "$bad" ]; then echo "SKIP $b: undeclared deletion(s):$bad"; SKIPPED=1; continue; fi
+  ## Every commit the tip brings is checked, not just the tip: a labelled ancestor rides in silently (overworld, 2026-10-14).
+  lab="$(git log --format='%h %s' origin/main.."$have" | grep -m1 -E '^[0-9a-f]+ \[UNVERIFIED\]' || true)"
+  if [ -n "$lab" ]; then echo "SKIP $b: an [UNVERIFIED] commit would ride in: $lab"; SKIPPED=1; continue; fi
   if git merge -q --no-edit "$have" >/dev/null 2>&1; then
     echo "MERGED $b ${have:0:9}"
   else
