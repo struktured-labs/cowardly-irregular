@@ -15,9 +15,15 @@ extends GutTest
 ## demanded, not where it is performed.
 ##
 ## 📌 The count in MenuNav's own docstring had already gone stale: it read "Five menus" and named
-## `DialogueChoiceMenu`, a file no longer in the tree. That is exactly why the set is DERIVED here
-## rather than restated there — a hand-maintained membership list goes quietly wrong when a sibling
-## change moves the world under it, and this one had.
+## `DialogueChoiceMenu`. Deriving the set here is what fixed that — but the REASON recorded for the
+## drop was itself false, in both files, and is corrected as of 2026-10-14: that file is tracked and
+## present at `src/llm/DialogueChoiceMenu.gd`. It left the set because it calls `step()` ONCE now.
+## Its one remaining mention of `MenuNav.step` is in a COMMENT, which `code_of` strips and a plain
+## `grep -c` counts — so a raw count still reports five, and `src/llm` is the one directory of six
+## below that a `src/ui` basename search never reaches.
+##
+## ⛔ WHICH IS WHY THIS FILE ALREADY CONTRADICTED ITSELF: the CONTROL below names `src/llm` as a
+## directory the walk must reach, eleven lines under a sentence saying its file was gone.
 
 const GdSource := preload("res://test/unit/helpers/gd_source.gd")
 const CALL := "MenuNav.step("

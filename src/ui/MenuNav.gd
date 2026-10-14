@@ -34,11 +34,19 @@ static var _h_axis_held: bool = false
 ## quit-confirm's own handler and RETURNS before its main chain. All four are mutually exclusive, so
 ## exactly one runs per event — but that is a property of where their early returns sit.
 ##
-## ⛔ THIS SAID "Five menus … and DialogueChoiceMenu", A FILE THAT NO LONGER EXISTS IN THE TREE. The
-## count and the membership both went stale the ordinary way: a sibling change moved the world under
-## a sentence nobody re-reads because it reads as settled. "A menu that reads a direction in two
-## places on ONE path loses the second, and no guard would see it" — that part was TRUE, and it is
-## why `test_a_second_step_on_one_path_is_lost` now derives this set instead of asserting it here.
+## ⛔ THIS SAID "Five menus … and DialogueChoiceMenu", AND THEN THAT THE FILE NO LONGER EXISTED. The
+## membership correction was right and the reason given for it was FALSE: `DialogueChoiceMenu.gd` is
+## tracked and in the tree at `src/llm/`, and it dropped out because it now calls `step()` ONCE, not
+## because it was deleted. It is the only one of 33 consumers living outside `src/ui`, so a basename
+## grep in the directory every other menu occupies finds nothing and reads as removal.
+##
+## 🔑 A CLAIM OF ABSENCE IS THE DANGEROUS DIRECTION. An over-claiming comment invites the check that
+## disproves it; "that file is gone" CLOSES the question, because nobody greps for a file they have
+## been told does not exist. Measured 2026-10-14: 4 double-callers, not 5, with the fifth present.
+##
+## "A menu that reads a direction in two places on ONE path loses the second, and no guard would see
+## it" — that part was TRUE, and it is why `test_a_second_step_on_one_path_is_lost` derives this set
+## instead of asserting it here.
 ##
 ## The direction this event steps, or "" for nothing. Buttons and keys pass straight through;
 ## an analog push steps ONCE until it returns past the deadzone.
