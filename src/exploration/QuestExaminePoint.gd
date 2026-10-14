@@ -10,7 +10,7 @@ const MIN_HOLD_SECONDS := 1.2   ## keeps a short idle_text feeling like a toast
 const MAX_HOLD_SECONDS := 10.0  ## stops a pathological row pinning a label on screen
 const FADE_SECONDS := 1.2
 const TOAST_WIDTH := 300.0
-const TOAST_FONT_SIZE := 11
+const TOAST_FONT_SIZE := 11  ## the BASE size; reach it through toast_font_size() so Text Size applies
 const TOAST_MIN_HEIGHT := 36.0  ## the authored two-line box, now a FLOOR rather than the whole rect
 const TOAST_BASELINE_Y := -58.0  ## where the authored rect's top sat; the bottom edge is held here
 
@@ -186,6 +186,22 @@ func _job_variant_text(qs: Node) -> String:
 	return str(variant.get("examine_text", ""))
 
 
+## ⛔ THE TOAST IGNORED THE TEXT SIZE SETTING ENTIRELY. Every other surface that shows authored
+## story text scales through TextScale — CutsceneDialogue (17 refs), BattleDialogue (5),
+## BattleSpeechBubble (3) — and this one used a raw 11, so a player who set Text Size to 200%
+## because they need it read every examine at 100%.
+##
+## 🔑 The rect follows for free, which is the whole reason this is a small change: `toast_height_for`
+## MEASURES at this size and `toast_position_for` derives from that height, so scaling here grows
+## the box and holds the bottom edge with no second edit. Scaling a font without growing its box is
+## the defect this file carried two commits ago; the seam is what makes doing it right cheap now.
+##
+## ⚠️ The HOLD is deliberately NOT scaled: `toast_hold_for` takes a WORD COUNT, and reading time is
+## a property of how many words there are, not how large they are drawn.
+static func toast_font_size() -> int:
+	return TextScale.scaled(TOAST_FONT_SIZE)
+
+
 ## Seconds a toast stays at full opacity for a line of `word_count` words. A STATIC seam rather
 ## than an inline expression so a guard can call it with the pack's real word counts instead of
 ## pinning the spelling of a literal.
@@ -202,7 +218,7 @@ static func toast_height_for(text: String) -> float:
 	var h: float = TOAST_MIN_HEIGHT
 	if font != null:
 		h = maxf(font.get_multiline_string_size(
-			text, HORIZONTAL_ALIGNMENT_CENTER, TOAST_WIDTH, TOAST_FONT_SIZE).y, TOAST_MIN_HEIGHT)
+			text, HORIZONTAL_ALIGNMENT_CENTER, TOAST_WIDTH, toast_font_size()).y, TOAST_MIN_HEIGHT)
 	probe.free()
 	return h
 
@@ -230,7 +246,7 @@ func _toast(text: String) -> void:
 	## from the font, so the override has to be in place first or it is measured at the theme
 	## default — and a wrapping Label that enters the tree before its width wraps one character per
 	## line and caches a minimum the assignment can no longer get under (@cowir-adhoc's JOBS panel).
-	lbl.add_theme_font_size_override("font_size", TOAST_FONT_SIZE)
+	lbl.add_theme_font_size_override("font_size", toast_font_size())
 	lbl.add_theme_color_override("font_color", Color(0.95, 0.9, 0.7))
 	## ⛔ THE RECT WAS A LIE AND THE PROSE DREW OVER THE WORLD. It was a flat `Vector2(300, 36)` —
 	## two lines — while the longest string that reaches here measures 296x80px at this width and

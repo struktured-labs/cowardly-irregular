@@ -214,3 +214,63 @@ func test_the_settled_rect_is_the_one_the_toast_asked_for() -> void:
 	assert_almost_eq(lbl.position.y + lbl.size.y,
 		QuestExaminePoint.TOAST_BASELINE_Y + QuestExaminePoint.TOAST_MIN_HEIGHT, 0.5,
 		"the settled bottom edge left the authored baseline, so a long examine draws over the prop and the player")
+
+
+## ⛔ THE TOAST IGNORED THE TEXT SIZE SETTING. Every other surface showing authored story text scales
+## through TextScale — CutsceneDialogue, BattleDialogue, BattleSpeechBubble — and this one drew a raw
+## 11, so a player on 200% read every examine at 100%. The surface whose entire content is prose was
+## the one the accessibility setting did not reach.
+const PRESETS: Array = [0.8, 1.0, 1.25, 1.5, 2.0]
+
+var _saved_scale: float = 1.0
+
+
+func before_each() -> void:
+	if GameState and "text_size_scale" in GameState:
+		_saved_scale = float(GameState.text_size_scale)
+
+
+func _restore_scale() -> void:
+	if GameState and "text_size_scale" in GameState:
+		GameState.text_size_scale = _saved_scale
+
+
+func test_the_toast_font_follows_the_text_size() -> void:
+	var seen: Array = []
+	for scale in PRESETS:
+		GameState.text_size_scale = scale
+		seen.append(QuestExaminePoint.toast_font_size())
+	_restore_scale()
+	assert_eq(seen[1], QuestExaminePoint.TOAST_FONT_SIZE,
+		"CONTROL: 100%% must be the authored base size, got %d" % seen[1])
+	assert_gt(seen[4], seen[1],
+		"200%% must draw larger than 100%%, got %d vs %d — the setting does not reach this surface" % [seen[4], seen[1]])
+	assert_gt(seen[2], seen[1], "125%% must draw larger than 100%%")
+	gut.p("  toast font at %s: %s" % [str(PRESETS), str(seen)])
+
+
+## The rect must follow the font, or scaling it just clips — the defect this file's own subject was.
+func test_the_rect_grows_with_the_font() -> void:
+	var text: String = "A planted line long enough to wrap at this width, so that a larger font needs strictly more vertical room than a smaller one does."
+	GameState.text_size_scale = 1.0
+	var at_100: float = QuestExaminePoint.toast_height_for(text)
+	GameState.text_size_scale = 2.0
+	var at_200: float = QuestExaminePoint.toast_height_for(text)
+	var pos_200: float = QuestExaminePoint.toast_position_for(text).y
+	_restore_scale()
+	assert_gt(at_200, at_100,
+		"the toast rect did not grow with the font (%.0f at 100%%, %.0f at 200%%) — scaling without growing is the clip" % [at_100, at_200])
+	assert_almost_eq(pos_200 + at_200,
+		QuestExaminePoint.TOAST_BASELINE_Y + QuestExaminePoint.TOAST_MIN_HEIGHT, 0.5,
+		"the bottom edge left the authored baseline at 200%%, so a scaled examine draws over the prop and the player")
+
+
+## And what must NOT change: the hold is a property of WORD COUNT, not of how large the words are.
+func test_the_hold_is_not_scaled() -> void:
+	GameState.text_size_scale = 1.0
+	var at_100: float = QuestExaminePoint.toast_hold_for(30)
+	GameState.text_size_scale = 2.0
+	var at_200: float = QuestExaminePoint.toast_hold_for(30)
+	_restore_scale()
+	assert_almost_eq(at_200, at_100, 0.01,
+		"the hold changed with Text Size (%.2f -> %.2f) — reading time depends on how many words there are, not how big they are drawn" % [at_100, at_200])
