@@ -32,6 +32,10 @@ const BORDER_SHADOW = RetroPanel.BORDER_SHADOW
 const SELECTED_COLOR = Color(0.2, 0.3, 0.5)
 const TEXT_COLOR = Color(1.0, 1.0, 1.0)
 const DISABLED_COLOR = Color(0.4, 0.4, 0.4)
+## In-row information on a row that can be HIGHLIGHTED. DISABLED_COLOR measures 1.46:1 against
+## SELECTED_COLOR, so the detail on the row you are standing on is the one that disappears;
+## this reads 4.61:1 there and 9.47:1 off it. Same constant and same reason as JobMenu's.
+const SUBTITLE_COLOR = Color(0.72, 0.75, 0.85)
 const MAGIC_COLOR = Color(0.6, 0.4, 1.0)
 const PHYSICAL_COLOR = Color(1.0, 0.5, 0.3)
 const SUPPORT_COLOR = Color(0.4, 0.9, 0.4)
@@ -369,7 +373,7 @@ func _create_ability_row(ability: Dictionary, index: int) -> Control:
 		mp_label.text = "%d MP" % mp_cost
 		mp_label.position = Vector2(184, 2)  # clears the longest name now the icon moved names 18px right
 		mp_label.add_theme_font_size_override("font_size", 10)
-		mp_label.add_theme_color_override("font_color", DISABLED_COLOR)
+		mp_label.add_theme_color_override("font_color", SUBTITLE_COLOR)
 		row.add_child(mp_label)
 
 	# Mouse click overlay
