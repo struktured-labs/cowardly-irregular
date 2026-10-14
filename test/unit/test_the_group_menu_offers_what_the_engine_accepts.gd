@@ -14,6 +14,11 @@ extends GutTest
 ##
 ## The gate now has ONE owner: BattleManager.group_participants / group_ap_shortfall. These arms pin
 ## that the menu asks it rather than re-deriving the answer.
+##
+## A refusing row carries `reject_reason` (the member who is short, named) rather than `disabled`,
+## because a disabled row is SKIPPED by the cursor and its tooltip can never be read. What matters
+## here is unchanged — the menu must refuse exactly what the engine refuses — so these arms read the
+## refusal through both keys.
 
 const MenuScript = preload("res://src/battle/BattleCommandMenu.gd")
 const SceneScript = preload("res://src/battle/BattleScene.gd")
@@ -141,7 +146,12 @@ func test_the_menu_row_agrees_with_the_engine_at_every_ap_split() -> void:
 		var party := _party([int(case[0]), int(case[1]), int(case[1])], 0)
 		var row: Dictionary = _limit_row(_scene_for(party), party[0])
 		assert_false(row.is_empty(), "CONTROL: the Limit Break row is built for %s" % str(case))
-		var row_says_yes: bool = not bool(row.get("disabled", false))
+		## ⛔ ASK WHETHER THE ROW REFUSES, NOT WHICH KEY SPELLS THE REFUSAL. This read `disabled`
+		## alone; the four Group rows now carry `reject_reason` instead, so that spelling made every
+		## case read ENABLED and the control below was the only thing that noticed. Mirrors
+		## Win98Menu._row_unavailable, which is what actually decides whether confirm fires.
+		var row_says_yes: bool = not bool(row.get("disabled", false)) \
+			and str(row.get("reject_reason", "")) == ""
 		var engine_says_yes: bool = BattleManager.group_ap_shortfall("limit_break") == null
 		if row_says_yes:
 			enabled_seen += 1

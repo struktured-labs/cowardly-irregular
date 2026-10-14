@@ -426,13 +426,20 @@ func build_command_menu_items_with_targets(combatant: Combatant) -> Array:
 	## with the party at 4 showed Limit Break ENABLED and player_group_attack REFUSED it.
 	var participants: Array[Combatant] = BattleManager.group_participants()
 	if participants.size() >= 2 and alive_enemies.size() > 0:
-		var can_all_out = BattleManager.group_ap_shortfall("all_out_attack") == null
-		var can_limit = BattleManager.group_ap_shortfall("limit_break") == null
 		var can_combo_magic = BattleManager.group_ap_shortfall("combo_magic") == null
 		var combo_elements: Array[String] = combo_elements_for(participants)
-		# Need >= 2 distinct elements for combo magic
+		## Each row carries WHY instead of a bare bool — see _group_ap_reason. Combo magic has TWO
+		## causes and they are not interchangeable: no amount of waiting fixes a party that cannot
+		## field two elements, so the element cause is named last and wins.
+		var all_out_reason: String = _group_ap_reason("all_out_attack")
+		var limit_reason: String = _group_ap_reason("limit_break")
+		var combo_reason: String = _group_ap_reason("combo_magic")
+		## ONE predicate decides both the tooltip bool and the reason. Two copies of `< 2` could
+		## drift, and then the row would be offered while the reason named elements, or refused with
+		## nothing to read — two sources for one surface, where only the consumer's choice is wrong.
 		if combo_elements.size() < 2:
 			can_combo_magic = false
+			combo_reason = "Needs 2 magic elements — party has %d" % combo_elements.size()
 		var combo_tooltip = "Fuse party elements into combined magic (costs 2 AP each)"
 		if can_combo_magic and combo_elements.size() >= 3:
 			combo_tooltip += " — Prism Convergence!"
@@ -449,32 +456,33 @@ func build_command_menu_items_with_targets(combatant: Combatant) -> Array:
 			"label": "All-Out Attack",
 			"tooltip": "All party members strike together (costs 1 AP each)",
 			"data": {"group_type": "all_out_attack"},
-			"disabled": not can_all_out
+			"reject_reason": all_out_reason
 		})
 		group_items.append({
 			"id": "group_combo_magic",
 			"label": "Combo Magic",
 			"tooltip": combo_tooltip,
 			"data": {"group_type": "combo_magic"},
-			"disabled": not can_combo_magic
+			"reject_reason": combo_reason
 		})
 		group_items.append({
 			"id": "group_limit",
 			"label": "Limit Break",
 			"tooltip": "Ultimate combined assault — requires 4 AP from all members",
 			"data": {"group_type": "limit_break"},
-			"disabled": not can_limit
+			"reject_reason": limit_reason
 		})
 		# Formation Special — unlocked by specific party job compositions
 		var formation = _detect_formation(participants)
 		if not formation.is_empty():
-			var can_formation: bool = BattleManager.group_ap_shortfall("formation", int(formation.get("ap_cost", 2))) == null
+			var formation_cost: int = int(formation.get("ap_cost", 2))
+			var formation_reason: String = _group_ap_reason("formation", formation_cost)
 			group_items.append({
 				"id": "group_formation",
 				"label": formation["name"],
 				"tooltip": formation["tooltip"],
 				"data": {"group_type": "formation", "formation_id": formation["id"]},
-				"disabled": not can_formation
+				"reject_reason": formation_reason
 			})
 		items.append({
 			"id": "group_menu",
@@ -883,6 +891,23 @@ func _build_attack_item(combatant: Combatant, alive_enemies: Array[Combatant], c
 ## who bought Fire, or anyone lending a secondary caster's kit, contributed nothing and Combo Magic
 ## stayed greyed out for a party that could genuinely fuse. struktured 2026-09-06: provenance is
 ## irrelevant, one predicate everywhere.
+## A GREYED ROW CANNOT SHOW ITS OWN TOOLTIP. The four Group rows carried `disabled: not can_X`, and
+## the cursor SKIPS a disabled row (Win98Menu._opening_index), so "requires 4 AP from all members"
+## sat on a row the player could never land on. With every row unpayable the cursor fell back to a
+## disabled row 0 and confirm said "Can't use that right now" — no cause, while group_ap_shortfall
+## had already identified the member who was short and by how much. This carries that out.
+##
+## Returns "" when the attack is payable, so a usable row stays fully usable; a non-empty reason
+## keeps the row greyed (Win98Menu:1131 dims a reject_reason row exactly as it dims a disabled one)
+## but LANDABLE, which is the whole difference.
+func _group_ap_reason(group_type: String, ap_cost: int = -1) -> String:
+	var blocker: Combatant = BattleManager.group_ap_shortfall(group_type, ap_cost)
+	if blocker == null:
+		return ""
+	var need: int = ap_cost if ap_cost >= 0 else int(BattleManager.GROUP_AP_COST.get(group_type, 1))
+	return "%s needs %d AP (has %d)" % [blocker.combatant_name, need, blocker.current_ap]
+
+
 static func combo_elements_for(members: Array) -> Array[String]:
 	var out: Array[String] = []
 	for m in members:
