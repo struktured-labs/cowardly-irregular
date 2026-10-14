@@ -1,5 +1,6 @@
 {
   "id": "world5_mutual_exclusion",
+  "wiring_pending": true,
   "title": "Mutual Exclusion",
   "world": 5,
   "prereq_flag": "cutscene_flag_world5_chapter2_complete",

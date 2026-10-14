@@ -1,5 +1,6 @@
 {
   "id": "world4_the_watercolors",
+  "wiring_pending": true,
   "title": "The Watercolors",
   "world": 4,
   "giver": {
