@@ -33,7 +33,14 @@
 set -uo pipefail
 cd "$(cd "$(dirname "$0")/.." && pwd)"
 LIST_ONLY=0
-[ "${1:-}" = "--list" ] && LIST_ONLY=1
+## An unread argument is refused, not ignored: `--help` used to fall through to a full 300-script run.
+case "$#:${1:-}" in
+  0:) ;;
+  1:--list) LIST_ONLY=1 ;;
+  *) echo "pre_ready_guards: unknown argument(s): $* — the only flag is --list (prints the derivation, runs nothing)." >&2
+     echo "                  Run with no arguments to run the guards; set PRE_READY_BASE / PRE_READY_PATHS to scope them." >&2
+     exit 2 ;;
+esac
 
 WALKS='DirAccess\.(open|get_files_at|get_directories_at)|list_dir_begin|dir_contents|get_files\(\)'
 MIN_WALKERS=100   # positive control on the WALK REGEX, not a floor on your branch
