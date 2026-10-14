@@ -47,8 +47,21 @@ extends GutTest
 ## ⚠️ NO FALLBACK DEFAULT, DELIBERATELY: a rename must RED. A `.get(..., [0.8, …])` would leave the
 ## arms passing against a ladder nobody can select, which is strictly worse than the copy it
 ## replaces — the copy at least fails visibly when someone compares the two lists.
-static func _presets() -> Array:
-	return SettingsMenu.TEXT_SIZE_PRESETS
+## ⛔ THE FLOOR LIVES HERE, NOT ONLY IN ITS OWN ARM, and the difference is DURABILITY rather than
+## detection. A standalone floor arm reds the FILE on an empty ladder — which is what a gate reads —
+## but every `for sc in _presets()` loop below still passes vacuously and is individually
+## unfalsifiable. @cowir-autogrind named that; @cowir-story's repair is cheaper than a control per
+## loop: assert in the helper, and each sweeping arm reds BY ITS OWN NAME. It also cannot be
+## separated from the loops by a later edit the way a separate arm can (@cowir-controller).
+##
+## ⚠️ NOT static any more. Checked before changing it: 0 of this file's static functions call it, so
+## nothing breaks at parse time — a single static caller would have been EC=3, "nothing ran", which
+## is louder than a vacuous pass but costs the whole file.
+func _presets() -> Array:
+	var out: Array = SettingsMenu.TEXT_SIZE_PRESETS
+	assert_gt(out.size(), 2,
+		"the Text Size ladder derived only %d rung(s) — every preset loop in this file iterates over it, so a short ladder makes this arm vacuous rather than failing" % out.size())
+	return out
 const LONG := "A notice long enough to need more than one line at any text size the settings offer."
 const LIT := '"((?:[^"\\\\]|\\\\.)*)"'
 
