@@ -71,9 +71,13 @@ SPREAD_LIMIT = 3.0          # LU; fire (2.8) and lightning (2.1) are the healthy
 def lufs(path, downmix=False):
     """Integrated LUFS, or None when the cue is too short for R128 to have an opinion.
 
-    ⛔ `downmix` EXISTS BECAUSE THE WEB BUILD SHIPS MONO. tools/make_web_audio.sh:121 transcodes
-    every master with `-ac 1`, so a mixed-channel family has a DIFFERENT spread on each platform and
-    no flat gain can fix both. Measured on ability_heal: 7.2 LU as-is, 3.4 LU downmixed.
+    ⛔ `downmix` IS A HYPOTHETICAL, NOT A PLATFORM — corrected 2026-10-14. This said "the WEB BUILD
+    SHIPS MONO … so a mixed-channel family has a DIFFERENT spread on each platform". The web build
+    downmixes `assets/audio/music` (make_web_audio.sh:52) and `voice_*.ogg` minus the blips
+    (make_web_voice.sh:42); make_web_stage.sh:166 says the rest of sfx stages as the masters, and the
+    .import has no channel conversion. No variant family is voice_*, so none of these numbers is a
+    shipped tier. Kept anyway, because a mixed-channel family cannot be levelled by ONE gain without
+    saying which quantity you mean. Measured on ability_heal: 7.2 LU as-is, 3.4 LU summed to mono.
     ⚠️ NEVER pass downmix on a MONO input: `pan=mono|c0=0.5*c0+0.5*c1` references a channel that
     does not exist and silently halves amplitude, a flat -6.02 dB. That bug cost @cowir-music two
     retracted numbers on 2026-10-13; the caller below guards it on the channel count."""

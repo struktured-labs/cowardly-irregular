@@ -31,11 +31,27 @@ const LIMIT := 3.0
 ## only the base was). For these four the reference member is ambiguous — the BASE is the loud one
 ## and the long-standing sound — and `buff`/`debuff` fire on every buff and debuff in the game, so
 ## picking a target is an audible change to the game's most-played cues and belongs to struktured.
-## ⛔ TWO NUMBERS PER FAMILY, BECAUSE THE WEB BUILD SHIPS MONO. make_web_audio.sh:121 transcodes
-## every master with `-ac 1`, so wherever a family mixes channel counts its spread DIFFERS BY
-## PLATFORM — and NO FLAT GAIN FIXES BOTH TIERS. Matching ability_heal on desktop (-7.2 on the
-## variants) leaves the web build mismatched ~5.5 dB the other way.
-##   [desktop LUFS as-is, web LUFS mono-downmixed]
+## ⛔ CORRECTED 2026-10-14 — THE SECOND NUMBER IS NOT A PLATFORM. This block said "TWO NUMBERS PER
+## FAMILY, BECAUSE THE WEB BUILD SHIPS MONO … so wherever a family mixes channel counts its spread
+## DIFFERS BY PLATFORM". The web build downmixes MUSIC and VOICE LINES, not ordinary SFX:
+##     tools/make_web_audio.sh:52    SRC_DIR="assets/audio/music"          <- music only
+##     tools/make_web_voice.sh:42    SRC_DIR="assets/audio/sfx", corpus voice_*.ogg except blips
+##     make_web_stage.sh:166         "sfx holds 300+ files that are not voice; each tier clip
+##                                    overwrites its same-named master IN THE STAGE only"
+##     the .import carries loop/loop_offset/bpm/beat_count/bar_beats and NO channel conversion
+## And NONE of the 13 variant families is `voice_*` (pinned below), so for every family here the web
+## build ships the master's channel count unchanged.
+##
+## 🔑 SO `spread_mono` IS A HYPOTHETICAL, NOT A TIER. It is the spread this family WOULD have if its
+## members were summed to mono — which is a true measurement and a real hazard for anything that
+## does sum them, and is NOT what a browser player hears. The numbers stay because they are measured
+## and because a mixed-channel family genuinely cannot be levelled by one gain without naming the
+## quantity; what goes is the claim that one of them is a shipped platform.
+## ⛔ WHAT THIS RETRACTS: `heal`'s "9.9 LU on web — the largest variant mismatch in the bank, and it
+## only exists in the shipped web build" was false in both halves. It is in no build. The same
+## premise is why I recommended a mono re-render for heal_v3 to struktured; that recommendation is
+## withdrawn, and the desktop spread (5.2 LU) is the whole of what he is being asked about.
+##   [LUFS as-is, LUFS if summed to mono — the second is a hypothetical]
 const WIDE_PENDING := {
 	## @cowir-music's find. Repair held at 415e433fc; a fifth option exists that none of
 	## @cowir-main's four covers — make the channel counts consistent, which is a content change.
@@ -150,7 +166,7 @@ func test_the_heal_family_is_the_open_case_and_still_measures_what_was_reported(
 	assert_false(bool(row.get("unmeasurable", false)),
 		"ability_heal became unmeasurable; it was 7.2 LU apart and measurable, so the instrument changed rather than the assets")
 	assert_almost_eq(float(row.get("spread_mono", -1.0)), 3.4, 0.15,
-		"ability_heal's WEB spread moved off 3.4 LU. The web build ships mono, so this is the number a browser player hears and it is tracked separately from desktop's 7.2")
+		"ability_heal's mono-summed spread moved off 3.4 LU. This is a HYPOTHETICAL — no build downmixes ordinary SFX (see the correction in this file's header) — kept because a mixed-channel family cannot be levelled by one gain without naming the quantity")
 	assert_almost_eq(float(row.get("spread", -1.0)), 7.2, 0.15,
 		"ability_heal's spread moved off the 7.2 LU that was reported to struktured. If this is his ruling landing, update WIDE_PENDING (or remove the family from it) in the same commit as the assets")
 	assert_true(WIDE_PENDING.has("ability_heal"),
@@ -254,3 +270,22 @@ func test_the_downmix_is_a_no_op_on_every_mono_member() -> void:
 		"CONTROL: only %d mono members checked, so this arm cannot see a downmix regression" % checked)
 	assert_eq(broken, [],
 		"the downmix is NOT a no-op on these MONO members, so the tool is running pan=mono on a mono input and halving amplitude by ~6 dB — every web figure it reports is wrong by that much: %s" % [broken])
+
+
+func test_no_variant_family_is_in_the_downmixed_corpus() -> void:
+	## ⛔ PINS THE PREMISE OF THE CORRECTION ABOVE, so the "web ships mono" framing cannot drift back
+	## in. The web build downmixes exactly two corpora: `assets/audio/music` (make_web_audio.sh) and
+	## `voice_*.ogg` minus the blips (make_web_voice.sh). A variant family inside either WOULD have a
+	## genuine per-platform spread and the two-number framing would be correct for it — so this arm
+	## reds the day one is added, which is when the framing needs revisiting rather than inheriting.
+	var fx := _fixture()
+	var downmixed: Array[String] = []
+	for name in fx.keys():
+		var key := str(name)
+		## the music corpus cannot appear here at all: this fixture is built from sfx_manifest.json
+		if key.begins_with("voice_") and not key.begins_with("voice_blip_"):
+			downmixed.append(key)
+	assert_gt(fx.size(), 5,
+		"VOID: the fixture holds %d families, too few for this arm to be about the corpus it names" % fx.size())
+	assert_eq(downmixed, [],
+		"these variant families ARE in the web build's downmixed corpus (voice_* minus blips), so for them spread_mono is a real shipped tier and not the hypothetical this file now calls it — revisit the two-number framing in the header: %s" % [downmixed])
