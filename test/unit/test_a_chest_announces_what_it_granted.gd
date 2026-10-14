@@ -242,3 +242,84 @@ func test_the_grant_defaults_to_a_refusal_not_an_empty_string() -> void:
 	var open_fn := src.substr(open_at)
 	assert_string_contains(open_fn, "contents_text != NOTHING_ADDED",
 		"`granted` must be derived from the text, so there is one source of truth and not two")
+
+
+## ⛔ THE SECOND SITE OF THE SAME SHAPE, AND THE SWEEP THAT BOUNDS IT. The gold arm's bug was a
+## variable SEEDED WITH THE NOMINAL AMOUNT and then conditionally overwritten by the real credit —
+## so when the conditional did not fire, the nominal amount was announced as if it had been granted.
+## A derived sweep for that shape across `src/` returns exactly two sites: `TreasureChest`'s gold arm
+## and `FireplaceSecret._examine`. Both are fixed here; `ConversationRewards:181` was already correct
+## because it appends `add_gold`'s return directly, with nothing to seed.
+##
+## 🔑 THIS ARM IS THE MECHANISM RATHER THAN THE TWO CALL SITES. A per-site assertion would be green
+## on the third one somebody writes; this reds on it. The population is derived from the source, so
+## it cannot go stale against a file I did not know about when writing it.
+
+const _SRC_ROOT := "res://src"
+
+
+func _gd_files_under(root: String) -> Array[String]:
+	var out: Array[String] = []
+	var stack: Array[String] = [root]
+	while not stack.is_empty():
+		var dir: String = stack.pop_back()
+		var d := DirAccess.open(dir)
+		if d == null:
+			continue
+		for sub in d.get_directories():
+			stack.append(dir + "/" + sub)
+		for f in d.get_files():
+			if f.ends_with(".gd"):
+				out.append(dir + "/" + f)
+	return out
+
+
+func test_no_credit_variable_is_seeded_with_the_amount_it_has_not_granted() -> void:
+	var files := _gd_files_under(_SRC_ROOT)
+	assert_gt(files.size(), 50, "the src sweep must actually find files — a tiny corpus cannot ratchet")
+
+	var offenders: Array[String] = []
+	var population := 0
+	for path in files:
+		var f := FileAccess.open(path, FileAccess.READ)
+		if f == null:
+			continue
+		var text := f.get_as_text()
+		f.close()
+		if not text.contains("add_gold("):
+			continue
+		var lines := text.split("\n")
+		for i in lines.size():
+			var line: String = lines[i]
+			var body: String = line.strip_edges()
+			if body.begins_with("#") or not body.begins_with("var "):
+				continue
+			if not body.contains("="):
+				continue
+			var name: String = body.substr(4).split(":")[0].split("=")[0].strip_edges()
+			if name == "":
+				continue
+			## Is this variable later assigned from add_gold? That is what makes it a CREDIT
+			## variable rather than any local int, and it is derived rather than name-matched.
+			var assigned_from_credit := false
+			for j in range(i + 1, mini(i + 8, lines.size())):
+				if lines[j].contains(name + " = ") and lines[j].contains("add_gold("):
+					assigned_from_credit = true
+					break
+			if not assigned_from_credit:
+				continue
+			population += 1
+			var seed_expr: String = body.split("=", true, 1)[1].strip_edges()
+			if seed_expr != "0":
+				offenders.append("%s:%d seeds %s with `%s`" % [path, i + 1, name, seed_expr])
+
+	## PRECONDITION, so a clean sweep cannot mean "the pattern matched nothing anywhere".
+	## ⛔ `>= 1`, NOT `> 1`. The population is exactly 2 today, and pinning that would red on a
+	## correct change — consolidating both sites behind one helper is a legitimate refactor and
+	## would leave 1. The property worth defending is that the PATTERN STILL MATCHES SOMETHING (a
+	## rename of `add_gold` would take it to 0 and make every later assertion vacuous), not that
+	## there are two of them. Asserting the count instead of the relationship is the coincidental-
+	## value ratchet: red on a correct change, green on a wrong one.
+	assert_gt(population, 0, "the sweep must find at least one credit variable — found %d" % population)
+	assert_eq(offenders.size(), 0,
+		"a credit variable must be seeded at 0, never with the amount it has not granted yet: %s" % str(offenders))

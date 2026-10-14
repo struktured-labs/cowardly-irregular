@@ -100,12 +100,27 @@ func _examine() -> void:
 		return
 	# Flag BEFORE the grant so a mid-frame re-entry can't double-pay.
 	gs.set_story_flag(SECRET_FLAG)
-	var credited: int = SECRET_GOLD
+	# ⛔ SEEDED AT ZERO, NOT AT SECRET_GOLD. Seeded with the nominal amount, an absent
+	# `gs.add_gold` left `credited` at the full find and the toast claimed "+N G" having credited
+	# nothing — and the flag is already set by then, so the secret is spent. This is the SECOND and
+	# LAST site of that shape in `src/`: a derived sweep for a variable seeded with the nominal
+	# amount and conditionally overwritten by the real credit returns exactly `TreasureChest:489`
+	# and this line. `ConversationRewards:181` is already correct — it appends `add_gold`'s return
+	# directly, with nothing to seed.
+	var credited: int = 0
 	if gs.has_method("add_gold"):
 		credited = int(gs.add_gold(SECRET_GOLD))
 	if SoundManager:
-		SoundManager.play_ui("secret_found")
-	_toast(FOUND_LINE + "  (+%d G)" % credited)
+		SoundManager.play_ui("secret_found" if credited > 0 else "menu_select")
+	# 🔑 THE FLAG ORDERING ABOVE IS DELIBERATE AND IS KEPT: its comment says "Flag BEFORE the
+	# grant so a mid-frame re-entry can't double-pay", and for a one-off gold secret a double-pay is
+	# worse than a missed one. So the remedy here is NOT to reorder — it is to stop CLAIMING. The
+	# softer cue follows @cowir-sfx's ruling on the examine chime: the press registered, and silence
+	# cannot say so.
+	if credited > 0:
+		_toast(FOUND_LINE + "  (+%d G)" % credited)
+	else:
+		_toast(FOUND_LINE + "  (the coins are gone)")
 
 
 func _toast(text: String) -> void:
