@@ -27,11 +27,21 @@ extends GutTest
 ## (@cowir-autogrind, 2026-10-14). get_string_size is synchronous and is what actually draws.
 
 const JukeboxScript = preload("res://src/ui/JukeboxMenu.gd")
-const PRESETS: Array = [0.8, 1.0, 1.25, 1.5, 2.0]
-const LABELS: Array = ["80%", "100%", "125%", "150%", "200%"]
+## DERIVED from the ladder the player actually drives, never copied (@cowir-controller's census:
+## 27 files carry the literal and 17 check nothing). No fallback default — `SettingsMenu` carries a
+## `class_name`, so this resolves at PARSE time and a rename gives EC=3, nothing ran, which is
+## louder than any floor. @cowir-adhoc's PIN is the alternative; DERIVE is chosen so a new preset is
+## swept with no human step, and @cowir-autogrind's floor arm below is the price of that choice —
+## every arm in this file LOOPS the ladder, so an empty one would iterate zero times and pass green.
+const PRESETS: Array = SettingsMenu.TEXT_SIZE_PRESETS
 
 var _menu: Control = null
 var _orig_scale: float = 1.0
+
+
+## The rung's player-facing name, formatted from the derived preset rather than a parallel list.
+func _label(i: int) -> String:
+	return "%d%%" % int(round(float(PRESETS[i]) * 100.0))
 
 
 func before_each() -> void:
@@ -96,7 +106,7 @@ func test_control_rows_are_built_and_carry_text_at_every_size() -> void:
 	for i in PRESETS.size():
 		await _build_at(PRESETS[i])
 		assert_gt(_row_labels().size(), 0,
-			"PRECONDITION: Text Size %s built no row label carrying text" % [LABELS[i]])
+			"PRECONDITION: Text Size %s built no row label carrying text" % [_label(i)])
 
 
 func test_a_row_label_draws_inside_its_highlight() -> void:
@@ -117,10 +127,10 @@ func test_a_row_label_draws_inside_its_highlight() -> void:
 				worst_text = lab.text
 				avail = par.size.x - 2.0 * lab.position.x
 		print("[JUKEBOX-WIDTH] %s worst overflow %.1f px (avail %.0f) on '%s'" % [
-			LABELS[i], worst, avail, worst_text.substr(0, 40)])
+			_label(i), worst, avail, worst_text.substr(0, 40)])
 		assert_lte(worst, 0.0,
 			"Text Size %s: '%s' draws %.0f px past its highlight (%.0f px available)" % [
-				LABELS[i], worst_text.substr(0, 34), worst, avail])
+				_label(i), worst_text.substr(0, 34), worst, avail])
 
 
 func test_the_now_playing_line_draws_inside_the_panel() -> void:
@@ -134,9 +144,9 @@ func test_the_now_playing_line_draws_inside_the_panel() -> void:
 		var panel: Control = _menu._panel as Control
 		var over: float = (np.position.x + _text_w(np)) - panel.size.x
 		print("[JUKEBOX-WIDTH] %s now-playing overflow %.1f px on '%s'" % [
-			LABELS[i], over, np.text.substr(0, 40)])
+			_label(i), over, np.text.substr(0, 40)])
 		assert_lte(over, 0.0,
-			"Text Size %s: now-playing draws %.0f px past the panel" % [LABELS[i], over])
+			"Text Size %s: now-playing draws %.0f px past the panel" % [_label(i), over])
 
 
 ## ⚠️ THE ARM ABOVE MEASURES ONLY THE ROWS THAT HAPPEN TO BE VISIBLE, which is 14 of 165 and is
@@ -163,16 +173,32 @@ func test_the_widest_row_the_list_can_show_still_fits() -> void:
 	for i in PRESETS.size():
 		await _build_at(PRESETS[i])
 		var rows: Array = _row_labels()
-		assert_gt(rows.size(), 0, "PRECONDITION: no row label at %s" % [LABELS[i]])
+		assert_gt(rows.size(), 0, "PRECONDITION: no row label at %s" % [_label(i)])
 		var lab := rows[0] as Label
 		var par := lab.get_parent() as Control
 		var f: Font = lab.get_theme_font("font")
 		var fs: int = lab.get_theme_font_size("font_size")
-		assert_true(f != null and fs > 0, "PRECONDITION: row font unreadable at %s" % [LABELS[i]])
+		assert_true(f != null and fs > 0, "PRECONDITION: row font unreadable at %s" % [_label(i)])
 		var w: float = f.get_string_size(worst_row, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
 		var avail: float = par.size.x - 2.0 * lab.position.x
 		print("[JUKEBOX-WORST] %s widest row %.0f px of %.0f avail (margin %.0f) '%s'" % [
-			LABELS[i], w, avail, avail - w, worst_row.substr(0, 46)])
+			_label(i), w, avail, avail - w, worst_row.substr(0, 46)])
 		assert_lte(lab.position.x + w, par.size.x - lab.position.x,
 			"Text Size %s: the widest row the list can show ('%s') draws %.0f px past its highlight" % [
-				LABELS[i], worst_row.substr(0, 34), (lab.position.x + w) - (par.size.x - lab.position.x)])
+				_label(i), worst_row.substr(0, 34), (lab.position.x + w) - (par.size.x - lab.position.x)])
+
+
+func test_control_the_ladder_itself_is_the_players() -> void:
+	## ⛔ THE PRICE OF DERIVING (@cowir-autogrind): every other arm in this file LOOPS `PRESETS`, so
+	## an empty or stubbed ladder makes all of them iterate zero times and pass GREEN. A pinned copy
+	## fails loudly instead; a derivation needs this arm to get the same loudness.
+	assert_gt(PRESETS.size(), 2, "the preset ladder derived %d rungs" % PRESETS.size())
+	assert_true(PRESETS.has(1.0), "the ladder has no 100%% rung: %s" % [PRESETS])
+	assert_gt(float(PRESETS.max()), 1.0, "the ladder tops out at %s, so nothing scales up" % [PRESETS.max()])
+	var seen: Dictionary = {}
+	for i in PRESETS.size():
+		seen[_label(i)] = true
+	assert_eq(seen.size(), PRESETS.size(),
+		"%d rungs collapse to %d labels, so a failure message cannot name its own size" % [
+			PRESETS.size(), seen.size()])
+	assert_eq(_label(PRESETS.find(1.0)), "100%", "the 1.0 rung is labelled %s" % _label(PRESETS.find(1.0)))
