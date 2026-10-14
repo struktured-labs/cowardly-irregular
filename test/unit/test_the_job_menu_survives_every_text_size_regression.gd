@@ -133,7 +133,17 @@ func test_every_font_grows_with_the_setting() -> void:
 	var stuck: Array[String] = []
 	for job_select in [false, true]:
 		var base: Dictionary = at["%s/%s" % [1.0, job_select]]
-		for scale in [0.8, 1.25, 1.5, 2.0]:
+		## ⛔ THIS WAS A HARDCODED [0.8, 1.25, 1.5, 2.0] — TEXT_SCALES minus the 1.0 baseline,
+		## written as a second list. The pin arm forces TEXT_SCALES to equal
+		## SettingsMenu.TEXT_SIZE_PRESETS, so adding a preset reds that arm and someone widens
+		## TEXT_SCALES — and the literal here would have stayed, so the new rung would be swept
+		## by every OTHER arm and silently never visited by this one, while the file still read
+		## as covering every preset. @cowir-battle's partition hazard: a stale partition skips a
+		## rung AND reads as exhaustive, which is worse than a stale copy that merely skips one.
+		## Derived from the pinned list now, so there is no second list to drift.
+		for scale in TEXT_SCALES:
+			if is_equal_approx(float(scale), 1.0):
+				continue  # the baseline every other preset is compared against
 			var other: Dictionary = at["%s/%s" % [scale, job_select]]
 			for key in base:
 				if not other.has(key) or other[key].size() != base[key].size():
