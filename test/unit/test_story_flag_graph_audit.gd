@@ -48,9 +48,25 @@ extends GutTest
 ## choice: its strip is a per-CHARACTER GDScript loop, and the corpus here is 307 files / 8.4 MB of
 ## `res://src`, walked for every arm. Instead the patterns run on RAW text in the engine's own C++
 ## RegEx and each HIT is then rejected if a `#` precedes it ON ITS LINE — ~200 cheap checks instead
-## of 8.4 M interpreted iterations. Measured: full-strip, line-strip and no-strip all yield the same
-## 58 src writers TODAY, so the discrimination is not load-bearing on this tree and is kept for the
-## state that will arrive — a write commented out while debugging must stop counting as a write.
+## of 8.4 M interpreted iterations. 🔑 AND THE COST WAS THE WEAKER HALF OF THAT ARGUMENT: this file
+## USES POSITIONS (`get_start` -> `rfind` -> `substr`), and `GdSource.split()` REJOINS its kept
+## parts, so the line map does not survive it — @cowir-battle measured +57 lines of drift on
+## `BattleManager.gd` and +4 on `HeadlessBattleResolver.gd`, 2026-10-14, in an arm that printed
+## `i + 1` as a source line and therefore named healthy code. Rejecting per HIT on the RAW text
+## keeps every offset true by construction, which is the correctness reason rather than the
+## performance one. `strip_comments` alone IS line-preserving and would also serve; `code_of` is
+## the one that cannot. Measured: full-strip, line-strip and no-strip all yield the same
+## 58 src writers TODAY — and that is the WRITER patterns only. 🔑 ON THE SHIPPED TREE THE RULE HAS
+## EXACTLY ONE LIVE INSTANCE, found by @cowir-sfx's direct test (run each pattern over RAW and over
+## COMMENT-STRIPPED source and diff the results — a delta of zero IS the absence of exposure, with
+## no predicate to be wrong about, which beats every filter five lanes wrote on 2026-10-14):
+##     writer patterns      raw 30 / 22 / 7   stripped 30 / 22 / 7    delta 0
+##     mention_all          raw 129           stripped 128            delta 1
+##     the one: `cutscene_flag_wardin_industrial_defeated`, GameLoop.gd:4163 — a comment that
+##     quotes a DELIBERATELY MISSPELLED flag as an example of the very defect it warns about
+##     ("a subclass typo sets the wrong flag silently"). Without `_is_commented` that fake name
+##     enters the mention arm's population.
+## So the rule is not kept for a state that will arrive; it is already earning its place once.
 ## `test_control_a_commented_write_is_not_a_writer` proves BOTH directions on planted text, because
 ## the real corpus contains no instance and a rule with no instance cannot be proven by the corpus.
 
@@ -210,7 +226,12 @@ func _writers() -> Dictionary:
 ## A cutscene's `set_flag: "x"` step lands in `game_constants["cutscene_flag_x"]`, so the two
 ## spellings are one flag. This alias is also what covers CutsceneDirector's composed write.
 ##
-## 📌 WHICH OF THE THREE CLAUSES IS LOAD-BEARING, measured by disabling each (@cowir-adhoc's test for
+## 📌 WHICH OF THE THREE CLAUSES IS LOAD-BEARING. ⚠️ MEASURED BY A PYTHON REPLICA DISABLING EACH,
+## NOT BY THE ENGINE — the earlier wording said "measured by disabling each", which reads as an
+## engine measurement and is the one over-claiming sentence in this file. A replica cannot fail the
+## way the guard would (@cowir-ai, 2026-10-14, whose own replica and guard disagreed about a
+## reachable state), so these three numbers are PREDICTIONS from an instrument that has agreed with
+## the engine on fourteen other measurements, not results. (@cowir-adhoc's test for
 ## "leave it alone"): exact-only leaves 20 reader flags dead (quest 2 · chapter 12 · worldmap 4 ·
 ## partychat 2), and all 20 are recovered by the TRIMMED alias — readers spell `cutscene_flag_X`
 ## while the cutscene JSON writes `X`. ⚠️ The PREFIXED alias is a BELT: disabling it changes no
