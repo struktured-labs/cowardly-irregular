@@ -283,6 +283,7 @@ var _area_fade_rect: ColorRect = null
 ## Overworld menu
 var _overworld_menu: Control = null
 var _overworld_menu_layer: CanvasLayer = null
+var _teleport_transition_pending: bool = false  # set before the teardown on a teleport: the destination sets music, so restoring the pre-menu bed would play the world being LEFT
 var _pre_menu_music_state: Dictionary = {}  # capture_music_state() snapshot while pause menu is open — a raw _current_music string cannot carry AREA beds, so W2+ overworlds restored wrong (struktured in-play report 2026-08-08)
 var _menu_hidden_hud: Array = []
 
@@ -1795,7 +1796,9 @@ func _teardown_overworld_menu_widget() -> void:
 	# OFF menu no matter what. Snapshot preferred (msg 2687 guard against
 	# underneath swaps), scene-derived key as fallback so "menu" can't
 	# persist even when the snapshot was lost. Clear runs unconditionally.
-	if SoundManager and SoundManager._current_music == "menu":
+	## A teleport replaces the scene immediately, and _pre_menu_music_state is the bed from where the
+	## player WAS — restoring it played the departed world for a beat (his 10-13 log, 3 warps of 3).
+	if SoundManager and SoundManager._current_music == "menu" and not _teleport_transition_pending:
 		SoundManager.restore_music_state(_pre_menu_music_state)
 		if SoundManager._current_music == "menu":
 			# Restore no-oped (empty/not-playing snapshot) — bug 2801's second stage still applies.
@@ -1804,6 +1807,7 @@ func _teardown_overworld_menu_widget() -> void:
 				# AREA key, not a track name — play_music("village") has no case and warns "Unknown music track", leaving the menu bed to bleed into the overworld (struktured 2026-07-25). play_area_music resolves village/interior_*/overworld properly.
 				SoundManager.play_area_music(fallback)
 	_pre_menu_music_state = {}
+	_teleport_transition_pending = false
 
 
 func _derive_current_scene_music_key() -> String:
@@ -5166,10 +5170,17 @@ func _start_battle_async(specific_enemies: Array = [], is_encounter: bool = fals
 
 func _on_teleport_requested(target_map: String, spawn_point: String) -> void:
 	"""Handle debug teleport from overworld menu"""
+	_teleport_transition_pending = true
 	# Teardown widget only — the scene is about to be replaced by the transition, so resuming the OLD exploration briefly would just let the player move for one frame before it's freed. Same class as the autobattle/autogrind menu-action paths.
 	_teardown_overworld_menu_widget()
 	# Then transition
 	_on_area_transition(target_map, spawn_point)
+	## bug 2801's invariant still holds: suppressing the restore above must not let the MENU bed bleed if
+	## the transition refused (re-entry) and therefore set no music of its own.
+	if SoundManager and SoundManager._current_music == "menu":
+		var after: String = _derive_current_scene_music_key()
+		if after != "":
+			SoundManager.play_area_music(after)
 
 
 func _on_settings_teleport_requested(target_map: String, spawn_point: String) -> void:
