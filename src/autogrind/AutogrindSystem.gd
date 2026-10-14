@@ -1866,9 +1866,7 @@ func _create_default_autogrind_profiles() -> Dictionary:
 	var profile_list = []
 
 	for i in range(DEFAULT_AUTOGRIND_TEMPLATES.size()):
-		var profile_name = DEFAULT_AUTOGRIND_TEMPLATES[i]
-		var profile_rules = _create_default_autogrind_rules() if i == 0 else _create_empty_autogrind_rules()
-		profile_list.append({"name": profile_name, "rules": profile_rules})
+		profile_list.append({"name": DEFAULT_AUTOGRIND_TEMPLATES[i], "rules": shipped_autogrind_rules_for(i)})
 
 	return {"profiles": profile_list, "active": 0}
 
@@ -1928,6 +1926,75 @@ func _create_empty_autogrind_rules() -> Array:
 		{
 			"conditions": [{"type": "always"}],
 			"actions": [{"type": "switch_profile", "character_id": ALL_PARTY, "profile_index": 0}],
+			"enabled": true
+		}
+	]
+
+
+## Slots 1-2 shipped the SAME one-rule placeholder a brand-new blank profile gets, so "Safe Grind" carried NO stop rule while "Standard Grind" stops at alive_count <= 2 -- the profile named for caution was the least cautious shipped, and byte-identical to "Aggressive Grind".
+func shipped_autogrind_rules_for(slot: int) -> Array:
+	match slot:
+		1:
+			return _create_safe_autogrind_rules()
+		2:
+			return _create_aggressive_autogrind_rules()
+		_:
+			return _create_default_autogrind_rules()
+
+
+## Safer than _create_default_autogrind_rules' set by the INJURY stop, the heal, the MP restore and the Defensive preset -- NOT by a tighter party-size stop, which would only refuse small parties; first-match-wins, so the stops sit above the care and the fallback sits last.
+func _create_safe_autogrind_rules() -> Array:
+	return [
+		## A permanent injury is the one cost a grind cannot undo, so the cautious profile hard-stops on it.
+		{
+			"conditions": [{"type": "member_injured"}],
+			"actions": [{"type": "stop_grinding"}],
+			"enabled": true
+		},
+		## MATCHES Standard deliberately: alive_count is ABSOLUTE, so a higher stop refuses a party Standard would grind -- and W1 unlocks the starters one at a time, so a 3-member party is normal.
+		{
+			"conditions": [{"type": "alive_count", "op": "<=", "value": 2}],
+			"actions": [{"type": "stop_grinding"}],
+			"enabled": true
+		},
+		## Standard heals on the AVERAGE at 30; this watches the WEAKEST member at 50.
+		{
+			"conditions": [{"type": "party_hp_min", "op": "<", "value": 50}],
+			"actions": [{"type": "heal_party"}],
+			"enabled": true
+		},
+		{
+			"conditions": [{"type": "party_mp_avg", "op": "<", "value": 30}],
+			"actions": [{"type": "restore_mp"}],
+			"enabled": true
+		},
+		## Autobattle profile 1 is the job's Defensive preset (AutobattleSystem._create_default_profiles).
+		{
+			"conditions": [{"type": "always"}],
+			"actions": [{"type": "switch_profile", "character_id": ALL_PARTY, "profile_index": 1}],
+			"enabled": true
+		}
+	]
+
+
+## The mirror of the safe set: it keeps going where Standard would stop, and only the last-resort stop remains.
+func _create_aggressive_autogrind_rules() -> Array:
+	return [
+		## Standard stops with 2 alive; this runs on until one member is left standing.
+		{
+			"conditions": [{"type": "alive_count", "op": "<=", "value": 1}],
+			"actions": [{"type": "stop_grinding"}],
+			"enabled": true
+		},
+		{
+			"conditions": [{"type": "party_hp_min", "op": "<", "value": 25}],
+			"actions": [{"type": "heal_party"}],
+			"enabled": true
+		},
+		## Autobattle profile 2 is the job's Aggressive preset (AutobattleSystem._create_default_profiles).
+		{
+			"conditions": [{"type": "always"}],
+			"actions": [{"type": "switch_profile", "character_id": ALL_PARTY, "profile_index": 2}],
 			"enabled": true
 		}
 	]
