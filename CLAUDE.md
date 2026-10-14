@@ -310,7 +310,7 @@ XDG_DATA_HOME=$PWD/tmp/xdg godot --headless -s test/run_tests.gd          # Run 
 ```
 
 ### Testing
-- Unit tests in `test/unit/` using GUT framework — **1,996 files on disk as of 2026-09-17; for the TEST count read `run_tests.sh`'s Totals rather than this line, which carried "~7390 across 1157 files" long after both were wrong.** **~5-10 min headless, not seconds** (see the Tests bullet above; this line said "~30s" and two other sites said "~40s", all three ~10x low and drifted independently)
+- Unit tests in `test/unit/` using GUT framework — **no file count pinned here (it read 1,996 on 2026-09-17 and was 2,741 four weeks later): `tools/fold_gate/make.sh` prints the authored count it derives, and for the TEST count read `run_tests.sh`'s Totals rather than this line, which carried "~7390 across 1157 files" long after both were wrong.** **~5-10 min headless, not seconds** (see the Tests bullet above; this line said "~30s" and two other sites said "~40s", all three ~10x low and drifted independently)
 - **Canonical test command** — use the wrapper (mutes audio AND writes its own --log-file so test runs never rotate the game's user://logs crash trace away):
   ```bash
   XDG_DATA_HOME=$PWD/tmp/xdg tools/run_tests.sh                # full unit suite
@@ -605,7 +605,7 @@ cowardly-irregular/
 │   ├── job_aliases.json    # white_mage→cleric, black_mage→mage, thief→rogue
 │   └── cutscenes/          # story cutscene JSON (id, trigger, world, background, steps)
 └── test/
-    └── unit/            # GUT tests (1,996 files @ 2026-09-17; count from run_tests.sh Totals, ~5-10 min headless — background it)
+    └── unit/            # GUT tests (count from run_tests.sh Totals, never pinned here; ~5-10 min headless — background it)
 ```
 
 ## Key Design Principles
