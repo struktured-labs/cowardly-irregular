@@ -12,6 +12,13 @@ extends GutTest
 ## themed-node work would introduce.
 
 const SCENE := "res://src/battle/BattleScene.tscn"
+## ⛔ Adding a BattleScene to the tree STARTS A BATTLE on the BattleManager autoload, and this
+## file instantiates one. Without a restore, test_battle_state_not_leaked_by_tests reds after
+## it ("state=3") — which is how the first version of this stack was dropped from .691.
+## The helper derives its surface from get_property_list(), so a field added tomorrow is
+## covered without editing anything; a hand-written teardown covers only the fields its
+## author thought of, which is the failure its own docstring records twice.
+const BattleStateHelper := preload("res://test/unit/helpers/battle_state.gd")
 ## Measured 2026-10-14 with five enemies: available = 474 - 406 = 68px of budget.
 ## These fit; 1.5x and 2.0x do NOT, and that boundary is pinned by its own arm below rather than
 ## left as a silent gap. On main (chrome = the literal 64) NONE of them fit, including the default.
@@ -20,9 +27,12 @@ const NOT_FITTING: Array = [1.5, 2.0]
 
 var _saved_scale: float = 1.0
 var _scene: Node = null
+var _battle_state: RefCounted = null
 
 
 func before_each() -> void:
+	_battle_state = BattleStateHelper.new()
+	_battle_state.snapshot()
 	_saved_scale = float(GameState.text_size_scale)
 
 
@@ -31,8 +41,10 @@ func after_each() -> void:
 	if _scene and is_instance_valid(_scene):
 		_scene.queue_free()
 	_scene = null
-
-
+	## LAST, not first: queue_free()ing the scene above can re-dirty the autoload, and the
+	## helper's own note says a restore must follow any line that does.
+	if _battle_state != null:
+		_battle_state.restore()
 func _enemy(n: String, hp: int) -> Combatant:
 	var c := Combatant.new()
 	add_child_autofree(c)
