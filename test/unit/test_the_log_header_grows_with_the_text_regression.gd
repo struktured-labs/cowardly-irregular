@@ -27,6 +27,23 @@ const PRESETS: Array = [0.8, 1.0, 1.25, 1.5, 2.0]
 var _saved_scale: float = 1.0
 var _scene: Node = null
 var _battle_state: RefCounted = null
+var _file_state: RefCounted = null
+
+
+## ⛔ BACKSTOP UNDER THE PER-TEST RESTORE, AND IT IS NOT BELT-AND-BRACES. after_each puts the
+## restore LAST, because queue_free()ing the scene can re-dirty the autoload — correct, and it leaves
+## the restore ABORT-EXPOSED: a GDScript error in the lines above it kills the enclosing function, so
+## the restore never runs and the file is green either way. The helper's own note names this exact
+## shape and names the repair: a file-scope snapshot a per-test abort cannot skip. This stack was
+## dropped from .691 for precisely that leak, one signal over.
+func before_all() -> void:
+	_file_state = BattleStateHelper.new()
+	_file_state.snapshot()
+
+
+func after_all() -> void:
+	if _file_state != null:
+		_file_state.restore()
 
 
 func before_each() -> void:
