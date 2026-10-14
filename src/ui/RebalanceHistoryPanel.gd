@@ -28,12 +28,26 @@ const APPLIED_COLOR := Color(0.45, 0.85, 0.50)
 const DISMISSED_COLOR := Color(0.85, 0.55, 0.45)
 const NEUTRAL_COLOR := Color(0.7, 0.7, 0.75)
 const REJECTED_COLOR := Color(0.95, 0.45, 0.40)
+
+## Authored font sizes. Every one goes through TextScale so Settings -> Text Size reaches this panel.
+const HEADER_FONT := 18
+const NOTE_FONT := 11
+const MODIFIERS_FONT := 12
+const LIST_FONT := 13
+const EMPTY_FONT := 13
+const HINT_FONT := 12
 const RESET_COLOR := Color(0.55, 0.75, 0.95)
 
 var _list_label: RichTextLabel
 var _empty_label: Label
 var _modifiers_label: RichTextLabel
 var _reset_btn: Button
+
+
+## A box: the authored height until the scaled font outgrows it, then the font plus the padding
+## the authored box spent. One expression, so 100% cannot drift from the shipped look.
+static func _box(base_font: int, authored_box: float) -> float:
+	return maxf(authored_box, float(TextScale.scaled(base_font)) + authored_box - float(base_font))
 
 
 func _ready() -> void:
@@ -76,18 +90,18 @@ func _build_ui() -> void:
 
 	var header := Label.new()
 	header.text = "REBALANCE HISTORY"
-	header.add_theme_font_size_override("font_size", 18)
+	header.add_theme_font_size_override("font_size", TextScale.scaled(HEADER_FONT))
 	header.add_theme_color_override("font_color", HEADER_COLOR)
 	header.position = Vector2(panel_x + 20, panel_y + 16)
-	header.size = Vector2(panel_w - 40, 28)
+	header.size = Vector2(panel_w - 40, _box(HEADER_FONT, 28.0))
 	add_child(header)
 
 	var note := Label.new()
 	note.text = "What the daemon has proposed since you started — most recent first."
-	note.add_theme_font_size_override("font_size", 11)
+	note.add_theme_font_size_override("font_size", TextScale.scaled(NOTE_FONT))
 	note.add_theme_color_override("font_color", DIM_COLOR)
 	note.position = Vector2(panel_x + 20, panel_y + 46)
-	note.size = Vector2(panel_w - 40, 18)
+	note.size = Vector2(panel_w - 40, _box(NOTE_FONT, 18.0))
 	add_child(note)
 
 	# tick 56: "Currently Active" snapshot section. Shows game_constants
@@ -97,17 +111,18 @@ func _build_ui() -> void:
 	_modifiers_label = RichTextLabel.new()
 	_modifiers_label.bbcode_enabled = true
 	_modifiers_label.add_theme_color_override("default_color", TEXT_COLOR)
-	_modifiers_label.add_theme_font_size_override("normal_font_size", 12)
+	_modifiers_label.add_theme_font_size_override("normal_font_size", TextScale.scaled(MODIFIERS_FONT))
 	_modifiers_label.position = Vector2(panel_x + 24, panel_y + 76)
 	_modifiers_label.size = Vector2(panel_w - 48, 56)
-	_modifiers_label.scroll_active = false
+	# scrolling off, the active-modifier line was silently cut at the box edge -- at every font size.
+	_modifiers_label.scroll_active = true
 	_modifiers_label.fit_content = false
 	add_child(_modifiers_label)
 
 	_list_label = RichTextLabel.new()
 	_list_label.bbcode_enabled = true
 	_list_label.add_theme_color_override("default_color", TEXT_COLOR)
-	_list_label.add_theme_font_size_override("normal_font_size", 13)
+	_list_label.add_theme_font_size_override("normal_font_size", TextScale.scaled(LIST_FONT))
 	_list_label.position = Vector2(panel_x + 24, panel_y + 138)
 	_list_label.size = Vector2(panel_w - 48, panel_h - 186)
 	_list_label.scroll_active = true
@@ -116,10 +131,10 @@ func _build_ui() -> void:
 
 	_empty_label = Label.new()
 	_empty_label.text = "No applied history yet. Defeat a boss or wipe a few times (with auto-rebalance ON) to start seeing entries here."
-	_empty_label.add_theme_font_size_override("font_size", 13)
+	_empty_label.add_theme_font_size_override("font_size", TextScale.scaled(EMPTY_FONT))
 	_empty_label.add_theme_color_override("font_color", DIM_COLOR)
 	_empty_label.position = Vector2(panel_x + 40, panel_y + (panel_h / 2.0) - 20)
-	_empty_label.size = Vector2(panel_w - 80, 40)
+	_empty_label.size = Vector2(panel_w - 80, _box(EMPTY_FONT, 40.0))
 	_empty_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_empty_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	add_child(_empty_label)
@@ -136,10 +151,10 @@ func _build_ui() -> void:
 
 	var hint := Label.new()
 	hint.text = "[%s/Esc] Close" % InputProfileManager.hint_for_action("ui_cancel")
-	hint.add_theme_font_size_override("font_size", 12)
+	hint.add_theme_font_size_override("font_size", TextScale.scaled(HINT_FONT))
 	hint.add_theme_color_override("font_color", TEXT_COLOR)
 	hint.position = Vector2(panel_x + panel_w - 200, panel_y + panel_h - 28)
-	hint.size = Vector2(180, 20)
+	hint.size = Vector2(180, _box(HINT_FONT, 20.0))
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	add_child(hint)
 
