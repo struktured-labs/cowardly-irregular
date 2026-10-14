@@ -11,6 +11,14 @@ var selected_index: int = 0  # 0=profile row, 1-6=action rows, 7=reset, 8=test b
 var _capturing: bool = false
 var _capture_action: String = ""
 var _capture_timer: float = 0.0
+## ⛔ THE WALK'S ONLY TWO EXITS, named once. The status line used to advertise a PAD button as the
+## skip -- and `_handle_mapping_input` records every InputEventJoypadButton as the binding, so
+## pressing it BOUND that button instead of skipping. Same advertised-vs-actual class as the Repeat
+## row and the grid refusals. The caption derives from these consts, so the handler and the text
+## cannot drift apart.
+const MAPPING_SKIP_KEY := KEY_X
+const MAPPING_CANCEL_KEY := KEY_ESCAPE
+
 const CAPTURE_TIMEOUT = 5.0
 var _testing: bool = false
 
@@ -831,9 +839,13 @@ func _map_pad_hint() -> String:
 	var pads := Input.get_connected_joypads()
 	if pads.is_empty():
 		return "no pad connected"
+	## ⛔ WARNS BEFORE THE PLAYER COMMITS. The walk has no PAD exit -- skip and cancel are keyboard
+	## keys -- so a pad-only player who starts it can only finish it. Whether a pad gesture should
+	## exist is struktured's call; until then the honest thing is to say so on the row rather than
+	## at the point of no return.
 	if Input.is_joy_known(pads[0]):
-		return "SDL already knows this pad — recapture only if it misbehaves"
-	return "THIS PAD IS UNMAPPED — capture it"
+		return "SDL knows this pad — recapture only if it misbehaves (needs a keyboard to skip/cancel)"
+	return "THIS PAD IS UNMAPPED — capture it (needs a keyboard to skip/cancel)"
 
 
 func _start_pad_mapping() -> void:
@@ -856,8 +868,11 @@ func _refresh_mapping_prompt() -> void:
 		return
 	_mapping_prompt.text = _mapping.current_prompt()
 	if _mapping_status:
-		_mapping_status.text = "%s   ·   %s\nB / X = skip this control   ·   Esc = cancel" % [
-			_mapping.pad_name, _mapping.guid]
+		## Keyboard only, and it says so: every pad button here is a BINDING, so there is no pad
+		## button left to mean "skip". The key names come from the consts the handler reads.
+		_mapping_status.text = "%s   ·   %s\nKeyboard %s = skip this control   ·   Keyboard %s = cancel" % [
+			_mapping.pad_name, _mapping.guid,
+			OS.get_keycode_string(MAPPING_SKIP_KEY), OS.get_keycode_string(MAPPING_CANCEL_KEY)]
 
 
 ## Consumes raw pad events during a mapping walk. Keyboard is NOT bindable here — an SDL
@@ -865,10 +880,10 @@ func _refresh_mapping_prompt() -> void:
 func _handle_mapping_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.is_echo():
 		var kc := (event as InputEventKey).keycode
-		if kc == KEY_ESCAPE:
+		if kc == MAPPING_CANCEL_KEY:
 			_cancel_mapping()
 			return
-		if kc == KEY_X:
+		if kc == MAPPING_SKIP_KEY:
 			_mapping.skip()
 			_advance_mapping()
 			return
@@ -883,7 +898,7 @@ func _handle_mapping_input(event: InputEvent) -> void:
 	if token != "" and _mapping_status:
 		var owner: String = _mapping.control_using(token)
 		if owner != "":
-			_mapping_status.text = "That input is already '%s'. Use a DIFFERENT control, or X to skip." % owner
+			_mapping_status.text = "That input is already '%s'. Use a DIFFERENT control, or keyboard %s to skip." % [owner, OS.get_keycode_string(MAPPING_SKIP_KEY)]
 
 
 func _advance_mapping() -> void:
