@@ -14,8 +14,36 @@ extends GutTest
 ## have their own voice — wall_blast, plate_engage, mirror_turn, block_seat — authored ONE PER TICK so
 ## each was separately vetoable by ear rather than landing as a batch. The ledger arm below is now a
 ## FLOOR AT ZERO: no mechanic in this file may reach for door_open again without its own cue.
+##
+## ⛔ AND THEN A FIFTH ONE TURNED UP IN THE SIBLING FILE, BECAUSE THIS LEDGER'S SCOPE WAS ONE FILE.
+## `DungeonPuzzleLayer.activate_switch` played `door_open` on a switch's `flip` effect — and `flip`
+## calls `tile_map.set_cell(cell, floor_atlas)`, turning a WALL cell into walkable floor. A lever
+## opening a stone passage, with a wooden door's creak on it. **It is the most reachable of the
+## five**: 13 dungeons author a flip switch, every W1 dragon cave among them, and FireDragonCave's
+## floor 4 lever is a REQUIRED gate, so W1 progression depends on pulling it.
+## 🔑 A CUE KEY IS A GLOBAL NAME, SO A PER-FILE LEDGER IS A SCOPE BUG BY CONSTRUCTION. The count was
+## correct and the question was too narrow. It now walks EVERY source that plays this cue for a
+## non-door event, each with its own needle proof — found by auditing which keys are played from more
+## than one site across `src/`, which is the audit that should have come first.
+## ✅ `GameLoop._area_interior_transition_in` also plays door_open and is CORRECT: that one is a
+## player walking into a building, which is a door. It is deliberately not in the ledger.
 
 const SRC := "res://src/exploration/DungeonMechanics.gd"
+
+## ⛔ EVERY SOURCE THAT MUST HOLD NO BARE `door_open`, each mapped to a token proving the strip did
+## not eat it. With an expected count of ZERO, "absent" and "unfindable" are the same number, so a
+## per-source needle is mandatory rather than nice: DungeonMechanics keeps its key-path ternary (the
+## one legitimate door), and DungeonPuzzleLayer proves findability with the cue this commit wired.
+const LEDGER_SOURCES := {
+	"res://src/exploration/DungeonMechanics.gd": "play_ui(\"door_open\" if resource",
+	## ⛔ NOT `passage_grind` — a needle must be INDEPENDENT OF ITS SUBJECT. Using the flip cue here
+	## made one token serve as both the thing under test and the proof the file is readable, so
+	## reverting the flip fired "lost its needle" as well as the real failures: a coupled signal that
+	## tells a future reader the strip ate the file when it did not. `portal_activate` is the `reveal`
+	## branch of the same function — present, a play_ui string like the one being counted, and
+	## untouched by any change to the flip cue.
+	"res://src/exploration/DungeonPuzzleLayer.gd": "play_ui(\"portal_activate\")",
+}
 const GdSource := preload("res://test/unit/helpers/gd_source.gd")
 
 ## ⛔ THE LENGTHS OF ALL FIVE, BECAUSE A TOLERANCE WIDER THAN THE GAP IS NOT A DISCRIMINATOR.
@@ -26,10 +54,12 @@ const GdSource := preload("res://test/unit/helpers/gd_source.gd")
 ## the relationship, and a new cue of a similar length tightens it instead of loosening it.
 ##
 ## ⚠️ AND ITS REACH IS THIS SET, NOT THE BANK. `ability_bypass_puzzle` is 0.340s against block_seat's
-## 0.335s, so a repoint at that file is nearest block_seat here and passes both length bounds. That
+## 0.335s — and `ability_permakill`, `ability_fire_v3` and `ability_revive` are EXACTLY 1.150s, the
+## same as passage_grind. So a repoint at any of those four is nearest its own cue here and passes
+## both length bounds; the collision is the normal case in a 989-cue bank, not a near miss. That
 ## hole is covered by the path EQUALITY in _assert_stream_is, not by any window — which is the whole
 ## point: the repoint is an edit to an INPUT, and an input takes no tolerance.
-const CUE_SECS := {"door_open": 1.00, "wall_blast": 0.95, "mirror_turn": 0.60, "plate_engage": 0.55, "block_seat": 0.335}
+const CUE_SECS := {"passage_grind": 1.150, "door_open": 1.00, "wall_blast": 0.95, "mirror_turn": 0.60, "plate_engage": 0.55, "block_seat": 0.335}
 const NEAR_ENOUGH := 0.08
 
 
@@ -135,39 +165,60 @@ func test_the_blast_cue_is_authored_and_plays() -> void:
 	_assert_stream_is("wall_blast")
 
 
-func test_the_last_door_open_site_is_still_counted() -> void:
-	## THE LEDGER, NOW AT ZERO. Every one of the four non-door mechanics has its own cue, so any
-	## `play_ui("door_open")` appearing in this file again is a new mechanic borrowing a wooden door
-	## for something that is not one. It reds, and the fix is a cue rather than a bigger number.
+func test_no_dungeon_mechanic_borrows_a_wooden_door() -> void:
+	## THE LEDGER, AT ZERO, ACROSS EVERY SOURCE THAT HAD ONE. Each of the five non-door mechanics has
+	## its own cue now, so a `play_ui("door_open")` reappearing in either file is a new mechanic
+	## borrowing a wooden door for something that is not one. It reds, and the fix is a cue.
 	##
-	## ⚠️ IT COUNTS THE LITERAL `play_ui("door_open")`, WHICH EXCLUDES THE KEY PATH ON PURPOSE. `try_open`
-	## spells its choice as a ternary — `play_ui("door_open" if resource == "key" else "wall_blast")` —
-	## so the file mentions door_open twice and this says 1. That is correct: a locked DOOR opening with
-	## a key is the one site where a wooden door is the right sound. If someone splits that ternary into
-	## an if/else, this reds on a legitimate refactor — bring the number up and say why, rather than
-	## widening the pattern, because a pattern loose enough to match the ternary also matches the
-	## comment above it.
-	var code: String = GdSource.code_of(SRC)
-	## gd_source.gd's own contract: a caller must assert a known CODE site survives, because
-	## over-stripping and a correct strip produce the same green — and here they would produce the
-	## same clean LEDGER. Without this, a stripper that ate the file reports 0 door_open sites and
-	## reds with "not the 1 declared", which names the wrong cause.
-	assert_true(code.contains("func toggle_mirror"),
-		"CONTROL: the comment strip ate the code half, so this count is about nothing")
-	## ⛔ AND WITH THE EXPECTED COUNT AT ZERO, A CONTROL ON THE NEEDLE IS MANDATORY, not optional:
-	## "absent" and "unfindable" are the same number. The key path's ternary is the ONE door_open
-	## mention that must survive — a door opened with a key is the single site where a wooden door is
-	## the right sound — so it doubles as proof that a door_open string in this file is still findable.
-	assert_true(code.contains("play_ui(\"door_open\" if resource"),
-		"CONTROL: the key path's ternary is gone, so a count of 0 says this file no longer mentions door_open at all — which is not the same claim as four mechanics each having their own cue")
-	var n: int = code.count("play_ui(\"door_open\")")
-	assert_eq(n, 0,
-		"DungeonMechanics plays door_open at %d site(s). All four non-door mechanics have their own cue now (wall_blast, plate_engage, mirror_turn, block_seat), so a new one here is a mechanic borrowing a wooden door for something that is not a door — give it a cue instead of raising this number." % n)
+	## ⚠️ IT COUNTS THE LITERAL `play_ui("door_open")`, WHICH EXCLUDES THE KEY PATH ON PURPOSE.
+	## `try_open` spells its choice as a ternary — `play_ui("door_open" if resource == "key" else
+	## "wall_blast")` — so DungeonMechanics mentions door_open twice and contributes 0 here. That is
+	## correct: a locked DOOR opening with a key is the one site where a wooden door is right. If
+	## someone splits that ternary into an if/else this reds on a legitimate refactor — say so and
+	## raise the number, rather than widening the pattern, because a pattern loose enough to match the
+	## ternary also matches the prose above it.
+	var total := 0
+	var detail: Array[String] = []
+	for src in LEDGER_SOURCES.keys():
+		var path := str(src)
+		var code: String = GdSource.code_of(path)
+		## gd_source.gd's contract, and doubly load-bearing at an expected count of ZERO: over-stripping
+		## and a correct strip give the same clean ledger, so each source names a token that MUST survive.
+		assert_true(code.contains(str(LEDGER_SOURCES[src])),
+			"CONTROL: %s lost its needle (%s), so a count of 0 from it means UNFINDABLE, not absent" % [path, LEDGER_SOURCES[src]])
+		var n: int = code.count("play_ui(\"door_open\")")
+		total += n
+		if n > 0:
+			detail.append("%s x%d" % [path.get_file(), n])
+	assert_gt(LEDGER_SOURCES.size(), 1,
+		"the ledger walks %d source(s) — it was ONE for four cues and the fifth instance was in the sibling file, which is the whole reason it walks a set" % LEDGER_SOURCES.size())
+	assert_eq(total, 0,
+		"a dungeon mechanic plays a bare door_open again (%s). All five non-door mechanics have their own cue — wall_blast, plate_engage, mirror_turn, block_seat, passage_grind — so give the new one a cue instead of raising this number." % [detail])
 
 
-## SECOND OF THE FOUR, authored on @cowir-main's "one per tick" instruction: a stone pressure plate
-## underfoot played `door_open`, a heavy wooden door creaking. `_on_timed_plate_entered` fires every
-## time a player steps on a timed plate, which makes it the most repeated of the four.
+## FIFTH AND MOST REACHABLE. `activate_switch`'s `flip` effect calls `tile_map.set_cell(cell,
+## floor_atlas)` — it turns a WALL cell into walkable floor, i.e. a lever opens a stone passage — and
+## it played `door_open`. 13 dungeons author a flip switch, every W1 dragon cave among them, and
+## FireDragonCave floor 4's lever is a REQUIRED gate: W1 progression depends on pulling it.
+func test_the_lever_passage_has_its_own_voice() -> void:
+	var code: String = GdSource.code_of("res://src/exploration/DungeonPuzzleLayer.gd")
+	var at: int = code.find("func activate_switch")
+	assert_gt(at, -1, "CONTROL: activate_switch is gone — re-point this arm")
+	if at < 0:
+		return
+	var nxt: int = code.find("\nfunc ", at + 1)
+	var body: String = code.substr(at, nxt - at) if nxt > at else code.substr(at)
+	assert_true(body.contains("passage_grind"),
+		"the flip effect no longer plays passage_grind, so a stone passage grinding open sounds like a wooden door again")
+	assert_false(body.contains("door_open"),
+		"the flip effect plays door_open again")
+	## the same function routes `reveal` to portal_activate; a cue swap there would be a different bug
+	assert_true(body.contains("portal_activate"),
+		"CONTROL: activate_switch's reveal branch is gone, so this arm is reading a function that no longer dispatches cues")
+
+
+func test_the_passage_cue_is_authored_and_plays() -> void:
+	_assert_stream_is("passage_grind")
 func test_the_timed_plate_has_its_own_voice() -> void:
 	var code: String = GdSource.code_of(SRC)
 	var at: int = code.find("func _on_timed_plate_entered")
