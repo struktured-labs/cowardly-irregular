@@ -1084,6 +1084,8 @@ const _UI_VOLUME_TRIM_DB: Dictionary = {
 	"menu_select": -2.5,
 	## menu_error's asset is deliberately attenuated -12 dB ("soft negative feedback", its own provenance note) but that lands it 28.5 dB under the music bed against menu_select's 22.0 — soft became masked. +6.6 restores parity with menu_select, keeping it the quietest UI cue without making it inaudible. Measured 2026-09-09; the asset is untouched so its note stays true.
 	"menu_error": 6.6,
+	## chest_open CONTRADICTS ITS OWN PROMPT, which asks for a "satisfying metal latch... physical mechanical feeling". Measured on the loudest 250ms window (mean rms is the wrong instrument for a 1.48s cue whose prompt authors a deliberate pause: it reads 11.5 dB low where the window reads 7.0): -22.2 against a world-event median of -15.1 across 12 cues, the QUIETEST of them, 7.0 dB under and 1.6 under the next quietest (chalk_tap, which is a chalk tap). A chest is a reward beat and the five dungeon cues authored this week all sit at that median. +7.0 lands it there; asset peak is -1.7 dBFS so base -16 + 7 = -9 puts the peak at -10.7, no clipping. Same shape and magnitude as advance_undo and status_cannot_act: a pre-attenuated asset restored to its family, asset untouched so its provenance note stays true.
+	"chest_open": 7.0,
 }
 
 ## 2026-08-31 struktured: the round cue reads "a bit loud, not subtle". Moving it off the UI channel was a +10 dB step (-16 -> -6) and it overshot; this walks back half of it without returning it to the channel that buried it.
