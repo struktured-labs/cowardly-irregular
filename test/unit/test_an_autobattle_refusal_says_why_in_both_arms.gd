@@ -28,6 +28,15 @@ const ARMS := ["ability", "item"]
 const DELIBERATELY_SILENT := "targets"
 
 
+## Tab depth. A refusal's guard is the nearest SHALLOWER if/elif; same-depth ones are its own
+## wording branches.
+func _indent(line: String) -> int:
+	var n := 0
+	while n < line.length() and line[n] == "\t":
+		n += 1
+	return n
+
+
 func _refusals() -> Array[Dictionary]:
 	var text := FileAccess.get_file_as_string(SRC)
 	var lines: PackedStringArray = text.split("\n")
@@ -51,16 +60,21 @@ func _refusals() -> Array[Dictionary]:
 			continue
 		if raw.strip_edges() != "return {}":
 			continue
-		## The guarding condition and whether anything between it and the return reports.
+		## The guarding condition and whether anything between it and the return reports. Bounded by
+		## INDENTATION, not by a line count: a refusal that reports and THEN picks its wording in an
+		## if/elif chain pushes its own diagnostic outside any fixed window, and a ±4-line probe calls
+		## it mute — a false positive that gets LOUDER the more the refusal explains. Only a line
+		## indented less than the return can be its guard, which skips inner branches at equal depth.
 		var cond := ""
 		var reports := false
-		for j in range(i - 1, max(start, i - 4), -1):
+		var depth: int = _indent(lines[i])
+		for j in range(i - 1, start, -1):
 			var prev: String = lines[j].strip_edges()
 			if prev.is_empty():
 				continue
-			if prev.contains("print("):
+			if prev.contains("print(") or prev.contains("battle_log_message.emit("):
 				reports = true
-			if prev.begins_with("if ") or prev.begins_with("elif "):
+			if _indent(lines[j]) < depth and (prev.begins_with("if ") or prev.begins_with("elif ")):
 				cond = prev
 				break
 		out.append({"arm": arm, "line": i + 1, "cond": cond, "reports": reports})

@@ -8591,8 +8591,21 @@ func _get_counter_action(combatant: Combatant, strategy: String, allies: Array, 
 	return {}  # No counter available
 
 
+## Reasons already spoken this autobattle turn, so one cause cannot repeat per queued action.
+var _autobattle_refusals_said: Dictionary = {}
+
+
+## One line per distinct reason per turn: the Advance loop converts up to FIVE actions, so a silenced caster would otherwise repeat one refusal five times into a six-line panel.
+func _say_autobattle_refusal(reason: String) -> void:
+	if _autobattle_refusals_said.has(reason):
+		return
+	_autobattle_refusals_said[reason] = true
+	battle_log_message.emit("[color=gray]%s[/color]" % reason)
+
+
 func _process_grid_autobattle(combatant: Combatant) -> void:
 	"""Process grid-based autobattle for a player character"""
+	_autobattle_refusals_said.clear()
 	var is_player_controlled = combatant in player_party
 	var allies = player_party if is_player_controlled else enemy_party
 	var enemies = enemy_party if is_player_controlled else player_party
@@ -8771,8 +8784,18 @@ func _convert_autobattle_action(combatant: Combatant, action_data: Dictionary, a
 			if not JobSystem.can_use_ability(combatant, ability_id):
 				## Names the real reason — silence is now a second way this fails, and blaming MP
 				## for a boss debuff sends the next reader to the wrong system.
-				var why: String = "silenced" if combatant.has_status("silence") else "MP %d" % combatant.current_mp
+				var silenced: bool = combatant.has_status("silence")
+				var mp_cost: int = JobSystem.get_ability_mp_cost(combatant, ability_id)
+				var why: String = "silenced" if silenced else "MP %d/%d" % [combatant.current_mp, mp_cost]
 				print("[AUTOBATTLE] Cannot use ability: %s (%s)" % [ability_id, why])
+				## _execute_ability emits this refusal; the pre-check only printed it, so a scripted caster defended with no reason on screen. No defer claim here: the Advance loop calls this too and its other actions still run.
+				var ability_name: String = str(ability.get("name", ability_id))
+				var reason: String = "%s can't use %s right now." % [combatant.combatant_name, ability_name]
+				if silenced:
+					reason = "%s is silenced — %s won't come out!" % [combatant.combatant_name, ability_name]
+				elif combatant.current_mp < mp_cost:
+					reason = "%s hasn't the MP for %s." % [combatant.combatant_name, ability_name]
+				_say_autobattle_refusal(reason)
 				return {}
 			# Tick 111: if the action explicitly carries a `targets` key
 			# (AutobattleSystem always does for abilities) but the array
@@ -8803,6 +8826,8 @@ func _convert_autobattle_action(combatant: Combatant, action_data: Dictionary, a
 			if ItemSystem.party_item_count(consumable_bag(combatant), item_id) <= 0:
 				## Routine (the player ran out), but the ability arm logs its routine MP case too.
 				print("[AUTOBATTLE] Item not held: %s" % item_id)
+				## The original report was a Potion rule deferring silently ON SCREEN; a print never reached the player, so this is the refusal that complaint actually names.
+				_say_autobattle_refusal("%s has no %s left." % [combatant.combatant_name, ItemNameResolver.resolve(item_id)])
 				return {}
 			# Tick 111: same empty-targets handling as ability — if the
 			# autobattle rule explicitly produced an empty targets list,
