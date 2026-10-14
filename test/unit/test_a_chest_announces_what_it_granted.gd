@@ -66,12 +66,24 @@ func test_the_claim_is_decided_by_the_effect_not_the_configuration() -> void:
 
 
 func test_a_claim_names_the_number_that_was_granted() -> void:
-	## A partial grant is the case the old code could not express: it printed `contents_amount`,
-	## which is what the chest was CONFIGURED with. Driving granted=1 against a configured 5 is the
-	## discriminator — the old spelling would have said x5.
+	## A partial grant is the case the old code could not express: it printed `contents_amount`, what
+	## the chest was CONFIGURED with, rather than what landed.
+	##
+	## ⛔ THE ASSERT THAT USED TO SIT HERE COULD NOT FAIL, and its own comment called it "the
+	## discriminator". It read `assert_false(said.contains("x5"))` — to catch the seam naming a
+	## configured 5 — but `claim_for` only ever RECEIVES `granted`, and this arm passes 1, so the only
+	## `%d` in the seam can never render 5. No configured value reaches it; "x5" was unreachable for
+	## every input. Found by @cowir-controller's decidable property — an assert red by NO mutant —
+	## reasoning per-assert rather than scanning, because the tautology is semantic and my regex for
+	## it inverted (it flagged a real assertion and missed this shape).
+	##
+	## ✅ The live form asserts the seam's output DEPENDS on `granted`: a mutant that ignores the
+	## amount makes these two calls agree, and this reds. That is the property the old line was
+	## reaching for, stated so it can actually be violated.
 	var said := TreasureChest.claim_for("item", "Potion", 1)
 	assert_string_contains(said, "x1", "the claim must name what was granted")
-	assert_false(said.contains("x5"), "the claim must not name a configured amount: %s" % said)
+	assert_ne(said, TreasureChest.claim_for("item", "Potion", 5),
+		"the claim must VARY with the amount granted; if 1 and 5 produce the same string the seam is ignoring it")
 	assert_string_contains(said, "Potion", "the claim must name the item")
 	assert_string_contains(TreasureChest.claim_for("gold", "", 50), "50",
 		"the gold claim must name the credited amount")
