@@ -14,6 +14,13 @@ signal corruption_effect_added(effect: String)
 ## Fires on EVERY corruption_level write, not just raises past a threshold: load and New Game move it too, and an audio surface that only hears raises leaves a loaded corrupt save clean and a fresh save dirty. Named for cowir-autogrind to emit through later.
 signal corruption_changed(level: float)
 signal game_constant_modified(constant_name: String, old_value, new_value)
+## A LIVE text-size change, for surfaces built ONCE and kept. Menus, overlays and cutscenes read the
+## scale at construction and need nothing. A persistent HUD cannot: it was built before the change,
+## so without this it stays exactly as it was -- which is the state a player sees right after
+## raising the setting BECAUSE they could not read it (cowir-story, 2026-10-14).
+## ⚠️ `settings_changed` on SettingsMenu is NOT this: measured 20 emits, ZERO `.connect(` anywhere
+## in src/, so it reaches nothing. This signal exists to HAVE listeners.
+signal text_size_scale_changed(scale: float)
 ## Tick 264: fired by BestiarySystem.mark_defeated when the per-monster
 ## kill count crosses a defined milestone (10/50/100/500). UI shows a
 ## Toast so the grinding loop gets visible reward feedback. BestiarySystem
@@ -52,6 +59,17 @@ var default_battle_speed: float = 0.25  # engine scale; labeled "1x" — struktu
 var text_speed: String = "normal"  # slow | normal | fast | instant
 # Tick 222: accessibility text-size multiplier. Consumers (CutsceneDialogue etc.) multiply base font sizes by this. 1.0 = default, 0.8 = compact, 1.25/1.5/2.0 = larger for readability.
 var text_size_scale: float = 1.0  # 0.8 | 1.0 | 1.25 | 1.5 | 2.0
+
+
+## The ONE writer, so a change cannot land without its signal. Direct assignment still compiles --
+## a ratchet in test/ requires callers outside this file to come through here, because a silent
+## assignment is exactly the defect this signal was added to fix.
+func set_text_size_scale(value: float) -> void:
+	var next: float = clampf(value, 0.8, 2.0)
+	if is_equal_approx(next, text_size_scale):
+		return
+	text_size_scale = next
+	text_size_scale_changed.emit(next)
 # Tick 226: color-blind friendly palette. When true, DamageNumber swaps lime green → cyan (heal) and orange → bright yellow (crit) — both safer for deuteranopia/protanopia (red-green color blindness, ~5% of males).
 var color_blind_mode: bool = false
 var reduce_flashes: bool = false  # Accessibility: suppress full-screen battle flashes (photosensitivity)

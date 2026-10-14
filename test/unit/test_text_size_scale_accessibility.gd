@@ -114,8 +114,13 @@ func test_save_helper_writes_to_gamestate() -> void:
 	assert_gt(fn_idx, -1, "_save_text_size_scale must exist")
 	var next_fn: int = src.find("\nfunc ", fn_idx + 1)
 	var body: String = src.substr(fn_idx, next_fn - fn_idx)
-	assert_true(body.contains("GameState.text_size_scale = text_size_scale"),
-		"helper must write to GameState.text_size_scale")
+	## Re-pointed 2026-10-14: this pinned the literal assignment `GameState.text_size_scale = …`,
+	## which certified a SPELLING. There is now a single writer, set_text_size_scale, because a bare
+	## assignment reaches no listener and a HUD built once never re-scaled. The contract is the
+	## writer, and test_a_live_text_size_change_reaches_a_kept_node ratchets that no src/ caller
+	## bypasses it; that file also proves the setter emits and clamps.
+	assert_true(body.contains("GameState.set_text_size_scale("),
+		"the helper must write through the single setter, so a kept HUD is told about the change")
 	assert_true(body.contains("settings_changed.emit(\"text_size_scale\", text_size_scale)"),
 		"helper must emit settings_changed signal")
 	assert_true(body.contains("_persist_settings()"),
@@ -137,8 +142,12 @@ func test_save_system_loads_text_size_scale_with_clamp() -> void:
 	var src := _read(SAVE_SYSTEM)
 	assert_true(src.contains("if settings.has(\"text_size_scale\"):"),
 		"load path must check for text_size_scale key")
-	assert_true(src.contains("GameState.text_size_scale = clampf(float(settings[\"text_size_scale\"]), 0.8, 2.0)"),
-		"load path must clampf to [0.8, 2.0] (the valid preset range)")
+	## Re-pointed 2026-10-14 for the same reason: the clamp MOVED into set_text_size_scale rather
+	## than being removed, so loading a save both clamps AND tells a kept HUD. The clamp itself is
+	## proven behaviourally in test_a_live_text_size_change_reaches_a_kept_node (99 -> 2.0, -5 -> 0.8),
+	## which is stronger than this file ever checked: it only asserted the expression was PRESENT.
+	assert_true(src.contains("GameState.set_text_size_scale(float(settings[\"text_size_scale\"]))"),
+		"the load path must route through the clamping setter, not assign the scale directly")
 
 
 # ── CutsceneDialogue consumer ────────────────────────────────────────
