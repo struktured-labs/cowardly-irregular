@@ -381,23 +381,31 @@ func try_auto_apply(proposal_idx: int) -> String:
 ##
 ## Returns APPLY_APPLIED on success, APPLY_REJECTED if the proposal
 ## references an unsafe constant or has malformed deltas.
+## Refusal, recorded where the player can be told. The status and the reason are set together so a
+## refused proposal cannot vanish from review without one.
+func _reject(proposal: Dictionary, reason: String) -> String:
+	proposal["status"] = "rejected"
+	proposal["reject_reason"] = reason
+	return APPLY_REJECTED
+
+
 func force_apply(proposal_idx: int) -> String:
 	if proposal_idx < 0 or proposal_idx >= pending.size():
 		return APPLY_REJECTED
 	var proposal: Dictionary = pending[proposal_idx]
 	var deltas: Variant = proposal.get("deltas", [])
 	if not (deltas is Array):
-		proposal["status"] = "rejected"
-		return APPLY_REJECTED
+		return _reject(proposal, "the model's deltas were not a list")
 	# Constant safelist still applies — player consent doesn't unlock
 	# arbitrary writes.
 	for delta in deltas:
 		if not (delta is Dictionary):
-			proposal["status"] = "rejected"
-			return APPLY_REJECTED
-		if str((delta as Dictionary).get("constant", "")) not in ALLOWED_CONSTANTS:
-			proposal["status"] = "rejected"
-			return APPLY_REJECTED
+			return _reject(proposal, "one of the model's deltas was malformed")
+		var cname: String = str((delta as Dictionary).get("constant", ""))
+		if cname not in ALLOWED_CONSTANTS:
+			# REBALANCE_SCHEMA constrains deltas to an Array and not the names inside it, so a
+			# model naming an unlisted constant reaches review and is refused only here.
+			return _reject(proposal, "'%s' is not a dial this game lets the AI turn" % cname)
 	var gs: Node = _resolve_game_state()
 	if gs == null or not ("game_constants" in gs):
 		return APPLY_REJECTED

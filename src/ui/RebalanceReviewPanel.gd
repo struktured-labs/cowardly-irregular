@@ -278,9 +278,22 @@ func _apply_current() -> void:
 		if result == daemon.APPLY_APPLIED:
 			sfx_key = "menu_select" if moved > 0 else "menu_move"
 		SoundManager.play_ui(sfx_key)
-	if result == daemon.APPLY_APPLIED and Toast:
-		Toast.show(self, daemon.summarize_applied(last), Toast.SUCCESS_COLOR if moved > 0 else Toast.DEFAULT_COLOR)
+	if Toast:
+		if result == daemon.APPLY_APPLIED:
+			Toast.show(self, daemon.summarize_applied(last), Toast.SUCCESS_COLOR if moved > 0 else Toast.DEFAULT_COLOR)
+		else:
+			# A refused apply buzzed and said nothing, and _refresh then dropped the proposal.
+			Toast.show(self, "Not applied — %s." % _reject_reason(daemon, orig_idx), Toast.WARNING_COLOR)
 	_refresh()
+
+
+## The daemon's own reason. A bad index annotates no proposal, so that case needs its own wording.
+func _reject_reason(daemon, idx: int) -> String:
+	if daemon != null and idx >= 0 and idx < daemon.pending.size():
+		var why: String = str((daemon.pending[idx] as Dictionary).get("reject_reason", ""))
+		if why != "":
+			return why
+	return "this proposal could not be applied"
 
 
 func _dismiss_current() -> void:
