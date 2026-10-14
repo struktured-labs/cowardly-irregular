@@ -13,6 +13,20 @@ const DIM_COLOR := Color(0.65, 0.65, 0.70)
 const OK_COLOR := Color(0.45, 0.85, 0.50)
 const FAIL_COLOR := Color(0.95, 0.45, 0.40)
 const BUSY_COLOR := Color(0.85, 0.75, 0.40)
+## Ladder spacing, so no row's position is a literal that a scaled font can outgrow.
+const LINE_PAD := 10.0
+const ROW_GAP := 10.0
+const SECTION_GAP := 18.0
+const CONTROL_MIN_H := 30.0
+const BUTTON_H := 36.0
+const BUTTON_MIN_W := 160.0
+const BUTTON_FONT := 14
+## Measured by _content_height and laid out by _build_ui — one copy each, so the panel's height
+## and its contents cannot disagree about what is in it.
+const HEADER_TEXT := "LIVE VOICE"
+const BLURB_TEXT := "A local speech server voices lines the game writes. Off: you hear the shipped recordings."
+## The longest line _status_label ever shows, so the panel reserves room for it.
+const LONGEST_STATUS := "No LLM backend reachable — Compose needs one (Settings → Configure BYOK, or local Ollama). The rule grid and presets work fine without it."
 const CONNECT_WAIT_SEC := 3.0
 const TEST_TIMEOUT_SEC := 12.0
 const SAMPLE_FALLBACK := "This is how I sound when the game speaks for me."
@@ -54,7 +68,10 @@ func _build_ui() -> void:
 	if vp.x <= 0 or vp.y <= 0:
 		vp = Vector2(1280, 720)
 	var w: float = min(680.0, vp.x - 80)
-	var h: float = min(360.0, vp.y - 80)
+	## Grows with the text, and MEASURED rather than estimated: my first arithmetic guess came to
+	## 382 where the real ladder needs 441 at 200%, which pushed the status label under the
+	## buttons and made its remaining-space height negative. Both failing arms caught it.
+	var h: float = clampf(maxf(360.0, _content_height(w)), 0.0, vp.y - 80)
 	var x: float = (vp.x - w) / 2.0
 	var y: float = (vp.y - h) / 2.0
 	var rim := ColorRect.new()
@@ -67,25 +84,39 @@ func _build_ui() -> void:
 	panel.position = Vector2(x, y)
 	panel.size = Vector2(w, h)
 	add_child(panel)
-	_label("LIVE VOICE", x + 20, y + 16, w - 40, 18, HEADER_COLOR)
-	_label("A local speech server voices lines the game writes. Off: you hear the shipped recordings.", x + 20, y + 44, w - 40, 11, DIM_COLOR)
+	var head := _label(HEADER_TEXT, x + 20, y + 16, w - 40, 18, HEADER_COLOR)
+	var cur_y: float = head.position.y + head.size.y + ROW_GAP
+	var blurb := _label(BLURB_TEXT, x + 20, cur_y, w - 40, 11, DIM_COLOR)
+	cur_y = blurb.position.y + blurb.size.y + SECTION_GAP
 	var lx: float = x + 24
 	var cx: float = x + 170
 	var cw: float = w - 194
-	_label("Enabled", lx, y + 86, 140, 13, Color.WHITE)
+	## Each row: the control's height is the taller of its own minimum and its scaled label, and
+	## the next row starts below whichever won. A fixed 40px pitch is what collided at 200%.
+	var row_h: float = maxf(float(TextScale.scaled(13)) + LINE_PAD, CONTROL_MIN_H)
+	var en_lbl := _label("Enabled", lx, cur_y, 140, 13, Color.WHITE)
 	_enabled_toggle = CheckButton.new()
-	_enabled_toggle.position = Vector2(cx, y + 82)
+	_enabled_toggle.position = Vector2(cx, cur_y - 4)
 	add_child(_enabled_toggle)
-	_label("Server URL", lx, y + 126, 140, 13, Color.WHITE)
+	## Advance by the CLAMPED label height, not a second expression for the same quantity. The
+	## row budget carries a CONTROL_MIN_H floor that the label's own height does not, and two
+	## expressions for one quantity is how a ladder drifts; reading the built node applies both
+	## sides' floors by construction. (NOT a content-vs-metric gap — that explanation was
+	## retracted: for single-line text the clamped height equals the font metric exactly.)
+	cur_y += maxf(row_h, en_lbl.size.y) + ROW_GAP
+	var url_lbl := _label("Server URL", lx, cur_y, 140, 13, Color.WHITE)
 	_url_field = LineEdit.new()
 	_url_field.placeholder_text = "http://127.0.0.1:8004"
-	_url_field.position = Vector2(cx, y + 122)
-	_url_field.size = Vector2(cw, 30)
+	_url_field.add_theme_font_size_override("font_size", TextScale.scaled(13))
+	_url_field.position = Vector2(cx, cur_y - 4)
+	_url_field.size = Vector2(cw, row_h)
 	add_child(_url_field)
-	_label("Speaker", lx, y + 166, 140, 13, Color.WHITE)
+	cur_y += maxf(row_h, url_lbl.size.y) + ROW_GAP
+	var spk_lbl := _label("Speaker", lx, cur_y, 140, 13, Color.WHITE)
 	_speaker_picker = OptionButton.new()
-	_speaker_picker.position = Vector2(cx, y + 162)
-	_speaker_picker.size = Vector2(cw, 30)
+	_speaker_picker.add_theme_font_size_override("font_size", TextScale.scaled(13))
+	_speaker_picker.position = Vector2(cx, cur_y - 4)
+	_speaker_picker.size = Vector2(cw, row_h)
 	var speakers: Array[String] = VoiceService.cast_speakers() if VoiceService != null else ([] as Array[String])
 	for s in speakers:
 		_speaker_picker.add_item(s)
@@ -93,12 +124,18 @@ func _build_ui() -> void:
 		_speaker_picker.add_item("(no voices cast yet)")
 		_speaker_picker.disabled = true
 	add_child(_speaker_picker)
-	_status_label = _label("", lx, y + 206, w - 48, 12, DIM_COLOR)
-	_status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_status_label.size.y = 72
-	_test_btn = _button("Test Voice", x + 24, y + h - 56, _on_test_pressed)
-	_save_btn = _button("Save", x + w - 360, y + h - 56, _on_save_pressed)
-	_cancel_btn = _button("Cancel", x + w - 184, y + h - 56, _on_cancel_pressed)
+	cur_y += maxf(row_h, spk_lbl.size.y) + SECTION_GAP
+	## Everything left between the last row and the buttons. The old literal 72 held three lines
+	## at 12pt and two at 24pt, so a scaled notice ran into Test Voice.
+	var bw: float = _button_w()
+	var buttons_y: float = y + h - _button_h() - 20
+	_status_label = _label("", lx, cur_y, w - 48, 12, DIM_COLOR)
+	_status_label.size.y = maxf(_status_label.size.y, buttons_y - cur_y - ROW_GAP)
+	## Right-aligned from the panel edge: the old x+w-360 / x+w-184 left 16px between two 160px
+	## buttons, which a scaled caption closes.
+	_cancel_btn = _button("Cancel", x + w - 24 - bw, buttons_y, _on_cancel_pressed)
+	_save_btn = _button("Save", x + w - 24 - bw - ROW_GAP - bw, buttons_y, _on_save_pressed)
+	_test_btn = _button("Test Voice", x + 24, buttons_y, _on_test_pressed)
 	var spine: Array = [_enabled_toggle, _url_field, _speaker_picker, _test_btn]
 	for i in spine.size():
 		spine[i].focus_neighbor_top = spine[i].get_path_to(spine[i - 1] if i > 0 else _save_btn)
@@ -113,25 +150,82 @@ func _build_ui() -> void:
 	_enabled_toggle.grab_focus.call_deferred()
 
 
+## Scales its font with Text Size and sizes its own box to the WRAPPED text, so _build_ui can
+## derive the next row from this one instead of a fixed offset. `size + 10` was both the font's
+## box AND the row pitch; at 200% the header alone overran the line below it.
+## What the ladder actually needs at this width: the header, the WRAPPED blurb, three control
+## rows, the WRAPPED status notice at its longest, and the button row. Measured with the same
+## font call the layout uses, so the panel cannot come out shorter than its own content.
+func _content_height(w: float) -> float:
+	var f: Font = get_theme_font("font")
+	var head_h: float = float(TextScale.scaled(18)) + LINE_PAD
+	var blurb_h: float = float(TextScale.scaled(11)) + LINE_PAD
+	var status_h: float = float(TextScale.scaled(12)) + LINE_PAD
+	if f != null:
+		head_h = f.get_multiline_string_size(HEADER_TEXT, HORIZONTAL_ALIGNMENT_LEFT, w - 40,
+				TextScale.scaled(18)).y + LINE_PAD
+		blurb_h = f.get_multiline_string_size(BLURB_TEXT, HORIZONTAL_ALIGNMENT_LEFT, w - 40,
+				TextScale.scaled(11)).y + LINE_PAD
+		status_h = f.get_multiline_string_size(LONGEST_STATUS, HORIZONTAL_ALIGNMENT_LEFT, w - 48,
+				TextScale.scaled(12)).y + LINE_PAD
+	var row_h: float = maxf(float(TextScale.scaled(13)) + LINE_PAD, CONTROL_MIN_H)
+	return 16.0 + head_h + ROW_GAP + blurb_h + SECTION_GAP \
+			+ 3.0 * (row_h + ROW_GAP) + SECTION_GAP \
+			+ status_h + ROW_GAP + _button_h() + 20.0 + 16.0
+
+
 func _label(text: String, x: float, y: float, w: float, size: int, color: Color) -> Label:
 	var l := Label.new()
+	var px: int = TextScale.scaled(size)
 	l.text = text
-	l.add_theme_font_size_override("font_size", size)
+	l.add_theme_font_size_override("font_size", px)
 	l.add_theme_color_override("font_color", color)
+	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	l.position = Vector2(x, y)
-	l.size = Vector2(w, size + 10)
+	l.size = Vector2(w, _text_height(l, text, w, px))
 	add_child(l)
 	return l
 
 
+## The wrapped height this text needs at this width and size. Measured from the live font rather
+## than font.get_height(), which is ascent+descent+leading and reds correct authored layout.
+func _text_height(l: Label, text: String, w: float, px: int) -> float:
+	var f: Font = l.get_theme_font("font")
+	if f == null:
+		return float(px + 10)
+	var measured: float = f.get_multiline_string_size(
+		text if text != "" else "X", HORIZONTAL_ALIGNMENT_LEFT, w, px).y
+	return maxf(measured, float(px)) + LINE_PAD
+
+
+## Scaled and content-sized. "Test Voice" / "Save" / "Cancel" are text the player reads, and a
+## 160x36 literal left them small while every label around them grew — half a fix.
 func _button(text: String, x: float, y: float, cb: Callable) -> Button:
 	var b := Button.new()
 	b.text = text
-	b.size = Vector2(160, 36)
+	b.add_theme_font_size_override("font_size", TextScale.scaled(BUTTON_FONT))
 	b.position = Vector2(x, y)
 	b.pressed.connect(cb)
 	add_child(b)
+	b.size = Vector2(maxf(BUTTON_MIN_W, b.get_combined_minimum_size().x), _button_h())
 	return b
+
+
+## One height for every button, so the row and the space above it agree.
+func _button_h() -> float:
+	return maxf(BUTTON_H, float(TextScale.scaled(BUTTON_FONT)) + LINE_PAD + 8.0)
+
+
+## Widest caption, so three buttons on one row are placed from a measured width.
+func _button_w() -> float:
+	var f: Font = get_theme_font("font")
+	if f == null:
+		return BUTTON_MIN_W
+	var px: int = TextScale.scaled(BUTTON_FONT)
+	var widest: float = 0.0
+	for cap in ["Test Voice", "Save", "Cancel"]:
+		widest = maxf(widest, f.get_string_size(cap, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x)
+	return maxf(BUTTON_MIN_W, widest + 28.0)
 
 
 ## The one line the player reads: readiness, latency, missing voices, and a clipping warning naming the supported server.
