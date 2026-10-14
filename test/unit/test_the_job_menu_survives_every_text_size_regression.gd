@@ -255,28 +255,45 @@ func _drawn_h(l: Label) -> float:
 
 
 ## ⛔ THE EXHAUSTIVE ARM. Every job, every preset, every TOKEN measured by the FONT — not by
-## `len()`, which is the selector that failed three lanes today. If no token exceeds the wrap
-## width, the default break flags and WORD_SMART's own flags cannot diverge, and the row budget is
-## sound; if one does, this names it and the flags question becomes load-bearing.
+## `len()`, which is the selector that failed three lanes. If no token exceeds the wrap width, the
+## default break flags and WORD_SMART's own flags cannot diverge, and the row budget is sound; if
+## one does, this names it and the flags question becomes load-bearing.
+##
+## ⛔ AND IT DID NOT PROVE IT WAS EXHAUSTIVE. The first version carried FOUR silent `continue`s —
+## empty description, no slot rows, label not found, no font — each dropping a job without a word,
+## against a CONTROL of `measured > 500` on a real corpus of 1110 tokens. So it could skip 55% of
+## the jobs and still pass, while its name claimed all of them. Measured, not supposed: 14 jobs,
+## all 14 with descriptions, 222 tokens per preset, 1110 across the sweep; 500 is 45%.
+## Coverage is DERIVED from the data now and every skip is reported with its reason.
 func test_no_description_token_exceeds_the_row_it_wraps_in() -> void:
 	var over: Array[String] = []
+	var skipped: Array[String] = []
+	var reached := {}
 	var measured := 0
 	var widest := 0.0
+	var expected := 0
+	for job_id in JobSystem.jobs:
+		if str(JobSystem.jobs[job_id].get("description", "")).strip_edges() != "":
+			expected += 1
 	for scale in TEXT_SCALES:
 		for job_id in JobSystem.jobs:
 			var desc: String = str(JobSystem.jobs[job_id].get("description", ""))
-			if desc == "":
-				continue
+			if desc.strip_edges() == "":
+				continue  # not in the population; `expected` excludes it too
 			var m = await _menu_for(str(job_id), scale)
 			if m._slot_labels.is_empty():
+				skipped.append("%.2fx %s: no slot rows built" % [scale, job_id])
 				continue
 			var row: Control = m._slot_labels[0]
 			var l := _label_with(row, desc)
 			if l == null:
+				skipped.append("%.2fx %s: no label carries the description text" % [scale, job_id])
 				continue
 			var f: Font = l.get_theme_font("font")
 			if f == null:
+				skipped.append("%.2fx %s: the label reports no font" % [scale, job_id])
 				continue
+			reached["%s/%s" % [scale, job_id]] = true
 			var fs: int = l.get_theme_font_size("font_size")
 			var avail: float = l.size.x
 			for tok in desc.split(" ", false):
@@ -286,8 +303,15 @@ func test_no_description_token_exceeds_the_row_it_wraps_in() -> void:
 				if w > avail:
 					over.append("%.2fx %s: '%s' is %.0fpx in a %.0fpx wrap"
 						% [scale, str(job_id), tok, w, avail])
-	assert_gt(measured, 500,
-		"CONTROL: tokens must have been measured across jobs and presets — only %d" % measured)
+	## ⚠️ THE CONTROL IS THE DERIVED DENOMINATOR, not a round number. A token count cannot tell you
+	## WHICH jobs were missing; a (preset, job) census can.
+	assert_eq(skipped, [] as Array[String],
+		"%d (preset, job) pairs were SKIPPED, so this arm is not exhaustive: %s"
+		% [skipped.size(), ", ".join(skipped)])
+	assert_eq(reached.size(), expected * TEXT_SCALES.size(),
+		"reached %d of %d (preset, job) pairs — %d jobs with a description x %d presets"
+		% [reached.size(), expected * TEXT_SCALES.size(), expected, TEXT_SCALES.size()])
+	assert_gt(measured, 0, "CONTROL: tokens must have been measured")
 	assert_gt(widest, 0.0, "CONTROL: the font must report real widths")
 	assert_eq(over, [] as Array[String],
 		"a job description token is wider than the row it wraps in — the break flags then decide "
