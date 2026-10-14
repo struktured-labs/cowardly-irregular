@@ -347,27 +347,77 @@ func _show_inn_menu() -> void:
 		SoundManager.play_ui("menu_open")
 
 
+## ⛔ THE ONE PLACE THE REST IS PAID FOR. Returns the gold ACTUALLY DEDUCTED, or REFUSED when the
+## rest must not happen — so the caller cannot restore a party it did not charge, and the receipt
+## cannot name a cost nobody paid. `spend_gold` returns a bool and this file used to DISCARD it,
+## then restore the party unconditionally and announce "(-%d G)".
+##
+## 🔑 ITS SIBLING ALREADY CARRIED THIS CONTRACT. `InnInterior._charge_for_rest` is documented
+## *"False = the rest is refused (message shown, gold untouched); the caller must not restore the
+## party"* and its caller honours it (`if not _charge_for_rest(): return`, above the restore). Same
+## cost — `InnInterior.REST_COST` IS `VillageInnRes.DEFAULT_REST_COST` — and two different levels of
+## safety. The repair sat one file away from the defect, which is the shape that hid the chest's.
+##
+## ⚠️ AND THE OUTER `has_method` GUARD IS WHY THIS RETURNS AN AMOUNT RATHER THAN A BOOL: with no
+## GameState the rest is still allowed (the sibling's deliberate `return true`), but then NOTHING was
+## charged and the receipt must not say otherwise. A bool cannot distinguish "paid 50" from
+## "allowed, charged nothing", and the old message claimed `rest_cost` in both.
+const REFUSED: int = -1
+
+func _charge_for_rest() -> int:
+	if GameState == null or not GameState.has_method("get_gold"):
+		return 0
+	var current_gold: int = int(GameState.get_gold())
+	if current_gold < rest_cost:
+		dialogue_label.text = "Not enough gold!\nNeed %d G, you have %d G." % [rest_cost, current_gold]
+		if SoundManager:
+			SoundManager.play_ui("menu_error")
+		return REFUSED
+	if not GameState.has_method("spend_gold"):
+		return 0
+	# Spend gold via the canonical accessor so the gold_multiplier
+	# game_constant stays consistent with shop transactions.
+	if not bool(GameState.spend_gold(rest_cost)):
+		# `spend_gold` refuses a negative amount as well as an overdraft, and `rest_cost` is an
+		# @export — so this is reachable from a scene override that the balance pre-check above
+		# passes. Refuse the rest rather than heal for free and bill for it.
+		dialogue_label.text = "The ledger refuses that sum.\nNo charge, no rest."
+		if SoundManager:
+			SoundManager.play_ui("menu_error")
+		return REFUSED
+	if SoundManager:
+		SoundManager.play_ui("purchase_complete")
+	return rest_cost
+
+
+## ⛔ UNREACHABLE IN SHIPPED PLAY, AND THAT IS THE POINT OF THIS NOTE. `interact()` at :327
+## returns early whenever `interior_target != ""`, and it DEFAULTS to "inn_interior" with no village
+## in `src/` clearing it — so every inn in all six worlds routes to `InnInterior._do_rest()` and this
+## function never runs. `InnInterior:1455` records the same fact from the other side.
+##
+## 🔑 THE DEADNESS IS WHAT NEEDED FIXING, NOT THE ARITHMETIC. I found the charge bug below by
+## reading, spent the repair on it, and only then learned from a SIBLING guard's header that no
+## player can reach it. `test_village_inn_charges_gold_regression` is green over this path, which is
+## CLAUDE.md's own tell: a test named for the defect passing because it asks a different question.
+## Per that file's rule for divergent sources that are invisible at authoring time — guard the
+## INVISIBILITY, not the collision, and require the annotation rather than permission to skip — this
+## note is the deliverable, and `test_an_inn_charges_before_it_claims_to` holds it to the real state
+## in BOTH directions: it reds if a village ever clears `interior_target` without this note being
+## removed, and reds if the note goes missing while the routing still outranks this path.
+##
+## The charge fix stays because it is correct and because `interior_target` is an @export a future
+## village may legitimately clear — at which point this becomes the live path and must already work.
 func _rest_party() -> void:
 	# Charge gold for the rest. Pre-fix this whole block was missing —
 	# the rest_cost @export was declared but never enforced, so inns
 	# healed the party for free regardless of party_gold. Insufficient
 	# gold now surfaces a clear message instead of silently restoring.
-	if GameState and GameState.has_method("get_gold"):
-		var current_gold: int = GameState.get_gold()
-		if current_gold < rest_cost:
-			dialogue_label.text = "Not enough gold!\nNeed %d G, you have %d G." % [rest_cost, current_gold]
-			if SoundManager:
-				SoundManager.play_ui("menu_error")
-			# Close after a beat so the player can read the failure.
-			await get_tree().create_timer(1.5).timeout
-			_close_menu()
-			return
-		# Spend gold via the canonical accessor so the gold_multiplier
-		# game_constant stays consistent with shop transactions.
-		if GameState.has_method("spend_gold"):
-			GameState.spend_gold(rest_cost)
-			if SoundManager:
-				SoundManager.play_ui("purchase_complete")
+	var charged: int = _charge_for_rest()
+	if charged == REFUSED:
+		# Close after a beat so the player can read the failure.
+		await get_tree().create_timer(1.5).timeout
+		_close_menu()
+		return
 
 	# Restore all party members to full HP/MP
 	var game_loop = get_tree().root.get_node_or_null("GameLoop")
@@ -390,10 +440,12 @@ func _rest_party() -> void:
 			member.current_mp = member.max_mp
 			member.current_ap = 0  # Reset AP too
 
+	## Both halves of the receipt are true at once: WHO stayed down (.695) and what was CHARGED.
+	var paid := " (-%d G)" % charged if charged > 0 else ""
 	if beyond_rest.is_empty():
-		dialogue_label.text = "Your party is fully rested!\nHP and MP restored. (-%d G)" % rest_cost
+		dialogue_label.text = "Your party is fully rested!\nHP and MP restored.%s" % paid
 	else:
-		dialogue_label.text = "Your party is rested.\nHP and MP restored. (-%d G)\n%s cannot be roused — that death is permanent." % [rest_cost, ", ".join(beyond_rest)]
+		dialogue_label.text = "Your party is rested.\nHP and MP restored.%s\n%s cannot be roused — that death is permanent." % [paid, ", ".join(beyond_rest)]
 
 	if SoundManager:
 		SoundManager.play_ui("inn_rest")
