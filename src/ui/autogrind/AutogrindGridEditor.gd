@@ -47,6 +47,10 @@ var party: Array = []
 ## Visual elements
 var _title_label: Label
 var _status_label: Label
+## The status label had one writer that never restored it, so a refusal message would have stuck
+## until the editor was rebuilt. The token lets a second flash supersede the first without the
+## earlier timer wiping the newer message.
+var _status_flash_token: int = 0
 var _grid_container: Control
 var _cursor: Control
 var _profile_label: Label
@@ -70,6 +74,8 @@ const CONNECTOR_WIDTH = 40
 const CURSOR_COLOR = Color(1.0, 1.0, 0.3)
 const MAX_CONDITIONS = 3
 const MAX_ACTIONS = 4
+const STATUS_DEFAULT_TEXT := "PARTY RULES"
+const STATUS_FLASH_SECONDS := 2.5
 
 ## Party-themed color scheme (dark green/amber - system-level feel)
 const PARTY_STYLE = {
@@ -197,7 +203,7 @@ func _build_ui() -> void:
 	_status_label.position = Vector2(size.x - 140, 28)
 	_status_label.add_theme_font_size_override("font_size", 12)
 	_status_label.add_theme_color_override("font_color", style.highlight_text)
-	_status_label.text = "PARTY RULES"
+	_status_label.text = STATUS_DEFAULT_TEXT
 	add_child(_status_label)
 
 	# Grid container (shifted right for details panel)
@@ -1330,6 +1336,20 @@ func _cycle_condition_type() -> void:
 	_refresh_grid()
 
 
+## Says WHY an edit was refused. The editor already beeps for seven refusals and explains none of
+## them, and the two caps it enforces -- MAX_ACTIONS and MAX_CONDITIONS -- appear in no player-facing
+## string anywhere in the game, so the number the player is up against is unreadable.
+func _flash_status(msg: String) -> void:
+	if _status_label == null or not is_instance_valid(_status_label):
+		return
+	_status_label.text = msg
+	_status_flash_token += 1
+	var token: int = _status_flash_token
+	await get_tree().create_timer(STATUS_FLASH_SECONDS).timeout
+	if _status_label and is_instance_valid(_status_label) and token == _status_flash_token:
+		_status_label.text = STATUS_DEFAULT_TEXT
+
+
 func _cycle_condition_operator() -> void:
 	"""Cycle through operators (C key)"""
 	var rule = rules[cursor_row] if cursor_row >= 0 and cursor_row < rules.size() else {}
@@ -1340,6 +1360,7 @@ func _cycle_condition_operator() -> void:
 	var cond = conditions[cursor_col]
 	if cond.get("type", "always") == "always":
 		SoundManager.play_ui("menu_error")
+		_flash_status("\"Always\" has no operator to cycle.")
 		return
 
 	var operators = ["<", "<=", "==", ">=", ">", "!="]
@@ -1575,9 +1596,13 @@ func _add_action() -> void:
 
 	if actions.size() > 0 and actions[-1].get("type") == "stop_grinding":
 		SoundManager.play_ui("menu_error")
+		_flash_status("Nothing can follow Stop Grinding -- it ends the session.")
 		return
 
 	if actions.size() >= MAX_ACTIONS:
+		## DERIVED from the cap, never typed: a message naming a different number than the check
+		## enforces is worse than no message.
+		_flash_status("This rule is full -- %d actions max." % MAX_ACTIONS)
 		SoundManager.play_ui("menu_error")
 		return
 

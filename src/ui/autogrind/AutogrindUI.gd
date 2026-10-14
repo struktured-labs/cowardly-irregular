@@ -2619,6 +2619,7 @@ func _safety_label(key: String) -> String:
 func _cycle_safety(key: String) -> void:
 	if _is_grinding:
 		_log_message("[color=yellow]Cannot change safety limits while grinding.[/color]")
+		SoundManager.play_ui("menu_error")
 		return
 	## The rung the player can SEE is the one the step starts from -- the label already reads live.
 	var live: Dictionary = AutogrindSystem.interrupt_rules
@@ -2659,6 +2660,7 @@ func _toggle_ludicrous_speed() -> void:
 	"""Toggle ludicrous speed (headless battle resolver)."""
 	if _is_grinding:
 		_log_message("[color=yellow]Cannot change speed mode while grinding.[/color]")
+		SoundManager.play_ui("menu_error")
 		return
 
 	_ludicrous_speed_enabled = not _ludicrous_speed_enabled
@@ -2674,6 +2676,7 @@ func _apply_preset(preset_id: String) -> void:
 	"""Apply a quick-start preset configuration."""
 	if _is_grinding:
 		_log_message("[color=yellow]Cannot change preset while grinding.[/color]")
+		SoundManager.play_ui("menu_error")
 		return
 
 	if not GRIND_PRESETS.has(preset_id):
@@ -2697,6 +2700,7 @@ func _toggle_auto_advance() -> void:
 	"""Toggle auto-advance to next world when region is cracked."""
 	if _is_grinding:
 		_log_message("[color=yellow]Cannot change auto-advance while grinding.[/color]")
+		SoundManager.play_ui("menu_error")
 		return
 
 	_auto_advance_enabled = not _auto_advance_enabled
@@ -2712,6 +2716,7 @@ func _export_scripts() -> void:
 	"""Export autobattle scripts + autogrind rules to JSON files."""
 	if _is_grinding:
 		_log_message("[color=yellow]Cannot export while grinding.[/color]")
+		SoundManager.play_ui("menu_error")
 		return
 
 	## ⛔ "NOTHING TO EXPORT." ASSERTED A CAUSE IT DID NOT KNOW. Both export calls return "" when
@@ -2772,6 +2777,7 @@ func _copy_rules_share_code() -> void:
 func _paste_rules_share_code() -> void:
 	if _is_grinding:
 		_log_message("[color=yellow]Cannot import while grinding.[/color]")
+		SoundManager.play_ui("menu_error")
 		return
 	var data := ScriptShareManager.decode_share_code(DisplayServer.clipboard_get())
 	if data.is_empty() or data.get("type") != "autogrind_rules":
@@ -2808,6 +2814,7 @@ func _import_scripts() -> void:
 	"""Import autobattle scripts and autogrind rules from export files."""
 	if _is_grinding:
 		_log_message("[color=yellow]Cannot import while grinding.[/color]")
+		SoundManager.play_ui("menu_error")
 		return
 
 	var files = ScriptShareManager.list_exports()
@@ -2893,6 +2900,7 @@ func _toggle_permadeath_staking() -> void:
 	"""Toggle permadeath staking with a confirmation step when enabling."""
 	if _is_grinding:
 		_log_message("[color=yellow]Cannot change permadeath stakes while grinding.[/color]")
+		SoundManager.play_ui("menu_error")
 		return
 
 	if _staking_on():
@@ -3474,6 +3482,7 @@ func _save_current_as_preset() -> void:
 	"""Save current rules as a custom preset (auto-named by slot)."""
 	if _is_grinding:
 		_log_message("[color=yellow]Cannot save preset while grinding.[/color]")
+		SoundManager.play_ui("menu_error")
 		return
 
 	if rules.is_empty():
@@ -3504,6 +3513,7 @@ func _apply_custom_preset(index: int) -> void:
 	"""Apply a saved custom preset by index."""
 	if _is_grinding:
 		_log_message("[color=yellow]Cannot change preset while grinding.[/color]")
+		SoundManager.play_ui("menu_error")
 		return
 
 	if index < 0 or index >= _custom_presets.size():
@@ -3527,6 +3537,7 @@ func _delete_last_custom_preset() -> void:
 	"""Delete the most recent custom preset."""
 	if _is_grinding:
 		_log_message("[color=yellow]Cannot delete preset while grinding.[/color]")
+		SoundManager.play_ui("menu_error")
 		return
 
 	if _custom_presets.is_empty():
