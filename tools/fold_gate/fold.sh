@@ -42,7 +42,9 @@ done
 
 sed -i "s/^const SEMVER := \"$PREV\"$/const SEMVER := \"$NEXT\"/" src/meta/Version.gd
 grep -q "^const SEMVER := \"$NEXT\"$" src/meta/Version.gd || { echo "fold.sh: SEMVER bump did not apply" >&2; exit 2; }
-git commit -qam "chore: bump to v$NEXT" || exit 2
+TRAILER="Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: ${CLAUDE_SESSION_URL:-https://claude.ai/code/session_0138SrA9DzyyHhWtSHVMBT8x}"
+git commit -qam "chore: bump to v$NEXT" -m "$TRAILER" || exit 2
 echo "fold v$NEXT @ $(git rev-parse --short HEAD) · deletions vs main: $(git diff --name-status origin/main...HEAD | grep -c '^D')"
 tools/fold_gate/make.sh "$NNN" || exit 2
 exit "$SKIPPED"
