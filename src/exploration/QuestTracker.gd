@@ -84,7 +84,7 @@ func setup(parent: Node) -> void:
 	_label.offset_top = 13
 	_label.offset_right = 346
 	_label.offset_bottom = 35
-	_label.add_theme_font_size_override("font_size", 12)
+	_label.add_theme_font_size_override("font_size", TextScale.scaled(MAIN_FONT_SIZE))
 	_label.add_theme_color_override("font_color", Color(0.95, 0.9, 0.6))
 	_label.clip_text = false
 	_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -100,9 +100,15 @@ func setup(parent: Node) -> void:
 	_side_label.offset_top = 37
 	_side_label.offset_right = 346
 	_side_label.offset_bottom = 57
-	_side_label.add_theme_font_size_override("font_size", 11)
+	_side_label.add_theme_font_size_override("font_size", TextScale.scaled(SIDE_FONT_SIZE))
 	_side_label.add_theme_color_override("font_color", Color(0.6, 0.85, 1.0))
 	_side_label.clip_text = false
+	## ⛔ WRAPS rather than ELLIPSIZES, and the choice is forced by a shipped guard, not preference.
+	## `test_quest_chicken_regression:167-169` asserts `_side_label.text` CONTAINS "[3/7]" and that
+	## the count precedes "Corner all seven" — because QuestLog CLIPS the same string and the tally
+	## must survive being cut. Wrapping is visual and leaves `.text` untouched; ellipsizing or
+	## inserting a newline would red it (@cowir-autogrind lost a fix to exactly that contiguity break).
+	_side_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_side_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_side_label.visible = false
 	_canvas.add_child(_side_label)
@@ -132,6 +138,72 @@ func _on_quest_progress(_a = null, _b = null) -> void:
 		tw.tween_property(_side_label, "modulate", Color.WHITE, 0.6)
 
 
+## ⛔ 424px OF QUEST PROSE DREW OVER THE WORLD WITH NO PLATE, AT THE SHIPPED DEFAULT. Measured on the
+## built node with the chicken quest at 3/7 (the worst authored line, and the only objective that
+## receives BOTH runtime annotations):
+##
+##   side label   box 330   built rect 668.0 x 20.0   font 11   122 chars   +338px PAST ITS BOX
+##   bg plate     x 12..260 (248 wide, shrink-wrapped to the MAIN line at _update_objective)
+##   side text spans x=16..684, its plate ends at x=260  ->  424px unbacked
+##
+## ⚠️ AND IDENTICAL AT ALL FIVE PRESETS — font 12/11 at 80% through 200% — so there were TWO defects
+## here and only one was the Text Size census item: the overflow is a DEFAULT-SETTING defect.
+##
+## 🔑 THE PLATE MECHANISM WAS ALREADY RIGHT AND ALREADY FONT-AWARE. `_update_objective` derives
+## `offset_right` from the main line's MEASURED text at its ACTUAL font size, so the main line is
+## self-correcting once scaled. The defect is that it considered ONLY `_label`. This extends that
+## derivation to the wider of the two lines rather than replacing it.
+const LABEL_LEFT := 16.0
+const LABEL_RIGHT := 346.0          ## both labels' authored right edge
+const WRAP_W := LABEL_RIGHT - LABEL_LEFT   ## 330 — the side line's bounded wrap width
+const PLATE_LEFT := 12.0
+const PLATE_PAD := 20.0             ## the authored right margin inside the plate
+const MAIN_FONT_SIZE := 12
+const SIDE_FONT_SIZE := 11
+const MAIN_TOP := 13.0
+const SIDE_TOP := 37.0
+const PLATE_BOTTOM_COLLAPSED := 36.0
+const PLATE_BOTTOM_PAD := 1.0       ## 58 - (37 + 20) at the authored two-line size
+## WORD_SMART's own break rule. @cowir-autogrind measured that the DEFAULT flags
+## (MANDATORY|WORD_BOUND) count fewer lines than a WORD_SMART label draws, because ADAPTIVE is what
+## splits a token too wide for its box — so a height derived with the default can be too small.
+const WRAP_FLAGS := TextServer.BREAK_MANDATORY | TextServer.BREAK_WORD_BOUND | TextServer.BREAK_ADAPTIVE
+
+
+## The plate's right edge and bottom, and the side line's wrapped height. STATIC so a guard can ask
+## for the arithmetic over the real authored strings without building the HUD.
+##
+## Collapsed (no side quest) returns the authored numbers unchanged at the authored font, so the
+## main-line-only state — the one a player sees most — does not move at 100%.
+static func plate_metrics(main_text: String, side_text: String, side_shown: bool,
+		main_px: int, side_px: int) -> Dictionary:
+	var font: Font = ThemeDB.fallback_font
+	var out: Dictionary = {
+		"plate_right": PLATE_LEFT + WRAP_W + PLATE_PAD,
+		"plate_bottom": PLATE_BOTTOM_COLLAPSED,
+		"side_h": SIDE_TOP + 20.0 - SIDE_TOP,
+	}
+	if font == null:
+		return out
+	var main_w: float = font.get_string_size(main_text, HORIZONTAL_ALIGNMENT_LEFT, -1, main_px).x
+	var right: float = LABEL_LEFT + main_w + PLATE_PAD
+	if not side_shown:
+		out["plate_right"] = right
+		out["plate_bottom"] = PLATE_BOTTOM_COLLAPSED
+		out["side_h"] = 0.0
+		return out
+	## The side line WRAPS, so its width is bounded and its height is what grows. Measured with the
+	## flags the node actually draws with, not the default.
+	var side_h: float = font.get_multiline_string_size(
+		side_text, HORIZONTAL_ALIGNMENT_LEFT, WRAP_W, side_px, -1, WRAP_FLAGS).y
+	out["side_h"] = maxf(20.0, side_h)
+	## The plate covers the WIDER of the two lines: the main line's measured text, or the side
+	## line's bounded wrap width. Never narrower than the authored collapsed plate.
+	out["plate_right"] = maxf(right, LABEL_LEFT + WRAP_W + PLATE_PAD)
+	out["plate_bottom"] = SIDE_TOP + float(out["side_h"]) + PLATE_BOTTOM_PAD
+	return out
+
+
 func _update_objective() -> void:
 	var best_text = OBJECTIVES[0]["text"]  # Default objective
 
@@ -142,12 +214,22 @@ func _update_objective() -> void:
 	if best_text != _current_objective:
 		_current_objective = best_text
 		_label.text = "> " + best_text
-		# Resize background to fit text
-		_bg.offset_right = _label.offset_left + _label.get_theme_font("font").get_string_size(
-			_label.text, HORIZONTAL_ALIGNMENT_LEFT, -1,
-			_label.get_theme_font_size("font_size")).x + 20 if _label.get_theme_font("font") else 350
 
 	_update_side_quest_line()
+	_apply_plate()
+
+
+## One place that sizes the plate, from both lines. The old derivation lived inline in
+## `_update_objective` and ran ONLY when the main text changed — so a side line appearing or growing
+## never resized the plate at all.
+func _apply_plate() -> void:
+	if _bg == null or _label == null or _side_label == null:
+		return
+	var m: Dictionary = plate_metrics(_label.text, _side_label.text, _side_label.visible,
+		_label.get_theme_font_size("font_size"), _side_label.get_theme_font_size("font_size"))
+	_bg.offset_right = float(m["plate_right"])
+	_bg.offset_bottom = float(m["plate_bottom"])
+	_side_label.size.y = float(m["side_h"])
 
 
 ## First active side quest's current objective, shown under the main line.
@@ -161,7 +243,6 @@ func _update_side_quest_line() -> void:
 	var active: Array = qs.get_active()
 	if active.is_empty():
 		_side_label.visible = false
-		_bg.offset_bottom = 36
 		return
 	var qid: String = _pick_tracked_quest(active, str(qs.last_progressed_quest_id))
 	var q: Dictionary = qs.get_quest(qid)
@@ -178,7 +259,6 @@ func _update_side_quest_line() -> void:
 		desc = QuestChicken.annotate_objective(desc, objectives[idx])
 	_side_label.text = "* %s — %s" % [q.get("title", qid), desc]
 	_side_label.visible = true
-	_bg.offset_bottom = 58
 
 
 ## The quest the player most recently touched wins the tracker line;
