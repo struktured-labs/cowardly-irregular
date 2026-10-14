@@ -21,11 +21,21 @@ extends GutTest
 ## not do. The arm below pins that the overlap does not GROW with Text Size, which is the defect.
 
 const JukeboxScript = preload("res://src/ui/JukeboxMenu.gd")
-const PRESETS: Array = [0.8, 1.0, 1.25, 1.5, 2.0]
-const LABELS: Array = ["80%", "100%", "125%", "150%", "200%"]
+## DERIVED from the ladder the player actually drives, never copied (@cowir-controller's census:
+## 27 files carry the literal and 17 check nothing). No fallback default — `SettingsMenu` carries a
+## `class_name`, so this resolves at PARSE time and a rename gives EC=3, nothing ran, which is
+## louder than any floor. @cowir-adhoc's PIN is the alternative; DERIVE is chosen so a new preset is
+## swept with no human step, and @cowir-autogrind's floor arm below is the price of that choice —
+## every arm in this file LOOPS the ladder, so an empty one would iterate zero times and pass green.
+const PRESETS: Array = SettingsMenu.TEXT_SIZE_PRESETS
 
 var _menu: Control = null
 var _orig_scale: float = 1.0
+
+
+## The rung's player-facing name, formatted from the derived preset rather than a parallel list.
+func _label(i: int) -> String:
+	return "%d%%" % int(round(float(PRESETS[i]) * 100.0))
 
 
 func before_each() -> void:
@@ -82,14 +92,18 @@ func test_control_the_menu_builds_rows_at_every_size() -> void:
 	for i in PRESETS.size():
 		await _build_at(PRESETS[i])
 		assert_gt(_menu._rows_shown(), 0,
-			"Text Size %s must show at least one row" % [LABELS[i]])
-		assert_not_null(_find("JUKEBOX"), "CONTROL: the title must exist at %s" % [LABELS[i]])
+			"Text Size %s must show at least one row" % [_label(i)])
+		assert_not_null(_find("JUKEBOX"), "CONTROL: the title must exist at %s" % [_label(i)])
 
 
 func test_one_hundred_percent_is_unchanged() -> void:
-	## 14 rows of 32px, exactly as before this change, at 100% and below.
-	for scale in [0.8, 1.0]:
-		await _build_at(scale)
+	## 14 rows of 32px, exactly as before this change, at every rung at or below 100% — DERIVED
+	## from the ladder like PRESETS, so a new sub-unity preset is covered without an edit here.
+	var at_or_below: Array = PRESETS.filter(func(p): return float(p) <= 1.0)
+	assert_gt(at_or_below.size(), 1,
+		"DERIVATION FLOOR: only %d presets at or below 100%% — the ladder is not the real one" % at_or_below.size())
+	for scale in at_or_below:
+		await _build_at(float(scale))
 		assert_eq(_menu._rows_shown(), JukeboxScript.VISIBLE_ROWS,
 			"at %.0f%% the window must still be VISIBLE_ROWS" % [scale * 100.0])
 		assert_almost_eq(_menu._row_h(), float(JukeboxScript.ROW_HEIGHT), 0.01,
@@ -114,8 +128,8 @@ func test_row_text_fits_the_band_it_sits_in() -> void:
 			checked += 1
 			assert_lte(lab.position.y + _extent(lab), par.size.y,
 				"Text Size %s: '%s' is %.0f px in a %.0f px row band" % [
-					LABELS[i], lab.text.substr(0, 18), lab.position.y + _extent(lab), par.size.y])
-		assert_gt(checked, 0, "PRECONDITION: Text Size %s must build row labels" % [LABELS[i]])
+					_label(i), lab.text.substr(0, 18), lab.position.y + _extent(lab), par.size.y])
+		assert_gt(checked, 0, "PRECONDITION: Text Size %s must build row labels" % [_label(i)])
 
 
 func test_the_footer_stays_inside_the_panel() -> void:
@@ -129,7 +143,7 @@ func test_the_footer_stays_inside_the_panel() -> void:
 			if (l as Label).text.find("D-pad") != -1:
 				footer = l
 				break
-		assert_not_null(footer, "CONTROL: the footer must exist at %s" % [LABELS[i]])
+		assert_not_null(footer, "CONTROL: the footer must exist at %s" % [_label(i)])
 		if footer == null:
 			continue
 		var panel := _menu._panel as Control
@@ -138,7 +152,7 @@ func test_the_footer_stays_inside_the_panel() -> void:
 			continue
 		assert_lte(footer.position.y + _extent(footer), panel.size.y,
 			"Text Size %s: the footer ends at %.0f in a %.0f-tall panel" % [
-				LABELS[i], footer.position.y + _extent(footer), panel.size.y])
+				_label(i), footer.position.y + _extent(footer), panel.size.y])
 
 
 func test_the_title_does_not_crowd_the_subtitle_further_as_text_grows() -> void:
@@ -151,7 +165,7 @@ func test_the_title_does_not_crowd_the_subtitle_further_as_text_grows() -> void:
 		await _build_at(PRESETS[i])
 		assert_lte(_crowding(), base + 0.5,
 			"Text Size %s: the title crowds the subtitle by %.1f px, worse than the %.1f px at 100%%" % [
-				LABELS[i], _crowding(), base])
+				_label(i), _crowding(), base])
 
 
 func _crowding() -> float:
@@ -172,7 +186,7 @@ func test_the_scroll_window_never_exceeds_the_rows_that_exist() -> void:
 			if c is Control and str(c.name).begins_with("Row_"):
 				built += 1
 		assert_eq(built, _menu._rows_shown(),
-			"Text Size %s: built %d rows but the window is %d" % [LABELS[i], built, _menu._rows_shown()])
+			"Text Size %s: built %d rows but the window is %d" % [_label(i), built, _menu._rows_shown()])
 
 
 func test_the_last_row_ends_inside_the_panel() -> void:
@@ -189,7 +203,23 @@ func test_the_last_row_ends_inside_the_panel() -> void:
 		for c in panel.get_children():
 			if c is Control and str(c.name).begins_with("Row_"):
 				lowest = maxf(lowest, (c as Control).position.y + (c as Control).size.y)
-		assert_gt(lowest, -9998.0, "PRECONDITION: rows must exist at %s" % [LABELS[i]])
+		assert_gt(lowest, -9998.0, "PRECONDITION: rows must exist at %s" % [_label(i)])
 		assert_lte(lowest, panel.size.y,
 			"Text Size %s: the last row ends at %.0f in a %.0f-tall panel" % [
-				LABELS[i], lowest, panel.size.y])
+				_label(i), lowest, panel.size.y])
+
+
+func test_control_the_ladder_itself_is_the_players() -> void:
+	## ⛔ THE PRICE OF DERIVING (@cowir-autogrind): every other arm in this file LOOPS `PRESETS`, so
+	## an empty or stubbed ladder makes all of them iterate zero times and pass GREEN. A pinned copy
+	## fails loudly instead; a derivation needs this arm to get the same loudness.
+	assert_gt(PRESETS.size(), 2, "the preset ladder derived %d rungs" % PRESETS.size())
+	assert_true(PRESETS.has(1.0), "the ladder has no 100%% rung: %s" % [PRESETS])
+	assert_gt(float(PRESETS.max()), 1.0, "the ladder tops out at %s, so nothing scales up" % [PRESETS.max()])
+	var seen: Dictionary = {}
+	for i in PRESETS.size():
+		seen[_label(i)] = true
+	assert_eq(seen.size(), PRESETS.size(),
+		"%d rungs collapse to %d labels, so a failure message cannot name its own size" % [
+			PRESETS.size(), seen.size()])
+	assert_eq(_label(PRESETS.find(1.0)), "100%", "the 1.0 rung is labelled %s" % _label(PRESETS.find(1.0)))
