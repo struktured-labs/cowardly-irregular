@@ -23,6 +23,7 @@ extends GutTest
 
 const BattleManagerScript = preload("res://src/battle/BattleManager.gd")
 const CUE := "status_cured"
+const SOUND_MANAGER_PATH := "res://src/audio/SoundManager.gd"
 
 var _bm = null
 
@@ -139,13 +140,61 @@ func test_the_cue_is_authored_and_on_disk() -> void:
 ## status_cured and BattleScene calls play_item for an item action — so @cowir-story's "nothing plays
 ## it" held only for abilities. If an item's cue mapping ever breaks, that is a different defect from
 ## the ability wiring above and this names it separately.
+## ⛔ DERIVED, NOT LISTED. This drove a hand-written ["antidote","echo_herbs","remedy",
+## "eye_drops","gold_needle"] until 2026-10-14. Measured then: items.json holds 172 items, exactly
+## 5 carry a cure effect, and the five listed were exactly those — so it was the COMPLETE population
+## and there was no live gap. That is the trap: a hardcoded list that happens to be complete goes
+## stale SILENTLY the day a sixth curative item is authored, and nothing reds. SoundManager's own
+## derivation says why it should not be a list: "so a new consumable is covered on the day it is
+## authored rather than when someone notices it is silent."
+##
+## 🔑 AND IT MIRRORS THE CONSUMER'S PRIORITY, which a naive "has cure_status" predicate would get
+## wrong. `_ITEM_EFFECT_SFX` is an ORDERED first-match-wins list and `revive`, `escape_battle` and
+## `repel_steps` all outrank the cure pair, so an item with BOTH revive and cure_status maps to
+## ability_revive and must NOT be expected here. No such item exists today (measured: 0 of the 5 are
+## shadowed), which is exactly why the naive form would have looked correct forever and then accused
+## a correctly-mapped item the day one was authored.
+func _items_the_consumer_maps_to_the_cure() -> Array[String]:
+	var out: Array[String] = []
+	var sm: Variant = load(SOUND_MANAGER_PATH)
+	if sm == null:
+		return out
+	var consts: Dictionary = (sm as Script).get_script_constant_map()
+	var table: Array = consts.get("_ITEM_EFFECT_SFX", [])
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items.json"))
+	if not (parsed is Dictionary) or table.is_empty():
+		return out
+	var items: Variant = (parsed as Dictionary).get("items", parsed)
+	if not (items is Dictionary):
+		return out
+	for iid in (items as Dictionary).keys():
+		var entry: Variant = (items as Dictionary)[iid]
+		if not (entry is Dictionary):
+			continue
+		var effects: Variant = (entry as Dictionary).get("effects", {})
+		if not (effects is Dictionary):
+			continue
+		## First match wins, exactly as _derive_item_sounds_from_data walks it.
+		for pair in table:
+			if not (effects as Dictionary).has(pair[0]):
+				continue
+			if str(pair[1]) == CUE:
+				out.append(str(iid))
+			break
+	out.sort()
+	return out
+
+
 func test_the_item_cure_path_is_cued_too() -> void:
+	var expected: Array[String] = _items_the_consumer_maps_to_the_cure()
+	assert_gt(expected.size(), 3,
+		"VOID: derived only %d items that should map to %s — the derivation broke, and a short list here would pass by measuring almost nothing: %s" % [expected.size(), CUE, [expected]])
 	var missing: Array[String] = []
-	for id in ["antidote", "echo_herbs", "remedy", "eye_drops", "gold_needle"]:
+	for id in expected:
 		if str(SoundManager._item_sounds.get(id, "")) != CUE:
 			missing.append("%s -> %s" % [id, str(SoundManager._item_sounds.get(id, "<none>"))])
 	assert_eq(missing, [],
-		"these curing items no longer map to %s, so the item cure path went silent while the ability path above stayed green: %s" % [CUE, missing])
+		"these curing items no longer map to %s, so the item cure path went silent while the ability path above stayed green: %s" % [CUE, [missing]])
 	## The derivation must not be vacuously wide either: an item that cures nothing must not map here.
 	assert_ne(str(SoundManager._item_sounds.get("potion", "")), CUE,
 		"a plain healing potion maps to %s, so the cue no longer means 'an ailment came off'" % CUE)
