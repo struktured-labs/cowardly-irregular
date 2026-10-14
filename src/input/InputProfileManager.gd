@@ -927,7 +927,13 @@ func load_config() -> void:
 		## same reasoning as the unrecognised-profile warning above. Presence of the key IS the
 		## discriminator, so no version bump is needed: absent means pre-fix.
 		profile_chosen_by_user = bool(data.get("profile_chosen_by_user", true))
-		# v1 hardcoded "8BitDo Ultimate Pro 2" as the startup default, so a persisted copy of it is indistinguishable from a real choice — treat it as unset so autodetect can correct the L/R inversion it carries.
+		# v1 hardcoded "8BitDo Ultimate Pro 2" as the startup default, so a persisted copy of it is indistinguishable from a real choice — treat it as unset and let autodetect decide.
+		# ⚠️ ITS ORIGINAL REASON IS STALE AND SAYING SO IS THE POINT: this read "so autodetect can
+		# correct the L/R inversion it carries". That inversion came from a7bcec0d, which encoded one
+		# device's quirk and applied it to every pad; it was reverted, and PROFILE_ULTIMATE_PRO_2 is
+		# now byte-identical to PROFILE_STANDARD. So the migration no longer corrects any BINDING —
+		# what it still does is clear a choice the player never made, which is reason enough to keep
+		# it. A comment that justifies code by a mechanism that no longer exists is read as current.
 		var cfg_version: int = int(data.get("version", 1))
 		if cfg_version < 2 and active_profile == "8BitDo Ultimate Pro 2":
 			profile_chosen_by_user = false
