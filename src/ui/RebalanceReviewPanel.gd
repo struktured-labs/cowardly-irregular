@@ -238,12 +238,16 @@ func _apply_current() -> void:
 		return
 	var orig_idx: int = int(_entries[_selected_idx]["idx"])
 	var result: String = daemon.force_apply(orig_idx)
+	var last: Dictionary = daemon.applied[-1] if daemon.applied.size() > 0 else {}
+	# A clamped proposal still returns APPLY_APPLIED, so success means "moved", not "accepted".
+	var moved: int = daemon.applied_moved_count(last) if result == daemon.APPLY_APPLIED else 0
 	if SoundManager:
-		var sfx_key: String = "menu_select" if result == daemon.APPLY_APPLIED else "menu_error"
+		var sfx_key: String = "menu_error"
+		if result == daemon.APPLY_APPLIED:
+			sfx_key = "menu_select" if moved > 0 else "menu_move"
 		SoundManager.play_ui(sfx_key)
 	if result == daemon.APPLY_APPLIED and Toast:
-		var last: Dictionary = daemon.applied[-1] if daemon.applied.size() > 0 else {}
-		Toast.show(self, daemon.summarize_applied(last), Toast.SUCCESS_COLOR)
+		Toast.show(self, daemon.summarize_applied(last), Toast.SUCCESS_COLOR if moved > 0 else Toast.DEFAULT_COLOR)
 	_refresh()
 
 
