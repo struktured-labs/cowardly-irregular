@@ -56,8 +56,14 @@ func test_the_stated_range_is_the_one_the_engine_clamps_to() -> void:
 	assert_false(code.is_empty(), "CONTROL: Combatant's source must be readable")
 	var clamps: int = code.count("clampi(current_ap")
 	assert_gt(clamps, 0, "CONTROL: the AP clamp must still be findable")
-	assert_true(code.find("-4, 4)") != -1,
-		"the prompt says -4..+4 because Combatant clamps there: %d clamp sites found" % clamps)
+	## DERIVED, not the literal "-4, 4)". That spelling broke the moment the bounds were NAMED,
+	## while the clamp was intact — and it only ever checked that the engine contained a string,
+	## never that the PROMPT agreed with it. This asks the docstring's actual question and reds on
+	## a divergence in either direction: move AP_FLOOR and the prompt is teaching dead bounds.
+	var stated: String = "runs %d to +%d" % [Combatant.AP_FLOOR, Combatant.AP_CEILING]
+	assert_true(_autobattle().find(stated) != -1,
+		("the prompt must state the range the engine actually clamps to (expected '%s'); "
+		+ "%d clamp sites found") % [stated, clamps])
 
 
 func test_the_grind_prompt_does_not_get_it() -> void:

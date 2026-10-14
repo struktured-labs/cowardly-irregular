@@ -3387,7 +3387,7 @@ func _restore_party_from_save_data() -> bool:
 		if saved.has("current_mp"):
 			c.current_mp = clampi(saved["current_mp"], 0, c.max_mp)
 		if saved.has("current_ap"):
-			c.current_ap = clampi(saved["current_ap"], -4, 4)
+			c.current_ap = clampi(saved["current_ap"], Combatant.AP_FLOOR, Combatant.AP_CEILING)
 		if saved.has("is_alive"):
 			c.is_alive = saved["is_alive"]
 		# The lines above write the saved bar back over from_dict. A permakilled corpse stays down even when that bar was full.

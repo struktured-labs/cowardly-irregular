@@ -4655,7 +4655,7 @@ func _apply_vulnerability_window(participants: Array) -> void:
 		p.add_status("cannot_defer", 2)
 		exposed_any = true
 		var old_ap = p.current_ap
-		p.current_ap = clampi(p.current_ap - 2, -4, 4)
+		p.current_ap = clampi(p.current_ap - 2, Combatant.AP_FLOOR, Combatant.AP_CEILING)
 		if p.has_signal("ap_changed"):
 			p.ap_changed.emit(old_ap, p.current_ap)
 	## Both statuses have AUTHORED cues that had never played (cowir-music, measured): this window is

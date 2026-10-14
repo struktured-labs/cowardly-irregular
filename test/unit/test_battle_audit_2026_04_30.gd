@@ -20,9 +20,10 @@ func _read_file(path: String) -> String:
 # Bug 1: _apply_vulnerability_window was setting AP to literal -2.
 func test_vulnerability_window_subtracts_ap_not_set_literal() -> void:
 	var src = _read_file("res://src/battle/BattleManager.gd")
-	# The previous broken line was `clampi(-2, -4, 4)` (literal). We require
-	# the new `clampi(p.current_ap - 2, -4, 4)` form (subtraction).
-	assert_string_contains(src, "clampi(p.current_ap - 2, -4, 4)",
+	# The previous broken line was `clampi(-2, ...)` (literal). We require the SUBTRACTION.
+	# The bounds are deliberately NOT pinned here: they are named consts now, and pinning their
+	# spelling broke this arm while the subtraction it is actually about was intact.
+	assert_string_contains(src, "clampi(p.current_ap - 2",
 		"_apply_vulnerability_window must subtract 2 from current AP, " +
 		"not set to literal -2 (the literal heals AP-debt characters " +
 		"and over-punishes high-AP characters)")
