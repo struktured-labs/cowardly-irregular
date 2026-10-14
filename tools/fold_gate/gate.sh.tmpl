@@ -4,7 +4,7 @@ cd @REPO@
   echo "authored: @AUTHORED@"
   ec=0
   start_sha=$(git rev-parse HEAD); start_dirty=$(git status --porcelain -- src test project.godot | wc -l)
-  RUN_TESTS_TIMEOUT=1200 XDG_DATA_HOME=$PWD/tmp/xdg tools/spinwatch.sh -- tools/run_tests.sh > tmp/gate@NNN@.raw 2>&1 || ec=$?
+  XDG_DATA_HOME=$PWD/tmp/xdg tools/spinwatch.sh -- tools/run_tests.sh > tmp/gate@NNN@.raw 2>&1 || ec=$?
   echo "GATE@NNN@ EC=$ec sha=$(git rev-parse HEAD)"
   end_sha=$(git rev-parse HEAD); end_dirty=$(git status --porcelain -- src test project.godot | wc -l)
   [ "$start_sha" = "$end_sha" ] && [ "$start_dirty" = "0" ] && [ "$end_dirty" = "0" ] && echo "TREE: unmoved $start_sha, clean" || echo "TREE MOVED OR DIRTY: start=$start_sha end=$end_sha dirty $start_dirty->$end_dirty -- VERDICT VOID"

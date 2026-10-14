@@ -26,6 +26,8 @@ check_templates() {
     grep -q '^cd @REPO@$' "$HERE/$f.sh.tmpl" || { echo "make.sh: $f.sh.tmpl does not cd to @REPO@" >&2; bad=1; }
   done
   grep -q 'authored: @AUTHORED@' "$HERE/gate.sh.tmpl" || { echo "make.sh: gate.sh.tmpl has no @AUTHORED@ placeholder" >&2; bad=1; }
+  # A typed budget goes stale as the suite grows: 1200 wedged .692 when green runs reached 1119s.
+  if grep -q 'RUN_TESTS_TIMEOUT=' "$HERE/gate.sh.tmpl"; then echo "make.sh: gate.sh.tmpl types its own RUN_TESTS_TIMEOUT; leave the budget to run_tests.sh" >&2; bad=1; fi
   return "$bad"
 }
 
