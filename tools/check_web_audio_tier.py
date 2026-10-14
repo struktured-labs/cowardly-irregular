@@ -47,6 +47,7 @@ Exit 0 every check passed · 5 a check failed · 2 usage or an input that cannot
 import collections
 import hashlib
 import os
+import re
 import statistics
 import time
 import struct
@@ -77,6 +78,30 @@ MEDIAN_LO, MEDIAN_HI = 1.00, 1.16
 # non-music tier must bring its own measured bands (--ratio-band / --median-band) — this tool does
 # not assume a 16 KB voice line carries the same packing overhead as a 500 KB bed.
 SUBDIR = "assets/audio/music"
+
+
+def _sw_covers_pck(build_dir):
+    """Is index.pck NAMED in the shipped service worker's cache list?
+
+    Mirrors tools/pck_cache_report.sh's _sw_state: it reads the worker Godot actually
+    emitted and looks for index.pck inside CACHED_FILES / CACHEABLE_FILES, rather than
+    trusting that a worker's presence implies coverage. Returns covers | uncovered |
+    none | unknown, and 'unknown' is a real answer — a report that cannot see the build
+    should not rule on what a player experiences.
+    """
+    if not build_dir or not os.path.isdir(build_dir):
+        return "unknown"
+    sw = os.path.join(build_dir, "index.service.worker.js")
+    if not os.path.isfile(sw):
+        return "none"
+    try:
+        src = open(sw, encoding="utf-8", errors="replace").read()
+    except OSError:
+        return "unknown"
+    for m in re.finditer(r"(?:CACHED_FILES|CACHEABLE_FILES)\s*=\s*\[([^\]]*)\]", src):
+        if "index.pck" in m.group(1):
+            return "covers"
+    return "uncovered"
 
 
 def die(msg):
@@ -257,10 +282,41 @@ def main():
         bad.append(f"resolved {matched} entries under {SUBDIR}, expected {expect} — a TIER CHANGE must "
                    f"not remove tracks")
     if file_size >= cache_line:
-        msg = (f"pck {file_size/1048576:.2f} MiB is AT OR OVER the {cache_line/1048576:.2f} MiB "
-               f"browser cache line by {(file_size-cache_line)/1048576:.2f} MiB — a returning "
-               f"player re-downloads the whole build every visit")
+        # THE SIZE FACT IS TRUE IN EVERY STATE; THE PER-VISIT CONCLUSION IS NOT.
+        # This used to append "a returning player re-downloads the whole build every visit"
+        # unconditionally — and since the PWA flag landed that is false, so one run printed it
+        # four lines after pck_cache_report.sh had MEASURED the opposite:
+        #     [deploy] service worker caches it: a returning player pays 170.73 MiB to warm
+        #     [tier]   ... re-downloads the whole build every visit
+        # The 160 MiB line is chromium's PER-ENTRY HTTP cache limit. The worker uses the Cache
+        # API, which is quota-based, so it holds a pck that the HTTP cache will not — and
+        # tools/web_smoke.mjs stage 4b fails the release if the worker does not take over with
+        # index.pck in its store. So the claim has to be conditional on the worker, exactly as
+        # pck_cache_report.sh's _sw_state already made it.
+        #
+        # ⚠️ Detection is deliberately the SAME question that tool asks — is index.pck NAMED in
+        # the shipped worker's cache list — rather than "does a worker exist". A worker that
+        # ships without the pck in its list is the v3.33.334-alpha regression, and it is the
+        # state where the old sentence was correct.
+        sw = _sw_covers_pck(os.path.dirname(os.path.abspath(pck_path)))
+        over = (f"pck {file_size/1048576:.2f} MiB is AT OR OVER the {cache_line/1048576:.2f} MiB "
+                f"browser cache line by {(file_size-cache_line)/1048576:.2f} MiB")
+        if sw == "covers":
+            per_visit = ("the service worker names index.pck, so a returning player warms the "
+                         "cache once rather than re-downloading it (web_smoke stage 4b gates this)")
+        elif sw == "uncovered":
+            per_visit = ("a service worker ships but does NOT name index.pck, so a returning "
+                         "player re-downloads the whole build every visit")
+        elif sw == "none":
+            per_visit = ("no service worker in this build, so a returning player re-downloads "
+                         "the whole build every visit")
+        else:
+            per_visit = ("per-visit cost UNKNOWN — no worker file was readable beside the pck, "
+                         "so this is not claiming either way")
+        msg = f"{over} — {per_visit}"
         if "--require-under-cache-line" in flags:
+            # The flag is a SIZE requirement and still fires on size alone: a caller asking for
+            # "under the line" is not asking about the worker. Only the wording is conditional.
             bad.append(msg)
         else:
             print(f"[tier] NOTE (advisory, not a block): {msg}")
