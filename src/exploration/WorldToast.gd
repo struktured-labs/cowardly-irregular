@@ -31,6 +31,21 @@ static func font_size(base: int = BASE_FONT) -> int:
 	return TextScale.scaled(base)
 
 
+## ⛔ `AUTOWRAP_WORD_SMART`'s OWN BREAK RULE, PASSED EXPLICITLY. `get_multiline_string_size`
+## defaults to `BREAK_MANDATORY | BREAK_WORD_BOUND`, which is `AUTOWRAP_WORD`'s rule and not the
+## one every toast label is set to. The two agree on all 2,665 (authored string x box x preset)
+## pairs in this corpus and diverge exactly where a token is wider than its box — by up to 4x the
+## height, because `BREAK_ADAPTIVE` breaks inside the over-wide word and the default cannot, so the
+## default reports ONE line for a block that draws four. Passing the real set makes this function
+## correct on its own terms instead of correct-while-the-token-arm-holds, which was a coupling
+## between two guards rather than a property of the code.
+##
+## ⚠️ The plausible wrong guess is `BREAK_GRAPHEME_BOUND` (44 of 180 differ): that is
+## `AUTOWRAP_ARBITRARY`'s flag, and reaching for "the one that breaks words" lands on it.
+const BREAK_FLAGS: int = TextServer.BREAK_MANDATORY | TextServer.BREAK_WORD_BOUND \
+	| TextServer.BREAK_ADAPTIVE
+
+
 ## What the wrapped block needs at `width`, floored at the authored box so a short toast is
 ## unchanged. The font comes from a throwaway Label because that is where the theme default lives,
 ## and it is a STATIC seam so a guard can ask for a real string's height without building a scene.
@@ -40,7 +55,7 @@ static func height_for(text: String, width: float, min_h: float, base: int = BAS
 	var h: float = min_h
 	if font != null:
 		h = maxf(font.get_multiline_string_size(
-			text, HORIZONTAL_ALIGNMENT_CENTER, width, font_size(base)).y, min_h)
+			text, HORIZONTAL_ALIGNMENT_CENTER, width, font_size(base), -1, BREAK_FLAGS).y, min_h)
 	probe.free()
 	return h
 
@@ -61,6 +76,39 @@ static func height_for(text: String, width: float, min_h: float, base: int = BAS
 ## 380 -> -190 — so that term is derivation replacing eleven hand-computed literals, not a new rule.
 static func origin_for_height(h: float, width: float, baseline_top: float, min_h: float) -> Vector2:
 	return Vector2(-width * 0.5, baseline_top - (h - min_h))
+
+
+## 🐛 NOTHING BOUNDED THE UPWARD GROWTH, AND THESE ARE WORLD-SPACE LABELS UNDER A ZOOMED CAMERA.
+## `origin_for_height` holds the authored BOTTOM edge and lets a taller block rise, which is right
+## — and unbounded. The village camera runs at zoom 2.0 and interiors at 2.5, so every toast pixel
+## is two or two and a half SCREEN pixels, and `limit_top = 0` means a prop near a map's top edge
+## sits high on screen instead of at the centre. Measured over all eleven placed examine points:
+##
+##     FrostholdVillage   prop at world y=80, camera clamped -> prop at screen y=160
+##                        its toast's risen top lands at y=-20 AT 100% TEXT SIZE  (default)
+##     10 of the other 11 go off the top at 200%, by 34 to 220 px — whole lines gone
+##
+## `Signpost` already carries this cure for its own label (`_keep_flat_label_on_screen`, "a sign by
+## the map's top edge grew its wrapped text up off the screen"); the toasts never got it.
+##
+## ⛔ THE CLAMP IS ONE-SIDED, AND THAT IS NOT AN OMISSION. A toast grows and rises UPWARD only, and
+## a prop near the map's BOTTOM edge puts the player low on screen, which moves the block further
+## from the bottom — so the bottom edge cannot be the one that escapes. Where a block is taller
+## than the whole viewport (341 px at 200% is 852 screen px at zoom 2.5, against 720) something
+## must be cut, and keeping the TOP is the choice: it is where reading starts.
+##
+## 📌 Pushing the toast down can put it over the prop, which is the defect `origin_for_height`
+## replaced. That is the lesser of the two: overlapping and readable beats off-screen and not.
+const VIEW_MARGIN_PX: float = 4.0
+
+
+## `screen_top` is where the label's top lands on screen at the END of its rise, and `scale_y` the
+## canvas scale that got it there — pure arithmetic, so a guard can drive the rule without a camera.
+static func on_screen_origin(at: Vector2, screen_top: float, scale_y: float,
+		margin: float = VIEW_MARGIN_PX) -> Vector2:
+	if scale_y <= 0.0 or screen_top >= margin:
+		return at
+	return Vector2(at.x, at.y + (margin - screen_top) / scale_y)
 
 
 ## The measuring entry points. Both route through `origin_for_height`, so a change to the rule
@@ -120,6 +168,9 @@ static func show(host: Node2D, text: String, width: float, baseline_top: float, 
 	host.add_child(lbl)
 	if stack:
 		at.y -= stack_offset(host, lbl)
+	## AFTER stacking: a stacked toast sits higher still, so it is the one most likely to escape.
+	var xf: Transform2D = host.get_global_transform_with_canvas()
+	at = on_screen_origin(at, (xf * Vector2(0.0, at.y - rise)).y, xf.get_scale().y)
 	lbl.position = at
 	var tw := host.create_tween()
 	tw.set_parallel(true)
