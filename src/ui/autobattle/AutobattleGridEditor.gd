@@ -2419,6 +2419,11 @@ func _apply_action_type(new_type: String, ctx: Dictionary) -> void:
 			actions[idx]["target"] = new_target
 		else:
 			actions[idx].erase("target")
+	## A defer ENDS the turn: the grid stops drawing after it, the editor refuses to add past it,
+	## and _execute_advance breaks there. Setting a MIDDLE slot to defer was the one path that
+	## left actions behind it — invisible, unreachable, never run, and still billed AP.
+	if new_type == "defer" and actions.size() > start + count:
+		actions.resize(start + count)
 	_refresh_grid()
 
 
