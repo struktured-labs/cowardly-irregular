@@ -46,10 +46,19 @@ const NEGATIVE_COLOR = Color(0.9, 0.4, 0.4)
 
 ## Slot-row geometry. The description WRAPS, so a row is as tall as its own text needs and the
 ## rows stack by accumulation — see _create_slot_row for why the old fixed pitch could not hold.
+## Text Size. Every font below scales and every y derives from the line above it — the character
+## panel stepped its five labels by literals (8/28/42/62) while their fonts were raw 16/11/10/12,
+## so at 200% the name's 39px line ran through the job label beneath it.
+const NAME_FONT := 16
+const JOB_FONT := 11
+const SEC_FONT := 10
+const LEVEL_FONT := 12
+const HP_FONT := 10
+const PANEL_PAD := 8.0
+const PANEL_GAP := 4.0
 const SLOT_ROW_MIN_HEIGHT := 56.0
 const SLOT_ROW_GAP := 4.0
 const SLOT_DESC_X := 24.0
-const SLOT_DESC_Y := 34.0
 const SLOT_DESC_FONT_SIZE := 9
 const SLOT_DESC_RIGHT_PAD := 8.0
 const SLOT_DESC_BOTTOM_PAD := 6.0
@@ -82,14 +91,19 @@ func _build_ui() -> void:
 	if viewport_size.x == 0:
 		viewport_size = Vector2(640, 480)
 
-	# Character info panel (top left)
-	var char_panel = _create_character_panel(Vector2(viewport_size.x * 0.35 - 16, 100))
+	# Character info panel (top left). Its height was a literal 100, so at 200% the HP line drew
+	# 120px into it; and the jobs panel's literal 124 top meant a taller character panel would have
+	# been overdrawn rather than pushed down. Both derive now, floored at the shipped numbers.
+	var char_h: float = maxf(100.0, _character_panel_h())
+	var char_panel = _create_character_panel(Vector2(viewport_size.x * 0.35 - 16, char_h))
 	char_panel.position = Vector2(16, 16)
 	add_child(char_panel)
 
 	# Current jobs panel (left, below character)
-	var jobs_panel = _create_jobs_panel(Vector2(viewport_size.x * 0.35 - 16, viewport_size.y - 200))
-	jobs_panel.position = Vector2(16, 124)
+	var jobs_y: float = 16.0 + char_h + 8.0
+	var jobs_panel = _create_jobs_panel(
+		Vector2(viewport_size.x * 0.35 - 16, viewport_size.y - jobs_y - 76.0))
+	jobs_panel.position = Vector2(16, jobs_y)
 	add_child(jobs_panel)
 
 	# Right panel: stats preview or job list
@@ -117,10 +131,104 @@ func _build_ui() -> void:
 	var footer_text = ("↑↓/D-pad: Select Slot  %s/Click: Change  %s/RClick: Back" % [_ok, _no]) if mode == Mode.SLOT_SELECT else ("↑↓/D-pad: Select  %s/Click: Assign  %s/RClick: Cancel" % [_ok, _no])
 	var footer = Label.new()
 	footer.text = footer_text
-	footer.position = Vector2(16, viewport_size.y - 32)
-	footer.add_theme_font_size_override("font_size", 12)
+	## A literal 32 off the bottom drew 722 in a 720px viewport at 200%. Floored at 32 so a 100%
+	## render does not move it.
+	footer.position = Vector2(16, viewport_size.y - maxf(32.0, _job_line_h(12) + 12.0))
+	footer.add_theme_font_size_override("font_size", TextScale.scaled(12))
 	footer.add_theme_color_override("font_color", DISABLED_COLOR)
 	add_child(footer)
+
+
+func _job_line_h(base: int) -> float:
+	var fs: int = TextScale.scaled(base)
+	var f: Font = ThemeDB.fallback_font
+	return float(fs) * 1.4 if f == null else f.get_height(fs)
+
+
+## Slot-row baselines: caption, then the equipped name, then the wrapped description, each under
+## the line above it rather than at a literal 4/18/34.
+## A slot row with NO description still has a caption and an equipped-job line, and 56 was a
+## literal: at 200% the equipped name alone drew to 68. Floored at the shipped 56.
+func _slot_row_min_h() -> float:
+	return maxf(SLOT_ROW_MIN_HEIGHT, _slot_equip_y() + _job_line_h(12) + SLOT_DESC_BOTTOM_PAD)
+
+
+func _slot_caption_y() -> float:
+	return 4.0
+
+
+func _slot_equip_y() -> float:
+	return _slot_caption_y() + _job_line_h(10) + 2.0
+
+
+func _slot_desc_y() -> float:
+	return _slot_equip_y() + _job_line_h(12) + 2.0
+
+
+## The wrapped height of a job-list description at THIS preset and THIS row width. Same
+## instrument as the slot row's: the SCALED size, and the break flags of the mode the label is
+## actually in (AUTOWRAP_WORD_SMART is MANDATORY|WORD_BOUND|ADAPTIVE; this call would otherwise
+## default to MANDATORY|WORD_BOUND and count fewer lines than the Label draws).
+func _job_desc_wrapped_h(desc: String, row_width: float) -> float:
+	var fs: int = TextScale.scaled(SLOT_DESC_FONT_SIZE)
+	var f: Font = ThemeDB.fallback_font
+	if desc == "" or f == null:
+		return _job_line_h(SLOT_DESC_FONT_SIZE)
+	return f.get_multiline_string_size(desc, HORIZONTAL_ALIGNMENT_LEFT,
+		_job_desc_avail(row_width), fs, -1,
+		TextServer.BREAK_MANDATORY | TextServer.BREAK_WORD_BOUND | TextServer.BREAK_ADAPTIVE).y
+
+
+func _job_desc_avail(row_width: float) -> float:
+	return maxf(32.0, row_width - SLOT_DESC_X - SLOT_DESC_RIGHT_PAD)
+
+
+## What a job-LIST row's four stacked lines actually need, bottom of the description included.
+func _job_row_h() -> float:
+	return _list_desc_y() + _job_line_h(SLOT_DESC_FONT_SIZE)
+
+
+## Job-LIST row baselines, same shape: name, stats, abilities, description.
+func _list_stats_y() -> float:
+	return 4.0 + _job_line_h(14) + 2.0
+
+
+func _list_abilities_y() -> float:
+	return _list_stats_y() + _job_line_h(10) + 2.0
+
+
+func _list_desc_y() -> float:
+	return _list_abilities_y() + _job_line_h(9) + 2.0
+
+
+## Stats-panel geometry. The fonts here already scaled; the PITCHES did not, so at 125% the
+## abilities list stacked on itself and "STATS" ran into the first stat row. Each pitch is the line
+## above it plus exactly the gap the literals (32 / 28 / 20 / 16) left at 100%, measured against
+## the fallback font — so a 100% render is pixel-identical and every larger preset clears.
+func _stats_first_row_y() -> float:
+	return 4.0 + _job_line_h(14) + 8.0
+
+
+func _stats_row_h() -> float:
+	return _job_line_h(12) + 11.0
+
+
+func _stats_header_pitch() -> float:
+	return _job_line_h(11) + 4.0
+
+
+func _stats_ability_pitch() -> float:
+	return _job_line_h(10) + 2.0
+
+
+## What the character panel's five labels actually need. Mirrors _create_character_panel's own
+## baselines rather than restating them as numbers — the two must not be able to disagree.
+func _character_panel_h() -> float:
+	var y: float = PANEL_PAD + _job_line_h(NAME_FONT) + PANEL_GAP
+	y += _job_line_h(JOB_FONT) + PANEL_GAP
+	if character != null and character.secondary_job_id != "":
+		y += _job_line_h(SEC_FONT) + PANEL_GAP
+	return y + _job_line_h(HP_FONT) + PANEL_PAD
 
 
 func _create_character_panel(panel_size: Vector2) -> Control:
@@ -141,8 +249,8 @@ func _create_character_panel(panel_size: Vector2) -> Control:
 	# Character name
 	var name_label = Label.new()
 	name_label.text = character.combatant_name
-	name_label.position = Vector2(8, 8)
-	name_label.add_theme_font_size_override("font_size", 16)
+	name_label.position = Vector2(PANEL_PAD, PANEL_PAD)
+	name_label.add_theme_font_size_override("font_size", TextScale.scaled(NAME_FONT))
 	name_label.add_theme_color_override("font_color", TEXT_COLOR)
 	panel.add_child(name_label)
 
@@ -153,8 +261,9 @@ func _create_character_panel(panel_size: Vector2) -> Control:
 		job_name = JobSystem.get_job_display_name(pjid) if pjid != "" else str(character.job.get("name", "Fighter"))
 	var job_label = Label.new()
 	job_label.text = job_name
-	job_label.position = Vector2(8, 28)
-	job_label.add_theme_font_size_override("font_size", 11)
+	var job_y: float = PANEL_PAD + _job_line_h(NAME_FONT) + PANEL_GAP
+	job_label.position = Vector2(PANEL_PAD, job_y)
+	job_label.add_theme_font_size_override("font_size", TextScale.scaled(JOB_FONT))
 	job_label.add_theme_color_override("font_color", PRIMARY_COLOR)
 	panel.add_child(job_label)
 
@@ -162,8 +271,8 @@ func _create_character_panel(panel_size: Vector2) -> Control:
 	if character.secondary_job_id != "":
 		var sec_label = Label.new()
 		sec_label.text = "/ %s" % JobSystem.get_job_display_name(character.secondary_job_id)
-		sec_label.position = Vector2(8, 42)
-		sec_label.add_theme_font_size_override("font_size", 10)
+		sec_label.position = Vector2(PANEL_PAD, job_y + _job_line_h(JOB_FONT) + PANEL_GAP)
+		sec_label.add_theme_font_size_override("font_size", TextScale.scaled(SEC_FONT))
 		sec_label.add_theme_color_override("font_color", SECONDARY_COLOR)
 		panel.add_child(sec_label)
 
@@ -171,15 +280,19 @@ func _create_character_panel(panel_size: Vector2) -> Control:
 	var level_label = Label.new()
 	level_label.text = "Lv %d" % character.job_level
 	level_label.position = Vector2(panel_size.x - 50, 8)
-	level_label.add_theme_font_size_override("font_size", 12)
+	level_label.add_theme_font_size_override("font_size", TextScale.scaled(LEVEL_FONT))
 	level_label.add_theme_color_override("font_color", TEXT_COLOR)
 	panel.add_child(level_label)
 
 	# HP/MP compact
 	var hp_label = Label.new()
 	hp_label.text = "HP %d/%d  MP %d/%d" % [character.current_hp, character.max_hp, character.current_mp, character.max_mp]
-	hp_label.position = Vector2(8, 62)
-	hp_label.add_theme_font_size_override("font_size", 10)
+	## Below whichever of job/secondary actually drew.
+	var hp_y: float = job_y + _job_line_h(JOB_FONT) + PANEL_GAP
+	if character.secondary_job_id != "":
+		hp_y += _job_line_h(SEC_FONT) + PANEL_GAP
+	hp_label.position = Vector2(PANEL_PAD, hp_y)
+	hp_label.add_theme_font_size_override("font_size", TextScale.scaled(HP_FONT))
 	hp_label.add_theme_color_override("font_color", TEXT_COLOR)
 	panel.add_child(hp_label)
 
@@ -202,7 +315,7 @@ func _create_jobs_panel(panel_size: Vector2) -> Control:
 	var title = Label.new()
 	title.text = "JOBS"
 	title.position = Vector2(8, 4)
-	title.add_theme_font_size_override("font_size", 14)
+	title.add_theme_font_size_override("font_size", TextScale.scaled(14))
 	title.add_theme_color_override("font_color", TEXT_COLOR)
 	panel.add_child(title)
 
@@ -212,13 +325,13 @@ func _create_jobs_panel(panel_size: Vector2) -> Control:
 	# Job slots. A row is as tall as its own wrapped description needs, so `y` ACCUMULATES instead
 	# of multiplying a fixed pitch — with a fixed pitch a two-line description draws over the slot
 	# underneath it. The panel has the room: it is viewport.y - 200 tall for two slots.
-	var y_offset = 32
+	var y_offset: float = _stats_first_row_y()  # under the scaled JOBS title, same 14/8 shape
 	var row_width: float = panel_size.x - 8
 	var y: float = y_offset
 
 	for i in range(SLOTS.size()):
 		var slot_row = _create_slot_row(i, row_width)
-		var row_h: float = float(slot_row.get_meta("row_height", SLOT_ROW_MIN_HEIGHT))
+		var row_h: float = float(slot_row.get_meta("row_height", _slot_row_min_h()))
 		slot_row.position = Vector2(4, y)
 		slot_row.size = Vector2(row_width, row_h)
 		panel.add_child(slot_row)
@@ -246,7 +359,7 @@ func _create_slot_row(slot_index: int, row_width: float) -> Control:
 	var cursor = Label.new()
 	cursor.text = ">" if is_selected else " "
 	cursor.position = Vector2(4, 14)
-	cursor.add_theme_font_size_override("font_size", 14)
+	cursor.add_theme_font_size_override("font_size", TextScale.scaled(14))
 	cursor.add_theme_color_override("font_color", Color.YELLOW)
 	cursor.name = "Cursor"
 	row.add_child(cursor)
@@ -254,8 +367,8 @@ func _create_slot_row(slot_index: int, row_width: float) -> Control:
 	# Slot label
 	var slot_label = Label.new()
 	slot_label.text = SLOTS[slot_index]
-	slot_label.position = Vector2(24, 4)
-	slot_label.add_theme_font_size_override("font_size", 10)
+	slot_label.position = Vector2(24, _slot_caption_y())
+	slot_label.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	slot_label.add_theme_color_override("font_color", SUBTITLE_COLOR)
 	row.add_child(slot_label)
 
@@ -264,8 +377,8 @@ func _create_slot_row(slot_index: int, row_width: float) -> Control:
 	var slot_color = PRIMARY_COLOR if slot_index == 0 else SECONDARY_COLOR
 	var equip_label = Label.new()
 	equip_label.text = job_name
-	equip_label.position = Vector2(24, 18)
-	equip_label.add_theme_font_size_override("font_size", 12)
+	equip_label.position = Vector2(24, _slot_equip_y())
+	equip_label.add_theme_font_size_override("font_size", TextScale.scaled(12))
 	equip_label.add_theme_color_override("font_color", slot_color if job_name != "(none)" else EMPTY_SLOT_COLOR)
 	row.add_child(equip_label)
 
@@ -284,22 +397,37 @@ func _create_slot_row(slot_index: int, row_width: float) -> Control:
 	## can no longer get under. (For a label that does NOT wrap the rule is the opposite way round,
 	## which is why this one spells it out.)
 	var desc = _get_current_job_desc(slot_index)
-	var row_height: float = SLOT_ROW_MIN_HEIGHT
+	var row_height: float = _slot_row_min_h()
 	if desc != "":
 		var desc_label = Label.new()
 		desc_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		desc_label.text = desc
-		desc_label.add_theme_font_size_override("font_size", SLOT_DESC_FONT_SIZE)
+		## ⛔ THIS OVERRIDE WAS RAW while the reservation below measured at the SCALED size, and
+		## the comment below asserted it was scaled. Two expressions for one quantity, disagreeing:
+		## at 80% the measurement shrank and the label did not, so the text drew 60px into a 56px row;
+		## at 200% the Text Size setting never reached the description at all. I banked "a regex-driven
+		## font scale cannot see a size used anywhere other than where it is set" after scaling the
+		## sites and leaving a measurement raw. This is the same defect with the sides swapped.
+		desc_label.add_theme_font_size_override("font_size", TextScale.scaled(SLOT_DESC_FONT_SIZE))
 		var avail: float = maxf(32.0, row_width - SLOT_DESC_X - SLOT_DESC_RIGHT_PAD)
 		## A width-limited query is the RIGHT instrument here precisely because the label wraps:
 		## it answers "how tall is this text at that width", which is what the row must reserve.
+		## ⚠️ TWO THINGS MUST MATCH THE NODE, not the authored constant:
+		## 1. the SCALED size — the override above is scaled, so measuring at the raw size reserves
+		##    for a font nobody is drawing. Two expressions for one quantity.
+		## 2. the BREAK FLAGS of the mode the label is actually in. AUTOWRAP_WORD_SMART is
+		##    MANDATORY|WORD_BOUND|ADAPTIVE; this call defaults to MANDATORY|WORD_BOUND, so a word
+		##    too long for the row would be left unbroken by the measurement and broken by the
+		##    Label — fewer lines counted than drawn, and the row under-reserves. (@cowir-autogrind
+		##    measured the mirror of this: GRAPHEME_BOUND counting MORE lines than drawn.)
 		var wrapped_h: float = desc_label.get_theme_font("font").get_multiline_string_size(
-			desc, HORIZONTAL_ALIGNMENT_LEFT, avail, SLOT_DESC_FONT_SIZE).y
-		desc_label.position = Vector2(SLOT_DESC_X, SLOT_DESC_Y)
+			desc, HORIZONTAL_ALIGNMENT_LEFT, avail, TextScale.scaled(SLOT_DESC_FONT_SIZE), -1,
+			TextServer.BREAK_MANDATORY | TextServer.BREAK_WORD_BOUND | TextServer.BREAK_ADAPTIVE).y
+		desc_label.position = Vector2(SLOT_DESC_X, _slot_desc_y())
 		desc_label.size = Vector2(avail, wrapped_h)
 		desc_label.add_theme_color_override("font_color", SUBTITLE_COLOR)
 		row.add_child(desc_label)
-		row_height = maxf(SLOT_ROW_MIN_HEIGHT, SLOT_DESC_Y + wrapped_h + SLOT_DESC_BOTTOM_PAD)
+		row_height = maxf(_slot_row_min_h(), _slot_desc_y() + wrapped_h + SLOT_DESC_BOTTOM_PAD)
 	row.set_meta("row_height", row_height)
 
 	# Mouse click overlay
@@ -359,7 +487,7 @@ func _create_stats_panel(panel_size: Vector2) -> Control:
 	var title = Label.new()
 	title.text = "STATS"
 	title.position = Vector2(8, 4)
-	title.add_theme_font_size_override("font_size", 14)
+	title.add_theme_font_size_override("font_size", TextScale.scaled(14))
 	title.add_theme_color_override("font_color", TEXT_COLOR)
 	panel.add_child(title)
 
@@ -378,9 +506,11 @@ func _create_stats_panel(panel_size: Vector2) -> Control:
 		["MP", character.max_mp]
 	]
 
-	var y_offset = 32
-	var col_width = 100
-	var row_height = 28
+	var y_offset: float = _stats_first_row_y()
+	var row_height: float = _stats_row_h()
+	## The two stat columns: wide enough for the widest cell at THIS preset, never narrower than
+	## the 100 the literal reserved. 'MDF: 100' at 200% is wider than 100px and ran into column 2.
+	var col_width: float = maxf(100.0, _stats_col_width(stats) + 16.0)
 
 	for i in range(stats.size()):
 		var stat = stats[i]
@@ -390,21 +520,21 @@ func _create_stats_panel(panel_size: Vector2) -> Control:
 		var stat_label = Label.new()
 		stat_label.text = "%s: %d" % [stat[0], stat[1]]
 		stat_label.position = Vector2(16 + col * col_width, y_offset + row_idx * row_height)
-		stat_label.add_theme_font_size_override("font_size", 12)
+		stat_label.add_theme_font_size_override("font_size", TextScale.scaled(12))
 		stat_label.add_theme_color_override("font_color", TEXT_COLOR)
 		panel.add_child(stat_label)
 
 	# Abilities from current job. Row count follows the stat list so an added stat cannot land on this header.
 	var stat_rows := int((stats.size() + 1) / 2)
-	var abilities_y = y_offset + stat_rows * row_height + 16
+	var abilities_y: float = y_offset + float(stat_rows) * row_height + 16.0
 	var abilities_title = Label.new()
 	abilities_title.text = "Job Abilities:"
 	abilities_title.position = Vector2(8, abilities_y)
-	abilities_title.add_theme_font_size_override("font_size", 11)
+	abilities_title.add_theme_font_size_override("font_size", TextScale.scaled(11))
 	abilities_title.add_theme_color_override("font_color", DISABLED_COLOR)
 	panel.add_child(abilities_title)
 
-	abilities_y += 20
+	abilities_y += _stats_header_pitch()
 	if character.job and character.job.has("abilities"):
 		for ability_id in character.job["abilities"]:
 			var ability = JobSystem.get_ability(ability_id)
@@ -415,12 +545,28 @@ func _create_stats_panel(panel_size: Vector2) -> Control:
 			var ability_label = Label.new()
 			ability_label.text = ability.get("name", ability_id.replace("_", " ").capitalize())
 			ability_label.position = Vector2(34, abilities_y)
-			ability_label.add_theme_font_size_override("font_size", 10)
+			ability_label.add_theme_font_size_override("font_size", TextScale.scaled(10))
 			ability_label.add_theme_color_override("font_color", TEXT_COLOR)
 			panel.add_child(ability_label)
-			abilities_y += 16
+			abilities_y += _stats_ability_pitch()
 
 	return panel
+
+
+## The widest "ATK: 10"-shaped cell, measured with the font that will draw it rather than by
+## len() — len() is a proxy for width and it is the selector that missed five short cells at 125%
+## in a neighbouring menu today.
+func _stats_col_width(stats: Array) -> float:
+	var fs: int = TextScale.scaled(12)
+	var f: Font = ThemeDB.fallback_font
+	if f == null:
+		return 0.0
+	var widest := 0.0
+	for stat in stats:
+		var w: float = f.get_string_size("%s: %d" % [stat[0], stat[1]],
+			HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+		widest = maxf(widest, w)
+	return widest
 
 
 func _create_job_list_panel(panel_size: Vector2) -> Control:
@@ -440,7 +586,7 @@ func _create_job_list_panel(panel_size: Vector2) -> Control:
 	var title = Label.new()
 	title.text = "SELECT %s" % slot_name
 	title.position = Vector2(8, 4)
-	title.add_theme_font_size_override("font_size", 14)
+	title.add_theme_font_size_override("font_size", TextScale.scaled(14))
 	title.add_theme_color_override("font_color", Color.YELLOW)
 	panel.add_child(title)
 
@@ -450,15 +596,32 @@ func _create_job_list_panel(panel_size: Vector2) -> Control:
 	if available_jobs.is_empty():
 		var empty_label = Label.new()
 		empty_label.text = "No jobs available"
-		empty_label.position = Vector2(16, 32)
-		empty_label.add_theme_font_size_override("font_size", 12)
+		empty_label.position = Vector2(16, _stats_first_row_y())
+		empty_label.add_theme_font_size_override("font_size", TextScale.scaled(12))
 		empty_label.add_theme_color_override("font_color", DISABLED_COLOR)
 		panel.add_child(empty_label)
 		return panel
 
-	var y_offset = 32
-	var item_height = 70
-	var max_visible = int((panel_size.y - 50) / item_height)
+	## ⛔ `item_height` WAS A LITERAL 70 WITH THE ROW 66 TALL, while the row's own description
+	## baseline plus its line height reaches 70 at 100% and 129 at 200%. So every job row drew its
+	## description out through its own bottom edge AT THE SHIPPED DEFAULT, and from 125% into the
+	## next row's job NAME. Eight of eight rows, every preset.
+	##
+	## The row now absorbs the 4px that used to sit between rows, because the description was
+	## already drawing there: at 100% the PITCH and the visible row count are unchanged (70px, 8
+	## rows) and the only difference is that the highlight covers the text it belongs to.
+	var y_offset: float = _stats_first_row_y()  # under the scaled SELECT <SLOT> title
+	var row_width: float = panel_size.x - 8
+	## The pitch is set by the TALLEST description in the list, not by the first one. A uniform
+	## pitch sized from one row is the render-samples-one-row-of-the-catalog error with the grid
+	## doing the sampling: cleric's description wraps to more lines than fighter's at every preset.
+	var tallest := 0.0
+	for jid in available_jobs:
+		var jd = JobSystem.get_job(str(jid))
+		var d: String = str(jd.get("description", "")) if jd is Dictionary else ""
+		tallest = maxf(tallest, _job_desc_wrapped_h(d, row_width))
+	var item_height: float = maxf(70.0, _list_desc_y() + tallest + 4.0)
+	var max_visible = int((panel_size.y - y_offset - 8.0) / item_height)
 
 	# Handle scroll offset
 	_job_scroll = MenuScroll.window_offset(selected_job_index, max_visible, available_jobs.size(), _job_scroll)
@@ -467,9 +630,9 @@ func _create_job_list_panel(panel_size: Vector2) -> Control:
 	for i in range(min(available_jobs.size() - scroll_offset, max_visible)):
 		var job_idx = i + scroll_offset
 		var job_id = available_jobs[job_idx]
-		var job_row = _create_job_row(job_id, job_idx)
-		job_row.position = Vector2(4, y_offset + i * item_height)
-		job_row.size = Vector2(panel_size.x - 8, item_height - 4)
+		var job_row = _create_job_row(job_id, job_idx, row_width)
+		job_row.position = Vector2(4, y_offset + float(i) * item_height)
+		job_row.size = Vector2(panel_size.x - 8, item_height)
 		panel.add_child(job_row)
 		_job_labels.append(job_row)
 
@@ -511,7 +674,7 @@ func _get_available_jobs() -> Array:
 	return jobs_list
 
 
-func _create_job_row(job_id: String, index: int) -> Control:
+func _create_job_row(job_id: String, index: int, row_width: float = 0.0) -> Control:
 	"""Create a job selection row"""
 	var row = Control.new()
 	var is_none = job_id == "__none__"
@@ -529,7 +692,7 @@ func _create_job_row(job_id: String, index: int) -> Control:
 	var cursor = Label.new()
 	cursor.text = ">" if is_selected else " "
 	cursor.position = Vector2(4, 16)
-	cursor.add_theme_font_size_override("font_size", 14)
+	cursor.add_theme_font_size_override("font_size", TextScale.scaled(14))
 	cursor.add_theme_color_override("font_color", Color.YELLOW)
 	cursor.name = "Cursor"
 	row.add_child(cursor)
@@ -539,13 +702,13 @@ func _create_job_row(job_id: String, index: int) -> Control:
 		var none_label = Label.new()
 		none_label.text = "(None)"
 		none_label.position = Vector2(24, 4)
-		none_label.add_theme_font_size_override("font_size", 12)
+		none_label.add_theme_font_size_override("font_size", TextScale.scaled(12))
 		none_label.add_theme_color_override("font_color", SUBTITLE_COLOR)
 		row.add_child(none_label)
 		var none_desc = Label.new()
 		none_desc.text = "Remove secondary job"
-		none_desc.position = Vector2(24, 22)
-		none_desc.add_theme_font_size_override("font_size", 9)
+		none_desc.position = Vector2(24, _list_stats_y())
+		none_desc.add_theme_font_size_override("font_size", TextScale.scaled(9))
 		## ⛔ WAS AN INLINE `Color(0.5, 0.5, 0.6)` — 2.17:1 on SELECTED_COLOR. Same defect as the
 		## one fixed across three menus in .687, and these two survived it because they are a
 		## LITERAL rather than DISABLED_COLOR, so the sweep that found the others could not see
@@ -574,7 +737,7 @@ func _create_job_row(job_id: String, index: int) -> Control:
 	var name_label = Label.new()
 	name_label.text = JobSystem.get_job_display_name(job_id) + type_tag
 	name_label.position = Vector2(24, 4)
-	name_label.add_theme_font_size_override("font_size", 12)
+	name_label.add_theme_font_size_override("font_size", TextScale.scaled(12))
 	name_label.add_theme_color_override("font_color", tag_color)
 	row.add_child(name_label)
 
@@ -584,8 +747,8 @@ func _create_job_row(job_id: String, index: int) -> Control:
 		if stat_text != "":
 			var stats_label = Label.new()
 			stats_label.text = stat_text
-			stats_label.position = Vector2(24, 20)
-			stats_label.add_theme_font_size_override("font_size", 10)
+			stats_label.position = Vector2(24, _list_stats_y())
+			stats_label.add_theme_font_size_override("font_size", TextScale.scaled(10))
 			stats_label.add_theme_color_override("font_color", TEXT_COLOR)
 			row.add_child(stats_label)
 
@@ -601,18 +764,30 @@ func _create_job_row(job_id: String, index: int) -> Control:
 	if abilities_text != "":
 		var abilities_label = Label.new()
 		abilities_label.text = abilities_text
-		abilities_label.position = Vector2(24, 36)
-		abilities_label.add_theme_font_size_override("font_size", 9)
+		abilities_label.position = Vector2(24, _list_abilities_y())
+		abilities_label.add_theme_font_size_override("font_size", TextScale.scaled(9))
 		abilities_label.add_theme_color_override("font_color", SUBTITLE_COLOR)
 		row.add_child(abilities_label)
 
 	# Description
 	var desc = job_data.get("description", "")
 	if desc != "":
+		## ⛔ THIS LABEL HAD NO WIDTH, NO `clip_text` AND NO `autowrap_mode`, exactly like the
+		## slot row's description before .683 — so it drew at its full CONTENT width: 534px at
+		## 100%, 830px at 150% and 1067px at 200%, inside an 800px row. This is the screen you
+		## read to choose a job, so the tail cannot be clipped; it wraps and the row grows.
+		##
+		## 🔑 ORDER IS LOAD-BEARING: `size` is clamped UP to the minimum as it stands when you
+		## assign it, so autowrap_mode, text and the font-size OVERRIDE are all set before `size`,
+		## and `size` before `add_child` — a wrapping Label that enters the tree at width 0 wraps
+		## one character per line and caches a minimum the assignment can no longer get under.
 		var desc_label = Label.new()
+		desc_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		desc_label.text = desc
-		desc_label.position = Vector2(24, 50)
-		desc_label.add_theme_font_size_override("font_size", 9)
+		desc_label.add_theme_font_size_override("font_size", TextScale.scaled(SLOT_DESC_FONT_SIZE))
+		var desc_w: float = _job_desc_avail(row_width if row_width > 0.0 else 800.0)
+		desc_label.position = Vector2(SLOT_DESC_X, _list_desc_y())
+		desc_label.size = Vector2(desc_w, _job_desc_wrapped_h(desc, row_width))
 		desc_label.add_theme_color_override("font_color", SUBTITLE_COLOR)
 		row.add_child(desc_label)
 
