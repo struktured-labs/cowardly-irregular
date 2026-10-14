@@ -643,13 +643,13 @@ func set_command_menu_visible(visible: bool) -> void:
 	"""Public method to show/hide the command menu (called by GameLoop for autobattle editor)"""
 	if visible:
 		if active_win98_menu and is_instance_valid(active_win98_menu):
-			print("[MENU-HIDE] t=%dms visible=%s (called from set_command_menu_visible)" % [Time.get_ticks_msec(), visible])
+			BattleCommandMenu.trace_menu("[MENU-HIDE] t=%dms visible=%s (called from set_command_menu_visible)" % [Time.get_ticks_msec(), visible])
 			active_win98_menu.set_chain_visible(true)
 			active_win98_menu.grab_focus()
 		return
 	# Submenus are SIBLINGS of the root; hiding only the root left a live-battle ability list taking confirm.
 	if active_win98_menu and is_instance_valid(active_win98_menu):
-		print("[MENU-HIDE] t=%dms visible=%s (called from set_command_menu_visible)" % [Time.get_ticks_msec(), visible])
+		BattleCommandMenu.trace_menu("[MENU-HIDE] t=%dms visible=%s (called from set_command_menu_visible)" % [Time.get_ticks_msec(), visible])
 		var sub = active_win98_menu.submenu
 		if sub and is_instance_valid(sub):
 			sub.force_close()
@@ -3514,7 +3514,7 @@ func _on_battle_ended(victory: bool) -> void:
 
 	# Clean up any open menus
 	if active_win98_menu and is_instance_valid(active_win98_menu):
-		print("[MENU-NULL] t=%dms path=battle_ended_cleanup" % Time.get_ticks_msec())
+		BattleCommandMenu.trace_menu("[MENU-NULL] t=%dms path=battle_ended_cleanup" % Time.get_ticks_msec())
 		active_win98_menu.queue_free()
 		active_win98_menu = null
 	## The header is only rewritten during selection/execution, so "Round 1 - SELECT: Fighter (AP: +1)" sat over VICTORY.
@@ -3949,7 +3949,7 @@ func _restart_battle() -> void:
 
 	# Clean up any stray menus
 	if active_win98_menu and is_instance_valid(active_win98_menu):
-		print("[MENU-NULL] t=%dms path=restart_battle_cleanup" % Time.get_ticks_msec())
+		BattleCommandMenu.trace_menu("[MENU-NULL] t=%dms path=restart_battle_cleanup" % Time.get_ticks_msec())
 		active_win98_menu.queue_free()
 		active_win98_menu = null
 

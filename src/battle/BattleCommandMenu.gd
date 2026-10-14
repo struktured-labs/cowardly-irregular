@@ -40,6 +40,51 @@ func get_alive_enemies() -> Array[Combatant]:
 	return _cached_alive_enemies
 
 
+## ⛔ THE msg 2503 TRACE, GATED — IT HAD NO READER FOR THREE MONTHS AND WAS STILL FIRING ON THE
+## HEALTHY PATH. These lines pinned the menu lifecycle for struktured's "two win98 menus at once"
+## report; the diagnostics landed in ba65bb692 (2026-07-12) and the ROOT FIX in b2f2d0283 the next
+## day (cowir-main confirmed the investigation closed). Measured in his 2026-10-13 session:
+##
+##   menu_closed_signal 29 · close_win98_menu 22 · defer_requested 12 · actions_submitted 5
+##   go_back_requested 2          = 70 of 1101 lines, 6.4% of the log
+##   paired ~1ms apart with closing == active, i.e. an ordinary close
+##
+## A trace that fires on health cannot report illness, and `print` reaches user://logs whatever the
+## file-logging setting says — so five lanes mining his logs for a real menu null sift this first. I
+## cleared 12 of them myself earlier today as "the sweep working". There is precedent in this very
+## file: _stray_menus' own note says logging a closing menu as a leak "hid real leaks (977 lines in
+## his sessions)". This is that again, one layer out.
+##
+## GATED, NOT DELETED (cowir-main): flip the overlay on and a recurrence is traceable on demand.
+## The flag is read HERE rather than copied to nine call sites, so a tenth cannot arrive ungated.
+## `debug_log_enabled` is the right flag and NOT `debug_mode` — a lifecycle trace is logging, and
+## after the flag split that is exactly what debug_log_enabled owns (cowir-overworld, cowir-main).
+## ⚠️ The stray_sweep line is deliberately NOT routed through here: it is the only signal that the
+## self-heal actually fired, so it stays unconditional.
+## ⚠️ RETURNS WHETHER IT LOGGED, and the return is the only thing that can catch this body losing
+## its guard. With a `-> void` signature, deleting the `if` below leaves the predicate arm green (the
+## predicate is still right), the routing arm green (the nine sites still call this) and the reached
+## arm green — five arms, all green, trace firing again. Callers ignore the value; the guard asserts
+## it. @cowir-sfx's quota arm was green on their own variant defect for the same reason: it drove
+## something adjacent to the thing that broke.
+static func trace_menu(message: String) -> bool:
+	if not tracing_menu_lifecycle():
+		return false
+	print(message)
+	return true
+
+
+## The gate's DECISION, split out so it is observable. A `print` is not visible to a unit test, so a
+## guard over trace_menu alone could only pin spelling; this makes "does the trace fire" a value an
+## arm can assert, with the flag as its only input.
+static func tracing_menu_lifecycle() -> bool:
+	var tree := Engine.get_main_loop() as SceneTree
+	if tree == null or tree.root == null:
+		return false
+	var gs = tree.root.get_node_or_null("GameState")
+	return gs != null and "debug_log_enabled" in gs and bool(gs.debug_log_enabled)
+
+
 ## Structural invariant: at most ONE menu chain exists per selecting character — sweep any stray
 ## chain a leak path left behind (struktured's 2026-08-14 cap: bouncing between players stacked
 ## three menus + an orphaned tooltip) so every future leak self-heals at the next menu spawn.
@@ -1372,7 +1417,7 @@ func _clear_aura() -> void:
 
 func _on_win98_menu_closed(closing_menu: Node = null) -> void:
 	"""Handle Win98 menu being closed. Identity guard (msg 2529): the bound closing_menu is the specific instance that emitted menu_closed. Only null active_win98_menu if it still references THIS closing menu — otherwise the next PC's menu already spawned and we'd orphan it. The bind() at the connect site passes the menu instance in; a plain connect() would fall back to closing_menu=null and skip the guard (safe default preserving pre-fix behavior for any future emit path that doesn't go through the standard connect)."""
-	print("[MENU-NULL] t=%dms path=menu_closed_signal closing=%s active=%s" % [Time.get_ticks_msec(), _instance_id(closing_menu), _instance_id(_scene.active_win98_menu)])
+	trace_menu("[MENU-NULL] t=%dms path=menu_closed_signal closing=%s active=%s" % [Time.get_ticks_msec(), _instance_id(closing_menu), _instance_id(_scene.active_win98_menu)])
 	if closing_menu != null and _scene.active_win98_menu != null and _scene.active_win98_menu != closing_menu:
 		# The closing menu is stale — a later menu is already active. Don't null the active ref or the watchdog force-spawns a duplicate.
 		return
@@ -1392,7 +1437,7 @@ func _instance_id(n: Object) -> String:
 func _on_win98_actions_submitted(actions: Array) -> void:
 	"""Handle multiple actions submitted via Advance mode (Brave)"""
 	_clear_aura()
-	print("[MENU-NULL] t=%dms path=actions_submitted count=%d" % [Time.get_ticks_msec(), actions.size()])
+	trace_menu("[MENU-NULL] t=%dms path=actions_submitted count=%d" % [Time.get_ticks_msec(), actions.size()])
 	_scene.active_win98_menu = null
 	var current = BattleManager.current_combatant
 	if not current:
@@ -1507,7 +1552,7 @@ func _on_win98_actions_submitted(actions: Array) -> void:
 func _on_win98_defer_requested() -> void:
 	"""Handle L button defer request (no queue)"""
 	_clear_aura()
-	print("[MENU-NULL] t=%dms path=defer_requested" % Time.get_ticks_msec())
+	trace_menu("[MENU-NULL] t=%dms path=defer_requested" % Time.get_ticks_msec())
 	var current = BattleManager.current_combatant
 	if not current:
 		return
@@ -1530,7 +1575,7 @@ func _on_win98_go_back_requested() -> void:
 	"""Handle B button request to go back to previous player"""
 	_clear_aura()
 	if _scene.active_win98_menu and is_instance_valid(_scene.active_win98_menu):
-		print("[MENU-NULL] t=%dms path=go_back_requested" % Time.get_ticks_msec())
+		trace_menu("[MENU-NULL] t=%dms path=go_back_requested" % Time.get_ticks_msec())
 		_scene.active_win98_menu.force_close()
 		_scene.active_win98_menu = null
 	BattleManager.go_back_to_previous_player()
@@ -1771,7 +1816,7 @@ func _create_element_badge(element: String, is_weakness: bool) -> PanelContainer
 func close_win98_menu() -> void:
 	"""Close the active Win98 menu"""
 	if _scene.active_win98_menu and is_instance_valid(_scene.active_win98_menu):
-		print("[MENU-NULL] t=%dms path=close_win98_menu" % Time.get_ticks_msec())
+		trace_menu("[MENU-NULL] t=%dms path=close_win98_menu" % Time.get_ticks_msec())
 		_scene.active_win98_menu.force_close()
 		_scene.active_win98_menu = null
 
