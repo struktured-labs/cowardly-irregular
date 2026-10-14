@@ -2240,6 +2240,13 @@ func _resolve_item(user, item_id: String, target) -> void:
 				ItemSystem.take_party_item(user, bag, item_id)
 				_log("%s uses %s on %s" % [user.combatant_name, item_id, corpse.combatant_name])
 		return
+	## THE LIVENESS CHECK MOVES ABOVE THE SPEND. The revive branch above was fixed for exactly this
+	## defect -- its own comment records it: "A revive used to be taken here and then thrown away,
+	## because the next guard returned on every dead target." The GENERAL path kept it: a potion
+	## aimed at a member who died earlier in the same round was CONSUMED and healed nobody.
+	## _grind_item_revives is false for a potion, so a corpse reaches here, not the branch above.
+	if target == null or not is_instance_valid(target) or not target.is_alive:
+		return
 	ItemSystem.take_party_item(user, bag, item_id)
 
 	## Tick 394: route through ItemSystem.use_item so autogrind item
@@ -2254,8 +2261,6 @@ func _resolve_item(user, item_id: String, target) -> void:
 	##   - power_drink / speed_tonic silently healed 50 instead of
 	##     applying their buff
 	## All silently corrupted autogrind reward / tier calculations.
-	if target == null or not target.is_alive:
-		return
 	var its = _get_autoload("ItemSystem")
 	if its != null and its.has_method("use_item"):
 		var typed_targets: Array[Combatant] = [target]
