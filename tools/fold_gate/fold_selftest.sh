@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # fold_selftest.sh — prove fold.sh's four refusal/accept arms on a throwaway worktree. Pushes nothing.
 #
-# Arms: a tip whose origin ref moved is skipped · a missing branch is skipped · an undeclared file
+# Arms: an unpushed sha is skipped · an older READYed commit on the branch is folded (not the tip) · a missing branch is skipped · an undeclared file
 # deletion is skipped · the same deletion, declared in FOLD_ALLOW_DELETE, merges. Probe tips are
 # LOCAL refs under refs/remotes/origin/lane/zz-selftest-*, removed on exit with the worktree.
 # Exit 0 = all four arms behaved; 1 = an arm did not.
@@ -17,7 +17,8 @@ cd "$WT"
 VICTIM="$(git ls-files 'test/unit/test_*.gd' | head -1)"
 git rm -q "$VICTIM" && git commit -qm "selftest: delete one file" || exit 1
 DEL="$(git rev-parse HEAD)"
-git update-ref "$REF" "$DEL"
+git commit -q --allow-empty -m "selftest: a later commit on the same branch"
+git update-ref "$REF" "$(git rev-parse HEAD)"
 git checkout -q --detach origin/main
 
 FAILS=0
@@ -30,9 +31,10 @@ run() {  # $1 label, $2 expected EC, $3 expected line pattern, rest = env + fold
     echo "FAIL $label (ec=$ec, wanted $want_ec and /$pat/)"; printf '%s\n' "$out" | sed 's/^/     /'; FAILS=1; fi
 }
 F="$REPO/tools/fold_gate/fold.sh"
-run "moved tip is skipped"           1 "SKIP zz-selftest-del: origin is"      FOLD_REPO="$WT" FOLD_ALLOW_DELETE= "$F" 997 zz-selftest-del:deadbeef0
+run "unpushed sha is skipped"        1 "is not on origin/lane/zz-selftest-del"      FOLD_REPO="$WT" FOLD_ALLOW_DELETE= "$F" 997 zz-selftest-del:deadbeef0
 run "missing branch is skipped"      1 "SKIP zz-no-such-branch: no origin"    FOLD_REPO="$WT" FOLD_ALLOW_DELETE= "$F" 997 zz-no-such-branch:abc123456
 run "undeclared deletion is skipped" 1 "undeclared deletion(s): $VICTIM"      FOLD_REPO="$WT" FOLD_ALLOW_DELETE= "$F" 997 "zz-selftest-del:${DEL:0:9}"
+run "an older READYed commit is folded, not the tip" 0 "folding the READYed ${DEL:0:9}"   FOLD_REPO="$WT" FOLD_ALLOW_DELETE="$VICTIM" "$F" 997 "zz-selftest-del:${DEL:0:9}"
 run "declared deletion merges"       0 "MERGED zz-selftest-del"               FOLD_REPO="$WT" FOLD_ALLOW_DELETE="$VICTIM" "$F" 997 "zz-selftest-del:${DEL:0:9}"
 rm -f "$WT"/tmp/chain997.sh tmp/gate997.sh tmp/rungate997.sh tmp/wedgewatch997.sh
 exit "$FAILS"

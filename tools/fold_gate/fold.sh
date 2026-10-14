@@ -4,8 +4,8 @@
 #   tools/fold_gate/fold.sh NNN branch:sha [branch:sha ...]     (branch without the lane/ prefix)
 #   FOLD_ALLOW_DELETE="path1 path2" declares deletions a READY said were intentional.
 #
-# Each tip is merged only if origin/lane/<branch> IS the announced sha (a moved tip is not what was
-# READYed), and its three-dot diff deletes nothing undeclared (a stale tree reverts a release that
+# Each tip is merged only if the announced sha is ON origin/lane/<branch> (the READYed commit is merged
+# even when the branch has moved on since), and its three-dot diff deletes nothing undeclared (a stale tree reverts a release that
 # way, .681). A conflicting merge is aborted and reported, never committed. Exit 0 = every tip merged;
 # 1 = some tip was skipped (the fold still exists, built from the rest, so read the report); 2 = usage.
 set -uo pipefail
@@ -29,7 +29,13 @@ for pair in "$@"; do
   b="${pair%%:*}"; want="${pair##*:}"
   have="$(git rev-parse --verify -q "origin/lane/$b" || true)"
   if [ -z "$have" ]; then echo "SKIP $b: no origin/lane/$b"; SKIPPED=1; continue; fi
-  case "$have" in "$want"*) ;; *) echo "SKIP $b: origin is ${have:0:9}, READY named $want (a moved tip is not what was READYed)"; SKIPPED=1; continue ;; esac
+  ## The READYed commit must be ON the origin branch; it, not a later tip, is what gets merged.
+  sha="$(git rev-parse --verify -q "${want}^{commit}" || true)"
+  if [ -z "$sha" ] || ! git merge-base --is-ancestor "$sha" "$have"; then
+    echo "SKIP $b: $want is not on origin/lane/$b (tip ${have:0:9}) — a READY must name a pushed commit"; SKIPPED=1; continue
+  fi
+  [ "$sha" = "$have" ] || echo "NOTE $b: folding the READYed ${sha:0:9}, not the newer tip ${have:0:9}"
+  have="$sha"
   dels="$(git diff --name-status origin/main..."$have" | sed -n 's/^D\t//p')"
   bad=""
   for d in $dels; do case " ${FOLD_ALLOW_DELETE:-} " in *" $d "*) ;; *) bad="$bad $d" ;; esac; done
