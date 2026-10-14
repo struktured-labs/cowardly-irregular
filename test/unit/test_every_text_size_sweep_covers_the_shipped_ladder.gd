@@ -157,7 +157,17 @@ func test_every_text_size_sweep_covers_every_shipped_preset() -> void:
 		if file_name == SELF:
 			continue
 		files_seen += 1
-		var src: String = FileAccess.get_file_as_string("%s/%s" % [UNIT_DIR, file_name])
+		## ⚠ COMMENT-STRIPPED, via the house tool 202 guards already use. A selector that reads RAW
+		## source can be captured by ANYONE'S prose: a comment writing `text_size_scale =` admits a
+		## file that never sweeps — and a comment documenting this very hazard would write exactly
+		## that, which is how a sibling lane captured their own anchor tonight.
+		##
+		## Measured on this tree before the change: 45 files admitted by a code occurrence, 3 by
+		## both, and 0 by a comment ALONE — so this is structural hardening, not a live repair. The
+		## blast radius was bounded anyway: a bare `contains` can only be fooled into a false
+		## PRESENCE, so a wrongly-admitted file with no declared ladder is a benign skip, and only
+		## one that ALSO carries a non-covering in-range float array could have reddened.
+		var src: String = GdSource.code_of("%s/%s" % [UNIT_DIR, file_name])
 		if src == "" or not src.contains("text_size_scale ="):
 			continue
 		sweeps_seen += 1
@@ -233,6 +243,25 @@ func test_the_detector_reads_a_declared_ladder() -> void:
 
 	var local := "\tvar presets := [0.8, 1.0, 1.25, 1.5, 2.0]\n"
 	assert_eq(_ladders(local, 0.8, 2.0).size(), 1, "a function-local ladder must parse too")
+
+
+## ⛔ THE ARM THAT MAKES THE STRIP LOAD-BEARING. Without a fixture only this clause rejects, the
+## comment-stripping is an untested clause — the shape that reddened nothing when I cut the float
+## filter earlier. A marker inside a comment must not reach the selector.
+func test_a_commented_marker_does_not_admit_a_file() -> void:
+	var prose := "## a sweep sets text_size_scale = 2.0 and measures the result
+	pass
+"
+	assert_false(GdSource.strip_comments(prose).contains("text_size_scale ="),
+		"a marker that exists only in a COMMENT must not survive the strip, or any lane's prose "
+		+ "can admit a file to this corpus")
+	## And the other direction, or the strip could be eating everything and the arm above would
+	## pass for the wrong reason.
+	var code := "	GameState.text_size_scale = s
+"
+	assert_true(GdSource.strip_comments(code).contains("text_size_scale ="),
+		"a real assignment must SURVIVE the strip — a strip that eats code would empty the corpus "
+		+ "and make every verdict vacuous")
 
 
 func test_the_detector_rejects_what_is_not_a_ladder() -> void:
