@@ -304,9 +304,16 @@ func _trigger_transition(_player: Node2D) -> void:
 	# Note: Don't call SceneTransition/MapSystem directly - GameLoop handles it
 
 
-## Called by player interaction system
+## ⛔ THE PROBE ONLY REACHES THIS WHEN THE PLAYER IS **OUTSIDE** THE ZONE, so requiring
+## `_player_in_zone` made it a no-op in the one case it can be called in: `_input` runs before
+## `_unhandled_input` and calls set_input_as_handled(), so an overlapping press never reaches the
+## probe, and a non-overlapping one reached it, printed "Found: <door>", and was silently dropped.
+## struktured's 2026-10-13 log, pressing at (272, 1636.4) -- 20 px under VillageEntrance's box:
+## "Found: VillageEntrance" with no Triggering line. The dead band is the probe's whole reach.
+## No sibling veto here: the probe already picked the nearest layer-4 hit, and with no overlap
+## `_a_nearer_transition_has` can only ever return false.
 func interact(player: Node2D) -> void:
-	if require_interaction and _player_in_zone:
+	if require_interaction:
 		_trigger_transition(player)
 
 ## True when a sibling transition also contains this player and its centre is NEARER.
