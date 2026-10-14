@@ -24,6 +24,30 @@ const FLAT_NAME_OFFSET := Vector2(-30, -24)
 const FLAT_NAME_FONT: int = 10
 
 ## State
+## What the panel says when the grant did nothing. One spelling, so a guard pins the STATE rather
+## than a sentence, and the arms cannot drift apart.
+const NOTHING_ADDED: String = "Nothing was added."
+
+
+## ⛔ THE ONE PLACE A FIND IS CLAIMED, AND IT TAKES WHAT WAS GRANTED RATHER THAN WHAT WAS
+## CONFIGURED. Three arms each spelled "announce the configured contents" and only the gold one had
+## been repaired to read the effect — so the repair existed, in the file, next to two copies of the
+## bug it fixed. Routing all three through one seam means a fourth arm cannot reintroduce the claim,
+## and `granted <= 0` is the single rule rather than three agreeing conditions.
+##
+## It is STATIC so a guard can drive the decision without standing up a GameLoop, a party and a
+## scene tree — the same seam shape as QuestExaminePoint.cue_for.
+static func claim_for(kind: String, display: String, granted: int) -> String:
+	if granted <= 0:
+		return NOTHING_ADDED
+	match kind:
+		"gold":
+			return "Found %d Gold!" % granted
+		"equipment":
+			return "Found %s!" % display
+		_:
+			return "Found %s x%d!" % [display, granted]
+
 var _is_opened: bool = false
 var _player_nearby: bool = false
 ## Found-line is still on screen. A second confirm must not swap it for "empty".
@@ -486,20 +510,36 @@ func _open_chest(player: Node2D) -> void:
 			# touches GameState, and PartyStatusScreen's gold display
 			# showed stale values. Routes through GameState.add_gold so
 			# the gold_multiplier game_constant still applies.
-			var credited: int = gold_amount
+			# ⚠️ AND THE FALLBACK IN THE ARM THAT WAS ALREADY REPAIRED CLAIMED TOO. `credited` was
+			# seeded with `gold_amount`, so an absent GameState.add_gold announced the full find
+			# having credited nothing — the same shape as the bug this arm's comment describes,
+			# one layer in. Seed it at zero and let only a real credit raise it.
+			var credited: int = 0
 			if GameState and GameState.has_method("add_gold"):
 				credited = int(GameState.add_gold(gold_amount))
-			contents_text = "Found %d Gold!" % credited
+			contents_text = claim_for("gold", "", credited)
 		"item":
+			# ⛔ ANNOUNCE AFTER THE GRANT, AND FROM WHAT IT ACTUALLY DID. Pre-fix this wrote
+			# "Found %s x%d!" FIRST and then called add_item, discarding the result, behind
+			# `if game_loop and party.size() > 0` — so three separate nothing-happened paths each
+			# printed a find: no GameLoop, an empty party, and add_item's own two refusals
+			# (negative quantity, empty id). That is the SAME defect the gold arm above already
+			# shipped and had repaired — its comment records players seeing "Found 100 Gold!" with
+			# party_gold unchanged — and only the gold arm was fixed. add_item returns `void`, so
+			# the effect is read as an INVENTORY DELTA rather than a return value, which also
+			# covers any refusal added to it later.
 			var item_name = _resolve_display_name(contents_id)
-			contents_text = "Found %s x%d!" % [item_name, contents_amount]
-			# Add items to party
+			var gained: int = 0
 			var game_loop = get_tree().root.get_node_or_null("GameLoop")
 			if game_loop and game_loop.party.size() > 0:
-				game_loop.party[0].add_item(contents_id, contents_amount)
+				var holder = game_loop.party[0]
+				var before: int = (int(holder.inventory.get(contents_id, 0)) if "inventory" in holder else 0)
+				holder.add_item(contents_id, contents_amount)
+				if "inventory" in holder:
+					gained = int(holder.inventory.get(contents_id, 0)) - before
+			contents_text = claim_for("item", item_name, gained)
 		"equipment":
 			var equip_name = _resolve_display_name(contents_id)
-			contents_text = "Found %s!" % equip_name
 			# Add to equipment pool. Slot is resolved against EquipmentSystem's
 			# weapons/armors/accessories dicts so the categorization is correct
 			# regardless of naming convention. Pre-fix used keyword heuristics
@@ -508,12 +548,27 @@ func _open_chest(player: Node2D) -> void:
 			# pool, leaving them stuck and un-equippable as armor. Falls back
 			# to "weapons" only when EquipmentSystem can't resolve the ID at
 			# all (genuinely unknown item — better than dropping silently).
+			# Same read-the-effect rule as the item arm: a null GameLoop announced a find and
+			# appended to nothing.
 			var game_loop = get_tree().root.get_node_or_null("GameLoop")
+			var pooled: bool = false
 			if game_loop:
 				var pool_key = _resolve_equipment_pool(contents_id)
 				if not game_loop.equipment_pool.has(pool_key):
 					game_loop.equipment_pool[pool_key] = []
+				var before_n: int = game_loop.equipment_pool[pool_key].size()
 				game_loop.equipment_pool[pool_key].append(contents_id)
+				pooled = game_loop.equipment_pool[pool_key].size() > before_n
+			contents_text = claim_for("equipment", equip_name, 1 if pooled else 0)
+		_:
+			# ⚠️ contents_type IS DATA-DRIVEN at one site — WhisperingCave:749 assigns
+			# `data["type"]` straight from its per-floor table — and this match had no default, so
+			# an unrecognised type fell through with contents_text = "" and granted nothing, under
+			# a chest that had already written its save-persisted flag. All five of that table's
+			# floors are "item"/"gold" today, so this is latent rather than live; a silent empty
+			# panel is the one outcome that cannot be told from a working chest.
+			push_warning("[TreasureChest] %s has unknown contents_type '%s' — nothing granted" % [chest_id, contents_type])
+			contents_text = claim_for(contents_type, "", 0)
 
 	# Show dialogue. The icon sits above the pinned 240x60 panel so the label geometry stays put.
 	_clamp_dialogue_box_to_viewport()
