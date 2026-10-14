@@ -20,24 +20,27 @@ class_name WorldToast
 ## Derived from `QuestExaminePoint`'s metrics (cowir-story, v3.33.688), which solved this for one
 ## prop; this is that shape with the per-prop values passed in rather than a thirteenth spelling.
 
+## ⚠️ ELEVEN CALLERS USE 11 AND TWO DO NOT. `HiddenPassage`'s "Secret passage!" is authored at
+## 12 and `SavePoint`'s "Game Saved!" at 14, so the base is a PARAMETER with 11 as its default —
+## appended nowhere, because it is the first argument every measuring function already needed.
 const BASE_FONT: int = 11
 
 
 ## The authored size is the BASE; Text Size multiplies it. Reach the font only through here.
-static func font_size() -> int:
-	return TextScale.scaled(BASE_FONT)
+static func font_size(base: int = BASE_FONT) -> int:
+	return TextScale.scaled(base)
 
 
 ## What the wrapped block needs at `width`, floored at the authored box so a short toast is
 ## unchanged. The font comes from a throwaway Label because that is where the theme default lives,
 ## and it is a STATIC seam so a guard can ask for a real string's height without building a scene.
-static func height_for(text: String, width: float, min_h: float) -> float:
+static func height_for(text: String, width: float, min_h: float, base: int = BASE_FONT) -> float:
 	var probe := Label.new()
 	var font: Font = probe.get_theme_font("font")
 	var h: float = min_h
 	if font != null:
 		h = maxf(font.get_multiline_string_size(
-			text, HORIZONTAL_ALIGNMENT_CENTER, width, font_size()).y, min_h)
+			text, HORIZONTAL_ALIGNMENT_CENTER, width, font_size(base)).y, min_h)
 	probe.free()
 	return h
 
@@ -62,12 +65,14 @@ static func origin_for_height(h: float, width: float, baseline_top: float, min_h
 
 ## The measuring entry points. Both route through `origin_for_height`, so a change to the rule
 ## reaches `show` and cowir-story's delegated `toast_position_for` together or not at all.
-static func origin_for(text: String, width: float, baseline_top: float, min_h: float) -> Vector2:
-	return origin_for_height(height_for(text, width, min_h), width, baseline_top, min_h)
+static func origin_for(text: String, width: float, baseline_top: float, min_h: float,
+		base: int = BASE_FONT) -> Vector2:
+	return origin_for_height(height_for(text, width, min_h, base), width, baseline_top, min_h)
 
 
-static func top_for(text: String, width: float, baseline_top: float, min_h: float) -> float:
-	return origin_for(text, width, baseline_top, min_h).y
+static func top_for(text: String, width: float, baseline_top: float, min_h: float,
+		base: int = BASE_FONT) -> float:
+	return origin_for(text, width, baseline_top, min_h, base).y
 
 
 ## Height already occupied by this host's live toasts, so a second one stacks above the first
@@ -95,7 +100,8 @@ static func stack_offset(host: Node, exclude: Node) -> float:
 ## would change what cowir-story measured as 24 prose strings' legibility.
 static func show(host: Node2D, text: String, width: float, baseline_top: float, col: Color,
 		min_h: float = 18.0, rise: float = 20.0, dur: float = 1.6, delay: float = 0.6,
-		stack: bool = false, label_name: String = "WorldToast", fade_dur: float = -1.0) -> Label:
+		stack: bool = false, label_name: String = "WorldToast", fade_dur: float = -1.0,
+		base_font: int = BASE_FONT) -> Label:
 	if text == "" or host == null or not host.is_inside_tree():
 		return null
 	var lbl := Label.new()
@@ -106,9 +112,9 @@ static func show(host: Node2D, text: String, width: float, baseline_top: float, 
 	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	## ⛔ FONT OVERRIDE BEFORE `size`. The height is measured AT this font, so setting it after
 	## would measure the theme default (cowir-story's note on the same hazard).
-	lbl.add_theme_font_size_override("font_size", font_size())
+	lbl.add_theme_font_size_override("font_size", font_size(base_font))
 	lbl.add_theme_color_override("font_color", col)
-	var h: float = height_for(text, width, min_h)
+	var h: float = height_for(text, width, min_h, base_font)
 	lbl.size = Vector2(width, h)
 	var at: Vector2 = origin_for_height(h, width, baseline_top, min_h)
 	host.add_child(lbl)
