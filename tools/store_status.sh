@@ -34,6 +34,10 @@ set -uo pipefail
 CHANNELS="linux windows web"
 TARGET="struktured/cowardly-irregular"
 
+# Overridable so the BLOCKED re-sample path is testable without touching itch.
+STORE_BUTLER="${STORE_BUTLER:-butler}"
+STORE_RECHECK_DELAY="${STORE_RECHECK_DELAY:-15}"
+
 _newest_tag() {
     git ls-remote --tags origin 'refs/tags/v3.33.*' 2>/dev/null \
         | grep -v '\^{}' | awk '{print $2}' | sed 's#refs/tags/##' | sort -V | tail -1
@@ -230,6 +234,55 @@ selftest() {
     if [ "$g" -eq 2 ]; then pass=$((pass+1)); printf '  ok    %-40s exit %s\n' "empty status file" "$g"
     else fail=$((fail+1)); printf '  FAIL  %-40s exit %s (wanted 2)\n' "empty status file" "$g"; fi
 
+    # ---- the BLOCKED re-sample path. judge() is a pure function of a captured file and
+    # cannot re-sample, so these drive the NO-ARG entry point with a fake butler whose answer
+    # CHANGES between calls. That is the only way to stage the pending->serving gap from
+    # outside: stagger the FIXTURE, not the subject.
+    local fake="$dir/fakebutler" ctr="$dir/calls" _tout _tec _calls
+    _mkfake() {   # $1 = what butler returns on call 1, $2 = on call 2+
+        : > "$ctr"
+        printf '%s\n%s\n' "$BANNER" "$1" > "$dir/s1.txt"
+        printf '%s\n%s\n' "$BANNER" "$2" > "$dir/s2.txt"
+        cat > "$fake" <<FAKE
+#!/usr/bin/env bash
+n=\$(( \$(cat "$ctr" 2>/dev/null || echo 0) + 1 ))
+echo "\$n" > "$ctr"
+if [ "\$n" -le 1 ]; then cat "$dir/s1.txt"; else cat "$dir/s2.txt"; fi
+FAKE
+        chmod +x "$fake"
+    }
+    _rsarm() {  # name want-ec want-calls must-match must-NOT-match
+        local name="$1" wec="$2" wcalls="$3" yes="$4" no="$5"
+        _calls="$(cat "$ctr" 2>/dev/null || echo 0)"
+        local bad=""
+        [ "$_tec" -eq "$wec" ]      || bad="exit $_tec (wanted $wec)"
+        [ "$_calls" -eq "$wcalls" ] || bad="${bad}${bad:+; }butler called $_calls (wanted $wcalls)"
+        if [ -n "$yes" ] && ! grep -q "$yes" <<<"$_tout"; then bad="${bad}${bad:+; }missing '$yes'"; fi
+        if [ -n "$no" ]  &&   grep -q "$no"  <<<"$_tout"; then bad="${bad}${bad:+; }unexpected '$no'"; fi
+        [ "$_tec" -eq 0 ] && saw0=1; [ "$_tec" -eq 1 ] && saw1=1
+        if [ -z "$bad" ]; then pass=$((pass+1)); printf '  ok    %-40s exit %s, %s butler call(s)\n' "$name" "$_tec" "$_calls"
+        else fail=$((fail+1)); printf '  FAIL  %-40s %s\n' "$name" "$bad"; fi
+    }
+
+    # 1) THE TRANSIENT THIS EXISTS FOR: sample 1 says BLOCKED, sample 2 says CURRENT.
+    #    Must report the RE-SAMPLE (exit 0), not the first read.
+    _mkfake "$WEBLAGS" "$ALL279"
+    _tout="$(STORE_BUTLER="$fake" STORE_RECHECK_DELAY=0 STORE_TAG=v3.33.279-alpha "$self" 2>&1)"; _tec=$?
+    _rsarm "transient BLOCK -> reports re-sample" 0 2 'a re-sample' ''
+
+    # 2) A REAL block must survive: BLOCKED on both samples -> still exit 1, and SAY it was two.
+    _mkfake "$WEBLAGS" "$WEBLAGS"
+    _tout="$(STORE_BUTLER="$fake" STORE_RECHECK_DELAY=0 STORE_TAG=v3.33.279-alpha "$self" 2>&1)"; _tec=$?
+    _rsarm "persistent BLOCK stays BLOCKED" 1 2 'confirmed by TWO samples' ''
+
+    # 3) CONTROL -- the re-sample must be CONDITIONAL on verdict 1, not unconditional.
+    #    A CURRENT first sample must cost exactly ONE butler call. This is the arm that reds if
+    #    anyone hoists the re-sample above the `[ "$ec" -ne 1 ]` check: the verdict would still
+    #    be 0 and arms 1-2 would still pass, so without a CALL COUNT the change is invisible.
+    _mkfake "$ALL279" "$WEBLAGS"
+    _tout="$(STORE_BUTLER="$fake" STORE_RECHECK_DELAY=0 STORE_TAG=v3.33.279-alpha "$self" 2>&1)"; _tec=$?
+    _rsarm "CURRENT does not re-sample" 0 1 '' 're-sample'
+
     echo
     echo "selftest: ${pass} passed, ${fail} failed"
     if [ "$saw0" -ne 1 ] || [ "$saw1" -ne 1 ] || [ "$saw2" -ne 1 ]; then
@@ -241,8 +294,40 @@ selftest() {
 
 case "${1:-}" in
     --selftest) selftest ;;
-    "")         tmp="$(mktemp)"; trap 'rm -f "$tmp"' EXIT
-                butler status "$TARGET" > "$tmp" 2>&1
-                judge "$tmp" "$(_newest_tag)" ;;
+    "")         tmp="$(mktemp)"; tmp2="$(mktemp)"; trap 'rm -f "$tmp" "$tmp2"' EXIT
+                # The tag is resolved ONCE. Re-resolving it per sample would let a tag cut
+                # between the two samples change the SUBJECT of the comparison, so the
+                # re-check would answer a different question than the one that failed.
+                tag="${STORE_TAG:-$(_newest_tag)}"
+                "$STORE_BUTLER" status "$TARGET" > "$tmp" 2>&1
+                out="$(judge "$tmp" "$tag" 2>&1)"; ec=$?
+                # ⛔ BLOCKED (1) IS THE ONE VERDICT THAT MUST NOT REST ON A SINGLE SAMPLE.
+                # Measured 2026-10-14 on v3.33.693-alpha web: at 20:33:12Z this read
+                # "NOT queued, did not ship: web" (exit 1); at 20:33:24Z, and twice more,
+                # it read CURRENT. There is a window between "queued and pending" and
+                # "serving" in which the build is in NEITHER set, and judge() classifies
+                # that as "did not ship".
+                #
+                # The direction is what makes it worth code rather than a note: this is a
+                # transient FALSE BLOCK on the ordinary success path, and the documented
+                # response to a BLOCK is a repair publish. So a single sample can send the
+                # lane to re-publish a channel that was already fine.
+                #
+                # CURRENT (0), PENDING (3) and UNDETERMINED (2) return immediately: none of
+                # them asks the caller to act destructively, and PENDING already tells the
+                # reader to re-check.
+                if [ "$ec" -ne 1 ]; then printf '%s\n' "$out"; exit "$ec"; fi
+                sleep "$STORE_RECHECK_DELAY"
+                "$STORE_BUTLER" status "$TARGET" > "$tmp2" 2>&1
+                out2="$(judge "$tmp2" "$tag" 2>&1)"; ec2=$?
+                printf '%s\n' "$out2"
+                if [ "$ec2" -ne 1 ]; then
+                    echo "[store] note: a first sample read BLOCKED and a re-sample ${STORE_RECHECK_DELAY}s later did not."
+                    echo "[store]       Reporting the re-sample. The first sample said:"
+                    printf '%s\n' "$out" | sed 's/^/[store]         /'
+                    exit "$ec2"
+                fi
+                echo "[store] BLOCKED confirmed by TWO samples ${STORE_RECHECK_DELAY}s apart — this is not the pending->serving gap."
+                exit "$ec2" ;;
     *)          judge "$1" "${2:-}" ;;
 esac
