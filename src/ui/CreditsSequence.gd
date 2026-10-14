@@ -89,30 +89,55 @@ func _build_ui() -> void:
 
 	_skip_hint = Label.new()
 	_skip_hint.text = skip_hint_text()  # resolved per roll: a pad plugged in after boot changes the cap
-	_skip_hint.position = Vector2(vp.x - 160, vp.y - 32)
-	_skip_hint.size = Vector2(140, 20)
-	_skip_hint.add_theme_font_size_override("font_size", 12)
+	var us: float = _ui_scale()
+	_skip_hint.position = Vector2(vp.x - 160.0 * us, vp.y - 32.0 * us)
+	_skip_hint.size = Vector2(140.0 * us, 20.0 * us)
+	_skip_hint.add_theme_font_size_override("font_size", TextScale.scaled(12))
 	_skip_hint.add_theme_color_override("font_color", DIM_COLOR)
 	_skip_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	add_child(_skip_hint)
 
 
+## WORD_SMART's own break flags — Godot maps that mode to these three, and a height measured with
+## GRAPHEME_BOUND instead under-counts lines against what the Label draws (@cowir-autogrind).
+const WRAP_BREAK_FLAGS := TextServer.BREAK_MANDATORY | TextServer.BREAK_WORD_BOUND | TextServer.BREAK_ADAPTIVE
+
+
+## The layout multiplier: the same factor the fonts take, never below 1.0 so 100% is unchanged.
+func _ui_scale() -> float:
+	return maxf(1.0, float(TextScale.scaled(1000)) / 1000.0)
+
+
 func _populate_credit_lines(parent: Control, width: float) -> void:
 	var lines := _credits_content(_world)
+	## The row table carries (font_size, row_h) in ONE Vector2 and y accumulates from row_h, so
+	## scaling the font alone would draw each line through the next. Floored at 1.0, so 100% and
+	## below are byte-identical to before.
+	var us: float = _ui_scale()
 	var y: float = 0
 	for row in lines:
 		var lbl := Label.new()
 		lbl.text = row.text
-		lbl.size = Vector2(width, row.size.y)
 		lbl.position = Vector2(0, y)
-		lbl.add_theme_font_size_override("font_size", row.size.x)
+		lbl.add_theme_font_size_override("font_size", TextScale.scaled(int(row.size.x)))
 		lbl.add_theme_color_override("font_color", row.color)
 		lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		lbl.clip_text = false
 		lbl.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
 		lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		parent.add_child(lbl)
-		y += row.size.y + row.get("pad", 10)
+		## BUILD, MEASURE, PLACE. The longest authored line is 889 px at 100% and 1332 px at 150%
+		## in a 1280 label, so rows DO wrap above 125% and a band of row_h * us holds one line.
+		## Measured with WORD_SMART's OWN break flags: the mode maps to MANDATORY|WORD_BOUND|
+		## ADAPTIVE, and measuring with GRAPHEME_BOUND counts fewer lines than the Label draws.
+		var band: float = row.size.y * us
+		var f: Font = lbl.get_theme_font("font")
+		var fs: int = lbl.get_theme_font_size("font_size")
+		if f != null and fs > 0:
+			band = maxf(band, f.get_multiline_string_size(lbl.text,
+				HORIZONTAL_ALIGNMENT_CENTER, width, fs, -1, WRAP_BREAK_FLAGS).y)
+		lbl.size = Vector2(width, band)
+		y += band + float(row.get("pad", 10)) * us
 	_scroll_root.custom_minimum_size = Vector2(width, y)
 
 

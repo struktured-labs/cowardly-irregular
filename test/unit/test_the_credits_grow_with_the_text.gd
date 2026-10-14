@@ -1,0 +1,229 @@
+extends GutTest
+
+## The credits roll had two raw font sites and no TextScale: the skip hint's 12, and each row's
+## font taken from `row.size.x`. The row table carries (font_size, row_h) in ONE Vector2 and the
+## scroll y ACCUMULATES from row_h, so scaling the font alone draws each line through the next.
+##
+## ⚠️ WRAPPING IS NOT THE EXPOSURE, measured before building: the longest authored line is 75 chars
+## at font 13, which is ~915 px of a 1280 viewport even at 200%, so AUTOWRAP_WORD_SMART never
+## engages. The exposure is ROW HEIGHT — a 26 px line in a 24 px band — which is why the fix scales
+## row_h and pad by the same factor and not just the font. (@cowir-adhoc's per-axis clamp table is
+## what sent me to measure instead of assuming autowrap; "autowrap alone wrecks the height" is true
+## and does not apply here because nothing wraps.)
+##
+## Heights come from the FONT (ascent + descent), never a node rect: a Label's content minimum can
+## be stale in the frame it is set, depending on the order the properties were assigned.
+
+const CreditsScript = preload("res://src/ui/CreditsSequence.gd")
+const PRESETS: Array = [0.8, 1.0, 1.25, 1.5, 2.0]
+## ⛔ THE ROW SET DEPENDS ON THE WORLD, so world 0 alone is "real data but not ALL real data".
+## `_credits_content` gates "— End of World %d —" on world > 0 (:150) and "— Continue Journey —"
+## on 0 < world < 6 (:188), and CutsceneDirector._step_roll_credits is documented with world 1.
+## 0 = neither row · 1 = both · 6 = only the first.
+const WORLDS: Array = [0, 1, 6]
+const LABELS: Array = ["80%", "100%", "125%", "150%", "200%"]
+
+var _c: Node = null
+var _orig_scale: float = 1.0
+
+
+func before_each() -> void:
+	var gs = get_tree().root.get_node_or_null("GameState")
+	if gs != null and "text_size_scale" in gs:
+		_orig_scale = float(gs.text_size_scale)
+
+
+func after_each() -> void:
+	var gs = get_tree().root.get_node_or_null("GameState")
+	if gs != null and "text_size_scale" in gs:
+		gs.text_size_scale = _orig_scale
+	_c = null
+
+
+func _build_at(scale: float, world: int = 0) -> void:
+	var gs = get_tree().root.get_node_or_null("GameState")
+	if gs != null and "text_size_scale" in gs:
+		gs.text_size_scale = scale
+	## A CanvasLayer, not a Control — it has no anchors, position or size of its own, and its
+	## _ready() is `pass`, so the build is explicit. Built directly rather than through play(),
+	## which starts a bed and a multi-second tween.
+	_c = CreditsScript.new()
+	_c._world = world
+	add_child_autofree(_c)
+	await wait_frames(2)
+	_c._build_ui()
+	await wait_frames(2)
+
+
+func _rows() -> Array:
+	var out: Array = []
+	## Rows live under _scroll_root; the skip hint is a DIRECT child and is deliberately excluded.
+	for c in _c.get_children():
+		for g in c.get_children():
+			if g is Label and str((g as Label).text) != "":
+				out.append(g)
+	return out
+
+
+## WORD_SMART's own break flags, the same three the src measures with. Measuring with
+## GRAPHEME_BOUND instead counts fewer lines than the Label draws (@cowir-autogrind).
+const WRAP_FLAGS := TextServer.BREAK_MANDATORY | TextServer.BREAK_WORD_BOUND | TextServer.BREAK_ADAPTIVE
+
+
+## The DRAWN height: multiline, at the label's real width, with the node's own flags. Rows wrap
+## above 125%, so a single-line extent understates this and a fit arm using it is blind.
+func _drawn_h(l: Label) -> float:
+	var f: Font = l.get_theme_font("font")
+	var fs: int = l.get_theme_font_size("font_size")
+	if f == null or fs <= 0:
+		return 0.0
+	return f.get_multiline_string_size(l.text, HORIZONTAL_ALIGNMENT_CENTER,
+		float(_c._viewport_size().x), fs, -1, WRAP_FLAGS).y
+
+
+## Glyph extent from the font that draws it — ascent plus descent, not a Control rect.
+func _extent(l: Label) -> float:
+	var f: Font = l.get_theme_font("font")
+	var fs: int = l.get_theme_font_size("font_size")
+	if f == null or fs <= 0:
+		return 0.0
+	return f.get_ascent(fs) + f.get_descent(fs)
+
+
+func test_control_the_roll_builds_rows_at_every_size() -> void:
+	## Without this, every arm below could walk an empty list and pass having measured nothing.
+	for i in PRESETS.size():
+		await _build_at(PRESETS[i])
+		assert_gt(_rows().size(), 2,
+			"PRECONDITION: Text Size %s built %d credit rows" % [LABELS[i], _rows().size()])
+
+
+func test_one_hundred_percent_and_below_are_unchanged() -> void:
+	## The layout factor is floored at 1.0, so 80% and 100% must place rows exactly as before.
+	## FLOOR first: without _ui_scale this arm aborts before asserting and scores Risky rather
+	## than naming the missing symbol.
+	await _build_at(1.0)
+	assert_true(_c.has_method("_ui_scale"),
+		"CreditsSequence._ui_scale() is MISSING — this arm cannot measure the layout factor")
+	for scale in [0.8, 1.0]:
+		await _build_at(scale)
+		assert_almost_eq(_c._ui_scale(), 1.0, 0.001,
+			"at %.0f%% the layout factor must still be 1.0" % [scale * 100.0])
+
+
+func test_the_font_actually_grows_with_the_setting() -> void:
+	## ⛔ THE LOAD-BEARING HALF, and the fit arms below CANNOT substitute for it: on the unfixed tree
+	## nothing scales, so nothing overflows and a fit-only guard is GREEN THROUGH THE DEFECT.
+	## Measured — reverting the fix left this file at Passing 3 with no [Failed] at all.
+	## Baselines are DERIVED from the 100% build, never written down, so the authored table can
+	## change without touching this file.
+	await _build_at(1.0)
+	var base: Dictionary = {}
+	for l in _rows():
+		base[(l as Label).text] = (l as Label).get_theme_font_size("font_size")
+	assert_gt(base.size(), 2, "PRECONDITION: only %d baseline rows captured" % base.size())
+
+	await _build_at(2.0)
+	var grew: int = 0
+	var same: Array[String] = []
+	for l in _rows():
+		var lab := l as Label
+		if not base.has(lab.text):
+			continue
+		var now: int = lab.get_theme_font_size("font_size")
+		if now > int(base[lab.text]):
+			grew += 1
+		else:
+			same.append("%s %d->%d" % [lab.text.substr(0, 16), int(base[lab.text]), now])
+	assert_eq(same, [], "rows whose font did NOT grow from 100%% to 200%%: %s" % [same])
+	assert_gt(grew, 2, "PRECONDITION: only %d rows compared" % grew)
+
+	## And the skip hint, which is a direct child and so outside _rows().
+	assert_gt(int((_c._skip_hint as Label).get_theme_font_size("font_size")), 12,
+		"the skip hint's font must grow past its authored 12 at 200%%")
+
+
+func test_the_gap_the_layout_leaves_each_row_is_max_authored_drawn_plus_pad() -> void:
+	## THE MECHANISM, read off POSITIONS rather than rects.
+	##
+	## ⛔ MY FIRST TWO VERSIONS OF THIS ARM BOTH READ `lab.size.y` AND BOTH WERE WRONG, in opposite
+	## directions. A Label with AUTOWRAP and no clip_text has its minimum computed at the FREED
+	## width (@cowir-adhoc measured min (1, 938)), so `size = Vector2(1280, 36)` CLAMPS UP to ~1023:
+	## v1 compared the extent against that clamped rect and could not fail; v2 compared the computed
+	## band against it and failed on correct layout. The node's rect is not the layout's budget.
+	##
+	## The budget is observable in the GAP between consecutive rows, which the clamp cannot touch
+	## because `y` accumulates from `band + pad` in the builder.
+	for w in WORLDS:
+		for i in PRESETS.size():
+			await _build_at(PRESETS[i], int(w))
+			var us: float = _c._ui_scale()
+			var authored: Dictionary = {}
+			var pad: Dictionary = {}
+			for row in _c._credits_content(_c._world):
+				authored[str(row.text)] = float(row.size.y) * us
+				pad[str(row.text)] = float(row.get("pad", 10)) * us
+			var rows: Array = _rows()
+			rows.sort_custom(func(a, b): return (a as Label).position.y < (b as Label).position.y)
+			var checked: int = 0
+			for n in range(rows.size() - 1):
+				var a := rows[n] as Label
+				var b := rows[n + 1] as Label
+				if not authored.has(a.text):
+					continue
+				checked += 1
+				var want: float = maxf(float(authored[a.text]), _drawn_h(a)) + float(pad[a.text])
+				assert_almost_eq(b.position.y - a.position.y, want, 1.5,
+					"w%d %s: the gap after '%s' is %.0f, must be max(authored %.0f, drawn %.0f) + pad %.0f" % [
+						int(w), LABELS[i], a.text.substr(0, 18), b.position.y - a.position.y,
+						float(authored[a.text]), _drawn_h(a), float(pad[a.text])])
+			assert_gt(checked, 1, "PRECONDITION: only %d row gaps at w%d %s" % [checked, int(w), LABELS[i]])
+
+func test_the_wrapping_path_is_actually_reached_at_the_large_presets() -> void:
+	## ⛔ MY FIRST VERSION OF THIS ARM ASSERTED THAT NOTHING WRAPS, AND IT RED: measured 889 px of
+	## 1280 at 100% but 1332 at 150% and 1774 at 200%. That falsified the premise my earlier
+	## single-line fit arm rested on, and the fix now measures multiline because of it.
+	##
+	## So the claim is inverted: the multiline branch must be REACHED, or `maxf` is dead code and
+	## every arm above passes on the authored literal alone.
+	var wrapped_at_200: int = 0
+	for i in PRESETS.size():
+		await _build_at(PRESETS[i], 1)
+		var budget: float = float(_c._viewport_size().x)
+		assert_gt(budget, 100.0, "SCOPE control: viewport width read back %.0f" % budget)
+		var widest: float = 0.0
+		var widest_text: String = ""
+		for l in _rows():
+			var lab := l as Label
+			var f: Font = lab.get_theme_font("font")
+			var fs: int = lab.get_theme_font_size("font_size")
+			if f == null or fs <= 0:
+				continue
+			var one_line: float = f.get_string_size(lab.text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+			if one_line > widest:
+				widest = one_line
+				widest_text = lab.text
+			if PRESETS[i] == 2.0 and one_line > budget:
+				wrapped_at_200 += 1
+		print("[CREDITS-WRAP] %s widest unwrapped line %.0f px of %.0f (margin %.0f) '%s'" % [
+			LABELS[i], widest, budget, budget - widest, widest_text.substr(0, 34)])
+	assert_gt(wrapped_at_200, 0,
+		"no row exceeds the label width at 200%%, so the multiline branch is never exercised and the maxf is dead")
+
+func test_no_credit_line_is_drawn_through_the_next() -> void:
+	## The consequence arm: consecutive rows must not overlap once the fonts scale.
+	for w in WORLDS:
+		for i in PRESETS.size():
+			await _build_at(PRESETS[i], int(w))
+			var rows: Array = _rows()
+			rows.sort_custom(func(a, b): return (a as Label).position.y < (b as Label).position.y)
+			var pairs: int = 0
+			for n in range(rows.size() - 1):
+				var a := rows[n] as Label
+				var b := rows[n + 1] as Label
+				pairs += 1
+				assert_lte(a.position.y + _drawn_h(a), b.position.y + 0.5,
+					"Text Size %s: '%s' ends %.0f and '%s' starts %.0f" % [
+						LABELS[i], a.text.substr(0, 18), a.position.y + _drawn_h(a),
+						b.text.substr(0, 18), b.position.y])
+			assert_gt(pairs, 1, "PRECONDITION: only %d row pairs at %s" % [pairs, LABELS[i]])
