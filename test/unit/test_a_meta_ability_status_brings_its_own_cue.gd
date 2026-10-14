@@ -23,6 +23,24 @@ const GdSource := preload("res://test/unit/helpers/gd_source.gd")
 
 ## Bounded by the function's END, never a character count: a fixed window reds on an unrelated
 ## insertion and names the wrong file (measured on my own branch earlier today).
+## ⛔ Executes a meta ability with a `corruption_risk`, and `add_corruption()` APPENDS a random
+## one of five effects when the level rises — so this file disturbs state it never names. See
+## helpers/corruption_state.gd; test_zz_corruption_state_not_leaked_by_tests is the backstop.
+const CorruptionState := preload("res://test/unit/helpers/corruption_state.gd")
+var _corruption_state: RefCounted = null
+
+
+func after_each() -> void:
+	## FIRST: order-independent, so an error below cannot skip the restore.
+	if _corruption_state != null:
+		_corruption_state.restore()
+
+
+func before_each() -> void:
+	_corruption_state = CorruptionState.new()
+	_corruption_state.snapshot()
+
+
 func _meta_body() -> String:
 	var src: String = GdSource.code_of(BM_SRC)
 	var i: int = src.find("func _execute_meta_ability")

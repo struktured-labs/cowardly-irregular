@@ -225,6 +225,24 @@ const UNDECIDED_LIVE_SIDE := []
 ## carries a dict or a list-of-dicts whose inner keys the engines could read. So this census sees
 ## everything today. The day an ability gains a nested block, it goes SILENTLY incomplete, and the
 ## whole backlog below is derived from it.
+## ⛔ Executes a meta ability with a `corruption_risk`, and `add_corruption()` APPENDS a random
+## one of five effects when the level rises — so this file disturbs state it never names. See
+## helpers/corruption_state.gd; test_zz_corruption_state_not_leaked_by_tests is the backstop.
+const CorruptionState := preload("res://test/unit/helpers/corruption_state.gd")
+var _corruption_state: RefCounted = null
+
+
+func after_each() -> void:
+	## FIRST: order-independent, so an error below cannot skip the restore.
+	if _corruption_state != null:
+		_corruption_state.restore()
+
+
+func before_each() -> void:
+	_corruption_state = CorruptionState.new()
+	_corruption_state.snapshot()
+
+
 func _authored_keys() -> Array:
 	var ab: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/abilities.json"))
 	var keys: Dictionary = {}
