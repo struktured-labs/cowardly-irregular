@@ -16,6 +16,7 @@ var _bank_player: AudioStreamPlayer  # dedicated voice: full_bank_unleash replac
 var _refuse_player: AudioStreamPlayer  # dedicated voice: a refused Advance press lands while the job's 3s fifth rung is still ringing (2026-09-14)
 var _weather_player: AudioStreamPlayer  # dedicated voice: a 4s thunder clap shared the channel every attack hit lands on (2026-09-18)
 var _ability_player: AudioStreamPlayer
+var _cutscene_player: AudioStreamPlayer  # dedicated voice: _advance_dialogue plays menu_select on _ui_player every press, so a cutscene's own cue died on the next line turn (2026-10-14)
 ## Per-cue tracing. FULL tracing is off by default: it was 27-41% of struktured's play logs (4,175-5,998
 ## lines a session, measured 2026-10-05), burying the errors those logs exist to surface.
 ## `COWIR_SFX_LOG_CUES=1` or setting this true restores every line.
@@ -611,6 +612,12 @@ func _setup_audio_players() -> void:
 	_battle_player.bus = SFX_BUS
 	add_child(_battle_player)
 
+	_cutscene_player = AudioStreamPlayer.new()
+	_cutscene_player.name = "CutscenePlayer"
+	_cutscene_player.volume_db = SFX_UI_BASE_DB
+	_cutscene_player.bus = SFX_BUS
+	add_child(_cutscene_player)
+
 	_footstep_player = AudioStreamPlayer.new()
 	_footstep_player.name = "FootstepPlayer"
 	_footstep_player.volume_db = SFX_UI_BASE_DB
@@ -1112,8 +1119,10 @@ const _BATTLE_VOLUME_TRIM_DB: Dictionary = {
 }
 
 
-func play_ui(sound_key: String) -> void:
+func play_ui(sound_key: String, player: AudioStreamPlayer = null) -> void:
 	"""Play a UI sound effect — world variant first, then default, else procedural"""
+	## An explicit player keeps ONE implementation of the variant lookup, the trim and the cooldown.
+	var target: AudioStreamPlayer = player if player != null else _ui_player
 	# Always pass an explicit volume — otherwise a prior trimmed play sticks (volume_db persists on the AudioStreamPlayer).
 	## The TRIM is read off the BASE key, matching play_battle's _battle_level: a trim corrects a
 	## cue's ROLE on this channel, and a world variant of the same role inherits it rather than
@@ -1129,9 +1138,9 @@ func play_ui(sound_key: String) -> void:
 	## ZERO had a w2_-w6_ variant in the manifest, so this changed the sound of nothing. It is the
 	## reachability that was missing, not the assets — which is why it ships before any of them.
 	var world_key: String = _get_world_sfx_prefix() + sound_key
-	if world_key != sound_key and _try_play_sfx_from_manifest(_ui_player, world_key, SFX_UI_BASE_DB + trim):
+	if world_key != sound_key and _try_play_sfx_from_manifest(target, world_key, SFX_UI_BASE_DB + trim):
 		return
-	if _try_play_sfx_from_manifest(_ui_player, sound_key, SFX_UI_BASE_DB + trim):
+	if _try_play_sfx_from_manifest(target, sound_key, SFX_UI_BASE_DB + trim):
 		return
 	if not SOUNDS.has(sound_key):
 		return
@@ -1140,7 +1149,7 @@ func play_ui(sound_key: String) -> void:
 	## for a procedural-only cue, played at the bare base with nothing to show the level was lost.
 	var params: Dictionary = (SOUNDS[sound_key] as Dictionary).duplicate()
 	params["volume_db"] = SFX_UI_BASE_DB + trim
-	_play_sound(_ui_player, params)
+	_play_sound(target, params)
 
 
 ## The battle channel's level for a cue: its base plus any authored trim. ONE owner, because
@@ -1807,6 +1816,12 @@ func get_kill_duck_db() -> float:
 ## long ones would need extending for every future cue. Footsteps are the one FREQUENT member, so
 ## moving them covers the whole channel and nothing to maintain. A step replacing a step is still
 ## correct — that is what walking sounds like.
+## Cutscene cues on their own voice. The VICTIMS are enumerable here where they were not on
+## 2026-09-11: _step_play_sfx is a single call site, so this needs no list of long cues.
+func play_cutscene_sfx(sound_key: String) -> void:
+	"""A cutscene's own SFX — same resolution as play_ui, on a voice no menu blip touches."""
+	play_ui(sound_key, _cutscene_player)
+
 func play_footstep(terrain: String = "grass") -> void:
 	"""Play a footstep sound for the given terrain type (grass, stone, sand)."""
 	var key = "footstep_" + terrain
