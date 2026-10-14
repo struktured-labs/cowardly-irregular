@@ -199,7 +199,7 @@ func _build_ui() -> void:
 	_skip_label = Label.new()
 	_skip_label.text = skip_prompt_text()
 	_skip_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_skip_label.add_theme_font_size_override("font_size", 14)
+	_skip_label.add_theme_font_size_override("font_size", TextScale.scaled(14))
 	_skip_label.add_theme_color_override("font_color", Color(0.95, 0.95, 0.75, 0.95))
 	_skip_indicator.add_child(_skip_label)
 
@@ -236,14 +236,17 @@ func _update_layout() -> void:
 	_letterbox_bottom.position = Vector2(0, screen_size.y)
 
 	# Bottom-center pill
-	var pill_w: float = SKIP_BAR_WIDTH + SKIP_PILL_PAD * 2.0
-	_skip_indicator.position = Vector2((screen_size.x - pill_w) / 2.0, screen_size.y - SKIP_PILL_HEIGHT - 18)
+	var spm: Dictionary = skip_pill_metrics(TextScale.scaled(14), 14, _skip_label.text,
+		6.0, 18.0, 30.0, SKIP_PILL_HEIGHT, SKIP_BAR_WIDTH + SKIP_PILL_PAD * 2.0)
+	var pill_w: float = float(spm["pill_w"])
+	var pill_h: float = float(spm["pill_h"])
+	_skip_indicator.position = Vector2((screen_size.x - pill_w) / 2.0, screen_size.y - pill_h - 18)
 	_skip_pill_bg.position = Vector2(0, 0)
-	_skip_pill_bg.size = Vector2(pill_w, SKIP_PILL_HEIGHT)
-	_skip_label.position = Vector2(0, 6)
-	_skip_label.size = Vector2(pill_w, 18)
-	_skip_bar_bg.position = Vector2(SKIP_PILL_PAD, 30)
-	_skip_bar.position = Vector2(SKIP_PILL_PAD, 30)
+	_skip_pill_bg.size = Vector2(pill_w, pill_h)
+	_skip_label.position = Vector2(0, float(spm["label_y"]))
+	_skip_label.size = Vector2(pill_w, float(spm["label_h"]))
+	_skip_bar_bg.position = Vector2(SKIP_PILL_PAD, float(spm["bar_y"]))
+	_skip_bar.position = Vector2(SKIP_PILL_PAD, float(spm["bar_y"]))
 
 	_effects_rect.position = Vector2.ZERO
 	_effects_rect.size = screen_size
@@ -1064,7 +1067,7 @@ func _build_timer_hud() -> void:
 	_timer_label = Label.new()
 	_timer_label.name = "CutsceneTimerHUD"
 	_timer_label.text = _format_timer_text(_timer_remaining)
-	_timer_label.add_theme_font_size_override("font_size", 22)
+	_timer_label.add_theme_font_size_override("font_size", TextScale.scaled(22))
 	_timer_label.add_theme_color_override("font_color", Color(0.95, 0.85, 0.45))
 	_timer_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	var vp_size := Vector2(1280, 720)
@@ -1073,8 +1076,9 @@ func _build_timer_hud() -> void:
 		vp_size = vp.get_visible_rect().size
 		if vp_size.x <= 0:
 			vp_size = Vector2(1280, 720)
-	_timer_label.position = Vector2(vp_size.x - 120, 20)
-	_timer_label.size = Vector2(100, 28)
+	var tr: Rect2 = timer_rect(TextScale.scaled(22), 22, _timer_label.text, vp_size.x, 100.0, 28.0, 20.0)
+	_timer_label.position = tr.position
+	_timer_label.size = tr.size
 	add_child(_timer_label)
 
 
@@ -1717,6 +1721,64 @@ static func card_metrics(title_px: int, sub_px: int, base_title_px: int, base_su
 		gap = maxf(base_gap, maxf(th + 2.0, base_gap * ratio))
 		sub_h = maxf(base_sub_h, maxf(sh, base_sub_h * ratio))
 	return {"title_h": title_h, "gap": gap, "sub_h": sub_h}
+
+
+## ⛔ THE SKIP PILL'S TEXT DREW THROUGH ITS OWN PROGRESS BAR. The label was font 14 raw in a box at
+## y=6 with the hold-bar pinned at y=30; a Label clamps its height UP to its content, so at 200% the
+## 39px of glyph ran from y=6 to y=45 and straight across the bar at 30 — inside a pill still 48 tall.
+##
+## 🔑 Same derivation as `card_metrics`: every number carries its authored ratio to the measured glyph
+## height, floored at the authored value so the default pill does not move. The pill also takes the
+## WIDER of its bar and its own text, because the prompt is resolved per device — the pad spelling of
+## this prompt is materially longer than the keyboard one.
+static func skip_pill_metrics(label_px: int, base_label_px: int, text: String,
+		base_label_y: float, base_label_h: float, base_bar_y: float,
+		base_pill_h: float, base_pill_w: float) -> Dictionary:
+	var out: Dictionary = {
+		"label_y": base_label_y, "label_h": base_label_h, "bar_y": base_bar_y,
+		"pill_h": base_pill_h, "pill_w": base_pill_w,
+	}
+	if label_px <= base_label_px:
+		return out
+	var font: Font = ThemeDB.fallback_font
+	if font == null:
+		return out
+	var h: float = float(font.get_height(label_px))
+	var ratio: float = h / maxf(float(font.get_height(base_label_px)), 1.0)
+	out["label_y"] = maxf(base_label_y, base_label_y * ratio)
+	out["label_h"] = maxf(base_label_h, maxf(h, base_label_h * ratio))
+	out["bar_y"] = maxf(base_bar_y, float(out["label_y"]) + float(out["label_h"]) + 6.0 * ratio)
+	out["pill_h"] = maxf(base_pill_h, float(out["bar_y"]) + SKIP_BAR_HEIGHT + 8.0 * ratio)
+	var tw: float = font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, label_px).x
+	out["pill_w"] = maxf(base_pill_w, tw + SKIP_PILL_PAD * 2.0)
+	return out
+
+
+## ⛔ THE STEP TIMER DID NOT SCALE AT ALL — font 22 raw, so a player on 200% Text Size read the
+## countdown at the same size as a player on 80%. That is the defect this fixes.
+##
+## ⚠️ AND THE WIDTH BRANCH BELOW IS CURRENTLY INERT, WHICH I AM WRITING DOWN RATHER THAN DRESSING UP.
+## I first justified it as "a Label clamps its width up to its content, so a scaled font pushes the
+## box past the viewport from its fixed left edge" — true as a rule, and FALSE for this node. The
+## format is `%d:%02d` and the game contains exactly ONE authored timer step (`world4_orrery.json`,
+## 300s -> "5:00"), four glyphs, which measures under the authored 100px box even at 200%. So no
+## authored countdown has ever overflowed and the `maxf` never fires.
+##
+## 🔑 It stays because the RIGHT EDGE is the thing worth pinning: `x = viewport.x - 120` with a
+## 100-wide box lands the right inset at 20 only by coincidence of two numbers that are not derived
+## from each other. Measured, at 200%: a four-digit "10:00" needs 113px, so the first ten-minute
+## timer anyone authors separates them and the old arithmetic puts its right edge 7px from the
+## viewport instead of 20. Inert against today's content, exact about when it stops being inert.
+static func timer_rect(px: int, base_px: int, text: String, viewport_w: float,
+		base_w: float, base_h: float, right_inset: float) -> Rect2:
+	var w: float = base_w
+	var h: float = base_h
+	var font: Font = ThemeDB.fallback_font
+	if font != null and px > base_px:
+		var m: Vector2 = font.get_string_size(text, HORIZONTAL_ALIGNMENT_RIGHT, -1, px)
+		w = maxf(base_w, m.x + 8.0)
+		h = maxf(base_h, float(font.get_height(px)))
+	return Rect2(Vector2(viewport_w - right_inset - w, 20.0), Vector2(w, h))
 
 
 func _step_chapter_title(step: Dictionary) -> void:
