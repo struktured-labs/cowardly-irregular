@@ -14,7 +14,21 @@ class_name LensMenu
 
 signal closed()
 
-const ROW_H := 76
+## ⛔ WAS `const ROW_H := 76` with three labels pinned inside it at y=6/26/46 and seven raw
+## font_size literals. Text Size offers 200%, where those fonts are 28/22/20 and their lines are
+## taller than the 20px steps between them — so a lens row stacked its own name, state and passive
+## on top of each other, and the last one ran past the row. Everything here derives from the
+## scaled fonts instead; mirrors SettingsMenu's _line_h / _row_font pair.
+const TITLE_FONT := 18
+const SUB_FONT := 10
+const STATUS_FONT := 11
+const HINT_FONT := 10
+const NAME_FONT := 14
+const STATE_FONT := 11
+const PASSIVE_FONT := 10
+const ROW_PAD_TOP := 6.0
+const ROW_PAD_BOTTOM := 6.0
+const LINE_GAP := 2.0
 const BG_COLOR := Color(0.05, 0.05, 0.1, 0.95)
 const PANEL_COLOR := Color(0.1, 0.1, 0.15)
 const SELECTED_COLOR := Color(0.2, 0.3, 0.5)
@@ -33,6 +47,7 @@ var _axes: Array = []
 var _selected: int = 0
 var _panel: Control
 var _rows: Array = []
+var _rows_bottom: float = 0.0
 var _status: Label
 
 
@@ -70,32 +85,40 @@ func _build_ui() -> void:
 	var title := Label.new()
 	title.text = "LENSES"
 	title.position = Vector2(16, 10)
-	title.add_theme_font_size_override("font_size", 18)
+	title.add_theme_font_size_override("font_size", TextScale.scaled(TITLE_FONT))
 	title.add_theme_color_override("font_color", TEXT_COLOR)
 	_panel.add_child(title)
 
 	var sub := Label.new()
 	sub.text = "Defeat a Masterite to learn its Lens.  Any party member can wear any Lens."
-	sub.position = Vector2(16, 34)
-	sub.add_theme_font_size_override("font_size", 10)
+	sub.position = Vector2(16, 10.0 + _line_h(TITLE_FONT) + LINE_GAP)
+	sub.add_theme_font_size_override("font_size", TextScale.scaled(SUB_FONT))
 	sub.add_theme_color_override("font_color", DIM_COLOR)
 	_panel.add_child(sub)
 
+	## Each row is placed under the one built before it, measured rather than predicted. A row's
+	## height cannot be derived from `font.get_height()` alone: a Label clamps its own size UP to
+	## its content, and that content is a few px taller than the metric — at 125% the passive line
+	## ended 5px past a row budgeted from get_height. So build, then read, then advance.
+	var row_y: float = _rows_top()
 	for i in range(_axes.size()):
-		_rows.append(_build_row(i, 58 + i * ROW_H))
+		var built: Dictionary = _build_row(i, row_y)
+		_rows.append(built)
+		row_y += (built["holder"] as Control).size.y + ROW_PAD_BOTTOM
+	_rows_bottom = row_y
 
 	_status = Label.new()
-	_status.position = Vector2(16, 58 + _axes.size() * ROW_H + 8)
-	_status.size = Vector2(_panel.size.x - 32, 40)
-	_status.add_theme_font_size_override("font_size", 11)
+	_status.position = Vector2(16, _rows_bottom + 8.0)
+	_status.size = Vector2(_panel.size.x - 32, maxf(40.0, _line_h(STATUS_FONT) * 2.0 + 8.0))
+	_status.add_theme_font_size_override("font_size", TextScale.scaled(STATUS_FONT))
 	_status.add_theme_color_override("font_color", DIM_COLOR)
 	_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_panel.add_child(_status)
 
 	var hint := Label.new()
 	hint.text = "[Up/Down] Select   %s Craft   [Left/Right] Assign   %s Back" % [InputProfileManager.hint_for_action("ui_accept"), InputProfileManager.hint_for_action("ui_cancel")]
-	hint.position = Vector2(16, _panel.size.y - 26)
-	hint.add_theme_font_size_override("font_size", 10)
+	hint.position = Vector2(16, _panel.size.y - _line_h(HINT_FONT) - 10.0)
+	hint.add_theme_font_size_override("font_size", TextScale.scaled(HINT_FONT))
 	hint.add_theme_color_override("font_color", DIM_COLOR)
 	_panel.add_child(hint)
 
@@ -107,10 +130,42 @@ func _build_ui() -> void:
 		closed.emit()
 		queue_free())
 
+func _lens_font() -> Font:
+	return ThemeDB.fallback_font
+
+
+func _line_h(base: int) -> float:
+	var fs: int = TextScale.scaled(base)
+	var f: Font = _lens_font()
+	return float(fs) * 1.4 if f == null else f.get_height(fs)
+
+
+## Intra-row baselines, each one below the line above it rather than at a literal offset.
+func _row_name_y() -> float:
+	return ROW_PAD_TOP
+
+
+func _row_state_y() -> float:
+	return _row_name_y() + _line_h(NAME_FONT) + LINE_GAP
+
+
+func _row_passive_y() -> float:
+	return _row_state_y() + _line_h(STATE_FONT) + LINE_GAP
+
+
+func _row_h() -> float:
+	return maxf(76.0, _row_passive_y() + _line_h(PASSIVE_FONT) + ROW_PAD_BOTTOM)
+
+
+## Where the first row starts: under the title and the subtitle, both of which scale too.
+func _rows_top() -> float:
+	return 10.0 + _line_h(TITLE_FONT) + LINE_GAP + _line_h(SUB_FONT) + 10.0
+
+
 func _build_row(index: int, y: float) -> Dictionary:
 	var holder := Control.new()
 	holder.position = Vector2(12, y)
-	holder.size = Vector2(_panel.size.x - 24, ROW_H - 6)
+	holder.size = Vector2(_panel.size.x - 24, _row_h() - ROW_PAD_BOTTOM)
 	_panel.add_child(holder)
 
 	var hl := ColorRect.new()
@@ -119,21 +174,25 @@ func _build_row(index: int, y: float) -> Dictionary:
 	holder.add_child(hl)
 
 	var name_lbl := Label.new()
-	name_lbl.position = Vector2(10, 6)
-	name_lbl.add_theme_font_size_override("font_size", 14)
+	name_lbl.position = Vector2(10, _row_name_y())
+	name_lbl.add_theme_font_size_override("font_size", TextScale.scaled(NAME_FONT))
 	holder.add_child(name_lbl)
 
 	var state_lbl := Label.new()
-	state_lbl.position = Vector2(10, 26)
-	state_lbl.add_theme_font_size_override("font_size", 11)
+	state_lbl.position = Vector2(10, _row_state_y())
+	state_lbl.add_theme_font_size_override("font_size", TextScale.scaled(STATE_FONT))
 	holder.add_child(state_lbl)
 
 	var passive_lbl := Label.new()
-	passive_lbl.position = Vector2(10, 46)
-	passive_lbl.size = Vector2(holder.size.x - 20, 18)
-	passive_lbl.add_theme_font_size_override("font_size", 10)
+	passive_lbl.position = Vector2(10, _row_passive_y())
+	passive_lbl.size = Vector2(holder.size.x - 20, maxf(18.0, _line_h(PASSIVE_FONT)))
+	passive_lbl.add_theme_font_size_override("font_size", TextScale.scaled(PASSIVE_FONT))
 	passive_lbl.add_theme_color_override("font_color", SUBTITLE_COLOR)
 	holder.add_child(passive_lbl)
+
+	## The row is as tall as what it ended up holding — `passive_lbl.size.y` is the clamped CONTENT
+	## height, which is what actually draws, not the metric the budget was guessed from.
+	holder.size.y = maxf(holder.size.y, passive_lbl.position.y + passive_lbl.size.y + ROW_PAD_BOTTOM)
 
 	return {"holder": holder, "hl": hl, "name": name_lbl, "state": state_lbl, "passive": passive_lbl}
 
