@@ -95,6 +95,15 @@ const DISABLED_COLOR = Color(0.4, 0.4, 0.4)
 ## (DISABLED_COLOR there measured ~1.5:1 and the job vanished on whichever card you were on).
 const SUBTITLE_COLOR = Color(0.72, 0.75, 0.85)
 
+## Row geometry inputs. The label font is the one thing Text Size scales, so everything else is
+## derived from it — see _menu_row_h.
+const MENU_FONT_SIZE := 14
+const MENU_LABEL_X := 24.0
+const MENU_ROW_PAD_X := 24.0
+const MENU_ROW_GAP := 4.0
+const INFO_FONT_SIZE := 11
+const INFO_FX_FONT_SIZE := 10
+
 
 ## The field menu is a real binding since 2026-10-12, so it follows a rebind and the Controls screen
 ## lists it. These two stay as the DEFAULTS the action ships with — the north face (this game's "X";
@@ -495,6 +504,47 @@ func _create_exp_indicator(member: Combatant) -> Control:
 	return container
 
 
+## Row geometry derived from the SCALED label font, not from a literal.
+##
+## ⛔ WAS `item_height = 28` with 200x24 items and a 180x24 highlight, while the label inside is
+## `TextScale.scaled(14)`. Text Size offers 200% (TEXT_SIZE_PRESETS tops out at 2.0), where that
+## font is 28px on a 24px row at a 28px pitch — so the rows of the most-used menu in the game
+## collided with each other and the labels ran outside their own highlight. Nothing guarded it:
+## no test named OverworldMenu and a text scale together.
+##
+## Mirrors SettingsMenu's `_line_h` / `_row_font` pair rather than inventing a third spelling.
+func _menu_font() -> Font:
+	return ThemeDB.fallback_font
+
+
+func _menu_row_h() -> float:
+	var fs: int = TextScale.scaled(MENU_FONT_SIZE)
+	var f: Font = _menu_font()
+	var line: float = float(fs) * 1.4 if f == null else f.get_height(fs)
+	return maxf(24.0, line + 6.0)
+
+
+## Wide enough for the longest option at the current scale, bounded by the panel.
+func _menu_row_w(panel_w: float) -> float:
+	var fs: int = TextScale.scaled(MENU_FONT_SIZE)
+	var f: Font = _menu_font()
+	var widest := 0.0
+	if f != null:
+		for o in _menu_options:
+			widest = maxf(widest, f.get_string_size(str(o["label"]), HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x)
+	return clampf(MENU_LABEL_X + widest + MENU_ROW_PAD_X, 200.0, maxf(200.0, panel_w - 16.0))
+
+
+## Line step for the info block under the rows (play time, location, corruption). Same reason as
+## _menu_row_h: those lines are TextScale.scaled(11) stepped by a literal 16, which the font
+## outgrows at 150% and above.
+func _info_step() -> float:
+	var fs: int = TextScale.scaled(INFO_FONT_SIZE)
+	var f: Font = _menu_font()
+	var line: float = float(fs) * 1.4 if f == null else f.get_height(fs)
+	return maxf(16.0, line + 2.0)
+
+
 func _create_menu_panel(panel_size: Vector2) -> Control:
 	"""Create the menu options panel"""
 	var panel = Control.new()
@@ -515,13 +565,16 @@ func _create_menu_panel(panel_size: Vector2) -> Control:
 	title.add_theme_color_override("font_color", TEXT_COLOR)
 	panel.add_child(title)
 
-	# Menu items
+	# Menu items. Pitch and width come from the scaled font, so a larger Text Size moves the rows
+	# apart instead of stacking them on top of each other.
 	var y_offset = 32
-	var item_height = 28
+	var row_h: float = _menu_row_h()
+	var row_w: float = _menu_row_w(panel_size.x)
+	var item_height: float = row_h + MENU_ROW_GAP
 
 	for i in range(_menu_options.size()):
 		var option = _menu_options[i]
-		var item = _create_menu_item(option, i)
+		var item = _create_menu_item(option, i, row_w, row_h)
 		item.position = Vector2(8, y_offset + i * item_height)
 		panel.add_child(item)
 		_menu_labels.append(item)
@@ -535,9 +588,11 @@ func _create_menu_panel(panel_size: Vector2) -> Control:
 	play_time.add_theme_color_override("font_color", DISABLED_COLOR)
 	panel.add_child(play_time)
 
+	var step: float = _info_step()
+
 	var location = Label.new()
 	location.text = "Location: Overworld"
-	location.position = Vector2(8, info_y + 16)
+	location.position = Vector2(8, info_y + step)
 	location.add_theme_font_size_override("font_size", TextScale.scaled(11))
 	location.add_theme_color_override("font_color", DISABLED_COLOR)
 	panel.add_child(location)
@@ -549,17 +604,24 @@ func _create_menu_panel(panel_size: Vector2) -> Control:
 	if corr_lines.size() > 0:
 		var corr = Label.new()
 		corr.text = str(corr_lines[0])
-		corr.position = Vector2(8, info_y + 32)
+		corr.position = Vector2(8, info_y + step * 2.0)
 		corr.add_theme_font_size_override("font_size", TextScale.scaled(11))
 		corr.add_theme_color_override("font_color", Color(0.85, 0.3, 0.45))
 		panel.add_child(corr)
 		if corr_lines.size() > 1:
 			var fx_label = Label.new()
 			fx_label.text = str(corr_lines[1])
-			fx_label.position = Vector2(8, info_y + 48)
-			fx_label.size = Vector2(190, 14)
+			## ⛔ WAS A LITERAL `Vector2(190, 14)` WITH `clip_text`. clip_text takes the text out of
+			## the minimum size, so unlike every other Label here this box does NOT clamp up to its
+			## content — it really is 14px tall, and a scaled(10) font is 20px at 200%, so the
+			## corruption effects line was cut off vertically by the box meant to hold it.
+			fx_label.position = Vector2(8, info_y + step * 3.0)
+			fx_label.add_theme_font_size_override("font_size", TextScale.scaled(INFO_FX_FONT_SIZE))
+			var fx_fs: int = TextScale.scaled(INFO_FX_FONT_SIZE)
+			var fx_f: Font = _menu_font()
+			var fx_line: float = float(fx_fs) * 1.4 if fx_f == null else fx_f.get_height(fx_fs)
+			fx_label.size = Vector2(190, maxf(14.0, fx_line))
 			fx_label.clip_text = true
-			fx_label.add_theme_font_size_override("font_size", TextScale.scaled(10))
 			fx_label.add_theme_color_override("font_color", Color(0.7, 0.35, 0.45))
 			panel.add_child(fx_label)
 
@@ -585,15 +647,17 @@ static func _corruption_summary(level: float, effects: Array) -> Array:
 	return lines
 
 
-func _create_menu_item(option: Dictionary, index: int) -> Control:
-	"""Create a single menu item"""
+func _create_menu_item(option: Dictionary, index: int, row_w: float, row_h: float) -> Control:
+	"""Create a single menu item. `row_w`/`row_h` are derived from the scaled font by the caller."""
 	var item = Control.new()
-	item.size = Vector2(200, 24)
+	item.size = Vector2(row_w, row_h)
 
 	# Selection highlight
+	## Anchored, not sized: the row's own width is the only correct answer at any Text Size, and a
+	## literal cannot be one. Same idiom as JobMenu and AbilitiesMenu.
 	var highlight = ColorRect.new()
 	highlight.color = SELECTED_COLOR if index == selected_index else Color.TRANSPARENT
-	highlight.size = Vector2(180, 24)
+	highlight.set_anchors_preset(Control.PRESET_FULL_RECT)
 	highlight.name = "Highlight"
 	item.add_child(highlight)
 
@@ -609,14 +673,16 @@ func _create_menu_item(option: Dictionary, index: int) -> Control:
 	# Label
 	var label = Label.new()
 	label.text = option["label"]
-	label.position = Vector2(24, 2)
+	label.position = Vector2(MENU_LABEL_X, 2)
 	label.add_theme_font_size_override("font_size", TextScale.scaled(14))
 	label.add_theme_color_override("font_color", TEXT_COLOR if option["enabled"] else DISABLED_COLOR)
 	label.name = "Label"
 	item.add_child(label)
 
 	# Mouse click overlay
-	MenuMouseHelper.make_clickable(item, index, 180, 24,
+	## From the ROW, not a literal 180x24: at 200% the row is taller and wider than that, so the
+	## bottom of a highlighted row did not answer a click.
+	MenuMouseHelper.make_clickable(item, index, row_w, row_h,
 		_on_menu_click.bind(index), _on_menu_hover.bind(index))
 
 	return item
