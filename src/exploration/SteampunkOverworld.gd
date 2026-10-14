@@ -534,6 +534,12 @@ func _setup_transitions() -> void:
 	back_portal.position += Vector2(0, InteractGeometry.ENTRANCE_BOX_MODE7.y)
 	back_portal.position += Vector2(0, InteractGeometry.MODE7_TRIGGER_Y_OFFSET)  # W1 log-warp recipe (audit defect #1)
 	_setup_transition_collision(back_portal, InteractGeometry.ENTRANCE_BOX_MODE7)
+	## ⛔ AFTER the portal is placed, and that ordering is the whole point: this key is the portal's
+	## OWN anchor, so deriving the arrival here reads one already-computed position instead of
+	## restating the +box -offset recipe a second time. `_setup_player` runs after
+	## `_setup_transitions`, so the corrected spawn is the one the player lands on.
+	spawn_points["steampunk_portal"] = InteractGeometry.arrival_clear_of(
+		back_portal.position, InteractGeometry.ENTRANCE_BOX_MODE7, float(MAP_HEIGHT * TILE_SIZE))
 	back_portal.transition_triggered.connect(_on_transition_triggered)
 	transitions.add_child(back_portal)
 

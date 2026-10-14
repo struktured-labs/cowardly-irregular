@@ -551,6 +551,9 @@ func _setup_transitions() -> void:
 	back_portal.position = Vector2(27 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 42 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
 	back_portal.position += Vector2(0, InteractGeometry.MODE7_TRIGGER_Y_OFFSET)  # W1 log-warp recipe (audit defect #1)
 	_setup_transition_collision(back_portal, InteractGeometry.ENTRANCE_BOX_MODE7)
+	## The W4 arrival landed inside this box; derived clear of it rather than moved a row.
+	spawn_points["from_industrial"] = InteractGeometry.arrival_clear_of(
+		back_portal.position, InteractGeometry.ENTRANCE_BOX_MODE7, float(MAP_HEIGHT * TILE_SIZE))
 	back_portal.transition_triggered.connect(_on_transition_triggered)
 	transitions.add_child(back_portal)
 

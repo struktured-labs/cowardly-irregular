@@ -81,6 +81,37 @@ const MODE7_GROUND_DISPLACEMENT_PX := 140.6
 ## test_transition_reachability_regression measures this; do not re-derive it by hand.
 const MODE7_TRIGGER_Y_OFFSET := -MODE7_GROUND_DISPLACEMENT_PX
 
+
+## 🐛 YOU ARRIVED STANDING IN THE TRIGGER THAT SENDS YOU BACK, on 3 of 4 world transitions.
+## Measured 2026-10-14: the triggers carry MODE7_TRIGGER_Y_OFFSET and the PLAYER does not —
+## `spawn_player_at` is a bare `player.teleport(spawn_points[name])` — so an arrival authored near
+## its own return portal lands inside a 192 px box that was shifted 140.6 px north of its anchor.
+##
+##     W2 -> W3 Steampunk   arrival (2608, 112)   box y  67.4 ..  259.4   INSIDE
+##     W4 -> W5 Futuristic  arrival (2608, 3856)  box y 3811.4 .. 4003.4  INSIDE
+##     W5 -> W6 Abstract    arrival (1232, 2064)  box y 2032.0 .. 2224.0  INSIDE
+##     W3 -> W4 Industrial  arrival (2896, 3472)  box y 3715.4 .. 3907.4  clear  <- the control
+##
+## `require_interaction` is true on all three, so it is not an instant bounce — it is worse-shaped
+## than that: the "Return to ..." prompt is already up when the world fades in (AreaTransition:231
+## shows it from `body_entered`), and the first interact press, which is the button a player uses
+## reflexively on signs and dialogue, leaves the world they just reached.
+##
+## ⛔ W3 -> W4 IS WHY THIS IS NOT A COORDINATE FIX. It is clear only because its portal sits in a
+## different COLUMN as well as five rows away; the other three are 0-2 cells apart against a box
+## 2 cells tall. Nudging a row buys the next instance, so the arrival is DERIVED from the box it
+## must clear: half the box, plus one tile so the player's own body is outside too.
+const ARRIVAL_CLEARANCE_PX := TILE  # this file's own tile constant; it has no TILE_SIZE
+
+
+## Where an arrival must land to be clear of the return trigger it faces. `toward` is DERIVED, not
+## passed: a portal in the map's top half pushes the arrival south, one in the bottom half pushes it
+## north, so it always moves into the map rather than off an edge — and no world carries a direction
+## constant that could disagree with its own geometry.
+static func arrival_clear_of(trigger_pos: Vector2, box: Vector2, map_px_height: float) -> Vector2:
+	var toward: float = 1.0 if trigger_pos.y < map_px_height * 0.5 else -1.0
+	return trigger_pos + Vector2(0.0, toward * (box.y * 0.5 + ARRIVAL_CLEARANCE_PX))
+
 # -- Class D: auto-sensors --
 const AUTO_SENSOR_SLOP := 8.0
 const STAIRS_BOX := Vector2(48, 48)  # unifies UP 32x32 / DOWN 64x64
