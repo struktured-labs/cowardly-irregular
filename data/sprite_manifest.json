@@ -5576,6 +5576,32 @@
           "frames": 4
         }
       }
+    },
+    "kid_acrees": {
+      "path": "res://assets/sprites/npcs/kid_acrees/overworld.png",
+      "frame_width": 48,
+      "frame_height": 48,
+      "fps": 4,
+      "tier": "T2",
+      "source": "artist aseprite drop 2026-10-13 — Villagers/Villager_Kid Acrees.aseprite, 16 frames / 4 tags (South, West, East, North; 250ms each). The artist's THIRD overworld walker. Exported at NATIVE size by tools/export_artist_overworld_walker.py: figure 23x41 in 48px cells, no resampling. ⚠️ His East tag is an exact copy of West (both face left), so the walk_right row is the walk_left row MIRRORED pixel for pixel (--mirror-right-from-left; struktured ruled 2026-10-14). Every other row is the artist's frames untouched.",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      }
     }
   },
   "overworld_player_sheets": {

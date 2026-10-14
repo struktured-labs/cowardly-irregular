@@ -781,6 +781,21 @@ func _setup_npcs() -> void:
 	)
 	npcs.add_child(roy)
 
+	# Kid Acrees — the artist's third overworld villager (2026-10-13 drop), on the grass north of the stall and cart.
+	var acrees_loop: Array[Vector2] = [
+		Vector2(24 * TILE_SIZE,20 * TILE_SIZE),
+		Vector2(29 * TILE_SIZE,20 * TILE_SIZE),
+	]
+	var acrees = _create_wandering_npc(
+		"Kid Acrees",
+		"kid_acrees",
+		"Mom says I can walk as far as the cart. The cart has never moved, so that's not very far.",
+		acrees_loop,
+		"villager",
+		"kid_acrees"
+	)
+	npcs.add_child(acrees)
+
 
 ## Spawn a QuestChicken for the one_chicken_problem 7-catch puzzle.
 func _place_chicken(chicken_id: String, pos: Vector2, catch_line: String = "") -> void:

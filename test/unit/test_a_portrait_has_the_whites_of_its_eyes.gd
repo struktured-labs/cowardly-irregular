@@ -60,7 +60,7 @@ const EYES_DRAWN := {
 	"npcs/villager_f.png": [Vector2i(106, 109), Vector2i(151, 109)],
 }
 const EYE_MATCH := 5
-const ARTIST_DERIVED := ["fighter.png", "cleric.png", "mage.png", "rogue.png", "bard.png", "mordaine.png", "chancellor_mordaine.png", "calibrant.png", "rotha.png", "roy.png"]
+const ARTIST_DERIVED := ["fighter.png", "cleric.png", "mage.png", "rogue.png", "bard.png", "mordaine.png", "chancellor_mordaine.png", "calibrant.png", "rotha.png", "roy.png", "kid_acrees.png"]
 
 
 func small_hole_pixels(img: Image, cap: int = MAX_HOLE, floor: int = 1, eyes: Array = [], found: Array = []) -> int:
