@@ -28,12 +28,34 @@ const BORDER_SHADOW := Color(0.08, 0.08, 0.12)
 const TEXT_COLOR := Color(0.95, 0.95, 0.95)
 const HEADER_COLOR := Color(0.85, 0.75, 0.40)
 
+## The authored sizes. Every box below is derived from the SCALED one, so 100% is byte-identical.
+const HEADER_FONT := 18
+const BODY_FONT := 14
+const EMPTY_FONT := 16
+const HINT_FONT := 12
+## Gaps the shipped layout spends around the three fixed rows, kept so 100% reproduces exactly.
+const PAD_SIDE := 20.0
+const BODY_INSET := 24.0
+const HEADER_TOP := 16.0
+const HEADER_BOX := 28.0
+const BODY_TOP_GAP := 12.0
+const HINT_BOX := 20.0
+const HINT_BOTTOM := 28.0
+## The shipped body reserved panel_h - 124 and the hint sits 28 up: 124 - 56 - 20 - 8 leaves this gap.
+const BODY_HINT_GAP := 40.0
+
 var _entries: Array = []   # [{idx: int, proposal: Dictionary}, ...]
 var _selected_idx: int = 0
 var _proposal_label: RichTextLabel
 var _hint_label: Label
 var _empty_label: Label
 var _header_label: Label
+
+
+## A row's box: the authored height until the scaled font outgrows it, then the font plus the padding
+## the authored box spent. One expression, so 100% cannot drift from the shipped look.
+static func _row_box(base_font: int, authored_box: float) -> float:
+	return maxf(authored_box, float(TextScale.scaled(base_font)) + authored_box - float(base_font))
 
 
 func _ready() -> void:
@@ -77,39 +99,49 @@ func _build_ui() -> void:
 	panel_bg.size = Vector2(panel_w, panel_h)
 	add_child(panel_bg)
 
+	var header_h: float = _row_box(HEADER_FONT, HEADER_BOX)
+	var hint_h: float = _row_box(HINT_FONT, HINT_BOX)
+	var empty_h: float = _row_box(EMPTY_FONT, HEADER_BOX)
+
 	_header_label = Label.new()
 	_header_label.text = "PENDING REBALANCE PROPOSALS"
-	_header_label.add_theme_font_size_override("font_size", 18)
+	_header_label.add_theme_font_size_override("font_size", TextScale.scaled(HEADER_FONT))
 	_header_label.add_theme_color_override("font_color", HEADER_COLOR)
-	_header_label.position = Vector2(panel_x + 20, panel_y + 16)
-	_header_label.size = Vector2(panel_w - 40, 28)
+	_header_label.position = Vector2(panel_x + PAD_SIDE, panel_y + HEADER_TOP)
+	_header_label.size = Vector2(panel_w - PAD_SIDE * 2.0, header_h)
 	add_child(_header_label)
 
+	# The body starts below the header it actually has, and ends above the hint it actually has.
+	var body_y: float = HEADER_TOP + header_h + BODY_TOP_GAP
+	var body_h: float = panel_h - body_y - hint_h - (HINT_BOTTOM - HINT_BOX) - BODY_HINT_GAP
 	_proposal_label = RichTextLabel.new()
 	_proposal_label.bbcode_enabled = true
 	_proposal_label.add_theme_color_override("default_color", TEXT_COLOR)
-	_proposal_label.add_theme_font_size_override("normal_font_size", 14)
-	_proposal_label.position = Vector2(panel_x + 24, panel_y + 56)
-	_proposal_label.size = Vector2(panel_w - 48, panel_h - 124)
-	_proposal_label.scroll_active = false
+	_proposal_label.add_theme_font_size_override("normal_font_size", TextScale.scaled(BODY_FONT))
+	_proposal_label.position = Vector2(panel_x + BODY_INSET, panel_y + body_y)
+	_proposal_label.size = Vector2(panel_w - BODY_INSET * 2.0, body_h)
+	# The model's `reason` reaches here UNCAPPED (RebalanceDaemon:240 validates type, not length), and
+	# this is the screen where a player decides whether to let it change the game's constants. With
+	# scrolling off, a long proposal was silently cut at the box edge -- at every font size.
+	_proposal_label.scroll_active = true
 	_proposal_label.fit_content = false
 	add_child(_proposal_label)
 
 	_empty_label = Label.new()
 	_empty_label.text = "No proposals waiting for review."
-	_empty_label.add_theme_font_size_override("font_size", 16)
+	_empty_label.add_theme_font_size_override("font_size", TextScale.scaled(EMPTY_FONT))
 	_empty_label.add_theme_color_override("font_color", TEXT_COLOR)
-	_empty_label.position = Vector2(panel_x + 24, panel_y + (panel_h / 2.0) - 14)
-	_empty_label.size = Vector2(panel_w - 48, 28)
+	_empty_label.position = Vector2(panel_x + BODY_INSET, panel_y + (panel_h / 2.0) - empty_h / 2.0)
+	_empty_label.size = Vector2(panel_w - BODY_INSET * 2.0, empty_h)
 	_empty_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	add_child(_empty_label)
 
 	_hint_label = Label.new()
 	_hint_label.text = _legend_text()
-	_hint_label.add_theme_font_size_override("font_size", 12)
+	_hint_label.add_theme_font_size_override("font_size", TextScale.scaled(HINT_FONT))
 	_hint_label.add_theme_color_override("font_color", TEXT_COLOR)
-	_hint_label.position = Vector2(panel_x + 24, panel_y + panel_h - 28)
-	_hint_label.size = Vector2(panel_w - 48, 20)
+	_hint_label.position = Vector2(panel_x + BODY_INSET, panel_y + panel_h - HINT_BOTTOM - (hint_h - HINT_BOX))
+	_hint_label.size = Vector2(panel_w - BODY_INSET * 2.0, hint_h)
 	_hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	add_child(_hint_label)
 
