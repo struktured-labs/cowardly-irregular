@@ -196,11 +196,14 @@ func _on_test_pressed() -> void:
 	var stream: AudioStream = await VoiceService.synthesize(speaker, _sample_line(speaker), TEST_TIMEOUT_SEC)
 	if not is_inside_tree():
 		return
-	if stream != null:
-		SoundManager.play_voice_stream(stream)
-		_set_status(status_text(VoiceService.status()), OK_COLOR)
-	else:
+	if stream == null:
 		_set_status(status_text(VoiceService.status()), FAIL_COLOR)
+		_testing = false
+		return
+	## A deliberate press outranks the sample still speaking; play_voice_stream refuses while the one player is busy.
+	SoundManager.stop_voice()
+	var heard: bool = SoundManager.play_voice_stream(stream) > 0.0
+	_set_status(status_text(VoiceService.status()), OK_COLOR if heard else FAIL_COLOR)
 	_testing = false
 
 
