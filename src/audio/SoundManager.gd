@@ -1449,6 +1449,23 @@ func _get_world_sfx_prefix() -> String:
 		_: return ""  # W1 medieval uses unprefixed keys
 
 
+## The settlement ambience for the CURRENT world. LITERAL ids, never built: the orphan census in test_every_authored_bed_has_a_consumer finds a consumer by locating a literal ambient id in src/, so a constructed key makes it blind to its own subject.
+func village_ambient_key() -> String:
+	var key: String = ""
+	match _get_current_world_suffix():
+		"medieval":
+			key = "ambient_village"
+		"steampunk":
+			key = "ambient_steampunk"
+		"industrial":
+			key = "ambient_industrial"
+		"digital":
+			key = "ambient_digital"
+	if key != "" and has_music_track(key) and music_is_available(key):
+		return key
+	return ""
+
+
 func play_ambient(sound_key: String) -> void:
 	"""Start a looping ambient sound (weather, environment). Stops previous ambient."""
 	## SILENT BY DESIGN: the bed asked for is the bed already sounding. Restarting it would seam.

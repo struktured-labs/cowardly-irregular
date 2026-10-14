@@ -789,6 +789,9 @@ func restore_place_ambient() -> void:
 
 
 func _get_ambient_key() -> String:
+	## Was a bare "ambient_village" for all 13 villages: 6 non-W1 ones layered MEDIEVAL market chatter, and ambient_steampunk/industrial/digital had no consumer at all.
+	if SoundManager and SoundManager.has_method("village_ambient_key"):
+		return SoundManager.village_ambient_key()
 	return "ambient_village"
 
 
