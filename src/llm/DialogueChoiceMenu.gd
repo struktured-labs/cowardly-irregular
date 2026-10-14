@@ -78,6 +78,30 @@ const PADDING_SIDE:   int   = 16
 const PADDING_BOTTOM: int   = 12
 const ROW_FONT_SIZE:  int   = 18
 const HINT_FONT_SIZE: int   = 13
+## The hint names the player's own keys, so it shrinks rather than trims when even a widened panel
+## cannot hold it: a cut-off control reminder is worse than a small one.
+const HINT_FONT_MIN:  int   = 10
+## The hint row and the gaps around it at 100%, kept so the derived panel is identical there.
+const HINT_ROW_H:      int  = 24
+const HINT_GAP_TOP:    int  = 8
+const HINT_GAP_BOTTOM: int  = 8
+
+
+## Row pitch grows with the row font and never falls below the shipped 40: smaller text in the same
+## box is fine, larger text in it is clipped glyphs.
+static func row_h() -> int:
+	return maxi(ROW_H, TextScale.scaled(ROW_FONT_SIZE) + ROW_H - ROW_FONT_SIZE)
+
+
+static func hint_h() -> int:
+	return maxi(HINT_ROW_H, TextScale.scaled(HINT_FONT_SIZE) + HINT_ROW_H - HINT_FONT_SIZE)
+
+
+## The panel widens with the text, because the rows ellipsis-trim to their box: in a fixed box, bigger
+## text shows LESS of an LLM-written choice than it did at 100%.
+static func panel_width(viewport_w: float) -> int:
+	var want: int = maxi(PANEL_W_TARGET, int(round(float(PANEL_W_TARGET * TextScale.scaled(100)) / 100.0)))
+	return mini(want, int(viewport_w) - 40)
 
 ## Position offset from the upper-center anchor of the viewport.
 ## NPCDialogue/CutsceneDialogue occupies the bottom ~170 px of the
@@ -241,10 +265,11 @@ func _build_ui() -> void:
 	# Clamp panel width to viewport so it never bleeds off-screen-right
 	# (LLM choice text already gets ellipsis-trimmed inside the label).
 	var vp_size: Vector2 = get_viewport_rect().size
-	_panel_w = mini(PANEL_W_TARGET, int(vp_size.x) - 40)
+	_panel_w = panel_width(vp_size.x)
 
-	# Calculate panel height from number of choices.
-	var panel_h: int = PADDING_TOP + _choices.size() * ROW_H + PADDING_BOTTOM + 28  # +28 for hint row
+	# Height derived from where the hint actually ends, not from a magic tail.
+	var hint_y: int = PADDING_TOP + _choices.size() * row_h() + HINT_GAP_TOP
+	var panel_h: int = hint_y + hint_h() + HINT_GAP_BOTTOM
 
 	_panel = RetroPanel.create_panel(
 		_panel_w,
@@ -267,16 +292,19 @@ func _build_ui() -> void:
 	for i in _choices.size():
 		var row := Label.new()
 		row.text = "  " + _choices[i]
-		row.add_theme_font_size_override("font_size", ROW_FONT_SIZE)
+		row.add_theme_font_size_override("font_size", TextScale.scaled(ROW_FONT_SIZE))
 		row.add_theme_color_override("font_color", COL_ROW_NORMAL)
-		row.position  = Vector2(PADDING_SIDE, PADDING_TOP + i * ROW_H)
-		row.size      = Vector2(_panel_w - PADDING_SIDE * 2, ROW_H)
-		# Long LLM-generated choices used to bleed past the panel and off
-		# the right edge of the viewport (clip_text=false +
-		# OVERRUN_NO_TRIMMING). Clip to label rect and ellipsis-trim so
-		# the menu always stays inside the panel.
+		row.position  = Vector2(PADDING_SIDE, PADDING_TOP + i * row_h())
+		# Clip and trim BEFORE the size, not after: a Label cannot be sized below its content
+		# minimum, and clip_text is what collapses that minimum. Assigned the other way round, an
+		# 85-character choice clamped the row to 651px inside a 640px panel and drew 27px of itself
+		# past the right edge -- at the shipped default, which is what the old comment here missed.
 		row.clip_text = true
 		row.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+		# Deferred, because a Label's content minimum is recomputed on a later pass: assigned in this
+		# frame the size clamps against the UNCLIPPED minimum, which is how an 85-character choice
+		# ended up 651px wide in a 640px panel even with clip_text set first.
+		row.set_deferred("size", Vector2(_panel_w - PADDING_SIDE * 2, row_h()))
 		row.mouse_filter = Control.MOUSE_FILTER_STOP
 		_panel.add_child(row)
 		_row_nodes.append(row)
@@ -294,16 +322,16 @@ func _build_ui() -> void:
 	# Divider above hint.
 	var div := ColorRect.new()
 	div.color    = Color(0.3, 0.4, 0.6, 0.7)
-	div.position = Vector2(PADDING_SIDE, PADDING_TOP + _choices.size() * ROW_H + 4)
+	div.position = Vector2(PADDING_SIDE, PADDING_TOP + _choices.size() * row_h() + 4)
 	div.size     = Vector2(_panel_w - PADDING_SIDE * 2, 2)
 	_panel.add_child(div)
 
 	# Hint row.
 	_hint_label = Label.new()
 	_hint_label.text = hint_text(cancellable)  # resolved per present(): a pad plugged in mid-scene changes the cap
-	_hint_label.position = Vector2(PADDING_SIDE, PADDING_TOP + _choices.size() * ROW_H + 8)
-	_hint_label.size     = Vector2(_panel_w - PADDING_SIDE * 2, 24)
-	_hint_label.add_theme_font_size_override("font_size", HINT_FONT_SIZE)
+	_hint_label.position = Vector2(PADDING_SIDE, float(hint_y))
+	_hint_label.size     = Vector2(_panel_w - PADDING_SIDE * 2, hint_h())
+	_hint_label.add_theme_font_size_override("font_size", _fit_hint_px(_hint_label.text))
 	_hint_label.add_theme_color_override("font_color", COL_HINT)
 	_hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_hint_label.clip_text = false
@@ -312,6 +340,17 @@ func _build_ui() -> void:
 
 
 # ── Input handling ────────────────────────────────────────────────────────────
+
+## The hint has NO trimming, so a size that does not fit draws straight off the panel. The panel
+## widens first; this only engages when the viewport itself cannot hold the grown hint.
+func _fit_hint_px(text: String) -> int:
+	var px: int = TextScale.scaled(HINT_FONT_SIZE)
+	var room: float = float(_panel_w - PADDING_SIDE * 2)
+	var font: Font = ThemeDB.fallback_font
+	while px > HINT_FONT_MIN and font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x > room:
+		px -= 1
+	return px
+
 
 func _input(event: InputEvent) -> void:
 	if not _active:
