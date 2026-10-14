@@ -35,6 +35,7 @@ var _nav_repeat := MenuRepeat.new(PackedStringArray(["ui_up", "ui_down"]))
 var cursor_col: int = 0  # Current cell in row (conditions then actions)
 var is_editing: bool = false  # Currently editing a cell
 var _portrait_focused: bool = false  # True when cursor is on character portrait panel
+var _cell_h_cache: int = 0  # invalidated per rebuild; rules AND Text Size feed it
 var _scroll_offset: float = 0.0  # Vertical scroll so >9 rules / off-screen rows follow the cursor
 
 ## Visual elements
@@ -345,7 +346,7 @@ func _build_ui() -> void:
 	var profile_name = AutobattleSystem.get_active_profile_name(character_id)
 	_title_label.text = "%s - %s" % [character_name, profile_name]
 	_title_label.position = Vector2(16, 8)
-	_title_label.add_theme_font_size_override("font_size", 14)
+	_title_label.add_theme_font_size_override("font_size", TextScale.scaled(14))
 	_title_label.add_theme_color_override("font_color", style.text)
 	add_child(_title_label)
 
@@ -358,7 +359,7 @@ func _build_ui() -> void:
 	# Autobattle status
 	_status_label = Label.new()
 	_status_label.position = Vector2(size.x - 120, 28)
-	_status_label.add_theme_font_size_override("font_size", 12)
+	_status_label.add_theme_font_size_override("font_size", TextScale.scaled(12))
 	add_child(_status_label)
 	_update_status_label()
 
@@ -397,7 +398,7 @@ func _build_ui() -> void:
 		InputProfileManager.hint_for_action("battle_defer"),
 	]
 	help_label1.position = Vector2(16, size.y - 44)
-	help_label1.add_theme_font_size_override("font_size", 10)
+	help_label1.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	help_label1.add_theme_color_override("font_color", style.text.darkened(0.2))
 	add_child(help_label1)
 
@@ -410,7 +411,7 @@ func _build_ui() -> void:
 		_pad_only_token("ui_menu", "Save"),
 	]
 	help_label2.position = Vector2(16, size.y - 28)
-	help_label2.add_theme_font_size_override("font_size", 10)
+	help_label2.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	help_label2.add_theme_color_override("font_color", style.text.darkened(0.2))
 	add_child(help_label2)
 
@@ -418,7 +419,7 @@ func _build_ui() -> void:
 	_flash_label = Label.new()
 	_flash_label.position = Vector2(16, size.y - 66)
 	_flash_label.size = Vector2(size.x - 32, 18)
-	_flash_label.add_theme_font_size_override("font_size", 12)
+	_flash_label.add_theme_font_size_override("font_size", TextScale.scaled(12))
 	_flash_label.add_theme_color_override("font_color", Color.LIME)
 	_flash_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_flash_label.visible = false
@@ -442,7 +443,7 @@ func _build_profile_panel() -> void:
 	_profile_label = Label.new()
 	_profile_label.text = "◀ %d/%d: %s ▶" % [profile_idx + 1, profiles.size(), profile_name]
 	_profile_label.position = Vector2(size.x - 175, 6)
-	_profile_label.add_theme_font_size_override("font_size", 11)
+	_profile_label.add_theme_font_size_override("font_size", TextScale.scaled(11))
 	_profile_label.add_theme_color_override("font_color", Color.YELLOW)
 	add_child(_profile_label)
 
@@ -490,7 +491,7 @@ func _build_stats_panel() -> void:
 		var portrait_label = Label.new()
 		portrait_label.text = character_name.substr(0, 1)
 		portrait_label.position = Vector2(14, 8)
-		portrait_label.add_theme_font_size_override("font_size", 24)
+		portrait_label.add_theme_font_size_override("font_size", TextScale.scaled(24))
 		portrait_label.add_theme_color_override("font_color", style.text)
 		_stats_panel.add_child(portrait_label)
 
@@ -498,7 +499,7 @@ func _build_stats_panel() -> void:
 	var job_label = Label.new()
 	job_label.text = _get_job_name()
 	job_label.position = Vector2(48, 4)
-	job_label.add_theme_font_size_override("font_size", 10)
+	job_label.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	job_label.add_theme_color_override("font_color", style.text.darkened(0.2))
 	_stats_panel.add_child(job_label)
 
@@ -506,14 +507,14 @@ func _build_stats_panel() -> void:
 	var name_label = Label.new()
 	name_label.text = character_name
 	name_label.position = Vector2(48, 18)
-	name_label.add_theme_font_size_override("font_size", 12)
+	name_label.add_theme_font_size_override("font_size", TextScale.scaled(12))
 	name_label.add_theme_color_override("font_color", style.text)
 	_stats_panel.add_child(name_label)
 
 	# Stats (if combatant available)
 	if combatant:
 		var stats_y = 50
-		var stat_size = 11
+		var stat_size = TextScale.scaled(11)
 
 		var hp_label = Label.new()
 		hp_label.text = "HP: %d/%d" % [combatant.current_hp, combatant.max_hp]
@@ -599,6 +600,7 @@ func _update_status_label() -> void:
 
 func _refresh_grid() -> void:
 	"""Rebuild the visual grid from rules data"""
+	_cell_h_cache = 0  # rules and Text Size may both have moved since the last build
 	# Clear existing cells
 	for child in _grid_container.get_children():
 		child.queue_free()
@@ -608,7 +610,7 @@ func _refresh_grid() -> void:
 	for row_idx in range(rules.size()):
 		var rule = rules[row_idx]
 		_draw_rule_row(row_idx, rule, y_offset)
-		y_offset += CELL_HEIGHT + ROW_SPACING
+		y_offset += _row_stride()
 
 		# Draw OR connector between rows
 		if row_idx < rules.size() - 1:
@@ -661,7 +663,7 @@ func _draw_rule_row(row_idx: int, rule: Dictionary, y_offset: float) -> void:
 
 	# Arrow connector between conditions and actions (with dedicated space)
 	var arrow = _create_arrow_connector()
-	arrow.position = Vector2(x_offset + 4, y_offset + CELL_HEIGHT / 2 - 6)
+	arrow.position = Vector2(x_offset + 4, y_offset + _cell_h() / 2 - 6)
 	_grid_container.add_child(arrow)
 	x_offset += CONNECTOR_WIDTH + 8
 
@@ -691,7 +693,7 @@ func _draw_rule_row(row_idx: int, rule: Dictionary, y_offset: float) -> void:
 		# Chain connector if more groups follow
 		if action_groups.find(group) < action_groups.size() - 1:
 			var chain = _create_chain_connector()
-			chain.position = Vector2(x_offset + 4, y_offset + CELL_HEIGHT / 2 - 6)
+			chain.position = Vector2(x_offset + 4, y_offset + _cell_h() / 2 - 6)
 			_grid_container.add_child(chain)
 			x_offset += CELL_PADDING + 16
 		else:
@@ -758,7 +760,7 @@ func _actions_equal(a: Dictionary, b: Dictionary) -> bool:
 func _create_condition_cell(row_idx: int, cond_idx: int, condition: Dictionary) -> Control:
 	"""Create a condition cell"""
 	var cell = Control.new()
-	cell.custom_minimum_size = Vector2(CELL_WIDTH, CELL_HEIGHT)
+	cell.custom_minimum_size = Vector2(CELL_WIDTH, _cell_h())
 	cell.set_meta("cell_type", "condition")
 	cell.set_meta("row", row_idx)
 	cell.set_meta("index", cond_idx)
@@ -766,26 +768,26 @@ func _create_condition_cell(row_idx: int, cond_idx: int, condition: Dictionary) 
 	# Background - use character-specific condition color
 	var bg = ColorRect.new()
 	bg.color = style.get("condition_bg", CONDITION_COLOR)
-	bg.size = Vector2(CELL_WIDTH, CELL_HEIGHT)
+	bg.size = Vector2(CELL_WIDTH, _cell_h())
 	cell.add_child(bg)
 
 	# Border - use character-specific border color
-	_add_pixel_border(cell, CELL_WIDTH, CELL_HEIGHT)
+	_add_pixel_border(cell, CELL_WIDTH, _cell_h())
 
 	# Text
 	var label = Label.new()
 	label.text = _format_condition(condition)
 	label.position = Vector2(6, 4)
-	label.size = Vector2(CELL_WIDTH - 12, CELL_HEIGHT - 8)
-	label.add_theme_font_size_override("font_size", 11)
+	label.size = Vector2(CELL_WIDTH - 12, _cell_h() - 8)
+	label.add_theme_font_size_override("font_size", TextScale.scaled(11))
 	label.add_theme_color_override("font_color", style.text)
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	label.autowrap_mode = TextServer.AUTOWRAP_WORD
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	cell.add_child(label)
 
 	# Mouse: click to edit, hover to highlight
-	MenuMouseHelper.make_clickable(cell, cond_idx, CELL_WIDTH, CELL_HEIGHT,
+	MenuMouseHelper.make_clickable(cell, cond_idx, CELL_WIDTH, _cell_h(),
 		func() -> void: _on_grid_cell_clicked(cell),
 		func() -> void: _on_grid_cell_hover(cell))
 
@@ -795,7 +797,7 @@ func _create_condition_cell(row_idx: int, cond_idx: int, condition: Dictionary) 
 func _create_action_cell(row_idx: int, act_idx: int, action: Dictionary, count: int = 1) -> Control:
 	"""Create an action cell with optional cycle count"""
 	var cell = Control.new()
-	cell.custom_minimum_size = Vector2(CELL_WIDTH, CELL_HEIGHT)
+	cell.custom_minimum_size = Vector2(CELL_WIDTH, _cell_h())
 	cell.set_meta("cell_type", "action")
 	cell.set_meta("row", row_idx)
 	cell.set_meta("index", act_idx)
@@ -808,11 +810,11 @@ func _create_action_cell(row_idx: int, act_idx: int, action: Dictionary, count: 
 		bg.color = base_action_color.lightened(0.2)  # Brighter for cycles
 	else:
 		bg.color = base_action_color
-	bg.size = Vector2(CELL_WIDTH, CELL_HEIGHT)
+	bg.size = Vector2(CELL_WIDTH, _cell_h())
 	cell.add_child(bg)
 
 	# Border
-	_add_pixel_border(cell, CELL_WIDTH, CELL_HEIGHT)
+	_add_pixel_border(cell, CELL_WIDTH, _cell_h())
 
 	# Text with cycle indicator
 	var label = Label.new()
@@ -823,12 +825,12 @@ func _create_action_cell(row_idx: int, act_idx: int, action: Dictionary, count: 
 	else:
 		label.text = action_text
 	label.position = Vector2(6, 2)
-	label.size = Vector2(CELL_WIDTH - 12, CELL_HEIGHT - 4)
-	label.add_theme_font_size_override("font_size", 11)
+	label.size = Vector2(CELL_WIDTH - 12, _cell_h() - 4)
+	label.add_theme_font_size_override("font_size", TextScale.scaled(11))
 	label.add_theme_color_override("font_color", style.text)
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	label.autowrap_mode = TextServer.AUTOWRAP_WORD
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	cell.add_child(label)
 	if action.get("type", "") == "ability" and str(action.get("id", "")) != "":
 		AbilityIcons.attach_to_cell(cell, str(action.get("id", "")))
@@ -838,12 +840,12 @@ func _create_action_cell(row_idx: int, act_idx: int, action: Dictionary, count: 
 		var badge = Label.new()
 		badge.text = "↻"
 		badge.position = Vector2(CELL_WIDTH - 16, 2)
-		badge.add_theme_font_size_override("font_size", 12)
+		badge.add_theme_font_size_override("font_size", TextScale.scaled(12))
 		badge.add_theme_color_override("font_color", style.get("highlight_text", Color.YELLOW))
 		cell.add_child(badge)
 
 	# Mouse: click to edit, hover to highlight
-	MenuMouseHelper.make_clickable(cell, act_idx, CELL_WIDTH, CELL_HEIGHT,
+	MenuMouseHelper.make_clickable(cell, act_idx, CELL_WIDTH, _cell_h(),
 		func() -> void: _on_grid_cell_clicked(cell),
 		func() -> void: _on_grid_cell_hover(cell))
 
@@ -853,7 +855,7 @@ func _create_action_cell(row_idx: int, act_idx: int, action: Dictionary, count: 
 func _create_collapsed_action_cell(row_idx: int, first_action: Dictionary, total_count: int) -> Control:
 	"""Create a collapsed action cell showing first action + total count (e.g., 'Attack ×3')"""
 	var cell = Control.new()
-	cell.custom_minimum_size = Vector2(CELL_WIDTH, CELL_HEIGHT)
+	cell.custom_minimum_size = Vector2(CELL_WIDTH, _cell_h())
 	cell.set_meta("cell_type", "collapsed_action")
 	cell.set_meta("row", row_idx)
 	cell.set_meta("count", total_count)
@@ -862,11 +864,11 @@ func _create_collapsed_action_cell(row_idx: int, first_action: Dictionary, total
 	var base_action_color = style.get("action_bg", ACTION_COLOR)
 	var bg = ColorRect.new()
 	bg.color = base_action_color.darkened(0.1)
-	bg.size = Vector2(CELL_WIDTH, CELL_HEIGHT)
+	bg.size = Vector2(CELL_WIDTH, _cell_h())
 	cell.add_child(bg)
 
 	# Border
-	_add_pixel_border(cell, CELL_WIDTH, CELL_HEIGHT)
+	_add_pixel_border(cell, CELL_WIDTH, _cell_h())
 
 	# Text showing first action type + total count
 	var label = Label.new()
@@ -876,8 +878,8 @@ func _create_collapsed_action_cell(row_idx: int, first_action: Dictionary, total
 		type_text = AbilityIcons.name_of(str(first_action.get("id", "Ability")))
 	label.text = "%s... ×%d" % [type_text, total_count]
 	label.position = Vector2(6, 4)
-	label.size = Vector2(CELL_WIDTH - 12, CELL_HEIGHT - 8)
-	label.add_theme_font_size_override("font_size", 11)
+	label.size = Vector2(CELL_WIDTH - 12, _cell_h() - 8)
+	label.add_theme_font_size_override("font_size", TextScale.scaled(11))
 	label.add_theme_color_override("font_color", style.text)
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
@@ -889,7 +891,7 @@ func _create_collapsed_action_cell(row_idx: int, first_action: Dictionary, total
 	var badge = Label.new()
 	badge.text = "⊞"  # Stack symbol
 	badge.position = Vector2(CELL_WIDTH - 16, 2)
-	badge.add_theme_font_size_override("font_size", 12)
+	badge.add_theme_font_size_override("font_size", TextScale.scaled(12))
 	badge.add_theme_color_override("font_color", style.get("highlight_text", Color.YELLOW))
 	cell.add_child(badge)
 
@@ -899,7 +901,7 @@ func _create_collapsed_action_cell(row_idx: int, first_action: Dictionary, total
 func _create_empty_action_hint(row_idx: int, act_idx: int) -> Control:
 	"""Create an empty action slot hint"""
 	var cell = Control.new()
-	cell.custom_minimum_size = Vector2(CELL_WIDTH, CELL_HEIGHT)
+	cell.custom_minimum_size = Vector2(CELL_WIDTH, _cell_h())
 	cell.set_meta("cell_type", "empty_action")
 	cell.set_meta("row", row_idx)
 	cell.set_meta("index", act_idx)
@@ -908,7 +910,7 @@ func _create_empty_action_hint(row_idx: int, act_idx: int) -> Control:
 	var bg = ColorRect.new()
 	bg.color = style.get("action_bg", Color(0.2, 0.2, 0.2)).darkened(0.5)
 	bg.modulate.a = 0.4
-	bg.size = Vector2(CELL_WIDTH, CELL_HEIGHT)
+	bg.size = Vector2(CELL_WIDTH, _cell_h())
 	cell.add_child(bg)
 
 	# Hint text
@@ -920,15 +922,15 @@ func _create_empty_action_hint(row_idx: int, act_idx: int) -> Control:
 	## thing added is correct under both readings, so the ambiguity does not need resolving.
 	label.text = "+ACTION"
 	label.position = Vector2(4, 4)
-	label.size = Vector2(CELL_WIDTH - 8, CELL_HEIGHT - 8)
-	label.add_theme_font_size_override("font_size", 11)
+	label.size = Vector2(CELL_WIDTH - 8, _cell_h() - 8)
+	label.add_theme_font_size_override("font_size", TextScale.scaled(11))
 	label.add_theme_color_override("font_color", style.get("text", Color.WHITE).darkened(0.4))
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	cell.add_child(label)
 
 	# Mouse: click to add action, hover to highlight
-	MenuMouseHelper.make_clickable(cell, act_idx, CELL_WIDTH, CELL_HEIGHT,
+	MenuMouseHelper.make_clickable(cell, act_idx, CELL_WIDTH, _cell_h(),
 		func() -> void: _on_grid_cell_clicked(cell),
 		func() -> void: _on_grid_cell_hover(cell))
 
@@ -938,7 +940,7 @@ func _create_empty_action_hint(row_idx: int, act_idx: int) -> Control:
 func _create_row_insert_hint(row_idx: int) -> Control:
 	"""Create a row insert button [++] at end of row"""
 	var cell = Control.new()
-	cell.custom_minimum_size = Vector2(40, CELL_HEIGHT)
+	cell.custom_minimum_size = Vector2(40, _cell_h())
 	cell.set_meta("cell_type", "row_insert")
 	cell.set_meta("row", row_idx)
 	cell.set_meta("index", -2)  # Special index for row insert
@@ -947,22 +949,22 @@ func _create_row_insert_hint(row_idx: int) -> Control:
 	var bg = ColorRect.new()
 	bg.color = Color(0.2, 0.25, 0.2).darkened(0.3)
 	bg.modulate.a = 0.5
-	bg.size = Vector2(40, CELL_HEIGHT)
+	bg.size = Vector2(40, _cell_h())
 	cell.add_child(bg)
 
 	# Hint text
 	var label = Label.new()
 	label.text = "[++]"
 	label.position = Vector2(2, 4)
-	label.size = Vector2(36, CELL_HEIGHT - 8)
-	label.add_theme_font_size_override("font_size", 10)
+	label.size = Vector2(36, _cell_h() - 8)
+	label.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	label.add_theme_color_override("font_color", Color(0.5, 0.7, 0.5))
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	cell.add_child(label)
 
 	# Mouse: click to insert row, hover to highlight
-	MenuMouseHelper.make_clickable(cell, row_idx, 40, CELL_HEIGHT,
+	MenuMouseHelper.make_clickable(cell, row_idx, 40, _cell_h(),
 		func() -> void: _on_grid_cell_clicked(cell),
 		func() -> void: _on_grid_cell_hover(cell))
 
@@ -972,7 +974,7 @@ func _create_row_insert_hint(row_idx: int) -> Control:
 func _create_row_toggle_cell(row_idx: int, is_enabled: bool) -> Control:
 	"""Create a selectable toggle cell [ON]/[OFF] for enabling/disabling the row"""
 	var cell = Control.new()
-	cell.custom_minimum_size = Vector2(50, CELL_HEIGHT)
+	cell.custom_minimum_size = Vector2(50, _cell_h())
 	cell.set_meta("cell_type", "row_toggle")
 	cell.set_meta("row", row_idx)
 	cell.set_meta("index", -3)  # Special index for toggle cell (after row_insert which is -2)
@@ -983,7 +985,7 @@ func _create_row_toggle_cell(row_idx: int, is_enabled: bool) -> Control:
 		bg.color = Color(0.15, 0.35, 0.15)  # Dark green
 	else:
 		bg.color = Color(0.35, 0.15, 0.15)  # Dark red
-	bg.size = Vector2(50, CELL_HEIGHT)
+	bg.size = Vector2(50, _cell_h())
 	cell.add_child(bg)
 
 	# Border
@@ -997,18 +999,18 @@ func _create_row_toggle_cell(row_idx: int, is_enabled: bool) -> Control:
 	var border_bottom = ColorRect.new()
 	border_bottom.color = border_color.darkened(0.3)
 	border_bottom.size = Vector2(50, 2)
-	border_bottom.position = Vector2(0, CELL_HEIGHT - 2)
+	border_bottom.position = Vector2(0, _cell_h() - 2)
 	cell.add_child(border_bottom)
 
 	var border_left = ColorRect.new()
 	border_left.color = border_color
-	border_left.size = Vector2(2, CELL_HEIGHT)
+	border_left.size = Vector2(2, _cell_h())
 	border_left.position = Vector2(0, 0)
 	cell.add_child(border_left)
 
 	var border_right = ColorRect.new()
 	border_right.color = border_color.darkened(0.3)
-	border_right.size = Vector2(2, CELL_HEIGHT)
+	border_right.size = Vector2(2, _cell_h())
 	border_right.position = Vector2(48, 0)
 	cell.add_child(border_right)
 
@@ -1016,15 +1018,15 @@ func _create_row_toggle_cell(row_idx: int, is_enabled: bool) -> Control:
 	var label = Label.new()
 	label.text = "[ON]" if is_enabled else "[OFF]"
 	label.position = Vector2(4, 8)
-	label.size = Vector2(42, CELL_HEIGHT - 16)
-	label.add_theme_font_size_override("font_size", 12)
+	label.size = Vector2(42, _cell_h() - 16)
+	label.add_theme_font_size_override("font_size", TextScale.scaled(12))
 	label.add_theme_color_override("font_color", Color.LIME if is_enabled else Color(1.0, 0.4, 0.4))
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	cell.add_child(label)
 
 	# Mouse: click to toggle, hover to highlight
-	MenuMouseHelper.make_clickable(cell, row_idx, 50, CELL_HEIGHT,
+	MenuMouseHelper.make_clickable(cell, row_idx, 50, _cell_h(),
 		func() -> void: _on_grid_cell_clicked(cell),
 		func() -> void: _on_grid_cell_hover(cell))
 
@@ -1034,7 +1036,7 @@ func _create_row_toggle_cell(row_idx: int, is_enabled: bool) -> Control:
 func _create_empty_condition_hint(row_idx: int, cond_idx: int) -> Control:
 	"""Create an empty AND condition slot hint"""
 	var cell = Control.new()
-	cell.custom_minimum_size = Vector2(CELL_WIDTH / 2, CELL_HEIGHT)
+	cell.custom_minimum_size = Vector2(CELL_WIDTH / 2, _cell_h())
 	cell.set_meta("cell_type", "empty_condition")
 	cell.set_meta("row", row_idx)
 	cell.set_meta("index", cond_idx)
@@ -1043,22 +1045,22 @@ func _create_empty_condition_hint(row_idx: int, cond_idx: int) -> Control:
 	var bg = ColorRect.new()
 	bg.color = style.get("condition_bg", Color(0.2, 0.2, 0.3)).darkened(0.5)
 	bg.modulate.a = 0.4
-	bg.size = Vector2(CELL_WIDTH / 2, CELL_HEIGHT)
+	bg.size = Vector2(CELL_WIDTH / 2, _cell_h())
 	cell.add_child(bg)
 
 	# Hint text
 	var label = Label.new()
 	label.text = "+AND"
 	label.position = Vector2(2, 4)
-	label.size = Vector2(CELL_WIDTH / 2 - 4, CELL_HEIGHT - 8)
-	label.add_theme_font_size_override("font_size", 9)
+	label.size = Vector2(CELL_WIDTH / 2 - 4, _cell_h() - 8)
+	label.add_theme_font_size_override("font_size", TextScale.scaled(9))
 	label.add_theme_color_override("font_color", style.get("text", Color.WHITE).darkened(0.4))
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	cell.add_child(label)
 
 	# Mouse: click to add condition, hover to highlight
-	MenuMouseHelper.make_clickable(cell, cond_idx, CELL_WIDTH / 2, CELL_HEIGHT,
+	MenuMouseHelper.make_clickable(cell, cond_idx, CELL_WIDTH / 2, _cell_h(),
 		func() -> void: _on_grid_cell_clicked(cell),
 		func() -> void: _on_grid_cell_hover(cell))
 
@@ -1101,7 +1103,7 @@ func _add_pixel_border(cell: Control, w: float, h: float) -> void:
 func _create_and_connector() -> Control:
 	"""Create AND connector between conditions"""
 	var container = Control.new()
-	container.custom_minimum_size = Vector2(CONNECTOR_WIDTH, CELL_HEIGHT)
+	container.custom_minimum_size = Vector2(CONNECTOR_WIDTH, _cell_h())
 
 	# Background pill
 	var bg = ColorRect.new()
@@ -1113,7 +1115,7 @@ func _create_and_connector() -> Control:
 	var label = Label.new()
 	label.text = "AND"
 	label.position = Vector2(6, 10)
-	label.add_theme_font_size_override("font_size", 10)
+	label.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	label.add_theme_color_override("font_color", style.get("text", CONNECTOR_COLOR))
 	container.add_child(label)
 	return container
@@ -1123,7 +1125,7 @@ func _create_arrow_connector() -> Label:
 	"""Create arrow between conditions and actions"""
 	var label = Label.new()
 	label.text = "→"
-	label.add_theme_font_size_override("font_size", 16)
+	label.add_theme_font_size_override("font_size", TextScale.scaled(16))
 	label.add_theme_color_override("font_color", style.get("highlight_text", CONNECTOR_COLOR))
 	return label
 
@@ -1132,7 +1134,7 @@ func _create_chain_connector() -> Label:
 	"""Create chain connector between actions"""
 	var label = Label.new()
 	label.text = "→"
-	label.add_theme_font_size_override("font_size", 14)
+	label.add_theme_font_size_override("font_size", TextScale.scaled(14))
 	label.add_theme_color_override("font_color", style.get("highlight_text", CONNECTOR_COLOR))
 	return label
 
@@ -1149,7 +1151,7 @@ func _draw_or_connector(y_pos: float) -> void:
 	var label = Label.new()
 	label.text = "OR"
 	label.position = Vector2(8, y_pos - 8)
-	label.add_theme_font_size_override("font_size", 11)
+	label.add_theme_font_size_override("font_size", TextScale.scaled(11))
 	label.add_theme_color_override("font_color", Color.ORANGE)
 	_grid_container.add_child(label)
 
@@ -1266,8 +1268,49 @@ func _short_target(target: String) -> String:
 			return target
 
 
+## ⛔ THE CELL HEIGHT IS DERIVED, THE WIDTH IS NOT, and the asymmetry is forced rather than chosen:
+## this grid scrolls VERTICALLY ONLY (_update_scroll_offset), so a wider grid would leave cells
+## off-screen with no way to reach them, while a taller one is already absorbed by that scroll.
+##
+## ⛔ AND IT IS MEASURED, NOT SCALED. Scaling the authored 44 by the font factor UNDER-RESERVES by
+## 5px at 2.0x: the text wraps at a FIXED width, so a bigger font spends its growth on LINE COUNT,
+## which outruns the factor. This asks the font for the real wrapped height at this width and this
+## size, THROUGH THE SAME BREAK RULE the labels draw with -- a budget computed under one wrap rule
+## and drawn under another is the two-expressions-for-one-quantity bug in its quietest form.
+## Floored at the authored 44, and only ever upward: 0.8x must not shrink the shipped grid.
+const CELL_TEXT_BREAK := TextServer.BREAK_MANDATORY | TextServer.BREAK_WORD_BOUND \
+	| TextServer.BREAK_GRAPHEME_BOUND
+
+
+func _cell_h() -> int:
+	if _cell_h_cache > 0:
+		return _cell_h_cache
+	var px: int = TextScale.scaled(11)
+	var fnt: Font = get_theme_font("font", "Label")
+	var inner: float = float(CELL_WIDTH - 12)
+	var tallest: float = 0.0
+	if fnt:
+		for rule in rules:
+			var r: Dictionary = rule as Dictionary
+			for cond in r.get("conditions", []):
+				tallest = maxf(tallest, fnt.get_multiline_string_size(_format_condition(cond),
+					HORIZONTAL_ALIGNMENT_CENTER, inner, px, -1, CELL_TEXT_BREAK).y)
+			for act in r.get("actions", []):
+				tallest = maxf(tallest, fnt.get_multiline_string_size(_format_action(act),
+					HORIZONTAL_ALIGNMENT_CENTER, inner, px, -1, CELL_TEXT_BREAK).y)
+	_cell_h_cache = int(ceil(maxf(float(CELL_HEIGHT), tallest + 8.0)))
+	return _cell_h_cache
+
+
+## Spelled ONCE. _refresh_grid and _update_scroll_offset each carried this sum, and a derived
+## height makes two copies of one quantity a collision waiting to happen rather than a tidiness
+## point -- the cursor reads row * stride while the rows are laid out by it.
+func _row_stride() -> int:
+	return _cell_h() + ROW_SPACING
+
+
 func _grid_view_h() -> float:
-	return maxf(float(CELL_HEIGHT + 8), size.y - GRID_BASE_POS.y - LEGEND_H - GRID_BOTTOM_GAP)
+	return maxf(float(_cell_h() + 8), size.y - GRID_BASE_POS.y - LEGEND_H - GRID_BOTTOM_GAP)
 
 
 func _notification(what: int) -> void:
@@ -1288,7 +1331,7 @@ func _update_scroll_offset() -> void:
 	if not _grid_container or not is_instance_valid(_grid_container):
 		return
 
-	var row_stride = CELL_HEIGHT + ROW_SPACING
+	var row_stride = _row_stride()
 	var cursor_y = cursor_row * row_stride
 	var view_h = _grid_view_h()
 	const CURSOR_BORDER := 4.0
@@ -1296,8 +1339,8 @@ func _update_scroll_offset() -> void:
 	# Clamp the selected row into the visible viewport, with air so the card is not flush-clipped.
 	if cursor_y - _scroll_offset < CURSOR_BORDER:
 		_scroll_offset = cursor_y - CURSOR_BORDER
-	elif cursor_y + CELL_HEIGHT + CURSOR_BORDER - _scroll_offset > view_h:
-		_scroll_offset = cursor_y + CELL_HEIGHT + CURSOR_BORDER - view_h
+	elif cursor_y + _cell_h() + CURSOR_BORDER - _scroll_offset > view_h:
+		_scroll_offset = cursor_y + _cell_h() + CURSOR_BORDER - view_h
 
 	# Never scroll past the top (negative offset would push row 0 down off the anchor).
 	_scroll_offset = max(0.0, _scroll_offset)
@@ -1359,7 +1402,7 @@ func _update_cursor() -> void:
 
 	var cell_pos = target_cell.global_position - _grid_container.global_position + _grid_container.position
 	# Get actual cell size from the cell (handles smaller empty_condition cells)
-	var cell_size = target_cell.custom_minimum_size if target_cell.custom_minimum_size.x > 0 else Vector2(CELL_WIDTH, CELL_HEIGHT)
+	var cell_size = target_cell.custom_minimum_size if target_cell.custom_minimum_size.x > 0 else Vector2(CELL_WIDTH, _cell_h())
 
 	# Animated highlight border
 	var border_width = 3
@@ -2624,7 +2667,7 @@ func _build_option_picker() -> void:
 	var title := Label.new()
 	title.text = title_text
 	title.position = panel.position + Vector2(12, 8)
-	title.add_theme_font_size_override("font_size", 13)
+	title.add_theme_font_size_override("font_size", TextScale.scaled(13))
 	title.add_theme_color_override("font_color", style.get("highlight_text", Color.YELLOW))
 	_option_picker.add_child(title)
 	var list_y := panel.position.y + 34.0
@@ -2645,7 +2688,7 @@ func _build_option_picker() -> void:
 		row.text = "%s %s" % ["▶" if is_sel else "  ", opt.get("label", opt.get("id", ""))]
 		row.position = Vector2(panel.position.x + 12, list_y)
 		row.size = Vector2(panel_w - 24, 20)
-		row.add_theme_font_size_override("font_size", 11)
+		row.add_theme_font_size_override("font_size", TextScale.scaled(11))
 		row.add_theme_color_override("font_color", style.get("highlight_text", Color.YELLOW) if is_sel else style.text)
 		row.clip_text = true
 		_option_picker.add_child(row)
@@ -2654,7 +2697,7 @@ func _build_option_picker() -> void:
 	## A/B are Nintendo names; on a DualSense Confirm is ✕ and Cancel is ○, and on Xbox they swap.
 	help.text = "\u2191\u2193/D-pad:Select   %s:Confirm   %s:Cancel" % [InputProfileManager.hint_for_action("ui_accept"), InputProfileManager.hint_for_action("ui_cancel")]
 	help.position = Vector2(panel.position.x + 12, panel.position.y + panel_h - 22)
-	help.add_theme_font_size_override("font_size", 10)
+	help.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	help.add_theme_color_override("font_color", style.text.darkened(0.2))
 	_option_picker.add_child(help)
 
@@ -3130,18 +3173,18 @@ func _build_simulate_panel(lines: Array[String]) -> Control:
 	root.add_child(box)
 	var title := Label.new()
 	title.text = "SIMULATE — what this grid does"
-	title.add_theme_font_size_override("font_size", 22)
+	title.add_theme_font_size_override("font_size", TextScale.scaled(22))
 	title.add_theme_color_override("font_color", Color(1.0, 0.9, 0.4))
 	box.add_child(title)
 	for line in lines:
 		var l := Label.new()
 		l.text = line
-		l.add_theme_font_size_override("font_size", 16)
+		l.add_theme_font_size_override("font_size", TextScale.scaled(16))
 		l.add_theme_color_override("font_color", Color(0.88, 0.92, 1.0))
 		box.add_child(l)
 	var hint := Label.new()
 	hint.text = "Rules are first-match-wins, top to bottom. Any key closes."
-	hint.add_theme_font_size_override("font_size", 13)
+	hint.add_theme_font_size_override("font_size", TextScale.scaled(13))
 	hint.add_theme_color_override("font_color", Color(0.6, 0.6, 0.65))
 	box.add_child(hint)
 	return root
@@ -3451,7 +3494,7 @@ func _build_share_picker(files: Array) -> void:
 	var title := Label.new()
 	title.text = "IMPORT SCRIPT  -  apply to %s" % character_name
 	title.position = panel.position + Vector2(12, 8)
-	title.add_theme_font_size_override("font_size", 13)
+	title.add_theme_font_size_override("font_size", TextScale.scaled(13))
 	title.add_theme_color_override("font_color", style.get("highlight_text", Color.YELLOW))
 	_share_picker.add_child(title)
 
@@ -3470,7 +3513,7 @@ func _build_share_picker(files: Array) -> void:
 		row.text = "%s %s" % ["▶" if is_sel else "  ", ScriptShareManager.get_export_summary(filename)]
 		row.position = Vector2(panel.position.x + 12, list_y)
 		row.size = Vector2(panel_w - 24, 22)
-		row.add_theme_font_size_override("font_size", 11)
+		row.add_theme_font_size_override("font_size", TextScale.scaled(11))
 		row.add_theme_color_override("font_color", style.get("highlight_text", Color.YELLOW) if is_sel else style.text)
 		row.clip_text = true
 		_share_picker.add_child(row)
@@ -3490,7 +3533,7 @@ func _build_share_picker(files: Array) -> void:
 	var help := Label.new()
 	help.text = "\u2191\u2193/D-pad:Select   %s:Import   %s:Cancel" % [InputProfileManager.hint_for_action("ui_accept"), InputProfileManager.hint_for_action("ui_cancel")]
 	help.position = Vector2(panel.position.x + 12, panel.position.y + panel_h - 22)
-	help.add_theme_font_size_override("font_size", 10)
+	help.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	help.add_theme_color_override("font_color", style.text.darkened(0.2))
 	_share_picker.add_child(help)
 

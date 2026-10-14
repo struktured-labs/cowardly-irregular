@@ -33,6 +33,17 @@ signal closed()
 
 const HELP_SCROLL_STEP_PX: float = 48.0
 
+## The authored sizes, named so the Text Size guard can assert they are SCALED rather than raw.
+const TITLE_PX: int = 24
+const BODY_PX: int = 13
+const BODY_BOLD_PX: int = 14
+## The shipped content top, kept as a floor so 100% renders exactly as before.
+const BASE_CONTENT_Y: float = 75.0
+## 6.0 is the gap the authored 75 ENCODES, recovered by measurement: the title measures 34px at
+## 100%, so 35 + 34 + 6 == 75. A 9 here put the derived value at 78 and moved every shipped F1
+## screenshot down 3px -- caught by the arm that pins the 100% layout, not by reading the diff.
+const TITLE_TO_CONTENT_GAP: float = 6.0
+
 var _scroll_target: RichTextLabel = null
 
 
@@ -130,17 +141,22 @@ func _ready() -> void:
 	var title := Label.new()
 	title.text = "HOW TO PLAY"
 	title.position = Vector2(60, 35)
-	title.add_theme_font_size_override("font_size", 24)
+	title.add_theme_font_size_override("font_size", TextScale.scaled(TITLE_PX))
 	title.add_theme_color_override("font_color", Color(1, 0.9, 0.4))
 	add_child(title)
 
 	var content := RichTextLabel.new()
 	content.bbcode_enabled = true
 	content.scroll_active = true
-	content.position = Vector2(60, 75)
-	content.size = Vector2(vp.x - 120, vp.y - 120)
-	content.add_theme_font_size_override("normal_font_size", 13)
-	content.add_theme_font_size_override("bold_font_size", 14)
+	## ⛔ DERIVED, because a literal 75 collides with the title it sits under. The title is a
+	## Label with no size, so its height tracks its font: ~31px at 100% and ~62px at 200% from a
+	## y of 35, which reaches 97 and draws across a content top pinned at 75. `maxf` keeps the
+	## shipped 100% layout exactly -- at that scale the derived value is below 75 and 75 wins.
+	content.position = Vector2(60, maxf(BASE_CONTENT_Y,
+		title.position.y + title.get_combined_minimum_size().y + TITLE_TO_CONTENT_GAP))
+	content.size = Vector2(vp.x - 120, vp.y - content.position.y - 45)
+	content.add_theme_font_size_override("normal_font_size", TextScale.scaled(BODY_PX))
+	content.add_theme_font_size_override("bold_font_size", TextScale.scaled(BODY_BOLD_PX))
 	content.add_theme_color_override("default_color", Color(0.9, 0.9, 0.95))
 	content.text = _content_text()
 	add_child(content)
