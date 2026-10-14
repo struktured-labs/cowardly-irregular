@@ -227,4 +227,4 @@ func test_a_limit_break_that_cured_nobody_is_silent_and_says_nothing() -> void:
 		if l.contains("is cleansed by the Limit Break"):
 			cleanse_lines.append(l)
 	assert_eq(cleanse_lines, [],
-		"the log announced a cleanse for a party member who had nothing to cleanse: %s" % cleanse_lines)
+		"the log announced a cleanse for a party member who had nothing to cleanse: %s" % [cleanse_lines])
