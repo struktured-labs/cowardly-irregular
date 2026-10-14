@@ -392,6 +392,10 @@ func _ready() -> void:
 	## derived rather than the 64 literal — scaling them against the literal hides the whole panel.
 	_scale_themed_font(get_node_or_null("UI/BattleLogPanel/MarginContainer/VBoxContainer/LogHeader/LogTitle"), &"font_size")
 	_scale_themed_font(log_expand_btn, &"font_size")
+	## TurnInfo is its own panel and feeds no other surface's budget — probed: scaling it leaves
+	## enemy_bottom and the log panel untouched, unlike EnemyStatusPanel's title, which moves the
+	## log's 68px budget by 7px and is held with the enemy-panel trade.
+	_scale_themed_font(turn_info, &"font_size")
 	# EnemyStatusPanel's height varies with the roster (more enemies = taller box) — the
 	# log panel's fixed .tscn offsets are only a FALLBACK until the real enemy panel settles.
 	var enemy_panel_for_log := get_node_or_null("UI/EnemyStatusPanel")
