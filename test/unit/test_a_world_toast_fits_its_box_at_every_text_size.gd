@@ -39,7 +39,16 @@ extends GutTest
 ## and two more flag ids, flagged as tokens wider than their box. Ids are never drawn. The corpus
 ## was keyed on the wrong noun and every one of its findings was about a string no player sees.
 
-const PRESETS := [0.8, 1.0, 1.25, 1.5, 2.0]
+## ⛔ DERIVED FROM THE LADDER THE PLAYER DRIVES, NOT COPIED. This was
+## `const PRESETS := [0.8, 1.0, 1.25, 1.5, 2.0]` — a duplicate of `SettingsMenu.TEXT_SIZE_PRESETS`
+## that goes stale the day a preset is added, and then every arm written to catch "it broke at
+## 125%" never visits the new rung. @cowir-controller found the same copy in two of their guards.
+##
+## ⚠️ NO FALLBACK DEFAULT, DELIBERATELY: a rename must RED. A `.get(..., [0.8, …])` would leave the
+## arms passing against a ladder nobody can select, which is strictly worse than the copy it
+## replaces — the copy at least fails visibly when someone compares the two lists.
+static func _presets() -> Array:
+	return SettingsMenu.TEXT_SIZE_PRESETS
 const LONG := "A notice long enough to need more than one line at any text size the settings offer."
 const LIT := '"((?:[^"\\\\]|\\\\.)*)"'
 
@@ -346,6 +355,23 @@ func _toast_box(path: String, text: String, at: Vector2) -> Dictionary:
 	return {"pos": pos, "size": lbl.size}
 
 
+## ⛔ THE DERIVATION'S OWN FLOOR, AS ITS OWN ARM. An empty or shrunken ladder makes every
+## `for sc in _presets()` loop iterate zero times and every arm below pass green about nothing —
+## the hollow shape @cowir-adhoc and @cowir-sfx each found in a guard of their own today, here
+## reachable through the SOURCE rather than through a skip.
+func test_the_preset_ladder_is_the_players_own() -> void:
+	var p: Array = _presets()
+	assert_gt(p.size(), 2,
+		"CONTROL: the Text Size ladder derived only %d rung(s). Every preset loop in this file iterates over it, so a short ladder makes the whole file vacuous" % p.size())
+	assert_true(p.has(1.0),
+		"CONTROL: the ladder must contain 1.0 — the shipped default is the rung most of this file's claims are about")
+	var sorted_copy: Array = p.duplicate()
+	sorted_copy.sort()
+	assert_eq(p, sorted_copy,
+		"the ladder must be ASCENDING: the bottom-edge rule is monotonic in preset order, so an unsorted list silently changes what that arm asserts")
+	gut.p("  ladder derived from SettingsMenu.TEXT_SIZE_PRESETS: %s" % str(p))
+
+
 func test_the_corpus_reaches_the_runtime_text_providers() -> void:
 	var all_src: Array = []
 	for p in _all_gd():
@@ -393,7 +419,7 @@ func test_the_font_grows_and_shrinks_with_the_setting() -> void:
 	## point small with every other arm green — the mutation that drops the parameter passed 5/5
 	## before this existed. Three bases, ordered, is the whole check.
 	var flat: Array = []
-	for sc in PRESETS:
+	for sc in _presets():
 		_scale(sc)
 		var a: int = WorldToast.font_size(11)
 		var b: int = WorldToast.font_size(12)
@@ -403,7 +429,7 @@ func test_the_font_grows_and_shrinks_with_the_setting() -> void:
 	_scale(1.0)
 	assert_eq(flat, [], "the authored base font must survive scaling: %s" % "; ".join(flat))
 	gut.p("  font 80%%/100%%/200%% = %d / %d / %d; bases 11/12/14 ordered at all %d presets" % [
-		small, base, big, PRESETS.size()])
+		small, base, big, _presets().size()])
 
 
 ## ⛔ THE MEASUREMENT MUST USE THE LABEL'S OWN BREAK RULE, AND THIS ARM IS WHY IT IS CHECKABLE
@@ -461,7 +487,7 @@ func test_every_toast_fits_its_box_at_every_preset() -> void:
 		var b := _box(src)
 		var own: Array = (_corpus(src, all_src)[0] as Array).duplicate()
 		own.append(LONG)
-		for s in PRESETS:
+		for s in _presets():
 			_scale(s)
 			for text in own:
 				var r: Dictionary = await _toast_box(path, text, low)
@@ -488,7 +514,7 @@ func test_every_toast_fits_its_box_at_every_preset() -> void:
 				## `Control.size` clamps UP to the content, so `lbl.size.y` becomes the text height
 				## whatever the caller assigned, and text-vs-box is green in both worlds. What the
 				## defect did was draw DOWNWARD over the prop, so the invariant is that the authored
-				## bottom edge does not move — asserted as INVARIANCE ACROSS PRESETS, needing no copy
+				## bottom edge does not move — asserted as INVARIANCE ACROSS THE PRESETS, needing no copy
 				## of any caller's baseline here.
 				if not bottoms.has(key):
 					bottoms[key] = {}
@@ -496,12 +522,12 @@ func test_every_toast_fits_its_box_at_every_preset() -> void:
 	_scale(1.0)
 	for key in bottoms:
 		var per: Dictionary = bottoms[key]
-		## ⛔ MONOTONIC IN PRESET ORDER, NOT A MIN/MAX SPREAD. `PRESETS` is ascending, so the claim is
+		## ⛔ MONOTONIC IN PRESET ORDER, NOT A MIN/MAX SPREAD. `_presets()` is ascending, so the claim is
 		## that a bigger font never pushes the edge DOWN. A spread cannot express that.
 		var worst_drop := 0.0
 		var first := true
 		var prev := 0.0
-		for sc in PRESETS:
+		for sc in _presets():
 			if not per.has(sc):
 				continue
 			var cur: float = float(per[sc])
@@ -546,7 +572,7 @@ func test_every_toast_fits_its_box_at_every_preset() -> void:
 			clamped.size(), "; ".join(clamped)])
 	assert_gt(checked, 180,
 		"CONTROL: only %d toasts built across %d callers x %d presets; the sweep did not run the full corpus (the pre-fix sweep managed ~100 and hid the tallest block)" % [
-			checked, _caller_paths().size(), PRESETS.size()])
+			checked, _caller_paths().size(), _presets().size()])
 	bad.sort()
 	for b in bad:
 		gut.p("  OVERFLOW %s" % b)
@@ -558,7 +584,7 @@ func test_every_toast_fits_its_box_at_every_preset() -> void:
 		var per2: Dictionary = bottoms[key]
 		var pv := 0.0
 		var f2 := true
-		for sc in PRESETS:
+		for sc in _presets():
 			if not per2.has(sc):
 				continue
 			if not f2:
@@ -568,7 +594,7 @@ func test_every_toast_fits_its_box_at_every_preset() -> void:
 		var v: Array = per2.values()
 		rise = maxf(rise, float(v.max()) - float(v.min()))
 	gut.p("  %d toasts across %d callers x %d presets; worst DOWNWARD move %.1f px (tolerance %.1f), worst total wander %.1f px" % [
-		checked, _caller_paths().size(), PRESETS.size(), drop, BOTTOM_TOLERANCE_PX, rise])
+		checked, _caller_paths().size(), _presets().size(), drop, BOTTOM_TOLERANCE_PX, rise])
 
 
 ## ⛔ THE DEFECT ARM. A toast's risen top must stay on screen, at every preset, for the HIGHEST
@@ -601,7 +627,7 @@ func test_a_toast_cannot_rise_off_the_top_of_the_screen() -> void:
 	assert_gt(strs.size(), 3, "CONTROL: the tallest caller's corpus must be non-trivial, found %d" % strs.size())
 	var off: Array = []
 	var would_have: Array = []
-	for sc in PRESETS:
+	for sc in _presets():
 		_scale(sc)
 		for text in strs:
 			var h: float = WorldToast.height_for(text, b["w"], b["min_h"], b["base"])
@@ -813,7 +839,7 @@ func test_no_authored_token_is_wider_than_its_own_box() -> void:
 				uncovered.append(name)
 			continue
 		reached.append(name)
-		for sc in PRESETS:
+		for sc in _presets():
 			_scale(sc)
 			var fs: int = WorldToast.font_size(int(b["base"]))
 			for text in strs:
