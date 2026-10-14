@@ -27,6 +27,7 @@ func _load(path: String) -> Image:
 
 func derive(cell: Image) -> Image:
 	## The tool's shrink(): crop to alpha > 10/255, fit the long side to CELL - 2, paste bottom-centred.
+	## TRILINEAR averages like the tool's BOX; BILINEAR dropped the Cursed Armor's sword (fresh roamer scored 0.77).
 	var x0 := cell.get_width()
 	var y0 := cell.get_height()
 	var x1 := -1
@@ -43,7 +44,7 @@ func derive(cell: Image) -> Image:
 		return tile
 	var crop := cell.get_region(Rect2i(x0, y0, x1 - x0 + 1, y1 - y0 + 1))
 	var s := float(CELL - 2) / float(maxi(crop.get_width(), crop.get_height()))
-	crop.resize(maxi(1, roundi(crop.get_width() * s)), maxi(1, roundi(crop.get_height() * s)), Image.INTERPOLATE_BILINEAR)
+	crop.resize(maxi(1, roundi(crop.get_width() * s)), maxi(1, roundi(crop.get_height() * s)), Image.INTERPOLATE_TRILINEAR)
 	tile.blend_rect(crop, Rect2i(Vector2i.ZERO, crop.get_size()), Vector2i((CELL - crop.get_width()) / 2, CELL - 1 - crop.get_height()))
 	return tile
 
@@ -77,6 +78,7 @@ func test_a_derived_roamer_is_cut_from_its_current_battle_idle() -> void:
 		var start := int(be.get("animations", {}).get("idle", {}).get("start", 0))
 		var fresh := derive(bimg.get_region(Rect2i(start * fw, 0, fw, fh)))
 		var score := overlap(fresh, fimg.get_region(Rect2i(0, 0, CELL, CELL)))
+		gut.p("%s overlap %.2f" % [id, score])
 		if score < MIN_OVERLAP:
 			stale.append("%s overlaps its battle idle by %.2f" % [id, score])
 	assert_eq(stale, [], "roamers that no longer show the creature their battle idle shows (re-derive with --refresh): %s" % str(stale))
