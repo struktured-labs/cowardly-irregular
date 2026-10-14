@@ -332,7 +332,8 @@ func activate_switch(switch_id: String) -> void:
 	var sm := get_node_or_null("/root/SoundManager")
 	if effects.has("flip"):
 		if sm:
-			sm.play_ui("door_open")
+			# A flip turns a wall cell into floor: a stone passage grinding open, not oak on hinges.
+			sm.play_ui("passage_grind")
 	if effects.has("reveal"):
 		_revealed[str(effects["reveal"])] = true
 		if sm:
