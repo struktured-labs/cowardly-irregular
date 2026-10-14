@@ -151,8 +151,14 @@ func test_a_built_card_does_not_print_through_its_subtitle() -> void:
 		if t_px <= int(spec[3]) or s_px <= int(spec[4]):
 			overlap.append("%s: at 200%% Text Size the card still draws at %d/%d, its authored %d/%d" % [
 				str(spec[0]), t_px, s_px, int(spec[3]), int(spec[4])])
+		## ⛔ THE RECT ALONE, NOT `maxf(rect, font_metric)` — WHICH IS THE MISTAKE I WARNED THE FLEET
+		## ABOUT, IN MY OWN ARM. @cowir-controller's sharpening: a box-against-a-font-metric predicate
+		## is what reds on fine authored layout, and a rect-vs-rect comparison is immune, because a
+		## Label clamps `size.y` UP to its content and therefore already reports the TRUE rendered
+		## height. Mixing the two can only make the arm stricter than the screen. The glyph figure
+		## stays in the report below, where it explains the number without deciding it.
 		var glyph: float = float(font.get_height(t_px))
-		var title_bottom: float = title.position.y + maxf(title.size.y, glyph)
+		var title_bottom: float = title.position.y + title.size.y
 		gut.p("  %s at 200%%: title y=%.0f glyphs=%.0f bottom=%.0f | subtitle y=%.0f" % [
 			str(spec[0]), title.position.y, glyph, title_bottom, sub.position.y])
 		if sub.position.y + 0.5 < title_bottom:
