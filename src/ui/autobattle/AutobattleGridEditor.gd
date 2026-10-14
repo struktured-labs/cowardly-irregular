@@ -1278,8 +1278,17 @@ func _short_target(target: String) -> String:
 ## size, THROUGH THE SAME BREAK RULE the labels draw with -- a budget computed under one wrap rule
 ## and drawn under another is the two-expressions-for-one-quantity bug in its quietest form.
 ## Floored at the authored 44, and only ever upward: 0.8x must not shrink the shipped grid.
+## ⛔ AUTOWRAP_WORD_SMART's OWN FLAGS. These were GRAPHEME_BOUND -- AUTOWRAP_ARBITRARY's rule --
+## which breaks more aggressively, so `get_multiline_string_size` counted FEWER lines than the Label
+## draws and the derived cell came out SHORT. Measured exhaustively over every ability:
+##     with GRAPHEME_BOUND   125%: 5 cells short   200%: 15 short   (up to 23px)
+##     with ADAPTIVE         0 short at every preset
+## It shipped in `.690`, so this is a live fix and not a tidy-up. An earlier 3-string check agreed
+## across both flag sets and read as clean; the sets only diverge where a token exceeds the cell,
+## 74 abilities do at 200%, and three of them were checked (@cowir-autogrind named both the hazard
+## and the exhaustive cure).
 const CELL_TEXT_BREAK := TextServer.BREAK_MANDATORY | TextServer.BREAK_WORD_BOUND \
-	| TextServer.BREAK_GRAPHEME_BOUND
+	| TextServer.BREAK_ADAPTIVE
 
 
 func _cell_h() -> int:

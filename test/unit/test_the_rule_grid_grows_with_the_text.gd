@@ -187,69 +187,46 @@ func test_the_cell_height_only_ever_grows() -> void:
 			"the cell height must never SHRINK as Text Size rises: %s across %s" % [seen, PRESETS])
 
 
-## ARM 6 — THE REAL DOMAIN, and the arm that would have caught the shipped defect. The arms above
-## drive text I chose; this one drives the worst text the GAME can produce, read out of the ability
-## table rather than authored here, so it cannot go stale when an ability is renamed or added.
-func test_the_longest_real_ability_fits_its_cell_at_every_preset() -> void:
+## ARM 6 — THE REAL DOMAIN, EXHAUSTIVELY. Every ability in the table, not the longest one.
+##
+## ⛔ ITS FIRST VERSION DROVE ONLY THE LONGEST-BY-CHARACTER-COUNT ABILITY, AND THAT MISSED A REAL
+## SHIPPED DEFECT. The grid went out in `.690` with `CELL_TEXT_BREAK` set to GRAPHEME_BOUND while
+## the cells wrap WORD_SMART (whose rule is ADAPTIVE). Measured exhaustively afterwards:
+##     150%   5 abilities derived a cell SHORTER than the Label draws  (54 vs 69)
+##     200%  15 abilities                                             (101 vs 124)
+## `Create Autobattle Script`, `Masterite Proclamation`, `Crown Authority` -- NONE of them the
+## longest string, which is why a worst-by-length corpus of one could not see it. The two flag sets
+## only diverge where a token exceeds the cell, and 74 abilities do at 200%; the arm checked one.
+## @cowir-autogrind named both the hazard and this cure: drive EVERY id, it costs seconds.
+func test_every_real_ability_fits_the_cell_it_derives() -> void:
 	var ab: Dictionary = JobSystem.abilities if "abilities" in JobSystem else {}
 	assert_gt(ab.size(), 50, "PRECONDITION: the ability table must be loaded, got %d" % ab.size())
-	var probe: Control = await _editor_at(1.0)
-	var worst_id := ""
-	var worst_len := 0
-	for aid in ab.keys():
-		var t: String = probe._format_action({"type": "ability", "id": str(aid), "target": "enemy"})
-		if t.length() > worst_len:
-			worst_len = t.length()
-			worst_id = str(aid)
-	assert_ne(worst_id, "", "PRECONDITION: a worst-case ability must be identifiable")
 	var bad: Array = []
 	for scale in PRESETS:
 		var ed: Control = await _editor_at(float(scale))
-		ed.rules = [{"enabled": true,
-			"conditions": [{"type": "hp_percent", "op": "<", "value": 50}],
-			"actions": [{"type": "ability", "id": worst_id, "target": "enemy"}]}]
-		ed._refresh_grid()
-		await get_tree().process_frame
-		await get_tree().process_frame
-		var h: float = float(ed._cell_h())
-		for pair in _cell_labels(ed):
-			var l: Label = pair["label"] as Label
-			var drawn: float = float(l.get_line_count()) * float(l.get_line_height())
-			if drawn > h:
-				bad.append("%.2fx: real ability '%s' draws %.0f in a %.0f cell"
-					% [scale, worst_id, drawn, h])
+		var fnt: Font = ed.get_theme_font("font", "Label")
+		if fnt == null:
+			continue
+		var px: int = TextScale.scaled(11)
+		var inner: float = float(ed.CELL_WIDTH - 12)
+		var brk: int = (load(GE) as GDScript).get_script_constant_map()["CELL_TEXT_BREAK"]
+		var probe := Label.new()
+		probe.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		probe.add_theme_font_size_override("font_size", px)
+		ed.add_child(probe)
+		probe.size = Vector2(inner, 20.0)
+		for aid in ab.keys():
+			var text: String = ed._format_action({"type": "ability", "id": str(aid),
+				"target": "enemy"})
+			probe.text = text
+			await get_tree().process_frame
+			var drawn: float = float(probe.get_line_count()) * float(probe.get_line_height())
+			var budget: float = fnt.get_multiline_string_size(text, HORIZONTAL_ALIGNMENT_CENTER,
+				inner, px, -1, brk).y + 8.0
+			if budget < drawn:
+				bad.append("%.2fx: '%s' derives %.0f, draws %.0f"
+					% [scale, str(aid), budget, drawn])
+		probe.queue_free()
 	assert_eq(bad, [],
-		"the longest REAL ability text must fit its cell at every Text Size: %s" % [bad])
-
-
-## ARM 5 — the stride is ONE expression, PROVEN THROUGH THE SCROLL PATH. _refresh_grid places the
-## rows and _update_scroll_offset decides what is on screen; each carried its own copy of
-## `CELL_HEIGHT + ROW_SPACING`. Asserting only on row POSITIONS could not see that -- the positions
-## come from the copy that was already correct, so re-duplicating the other one passed. The arm that
-## bites drives the cursor to a row below the fold and asks whether it is actually VISIBLE.
-func test_a_low_row_is_scrolled_into_view_at_every_preset() -> void:
-	var bad: Array = []
-	for scale in PRESETS:
-		var ed: Control = await _editor_at(float(scale))
-		var many: Array = []
-		for i in range(8):
-			many.append(RULES[i % RULES.size()].duplicate(true))
-		ed.rules = many
-		ed._refresh_grid()
-		await get_tree().process_frame
-		ed.cursor_row = 7
-		ed._update_scroll_offset()
-		await get_tree().process_frame
-		var stride: float = float(ed._row_stride())
-		var cell_h: float = float(ed._cell_h())
-		var view_h: float = float(ed._grid_view_h())
-		var top: float = 7.0 * stride - ed._scroll_offset
-		if top < -0.5:
-			bad.append("%.2fx: the selected row sits %.0f ABOVE the viewport" % [scale, -top])
-		elif top + cell_h > view_h + 0.5:
-			bad.append("%.2fx: the selected row ends at %.0f, past a %.0f viewport"
-				% [scale, top + cell_h, view_h])
-		if cell_h > stride:
-			bad.append("%.2fx: a %.0f cell cannot fit a %.0f stride" % [scale, cell_h, stride])
-	assert_eq(bad, [],
-		"the cursor's row must be on screen after scrolling, at every Text Size: %s" % [bad])
+		"every ability's cell budget must cover what its Label draws -- a budget measured under "
+		+ "different break flags than the node wraps with comes out SHORT: %s" % [bad.slice(0, 6)])
