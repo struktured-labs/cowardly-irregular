@@ -558,11 +558,13 @@ func build_command_menu_items_with_targets(combatant: Combatant) -> Array:
 	# DEFENSIVE option on account of a resource benefit Defer does not provide. It was also
 	# inconsistent: the L-shoulder shortcut defers at any AP, so the same action was available by
 	# button and greyed in the menu.
+	## LANDABLE, not disabled: a disabled row is SKIPPED by the cursor (Win98Menu:2087), so the player could not reach the one row that explains why their defence vanished — during the 2-turn window they are also taking 1.5x damage. The L/Q shoulder already says this in the battle log; the menu said nothing, which is the asymmetry reject_reason exists for (Win98Menu:2083).
+	var defer_locked: bool = combatant.has_status("cannot_defer")
 	items.append({
 		"id": "defer",
 		"label": "Defer",
 		"data": null,
-		"disabled": combatant.has_status("cannot_defer")
+		"reject_reason": "Exposed — can't Defer" if defer_locked else ""
 	})
 
 	# Formation was KEY_F only and nothing else in src/ sets current_formation, so a pad could not

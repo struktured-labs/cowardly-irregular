@@ -19,12 +19,15 @@ extends GutTest
 ## It was also internally inconsistent: the L-shoulder shortcut routes through defer_requested
 ## with no AP check, so the same action was available by button and greyed in the menu.
 ##
-## NOTE ON COVERAGE: build_command_menu_items_with_targets needs a live BattleScene (it reaches
-## _scene.get_viewport()), so the menu entry itself is pinned at source. Everything the fix
-## actually rests on — that Defer grants no AP, and that defending halves damage — is tested
-## behaviourally below, because those are the claims that make the gate wrong.
+## NOTE ON COVERAGE: the two menu-entry arms were pinned at SOURCE, on the grounds that
+## build_command_menu_items_with_targets needs a live BattleScene. It does, and a test can supply
+## one, so they are behavioural now. The source form pinned the KEY NAME `"disabled"`, which
+## certified a spelling rather than the gate: when the row became landable-with-a-reason (a
+## disabled row is SKIPPED by the cursor, so the player could never reach the reason) the gate was
+## intact and the extraction broke. Everything else here was always behavioural.
 
 const MENU_PATH := "res://src/battle/BattleCommandMenu.gd"
+const SCENE_PATH := "res://src/battle/BattleScene.gd"
 
 
 func _combatant(ap: int) -> Combatant:
@@ -37,30 +40,60 @@ func _combatant(ap: int) -> Combatant:
 	return c
 
 
-## The Defer entry's `disabled` expression, isolated from the rest of the builder.
-func _defer_disabled_expression() -> String:
-	var src := FileAccess.get_file_as_string(MENU_PATH)
-	var idx := src.find('"id": "defer"')
-	assert_gt(idx, 0, "the Defer command entry must exist")
-	var window := src.substr(idx, 260)
-	var dis := window.find('"disabled"')
-	assert_gt(dis, 0, "the Defer entry must declare a disabled condition")
-	var line_end := window.find("\n", dis)
-	return window.substr(dis, line_end - dis)
+## The real Defer row, built by the real builder. Mechanism-agnostic by construction: whether the
+## gate is carried by `disabled` or by `reject_reason`, what matters is whether the row refuses.
+func _defer_row(c: Combatant) -> Dictionary:
+	var scene_script: GDScript = load(SCENE_PATH)
+	var scene: Node = scene_script.new()
+	add_child_autofree(scene)
+	await get_tree().process_frame
+	var foe := Combatant.new()
+	add_child_autofree(foe)
+	foe.combatant_name = "Rat"
+	foe.max_hp = 10
+	foe.current_hp = 10
+	foe.is_alive = true
+	scene.test_enemies.assign([foe])
+	var typed: Array[Combatant] = []
+	typed.append(c)
+	scene.party_members.assign(typed)
+	BattleManager.player_party.assign(typed)
+	var menu_script: GDScript = load(MENU_PATH)
+	var menu = menu_script.new(scene)
+	for r in menu.build_command_menu_items_with_targets(c):
+		if r is Dictionary and str(r.get("id", "")) == "defer":
+			return r
+	return {}
+
+
+## Refused either way a gate can be spelled.
+func _refuses(row: Dictionary) -> bool:
+	return bool(row.get("disabled", false)) or str(row.get("reject_reason", "")) != ""
 
 
 func test_defer_is_no_longer_gated_on_ap() -> void:
-	var expr := _defer_disabled_expression()
-	assert_false(expr.contains("current_ap"),
-		"Defer must not be disabled by AP — its purpose is the -50% damage reduction, which has "
-		+ "nothing to do with AP. Got: %s" % expr)
+	var c := _combatant(4)
+	add_child_autofree(c)
+	c.is_alive = true
+	c.job = JobSystem.get_job("fighter")
+	var row: Dictionary = await _defer_row(c)
+	assert_false(row.is_empty(), "the Defer command entry must exist")
+	assert_false(_refuses(row),
+		("a max-AP character must still be offered Defer — its purpose is the -50%% damage reduction, "
+		+ "which has nothing to do with AP. struktured 2026-07-28. Row: %s") % str(row))
 
 
 func test_cannot_defer_status_still_gates_it() -> void:
-	# The one legitimate reason to grey Defer must survive the fix.
-	var expr := _defer_disabled_expression()
-	assert_string_contains(expr, "cannot_defer",
-		"the cannot_defer status must still disable Defer — that gate is real")
+	# The one legitimate reason to withhold Defer must survive, by whatever mechanism carries it.
+	var c := _combatant(4)
+	add_child_autofree(c)
+	c.is_alive = true
+	c.job = JobSystem.get_job("fighter")
+	c.add_status("cannot_defer", 2)
+	var row: Dictionary = await _defer_row(c)
+	assert_false(row.is_empty(), "the Defer command entry must exist")
+	assert_true(_refuses(row),
+		"the cannot_defer status must still withhold Defer — that gate is real. Row: %s" % str(row))
 
 
 func test_defer_grants_no_ap_which_is_why_the_ap_gate_was_wrong() -> void:
