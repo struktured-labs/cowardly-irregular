@@ -51,6 +51,31 @@ const WIDE_PENDING := {
 	"heal": [5.2, 9.9],
 }
 
+## ⛔ THE SIX R128 CANNOT SEE, MEASURED THE OTHER WAY (2026-10-14). Marking them `unmeasurable` was
+## honest and still left 18 of the most repeated cues in the game judged by NOTHING — a player walks
+## continuously, so a footstep family is heard more than any battle cue. `spread_rms` has no
+## short-cue floor, and the numbers are not comparable to the LU figures above: different quantity,
+## no pass/fail limit, pinned here so a MOVE reds.
+##
+## 🔑 THE INCONSISTENCY IS THE FINDING, not the magnitude. Commit 3767131e3 randomised bandwidth and
+## duration per variant for natural variety, so SOME spread is intended — but an intended spread
+## would not be 0.6 dB on grass and metal and 4.2 dB on sand, from the same generator in the same
+## commit. ⛔ NOT REPAIRED, for this file's standing reason: they shipped in April and struktured
+## approved them by ear, which is exactly why @cowir-main held the Cure re-level. Measured, declared,
+## his call — and the same four options apply (pull the loud member down, raise the quiet ones, meet
+## in the middle, or leave it, since the variety is deliberate).
+const RMS_PENDING := {
+	## the widest of the six, and audible: -16.0 / -20.1 / -18.8
+	"footstep_sand": 4.2,
+	"footstep_stone": 2.7,
+	"footstep_snow": 2.6,
+	"footstep_wood": 2.3,
+	## what the same generator produced elsewhere — the reason the four above read as artifacts
+	## of the randomisation rather than as the intended variety
+	"footstep_grass": 0.6,
+	"footstep_metal": 0.6,
+}
+
 
 func _fixture() -> Dictionary:
 	var raw := FileAccess.get_file_as_string(FIXTURE)
@@ -145,6 +170,56 @@ func test_the_unmeasurable_families_are_named_not_passed() -> void:
 			floored.append(str(name))
 	assert_gt(floored.size(), 0,
 		"no family is marked unmeasurable, but the six footstep families are all under 0.4s — either the tool stopped detecting the R128 floor, or it is now reporting a 0.0 spread for three floored values")
+	## ⛔ AND "NAMED" IS NOT "JUDGED". Until 2026-10-14 these six were excluded from every arm in this
+	## file, so the loudest-footfall family in the game could drift any distance and nothing reddened.
+	## Each must now carry an rms spread, which has no floor to hide behind.
+	var unjudged: Array[String] = []
+	for name in floored:
+		var row: Dictionary = fx[name]
+		if row.get("spread_rms") == null:
+			unjudged.append(name)
+	assert_eq(unjudged, [],
+		"these families are unmeasurable by R128 AND carry no spread_rms, so nothing in this file judges them at all — re-run tools/audit_variant_levels.py --write: %s" % [unjudged])
+
+
+func test_the_r128_blind_families_still_measure_what_was_declared() -> void:
+	## The ledger above is a claim about the tree; this is what stops it outliving its fact. A member
+	## re-rendered, re-levelled or regenerated moves its family's spread and reds here by name.
+	var fx := _fixture()
+	var moved: Array[String] = []
+	for name in RMS_PENDING.keys():
+		var key := str(name)
+		assert_true(fx.has(key), "RMS_PENDING names %s, which the fixture does not cover" % key)
+		if not fx.has(key):
+			continue
+		var row: Dictionary = fx[key]
+		var got: Variant = row.get("spread_rms")
+		assert_true(got != null, "%s lost its spread_rms" % key)
+		if got == null:
+			continue
+		if absf(float(got) - float(RMS_PENDING[name])) > 0.15:
+			moved.append("%s declared %.1f dB, measured %.1f dB" % [key, float(RMS_PENDING[name]), float(got)])
+	assert_eq(moved, [],
+		"an R128-blind family's rms spread MOVED. If this is struktured's ruling landing, update RMS_PENDING in the same commit as the assets; if it is a re-render nobody announced, that is the finding: %s" % [moved])
+
+
+func test_a_family_whose_channels_diverge_is_named() -> void:
+	## ⛔ WHY THIS EXISTS: all-samples RMS and per-channel RMS agree on a dual-mono asset and diverge
+	## by up to ~6 dB on a DECORRELATED stereo one, so a family with divergent channels cannot be
+	## levelled by one number without saying which quantity you mean. All 18 footsteps are dual-mono
+	## (divergence 0.00), so the footstep figures above are safe — but `heal` and `ability_heal` are
+	## NOT, and that is new information about the two families already in WIDE_PENDING: a flat gain
+	## derived from one quantity would miss on the other. Named, not repaired.
+	var fx := _fixture()
+	var divergent: Array[String] = []
+	for name in fx.keys():
+		var row: Dictionary = fx[name]
+		var d: Variant = row.get("ch_div_max")
+		if d != null and float(d) > 0.5:
+			divergent.append("%s %.2f dB" % [str(name), float(d)])
+	divergent.sort()
+	assert_eq(divergent, ["ability_heal 1.64 dB", "heal 2.05 dB"],
+		"the set of families whose stereo channels diverge has changed. These cannot be levelled by a single number without naming the quantity, so a new one is a decision rather than a drift: %s" % [divergent])
 
 
 ## ⛔ THE CONTROL ON THE DOWNMIX ITSELF, guarding the bug that cost @cowir-music two retracted

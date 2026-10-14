@@ -15,9 +15,35 @@ MEASURED 2026-10-12, which is why this exists:
 
 ⛔ EBU R128 INTEGRATED LOUDNESS IS UNDEFINED BELOW ~0.4s AND FLOORS AT -70. All six footstep
 families measure -70.0/-70.0/-70.0 and are NOT silent and NOT level-matched — they are
-unmeasurable by this instrument. A spread of 0.0 computed from three floored values is the most
-confident wrong answer this tool can give, so they are reported UNMEASURABLE by name rather than
-passing.
+unmeasurable by R128. A spread of 0.0 computed from three floored values is the most confident
+wrong answer this tool can give, so they are never passed as level-matched.
+
+✅ SO THEY ARE MEASURED THE OTHER WAY, added 2026-10-14: `spread_rms`, from per-channel RMS, which
+has no short-cue floor. Reporting them UNMEASURABLE was honest and still left 18 of the most
+repeated cues in the game judged by nothing — and one family is 4.1 dB wide:
+
+    footstep_sand    -16.0 / -20.1 / -18.8   4.1 dB   <- audible, and the widest of the six
+    footstep_stone                           2.7 dB
+    footstep_snow                            2.6 dB
+    footstep_wood                            2.3 dB
+    footstep_metal / footstep_grass          0.6 dB   <- what the same generator produced elsewhere
+
+The inconsistency IS the finding: commit 3767131e3 randomised bandwidth and duration per variant
+for natural variety, so some spread is intended — but an intended spread would not be 0.6 dB on
+grass and 4.1 dB on sand. Re-levelling is NOT done here: these shipped in April and struktured
+approved them by ear, which is the same reason cowir-main held the Cure re-level. Measured,
+reported, his call.
+
+⚠️ RMS AND LUFS ARE DIFFERENT QUANTITIES AND ARE NOT COMPARED. `spread` is in LU against
+SPREAD_LIMIT; `spread_rms` is in dB and carries NO pass/fail limit, because the six measured
+values run 0.6 / 0.6 / 2.3 / 2.5 / 2.7 / 4.1 with no break — any cut there is a coincidental
+value. The fixture PINS them and --check reports DRIFT, which needs no threshold at all.
+
+⚠️ AND RMS IS TAKEN PER CHANNEL, not over all samples. All 18 footsteps are dual-mono (stereo
+container, L/R correlation 1.00, every measure agreeing within 0.1 dB) so it does not bite today —
+but all-samples and channel-averaged RMS diverge by ~6 dB on a DECORRELATED stereo asset, and a
+future stereo family would be silently mismeasured. `rms()` records the channel divergence so that
+case announces itself instead.
 
 ⚠️ THREE FAMILIES ALSO MIX CHANNEL COUNTS (a mono base with stereo variants, or the reverse).
 Reported, NOT repaired: all-samples rms and channel-averaged rms diverge on a stereo asset, so a
@@ -63,6 +89,43 @@ def lufs(path, downmix=False):
     return None if v <= R128_FLOOR else v
 
 
+def _is_midpoint(path, avg):
+    """Selftest helper: re-read the per-channel values and check `avg` is their midpoint.
+
+    Deliberately parses INDEPENDENTLY of rms() — using rms()'s own parse to check rms() would only
+    confirm it agrees with itself."""
+    out = subprocess.run(["ffmpeg", "-v", "info", "-i", path, "-af", "astats=metadata=1:reset=0",
+                          "-f", "null", "-"], capture_output=True, text=True, timeout=120).stderr
+    head = out.split("Overall")[0]
+    vals = [float(m.group(1)) for m in re.finditer(r"RMS level dB:\s*(-?[0-9.]+)", head)]
+    if len(vals) != 2:
+        return False
+    return abs(avg - (max(vals) + min(vals)) / 2.0) < 0.05
+
+
+def rms(path):
+    """(channel-averaged RMS dB, max divergence between channels) or (None, None).
+
+    ⛔ PER CHANNEL, NOT OVER ALL SAMPLES. astats prints one `RMS level dB` per channel and then an
+    `Overall` block with the same label, so the Overall value must be dropped or a stereo file
+    yields three readings and a nonsense divergence. Cross-checked three ways on footstep_sand:
+    astats per-channel -15.96/-15.96, volumedetect all-samples -16.0, numpy per-channel -16.0/-16.0.
+
+    ⚠️ No R128 floor applies here, which is the whole point — this is what measures a 35ms cue."""
+    out = subprocess.run(["ffmpeg", "-v", "info", "-i", path, "-af", "astats=metadata=1:reset=0",
+                          "-f", "null", "-"], capture_output=True, text=True, timeout=120).stderr
+    head = out.split("Overall")[0]
+    vals = []
+    for m in re.finditer(r"RMS level dB:\s*(-?[0-9.]+|-?inf)", head):
+        t = m.group(1)
+        if t.endswith("inf"):
+            continue
+        vals.append(float(t))
+    if not vals:
+        return None, None
+    return round(sum(vals) / len(vals), 2), round(max(vals) - min(vals), 2)
+
+
 def channels(path):
     out = subprocess.run(["ffprobe", "-v", "error", "-show_entries", "stream=channels",
                           "-of", "csv=p=0", path], capture_output=True, text=True).stdout.strip()
@@ -87,17 +150,27 @@ def measure():
                 rows[m] = {"lufs": None, "ch": 0, "why": "no file on disk"}
                 continue
             ch = channels(f)
+            r, div = rms(f)
             ## mono input is already its own downmix; running the filter on it is the -6.02 dB bug
             rows[m] = {"lufs": lufs(f), "ch": ch,
-                       "lufs_mono": lufs(f) if ch == 1 else lufs(f, downmix=True)}
+                       "lufs_mono": lufs(f) if ch == 1 else lufs(f, downmix=True),
+                       "rms": r, "ch_div": div}
         vals = [r["lufs"] for r in rows.values() if r["lufs"] is not None]
         monos = [r.get("lufs_mono") for r in rows.values() if r.get("lufs_mono") is not None]
+        rmss = [r.get("rms") for r in rows.values() if r.get("rms") is not None]
+        divs = [r.get("ch_div") for r in rows.values() if r.get("ch_div") is not None]
         measurable = len(vals) == len(rows) and len(vals) >= 2
         out[base] = {
             "members": rows,
             "spread": round(max(vals) - min(vals), 1) if measurable else None,
             ## what the WEB build ships, which differs wherever a family mixes channel counts
             "spread_mono": round(max(monos) - min(monos), 1) if (measurable and len(monos) == len(rows)) else None,
+            ## no R128 floor, so this is populated for EVERY family — including the six R128 cannot
+            ## see. Pinned by the fixture and compared by --check; it carries no pass/fail limit.
+            "spread_rms": round(max(rmss) - min(rmss), 1) if len(rmss) == len(rows) and len(rmss) >= 2 else None,
+            ## a DECORRELATED stereo member would read differently all-samples vs per-channel; this
+            ## makes that announce itself rather than being absorbed into the number above
+            "ch_div_max": round(max(divs), 2) if divs else None,
             "unmeasurable": not measurable,
             "mixed_channels": len({r["ch"] for r in rows.values() if r["ch"]}) > 1,
         }
@@ -112,10 +185,22 @@ def cmd_write():
            "families": data}
     io.open(FIXTURE, "w", encoding="utf-8").write(json.dumps(doc, indent=2, ensure_ascii=False) + "\n")
     wide = [(k, v["spread"]) for k, v in data.items() if v["spread"] is not None and v["spread"] > SPREAD_LIMIT]
-    print("wrote %s: %d families, %d unmeasurable, %d over %.1f LU"
+    print("wrote %s: %d families, %d unmeasurable by R128, %d over %.1f LU"
           % (FIXTURE, len(data), sum(1 for v in data.values() if v["unmeasurable"]), len(wide), SPREAD_LIMIT))
     for k, s in sorted(wide, key=lambda x: -x[1]):
         print("   WIDE  %-22s %.1f LU" % (k, s))
+    ## The R128-blind families, ranked rather than thresholded: there is no break in the values to
+    ## put a cut at, so this is a report a human reads, not a gate.
+    rms_only = [(k, v["spread_rms"]) for k, v in data.items()
+                if v["unmeasurable"] and v.get("spread_rms") is not None]
+    if rms_only:
+        print("  R128-blind families, by RMS spread (dB — not comparable to the LU figures above):")
+        for k, s in sorted(rms_only, key=lambda x: -x[1]):
+            print("   rms   %-22s %.1f dB" % (k, s))
+    divergent = [(k, v["ch_div_max"]) for k, v in data.items()
+                 if v.get("ch_div_max") is not None and v["ch_div_max"] > 0.5]
+    for k, d in sorted(divergent, key=lambda x: -x[1]):
+        print("   ⚠️ %-22s channels diverge by %.2f dB — all-samples RMS would mismeasure this family" % (k, d))
     return 0
 
 
@@ -135,7 +220,12 @@ def cmd_check():
             print("family gone from the manifest but still pinned: %s" % k)
             bad += 1
         elif p.get("spread") != l.get("spread"):
-            print("%-22s pinned %s, now %s" % (k, p.get("spread"), l.get("spread")))
+            print("%-22s pinned spread %s, now %s" % (k, p.get("spread"), l.get("spread")))
+            bad += 1
+        ## ⛔ COMPARED, NOT JUST WRITTEN. A field the fixture records and --check ignores is inert
+        ## data that reads as coverage — the whole reason the six families were worth measuring.
+        elif p.get("spread_rms") != l.get("spread_rms"):
+            print("%-22s pinned spread_rms %s dB, now %s dB" % (k, p.get("spread_rms"), l.get("spread_rms")))
             bad += 1
     print("check: %s" % ("DRIFT (%d)" % bad if bad else "matches the fixture"))
     return 1 if bad else 0
@@ -173,6 +263,41 @@ def selftest():
     ## spread of 0.0, which is the most confident wrong answer available.
     chk("a family of floored members is UNMEASURABLE, not a 0.0 spread",
         lufs(short) is None)
+    ## ⛔ THE CONTROL FOR THE FALLBACK, and the only arm that proves the blind spot is now covered:
+    ## the SAME planted gap, on cues R128 cannot see at all.
+    short_loud = os.path.join(d, "short_loud.wav")
+    short_quiet = os.path.join(d, "short_quiet.wav")
+    subprocess.run(["ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", "sine=f=440:d=0.04",
+                    "-af", "volume=-6dB", short_loud], check=True)
+    subprocess.run(["ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", "sine=f=440:d=0.04",
+                    "-af", "volume=-14dB", short_quiet], check=True)
+    chk("R128 is blind to both 0.04s cues", lufs(short_loud) is None and lufs(short_quiet) is None)
+    ra, _ = rms(short_loud)
+    rb, _ = rms(short_quiet)
+    chk("rms() measures a 0.04s cue at all", ra is not None and rb is not None)
+    chk("...and sees the planted 8 dB gap R128 cannot", ra is not None and rb is not None and abs((ra - rb) - 8.0) < 0.6)
+    _, dv = rms(loud)
+    chk("a mono file reports 0.00 channel divergence", dv == 0.0)
+    ## ⛔ THE ARM ABOVE CANNOT CATCH AN OVERALL-INCLUSION BUG AND I SHIPPED IT BELIEVING IT COULD —
+    ## a mutation deleting `out.split("Overall")[0]` stayed GREEN. On a MONO file astats' per-channel
+    ## and Overall readings are the SAME NUMBER, and on a stereo file Overall sits BETWEEN the two
+    ## channels, so the DIVERGENCE is identical either way (measured: 8.00 vs 8.00). The only thing
+    ## that moves is the AVERAGE (-31.07 per-channel vs -30.53 with Overall).
+    ## ✅ So assert the RELATIONSHIP that holds for exactly two channels and nothing else: the
+    ## returned value must be the MIDPOINT of the channel extremes. A third reading breaks it.
+    asym = os.path.join(d, "asym.wav")
+    r_ch = os.path.join(d, "r_ch.wav")
+    subprocess.run(["ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", "sine=f=440:d=1",
+                    "-af", "volume=-14dB", r_ch], check=True)
+    subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", loud, "-i", r_ch, "-filter_complex",
+                    "[0:a][1:a]amerge=inputs=2[a]", "-map", "[a]", "-ac", "2", asym], check=True)
+    avg, dv2 = rms(asym)
+    chk("an asymmetric stereo file measures", avg is not None and dv2 is not None)
+    chk("...its divergence is the planted 8 dB gap",
+        dv2 is not None and abs(dv2 - 8.0) < 0.3)
+    ## midpoint of the extremes == avg only when exactly the two channels were averaged
+    chk("...and the returned rms is the MIDPOINT of the two channels (Overall is excluded)",
+        avg is not None and _is_midpoint(asym, avg))
     print("  selftest: %s" % ("PASS" if not f else "FAIL"))
     return 1 if f else 0
 
