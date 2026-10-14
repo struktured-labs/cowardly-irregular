@@ -13,7 +13,31 @@ extends GutTest
 ## growth on line count, which outruns the factor.
 
 const GE := "res://src/ui/autobattle/AutobattleGridEditor.gd"
-const PRESETS: Array = [0.8, 1.0, 1.25, 1.5, 2.0]
+## ⛔ DERIVED FROM THE CONSUMER'S OWN LIST, NOT A COPY. A hardcoded [0.8, 1.0, 1.25, 1.5, 2.0] goes
+## quietly stale the day a preset is added, and the arms below then never visit the new step.
+##
+## 📌 NO FALLBACK TO A HARDCODED LADDER — the EMPTY default one line below is deliberate and is not
+## the same thing. A fallback ladder would make these arms pass against a set the player cannot
+## select; the empty default hands the floor something it can fail on, by name.
+##
+## ⚠️ AND THIS REACH IS RUNTIME, WHICH IS WHY "a rename reds" IS TRUE HERE and would be FALSE of a
+## `class_name` const reach. `SettingsMenu.TEXT_SIZE_PRESETS` as a static reach resolves at PARSE
+## time, so a rename stops the file RUNNING — `run_tests.sh` EC=3, whose first listed cause is a
+## stale import cache, which cannot fix it. Keyed by string off `get_script_constant_map()`, a
+## rename yields `[]` and the floor reds as an ordinary named failure (@cowir-music's finding;
+## @cowir-overworld corrected the same sentence in their own file).
+##
+## ⛔ THE FLOOR LIVES IN HERE, NOT ONLY IN ITS OWN ARM. An empty or renamed ladder makes every
+## `for scale in _presets()` iterate ZERO times and pass green; asserting inside the helper makes
+## each sweeping arm red BY ITS OWN NAME, and it cannot be separated from the loops by a later edit
+## the way a standalone floor arm can (@cowir-autogrind named the gap, @cowir-story the repair).
+func _presets() -> Array:
+	var consts: Dictionary = (load("res://src/ui/SettingsMenu.gd") as GDScript).get_script_constant_map()
+	var p: Array = consts.get("TEXT_SIZE_PRESETS", [])
+	assert_gt(p.size(), 1,
+		"FLOOR: SettingsMenu.TEXT_SIZE_PRESETS must resolve and hold more than one step, or this "
+		+ "arm's preset loop iterates nothing and passes. Got " + str(p))
+	return p
 
 ## Two rules whose cells carry real wrapped text, including the hard newline an action row builds.
 const RULES: Array = [
@@ -129,7 +153,7 @@ func test_the_cell_font_follows_the_setting() -> void:
 ## layout.
 func test_no_cell_text_overflows_its_cell_at_any_preset() -> void:
 	var bad: Array = []
-	for scale in PRESETS:
+	for scale in _presets():
 		var ed: Control = await _editor_at(float(scale))
 		var h: float = float(ed._cell_h())
 		for pair in _cell_labels(ed):
@@ -146,7 +170,7 @@ func test_no_cell_text_overflows_its_cell_at_any_preset() -> void:
 ## UNWRAPPED glyphs and reports a false overflow (it told me +13 where the label draws none).
 func test_no_cell_text_spills_sideways_at_any_preset() -> void:
 	var bad: Array = []
-	for scale in PRESETS:
+	for scale in _presets():
 		var ed: Control = await _editor_at(float(scale))
 		for pair in _cell_labels(ed):
 			var l: Label = pair["label"] as Label
@@ -176,7 +200,7 @@ func test_the_cell_height_only_ever_grows() -> void:
 		"FLOOR: the authored CELL_HEIGHT must still exist, or this arm is vacuous")
 	var authored: int = int(consts.get("CELL_HEIGHT", -1))
 	var seen: Array = []
-	for scale in PRESETS:
+	for scale in _presets():
 		var ed: Control = await _editor_at(float(scale), SHORT_RULES)
 		var h: int = int(ed._cell_h())
 		assert_gte(h, authored,
@@ -184,7 +208,7 @@ func test_the_cell_height_only_ever_grows() -> void:
 		seen.append(h)
 	for i in range(1, seen.size()):
 		assert_gte(int(seen[i]), int(seen[i - 1]),
-			"the cell height must never SHRINK as Text Size rises: %s across %s" % [seen, PRESETS])
+			"the cell height must never SHRINK as Text Size rises: %s across %s" % [seen, _presets()])
 
 
 ## ARM 6 — THE REAL DOMAIN, EXHAUSTIVELY. Every ability in the table, not the longest one.
@@ -202,7 +226,7 @@ func test_every_real_ability_fits_the_cell_it_derives() -> void:
 	var ab: Dictionary = JobSystem.abilities if "abilities" in JobSystem else {}
 	assert_gt(ab.size(), 50, "PRECONDITION: the ability table must be loaded, got %d" % ab.size())
 	var bad: Array = []
-	for scale in PRESETS:
+	for scale in _presets():
 		var ed: Control = await _editor_at(float(scale))
 		var fnt: Font = ed.get_theme_font("font", "Label")
 		if fnt == null:
@@ -230,3 +254,13 @@ func test_every_real_ability_fits_the_cell_it_derives() -> void:
 	assert_eq(bad, [],
 		"every ability's cell budget must cover what its Label draws -- a budget measured under "
 		+ "different break flags than the node wraps with comes out SHORT: %s" % [bad.slice(0, 6)])
+
+
+## FLOOR for the preset derivation — without it an empty list makes every preset loop above iterate
+## ZERO times and pass, which is the shrinking-corpus shape a derived guard fails into silently.
+func test_the_preset_list_derives_from_settings() -> void:
+	var p: Array = _presets()
+	assert_gt(p.size(), 1,
+		"FLOOR: SettingsMenu.TEXT_SIZE_PRESETS must still resolve and hold more than one step — a "
+		+ "rename leaves every preset loop here iterating nothing and passing. Got " + str(p))
+	assert_true(p.has(1.0), "the derived presets must include the 1.0 default: " + str(p))

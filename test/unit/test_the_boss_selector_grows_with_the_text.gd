@@ -16,7 +16,31 @@ extends GutTest
 ## places (the build loop AND `_update_list`), so both writers had to be derived.
 
 const BS := "res://src/ui/BossSelectorMenu.gd"
-const PRESETS: Array = [0.8, 1.0, 1.25, 1.5, 2.0]
+## ⛔ DERIVED FROM THE CONSUMER'S OWN LIST, NOT A COPY. A hardcoded [0.8, 1.0, 1.25, 1.5, 2.0] goes
+## quietly stale the day a preset is added, and the arms below then never visit the new step.
+##
+## 📌 NO FALLBACK TO A HARDCODED LADDER — the EMPTY default one line below is deliberate and is not
+## the same thing. A fallback ladder would make these arms pass against a set the player cannot
+## select; the empty default hands the floor something it can fail on, by name.
+##
+## ⚠️ AND THIS REACH IS RUNTIME, WHICH IS WHY "a rename reds" IS TRUE HERE and would be FALSE of a
+## `class_name` const reach. `SettingsMenu.TEXT_SIZE_PRESETS` as a static reach resolves at PARSE
+## time, so a rename stops the file RUNNING — `run_tests.sh` EC=3, whose first listed cause is a
+## stale import cache, which cannot fix it. Keyed by string off `get_script_constant_map()`, a
+## rename yields `[]` and the floor reds as an ordinary named failure (@cowir-music's finding;
+## @cowir-overworld corrected the same sentence in their own file).
+##
+## ⛔ THE FLOOR LIVES IN HERE, NOT ONLY IN ITS OWN ARM. An empty or renamed ladder makes every
+## `for scale in _presets()` iterate ZERO times and pass green; asserting inside the helper makes
+## each sweeping arm red BY ITS OWN NAME, and it cannot be separated from the loops by a later edit
+## the way a standalone floor arm can (@cowir-autogrind named the gap, @cowir-story the repair).
+func _presets() -> Array:
+	var consts: Dictionary = (load("res://src/ui/SettingsMenu.gd") as GDScript).get_script_constant_map()
+	var p: Array = consts.get("TEXT_SIZE_PRESETS", [])
+	assert_gt(p.size(), 1,
+		"FLOOR: SettingsMenu.TEXT_SIZE_PRESETS must resolve and hold more than one step, or this "
+		+ "arm's preset loop iterates nothing and passes. Got " + str(p))
+	return p
 
 var _saved = null
 
@@ -75,7 +99,7 @@ func test_the_row_font_follows_the_setting() -> void:
 ## the whole design turns on: a row below the footer is a boss the player cannot see.
 func test_the_window_fits_above_the_footer_at_every_preset() -> void:
 	var bad: Array = []
-	for scale in PRESETS:
+	for scale in _presets():
 		var m: Control = await _menu_at(float(scale))
 		var bottom: float = m._list_y() + float(int(m._visible_rows()) * int(m._row_h()))
 		var limit: float = m._panel.size.y - m._footer_gap()
@@ -97,7 +121,7 @@ func test_the_window_fits_above_the_footer_at_every_preset() -> void:
 ## `_clamp_scroll()`, and asks whether that entry is inside the window.
 func test_the_last_boss_is_reachable_at_every_preset() -> void:
 	var bad: Array = []
-	for scale in PRESETS:
+	for scale in _presets():
 		var m: Control = await _menu_at(float(scale))
 		var total: int = (m._display_list as Array).size()
 		if total <= 0:
@@ -130,7 +154,7 @@ func test_the_last_boss_is_reachable_at_every_preset() -> void:
 ## VERIFICATION that saw a tenth of them.
 func test_every_boss_name_keeps_margin_from_the_world_column() -> void:
 	var bad: Array = []
-	for scale in PRESETS:
+	for scale in _presets():
 		var m: Control = await _menu_at(float(scale))
 		var asked: float = float(m._world_col_w())
 		var roster: Array = m.BOSSES
@@ -173,7 +197,13 @@ func test_the_small_and_default_sizes_render_the_shipped_layout() -> void:
 	var consts: Dictionary = (load(BS) as GDScript).get_script_constant_map()
 	for key in ["ROW_HEIGHT", "VISIBLE_ROWS"]:
 		assert_true(consts.has(key), "FLOOR: %s must still exist, or this arm is vacuous" % key)
-	for scale in [0.8, 1.0]:
+	## ⛔ DERIVED, NOT `[0.8, 1.0]`. Converting the ladder const left this SECOND literal behind,
+	## and it carries no 1.25 so every ladder-keyed census is blind to it — yet this is the arm
+	## that decides whether a new SUB-UNITY preset is ever checked (@cowir-music, 2026-10-14).
+	var at_or_below: Array = _presets().filter(func(p): return float(p) <= 1.0)
+	assert_gt(at_or_below.size(), 1,
+		"CONTROL: the sub-unity set must derive more than one step from the shipped ladder, or this loop iterates nothing and passes: " + str(at_or_below))
+	for scale in at_or_below:
 		var snap: Dictionary = _snapshot(await _menu_at(scale))
 		assert_eq(int(snap["row_h"]), int(consts["ROW_HEIGHT"]),
 			"at %.0f%% the row height must be the authored %d"
@@ -190,7 +220,7 @@ func test_the_small_and_default_sizes_render_the_shipped_layout() -> void:
 ## ARM 6 — the click target and the drawn row are ONE height.
 func test_the_click_target_matches_the_drawn_row() -> void:
 	var bad: Array = []
-	for scale in PRESETS:
+	for scale in _presets():
 		var m: Control = await _menu_at(float(scale))
 		for hl in m._row_highlights:
 			if not (hl and is_instance_valid(hl)):
@@ -234,7 +264,7 @@ func test_the_header_band_scales_with_the_text() -> void:
 ## regression from every arm that measures the WINDOW.
 func test_no_row_text_overflows_its_row() -> void:
 	var bad: Array = []
-	for scale in PRESETS:
+	for scale in _presets():
 		var m: Control = await _menu_at(float(scale))
 		var h: float = float(m._row_h())
 		for i in range(m._row_highlights.size()):
@@ -246,3 +276,13 @@ func test_no_row_text_overflows_its_row() -> void:
 					bad.append("%.2fx: '%s' ends %.0f in a %.0f row"
 						% [scale, lbl.text, lbl.position.y + drawn, h])
 	assert_eq(bad, [], "row text must stay inside its row at every Text Size: %s" % [bad])
+
+
+## FLOOR for the preset derivation — without it an empty list makes every preset loop above iterate
+## ZERO times and pass, which is the shrinking-corpus shape a derived guard fails into silently.
+func test_the_preset_list_derives_from_settings() -> void:
+	var p: Array = _presets()
+	assert_gt(p.size(), 1,
+		"FLOOR: SettingsMenu.TEXT_SIZE_PRESETS must still resolve and hold more than one step — a "
+		+ "rename leaves every preset loop here iterating nothing and passing. Got " + str(p))
+	assert_true(p.has(1.0), "the derived presets must include the 1.0 default: " + str(p))

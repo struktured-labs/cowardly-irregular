@@ -19,6 +19,22 @@ var _capture_timer: float = 0.0
 const MAPPING_SKIP_KEY := KEY_X
 const MAPPING_CANCEL_KEY := KEY_ESCAPE
 
+## ⛔ THE WALK'S ONLY PAD-REACHABLE EXIT, AND IT CLAIMS NO BUTTON -- which is why it is a clock and
+## not a gesture. `_handle_mapping_input` records every InputEventJoypadButton as the binding, so a
+## reserved button or a hold would have to steal one from the very mapping it is capturing. A
+## deadline takes nothing and cannot collide. Whether a gesture should ALSO exist is struktured's
+## call; adding one later does not undo this.
+##
+## 🔑 MEASURED FROM THE LAST PROGRESS, NOT THE LAST INPUT, and that is the whole fix. A player
+## working through the walk resets it on every binding and never sees it. A player whose presses are
+## all REFUSED -- a duplicate token, or a pad with no control the prompt will accept -- keeps
+## pressing and still gets out. Keyed to input, it would strand exactly the flailing player it
+## exists for, which is the population the row hint says is most likely to be in here.
+const MAPPING_IDLE_LIMIT := 30.0
+
+## The warning shows only inside this tail, so a calm walk is not run against a visible clock.
+const MAPPING_IDLE_WARN_AT := 10.0
+
 const CAPTURE_TIMEOUT = 5.0
 var _testing: bool = false
 
@@ -65,6 +81,10 @@ var _mapping: RefCounted = null
 var _mapping_overlay: Control = null
 var _mapping_prompt: Label = null
 var _mapping_status: Label = null
+## Seconds since the walk last ADVANCED. Its own label, so the deadline cannot clobber the
+## duplicate-input refusal that shares _mapping_status.
+var _mapping_idle: float = 0.0
+var _mapping_idle_label: Label = null
 
 
 func _compute_row_indices() -> void:
@@ -839,13 +859,13 @@ func _map_pad_hint() -> String:
 	var pads := Input.get_connected_joypads()
 	if pads.is_empty():
 		return "no pad connected"
-	## ⛔ WARNS BEFORE THE PLAYER COMMITS. The walk has no PAD exit -- skip and cancel are keyboard
-	## keys -- so a pad-only player who starts it can only finish it. Whether a pad gesture should
-	## exist is struktured's call; until then the honest thing is to say so on the row rather than
-	## at the point of no return.
+	## ⛔ WARNS BEFORE THE PLAYER COMMITS, and the warning CHANGED when the deadline landed: it used
+	## to say a pad-only player "can only finish it", which was true and is now false. Skipping one
+	## control and cancelling on the spot are still keyboard keys; being released is not.
+	var secs: int = int(MAPPING_IDLE_LIMIT)
 	if Input.is_joy_known(pads[0]):
-		return "SDL knows this pad — recapture only if it misbehaves (needs a keyboard to skip/cancel)"
-	return "THIS PAD IS UNMAPPED — capture it (needs a keyboard to skip/cancel)"
+		return "SDL knows this pad — recapture only if it misbehaves (keyboard skips a control; a stall releases it after %ds)" % secs
+	return "THIS PAD IS UNMAPPED — capture it (keyboard skips a control; a stall releases it after %ds)" % secs
 
 
 func _start_pad_mapping() -> void:
@@ -856,6 +876,7 @@ func _start_pad_mapping() -> void:
 	var device: int = pads[0]
 	var CaptureScript = load("res://src/input/ControllerMappingCapture.gd")
 	_mapping = CaptureScript.new(Input.get_joy_guid(device), Input.get_joy_name(device))
+	_mapping_idle = 0.0
 	_build_mapping_overlay()
 	_mapping_overlay.visible = true
 	_refresh_mapping_prompt()
@@ -867,6 +888,7 @@ func _refresh_mapping_prompt() -> void:
 	if _mapping_prompt == null or _mapping == null:
 		return
 	_mapping_prompt.text = _mapping.current_prompt()
+	_update_mapping_idle_label()
 	if _mapping_status:
 		## Keyboard only, and it says so: every pad button here is a BINDING, so there is no pad
 		## button left to mean "skip". The key names come from the consts the handler reads.
@@ -902,6 +924,7 @@ func _handle_mapping_input(event: InputEvent) -> void:
 
 
 func _advance_mapping() -> void:
+	_mapping_idle = 0.0
 	if _mapping.is_complete():
 		_finish_mapping()
 		return
@@ -1015,8 +1038,33 @@ func _preserve_unreadable(path: String, raw: String) -> bool:
 	return true
 
 
+## Releases a stalled walk and SAYS what it discarded. A screen that simply vanishes reads as a
+## crash, and the partial capture is worth naming: `build()` refuses an incomplete mapping anyway,
+## so nothing was ever going to be saved from here.
+func _expire_mapping() -> void:
+	var bound: int = 0
+	if _mapping != null:
+		bound = (_mapping.bindings as Dictionary).size()
+	_cancel_mapping()
+	_show_flash("Pad mapping released after %ds with no progress. %d captured control(s) discarded, nothing saved." % [int(MAPPING_IDLE_LIMIT), bound])
+
+
+## Silent until the walk is actually stalling, then it names the way out rather than only counting.
+func _update_mapping_idle_label() -> void:
+	if _mapping_idle_label == null or not is_instance_valid(_mapping_idle_label):
+		return
+	var left: float = MAPPING_IDLE_LIMIT - _mapping_idle
+	if _mapping == null or left > MAPPING_IDLE_WARN_AT:
+		_mapping_idle_label.text = ""
+		return
+	_mapping_idle_label.text = "No progress — releasing this screen in %.0fs.\nPress the control the prompt asks for to carry on." % max(0.0, left)
+
+
 func _cancel_mapping() -> void:
 	_mapping = null
+	_mapping_idle = 0.0
+	if _mapping_idle_label and is_instance_valid(_mapping_idle_label):
+		_mapping_idle_label.text = ""
 	if _mapping_overlay and is_instance_valid(_mapping_overlay):
 		_mapping_overlay.visible = false
 
@@ -1054,6 +1102,14 @@ func _build_mapping_overlay() -> void:
 	_mapping_status.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	_mapping_status.add_theme_color_override("font_color", DISABLED_COLOR)
 	_mapping_overlay.add_child(_mapping_status)
+
+	_mapping_idle_label = Label.new()
+	_mapping_idle_label.position = Vector2(size.x * 0.5 - 240, size.y * 0.62)
+	_mapping_idle_label.size = Vector2(480, 40)
+	_mapping_idle_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_mapping_idle_label.add_theme_font_size_override("font_size", TextScale.scaled(11))
+	_mapping_idle_label.add_theme_color_override("font_color", WARN_COLOR)
+	_mapping_overlay.add_child(_mapping_idle_label)
 
 
 func _toggle_nintendo_mode() -> void:
@@ -1095,6 +1151,14 @@ func _process(delta: float) -> void:
 		_flash_timer -= delta
 		if _flash_timer <= 0 and _flash_label:
 			_flash_label.visible = false
+
+	# The mapping walk's no-progress deadline. There was no arm here at all: the sibling
+	# single-action capture below has timed out since it shipped, and the walk never did.
+	if _mapping != null:
+		_mapping_idle += delta
+		_update_mapping_idle_label()
+		if _mapping_idle >= MAPPING_IDLE_LIMIT:
+			_expire_mapping()
 
 	# Capture timeout
 	if _capturing:

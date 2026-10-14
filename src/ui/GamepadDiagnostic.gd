@@ -4,6 +4,23 @@ class_name GamepadDiagnostic
 var _label: RichTextLabel
 var _active: bool = false
 
+## ⛔ WAS A RAW `18`, THE ONLY RAW RichTextLabel FONT LEFT IN `src/ui`. This overlay is advertised to
+## the player in the F1 controls reference and in ControlsMenu, so a player who turned Text Size up
+## reached the one screen that ignored the setting.
+##
+## ⛔ AND SCALING ALONE WOULD HAVE MADE IT WORSE, which is why `scroll_active` changes with it. The
+## label is PRESET_FULL_RECT with scrolling OFF, so anything past the viewport was simply not drawn
+## — no scrollbar, no clipping indicator, nothing. Content is a title, 5 lines per connected pad,
+## and one row per joypad-bound action (16 in project.godot, plus whatever engine-default ui_*
+## actions the live InputMap carries), so at the default it sits within ~100px of a 720px viewport
+## with ONE pad — and a second pad, or any Text Size above 100%, pushes rows off the bottom where
+## nothing could reach them. The action list is the whole point of the screen.
+const BASE_FONT_SIZE := 18
+
+## Scroll step, in lines of the CURRENT font — so the step grows with the text rather than becoming
+## a crawl at 200%. Three keeps a d-pad hold responsive without skipping a device block.
+const SCROLL_LINES := 3
+
 
 ## Every action the PROJECT declares, not a hardcoded six. The old list showed 6 of 14 and two of
 ## those six are dead (camera_rotate_*, no handler anywhere), so a tester chasing "my A button does
@@ -50,15 +67,45 @@ func _ready() -> void:
 	_label = RichTextLabel.new()
 	_label.set_anchors_preset(PRESET_FULL_RECT)
 	_label.bbcode_enabled = true
-	_label.scroll_active = false
-	_label.add_theme_font_size_override("normal_font_size", 18)
+	_label.scroll_active = true
+	_label.add_theme_font_size_override("normal_font_size", TextScale.scaled(BASE_FONT_SIZE))
 	add_child(_label)
 
 
+## ⚠️ THE SCROLL READ IS `MenuNav.step`, NOT a raw `is_action_pressed`: ui_up/ui_down bind the left
+## stick's Y axis, an axis carries no echo flag, and every value change on one push reads as pressed
+## — measured elsewhere as five steps for one nudge. Buttons pass through unlatched.
+##
+## 📌 CONSUMED ONLY WHEN IT SCROLLS. The F11 toggle deliberately does not consume, as before; and
+## while the overlay is closed this handler touches nothing, so it cannot steal a direction from the
+## game underneath.
 func _input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and event.keycode == KEY_F11:
 		_active = not _active
 		visible = _active
+		return
+
+	if not _active:
+		return
+	var nav: String = MenuNav.step(event)
+	if nav == "ui_down":
+		_scroll_by(SCROLL_LINES)
+		get_viewport().set_input_as_handled()
+	elif nav == "ui_up":
+		_scroll_by(-SCROLL_LINES)
+		get_viewport().set_input_as_handled()
+
+
+## Clamped to the last full page, not to max_value: scrolling into empty space below the content
+## reads as a broken screen.
+func _scroll_by(lines: int) -> void:
+	if _label == null or not is_instance_valid(_label):
+		return
+	var sb := _label.get_v_scroll_bar()
+	if sb == null:
+		return
+	var step: float = float(lines * TextScale.scaled(BASE_FONT_SIZE))
+	sb.value = clampf(sb.value + step, sb.min_value, max(sb.min_value, sb.max_value - sb.page))
 
 
 ## ⛔ GATED ON `_active`, WHICH `_process` ALREADY WAS AND THIS WAS NOT. GameLoop adds this overlay
@@ -94,7 +141,11 @@ func _process(_delta: float) -> void:
 	if not _active:
 		return
 
-	var text = "[b][color=yellow]GAMEPAD DIAGNOSTIC (F11 to close)[/color][/b]\n\n"
+	## ⚠️ NAMES NO FACE LETTER, DELIBERATELY. "D-pad" and "arrows" are family-neutral, so this caption
+	## cannot invert on an Xbox or PlayStation pad the way a hardcoded A/B does — the failure that put
+	## six wrong glyphs in shipped captions between .308 and .332. A derived glyph is not available
+	## here anyway: ui_up/ui_down are not in REMAPPABLE_ACTIONS, so hint_for_action cannot reach them.
+	var text = "[b][color=yellow]GAMEPAD DIAGNOSTIC (F11 to close · D-pad/arrows scroll)[/color][/b]\n\n"
 
 	for dev in Input.get_connected_joypads():
 		var name = Input.get_joy_name(dev)
@@ -127,4 +178,17 @@ func _process(_delta: float) -> void:
 
 	text += "\n[color=cyan]Mouse velocity:[/color] %s\n" % str(Input.get_last_mouse_velocity())
 
+	## ⚠️ HOLDS THE READING POSITION ACROSS A PER-FRAME REWRITE, and the reason is narrow: assigning
+	## `text` PRESERVES the scroll value for a same-height body and CLAMPS it to 0 when the body
+	## SHRINKS, and the clamp is not undone when it grows back (measured in HowToPlayOverlay). Line
+	## COUNT here is fixed, so the default case is stable — but at large Text Size a value changing
+	## width ("0=0.00" -> "0=-1.00") can rewrap a row and shrink the height for one frame.
+	##
+	## ⛔ NO GUARD ARM COVERS THESE TWO LINES, DELIBERATELY: headless has no pad and no mouse motion,
+	## so the rebuilt text is byte-identical every frame and the clamp cannot occur. An arm asserting
+	## the position survives would pass whether or not this code exists, which reads as cover.
+	var sb := _label.get_v_scroll_bar()
+	var keep: float = sb.value if sb else 0.0
 	_label.text = text
+	if sb:
+		sb.value = keep
