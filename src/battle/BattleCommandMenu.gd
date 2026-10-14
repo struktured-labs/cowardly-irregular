@@ -984,8 +984,10 @@ func _item_allows_any_ally_target(effects: Dictionary) -> bool:
 func _ally_state_tag(member: Combatant) -> String:
 	if not is_instance_valid(member):
 		return ""
+	## [KO] and [DEAD] read the same to the engine and NOT to the player: a permakilled ally cannot
+	## be raised, and tagging them [KO] is what made the choice blind. Matches BattleScene's badge.
 	if not member.is_alive:
-		return " [KO]"
+		return " [DEAD]" if not member.can_be_revived() else " [KO]"
 	if member.current_hp >= member.max_hp:
 		return " [Full]"
 	return ""

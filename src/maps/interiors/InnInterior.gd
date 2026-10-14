@@ -1457,17 +1457,25 @@ func _do_rest() -> void:
 		return
 
 	var game_loop = get_tree().root.get_node_or_null("GameLoop")
+	## Keyed on the OUTCOME rather than on permakill: whoever is still down after a paid rest gets
+	## named, whatever refused them. The dialogue charged for "fully rested" regardless.
+	var beyond_rest: Array[String] = []
 	if game_loop and game_loop.party:
 		for member in game_loop.party:
 			_restore_member_from_rest(member)
+			if not member.is_alive:
+				beyond_rest.append(str(member.combatant_name))
 
 	if SoundManager:
 		SoundManager.play_ui("heal")
 
 	var done: String = InnDialogue.line(_origin_map_id(), "rest_complete")
 	if done == "":
-		done = "Your party is fully rested!"
-	_rest_dialog = _make_inn_dialog(done + "\nHP and MP restored. (-%d G)" % REST_COST)
+		done = "Your party is rested." if not beyond_rest.is_empty() else "Your party is fully rested!"
+	var rest_tail: String = "\nHP and MP restored. (-%d G)" % REST_COST
+	if not beyond_rest.is_empty():
+		rest_tail += "\n%s cannot be roused — that death is permanent." % ", ".join(beyond_rest)
+	_rest_dialog = _make_inn_dialog(done + rest_tail)
 	await get_tree().create_timer(1.6).timeout
 	if _rest_dialog and is_instance_valid(_rest_dialog):
 		_rest_dialog.queue_free()

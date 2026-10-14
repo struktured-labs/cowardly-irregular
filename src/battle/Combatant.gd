@@ -581,6 +581,12 @@ func die() -> void:
 	died.emit()
 
 
+## Whether revive() will actually land. Derived from revive_preview so the predicate and the HP it
+## quotes cannot drift — six consumers called revive() blind and announced success regardless.
+func can_be_revived() -> bool:
+	return revive_preview() > 0
+
+
 ## HP revive(hp_amount) would land, with no side effect; 0 when revive() refuses (permakilled). The menu quotes this.
 func revive_preview(hp_amount: int = 0) -> int:
 	if "permakilled" in status_effects:

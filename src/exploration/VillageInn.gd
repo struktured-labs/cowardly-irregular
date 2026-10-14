@@ -371,6 +371,7 @@ func _rest_party() -> void:
 
 	# Restore all party members to full HP/MP
 	var game_loop = get_tree().root.get_node_or_null("GameLoop")
+	var beyond_rest: Array[String] = []
 	if game_loop and game_loop.party:
 		for member in game_loop.party:
 			# Direct current_hp assignment leaves is_alive=false on dead
@@ -378,13 +379,21 @@ func _rest_party() -> void:
 			# they sit out of battles until a Phoenix Down. Call revive()
 			# to flip is_alive AND set HP atomically.
 			if not member.is_alive:
+				## revive() refuses a permakilled member, and the HP/MP fills below then dressed a
+				## corpse's bars while the dialogue charged for "fully rested". Say who stayed down.
+				if not member.can_be_revived():
+					beyond_rest.append(str(member.combatant_name))
+					continue
 				member.revive(member.max_hp)
 			else:
 				member.current_hp = member.max_hp
 			member.current_mp = member.max_mp
 			member.current_ap = 0  # Reset AP too
 
-	dialogue_label.text = "Your party is fully rested!\nHP and MP restored. (-%d G)" % rest_cost
+	if beyond_rest.is_empty():
+		dialogue_label.text = "Your party is fully rested!\nHP and MP restored. (-%d G)" % rest_cost
+	else:
+		dialogue_label.text = "Your party is rested.\nHP and MP restored. (-%d G)\n%s cannot be roused — that death is permanent." % [rest_cost, ", ".join(beyond_rest)]
 
 	if SoundManager:
 		SoundManager.play_ui("inn_rest")
