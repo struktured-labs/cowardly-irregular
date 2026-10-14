@@ -50,6 +50,25 @@ var _testing: bool = false
 ## base_url + format + a starting model so only the key is left to paste.
 ## Bearer-auth providers only — _build_headers sends no x-api-key, so
 ## Anthropic's native endpoint cannot work here and is deliberately absent.
+## The longest line _status_label shows, so the panel reserves room for it. One copy, measured by
+## _content_h and drawn by _build_ui.
+const LONGEST_STATUS := "Status: FAILED — model 'x' not found at http://127.0.0.1:11434/v1 (HTTP 404). Check the model name and the base URL."
+
+## Ladder spacing. The old layout put the header in a 28px box at +16 with the privacy note at
+## +46, six rows on a flat 38px pitch, the status box at 66 and three buttons at a flat 160x36 —
+## none of which moved when Text Size did.
+const LINE_PAD := 10.0
+const ROW_GAP := 8.0
+const SECTION_GAP := 14.0
+const CONTROL_MIN_H := 30.0
+const BUTTON_H := 36.0
+const BUTTON_MIN_W := 160.0
+const BUTTON_FONT := 14
+const HEADER_FONT := 18
+const NOTE_FONT := 11
+const LABEL_FONT := 14
+const STATUS_FONT := 12
+
 const PROVIDER_PRESETS := [
 	{"label": "Custom / manual", "base_url": "", "format": "openai", "models": []},
 	{"label": "OpenAI", "base_url": "https://api.openai.com", "format": "openai", "models": [
@@ -107,7 +126,9 @@ func _build_ui() -> void:
 	if vp.x <= 0 or vp.y <= 0:
 		vp = Vector2(1280, 720)
 	var panel_w: float = min(720.0, vp.x - 80)
-	var panel_h: float = min(520.0, vp.y - 80)
+	## Measured, not estimated: on LiveVoicePanel my arithmetic guess came to 382 where the ladder
+	## needed 441, which pushed the status label under the buttons.
+	var panel_h: float = clampf(maxf(520.0, _content_h(min(720.0, vp.x - 80))), 0.0, vp.y - 80)
 	var panel_x: float = (vp.x - panel_w) / 2.0
 	var panel_y: float = (vp.y - panel_h) / 2.0
 
@@ -129,115 +150,139 @@ func _build_ui() -> void:
 
 	var header := Label.new()
 	header.text = "CUSTOM LLM BACKEND / BYOK"
-	header.add_theme_font_size_override("font_size", 18)
+	var header_px: int = TextScale.scaled(HEADER_FONT)
+	header.add_theme_font_size_override("font_size", header_px)
 	header.add_theme_color_override("font_color", HEADER_COLOR)
+	header.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	header.position = Vector2(panel_x + 20, panel_y + 16)
-	header.size = Vector2(panel_w - 40, 28)
+	header.size = Vector2(panel_w - 40, _text_h(header.text, panel_w - 40, header_px))
 	add_child(header)
 
 	var note := Label.new()
 	note.text = "Key is stored on this device only. Never sent to my server. Never logged."
-	note.add_theme_font_size_override("font_size", 11)
+	var note_px: int = TextScale.scaled(NOTE_FONT)
+	note.add_theme_font_size_override("font_size", note_px)
 	note.add_theme_color_override("font_color", DIM_COLOR)
-	note.position = Vector2(panel_x + 20, panel_y + 46)
-	note.size = Vector2(panel_w - 40, 18)
+	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	note.position = Vector2(panel_x + 20, header.position.y + header.size.y + ROW_GAP)
+	note.size = Vector2(panel_w - 40, _text_h(note.text, panel_w - 40, note_px))
 	add_child(note)
 
 	# Form rows: label + control
 	var form_x: float = panel_x + 24
 	var form_w: float = panel_w - 48
-	var label_w: float = 130
+	var label_w: float = _label_col_w()
 	var ctrl_x: float = form_x + label_w + 8
 	var ctrl_w: float = form_w - label_w - 8
-	var row_y: float = panel_y + 86
-	var row_h: float = 38
+	var row_y: float = note.position.y + note.size.y + SECTION_GAP
+	## The taller of the control and its scaled label, so a bigger font moves the row below it.
+	var row_h: float = maxf(float(TextScale.scaled(LABEL_FONT)) + LINE_PAD + 6.0, CONTROL_MIN_H) + ROW_GAP
 
-	_add_label("Provider", form_x, row_y, label_w)
+	var lbl_h: float = _add_label("Provider", form_x, row_y, label_w)
 	_provider_picker = OptionButton.new()
 	for i in PROVIDER_PRESETS.size():
 		_provider_picker.add_item(str(PROVIDER_PRESETS[i]["label"]), i)
+	_provider_picker.add_theme_font_size_override("font_size", TextScale.scaled(LABEL_FONT))
 	_provider_picker.position = Vector2(ctrl_x, row_y)
-	_provider_picker.size = Vector2(ctrl_w, 30)
+	_provider_picker.size = Vector2(ctrl_w, maxf(CONTROL_MIN_H, row_h - ROW_GAP))
 	_provider_picker.item_selected.connect(_on_provider_selected)
 	add_child(_provider_picker)
-	row_y += row_h
+	row_y += maxf(row_h, lbl_h + ROW_GAP)
 
-	_add_label("Base URL", form_x, row_y, label_w)
+	lbl_h = _add_label("Base URL", form_x, row_y, label_w)
 	_base_url_field = _add_field(ctrl_x, row_y, ctrl_w, "https://api.openai.com")
 	add_child(_base_url_field)
-	row_y += row_h
+	row_y += maxf(row_h, lbl_h + ROW_GAP)
 
-	_add_label("Format", form_x, row_y, label_w)
+	lbl_h = _add_label("Format", form_x, row_y, label_w)
 	_format_picker = OptionButton.new()
 	_format_picker.add_item("OpenAI-compatible", 0)
 	_format_picker.add_item("Ollama", 1)
+	_format_picker.add_theme_font_size_override("font_size", TextScale.scaled(LABEL_FONT))
 	_format_picker.position = Vector2(ctrl_x, row_y)
-	_format_picker.size = Vector2(ctrl_w, 30)
+	_format_picker.size = Vector2(ctrl_w, maxf(CONTROL_MIN_H, row_h - ROW_GAP))
 	add_child(_format_picker)
-	row_y += row_h
+	row_y += maxf(row_h, lbl_h + ROW_GAP)
 
-	_add_label("Model", form_x, row_y, label_w)
+	lbl_h = _add_label("Model", form_x, row_y, label_w)
 	_model_picker = OptionButton.new()
+	_model_picker.add_theme_font_size_override("font_size", TextScale.scaled(LABEL_FONT))
 	_model_picker.position = Vector2(ctrl_x, row_y)
-	_model_picker.size = Vector2(ctrl_w, 30)
+	_model_picker.size = Vector2(ctrl_w, maxf(CONTROL_MIN_H, row_h - ROW_GAP))
 	_model_picker.item_selected.connect(_on_model_selected)
 	add_child(_model_picker)
-	row_y += row_h
+	row_y += maxf(row_h, lbl_h + ROW_GAP)
 
-	_add_label("Custom model", form_x, row_y, label_w)
+	lbl_h = _add_label("Custom model", form_x, row_y, label_w)
 	_model_field = _add_field(ctrl_x, row_y, ctrl_w, "only needed for Custom…")
 	_model_field.text_changed.connect(_on_model_text_changed)
 	add_child(_model_field)
-	row_y += row_h
+	row_y += maxf(row_h, lbl_h + ROW_GAP)
 
-	_add_label("API Key", form_x, row_y, label_w)
+	lbl_h = _add_label("API Key", form_x, row_y, label_w)
 	_api_key_field = _add_field(ctrl_x, row_y, ctrl_w, "sk-...")
 	_api_key_field.secret = true
 	_api_key_field.secret_character = "•"
 	add_child(_api_key_field)
-	row_y += row_h
+	row_y += maxf(row_h, lbl_h + ROW_GAP)
 
 	# Privacy reminder under the key field
 	var reminder := Label.new()
 	reminder.text = "Logs use the masked form abcd…WXYZ, never the raw value."
-	reminder.add_theme_font_size_override("font_size", 11)
+	var rem_px: int = TextScale.scaled(NOTE_FONT)
+	reminder.add_theme_font_size_override("font_size", rem_px)
 	reminder.add_theme_color_override("font_color", DIM_COLOR)
+	reminder.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	reminder.position = Vector2(form_x, row_y + 4)
-	reminder.size = Vector2(form_w, 18)
+	reminder.size = Vector2(form_w, _text_h(reminder.text, form_w, rem_px))
 	add_child(reminder)
-	row_y += 24
+	row_y += reminder.size.y + ROW_GAP
 
 	# tick 52: status label for the Test Connection result. Persists
 	# between Test clicks so the user can see what last happened.
 	_status_label = Label.new()
-	_status_label.text = "Status: idle (Save first to test current config)"
-	_status_label.add_theme_font_size_override("font_size", 12)
+	var idle_text := "Status: idle (Save first to test current config)"
+	var status_px: int = TextScale.scaled(STATUS_FONT)
+	_status_label.add_theme_font_size_override("font_size", status_px)
 	_status_label.add_theme_color_override("font_color", STATUS_IDLE_COLOR)
 	_status_label.position = Vector2(form_x, row_y + 12)
 	# A failure names model, endpoint and error; one 22px line ran past the frame, so it wraps in room for three.
 	_status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_status_label.size = Vector2(form_w, 66)
+	## Room for the longest message this label shows — a failure names the model, the endpoint and
+	## the error — measured rather than the old flat 66, which held three 12px lines and two 24px.
+	## The room that EXISTS above the buttons, never more: the panel is capped by the viewport, so
+	## reserving what the longest message WANTS is what put it over Test Connection at 2.0x.
+	var btn_top: float = panel_y + panel_h - _button_h() - 20.0
+	var want: float = maxf(_text_h(LONGEST_STATUS, form_w, status_px), float(status_px) * 3.0)
+	_status_label.size = Vector2(form_w, maxf(float(status_px) + LINE_PAD, minf(want, btn_top - (row_y + 12.0) - ROW_GAP)))
+	_status_label.text = _fit_status(idle_text)
+	_status_label.tooltip_text = idle_text
 	add_child(_status_label)
 
 	# Buttons: Test (left), Save (mid-right), Cancel (right).
 	_test_btn = Button.new()
 	_test_btn.text = "Test Connection"
-	_test_btn.size = Vector2(160, 36)
-	_test_btn.position = Vector2(panel_x + 24, panel_y + panel_h - 56)
+	var bw: float = _button_w()
+	var btn_y: float = panel_y + panel_h - _button_h() - 20.0
+	_test_btn.add_theme_font_size_override("font_size", TextScale.scaled(BUTTON_FONT))
+	_test_btn.position = Vector2(panel_x + 24, btn_y)
+	_test_btn.size = Vector2(bw, _button_h())
 	_test_btn.pressed.connect(_on_test_pressed)
 	add_child(_test_btn)
 
 	_save_btn = Button.new()
 	_save_btn.text = "Save & Apply"
-	_save_btn.size = Vector2(160, 36)
-	_save_btn.position = Vector2(panel_x + panel_w - 360, panel_y + panel_h - 56)
+	_save_btn.add_theme_font_size_override("font_size", TextScale.scaled(BUTTON_FONT))
+	_save_btn.position = Vector2(panel_x + panel_w - 24 - bw - ROW_GAP - bw, btn_y)
+	_save_btn.size = Vector2(bw, _button_h())
 	_save_btn.pressed.connect(_on_save_pressed)
 	add_child(_save_btn)
 
 	_cancel_btn = Button.new()
 	_cancel_btn.text = "Cancel"
-	_cancel_btn.size = Vector2(160, 36)
-	_cancel_btn.position = Vector2(panel_x + panel_w - 184, panel_y + panel_h - 56)
+	_cancel_btn.add_theme_font_size_override("font_size", TextScale.scaled(BUTTON_FONT))
+	_cancel_btn.position = Vector2(panel_x + panel_w - 24 - bw, btn_y)
+	_cancel_btn.size = Vector2(bw, _button_h())
 	_cancel_btn.pressed.connect(_on_cancel_pressed)
 	add_child(_cancel_btn)
 
@@ -269,22 +314,93 @@ func _wire_focus_chain() -> void:
 	_provider_picker.grab_focus.call_deferred()
 
 
-func _add_label(text: String, x: float, y: float, w: float) -> void:
+## The wrapped height this text needs at this width and size, measured from the live font. Not
+## font.get_height(), which is one line's ascent+descent+leading and under-reserves once a label
+## wraps (@cowir-story's single-line-vs-wrapping measurement).
+## What the ladder needs at this width: header, note, six rows, the privacy reminder, the status
+## box at its longest, and the button row.
+func _content_h(panel_w: float) -> float:
+	var inner: float = panel_w - 40
+	var form_w: float = panel_w - 48
+	var row_h: float = maxf(float(TextScale.scaled(LABEL_FONT)) + LINE_PAD + 6.0, CONTROL_MIN_H) + ROW_GAP
+	row_h = maxf(row_h, _text_h("Custom model", _label_col_w(), TextScale.scaled(LABEL_FONT)) + ROW_GAP)
+	return 16.0 + _text_h("CUSTOM LLM BACKEND / BYOK", inner, TextScale.scaled(HEADER_FONT)) \
+			+ ROW_GAP + _text_h("Key is stored on this device only. Never sent to my server. Never logged.", inner, TextScale.scaled(NOTE_FONT)) \
+			+ SECTION_GAP + 6.0 * row_h \
+			+ _text_h("Logs use the masked form abcd…WXYZ, never the raw value.", form_w, TextScale.scaled(NOTE_FONT)) \
+			+ 12.0 + _text_h(LONGEST_STATUS, form_w, TextScale.scaled(STATUS_FONT)) \
+			+ ROW_GAP + _button_h() + 20.0 + 16.0
+
+
+func _text_h(text: String, w: float, px: int) -> float:
+	var f: Font = get_theme_font("font")
+	if f == null:
+		return float(px) + LINE_PAD
+	return f.get_multiline_string_size(text if text != "" else "X",
+			HORIZONTAL_ALIGNMENT_LEFT, w, px).y + LINE_PAD
+
+
+## One height for every button, and one width from the widest caption, so three on a row cannot
+## collide once a caption grows.
+## The widest field caption at the current size, so the label column grows with the font instead
+## of wrapping "Custom model" onto two lines and pushing its row into the next one.
+## The panel width the layout uses, so the helpers agree with _build_ui about the room available.
+func _panel_w() -> float:
+	var vp: Vector2 = get_viewport_rect().size
+	if vp.x <= 0:
+		vp = Vector2(1280, 720)
+	return min(720.0, vp.x - 80)
+
+
+func _label_col_w() -> float:
+	var f: Font = get_theme_font("font")
+	if f == null:
+		return 130.0
+	var px: int = TextScale.scaled(LABEL_FONT)
+	var widest: float = 0.0
+	for cap in ["Provider", "Base URL", "Format", "Model", "Custom model", "API Key"]:
+		widest = maxf(widest, f.get_string_size(cap, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x)
+	return maxf(130.0, widest + 12.0)
+
+
+func _button_h() -> float:
+	return maxf(BUTTON_H, float(TextScale.scaled(BUTTON_FONT)) + LINE_PAD + 8.0)
+
+
+func _button_w() -> float:
+	var f: Font = get_theme_font("font")
+	if f == null:
+		return BUTTON_MIN_W
+	var px: int = TextScale.scaled(BUTTON_FONT)
+	var widest: float = 0.0
+	for cap in ["Test Connection", "Save & Apply", "Cancel"]:
+		widest = maxf(widest, f.get_string_size(cap, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x)
+	## Three share one row, so a measured width that cannot fit three is capped rather than
+	## allowed to overlap — my guard caught Test Connection over Save & Apply at 2.0x.
+	var room: float = (_panel_w() - 48.0 - 2.0 * ROW_GAP) / 3.0
+	return clampf(widest + 28.0, BUTTON_MIN_W, maxf(BUTTON_MIN_W, room))
+
+
+## _add_label returns its clamped height so the caller advances by what DREW, not by a literal.
+func _add_label(text: String, x: float, y: float, w: float) -> float:
 	var lbl := Label.new()
 	lbl.text = text
-	lbl.add_theme_font_size_override("font_size", 14)
+	var px: int = TextScale.scaled(LABEL_FONT)
+	lbl.add_theme_font_size_override("font_size", px)
 	lbl.add_theme_color_override("font_color", TEXT_COLOR)
+	lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	lbl.position = Vector2(x, y + 6)
-	lbl.size = Vector2(w, 24)
+	lbl.size = Vector2(w, _text_h(text, w, px))
 	add_child(lbl)
+	return lbl.size.y
 
 
 func _add_field(x: float, y: float, w: float, placeholder: String) -> LineEdit:
 	var le := LineEdit.new()
 	le.placeholder_text = placeholder
 	le.position = Vector2(x, y)
-	le.size = Vector2(w, 30)
-	le.add_theme_font_size_override("font_size", 14)
+	le.size = Vector2(w, maxf(CONTROL_MIN_H, float(TextScale.scaled(LABEL_FONT)) + LINE_PAD + 6.0))
+	le.add_theme_font_size_override("font_size", TextScale.scaled(LABEL_FONT))
 	return le
 
 
@@ -571,8 +687,32 @@ func _merge_live_models(models: PackedStringArray) -> String:
 func _set_status(msg: String, color: Color) -> void:
 	if _status_label == null:
 		return
-	_status_label.text = msg
+	_status_label.text = _fit_status(msg)
+	_status_label.tooltip_text = msg
 	_status_label.add_theme_color_override("font_color", color)
+
+
+## What of `msg` fits the room this label actually has. At 2.0x on a 720p screen the ladder wants
+## 767px and the panel can only be 640, so a long failure message would otherwise draw over the
+## buttons. Trimmed to fit with an ellipsis; the whole message stays in the tooltip, because this
+## is the one label on the screen whose job is to say what went wrong.
+func _fit_status(msg: String) -> String:
+	if _status_label == null or msg == "":
+		return msg
+	var w: float = _status_label.size.x
+	var px: int = TextScale.scaled(STATUS_FONT)
+	var room: float = _status_label.size.y
+	if w <= 0.0 or room <= 0.0 or _text_h(msg, w, px) <= room:
+		return msg
+	var lo: int = 0
+	var hi: int = msg.length()
+	while lo < hi:
+		var mid: int = (lo + hi + 1) / 2
+		if _text_h(msg.substr(0, mid) + "…", w, px) <= room:
+			lo = mid
+		else:
+			hi = mid - 1
+	return msg.substr(0, lo) + "…" if lo > 0 else msg.substr(0, 1) + "…"
 
 
 func _input(event: InputEvent) -> void:

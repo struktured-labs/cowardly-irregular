@@ -125,7 +125,7 @@ func _build_ui() -> void:
 	var footer = Label.new()
 	footer.name = "ScreenFooter"
 	footer.text = footer_text
-	footer.add_theme_font_size_override("font_size", 12)
+	footer.add_theme_font_size_override("font_size", TextScale.scaled(12))
 	footer.add_theme_color_override("font_color", DISABLED_COLOR)
 	add_child(footer)
 	var footer_rect := MenuChrome.place_footer(footer, viewport_size, 16.0)
@@ -182,7 +182,7 @@ func _create_character_panel(panel_size: Vector2, at: Vector2) -> Control:
 	var name_label = Label.new()
 	name_label.name = "ScreenTitle"
 	name_label.text = character.combatant_name
-	name_label.add_theme_font_size_override("font_size", 16)
+	name_label.add_theme_font_size_override("font_size", TextScale.scaled(16))
 	name_label.add_theme_color_override("font_color", TEXT_COLOR)
 	panel.add_child(name_label)
 
@@ -191,7 +191,7 @@ func _create_character_panel(panel_size: Vector2, at: Vector2) -> Control:
 	level_label.name = "ScreenCounter"
 	level_label.text = "Lv %d" % character.job_level
 	level_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	level_label.add_theme_font_size_override("font_size", 12)
+	level_label.add_theme_font_size_override("font_size", TextScale.scaled(12))
 	level_label.add_theme_color_override("font_color", TEXT_COLOR)
 	panel.add_child(level_label)
 	var row_bottom := MenuChrome.place_header(name_label, level_label, panel.size.x, 8.0, false, 8.0)
@@ -200,7 +200,7 @@ func _create_character_panel(panel_size: Vector2, at: Vector2) -> Control:
 	var job_name = character.job.get("name", "Fighter") if character.job else "Fighter"
 	var job_label = Label.new()
 	job_label.text = job_name
-	job_label.add_theme_font_size_override("font_size", 11)
+	job_label.add_theme_font_size_override("font_size", TextScale.scaled(11))
 	job_label.add_theme_color_override("font_color", DISABLED_COLOR)
 	panel.add_child(job_label)
 	var job_sz := MenuChrome.lock(job_label)
@@ -209,7 +209,7 @@ func _create_character_panel(panel_size: Vector2, at: Vector2) -> Control:
 	# HP/MP compact
 	var hp_label = Label.new()
 	hp_label.text = "HP %d/%d  MP %d/%d" % [character.current_hp, character.max_hp, character.current_mp, character.max_mp]
-	hp_label.add_theme_font_size_override("font_size", 10)
+	hp_label.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	hp_label.add_theme_color_override("font_color", TEXT_COLOR)
 	panel.add_child(hp_label)
 	var hp_sz := MenuChrome.lock(hp_label)
@@ -236,7 +236,7 @@ func _create_equipment_panel(panel_size: Vector2) -> Control:
 	var title = Label.new()
 	title.text = "EQUIPMENT"
 	title.position = Vector2(8, 4)
-	title.add_theme_font_size_override("font_size", 14)
+	title.add_theme_font_size_override("font_size", TextScale.scaled(14))
 	title.add_theme_color_override("font_color", TEXT_COLOR)
 	panel.add_child(title)
 
@@ -257,8 +257,12 @@ func _create_equipment_panel(panel_size: Vector2) -> Control:
 	return panel
 
 
+## ⛔ TOOK A RAW font_size AND EVERY CALLER PASSED A LITERAL, so this file's geometry was already
+## derived — correctly — and then frozen at the default Text Size. The fonts below now scale, so
+## this scales the same way: callers keep passing the BASE size and get the SCALED height, which
+## keeps one source of truth for both the override and the box that holds it.
 func _ui_line_height(font_size: int) -> int:
-	return int(ceili(ThemeDB.fallback_font.get_height(font_size)))
+	return int(ceili(ThemeDB.fallback_font.get_height(TextScale.scaled(font_size))))
 
 
 func _centered_on_icon(font_size: int) -> int:
@@ -270,8 +274,16 @@ func _slot_body_y() -> int:
 	return _ui_line_height(10) + 4
 
 
+## ⚠️ `32` is the ICON's height, and the cursor and name sit BESIDE it on the same line. At 200%
+## that text is 34px, taller than the icon it is centred against, so a flat 32 under-reserves and
+## the glyph drew past the row (measured: '>' ending at 71 in a 68px row). The body line is
+## whichever of the two is taller.
+func _slot_body_h() -> int:
+	return maxi(32, _ui_line_height(14))
+
+
 func _slot_stride() -> int:
-	return _slot_body_y() + 32 + 4 + 4
+	return _slot_body_y() + _slot_body_h() + 4 + 4
 
 
 ## Icon line, then the stat line, then the description, with a gap so they do not share pixels.
@@ -305,7 +317,7 @@ func _create_slot_row(slot_index: int) -> Control:
 	var cursor = Label.new()
 	cursor.text = ">" if is_selected else " "
 	cursor.position = Vector2(4, body_y + _centered_on_icon(14))
-	cursor.add_theme_font_size_override("font_size", 14)
+	cursor.add_theme_font_size_override("font_size", TextScale.scaled(14))
 	cursor.add_theme_color_override("font_color", Color.YELLOW)
 	cursor.name = "Cursor"
 	row.add_child(cursor)
@@ -315,7 +327,7 @@ func _create_slot_row(slot_index: int) -> Control:
 	slot_label.name = "SlotTitle"
 	slot_label.text = SLOTS[slot_index]
 	slot_label.position = Vector2(24, 0)
-	slot_label.add_theme_font_size_override("font_size", 10)
+	slot_label.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	slot_label.add_theme_color_override("font_color", SUBTITLE_COLOR)
 	row.add_child(slot_label)
 
@@ -335,7 +347,7 @@ func _create_slot_row(slot_index: int) -> Control:
 	equip_label.position = Vector2(name_x, body_y)
 	equip_label.size = Vector2(280, 32)
 	equip_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	equip_label.add_theme_font_size_override("font_size", 12)
+	equip_label.add_theme_font_size_override("font_size", TextScale.scaled(12))
 	equip_label.add_theme_color_override("font_color", equip_color if equip_name != "(empty)" else EMPTY_SLOT_COLOR)
 	row.add_child(equip_label)
 
@@ -426,7 +438,7 @@ func _create_stats_panel(panel_size: Vector2) -> Control:
 	var title = Label.new()
 	title.text = "STATS"
 	title.position = Vector2(8, 4)
-	title.add_theme_font_size_override("font_size", 14)
+	title.add_theme_font_size_override("font_size", TextScale.scaled(14))
 	title.add_theme_color_override("font_color", TEXT_COLOR)
 	panel.add_child(title)
 
@@ -461,7 +473,7 @@ func _create_stats_panel(panel_size: Vector2) -> Control:
 		var stat_label = Label.new()
 		stat_label.text = "%s: %d" % [stat[0], stat[1]]
 		stat_label.position = Vector2(16 + col * col_width, y_offset + row_idx * row_height)
-		stat_label.add_theme_font_size_override("font_size", 12)
+		stat_label.add_theme_font_size_override("font_size", TextScale.scaled(12))
 		stat_label.add_theme_color_override("font_color", TEXT_COLOR)
 		panel.add_child(stat_label)
 
@@ -470,7 +482,7 @@ func _create_stats_panel(panel_size: Vector2) -> Control:
 	var bonus_title = Label.new()
 	bonus_title.text = "Equipment Bonuses:"
 	bonus_title.position = Vector2(8, bonus_y)
-	bonus_title.add_theme_font_size_override("font_size", 11)
+	bonus_title.add_theme_font_size_override("font_size", TextScale.scaled(11))
 	bonus_title.add_theme_color_override("font_color", DISABLED_COLOR)
 	panel.add_child(bonus_title)
 
@@ -483,7 +495,7 @@ func _create_stats_panel(panel_size: Vector2) -> Control:
 			var mod_label = Label.new()
 			mod_label.text = "%s: %s%d" % [_stat_display_name(stat_name), "+" if mod_value > 0 else "", mod_value]
 			mod_label.position = Vector2(16, bonus_y)
-			mod_label.add_theme_font_size_override("font_size", 10)
+			mod_label.add_theme_font_size_override("font_size", TextScale.scaled(10))
 			mod_label.add_theme_color_override("font_color", AccessibilityPalette.bonus() if mod_value > 0 else AccessibilityPalette.penalty())
 			panel.add_child(mod_label)
 			bonus_y += 16
@@ -507,7 +519,7 @@ func _create_items_panel(panel_size: Vector2) -> Control:
 	var title = Label.new()
 	title.text = "SELECT %s" % SLOTS[selected_slot].to_upper()
 	title.position = Vector2(8, 4)
-	title.add_theme_font_size_override("font_size", 14)
+	title.add_theme_font_size_override("font_size", TextScale.scaled(14))
 	title.add_theme_color_override("font_color", Color.YELLOW)
 	panel.add_child(title)
 
@@ -518,7 +530,7 @@ func _create_items_panel(panel_size: Vector2) -> Control:
 		var empty_label = Label.new()
 		empty_label.text = "No items available"
 		empty_label.position = Vector2(16, 32)
-		empty_label.add_theme_font_size_override("font_size", 12)
+		empty_label.add_theme_font_size_override("font_size", TextScale.scaled(12))
 		empty_label.add_theme_color_override("font_color", DISABLED_COLOR)
 		panel.add_child(empty_label)
 		return panel
@@ -575,7 +587,7 @@ func _create_item_row(item_id: String, index: int) -> Control:
 	var cursor = Label.new()
 	cursor.text = ">" if is_selected else " "
 	cursor.position = Vector2(4, _centered_on_icon(14))
-	cursor.add_theme_font_size_override("font_size", 14)
+	cursor.add_theme_font_size_override("font_size", TextScale.scaled(14))
 	cursor.add_theme_color_override("font_color", Color.YELLOW)
 	cursor.name = "Cursor"
 	row.add_child(cursor)
@@ -597,7 +609,7 @@ func _create_item_row(item_id: String, index: int) -> Control:
 	name_label.position = Vector2(54, 0)
 	name_label.size = Vector2(420, 32)
 	name_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	name_label.add_theme_font_size_override("font_size", 12)
+	name_label.add_theme_font_size_override("font_size", TextScale.scaled(12))
 	name_label.add_theme_color_override("font_color", _get_slot_color(selected_slot))
 	row.add_child(name_label)
 
@@ -635,7 +647,7 @@ func _create_item_row(item_id: String, index: int) -> Control:
 	stats_label.name = "Stats"
 	stats_label.text = stat_text.strip_edges()
 	stats_label.position = Vector2(54, _choice_stats_y())
-	stats_label.add_theme_font_size_override("font_size", 10)
+	stats_label.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	if positive_count > 0 and negative_count == 0:
 		stats_label.add_theme_color_override("font_color", AccessibilityPalette.bonus())
 	elif negative_count > 0 and positive_count == 0:
@@ -670,7 +682,7 @@ func _create_item_row(item_id: String, index: int) -> Control:
 	desc_label.offset_bottom = _choice_desc_y() + _ui_line_height(9)
 	desc_label.clip_text = true
 	desc_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	desc_label.add_theme_font_size_override("font_size", 9)
+	desc_label.add_theme_font_size_override("font_size", TextScale.scaled(9))
 	desc_label.add_theme_color_override("font_color", SUBTITLE_COLOR)
 	row.add_child(desc_label)
 

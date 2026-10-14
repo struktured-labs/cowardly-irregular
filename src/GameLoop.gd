@@ -3752,7 +3752,7 @@ func _check_boot_canaries() -> void:
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	label.add_theme_color_override("font_color", Color(1.0, 0.85, 0.85))
-	label.add_theme_font_size_override("font_size", 22)
+	label.add_theme_font_size_override("font_size", TextScale.scaled(22))
 	## ⛔ THE SECOND LINE IS AN INSTRUCTION A PANICKING DEVELOPER TYPES, so it carries the sandbox.
 	## A bare `godot --headless --import` is editor-class: it writes user://, rotating the crash
 	## trace it was run to investigate — that is how a real log history was lost on 2026-09-18. The
@@ -4314,7 +4314,7 @@ func _maybe_diegetic_retry() -> bool:
 	lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	lbl.set_anchors_preset(Control.PRESET_FULL_RECT)
-	lbl.add_theme_font_size_override("font_size", 18)
+	lbl.add_theme_font_size_override("font_size", TextScale.scaled(18))
 	lbl.add_theme_color_override("font_color", Color(0.85, 0.6, 0.95))
 	overlay.add_child(lbl)
 	add_child(overlay)
@@ -5288,7 +5288,7 @@ func _make_location_label(text: String, layer: CanvasLayer) -> Label:
 	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	lbl.set_anchors_preset(Control.PRESET_FULL_RECT)
-	lbl.add_theme_font_size_override("font_size", 22)
+	lbl.add_theme_font_size_override("font_size", TextScale.scaled(22))
 	lbl.add_theme_color_override("font_color", Color(0.95, 0.92, 0.78))
 	lbl.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 0.8))
 	lbl.add_theme_constant_override("shadow_offset_x", 2)
@@ -5472,12 +5472,13 @@ func _area_interior_transition_in(location_name: String) -> void:
 	# Subtle small label in the lower-left — just the room name, no prefix.
 	var lbl = Label.new()
 	lbl.text = location_name
-	lbl.add_theme_font_size_override("font_size", 16)
+	var loc_px := TextScale.scaled(16)
+	lbl.add_theme_font_size_override("font_size", loc_px)
 	lbl.add_theme_color_override("font_color", Color(0.85, 0.80, 0.70))
 	lbl.add_theme_color_override("font_shadow_color", Color.BLACK)
 	lbl.add_theme_constant_override("shadow_offset_x", 1)
 	lbl.add_theme_constant_override("shadow_offset_y", 1)
-	lbl.position = Vector2(32, get_viewport().get_visible_rect().size.y - 56)
+	lbl.position = Vector2(32, get_viewport().get_visible_rect().size.y - 56 - (_text_line_h(loc_px) - _text_line_h(16)))
 	lbl.modulate.a = 0.0
 	_area_fade_layer.add_child(lbl)
 	var lbl_tween = create_tween()
@@ -6803,10 +6804,13 @@ func _show_autogrind_transition() -> void:
 	battle_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	battle_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	battle_label.set_anchors_preset(Control.PRESET_CENTER)
-	battle_label.add_theme_font_size_override("font_size", 32)
+	var card_px := TextScale.scaled(32)
+	battle_label.add_theme_font_size_override("font_size", card_px)
 	battle_label.add_theme_color_override("font_color", Color(1.0, 1.0, 0.4))
-	battle_label.position = Vector2(-100, -30)
-	battle_label.size = Vector2(200, 40)
+	var card_w := maxf(200.0, ThemeDB.fallback_font.get_string_size(battle_label.text, HORIZONTAL_ALIGNMENT_LEFT, -1, card_px).x + 16.0)
+	var card_h := maxf(40.0, _text_line_h(card_px))
+	battle_label.position = Vector2(-card_w * 0.5, -30)
+	battle_label.size = Vector2(card_w, card_h)
 	layer.add_child(battle_label)
 
 	if speed_text != "":
@@ -6814,11 +6818,13 @@ func _show_autogrind_transition() -> void:
 		speed_label.text = speed_text
 		speed_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		speed_label.set_anchors_preset(Control.PRESET_CENTER)
-		speed_label.add_theme_font_size_override("font_size", 20)
+		var speed_px := TextScale.scaled(20)
+		speed_label.add_theme_font_size_override("font_size", speed_px)
 		var color = Color(0.9, 0.3, 0.3) if speed_text == "TURBO" else Color(0.4, 0.9, 0.4)
 		speed_label.add_theme_color_override("font_color", color)
-		speed_label.position = Vector2(-60, 10)
-		speed_label.size = Vector2(120, 30)
+		var speed_w := maxf(120.0, ThemeDB.fallback_font.get_string_size(speed_text, HORIZONTAL_ALIGNMENT_LEFT, -1, speed_px).x + 16.0)
+		speed_label.position = Vector2(-speed_w * 0.5, -30 + card_h)
+		speed_label.size = Vector2(speed_w, maxf(30.0, _text_line_h(speed_px)))
 		layer.add_child(speed_label)
 
 	var tween = create_tween()
@@ -7147,16 +7153,16 @@ func _show_grind_stop_notification(reason: String) -> void:
 	if vp_size.x == 0:
 		vp_size = Vector2(1280, 720)
 	banner_bg.position = Vector2(0, vp_size.y * 0.42)
-	banner_bg.size = Vector2(vp_size.x, 56)
+	banner_bg.size = Vector2(vp_size.x, 56 + maxf(0.0, _text_line_h(TextScale.scaled(22)) - 24.0))
 	banner_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	layer.add_child(banner_bg)
 
 	var banner_lbl := Label.new()
 	banner_lbl.text = "AUTOGRIND STOPPED — %s" % reason.to_upper()
 	banner_lbl.position = Vector2(0, vp_size.y * 0.42 + 16)
-	banner_lbl.size = Vector2(vp_size.x, 24)
+	banner_lbl.size = Vector2(vp_size.x, maxf(24.0, _text_line_h(TextScale.scaled(22))))
 	banner_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	banner_lbl.add_theme_font_size_override("font_size", 22)
+	banner_lbl.add_theme_font_size_override("font_size", TextScale.scaled(22))
 	banner_lbl.add_theme_color_override("font_color", Color(1.0, 0.9, 0.3))
 	banner_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	layer.add_child(banner_lbl)
@@ -7421,9 +7427,11 @@ func _show_region_warp_transition(world_num: int, world_name: String) -> void:
 	var title = Label.new()
 	title.text = "REGION CRACKED"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.position = Vector2(0, vp_size.y * 0.35)
-	title.size = Vector2(vp_size.x, 40)
-	title.add_theme_font_size_override("font_size", 28)
+	var warp_top: float = vp_size.y * 0.35
+	var title_h := maxf(40.0, _text_line_h(TextScale.scaled(28)))
+	title.position = Vector2(0, warp_top)
+	title.size = Vector2(vp_size.x, title_h)
+	title.add_theme_font_size_override("font_size", TextScale.scaled(28))
 	title.add_theme_color_override("font_color", Color(1.0, 0.3, 0.3))
 	title.modulate.a = 0.0
 	layer.add_child(title)
@@ -7432,9 +7440,10 @@ func _show_region_warp_transition(world_num: int, world_name: String) -> void:
 	var subtitle = Label.new()
 	subtitle.text = "Warping to World %d: %s" % [world_num, world_name]
 	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	subtitle.position = Vector2(0, vp_size.y * 0.35 + 40)
-	subtitle.size = Vector2(vp_size.x, 30)
-	subtitle.add_theme_font_size_override("font_size", 18)
+	var sub_h := maxf(30.0, _text_line_h(TextScale.scaled(18)))
+	subtitle.position = Vector2(0, warp_top + title_h)
+	subtitle.size = Vector2(vp_size.x, sub_h)
+	subtitle.add_theme_font_size_override("font_size", TextScale.scaled(18))
 	subtitle.add_theme_color_override("font_color", Color(1.0, 1.0, 0.4))
 	subtitle.modulate.a = 0.0
 	layer.add_child(subtitle)
@@ -7443,9 +7452,9 @@ func _show_region_warp_transition(world_num: int, world_name: String) -> void:
 	var hint = Label.new()
 	hint.text = "Enemy adaptation reset — fresh hunting grounds!"
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	hint.position = Vector2(0, vp_size.y * 0.35 + 76)
-	hint.size = Vector2(vp_size.x, 24)
-	hint.add_theme_font_size_override("font_size", 13)
+	hint.position = Vector2(0, warp_top + title_h + sub_h + 6.0)
+	hint.size = Vector2(vp_size.x, maxf(24.0, _text_line_h(TextScale.scaled(13))))
+	hint.add_theme_font_size_override("font_size", TextScale.scaled(13))
 	hint.add_theme_color_override("font_color", Color(0.5, 0.9, 0.5))
 	hint.modulate.a = 0.0
 	layer.add_child(hint)
@@ -8112,7 +8121,7 @@ func _show_autogrind_paused_badge(text: String) -> void:
 	label.text = text
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	label.add_theme_font_size_override("font_size", 20)
+	label.add_theme_font_size_override("font_size", TextScale.scaled(20))
 	## The colour the orphaned overlay's own paused label used, kept so the intent survives it.
 	label.add_theme_color_override("font_color", Color(1.0, 0.7, 0.3))
 	panel.add_child(label)
@@ -8137,6 +8146,11 @@ func _hide_autogrind_paused_badge() -> void:
 	_autogrind_paused_layer = null
 
 
+## One line's drawn height at a font size: single-line text clamps to exactly this, so offsets stack from it.
+static func _text_line_h(px: int) -> float:
+	return ThemeDB.fallback_font.get_height(px)
+
+
 func _show_autogrind_toast(text: String) -> void:
 	var layer = CanvasLayer.new()
 	layer.layer = 80
@@ -8149,8 +8163,9 @@ func _show_autogrind_toast(text: String) -> void:
 	if vp_size.x == 0:
 		vp_size = Vector2(1280, 720)
 	label.position = Vector2(0, 80)
-	label.size = Vector2(vp_size.x, 40)
-	label.add_theme_font_size_override("font_size", 20)
+	var toast_h := maxf(40.0, _text_line_h(TextScale.scaled(20)))
+	label.size = Vector2(vp_size.x, toast_h)
+	label.add_theme_font_size_override("font_size", TextScale.scaled(20))
 	label.add_theme_color_override("font_color", Color(1.0, 1.0, 0.4))
 	label.modulate.a = 0.0
 	layer.add_child(label)
@@ -8159,8 +8174,8 @@ func _show_autogrind_toast(text: String) -> void:
 	shadow.text = text
 	shadow.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	shadow.position = Vector2(2, 82)
-	shadow.size = Vector2(vp_size.x, 40)
-	shadow.add_theme_font_size_override("font_size", 20)
+	shadow.size = Vector2(vp_size.x, toast_h)
+	shadow.add_theme_font_size_override("font_size", TextScale.scaled(20))
 	shadow.add_theme_color_override("font_color", Color(0, 0, 0, 0.6))
 	shadow.modulate.a = 0.0
 	layer.add_child(shadow)
