@@ -78,20 +78,72 @@ func test_every_preset_moves_it_monotonically() -> void:
 
 
 ## The text must FIT its own panel at every preset — a font-grew arm alone is blind to overflow.
-func test_the_strip_fits_its_panel_at_every_preset() -> void:
+##
+## ⛔ THIS ARM USED ONE HAND-PICKED STRING, AND IT WAS A STRING THE GAME NEVER PRODUCES.
+## "Fighter's turn — choose an action", 32 chars, invented. The real formats are in
+## BattleUIManager.update_turn_info, and the worst of them with the longest authored name is
+## "Round 99 - SELECT: Glacius, the Frozen Sovereign (AP: +4)" at 57 — nearly double. So the arm
+## tested a narrower case than reality and would have passed an overflow of the real text.
+## That is cowir-controller's exact failure (18110): a corpus of one, and 5 of their 289 abilities
+## were short at 125% while none of the failures was the longest string. And cowir-adhoc's
+## refinement (18111): len() is a PROXY for width, not width — a wide-glyph short word beats a
+## narrow-glyph long one. So this drives EVERY authored name through EVERY real format and measures
+## with get_string_size, not with len().
+##
+## A font query is valid here: TurnInfo has no autowrap_mode in the scene, so it is single-line and
+## the default break flags are the ones it draws with — cowir-autogrind's flags hazard needs a
+## wrapping node and cannot reach this one.
+func _real_turn_lines() -> Array[String]:
+	var names: Array[String] = []
+	var raw: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/monsters.json"))
+	if raw is Dictionary:
+		var table: Variant = raw.get("monsters", raw)
+		if table is Dictionary:
+			for k in (table as Dictionary):
+				var m: Variant = (table as Dictionary)[k]
+				if m is Dictionary and str((m as Dictionary).get("name", "")) != "":
+					names.append(str((m as Dictionary)["name"]))
+	for job in ["Fighter", "Cleric", "Mage", "Rogue", "Bard"]:
+		names.append(job)
+	var out: Array[String] = []
+	for n in names:
+		out.append("Round 99 - SELECT: %s (AP: +4)" % n)
+		out.append("Round 99 - EXECUTE: %s" % n)
+	out.append("Round 99 - Selection Phase")
+	out.append("Round 99 - Execution Phase")
+	return out
+
+
+func test_every_real_turn_line_fits_the_strip_at_every_preset() -> void:
+	var lines: Array[String] = _real_turn_lines()
+	assert_gt(lines.size(), 20,
+		"FLOOR: the corpus must be the real one — %d lines derived from monsters.json plus the five "
+		% lines.size() + "starter jobs, through every format update_turn_info writes")
 	for s in PRESETS:
 		_scene = await _build(float(s))
 		var panel: Control = _scene.get_node_or_null("UI/TurnInfoPanel")
-		var label: Control = _scene.get_node_or_null(TURN_INFO)
-		assert_false(panel == null or label == null, "fixture: panel and label must exist at %sx" % str(s))
+		var label: Label = _scene.get_node_or_null(TURN_INFO)
+		assert_false(panel == null or label == null, "fixture: both must exist at %sx" % str(s))
 		if panel == null or label == null:
 			return
-		label.text = "Fighter's turn — choose an action"
-		await get_tree().process_frame
-		await get_tree().process_frame
-		assert_true(label.size.y <= panel.size.y + 1.0,
-			("at %sx the turn strip's text (%.1f) ran past its panel (%.1f)")
-			% [str(s), label.size.y, panel.size.y])
+		var f := label.get_theme_font(&"font")
+		var px: int = label.get_theme_font_size(&"font_size")
+		assert_false(f == null, "fixture: the strip must resolve a font at %sx" % str(s))
+		if f == null:
+			return
+		var avail: float = panel.size.x
+		var worst: String = ""
+		var worst_w: float = 0.0
+		for line in lines:
+			var w: float = f.get_string_size(line, HORIZONTAL_ALIGNMENT_CENTER, -1, px).x
+			if w > worst_w:
+				worst_w = w
+				worst = line
+		gut.p("%sx widest real line: %.0fpx of %.0f — '%s'" % [str(s), worst_w, avail, worst])
+		assert_true(worst_w <= avail,
+			("at %sx the widest REAL turn line needs %.0fpx in a %.0fpx strip: '%s'. Measured by "
+			+ "width over every authored name, not by len() over one invented sample.")
+			% [str(s), worst_w, avail, worst])
 		_scene.queue_free()
 		_scene = null
 		await get_tree().process_frame
