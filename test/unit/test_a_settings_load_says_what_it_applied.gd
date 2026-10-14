@@ -20,6 +20,8 @@ func before_each() -> void:
 func after_each() -> void:
 	for k in _saved:
 		GameState.set(k, _saved[k])
+	## Spelled out as well: test_zz_text_size_scale_not_leaked_by_tests reads this form, not a loop.
+	GameState.text_size_scale = float(_saved.get("text_size_scale", 1.0))
 	_saved.clear()
 
 
