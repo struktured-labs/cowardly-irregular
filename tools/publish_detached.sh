@@ -284,7 +284,11 @@ if [ "${1:-}" != "--selftest" ]; then
     fi
     LOGDIR="$(_logdir "$TAG")"
     mkdir -p "$LOGDIR"
-    rm -f "$LOGDIR/publish.ec"
+    # ⛔ THE PID GOES TOO, AND NOT ONLY FOR TIDINESS. A stale publish.pid from an earlier run at
+    # this same tag can name a pid the kernel has since REUSED for something unrelated, so a
+    # liveness check would read a dead publish as live and block the box indefinitely. The two
+    # markers are cleared together because between them they answer one question.
+    rm -f "$LOGDIR/publish.ec" "$LOGDIR/publish.pid"
     # The EC file is written by the DETACHED shell, so it records publish_all's own code even
     # though this launcher has already exited. Without it, "the task died" and "the task
     # finished" are indistinguishable from out here — which is exactly how I reported a
@@ -307,7 +311,20 @@ if [ "${1:-}" != "--selftest" ]; then
     # stubbed publish_all with a script that echoed its arguments, proving ARRIVAL while the
     # broken thing was EFFECT -- a stub with no parser cannot drop a flag the way every real
     # parser does.
+    # publish.pid is written FIRST, by the setsid'd subshell, naming ITSELF. It exists so a reader
+    # can tell a RUNNING publish from a WEDGED marker: "publish.log present, publish.ec absent"
+    # means in flight, and without a liveness test that is indistinguishable from "killed before
+    # it could write .ec". Nothing prunes tmp/_detached — measured 2026-10-14: zero rm/find sites
+    # across tools/, directories surviving back to v3.33.306-alpha — so a wedged marker would
+    # block every reader forever. cowir-main's tools/box_busy.sh applies `kill -0` to this file
+    # and treats a dead pid as stale; a directory WITHOUT one keeps the old meaning, so this is
+    # additive for the 265 dirs that predate it.
+    #
+    # ⚠️ $$ is inside SINGLE quotes deliberately: it must be expanded by the INNER bash, whose pid
+    # owns the publish, not by this launcher, which exits immediately. Measured: the value is the
+    # session leader (sid == pid), alive for the run, and gone once the .ec lands.
     setsid bash -c '
+        echo $$ > "'"$LOGDIR"'/publish.pid"
         "$0" "$@" > "'"$LOGDIR"'/publish.log" 2>&1
         echo $? > "'"$LOGDIR"'/publish.ec"
     ' "$CMD" "$@" "$TAG" < /dev/null > /dev/null 2>&1 &
