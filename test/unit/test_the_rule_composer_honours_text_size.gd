@@ -6,7 +6,12 @@ extends GutTest
 ## text pushes the button row out of the panel. Measured on the built node at every preset.
 
 const OverlayScene := preload("res://src/ui/autobattle/RuleComposerOverlay.tscn")
-const PRESETS: Array = [0.8, 1.0, 1.25, 1.5, 2.0]
+## DERIVED, not copied. @cowir-controller's census found this file among 17 carrying an UNCHECKED
+## copy of the ladder — @cowir-adhoc's test is the right one: "has a copy" is not the defect, "has a
+## copy and nothing checks it" is. Reached through the class_name, so a rename is a PARSE error
+## (EC=3, nothing ran) rather than an abort, and with NO fallback default: a fallback would pass
+## every arm below against a ladder no player can select.
+const PRESETS: Array = SettingsMenu.TEXT_SIZE_PRESETS
 
 ## The paths the overlay scales. PreviewLabel is built on demand, so it only exists in a populated overlay.
 const TEXT_PATHS: Array = [
@@ -154,7 +159,13 @@ func test_every_text_node_grows_with_the_text_size() -> void:
 ## text inside it -- the box is not the node that overflows, so the arm had no teeth and the fix lost
 ## its load-bearing half. One-directional in both halves: 100% is pinned, larger may only gain room.
 func test_the_modal_grows_only_above_the_shipped_frame() -> void:
-	for scale in [0.8, 1.0]:
+	# DERIVED sub-unity set, not a hand-written one. @cowir-music's finding: a file can derive its
+	# full sweep and still hold a literal partial ladder for its "unchanged at 100%" arm -- and that
+	# literal carries no [0.8, 1.0, 1.25] triple, so a census keyed on the full ladder cannot see it.
+	# It is the arm that decides whether a NEW sub-unity preset is ever checked at all.
+	var at_or_below: Array = PRESETS.filter(func(p): return float(p) <= 1.0)
+	assert_false(at_or_below.is_empty(), "no preset at or below 100% — this arm would assert nothing")
+	for scale in at_or_below:
 		var small = await _open_populated(scale)
 		var sp := small.get_node("Panel") as Control
 		for pair in [["anchor_left", 0.15], ["anchor_top", 0.15], ["anchor_right", 0.85], ["anchor_bottom", 0.85]]:
@@ -283,3 +294,14 @@ func test_the_overlay_still_has_what_this_file_drives() -> void:
 		"the overlay scales %d nodes and this file measures %d" % [declared.size(), TEXT_PATHS.size()])
 	for p in TEXT_PATHS:
 		assert_true(declared.has(p), "the overlay does not scale %s, which this file measures" % p)
+
+## The derivation's own floor: an EMPTY ladder makes every preset loop above iterate zero times and
+## pass. Named rather than counted, and ASCENDING because the growth arms walk the ladder asserting
+## each value is >= the one before — an unsorted ladder would change what they assert, not break it.
+func test_the_preset_ladder_is_the_players_own() -> void:
+	assert_false(PRESETS.is_empty(), "the ladder derived empty — every preset loop in this file would pass vacuously")
+	assert_true(PRESETS.has(1.0), "the shipped default must be a rung the player can select: %s" % str(PRESETS))
+	var prev: float = -1.0
+	for scale in PRESETS:
+		assert_gt(float(scale), prev, "the ladder is not ascending at %s: %s" % [str(scale), str(PRESETS)])
+		prev = float(scale)
