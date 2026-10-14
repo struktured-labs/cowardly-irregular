@@ -36,6 +36,26 @@ const WORLD_PREFIXES := ["w2_", "w3_", "w4_", "w5_", "w6_"]
 ## — and its absence is what catches a variant nobody meant to create.
 const DECLARED_UI_VARIANTS := {}
 
+## ⛔ WORLD-VARIANT BASES REACHED THROUGH A CHANNEL THAT IS NOT play_ui, so a variant of them is
+## nothing to do with this guard. THE ARM BELOW FLAGS EVERYTHING ELSE — the default is "explain it",
+## not "prove it is a UI cue", and that inversion is the whole correctness of this file.
+##
+## 🔑 MY FIRST VERSION ASKED THE OTHER QUESTION and had a hole I had explicitly claimed it did not.
+## It tested `base in <literal play_ui keys>`, and a comment asserted that a variant of a
+## variable-passed key "is caught by the same missing row". FALSE, measured: 39 cues are named only
+## in cutscene JSON and reach play_ui through CutsceneDirector._step_play_sfx, and the three village
+## elevator cues arrive through VillageElevator.sfx_key — none is a literal inside a `play_ui(`
+## call, so a `w2_armor_clank` or `w5_freight_lift` would have rewritten that cue for a whole world
+## with this arm green. Enumerating "what play_ui can reach" is unbounded; enumerating what it
+## CANNOT is eight rows and cannot go stale silently, because a new family reds until it is listed.
+const NON_UI_VARIANT_BASES := {
+	"ability_dark": "play_ability / play_battle", "ability_fire": "play_ability / play_battle",
+	"ability_heal": "play_ability / play_battle", "ability_holy": "play_ability / play_battle",
+	"ability_ice": "play_ability / play_battle", "ability_lightning": "play_ability / play_battle",
+	"ability_physical": "play_ability / play_battle",
+	"enemy_death": "play_death / play_battle (the Cycle #13 routing fix)",
+}
+
 
 func _play_ui_body() -> String:
 	var code: String = GdSource.code_of(SOUND_MANAGER)
@@ -48,42 +68,6 @@ func _play_ui_body() -> String:
 	## function's variant lookup satisfy every arm below — play_battle's is 40 lines down.
 	var next: int = code.find("\nfunc ", start + 1)
 	return code.substr(start, (next - start) if next > start else -1)
-
-
-## Every cue key a literal `play_ui` reaches, across ALL of src/ — not just SoundManager, which
-## DEFINES play_ui and calls it with a literal almost nowhere. My first version scanned only
-## SoundManager and derived ZERO keys; the arm's own scope control caught it and reported
-## "only 0 UI cue keys derived", which is the floor doing exactly its job.
-func _ui_keys() -> Array[String]:
-	var out: Array[String] = []
-	var rx := RegEx.create_from_string("play_ui\\(\\s*\"([a-z0-9_]+)\"")
-	for path in _gd_files_under("res://src"):
-		for m in rx.search_all(GdSource.code_of(path)):
-			if not out.has(m.get_string(1)):
-				out.append(m.get_string(1))
-	return out
-
-
-## ⚠️ Six play_ui sites pass a VARIABLE key (two Rebalance panels, CutsceneDirector's play_sfx step,
-## VillageElevator, play_pickup's fallback, play_ui's own recursion), so a literal scan under-counts
-## the population by construction. It is still the right corpus for the arm below, which asks
-## whether a MANIFEST variant rewrites a cue: an undeclared variant of a variable-passed key is
-## caught by the same missing row. Said rather than implied — a literal cue-key grep is the corpus
-## error that put a chest cue on a floor pickup.
-func _gd_files_under(root: String) -> Array[String]:
-	var out: Array[String] = []
-	var pending: Array[String] = [root]
-	while not pending.is_empty():
-		var dir: String = pending.pop_back()
-		var d := DirAccess.open(dir)
-		if d == null:
-			continue
-		for sub in d.get_directories():
-			pending.append("%s/%s" % [dir, sub])
-		for f in d.get_files():
-			if f.ends_with(".gd"):
-				out.append("%s/%s" % [dir, f])
-	return out
 
 
 func test_play_ui_resolves_a_world_variant_at_all() -> void:
@@ -135,25 +119,30 @@ func test_the_prefix_function_still_covers_every_world() -> void:
 func test_no_undeclared_world_variant_rewrites_a_ui_cue() -> void:
 	## ⛔ THE ONE NEW SILENT FAILURE THIS CHANGE CREATES. Before the lookup, a `w2_menu_select` in
 	## the manifest was inert data. Now it REPLACES menu_select for every suburban-world player, and
-	## nothing announces it. So any world variant of a UI cue must be declared above with its
-	## reason; an undeclared one is either a typo or an undocumented decision.
+	## nothing announces it. Every world variant is therefore flagged unless it is declared — either
+	## as an intentional UI variant above, or as a base this channel never plays.
 	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(SFX_MANIFEST))
 	assert_true(parsed is Dictionary and (parsed as Dictionary).has("sfx"),
 		"VOID: the sfx manifest did not parse, so this arm is about nothing")
 	if not (parsed is Dictionary):
 		return
 	var sfx: Dictionary = (parsed as Dictionary).get("sfx", {})
-	var ui: Array[String] = _ui_keys()
-	assert_gt(ui.size(), 30,
-		"VOID: only %d UI cue keys derived from play_ui call sites — a short population here would read as full coverage" % ui.size())
+	assert_gt(sfx.size(), 100, "VOID: manifest holds %d keys" % sfx.size())
+	var variants := 0
 	var undeclared: Array[String] = []
 	for key in sfx:
 		var k: String = str(key)
 		for p in WORLD_PREFIXES:
 			if not k.begins_with(p):
 				continue
+			variants += 1
 			var base: String = k.substr(p.length())
-			if ui.has(base) and not DECLARED_UI_VARIANTS.has(k):
-				undeclared.append("%s (rewrites %s in world %s)" % [k, base, p.substr(1, 1)])
+			if NON_UI_VARIANT_BASES.has(base) or DECLARED_UI_VARIANTS.has(k):
+				continue
+			undeclared.append("%s (would rewrite %s in world %s)" % [k, base, p.substr(1, 1)])
+	## The scope control: if the manifest ever holds no world variants at all, this arm is passing
+	## over an empty population rather than finding nothing wrong. 36 exist today.
+	assert_gt(variants, 20,
+		"VOID: only %d world variants found in the manifest, so a green here measures nothing" % variants)
 	assert_eq(undeclared, [],
-		"these world variants of UI cues are not declared, and since play_ui became prefix-aware each one REPLACES its base cue for a whole world: %s" % [undeclared])
+		"these world variants are declared nowhere, and since play_ui became prefix-aware each one REPLACES its base cue for a whole world: %s" % [undeclared])
