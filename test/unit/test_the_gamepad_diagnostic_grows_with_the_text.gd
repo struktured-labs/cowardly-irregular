@@ -25,6 +25,15 @@ static func _view_size() -> Vector2:
 	var h: float = float(ProjectSettings.get_setting("display/window/size/viewport_height", 720))
 	return Vector2(w, h)
 
+## ⛔ DERIVED FROM THE CONSUMER'S OWN LIST, NOT A COPY. A hardcoded [0.8, 1.0, 1.25, 1.5, 2.0] goes
+## quietly stale the day a preset is added, and the arm meant to catch "it broke at 125%" then never
+## visits the new step. NO FALLBACK DEFAULT: a rename must red, and a fallback would make this pass
+## against a ladder the player cannot select.
+static func _presets() -> Array:
+	var consts: Dictionary = (load("res://src/ui/SettingsMenu.gd") as GDScript).get_script_constant_map()
+	return consts.get("TEXT_SIZE_PRESETS", [])
+
+
 var _saved_scale = null
 
 
@@ -91,17 +100,28 @@ func test_the_overlay_opens_and_renders() -> void:
 		assert_gt(l.text.length(), 0, "the label must have been populated by _process")
 
 
-## ARM 1 — the font follows the setting. A fit-only arm would be green on the raw-font defect.
-func test_the_font_follows_the_setting() -> void:
-	var small: RichTextLabel = _label_of(await _opened_at(0.8))
-	var big: RichTextLabel = _label_of(await _opened_at(2.0))
-	assert_not_null(small, "PRECONDITION: the 80% label must exist")
-	assert_not_null(big, "PRECONDITION: the 200% label must exist")
-	if small == null or big == null:
-		return
-	var s: int = int(small.get_theme_font_size("normal_font_size"))
-	var b: int = int(big.get_theme_font_size("normal_font_size"))
-	assert_gt(b, s, "the diagnostic font must GROW with Text Size: 80%% gave %d, 200%% gave %d" % [s, b])
+## ARM 1 — the font follows the setting at EVERY preset step, not just the endpoints. Two endpoints
+## cannot see a ladder that skips a rung: the field menu broke at 125% while 80% and 200% were fine.
+func test_the_font_follows_the_setting_at_every_preset() -> void:
+	var seen: Array = []
+	var sizes: Array = []
+	for scale in _presets():
+		var l: RichTextLabel = _label_of(await _opened_at(float(scale)))
+		if l == null:
+			seen.append("%.2fx: NO LABEL" % scale)
+			continue
+		var px: int = int(l.get_theme_font_size("normal_font_size"))
+		sizes.append(px)
+		seen.append("%.2fx=%d" % [scale, px])
+	assert_gt(seen.size(), 1, "CONTROL: the loop must have visited more than one preset: %s" % [seen])
+	assert_eq(sizes.size(), seen.size(),
+		"every preset must have produced a font size: %s" % [seen])
+	var flat: Array = []
+	for i in range(1, sizes.size()):
+		if int(sizes[i]) <= int(sizes[i - 1]):
+			flat.append("step %d did not grow" % i)
+	assert_eq(flat, [],
+		"the font must grow at EVERY preset step, not only between the endpoints: %s" % [seen])
 
 
 ## ARM 2 — pin the state the fix did not change. At the default the font must still be exactly the
@@ -199,3 +219,13 @@ func test_a_closed_overlay_ignores_the_same_press() -> void:
 	assert_almost_eq(sb.value, before, 0.001,
 		"a CLOSED diagnostic must not act on ui_down — it is added to every session unconditionally, "
 		+ "so a handler that ran while closed would steal a direction from the game underneath")
+
+
+## FLOOR for the preset derivation — without it an empty list makes every preset loop above iterate
+## ZERO times and pass, which is the shrinking-corpus shape a derived guard fails into silently.
+func test_the_preset_list_derives_from_settings() -> void:
+	var p: Array = _presets()
+	assert_gt(p.size(), 1,
+		"FLOOR: SettingsMenu.TEXT_SIZE_PRESETS must still resolve and hold more than one step — a "
+		+ "rename leaves every preset loop here iterating nothing and passing. Got " + str(p))
+	assert_true(p.has(1.0), "the derived presets must include the 1.0 default: " + str(p))

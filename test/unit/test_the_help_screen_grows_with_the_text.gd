@@ -16,7 +16,14 @@ extends GutTest
 ## absorbed by scrolling rather than overflowing. Same file, two labels, two correct answers.
 
 const OVERLAY := "res://src/ui/HowToPlayOverlay.gd"
-const PRESETS: Array = [0.8, 1.0, 1.25, 1.5, 2.0]
+
+## ⛔ DERIVED FROM THE CONSUMER'S OWN LIST, NOT A COPY. A hardcoded [0.8, 1.0, 1.25, 1.5, 2.0] goes
+## quietly stale the day a preset is added, and the arm meant to catch "it broke at 125%" then never
+## visits the new step. NO FALLBACK DEFAULT: a rename must red, and a fallback would make this pass
+## against a ladder the player cannot select.
+static func _presets() -> Array:
+	var consts: Dictionary = (load("res://src/ui/SettingsMenu.gd") as GDScript).get_script_constant_map()
+	return consts.get("TEXT_SIZE_PRESETS", [])
 
 var _saved_scale = null
 
@@ -69,10 +76,11 @@ func test_the_fonts_follow_the_setting() -> void:
 
 
 ## ARM 2 — the grown text FITS: the title must not draw over the body, at EVERY preset step rather
-## than only the endpoints (@cowir-adhoc's field menu broke at 125%, not 200%).
+## than only the endpoints (@cowir-adhoc's field menu broke at 125%, not 200%), derived from
+## SettingsMenu rather than copied.
 func test_the_title_never_draws_over_the_body_at_any_preset() -> void:
 	var collisions: Array = []
-	for scale in PRESETS:
+	for scale in _presets():
 		var b: Dictionary = await _built_at(float(scale))
 		var title: Label = b["title"] as Label
 		var content: RichTextLabel = b["content"] as RichTextLabel
@@ -133,3 +141,13 @@ func test_the_default_text_size_renders_the_shipped_layout() -> void:
 	assert_eq(content.position.y, floor_y,
 		"at 100%% the content top must still be the authored %.0f, not a derived value: got %.1f"
 			% [floor_y, content.position.y])
+
+
+## FLOOR for the preset derivation — without it an empty list makes every preset loop above iterate
+## ZERO times and pass, which is the shrinking-corpus shape a derived guard fails into silently.
+func test_the_preset_list_derives_from_settings() -> void:
+	var p: Array = _presets()
+	assert_gt(p.size(), 1,
+		"FLOOR: SettingsMenu.TEXT_SIZE_PRESETS must still resolve and hold more than one step — a "
+		+ "rename leaves every preset loop here iterating nothing and passing. Got " + str(p))
+	assert_true(p.has(1.0), "the derived presets must include the 1.0 default: " + str(p))
