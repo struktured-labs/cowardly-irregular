@@ -4,24 +4,35 @@ extends GutTest
 ## font taken from `row.size.x`. The row table carries (font_size, row_h) in ONE Vector2 and the
 ## scroll y ACCUMULATES from row_h, so scaling the font alone draws each line through the next.
 ##
-## ⚠️ WRAPPING IS NOT THE EXPOSURE, measured before building: the longest authored line is 75 chars
-## at font 13, which is ~915 px of a 1280 viewport even at 200%, so AUTOWRAP_WORD_SMART never
-## engages. The exposure is ROW HEIGHT — a 26 px line in a 24 px band — which is why the fix scales
-## row_h and pad by the same factor and not just the font. (@cowir-adhoc's per-axis clamp table is
-## what sent me to measure instead of assuming autowrap; "autowrap alone wrecks the height" is true
-## and does not apply here because nothing wraps.)
+## ⛔ RETRACTED, BY THIS FILE'S OWN ARM: this header used to read "wrapping is NOT the exposure
+## — ~915 px of 1280 even at 200%, so AUTOWRAP_WORD_SMART never engages". Both instruments were
+## wrong (a regex over the row table that never saw the widest line, and an ESTIMATED width in
+## place of a font query), and `test_the_wrapping_path_is_actually_reached_at_the_large_presets`
+## red immediately. Measured widest unwrapped line, font query, 1280 px label:
+##   80% 740 · 100% 889 · 125% 1109 · 150% 1332 · 200% 1774   -> rows DO wrap above 125%.
+## So the exposure is BOTH halves: row height (a 26 px line in a 24 px band) and, past 125%, the
+## wrapped line count. A fix budgeting one line scales the fonts and still draws row through row,
+## which is worse than shipping nothing — hence `maxf(authored, drawn)` and the arm that proves
+## the multiline branch is reached rather than dead.
 ##
 ## Heights come from the FONT (ascent + descent), never a node rect: a Label's content minimum can
 ## be stale in the frame it is set, depending on the order the properties were assigned.
 
 const CreditsScript = preload("res://src/ui/CreditsSequence.gd")
-const PRESETS: Array = [0.8, 1.0, 1.25, 1.5, 2.0]
+## DERIVED from the ladder the player actually drives, never copied (@cowir-controller): a copy
+## goes stale the day a preset is added, and an arm written to catch "it broke at 125%" then never
+## visits the new rung. No fallback default — `SettingsMenu` carries a `class_name`, so this const
+## resolves at PARSE time and a rename gives EC=3 (nothing ran), which is louder than any floor.
+const PRESETS: Array = SettingsMenu.TEXT_SIZE_PRESETS
+## @cowir-adhoc's alternative is to PIN a local copy against SettingsMenu, which reds when a
+## preset is added instead of sweeping it silently. Deriving is chosen here because coverage then
+## follows the player's ladder with no human step; the cost is the floor arm below, which an
+## empty derived list would otherwise walk zero times and pass.
 ## ⛔ THE ROW SET DEPENDS ON THE WORLD, so world 0 alone is "real data but not ALL real data".
 ## `_credits_content` gates "— End of World %d —" on world > 0 (:150) and "— Continue Journey —"
 ## on 0 < world < 6 (:188), and CutsceneDirector._step_roll_credits is documented with world 1.
 ## 0 = neither row · 1 = both · 6 = only the first.
 const WORLDS: Array = [0, 1, 6]
-const LABELS: Array = ["80%", "100%", "125%", "150%", "200%"]
 
 var _c: Node = null
 var _orig_scale: float = 1.0
@@ -55,12 +66,19 @@ func _build_at(scale: float, world: int = 0) -> void:
 	await wait_frames(2)
 
 
+## The rung's player-facing name, formatted from the derived preset rather than a parallel list.
+func _label(i: int) -> String:
+	return "%d%%" % int(round(float(PRESETS[i]) * 100.0))
+
+
 func _rows() -> Array:
 	var out: Array = []
 	## Rows live under _scroll_root; the skip hint is a DIRECT child and is deliberately excluded.
 	for c in _c.get_children():
 		for g in c.get_children():
-			if g is Label and str((g as Label).text) != "":
+			## Same predicate as _authored_rows(): strip_edges, so a whitespace-only row cannot
+			## make the two filters disagree and break the index pairing.
+			if g is Label and str((g as Label).text).strip_edges() != "":
 				out.append(g)
 	return out
 
@@ -127,23 +145,45 @@ func _paired(label_for: String) -> Array:
 	return out
 
 
+func test_control_the_ladder_itself_is_the_players() -> void:
+	## A DERIVED ladder can arrive empty or wrong, and then every preset loop in this file iterates
+	## zero times and passes. This arm judges the ladder before anything measures through it.
+	assert_gt(PRESETS.size(), 2, "the preset ladder derived %d rungs" % PRESETS.size())
+	assert_true(PRESETS.has(1.0), "the ladder has no 100%% rung: %s" % [PRESETS])
+	assert_gt(float(PRESETS.max()), 1.0, "the ladder tops out at %s, so nothing scales up" % [PRESETS.max()])
+	## ⛔ NOT `_label(0) == "%d%%" % PRESETS[0] * 100` — that restates _label's own body and is a
+	## clause that cannot fail. These two can: a label that collapses across rungs would make every
+	## failure message below name the wrong size, and the 100% rung is the one with a known name.
+	var seen: Dictionary = {}
+	for i in PRESETS.size():
+		seen[_label(i)] = true
+	assert_eq(seen.size(), PRESETS.size(),
+		"%d rungs collapse to %d labels, so a failure message cannot name its own size" % [
+			PRESETS.size(), seen.size()])
+	assert_eq(_label(PRESETS.find(1.0)), "100%", "the 1.0 rung is labelled %s" % _label(PRESETS.find(1.0)))
+
+
 func test_control_the_roll_builds_rows_at_every_size() -> void:
 	## Without this, every arm below could walk an empty list and pass having measured nothing.
 	for i in PRESETS.size():
 		await _build_at(PRESETS[i])
 		assert_gt(_rows().size(), 2,
-			"PRECONDITION: Text Size %s built %d credit rows" % [LABELS[i], _rows().size()])
+			"PRECONDITION: Text Size %s built %d credit rows" % [_label(i), _rows().size()])
 
 
 func test_one_hundred_percent_and_below_are_unchanged() -> void:
-	## The layout factor is floored at 1.0, so 80% and 100% must place rows exactly as before.
+	## The layout factor is floored at 1.0, so every rung at or below 100% must place rows exactly
+	## as before — derived from the ladder, so a new sub-unity preset is covered without an edit.
 	## FLOOR first: without _ui_scale this arm aborts before asserting and scores Risky rather
 	## than naming the missing symbol.
 	await _build_at(1.0)
 	assert_true(_c.has_method("_ui_scale"),
 		"CreditsSequence._ui_scale() is MISSING — this arm cannot measure the layout factor")
-	for scale in [0.8, 1.0]:
-		await _build_at(scale)
+	var at_or_below: Array = PRESETS.filter(func(p): return float(p) <= 1.0)
+	assert_gt(at_or_below.size(), 1,
+		"DERIVATION FLOOR: only %d presets at or below 100%% — the ladder is not the real one" % at_or_below.size())
+	for scale in at_or_below:
+		await _build_at(float(scale))
 		assert_almost_eq(_c._ui_scale(), 1.0, 0.001,
 			"at %.0f%% the layout factor must still be 1.0" % [scale * 100.0])
 
@@ -179,6 +219,7 @@ func test_the_font_actually_grows_with_the_setting() -> void:
 	assert_gt(int((_c._skip_hint as Label).get_theme_font_size("font_size")), 12,
 		"the skip hint's font must grow past its authored 12 at 200%%")
 
+
 func test_the_gap_the_layout_leaves_each_row_is_max_authored_drawn_plus_pad() -> void:
 	## THE MECHANISM, read off POSITIONS rather than rects. A Label with autowrap and no clip_text
 	## computes its minimum at the FREED width, so `size = Vector2(1280, 36)` clamps up to ~1023 —
@@ -191,7 +232,7 @@ func test_the_gap_the_layout_leaves_each_row_is_max_authored_drawn_plus_pad() ->
 		for i in PRESETS.size():
 			await _build_at(PRESETS[i], int(w))
 			var us: float = _c._ui_scale()
-			var pairs: Array = _paired("w%d %s" % [int(w), LABELS[i]])
+			var pairs: Array = _paired("w%d %s" % [int(w), _label(i)])
 			for n in range(pairs.size() - 1):
 				var a := pairs[n]["label"] as Label
 				var b := pairs[n + 1]["label"] as Label
@@ -201,8 +242,9 @@ func test_the_gap_the_layout_leaves_each_row_is_max_authored_drawn_plus_pad() ->
 				var want: float = maxf(authored, _drawn_h(a)) + pad
 				assert_almost_eq(b.position.y - a.position.y, want, 1.5,
 					"w%d %s: the gap after '%s' is %.0f, must be max(authored %.0f, drawn %.0f) + pad %.0f" % [
-						int(w), LABELS[i], a.text.substr(0, 18), b.position.y - a.position.y,
+						int(w), _label(i), a.text.substr(0, 18), b.position.y - a.position.y,
 						authored, _drawn_h(a), pad])
+
 
 func test_the_wrapping_path_is_actually_reached_at_the_large_presets() -> void:
 	## ⛔ MY FIRST VERSION OF THIS ARM ASSERTED THAT NOTHING WRAPS, AND IT RED: measured 889 px of
@@ -231,9 +273,10 @@ func test_the_wrapping_path_is_actually_reached_at_the_large_presets() -> void:
 			if PRESETS[i] == 2.0 and one_line > budget:
 				wrapped_at_200 += 1
 		print("[CREDITS-WRAP] %s widest unwrapped line %.0f px of %.0f (margin %.0f) '%s'" % [
-			LABELS[i], widest, budget, budget - widest, widest_text.substr(0, 34)])
+			_label(i), widest, budget, budget - widest, widest_text.substr(0, 34)])
 	assert_gt(wrapped_at_200, 0,
 		"no row exceeds the label width at 200%%, so the multiline branch is never exercised and the maxf is dead")
+
 
 func test_no_credit_line_is_drawn_through_the_next() -> void:
 	## The consequence arm: consecutive rows must not overlap once the fonts scale.
@@ -249,6 +292,6 @@ func test_no_credit_line_is_drawn_through_the_next() -> void:
 				pairs += 1
 				assert_lte(a.position.y + _drawn_h(a), b.position.y + 0.5,
 					"Text Size %s: '%s' ends %.0f and '%s' starts %.0f" % [
-						LABELS[i], a.text.substr(0, 18), a.position.y + _drawn_h(a),
+						_label(i), a.text.substr(0, 18), a.position.y + _drawn_h(a),
 						b.text.substr(0, 18), b.position.y])
-			assert_gt(pairs, 1, "PRECONDITION: only %d row pairs at %s" % [pairs, LABELS[i]])
+			assert_gt(pairs, 1, "PRECONDITION: only %d row pairs at %s" % [pairs, _label(i)])
