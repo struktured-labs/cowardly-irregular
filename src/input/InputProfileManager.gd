@@ -153,6 +153,32 @@ const PROFILE_AUTODETECT = [
 	["sf30", "8BitDo SN30"],
 ]
 
+## Listed profiles that are DELIBERATELY identical to PROFILE_STANDARD, each with the reason its
+## entry still exists. Declaring it here is what makes the sameness a decision instead of a
+## coincidence — `test_a_listed_profile_says_what_it_is` reds on a listed profile that resolves to
+## Standard without an entry, AND on an entry whose profile has since diverged.
+##
+## ⛔ THE DEFECT THIS DEFENDS IS REACHABLE, NOT COSMETIC: `get_profile_bindings`' `_:` arm returns
+## PROFILE_STANDARD, so a name added to PROFILE_NAMES without a `match` arm becomes a profile the
+## player can select from ControlsMenu that silently changes nothing. That failure is invisible from
+## both sides — the picker shows the name, and the bindings are a valid profile.
+##
+## 📌 Reasons, not permission: there is no flag here that silences the guard. An entry is a sentence
+## a reader can disagree with, which is the only form that cannot become muscle memory.
+const PROFILE_ALIASES := {
+	"8BitDo SN30":
+		"Identical to Standard since the 2026-05-02 Godot-4 button renumbering. Kept because "
+		+ "PROFILE_AUTODETECT routes the 'sn30' and 'sf30' device-name substrings here, so the "
+		+ "name is what an SN30 owner sees their own pad called, and it is where a real SN30 "
+		+ "divergence would land.",
+	"8BitDo Ultimate Pro 2":
+		"Aligned to Standard on 2026-07-29 when ControllerMappings made the hardware shoulder "
+		+ "swap wrong rather than right. Autodetect never reaches it (neither Ultimate 2 identity "
+		+ "contains 'ultimate pro 2', pinned by test) but it stays manually selectable and is the "
+		+ "listed name closest to struktured's actual pad. Its existence is the open half of the "
+		+ "retire-vs-keep ruling.",
+}
+
 ## Human-readable button labels by index — Godot 4 JoyButton enum.
 ## (Pre-2026-05-02 these labels were transcribed from Godot 3, which silently
 ## misled user-facing remap UI when the underlying button numbers shifted.)
