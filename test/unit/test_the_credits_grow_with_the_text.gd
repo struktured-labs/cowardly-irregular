@@ -90,6 +90,43 @@ func _extent(l: Label) -> float:
 	return f.get_ascent(fs) + f.get_descent(fs)
 
 
+## The non-empty authored rows, IN BUILD ORDER. The builder makes one Label per row in that
+## order, so pairing by INDEX removes the exact-text match my first version used — a trim, a
+## prefix or a duplicated string silently dropped a row there and the small floor still passed
+## (@cowir-adhoc's hollow-arm shape: 4 silent continues behind a control at 45% of the true
+## denominator; mine was a floor of 2 against ~20 rows, so 10%).
+func _authored_rows() -> Array:
+	var out: Array = []
+	for row in _c._credits_content(_c._world):
+		if str(row.text).strip_edges() == "":
+			continue
+		out.append(row)
+	return out
+
+
+## Rows as built, sorted top to bottom — the same order _authored_rows() returns.
+func _rows_in_order() -> Array:
+	var r: Array = _rows()
+	r.sort_custom(func(a, b): return (a as Label).position.y < (b as Label).position.y)
+	return r
+
+
+## Pairs each built label with its authored row, and REFUSES a partial pairing rather than
+## skipping. A derived denominator: adding a row cannot leave a round-number control behind.
+func _paired(label_for: String) -> Array:
+	var authored: Array = _authored_rows()
+	var built: Array = _rows_in_order()
+	assert_eq(built.size(), authored.size(),
+		"%s: built %d non-empty rows, authored %d — a silent skip would hide here" % [
+			label_for, built.size(), authored.size()])
+	assert_gt(authored.size(), 10,
+		"%s: only %d authored rows derived; the corpus is not the real one" % [label_for, authored.size()])
+	var out: Array = []
+	for i in mini(built.size(), authored.size()):
+		out.append({"label": built[i], "row": authored[i]})
+	return out
+
+
 func test_control_the_roll_builds_rows_at_every_size() -> void:
 	## Without this, every arm below could walk an empty list and pass having measured nothing.
 	for i in PRESETS.size():
@@ -112,72 +149,60 @@ func test_one_hundred_percent_and_below_are_unchanged() -> void:
 
 
 func test_the_font_actually_grows_with_the_setting() -> void:
-	## ⛔ THE LOAD-BEARING HALF, and the fit arms below CANNOT substitute for it: on the unfixed tree
+	## ⛔ THE LOAD-BEARING HALF, and the fit arms CANNOT substitute for it: on the unfixed tree
 	## nothing scales, so nothing overflows and a fit-only guard is GREEN THROUGH THE DEFECT.
 	## Measured — reverting the fix left this file at Passing 3 with no [Failed] at all.
-	## Baselines are DERIVED from the 100% build, never written down, so the authored table can
-	## change without touching this file.
-	await _build_at(1.0)
-	var base: Dictionary = {}
-	for l in _rows():
-		base[(l as Label).text] = (l as Label).get_theme_font_size("font_size")
-	assert_gt(base.size(), 2, "PRECONDITION: only %d baseline rows captured" % base.size())
+	##
+	## Baselines are an ORDERED array, not a dict keyed by text: a duplicated or reformatted
+	## string silently dropped a row from the old dict and the floor still passed.
+	await _build_at(1.0, 1)
+	var base: Array = []
+	for l in _rows_in_order():
+		base.append(int((l as Label).get_theme_font_size("font_size")))
+	assert_gt(base.size(), 10,
+		"PRECONDITION: only %d baseline rows captured; the corpus is not the real one" % base.size())
 
-	await _build_at(2.0)
-	var grew: int = 0
+	await _build_at(2.0, 1)
+	var now_rows: Array = _rows_in_order()
+	assert_eq(now_rows.size(), base.size(),
+		"the row count moved between 100%% and 200%% (%d vs %d), so index pairing is invalid here" % [
+			now_rows.size(), base.size()])
 	var same: Array[String] = []
-	for l in _rows():
-		var lab := l as Label
-		if not base.has(lab.text):
-			continue
-		var now: int = lab.get_theme_font_size("font_size")
-		if now > int(base[lab.text]):
-			grew += 1
-		else:
-			same.append("%s %d->%d" % [lab.text.substr(0, 16), int(base[lab.text]), now])
+	for n in now_rows.size():
+		var lab := now_rows[n] as Label
+		var now_px: int = int(lab.get_theme_font_size("font_size"))
+		if now_px <= int(base[n]):
+			same.append("%s %d->%d" % [lab.text.substr(0, 16), int(base[n]), now_px])
 	assert_eq(same, [], "rows whose font did NOT grow from 100%% to 200%%: %s" % [same])
-	assert_gt(grew, 2, "PRECONDITION: only %d rows compared" % grew)
 
-	## And the skip hint, which is a direct child and so outside _rows().
+	## And the skip hint, a direct child and so outside _rows().
 	assert_gt(int((_c._skip_hint as Label).get_theme_font_size("font_size")), 12,
 		"the skip hint's font must grow past its authored 12 at 200%%")
 
-
 func test_the_gap_the_layout_leaves_each_row_is_max_authored_drawn_plus_pad() -> void:
-	## THE MECHANISM, read off POSITIONS rather than rects.
+	## THE MECHANISM, read off POSITIONS rather than rects. A Label with autowrap and no clip_text
+	## computes its minimum at the FREED width, so `size = Vector2(1280, 36)` clamps up to ~1023 —
+	## two earlier versions of this arm read `size.y` and were wrong in opposite directions. The
+	## budget is only observable in the GAP, which `y += band + pad` produces.
 	##
-	## ⛔ MY FIRST TWO VERSIONS OF THIS ARM BOTH READ `lab.size.y` AND BOTH WERE WRONG, in opposite
-	## directions. A Label with AUTOWRAP and no clip_text has its minimum computed at the FREED
-	## width (@cowir-adhoc measured min (1, 938)), so `size = Vector2(1280, 36)` CLAMPS UP to ~1023:
-	## v1 compared the extent against that clamped rect and could not fail; v2 compared the computed
-	## band against it and failed on correct layout. The node's rect is not the layout's budget.
-	##
-	## The budget is observable in the GAP between consecutive rows, which the clamp cannot touch
-	## because `y` accumulates from `band + pad` in the builder.
+	## Paired by INDEX via _paired(), so there is no text match to fail silently and no `continue`:
+	## a row that cannot be paired fails the denominator assert instead of vanishing.
 	for w in WORLDS:
 		for i in PRESETS.size():
 			await _build_at(PRESETS[i], int(w))
 			var us: float = _c._ui_scale()
-			var authored: Dictionary = {}
-			var pad: Dictionary = {}
-			for row in _c._credits_content(_c._world):
-				authored[str(row.text)] = float(row.size.y) * us
-				pad[str(row.text)] = float(row.get("pad", 10)) * us
-			var rows: Array = _rows()
-			rows.sort_custom(func(a, b): return (a as Label).position.y < (b as Label).position.y)
-			var checked: int = 0
-			for n in range(rows.size() - 1):
-				var a := rows[n] as Label
-				var b := rows[n + 1] as Label
-				if not authored.has(a.text):
-					continue
-				checked += 1
-				var want: float = maxf(float(authored[a.text]), _drawn_h(a)) + float(pad[a.text])
+			var pairs: Array = _paired("w%d %s" % [int(w), LABELS[i]])
+			for n in range(pairs.size() - 1):
+				var a := pairs[n]["label"] as Label
+				var b := pairs[n + 1]["label"] as Label
+				var row: Dictionary = pairs[n]["row"]
+				var authored: float = float(row.size.y) * us
+				var pad: float = float(row.get("pad", 10)) * us
+				var want: float = maxf(authored, _drawn_h(a)) + pad
 				assert_almost_eq(b.position.y - a.position.y, want, 1.5,
 					"w%d %s: the gap after '%s' is %.0f, must be max(authored %.0f, drawn %.0f) + pad %.0f" % [
 						int(w), LABELS[i], a.text.substr(0, 18), b.position.y - a.position.y,
-						float(authored[a.text]), _drawn_h(a), float(pad[a.text])])
-			assert_gt(checked, 1, "PRECONDITION: only %d row gaps at w%d %s" % [checked, int(w), LABELS[i]])
+						authored, _drawn_h(a), pad])
 
 func test_the_wrapping_path_is_actually_reached_at_the_large_presets() -> void:
 	## ⛔ MY FIRST VERSION OF THIS ARM ASSERTED THAT NOTHING WRAPS, AND IT RED: measured 889 px of
