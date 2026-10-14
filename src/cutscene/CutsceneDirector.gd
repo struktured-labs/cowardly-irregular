@@ -199,7 +199,7 @@ func _build_ui() -> void:
 	_skip_label = Label.new()
 	_skip_label.text = skip_prompt_text()
 	_skip_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_skip_label.add_theme_font_size_override("font_size", 14)
+	_skip_label.add_theme_font_size_override("font_size", TextScale.scaled(14))
 	_skip_label.add_theme_color_override("font_color", Color(0.95, 0.95, 0.75, 0.95))
 	_skip_indicator.add_child(_skip_label)
 
@@ -236,14 +236,17 @@ func _update_layout() -> void:
 	_letterbox_bottom.position = Vector2(0, screen_size.y)
 
 	# Bottom-center pill
-	var pill_w: float = SKIP_BAR_WIDTH + SKIP_PILL_PAD * 2.0
-	_skip_indicator.position = Vector2((screen_size.x - pill_w) / 2.0, screen_size.y - SKIP_PILL_HEIGHT - 18)
+	var spm: Dictionary = skip_pill_metrics(TextScale.scaled(14), 14, _skip_label.text,
+		6.0, 18.0, 30.0, SKIP_PILL_HEIGHT, SKIP_BAR_WIDTH + SKIP_PILL_PAD * 2.0)
+	var pill_w: float = float(spm["pill_w"])
+	var pill_h: float = float(spm["pill_h"])
+	_skip_indicator.position = Vector2((screen_size.x - pill_w) / 2.0, screen_size.y - pill_h - 18)
 	_skip_pill_bg.position = Vector2(0, 0)
-	_skip_pill_bg.size = Vector2(pill_w, SKIP_PILL_HEIGHT)
-	_skip_label.position = Vector2(0, 6)
-	_skip_label.size = Vector2(pill_w, 18)
-	_skip_bar_bg.position = Vector2(SKIP_PILL_PAD, 30)
-	_skip_bar.position = Vector2(SKIP_PILL_PAD, 30)
+	_skip_pill_bg.size = Vector2(pill_w, pill_h)
+	_skip_label.position = Vector2(0, float(spm["label_y"]))
+	_skip_label.size = Vector2(pill_w, float(spm["label_h"]))
+	_skip_bar_bg.position = Vector2(SKIP_PILL_PAD, float(spm["bar_y"]))
+	_skip_bar.position = Vector2(SKIP_PILL_PAD, float(spm["bar_y"]))
 
 	_effects_rect.position = Vector2.ZERO
 	_effects_rect.size = screen_size
@@ -1064,7 +1067,7 @@ func _build_timer_hud() -> void:
 	_timer_label = Label.new()
 	_timer_label.name = "CutsceneTimerHUD"
 	_timer_label.text = _format_timer_text(_timer_remaining)
-	_timer_label.add_theme_font_size_override("font_size", 22)
+	_timer_label.add_theme_font_size_override("font_size", TextScale.scaled(22))
 	_timer_label.add_theme_color_override("font_color", Color(0.95, 0.85, 0.45))
 	_timer_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	var vp_size := Vector2(1280, 720)
@@ -1073,8 +1076,9 @@ func _build_timer_hud() -> void:
 		vp_size = vp.get_visible_rect().size
 		if vp_size.x <= 0:
 			vp_size = Vector2(1280, 720)
-	_timer_label.position = Vector2(vp_size.x - 120, 20)
-	_timer_label.size = Vector2(100, 28)
+	var tr: Rect2 = timer_rect(TextScale.scaled(22), 22, _timer_label.text, vp_size.x, 100.0, 28.0, 20.0)
+	_timer_label.position = tr.position
+	_timer_label.size = tr.size
 	add_child(_timer_label)
 
 
@@ -1672,6 +1676,111 @@ func _apply_skipped_choice(step: Dictionary) -> void:
 		return
 
 
+## ⛔ THE LARGEST TEXT IN THE GAME DID NOT SCALE, AND ITS SUBTITLE OFFSET WAS A HARDCODED GUESS AT
+## THE TITLE'S HEIGHT. Both cards set their fonts raw — boss name 36 / subtitle 16, chapter title
+## 28 / subtitle 18 — and then placed the subtitle at a fixed `+48` / `+44`, a number that is only
+## right at the base size. `clip_text` is false on all four, so at 200% the title's glyphs overrun
+## their 50px/40px boxes and print through the subtitle beneath them.
+##
+## 🔑 A player on 200% was reading SCALED dialogue under an UNSCALED boss name on the same screen —
+## CutsceneDialogue has scaled since tick 222 and these cards never did.
+##
+## ⚠️ AND SCALING THE FONTS ALONE IS THE DEFECT, NOT THE FIX: that is what `_box_metrics` and the
+## backlog header were both about earlier today. The gap below is derived from the title's MEASURED
+## glyph height, so the subtitle sits under the title at every size instead of under an assumption.
+##
+## At 100% and 80% every number is the authored one, so the default cards do not move.
+## STATIC so a guard can ask for the metrics at each Text Size without building a cutscene.
+static func card_metrics(title_px: int, sub_px: int, base_title_px: int, base_sub_px: int,
+		base_title_h: float, base_gap: float, base_sub_h: float) -> Dictionary:
+	var title_h: float = base_title_h
+	var gap: float = base_gap
+	var sub_h: float = base_sub_h
+	## ⛔ ONLY DERIVE ABOVE THE BASE SIZE. The authored 48px gap is SMALLER than the 36pt glyph box
+	## it sits under, so deriving unconditionally returned 50 at 100% and moved the default card by
+	## 2px. My own "the default must not move" arm caught that on the first run — the same
+	## above-base guard `_box_metrics` carries, which I left out here.
+	if title_px <= base_title_px and sub_px <= base_sub_px:
+		return {"title_h": title_h, "gap": gap, "sub_h": sub_h}
+	var font: Font = ThemeDB.fallback_font
+	if font != null:
+		var th: float = float(font.get_height(title_px))
+		var sh: float = float(font.get_height(sub_px))
+		var base_th: float = maxf(float(font.get_height(base_title_px)), 1.0)
+		## ⛔ PROPORTIONAL, NOT `th + 2`. An additive gap clears the glyphs but SHRINKS the authored
+		## breathing room as the font grows: the chapter card ships 44px under a 39px glyph box — five
+		## px of air — and `th + 2` turned that into two px at 125% and stayed at two for every size
+		## above it. The card stopped looking like itself well before it collided.
+		##
+		## 🔑 A 200% card should read as the 100% card SCALED, so each number carries its authored
+		## ratio to the measured glyph height, floored at the authored value (the default never
+		## shrinks) and at `th + 2` (a card whose authored gap is TIGHTER than its glyphs, like the
+		## boss name's 48-under-50, still clears them once it starts growing).
+		var ratio: float = th / base_th
+		title_h = maxf(base_title_h, maxf(th, base_title_h * ratio))
+		gap = maxf(base_gap, maxf(th + 2.0, base_gap * ratio))
+		sub_h = maxf(base_sub_h, maxf(sh, base_sub_h * ratio))
+	return {"title_h": title_h, "gap": gap, "sub_h": sub_h}
+
+
+## ⛔ THE SKIP PILL'S TEXT DREW THROUGH ITS OWN PROGRESS BAR. The label was font 14 raw in a box at
+## y=6 with the hold-bar pinned at y=30; a Label clamps its height UP to its content, so at 200% the
+## 39px of glyph ran from y=6 to y=45 and straight across the bar at 30 — inside a pill still 48 tall.
+##
+## 🔑 Same derivation as `card_metrics`: every number carries its authored ratio to the measured glyph
+## height, floored at the authored value so the default pill does not move. The pill also takes the
+## WIDER of its bar and its own text, because the prompt is resolved per device — the pad spelling of
+## this prompt is materially longer than the keyboard one.
+static func skip_pill_metrics(label_px: int, base_label_px: int, text: String,
+		base_label_y: float, base_label_h: float, base_bar_y: float,
+		base_pill_h: float, base_pill_w: float) -> Dictionary:
+	var out: Dictionary = {
+		"label_y": base_label_y, "label_h": base_label_h, "bar_y": base_bar_y,
+		"pill_h": base_pill_h, "pill_w": base_pill_w,
+	}
+	if label_px <= base_label_px:
+		return out
+	var font: Font = ThemeDB.fallback_font
+	if font == null:
+		return out
+	var h: float = float(font.get_height(label_px))
+	var ratio: float = h / maxf(float(font.get_height(base_label_px)), 1.0)
+	out["label_y"] = maxf(base_label_y, base_label_y * ratio)
+	out["label_h"] = maxf(base_label_h, maxf(h, base_label_h * ratio))
+	out["bar_y"] = maxf(base_bar_y, float(out["label_y"]) + float(out["label_h"]) + 6.0 * ratio)
+	out["pill_h"] = maxf(base_pill_h, float(out["bar_y"]) + SKIP_BAR_HEIGHT + 8.0 * ratio)
+	var tw: float = font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, label_px).x
+	out["pill_w"] = maxf(base_pill_w, tw + SKIP_PILL_PAD * 2.0)
+	return out
+
+
+## ⛔ THE STEP TIMER DID NOT SCALE AT ALL — font 22 raw, so a player on 200% Text Size read the
+## countdown at the same size as a player on 80%. That is the defect this fixes.
+##
+## ⚠️ AND THE WIDTH BRANCH BELOW IS CURRENTLY INERT, WHICH I AM WRITING DOWN RATHER THAN DRESSING UP.
+## I first justified it as "a Label clamps its width up to its content, so a scaled font pushes the
+## box past the viewport from its fixed left edge" — true as a rule, and FALSE for this node. The
+## format is `%d:%02d` and the game contains exactly ONE authored timer step (`world4_orrery.json`,
+## 300s -> "5:00"), four glyphs, which measures under the authored 100px box even at 200%. So no
+## authored countdown has ever overflowed and the `maxf` never fires.
+##
+## 🔑 It stays because the RIGHT EDGE is the thing worth pinning: `x = viewport.x - 120` with a
+## 100-wide box lands the right inset at 20 only by coincidence of two numbers that are not derived
+## from each other. Measured, at 200%: a four-digit "10:00" needs 113px, so the first ten-minute
+## timer anyone authors separates them and the old arithmetic puts its right edge 7px from the
+## viewport instead of 20. Inert against today's content, exact about when it stops being inert.
+static func timer_rect(px: int, base_px: int, text: String, viewport_w: float,
+		base_w: float, base_h: float, right_inset: float) -> Rect2:
+	var w: float = base_w
+	var h: float = base_h
+	var font: Font = ThemeDB.fallback_font
+	if font != null and px > base_px:
+		var m: Vector2 = font.get_string_size(text, HORIZONTAL_ALIGNMENT_RIGHT, -1, px)
+		w = maxf(base_w, m.x + 8.0)
+		h = maxf(base_h, float(font.get_height(px)))
+	return Rect2(Vector2(viewport_w - right_inset - w, 20.0), Vector2(w, h))
+
+
 func _step_chapter_title(step: Dictionary) -> void:
 	"""Show a cinematic chapter title card that fades in, holds, then fades out.
 	Usage: {"type": "chapter_title", "title": "Chapter 3", "subtitle": "The Whispering Cave"}"""
@@ -1704,11 +1813,14 @@ func _step_chapter_title(step: Dictionary) -> void:
 	title_label.text = title_text
 	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	var ch_title_px: int = TextScale.scaled(28)
+	var ch_sub_px: int = TextScale.scaled(18)
+	var chm: Dictionary = card_metrics(ch_title_px, ch_sub_px, 28, 18, 40.0, 44.0, 30.0)
 	title_label.position = Vector2(0, screen_size.y * 0.36)
-	title_label.size = Vector2(screen_size.x, 40)
+	title_label.size = Vector2(screen_size.x, float(chm["title_h"]))
 	title_label.clip_text = false
 	title_label.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
-	title_label.add_theme_font_size_override("font_size", 28)
+	title_label.add_theme_font_size_override("font_size", ch_title_px)
 	title_label.add_theme_color_override("font_color", Color(0.95, 0.90, 0.70))
 	title_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	container.add_child(title_label)
@@ -1719,11 +1831,11 @@ func _step_chapter_title(step: Dictionary) -> void:
 		sub_label.text = subtitle_text
 		sub_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		sub_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		sub_label.position = Vector2(0, screen_size.y * 0.36 + 44)
-		sub_label.size = Vector2(screen_size.x, 30)
+		sub_label.position = Vector2(0, screen_size.y * 0.36 + float(chm["gap"]))
+		sub_label.size = Vector2(screen_size.x, float(chm["sub_h"]))
 		sub_label.clip_text = false
 		sub_label.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
-		sub_label.add_theme_font_size_override("font_size", 18)
+		sub_label.add_theme_font_size_override("font_size", ch_sub_px)
 		sub_label.add_theme_color_override("font_color", Color(0.75, 0.72, 0.60))
 		sub_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		container.add_child(sub_label)
@@ -1773,11 +1885,14 @@ func _step_boss_intro(step: Dictionary) -> void:
 	var name_label = Label.new()
 	name_label.text = boss_name
 	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	var bi_name_px: int = TextScale.scaled(36)
+	var bi_title_px: int = TextScale.scaled(16)
+	var bim: Dictionary = card_metrics(bi_name_px, bi_title_px, 36, 16, 50.0, 48.0, 30.0)
 	name_label.position = Vector2(0, screen_size.y * 0.4)
-	name_label.size = Vector2(screen_size.x, 50)
+	name_label.size = Vector2(screen_size.x, float(bim["title_h"]))
 	name_label.clip_text = false
 	name_label.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
-	name_label.add_theme_font_size_override("font_size", 36)
+	name_label.add_theme_font_size_override("font_size", bi_name_px)
 	name_label.add_theme_color_override("font_color", Color(0.95, 0.3, 0.2))
 	name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	name_label.modulate.a = 0.0
@@ -1789,11 +1904,11 @@ func _step_boss_intro(step: Dictionary) -> void:
 		title_label = Label.new()
 		title_label.text = boss_title
 		title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		title_label.position = Vector2(0, screen_size.y * 0.4 + 48)
-		title_label.size = Vector2(screen_size.x, 30)
+		title_label.position = Vector2(0, screen_size.y * 0.4 + float(bim["gap"]))
+		title_label.size = Vector2(screen_size.x, float(bim["sub_h"]))
 		title_label.clip_text = false
 		title_label.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
-		title_label.add_theme_font_size_override("font_size", 16)
+		title_label.add_theme_font_size_override("font_size", bi_title_px)
 		title_label.add_theme_color_override("font_color", Color(0.7, 0.6, 0.5))
 		title_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		title_label.modulate.a = 0.0
