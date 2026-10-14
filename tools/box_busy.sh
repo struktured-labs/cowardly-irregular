@@ -58,11 +58,13 @@ if [ "${1:-}" = "--selftest" ]; then  # watch the answer flip, so a FREE is neve
   fails=0
   BOX_MARKER="$T/m" DEPLOY_DIR="$T/d" FOLD_TREE="$T/none" "$0" >/dev/null || { echo "FAIL: not FREE with nothing set"; fails=1; }
   printf 'pid=%s\n' "$$" > "$T/m"
-  BOX_MARKER="$T/m" DEPLOY_DIR="$T/d" FOLD_TREE="$T/none" "$0" >/dev/null && { echo "FAIL: a live marker did not read BUSY"; fails=1; }
+  out="$(BOX_MARKER="$T/m" DEPLOY_DIR="$T/d" FOLD_TREE="$T/none" "$0")"
+  case "$out" in "BUSY: fold chain/gate running"*) ;; *) echo "FAIL: a live marker did not read BUSY for THAT reason: $out"; fails=1 ;; esac
   printf 'pid=999999\n' > "$T/m"
   BOX_MARKER="$T/m" DEPLOY_DIR="$T/d" FOLD_TREE="$T/none" "$0" >/dev/null 2>&1 || { echo "FAIL: a dead marker blocked"; fails=1; }
   rm -f "$T/m"; mkdir -p "$T/d/v3.33.0-alpha"; : > "$T/d/v3.33.0-alpha/publish.log"
-  BOX_MARKER="$T/m" DEPLOY_DIR="$T/d" FOLD_TREE="$T/none" "$0" >/dev/null && { echo "FAIL: a publish in flight did not read BUSY"; fails=1; }
+  out="$(BOX_MARKER="$T/m" DEPLOY_DIR="$T/d" FOLD_TREE="$T/none" "$0")"
+  case "$out" in "BUSY: publish in flight: v3.33.0-alpha") ;; *) echo "FAIL: a publish in flight did not read BUSY naming its tag: $out"; fails=1 ;; esac
   echo 999999 > "$T/d/v3.33.0-alpha/publish.pid"
   BOX_MARKER="$T/m" DEPLOY_DIR="$T/d" FOLD_TREE="$T/none" "$0" >/dev/null 2>&1 || { echo "FAIL: a dead publish.pid blocked"; fails=1; }
   [ "$fails" = 0 ] && echo "box_busy selftest: 5/5 arms flipped as expected"
