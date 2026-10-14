@@ -14,7 +14,63 @@ extends GutTest
 ## driven through the real step functions, because a helper can be right while the card that uses it
 ## is not — @cowir-adhoc's JobMenu was clean in the mode their guard happened to build.
 
-const PRESETS: Array = [0.8, 1.0, 1.25, 1.5, 2.0]
+## ⛔ THE SWEEP IS THE PLAYER'S OWN LADDER, DERIVED — NOT A COPY OF IT. This file carried
+## `const PRESETS: Array = [0.8, 1.0, 1.25, 1.5, 2.0]`, a duplicate of
+## `SettingsMenu.TEXT_SIZE_PRESETS` with nothing checking the two still agreed. A copy goes stale
+## the day a preset is added, and the arm written to catch "it broke at 125%" then never visits the
+## new rung — silently, because a loop over a short list still passes.
+##
+## ⚠️ NO FALLBACK DEFAULT, deliberately: a RENAME must red rather than pass against a ladder
+## nobody can select. If the const is gone, `s.TEXT_SIZE_PRESETS` raises and this file fails by
+## name; if it is emptied, `_presets()` asserts below.
+const SETTINGS_PATH := "res://src/ui/SettingsMenu.gd"
+
+var _ladder: Array = []
+
+
+## ⛔ THE FLOOR LIVES HERE, IN THE HELPER EVERY SWEEPING ARM CALLS, not only as a separate arm.
+## A file-level floor arm makes the FILE red on an empty ladder but leaves each looping arm
+## individually vacuous — it iterates zero times and passes green, so a reorder or a single-arm
+## run reports success. Asserting on every call means every arm that sweeps reds by its own name.
+func _presets() -> Array:
+	if _ladder.is_empty():
+		var s = load(SETTINGS_PATH)
+		_ladder = (s.TEXT_SIZE_PRESETS as Array) if s != null else []
+	assert_gt(_ladder.size(), 1, "the shipped Text Size ladder must have at least two rungs — an "
+		+ "empty or stubbed ladder makes every preset loop iterate ZERO times and pass")
+	return _ladder
+
+
+## The sub-unity rungs. A SECOND literal lived in these files as `for scale in [0.8, 1.0]`, and it
+## is invisible to any census keyed on the full ladder because it carries no 1.25 — yet it is the
+## arm deciding whether a new sub-unity preset is ever checked at all. (@cowir-music, 2026-10-14.)
+func _sub_unity() -> Array:
+	var out: Array = []
+	for p in _presets():
+		if float(p) <= 1.0:
+			out.append(p)
+	return out
+
+
+## The ladder's SHAPE, which several arms below silently depend on: ascending (a "100% is the
+## baseline, larger must not shrink" arm reads differently under an unsorted ladder) and containing
+## 1.0 (the default-unchanged arms have nothing to assert without it).
+func test_the_sweep_is_the_players_own_ladder() -> void:
+	var p: Array = _presets()
+	assert_gt(p.size(), 1, "FLOOR: the derived ladder must be real")
+	assert_true(1.0 in p, "the ladder must contain 1.0 — the default-unchanged arms sweep "
+		+ "_sub_unity() and would examine nobody without it")
+	var ascending := true
+	for i in range(1, p.size()):
+		if float(p[i]) <= float(p[i - 1]):
+			ascending = false
+	assert_true(ascending, "the ladder must be ASCENDING: arms here judge every larger size "
+		+ "against 1.0 and an unsorted ladder changes what they assert rather than breaking them: %s" % [p])
+	assert_gt(_sub_unity().size(), 0, "FLOOR: the sub-unity set must be non-empty, else the "
+		+ "default-unchanged arm iterates zero times and passes")
+	gut.p("  ladder %s · sub-unity %s (derived from SettingsMenu.TEXT_SIZE_PRESETS)" % [p, _sub_unity()])
+
+
 const BOSS_NAME := "Warden of the Old Guard"
 const BOSS_TITLE := "Masterite — Medieval"
 const CH_TITLE := "Chapter Four"
@@ -44,10 +100,10 @@ func test_every_card_metric_clears_its_own_title() -> void:
 	assert_not_null(font, "CONTROL: a theme font is needed to measure a card")
 	var bad: Array = []
 	## Read at 100% first: the baseline is the implementation's OWN output, so it must exist before
-	## any larger size is judged against it. PRESETS is ascending, which puts 1.0 before 1.25/1.5/2.0.
+	## any larger size is judged against it. _presets() is ascending, which puts 1.0 before 1.25/1.5/2.0.
 	var base_ratio: Dictionary = {}
 	var base_box: Dictionary = {}
-	for scale in PRESETS:
+	for scale in _presets():
 		GameState.text_size_scale = scale
 		for spec in [["boss", 36, 16, 50.0, 48.0, 30.0], ["chapter", 28, 18, 40.0, 44.0, 30.0]]:
 			var t_px: int = TextScale.scaled(int(spec[1]))
@@ -91,7 +147,7 @@ func test_every_card_metric_clears_its_own_title() -> void:
 
 ## The default must not move: 80% and 100% keep every authored number.
 func test_the_default_cards_are_unchanged() -> void:
-	for scale in [0.8, 1.0]:
+	for scale in _sub_unity():
 		GameState.text_size_scale = scale
 		var b: Dictionary = CutsceneDirector.card_metrics(TextScale.scaled(36), TextScale.scaled(16), 36, 16, 50.0, 48.0, 30.0)
 		var c: Dictionary = CutsceneDirector.card_metrics(TextScale.scaled(28), TextScale.scaled(18), 28, 18, 40.0, 44.0, 30.0)
@@ -180,7 +236,7 @@ func _director_at(scale: float):
 
 func test_the_skip_pill_keeps_its_text_off_its_own_bar() -> void:
 	var bad: Array = []
-	for scale in PRESETS:
+	for scale in _presets():
 		var dir = await _director_at(scale)
 		dir._update_layout()
 		await get_tree().process_frame
@@ -216,7 +272,7 @@ func test_the_skip_pill_keeps_its_text_off_its_own_bar() -> void:
 
 func test_the_step_timer_stays_on_screen() -> void:
 	var bad: Array = []
-	for scale in PRESETS:
+	for scale in _presets():
 		var dir = await _director_at(scale)
 		## THE ONLY AUTHORED TIMER IN THE GAME: world4_orrery's 300s. A guard on a made-up duration
 		## would be measuring a string no player sees; "10:00" below is the first unauthored width.
@@ -260,7 +316,7 @@ func test_the_step_timer_stays_on_screen() -> void:
 ## re-derivation of the formula: it asserts the INSET, which the formula does not mention.
 func test_the_timer_holds_its_inset_for_a_countdown_wider_than_its_box() -> void:
 	var bad: Array = []
-	for scale in PRESETS:
+	for scale in _presets():
 		GameState.text_size_scale = scale
 		var px: int = TextScale.scaled(22)
 		var r: Rect2 = CutsceneDirector.timer_rect(px, 22, "10:00", 1280.0, 100.0, 28.0, 20.0)

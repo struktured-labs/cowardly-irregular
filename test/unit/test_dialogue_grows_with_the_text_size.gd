@@ -19,7 +19,63 @@ extends GutTest
 ## so new dialogue joins the population without editing the test.
 
 const CUTSCENES := "res://data/cutscenes"
-const PRESETS: Array = [0.8, 1.0, 1.25, 1.5, 2.0]
+## ⛔ THE SWEEP IS THE PLAYER'S OWN LADDER, DERIVED — NOT A COPY OF IT. This file carried
+## `const PRESETS: Array = [0.8, 1.0, 1.25, 1.5, 2.0]`, a duplicate of
+## `SettingsMenu.TEXT_SIZE_PRESETS` with nothing checking the two still agreed. A copy goes stale
+## the day a preset is added, and the arm written to catch "it broke at 125%" then never visits the
+## new rung — silently, because a loop over a short list still passes.
+##
+## ⚠️ NO FALLBACK DEFAULT, deliberately: a RENAME must red rather than pass against a ladder
+## nobody can select. If the const is gone, `s.TEXT_SIZE_PRESETS` raises and this file fails by
+## name; if it is emptied, `_presets()` asserts below.
+const SETTINGS_PATH := "res://src/ui/SettingsMenu.gd"
+
+var _ladder: Array = []
+
+
+## ⛔ THE FLOOR LIVES HERE, IN THE HELPER EVERY SWEEPING ARM CALLS, not only as a separate arm.
+## A file-level floor arm makes the FILE red on an empty ladder but leaves each looping arm
+## individually vacuous — it iterates zero times and passes green, so a reorder or a single-arm
+## run reports success. Asserting on every call means every arm that sweeps reds by its own name.
+func _presets() -> Array:
+	if _ladder.is_empty():
+		var s = load(SETTINGS_PATH)
+		_ladder = (s.TEXT_SIZE_PRESETS as Array) if s != null else []
+	assert_gt(_ladder.size(), 1, "the shipped Text Size ladder must have at least two rungs — an "
+		+ "empty or stubbed ladder makes every preset loop iterate ZERO times and pass")
+	return _ladder
+
+
+## The sub-unity rungs. A SECOND literal lived in these files as `for scale in [0.8, 1.0]`, and it
+## is invisible to any census keyed on the full ladder because it carries no 1.25 — yet it is the
+## arm deciding whether a new sub-unity preset is ever checked at all. (@cowir-music, 2026-10-14.)
+func _sub_unity() -> Array:
+	var out: Array = []
+	for p in _presets():
+		if float(p) <= 1.0:
+			out.append(p)
+	return out
+
+
+## The ladder's SHAPE, which several arms below silently depend on: ascending (a "100% is the
+## baseline, larger must not shrink" arm reads differently under an unsorted ladder) and containing
+## 1.0 (the default-unchanged arms have nothing to assert without it).
+func test_the_sweep_is_the_players_own_ladder() -> void:
+	var p: Array = _presets()
+	assert_gt(p.size(), 1, "FLOOR: the derived ladder must be real")
+	assert_true(1.0 in p, "the ladder must contain 1.0 — the default-unchanged arms sweep "
+		+ "_sub_unity() and would examine nobody without it")
+	var ascending := true
+	for i in range(1, p.size()):
+		if float(p[i]) <= float(p[i - 1]):
+			ascending = false
+	assert_true(ascending, "the ladder must be ASCENDING: arms here judge every larger size "
+		+ "against 1.0 and an unsorted ladder changes what they assert rather than breaking them: %s" % [p])
+	assert_gt(_sub_unity().size(), 0, "FLOOR: the sub-unity set must be non-empty, else the "
+		+ "default-unchanged arm iterates zero times and passes")
+	gut.p("  ladder %s · sub-unity %s (derived from SettingsMenu.TEXT_SIZE_PRESETS)" % [p, _sub_unity()])
+
+
 
 var _saved: float = 1.0
 
@@ -79,7 +135,7 @@ func test_every_authored_line_fits_at_every_text_size() -> void:
 	var rows: Array = _lines()
 	var font: Font = ThemeDB.fallback_font
 	assert_not_null(font, "CONTROL: a theme font is needed to measure wrapping")
-	for scale in PRESETS:
+	for scale in _presets():
 		var p: Dictionary = await _panel(scale)
 		var lbl: RichTextLabel = p["lbl"]
 		assert_not_null(lbl, "CONTROL: the panel must build a text label at scale %.2f" % scale)
@@ -101,7 +157,7 @@ func test_every_authored_line_fits_at_every_text_size() -> void:
 
 ## The default must not move: 100% and 80% keep the authored 150px panel exactly.
 func test_the_default_panel_is_unchanged() -> void:
-	for scale in [0.8, 1.0]:
+	for scale in _sub_unity():
 		var p: Dictionary = await _panel(scale)
 		var box: Control = p["box"]
 		assert_not_null(box, "CONTROL: the panel must build at scale %.2f" % scale)
@@ -112,7 +168,7 @@ func test_the_default_panel_is_unchanged() -> void:
 ## And the hint stays inside the panel at every size, or the player loses the advance prompt.
 func test_the_advance_hint_stays_inside_the_panel() -> void:
 	var outside: Array = []
-	for scale in PRESETS:
+	for scale in _presets():
 		var p: Dictionary = await _panel(scale)
 		var box: Control = p["box"]
 		var hint = p["hint"]

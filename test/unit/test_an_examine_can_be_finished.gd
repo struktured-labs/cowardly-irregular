@@ -239,7 +239,63 @@ func test_the_settled_rect_is_the_one_the_toast_asked_for() -> void:
 ## through TextScale — CutsceneDialogue, BattleDialogue, BattleSpeechBubble — and this one drew a raw
 ## 11, so a player on 200% read every examine at 100%. The surface whose entire content is prose was
 ## the one the accessibility setting did not reach.
-const PRESETS: Array = [0.8, 1.0, 1.25, 1.5, 2.0]
+## ⛔ THE SWEEP IS THE PLAYER'S OWN LADDER, DERIVED — NOT A COPY OF IT. This file carried
+## `const PRESETS: Array = [0.8, 1.0, 1.25, 1.5, 2.0]`, a duplicate of
+## `SettingsMenu.TEXT_SIZE_PRESETS` with nothing checking the two still agreed. A copy goes stale
+## the day a preset is added, and the arm written to catch "it broke at 125%" then never visits the
+## new rung — silently, because a loop over a short list still passes.
+##
+## ⚠️ NO FALLBACK DEFAULT, deliberately: a RENAME must red rather than pass against a ladder
+## nobody can select. If the const is gone, `s.TEXT_SIZE_PRESETS` raises and this file fails by
+## name; if it is emptied, `_presets()` asserts below.
+const SETTINGS_PATH := "res://src/ui/SettingsMenu.gd"
+
+var _ladder: Array = []
+
+
+## ⛔ THE FLOOR LIVES HERE, IN THE HELPER EVERY SWEEPING ARM CALLS, not only as a separate arm.
+## A file-level floor arm makes the FILE red on an empty ladder but leaves each looping arm
+## individually vacuous — it iterates zero times and passes green, so a reorder or a single-arm
+## run reports success. Asserting on every call means every arm that sweeps reds by its own name.
+func _presets() -> Array:
+	if _ladder.is_empty():
+		var s = load(SETTINGS_PATH)
+		_ladder = (s.TEXT_SIZE_PRESETS as Array) if s != null else []
+	assert_gt(_ladder.size(), 1, "the shipped Text Size ladder must have at least two rungs — an "
+		+ "empty or stubbed ladder makes every preset loop iterate ZERO times and pass")
+	return _ladder
+
+
+## The sub-unity rungs. A SECOND literal lived in these files as `for scale in [0.8, 1.0]`, and it
+## is invisible to any census keyed on the full ladder because it carries no 1.25 — yet it is the
+## arm deciding whether a new sub-unity preset is ever checked at all. (@cowir-music, 2026-10-14.)
+func _sub_unity() -> Array:
+	var out: Array = []
+	for p in _presets():
+		if float(p) <= 1.0:
+			out.append(p)
+	return out
+
+
+## The ladder's SHAPE, which several arms below silently depend on: ascending (a "100% is the
+## baseline, larger must not shrink" arm reads differently under an unsorted ladder) and containing
+## 1.0 (the default-unchanged arms have nothing to assert without it).
+func test_the_sweep_is_the_players_own_ladder() -> void:
+	var p: Array = _presets()
+	assert_gt(p.size(), 1, "FLOOR: the derived ladder must be real")
+	assert_true(1.0 in p, "the ladder must contain 1.0 — the default-unchanged arms sweep "
+		+ "_sub_unity() and would examine nobody without it")
+	var ascending := true
+	for i in range(1, p.size()):
+		if float(p[i]) <= float(p[i - 1]):
+			ascending = false
+	assert_true(ascending, "the ladder must be ASCENDING: arms here judge every larger size "
+		+ "against 1.0 and an unsorted ladder changes what they assert rather than breaking them: %s" % [p])
+	assert_gt(_sub_unity().size(), 0, "FLOOR: the sub-unity set must be non-empty, else the "
+		+ "default-unchanged arm iterates zero times and passes")
+	gut.p("  ladder %s · sub-unity %s (derived from SettingsMenu.TEXT_SIZE_PRESETS)" % [p, _sub_unity()])
+
+
 
 var _saved_scale: float = 1.0
 
@@ -256,7 +312,7 @@ func _restore_scale() -> void:
 
 func test_the_toast_font_follows_the_text_size() -> void:
 	var seen: Array = []
-	for scale in PRESETS:
+	for scale in _presets():
 		GameState.text_size_scale = scale
 		seen.append(QuestExaminePoint.toast_font_size())
 	_restore_scale()
@@ -265,7 +321,7 @@ func test_the_toast_font_follows_the_text_size() -> void:
 	assert_gt(seen[4], seen[1],
 		"200%% must draw larger than 100%%, got %d vs %d — the setting does not reach this surface" % [seen[4], seen[1]])
 	assert_gt(seen[2], seen[1], "125%% must draw larger than 100%%")
-	gut.p("  toast font at %s: %s" % [str(PRESETS), str(seen)])
+	gut.p("  toast font at %s: %s" % [str(_presets()), str(seen)])
 
 
 ## The rect must follow the font, or scaling it just clips — the defect this file's own subject was.
