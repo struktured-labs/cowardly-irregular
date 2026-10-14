@@ -81,6 +81,8 @@ func _build_ui() -> void:
 	# Scroll root starts below the viewport and moves up
 	_scroll_root = Control.new()
 	_scroll_root.position = Vector2(0, vp.y)
+	## Not the roll's height: _populate_credit_lines sets custom_minimum_size, which is what
+	## _scroll_and_wait measures and what grows with Text Size (1356 px at 100%, 2712 at 200%).
 	_scroll_root.size = Vector2(vp.x, 2000)
 	_scroll_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_scroll_root)

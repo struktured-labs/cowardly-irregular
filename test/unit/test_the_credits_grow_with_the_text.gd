@@ -295,3 +295,37 @@ func test_no_credit_line_is_drawn_through_the_next() -> void:
 						_label(i), a.text.substr(0, 18), a.position.y + _drawn_h(a),
 						b.text.substr(0, 18), b.position.y])
 			assert_gt(pairs, 1, "PRECONDITION: only %d row pairs at %s" % [pairs, _label(i)])
+
+
+func test_the_roll_scrolls_far_enough_to_show_its_last_line() -> void:
+	## THE CONSEQUENCE THE PLAYER FEELS, and it was unguarded: `_scroll_and_wait` takes BOTH its
+	## distance and its tween target from `custom_minimum_size.y`, so if that extent stops tracking
+	## the rows the roll ends with lines still below the screen — fonts correct, content cut.
+	##
+	## `_scroll_root.size`'s 2000 literal is NOT that extent (1356 px of content at 100%, 2712 at
+	## 200%, and nothing clips), which is why this arm reads custom_minimum_size and not the rect.
+	var prev: float = 0.0
+	for i in PRESETS.size():
+		await _build_at(PRESETS[i], 1)
+		var extent: float = float(_c._scroll_root.custom_minimum_size.y)
+		var rows: Array = _rows_in_order()
+		assert_gt(rows.size(), 10, "%s: only %d rows to measure" % [_label(i), rows.size()])
+		var last := rows[rows.size() - 1] as Label
+		assert_lte(last.position.y + _drawn_h(last), extent + 0.5,
+			"%s: the last line ends at %.0f but the roll only scrolls %.0f — it would be cut off" % [
+				_label(i), last.position.y + _drawn_h(last), extent])
+		assert_gte(extent, prev,
+			"%s: the scroll extent SHRANK to %.0f from %.0f at the rung below" % [_label(i), extent, prev])
+		prev = extent
+	## And it must actually have GROWN across the ladder, or the monotonic assert above is pinning a
+	## constant. ⛔ NOT `prev > base * 1.5` — 1.5 is a fact about today's ladder topping out at 2.0,
+	## and a ladder topping at 1.25 would red this on a correct tree (the coincidental-value ratchet).
+	## Derived from the ladder's own top instead, and `>=` rather than `==` because wrapped rows add
+	## height beyond the linear factor.
+	await _build_at(1.0, 1)
+	var base: float = float(_c._scroll_root.custom_minimum_size.y)
+	var top: float = maxf(1.0, float(PRESETS.max()))
+	assert_gt(base, 0.0, "the 100%% extent read back %.0f" % base)
+	assert_gte(prev, base * top - 1.0,
+		"the extent is %.0f at the top rung; scaling %.0f by the ladder's own top (%.2f) needs %.0f" % [
+			prev, base, top, base * top])
