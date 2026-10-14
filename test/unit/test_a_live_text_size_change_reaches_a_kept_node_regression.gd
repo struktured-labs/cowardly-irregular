@@ -20,6 +20,12 @@ extends GutTest
 const GS_PATH := "res://src/meta/GameState.gd"
 
 var _saved_scale: float = 1.0
+## ⛔ EVERY CONNECTION THIS FILE MAKES IS TO AN AUTOLOAD SIGNAL AND MUST COME BACK OFF. A lambda
+## left connected outlives the test: the next file to change the scale fires it, against locals this
+## one captured. TextScale.apply guards with is_instance_valid so it would not crash — but an
+## accumulating connection list IS autoload state left dirty, which is exactly the class that got
+## this stack dropped from .691, one signal over from current_state.
+var _conns: Array[Callable] = []
 
 
 func before_each() -> void:
@@ -27,7 +33,18 @@ func before_each() -> void:
 
 
 func after_each() -> void:
+	for c in _conns:
+		if GameState.text_size_scale_changed.is_connected(c):
+			GameState.text_size_scale_changed.disconnect(c)
+	_conns.clear()
 	GameState.text_size_scale = _saved_scale
+
+
+## Connect through here so after_each can take it back off. A bare `.connect(func(…))` cannot be
+## disconnected later: nothing holds the Callable.
+func _watch(c: Callable) -> void:
+	_conns.append(c)
+	GameState.text_size_scale_changed.connect(c)
 
 
 func _label(px: int) -> Label:
@@ -72,7 +89,7 @@ func test_a_live_change_reaches_a_node_built_before_it() -> void:
 	TextScale.apply(l)
 	assert_eq(l.get_theme_font_size(&"font_size"), 16, "built at 100%, so 16 to begin with")
 	var seen: Array = []
-	GameState.text_size_scale_changed.connect(func(s): TextScale.apply(l); seen.append(s))
+	_watch(func(s): TextScale.apply(l); seen.append(s))
 	GameState.set_text_size_scale(2.0)
 	assert_eq(seen.size(), 1,
 		"the setter must emit exactly once for a real change, or an adopter is never told")
@@ -99,7 +116,7 @@ func test_the_change_reaches_a_HIDDEN_node() -> void:
 	var l := _label(16)
 	TextScale.apply(l)
 	l.visible = false
-	GameState.text_size_scale_changed.connect(func(_s): TextScale.apply(l))
+	_watch(func(_s): TextScale.apply(l))
 	GameState.set_text_size_scale(2.0)
 	assert_eq(l.get_theme_font_size(&"font_size"), 32,
 		("a HIDDEN node must take the change: in exploration Settings is only reachable through the "
@@ -114,7 +131,7 @@ func test_the_change_reaches_a_HIDDEN_node() -> void:
 func test_setting_the_same_value_does_not_emit() -> void:
 	GameState.set_text_size_scale(1.5)
 	var fired: Array = []
-	GameState.text_size_scale_changed.connect(func(s): fired.append(s))
+	_watch(func(s): fired.append(s))
 	GameState.set_text_size_scale(1.5)
 	assert_eq(fired.size(), 0, "an unchanged value must not emit; got %d emission(s)" % fired.size())
 	GameState.set_text_size_scale(0.8)
