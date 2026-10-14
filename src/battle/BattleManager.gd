@@ -2116,19 +2116,23 @@ static func is_full_bank(current_ap: int, queued: int) -> bool:
 	return current_ap >= FULL_BANK_AP and queued >= FULL_BANK_ACTIONS
 
 
-## A defer costs no AP anywhere else in the game, so it must not be billed inside a queue either.
+## A defer costs no AP anywhere else, so it is not billed inside a queue — and it ENDS the queue,
+## so neither is anything behind it. BREAK, not continue: _execute_advance stops there too.
 static func billable_actions(actions: Array) -> int:
 	var n: int = 0
 	for a in actions:
 		if a is Dictionary and str((a as Dictionary).get("type", "")) == "defer":
-			continue
+			break
 		n += 1
 	return n
 
 
 static func billed_ap(current_ap: int, queued: int, billable: int = -1) -> int:
 	var b: int = billable if billable >= 0 else queued
-	if is_full_bank(current_ap, queued):
+	## The free fifth is earned by a queue that RUNS TO THE END. A defer mid-queue ends it early,
+	## so the tail is neither billed nor discounted — `queued <= b + 1` means at most the defer
+	## itself went unbilled, which is the only shape the editor can now produce.
+	if is_full_bank(current_ap, queued) and queued <= b + 1:
 		return maxi(0, b - 1)
 	return b
 
