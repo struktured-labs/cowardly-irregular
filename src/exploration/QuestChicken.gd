@@ -183,30 +183,5 @@ func _poof() -> void:
 
 
 func _toast(text: String) -> void:
-	var lbl := Label.new()
-	lbl.name = "CatchToast"
-	lbl.text = text
-	lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	lbl.add_theme_font_size_override("font_size", 11)
-	lbl.add_theme_color_override("font_color", Color(1.0, 0.95, 0.7))
-	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(lbl)
-	var font := lbl.get_theme_font("font")
-	var fsz := lbl.get_theme_font_size("font_size")
-	var h := 18.0
-	if font != null:
-		h = maxf(18.0, font.get_multiline_string_size(text, HORIZONTAL_ALIGNMENT_CENTER, _TOAST_WIDTH, fsz).y)
-	lbl.size = Vector2(_TOAST_WIDTH, h)
-	var stack := 0.0
-	for c in get_children():
-		if c is Label and c != lbl:
-			stack += (c as Label).size.y + 4.0
-	lbl.position = Vector2(-_TOAST_WIDTH * 0.5, -48.0 - h - stack)
-	var tw := create_tween()
-	tw.set_parallel(true)
-	tw.tween_property(lbl, "position:y", lbl.position.y - 22.0, 1.5)
-	tw.tween_property(lbl, "modulate:a", 0.0, 1.5).set_delay(0.5)
-	tw.chain().tween_callback(func():
-		if is_instance_valid(lbl):
-			lbl.queue_free())
+	WorldToast.show(self, text, 240.0, -66.0, Color(1.0, 0.95, 0.7), 18.0, 22.0, 1.5, 0.5, true, "CatchToast")
+

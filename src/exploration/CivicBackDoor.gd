@@ -144,20 +144,5 @@ func _lead_job() -> String:
 
 
 func _toast(text: String) -> void:
-	var lbl := Label.new()
-	lbl.text = text
-	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	lbl.position = Vector2(-150, -70)
-	lbl.size = Vector2(300, 34)
-	lbl.add_theme_font_size_override("font_size", 11)
-	lbl.add_theme_color_override("font_color", Color(0.85, 0.87, 0.92))
-	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(lbl)
-	var tw := create_tween()
-	tw.set_parallel(true)
-	tw.tween_property(lbl, "position:y", lbl.position.y - 18.0, 2.0)
-	tw.tween_property(lbl, "modulate:a", 0.0, 2.0).set_delay(0.9)
-	tw.chain().tween_callback(func():
-		if is_instance_valid(lbl):
-			lbl.queue_free())
+	WorldToast.show(self, text, 300.0, -70.0, Color(0.85, 0.87, 0.92), 34.0, 18.0, 2.0, 0.9)
+

@@ -161,19 +161,5 @@ func _glint() -> void:
 
 
 func _toast(text: String) -> void:
-	var lbl := Label.new()
-	lbl.text = text
-	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	lbl.position = Vector2(-130, -56)
-	lbl.size = Vector2(260, 18)
-	lbl.add_theme_font_size_override("font_size", 11)
-	lbl.add_theme_color_override("font_color", Color(0.85, 0.9, 1.0))
-	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(lbl)
-	var tw := create_tween()
-	tw.set_parallel(true)
-	tw.tween_property(lbl, "position:y", lbl.position.y - 20.0, 1.6)
-	tw.tween_property(lbl, "modulate:a", 0.0, 1.6).set_delay(0.6)
-	tw.chain().tween_callback(func():
-		if is_instance_valid(lbl):
-			lbl.queue_free())
+	WorldToast.show(self, text, 260.0, -56.0, Color(0.85, 0.9, 1.0), 18.0, 20.0, 1.6, 0.6)
+
