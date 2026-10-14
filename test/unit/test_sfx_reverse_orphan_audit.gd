@@ -27,9 +27,18 @@ extends GutTest
 const MANIFEST_PATH := "res://data/sfx_manifest.json"
 
 ## Prefixes whose keys are built at runtime by string concatenation. If the
-## GUARD pattern appears in SoundManager source, every key with that prefix is
+## GUARD pattern appears ANYWHERE IN res://src, every key with that prefix is
 ## considered reachable. Keep GUARDs tied to the actual construction site so a
 ## refactor that removes the concatenation also drops the exemption.
+##
+## ⚠️ "ANYWHERE IN res://src", NOT "in SoundManager" — this comment said SoundManager until
+## 2026-10-14 while every arm below has always called `_slurp_dir("res://src", ".gd")`. TWO of the
+## eleven entries are satisfied ONLY by the wider corpus: `advance_%s` lives in
+## src/ui/Win98Menu.gd and `formation_key` in src/battle/BattleScene.gd, neither in SoundManager at
+## all. So a reader auditing an exemption against the comment's corpus would have found those two
+## unmatched and concluded they were inert — the exact disposition this table deletes entries for.
+## Found by doing that: I checked the `w<N>_` guards against SoundManager.gd because the comment
+## said so, got two false "unsatisfied" rows, and only then read the resolver.
 ##
 ## EVERY ENTRY MUST BE LOAD-BEARING — test_every_dynamic_prefix_exemption_is_load_bearing
 ## reds on one that exempts nothing. Three were removed 2026-09-11 for failing it, and the
