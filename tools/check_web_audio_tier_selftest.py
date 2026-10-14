@@ -171,6 +171,35 @@ def main():
         ec, out = run(pck, tier, f"--stage={stage}", "--require-under-cache-line")
         check("a TABLE total over the line does not fire — the FILE decides", ec, 0, out, "UNDER the cache line")
 
+        # ── THE PER-VISIT CLAIM IS CONDITIONAL ON THE SERVICE WORKER, ALL FOUR STATES.
+        #    The size fact is true in every one; the sentence after the dash is not. The tool
+        #    used to assert "re-downloads the whole build every visit" unconditionally, and one
+        #    real run printed that four lines after pck_cache_report.sh measured the opposite on
+        #    the same build.
+        #    ⛔ Each arm pins the REASON, not the exit code: the verdict is identical (advisory,
+        #       exit 0) in all four states, so an exit-only arm cannot tell them apart.
+        pck, tier, stage = build(sub("sw"), names, file_pad=LINE)
+        swf = os.path.join(os.path.dirname(pck), "index.service.worker.js")
+
+        ec, out = run(pck, tier, f"--stage={stage}")
+        check("no worker -> re-downloads every visit", ec, 0, out, "no service worker in this build")
+
+        with open(swf, "w") as f:
+            f.write("const CACHEABLE_FILES = ['index.wasm'];\n")
+        ec, out = run(pck, tier, f"--stage={stage}")
+        check("worker without index.pck -> re-downloads", ec, 0, out, "does NOT name index.pck")
+
+        with open(swf, "w") as f:
+            f.write("const CACHEABLE_FILES = ['index.wasm', 'index.pck'];\n")
+        ec, out = run(pck, tier, f"--stage={stage}")
+        check("worker naming index.pck -> warms once", ec, 0, out, "warms the cache once")
+        check("...and drops the re-download claim", 0 if "every visit" not in out else 1, 0)
+
+        # The flag asks about BYTES, so it still fires with a covering worker. Only the wording
+        # was ever conditional, and an arm that let the worker suppress it would be wrong.
+        ec, out = run(pck, tier, f"--stage={stage}", "--require-under-cache-line")
+        check("--require-under-cache-line still fails WITH a covering worker", ec, 5, out, "AT OR OVER")
+
         # ── without --stage: the basename join, which must REFUSE a collision rather than pick.
         pck, tier, stage = build(sub("k"), names, dup="track013")
         ec, out = run(pck, tier)
