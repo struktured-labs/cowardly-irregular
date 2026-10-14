@@ -115,6 +115,15 @@ func test_safe_high_confidence_applies_and_moves() -> void:
 			"without GameState, apply must fall back to NEEDS_REVIEW so deltas aren't silently lost")
 		return
 	# Real GameState present — snapshot the constant, apply, verify.
+	# Both asserts below assume exp_multiplier has ROOM under the authored band: at the ceiling the
+	# cumulative clamp makes the apply a no-op, so `after == before * 1.05` cannot hold (and, since
+	# the daemon stopped calling a no-op an apply, nor can APPLY_APPLIED). The premise was inherited
+	# from whatever ran first; set it instead, and restore the value this test actually found.
+	var original: float = float(gs.game_constants.get("exp_multiplier", 1.0))
+	var authored: float = 1.0
+	if "DEFAULT_GAME_CONSTANTS" in gs:
+		authored = float((gs.DEFAULT_GAME_CONSTANTS as Dictionary).get("exp_multiplier", 1.0))
+	gs.game_constants["exp_multiplier"] = authored
 	var before: float = float(gs.game_constants.get("exp_multiplier", 1.0))
 	var result: String = daemon.try_auto_apply(idx)
 	assert_eq(result, daemon.APPLY_APPLIED,
@@ -126,8 +135,8 @@ func test_safe_high_confidence_applies_and_moves() -> void:
 		"applied proposals must leave pending[]")
 	assert_eq(daemon.applied.size(), 1,
 		"applied proposals must land in applied[]")
-	# Restore the constant so subsequent tests aren't affected.
-	gs.game_constants["exp_multiplier"] = before
+	# Restore what this test FOUND, not the precondition it set.
+	gs.game_constants["exp_multiplier"] = original
 
 
 func test_summarize_applied_formats_percentage() -> void:

@@ -223,15 +223,18 @@ func request_llm_proposal(proposal_idx: int, recent_events: Array = []) -> bool:
 	var tree: SceneTree = Engine.get_main_loop() as SceneTree
 	if tree == null or tree.root == null:
 		proposal["status"] = "failed_no_tree"
+		print("[REBALANCE] proposal for %s produced nothing — no scene tree" % str(trigger))
 		return false
 	var svc: Node = tree.root.get_node_or_null("LLMService")
 	if svc == null or not svc.has_method("complete_json") or not svc.is_available():
 		proposal["status"] = "failed_unavailable"
+		print("[REBALANCE] proposal for %s produced nothing — no LLM backend" % str(trigger))
 		return false
 	var fallback: Variant = null
 	var result: Variant = await svc.complete_json(prompt, REBALANCE_SCHEMA, fallback)
 	if not (result is Dictionary):
 		proposal["status"] = "failed_fallback"
+		print("[REBALANCE] proposal for %s produced nothing — the reply was not usable" % str(trigger))
 		return false
 	var r: Dictionary = result as Dictionary
 	proposal["verdict"]    = str(r.get("verdict", "no_change"))
@@ -239,7 +242,21 @@ func request_llm_proposal(proposal_idx: int, recent_events: Array = []) -> bool:
 	proposal["deltas"]     = r.get("deltas", [])
 	proposal["reason"]     = str(r.get("reason", ""))
 	proposal["status"]     = "proposed"
+	print("[REBALANCE] proposal for %s — %s (confidence %.0f%%, %d delta(s))" % [
+		str(trigger), str(proposal["verdict"]), float(proposal["confidence"]) * 100.0,
+		(proposal["deltas"] as Array).size() if proposal["deltas"] is Array else 0])
 	return true
+
+
+## The constants a decision touched, for the log line. The daemon printed only `considered` and
+## `throttled`, so his log could not say whether a proposal resolved, failed or did nothing.
+static func _limit_summary(applied_changes: Array) -> String:
+	var parts: Array[String] = []
+	for c in applied_changes:
+		if c is Dictionary:
+			parts.append("%s %.4g->%.4g" % [str(c.get("constant", "?")),
+					float(c.get("before", 0.0)), float(c.get("after", 0.0))])
+	return ", ".join(parts) if parts.size() > 0 else "(no constants)"
 
 
 ## Compress the context dict into a short string for logs + tests.
@@ -261,6 +278,20 @@ const APPLY_NO_CHANGE := "no_change"
 const APPLY_APPLIED := "applied"
 const APPLY_NEEDS_REVIEW := "needs_review"
 const APPLY_REJECTED := "rejected"
+## Every delta clamped to a no-op: the constants are already at the authored band edge. Reported as
+## APPLY_NO_CHANGE, which both callers already handle, with its own status so the history stays honest.
+const STATUS_AT_LIMIT := "no_change_at_limit"
+
+
+## True when the clamp left every constant exactly where it was. Measured in struktured's own saves:
+## 48 of 50 recorded changes in save_98 were clamped, 46 of them literally `1.15 -> 1.15`, each one
+## logged as "applied" -- a reported change that never happened, which is this project's
+## silent-failure rule running backwards.
+static func _nothing_moved(applied_changes: Array) -> bool:
+	for c in applied_changes:
+		if c is Dictionary and not is_equal_approx(float(c.get("before", 0.0)), float(c.get("after", 0.0))):
+			return false
+	return true
 
 
 ## Try to auto-apply a proposal that's reached status='proposed'.
@@ -341,9 +372,19 @@ func try_auto_apply(proposal_idx: int) -> String:
 				"multiplier": multiplier,
 				"clamped":    not is_equal_approx(after, requested),
 			})
+	if applied_changes.size() > 0 and _nothing_moved(applied_changes):
+		# Out of pending either way -- leaving it there is how his saves reached 17 stale rows.
+		proposal["status"] = STATUS_AT_LIMIT
+		proposal["applied_changes"] = []
+		_move_to_applied(proposal_idx)
+		print("[REBALANCE] %s at the authored limit — nothing applied (%s)" % [
+			str(proposal.get("verdict", "?")), _limit_summary(applied_changes)])
+		return APPLY_NO_CHANGE
 	proposal["status"] = "applied"
 	proposal["applied_changes"] = applied_changes
 	_move_to_applied(proposal_idx)
+	print("[REBALANCE] applied %s — %s" % [
+		str(proposal.get("verdict", "?")), _limit_summary(applied_changes)])
 	return APPLY_APPLIED
 
 
@@ -393,10 +434,20 @@ func force_apply(proposal_idx: int) -> String:
 				"multiplier": multiplier,
 				"clamped":    not is_equal_approx(after, requested),
 			})
+	if applied_changes.size() > 0 and _nothing_moved(applied_changes):
+		proposal["status"] = STATUS_AT_LIMIT
+		proposal["applied_changes"] = []
+		proposal["force_applied"] = true
+		_move_to_applied(proposal_idx)
+		print("[REBALANCE] %s at the authored limit — nothing applied (%s)" % [
+			str(proposal.get("verdict", "?")), _limit_summary(applied_changes)])
+		return APPLY_NO_CHANGE
 	proposal["status"] = "applied"
 	proposal["applied_changes"] = applied_changes
 	proposal["force_applied"] = true
 	_move_to_applied(proposal_idx)
+	print("[REBALANCE] applied %s on request — %s" % [
+		str(proposal.get("verdict", "?")), _limit_summary(applied_changes)])
 	return APPLY_APPLIED
 
 
