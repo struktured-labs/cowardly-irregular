@@ -54,12 +54,29 @@ def has_real_alpha(img: Image.Image) -> bool:
     return float((a < 16).mean()) >= 0.10 and float((a > 240).mean()) >= 0.10
 
 
+def _seal_seams(px: np.ndarray) -> int:
+    """Fill every clear region the figure encloses with the darkest colour on its rim. Returns pixels filled.
+
+    The model draws outlines with soft alpha; hardening at ALPHA clears the faintest of them, leaving 1px see-through
+    seams along the jaw and collar that the eye-white guard (test_a_portrait_has_the_whites_of_its_eyes) reds on."""
+    sys.path.insert(0, str(ROOT / "tools"))
+    import fill_portrait_key_holes as holes_tool
+    filled = 0
+    for region, rim in holes_tool.holes(px):
+        colour = holes_tool._darkest(px, rim)
+        for y, x in region:
+            px[y, x] = (*colour, 255)
+        filled += len(region)
+    return filled
+
+
 def finish(raw: Image.Image) -> Image.Image:
     """256x256, alpha hardened to on/off, and the bust dropped onto the frame's lower edge."""
     img = raw.convert("RGBA").resize((SIZE * 4, SIZE * 4), Image.LANCZOS).resize((SIZE, SIZE), Image.BOX)
     px = np.asarray(img).copy()
     px[..., 3] = np.where(px[..., 3] >= ALPHA, 255, 0)
     px[px[..., 3] == 0] = 0
+    _seal_seams(px)
     rows = np.nonzero((px[..., 3] > 0).any(axis=1))[0]
     out = np.zeros_like(px)
     if len(rows):
@@ -79,6 +96,12 @@ def selftest() -> int:
     assert out.size == (SIZE, SIZE) and set(np.unique(a).tolist()) <= {0, 255}, "256px, hard alpha"
     assert a[SIZE - 1].any(), "the bust stands on the lower edge"
     assert not a[0].any(), "and the space it left is at the top"
+    ring = np.zeros((40, 40, 4), dtype=np.uint8)
+    ring[5:35, 5:35] = (30, 20, 10, 255)
+    ring[10:30, 10:30] = (200, 160, 120, 255)
+    ring[10:30, 19] = 0
+    assert _seal_seams(ring) == 20 and ring[20, 19, 3] == 255, "an enclosed seam is sealed"
+    assert tuple(ring[20, 19, :3]) == (30, 20, 10) or tuple(ring[20, 19, :3]) == (200, 160, 120), "with a colour from its own rim"
     print("selftest ok")
     return 0
 
