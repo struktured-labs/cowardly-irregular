@@ -80,7 +80,12 @@ func taped_notice() -> Array:
 		{"heading": "Layer one, municipal", "body": "NO PARKING WITHIN 15 FEET OF THIS HYDRANT.\nVehicles will be removed at the owner's expense."},
 		{"heading": "Layer two, biro on lined paper", "body": "The silver estate car parks here EVERY evening. I have measured it. NINE FEET. I have the measurements. I have had the measurements for some time and nobody has asked me for them."},
 		{"heading": "Layer three, marker on card", "body": "It is fifteen feet from the NEAR side. Measure from the near side. You are measuring from the wrong side and you have been for two years, Brian."},
-		{"heading": "Layer four, printed, laminated, drilled and bolted through the other three", "body": "THE HYDRANT HAS NEVER BEEN USED.\n\nThere has not been a fire on this street. There is no record of a fire on this street. I have requested the record. There is no record because there is no fire, and I would like someone to sit with that before they measure anything else."},
+		## ⛔ WAS "Layer four, printed, laminated, drilled and bolted through the other three" — 74
+		## characters, 460 px at the heading font against a 392 px band, and headings do NOT autowrap,
+		## so 68 px drew past the panel over the map behind it. Trimmed rather than wrapped: a second
+		## heading line needs ~17 px and the panel has 14 px of slack, so wrapping means shrinking the
+		## body or growing a panel 70 props share. The escalation and the punchline both survive.
+		{"heading": "Layer four, laminated and bolted through the other three", "body": "THE HYDRANT HAS NEVER BEEN USED.\n\nThere has not been a fire on this street. There is no record of a fire on this street. I have requested the record. There is no record because there is no fire, and I would like someone to sit with that before they measure anything else."},
 		{"heading": "Layer five would go here", "body": "There is no layer five. The bolts through layer four are the good kind, and everybody seems to have accepted that as the end of it.\n\nThe silver estate car is parked nine feet away."},
 	]
 
