@@ -92,12 +92,35 @@ def build_grid(tiles: list[Image.Image], faces_right: bool) -> Image.Image:
     return grid
 
 
+def record_provenance(manifest: dict, mid: str, battle_entry: dict) -> None:
+    """Register the derived roamer and record WHICH battle idle it was cut from.
+
+    test_a_roamer_stands_like_its_battle_idle compares derived_from_idle with the battle sheet's
+    current idle: an idle moved without --refresh leaves the roamer showing the old pose (the
+    Cursed Armor roamed crouched, 16 roamers slid around as slash arcs)."""
+    idle = battle_entry.get("animations", {}).get("idle")
+    if not isinstance(idle, dict):
+        return
+    section = manifest.setdefault("overworld_monster_sheets", {})
+    entry = section.setdefault(mid, {
+        "path": "res://assets/sprites/monsters/overworld/%s.png" % mid,
+        "frame_width": CELL,
+        "frame_height": CELL,
+        "tier": "T1",
+        "source": "tools/derive_overworld_roamer_sheets.py: autocrop + BOX downscale of the battle idle",
+    })
+    entry["derived_from_idle"] = {"start": int(idle["start"]), "end": int(idle.get("end", idle["start"]))}
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--refresh", nargs="+", default=[], metavar="ID")
     args = ap.parse_args()
-    sheets = json.load(open(REPO / "data/sprite_manifest.json"))["monster_sheets"]
+    manifest_path = REPO / "data/sprite_manifest.json"
+    raw = manifest_path.read_text()
+    manifest = json.loads(raw)
+    sheets = manifest["monster_sheets"]
     made, skipped, kept = [], [], []
     for mid in roaming_ids():
         out = OUT / f"{mid}.png"
@@ -114,7 +137,11 @@ def main() -> int:
         faces_right = int(entry.get("frame_height", 256)) > 128
         if not args.dry_run:
             build_grid(tiles, faces_right).save(out)
+            record_provenance(manifest, mid, entry)
         made.append(mid)
+    if made and not args.dry_run:
+        indent = 2 if raw.startswith("{\n  ") else (1 if raw.startswith("{\n ") else "\t")
+        manifest_path.write_text(json.dumps(manifest, indent=indent, ensure_ascii=False) + ("\n" if raw.endswith("\n") else ""))
     print("derived %d · kept existing %d · no battle sheet %d" % (len(made), len(kept), len(skipped)))
     if skipped:
         print("still squares (no source):", ", ".join(skipped))

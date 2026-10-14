@@ -821,6 +821,193 @@
           "frames": 4
         }
       }
+    },
+    "corrupted_sprite": {
+      "path": "res://assets/sprites/monsters/overworld/corrupted_sprite.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "tier": "T1",
+      "source": "tools/derive_overworld_roamer_sheets.py: autocrop + BOX downscale of the battle idle",
+      "derived_from_idle": {
+        "start": 3,
+        "end": 4
+      }
+    },
+    "crystal_golem": {
+      "path": "res://assets/sprites/monsters/overworld/crystal_golem.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "tier": "T1",
+      "source": "tools/derive_overworld_roamer_sheets.py: autocrop + BOX downscale of the battle idle",
+      "derived_from_idle": {
+        "start": 3,
+        "end": 4
+      }
+    },
+    "cursed_armor": {
+      "path": "res://assets/sprites/monsters/overworld/cursed_armor.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "tier": "T1",
+      "source": "tools/derive_overworld_roamer_sheets.py: autocrop + BOX downscale of the battle idle",
+      "derived_from_idle": {
+        "start": 3,
+        "end": 4
+      }
+    },
+    "empty_set": {
+      "path": "res://assets/sprites/monsters/overworld/empty_set.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "tier": "T1",
+      "source": "tools/derive_overworld_roamer_sheets.py: autocrop + BOX downscale of the battle idle",
+      "derived_from_idle": {
+        "start": 3,
+        "end": 4
+      }
+    },
+    "forgotten_variable": {
+      "path": "res://assets/sprites/monsters/overworld/forgotten_variable.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "tier": "T1",
+      "source": "tools/derive_overworld_roamer_sheets.py: autocrop + BOX downscale of the battle idle",
+      "derived_from_idle": {
+        "start": 4,
+        "end": 4
+      }
+    },
+    "glitch_entity": {
+      "path": "res://assets/sprites/monsters/overworld/glitch_entity.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "tier": "T1",
+      "source": "tools/derive_overworld_roamer_sheets.py: autocrop + BOX downscale of the battle idle",
+      "derived_from_idle": {
+        "start": 4,
+        "end": 5
+      }
+    },
+    "masterite_arbiter_futuristic": {
+      "path": "res://assets/sprites/monsters/overworld/masterite_arbiter_futuristic.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "tier": "T1",
+      "source": "tools/derive_overworld_roamer_sheets.py: autocrop + BOX downscale of the battle idle",
+      "derived_from_idle": {
+        "start": 3,
+        "end": 4
+      }
+    },
+    "masterite_tempo_futuristic": {
+      "path": "res://assets/sprites/monsters/overworld/masterite_tempo_futuristic.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "tier": "T1",
+      "source": "tools/derive_overworld_roamer_sheets.py: autocrop + BOX downscale of the battle idle",
+      "derived_from_idle": {
+        "start": 3,
+        "end": 3
+      }
+    },
+    "masterite_warden_abstract": {
+      "path": "res://assets/sprites/monsters/overworld/masterite_warden_abstract.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "tier": "T1",
+      "source": "tools/derive_overworld_roamer_sheets.py: autocrop + BOX downscale of the battle idle",
+      "derived_from_idle": {
+        "start": 3,
+        "end": 4
+      }
+    },
+    "masterite_warden_futuristic": {
+      "path": "res://assets/sprites/monsters/overworld/masterite_warden_futuristic.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "tier": "T1",
+      "source": "tools/derive_overworld_roamer_sheets.py: autocrop + BOX downscale of the battle idle",
+      "derived_from_idle": {
+        "start": 3,
+        "end": 4
+      }
+    },
+    "memory_leak": {
+      "path": "res://assets/sprites/monsters/overworld/memory_leak.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "tier": "T1",
+      "source": "tools/derive_overworld_roamer_sheets.py: autocrop + BOX downscale of the battle idle",
+      "derived_from_idle": {
+        "start": 5,
+        "end": 5
+      }
+    },
+    "null_entity": {
+      "path": "res://assets/sprites/monsters/overworld/null_entity.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "tier": "T1",
+      "source": "tools/derive_overworld_roamer_sheets.py: autocrop + BOX downscale of the battle idle",
+      "derived_from_idle": {
+        "start": 5,
+        "end": 5
+      }
+    },
+    "optimization_itself": {
+      "path": "res://assets/sprites/monsters/overworld/optimization_itself.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "tier": "T1",
+      "source": "tools/derive_overworld_roamer_sheets.py: autocrop + BOX downscale of the battle idle",
+      "derived_from_idle": {
+        "start": 5,
+        "end": 5
+      }
+    },
+    "pipe_phantom": {
+      "path": "res://assets/sprites/monsters/overworld/pipe_phantom.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "tier": "T1",
+      "source": "tools/derive_overworld_roamer_sheets.py: autocrop + BOX downscale of the battle idle",
+      "derived_from_idle": {
+        "start": 5,
+        "end": 5
+      }
+    },
+    "rogue_process": {
+      "path": "res://assets/sprites/monsters/overworld/rogue_process.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "tier": "T1",
+      "source": "tools/derive_overworld_roamer_sheets.py: autocrop + BOX downscale of the battle idle",
+      "derived_from_idle": {
+        "start": 5,
+        "end": 5
+      }
+    },
+    "specter": {
+      "path": "res://assets/sprites/monsters/overworld/specter.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "tier": "T1",
+      "source": "tools/derive_overworld_roamer_sheets.py: autocrop + BOX downscale of the battle idle",
+      "derived_from_idle": {
+        "start": 4,
+        "end": 5
+      }
+    },
+    "the_absence": {
+      "path": "res://assets/sprites/monsters/overworld/the_absence.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "tier": "T1",
+      "source": "tools/derive_overworld_roamer_sheets.py: autocrop + BOX downscale of the battle idle",
+      "derived_from_idle": {
+        "start": 5,
+        "end": 5
+      }
     }
   },
   "monster_sheets": {
@@ -1553,7 +1740,7 @@
       "animations": {
         "idle": {
           "start": 4,
-          "end": 5
+          "end": 4
         },
         "attack": {
           "start": 2,
@@ -2678,7 +2865,7 @@
       "fps": 8,
       "animations": {
         "idle": {
-          "start": 4,
+          "start": 5,
           "end": 5
         },
         "attack": {
