@@ -2005,6 +2005,19 @@ func _reposition_battle_log_panel() -> void:
 	call_deferred("_reposition_battle_log_panel_now")
 
 
+## The chrome is DERIVED, never the 64 literal: LogTitle and LogExpandButton live in LogHeader and
+## are themed nodes, so their own Text Size fix would silently make any hand-measured constant wrong
+## and push the panel into the hide branch below. Zero the text min, pull the panel minimum, restore.
+func _log_panel_chrome(log_panel: Control) -> float:
+	if not battle_log or not is_instance_valid(battle_log):
+		return LOG_PANEL_NON_TEXT_OVERHEAD
+	var saved: float = battle_log.custom_minimum_size.y
+	battle_log.custom_minimum_size.y = 0.0
+	var chrome: float = log_panel.get_combined_minimum_size().y
+	battle_log.custom_minimum_size.y = saved
+	return maxf(0.0, chrome)
+
+
 func _reposition_battle_log_panel_now() -> void:
 	var log_panel := get_node_or_null("UI/BattleLogPanel")
 	var enemy_panel := get_node_or_null("UI/EnemyStatusPanel")
@@ -2021,14 +2034,19 @@ func _reposition_battle_log_panel_now() -> void:
 	var ctb_top_at_current_height: float = get_viewport_rect().size.y - 230.0
 	var hard_bottom_cap: float = ctb_top_at_current_height - LOG_PANEL_GAP
 	var available: float = hard_bottom_cap - top
-	if available < LOG_PANEL_NON_TEXT_OVERHEAD + LOG_PANEL_MIN_TEXT_HEIGHT:
+	var chrome: float = _log_panel_chrome(log_panel)
+	## DELIBERATELY the literal, not a scaled line: see the regression guard. Raising this floor to a
+	## whole scaled line makes the panel HIDE in a squeeze where it could still show a clipped row, and
+	## a clipped newest line beats no log at all.
+	var min_text: float = LOG_PANEL_MIN_TEXT_HEIGHT
+	if available < chrome + min_text:
 		# An extreme roster left no safe room at all — hide the condensed strip rather than
 		# overlap the CTB panel. Full history is still one L / expand-button press away.
 		log_panel.visible = false
 		return
 	var desired: float = minf(LOG_PANEL_HEIGHT, available)
 	if battle_log and is_instance_valid(battle_log):
-		battle_log.custom_minimum_size.y = maxf(LOG_PANEL_MIN_TEXT_HEIGHT, desired - LOG_PANEL_NON_TEXT_OVERHEAD)
+		battle_log.custom_minimum_size.y = maxf(min_text, desired - chrome)
 	# get_combined_minimum_size() is a PULL computation — it reflects the shrink above
 	# immediately, unlike .size, which only updates on the next SORT_CHILDREN layout pass (that
 	# lag, read through .size instead of this, is what let a taller-than-requested panel slip
