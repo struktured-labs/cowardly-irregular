@@ -16,6 +16,27 @@ signal cancelled
 const RC_DOMAIN_AUTOBATTLE := "autobattle"
 const RC_DOMAIN_AUTOGRIND  := "autogrind"
 
+## Every text node a player reads here. All themed, so without an override the whole overlay ignored Text Size.
+const TEXT_NODE_PATHS: Array = [
+	"Panel/VBox/Title",
+	"Panel/VBox/PromptField",
+	"Panel/VBox/StatusLabel",
+	"Panel/VBox/ButtonsHBox/ComposeButton",
+	"Panel/VBox/ButtonsHBox/RegenButton",
+	"Panel/VBox/ButtonsHBox/ConfirmButton",
+	"Panel/VBox/ButtonsHBox/CancelButton",
+	"Panel/VBox/ReplaceToggle",
+	"Panel/VBox/PreviewPanel/PreviewLabel",
+]
+
+## About two lines of preview. The rest of its height is the room the fixed rows leave it.
+const PREVIEW_FLOOR_PX := 72
+## The shipped frame, kept exactly at 100%. Above it the modal takes more of the screen, because the
+## rows it must show grow while the frame does not -- measured, the preview was squeezed 345 -> 235
+## while the composition it holds went 7 lines -> 11.
+const PANEL_MARGIN_SHIPPED := 0.15
+const PANEL_MARGIN_WIDEST := 0.02
+
 var _domain: String = ""
 var _character_id: String = ""
 var _current_rules: Array = []
@@ -30,6 +51,8 @@ var _regen_button: Button = null
 var _confirm_button: Button = null
 var _cancel_button: Button = null
 var _replace_toggle: CheckBox = null
+## path -> the font size that node drew at before any override, so 100% is provably the shipped look.
+var _base_px: Dictionary = {}
 
 
 func _ready() -> void:
@@ -60,6 +83,7 @@ func _ready() -> void:
 		if ipm.has_signal("bindings_changed"):
 			ipm.bindings_changed.connect(_refresh_captions)
 	_refresh_captions()
+	_apply_text_scale()
 	hide()
 
 
@@ -90,6 +114,43 @@ func _hint(action: String, device_name: String) -> String:
 
 static func _caption(word: String, hint: String) -> String:
 	return word if hint == "" else "%s (%s)" % [word, hint]
+
+
+## The Text Size multiplier itself, derived from the one helper every other menu scales through.
+func _text_scale() -> float:
+	return float(TextScale.scaled(100)) / 100.0
+
+
+## Each node's base is read from the theme BEFORE its first override, so 100% draws exactly what
+## shipped and a repeat call cannot compound. Re-derived per call: PreviewLabel is built on demand.
+func _apply_text_scale() -> void:
+	for path in TEXT_NODE_PATHS:
+		var n := get_node_or_null(path) as Control
+		if n == null:
+			continue
+		if not _base_px.has(path):
+			_base_px[path] = n.get_theme_font_size("font_size")
+		n.add_theme_font_size_override("font_size", TextScale.scaled(int(_base_px[path])))
+	_apply_preview_room()
+
+
+## The preview was pinned at 200px: at 200% text a composition that wraps to 11 lines needs ~495 and
+## drew the overflow across the button row. It takes the room the fixed rows leave instead, the frame
+## grows to leave it some, and clip_contents contains anything longer still.
+func _apply_preview_room() -> void:
+	var panel := get_node_or_null("Panel") as Control
+	if panel != null:
+		var m: float = lerpf(PANEL_MARGIN_SHIPPED, PANEL_MARGIN_WIDEST, clampf(_text_scale() - 1.0, 0.0, 1.0))
+		panel.anchor_left = m
+		panel.anchor_top = m
+		panel.anchor_right = 1.0 - m
+		panel.anchor_bottom = 1.0 - m
+	if _preview_panel == null:
+		return
+	# Clipping is what makes "never over the buttons" structural rather than arithmetic.
+	_preview_panel.clip_contents = true
+	_preview_panel.custom_minimum_size = Vector2(0, float(TextScale.scaled(PREVIEW_FLOOR_PX)))
+	_preview_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
 
 
 func _input(event: InputEvent) -> void:
@@ -123,6 +184,7 @@ func open(domain: String, character_id: String, current_rules: Array) -> void:
 	if _regen_button != null:
 		_regen_button.disabled = true
 	_refresh_captions()
+	_apply_text_scale()
 	show()
 	# Upfront honesty for the no-backend case (every web player): say WHY
 	# Compose will fail BEFORE they type an essay — the grid stays fully manual.
@@ -312,6 +374,7 @@ func _populate_preview(result: Dictionary) -> void:
 		label.set_anchors_preset(Control.PRESET_FULL_RECT)
 		label.autowrap_mode = TextServer.AUTOWRAP_WORD
 		_preview_panel.add_child(label)
+		_apply_text_scale()
 	var preview_rules = result.get("rules", [])
 	var rule_count: int = preview_rules.size() if preview_rules is Array else 0
 	var desc: String = str(result.get("description", ""))

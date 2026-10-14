@@ -24,23 +24,35 @@ extends GutTest
 const PRESETS := [0.8, 1.0, 1.25, 1.5, 2.0]
 const LONG := "A notice long enough to need more than one line at any text size the settings offer."
 
-## caller -> [script path, authored width]
-const CALLERS := {
-	"AnnexLiberation": ["res://src/exploration/AnnexLiberation.gd", 300.0],
-	"BulletinBoard": ["res://src/exploration/BulletinBoard.gd", 300.0],
-	"CivicBackDoor": ["res://src/exploration/CivicBackDoor.gd", 300.0],
-	"CivicFrontDesk": ["res://src/exploration/CivicFrontDesk.gd", 300.0],
-	"FireplaceSecret": ["res://src/exploration/FireplaceSecret.gd", 380.0],
-	"LockedDoorFlavor": ["res://src/exploration/LockedDoorFlavor.gd", 300.0],
-	"MissingPackage": ["res://src/exploration/MissingPackage.gd", 260.0],
-	"QuestChicken": ["res://src/exploration/QuestChicken.gd", 240.0],
-	"SwordInscription": ["res://src/exploration/SwordInscription.gd", 260.0],
-	"TallyWall": ["res://src/exploration/TallyWall.gd", 240.0],
-	"WildflowerPatch": ["res://src/exploration/WildflowerPatch.gd", 260.0],
-	## cowir-story's, converted to a caller 2026-10-14 (cowir-main's ruling). It is the one caller
-	## whose fade span differs from its rise span, so it also covers `show`'s `fade_dur`.
-	"QuestExaminePoint": ["res://src/exploration/QuestExaminePoint.gd", 300.0],
-}
+## ⛔ THE CALLER LIST IS DERIVED, NOT WRITTEN. It was twelve hand-typed literals, equal to the
+## twelve live call sites and with nothing keeping them equal — and this very item adds a
+## thirteenth, which is exactly the case a hand-list misses. Worse, my refactor REMOVED
+## `Label.new()` from every caller, so a node-based census now sees only `WorldToast.gd`: the
+## helper hid its own callers from the scan that found them.
+##
+## ⚠️ AND KEYING ON THE METHOD NAME WOULD MISS ONE TOO. `HiddenPassage`'s toast lives in
+## `_shimmer_away`, not `_toast` — that is why the original census of twelve missed it. So the
+## derivation keys on the HELPER (`WorldToast.show(`), which is the one name every caller must
+## spell, and the scene-driven sweep then asks each prop whether it HAS a `_toast` to drive.
+const CALL := "WorldToast.show("
+const DIRS := ["res://src/exploration/", "res://src/maps/villages/", "res://src/maps/interiors/", "res://src/maps/dungeons/"]
+
+
+static func _caller_paths() -> Array:
+	var out: Array = []
+	for d in DIRS:
+		var da := DirAccess.open(d)
+		if da == null:
+			continue
+		for fn in da.get_files():
+			if not str(fn).ends_with(".gd"):
+				continue
+			var path: String = d + str(fn)
+			if FileAccess.get_file_as_string(path).contains(CALL):
+				out.append(path)
+	out.sort()
+	return out
+
 
 var _vp: SubViewport = null
 var _saved_scale: float = 1.0
@@ -72,11 +84,15 @@ func _host() -> SubViewport:
 ## strings at runtime (FireplaceSecret, LockedDoorFlavor) — those are driven with LONG instead.
 func _worst_authored(path: String) -> String:
 	var src := FileAccess.get_file_as_string(path)
-	var rx := RegEx.create_from_string('_toast\\(\\s*"((?:[^"\\\\]|\\\\.)*)"')
+	## ⚠️ TWO CALL SHAPES, because a converted caller may pass its literal to the HELPER rather
+	## than to its own `_toast`. `HiddenPassage` does exactly that, and keying only on `_toast(`
+	## scored it as having no authored string — the control caught that rather than me.
 	var worst := ""
-	for m in rx.search_all(src):
-		if m.get_string(1).length() > worst.length():
-			worst = m.get_string(1)
+	for pattern in ['_toast\\(\\s*"((?:[^"\\\\]|\\\\.)*)"', 'WorldToast\\.show\\(\\s*\\w+,\\s*"((?:[^"\\\\]|\\\\.)*)"']:
+		var rx := RegEx.create_from_string(pattern)
+		for m in rx.search_all(src):
+			if m.get_string(1).length() > worst.length():
+				worst = m.get_string(1)
 	return worst
 
 
@@ -92,6 +108,13 @@ func _toast_label(path: String, text: String) -> Label:
 	if scr == null or not (scr is GDScript) or not scr.can_instantiate():
 		return null
 	var prop = scr.new()
+	## ⚠️ ASK BEFORE CALLING. Not every caller exposes `_toast(text)` — `HiddenPassage`'s toast
+	## is in `_shimmer_away()` and takes none — and an unguarded call is a GDScript error that
+	## ABORTS this function. The null it then returns is indistinguishable from "built no Label",
+	## so the sweep reported a clean skip while the log filled with errors.
+	if not scr.new().has_method("_toast"):
+		prop.free()
+		return null
 	_host().add_child(prop)
 	await get_tree().process_frame
 	var before: Dictionary = {}
@@ -116,6 +139,21 @@ func test_the_font_grows_and_shrinks_with_the_setting() -> void:
 	assert_gt(big, base, "the toast font must GROW at 200%% (got %d vs %d)" % [big, base])
 	assert_lt(small, base, "the toast font must SHRINK at 80%% (got %d vs %d)" % [small, base])
 	gut.p("  font 80%%/100%%/200%% = %d / %d / %d" % [small, base, big])
+	## ⛔ AND THE BASE MUST REACH THE RESULT, AT EVERY PRESET. Eleven callers author 11 and
+	## `HiddenPassage` authors 12, so a `font_size(base)` that ignored its argument would render it
+	## a point small with every other arm green — measured: the mutation that drops the parameter
+	## passed 5/5 before this existed. Three bases, ordered, is the whole check.
+	var flat: Array = []
+	for sc in PRESETS:
+		_scale(sc)
+		var a: int = WorldToast.font_size(11)
+		var b: int = WorldToast.font_size(12)
+		var c: int = WorldToast.font_size(14)
+		if not (c > b and b > a):
+			flat.append("@%.2fx base 11/12/14 gave %d/%d/%d — the base does not reach the result" % [sc, a, b, c])
+	_scale(1.0)
+	assert_eq(flat, [], "the authored base font must survive scaling: %s" % "; ".join(flat))
+	gut.p("  base 11/12/14 stay ordered at all %d presets" % PRESETS.size())
 
 
 ## ⛔ THE ARM THAT MATTERS: every caller's real toast, at every preset the player can pick, with
@@ -123,11 +161,12 @@ func test_the_font_grows_and_shrinks_with_the_setting() -> void:
 func test_every_toast_fits_its_box_at_every_preset() -> void:
 	var bad: Array = []
 	var bottoms: Dictionary = {}
+	var widths: Dictionary = {}
 	var checked := 0
 	var authored := 0
-	for name in CALLERS:
-		var path: String = str(CALLERS[name][0])
-		var width: float = float(CALLERS[name][1])
+	var no_toast: Array = []
+	for path in _caller_paths():
+		var name: String = path.get_file().get_basename()
 		var own := _worst_authored(path)
 		if own != "":
 			authored += 1
@@ -136,13 +175,22 @@ func test_every_toast_fits_its_box_at_every_preset() -> void:
 			for text in ([own, LONG] if own != "" else [LONG]):
 				var lbl: Label = await _toast_label(path, text)
 				if lbl == null:
-					bad.append("%s @%.2fx built no Label" % [name, s])
+					## No `_toast(text)` to drive — HiddenPassage's is `_shimmer_away()` and takes
+					## none. Recorded, not failed: the source arm below covers every call site
+					## regardless of the method name it sits in.
+					if not (name in no_toast):
+						no_toast.append(name)
 					continue
 				checked += 1
-				## The box must still be the authored width: a clamp up is the centring drift.
-				if lbl.size.x > width + 0.5:
-					bad.append("%s @%.2fx width clamped to %.0f past its authored %.0f — the box is centred, the text is not (drift %+.0f px)" % [
-						name, s, lbl.size.x, width, (lbl.size.x - width) * 0.5])
+				## ⛔ WIDTH IS CHECKED AS AN INVARIANT, NOT AGAINST A TABLE. The authored width used
+				## to come from a hand-written dict; the derivation has no such number, and it does
+				## not need one: a wrapping label stays at its box width at EVERY preset, while an
+				## unwrapped one takes its text's width and therefore GROWS with the font. So
+				## "constant across presets" catches the clamp without anyone writing the width down
+				## — and it is what the no-autowrap mutation reds.
+				if not widths.has(name):
+					widths[name] = {}
+				(widths[name] as Dictionary)[s] = lbl.size.x
 				## ⛔ THE BOTTOM EDGE, NOT "DOES THE TEXT FIT THE BOX". That comparison is HOLLOW here
 				## and the shrink-the-container mutation is what showed it: `Control.size` clamps UP
 				## to the content, so `lbl.size.y` becomes the text height whatever the caller
@@ -162,19 +210,35 @@ func test_every_toast_fits_its_box_at_every_preset() -> void:
 		var vals: Array = per.values()
 		var lo: float = vals.min()
 		var hi: float = vals.max()
-		if absf(hi - lo) > 0.5:
+		## ⚠️ 2 px, NOT 0 px, AND THE NUMBER IS MEASURED. `height_for` measures off the FONT
+		## (`get_multiline_string_size`) while the Label clamps `size.y` to its own
+		## `get_combined_minimum_size()`, and the two disagree by up to a pixel of rounding —
+		## `LockedDoorFlavor` reported -29..-28 across the presets on a correct tree. That is the
+		## metric-vs-content gap @cowir-story measured on title cards and @cowir-adhoc on lens rows,
+		## landing on a tolerance instead of a layout. **It keeps its teeth because the defect it
+		## guards moves the edge 14 px at the floor and 124 px at 2.0x** — two orders off this.
+		if absf(hi - lo) > 2.0:
 			bad.append("%s bottom edge MOVES across presets: %.0f..%.0f — a taller toast grew DOWN over the prop instead of up (%s)" % [
 				name, lo, hi, str(per)])
-	assert_eq(authored, 10,
-		"CONTROL: 10 of the 12 callers must carry authored toast literals (found %d); FireplaceSecret and LockedDoorFlavor build theirs at runtime" % authored)
+	for name in widths:
+		var wper: Dictionary = widths[name]
+		var wv: Array = wper.values()
+		if absf(float(wv.max()) - float(wv.min())) > 2.0:
+			bad.append("%s width GROWS with the font: %.0f..%.0f — the label took its text's width instead of its box, so the box is centred and the text is not (%s)" % [
+				name, float(wv.min()), float(wv.max()), str(wper)])
+	no_toast.sort()
+	for n in no_toast:
+		gut.p("  no _toast(text) to drive, covered by the source arm: %s" % n)
+	assert_eq(authored, 11,
+		"CONTROL: 11 of the 13 callers must carry authored toast literals (found %d); FireplaceSecret and LockedDoorFlavor build theirs at runtime" % authored)
 	assert_gt(checked, 90,
-		"CONTROL: only %d toasts were built across %d callers x %d presets; the sweep did not run" % [checked, CALLERS.size(), PRESETS.size()])
+		"CONTROL: only %d toasts were built across %d callers x %d presets; the sweep did not run" % [checked, _caller_paths().size(), PRESETS.size()])
 	bad.sort()
 	for b in bad:
 		gut.p("  OVERFLOW %s" % b)
 	assert_eq(bad, [],
 		"%d toast(s) do not fit the box their prop gave them: %s" % [bad.size(), "; ".join(bad)])
-	gut.p("  %d toasts built across %d callers x %d presets, every bottom edge held across all five" % [checked, CALLERS.size(), PRESETS.size()])
+	gut.p("  %d toasts built across %d callers x %d presets, every bottom edge held across all five" % [checked, _caller_paths().size(), PRESETS.size()])
 
 
 ## ⛔ CONTROL ON THE SHAPE: the authored BOTTOM edge is held, so a taller toast rises away from the
@@ -227,4 +291,84 @@ func test_show_places_the_label_where_the_seam_says() -> void:
 	assert_gt(WorldToast.height_for(LONG, 260.0, 18.0), 18.0,
 		"CONTROL: the long string must exceed the 18 px floor, else the arm only tests h == min_h")
 	gut.p("  %d (text x floor) pairs, show and the seam agree on every one" % pairs)
+
+
+## ⛔ THE SOURCE ARM: every `WorldToast.show(` CALL SITE, whatever method it sits in. The sweep
+## above drives each prop's `_toast(text)`, and `HiddenPassage` has none — its toast is in
+## `_shimmer_away()` and takes no argument — so without this arm the thirteenth caller is derived
+## into the list and then never exercised.
+##
+## ⚠️ WHAT IT ASSERTS IS NOT "the text fits", which wrapping makes true by construction. It is
+## that NO SINGLE TOKEN IS WIDER THAN THE BOX. Autowrap breaks between words and cannot break
+## inside one, so one long word takes the label's minimum width past its box and the centring drift
+## returns — @cowir-autogrind measured exactly that on a grid cell ("Hallucination", 13 chars) and
+## @cowir-controller checked the converse on 289 abilities ("no real token is unbreakable").
+## At 2.0x every token is twice as wide, which is why this sweeps the presets rather than the default.
+## One token's drawn width at a given size, off the theme font a Label would use. Measured from the
+## FONT rather than a node, per @cowir-autogrind: a node's content minimum lands on a deferred pass
+## whose timing depends on the order its properties were set, so reading a rect back is unreliable.
+func _token_width(word: String, fs: int) -> float:
+	var probe := Label.new()
+	var font: Font = probe.get_theme_font("font")
+	var w := 0.0
+	if font != null:
+		w = font.get_string_size(word, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+	probe.free()
+	return w
+
+
+func test_no_authored_token_is_wider_than_its_own_box() -> void:
+	var rx := RegEx.create_from_string('WorldToast\\.show\\(\\s*\\w+,\\s*"((?:[^"\\\\]|\\\\.)*)"\\s*,\\s*([0-9]+\\.?[0-9]*)')
+	var over: Array = []
+	var uncovered: Array = []
+	var pairs := 0
+	var symbolic := 0
+	for path in _caller_paths():
+		var src := FileAccess.get_file_as_string(path)
+		var name: String = path.get_file().get_basename()
+		var found := false
+		for m in rx.search_all(src):
+			found = true
+			var text: String = m.get_string(1)
+			var width: float = float(m.get_string(2))
+			for sc in PRESETS:
+				_scale(sc)
+				## ⛔ MEASURED AT THE DEFAULT BASE, DELIBERATELY. The first version read
+				## `font_size(12) if name == "HiddenPassage"` — a second copy of BOTH the caller's
+				## name and its authored base, which is the duplication this whole item exists to
+				## remove, reintroduced inside its own guard. A caller with a larger base is
+				## therefore under-measured by that ratio (12/11, ~9%), and that is acceptable here
+				## only because the margin is not marginal: its widest token is ~56 px against a
+				## 104 px box. If a future caller's token approaches its box this arm must parse the
+				## base from the call site instead of assuming it.
+				var fs: int = WorldToast.font_size()
+				for word in text.split(" ", false):
+					var w: float = _token_width(word, fs)
+					pairs += 1
+					if w > width + 0.5:
+						over.append("%s @%.2fx token '%s' is %.0f px against a %.0f px box — autowrap cannot break inside a word, so the label takes the token's width and the toast drifts %+.0f px" % [
+							name, sc, word, w, width, (w - width) * 0.5])
+		if not found:
+			symbolic += 1
+			## ⛔ THE COVERAGE RELATIONSHIP, which replaced a guessed magnitude. My first control
+			## here was `pairs > 200` and it RED: of thirteen call sites only ONE passes both a
+			## literal text and a literal width, because the other twelve take `text` as an
+			## argument. The number was invented; what matters is that no caller falls between the
+			## two arms — the sweep drives anything with `_toast(text)`, this one covers literal
+			## call sites, and a caller with NEITHER would be derived into the list and never run.
+			if not src.contains("func _toast("):
+				uncovered.append(name)
+	_scale(1.0)
+	uncovered.sort()
+	assert_eq(uncovered, [],
+		"%d caller(s) are covered by NEITHER arm — no `_toast(text)` for the sweep to drive and no literal call site for this arm: %s" % [
+			uncovered.size(), ", ".join(uncovered)])
+	assert_gt(pairs, 0,
+		"CONTROL: no (token x preset) pair measured at all; the regex matched no literal call site")
+	over.sort()
+	for o in over:
+		gut.p("  TOKEN %s" % o)
+	assert_eq(over, [],
+		"%d authored token(s) exceed their own toast box: %s" % [over.size(), "; ".join(over)])
+	gut.p("  %d (token x preset) pairs within their boxes; %d call site(s) pass text or width symbolically" % [pairs, symbolic])
 

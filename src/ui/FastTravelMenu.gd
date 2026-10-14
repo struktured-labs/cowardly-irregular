@@ -94,6 +94,64 @@ func _collect_rows() -> void:
 	_rows.sort_custom(func(a, b): return a["cost"] < b["cost"])
 
 
+## ⛔ DERIVED, UPWARD ONLY, and kept PARALLEL to TeleportMenu's helpers on purpose: these two
+## screens render the same destination list and `test_fast_travel_scrolls_to_its_selection` carries
+## a ratchet against them diverging. This screen scrolls, so rows may grow freely.
+func _tf() -> float:
+	return maxf(1.0, float(TextScale.scaled(100)) / 100.0)
+
+
+func _line_h(base: int) -> float:
+	var fnt: Font = get_theme_font("font", "Label")
+	return fnt.get_height(TextScale.scaled(base)) if fnt else float(base) + 4.0
+
+
+func _row_h() -> int:
+	return int(maxf(float(ROW_HEIGHT), _line_h(ROW_FONT_SIZE) + 6.0))
+
+
+## The right-hand cost column, measured from THE COSTS THIS MENU IS SHOWING. 100 is the authored
+## width and the floor. Same shape as TeleportMenu's id column, where a fixed width left the name
+## column with exactly ZERO margin at 2.0x -- touching, which a non-overlap check passes.
+## The first version measured a made-up "99999 G"; costs are bounded by BASE_COST + COST_PER_TIER
+## per tier step, so an invented string reserves space for a price the game cannot charge.
+func _cost_col_w() -> float:
+	var fnt: Font = get_theme_font("font", "Label")
+	if fnt == null:
+		return 100.0
+	var px: int = TextScale.scaled(ROW_FONT_SIZE)
+	var w: float = 0.0
+	for row in _rows:
+		w = maxf(w, fnt.get_string_size("%d G" % int((row as Dictionary).get("cost", 0)),
+			HORIZONTAL_ALIGNMENT_LEFT, -1, px).x)
+	return maxf(100.0, w + 8.0)
+
+
+## The gold readout's band. Gold is UNBOUNDED, so this is the one header value whose width is not
+## knowable from a constant -- it is measured from what the player actually holds, floored at the
+## authored 120. A fixed box here clips the number a purchase decision depends on.
+func _gold_col_w() -> float:
+	var fnt: Font = get_theme_font("font", "Label")
+	if fnt == null:
+		return 120.0
+	var w: float = fnt.get_string_size("%d G" % GameState.get_gold(),
+		HORIZONTAL_ALIGNMENT_LEFT, -1, TextScale.scaled(14)).x
+	return maxf(120.0, w + 8.0)
+
+
+## The name column's left edge, and the gold readout's band in the header.
+func _name_x() -> float:
+	return maxf(26.0, 26.0 * _tf())
+
+
+func _sub_y() -> float:
+	return 32.0 * _tf()
+
+
+func _list_top() -> float:
+	return maxf(60.0, _sub_y() + _line_h(11) + 6.0)
+
+
 func _build_ui() -> void:
 	var bg = ColorRect.new()
 	bg.color = BG_COLOR
@@ -117,16 +175,16 @@ func _build_ui() -> void:
 	var title = Label.new()
 	title.text = "CRYSTAL WARP"
 	title.position = Vector2(16, 8)
-	title.add_theme_font_size_override("font_size", 18)
+	title.add_theme_font_size_override("font_size", TextScale.scaled(18))
 	title.add_theme_color_override("font_color", Color(0.55, 0.80, 1.0))
 	panel.add_child(title)
 
 	var gold_label = Label.new()
 	gold_label.text = "%d G" % GameState.get_gold()
-	gold_label.position = Vector2(panel.size.x - 136, 10)
-	gold_label.size = Vector2(120, 20)
+	gold_label.position = Vector2(panel.size.x - _gold_col_w() - 16.0, 10)
+	gold_label.size = Vector2(_gold_col_w(), _line_h(14) + 6.0)
 	gold_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	gold_label.add_theme_font_size_override("font_size", 14)
+	gold_label.add_theme_font_size_override("font_size", TextScale.scaled(14))
 	gold_label.add_theme_color_override("font_color", GOLD_COLOR)
 	panel.add_child(gold_label)
 
@@ -135,8 +193,8 @@ func _build_ui() -> void:
 		InputProfileManager.hint_for_action("battle_defer"),
 		InputProfileManager.hint_for_action("battle_advance"),
 	]
-	sub.position = Vector2(16, 32)
-	sub.add_theme_font_size_override("font_size", 11)
+	sub.position = Vector2(16, _sub_y())
+	sub.add_theme_font_size_override("font_size", TextScale.scaled(11))
 	sub.add_theme_color_override("font_color", DISABLED_COLOR)
 	panel.add_child(sub)
 
@@ -145,21 +203,21 @@ func _build_ui() -> void:
 		empty.text = "No other attuned crystals yet.\nSave at crystals across the worlds to attune them."
 		empty.position = Vector2(16, 72)
 		empty.size = Vector2(panel.size.x - 32, 60)
-		empty.add_theme_font_size_override("font_size", 13)
+		empty.add_theme_font_size_override("font_size", TextScale.scaled(13))
 		empty.add_theme_color_override("font_color", DISABLED_COLOR)
 		panel.add_child(empty)
 		return
 
 	_scroll = ScrollContainer.new()
-	_scroll.position = Vector2(16, 60)
-	_scroll.size = Vector2(panel.size.x - 32, panel.size.y - 68)
+	_scroll.position = Vector2(16, _list_top())
+	_scroll.size = Vector2(panel.size.x - 32, panel.size.y - _list_top() - 8.0)
 	_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
 	panel.add_child(_scroll)
 	_viewport_height = _scroll.size.y
 
 	_content = Control.new()
-	_content.custom_minimum_size = Vector2(_scroll.size.x, _rows.size() * ROW_HEIGHT)
+	_content.custom_minimum_size = Vector2(_scroll.size.x, _rows.size() * _row_h())
 	_scroll.add_child(_content)
 
 	_row_y.clear()
@@ -168,7 +226,7 @@ func _build_ui() -> void:
 		var row = _rows[i]
 		var item = Control.new()
 		item.position = Vector2(0, y)
-		item.size = Vector2(_scroll.size.x, ROW_HEIGHT - 2)
+		item.size = Vector2(_scroll.size.x, _row_h() - 2)
 		item.mouse_filter = Control.MOUSE_FILTER_STOP
 
 		var hl = ColorRect.new()
@@ -179,36 +237,37 @@ func _build_ui() -> void:
 		var cursor = Label.new()
 		cursor.text = "  "
 		cursor.position = Vector2(4, 3)
-		cursor.add_theme_font_size_override("font_size", ROW_FONT_SIZE)
+		cursor.add_theme_font_size_override("font_size", TextScale.scaled(ROW_FONT_SIZE))
 		cursor.add_theme_color_override("font_color", Color.YELLOW)
 		item.add_child(cursor)
 
 		var name_label = Label.new()
 		name_label.text = row["label"]
-		name_label.position = Vector2(26, 3)
-		name_label.add_theme_font_size_override("font_size", ROW_FONT_SIZE)
+		name_label.position = Vector2(_name_x(), 3)
+		name_label.add_theme_font_size_override("font_size", TextScale.scaled(ROW_FONT_SIZE))
 		name_label.add_theme_color_override("font_color",
 			TEXT_COLOR if row["affordable"] else DISABLED_COLOR)
 		item.add_child(name_label)
 
 		var cost_label = Label.new()
 		cost_label.text = "%d G" % row["cost"]
-		cost_label.position = Vector2(item.size.x - 110, 3)
-		cost_label.size = Vector2(100, ROW_HEIGHT - 6)
+		cost_label.position = Vector2(item.size.x - _cost_col_w() - 10.0, 3)
+		cost_label.size = Vector2(_cost_col_w(), _row_h() - 6)
 		cost_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-		cost_label.add_theme_font_size_override("font_size", ROW_FONT_SIZE)
+		cost_label.add_theme_font_size_override("font_size", TextScale.scaled(ROW_FONT_SIZE))
 		cost_label.add_theme_color_override("font_color",
 			GOLD_COLOR if row["affordable"] else DISABLED_COLOR)
 		item.add_child(cost_label)
 
-		MenuMouseHelper.make_clickable(item, i, int(item.size.x), ROW_HEIGHT - 2,
+		## One height for the click target and the drawn row.
+		MenuMouseHelper.make_clickable(item, i, int(item.size.x), _row_h() - 2,
 			_on_row_click.bind(i), _on_row_hover.bind(i))
 
 		_content.add_child(item)
 		_highlight_refs.append(hl)
 		_cursor_refs.append(cursor)
 		_row_y.append(y)
-		y += ROW_HEIGHT
+		y += _row_h()
 
 	_update_selection()
 
@@ -260,11 +319,11 @@ func _scroll_selection_into_view() -> void:
 		return
 	var row_y: float = _row_y[_selected]
 	var view_top: float = _scroll.scroll_vertical
-	var view_bot: float = view_top + _viewport_height - ROW_HEIGHT
+	var view_bot: float = view_top + _viewport_height - _row_h()
 	if row_y < view_top:
 		_scroll.scroll_vertical = int(row_y)
 	elif row_y > view_bot:
-		_scroll.scroll_vertical = int(row_y - _viewport_height + ROW_HEIGHT)
+		_scroll.scroll_vertical = int(row_y - _viewport_height + _row_h())
 
 
 func _pick() -> void:

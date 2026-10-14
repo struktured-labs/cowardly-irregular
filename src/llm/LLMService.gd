@@ -255,6 +255,24 @@ func _select_backend() -> void:
 # ── Public API ────────────────────────────────────────────────────────────────
 
 ## Returns true when the LLM is enabled AND at least one non-Null backend is ready.
+## ⛔ MODEL TEXT REACHES A BBCODE PARSER. `CutsceneDialogue._text_label` (`:735`) and
+## `BattleDialogue._text_label` (`:292`) are RichTextLabels with `bbcode_enabled = true`, and the
+## authored string is assigned RAW. A generated line containing `[s]`, `[b]` or `[color=red]` has
+## those characters SILENTLY EATEN — measured on the shipped configuration: `[s]struck[/s]` renders
+## as 6 of 13 characters.
+##
+## ⚠️ Nothing in the game emits a bbcode tag on purpose (zero authored strings in all of `data/`
+## contain one) and the prompt says nothing about markup, so a model is neither constrained nor
+## expected to avoid them. The game's own voice uses `[QUERY: ...]`/`[MEMORY_OVERFLOW]`, which makes
+## a model reaching for brackets likely rather than remote.
+##
+## 🔑 `[lb]` is BBCode's own escape for a literal `[`, so the player sees the bracket the model
+## wrote. Applied to GENERATED lines only — authored prose is untouched, per cowir-main's ruling,
+## which is why this lives in the LLM layer and not at the shared sink.
+static func escape_markup(text: String) -> String:
+	return text.replace("[", "[lb]")
+
+
 func is_available() -> bool:
 	if not llm_enabled:
 		return false

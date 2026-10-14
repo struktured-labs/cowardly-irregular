@@ -186,7 +186,7 @@ func test_every_elevator_site_is_in_the_ledger() -> void:
 		if n != want:
 			miscounted.append("%s builds %d elevator(s), the ledger records %d" % [path, n, want])
 	assert_eq(miscounted, [],
-		"a village's elevator COUNT moved — each elevator passes its own cue, so a second one needs its own ledger row: %s" % miscounted)
+		"a village's elevator COUNT moved — each elevator passes its own cue, so a second one needs its own ledger row: %s" % [miscounted])
 
 
 func test_every_elevator_cue_resolves() -> void:
@@ -211,7 +211,7 @@ func test_every_elevator_cue_resolves() -> void:
 	assert_not_null(e, "VOID: could not read the sfx_key default from VillageElevator")
 	if e != null and not _resolves(e.get_string(1), man, sm_code):
 		unresolvable.append("the @export default %s resolves nowhere" % e.get_string(1))
-	assert_eq(unresolvable, [], "unresolvable elevator cues (play_ui would return in silence): %s" % unresolvable)
+	assert_eq(unresolvable, [], "unresolvable elevator cues (play_ui would return in silence): %s" % [unresolvable])
 
 
 func test_an_elevator_cue_does_not_outlast_its_own_ride() -> void:
@@ -247,4 +247,4 @@ func test_an_elevator_cue_does_not_outlast_its_own_ride() -> void:
 		assert_gte(shared, int(ex["min_cutscenes"]),
 			"%s is %.3fs for a %.2fs ride and is excused as \"%s\" — but it is now shared with %d cutscenes, not %d, so the premise of its exemption is gone and that elevator needs a ride-length cue" % [cue, dur, ride, ex["why"], shared, int(ex["min_cutscenes"])])
 	assert_eq(over, [],
-		"these elevator cues outlast their own ride with no declared reason, so their arrival accent fires after the player has arrived: %s" % over)
+		"these elevator cues outlast their own ride with no declared reason, so their arrival accent fires after the player has arrived: %s" % [over])

@@ -126,8 +126,8 @@ func _build_ui() -> void:
 
 	# Panel — centered, slightly less than full screen for breathing room
 	var panel = Control.new()
-	panel.position = Vector2(size.x * 0.18, size.y * 0.06)
-	panel.size = Vector2(size.x * 0.64, size.y * 0.88)
+	panel.position = Vector2((size.x - size.x * _panel_w_frac()) * 0.5, size.y * 0.06)
+	panel.size = Vector2(size.x * _panel_w_frac(), size.y * 0.88)
 	panel.mouse_filter = Control.MOUSE_FILTER_STOP
 	add_child(panel)
 
@@ -141,7 +141,7 @@ func _build_ui() -> void:
 	var title = Label.new()
 	title.text = "DEBUG TELEPORT"
 	title.position = Vector2(16, 8)
-	title.add_theme_font_size_override("font_size", 18)
+	title.add_theme_font_size_override("font_size", TextScale.scaled(18))
 	title.add_theme_color_override("font_color", Color.YELLOW)
 	panel.add_child(title)
 
@@ -153,15 +153,15 @@ func _build_ui() -> void:
 		InputProfileManager.hint_for_action("ui_accept"),
 		InputProfileManager.hint_for_action("ui_cancel"),
 	]
-	sub.position = Vector2(16, 32)
-	sub.add_theme_font_size_override("font_size", 11)
+	sub.position = Vector2(16, _sub_y())
+	sub.add_theme_font_size_override("font_size", TextScale.scaled(11))
 	sub.add_theme_color_override("font_color", DISABLED_COLOR)
 	panel.add_child(sub)
 
 	# Scroll container (so list works at any vertical resolution)
 	_scroll = ScrollContainer.new()
-	_scroll.position = Vector2(8, 56)
-	_scroll.size = Vector2(panel.size.x - 16, panel.size.y - 80)
+	_scroll.position = Vector2(8, _list_top())
+	_scroll.size = Vector2(panel.size.x - 16, panel.size.y - _list_top() - 24.0)
 	_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
 	panel.add_child(_scroll)
@@ -182,14 +182,14 @@ func _build_ui() -> void:
 			var header = Label.new()
 			header.text = "── %s ──" % section
 			header.position = Vector2(8, y)
-			header.add_theme_font_size_override("font_size", SECTION_FONT_SIZE)
+			header.add_theme_font_size_override("font_size", TextScale.scaled(SECTION_FONT_SIZE))
 			header.add_theme_color_override("font_color", SECTION_COLOR)
 			_content.add_child(header)
-			y += SECTION_HEADER_HEIGHT
+			y += _section_h()
 			current_section = section
 		_row_global_y.append(y)
 		_add_row(i, y)
-		y += ROW_HEIGHT
+		y += _row_h()
 
 	_content.custom_minimum_size = Vector2(panel.size.x - 32, y + 8)
 	_content_height = y + 8
@@ -198,11 +198,78 @@ func _build_ui() -> void:
 	_update_selection()
 
 
+## ⛔ GEOMETRY DERIVED, UPWARD ONLY -- a text size may not shrink a shipped box, so the factor is
+## floored at 1.0 while the FONTS still scale below it. This screen has a ScrollContainer, so a
+## taller list is absorbed rather than made unreachable; that is why rows here may grow freely
+## where ControlsMenu's had to be capped by the space.
+func _tf() -> float:
+	return maxf(1.0, float(TextScale.scaled(100)) / 100.0)
+
+
+func _line_h(base: int) -> float:
+	var fnt: Font = get_theme_font("font", "Label")
+	return fnt.get_height(TextScale.scaled(base)) if fnt else float(base) + 4.0
+
+
+func _row_h() -> int:
+	return int(maxf(float(ROW_HEIGHT), _line_h(ROW_FONT_SIZE) + 6.0))
+
+
+func _section_h() -> int:
+	return int(maxf(float(SECTION_HEADER_HEIGHT), _line_h(SECTION_FONT_SIZE) + 6.0))
+
+
+## ⛔ THE PANEL WIDENS SO BOTH COLUMNS KEEP ROOM. Measured at 2.0x without this: the longest
+## destination name ends at 481 and the id column starts at 481 -- EXACTLY TOUCHING, zero margin.
+## A non-overlap arm passes on that and the next slightly longer name overlaps silently, so the
+## margin is the thing to guarantee rather than the absence of a collision. 0.64 is the authored
+## fraction and the floor.
+func _panel_w_frac() -> float:
+	if size.x <= 0.0:
+		return 0.64
+	var fnt: Font = get_theme_font("font", "Label")
+	var name_w: float = 0.0
+	if fnt:
+		for dest in DESTINATIONS:
+			name_w = maxf(name_w, fnt.get_string_size(str((dest as Dictionary).get("label", "")),
+				HORIZONTAL_ALIGNMENT_LEFT, -1, TextScale.scaled(ROW_FONT_SIZE)).x)
+	var needed: float = float(ITEM_PADDING_X) * _tf() + name_w + NAME_ID_GAP * _tf() \
+		+ _id_col_w() + 28.0
+	return clampf(needed / size.x, 0.64, 0.96)
+
+
+## The air a destination name keeps between itself and the map-id column.
+const NAME_ID_GAP: float = 16.0
+
+
+## The right-hand map-id column, measured from the ids it actually holds. 216 is the authored width
+## and the floor, so 100% is untouched -- and the derivation DOES bind above it: measured
+## 216 at 1.0x, 217 at 1.5x, 286 at 2.0x for 'node_prime_daemon_lounge'.
+func _id_col_w() -> float:
+	var fnt: Font = get_theme_font("font", "Label")
+	var w: float = 0.0
+	if fnt:
+		var px: int = TextScale.scaled(10)
+		for dest in DESTINATIONS:
+			w = maxf(w, fnt.get_string_size(str((dest as Dictionary).get("id", "")),
+				HORIZONTAL_ALIGNMENT_LEFT, -1, px).x)
+	return maxf(216.0, w + 8.0)
+
+
+## The list's top edge, below the title and subtitle, which both scale.
+func _sub_y() -> float:
+	return 32.0 * _tf()
+
+
+func _list_top() -> float:
+	return maxf(56.0, _sub_y() + _line_h(11) + 6.0)
+
+
 func _add_row(idx: int, y: float) -> void:
 	var dest = DESTINATIONS[idx]
 	var item = Control.new()
 	item.position = Vector2(8, y)
-	item.size = Vector2(_content.custom_minimum_size.x - 16, ROW_HEIGHT - 2)
+	item.size = Vector2(_content.custom_minimum_size.x - 16, _row_h() - 2)
 	item.mouse_filter = Control.MOUSE_FILTER_STOP
 
 	var hl = ColorRect.new()
@@ -213,29 +280,31 @@ func _add_row(idx: int, y: float) -> void:
 	var cursor = Label.new()
 	cursor.text = "  "
 	cursor.position = Vector2(4, 2)
-	cursor.add_theme_font_size_override("font_size", ROW_FONT_SIZE)
+	cursor.add_theme_font_size_override("font_size", TextScale.scaled(ROW_FONT_SIZE))
 	cursor.add_theme_color_override("font_color", Color.YELLOW)
 	item.add_child(cursor)
 
 	var label = Label.new()
 	label.text = dest["label"]
-	label.position = Vector2(ITEM_PADDING_X, 2)
-	label.add_theme_font_size_override("font_size", ROW_FONT_SIZE)
+	label.position = Vector2(float(ITEM_PADDING_X) * _tf(), 2)
+	label.add_theme_font_size_override("font_size", TextScale.scaled(ROW_FONT_SIZE))
 	label.add_theme_color_override("font_color", TEXT_COLOR)
 	item.add_child(label)
 
 	# Show map_id in light gray, right-aligned, useful as debug reference
 	var id_label = Label.new()
 	id_label.text = dest["id"]
-	id_label.position = Vector2(item.size.x - 220, 2)
-	id_label.size = Vector2(216, ROW_HEIGHT - 4)
+	id_label.position = Vector2(item.size.x - _id_col_w() - 4.0, 2)
+	id_label.size = Vector2(_id_col_w(), _row_h() - 4)
 	id_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	id_label.add_theme_font_size_override("font_size", 10)
+	id_label.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	id_label.add_theme_color_override("font_color", SUBTITLE_COLOR)
 	item.add_child(id_label)
 
 	# Per-row mouse: hover + click both work
-	MenuMouseHelper.make_clickable(item, idx, int(item.size.x), ROW_HEIGHT - 2,
+	## The click target reads the same height as the drawn row -- two spellings land a click on a
+	## different row than the one under the pointer once the rows grow.
+	MenuMouseHelper.make_clickable(item, idx, int(item.size.x), _row_h() - 2,
 		_on_row_click.bind(idx), _on_row_hover.bind(idx))
 
 	_content.add_child(item)
@@ -291,11 +360,11 @@ func _update_selection() -> void:
 	if _scroll and _selected < _row_global_y.size():
 		var row_y: float = _row_global_y[_selected]
 		var view_top = _scroll.scroll_vertical
-		var view_bot = view_top + _viewport_height - ROW_HEIGHT
+		var view_bot = view_top + _viewport_height - _row_h()
 		if row_y < view_top:
 			_scroll.scroll_vertical = int(row_y - 8)
 		elif row_y > view_bot:
-			_scroll.scroll_vertical = int(row_y - _viewport_height + ROW_HEIGHT + 8)
+			_scroll.scroll_vertical = int(row_y - _viewport_height + _row_h() + 8)
 
 
 func _pick() -> void:

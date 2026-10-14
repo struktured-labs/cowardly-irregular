@@ -76,7 +76,7 @@ func test_only_voice_lines_carry_a_gain() -> void:
 		if (sfx[key] as Dictionary).has("gain_db") and not str(key).begins_with("voice_"):
 			strays.append(str(key))
 	assert_eq(strays, [],
-		"these non-voice cues carry a gain_db that nothing reads — only play_voice applies it: %s" % strays)
+		"these non-voice cues carry a gain_db that nothing reads — only play_voice applies it: %s" % [strays])
 
 
 ## ⛔ `voice_blip_*` SHARES THE PREFIX AND IS A DIFFERENT ASSET CLASS. The arm above excludes
@@ -103,7 +103,7 @@ func test_the_stereo_blips_are_not_in_the_levelled_set() -> void:
 	assert_gt(blips, 0,
 		"VOID: no voice_blip_* entries found, so this arm is not guarding the boundary it describes")
 	assert_eq(gained_blips, [],
-		"these text-advance blips carry a gain_db: they are STEREO and a different asset class, so the mono premise the 613 line gains were measured under does not hold for them. If blips are to be levelled, meter them channel-averaged and say so: %s" % gained_blips)
+		"these text-advance blips carry a gain_db: they are STEREO and a different asset class, so the mono premise the 613 line gains were measured under does not hold for them. If blips are to be levelled, meter them channel-averaged and say so: %s" % [gained_blips])
 
 
 func test_the_tool_and_the_engine_agree_on_the_channel_base() -> void:
@@ -146,4 +146,4 @@ func test_the_fighter_pack_is_the_reference_and_barely_moves() -> void:
 			big.append("%s %+.1f" % [key, g])
 	assert_gt(n, 40, "VOID: only %d fighter clips found; the pack was 50" % n)
 	assert_eq(big, [],
-		"the ElevenLabs pack needs gains over 2 dB, so it is no longer the 0.4 LU reference the target was taken from: %s" % big)
+		"the ElevenLabs pack needs gains over 2 dB, so it is no longer the 0.4 LU reference the target was taken from: %s" % [big])

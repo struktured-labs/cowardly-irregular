@@ -124,21 +124,9 @@ func _shimmer_away() -> void:
 	var tween = create_tween()
 	tween.tween_property(_sprite, "modulate", Color(1.8, 1.8, 2.2, 1.0), 0.15)
 	tween.tween_property(_sprite, "modulate", Color(1.0, 1.0, 1.0, 0.15), 0.6)
-	# Discovery toast floats up from the wall
-	var toast = Label.new()
-	toast.text = "Secret passage!"
-	toast.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	toast.position = Vector2(-52, -40)
-	toast.size = Vector2(104, 18)
-	toast.add_theme_font_size_override("font_size", 12)
-	toast.add_theme_color_override("font_color", Color(0.6, 0.9, 1.0))
-	toast.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(toast)
-	var t2 = create_tween()
-	t2.set_parallel(true)
-	t2.tween_property(toast, "position:y", toast.position.y - 22, 1.4)
-	t2.tween_property(toast, "modulate:a", 0.0, 1.4).set_delay(0.4)
-	t2.chain().tween_callback(func():
-		if is_instance_valid(toast):
-			toast.queue_free()
-	)
+	## A WorldToast caller since 2026-10-14. It was the thirteenth hand-rolled copy and the census
+	## that collapsed the other twelve MISSED IT, because that census keyed on the function name
+	## `_toast` and this one is `_shimmer_away` with a local called `toast`. Its authored base font
+	## is 12, not the 11 the other eleven share, which is why `show` takes the base as a parameter.
+	WorldToast.show(self, "Secret passage!", 104.0, -40.0, Color(0.6, 0.9, 1.0),
+		18.0, 22.0, 1.4, 0.4, false, "WorldToast", -1.0, 12)

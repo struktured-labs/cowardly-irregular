@@ -648,9 +648,14 @@ func _show_npc_line(line: String) -> void:
 	if _npc_dialogue == null or not is_instance_valid(_npc_dialogue):
 		return
 
+	## ⛔ ESCAPED HERE, THE ONE CHOKEPOINT FOR THIS PATH: `_show_npc_line` is the only caller of
+	## `say()` on the generated side, reached from four sites (:303 opening, :348, :399 sign-off,
+	## :430 reply). `NPCDialogue` renders through `CutsceneDialogue`, whose label has bbcode ON, and
+	## it ALSO serves authored NPC prose (`WanderingNPC:493`) — so the escape cannot live at the
+	## sink without changing authored text, which cowir-main's ruling forbids.
 	await _npc_dialogue.say(
 		_npc_name,
-		line,
+		LLMService.escape_markup(line),
 		"villager",  # theme — caller may override by subclassing
 		"villager",  # portrait
 	)

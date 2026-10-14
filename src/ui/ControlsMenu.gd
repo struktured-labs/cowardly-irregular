@@ -37,6 +37,10 @@ const ROW_HELP := 2
 const ROW_ACTION_FIRST := 3
 const ROW_HEIGHT = 32
 ## The column header's own band, between the option rows and the action rows.
+## The air between the action rows and Reset/Test/Map. Named because the row-height cap has to
+## subtract it: it was a bare 8 in the loop and absent from the cap, so the cap over-budgeted by
+## exactly 8px and the last row crossed the footer at 2.0x.
+const ACTION_BLOCK_GAP := 8.0
 const HEADER_BAND = 18
 const ROW_START_Y = 48
 
@@ -96,6 +100,163 @@ func refresh_footer() -> void:
 
 ## A column label must end inside its column: "R / RB / R1 (Right Shoulder)" ran into the Keyboard column. Sized after add_child
 ## (a detached Label measures at the default font), the font steps down to 10px to fit, and an ellipsis is the last resort.
+## ⛔ GEOMETRY GROWS WITH THE TEXT OR THE TEXT DOES NOT GROW AT ALL. `_fit_column_label` steps a
+## binding label's font DOWN to a floor of 10 until it fits its column, then clips with an ellipsis
+## -- so scaling those fonts without widening the columns is a SILENT NO-OP: the override rises and
+## the helper takes it straight back off. Two writers, one surface, and the later one wins.
+##
+## Only ever UPWARD (a text size may not shrink a shipped box), which is why the factor is floored
+## at 1.0 while the FONTS still scale below it: smaller text in unchanged boxes is correct.
+## ⛔ THE TOP BAND IS DERIVED FROM THE TWO LABELS IN IT, not scaled from ROW_START_Y. Scaling the
+## literal reserved 96px at 2.0x for a title and subtitle that end around 67, and those ~29 wasted
+## pixels were the whole reason the last row still covered the footer after the rows themselves
+## had been made to fit. Same shape as the footer band below: the space a band needs is the height
+## of the text in it.
+##
+## maxf against the authored 30 and 48 keeps 100% rendering the shipped layout exactly -- and the
+## subtitle's y HAD to become derived regardless: it was a bare 30 while the title above it scales,
+## so at 2.0x a 36px title drew straight through it.
+func _title_h() -> float:
+	var fnt: Font = get_theme_font("font", "Label")
+	return fnt.get_height(TextScale.scaled(18)) if fnt else 24.0
+
+
+func _device_h() -> float:
+	var fnt: Font = get_theme_font("font", "Label")
+	return fnt.get_height(TextScale.scaled(10)) if fnt else 12.0
+
+
+## ⛔ THE AUTHORED OFFSET SCALED, not the measured height stacked. Stacking `8 + get_height()` put
+## the subtitle at 35 where the shipped layout has 30 -- a 3px shift at the DEFAULT setting, which
+## is the regression my own F1 arm caught this morning in the other direction. The authored 30 sits
+## INSIDE the title's line box on purpose (leading is not ink), so a height-derived stack can only
+## over-reserve. Scaling keeps 100% exact and still clears the title at every larger step, which
+## the guard asserts rather than this comment.
+func _device_y() -> float:
+	return 30.0 * _tf()
+
+
+func _rows_top() -> float:
+	return maxf(float(ROW_START_Y), _device_y() + _device_h() + 2.0)
+
+
+## Every fixed overhead between the rows' top and the first bottom label, subtracted ONCE so the
+## row-height cap and the layout cannot disagree about what space exists.
+func _rows_avail() -> float:
+	if not (_panel and is_instance_valid(_panel)):
+		return 0.0
+	return _flash_y(_panel.size.y) - _rows_top() - float(HEADER_BAND) * _tf() - ACTION_BLOCK_GAP
+
+
+func _tf() -> float:
+	return maxf(1.0, float(TextScale.scaled(100)) / 100.0)
+
+
+## The three binding columns, scaled. 160/110/120 are the authored widths.
+func _col_w() -> Array:
+	var f: float = _tf()
+	return [160.0 * f, 110.0 * f, 120.0 * f]
+
+
+## ⛔ PACKED, not scaled, and the authored layout is the f==1 case OF THIS ARITHMETIC rather than a
+## separate branch: 12 + name, then 320 + 160 + 10 == 490 and 490 + 110 + 10 == 610, which are the
+## literals this replaces. So 100% is reproduced by the same expression that widens 200%, and there
+## is no second spelling to disagree with.
+func _col_x() -> Array:
+	var f: float = _tf()
+	var w: Array = _col_w()
+	var name_w: float = 0.0
+	var fnt: Font = get_theme_font("font", "Label")
+	if fnt:
+		for action in InputProfileManager.REMAPPABLE_ACTIONS:
+			name_w = maxf(name_w, fnt.get_string_size(str(InputProfileManager.ACTION_LABELS.get(action, action)),
+				HORIZONTAL_ALIGNMENT_LEFT, -1, _row_font()).x)
+	var x1: float = maxf(320.0, 12.0 + name_w + 20.0 * f)
+	var x2: float = x1 + float(w[0]) + 10.0 * f
+	var x3: float = x2 + float(w[1]) + 10.0 * f
+	return [12.0, x1, x2, x3]
+
+
+## The panel must contain the packed columns; 0.6 is the authored fraction and the floor.
+func _panel_w_frac() -> float:
+	var x: Array = _col_x()
+	var w: Array = _col_w()
+	var needed: float = float(x[3]) + float(w[2]) + 16.0
+	if size.x <= 0.0:
+		return 0.6
+	return clampf(needed / size.x, 0.6, 0.96)
+
+
+## ⛔ THE ROW FONT IS CAPPED BY THE SPACE, and at 2.0x it really does bind. Measured: 14 rows do
+## not scroll (no ScrollContainer, no clip_contents anywhere in this file), the row font at 2.0x is
+## 28 whose line height ~37 already exceeds the authored 32 row, and 14 of those plus the title
+## band, the column-header band and a derived footer band need ~782px of a 720px viewport. So this
+## screen cannot reach a true 2.0x for its rows, and the honest behaviour is to grow the text as far
+## as it fits and no further -- which is EXACTLY what `_fit_column_label` already does horizontally
+## for a binding label. Same algorithm, vertical axis, so the screen has one policy rather than two.
+## A row the player cannot reach would be worse than text that stops short of the setting.
+func _row_font() -> int:
+	var want: int = TextScale.scaled(14)
+	var fnt: Font = get_theme_font("font", "Label")
+	if fnt == null:
+		return want
+	var rows: int = ROW_ACTION_FIRST + InputProfileManager.REMAPPABLE_ACTIONS.size() + 3
+	var avail: float = 0.0
+	if _panel and is_instance_valid(_panel):
+		avail = _rows_avail()
+	if avail <= 0.0 or rows <= 0:
+		return want
+	var cap: float = avail / float(rows)
+	var fs: int = want
+	while fs > 10 and fnt.get_height(fs) + 8.0 > cap:
+		fs -= 1
+	return fs
+
+
+func _row_h() -> int:
+	## +3, not +1: Reset to Default, Test Buttons and Map This Pad all follow the action rows.
+	var fnt: Font = get_theme_font("font", "Label")
+	var line: float = fnt.get_height(_row_font()) if fnt else float(ROW_HEIGHT)
+	var rows: int = ROW_ACTION_FIRST + InputProfileManager.REMAPPABLE_ACTIONS.size() + 3
+	var avail: float = _rows_avail()
+	var cap: float = (avail / float(rows)) if rows > 0 and avail > 0.0 else float(ROW_HEIGHT)
+	## The authored 32 is preferred, but REACHABILITY outranks it: this screen does not scroll, so a
+	## band that keeps its height at the cost of pushing row 14 under the footer hides a row. The
+	## floor is the text's own line box, never less.
+	return int(clampf(maxf(float(ROW_HEIGHT), line + 8.0), line + 2.0, maxf(line + 2.0, cap)))
+
+
+## ⛔ DERIVED FROM THE FOOTER, not scaled from 44. Scaling the literal reserved 88px at 2.0x for a
+## two-line footer that draws ~60, and those 28 wasted pixels were enough to push the last row over
+## the footer while the rows were ALREADY pinned at their 32 floor. The band a surface needs is the
+## height of the text in it.
+func _footer_line_h() -> float:
+	var fnt: Font = get_theme_font("font", "Label")
+	return fnt.get_height(TextScale.scaled(10)) if fnt else 12.0
+
+
+func _bottom_gap() -> float:
+	return maxf(44.0, _footer_line_h() * 2.0 + 12.0)
+
+
+## The flash line is the topmost of the three stacked bottom labels, so it is what the rows must
+## clear. One expression, read by both the label and the fit guard.
+func _flash_y(panel_h: float) -> float:
+	return panel_h - _bottom_gap() - _footer_line_h() * 2.0 - 8.0
+
+
+## ⛔ THE PANEL GROWS IN HEIGHT TOO, for the same reason it grows in width: this screen does not
+## scroll, so anything that does not fit is unreachable. Computed from the ROW_HEIGHT FLOOR rather
+## than from _row_h(), which reads the panel back and would make this recursive.
+func _panel_h_frac() -> float:
+	if size.y <= 0.0:
+		return 0.88
+	var rows: int = ROW_ACTION_FIRST + InputProfileManager.REMAPPABLE_ACTIONS.size() + 3
+	var needed: float = float(ROW_START_Y) * _tf() + float(rows * ROW_HEIGHT) \
+		+ float(HEADER_BAND) * _tf() + _bottom_gap() + _footer_line_h() * 2.0 + 16.0
+	return clampf(needed / size.y, 0.88, 0.96)
+
+
 func _fit_column_label(l: Label, width: float) -> void:
 	var fs: int = l.get_theme_font_size("font_size")
 	while fs > 10 and l.get_theme_font("font").get_string_size(l.text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x > width:
@@ -191,11 +352,11 @@ func _build_ui() -> void:
 
 	# Main panel
 	_panel = Control.new()
-	_panel.position = Vector2(size.x * 0.2, size.y * 0.1)
+	_panel.position = Vector2((size.x - size.x * _panel_w_frac()) * 0.5, size.y * 0.1)
 	## 0.80 until 2026-10-12: the field-menu row made eight remappable rows and the last one
 	## ended 24px BELOW the conflict line. The footer lines are placed from the panel's bottom, so
 	## growing the panel restores the gap without moving a single row.
-	_panel.size = Vector2(size.x * 0.6, size.y * 0.88)
+	_panel.size = Vector2(size.x * _panel_w_frac(), size.y * _panel_h_frac())
 	add_child(_panel)
 
 	var panel_bg = ColorRect.new()
@@ -209,7 +370,7 @@ func _build_ui() -> void:
 	var title = Label.new()
 	title.text = "CONTROLS"
 	title.position = Vector2(16, 8)
-	title.add_theme_font_size_override("font_size", 18)
+	title.add_theme_font_size_override("font_size", TextScale.scaled(18))
 	title.add_theme_color_override("font_color", TEXT_COLOR)
 	_panel.add_child(title)
 
@@ -217,8 +378,8 @@ func _build_ui() -> void:
 	# whether SDL had a mapping for the attached pad, and unmapped every index below is a lie —
 	# that absence is what made the 2026-07-25 controller hunt expensive.
 	_device_label = Label.new()
-	_device_label.position = Vector2(16, 30)
-	_device_label.add_theme_font_size_override("font_size", 10)
+	_device_label.position = Vector2(16, _device_y())
+	_device_label.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	_panel.add_child(_device_label)
 	refresh_device_label()
 
@@ -226,44 +387,44 @@ func _build_ui() -> void:
 	# the right-hand columns mean. Drawn just above the first action row.
 	var col_header_pad = Label.new()
 	col_header_pad.text = "Action"
-	col_header_pad.position = Vector2(12, ROW_START_Y + ROW_ACTION_FIRST * ROW_HEIGHT + 1)
-	col_header_pad.add_theme_font_size_override("font_size", 10)
+	col_header_pad.position = Vector2(_col_x()[0], _rows_top() + ROW_ACTION_FIRST * _row_h() + 1)
+	col_header_pad.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	col_header_pad.add_theme_color_override("font_color", Color(0.55, 0.55, 0.65))
 	_panel.add_child(col_header_pad)
 	var col_header_pad_btn = Label.new()
 	col_header_pad_btn.text = "Gamepad"
-	col_header_pad_btn.position = Vector2(320, ROW_START_Y + ROW_ACTION_FIRST * ROW_HEIGHT + 1)
-	col_header_pad_btn.add_theme_font_size_override("font_size", 10)
+	col_header_pad_btn.position = Vector2(_col_x()[1], _rows_top() + ROW_ACTION_FIRST * _row_h() + 1)
+	col_header_pad_btn.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	col_header_pad_btn.add_theme_color_override("font_color", Color(0.55, 0.55, 0.65))
 	_panel.add_child(col_header_pad_btn)
 	var col_header_kb = Label.new()
 	col_header_kb.text = "Keyboard"
-	col_header_kb.position = Vector2(490, ROW_START_Y + ROW_ACTION_FIRST * ROW_HEIGHT + 1)
-	col_header_kb.add_theme_font_size_override("font_size", 10)
+	col_header_kb.position = Vector2(_col_x()[2], _rows_top() + ROW_ACTION_FIRST * _row_h() + 1)
+	col_header_kb.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	col_header_kb.add_theme_color_override("font_color", Color(0.55, 0.55, 0.65))
 	_panel.add_child(col_header_kb)
 	var col_header_mouse = Label.new()
 	col_header_mouse.text = "Mouse"
-	col_header_mouse.position = Vector2(610, ROW_START_Y + ROW_ACTION_FIRST * ROW_HEIGHT + 1)
-	col_header_mouse.add_theme_font_size_override("font_size", 10)
+	col_header_mouse.position = Vector2(_col_x()[3], _rows_top() + ROW_ACTION_FIRST * _row_h() + 1)
+	col_header_mouse.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	col_header_mouse.add_theme_color_override("font_color", Color(0.55, 0.55, 0.65))
 	_panel.add_child(col_header_mouse)
 
 	# Build rows
 	_compute_row_indices()
-	var y = ROW_START_Y
+	var y = _rows_top()
 
 	_add_row(ROW_PROFILE, y, "Profile", _get_profile_display(), true)
-	y += ROW_HEIGHT
+	y += _row_h()
 
 	# Confirm sits on the EAST face when on — the SNES layout. Cycles like the profile row.
 	_add_row(ROW_NINTENDO, y, "Nintendo Mode", _get_nintendo_display(), true)
-	y += ROW_HEIGHT
+	y += _row_h()
 
 	# The full reference, reachable from inside the game. Sits here rather than only on the
 	# title screen because that copy is unreachable once a session starts.
 	_add_row(ROW_HELP, y, "How to Play", "View full reference", true)
-	y += ROW_HEIGHT + HEADER_BAND
+	y += _row_h() + HEADER_BAND * _tf()
 
 	var row_idx = ROW_ACTION_FIRST
 	for action in InputProfileManager.REMAPPABLE_ACTIONS:
@@ -272,29 +433,29 @@ func _build_ui() -> void:
 		_add_row(row_idx, y, label_text, btn_label, false)
 		_action_labels[action] = _highlight_refs[row_idx].get_meta("value_label")
 		row_idx += 1
-		y += ROW_HEIGHT
+		y += _row_h()
 
-	y += 8
+	y += ACTION_BLOCK_GAP
 	_add_row(_row_reset, y, "Reset to Default", "", false, true)
-	y += ROW_HEIGHT
+	y += _row_h()
 
 	_add_row(_row_test, y, "Test Buttons", "", false, true)
-	y += ROW_HEIGHT
+	y += _row_h()
 
 	_add_row(_row_map_pad, y, "Map This Pad", _map_pad_hint(), false, true)
 
 	# Conflict display
 	_conflict_label = Label.new()
-	_conflict_label.position = Vector2(16, _panel.size.y - 62)
-	_conflict_label.add_theme_font_size_override("font_size", 10)
+	_conflict_label.position = Vector2(16, _panel.size.y - _bottom_gap() - _footer_line_h())
+	_conflict_label.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	_conflict_label.add_theme_color_override("font_color", Color(1.0, 0.8, 0.3))
 	_panel.add_child(_conflict_label)
 	_update_conflict_display()
 
 	# Flash message label (for "Switch to Custom" hint)
 	_flash_label = Label.new()
-	_flash_label.position = Vector2(16, _panel.size.y - 78)
-	_flash_label.add_theme_font_size_override("font_size", 10)
+	_flash_label.position = Vector2(16, _flash_y(_panel.size.y))
+	_flash_label.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	_flash_label.add_theme_color_override("font_color", Color(1.0, 0.6, 0.3))
 	_flash_label.visible = false
 	_panel.add_child(_flash_label)
@@ -303,14 +464,14 @@ func _build_ui() -> void:
 	var footer = Label.new()
 	_footer_label = footer
 	footer.text = _footer_text()
-	footer.position = Vector2(16, _panel.size.y - 44)
+	footer.position = Vector2(16, _panel.size.y - _bottom_gap())
 	footer.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	footer.max_lines_visible = 2
-	footer.add_theme_font_size_override("font_size", 10)
+	footer.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	footer.add_theme_color_override("font_color", DISABLED_COLOR)
 	_panel.add_child(footer)
 	## Sized AFTER add_child (a detached Label clamps to its 16px-font minimum); wraps to two lines, since one cut the mouse hints off.
-	footer.size = Vector2(_panel.size.x - 32, 36)
+	footer.size = Vector2(_panel.size.x - 32, _footer_line_h() * 2.0 + 4.0)
 
 	# Right-click to cancel
 	MenuMouseHelper.add_right_click_cancel(bg, _close_menu)
@@ -327,7 +488,7 @@ func _build_ui() -> void:
 func _add_row(index: int, y: float, label_text: String, value_text: String, is_profile: bool, is_action_btn: bool = false) -> void:
 	var highlight = ColorRect.new()
 	highlight.position = Vector2(8, y)
-	highlight.size = Vector2(_panel.size.x - 16, ROW_HEIGHT)
+	highlight.size = Vector2(_panel.size.x - 16, _row_h())
 	highlight.color = Color.TRANSPARENT
 	highlight.name = "Row_%d" % index
 	_panel.add_child(highlight)
@@ -336,7 +497,7 @@ func _add_row(index: int, y: float, label_text: String, value_text: String, is_p
 	var label = Label.new()
 	label.text = label_text
 	label.position = Vector2(12, 4)
-	label.add_theme_font_size_override("font_size", 14)
+	label.add_theme_font_size_override("font_size", _row_font())
 	if is_action_btn:
 		label.add_theme_color_override("font_color", Color(0.8, 0.9, 1.0))
 	else:
@@ -346,15 +507,15 @@ func _add_row(index: int, y: float, label_text: String, value_text: String, is_p
 	if is_profile:
 		var arrows_left = Label.new()
 		arrows_left.text = "<"
-		arrows_left.position = Vector2(200, 4)
-		arrows_left.add_theme_font_size_override("font_size", 14)
+		arrows_left.position = Vector2(200.0 * _tf(), 4)
+		arrows_left.add_theme_font_size_override("font_size", TextScale.scaled(14))
 		arrows_left.add_theme_color_override("font_color", Color.YELLOW)
 		highlight.add_child(arrows_left)
 
 		var value = Label.new()
 		value.text = value_text
-		value.position = Vector2(220, 4)
-		value.add_theme_font_size_override("font_size", 14)
+		value.position = Vector2(220.0 * _tf(), 4)
+		value.add_theme_font_size_override("font_size", TextScale.scaled(14))
 		value.add_theme_color_override("font_color", Color.YELLOW)
 		value.name = "ValueLabel"
 		highlight.add_child(value)
@@ -362,8 +523,8 @@ func _add_row(index: int, y: float, label_text: String, value_text: String, is_p
 
 		var arrows_right = Label.new()
 		arrows_right.text = ">"
-		arrows_right.position = Vector2(420, 4)
-		arrows_right.add_theme_font_size_override("font_size", 14)
+		arrows_right.position = Vector2(420.0 * _tf(), 4)
+		arrows_right.add_theme_font_size_override("font_size", TextScale.scaled(14))
 		arrows_right.add_theme_color_override("font_color", Color.YELLOW)
 		highlight.add_child(arrows_right)
 	elif not is_action_btn and value_text != "":
@@ -371,23 +532,23 @@ func _add_row(index: int, y: float, label_text: String, value_text: String, is_p
 		var dots = Label.new()
 		dots.text = ".".repeat(120)
 		dots.clip_text = true
-		dots.add_theme_font_size_override("font_size", 10)
+		dots.add_theme_font_size_override("font_size", TextScale.scaled(10))
 		dots.add_theme_color_override("font_color", Color(0.3, 0.3, 0.4))
 		highlight.add_child(dots)
 		# Runs from the end of the measured name to the binding column (it used to guess 9px a letter and stop short).
-		var name_end: float = 12.0 + label.get_theme_font("font").get_string_size(label_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 14).x + 8.0
+		var name_end: float = 12.0 + label.get_theme_font("font").get_string_size(label_text, HORIZONTAL_ALIGNMENT_LEFT, -1, _row_font()).x + 8.0
 		dots.position = Vector2(name_end, 6)
-		dots.size = Vector2(maxf(0.0, 312.0 - name_end), dots.size.y)
+		dots.size = Vector2(maxf(0.0, _col_x()[1] - 8.0 - name_end), dots.size.y)
 
 		var value = Label.new()
 		value.text = value_text
-		value.position = Vector2(320, 4)
-		value.size = Vector2(160, ROW_HEIGHT - 8)
-		value.add_theme_font_size_override("font_size", 13)
+		value.position = Vector2(_col_x()[1], 4)
+		value.size = Vector2(_col_w()[0], _row_h() - 8)
+		value.add_theme_font_size_override("font_size", TextScale.scaled(13))
 		value.add_theme_color_override("font_color", OPTION_SELECTED)
 		value.name = "ValueLabel"
 		highlight.add_child(value)
-		_fit_column_label(value, 160.0)
+		_fit_column_label(value, _col_w()[0])
 		highlight.set_meta("value_label", value)
 
 		# Profile, Nintendo Mode and How to Play sit above the actions, so the offset is ROW_ACTION_FIRST.
@@ -397,26 +558,28 @@ func _add_row(index: int, y: float, label_text: String, value_text: String, is_p
 			var kb_label_text := InputProfileManager.get_action_key_label(action_id)
 			var kb_label = Label.new()
 			kb_label.text = kb_label_text
-			kb_label.position = Vector2(490, 4)
-			kb_label.size = Vector2(110, ROW_HEIGHT - 8)
-			kb_label.add_theme_font_size_override("font_size", 13)
+			kb_label.position = Vector2(_col_x()[2], 4)
+			kb_label.size = Vector2(_col_w()[1], _row_h() - 8)
+			kb_label.add_theme_font_size_override("font_size", TextScale.scaled(13))
 			# Slightly muted color since it's not remappable here
 			kb_label.add_theme_color_override("font_color", Color(0.85, 0.85, 0.95))
 			highlight.add_child(kb_label)
-			_fit_column_label(kb_label, 110.0)
+			_fit_column_label(kb_label, _col_w()[1])
 
 			var mouse_label_text := InputProfileManager.get_action_mouse_label(action_id)
 			var mouse_label = Label.new()
 			mouse_label.text = mouse_label_text
-			mouse_label.position = Vector2(610, 4)
-			mouse_label.size = Vector2(120, ROW_HEIGHT - 8)
-			mouse_label.add_theme_font_size_override("font_size", 13)
+			mouse_label.position = Vector2(_col_x()[3], 4)
+			mouse_label.size = Vector2(_col_w()[2], _row_h() - 8)
+			mouse_label.add_theme_font_size_override("font_size", TextScale.scaled(13))
 			mouse_label.add_theme_color_override("font_color", Color(0.85, 0.85, 0.95))
 			highlight.add_child(mouse_label)
-			_fit_column_label(mouse_label, 120.0)
+			_fit_column_label(mouse_label, _col_w()[2])
 
 	# Mouse support
-	MenuMouseHelper.make_clickable(highlight, index, _panel.size.x - 16, ROW_HEIGHT,
+	## The HIT AREA reads the same height as the drawn row -- two spellings here would land a
+	## click on a different row than the one under the pointer at larger Text Sizes.
+	MenuMouseHelper.make_clickable(highlight, index, _panel.size.x - 16, _row_h(),
 		_on_row_click.bind(index), _on_row_hover.bind(index))
 
 
@@ -444,7 +607,7 @@ func _build_capture_overlay() -> void:
 	var prompt = Label.new()
 	prompt.text = "Press a gamepad button..."
 	prompt.position = Vector2(20, 30)
-	prompt.add_theme_font_size_override("font_size", 16)
+	prompt.add_theme_font_size_override("font_size", TextScale.scaled(16))
 	prompt.add_theme_color_override("font_color", Color.YELLOW)
 	prompt.name = "CapturePrompt"
 	box.add_child(prompt)
@@ -453,14 +616,14 @@ func _build_capture_overlay() -> void:
 	hint.text = _capture_cancel_hint()
 	hint.name = "CaptureHint"
 	hint.position = Vector2(20, 60)
-	hint.add_theme_font_size_override("font_size", 12)
+	hint.add_theme_font_size_override("font_size", TextScale.scaled(12))
 	hint.add_theme_color_override("font_color", DISABLED_COLOR)
 	box.add_child(hint)
 
 	var timer_label = Label.new()
 	timer_label.text = "5.0s"
 	timer_label.position = Vector2(20, 90)
-	timer_label.add_theme_font_size_override("font_size", 14)
+	timer_label.add_theme_font_size_override("font_size", TextScale.scaled(14))
 	timer_label.add_theme_color_override("font_color", TEXT_COLOR)
 	timer_label.name = "TimerLabel"
 	box.add_child(timer_label)
@@ -490,14 +653,14 @@ func _build_test_overlay() -> void:
 	var title = Label.new()
 	title.text = "BUTTON TEST"
 	title.position = Vector2(20, 16)
-	title.add_theme_font_size_override("font_size", 18)
+	title.add_theme_font_size_override("font_size", TextScale.scaled(18))
 	title.add_theme_color_override("font_color", Color.YELLOW)
 	box.add_child(title)
 
 	var prompt = Label.new()
 	prompt.text = "Press any gamepad button..."
 	prompt.position = Vector2(20, 52)
-	prompt.add_theme_font_size_override("font_size", 14)
+	prompt.add_theme_font_size_override("font_size", TextScale.scaled(14))
 	prompt.add_theme_color_override("font_color", TEXT_COLOR)
 	prompt.name = "TestPrompt"
 	box.add_child(prompt)
@@ -505,7 +668,7 @@ func _build_test_overlay() -> void:
 	_test_result_label = Label.new()
 	_test_result_label.text = ""
 	_test_result_label.position = Vector2(20, 90)
-	_test_result_label.add_theme_font_size_override("font_size", 22)
+	_test_result_label.add_theme_font_size_override("font_size", TextScale.scaled(22))
 	_test_result_label.add_theme_color_override("font_color", Color(0.4, 1.0, 0.6))
 	_test_result_label.name = "TestResult"
 	box.add_child(_test_result_label)
@@ -513,7 +676,7 @@ func _build_test_overlay() -> void:
 	var raw_label = Label.new()
 	raw_label.text = ""
 	raw_label.position = Vector2(20, 126)
-	raw_label.add_theme_font_size_override("font_size", 13)
+	raw_label.add_theme_font_size_override("font_size", TextScale.scaled(13))
 	raw_label.add_theme_color_override("font_color", DISABLED_COLOR)
 	raw_label.name = "TestRaw"
 	box.add_child(raw_label)
@@ -524,7 +687,7 @@ func _build_test_overlay() -> void:
 	hint.name = "TestCloseHint"
 	hint.text = _test_close_hint()
 	hint.position = Vector2(20, box.size.y - 36)
-	hint.add_theme_font_size_override("font_size", 12)
+	hint.add_theme_font_size_override("font_size", TextScale.scaled(12))
 	hint.add_theme_color_override("font_color", DISABLED_COLOR)
 	box.add_child(hint)
 
@@ -859,21 +1022,21 @@ func _build_mapping_overlay() -> void:
 	var title := Label.new()
 	title.text = "MAP THIS PAD"
 	title.position = Vector2(size.x * 0.5 - 80, size.y * 0.32)
-	title.add_theme_font_size_override("font_size", 18)
+	title.add_theme_font_size_override("font_size", TextScale.scaled(18))
 	_mapping_overlay.add_child(title)
 
 	_mapping_prompt = Label.new()
 	_mapping_prompt.position = Vector2(size.x * 0.5 - 240, size.y * 0.42)
 	_mapping_prompt.size = Vector2(480, 30)
 	_mapping_prompt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_mapping_prompt.add_theme_font_size_override("font_size", 15)
+	_mapping_prompt.add_theme_font_size_override("font_size", TextScale.scaled(15))
 	_mapping_overlay.add_child(_mapping_prompt)
 
 	_mapping_status = Label.new()
 	_mapping_status.position = Vector2(size.x * 0.5 - 240, size.y * 0.52)
 	_mapping_status.size = Vector2(480, 50)
 	_mapping_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_mapping_status.add_theme_font_size_override("font_size", 10)
+	_mapping_status.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	_mapping_status.add_theme_color_override("font_color", DISABLED_COLOR)
 	_mapping_overlay.add_child(_mapping_status)
 
