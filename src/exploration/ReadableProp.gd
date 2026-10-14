@@ -19,16 +19,30 @@ class_name ReadableProp
 ## pixels as WORLD coords, so the camera left it behind (InnInterior:1487).
 
 const PANEL_W: float = 420.0
-const PANEL_H: float = 240.0
-## ⛔ THE BODY BOX AND ITS FONT, NAMED ONCE. `test_an_examine_fits_the_panel_that_shows_it` has to
+## ⛔ 240 UNTIL 2026-10-14, AND THE 17 px IT LACKED REWROTE HIS TEXT. Headings did not autowrap
+## against a fixed 22 px band, so a 460 px authored heading drew 68 px past the panel onto the map
+## behind it. The W2 Taped Notice was TRIMMED instead (`W2Landmarks.taped_notice`) because a second
+## heading line needs ~17 px and the panel had 14 px of slack. The panel carries the text now: +17
+## here, the body band stays 166 px because `body_box` derives from BODY_TOP rather than a literal.
+const PANEL_H: float = 257.0
+const HEADING_FONT: int = 13
+const HEADING_TOP: float = 10.0
+## Two lines at HEADING_FONT. One was 22, and one line is what forced the rewrite.
+const HEADING_H: float = 39.0
+const BODY_TOP: float = HEADING_TOP + HEADING_H + 6.0
+## ⛔ THE BODY BOX AND ITS FONT, NAMED ONCE. `test_every_readable_page_fits_its_panel` has to
 ## render every authored examine at exactly this geometry to know whether its tail is reachable, and
 ## a guard that copied `PANEL_W - 28` and `12` would keep measuring the old box after a resize and
 ## pass prose that no longer fits. Both are read, not duplicated.
 const BODY_FONT: int = 12
 
 
+static func heading_box() -> Vector2:
+	return Vector2(PANEL_W - 28.0, HEADING_H)
+
+
 static func body_box() -> Vector2:
-	return Vector2(PANEL_W - 28.0, PANEL_H - 74.0)
+	return Vector2(PANEL_W - 28.0, PANEL_H - BODY_TOP - 36.0)
 const LOCK_NAME: String = "readable_prop"
 ## ⛔ NOT Signpost's recipe — this copied its two CONSTANTS and not its LAYOUT, and the comment here
 ## used to claim "verbatim", which is what hid the gap. Signpost's `_layout_flat` sets a width and
@@ -213,14 +227,15 @@ func _open_panel() -> void:
 	holder.add_child(panel)
 
 	_heading_label = Label.new()
-	_heading_label.position = Vector2(14, 10)
-	_heading_label.size = Vector2(PANEL_W - 28, 22)
-	_heading_label.add_theme_font_size_override("font_size", 13)
+	_heading_label.position = Vector2(14, HEADING_TOP)
+	_heading_label.size = heading_box()
+	_heading_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_heading_label.add_theme_font_size_override("font_size", HEADING_FONT)
 	_heading_label.add_theme_color_override("font_color", Color(0.92, 0.84, 0.58))
 	panel.add_child(_heading_label)
 
 	_body_label = Label.new()
-	_body_label.position = Vector2(14, 38)
+	_body_label.position = Vector2(14, BODY_TOP)
 	_body_label.size = body_box()
 	_body_label.add_theme_font_size_override("font_size", BODY_FONT)
 	_body_label.add_theme_color_override("font_color", Color(0.88, 0.86, 0.80))
