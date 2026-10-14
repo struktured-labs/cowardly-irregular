@@ -12,7 +12,11 @@ Facing: on-disk battle art faces RIGHT when frame_height > 128 and LEFT when
 <= 128 (the engine flips those in battle). The right-facing row mirrors
 accordingly; down/up rows use the frames as-is.
 
-Usage: uv run python tools/derive_overworld_roamer_sheets.py [--dry-run]
+Usage: uv run python tools/derive_overworld_roamer_sheets.py [--dry-run] [--refresh ID ...]
+
+--refresh re-derives an id whose sheet already exists — for when its battle idle range
+changed (the Cursed Armor's moved off a crouch and left the roamer crouched). Never point
+it at a hand-drawn walk grid: it overwrites the file with the derived glide.
 """
 
 from __future__ import annotations
@@ -91,12 +95,13 @@ def build_grid(tiles: list[Image.Image], faces_right: bool) -> Image.Image:
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--refresh", nargs="+", default=[], metavar="ID")
     args = ap.parse_args()
     sheets = json.load(open(REPO / "data/sprite_manifest.json"))["monster_sheets"]
     made, skipped, kept = [], [], []
     for mid in roaming_ids():
         out = OUT / f"{mid}.png"
-        if out.exists():
+        if out.exists() and mid not in args.refresh:
             kept.append(mid)
             continue
         entry = sheets.get(mid)
