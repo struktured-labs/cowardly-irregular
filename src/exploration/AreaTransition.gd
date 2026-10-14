@@ -185,6 +185,8 @@ func _setup_indicator() -> void:
 	# the player sprite is drawn over the middle of "Enter Village" in every interior in the game.
 	Mode7Prompt.pin_above_sprites(_indicator_label)
 	add_child(_indicator_label)
+	## Deferred: a one-line minimum width is not resolved until the label has settled in the tree.
+	_centre_indicator.call_deferred()
 
 
 func _get_default_indicator_text() -> String:
@@ -215,6 +217,9 @@ func _drive_screen_prompt() -> void:
 ## A scene can drop out of Mode 7 under a live transition; put the label back where flat maps expect it.
 func _return_prompt_to_the_world() -> void:
 	Mode7Prompt.drop(self, _prompt_layer, _indicator_label, FLAT_OFFSET, FLAT_FONT)
+	## `drop` restores the raw offset and zeroes the width, so the centring is redone or it holds
+	## only until the player's first trip through a Mode 7 map.
+	_centre_indicator.call_deferred()
 	_indicator_label.visible = show_gate_visual
 	_prompt_layer = null
 
@@ -304,9 +309,16 @@ func _trigger_transition(_player: Node2D) -> void:
 	# Note: Don't call SceneTransition/MapSystem directly - GameLoop handles it
 
 
-## Called by player interaction system
+## ⛔ THE PROBE ONLY REACHES THIS WHEN THE PLAYER IS **OUTSIDE** THE ZONE, so requiring
+## `_player_in_zone` made it a no-op in the one case it can be called in: `_input` runs before
+## `_unhandled_input` and calls set_input_as_handled(), so an overlapping press never reaches the
+## probe, and a non-overlapping one reached it, printed "Found: <door>", and was silently dropped.
+## struktured's 2026-10-13 log, pressing at (272, 1636.4) -- 20 px under VillageEntrance's box:
+## "Found: VillageEntrance" with no Triggering line. The dead band is the probe's whole reach.
+## No sibling veto here: the probe already picked the nearest layer-4 hit, and with no overlap
+## `_a_nearer_transition_has` can only ever return false.
 func interact(player: Node2D) -> void:
-	if require_interaction and _player_in_zone:
+	if require_interaction:
 		_trigger_transition(player)
 
 ## True when a sibling transition also contains this player and its centre is NEARER.
@@ -337,3 +349,24 @@ func _a_nearer_transition_has(player: Node2D) -> bool:
 		if other.global_position.distance_to(player.global_position) < mine:
 			return true
 	return false
+
+## ⛔ THE PROMPT IS CENTRED ON THE DOOR, AT WHATEVER WIDTH ITS TEXT NEEDS. `FLAT_OFFSET.x = -40`
+## centres a label 80 px wide and nothing held it at 80, so the prompt drew at content width and its
+## centre sat `(width - 80) / 2` off — and door prompts are the widest-ranging strings in the game:
+## "Exit" is ~25 px and "Descend into the Suburban Underground" ~230 px, across 26 authored strings
+## and four defaults, so the drift RAN BOTH WAYS, about -27 px to +75 px. On every door.
+##
+## `horizontal_alignment = CENTER` was already set and is a no-op at content width, so the intent was
+## never in doubt; only the width was missing. Same defect, same morning, as `ReadableProp`'s floating
+## name (fixed in `.685`) — found by re-running that lens over the lane instead of assuming one
+## instance was the only one.
+func _centre_indicator() -> void:
+	if _indicator_label == null or not is_instance_valid(_indicator_label) or _prompt_layer != null:
+		return
+	_indicator_label.autowrap_mode = TextServer.AUTOWRAP_OFF
+	_indicator_label.update_minimum_size()
+	var w: float = _indicator_label.get_minimum_size().x
+	if w <= 0.0:
+		return
+	_indicator_label.size = Vector2(w, 0.0)
+	_indicator_label.position = Vector2(-w * 0.5, FLAT_OFFSET.y)

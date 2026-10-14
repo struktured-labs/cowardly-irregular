@@ -31,6 +31,12 @@ const BORDER_SHADOW = RetroPanel.BORDER_SHADOW
 const SELECTED_COLOR = Color(0.2, 0.3, 0.5)
 const TEXT_COLOR = Color(1.0, 1.0, 1.0)
 const DISABLED_COLOR = Color(0.4, 0.4, 0.4)
+## An EMPTY slot on a row that can be highlighted. It must still read as inactive — dimmer than
+## the active colours — AND survive the highlight: DISABLED_COLOR measures 1.46:1 on
+## SELECTED_COLOR, so the "(empty)" telling you the slot is free vanished on the very row you
+## select to fill it. This is 3.36:1 there, 6.92:1 off it, and 65% of the active blue's
+## luminance, so the hierarchy survives too.
+const EMPTY_SLOT_COLOR = Color(0.62, 0.64, 0.72)
 ## In-row information on a row that can be highlighted: readable on SELECTED_COLOR, where the disabled grey is ~1.5:1.
 const SUBTITLE_COLOR = Color(0.72, 0.75, 0.85)
 const PRIMARY_COLOR = Color(1.0, 0.85, 0.3)
@@ -260,7 +266,7 @@ func _create_slot_row(slot_index: int, row_width: float) -> Control:
 	equip_label.text = job_name
 	equip_label.position = Vector2(24, 18)
 	equip_label.add_theme_font_size_override("font_size", 12)
-	equip_label.add_theme_color_override("font_color", slot_color if job_name != "(none)" else DISABLED_COLOR)
+	equip_label.add_theme_color_override("font_color", slot_color if job_name != "(none)" else EMPTY_SLOT_COLOR)
 	row.add_child(equip_label)
 
 	# Description
@@ -534,7 +540,7 @@ func _create_job_row(job_id: String, index: int) -> Control:
 		none_label.text = "(None)"
 		none_label.position = Vector2(24, 4)
 		none_label.add_theme_font_size_override("font_size", 12)
-		none_label.add_theme_color_override("font_color", DISABLED_COLOR)
+		none_label.add_theme_color_override("font_color", SUBTITLE_COLOR)
 		row.add_child(none_label)
 		var none_desc = Label.new()
 		none_desc.text = "Remove secondary job"
@@ -592,7 +598,7 @@ func _create_job_row(job_id: String, index: int) -> Control:
 		abilities_label.text = abilities_text
 		abilities_label.position = Vector2(24, 36)
 		abilities_label.add_theme_font_size_override("font_size", 9)
-		abilities_label.add_theme_color_override("font_color", DISABLED_COLOR)
+		abilities_label.add_theme_color_override("font_color", SUBTITLE_COLOR)
 		row.add_child(abilities_label)
 
 	# Description

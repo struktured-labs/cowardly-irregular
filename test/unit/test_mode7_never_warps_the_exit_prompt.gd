@@ -21,6 +21,14 @@ const AreaTransitionScript = preload("res://src/exploration/AreaTransition.gd")
 ## Mode7Overlay draws warped ground on layer 1 and the upright player on 2; the prompt must clear both.
 const PLAYER_OVERLAY_LAYER := 2
 ## The authored world-space offset flat maps have always used.
+## ⛔ THE X OF `FLAT_OFFSET` IS NO LONGER THE PROMPT'S POSITION, AND PINNING IT WAS A COINCIDENTAL
+## VALUE. `-40` centres a label exactly 80 px wide; prompts run from "Exit" (~25 px) to
+## "Enter the Null Chamber" (137 px), so the authored constant only ever centred one of them and
+## `AreaTransition._centre_indicator` now positions at `-width * 0.5`. This file's PURPOSE is that a
+## return to flat puts the prompt back in WORLD space on the trigger, and the parent assertions
+## carry that entirely; the position assertions now check the Y (which the fix does not touch) and
+## the centring relationship, so they still fail on a prompt left in screen space without encoding
+## the off-centre bug.
 const FLAT_OFFSET := Vector2(-40, -72)
 
 
@@ -66,7 +74,9 @@ func test_a_flat_map_keeps_the_world_space_prompt_it_always_had() -> void:
 	if lbl == null:
 		return
 	assert_eq(lbl.get_parent(), t, "a flat map moved its prompt off the trigger")
-	assert_eq(lbl.position, FLAT_OFFSET, "a flat map moved its prompt off its authored offset")
+	assert_eq(lbl.position.y, FLAT_OFFSET.y, "a flat map moved its prompt off its authored height")
+	assert_almost_eq(lbl.position.x, -lbl.size.x * 0.5, 0.5,
+		"a flat map left the prompt off-centre on its trigger (x %.1f for a %.0f px label)" % [lbl.position.x, lbl.size.x])
 	assert_true(lbl.visible, "CONTROL: show_gate_visual keeps a flat prompt on screen")
 
 
@@ -94,5 +104,7 @@ func test_leaving_mode7_puts_the_prompt_back_where_flat_maps_expect_it() -> void
 	await get_tree().process_frame
 	await get_tree().process_frame
 	assert_eq(lbl.get_parent(), t, "the prompt never came back from its screen layer")
-	assert_eq(lbl.position, FLAT_OFFSET, "the prompt came back to the wrong offset")
+	assert_eq(lbl.position.y, FLAT_OFFSET.y, "the prompt came back to the wrong height")
+	assert_almost_eq(lbl.position.x, -lbl.size.x * 0.5, 0.5,
+		"the prompt came back off-centre (x %.1f for a %.0f px label)" % [lbl.position.x, lbl.size.x])
 	assert_true(lbl.visible, "the prompt came back invisible")

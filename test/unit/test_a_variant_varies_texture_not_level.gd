@@ -33,7 +33,12 @@ const LIMIT := 3.0
 ## picking a target is an audible change to the game's most-played cues and belongs to struktured.
 ## ⛔ CORRECTED 2026-10-14 — THE SECOND NUMBER IS NOT A PLATFORM. This block said "TWO NUMBERS PER
 ## FAMILY, BECAUSE THE WEB BUILD SHIPS MONO … so wherever a family mixes channel counts its spread
-## DIFFERS BY PLATFORM". The web build downmixes MUSIC and VOICE LINES, not ordinary SFX:
+## DIFFERS BY PLATFORM". ⚠️ AND MY FIRST CORRECTION WAS ITSELF IMPRECISE — it said "downmixes MUSIC
+## and VOICE LINES". @cowir-deploy censused the SHIPPED STAGE (989 files, 0 channel differences) and
+## the voice masters are ALREADY MONO, 654 of 654, so make_web_voice.sh's `-ac 1` moves no channel
+## count: it re-encodes bitrate and sample rate. MUSIC IS THE ONLY CORPUS THE WEB BUILD ACTUALLY
+## DOWNMIXES — and the 6 stereo files in that area are the `voice_blip_*` ones, which that script
+## EXCLUDES. Either way the answer for ordinary SFX is unchanged, and here is the evidence:
 ##     tools/make_web_audio.sh:52    SRC_DIR="assets/audio/music"          <- music only
 ##     tools/make_web_voice.sh:42    SRC_DIR="assets/audio/sfx", corpus voice_*.ogg except blips
 ##     make_web_stage.sh:166         "sfx holds 300+ files that are not voice; each tier clip
@@ -274,10 +279,14 @@ func test_the_downmix_is_a_no_op_on_every_mono_member() -> void:
 
 func test_no_variant_family_is_in_the_downmixed_corpus() -> void:
 	## ⛔ PINS THE PREMISE OF THE CORRECTION ABOVE, so the "web ships mono" framing cannot drift back
-	## in. The web build downmixes exactly two corpora: `assets/audio/music` (make_web_audio.sh) and
-	## `voice_*.ogg` minus the blips (make_web_voice.sh). A variant family inside either WOULD have a
-	## genuine per-platform spread and the two-number framing would be correct for it — so this arm
-	## reds the day one is added, which is when the framing needs revisiting rather than inheriting.
+	## in. The web build RE-ENCODES exactly two corpora: `assets/audio/music` (make_web_audio.sh — the
+	## only one it genuinely DOWNMIXES) and `voice_*.ogg` minus the blips (make_web_voice.sh — bitrate
+	## and sample rate only, since those masters are already mono, 654 of 654, so its `-ac 1` moves no
+	## channel count). A variant family inside either would get a genuinely different shipped file, so
+	## the two-number framing could become right for it; this arm reds the day one is added, which is
+	## when the framing gets revisited on purpose instead of inherited. Keyed on the voice corpus
+	## because that is the only one a cue from `sfx_manifest.json` can land in — music never appears
+	## in this fixture.
 	var fx := _fixture()
 	var downmixed: Array[String] = []
 	for name in fx.keys():

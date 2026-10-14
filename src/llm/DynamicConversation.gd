@@ -257,7 +257,12 @@ func run(player: Node) -> void:
 	# conversation the player actually saw through.
 	if _active:
 		await _maybe_grant_reward()
-		ConversationMemory.remember(get_node_or_null("/root/GameState"), _npc_id, _player_lines)
+	## The MEMORY is not gated the same way, and the two were bundled by proximity rather than by
+	## argument: the player said those lines whether or not a transition ended the conversation,
+	## and an NPC forgetting them is the amnesia this feature exists to prevent. Only the PAYOUT
+	## needs seeing it through. Lines reach _player_lines past the farewell check, so anything
+	## stored here was a real mid-conversation choice; remember() no-ops on an empty list.
+	ConversationMemory.remember(get_node_or_null("/root/GameState"), _npc_id, _player_lines)
 
 	# Unfreeze the player.
 	_set_player_movement(player, true)

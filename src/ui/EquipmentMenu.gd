@@ -36,6 +36,12 @@ const BORDER_SHADOW = RetroPanel.BORDER_SHADOW
 const SELECTED_COLOR = Color(0.2, 0.3, 0.5)
 const TEXT_COLOR = Color(1.0, 1.0, 1.0)
 const DISABLED_COLOR = Color(0.4, 0.4, 0.4)
+## An EMPTY slot on a row that can be highlighted. It must still read as inactive — dimmer than
+## the active colours — AND survive the highlight: DISABLED_COLOR measures 1.46:1 on
+## SELECTED_COLOR, so the "(empty)" telling you the slot is free vanished on the very row you
+## select to fill it. This is 3.36:1 there, 6.92:1 off it, and 65% of the active blue's
+## luminance, so the hierarchy survives too.
+const EMPTY_SLOT_COLOR = Color(0.62, 0.64, 0.72)
 ## A slot's title (Weapon / Armor / Accessory): subdued, but readable on the selected row's blue (DISABLED_COLOR ~1.5:1).
 const SUBTITLE_COLOR = Color(0.72, 0.75, 0.85)
 const POSITIVE_COLOR = Color(0.4, 0.9, 0.4)
@@ -330,7 +336,7 @@ func _create_slot_row(slot_index: int) -> Control:
 	equip_label.size = Vector2(280, 32)
 	equip_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	equip_label.add_theme_font_size_override("font_size", 12)
-	equip_label.add_theme_color_override("font_color", equip_color if equip_name != "(empty)" else DISABLED_COLOR)
+	equip_label.add_theme_color_override("font_color", equip_color if equip_name != "(empty)" else EMPTY_SLOT_COLOR)
 	row.add_child(equip_label)
 
 	# Mouse click overlay
@@ -665,7 +671,7 @@ func _create_item_row(item_id: String, index: int) -> Control:
 	desc_label.clip_text = true
 	desc_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	desc_label.add_theme_font_size_override("font_size", 9)
-	desc_label.add_theme_color_override("font_color", DISABLED_COLOR)
+	desc_label.add_theme_color_override("font_color", SUBTITLE_COLOR)
 	row.add_child(desc_label)
 
 	# Mouse click overlay
