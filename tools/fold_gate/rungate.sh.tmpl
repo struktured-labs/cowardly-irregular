@@ -1,4 +1,11 @@
 cd @REPO@
+## A standalone re-run (no live chain owns the box marker) declares the box itself, and marks the chain's old verdict stale (.692: chain692.out kept a wedge for a re-run that passed).
+M="${BOX_MARKER:-/home/struktured/projects/cowir-main/tmp/BOX_BUSY}"
+mp="$(sed -n 's/^pid=//p' "$M" 2>/dev/null)"
+if [ -z "$mp" ] || ! kill -0 "$mp" 2>/dev/null; then
+  printf 'pid=%s\nwhat=rungate@NNN@\nsince=%s\n' "$$" "$(date -u +%H:%M:%SZ)" > "$M"; trap 'rm -f "$M"' EXIT
+  [ -f tmp/chain@NNN@.out ] && echo "SUPERSEDED $(date -u +%H:%M:%SZ): a standalone rungate re-run owns this gate; its verdict is tmp/gate@NNN@.out, not any GATE VERDICT line above" >> tmp/chain@NNN@.out
+fi
 ## Wait (bounded, 60 min) until no publish is in flight (cowir-deploy: publish.log exists and publish.ec does not) AND no godot runs. Not a load figure: ten idle sessions hold load near 9.
 for i in $(seq 240); do busy=0; why=""; for d in /home/struktured/projects/cowir-deploy-wt/tmp/_detached/v3.33.*/; do [ -f "$d/publish.log" ] && [ ! -f "$d/publish.ec" ] && { busy=1; why="$why publish:$(basename "$d")"; }; done; for p in /proc/[0-9]*; do [ "$(readlink $p/exe 2>/dev/null)" = "/usr/bin/godot" ] && { busy=1; why="$why godot:${p#/proc/}@$(readlink $p/cwd 2>/dev/null)"; }; done; [ $busy -eq 0 ] && break; sleep 15; done
 ## The wait is bounded, so it can expire with the box still busy: say so, or a contended gate reads as a quiet one.
