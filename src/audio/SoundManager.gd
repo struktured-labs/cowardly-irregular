@@ -1120,9 +1120,23 @@ const _BATTLE_VOLUME_TRIM_DB: Dictionary = {
 	## against a family median of -21.7 and 13.5 dB under the three that carry an explicit ~-14 LUFS
 	## target (doom/curse/silence, all three hitting it). It marks LOSING A TURN -- the cue whose
 	## reachability BattleScene._cue_if_turn_skipped was deliberately hoisted above the animator
-	## guard to protect, "losing a turn is exactly as audible either way". +6.0 lands it at -21.2,
-	## the family median, and is the same magnitude as advance_undo above: base -6.0 + 6.0 = 0.0 dB
-	## on the player, where the asset's own peak is -6.4 dBFS, so there is no clipping.
+	## guard to protect, "losing a turn is exactly as audible either way". Same magnitude as
+	## advance_undo above: base -6.0 + 6.0 = 0.0 dB on the player.
+	## ⛔ THE NO-CLIPPING CLAUSE THAT USED TO END THIS NOTE CITED A PEAK THE ASSET DOES NOT HAVE.
+	## It read "the asset's own peak is -6.4 dBFS, so there is no clipping". Measured 2026-10-14 by
+	## three instruments in agreement -- numpy whole-file mono rms, ffmpeg volumedetect, ffmpeg
+	## astats -- the peak is -0.4 dBFS and the rms -21.2. At 0.0 dB player gain that leaves 0.4 dB
+	## of headroom, not 6.4. PEAK IS THE LOAD-BEARING FIGURE because it is instrument-independent;
+	## the rms half is not adjudicable (this note says "mono-summed rms" with no extent, and the
+	## family median measures -16.4 here against its -21.7, with the RANK differing too -- 5th
+	## quietest of 24, not "second" -- so a constant offset is ruled out).
+	## RULED OUT, so the asset is not the explanation: it has ONE commit (2678ea61c, 2026-07-31),
+	## this trim landed 2026-10-12 (a8afb0096), it is LFS-tracked so content cannot change without
+	## a commit, and there is one key, one file, no variants. The figures never described it.
+	## ⚠️ THE 6.0 IS LEFT AS IT IS ON PURPOSE -- a cue's LEVEL is struktured's ruling, and this is
+	## only the false citation removed. Re-derive from a stated instrument when he rules; the
+	## standard is tools/sfx_band_share.py's own docstring: "a number nobody else can re-derive is
+	## an assertion rather than a measurement". This note was an assertion.
 	"status_cannot_act": 6.0,
 }
 
