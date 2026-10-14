@@ -284,7 +284,11 @@ if [ "${1:-}" != "--selftest" ]; then
     fi
     LOGDIR="$(_logdir "$TAG")"
     mkdir -p "$LOGDIR"
-    rm -f "$LOGDIR/publish.ec"
+    # ⛔ THE PID GOES TOO, AND NOT ONLY FOR TIDINESS. A stale publish.pid from an earlier run at
+    # this same tag can name a pid the kernel has since REUSED for something unrelated, so a
+    # liveness check would read a dead publish as live and block the box indefinitely. The two
+    # markers are cleared together because between them they answer one question.
+    rm -f "$LOGDIR/publish.ec" "$LOGDIR/publish.pid"
     # The EC file is written by the DETACHED shell, so it records publish_all's own code even
     # though this launcher has already exited. Without it, "the task died" and "the task
     # finished" are indistinguishable from out here — which is exactly how I reported a
@@ -307,7 +311,20 @@ if [ "${1:-}" != "--selftest" ]; then
     # stubbed publish_all with a script that echoed its arguments, proving ARRIVAL while the
     # broken thing was EFFECT -- a stub with no parser cannot drop a flag the way every real
     # parser does.
+    # publish.pid is written FIRST, by the setsid'd subshell, naming ITSELF. It exists so a reader
+    # can tell a RUNNING publish from a WEDGED marker: "publish.log present, publish.ec absent"
+    # means in flight, and without a liveness test that is indistinguishable from "killed before
+    # it could write .ec". Nothing prunes tmp/_detached — measured 2026-10-14: zero rm/find sites
+    # across tools/, directories surviving back to v3.33.306-alpha — so a wedged marker would
+    # block every reader forever. cowir-main's tools/box_busy.sh applies `kill -0` to this file
+    # and treats a dead pid as stale; a directory WITHOUT one keeps the old meaning, so this is
+    # additive for the 265 dirs that predate it.
+    #
+    # ⚠️ $$ is inside SINGLE quotes deliberately: it must be expanded by the INNER bash, whose pid
+    # owns the publish, not by this launcher, which exits immediately. Measured: the value is the
+    # session leader (sid == pid), alive for the run, and gone once the .ec lands.
     setsid bash -c '
+        echo $$ > "'"$LOGDIR"'/publish.pid"
         "$0" "$@" > "'"$LOGDIR"'/publish.log" 2>&1
         echo $? > "'"$LOGDIR"'/publish.ec"
     ' "$CMD" "$@" "$TAG" < /dev/null > /dev/null 2>&1 &
@@ -348,6 +365,7 @@ T=$(mktemp -d); trap 'rm -rf "$T"' EXIT
 printf '#!/usr/bin/env bash\nexit 0\n' > "$T/ok.sh";  chmod +x "$T/ok.sh"
 printf '#!/usr/bin/env bash\nexit 7\n' > "$T/bad.sh"; chmod +x "$T/bad.sh"
 printf '#!/usr/bin/env bash\nsleep 2; exit 3\n' > "$T/slow.sh"; chmod +x "$T/slow.sh"
+printf '#!/usr/bin/env bash\nsleep 600\n' > "$T/forever.sh"; chmod +x "$T/forever.sh"
 _wait_ec() { local f="$1" n=0; while [ "$n" -lt 20 ]; do [ -f "$f" ] && return 0; sleep 1; n=$((n+1)); done; return 1; }
 
 # 1/2 — the EC file records the REAL code, both directions. A launcher that always wrote 0
@@ -379,6 +397,41 @@ else
 fi
 _wait_ec "$slow_ec"
 chk "slow child wrote its EC after the launcher returned" "$(cat "$slow_ec" 2>/dev/null)" "3"
+
+# 3b/3c — THE PID MARKER, BOTH DIRECTIONS, AND THE WEDGE IT EXISTS FOR.
+# ⛔ `kill -9 "$pid"` with an EMPTY pid is `kill -9 0`, which addresses the caller's ENTIRE
+#    PROCESS GROUP and kills the selftest itself. The first version of these arms did exactly
+#    that and the run came back "Killed". Every signal below goes through a guard.
+# ⛔ TRI-STATE, NOT A BOOLEAN. With a boolean "is it alive", an ABSENT publish.pid is
+#    indistinguishable from a DEAD one, so an arm asserting "dead" is satisfied by the file not
+#    existing. Measured: with the pid write mutated out, a boolean version redded 2 of 8 arms;
+#    absent/alive/dead reds 6. Three of my own arms were vacuous until this was measured.
+_pidstate() { case "${1:-}" in ''|*[!0-9]*|0) echo absent; return ;; esac
+              kill -0 "$1" 2>/dev/null && echo alive || echo dead; }
+_slay() { case "${1:-}" in ''|*[!0-9]*|0) return 1 ;; esac; kill -9 "$1" 2>/dev/null; }
+
+out=$(PUBLISH_CMD="$T/slow.sh" PUBLISH_OWNER_PROCS="__absent__" PUBLISH_OBS_PROC="__absent__" ./tools/publish_detached.sh ZZ-pid 2>&1)
+pid_ec=$(_ec_path_from "$out"); pid_dir=$(dirname "$pid_ec"); sleep 1
+pidv=$(cat "$pid_dir/publish.pid" 2>/dev/null)
+chk "publish.pid written beside the log"          "$([ -s "$pid_dir/publish.pid" ] && echo yes || echo no)" "yes"
+chk "publish.pid is alive while the publish runs" "$(_pidstate "$pidv")" "alive"
+chk "publish.pid names another live process"      "$([ -s "$pid_dir/publish.pid" ] && [ "${pidv:-0}" != "$$" ] && echo yes || echo no)" "yes"
+_wait_ec "$pid_ec"
+chk "publish.pid is dead once the EC is written"  "$(_pidstate "$pidv")" "dead"
+
+# The wedge: kill the subshell so .ec NEVER arrives, then show the two contracts disagree.
+# Without this arm the pid file is decoration — every other arm passes with it unread.
+out=$(PUBLISH_CMD="$T/forever.sh" PUBLISH_OWNER_PROCS="__absent__" PUBLISH_OBS_PROC="__absent__" ./tools/publish_detached.sh ZZ-wedge 2>&1)
+w_ec=$(_ec_path_from "$out"); w_dir=$(dirname "$w_ec"); sleep 1
+wpid=$(cat "$w_dir/publish.pid" 2>/dev/null)
+_slay "$wpid"; pkill -9 -f "$T/forever.sh" 2>/dev/null; sleep 1
+chk "wedge: log present, EC absent"               "$([ -f "$w_dir/publish.log" ] && [ ! -f "$w_ec" ] && echo yes || echo no)" "yes"
+chk "wedge: the OLD contract reads in-flight"     "$([ -f "$w_dir/publish.log" ] && [ ! -f "$w_ec" ] && echo inflight || echo clear)" "inflight"
+chk "wedge: pid liveness calls it dead"           "$(_pidstate "$wpid")" "dead"
+# ⛔ LEAVE NOTHING THAT READS AS IN FLIGHT. This arm manufactures the exact state that blocks a
+#    reader; a ZZ- tag is outside box_busy.sh's v3.33.* glob today, but that is luck, not design.
+rm -rf "$w_dir"
+chk "wedge: the probe dir is removed, not left wedged" "$([ -d "$w_dir" ] && echo left || echo gone)" "gone"
 
 # 4/5 — the courtesy refusal, BOTH directions. An always-refusing guard passes arm 4 alone.
 PUBLISH_OWNER_PROCS="bash" ./tools/publish_detached.sh ZZ-busy >/dev/null 2>&1
