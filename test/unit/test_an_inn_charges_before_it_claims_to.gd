@@ -153,7 +153,11 @@ func test_spend_gold_really_refuses_the_case_the_fix_now_honours() -> void:
 # ── the caller's half: order, and the receipt ────────────────────────────────
 
 func test_the_rest_consults_the_charge_before_it_restores_or_claims() -> void:
-	var src := _source(INN_SRC)
+	## ⛔ CODE, NOT RAW SOURCE. `_source` reads the file verbatim, and .695's refused-revive fix
+	## added a COMMENT containing the phrase "fully rested" ABOVE the receipt — so `find` anchored
+	## i_receipt in prose, the tail swallowed the lines between, and this arm went green measuring
+	## nothing. GdSource strips comments and docstrings for exactly this.
+	var src := GdSource.code_of(INN_SRC)
 	var at := src.find("func _rest_party(")
 	assert_gt(at, -1, "_rest_party must still exist")
 	var fn := src.substr(at)
@@ -176,4 +180,11 @@ func test_the_rest_consults_the_charge_before_it_restores_or_claims() -> void:
 	var tail := fn.substr(i_receipt)
 	assert_false(tail.contains("% rest_cost"),
 		"the receipt must not name rest_cost — that is the price, not the charge")
-	assert_string_contains(tail, "charged", "it must name the amount actually taken")
+	## ⛔ WAS `tail.contains("charged")`, WHICH PINNED STATEMENT ORDER RATHER THAN THE CLAIM. .695's
+	## refused-revive fix made the receipt two-branched, so the gold clause has to be built ABOVE
+	## both branches -- which moved `charged` before i_receipt and red an assert about behaviour
+	## that had not changed. Pin the RELATIONSHIP: whatever prints the gold figure is fed by the
+	## amount actually taken, wherever that line sits.
+	assert_string_contains(fn, "(-%d G)\" % charged",
+		"the printed gold figure must be fed by `charged`, the amount actually taken")
+	assert_string_contains(tail, "paid", "and the receipt must interpolate that figure")

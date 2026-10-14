@@ -441,7 +441,7 @@ func _rest_party() -> void:
 			member.current_ap = 0  # Reset AP too
 
 	## Both halves of the receipt are true at once: WHO stayed down (.695) and what was CHARGED.
-	var paid := " (-%d G)" % charged if charged > 0 else ""
+	var paid := (" (-%d G)" % charged) if charged > 0 else ""
 	if beyond_rest.is_empty():
 		dialogue_label.text = "Your party is fully rested!\nHP and MP restored.%s" % paid
 	else:
