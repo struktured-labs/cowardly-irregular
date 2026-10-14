@@ -668,8 +668,9 @@ func _create_item_row(item_id: String, index: int) -> Control:
 	## the row rather than take a width assigned here — an assigned width is clamped up to the
 	## minimum size as it stands in that frame, which is the content width at the DEFAULT font
 	## (1499px for this text at 16, against 843 at the overridden 9), and `size` keeps the clamped
-	## value after the minimum settles. `clip_text` is what removes the text from the minimum size
-	## at all; without it the overrun behaviour alone cannot hold a width.
+	## value after the minimum settles. `clip_text` is what removes the text from the minimum
+	## WIDTH — measured min.x 1623 -> 1 on a label it is set on, while min.y stays line-height
+	## driven — and without it the overrun behaviour alone cannot hold a width.
 	##
 	## Same shape as ItemsMenu's name label, which is the established idiom here — anchor_right,
 	## offsets, clip_text, ellipsis. Trimmed to one line rather than wrapped because

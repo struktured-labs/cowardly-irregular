@@ -611,10 +611,28 @@ func _create_menu_panel(panel_size: Vector2) -> Control:
 		if corr_lines.size() > 1:
 			var fx_label = Label.new()
 			fx_label.text = str(corr_lines[1])
-			## ⛔ WAS A LITERAL `Vector2(190, 14)` WITH `clip_text`. clip_text takes the text out of
-			## the minimum size, so unlike every other Label here this box does NOT clamp up to its
-			## content — it really is 14px tall, and a scaled(10) font is 20px at 200%, so the
-			## corruption effects line was cut off vertically by the box meant to hold it.
+			## ⛔ WAS A LITERAL `Vector2(190, 14)` WITH `clip_text`, and a scaled(10) font is 20px at
+			## 200%, so the corruption effects line was cut off by the box meant to hold it.
+			##
+			## ⚠️ I SHIPPED THE WRONG MECHANISM HERE AND MEASURED IT AFTERWARDS. This comment used
+			## to say "clip_text takes the text out of the minimum size, so this box does NOT clamp
+			## up to its content — it really is 14px tall." THAT IS TRUE OF THE WIDTH ONLY.
+			## Measured with tools/label_clamp_probe.gd, one Label at font 48 asking size (400, 4):
+			##
+			##   baseline                  min (1623, 67) -> settled (1623, 67)   clamps BOTH axes
+			##   clip_text ALONE           min (   1, 67) -> settled ( 400, 67)   WIDTH freed,
+			##                                                                   HEIGHT clamps
+			##   autowrap ALONE            min (   1, 938)                        height EXPLODES
+			##   clip_text + AUTOWRAP_WORD min (   1,  1) -> settled ( 400,  4)   both freed
+			##   empty text                min (   1, 67)   -> the vertical minimum is LINE-HEIGHT
+			##                                                 driven, not glyph driven
+			##
+			## So a `clip_text` Label can never be shorter than one line box: a 14px request on a
+			## 20px line would have clamped UP to 20 and drawn, overlapping whatever sat below it.
+			## The height below is `maxf(14.0, fx_line)` and that is correct — do not "simplify" it
+			## back to a literal on the strength of the old sentence. State the AXIS in any clamp
+			## claim; every error in this family was a true statement about one axis applied to the
+			## other.
 			fx_label.position = Vector2(8, info_y + step * 3.0)
 			fx_label.add_theme_font_size_override("font_size", TextScale.scaled(INFO_FX_FONT_SIZE))
 			var fx_fs: int = TextScale.scaled(INFO_FX_FONT_SIZE)
