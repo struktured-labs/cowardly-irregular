@@ -171,14 +171,18 @@ static func reset_table_cache() -> void:
 
 
 ## Grants gold and consumables. Returns a player-facing summary, or "" when
-## nothing landed — a table entry of all zeroes must not consume the claim.
+## nothing landed — neither a table entry of all zeroes NOR a payout that rounded to
+## zero may consume the claim, because both leave the player with nothing.
 static func _grant(gs: Node, entry: Dictionary) -> String:
 	if entry.is_empty():
 		return ""
 	var parts: Array = []
 	var gold: int = int(entry.get("gold", 0))
 	if gold > 0 and gs.has_method("add_gold"):
-		parts.append("%d gold" % int(gs.add_gold(gold)))
+		# The CREDIT, not the table amount: gold_to_credit truncates, so a positive entry can credit 0.
+		var credited: int = int(gs.add_gold(gold))
+		if credited > 0:
+			parts.append("%d gold" % credited)
 	for raw in (entry.get("items", []) as Array):
 		var spec: Dictionary = raw as Dictionary
 		var iid: String = str(spec.get("item_id", ""))
