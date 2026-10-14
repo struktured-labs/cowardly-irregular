@@ -71,6 +71,12 @@ func _interrupt_advice(rule: String) -> String:
 	return ""
 
 
+## A text size GROWS a box and must never shrink one below the authored layout: at 0.8x the glyphs do
+## not shrink in proportion, so a scaled-down box clips text the shipped layout fits.
+func _grew(base: float) -> float:
+	return maxf(base, float(TextScale.scaled(int(round(base)))))
+
+
 func _build_ui() -> void:
 	for child in get_children():
 		child.queue_free()
@@ -164,8 +170,10 @@ func _build_ui() -> void:
 	var all_badges: Array = newly + previously
 
 	# Compute panel height from row count
-	var row_h = 26.0
-	var panel_w = 520.0
+	var row_h = _grew(26.0)
+	## The panel holds the text, so it widens with it -- clamped to the viewport, and floored at the
+	## authored 520 so 0.8x and 1.0x are unchanged.
+	var panel_w = minf(_grew(520.0), vp_size.x - 40.0)
 	# Pre-compute badge wrap so the panel grows to fit — the old flat 40px
 	# assumption silently dropped chips past panel_w-40 (a full catalog earned
 	# in one session would truncate to ~4 badges on a 520 panel).
@@ -173,33 +181,52 @@ func _build_ui() -> void:
 	var badge_rows: int = 0
 	if badge_layout.size() > 0:
 		badge_rows = int(badge_layout[badge_layout.size() - 1]["row"]) + 1
-	var badge_row_h: float = 40.0 * badge_rows
-	var badge_header_h := 20.0 if all_badges.size() > 0 else 0.0
+	var badge_row_h: float = _grew(40.0) * badge_rows
+	var badge_header_h := _grew(20.0) if all_badges.size() > 0 else 0.0
 	var advice: String = _interrupt_advice(str(AutogrindSystem.last_interrupt_rule))
 	## Header is 68 px bare, 86 with the advice line; every stats offset derives from it so the panel cannot overflow.
 	## Derived from the WRAPPED height, against the NARROW panel width -- 520 is the worst case and
 	## panel_w only ever widens below, so over-reserving is the safe direction and overlap is not.
 	var advice_h: float = 0.0
 	if advice != "":
+		## ⛔ THE SIZE AND THE BREAK FLAGS BOTH HAVE TO MATCH THE LABEL THIS RESERVES FOR. It is
+		## AUTOWRAP_WORD_SMART, whose rule is MANDATORY|WORD_BOUND|ADAPTIVE, and its font is scaled
+		## below. A raw size here was consistent only while the label's was raw too, and the default
+		## flags were inert only while no token exceeded the width -- measured elsewhere today, a
+		## mismatched pair derived a 120px box for 140px of text, and it bit at 125%, not just at 2.0x.
 		advice_h = ThemeDB.fallback_font.get_multiline_string_size(
-			advice, HORIZONTAL_ALIGNMENT_LEFT, panel_w - 40.0, ADVICE_FONT_SIZE).y
-	var head_h: float = 68.0 if advice == "" else 56.0 + maxf(advice_h, float(ADVICE_FONT_SIZE)) + 14.0
+			advice, HORIZONTAL_ALIGNMENT_LEFT, panel_w - 40.0, TextScale.scaled(ADVICE_FONT_SIZE),
+			-1, TextServer.BREAK_MANDATORY | TextServer.BREAK_WORD_BOUND | TextServer.BREAK_ADAPTIVE).y
+	var head_h: float = _grew(68.0) if advice == "" else _grew(56.0) + maxf(advice_h, float(TextScale.scaled(ADVICE_FONT_SIZE))) + _grew(14.0)
 	var rows_per_col: int = stats_data.size()
 	var panel_h = head_h + rows_per_col * row_h + badge_header_h + badge_row_h + 50.0
 	## A long session (full party, rule notes, permadeath, badges) stacked past 720 px and hid the grade and the achievements.
 	var max_h: float = vp_size.y - 40
 	if panel_h > max_h:
-		panel_w = minf(vp_size.x - 80, 1000.0)
-		rows_per_col = int(ceil(stats_data.size() / 2.0))
+		## ⛔ NEVER NARROWER than the width the advice was measured against: the comment above says
+		## "panel_w only ever widens below", and scaling the initial 520 would have broken that --
+		## at 2.0x the scaled start (1040) exceeds this branch's old 1000, so the advice would have
+		## been reserved for a wider panel than the label then got, and wrapped past its reservation.
+		panel_w = maxf(panel_w, minf(vp_size.x - 80, _grew(1000.0)))
+		## ⛔ TWO COLUMNS ONLY IF A COLUMN CAN HOLD A ROW. At 2.0x a 510px column cannot: the value box
+		## starts before the label ends and "Battles Won" draws over "148" (measured). One tall column
+		## is worse vertically and the row cap below handles that; an overlapping row is unreadable.
+		if (panel_w - 20.0) / 2.0 >= _grew(VALUE_BOX_LEFT) + _grew(170.0) + _grew(30.0):
+			rows_per_col = int(ceil(stats_data.size() / 2.0))
 		badge_layout = _layout_badges(all_badges, panel_w)
 		badge_rows = int(badge_layout[badge_layout.size() - 1]["row"]) + 1 if badge_layout.size() > 0 else 0
-		badge_row_h = 40.0 * badge_rows
+		badge_row_h = _grew(40.0) * badge_rows
 		panel_h = head_h + rows_per_col * row_h + badge_header_h + badge_row_h + 50.0
 		if panel_h > max_h:
 			row_h = maxf(18.0, (max_h - head_h - badge_header_h - badge_row_h - 50.0) / maxf(rows_per_col, 1))
 			panel_h = head_h + rows_per_col * row_h + badge_header_h + badge_row_h + 50.0
 	panel_h = min(panel_h, max_h)
 	var col_w: float = panel_w if rows_per_col >= stats_data.size() else (panel_w - 20.0) / 2.0
+	## ⛔ THE ROW FONT FOLLOWS THE ROW. row_h shrinks (floor 18) when a long session will not fit the
+	## screen, and a scaled font in a shrunken row overlaps the row below. Capped here, so the setting
+	## is honoured up to the point the panel can take and every row stays readable past it -- the
+	## boundary is pinned by the guard rather than left to be discovered.
+	var stats_px: int = clampi(int(row_h) - 6, 8, TextScale.scaled(13))
 
 	var panel = Control.new()
 	panel.position = Vector2((vp_size.x - panel_w) / 2, (vp_size.y - panel_h) / 2)
@@ -214,15 +241,15 @@ func _build_ui() -> void:
 
 	var title = Label.new()
 	title.text = "AUTOGRIND COMPLETE"
-	title.position = Vector2(20, 12)
-	title.add_theme_font_size_override("font_size", 18)
+	title.position = Vector2(_grew(20.0), _grew(12.0))
+	title.add_theme_font_size_override("font_size", TextScale.scaled(18))
 	title.add_theme_color_override("font_color", HEADER_COLOR)
 	panel.add_child(title)
 
 	var reason_lbl = Label.new()
 	reason_lbl.text = "Stopped: %s" % _reason
-	reason_lbl.position = Vector2(20, 38)
-	reason_lbl.add_theme_font_size_override("font_size", 12)
+	reason_lbl.position = Vector2(_grew(20.0), _grew(38.0))
+	reason_lbl.add_theme_font_size_override("font_size", TextScale.scaled(12))
 	reason_lbl.add_theme_color_override("font_color", LABEL_COLOR)
 	panel.add_child(reason_lbl)
 
@@ -233,16 +260,16 @@ func _build_ui() -> void:
 		## that enters the tree at width 0 caches a minimum the assignment can no longer get under.
 		advice_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		advice_lbl.text = advice
-		advice_lbl.add_theme_font_size_override("font_size", ADVICE_FONT_SIZE)
+		advice_lbl.add_theme_font_size_override("font_size", TextScale.scaled(ADVICE_FONT_SIZE))
 		advice_lbl.add_theme_color_override("font_color", ADVICE_COLOR)
-		advice_lbl.position = Vector2(20, 56)
-		advice_lbl.size = Vector2(panel_w - 40.0, maxf(advice_h, float(ADVICE_FONT_SIZE)))
+		advice_lbl.position = Vector2(_grew(20.0), _grew(56.0))
+		advice_lbl.size = Vector2(panel_w - _grew(40.0), maxf(advice_h, float(TextScale.scaled(ADVICE_FONT_SIZE))))
 		panel.add_child(advice_lbl)
 
 	var sep = ColorRect.new()
 	sep.color = BORDER_LIGHT
-	sep.position = Vector2(16, head_h - 10)
-	sep.size = Vector2(panel_w - 32, 1)
+	sep.position = Vector2(16, head_h - _grew(10.0))
+	sep.size = Vector2(panel_w - _grew(32.0), 1)
 	panel.add_child(sep)
 
 	var y = head_h
@@ -253,8 +280,8 @@ func _build_ui() -> void:
 		y = head_h + (i % maxi(rows_per_col, 1)) * row_h
 		var lbl = Label.new()
 		lbl.text = s["label"]
-		lbl.position = Vector2(x0 + 30, y)
-		lbl.add_theme_font_size_override("font_size", 13)
+		lbl.position = Vector2(x0 + _grew(30.0), y)
+		lbl.add_theme_font_size_override("font_size", stats_px)
 		lbl.add_theme_color_override("font_color", LABEL_COLOR)
 		panel.add_child(lbl)
 
@@ -262,35 +289,50 @@ func _build_ui() -> void:
 		## Set BEFORE the text: an unclipped Label's minimum width is its whole string, and a size assigned
 		## under that minimum is silently clamped UP — which is how a 310-px box became a 540-px one off-panel.
 		val.clip_text = true
-		val.add_theme_font_size_override("font_size", 13)
+		val.add_theme_font_size_override("font_size", stats_px)
 		val.add_theme_color_override("font_color", s["color"])
 		val.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 		val.text = s["value"]
 		## The box used to be a fixed 170 px while the panel offers far more, so a long value ran off the SCREEN.
-		var box_w: float = maxf(170.0, col_w - VALUE_BOX_LEFT - 30.0)
-		val.position = Vector2(x0 + col_w - 30.0 - box_w, y)
-		val.size = Vector2(box_w, 20)
+		var box_w: float = maxf(_grew(170.0), col_w - _grew(VALUE_BOX_LEFT) - _grew(30.0))
+		val.position = Vector2(x0 + col_w - _grew(30.0) - box_w, y)
+		val.size = Vector2(box_w, _grew(20.0))
 		panel.add_child(val)
 		if s.has("fit_items"):
 			val.text = _fit_items(val, s["fit_items"], box_w)
-			val.size = Vector2(box_w, 20)
+			val.size = Vector2(box_w, _grew(20.0))
 
 	y = head_h + rows_per_col * row_h
 
 	if all_badges.size() > 0:
+		## ⛔ MEASURED AT 2.0x: a 22-row session needs 737px of content in a panel the screen caps at
+		## 680, with row_h already at its 18px floor -- so the chips had nowhere to go and drew over
+		## "Press X or Z to continue", the one control the player needs. Rows that fit are drawn; the
+		## rest are COUNTED IN THE HEADER, which costs no vertical space and loses no information.
+		var chip_h := _grew(30.0)
+		var room: float = panel.size.y - _grew(40.0) - (y + badge_header_h)
+		var rows_fit: int = maxi(0, int(floorf(room / _grew(40.0))))
+		var shown: int = 0
+		for placement in badge_layout:
+			if int(placement["row"]) < rows_fit:
+				shown += 1
+		var not_shown: int = all_badges.size() - shown
 		var badge_header = Label.new()
 		badge_header.text = "ACHIEVEMENTS  (%d new)" % newly.size() if newly.size() > 0 else "ACHIEVEMENTS"
-		badge_header.position = Vector2(20, y)
-		badge_header.add_theme_font_size_override("font_size", 12)
+		if not_shown > 0:
+			badge_header.text += "  (+%d not shown)" % not_shown
+		badge_header.position = Vector2(_grew(20.0), y)
+		badge_header.add_theme_font_size_override("font_size", TextScale.scaled(12))
 		badge_header.add_theme_color_override("font_color", BADGE_NEW_COLOR if newly.size() > 0 else LABEL_COLOR)
 		panel.add_child(badge_header)
 		y += badge_header_h
 
-		var chip_h := 30.0
 		for placement in badge_layout:
+			if int(placement["row"]) >= rows_fit:
+				continue
 			var a: Dictionary = placement["badge"]
 			var chip_x: float = placement["x"]
-			var chip_y: float = y + float(placement["row"]) * 40.0
+			var chip_y: float = y + float(placement["row"]) * _grew(40.0)
 			var chip_w: float = placement["w"]
 			var is_new: bool = a in newly
 			var chip_bg = ColorRect.new()
@@ -301,16 +343,18 @@ func _build_ui() -> void:
 
 			var chip_lbl = Label.new()
 			chip_lbl.text = "%s %s" % [a.get("icon", "*"), a.get("name", a.get("id", "?"))]
-			chip_lbl.position = Vector2(chip_x + 6, chip_y + 6)
-			chip_lbl.add_theme_font_size_override("font_size", 12)
+			chip_lbl.position = Vector2(chip_x + _grew(6.0), chip_y + _grew(6.0))
+			chip_lbl.add_theme_font_size_override("font_size", TextScale.scaled(CHIP_FONT_SIZE))
 			chip_lbl.add_theme_color_override("font_color", BADGE_NEW_COLOR if is_new else BADGE_EARNED_COLOR)
 			chip_lbl.tooltip_text = a.get("description", "")
 			panel.add_child(chip_lbl)
 
+
+
 	var footer_sep = ColorRect.new()
 	footer_sep.color = BORDER_LIGHT
-	footer_sep.position = Vector2(16, panel_h - 40)
-	footer_sep.size = Vector2(panel_w - 32, 1)
+	footer_sep.position = Vector2(16, panel_h - _grew(40.0))
+	footer_sep.size = Vector2(panel_w - _grew(32.0), 1)
 	panel.add_child(footer_sep)
 
 	var dismiss_lbl = Label.new()
@@ -323,9 +367,9 @@ func _build_ui() -> void:
 		g_ok = InputProfileManager.hint_for_action("ui_accept")
 		g_no = InputProfileManager.hint_for_action("ui_cancel")
 	dismiss_lbl.text = "Press %s or %s to continue" % [g_ok, g_no]
-	dismiss_lbl.position = Vector2(0, panel_h - 30)
-	dismiss_lbl.size = Vector2(panel_w, 20)
-	dismiss_lbl.add_theme_font_size_override("font_size", 12)
+	dismiss_lbl.position = Vector2(0, panel_h - _grew(30.0))
+	dismiss_lbl.size = Vector2(panel_w, _grew(20.0))
+	dismiss_lbl.add_theme_font_size_override("font_size", TextScale.scaled(12))
 	dismiss_lbl.add_theme_color_override("font_color", LABEL_COLOR)
 	dismiss_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	panel.add_child(dismiss_lbl)
@@ -353,6 +397,9 @@ func _rules_summary() -> String:
 
 ## Where a value box may start, measured from the column's left edge: clear of the longest authored row label.
 const VALUE_BOX_LEFT := 150.0
+
+## The chip font, named once: _measure_badge_width and the chip Label must not drift apart.
+const CHIP_FONT_SIZE := 12
 
 
 ## Drops trailing entries until the list fits `max_w` in the label's OWN font, so the cap follows the font rather than a guess.
@@ -437,18 +484,23 @@ static func split_session_new(split: Array, session_ids: Array) -> Array:
 	return [newly, previously]
 
 
+## ⛔ MEASURED, NOT ESTIMATED. This was `text.length() * 6.5`, an em-per-char guess at a fixed font
+## 12: blind to the setting, so scaled chips kept their old width and drew over each other from
+## 1.25x -- and blind to the glyphs, so a wide name could already overlap at the shipped size. Three
+## lanes were corrected today for exactly this instrument; `len()` is a proxy for width, not width.
 func _measure_badge_width(a: Dictionary) -> float:
-	# ~6.5 px per char at font_size 12; icon + space + name.
 	var text := "%s %s" % [a.get("icon", "*"), a.get("name", a.get("id", "?"))]
-	return maxf(72.0, text.length() * 6.5 + 16.0)
+	var px: int = TextScale.scaled(CHIP_FONT_SIZE)
+	var w: float = ThemeDB.fallback_font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x
+	return maxf(_grew(72.0), w + _grew(16.0))
 
 
 ## Precompute wrap positions so panel_h can grow to fit all chips.
 ## Returns [{badge, row, x, w}] — one entry per input badge, never fewer.
 func _layout_badges(all_badges: Array, panel_w: float) -> Array:
-	var chip_pad := 8.0
-	var start_x := 20.0
-	var wrap_x := panel_w - 20.0
+	var chip_pad := _grew(8.0)
+	var start_x := _grew(20.0)
+	var wrap_x := panel_w - _grew(20.0)
 	var out: Array = []
 	var row := 0
 	var x := start_x
