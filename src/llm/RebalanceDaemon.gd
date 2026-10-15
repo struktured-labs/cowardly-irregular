@@ -216,6 +216,9 @@ static func outcome_line(trigger: String, status: String, proposal: Dictionary =
 			return "[REBALANCE] %s produced no proposal — no LLM backend reachable" % trigger
 		"failed_fallback":
 			return "[REBALANCE] %s produced no proposal — the model's reply was not usable" % trigger
+		"failed_bad_index":
+			return "[REBALANCE] produced no proposal — index %d is outside pending[%d]" % [
+				int(proposal.get("idx", -1)), int(proposal.get("pending", 0))]
 		"proposed":
 			var deltas: Variant = proposal.get("deltas", [])
 			var n_deltas: int = (deltas as Array).size() if deltas is Array else 0
@@ -229,6 +232,8 @@ static func outcome_line(trigger: String, status: String, proposal: Dictionary =
 ## the proposal idx is invalid OR LLM unavailable OR fallback was hit.
 func request_llm_proposal(proposal_idx: int, recent_events: Array = []) -> bool:
 	if proposal_idx < 0 or proposal_idx >= pending.size():
+		# The only exit that said nothing. consider() has already promised "awaiting LLM proposal".
+		print(outcome_line("", "failed_bad_index", {"idx": proposal_idx, "pending": pending.size()}))
 		return false
 	var proposal: Dictionary = pending[proposal_idx]
 	var trigger: String = str(proposal.get("trigger", ""))
