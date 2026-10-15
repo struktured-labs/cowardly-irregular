@@ -45,7 +45,9 @@ tried to fix. Exports now carry a redirect like every other invocation; see tool
 
 Exit 0 every invocation is sandboxed or declared · 1 something is not · 2 nothing was examined.
 """
+import ast
 import glob
+import io
 import subprocess
 import os
 import re
@@ -147,6 +149,127 @@ EXEMPT = (
 )
 
 
+# ⛔ THE CORPUS WAS A LANGUAGE. main()'s comment celebrates deriving the corpus "from the index,
+# not from a pattern" while the derivation stayed `git ls-files "*.sh"` -- an EXTENSION standing
+# in for "everything that can launch godot", which is the same substitution one layer over.
+# 220 tracked python files exist, one of them launched the engine, and this guard could not see
+# the language it is itself written in. (Seven lanes made the identical shell-only corpus error
+# in their own audits on 2026-10-15; this one was frozen into a guard the publish chain blocks on.)
+#
+# ⛔ AND IT IS AST, NOT REGEX, BECAUSE THE FIRST VERSION FLAGGED ITS OWN SELFTEST FIXTURES.
+# A pattern cannot separate `subprocess.run(["godot"...])` from a STRING containing that text,
+# and this file is full of the latter by construction -- 5 false findings, in the guard itself,
+# on the first run. The shell arm has the same hazard and solves it by hand (`ADVICE TEXT in an
+# echo is not an invocation`); python hands us an exact answer, since a string holding code is a
+# Constant and never a Call. Nothing here can be fooled by a quoted example.
+PY_SUBPROC_FNS = {"run", "Popen", "call", "check_call", "check_output"}
+
+
+def _py_is_subprocess(func):
+    if isinstance(func, ast.Attribute) and func.attr in PY_SUBPROC_FNS:
+        return isinstance(func.value, ast.Name) and func.value.id == "subprocess"
+    if isinstance(func, ast.Attribute) and func.attr in ("system", "popen"):
+        return isinstance(func.value, ast.Name) and func.value.id == "os"
+    return False
+
+
+def _py_names_engine(call):
+    """An engine named as an ARGUMENT, by basename -- so `project.godot` (a filename) and
+    `res://.godot/imported/x` (a path) are data, which is the false-positive class that cost
+    three lanes a wrong audit number on 2026-10-15."""
+    def _is_engine(sval):
+        base = sval.rsplit("/", 1)[-1]
+        return base == "godot" or base.endswith("run_tests.sh")
+
+    for arg in call.args:
+        if isinstance(arg, (ast.List, ast.Tuple)):
+            for el in arg.elts:
+                if isinstance(el, ast.Constant) and isinstance(el.value, str) and _is_engine(el.value):
+                    return True
+        elif isinstance(arg, ast.Constant) and isinstance(arg.value, str):
+            # shell=True form: the engine must be in command position, not merely present.
+            if EDITOR_CLASS.search(arg.value) and _in_command_position(
+                    arg.value[:EDITOR_CLASS.search(arg.value).start()]):
+                return True
+            if "run_tests.sh" in arg.value:
+                return True
+    return False
+
+
+def _py_module_env_governs(tree):
+    """A MODULE-LEVEL os.environ write governs every later subprocess in the process, because
+    subprocess inherits os.environ by default. This has no shell analogue.
+
+    Only `tree.body` counts. An indented write is reached only if its function ran first, which
+    this cannot know -- clearing on it would be textual presence standing in for a structural
+    property, the exact failure _redirect_governs documents for shell."""
+    for node in tree.body:
+        tgts = []
+        if isinstance(node, ast.Assign):
+            tgts = node.targets
+        elif isinstance(node, ast.AnnAssign):
+            tgts = [node.target]
+        for t in tgts:
+            if isinstance(t, ast.Subscript) and isinstance(t.value, ast.Attribute) \
+               and t.value.attr == "environ" and isinstance(t.slice, ast.Constant) \
+               and t.slice.value == "XDG_DATA_HOME":
+                return True
+        if isinstance(node, ast.Expr) and isinstance(node.value, ast.Call) \
+           and isinstance(node.value.func, ast.Attribute) and node.value.func.attr == "setdefault" \
+           and node.value.args and isinstance(node.value.args[0], ast.Constant) \
+           and node.value.args[0].value == "XDG_DATA_HOME":
+            return True
+    return False
+
+
+def _py_env_governs(call, tree):
+    """`env=` on THIS call. Two spellings, plus one level of indirection because
+    `e = dict(os.environ); e["XDG_DATA_HOME"] = sb; ...env=e` is idiomatic. A deeper
+    indirection reds, which is the safe direction and names its own cure."""
+    kw = next((k for k in call.keywords if k.arg == "env"), None)
+    if kw is None:
+        return False
+    if isinstance(kw.value, ast.Dict):
+        for k in kw.value.keys:
+            if isinstance(k, ast.Constant) and k.value == "XDG_DATA_HOME":
+                return True
+    if isinstance(kw.value, ast.Name):
+        name = kw.value.id
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Assign):
+                for t in node.targets:
+                    if isinstance(t, ast.Subscript) and isinstance(t.value, ast.Name) \
+                       and t.value.id == name and isinstance(t.slice, ast.Constant) \
+                       and t.slice.value == "XDG_DATA_HOME":
+                        return True
+                    if isinstance(t, ast.Name) and t.id == name:
+                        seg = ast.dump(node.value)
+                        if "XDG_DATA_HOME" in seg:
+                            return True
+    return False
+
+
+def _py_invocations(path):
+    """Yield (lineno, text, sandboxed) for every engine launch in a python file."""
+    src = io.open(path, encoding="utf-8", errors="replace").read()
+    try:
+        tree = ast.parse(src)
+    except SyntaxError as exc:
+        # A file we cannot parse is a file we cannot certify. All 220 tracked .py parse today;
+        # if that changes, say so rather than reporting it clean.
+        print(f"  BLOCKED   {path}: does not parse ({exc}) -- cannot certify its invocations",
+              file=sys.stderr)
+        return
+    module_ok = _py_module_env_governs(tree)
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call) or not _py_is_subprocess(node.func):
+            continue
+        if not _py_names_engine(node):
+            continue
+        text = (ast.get_source_segment(src, node) or "").split("\n")[0]
+        yield node.lineno, " ".join(text.split())[:100], module_ok or _py_env_governs(node, tree)
+
+
 def _commands(path):
     """Yield (lineno, logical line). Shell continuations are joined so a redirect on the
     previous physical line still counts — the battle smoke's WINEPREFIX sits there, and
@@ -174,6 +297,18 @@ def audit(paths):
         if not os.path.exists(path):
             continue
         scanned += 1
+        if path.endswith(".py"):
+            for lineno, text, sandboxed in _py_invocations(path):
+                exempt_reason = next((r for token, r in EXEMPT
+                                      if path == token or path.endswith("/" + token)), None)
+                if sandboxed:
+                    ok += 1
+                elif exempt_reason:
+                    declared += 1
+                    print(f"  declared  {path}:{lineno}  {exempt_reason}")
+                else:
+                    findings.append((path, lineno, text, "godot (python)"))
+            continue
         for lineno, cmd in _commands(path):
             code = cmd.split("#", 1)[0] if not cmd.lstrip().startswith("#") else ""
             if not code.strip():
@@ -277,8 +412,11 @@ def main(argv):
         paths = argv
     else:
         try:
-            out = subprocess.run(["git", "ls-files", "*.sh"], capture_output=True, text=True, timeout=30)
-            paths = sorted(p for p in out.stdout.split("\n") if p.endswith(".sh"))
+            # ⛔ `*.sh` ALONE WAS STILL A PATTERN STANDING IN FOR A SET -- see the PY_SUBPROC
+            # comment. The index is the right source; the extension list is the part that was
+            # a hypothesis, and python is where the one missed invocation lived.
+            out = subprocess.run(["git", "ls-files", "*.sh", "*.py"], capture_output=True, text=True, timeout=30)
+            paths = sorted(p for p in out.stdout.split("\n") if p.endswith((".sh", ".py")))
         except Exception:
             paths = []
         if not paths:
@@ -413,6 +551,77 @@ def selftest():
         check("a corpus with no invocations is BLOCKED (2)", rc, 2)
         rc = main([os.path.join(d, "does-not-exist.sh")])
         check("a corpus of missing files is BLOCKED (2)", rc, 2)
+        # ---- PYTHON ARM. The corpus was shell-only; these are the forms it could not see. ----
+        PY_BARE = ('import subprocess\n'
+                   'subprocess.run(["godot", "--headless", "--import", "--quit"], timeout=900)\n')
+        f, o, dec, _ = audit([w("p_bare.py", PY_BARE)])
+        check("python: a list-form godot launch is FLAGGED", len(f), 1)
+        check("  ...and the shell matcher alone would have missed it",
+              bool(EDITOR_CLASS.search('["godot", "--headless"]')), False)
+
+        f, o, dec, _ = audit([w("p_env.py",
+            'import os, subprocess\n'
+            'subprocess.run(["godot", "--import"], env={**os.environ, "XDG_DATA_HOME": "sb"})\n')])
+        check("python: a per-call env= redirect is CLEAN", len(f), 0)
+        check("  ...and is COUNTED rather than skipped", o, 1)
+
+        # `env=` is conventionally the LAST argument, so a fixed-width window misses exactly the
+        # thing that clears the finding. Balanced-paren extraction is what makes this arm pass.
+        f, o, dec, _ = audit([w("p_multiline.py",
+            'import os, subprocess\n'
+            'subprocess.run(\n'
+            '    ["godot", "--headless", "--audio-driver", "Dummy", "--import", "--quit"],\n'
+            '    cwd="/x", capture_output=True, timeout=900,\n'
+            '    env={**os.environ, "XDG_DATA_HOME": "sb"},\n'
+            ')\n')])
+        check("python: env= on a LATER line still governs", len(f), 0)
+
+        f, o, dec, _ = audit([w("p_module.py",
+            'import os, subprocess\n'
+            'os.environ["XDG_DATA_HOME"] = "sb"\n'
+            'subprocess.run(["godot", "--import"])\n')])
+        check("python: a module-level os.environ write governs", len(f), 0)
+
+        # Indented => ran only if that function ran first, which this cannot know. Flagging is
+        # the safe direction and names the cure.
+        f, o, dec, _ = audit([w("p_indented.py",
+            'import os, subprocess\n'
+            'def setup():\n'
+            '    os.environ["XDG_DATA_HOME"] = "sb"\n'
+            'subprocess.run(["godot", "--import"])\n')])
+        check("python: an INDENTED os.environ write does NOT clear it", len(f), 1)
+
+        f, o, dec, _ = audit([w("p_named.py",
+            'import os, subprocess\n'
+            'e = dict(os.environ)\n'
+            'e["XDG_DATA_HOME"] = "sb"\n'
+            'subprocess.run(["godot", "--import"], env=e)\n')])
+        check("python: env=NAME resolves one level", len(f), 0)
+
+        f, o, dec, _ = audit([w("p_runtests.py",
+            'import subprocess\n'
+            'subprocess.run(["timeout", "900", "tools/run_tests.sh", "x"])\n')])
+        check("python: run_tests.sh in a list is FLAGGED", len(f), 1)
+
+        # ⛔ THE FALSE-POSITIVE CLASSES THAT COST SEVEN LANES A WRONG NUMBER ON 2026-10-15:
+        # `.godot` as a FILE EXTENSION and `.godot/imported` as a PATH, both inside data.
+        f, o, dec, _ = audit([w("p_fp.py",
+            'import subprocess\n'
+            'EXTS = ("gd", "json", "tscn", "cfg", "tres", "godot", "sh", "py")\n'
+            'dest = "res://.godot/imported/x.ctex"\n'
+            'subprocess.run(["git", "ls-files", "project.godot"])\n'
+            'print("run godot --import yourself")\n')])
+        check("python: an extension list / .godot path / project.godot is NOT a launch", len(f), 0)
+        check("  ...and that file yields no invocation at all", o + dec + len(f), 0)
+
+        f, o, dec, _ = audit([w("p_comment.py",
+            'import subprocess\n'
+            '# subprocess.run(["godot", "--import"])\n')])
+        check("python: a COMMENTED-OUT launch is not an invocation", len(f), 0)
+
+        check("the derived corpus now spans BOTH languages",
+              all(e in open(__file__).read() for e in ('"*.sh", "*.py"',)), True)
+
 
     # ⛔ A DECLARATION NOBODY HAS WATCHED FIRE IS INDISTINGUISHABLE FROM A DEAD ENTRY.
     # This file already lost one to that: the EXEMPT tuple was tested only against `code`, so an
