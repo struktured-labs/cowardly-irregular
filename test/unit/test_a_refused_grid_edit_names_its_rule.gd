@@ -25,7 +25,13 @@ const GdSource := preload("res://test/unit/helpers/gd_source.gd")
 ## reason is invisible — paired with whether a reason is flashed with it.
 func _cap_gated_refusals() -> Array:
 	var out: Array = []
-	var lines: PackedStringArray = GdSource.code_of(EDITOR_PATH).split("\n")
+	## ⛔ strip_comments, NOT code_of: this arm reports `i + 1` as a SOURCE LINE, and code_of
+	## rejoins after splitting on triple quotes, so its line map is gone. Measured on this
+	## file: 3805 raw lines, 3805 after strip_comments, 3865 after code_of — every printed
+	## number was off by 32-57, naming healthy code to whoever read the failure. The swap is
+	## behaviour-neutral: the needle occurs 23 times under both readers (cowir-battle).
+	var lines: PackedStringArray = GdSource.strip_comments(
+			FileAccess.get_file_as_string(EDITOR_PATH)).split("\n")
 	for i in lines.size():
 		if not str(lines[i]).contains('play_ui("menu_error")'):
 			continue
