@@ -1008,6 +1008,39 @@
         "start": 5,
         "end": 5
       }
+    },
+    "ironback_beetle": {
+      "path": "res://assets/sprites/monsters/overworld/ironback_beetle.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "tier": "T1",
+      "source": "tools/derive_overworld_roamer_sheets.py: autocrop + BOX downscale of the battle idle",
+      "derived_from_idle": {
+        "start": 3,
+        "end": 4
+      }
+    },
+    "masterite_tempo_suburban": {
+      "path": "res://assets/sprites/monsters/overworld/masterite_tempo_suburban.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "tier": "T1",
+      "source": "tools/derive_overworld_roamer_sheets.py: autocrop + BOX downscale of the battle idle",
+      "derived_from_idle": {
+        "start": 3,
+        "end": 4
+      }
+    },
+    "spiteful_crow": {
+      "path": "res://assets/sprites/monsters/overworld/spiteful_crow.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "tier": "T1",
+      "source": "tools/derive_overworld_roamer_sheets.py: autocrop + BOX downscale of the battle idle",
+      "derived_from_idle": {
+        "start": 3,
+        "end": 4
+      }
     }
   },
   "monster_sheets": {

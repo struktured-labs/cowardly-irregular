@@ -8,7 +8,7 @@ extends GutTest
 ## re-deriving in-engine (BILINEAR or TRILINEAR) scored correct roamers 0.52-0.95 against the tool's BOX filter.
 
 ## Roamers derived by the tool as of 2026-10-14; the floor keeps an emptied record from passing.
-const MIN_DERIVED := 17
+const MIN_DERIVED := 20
 
 
 func _manifest() -> Dictionary:
