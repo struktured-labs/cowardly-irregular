@@ -140,13 +140,18 @@ def _runs_godot(code):
 # Deliberately EMPTY. Kept as a named, greppable place so that adding an exemption is a visible
 # act with a reason attached, rather than a special case buried in the matcher — and so the
 # report keeps a `declared` column that reads 0 instead of silently having no such concept.
-EXEMPT = (
-    # launch.sh IS the player's launcher. Its whole purpose is to start the game against
-    # struktured's real profile, so an import prewarm writing user:// there is the intended
-    # behaviour rather than a leak. This is the one case where "runs unsandboxed" is correct,
-    # and it is declared rather than filtered so the next reader sees WHY it is not a finding.
-    ("launch.sh", "the player's own launcher — running against the real profile is its purpose"),
-)
+# ⛔ DROPPED 2026-10-15, and it was 0-FOR-2 ON ITS OWN JUSTIFICATION (cowir-sfx).
+# The entry was ("launch.sh", "the player's own launcher — running against the real profile is
+# its purpose"). That reason is true of `godot &` at launch.sh:50 and FALSE of the two
+# `godot --headless --import` prewarms at :40 and :45 -- and because the tuple matches on
+# `path == token` it declared the whole FILE, so it licensed exactly the two lines its reason is
+# not about. Worse, the line it IS about was never a finding: `godot &` carries no `--`, so it
+# never matches EDITOR_CLASS. A file-scoped licence for a line-scoped reason.
+# The docstring above already said "THERE ARE NO EXEMPTIONS ANY MORE"; now that is true.
+# ⚠️ The MECHANISM (a declaration may name a FILE, not just a line fragment) is still pinned --
+# selftest injects a synthetic EXEMPT, because an arm that needs a live licence to stay green
+# is a reason never to remove one.
+EXEMPT = ()
 
 
 # ⛔ THE CORPUS WAS A LANGUAGE. main()'s comment celebrates deriving the corpus "from the index,
@@ -484,10 +489,20 @@ def selftest():
         check("the derived corpus reaches OUTSIDE tools/", len(_outside) > 0, True)
         check("  ...and it is derived, not a glob", "ls-files" in open(__file__).read(), True)
 
-        # a declaration must be able to name a FILE, not only a line fragment
-        f, o, dec, _ = audit([w("launch.sh", 'godot --headless --import\n')])
-        check("a PATH-named exemption is honoured", dec, 1)
-        check("  ...and it is not counted as a finding", len(f), 0)
+        # a declaration must be able to name a FILE, not only a line fragment.
+        # SYNTHETIC since 2026-10-15: EXEMPT is empty, and this pins the MECHANISM rather than
+        # any live entry. Previously it read the real tuple, so the arm could only stay green
+        # while an exemption existed -- a guard that pays you to keep a licence.
+        _saved_exempt = EXEMPT
+        globals()["EXEMPT"] = (("launch.sh", "synthetic: the mechanism, not a live licence"),)
+        try:
+            f, o, dec, _ = audit([w("launch.sh", 'godot --headless --import\n')])
+            check("a PATH-named exemption is honoured (synthetic)", dec, 1)
+            check("  ...and it is not counted as a finding", len(f), 0)
+            check("  ...and the real tuple is EMPTY, so that was the mechanism only",
+                  len(_saved_exempt), 0)
+        finally:
+            globals()["EXEMPT"] = _saved_exempt
 
         # the exported binary, which carries no `godot` at all
         f, o, dec, _ = audit([w("c.sh", '( cd "$OUT" && timeout 240 "./${ARTIFACT}" --headless --quit )\n')])
@@ -629,12 +644,21 @@ def selftest():
     # measured. That bug was fixed; the CLASS was not. If launch.sh is sandboxed, renamed, or stops
     # invoking godot, its declaration becomes a permanent silent exemption with nothing to say so.
     # So: every EXEMPT token must still produce a `declared` row on the REAL tree.
+    #
+    # ⚠️ AND THAT LOOP GOES VACUOUS THE MOMENT THE TUPLE IS EMPTY, which is now the normal
+    # state -- zero iterations, zero arms, nothing said. The `if not EXEMPT` arm below is what
+    # keeps this section able to fail at all: with no licences issued, the real tree must
+    # declare NOTHING, so a declaration that reappears without an entry is caught too.
+    # This is the anti-vacuity pair, not a second opinion on the same fact.
     import io as _io
     _out = _sp.run([sys.executable, __file__], capture_output=True, text=True, timeout=120).stdout
     for _token, _reason in EXEMPT:
         _fired = any(line.startswith("  declared ") and _token in line for line in _out.splitlines())
         check("EXEMPT '%s' still fires — else DROP it, do not carry a stale exemption" % _token,
               _fired, True)
+    if not EXEMPT:
+        _declared = [l for l in _out.splitlines() if l.startswith("  declared ")]
+        check("EXEMPT is empty, so the real tree declares NOTHING", len(_declared), 0)
 
     # ⛔ THE INTERPRETER RULE, BOTH DIRECTIONS. This LOOSENS a safety guard, so the arms that
     # matter are the ones proving it did not stop flagging a real execution. The third is the
