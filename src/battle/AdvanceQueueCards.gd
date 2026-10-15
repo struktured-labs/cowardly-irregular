@@ -127,6 +127,22 @@ func _place(card: Control, i: int, anchor: Rect2, animate: bool) -> void:
 	t.tween_property(card, "modulate:a", 1.0, 0.10)
 
 
+## Hand a card out and VACATE its slot, so `_cards` never holds one whose free is pending.
+## ⛔ THE DEFECT THIS FIXES, from struktured's 2026-10-12 session: 20 freed-instance aborts, 15 in
+## `_peel` and 5 in `_pop`. `_peel` schedules `queue_free` through a tween 0.43 s out (0.25 interval
+## + 0.18 fade) and LEFT the card in `_cards`; `run_end` then iterated every slot and peeled the
+## already-freed ones. 9 of the 20 came from that loop alone.
+## The slot becomes null rather than being removed: `_run_index` indexes `_cards`, so erasing would
+## shift every later entry out from under it. A freed reference is already null-ish and every other
+## consumer here already gates on `is_instance_valid`, so a null slot is the state they all handle.
+func _take(i: int) -> PanelContainer:
+	if i < 0 or i >= _cards.size():
+		return null
+	var card: PanelContainer = _cards[i] if is_instance_valid(_cards[i]) else null
+	_cards[i] = null
+	return card
+
+
 func _pop(card, animate: bool) -> void:  # untyped: a freed card must reach the validity check
 	if not is_instance_valid(card):
 		return
@@ -276,7 +292,7 @@ func run_step(targets: Array, animate: bool, action = null) -> void:
 			return  # not one of this run's steps
 		while _run_index < at:
 			_mark_held(_run_index)
-			_peel(_cards[_run_index], animate)
+			_peel(_take(_run_index), animate)
 			_run_index += 1
 	var i := _run_index
 	var hit := names_of(targets)
@@ -285,7 +301,7 @@ func run_step(targets: Array, animate: bool, action = null) -> void:
 		l.text = l.text.split("  → ")[0] + "  → " + hit + " (retarget)"
 	elif l and hit != "":
 		l.text = l.text.split("  → ")[0] + "  → " + hit
-	_peel(_cards[i], animate)
+	_peel(_take(i), animate)
 	_run_index += 1
 	if _run_index < _cards.size():
 		_light(_run_index, animate)
@@ -298,8 +314,8 @@ func run_end(animate: bool) -> void:
 	for i in range(maxi(0, _run_index), _cards.size()):
 		_mark_held(i)
 	_run_index = -1
-	for c in _cards:
-		_peel(c, animate)
+	for i in _cards.size():
+		_peel(_take(i), animate)
 	_cards.clear()
 	_keys.clear()
 
