@@ -87,3 +87,64 @@ func test_a_specific_arm_is_not_gated_by_the_seam() -> void:
 	_es._play_effect_sound(_es.EffectType.FIRE, 1.0, "")
 	assert_true(_sm._sfx_cooldowns.has("strike_fire"),
 		"strike_fire was gated — only the generic buff/debuff stings may stand off")
+
+## ⛔ THE SAME DEFECT CLASS ON A SECOND PAIR OF ARMS, and the 2026-09-06 pass is what dates it:
+## that pass moved every elemental impact off the CAST cue onto `strike_<element>`, because replaying
+## `ability_<element>` at impact was the doubled "boop" struktured reported. HEAL and MP_RESTORE were
+## left on `ability_heal` — so one asset played twice per heal, cast on _ability_player at -12 dB and
+## impact on _battle_player at -6 + jitter, 3-9 dB apart (cowir-sfx, from his logs).
+## `strike_heal` does not exist (0 in the manifest, 0 on disk), so the impact arm is EMPTY rather than
+## repointed: the cast already spoke, and naming an absent cue trades a double-play for a warning.
+func test_the_cast_side_member_this_file_drives_exists() -> void:
+	assert_true(_sm.has_method("play_ability"), "SoundManager.play_ability is the cast path BattleScene:4226 uses")
+	assert_true(_sm._sfx_manifest.has("ability_heal"), "ability_heal must be authored or these arms mean nothing")
+
+
+func test_a_heal_does_not_replay_its_cast_cue_at_impact() -> void:
+	_sm._sfx_cooldowns.clear()
+	_sm.play_ability("heal")
+	assert_true(_sm._sfx_cooldowns.has("ability_heal"), "CONTROL: the CAST cue must have been served first")
+	_sm._sfx_cooldowns.clear()
+	_es._play_effect_sound(_es.EffectType.HEAL, 1.0, "")
+	assert_false(_sm._sfx_cooldowns.has("ability_heal"),
+		"the impact voice replayed the CAST cue — one asset twice per heal, 3-9 dB apart, which is the defect the 09-06 pass fixed for the five elements")
+
+
+func test_an_mp_restore_does_not_replay_the_heal_cast_cue() -> void:
+	_sm._sfx_cooldowns.clear()
+	_es._play_effect_sound(_es.EffectType.MP_RESTORE, 1.0, "")
+	assert_false(_sm._sfx_cooldowns.has("ability_heal"),
+		"MP_RESTORE carried the same reuse — it shared the arm verbatim")
+
+
+## CONTROL, and it is why this is a suppression and not a deletion of the sound path: the five
+## elemental arms must still serve their own authored impact cue.
+func test_the_elemental_impacts_still_speak() -> void:
+	for pair in [[_es.EffectType.FIRE, "strike_fire"], [_es.EffectType.ICE, "strike_ice"],
+			[_es.EffectType.LIGHTNING, "strike_lightning"], [_es.EffectType.HOLY, "strike_holy"],
+			[_es.EffectType.DARK, "strike_dark"]]:
+		_sm._sfx_cooldowns.clear()
+		_es._play_effect_sound(pair[0], 1.0, "")
+		assert_true(_sm._sfx_cooldowns.has(str(pair[1])),
+			"%s went silent — the heal suppression must not reach the elemental arms" % str(pair[1]))
+
+
+## An impact arm may reuse a CAST-namespace key only with a stated reason. You cannot silence this
+## green, only explain it green, and the explanation is the deliverable.
+func test_a_cast_namespace_impact_key_carries_its_reason() -> void:
+	var src: String = GdSource.strip_comments(FileAccess.get_file_as_string("res://src/battle/EffectSystem.gd"))
+	var raw: PackedStringArray = FileAccess.get_file_as_string("res://src/battle/EffectSystem.gd").split("\n")
+	var checked := 0
+	for i in raw.size():
+		if not raw[i].contains("sound_key = \"ability_"):
+			continue
+		checked += 1
+		var explained := false
+		for back in range(maxi(0, i - 6), i):
+			if raw[back].strip_edges().begins_with("##"):
+				explained = true
+		assert_true(explained,
+			"EffectSystem.gd:%d gives an impact arm a CAST-namespace key with no `##` reason above it — that is the heal double-play shape" % (i + 1))
+	assert_gt(checked, 0, "FLOOR: no `sound_key = \"ability_` arm was found, so this arm checked nothing")
+	assert_eq(src.count("sound_key = \"ability_heal\""), 0,
+		"ability_heal is back as an impact key — it is the CAST cue and play_ability already served it")
