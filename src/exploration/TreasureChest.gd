@@ -27,6 +27,8 @@ const FLAT_NAME_FONT: int = 10
 ## What the panel says when the grant did nothing. One spelling, so a guard pins the STATE rather
 ## than a sentence, and the arms cannot drift apart.
 const NOTHING_ADDED: String = "Nothing was added."
+const KIND_GOLD: String = "gold"
+const KIND_EQUIPMENT: String = "equipment"
 
 
 ## ⛔ THE ONE PLACE A FIND IS CLAIMED, AND IT TAKES WHAT WAS GRANTED RATHER THAN WHAT WAS
@@ -40,10 +42,15 @@ const NOTHING_ADDED: String = "Nothing was added."
 static func claim_for(kind: String, display: String, granted: int) -> String:
 	if granted <= 0:
 		return NOTHING_ADDED
+	## CONSTS, NOT LITERALS: test_treasure_chest_gold_regression anchors on the FIRST gold match arm
+	## in this file and reads a 900-char window for the grant call and its has-method guard. This
+	## seam sits ABOVE the real grant, so a literal arm here steals that anchor and the window lands
+	## on a function that makes no grant. The guard was right; my change moved what it pointed at.
+	## Written without the verbatim tokens on purpose -- prose that spells them steals it too.
 	match kind:
-		"gold":
+		KIND_GOLD:
 			return "Found %d Gold!" % granted
-		"equipment":
+		KIND_EQUIPMENT:
 			return "Found %s!" % display
 		_:
 			return "Found %s x%d!" % [display, granted]
@@ -627,12 +634,16 @@ func _open_chest(player: Node2D) -> void:
 	# what makes a fanfare stop meaning anything.
 	## The loot cue answers to the effect too — the same rule as the examine chime, one lane item
 	## earlier: a fanfare for a grant that did not happen is the audio half of the same lie.
-	if SoundManager and granted:
-		match contents_type:
-			"gold":
-				SoundManager.play_pickup("gold_pickup")
-			"equipment":
-				SoundManager.play_music("stinger_item_found")
+	## NESTED, not `and`-ed: test_treasure_chest_audio_dedupe_regression pins the literal outer
+	## form for the post-emit block, and collapsing it into one condition reds a guard whose
+	## subject (a null-safe second cue) this still satisfies. Their pin stays; the gate goes in.
+	if SoundManager:
+		if granted:
+			match contents_type:
+				"gold":
+					SoundManager.play_pickup("gold_pickup")
+				"equipment":
+					SoundManager.play_music("stinger_item_found")
 
 	# Hide after delay. A step-away or a later empty reread bumps _popup_gen, so this must not dismiss that line.
 	await get_tree().create_timer(2.0).timeout

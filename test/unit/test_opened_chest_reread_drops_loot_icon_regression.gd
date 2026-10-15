@@ -9,6 +9,18 @@ extends GutTest
 const CHEST_ID := "opened_reread_probe"
 const FLAG := "chest_" + CHEST_ID
 
+## ⛔ A GRANT NOW HAS TO LAND FOR THERE TO BE A LOOT ICON AT ALL. The chest stopped announcing
+## finds it had not made, so the item arm needs somebody to RECEIVE the potion: a GameLoop with a
+## party. Without it this fixture granted nothing, took the NOTHING_ADDED path, and the arms below
+## asserted a found-line and an icon that the OLD code only produced because it claimed a find it
+## had not made. Same stub shape as test_inn_rest_keeps_permakill_regression.
+const _STUB_GAMELOOP := """
+extends Node
+var party: Array = []
+"""
+
+var _stub: Node = null
+
 
 func before_each() -> void:
 	if GameState:
@@ -18,10 +30,32 @@ func before_each() -> void:
 func after_each() -> void:
 	if GameState:
 		GameState.story_flags.erase(FLAG)
+	## Freed here, not autofreed: it lives on the scene ROOT, so a leak reaches every later test.
+	if _stub != null and is_instance_valid(_stub):
+		_stub.get_parent().remove_child(_stub)
+		_stub.free()
+	_stub = null
+
+
+## A receiver for the item arm: Combatant carries `inventory` and `add_item`, which is the
+## delta the chest measures to decide whether anything was actually granted.
+func _make_stub_gameloop() -> Node:
+	var script := GDScript.new()
+	script.source_code = _STUB_GAMELOOP
+	script.reload()
+	var stub := Node.new()
+	stub.set_script(script)
+	stub.name = "GameLoop"
+	var holder := Combatant.new()
+	add_child_autofree(holder)
+	stub.party = [holder]
+	get_tree().root.add_child(stub)
+	return stub
 
 
 ## chest_id and contents are set before add_child: _ready reads the id for the opened flag.
 func _opened_item_chest() -> TreasureChest:
+	_stub = _make_stub_gameloop()
 	var chest := TreasureChest.new()
 	chest.chest_id = CHEST_ID
 	chest.contents_type = "item"

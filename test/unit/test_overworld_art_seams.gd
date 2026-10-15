@@ -79,6 +79,12 @@ func test_opening_a_chest_keeps_the_artist_art() -> void:
 	GameState.set_story_flag("chest_transition_probe", false)
 	var c = load("res://src/exploration/TreasureChest.gd").new()
 	c.chest_id = "transition_probe"
+	## GOLD, not the default item: the swap is now gated on the grant having LANDED, and the item
+	## arm needs a party to receive it (no GameLoop here, so it would grant nothing and correctly
+	## stay shut). Gold credits through the GameState autoload, which this fixture already has.
+	## The subject is unchanged -- this test is about the ART SWAP, not about which payload.
+	c.contents_type = "gold"
+	c.contents_amount = 25
 	add_child_autofree(c)
 	await get_tree().process_frame
 

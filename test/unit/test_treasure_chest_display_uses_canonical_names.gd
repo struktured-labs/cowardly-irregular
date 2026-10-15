@@ -14,10 +14,13 @@ func _read(p: String) -> String:
 	return t
 
 
+## Re-pointed at _grant_contents: the item and equipment branches MOVED there when the grant was
+## extracted behind claim_for. Both callers of this helper assert about those branches, so the
+## subject is unchanged -- only its home moved. Slicing _open_chest now finds neither branch.
 func _open_chest_body() -> String:
 	var src := _read(TREASURE_CHEST)
-	var idx: int = src.find("func _open_chest")
-	assert_gt(idx, -1, "_open_chest must exist")
+	var idx: int = src.find("func _grant_contents")
+	assert_gt(idx, -1, "_grant_contents must exist -- it holds the item/equipment branches")
 	var next_fn: int = src.find("\nfunc ", idx + 1)
 	return src.substr(idx, next_fn - idx) if next_fn > -1 else src.substr(idx)
 
