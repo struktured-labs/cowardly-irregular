@@ -1,5 +1,6 @@
 {
   "id": "world4_below_specification",
+  "wiring_pending": true,
   "title": "Below Specification",
   "world": 4,
   "giver": {

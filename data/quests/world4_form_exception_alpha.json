@@ -1,5 +1,6 @@
 {
   "id": "world4_form_exception_alpha",
+  "wiring_pending": true,
   "title": "Form Exception-Alpha",
   "world": 4,
   "prereq_flag": "cutscene_flag_world4_chapter2_complete",

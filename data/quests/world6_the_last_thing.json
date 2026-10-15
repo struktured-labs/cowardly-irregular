@@ -1,5 +1,6 @@
 {
   "id": "world6_the_last_thing",
+  "wiring_pending": true,
   "title": "The Last Thing",
   "world": 6,
   "giver": {

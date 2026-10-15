@@ -12,9 +12,17 @@ const LOCKED_QUEST := "world2_fine_print"
 const LOCKED_GIVER := "madame_orrery_w2"
 const PREREQ := "world1_orrery_complete"
 
-## Prereq-locked, giver-owned, and authors NO locked block — must stay silent after the fix.
-const SILENT_QUEST := "world4_form_exception_alpha"
-const SILENT_GIVER := "dorrit_w4"
+## ⚠️ WAS `world4_form_exception_alpha` / `dorrit_w4`, AND THAT QUEST IS NOW WITHHELD
+## (`"wiring_pending": true`, 2026-10-14 — its custom steps have no emitter, so it could be
+## accepted and never finished). Both assertions below would still have PASSED, which is the
+## problem: `is_offerable` would be false and `_giver_quest_for` would return "" for a SECOND
+## reason, and the arm could then no longer tell you prereq-locking works at all. A control that
+## is clear for two reasons cannot attribute its own pass.
+##
+## Prereq-locked, giver-owned, authors NO locked block, and NOT withheld — asserted below rather
+## than assumed, so this control cannot drift into the same state silently.
+const SILENT_QUEST := "world2_wrong_blue"
+const SILENT_GIVER := "casper_kid"
 
 var _saved_quests: Dictionary
 var _saved_flags: Dictionary
@@ -78,6 +86,17 @@ func test_a_locked_giver_without_authored_lines_stays_silent() -> void:
 	assert_false(q.is_empty(), "control quest must load")
 	assert_false((q.get("dialogue", {}) as Dictionary).has("locked"),
 		"control must genuinely lack a locked block, else it proves nothing")
+	assert_false(bool(q.get("wiring_pending", false)),
+		"control must NOT be wiring_pending — a withheld quest is unofferable for a second reason "
+		+ "and this arm could then pass with prereq-locking entirely broken")
+	## ⛔ CLEAR THE PREREQ HERE, don't inherit it. Its flag is settable by any earlier file in a
+	## sweep, and if it arrives set the quest is OFFERABLE and both assertions below red — an
+	## order-dependent flake that reads as a real defect. The original control carried the same
+	## exposure; making the claim true by construction is cheaper than hoping.
+	var prereq: String = str(q.get("prereq_flag", ""))
+	assert_ne(prereq, "", "control must be prereq-gated, or it tests a different shape")
+	_clear_flag(prereq)
+	assert_false(GameState.is_story_flag_set(prereq), "the control's prereq must actually be clear")
 	assert_false(QuestSystem.is_offerable(SILENT_QUEST), "control must be prereq-locked")
 	assert_eq(QuestSystem._giver_quest_for(SILENT_GIVER), "",
 		"a prereq-locked quest with no authored refusal must still resolve to nothing — the NPC "
