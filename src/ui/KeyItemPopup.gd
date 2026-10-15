@@ -19,6 +19,17 @@ const EXTRA_LINE_H := 36.0
 ## the hint's offset all have to agree, and three bare numbers in three places is how they stop.
 const DESC_BAND_H := 44.0
 const DESC_FONT_SIZE := 12
+## The card's six font sites at 100%. Named so a Text Size guard reads what each one SHOULD draw
+## at a preset rather than keeping its own copy of these numbers; every site passes its base
+## through TextScale.scaled, which is what makes the card follow the player's setting.
+const TITLE_FONT_SIZE := 20
+const NAME_FONT_SIZE := 18
+const BAG_FONT_SIZE := 11
+const HINT_FONT_SIZE := 10
+const EMBLEM_FONT_SIZE := 64
+## The gutter the card keeps from the screen edge when Text Size grows it. The card is centred, so
+## one number bounds the layout scale on both axes.
+const VP_MARGIN := 16.0
 const BG_COLOR := Color(0.03, 0.03, 0.08, 0.75)
 const PANEL_COLOR := Color(0.12, 0.10, 0.18)
 const BORDER_LIGHT := Color(1.0, 0.85, 0.4)
@@ -89,6 +100,54 @@ static func show_item(parent: Node, item: Dictionary) -> KeyItemPopup:
 	return popup
 
 
+## The Text Size multiplier itself. `TextScale.scaled` rounds to an int, so it is sampled at a
+## large base to keep the ratio exact. Same shape as VictoryOverlay._raw_text_scale.
+func _raw_text_scale() -> float:
+	return float(TextScale.scaled(1000)) / 1000.0
+
+
+## Height of `text` wrapped into `width` at `font_size`, measured with the label's OWN resolved
+## theme font — a throwaway Label is parented to this popup first, so the chain is the one the real
+## description will have inside the panel rather than a default. 0.0 for empty text or no font.
+func _measure_desc(text: String, width: float, font_size: int) -> float:
+	if text == "":
+		return 0.0
+	var probe := Label.new()
+	probe.add_theme_font_size_override("font_size", font_size)
+	add_child(probe)
+	var out := 0.0
+	var pf: Font = probe.get_theme_font("font")
+	if pf != null:
+		out = pf.get_multiline_string_size(
+			text, HORIZONTAL_ALIGNMENT_CENTER, width, font_size).y
+	remove_child(probe)
+	probe.queue_free()
+	return out
+
+
+## How much the CARD may grow. Only ever GROWS, like VictoryOverlay's result cards: at 80% Text Size
+## the card is pixel-identical to before this change and only its text gets smaller, so 100% and
+## below are untouched.
+##
+## The cap is the point of the function. At 200% an uncapped card is 880px wide before the
+## description is measured, and on a 640x360 web viewport that is wider than the screen — so fixing
+## a text overflow would push the card's own border off the display.
+##
+## ⛔ `needed_h` IS THE CARD'S FULL HEIGHT AT 1.0, NOT `PANEL_H`, and the difference is a real hole
+## rather than a refinement. The description's growth is added AFTER the scale is chosen, so a cap
+## against the base 260 lets the longest authored description at 200% land past the bottom of the
+## screen — the card would be clamped to the top margin and lose its own continue hint instead.
+## Growth is very nearly LINEAR in the scale, because the font and the wrap width scale TOGETHER:
+## the line count holds and each line's height scales, so the full height at g is about g times the
+## height at 1.0. That is the quantity worth capping, and it is why this takes an argument.
+func _layout_scale(vp_size: Vector2, needed_h: float) -> float:
+	var want: float = maxf(1.0, _raw_text_scale())
+	var cap: float = minf(
+		(vp_size.x - 2.0 * VP_MARGIN) / PANEL_W,
+		(vp_size.y - 2.0 * VP_MARGIN) / maxf(1.0, needed_h))
+	return clampf(want, 1.0, maxf(1.0, cap))
+
+
 func _present(item: Dictionary) -> void:
 	var vp_size := Vector2(1280, 720)
 	var vp := get_viewport()
@@ -113,32 +172,58 @@ func _present(item: Dictionary) -> void:
 		and bag_name.strip_edges().to_lower() != shown_name.strip_edges().to_lower()
 	## ⛔ THE CARD GROWS FOR A LONG DESCRIPTION TOO, AND IT HAS TO BE MEASURED BEFORE THE PANEL
 	## EXISTS — RetroPanel.add_border draws from _panel.size at construction, so growing the
-	## panel afterwards leaves the border behind. The description band is a flat 44px and the
-	## continue hint is pinned at panel_h - 22; the longest authored key-item description is 245
+	## panel afterwards leaves the border behind. The description band used to be a flat 44px with
+	## the continue hint pinned at panel_h - 22; the longest authored key-item description is 245
 	## characters, which wraps to four lines, overruns the band and is drawn THROUGH the hint and
 	## past the card's bottom border. Rendered at 1280x720 the last line and "[Z] Continue" sit on
-	## top of each other.
-	##
-	## Measured with the label's OWN resolved font rather than a default: a throwaway Label is
-	## parented here first so the theme chain is the one it will actually have inside the panel.
+	## top of each other. Both numbers now scale with Text Size, and the band still has to be
+	## measured up front for the same reason. `_measure_desc` does the measuring.
 	var desc_text: String = str(item.get("description", ""))
-	var desc_h: float = DESC_BAND_H
-	if desc_text != "":
-		var probe := Label.new()
-		probe.add_theme_font_size_override("font_size", DESC_FONT_SIZE)
-		add_child(probe)
-		var pf: Font = probe.get_theme_font("font")
-		if pf != null:
-			desc_h = maxf(DESC_BAND_H, pf.get_multiline_string_size(
-				desc_text, HORIZONTAL_ALIGNMENT_CENTER, PANEL_W - 40.0, DESC_FONT_SIZE).y)
-		remove_child(probe)
-		probe.queue_free()
-	var panel_h: float = PANEL_H + (EXTRA_LINE_H if show_bag else 0.0) + (desc_h - DESC_BAND_H)
+
+	## TEXT SIZE, resolved here because it needs the CONTENT. `g` scales the GEOMETRY and every font
+	## goes through TextScale — both halves, because TextScale.apply_tree's own docstring says it
+	## cannot do the second one: "re-scaling text is not re-scaling a LAYOUT". Every band on this card
+	## is a literal, so scaling only the fonts would grow the text inside bands that stayed put, which
+	## is the collision this card was already fixed for once.
+	##
+	## Measured at 1.0 FIRST so the cap sees the card's real height, then again at the chosen scale
+	## so the band the description is compared against has scaled too — comparing a grown font with
+	## the flat 44px band would read every description as an overflow and grow the card twice.
+	var base_desc_h: float = maxf(DESC_BAND_H,
+		_measure_desc(desc_text, PANEL_W - 40.0, DESC_FONT_SIZE))
+	var needed_h: float = PANEL_H + (EXTRA_LINE_H if show_bag else 0.0) \
+		+ (base_desc_h - DESC_BAND_H)
+	var g := _layout_scale(vp_size, needed_h)
+	var panel_w: float = PANEL_W * g
+
+	var desc_font: int = TextScale.scaled(DESC_FONT_SIZE)
+	var band_h: float = DESC_BAND_H * g
+	var desc_h: float = maxf(band_h,
+		_measure_desc(desc_text, panel_w - 40.0 * g, desc_font))
+	var panel_h: float = PANEL_H * g + (EXTRA_LINE_H * g if show_bag else 0.0) + (desc_h - band_h)
 
 	# Panel
 	_panel = Control.new()
-	_panel.size = Vector2(PANEL_W, panel_h)
-	_panel.position = Vector2((vp_size.x - PANEL_W) / 2.0, (vp_size.y - panel_h) / 2.0 - 20)
+	_panel.size = Vector2(panel_w, panel_h)
+	## Clamped to the margin, TOP FIRST AND BOTTOM LAST, and the order is the whole point.
+	##
+	## The content-aware cap already keeps `panel_h` inside `vp.y - 2*VP_MARGIN`, so for every card
+	## that fits, the top clamp is all that is needed — it only ever absorbs the `-20*g` nudge, which
+	## at 200% is enough on its own to centre a tall card above the screen edge.
+	##
+	## ⛔ BUT A TOP-ONLY CLAMP MAKES THE ONE CASE IT CANNOT FIX STRICTLY WORSE, and I shipped that
+	## before measuring it. When the card is taller than the screen (only reachable below the g >= 1
+	## floor, with a description longer than any authored), pinning the top pushes the BOTTOM off —
+	## and the bottom is where the continue hint lives, so the player loses the one line telling them
+	## how to dismiss a card that now looks stuck. Measured on 640x360 with a 140px description:
+	## centred was top=-18 bottom=338 (hint visible, top border clipped); top-pinned was top=16
+	## bottom=372 (hint GONE). Cutting the title is cosmetic; cutting the hint is functional.
+	##
+	## So the bottom clamp is applied second and wins: an oversized card gives up its top border to
+	## keep its hint, which is also what the unclamped original happened to do.
+	var panel_y: float = maxf(VP_MARGIN, (vp_size.y - panel_h) / 2.0 - 20.0 * g)
+	panel_y = minf(panel_y, vp_size.y - VP_MARGIN - panel_h)
+	_panel.position = Vector2(maxf(VP_MARGIN, (vp_size.x - panel_w) / 2.0), panel_y)
 	add_child(_panel)
 
 	var panel_bg := ColorRect.new()
@@ -151,14 +236,14 @@ func _present(item: Dictionary) -> void:
 	var title := Label.new()
 	title.text = "Key Item Obtained!"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.position = Vector2(0, 16)
-	title.size = Vector2(PANEL_W, 28)
-	title.add_theme_font_size_override("font_size", 20)
+	title.position = Vector2(0, 16.0 * g)
+	title.size = Vector2(panel_w, 28.0 * g)
+	title.add_theme_font_size_override("font_size", TextScale.scaled(TITLE_FONT_SIZE))
 	title.add_theme_color_override("font_color", TITLE_COLOR)
 	_panel.add_child(title)
 
 	# Item sprite (optional)
-	var sprite_y := 56.0
+	var sprite_y := 56.0 * g
 	var sprite_path := str(item.get("sprite_path", ""))
 	if sprite_path != "" and ResourceLoader.exists(sprite_path):
 		var tex := load(sprite_path) as Texture2D
@@ -169,8 +254,8 @@ func _present(item: Dictionary) -> void:
 			## 96 back up to the texture's own size and overflows the panel.
 			sprite_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 			sprite_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-			sprite_rect.size = Vector2(96, 96)
-			sprite_rect.position = Vector2((PANEL_W - 96) / 2.0, sprite_y)
+			sprite_rect.size = Vector2(96, 96) * g
+			sprite_rect.position = Vector2((panel_w - 96.0 * g) / 2.0, sprite_y)
 			_panel.add_child(sprite_rect)
 			_icon = sprite_rect
 	if _icon == null:
@@ -182,8 +267,8 @@ func _present(item: Dictionary) -> void:
 			icon_rect.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 			icon_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 			icon_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-			icon_rect.size = Vector2(64, 64)
-			icon_rect.position = Vector2((PANEL_W - 64) / 2.0, sprite_y + 16)
+			icon_rect.size = Vector2(64, 64) * g
+			icon_rect.position = Vector2((panel_w - 64.0 * g) / 2.0, sprite_y + 16.0 * g)
 			_panel.add_child(icon_rect)
 			_icon = icon_rect
 	if _icon == null:
@@ -192,9 +277,9 @@ func _present(item: Dictionary) -> void:
 		emblem.text = emblem_glyph(str(item.get("item_id", "")))
 		emblem.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		emblem.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		emblem.position = Vector2((PANEL_W - 96) / 2.0, sprite_y)
-		emblem.size = Vector2(96, 96)
-		emblem.add_theme_font_size_override("font_size", 64)
+		emblem.position = Vector2((panel_w - 96.0 * g) / 2.0, sprite_y)
+		emblem.size = Vector2(96, 96) * g
+		emblem.add_theme_font_size_override("font_size", TextScale.scaled(EMBLEM_FONT_SIZE))
 		emblem.add_theme_color_override("font_color", BORDER_LIGHT)
 		_panel.add_child(emblem)
 		_icon = emblem
@@ -203,9 +288,9 @@ func _present(item: Dictionary) -> void:
 	var name_label := Label.new()
 	name_label.text = str(item.get("name", "???"))
 	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	name_label.position = Vector2(0, 160)
-	name_label.size = Vector2(PANEL_W, 24)
-	name_label.add_theme_font_size_override("font_size", 18)
+	name_label.position = Vector2(0, 160.0 * g)
+	name_label.size = Vector2(panel_w, 24.0 * g)
+	name_label.add_theme_font_size_override("font_size", TextScale.scaled(NAME_FONT_SIZE))
 	name_label.add_theme_color_override("font_color", NAME_COLOR)
 	_panel.add_child(name_label)
 
@@ -216,26 +301,26 @@ func _present(item: Dictionary) -> void:
 	# WHICH name is canonical is cowir-story's call; that the player can FIND it is not. So when the
 	# two differ, the bag's name goes under the flavour name — and this line DISAPPEARS on its own if
 	# the names are ever aligned, because equal names render nothing.
-	var desc_y := 188.0
+	var desc_y := 188.0 * g
 	if show_bag:
 		var bag := Label.new()
 		bag.text = "In your bag: %s" % bag_name
 		bag.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		bag.position = Vector2(0, 184)
-		bag.size = Vector2(PANEL_W, EXTRA_LINE_H)
-		bag.add_theme_font_size_override("font_size", 11)
+		bag.position = Vector2(0, 184.0 * g)
+		bag.size = Vector2(panel_w, EXTRA_LINE_H * g)
+		bag.add_theme_font_size_override("font_size", TextScale.scaled(BAG_FONT_SIZE))
 		bag.add_theme_color_override("font_color", HINT_COLOR)
 		_panel.add_child(bag)
-		desc_y = 184.0 + EXTRA_LINE_H
+		desc_y = (184.0 + EXTRA_LINE_H) * g
 
 	# Description
 	var desc := Label.new()
 	desc.text = str(item.get("description", ""))
 	desc.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	desc.position = Vector2(20, desc_y)
-	desc.size = Vector2(PANEL_W - 40, desc_h)
-	desc.add_theme_font_size_override("font_size", DESC_FONT_SIZE)
+	desc.position = Vector2(20.0 * g, desc_y)
+	desc.size = Vector2(panel_w - 40.0 * g, desc_h)
+	desc.add_theme_font_size_override("font_size", desc_font)
 	desc.add_theme_color_override("font_color", DESC_COLOR)
 	_panel.add_child(desc)
 
@@ -243,9 +328,9 @@ func _present(item: Dictionary) -> void:
 	var hint := Label.new()
 	hint.text = continue_hint_text()
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	hint.position = Vector2(0, panel_h - 22.0)
-	hint.size = Vector2(PANEL_W, 18)
-	hint.add_theme_font_size_override("font_size", 10)
+	hint.position = Vector2(0, panel_h - 22.0 * g)
+	hint.size = Vector2(panel_w, 18.0 * g)
+	hint.add_theme_font_size_override("font_size", TextScale.scaled(HINT_FONT_SIZE))
 	hint.add_theme_color_override("font_color", HINT_COLOR)
 	_panel.add_child(hint)
 	_hint = hint
