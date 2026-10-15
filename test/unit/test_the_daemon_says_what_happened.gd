@@ -136,10 +136,24 @@ func test_the_bad_index_exit_is_not_silent() -> void:
 
 
 ## And the source must actually call it there -- outcome_line rendering is half the fix.
+## THE ANCHOR IS NOT UNIQUE: the identical index guard appears in try_auto_apply (:313), force_apply
+## (:390) and dismiss (:442), so the old bare find() reached MINE only because request_llm_proposal
+## happens to be declared first. Slice the function first, then search inside it -- immune by shape.
 func test_the_index_guard_prints() -> void:
-	var src: String = FileAccess.get_file_as_string("res://src/llm/RebalanceDaemon.gd")
-	var at: int = src.find("if proposal_idx < 0 or proposal_idx >= pending.size():")
-	assert_gt(at, -1, "FIXTURE: the index guard must exist or this arm measures nothing")
-	var block: String = src.substr(at, 240)
-	assert_true(block.contains("print(outcome_line("),
+	# code_of, not raw text: a comment quoting the guard would otherwise satisfy a presence assert.
+	var src: String = GdSource.code_of("res://src/llm/RebalanceDaemon.gd")
+	var guard := "if proposal_idx < 0 or proposal_idx >= pending.size():"
+	# The slice is load-bearing, pinned as its own claim so the reason cannot be lost to a tidy-up.
+	assert_gt(src.count(guard), 1,
+		"FIXTURE: were the guard unique the slice below would be decoration; it is not")
+	var fi: int = src.find("func request_llm_proposal(")
+	assert_gt(fi, 0, "FIXTURE: request_llm_proposal not found, so this arm measures nothing")
+	var nf: int = src.find("\nfunc ", fi + 10)
+	var body: String = src.substr(fi) if nf < 0 else src.substr(fi, nf - fi)
+	var at: int = body.find(guard)
+	assert_gt(at, -1, "FIXTURE: the index guard must exist inside request_llm_proposal")
+	# A relationship, not a 240-char window: the print must precede the guard's OWN return.
+	var ret: int = body.find("return", at)
+	assert_gt(ret, at, "FIXTURE: the guard must return, or this arm bounds nothing")
+	assert_true(body.substr(at, ret - at).contains("print(outcome_line("),
 		"the index guard must log before returning, like every other exit in this function")
