@@ -96,11 +96,18 @@ func _menu_for(scale: float, tab: int) -> Control:
 	return m
 
 
+## ⛔ READ THROUGH get_script_constant_map, NOT `settings.TEXT_SIZE_PRESETS`. A direct const access
+## on a renamed symbol raises mid-arm, and GUT scores an aborted body as a PASS — so the first
+## version of this pin was blind to the one thing it watches. The map form reports an ABSENT const
+## as an empty ladder, which this arm then fails on, loudly.
 func test_the_sweep_matches_the_shipped_presets() -> void:
 	var settings := load("res://src/ui/SettingsMenu.gd")
-	assert_eq(TEXT_SCALES, settings.TEXT_SIZE_PRESETS as Array,
-		"this file sweeps %s but SettingsMenu offers %s"
-		% [str(TEXT_SCALES), str(settings.TEXT_SIZE_PRESETS)])
+	var shipped: Array = settings.get_script_constant_map().get("TEXT_SIZE_PRESETS", [])
+	assert_false(shipped.is_empty(),
+		"SettingsMenu declares no TEXT_SIZE_PRESETS — this sweep then describes a ladder that is "
+		+ "not the shipped one, and every arm below sweeps the wrong values")
+	assert_eq(TEXT_SCALES, shipped,
+		"this file sweeps %s but SettingsMenu offers %s" % [str(TEXT_SCALES), str(shipped)])
 
 
 func test_both_tabs_build_their_rows() -> void:
