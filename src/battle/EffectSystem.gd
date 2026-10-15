@@ -187,10 +187,12 @@ func _play_effect_sound(effect_type: EffectType, power: float = 1.0, weapon_type
 		EffectType.DEBUFF:
 			sound_key = "debuff"
 		EffectType.POISON:
-			## Reuses a CAST-namespace key deliberately: a poison TICK is not an ability action, so no
-			## play_ability fired before it and this is the only audio for the event. Unlike HEAL above,
-			## there is nothing here to double. ⚠️ cowir-sfx owns the cue convention and may prefer an
-			## authored `strike_poison`; until then the reuse is the lesser of silence and a duplicate.
+			## Reuses a CAST-namespace key, and what makes it safe is that the keys DIFFER: the cast
+			## derives `ability_poison` from SoundManager's element map while this impact plays
+			## `ability_dark`, so there is nothing to double. ⛔ NOT "no cast fires" — eight abilities
+			## resolve to POISON and DO call play_ability (cowir-sfx's measurement, correcting mine).
+			## If either side is repointed so the two match, this becomes the HEAL defect above.
+			## ⚠️ cowir-sfx owns the cue choice and may prefer an authored `strike_poison`.
 			sound_key = "ability_dark"
 
 	## The generic polarity sting is REDUNDANT when BattleScene already played an authored status_* cue for
