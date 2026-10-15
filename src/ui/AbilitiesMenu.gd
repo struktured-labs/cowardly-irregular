@@ -423,6 +423,14 @@ func _create_abilities_panel(panel_size: Vector2) -> Control:
 func _create_ability_row(ability: Dictionary, index: int) -> Control:
 	"""Create an ability list row"""
 	var row = Control.new()
+	## ⛔ A NOMINAL SIZE, BECAUSE THE LABELS BELOW ARE ANCHORED AND A CALLER MAY NEVER SIZE THIS ROW.
+	## `test_every_ability_has_an_icon` builds rows through this function directly and adds them to
+	## the menu, not to a laid-out panel — so with size 0 the right-anchored MP label resolved to
+	## x = -mp_w (measured: -32 to -38) and all 57 rows read as overruns. The list builder overrides
+	## this immediately after we return and the anchors re-resolve against the real width; this only
+	## has to be sane for the caller that does not. 220 is the width `make_clickable` already uses
+	## for this row below.
+	row.size = Vector2(220, _ability_row_h())
 	var data = ability["data"]
 
 	# Highlight
@@ -647,6 +655,10 @@ func _create_passives_panel(panel_size: Vector2) -> Control:
 func _create_passive_row(passive: Dictionary, index: int) -> Control:
 	"""Create a passive list row"""
 	var row = Control.new()
+	## A nominal size for the same reason as `_create_ability_row`: this row's name label is
+	## right-anchored, so a caller that never sizes the row would resolve it against zero. No guard
+	## builds a passive row standalone today — this is the belt, and it costs one line.
+	row.size = Vector2(220, _passive_row_h())
 	var data = passive["data"]
 
 	# Highlight

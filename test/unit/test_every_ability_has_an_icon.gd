@@ -230,9 +230,23 @@ func test_no_ability_name_runs_into_its_mp_cost_beside_the_icon() -> void:
 				elif c is Label and c.text.ends_with(" MP"):
 					mp_label = c
 			if name_label and mp_label:
-				var name_end := name_label.position.x + name_label.get_minimum_size().x
+				## ⛔ WAS `get_minimum_size().x`, WHICH THIS ARM CAN NO LONGER USE. The name label now
+				## CLIPS, and `clip_text` takes the text out of the minimum size — so the minimum
+				## collapses to ~1px and the comparison below would be true for ANY name length.
+				## The arm would have gone green and stopped measuring the thing it is named for.
+				##
+				## `size.x` is the DRAWN extent in both regimes: an unclipped Label clamps its box up
+				## to its content, and a clipped one draws exactly its box. So this reads what is
+				## painted either way, and it still reds if the name's box is ever allowed past the
+				## MP column.
+				var name_end := name_label.position.x + name_label.size.x
 				if name_end > mp_label.position.x - 4:
 					overruns.append("%s (ends %d, MP at %d)" % [name_label.text, int(name_end), int(mp_label.position.x)])
+				## And the structural half, because a bounded box is only bounded while it clips:
+				## `clip_text` is the load-bearing property and the overrun behaviour only chooses
+				## what the truncation looks like. Asserting the PAIR is the house idiom.
+				if not name_label.clip_text:
+					overruns.append("%s: the name no longer clips, so its box cannot hold it" % name_label.text)
 				checked += 1
 			row.queue_free()
 	assert_gt(checked, 40, "CONTROL: rows with an MP cost were actually measured")
