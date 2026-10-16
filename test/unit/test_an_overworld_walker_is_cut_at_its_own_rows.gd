@@ -9,10 +9,13 @@ extends GutTest
 ## with the reason, and the list may only shrink.
 ## 2026-10-12, second pass: six more seated, five of them with a last row the image edge had cut 5px short.
 ## Those walk up without feet until re-rolled and are named in UP_ROW_CUT_SHORT.
+## 2026-10-16: every villager sheet was redrawn at 48px; the 14 villagers listed here and 3 in UP_ROW_CUT_SHORT are whole.
 ## The measure: a cell holding a DETACHED body of >= MIN_PIECE px on its top or bottom edge holds another row's figure.
 
 const SECTIONS := ["overworld_npc_sheets", "overworld_player_sheets", "overworld_monster_sheets"]
 const SPRITES := "res://assets/sprites/"
+## The cell of a sheet that declares none (job costumes, the 32px placeholders). A sheet that declares frame_height is
+## cut at its own cell: the 48px villagers redrawn 2026-10-16 were skipped by a 32-only filter, not checked.
 const CELL := 32
 const MIN_PIECE := 10
 ## Sheets still cut, keyed by path under assets/sprites without .png, each with why a re-seat cannot fix it.
@@ -42,26 +45,11 @@ const NEEDS_A_REROLL := {
 	"jobs/summoner/overworld_industrial": "3 rows of figures, not 4",
 	"jobs/summoner/overworld_steampunk": "2 rows of figures, not 4",
 	"jobs/summoner/overworld_suburban": "2 rows of figures, not 4",
-	"npcs/chancellor_mordaine/overworld": "5 rows of figures, not 4",
-	"npcs/ghost_suburban/overworld": "still cut after re-seating, (1, 3)]): the columns are off too",
-	"npcs/guard_suburban/overworld": "rows of unequal height: one was cut short",
-	"npcs/innkeeper_abstract/overworld": "still cut after re-seating, (1, 2)]): the columns are off too",
-	"npcs/merchant_industrial/overworld": "a detached speck sits between its rows",
-	"npcs/monk/overworld": "rows of unequal height: one was cut short",
-	"npcs/noblewoman/overworld": "rows of unequal height: one was cut short",
-	"npcs/noblewoman_abstract/overworld": "its rows touch: no gap to cut at",
-	"npcs/old_woman_suburban/overworld": "its rows touch: no gap to cut at",
-	"npcs/priestess/overworld": "its rows are not the four facings (three side views, no back): re-seated, the facing guard can see that",
-	"npcs/phil/overworld": "2 rows of figures, not 4",
-	"npcs/soldier_digital/overworld": "its rows touch: no gap to cut at",
-	"npcs/traveler_steampunk/overworld": "rows of unequal height: one was cut short",
-	"npcs/young_woman/overworld": "rows of unequal height: one was cut short",
 }
 
 ## Seated sheets whose up-facing row lost its feet to the image edge: that row stands shorter than the down row.
 const UP_ROW_CUT_SHORT := [
 	"jobs/fighter/overworld_digital", "jobs/fighter/overworld_steampunk",
-	"npcs/child_digital/overworld", "npcs/old_man_suburban/overworld", "npcs/soldier_steampunk/overworld",
 ]
 ## An up row at most this share of the down row's height has lost its feet.
 const SHORT_SHARE := 0.82
@@ -77,19 +65,19 @@ func _alpha(img: Image) -> PackedByteArray:
 	return out
 
 
-func cut_cells(img: Image) -> int:
+func cut_cells(img: Image, cell: int = CELL) -> int:
 	## Cells holding a detached piece of another row's figure on their top or bottom edge.
 	var w := img.get_width()
 	var a := _alpha(img)
 	var cut := 0
-	for r in img.get_height() / CELL:
-		for c in w / CELL:
+	for r in img.get_height() / cell:
+		for c in w / cell:
 			var seen := PackedByteArray()
-			seen.resize(CELL * CELL)
+			seen.resize(cell * cell)
 			var sizes: Array[int] = []
 			var on_edge: Array[bool] = []
-			for start in CELL * CELL:
-				if seen[start] or not a[(r * CELL + start / CELL) * w + c * CELL + start % CELL]:
+			for start in cell * cell:
+				if seen[start] or not a[(r * cell + start / cell) * w + c * cell + start % cell]:
 					continue
 				var stack: Array[int] = [start]
 				seen[start] = 1
@@ -98,13 +86,13 @@ func cut_cells(img: Image) -> int:
 				while not stack.is_empty():
 					var p: int = stack.pop_back()
 					n += 1
-					var x := p % CELL
-					var y := p / CELL
-					edge = edge or y == 0 or y == CELL - 1
-					for ny in range(maxi(0, y - 1), mini(CELL, y + 2)):
-						for nx in range(maxi(0, x - 1), mini(CELL, x + 2)):
-							var q := ny * CELL + nx
-							if not seen[q] and a[(r * CELL + ny) * w + c * CELL + nx]:
+					var x := p % cell
+					var y := p / cell
+					edge = edge or y == 0 or y == cell - 1
+					for ny in range(maxi(0, y - 1), mini(cell, y + 2)):
+						for nx in range(maxi(0, x - 1), mini(cell, x + 2)):
+							var q := ny * cell + nx
+							if not seen[q] and a[(r * cell + ny) * w + c * cell + nx]:
 								seen[q] = 1
 								stack.append(q)
 				sizes.append(n)
@@ -117,20 +105,20 @@ func cut_cells(img: Image) -> int:
 	return cut
 
 
-func _sheets() -> Array:
-	## Every 32px overworld sheet the game can load: the manifest's, plus each job's world costumes.
+func _sheets() -> Dictionary:
+	## path -> cell for every square-celled overworld sheet the game can load: the manifest's, plus each job's world costumes.
 	var manifest: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/sprite_manifest.json"))
-	var out: Array = []
+	var out := {}
 	for section in SECTIONS:
 		for key in manifest[section]:
 			var entry: Dictionary = manifest[section][key]
-			if int(entry.get("frame_width", CELL)) == CELL and int(entry.get("frame_height", CELL)) == CELL:
-				out.append(str(entry["path"]))
+			var fw := int(entry.get("frame_width", CELL))
+			if fw == int(entry.get("frame_height", CELL)):
+				out[str(entry["path"])] = fw
 	for job in DirAccess.get_directories_at(SPRITES + "jobs"):
 		for f in DirAccess.get_files_at(SPRITES + "jobs/" + job):
 			if f.begins_with("overworld_") and f.ends_with(".png"):
-				out.append(SPRITES + "jobs/" + job + "/" + f)
-	out.sort()
+				out[SPRITES + "jobs/" + job + "/" + f] = CELL
 	return out
 
 
@@ -153,13 +141,13 @@ func test_every_overworld_walker_is_cut_at_its_own_rows() -> void:
 			continue
 		judged += 1
 		var key: String = path.trim_prefix(SPRITES).trim_suffix(".png")
-		var n := cut_cells(_rgba(path))
+		var n := cut_cells(_rgba(path), sheets[path])
 		if n > 0 and not NEEDS_A_REROLL.has(key):
 			cut.append("%s: %d cells hold a piece of another row" % [key, n])
 		elif n == 0 and NEEDS_A_REROLL.has(key):
 			mended.append(key)
 	assert_gt(judged, 200, "CONTROL: the sheets were judged (%d)" % judged)
-	assert_eq(cut, [], "%d overworld sheet(s) whose rows are off the 32px grid (tools/reseat_overworld_rows.py): %s" % [cut.size(), str(cut.slice(0, 8))])
+	assert_eq(cut, [], "%d overworld sheet(s) whose rows are off their cell grid (tools/reseat_overworld_rows.py): %s" % [cut.size(), str(cut.slice(0, 8))])
 	assert_eq(mended, [], "these are whole now: drop them from NEEDS_A_REROLL")
 
 
@@ -169,11 +157,12 @@ func test_the_list_names_real_sheets() -> void:
 
 
 func _row_height(img: Image, row: int) -> int:
-	## Rows of the cell band that hold any opaque pixel.
+	## Rows of the cell band that hold any opaque pixel. Every sheet is four rows, so the cell is a quarter of its height.
+	var cell := img.get_height() / 4
 	var a := _alpha(img)
 	var w := img.get_width()
 	var n := 0
-	for y in range(row * CELL, (row + 1) * CELL):
+	for y in range(row * cell, (row + 1) * cell):
 		for x in w:
 			if a[y * w + x]:
 				n += 1

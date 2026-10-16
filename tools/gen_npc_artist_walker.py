@@ -108,6 +108,12 @@ def base_id(npc: str) -> tuple[str, str | None]:
     return (npc[: m.start()], m.group(1)) if m else (npc, None)
 
 
+# World variants whose portrait outweighed the wardrobe text, named outfit and all (each matches the sheet it replaces).
+WARDROBE = {
+    "king_suburban": "a gold crown worn with an ordinary blue business suit and tie -- NOT royal robes, NOT a cape",
+}
+
+
 def describe(npc: str) -> str:
     base, world = base_id(npc)
     cfg = ow.ENTITY_SOURCES.get(base)
@@ -115,6 +121,8 @@ def describe(npc: str) -> str:
     if world:
         desc = (f"{desc} -- the SAME person, re-dressed for {wv.WORLDS[world]}; keep their face, "
                 f"hair and build, change only the clothes and accessories")
+    if npc in WARDROBE:
+        desc = f"{desc}. Outfit: {WARDROBE[npc]}"
     return desc
 
 
