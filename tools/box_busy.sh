@@ -3,16 +3,21 @@
 #
 #   tools/box_busy.sh            exit 0 = box free · 1 = busy (the reason is printed) · 2 = usage
 #   tools/box_busy.sh --wait N   poll every 20s for up to N seconds, then answer as above
-#   tools/box_busy.sh --selftest watch each arm flip (exit 0 = all five did)
+#   tools/box_busy.sh --selftest watch each arm flip (exit 0 = all six did)
 #
 # Busy means either of the two states that broke the .691 web publish: cowir-main's fold chain or
 # gate is running (it writes BOX_MARKER with its PID and removes it on exit), or cowir-deploy has a
-# publish in flight (publish.log without publish.ec), or a godot is running in the fold tree itself.
+# ANY lane has a publish in flight (publish.log without publish.ec), or a godot is running in the fold tree itself.
 # A marker whose PID is dead (fold marker, or a publish.pid beside the log) is reported as stale and
 # does not block — a crashed chain or killed publish must not close the box forever.
 set -u
 BOX_MARKER="${BOX_MARKER:-/home/struktured/projects/cowir-main/tmp/BOX_BUSY}"
-DEPLOY_DIR="${DEPLOY_DIR:-/home/struktured/projects/cowir-deploy-wt/tmp/_detached}"
+## DEPLOY_DIR named ONE publisher, so a publish launched from any other lane's worktree was
+## INVISIBLE: measured 2026-10-17, this said FREE while v3.33.697-alpha published from
+## cowir-sprites. A glob over every lane adds 1 true positive and 0 false ones (270 marker
+## dirs on disk, 269 carry publish.ec so the log-without-ec predicate excludes them).
+DEPLOY_DIR="${DEPLOY_DIR:-}"
+DEPLOY_GLOB="${DEPLOY_GLOB:-/home/struktured/projects/*/tmp/_detached}"
 FOLD_TREE="${FOLD_TREE:-/home/struktured/projects/cowir-main}"
 
 busy_reason() {
@@ -31,14 +36,22 @@ busy_reason() {
     c="$(readlink "$p/cwd" 2>/dev/null)"
     case "$c" in "$FOLD_TREE"|"$FOLD_TREE"/*) echo "fold-tree godot running: pid ${p#/proc/} cwd=$c"; return 0 ;; esac
   done
-  local d
-  for d in "$DEPLOY_DIR"/v3.33.*/; do
+  local d roots
+  if [ -n "$DEPLOY_DIR" ]; then roots="$DEPLOY_DIR"; else roots="$(echo $DEPLOY_GLOB)"; fi
+  for d in $(for r in $roots; do printf '%s\n' "$r"/v3.33.*/; done); do
     [ -f "$d/publish.log" ] && [ ! -f "$d/publish.ec" ] || continue
     ## A publish that writes publish.pid gets the same liveness test as the fold marker.
     if [ -f "$d/publish.pid" ] && ! kill -0 "$(head -1 "$d/publish.pid")" 2>/dev/null; then
       echo "box_busy: stale publish marker (pid not alive), ignoring: $(basename "$d")" >&2; continue
     fi
-    echo "publish in flight: $(basename "$d")"; return 0
+    local who
+    case "$d" in
+      */tmp/_detached/*) who="${d%%/tmp/_detached/*}"; who="$(basename "$who")" ;;
+      *) who="" ;;
+    esac
+    if [ -n "$who" ]; then echo "publish in flight: $(basename "$d") (from $who)"
+    else echo "publish in flight: $(basename "$d")"; fi
+    return 0
   done
   return 1
 }
@@ -67,7 +80,22 @@ if [ "${1:-}" = "--selftest" ]; then  # watch the answer flip, so a FREE is neve
   case "$out" in "BUSY: publish in flight: v3.33.0-alpha") ;; *) echo "FAIL: a publish in flight did not read BUSY naming its tag: $out"; fails=1 ;; esac
   echo 999999 > "$T/d/v3.33.0-alpha/publish.pid"
   BOX_MARKER="$T/m" DEPLOY_DIR="$T/d" FOLD_TREE="$T/none" "$0" >/dev/null 2>&1 || { echo "FAIL: a dead publish.pid blocked"; fails=1; }
-  [ "$fails" = 0 ] && echo "box_busy selftest: 5/5 arms flipped as expected"
+  ## ARM 6 — THE REGRESSION ARM. DEPLOY_DIR used to name ONE publisher, so a publish from any
+  ## other lane's worktree read FREE. This arm takes the GLOB path (DEPLOY_DIR empty) and plants a
+  ## marker in a lane that is not the old hardcoded one; it also pins that the lane is NAMED, since
+  ## a BUSY you cannot attribute is a BUSY nobody can clear.
+  mkdir -p "$T/lanes/some-other-lane/tmp/_detached/v3.33.0-alpha"
+  : > "$T/lanes/some-other-lane/tmp/_detached/v3.33.0-alpha/publish.log"
+  out="$(DEPLOY_DIR= DEPLOY_GLOB="$T/lanes/*/tmp/_detached" BOX_MARKER="$T/m" FOLD_TREE="$T/none" "$0")"
+  case "$out" in
+    "BUSY: publish in flight: v3.33.0-alpha (from some-other-lane)") ;;
+    *) echo "FAIL: a publish in ANOTHER lane's worktree did not read BUSY naming that lane: $out"; fails=1 ;;
+  esac
+  ## and the glob must not invent a publish where none is in flight
+  : > "$T/lanes/some-other-lane/tmp/_detached/v3.33.0-alpha/publish.ec"
+  DEPLOY_DIR= DEPLOY_GLOB="$T/lanes/*/tmp/_detached" BOX_MARKER="$T/m" FOLD_TREE="$T/none" "$0" >/dev/null 2>&1 \
+    || { echo "FAIL: a FINISHED publish (ec present) still blocked under the glob"; fails=1; }
+  [ "$fails" = 0 ] && echo "box_busy selftest: 6/6 arms flipped as expected"
   exit "$fails"
 fi
 
