@@ -25,7 +25,7 @@ func _actor_at(frame_px: int) -> Node:
 	return a
 
 
-## A real 32px sheet from the shipped corpus, for the one case the live path can be driven with.
+## A real sheet from the shipped corpus (48px since the 2026-10-16 redraw), for the one case the live path can be driven with.
 const REAL_SHEET := "res://assets/sprites/npcs/blacksmith/overworld.png"
 
 
@@ -96,8 +96,10 @@ func test_the_live_slicer_stores_what_it_measured() -> void:
 	add_child_autofree(a)
 	a._frame_px = 999  # a value the loader must overwrite
 	assert_true(ResourceLoader.exists(REAL_SHEET), "PRECONDITION: the shipped fixture sheet must exist")
-	assert_true(a._load_sheet(REAL_SHEET), "the shipped 128x128 sheet must load")
-	assert_eq(a._frame_px, ActorScript.FRAME_SIZE,
+	assert_true(a._load_sheet(REAL_SHEET), "the shipped sheet must load")
+	var measured: int = (load(REAL_SHEET) as Texture2D).get_height() / 4
+	assert_ne(measured, ActorScript.FRAME_SIZE, "CONTROL: the fixture is not cut at the convention, so only a measurement can match it")
+	assert_eq(a._frame_px, measured,
 		"the slicer must record the frame it cut at — 999 surviving means the emote reads a stale number")
 	var src := FileAccess.get_file_as_string("res://src/cutscene/CutsceneActor.gd")
 	var i := src.find("func _load_sheet")

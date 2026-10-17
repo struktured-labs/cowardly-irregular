@@ -41,7 +41,9 @@ func test_the_portrait_wears_what_the_sprite_wears() -> void:
 	assert_not_null(portrait, "CONTROL: the merchant's portrait is on disk")
 	if sheet == null or portrait == null:
 		return
-	var body := clothing(sheet, Rect2i(0, 14, 32, 12))
+	# The torso band of a 32px cell (y 14-26), scaled to the sheet's own cell: 48px since the 2026-10-16 redraw.
+	var cell := sheet.get_height() / 4
+	var body := clothing(sheet, Rect2i(0, roundi(14.0 * cell / 32.0), cell, roundi(12.0 * cell / 32.0)))
 	assert_gt(float(body["green"]), 0.25, "CONTROL: the sprite's torso is a green apron (%.2f green)" % body["green"])
 	var bust := clothing(portrait, Rect2i(0, 170, 256, 86))
 	assert_gt(int(bust["n"]), 4000, "CONTROL: the portrait has shoulders to measure")
