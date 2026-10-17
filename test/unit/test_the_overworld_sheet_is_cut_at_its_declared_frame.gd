@@ -469,10 +469,11 @@ func test_an_npc_renders_the_row_its_declaration_names() -> void:
 	var sprite: Sprite2D = npc.get("sprite")
 	assert_not_null(sprite, "PRECONDITION: the NPC must have built a sprite node")
 
-	# Each row tagged with its own index at the frame's top-left pixel.
-	var sheet := Image.create(128, 128, false, Image.FORMAT_RGBA8)
+	# Each row tagged with its own index at the frame's top-left pixel, cut at the cell this NPC declares (48px since 2026-10-16).
+	var cell: Vector2i = npc.get("_archetype_frame")
+	var sheet := Image.create(cell.x * 4, cell.y * 4, false, Image.FORMAT_RGBA8)
 	for r in 4:
-		sheet.set_pixel(0, r * 32, Color(float(r) / 8.0, 0.0, 0.0, 1.0))
+		sheet.set_pixel(0, r * cell.y, Color(float(r) / 8.0, 0.0, 0.0, 1.0))
 	npc.set("_archetype_sheet", sheet)
 	# An order NO shipped sheet declares, or a consumer ignoring the declaration would pass.
 	npc.set("_archetype_rows", {"walk_down": 2, "walk_left": 3, "walk_right": 0, "walk_up": 1})

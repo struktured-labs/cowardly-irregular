@@ -8,6 +8,8 @@ extends GutTest
 ## its centroid against the figure's own centre leans left on a left-facing row. Checked by eye on 16 sheets: right on
 ## every clear lean, wrong on flat placeholder sprites whose lean is under the floor, which is why there is a floor.
 ## tools/fix_overworld_side_facing.py swapped the side rows of 71 sheets.
+## 2026-10-16: every villager was redrawn at 48px (tools/gen_npc_artist_walker.py), facing checked by eye at 7x per sheet;
+## the measure now reads each sheet at its own declared cell, so the redraws are judged, not filtered out.
 
 const CELL := 32
 const LEFT_ROW := 1
@@ -15,17 +17,16 @@ const RIGHT_ROW := 2
 ## Both rows must lean this far (share of the figure's width) before the sheet has a verdict.
 const CLEAR_LEAN := 0.10
 const HEAD_SHARE := 0.6
-## Weak-lean sheets checked by eye and found swapped: after the fix their left row leans left at all.
-const REVIEWED := [
-	"fairy", "blacksmith_abstract", "old_woman_steampunk",
-	# Second pass 2026-10-12: leans of 0.08-0.10, each zoomed and found walking left facing right.
-	"blacksmith", "dr_temporal", "fairy_industrial", "fisherman_industrial", "fisherman_steampunk",
-	"young_man_abstract", "king_industrial", "noble_abstract", "old_man_industrial", "priestess_steampunk",
-]
-## Still facing the wrong way, each with why it was not swapped.
-const LEFT_AS_IS := {
-	"innkeeper_abstract": "its rows are cut in the wrong place (see test_an_overworld_walker_is_cut_at_its_own_rows)",
-	"priestess": "its rows are cut in the wrong place and are not the four facings",
+## Sheets the measure reads as walking left facing right that face the right way, each zoomed to 7x beside its right row
+## (2026-10-16): a skin-toned hand, mug or beard ahead of the face pulls the centroid. Each must still misread, so a re-roll
+## drops it from the list rather than hiding behind it.
+const MISREAD := {
+	"blacksmith_industrial": "bare forearms and gloves ahead of a bearded face",
+	"blacksmith_steampunk": "a bare forearm swinging forward under a full beard",
+	"farmer_steampunk": "a hand on the hoe handle beside the face",
+	"innkeeper_abstract": "the mug hand held out ahead of him",
+	"merchant": "the forward arm under a mustache",
+	"merchant_steampunk": "a cream sleeve and hand ahead of the face",
 }
 const NO_LEAN := 99.0
 
@@ -44,19 +45,21 @@ func _is_skin(d: PackedByteArray, o: int) -> bool:
 
 func row_lean(img: Image, row: int) -> float:
 	## Mean over the row's frames of (head skin centroid - figure centre) / figure width; + faces right. NO_LEAN if no face.
+	## Every sheet is four rows, so its cell is a quarter of its height.
+	var cell := img.get_height() / 4
 	var w := img.get_width()
 	var d := img.get_data()
 	var total := 0.0
 	var frames := 0
-	for col in w / CELL:
-		var x0 := CELL
+	for col in w / cell:
+		var x0 := cell
 		var x1 := -1
-		var y0 := CELL
+		var y0 := cell
 		var y1 := -1
 		var opaque := 0
-		for y in CELL:
-			for x in CELL:
-				if d[((row * CELL + y) * w + col * CELL + x) * 4 + 3] >= 128:
+		for y in cell:
+			for x in cell:
+				if d[((row * cell + y) * w + col * cell + x) * 4 + 3] >= 128:
 					opaque += 1
 					x0 = mini(x0, x)
 					x1 = maxi(x1, x)
@@ -67,8 +70,8 @@ func row_lean(img: Image, row: int) -> float:
 		var sum_x := 0.0
 		var skin := 0
 		for y in range(y0, y0 + int((y1 - y0) * HEAD_SHARE)):
-			for x in CELL:
-				if _is_skin(d, ((row * CELL + y) * w + col * CELL + x) * 4):
+			for x in cell:
+				if _is_skin(d, ((row * cell + y) * w + col * cell + x) * 4):
 					sum_x += x
 					skin += 1
 		if skin < 4:
@@ -87,12 +90,12 @@ func _rgba(path: String) -> Image:
 
 
 func _villagers() -> Dictionary:
-	## id -> path for every 32px villager sheet.
+	## id -> path for every villager sheet, at whatever cell it declares.
 	var manifest: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/sprite_manifest.json"))
 	var out := {}
 	for key in manifest["overworld_npc_sheets"]:
 		var entry: Dictionary = manifest["overworld_npc_sheets"][key]
-		if int(entry.get("frame_width", CELL)) == CELL and int(entry.get("frame_height", CELL)) == CELL and ResourceLoader.exists(str(entry["path"])):
+		if ResourceLoader.exists(str(entry["path"])):
 			out[key] = str(entry["path"])
 	return out
 
@@ -111,19 +114,19 @@ func test_no_villager_walks_left_facing_right() -> void:
 		if left <= -CLEAR_LEAN and right >= CLEAR_LEAN:
 			facing_left += 1
 		var wrong: bool = left >= CLEAR_LEAN and right <= -CLEAR_LEAN
-		if LEFT_AS_IS.has(key):
-			assert_true(wrong, "%s faces the right way now: drop it from LEFT_AS_IS" % key)
+		if MISREAD.has(key):
+			assert_true(wrong, "%s no longer misreads: drop it from MISREAD" % key)
 		elif wrong:
 			backwards.append("%s (left row leans %+.2f)" % [key, left])
 	assert_gt(facing_left, 90, "CONTROL: sheets with a clear verdict face the way they walk (%d)" % facing_left)
 	assert_eq(backwards, [], "%d villager sheet(s) walk left facing right (tools/fix_overworld_side_facing.py): %s" % [backwards.size(), str(backwards.slice(0, 8))])
 
 
-func test_the_sheets_checked_by_eye_were_turned_round() -> void:
+func test_every_misread_names_a_real_villager() -> void:
 	var sheets := _villagers()
-	for key in REVIEWED:
-		assert_true(sheets.has(key), "CONTROL: %s is a villager sheet" % key)
-		assert_lt(row_lean(_rgba(sheets[key]), LEFT_ROW), 0.0, "%s walks left facing left" % key)
+	assert_gt(MISREAD.size(), 0, "CONTROL: the list has entries to check")
+	for key in MISREAD:
+		assert_true(sheets.has(key), "%s is listed but is not a villager sheet" % key)
 
 
 func _synthetic(face_dx: int) -> Image:

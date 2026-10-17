@@ -211,8 +211,9 @@ func test_every_sheet_is_actually_MEASURABLE_not_just_listed() -> void:
 			continue
 		if EXEMPT.has(sheet):
 			continue  # an exempt sheet is not the gate's to measure; its reason says why
-		if img.get_width() != 128 or img.get_height() != 128:
-			unmeasurable.append("%s: %dx%d not 128x128" % [sheet, img.get_width(), img.get_height()])
+		# The gate measures any square 4x4 grid since the 48px redraws of 2026-10-16; this mirrors its own size check.
+		if img.get_width() != img.get_height() or img.get_width() % 4 != 0:
+			unmeasurable.append("%s: %dx%d not a square 4x4 grid" % [sheet, img.get_width(), img.get_height()])
 	unmeasurable.sort()
 	assert_eq(unmeasurable, [],
 		("sheet(s) the head-lock gate CANNOT measure — it bare-returns on each and " +
