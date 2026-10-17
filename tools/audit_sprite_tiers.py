@@ -173,7 +173,67 @@ def _tier_sections(manifest: dict) -> list[str]:
     with it by construction.
     """
     return [s for s, body in manifest.items()
-            if isinstance(body, dict) and not s.startswith("_")]
+            if isinstance(body, dict) and not s.startswith("_")
+            and s not in _section_claims(manifest)]
+
+
+def _section_claims(manifest: dict) -> list[str]:
+    """Sections whose BODY carries the tier, rather than their entries.
+
+    `ability_icons` (added 2026-09-26, nine days after this file was last
+    touched) declares ONE `tier`, one `dir` and a list of names: a claim over a
+    SET, not a map of id -> entry. The derived section filter admitted it
+    because it is a non-underscore dict, so its five scalar keys read as five
+    entries with unreadable tiers and `malformed_entries` voided the whole run.
+
+    That arm was right and the consequence was that this tool COULD NOT AUDIT
+    THE GAME REPO AT ALL for 21 days. Invisible because the default corpus is
+    the delivery checkout, where the section does not exist -- so the default
+    invocation kept printing a clean EC=0 and only a `COWIR_SPRITE_ROOT` run
+    could ever have shown it. The second reading this tool gained in September
+    was void from the day it was first pointed at the game tree.
+
+    ⛔ NOT AN EXEMPTION, and deliberately not a name list. A section-level claim
+    is still a T1 claim over real files, so it is EXPANDED into entries and
+    audited by the same loop -- coverage gained, not waived. The discriminator
+    is structural: an entry map's values are always dicts, so `tier` can never
+    be a direct string on its body, whatever an entry happens to be called.
+    """
+    return [s for s, body in manifest.items()
+            if isinstance(body, dict) and not s.startswith("_")
+            and isinstance(body.get("tier"), str)]
+
+
+def _section_claim_paths(body: dict) -> list[str]:
+    """The files a section-level claim covers, or empty when undecidable.
+
+    Empty is reported by the caller as VOID rather than skipped, for the same
+    reason a malformed entry is: a tier claim whose subjects cannot be found is
+    unknown provenance, and unknown is not T1.
+    """
+    d = str(body.get("dir", "")).replace("res://", "").rstrip("/")
+    names = next((v for v in body.values() if isinstance(v, list)), None)
+    if not d or not names:
+        return []
+    return [f"{d}/{n}.png" for n in names if isinstance(n, str)]
+
+
+def _section_claim_t1(manifest: dict) -> list[tuple[str, str, dict]]:
+    """A section-level T1 claim, expanded into one pseudo-entry per file.
+
+    Expanded rather than special-cased so the existing loop audits them with no
+    second code path: each flows through `_entry_paths`, the path-exists gate,
+    `artist_evidence` and the `examined`/`t1_total` coverage control exactly as
+    a per-entry T1 does.
+    """
+    out = []
+    for section in _section_claims(manifest):
+        body = manifest[section]
+        if body.get("tier") != "T1":
+            continue
+        for rel in _section_claim_paths(body):
+            out.append((section, rel.rsplit("/", 1)[-1], {"path": rel}))
+    return out
 
 
 def _entry_paths(val: dict) -> list[str]:
@@ -294,7 +354,16 @@ def main() -> int:
               f"T1; every result above is VOID, not clean.")
         return 2
 
-    t1 = _t1_entries(m)
+    blind = [s for s in _section_claims(m)
+             if m[s].get("tier") == "T1" and not _section_claim_paths(m[s])]
+    if blind:
+        print(f"\nCORPUS UNREADABLE — {len(blind)} section-level T1 claim(s) declare no "
+              f"derivable files, so the sheets they vouch for cannot be opened: "
+              f"{', '.join(blind)}. Unknown is not T1; every result above is VOID, "
+              f"not clean.")
+        return 2
+
+    t1 = _t1_entries(m) + _section_claim_t1(m)
     t1_total = len(t1)
     for section, key, val in t1:
         rels = _entry_paths(val)
@@ -378,6 +447,47 @@ def selftest() -> int:
     # and fails this one, which is the only reason the list can stay derived.
     keys = {k for _, k, _ in _t1_entries(synthetic)}
     check("a T1 entry in an unknown section is COUNTED", keys == {"newcomer", "known"}, str(keys))
+
+    print("section-level tier claims (ability_icons, 2026-09-26)")
+    # A section whose BODY carries the tier. Admitted as an entry section until
+    # 2026-10-17, so its scalar keys read as malformed entries and the GAME repo
+    # voided entirely -- 21 days, invisible because the default corpus is the
+    # delivery tree, where the section does not exist.
+    claim = {
+        "ability_icons": {"tier": "T1", "dir": "assets/sprites/ui/ability_icons",
+                          "icons": ["arcane", "buff"], "source": "procedural"},
+        "monster_sheets": {"known": {"tier": "T1", "path": "res://assets/sprites/y.png"}},
+    }
+    check("a section-level claim is not an ENTRY section",
+          _tier_sections(claim) == ["monster_sheets"], str(_tier_sections(claim)))
+    check("  ...so its scalar keys are not malformed entries",
+          malformed_entries(claim) == [], str(malformed_entries(claim)))
+    check("  ...and it is DISCOVERED as a claim", _section_claims(claim) == ["ability_icons"])
+    # Coverage GAINED, not waived: the files it vouches for are audited by the
+    # same loop. An exemption would have reported them as nothing at all.
+    cl = {k for _, k, _ in _section_claim_t1(claim)}
+    check("  ...and its files are COUNTED as T1", cl == {"arcane.png", "buff.png"}, str(cl))
+    check("  ...expanded with real paths",
+          [v["path"] for _, _, v in _section_claim_t1(claim)]
+          == ["assets/sprites/ui/ability_icons/arcane.png",
+              "assets/sprites/ui/ability_icons/buff.png"])
+    # ⛔ THE ARM THAT KEEPS THE EXCLUSION HONEST. Widening it would silently
+    # reclassify a broken entry as config, which is the direction that
+    # un-protects artist work.
+    still_bad = dict(claim)
+    still_bad["monster_sheets"] = dict(claim["monster_sheets"]); still_bad["monster_sheets"]["oops"] = "a string"
+    check("a genuinely MALFORMED entry is still reported",
+          malformed_entries(still_bad) == ["monster_sheets/oops (str)"], str(malformed_entries(still_bad)))
+    # The discriminator is STRUCTURAL, not a name list: an entry map's values
+    # are dicts, so `tier` cannot be a direct string on its body even when an
+    # entry is literally called "tier".
+    named_tier = {"monster_sheets": {"tier": {"tier": "T1", "path": "res://a/t.png"}}}
+    check("an entry literally named \"tier\" is still an entry section",
+          _tier_sections(named_tier) == ["monster_sheets"] and _section_claims(named_tier) == [],
+          str((_tier_sections(named_tier), _section_claims(named_tier))))
+    check("a claim with no derivable files yields none, so the caller voids it",
+          _section_claim_paths({"tier": "T1", "icons": ["a"]}) == []
+          and _section_claim_paths({"tier": "T1", "dir": "d"}) == [])
 
     print("declaration shapes")
     check("top-level path (monster/NPC single png)",
