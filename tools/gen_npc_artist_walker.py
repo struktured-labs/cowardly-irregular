@@ -111,6 +111,11 @@ def base_id(npc: str) -> tuple[str, str | None]:
 # World variants whose portrait outweighed the wardrobe text, named outfit and all (each matches the sheet it replaces).
 WARDROBE = {
     "king_suburban": "a gold crown worn with an ordinary blue business suit and tie -- NOT royal robes, NOT a cape",
+    "guard_suburban": "a teal baseball cap and a khaki work jacket, holding a tall spear upright like a security guard",
+    "king_industrial": ("a hard hat with yellow hazard stripes and a small gold crown badge, dark riveted work overalls "
+                        "and heavy gloves -- NOT royal robes, NOT a cape"),
+    "old_woman_industrial": ("clearly ELDERLY: grey hair, lined face, a little stooped; a dark steel safety helmet, "
+                             "heavy dark work coat and gloves"),
 }
 
 
