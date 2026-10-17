@@ -93,7 +93,7 @@ LEFT_OPEN = ("mage_abstract.png", "mage_industrial.png", "mage_suburban.png", "m
 FACE_IN_SHADOW = ("npcs/hooded_mage.png", "npcs/mysterious.png")
 # Busts cut from the artist's battle sheets (the five starters, Mordaine and her other face): never filled.
 ARTIST_DERIVED = ("fighter.png", "cleric.png", "mage.png", "rogue.png", "bard.png", "mordaine.png",
-                  "chancellor_mordaine.png", "calibrant.png", "rotha.png", "roy.png", "kid_acrees.png")
+                  "chancellor_mordaine.png", "calibrant.png", "rotha.png", "roy.png", "kid_acrees.png", "granny_kaya.png")
 
 
 # portrait -> first row of a keyed-out shirt that is open at the bottom of the bust (not enclosed, so not a hole).

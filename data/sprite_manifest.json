@@ -5628,6 +5628,32 @@
           "frames": 4
         }
       }
+    },
+    "granny_kaya": {
+      "path": "res://assets/sprites/npcs/granny_kaya/overworld.png",
+      "frame_width": 48,
+      "frame_height": 48,
+      "fps": 4,
+      "tier": "T2",
+      "source": "artist aseprite drop 2026-10-15 — Villagers/Villager_Granny Kaya.aseprite, 16 frames / 4 tags (South, West, East, North). The artist's FOURTH overworld walker. Exported at NATIVE size by tools/export_artist_overworld_walker.py: figure 22x39 in 48px cells, 21 colours, no resampling. Her East tag is the artist's own mirror of West, checked by eye to face right (2026-10-16). Every row is the artist's frames untouched.",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      }
     }
   },
   "overworld_player_sheets": {
