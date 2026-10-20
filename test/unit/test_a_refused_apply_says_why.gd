@@ -18,6 +18,13 @@ extends GutTest
 
 const PANEL := "res://src/ui/RebalanceReviewPanel.gd"
 
+## Reached through the CLASS, not through the instance. An instance reach resolves at RUNTIME, so a
+## rename aborts the enclosing arm -- and all four of mine sat inside their arm's FIRST assert
+## argument, which made them loud by STATEMENT ORDER alone. Add one precondition line above any of
+## them and that cover silently drops to nothing. A class reach is a PARSE error instead: EC=3,
+## nothing runs, and stderr names the member -- louder than a floor, with nothing to keep current.
+const REJECTED := RebalanceDaemon.APPLY_REJECTED
+
 
 func _daemon_with(deltas: Array) -> RebalanceDaemon:
 	var d := RebalanceDaemon.new()
@@ -33,7 +40,7 @@ func _daemon_with(deltas: Array) -> RebalanceDaemon:
 
 func test_an_unlisted_constant_is_refused_and_names_itself() -> void:
 	var d := _daemon_with([{"constant": "enemy_hp_multiplier", "value": 1.1}])
-	assert_eq(d.force_apply(0), d.APPLY_REJECTED, "an unlisted dial must be refused")
+	assert_eq(d.force_apply(0), REJECTED, "an unlisted dial must be refused")
 	var why: String = str(d.pending[0].get("reject_reason", ""))
 	assert_ne(why, "", "THE DEFECT: refused with no reason, so the panel had nothing to show")
 	assert_true(why.contains("enemy_hp_multiplier"),
@@ -42,7 +49,7 @@ func test_an_unlisted_constant_is_refused_and_names_itself() -> void:
 
 func test_malformed_deltas_are_refused_with_their_own_reason() -> void:
 	var d := _daemon_with(["not a dictionary"])
-	assert_eq(d.force_apply(0), d.APPLY_REJECTED, "a malformed delta must be refused")
+	assert_eq(d.force_apply(0), REJECTED, "a malformed delta must be refused")
 	var why: String = str(d.pending[0].get("reject_reason", ""))
 	assert_ne(why, "", "a malformed delta must also record a reason")
 	assert_false(why.contains("not a dial"),
@@ -53,7 +60,7 @@ func test_malformed_deltas_are_refused_with_their_own_reason() -> void:
 func test_a_rejected_status_never_travels_without_a_reason() -> void:
 	for deltas in [["bad"], [{"constant": "nope", "value": 1.0}], [{"no_constant_key": 1}]]:
 		var d := _daemon_with(deltas)
-		assert_eq(d.force_apply(0), d.APPLY_REJECTED, "fixture must be refused: %s" % str(deltas))
+		assert_eq(d.force_apply(0), REJECTED, "fixture must be refused: %s" % str(deltas))
 		assert_eq(str(d.pending[0].get("status", "")), "rejected", "status must say rejected")
 		assert_ne(str(d.pending[0].get("reject_reason", "")), "",
 			"a rejected proposal with no reason is the defect, for deltas %s" % str(deltas))
@@ -63,7 +70,7 @@ func test_a_rejected_status_never_travels_without_a_reason() -> void:
 func test_an_allowed_constant_still_applies() -> void:
 	var d := _daemon_with([{"constant": "exp_multiplier", "value": 1.05}])
 	var out: String = d.force_apply(0)
-	assert_ne(out, d.APPLY_REJECTED, "a listed dial must not be refused by the safelist")
+	assert_ne(out, REJECTED, "a listed dial must not be refused by the safelist")
 	assert_eq(str(d.pending[0].get("reject_reason", "")), "",
 		"and a successful apply must not leave a stale refusal reason behind")
 
