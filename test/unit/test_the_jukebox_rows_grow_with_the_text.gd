@@ -79,11 +79,14 @@ func _extent(l: Label) -> float:
 	return f.get_ascent(fs) + f.get_descent(fs)
 
 
-func _find(prefix: String) -> Label:
+## Exact where the authored text is exact; prefix only where the label carries a suffix.
+func _find(prefix: String, exact: bool = false) -> Label:
 	var ls: Array = []
 	_labels_in(_menu, ls)
 	for l in ls:
-		if (l as Label).text.begins_with(prefix):
+		var txt: String = (l as Label).text
+		var hit: bool = (txt == prefix) if exact else txt.begins_with(prefix)
+		if hit:
 			return l
 	return null
 
@@ -93,7 +96,7 @@ func test_control_the_menu_builds_rows_at_every_size() -> void:
 		await _build_at(PRESETS[i])
 		assert_gt(_menu._rows_shown(), 0,
 			"Text Size %s must show at least one row" % [_label(i)])
-		assert_not_null(_find("JUKEBOX"), "CONTROL: the title must exist at %s" % [_label(i)])
+		assert_not_null(_find("JUKEBOX", true), "CONTROL: the title must exist at %s" % [_label(i)])
 
 
 func test_one_hundred_percent_is_unchanged() -> void:
@@ -169,7 +172,7 @@ func test_the_title_does_not_crowd_the_subtitle_further_as_text_grows() -> void:
 
 
 func _crowding() -> float:
-	var title := _find("JUKEBOX")
+	var title := _find("JUKEBOX", true)
 	var sub := _find("[DEBUG]")
 	if title == null or sub == null:
 		return -9999.0
@@ -223,3 +226,21 @@ func test_control_the_ladder_itself_is_the_players() -> void:
 		"%d rungs collapse to %d labels, so a failure message cannot name its own size" % [
 			PRESETS.size(), seen.size()])
 	assert_eq(_label(PRESETS.find(1.0)), "100%", "the 1.0 rung is labelled %s" % _label(PRESETS.find(1.0)))
+
+
+func test_a_label_named_like_the_title_cannot_impersonate_it() -> void:
+	## `_find` returns the FIRST tree-order match, so a PREFIX lookup resolves to whichever label
+	## sorts earliest -- the title only wins today because it is built before the rows. A label
+	## planted ahead of it takes the lookup, which is what the exact form removes.
+	await _build_at(1.0)
+	var decoy := Label.new()
+	decoy.text = "JUKEBOX Theme"
+	_menu.add_child(decoy)
+	_menu.move_child(decoy, 0)
+	assert_eq(_menu.get_child(0), decoy, "PRECONDITION: the decoy must sort before the title")
+	var title := _find("JUKEBOX", true)
+	assert_not_null(title, "the title must still resolve with a decoy ahead of it")
+	if title != null:
+		assert_eq(title.text, "JUKEBOX", "the exact lookup resolved to '%s'" % title.text)
+	assert_ne(title, decoy, "the lookup returned the DECOY, not the title")
+	assert_eq(_find("JUKEBOX"), decoy, "CONTROL: the prefix form must take the decoy, or this arm proves nothing")
