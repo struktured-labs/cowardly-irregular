@@ -481,3 +481,16 @@ func _place_masterites() -> void:
 	curator.cutscene_id = "world2_curator_intro"
 	curator.position = Vector2(21 * TILE_SIZE,16 * TILE_SIZE)
 	npcs.add_child(curator)
+
+	## W2's fourth. Tempo of the Rush Hour is level 10 -- the Warden's level, which is why it sits this
+	## early -- and world2_fragment_tempo waits on its defeat. Row 7 is the sidewalk the north half is
+	## crossed on; its own intro scene had no dispatcher until this placement.
+	var tempo = MasteriteScript.new()
+	tempo.archetype = "tempo"
+	tempo.monster_id = "masterite_tempo_suburban"
+	tempo.defeat_flag_name = "cutscene_flag_tempo_suburban_defeated"
+	tempo.prereq_flag = "cutscene_flag_world2_chapter3_complete"
+	tempo.display_name = "Masterite Tempo"
+	tempo.cutscene_id = "world2_tempo_intro"
+	tempo.position = Vector2(11 * TILE_SIZE,7 * TILE_SIZE)
+	npcs.add_child(tempo)

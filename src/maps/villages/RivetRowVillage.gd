@@ -322,6 +322,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(graffiti)
 
 	_setup_quest_points()
+	_place_masterites()
 
 
 ## words_per_conversation step 3 — Form 99-Theta, filed at the complaints window in the east yard.
@@ -338,3 +339,46 @@ func _setup_quest_points() -> void:
 	window.idle_text = "A filing window, shuttered at the bottom, with a tray worn smooth by forms."
 	window.position = Vector2(23 * TILE_SIZE, 8 * TILE_SIZE)
 	npcs.add_child(window)
+
+
+## W4's three village Masterites. The Assembly Core already fights warden_industrial; these are the other
+## three this world was designed for, and each writes the flag its fragment reveal waits on
+## (world3_fragment_arbiter/curator/tempo -- those filenames run one world behind the theme).
+## Their intros were authored with zero dispatchers; these fights are their first callers.
+func _place_masterites() -> void:
+	var MasteriteScript = load("res://src/exploration/MasteriteEncounter.gd")
+	if MasteriteScript == null:
+		return
+
+	## Row 10 is the corridor north out of the entrance: the barrel bank closes cols 7-13 above it.
+	var tempo = MasteriteScript.new()
+	tempo.archetype = "tempo"
+	tempo.monster_id = "masterite_tempo_industrial"
+	tempo.defeat_flag_name = "cutscene_flag_tempo_industrial_defeated"
+	tempo.prereq_flag = "cutscene_flag_world4_chapter1_complete"
+	tempo.display_name = "Tempo of the Shift"
+	tempo.cutscene_id = "world3_tempo_intro"
+	tempo.position = Vector2(11 * TILE_SIZE,10 * TILE_SIZE)
+	npcs.add_child(tempo)
+
+	## The east yard on row 7, clear of Pell (17,8) and the graffiti wall (21,4).
+	var arbiter = MasteriteScript.new()
+	arbiter.archetype = "arbiter"
+	arbiter.monster_id = "masterite_arbiter_industrial"
+	arbiter.defeat_flag_name = "cutscene_flag_arbiter_industrial_defeated"
+	arbiter.prereq_flag = "cutscene_flag_world4_chapter2_complete"
+	arbiter.display_name = "Arbiter of Efficiency"
+	arbiter.cutscene_id = "world3_arbiter_intro"
+	arbiter.position = Vector2(19 * TILE_SIZE,7 * TILE_SIZE)
+	npcs.add_child(arbiter)
+
+	## The north strip on row 3, the approach to the barracks and the loading floor.
+	var curator = MasteriteScript.new()
+	curator.archetype = "curator"
+	curator.monster_id = "masterite_curator_industrial"
+	curator.defeat_flag_name = "cutscene_flag_curator_industrial_defeated"
+	curator.prereq_flag = "cutscene_flag_world4_chapter3_complete"
+	curator.display_name = "Curator of the Pipeline"
+	curator.cutscene_id = "world3_curator_intro"
+	curator.position = Vector2(8 * TILE_SIZE,3 * TILE_SIZE)
+	npcs.add_child(curator)
