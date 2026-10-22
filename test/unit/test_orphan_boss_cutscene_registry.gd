@@ -28,6 +28,10 @@ const CUTSCENES_DIR := "res://data/cutscenes"
 
 ## Boss/intro cutscene files that have NO code reference yet.
 ## Update this list deliberately as content lands.
+## RETIRED: world2_curator_intro — MapleHeightsVillage._place_masterites made the Curator a real
+## fight and passes it as the encounter's cutscene_id, so it has a caller now. world2_arbiter_intro
+## STAYS: it writes the flag world2_chapter4 is gated on NOT having, so wiring it would cancel that
+## chapter permanently (see test_no_scene_cancels_another_scenes_gate_regression, its 2nd declarer).
 const KNOWN_PLANNED_INTROS: Array[String] = [
 	"world3_tempo_intro",  # W4's industrial Tempo (trigger boss_tempo_industrial); W3 now has its own Grand Schedule scenes
 	"world1_arbiter_intro",
@@ -35,7 +39,6 @@ const KNOWN_PLANNED_INTROS: Array[String] = [
 	"world1_tempo_intro",
 	"world1_warden_intro",
 	"world2_arbiter_intro",
-	"world2_curator_intro",
 	"world2_tempo_intro",
 	"world3_arbiter_intro",
 	"world3_curator_intro",

@@ -2460,25 +2460,14 @@ func _get_pending_story_cutscene() -> String:
 	if flags.get("cutscene_flag_chapter4_garage_complete", false) and not flags.get("cutscene_flag_arbiter_suburban_intro_complete", false):
 		if _current_map_id == "maple_heights_village":
 			return "world2_chapter4"
-	# Tick 101: auto-set arbiter_suburban_defeated after the arbiter intro
-	# cutscene completes. Pre-fix, this flag was set ONLY by
-	# world2_arbiter_defeat.json — a cutscene NO code path triggers — so
-	# W2 chapter5 was unreachable. The Masterite Arbiter battle is treated
-	# as an off-screen narrative beat that happens between intro and the
-	# community center reveal. Mirror of the chapter5→curator auto-set
-	# below for the same reason.
-	if flags.get("cutscene_flag_arbiter_suburban_intro_complete", false) and not flags.get("cutscene_flag_arbiter_suburban_defeated", false):
-		_set_cutscene_flag_and_mirror("cutscene_flag_arbiter_suburban_defeated")
+	# The Arbiter is FOUGHT now: MapleHeightsVillage._place_masterites puts a MasteriteEncounter
+	# beside the Enrichment Annex, and its victory writes this flag. The tick-101 auto-set that
+	# stood here granted the defeat the moment the intro ended, which is why its battle, its
+	# intro scene and world2_arbiter_defeat.json were all unreachable.
 	# W2 Chapter 5: community center, Coordinator reveal
 	if flags.get("cutscene_flag_arbiter_suburban_defeated", false) and not flags.get("cutscene_flag_world2_chapter5_complete", false):
 		return "world2_chapter5"
-	# Tick 101: auto-set curator_suburban_defeated after chapter5
-	# (Coordinator reveal). world2_curator_defeat.json exists but has no
-	# code path — same situation as arbiter above. The Curator battle is
-	# treated as an off-screen narrative beat between chapter5 (reveal)
-	# and chapter7_infrastructure (feral shopping cart aftermath).
-	if flags.get("cutscene_flag_world2_chapter5_complete", false) and not flags.get("cutscene_flag_curator_suburban_defeated", false):
-		_set_cutscene_flag_and_mirror("cutscene_flag_curator_suburban_defeated")
+	# The Curator is FOUGHT now, out in the neighbourhood its scenes are set in — same reason.
 	# W2 Chapter 7: feral shopping cart (after curator defeat)
 	if flags.get("cutscene_flag_curator_suburban_defeated", false) and not flags.get("cutscene_flag_chapter7_infrastructure_complete", false):
 		return "world2_chapter7_infrastructure"

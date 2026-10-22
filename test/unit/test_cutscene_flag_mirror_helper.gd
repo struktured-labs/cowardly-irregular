@@ -85,8 +85,9 @@ func test_all_known_call_sites_use_helper() -> void:
 	var sites: Array[String] = [
 		"_set_cutscene_flag_and_mirror(\"cutscene_flag_chapter2_complete\")",
 		"_set_cutscene_flag_and_mirror(\"cutscene_flag_\" + skip_flag)",
-		"_set_cutscene_flag_and_mirror(\"cutscene_flag_arbiter_suburban_defeated\")",
-		"_set_cutscene_flag_and_mirror(\"cutscene_flag_curator_suburban_defeated\")",
+		## The two W2 auto-sets are GONE: those Masterites are fought now, and their defeat flags
+		## arrive through _apply_pending_boss_defeat's `str(c)` site below, which this list still
+		## pins. Re-pinned rather than suppressed — the helper's coverage is unchanged.
 		"_set_cutscene_flag_and_mirror(\"cutscene_flag_world2_complete\")",
 		"_set_cutscene_flag_and_mirror(\"cutscene_flag_world3_complete\")",
 		"_set_cutscene_flag_and_mirror(\"cutscene_flag_world4_complete\")",
