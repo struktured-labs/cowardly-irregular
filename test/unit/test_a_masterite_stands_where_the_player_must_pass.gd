@@ -16,6 +16,20 @@ extends GutTest
 ## comes from the village SOURCES, so a boss added to a village and a boss dropped from the walk are
 ## both visible. Nothing here is a hand-kept list of villages or of bosses.
 
+## 📋 ARMS PROVEN — which asserts here have a DEMONSTRATED red, and which do not.
+##   moved == []         ✅ Warden onto the inn's wall block (6,3) -> "authored at (192,96), stands at
+##                          (176,80)"; and onto the perimeter echo wall (0,8) -> "(0,256) -> (48,240)"
+##   shared == []        ✅ Arbiter stacked onto the Tempo's cell  -> names both and "(11, 10)"
+##   set equality        ✅ one `npcs.add_child` dropped while the source still declares it
+##   blocked == []       ⛔ NEVER FIRED, AND ALMOST UNREACHABLE — say so rather than imply it is a
+##                          proven arm. `_validate_placements` runs on every Node2D under `npcs`, so a
+##                          boss on an impassable cell is RELOCATED before this test can read it: both
+##                          wall mutations above left the built cell walkable and `moved` is what spoke.
+##                          It can only fire in the case BaseVillage merely warns about — no walkable
+##                          cell within 5 tiles — which these villages' open bands make hard to build.
+##                          Kept because that case leaves the boss standing in a wall and nothing else
+##                          here would notice.
+##
 const MapScripts := preload("res://test/unit/helpers/map_scripts.gd")
 const VILLAGE_DIR := "res://src/maps/villages"
 const TILE := 32
