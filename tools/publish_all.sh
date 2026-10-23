@@ -467,10 +467,22 @@ fi
 # stderr and exit code instead of discarding them; this is that pattern, applied to the
 # resolver the publish decision actually rests on.
 #
-# THREE states, because "I could not ask" is not "the answer is no":
+# FOUR states, because "I could not ask" is not "the answer is no":
 #   0  resolved     -- stdout is the newest tag (unchanged on the success path)
 #   1  unreachable  -- ls-remote itself failed
 #   2  no tags      -- origin answered, and nothing parsed as a v3.33.* tag
+#   3  stale reply  -- given $1, origin answered ec 0 but never listed $1 in 3 replies
+#
+# A SHORT REPLY IS NOT A SUPERSESSION. Measured 2026-10-23, `git ls-remote --tags origin
+# 'refs/tags/v3.33.*'` 12 times in a row: 10 replies of 1160 lines (top .699), 2 of 978 (top
+# .616, every tag after .616 missing, same last line, ec 0). v3.33.699-alpha's first publish
+# aborted "SUPERSEDED before linux: origin now has v3.33.616-alpha" and told the operator to
+# re-run with the OLDER tag, because both callers test `!= "$TAG"` and an incomplete list
+# reads as "a different tag is newest". The in-loop caller runs BETWEEN channels, so the same
+# reply after linux would have split the store, which is the one outcome its comment rules out.
+# The discriminator: $TAG is on origin (the evidence gate checked that), so a reply that lacks
+# it is provably incomplete and is re-sampled. A reply that CONTAINS $TAG has a max >= $TAG,
+# which is what makes the callers' `!=` mean "strictly newer" without a comparator of their own.
 #
 # THE REASON GOES TO STDERR, NOT TO A VARIABLE, AND THAT IS NOT A STYLE CHOICE. The first
 # version of this fix set a global and interpolated it into each caller's message. Every
@@ -480,12 +492,23 @@ fi
 # test printed the variable: why=[] in both failure states, next to a correct exit code.
 # stderr crosses the subshell boundary and lands in publish.log where the operator reads it.
 _newest_tag_on_origin() {
-    local raw ec t
-    raw="$(git ls-remote --tags origin 'refs/tags/v3.33.*' 2>&1)"; ec=$?
-    if [ "$ec" -ne 0 ]; then
-        echo "[pub] origin UNREACHABLE: git ls-remote exited ${ec}: $(printf '%s' "$raw" | head -2 | tr '\n' ' ')" >&2
-        return 1
-    fi
+    local want="${1:-}" raw ec t try
+    for try in 1 2 3; do
+        raw="$(git ls-remote --tags origin 'refs/tags/v3.33.*' 2>&1)"; ec=$?
+        if [ "$ec" -ne 0 ]; then
+            echo "[pub] origin UNREACHABLE: git ls-remote exited ${ec}: $(printf '%s' "$raw" | head -2 | tr '\n' ' ')" >&2
+            return 1
+        fi
+        [ -z "$want" ] && break
+        # Exact field match: a grep pattern would read the tag's dots as wildcards.
+        printf '%s\n' "$raw" | awk -v w="refs/tags/${want}" '$2 == w { f = 1 } END { exit !f }' && break
+        echo "[pub] origin reply ${try}/3 is STALE: $(printf '%s\n' "$raw" | wc -l) line(s), ${want} not among them." >&2
+        if [ "$try" -eq 3 ]; then
+            echo "[pub] origin never listed ${want} in 3 replies -- newest tag UNKNOWN, which is not superseded." >&2
+            return 3
+        fi
+        sleep "${PUB_STALE_RETRY_DELAY:-2}"
+    done
     # Split assignment: `local t=$(...)` would discard the status (CLAUDE.md), and the -z test
     # below is what classifies "answered but unparseable" rather than the pipeline's own code.
     t="$(printf '%s\n' "$raw" | grep -v '\^{}' | awk '{print $2}' | sed 's#refs/tags/##' | sort -V | tail -1)"
@@ -1013,7 +1036,7 @@ fi
 # reason; see its own comment.
 NEWEST_NOW=""
 SUPERSESSION_CHECKED=0
-if NEWEST_NOW="$(_newest_tag_on_origin)"; then
+if NEWEST_NOW="$(_newest_tag_on_origin "$TAG")"; then
     SUPERSESSION_CHECKED=1
 elif [ "$ROLLBACK" -eq 1 ]; then
     echo "[pub] ⚠ supersession UNVERIFIED (reason on the line above) — proceeding because --rollback was given." >&2
@@ -1152,7 +1175,7 @@ for CH in linux windows web; do
     # read-back after every channel. What was wrong before was not the trade, it was that the
     # skip was SILENT: the log could not tell a verified channel from an unverified one.
     NEWEST=""
-    if ! NEWEST="$(_newest_tag_on_origin)"; then
+    if ! NEWEST="$(_newest_tag_on_origin "$TAG")"; then
         echo "[pub] ⚠ ${CH}: supersession UNVERIFIED (reason on the line above)." >&2
         echo "      Continuing: stopping mid-batch would split the store. The store-wide" >&2
         echo "      read-back after this channel is the authoritative check." >&2
