@@ -445,9 +445,55 @@ if [ "$ROLLBACK" -eq 1 ]; then
     fi
 fi
 
+# ⛔ AN EMPTY RESULT HERE USED TO BE INDISTINGUISHABLE FROM "ORIGIN AGREES WE ARE NEWEST".
+# `2>/dev/null` discarded ls-remote's reason, so an unreachable origin, a dead ssh agent, a
+# bad remote URL and a genuinely empty tag list all returned the same empty string. Both
+# supersession gates below skip on empty (`[ -n "$NEWEST" ]`), so ONE network blip silently
+# turned FOUR consecutive supersession checks into no-ops -- the pre-check and all three
+# per-channel ones -- while --check went on printing "also checked: supersession against
+# origin".
+#
+# PRECISELY WHAT WAS BROKEN, measured 2026-10-15 on three local origins rather than assumed:
+# the old resolver DID signal failure -- pipefail made `grep -v` on empty input exit 1 -- so it
+# returned (empty, ec=1) for an unreachable origin AND for a reachable one with no v3.33 tags,
+# and (tag, ec=0) for a good one. THE STATUS WAS ALREADY THERE AND EVERY CALLER DISCARDED IT,
+# testing `[ -n "$NEWEST" ]` instead. So the defect was never "the resolver cannot tell you":
+# it was that no caller asked, and 2>/dev/null destroyed the one thing a status cannot carry --
+# WHICH failure it was, in git's own words. CLAUDE.md: don't 2>/dev/null a measurement.
+#
+# That gate exists because of the v3.33.374 supersession incident, and CLAUDE.md's rule for
+# this exact shape is "don't 2>/dev/null a measurement command -- it deletes the warning and
+# keeps the wrong number." tools/reap_release_worktrees.sh:103 already captures ls-remote's
+# stderr and exit code instead of discarding them; this is that pattern, applied to the
+# resolver the publish decision actually rests on.
+#
+# THREE states, because "I could not ask" is not "the answer is no":
+#   0  resolved     -- stdout is the newest tag (unchanged on the success path)
+#   1  unreachable  -- ls-remote itself failed
+#   2  no tags      -- origin answered, and nothing parsed as a v3.33.* tag
+#
+# THE REASON GOES TO STDERR, NOT TO A VARIABLE, AND THAT IS NOT A STYLE CHOICE. The first
+# version of this fix set a global and interpolated it into each caller's message. Every
+# caller invokes this as t="$(...)" -- a COMMAND SUBSTITUTION, which runs in a SUBSHELL -- so
+# the assignment died with the subshell and all four new messages would have printed an empty
+# string inside their own parentheses. Caught before shipping only because the three-state
+# test printed the variable: why=[] in both failure states, next to a correct exit code.
+# stderr crosses the subshell boundary and lands in publish.log where the operator reads it.
 _newest_tag_on_origin() {
-    git ls-remote --tags origin 'refs/tags/v3.33.*' 2>/dev/null \
-        | grep -v '\^{}' | awk '{print $2}' | sed 's#refs/tags/##' | sort -V | tail -1
+    local raw ec t
+    raw="$(git ls-remote --tags origin 'refs/tags/v3.33.*' 2>&1)"; ec=$?
+    if [ "$ec" -ne 0 ]; then
+        echo "[pub] origin UNREACHABLE: git ls-remote exited ${ec}: $(printf '%s' "$raw" | head -2 | tr '\n' ' ')" >&2
+        return 1
+    fi
+    # Split assignment: `local t=$(...)` would discard the status (CLAUDE.md), and the -z test
+    # below is what classifies "answered but unparseable" rather than the pipeline's own code.
+    t="$(printf '%s\n' "$raw" | grep -v '\^{}' | awk '{print $2}' | sed 's#refs/tags/##' | sort -V | tail -1)"
+    if [ -z "$t" ]; then
+        echo "[pub] origin ANSWERED but no refs/tags/v3.33.* tag parsed from its reply." >&2
+        return 2
+    fi
+    printf '%s' "$t"
 }
 
 _saves_cksum() {
@@ -961,7 +1007,25 @@ fi
 #
 # A check whose verdict does not predict the run it is checking is not a check. So this now
 # fails the SAME WAY the publish would, with the same exit code.
-NEWEST_NOW="$(_newest_tag_on_origin)"
+# The resolver now reports WHY it came back empty, and an unresolved origin stops the run
+# HERE -- before butler is touched, before anything is published, so a refusal costs a retry
+# and cannot split the store. The in-loop gate makes the opposite trade for the opposite
+# reason; see its own comment.
+NEWEST_NOW=""
+SUPERSESSION_CHECKED=0
+if NEWEST_NOW="$(_newest_tag_on_origin)"; then
+    SUPERSESSION_CHECKED=1
+elif [ "$ROLLBACK" -eq 1 ]; then
+    echo "[pub] ⚠ supersession UNVERIFIED (reason on the line above) — proceeding because --rollback was given." >&2
+else
+    echo "[pub] BLOCKED: cannot determine the newest tag on origin, so supersession is UNCHECKED." >&2
+    echo "      git's own reason is on the line above, printed by the resolver." >&2
+    echo "      This refusal is before butler: nothing has been published and nothing is split." >&2
+    echo "      An unreachable origin is not agreement that ${TAG} is newest — that is the" >&2
+    echo "      v3.33.374 incident's failure mode. Fix the remote and re-run, or if you have" >&2
+    echo "      confirmed ${TAG} is newest by other means: tools/publish_all.sh --rollback ${TAG}" >&2
+    exit 3
+fi
 if [ -n "$NEWEST_NOW" ] && [ "$NEWEST_NOW" != "$TAG" ]; then
     if [ "$ROLLBACK" -eq 1 ]; then
         echo "[pub] ⚠ ROLLBACK: ${TAG} is SUPERSEDED by ${NEWEST_NOW} on origin, and --rollback was given."
@@ -994,7 +1058,14 @@ if [ "$CHECK_ONLY" -eq 1 ]; then
     # that enumerates what it skipped decays exactly as fast as one that claims "all", just
     # less visibly: nothing re-reads it when a check is added. Kept because naming the gap is
     # still right, corrected because the gap moved.
-    echo "[pub]          also checked: supersession against origin."
+    # A LABEL THAT CANNOT CHANGE WHEN ITS INPUT CHANGES IS NOT REPORTING THAT INPUT -- the rule
+    # stated 60 lines above, which this line was breaking: it printed identically whether the
+    # resolver had answered or silently failed.
+    if [ "$SUPERSESSION_CHECKED" -eq 1 ]; then
+        echo "[pub]          also checked: supersession against origin (newest there: ${NEWEST_NOW})."
+    else
+        echo "[pub]          NOT checked: supersession — origin did not answer (reason logged above)."
+    fi
     echo "[pub]          NOT checked here: prebuilds and every chain gate (suite, export, smokes)."
     echo "[pub]          Stopping before publish."
     exit 0
@@ -1073,7 +1144,20 @@ echo "[pub] prebuild: tier ${TIER_N}/${SRC_N}"
 # ── 5. publish, re-checking supersession before each channel ─────────────────
 PUBLISHED=""
 for CH in linux windows web; do
-    NEWEST="$(_newest_tag_on_origin)"
+    # ⚠ HERE an unresolved origin WARNS and continues, where the pre-check refuses. The
+    # asymmetry is deliberate and it is the v3.33.294/.691 lesson: this runs BETWEEN channels,
+    # so stopping on a transient network error leaves the store serving different builds on
+    # different channels -- a worse outcome than publishing the tag the pre-check already
+    # verified was newest minutes earlier. The authoritative currency check is the store-wide
+    # read-back after every channel. What was wrong before was not the trade, it was that the
+    # skip was SILENT: the log could not tell a verified channel from an unverified one.
+    NEWEST=""
+    if ! NEWEST="$(_newest_tag_on_origin)"; then
+        echo "[pub] ⚠ ${CH}: supersession UNVERIFIED (reason on the line above)." >&2
+        echo "      Continuing: stopping mid-batch would split the store. The store-wide" >&2
+        echo "      read-back after this channel is the authoritative check." >&2
+        NEWEST=""
+    fi
     if [ "$ROLLBACK" -eq 1 ]; then
         NEWEST="$TAG"   # --rollback: a newer tag is expected and is not a reason to stop
     fi

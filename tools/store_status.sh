@@ -38,9 +38,26 @@ TARGET="struktured/cowardly-irregular"
 STORE_BUTLER="${STORE_BUTLER:-butler}"
 STORE_RECHECK_DELAY="${STORE_RECHECK_DELAY:-15}"
 
+# judge() already fails CLOSED on an empty tag (return 2, "no tag to compare against"), so this
+# was never a wrong-verdict defect the way publish_all.sh's was. What it could not do is say
+# WHY the tag was empty: an unreachable origin, a dead ssh agent and a genuinely empty tag list
+# all produced the same silent empty string, and the operator reading a BLOCKED(2) had nothing
+# to act on. CLAUDE.md: don't 2>/dev/null a measurement command -- it deletes the warning and
+# keeps the wrong number. Same change as publish_all.sh's resolver, and for the same reason:
+# the reason goes to STDERR, which survives the command substitution every caller uses.
 _newest_tag() {
-    git ls-remote --tags origin 'refs/tags/v3.33.*' 2>/dev/null \
-        | grep -v '\^{}' | awk '{print $2}' | sed 's#refs/tags/##' | sort -V | tail -1
+    local raw ec t
+    raw="$(git ls-remote --tags origin 'refs/tags/v3.33.*' 2>&1)"; ec=$?
+    if [ "$ec" -ne 0 ]; then
+        echo "[store] origin UNREACHABLE: git ls-remote exited ${ec}: $(printf '%s' "$raw" | head -2 | tr '\n' ' ')" >&2
+        return 1
+    fi
+    t="$(printf '%s\n' "$raw" | grep -v '\^{}' | awk '{print $2}' | sed 's#refs/tags/##' | sort -V | tail -1)"
+    if [ -z "$t" ]; then
+        echo "[store] origin ANSWERED but no refs/tags/v3.33.* tag parsed from its reply." >&2
+        return 2
+    fi
+    printf '%s' "$t"
 }
 
 # A channel's row can WRAP: butler prints a queued build on continuation lines whose channel
