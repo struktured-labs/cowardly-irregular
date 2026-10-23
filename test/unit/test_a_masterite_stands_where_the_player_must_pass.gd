@@ -21,6 +21,10 @@ extends GutTest
 ##                          (176,80)"; and onto the perimeter echo wall (0,8) -> "(0,256) -> (48,240)"
 ##   shared == []        ✅ Arbiter stacked onto the Tempo's cell  -> names both and "(11, 10)"
 ##   set equality        ✅ one `npcs.add_child` dropped while the source still declares it
+##   swallows_save == []  ✅ FOUND TWO REAL DEFECTS THE DAY IT WAS WRITTEN, and proven at BOTH
+##                          distances: Node Prime's Tempo on the crystal's own cell (gap 0) and one
+##                          cell off it (gap 1, the Rivet Row shape). Each red named the cell, the
+##                          crystal, the gap and the derived reach. Restored clean.
 ##   blocked == []       ⛔ NEVER FIRED, AND ALMOST UNREACHABLE — say so rather than imply it is a
 ##                          proven arm. `_validate_placements` runs on every Node2D under `npcs`, so a
 ##                          boss on an impassable cell is RELOCATED before this test can read it: both
@@ -32,7 +36,24 @@ extends GutTest
 ##
 const MapScripts := preload("res://test/unit/helpers/map_scripts.gd")
 const VILLAGE_DIR := "res://src/maps/villages"
+const ENCOUNTER_SRC := "res://src/exploration/MasteriteEncounter.gd"
 const TILE := 32
+
+
+## How many cells the trigger reaches from its own centre, read off the shape MasteriteEncounter
+## builds rather than assumed. A boss whose trigger covers the save crystal makes saving fire the
+## fight; growing the trigger must widen the clearance below, not silently outrun it.
+func _trigger_reach_cells() -> int:
+	var src: String = FileAccess.get_file_as_string(ENCOUNTER_SRC)
+	assert_ne(src, "", "FLOOR: %s must be readable — the clearance below is derived from it" % ENCOUNTER_SRC)
+	var rx := RegEx.create_from_string('shape\\.size\\s*=\\s*Vector2\\(\\s*TILE_SIZE\\s*\\*\\s*([0-9]+)')
+	var m := rx.search(src)
+	assert_not_null(m, "MasteriteEncounter must declare its trigger as `shape.size = Vector2(TILE_SIZE * N, ...)`")
+	if m == null:
+		return 1
+	var tiles := int(m.get_string(1))
+	assert_gt(tiles, 0, "a trigger of %d tiles would make the clearance rule vacuous" % tiles)
+	return tiles / 2
 
 
 ## Every Masterite a village constructs and the position it was AUTHORED at, straight from the
@@ -77,14 +98,25 @@ func _npc_cells(n: Node, acc: Dictionary) -> void:
 		_npc_cells(c, acc)
 
 
+func _crystal_cell(n: Node, acc: Array) -> void:
+	for c in n.get_children():
+		if c is SavePoint and c is Node2D:
+			var p: Vector2 = (c as Node2D).global_position
+			acc.append(Vector2i(int(p.x / TILE), int(p.y / TILE)))
+		_crystal_cell(c, acc)
+
+
 func test_every_placed_masterite_stands_on_a_walkable_cell_of_its_own() -> void:
 	var blocked: Array = []
 	var shared: Array = []
 	var moved: Array = []
+	var swallows_save: Array = []
 	var seen_ids: Array = []
 	var declared := _declared()
 	var oracle_said_no := 0
 	var villages_walked := 0
+	var crystals_seen := 0
+	var reach := _trigger_reach_cells()
 
 	for path in MapScripts.maps_in(VILLAGE_DIR):
 		var vp := SubViewport.new()
@@ -108,6 +140,9 @@ func test_every_placed_masterite_stands_on_a_walkable_cell_of_its_own() -> void:
 			continue
 		var occupied := {}
 		_npc_cells(village, occupied)
+		var crystals: Array = []
+		_crystal_cell(village, crystals)
+		crystals_seen += crystals.size()
 		for enc in found:
 			var mid: String = str(enc.get("monster_id"))
 			seen_ids.append(mid)
@@ -126,6 +161,23 @@ func test_every_placed_masterite_stands_on_a_walkable_cell_of_its_own() -> void:
 			## is satisfied. Only the source can say the boss is not where its author put it.
 			if declared.has(mid) and pos != Vector2(declared[mid]["pos"]):
 				moved.append("%s: %s was authored at %s and stands at %s — BaseVillage relocated it off an impassable cell" % [path.get_file(), mid, str(declared[mid]["pos"]), str(pos)])
+			## ⛔ THE SAVE CRYSTAL, WHICH NO CO-LOCATION ARM ABOVE CAN SEE. A SavePoint is not an NPC
+			## and not an encounter, so `shared` is silent about it — and the trigger does not need the
+			## crystal's own cell to eat it, only to REACH it. Node Prime's Tempo was authored on the
+			## crystal's exact cell and Rivet Row's Arbiter one cell off it; both made saving start a
+			## mini-boss, and both read as correctly placed everywhere else in this file.
+			##
+			## ⚠️ `test_no_village_save_crystal_contests_a_press` cannot cover this either: with no
+			## story flags set, every placement's prereq is unmet, `_ready` returns before
+			## `_build_collision`, and all 15 triggers are shapeless at build time (measured:
+			## visible=false monitoring=false shapes=0). It judges presses between things that are
+			## not there. The hazard is live only once the prereq opens, so the rule has to be
+			## geometric rather than physical.
+			for cc in crystals:
+				var gap: int = maxi(absi(cell.x - (cc as Vector2i).x), absi(cell.y - (cc as Vector2i).y))
+				if gap <= reach:
+					swallows_save.append("%s: %s at %s is %d cell(s) from the save crystal at %s and its trigger reaches %d — saving there starts the fight" % [
+						path.get_file(), mid, str(cell), gap, str(cc), reach])
 
 	## CONTROLS FIRST — each of the three claims below is empty for free if the sweep did not run.
 	assert_gt(villages_walked, 11, "CONTROL: only %d villages built — the sweep is broken" % villages_walked)
@@ -139,6 +191,10 @@ func test_every_placed_masterite_stands_on_a_walkable_cell_of_its_own() -> void:
 		"A placement behind an `if` that is false at _ready, or a renamed local var, lands here —\n" +
 		"and every arm below would have been silently empty about it.\nbuilt: %s\nsource: %s") % [str(seen_ids), str(declared_ids)])
 
+	assert_gt(crystals_seen, 0,
+		"CONTROL: no save crystal was found in any village holding a Masterite — the clearance arm would be empty for free")
+
 	assert_eq(blocked, [], "a Masterite on an impassable cell:\n  %s" % "\n  ".join(blocked))
 	assert_eq(shared, [], "a Masterite sharing a cell:\n  %s" % "\n  ".join(shared))
 	assert_eq(moved, [], "a Masterite is not where it was authored:\n  %s" % "\n  ".join(moved))
+	assert_eq(swallows_save, [], "a Masterite trigger reaches the save crystal:\n  %s" % "\n  ".join(swallows_save))

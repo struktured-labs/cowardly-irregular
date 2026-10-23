@@ -33,27 +33,34 @@ const CUTSCENES_DIR := "res://data/cutscenes"
 ## STAYS: it writes the flag world2_chapter4 is gated on NOT having, so wiring it would cancel that
 ## chapter permanently (see test_no_scene_cancels_another_scenes_gate_regression, its 2nd declarer).
 const KNOWN_PLANNED_INTROS: Array[String] = [
-	"world3_tempo_intro",  # W4's industrial Tempo (trigger boss_tempo_industrial); W3 now has its own Grand Schedule scenes
+	## W1's four. Each beat already plays through a wired `*_encounter` scene, so these are a second
+	## authored take on a moment the player does reach — dormant by choice, not by oversight.
 	"world1_arbiter_intro",
 	"world1_curator_intro",
 	"world1_tempo_intro",
 	"world1_warden_intro",
+	## ⛔ MUST STAY ORPHANED, AND IT IS THE ONE ENTRY HERE THAT WIRING WOULD BREAK SOMETHING.
+	## It sets `cutscene_flag_arbiter_suburban_intro_complete`, which world2_chapter4 is gated on NOT
+	## having. Playing it would cancel chapter4 permanently — and chapter4 is itself titled
+	## "Arbiter's Appeal" and serves as that intro. Pinned from the other side in
+	## test_a_masterite_defeat_is_fought_not_granted.
 	"world2_arbiter_intro",
-	"world2_tempo_intro",
-	"world3_arbiter_intro",
-	"world3_curator_intro",
-	"world3_warden_intro",
-	"world4_arbiter_intro",
-	"world4_curator_intro",
-	"world4_tempo_intro",
-	"world4_warden_intro",
-	"world5_arbiter_intro",
-	"world5_curator_intro",
-	"world5_tempo_intro",
-	"world5_warden_intro",
+	## ⛔ THE THREE ARCHETYPES WHOSE FIGHT IS A DUNGEON BOSS, NOT A VILLAGE PLACEMENT. Each dungeon
+	## declares its own boss scene and writes that archetype's defeat flag, so the village-style
+	## intro has no fight left to introduce. Remember the file-numbering offset: a `worldN_*` intro
+	## file is the world N+1 THEME from industrial up, which is why these three read as a world off.
+	"world3_warden_intro",   # industrial Warden -> AssemblyCore, world4_assembly_boss
+	"world4_arbiter_intro",  # futuristic Arbiter -> RootProcess, world5_root_process_boss
+	"world5_curator_intro",  # abstract Curator -> NullChamber, world6_null_chamber_boss
 	## world6_calibrant_intro RETIRED 2026-08-04 — VertexApex.gd wires it as boss_cutscene_id.
 	## Its 86 steps had never played; the Calibrant is now a fight instead of an elided cutscene.
 	## Removing it here is this registry working exactly as designed, not a suppression.
+	##
+	## TEN RETIRED 2026-10-23 — the W2-W6 Masterites became real fights, and a placement's
+	## `cutscene_id` is their first caller. Dropped: world2_tempo_intro (Maple Heights);
+	## world3_{tempo,arbiter,curator}_intro (Rivet Row, industrial); world4_{warden,tempo,curator}_intro
+	## (Node Prime, futuristic); world5_{warden,tempo,arbiter}_intro (Vertex, abstract). Brasston's
+	## three steampunk bosses have no entries here because no steampunk intros were ever authored.
 ]
 
 

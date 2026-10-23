@@ -369,7 +369,8 @@ func _place_masterites() -> void:
 	arbiter.prereq_flag = "cutscene_flag_world4_chapter2_complete"
 	arbiter.display_name = "Arbiter of Efficiency"
 	arbiter.cutscene_id = "world3_arbiter_intro"
-	arbiter.position = Vector2(19 * TILE_SIZE,7 * TILE_SIZE)
+	# (19,7) was one cell off the save crystal, so the 2x2 trigger covered it.
+	arbiter.position = Vector2(19 * TILE_SIZE,5 * TILE_SIZE)
 	npcs.add_child(arbiter)
 
 	## The north strip on row 3, the approach to the barracks and the loading floor.

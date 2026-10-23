@@ -545,6 +545,18 @@ func _gd_files_under(root: String) -> Array:
 	return out
 
 
+## ⛔ A BARE ARCHETYPE STOPPED IDENTIFYING A PLACEMENT THE DAY W2-W6 GOT THEIRS. `_kill_gated_steps`
+## only yields W1 steps (its regex is `^w1_<arch>_defeated$`), but this lookup matched the FIRST
+## village file declaring that archetype — and with 19 more placements landed, "warden", "arbiter"
+## and "curator" each name four bosses in four worlds. BrasstonVillage sorts before Grimhollow,
+## Ironhaven and Sandrift, so a W1 quest was handed the STEAMPUNK prereq and the caller then
+## demanded one defeat spec open `cutscene_flag_rat_king_defeated` together with
+## `cutscene_flag_world3_chapter2_complete` — a pairing nothing should ever satisfy.
+##
+## 🔑 The discriminator is the FLAG THE VICTORY WRITES, not the archetype. W1's four compose
+## `w1_<archetype>_defeated` because they set no `defeat_flag_name`; every W2-W6 placement overrides
+## it to name its own world's gate. So a block carrying an override cannot be the writer of the W1
+## flag this step waits on, whatever its archetype says.
 func _placement_prereq(archetype: String) -> String:
 	var dir := DirAccess.open(VILLAGE_DIR)
 	if dir == null:
@@ -558,7 +570,7 @@ func _placement_prereq(archetype: String) -> String:
 		while idx >= 0:
 			var end := src.find("npcs.add_child(", idx)
 			var block: String = src.substr(idx, end - idx) if end > idx else src.substr(idx)
-			if block.contains("\"%s\"" % archetype):
+			if block.contains("\"%s\"" % archetype) and not block.contains(".defeat_flag_name"):
 				var m := re.search(block)
 				return m.get_string(1) if m != null else ""
 			idx = src.find("MasteriteScript.new()", idx + 1)

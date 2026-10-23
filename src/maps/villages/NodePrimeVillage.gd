@@ -335,7 +335,8 @@ func _place_masterites() -> void:
 	tempo.prereq_flag = "cutscene_flag_world5_chapter2_complete"
 	tempo.display_name = "Tempo of the Clock Cycle"
 	tempo.cutscene_id = "world4_tempo_intro"
-	tempo.position = Vector2(10 * TILE_SIZE,12 * TILE_SIZE)
+	# (10,12) was the save crystal's own cell — the 2x2 trigger swallowed the save point.
+	tempo.position = Vector2(10 * TILE_SIZE,15 * TILE_SIZE)
 	npcs.add_child(tempo)
 
 	## The open row-7 corridor between the data highway and the north shops.
