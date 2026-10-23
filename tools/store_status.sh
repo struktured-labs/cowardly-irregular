@@ -37,6 +37,14 @@ TARGET="struktured/cowardly-irregular"
 # Overridable so the BLOCKED re-sample path is testable without touching itch.
 STORE_BUTLER="${STORE_BUTLER:-butler}"
 STORE_RECHECK_DELAY="${STORE_RECHECK_DELAY:-15}"
+# How many re-samples a BLOCKED first read gets before it is believed. The budget is
+# DELAY x MAX = 120s by default, sized from the queued->serving HANDOFF gap, NOT from itch's
+# processing time: three gaps measured 2026-10-14..23 were each >15s and the bounded ones <=60s
+# (.700 windows: BLOCKED 21:57:21Z, CURRENT 21:58:21Z), so 120s is twice the worst seen.
+# Processing (42-168 min) is irrelevant here -- a processing build is QUEUED, and queued
+# already reads PENDING without any re-sample. Counted in SAMPLES, not clock time, so the
+# selftest can run it at DELAY=0 and assert an exact butler call count.
+STORE_RECHECK_MAX="${STORE_RECHECK_MAX:-8}"
 
 # judge() already fails CLOSED on an empty tag (return 2, "no tag to compare against"), so this
 # was never a wrong-verdict defect the way publish_all.sh's was. What it could not do is say
@@ -256,15 +264,19 @@ selftest() {
     # CHANGES between calls. That is the only way to stage the pending->serving gap from
     # outside: stagger the FIXTURE, not the subject.
     local fake="$dir/fakebutler" ctr="$dir/calls" _tout _tec _calls
-    _mkfake() {   # $1 = what butler returns on call 1, $2 = on call 2+
+    _mkfake() {   # butler's answer on call 1, 2, ...; the LAST one repeats forever
         : > "$ctr"
-        printf '%s\n%s\n' "$BANNER" "$1" > "$dir/s1.txt"
-        printf '%s\n%s\n' "$BANNER" "$2" > "$dir/s2.txt"
+        local i=0 body
+        rm -f "$dir"/seq.*.txt
+        for body in "$@"; do
+            i=$((i+1)); printf '%s\n%s\n' "$BANNER" "$body" > "$dir/seq.$i.txt"
+        done
         cat > "$fake" <<FAKE
 #!/usr/bin/env bash
 n=\$(( \$(cat "$ctr" 2>/dev/null || echo 0) + 1 ))
 echo "\$n" > "$ctr"
-if [ "\$n" -le 1 ]; then cat "$dir/s1.txt"; else cat "$dir/s2.txt"; fi
+k=\$n; [ "\$k" -gt $i ] && k=$i
+cat "$dir/seq.\$k.txt"
 FAKE
         chmod +x "$fake"
     }
@@ -280,30 +292,57 @@ FAKE
         if [ -z "$bad" ]; then pass=$((pass+1)); printf '  ok    %-40s exit %s, %s butler call(s)\n' "$name" "$_tec" "$_calls"
         else fail=$((fail+1)); printf '  FAIL  %-40s %s\n' "$name" "$bad"; fi
     }
+    _rs() {  # MAX, then the butler sequence
+        local max="$1"; shift
+        _mkfake "$@"
+        _tout="$(STORE_BUTLER="$fake" STORE_RECHECK_DELAY=0 STORE_RECHECK_MAX="$max" STORE_TAG="${_rstag:-v3.33.279-alpha}" "$self" 2>&1)"; _tec=$?
+    }
 
-    # 1) THE TRANSIENT THIS EXISTS FOR: sample 1 says BLOCKED, sample 2 says CURRENT.
-    #    Must report the RE-SAMPLE (exit 0), not the first read.
-    _mkfake "$WEBLAGS" "$ALL279"
-    _tout="$(STORE_BUTLER="$fake" STORE_RECHECK_DELAY=0 STORE_TAG=v3.33.279-alpha "$self" 2>&1)"; _tec=$?
-    _rsarm "transient BLOCK -> reports re-sample" 0 2 'a re-sample' ''
+    # 1) The transient: sample 1 BLOCKED, sample 2 CURRENT -> report the re-sample.
+    _rs 8 "$WEBLAGS" "$ALL279"
+    _rsarm "transient BLOCK -> reports re-sample" 0 2 'first sample read BLOCKED' 'past the handoff budget'
 
-    # 2) A REAL block must survive: BLOCKED on both samples -> still exit 1, and SAY it was two.
-    _mkfake "$WEBLAGS" "$WEBLAGS"
-    _tout="$(STORE_BUTLER="$fake" STORE_RECHECK_DELAY=0 STORE_TAG=v3.33.279-alpha "$self" 2>&1)"; _tec=$?
-    _rsarm "persistent BLOCK stays BLOCKED" 1 2 'confirmed by TWO samples' ''
+    # 2) THE DEFECT THIS POLL EXISTS FOR: the gap outlasts ONE re-sample (the .698/.700 case,
+    #    BLOCKED at +0s and +15s, CURRENT at +60s). The old single re-sample exited 1 here
+    #    after 2 calls and called it "confirmed by TWO samples".
+    _rs 8 "$WEBLAGS" "$WEBLAGS" "$WEBLAGS" "$ALL279"
+    _rsarm "gap outlasting one re-sample -> CURRENT" 0 4 'first sample read BLOCKED' 'past the handoff budget'
 
-    # 3) CONTROL -- the re-sample must be CONDITIONAL on verdict 1, not unconditional.
-    #    A CURRENT first sample must cost exactly ONE butler call. This is the arm that reds if
-    #    anyone hoists the re-sample above the `[ "$ec" -ne 1 ]` check: the verdict would still
-    #    be 0 and arms 1-2 would still pass, so without a CALL COUNT the change is invisible.
-    _mkfake "$ALL279" "$WEBLAGS"
-    _tout="$(STORE_BUTLER="$fake" STORE_RECHECK_DELAY=0 STORE_TAG=v3.33.279-alpha "$self" 2>&1)"; _tec=$?
+    # 3+4) THE DEADLINE, PINNED FROM BOTH SIDES with one sequence (3 BLOCKED, then serving):
+    #    a budget of 3 re-samples just reaches the serving sample -> CURRENT, 4 calls;
+    #    a budget of 2 stops one short                          -> BLOCKED, 3 calls.
+    #    An off-by-one in the loop bound reds exactly one of the pair.
+    _rs 3 "$WEBLAGS" "$WEBLAGS" "$WEBLAGS" "$ALL279"
+    _rsarm "serving ON the last allowed sample" 0 4 'first sample read BLOCKED' 'past the handoff budget'
+    _rs 2 "$WEBLAGS" "$WEBLAGS" "$WEBLAGS" "$ALL279"
+    _rsarm "serving one sample PAST the budget" 1 3 'past the handoff budget' 'first sample read BLOCKED'
+
+    # 5) A real block survives the whole budget and says how long it waited.
+    _rs 3 "$WEBLAGS"
+    _rsarm "persistent BLOCK stays BLOCKED" 1 4 'BLOCKED on all 4 samples' 'first sample read BLOCKED'
+
+    # 6) The old wording claimed a gap had been ruled out. It must be gone.
+    if grep -q 'confirmed by TWO samples' <<<"$_tout"; then
+        fail=$((fail+1)); printf '  FAIL  %-40s still prints it\n' "no 'confirmed by TWO samples' claim"
+    else
+        pass=$((pass+1)); printf '  ok    %-40s absent\n' "no 'confirmed by TWO samples' claim"
+    fi
+
+    # 7) A re-sample that turns PENDING ends the poll and reports PENDING (3), not BLOCKED.
+    _rstag=v3.33.675-alpha _rs 8 "$REAL_BLOCKED" "$REAL_PENDING"
+    _rsarm "gap then queued -> PENDING" 3 2 '^\[store\] PENDING' 'past the handoff budget'
+    [ "$_tec" -eq 3 ] && saw3=1
+
+    # 8) CONTROL -- the poll must be CONDITIONAL on verdict 1. A CURRENT first sample costs
+    #    exactly ONE butler call; hoisting the poll above the `[ "$ec" -ne 1 ]` check would
+    #    keep every verdict above and change only this count.
+    _rs 8 "$ALL279" "$WEBLAGS"
     _rsarm "CURRENT does not re-sample" 0 1 '' 're-sample'
 
     echo
     echo "selftest: ${pass} passed, ${fail} failed"
-    if [ "$saw0" -ne 1 ] || [ "$saw1" -ne 1 ] || [ "$saw2" -ne 1 ]; then
-        echo "selftest: BROKEN — outcomes seen: current=${saw0} behind=${saw1} undetermined=${saw2}; all three required" >&2
+    if [ "$saw0" -ne 1 ] || [ "$saw1" -ne 1 ] || [ "$saw2" -ne 1 ] || [ "$saw3" -ne 1 ]; then
+        echo "selftest: BROKEN — outcomes seen: current=${saw0} behind=${saw1} undetermined=${saw2} pending=${saw3}; all four required" >&2
         return 1
     fi
     [ "$fail" -eq 0 ]
@@ -334,17 +373,34 @@ case "${1:-}" in
                 # them asks the caller to act destructively, and PENDING already tells the
                 # reader to re-check.
                 if [ "$ec" -ne 1 ]; then printf '%s\n' "$out"; exit "$ec"; fi
-                sleep "$STORE_RECHECK_DELAY"
-                "$STORE_BUTLER" status "$TARGET" > "$tmp2" 2>&1
-                out2="$(judge "$tmp2" "$tag" 2>&1)"; ec2=$?
+                # ⛔ ONE RE-SAMPLE 15s LATER DID NOT COVER THE GAP. It fired falsely three
+                # times (.698 web, .700 linux, .700 windows): BLOCKED on both samples, CURRENT
+                # a minute later, and the old message called that "confirmed by TWO samples --
+                # not the pending->serving gap", which is exactly what it was. So the re-sample
+                # is now a bounded poll: the first non-BLOCKED sample is reported, and BLOCKED
+                # is believed only once the whole handoff budget has passed without one.
+                #
+                # butler has no per-build state query (only `status` and `fetch`), so a build
+                # in the gap and a channel that was never pushed are indistinguishable from
+                # one sample. Both get the same poll; a real BLOCK costs at most the budget in
+                # latency, never a different verdict.
+                n=0 ec2=1 out2="$out"
+                while [ "$ec2" -eq 1 ] && [ "$n" -lt "$STORE_RECHECK_MAX" ]; do
+                    sleep "$STORE_RECHECK_DELAY"
+                    n=$((n+1))
+                    "$STORE_BUTLER" status "$TARGET" > "$tmp2" 2>&1
+                    out2="$(judge "$tmp2" "$tag" 2>&1)"; ec2=$?
+                done
                 printf '%s\n' "$out2"
+                waited=$((n * STORE_RECHECK_DELAY))
                 if [ "$ec2" -ne 1 ]; then
-                    echo "[store] note: a first sample read BLOCKED and a re-sample ${STORE_RECHECK_DELAY}s later did not."
+                    echo "[store] note: a first sample read BLOCKED; re-sample ${n} (~${waited}s later) did not."
                     echo "[store]       Reporting the re-sample. The first sample said:"
                     printf '%s\n' "$out" | sed 's/^/[store]         /'
                     exit "$ec2"
                 fi
-                echo "[store] BLOCKED confirmed by TWO samples ${STORE_RECHECK_DELAY}s apart — this is not the pending->serving gap."
+                echo "[store] BLOCKED on all $((n+1)) samples over ~${waited}s -- past the handoff budget"
+                echo "[store]       (gap measured >15s and <=60s), so this channel did not ship."
                 exit "$ec2" ;;
     *)          judge "$1" "${2:-}" ;;
 esac
