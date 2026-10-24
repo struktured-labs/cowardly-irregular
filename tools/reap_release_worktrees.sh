@@ -98,11 +98,26 @@ _remote_unreachable() { # $1 = git's stderr, $2 = exit code
     echo "       git ls-remote exited $2: $(printf '%s' "$1" | head -2 | tr '\n' ' ')" >&2
 }
 
+# The newest tag PROTECTS the worktree at it, so a short ls-remote reply (ec 0, tags after .616
+# or .674 missing -- measured 2026-10-23) would move that guard onto an older tree. Resolved by
+# tools/origin_tags.sh with this repo's own newest local tag as the FLOOR: we only ever learn a
+# v3.33.* tag from origin, so origin naming an older "newest" is a stale reply, not news.
+# A stale reply is UNKNOWN (3) and the reap refuses, the same as an unreachable remote.
+# ⚠️ A local tag that origin has since DELETED trips the same FLOOR permanently; check it with
+#    `git ls-remote origin refs/tags/<tag>`. That fails toward refusing, which is the safe side.
+# shellcheck source=origin_tags.sh
+. "$(dirname "${BASH_SOURCE[0]}")/origin_tags.sh"
 _newest_tag_on_origin() {
-    local out ec
-    out="$(git ls-remote --tags "$ORIGIN" 'refs/tags/v3.33.*' 2>&1)"; ec=$?
-    [ "$ec" -eq 0 ] || { _remote_unreachable "$out" "$ec"; return 3; }
-    printf '%s\n' "$out" | grep -v '\^{}' | awk '{print $2}' | sed 's#refs/tags/##' | sort -V | tail -1
+    local floor ec=0
+    floor="$(git tag -l 'v3.33.*' --sort=-v:refname | head -1)"
+    OT_REMOTE="$ORIGIN" origin_newest_tag reap "" "$floor" || ec=$?
+    case "$ec" in
+        0|2) return 0 ;;   # 2 = reachable, no v3.33.* tags: an empty newest, as before
+        1)   _remote_unreachable "(origin_tags.sh printed git's own message above)" 1; return 3 ;;
+        *)   echo "[reap] BLOCKED: origin's tag list contradicts this repo's (newest local ${floor})" >&2
+             echo "       -- newest tag UNKNOWN, so the newest-tag guard cannot be placed. Nothing is reaped." >&2
+             return 3 ;;
+    esac
 }
 
 _origin_tags() {

@@ -46,26 +46,22 @@ STORE_RECHECK_DELAY="${STORE_RECHECK_DELAY:-15}"
 # selftest can run it at DELAY=0 and assert an exact butler call count.
 STORE_RECHECK_MAX="${STORE_RECHECK_MAX:-8}"
 
-# judge() already fails CLOSED on an empty tag (return 2, "no tag to compare against"), so this
-# was never a wrong-verdict defect the way publish_all.sh's was. What it could not do is say
-# WHY the tag was empty: an unreachable origin, a dead ssh agent and a genuinely empty tag list
-# all produced the same silent empty string, and the operator reading a BLOCKED(2) had nothing
-# to act on. CLAUDE.md: don't 2>/dev/null a measurement command -- it deletes the warning and
-# keeps the wrong number. Same change as publish_all.sh's resolver, and for the same reason:
-# the reason goes to STDERR, which survives the command substitution every caller uses.
-_newest_tag() {
-    local raw ec t
-    raw="$(git ls-remote --tags origin 'refs/tags/v3.33.*' 2>&1)"; ec=$?
-    if [ "$ec" -ne 0 ]; then
-        echo "[store] origin UNREACHABLE: git ls-remote exited ${ec}: $(printf '%s' "$raw" | head -2 | tr '\n' ' ')" >&2
-        return 1
-    fi
-    t="$(printf '%s\n' "$raw" | grep -v '\^{}' | awk '{print $2}' | sed 's#refs/tags/##' | sort -V | tail -1)"
-    if [ -z "$t" ]; then
-        echo "[store] origin ANSWERED but no refs/tags/v3.33.* tag parsed from its reply." >&2
-        return 2
-    fi
-    printf '%s' "$t"
+# The newest tag comes from tools/origin_tags.sh, the one resolver shared with publish_all.sh
+# and reap_release_worktrees.sh. ⛔ This file had its OWN copy until .702, and it is the copy
+# that produced .701's false red: publish_all's last step printed every channel
+# "v3.33.701-alpha <- BEHIND (v3.33.674-alpha)" and exited 1 while all three SERVED .701,
+# because ls-remote answered short with ec 0 and this resolver believed it. Two invariants now
+# judge the reply (see origin_tags.sh):
+#   FLOOR = the newest version butler says is SERVED. Always available, so a standalone run is
+#           covered too. A newest tag older than a served build is impossible -- we ship tags.
+#   WANT  = STORE_KNOWN_TAG, which publish_all passes as the tag it just published.
+# A reply breaking either is re-asked, then UNKNOWN (2) -- never BEHIND (1).
+# shellcheck source=origin_tags.sh
+. "$(dirname "${BASH_SOURCE[0]}")/origin_tags.sh"
+
+# The newest v3.33.* version in the channel rows of a captured butler status, or nothing.
+_served_max() {
+    grep -aE "^\| *(linux|windows|web) " "$1" | grep -oE 'v3\.33\.[0-9]+-alpha' | sort -V | tail -1
 }
 
 # A channel's row can WRAP: butler prints a queued build on continuation lines whose channel
@@ -333,6 +329,57 @@ FAKE
     _rsarm "gap then queued -> PENDING" 3 2 '^\[store\] PENDING' 'past the handoff budget'
     [ "$_tec" -eq 3 ] && saw3=1
 
+    # ── THE TAG LIST ITSELF CAN LIE (.701's false red) ───────────────────────────────────
+    # These drive the no-arg entry point with BOTH a fake butler and a fake git, and no
+    # STORE_TAG, so the tag comes from origin_tags.sh judged against what the store serves.
+    local fgit="$dir/fakegit" gctr="$dir/gcalls"
+    _gfix() { local n; for n in "$@"; do
+        printf '%040d\trefs/tags/v3.33.%s-alpha\n%040d\trefs/tags/v3.33.%s-alpha^{}\n' 0 "$n" 1 "$n"
+    done; }
+    _gfix 616 673 674 699 700 701 > "$dir/g.full"
+    _gfix 616 673 674             > "$dir/g.short"
+    _gfix 98 99                   > "$dir/g.top99"
+    _mkgit() {   # reply files by suffix; the LAST one repeats
+        : > "$gctr"; printf '%s\n' "$@" > "$dir/g.seq"
+        cat > "$fgit" <<FAKE
+#!/usr/bin/env bash
+n=\$(( \$(cat "$gctr" 2>/dev/null || echo 0) + 1 )); echo "\$n" > "$gctr"
+k=\$(wc -l < "$dir/g.seq"); [ "\$n" -lt "\$k" ] && k=\$n
+cat "$dir/g.\$(sed -n "\${k}p" "$dir/g.seq")"
+FAKE
+        chmod +x "$fgit"
+    }
+    _srv() { printf '| linux    | #1 | ✓ #9 | v3.33.%s-alpha+aaa |\n| web      | #2 | ✓ #9 | v3.33.%s-alpha+aaa |\n| windows  | #3 | ✓ #9 | v3.33.%s-alpha+aaa |' "$1" "$1" "$1"; }
+    _tl() {  # name want-ec want-git-calls must-match must-NOT-match KNOWN served git-replies...
+        local name="$1" wec="$2" wg="$3" yes="$4" no="$5" known="$6" served="$7"; shift 7
+        _mkfake "$(_srv "$served")"; _mkgit "$@"
+        _tout="$(STORE_BUTLER="$fake" OT_GIT="$fgit" OT_RETRY_DELAY=0 STORE_RECHECK_DELAY=0 \
+                 STORE_RECHECK_MAX=1 STORE_KNOWN_TAG="$known" "$self" 2>&1)"; _tec=$?
+        local g bad=""; g="$(cat "$gctr")"
+        [ "$_tec" -eq "$wec" ] || bad="exit $_tec (wanted $wec)"
+        [ "$g" -eq "$wg" ]     || bad="${bad}${bad:+; }ls-remote called $g (wanted $wg)"
+        if [ -n "$yes" ] && ! grep -q "$yes" <<<"$_tout"; then bad="${bad}${bad:+; }missing '$yes'"; fi
+        if [ -n "$no" ]  &&   grep -q "$no"  <<<"$_tout"; then bad="${bad}${bad:+; }unexpected '$no'"; fi
+        case "$_tec" in 0) saw0=1 ;; 1) saw1=1 ;; 2) saw2=1 ;; esac
+        if [ -z "$bad" ]; then pass=$((pass+1)); printf '  ok    %-40s exit %s, %s ls-remote call(s)\n' "$name" "$_tec" "$g"
+        else fail=$((fail+1)); printf '  FAIL  %-40s %s\n' "$name" "$bad"; fi
+    }
+    # T1) .701's case exactly: serving .701, origin answers short (top .674) then in full.
+    _tl "short reply under a served .701 -> CURRENT" 0 2 'CURRENT: all 3 channels at v3.33.701' 'BEHIND' "" 701 short full
+    # T2) Short on every reply: UNKNOWN (2), and it must not say BEHIND about a current store.
+    _tl "short x3 under a served .701 -> UNKNOWN"    2 3 'newest tag UNKNOWN' 'BEHIND' "" 701 short
+    # T3) THE TWIN: a store that is TRULY behind a truly newer tag must still read 1. An eager
+    #     FLOOR would re-ask this and report "don't know" -- the one thing this tool exists to say.
+    _tl "TRUE behind (.700 vs .701) stays BEHIND"    1 1 'BEHIND at v3.33.701-alpha' 'STALE' "" 700 full
+    # T4) WANT catches what FLOOR cannot: serving .673, a short reply topping at .674 is ABOVE
+    #     the floor and looks consistent. Only publish_all's known tag shows it is incomplete.
+    _tl "KNOWN .701 catches a short reply > FLOOR"   1 2 'BEHIND at v3.33.701-alpha' 'at v3.33.674' v3.33.701-alpha 673 short full
+    #     ...and its control: the same inputs WITHOUT the known tag are fooled, one call, .674.
+    _tl "  control: no KNOWN -> fooled by .674"      1 1 'BEHIND at v3.33.674-alpha' 'STALE' "" 673 short full
+    # T5) Lexical vs numeric: as strings ".99" sorts above ".674". Serving .674 under a reply
+    #     topping out at .99 is a contradiction and must be UNKNOWN, not CURRENT and not BEHIND.
+    _tl "top .99 under a served .674 -> UNKNOWN"     2 3 'newest tag UNKNOWN' 'BEHIND' "" 674 top99
+
     # 8) CONTROL -- the poll must be CONDITIONAL on verdict 1. A CURRENT first sample costs
     #    exactly ONE butler call; hoisting the poll above the `[ "$ec" -ne 1 ]` check would
     #    keep every verdict above and change only this count.
@@ -354,8 +401,10 @@ case "${1:-}" in
                 # The tag is resolved ONCE. Re-resolving it per sample would let a tag cut
                 # between the two samples change the SUBJECT of the comparison, so the
                 # re-check would answer a different question than the one that failed.
-                tag="${STORE_TAG:-$(_newest_tag)}"
+                # The first sample comes BEFORE the tag, because what it SERVES is the FLOOR
+                # the tag list is judged against.
                 "$STORE_BUTLER" status "$TARGET" > "$tmp" 2>&1
+                tag="${STORE_TAG:-$(origin_newest_tag store "${STORE_KNOWN_TAG:-}" "$(_served_max "$tmp")")}"
                 out="$(judge "$tmp" "$tag" 2>&1)"; ec=$?
                 # ⛔ BLOCKED (1) IS THE ONE VERDICT THAT MUST NOT REST ON A SINGLE SAMPLE.
                 # Measured 2026-10-14 on v3.33.693-alpha web: at 20:33:12Z this read

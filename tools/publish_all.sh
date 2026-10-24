@@ -491,32 +491,14 @@ fi
 # string inside their own parentheses. Caught before shipping only because the three-state
 # test printed the variable: why=[] in both failure states, next to a correct exit code.
 # stderr crosses the subshell boundary and lands in publish.log where the operator reads it.
+# The resolver itself now lives in tools/origin_tags.sh, shared with store_status.sh and
+# reap_release_worktrees.sh: three copies of it were patched apart, and the unpatched copy in
+# store_status.sh produced .701's false red. Same states and same stderr reasons as above
+# ("[pub] origin reply N/3 is STALE ..."), so every caller's case on 0/1/2/3 is unchanged.
+# shellcheck source=origin_tags.sh
+. "$(dirname "${BASH_SOURCE[0]}")/origin_tags.sh"
 _newest_tag_on_origin() {
-    local want="${1:-}" raw ec t try
-    for try in 1 2 3; do
-        raw="$(git ls-remote --tags origin 'refs/tags/v3.33.*' 2>&1)"; ec=$?
-        if [ "$ec" -ne 0 ]; then
-            echo "[pub] origin UNREACHABLE: git ls-remote exited ${ec}: $(printf '%s' "$raw" | head -2 | tr '\n' ' ')" >&2
-            return 1
-        fi
-        [ -z "$want" ] && break
-        # Exact field match: a grep pattern would read the tag's dots as wildcards.
-        printf '%s\n' "$raw" | awk -v w="refs/tags/${want}" '$2 == w { f = 1 } END { exit !f }' && break
-        echo "[pub] origin reply ${try}/3 is STALE: $(printf '%s\n' "$raw" | wc -l) line(s), ${want} not among them." >&2
-        if [ "$try" -eq 3 ]; then
-            echo "[pub] origin never listed ${want} in 3 replies -- newest tag UNKNOWN, which is not superseded." >&2
-            return 3
-        fi
-        sleep "${PUB_STALE_RETRY_DELAY:-2}"
-    done
-    # Split assignment: `local t=$(...)` would discard the status (CLAUDE.md), and the -z test
-    # below is what classifies "answered but unparseable" rather than the pipeline's own code.
-    t="$(printf '%s\n' "$raw" | grep -v '\^{}' | awk '{print $2}' | sed 's#refs/tags/##' | sort -V | tail -1)"
-    if [ -z "$t" ]; then
-        echo "[pub] origin ANSWERED but no refs/tags/v3.33.* tag parsed from its reply." >&2
-        return 2
-    fi
-    printf '%s' "$t"
+    origin_newest_tag pub "${1:-}" ""
 }
 
 _saves_cksum() {
@@ -1293,7 +1275,8 @@ butler status struktured/cowardly-irregular 2>&1 | grep -aE 'CHANNEL|linux|windo
 # PENDING is NOT success: it exits non-zero, and no caller may read it as published.
 if [ -x tools/store_status.sh ]; then
     _ss_ec=0
-    ./tools/store_status.sh || _ss_ec=$?
+    # STORE_KNOWN_TAG: the tag just published is on origin, so a tag list without it is stale.
+    STORE_KNOWN_TAG="$TAG" ./tools/store_status.sh || _ss_ec=$?
     if [ "$_ss_ec" -eq 3 ]; then
         echo "[pub] PENDING: every channel that is behind has THIS build queued at itch." >&2
         echo "      The upload succeeded; delivery has not finished. Do NOT report LIVE." >&2
