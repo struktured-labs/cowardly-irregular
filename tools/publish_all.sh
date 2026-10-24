@@ -496,7 +496,18 @@ fi
 # store_status.sh produced .701's false red. Same states and same stderr reasons as above
 # ("[pub] origin reply N/3 is STALE ..."), so every caller's case on 0/1/2/3 is unchanged.
 # shellcheck source=origin_tags.sh
-. "$(dirname "${BASH_SOURCE[0]}")/origin_tags.sh"
+. "$(dirname "${BASH_SOURCE[0]}")/origin_tags.sh" || {
+    echo "[pub] BLOCKED: $(dirname "${BASH_SOURCE[0]}")/origin_tags.sh is missing, unreadable or did not parse. It is the" >&2
+    echo "      newest-tag resolver this script sources. Without it no tag verdict is possible, and" >&2
+    echo "      continuing would turn 'command not found' into a false supersession." >&2
+    exit 4; }
+# A lib that is PRESENT but defines nothing (zero bytes, a truncated copy, a conflict leftover)
+# sources with status 0 and slips past the `||` above, so check the function itself. Found by
+# @cowir-main: an empty lib gave store_status "command not found" + "no tag to compare against".
+declare -F origin_newest_tag >/dev/null || {
+    echo "[pub] BLOCKED: $(dirname "${BASH_SOURCE[0]}")/origin_tags.sh loaded but defined no origin_newest_tag" >&2
+    echo "      (empty or truncated copy?). No tag verdict is possible without it." >&2
+    exit 4; }
 _newest_tag_on_origin() {
     origin_newest_tag pub "${1:-}" ""
 }

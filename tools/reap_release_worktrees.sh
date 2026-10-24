@@ -106,7 +106,18 @@ _remote_unreachable() { # $1 = git's stderr, $2 = exit code
 # ⚠️ A local tag that origin has since DELETED trips the same FLOOR permanently; check it with
 #    `git ls-remote origin refs/tags/<tag>`. That fails toward refusing, which is the safe side.
 # shellcheck source=origin_tags.sh
-. "$(dirname "${BASH_SOURCE[0]}")/origin_tags.sh"
+. "$(dirname "${BASH_SOURCE[0]}")/origin_tags.sh" || {
+    echo "[reap] BLOCKED: $(dirname "${BASH_SOURCE[0]}")/origin_tags.sh is missing, unreadable or did not parse. It is the" >&2
+    echo "      newest-tag resolver this script sources. Without it no tag verdict is possible, and" >&2
+    echo "      continuing would turn 'command not found' into a misleading refusal." >&2
+    exit 3; }
+# A lib that is PRESENT but defines nothing (zero bytes, a truncated copy, a conflict leftover)
+# sources with status 0 and slips past the `||` above, so check the function itself. Found by
+# @cowir-main: an empty lib gave store_status "command not found" + "no tag to compare against".
+declare -F origin_newest_tag >/dev/null || {
+    echo "[reap] BLOCKED: $(dirname "${BASH_SOURCE[0]}")/origin_tags.sh loaded but defined no origin_newest_tag" >&2
+    echo "      (empty or truncated copy?). No tag verdict is possible without it." >&2
+    exit 3; }
 _newest_tag_on_origin() {
     local floor ec=0
     floor="$(git tag -l 'v3.33.*' --sort=-v:refname | head -1)"

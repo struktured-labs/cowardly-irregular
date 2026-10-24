@@ -57,7 +57,18 @@ STORE_RECHECK_MAX="${STORE_RECHECK_MAX:-8}"
 #   WANT  = STORE_KNOWN_TAG, which publish_all passes as the tag it just published.
 # A reply breaking either is re-asked, then UNKNOWN (2) -- never BEHIND (1).
 # shellcheck source=origin_tags.sh
-. "$(dirname "${BASH_SOURCE[0]}")/origin_tags.sh"
+. "$(dirname "${BASH_SOURCE[0]}")/origin_tags.sh" || {
+    echo "[store] BLOCKED: $(dirname "${BASH_SOURCE[0]}")/origin_tags.sh is missing, unreadable or did not parse. It is the" >&2
+    echo "      newest-tag resolver this script sources. Without it no tag verdict is possible, and" >&2
+    echo "      continuing would turn 'command not found' into a false UNKNOWN." >&2
+    exit 2; }
+# A lib that is PRESENT but defines nothing (zero bytes, a truncated copy, a conflict leftover)
+# sources with status 0 and slips past the `||` above, so check the function itself. Found by
+# @cowir-main: an empty lib gave store_status "command not found" + "no tag to compare against".
+declare -F origin_newest_tag >/dev/null || {
+    echo "[store] BLOCKED: $(dirname "${BASH_SOURCE[0]}")/origin_tags.sh loaded but defined no origin_newest_tag" >&2
+    echo "      (empty or truncated copy?). No tag verdict is possible without it." >&2
+    exit 2; }
 
 # The newest v3.33.* version in the channel rows of a captured butler status, or nothing.
 _served_max() {

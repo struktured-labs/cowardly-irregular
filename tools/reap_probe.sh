@@ -156,6 +156,11 @@ selftest() {
     mkdir -p "$repo_wt/tmp" "$dir/caller/tools"
     cp "$self" "$dir/caller/tools/"
     cp "$repo/tools/reap_release_worktrees.sh" "$dir/caller/tools/"
+    # ⛔ AND ITS SOURCED RESOLVER. From .702 the reaper does `. <its own dir>/origin_tags.sh`, so a
+    # copy of it alone is a reaper that cannot ask origin for a tag. Copied alone, it refused
+    # with "tag list contradicts this repo's", this file's three "no population" arms read the
+    # wrong message, and gate 0d BLOCKED v3.33.702-alpha's publish (15/18).
+    cp "$repo/tools/origin_tags.sh" "$dir/caller/tools/"
 
     # PRECONDITION, ASSERTED. The blind arm needs a NON-EMPTY registered population — that is what
     # makes "0 of N" different from "0 of 0". If the fixture ever lands outside the repo again, the
