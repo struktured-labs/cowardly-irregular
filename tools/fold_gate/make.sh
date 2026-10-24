@@ -30,6 +30,9 @@ check_templates() {
   # because rungate was invoked directly, skipping chain's import/smoke/selftests/sweep.
   grep -q 'PRE-GATE:' "$HERE/rungate.sh.tmpl" || { echo "make.sh: rungate.sh.tmpl no longer reports whether a chain pre-gate covered this tree" >&2; bad=1; }
   grep -q 'run_publish_selftests' "$HERE/chain.sh.tmpl" || { echo "make.sh: chain.sh.tmpl no longer runs the publish selftest corpus" >&2; bad=1; }
+  # The runner is NOT in the derived corpus -- publish_all's closure never names it -- so the chain
+  # is the only caller that ever runs its arms, and its fail-open direction fails silently.
+  grep -q 'run_publish_selftests.sh --selftest' "$HERE/chain.sh.tmpl" || { echo "make.sh: chain.sh.tmpl no longer runs the corpus runner's own selftest arms" >&2; bad=1; }
   # A typed budget goes stale as the suite grows: 1200 wedged .692 when green runs reached 1119s.
   if grep -q 'RUN_TESTS_TIMEOUT=' "$HERE/gate.sh.tmpl"; then echo "make.sh: gate.sh.tmpl types its own RUN_TESTS_TIMEOUT; leave the budget to run_tests.sh" >&2; bad=1; fi
   return "$bad"

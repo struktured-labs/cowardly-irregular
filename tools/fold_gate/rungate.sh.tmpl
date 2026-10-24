@@ -16,14 +16,15 @@ fi
 ## gate@NNN@.out cannot miss it. An invisible skip is the defect; a declared one is a choice.
 PG="tmp/chain@NNN@.out"; PGSHA="$(git rev-parse HEAD)"
 if [ ! -f "$PG" ]; then
-  echo "PRE-GATE: ABSENT -- no $PG. import, render smoke, publish selftests and pre_ready sweep did NOT run for this gate."
+  PGMSG="PRE-GATE: ABSENT -- no $PG. import, render smoke, publish selftests and pre_ready sweep did NOT run for this gate."
 elif ! command grep -aq "chain@NNN@ tree=$PGSHA" "$PG"; then
-  echo "PRE-GATE: STALE -- $PG describes another tree, not $PGSHA."
+  PGMSG="PRE-GATE: STALE -- $PG describes another tree, not $PGSHA."
 elif command grep -aq 'PRE-GATE RED' "$PG"; then
-  echo "PRE-GATE: RED for this tree -- the chain refused to start a gate; this run overrides that."
+  PGMSG="PRE-GATE: RED for this tree -- the chain refused to start a gate; this run overrides that."
 else
-  echo "PRE-GATE: CLEAN for $PGSHA ($(command grep -aE '^selftests EC=' "$PG" | tail -1))"
+  PGMSG="PRE-GATE: CLEAN for $PGSHA ($(command grep -aE '^selftests EC=' "$PG" | tail -1))"
 fi
+printf '%s\n' "$PGMSG"
 ## Wait (bounded, 60 min) until no publish is in flight (cowir-deploy: publish.log exists and publish.ec does not) AND no godot runs. Not a load figure: ten idle sessions hold load near 9.
 for i in $(seq 240); do busy=0; why=""; for d in /home/struktured/projects/cowir-deploy-wt/tmp/_detached/v3.33.*/; do [ -f "$d/publish.log" ] && [ ! -f "$d/publish.ec" ] && { busy=1; why="$why publish:$(basename "$d")"; }; done; for p in /proc/[0-9]*; do [ "$(readlink $p/exe 2>/dev/null)" = "/usr/bin/godot" ] && { busy=1; why="$why godot:${p#/proc/}@$(readlink $p/cwd 2>/dev/null)"; }; done; [ $busy -eq 0 ] && break; sleep 15; done
 ## The wait is bounded, so it can expire with the box still busy: say so, or a contended gate reads as a quiet one.
@@ -33,3 +34,6 @@ setsid bash tmp/gate@NNN@.sh < /dev/null > /dev/null 2>&1 &
 sleep 2; bash tmp/wedgewatch@NNN@.sh
 for i in $(seq 120); do command grep -aq '^PAD LINE' tmp/gate@NNN@.out 2>/dev/null && break; sleep 5; done
 tail -1 tmp/wedge@NNN@_watch.log; cat tmp/gate@NNN@.out; echo "stall latches: $(command grep -ac 'stall' tmp/gate@NNN@.raw)"; echo "end load=$(cut -d' ' -f1-3 /proc/loadavg)"
+## Repeated LAST because chain.sh prints only `tail -14` of this file and the copy above is line 1:
+## a gate that skipped its pre-gate must say so where the reader actually looks (.703 disclosed this).
+printf '%s\n' "$PGMSG"
