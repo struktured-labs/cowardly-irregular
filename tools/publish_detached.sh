@@ -153,11 +153,16 @@ _obs_busy() {
 # whose whole purpose is to answer "did it finish?" after the fact. A publish worktree is
 # <lane>/tmp/<name>, so the lane root is the path before /tmp/, the same derivation publish_all
 # uses for its log archive. `here` is a parameter so the selftest can drive both branches.
+# ONE SHAPE, <root>/tmp/_detached/<tag>, absolute, on both branches. Until 2026-10-24 the second
+# branch returned the RELATIVE tmp/detached/<tag> -- a second shape every reader had to know, and
+# box_busy did not (cowir-main/tmp/detached/v3.33.471-alpha read FREE). `here` is the repo root
+# there (line 33 cds to it), so <here>/tmp/_detached is the same place the old path resolved to,
+# with the underscore every reader already expects.
 _logdir() {
     local tag="$1" here="${2:-$(pwd -P)}"
     case "$here" in
         */tmp/*) printf '%s' "${here%%/tmp/*}/tmp/_detached/${tag}" ;;
-        *)       printf '%s' "tmp/detached/${tag}" ;;
+        *)       printf '%s' "${here}/tmp/_detached/${tag}" ;;
     esac
 }
 
@@ -477,7 +482,13 @@ _try "PUBLISH_OBS_HOLD=1 still refuses a recording"                        2 "OB
 # The recording MUXER, by name, in the owner list: a stand-in process literally named
 # obs-ffmpeg-mux. Default: not an owner process -> launch. OBS_HOLD=1: it holds -> refuse.
 cp "$(command -v bash)" "$T/obs-ffmpeg-mux"
-"$T/obs-ffmpeg-mux" -c 'sleep 30' & _MUX=$!
+# `-c 'sleep 30'` alone is a single command, and bash EXECS it: the process renames itself `sleep`
+# and no obs-ffmpeg-mux exists, so the HOLD arm red and the DEFAULT arm passed vacuously (measured
+# 2026-10-24, red on origin/main; nothing ran it, publish_detached is outside the gate-0d corpus).
+# The trailing `:` keeps bash alive under its own name, and the name is asserted before any arm.
+"$T/obs-ffmpeg-mux" -c 'sleep 30; :' & _MUX=$!
+_w=0; while [ $_w -lt 40 ] && [ "$(cat /proc/$_MUX/comm 2>/dev/null)" != obs-ffmpeg-mux ]; do sleep 0.05; _w=$((_w+1)); done
+chk "the stand-in muxer runs under its own name" "$(cat /proc/$_MUX/comm 2>/dev/null)" "obs-ffmpeg-mux"
 _mux_try() {  # label want_ec   (no PUBLISH_OWNER_PROCS: the DEFAULT owner list is under test)
     local ec=0
     env -u PUBLISH_OWNER_PROCS PUBLISH_CMD="$T/ok.sh" PUBLISH_OBS_PROC="__absent__" \
@@ -628,7 +639,7 @@ wt_dir=$(_logdir v9.9.9 /home/x/lane-wt/tmp/pub999)
 chk "logdir escapes a <lane>/tmp/<wt> worktree" \
     "$(case "$wt_dir" in /home/x/lane-wt/tmp/_detached/v9.9.9) echo yes ;; *) echo "no:$wt_dir" ;; esac)" "yes"
 plain_dir=$(_logdir v9.9.9 /home/x/plainrepo)
-chk "logdir stays relative outside a worktree" "$plain_dir" "tmp/detached/v9.9.9"
+chk "logdir outside a worktree is <root>/tmp/_detached, the ONE shape box_busy reads" "$plain_dir" "/home/x/plainrepo/tmp/_detached/v9.9.9"
 
 rm -rf tmp/detached/ZZ-* "$(_logdir '' | sed 's:/*$::')"/ZZ-* 2>/dev/null
 echo; echo "selftest: ${pass} passed, ${fail} failed"; [ "$fail" -eq 0 ]

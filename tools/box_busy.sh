@@ -26,9 +26,9 @@ BOX_MARKER="${BOX_MARKER:-$FOLD_TREE/tmp/BOX_BUSY}"
 ## cowir-sprites. A glob over every lane adds 1 true positive and 0 false ones (270 marker
 ## dirs on disk, 269 carry publish.ec so the log-without-ec predicate excludes them).
 DEPLOY_DIR="${DEPLOY_DIR:-}"
-## BOTH shapes publish_detached.sh's _logdir writes: <lane>/tmp/_detached/<tag> from a tmp/ worktree,
-## and <cwd>/tmp/detached/<tag> from anywhere else. Only the first was here until 2026-10-24, so a
-## publish launched from a lane ROOT read FREE (cowir-main/tmp/detached/v3.33.471-alpha is one).
+## publish_detached.sh's _logdir writes ONE shape, <root>/tmp/_detached/<tag> (arm 11 asks _logdir
+## itself). tmp/detached is the LEGACY shape its second branch wrote until 2026-10-24: kept, because
+## --rollback publishes an old tag with that tag's own tools, and an old producer still writes it.
 DEPLOY_GLOB="${DEPLOY_GLOB:-/home/struktured/projects/*/tmp/_detached /home/struktured/projects/*/tmp/detached}"
 
 ## The dirs the publish scan reads. A glob matching nothing expands to itself, which names no real
@@ -142,11 +142,20 @@ if [ "${1:-}" = "--selftest" ]; then  # watch the answer flip, so a FREE is neve
   out="$(env -u DEPLOY_DIR -u DEPLOY_GLOB "$0" --roots)" \
     || { echo "FAIL: the shipped DEPLOY_GLOB default names no existing _detached dir (the scan would read FREE beside any publish): $out"; fails=1; }
   ## ... and an existing dir is not enough: a typo'd tmp/_detached -> tmp/detached passed the line
-  ## above, because that dir exists too. So the default must also MATCH both shapes _logdir writes.
+  ## above, because that dir exists too. So the default must also MATCH where _logdir writes. The
+  ## shapes come from publish_detached.sh's OWN _logdir, driven down both branches, not a hand copy;
+  ## the legacy shape is listed by hand because no current producer writes it.
   dflt="$(env -u DEPLOY_GLOB bash -c 'eval "$(command grep -m1 "^DEPLOY_GLOB=" "$1")"; printf "%s" "$DEPLOY_GLOB"' _ "$0")"
-  for shape in /home/struktured/projects/some-lane/tmp/_detached /home/struktured/projects/some-lane/tmp/detached; do
+  pd="$(dirname "$0")/publish_detached.sh"
+  shapes="$(bash -c 'eval "$(sed -n "/^_logdir() {/,/^}/p" "$1")"; declare -F _logdir >/dev/null || exit 9
+                     dirname "$(_logdir v /home/struktured/projects/some-lane/tmp/pub1)"
+                     dirname "$(_logdir v /home/struktured/projects/some-lane)"' _ "$pd")" \
+    || { echo "FAIL: could not drive _logdir from $pd, so where publishes write is unknown"; fails=1; }
+  [ "$(printf '%s\n' "$shapes" | command grep -c '^/')" = 2 ] \
+    || { echo "FAIL: _logdir did not return two absolute dirs: $shapes"; fails=1; }
+  for shape in $shapes /home/struktured/projects/some-lane/tmp/detached; do
     hit=0; set -f; for g in $dflt; do case "$shape" in $g) hit=1 ;; esac; done; set +f  # patterns, not paths
-    [ "$hit" = 1 ] || { echo "FAIL: the shipped DEPLOY_GLOB ($dflt) does not cover $shape, a dir publish_detached.sh writes"; fails=1; }
+    [ "$hit" = 1 ] || { echo "FAIL: the shipped DEPLOY_GLOB ($dflt) does not cover $shape, a dir a publish writes"; fails=1; }
   done
   ## and the lane is NAMED for the second shape too
   mkdir -p "$T/l2/root-lane/tmp/detached/v3.33.0-alpha"; : > "$T/l2/root-lane/tmp/detached/v3.33.0-alpha/publish.log"
