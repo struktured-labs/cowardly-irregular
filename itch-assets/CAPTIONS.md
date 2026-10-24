@@ -57,6 +57,22 @@ overlay tint and rain are both alpha 0.2 and the rain only covers the top ~150px
 bright daytime background it is invisible. The shot is honest but the weather is doing more
 mechanically than the frame shows.
 
+⛔ **2026-10-24: the lead image is the OLDEST frame in the gallery.** It is byte-identical to
+`capture-history/shots-225/battle_storm.png`, a `.225` capture, so a store visitor's first look is
+the UI from ~485 releases ago: empty HP bars, banter mixed with `selecting...` status lines, no
+LOG panel. `battle.png` beside it is now the `.710` frame. Two `.710` frames with a real storm
+are in `unshipped-captures/` (from `tools/store_shot_storm.gd`, run sandboxed; the cast lands
+this time as Fulmen at the Mage's tier, killing blow on the Goblin, `WEAK!` against the Imp):
+- `battle_storm.710-bolt.png`: burst frame 51, the brightest bolt frame (3,598 px above 235).
+- `battle_storm.710-weak.png`: burst frame 62, the bolt plus the `WEAK!` popup and the
+  "WEAK to Lightning" log tip.
+
+Both are taken mid-cinematic, so `BattleJuice.punch_zoom` and the camera shake are scaling the
+HUD out from the centre (PARTY header about 25 px right, ENEMIES about 13 px left of their
+places) and cropping the panel edges, under the cinematic dim. That is deliberate battle juice,
+not a capture fault, but it is what the frame shows. Which image leads (this one, `battle.png`,
+or a storm candidate) is @struktured's call; none of the three has been moved.
+
 ### `battle.png`
 The same five-job battle, weather pinned clear, with the command menu open on **`Auto: this
 turn`** and the tooltip legible: *"Run this character's autobattle script for this turn"*. The
