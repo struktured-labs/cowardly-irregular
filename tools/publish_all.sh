@@ -575,9 +575,17 @@ echo "═══ publish_all: $TAG ═══"
 # Delegated so the decision is exercised by ITS OWN selftest as a subprocess — same reason
 # as check_import_ok.sh below, and the same reason a re-implemented copy in a probe proves
 # nothing about the shipped code.
+# A failed selftest's output: the last 25 lines here, ALL of it in tmp/publish_selftest_fail.$$.log.
+# The tail alone hid the decisive line of a VOID (2026-10-24: a fixture's git error sat above it).
+_st_dump() {
+    mkdir -p tmp
+    printf '%s\n' "$1" > "tmp/publish_selftest_fail.$$.log"
+    printf '%s\n' "$1" | tail -25 >&2
+    echo "[pub] full selftest output ($(printf '%s\n' "$1" | wc -l | tr -d ' ') lines): tmp/publish_selftest_fail.$$.log" >&2
+}
 if [ -x tools/check_polling_bounded.py ]; then
     if ! _ST=$(./tools/check_polling_bounded.py --selftest 2>&1); then
-        printf '%s\n' "$_ST" | tail -25 >&2
+        _st_dump "$_ST"
         echo "[pub] BLOCKED: tools/check_polling_bounded.py FAILED ITS OWN SELFTEST — the bounded-wait detector" >&2
         echo "      is not answering correctly, so its verdict on this tree means" >&2
         echo "      nothing. A present guard is not a working one." >&2
@@ -607,7 +615,7 @@ fi
 # out-of-scope count is printed every run so it is a stated scope rather than a blind spot.
 if [ -f tools/check_godot_bounded.py ]; then
     if ! _ST=$(python3 tools/check_godot_bounded.py --selftest 2>&1); then
-        printf '%s\n' "$_ST" | tail -25 >&2
+        _st_dump "$_ST"
         echo "[pub] BLOCKED: tools/check_godot_bounded.py FAILED ITS OWN SELFTEST — the unbounded-godot" >&2
         echo "      detector is not answering correctly, so its verdict on this tree means" >&2
         echo "      nothing. A present guard is not a working one." >&2
@@ -638,7 +646,7 @@ fi
 # both documenting "only EC 2 blocks" while unable to print their own BLOCKED diagnostic.
 if [ -f tools/check_exit_capture.py ]; then
     if ! _ST=$(python3 tools/check_exit_capture.py --selftest 2>&1); then
-        printf '%s\n' "$_ST" | tail -25 >&2
+        _st_dump "$_ST"
         echo "[pub] BLOCKED: tools/check_exit_capture.py FAILED ITS OWN SELFTEST — the dead-arm" >&2
         echo "      detector is not answering correctly, so its verdict on this tree means" >&2
         echo "      nothing. A present guard is not a working one." >&2
@@ -666,7 +674,7 @@ fi
 # This runs BEFORE the batch because it is the publish itself that would do the writing.
 if [ -x tools/check_user_data_sandboxed.py ]; then
     if ! _ST=$(./tools/check_user_data_sandboxed.py --selftest 2>&1); then
-        printf '%s\n' "$_ST" | tail -25 >&2
+        _st_dump "$_ST"
         echo "[pub] BLOCKED: tools/check_user_data_sandboxed.py FAILED ITS OWN SELFTEST — the" >&2
         echo "      user:// redirect detector is not answering correctly, so its verdict on this" >&2
         echo "      tree means nothing. A present guard is not a working one." >&2
@@ -695,7 +703,7 @@ fi
 # the worst thing this lane can do, and the flag that prevents it was never checked.
 if [ -x tools/check_publish_is_optin.py ]; then
     if ! _ST=$(./tools/check_publish_is_optin.py --selftest 2>&1); then
-        printf '%s\n' "$_ST" | tail -25 >&2
+        _st_dump "$_ST"
         echo "[pub] BLOCKED: tools/check_publish_is_optin.py FAILED ITS OWN SELFTEST — the --publish detector" >&2
         echo "      is not answering correctly, so its verdict on this tree means" >&2
         echo "      nothing. A present guard is not a working one." >&2
@@ -727,7 +735,7 @@ fi
 # 2.29s for 500 files, no network, no godot — against a ~45min publish.
 if [ -x tools/check_lfs_blobs_current.py ]; then
     if ! _ST=$(./tools/check_lfs_blobs_current.py --selftest 2>&1); then
-        printf '%s\n' "$_ST" | tail -25 >&2
+        _st_dump "$_ST"
         echo "[pub] BLOCKED: tools/check_lfs_blobs_current.py FAILED ITS OWN SELFTEST — the byte" >&2
         echo "      comparator is not answering correctly, so its verdict on this tree means" >&2
         echo "      nothing. A present guard is not a working one." >&2
@@ -844,7 +852,7 @@ for _t in $_ST_CORPUS; do
     esac
     # shellcheck disable=SC2181
     if [ $? -ne 0 ]; then
-        printf '%s\n' "$_ST" | tail -25 >&2
+        _st_dump "$_ST"
         echo "[pub] BLOCKED: tools/$_t FAILED ITS OWN SELFTEST. It runs on this publish path," >&2
         echo "      so its output cannot be trusted for this build. A present guard is not a" >&2
         echo "      working one." >&2
