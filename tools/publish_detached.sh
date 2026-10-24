@@ -641,5 +641,17 @@ chk "logdir escapes a <lane>/tmp/<wt> worktree" \
 plain_dir=$(_logdir v9.9.9 /home/x/plainrepo)
 chk "logdir outside a worktree is <root>/tmp/_detached, the ONE shape box_busy reads" "$plain_dir" "/home/x/plainrepo/tmp/_detached/v9.9.9"
 
+# ⛔ LOAD-BEARING. The ZZ-argpos/ZZ-argnone arms launch a REAL detached publish_all, and every
+#    launch here writes its log via _logdir, i.e. into the live <root>/tmp/_detached beside the
+#    production tags, not into $T. This line is what removes them. It is NOT what keeps the box
+#    FREE today: box_busy.sh reads only v3.33.*/, so a leftover ZZ- log with no .ec reads
+#    `--publish` ec=1 (measured 2026-10-24; a v3.33.0-alpha control read ec=0). That is the luck
+#    the wedge arm names, and any reader that globs the root wider would see in-flight debris.
+#    The root comes from `_logdir ''`, so this is only right while _logdir has one shape;
+#    tmp/detached/ is the pre-.707 legacy shape, relative to the repo root line 33 cds to.
+#    Asserted below, so deleting or mis-rooting the rm reds instead of leaking silently.
 rm -rf tmp/detached/ZZ-* "$(_logdir '' | sed 's:/*$::')"/ZZ-* 2>/dev/null
+_zz_left=0
+for _zz in tmp/detached/ZZ-* "$(_logdir '' | sed 's:/*$::')"/ZZ-*; do [ -e "$_zz" ] && _zz_left=$((_zz_left+1)); done
+chk "no ZZ- probe dir survives in either log root" "$_zz_left" "0"
 echo; echo "selftest: ${pass} passed, ${fail} failed"; [ "$fail" -eq 0 ]
