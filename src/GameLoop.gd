@@ -813,8 +813,9 @@ func _smoke_enter_map(map_id: String) -> void:
 	# between the walk shots and the village shot and every later leg bailed — the roamer path,
 	# which consults no flag. Same signature this file's :717 comment recorded at .265.
 	_smoke_quiet_the_roamers()
-	if BattleManager and BattleManager.current_state != BattleManager.BattleState.INACTIVE:
-		print("[SMOKE] FAIL: '%s' leg bailed — a live battle owns the screen, this shot is the previous frame" % map_id)
+	var screen_owner: String = _smoke_screen_owner()
+	if screen_owner != "":
+		print("[SMOKE] FAIL: '%s' leg bailed — %s, this shot is the previous frame" % [map_id, screen_owner])
 		_smoke_failed = true
 	elif not is_instance_valid(current_scene) or current_scene.get_instance_id() == before_id:
 		print("[SMOKE] FAIL: '%s' leg built no new scene — _start_exploration returned early, this shot is the previous map" % map_id)
@@ -856,6 +857,36 @@ static func smoke_wipe_verdict(elapsed_ms: int, since_progress_ms: int, since_in
 	if elapsed_ms >= budget_ms:
 		return "budget"
 	return ""
+
+
+## Which of the two owns the screen, or "" for neither; a live battle outranks a starting transition.
+static func smoke_screen_owner(state_inactive: bool, transition_pending: bool) -> String:
+	if not state_inactive:
+		return "a live battle owns the screen"
+	if transition_pending:
+		return "a battle transition is starting"
+	return ""
+
+
+## Both facts off the live engine: current_state flips to BATTLE frames AFTER the trigger (.705).
+func _smoke_screen_owner() -> String:
+	var inactive: bool = BattleManager == null or BattleManager.current_state == BattleManager.BattleState.INACTIVE
+	return smoke_screen_owner(inactive, _battle_transition_starting)
+
+
+## Wait out a starting transition, end whatever battle it produced, and tap until it is gone.
+func _smoke_end_any_battle() -> void:
+	var settling: float = 0.0
+	while _battle_transition_starting and settling < 12.0:
+		await get_tree().create_timer(0.25).timeout
+		settling += 0.25
+	if BattleManager.current_state != BattleManager.BattleState.INACTIVE:
+		BattleManager.end_battle(true)
+	var back: float = 0.0
+	while BattleManager.current_state != BattleManager.BattleState.INACTIVE and back < 15.0:
+		_smoke_tap("ui_accept")
+		await get_tree().create_timer(0.5).timeout
+		back += 0.5
 
 
 ## Wait for the party wipe to produce a GameOverScreen, bounded by PROGRESS rather than by the clock.
@@ -998,21 +1029,33 @@ func _smoke_player_path_battle() -> void:
 	## Back on a map, not just out of the battle: `_smoke_enter_map` early-returns while a battle
 	## scene is up, so a leg that stopped at INACTIVE would leave every later leg shooting this one.
 	## An exploration scene is the thing that owns a monster_spawner.
-	var rewind: float = 0.0
-	var polls: int = 0
-	while rewind < 15.0 and not (current_scene != null and is_instance_valid(current_scene) and "monster_spawner" in current_scene):
-		if polls % 5 == 0:
-			_smoke_tap("ui_accept")
-		polls += 1
-		await get_tree().create_timer(0.1).timeout
-		rewind += 0.1
-	## The map that comes back has a fresh ENABLED spawner: .669's pre-gate took a second roamer battle here and five legs bailed.
-	_smoke_quiet_the_roamers()
-	if BattleManager.current_state != BattleManager.BattleState.INACTIVE:
-		print("[SMOKE] FAIL: the player-path battle never ended — every later leg would bail")
+	var leaked: int = 0
+	var waited_back: float = 0.0
+	## .669 narrowed this window and .705 fell into it anyway: absorb the leak instead of bailing five later legs.
+	for _attempt in range(3):
+		var rewind: float = 0.0
+		var polls: int = 0
+		while rewind < 15.0 and not (current_scene != null and is_instance_valid(current_scene) and "monster_spawner" in current_scene):
+			if polls % 5 == 0:
+				_smoke_tap("ui_accept")
+			polls += 1
+			await get_tree().create_timer(0.1).timeout
+			rewind += 0.1
+		waited_back += rewind
+		## The map that comes back has a fresh ENABLED spawner, and the player stands where the last roamer was.
+		_smoke_quiet_the_roamers()
+		var leak: String = _smoke_screen_owner()
+		if leak == "":
+			break
+		leaked += 1
+		print("[SMOKE] a battle still owns the screen after the hand-back (%s), absorbing it, attempt %d" % [leak, leaked])
+		await _smoke_end_any_battle()
+	var screen_owner: String = _smoke_screen_owner()
+	if screen_owner != "":
+		print("[SMOKE] FAIL: the player-path battle never ended — %s after %d absorb attempt(s), every later leg would bail" % [screen_owner, leaked])
 		_smoke_failed = true
 	elif not (current_scene != null and is_instance_valid(current_scene) and "monster_spawner" in current_scene):
-		print("[SMOKE] FAIL: the player-path battle ended but exploration never came back in %.1fs" % rewind)
+		print("[SMOKE] FAIL: the player-path battle ended but exploration never came back in %.1fs" % waited_back)
 		_smoke_failed = true
 
 
