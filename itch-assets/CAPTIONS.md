@@ -70,8 +70,18 @@ this time as Fulmen at the Mage's tier, killing blow on the Goblin, `WEAK!` agai
 Both are taken mid-cinematic, so `BattleJuice.punch_zoom` and the camera shake are scaling the
 HUD out from the centre (PARTY header about 25 px right, ENEMIES about 13 px left of their
 places) and cropping the panel edges, under the cinematic dim. That is deliberate battle juice,
-not a capture fault, but it is what the frame shows. Which image leads (this one, `battle.png`,
-or a storm candidate) is @struktured's call; none of the three has been moved.
+not a capture fault, but it is what the frame shows.
+
+- `battle_storm.710-settled.png`: burst frame 120, the **clean** one (cowir-main's hypothesis,
+  measured). The zoom and shake are transient and the weather is not. Template-matching the
+  PARTY header against pre-hit frame 0 gives a shift of +26/-12 px at frame 51 and exactly 0/0
+  (match 1.00) on every frame from 100 to 169, while mean luma stays 41-50 against 85
+  pre-hit, so the storm darkness persists. Frame 120 has every panel whole, `~ RAIN ~` legible,
+  the dark sky, the `1277` damage number with `WEAK!` over the Imp, and the elemental tip in the
+  LOG. It loses only the bolt.
+
+Which image leads (this one, `battle.png`, or a storm candidate) is @struktured's call; none has
+been moved.
 
 ### `battle.png`
 The same five-job battle, weather pinned clear, with the command menu open on **`Auto: this
