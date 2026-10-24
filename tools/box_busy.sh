@@ -3,7 +3,14 @@
 #
 #   tools/box_busy.sh            exit 0 = box free · 1 = busy (the reason is printed) · 2 = usage
 #   tools/box_busy.sh --wait N   poll every 20s for up to N seconds, then answer as above
-#   tools/box_busy.sh --selftest watch each arm flip (exit 0 = all six did)
+#   tools/box_busy.sh --publish  exit 0 = a publish is in flight (named, with its lane) · 1 = none
+#   tools/box_busy.sh --marker   print the BOX_MARKER path every box-protocol script must use
+#   tools/box_busy.sh --selftest watch each arm flip (exit 0 = all ten did)
+#
+# ONE SOURCE. The fold templates used to carry their own copies of the marker path AND their own
+# publish scan, hardcoded to cowir-deploy-wt/tmp/_detached: the single-publisher defect this file
+# fixed on 2026-10-17, still live in chain.sh.tmpl and rungate.sh.tmpl, so the fold's engine wait
+# could not see a publish launched from any other lane. They now ask --publish and --marker.
 #
 # Busy means either of the two states that broke the .691 web publish: cowir-main's fold chain or
 # gate is running (it writes BOX_MARKER with its PID and removes it on exit), or cowir-deploy has a
@@ -11,14 +18,34 @@
 # A marker whose PID is dead (fold marker, or a publish.pid beside the log) is reported as stale and
 # does not block — a crashed chain or killed publish must not close the box forever.
 set -u
-BOX_MARKER="${BOX_MARKER:-/home/struktured/projects/cowir-main/tmp/BOX_BUSY}"
+FOLD_TREE="${FOLD_TREE:-/home/struktured/projects/cowir-main}"
+BOX_MARKER="${BOX_MARKER:-$FOLD_TREE/tmp/BOX_BUSY}"
 ## DEPLOY_DIR named ONE publisher, so a publish launched from any other lane's worktree was
 ## INVISIBLE: measured 2026-10-17, this said FREE while v3.33.697-alpha published from
 ## cowir-sprites. A glob over every lane adds 1 true positive and 0 false ones (270 marker
 ## dirs on disk, 269 carry publish.ec so the log-without-ec predicate excludes them).
 DEPLOY_DIR="${DEPLOY_DIR:-}"
 DEPLOY_GLOB="${DEPLOY_GLOB:-/home/struktured/projects/*/tmp/_detached}"
-FOLD_TREE="${FOLD_TREE:-/home/struktured/projects/cowir-main}"
+
+## A publish in flight in ANY lane: publish.log without publish.ec, unless its publish.pid is dead.
+publish_reason() {
+  local d roots who
+  if [ -n "$DEPLOY_DIR" ]; then roots="$DEPLOY_DIR"; else roots="$(echo $DEPLOY_GLOB)"; fi
+  for d in $(for r in $roots; do printf '%s\n' "$r"/v3.33.*/; done); do
+    [ -f "$d/publish.log" ] && [ ! -f "$d/publish.ec" ] || continue
+    if [ -f "$d/publish.pid" ] && ! kill -0 "$(head -1 "$d/publish.pid")" 2>/dev/null; then
+      echo "box_busy: stale publish marker (pid not alive), ignoring: $(basename "$d")" >&2; continue
+    fi
+    case "$d" in
+      */tmp/_detached/*) who="${d%%/tmp/_detached/*}"; who="$(basename "$who")" ;;
+      *) who="" ;;
+    esac
+    if [ -n "$who" ]; then echo "publish in flight: $(basename "$d") (from $who)"
+    else echo "publish in flight: $(basename "$d")"; fi
+    return 0
+  done
+  return 1
+}
 
 busy_reason() {
   if [ -f "$BOX_MARKER" ]; then
@@ -36,23 +63,7 @@ busy_reason() {
     c="$(readlink "$p/cwd" 2>/dev/null)"
     case "$c" in "$FOLD_TREE"|"$FOLD_TREE"/*) echo "fold-tree godot running: pid ${p#/proc/} cwd=$c"; return 0 ;; esac
   done
-  local d roots
-  if [ -n "$DEPLOY_DIR" ]; then roots="$DEPLOY_DIR"; else roots="$(echo $DEPLOY_GLOB)"; fi
-  for d in $(for r in $roots; do printf '%s\n' "$r"/v3.33.*/; done); do
-    [ -f "$d/publish.log" ] && [ ! -f "$d/publish.ec" ] || continue
-    ## A publish that writes publish.pid gets the same liveness test as the fold marker.
-    if [ -f "$d/publish.pid" ] && ! kill -0 "$(head -1 "$d/publish.pid")" 2>/dev/null; then
-      echo "box_busy: stale publish marker (pid not alive), ignoring: $(basename "$d")" >&2; continue
-    fi
-    local who
-    case "$d" in
-      */tmp/_detached/*) who="${d%%/tmp/_detached/*}"; who="$(basename "$who")" ;;
-      *) who="" ;;
-    esac
-    if [ -n "$who" ]; then echo "publish in flight: $(basename "$d") (from $who)"
-    else echo "publish in flight: $(basename "$d")"; fi
-    return 0
-  done
+  publish_reason && return 0
   return 1
 }
 
@@ -95,14 +106,35 @@ if [ "${1:-}" = "--selftest" ]; then  # watch the answer flip, so a FREE is neve
   : > "$T/lanes/some-other-lane/tmp/_detached/v3.33.0-alpha/publish.ec"
   DEPLOY_DIR= DEPLOY_GLOB="$T/lanes/*/tmp/_detached" BOX_MARKER="$T/m" FOLD_TREE="$T/none" "$0" >/dev/null 2>&1 \
     || { echo "FAIL: a FINISHED publish (ec present) still blocked under the glob"; fails=1; }
-  [ "$fails" = 0 ] && echo "box_busy selftest: 6/6 arms flipped as expected"
+  ## ARMS 7-10 — the two one-source modes the fold templates call. --publish must see the SAME
+  ## lane-glob publish arm 6 sees, and must not see a finished or dead one.
+  rm -f "$T/lanes/some-other-lane/tmp/_detached/v3.33.0-alpha/publish.ec"
+  out="$(DEPLOY_DIR= DEPLOY_GLOB="$T/lanes/*/tmp/_detached" BOX_MARKER="$T/m" FOLD_TREE="$T/none" "$0" --publish)"; e=$?
+  { [ "$e" = 0 ] && [ "$out" = "publish in flight: v3.33.0-alpha (from some-other-lane)" ]; } \
+    || { echo "FAIL: --publish did not report another lane's publish (ec=$e): $out"; fails=1; }
+  echo 999999 > "$T/lanes/some-other-lane/tmp/_detached/v3.33.0-alpha/publish.pid"
+  DEPLOY_DIR= DEPLOY_GLOB="$T/lanes/*/tmp/_detached" BOX_MARKER="$T/m" FOLD_TREE="$T/none" "$0" --publish >/dev/null 2>&1 \
+    && { echo "FAIL: --publish reported a publish whose pid is dead"; fails=1; }
+  ## ... and --publish ignores the fold marker: the chain asks it while HOLDING that marker.
+  rm -f "$T/lanes/some-other-lane/tmp/_detached/v3.33.0-alpha/publish.pid"
+  : > "$T/lanes/some-other-lane/tmp/_detached/v3.33.0-alpha/publish.ec"; printf 'pid=%s\n' "$$" > "$T/m"
+  DEPLOY_DIR= DEPLOY_GLOB="$T/lanes/*/tmp/_detached" BOX_MARKER="$T/m" FOLD_TREE="$T/none" "$0" --publish >/dev/null 2>&1 \
+    && { echo "FAIL: --publish read the fold marker as a publish (the chain would wait on itself)"; fails=1; }
+  ## --marker: the default derives from FOLD_TREE (one literal), and an explicit BOX_MARKER wins.
+  out="$(env -u BOX_MARKER FOLD_TREE="$T/ft" "$0" --marker)"
+  [ "$out" = "$T/ft/tmp/BOX_BUSY" ] || { echo "FAIL: --marker default not derived from FOLD_TREE: $out"; fails=1; }
+  out="$(BOX_MARKER="$T/x" FOLD_TREE="$T/ft" "$0" --marker)"
+  [ "$out" = "$T/x" ] || { echo "FAIL: --marker ignored an explicit BOX_MARKER: $out"; fails=1; }
+  [ "$fails" = 0 ] && echo "box_busy selftest: 10/10 arms flipped as expected"
   exit "$fails"
 fi
 
 case "${1:-}" in
   "") ;;
-  --wait) case "${2:-}" in ''|*[!0-9]*) echo "usage: tools/box_busy.sh [--wait SECONDS]" >&2; exit 2 ;; esac ;;
-  *) echo "usage: tools/box_busy.sh [--wait SECONDS]" >&2; exit 2 ;;
+  --wait) case "${2:-}" in ''|*[!0-9]*) echo "usage: tools/box_busy.sh [--wait SECONDS | --publish | --marker]" >&2; exit 2 ;; esac ;;
+  --publish) publish_reason; exit $? ;;
+  --marker) printf '%s\n' "$BOX_MARKER"; exit 0 ;;
+  *) echo "usage: tools/box_busy.sh [--wait SECONDS | --publish | --marker]" >&2; exit 2 ;;
 esac
 
 if [ "${1:-}" = "--wait" ]; then

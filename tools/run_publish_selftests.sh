@@ -80,7 +80,7 @@ if [ "${1:-}" = "--selftest" ]; then
   exit "$fails"
 fi
 ## The box check (see header). The fold chain's marker pid is our ancestor when the chain runs us.
-BOX_MARKER="${BOX_MARKER:-/home/struktured/projects/cowir-main/tmp/BOX_BUSY}"
+BOX_MARKER="${BOX_MARKER:-$(./tools/box_busy.sh --marker 2>/dev/null)}"
 holder=""; [ -f "$BOX_MARKER" ] && holder="$(sed -n 's/^pid=//p' "$BOX_MARKER" | head -1)"
 p=$$; anc=0
 while [ -n "$holder" ] && [ "$p" -gt 1 ] 2>/dev/null; do

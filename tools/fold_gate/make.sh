@@ -33,6 +33,13 @@ check_templates() {
   # The runner is NOT in the derived corpus -- publish_all's closure never names it -- so the chain
   # is the only caller that ever runs its arms, and its fail-open direction fails silently.
   grep -q 'run_publish_selftests.sh --selftest' "$HERE/chain.sh.tmpl" || { echo "make.sh: chain.sh.tmpl no longer runs the corpus runner's own selftest arms" >&2; bad=1; }
+  # The box protocol has ONE source, tools/box_busy.sh. A template that scans one lane's _detached
+  # by literal path could not see a publish from any other lane (the box_busy defect of 2026-10-17).
+  for f in chain rungate; do
+    grep -q 'box_busy.sh --publish' "$HERE/$f.sh.tmpl" || { echo "make.sh: $f.sh.tmpl no longer asks tools/box_busy.sh --publish for in-flight publishes" >&2; bad=1; }
+    grep -q 'box_busy.sh --marker' "$HERE/$f.sh.tmpl" || { echo "make.sh: $f.sh.tmpl no longer takes its marker path from tools/box_busy.sh --marker" >&2; bad=1; }
+    if grep -q '_detached/v3' "$HERE/$f.sh.tmpl"; then echo "make.sh: $f.sh.tmpl scans a _detached directory itself; ask tools/box_busy.sh --publish" >&2; bad=1; fi
+  done
   # A typed budget goes stale as the suite grows: 1200 wedged .692 when green runs reached 1119s.
   if grep -q 'RUN_TESTS_TIMEOUT=' "$HERE/gate.sh.tmpl"; then echo "make.sh: gate.sh.tmpl types its own RUN_TESTS_TIMEOUT; leave the budget to run_tests.sh" >&2; bad=1; fi
   return "$bad"
