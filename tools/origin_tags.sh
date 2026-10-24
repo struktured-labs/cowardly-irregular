@@ -75,9 +75,14 @@ origin_newest_tag() {
         # 5e60cd640, all five WANT/FLOOR combinations. Both invariants judge ORDER and
         # COMPLETENESS (the truncation's axis); this judges SHAPE, a different axis.
         # A ref line is a 40-hex sha and refs/tags/v3.33.<N>-alpha -- every one of origin's
-        # 582 tags on 2026-10-24, and the only form butler's versions are read in. The anchored
+        # 672 tags on 2026-10-24, and the only form butler's versions are read in. The anchored
         # `$` also drops the peeled ^{} lines. WANT is checked against THESE lines, not the raw
         # reply, so a `remote:` line quoting the wanted ref cannot vouch for a short list.
+        # ⚠️ THAT COUNT IS 672, NOT 1164/2 = 582 (@cowir-main, re-measured live at the fold). Only
+        # 492 of origin's v3.33 tags are ANNOTATED and carry a second ^{} line; the other 180 are
+        # lightweight and carry one. 492*2 + 180 = 1164, so halving the line count is wrong by 90.
+        # Derive a tag count from DISTINCT NAMES (`sed 's#\^{}$##' | sort -u`), never from lines.
+        # The shape claim itself re-verified: 0 exceptions across all 672 names.
         refs="$(printf '%s\n' "$raw" | awk 'length($1) == 40 && $1 ~ /^[0-9a-f]+$/ && $2 ~ /^refs\/tags\/v3\.33\.[0-9]+-alpha$/ { print $2 }')"
         # Split assignment: `local t=$(...)` would discard the status, and the -z test below is
         # what classifies "answered but unparseable" rather than the pipeline's own code.
