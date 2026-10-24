@@ -202,14 +202,26 @@ def controls():
     loud_head[int(0.100 * SR):] *= 0.125
     loud_tail = tone.copy()
     loud_tail[:int(0.100 * SR)] *= 0.125
+    ## Both arms above assert POLARITY and both survive narrowing
+    ## SEAM_WINDOWS_S to [0.300] -- which leaves the corpus printing health,
+    ## so neither the controls nor the number would notice. This arm covers
+    ## the WINDOW SET instead. A 50ms defect steps +18.1 dB at 50ms, +15.1 at
+    ## 100ms and only +10.6 at 300ms, so it reds exactly when no window short
+    ## enough to see it remains. The attenuation is chosen for that margin:
+    ## at 0.0625 the 300ms step is +16.4 and the arm would survive. This is
+    ## the single-window shape that made crossfade_loop.py decline a real
+    ## finding -- SEAM_S = 0.3 answering a 100ms seam it cannot reach.
+    short_defect = tone.copy()
+    short_defect[int(0.050 * SR):] *= 0.125
 
     flat, step, pads, clean = wrap_step(tone), wrap_step(faded), pad_seconds(padded_sig), pad_seconds(tone)
-    lhead, ltail = wrap_step(loud_head), wrap_step(loud_tail)
+    lhead, ltail, sdef = wrap_step(loud_head), wrap_step(loud_tail), wrap_step(short_defect)
     checks = [
         ("flat tone -> no wrap jump", flat is not None and flat[0] < 1.0),
         ("faded tail -> jump detected", step is not None and step[0] > JUMP_DB),
         ("loud head -> jump detected", lhead is not None and lhead[0] > JUMP_DB),
         ("loud tail -> no jump", ltail is not None and ltail[0] < 1.0),
+        ("50ms defect -> a short window remains", sdef is not None and sdef[0] > JUMP_DB),
         ("300ms silent head -> pad found", pads is not None and pads[0] >= 0.25),
         ("flat tone -> no pad", clean is not None and clean[0] + clean[1] < MIN_PAD_S),
     ]
