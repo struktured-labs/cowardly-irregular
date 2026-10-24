@@ -212,33 +212,11 @@ func _suppress_furniture() -> void:
 	_pin_conditions("setup")
 
 
-## ⛔ THE WEATHER WAS A DICE ROLL IN EVERY STORE FRAME. GameState._process advances the clock and
-## rolls weather from WEATHER_VOCAB (world 1: "clear" is 55 of 100), and _weather_world starts at 0,
-## so the very first frame -- before this script's setup -- already rolls. Measured 2026-10-24 at
-## .710: two runs minutes apart differed on 45-97% of pixels in every outdoor frame and the battle
-## (interiors 0.00%), sandrift's mean RGB moved by 17, and one battle frame read "~ RAIN ~" under a
-## caption that says the weather is off. So a re-shoot was partly random and the run-to-run floor
-## swamped every real change. Pausing playtime stops both the clock and the re-roll; "clear" and the
-## new-game phase (0.15, inside the untinted 0.10-0.50 band) are what a player starting fresh sees.
-## Called again before each capture, because _create_party resets state (reset_game_state).
+## Clear weather + paused clock: see ShotGuard.pin_conditions for the measurement behind it.
+## Called again before the battle, because _create_party resets state (reset_game_state).
 func _pin_conditions(where: String) -> void:
-	var gs = root.get_node_or_null("GameState")
-	if gs == null or not ("weather_condition" in gs) or not ("playtime_paused" in gs):
-		push_error("[SHOT] GameState has no weather/pause fields -- conditions cannot be pinned")
+	if not ShotGuard.pin_conditions(root, where):
 		_fail += 1
-		return
-	gs.playtime_paused = true
-	var consts: Dictionary = gs.get_script().get_script_constant_map()
-	if not consts.has("DAY_PHASE_NEW_GAME") or not ("day_phase" in gs):
-		push_error("[SHOT] GameState.DAY_PHASE_NEW_GAME / day_phase absent -- the clock cannot be pinned")
-		_fail += 1
-		return
-	gs.day_phase = float(consts["DAY_PHASE_NEW_GAME"])
-	if gs.weather_condition != "clear":
-		gs.weather_condition = "clear"
-		if gs.has_signal("weather_changed"):
-			gs.weather_changed.emit("clear")
-	print("[SHOT] conditions (%s): weather=%s day_phase=%.2f paused=%s" % [where, gs.weather_condition, float(gs.day_phase), str(gs.playtime_paused)])
 
 
 func _shoot(name: String, paths: Array) -> void:
