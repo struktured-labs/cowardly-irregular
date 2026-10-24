@@ -201,18 +201,24 @@ $SEAM_AUDIT --from "$OUT_DIR" > "$_seam_out" 2>&1 || _seam_ec=$?
 #    grep. The publish stopped, by accident, under a "WARNING" header with the cause never
 #    printed (measured 2026-10-24). A crossing is exit 1 AND the audit's summary line, which it
 #    prints only after measuring; exit 1 without it is the audit not running, and it BLOCKS.
-if [ "$_seam_ec" = 1 ] && ! command grep -aq 'looping beds measured' "$_seam_out"; then
+#    AND it must name what crossed: a crash AFTER the summary (cowir-main's residual, .709) has
+#    the summary and no crossing line, so the grep below came back empty and `set -e` killed the
+#    script the old way. Captured with `|| true` and tested instead, so that case BLOCKS too,
+#    rather than printing "NOT blocking" about a measurement that broke partway.
+_seam_lines="$(command grep -aE 'NEW jumps not pinned|PINNED entries that now loop|\*\*\* NEW \*\*\*|digital silence at the wrap' "$_seam_out" || true)"
+if [ "$_seam_ec" = 1 ] && { ! command grep -aq 'looping beds measured' "$_seam_out" || [ -z "$_seam_lines" ]; }; then
     _seam_ec=crashed
 fi
 case "$_seam_ec" in
     0) echo "[web-audio] wrap seams: every bed clears the 12 dB gate ON THE SHIPPED TIER" ;;
     crashed)
-       echo "[web-audio] ⛔ BLOCKED: the seam audit exited 1 WITHOUT measuring (no summary line)." >&2
-       echo "[web-audio]   That is a crash or a usage error, not a crossing. Its last output:" >&2
+       echo "[web-audio] ⛔ BLOCKED: the seam audit exited 1 without a complete measurement (no summary" >&2
+       echo "[web-audio]   line, or no crossing named). That is a crash or a usage error, not a crossing." >&2
+       echo "[web-audio]   Its last output:" >&2
        tail -5 "$_seam_out" >&2
        rm -f "$_seam_out"; exit 5 ;;
     1) echo "[web-audio] ⚠ WRAP SEAM WARNING on the tier we actually ship:" >&2
-       command grep -aE 'NEW jumps not pinned|PINNED entries that now loop|\*\*\* NEW \*\*\*|digital silence at the wrap' "$_seam_out" >&2
+       printf '%s\n' "$_seam_lines" >&2
        echo "[web-audio]   measured on ${BITRATE}k. The masters can pass while the transcode does not." >&2
        echo "[web-audio]   NOT blocking: publishing continues." >&2 ;;
     # Exit 2 has TWO causes (cowir-main, 2026-10-24): the detector's own controls failed, or the

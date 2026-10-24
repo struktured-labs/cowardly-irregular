@@ -82,7 +82,7 @@ func _init() -> void:
 	# The overworld builds tiles, the player and the spawner across several frames.
 	for i in range(30):
 		await process_frame
-	# The overworld can move current_world; re-assert before anything is photographed.
+	# Re-assert in case the overworld's own setup cleared the pause (a state reset, as _create_party does for marketing_shots); a current_world move alone cannot roll while paused.
 	if not ShotGuard.pin_conditions(root, "overworld"):
 		_die("weather/clock could not be pinned after the overworld loaded")
 		return
