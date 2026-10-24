@@ -417,6 +417,12 @@ selftest() {
     # arms are deterministic and say something about the TOOL rather than about connectivity.
     # --local hardlinks the object store, so this costs no meaningful disk or time.
     local _bare="tmp/reapself-${sfx}-origin.git"
+    # ⛔ THIS CLONE LEAKED ON EVERY RUN (2026-10-13 .. 10-24). Nothing removed it, and this selftest
+    # runs in every publish's gate 0d and every corpus: 42 dead-PID clones in cowir-main/tmp
+    # (17 in one day) and 28 in cowir-deploy's publish trees, from the tool whose own header says
+    # "manual cleanup guarantees it recurs". The RETURN trap covers every exit after this line
+    # (the VOID `return 1` and the normal end); the earlier SKIPPED return happens before the clone.
+    trap 'rm -rf "$_bare"; trap - RETURN' RETURN
     if git clone --bare --local --quiet . "$_bare" 2>/dev/null; then
         export REAP_ORIGIN="$_bare"
         ORIGIN="$_bare"
