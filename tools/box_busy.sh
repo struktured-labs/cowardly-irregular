@@ -5,7 +5,8 @@
 #   tools/box_busy.sh --wait N   poll every 20s for up to N seconds, then answer as above
 #   tools/box_busy.sh --publish  exit 0 = a publish is in flight (named, with its lane) · 1 = none
 #   tools/box_busy.sh --marker   print the BOX_MARKER path every box-protocol script must use
-#   tools/box_busy.sh --selftest watch each arm flip (exit 0 = all ten did)
+#   tools/box_busy.sh --roots    print each _detached dir the publish scan reads (exit 1 = none exist)
+#   tools/box_busy.sh --selftest watch each arm flip (exit 0 = all eleven did)
 #
 # ONE SOURCE. The fold templates used to carry their own copies of the marker path AND their own
 # publish scan, hardcoded to cowir-deploy-wt/tmp/_detached: the single-publisher defect this file
@@ -25,19 +26,29 @@ BOX_MARKER="${BOX_MARKER:-$FOLD_TREE/tmp/BOX_BUSY}"
 ## cowir-sprites. A glob over every lane adds 1 true positive and 0 false ones (270 marker
 ## dirs on disk, 269 carry publish.ec so the log-without-ec predicate excludes them).
 DEPLOY_DIR="${DEPLOY_DIR:-}"
-DEPLOY_GLOB="${DEPLOY_GLOB:-/home/struktured/projects/*/tmp/_detached}"
+## BOTH shapes publish_detached.sh's _logdir writes: <lane>/tmp/_detached/<tag> from a tmp/ worktree,
+## and <cwd>/tmp/detached/<tag> from anywhere else. Only the first was here until 2026-10-24, so a
+## publish launched from a lane ROOT read FREE (cowir-main/tmp/detached/v3.33.471-alpha is one).
+DEPLOY_GLOB="${DEPLOY_GLOB:-/home/struktured/projects/*/tmp/_detached /home/struktured/projects/*/tmp/detached}"
+
+## The dirs the publish scan reads. A glob matching nothing expands to itself, which names no real
+## dir, so the scan finds no publish and answers FREE: the one fail-OPEN direction here. --roots
+## and arm 11 exist so that answer is never silent.
+deploy_roots() {
+  if [ -n "$DEPLOY_DIR" ]; then echo "$DEPLOY_DIR"; else echo $DEPLOY_GLOB; fi
+}
 
 ## A publish in flight in ANY lane: publish.log without publish.ec, unless its publish.pid is dead.
 publish_reason() {
-  local d roots who
-  if [ -n "$DEPLOY_DIR" ]; then roots="$DEPLOY_DIR"; else roots="$(echo $DEPLOY_GLOB)"; fi
-  for d in $(for r in $roots; do printf '%s\n' "$r"/v3.33.*/; done); do
+  local d who
+  for d in $(for r in $(deploy_roots); do printf '%s\n' "$r"/v3.33.*/; done); do
     [ -f "$d/publish.log" ] && [ ! -f "$d/publish.ec" ] || continue
     if [ -f "$d/publish.pid" ] && ! kill -0 "$(head -1 "$d/publish.pid")" 2>/dev/null; then
       echo "box_busy: stale publish marker (pid not alive), ignoring: $(basename "$d")" >&2; continue
     fi
     case "$d" in
       */tmp/_detached/*) who="${d%%/tmp/_detached/*}"; who="$(basename "$who")" ;;
+      */tmp/detached/*)  who="${d%%/tmp/detached/*}"; who="$(basename "$who")" ;;
       *) who="" ;;
     esac
     if [ -n "$who" ]; then echo "publish in flight: $(basename "$d") (from $who)"
@@ -125,16 +136,34 @@ if [ "${1:-}" = "--selftest" ]; then  # watch the answer flip, so a FREE is neve
   [ "$out" = "$T/ft/tmp/BOX_BUSY" ] || { echo "FAIL: --marker default not derived from FOLD_TREE: $out"; fails=1; }
   out="$(BOX_MARKER="$T/x" FOLD_TREE="$T/ft" "$0" --marker)"
   [ "$out" = "$T/x" ] || { echo "FAIL: --marker ignored an explicit BOX_MARKER: $out"; fails=1; }
-  [ "$fails" = 0 ] && echo "box_busy selftest: 10/10 arms flipped as expected"
+  ## ARM 11 — THE SHIPPED DEFAULT. Arms 1-10 all override DEPLOY_GLOB, so a typo in its default
+  ## passed 10/10 while the scan read FREE beside every publish. This arm must run UNOVERRIDDEN to
+  ## mean anything: it asks the real filesystem whether the default names at least one real dir.
+  out="$(env -u DEPLOY_DIR -u DEPLOY_GLOB "$0" --roots)" \
+    || { echo "FAIL: the shipped DEPLOY_GLOB default names no existing _detached dir (the scan would read FREE beside any publish): $out"; fails=1; }
+  ## ... and an existing dir is not enough: a typo'd tmp/_detached -> tmp/detached passed the line
+  ## above, because that dir exists too. So the default must also MATCH both shapes _logdir writes.
+  dflt="$(env -u DEPLOY_GLOB bash -c 'eval "$(command grep -m1 "^DEPLOY_GLOB=" "$1")"; printf "%s" "$DEPLOY_GLOB"' _ "$0")"
+  for shape in /home/struktured/projects/some-lane/tmp/_detached /home/struktured/projects/some-lane/tmp/detached; do
+    hit=0; set -f; for g in $dflt; do case "$shape" in $g) hit=1 ;; esac; done; set +f  # patterns, not paths
+    [ "$hit" = 1 ] || { echo "FAIL: the shipped DEPLOY_GLOB ($dflt) does not cover $shape, a dir publish_detached.sh writes"; fails=1; }
+  done
+  ## and the lane is NAMED for the second shape too
+  mkdir -p "$T/l2/root-lane/tmp/detached/v3.33.0-alpha"; : > "$T/l2/root-lane/tmp/detached/v3.33.0-alpha/publish.log"
+  out="$(DEPLOY_DIR= DEPLOY_GLOB="$T/l2/*/tmp/detached" BOX_MARKER="$T/m" FOLD_TREE="$T/none" "$0" --publish)"
+  [ "$out" = "publish in flight: v3.33.0-alpha (from root-lane)" ] || { echo "FAIL: a tmp/detached publish was not named with its lane: $out"; fails=1; }
+  [ "$fails" = 0 ] && echo "box_busy selftest: 11/11 arms flipped as expected"
   exit "$fails"
 fi
 
 case "${1:-}" in
   "") ;;
-  --wait) case "${2:-}" in ''|*[!0-9]*) echo "usage: tools/box_busy.sh [--wait SECONDS | --publish | --marker]" >&2; exit 2 ;; esac ;;
+  --wait) case "${2:-}" in ''|*[!0-9]*) echo "usage: tools/box_busy.sh [--wait SECONDS | --publish | --marker | --roots]" >&2; exit 2 ;; esac ;;
   --publish) publish_reason; exit $? ;;
   --marker) printf '%s\n' "$BOX_MARKER"; exit 0 ;;
-  *) echo "usage: tools/box_busy.sh [--wait SECONDS | --publish | --marker]" >&2; exit 2 ;;
+  --roots) n=0; for r in $(deploy_roots); do [ -d "$r" ] && { echo "$r"; n=$((n+1)); }; done
+           [ "$n" -gt 0 ] || { echo "no existing dir in: $(deploy_roots)"; exit 1; }; exit 0 ;;
+  *) echo "usage: tools/box_busy.sh [--wait SECONDS | --publish | --marker | --roots]" >&2; exit 2 ;;
 esac
 
 if [ "${1:-}" = "--wait" ]; then
