@@ -191,11 +191,25 @@ def controls():
     faded[-int(0.5 * SR):] *= 0.02
     padded_sig = tone.copy()
     padded_sig[:int(0.30 * SR)] = 0.0
+    ## The ONE live finding has the polarity the arms above never exercise:
+    ## ambient_cave is a LOUD HEAD (-7.2 dBFS against a -15.9 median) over an
+    ## ordinary tail, not a fade. db(head) - db(tail) catches it by construction
+    ## and the docstring says so; nothing proved it until these two arms. The
+    ## first reds on any tail-vs-body form -- the shape this file was written to
+    ## kill. The second reds on an abs() acceptance criterion, which emptied
+    ## KNOWN_UNFIXABLE twice: a bed that ends louder than it begins is benign.
+    loud_head = tone.copy()
+    loud_head[int(0.100 * SR):] *= 0.125
+    loud_tail = tone.copy()
+    loud_tail[:int(0.100 * SR)] *= 0.125
 
     flat, step, pads, clean = wrap_step(tone), wrap_step(faded), pad_seconds(padded_sig), pad_seconds(tone)
+    lhead, ltail = wrap_step(loud_head), wrap_step(loud_tail)
     checks = [
         ("flat tone -> no wrap jump", flat is not None and flat[0] < 1.0),
         ("faded tail -> jump detected", step is not None and step[0] > JUMP_DB),
+        ("loud head -> jump detected", lhead is not None and lhead[0] > JUMP_DB),
+        ("loud tail -> no jump", ltail is not None and ltail[0] < 1.0),
         ("300ms silent head -> pad found", pads is not None and pads[0] >= 0.25),
         ("flat tone -> no pad", clean is not None and clean[0] + clean[1] < MIN_PAD_S),
     ]
