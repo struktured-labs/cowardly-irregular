@@ -14,6 +14,22 @@ const GL_SRC := "res://src/GameLoop.gd"
 const GameLoopScript := preload("res://src/GameLoop.gd")
 
 
+## One function's text, bounded by whichever of the two function headers comes first. `"\nfunc "`
+## alone is blind to `static func`, and a widened window lets a NEIGHBOUR's call satisfy a
+## contains() arm below -- fail-open, which is the direction that costs a defect (.706).
+func _body_of(text: String, header: String) -> String:
+	var at: int = text.find(header)
+	if at < 0:
+		return ""
+	var end: int = text.find("\nfunc ", at + 1)
+	var stat: int = text.find("\nstatic func ", at + 1)
+	if stat > -1 and (end < 0 or stat < end):
+		end = stat
+	if end < 0:
+		end = text.length()
+	return text.substr(at, end - at)
+
+
 func test_the_smoke_gates_both_battle_start_paths() -> void:
 	var src := FileAccess.get_file_as_string(GL_SRC)
 	assert_true(src.contains("EncounterSystem.encounters_enabled = false"),
@@ -45,10 +61,8 @@ func test_the_roamer_gate_runs_at_MAP_ENTRY_not_only_at_the_next_shot() -> void:
 	## that sets it true ran 30 log lines AFTER the first bail), yet a battle started between the walk
 	## shots and the village shot and all 13 later legs bailed. The other arm was green throughout.
 	var src := FileAccess.get_file_as_string(GL_SRC)
-	var at: int = src.find("func _smoke_enter_map")
-	assert_gt(at, -1, "CONTROL: the map-entry helper exists")
-	var next: int = src.find("\nfunc ", at + 1)
-	var body := src.substr(at, next - at)
+	var body := _body_of(src, "func _smoke_enter_map")
+	assert_ne(body, "", "CONTROL: the map-entry helper exists")
 	assert_true(body.contains("_smoke_quiet_the_roamers()"),
 		"a freshly built map must have its spawner quieted AT ENTRY -- waiting for the next shot " +
 		"leaves a live-roamer window that no flag closes")
@@ -79,11 +93,8 @@ func test_the_spawner_really_has_that_api_and_despawns() -> void:
 ## A second roamer started a battle before the next map leg and five legs bailed.
 func test_the_roamer_leg_quiets_the_map_it_comes_back_to() -> void:
 	var code: String = load("res://test/unit/helpers/gd_source.gd").code_of(GL_SRC)
-	var at: int = code.find("func _smoke_player_path_battle")
-	var end: int = code.find("\nfunc ", at + 1)
-	assert_gt(at, -1, "CONTROL: the roamer leg exists")
-	assert_gt(end, at, "CONTROL: the roamer leg ends at a next function")
-	var body: String = code.substr(at, end - at)
+	var body: String = _body_of(code, "func _smoke_player_path_battle")
+	assert_ne(body, "", "CONTROL: the roamer leg exists")
 	var rearm: int = body.find("set_enabled(true)")
 	assert_gt(rearm, -1, "CONTROL: the leg re-arms the spawner, which is why it must quiet again")
 	var back: int = body.find("\"monster_spawner\" in current_scene", rearm)
@@ -125,10 +136,8 @@ func test_a_live_battle_outranks_a_starting_transition_in_the_message() -> void:
 func test_both_smoke_guards_ask_the_predicate_rather_than_the_state_alone() -> void:
 	var code: String = load("res://test/unit/helpers/gd_source.gd").code_of(GL_SRC)
 	for fn in ["func _smoke_enter_map", "func _smoke_player_path_battle"]:
-		var at: int = code.find(fn)
-		assert_gt(at, -1, "CONTROL: %s exists" % fn)
-		var end: int = code.find("\nfunc ", at + 1)
-		var body: String = code.substr(at, end - at)
+		var body: String = _body_of(code, fn)
+		assert_ne(body, "", "CONTROL: %s exists" % fn)
 		assert_true(body.contains("_smoke_screen_owner()"),
 			"%s must ask the predicate: a bare current_state test is blind to a starting transition" % fn)
 
@@ -147,9 +156,8 @@ func test_the_predicate_reads_the_transition_flag_the_engine_actually_sets() -> 
 ## The half that stops a leak reding the fold: naming it better would still have been a red.
 func test_the_roamer_leg_absorbs_a_leaked_battle_under_a_bound() -> void:
 	var code: String = load("res://test/unit/helpers/gd_source.gd").code_of(GL_SRC)
-	var at: int = code.find("func _smoke_player_path_battle")
-	var end: int = code.find("\nfunc ", at + 1)
-	var body: String = code.substr(at, end - at)
+	var body: String = _body_of(code, "func _smoke_player_path_battle")
+	assert_ne(body, "", "CONTROL: the roamer leg exists")
 	assert_true(body.contains("_smoke_end_any_battle()"),
 		"a second touch is noise, not coverage -- end it rather than failing every later leg")
 	assert_true(body.contains("for _attempt in range("),
@@ -159,13 +167,23 @@ func test_the_roamer_leg_absorbs_a_leaked_battle_under_a_bound() -> void:
 func test_the_absorber_waits_out_the_transition_before_ending_anything() -> void:
 	# end_battle on a battle that has not begun does nothing, and the leg would hand back into it.
 	var code: String = load("res://test/unit/helpers/gd_source.gd").code_of(GL_SRC)
-	var at: int = code.find("func _smoke_end_any_battle")
-	assert_gt(at, -1, "CONTROL: the absorber exists")
-	var end: int = code.find("\nfunc ", at + 1)
-	var body: String = code.substr(at, end - at)
+	var body: String = _body_of(code, "func _smoke_end_any_battle")
+	assert_ne(body, "", "CONTROL: the absorber exists")
 	var settle: int = body.find("_battle_transition_starting")
 	var ends: int = body.find("end_battle(true)")
 	assert_gt(settle, -1, "the absorber must wait for the transition to resolve")
 	assert_gt(ends, settle, "it must wait BEFORE ending: a battle mid-transition cannot be ended")
 	assert_true(body.contains("settling < 12.0") and body.contains("back < 15.0"),
 		"both waits bounded in their own conditions, the bounds the deliberate hand-back already uses")
+
+
+## An arm on the DERIVATION, not on what it derives: a widened window fails OPEN, so every
+## contains() arm above would keep passing while its subject lost the call to a neighbour.
+func test_the_body_extractor_stops_at_a_static_func_too() -> void:
+	var sample := "func a():\n\treturn 1\n\nstatic func b():\n\treturn 2\n\nfunc c():\n\treturn 3\n"
+	var body := _body_of(sample, "func a(")
+	assert_true(body.contains("return 1"), "CONTROL: the subject's own body is in the window")
+	assert_false(body.contains("return 2"),
+		"a `static func` must close the window -- `\\nfunc ` alone does not match one")
+	assert_false(body.contains("return 3"), "CONTROL: a later plain func is out too")
+	assert_eq(_body_of(sample, "func nope("), "", "an absent subject reads empty, not the whole file")

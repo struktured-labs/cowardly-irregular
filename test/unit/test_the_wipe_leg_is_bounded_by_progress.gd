@@ -132,7 +132,13 @@ func test_every_reason_the_verdict_returns_has_a_branch_that_prints_it() -> void
 
 	var vat := src.find("static func smoke_wipe_verdict")
 	assert_gt(vat, -1, "CONTROL: the verdict function must exist")
+	## `"\nfunc "` alone is BLIND to `static func`, so a static added after the verdict was absorbed
+	## into its region: 7 returns scanned, 5 readable, and this arm's refusal fired on a clean tree
+	## (.706). Take whichever boundary comes first -- the refusal below is right, the window was not.
 	var vend := src.find("\nfunc ", vat + 10)
+	var vstatic := src.find("\nstatic func ", vat + 10)
+	if vstatic > -1 and (vend < 0 or vstatic < vend):
+		vend = vstatic
 	assert_gt(vend, vat, "CONTROL: the verdict function ends before the next one")
 	var verdict := src.substr(vat, vend - vat)
 
