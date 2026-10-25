@@ -43,15 +43,27 @@ func test_the_engine_prefers_the_ability_id_when_the_sheet_has_it() -> void:
 	assert_false(s.contains("animator.play_named_animation(str(ability.get(\"animation\", \"cast\")))"),
 		"the raw animation-field call is what made bespoke art unreachable")
 
+## One function's own text, bounded by the next top-level func. A fixed-width window spans into the
+## neighbour instead, which is how this file read the gate as MISSING on the day it merely moved.
+func _func_body(src: String, fname: String) -> String:
+	var i := src.find("func %s(" % fname)
+	if i < 0:
+		return ""
+	var j := src.find("\nfunc ", i + 1)
+	return src.substr(i, (j - i) if j > i else -1)
+
 func test_the_preference_is_gated_on_the_sheet_actually_having_it() -> void:
 	## Strictly additive: an unregistered id must fall back exactly as before, or every ability
-	## without bespoke art changes animation at once.
+	## without bespoke art changes animation at once. The gate moved into _ability_sheet_anim when the
+	## melee contact frame needed to ask "does the sheet carry this?" WITHOUT inheriting the bucket.
 	var s := _scene()
-	var i := s.find("func _ability_anim_name(")
-	var body := s.substr(i, 420)
-	assert_true(body.contains("has_named_animation(id)"),
+	var gate := _func_body(s, "_ability_sheet_anim")
+	assert_ne(gate, "", "something must answer whether the sheet carries art named for this ability id")
+	assert_true(gate.contains("has_named_animation(id)"),
 		"the id may only win when the sheet carries it")
-	assert_true(body.contains("ability.get(\"animation\", \"cast\")"),
+	var resolver := _func_body(s, "_ability_anim_name")
+	assert_ne(resolver, "", "CONTROL: located the resolver")
+	assert_true(resolver.contains("ability.get(\"animation\", \"cast\")"),
 		"the old field must remain the fallback")
 
 func test_the_animator_exposes_the_query() -> void:
