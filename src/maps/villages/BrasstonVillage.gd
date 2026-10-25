@@ -405,10 +405,10 @@ func _setup_npcs() -> void:
 
 ## W3's three village Masterites. STEAMPUNK IS THE ONE THEME WITH NO FRAGMENT GATE -- the reveal files
 ## numbered world3_* are gated on the INDUSTRIAL flags (the numbering runs one world behind the theme
-## from industrial up), and no intro scene was authored for these three. Placed anyway: the fight, its
-## drops and its bestiary entry are the content. The explicit flag keeps them off W1's composed
-## w1_<archetype>_defeated, which they would otherwise share with Sandrift's and Grimhollow's.
-## The Grand Schedule (tempo_steampunk) is the Steampunk Mechanism's boss and is already fought.
+## from industrial up). Their intros are named after the BOSSES, not the archetypes: world3_warden_intro
+## and its siblings are W4 Rivet Row's scenes, as world3_grand_schedule_intro already worked around.
+## The explicit flag keeps them off W1's composed w1_<archetype>_defeated, which they would otherwise
+## share with Sandrift's and Grimhollow's. The Grand Schedule is the Steampunk Mechanism's boss.
 func _place_masterites() -> void:
 	var MasteriteScript = load("res://src/exploration/MasteriteEncounter.gd")
 	if MasteriteScript == null:
@@ -421,6 +421,7 @@ func _place_masterites() -> void:
 	warden.defeat_flag_name = "cutscene_flag_warden_steampunk_defeated"
 	warden.prereq_flag = "cutscene_flag_world3_chapter1_complete"
 	warden.display_name = "The Standing Order"
+	warden.cutscene_id = "world3_standing_order_intro"
 	warden.position = Vector2(14 * TILE_SIZE,12 * TILE_SIZE)
 	npcs.add_child(warden)
 
@@ -431,6 +432,7 @@ func _place_masterites() -> void:
 	arbiter.defeat_flag_name = "cutscene_flag_arbiter_steampunk_defeated"
 	arbiter.prereq_flag = "cutscene_flag_world3_chapter2_complete"
 	arbiter.display_name = "The Tolerance Limit"
+	arbiter.cutscene_id = "world3_tolerance_limit_intro"
 	arbiter.position = Vector2(10 * TILE_SIZE,9 * TILE_SIZE)
 	npcs.add_child(arbiter)
 
@@ -441,5 +443,6 @@ func _place_masterites() -> void:
 	curator.defeat_flag_name = "cutscene_flag_curator_steampunk_defeated"
 	curator.prereq_flag = "cutscene_flag_world3_chapter3_complete"
 	curator.display_name = "The Requisition"
+	curator.cutscene_id = "world3_requisition_intro"
 	curator.position = Vector2(18 * TILE_SIZE,3 * TILE_SIZE)
 	npcs.add_child(curator)

@@ -1,0 +1,74 @@
+{
+  "id": "world3_tolerance_limit_intro",
+  "title": "The Tolerance Limit",
+  "world": 3,
+  "trigger": "boss_arbiter_steampunk",
+  "background": "brasston_square",
+  "description": "Brasston's arbiter is a caliper. It holds the party against a specification and reports the deviation, and it has no clause at all for exceeding the spec — the only judgement it can return is how far off you are, in which direction.",
+  "steps": [
+    { "type": "stop_music" },
+    { "type": "letterbox_in", "duration": 0.5 },
+    { "type": "boss_intro", "name": "The Tolerance Limit", "title": "Masterite — Steampunk" },
+    { "type": "wait", "duration": 0.4 },
+    {
+      "type": "narration",
+      "text": "It was waiting on the run past the inn with its arms already open to the width of a man, and it closed them as each of the party came level with it, without hurry, the way a man checks a pipe he has checked ten thousand times. There was a scale engraved along the inside of each arm. The numbers ran out well before the end of the metal."
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "The Tolerance Limit",
+          "text": "MEASURING. Hold still. Movement is recorded as deviation.",
+          "theme": "enemy",
+          "portrait": "masterite_arbiter_steampunk"
+        },
+        { "speaker": "Fighter", "text": "Measuring us against what?", "theme": "fighter" },
+        {
+          "speaker": "The Tolerance Limit",
+          "text": "The specification. All parts are measured against the specification.",
+          "theme": "enemy",
+          "portrait": "masterite_arbiter_steampunk"
+        },
+        { "speaker": "Mage", "text": "We aren't parts.", "theme": "mage" },
+        {
+          "speaker": "The Tolerance Limit",
+          "text": "Everything that enters the district is a part. Some parts object. Objection is recorded as deviation.",
+          "theme": "enemy",
+          "portrait": "masterite_arbiter_steampunk"
+        },
+        { "speaker": "Bard", "text": "What happens if something comes out BETTER than your specification?", "theme": "bard" },
+        {
+          "speaker": "The Tolerance Limit",
+          "text": "...",
+          "theme": "enemy",
+          "portrait": "masterite_arbiter_steampunk"
+        },
+        {
+          "speaker": "The Tolerance Limit",
+          "text": "No procedure is held for that condition. It has not arisen.",
+          "theme": "enemy",
+          "portrait": "masterite_arbiter_steampunk"
+        },
+        { "speaker": "Rogue", "text": "So you'd scrap something good for being the wrong kind of wrong.", "theme": "rogue" },
+        {
+          "speaker": "The Tolerance Limit",
+          "text": "Out of tolerance is out of tolerance. The caliper does not take sides — that is the whole of its virtue.",
+          "theme": "enemy",
+          "portrait": "masterite_arbiter_steampunk"
+        },
+        { "speaker": "Cleric", "text": "It's going to measure us whether we agree or not, isn't it.", "theme": "cleric" },
+        {
+          "speaker": "The Tolerance Limit",
+          "text": "MEASUREMENT COMMENCES.",
+          "theme": "enemy",
+          "portrait": "masterite_arbiter_steampunk"
+        }
+      ]
+    },
+    { "type": "screen_shake", "duration": 0.3, "intensity": 3.5 },
+    { "type": "screen_flash", "duration": 0.15 },
+    { "type": "set_flag", "flag": "arbiter_steampunk_intro_complete", "value": true },
+    { "type": "letterbox_out", "duration": 0.3 }
+  ]
+}
