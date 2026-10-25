@@ -465,6 +465,13 @@ selftest() {
         if printf '%s' "$out" | grep -q "$2"; then [ "$3" -eq 0 ] && { pass=$((pass+1)); printf '  ok    %s\n' "$1"; return; }
         else [ "$3" -eq 1 ] && { pass=$((pass+1)); printf '  ok    %s\n' "$1"; return; }; fi
         fail=$((fail+1)); printf '  FAIL  %s\n' "$1"
+        # SAY WHY. A bare FAIL name is what kept the 2026-10-12 nondeterminism unnamed for two weeks:
+        # the tool's own KEEP/remove line for the fixture carries the reason, and it was discarded.
+        local _fx; _fx="$(printf '%s' "$2" | grep -o 'reaptest-[A-Za-z0-9-]*' | head -1)"
+        if [ -n "$_fx" ]; then
+            printf '%s\n' "$out" | grep -F -- "$_fx" | head -4 | sed 's/^/          tool: /'
+            printf '%s\n' "$out" | grep -qF -- "$_fx" || printf '          tool: (no line names %s)\n' "$_fx"
+        fi
     }
     chk "dry run removes nothing"            "DRY RUN"                          0
     chk "a dirty worktree is kept"           "KEEP.*reaptest-rel-2.*modification" 0
