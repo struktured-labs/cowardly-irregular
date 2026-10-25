@@ -344,6 +344,20 @@ const PER_BATTLE_METAS: Array[String] = [
 ## action outruns the whole queue while priority actions still sort against each other.
 const PRIORITY_OFFSET: float = 1000.0
 
+## Twin of HeadlessBattleResolver.MAX_ROUNDS — same name, same value; live had NO cap at all.
+const MAX_ROUNDS: int = 50
+
+## Rounds with no new HP low on EITHER side before the deadlock is called; nobody is winning.
+const STALEMATE_ROUNDS: int = 15
+
+## Rounds before MAX_ROUNDS that the player is warned, so the end is not a surprise.
+const STALL_WARNING_LEAD: int = 10
+
+var _lowest_enemy_hp_total: int = -1
+var _lowest_player_hp_total: int = -1
+var _rounds_since_progress: int = 0
+var _stall_warning_sent: bool = false
+
 ## The ability types an archetype's UTILITY slot may select, in ONE place — three filters carried
 ## three hand-written copies. `buff` and `defensive` are authored by NO ability in the game; they are
 ## kept and LABELLED rather than deleted, so the next reader cannot mistake them for live vocabulary
@@ -466,6 +480,11 @@ func start_battle(players: Array[Combatant], enemies: Array[Combatant]) -> void:
 	battle_serial += 1
 	current_state = BattleState.STARTING
 	current_round = 0
+	## A carried-over minimum would read the previous battle's progress as this one's.
+	_lowest_enemy_hp_total = -1
+	_lowest_player_hp_total = -1
+	_rounds_since_progress = 0
+	_stall_warning_sent = false
 	_wd_armed = true
 	_wd_last_progress_ms = 0
 	_party_line_cooldowns.clear()
@@ -1537,11 +1556,67 @@ func _start_new_round() -> void:
 		return
 	_casualty_outside_execution = false
 
+	## Victory is tested first on purpose: a kill landing on the last legal round still wins.
+	if _resolve_if_going_nowhere():
+		return
+
 	# Calculate selection order (players first, then enemies, sorted by speed)
 	_calculate_selection_order()
 
 	round_started.emit(current_round)
 	_start_selection_phase()
+
+
+## Living HP on one side. The dead contribute 0, so a side's total falls as its members drop.
+func _side_hp_total(side: Array) -> int:
+	var total: int = 0
+	for c in side:
+		if c != null and is_instance_valid(c) and c.is_alive:
+			total += int(c.current_hp)
+	return total
+
+
+## True when this battle has just been ended because it was never going to end on its own.
+## A new low on one side means THAT side is losing, i.e. somebody is making progress; no new low
+## anywhere for STALEMATE_ROUNDS means nobody can, which is what a heal loop and a wrong-element
+## party both look like. end_battle(false) with survivors is the flee path, not the wipe path —
+## GameLoop discriminates on survivors — so a deadlock returns the player to the map, not a game over.
+func _resolve_if_going_nowhere() -> bool:
+	var enemy_hp: int = _side_hp_total(enemy_party)
+	var player_hp: int = _side_hp_total(player_party)
+	var progressed: bool = false
+	if _lowest_enemy_hp_total < 0 or enemy_hp < _lowest_enemy_hp_total:
+		_lowest_enemy_hp_total = enemy_hp
+		progressed = true
+	if _lowest_player_hp_total < 0 or player_hp < _lowest_player_hp_total:
+		_lowest_player_hp_total = player_hp
+		progressed = true
+	_rounds_since_progress = 0 if progressed else _rounds_since_progress + 1
+
+	## An authored win condition is allowed an unusual damage flow — withhold_attack WANTS zero
+	## progress — so the deadlock test is skipped for those and only the hard cap applies.
+	var deadlocked: bool = _win_condition.is_empty() and _rounds_since_progress >= STALEMATE_ROUNDS
+	var capped: bool = current_round > MAX_ROUNDS
+	if not deadlocked and not capped:
+		_warn_once_if_stalling()
+		return false
+
+	var why: String = "hit MAX_ROUNDS=%d" % MAX_ROUNDS
+	if deadlocked:
+		why = "deadlocked for %d rounds" % _rounds_since_progress
+	print("[BATTLE] Battle %s — disengaging. enemy HP %d, party HP %d" % [why, enemy_hp, player_hp])
+	push_warning("[BattleManager] Battle %s at round %d — ending as a disengage; the party may be undertuned, or the enemy has a heal/regen loop nothing in the party's kit can out-damage" % [why, current_round])
+	battle_log_message.emit("[color=gray]Neither side can finish this. The party disengages.[/color]")
+	end_battle(false)
+	return true
+
+
+## One line, once per battle, while the player can still act on it.
+func _warn_once_if_stalling() -> void:
+	if _stall_warning_sent or current_round < MAX_ROUNDS - STALL_WARNING_LEAD:
+		return
+	_stall_warning_sent = true
+	battle_log_message.emit("[color=%s]This fight is going nowhere. Change tactics or flee — it will not last much longer.[/color]" % AccessibilityPalette.penalty_bbcode())
 
 
 ## Tick 426: scan the alive enemy_party for monsters with
