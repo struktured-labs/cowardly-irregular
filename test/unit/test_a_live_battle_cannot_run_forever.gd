@@ -91,6 +91,33 @@ func test_the_floor_names_every_symbol_this_file_reaches() -> void:
 	assert_eq(missing.size(), 0, "BattleManager no longer carries: " + str(missing))
 
 
+## A function body, bounded at BOTH ends — from its own `func` line to the next one. An unbounded
+## window reads the whole rest of the file and would find the call anywhere below.
+func _func_body(src: String, fname: String) -> String:
+	var start: int = src.find("func %s(" % fname)
+	if start < 0:
+		return ""
+	var end: int = src.find("\nfunc ", start + 1)
+	return src.substr(start, (end - start) if end > start else -1)
+
+
+func test_the_detector_is_actually_wired_into_the_round_advance() -> void:
+	## ⛔ EVERY OTHER ARM CALLS _resolve_if_going_nowhere DIRECTLY, so all of them stay green if the
+	## CALL SITE is deleted and the function becomes dead code — battles would run forever again with
+	## a fully passing guard. This is a reachability question, which is a fact about the source, so a
+	## bounded source pin is the honest instrument rather than a weaker one dressed up as behaviour.
+	var src: String = FileAccess.get_file_as_string("res://src/battle/BattleManager.gd")
+	var body: String = _func_body(src, "_start_new_round")
+	assert_gt(body.length(), 0, "BattleManager must still declare _start_new_round for this to mean anything")
+	assert_true(body.contains("_resolve_if_going_nowhere()"),
+		"_start_new_round must call the detector, or nothing in the live engine ever bounds a battle")
+	## Precedence, pinned where it is decided: a kill landing on the last legal round still wins.
+	var vic: int = body.find("_check_victory_conditions()")
+	var stale: int = body.find("_resolve_if_going_nowhere()")
+	assert_true(vic >= 0 and vic < stale,
+		"victory must be tested BEFORE the timeout, or a fight won on the final round reports as a disengage")
+
+
 func test_the_live_cap_is_the_resolvers_twin() -> void:
 	## The comment on BattleManager.MAX_ROUNDS claims it is HeadlessBattleResolver's twin. Twins by
 	## construction must agree in VALUE, and nothing but this makes them.
