@@ -1557,8 +1557,10 @@ func _create_thief_default_script(character_id: String) -> Dictionary:
 			# Steal: grab items from a healthy enemy at fight start.
 			# Must come before backstab so steal fires on a fully-HP target (steal
 			# is more likely to succeed on undamaged enemies in many JRPG conventions)
+			# turn<=1 makes it an OPENER: boss HP keeps enemy_hp_percent>75 all fight, so first-match-wins re-picked steal every round and the Rogue dealt 0 damage to Mordaine. Same gate battle_hymn and forecast carry.
 			{
 				"conditions": [
+					{"type": "turn", "op": "<=", "value": 1},
 					{"type": "enemy_hp_percent", "op": ">", "value": 75},
 					{"type": "hp_percent", "op": ">", "value": 70}
 				],
