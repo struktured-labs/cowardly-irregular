@@ -1,0 +1,68 @@
+{
+  "id": "world3_standing_order_intro",
+  "title": "The Standing Order",
+  "world": 3,
+  "trigger": "boss_warden_steampunk",
+  "background": "brasston_square",
+  "description": "Brasston's warden is a standing order nobody remembers issuing and nobody has authority to rescind. It speaks in the impersonal register W3 established with The Grand Schedule — never 'I' — and judges by a gauge whose needle has read red since before the party existed.",
+  "steps": [
+    { "type": "stop_music" },
+    { "type": "letterbox_in", "duration": 0.5 },
+    { "type": "boss_intro", "name": "The Standing Order", "title": "Masterite — Steampunk" },
+    { "type": "wait", "duration": 0.4 },
+    {
+      "type": "narration",
+      "text": "Halfway down the concrete street, where the brass pipework came up out of the ground and turned east, something had been standing long enough that the pavement had worn pale around it in a ring. A gauge was set into its chest. The needle sat hard against the red, and the glass over it had been polished so often that the maker's name was gone."
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "The Standing Order",
+          "text": "HALT. This street is closed by standing order.",
+          "theme": "enemy",
+          "portrait": "masterite_warden_steampunk"
+        },
+        { "speaker": "Rogue", "text": "Closed by who?", "theme": "rogue" },
+        {
+          "speaker": "The Standing Order",
+          "text": "By the order. The order does not require a who.",
+          "theme": "enemy",
+          "portrait": "masterite_warden_steampunk"
+        },
+        { "speaker": "Cleric", "text": "Then who can lift it? Somebody must be able to lift it.", "theme": "cleric" },
+        {
+          "speaker": "The Standing Order",
+          "text": "Rescission requires an authority above the order. No such authority has presented itself in this district.",
+          "theme": "enemy",
+          "portrait": "masterite_warden_steampunk"
+        },
+        { "speaker": "Mage", "text": "Your gauge is pinned. It's been pinned for a long time — look at the glass.", "theme": "mage" },
+        {
+          "speaker": "The Standing Order",
+          "text": "The reading is RED. Red is the condition under which the street is closed.",
+          "theme": "enemy",
+          "portrait": "masterite_warden_steampunk"
+        },
+        { "speaker": "Fighter", "text": "And if it ever read anything else?", "theme": "fighter" },
+        {
+          "speaker": "The Standing Order",
+          "text": "There is no instruction for that reading. The order was written by someone who did not expect to be wrong.",
+          "theme": "enemy",
+          "portrait": "masterite_warden_steampunk"
+        },
+        { "speaker": "Bard", "text": "That's not a guard. That's a sentence somebody left running.", "theme": "bard" },
+        {
+          "speaker": "The Standing Order",
+          "text": "The distinction is not operative. ENFORCEMENT PROCEEDS.",
+          "theme": "enemy",
+          "portrait": "masterite_warden_steampunk"
+        }
+      ]
+    },
+    { "type": "screen_shake", "duration": 0.3, "intensity": 4.0 },
+    { "type": "screen_flash", "duration": 0.15 },
+    { "type": "set_flag", "flag": "warden_steampunk_intro_complete", "value": true },
+    { "type": "letterbox_out", "duration": 0.3 }
+  ]
+}
