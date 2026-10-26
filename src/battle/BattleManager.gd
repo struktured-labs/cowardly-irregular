@@ -353,6 +353,13 @@ const STALEMATE_ROUNDS: int = 15
 ## Rounds before MAX_ROUNDS that the player is warned, so the end is not a surprise.
 const STALL_WARNING_LEAD: int = 10
 
+## Twin of HeadlessBattleResolver.GROUP_ATTACK_COOLDOWN — same name, same value; live had none.
+const GROUP_ATTACK_COOLDOWN: int = 3
+
+## The round a formation special last fired on. A battle OPENS with the cooldown already expired —
+## the resolver's counter starts cold and delays the opener, and that one difference is deliberate.
+var _formation_last_round: int = -GROUP_ATTACK_COOLDOWN
+
 var _lowest_enemy_hp_total: int = -1
 var _lowest_player_hp_total: int = -1
 var _rounds_since_progress: int = 0
@@ -485,6 +492,8 @@ func start_battle(players: Array[Combatant], enemies: Array[Combatant]) -> void:
 	_lowest_player_hp_total = -1
 	_rounds_since_progress = 0
 	_stall_warning_sent = false
+	## A carried-over stamp would read the last battle's formation as this one's.
+	_formation_last_round = -GROUP_ATTACK_COOLDOWN
 	_wd_armed = true
 	_wd_last_progress_ms = 0
 	_party_line_cooldowns.clear()
@@ -2283,6 +2292,12 @@ func group_ap_shortfall(group_type: String, ap_cost: int = -1) -> Combatant:
 	return null
 
 
+## Rounds a formation special must still wait; 0 when it is available now. DERIVED from current_round
+## rather than ticked by its own counter, so there is no increment to lose and nothing to desync.
+func formation_cooldown_remaining() -> int:
+	return maxi(0, GROUP_ATTACK_COOLDOWN - (current_round - _formation_last_round))
+
+
 func player_group_attack(group_type: String, formation_id: String = "") -> void:
 	"""Initiate a group attack — all alive party members pool AP for a combined strike.
 	group_type: "all_out_attack", "limit_break", "combo_magic", or "formation"
@@ -2296,6 +2311,16 @@ func player_group_attack(group_type: String, formation_id: String = "") -> void:
 
 	# Participants are the only PCs whose AP/element should gate group attacks.
 	var participants: Array[Combatant] = group_participants()
+
+	## Formation specials are the one row the cooldown governs — Carmelo approved this and declined
+	## every other balance item, so All-Out Attack and Limit Break stay ungated here.
+	if group_type == "formation" and formation_cooldown_remaining() > 0:
+		battle_log_message.emit("[color=%s]The formation needs %d more round(s) to re-form![/color]" % [
+			AccessibilityPalette.penalty_bbcode(), formation_cooldown_remaining()])
+		print("[GROUP] Formation blocked — %d round(s) of cooldown left" % formation_cooldown_remaining())
+		current_state = BattleState.PLAYER_SELECTING
+		selection_turn_started.emit(current_combatant)
+		return
 
 	# Limit Break requires full AP (>= 4) from every PARTICIPATING member.
 	if group_type == "limit_break":
@@ -2333,6 +2358,10 @@ func player_group_attack(group_type: String, formation_id: String = "") -> void:
 		"participants": participants,
 		"speed": _compute_action_speed(current_combatant, "attack")
 	}
+	## Stamped at SELECTION, which is where the resolver resets its own clock — both engines charge
+	## the round the party committed on, not the round the strike happens to land in.
+	if group_type == "formation":
+		_formation_last_round = current_round
 	_queue_action(action)
 	print("[GROUP] %s initiates group attack '%s' with %d participants" % [
 		current_combatant.combatant_name, group_type, participants.size()])
