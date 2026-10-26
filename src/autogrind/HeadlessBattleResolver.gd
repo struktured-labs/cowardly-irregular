@@ -510,11 +510,11 @@ func _execute_group_physical(participants: Array, group_type: String) -> Diction
 			p.spend_ap(1)
 			total_power += p.get_buffed_stat("attack", p.attack)
 
-	var scale = pow(maxi(1, _living(participants).size()), 1.5)
+	var scale = pow(maxi(1, _living(participants).size()), 1.0)
 	var alive_enemies = _enemy_party.filter(func(e): return e.is_alive)
 
 	for enemy in alive_enemies:
-		var raw_damage = int(total_power * scale / max(1.0, float(alive_enemies.size())))
+		var raw_damage = int(total_power * scale)
 		var mitigated = max(1, raw_damage)
 		var landed: int = enemy.take_damage(mitigated)
 		_log("%s hits %s for %d!" % [group_type, enemy.combatant_name, landed])
@@ -536,7 +536,7 @@ func _execute_group_formation(participants: Array, formation: Dictionary) -> Dic
 		if p is Combatant and p.is_alive:
 			p.spend_ap(ap_cost)
 
-	var scale = pow(maxi(1, _living(participants).size()), 1.5)
+	var scale = pow(maxi(1, _living(participants).size()), 1.0)
 
 	match formation_id:
 		"four_heroes":
@@ -546,7 +546,7 @@ func _execute_group_formation(participants: Array, formation: Dictionary) -> Dic
 					total_power += (p.get_buffed_stat("attack", p.attack) + p.get_buffed_stat("magic", p.magic)) * 0.5
 			for enemy in alive_enemies:
 				if not enemy.is_alive: continue
-				var damage = max(1, int(total_power * scale / max(1.0, float(alive_enemies.size()))))
+				var damage = max(1, int(total_power * scale))
 				var landed: int = enemy.take_damage(damage)
 				_log("Four Heroes strikes %s for %d!" % [enemy.combatant_name, landed])
 			for p in participants:
@@ -561,7 +561,7 @@ func _execute_group_formation(participants: Array, formation: Dictionary) -> Dic
 					total_magic += p.get_buffed_stat("magic", p.magic)
 			for enemy in alive_enemies:
 				if not enemy.is_alive: continue
-				var damage = max(1, int(total_magic * scale / max(1.0, float(alive_enemies.size()))))
+				var damage = max(1, int(total_magic * scale))
 				var landed: int = enemy.take_damage(damage, true)
 				_log("Arcane Tempest blasts %s for %d!" % [enemy.combatant_name, landed])
 			_log("FORMATION: Arcane Tempest — raw magic ignores resistances!")
@@ -598,7 +598,7 @@ func _execute_group_formation(participants: Array, formation: Dictionary) -> Dic
 					total_atk += p.get_buffed_stat("attack", p.attack)
 			for enemy in alive_enemies:
 				if not enemy.is_alive: continue
-				var damage = max(1, int(total_atk * scale * 0.6 / max(1.0, float(alive_enemies.size()))))
+				var damage = max(1, int(total_atk * scale * 0.6))
 				var landed: int = enemy.take_damage(damage)
 				_log("Iron Wall crushes %s for %d!" % [enemy.combatant_name, landed])
 			_log("FORMATION: Iron Wall — DEF +50%% (3 turns) + crushing blow!")
@@ -611,7 +611,7 @@ func _execute_group_formation(participants: Array, formation: Dictionary) -> Dic
 			for enemy in alive_enemies:
 				if not enemy.is_alive: continue
 				var full_hp_bonus = 2.0 if enemy.current_hp == enemy.max_hp else 1.0
-				var damage = max(1, int(total_atk * scale * full_hp_bonus / max(1.0, float(alive_enemies.size()))))
+				var damage = max(1, int(total_atk * scale * full_hp_bonus))
 				var landed: int = enemy.take_damage(damage)
 				_log("Shadow Strike hits %s for %d!" % [enemy.combatant_name, landed])
 			_log("FORMATION: Shadow Strike — 2x on full HP!")
@@ -625,7 +625,7 @@ func _execute_group_formation(participants: Array, formation: Dictionary) -> Dic
 						total_power += (p.get_buffed_stat("attack", p.attack) + p.get_buffed_stat("magic", p.magic))
 				for enemy in alive_enemies:
 					if not enemy.is_alive: continue
-					var damage = max(1, int(total_power * scale * 1.5 / max(1.0, float(alive_enemies.size()))))
+					var damage = max(1, int(total_power * scale * 1.5))
 					enemy.take_damage(damage, true)
 				_log("FORMATION: Chaos Theory — JACKPOT! Massive damage!")
 			elif roll < 0.7:
@@ -642,7 +642,7 @@ func _execute_group_formation(participants: Array, formation: Dictionary) -> Dic
 						total_power += p.get_buffed_stat("attack", p.attack)
 				for enemy in alive_enemies:
 					if not enemy.is_alive: continue
-					var damage = max(1, int(total_power * scale * 0.8 / max(1.0, float(alive_enemies.size()))))
+					var damage = max(1, int(total_power * scale * 0.8))
 					enemy.take_damage(damage)
 				for p in participants:
 					if p is Combatant and p.is_alive:
