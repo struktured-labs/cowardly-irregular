@@ -335,9 +335,10 @@ XDG_DATA_HOME=$PWD/tmp/xdg godot --headless -s test/run_tests.gd          # Run 
 - **Gate on the EXIT CODE, captured before you shape the output.** `run_tests.sh` propagates failure correctly (verified independently by 5 lanes, 2026-07-29); every gate that ever passed a red tree broke the signal downstream:
   ```bash
   tools/run_tests.sh > tmp/lane_run.log 2>&1; EC=$?   # capture BEFORE piping
-  grep -E "^  (Passing|Failing)" tmp/lane_run.log     # then look
+  command grep -aE '^[[:space:]]*(Scripts|Tests|Passing|Failing|Risky|Pending)[[:space:]]+[0-9]+$' tmp/lane_run.log
   test $EC -eq 0 || exit 1                        # then decide
   ```
+  - ⛔ **THAT FILTER REQUIRED TWO LEADING SPACES UNTIL `.725`, AND `Scripts`/`Tests` PRINT AT COLUMN 0** — so the documented snippet silently dropped **exactly the two rows that prove a run was not truncated**, including the one row `Scripts == authored` is mandatory on, with nothing in the output saying a row was dropped (cowir-music, measured on their own `.725` READY: their first read of a clean 113-guard sweep had no `Scripts` row at all). Keep the **END** anchor — GUT prints prose at column 0 *after* the Totals block, which is the hazard the anchor exists for — and make the LEADING whitespace optional. `gate.sh` was always correct here; the lane-facing snippet and the tool had diverged, and the snippet is what a new lane copies.
   - ⚠️ **Write it to `tmp/lane_run.log`, NOT `tmp/gate.log`.** `tools/gate.sh` writes `tmp/gate.log`
     itself and **strips the ANSI escapes at `:25`** before any grep; this command writes the same
     name and does not. One filename, two artifacts, nothing inside saying which — and on 2026-09-16
