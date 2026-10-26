@@ -59,6 +59,8 @@ extends GutTest
 ## this loop is itself in the triaged list.
 
 const TEST_DIR := "res://test/unit"
+const MAKE_SH := "res://tools/fold_gate/make.sh"
+const RUNNER_SH := "res://tools/run_tests.sh"
 const ASSIGN := "BattleManager.current_state = "
 const LITERAL := "BattleManager.current_state = BattleManager.BattleState."
 
@@ -78,12 +80,21 @@ func _test_files() -> Array[String]:
 	return out
 
 
-func test_the_corpus_is_readable() -> void:
-	# POSITIVE CONTROL. Every assertion below passes vacuously against an empty
-	# directory listing, which is exactly what a wrong path returns.
+func test_the_corpus_is_not_empty() -> void:
+	# POSITIVE CONTROL, AND ONLY THAT. Every assertion below passes vacuously against an
+	# empty directory listing, which is exactly what a wrong path returns. The number is a
+	# NON-EMPTINESS threshold, not a bound: 2821 files live here, so a walk returning 600
+	# passes this comfortably. Renamed from test_the_corpus_is_readable and reworded because
+	# the old message read like a corpus-size check (cowir-music, 2026-10-26).
+	#
+	# COMPLETENESS IS NOT PROVABLE FROM IN HERE — any count this file derives comes from the
+	# same walk it is checking. It is proved from OUTSIDE instead: fold_gate/make.sh counts
+	# test_*.gd on disk and the gate refuses Scripts != authored, which is an independent
+	# enumeration, in another tool, outside the run. Do not read a green here as evidence
+	# about how much of the corpus was swept.
 	var files := _test_files()
 	assert_gt(files.size(), 500,
-		"must enumerate the real test corpus — %d files found, so the sweep below would be vacuous" % files.size())
+		"the walk must not be empty or near-empty — %d files found, and the sweep below is vacuous without them" % files.size())
 
 
 func test_files_that_set_autoload_battle_state_also_restore_it() -> void:
@@ -123,3 +134,54 @@ func test_battle_is_inactive_at_this_point_in_the_run() -> void:
 	# battle from another source (see the scope note in the header).
 	assert_false(BattleManager.is_battle_active(),
 		"no test before this file may leave the autoload mid-battle — true here means that leak is back (state=%s)" % str(BattleManager.current_state))
+
+
+# The `find <root> -name 'test_*.gd'` line make.sh derives its authored count from.
+func _authored_find_line() -> String:
+	for line in FileAccess.get_file_as_string(MAKE_SH).split("\n"):
+		if line.contains("find ") and line.contains("test_*.gd"):
+			return line
+	return ""
+
+
+func test_the_walked_root_is_the_tree_the_fold_counts() -> void:
+	# Two sources that must agree, each DERIVED rather than pinned: the directory this file
+	# sweeps, and the root make.sh hands to `find` for the authored count. A TEST_DIR edited
+	# somewhere narrower reds here; so does a narrowing edit to make.sh, from the other side.
+	# Neither is pinned to a coordinate, so neither can go quietly wrong (cowir-music's cure
+	# for the one loss mode the fold cannot see on its own).
+	var line := _authored_find_line()
+	assert_ne(line, "",
+		"make.sh must still derive authored with a `find <root> -name 'test_*.gd'` — if that moved, this arm is reading nothing")
+	var rx := RegEx.new()
+	rx.compile("find\\s+(\\S+)\\s+-name")
+	var m := rx.search(line)
+	assert_not_null(m, "could not read the root out of: %s" % line)
+	if m == null:
+		return
+	assert_eq("res://" + m.get_string(1), TEST_DIR,
+		"the tree this file sweeps and the tree the fold counts as authored must be the same one")
+
+
+func test_a_test_file_moved_into_a_subdirectory_cannot_go_quiet() -> void:
+	# This file's walk is NON-RECURSIVE, so a test file moved into test/unit/<subdir>/ would
+	# leave its corpus silently. What makes that loud is an asymmetry in two OTHER tools:
+	# make.sh counts authored recursively while GUT runs -gdir non-recursively, so such a file
+	# is counted and never run and the gate refuses Scripts != authored. Nothing pinned that
+	# until this arm — add -ginclude_subdirs and BOTH halves fail at once, in the same edit,
+	# with no test naming the dependency. Measured 2026-10-26: 0 files in test/ mentioned it.
+	var line := _authored_find_line()
+	assert_ne(line, "", "no authored `find` line in make.sh — the half below has nothing to be asymmetric to")
+	assert_false(line.contains("-maxdepth"),
+		"make.sh's authored count must stay RECURSIVE: bound its depth and a test file in a subdirectory stops being counted, which is the half that makes the gate notice")
+	var runner := FileAccess.get_file_as_string(RUNNER_SH)
+	assert_ne(runner, "", "could not read %s" % RUNNER_SH)
+	var invocations: Array[String] = []
+	for l in runner.split("\n"):
+		if l.contains("gut_cmdln.gd"):
+			invocations.append(l)
+	assert_gt(invocations.size(), 0,
+		"CONTROL: no GUT invocation found in the runner, so the check below would pass over nothing")
+	for l in invocations:
+		assert_false(l.contains("-ginclude_subdirs"),
+			"the runner must not enable GUT's subdirectory recursion while make.sh counts recursively — enable it and a subdir reorganisation passes the gate AND shortens this file's sweep, simultaneously: %s" % l.strip_edges())
