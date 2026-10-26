@@ -119,8 +119,20 @@ func test_the_derivation_sees_all_three_sources() -> void:
 		"BattleScene must still build a Masterite bed from the role and the WORLD SUFFIX — if that shape changed, every arm here is about the wrong key")
 
 
-func test_the_two_world_suffix_vocabularies_agree() -> void:
-	## ⛔ THE REASON THIS FILE IS NOT A RE-PIN OF test_a_masterite_without_a_theme_still_sounds_like_a_boss.
+func test_the_suffix_map_in_source_reaches_every_world() -> void:
+	## ⛔ RENAMED FROM test_the_two_world_suffix_vocabularies_agree, WHICH IS NOW THE NAME OF ITS TWIN.
+	## cowir-music's test_every_world_suffix_names_a_bed.gd asks the same QUESTION of a different
+	## INSTRUMENT: it pre-sets the sentinel, sets _current_area and calls the real
+	## _get_current_world_suffix(), where this arm reads the match block's SOURCE TEXT. Two files, one
+	## test name, and a gate printing `* test_the_two_world_suffix_vocabularies_agree` would not have
+	## said which — recoverable from the script line above it, and a trap for the grep triage we both
+	## actually do. Keep BOTH: an early return that changes what the function RETURNS while the text
+	## still reads correctly is green here and red there; a bridge map that loses a world no runtime
+	## probe reaches is red here and green there. Neither is the other's superset, so neither earns a
+	## deletion — I offered to delete this file on a "supersedes" that was read off a title, and
+	## cowir-music retracted it after reading the arms (2026-10-26).
+	##
+	## THE REASON THIS FILE IS NOT A RE-PIN OF test_a_masterite_without_a_theme_still_sounds_like_a_boss.
 	## SoundManager holds TWO independent world->suffix mappings fifteen lines apart:
 	##   :2635 _interior_world_suffix()      -> delegates to WeatherSystem.world_id_for(w)
 	##   :2650 _get_current_world_suffix()   -> hand-written area-id match arms, zero WeatherSystem refs
