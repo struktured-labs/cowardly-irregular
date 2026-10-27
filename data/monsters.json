@@ -5603,17 +5603,16 @@
     "boss": true,
     "meta_enemy": true,
     "stats": {
-      "max_hp": 22000,
+      "max_hp": 28000,
       "max_mp": 400,
-      "attack": 500,
+      "attack": 800,
       "defense": 330,
-      "magic": 540,
+      "magic": 340,
       "magic_defense": 260,
       "speed": 22
     },
     "abilities": [
-      "exploit_weakness",
-      "masterite_quick_strike",
+      "fourth_wall_break",
       "adapt",
       "mimic_ability",
       "masterite_time_tax"
@@ -5635,7 +5634,7 @@
       "physical"
     ],
     "one_shot": {
-      "hp_threshold": 22000,
+      "hp_threshold": 28000,
       "setup_hint": "It halves the damage of any ability you repeat and learns an element in two casts. Vary everything, or bring one burst large enough that it never gets a second reading.",
       "reward_item": "boss_trophy"
     },
@@ -5651,7 +5650,7 @@
       "counter_repeated_actions": true
     },
     "_META_trial": "TRIAL_AUTOMATION. Mechanics are all EXISTING engine hooks, no new battle code: counter_repeated_actions halves a repeated ability (BattleManager._apply_counter_repeated_damage_mod), adaptation_speed 2 teaches it an element in two casts instead of three, counter_abilities retaliate. A static autobattle script loses damage every round it does not change.",
-    "_META_numbers_provisional": "LEVEL, HP AND REWARDS ARE PROVISIONAL AND struktured's TO RULE, on the same footing as the_calibrant's _META_hp_provisional. Anchored arithmetically, not by taste: single-target 3.0x off magic 540 is 1620, under the squishiest L26 pool (~1904), so it pressures without one-shotting; 22000 HP is ~4.4 rounds at the party's measured ~5000/round. Deliberately NO heavy all_enemies row -- an all_enemies ability is effectively x5 against a five-member party, which is what makes every current dragon unwinnable."
+    "_META_numbers_provisional": "PROVISIONAL, struktured's to rule. THIRD ITERATION, and the arithmetic that forced it: the party's Cleric heals ~1500/round and members drink potions, so SINGLE-TARGET damage under ~2000/round is net-zero against party sustain -- raising the Operator from 1620 to 1800 LEFT MORE party HP (72.5%% -> 77.5%%) because the longer fight gave the Cleric more rounds. And anything above ~1904 one-shots the squishiest member. That gap is why this ladder is bimodal, and with HeadlessBattleResolver._find_attack_ability selecting only the single HIGHEST-multiplier row, a MODEST all_enemies ability is the only lever that produces a fight rather than decoration or a wipe. Sized at ~650 per member: 5 x 650 = 3250/round against ~1800 of sustain is a net drain of ~1450, so a 12500-point party pool lasts ~8 rounds while the boss dies in ~6. FOURTH ITERATION, and the variable I had missed: PHYSICAL damage is mitigated roughly three times harder than magic, because the shipped jobs' magic_defense sits near half their defense (party def 222-382 vs mdef 90-150). A physical all_enemies row at 640/member measured 100%% / 75.7%% party HP remaining while the Examiner's MAGIC row at 648 measured 85%% / 56.8%% -- same nominal number, a third of the effect. So this is now fourth_wall_break, 2.5x all_enemies MAGIC off a deliberately low magic 340 = 850 incoming, ~740 after mdef (magic 300 measured 100% / 62.6% party HP remaining, still decoration by the pre-registered criterion). attack 800 stays for its physical rows, none of which _find_attack_ability will select. The low magic stat is the knob that lands the damage, not an oversight -- and fourth_wall_break on the trial for players who automated the game is the one ability in the roster that belongs here."
   },
   "the_examiner": {
     "id": "the_examiner",
@@ -5668,17 +5667,16 @@
     ],
     "weakness_cycle_turns": 2,
     "stats": {
-      "max_hp": 20000,
+      "max_hp": 30000,
       "max_mp": 450,
       "attack": 460,
       "defense": 380,
-      "magic": 500,
+      "magic": 360,
       "magic_defense": 300,
       "speed": 20
     },
     "abilities": [
-      "masterite_judgment",
-      "masterite_precise_strike",
+      "void_pulse",
       "masterite_audit",
       "masterite_iron_guard"
     ],
@@ -5704,14 +5702,14 @@
       "physical"
     ],
     "one_shot": {
-      "hp_threshold": 20000,
+      "hp_threshold": 30000,
       "setup_hint": "Its face turns every second round. Read the element it is showing and answer with that one; anything else is resisted. Physical does almost nothing. This is a reading test, not a damage race.",
       "reward_item": "boss_trophy"
     },
     "learns_from": [],
     "counter_abilities": [],
     "_META_trial": "TRIAL_CLASSIC, and the DEFAULT route -- TrialRouting.trial_for sends manual, grinder, exploiter and balanced here, so an unrecognised playstyle gets a real fight rather than none. weakness_cycle + weakness_cycle_turns are the mage duel's Prismatic Construct mechanic at boss scale (BattleManager._apply_weakness_cycles), which is the one trial that assumes nothing about how the player plays.",
-    "_META_numbers_provisional": "PROVISIONAL, struktured's to rule. Its damage is deliberately the LOWEST of the three (1.8x single off magic 500 = 900) because the difficulty is carried by the cycle: a wrong element wastes the round. resistances physical forces the answer through magic, which is what makes reading the cycle load-bearing rather than optional."
+    "_META_numbers_provisional": "PROVISIONAL, struktured's to rule. THIRD ITERATION, and the arithmetic that forced it: the party's Cleric heals ~1500/round and members drink potions, so SINGLE-TARGET damage under ~2000/round is net-zero against party sustain -- raising the Operator from 1620 to 1800 LEFT MORE party HP (72.5%% -> 77.5%%) because the longer fight gave the Cleric more rounds. And anything above ~1904 one-shots the squishiest member. That gap is why this ladder is bimodal, and with HeadlessBattleResolver._find_attack_ability selecting only the single HIGHEST-multiplier row, a MODEST all_enemies ability is the only lever that produces a fight rather than decoration or a wipe. Sized at ~650 per member: 5 x 650 = 3250/round against ~1800 of sustain is a net drain of ~1450, so a 12500-point party pool lasts ~8 rounds while the boss dies in ~6. void_pulse is 1.8x all_enemies off magic 360 = 648/member. exploit_weakness was REMOVED rather than kept: at 3.0x it would always be selected over void_pulse and revert this to a single-target fight the party out-heals. Its damage identity is dark AoE; the weakness_cycle governs the PLAYER's damage, not its own."
   },
   "the_margin": {
     "id": "the_margin",
@@ -5721,11 +5719,11 @@
     "boss": true,
     "meta_enemy": true,
     "stats": {
-      "max_hp": 15000,
+      "max_hp": 6500,
       "max_mp": 400,
-      "attack": 680,
+      "attack": 620,
       "defense": 240,
-      "magic": 660,
+      "magic": 560,
       "magic_defense": 180,
       "speed": 26
     },
@@ -5749,13 +5747,13 @@
     "weaknesses": [],
     "resistances": [],
     "one_shot": {
-      "hp_threshold": 15000,
+      "hp_threshold": 6500,
       "setup_hint": "It removes one of you per round and it has the thinnest guard of the three. Spend everything at once. This is the fight your build was for.",
       "reward_item": "calibrant_token"
     },
     "learns_from": [],
     "counter_abilities": [],
     "_META_trial": "TRIAL_BURST, routed by SaveSystem.one_shot_records rather than by a playstyle label -- TrialRouting requires 8+ one-shots, at least one at rank S or A, and a fifth of all wins. A glass cannon by construction: the LOWEST HP of the three and the highest damage, so it is the one trial a burst build deletes before it acts twice and the one a slow party loses a member per round to.",
-    "_META_numbers_provisional": "PROVISIONAL, struktured's to rule. hp_threshold EQUALS max_hp, the honest form .727 established for cave_rat_king and rogue_lockward -- no padded threshold. 15000 is set so a committed one-shot build can reach it and an ordinary L26 party cannot: the post-.727 formation measured ~12,980 at L40, so clearing 15000 in one execution phase requires a build rather than a level. final_compilation 5.0x off magic 660 is 3300, above four of the five L26 pools, which is the per-round removal that makes the race real."
+    "_META_numbers_provisional": "PROVISIONAL, struktured's to rule. Kept single-target BY DESIGN -- the one trial meant to be a race rather than an endurance test. final_compilation at 5.0x off magic 560 lands ~2700 after mdef, above four of the five L26 pools, so it removes a member per round.\nSET FROM THE BATTLE LOG, NOT FROM A MODEL. I estimated party output at ~8600 and 15000/11000/9000/8000 HP all measured 0%. The log says the real figure is ~6566, and why: the Bard spends ROUND ONE entirely on five battle_hymn casts for zero damage; the Fighter missed twice in six rounds; the Mage lands exactly ONE thundaga (3807) before dying in round 2 at speed 26 vs its 20; and the Cleric's attacks are 48-95 because it is a healer with 148 attack. So against a boss that removes a member per round, 'party DPS' is one caster plus scraps. 6500 sits just under that measured ceiling so an ordinary party has a genuine race, and far under the post-.727 formation's measured ~12980 so a committed one-shot build ends it in a single execution phase. Thin for a level 26 boss on purpose: it is a glass cannon, and hp_threshold EQUALS max_hp per the honest form .727 established.\n⚠️ THE BURST PATH IS UNMEASURED: this harness drives default autobattle with no AP stacking, no setup turns and no manual play, so it cannot simulate the build this trial exists for. Every figure here is the NON-burst floor."
   }
 }
