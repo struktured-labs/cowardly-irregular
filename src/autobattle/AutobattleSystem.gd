@@ -679,7 +679,15 @@ func _deep_check_rule(rule: Dictionary, character_id: String, reachability_only:
 				errors.append("unknown ability '%s'" % aid)
 				continue
 			if not (aid in kit):
-				errors.append("ability '%s' not in %s's level-1 kit" % [aid, job_id])
+				## ⛔ THE SUFFIX IS THE WHOLE POINT: THIS IS NOT A FIZZLE AND THIS LINT USED TO IMPLY IT
+				## WAS. `_action_can_be_attempted` refuses an ability the character has not learned, so
+				## the rule is SKIPPED and the next one runs -- no turn is consumed. The Cleric's three
+				## `esuna` rules sit above its antidote/echo_herbs rows precisely so a level-1 Cleric
+				## degrades to items, which it does. Read as a fizzle, this message sent me to redesign
+				## three rules whose runtime behaviour was already correct (cowir-main, 2026-10-27).
+				## The leading clause is unchanged because test_rule_composer_fizzle_deep_check asserts
+				## the substring; only the consequence is added.
+				errors.append("ability '%s' not in %s's level-1 kit — the rule is SKIPPED until learned, so a level-1 character never reaches it (a dead rule, NOT a fizzle)" % [aid, job_id])
 			var action_cost: int = int(ability.get("mp_cost", 0))
 			# Upgrades: baseline must be level-1-safe (above), each upgrade must be
 			# learnable somewhere in the job's roster, cost check uses worst case.
