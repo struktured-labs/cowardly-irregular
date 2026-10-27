@@ -4,6 +4,7 @@
 #   tools/box_busy.sh            exit 0 = box free · 1 = busy (the reason is printed) · 2 = usage
 #   tools/box_busy.sh --wait N   poll every 20s for up to N seconds, then answer as above
 #   tools/box_busy.sh --publish  exit 0 = a publish is in flight (named, with its lane) · 1 = none
+#   tools/box_busy.sh --others   exit 0 = another lane has an engine up (count printed) · 1 = none
 #   tools/box_busy.sh --marker   print the BOX_MARKER path every box-protocol script must use
 #   tools/box_busy.sh --roots    print each _detached dir the publish scan reads (exit 1 = none exist)
 #   tools/box_busy.sh --selftest watch each arm flip (exit 0 = all eleven did)
@@ -20,6 +21,13 @@
 # does not block — a crashed chain or killed publish must not close the box forever.
 set -u
 FOLD_TREE="${FOLD_TREE:-/home/struktured/projects/cowir-main}"
+## What an engine LOOKS like, injectable so the engine arms have a positive control that does not
+## need a real godot: a negative from --others is not evidence until the answer has been watched
+## flipping to YES, and starting an engine to prove it is exactly what the tool exists to prevent.
+## Resolved to an ABSOLUTE path: /proc/<pid>/exe is always absolute, so a relative
+## BOX_BUSY_ENGINE never matches and the control reads FREE while its stand-in is running —
+## measured. A no-op for production: /usr/bin/godot is a real file, not a symlink.
+ENGINE_EXE="$(readlink -f "${BOX_BUSY_ENGINE:-/usr/bin/godot}" 2>/dev/null || echo "${BOX_BUSY_ENGINE:-/usr/bin/godot}")"
 BOX_MARKER="${BOX_MARKER:-$FOLD_TREE/tmp/BOX_BUSY}"
 ## DEPLOY_DIR named ONE publisher, so a publish launched from any other lane's worktree was
 ## INVISIBLE: measured 2026-10-17, this said FREE while v3.33.697-alpha published from
@@ -70,7 +78,7 @@ busy_reason() {
   ## cannot turn a running gate into FREE (cowir-autogrind: it said FREE beside the .692 chain).
   local p c
   for p in /proc/[0-9]*; do
-    [ "$(readlink "$p/exe" 2>/dev/null)" = "/usr/bin/godot" ] || continue
+    [ "$(readlink "$p/exe" 2>/dev/null)" = "$ENGINE_EXE" ] || continue
     c="$(readlink "$p/cwd" 2>/dev/null)"
     case "$c" in "$FOLD_TREE"|"$FOLD_TREE"/*) echo "fold-tree godot running: pid ${p#/proc/} cwd=$c"; return 0 ;; esac
   done
@@ -81,7 +89,7 @@ busy_reason() {
 others() {  # other lanes' engines: reported, not judged
   local n=0 p c
   for p in /proc/[0-9]*; do
-    [ "$(readlink "$p/exe" 2>/dev/null)" = "/usr/bin/godot" ] || continue
+    [ "$(readlink "$p/exe" 2>/dev/null)" = "$ENGINE_EXE" ] || continue
     c="$(readlink "$p/cwd" 2>/dev/null)"; case "$c" in "$FOLD_TREE"|"$FOLD_TREE"/*) continue ;; esac
     n=$((n+1))
   done
@@ -161,7 +169,33 @@ if [ "${1:-}" = "--selftest" ]; then  # watch the answer flip, so a FREE is neve
   mkdir -p "$T/l2/root-lane/tmp/detached/v3.33.0-alpha"; : > "$T/l2/root-lane/tmp/detached/v3.33.0-alpha/publish.log"
   out="$(DEPLOY_DIR= DEPLOY_GLOB="$T/l2/*/tmp/detached" BOX_MARKER="$T/m" FOLD_TREE="$T/none" "$0" --publish)"
   [ "$out" = "publish in flight: v3.33.0-alpha (from root-lane)" ] || { echo "FAIL: a tmp/detached publish was not named with its lane: $out"; fails=1; }
-  [ "$fails" = 0 ] && echo "box_busy selftest: 11/11 arms flipped as expected"
+  ## ARM 12 — --others, BOTH directions, with `sleep` standing in for the engine so the arm needs no
+  ## godot. The fold chain now WAITS on this answer, so a mode that could only ever say FREE would
+  ## silently restore the overlap it was added to prevent — and a negative is not evidence until the
+  ## answer has been watched flipping to YES.
+  ##
+  ## ⛔ RESOLVE the stand-in: /usr/bin/sleep is a symlink to uutils (/usr/lib/cargo/bin/coreutils/
+  ## sleep) and /proc/<pid>/exe reads the RESOLVED target, so comparing against /usr/bin/sleep can
+  ## never match and this arm failed on its first run. A real godot is not a symlink — its exe reads
+  ## /usr/bin/godot directly, measured — so production was never affected, only the control.
+  ## And a UNIQUE COPY, because the resolved path is shared: every `sleep` on the box runs
+  ## /usr/lib/cargo/bin/coreutils/sleep, including this file's own waiters, so the arm read
+  ## "engines up: 4" with no stand-in started at all. The basename stays `sleep` because uutils is a
+  ## multicall binary that dispatches on argv[0].
+  mkdir -p "$T/bin"; cp "$(readlink -f /usr/bin/sleep)" "$T/bin/sleep"
+  STANDIN="$T/bin/sleep"
+  out="$(BOX_BUSY_ENGINE="$STANDIN" DEPLOY_DIR="$T/d" BOX_MARKER="$T/m" FOLD_TREE="$T/none" "$0" --others)"; e=$?
+  [ "$e" = 1 ] || { echo "FAIL: --others reported busy with no stand-in engine: $out"; fails=1; }
+  "$STANDIN" 25 & SLEEPER=$!
+  sleep 1
+  out="$(BOX_BUSY_ENGINE="$STANDIN" DEPLOY_DIR="$T/d" BOX_MARKER="$T/m" FOLD_TREE="$T/none" "$0" --others)"; e=$?
+  case "$out" in "other lanes' engines up: "*) [ "$e" = 0 ] || { echo "FAIL: --others printed a count but exited $e"; fails=1; } ;;
+                 *) echo "FAIL: --others did not see a running stand-in engine (ec=$e): $out"; fails=1 ;; esac
+  kill "$SLEEPER" 2>/dev/null; wait "$SLEEPER" 2>/dev/null
+  out="$(BOX_BUSY_ENGINE="$STANDIN" DEPLOY_DIR="$T/d" BOX_MARKER="$T/m" FOLD_TREE="$T/none" "$0" --others)"; e=$?
+  [ "$e" = 1 ] || { echo "FAIL: --others still busy after the stand-in engine exited: $out"; fails=1; }
+
+  [ "$fails" = 0 ] && echo "box_busy selftest: 12/12 arms flipped as expected"
   exit "$fails"
 fi
 
@@ -169,6 +203,12 @@ case "${1:-}" in
   "") ;;
   --wait) case "${2:-}" in ''|*[!0-9]*) echo "usage: tools/box_busy.sh [--wait SECONDS | --publish | --marker | --roots]" >&2; exit 2 ;; esac ;;
   --publish) publish_reason; exit $? ;;
+  ## ⛔ others() is "reported, not judged" for a HUMAN reading FREE, but the fold chain needs it as a
+  ## DECISION: it waits for an in-flight publish and ignored other lanes' engines, so a lane that
+  ## checked FREE correctly and then ran a 250s sweep got a gate launched into it seconds later
+  ## (@cowir-music, 2026-10-26). Neither instrument was wrong — there was no mutual exclusion at all,
+  ## only a point-in-time check on each side. Exit 0 = busy, matching --publish.
+  --others) n="$(others)"; [ "${n:-0}" -gt 0 ] && { echo "other lanes' engines up: $n"; exit 0; }; exit 1 ;;
   --marker) printf '%s\n' "$BOX_MARKER"; exit 0 ;;
   --roots) n=0; for r in $(deploy_roots); do [ -d "$r" ] && { echo "$r"; n=$((n+1)); }; done
            [ "$n" -gt 0 ] || { echo "no existing dir in: $(deploy_roots)"; exit 1; }; exit 0 ;;
