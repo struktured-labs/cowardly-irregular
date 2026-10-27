@@ -19,6 +19,20 @@ const NOT_A_DUNGEON_INSTANCE := {
 	"DragonCave.gd": "base class — the four dragon caves extend it and set their own boss_id",
 }
 
+## ⛔ A SECOND LIST RATHER THAN A SECOND MEANING FOR THE FIRST. VertexAntechamber IS a dungeon
+## instance, so filing it under NOT_A_DUNGEON_INSTANCE would make that const's NAME false — the
+## exact shape the parity ledger's `target_type` entry had, where a reason true of half the system
+## read as a complete one.
+##
+## ⚠️ AND THE EXEMPTION HAS A COST THIS FILE ALREADY NAMES: an unscraped script is silently outside
+## every other assert here. Stated rather than absorbed. The coverage it would otherwise get lives in
+## test_every_trial_fields_a_monster_that_exists, which checks that each trial's occupant exists in
+## monsters.json and still carries the mechanic its trial is named for — derived from
+## TrialRouting.TRIAL_MONSTERS, which is the thing this file cannot scrape.
+const BOSS_ID_ROUTED_AT_RUNTIME := {
+	"VertexAntechamber.gd": "boss_id is chosen by TrialRouting from how the save played, so there is no literal to scrape — the whole point of the routed arena. It authors no boss_cutscene_id either: the three intros are cowir-story's",
+}
+
 var _monsters: Dictionary
 
 
@@ -114,6 +128,7 @@ func test_the_scraper_covers_every_script_that_declares_a_boss() -> void:
 			unscraped.append(f)
 	unscraped.sort()
 	var excused: Array = NOT_A_DUNGEON_INSTANCE.keys()
+	excused.append_array(BOSS_ID_ROUTED_AT_RUNTIME.keys())
 	excused.sort()
 	assert_eq(unscraped, excused,
 		("a script under %s declares a boss_id but the scrape below did not capture it, so it is "

@@ -29,16 +29,23 @@ func _init() -> void:
 	overworld_exit_map = "abstract_overworld"
 	unlock_story_flag = "w6_trial_passed"
 
-	## ONE flag for all three trials, deliberately: the gate the Apex will read is "you were tested",
-	## not "you beat the Operator". Which trial you got is not a thing the player chose.
-	defeat_cutscene_flags = ["cutscene_flag_world6_trial_passed"]
+	## ⛔ NO defeat_cutscene_flags, DELIBERATELY. GameLoop._KNOWN_DEFEAT_CUTSCENE_FLAGS' own comment is
+	## the reason: "when a subclass declares defeat_cutscene_flags and X isn't here, the flag gets set
+	## but no gate fires — silent narrative drop", and it requires updating the set AND the gate. There
+	## is no trial cutscene for a gate to return yet, so declaring the flag would set something nothing
+	## reads — the authored-but-unread class. It lands with cowir-story's scene, not before it.
+	##
+	## The MECHANICAL gates are already here and do not need a cutscene: boss_flag_key marks the room
+	## cleared and unlock_story_flag is what a future Apex gate would read.
 
 	## No boss_cutscene_id. DragonCave falls back to the console announce when it is empty, and the
 	## three intros are cowir-story's to author — an id pointing at missing JSON would red
 	## test_orphan_boss_cutscene_registry, and inventing one to look finished is worse than absent.
 
-	# A single chamber, narrower than the Apex and with no chest: whatever you brought is what you
-	# have. Legend: M=wall, .=floor, B=boss, D=exit.
+	# A single chamber, narrower than the Apex. One chest by the door, like the Apex's own "last
+	# kindness" — every layout-driven dungeon keeps at least one T, which
+	# test_the_dungeon_layouts_are_walkable enforces and which my first draft broke by giving the room
+	# no treasure for flavour reasons. Legend: M=wall, .=floor, B=boss, T=treasure, D=exit.
 	floor_layouts = {
 		1: [
 			"MMMMMMMMMMMMMMMMMMMM",
@@ -53,7 +60,7 @@ func _init() -> void:
 			"MMM..............MMM",
 			"MM................MM",
 			"MMMM............MMMM",
-			"MMMMMM...D....MMMMMM",
+			"MMMMMM.T.D....MMMMMM",
 			"MMMMMMMMMMMMMMMMMMMM",
 		],
 	}
