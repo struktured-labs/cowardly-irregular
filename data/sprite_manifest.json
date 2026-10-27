@@ -3853,8 +3853,7 @@
         }
       },
       "tier": "T1",
-      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)",
-      "_META_placeholder": "PLACEHOLDER, reusing masterite_tempo_abstract's sheet. Same precedent as the_calibrant pointing at chancellor_mordaine.png, and canon-true rather than lazy: the Calibrant wears the faces it already spent on you. Without an entry here test_monster_sprite_coverage_derived reds with 'these render as SLIMES'. cowir-sprites owns the bespoke sheet; this is the floor that keeps a sub-final boss from rendering as a slime in the meantime."
+      "source": "DELIBERATE REUSE of masterite_tempo_abstract.png — the Operator is the AUTOMATION trial in the Vertex Antechamber, and one more face of the Calibrant, which wears the masks it has already spent on you. Same call as the_calibrant reusing chancellor_mordaine.png, and modelled on that entry down to this field: tier T1 is the REUSED art's tier, not a generation of mine — no PNG was written or touched. The bespoke sheet is cowir-sprites' call, briefed by this monster's _META_trial line in monsters.json and its bestiary entry; replace this entry when it ships. Registering SOMETHING here is not optional polish: without an entry test_monster_sprite_coverage_derived is right that a sub-final boss renders as a SLIME, so this is the floor, not the plan."
     },
     "the_examiner": {
       "path": "res://assets/sprites/monsters/masterite_curator_abstract.png",
@@ -3880,8 +3879,7 @@
         }
       },
       "tier": "T1",
-      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)",
-      "_META_placeholder": "PLACEHOLDER, reusing masterite_curator_abstract's sheet. Same precedent as the_calibrant pointing at chancellor_mordaine.png, and canon-true rather than lazy: the Calibrant wears the faces it already spent on you. Without an entry here test_monster_sprite_coverage_derived reds with 'these render as SLIMES'. cowir-sprites owns the bespoke sheet; this is the floor that keeps a sub-final boss from rendering as a slime in the meantime."
+      "source": "DELIBERATE REUSE of masterite_curator_abstract.png — the Examiner is the CLASSIC-PLAY trial in the Vertex Antechamber, and one more face of the Calibrant, which wears the masks it has already spent on you. Same call as the_calibrant reusing chancellor_mordaine.png, and modelled on that entry down to this field: tier T1 is the REUSED art's tier, not a generation of mine — no PNG was written or touched. The bespoke sheet is cowir-sprites' call, briefed by this monster's _META_trial line in monsters.json and its bestiary entry; replace this entry when it ships. Registering SOMETHING here is not optional polish: without an entry test_monster_sprite_coverage_derived is right that a sub-final boss renders as a SLIME, so this is the floor, not the plan."
     },
     "the_margin": {
       "path": "res://assets/sprites/monsters/masterite_arbiter_abstract.png",
@@ -3907,8 +3905,7 @@
         }
       },
       "tier": "T1",
-      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)",
-      "_META_placeholder": "PLACEHOLDER, reusing masterite_arbiter_abstract's sheet. Same precedent as the_calibrant pointing at chancellor_mordaine.png, and canon-true rather than lazy: the Calibrant wears the faces it already spent on you. Without an entry here test_monster_sprite_coverage_derived reds with 'these render as SLIMES'. cowir-sprites owns the bespoke sheet; this is the floor that keeps a sub-final boss from rendering as a slime in the meantime."
+      "source": "DELIBERATE REUSE of masterite_arbiter_abstract.png — the Margin is the ONE-SHOT trial in the Vertex Antechamber, and one more face of the Calibrant, which wears the masks it has already spent on you. Same call as the_calibrant reusing chancellor_mordaine.png, and modelled on that entry down to this field: tier T1 is the REUSED art's tier, not a generation of mine — no PNG was written or touched. The bespoke sheet is cowir-sprites' call, briefed by this monster's _META_trial line in monsters.json and its bestiary entry; replace this entry when it ships. Registering SOMETHING here is not optional polish: without an entry test_monster_sprite_coverage_derived is right that a sub-final boss renders as a SLIME, so this is the floor, not the plan."
     }
   },
   "npc_sheets": {
