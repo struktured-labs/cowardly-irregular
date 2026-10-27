@@ -823,9 +823,34 @@ func _resolve_ability_upgrade(combatant: Combatant, action_def: Dictionary) -> S
 		var cand_id: String = str(candidate)
 		if cand_id == "":
 			continue
-		if _combatant_has_learned(combatant, cand_id):
+		if _upgrade_is_usable(combatant, cand_id):
 			chosen = cand_id
 	return chosen
+
+
+## AN UNAFFORDABLE UPGRADE BURNS THE TURN, so affordability belongs to RESOLUTION and not to a
+## guard. `JobSystem.can_use_ability` refuses on `current_mp < cost` and `_execute_ability` simply
+## returns -- no re-selection, no step down to the baseline, turn consumed.
+##
+## The `mp_percent` guard cannot carry this: `_deep_check_rule` sizes it with `ceili` against the
+## job's BASE pool, which is the MINIMUM SUFFICIENT percent and therefore has zero margin by
+## construction (firaga 32 of the Mage's 80 -> exactly 40), while `get_mp_percentage` divides by the
+## LIVE pool. Permanent `max_mp` injuries shrink the live pool and STACK unbounded -- Mana drain
+## wound 5 and Spirit fracture 7, scaled 1 + job_level * 0.05 -- so enough of them put the guard's
+## firing threshold below the spell's cost (cowir-music, 2026-10-27).
+##
+## Asking the SAME function execution asks is the point: it also honours `silence` and the passive
+## `mp_cost_multiplier` through `get_ability_mp_cost`, which a local `current_mp >= mp_cost` would
+## have gotten wrong. Resolution and execution now agree by construction rather than by matching
+## arithmetic in two places.
+func _upgrade_is_usable(combatant: Combatant, ability_id: String) -> bool:
+	if combatant == null or ability_id == "":
+		return false
+	## No JobSystem means no cost data, and an unknown cost is not evidence of unaffordability --
+	## refusing here would silently disable every upgrade, which is the defect this file just fixed.
+	if JobSystem == null:
+		return _combatant_has_learned(combatant, ability_id)
+	return JobSystem.can_use_ability(combatant, ability_id)
 
 
 func _combatant_has_learned(combatant: Combatant, ability_id: String) -> bool:

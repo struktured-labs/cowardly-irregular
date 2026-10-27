@@ -33,6 +33,11 @@ func _fresh_combatant(job_id: String, level: int = 1) -> Combatant:
 	c.job = JobSystem.get_job(job_id)
 	c.job_level = level
 	c.is_alive = true
+	## `current_mp` is a bare `var current_mp: int`, so it starts at 0 while max_mp defaults to 50.
+	## That was invisible while resolution ignored MP -- every arm below was asserting which spell a
+	## character picks when it cannot afford ANY of them. Resolution now asks
+	## JobSystem.can_use_ability, so the fixture has to fund the cast it is asserting.
+	c.current_mp = c.max_mp
 	return c
 
 
@@ -56,6 +61,61 @@ func test_resolver_picks_upgrade_when_learned() -> void:
 	var c := _fresh_combatant("cleric", 6)
 	assert_eq(_ab._resolve_ability_upgrade(c, {"id": "cure", "upgrades": ["cura"]}), "cura",
 		"level 6 cleric has cura (unlocks at 6) → resolver picks it")
+	c.free()
+
+
+## ── Affordability is part of resolution (cowir-main/cowir-music, 2026-10-27) ──────────────
+##
+## An upgrade the character cannot pay for BURNS THE TURN: can_use_ability refuses and
+## _execute_ability returns, with no step down to the baseline. The `mp_percent` guard cannot carry
+## this -- _deep_check_rule sizes it with `ceili` against the job's BASE pool, which is the minimum
+## sufficient percent and so has zero margin (firaga 32 of the Mage's 80 -> exactly 40), while
+## get_mp_percentage divides by the LIVE pool. Permanent `max_mp` injuries shrink the live pool and
+## STACK unbounded, which puts the guard's firing threshold below the spell's cost.
+##
+## Three points rather than one, because the invariant is MONOTONIC STEP-DOWN and a single point
+## cannot tell "picked the right rung" from "picked the only rung it ever picks".
+func test_resolver_steps_down_to_the_rung_it_can_afford() -> void:
+	var c := _fresh_combatant("mage", 26)
+	var row := {"id": "thunder", "upgrades": ["thundara", "thundaga"]}
+
+	c.current_mp = 200
+	assert_eq(_ab._resolve_ability_upgrade(c, row), "thundaga",
+		"ample MP -> the strongest learned rung (thundaga, 32 MP)")
+
+	c.current_mp = 20
+	assert_eq(_ab._resolve_ability_upgrade(c, row), "thundara",
+		"20 MP cannot pay thundaga's 32 -> step down one rung to thundara (16 MP)")
+
+	c.current_mp = 10
+	assert_eq(_ab._resolve_ability_upgrade(c, row), "thunder",
+		"10 MP cannot pay thundara's 16 -> fall back to the baseline thunder (8 MP)")
+	c.free()
+
+
+## The shape the injury mechanic actually produces: the pool SHRANK, so a percentage guard sized
+## against the base pool fires while the absolute cost is out of reach.
+func test_a_shrunken_pool_resolves_to_an_affordable_rung() -> void:
+	var c := _fresh_combatant("mage", 26)
+	var row := {"id": "thunder", "upgrades": ["thundara", "thundaga"]}
+	## Spirit fracture at job_level 26 is int(7 * (1 + 26 * 0.05)) = 16, applied to max_mp.
+	c.max_mp = 80 - 16
+	c.current_mp = int(c.max_mp * 0.40)
+	assert_lt(c.current_mp, 32, "CONTROL: the 40%% guard's threshold is now BELOW firaga/thundaga's cost")
+	assert_gte(c.current_mp, 16, "CONTROL: and still above thundara's, so a step-down has somewhere to go")
+	assert_eq(_ab._resolve_ability_upgrade(c, row), "thundara",
+		"at exactly the guard's firing point on an injured pool the resolver must not pick a 32 MP cast")
+	c.free()
+
+
+## ⚠️ THE REMAINING HOLE, STATED SO IT IS NOT READ AS COVERED: an unaffordable BASELINE still burns
+## the turn. Resolution can only choose among rungs; it cannot invent a cheaper one. Pre-existing,
+## and what the `mp_percent` guards are still for.
+func test_an_unaffordable_baseline_is_still_returned() -> void:
+	var c := _fresh_combatant("mage", 26)
+	c.current_mp = 1
+	assert_eq(_ab._resolve_ability_upgrade(c, {"id": "thunder", "upgrades": ["thundara", "thundaga"]}), "thunder",
+		"nothing is affordable -> the baseline comes back; the mp_percent guard is what prevents the cast")
 	c.free()
 
 
