@@ -20,6 +20,28 @@ const TRIAL_AUTOMATION := "trial_automation"
 const TRIAL_CLASSIC := "trial_classic"
 const TRIAL_BURST := "trial_burst"
 
+## WHICH MONSTER EACH TRIAL FIELDS. The arena asks for this rather than naming a monster, so a
+## renamed or deleted id cannot leave the routing pointing at nothing —
+## test_every_trial_fields_a_monster_that_exists reds instead, and it derives the three ids from
+## this map rather than listing them.
+##
+## ⚠️ MECHANICAL IDS, AND THE DISPLAY NAMES ARE DATA. cowir-story owns what a player reads: the
+## `name`, `description`, `dialogue` and intro cutscene on each monsters.json entry are theirs to
+## rewrite without touching a line of this file. What is NOT theirs to change silently is the
+## mechanic each trial tests, which is why the guard checks the MECHANIC and not the prose.
+const TRIAL_MONSTERS := {
+	TRIAL_AUTOMATION: "the_operator",
+	TRIAL_CLASSIC: "the_examiner",
+	TRIAL_BURST: "the_margin",
+}
+
+
+## The monster a trial fields. Falls back to the classic occupant for the same reason trial_for
+## defaults to TRIAL_CLASSIC: an unrecognised trial should yield a real fight, not an empty arena.
+static func monster_for(trial: String) -> String:
+	return str(TRIAL_MONSTERS.get(trial, TRIAL_MONSTERS[TRIAL_CLASSIC]))
+
+
 ## Below this many one-shots nothing is a build — the formation clears the low-end roster by accident
 ## even after .727 (13 of 50 monsters are still one-shottable by design).
 const BURST_MIN_ONE_SHOTS: int = 8
@@ -65,6 +87,21 @@ static func _is_burst_build(one_shots: int, deliberate: int, battles_won: int) -
 		## No denominator: trust the deliberate count alone rather than dividing by zero.
 		return deliberate >= BURST_MIN_ONE_SHOTS
 	return float(one_shots) / float(battles_won) >= BURST_RATIO
+
+
+## The trial this save has earned, resolved from the live game. Guarded at every step because the
+## arena is instantiable in a test with no GameLoop: a missing director yields "balanced", which
+## trial_for documents as landing on TRIAL_CLASSIC — a real fight rather than no trial at all.
+##
+## ⚠️ IT ASKS THE DIRECTOR RATHER THAN RE-DERIVING THE PLAYSTYLE. CutsceneDirector._detect_playstyle
+## is the only body; world6_chapter3's ending branch reads the same answer. A local copy here would
+## be a second instrument that drifts, and the two would disagree about the same save.
+static func trial_from_game(director, save_system, game_state) -> String:
+	var playstyle: String = "balanced"
+	if director != null and director.has_method("detect_playstyle"):
+		playstyle = str(director.detect_playstyle())
+	var counts: Dictionary = counts_from_save(save_system, game_state)
+	return trial_for(playstyle, int(counts.get("one_shots", 0)), int(counts.get("deliberate", 0)), int(counts.get("battles_won", 0)))
 
 
 ## The counts this save actually carries. Thin on purpose — everything decidable lives in trial_for.

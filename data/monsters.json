@@ -5594,5 +5594,168 @@
     "learns_from": [
       "abilities"
     ]
+  },
+  "the_operator": {
+    "id": "the_operator",
+    "name": "The Operator",
+    "description": "It does not fight you. It runs you, the way you have been running yourself since the first slime, and it is better at it. Every repetition you make, it has already filed.",
+    "level": 26,
+    "boss": true,
+    "meta_enemy": true,
+    "stats": {
+      "max_hp": 22000,
+      "max_mp": 400,
+      "attack": 500,
+      "defense": 330,
+      "magic": 540,
+      "magic_defense": 260,
+      "speed": 22
+    },
+    "abilities": [
+      "exploit_weakness",
+      "masterite_quick_strike",
+      "adapt",
+      "mimic_ability",
+      "masterite_time_tax"
+    ],
+    "exp_reward": 1200,
+    "gold_reward": 1000,
+    "drop_table": [
+      {
+        "item": "elixir",
+        "chance": 1.0
+      },
+      {
+        "item": "calibrant_token",
+        "chance": 0.5
+      }
+    ],
+    "weaknesses": [],
+    "resistances": [
+      "physical"
+    ],
+    "one_shot": {
+      "hp_threshold": 22000,
+      "setup_hint": "It halves the damage of any ability you repeat and learns an element in two casts. Vary everything, or bring one burst large enough that it never gets a second reading.",
+      "reward_item": "boss_trophy"
+    },
+    "learns_from": [
+      "all"
+    ],
+    "adaptation_speed": 2,
+    "counter_abilities": [
+      "counter",
+      "adapt"
+    ],
+    "special_behavior": {
+      "counter_repeated_actions": true
+    },
+    "_META_trial": "TRIAL_AUTOMATION. Mechanics are all EXISTING engine hooks, no new battle code: counter_repeated_actions halves a repeated ability (BattleManager._apply_counter_repeated_damage_mod), adaptation_speed 2 teaches it an element in two casts instead of three, counter_abilities retaliate. A static autobattle script loses damage every round it does not change.",
+    "_META_numbers_provisional": "LEVEL, HP AND REWARDS ARE PROVISIONAL AND struktured's TO RULE, on the same footing as the_calibrant's _META_hp_provisional. Anchored arithmetically, not by taste: single-target 3.0x off magic 540 is 1620, under the squishiest L26 pool (~1904), so it pressures without one-shotting; 22000 HP is ~4.4 rounds at the party's measured ~5000/round. Deliberately NO heavy all_enemies row -- an all_enemies ability is effectively x5 against a five-member party, which is what makes every current dragon unwinnable."
+  },
+  "the_examiner": {
+    "id": "the_examiner",
+    "name": "The Examiner",
+    "description": "It sets a question, waits, and marks the answer. It will not hurry you. It has read every attempt anyone has ever made and it is still, faintly, hoping to be surprised.",
+    "level": 26,
+    "boss": true,
+    "meta_enemy": true,
+    "weakness_cycle": [
+      "fire",
+      "ice",
+      "lightning",
+      "holy"
+    ],
+    "weakness_cycle_turns": 2,
+    "stats": {
+      "max_hp": 20000,
+      "max_mp": 450,
+      "attack": 460,
+      "defense": 380,
+      "magic": 500,
+      "magic_defense": 300,
+      "speed": 20
+    },
+    "abilities": [
+      "masterite_judgment",
+      "masterite_precise_strike",
+      "masterite_audit",
+      "masterite_iron_guard"
+    ],
+    "exp_reward": 1200,
+    "gold_reward": 1000,
+    "drop_table": [
+      {
+        "item": "elixir",
+        "chance": 1.0
+      },
+      {
+        "item": "calibrant_token",
+        "chance": 0.5
+      }
+    ],
+    "weaknesses": [
+      "fire",
+      "ice",
+      "lightning",
+      "holy"
+    ],
+    "resistances": [
+      "physical"
+    ],
+    "one_shot": {
+      "hp_threshold": 20000,
+      "setup_hint": "Its face turns every second round. Read the element it is showing and answer with that one; anything else is resisted. Physical does almost nothing. This is a reading test, not a damage race.",
+      "reward_item": "boss_trophy"
+    },
+    "learns_from": [],
+    "counter_abilities": [],
+    "_META_trial": "TRIAL_CLASSIC, and the DEFAULT route -- TrialRouting.trial_for sends manual, grinder, exploiter and balanced here, so an unrecognised playstyle gets a real fight rather than none. weakness_cycle + weakness_cycle_turns are the mage duel's Prismatic Construct mechanic at boss scale (BattleManager._apply_weakness_cycles), which is the one trial that assumes nothing about how the player plays.",
+    "_META_numbers_provisional": "PROVISIONAL, struktured's to rule. Its damage is deliberately the LOWEST of the three (1.8x single off magic 500 = 900) because the difficulty is carried by the cycle: a wrong element wastes the round. resistances physical forces the answer through magic, which is what makes reading the cycle load-bearing rather than optional."
+  },
+  "the_margin": {
+    "id": "the_margin",
+    "name": "The Margin",
+    "description": "The slack in the numbers. Everything that was left over after the curve was fitted, standing up. It objects to you for the same reason an accountant objects to a rounding error that keeps winning.",
+    "level": 26,
+    "boss": true,
+    "meta_enemy": true,
+    "stats": {
+      "max_hp": 15000,
+      "max_mp": 400,
+      "attack": 680,
+      "defense": 240,
+      "magic": 660,
+      "magic_defense": 180,
+      "speed": 26
+    },
+    "abilities": [
+      "final_compilation",
+      "masterite_execution",
+      "masterite_measured_blow"
+    ],
+    "exp_reward": 1200,
+    "gold_reward": 1000,
+    "drop_table": [
+      {
+        "item": "elixir",
+        "chance": 1.0
+      },
+      {
+        "item": "calibrant_token",
+        "chance": 0.5
+      }
+    ],
+    "weaknesses": [],
+    "resistances": [],
+    "one_shot": {
+      "hp_threshold": 15000,
+      "setup_hint": "It removes one of you per round and it has the thinnest guard of the three. Spend everything at once. This is the fight your build was for.",
+      "reward_item": "calibrant_token"
+    },
+    "learns_from": [],
+    "counter_abilities": [],
+    "_META_trial": "TRIAL_BURST, routed by SaveSystem.one_shot_records rather than by a playstyle label -- TrialRouting requires 8+ one-shots, at least one at rank S or A, and a fifth of all wins. A glass cannon by construction: the LOWEST HP of the three and the highest damage, so it is the one trial a burst build deletes before it acts twice and the one a slow party loses a member per round to.",
+    "_META_numbers_provisional": "PROVISIONAL, struktured's to rule. hp_threshold EQUALS max_hp, the honest form .727 established for cave_rat_king and rogue_lockward -- no padded threshold. 15000 is set so a committed one-shot build can reach it and an ordinary L26 party cannot: the post-.727 formation measured ~12,980 at L40, so clearing 15000 in one execution phase requires a build rather than a level. final_compilation 5.0x off magic 660 is 3300, above four of the five L26 pools, which is the per-round removal that makes the race real."
   }
 }

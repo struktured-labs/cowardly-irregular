@@ -494,6 +494,9 @@ func _generate_map() -> void:
 	spawn_points["vertex_entrance"] = Vector2(19 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 16 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
 	# VertexApex.overworld_exit_spawn is "apex". A missing key left the player on the south entrance.
 	spawn_points["apex"] = Vector2(16 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 4 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
+	# VertexAntechamber.overworld_exit_spawn is "antechamber" — the same lesson as "apex" above:
+	# a missing key leaves the player on the south entrance after clearing the room.
+	spawn_points["antechamber"] = Vector2(22 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 6 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
 
 
 func _char_to_tile_type(char: String) -> int:
@@ -559,6 +562,26 @@ func _setup_transitions() -> void:
 	null_trans.transition_triggered.connect(_on_transition_triggered)
 	transitions.add_child(null_trans)
 	transitions.add_child(vertex_trans)
+
+	# The Vertex Antechamber — the routed trial, on the same gate as the Apex it opens onto. Which
+	# of the three sub-final bosses stands here is decided by TrialRouting from how the save played,
+	# not by anything the player picks at this door.
+	#
+	# ⚠️ NOT YET A GATE ON THE APEX. Requiring the trial before the Apex is the design intent and is
+	# ONE condition below, deliberately not added in the same release: it would change what
+	# test_vertex_apex_exit_lands_at_its_door and the campaign spine walk through, and that wants its
+	# own measurement rather than riding along with the arena's first appearance.
+	if GameState and GameState.is_story_flag_set("world6_chapter3_complete"):
+		var ante_trans = AreaTransitionScript.new()
+		ante_trans.name = "VertexAntechamberEntrance"
+		ante_trans.target_map = "vertex_antechamber"
+		ante_trans.target_spawn = "default"
+		ante_trans.require_interaction = true
+		ante_trans.indicator_text = "Enter the Antechamber"
+		ante_trans.position = Vector2(22 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 6 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
+		_setup_transition_collision(ante_trans, Vector2(TILE_SIZE * 2, TILE_SIZE * 2))
+		ante_trans.transition_triggered.connect(_on_transition_triggered)
+		transitions.add_child(ante_trans)
 
 	# The Vertex Apex — the Calibrant's arena. Appears only once The Question has been asked
 	# (world6_chapter3), so the last room in the game cannot be walked into early.

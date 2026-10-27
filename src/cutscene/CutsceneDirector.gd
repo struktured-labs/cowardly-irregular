@@ -2026,6 +2026,12 @@ func _lead_job_id() -> String:
 	return ""
 
 
+## PUBLIC READ OF THE PRIVATE DETECTOR. TrialRouting needs the same answer world6_chapter3's branch
+## step uses, and a second implementation would drift — `_detect_playstyle` stays the only body.
+func detect_playstyle() -> String:
+	return _detect_playstyle()
+
+
 func _detect_playstyle() -> String:
 	"""Detect the dominant playstyle based on game stats.
 	Returns: 'automator', 'manual', 'grinder', 'exploiter', or 'balanced'."""

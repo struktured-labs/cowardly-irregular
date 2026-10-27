@@ -14,6 +14,7 @@ const DUNGEONS := {
 	"null_chamber": "res://src/maps/dungeons/NullChamber.gd",
 	"suburban_underground": "res://src/maps/dungeons/SuburbanUnderground.gd",
 	"vertex_apex": "res://src/maps/dungeons/VertexApex.gd",
+	"vertex_antechamber": "res://src/maps/dungeons/VertexAntechamber.gd",
 }
 
 
@@ -29,7 +30,9 @@ func _cave(path: String) -> Node:
 
 ## null_chamber and vertex_apex are BOTH W6 abstract (VertexApex's own doc: "stays single-room
 ## BY DESIGN") -- they are deliberately the one pair expected to share a wall tile.
-const EXPECTED_SHARED_WALL_GROUPS := [["null_chamber", "vertex_apex"]]
+## vertex_antechamber joins the pair 2026-10-27: it is the room before the Apex, same W6 abstract
+## world, and sharing their wall tile is the point rather than an oversight.
+const EXPECTED_SHARED_WALL_GROUPS := [["null_chamber", "vertex_apex", "vertex_antechamber"]]
 
 
 func test_each_later_world_dungeon_resolves_its_own_wall_tile() -> void:

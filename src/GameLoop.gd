@@ -66,6 +66,7 @@ const SuburbanUndergroundScript = preload("res://src/maps/dungeons/SuburbanUnder
 const CastleHarmoniaScript = preload("res://src/maps/dungeons/CastleHarmonia.gd")
 const SteampunkMechanismScript = preload("res://src/maps/dungeons/SteampunkMechanism.gd")
 const VertexApexScript = preload("res://src/maps/dungeons/VertexApex.gd")
+const VertexAntechamberScript = preload("res://src/maps/dungeons/VertexAntechamber.gd")
 const ContrarianDepthsScript = preload("res://src/maps/dungeons/ContrarianDepths.gd")
 const SteampunkOverworldScript = preload("res://src/exploration/SteampunkOverworld.gd")
 const SuburbanOverworldScript = preload("res://src/exploration/SuburbanOverworld.gd")
@@ -4606,6 +4607,8 @@ func _start_exploration(force_battle_teardown: bool = false) -> void:
 			exploration_scene = _create_dragon_cave_from_script(SteampunkMechanismScript)
 		"vertex_apex":
 			exploration_scene = _create_dragon_cave_from_script(VertexApexScript)
+		"vertex_antechamber":
+			exploration_scene = _create_dragon_cave_from_script(VertexAntechamberScript)
 		"steampunk_overworld":
 			exploration_scene = SteampunkOverworldScript.new()
 		"suburban_overworld":
