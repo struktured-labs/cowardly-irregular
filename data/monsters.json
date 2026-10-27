@@ -709,7 +709,7 @@
       "poison"
     ],
     "one_shot": {
-      "hp_threshold": 2500,
+      "hp_threshold": 6500,
       "setup_hint": "Stack attack buffs, defer for max AP, then unleash all at once.",
       "reward_item": "boss_trophy"
     },
@@ -5042,7 +5042,7 @@
       "physical"
     ],
     "one_shot": {
-      "hp_threshold": 1740,
+      "hp_threshold": 1340,
       "setup_hint": "Wait for the flank to expose. Steal breaks its guard; Backstab lands the answer. Speed matters more than power.",
       "reward_item": "boss_trophy"
     },
