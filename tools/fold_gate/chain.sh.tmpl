@@ -27,6 +27,23 @@ if pb="$(publish_busy)"; then echo "PUBLISH WAIT EXPIRED after ${pw}s, starting 
 ## reported-not-judged, so a lane that read FREE correctly and started a 250s sweep had a gate
 ## launched into it seconds later. Bounded at 900s and then started anyway — a release must not
 ## hang on one lane's long run, and the note says which choice was made.
+## ⛔ AND box_busy's OWN ARMS, BEFORE THE WAIT BELOW TRUSTS ITS ANSWER. Same reason the runner's
+## arms run further down and the same hole: box_busy is in NEITHER selftest corpus -- the GUT walk
+## skips non-.py by construction and the publish derivation covers publish_all's closure, which
+## never names it -- so until 2026-10-27 nothing but a hand had ever run them. It is the instrument
+## every lane asks before touching the box, and this chain's lane wait is one of its consumers.
+##
+## ⚠️ ITS FAIL-OPEN DIRECTION IS THE SILENT ONE: a broken --others that can only answer FREE
+## restores exactly the overlap the wait was added to prevent, and the chain would look merely fast.
+## Judged, not reported.
+##
+## Safe to run here, measured rather than assumed: mktemp -d under tmp/ with a trap-scoped rm -rf,
+## read-only /proc, kill -0 probes, no git and no godot. A clean run left pids 923 -> 923, zero
+## stand-in survivors and zero temp dirs, and its stand-in is $T/bin/sleep rather than a godot, so
+## the wait below cannot see this selftest's own debris.
+tools/box_busy.sh --selftest > tmp/bbself@NNN@.log 2>&1
+BE=$?; echo "box_busy selftest EC=$BE"; tail -1 tmp/bbself@NNN@.log
+
 others_busy() { local r e=0; r="$(tools/box_busy.sh --others 2>/dev/null)" || e=$?; case "$e" in 0) echo "$r"; return 0 ;; 1) return 1 ;; *) echo "(box_busy --others could not answer, exit $e)"; return 0 ;; esac; }
 ow=0
 while [ "$ow" -lt 900 ]; do ob="$(others_busy)" || break; [ "$ow" -eq 0 ] && echo "waiting for $ob before any engine"; sleep 20; ow=$((ow + 20)); done
@@ -65,6 +82,7 @@ WHY=""
 [ "$IE" -eq 0 ] || WHY="$WHY import"
 [ "$SE" -eq 0 ] && command grep -aq 'VERDICT: PASS' tmp/smoke@NNN@.log || WHY="$WHY smoke"
 [ "$F" = 0 ] && [ "$E" = 0 ] || WHY="$WHY smoke-errors"
+[ "$BE" -eq 0 ] || WHY="$WHY box_busy-selftest"
 [ "$RE" -eq 0 ] || WHY="$WHY runner-selftest"
 [ "$TE" -eq 0 ] || WHY="$WHY selftests"
 [ "$PE" -eq 0 ] || WHY="$WHY sweep"

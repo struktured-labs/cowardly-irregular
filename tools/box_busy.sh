@@ -7,7 +7,8 @@
 #   tools/box_busy.sh --others   exit 0 = another lane has an engine up (count printed) · 1 = none
 #   tools/box_busy.sh --marker   print the BOX_MARKER path every box-protocol script must use
 #   tools/box_busy.sh --roots    print each _detached dir the publish scan reads (exit 1 = none exist)
-#   tools/box_busy.sh --selftest watch each arm flip (exit 0 = all eleven did)
+#   tools/box_busy.sh --selftest watch each arm flip (exit 0 = every arm RAN and held;
+#                                the run prints the count it derived, not a literal)
 #
 # ONE SOURCE. The fold templates used to carry their own copies of the marker path AND their own
 # publish scan, hardcoded to cowir-deploy-wt/tmp/_detached: the single-publisher defect this file
@@ -99,21 +100,42 @@ others() {  # other lanes' engines: reported, not judged
 if [ "${1:-}" = "--selftest" ]; then  # watch the answer flip, so a FREE is never trusted unseen
   mkdir -p "$(dirname "$0")/../tmp"; T="$(mktemp -d "$(dirname "$0")/../tmp/box_busy_selftest.XXXXXX")"; trap 'rm -rf "$T"' EXIT
   fails=0
+  ## ⛔ THE COUNT USED TO BE THE STRING "12/12", WHICH PRINTED ON SUCCESS WHETHER TWELVE ARMS RAN OR
+  ## NONE. I added arm 12 and updated that literal in ONE edit, ran it, and read my own string back
+  ## as proof the arm was wired (@cowir-music, 2026-10-27, on the first run of this selftest by
+  ## anything but my own hand). Arm 12 was in fact reached -- it RED on its first run, which a
+  ## literal cannot fake -- but reach rested on that historical accident rather than on the run.
+  ## `Scripts == authored` applied one level down: count arms as they run, check the derived total,
+  ## print the derived number.
+  ##
+  ## ⚠️ THE UNIT IS AN ARM, NOT AN ASSERTION, AND THAT IS A REAL LIMIT: the 12 arms hold 21 `FAIL:`
+  ## sites, so a check dropped from INSIDE an arm still passes this. Stated rather than implied --
+  ## the grouping into arms is a judgement the output cannot settle, which is half of why the old
+  ## literal went unexamined for so long.
+  arms=0
+  EXPECT_ARMS=12
+  A() { arms=$((arms + 1)); }
+  A  # arm 1  nothing set -> FREE
   BOX_MARKER="$T/m" DEPLOY_DIR="$T/d" FOLD_TREE="$T/none" "$0" >/dev/null || { echo "FAIL: not FREE with nothing set"; fails=1; }
+  A  # arm 2  live marker -> BUSY
   printf 'pid=%s\n' "$$" > "$T/m"
   out="$(BOX_MARKER="$T/m" DEPLOY_DIR="$T/d" FOLD_TREE="$T/none" "$0")"
   case "$out" in "BUSY: fold chain/gate running"*) ;; *) echo "FAIL: a live marker did not read BUSY for THAT reason: $out"; fails=1 ;; esac
+  A  # arm 3  dead marker does not block
   printf 'pid=999999\n' > "$T/m"
   BOX_MARKER="$T/m" DEPLOY_DIR="$T/d" FOLD_TREE="$T/none" "$0" >/dev/null 2>&1 || { echo "FAIL: a dead marker blocked"; fails=1; }
+  A  # arm 4  publish in flight -> BUSY, named
   rm -f "$T/m"; mkdir -p "$T/d/v3.33.0-alpha"; : > "$T/d/v3.33.0-alpha/publish.log"
   out="$(BOX_MARKER="$T/m" DEPLOY_DIR="$T/d" FOLD_TREE="$T/none" "$0")"
   case "$out" in "BUSY: publish in flight: v3.33.0-alpha") ;; *) echo "FAIL: a publish in flight did not read BUSY naming its tag: $out"; fails=1 ;; esac
+  A  # arm 5  dead publish.pid does not block
   echo 999999 > "$T/d/v3.33.0-alpha/publish.pid"
   BOX_MARKER="$T/m" DEPLOY_DIR="$T/d" FOLD_TREE="$T/none" "$0" >/dev/null 2>&1 || { echo "FAIL: a dead publish.pid blocked"; fails=1; }
   ## ARM 6 — THE REGRESSION ARM. DEPLOY_DIR used to name ONE publisher, so a publish from any
   ## other lane's worktree read FREE. This arm takes the GLOB path (DEPLOY_DIR empty) and plants a
   ## marker in a lane that is not the old hardcoded one; it also pins that the lane is NAMED, since
   ## a BUSY you cannot attribute is a BUSY nobody can clear.
+  A  # arm 6  another lane via the GLOB
   mkdir -p "$T/lanes/some-other-lane/tmp/_detached/v3.33.0-alpha"
   : > "$T/lanes/some-other-lane/tmp/_detached/v3.33.0-alpha/publish.log"
   out="$(DEPLOY_DIR= DEPLOY_GLOB="$T/lanes/*/tmp/_detached" BOX_MARKER="$T/m" FOLD_TREE="$T/none" "$0")"
@@ -127,19 +149,23 @@ if [ "${1:-}" = "--selftest" ]; then  # watch the answer flip, so a FREE is neve
     || { echo "FAIL: a FINISHED publish (ec present) still blocked under the glob"; fails=1; }
   ## ARMS 7-10 — the two one-source modes the fold templates call. --publish must see the SAME
   ## lane-glob publish arm 6 sees, and must not see a finished or dead one.
+  A  # arm 7  --publish sees it
   rm -f "$T/lanes/some-other-lane/tmp/_detached/v3.33.0-alpha/publish.ec"
   out="$(DEPLOY_DIR= DEPLOY_GLOB="$T/lanes/*/tmp/_detached" BOX_MARKER="$T/m" FOLD_TREE="$T/none" "$0" --publish)"; e=$?
   { [ "$e" = 0 ] && [ "$out" = "publish in flight: v3.33.0-alpha (from some-other-lane)" ]; } \
     || { echo "FAIL: --publish did not report another lane's publish (ec=$e): $out"; fails=1; }
+  A  # arm 8  --publish ignores a dead pid
   echo 999999 > "$T/lanes/some-other-lane/tmp/_detached/v3.33.0-alpha/publish.pid"
   DEPLOY_DIR= DEPLOY_GLOB="$T/lanes/*/tmp/_detached" BOX_MARKER="$T/m" FOLD_TREE="$T/none" "$0" --publish >/dev/null 2>&1 \
     && { echo "FAIL: --publish reported a publish whose pid is dead"; fails=1; }
   ## ... and --publish ignores the fold marker: the chain asks it while HOLDING that marker.
+  A  # arm 9  --publish ignores the fold marker
   rm -f "$T/lanes/some-other-lane/tmp/_detached/v3.33.0-alpha/publish.pid"
   : > "$T/lanes/some-other-lane/tmp/_detached/v3.33.0-alpha/publish.ec"; printf 'pid=%s\n' "$$" > "$T/m"
   DEPLOY_DIR= DEPLOY_GLOB="$T/lanes/*/tmp/_detached" BOX_MARKER="$T/m" FOLD_TREE="$T/none" "$0" --publish >/dev/null 2>&1 \
     && { echo "FAIL: --publish read the fold marker as a publish (the chain would wait on itself)"; fails=1; }
   ## --marker: the default derives from FOLD_TREE (one literal), and an explicit BOX_MARKER wins.
+  A  # arm 10 --marker derives and is overridable
   out="$(env -u BOX_MARKER FOLD_TREE="$T/ft" "$0" --marker)"
   [ "$out" = "$T/ft/tmp/BOX_BUSY" ] || { echo "FAIL: --marker default not derived from FOLD_TREE: $out"; fails=1; }
   out="$(BOX_MARKER="$T/x" FOLD_TREE="$T/ft" "$0" --marker)"
@@ -147,6 +173,7 @@ if [ "${1:-}" = "--selftest" ]; then  # watch the answer flip, so a FREE is neve
   ## ARM 11 — THE SHIPPED DEFAULT. Arms 1-10 all override DEPLOY_GLOB, so a typo in its default
   ## passed 10/10 while the scan read FREE beside every publish. This arm must run UNOVERRIDDEN to
   ## mean anything: it asks the real filesystem whether the default names at least one real dir.
+  A  # arm 11 the SHIPPED default, unoverridden
   out="$(env -u DEPLOY_DIR -u DEPLOY_GLOB "$0" --roots)" \
     || { echo "FAIL: the shipped DEPLOY_GLOB default names no existing _detached dir (the scan would read FREE beside any publish): $out"; fails=1; }
   ## ... and an existing dir is not enough: a typo'd tmp/_detached -> tmp/detached passed the line
@@ -182,6 +209,7 @@ if [ "${1:-}" = "--selftest" ]; then  # watch the answer flip, so a FREE is neve
   ## /usr/lib/cargo/bin/coreutils/sleep, including this file's own waiters, so the arm read
   ## "engines up: 4" with no stand-in started at all. The basename stays `sleep` because uutils is a
   ## multicall binary that dispatches on argv[0].
+  A  # arm 12 --others, both directions
   mkdir -p "$T/bin"; cp "$(readlink -f /usr/bin/sleep)" "$T/bin/sleep"
   STANDIN="$T/bin/sleep"
   out="$(BOX_BUSY_ENGINE="$STANDIN" DEPLOY_DIR="$T/d" BOX_MARKER="$T/m" FOLD_TREE="$T/none" "$0" --others)"; e=$?
@@ -195,7 +223,9 @@ if [ "${1:-}" = "--selftest" ]; then  # watch the answer flip, so a FREE is neve
   out="$(BOX_BUSY_ENGINE="$STANDIN" DEPLOY_DIR="$T/d" BOX_MARKER="$T/m" FOLD_TREE="$T/none" "$0" --others)"; e=$?
   [ "$e" = 1 ] || { echo "FAIL: --others still busy after the stand-in engine exited: $out"; fails=1; }
 
-  [ "$fails" = 0 ] && echo "box_busy selftest: 12/12 arms flipped as expected"
+  [ "$arms" = "$EXPECT_ARMS" ] \
+    || { echo "FAIL: $arms of $EXPECT_ARMS arms ran — one was dropped, never wired, or an earlier arm exited"; fails=1; }
+  [ "$fails" = 0 ] && echo "box_busy selftest: $arms/$EXPECT_ARMS arms ran, every assertion held"
   exit "$fails"
 fi
 
