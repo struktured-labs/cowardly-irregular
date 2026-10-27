@@ -1491,18 +1491,20 @@ func _create_white_mage_default_script(character_id: String) -> Dictionary:
 			{
 				"conditions": [
 					{"type": "hp_percent", "op": "<=", "value": 30},
-					{"type": "mp_percent", "op": ">=", "value": 10}
+					{"type": "mp_percent", "op": ">=", "value": 20}
 				],
-				"actions": [{"type": "ability", "id": "cure", "target": "self"}]
+				# cura is 12 MP of the Cleric's base 70, so the guard must clear 18%.
+				"actions": [{"type": "ability", "id": "cure", "target": "self", "upgrades": ["cura"]}]
 			},
 			# Proactive: any ally (including self) at or below 60% HP — heal before it gets
 			# critical. 60% gives a two-turn buffer against average W1 enemy damage.
 			{
 				"conditions": [
 					{"type": "ally_hp_percent", "op": "<=", "value": 60},
-					{"type": "mp_percent", "op": ">=", "value": 10}
+					{"type": "mp_percent", "op": ">=", "value": 20}
 				],
-				"actions": [{"type": "ability", "id": "cure", "target": "lowest_hp_ally"}]
+				# Same ladder as the self-heal row; cure heals 650, cura 1500.
+				"actions": [{"type": "ability", "id": "cure", "target": "lowest_hp_ally", "upgrades": ["cura"]}]
 			},
 			# Self at or below 60% but MP is gone: use a potion — Cleric can't help others
 			# if she drops first
@@ -1610,16 +1612,18 @@ func _create_black_mage_default_script(character_id: String) -> Dictionary:
 			{
 				"conditions": [
 					{"type": "enemy_count", "op": ">=", "value": 2},
-					{"type": "mp_percent", "op": ">=", "value": 25}
+					{"type": "mp_percent", "op": ">=", "value": 40}
 				],
-				"actions": [{"type": "ability", "id": "fire", "target": "lowest_magic_defense_enemy"}]
+				# firaga is 32 MP of the Mage's base 80, so the guard must clear 40%.
+				"actions": [{"type": "ability", "id": "fire", "target": "lowest_magic_defense_enemy", "upgrades": ["fira", "firaga"]}]
 			},
 			# Single enemy, good MP: Thunder for solid single-target damage
 			{
 				"conditions": [
-					{"type": "mp_percent", "op": ">=", "value": 20}
+					{"type": "mp_percent", "op": ">=", "value": 40}
 				],
-				"actions": [{"type": "ability", "id": "thunder", "target": "lowest_magic_defense_enemy"}]
+				# Ascending order is load-bearing: the resolver keeps the LAST learned candidate.
+				"actions": [{"type": "ability", "id": "thunder", "target": "lowest_magic_defense_enemy", "upgrades": ["thundara", "thundaga"]}]
 			},
 			# MP depleted: basic attack rather than deferring dead weight
 			{
