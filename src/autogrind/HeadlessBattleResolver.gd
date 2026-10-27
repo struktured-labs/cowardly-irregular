@@ -767,9 +767,35 @@ func _select_enemy_action(enemy) -> Dictionary:
 		if atk_ability != "":
 			var mp_cost = _get_ability_mp_cost(atk_ability)
 			if enemy.current_mp >= mp_cost:
-				return {"type": "ability", "ability_id": atk_ability, "targets": [focus]}
+				return {"type": "ability", "ability_id": atk_ability, "targets": _foe_ability_targets(atk_ability, focus, alive_players)}
 
 	return {"type": "attack", "target": focus}
+
+
+## ⛔ THIS FILE BUILT A ONE-ELEMENT TARGET LIST WHATEVER `target_type` SAID, SO EVERY ENEMY AoE HIT
+## ONE PARTY MEMBER INSTEAD OF THE PARTY. Live expands it — `BattleManager._utility_targets` returns
+## `alive_enemies.duplicate()` for `all_enemies` — and the foe side here never did. Player AoE was
+## unaffected because `AutobattleSystem` hands this engine a pre-expanded list; only foe actions are
+## built in-file (cowir-music, 2026-10-27).
+##
+## 🚨 NOT A MEASUREMENT BUG. `GameLoop:6707` runs this resolver for the player-facing AUTOGRIND path,
+## so a grind against any AoE carrier was easier than the same fight live: firaga, void_breath and
+## dark_matter are all `all_enemies`, and Mordaine and the Calibrant carry three 5.0x ones each.
+##
+## ⚠️ ONLY THE `all_enemies` ARM IS MIRRORED, AND THAT IS DELIBERATE RATHER THAN PARTIAL:
+## `_find_attack_ability` selects only `magic`/`physical` rows, so a foe's `all_allies`/`self`
+## support never reaches here, and the self-heal above returns its own target. Widening this to
+## live's full table would add arms nothing can select.
+func _foe_ability_targets(ability_id: String, focus, alive_players: Array) -> Array:
+	var js = _get_autoload("JobSystem")
+	if js == null or not js.has_method("get_ability"):
+		return [focus]
+	var ability: Dictionary = js.get_ability(ability_id)
+	## From the foe's seat the PARTY are its enemies, which is why `all_enemies` resolves to the
+	## living players rather than to the monster's own side.
+	if str(ability.get("target_type", "")) == "all_enemies":
+		return alive_players.duplicate() if not alive_players.is_empty() else [focus]
+	return [focus]
 
 
 ## Twin of BattleManager._find_taunter. provoke writes `taunted_<caster>` onto the victim and live's
