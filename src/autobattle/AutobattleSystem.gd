@@ -1452,7 +1452,9 @@ func _create_fighter_default_script(character_id: String) -> Dictionary:
 			# Power Strike to finish off a wounded enemy
 			{
 				"conditions": [
-					{"type": "enemy_hp_percent", "op": "<", "value": 40}
+					{"type": "enemy_hp_percent", "op": "<", "value": 40},
+					# 8 MP of the Fighter's base 30 pool.
+					{"type": "mp_percent", "op": ">=", "value": 27}
 				],
 				"actions": [{"type": "ability", "id": "power_strike", "target": "lowest_hp_enemy"}]
 			},
@@ -1589,14 +1591,18 @@ func _create_thief_default_script(character_id: String) -> Dictionary:
 				"conditions": [
 					{"type": "turn", "op": "<=", "value": 1},
 					{"type": "enemy_hp_percent", "op": ">", "value": 75},
-					{"type": "hp_percent", "op": ">", "value": 70}
+					{"type": "hp_percent", "op": ">", "value": 70},
+					# 4 MP of the Rogue's base 40 pool.
+					{"type": "mp_percent", "op": ">=", "value": 10}
 				],
 				"actions": [{"type": "ability", "id": "steal", "target": "highest_hp_enemy"}]
 			},
 			# Backstab: high-damage hit while the enemy is still mostly healthy
 			{
 				"conditions": [
-					{"type": "enemy_hp_percent", "op": ">", "value": 60}
+					{"type": "enemy_hp_percent", "op": ">", "value": 60},
+					# 14 MP of the Rogue's base 40 pool.
+					{"type": "mp_percent", "op": ">=", "value": 35}
 				],
 				"actions": [{"type": "ability", "id": "backstab", "target": "lowest_hp_enemy"}]
 			},
@@ -1692,11 +1698,12 @@ func _create_bard_default_script(character_id: String) -> Dictionary:
 				"actions": [{"type": "ability", "id": "lullaby", "target": "lowest_hp_enemy"}]
 			},
 			# Inspiring Melody: restore MP when any ally is running low (below 30%) and
-			# the Bard still has enough MP to cast it (20%+ own MP)
+			# the Bard can actually pay for it -- 15 MP of its base 65 pool is 24%, not the 20%
+			# this rule asked for, so the guard was 4 points short of its own stated intent.
 			{
 				"conditions": [
 					{"type": "ally_mp_percent", "op": "<", "value": 30},
-					{"type": "mp_percent", "op": ">=", "value": 20}
+					{"type": "mp_percent", "op": ">=", "value": 24}
 				],
 				"actions": [{"type": "ability", "id": "inspiring_melody", "target": "all_allies"}]
 			},

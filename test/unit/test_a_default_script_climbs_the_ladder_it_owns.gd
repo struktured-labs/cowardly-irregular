@@ -174,35 +174,67 @@ func test_no_row_with_an_authored_ladder_can_fizzle_its_turn() -> void:
 	assert_gt(checked, 0, "CONTROL: no default-script rule authors a ladder, so this arm judged nothing")
 
 
-## A SEPARATE, PRE-EXISTING DEFECT, RATCHETED RATHER THAN FIXED HERE. Driving `validate_rule` over
-## EVERY default rule reds on seven rows this change never touched -- measured on the tree before it:
-##   fighter 2     power_strike 8 MP (27% of base) unguarded
-##   cleric 0/1/2  `esuna` is not in the Cleric's level-1 kit
-##   rogue 2/3     steal 4 MP, backstab 14 MP (35%) unguarded
-##   bard 3        `inspiring_melody` not in the level-1 kit, and 15 MP unguarded
-## `test_autobattle_rule_templates_regression` enforces this exact contract on the PRESET CATALOG in
-## `data/`, and nothing enforced it on the built-in defaults in code -- so the defect that lint
-## exists to prevent sat in the scripts every fresh character actually gets.
+## THE REMAINING FIZZLE DEBT, AFTER TRIAGING WHAT "FIZZLE" ACTUALLY MEANS PER ROW.
 ##
-## MEMBERSHIP, NOT A COUNT. A pinned 7 says nothing about WHICH seven, and right-count-wrong-
-## membership is the shape of my own retractions. A subset check lets a fix pass for free, reds with
-## the offender's name when a new one lands, and leaves the debt readable.
-const KNOWN_FIZZLE_DEBT: Array[String] = [
-	"fighter:2", "cleric:0", "cleric:1", "cleric:2", "rogue:2", "rogue:3", "bard:3",
-]
+## v3.33.729 ratcheted seven offenders. Four were real -- a costed rule with no sufficient
+## `mp_percent` guard burns the turn, because `_action_can_be_attempted` refuses an UNLEARNED
+## ability but says nothing about an unaffordable one, and `_rule_is_performable` deliberately lets
+## a transient MP block still match so the player's authored priority survives and the log names the
+## reason. Sized against each ability's real cost over its job's base pool, and fixed here:
+##   fighter 2   power_strike      8 MP / 30  -> added mp_percent >= 27
+##   rogue 2     steal             4 MP / 40  -> added mp_percent >= 10
+##   rogue 3     backstab         14 MP / 40  -> added mp_percent >= 35
+##   bard 3      inspiring_melody 15 MP / 65  -> 20 raised to 24
+## The Bard's is the one worth naming: that guard was authored DELIBERATELY, with a comment saying
+## "the Bard still has enough MP to cast it (20%+ own MP)", and 15 of 65 is 24%. It was four points
+## short of its own stated intent -- a guard that exists and does not cover its cost reads, to every
+## later reader, as a question already settled.
+##
+## ⛔ THE OTHER THREE ARE NOT FIZZLES AT ALL, AND THE VALIDATOR'S OWN MESSAGE IS WHAT MISLED ME.
+## It reports `esuna` as "not in cleric's level-1 kit" under a lint whose stated reason is "would
+## fizzle-consume the turn" -- but an unlearned ability cannot fizzle: `_action_can_be_attempted`
+## returns false for it, so the rule is SKIPPED and the next rule runs. The message is right about
+## the policy (a default script should be level-1-safe) and wrong about the mechanism, which is why
+## I nearly "fixed" three rules whose runtime behaviour is already correct.
+##
+## 🔑 Kept as debt rather than silenced: at level 1 those rules are inert, and the honest repair is
+## an item-based baseline with the late ability as its upgrade -- a script redesign, not a guard
+## value, and not this change.
+##
+## ⛔ RENAMED FROM `KNOWN_FIZZLE_DEBT`, BECAUSE NOT ONE REMAINING ENTRY IS A FIZZLE. The old name
+## described the four rules that have since been fixed, and a constant whose name outlives its
+## contents is how the next reader excuses the wrong thing.
+const KNOWN_NOT_IN_KIT_DEBT: Array[String] = ["cleric:0", "cleric:1", "cleric:2", "bard:3"]
+
+## The text a fizzle error carries, so an excused ADDRESS cannot smuggle one in.
+const FIZZLE_MARKER := "fizzle-consume"
 
 
 func test_the_default_scripts_fizzle_debt_does_not_grow() -> void:
 	var offenders: Array[String] = []
+	var why: Dictionary = {}
 	for job in STARTER_JOBS:
 		var script: Dictionary = AutobattleSystem.create_default_character_script(job)
 		var rules: Array = script.get("rules", []) as Array
 		for i in range(rules.size()):
-			if AutobattleSystem.validate_rule(rules[i] as Dictionary, job).size() > 0:
-				offenders.append("%s:%d" % [job, i])
+			var errors: Array = AutobattleSystem.validate_rule(rules[i] as Dictionary, job)
+			if errors.size() > 0:
+				var key: String = "%s:%d" % [job, i]
+				offenders.append(key)
+				why[key] = ", ".join(errors)
+	## ⛔ THE MESSAGE CARRIES THE ERROR, NOT JUST THE ADDRESS. The first version named only `bard:3`,
+	## and that rule had TWO errors -- I fixed its MP guard, left its not-in-kit error, and dropped it
+	## from the list below. A red naming a location tells you a rule still offends; only the text says
+	## whether the thing YOU changed is the thing still wrong.
 	for o in offenders:
-		assert_true(o in KNOWN_FIZZLE_DEBT,
-			"NEW fizzle violation at %s -- a default rule that cannot pay for itself burns the turn" % o)
+		assert_true(o in KNOWN_NOT_IN_KIT_DEBT,
+			"NEW violation at %s: %s" % [o, str(why.get(o, "(no text)"))])
+		## ⛔ THE LIST EXCUSES A CLASS, NOT AN ADDRESS -- and that distinction is here because my own
+		## first version got it wrong. `bard:3` carried TWO errors; I fixed its MP guard, left its
+		## not-in-kit error, and an address-only allowlist would have gone on excusing a real fizzle
+		## at that address forever. No excused entry may carry a fizzle.
+		assert_false(FIZZLE_MARKER in str(why.get(o, "")),
+			"%s is excused for its level-1 kit, but it is now ALSO fizzling: %s" % [o, str(why.get(o, ""))])
 	## The other direction, so the list cannot quietly describe rules that no longer exist.
 	assert_gt(offenders.size(), 0,
 		"CONTROL: validate_rule found nothing anywhere, so the subset check above passed vacuously")
