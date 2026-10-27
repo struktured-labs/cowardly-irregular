@@ -23,6 +23,15 @@ pw=0
 while [ "$pw" -lt 3600 ]; do pb="$(publish_busy)" || break; [ "$pw" -eq 0 ] && echo "waiting for publish $pb before any engine"; sleep 20; pw=$((pw + 20)); done
 if pb="$(publish_busy)"; then echo "PUBLISH WAIT EXPIRED after ${pw}s, starting beside publish $pb"; elif [ "$pw" -gt 0 ]; then echo "publish cleared after ${pw}s"; fi
 
+## And the same courtesy to LANES, which this chain used to deny them: box_busy's others() was
+## reported-not-judged, so a lane that read FREE correctly and started a 250s sweep had a gate
+## launched into it seconds later. Bounded at 900s and then started anyway — a release must not
+## hang on one lane's long run, and the note says which choice was made.
+others_busy() { local r e=0; r="$(tools/box_busy.sh --others 2>/dev/null)" || e=$?; case "$e" in 0) echo "$r"; return 0 ;; 1) return 1 ;; *) echo "(box_busy --others could not answer, exit $e)"; return 0 ;; esac; }
+ow=0
+while [ "$ow" -lt 900 ]; do ob="$(others_busy)" || break; [ "$ow" -eq 0 ] && echo "waiting for $ob before any engine"; sleep 20; ow=$((ow + 20)); done
+if ob="$(others_busy)"; then echo "LANE WAIT EXPIRED after ${ow}s, starting beside $ob"; elif [ "$ow" -gt 0 ]; then echo "lanes cleared after ${ow}s"; fi
+
 XDG_DATA_HOME=$PWD/tmp/xdg timeout 900 godot --headless --audio-driver Dummy --import --quit > tmp/import@NNN@.log 2>&1
 IE=$?; echo "import EC=$IE"
 
