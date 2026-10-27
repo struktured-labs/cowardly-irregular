@@ -226,7 +226,63 @@ func _build_party(gl, want_jobs: PackedStringArray, level: int, gear: bool) -> A
 		c.is_alive = true
 		party.append(c)
 	gl.party.clear()
+	_equip_lens(party)
 	return party
+
+
+## BAL_LENS=<axis>[:<job>] equips one Lens, because the party this harness built was MISSING THE
+## GAME'S OWN ANSWER to the thing I was measuring. `Combatant.take_damage` carries a Warden Lens
+## lethal floor -- one survived killing blow per battle, from any HP -- and the first fifteen-boss
+## sweep ran with no Lens at all while printing "[LensSystem] Loaded 4 lenses" at startup. Four
+## bosses measured 0/20 against a party that cannot hold the mechanic the design points at.
+##
+## ⛔ EXACTLY ONE LENS EXISTS PER AXIS. `LensSystem.holder_of` returns a single holder and
+## `equip_lens` MOVES it rather than duplicating, so "pooled" (struktured 2026-07-27) means
+## unbound, not copyable: one party member carries the floor, not five. Equipping it to a second
+## member silently takes it off the first, which is why this helper equips ONE.
+##
+## The key is `combatant_name.to_lower().replace(" ", "_")`, which is what take_damage's floor and
+## get_lens_meta_effects both read -- derived from the consumer rather than guessed.
+func _equip_lens(party: Array) -> void:
+	var spec := _env("BAL_LENS", "")
+	if spec == "":
+		return
+	var bits := spec.split(":", false)
+	var axis: String = str(bits[0])
+	var want_job: String = str(bits[1]) if bits.size() > 1 else ""
+	var ls: Node = root.get_node_or_null("LensSystem")
+	var gs: Node = root.get_node_or_null("GameState")
+	if ls == null or gs == null:
+		print("[BAL] BAL_LENS=%s asked for but LensSystem/GameState absent — NO lens equipped" % spec)
+		_fail += 1
+		return
+	if not (axis in ls.all_axes()):
+		print("[BAL] BAL_LENS names axis '%s', which is not one of %s" % [axis, str(ls.all_axes())])
+		_fail += 1
+		return
+	if not (axis in gs.owned_lenses):
+		gs.owned_lenses.append(axis)
+	var target = null
+	for c in party:
+		var jid: String = str((c.job as Dictionary).get("id", "")) if c.job is Dictionary else ""
+		if want_job == "" or jid == want_job:
+			target = c
+			break
+	if target == null:
+		print("[BAL] BAL_LENS wanted job '%s', which is not in this party" % want_job)
+		_fail += 1
+		return
+	var key: String = str(target.combatant_name).to_lower().replace(" ", "_")
+	if not ls.equip_lens(key, axis):
+		print("[BAL] equip_lens(%s, %s) REFUSED — the lens is not equipped, so this run proves nothing" % [key, axis])
+		_fail += 1
+		return
+	## Read it back through the consumer's own accessor rather than trusting the setter's bool.
+	var me: Dictionary = ls.get_lens_meta_effects(key)
+	print("[BAL] lens %s -> %s (%s)  meta_effects=%s" % [axis, target.combatant_name, key, str(me)])
+	if me.is_empty():
+		print("[BAL] the lens equipped but get_lens_meta_effects(%s) is EMPTY — the floor would not fire" % key)
+		_fail += 1
 
 
 func _free_party(party: Array) -> void:
