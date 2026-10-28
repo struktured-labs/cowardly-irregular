@@ -249,8 +249,20 @@ func _selection_phase() -> Array[Dictionary]:
 	_rounds_since_group_attack += 1
 
 	# Try group attack first (cooldown, AP check, formation match)
+	## ⛔ _try_group_attack LANDS ITS DAMAGE HERE, IN SELECTION — the action it returns is a
+	## `group_done` marker whose execute arm is `pass`. So `_note_first_enemy_hp_loss`, which only
+	## runs around `_execute_action`, captured its hp_before AFTER the field was already dead and
+	## left `_first_damage_round` at -1: a pooled wipe scored NOT a one-shot, and
+	## `_grant_one_shot_trophies` never ran for it. Same hole as BattleManager's (fixed in the same
+	## change), so this is parity, not a divergence — and the party's bank-then-strike pillar is
+	## exactly how a player sets a one-shot up.
+	var _hp_before_group: Dictionary = {}
+	for e in _enemy_party:
+		if is_instance_valid(e) and e.is_alive:
+			_hp_before_group[e] = e.current_hp
 	var group_action = _try_group_attack()
 	if not group_action.is_empty():
+		_note_first_enemy_hp_loss(_hp_before_group)
 		actions.append(group_action)
 		# Group attack consumes all players' turns — skip to enemies
 		for enemy in _enemy_party:
