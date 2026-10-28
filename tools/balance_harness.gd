@@ -690,8 +690,20 @@ func _print_fire_counts(path: String, cids: Array) -> void:
 		for i in range(n):
 			parts.append("r%d=%d" % [i, int(fired.get(i, 0))])
 		var note: String = ""
+		## ⛔ THE DEGENERATE CASE IS THE ONE THAT LOOKS LIKE DATA. A path whose only firing row is
+		## its `always` catch-all measured the FALLBACK, and every path has one, so three columns
+		## can be three names for the same behaviour and nothing in a win rate says so. Measured on
+		## the Calibrant: the engine's own automatic group attack (_try_group_attack runs BEFORE any
+		## rule is consulted, and a formation special has no enemy-count gate) consumes the whole
+		## party's AP every cooldown window, so no AP-gated row above 1 can ever reach its bank.
+		var only_catch_all: bool = not fired.is_empty() and n > 1
+		for i in range(n - 1):
+			if int(fired.get(i, 0)) > 0:
+				only_catch_all = false
 		if turns > 0 and fired.is_empty():
 			note = "   ** NO RULE EVER FIRED — this row measured the default plain attack **"
+		elif only_catch_all:
+			note = "   ** ONLY THE CATCH-ALL FIRED — this row measured the fallback, not the path **"
 		elif turns > 0 and int(fired.get(0, 0)) == 0 and path == "oneshot":
 			note = "   ** setup_complete NEVER HELD — read the valve row (r1), not the label **"
 		print("[BAL]   %-10s turns=%-5d %s%s" % [str(cid), turns, " ".join(parts), note])
