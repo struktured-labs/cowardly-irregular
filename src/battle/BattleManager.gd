@@ -4376,6 +4376,26 @@ func _execute_group_action(action: Dictionary) -> void:
 	# The same table the command menu gates these rows on, not a second copy of its numbers
 	var ap_cost: int = int(GROUP_AP_COST.get(group_type, 1))
 
+	## ⛔ THE ONE-SHOT SYSTEM WAS BLIND TO THE PARTY'S OWN ALPHA STRIKE. `_record_first_damage` has
+	## three call sites — _execute_attack, _execute_physical_ability, _execute_magic_ability — and
+	## all NINE `take_damage` sites in the three group paths below call the combatant directly: one
+	## in _execute_physical_group, one in _execute_combo_magic, SEVEN across the six formation
+	## specials. (Counted per function boundary. A first pass read "seven" from a 120-line window
+	## over a 170-line function and cut three of the formation sites off the end — the count a
+	## window produces is a fact about the window.) So
+	## a party that banked AP for a round and then wiped the field with one All-Out Attack left
+	## `_first_damage_phase` at -1, and `_check_one_shot` returns on that sentinel before it reaches
+	## its own `all_dead` test. No rank, no 3.0x S-rank EXP, no trophy — for the most canonical
+	## one-shot the game has, and at exactly the one setup turn `_get_one_shot_rank` calls S.
+	## Measured per group TYPE rather than per hit because the three paths land damage differently
+	## (one target loop each, plus the formation specials' six shapes) and the recorder is
+	## idempotent anyway: one HP-loss observation around the dispatch answers for all four.
+	## Snapshot AFTER the alive filter, so a group action that finds nothing alive records nothing.
+	var _hp_before_group: Dictionary = {}
+	for e in alive_enemies:
+		if is_instance_valid(e):
+			_hp_before_group[e] = e.current_hp
+
 	if group_type == "combo_magic":
 		_execute_combo_magic(participants, alive_enemies, ap_cost)
 	elif group_type == "formation":
@@ -4383,6 +4403,13 @@ func _execute_group_action(action: Dictionary) -> void:
 		_execute_formation_special(participants, alive_enemies, formation_id)
 	else:
 		_execute_physical_group(participants, alive_enemies, group_type, ap_cost)
+
+	## All three dispatches above are synchronous (zero `await` between them and here), so this
+	## reads post-damage HP rather than a value a coroutine has not written yet.
+	for e in _hp_before_group:
+		if is_instance_valid(e) and int(e.current_hp) < int(_hp_before_group[e]):
+			_record_first_damage()
+			break
 
 	# --- Vulnerability Window: all participants become exposed ---
 	_apply_vulnerability_window(participants)
