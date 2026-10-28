@@ -567,10 +567,9 @@ func _setup_transitions() -> void:
 	# of the three sub-final bosses stands here is decided by TrialRouting from how the save played,
 	# not by anything the player picks at this door.
 	#
-	# ⚠️ NOT YET A GATE ON THE APEX. Requiring the trial before the Apex is the design intent and is
-	# ONE condition below, deliberately not added in the same release: it would change what
-	# test_vertex_apex_exit_lands_at_its_door and the campaign spine walk through, and that wants its
-	# own measurement rather than riding along with the arena's first appearance.
+	# This door is also the Apex's signpost, which is why the gate below can be a plain absence: at
+	# chapter3 the Antechamber is the ONLY way forward, and the Apex appears beside it once the trial
+	# is passed. One open door at every moment, so a gated Apex can never read as a dead end.
 	if GameState and GameState.is_story_flag_set("world6_chapter3_complete"):
 		var ante_trans = AreaTransitionScript.new()
 		ante_trans.name = "VertexAntechamberEntrance"
@@ -583,9 +582,16 @@ func _setup_transitions() -> void:
 		ante_trans.transition_triggered.connect(_on_transition_triggered)
 		transitions.add_child(ante_trans)
 
-	# The Vertex Apex — the Calibrant's arena. Appears only once The Question has been asked
-	# (world6_chapter3), so the last room in the game cannot be walked into early.
-	if GameState and GameState.is_story_flag_set("world6_chapter3_complete"):
+	# The Vertex Apex — the Calibrant's arena. Needs The Question asked (world6_chapter3) AND a trial
+	# passed. One Antechamber victory writes TWO DIFFERENT NAMES through one spec (DragonCave:845-851,
+	# applied by GameLoop on victory only): unlock_story_flag "w6_trial_passed" into story_flags, and
+	# boss_flag_key "vertex_antechamber_cleared" into game_constants["dungeon_flags"]. Different names
+	# in different namespaces, so is_story_flag_set's union does NOT make one answer for the other —
+	# EITHER is accepted here deliberately, because this is the gate in front of the game's ending and
+	# a save carrying one name and not the other would softlock with no door and no explanation.
+	if GameState and GameState.is_story_flag_set("world6_chapter3_complete") \
+			and (GameState.is_story_flag_set("w6_trial_passed") \
+				or GameState.is_story_flag_set("vertex_antechamber_cleared")):
 		var apex_trans = AreaTransitionScript.new()
 		apex_trans.name = "VertexApexEntrance"
 		apex_trans.target_map = "vertex_apex"
