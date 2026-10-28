@@ -23,10 +23,22 @@ const GRIND := "res://src/autogrind/HeadlessBattleResolver.gd"
 const DECIDER := "Model a passive when it moves the EXPECTATION of what the grind reports; declare it when it only moves the SPREAD. The answer decides how much of the passive system the resolver must mirror, which is why this is unscoped rather than backlogged."
 
 ## The 12 distinct stat_mods keys authored today. A thirteenth means the ask got bigger.
+## ⛔ magic_defense_multiplier (2026-10-28) ANSWERS THIS FILE'S OWN DECIDER WITH A BIGGER GAP THAN
+## ITSELF. By the rule above it should be MODELLED — it moves the expectation, not the spread, since
+## magical damage is what the dragons and both finales deal. It cannot be, and the key is not why:
+## THIS RESOLVER NEVER READS magic_defense FOR DAMAGE AT ALL. `is_magical`, `is_magic`, `magical`
+## and `target.magic_defense` each occur ZERO times in it; `:1058` and `:2225` divide every hit,
+## magical or physical, by `defense`, while live selects magic_defense at BattleManager:6391. So the
+## resolver maintains a magic_defense stat it buffs (`magic_defense_up`, `:1294`) and debuffs
+## (`Soul Sap`, `:1854`) and never consults — and since mdef runs about half of def, it UNDERSTATES
+## magical damage against the live engine. Declared here rather than modelled because the fix is a
+## branch in the damage formula, which changes grind difficulty and needs its own measurement and
+## Carmelo's sign-off. Same family as the foe-AoE gap fixed in .734, one stat over.
 const KNOWN_STAT_MODS := [
 	"attack_multiplier", "crit_chance", "crit_damage_bonus", "defense_multiplier",
-	"evasion", "healing_multiplier", "magic_multiplier", "max_hp_multiplier",
-	"max_mp_multiplier", "mp_cost_multiplier", "speed_multiplier", "steal_chance",
+	"evasion", "healing_multiplier", "magic_defense_multiplier", "magic_multiplier",
+	"max_hp_multiplier", "max_mp_multiplier", "mp_cost_multiplier", "speed_multiplier",
+	"steal_chance",
 ]
 
 
