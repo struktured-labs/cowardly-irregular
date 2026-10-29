@@ -63,6 +63,10 @@ const MAKE_SH := "res://tools/fold_gate/make.sh"
 const RUNNER_SH := "res://tools/run_tests.sh"
 const ASSIGN := "BattleManager.current_state = "
 const LITERAL := "BattleManager.current_state = BattleManager.BattleState."
+## A file that hands its teardown to the shared guard DOES restore, through a call this text sweep
+## cannot see — the exemption is grounded by the runtime arm below, not by the filename.
+const GUARD_PRELOAD := 'preload("res://test/unit/helpers/battle_state.gd")'
+const GUARD_RESTORE := ".restore()"
 
 
 func _test_files() -> Array[String]:
@@ -106,10 +110,28 @@ func test_files_that_set_autoload_battle_state_also_restore_it() -> void:
 		var src := FileAccess.get_file_as_string("%s/%s" % [TEST_DIR, f])
 		if src == "" or not src.contains(ASSIGN):
 			continue
+		if src.contains(GUARD_PRELOAD) and src.contains(GUARD_RESTORE):
+			continue
 		if src.count(ASSIGN) == src.count(LITERAL):
 			offenders.append(f)
 	assert_eq(offenders, [] as Array[String],
 		"these files set the BattleManager AUTOLOAD's state to a literal and never restore a saved value, so it leaks into every later test file: %s" % str(offenders))
+
+
+func test_the_shared_guard_really_puts_current_state_back() -> void:
+	## ⛔ WHAT THE EXEMPTION ABOVE RESTS ON, asserted at RUNTIME rather than read from source. The
+	## helper derives its surface from get_property_list(), so no source check can prove it covers
+	## current_state — and if it ever stopped, the sweep would be exempting 70 files for a filename.
+	## Driven on the real autoload, because that is the object the exemption is about.
+	var before: int = BattleManager.current_state
+	var guard = load("res://test/unit/helpers/battle_state.gd").new()
+	guard.snapshot()
+	BattleManager.current_state = BattleManager.BattleState.PROCESSING_ACTION
+	assert_eq(BattleManager.current_state, BattleManager.BattleState.PROCESSING_ACTION,
+		"CONTROL: the dirty value must actually take, or the restore below proves nothing")
+	guard.restore()
+	assert_eq(BattleManager.current_state, before,
+		"the shared guard no longer restores current_state, so every file trusting it leaks and this sweep's helper exemption is unsound")
 
 
 func test_the_sweep_can_actually_find_assignments() -> void:

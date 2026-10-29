@@ -33,6 +33,69 @@ const AWAITING_HIS_CALL: Array[String] = [
 	"voice_fighter_turn_start_15",
 ]
 
+## Lines authored 2026-10-28 on struktured's ask for quips that react to a level-up, a learned
+## ability, a crit and a kill. The engine side shipped with them; the clips are cowir-sfx's to cut and
+## nobody has authorised spending ElevenLabs credits on fifty new ones. Until they are cut each line
+## plays with its text and no audio, which is the documented fallback and still an improvement on the
+## moment having no line at all.
+##
+## SEPARATE from AWAITING_HIS_CALL on purpose: those six await a CASTING RULING he has to make, these
+## fifty await RECORDING that simply has not happened. Merging them would blur one exact set into
+## another and make both reasons unfalsifiable. Same contract as that block — exact in both
+## directions, so a fifty-first unvoiced line reds and each clip that lands reds its own stale entry.
+const AWAITING_RECORDING: Array[String] = [
+	"voice_fighter_victory_10",
+	"voice_fighter_victory_11",
+	"voice_fighter_victory_12",
+	"voice_fighter_victory_13",
+	"voice_fighter_crit_landed",
+	"voice_fighter_crit_landed_1",
+	"voice_fighter_crit_landed_2",
+	"voice_fighter_enemy_felled",
+	"voice_fighter_enemy_felled_1",
+	"voice_fighter_enemy_felled_2",
+	"voice_cleric_victory_25",
+	"voice_cleric_victory_26",
+	"voice_cleric_victory_27",
+	"voice_cleric_victory_28",
+	"voice_cleric_crit_landed",
+	"voice_cleric_crit_landed_1",
+	"voice_cleric_crit_landed_2",
+	"voice_cleric_enemy_felled",
+	"voice_cleric_enemy_felled_1",
+	"voice_cleric_enemy_felled_2",
+	"voice_mage_victory_25",
+	"voice_mage_victory_26",
+	"voice_mage_victory_27",
+	"voice_mage_victory_28",
+	"voice_mage_crit_landed",
+	"voice_mage_crit_landed_1",
+	"voice_mage_crit_landed_2",
+	"voice_mage_enemy_felled",
+	"voice_mage_enemy_felled_1",
+	"voice_mage_enemy_felled_2",
+	"voice_rogue_victory_25",
+	"voice_rogue_victory_26",
+	"voice_rogue_victory_27",
+	"voice_rogue_victory_28",
+	"voice_rogue_crit_landed",
+	"voice_rogue_crit_landed_1",
+	"voice_rogue_crit_landed_2",
+	"voice_rogue_enemy_felled",
+	"voice_rogue_enemy_felled_1",
+	"voice_rogue_enemy_felled_2",
+	"voice_bard_victory_25",
+	"voice_bard_victory_26",
+	"voice_bard_victory_27",
+	"voice_bard_victory_28",
+	"voice_bard_crit_landed",
+	"voice_bard_crit_landed_1",
+	"voice_bard_crit_landed_2",
+	"voice_bard_enemy_felled",
+	"voice_bard_enemy_felled_1",
+	"voice_bard_enemy_felled_2",
+]
+
 
 func _sfx() -> Dictionary:
 	var p: Variant = JSON.parse_string(FileAccess.get_file_as_string(MANIFEST))
@@ -74,18 +137,18 @@ func test_every_scripted_trigger_line_has_a_voice_clip() -> void:
 	assert_gt(checked, 0, "the scan found trigger lines at all — a zero here is a dead scan, not a clean result")
 	var unexplained: Array[String] = []
 	for k in missing:
-		if not AWAITING_HIS_CALL.has(k):
+		if not AWAITING_HIS_CALL.has(k) and not AWAITING_RECORDING.has(k):
 			unexplained.append(k)
 	assert_eq(unexplained.size(), 0, "scripted trigger lines with no voice clip and no reason: %s" % [unexplained])
 	## THE OTHER DIRECTION, which is what stops the list above becoming muscle memory: every entry
 	## must STILL be missing. The day someone cuts these six, this reds and names them, and the
 	## exemption has to be deleted rather than quietly outliving the decision it records.
 	var landed: Array[String] = []
-	for k in AWAITING_HIS_CALL:
+	for k in AWAITING_HIS_CALL + AWAITING_RECORDING:
 		if sfx.has(k):
 			landed.append(k)
 	assert_eq(landed.size(), 0,
-		"these clips now EXIST, so the exemption naming them is stale — delete them from AWAITING_HIS_CALL: %s" % [landed])
+		"these clips now EXIST, so the exemption naming them is stale — delete them from AWAITING_HIS_CALL or AWAITING_RECORDING: %s" % [landed])
 
 
 func test_every_voice_clip_answers_a_real_trigger_line() -> void:
@@ -138,7 +201,7 @@ func test_the_clips_exist_on_disk_and_are_not_empty() -> void:
 	assert_gte(lines, 25, "the pack shipped as 5 jobs x 5 triggers; fewer lines means a trigger was lost")
 	## Minus the clips he has not ruled on yet; AWAITING_HIS_CALL's own arm above proves each of those
 	## is genuinely absent, so this subtraction cannot hide a clip that exists under a wrong key.
-	var awaited := AWAITING_HIS_CALL.size()
+	var awaited := AWAITING_HIS_CALL.size() + AWAITING_RECORDING.size()
 	assert_eq(checked, lines - awaited,
 		"one clip per scripted line (less the %d awaiting struktured's call), found %d clips for %d lines" % [awaited, checked, lines])
 

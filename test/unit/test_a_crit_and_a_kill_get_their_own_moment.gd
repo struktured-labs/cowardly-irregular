@@ -16,21 +16,18 @@ extends GutTest
 ## enemy fights its own side — it would credit the acting PC. Named rather than silently accepted.
 
 const GdSource := preload("res://test/unit/helpers/gd_source.gd")
+const BattleStateGuard := preload("res://test/unit/helpers/battle_state.gd")
 const BM_PATH := "res://src/battle/BattleManager.gd"
 
-var _saved: Dictionary = {}
+## The shared guard, not a teardown of my own: its surface is derived from get_property_list(), so it
+## covers the two party-line dicts below and anything added to BattleManager tomorrow.
+var _bm_guard = BattleStateGuard.new()
 
 
 func before_each() -> void:
-	_saved = {
-		"player_party": BattleManager.player_party.duplicate(),
-		"enemy_party": BattleManager.enemy_party.duplicate(),
-		"current_combatant": BattleManager.current_combatant,
-		"current_state": BattleManager.current_state,
-		"current_round": BattleManager.current_round,
-		"cooldowns": BattleManager._party_line_cooldowns.duplicate(),
-		"last_kind": BattleManager._party_line_last_kind.duplicate(),
-	}
+	_bm_guard.snapshot()
+	## ESTABLISH as well as snapshot. restore() puts back the PRIOR value by design, which makes it a
+	## conduit for dirt an earlier file left rather than a barrier — so these arms set what they need.
 	BattleManager._party_line_cooldowns = {}
 	BattleManager._party_line_last_kind = {}
 	BattleManager.current_state = BattleManager.BattleState.EXECUTION_PHASE
@@ -38,14 +35,7 @@ func before_each() -> void:
 
 
 func after_each() -> void:
-	## Restore every field, or a later battle test inherits a party of freed test combatants.
-	BattleManager.player_party.assign(_saved["player_party"])
-	BattleManager.enemy_party.assign(_saved["enemy_party"])
-	BattleManager.current_combatant = _saved["current_combatant"]
-	BattleManager.current_state = _saved["current_state"]
-	BattleManager.current_round = int(_saved["current_round"])
-	BattleManager._party_line_cooldowns = _saved["cooldowns"]
-	BattleManager._party_line_last_kind = _saved["last_kind"]
+	_bm_guard.restore()
 
 
 func _pc(who: String) -> Combatant:
