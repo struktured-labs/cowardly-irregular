@@ -6,12 +6,15 @@ extends RefCounted
 const SIMPLE_TAGS: Array[String] = [
 	"none_down", "all_full", "ally_down", "ally_low", "last_standing",
 	"enemy_last", "enemy_nearly_dead", "many_enemies", "self_status",
+	"self_leveled", "self_learned_ability", "long_fight", "one_shot_win",
 ]
 ## Say when a line MAY play and hold in most fights, so they filter but never outrank generic lines.
 const PRECONDITION_TAGS: Array[String] = ["none_down", "all_full"]
 const ALLY_ALIVE_PREFIX := "ally_alive:"
 const ALLY_LOW_PCT := 30.0
 const ENEMY_NEARLY_DEAD_PCT := 20.0
+## The four outcome tags read event_data, so they can only hold on a victory line — every other event sends {}.
+const LONG_FIGHT_ROUNDS: int = 8
 
 
 static func is_known_tag(tag: String) -> bool:
@@ -60,4 +63,12 @@ static func tag_holds(tag: String, ctx: PartyCombatLineContext) -> bool:
 			return alive_enemies.size() >= 3
 		"self_status":
 			return not ctx.speaker_status.is_empty()
+		"self_leveled":
+			return bool(ctx.event_data.get(PartyCombatLineContext.VICTORY_SELF_LEVELED, false))
+		"self_learned_ability":
+			return bool(ctx.event_data.get(PartyCombatLineContext.VICTORY_SELF_LEARNED, false))
+		"long_fight":
+			return int(ctx.event_data.get(PartyCombatLineContext.VICTORY_ROUNDS, 0)) >= LONG_FIGHT_ROUNDS
+		"one_shot_win":
+			return bool(ctx.event_data.get(PartyCombatLineContext.VICTORY_ONE_SHOT, false))
 	return false

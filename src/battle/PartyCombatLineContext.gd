@@ -35,6 +35,12 @@ const EVENT_BIG_HIT_TAKEN := "big_hit_taken"
 const EVENT_USED_SIGNATURE_ABILITY := "used_signature_ability"
 const EVENT_VICTORY := "victory"
 
+## Victory payload keys. end_battle knows all four by the time it dispatches the line; VoiceLineTags reads them.
+const VICTORY_SELF_LEVELED := "self_leveled"
+const VICTORY_SELF_LEARNED := "self_learned_ability"
+const VICTORY_ROUNDS := "rounds"
+const VICTORY_ONE_SHOT := "one_shot"
+
 const RECENT_LIMIT: int = 6
 
 

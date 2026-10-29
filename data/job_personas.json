@@ -111,6 +111,22 @@
 					{
 						"line": "Bard. No victory song. ...Fine. One verse.",
 						"when": "ally_alive:bard"
+					},
+					{
+						"line": "Stronger than I was this morning. Good.",
+						"when": "self_leveled"
+					},
+					{
+						"line": "New move. I'll use it badly the first time.",
+						"when": "self_learned_ability"
+					},
+					{
+						"line": "Too long. My arms are keeping score.",
+						"when": "long_fight"
+					},
+					{
+						"line": "One swing. That's the standard.",
+						"when": "one_shot_win"
 					}
 				]
 			}
@@ -322,7 +338,23 @@
 					"Tally complete. The scripture holds.",
 					"Go in peace. Carefully.",
 					"A quiet ending. I'll take it.",
-					"Record it. We were here."
+					"Record it. We were here.",
+					{
+						"line": "The Loop granted me another measure. I'll spend it on you.",
+						"when": "self_leveled"
+					},
+					{
+						"line": "A new verse, handed down mid-battle. I'll practise before I need it.",
+						"when": "self_learned_ability"
+					},
+					{
+						"line": "A long verse. I counted every breath of it.",
+						"when": "long_fight"
+					},
+					{
+						"line": "One strike and the Loop closed. Barely a verse at all.",
+						"when": "one_shot_win"
+					}
 				]
 			}
 		},
@@ -521,7 +553,23 @@
 					"Victory logged. Timestamped. Framed.",
 					"I'd like the loot itemized, please.",
 					"Wonderful. Now, who wants a debrief?",
-					"Data collected. Enemies discontinued."
+					"Data collected. Enemies discontinued.",
+					{
+						"line": "Level acquired. Updating my own documentation.",
+						"when": "self_leveled"
+					},
+					{
+						"line": "New spell filed. Expect a rough first cast.",
+						"when": "self_learned_ability"
+					},
+					{
+						"line": "That ran well past the projected duration. Noted.",
+						"when": "long_fight"
+					},
+					{
+						"line": "One action, zero variance. Filing under ideal.",
+						"when": "one_shot_win"
+					}
 				]
 			}
 		},
@@ -714,7 +762,23 @@
 					"Show's over. Exit through the gift shop.",
 					"Perfect heist. Shame about the lighting.",
 					"Easy money. The best kind.",
-					"Take a bow. I already did."
+					"Take a bow. I already did.",
+					{
+						"line": "Levelled. Don't tell the others, they'll want a cut.",
+						"when": "self_leveled"
+					},
+					{
+						"line": "Picked up something new. Not telling you what.",
+						"when": "self_learned_ability"
+					},
+					{
+						"line": "That took forever. I'm billing by the round.",
+						"when": "long_fight"
+					},
+					{
+						"line": "One hit. I barely had to commit.",
+						"when": "one_shot_win"
+					}
 				]
 			}
 		},
@@ -907,7 +971,23 @@
 					"History's written. Nicely, too.",
 					"And the crowd goes wild. The crowd is me.",
 					"Sweet ending. Don't ruin it by talking.",
-					"That was pitch perfect."
+					"That was pitch perfect.",
+					{
+						"line": "I grew, mid-performance! The audience wept!",
+						"when": "self_leveled"
+					},
+					{
+						"line": "A new number for the setlist! Nobody's heard it, including me.",
+						"when": "self_learned_ability"
+					},
+					{
+						"line": "That was a five-act fight. I am hoarse.",
+						"when": "long_fight"
+					},
+					{
+						"line": "One beat! One! The shortest song I have ever performed!",
+						"when": "one_shot_win"
+					}
 				]
 			}
 		}

@@ -10050,6 +10050,24 @@ func _maybe_fire_party_line(combatant: Combatant, event_kind: String, event_data
 	_run_party_line_async(combatant, event_kind, event_data)
 
 
+## The SPEAKER's own outcome, so a line can say "I levelled" instead of "somebody did".
+static func victory_line_payload(speaker_name: String, char_results: Array, rounds: int, one_shot: bool) -> Dictionary:
+	var leveled: bool = false
+	var learned: bool = false
+	for r in char_results:
+		if not (r is Dictionary) or str((r as Dictionary).get("name", "")) != speaker_name:
+			continue
+		leveled = bool((r as Dictionary).get("leveled_up", false))
+		learned = not ((r as Dictionary).get("learned_abilities", []) as Array).is_empty()
+		break
+	return {
+		PartyCombatLineContext.VICTORY_SELF_LEVELED: leveled,
+		PartyCombatLineContext.VICTORY_SELF_LEARNED: learned,
+		PartyCombatLineContext.VICTORY_ROUNDS: rounds,
+		PartyCombatLineContext.VICTORY_ONE_SHOT: one_shot,
+	}
+
+
 ## Pick the freshest alive PC to deliver the post-battle victory line.
 func _dispatch_victory_party_line() -> void:
 	if player_party.is_empty():
@@ -10064,7 +10082,8 @@ func _dispatch_victory_party_line() -> void:
 			speaker = m
 	if speaker == null:
 		return
-	_maybe_fire_party_line(speaker, "victory", {})
+	_maybe_fire_party_line(speaker, "victory", victory_line_payload(
+		speaker.combatant_name, _battle_results.get("char_results", []), current_round, _one_shot_achieved))
 
 
 ## Awaitable producer — kicks off the LLM call OR ships the scripted fallback line.
