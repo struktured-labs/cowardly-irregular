@@ -102,8 +102,10 @@ func test_the_cast_side_member_this_file_drives_exists() -> void:
 
 func test_a_heal_does_not_replay_its_cast_cue_at_impact() -> void:
 	_sm._sfx_cooldowns.clear()
-	_sm.play_ability("heal")
-	assert_true(_sm._sfx_cooldowns.has("ability_heal"), "CONTROL: the CAST cue must have been served first")
+	## "heal" is not an ability id and falls back to ability_physical; cure/cura/curaga are (SoundManager:753)
+	_sm.play_ability("cure")
+	assert_true(_sm._sfx_cooldowns.has("ability_heal"),
+		"CONTROL: the CAST cue must have been served first, or the assert below judges an empty dict")
 	_sm._sfx_cooldowns.clear()
 	_es._play_effect_sound(_es.EffectType.HEAL, 1.0, "")
 	assert_false(_sm._sfx_cooldowns.has("ability_heal"),
