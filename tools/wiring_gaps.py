@@ -54,6 +54,17 @@ ENGINE_VIRTUALS = {
 }
 CLASSNAME_RE = re.compile(r"^class_name\s+(\w+)", re.M)
 CALL_RE = re.compile(r"(?<!\w)(\w+)\s*\(")
+## Names inside a `.connect(...)` or `.is_connected(...)` argument list. @cowir-music's class-A audit:
+## 5 of 94 rows were pinned by arms my substring test could not see, for two reasons BOTH present in a
+## correctly written assertion -- the arm says `<signal>.is_connected(` where a `.connect(` pattern
+## cannot match, and the Callable is receiver-qualified (`is_connected(SoundManager.set_save_corruption)`)
+## so `connect(<handler>` cannot match either, because the receiver sits between them.
+## ⚠️ NO LEADING DOT REQUIRED. The two rows that survived the first fix are pinned by a SOURCE READ --
+## `assert_true(body.contains("is_connected(_on_party_leveled_up)"))` -- so the character before the
+## call is a QUOTE, not a dot. Requiring `\.` missed the single most common way this codebase asserts
+## a wiring guard. `disconnect(` matches too, which is correct: an arm naming the symmetric disconnect
+## is also defending the wiring.
+CONNECT_ARGS_RE = re.compile(r"(?:is_connected|connect)\(([^)\n]*)")
 WORD_RE = re.compile(r"[A-Za-z_]\w*")
 
 
@@ -110,7 +121,15 @@ def spread(conns):
     return {k: len(v) for k, v in counts.items()}
 
 
-def classify(signal, handler, test_sources):
+def connect_arg_names(src):
+    """Every identifier appearing inside a connect/is_connected argument list in one source."""
+    out = set()
+    for args in CONNECT_ARGS_RE.findall(src):
+        out.update(WORD_RE.findall(args))
+    return out
+
+
+def classify(signal, handler, test_sources, arg_names=None):
     """PINNED / GAP / UNTESTED for one connection against the test corpus.
 
     PINNED   some test names this CONNECTION -- the literal `<signal>.connect(` plus the handler, or
@@ -122,11 +141,12 @@ def classify(signal, handler, test_sources):
     """
     exercised = 0
     pinned = 0
-    for src in test_sources:
+    for i, src in enumerate(test_sources):
         if handler not in src:
             continue
         exercised += 1
-        if ("%s.connect(" % signal) in src or ("connect(%s" % handler) in src:
+        named_in_a_connect = handler in (arg_names[i] if arg_names else connect_arg_names(src))
+        if ("%s.connect(" % signal) in src or ("connect(%s" % handler) in src or named_in_a_connect:
             pinned += 1
     if pinned:
         return "PINNED", exercised, pinned
@@ -266,9 +286,10 @@ def main():
         print("CONTROL FAILED: a corpus is empty, so every verdict below is vacuous. Run from the repo root.")
         return 0
 
+    arg_names = [connect_arg_names(t) for t in tests]
     buckets = {"GAP": [], "PINNED": [], "UNTESTED": []}
     for path, signal, handler in conns:
-        verdict, exercised, pinned = classify(signal, handler, tests)
+        verdict, exercised, pinned = classify(signal, handler, tests, arg_names)
         buckets[verdict].append((path, signal, handler, exercised, pinned))
 
     print("excluded: %d connection(s) name an engine method we do not define (queue_free, hide, popup...)"
@@ -397,15 +418,29 @@ def selftest():
     check("no driver is still a gap",
           [r[1] for r in single_caller_gaps(jukebox, ["disarm() mentioned only"])], ["disarm"])
 
-    ## 14. a connect with no handler token must not crash or invent a connection
+    ## 14-15. @cowir-music's class-A audit: the two forms a correct arm actually uses.
+    check("is_connected pins it",
+          classify("corruption_changed", "set_save_corruption",
+                   ["assert_true(GameState.corruption_changed.is_connected(SoundManager.set_save_corruption))"])[0],
+          "PINNED")
+    check("a receiver-qualified callable pins it",
+          classify("leveled_up", "_on_party_leveled_up",
+                   ["c.leveled_up.connect(gl._on_party_leveled_up)"])[0], "PINNED")
+
+    ## 16. the SOURCE-READ form, which is how this codebase most often asserts a wiring guard
+    check("a source-read assertion pins it",
+          classify("leveled_up", "_on_party_leveled_up",
+                   ['assert_true(body.contains("is_connected(_on_party_leveled_up)"))'])[0], "PINNED")
+
+    ## 17. a connect with no handler token must not crash or invent a connection
     check("junk is ignored", connections_in("something.connect()"), [])
 
     if fails:
         for f in fails:
             print("FAIL %s" % f)
-        print("wiring_gaps selftest: %d of 14 arms FAILED" % len(fails))
+        print("wiring_gaps selftest: %d of 17 arms FAILED" % len(fails))
         return 1
-    print("wiring_gaps selftest: 14/14 arms ran, every assertion held (in-memory only: no file, walk, subprocess or git)")
+    print("wiring_gaps selftest: 17/17 arms ran, every assertion held (in-memory only: no file, walk, subprocess or git)")
     return 0
 
 
