@@ -43,6 +43,18 @@ CONNECT_RE = re.compile(r"(?:(\w+)\.)?(\w+)\.connect\(\s*([\w.]+)")
 BIND_RE = re.compile(r"var\s+(\w+)\s*(?::\s*\w+\s*)?=\s*(\w+)\.bind\(")
 ## Handlers WE define. Anything else a connect names is an engine method, not a mechanism of ours.
 FUNC_RE = re.compile(r"^func\s+(\w+)", re.M)
+## Godot calls these itself, so "how many callers in src/" is not a question about them. A fixed list
+## is honest here where a derived rule is not: these are engine API, the set is documented and stable,
+## and a wrong entry only skips a row rather than inventing one.
+ENGINE_VIRTUALS = {
+    "_ready", "_init", "_process", "_physics_process", "_input", "_unhandled_input",
+    "_unhandled_key_input", "_shortcut_input", "_gui_input", "_draw", "_notification",
+    "_enter_tree", "_exit_tree", "_to_string", "_get", "_set", "_get_property_list",
+    "_can_drop_data", "_drop_data", "_get_drag_data", "_integrate_forces", "_value_changed",
+}
+CLASSNAME_RE = re.compile(r"^class_name\s+(\w+)", re.M)
+CALL_RE = re.compile(r"(?<!\w)(\w+)\s*\(")
+WORD_RE = re.compile(r"[A-Za-z_]\w*")
 
 
 def resolve_handler(token, source):
@@ -123,6 +135,70 @@ def classify(signal, handler, test_sources):
     return "UNTESTED", 0, 0
 
 
+def single_caller_gaps(files, tests):
+    """CLASS C: a function with exactly ONE call site in src/, whose CALL nothing pins.
+
+    Distinct from the connect corpus above, and distinct again from the shape that shipped broken for
+    months: `_record_first_damage` had THREE callers, all correct, and its defect was the NINE effect
+    sites that never called it. That is not derivable from source without someone first naming the
+    effect, so it is deliberately NOT attempted here -- see this tool's module docstring.
+
+    A call is PINNED when some test names the callee AND the caller's own class_name or file, which is
+    what an arm asserting "this caller still reaches this callee" looks like in this codebase.
+
+    ⚠️ ONE PASS PER FILE, NOT ONE PER (function, file). The first draft ran a regex per function per
+    file -- ~7000 x ~600 -- and took over two minutes, which is a defect in a tool meant to be run by
+    hand. Counting every `name(` once per file and looking functions up in that table is the same
+    answer in a second.
+    """
+    defs, names, calls, selfdefs = {}, {}, {}, {}
+    for path, src in files:
+        for fn in FUNC_RE.findall(src):
+            defs.setdefault(fn, []).append(path)
+        m = CLASSNAME_RE.search(src)
+        names[path] = m.group(1) if m else os.path.basename(path)[:-3]
+        c = {}
+        for tok in CALL_RE.findall(src):
+            c[tok] = c.get(tok, 0) + 1
+        calls[path] = c
+        d = {}
+        for tok in FUNC_RE.findall(src):
+            d[tok] = d.get(tok, 0) + 1
+        selfdefs[path] = d
+
+    ## Which test files mention each callee, computed once -- the per-function scan over 2850 test
+    ## sources was the other half of the two minutes.
+    mentions = {}
+    for i, t in enumerate(tests):
+        for tok in set(CALL_RE.findall(t)) | set(WORD_RE.findall(t)):
+            mentions.setdefault(tok, []).append(i)
+
+    out = []
+    for fn, where in defs.items():
+        if fn in ENGINE_VIRTUALS or len(where) != 1 or fn.startswith("__"):
+            continue
+        callers = []
+        for path, _src in files:
+            n = calls[path].get(fn, 0)
+            if path == where[0]:
+                n -= selfdefs[path].get(fn, 0)
+            if n > 0:
+                callers.append((path, n))
+        if len(callers) != 1 or callers[0][1] != 1:
+            continue
+        caller_path = callers[0][0]
+        if caller_path == where[0]:
+            continue  ## called once inside its own file: a private helper, not a crossing
+        idxs = mentions.get(fn, [])
+        if not idxs:
+            continue
+        cname, cbase = names[caller_path], os.path.basename(caller_path)
+        pinned = sum(1 for i in idxs if cname in tests[i] or cbase in tests[i])
+        if not pinned:
+            out.append((where[0], fn, caller_path, len(idxs)))
+    return out
+
+
 def _read(path):
     try:
         with open(path, encoding="utf-8", errors="replace") as fh:
@@ -143,9 +219,11 @@ def _gd_files(root):
 def main():
     conns = []
     ours = set()
+    files = []
     for root in SRC_DIRS:
         for path in _gd_files(root):
             src = _read(path)
+            files.append((path, src))
             ours.update(FUNC_RE.findall(src))
             for signal, handler in connections_in(src):
                 conns.append((path, signal, handler))
@@ -213,6 +291,21 @@ def main():
         print("  %-52s %-28s %s" % (path, signal, handler))
     if len(buckets["UNTESTED"]) > 15:
         print("  ... and %d more" % (len(buckets["UNTESTED"]) - 15))
+
+    ## CLASS C, a separate corpus with a separate predicate -- printed apart so a clean section above
+    ## is never read as covering this one. The classes are not nested.
+    solo = single_caller_gaps(files, tests)
+    print("\n== CLASS C: ONE plain call site in src/, and nothing pins the call ==")
+    print("%d gap(s). A rename or deletion of that one call stops the mechanism with its own tests green."
+          % len(solo))
+    for defined_in, fn, caller, exercised in sorted(solo, key=lambda r: -r[3])[:20]:
+        print("  %-34s defined in %-42s called once by %-38s exercised by %2d test file(s)"
+              % (fn, defined_in, caller, exercised))
+    if len(solo) > 20:
+        print("  ... and %d more" % (len(solo) - 20))
+    print("\n⚠️ NOT COVERED BY ANYTHING HERE: a mechanism whose EFFECT sites are incomplete")
+    print("   (_record_first_damage had 3 correct callers and 9 silent take_damage sites). That needs")
+    print("   the effect NAMED before the question is askable, so no sweep can derive it.")
     return 0
 
 
@@ -255,15 +348,31 @@ def selftest():
     ## 8. the INLINE bind, which produced ten `bind` rows before it was handled
     check("inline bind", connections_in("died.connect(_on_died.bind(c))"), [("died", "_on_died")])
 
-    ## 9. a connect with no handler token must not crash or invent a connection
+    ## 9-11. CLASS C. Built from in-memory file tuples, same as every arm above.
+    src_files = [
+        ("src/A.gd", "class_name A\nfunc _mechanism() -> void:\n\tpass\n"),
+        ("src/B.gd", "class_name B\nfunc update() -> void:\n\t_scene._mechanism()\n"),
+    ]
+    check("one unpinned caller is a gap",
+          [r[1] for r in single_caller_gaps(src_files, ["drive _mechanism() directly"])],
+          ["_mechanism"])
+    ## a test naming the CALLER's class as well is a pin, not a gap
+    check("naming the caller pins the call",
+          single_caller_gaps(src_files, ["B then _mechanism"]), [])
+    ## an engine virtual has no meaningful caller count and must never be listed
+    check("engine virtuals excluded",
+          single_caller_gaps([("src/C.gd", "func _ready() -> void:\n\tpass\n"),
+                              ("src/D.gd", "func go():\n\t_ready()\n")], ["_ready"]), [])
+
+    ## 12. a connect with no handler token must not crash or invent a connection
     check("junk is ignored", connections_in("something.connect()"), [])
 
     if fails:
         for f in fails:
             print("FAIL %s" % f)
-        print("wiring_gaps selftest: %d of 9 arms FAILED" % len(fails))
+        print("wiring_gaps selftest: %d of 12 arms FAILED" % len(fails))
         return 1
-    print("wiring_gaps selftest: 9/9 arms ran, every assertion held (in-memory only: no file, walk, subprocess or git)")
+    print("wiring_gaps selftest: 12/12 arms ran, every assertion held (in-memory only: no file, walk, subprocess or git)")
     return 0
 
 
