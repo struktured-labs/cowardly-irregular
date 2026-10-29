@@ -403,6 +403,9 @@ func _ready() -> void:
 	if boss_dlg and boss_dlg.has_signal("jailbreak_succeeded"):
 		if not boss_dlg.jailbreak_succeeded.is_connected(_on_boss_jailbreak_succeeded):
 			boss_dlg.jailbreak_succeeded.connect(_on_boss_jailbreak_succeeded)
+	## Own signal, so every damage path's crit reaches the party line through one hook.
+	if not damage_dealt.is_connected(_on_damage_dealt_for_party_line):
+		damage_dealt.connect(_on_damage_dealt_for_party_line)
 
 
 func set_terrain(terrain: String) -> void:
@@ -8507,6 +8510,8 @@ func _on_combatant_died(combatant: Combatant) -> void:
 	# Track party member KOs for permanent injury system
 	if combatant in player_party and combatant not in _ko_this_battle:
 		_ko_this_battle.append(combatant)
+	elif not (combatant in player_party):
+		call_deferred("_dispatch_enemy_felled_party_line", combatant.combatant_name)
 
 
 func _print_defeat_line(name_text: String) -> void:
@@ -10048,6 +10053,31 @@ func _maybe_fire_party_line(combatant: Combatant, event_kind: String, event_data
 	_party_line_cooldowns[name_key] = current_round
 	_party_line_last_kind[name_key] = event_kind
 	_run_party_line_async(combatant, event_kind, event_data)
+
+
+## Hooked to the SIGNAL, not to the five sites that set is_crit — a sixth damage path stays covered.
+func _on_damage_dealt_for_party_line(target: Combatant, _amount: int, is_crit: bool, _element: String, _elemental_mod: float) -> void:
+	if not is_crit or target == null or not is_instance_valid(target) or target in player_party:
+		return
+	_fire_moment_line(PartyCombatLineContext.EVENT_CRIT_LANDED, target.combatant_name)
+
+
+## Deferred by the caller: `died` fires inside take_damage, so the field is mid-update on arrival.
+func _dispatch_enemy_felled_party_line(enemy_name: String) -> void:
+	## The last enemy's death IS the victory, and _dispatch_victory_party_line speaks for it 4 lines later.
+	if _get_alive_enemies().is_empty():
+		return
+	_fire_moment_line(PartyCombatLineContext.EVENT_ENEMY_FELLED, enemy_name)
+
+
+## The acting PC speaks; damage_dealt carries no attacker, so current_combatant is who landed it.
+func _fire_moment_line(event_kind: String, target_name: String) -> void:
+	if current_state == BattleState.VICTORY or current_state == BattleState.DEFEAT or current_state == BattleState.INACTIVE:
+		return
+	var speaker: Combatant = current_combatant
+	if speaker == null or not is_instance_valid(speaker) or not (speaker in player_party) or not speaker.is_alive:
+		return
+	_maybe_fire_party_line(speaker, event_kind, {PartyCombatLineContext.MOMENT_TARGET: target_name})
 
 
 ## The SPEAKER's own outcome, so a line can say "I levelled" instead of "somebody did".

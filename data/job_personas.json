@@ -128,6 +128,16 @@
 						"line": "One swing. That's the standard.",
 						"when": "one_shot_win"
 					}
+				],
+				"crit_landed": [
+					"That one landed.",
+					"Felt the bone go.",
+					"Clean hit."
+				],
+				"enemy_felled": [
+					"One down.",
+					"That's one less.",
+					"Next."
 				]
 			}
 		},
@@ -355,6 +365,16 @@
 						"line": "One strike and the Loop closed. Barely a verse at all.",
 						"when": "one_shot_win"
 					}
+				],
+				"crit_landed": [
+					"The Loop favoured that one.",
+					"Mercy, delivered firmly.",
+					"That was louder than I meant."
+				],
+				"enemy_felled": [
+					"One returned to the Loop.",
+					"Rest now. Honestly.",
+					"I will pray for it later."
 				]
 			}
 		},
@@ -570,6 +590,16 @@
 						"line": "One action, zero variance. Filing under ideal.",
 						"when": "one_shot_win"
 					}
+				],
+				"crit_landed": [
+					"Variance, in my favour.",
+					"An outlier. A good one.",
+					"Recalculating. Upward."
+				],
+				"enemy_felled": [
+					"One variable eliminated.",
+					"Removed from the dataset.",
+					"That one is resolved."
 				]
 			}
 		},
@@ -779,6 +809,16 @@
 						"line": "One hit. I barely had to commit.",
 						"when": "one_shot_win"
 					}
+				],
+				"crit_landed": [
+					"Right where it hurts.",
+					"Told you I aim.",
+					"That is the spot."
+				],
+				"enemy_felled": [
+					"Minus one.",
+					"Pockets later. One down.",
+					"Down. Who is next?"
 				]
 			}
 		},
@@ -988,6 +1028,16 @@
 						"line": "One beat! One! The shortest song I have ever performed!",
 						"when": "one_shot_win"
 					}
+				],
+				"crit_landed": [
+					"CRESCENDO!",
+					"Did everyone see that?",
+					"Put that one in the chorus!"
+				],
+				"enemy_felled": [
+					"Exit, stage left!",
+					"One fewer in the chorus.",
+					"And then there were fewer!"
 				]
 			}
 		}
