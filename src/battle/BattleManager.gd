@@ -274,6 +274,9 @@ var _all_enemies_initial_count: int = 0  # Total enemies at battle start
 ## fanned out N times after N battles.
 var _died_callbacks: Dictionary = {}
 var _doom_callbacks: Dictionary = {}
+var _hp_callbacks: Dictionary = {}
+## Lowest HP% any PC REACHED this battle. Final-frame state cannot see a dip that was healed back.
+var _battle_low_water_pct: float = 100.0
 
 ## Autobattle reward tracking
 var _full_autobattle: bool = true          # False if any player turn was manual
@@ -602,6 +605,7 @@ func start_battle(players: Array[Combatant], enemies: Array[Combatant]) -> void:
 	_c3_clutch_crit = false
 	_battle_results = {}
 	_ko_this_battle.clear()
+	_battle_low_water_pct = 100.0
 	# Warden Lens floor is once per BATTLE — clear on both sides so a party member and a lens-holding ally alike start each fight with it available.
 	for _c in (players + enemies):
 		if _c is Combatant:
@@ -667,6 +671,11 @@ func start_battle(players: Array[Combatant], enemies: Array[Combatant]) -> void:
 		var cb = _on_combatant_died.bind(combatant)
 		_died_callbacks[combatant] = cb
 		combatant.died.connect(cb)
+		## hp_changed, not damage_dealt: it is the only signal a status tick and corruption erosion both reach.
+		if combatant.has_signal("hp_changed"):
+			var hcb = _on_hp_changed_for_low_water.bind(combatant)
+			_hp_callbacks[combatant] = hcb
+			combatant.hp_changed.connect(hcb)
 		## Same bound-Callable caching as died, for the same disconnect reason.
 		if combatant.has_signal("doom_ticked"):
 			var dcb = _on_doom_ticked.bind(combatant)
@@ -1315,8 +1324,15 @@ func _disconnect_combatant_signals() -> void:
 		var dcb = _doom_callbacks[combatant]
 		if dcb and combatant.has_signal("doom_ticked") and combatant.doom_ticked.is_connected(dcb):
 			combatant.doom_ticked.disconnect(dcb)
+	for combatant in _hp_callbacks.keys():
+		if not is_instance_valid(combatant):
+			continue
+		var hcb = _hp_callbacks[combatant]
+		if hcb and combatant.has_signal("hp_changed") and combatant.hp_changed.is_connected(hcb):
+			combatant.hp_changed.disconnect(hcb)
 	_died_callbacks.clear()
 	_doom_callbacks.clear()
+	_hp_callbacks.clear()
 
 
 func _cleanup_battle() -> void:
@@ -10055,6 +10071,14 @@ func _maybe_fire_party_line(combatant: Combatant, event_kind: String, event_data
 	_run_party_line_async(combatant, event_kind, event_data)
 
 
+## A KO reads 0% and is already counted by _ko_this_battle, so the dip a REVIVED member survived is what this adds.
+func _on_hp_changed_for_low_water(_old_value: int, new_value: int, combatant: Combatant) -> void:
+	if combatant == null or not is_instance_valid(combatant) or not (combatant in player_party):
+		return
+	var cap: int = maxi(int(combatant.max_hp), 1)
+	_battle_low_water_pct = minf(_battle_low_water_pct, (float(maxi(new_value, 0)) / float(cap)) * 100.0)
+
+
 ## Hooked to the SIGNAL, not to the five sites that set is_crit — a sixth damage path stays covered.
 func _on_damage_dealt_for_party_line(target: Combatant, _amount: int, is_crit: bool, _element: String, _elemental_mod: float) -> void:
 	if not is_crit or target == null or not is_instance_valid(target) or target in player_party:
@@ -10081,7 +10105,7 @@ func _fire_moment_line(event_kind: String, target_name: String) -> void:
 
 
 ## The SPEAKER's own outcome, so a line can say "I levelled" instead of "somebody did".
-static func victory_line_payload(speaker_name: String, char_results: Array, rounds: int, one_shot: bool) -> Dictionary:
+static func victory_line_payload(speaker_name: String, char_results: Array, rounds: int, one_shot: bool, low_water_pct: float = 100.0, anyone_fell: bool = false) -> Dictionary:
 	var leveled: bool = false
 	var learned: bool = false
 	for r in char_results:
@@ -10095,6 +10119,8 @@ static func victory_line_payload(speaker_name: String, char_results: Array, roun
 		PartyCombatLineContext.VICTORY_SELF_LEARNED: learned,
 		PartyCombatLineContext.VICTORY_ROUNDS: rounds,
 		PartyCombatLineContext.VICTORY_ONE_SHOT: one_shot,
+		PartyCombatLineContext.VICTORY_LOW_WATER: low_water_pct,
+		PartyCombatLineContext.VICTORY_ANYONE_FELL: anyone_fell,
 	}
 
 
@@ -10113,7 +10139,8 @@ func _dispatch_victory_party_line() -> void:
 	if speaker == null:
 		return
 	_maybe_fire_party_line(speaker, "victory", victory_line_payload(
-		speaker.combatant_name, _battle_results.get("char_results", []), current_round, _one_shot_achieved))
+		speaker.combatant_name, _battle_results.get("char_results", []), current_round, _one_shot_achieved,
+		_battle_low_water_pct, not _ko_this_battle.is_empty()))
 
 
 ## Awaitable producer — kicks off the LLM call OR ships the scripted fallback line.

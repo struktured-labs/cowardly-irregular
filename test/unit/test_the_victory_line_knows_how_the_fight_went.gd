@@ -19,6 +19,7 @@ extends GutTest
 
 const TAGS := preload("res://src/llm/VoiceLineTags.gd")
 const GdSource := preload("res://test/unit/helpers/gd_source.gd")
+const BattleStateGuard := preload("res://test/unit/helpers/battle_state.gd")
 const BM_PATH := "res://src/battle/BattleManager.gd"
 const BM := preload("res://src/battle/BattleManager.gd")
 
@@ -35,6 +36,63 @@ func _ctx(data: Dictionary) -> PartyCombatLineContext:
 
 func _row(who: String, leveled: bool, learned: Array) -> Dictionary:
 	return {"name": who, "leveled_up": leveled, "learned_abilities": learned}
+
+
+func test_the_low_water_mark_is_actually_recorded_by_the_engine() -> void:
+	## ⛔ EVERY ARM ABOVE HANDS THE TAG A PAYLOAD I WROTE. None of them proves the engine ever FILLS
+	## that payload — the tag could be perfect and `_battle_low_water_pct` never move. Driven on the
+	## real autoload through the real signal, which is the only thing that answers it.
+	var guard = BattleStateGuard.new()
+	guard.snapshot()
+	var pc := Combatant.new()
+	autofree(pc)
+	pc.combatant_name = "Brom"
+	pc.is_alive = true
+	pc.max_hp = 100
+	pc.current_hp = 100
+	BattleManager.player_party.assign([pc])
+	BattleManager._battle_low_water_pct = 100.0
+	## The dip and the recovery, exactly the history a final-frame read cannot see.
+	BattleManager._on_hp_changed_for_low_water(100, 7, pc)
+	BattleManager._on_hp_changed_for_low_water(7, 92, pc)
+	var low: float = BattleManager._battle_low_water_pct
+	guard.restore()
+	assert_almost_eq(low, 7.0, 0.01,
+		"the engine must keep the WORST value reached (7%%), not the latest one (92%%)")
+
+
+func test_the_low_water_sampler_is_wired_and_unwired() -> void:
+	## ⛔ THE ARM ABOVE CALLS THE HANDLER DIRECTLY, so it passes whether or not anything ever invokes it.
+	## Both halves are needed: without the connect the feature is dead with every other arm green, and
+	## without the disconnect each battle leaves a listener on a combatant it no longer owns — the leak
+	## _died_callbacks exists to prevent, which is why it is cached as a bound Callable the same way.
+	var code: String = GdSource.code_of(BM_PATH)
+	assert_gt(code.length(), 10000, "CONTROL: BattleManager was actually read")
+	assert_true(code.contains("combatant.hp_changed.connect(hcb)"),
+		"nothing connects the low-water sampler, so _battle_low_water_pct never moves and won_barely can never hold")
+	assert_true(code.contains("combatant.hp_changed.disconnect(hcb)"),
+		"the sampler is connected and never disconnected — every battle leaks a listener onto its combatants")
+	assert_true(code.contains("_hp_callbacks.clear()"),
+		"the bound-Callable cache must be cleared with the others, or it holds freed combatants")
+	assert_true(code.contains("_battle_low_water_pct = 100.0"),
+		"the mark must reset per battle, or one close call makes every later victory read as a close call")
+
+
+func test_an_enemys_hp_does_not_count_as_the_partys_low_water() -> void:
+	var guard = BattleStateGuard.new()
+	guard.snapshot()
+	var foe := Combatant.new()
+	autofree(foe)
+	foe.combatant_name = "Slime"
+	foe.is_alive = true
+	foe.max_hp = 100
+	BattleManager.player_party.assign([])
+	BattleManager._battle_low_water_pct = 100.0
+	BattleManager._on_hp_changed_for_low_water(100, 1, foe)
+	var low: float = BattleManager._battle_low_water_pct
+	guard.restore()
+	assert_almost_eq(low, 100.0, 0.01,
+		"a monster at 1%% is the party WINNING; counting it would make every victory a close call")
 
 
 func test_the_payload_reads_the_speakers_own_row() -> void:
@@ -91,7 +149,7 @@ func test_an_outcome_tag_cannot_hold_without_a_payload() -> void:
 	## ⛔ THE ISOLATION ARM. Every non-victory event sends `{}`, so a line tagged for a level-up must be
 	## unspeakable on turn_start. Without this, an outcome tag would be a moment tag that holds ALWAYS and
 	## outranks every generic line in the pool — the loudest possible regression, and silent in the data.
-	for tag in ["self_leveled", "self_learned_ability", "long_fight", "one_shot_win"]:
+	for tag in ["self_leveled", "self_learned_ability", "long_fight", "one_shot_win", "won_barely", "someone_fell"]:
 		assert_false(TAGS.tag_holds(str(tag), _ctx({})),
 			"%s holds with no event_data, so it would fire on every ambient line" % tag)
 
@@ -107,9 +165,75 @@ func test_long_fight_is_a_boundary_not_a_coincidence() -> void:
 		"the threshold itself counts as a long fight")
 
 
+func test_a_dip_that_was_healed_back_is_invisible_to_every_final_frame_tag() -> void:
+	## ⛔ THE ARM THAT JUSTIFIES TRACKING AT ALL. A party that fell to 4% and was healed to 90% had the
+	## closest fight of the night, and ally_low / ally_down / last_standing / all_full ALL read false,
+	## because every one of them reads the party as it stands when the line fires. Without the recorded
+	## low-water mark the game has no way to know it happened, so "that was close" could never be said
+	## at the only moment it is true.
+	var healthy_now: Array = [
+		{"name": "Brom", "job_id": "fighter", "hp_pct": 90.0, "is_alive": true},
+		{"name": "Mira", "job_id": "cleric", "hp_pct": 95.0, "is_alive": true},
+	]
+	var c := PartyCombatLineContext.new()
+	c.speaker_name = "Brom"
+	c.event_kind = PartyCombatLineContext.EVENT_VICTORY
+	c.party = healthy_now
+	c.enemies = []
+	c.event_data = {PartyCombatLineContext.VICTORY_LOW_WATER: 4.0}
+	for blind in ["ally_low", "ally_down", "last_standing", "all_full"]:
+		assert_false(TAGS.tag_holds(blind, c),
+			"CONTROL: %s reads the final frame and must be false here — if it holds, this fixture does not demonstrate the gap" % blind)
+	assert_true(TAGS.tag_holds("won_barely", c),
+		"the party reached 4%% and nothing else in the system can say so")
+
+
+func test_a_full_health_finish_is_not_a_close_call() -> void:
+	assert_false(TAGS.tag_holds("won_barely", _ctx({PartyCombatLineContext.VICTORY_LOW_WATER: 100.0})),
+		"an untouched party did not barely win")
+	assert_false(TAGS.tag_holds("won_barely", _ctx({})),
+		"a payload with no low-water key must default safe, not claim a close call")
+
+
+func test_won_barely_is_a_boundary_not_a_pinned_number() -> void:
+	var t: float = TAGS.CLOSE_CALL_PCT
+	assert_gt(t, 1.0, "CONTROL: a threshold at or below 1%% would make the arm below vacuous")
+	assert_true(TAGS.tag_holds("won_barely", _ctx({PartyCombatLineContext.VICTORY_LOW_WATER: t - 1.0})),
+		"below the threshold is a close call")
+	assert_false(TAGS.tag_holds("won_barely", _ctx({PartyCombatLineContext.VICTORY_LOW_WATER: t})),
+		"the threshold itself is not yet a close call, and raising CLOSE_CALL_PCT must not red this")
+
+
+func test_someone_fell_survives_a_revival_where_ally_down_does_not() -> void:
+	## A member who fell and was raised leaves `ally_down` false at victory. _ko_this_battle already
+	## recorded the KO, and routing it is what lets the quip acknowledge a death the party undid.
+	var raised: Array = [
+		{"name": "Brom", "job_id": "fighter", "hp_pct": 70.0, "is_alive": true},
+		{"name": "Mira", "job_id": "cleric", "hp_pct": 30.0, "is_alive": true},
+	]
+	var c := PartyCombatLineContext.new()
+	c.speaker_name = "Brom"
+	c.event_kind = PartyCombatLineContext.EVENT_VICTORY
+	c.party = raised
+	c.enemies = []
+	c.event_data = {PartyCombatLineContext.VICTORY_ANYONE_FELL: true}
+	assert_false(TAGS.tag_holds("ally_down", c), "CONTROL: everyone is standing again, so ally_down is false")
+	assert_true(TAGS.tag_holds("someone_fell", c), "the fight still cost somebody their feet")
+
+
+func test_the_payload_carries_the_fights_shape_not_just_the_speakers() -> void:
+	var p: Dictionary = BM.victory_line_payload("Brom", [_row("Brom", false, [])], 5, false, 11.5, true)
+	assert_almost_eq(float(p[PartyCombatLineContext.VICTORY_LOW_WATER]), 11.5, 0.01, "the low-water mark travels")
+	assert_true(bool(p[PartyCombatLineContext.VICTORY_ANYONE_FELL]), "the KO record travels")
+	var q: Dictionary = BM.victory_line_payload("Brom", [_row("Brom", false, [])], 5, false)
+	assert_almost_eq(float(q[PartyCombatLineContext.VICTORY_LOW_WATER]), 100.0, 0.01,
+		"the default must be a clean fight, so an un-updated caller cannot invent a close call")
+	assert_false(bool(q[PartyCombatLineContext.VICTORY_ANYONE_FELL]), "and cannot invent a casualty")
+
+
 func test_the_outcome_tags_are_known_and_rank_as_moments() -> void:
 	## is_moment_tag is what makes a written line WIN its moment instead of sitting in the generic pool.
-	for tag in ["self_leveled", "self_learned_ability", "long_fight", "one_shot_win"]:
+	for tag in ["self_leveled", "self_learned_ability", "long_fight", "one_shot_win", "won_barely", "someone_fell"]:
 		assert_true(TAGS.is_known_tag(str(tag)), "%s must be known or every line carrying it is mute" % tag)
 		assert_true(TAGS.is_moment_tag(str(tag)),
 			"%s must outrank generic victory lines, or a level-up quip loses to 'Clean. Next.'" % tag)

@@ -127,6 +127,14 @@
 					{
 						"line": "One swing. That's the standard.",
 						"when": "one_shot_win"
+					},
+					{
+						"line": "Too close. Sharpen everything.",
+						"when": "won_barely"
+					},
+					{
+						"line": "You went down. Get up slower next time.",
+						"when": "someone_fell"
 					}
 				],
 				"crit_landed": [
@@ -364,6 +372,14 @@
 					{
 						"line": "One strike and the Loop closed. Barely a verse at all.",
 						"when": "one_shot_win"
+					},
+					{
+						"line": "That verse nearly ended badly. Sit down, all of you.",
+						"when": "won_barely"
+					},
+					{
+						"line": "I brought one of you back. Try not to need it twice.",
+						"when": "someone_fell"
 					}
 				],
 				"crit_landed": [
@@ -589,6 +605,14 @@
 					{
 						"line": "One action, zero variance. Filing under ideal.",
 						"when": "one_shot_win"
+					},
+					{
+						"line": "Margin of error: exceeded. Noted for the record.",
+						"when": "won_barely"
+					},
+					{
+						"line": "One casualty, reversed. The spreadsheet disapproves.",
+						"when": "someone_fell"
 					}
 				],
 				"crit_landed": [
@@ -808,6 +832,14 @@
 					{
 						"line": "One hit. I barely had to commit.",
 						"when": "one_shot_win"
+					},
+					{
+						"line": "I had an exit planned. Nearly used it.",
+						"when": "won_barely"
+					},
+					{
+						"line": "You died a little. I am counting it.",
+						"when": "someone_fell"
 					}
 				],
 				"crit_landed": [
@@ -1027,6 +1059,14 @@
 					{
 						"line": "One beat! One! The shortest song I have ever performed!",
 						"when": "one_shot_win"
+					},
+					{
+						"line": "I was composing an elegy! For US!",
+						"when": "won_barely"
+					},
+					{
+						"line": "A death scene AND a resurrection. What a show.",
+						"when": "someone_fell"
 					}
 				],
 				"crit_landed": [

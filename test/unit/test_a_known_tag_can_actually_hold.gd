@@ -68,6 +68,8 @@ func _situations() -> Dictionary:
 		"the speaker learned an ability": _ectx({PartyCombatLineContext.VICTORY_SELF_LEARNED: true}),
 		"a long grind of a fight": _ectx({PartyCombatLineContext.VICTORY_ROUNDS: TAGS.LONG_FIGHT_ROUNDS}),
 		"the field wiped in one strike": _ectx({PartyCombatLineContext.VICTORY_ONE_SHOT: true}),
+		"somebody dipped and was healed back": _ectx({PartyCombatLineContext.VICTORY_LOW_WATER: 4.0}),
+		"somebody fell and was raised": _ectx({PartyCombatLineContext.VICTORY_ANYONE_FELL: true}),
 	}
 
 

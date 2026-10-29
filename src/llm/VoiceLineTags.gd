@@ -7,6 +7,7 @@ const SIMPLE_TAGS: Array[String] = [
 	"none_down", "all_full", "ally_down", "ally_low", "last_standing",
 	"enemy_last", "enemy_nearly_dead", "many_enemies", "self_status",
 	"self_leveled", "self_learned_ability", "long_fight", "one_shot_win",
+	"won_barely", "someone_fell",
 ]
 ## Say when a line MAY play and hold in most fights, so they filter but never outrank generic lines.
 const PRECONDITION_TAGS: Array[String] = ["none_down", "all_full"]
@@ -15,6 +16,8 @@ const ALLY_LOW_PCT := 30.0
 const ENEMY_NEARLY_DEAD_PCT := 20.0
 ## The four outcome tags read event_data, so they can only hold on a victory line — every other event sends {}.
 const LONG_FIGHT_ROUNDS: int = 8
+## Compared against the lowest HP% REACHED, so a dip that was healed back still counts as close.
+const CLOSE_CALL_PCT := 25.0
 
 
 static func is_known_tag(tag: String) -> bool:
@@ -71,4 +74,9 @@ static func tag_holds(tag: String, ctx: PartyCombatLineContext) -> bool:
 			return int(ctx.event_data.get(PartyCombatLineContext.VICTORY_ROUNDS, 0)) >= LONG_FIGHT_ROUNDS
 		"one_shot_win":
 			return bool(ctx.event_data.get(PartyCombatLineContext.VICTORY_ONE_SHOT, false))
+		"won_barely":
+			## Defaults to 100.0 so a payload without the key never reads as a close call.
+			return float(ctx.event_data.get(PartyCombatLineContext.VICTORY_LOW_WATER, 100.0)) < CLOSE_CALL_PCT
+		"someone_fell":
+			return bool(ctx.event_data.get(PartyCombatLineContext.VICTORY_ANYONE_FELL, false))
 	return false

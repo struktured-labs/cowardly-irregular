@@ -45,6 +45,9 @@ const VICTORY_SELF_LEVELED := "self_leveled"
 const VICTORY_SELF_LEARNED := "self_learned_ability"
 const VICTORY_ROUNDS := "rounds"
 const VICTORY_ONE_SHOT := "one_shot"
+## The lowest HP% any PC REACHED, and whether one fell at any point — neither is readable from final state.
+const VICTORY_LOW_WATER := "low_water_pct"
+const VICTORY_ANYONE_FELL := "anyone_fell"
 
 const RECENT_LIMIT: int = 6
 

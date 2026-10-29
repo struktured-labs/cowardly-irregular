@@ -94,6 +94,16 @@ const AWAITING_RECORDING: Array[String] = [
 	"voice_bard_enemy_felled",
 	"voice_bard_enemy_felled_1",
 	"voice_bard_enemy_felled_2",
+	"voice_fighter_victory_14",
+	"voice_fighter_victory_15",
+	"voice_cleric_victory_29",
+	"voice_cleric_victory_30",
+	"voice_mage_victory_29",
+	"voice_mage_victory_30",
+	"voice_rogue_victory_29",
+	"voice_rogue_victory_30",
+	"voice_bard_victory_29",
+	"voice_bard_victory_30",
 ]
 
 
