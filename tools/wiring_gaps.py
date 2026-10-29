@@ -194,9 +194,30 @@ def single_caller_gaps(files, tests):
             continue
         cname, cbase = names[caller_path], os.path.basename(caller_path)
         pinned = sum(1 for i in idxs if cname in tests[i] or cbase in tests[i])
+
+        ## ⛔ THE FALSE-GAP MODE @cowir-music MEASURED, AND IT IS THE STRONGEST FORM OF PINNING.
+        ## test_a_jukebox_stinger_does_not_resume_the_bed never names `disarm_stinger_resume`: it
+        ## drives `_play_selected()` -- the function CONTAINING the call -- and asserts the bed stayed
+        ## gone. Deleting the call reds it (EC=1, Failing 1, by message). A callee-name count cannot
+        ## see that by construction, and `disarm_stinger_resume` showed 1 caller / 0 mentions, the
+        ## same two numbers as a real gap. So count the DRIVERS OF THE CALLER, not mentions of the
+        ## callee: a test that exercises the enclosing function is what actually defends the call.
+        enclosing = _enclosing_func(dict(files)[caller_path], fn)
+        if enclosing:
+            pinned += sum(1 for t in tests if enclosing in t)
         if not pinned:
             out.append((where[0], fn, caller_path, len(idxs)))
     return out
+
+
+def _enclosing_func(src, callee):
+    """The name of the function containing the first call to `callee`, or "" if none found."""
+    m = re.search(r"(?<!\w)" + re.escape(callee) + r"\s*\(", src)
+    if not m:
+        return ""
+    before = src[:m.start()]
+    hits = FUNC_RE.findall(before)
+    return hits[-1] if hits else ""
 
 
 def _read(path):
@@ -364,15 +385,27 @@ def selftest():
           single_caller_gaps([("src/C.gd", "func _ready() -> void:\n\tpass\n"),
                               ("src/D.gd", "func go():\n\t_ready()\n")], ["_ready"]), [])
 
-    ## 12. a connect with no handler token must not crash or invent a connection
+    ## 12. @cowir-music's FALSE-GAP case: the test drives the CALLER's enclosing function and never
+    ##      names the callee. Before this, that read as a gap with the same two numbers as a real one.
+    jukebox = [
+        ("src/A.gd", "class_name A\nfunc disarm() -> void:\n\tpass\n"),
+        ("src/B.gd", "class_name B\nfunc _play_selected() -> void:\n\t_sm.disarm()\n"),
+    ]
+    check("driving the enclosing function is a pin",
+          single_caller_gaps(jukebox, ["await menu._play_selected()\nassert_eq(track, \"\")"]), [])
+    ## and the same shape WITHOUT a driver is still a gap, or the fix above would pin everything
+    check("no driver is still a gap",
+          [r[1] for r in single_caller_gaps(jukebox, ["disarm() mentioned only"])], ["disarm"])
+
+    ## 14. a connect with no handler token must not crash or invent a connection
     check("junk is ignored", connections_in("something.connect()"), [])
 
     if fails:
         for f in fails:
             print("FAIL %s" % f)
-        print("wiring_gaps selftest: %d of 12 arms FAILED" % len(fails))
+        print("wiring_gaps selftest: %d of 14 arms FAILED" % len(fails))
         return 1
-    print("wiring_gaps selftest: 12/12 arms ran, every assertion held (in-memory only: no file, walk, subprocess or git)")
+    print("wiring_gaps selftest: 14/14 arms ran, every assertion held (in-memory only: no file, walk, subprocess or git)")
     return 0
 
 
