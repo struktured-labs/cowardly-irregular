@@ -1225,6 +1225,8 @@ func end_battle(victory: bool) -> void:
 					AccessibilityPalette.penalty_bbcode(), combatant.combatant_name, injury["description"], injury["penalty"], injury["stat"].capitalize()])
 
 		_battle_results = {
+			"low_water_pct": _battle_low_water_pct,
+			"anyone_fell": not _ko_this_battle.is_empty(),
 			"char_results": char_results,
 			"bonuses": bonuses,
 			"base_exp": base_exp,
