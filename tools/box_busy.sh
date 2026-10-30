@@ -67,6 +67,14 @@ publish_reason() {
   return 1
 }
 
+## Argv entries of a live pid. Unreadable (gone, or not ours) yields 0, which is NOT 1, so the
+## caller treats it as a gate: the fail-closed direction.
+argv_len() {
+  local n=0 a
+  while IFS= read -r -d "" a; do n=$((n + 1)); done < "/proc/$1/cmdline" 2>/dev/null
+  printf "%s\n" "$n"
+}
+
 busy_reason() {
   if [ -f "$BOX_MARKER" ]; then
     local pid; pid="$(sed -n 's/^pid=//p' "$BOX_MARKER" | head -1)"
@@ -77,11 +85,21 @@ busy_reason() {
   fi
   ## A godot running in the fold tree IS the chain or gate, marker or not — so a missing marker
   ## cannot turn a running gate into FREE (cowir-autogrind: it said FREE beside the .692 chain).
-  local p c
+  ## EXCEPT struktured's own game: launch.sh starts it as bare `godot &` from this very tree, so
+  ## while he plays, every lane read BUSY and the whole fleet stalled on his play session.
+  ## The discriminator is ARGV LENGTH, not --headless: 5 of 20 real invocations in tools/ omit
+  ## --headless (the xvfb screenshot and render-smoke paths), while EVERY automated invocation
+  ## passes at least one flag. Argv of exactly 1 is the player and nothing else. An unreadable
+  ## argv counts as a gate, so the unknown case still closes the box.
+  local p c pid
+  PLAYER_PIDS=""
   for p in /proc/[0-9]*; do
     [ "$(readlink "$p/exe" 2>/dev/null)" = "$ENGINE_EXE" ] || continue
     c="$(readlink "$p/cwd" 2>/dev/null)"
-    case "$c" in "$FOLD_TREE"|"$FOLD_TREE"/*) echo "fold-tree godot running: pid ${p#/proc/} cwd=$c"; return 0 ;; esac
+    case "$c" in "$FOLD_TREE"|"$FOLD_TREE"/*) ;; *) continue ;; esac
+    pid="${p#/proc/}"
+    if [ "$(argv_len "$pid")" = 1 ]; then PLAYER_PIDS="${PLAYER_PIDS}${PLAYER_PIDS:+ }$pid"; continue; fi
+    echo "fold-tree godot running: pid $pid cwd=$c"; return 0
   done
   publish_reason && return 0
   return 1
@@ -113,7 +131,7 @@ if [ "${1:-}" = "--selftest" ]; then  # watch the answer flip, so a FREE is neve
   ## the grouping into arms is a judgement the output cannot settle, which is half of why the old
   ## literal went unexamined for so long.
   arms=0
-  EXPECT_ARMS=12
+  EXPECT_ARMS=14
   A() { arms=$((arms + 1)); }
   A  # arm 1  nothing set -> FREE
   BOX_MARKER="$T/m" DEPLOY_DIR="$T/d" FOLD_TREE="$T/none" "$0" >/dev/null || { echo "FAIL: not FREE with nothing set"; fails=1; }
@@ -223,6 +241,36 @@ if [ "${1:-}" = "--selftest" ]; then  # watch the answer flip, so a FREE is neve
   out="$(BOX_BUSY_ENGINE="$STANDIN" DEPLOY_DIR="$T/d" BOX_MARKER="$T/m" FOLD_TREE="$T/none" "$0" --others)"; e=$?
   [ "$e" = 1 ] || { echo "FAIL: --others still busy after the stand-in engine exited: $out"; fails=1; }
 
+  ## The player/gate split. DEPLOY_GLOB is isolated too: publish_reason runs AFTER the engine
+  ## loop, so a real publish in flight would make the FREE arm fail for an unrelated reason.
+  ## The blocker is a copy of `cat` on a fifo because it is the one long-lived process whose argv
+  ## is exactly 1 — `sleep` needs an argument, which is the very thing under test.
+  A  # arm 13 a bare-argv engine in the fold tree is the PLAYER: FREE, and NAMED
+  ## T is RELATIVE (mktemp under dirname $0), so the stand-in path must be absolutised before any
+  ## `cd` — and the marker must be a path NO earlier arm has written, or its live pid answers first.
+  TA="$(cd "$T" && pwd)"
+  mkdir -p "$TA/bin" "$TA/fold"
+  cp "$(readlink -f /usr/bin/cat)" "$TA/bin/cat"
+  mkfifo "$TA/fifo"
+  ( cd "$TA/fold" && exec "$TA/bin/cat" ) < "$TA/fifo" & PLAYER=$!
+  exec 9> "$TA/fifo"
+  sleep 1
+  PENV=(BOX_BUSY_ENGINE="$TA/bin/cat" DEPLOY_DIR="$TA/d" DEPLOY_GLOB="$TA/none" BOX_MARKER="$TA/m_player_none" FOLD_TREE="$TA/fold")
+  out="$(env "${PENV[@]}" "$0")"; e=$?
+  [ "$e" = 0 ] || { echo "FAIL arm13: a bare-argv engine in the fold tree read BUSY (ec=$e): $out"; fails=1; }
+  case "$out" in *"a player instance, not a gate"*) ;; *) echo "FAIL arm13b: FREE did not name the player: $out"; fails=1 ;; esac
+  kill "$PLAYER" 2>/dev/null; wait "$PLAYER" 2>/dev/null
+
+  A  # arm 14 THE CONTROL: same binary, ONE flag, same tree -> BUSY. Without it arm 13 passes for
+     #        any reason at all, including a scan that never saw the process.
+  ( cd "$TA/fold" && exec "$TA/bin/cat" -u ) < "$TA/fifo" & GATE=$!
+  sleep 1
+  out="$(env "${PENV[@]}" "$0")"; e=$?
+  [ "$e" = 1 ] || { echo "FAIL arm14: a FLAGGED engine in the fold tree read FREE (ec=$e) — the player skip is too wide: $out"; fails=1; }
+  case "$out" in *"fold-tree godot running"*) ;; *) echo "FAIL arm14b: BUSY did not name the fold-tree engine: $out"; fails=1 ;; esac
+  kill "$GATE" 2>/dev/null; wait "$GATE" 2>/dev/null
+  exec 9>&-
+
   [ "$arms" = "$EXPECT_ARMS" ] \
     || { echo "FAIL: $arms of $EXPECT_ARMS arms ran — one was dropped, never wired, or an earlier arm exited"; fails=1; }
   [ "$fails" = 0 ] && echo "box_busy selftest: $arms/$EXPECT_ARMS arms ran, every assertion held"
@@ -258,4 +306,10 @@ if [ "${1:-}" = "--wait" ]; then
 fi
 
 if r="$(busy_reason)"; then echo "BUSY: $r"; exit 1; fi
+## busy_reason ran in a subshell above, so re-derive PLAYER_PIDS here rather than read a variable
+## that cannot have crossed back. Named, not silent: a FREE beside a running engine must say why.
+busy_reason >/dev/null || true
+if [ -n "${PLAYER_PIDS:-}" ]; then
+  echo "FREE (struktured's game is up: pid $PLAYER_PIDS — a player instance, not a gate; other lanes' godot up: $(others))"; exit 0
+fi
 echo "FREE (other lanes' godot up: $(others))"; exit 0
