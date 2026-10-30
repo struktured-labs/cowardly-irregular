@@ -59,6 +59,56 @@ def last_record(path):
             continue
     return None
 
+def last_turn(path, max_bytes=16 * 1024 * 1024):
+    """The last record a MODEL actually produced, scanning backward in chunks.
+
+    AN ENTRY IS NOT A TURN, and keying on the file's mtime was this tool's worst defect:
+    attachments, queue-operations, hook context and system notices all append without any
+    turn occurring -- and a <task-notification> arrives with role "user", so even "last user
+    record" is fooled. Measured 2026-10-29 by five lanes on their own transcripts: a shared
+    "Remote Control disconnected -- OAuth token unavailable" system line appended to many
+    files at one instant, and an mtime read called it activity in every one of them. The
+    batch-resumed lanes had ZERO assistant records for 11d22h while their files kept growing.
+    """
+    try:
+        sz = os.path.getsize(path)
+    except OSError:
+        return None
+    chunk, pos, tail = 1024 * 1024, sz, b""
+    while pos > 0 and (sz - pos) < max_bytes:
+        step = min(chunk, pos)
+        pos -= step
+        try:
+            with open(path, "rb") as fh:
+                fh.seek(pos)
+                tail = fh.read(step) + tail
+        except OSError:
+            return None
+        lines = tail.split(b"\n")
+        # the first element may be a partial line unless we are at the start of the file
+        scan = lines if pos == 0 else lines[1:]
+        for line in reversed(scan):
+            line = line.strip()
+            if not line or b'"assistant"' not in line:
+                continue
+            try:
+                r = json.loads(line)
+            except Exception:
+                continue
+            if r.get("type") == "assistant":
+                return r
+        tail = lines[0] if pos > 0 else b""
+    return None
+
+
+def rec_ts(rec):
+    try:
+        return datetime.datetime.fromisoformat(
+            rec["timestamp"].replace("Z", "+00:00")).timestamp()
+    except Exception:
+        return None
+
+
 def assistant_text(rec):
     c = (rec.get("message") or {}).get("content") or []
     if isinstance(c, list):
@@ -160,13 +210,20 @@ def classify(sess, root, stall_secs, idle_hours):
     if not path or not os.path.exists(path):
         out["klass"] = "NO_TRANSCRIPT"
         return out
-    age = now_ts() - os.path.getmtime(path)
-    rec = last_record(path)
-    out["idle_secs"] = int(age)
     out["project"] = os.path.basename(os.path.dirname(path))
+    out["entry_age_secs"] = int(now_ts() - os.path.getmtime(path))
+    # An api-error record IS an assistant record (model "<synthetic>"), so one scan answers
+    # both questions: what the model last did, and how long ago it did it.
+    rec = last_turn(path)
     if rec is None:
-        out["klass"] = "NO_RECORD"
+        # Entries exist but no model turn in reach -- the batch-resume shape. Keyed on the
+        # absence of a turn rather than on a quiet file, which is the distinction that matters.
+        out["klass"] = "ENTRIES_NO_TURNS" if last_record(path) else "NO_RECORD"
+        out["idle_secs"] = out["entry_age_secs"]
         return out
+    t = rec_ts(rec)
+    age = (now_ts() - t) if t else (now_ts() - os.path.getmtime(path))
+    out["idle_secs"] = int(age)
     is_err = bool(rec.get("isApiErrorMessage"))
     out["error"] = rec.get("error") if is_err else None
     out["text"] = assistant_text(rec)[:300]
@@ -251,7 +308,7 @@ def do_pass(args, sessions=None):
         c["action"], c["attempt"] = action, ent["attempts"]
         c["backoff_secs"] = delay
         rows.append(c)
-        if args.notify_cmd and c["klass"] in ("NEEDS_HUMAN", "IDLE") and not ent.get("notified"):
+        if args.notify_cmd and c["klass"] in ("NEEDS_HUMAN", "IDLE", "ENTRIES_NO_TURNS") and not ent.get("notified"):
             subprocess.run(args.notify_cmd + [c["klass"], c.get("project") or "?",
                                               str(c.get("idle_secs") or 0), (c.get("text") or "")[:200]],
                            check=False)
@@ -259,7 +316,7 @@ def do_pass(args, sessions=None):
             st[key] = ent
             if args.act:
                 save_state(args.state, st)
-        if c["klass"] in ("API_STALL", "NEEDS_HUMAN", "IDLE", "NO_RECORD") or action in ("nudged", "would-nudge"):
+        if c["klass"] in ("API_STALL", "NEEDS_HUMAN", "IDLE", "NO_RECORD", "ENTRIES_NO_TURNS") or action in ("nudged", "would-nudge"):
             log_event(args.log, {"ts": iso(now_ts()), "klass": c["klass"], "tmux": c.get("tmux"),
                                  "project": c.get("project"), "sid": c.get("sid"),
                                  "error": c.get("error"), "idle_secs": c.get("idle_secs"),
@@ -355,8 +412,8 @@ def print_rows(rows):
     if not rows:
         print("no claude sessions found")
         return
-    order = {"NEEDS_HUMAN": 0, "API_STALL": 1, "NO_RECORD": 2, "IDLE": 3, "QUIET": 4,
-             "NO_TRANSCRIPT": 5, "WORKING": 6}
+    order = {"NEEDS_HUMAN": 0, "API_STALL": 1, "ENTRIES_NO_TURNS": 2, "NO_RECORD": 3,
+             "IDLE": 4, "QUIET": 5, "NO_TRANSCRIPT": 6, "WORKING": 7}
     for c in sorted(rows, key=lambda r: (order.get(r["klass"], 9), -(r.get("idle_secs") or 0))):
         idle = c.get("idle_secs")
         idle_s = "%6.1fh" % (idle / 3600.0) if idle is not None else "      -"
@@ -405,17 +462,24 @@ def selftest():
             fh.write("#!/usr/bin/env bash\necho \"$@\" >> %s\n" % nudges)
         os.chmod(stub, 0o755)
 
-        def write_tx(sid, recs, age_secs):
+        def write_tx(sid, recs, age_secs, extra=None):
             p = os.path.join(proj, sid + ".jsonl")
             with open(p, "w") as fh:
                 for r in recs:
+                    # stamp the RECORD to the intended age: the tool reads the turn's own
+                    # timestamp now, so a fixture that backdates only the mtime tests nothing
+                    r = dict(r, timestamp=iso(now_ts() - age_secs))
+                    fh.write(json.dumps(r, separators=(",", ":")) + "\n")
+                for r in (extra or []):      # appended AFTER the turn, as a real tail does
                     fh.write(json.dumps(r, separators=(",", ":")) + "\n")
             t = time.time() - age_secs
             os.utime(p, (t, t))
             return p
 
         def err_rec(msg="API Error: Overloaded"):
-            return {"timestamp": iso(now_ts()), "isApiErrorMessage": True, "error": "server_error",
+            # a real api-error record IS type=assistant with model "<synthetic>"
+            return {"timestamp": iso(now_ts()), "type": "assistant", "isApiErrorMessage": True,
+                    "error": "server_error",
                     "message": {"content": [{"type": "text", "text": msg}]}}
 
         def ok_rec(msg="done"):
@@ -522,7 +586,9 @@ def selftest():
         # 14 --report counts by RECORD timestamp, not by file mtime
         old = {"timestamp": "2026-01-01T00:00:00.000Z", "isApiErrorMessage": True,
                "error": "rate_limit", "message": {"content": [{"type": "text", "text": "old"}]}}
-        write_tx("s6", [old, err_rec(), err_rec()], 10)
+        # `old` goes in the un-stamped tail: write_tx re-dates the records it stamps, which
+        # would make the deliberately-ancient one recent and leave the window untestable.
+        write_tx("s6", [err_rec(), err_rec()], 10, extra=[old])
         n = report(root, 48)
         ck("arm14", n >= 2, "report returned %s" % n)
 
@@ -545,6 +611,43 @@ def selftest():
         ck("arm19a", len(lines) == 1, "hook fired %d times across 3 passes: %s" % (len(lines), lines))
         ck("arm19b", lines and lines[0].startswith("IDLE") and "Holding for a ruling" in lines[0],
            "hook payload=%r" % (lines[0] if lines else None))
+
+        # 20 THE DEFECT: entries appended after the last turn must NOT read as activity.
+        #    A shared "Remote Control disconnected" system line appended to many transcripts
+        #    at one instant, and an mtime read called every one of them alive.
+        sysline = {"timestamp": iso(now_ts()), "type": "system", "subtype": "informational",
+                   "content": "Remote Control disconnected - OAuth token unavailable"}
+        attach = {"timestamp": iso(now_ts()), "type": "attachment"}
+        tasknote = {"timestamp": iso(now_ts()), "type": "user",
+                    "message": {"role": "user", "content": "<task-notification>done</task-notification>"}}
+        write_tx("s9", [ok_rec("real work")], 36_000, extra=[attach, sysline])
+        os.utime(os.path.join(proj, "s9.jsonl"), None)       # mtime = NOW, as an append gives
+        r = do_pass(mkargs(), S("s9"))[0]
+        ck("arm20a", r["klass"] == "IDLE",
+           "entries after the turn read as activity: klass=%s" % r["klass"])
+        ck("arm20b", r["idle_secs"] > 30_000,
+           "idle came from mtime, not the turn: idle_secs=%s" % r.get("idle_secs"))
+        ck("arm20c", r.get("entry_age_secs", 9999) < 120,
+           "entry_age must still be reported, and be fresh: %s" % r.get("entry_age_secs"))
+
+        # 21 a <task-notification> arrives with role "user" -- the check that fools a
+        #    "last user record" heuristic specifically
+        write_tx("s10", [ok_rec("real work")], 36_000, extra=[tasknote])
+        os.utime(os.path.join(proj, "s10.jsonl"), None)
+        r = do_pass(mkargs(), S("s10"))[0]
+        ck("arm21", r["klass"] == "IDLE" and r["idle_secs"] > 30_000,
+           "a machine user-record read as a turn: klass=%s idle=%s" % (r["klass"], r.get("idle_secs")))
+
+        # 22 entries but ZERO model turns -- the batch-resume shape, its own class
+        write_tx("s11", [], 10, extra=[attach, attach, sysline])
+        r = do_pass(mkargs(), S("s11"))[0]
+        ck("arm22", r["klass"] == "ENTRIES_NO_TURNS", "klass=%s" % r["klass"])
+
+        # 23 POSITIVE CONTROL: a genuinely fresh turn is still WORKING, so arm20 is not
+        #    passing because everything now reads IDLE
+        write_tx("s12", [ok_rec("just now")], 5)
+        r = do_pass(mkargs(), S("s12"))[0]
+        ck("arm23", r["klass"] == "WORKING", "a fresh turn must read WORKING: %s" % r["klass"])
 
         # 18 a --scan is read-only: it names the stall but spends no backoff budget
         write_tx("s7", [err_rec()], 600)
@@ -571,7 +674,7 @@ def selftest():
         for f in fails:
             print("  " + f)
         return 1
-    print("fleet_watchdog selftest: 22 arms ran, every assertion held")
+    print("fleet_watchdog selftest: 29 arms ran, every assertion held")
     return 0
 
 if __name__ == "__main__":
