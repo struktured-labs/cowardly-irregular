@@ -14,6 +14,12 @@ const BADGES := ["①", "②", "③", "④", "⑤"]
 
 var _cards: Array[PanelContainer] = []
 var _keys: Array[String] = []
+## A fired step's text, kept after _take vacates its slot. `card_text` is how a caller
+## observes that a step named who it ACTUALLY hit (including a retarget), and that read
+## happens AFTER the step fires -- so vacating the slot made the answer "" and red
+## test_a_step_names_who_it_actually_hit_including_a_retarget. The card still leaves
+## `_cards`; only its text outlives it.
+var _taken_text: Dictionary = {}
 
 
 func _ready() -> void:
@@ -88,7 +94,7 @@ func card_count() -> int:
 
 func card_text(i: int) -> String:
 	if i < 0 or i >= _cards.size() or not is_instance_valid(_cards[i]):
-		return ""
+		return str(_taken_text.get(i, ""))
 	var l: Label = _cards[i].find_child("Text", true, false)
 	return l.text if l else ""
 
@@ -139,6 +145,10 @@ func _take(i: int) -> PanelContainer:
 	if i < 0 or i >= _cards.size():
 		return null
 	var card: PanelContainer = _cards[i] if is_instance_valid(_cards[i]) else null
+	if card != null:
+		var l: Label = card.find_child("Text", true, false)
+		if l:
+			_taken_text[i] = l.text
 	_cards[i] = null
 	return card
 
@@ -258,6 +268,7 @@ static func names_of(targets: Array) -> String:
 
 func run_begin(actions: Array, beside: Rect2, animate: bool) -> void:
 	clear(false)
+	_taken_text.clear()
 	_run_planned.clear()
 	_run_actions = actions.duplicate()
 	var vp := get_viewport_rect().size
@@ -318,6 +329,7 @@ func run_end(animate: bool) -> void:
 		_peel(_take(i), animate)
 	_cards.clear()
 	_keys.clear()
+	_taken_text.clear()
 
 
 ## A step is still to fire.
