@@ -364,12 +364,23 @@ def do_tick(args, rows, st):
         return None
 
     if args.tick_guard_cmd:
-        # exit 0 means "hold off" -- box_busy.sh --publish exits 0 when a publish is IN FLIGHT
+        # A SAFETY GUARD MUST FAIL CLOSED, and this one did not. box_busy.sh --publish exits
+        # 0 = a publish IS in flight, 1 = none. Every OTHER code means the guard did not
+        # answer: 2 is its own usage error, 127 is "command not found", and a crash is
+        # anything. Testing only `== 0` treated all of those as "no publish, go ahead" --
+        # the fail-toward-GO direction this fleet spent 2026-10-29 cataloguing, written into
+        # the check meant to prevent collisions. Only an explicit 1 releases the hold.
         import shlex
         cmd = (shlex.split(args.tick_guard_cmd)
                if isinstance(args.tick_guard_cmd, str) else list(args.tick_guard_cmd))
-        if subprocess.run(cmd, capture_output=True).returncode == 0:
+        try:
+            rc = subprocess.run(cmd, capture_output=True).returncode
+        except OSError as e:
+            return refuse("guard-cmd could not run: %s" % e.__class__.__name__)
+        if rc == 0:
             return refuse("guard-cmd says hold")
+        if rc != 1:
+            return refuse("guard-cmd did not answer (exit %d) — holding" % rc)
     if len(log) >= args.tick_max_per_hour:
         return refuse("hourly ceiling", ticks_this_hour=len(log))
     if log and (now - max(log)) < args.tick_min_gap:
@@ -875,6 +886,27 @@ def selftest():
         ck("arm34b", nudge_count() == before + 1,
            "without --publish the same guard must exit 1 and let the tick through")
 
+        # 35 A BROKEN GUARD MUST HOLD, NOT PROCEED. @cowir-autogrind's finding applied to my
+        #    own code: a stale/missing/erroring guard previously read as "no publish, go".
+        for rc, name in ((2, "usage"), (127, "notfound"), (3, "crash")):
+            bad = os.path.join(T, "bad%d.sh" % rc)
+            open(bad, "w").write("#!/usr/bin/env bash\nexit %d\n" % rc)
+            os.chmod(bad, 0o755)
+            ab = tickargs("bad%d" % rc, tick_guard_cmd=bad); before = nudge_count()
+            do_pass(ab, T1)
+            ck("arm35-%s" % name,
+               nudge_count() == before
+               and any("did not answer" in (t.get("reason") or "") for t in ticks_of(ab.log)),
+               "guard exit %d did not hold: nudges %d->%d reasons=%s"
+               % (rc, before, nudge_count(), [t.get("reason") for t in ticks_of(ab.log)]))
+        # and a guard that cannot be executed at all
+        ax = tickargs("noexec", tick_guard_cmd=os.path.join(T, "does_not_exist_at_all"))
+        before = nudge_count()
+        do_pass(ax, T1)
+        ck("arm35-oserror", nudge_count() == before
+           and any("could not run" in (t.get("reason") or "") for t in ticks_of(ax.log)),
+           "an unrunnable guard did not hold")
+
         a5 = tickargs("go", tick_guard_cmd=[go]); before = nudge_count()
         do_pass(a5, T1)
         ck("arm31b", nudge_count() == before + 1, "guard exit 1 should have let the tick through")
@@ -908,7 +940,7 @@ def selftest():
         for f in fails:
             print("  " + f)
         return 1
-    print("fleet_watchdog selftest: 46 arms ran, every assertion held")
+    print("fleet_watchdog selftest: 50 arms ran, every assertion held")
     return 0
 
 if __name__ == "__main__":
