@@ -92,6 +92,31 @@ func test_the_physical_half_is_exactly_as_it_was() -> void:
 		"and the magic half matches it rather than inventing a second number")
 
 
+# ── the claim the comment now rests on ──────────────────────────────
+
+func test_no_warden_deals_aoe_magic_so_the_comment_stays_true() -> void:
+	## The rationale first shipped with this fix said "every wall boss deals AoE magic". It was
+	## wrong and @cowir-adhoc measured it: the warden AoE (masterite_endurance_test) is PHYSICAL and
+	## its magic (masterite_judgment) is single_enemy. This reds if that flips, which is exactly
+	## when LensSystem's comment and lenses.json's note need re-reading -- not on a magnitude.
+	var ab = JSON.parse_string(FileAccess.get_file_as_string("res://data/abilities.json"))
+	var mo = JSON.parse_string(FileAccess.get_file_as_string("res://data/monsters.json"))
+	var abil: Dictionary = ab.get("abilities", ab)
+	var mons: Dictionary = mo.get("monsters", mo)
+	var wardens := 0
+	for mid in mons.keys():
+		if not str(mid).begins_with("masterite_warden"):
+			continue
+		wardens += 1
+		for aid in (mons[mid] as Dictionary).get("abilities", []):
+			var a: Dictionary = abil.get(aid, {})
+			var is_aoe_magic: bool = str(a.get("type", "")) == "magic" \
+				and str(a.get("target_type", "")).contains("all")
+			assert_false(is_aoe_magic,
+				"%s now carries AoE magic (%s) — re-read LensSystem's magic_defense_multiplier comment and lenses.json's note, which both state no warden does" % [mid, aid])
+	assert_gt(wardens, 0, "the derivation must reach some wardens, or it certifies nothing")
+
+
 # ── the generalizing guard ──────────────────────────────────────────
 
 func test_every_lens_stat_mod_key_survives_both_gates() -> void:
