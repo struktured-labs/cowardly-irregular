@@ -906,6 +906,11 @@ func _setup_lighting() -> void:
 	add_child(lighting)
 
 
+## Base torch. Mirrors DragonCave's seam so a retune of the W1 flame reaches this cave too.
+func _get_torch_tint() -> Color:
+	return DungeonLightingScript.TORCH_TINT
+
+
 ## Landmarks earn a torch: the way in, the way on, the treasure, the boss.
 func _place_torches() -> void:
 	if lighting == null:
@@ -916,7 +921,7 @@ func _place_torches() -> void:
 	lighting._lamps.clear()
 	for key in spawn_points:
 		var k := str(key)
-		var tint := Color(1.0, 0.80, 0.45)
+		var tint := _get_torch_tint()
 		var radius := 112
 		var energy := 1.0
 		if k == "boss":

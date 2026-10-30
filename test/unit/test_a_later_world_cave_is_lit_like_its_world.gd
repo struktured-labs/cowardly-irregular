@@ -154,6 +154,7 @@ func test_a_later_world_cave_does_not_fall_back_to_the_w1_look() -> void:
 	var knee: float = VL.LAMP_FADE_START - VL.LAMP_FADE_SPAN
 
 	var unclassified: Array = []
+	var offbrand: Array = []
 	var later_exit_maps: Dictionary = {}
 
 	for name in scripts:
@@ -175,6 +176,12 @@ func test_a_later_world_cave_does_not_fall_back_to_the_w1_look() -> void:
 
 		if not has_lens:
 			unclassified.append(name)
+			# A dungeon outside the world lens is a W1-era map, so its base torch must still
+			# be the W1 flame. WhisperingCave does not extend DragonCave and owns its own
+			# _place_torches, so without this it is judged by NEITHER the later-world arms nor
+			# the W1 control, and a retune of TORCH_TINT would silently leave it behind.
+			if not _has_color(_lamp_colors(d), DL.TORCH_TINT):
+				offbrand.append("%s carries no TORCH_TINT lamp — a retune of the W1 flame will not reach it" % name)
 			continue
 		if exit_map == W1_EXIT_MAP:
 			w1.append(name)
@@ -210,6 +217,9 @@ func test_a_later_world_cave_does_not_fall_back_to_the_w1_look() -> void:
 	assert_gt(later_exit_maps.size(), 0, "CONTROL: no later-world exit maps derived, so the evasion check is empty")
 	assert_eq(evaded, [],
 		"a later-world dungeon is invisible to the world lens, so its lighting is never checked: %s" % str(evaded))
+
+	assert_eq(offbrand, [],
+		"a dungeon outside the world lens does not read the shared W1 flame: %s" % str(offbrand))
 
 	assert_eq(unlit, [], "a dungeon built no lighting rig: %s" % str(unlit))
 	assert_eq(medieval_ambient, [],
@@ -250,3 +260,37 @@ func test_w1_caves_still_look_medieval() -> void:
 		"no W1 cave carries the default ambient any more -- this fold moved W1, or the default became unreachable")
 	assert_gt(flamelit.size(), 0,
 		"no W1 cave is lit by the W1 flame any more -- _get_torch_tint's default stopped being the flame")
+
+
+## The behavioural arm above reds only once someone RETUNES the flame. This one reds the moment a
+## SECOND copy of it appears, which is the defect itself: two sources for one surface, one silently
+## winning. Measured 2026-10-30 — adding DragonCave._get_torch_tint left WhisperingCave's own
+## _place_torches holding the literal, so the seam covered 14 dungeons and missed the first cave.
+func test_the_w1_flame_has_exactly_one_source() -> void:
+	var dir := DirAccess.open(DUNGEON_DIR)
+	var copies: Array = []
+	var scanned := 0
+	if dir != null:
+		dir.list_dir_begin()
+		var f := dir.get_next()
+		while f != "":
+			if f.ends_with(".gd"):
+				scanned += 1
+				var src := FileAccess.get_file_as_string("%s/%s" % [DUNGEON_DIR, f])
+				if src.contains(_flame_literal()):
+					copies.append(f)
+			f = dir.get_next()
+
+	# CONTROL: the literal must be findable where it IS declared, or this scan proves nothing.
+	var rig := FileAccess.get_file_as_string("res://src/exploration/DungeonLighting.gd")
+	assert_true(rig.contains(_flame_literal()),
+		"CONTROL: the flame literal must appear in DungeonLighting.gd, else this pattern is dead")
+	assert_gt(scanned, 8, "CONTROL: only %d dungeon scripts scanned" % scanned)
+	assert_eq(copies, [],
+		"the W1 flame is hardcoded outside DungeonLighting.gd, so a retune reaches only some caves: %s" % str(copies))
+
+
+## Derived from the constant rather than typed, so the scan cannot pin a stale spelling.
+func _flame_literal() -> String:
+	var c: Color = DL.TORCH_TINT
+	return "Color(%.1f, %.2f, %.2f)" % [c.r, c.g, c.b]
