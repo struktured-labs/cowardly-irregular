@@ -227,10 +227,36 @@ def _py_module_env_governs(tree):
     return False
 
 
+def _py_env_parents(value):
+    """Names a derived env could have inherited XDG_DATA_HOME FROM. Every idiom that
+    re-derives one mapping from another: dict(base, ...), base.copy(), {**base, ...},
+    and base | {...}. A form not listed yields nothing, so the chain ends and reds."""
+    out = []
+    if isinstance(value, ast.Call):
+        for a in value.args:
+            if isinstance(a, ast.Name):
+                out.append(a.id)
+        if isinstance(value.func, ast.Attribute) and value.func.attr == "copy" \
+           and isinstance(value.func.value, ast.Name):
+            out.append(value.func.value.id)
+    elif isinstance(value, ast.Dict):
+        for k, v in zip(value.keys, value.values):
+            if k is None and isinstance(v, ast.Name):
+                out.append(v.id)
+    elif isinstance(value, ast.BinOp) and isinstance(value.op, ast.BitOr):
+        for side in (value.left, value.right):
+            if isinstance(side, ast.Name):
+                out.append(side.id)
+    return out
+
+
 def _py_env_governs(call, tree):
-    """`env=` on THIS call. Two spellings, plus one level of indirection because
-    `e = dict(os.environ); e["XDG_DATA_HOME"] = sb; ...env=e` is idiomatic. A deeper
-    indirection reds, which is the safe direction and names its own cure."""
+    """`env=` on THIS call. Two spellings, plus a CHAIN of name indirection, because a
+    sandboxed base env is routinely re-derived per call: `env = dict(os.environ,
+    XDG_DATA_HOME=sb)` then `e = dict(env, EXTRA=...)` then `env=e`. Resolving only the
+    last hop red `tools/boss_ladder_sweep.py:112`, which IS sandboxed — a false positive
+    that blocks every publish (publish_all.sh gate 0a). An UNRESOLVABLE chain still reds,
+    which is the safe direction and names its own cure."""
     kw = next((k for k in call.keywords if k.arg == "env"), None)
     if kw is None:
         return False
@@ -239,18 +265,24 @@ def _py_env_governs(call, tree):
             if isinstance(k, ast.Constant) and k.value == "XDG_DATA_HOME":
                 return True
     if isinstance(kw.value, ast.Name):
-        name = kw.value.id
-        for node in ast.walk(tree):
-            if isinstance(node, ast.Assign):
+        pending, seen = [kw.value.id], set()
+        while pending:
+            name = pending.pop()
+            if name in seen or len(seen) >= 16:
+                break
+            seen.add(name)
+            for node in ast.walk(tree):
+                if not isinstance(node, ast.Assign):
+                    continue
                 for t in node.targets:
                     if isinstance(t, ast.Subscript) and isinstance(t.value, ast.Name) \
                        and t.value.id == name and isinstance(t.slice, ast.Constant) \
                        and t.slice.value == "XDG_DATA_HOME":
                         return True
                     if isinstance(t, ast.Name) and t.id == name:
-                        seg = ast.dump(node.value)
-                        if "XDG_DATA_HOME" in seg:
+                        if "XDG_DATA_HOME" in ast.dump(node.value):
                             return True
+                        pending.extend(_py_env_parents(node.value))
     return False
 
 
@@ -612,6 +644,38 @@ def selftest():
             'e["XDG_DATA_HOME"] = "sb"\n'
             'subprocess.run(["godot", "--import"], env=e)\n')])
         check("python: env=NAME resolves one level", len(f), 0)
+
+        # ⛔ THE SHAPE THAT RED tools/boss_ladder_sweep.py:112, WHICH IS SANDBOXED. Resolving only
+        # the last hop reported it UNSANDBOXED, and publish_all.sh gate 0a refuses on that.
+        f, o, dec, _ = audit([w("p_chain.py",
+            'import os, subprocess\n'
+            'env = dict(os.environ, XDG_DATA_HOME="sb")\n'
+            'e = dict(env, BAL_LEVEL="7")\n'
+            'subprocess.run(["godot", "--headless", "-s", "x.gd"], env=e)\n')])
+        check("python: env=NAME resolves a dict(base, ...) CHAIN", len(f), 0)
+
+        f, o, dec, _ = audit([w("p_copy.py",
+            'import os, subprocess\n'
+            'base = dict(os.environ, XDG_DATA_HOME="sb")\n'
+            'e = base.copy()\n'
+            'subprocess.run(["godot", "--import"], env=e)\n')])
+        check("python: env=NAME resolves a .copy() hop", len(f), 0)
+
+        f, o, dec, _ = audit([w("p_splat.py",
+            'import os, subprocess\n'
+            'base = dict(os.environ, XDG_DATA_HOME="sb")\n'
+            'e = {**base, "BAL_GEAR": "1"}\n'
+            'subprocess.run(["godot", "--import"], env=e)\n')])
+        check("python: env=NAME resolves a {**base} hop", len(f), 0)
+
+        # THE SAFE DIRECTION, and the arm that keeps the chain from licensing anything: a hop
+        # whose parent never carries the variable still REDS rather than being assumed clean.
+        f, o, dec, _ = audit([w("p_chain_unsandboxed.py",
+            'import os, subprocess\n'
+            'env = dict(os.environ, BAL_TRIALS="3")\n'
+            'e = dict(env, BAL_LEVEL="7")\n'
+            'subprocess.run(["godot", "--import"], env=e)\n')])
+        check("python: a CHAIN carrying no XDG_DATA_HOME still reds", len(f), 1)
 
         f, o, dec, _ = audit([w("p_runtests.py",
             'import subprocess\n'
