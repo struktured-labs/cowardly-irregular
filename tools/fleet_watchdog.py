@@ -339,19 +339,81 @@ def do_pass(args, sessions=None):
                                  "error": c.get("error"), "idle_secs": c.get("idle_secs"),
                                  "action": action, "attempt": ent["attempts"],
                                  "backoff_secs": delay, "text": c.get("text", "")[:200]})
+    if args.tick:
+        do_tick(args, rows, st)
     if args.act:
         save_state(args.state, st)
     return rows
 
-def nudge(args, c):
+def do_tick(args, rows, st):
+    """One lane gets its hourly prompt, subject to a budget, or nobody does.
+
+    WHY A TICK IS NEEDED AT ALL: a lane that finishes its work and goes quiet is not woken by
+    anything -- six lanes measured that on 2026-10-29, and one batch resume cost the fleet twelve
+    days. WHY IT IS BUDGETED: the 182 rate_limit hits of 2026-10-13..15 came from the whole fleet
+    working at once, so the danger is not the tick, it is the WORK a tick starts. Hence a cap on
+    how many lanes may be active, a fleet-wide minimum gap, and an hourly ceiling -- and every
+    refusal is logged with its reason, because a silent skip is indistinguishable from a tick."""
+    now = now_ts()
+    log = [t for t in st.get("_ticks", []) if now - t < 3600]
+    st["_ticks"] = log
+
+    def refuse(why, **kw):
+        log_event(args.log, dict({"ts": iso(now), "klass": "TICK", "action": "skipped",
+                                  "reason": why}, **kw))
+        return None
+
+    if args.tick_guard_cmd:
+        # exit 0 means "hold off" -- box_busy.sh --publish exits 0 when a publish is IN FLIGHT
+        import shlex
+        cmd = (shlex.split(args.tick_guard_cmd)
+               if isinstance(args.tick_guard_cmd, str) else list(args.tick_guard_cmd))
+        if subprocess.run(cmd, capture_output=True).returncode == 0:
+            return refuse("guard-cmd says hold")
+    if len(log) >= args.tick_max_per_hour:
+        return refuse("hourly ceiling", ticks_this_hour=len(log))
+    if log and (now - max(log)) < args.tick_min_gap:
+        return refuse("min-gap", since_last=int(now - max(log)))
+
+    lanes = [r for r in rows if (r.get("project") or "").startswith("-home")
+             and args.tick_prefix in (r.get("project") or "")]
+    active = [r for r in lanes if (r.get("idle_secs") is not None
+                                   and r["idle_secs"] < args.tick_active_window)]
+    if len(active) >= args.tick_max_active:
+        return refuse("budget: lanes already working", active=len(active))
+
+    # oldest-silent first, and never a lane that is working or already in a nudged state
+    due = [r for r in lanes
+           if r.get("idle_secs") is not None
+           and r["idle_secs"] >= args.tick_active_window
+           and r["klass"] not in ("API_STALL", "NEEDS_HUMAN", "NO_TURN_SINCE_START")
+           and (now - float(st.get(r.get("sid") or r["tmux"], {}).get("last_tick", 0)))
+               >= args.tick_interval]
+    if not due:
+        return refuse("none due")
+    pick = max(due, key=lambda r: r["idle_secs"])
+    if args.act:
+        nudge(args, pick, text=args.tick_text)
+    ent = st.setdefault(pick.get("sid") or pick["tmux"], {"attempts": 0, "last_nudge": 0.0})
+    ent["last_tick"] = now
+    st["_ticks"] = log + [now]
+    log_event(args.log, {"ts": iso(now), "klass": "TICK",
+                         "action": "ticked" if args.act else "would-tick",
+                         "project": pick.get("project"), "tmux": pick.get("tmux"),
+                         "idle_secs": pick.get("idle_secs"), "active": len(active)})
+    return pick
+
+
+def nudge(args, c, text=None):
     """Resubmit in the stalled pane. A stalled Claude TUI needs a prompt, not a signal."""
     if args.nudge_cmd:
-        subprocess.run(args.nudge_cmd + [c.get("tmux") or "", c.get("sid") or ""], check=False)
+        subprocess.run(args.nudge_cmd + [c.get("tmux") or "", c.get("sid") or "",
+                                         (text or args.nudge_text)[:40]], check=False)
         return
     t = c.get("tmux")
     if not t:
         return
-    subprocess.run(["tmux", "send-keys", "-t", t, "-l", args.nudge_text], check=False)
+    subprocess.run(["tmux", "send-keys", "-t", t, "-l", text or args.nudge_text], check=False)
     subprocess.run(["tmux", "send-keys", "-t", t, "Enter"], check=False)
 
 # ---------------------------------------------------------------- report
@@ -423,6 +485,27 @@ def build_parser():
     # IDLE is a REPORT, not a repair -- see the header. A log nobody opens is not "surfaced",
     # so an escalation hook can be attached; it fires ONCE per lane per threshold crossing.
     ap.add_argument("--notify-cmd", dest="notify_cmd", nargs="+", default=None)
+    # --- the staggered hourly lane tick (struktured, 2026-10-29) ---------------------------
+    ap.add_argument("--tick", action="store_true",
+                    help="also give each lane its hourly tick, staggered and budgeted")
+    ap.add_argument("--tick-interval", dest="tick_interval", type=float, default=3600)
+    ap.add_argument("--tick-min-gap", dest="tick_min_gap", type=float, default=300,
+                    help="minimum seconds between ANY two ticks fleet-wide -- this is the stagger")
+    ap.add_argument("--tick-max-active", dest="tick_max_active", type=int, default=4,
+                    help="skip ticking while this many lanes are already working (the budget)")
+    ap.add_argument("--tick-active-window", dest="tick_active_window", type=float, default=1200)
+    ap.add_argument("--tick-max-per-hour", dest="tick_max_per_hour", type=int, default=13)
+    ap.add_argument("--tick-prefix", dest="tick_prefix", default="cowir-")
+    # ONE STRING, shlex-split -- NOT nargs="+", which cannot accept a command whose own
+    # argument starts with a dash: `--tick-guard-cmd tools/box_busy.sh --publish` made argparse
+    # claim --publish as an unknown option of ours and print usage instead of running.
+    # The real guard is exactly that shape, so nargs="+" was unusable for its only use case.
+    ap.add_argument("--tick-guard-cmd", dest="tick_guard_cmd", default=None,
+                    help="shell-quoted command whose EXIT 0 means 'hold off', "
+                         "e.g. --tick-guard-cmd 'tools/box_busy.sh --publish'")
+    ap.add_argument("--tick-text", dest="tick_text",
+                    default="Hourly tick: pick ONE feature or fix in your lane and land it. "
+                            "Check tools/box_busy.sh and the channel queue before any godot run.")
     return ap
 
 def print_rows(rows):
@@ -708,6 +791,112 @@ def selftest():
         ck("arm18c", r["action"] == "nudged" and r["attempt"] == 1,
            "action=%s attempt=%s" % (r["action"], r["attempt"]))
 
+        # ── the hourly tick: every refusal reason gets an arm, because a budget nobody has
+        #    watched refuse is worth nothing, and a silent skip looks exactly like a tick ──
+        def ticks_of(logp):
+            try:
+                return [json.loads(l) for l in open(logp) if '"TICK"' in l]
+            except OSError:
+                return []
+
+        def tickargs(name="shared", **kw):
+            a = mkargs(tick=True, tick_prefix="x-lane", tick_active_window=1200,
+                       tick_interval=3600, tick_min_gap=300, tick_max_active=4,
+                       tick_max_per_hour=13, tick_guard_cmd=None)
+            a.log = os.path.join(T, "ticklog_%s.jsonl" % name)
+            a.state = os.path.join(T, "tickstate_%s.json" % name)
+            for k, v in kw.items():
+                setattr(a, k, v)
+            return a
+
+        write_tx("t1", [ok_rec("quiet lane")], 7200)      # silent 2h -> due
+        T1 = [{"tmux": "t-t1", "cwd": "/home/x/lane", "sid": "t1", "pid": 0, "proc_age_secs": 99999}]
+
+        # 27 a due, silent lane is ticked, with the TICK text and not the nudge text
+        a = tickargs()
+        before = nudge_count()
+        do_pass(a, T1)
+        ck("arm27a", nudge_count() == before + 1, "no tick fired: %d->%d" % (before, nudge_count()))
+        ck("arm27b", any(t["action"] == "ticked" for t in ticks_of(a.log)),
+           "tick not logged: %s" % ticks_of(a.log))
+        ck("arm27c", "Hourly tick" in open(nudges).read(),
+           "the tick sent the wrong text")
+
+        # 28 immediately again -> refused by the fleet-wide MIN GAP, with that reason logged
+        before = nudge_count()
+        do_pass(a, T1)
+        ck("arm28", nudge_count() == before
+                    and any(t.get("reason") == "min-gap" for t in ticks_of(a.log)),
+           "min-gap not enforced/logged: nudges %d->%d reasons=%s"
+           % (before, nudge_count(), [t.get("reason") for t in ticks_of(a.log)]))
+
+        # 29 THE BUDGET: too many lanes already working -> refuse, reason logged
+        write_tx("t2", [ok_rec("busy lane")], 10)        # active
+        T2 = T1 + [{"tmux": "t-t2", "cwd": "/home/x/lane", "sid": "t2", "pid": 0,
+                    "proc_age_secs": 99999}]
+        a2 = tickargs("budget", tick_max_active=1)
+        before = nudge_count()
+        do_pass(a2, T2)
+        ck("arm29", nudge_count() == before
+                    and any(t.get("reason", "").startswith("budget") for t in ticks_of(a2.log)),
+           "budget did not refuse: nudges %d->%d" % (before, nudge_count()))
+
+        # 30 the hourly CEILING refuses even with nothing else in the way
+        a3 = tickargs("ceiling", tick_max_per_hour=2)
+        st3 = {"_ticks": [now_ts() - 10, now_ts() - 20]}
+        save_state(a3.state, st3)
+        before = nudge_count()
+        do_pass(a3, T1)
+        ck("arm30", nudge_count() == before
+                    and any(t.get("reason") == "hourly ceiling" for t in ticks_of(a3.log)),
+           "ceiling did not refuse: nudges %d->%d" % (before, nudge_count()))
+
+        # 31 the GUARD (exit 0 = hold, matching box_busy.sh --publish) refuses; exit 1 proceeds
+        hold = os.path.join(T, "hold.sh"); go = os.path.join(T, "go.sh")
+        open(hold, "w").write("#!/usr/bin/env bash\nexit 0\n")
+        open(go, "w").write("#!/usr/bin/env bash\nexit 1\n")
+        os.chmod(hold, 0o755); os.chmod(go, 0o755)
+        a4 = tickargs("hold", tick_guard_cmd=[hold]); before = nudge_count()
+        do_pass(a4, T1)
+        ck("arm31a", nudge_count() == before
+                     and any(t.get("reason") == "guard-cmd says hold" for t in ticks_of(a4.log)),
+           "guard did not hold")
+        # 34 the guard accepts a DASH-CARRYING argument as one shlex string -- the real shape
+        flagged = os.path.join(T, "flagged.sh")
+        open(flagged, "w").write('#!/usr/bin/env bash\n[ "$1" = "--publish" ] && exit 0\nexit 1\n')
+        os.chmod(flagged, 0o755)
+        a4b = tickargs("flag", tick_guard_cmd="%s --publish" % flagged); before = nudge_count()
+        do_pass(a4b, T1)
+        ck("arm34a", nudge_count() == before
+                     and any(t.get("reason") == "guard-cmd says hold" for t in ticks_of(a4b.log)),
+           "a dash-carrying guard arg did not reach the command")
+        a4c = tickargs("noflag", tick_guard_cmd=flagged); before = nudge_count()
+        do_pass(a4c, T1)
+        ck("arm34b", nudge_count() == before + 1,
+           "without --publish the same guard must exit 1 and let the tick through")
+
+        a5 = tickargs("go", tick_guard_cmd=[go]); before = nudge_count()
+        do_pass(a5, T1)
+        ck("arm31b", nudge_count() == before + 1, "guard exit 1 should have let the tick through")
+
+        # 32 a lane in the DEADLOCK class is not ALSO ticked -- it is already being nudged
+        write_tx("t3", [ok_rec("pre-resume")], 7200)
+        T3 = [{"tmux": "t-t3", "cwd": "/home/x/lane", "sid": "t3", "pid": 0, "proc_age_secs": 600}]
+        a6 = tickargs("deadlock"); before = nudge_count()
+        r = do_pass(a6, T3)[0]
+        ck("arm32", r["klass"] == "NO_TURN_SINCE_START" and nudge_count() == before + 1,
+           "expected exactly ONE poke (the deadlock nudge), got klass=%s nudges %d->%d"
+           % (r["klass"], before, nudge_count()))
+
+        # 33 a WORKING lane is never ticked, and the reason is "none due" not a budget refusal
+        write_tx("t4", [ok_rec("busy")], 30)
+        T4 = [{"tmux": "t-t4", "cwd": "/home/x/lane", "sid": "t4", "pid": 0, "proc_age_secs": 99999}]
+        a7 = tickargs("nonedue"); before = nudge_count()
+        do_pass(a7, T4)
+        ck("arm33", nudge_count() == before
+                    and any(t.get("reason") == "none due" for t in ticks_of(a7.log)),
+           "a working lane was ticked or refused for the wrong reason")
+
         # 17 the watchdog excludes its own tmux session
         a = mkargs(exclude="t-s1")
         rows = do_pass(a, S("s1"))
@@ -719,7 +908,7 @@ def selftest():
         for f in fails:
             print("  " + f)
         return 1
-    print("fleet_watchdog selftest: 33 arms ran, every assertion held")
+    print("fleet_watchdog selftest: 46 arms ran, every assertion held")
     return 0
 
 if __name__ == "__main__":
