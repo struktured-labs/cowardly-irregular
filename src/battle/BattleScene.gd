@@ -2124,6 +2124,13 @@ func _build_input_hint_bar() -> void:
 	## at 704, i.e. 64px right of a bar whose whole anchor preset is CENTER_BOTTOM. Only players
 	## whose pad family is unrecognised ever see the fallback, so this went unnoticed.
 	hint_panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	## ⛔ AND THE SAME QUESTION VERTICALLY, WHICH THE LINE ABOVE DID NOT ASK. grow_vertical
+	## defaults to END — DOWNWARD — on a panel anchored CENTER_BOTTOM at offset -6, and a
+	## PanelContainer GROWS to fit its label rather than clipping it. So the bar does not lose
+	## its text at large Text Size, it leaves the screen: measured on the real node at 1280x720,
+	## bottom 728 against a 720-tall parent at 2.0x. Growing BEGIN sends the extra height up into
+	## the battle view, which is an overlay and has the room.
+	hint_panel.grow_vertical = Control.GROW_DIRECTION_BEGIN
 	## 520px held SIX tokens edge to edge; Repeat (2026-10-12) makes seven, so the bar is 600 wide.
 	## Measured on a rendered 1280x720 frame, not computed: seven fit on ONE line, which is why the
 	## 28px height is unchanged. Do not add autowrap — a second line cannot be shown at this height.
