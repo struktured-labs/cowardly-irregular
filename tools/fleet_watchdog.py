@@ -179,7 +179,12 @@ def discover_tmux():
                 cwd = os.readlink("/proc/%d/cwd" % pid)
             except OSError:
                 cwd = None
-            sessions.append({"tmux": name, "cwd": cwd,
+            try:
+                etimes = int(subprocess.run(["ps", "-o", "etimes=", "-p", str(pid)],
+                                            capture_output=True, text=True).stdout.strip() or 0)
+            except ValueError:
+                etimes = 0
+            sessions.append({"tmux": name, "cwd": cwd, "proc_age_secs": etimes,
                              "sid": mm.group(1) if mm else None, "pid": pid})
             break
     return sessions
@@ -228,6 +233,17 @@ def classify(sess, root, stall_secs, idle_hours):
     out["error"] = rec.get("error") if is_err else None
     out["text"] = assistant_text(rec)[:300]
     out["last_record_ts"] = rec.get("timestamp")
+    # NO TURN SINCE THE PROCESS STARTED is the resume deadlock's exact signature, and it is the
+    # one idle-looking state that is SAFE to nudge: a process that has never produced a turn cannot
+    # be deliberately holding for a ruling -- it was never given the chance to decide. Measured
+    # 2026-10-17..29: one batch resume left 13 lanes here for 12 days, because a resumed process
+    # inherits the channel flag but not its intercom registration, and the SessionStart hook that
+    # says to register is only read ON a turn. Nothing self-heals; a keystroke is the only break.
+    pa = int(sess.get("proc_age_secs") or 0)
+    if pa > 0 and age > pa and age >= stall_secs:
+        out["klass"] = "NO_TURN_SINCE_START"
+        out["proc_age_secs"] = pa
+        return out
     if is_err:
         # A session that errored seconds ago may be retrying on its own; only a SETTLED error
         # is a stall. This is why stall_secs exists and why arm 5 pins it.
@@ -280,11 +296,11 @@ def do_pass(args, sessions=None):
 
         # RECOVERY RESET: the transcript moved on to a non-error record after our last nudge,
         # so whatever we did worked (or it recovered by itself) -- forget the attempt history.
-        if c["klass"] != "API_STALL" and ent.get("attempts"):
+        if c["klass"] not in ("API_STALL", "NO_TURN_SINCE_START") and ent.get("attempts"):
             ent = {"attempts": 0, "last_nudge": 0.0, "last_seen_ts": c.get("last_record_ts")}
             action = "reset"
 
-        if c["klass"] == "API_STALL":
+        if c["klass"] in ("API_STALL", "NO_TURN_SINCE_START"):
             if ent["attempts"] >= args.max_attempts:
                 c["klass"], action = "NEEDS_HUMAN", "none"
             else:
@@ -316,7 +332,8 @@ def do_pass(args, sessions=None):
             st[key] = ent
             if args.act:
                 save_state(args.state, st)
-        if c["klass"] in ("API_STALL", "NEEDS_HUMAN", "IDLE", "NO_RECORD", "ENTRIES_NO_TURNS") or action in ("nudged", "would-nudge"):
+        if c["klass"] in ("API_STALL", "NEEDS_HUMAN", "IDLE", "NO_RECORD", "ENTRIES_NO_TURNS",
+                          "NO_TURN_SINCE_START") or action in ("nudged", "would-nudge"):
             log_event(args.log, {"ts": iso(now_ts()), "klass": c["klass"], "tmux": c.get("tmux"),
                                  "project": c.get("project"), "sid": c.get("sid"),
                                  "error": c.get("error"), "idle_secs": c.get("idle_secs"),
@@ -412,8 +429,8 @@ def print_rows(rows):
     if not rows:
         print("no claude sessions found")
         return
-    order = {"NEEDS_HUMAN": 0, "API_STALL": 1, "ENTRIES_NO_TURNS": 2, "NO_RECORD": 3,
-             "IDLE": 4, "QUIET": 5, "NO_TRANSCRIPT": 6, "WORKING": 7}
+    order = {"NEEDS_HUMAN": 0, "NO_TURN_SINCE_START": 1, "API_STALL": 2, "ENTRIES_NO_TURNS": 3,
+             "NO_RECORD": 4, "IDLE": 5, "QUIET": 6, "NO_TRANSCRIPT": 7, "WORKING": 8}
     for c in sorted(rows, key=lambda r: (order.get(r["klass"], 9), -(r.get("idle_secs") or 0))):
         idle = c.get("idle_secs")
         idle_s = "%6.1fh" % (idle / 3600.0) if idle is not None else "      -"
@@ -612,6 +629,34 @@ def selftest():
         ck("arm19b", lines and lines[0].startswith("IDLE") and "Holding for a ruling" in lines[0],
            "hook payload=%r" % (lines[0] if lines else None))
 
+        # 24 THE RESUME DEADLOCK: a process younger than its last turn has never produced one,
+        #    so it is holding nothing and IS safe to nudge -- unlike IDLE.
+        write_tx("s13", [ok_rec("pre-resume work")], 36_000)
+        S13 = [{"tmux": "t-s13", "cwd": "/home/x/lane", "sid": "s13", "pid": 0,
+                "proc_age_secs": 600}]          # process 10 min old, last turn 10 HOURS old
+        before = nudge_count()
+        r = do_pass(mkargs(), S13)[0]
+        ck("arm24a", r["klass"] == "NO_TURN_SINCE_START", "klass=%s" % r["klass"])
+        ck("arm24b", r["action"] == "nudged" and nudge_count() == before + 1,
+           "the deadlock must be nudged: action=%s nudges %d->%d" % (r["action"], before, nudge_count()))
+
+        # 25 CONTROL: a turn TAKEN since the process started is not the deadlock
+        write_tx("s14", [ok_rec("post-resume work")], 300)
+        S14 = [{"tmux": "t-s14", "cwd": "/home/x/lane", "sid": "s14", "pid": 0,
+                "proc_age_secs": 36_000}]       # process 10h old, turn 5 min old
+        before = nudge_count()
+        r = do_pass(mkargs(), S14)[0]
+        ck("arm25", r["klass"] != "NO_TURN_SINCE_START" and nudge_count() == before,
+           "a worked-since-start session was called a deadlock: klass=%s" % r["klass"])
+
+        # 26 CONTROL: unknown process age must NOT trigger it -- never nudge on missing data
+        write_tx("s15", [ok_rec("old")], 36_000)
+        S15 = [{"tmux": "t-s15", "cwd": "/home/x/lane", "sid": "s15", "pid": 0, "proc_age_secs": 0}]
+        before = nudge_count()
+        r = do_pass(mkargs(), S15)[0]
+        ck("arm26", r["klass"] == "IDLE" and nudge_count() == before,
+           "missing proc age triggered a nudge: klass=%s nudges %d->%d" % (r["klass"], before, nudge_count()))
+
         # 20 THE DEFECT: entries appended after the last turn must NOT read as activity.
         #    A shared "Remote Control disconnected" system line appended to many transcripts
         #    at one instant, and an mtime read called every one of them alive.
@@ -674,7 +719,7 @@ def selftest():
         for f in fails:
             print("  " + f)
         return 1
-    print("fleet_watchdog selftest: 29 arms ran, every assertion held")
+    print("fleet_watchdog selftest: 33 arms ran, every assertion held")
     return 0
 
 if __name__ == "__main__":
