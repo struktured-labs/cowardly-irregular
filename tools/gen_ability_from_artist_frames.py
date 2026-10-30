@@ -82,8 +82,12 @@ RECIPES = {
         # destroy the SHA256 duplicate signal that marks them as needing real art. They stay
         # byte-identical on purpose, as a standing artist ask. discord works because it borrows
         # her attack's arcs, which is art the other three have no equivalent of.
+        # SIX frames, not five: bard/attack carries f0-f4, and the rhythm authored for discord
+        # on the sibling branch is [60,55,60,105,180,290] -- three jagged beats, a fourth that
+        # lands, then the two held song frames. A 5-frame sheet silently discards that rhythm
+        # (HybridSpriteLoader only honours frame_durations_ms when size == frame_count).
         "discord": [("attack", 0, 0, 0), ("attack", 1, 6, -2), ("attack", 2, -4, 2),
-                    ("lullaby", 4, 0, 0), ("lullaby", 5, 0, 0)],
+                    ("attack", 3, 10, -1), ("lullaby", 4, 0, 0), ("lullaby", 5, 0, 0)],
         # battle_hymn and inspiring_melody move to her CAST strip so the four songs do not all
         # ride one set of frames -- offsets alone left three of them reading alike.
     },
