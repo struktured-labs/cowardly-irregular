@@ -67,6 +67,14 @@ if [ "${1:-}" = "--selftest" ]; then
   ## 4f and BOX_PIN_FETCH=0 must still WORK (the opt-out is real, staleness owned by caller)
   BOX_PIN_FETCH=0 BOX_PIN_DIR="tmp/boxpin_self.$$" "$0" --publish >/dev/null 2>&1; e=$?
   case "$e" in 0|1) ;; *) echo "FAIL arm4f: BOX_PIN_FETCH=0 gave $e, want 0 or 1"; fails=1 ;; esac
+  ## 4g ON ANY REFUSAL THE PIN IS REMOVED, so no empty/stale executable is left at a path
+  ##     another reader might take for a gate (@cowir-story planted one in a shared tmp and
+  ##     an empty script exits 0, which reads as FREE).
+  mkdir -p "tmp/boxpin_self.$$"; : > "tmp/boxpin_self.$$/box_busy.origin.sh"
+  chmod +x "tmp/boxpin_self.$$/box_busy.origin.sh"
+  BOX_PIN_REF=refs/heads/__no_such_ref__ BOX_PIN_DIR="tmp/boxpin_self.$$" "$0" --publish >/dev/null 2>&1
+  [ ! -e "tmp/boxpin_self.$$/box_busy.origin.sh" ] \
+    || { echo "FAIL arm4g: a refusal left a pin behind ($(stat -c%s "tmp/boxpin_self.$$/box_busy.origin.sh") B)"; fails=1; }
   ## 5 exit codes pass through: --publish is 0 or 1, and must not be mangled to 3
   BOX_PIN_DIR="tmp/boxpin_self.$$" "$0" --publish >/dev/null 2>&1; e=$?
   case "$e" in 0|1) ;; *) echo "FAIL arm5: --publish passthrough gave $e, want 0 or 1"; fails=1 ;; esac
@@ -75,13 +83,14 @@ if [ "${1:-}" = "--selftest" ]; then
   BOX_PIN_DIR="tmp/boxpin_self.$$" "$0" --definitely-not-a-flag >/dev/null 2>&1; e=$?
   [ "$e" = 2 ] || { echo "FAIL arm6: bogus flag gave $e, want box_busy's own 2"; fails=1; }
   rm -rf "tmp/boxpin_self.$$"
-  [ "$fails" = 0 ] && echo "box_busy_pinned selftest: 11 arms ran, every assertion held"
+  [ "$fails" = 0 ] && echo "box_busy_pinned selftest: 12 arms ran, every assertion held"
   exit "$fails"
 fi
 
 mkdir -p "$PIN_DIR" 2>/dev/null
 if [ "$FETCH" = 1 ] && [ "$REF" = "origin/main" ]; then
   if ! timeout 25 git fetch -q "$REMOTE" refs/heads/main 2>/dev/null; then
+    rm -f "$PIN" "$PIN.tmp"
     echo "box_busy_pinned: could not fetch origin/main — the delegate would come from a cached" \
          "ref of unknown age — HOLD (exit 3). BOX_PIN_FETCH=0 to accept that risk." >&2
     exit 3
@@ -92,7 +101,7 @@ fi
 # shell script exits 0, which for `--publish` reads as "a publish IS in flight" and for a plain
 # call reads as FREE. @cowir-autogrind measured that shape. A separate temp has no such path.
 if ! git show "$REF:tools/box_busy.sh" > "$PIN.tmp" 2>/dev/null || [ ! -s "$PIN.tmp" ]; then
-  rm -f "$PIN.tmp"
+  rm -f "$PIN.tmp" "$PIN"
   echo "box_busy_pinned: could not resolve $REF:tools/box_busy.sh — HOLD (exit 3)" >&2
   exit 3
 fi
@@ -100,7 +109,7 @@ fi
 # EVERY lane. A hash says "this is the blessed file" and needs a ref to compare against; the
 # property says "this file can see every lane" and survives main itself regressing. Both, here.
 if ! /usr/bin/grep -q '^DEPLOY_GLOB=' "$PIN.tmp"; then
-  rm -f "$PIN.tmp"
+  rm -f "$PIN.tmp" "$PIN"
   echo "box_busy_pinned: $REF's box_busy.sh carries no DEPLOY_GLOB — single-lane scope, blind" \
        "to another lane's publish — HOLD (exit 3)" >&2
   exit 3
