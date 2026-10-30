@@ -28,6 +28,15 @@ cd "$(cd "$(dirname "$0")/.." && pwd)"
 PIN_DIR="${BOX_PIN_DIR:-tmp/boxpin}"
 PIN="$PIN_DIR/box_busy.origin.sh"
 REF="${BOX_PIN_REF:-origin/main}"
+# BOX_PIN_FETCH=0 skips the fetch. @cowir-story's residual: origin/main is a LOCAL cached ref
+# that moves only on fetch, so "resolved from origin" is only as current as your last one -- a
+# tree that fetched 12 days ago resolves a 12-day-old tool and calls it origin's. That is the
+# same staleness we are fixing, wearing the fix's clothes. Default on; a caller that opts out
+# owns the staleness, and the scope assert below still catches the known-bad shape.
+FETCH="${BOX_PIN_FETCH:-1}"
+# The remote is a seam so the fetch-failure path is testable: this script cd's to its own repo
+# root by design, so a scratch repo cannot exercise it from outside.
+REMOTE="${BOX_PIN_REMOTE:-origin}"
 
 if [ "${1:-}" = "--selftest" ]; then
   fails=0
@@ -41,6 +50,23 @@ if [ "${1:-}" = "--selftest" ]; then
   out="$(BOX_PIN_REF=refs/heads/__no_such_ref__ BOX_PIN_DIR="tmp/boxpin_self.$$" "$0" --publish 2>&1)"; e=$?
   [ "$e" = 3 ] || { echo "FAIL arm3: unresolvable ref exited $e, want 3 (fail-closed): $out"; fails=1; }
   case "$out" in *"could not resolve"*) ;; *) echo "FAIL arm4: no reason printed: $out"; fails=1 ;; esac
+  ## 4b A REAL BLIND COPY, not a synthetic one: this ref's box_busy predates the all-lane fix
+  ##    (DEPLOY_GLOB absent, DEPLOY_DIR defaulted to one lane's tree). It must be REFUSED.
+  if git rev-parse --verify -q "origin/lane/main-a-box-marker-a-script-can-read:tools/box_busy.sh" >/dev/null 2>&1; then
+    out="$(BOX_PIN_REF=origin/lane/main-a-box-marker-a-script-can-read BOX_PIN_DIR="tmp/boxpin_self.$$" "$0" --publish 2>&1)"; e=$?
+    [ "$e" = 3 ] || { echo "FAIL arm4b: a real single-lane copy exited $e, want 3: $out"; fails=1; }
+    case "$out" in *"no DEPLOY_GLOB"*) ;; *) echo "FAIL arm4c: scope refusal not named: $out"; fails=1 ;; esac
+  else
+    echo "note arm4b: the blind control ref is gone; scope assert unexercised" >&2
+  fi
+  ## 4d a fetch failure must HOLD, not silently fall back to the cached ref
+  out="$(BOX_PIN_FETCH=1 BOX_PIN_REMOTE=/nonexistent-remote-for-the-arm \
+         BOX_PIN_DIR="tmp/boxpin_self.$$" "$0" --publish 2>&1)"; e=$?
+  [ "$e" = 3 ] || { echo "FAIL arm4d: unfetchable remote exited $e, want 3: $out"; fails=1; }
+  case "$out" in *"could not fetch"*) ;; *) echo "FAIL arm4e: fetch refusal not named: $out"; fails=1 ;; esac
+  ## 4f and BOX_PIN_FETCH=0 must still WORK (the opt-out is real, staleness owned by caller)
+  BOX_PIN_FETCH=0 BOX_PIN_DIR="tmp/boxpin_self.$$" "$0" --publish >/dev/null 2>&1; e=$?
+  case "$e" in 0|1) ;; *) echo "FAIL arm4f: BOX_PIN_FETCH=0 gave $e, want 0 or 1"; fails=1 ;; esac
   ## 5 exit codes pass through: --publish is 0 or 1, and must not be mangled to 3
   BOX_PIN_DIR="tmp/boxpin_self.$$" "$0" --publish >/dev/null 2>&1; e=$?
   case "$e" in 0|1) ;; *) echo "FAIL arm5: --publish passthrough gave $e, want 0 or 1"; fails=1 ;; esac
@@ -49,14 +75,34 @@ if [ "${1:-}" = "--selftest" ]; then
   BOX_PIN_DIR="tmp/boxpin_self.$$" "$0" --definitely-not-a-flag >/dev/null 2>&1; e=$?
   [ "$e" = 2 ] || { echo "FAIL arm6: bogus flag gave $e, want box_busy's own 2"; fails=1; }
   rm -rf "tmp/boxpin_self.$$"
-  [ "$fails" = 0 ] && echo "box_busy_pinned selftest: 6 arms ran, every assertion held"
+  [ "$fails" = 0 ] && echo "box_busy_pinned selftest: 11 arms ran, every assertion held"
   exit "$fails"
 fi
 
 mkdir -p "$PIN_DIR" 2>/dev/null
+if [ "$FETCH" = 1 ] && [ "$REF" = "origin/main" ]; then
+  if ! timeout 25 git fetch -q "$REMOTE" refs/heads/main 2>/dev/null; then
+    echo "box_busy_pinned: could not fetch origin/main — the delegate would come from a cached" \
+         "ref of unknown age — HOLD (exit 3). BOX_PIN_FETCH=0 to accept that risk." >&2
+    exit 3
+  fi
+fi
+# Resolve to a TEMP and promote only on success. The redirect truncates its target before git
+# runs, so writing straight to $PIN would leave an EMPTY file there on failure -- and an empty
+# shell script exits 0, which for `--publish` reads as "a publish IS in flight" and for a plain
+# call reads as FREE. @cowir-autogrind measured that shape. A separate temp has no such path.
 if ! git show "$REF:tools/box_busy.sh" > "$PIN.tmp" 2>/dev/null || [ ! -s "$PIN.tmp" ]; then
   rm -f "$PIN.tmp"
   echo "box_busy_pinned: could not resolve $REF:tools/box_busy.sh — HOLD (exit 3)" >&2
+  exit 3
+fi
+# ASSERT THE PROPERTY, not just the provenance (@cowir-battle): the copy must be able to see
+# EVERY lane. A hash says "this is the blessed file" and needs a ref to compare against; the
+# property says "this file can see every lane" and survives main itself regressing. Both, here.
+if ! /usr/bin/grep -q '^DEPLOY_GLOB=' "$PIN.tmp"; then
+  rm -f "$PIN.tmp"
+  echo "box_busy_pinned: $REF's box_busy.sh carries no DEPLOY_GLOB — single-lane scope, blind" \
+       "to another lane's publish — HOLD (exit 3)" >&2
   exit 3
 fi
 mv -f "$PIN.tmp" "$PIN"
