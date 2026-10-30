@@ -7,6 +7,8 @@ extends VillageLighting
 ## Brightened from (0.30, 0.29, 0.42) -- struktured 2026-10-06: the dungeon pass read as
 ## too dark to track the player or interactables. Still underground-dark, now legible.
 const CAVE_AMBIENT := Color(0.36, 0.35, 0.48)
+## The W1 flame. Later worlds light themselves with their own fixtures -- see DragonCave._get_torch_tint.
+const TORCH_TINT := Color(1.0, 0.80, 0.45)
 
 var ambient: Color = CAVE_AMBIENT
 var _flicker_t: float = 0.0
