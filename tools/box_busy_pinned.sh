@@ -75,6 +75,16 @@ if [ "${1:-}" = "--selftest" ]; then
   BOX_PIN_REF=refs/heads/__no_such_ref__ BOX_PIN_DIR="tmp/boxpin_self.$$" "$0" --publish >/dev/null 2>&1
   [ ! -e "tmp/boxpin_self.$$/box_busy.origin.sh" ] \
     || { echo "FAIL arm4g: a refusal left a pin behind ($(stat -c%s "tmp/boxpin_self.$$/box_busy.origin.sh") B)"; fails=1; }
+  ## 4h THE SAME CLEANUP, ON THE OTHER EXIT. @cowir-adhoc's gate cleaned correctly on the
+  ##     RESOLVE-failure branch and not on the FETCH-failure branch, because its early exit
+  ##     preceded the cleanup variable's own definition. Per-branch, or the arm is a guess:
+  ##     "both exits clean" is two claims and arm4g only tested one.
+  mkdir -p "tmp/boxpin_self.$$"; : > "tmp/boxpin_self.$$/box_busy.origin.sh"
+  chmod +x "tmp/boxpin_self.$$/box_busy.origin.sh"
+  BOX_PIN_FETCH=1 BOX_PIN_REMOTE=/nonexistent-remote-for-the-arm \
+    BOX_PIN_DIR="tmp/boxpin_self.$$" "$0" --publish >/dev/null 2>&1
+  [ ! -e "tmp/boxpin_self.$$/box_busy.origin.sh" ] \
+    || { echo "FAIL arm4h: the FETCH-failure exit left a pin behind"; fails=1; }
   ## 5 exit codes pass through: --publish is 0 or 1, and must not be mangled to 3
   BOX_PIN_DIR="tmp/boxpin_self.$$" "$0" --publish >/dev/null 2>&1; e=$?
   case "$e" in 0|1) ;; *) echo "FAIL arm5: --publish passthrough gave $e, want 0 or 1"; fails=1 ;; esac
@@ -83,7 +93,7 @@ if [ "${1:-}" = "--selftest" ]; then
   BOX_PIN_DIR="tmp/boxpin_self.$$" "$0" --definitely-not-a-flag >/dev/null 2>&1; e=$?
   [ "$e" = 2 ] || { echo "FAIL arm6: bogus flag gave $e, want box_busy's own 2"; fails=1; }
   rm -rf "tmp/boxpin_self.$$"
-  [ "$fails" = 0 ] && echo "box_busy_pinned selftest: 12 arms ran, every assertion held"
+  [ "$fails" = 0 ] && echo "box_busy_pinned selftest: 13 arms ran, every assertion held"
   exit "$fails"
 fi
 
