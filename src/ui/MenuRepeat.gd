@@ -24,12 +24,15 @@ var _since_step: float = 0.0
 ## ⛔ MENU NAVIGATION IS WALL-CLOCK, AND `delta` IS NOT. Battle sets Engine.time_scale to 0.25 for
 ## "1x" (the v3 scale), and _process's delta carries that factor, so every constant above meant
 ## FOUR TIMES its number in the player's hand: a 0.40 initial delay became 1.60 s. All eleven
-## callers pass _process(delta), so this is fixed beside the poll rather than at eleven call sites
-## — and a twelfth caller cannot reintroduce it. Win98Menu's own input debounce already passes
+## callers pass _process(delta), so this is undone beside the poll rather than at eleven call
+## sites — a twelfth caller cannot reintroduce it. Win98Menu's own input debounce already passes
 ## ignore_time_scale=true for exactly this reason; the polled ramp was the half that was missed.
-## Injected like focused_check so the ramp is drivable without wall-clock waits.
-var clock: Callable = func() -> float: return float(Time.get_ticks_usec()) / 1000000.0
-var _last_t: float = -1.0
+##
+## UNSCALING the delta, not reading a wall clock. A wall clock is just as correct in the player's
+## hand and silently voids the way the ramp is DRIVEN under test: three existing guards step it by
+## passing synthetic deltas in a tight loop, where no real time passes at all. Measured — the
+## wall-clock version red 5 arms across those three files. Delta stays the time source, so the
+## ramp remains deterministic.
 
 ## ⛔ INJECTED SO THE UNFOCUSED BRANCH IS DRIVABLE. Headless reports the window as FOCUSED, so a
 ## test cannot reach that branch through the real query at all. The default IS the real query, and
@@ -74,12 +77,10 @@ func tick(delta: float) -> String:
 		_action = down
 		_held = 0.0
 		_since_step = 0.0
-		_last_t = -1.0
 		return ""
-	## Real seconds since the previous held frame. `delta` is the first frame's only estimate.
-	var now: float = float(clock.call())
-	var step: float = delta if _last_t < 0.0 else now - _last_t
-	_last_t = now
+	## Real seconds, not engine seconds. Guarded because time_scale 0 is a hard pause, where
+	## delta is 0 as well — so the quotient stays 0 and a paused menu simply does not ramp.
+	var step: float = delta / maxf(Engine.time_scale, 0.0001)
 	_held += step
 	if _held < INITIAL_DELAY:
 		return ""
@@ -109,7 +110,6 @@ func reset() -> void:
 	_action = ""
 	_held = 0.0
 	_since_step = 0.0
-	_last_t = -1.0
 
 
 ## Exposed for tests and for menus that want to show a ramp indicator.
