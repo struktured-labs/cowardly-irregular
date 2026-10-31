@@ -1175,12 +1175,24 @@ func _ensure_save_directory() -> void:
 const SETTINGS_PATH = "user://settings.json"
 
 
+## A v3 battle_speed_index on today's ladder: the old default (index 0) moves to the new default,
+## every other rung keeps the exact speed the player picked. -1 for an index the old ladder lacked.
+static func migrate_v3_speed_index(v3_index: int) -> int:
+	var legacy: Array[float] = BATTLE_SCENE_SCRIPT.LEGACY_V3_BATTLE_SPEEDS
+	if v3_index < 0 or v3_index >= legacy.size():
+		return -1
+	if v3_index == 0:
+		return BATTLE_SCENE_SCRIPT.DEFAULT_BATTLE_SPEED_INDEX
+	return BATTLE_SCENE_SCRIPT.BATTLE_SPEEDS.find(legacy[v3_index])
+
+
 func save_settings() -> void:
 	"""Save global game settings (battle speed, audio, display options)."""
 	var settings = {
 		"version": 2,
 		"speed_scale_v2": true,
 		"speed_scale_v3": true,
+		"speed_scale_v4": true,
 		"battle_speed_index": BATTLE_SCENE_SCRIPT._battle_speed_index,
 		"show_controller_overlay": GameState.show_controller_overlay if GameState else true,
 		"battle_fx_flags": GameState.battle_fx_flags if GameState else {},
@@ -1318,13 +1330,17 @@ func load_settings() -> void:
 	# 0.25). Pre-v3 files one-time reset to the new default; users re-pick
 	# if they want fast. Same pattern as the v2 raw-engine-label reset.
 	# applied_speed_index stays -1 unless this file's index was actually stored.
+	## speed_scale_v4 (struktured 2026-10-30): a 1.5x rung went in at index 1 and became the default.
+	## A v3 file's index is read against the old ladder; only the old default moves to the new one.
 	var applied_speed_index := -1
 	if not settings.get("speed_scale_v3", false):
-		BATTLE_SCENE_SCRIPT._battle_speed_index = 0
+		BATTLE_SCENE_SCRIPT._battle_speed_index = BATTLE_SCENE_SCRIPT.DEFAULT_BATTLE_SPEED_INDEX
 		if GameState:
-			GameState.default_battle_speed = 0.25
+			GameState.default_battle_speed = BATTLE_SCENE_SCRIPT.DEFAULT_BATTLE_SPEED
 	elif settings.has("battle_speed_index"):
 		var idx = int(settings["battle_speed_index"])
+		if not settings.get("speed_scale_v4", false):
+			idx = migrate_v3_speed_index(idx)
 		if idx >= 0 and idx < BATTLE_SCENE_SCRIPT.BATTLE_SPEEDS.size():
 			BATTLE_SCENE_SCRIPT._battle_speed_index = idx
 			applied_speed_index = idx
@@ -1388,9 +1404,11 @@ func load_settings() -> void:
 			GameState.advance_commits_at_limit = bool(settings["advance_commits_at_limit"])
 		# v3-gated: a pre-v3 file's stale engine value silently UNDID the speed migration 40 lines above
 		if settings.has("default_battle_speed") and settings.get("speed_scale_v3", false):
-			# Validate against actual BATTLE_SPEEDS — fall back to the 0.25 default if drift.
+			# Validate against actual BATTLE_SPEEDS — fall back to the default if drift.
 			var raw_speed = float(settings["default_battle_speed"])
-			GameState.default_battle_speed = raw_speed if (raw_speed in BATTLE_SCENE_SCRIPT.BATTLE_SPEEDS) else 0.25
+			if not settings.get("speed_scale_v4", false) and is_equal_approx(raw_speed, BATTLE_SCENE_SCRIPT.LEGACY_V3_BATTLE_SPEEDS[0]):
+				raw_speed = BATTLE_SCENE_SCRIPT.DEFAULT_BATTLE_SPEED
+			GameState.default_battle_speed = raw_speed if (raw_speed in BATTLE_SCENE_SCRIPT.BATTLE_SPEEDS) else BATTLE_SCENE_SCRIPT.DEFAULT_BATTLE_SPEED
 		# Index is what the next battle applies; a stale default lit the wrong chip after save.
 		if applied_speed_index >= 0:
 			GameState.default_battle_speed = BATTLE_SCENE_SCRIPT.BATTLE_SPEEDS[applied_speed_index]
