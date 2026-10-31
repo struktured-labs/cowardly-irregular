@@ -2314,23 +2314,28 @@ const _VILLAGE_INTROS := {
 }
 
 
-## An intro that has LOST ITS MOMENT retires instead of playing: most of its locals (non-party speakers) already spoke in a finished scene.
-## struktured 2026-10-30, "dialogue replayed after leaving mystic remedies": prologue + chapter1 had met 3 of Harmonia's 5 locals.
+## A village intro skips every exchange whose locals (non-party speakers) all already spoke in a finished scene, and retires only once ALL its locals have.
+## struktured 2026-10-31 ("trim to strangers"): chapter1 always plays straight after the prologue and meets Theron, Milo and Phil, so Harmonia's intro introduces Marta and the Merchant.
 var _scene_speakers_cache: Dictionary = {}
 var _party_speaker_names_cache: Array = []
 
 
-func _intro_has_lost_its_moment(met: Vector2i) -> bool:
-	return met.y > 0 and met.x * 2 > met.y
+func _intro_has_lost_its_moment(met_count: int, locals_count: int) -> bool:
+	return locals_count > 0 and met_count >= locals_count
 
 
-## x = the intro's locals already met in a finished scene, y = all of its locals.
-func _intro_locals_already_met(intro: String, flags: Dictionary) -> Vector2i:
+func _intro_locals(intro: String) -> Array:
 	var party: Array = _party_speaker_names()
 	var locals: Array = []
 	for sp in _scene_speakers(intro):
 		if not party.has(sp):
 			locals.append(sp)
+	return locals
+
+
+## The intro's locals that already speak in a scene whose completion flag is set.
+func _intro_met_locals(intro: String, flags: Dictionary) -> Array:
+	var locals: Array = _intro_locals(intro)
 	var met: Array = []
 	for cid in _CUTSCENE_COMPLETION_FLAGS:
 		if str(cid) == intro or not bool(flags.get(_CUTSCENE_COMPLETION_FLAGS[cid], false)):
@@ -2338,7 +2343,52 @@ func _intro_locals_already_met(intro: String, flags: Dictionary) -> Vector2i:
 		for sp in _scene_speakers(str(cid)):
 			if locals.has(sp) and not met.has(sp):
 				met.append(sp)
-	return Vector2i(met.size(), locals.size())
+	return met
+
+
+## Drops each dialogue step whose locals are all in met, with the wait leading into it; party lines ride with their local's exchange.
+func _trim_intro_steps(steps: Array, met: Array, party: Array) -> Array:
+	var out: Array = []
+	for step in steps:
+		if step is Dictionary and str((step as Dictionary).get("type", "")) == "dialogue" and _exchange_already_met(step, met, party):
+			if not out.is_empty() and out.back() is Dictionary and str((out.back() as Dictionary).get("type", "")) == "wait":
+				out.pop_back()
+			continue
+		out.append(step)
+	return out
+
+
+func _exchange_already_met(step: Dictionary, met: Array, party: Array) -> bool:
+	var locals := 0
+	for line in step.get("lines", []):
+		var sp := str((line as Dictionary).get("speaker", "")) if line is Dictionary else ""
+		if sp == "" or party.has(sp):
+			continue
+		locals += 1
+		if not met.has(sp):
+			return false
+	return locals > 0
+
+
+## The village intro's data with its already-met exchanges removed, or {} when this is not a village intro or nothing is cut.
+func _trimmed_intro_data(cutscene_id: String) -> Dictionary:
+	if not _VILLAGE_INTROS.values().has(cutscene_id) or not GameState:
+		return {}
+	var met: Array = _intro_met_locals(cutscene_id, GameState.game_constants)
+	if met.is_empty():
+		return {}
+	var path := "res://data/cutscenes/%s.json" % cutscene_id
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(path)) if FileAccess.file_exists(path) else null
+	if not (parsed is Dictionary):
+		return {}
+	var data: Dictionary = parsed
+	var steps: Array = data.get("steps", [])
+	var trimmed: Array = _trim_intro_steps(steps, met, _party_speaker_names())
+	if trimmed.size() == steps.size():
+		return {}
+	data["steps"] = trimmed
+	print("[CUTSCENE] %s trimmed to strangers: skipping %s (already met)" % [cutscene_id, ", ".join(PackedStringArray(met))])
+	return data
 
 
 func _scene_speakers(cid: String) -> Array:
@@ -2772,10 +2822,11 @@ func _get_pending_story_cutscene() -> String:
 		for vid in _VILLAGE_INTROS:
 			var intro: String = str(_VILLAGE_INTROS[vid])
 			if _current_map_id == vid and not flags.get("cutscene_flag_%s_complete" % intro, false):
-				var met: Vector2i = _intro_locals_already_met(intro, flags)
-				if _intro_has_lost_its_moment(met):
+				var met: Array = _intro_met_locals(intro, flags)
+				var locals_count: int = _intro_locals(intro).size()
+				if _intro_has_lost_its_moment(met.size(), locals_count):
 					_set_cutscene_flag_and_mirror("cutscene_flag_%s_complete" % intro)
-					print("[CUTSCENE] %s retired, not played: %d of its %d locals were already met in finished scenes" % [intro, met.x, met.y])
+					print("[CUTSCENE] %s retired, not played: all %d of its locals were already met in finished scenes" % [intro, locals_count])
 					continue
 				return intro
 
@@ -3070,7 +3121,11 @@ func _play_story_cutscene(cutscene_id: String) -> bool:
 		_resume_exploration_after_cutscene()
 		_flush_chat_toasts()
 	, CONNECT_ONE_SHOT)
-	_cutscene_director.play_cutscene(cutscene_id)
+	var trimmed: Dictionary = _trimmed_intro_data(cutscene_id)
+	if trimmed.is_empty():
+		_cutscene_director.play_cutscene(cutscene_id)
+	else:
+		_cutscene_director.play_cutscene_from_data(cutscene_id, trimmed)
 	return true
 
 
