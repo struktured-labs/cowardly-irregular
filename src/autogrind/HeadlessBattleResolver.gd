@@ -2278,6 +2278,9 @@ func _resolve_item(user, item_id: String, target) -> void:
 				ItemSystem.take_party_item(user, bag, item_id)
 				_log("%s uses %s on %s" % [user.combatant_name, item_id, corpse.combatant_name])
 		return
+	## A potion aimed at a member who died earlier in the round was spent and healed nobody.
+	if target == null or not is_instance_valid(target) or not target.is_alive:
+		return
 	ItemSystem.take_party_item(user, bag, item_id)
 
 	## Tick 394: route through ItemSystem.use_item so autogrind item
@@ -2292,8 +2295,6 @@ func _resolve_item(user, item_id: String, target) -> void:
 	##   - power_drink / speed_tonic silently healed 50 instead of
 	##     applying their buff
 	## All silently corrupted autogrind reward / tier calculations.
-	if target == null or not target.is_alive:
-		return
 	var its = _get_autoload("ItemSystem")
 	if its != null and its.has_method("use_item"):
 		var typed_targets: Array[Combatant] = [target]
