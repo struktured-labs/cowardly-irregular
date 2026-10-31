@@ -3,7 +3,7 @@
   "title": "Gray",
   "world": 4,
   "trigger": "world4_portal_entry",
-  "background": "industrial_factory",
+  "background": "rivet_row_factory",
   "description": "Arrival in the industrial world. No sky, just ceiling. Steampunk craft becomes raw function. Rivet Row.",
   "steps": [
     {
