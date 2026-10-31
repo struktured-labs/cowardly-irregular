@@ -8701,6 +8701,615 @@
       "prompt": "Rivet Row's HAZARD freight elevator hauling the player up to the dock tier (VillageElevator._ride, via RivetRowVillage.gd:203). AUTHORED because that site played `armor_clank`, whose own prompt is \"Medieval plate armor clanking together, metal gauntlet striking breastplate in SALUTE, military honor gesture\" - and whose only other consumer is data/cutscenes/world1_warden_intro.json step 8, a WORLD 1 medieval warden. Rivet Row is WORLD 4: \"Workers' settlement on factory outskirts... Workers' Barracks, Company Store, canteen, smokestacks, graffiti wall\", built by IndustrialTileGenerator and reachable from TeleportMenu. A plate-armour salute was playing for a pallet lift, in the wrong world and for the wrong event. FOUND BY AUDITING THE UI CHANNEL'S VARIABLE-KEY CALL SITES: play_ui takes a free string and SILENTLY RETURNS for a key in neither the manifest nor SOUNDS, so six call sites pass a key no literal grep can see. All six resolve and all 95 authored cutscene cues resolve - the defect was not a silent cue but a resolving WRONG one. SYNTHESISED with sox, every layer and gain in tools/gen_freight_lift.sh: a 150:112 contactor thunk with a 700-1500 relay click, a motor of two detuned partials (318:348 and 325:355, beating at ~7Hz, which is what makes it read as a loaded motor rather than a tone) over a 163:178 sawtooth for harmonic grit, a sparse 1500-4200 chain rattle at 38Hz tremolo, and a 210:148 platform seat with a 1100-2600 edge. 0.408s, peak -3.2 dBFS, loudest-250ms -15.1 - against a UI world-event median of -16.6 across 22 cues, so 1.5 dB inside the family, level with inn_rest (-15.1) and just over mirror_turn (-15.6). THE ARRIVAL ACCENT LANDS INSIDE THE RIDE: VillageElevator.RIDE_TIME is 0.35s and the cue is played at ride START with no arrival cue of its own, so an accent later than that fires when the player is already standing on the dock. Measured on the installed file, the seat is at 0.300s (tools/sfx_envelope_accent.py), +3.2 dB above the motor body and within 0.6 dB of the engage - clunk, hum, clunk, bookended. This is the axis the other two village elevators FAIL and it is declared rather than fixed: steam_hiss is 1.0s (2.9x the ride) and portal_activate 2.0s (5.7x), and both are shared with cutscenes (4 and 9 respectively), so shortening either would edit scenes this change has no business touching. SEPARATION: the UI channel's world events crowd 40-250 (portal_activate 63.0%, passage_grind 55.0%, door_open 41.6%, inn_rest 62.1%, autobattle_off 89.7%, defer 48.0%) and 2k-8k (armor_clank 42.7%, steam_hiss 60.2%, chalk_tap 55.1%, status_cannot_act 50.8%); 250Hz-1k held only plate_engage, so the motor's voice goes there. By exact FFT (tools/sfx_band_share.py): 40-250 25.3% - 250Hz-1k 71.6% - 1k-2k 0.9% - 2k-8k 2.1%, peak 336 Hz. Against plate_engage, the one other cue in that band, the separator is ENVELOPE: a 0.55s single click at 523Hz versus a 0.3s sustained beating motor. REBALANCED ONCE, from a measurement: build 1 was front-heavy - the engage clunk was the loudest thing in the cue at -7.2 and the arrival only -13.0 (measured on the pre-`-R` build; the figures above are the reproducible one), which is backwards for a lift, where the arrival is the payoff. Engage and body came down, the seat went up. REPRODUCIBLE, and that is why the generator lives in tools/ rather than tmp/: four layers are `whitenoise`, which sox seeds per run, so the first build could not be reobtained from its own script and the prompt described a file nobody else could get. `sox -R` fixes the seed and three independent runs now decode to one PCM hash (9e92113f76e490eade9489a0). COMPARE THE DECODE, NOT THE FILE: Ogg assigns a random bitstream serial per stream, so 24 container bytes differ every run and ffmpeg's -serial_offset does not pin them - measured.",
       "duration_seconds": 0.408,
       "prompt_influence": 0.0
+    },
+    "voice_bard_crit_landed": {
+      "file": "assets/audio/sfx/voice_bard_crit_landed.ogg",
+      "description": "Bard party voice line — crit landed",
+      "source_sha": "a188c8fca067927f",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 1744145037,
+      "gain_db": 1.1
+    },
+    "voice_bard_crit_landed_1": {
+      "file": "assets/audio/sfx/voice_bard_crit_landed_1.ogg",
+      "description": "Bard party voice line — crit landed (variant 1)",
+      "source_sha": "25005daf32a553a8",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 366688943,
+      "gain_db": -1.3
+    },
+    "voice_bard_crit_landed_2": {
+      "file": "assets/audio/sfx/voice_bard_crit_landed_2.ogg",
+      "description": "Bard party voice line — crit landed (variant 2)",
+      "source_sha": "86b9bf0a77c600a3",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 1971712780,
+      "gain_db": -2.0
+    },
+    "voice_bard_enemy_felled": {
+      "file": "assets/audio/sfx/voice_bard_enemy_felled.ogg",
+      "description": "Bard party voice line — enemy felled",
+      "source_sha": "3ff7f2b996e2c549",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 4007614,
+      "gain_db": -0.1
+    },
+    "voice_bard_enemy_felled_1": {
+      "file": "assets/audio/sfx/voice_bard_enemy_felled_1.ogg",
+      "description": "Bard party voice line — enemy felled (variant 1)",
+      "source_sha": "49a433b57e0860e6",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 831604084,
+      "gain_db": -0.3
+    },
+    "voice_bard_enemy_felled_2": {
+      "file": "assets/audio/sfx/voice_bard_enemy_felled_2.ogg",
+      "description": "Bard party voice line — enemy felled (variant 2)",
+      "source_sha": "3f75ad37f5d81728",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 685983826,
+      "gain_db": -1.9
+    },
+    "voice_bard_victory_25": {
+      "file": "assets/audio/sfx/voice_bard_victory_25.ogg",
+      "description": "Bard party voice line — victory (variant 25)",
+      "source_sha": "678e8c37cf394d69",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 981388330,
+      "gain_db": -1.3
+    },
+    "voice_bard_victory_26": {
+      "file": "assets/audio/sfx/voice_bard_victory_26.ogg",
+      "description": "Bard party voice line — victory (variant 26)",
+      "source_sha": "0e48ee544b035edd",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 1668057743,
+      "gain_db": -0.7
+    },
+    "voice_bard_victory_27": {
+      "file": "assets/audio/sfx/voice_bard_victory_27.ogg",
+      "description": "Bard party voice line — victory (variant 27)",
+      "source_sha": "544fbb24b62dd767",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 2054057799,
+      "gain_db": -0.4
+    },
+    "voice_bard_victory_28": {
+      "file": "assets/audio/sfx/voice_bard_victory_28.ogg",
+      "description": "Bard party voice line — victory (variant 28)",
+      "source_sha": "fa297bdd3e2d8d09",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 1908864139,
+      "gain_db": -0.6
+    },
+    "voice_bard_victory_29": {
+      "file": "assets/audio/sfx/voice_bard_victory_29.ogg",
+      "description": "Bard party voice line — victory (variant 29)",
+      "source_sha": "d1c7e6bd76e932e4",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 858371089,
+      "gain_db": -2.7
+    },
+    "voice_bard_victory_30": {
+      "file": "assets/audio/sfx/voice_bard_victory_30.ogg",
+      "description": "Bard party voice line — victory (variant 30)",
+      "source_sha": "172706c98373adaa",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 1503372367,
+      "gain_db": -2.6
+    },
+    "voice_cleric_crit_landed": {
+      "file": "assets/audio/sfx/voice_cleric_crit_landed.ogg",
+      "description": "Cleric party voice line — crit landed",
+      "source_sha": "429a2973ae0c901a",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 562127662,
+      "gain_db": -2.7
+    },
+    "voice_cleric_crit_landed_1": {
+      "file": "assets/audio/sfx/voice_cleric_crit_landed_1.ogg",
+      "description": "Cleric party voice line — crit landed (variant 1)",
+      "source_sha": "78c46fc3844f7d8f",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 2032127108,
+      "gain_db": -6.0
+    },
+    "voice_cleric_crit_landed_2": {
+      "file": "assets/audio/sfx/voice_cleric_crit_landed_2.ogg",
+      "description": "Cleric party voice line — crit landed (variant 2)",
+      "source_sha": "2d15af506d87210f",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 225126550,
+      "gain_db": -5.3
+    },
+    "voice_cleric_enemy_felled": {
+      "file": "assets/audio/sfx/voice_cleric_enemy_felled.ogg",
+      "description": "Cleric party voice line — enemy felled",
+      "source_sha": "de54618bf389142b",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 1198936508,
+      "gain_db": -5.6
+    },
+    "voice_cleric_enemy_felled_1": {
+      "file": "assets/audio/sfx/voice_cleric_enemy_felled_1.ogg",
+      "description": "Cleric party voice line — enemy felled (variant 1)",
+      "source_sha": "d9b8f110fbe9f268",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 826902834,
+      "gain_db": -1.9
+    },
+    "voice_cleric_enemy_felled_2": {
+      "file": "assets/audio/sfx/voice_cleric_enemy_felled_2.ogg",
+      "description": "Cleric party voice line — enemy felled (variant 2)",
+      "source_sha": "73a65d335f6f0232",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 1893780452,
+      "gain_db": -3.5
+    },
+    "voice_cleric_victory_25": {
+      "file": "assets/audio/sfx/voice_cleric_victory_25.ogg",
+      "description": "Cleric party voice line — victory (variant 25)",
+      "source_sha": "4810af5641ba12de",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 2102767282,
+      "gain_db": -4.4
+    },
+    "voice_cleric_victory_26": {
+      "file": "assets/audio/sfx/voice_cleric_victory_26.ogg",
+      "description": "Cleric party voice line — victory (variant 26)",
+      "source_sha": "e8bac957d61d347b",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 1274565675,
+      "gain_db": -4.1
+    },
+    "voice_cleric_victory_27": {
+      "file": "assets/audio/sfx/voice_cleric_victory_27.ogg",
+      "description": "Cleric party voice line — victory (variant 27)",
+      "source_sha": "d17a6d592cd4f03c",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 1473452725,
+      "gain_db": -3.0
+    },
+    "voice_cleric_victory_28": {
+      "file": "assets/audio/sfx/voice_cleric_victory_28.ogg",
+      "description": "Cleric party voice line — victory (variant 28)",
+      "source_sha": "7da4bc66b79fe0e0",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 1231759431,
+      "gain_db": -4.7
+    },
+    "voice_cleric_victory_29": {
+      "file": "assets/audio/sfx/voice_cleric_victory_29.ogg",
+      "description": "Cleric party voice line — victory (variant 29)",
+      "source_sha": "408879009ec91310",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 1138808612,
+      "gain_db": -3.9
+    },
+    "voice_cleric_victory_30": {
+      "file": "assets/audio/sfx/voice_cleric_victory_30.ogg",
+      "description": "Cleric party voice line — victory (variant 30)",
+      "source_sha": "61552c71c83bf104",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 1523950616,
+      "gain_db": -4.6
+    },
+    "voice_mage_crit_landed": {
+      "file": "assets/audio/sfx/voice_mage_crit_landed.ogg",
+      "description": "Mage party voice line — crit landed",
+      "source_sha": "b46eca06a8c2244d",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 113254919,
+      "gain_db": -5.2
+    },
+    "voice_mage_crit_landed_1": {
+      "file": "assets/audio/sfx/voice_mage_crit_landed_1.ogg",
+      "description": "Mage party voice line — crit landed (variant 1)",
+      "source_sha": "a4be7ecd0b3fbefd",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 1333745712,
+      "gain_db": -3.5
+    },
+    "voice_mage_crit_landed_2": {
+      "file": "assets/audio/sfx/voice_mage_crit_landed_2.ogg",
+      "description": "Mage party voice line — crit landed (variant 2)",
+      "source_sha": "58b88577c04cb561",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 1390033420,
+      "gain_db": -2.7
+    },
+    "voice_mage_enemy_felled": {
+      "file": "assets/audio/sfx/voice_mage_enemy_felled.ogg",
+      "description": "Mage party voice line — enemy felled",
+      "source_sha": "9d714b6610a7da9c",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 1816557528,
+      "gain_db": -4.6
+    },
+    "voice_mage_enemy_felled_1": {
+      "file": "assets/audio/sfx/voice_mage_enemy_felled_1.ogg",
+      "description": "Mage party voice line — enemy felled (variant 1)",
+      "source_sha": "5b1751d6bc7969dc",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 390913914,
+      "gain_db": -4.4
+    },
+    "voice_mage_enemy_felled_2": {
+      "file": "assets/audio/sfx/voice_mage_enemy_felled_2.ogg",
+      "description": "Mage party voice line — enemy felled (variant 2)",
+      "source_sha": "722f9b816a62d511",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 939354335,
+      "gain_db": -4.2
+    },
+    "voice_mage_victory_25": {
+      "file": "assets/audio/sfx/voice_mage_victory_25.ogg",
+      "description": "Mage party voice line — victory (variant 25)",
+      "source_sha": "9504369e749e7abb",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 1429423490,
+      "gain_db": -3.7
+    },
+    "voice_mage_victory_26": {
+      "file": "assets/audio/sfx/voice_mage_victory_26.ogg",
+      "description": "Mage party voice line — victory (variant 26)",
+      "source_sha": "5b5a74273e7c1d70",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 225144525,
+      "gain_db": -3.2
+    },
+    "voice_mage_victory_27": {
+      "file": "assets/audio/sfx/voice_mage_victory_27.ogg",
+      "description": "Mage party voice line — victory (variant 27)",
+      "source_sha": "5f2912d25e825d8f",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 1543102098,
+      "gain_db": -2.9
+    },
+    "voice_mage_victory_28": {
+      "file": "assets/audio/sfx/voice_mage_victory_28.ogg",
+      "description": "Mage party voice line — victory (variant 28)",
+      "source_sha": "c470d508c1fc7f47",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 721912605,
+      "gain_db": -5.0
+    },
+    "voice_mage_victory_29": {
+      "file": "assets/audio/sfx/voice_mage_victory_29.ogg",
+      "description": "Mage party voice line — victory (variant 29)",
+      "source_sha": "feb681cd12a148cc",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 1190967172,
+      "gain_db": -4.1
+    },
+    "voice_mage_victory_30": {
+      "file": "assets/audio/sfx/voice_mage_victory_30.ogg",
+      "description": "Mage party voice line — victory (variant 30)",
+      "source_sha": "0bcca7dc62b33c7d",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 769338685,
+      "gain_db": -3.7
+    },
+    "voice_rogue_crit_landed": {
+      "file": "assets/audio/sfx/voice_rogue_crit_landed.ogg",
+      "description": "Rogue party voice line — crit landed",
+      "source_sha": "7a7dbfca80be9557",
+      "voice": "Chatterbox clone of LibriTTS-R speaker 8224 (CC BY 4.0), reference +1.5 st, voice_refs/rogue.wav",
+      "voice_gender": "ambiguous",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.55 cfg 0.4",
+      "seed": 430183811,
+      "gain_db": -3.5
+    },
+    "voice_rogue_crit_landed_1": {
+      "file": "assets/audio/sfx/voice_rogue_crit_landed_1.ogg",
+      "description": "Rogue party voice line — crit landed (variant 1)",
+      "source_sha": "12e0d4cb61cc13e8",
+      "voice": "Chatterbox clone of LibriTTS-R speaker 8224 (CC BY 4.0), reference +1.5 st, voice_refs/rogue.wav",
+      "voice_gender": "ambiguous",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.55 cfg 0.4",
+      "seed": 1072217960,
+      "gain_db": -4.0
+    },
+    "voice_rogue_crit_landed_2": {
+      "file": "assets/audio/sfx/voice_rogue_crit_landed_2.ogg",
+      "description": "Rogue party voice line — crit landed (variant 2)",
+      "source_sha": "10cd28c09da99119",
+      "voice": "Chatterbox clone of LibriTTS-R speaker 8224 (CC BY 4.0), reference +1.5 st, voice_refs/rogue.wav",
+      "voice_gender": "ambiguous",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.55 cfg 0.4",
+      "seed": 136557270,
+      "gain_db": 1.7
+    },
+    "voice_rogue_enemy_felled": {
+      "file": "assets/audio/sfx/voice_rogue_enemy_felled.ogg",
+      "description": "Rogue party voice line — enemy felled",
+      "source_sha": "5873e030aa139616",
+      "voice": "Chatterbox clone of LibriTTS-R speaker 8224 (CC BY 4.0), reference +1.5 st, voice_refs/rogue.wav",
+      "voice_gender": "ambiguous",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.55 cfg 0.4",
+      "seed": 1717299941,
+      "gain_db": -4.6
+    },
+    "voice_rogue_enemy_felled_1": {
+      "file": "assets/audio/sfx/voice_rogue_enemy_felled_1.ogg",
+      "description": "Rogue party voice line — enemy felled (variant 1)",
+      "source_sha": "de892ebb5e8945a1",
+      "voice": "Chatterbox clone of LibriTTS-R speaker 8224 (CC BY 4.0), reference +1.5 st, voice_refs/rogue.wav",
+      "voice_gender": "ambiguous",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.55 cfg 0.4",
+      "seed": 13661430,
+      "gain_db": -1.2
+    },
+    "voice_rogue_enemy_felled_2": {
+      "file": "assets/audio/sfx/voice_rogue_enemy_felled_2.ogg",
+      "description": "Rogue party voice line — enemy felled (variant 2)",
+      "source_sha": "0179845c6ec7bb8f",
+      "voice": "Chatterbox clone of LibriTTS-R speaker 8224 (CC BY 4.0), reference +1.5 st, voice_refs/rogue.wav",
+      "voice_gender": "ambiguous",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.55 cfg 0.4",
+      "seed": 608021462,
+      "gain_db": -1.8
+    },
+    "voice_rogue_victory_25": {
+      "file": "assets/audio/sfx/voice_rogue_victory_25.ogg",
+      "description": "Rogue party voice line — victory (variant 25)",
+      "source_sha": "8d53afc12fa94da5",
+      "voice": "Chatterbox clone of LibriTTS-R speaker 8224 (CC BY 4.0), reference +1.5 st, voice_refs/rogue.wav",
+      "voice_gender": "ambiguous",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.55 cfg 0.4",
+      "seed": 1419273286,
+      "gain_db": -2.1
+    },
+    "voice_rogue_victory_26": {
+      "file": "assets/audio/sfx/voice_rogue_victory_26.ogg",
+      "description": "Rogue party voice line — victory (variant 26)",
+      "source_sha": "3268aca347d44daa",
+      "voice": "Chatterbox clone of LibriTTS-R speaker 8224 (CC BY 4.0), reference +1.5 st, voice_refs/rogue.wav",
+      "voice_gender": "ambiguous",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.55 cfg 0.4",
+      "seed": 1265725582,
+      "gain_db": -0.7
+    },
+    "voice_rogue_victory_27": {
+      "file": "assets/audio/sfx/voice_rogue_victory_27.ogg",
+      "description": "Rogue party voice line — victory (variant 27)",
+      "source_sha": "f17fda1d3d4cde50",
+      "voice": "Chatterbox clone of LibriTTS-R speaker 8224 (CC BY 4.0), reference +1.5 st, voice_refs/rogue.wav",
+      "voice_gender": "ambiguous",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.55 cfg 0.4",
+      "seed": 177024838,
+      "gain_db": -2.0
+    },
+    "voice_rogue_victory_28": {
+      "file": "assets/audio/sfx/voice_rogue_victory_28.ogg",
+      "description": "Rogue party voice line — victory (variant 28)",
+      "source_sha": "475bd8c63073e149",
+      "voice": "Chatterbox clone of LibriTTS-R speaker 8224 (CC BY 4.0), reference +1.5 st, voice_refs/rogue.wav",
+      "voice_gender": "ambiguous",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.55 cfg 0.4",
+      "seed": 839453673,
+      "gain_db": -1.0
+    },
+    "voice_rogue_victory_29": {
+      "file": "assets/audio/sfx/voice_rogue_victory_29.ogg",
+      "description": "Rogue party voice line — victory (variant 29)",
+      "source_sha": "2a8bb12133af1504",
+      "voice": "Chatterbox clone of LibriTTS-R speaker 8224 (CC BY 4.0), reference +1.5 st, voice_refs/rogue.wav",
+      "voice_gender": "ambiguous",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.55 cfg 0.4",
+      "seed": 1429301763,
+      "gain_db": -1.9
+    },
+    "voice_rogue_victory_30": {
+      "file": "assets/audio/sfx/voice_rogue_victory_30.ogg",
+      "description": "Rogue party voice line — victory (variant 30)",
+      "source_sha": "2273306a4f19abd5",
+      "voice": "Chatterbox clone of LibriTTS-R speaker 8224 (CC BY 4.0), reference +1.5 st, voice_refs/rogue.wav",
+      "voice_gender": "ambiguous",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.55 cfg 0.4",
+      "seed": 1515064924,
+      "gain_db": -1.3
+    },
+    "voice_fighter_crit_landed": {
+      "file": "assets/audio/sfx/voice_fighter_crit_landed.ogg",
+      "description": "Fighter party voice line — crit landed",
+      "source_sha": "4ee1d908b0465156",
+      "voice": "Harry - Fierce Warrior (SOYHLrjzK2X1ezoPC6cr)",
+      "voice_gender": "male"
+    },
+    "voice_fighter_crit_landed_1": {
+      "file": "assets/audio/sfx/voice_fighter_crit_landed_1.ogg",
+      "description": "Fighter party voice line — crit landed (variant 1)",
+      "source_sha": "14b81c4f8f799c4e",
+      "voice": "Harry - Fierce Warrior (SOYHLrjzK2X1ezoPC6cr)",
+      "voice_gender": "male"
+    },
+    "voice_fighter_crit_landed_2": {
+      "file": "assets/audio/sfx/voice_fighter_crit_landed_2.ogg",
+      "description": "Fighter party voice line — crit landed (variant 2)",
+      "source_sha": "883860fd23ba843d",
+      "voice": "Harry - Fierce Warrior (SOYHLrjzK2X1ezoPC6cr)",
+      "voice_gender": "male"
+    },
+    "voice_fighter_enemy_felled": {
+      "file": "assets/audio/sfx/voice_fighter_enemy_felled.ogg",
+      "description": "Fighter party voice line — enemy felled",
+      "source_sha": "1e245e0a9b905428",
+      "voice": "Harry - Fierce Warrior (SOYHLrjzK2X1ezoPC6cr)",
+      "voice_gender": "male",
+      "gain_db": 0.1
+    },
+    "voice_fighter_enemy_felled_1": {
+      "file": "assets/audio/sfx/voice_fighter_enemy_felled_1.ogg",
+      "description": "Fighter party voice line — enemy felled (variant 1)",
+      "source_sha": "8cc4445990da029e",
+      "voice": "Harry - Fierce Warrior (SOYHLrjzK2X1ezoPC6cr)",
+      "voice_gender": "male"
+    },
+    "voice_fighter_enemy_felled_2": {
+      "file": "assets/audio/sfx/voice_fighter_enemy_felled_2.ogg",
+      "description": "Fighter party voice line — enemy felled (variant 2)",
+      "source_sha": "3afc86e0d447bbf9",
+      "voice": "Harry - Fierce Warrior (SOYHLrjzK2X1ezoPC6cr)",
+      "voice_gender": "male",
+      "gain_db": 0.2
+    },
+    "voice_fighter_turn_start_10": {
+      "file": "assets/audio/sfx/voice_fighter_turn_start_10.ogg",
+      "description": "Fighter party voice line — turn start (variant 10)",
+      "source_sha": "068323c844c2a057",
+      "voice": "Harry - Fierce Warrior (SOYHLrjzK2X1ezoPC6cr)",
+      "voice_gender": "male"
+    },
+    "voice_fighter_turn_start_11": {
+      "file": "assets/audio/sfx/voice_fighter_turn_start_11.ogg",
+      "description": "Fighter party voice line — turn start (variant 11)",
+      "source_sha": "39504a00c74a735f",
+      "voice": "Harry - Fierce Warrior (SOYHLrjzK2X1ezoPC6cr)",
+      "voice_gender": "male"
+    },
+    "voice_fighter_turn_start_12": {
+      "file": "assets/audio/sfx/voice_fighter_turn_start_12.ogg",
+      "description": "Fighter party voice line — turn start (variant 12)",
+      "source_sha": "69e37a150c95bef0",
+      "voice": "Harry - Fierce Warrior (SOYHLrjzK2X1ezoPC6cr)",
+      "voice_gender": "male"
+    },
+    "voice_fighter_turn_start_13": {
+      "file": "assets/audio/sfx/voice_fighter_turn_start_13.ogg",
+      "description": "Fighter party voice line — turn start (variant 13)",
+      "source_sha": "2ea2f4831c3fe72b",
+      "voice": "Harry - Fierce Warrior (SOYHLrjzK2X1ezoPC6cr)",
+      "voice_gender": "male"
+    },
+    "voice_fighter_turn_start_14": {
+      "file": "assets/audio/sfx/voice_fighter_turn_start_14.ogg",
+      "description": "Fighter party voice line — turn start (variant 14)",
+      "source_sha": "dd5ff3d903ef2b91",
+      "voice": "Harry - Fierce Warrior (SOYHLrjzK2X1ezoPC6cr)",
+      "voice_gender": "male"
+    },
+    "voice_fighter_turn_start_15": {
+      "file": "assets/audio/sfx/voice_fighter_turn_start_15.ogg",
+      "description": "Fighter party voice line — turn start (variant 15)",
+      "source_sha": "3b9840566e9ac4bd",
+      "voice": "Harry - Fierce Warrior (SOYHLrjzK2X1ezoPC6cr)",
+      "voice_gender": "male"
+    },
+    "voice_fighter_victory_10": {
+      "file": "assets/audio/sfx/voice_fighter_victory_10.ogg",
+      "description": "Fighter party voice line — victory (variant 10)",
+      "source_sha": "cc84f1605d6c8118",
+      "voice": "Harry - Fierce Warrior (SOYHLrjzK2X1ezoPC6cr)",
+      "voice_gender": "male"
+    },
+    "voice_fighter_victory_11": {
+      "file": "assets/audio/sfx/voice_fighter_victory_11.ogg",
+      "description": "Fighter party voice line — victory (variant 11)",
+      "source_sha": "81bbf89393d560b6",
+      "voice": "Harry - Fierce Warrior (SOYHLrjzK2X1ezoPC6cr)",
+      "voice_gender": "male"
+    },
+    "voice_fighter_victory_12": {
+      "file": "assets/audio/sfx/voice_fighter_victory_12.ogg",
+      "description": "Fighter party voice line — victory (variant 12)",
+      "source_sha": "439fd6509dcf4c71",
+      "voice": "Harry - Fierce Warrior (SOYHLrjzK2X1ezoPC6cr)",
+      "voice_gender": "male"
+    },
+    "voice_fighter_victory_13": {
+      "file": "assets/audio/sfx/voice_fighter_victory_13.ogg",
+      "description": "Fighter party voice line — victory (variant 13)",
+      "source_sha": "8fcdf698fdc2c6b9",
+      "voice": "Harry - Fierce Warrior (SOYHLrjzK2X1ezoPC6cr)",
+      "voice_gender": "male",
+      "gain_db": 0.1
+    },
+    "voice_fighter_victory_14": {
+      "file": "assets/audio/sfx/voice_fighter_victory_14.ogg",
+      "description": "Fighter party voice line — victory (variant 14)",
+      "source_sha": "33782438525e2445",
+      "voice": "Harry - Fierce Warrior (SOYHLrjzK2X1ezoPC6cr)",
+      "voice_gender": "male"
+    },
+    "voice_fighter_victory_15": {
+      "file": "assets/audio/sfx/voice_fighter_victory_15.ogg",
+      "description": "Fighter party voice line — victory (variant 15)",
+      "source_sha": "58730446c21cbc85",
+      "voice": "Harry - Fierce Warrior (SOYHLrjzK2X1ezoPC6cr)",
+      "voice_gender": "male"
     }
   }
 }

@@ -12,10 +12,13 @@ const PROBE := "user://village_intro_strip_probe.gd"
 
 var _loop: Node
 var _saved: Dictionary = {}
+## A retired intro mirrors its flag into story_flags too, so that store is restored as well or it leaks into later files.
+var _saved_story: Dictionary = {}
 
 
 func before_each() -> void:
 	_saved = GameState.game_constants.duplicate(true)
+	_saved_story = GameState.story_flags.duplicate(true)
 	_loop = load("res://src/GameLoop.gd").new()
 	## Every intro's gate flag cleared, so each arm starts from a player who has never been there.
 	for map_id in _intros():
@@ -26,6 +29,7 @@ func after_each() -> void:
 	## Erased FIRST: free() below can abort this function, which would strand the plant.
 	if FileAccess.file_exists(PROBE):
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(PROBE))
+	GameState.story_flags = _saved_story
 	if is_instance_valid(_loop):
 		_loop.free()
 	GameState.game_constants = _saved
@@ -375,3 +379,158 @@ func test_the_accessor_these_arms_use_strips_prose_both_ways() -> void:
 	assert_gt(raw_len, 100000, "CONTROL: GameLoop.gd must be read at all, got %d chars" % raw_len)
 	assert_gt(float(code_len) / float(maxi(raw_len, 1)), 0.40,
 		"the strip left only %d of %d chars (%.3f): it is keeping the named lines and discarding the file, so every source arm here reads a corpus chosen by its own assertions" % [code_len, raw_len, float(code_len) / float(maxi(raw_len, 1))])
+
+
+## Plays whatever the gate offers on map_id, finishing each scene, and returns every id it offered (bounded).
+func _offered_on(map_id: String) -> Array[String]:
+	var offered: Array[String] = []
+	for _step in STORY_WALK_CAP:
+		var got: String = _pending_on(map_id)
+		if got == "" or offered.has(got):
+			break
+		offered.append(got)
+		GameState.game_constants[_completion_flag_of(got)] = true
+	return offered
+
+
+## His save: prologue + chapter1 + the Cleric spotlight finished. Every arm below that needs "a real game at the
+## first free Harmonia entry" starts here, because _on_prologue_finished plays chapter1 in the same breath.
+const HIS_SAVE_DONE := ["world1_prologue", "world1_chapter1", "world1_spotlight_cleric_ch1"]
+
+
+## His save as his log wrote it. The duel-won flag is separate from the scene's completion flag (the Cleric spotlight's gate
+## reads _unlocked_, the completion map writes _watched_), and his log :3854 set it; without it the gate re-offers the duel.
+func _load_his_save() -> void:
+	_finish(HIS_SAVE_DONE)
+	GameState.game_constants["cutscene_flag_spotlight_unlocked_cleric"] = true
+
+
+func _finish(ids: Array) -> void:
+	for done in ids:
+		assert_true(_completion_flags().has(done), "CONTROL: %s must be in the completion map" % done)
+		GameState.game_constants[_completion_flag_of(str(done))] = true
+
+
+func _dialogue_speakers(steps: Array) -> Array:
+	var out: Array = []
+	for step in steps:
+		if step is Dictionary and str((step as Dictionary).get("type", "")) == "dialogue":
+			for line in (step as Dictionary).get("lines", []):
+				var sp := str((line as Dictionary).get("speaker", ""))
+				if sp != "" and not out.has(sp):
+					out.append(sp)
+	return out
+
+
+func test_his_harmonia_intro_plays_only_the_strangers() -> void:
+	## struktured 2026-10-31, "trim to strangers": the intro after Mystic Remedies re-introduced three people chapter1 had
+	## just introduced. It must still PLAY (Marta and the Merchant were never introduced anywhere), minus the three.
+	_load_his_save()
+	var intro := "world1_harmonia_npcs"
+	## Trimmed BEFORE the walk: _offered_on finishes every scene it is handed, and a later one could add speakers.
+	var data: Dictionary = _loop._trimmed_intro_data(intro)
+	var offered := _offered_on("harmonia_village")
+	assert_true(offered.has(intro), "the intro still has strangers to introduce, so it must be offered; the gate offered %s" % [offered])
+	assert_false(data.is_empty(), "his save must produce a TRIMMED scene; {} means the full scene plays and the replay is back")
+	var heard: Array = _dialogue_speakers(data.get("steps", []))
+	for met in ["Elder Theron", "Scholar Milo", "Phil the Lost"]:
+		assert_false(heard.has(met), "%s spoke in chapter1 and is introduced again: %s" % [met, heard])
+	for stranger in ["Marta", "Merchant"]:
+		assert_true(heard.has(stranger), "%s was never introduced anywhere and the trim cut them: %s" % [stranger, heard])
+
+
+func test_the_trim_follows_the_finished_scenes_not_a_list() -> void:
+	## Derived, so it holds when a later scene introduces someone: every kept exchange has a local nobody has met, every
+	## cut one has only met locals. Checked for every intro at its world's chapter1, the first state a real game reaches.
+	var states := {
+		"world1_harmonia_npcs": HIS_SAVE_DONE,
+		"world1_eldertree_npcs": [],
+		"world2_maple_heights_npcs": ["world2_prologue", "world2_chapter1"],
+		"world3_brasston_npcs": ["world3_prologue", "world3_chapter1"],
+		"world4_rivet_row_npcs": ["world4_prologue", "world4_chapter1"],
+	}
+	var party: Array = _loop._party_speaker_names()
+	var trimmed_any := false
+	for intro in states:
+		GameState.game_constants = _saved.duplicate(true)
+		_finish(states[intro])
+		var met: Array = _loop._intro_met_locals(str(intro), GameState.game_constants)
+		var full: Array = JSON.parse_string(FileAccess.get_file_as_string("res://data/cutscenes/%s.json" % intro)).get("steps", [])
+		var kept: Array = _loop._trim_intro_steps(full, met, party)
+		trimmed_any = trimmed_any or kept.size() < full.size()
+		for step in full:
+			if not (step is Dictionary and str((step as Dictionary).get("type", "")) == "dialogue"):
+				continue
+			var locals: Array = []
+			for line in (step as Dictionary).get("lines", []):
+				var sp := str((line as Dictionary).get("speaker", ""))
+				if sp != "" and not party.has(sp):
+					locals.append(sp)
+			var all_met := not locals.is_empty()
+			for sp in locals:
+				all_met = all_met and met.has(sp)
+			assert_eq(kept.has(step), not all_met,
+				"%s: an exchange with locals %s (met: %s) was %s" % [intro, locals, met, "kept" if kept.has(step) else "cut"])
+		var set_flags := 0
+		for step in kept:
+			if step is Dictionary and str((step as Dictionary).get("type", "")) == "set_flag":
+				set_flags += 1
+		assert_gt(set_flags, 0, "%s: the trim dropped the scene's own set_flag, so it would replay forever" % intro)
+	assert_true(trimmed_any, "CONTROL: no intro was trimmed at any real state, so the arms above judged nothing")
+
+
+func test_a_cut_exchange_takes_its_lead_in_pause_with_it() -> void:
+	## Every authored intro paces each exchange with the wait before it. A cut that kept the wait would leave a dead pause.
+	var party: Array = _loop._party_speaker_names()
+	for map_id in _intros():
+		var intro := str(_intros()[map_id])
+		var full: Array = JSON.parse_string(FileAccess.get_file_as_string("res://data/cutscenes/%s.json" % intro)).get("steps", [])
+		var everyone: Array = _loop._intro_locals(intro)
+		var all_but_one: Array = everyone.slice(0, maxi(everyone.size() - 1, 0))
+		for steps in [full, _loop._trim_intro_steps(full, all_but_one, party)]:
+			for i in steps.size() - 1:
+				if str((steps[i] as Dictionary).get("type", "")) == "wait":
+					assert_eq(str((steps[i + 1] as Dictionary).get("type", "")), "dialogue",
+						"%s: a wait at step %d leads into %s, not an exchange" % [intro, i, (steps[i + 1] as Dictionary).get("type", "")])
+
+
+func test_party_lines_never_count_as_met_and_never_cut_alone() -> void:
+	## The party talks in every chapter; counting them would cut real strangers. Maple Heights' intro shares
+	## Fighter/Cleric/Mage lines with its chapter1 and no local, so after chapter1 nothing is met.
+	GameState.game_constants[_completion_flag_of("world2_chapter1")] = true
+	var met: Array = _loop._intro_met_locals("world2_maple_heights_npcs", GameState.game_constants)
+	assert_gt(_loop._intro_locals("world2_maple_heights_npcs").size(), 0, "CONTROL: the intro must have locals")
+	assert_lt(_loop._intro_locals("world2_maple_heights_npcs").size(), _loop._scene_speakers("world2_maple_heights_npcs").size(),
+		"CONTROL: the intro's party lines must be excluded from its locals, so locals < speakers")
+	assert_eq(met, [], "a party member counted as an already-met local: %s" % [met])
+	var party_only := {"type": "dialogue", "lines": [{"speaker": "Fighter", "text": "x"}]}
+	assert_false(_loop._exchange_already_met(party_only, ["Fighter"], _loop._party_speaker_names()),
+		"an exchange with no local has nobody to have met, so it is never cut")
+
+
+func test_an_intro_retires_only_when_everyone_in_it_is_met() -> void:
+	assert_true(_loop._intro_has_lost_its_moment(5, 5), "all five met: nothing left to introduce")
+	assert_false(_loop._intro_has_lost_its_moment(3, 5), "his Harmonia save: two strangers left, so it plays trimmed")
+	assert_false(_loop._intro_has_lost_its_moment(0, 0), "an intro with no locals has no one to have met")
+	## The gate itself, ONE call (the walk would finish the intro and set the flag for its own reasons).
+	_load_his_save()
+	assert_eq(_pending_on("harmonia_village"), "world1_harmonia_npcs",
+		"CONTROL: the gate must reach the intro loop at his save, or the flag check below proves nothing")
+	assert_false(bool(GameState.game_constants.get(_completion_flag_of("world1_harmonia_npcs"), false)),
+		"the gate retired an intro that still has two strangers in it: the trim is the fix, retiring loses them")
+
+
+func test_a_fresh_entry_plays_the_whole_intro() -> void:
+	## POSITIVE CONTROL: nobody met, so the trim must hand back {} and the normal play path runs the full scene.
+	assert_eq(_loop._trimmed_intro_data("world1_eldertree_npcs"), {}, "a fresh Eldertree entry must play its whole intro")
+	assert_eq(_loop._trimmed_intro_data("world1_prologue"), {}, "only village intros are ever trimmed")
+
+
+func test_a_trimmed_intro_keeps_its_music() -> void:
+	## A trimmed intro plays through play_cutscene_from_data, which has no music-fade block; that is only equivalent to
+	## play_cutscene for a scene that opts out of the fade. Every village intro must, or trimming would change its audio.
+	for map_id in _intros():
+		var intro := str(_intros()[map_id])
+		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/cutscenes/%s.json" % intro))
+		assert_true(parsed is Dictionary and bool((parsed as Dictionary).get("keep_music", false)),
+			"%s does not set keep_music, so its trimmed form would skip the fade its full form gets" % intro)

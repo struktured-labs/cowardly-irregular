@@ -4,7 +4,7 @@
   "world": 2,
   "keep_music": true,
   "trigger": "world2_maple_heights_entry",
-  "background": "suburban_neighborhood",
+  "background": "maple_heights_street",
   "description": "First suburban village. A shopkeeper who stocks medieval items and knows about the portal. A mail carrier who's seen the appliances go rogue. A lawn-watering man who thinks Thursday is the answer to everything. A kid on a bicycle with opinions about cosplay.",
   "steps": [
     {

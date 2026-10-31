@@ -11,6 +11,19 @@ extends GutTest
 
 
 const GAME_STATE := "res://src/meta/GameState.gd"
+var _saved_level: float = 0.0
+var _saved_effects: Array = []
+
+
+## A successful modify_constant raises corruption on the autoload, so both fields go back after every arm.
+func before_each() -> void:
+	_saved_level = GameState.corruption_level
+	_saved_effects = (GameState.corruption_effects as Array).duplicate()
+
+
+func after_each() -> void:
+	GameState.corruption_level = _saved_level
+	GameState.corruption_effects.assign(_saved_effects)
 
 
 # ── Source pin: push_warning on unknown constant ──────────────────

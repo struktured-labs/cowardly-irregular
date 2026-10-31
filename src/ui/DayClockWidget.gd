@@ -31,13 +31,26 @@ func _ready() -> void:
 	layer = 45
 	_dial = Control.new()
 	_dial.name = "DayClockDial"
-	_dial.custom_minimum_size = Vector2(72, 88)
-	_dial.size = Vector2(72, 88)
+	_dial.custom_minimum_size = DIAL_SIZE
+	_dial.size = DIAL_SIZE
 	_dial.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_dial.set_anchors_preset(Control.PRESET_CENTER_TOP)
-	_dial.position = Vector2(get_viewport().get_visible_rect().size.x / 2.0 - 36, 8)
+	_dial.position = dial_position()
 	_dial.draw.connect(_draw_dial)
 	add_child(_dial)
+
+
+## ⛔ IT SAT HALF OFF THE RIGHT EDGE FROM 2026-07-18 UNTIL struktured REPORTED IT. It set a CENTER_TOP
+## anchor (0.5) AND an absolute x of width/2 - 36, so the half-width counted twice: 640 + 604 = 1244,
+## leaving ~36 of its 72 px on screen beside the minimap. And centre-top would have been wrong anyway:
+## TutorialHint draws x 200..1080 at layer 98, so a centred dial vanishes under every hint. It now sits
+## just left of the minimap, derived from the minimap's own constants so the two can never overlap.
+const DIAL_SIZE := Vector2(72, 88)
+const DIAL_GAP := 8.0
+
+
+static func dial_position() -> Vector2:
+	var mm: Rect2 = OverworldMinimap.panel_rect()
+	return Vector2(mm.position.x - DIAL_GAP - DIAL_SIZE.x, mm.position.y)
 
 
 func set_outdoor(outdoor: bool) -> void:

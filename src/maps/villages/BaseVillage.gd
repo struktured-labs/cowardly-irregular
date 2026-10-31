@@ -71,6 +71,8 @@ var spawn_points: Dictionary = {}
 
 ## Elevation state, filled by _build_derived_layers (empty = flat village, today's behaviour)
 var _height_grid: Array = []
+## The village's own glyph rows, captured where every village already hands them over.
+var _map_rows: Array = []
 var _stair_cells: Dictionary = {}
 var _face_cells: Dictionary = {}
 var _prop_blocked: Dictionary = {}
@@ -88,6 +90,7 @@ func _ready() -> void:
 	_setup_treasures()
 	_setup_npcs()
 	_place_authored_examines()
+	_add_ambient_walkers(_get_ambient_walkers())
 	_validate_placements()
 	_setup_player()
 	_setup_camera()
@@ -240,6 +243,106 @@ func _add_prop(kind: int, base_cell: Vector2i) -> VillageProp:
 	return p
 
 
+## Give every solid block of `glyphs` a drawn face. The block keeps its WALL tiles and so keeps
+## its collision; this adds the elevation above them, Y-sorted so the player walks behind the roof.
+## Struktured, 2026-10-30, on a SNES town: "I want some of that feel at least" -- the feel is the
+## facade, not the pixels. A top-down block of wall tiles reads as a map; a drawn face reads as a town.
+## ONLY FULL RECTANGLES: an L-shaped block's bounding box would paint a face over walkable ground,
+## so a ragged block is left exactly as it is today rather than guessed at.
+## A block whose ART is a building -- an inn, a shop, the bar -- already HAS a face and is skipped.
+## A DOOR does not claim its block: it sorts below the facade's base, so it draws on the house's front.
+## Call this LAST in _setup_buildings, so every node it must defer to already exists.
+func _spawn_house_facades(glyphs: Array, roof_colors: Array = [], style: String = "timber") -> int:
+	if _map_rows.is_empty() or props == null:
+		return 0
+	var claimed: Array = []
+	if buildings != null:
+		for b in buildings.get_children():
+			if b is Node2D and not (b is AreaTransition):
+				claimed.append(_building_cells(b))
+	var want := {}
+	for g in glyphs:
+		want[g] = true
+	var seen := {}
+	var built: int = 0
+	for y in range(_map_rows.size()):
+		var row: String = _map_rows[y]
+		for x in range(row.length()):
+			var cell := Vector2i(x, y)
+			if seen.has(cell) or not want.has(row[x]):
+				continue
+			var block: Array = _flood_block(cell, want, seen)
+			var minp := block[0] as Vector2i
+			var maxp := block[1] as Vector2i
+			var cells: int = block[2]
+			var bw: int = maxp.x - minp.x + 1
+			var bh: int = maxp.y - minp.y + 1
+			if cells != bw * bh:
+				continue
+			## The GROUND ROW IS LEFT ALONE: Harmonia's chapel and library doors sit on their
+			## block's bottom row, and a full-height face would paint over a real door and its
+			## gate visual. The art spans one row ABOVE the block down to one row above its
+			## base, so the roof rises and every entrance stays exactly as it is.
+			if bh < 2 or _block_is_claimed(minp, maxp, claimed):
+				continue
+			var house: VillageProp = VillagePropScript.create(VillagePropScript.Kind.HOUSE, Vector2i(minp.x, maxp.y - 1))
+			house.sheet_key = tile_generator._get_sheet_key()
+			house.size_tiles = Vector2i(bw, bh)
+			if not roof_colors.is_empty():
+				house.roof_color = roof_colors[built % roof_colors.size()]
+			## A different period from the colour cycle, so colour and shape do not lock together.
+			house.roof_peaked = built % 2 == 1
+			house.house_style = style
+			props.add_child(house)
+			built += 1
+	return built
+
+
+func _block_is_claimed(minp: Vector2i, maxp: Vector2i, claimed: Array) -> bool:
+	## The facade's extent, not the block's: the roof rises one row ABOVE it, where a shop may stand.
+	var block := Rect2i(minp - Vector2i(0, 1), maxp - minp + Vector2i(1, 2))
+	for r in claimed:
+		if block.intersects(r):
+			return true
+	return false
+
+
+## The cells a building's ART covers, not just its origin: the bar sits beside its block and its art spans it.
+func _building_cells(b: Node2D) -> Rect2i:
+	var spr = b.get("sprite")
+	if spr is Sprite2D and spr.texture != null:
+		var r: Rect2 = spr.get_rect()
+		r.position += b.position + spr.position
+		var lo := Vector2i(floori(r.position.x / TILE_SIZE), floori(r.position.y / TILE_SIZE))
+		var hi := Vector2i(ceili(r.end.x / TILE_SIZE), ceili(r.end.y / TILE_SIZE))
+		return Rect2i(lo, hi - lo)
+	return Rect2i(Vector2i(floori(b.position.x / TILE_SIZE), floori(b.position.y / TILE_SIZE)), Vector2i.ONE)
+
+
+## Bounds and cell count of the contiguous run of wanted glyphs containing `start`.
+func _flood_block(start: Vector2i, want: Dictionary, seen: Dictionary) -> Array:
+	var minp := start
+	var maxp := start
+	var n: int = 0
+	var stack: Array = [start]
+	while not stack.is_empty():
+		var c: Vector2i = stack.pop_back()
+		if seen.has(c) or c.y < 0 or c.y >= _map_rows.size():
+			continue
+		var r: String = _map_rows[c.y]
+		if c.x < 0 or c.x >= r.length() or not want.has(r[c.x]):
+			continue
+		seen[c] = true
+		n += 1
+		minp = Vector2i(min(minp.x, c.x), min(minp.y, c.y))
+		maxp = Vector2i(max(maxp.x, c.x), max(maxp.y, c.y))
+		stack.append(c + Vector2i(1, 0))
+		stack.append(c + Vector2i(-1, 0))
+		stack.append(c + Vector2i(0, 1))
+		stack.append(c + Vector2i(0, -1))
+	return [minp, maxp, n]
+
+
 ## ---- Placement validation (live playtest 2026-07-11, msg 2360) ----
 ## A quest hen spawned inside Harmonia's Inn wall block and some wanderers
 ## pathed through building footprints. Every npcs-container child gets its
@@ -344,6 +447,7 @@ static func exit_centre_of(map_rows: Array, tile: int) -> Vector2:
 
 
 func _build_derived_layers(map_rows: Array, height_rows: Array) -> void:
+	_map_rows = map_rows
 	var exit_at := exit_centre_of(map_rows, TILE_SIZE)
 	if exit_at != Vector2.INF:
 		spawn_points["exit"] = exit_at
@@ -549,6 +653,8 @@ func _setup_scene() -> void:
 
 	buildings = Node2D.new()
 	buildings.name = "Buildings"
+	## Y-sorted like props and NPCs: unsorted, every door and shop drew at y=0, behind every facade.
+	buildings.y_sort_enabled = true
 	add_child(buildings)
 
 	treasures = Node2D.new()
@@ -642,6 +748,153 @@ func _add_quest_route_point(qid: String, flag: String, index: int, group_size: i
 ## (User feedback 2026-05-02: "village characters should walk around,
 ## at least some of them" — head-lock constraints already satisfied by
 ## the bb60068 sprite pass.)
+## Villagers on errands. A village returns [{name, archetype, line}, ...]; [] keeps it as authored.
+func _get_ambient_walkers() -> Array:
+	return []
+
+
+const WALKER_MIN_RUN: int = 5
+const WALKER_MAX_RUN: int = 9
+## The village gate's keep-clear box around an exit, the same one test_a_village_exit_sits_on_its_exit judges.
+const GATE_CLEAR := Rect2(-44.0, -76.0, 88.0, 80.0)
+## Each walker's line as DERIVED, by node name: the record placement validation must leave untouched.
+var ambient_walker_lines: Dictionary = {}
+
+
+## Each walker's line is DERIVED from this village's own walkability, so no map edit can strand one in a wall.
+func _add_ambient_walkers(roster: Array) -> int:
+	if roster.is_empty() or npcs == null:
+		return 0
+	var runs := _walker_runs(roster.size())
+	var added: int = 0
+	for spec in roster:
+		if added >= runs.size():
+			push_warning("[%s] only %d walker line(s) fit; '%s' has nowhere to walk" % [_get_area_id(), runs.size(), spec.get("name", "?")])
+			break
+		var run: Array = runs[added]
+		var loop: Array[Vector2] = [_cell_centre(run[0]), _cell_centre(run[1])]
+		ambient_walker_lines["Walker_%s" % str(spec["name"]).validate_node_name()] = loop.duplicate()
+		var w := _create_wandering_npc(spec["name"], spec["archetype"], spec["line"], loop,
+			spec.get("theme", "villager"), spec.get("portrait", spec["archetype"]))
+		w.name = "Walker_%s" % str(spec["name"]).validate_node_name()
+		npcs.add_child(w)
+		added += 1
+	return added
+
+
+func _cell_centre(cell: Vector2i) -> Vector2:
+	return Vector2((cell.x + 0.5) * TILE_SIZE, (cell.y + 0.5) * TILE_SIZE)
+
+
+## Horizontal runs of steppable cells clear of doors, exits and anyone standing still; longest first,
+## and never two on neighbouring rows over the same columns, so walkers do not pace on top of each other.
+func _walker_runs(want: int = 0) -> Array:
+	var size := _walker_grid_size()
+	if size == Vector2i.ZERO:
+		return []
+	var avoid := {}
+	for container in [npcs, buildings, treasures, transitions]:
+		if container == null:
+			continue
+		for n in container.get_children():
+			## A walker moves, so its spawn cell is no obstacle -- and skipping it keeps the derivation a pure function of the map.
+			if not (n is Node2D) or n is WanderingNPC:
+				continue
+			for r in _keep_clear_rects(n as Node2D, container == transitions):
+				_mark_cells(avoid, r)
+	var margin: int = 3
+	var runs: Array = []
+	for y in range(margin, size.y - margin):
+		var width: int = size.x
+		var start: int = -1
+		for x in range(margin, width - margin + 1):
+			var cell := Vector2i(x, y)
+			var open: bool = x < width - margin and not avoid.has(cell) and _is_cell_walkable(cell)
+			if open and start >= 0 and _can_step(Vector2i(x - 1, y), cell):
+				continue
+			if start >= 0:
+				var n: int = x - start
+				if n >= WALKER_MIN_RUN:
+					var take: int = mini(n, WALKER_MAX_RUN)
+					var a: int = start + (n - take) / 2
+					runs.append([Vector2i(a, y), Vector2i(a + take - 1, y)])
+			start = x if open else -1
+	runs.sort_custom(func(p, q):
+		var lp: int = p[1].x - p[0].x
+		var lq: int = q[1].x - q[0].x
+		return lp > lq if lp != lq else (p[0].y < q[0].y if p[0].y != q[0].y else p[0].x < q[0].x))
+	var chosen: Array = []
+	for r in runs:
+		var clash := false
+		for c in chosen:
+			if absi(r[0].y - c[0].y) <= 2 and r[0].x <= c[1].x and c[0].x <= r[1].x:
+				clash = true
+				break
+		if not clash:
+			chosen.append(r)
+	## Vertical lines only when the rows cannot fill the roster, so a village the rows already serve is unchanged.
+	if chosen.size() < want:
+		for r in _walker_column_runs(size, avoid, margin):
+			if not chosen.any(func(c): return _run_rect(c).grow(2).intersects(_run_rect(r))):
+				chosen.append(r)
+	return chosen
+
+
+func _walker_column_runs(size: Vector2i, avoid: Dictionary, margin: int) -> Array:
+	var runs: Array = []
+	for x in range(margin, size.x - margin):
+		var start: int = -1
+		for y in range(margin, size.y - margin + 1):
+			var cell := Vector2i(x, y)
+			var open: bool = y < size.y - margin and not avoid.has(cell) and _is_cell_walkable(cell)
+			if open and start >= 0 and _can_step(Vector2i(x, y - 1), cell):
+				continue
+			if start >= 0:
+				var n: int = y - start
+				if n >= WALKER_MIN_RUN:
+					var take: int = mini(n, WALKER_MAX_RUN)
+					var a: int = start + (n - take) / 2
+					runs.append([Vector2i(x, a), Vector2i(x, a + take - 1)])
+			start = y if open else -1
+	runs.sort_custom(func(p, q): return (p[1] - p[0]).length() > (q[1] - q[0]).length())
+	return runs
+
+
+func _run_rect(r: Array) -> Rect2i:
+	var lo := Vector2i(mini(r[0].x, r[1].x), mini(r[0].y, r[1].y))
+	var hi := Vector2i(maxi(r[0].x, r[1].x), maxi(r[0].y, r[1].y))
+	return Rect2i(lo, hi - lo + Vector2i.ONE)
+
+
+## Map size in cells: the glyph rows when a village has them, else its declared pixel size (the strip mall, the plaza).
+func _walker_grid_size() -> Vector2i:
+	if not _map_rows.is_empty():
+		return Vector2i((_map_rows[0] as String).length(), _map_rows.size())
+	var px := _get_map_pixel_size()
+	return Vector2i(px.x / TILE_SIZE, px.y / TILE_SIZE)
+
+
+## World-space boxes a walker's line must stay out of: an exit's gate, a door's press zone, else the node's own cell +-1.
+func _keep_clear_rects(n: Node2D, is_exit: bool) -> Array:
+	var out: Array = []
+	if is_exit:
+		out.append(Rect2(n.position + GATE_CLEAR.position, GATE_CLEAR.size).grow(8.0))
+	for c in n.get_children():
+		if n is Area2D and c is CollisionShape2D and c.shape is RectangleShape2D:
+			var sz: Vector2 = (c.shape as RectangleShape2D).size
+			out.append(Rect2(n.position + c.position - sz * 0.5, sz).grow(8.0))
+	var cell := _cell_of(n.position)
+	out.append(Rect2(Vector2(cell - Vector2i.ONE) * TILE_SIZE, Vector2(3, 3) * TILE_SIZE))
+	return out
+
+
+## Every cell whose square touches `r`, not just those whose centre is inside: a line through a corner is still inside.
+func _mark_cells(avoid: Dictionary, r: Rect2) -> void:
+	for y in range(floori(r.position.y / TILE_SIZE), ceili(r.end.y / TILE_SIZE)):
+		for x in range(floori(r.position.x / TILE_SIZE), ceili(r.end.x / TILE_SIZE)):
+			avoid[Vector2i(x, y)] = true
+
+
 func _create_wandering_npc(npc_name: String, archetype: String, dialogue: String, patrol_loop: Array[Vector2], dialogue_theme: String = "elder", dialogue_portrait: String = "elder") -> Area2D:
 	var w = WanderingNPCScript.new()
 	w.npc_name = npc_name
