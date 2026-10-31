@@ -213,3 +213,11 @@ func _setup_npcs() -> void:
 	orrery.sprite_archetype = "traveler"  # the travelling merchant keeps her look; plain "mysterious" is the hooded figure
 	orrery.npc_id = "madame_orrery_w2"
 	npcs.add_child(orrery)
+
+
+## Ambient walkers: their lines are derived from this map's ground (BaseVillage._walker_runs).
+func _get_ambient_walkers() -> Array:
+	return [
+		{"name": "Mall Walker Gloria", "archetype": "old_woman", "line": "Six laps before the stores open. The stores never open. I'm on lap four thousand."},
+		{"name": "Bored Teen Dex", "archetype": "young_man", "line": "Came for the arcade. The arcade is a different store every time I look."},
+	]
