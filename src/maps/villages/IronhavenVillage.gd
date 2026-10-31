@@ -213,6 +213,9 @@ func _setup_buildings() -> void:
 	_add_lamp_post(Vector2i(17, 18))
 	_add_prop(VillagePropScript.Kind.WELL, Vector2i(23, 13))
 	_add_prop(VillagePropScript.Kind.FENCE, Vector2i(3, 10))
+	## LAST, so it defers to every building above. Soot-black slate and ember-red tile.
+	_spawn_house_facades(["I", "F", "S", "M"], [Color(0.28, 0.27, 0.30), Color(0.46, 0.22, 0.14)], "timber")
+
 
 func _setup_treasures() -> void:
 	# Iron Shield near forge
@@ -386,3 +389,13 @@ func _place_masterite_curator() -> void:
 	curator.quest_flag = "quest_w1_ironhaven_flame_heard"
 	curator.position = Vector2(14 * TILE_SIZE,8 * TILE_SIZE)
 	npcs.add_child(curator)
+
+
+## Ambient walkers: their lines are derived from this map's ground (BaseVillage._walker_runs).
+func _get_ambient_walkers() -> Array:
+	return [
+		{"name": "Ore Hauler Dunn", "archetype": "blacksmith", "line": "This cart weighs more than I do. Some days it decides where we go."},
+		{"name": "Shift Whistle Marla", "archetype": "young_woman", "line": "Somebody has to walk the line and blow the whistle. Turns out it's me, forever."},
+		{"name": "Soot-Faced Pip", "archetype": "child", "line": "I'm not dirty, I'm WEATHERPROOFED."},
+		{"name": "Veteran Smelter Gorr", "archetype": "old_man", "line": "Forty years at the furnace. Can't feel my eyebrows. Never needed 'em."},
+	]
