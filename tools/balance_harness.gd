@@ -325,8 +325,26 @@ func _equip_lens(party: Array) -> void:
 		_fail += 1
 
 
+## Why a BAL_FROM_SAVE path may not be read, or "" if it is a copy: his live profile is never an input.
+static func save_path_refusal(path: String, user_dir: String) -> String:
+	if path.strip_edges() == "":
+		return "no path given"
+	if path.begins_with("user://"):
+		return "'%s' is inside user:// -- copy the save out first" % path
+	var full := path.simplify_path()
+	if user_dir != "" and full.begins_with(user_dir.simplify_path().trim_suffix("/") + "/"):
+		return "'%s' is under this run's user data dir %s" % [path, user_dir]
+	if "/app_userdata/" in full:
+		return "'%s' is inside a godot app_userdata profile -- copy the save out first" % path
+	return ""
+
+
 ## BAL_FROM_SAVE=<save.json>: his party exactly as saved, rebuilt by the game's own load path (levels from the save).
 func _build_party_from_save(gl, want_jobs: PackedStringArray, path: String) -> Array:
+	var refusal := save_path_refusal(path, OS.get_user_data_dir())
+	if refusal != "":
+		_die("BAL_FROM_SAVE refused: %s" % refusal)
+		return []
 	var save: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
 	if not (save is Dictionary) or not ((save as Dictionary).get("party") is Array):
 		_die("BAL_FROM_SAVE '%s' has no party array" % path)
