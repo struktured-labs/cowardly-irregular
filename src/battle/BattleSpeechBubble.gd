@@ -59,6 +59,10 @@ var _ceiling_y: float = TOP_MARGIN
 ## Extra sideways clearance, set when the ceiling forced the bubble down into its speaker's body.
 var _side_clear: float = 0.0
 var _float_px: float = FLOAT_UP_PX
+## The speaker's head in global space, kept so the tail can aim at it in y as well as x.
+var _anchor_global: Vector2 = Vector2.ZERO
+## Longest tail, px: long enough to reach back from an edge-clamped bubble, short enough not to cross the field.
+const TAIL_MAX_PX: float = 56.0
 ## True once a voice clip set the hold — that hold is in real seconds, so the tween must be too.
 var _voiced: bool = false
 var _panel: PanelContainer = null
@@ -306,6 +310,7 @@ func _present(anchor_global_pos: Vector2, speaker_name: String, line: String, bo
 	modulate.a = 0.0
 
 	var anchor_x: float = anchor_global_pos.x
+	_anchor_global = anchor_global_pos
 	# NOT bubble.ready: spawn() adds this node to the tree BEFORE _present runs, so add_child(bubble) above makes the panel ready SYNCHRONOUSLY and a later connect misses the signal forever. Measured 2026-08-22 — is_node_ready() is already true here, so the whole layout pass had been DEAD since the 2026-07-01 extraction.
 	_finalize_layout(bubble, pointer, anchor_x, prefer_right)
 
@@ -329,7 +334,7 @@ func _finalize_layout(bubble: PanelContainer, pointer: Polygon2D, anchor_x: floa
 	var bw: float = bubble.size.x
 	position.x = _side_placed_x(anchor_x, bw, prefer_right)
 	position.x = _clear_keep_out(position.x, bubble.size, anchor_x)
-	_build_tail(pointer, bubble.size, anchor_x - position.x)
+	_build_tail(pointer, bubble.size, Vector2(anchor_x - position.x, _anchor_global.y - position.y))
 	_panel = bubble
 	_retire_overlapped_elders()
 
@@ -402,15 +407,21 @@ func _retire_overlapped_elders() -> void:
 
 
 ## Tail base on the bubble's bottom edge, tip leaning back toward the speaker, so a diagonally-offset bubble still reads as belonging to that character.
-func _build_tail(pointer: Polygon2D, bubble_size: Vector2, anchor_local_x: float) -> void:
+## The tail AIMS at the speaker's head: an edge-clamped bubble sits well off to one side and the head
+## below it, and a tip fixed 16px under the bubble pointed at nobody (cowir-main, from the 2026-10-31 shots).
+func _build_tail(pointer: Polygon2D, bubble_size: Vector2, anchor_local: Vector2) -> void:
 	var bw: float = bubble_size.x
 	var bh: float = bubble_size.y
-	var base_cx: float = clampf(anchor_local_x, 16.0, maxf(16.0, bw - 16.0))
-	var tip_x: float = clampf(anchor_local_x, -34.0, bw + 34.0)
+	var base_cx: float = clampf(anchor_local.x, 16.0, maxf(16.0, bw - 16.0))
+	var base := Vector2(base_cx, bh - 2.0)
+	var to: Vector2 = anchor_local - base
+	## Always leave downward: a head level with the bubble still reads from a tail that dips to it.
+	to.y = maxf(to.y, 10.0)
+	var tip: Vector2 = base + to.normalized() * minf(to.length(), TAIL_MAX_PX)
 	pointer.polygon = PackedVector2Array([
 		Vector2(base_cx - 8.0, bh - 2.0),
 		Vector2(base_cx + 8.0, bh - 2.0),
-		Vector2(tip_x, bh + 16.0),
+		tip,
 	])
 
 ## Plays the line's audio (a synthesized stream wins over a shipped clip) and holds the bubble for as long as it lasts.
