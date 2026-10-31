@@ -74,3 +74,37 @@ func test_every_backdrop_is_shown_by_one_world() -> void:
 		("a backdrop is a place, and a place is in one world. Seven W2-W6 party chats named W1's "
 		+ "prologue_forest and resolved fine, so only the player could see it. Point each minority scene at its "
 		+ "own world's backdrop. Offenders: %s") % str(offenders))
+
+
+## Story scenes that render the dimmed live capture ON PURPOSE. Each entry is a reason, not a permission.
+const SHOWS_THE_LIVE_SCREEN := {
+	"world3_transition": "brass becomes steel in the prose; a still of either world would contradict the transformation",
+}
+
+
+## An overlay story scene with no backdrop shows a dimmed capture of whatever map was under it. world6_orrery
+## ("The Last Appointment") shipped that way for months, the only orrery of six without its world's backdrop.
+func test_every_overlay_story_scene_names_a_backdrop() -> void:
+	var missing: Array = []
+	var stale: Array = []
+	var scanned := 0
+	for f in DirAccess.get_files_at(CUTSCENE_DIR):
+		if not f.ends_with(".json"):
+			continue
+		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("%s/%s" % [CUTSCENE_DIR, f]))
+		if not (parsed is Dictionary):
+			continue
+		var scene := parsed as Dictionary
+		var w: Variant = scene.get("world", 0)
+		if str(scene.get("presentation", "")) == "staged" or not (w is float or w is int) or int(w) < 1 or int(w) > 6:
+			continue
+		scanned += 1
+		var id := f.trim_suffix(".json")
+		var has_bg := str(scene.get("background", "")) != ""
+		if not has_bg and not SHOWS_THE_LIVE_SCREEN.has(id):
+			missing.append(id)
+		elif has_bg and SHOWS_THE_LIVE_SCREEN.has(id):
+			stale.append(id)
+	assert_gt(scanned, 150, "CONTROL: only %d overlay story scenes were read" % scanned)
+	assert_eq(missing, [], "an overlay story scene with no backdrop shows the dimmed map under it. Name its world's backdrop, or add it to SHOWS_THE_LIVE_SCREEN with the reason: %s" % str(missing))
+	assert_eq(stale, [], "SHOWS_THE_LIVE_SCREEN excuses a scene that now has a backdrop; delete the line: %s" % str(stale))
