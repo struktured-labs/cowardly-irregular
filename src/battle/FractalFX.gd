@@ -439,7 +439,7 @@ func _hitstop(p: Dictionary) -> void:
 	var dur := float(p.get("dur", 0.09))
 	for key in p.get("actors", ["caster", "target"]):
 		var a = actors.get(str(key))
-		if a is AnimatedSprite2D and is_instance_valid(a):
+		if is_instance_valid(a) and a is AnimatedSprite2D:
 			var sprite: AnimatedSprite2D = a
 			var was := sprite.speed_scale
 			sprite.speed_scale = 0.0

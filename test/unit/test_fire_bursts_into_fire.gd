@@ -2,8 +2,9 @@ extends GutTest
 
 ## Issue #399 prototype guard: FractalFX's recursion must really be self-similar and bounded, every
 ## authored phase must name a kind the runner has, and the physical layer must leave the actor
-## sprites exactly as it found them (artist frames are read, never edited). Sequences run at engine
-## speed 4 so the arms wait well under a second of real time.
+## sprites exactly as it found them (artist frames are read, never edited). Arms wait for a
+## CONDITION under a real-time bound, never for a timer: a slow frame mid-suite can jump a whole
+## recursion level (measured: 12 of 39 at engine speed 4 with a fixed wait).
 
 const FX := preload("res://src/battle/FractalFX.gd")
 const FX_SRC := "res://src/battle/FractalFX.gd"
@@ -14,7 +15,7 @@ var _layer: Node2D
 
 func before_each() -> void:
 	_saved_scale = Engine.time_scale
-	Engine.time_scale = 4.0
+	Engine.time_scale = 1.0
 	_layer = Node2D.new()
 	add_child_autofree(_layer)
 
@@ -23,8 +24,18 @@ func after_each() -> void:
 	Engine.time_scale = _saved_scale
 
 
-func _settle(battle_seconds: float) -> void:
-	await get_tree().create_timer(battle_seconds + 0.1).timeout
+## True once `cond` holds; false if `bound_s` real seconds pass first.
+func _until(cond: Callable, bound_s: float) -> bool:
+	var deadline := Time.get_ticks_msec() + int(bound_s * 1000.0)
+	while Time.get_ticks_msec() < deadline:
+		if cond.call():
+			return true
+		await get_tree().process_frame
+	return bool(cond.call())
+
+
+func _quiet() -> bool:
+	return _layer.get_child_count() == 0
 
 
 ## Derived from the runner's own match arms, so a new kind is covered the day it is written.
@@ -62,7 +73,8 @@ func test_a_burst_recurses_into_copies_of_itself() -> void:
 		"depth": 2, "child_at": 0.5, "bloom": false}]}
 	var total: float = fx.play(seq, Vector2.ZERO, Vector2(100, 100))
 	assert_gt(total, 0.2, "the duration must include the recursion, not just the first life")
-	await _settle(total)
+	assert_true(await _until(func() -> bool: return fx.spawned >= 39 and _quiet(), 5.0),
+		"the burst must recurse and finish within 5 real seconds (spawned %d)" % fx.spawned)
 	assert_eq(fx.spawned, 39, "depth 2 of a 3-burst is 3 + 9 + 27 flames")
 
 
@@ -70,8 +82,8 @@ func test_depth_is_bounded_by_the_flame_cap() -> void:
 	var fx = FX.new(_layer, 7)
 	var seq := {"phases": [{"kind": "emit", "count": 8, "arc": 360, "radius": 20, "life": 0.12,
 		"depth": 6, "child_at": 0.5, "bloom": false}]}
-	var total: float = fx.play(seq, Vector2.ZERO, Vector2.ZERO)
-	await _settle(total)
+	fx.play(seq, Vector2.ZERO, Vector2.ZERO)
+	assert_true(await _until(func() -> bool: return fx.spawned > 0 and _quiet(), 8.0), "the capped burst must finish")
 	assert_gt(fx.spawned, 500, "CONTROL: an uncapped depth-6 8-burst would want ~300k flames")
 	assert_lte(fx.spawned, FX.FLAME_CAP, "one cast must never allocate past FLAME_CAP")
 
@@ -86,7 +98,11 @@ func test_the_physical_layer_leaves_the_actors_as_it_found_them() -> void:
 	var seq: Dictionary = FX.load_sequence("strike_impact")
 	assert_false(seq.is_empty(), "strike_impact must be authored")
 	var total: float = fx.play(seq, caster.position, target.position)
-	await _settle(total + 0.4)
+	var t0 := Time.get_ticks_msec()
+	## Only the two actors left, and the whole timeline elapsed: every tween has had its end frame.
+	assert_true(await _until(func() -> bool:
+		return _layer.get_child_count() == 2 and Time.get_ticks_msec() - t0 > int((total + 0.3) * 1000.0), 6.0),
+		"the strike must finish within 6 real seconds")
 	var after := [caster.position, caster.material, caster.speed_scale, caster.sprite_frames,
 		target.position, target.material, target.speed_scale, target.scale]
 	for i in before.size():
@@ -95,14 +111,12 @@ func test_the_physical_layer_leaves_the_actors_as_it_found_them() -> void:
 
 
 func test_a_dropped_instance_still_plays_its_later_phases() -> void:
-	## Callers drop the FractalFX right after play(); delayed phases are bound to it. Flames live
-	## 0.3-0.9 battle s; checked at 0.15 and 0.6, each far from a frame boundary at speed 4.
+	## Callers drop the FractalFX right after play(); delayed phases are bound to it.
 	var seq := {"phases": [{"at": 0.3, "kind": "emit", "count": 4, "radius": 10, "life": 0.6, "bloom": false}]}
 	FX.new(_layer, 7).play(seq, Vector2.ZERO, Vector2.ZERO)
-	await get_tree().create_timer(0.15).timeout
-	assert_eq(_layer.get_child_count(), 0, "CONTROL: nothing yet before the phase's start")
-	await get_tree().create_timer(0.45).timeout
-	assert_eq(_layer.get_child_count(), 4, "the 0.3 s phase must still fire after the caller let go")
+	assert_eq(_layer.get_child_count(), 0, "CONTROL: a delayed phase spawns nothing at play()")
+	assert_true(await _until(func() -> bool: return _layer.get_child_count() == 4, 3.0),
+		"the 0.3 s phase must still fire after the caller let go")
 
 
 func _actor(pos: Vector2) -> AnimatedSprite2D:
