@@ -190,7 +190,7 @@ func test_unresolvable_play_ambient_sites_are_known() -> void:
 		"src/maps/interiors/BaseInterior.gd", "src/maps/villages/BaseVillage.gd"]
 	var found: Array[String] = []
 	var re := RegEx.new()
-	re.compile("play_ambient\\(\\s*([a-z_][a-zA-Z0-9_]*)\\s*\\)")
+	re.compile("play_ambient\\(\\s*([a-z_][a-zA-Z0-9_]*)\\s*[,)]")  # [,)]: a second arg (trim_db) must not hide a variable key
 	var stack: Array[String] = ["res://src"]
 	while not stack.is_empty():
 		var dir_path: String = stack.pop_back()

@@ -17,12 +17,14 @@ class StubOwner extends Node:
 	var _current_ambient_key: String = ""
 	var ducked: bool = false
 	var played_beds: Array = []
+	var trims: Array = []
 
 	func is_music_ducked_for_dialogue() -> bool:
 		return ducked
 
-	func play_ambient(key: String) -> void:
+	func play_ambient(key: String, trim_db: float = 0.0) -> void:
 		played_beds.append(key)
+		trims.append(trim_db)
 		_current_ambient_key = key
 
 	func stop_ambient() -> void:
@@ -312,6 +314,68 @@ func test_the_music_slider_reaches_every_voice() -> void:
 			stuck.append("%s held %.1f dB with the music slider at zero" % [p.name, p.volume_db])
 	SoundManager.set_music_volume(1.0)
 	assert_eq(stuck, [], "a soundscape voice no slider can turn down: %s" % [stuck])
+
+
+## The level is derived, not stored: (music_lufs - target) - (bed_lufs + AMBIENT_OFFSET_DB), from the recipe's own measurements.
+func _expected_trim(place: String, band: String) -> float:
+	var rec: Dictionary = _recipe_places()[place]
+	var layer: Dictionary = AmbientSoundscape.layer_for(rec, band)
+	return (float(rec["music_lufs"]) - AmbientSoundscape.target_lu()) - (float(layer["bed_lufs"]) + StubOwner.AMBIENT_OFFSET_DB)
+
+
+func test_every_place_carries_the_loudness_its_level_is_derived_from() -> void:
+	var t := AmbientSoundscape.target_lu()
+	assert_between(t, 12.0, 30.0, "target_lu_under_music %.1f is outside anything calibrated (rain accepted at 23.8 LU under, too loud at 15.8)" % t)
+	var bad: Array[String] = []
+	for place in _recipe_places():
+		var rec: Dictionary = _recipe_places()[place]
+		if not rec.has("music_lufs") or float(rec["music_lufs"]) > -5.0 or float(rec["music_lufs"]) < -40.0:
+			bad.append("%s music_lufs=%s" % [place, rec.get("music_lufs")])
+		for phase in rec.get("phases", {}):
+			var layer: Dictionary = rec["phases"][phase]
+			if str(layer.get("bed", "")) != "" and (not layer.has("bed_lufs") or float(layer["bed_lufs"]) > -5.0 or float(layer["bed_lufs"]) < -50.0):
+				bad.append("%s/%s bed_lufs=%s" % [place, phase, layer.get("bed_lufs")])
+	assert_eq(bad, [], "a bed's level is derived from these measurements, so a missing or implausible one sets it wrong: %s" % [bad])
+
+
+func test_a_bed_sits_its_target_under_the_music() -> void:
+	_scape.seed_rng(8)
+	_scape.start("harmonia_village", "day")
+	assert_almost_eq(float(_owner.trims.back()), _expected_trim("harmonia_village", "day"), 0.01, "the day bed was not trimmed to sit target_lu() under the music")
+	assert_gt(float(_owner.trims.back()), 0.0, "CONTROL: ambient_plains is a quiet file, so reaching the target must RAISE it")
+	_scape.set_band("night")
+	assert_almost_eq(float(_owner.trims.back()), _expected_trim("harmonia_village", "night"), 0.01, "the night bed kept the day bed's trim instead of its own")
+
+
+func test_weather_handed_back_gets_no_trim() -> void:
+	_scape.seed_rng(9)
+	_scape.start("harmonia_village", "day")
+	_owner._current_ambient_key = "weather_rain"
+	_scape.set_band("night")
+	_scape.set_band("dawn")
+	assert_eq(_owner._current_ambient_key, "weather_rain", "precondition: dawn handed the rain back")
+	assert_eq(float(_owner.trims.back()), 0.0, "the rain came back carrying a soundscape bed's trim, louder than his 09-07 ruling allows")
+
+
+func test_events_ride_the_bed_trim() -> void:
+	_scape.start("harmonia_village", "day")
+	assert_almost_eq(_scape.base_db(), _owner._music_base_db + StubOwner.AMBIENT_OFFSET_DB + _expected_trim("harmonia_village", "day"), 0.01,
+		"events are authored relative to the bed, so a bed raised by its trim without them leaves them that much quieter")
+
+
+func test_todays_take_is_untrimmed() -> void:
+	_scape.trim_enabled = false
+	_scape.start("harmonia_village", "day")
+	assert_eq(float(_owner.trims.back()), 0.0, "the 'today' A/B take must be the old untrimmed level, or the comparison is not with today")
+
+
+func test_a_soundscape_bed_ducks_for_dialogue_and_hands_the_bus_back() -> void:
+	assert_eq(SoundManager._ambient_player.bus, &"Master", "precondition: the ambient player boots on Master")
+	assert_true(SoundManager.start_soundscape("harmonia_village"), "Harmonia starts through SoundManager")
+	SoundManager._soundscape.audible = false
+	assert_eq(str(SoundManager._ambient_player.bus), SoundManager.MUSIC_DUCK_BUS, "a soundscape bed must sit under the dialogue duck (cowir-music 2026-10-31)")
+	SoundManager.stop_soundscape("harmonia_village")
+	assert_eq(SoundManager._ambient_player.bus, &"Master", "leaving the place must hand the bus back, or rain in the next zone ducks too")
 
 
 func test_a_place_without_a_recipe_keeps_the_old_loop() -> void:

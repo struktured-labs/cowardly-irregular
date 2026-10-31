@@ -173,7 +173,8 @@ func test_no_play_ambient_call_uses_a_form_this_file_cannot_read() -> void:
 		if code == "":
 			continue
 		for m in call_re.search_all(code):
-			var arg: String = m.get_string(1).strip_edges()
+			## The KEY is the first argument; play_ambient's optional trim_db (2026-10-31) is not a key and must not hide one.
+			var arg: String = m.get_string(1).get_slice(",", 0).strip_edges()
 			examined.append("%s|%s" % [path.replace("res://src/", ""), arg])
 			if arg == "" or arg.begins_with("sound_key"):
 				continue   # the declaration and its own forwarding

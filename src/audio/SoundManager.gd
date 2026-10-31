@@ -51,6 +51,7 @@ var _sub_player: AudioStreamPlayer  # Crit sub-layer only; separate so the thud 
 var _strike_player: AudioStreamPlayer  # dedicated voice: the elemental strike voice is authored to ride OVER the weapon hit, and replaced it on _battle_player (2026-09-16)
 var _flash_player: AudioStreamPlayer  # dedicated voice: the weakness stinger fires same-frame with the hit by design, so the hit always replaced it (2026-09-16)
 var _current_ambient_key: String = ""
+var _ambient_trim_db: float = 0.0  # the playing bed's trim on top of AMBIENT_OFFSET_DB; 0 for weather and every non-soundscape bed
 var _soundscape: AmbientSoundscape  # bed + scheduled one-shots for places with a recipe in data/ambient_recipes.json
 var _crossfade_tween: Tween = null
 ## The SAME tween when a fade-OUT owns it, so "is the bed on its way to silence" is derived from a live object rather than latched in a bool every kill() site would have to clear.
@@ -1527,7 +1528,7 @@ func village_ambient_key() -> String:
 	return ""
 
 
-func play_ambient(sound_key: String) -> void:
+func play_ambient(sound_key: String, trim_db: float = 0.0) -> void:
 	"""Start a looping ambient sound (weather, environment). Stops previous ambient."""
 	## SILENT BY DESIGN: the bed asked for is the bed already sounding. Restarting it would seam.
 	if sound_key == _current_ambient_key and _ambient_player.playing:
@@ -1580,6 +1581,9 @@ func play_ambient(sound_key: String) -> void:
 			and _music_player.stream.resource_path == path:
 		return
 	_ambient_player.stream = stream
+	## trim_db is a soundscape bed's loudness match (data/ambient_recipes.json); every other caller passes none and keeps the old level.
+	_ambient_trim_db = trim_db
+	_ambient_player.volume_db = _music_base_db + AMBIENT_OFFSET_DB + _ambient_trim_db
 	_ambient_player.play()
 	_current_ambient_key = sound_key
 
@@ -1610,7 +1614,10 @@ func start_soundscape(place_id: String) -> bool:
 		band = gs.get_time_of_day_name()
 		if not gs.time_of_day_changed.is_connected(_on_time_of_day_changed):
 			gs.time_of_day_changed.connect(_on_time_of_day_changed)
-	return _soundscape.start(place_id, band)
+	var started := _soundscape.start(place_id, band)
+	## A soundscape bed DUCKS for dialogue (cowir-music 2026-10-31: the 09-11 "re-open if voice acting ships" condition is met). MusicDuck, not MusicNight: the night filter still must not touch it.
+	_ambient_player.bus = MUSIC_DUCK_BUS if started else "Master"
+	return started
 
 
 ## Keyed to the place so a scene exiting late cannot stop the soundscape the NEXT scene already started.
@@ -1619,6 +1626,7 @@ func stop_soundscape(place_id: String) -> void:
 		return
 	_soundscape.stop()
 	stop_ambient()
+	_ambient_player.bus = "Master"  # back to the boot routing: weather and every non-soundscape bed skip the duck as before
 
 
 func soundscape_place() -> String:
@@ -5035,7 +5043,7 @@ func set_music_volume(normalized: float) -> void:
 		_apply_corruption_intensity(_corruption_intensity)
 	# ambient (weather / room tone) sits a fixed offset below music — keep it tracking the slider (cowir-sfx msg 2218)
 	if _ambient_player:
-		_ambient_player.volume_db = db + AMBIENT_OFFSET_DB
+		_ambient_player.volume_db = db + AMBIENT_OFFSET_DB + _ambient_trim_db
 	if _soundscape:
 		_soundscape.refresh_levels()
 

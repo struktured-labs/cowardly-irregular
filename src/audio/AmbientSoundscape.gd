@@ -12,6 +12,7 @@ const DIALOGUE_HOLD_S := 3.0
 
 static var _recipes: Dictionary = {}
 static var _recipes_loaded: bool = false
+static var _target_lu: float = 21.0
 
 var _rng := RandomNumberGenerator.new()
 var _place: String = ""
@@ -26,6 +27,9 @@ var _next_voice: int = 0
 var fired: Array = []
 ## Tests turn this off to drive the schedule without creating buses or voices.
 var audible: bool = true
+## A/B capture knobs only: false plays today's untrimmed level; extra moves the whole soundscape (e.g. +3 for an -18 LU take).
+var trim_enabled: bool = true
+var trim_extra_db: float = 0.0
 
 
 static func load_recipes() -> Dictionary:
@@ -43,7 +47,14 @@ static func load_recipes() -> Dictionary:
 		push_warning("[SOUNDSCAPE] %s has no `places` table — no place has a soundscape" % RECIPES_PATH)
 		return _recipes
 	_recipes = parsed["places"]
+	_target_lu = float(parsed.get("target_lu_under_music", 21.0))
 	return _recipes
+
+
+## How far under its place's music a bed sits, in LU; recipe data, calibrated with cowir-music against the rain ruling.
+static func target_lu() -> float:
+	load_recipes()
+	return _target_lu
 
 
 static func has_place(place_id: String) -> bool:
@@ -129,12 +140,26 @@ func _apply_band(band_name: String, starting: bool) -> void:
 		_play_bed(bed_key())
 
 
+## The trim that puts OUR bed target_lu() under the place's music by loudness; weather we hand back gets none.
+func bed_trim_db() -> float:
+	if not trim_enabled or _place == "":
+		return 0.0
+	var sm = get_parent()
+	var offset: float = float(sm.AMBIENT_OFFSET_DB) if sm != null and "AMBIENT_OFFSET_DB" in sm else -16.0
+	var music_lufs: float = float(load_recipes()[_place].get("music_lufs", 0.0))
+	var bed_lufs: float = float(_layer.get("bed_lufs", 0.0))
+	if music_lufs == 0.0 or bed_lufs == 0.0:
+		return trim_extra_db
+	return (music_lufs - target_lu()) - (bed_lufs + offset) + trim_extra_db
+
+
 func _play_bed(key: String) -> void:
 	var sm = get_parent()
 	if sm == null:
 		return
 	if key != "" and sm.has_method("play_ambient"):
-		sm.play_ambient(key)
+		var trim := bed_trim_db() if key == bed_key() else 0.0
+		sm.play_ambient(key, trim)
 	elif sm.has_method("stop_ambient"):
 		sm.stop_ambient()
 
@@ -236,12 +261,12 @@ func voices() -> Array:
 	return _voices
 
 
-## Events sit relative to the bed, which tracks the music slider; read at play time so the slider is live.
+## Events sit relative to OUR bed, so they ride its trim too; read at play time so the music slider is live.
 func base_db() -> float:
 	var sm = get_parent()
 	if sm == null or not ("_music_base_db" in sm):
 		return -28.0
-	return float(sm._music_base_db) + float(sm.AMBIENT_OFFSET_DB)
+	return float(sm._music_base_db) + float(sm.AMBIENT_OFFSET_DB) + bed_trim_db()
 
 
 func _stream_for(key: String) -> AudioStream:

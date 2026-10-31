@@ -6,6 +6,7 @@ func _init() -> void:
 	var village := "harmonia"
 	var day_s := 40.0
 	var night_s := 45.0
+	var take := "proposed"
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--village="):
 			village = a.get_slice("=", 1)
@@ -13,6 +14,8 @@ func _init() -> void:
 			day_s = float(a.get_slice("=", 1))
 		elif a.begins_with("--night="):
 			night_s = float(a.get_slice("=", 1))
+		elif a.begins_with("--take="):
+			take = a.get_slice("=", 1)
 	# Autoloads arrive after a -s script's _init, so wait before compiling the village.
 	await process_frame
 	await process_frame
@@ -23,6 +26,15 @@ func _init() -> void:
 		quit(2)
 		return
 	gs.day_phase = 0.30
+	# today = the old untrimmed level · proposed = target_lu_under_music (21) · louder = 3 LU closer, for comparison only
+	match take:
+		"today": sm._soundscape.trim_enabled = false
+		"louder": sm._soundscape.trim_extra_db = 3.0
+		"proposed": pass
+		_:
+			push_error("[SCAPECAP] unknown --take=%s (today|proposed|louder)" % take)
+			quit(2)
+			return
 	var stem := ""
 	for part in village.split("_"):
 		stem += part.capitalize()
@@ -46,7 +58,7 @@ func _init() -> void:
 	await process_frame
 	await process_frame
 	var place: String = sm.soundscape_place()
-	print("[SCAPECAP] soundscape_place=%s bed=%s band=%s" % [place, sm._current_ambient_key, gs.get_time_of_day_name()])
+	print("[SCAPECAP] take=%s soundscape_place=%s bed=%s band=%s bed_trim=%.1fdB ambient_bus=%s" % [take, place, sm._current_ambient_key, gs.get_time_of_day_name(), sm._soundscape.bed_trim_db(), sm._ambient_player.bus])
 	if place == "":
 		push_error("[SCAPECAP] %s started no soundscape, so this capture would be music alone" % village)
 		quit(3)
