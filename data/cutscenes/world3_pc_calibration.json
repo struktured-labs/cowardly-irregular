@@ -3,7 +3,7 @@
   "title": "Calibration",
   "world": 3,
   "trigger": "world3_pc_calibration",
-  "background": "prologue_forest",
+  "background": "brasston_square",
   "description": "First steps in the steampunk world. Everything is on time.",
   "steps": [
     {

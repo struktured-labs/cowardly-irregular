@@ -3,7 +3,7 @@
   "title": "Shift Change",
   "world": 4,
   "trigger": "world4_pc_shift_change",
-  "background": "prologue_forest",
+  "background": "rivet_row_factory",
   "description": "First steps in the industrial world. A horn sounds. Everyone moves.",
   "steps": [
     {

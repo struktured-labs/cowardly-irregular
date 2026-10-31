@@ -3,7 +3,7 @@
   "title": "Double Digits",
   "world": 1,
   "trigger": "event_chat_level_10",
-  "background": "prologue_village",
+  "background": "prologue_forest",
   "description": "First character hits level 10. The party notices, sort of.",
   "steps": [
     {"type": "letterbox_in", "duration": 0.3},
