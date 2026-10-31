@@ -2,7 +2,7 @@ extends GutTest
 
 ## The cleric walked the overworld with a slot in her hood that showed the grass through it. The August overworld
 ## sheets were keyed on near-white (R,G,B >= 240), so the brightest highlight of a pale robe went clear with the
-## backdrop: 76 px on her sheet, 24 more across four speculator and summoner world costumes (a fifth is left, see LEFT_HOLED). Nothing failed, because
+## backdrop: 76 px on her sheet, 24 more across four speculator and summoner world costumes (a fifth was re-rolled whole 2026-10-31). Nothing failed, because
 ## a clear pixel inside a figure is a legal pixel. Found 2026-10-12 auditing the white-keyed grids.
 ## A hole is that damage, and not a real gap (staff to body, between the legs), when its rim is mostly pale.
 ## tools/fill_pale_holes.py fills each with the commonest pale colour on its own rim.
@@ -15,8 +15,8 @@ const CELL := 32
 ## A rim pixel is pale when its darkest channel is at least this; a hole is damage when this share of its rim is.
 const PALE_MIN := 200
 const PALE_SHARE := 0.6
-## Sheets left holed, each with why: filling this one breaks its head lock, and it awaits a re-roll anyway (three rows of figures).
-const LEFT_HOLED := {"jobs/speculator/overworld_industrial.png": 166}
+## Sheets left holed, each with why. Empty since 2026-10-31: the speculator's industrial costume was re-rolled whole at 48px.
+const LEFT_HOLED := {}
 
 
 func pale_hole_pixels(img: Image, cell: int = CELL) -> int:
