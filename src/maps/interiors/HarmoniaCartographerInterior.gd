@@ -138,6 +138,7 @@ func _setup_npcs() -> void:
 		else "%d crystal%s attuned. The map marked them before you touched them." % [attuned, "" if attuned == 1 else "s"]
 	var map_obj = OverworldNPCScript.new()
 	map_obj.npc_name = "The Living Map"
+	map_obj.is_object = true  ## the room draws it; no person stands here
 	map_obj.npc_type = "scholar"
 	map_obj.position = Vector2(10 * TILE_SIZE, 1 * TILE_SIZE)
 	map_obj.dialogue_lines = [

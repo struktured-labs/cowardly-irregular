@@ -606,3 +606,42 @@ pads       hidden by the jail (none connected anyway)
 
 **The store page itself is not updated by this commit:** itch screenshots are uploaded through the
 web UI, which is @struktured's.
+
+---
+
+## 2026-10-31 (later) — the rest of the set re-shot at `v3.33.750-alpha`, and a current storm for the lead
+
+The village refresh above covered `marketing_shots.gd`. The other eight shipped frames came from `shots-225`
+and `shots-293` and showed the **pre-.747 party** (the squat fighter where the game now draws the 48 px
+party in its world costume) and the old HUD. Re-shot with the tools that made them, from `<lane>/tmp/pub750`
+(the `.750` publish's own tree): `tools/store_shots_225.sh`, `tools/store_shot_elite.sh` (`-- medieval prompt`
+and `-- steampunk`, default offset and zoom, as the shipped frames were), and a `tools/store_shot_storm.gd` burst.
+
+| shot | vs shipped | noise | verdict |
+|---|---|---|---|
+| `field_elite_steampunk` | 33.59% | 0.06% | **REPLACED** — the current party leader, the boxed title banner, a labelled minimap |
+| `infernal_grotto_f3` | 31.24% | 0.00% | **REPLACED** |
+| `battle_storm` | 29.55% | 0.80% | **REPLACED** — the HUD is current at last: LOG panel, Trust + Formation in the menu, 1.5× speed, turn-order gauges, whole HP bars |
+| `warren_wrap_field` | 21.79% | 0.00% | **REPLACED** |
+| `warren_lever_portals` | 20.46% | 0.00% | **REPLACED** |
+| `field_elite_prompt_medieval` | 14.72% | 0.05% | **REPLACED** |
+| `grimhollow_spiral` | 11.22% | 42.64% | **REPLACED by eye** — the noise exceeds the change (this tool's village path keeps camera smoothing, so it lands a few px differently each run); the frame shows the 48 px party, a facade and the shops |
+| `field_elite_medieval` | 7.69% | 0.01% | **REPLACED** |
+
+`title_screen` is the one frame no tool reaches (it came from the exported `.483` binary).
+
+### The lead image — two CURRENT storm candidates, `unshipped-captures/`
+The `.710` analysis picked burst frame 120 as the clean one; at `.750` the timing moved (1.5× is now the
+default) and frame 120 is the VICTORY banner with the HUD zoomed off the left edge. Re-measured on this
+burst (HUD shift against frame 0 on the PARTY and ENEMIES headers; mean luma for the storm dim):
+- `battle_storm.750-bolt.png` — frame 50: the bolt striking the Goblin under the storm-darkened sky, arcs
+  across the party, "Mage uses Fulmen! … 1667 lightning damage" in the LOG. Mid-cinematic, so the HUD edges
+  are scaled out a little (deliberate battle juice).
+- `battle_storm.750-settled.png` — frame 102: the HUD whole (shift 0), `1667 WEAK!`, the bolt's trace, the
+  "WEAK to Lightning" tip in the LOG, Goblin DEFEATED. The storm dim has lifted by then.
+
+Which image leads (`battle_storm`, `battle`, or one of these) stays @struktured's call.
+
+**Capture conditions:** as the village section above, from `pub750` at `3cc6e9221`; pads hidden by the jail;
+his profile `--sig` before / `--verify` after every one of the 9 runs: UNCHANGED. The store page itself is
+@struktured's to update.

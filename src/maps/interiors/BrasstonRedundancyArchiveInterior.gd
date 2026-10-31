@@ -137,6 +137,8 @@ func _setup_npcs() -> void:
 	# Shelf 7 — reads the REAL most-recent save.
 	var shelf = OverworldNPCScript.new()
 	shelf.npc_name = "Shelf 7"
+	shelf.is_object = true  ## an object, not a person
+	shelf.object_art = "res://assets/sprites/objects/shelf_7.png"
 	shelf.npc_type = "scholar"
 	shelf.position = Vector2(11 * TILE_SIZE, 2 * TILE_SIZE)
 	shelf.dialogue_lines = [

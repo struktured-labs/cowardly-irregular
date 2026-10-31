@@ -124,6 +124,7 @@ func _setup_npcs() -> void:
 	# The Ledger itself — one entry. The room's whole weight.
 	var ledger = OverworldNPCScript.new()
 	ledger.npc_name = "The Rain Ledger"
+	ledger.is_object = true  ## the room draws it; no person stands here
 	ledger.npc_type = "scholar"
 	ledger.position = Vector2(5 * TILE_SIZE, 2.6 * TILE_SIZE)
 	ledger.dialogue_lines = [

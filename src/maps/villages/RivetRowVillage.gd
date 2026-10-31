@@ -321,6 +321,8 @@ func _setup_npcs() -> void:
 		"'EMPLOYEE OF THE MONTH IS RIGGED — ASK VOSS'",
 		"Someone has drawn a surprisingly accurate map of the overworld. In crayon."
 	])
+	graffiti.is_object = true  ## an object, not a person
+	graffiti.object_art = "res://assets/sprites/objects/graffiti_wall.png"
 	npcs.add_child(graffiti)
 
 	_setup_quest_points()

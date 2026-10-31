@@ -670,6 +670,8 @@ func _setup_npcs() -> void:
 		"*A tiny flower bud is forming. It has no production value whatsoever.*",
 		"*You feel an irrational warmth. Efficiency score: irrelevant.*"
 	])
+	plant.is_object = true  ## an object, not a person
+	plant.object_art = "res://assets/sprites/objects/potted_plant.png"
 	npcs.add_child(plant)
 
 
