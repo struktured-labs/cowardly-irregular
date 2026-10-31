@@ -12,10 +12,13 @@ const PROBE := "user://village_intro_strip_probe.gd"
 
 var _loop: Node
 var _saved: Dictionary = {}
+## A retired intro mirrors its flag into story_flags too, so that store is restored as well or it leaks into later files.
+var _saved_story: Dictionary = {}
 
 
 func before_each() -> void:
 	_saved = GameState.game_constants.duplicate(true)
+	_saved_story = GameState.story_flags.duplicate(true)
 	_loop = load("res://src/GameLoop.gd").new()
 	## Every intro's gate flag cleared, so each arm starts from a player who has never been there.
 	for map_id in _intros():
@@ -26,6 +29,7 @@ func after_each() -> void:
 	## Erased FIRST: free() below can abort this function, which would strand the plant.
 	if FileAccess.file_exists(PROBE):
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(PROBE))
+	GameState.story_flags = _saved_story
 	if is_instance_valid(_loop):
 		_loop.free()
 	GameState.game_constants = _saved
@@ -375,3 +379,63 @@ func test_the_accessor_these_arms_use_strips_prose_both_ways() -> void:
 	assert_gt(raw_len, 100000, "CONTROL: GameLoop.gd must be read at all, got %d chars" % raw_len)
 	assert_gt(float(code_len) / float(maxi(raw_len, 1)), 0.40,
 		"the strip left only %d of %d chars (%.3f): it is keeping the named lines and discarding the file, so every source arm here reads a corpus chosen by its own assertions" % [code_len, raw_len, float(code_len) / float(maxi(raw_len, 1))])
+
+
+## Plays whatever the gate offers on map_id, finishing each scene, and returns every id it offered (bounded).
+func _offered_on(map_id: String) -> Array[String]:
+	var offered: Array[String] = []
+	for _step in STORY_WALK_CAP:
+		var got: String = _pending_on(map_id)
+		if got == "" or offered.has(got):
+			break
+		offered.append(got)
+		GameState.game_constants[_completion_flag_of(got)] = true
+	return offered
+
+
+func test_an_intro_that_has_lost_its_moment_retires_instead_of_playing() -> void:
+	## struktured 2026-10-30: "some dialogue replayed all of a sudden, after leaving mystic remedies". His save
+	## had finished the prologue, chapter1 and the Cleric spotlight, which between them put 3 of Harmonia's 5
+	## locals on screen, and the intro then played as if they were strangers. The gate must retire it instead.
+	var intro := "world1_harmonia_npcs"
+	for done in ["world1_prologue", "world1_chapter1", "world1_spotlight_cleric_ch1"]:
+		assert_true(_completion_flags().has(done), "CONTROL: %s must be in the completion map, or this arm is not his save" % done)
+		GameState.game_constants[_completion_flag_of(done)] = true
+	assert_false(bool(GameState.game_constants.get(_completion_flag_of(intro), false)), "CONTROL: the intro must start unplayed")
+	var offered := _offered_on("harmonia_village")
+	assert_false(offered.has(intro), "an intro whose locals were already met was offered anyway: %s" % [offered])
+	assert_true(bool(GameState.game_constants.get(_completion_flag_of(intro), false)),
+		"a retired intro must close its own gate, or it waits to fire on some later entry instead")
+
+
+func test_an_intro_among_strangers_still_plays() -> void:
+	## POSITIVE CONTROL. The rule must not swallow every intro that arrives after a chapter: Maple Heights'
+	## chapter1 meets none of the intro's four locals, and Harmonia right after the prologue has met nobody.
+	GameState.game_constants[_completion_flag_of("world2_prologue")] = true
+	GameState.game_constants[_completion_flag_of("world2_chapter1")] = true
+	assert_true(_offered_on("maple_heights_village").has("world2_maple_heights_npcs"),
+		"Maple Heights' intro must still play after its chapter1, whose cast it does not share")
+	GameState.game_constants = _saved.duplicate(true)
+	for map_id in _intros():
+		GameState.game_constants.erase(_completion_flag_of(str(_intros()[map_id])))
+	GameState.game_constants[_completion_flag_of("world1_prologue")] = true
+	assert_true(_offered_on("harmonia_village").has("world1_harmonia_npcs"),
+		"Harmonia's intro must still play on an entry where nobody it introduces has spoken yet")
+
+
+func test_party_members_never_count_as_already_met() -> void:
+	## Every chapter has the party talking, so counting them would retire intros that introduce real strangers.
+	## Maple Heights' intro and chapter1 share Fighter/Cleric/Mage lines and no local.
+	var met: Vector2i = _loop._intro_locals_already_met("world2_maple_heights_npcs",
+		{_completion_flag_of("world2_chapter1"): true})
+	assert_gt(met.y, 0, "CONTROL: the intro must have locals at all, read %d" % met.y)
+	assert_lt(met.y, _loop._scene_speakers("world2_maple_heights_npcs").size(),
+		"CONTROL: the intro's own party lines must be excluded from its locals, so locals < speakers")
+	assert_eq(met.x, 0, "a party member counted as an already-met local: %d of %d" % [met.x, met.y])
+
+
+func test_most_means_more_than_half() -> void:
+	assert_true(_loop._intro_has_lost_its_moment(Vector2i(3, 5)), "3 of 5 met is most: his Harmonia save")
+	assert_false(_loop._intro_has_lost_its_moment(Vector2i(1, 2)), "half is not most: Brasston after its chapter1")
+	assert_false(_loop._intro_has_lost_its_moment(Vector2i(1, 3)), "a minority is not most: Rivet Row after its chapter1")
+	assert_false(_loop._intro_has_lost_its_moment(Vector2i(0, 0)), "an intro with no locals has no one to have met")

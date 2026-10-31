@@ -2314,6 +2314,68 @@ const _VILLAGE_INTROS := {
 }
 
 
+## An intro that has LOST ITS MOMENT retires instead of playing: most of its locals (non-party speakers) already spoke in a finished scene.
+## struktured 2026-10-30, "dialogue replayed after leaving mystic remedies": prologue + chapter1 had met 3 of Harmonia's 5 locals.
+var _scene_speakers_cache: Dictionary = {}
+var _party_speaker_names_cache: Array = []
+
+
+func _intro_has_lost_its_moment(met: Vector2i) -> bool:
+	return met.y > 0 and met.x * 2 > met.y
+
+
+## x = the intro's locals already met in a finished scene, y = all of its locals.
+func _intro_locals_already_met(intro: String, flags: Dictionary) -> Vector2i:
+	var party: Array = _party_speaker_names()
+	var locals: Array = []
+	for sp in _scene_speakers(intro):
+		if not party.has(sp):
+			locals.append(sp)
+	var met: Array = []
+	for cid in _CUTSCENE_COMPLETION_FLAGS:
+		if str(cid) == intro or not bool(flags.get(_CUTSCENE_COMPLETION_FLAGS[cid], false)):
+			continue
+		for sp in _scene_speakers(str(cid)):
+			if locals.has(sp) and not met.has(sp):
+				met.append(sp)
+	return Vector2i(met.size(), locals.size())
+
+
+func _scene_speakers(cid: String) -> Array:
+	if _scene_speakers_cache.has(cid):
+		return _scene_speakers_cache[cid]
+	var out: Array = []
+	var path := "res://data/cutscenes/%s.json" % cid
+	if FileAccess.file_exists(path):
+		_collect_speakers(JSON.parse_string(FileAccess.get_file_as_string(path)), out)
+	_scene_speakers_cache[cid] = out
+	return out
+
+
+func _collect_speakers(node: Variant, out: Array) -> void:
+	if node is Dictionary:
+		var sp := str((node as Dictionary).get("speaker", ""))
+		if sp != "" and not out.has(sp):
+			out.append(sp)
+		for v in (node as Dictionary).values():
+			_collect_speakers(v, out)
+	elif node is Array:
+		for v in node:
+			_collect_speakers(v, out)
+
+
+## Party members speak in every scene, so they would count as "met" everywhere; jobs.json's display names are theirs.
+func _party_speaker_names() -> Array:
+	if _party_speaker_names_cache.is_empty():
+		var rows: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/jobs.json"))
+		if rows is Dictionary:
+			for id in (rows as Dictionary):
+				var row: Variant = rows[id]
+				if row is Dictionary:
+					_party_speaker_names_cache.append(str((row as Dictionary).get("name", id)))
+	return _party_speaker_names_cache
+
+
 func _get_pending_story_cutscene() -> String:
 	"""Check if a story cutscene should play based on flags.
 	Returns cutscene ID or empty string."""
@@ -2710,6 +2772,11 @@ func _get_pending_story_cutscene() -> String:
 		for vid in _VILLAGE_INTROS:
 			var intro: String = str(_VILLAGE_INTROS[vid])
 			if _current_map_id == vid and not flags.get("cutscene_flag_%s_complete" % intro, false):
+				var met: Vector2i = _intro_locals_already_met(intro, flags)
+				if _intro_has_lost_its_moment(met):
+					_set_cutscene_flag_and_mirror("cutscene_flag_%s_complete" % intro)
+					print("[CUTSCENE] %s retired, not played: %d of its %d locals were already met in finished scenes" % [intro, met.x, met.y])
+					continue
 				return intro
 
 	# ===== GUIDANCE HINTS — disabled (now opt-in via party chat) =====
