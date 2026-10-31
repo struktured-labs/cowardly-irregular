@@ -2983,7 +2983,7 @@ func capture_music_state() -> Dictionary:
 	return {"track": _current_music, "area": _current_area, "playing": _music_playing and not fading_out, "position": pos}
 
 
-## The bed play_area_music has ARMED but not started: it stops the old bed now and starts this one a frame later. Empty otherwise.
+## A state to RESTORE, shaped like capture_music_state: the bed play_area_music armed and has not started. "playing" means owed, never audible.
 func armed_area_state() -> Dictionary:
 	if not _area_start_armed or _pending_music_area == "":
 		return {}
