@@ -134,6 +134,7 @@ func _setup_npcs() -> void:
 	# The Clock — reads REAL playtime, composed fresh each entry.
 	var clock = OverworldNPCScript.new()
 	clock.npc_name = "The Meltwater Clock"
+	clock.is_object = true  ## the room draws it; no person stands here
 	clock.npc_type = "villager"
 	clock.position = Vector2(5 * TILE_SIZE, 2.8 * TILE_SIZE)
 	clock.dialogue_lines = [

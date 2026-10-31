@@ -133,6 +133,7 @@ func _setup_npcs() -> void:
 		else "Your page lists %d storm%s survived. The handwriting is yours. You have never written in it." % [storms, "" if storms == 1 else "s"]
 	var ledger = OverworldNPCScript.new()
 	ledger.npc_name = "The Ledger"
+	ledger.is_object = true  ## the room draws it; no person stands here
 	ledger.npc_type = "scholar"
 	ledger.position = Vector2(4.5 * TILE_SIZE, 2.6 * TILE_SIZE)
 	ledger.dialogue_lines = [
