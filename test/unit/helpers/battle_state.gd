@@ -99,7 +99,8 @@ func restore() -> void:
 func _valid_only(a: Array) -> Array:
 	var out: Array = []
 	for e in a:
-		if e is Object and not is_instance_valid(e):
+		## typeof first: `is` on a freed instance is itself the SCRIPT ERROR this function exists to avoid.
+		if typeof(e) == TYPE_OBJECT and not is_instance_valid(e):
 			continue
 		out.append(e)
 	return out
