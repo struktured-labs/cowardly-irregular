@@ -9885,7 +9885,7 @@ func _dispatch_boss_gloat(victory: bool) -> void:
 	# be cleared by _cleanup_battle) and hand off to the async producer. We do
 	# NOT await: end_battle stays synchronous and non-blocking.
 	var boss_name: String = _resolve_boss_display_name(persona_id)
-	var prompt: String = _build_gloat_prompt(persona_id, boss_name, victory)
+	var prompt: String = _build_gloat_prompt(persona_id, boss_name, victory, fallback)
 	_produce_boss_gloat_async(prompt, fallback, victory)
 
 
@@ -9916,7 +9916,7 @@ func _produce_boss_gloat_async(prompt: String, fallback: String, victory: bool) 
 ## autobattle-only? all-out attack?). The scripted pool line is the fallback so
 ## the LLM only ever RE-NARRATES a line that already works — it is never the
 ## rules engine and never touches story flags.
-func _build_gloat_prompt(persona_id: String, boss_name: String, victory: bool) -> String:
+func _build_gloat_prompt(persona_id: String, boss_name: String, victory: bool, voice_sample: String = "") -> String:
 	var recent_events: Array = []
 	var gs = get_node_or_null("/root/GameState")
 	if gs and "event_log" in gs and gs.event_log != null:
@@ -9924,8 +9924,17 @@ func _build_gloat_prompt(persona_id: String, boss_name: String, victory: bool) -
 
 	# Deterministic how-the-fight-went facts.
 	var facts: Array[String] = []
-	if _full_autobattle and _autobattle_player_turns > 0:
+	## RETROSPECTIVE, unlike _resolve_party_automation_tier's live toggle read: did automation WIN this fight, not is anyone deciding now.
+	var auto_tier: String = ""
+	var grind_g = get_node_or_null("/root/AutogrindSystem")
+	if grind_g != null and grind_g.has_method("is_battle_automated") and grind_g.is_battle_automated():
+		auto_tier = "autogrind"
+	elif _full_autobattle and _autobattle_player_turns > 0:
+		auto_tier = "autobattle"
+	if auto_tier == "autobattle":
 		facts.append("the party never lifted a finger — every move was automated (autobattle)")
+	elif auto_tier == "autogrind":
+		facts.append("nobody was even watching — an unattended autogrind session ran this fight")
 	if _all_out_attack_this_battle:
 		facts.append("the party pooled their power into an all-out group attack")
 	if _jailbreak_landed_this_battle:
@@ -9953,20 +9962,40 @@ func _build_gloat_prompt(persona_id: String, boss_name: String, victory: bool) -
 	if victory:
 		situation = (
 			"The PARTY has just DEFEATED this boss. Write what the boss says as it "
-			+ "falls — a final gloat, concession, or dark joke. Meta-aware: it may "
-			+ "remark on the player automating their way to victory."
+			+ "falls — a concession, a verdict, or a dark joke, in the boss's own temperament."
 		)
 	else:
 		situation = (
-			"The boss has just WIPED the entire party. Write its triumphant gloat "
-			+ "over the fallen heroes — cruel, smug, and meta-aware."
+			"The boss has just WIPED the entire party. Write what it says over them, "
+			+ "in its own temperament — whatever its persona makes of a win."
 		)
+	## The "lazy" line came from an UNCONDITIONAL invitation here: the model was told it may mock automation in a fight played by hand.
+	if auto_tier != "":
+		situation += (
+			"\nThe party automated this fight (see below). The boss may needle them for it, "
+			+ "but in ITS OWN voice and register — an examiner grades it, a tyrant sneers, "
+			+ "an optimizer may even approve. Never a stock villain's insult."
+		)
+	else:
+		situation += "\nThe player chose every action in this fight by hand; do not suggest otherwise."
+
+	var persona_block: String = ""
+	var boss_dlg_g = get_node_or_null("/root/BossDialogue")
+	if boss_dlg_g and boss_dlg_g.has_method("get_persona"):
+		var persona_text: String = str(boss_dlg_g.get_persona(persona_id)).strip_edges()
+		if persona_text != "":
+			persona_block = "\nPersona — stay in THIS voice, not a generic villain's:\n  %s\n" % persona_text
+	var sample_block: String = ""
+	if voice_sample.strip_edges() != "":
+		sample_block = "\nOne of this boss's own lines for this moment (match its voice; do not copy it):\n  %s\n" % voice_sample.strip_edges()
 
 	return (
 		"You are voicing a boss in a meta-aware JRPG called 'Cowardly Irregular'.\n"
 		+ "%s\n" % situation
 		+ "\n"
 		+ "Boss: %s\n" % boss_name
+		+ persona_block
+		+ sample_block
 		+ facts_block
 		+ events_block
 		+ "\n"
