@@ -67,7 +67,8 @@ func _init() -> void:
 		var home: Vector2 = sprite.global_position
 		var anchor: Vector2 = home + Vector2(_bsb.head_dx(sprite), -_bsb.head_lift(sprite))
 		## The open command menu draws over a bubble (z 100 > 95) and pushes it aside; hide it for the frame.
-		_hide_menus(scene)
+		_hide_menus(root)
+		var mark := _mark(anchor)
 		scene._spawn_quip_bubble(sprite, pc.combatant_name, "Is this over MY head?", scene._get_job_quip_color(pc), 30.0)
 		## The fade-in runs in battle time, so 0.6 real s caught it part-transparent at 1x.
 		await create_timer(1.5, true, false, true).timeout
@@ -82,6 +83,7 @@ func _init() -> void:
 		c0.x = clampi(c0.x, 0, img.get_width() - CROP.x)
 		c0.y = clampi(c0.y, 0, img.get_height() - CROP.y)
 		var crop := img.get_region(Rect2i(c0, CROP))
+		mark.queue_free()
 		var out := "%s/w%d_%s.png" % [OUT, world, job]
 		if live == 0:
 			print("[SHOT] FAIL: %s no bubble live" % job)
@@ -99,11 +101,28 @@ func _init() -> void:
 	quit(0 if fails == 0 and shots > 0 else 1)
 
 
-func _hide_menus(scene: Node) -> void:
-	var m = scene.get("active_win98_menu")
-	while m != null and is_instance_valid(m):
-		m.visible = false
-		m = m.get("submenu")
+## Every menu-family node, wherever it is parented: active_win98_menu alone missed the one on screen.
+func _hide_menus(n: Node) -> void:
+	for c in n.get_children():
+		var sc = c.get_script()
+		var path: String = sc.resource_path if sc is Script else ""
+		if c is CanvasItem and (path.ends_with("Win98Menu.gd") or str(c.name).to_lower().contains("tooltip")):
+			(c as CanvasItem).visible = false
+		_hide_menus(c)
+
+
+## A magenta ring at the computed head, drawn above everything, so the crop shows anchor and tail together.
+func _mark(at: Vector2) -> CanvasLayer:
+	var layer := CanvasLayer.new()
+	layer.layer = 128
+	var ring := Line2D.new()
+	ring.width = 2.0
+	ring.default_color = Color(1.0, 0.1, 0.9)
+	for i in 17:
+		ring.add_point(at + Vector2.from_angle(TAU * i / 16.0) * 7.0)
+	layer.add_child(ring)
+	root.add_child(layer)
+	return layer
 
 
 func _clear_bubbles() -> void:
