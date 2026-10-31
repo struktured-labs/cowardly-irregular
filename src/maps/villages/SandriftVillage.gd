@@ -360,3 +360,12 @@ func _place_masterite_warden() -> void:
 	warden.quest_flag = "quest_w1_sandrift_water_on_the_road_accepted"
 	warden.position = Vector2(14 * TILE_SIZE,16 * TILE_SIZE)
 	npcs.add_child(warden)
+
+
+## Ambient walkers: their lines are derived from this map's ground (BaseVillage._walker_runs).
+func _get_ambient_walkers() -> Array:
+	return [
+		{"name": "Water Carrier Asha", "archetype": "young_woman", "line": "Forty miles to the next well. I counted. Twice. Out loud."},
+		{"name": "Camel Haggler Omid", "archetype": "merchant", "line": "I sell camels. Not the camel you're thinking of. That one's the camel's idea."},
+		{"name": "Dune Pilgrim Sefa", "archetype": "traveler", "line": "The sand says walk north. Last week it said walk south. Sand's indecisive."},
+	]

@@ -383,3 +383,12 @@ func _place_masterites() -> void:
 	curator.cutscene_id = "world3_curator_intro"
 	curator.position = Vector2(8 * TILE_SIZE,3 * TILE_SIZE)
 	npcs.add_child(curator)
+
+
+## Ambient walkers: their lines are derived from this map's ground (BaseVillage._walker_runs).
+func _get_ambient_walkers() -> Array:
+	return [
+		{"name": "Night-Shift Ola", "archetype": "young_woman", "line": "Clocked out at dawn. Clocked in at dawn. Same dawn? Hard to say anymore."},
+		{"name": "Rivet Counter Hobb", "archetype": "old_man", "line": "Four million and twelve. Four million and thirteen. Don't talk to me."},
+		{"name": "Lunch-Pail Tess", "archetype": "child", "line": "Bringing Dad his lunch. It's a sandwich. It's always a sandwich."},
+	]

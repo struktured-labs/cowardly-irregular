@@ -258,3 +258,11 @@ func _place_masterites() -> void:
 	arbiter.cutscene_id = "world5_arbiter_intro"
 	arbiter.position = Vector2(13 * TILE_SIZE,8 * TILE_SIZE)
 	npcs.add_child(arbiter)
+
+
+## Ambient walkers: their lines are derived from this map's ground (BaseVillage._walker_runs).
+func _get_ambient_walkers() -> Array:
+	return [
+		{"name": "The Pacing", "archetype": "traveler", "line": "Here. Then there. Then here. It is the same distance both ways. That is the comfort."},
+		{"name": "The Errand", "archetype": "monk", "line": "I was sent to fetch something. I have forgotten what. I walk anyway; the walking remembers."},
+	]

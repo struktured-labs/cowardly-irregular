@@ -360,3 +360,12 @@ func _place_masterite_arbiter() -> void:
 	arbiter.quest_flag = "quest_w1_grimhollow_ledger_read"
 	arbiter.position = Vector2(15.5 * TILE_SIZE,11.5 * TILE_SIZE)
 	npcs.add_child(arbiter)
+
+
+## Ambient walkers: their lines are derived from this map's ground (BaseVillage._walker_runs).
+func _get_ambient_walkers() -> Array:
+	return [
+		{"name": "Lamplighter Nell", "archetype": "old_woman", "line": "I light them, the fog eats them, I light them again. Steady work."},
+		{"name": "Mourner-for-Hire Bastien", "archetype": "young_man", "line": "Two silver a funeral. Four if you want the good wailing."},
+		{"name": "Wisp the Boy", "archetype": "child", "line": "Mum says don't follow the floating lights. I am a floating light. Checkmate."},
+	]

@@ -89,6 +89,7 @@ func _ready() -> void:
 	_setup_buildings()
 	_setup_treasures()
 	_setup_npcs()
+	_add_ambient_walkers(_get_ambient_walkers())
 	_place_authored_examines()
 	_validate_placements()
 	_setup_player()
@@ -743,6 +744,89 @@ func _add_quest_route_point(qid: String, flag: String, index: int, group_size: i
 ## (User feedback 2026-05-02: "village characters should walk around,
 ## at least some of them" — head-lock constraints already satisfied by
 ## the bb60068 sprite pass.)
+## Villagers on errands. A village returns [{name, archetype, line}, ...]; [] keeps it as authored.
+func _get_ambient_walkers() -> Array:
+	return []
+
+
+const WALKER_MIN_RUN: int = 5
+const WALKER_MAX_RUN: int = 9
+
+
+## Each walker's line is DERIVED from this village's own walkability, so no map edit can strand one in a wall.
+func _add_ambient_walkers(roster: Array) -> int:
+	if roster.is_empty() or npcs == null:
+		return 0
+	var runs := _walker_runs()
+	var added: int = 0
+	for spec in roster:
+		if added >= runs.size():
+			push_warning("[%s] only %d walker line(s) fit; '%s' has nowhere to walk" % [_get_area_id(), runs.size(), spec.get("name", "?")])
+			break
+		var run: Array = runs[added]
+		var loop: Array[Vector2] = [_cell_centre(run[0]), _cell_centre(run[1])]
+		var w := _create_wandering_npc(spec["name"], spec["archetype"], spec["line"], loop,
+			spec.get("theme", "villager"), spec.get("portrait", spec["archetype"]))
+		w.name = "Walker_%s" % str(spec["name"]).validate_node_name()
+		npcs.add_child(w)
+		added += 1
+	return added
+
+
+func _cell_centre(cell: Vector2i) -> Vector2:
+	return Vector2((cell.x + 0.5) * TILE_SIZE, (cell.y + 0.5) * TILE_SIZE)
+
+
+## Horizontal runs of steppable cells clear of doors, exits and anyone standing still; longest first,
+## and never two on neighbouring rows over the same columns, so walkers do not pace on top of each other.
+func _walker_runs() -> Array:
+	if _map_rows.is_empty():
+		return []
+	var avoid := {}
+	for container in [npcs, buildings, treasures, transitions]:
+		if container == null:
+			continue
+		for n in container.get_children():
+			if not (n is Node2D):
+				continue
+			var c := _cell_of((n as Node2D).position)
+			var below: int = 2 if n is AreaTransition else 1
+			for dy in range(-1, below + 1):
+				for dx in range(-1, 2):
+					avoid[c + Vector2i(dx, dy)] = true
+	var margin: int = 3
+	var runs: Array = []
+	for y in range(margin, _map_rows.size() - margin):
+		var width: int = (_map_rows[y] as String).length()
+		var start: int = -1
+		for x in range(margin, width - margin + 1):
+			var cell := Vector2i(x, y)
+			var open: bool = x < width - margin and not avoid.has(cell) and _is_cell_walkable(cell)
+			if open and start >= 0 and _can_step(Vector2i(x - 1, y), cell):
+				continue
+			if start >= 0:
+				var n: int = x - start
+				if n >= WALKER_MIN_RUN:
+					var take: int = mini(n, WALKER_MAX_RUN)
+					var a: int = start + (n - take) / 2
+					runs.append([Vector2i(a, y), Vector2i(a + take - 1, y)])
+			start = x if open else -1
+	runs.sort_custom(func(p, q):
+		var lp: int = p[1].x - p[0].x
+		var lq: int = q[1].x - q[0].x
+		return lp > lq if lp != lq else (p[0].y < q[0].y if p[0].y != q[0].y else p[0].x < q[0].x))
+	var chosen: Array = []
+	for r in runs:
+		var clash := false
+		for c in chosen:
+			if absi(r[0].y - c[0].y) <= 2 and r[0].x <= c[1].x and c[0].x <= r[1].x:
+				clash = true
+				break
+		if not clash:
+			chosen.append(r)
+	return chosen
+
+
 func _create_wandering_npc(npc_name: String, archetype: String, dialogue: String, patrol_loop: Array[Vector2], dialogue_theme: String = "elder", dialogue_portrait: String = "elder") -> Area2D:
 	var w = WanderingNPCScript.new()
 	w.npc_name = npc_name
