@@ -15,7 +15,14 @@
 #
 # Corpus: every `ambient_*` / `weather_*` key in BOTH manifests. A key may be HELD below with a reason,
 # and a held key that now measures clean reds (the hold has expired).
-# Exit 0 clean · 1 a pitched bed or an expired hold · 2 could not measure (missing file / ffmpeg / numpy)
+#
+# SECOND LEG, LOUDNESS (2026-10-31, with cowir-sfx): data/ambient_recipes.json sets each soundscape bed by
+# MEASURED loudness -- places.<id>.music_lufs and phases.<p>.bed_lufs, EBU R128 integrated over the first
+# 60 s -- and the game derives the trim from them. A re-rendered bed or re-mastered track would keep its
+# old number and be trimmed for audio that no longer exists, so each is re-measured here, red past 1 LU.
+# Corpus BY THE RECIPE, not by prefix (night_crickets_wind is a bed). The track is the recipe's own
+# `music_key`; that it is the track the village really plays is cowir-sfx's engine-side guard.
+# Exit 0 clean · 1 a pitched bed, an expired hold or a stale loudness · 2 could not measure
 import json, os, subprocess, sys
 
 CEILING = 6.0
@@ -45,6 +52,50 @@ def clarity(path, np):
     if not vals:
         raise ValueError("no audible frames")
     return float(np.median(vals))
+
+
+LUFS_TOL = 1.0
+RECIPES = "data/ambient_recipes.json"
+
+
+def lufs(path):
+    out = subprocess.run(["ffmpeg", "-nostats", "-v", "info", "-i", path, "-t", str(SECS), "-af", "ebur128",
+                          "-f", "null", "-"], capture_output=True, text=True, errors="replace")
+    if out.returncode != 0:
+        raise ValueError("ffmpeg EC=%d" % out.returncode)
+    vals = [l.split()[1] for l in out.stderr.splitlines() if l.strip().startswith("I:") and "LUFS" in l]
+    if not vals:
+        raise ValueError("no integrated loudness in ffmpeg output")
+    return float(vals[-1])
+
+
+def loudness_audit(root):
+    """[(label, stored, measured)] for every number the recipe stores; stale and unmeasurable lists."""
+    rp = os.path.join(root, RECIPES)
+    if not os.path.exists(rp):
+        return None
+    music = json.load(open(os.path.join(root, "data/music_manifest.json"))).get("tracks", {})
+    sfx = json.load(open(os.path.join(root, "data/sfx_manifest.json"))).get("sfx", {})
+    rows, stale, fails = [], [], []
+    for place, pl in sorted(json.load(open(rp)).get("places", {}).items()):
+        checks = [("%s music %s" % (place, pl.get("music_key")), music.get(pl.get("music_key"), {}), pl.get("music_lufs"))]
+        for ph, x in sorted(pl.get("phases", {}).items()):
+            checks.append(("%s %s bed %s" % (place, ph, x.get("bed")), sfx.get(x.get("bed"), {}), x.get("bed_lufs")))
+        for label, entry, stored in checks:
+            f = entry.get("file") if isinstance(entry, dict) else None
+            if not f or stored is None:
+                fails.append("%s: %s" % (label, "no file in its manifest" if not f else "no stored loudness"))
+                continue
+            try:
+                m = lufs(os.path.join(root, f))
+            except Exception as e:
+                fails.append("%s: %s" % (label, e))
+                continue
+            rows.append((label, float(stored), m))
+            print("  %-6s %-46s stored %6.1f  measured %6.1f LUFS" % ("ok" if abs(m - float(stored)) <= LUFS_TOL else "STALE", label, float(stored), m))
+            if abs(m - float(stored)) > LUFS_TOL:
+                stale.append("%s stored %.1f, measures %.1f" % (label, float(stored), m))
+    return rows, stale, fails
 
 
 def corpus(root):
@@ -119,6 +170,25 @@ def _selftest(np):
     n, bad, exp, f = audit(t, {}, np)
     arm("an unmeasurable file is a failure, not a pass", len(f) == 1 and n == 0)
     arm("a non-ambient key is outside the corpus", not any("battle_z" in b for b in bad))
+    ## The loudness leg, on a recipe pointing at the noise file it measures.
+    man({"village_x": {"file": z}}, {"bed_y": {"file": z}})
+    real = lufs(os.path.join(t, z))
+    def recipe(music_lufs, bed_lufs, bed="bed_y"):
+        json.dump({"places": {"p": {"music_key": "village_x", "music_lufs": music_lufs,
+                                    "phases": {"day": {"bed": bed, "bed_lufs": bed_lufs}}}}},
+                  open(os.path.join(t, RECIPES), "w"))
+    recipe(real, real)
+    rows, stale, f = loudness_audit(t)
+    arm("a recipe whose numbers match its files is clean", len(rows) == 2 and stale == [] and f == [])
+    recipe(real, real + 3.0)
+    rows, stale, f = loudness_audit(t)
+    arm("a stale bed_lufs reds, naming the bed", len(stale) == 1 and "bed bed_y" in stale[0])
+    recipe(real - 3.0, real)
+    rows, stale, f = loudness_audit(t)
+    arm("a stale music_lufs reds, naming the track", len(stale) == 1 and "music village_x" in stale[0])
+    recipe(real, real, bed="bed_missing")
+    rows, stale, f = loudness_audit(t)
+    arm("a bed the sfx manifest does not name is unmeasurable, not clean", len(f) == 1 and stale == [])
     subprocess.run(["rm", "-rf", t])
     print("check_ambient_is_unpitched selftest: %d/%d arms as expected" % (arms - fails, arms))
     return 1 if fails else 0
@@ -140,9 +210,21 @@ def main():
         print("  PITCHED %s -- an ambient bed with a pitch sounds a second key under the music" % line)
     for line in expired + fails:
         print("  %s" % line)
-    if fails or n == 0:
+    lo = loudness_audit(root)
+    stale, lfails = [], []
+    if lo is None:
+        print("[ambient-loudness] no %s -- nothing to measure" % RECIPES)
+    else:
+        rows, stale, lfails = lo
+        print("[ambient-loudness] %d stored loudness value(s) re-measured · tolerance %.1f LU · %d stale · %d unmeasurable"
+              % (len(rows), LUFS_TOL, len(stale), len(lfails)))
+        for line in stale:
+            print("  STALE %s -- the game trims this bed for audio that is no longer in the file" % line)
+        for line in lfails:
+            print("  %s" % line)
+    if fails or n == 0 or lfails:
         return 2
-    return 1 if (bad or expired) else 0
+    return 1 if (bad or expired or stale) else 0
 
 
 if __name__ == "__main__":
