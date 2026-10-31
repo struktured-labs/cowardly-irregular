@@ -10,6 +10,8 @@ const ShotGuard = preload("res://tools/shot_guard.gd")
 
 const OUT := "res://tmp/bubble_anchor"
 const CROP := Vector2i(560, 360)
+## Loaded at run time, after autoloads exist: naming the class statically compiled its GameState reads first.
+var _bsb: Script
 
 
 func _init() -> void:
@@ -19,6 +21,7 @@ func _init() -> void:
 			world = int(a.get_slice("=", 1))
 	await process_frame
 	await process_frame
+	_bsb = load("res://src/battle/BattleSpeechBubble.gd")
 	var gs = root.get_node_or_null("GameState")
 	if gs == null:
 		print("[SHOT] FAIL: no GameState")
@@ -62,18 +65,18 @@ func _init() -> void:
 			sprite.position = sprite.get_meta("home_position")
 		var job: String = str(pc.job.get("id", "?")) if pc.job is Dictionary else "?"
 		var home: Vector2 = sprite.global_position
-		var anchor := home + Vector2(BattleSpeechBubble.head_dx(sprite), -BattleSpeechBubble.head_lift(sprite))
+		var anchor := home + Vector2(_bsb.head_dx(sprite), -_bsb.head_lift(sprite))
 		## The open command menu draws over a bubble (z 100 > 95) and pushes it aside; hide it for the frame.
 		_hide_menus(scene)
 		scene._spawn_quip_bubble(sprite, pc.combatant_name, "Is this over MY head?", scene._get_job_quip_color(pc), 30.0)
 		## The fade-in runs in battle time, so 0.6 real s caught it part-transparent at 1x.
 		await create_timer(1.5, true, false, true).timeout
-		var live := BattleSpeechBubble._live.size()
+		var live := _bsb._live.size()
 		var img := root.get_texture().get_image()
 		## From the bubble's own rect: a party speaker's bubble sits to their LEFT, so a crop centred on the head cut it off.
 		var c0 := Vector2i(int(anchor.x) - CROP.x / 2, int(anchor.y) - 170)
-		if live > 0 and is_instance_valid(BattleSpeechBubble._live[-1]["bubble"]):
-			var br: Rect2 = (BattleSpeechBubble._live[-1]["bubble"] as Control).get_global_rect()
+		if live > 0 and is_instance_valid(_bsb._live[-1]["bubble"]):
+			var br: Rect2 = (_bsb._live[-1]["bubble"] as Control).get_global_rect()
 			var span := br.merge(Rect2(anchor - Vector2(30, 0), Vector2(60, 110)))
 			c0 = Vector2i(int(span.get_center().x) - CROP.x / 2, int(span.position.y) - 24)
 		c0.x = clampi(c0.x, 0, img.get_width() - CROP.x)
@@ -88,8 +91,8 @@ func _init() -> void:
 		else:
 			fails += 1
 		print("[SHOT] w%d %s home=%s anchor=%s head_dx=%.1f lift=%.1f flip=%s scale=%.2f live=%d" % [
-			world, job, str(home.round()), str(anchor.round()), BattleSpeechBubble.head_dx(sprite),
-			BattleSpeechBubble.head_lift(sprite), str((sprite as AnimatedSprite2D).flip_h) if sprite is AnimatedSprite2D else "-",
+			world, job, str(home.round()), str(anchor.round()), _bsb.head_dx(sprite),
+			_bsb.head_lift(sprite), str((sprite as AnimatedSprite2D).flip_h) if sprite is AnimatedSprite2D else "-",
 			sprite.scale.x, live])
 	_clear_bubbles()
 	print("[SHOT] done world=%d shots=%d failed=%d" % [world, shots, fails])
@@ -104,10 +107,10 @@ func _hide_menus(scene: Node) -> void:
 
 
 func _clear_bubbles() -> void:
-	for e in BattleSpeechBubble._live:
+	for e in _bsb._live:
 		if is_instance_valid(e["bubble"]):
 			e["bubble"].queue_free()
-	BattleSpeechBubble._live.clear()
+	_bsb._live.clear()
 
 
 func _find(n: Node) -> Node:
