@@ -33,7 +33,7 @@ const SFX_DIR := "assets/audio/sfx/"
 const SELF_PATH := "res://test/unit/test_the_ambient_layer_plays_the_composed_bed.gd"
 
 ## ⛔ 2026-10-30: the three dual-store beds were Suno SONGS under the music (struktured, Harmonia) and their
-## music entries moved to retired_ambient_beds, so each key now resolves to its sfx twin. Music-first
+## music entries were renamed to suno_* Jukebox rows, so each ambient_ key now resolves to its sfx twin. Music-first
 ## resolution still stands for a music-only key, and ambient_ocean is the one these arms drive.
 const RETIRED_TO_SFX := ["ambient_cave", "ambient_forest", "ambient_village"]
 const COMPOSED := "ambient_ocean"

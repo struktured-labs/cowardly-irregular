@@ -20,7 +20,7 @@ import json, os, subprocess, sys
 
 CEILING = 6.0
 SR, N, SECS = 22050, 4096, 60.0
-## village/forest/cave measured 7.5-7.7 and LEFT the music store 2026-10-30 (retired_ambient_beds).
+## village/forest/cave measured 7.5-7.7; 2026-10-30 they became suno_* Jukebox rows, out of this corpus.
 HELD = {
     "ambient_ocean": "music store: unreachable (test_unreachable_music_is_pinned); must not be wired as it is",
     "ambient_industrial": "music store: unreachable (test_unreachable_music_is_pinned); must not be wired as it is",

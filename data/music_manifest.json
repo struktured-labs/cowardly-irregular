@@ -2075,41 +2075,8 @@
       "duration": 73.68,
       "loop": true,
       "generated_at": "2026-08-27"
-    }
-  },
-  "tier_priority": [
-    "T3",
-    "T2",
-    "T1"
-  ],
-  "retired_ambient_beds": {
-    "ambient_cave": {
-      "file": "assets/audio/music/ambient_cave.ogg",
-      "tier": "T1",
-      "provider": "suno",
-      "title": "Dripping Stone",
-      "prompt": "Cave ambient loop. Slow dripping water echoing off stone walls, distant rumbling, subtle wind through crevices, occasional pebble falling. Dark and atmospheric with deep reverb. No melody — pure environmental texture. Seamless loop, 60 seconds.",
-      "style": "ambient, cave, dripping water, reverb, dark, atmospheric, looping",
-      "model": "suno-v4",
-      "duration": 186.96,
-      "loop": true,
-      "generated_at": "2026-04-14",
-      "retired": "2026-10-30: a Suno song (pitch clarity 7.5-7.7; real ambience <= 4.99) played under the music; struktured dropped it. File kept on disk for his ear; the key now resolves to its sfx_manifest twin."
     },
-    "ambient_forest": {
-      "file": "assets/audio/music/ambient_forest.ogg",
-      "tier": "T1",
-      "provider": "suno",
-      "title": "Whispering Canopy",
-      "prompt": "Forest ambient loop. Gentle wind through leaves, distant birdsong, soft rustling undergrowth, occasional branch creak. Warm dappled sunlight in sound. Natural and peaceful. Seamless loop, 60 seconds.",
-      "style": "ambient, forest, rustling leaves, birdsong, gentle wind, natural, looping",
-      "model": "suno-v4",
-      "duration": 214.32,
-      "loop": true,
-      "generated_at": "2026-04-14",
-      "retired": "2026-10-30: a Suno song (pitch clarity 7.5-7.7; real ambience <= 4.99) played under the music; struktured dropped it. File kept on disk for his ear; the key now resolves to its sfx_manifest twin."
-    },
-    "ambient_village": {
+    "suno_market_morning": {
       "file": "assets/audio/music/ambient_village.ogg",
       "tier": "T1",
       "provider": "suno",
@@ -2120,7 +2087,38 @@
       "duration": 144.9,
       "loop": true,
       "generated_at": "2026-04-14",
-      "retired": "2026-10-30: a Suno song (pitch clarity 7.5-7.7; real ambience <= 4.99) played under the music; struktured dropped it. File kept on disk for his ear; the key now resolves to its sfx_manifest twin."
+      "unlayered": "was ambient_village until 2026-10-30: a Suno song (pitch clarity 7.5-7.7; real ambience <= 4.99) that played under the music. struktured dropped it as an ambient layer; kept as a Jukebox row and a possible non-layered cue. The key ambient_village now resolves to its sfx_manifest twin."
+    },
+    "suno_whispering_canopy": {
+      "file": "assets/audio/music/ambient_forest.ogg",
+      "tier": "T1",
+      "provider": "suno",
+      "title": "Whispering Canopy",
+      "prompt": "Forest ambient loop. Gentle wind through leaves, distant birdsong, soft rustling undergrowth, occasional branch creak. Warm dappled sunlight in sound. Natural and peaceful. Seamless loop, 60 seconds.",
+      "style": "ambient, forest, rustling leaves, birdsong, gentle wind, natural, looping",
+      "model": "suno-v4",
+      "duration": 214.32,
+      "loop": true,
+      "generated_at": "2026-04-14",
+      "unlayered": "was ambient_forest until 2026-10-30: a Suno song (pitch clarity 7.5-7.7; real ambience <= 4.99) that played under the music. struktured dropped it as an ambient layer; kept as a Jukebox row and a possible non-layered cue. The key ambient_forest now resolves to its sfx_manifest twin."
+    },
+    "suno_dripping_stone": {
+      "file": "assets/audio/music/ambient_cave.ogg",
+      "tier": "T1",
+      "provider": "suno",
+      "title": "Dripping Stone",
+      "prompt": "Cave ambient loop. Slow dripping water echoing off stone walls, distant rumbling, subtle wind through crevices, occasional pebble falling. Dark and atmospheric with deep reverb. No melody — pure environmental texture. Seamless loop, 60 seconds.",
+      "style": "ambient, cave, dripping water, reverb, dark, atmospheric, looping",
+      "model": "suno-v4",
+      "duration": 186.96,
+      "loop": true,
+      "generated_at": "2026-04-14",
+      "unlayered": "was ambient_cave until 2026-10-30: a Suno song (pitch clarity 7.5-7.7; real ambience <= 4.99) that played under the music. struktured dropped it as an ambient layer; kept as a Jukebox row and a possible non-layered cue. The key ambient_cave now resolves to its sfx_manifest twin."
     }
-  }
+  },
+  "tier_priority": [
+    "T3",
+    "T2",
+    "T1"
+  ]
 }
