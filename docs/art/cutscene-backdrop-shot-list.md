@@ -71,3 +71,9 @@ The still is only what a missing or undecodable video falls back to. Worth redra
 2. Redraws of an existing key: also replace or delete its .ogv (section 0)
 3. Optional NEW: scriptura_guild, a W1 city street for the Tempo, 4 elemental dragon caves
 Every re-point in section 2 to an EXISTING key is JSON-only: cutscenes will do those, no art needed.
+
+## 4. Filed for after the backdrop pilot: a redrawn PNG behind a stale video
+Section 0's trap has no guard yet. A guard keyed on mtime cannot work, because git checkout does
+not preserve mtime. The robust form is a source hash: the video generator (tools/gen_cutscene_video.py)
+records the sha of the PNG it rendered from, and a test asserts the recorded sha equals the PNG on
+disk whenever both files exist. That needs a generator change, so it belongs to whoever runs the pilot.
