@@ -1,6 +1,9 @@
 extends SceneTree
 
 const ShotGuard = preload("res://tools/shot_guard.gd")
+const VillagePropScript = preload("res://src/exploration/VillageProp.gd")
+## What a 1280x720 capture shows of a village: its camera is zoomed 2x (BaseVillage._setup_camera).
+const VIEW := Vector2(640, 360)
 ## Marketing screenshots for the itch.io page — clean frames, no HUD furniture.
 ##
 ## The render smoke's 26 frames are DIAGNOSTIC captures and are unusable as store art:
@@ -244,6 +247,12 @@ func _shoot(name: String, paths: Array) -> void:
 	for i in range(12):
 		await process_frame
 
+	var framing := _frame_on_houses(scene)
+	if framing != "":
+		for i in range(6):
+			await process_frame
+		print("[SHOT] %s framing: %s" % [name, framing])
+
 	var img := root.get_texture().get_image()
 	var out := "res://tmp/marketing/%s.png" % name
 	if not ShotGuard.save_or_refuse(img, out):
@@ -253,3 +262,76 @@ func _shoot(name: String, paths: Array) -> void:
 
 	scene.queue_free()
 	await process_frame
+
+
+## Frame a village on its HOUSES, not its entrance (2026-10-31). The camera follows the player, who
+## spawns at the entrance, so every village shot was an entrance plaza and .747's facades (roofs,
+## walls, doors on their fronts) sat at the edge of the frame or out of it. This finds the densest
+## cluster of HOUSE props a single view can hold, stands the player just below the nearest door in
+## it (so the party is in shot too), and offsets the camera onto the cluster. DERIVED from the
+## scene, never a per-village coordinate list: a village that gains or moves houses re-frames
+## itself. A scene with fewer than 2 houses (Eldertree builds none; interiors; the cave) returns ""
+## and is captured exactly as before.
+func _frame_on_houses(scene: Node) -> String:
+	if not ("player" in scene and "camera" in scene) or scene.player == null or scene.camera == null:
+		return ""
+	var centers: Array[Vector2] = []
+	var doors: Array[Vector2] = []
+	var stack: Array[Node] = [scene]
+	while not stack.is_empty():
+		var n: Node = stack.pop_back()
+		stack.append_array(n.get_children())
+		if n.get_script() == VillagePropScript and n.kind == VillagePropScript.Kind.HOUSE:
+			## position is the facade's base cell, bottom-centre of its first column (VillageProp.create).
+			var half := VillagePropScript.TILE * 0.5
+			centers.append(n.global_position + Vector2((n.size_tiles.x - 1) * half, -n.size_tiles.y * half))
+		## The OTHER way a building stands up: every child of "Buildings" — shops, inns and doors that
+		## carry their own art, which are Area2D themselves. _spawn_house_facades never faces a block that
+		## art already claims, so Frosthold, Sandrift and Grimhollow have ZERO HOUSE props (measured) and
+		## 5-6 buildings here each; counting facades alone, or excluding Area2D, left them unframed.
+		if n is Node2D and n.get_parent() != null and n.get_parent().name == "Buildings":
+			centers.append(n.global_position)
+		if n is Area2D and "require_interaction" in n and n.require_interaction and "target_map" in n:
+			doors.append(n.global_position)
+	var reach := VIEW * 0.5 - Vector2(32, 32)
+	var best := -1
+	var best_n := 0
+	for i in centers.size():
+		var k := 0
+		for c in centers:
+			if absf(c.x - centers[i].x) <= reach.x and absf(c.y - centers[i].y) <= reach.y:
+				k += 1
+		if k > best_n:
+			best_n = k
+			best = i
+	if best_n < 2:
+		## Said out loud: a village that SHOULD re-frame and silently didn't reads exactly like one
+		## that has nothing to frame.
+		print("[SHOT] framing skipped: %d building(s) found (facades + building art), densest view holds %d (need 2)" % [centers.size(), best_n])
+		return ""
+	var target := Vector2.ZERO
+	for c in centers:
+		if absf(c.x - centers[best].x) <= reach.x and absf(c.y - centers[best].y) <= reach.y:
+			target += c
+	target /= best_n
+	## Stand at a door's foot when the cluster has one in view, else on the street below it.
+	var stand := target + Vector2(0, VillagePropScript.TILE * 3)
+	var used_door := false
+	var nearest := INF
+	for d in doors:
+		if absf(d.x - target.x) <= reach.x and absf(d.y - target.y) <= reach.y and d.distance_to(target) < nearest:
+			nearest = d.distance_to(target)
+			## 2.5 tiles, not 1.25: at 1.25 the player stood INSIDE the door's trigger and an "Enter …"
+			## prompt drew over the frame (measured on Harmonia and Frosthold).
+			stand = d + Vector2(0, VillagePropScript.TILE * 2.5)
+			used_door = true
+	## Smoothing OFF for the shot: with it on, the camera was still easing toward the new spot when the
+	## frame was taken, so two identical runs differed by a 2-3 px pan (45% of pixels on Frosthold).
+	scene.camera.position_smoothing_enabled = false
+	scene.player.global_position = stand
+	## Keep the player inside the frame: the offset never pushes them past the view's edge.
+	var keep := VIEW * 0.5 - Vector2(48, 72)
+	scene.camera.offset = (target - stand).clamp(-keep, keep)
+	scene.camera.reset_smoothing()
+	scene.camera.force_update_scroll()
+	return "%d of %d buildings in view · player at %s (%s)" % [best_n, centers.size(), str(stand.round()), "a door" if used_door else "the street below them"]

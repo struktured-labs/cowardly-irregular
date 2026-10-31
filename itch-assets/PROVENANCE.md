@@ -272,3 +272,16 @@ Two directories hold frames that were shipped but never archived, found by searc
 shots-293/          field_elite_medieval, field_elite_prompt_medieval   (the .293 re-shoot)
 shots-483-export/   title_screen                                        (the exported .483 binary)
 ```
+
+## 2026-10-31 — `capture-history/shots-710/` (the section this file was missing) and `shots-748/`
+
+**shots-710.** Eleven shipped frames came from it before this refresh — `battle`, the six villages,
+`inn_interior`, `shop_interior`, `tavern_interior`, `whispering_cave` — matched by git BLOB against every
+`capture-history/` era, not from prose. Its capture conditions are in `CAPTIONS.md`'s `.710` section; this
+file never got its own. At the same date the other nine shipped frames matched `shots-225` (6),
+`shots-293` (2) and `shots-483-export` (`title_screen`).
+
+**shots-748.** All twelve `marketing_shots.gd` captures at `v3.33.748-alpha`, archived WHOLESALE before
+any swap, with the villages framed on their buildings (see `CAPTIONS.md`'s 2026-10-31 section for the
+per-shot pixel deltas and conditions). Ten replaced the shipped frame; `battle` was kept (inside its own
+noise); `battle_advance` is archived only.
