@@ -32,17 +32,27 @@ done
 [ "$KILLED" -gt 0 ] && sleep 2
 
 # Stale-class-cache guard (post-mortem note 2)
+# SANDBOXED PREWARM. `--import` is EDITOR-CLASS -- it carries the same E flag as --editor, and
+# --headless means no window, NOT "not the editor" -- so it writes .recovery_mode_lock and a
+# multi-MB editor shader cache into whichever profile is active. Unsandboxed that is HIS profile,
+# seconds before his game starts. The import CACHE lives in res://.godot, inside the project, so
+# relocating the data root costs the prewarm nothing: same reasoning, same idiom and same path as
+# tools/deploy_desktop.sh:170 / deploy_web.sh / publish_all.sh, which were fixed 2026-09-16.
+# PER-COMMAND PREFIX, NEVER `export`. The launch below must reach his REAL user:// -- that is the
+# one documented case where sandboxing would itself be the bug, and an export here would send his
+# saves to a gitignored temp dir.
 CACHE=".godot/global_script_class_cache.cfg"
+mkdir -p tmp/prewarm_xdg
 if [ -f "$CACHE" ]; then
     NEWER=$(find src -name '*.gd' -newer "$CACHE" -exec grep -l '^class_name ' {} + 2>/dev/null | head -1)
     if [ -n "$NEWER" ]; then
         echo "class_name script(s) newer than import cache (e.g. $NEWER) — reimporting..."
-        godot --headless --import > /dev/null 2>&1 || true
+        XDG_DATA_HOME="$PWD/tmp/prewarm_xdg" godot --headless --import > /dev/null 2>&1 || true
         sleep 1
     fi
 else
     echo "No import cache found — running first import..."
-    godot --headless --import > /dev/null 2>&1 || true
+    XDG_DATA_HOME="$PWD/tmp/prewarm_xdg" godot --headless --import > /dev/null 2>&1 || true
     sleep 1
 fi
 
