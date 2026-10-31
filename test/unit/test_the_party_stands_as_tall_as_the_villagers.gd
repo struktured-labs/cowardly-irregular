@@ -133,3 +133,25 @@ func test_each_party_member_stands_as_tall_as_the_artists_villagers() -> void:
 	wrong.sort()
 	assert_eq(wrong, [], "the artist's villagers stand %d px (median of %s); the party must be within %d%%" \
 		% [int(median), str(heights), int(HEIGHT_TOLERANCE * 100)])
+
+
+## The DRAWN size, not the sheet's: OverworldPlayer once squeezed every cut frame to SPRITE_SIZE, so 48px art drew at 32.
+func test_each_party_member_is_drawn_at_the_villagers_frame() -> void:
+	var want := _villager_frame()
+	var judged := 0
+	var wrong: Array = []
+	for job in _section("overworld_player_sheets"):
+		var player := OverworldPlayer.new()
+		player.current_job = str(job)
+		var cache: Dictionary = player._try_load_overworld_sheet()
+		var tex: Variant = cache.get("0_0")
+		if tex is Texture2D:
+			judged += 1
+			if (tex as Texture2D).get_height() != want:
+				wrong.append("%s drawn %d px" % [job, (tex as Texture2D).get_height()])
+		else:
+			wrong.append("%s built no frame" % job)
+		player.free()
+	wrong.sort()
+	assert_gte(judged, 14, "FLOOR: every job's sheet must load and be measured, not skipped")
+	assert_eq(wrong, [], "a party frame must be DRAWN at the villagers' %d px, not shrunk after the cut" % want)
