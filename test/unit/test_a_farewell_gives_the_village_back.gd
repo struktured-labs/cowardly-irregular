@@ -34,8 +34,7 @@ class MusicOnlyDirector extends "res://src/cutscene/CutsceneDirector.gd":
 				kept.append(s)
 		kept.append({"type": "wait", "duration": 0.05})
 		scene["steps"] = kept
-		scene.erase("background")
-		return scene
+		return scene  # the backdrop STAYS: it loads synchronously, while a missing one awaits a viewport capture and hides the race
 
 
 func before_each() -> void:
@@ -92,6 +91,10 @@ func test_premise_a_map_load_leaves_a_frame_with_no_bed() -> void:
 
 func test_the_scan_finds_the_farewell_scenes() -> void:
 	assert_gt(_farewell_scenes().size(), 4, "CONTROL: the farewell cue is played by the W1 Warden scenes; found %s" % str(_farewell_scenes()))
+	for scene_id in _farewell_scenes():
+		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("%s/%s.json" % [CUTSCENE_DIR, scene_id]))
+		assert_ne(str((parsed as Dictionary).get("background", "")) if parsed is Dictionary else "", "",
+			"CONTROL: %s has no backdrop, so play_cutscene awaits a capture before the music check and the race cannot happen there" % scene_id)
 
 
 func test_every_farewell_started_as_the_map_loads_gives_the_bed_back() -> void:
