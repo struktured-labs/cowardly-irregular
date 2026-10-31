@@ -18,6 +18,8 @@ extends GutTest
 ## condition rather than being harmless, and anything that reads the field alone gets a lie.
 
 const REAL := "ambient_cave"
+## A collision needs ONE file on both players; since 2026-10-30 ambient_cave is sfx-only, so ocean (music-only) drives it.
+const COLLIDES := "ambient_ocean"
 
 
 func after_each() -> void:
@@ -44,9 +46,10 @@ func test_a_key_in_neither_manifest_leaves_no_name_behind() -> void:
 func test_a_failed_start_leaves_no_name_behind() -> void:
 	## Drives the same leak through the MUSIC-collision return, which is the one that already had
 	## a clear-on-exit — kept so the retirement of that patch is covered rather than assumed.
-	SoundManager.play_music(REAL, true)
+	SoundManager.play_music(COLLIDES, true)
 	await get_tree().create_timer(0.2).timeout
-	SoundManager.play_ambient(REAL)
+	assert_true(SoundManager._music_player.playing, "CONTROL: the music player holds %s, so there is a collision to yield to" % COLLIDES)
+	SoundManager.play_ambient(COLLIDES)
 	assert_false(SoundManager._ambient_player.playing, "CONTROL: the ambient layer yielded to the music player")
 	assert_eq(SoundManager._current_ambient_key, "",
 		"the field names %s after the ambient layer declined to start" % SoundManager._current_ambient_key)
