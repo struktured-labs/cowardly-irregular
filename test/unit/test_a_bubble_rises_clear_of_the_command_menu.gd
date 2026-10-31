@@ -7,9 +7,13 @@ extends GutTest
 
 var _host: Control
 var _band: Rect2
+var _saved_scale := 1.0
 
 
 func before_each() -> void:
+	## Bubbles are suppressed at engine 1.0 and up (the 4x rule); speak at the 1x rung.
+	_saved_scale = Engine.time_scale
+	Engine.time_scale = 0.25
 	BattleSpeechBubble._live.clear()
 	_host = Control.new()
 	add_child_autofree(_host)
@@ -18,6 +22,10 @@ func before_each() -> void:
 
 
 ## A menu band spanning the full width, so no side of the speaker clears it.
+func after_each() -> void:
+	Engine.time_scale = _saved_scale
+
+
 func _spawn(band_top: float) -> BattleSpeechBubble:
 	var vp: Vector2 = _host.size
 	_band = Rect2(0, band_top, vp.x, 160)
@@ -49,6 +57,7 @@ func test_the_float_tween_does_not_drag_it_back_under() -> void:
 	if b == null:
 		return
 	await _settled(b)
+	## 0.5 battle s at 0.25 = 2 real s: past the fade-in and well into the float.
 	await get_tree().create_timer(0.5).timeout
 	var r := Rect2(b.global_position, b._panel.size)
 	assert_false(r.intersects(_band), "mid-float the bubble must still be clear of the menu (a stale tween would slide it back)")
