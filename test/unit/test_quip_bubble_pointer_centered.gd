@@ -60,8 +60,8 @@ func test_container_placed_beside_speaker_on_ready() -> void:
 # Retargeted 2026-08-22: the tail is rebuilt from the bubble's real size and leans back toward the speaker, so a diagonally-offset bubble still reads as theirs.
 func test_tail_is_rebuilt_against_the_speaker() -> void:
 	var body := _finalize_layout_body()
-	assert_true(body.contains("_build_tail(pointer, bubble.size, anchor_x - position.x)"),
-		"the tail must be rebuilt from the settled bubble size with the speaker's LOCAL offset")
+	assert_true(body.contains("_build_tail(pointer, bubble.size, Vector2(anchor_x - position.x, _anchor_global.y - position.y))"),
+		"the tail must be rebuilt from the settled bubble size with the speaker's LOCAL offset, x and y")
 
 
 # Still pinned, one layer in: the tail base sits on the bubble's BOTTOM EDGE.

@@ -89,7 +89,9 @@ func test_existing_bubble_layout_paths_preserved() -> void:
 		"VBoxContainer layout preserved")
 	assert_true(body.contains("var pointer := Polygon2D.new()"),
 		"pointer triangle preserved")
-	assert_true(body.contains("tween.tween_property(self, \"modulate:a\", 1.0, 0.15)"),
+	## The fade/float recipe moved to _start_float (2026-10-31) so a lift clear of the menu can restart it.
+	var src := FileAccess.get_file_as_string("res://src/battle/BattleSpeechBubble.gd")
+	assert_true(body.contains("_start_float()") and src.substr(src.find("func _start_float"), 900).contains("tween.tween_property(self, \"modulate:a\", 1.0, 0.15)"),
 		"fade-in tween preserved")
 
 

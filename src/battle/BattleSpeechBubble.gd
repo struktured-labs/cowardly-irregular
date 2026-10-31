@@ -59,6 +59,12 @@ var _ceiling_y: float = TOP_MARGIN
 ## Extra sideways clearance, set when the ceiling forced the bubble down into its speaker's body.
 var _side_clear: float = 0.0
 var _float_px: float = FLOAT_UP_PX
+## The speaker's head in global space, kept so the tail can aim at it in y as well as x.
+var _anchor_global: Vector2 = Vector2.ZERO
+## The fade-in / float-up / fade-out run; rebuilt when the layout pass has to lift the bubble.
+var _float_tween: Tween = null
+## Longest tail, px: long enough to reach back from an edge-clamped bubble, short enough not to cross the field.
+const TAIL_MAX_PX: float = 56.0
 ## True once a voice clip set the hold — that hold is in real seconds, so the tween must be too.
 var _voiced: bool = false
 var _panel: PanelContainer = null
@@ -306,10 +312,20 @@ func _present(anchor_global_pos: Vector2, speaker_name: String, line: String, bo
 	modulate.a = 0.0
 
 	var anchor_x: float = anchor_global_pos.x
+	_anchor_global = anchor_global_pos
 	# NOT bubble.ready: spawn() adds this node to the tree BEFORE _present runs, so add_child(bubble) above makes the panel ready SYNCHRONOUSLY and a later connect misses the signal forever. Measured 2026-08-22 — is_node_ready() is already true here, so the whole layout pass had been DEAD since the 2026-07-01 extraction.
 	_finalize_layout(bubble, pointer, anchor_x, prefer_right)
 
+	_start_float()
+
+
+## One recipe, started here and restarted by _lift_clear_of: the tween captures its target y, so a
+## bubble moved after it starts must get a fresh one or it slides back to the old spot.
+func _start_float() -> void:
+	if _float_tween != null and _float_tween.is_valid():
+		_float_tween.kill()
 	var tween := create_tween()
+	_float_tween = tween
 	# A voiced hold is measured on the audio clock; a scaled tween stretched it 4x at default speed and would desync on a mid-hold speed change.
 	if _voiced:
 		tween.set_ignore_time_scale(true)
@@ -329,7 +345,10 @@ func _finalize_layout(bubble: PanelContainer, pointer: Polygon2D, anchor_x: floa
 	var bw: float = bubble.size.x
 	position.x = _side_placed_x(anchor_x, bw, prefer_right)
 	position.x = _clear_keep_out(position.x, bubble.size, anchor_x)
-	_build_tail(pointer, bubble.size, anchor_x - position.x)
+	var cover := _covering_rect(position.x, bubble.size)
+	if cover.size != Vector2.ZERO:
+		_lift_clear_of(cover, bubble.size)
+	_build_tail(pointer, bubble.size, Vector2(anchor_x - position.x, _anchor_global.y - position.y))
 	_panel = bubble
 	_retire_overlapped_elders()
 
@@ -379,6 +398,34 @@ func _clear_keep_out(x: float, size: Vector2, anchor_x: float) -> float:
 	return x
 
 
+## The keep-out rect this bubble would sit under at x, or an empty rect.
+func _covering_rect(x: float, size: Vector2) -> Rect2:
+	if not _keep_out.is_valid():
+		return Rect2()
+	var rects = _keep_out.call()
+	if not (rects is Array):
+		return Rect2()
+	var off: Vector2 = global_position - position
+	var mine := Rect2(Vector2(x, position.y - _float_px) + off, Vector2(size.x, size.y + _float_px))
+	for r in rects:
+		if r is Rect2 and (r as Rect2).size != Vector2.ZERO and mine.intersects(r):
+			return r
+	return Rect2()
+
+
+## No side of the speaker clears the open command menu (a party speaker's bubble must go left, where
+## the menu sits), so rise above it instead of staying under it (cowir-main, from the 2026-10-31
+## shots). Below the menu is never tried: that is where the speaker stands. With no room above the
+## ceiling it stays put, under the menu: the menu still wins (struktured 2026-09-02) and the line is in the log.
+func _lift_clear_of(cover: Rect2, size: Vector2) -> void:
+	var off: Vector2 = global_position - position
+	var y: float = cover.position.y - off.y - size.y - _float_px - 6.0
+	if y < _ceiling_y:
+		return
+	position.y = y
+	_start_float()
+
+
 ## Screen rect of the laid-out panel; empty until the layout pass has run.
 func _screen_rect() -> Rect2:
 	if _panel == null or not is_instance_valid(_panel):
@@ -402,16 +449,22 @@ func _retire_overlapped_elders() -> void:
 
 
 ## Tail base on the bubble's bottom edge, tip leaning back toward the speaker, so a diagonally-offset bubble still reads as belonging to that character.
-func _build_tail(pointer: Polygon2D, bubble_size: Vector2, anchor_local_x: float) -> void:
+## The tail AIMS at the speaker's head: an edge-clamped bubble sits well off to one side and the head
+## below it, and a tip fixed 16px under the bubble pointed at nobody (cowir-main, from the 2026-10-31 shots).
+func _build_tail(pointer: Polygon2D, bubble_size: Vector2, anchor_local: Vector2) -> void:
 	var bw: float = bubble_size.x
 	var bh: float = bubble_size.y
-	var base_cx: float = clampf(anchor_local_x, 16.0, maxf(16.0, bw - 16.0))
-	var tip_x: float = clampf(anchor_local_x, -34.0, bw + 34.0)
-	pointer.polygon = PackedVector2Array([
-		Vector2(base_cx - 8.0, bh - 2.0),
-		Vector2(base_cx + 8.0, bh - 2.0),
-		Vector2(tip_x, bh + 16.0),
-	])
+	var base_cx: float = clampf(anchor_local.x, 16.0, maxf(16.0, bw - 16.0))
+	var base := Vector2(base_cx, bh - 2.0)
+	var to: Vector2 = anchor_local - base
+	## Always leave downward: a head level with the bubble still reads from a tail that dips to it.
+	to.y = maxf(to.y, 10.0)
+	var dir: Vector2 = to.normalized()
+	var tip: Vector2 = base + dir * minf(to.length(), TAIL_MAX_PX)
+	## The base spans ACROSS the aim, not along the edge: aimed sideways at a head level with the bubble,
+	## an edge-aligned base made a sliver a few px thick (the 2026-10-31 Fighter shot showed no tail at all).
+	var half: Vector2 = Vector2(-dir.y, dir.x) * 8.0
+	pointer.polygon = PackedVector2Array([base - half, base + half, tip])
 
 ## Plays the line's audio (a synthesized stream wins over a shipped clip) and holds the bubble for as long as it lasts.
 func _play_voice(audio_key: String, voice_stream: AudioStream = null) -> void:

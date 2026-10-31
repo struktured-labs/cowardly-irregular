@@ -16,9 +16,13 @@ var _bsb: Script
 
 func _init() -> void:
 	var world := 1
+	## --keep-menu leaves the command menu up: the shot that shows whether a bubble clears it.
+	var keep_menu := false
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--world="):
 			world = int(a.get_slice("=", 1))
+		elif a == "--keep-menu":
+			keep_menu = true
 	await process_frame
 	await process_frame
 	_bsb = load("res://src/battle/BattleSpeechBubble.gd")
@@ -67,7 +71,8 @@ func _init() -> void:
 		var home: Vector2 = sprite.global_position
 		var anchor: Vector2 = home + Vector2(_bsb.head_dx(sprite), -_bsb.head_lift(sprite))
 		## The open command menu draws over a bubble (z 100 > 95) and pushes it aside; hide it for the frame.
-		_hide_menus(root)
+		if not keep_menu:
+			_hide_menus(root)
 		var mark := _mark(anchor)
 		scene._spawn_quip_bubble(sprite, pc.combatant_name, "Is this over MY head?", scene._get_job_quip_color(pc), 30.0)
 		## The fade-in runs in battle time, so 0.6 real s caught it part-transparent at 1x.

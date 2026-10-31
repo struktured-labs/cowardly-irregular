@@ -93,7 +93,10 @@ func test_tween_still_animates_y_by_minus_10() -> void:
 	# Don't regress the tween — it animates a -10px float-up over
 	# the hold_time. With the new dynamic y, the tween animates from
 	# the corrected initial position which is the right behavior.
-	var body := _spawn_bubble_body()
+	## The recipe moved to _start_float so a lift can restart it; _present still starts it.
+	assert_true(_spawn_bubble_body().contains("_start_float()"), "_present must start the float")
+	var src := FileAccess.get_file_as_string("res://src/battle/BattleSpeechBubble.gd")
+	var body := src.substr(src.find("func _start_float"), 900)
 	assert_true(body.contains("tween_property(self, \"position:y\", position.y - _float_px, _hold_time * 0.5)"),
 		"tween must still animate container.position.y upward — preserves the float-up bubble animation")
 	var b := BattleSpeechBubble.new()
