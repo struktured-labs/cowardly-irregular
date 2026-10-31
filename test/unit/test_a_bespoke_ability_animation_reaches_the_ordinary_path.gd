@@ -7,7 +7,10 @@ extends GutTest
 ## because `_animate_melee_attack` took no ability argument. These arms pin WHICH path plays the
 ## named art, and the control pins that a sheet without the art is unchanged.
 
-const SCENE := preload("res://src/battle/BattleScene.gd")
+## The SCENE, not the script: a bare BattleScene.gd.new() has no UI tree, so every UI write in the action path
+## aborted (5 SCRIPT ERRORs per run: turn_info at BattleUIManager:970, then the turn-order strip at :1018/:1041)
+## while each arm's own asserts still scored. 25 other battle tests already build the .tscn; this one was the outlier.
+const SCENE := preload("res://src/battle/BattleScene.tscn")
 const MANIFEST := "res://data/sprite_manifest.json"
 const ABILITIES := "res://data/abilities.json"
 const STD_ANIMS := ["idle", "walk", "attack", "hit", "dead", "death", "cast", "defend", "item",
@@ -78,7 +81,7 @@ func before_each() -> void:
 	_saved_pp = BattleManager.player_party.duplicate()
 	_saved_ep = BattleManager.enemy_party.duplicate()
 	_saved_scale = Engine.time_scale
-	_scene = SCENE.new()
+	_scene = SCENE.instantiate()
 	add_child_autofree(_scene)
 	_hero = _c("Fighter")
 	_foe = _c("Goblin")
