@@ -14,6 +14,20 @@ extends GutTest
 ## unconditionally would report the fix instead of measuring it.
 
 const SaveScreenScript = preload("res://src/ui/SaveScreen.gd")
+
+
+## ⛔ THIS FILE USED TO NEED SAVES IT NEVER WROTE. The timestamp labels it judges exist only for a
+## FILLED slot, and it built the screen against whatever user:// held. Green in a sandbox earlier runs
+## had seeded, red in a fresh worktree's: Passing 3 Failing 2 on main, Passing 5 once 7 leftover
+## saves were copied in (measured 2026-10-30, .746 gate). The fixture comes through SaveScreen's own
+## read, never a file -- a write would land on his real save_00 under RUN_TESTS_REAL_PROFILE=1.
+class FixtureSaveScreen extends "res://src/ui/SaveScreen.gd":
+	func _save_info_for(_slot: int) -> Dictionary:
+		return {
+			"chapter": 9, "chapter_title": "The Throne", "location_name": "Overworld",
+			"play_time_formatted": "05:42:24", "save_date": "2026-09-07T20:32:11", "world": 1,
+			"party_summary": [{"hp": 2433, "job": "Fighter", "job_id": "fighter", "level": 10, "max_hp": 2433, "name": "Fighter"}],
+		}
 const PRESETS: Array = [0.8, 1.0, 1.25, 1.5, 2.0]
 const LABELS: Array = ["80%", "100%", "125%", "150%", "200%"]
 
@@ -39,7 +53,7 @@ func _build_at(scale: float) -> void:
 	var gs = get_tree().root.get_node_or_null("GameState")
 	if gs != null and "text_size_scale" in gs:
 		gs.text_size_scale = scale
-	_screen = SaveScreenScript.new()
+	_screen = FixtureSaveScreen.new()
 	_screen.set_anchors_preset(Control.PRESET_TOP_LEFT)
 	_screen.position = Vector2.ZERO
 	_screen.size = Vector2(1280, 720)
