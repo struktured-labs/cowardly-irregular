@@ -74,8 +74,15 @@ origin_newest_tag() {
     # repo's local tags (byte order, LC_ALL=C, as git prints), the same source reap's FLOOR
     # uses; a stale local list only makes the anchor earlier, never wrong. Outside a repo there
     # is no anchor and the resolver behaves exactly as before.
+    # ⛔ ONLY WHEN OT_GIT IS UNSET. The anchor must come from the same universe as the reply. A
+    # caller that fakes the remote through OT_GIT (store_status's selftest) is answered from a
+    # fixture, and this repo's real tags are not that fixture's tags: the first version derived
+    # v3.33.99-alpha there and turned 4 of its 25 arms STALE. reap fakes it the other way
+    # (OT_REMOTE = a fixture repo, real git), where local tags ARE the remote's, so it keeps one.
     term="${OT_TERMINUS-}"
-    [ -n "$term" ] || term="$(git tag -l 'v3.33.*' 2>/dev/null | grep -E '^v3\.33\.[0-9]+-alpha$' | LC_ALL=C sort | tail -1)"
+    if [ -z "$term" ] && [ -z "${OT_GIT:-}" ]; then
+        term="$(git tag -l 'v3.33.*' 2>/dev/null | grep -E '^v3\.33\.[0-9]+-alpha$' | LC_ALL=C sort | tail -1)"
+    fi
     [ "$term" = "-" ] && term=""
     for try in $(seq 1 "$tries"); do
         raw="$("${OT_GIT:-git}" ls-remote --tags "${OT_REMOTE:-origin}" 'refs/tags/v3.33.*' 2>&1)"; ec=$?
@@ -165,7 +172,13 @@ FAKE
         local name="$1" wec="$2" wout="$3" wcalls="$4" want="$5" floor="$6"; shift 6
         _mkgit "$@"
         local out ec calls bad=""
-        out="$(cd "${ARM_CWD:-.}" && OT_TERMINUS="${ARM_TERM--}" OT_GIT="$fake" OT_RETRY_DELAY=0 origin_newest_tag selftest "$want" "$floor" 2>"$dir/err")"; ec=$?
+        # ARM_PATHGIT: real git with only ls-remote faked (a PATH wrapper), OT_GIT unset — the
+        # only honest way to test the derived anchor, which is off whenever OT_GIT is set.
+        out="$(cd "${ARM_CWD:-.}" && if [ -n "${ARM_PATHGIT:-}" ]; then
+                   PATH="$dir/pathgit:$PATH" OT_TERMINUS="${ARM_TERM--}" OT_RETRY_DELAY=0 origin_newest_tag selftest "$want" "$floor"
+               else
+                   OT_TERMINUS="${ARM_TERM--}" OT_GIT="$fake" OT_RETRY_DELAY=0 origin_newest_tag selftest "$want" "$floor"
+               fi 2>"$dir/err")"; ec=$?
         calls="$(cat "$ctr")"
         [ "$ec" -eq "$wec" ]       || bad="exit $ec (wanted $wec)"
         [ "$out" = "$wout" ]       || bad="${bad}${bad:+; }stdout '$out' (wanted '$wout')"
@@ -227,11 +240,17 @@ FAKE
     git init -q "$dir/repo" && git -C "$dir/repo" -c user.email=t@t -c user.name=t commit -q --allow-empty -m t \
         && for n in 5 98 615; do git -C "$dir/repo" tag "v3.33.${n}-alpha"; done
     _reply 5 615 616 98 > "$dir/has98"; _reply 5 615 616 > "$dir/no98"
-    ARM_TERM="" ARM_CWD="$dir/repo" _arm "TERMINUS derived from local tags: present" 0 v3.33.616-alpha 1 "" "" has98
-    ARM_TERM="" ARM_CWD="$dir/repo" _arm "TERMINUS derived from local tags: cut"     3 "" 3 "" "" no98
+    mkdir -p "$dir/pathgit"; local realgit; realgit="$(command -v git)"
+    printf '#!/usr/bin/env bash\n[ "$1" = ls-remote ] && exec "%s" "$@"\nexec "%s" "$@"\n' "$fake" "$realgit" > "$dir/pathgit/git"
+    chmod +x "$dir/pathgit/git"
+    ARM_PATHGIT=1 ARM_TERM="" ARM_CWD="$dir/repo" _arm "TERMINUS derived from local tags: present" 0 v3.33.616-alpha 1 "" "" has98
+    ARM_PATHGIT=1 ARM_TERM="" ARM_CWD="$dir/repo" _arm "TERMINUS derived from local tags: cut"     3 "" 3 "" "" no98
+    # THE store_status REGRESSION: a faked remote (OT_GIT) inside a repo WITH tags derives no
+    # anchor, so a fixture reply that lacks the repo's last tag is not called short.
+    ARM_TERM="" ARM_CWD="$dir/repo" _arm "OT_GIT fake in a tagged repo -> no anchor" 0 v3.33.616-alpha 1 "" "" no98
     # Outside any repo there is no anchor: exactly the old behaviour, by design.
     mkdir -p "$dir/norepo"
-    ARM_TERM="" ARM_CWD="$dir/norepo" GIT_CEILING_DIRECTORIES="$dir" _arm "no repo -> no anchor, old behaviour" 0 v3.33.616-alpha 1 "" "" no98
+    ARM_PATHGIT=1 ARM_TERM="" ARM_CWD="$dir/norepo" GIT_CEILING_DIRECTORIES="$dir" _arm "no repo -> no anchor, old behaviour" 0 v3.33.616-alpha 1 "" "" no98
     # The retry budget is the env's, not a constant.
     _mkgit short674
     OT_TERMINUS=- OT_GIT="$fake" OT_RETRY_DELAY=0 OT_RETRIES=5 origin_newest_tag selftest "$T" "" >/dev/null 2>&1
