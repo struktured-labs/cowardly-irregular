@@ -3,7 +3,7 @@
   "title": "The Rules",
   "world": 2,
   "trigger": "world2_first_encounter",
-  "background": "suburban_park",
+  "background": "maple_heights_street",
   "description": "First suburban encounter: enchanted lawn mower, angry mailbox, targeting sprinkler. The HOA memo.",
   "steps": [
     {

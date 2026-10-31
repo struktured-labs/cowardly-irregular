@@ -3,7 +3,7 @@
   "title": "Brass",
   "world": 3,
   "trigger": "world3_portal_entry",
-  "background": "steampunk_workshop",
+  "background": "brasston_square",
   "description": "Arrival in the steampunk world. Suburban gear transforms into brass and clockwork. Cogsworth Junction, the clock tower chiming thirteen.",
   "steps": [
     {

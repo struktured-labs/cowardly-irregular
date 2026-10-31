@@ -3,7 +3,7 @@
   "title": "Negative Space",
   "world": 6,
   "trigger": "world6_pc_negative_space",
-  "background": "prologue_forest",
+  "background": "vertex_village",
   "description": "First steps in the abstract world. There is exactly enough of everything.",
   "steps": [
     {
