@@ -213,6 +213,8 @@ var current_job: String = "fighter"
 ## the others are "%d_%d" — so it rides the static cache without a parallel structure to keep in
 ## step, and a procedural cache simply has none.
 const OFFSETS_KEY := "_registration_offsets"
+## The cut frame's height, so a frame taller than SPRITE_SIZE keeps its feet where a 32px figure's are.
+const FRAME_H_KEY := "_frame_h"
 
 ## Character customization for appearance
 var _custom_hair_color: Color = Color(0.35, 0.25, 0.18)
@@ -585,6 +587,8 @@ func _update_sprite() -> void:
 	# centred, so a correction derived from artist art must not leak onto them.
 	var offsets: Dictionary = _sprite_cache.get(OFFSETS_KEY, {})
 	_sprite.offset.x = float(offsets.get(current_direction, 0.0))
+	## Foot-align exactly as OverworldNPC does for its 48px sheets: lift by half the extra height.
+	_sprite.offset.y = -(int(_sprite_cache.get(FRAME_H_KEY, SPRITE_SIZE)) - SPRITE_SIZE) / 2.0
 
 
 func _get_static_cache_key() -> String:
@@ -679,12 +683,11 @@ func _try_load_overworld_sheet() -> Dictionary:
 		for col in range(WALK_FRAMES):
 			var region = Rect2i(col * frame_w, row * frame_h, frame_w, frame_h)
 			var frame_img = img.get_region(region)
-			# A frame cut at its DECLARED size still has to render at SPRITE_SIZE: the procedural
-			# fallback and _extract_artist_frame both produce 32px, and STEP_DISTANCE is one tile.
-			# Cutting correctly and handing back a 48px texture would trade a mis-sliced sprite for
-			# an oversized one — right art, wrong size, for exactly the sheets the fix was for.
-			if frame_w != SPRITE_SIZE or frame_h != SPRITE_SIZE:
-				frame_img = _fit_to_sprite_size(frame_img)
+			## A frame renders at its DECLARED size. This used to squeeze every frame into SPRITE_SIZE,
+			## which was right while "the party is 32px" was the target -- and is exactly what made
+			## them 1.5x shorter than the 48px villagers (struktured, 2026-10-30: "our own characters
+			## are too small relative to npcs"). The art now sets the size; SPRITE_SIZE is only the
+			## procedural fallback's drawing grid, so the two can no longer disagree.
 			var frame_tex = ImageTexture.create_from_image(frame_img)
 			cache["%d_%d" % [dir, col]] = frame_tex
 			var centre := _bbox_centre_x(frame_img)
@@ -692,6 +695,7 @@ func _try_load_overworld_sheet() -> Dictionary:
 				row_centre[dir] = float(row_centre.get(dir, 0.0)) + centre / float(WALK_FRAMES)
 
 	cache[OFFSETS_KEY] = _registration_offsets(row_centre)
+	cache[FRAME_H_KEY] = frame_h
 	print("[OVERWORLD] Loaded overworld sheet for '%s'" % current_job)
 	return cache
 
@@ -717,9 +721,9 @@ func _bbox_centre_x(img: Image) -> float:
 ## 9 of 14 job sheets drift, worst 1.75px — smaller than the roaming monsters' 4.0px, on the one
 ## sprite that is on screen for the whole run (cowir-adhoc).
 ##
-## ⚠️ MEASURED ON THE BUILT FRAMES, NOT THE SHEET CELLS, because `_fit_to_sprite_size` may rescale
-## and foot-align a non-32px sheet — an offset derived in sheet coordinates would be wrong for
-## exactly the sheets that need the fit. These are the pixels that get drawn.
+## ⚠️ MEASURED ON THE BUILT FRAMES, NOT THE SHEET CELLS: a frame is drawn at its declared size and
+## foot-aligned by an offset, so an offset derived in sheet coordinates would be wrong for exactly the
+## sheets that are not 32px. These are the pixels that get drawn.
 ##
 ## ⛔ NOT ROUNDED, and the first version was. Rounding to whole pixels looks right for pixel art
 ## but INVERTS a half-pixel drift instead of removing it: ninja sits at left 15.0 / right 16.0
@@ -735,24 +739,6 @@ func _registration_offsets(row_centre: Dictionary) -> Dictionary:
 	for dir in row_centre:
 		out[dir] = anchor - float(row_centre[dir])
 	return out
-
-
-## Proportional fit into a SPRITE_SIZE canvas, foot-aligned. Shares the rule with
-## _extract_artist_frame: a direct resize squashes the aspect ratio, and the feet must sit on the
-## same baseline as the procedural sprite or the character bobs when the source changes.
-func _fit_to_sprite_size(src: Image) -> Image:
-	var sw: int = src.get_width()
-	var sh: int = src.get_height()
-	if sw == SPRITE_SIZE and sh == SPRITE_SIZE:
-		return src
-	var scale_factor: float = min(float(SPRITE_SIZE) / max(sw, 1), float(SPRITE_SIZE) / max(sh, 1))
-	var new_w: int = max(1, int(sw * scale_factor))
-	var new_h: int = max(1, int(sh * scale_factor))
-	var scaled := src.duplicate() as Image
-	scaled.resize(new_w, new_h, Image.INTERPOLATE_NEAREST)
-	var canvas := Image.create(SPRITE_SIZE, SPRITE_SIZE, true, Image.FORMAT_RGBA8)
-	canvas.blit_rect(scaled, Rect2i(0, 0, new_w, new_h), Vector2i((SPRITE_SIZE - new_w) / 2, SPRITE_SIZE - new_h))
-	return canvas
 
 
 ## Extract and downscale a single frame from a SpriteFrames animation into a 32x32 Image.
