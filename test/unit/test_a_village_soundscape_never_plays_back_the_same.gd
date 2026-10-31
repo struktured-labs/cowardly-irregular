@@ -245,14 +245,42 @@ func test_dialogue_holds_the_one_shots() -> void:
 	assert_gt(_scape.fired.size(), 0, "CONTROL: the soundscape never resumed once dialogue let go")
 
 
-func test_a_band_change_leaves_weather_on_the_bed() -> void:
+## Same precedence SoundManager.set_night_ambience had before the soundscape (night outranks rain); whether it should is his open call.
+func test_night_takes_the_bed_from_weather_and_dawn_gives_it_back() -> void:
 	_scape.seed_rng(5)
 	_scape.start("harmonia_village", "day")
 	_owner._current_ambient_key = "weather_rain"
-	var n := _owner.played_beds.size()
 	_scape.set_band("night")
-	assert_eq(_owner.played_beds.size(), n, "nightfall replaced the rain with the village's night bed")
-	assert_eq(_scape.bed_key(), "night_crickets_wind", "the layer still moved to night, ready for the rain to clear")
+	assert_eq(_owner._current_ambient_key, "night_crickets_wind", "nightfall must take the layer from the rain")
+	_scape.set_band("dawn")
+	assert_eq(_owner._current_ambient_key, "weather_rain", "dawn must hand back the rain that night displaced, not the day bed")
+
+
+func test_weather_that_starts_at_night_survives_dawn() -> void:
+	_scape.seed_rng(6)
+	_scape.start("harmonia_village", "night")
+	_owner._current_ambient_key = "weather_storm_bed"
+	_scape.set_band("dawn")
+	assert_eq(_owner._current_ambient_key, "weather_storm_bed", "dawn overwrote a storm that started after nightfall")
+
+
+func test_a_clean_night_hands_back_the_day_bed() -> void:
+	_scape.seed_rng(7)
+	_scape.start("harmonia_village", "day")
+	_scape.set_band("night")
+	_scape.set_band("dawn")
+	assert_eq(_owner._current_ambient_key, "ambient_plains", "dawn left the layer on the night bed, or silent")
+
+
+func test_the_old_night_system_stands_aside_for_a_soundscape() -> void:
+	## Two owners of one player raced at dawn: if the old system ran first it stopped the crickets and the soundscape saw silence.
+	assert_true(SoundManager.start_soundscape("harmonia_village"), "Harmonia starts through SoundManager")
+	SoundManager._soundscape.audible = false
+	var bed: String = SoundManager._current_ambient_key
+	SoundManager.set_night_ambience(true)
+	assert_eq(SoundManager._current_ambient_key, bed, "the old night system took the layer from a place whose soundscape owns it")
+	SoundManager.set_night_ambience(false)
+	assert_eq(SoundManager._current_ambient_key, bed, "the old night system's dawn branch touched a soundscape's layer")
 
 
 func test_a_late_exit_cannot_stop_the_next_place() -> void:
@@ -262,6 +290,28 @@ func test_a_late_exit_cannot_stop_the_next_place() -> void:
 	assert_eq(SoundManager.soundscape_place(), "harmonia_village", "another place's exit stopped Harmonia's soundscape")
 	SoundManager.stop_soundscape("harmonia_village")
 	assert_eq(SoundManager.soundscape_place(), "", "Harmonia's own exit stops it")
+
+
+## test_sfx_volume_reaches_all_players' source scan skips this file the way it skips SoundManager.gd; THIS arm is that check, at runtime.
+func test_the_music_slider_reaches_every_voice() -> void:
+	var scape: AmbientSoundscape = SoundManager._soundscape
+	scape.ensure_voices()
+	var voices: Array = scape.voices()
+	assert_eq(voices.size(), AmbientSoundscape.VOICE_COUNT, "VOID: the soundscape built %d voices" % voices.size())
+	for v in voices:
+		(v as AudioStreamPlayer).set_meta("offset_db", -6.0)
+	SoundManager.set_music_volume(1.0)
+	var loud := {}
+	for v in voices:
+		loud[v.name] = (v as AudioStreamPlayer).volume_db
+	SoundManager.set_music_volume(0.0)
+	var stuck: Array[String] = []
+	for v in voices:
+		var p: AudioStreamPlayer = v
+		if p.volume_db >= loud[p.name]:
+			stuck.append("%s held %.1f dB with the music slider at zero" % [p.name, p.volume_db])
+	SoundManager.set_music_volume(1.0)
+	assert_eq(stuck, [], "a soundscape voice no slider can turn down: %s" % [stuck])
 
 
 func test_a_place_without_a_recipe_keeps_the_old_loop() -> void:

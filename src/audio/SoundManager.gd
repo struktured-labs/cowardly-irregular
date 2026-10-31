@@ -1721,6 +1721,10 @@ var _pre_night_ambient_key: String = ""
 ## struktured's and stays registered). "Night ends and nothing hands the layer back" is wrong under
 ## every answer to that one.
 func set_night_ambience(enabled: bool) -> void:
+	## A place with a living soundscape owns its own night bed; two owners of one player would race at dawn.
+	if soundscape_place() != "":
+		_pre_night_ambient_key = ""
+		return
 	if enabled:
 		if _current_ambient_key != NIGHT_AMBIENCE_KEY:
 			_pre_night_ambient_key = _current_ambient_key
@@ -5032,6 +5036,8 @@ func set_music_volume(normalized: float) -> void:
 	# ambient (weather / room tone) sits a fixed offset below music — keep it tracking the slider (cowir-sfx msg 2218)
 	if _ambient_player:
 		_ambient_player.volume_db = db + AMBIENT_OFFSET_DB
+	if _soundscape:
+		_soundscape.refresh_levels()
 
 
 func set_sfx_volume(normalized: float) -> void:

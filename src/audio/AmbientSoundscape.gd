@@ -17,6 +17,8 @@ var _rng := RandomNumberGenerator.new()
 var _place: String = ""
 var _band: String = ""
 var _layer: Dictionary = {}
+## The weather bed nightfall took the layer from, handed back at dawn; "" when night displaced our own bed.
+var _displaced: String = ""
 var _due_in: Array = []
 var _voices: Array = []
 var _next_voice: int = 0
@@ -89,6 +91,7 @@ func stop() -> void:
 	_place = ""
 	_band = ""
 	_layer = {}
+	_displaced = ""
 	_due_in = []
 	for v in _voices:
 		(v as AudioStreamPlayer).stop()
@@ -109,9 +112,31 @@ func _apply_band(band_name: String, starting: bool) -> void:
 	for ev in _events():
 		## Staggered across the whole first interval, so a fresh entry does not fire everything at once.
 		_due_in.append(_rng.randf_range(0.0, _range_of(ev, "every", [10.0, 20.0])[1]))
-	## A band change swaps only OUR bed: if weather holds the ambient player, its rain must keep playing.
-	if starting or (bed_key() != old_bed and _ambient_key_now() == old_bed):
+	if starting:
 		restore_bed()
+		return
+	var now := _ambient_key_now()
+	if now == old_bed or now == "":
+		## Our bed held the layer. Dawn hands back the weather that nightfall displaced, else plays the new bed.
+		if phase_for_band(band_name) == "day" and _displaced != "":
+			_play_bed(_displaced)
+			_displaced = ""
+		elif bed_key() != old_bed or now == "":
+			_play_bed(bed_key())
+	elif phase_for_band(band_name) == "night":
+		## Weather holds the layer: night outranks it, as SoundManager.set_night_ambience did before, and remembers it for dawn.
+		_displaced = now
+		_play_bed(bed_key())
+
+
+func _play_bed(key: String) -> void:
+	var sm = get_parent()
+	if sm == null:
+		return
+	if key != "" and sm.has_method("play_ambient"):
+		sm.play_ambient(key)
+	elif sm.has_method("stop_ambient"):
+		sm.stop_ambient()
 
 
 func _ambient_key_now() -> String:
@@ -119,15 +144,10 @@ func _ambient_key_now() -> String:
 	return str(sm._current_ambient_key) if sm != null and "_current_ambient_key" in sm else ""
 
 
-## Re-asserts this place's bed, e.g. after weather handed the ambient player back.
+## Re-asserts this place's bed, e.g. after weather handed the ambient player back; nothing is displaced any more.
 func restore_bed() -> void:
-	var sm = get_parent()
-	if sm == null:
-		return
-	if bed_key() != "" and sm.has_method("play_ambient"):
-		sm.play_ambient(bed_key())
-	elif sm.has_method("stop_ambient"):
-		sm.stop_ambient()
+	_displaced = ""
+	_play_bed(bed_key())
 
 
 func _events() -> Array:
@@ -199,9 +219,21 @@ func _play(shot: Dictionary) -> void:
 	if bus_idx != -1 and AudioServer.get_bus_effect_count(bus_idx) > 0:
 		(AudioServer.get_bus_effect(bus_idx, 0) as AudioEffectPanner).pan = float(shot["pan"])
 	player.stream = stream
+	player.set_meta("offset_db", float(shot["volume_db"]))
 	player.volume_db = base_db() + float(shot["volume_db"])
 	player.pitch_scale = float(shot["pitch"])
 	player.play()
+
+
+## The music slider re-applies each voice's rolled offset, so a sound already playing follows it like the bed does.
+func refresh_levels() -> void:
+	for v in _voices:
+		var p: AudioStreamPlayer = v
+		p.volume_db = base_db() + float(p.get_meta("offset_db", 0.0))
+
+
+func voices() -> Array:
+	return _voices
 
 
 ## Events sit relative to the bed, which tracks the music slider; read at play time so the slider is live.
@@ -225,6 +257,10 @@ func _stream_for(key: String) -> AudioStream:
 	if not path.begins_with("res://"):
 		path = "res://" + path
 	return load(path) as AudioStream
+
+
+func ensure_voices() -> void:
+	_ensure_voices()
 
 
 func _ensure_voices() -> void:

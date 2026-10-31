@@ -125,6 +125,9 @@ func test_no_sfx_player_is_left_on_master() -> void:
 	for path in files:
 		if path.ends_with("SoundManager.gd"):
 			continue
+		## SoundManager-owned too: its voices follow the MUSIC slider, checked at runtime by test_the_music_slider_reaches_every_voice.
+		if path.ends_with("AmbientSoundscape.gd"):
+			continue
 		var src := FileAccess.get_file_as_string(path)
 		var creates := src.count("AudioStreamPlayer.new()")
 		if creates == 0:

@@ -30,9 +30,11 @@ const GdSource := preload("res://test/unit/helpers/gd_source.gd")
 
 const SFX_MANIFEST := "res://data/sfx_manifest.json"
 const MUSIC_MANIFEST := "res://data/music_manifest.json"
+const RECIPES := "res://data/ambient_recipes.json"
+const RECIPE_CONSUMER := "res://src/audio/AmbientSoundscape.gd (data/ambient_recipes.json)"
 ## Every file in src/ that calls play_ambient, derived below and asserted against this floor so a
-## SIXTH consumer cannot appear without someone noticing the corpus grew.
-const KNOWN_CONSUMERS := 5
+## SEVENTH consumer cannot appear without someone noticing the corpus grew. The sixth is AmbientSoundscape (2026-10-31).
+const KNOWN_CONSUMERS := 6
 
 
 func _manifest(path: String, root_keys: Array) -> Dictionary:
@@ -77,6 +79,15 @@ func _requested_keys() -> Dictionary:
 			var hit := decl.search(code)
 			if hit != null:
 				_add(out, hit.get_string(1), path)
+	## FIFTH FORM, from DATA: AmbientSoundscape plays each place's bed from data/ambient_recipes.json, so read the beds there.
+	var recipes: Variant = JSON.parse_string(FileAccess.get_file_as_string(RECIPES))
+	if recipes is Dictionary:
+		for place in (recipes as Dictionary).get("places", {}):
+			var phases: Dictionary = recipes["places"][place].get("phases", {})
+			for phase in phases:
+				var bed: String = str(phases[phase].get("bed", ""))
+				if bed != "":
+					_add(out, bed, RECIPE_CONSUMER)
 	return out
 
 
@@ -172,6 +183,9 @@ func test_no_play_ambient_call_uses_a_form_this_file_cannot_read() -> void:
 				continue   # CONST path
 			if UNRESOLVABLE_BY_DESIGN.has(arg):
 				continue
+			## The DATA path, by provenance: bed_key() reads the recipe file, whose beds _requested_keys adds above.
+			if arg.begins_with("bed_key(") and path.ends_with("audio/AmbientSoundscape.gd") and code.contains(RECIPES):
+				continue
 			## ⛔ THE VIRTUAL EXEMPTION IS BY PROVENANCE, NOT BY NAME. It was `arg in ["ambient_key",
 			## "key"]` for an hour — a name exemption, so `var key := some_dict[x]` followed by
 			## play_ambient(key) passed silently while contributing nothing to the corpus. Same
@@ -194,6 +208,7 @@ func test_no_play_ambient_call_uses_a_form_this_file_cannot_read() -> void:
 		"exploration/WeatherSystem.gd|\"weather_rain\"",
 		"audio/SoundManager.gd|NIGHT_AMBIENCE_KEY",
 		"maps/villages/BaseVillage.gd|key",
+		"audio/AmbientSoundscape.gd|bed_key(",
 	]:
 		assert_true(examined.has(must),
 			"CONTROL: the walk never EXAMINED `%s` — this arm reports a clean sweep of whatever it managed to read, and an unreadable file is skipped in silence" % must)
@@ -229,6 +244,12 @@ func test_every_literal_ambient_key_resolves_to_a_file_on_disk() -> void:
 	]:
 		assert_true(requested.has(probe[0]),
 			"MEMBERSHIP floor: %s is absent, so %s found nothing — the count above still passes because the other paths carry it" % [probe[0], probe[1]])
+	## Every recipe bed is also reached by another path, so the DATA path is probed by provenance rather than by key.
+	var from_recipes := 0
+	for key in requested:
+		if (requested[key] as Array).has(RECIPE_CONSUMER.replace("res://src/", "")):
+			from_recipes += 1
+	assert_gt(from_recipes, 0, "MEMBERSHIP floor: the recipe path contributed no key, so data/ambient_recipes.json's beds are unaudited here")
 
 	var broken: Array = []
 	for key in requested.keys():

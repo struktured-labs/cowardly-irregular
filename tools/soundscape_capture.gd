@@ -5,7 +5,7 @@ extends SceneTree
 func _init() -> void:
 	var village := "harmonia"
 	var day_s := 40.0
-	var night_s := 25.0
+	var night_s := 45.0
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--village="):
 			village = a.get_slice("=", 1)
@@ -40,6 +40,10 @@ func _init() -> void:
 		quit(2)
 		return
 	root.add_child(scene)
+	await process_frame
+	# The first take rolled rain over both villages; pin clear AFTER _ready (entry re-rolls weather) so the capture is the soundscape.
+	gs.set_weather("clear", 1.0e9)
+	await process_frame
 	await process_frame
 	var place: String = sm.soundscape_place()
 	print("[SCAPECAP] soundscape_place=%s bed=%s band=%s" % [place, sm._current_ambient_key, gs.get_time_of_day_name()])
