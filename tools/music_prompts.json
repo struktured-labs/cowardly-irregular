@@ -564,17 +564,17 @@
       "style": "speed metal, chiptune, breakneck, kinetic, aggressive, exhilarating",
       "prompt": "Breakneck tempo from the first note. Speed metal guitar over chiptune bass, relentless drums. The sound of a speedrunner tearing through a game at terminal velocity — skipping cutscenes, attacking mid-dialogue, finding every shortcut. Exhilarating, aggressive, joyful destruction. A system being broken at the speed of thought. 55 seconds."
     },
-    "ambient_cave": {
+    "suno_dripping_stone": {
       "title_template": "Dripping Stone",
       "style": "ambient, cave, dripping water, reverb, dark, atmospheric, looping",
       "prompt": "Cave ambient loop. Slow dripping water echoing off stone walls, distant rumbling, subtle wind through crevices, occasional pebble falling. Dark and atmospheric with deep reverb. No melody — pure environmental texture. Seamless loop, 60 seconds."
     },
-    "ambient_forest": {
+    "suno_whispering_canopy": {
       "title_template": "Whispering Canopy",
       "style": "ambient, forest, rustling leaves, birdsong, gentle wind, natural, looping",
       "prompt": "Forest ambient loop. Gentle wind through leaves, distant birdsong, soft rustling undergrowth, occasional branch creak. Warm dappled sunlight in sound. Natural and peaceful. Seamless loop, 60 seconds."
     },
-    "ambient_village": {
+    "suno_market_morning": {
       "title_template": "Market Morning",
       "style": "ambient, village, bustle, chatter, footsteps, warm, looping",
       "prompt": "Medieval village ambient loop. Distant market chatter, cart wheels on cobblestone, hammering from a smithy, children laughing, gentle breeze. Warm busy atmosphere without being chaotic. Seamless loop, 60 seconds."
