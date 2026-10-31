@@ -2878,9 +2878,9 @@ const _KNOWN_DEFEAT_CUTSCENE_FLAGS := {
 }
 
 
-# Tick 214: check whether a defeat flag name is consumed by any _get_pending_story_cutscene gate.
+# Tick 214: is this defeat flag consumed? A scene's own COMPLETION flag counts: the Rat King back-fills chapter3_complete, and the gate chain reads it.
 func _is_known_defeat_flag(flag: String) -> bool:
-	return _KNOWN_DEFEAT_CUTSCENE_FLAGS.has(flag)
+	return _KNOWN_DEFEAT_CUTSCENE_FLAGS.has(flag) or _CUTSCENE_COMPLETION_FLAGS.values().has(flag)
 
 
 # Tick 220: set a cutscene_flag_X game_constant AND mirror to story_flags as bare 'X'. QuestLog reads story_flags — without the mirror, objective lines stay stale even after the cutscene fires and the game_constants flag is set. Pre-fix this mirror lived only in _play_story_cutscene; direct game_constants writes elsewhere (boss defeats via _apply_pending_boss_defeat, chapter auto-advance gates) silently skipped it. Same bug class as 2026-06-04 Elder Theron.
