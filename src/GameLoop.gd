@@ -2158,11 +2158,11 @@ func _on_title_new_game() -> void:
 	# game, battle speed was 16x, encounter rate 50%... prob not the right
 	# choice"). System settings (volumes, text, accessibility) persist;
 	# run-pacing choices start fresh.
-	if GameState:
-		GameState.default_battle_speed = 0.25
-		GameState.encounter_rate_multiplier = 1.0
 	var BattleSceneScript = load("res://src/battle/BattleScene.gd")
-	BattleSceneScript._battle_speed_index = 0
+	if GameState:
+		GameState.default_battle_speed = BattleSceneScript.DEFAULT_BATTLE_SPEED
+		GameState.encounter_rate_multiplier = 1.0
+	BattleSceneScript._battle_speed_index = BattleSceneScript.DEFAULT_BATTLE_SPEED_INDEX
 	if SaveSystem and SaveSystem.has_method("save_settings"):
 		SaveSystem.save_settings()
 	## A latched grind meter survives the clean emit: the renderer takes max(stale_grind, 0) and tweens the new game back up.
