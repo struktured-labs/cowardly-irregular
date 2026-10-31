@@ -9,7 +9,7 @@ const ShotGuard = preload("res://tools/shot_guard.gd")
 ## Writes tmp/bubble_anchor/w<N>_<job>.png crops (speaker + bubble) and prints each anchor.
 
 const OUT := "res://tmp/bubble_anchor"
-const CROP := Vector2i(440, 400)
+const CROP := Vector2i(560, 360)
 
 
 func _init() -> void:
@@ -70,7 +70,12 @@ func _init() -> void:
 		await create_timer(1.5, true, false, true).timeout
 		var live := BattleSpeechBubble._live.size()
 		var img := root.get_texture().get_image()
+		## From the bubble's own rect: a party speaker's bubble sits to their LEFT, so a crop centred on the head cut it off.
 		var c0 := Vector2i(int(anchor.x) - CROP.x / 2, int(anchor.y) - 170)
+		if live > 0 and is_instance_valid(BattleSpeechBubble._live[-1]["bubble"]):
+			var br: Rect2 = (BattleSpeechBubble._live[-1]["bubble"] as Control).get_global_rect()
+			var span := br.merge(Rect2(anchor - Vector2(30, 0), Vector2(60, 110)))
+			c0 = Vector2i(int(span.get_center().x) - CROP.x / 2, int(span.position.y) - 24)
 		c0.x = clampi(c0.x, 0, img.get_width() - CROP.x)
 		c0.y = clampi(c0.y, 0, img.get_height() - CROP.y)
 		var crop := img.get_region(Rect2i(c0, CROP))
