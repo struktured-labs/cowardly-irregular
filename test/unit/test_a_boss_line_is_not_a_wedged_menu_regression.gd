@@ -49,7 +49,7 @@ func _overdue(retries: int) -> void:
 func test_floor_the_symbols_this_file_reaches() -> void:
 	for m in ["_tick_menu_watchdog", "_a_boss_line_owns_the_screen", "_reset_menu_watchdog"]:
 		assert_true(_scene.has_method(m), "FLOOR: BattleScene.%s must exist" % m)
-	for p in ["_menu_wd_started_ms", "_menu_wd_retries", "_battle_dialogue", "active_win98_menu"]:
+	for p in ["_menu_wd_started_ms", "_menu_wd_retries", "_battle_dialogue", "active_win98_menu", "_boss_line_seen_ms"]:
 		assert_true(p in _scene, "FLOOR: BattleScene.%s must exist" % p)
 
 
@@ -78,3 +78,21 @@ func test_a_slow_reader_does_not_lose_the_turn() -> void:
 	assert_eq(BattleManager.current_state, BattleManager.BattleState.PLAYER_SELECTING,
 		"at the retry cap with the boss still talking, the terminal fallback must NOT autobattle the player's turn away")
 	assert_eq(BattleManager.current_combatant, _pc, "and the turn stays the duelist's")
+
+
+## cowir-battle's bound: the exemption must not outlive any honest read, or a line that never hides
+## (a freed callback, a confirm that never arrives) disarms the net that keeps a battle un-wedgeable.
+func test_a_line_stuck_on_screen_still_reaches_recovery() -> void:
+	_scene._battle_dialogue.visible = true
+	_scene._boss_line_seen_ms = Time.get_ticks_msec() - _scene.BOSS_LINE_GRACE_MS - 1000
+	_overdue(0)
+	_scene._tick_menu_watchdog()
+	assert_eq(_scene._menu_wd_retries, 1,
+		"past BOSS_LINE_GRACE_MS the line is stuck, not being read; the watchdog must resume its recovery")
+
+
+func test_the_grace_counts_from_the_line_not_from_an_earlier_one() -> void:
+	_scene._boss_line_seen_ms = Time.get_ticks_msec() - _scene.BOSS_LINE_GRACE_MS - 1000
+	_scene._on_dialogue_finished()
+	assert_eq(_scene._boss_line_seen_ms, 0,
+		"a dismissed line must clear its clock, or the NEXT boss line would start already expired")
