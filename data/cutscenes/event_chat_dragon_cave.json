@@ -1,7 +1,7 @@
 {
   "id": "event_chat_dragon_cave",
   "title": "At the Cave Mouth",
-  "world": 3,
+  "world": 1,
   "trigger": "event_chat_dragon_cave",
   "background": "cave_entrance",
   "description": "First time entering a dragon-gated dungeon. Everyone is brave in slightly different ways.",
