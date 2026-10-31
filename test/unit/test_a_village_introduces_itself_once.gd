@@ -398,6 +398,13 @@ func _offered_on(map_id: String) -> Array[String]:
 const HIS_SAVE_DONE := ["world1_prologue", "world1_chapter1", "world1_spotlight_cleric_ch1"]
 
 
+## His save as his log wrote it. The duel-won flag is separate from the scene's completion flag (the Cleric spotlight's gate
+## reads _unlocked_, the completion map writes _watched_), and his log :3854 set it; without it the gate re-offers the duel.
+func _load_his_save() -> void:
+	_finish(HIS_SAVE_DONE)
+	GameState.game_constants["cutscene_flag_spotlight_unlocked_cleric"] = true
+
+
 func _finish(ids: Array) -> void:
 	for done in ids:
 		assert_true(_completion_flags().has(done), "CONTROL: %s must be in the completion map" % done)
@@ -418,11 +425,12 @@ func _dialogue_speakers(steps: Array) -> Array:
 func test_his_harmonia_intro_plays_only_the_strangers() -> void:
 	## struktured 2026-10-31, "trim to strangers": the intro after Mystic Remedies re-introduced three people chapter1 had
 	## just introduced. It must still PLAY (Marta and the Merchant were never introduced anywhere), minus the three.
-	_finish(HIS_SAVE_DONE)
+	_load_his_save()
 	var intro := "world1_harmonia_npcs"
 	## Trimmed BEFORE the walk: _offered_on finishes every scene it is handed, and a later one could add speakers.
 	var data: Dictionary = _loop._trimmed_intro_data(intro)
-	assert_true(_offered_on("harmonia_village").has(intro), "the intro still has strangers to introduce, so it must be offered")
+	var offered := _offered_on("harmonia_village")
+	assert_true(offered.has(intro), "the intro still has strangers to introduce, so it must be offered; the gate offered %s" % [offered])
 	assert_false(data.is_empty(), "his save must produce a TRIMMED scene; {} means the full scene plays and the replay is back")
 	var heard: Array = _dialogue_speakers(data.get("steps", []))
 	for met in ["Elder Theron", "Scholar Milo", "Phil the Lost"]:
@@ -505,8 +513,9 @@ func test_an_intro_retires_only_when_everyone_in_it_is_met() -> void:
 	assert_false(_loop._intro_has_lost_its_moment(3, 5), "his Harmonia save: two strangers left, so it plays trimmed")
 	assert_false(_loop._intro_has_lost_its_moment(0, 0), "an intro with no locals has no one to have met")
 	## The gate itself, ONE call (the walk would finish the intro and set the flag for its own reasons).
-	_finish(HIS_SAVE_DONE)
-	_pending_on("harmonia_village")
+	_load_his_save()
+	assert_eq(_pending_on("harmonia_village"), "world1_harmonia_npcs",
+		"CONTROL: the gate must reach the intro loop at his save, or the flag check below proves nothing")
 	assert_false(bool(GameState.game_constants.get(_completion_flag_of("world1_harmonia_npcs"), false)),
 		"the gate retired an intro that still has two strangers in it: the trim is the fix, retiring loses them")
 
