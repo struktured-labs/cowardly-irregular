@@ -246,17 +246,17 @@ func _add_prop(kind: int, base_cell: Vector2i) -> VillageProp:
 ## facade, not the pixels. A top-down block of wall tiles reads as a map; a drawn face reads as a town.
 ## ONLY FULL RECTANGLES: an L-shaped block's bounding box would paint a face over walkable ground,
 ## so a ragged block is left exactly as it is today rather than guessed at.
-## ONLY BARE BLOCKS: a block that already carries a `buildings` node -- a door, an inn, a shop --
-## already HAS a face. The first pass painted over Harmonia's Inn cottage and hid the library door's
-## banner arch. Call this LAST in _setup_buildings, so every node it must defer to already exists.
+## A block whose ART is a building -- an inn, a shop, the bar -- already HAS a face and is skipped.
+## A DOOR does not claim its block: it sorts below the facade's base, so it draws on the house's front.
+## Call this LAST in _setup_buildings, so every node it must defer to already exists.
 func _spawn_house_facades(glyphs: Array, roof_colors: Array = []) -> int:
 	if _map_rows.is_empty() or props == null:
 		return 0
-	var claimed := {}
+	var claimed: Array = []
 	if buildings != null:
 		for b in buildings.get_children():
-			if b is Node2D:
-				claimed[Vector2i(floori(b.position.x / TILE_SIZE), floori(b.position.y / TILE_SIZE))] = true
+			if b is Node2D and not (b is AreaTransition):
+				claimed.append(_building_cells(b))
 	var want := {}
 	for g in glyphs:
 		want[g] = true
@@ -294,11 +294,24 @@ func _spawn_house_facades(glyphs: Array, roof_colors: Array = []) -> int:
 	return built
 
 
-func _block_is_claimed(minp: Vector2i, maxp: Vector2i, claimed: Dictionary) -> bool:
-	for c in claimed:
-		if c.x >= minp.x and c.x <= maxp.x and c.y >= minp.y and c.y <= maxp.y:
+func _block_is_claimed(minp: Vector2i, maxp: Vector2i, claimed: Array) -> bool:
+	var block := Rect2i(minp, maxp - minp + Vector2i.ONE)
+	for r in claimed:
+		if block.intersects(r):
 			return true
 	return false
+
+
+## The cells a building's ART covers, not just its origin: the bar sits beside its block and its art spans it.
+func _building_cells(b: Node2D) -> Rect2i:
+	var spr = b.get("sprite")
+	if spr is Sprite2D and spr.texture != null:
+		var r: Rect2 = spr.get_rect()
+		r.position += b.position + spr.position
+		var lo := Vector2i(floori(r.position.x / TILE_SIZE), floori(r.position.y / TILE_SIZE))
+		var hi := Vector2i(ceili(r.end.x / TILE_SIZE), ceili(r.end.y / TILE_SIZE))
+		return Rect2i(lo, hi - lo)
+	return Rect2i(Vector2i(floori(b.position.x / TILE_SIZE), floori(b.position.y / TILE_SIZE)), Vector2i.ONE)
 
 
 ## Bounds and cell count of the contiguous run of wanted glyphs containing `start`.
@@ -635,6 +648,8 @@ func _setup_scene() -> void:
 
 	buildings = Node2D.new()
 	buildings.name = "Buildings"
+	## Y-sorted like props and NPCs: unsorted, every door and shop drew at y=0, behind every facade.
+	buildings.y_sort_enabled = true
 	add_child(buildings)
 
 	treasures = Node2D.new()

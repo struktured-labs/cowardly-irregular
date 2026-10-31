@@ -76,17 +76,64 @@ func test_harmonia_has_faced_houses() -> void:
 	assert_gt(_facades(_village()).size(), 0, "Harmonia built no facades at all")
 
 
-func test_no_facade_covers_a_door_or_an_existing_building() -> void:
-	## THE REGRESSION: the first pass hid the library door's banner and painted over the Inn's cottage.
+func test_no_facade_covers_a_building_that_already_has_a_face() -> void:
+	## THE REGRESSION: the first pass painted over the Inn's cottage. Judged by ART, not origin: the bar sits beside its block.
 	var v := _village()
+	var checked: int = 0
+	for b in v.buildings.get_children():
+		if not (b is Node2D) or b is AreaTransition:
+			continue
+		var art: Rect2i = v._building_cells(b)
+		checked += 1
+		for f in _facades(v):
+			var r := _covered(f).grow_individual(0, 0, 0, 1)
+			assert_false(r.intersects(art), "facade %s covers %s's art %s" % [str(r), b.name, str(art)])
+	assert_gt(checked, 3, "no art-bearing buildings were checked")
+
+
+func _door(v: Node, door_name: String) -> Node2D:
+	return v.buildings.get_node_or_null(door_name) as Node2D
+
+
+func _facade_fronted_by(v: Node, door: Node2D) -> VillageProp:
+	var cell := Vector2i(floori(door.position.x / 32.0), floori(door.position.y / 32.0))
 	for f in _facades(v):
 		var r := _covered(f)
-		for b in v.buildings.get_children():
-			if not (b is Node2D):
-				continue
-			var cell := Vector2i(floori(b.position.x / 32.0), floori(b.position.y / 32.0))
-			assert_false(r.grow_individual(0, 0, 0, 1).has_point(cell),
-				"facade %s covers building node %s at %s" % [str(r), b.name, str(cell)])
+		if Rect2i(r.position.x, r.position.y + r.size.y, r.size.x, 1).has_point(cell):
+			return f
+	return null
+
+
+func test_a_door_block_is_faced_and_its_door_draws_on_the_front() -> void:
+	## struktured wants the elevation on the door blocks too; the door must sort AFTER its facade or the arch is hidden.
+	var v := _village()
+	assert_true(v.buildings.y_sort_enabled, "Buildings is not y-sorted, so every door sorts at y=0 behind every facade")
+	for door_name in ["LibraryDoor", "ChapelDoor", "CartographerDoor"]:
+		var door := _door(v, door_name)
+		assert_not_null(door, "%s is missing" % door_name)
+		if door == null:
+			continue
+		var f := _facade_fronted_by(v, door)
+		assert_not_null(f, "%s's block has no facade" % door_name)
+		if f != null:
+			assert_gt(door.global_position.y, f.global_position.y, "%s sorts before its facade and is drawn under it" % door_name)
+
+
+func test_a_building_sorts_by_its_base_without_moving_on_screen() -> void:
+	## The art is centred on the node, so sorting by the node put a villager below its middle BEHIND the shop.
+	var v := _village()
+	var checked: int = 0
+	for b in v.buildings.get_children():
+		var spr = b.get("sprite") if b is Node2D else null
+		if not (spr is Sprite2D) or spr.texture == null:
+			continue
+		var r: Rect2 = spr.get_rect()
+		r.position += spr.position
+		assert_true(b.y_sort_enabled, "%s does not let its sprite sort on its own key" % b.name)
+		assert_almost_eq(spr.position.y, r.end.y, 0.5, "%s sorts at %.1f, not its art's base %.1f" % [b.name, spr.position.y, r.end.y])
+		assert_almost_eq(r.get_center().y, 0.0, 0.5, "%s's art moved on screen" % b.name)
+		checked += 1
+	assert_gt(checked, 3, "no sprite-bearing buildings were checked")
 
 
 func test_every_facade_leaves_its_ground_row_alone() -> void:
