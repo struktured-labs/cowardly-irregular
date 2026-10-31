@@ -785,14 +785,17 @@ if [ "$PLAT" = "linux" ] || [ "$PLAT" = "windows" ]; then
         fi
         REAL_SIG_BEFORE="$(./tools/check_profile_untouched.sh --sig "$USERDATA")"
         REAL_N_BEFORE=$(find "$USERDATA" -type f 2>/dev/null | wc -l)
+        # .746: his live pad drove a smoke beside his own game; hide host pads like run_tests.sh.
+        SMOKE_JAIL=(); if command -v bwrap > /dev/null && bwrap --dev-bind / / --tmpfs /dev/input true 2>/dev/null; then SMOKE_JAIL=(bwrap --dev-bind / / --tmpfs /dev/input); fi
+        if [ ${#SMOKE_JAIL[@]} -gt 0 ]; then echo "[${PLAT}] smoke pads: hidden"; else echo "[${PLAT}] smoke pads: VISIBLE (no usable bwrap)"; fi
         if [ "$PLAT" = "windows" ]; then
             # 900s, not 600: creating a fresh WINEPREFIX dominates the first minutes and is
             # not the game being slow. Measured 2026-09-10 — prefix creation, then engine
             # banner, [GAME] Started, Battle commenced, and a clean exit 0.
-            ( cd "$OUT_DIR" && WINEPREFIX="$SMOKE_HOME" timeout 900 xvfb-run -a \
+            ( cd "$OUT_DIR" && WINEPREFIX="$SMOKE_HOME" timeout 900 "${SMOKE_JAIL[@]}" xvfb-run -a \
                 wine "./${ARTIFACT}" -- --battle-smoke ) > "tmp/${PLAT}_battle.log" 2>&1 &
         else
-            HOME="$SMOKE_HOME" timeout 600 xvfb-run -a "$BIN" -- --battle-smoke \
+            HOME="$SMOKE_HOME" timeout 600 "${SMOKE_JAIL[@]}" xvfb-run -a "$BIN" -- --battle-smoke \
                 > "tmp/${PLAT}_battle.log" 2>&1 &
         fi
         SEC=0; wait $! || SEC=$?
