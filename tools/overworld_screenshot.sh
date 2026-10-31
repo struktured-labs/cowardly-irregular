@@ -17,13 +17,15 @@ mkdir -p tmp/screens
 # SAFE here: these run the project and need no export_templates, which is the only thing that
 # breaks when XDG_DATA_HOME moves.
 _SHOT_XDG="$PWD/tmp/shot_xdg"; mkdir -p "$_SHOT_XDG"
+# A screenshot run reads a live pad like any game; hide host pads as run_tests.sh does (.746 smoke).
+SHOT_JAIL=(); if command -v bwrap > /dev/null && bwrap --dev-bind / / --tmpfs /dev/input true 2>/dev/null; then SHOT_JAIL=(bwrap --dev-bind / / --tmpfs /dev/input); fi
 # ⛔ THE EXIT CODE USED TO BE DISCARDED TWICE HERE: `$?` after a pipeline is the LAST
 # stage's status (grep succeeds whenever it matches), and `|| true` swallowed what was
 # left. So godot could fail to load the scene, render an empty node, and this returned 0.
 # Log first, read the log second, decide on the captured code.
 _LOG="tmp/screens/overworld_${W}_${TAG}.log"
 _EC=0
-XDG_DATA_HOME="$_SHOT_XDG" xvfb-run -a godot --audio-driver Dummy --rendering-driver opengl3 --resolution 1280x720 \
+XDG_DATA_HOME="$_SHOT_XDG" timeout 600 "${SHOT_JAIL[@]}" xvfb-run -a godot --audio-driver Dummy --rendering-driver opengl3 --resolution 1280x720 \
   -s tools/overworld_screenshot.gd -- "--world=$W" ${AT:+--at=$AT} "--tag=$TAG" ${ZOOM:+--zoom=$ZOOM} \
   > "$_LOG" 2>&1 || _EC=$?
 command grep -a -E "SHOT|ERROR|SCRIPT ERROR|shot-guard" "$_LOG" || true
