@@ -98,11 +98,37 @@ _remote_unreachable() { # $1 = git's stderr, $2 = exit code
     echo "       git ls-remote exited $2: $(printf '%s' "$1" | head -2 | tr '\n' ' ')" >&2
 }
 
+# The newest tag PROTECTS the worktree at it, so a short ls-remote reply (ec 0, tags after .616
+# or .674 missing -- measured 2026-10-23) would move that guard onto an older tree. Resolved by
+# tools/origin_tags.sh with this repo's own newest local tag as the FLOOR: we only ever learn a
+# v3.33.* tag from origin, so origin naming an older "newest" is a stale reply, not news.
+# A stale reply is UNKNOWN (3) and the reap refuses, the same as an unreachable remote.
+# ⚠️ A local tag that origin has since DELETED trips the same FLOOR permanently; check it with
+#    `git ls-remote origin refs/tags/<tag>`. That fails toward refusing, which is the safe side.
+# shellcheck source=origin_tags.sh
+. "$(dirname "${BASH_SOURCE[0]}")/origin_tags.sh" || {
+    echo "[reap] BLOCKED: $(dirname "${BASH_SOURCE[0]}")/origin_tags.sh is missing, unreadable or did not parse. It is the" >&2
+    echo "      newest-tag resolver this script sources. Without it no tag verdict is possible, and" >&2
+    echo "      continuing would turn 'command not found' into a misleading refusal." >&2
+    exit 3; }
+# A lib that is PRESENT but defines nothing (zero bytes, a truncated copy, a conflict leftover)
+# sources with status 0 and slips past the `||` above, so check the function itself. Found by
+# @cowir-main: an empty lib gave store_status "command not found" + "no tag to compare against".
+declare -F origin_newest_tag >/dev/null || {
+    echo "[reap] BLOCKED: $(dirname "${BASH_SOURCE[0]}")/origin_tags.sh loaded but defined no origin_newest_tag" >&2
+    echo "      (empty or truncated copy?). No tag verdict is possible without it." >&2
+    exit 3; }
 _newest_tag_on_origin() {
-    local out ec
-    out="$(git ls-remote --tags "$ORIGIN" 'refs/tags/v3.33.*' 2>&1)"; ec=$?
-    [ "$ec" -eq 0 ] || { _remote_unreachable "$out" "$ec"; return 3; }
-    printf '%s\n' "$out" | grep -v '\^{}' | awk '{print $2}' | sed 's#refs/tags/##' | sort -V | tail -1
+    local floor ec=0
+    floor="$(git tag -l 'v3.33.*' --sort=-v:refname | head -1)"
+    OT_REMOTE="$ORIGIN" origin_newest_tag reap "" "$floor" || ec=$?
+    case "$ec" in
+        0|2) return 0 ;;   # 2 = reachable, no v3.33.* tags: an empty newest, as before
+        1)   _remote_unreachable "(origin_tags.sh printed git's own message above)" 1; return 3 ;;
+        *)   echo "[reap] BLOCKED: origin's tag list contradicts this repo's (newest local ${floor})" >&2
+             echo "       -- newest tag UNKNOWN, so the newest-tag guard cannot be placed. Nothing is reaped." >&2
+             return 3 ;;
+    esac
 }
 
 _origin_tags() {
@@ -391,6 +417,12 @@ selftest() {
     # arms are deterministic and say something about the TOOL rather than about connectivity.
     # --local hardlinks the object store, so this costs no meaningful disk or time.
     local _bare="tmp/reapself-${sfx}-origin.git"
+    # ⛔ THIS CLONE LEAKED ON EVERY RUN (2026-10-13 .. 10-24). Nothing removed it, and this selftest
+    # runs in every publish's gate 0d and every corpus: 42 dead-PID clones in cowir-main/tmp
+    # (17 in one day) and 28 in cowir-deploy's publish trees, from the tool whose own header says
+    # "manual cleanup guarantees it recurs". The RETURN trap covers every exit after this line
+    # (the VOID `return 1` and the normal end); the earlier SKIPPED return happens before the clone.
+    trap 'rm -rf "$_bare"; trap - RETURN' RETURN
     if git clone --bare --local --quiet . "$_bare" 2>/dev/null; then
         export REAP_ORIGIN="$_bare"
         ORIGIN="$_bare"
@@ -433,6 +465,13 @@ selftest() {
         if printf '%s' "$out" | grep -q "$2"; then [ "$3" -eq 0 ] && { pass=$((pass+1)); printf '  ok    %s\n' "$1"; return; }
         else [ "$3" -eq 1 ] && { pass=$((pass+1)); printf '  ok    %s\n' "$1"; return; }; fi
         fail=$((fail+1)); printf '  FAIL  %s\n' "$1"
+        # SAY WHY. A bare FAIL name is what kept the 2026-10-12 nondeterminism unnamed for two weeks:
+        # the tool's own KEEP/remove line for the fixture carries the reason, and it was discarded.
+        local _fx; _fx="$(printf '%s' "$2" | grep -o 'reaptest-[A-Za-z0-9-]*' | head -1)"
+        if [ -n "$_fx" ]; then
+            printf '%s\n' "$out" | grep -F -- "$_fx" | head -4 | sed 's/^/          tool: /'
+            printf '%s\n' "$out" | grep -qF -- "$_fx" || printf '          tool: (no line names %s)\n' "$_fx"
+        fi
     }
     chk "dry run removes nothing"            "DRY RUN"                          0
     chk "a dirty worktree is kept"           "KEEP.*reaptest-rel-2.*modification" 0

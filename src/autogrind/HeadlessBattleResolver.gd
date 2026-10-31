@@ -249,8 +249,20 @@ func _selection_phase() -> Array[Dictionary]:
 	_rounds_since_group_attack += 1
 
 	# Try group attack first (cooldown, AP check, formation match)
+	## ⛔ _try_group_attack LANDS ITS DAMAGE HERE, IN SELECTION — the action it returns is a
+	## `group_done` marker whose execute arm is `pass`. So `_note_first_enemy_hp_loss`, which only
+	## runs around `_execute_action`, captured its hp_before AFTER the field was already dead and
+	## left `_first_damage_round` at -1: a pooled wipe scored NOT a one-shot, and
+	## `_grant_one_shot_trophies` never ran for it. Same hole as BattleManager's (fixed in the same
+	## change), so this is parity, not a divergence — and the party's bank-then-strike pillar is
+	## exactly how a player sets a one-shot up.
+	var _hp_before_group: Dictionary = {}
+	for e in _enemy_party:
+		if is_instance_valid(e) and e.is_alive:
+			_hp_before_group[e] = e.current_hp
 	var group_action = _try_group_attack()
 	if not group_action.is_empty():
+		_note_first_enemy_hp_loss(_hp_before_group)
 		actions.append(group_action)
 		# Group attack consumes all players' turns — skip to enemies
 		for enemy in _enemy_party:
@@ -510,11 +522,11 @@ func _execute_group_physical(participants: Array, group_type: String) -> Diction
 			p.spend_ap(1)
 			total_power += p.get_buffed_stat("attack", p.attack)
 
-	var scale = pow(maxi(1, _living(participants).size()), 1.5)
+	var scale = pow(maxi(1, _living(participants).size()), 1.0)
 	var alive_enemies = _enemy_party.filter(func(e): return e.is_alive)
 
 	for enemy in alive_enemies:
-		var raw_damage = int(total_power * scale / max(1.0, float(alive_enemies.size())))
+		var raw_damage = int(total_power * scale)
 		var mitigated = max(1, raw_damage)
 		var landed: int = enemy.take_damage(mitigated)
 		_log("%s hits %s for %d!" % [group_type, enemy.combatant_name, landed])
@@ -536,7 +548,7 @@ func _execute_group_formation(participants: Array, formation: Dictionary) -> Dic
 		if p is Combatant and p.is_alive:
 			p.spend_ap(ap_cost)
 
-	var scale = pow(maxi(1, _living(participants).size()), 1.5)
+	var scale = pow(maxi(1, _living(participants).size()), 1.0)
 
 	match formation_id:
 		"four_heroes":
@@ -546,7 +558,7 @@ func _execute_group_formation(participants: Array, formation: Dictionary) -> Dic
 					total_power += (p.get_buffed_stat("attack", p.attack) + p.get_buffed_stat("magic", p.magic)) * 0.5
 			for enemy in alive_enemies:
 				if not enemy.is_alive: continue
-				var damage = max(1, int(total_power * scale / max(1.0, float(alive_enemies.size()))))
+				var damage = max(1, int(total_power * scale))
 				var landed: int = enemy.take_damage(damage)
 				_log("Four Heroes strikes %s for %d!" % [enemy.combatant_name, landed])
 			for p in participants:
@@ -561,7 +573,7 @@ func _execute_group_formation(participants: Array, formation: Dictionary) -> Dic
 					total_magic += p.get_buffed_stat("magic", p.magic)
 			for enemy in alive_enemies:
 				if not enemy.is_alive: continue
-				var damage = max(1, int(total_magic * scale / max(1.0, float(alive_enemies.size()))))
+				var damage = max(1, int(total_magic * scale))
 				var landed: int = enemy.take_damage(damage, true)
 				_log("Arcane Tempest blasts %s for %d!" % [enemy.combatant_name, landed])
 			_log("FORMATION: Arcane Tempest — raw magic ignores resistances!")
@@ -598,7 +610,7 @@ func _execute_group_formation(participants: Array, formation: Dictionary) -> Dic
 					total_atk += p.get_buffed_stat("attack", p.attack)
 			for enemy in alive_enemies:
 				if not enemy.is_alive: continue
-				var damage = max(1, int(total_atk * scale * 0.6 / max(1.0, float(alive_enemies.size()))))
+				var damage = max(1, int(total_atk * scale * 0.6))
 				var landed: int = enemy.take_damage(damage)
 				_log("Iron Wall crushes %s for %d!" % [enemy.combatant_name, landed])
 			_log("FORMATION: Iron Wall — DEF +50%% (3 turns) + crushing blow!")
@@ -611,7 +623,7 @@ func _execute_group_formation(participants: Array, formation: Dictionary) -> Dic
 			for enemy in alive_enemies:
 				if not enemy.is_alive: continue
 				var full_hp_bonus = 2.0 if enemy.current_hp == enemy.max_hp else 1.0
-				var damage = max(1, int(total_atk * scale * full_hp_bonus / max(1.0, float(alive_enemies.size()))))
+				var damage = max(1, int(total_atk * scale * full_hp_bonus))
 				var landed: int = enemy.take_damage(damage)
 				_log("Shadow Strike hits %s for %d!" % [enemy.combatant_name, landed])
 			_log("FORMATION: Shadow Strike — 2x on full HP!")
@@ -625,7 +637,7 @@ func _execute_group_formation(participants: Array, formation: Dictionary) -> Dic
 						total_power += (p.get_buffed_stat("attack", p.attack) + p.get_buffed_stat("magic", p.magic))
 				for enemy in alive_enemies:
 					if not enemy.is_alive: continue
-					var damage = max(1, int(total_power * scale * 1.5 / max(1.0, float(alive_enemies.size()))))
+					var damage = max(1, int(total_power * scale * 1.5))
 					enemy.take_damage(damage, true)
 				_log("FORMATION: Chaos Theory — JACKPOT! Massive damage!")
 			elif roll < 0.7:
@@ -642,7 +654,7 @@ func _execute_group_formation(participants: Array, formation: Dictionary) -> Dic
 						total_power += p.get_buffed_stat("attack", p.attack)
 				for enemy in alive_enemies:
 					if not enemy.is_alive: continue
-					var damage = max(1, int(total_power * scale * 0.8 / max(1.0, float(alive_enemies.size()))))
+					var damage = max(1, int(total_power * scale * 0.8))
 					enemy.take_damage(damage)
 				for p in participants:
 					if p is Combatant and p.is_alive:
@@ -767,9 +779,35 @@ func _select_enemy_action(enemy) -> Dictionary:
 		if atk_ability != "":
 			var mp_cost = _get_ability_mp_cost(atk_ability)
 			if enemy.current_mp >= mp_cost:
-				return {"type": "ability", "ability_id": atk_ability, "targets": [focus]}
+				return {"type": "ability", "ability_id": atk_ability, "targets": _foe_ability_targets(atk_ability, focus, alive_players)}
 
 	return {"type": "attack", "target": focus}
+
+
+## ⛔ THIS FILE BUILT A ONE-ELEMENT TARGET LIST WHATEVER `target_type` SAID, SO EVERY ENEMY AoE HIT
+## ONE PARTY MEMBER INSTEAD OF THE PARTY. Live expands it — `BattleManager._utility_targets` returns
+## `alive_enemies.duplicate()` for `all_enemies` — and the foe side here never did. Player AoE was
+## unaffected because `AutobattleSystem` hands this engine a pre-expanded list; only foe actions are
+## built in-file (cowir-music, 2026-10-27).
+##
+## 🚨 NOT A MEASUREMENT BUG. `GameLoop:6707` runs this resolver for the player-facing AUTOGRIND path,
+## so a grind against any AoE carrier was easier than the same fight live: firaga, void_breath and
+## dark_matter are all `all_enemies`, and Mordaine and the Calibrant carry three 5.0x ones each.
+##
+## ⚠️ ONLY THE `all_enemies` ARM IS MIRRORED, AND THAT IS DELIBERATE RATHER THAN PARTIAL:
+## `_find_attack_ability` selects only `magic`/`physical` rows, so a foe's `all_allies`/`self`
+## support never reaches here, and the self-heal above returns its own target. Widening this to
+## live's full table would add arms nothing can select.
+func _foe_ability_targets(ability_id: String, focus, alive_players: Array) -> Array:
+	var js = _get_autoload("JobSystem")
+	if js == null or not js.has_method("get_ability"):
+		return [focus]
+	var ability: Dictionary = js.get_ability(ability_id)
+	## From the foe's seat the PARTY are its enemies, which is why `all_enemies` resolves to the
+	## living players rather than to the monster's own side.
+	if str(ability.get("target_type", "")) == "all_enemies":
+		return alive_players.duplicate() if not alive_players.is_empty() else [focus]
+	return [focus]
 
 
 ## Twin of BattleManager._find_taunter. provoke writes `taunted_<caster>` onto the victim and live's

@@ -197,6 +197,7 @@ func _kill_gated_steps() -> Array:
 				"quest": str(parsed.get("id", f.get_basename())),
 				"index": i,
 				"archetype": m.get_string(1),
+				"defeat_flag": m.get_string(0),
 				"required_flag": str(o.get("required_flag", "")),
 			})
 	return out
@@ -211,6 +212,10 @@ func _declared_placements() -> Array:
 		return out
 	var arch_re := RegEx.create_from_string("\\.archetype\\s*=\\s*\"([a-z_]+)\"")
 	var qf_re := RegEx.create_from_string("\\.quest_flag\\s*=\\s*\"([a-z0-9_]+)\"")
+	## W2-W6 name their own flag, so ARCHETYPE IS NO LONGER UNIQUE across placements: a second
+	## "arbiter" in another world collided with W1's in a by-archetype dict and inherited its
+	## quest expectation. The effective defeat flag is unique per boss and is what quest data names.
+	var df_re := RegEx.create_from_string("\\.defeat_flag_name\\s*=\\s*\"([a-z0-9_]+)\"")
 	for f in d.get_files():
 		if not f.ends_with(".gd"):
 			continue
@@ -222,8 +227,11 @@ func _declared_placements() -> Array:
 			var am := arch_re.search(block)
 			if am != null:
 				var qm := qf_re.search(block)
+				var dm := df_re.search(block)
+				var arch: String = am.get_string(1)
 				out.append({
-					"archetype": am.get_string(1),
+					"archetype": arch,
+					"defeat_flag": dm.get_string(1) if dm != null else "w1_%s_defeated" % arch,
 					"flag": qm.get_string(1) if qm != null else "",
 					"file": f,
 				})
@@ -293,18 +301,18 @@ func test_every_masterite_gated_step_has_an_encounter_wired_to_it() -> void:
 	var steps := _kill_gated_steps()
 	assert_gt(steps.size(), 0,
 		"quest data declares at least one masterite-gated step — zero steps would pass every assertion in this file for free")
-	var by_arch := {}
+	var by_flag := {}
 	for p in _declared_placements():
-		by_arch[p["archetype"]] = p
+		by_flag[str(p["defeat_flag"])] = p
 	for s in steps:
-		var arch: String = s["archetype"]
-		assert_true(by_arch.has(arch),
-			"%s step %d completes on w1_%s_defeated but no village constructs that encounter — the step is unreachable" % [s["quest"], s["index"], arch])
-		if not by_arch.has(arch):
+		var df: String = str(s["defeat_flag"])
+		assert_true(by_flag.has(df),
+			"%s step %d completes on %s but no village constructs that encounter — the step is unreachable" % [s["quest"], s["index"], df])
+		if not by_flag.has(df):
 			continue
-		assert_eq(str(by_arch[arch]["flag"]), str(s["required_flag"]),
+		assert_eq(str(by_flag[df]["flag"]), str(s["required_flag"]),
 			"%s places the %s encounter but declares quest_flag '%s'; %s step %d gates on '%s' — a mismatch notifies nothing and the step strands" % [
-				by_arch[arch]["file"], arch, by_arch[arch]["flag"], s["quest"], s["index"], s["required_flag"]])
+				by_flag[df]["file"], s["archetype"], by_flag[df]["flag"], s["quest"], s["index"], s["required_flag"]])
 
 
 func test_no_encounter_declares_a_quest_flag_that_gates_nothing() -> void:
@@ -351,20 +359,20 @@ func test_the_step_advances_because_of_the_notify_not_the_flag() -> void:
 ## The encounter must hand the applier the flag to notify. Driven for real:
 ## instantiate, walk in, read what was staked.
 func test_body_entered_stakes_the_quest_flag_the_applier_will_notify() -> void:
-	var by_arch := {}
+	var by_flag := {}
 	for p in _declared_placements():
-		by_arch[p["archetype"]] = p
+		by_flag[str(p["defeat_flag"])] = p
 	var checked := 0
 	for s in _kill_gated_steps():
 		var arch: String = s["archetype"]
-		if not by_arch.has(arch):
+		if not by_flag.has(str(s["defeat_flag"])):
 			continue
 		GameState.pending_boss_defeat = {}
 		GameState.set_story_flag("w1_%s_defeated" % arch, false)
 		var trig := MasteriteEncounterScript.new()
 		trig.archetype = arch
 		trig.monster_id = "masterite_%s_medieval" % arch
-		trig.quest_flag = str(by_arch[arch]["flag"])
+		trig.quest_flag = str(by_flag[str(s["defeat_flag"])]["flag"])
 		add_child_autofree(trig)
 		await get_tree().process_frame
 		var player := _fake_player()
@@ -383,12 +391,12 @@ func test_body_entered_stakes_the_quest_flag_the_applier_will_notify() -> void:
 ## objective, so re-entering the village must catch the step up.
 func test_ready_catches_up_a_step_whose_kill_happened_before_the_quest() -> void:
 	var qs = _quest_system()
-	var by_arch := {}
+	var by_flag := {}
 	for p in _declared_placements():
-		by_arch[p["archetype"]] = p
+		by_flag[str(p["defeat_flag"])] = p
 	for s in _kill_gated_steps():
 		var arch: String = s["archetype"]
-		if not by_arch.has(arch):
+		if not by_flag.has(str(s["defeat_flag"])):
 			continue
 		var qid: String = s["quest"]
 		_reset_quest(qid)
@@ -399,7 +407,7 @@ func test_ready_catches_up_a_step_whose_kill_happened_before_the_quest() -> void
 		var trig := MasteriteEncounterScript.new()
 		trig.archetype = arch
 		trig.monster_id = "masterite_%s_medieval" % arch
-		trig.quest_flag = str(by_arch[arch]["flag"])
+		trig.quest_flag = str(by_flag[str(s["defeat_flag"])]["flag"])
 		add_child_autofree(trig)
 		await get_tree().process_frame
 
@@ -415,14 +423,14 @@ func test_ready_catches_up_a_step_whose_kill_happened_before_the_quest() -> void
 func test_reaching_the_step_in_the_same_visit_counts_a_kill_that_already_happened() -> void:
 	var qs = _quest_system()
 	assert_not_null(qs, "QuestSystem autoload present")
-	var by_arch := {}
+	var by_flag := {}
 	for p in _declared_placements():
-		by_arch[p["archetype"]] = p
+		by_flag[str(p["defeat_flag"])] = p
 	var gold_before: int = GameState.get_gold()
 	var checked := 0
 	for s in _kill_gated_steps():
 		var arch: String = s["archetype"]
-		if not by_arch.has(arch):
+		if not by_flag.has(str(s["defeat_flag"])):
 			continue
 		var qid: String = s["quest"]
 		_reset_quest(qid)
@@ -430,7 +438,7 @@ func test_reaching_the_step_in_the_same_visit_counts_a_kill_that_already_happene
 		var trig := MasteriteEncounterScript.new()
 		trig.archetype = arch
 		trig.monster_id = "masterite_%s_medieval" % arch
-		trig.quest_flag = str(by_arch[arch]["flag"])
+		trig.quest_flag = str(by_flag[str(s["defeat_flag"])]["flag"])
 		add_child_autofree(trig)
 		await get_tree().process_frame
 		assert_eq(qs.get_objective_index(qid), 0,
@@ -537,6 +545,18 @@ func _gd_files_under(root: String) -> Array:
 	return out
 
 
+## ⛔ A BARE ARCHETYPE STOPPED IDENTIFYING A PLACEMENT THE DAY W2-W6 GOT THEIRS. `_kill_gated_steps`
+## only yields W1 steps (its regex is `^w1_<arch>_defeated$`), but this lookup matched the FIRST
+## village file declaring that archetype — and with 19 more placements landed, "warden", "arbiter"
+## and "curator" each name four bosses in four worlds. BrasstonVillage sorts before Grimhollow,
+## Ironhaven and Sandrift, so a W1 quest was handed the STEAMPUNK prereq and the caller then
+## demanded one defeat spec open `cutscene_flag_rat_king_defeated` together with
+## `cutscene_flag_world3_chapter2_complete` — a pairing nothing should ever satisfy.
+##
+## 🔑 The discriminator is the FLAG THE VICTORY WRITES, not the archetype. W1's four compose
+## `w1_<archetype>_defeated` because they set no `defeat_flag_name`; every W2-W6 placement overrides
+## it to name its own world's gate. So a block carrying an override cannot be the writer of the W1
+## flag this step waits on, whatever its archetype says.
 func _placement_prereq(archetype: String) -> String:
 	var dir := DirAccess.open(VILLAGE_DIR)
 	if dir == null:
@@ -550,7 +570,7 @@ func _placement_prereq(archetype: String) -> String:
 		while idx >= 0:
 			var end := src.find("npcs.add_child(", idx)
 			var block: String = src.substr(idx, end - idx) if end > idx else src.substr(idx)
-			if block.contains("\"%s\"" % archetype):
+			if block.contains("\"%s\"" % archetype) and not block.contains(".defeat_flag_name"):
 				var m := re.search(block)
 				return m.get_string(1) if m != null else ""
 			idx = src.find("MasteriteScript.new()", idx + 1)

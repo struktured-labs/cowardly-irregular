@@ -28,7 +28,7 @@ extends GutTest
 ## WHAT THIS FOUND WHEN IT WAS WRITTEN: nothing. Twelve gate flags in src/exploration and src/maps,
 ## twelve writers, every name matching exactly. That is the result being pinned.
 ##
-## ⚠️ THE THREE TIMES IT WAS WRONG FIRST, all on the WRITER side, all in the same direction — a
+## ⚠️ THE FOUR TIMES IT WAS WRONG FIRST, all on the WRITER side, all in the same direction — a
 ## missing writer definer turns a working gate into a "permanently closed door" finding, and six of
 ## them at once looks like a discovery:
 ##   1. `visited_brasston` and its three siblings are never written as literals. BaseVillage:111 does
@@ -38,6 +38,14 @@ extends GutTest
 ##      QuestSystem from the quest JSON's `flag_on_complete` field, which my first scan did not read.
 ##   3. A reader scan that takes any literal string catches PREFIXES — `"chest_"`, `"secret_"`,
 ##      `"chicken_caught_"` are concatenated with an id at the call site and are not flags at all.
+##   4. `w6_trial_passed` (2026-10-28), when the Vertex Apex became the first door gated on a
+##      dungeon's `unlock_story_flag`. Eight dungeons had declared one for releases; the field rides
+##      the SAME victory spec as `boss_flag_key`, which this file already derived — so the miss was
+##      the derivation's TWIN being absent, not the derivation being wrong. ⛔ And nothing could have
+##      surfaced it earlier: a writer definer is only exercised when some door gates on a flag from
+##      that source, so an unexercised source looks exactly like a source that is not needed. The
+##      guard was correct, complete for every gate that existed, and one new gate away from a false
+##      "the ending is unreachable".
 ##
 ## So the control is the WRITER DEFINER COUNT, not the orphan count, exactly as in the routing
 ## ledger: each source of writes carries a floor, and if one stops matching the test names it rather
@@ -111,6 +119,22 @@ func _writers() -> Dictionary:
 		bosses += 1
 	if bosses < 4:
 		thin.append("boss_flag_key definers derived %d (floor 4)" % bosses)
+
+	# DERIVED, AND THE TWIN OF THE BLOCK ABOVE: one victory spec (DragonCave:845-851, applied by
+	# GameLoop on victory only) carries BOTH halves — boss_flag_key into dungeon_flags and
+	# unlock_story_flag into story_flags. Different namespaces AND different names, so the block
+	# above cannot answer for this one. Found by the Vertex Apex becoming the first door gated on an
+	# unlock_story_flag: 8 dungeons had declared one for releases and none had ever been read as a
+	# gate, so the derivation was absent rather than wrong. Floor 6 of 8 observed — tighter than the
+	# sibling's 4 of 13 because a rename takes it to 0 and deleting three dungeons at once would not.
+	var rx_unlock := RegEx.new()
+	rx_unlock.compile("unlock_story_flag\\s*=\\s*\"([a-z0-9_]+)\"")
+	var unlocks := 0
+	for m in rx_unlock.search_all(src):
+		written[m.get_string(1)] = true
+		unlocks += 1
+	if unlocks < 6:
+		thin.append("unlock_story_flag definers derived %d (floor 6)" % unlocks)
 
 	# DERIVED: BaseVillage writes "visited_" + area id, so these names exist in no source file.
 	var villages := 0

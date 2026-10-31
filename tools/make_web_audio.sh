@@ -167,7 +167,8 @@ echo "[web-audio] transcoded ${transcoded}, reused ${reused}"
 # ⚠️ A CROSSING WARNS, IT DOES NOT BLOCK -- and the two outcomes are NOT the same word:
 #   exit 1  a bed crossed. 0.1 dB over a 12.0 dB policy line should not hold a release, and
 #           the number is printed so the decision is made rather than defaulted into.
-#   exit 2  REFUSED -- fewer than MIN_CORPUS=50 beds measurable against a real corpus of ~146.
+#   exit 2  REFUSED -- fewer than MIN_CORPUS=50 beds measurable against a real corpus of ~146,
+#           OR the detector's own controls failed (see the case arm for why both share it).
 #           That is NOT "no jumps", it is "nothing was measured", and it BLOCKS. A guard whose
 #           measurement did not happen is untrustworthy, not absent -- the same distinction
 #           verify_store_artifact.sh draws between 5 (the store differs) and 2 (nothing was
@@ -194,15 +195,38 @@ _seam_out="$(mktemp)"
 _seam_ec=0   # MUST be initialised: with `set -u`, the `||` arm does not run on success,
              # so an uninitialised $_seam_ec would kill this script on the PASSING path.
 $SEAM_AUDIT --from "$OUT_DIR" > "$_seam_out" 2>&1 || _seam_ec=$?
+# ⛔ EXIT 1 IS ALSO PYTHON'S CRASH CODE. A traceback, or the audit's own `sys.exit("<msg>")` for a
+#    bad --from or a missing manifest, exits 1 too, and so arrived in the WARNING arm: it printed
+#    the warning header, the grep below matched nothing, and `set -e` killed this script on the
+#    grep. The publish stopped, by accident, under a "WARNING" header with the cause never
+#    printed (measured 2026-10-24). A crossing is exit 1 AND the audit's summary line, which it
+#    prints only after measuring; exit 1 without it is the audit not running, and it BLOCKS.
+#    AND it must name what crossed: a crash AFTER the summary (cowir-main's residual, .709) has
+#    the summary and no crossing line, so the grep below came back empty and `set -e` killed the
+#    script the old way. Captured with `|| true` and tested instead, so that case BLOCKS too,
+#    rather than printing "NOT blocking" about a measurement that broke partway.
+_seam_lines="$(command grep -aE 'NEW jumps not pinned|PINNED entries that now loop|\*\*\* NEW \*\*\*|digital silence at the wrap' "$_seam_out" || true)"
+if [ "$_seam_ec" = 1 ] && { ! command grep -aq 'looping beds measured' "$_seam_out" || [ -z "$_seam_lines" ]; }; then
+    _seam_ec=crashed
+fi
 case "$_seam_ec" in
     0) echo "[web-audio] wrap seams: every bed clears the 12 dB gate ON THE SHIPPED TIER" ;;
+    crashed)
+       echo "[web-audio] ⛔ BLOCKED: the seam audit exited 1 without a complete measurement (no summary" >&2
+       echo "[web-audio]   line, or no crossing named). That is a crash or a usage error, not a crossing." >&2
+       echo "[web-audio]   Its last output:" >&2
+       tail -5 "$_seam_out" >&2
+       rm -f "$_seam_out"; exit 5 ;;
     1) echo "[web-audio] ⚠ WRAP SEAM WARNING on the tier we actually ship:" >&2
-       command grep -aE 'NEW jumps not pinned|PINNED entries that now loop|\*\*\* NEW \*\*\*|digital silence at the wrap' "$_seam_out" >&2
+       printf '%s\n' "$_seam_lines" >&2
        echo "[web-audio]   measured on ${BITRATE}k. The masters can pass while the transcode does not." >&2
        echo "[web-audio]   NOT blocking: publishing continues." >&2 ;;
-    2) echo "[web-audio] ⛔ BLOCKED: the seam audit REFUSED — it measured too few beds to be a" >&2
-       echo "[web-audio]   corpus at all. This is not 'no jumps found', it is 'nothing was" >&2
-       echo "[web-audio]   measured', and the tier must not be cached or published on it." >&2
+    # Exit 2 has TWO causes (cowir-main, 2026-10-24): the detector's own controls failed, or the
+    # corpus was under MIN_CORPUS. They need opposite responses, so the grepped line names which.
+    2) echo "[web-audio] ⛔ BLOCKED: the seam audit REFUSED. Either its own controls failed or it" >&2
+       echo "[web-audio]   measured too few beds to be a corpus; the line below says which. A controls" >&2
+       echo "[web-audio]   failure means the MEASUREMENT is broken, not the input. Either way the" >&2
+       echo "[web-audio]   tier must not be cached or published on it." >&2
        command grep -aE 'REFUSED' "$_seam_out" >&2
        rm -f "$_seam_out"; exit 5 ;;
     *) echo "[web-audio] ⛔ BLOCKED: the seam audit exited ${_seam_ec}, which it does not define." >&2

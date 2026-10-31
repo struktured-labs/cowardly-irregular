@@ -437,3 +437,19 @@ func test_the_handover_check_reads_the_reference_not_the_spelling() -> void:
 		"a hardcoded bitrate must NOT read as handed over — that is the decorative pin this arm exists for")
 	assert_false(_has_handover('  echo "$WEB_AUDIO_KBPS kbps tier"'),
 		"a line naming the variable without calling the stage script is not a handover")
+
+
+## The call site, not the logic: delete `if not controls():` and all seven arms go dead.
+func test_the_detectors_own_controls_actually_run() -> void:
+	var probe: String = OS.get_user_data_dir() + "/seam_controls_probe"
+	DirAccess.make_dir_recursive_absolute(probe)
+	assert_true(DirAccess.dir_exists_absolute(probe), "SCOPE control: the probe directory was not created")
+
+	var out: Array = []
+	var ec: int = OS.execute("uv", ["run", "tools/audit_wrap_seams.py", "--from", probe], out, true)
+	assert_gt(out.size(), 0, "CONTROL FAILED: running the tool produced no output at all")
+	var said: String = str(out[0])
+	assert_true(said.contains("CONTROL"),
+		"the tool printed no CONTROL verdict line, so controls() never ran and its seven arms are dead code. Measured 2026-10-25: the shipped tool prints 7 CONTROL lines and the neutered call site prints 0, while BOTH exit 2 with the same too-small refusal — so no exit-code arm in this file can see it, and a source grep for the call would certify spelling rather than execution. Got exit %d: %s" % [ec, said.substr(0, 400)])
+	assert_false(said.contains("the detector's own controls FAILED"),
+		"the seam detector's own controls reported a FAILURE, so every corpus number it prints is unearned: %s" % said.substr(0, 600))

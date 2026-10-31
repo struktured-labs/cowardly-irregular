@@ -34,6 +34,20 @@ const EVENT_LOW_HP := "low_hp"
 const EVENT_BIG_HIT_TAKEN := "big_hit_taken"
 const EVENT_USED_SIGNATURE_ABILITY := "used_signature_ability"
 const EVENT_VICTORY := "victory"
+const EVENT_CRIT_LANDED := "crit_landed"
+const EVENT_ENEMY_FELLED := "enemy_felled"
+
+## Who the moment was about — the crit's victim, or the enemy that just fell.
+const MOMENT_TARGET := "target_name"
+
+## Victory payload keys. end_battle knows all four by the time it dispatches the line; VoiceLineTags reads them.
+const VICTORY_SELF_LEVELED := "self_leveled"
+const VICTORY_SELF_LEARNED := "self_learned_ability"
+const VICTORY_ROUNDS := "rounds"
+const VICTORY_ONE_SHOT := "one_shot"
+## The lowest HP% any PC REACHED, and whether one fell at any point — neither is readable from final state.
+const VICTORY_LOW_WATER := "low_water_pct"
+const VICTORY_ANYONE_FELL := "anyone_fell"
 
 const RECENT_LIMIT: int = 6
 

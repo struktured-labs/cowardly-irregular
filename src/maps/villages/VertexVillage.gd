@@ -215,3 +215,46 @@ func _setup_npcs() -> void:
 		"Thank you. That's an odd kind of gift."
 	])
 	npcs.add_child(absence)
+	_place_masterites()
+
+
+## W6's three village Masterites. The Null Chamber already fights curator_abstract; these are the other
+## three, each writing the flag its world6_fragment_* reveal waits on. With these, all four abstract
+## Masterites the Calibrant's intro names on screen can actually be met.
+func _place_masterites() -> void:
+	var MasteriteScript = load("res://src/exploration/MasteriteEncounter.gd")
+	if MasteriteScript == null:
+		return
+
+	## The west half of the row-7/8 band, on the way to The Shape.
+	var warden = MasteriteScript.new()
+	warden.archetype = "warden"
+	warden.monster_id = "masterite_warden_abstract"
+	warden.defeat_flag_name = "cutscene_flag_warden_abstract_defeated"
+	warden.prereq_flag = "cutscene_flag_world6_chapter1_complete"
+	warden.display_name = "Warden of Form"
+	warden.cutscene_id = "world5_warden_intro"
+	warden.position = Vector2(6 * TILE_SIZE,8 * TILE_SIZE)
+	npcs.add_child(warden)
+
+	## The lower band, which every walk to the exit crosses.
+	var tempo = MasteriteScript.new()
+	tempo.archetype = "tempo"
+	tempo.monster_id = "masterite_tempo_abstract"
+	tempo.defeat_flag_name = "cutscene_flag_tempo_abstract_defeated"
+	tempo.prereq_flag = "cutscene_flag_world6_chapter2_complete"
+	tempo.display_name = "Tempo of Sequence"
+	tempo.cutscene_id = "world5_tempo_intro"
+	tempo.position = Vector2(12 * TILE_SIZE,11 * TILE_SIZE)
+	npcs.add_child(tempo)
+
+	## The east end of the same band, clear of the Threshold door at (11,7).
+	var arbiter = MasteriteScript.new()
+	arbiter.archetype = "arbiter"
+	arbiter.monster_id = "masterite_arbiter_abstract"
+	arbiter.defeat_flag_name = "cutscene_flag_arbiter_abstract_defeated"
+	arbiter.prereq_flag = "cutscene_flag_world6_chapter3_complete"
+	arbiter.display_name = "Arbiter of Function"
+	arbiter.cutscene_id = "world5_arbiter_intro"
+	arbiter.position = Vector2(13 * TILE_SIZE,8 * TILE_SIZE)
+	npcs.add_child(arbiter)

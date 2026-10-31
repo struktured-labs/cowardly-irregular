@@ -101,11 +101,34 @@ func get_active() -> Array:
 	return get_by_state("active")
 
 
+## ⛔ AUTHORED AHEAD OF ITS EMITTER. A custom objective advances ONLY through `notify_flag`, so a
+## quest whose `required_flag` nothing in src/ or data/cutscenes/ ever sets can be ACCEPTED and then
+## never advances — and there is no abandon, so it sits in the log and on the HUD tracker forever.
+##
+## ⚠️ MEASURED on this tree: 17 of 48 custom objectives across 10 quests had no emitter of any form,
+## and THREE of those quests were reachably offerable from a PLACED giver —
+## `world4_the_watercolors` (Shift Foreman Grix, Rivet Row, no prereq), `world5_termination_condition`
+## (the Firewall Attendant, Node Prime, no prereq) and `world4_form_exception_alpha` (Dorrit, once
+## the W4 chapter-2 cutscene has run). Talk, accept, and the quest is permanently stuck on step 2.
+##
+## 🔑 `markerless` was not enough: it suppresses the "!" in `giver_business_kind` and leaves the
+## OFFER intact, so the quest is still acceptable by walking up and pressing the button.
+## `wiring_pending` withholds the quest itself, and comes off in the same commit as its emitter —
+## `test_a_custom_objective_has_an_emitter.gd` fails BOTH ways, so the key cannot outlive the gap
+## it documents, or hide content that has since been wired.
+## The ONLY reader of the key. Both consumers come through here so a rename cannot half-land,
+## and so one mutation of this line can prove the whole gate.
+func is_wiring_pending(quest_id: String) -> bool:
+	return bool(get_quest(quest_id).get("wiring_pending", false))
+
+
 ## A quest is offerable when unstarted and its prereq flag (if any) is set.
 ## The giver's spawn_flag gates NPC VISIBILITY (plumbing side), not the offer.
 func is_offerable(quest_id: String) -> bool:
 	var q: Dictionary = get_quest(quest_id)
 	if q.is_empty() or get_state(quest_id) != "":
+		return false
+	if is_wiring_pending(quest_id):
 		return false
 	var prereq: String = q.get("prereq_flag", "")
 	return prereq == "" or _flag(prereq)
@@ -451,6 +474,10 @@ func _giver_quest_for(npc_id: String) -> String:
 			return qid
 		## Prereq-locked WITH an authored refusal. Without this, run_giver_dialogue's locked
 		## branch is unreachable and the Orrery arc's four out-of-sequence lines never play.
+		## A withheld quest skips the locked refusal too — its giver has no business at all,
+		## rather than an in-voice "not yet" for a gate that does not exist in the data.
+		if is_wiring_pending(qid):
+			continue
 		if locked_fallback == "" and get_state(qid) == "" and (q.get("dialogue", {}) as Dictionary).has("locked"):
 			locked_fallback = qid
 	return locked_fallback

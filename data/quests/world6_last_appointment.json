@@ -1,5 +1,6 @@
 {
   "id": "world6_last_appointment",
+  "wiring_pending": true,
   "title": "The Last Appointment",
   "world": 6,
   "chain": "traveling_merchant",

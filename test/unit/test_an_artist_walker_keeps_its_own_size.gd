@@ -53,12 +53,15 @@ func test_a_wandering_villager_slices_her_cells_and_stands_on_the_ground_line() 
 	assert_not_null(spr, "CONTROL: the wanderer has a sprite")
 	assert_eq(Vector2i(spr.texture.get_size()), Vector2i(int(e["frame_width"]), int(e["frame_height"])), "one whole cell, not a 32px piece of it")
 	assert_eq(spr.offset.y, -(float(e["frame_height"]) - 32.0) / 2.0, "lifted so her feet are where a 32px walker's are")
+	# The villagers are 48px like her since 2026-10-16, so the contrast is Roy's 64px cell: the slice follows each declaration.
+	var other := _manifest_entry("roy")
+	assert_ne(int(other["frame_height"]), int(e["frame_height"]), "CONTROL: the contrast sheet declares a different cell")
 	var plain = WanderScript.new()
-	plain.sprite_archetype = "young_woman"
+	plain.sprite_archetype = "roy"
 	add_child_autofree(plain)
 	await get_tree().process_frame
 	var ps := plain.find_child("Sprite", true, false) as Sprite2D
-	assert_eq(Vector2i(ps.texture.get_size()), Vector2i(32, 32), "CONTROL: a placeholder still slices 32px cells")
+	assert_eq(Vector2i(ps.texture.get_size()), Vector2i(int(other["frame_width"]), int(other["frame_height"])), "CONTROL: another declared cell slices that cell")
 
 
 func test_a_standing_npc_slices_her_cells_too() -> void:

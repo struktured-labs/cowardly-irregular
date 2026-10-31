@@ -40,6 +40,14 @@ func _e(who: String, hp: float = 100.0) -> Dictionary:
 	return {"name": who, "hp_pct": hp}
 
 
+## The outcome tags read event_data, which only a victory line carries — so they need their own situations.
+func _ectx(data: Dictionary) -> PartyCombatLineContext:
+	var c: PartyCombatLineContext = _ctx([_m("Brom", "fighter"), _m("Mira", "cleric")], [_e("Slime")])
+	c.event_kind = PartyCombatLineContext.EVENT_VICTORY
+	c.event_data = data
+	return c
+
+
 ## The situations the evaluator is written about. A tag that holds in none of them holds in none that
 ## a battle can produce — and any new tag owes this table an entry.
 func _situations() -> Dictionary:
@@ -56,6 +64,12 @@ func _situations() -> Dictionary:
 		"outnumbered": _ctx([me, _m("Mira", "cleric")], [_e("Slime"), _e("Rat"), _e("Bat")]),
 		"the speaker is poisoned": _ctx([me, _m("Mira", "cleric")], two_foes, ["poison"]),
 		"a cleric is alive beside me": _ctx([me, _m("Mira", "cleric")], two_foes),
+		"the speaker levelled on this win": _ectx({PartyCombatLineContext.VICTORY_SELF_LEVELED: true}),
+		"the speaker learned an ability": _ectx({PartyCombatLineContext.VICTORY_SELF_LEARNED: true}),
+		"a long grind of a fight": _ectx({PartyCombatLineContext.VICTORY_ROUNDS: TAGS.LONG_FIGHT_ROUNDS}),
+		"the field wiped in one strike": _ectx({PartyCombatLineContext.VICTORY_ONE_SHOT: true}),
+		"somebody dipped and was healed back": _ectx({PartyCombatLineContext.VICTORY_LOW_WATER: 4.0}),
+		"somebody fell and was raised": _ectx({PartyCombatLineContext.VICTORY_ANYONE_FELL: true}),
 	}
 
 

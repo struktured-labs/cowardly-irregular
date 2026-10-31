@@ -23,10 +23,25 @@ const GRIND := "res://src/autogrind/HeadlessBattleResolver.gd"
 const DECIDER := "Model a passive when it moves the EXPECTATION of what the grind reports; declare it when it only moves the SPREAD. The answer decides how much of the passive system the resolver must mirror, which is why this is unscoped rather than backlogged."
 
 ## The 12 distinct stat_mods keys authored today. A thirteenth means the ask got bigger.
+## magic_defense_multiplier (2026-10-28) is MODELLED, and needs no resolver work: the passive moves
+## the `magic_defense` stat, and `Combatant.damage_preview:286` — which every magical hit reaches via
+## `take_damage(dmg, true)` — selects `get_buffed_stat("magic_defense", ...)` when `is_magical`. The
+## grind engine inherits it through the shared method rather than through a formula of its own.
+##
+## ⛔ I SHIPPED THE OPPOSITE CLAIM HERE IN `.737` AND IT WAS FALSE. The comment said this resolver
+## "never reads magic_defense for damage at all", on the evidence that `is_magical` and
+## `target.magic_defense` occur zero times in `HeadlessBattleResolver.gd` and that its two `def_val`
+## sites divide by `defense`. Both facts are true and the conclusion does not follow: those two sites
+## are `_resolve_attack` and `_resolve_attack_with_power`, which take no ability and are the PHYSICAL
+## path, correctly using `defense`. Ability damage never goes through them — it is handed to
+## `take_damage(damage, true)`, and the mitigation lives in the Combatant method the resolver CALLS.
+## **A grep of one file cannot see a mechanism that file delegates**, which is the lesson @cowir-music
+## banked this same day about their own three misses, and I quoted it at them before repeating it.
 const KNOWN_STAT_MODS := [
 	"attack_multiplier", "crit_chance", "crit_damage_bonus", "defense_multiplier",
-	"evasion", "healing_multiplier", "magic_multiplier", "max_hp_multiplier",
-	"max_mp_multiplier", "mp_cost_multiplier", "speed_multiplier", "steal_chance",
+	"evasion", "healing_multiplier", "magic_defense_multiplier", "magic_multiplier",
+	"max_hp_multiplier", "max_mp_multiplier", "mp_cost_multiplier", "speed_multiplier",
+	"steal_chance",
 ]
 
 

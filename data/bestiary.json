@@ -422,5 +422,17 @@
   "dark_knight": {
     "epithet": "The One That Waits",
     "flavor": "It has chosen a spot. It will not be chasing you, which is somehow worse -- a thing that hunts can be outrun, and a thing that waits has already decided it does not need to. The armour is older than the kingdom that fears it. Whatever is inside stopped being a knight some time ago and kept the posture out of habit."
+  },
+  "the_operator": {
+    "epithet": "The One That Runs You",
+    "flavor": "It read your scripts. Not metaphorically — it read them, the way a reviewer reads, and it has notes. The Calibrant built it for the players who stopped choosing and started composing, and it fights the way a good opponent fights a known opening: it lets you have the first one, discounts the second, and by the third it is already somewhere else. There is no trick to it and it is not hiding anything. It simply costs you something every time you repeat yourself, which is the one tax an optimiser has no answer for."
+  },
+  "the_examiner": {
+    "epithet": "The One That Waits",
+    "flavor": "The oldest kind of fight, kept carefully in a room at the end of the world. It changes its face on a schedule you could set a clock by, and it will not punish you for taking the time to look — it would rather you looked. Everything it does is announced. Nothing it does is fast. The Calibrant kept it for the players who never automated anything, who read every window and pressed every button themselves, and it is the only face in the Antechamber that seems glad of the company."
+  },
+  "the_margin": {
+    "epithet": "The Slack in the Numbers",
+    "flavor": "Every curve that was ever fitted left something over, and this is where it went. It is thin — thinner than anything else down here, and it knows, and it does not care, because it intends the fight to be over before thinness matters. It removes one of you per round with the unbothered precision of an accountant striking a line. The Calibrant built it for the players who learned that a fight has a first phase and decided the rest was optional, and it is the only one of the three that agrees with them."
   }
 }

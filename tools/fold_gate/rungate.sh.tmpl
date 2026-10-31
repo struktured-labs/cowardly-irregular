@@ -1,13 +1,33 @@
 cd @REPO@
 ## A standalone re-run (no live chain owns the box marker) declares the box itself, and marks the chain's old verdict stale (.692: chain692.out kept a wedge for a re-run that passed).
-M="${BOX_MARKER:-/home/struktured/projects/cowir-main/tmp/BOX_BUSY}"
+M="${BOX_MARKER:-$(tools/box_busy.sh --marker)}"
+[ -n "$M" ] || { echo "rungate: tools/box_busy.sh --marker gave no marker path; refusing to start a gate"; exit 1; }
 mp="$(sed -n 's/^pid=//p' "$M" 2>/dev/null)"
 if [ -z "$mp" ] || ! kill -0 "$mp" 2>/dev/null; then
   printf 'pid=%s\nwhat=rungate@NNN@\nsince=%s\n' "$$" "$(date -u +%H:%M:%SZ)" > "$M"; trap 'rm -f "$M"' EXIT
   [ -f tmp/chain@NNN@.out ] && echo "SUPERSEDED $(date -u +%H:%M:%SZ): a standalone rungate re-run owns this gate; its verdict is tmp/gate@NNN@.out, not any GATE VERDICT line above" >> tmp/chain@NNN@.out
 fi
-## Wait (bounded, 60 min) until no publish is in flight (cowir-deploy: publish.log exists and publish.ec does not) AND no godot runs. Not a load figure: ten idle sessions hold load near 9.
-for i in $(seq 240); do busy=0; why=""; for d in /home/struktured/projects/cowir-deploy-wt/tmp/_detached/v3.33.*/; do [ -f "$d/publish.log" ] && [ ! -f "$d/publish.ec" ] && { busy=1; why="$why publish:$(basename "$d")"; }; done; for p in /proc/[0-9]*; do [ "$(readlink $p/exe 2>/dev/null)" = "/usr/bin/godot" ] && { busy=1; why="$why godot:${p#/proc/}@$(readlink $p/cwd 2>/dev/null)"; }; done; [ $busy -eq 0 ] && break; sleep 15; done
+## ⛔ A GATE IS ONLY AS GOOD AS THE PRE-GATE THAT ADMITTED IT, AND THIS SCRIPT CAN BE RUN WITHOUT ONE.
+## chain@NNN@.sh runs the import, the render smoke, the publish selftest corpus and the pre_ready
+## sweep, and starts this script ONLY if all four are clean (chain.sh.tmpl:48 gates on the corpus).
+## Invoking this script directly skips all four: that is how v3.33.702-alpha was tagged over a
+## broken tools/ corpus, which gate 0d then caught at publish time. make.sh's usage names chain as
+## the entry point; I used its sub-scripts. A standalone re-run IS legitimate for a wedge, so this
+## does not refuse -- it states which case it is, in the gate's own output, where a reader of
+## gate@NNN@.out cannot miss it. An invisible skip is the defect; a declared one is a choice.
+PG="tmp/chain@NNN@.out"; PGSHA="$(git rev-parse HEAD)"
+if [ ! -f "$PG" ]; then
+  PGMSG="PRE-GATE: ABSENT -- no $PG. import, render smoke, publish selftests and pre_ready sweep did NOT run for this gate."
+elif ! command grep -aq "chain@NNN@ tree=$PGSHA" "$PG"; then
+  PGMSG="PRE-GATE: STALE -- $PG describes another tree, not $PGSHA."
+elif command grep -aq 'PRE-GATE RED' "$PG"; then
+  PGMSG="PRE-GATE: RED for this tree -- the chain refused to start a gate; this run overrides that."
+else
+  PGMSG="PRE-GATE: CLEAN for $PGSHA ($(command grep -aE '^selftests EC=' "$PG" | tail -1))"
+fi
+printf '%s\n' "$PGMSG"
+## Wait (bounded, 60 min) until no publish is in flight in ANY lane (tools/box_busy.sh --publish; a dead publish.pid does not count, and an answer it cannot give counts as busy) AND no godot runs. Not a load figure: ten idle sessions hold load near 9.
+for i in $(seq 240); do busy=0; why=""; pe=0; pb="$(tools/box_busy.sh --publish 2>/dev/null)" || pe=$?; [ "$pe" = 1 ] || { busy=1; why="$why publish:${pb:-box_busy exit $pe}"; }; for p in /proc/[0-9]*; do [ "$(readlink $p/exe 2>/dev/null)" = "/usr/bin/godot" ] && { busy=1; why="$why godot:${p#/proc/}@$(readlink $p/cwd 2>/dev/null)"; }; done; [ $busy -eq 0 ] && break; sleep 15; done
 ## The wait is bounded, so it can expire with the box still busy: say so, or a contended gate reads as a quiet one.
 [ $busy -eq 0 ] || echo "WAIT EXPIRED after 60 min, gate started on a BUSY box:$why"
 echo "gate start load=$(cut -d' ' -f1-3 /proc/loadavg) at $(date -u +%H:%M:%SZ)"
@@ -15,3 +35,6 @@ setsid bash tmp/gate@NNN@.sh < /dev/null > /dev/null 2>&1 &
 sleep 2; bash tmp/wedgewatch@NNN@.sh
 for i in $(seq 120); do command grep -aq '^PAD LINE' tmp/gate@NNN@.out 2>/dev/null && break; sleep 5; done
 tail -1 tmp/wedge@NNN@_watch.log; cat tmp/gate@NNN@.out; echo "stall latches: $(command grep -ac 'stall' tmp/gate@NNN@.raw)"; echo "end load=$(cut -d' ' -f1-3 /proc/loadavg)"
+## Repeated LAST because chain.sh prints only `tail -14` of this file and the copy above is line 1:
+## a gate that skipped its pre-gate must say so where the reader actually looks (.703 disclosed this).
+printf '%s\n' "$PGMSG"

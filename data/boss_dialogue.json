@@ -1966,5 +1966,221 @@
       ]
     },
     "_META_vocabularies": "TWO deliberate vocabularies, both consumed. phase_faces (monsters.json, 5 entries) is the MECHANICAL ladder; this entry's `phases` (3: measuring/patching/unmasked) is the NARRATIVE act structure the LLM speaks from. Bark index mapping, verified in _maybe_advance_boss_face: after landing faces[k] the meta is k+1, so phase_barks[0] = the un-phased Calibrant and phase_barks[N+1] = worn face N (1=Warden .. 5='no face at all'). MUSIC contract per face (cowir-sfx's sentinel, msg 4173): key ABSENT = inherit the playing track; 'silence' = stop_music at the swap (the unmasking is scored by silence, per the intro's own convention: 'the question hung in the nothing, without music to underline it'); any other value = swap to that track. A named sentinel, NOT empty-string: 525 .get(k,\"\") sites in src/ collapse absent and empty."
+  },
+  "masterite_warden_medieval": {
+    "display_name": "Warden of the Old Guard",
+    "victory_lines": [
+      "Thirty-six parties turned back at this pass. You are the first I will have to write down twice."
+    ],
+    "defeat_lines": [
+      "Thirty-seventh. I will keep the count. Someone should."
+    ]
+  },
+  "masterite_tempo_medieval": {
+    "display_name": "Tempo of the Hunt",
+    "victory_lines": [
+      "You closed faster than I announced. Take the forest — I only ever borrowed it."
+    ],
+    "defeat_lines": [
+      "The courtesy shot was the only warning you were owed."
+    ]
+  },
+  "masterite_arbiter_medieval": {
+    "display_name": "Arbiter of Steel",
+    "victory_lines": [
+      "The measurement is complete. You are heavier than the scale allowed for. That is not a compliment, it is a correction."
+    ],
+    "defeat_lines": [
+      "Measured. Recorded. You were within half a stone of enough."
+    ]
+  },
+  "masterite_curator_medieval": {
+    "display_name": "Curator of the Flame",
+    "victory_lines": [
+      "Four of your castings were redundant. You won with the others. I note both halves."
+    ],
+    "defeat_lines": [
+      "It is always the third wasted cast that burns."
+    ]
+  },
+  "masterite_warden_suburban": {
+    "display_name": "Warden of Routine",
+    "victory_lines": [
+      "You broke the routine. I have nothing after the routine. I never did."
+    ],
+    "defeat_lines": [
+      "Back to the start of the corridor. Walk, do not run."
+    ]
+  },
+  "masterite_tempo_suburban": {
+    "display_name": "Tempo of the Rush Hour",
+    "victory_lines": [
+      "Nine minutes. NINE. Do you have any idea what that does to a man's average?"
+    ],
+    "defeat_lines": [
+      "Delivered. Late, but delivered. Please rate your driver."
+    ]
+  },
+  "masterite_arbiter_suburban": {
+    "display_name": "Arbiter of the Grade",
+    "victory_lines": [
+      "A minus. The minus is for the method. See me afterwards."
+    ],
+    "defeat_lines": [
+      "Incomplete. You may resit. Most do not."
+    ]
+  },
+  "masterite_curator_suburban": {
+    "display_name": "Curator of the Budget",
+    "victory_lines": [
+      "You spent everything. The columns balance at zero, which is, technically, correct."
+    ],
+    "defeat_lines": [
+      "Overdrawn. I did warn you, in writing, in a document nobody reads."
+    ]
+  },
+  "masterite_warden_steampunk": {
+    "display_name": "The Standing Order",
+    "victory_lines": [
+      "The needle moved. There is no reading for this."
+    ],
+    "defeat_lines": [
+      "Still red. It was always going to be red."
+    ]
+  },
+  "masterite_tempo_steampunk": {
+    "display_name": "The Grand Schedule",
+    "victory_lines": [
+      "A delay. The first. It will be absorbed — everything is absorbed — but it happened."
+    ],
+    "defeat_lines": [
+      "You arrived exactly when you were going to arrive."
+    ]
+  },
+  "masterite_arbiter_steampunk": {
+    "display_name": "The Tolerance Limit",
+    "victory_lines": [
+      "Out of tolerance in the other direction. No procedure is held for better than specified."
+    ],
+    "defeat_lines": [
+      "Rejected. Not cruelly. A caliper is not cruel."
+    ]
+  },
+  "masterite_curator_steampunk": {
+    "display_name": "The Requisition",
+    "victory_lines": [
+      "The column closes. More was spent than this was worth. It is granted anyway."
+    ],
+    "defeat_lines": [
+      "Insufficient. Not denied — unfunded. There is a difference, and it will not comfort you."
+    ]
+  },
+  "masterite_warden_industrial": {
+    "display_name": "Warden of the Assembly Line",
+    "victory_lines": [
+      "Tolerance exceeded. Amending the specification to include you."
+    ],
+    "defeat_lines": [
+      "You failed safely. That is the best outcome the test allows for."
+    ]
+  },
+  "masterite_tempo_industrial": {
+    "display_name": "Tempo of the Shift",
+    "victory_lines": [
+      "Clock out. Your hours are your own again. Nobody will thank you for them."
+    ],
+    "defeat_lines": [
+      "That is time and a half. Settled in full."
+    ]
+  },
+  "masterite_arbiter_industrial": {
+    "display_name": "Arbiter of Efficiency",
+    "victory_lines": [
+      "There was a wasted motion in that. Yours. It worked anyway. I will be thinking about that."
+    ],
+    "defeat_lines": [
+      "No wind-up. No follow-through. No waste."
+    ]
+  },
+  "masterite_curator_industrial": {
+    "display_name": "Curator of the Pipeline",
+    "victory_lines": [
+      "Released. All of it. It was never mine — I only decided when."
+    ],
+    "defeat_lines": [
+      "Not on the manifest. Nothing that is not on the manifest arrives."
+    ]
+  },
+  "masterite_warden_futuristic": {
+    "display_name": "Warden of the Firewall",
+    "victory_lines": [
+      "Unpatched. Filing the report. You will be in the next release."
+    ],
+    "defeat_lines": [
+      "Request denied. The rule predates you and will outlast you."
+    ]
+  },
+  "masterite_tempo_futuristic": {
+    "display_name": "Tempo of the Clock Cycle",
+    "victory_lines": [
+      "Yielding. I did not know that I could. The queue is yours."
+    ],
+    "defeat_lines": [
+      "You were scheduled. Just not often."
+    ]
+  },
+  "masterite_arbiter_futuristic": {
+    "display_name": "Arbiter of the Benchmark",
+    "victory_lines": [
+      "Ninety-ninth percentile. The suite holds no harder test. I will have to write one."
+    ],
+    "defeat_lines": [
+      "Below the ninetieth. The score stands. The score always stands."
+    ]
+  },
+  "masterite_curator_futuristic": {
+    "display_name": "Curator of the Memory Pool",
+    "victory_lines": [
+      "You held a reference I could not reach. Congratulations — you are a leak."
+    ],
+    "defeat_lines": [
+      "Collected. You were not being used."
+    ]
+  },
+  "masterite_warden_abstract": {
+    "display_name": "Warden of Form",
+    "victory_lines": [
+      "If I can be moved, I was never the law. Only the longest-standing habit."
+    ],
+    "defeat_lines": [
+      "You pushed against the shape of the room. The room is fine."
+    ]
+  },
+  "masterite_tempo_abstract": {
+    "display_name": "Tempo of Sequence",
+    "victory_lines": [
+      "You went first. I did not permit that. I am no longer certain what I am, if that can happen."
+    ],
+    "defeat_lines": [
+      "Struck from the record. You will not have been."
+    ]
+  },
+  "masterite_arbiter_abstract": {
+    "display_name": "Arbiter of Function",
+    "victory_lines": [
+      "The expression evaluated false. I have no other clauses. Reduce me."
+    ],
+    "defeat_lines": [
+      "damage(you). There were no other clauses."
+    ]
+  },
+  "masterite_curator_abstract": {
+    "display_name": "Curator of Entropy",
+    "victory_lines": [
+      "Reversed. Briefly. Locally. I will take the rest back on the way home."
+    ],
+    "defeat_lines": [
+      "Not drained — spent. There is a difference, and you have run out of both."
+    ]
   }
 }

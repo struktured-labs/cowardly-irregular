@@ -1,5 +1,6 @@
 {
   "id": "world5_termination_condition",
+  "wiring_pending": true,
   "title": "The Termination Condition",
   "world": 5,
   "giver": {

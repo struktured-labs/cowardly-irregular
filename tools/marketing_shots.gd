@@ -127,6 +127,7 @@ func _shoot_battle() -> void:
 		print("[SHOT] FAIL: battle — _start_battle_async absent; GameLoop's API moved")
 		_fail += 1
 		return
+	_pin_conditions("battle")
 	await gl._start_battle_async(["goblin"], true)
 	# 2.5s: the smoke's own settle time. The battle intro runs a transition and the command
 	# menu builds over several frames — capturing earlier catches a half-drawn HUD.
@@ -208,6 +209,14 @@ func _suppress_furniture() -> void:
 		for id in ids:
 			gs.game_constants["tutorial_" + str(id)] = true
 	print("[SHOT] suppressed: debug overlay + %d tutorial hints (read from HINTS)" % ids.size())
+	_pin_conditions("setup")
+
+
+## Clear weather + paused clock: see ShotGuard.pin_conditions for the measurement behind it.
+## Called again before the battle, because _create_party resets state (reset_game_state).
+func _pin_conditions(where: String) -> void:
+	if not ShotGuard.pin_conditions(root, where):
+		_fail += 1
 
 
 func _shoot(name: String, paths: Array) -> void:

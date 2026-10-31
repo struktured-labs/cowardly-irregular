@@ -101,7 +101,30 @@ for t in ${TREES[@]+"${TREES[@]}"}; do
   [ -n "$t" ] || continue
   mapfile -t L < <(printf '%s\n' "${ALL_WALKERS[@]}" | xargs -r grep -lE "\"res://$t" 2>/dev/null | sort)
   [ "${#L[@]}" -gt 0 ] || continue
-  echo "pre_ready_guards: ${#L[@]} guards walk res://$t"
+  # ⛔ THE PREDICATE ABOVE IS A SUPERSET, NOT A WALK OF THIS TREE. It keeps any walk-capable
+  # file that merely MENTIONS "res://$t — and 81 of test/'s 113 only `preload` a helper from
+  # test/unit/helpers/, while walking res://src. A green over those is regression cover; it is
+  # NOT evidence that a file you ADDED under res://$t was judged. Measured 2026-10-26 after
+  # @cowir-music asked what their step-4 green covered, and the honest answer was 15 of 113.
+  # DIRECT is a conservative floor: it counts only a walk form and the path on ONE line, so a
+  # `const DIR := "res://$t"` walked three lines later is missed. Understating is the safe
+  # direction here — the risk is a lane trusting the bigger number.
+  # The discriminator is whether the file names a res://$t path that is a DIRECTORY: a helper
+  # import is ".../helpers/gd_source.gd" and cannot be walked, while a walker holds
+  # "res://$t" or "res://$t/unit" — usually in a const, which is why keying on "a walk form
+  # and the path on ONE line" scored 5 of an actual ~15 and was too weak to be useful.
+  DIRECT=0
+  for _f in "${L[@]}"; do
+    grep -oE "\"res://$t[^\"]*\"" "$_f" 2>/dev/null | grep -qvE '\.gd"$' && DIRECT=$((DIRECT+1))
+  done
+  # ⚠️ "N guards walk res://$t" IS A PARSED CONTRACT, not prose: test_the_pre_ready_sweep_derives_each_leg
+  # finds that phrase and reads the number immediately before it. Rewording the line to "N guards
+  # reference res://$t" red three of its arms with "derived -1 walkers" — the count went missing, not
+  # wrong. So the substring stays verbatim and the correction is APPENDED after it.
+  echo "pre_ready_guards: ${#L[@]} guards walk res://$t; >= $DIRECT hand it a res://$t path, the rest only import from it"
+  if [ "$DIRECT" -lt "${#L[@]}" ]; then
+    echo "pre_ready_guards:   an importer cannot see a file you ADD under res://$t — that part of a green is regression cover, not step-4 evidence"
+  fi
   COVERED_TREES+=("$t")
   FILES+=("${L[@]}")
 done

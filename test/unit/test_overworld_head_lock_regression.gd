@@ -88,16 +88,16 @@ func _load_image(path: String) -> Image:
     return tex.get_image()
 
 
-func _frame_bbox_y(img: Image, row_idx: int, col_idx: int) -> Vector2i:
-    # Returns Vector2i(y_top, y_bot) for the 32x32 frame's opaque bbox.
+func _frame_bbox_y(img: Image, row_idx: int, col_idx: int, fs: int = FRAME_SIZE) -> Vector2i:
+    # Returns Vector2i(y_top, y_bot) for the frame's opaque bbox.
     # If frame is empty, returns Vector2i(-1, -1).
     var y_top := -1
     var y_bot := -1
-    var ox := col_idx * FRAME_SIZE
-    var oy := row_idx * FRAME_SIZE
-    for y in range(FRAME_SIZE):
+    var ox := col_idx * fs
+    var oy := row_idx * fs
+    for y in range(fs):
         var any_opaque := false
-        for x in range(FRAME_SIZE):
+        for x in range(fs):
             if img.get_pixel(ox + x, oy + y).a > 0.05:
                 any_opaque = true
                 break
@@ -108,19 +108,19 @@ func _frame_bbox_y(img: Image, row_idx: int, col_idx: int) -> Vector2i:
     return Vector2i(y_top, y_bot)
 
 
-func _head_pixels_match_shifted(img: Image, row_idx: int, col_a: int, col_b: int, y_top: int, y_lock_end: int, dy: int) -> int:
+func _head_pixels_match_shifted(img: Image, row_idx: int, col_a: int, col_b: int, y_top: int, y_lock_end: int, dy: int, fs: int = FRAME_SIZE) -> int:
     # Like _head_pixels_match but frame B is sampled dy pixels lower —
     # a UNIFORM 1px stride bob (2026-07-11 robed-walker fix) is deliberate
     # whole-sprite rhythm, not garble; garbled heads match NO shift.
     var diffs := 0
-    var oy := row_idx * FRAME_SIZE
-    var oxa := col_a * FRAME_SIZE
-    var oxb := col_b * FRAME_SIZE
+    var oy := row_idx * fs
+    var oxa := col_a * fs
+    var oxb := col_b * fs
     for y in range(y_top, y_lock_end):
         var yb := y + dy
-        if yb < 0 or yb >= FRAME_SIZE:
+        if yb < 0 or yb >= fs:
             continue
-        for x in range(FRAME_SIZE):
+        for x in range(fs):
             var pa := img.get_pixel(oxa + x, oy + y)
             var pb := img.get_pixel(oxb + x, oy + yb)
             if abs(pa.a - pb.a) > 0.02:
@@ -134,16 +134,16 @@ func _head_pixels_match_shifted(img: Image, row_idx: int, col_a: int, col_b: int
     return diffs
 
 
-func _head_pixels_match(img: Image, row_idx: int, col_a: int, col_b: int, y_top: int, y_lock_end: int) -> int:
+func _head_pixels_match(img: Image, row_idx: int, col_a: int, col_b: int, y_top: int, y_lock_end: int, fs: int = FRAME_SIZE) -> int:
     # Counts mismatched pixels in the head region between two frames.
     # Compares alpha + only-opaque RGB (Godot's fix_alpha_border setting bleeds
     # RGB into transparent pixels, so RGB on alpha=0 isn't reliable).
     var diffs := 0
-    var oy := row_idx * FRAME_SIZE
-    var oxa := col_a * FRAME_SIZE
-    var oxb := col_b * FRAME_SIZE
+    var oy := row_idx * fs
+    var oxa := col_a * fs
+    var oxb := col_b * fs
     for y in range(y_top, y_lock_end):
-        for x in range(FRAME_SIZE):
+        for x in range(fs):
             var pa := img.get_pixel(oxa + x, oy + y)
             var pb := img.get_pixel(oxb + x, oy + y)
             if abs(pa.a - pb.a) > 0.02:
@@ -171,20 +171,22 @@ func _assert_head_locked(path: String, label: String) -> String:
     var img = _load_image(path)
     if img == null:
         return "%s: %s exists but does not load as an image" % [label, path]
-    if img.get_width() != 128 or img.get_height() != 128:
-        return "%s: %dx%d, not the 128x128 4x4 grid this gate can measure" % [label, img.get_width(), img.get_height()]
+    # A sheet is a 4x4 grid of square cells: 32px for the generated placeholders, 48px for the 2026-10-16 redraws.
+    if img.get_width() != img.get_height() or img.get_width() % 4 != 0:
+        return "%s: %dx%d, not the square 4x4 grid this gate can measure" % [label, img.get_width(), img.get_height()]
+    var fs := img.get_width() / 4
     var rows_measured := 0
     for row in range(4):
-        var bbox := _frame_bbox_y(img, row, 0)
+        var bbox := _frame_bbox_y(img, row, 0, fs)
         if bbox.x < 0:
             continue  # row 0 frame is empty -- skip
         rows_measured += 1
         var head_h := maxi(1, int(float(bbox.y - bbox.x + 1) * HEAD_FRAC))
-        var y_lock_end := mini(FRAME_SIZE, bbox.x + head_h)
+        var y_lock_end := mini(fs, bbox.x + head_h)
         for col in [1, 2, 3]:
-            var diffs := _head_pixels_match(img, row, 0, col, bbox.x, y_lock_end)
+            var diffs := _head_pixels_match(img, row, 0, col, bbox.x, y_lock_end, fs)
             for dy in [-1, 1]:
-                diffs = mini(diffs, _head_pixels_match_shifted(img, row, 0, col, bbox.x, y_lock_end, dy))
+                diffs = mini(diffs, _head_pixels_match_shifted(img, row, 0, col, bbox.x, y_lock_end, dy, fs))
             assert_lt(diffs, 4,
                 "%s row %d frame %d: head region (y=%d..%d) should be pixel-identical to frame 0. Got %d diffs (expected <4)." %
                 [label, row, col, bbox.x, y_lock_end, diffs])

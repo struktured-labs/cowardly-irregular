@@ -30,6 +30,14 @@ func _statuses_in_source() -> Array:
 		var st: String = m.get_string(1)
 		if st != "" and not out.has(st):
 			out.append(st)
+	# SECOND SHAPE, added 2026-10-14: a bad INDEX has no proposal to stamp, so that path passes its
+	# status straight to outcome_line. Deriving only the stamped form left it outside this sweep.
+	var lit := RegEx.new()
+	lit.compile('outcome_line\\([^)]*?"(failed_[a-z_]+)"')
+	for m2 in lit.search_all(body):
+		var st2: String = m2.get_string(1)
+		if st2 != "" and not out.has(st2):
+			out.append(st2)
 	return out
 
 
@@ -40,7 +48,7 @@ func test_every_outcome_the_request_path_sets_has_a_line() -> void:
 	# half the outcomes -- @cowir-adhoc measured that exact shape costing 55% of a corpus under a
 	# `> 500` control. A broken parser now reds with the missing name, and a NEW status is still
 	# caught by the line arm below, which runs over whatever the derivation returns.
-	for known in ["failed_no_tree", "failed_unavailable", "failed_fallback", "awaiting_llm", "proposed"]:
+	for known in ["failed_no_tree", "failed_unavailable", "failed_fallback", "awaiting_llm", "proposed", "failed_bad_index"]:
 		assert_true(statuses.has(known),
 			"CONTROL: the derivation missed %s, so this arm judges a subset of the outcomes" % known)
 	# EXEMPT, not skipped silently: :93 requires awaiting_llm to stay EMPTY because it is the
@@ -114,3 +122,38 @@ func test_the_daemon_still_has_what_this_file_drives() -> void:
 	# outcome_line is reached through the class, so a rename is a PARSE error (EC=3), not an abort --
 	# louder than a floor. This line is the fixture's claim about which spelling it depends on.
 	assert_ne(Daemon.outcome_line("t", "failed_no_tree"), "", "outcome_line() is gone or silent")
+
+
+## The exit that said nothing. Measured in struktured's own logs 2026-10-14: across six sessions
+## the daemon printed 31 "considered ... (awaiting LLM proposal)" lines and ZERO outcome lines, and
+## the index guard was the only return in request_llm_proposal that did not log. Whatever path he
+## hit, the log could not name it, so the next one must.
+func test_the_bad_index_exit_is_not_silent() -> void:
+	var line: String = Daemon.outcome_line("", "failed_bad_index", {"idx": 7, "pending": 3})
+	assert_ne(line, "", "THE DEFECT: the one unlogged exit must reach the log like its four siblings")
+	assert_true(line.contains("7") and line.contains("3"),
+		"it must name the index AND the pending size, or it cannot be diagnosed: %s" % line)
+
+
+## And the source must actually call it there -- outcome_line rendering is half the fix.
+## THE ANCHOR IS NOT UNIQUE: the identical index guard appears in try_auto_apply (:313), force_apply
+## (:390) and dismiss (:442), so the old bare find() reached MINE only because request_llm_proposal
+## happens to be declared first. Slice the function first, then search inside it -- immune by shape.
+func test_the_index_guard_prints() -> void:
+	# code_of, not raw text: a comment quoting the guard would otherwise satisfy a presence assert.
+	var src: String = GdSource.code_of("res://src/llm/RebalanceDaemon.gd")
+	var guard := "if proposal_idx < 0 or proposal_idx >= pending.size():"
+	# The slice is load-bearing, pinned as its own claim so the reason cannot be lost to a tidy-up.
+	assert_gt(src.count(guard), 1,
+		"FIXTURE: were the guard unique the slice below would be decoration; it is not")
+	var fi: int = src.find("func request_llm_proposal(")
+	assert_gt(fi, 0, "FIXTURE: request_llm_proposal not found, so this arm measures nothing")
+	var nf: int = src.find("\nfunc ", fi + 10)
+	var body: String = src.substr(fi) if nf < 0 else src.substr(fi, nf - fi)
+	var at: int = body.find(guard)
+	assert_gt(at, -1, "FIXTURE: the index guard must exist inside request_llm_proposal")
+	# A relationship, not a 240-char window: the print must precede the guard's OWN return.
+	var ret: int = body.find("return", at)
+	assert_gt(ret, at, "FIXTURE: the guard must return, or this arm bounds nothing")
+	assert_true(body.substr(at, ret - at).contains("print(outcome_line("),
+		"the index guard must log before returning, like every other exit in this function")

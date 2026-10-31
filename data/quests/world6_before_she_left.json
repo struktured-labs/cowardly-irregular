@@ -1,5 +1,6 @@
 {
   "id": "world6_before_she_left",
+  "wiring_pending": true,
   "title": "Before She Left",
   "world": 6,
   "prereq_flag": "quest_world6_the_last_thing_complete",

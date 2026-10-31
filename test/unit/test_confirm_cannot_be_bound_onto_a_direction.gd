@@ -24,6 +24,7 @@ extends GutTest
 ## `test_a_rebind_survives_the_face_convention`'s "stock is conflict-free" control stays green.
 
 const IPM := "res://src/input/InputProfileManager.gd"
+const GdSource := preload("res://test/unit/helpers/gd_source.gd")
 const CONFIG := "user://input/controls.json"  # read from InputProfileManager, not guessed
 
 var _mode: bool = false
@@ -91,11 +92,20 @@ func _nav() -> Array:
 ## dynamically-typed receiver, so a rename aborts the enclosing arm and -- once any assert has run
 ## in it -- the file scores PASSING with the subject never driven.
 func test_the_manager_exposes_every_member_this_file_drives() -> void:
-	var src: String = FileAccess.get_file_as_string(
+	## ⛔ CODE ONLY, NOT RAW SOURCE — AND THE HAZARD IS SOMEONE ELSE'S PROSE, NOT MINE. A sibling
+	## lane's comment added LATER, anywhere in this file, is raw text this derivation would read:
+	## a `m.whatever` mention invents a member and reds correct code, and -- the silent direction --
+	## a mention PADS the `names.size()` control, so comments could keep it satisfied while the real
+	## reaches dropped away. @cowir-overworld hit the same shape from the other side in .695, where
+	## a comment added ABOVE their anchor captured it and the arm went green measuring prose.
+	## `gd_source.gd`'s own docstring names this: a presence assert over raw source is satisfied by
+	## prose about the code. The sibling walk guard already used `code_of`; this file did not.
+	var src: String = GdSource.code_of(
 		"res://test/unit/test_confirm_cannot_be_bound_onto_a_direction.gd")
 	assert_true(src.find("binding_would_trap_the_player") > -1,
-		"POSITIVE CONTROL: this file's source must be readable, or the derivation below runs on " +
-		"an empty window and passes having checked nothing")
+		"POSITIVE CONTROL: a known CODE site must survive stripping -- required by the helper's " +
+		"contract, and without it an over-strip leaves the derivation below running on an empty " +
+		"window and passing having checked nothing")
 	var names: Dictionary = {}
 	var rx := RegEx.create_from_string("\\bm\\.([A-Za-z_][A-Za-z0-9_]*)")
 	for hit in rx.search_all(src):

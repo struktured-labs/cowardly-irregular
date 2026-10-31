@@ -274,6 +274,9 @@ var _all_enemies_initial_count: int = 0  # Total enemies at battle start
 ## fanned out N times after N battles.
 var _died_callbacks: Dictionary = {}
 var _doom_callbacks: Dictionary = {}
+var _hp_callbacks: Dictionary = {}
+## Lowest HP% any PC REACHED this battle. Final-frame state cannot see a dip that was healed back.
+var _battle_low_water_pct: float = 100.0
 
 ## Autobattle reward tracking
 var _full_autobattle: bool = true          # False if any player turn was manual
@@ -344,6 +347,27 @@ const PER_BATTLE_METAS: Array[String] = [
 ## action outruns the whole queue while priority actions still sort against each other.
 const PRIORITY_OFFSET: float = 1000.0
 
+## Twin of HeadlessBattleResolver.MAX_ROUNDS — same name, same value; live had NO cap at all.
+const MAX_ROUNDS: int = 50
+
+## Rounds with no new HP low on EITHER side before the deadlock is called; nobody is winning.
+const STALEMATE_ROUNDS: int = 15
+
+## Rounds before MAX_ROUNDS that the player is warned, so the end is not a surprise.
+const STALL_WARNING_LEAD: int = 10
+
+## Twin of HeadlessBattleResolver.GROUP_ATTACK_COOLDOWN — same name, same value; live had none.
+const GROUP_ATTACK_COOLDOWN: int = 3
+
+## The round a formation special last fired on. A battle OPENS with the cooldown already expired —
+## the resolver's counter starts cold and delays the opener, and that one difference is deliberate.
+var _formation_last_round: int = -GROUP_ATTACK_COOLDOWN
+
+var _lowest_enemy_hp_total: int = -1
+var _lowest_player_hp_total: int = -1
+var _rounds_since_progress: int = 0
+var _stall_warning_sent: bool = false
+
 ## The ability types an archetype's UTILITY slot may select, in ONE place — three filters carried
 ## three hand-written copies. `buff` and `defensive` are authored by NO ability in the game; they are
 ## kept and LABELLED rather than deleted, so the next reader cannot mistake them for live vocabulary
@@ -382,6 +406,9 @@ func _ready() -> void:
 	if boss_dlg and boss_dlg.has_signal("jailbreak_succeeded"):
 		if not boss_dlg.jailbreak_succeeded.is_connected(_on_boss_jailbreak_succeeded):
 			boss_dlg.jailbreak_succeeded.connect(_on_boss_jailbreak_succeeded)
+	## Own signal, so every damage path's crit reaches the party line through one hook.
+	if not damage_dealt.is_connected(_on_damage_dealt_for_party_line):
+		damage_dealt.connect(_on_damage_dealt_for_party_line)
 
 
 func set_terrain(terrain: String) -> void:
@@ -466,6 +493,13 @@ func start_battle(players: Array[Combatant], enemies: Array[Combatant]) -> void:
 	battle_serial += 1
 	current_state = BattleState.STARTING
 	current_round = 0
+	## A carried-over minimum would read the previous battle's progress as this one's.
+	_lowest_enemy_hp_total = -1
+	_lowest_player_hp_total = -1
+	_rounds_since_progress = 0
+	_stall_warning_sent = false
+	## A carried-over stamp would read the last battle's formation as this one's.
+	_formation_last_round = -GROUP_ATTACK_COOLDOWN
 	_wd_armed = true
 	_wd_last_progress_ms = 0
 	_party_line_cooldowns.clear()
@@ -571,6 +605,7 @@ func start_battle(players: Array[Combatant], enemies: Array[Combatant]) -> void:
 	_c3_clutch_crit = false
 	_battle_results = {}
 	_ko_this_battle.clear()
+	_battle_low_water_pct = 100.0
 	# Warden Lens floor is once per BATTLE — clear on both sides so a party member and a lens-holding ally alike start each fight with it available.
 	for _c in (players + enemies):
 		if _c is Combatant:
@@ -636,6 +671,11 @@ func start_battle(players: Array[Combatant], enemies: Array[Combatant]) -> void:
 		var cb = _on_combatant_died.bind(combatant)
 		_died_callbacks[combatant] = cb
 		combatant.died.connect(cb)
+		## hp_changed, not damage_dealt: it is the only signal a status tick and corruption erosion both reach.
+		if combatant.has_signal("hp_changed"):
+			var hcb = _on_hp_changed_for_low_water.bind(combatant)
+			_hp_callbacks[combatant] = hcb
+			combatant.hp_changed.connect(hcb)
 		## Same bound-Callable caching as died, for the same disconnect reason.
 		if combatant.has_signal("doom_ticked"):
 			var dcb = _on_doom_ticked.bind(combatant)
@@ -1185,6 +1225,8 @@ func end_battle(victory: bool) -> void:
 					AccessibilityPalette.penalty_bbcode(), combatant.combatant_name, injury["description"], injury["penalty"], injury["stat"].capitalize()])
 
 		_battle_results = {
+			"low_water_pct": _battle_low_water_pct,
+			"anyone_fell": not _ko_this_battle.is_empty(),
 			"char_results": char_results,
 			"bonuses": bonuses,
 			"base_exp": base_exp,
@@ -1284,8 +1326,15 @@ func _disconnect_combatant_signals() -> void:
 		var dcb = _doom_callbacks[combatant]
 		if dcb and combatant.has_signal("doom_ticked") and combatant.doom_ticked.is_connected(dcb):
 			combatant.doom_ticked.disconnect(dcb)
+	for combatant in _hp_callbacks.keys():
+		if not is_instance_valid(combatant):
+			continue
+		var hcb = _hp_callbacks[combatant]
+		if hcb and combatant.has_signal("hp_changed") and combatant.hp_changed.is_connected(hcb):
+			combatant.hp_changed.disconnect(hcb)
 	_died_callbacks.clear()
 	_doom_callbacks.clear()
+	_hp_callbacks.clear()
 
 
 func _cleanup_battle() -> void:
@@ -1537,11 +1586,67 @@ func _start_new_round() -> void:
 		return
 	_casualty_outside_execution = false
 
+	## Victory is tested first on purpose: a kill landing on the last legal round still wins.
+	if _resolve_if_going_nowhere():
+		return
+
 	# Calculate selection order (players first, then enemies, sorted by speed)
 	_calculate_selection_order()
 
 	round_started.emit(current_round)
 	_start_selection_phase()
+
+
+## Living HP on one side. The dead contribute 0, so a side's total falls as its members drop.
+func _side_hp_total(side: Array) -> int:
+	var total: int = 0
+	for c in side:
+		if c != null and is_instance_valid(c) and c.is_alive:
+			total += int(c.current_hp)
+	return total
+
+
+## True when this battle has just been ended because it was never going to end on its own.
+## A new low on one side means THAT side is losing, i.e. somebody is making progress; no new low
+## anywhere for STALEMATE_ROUNDS means nobody can, which is what a heal loop and a wrong-element
+## party both look like. end_battle(false) with survivors is the flee path, not the wipe path —
+## GameLoop discriminates on survivors — so a deadlock returns the player to the map, not a game over.
+func _resolve_if_going_nowhere() -> bool:
+	var enemy_hp: int = _side_hp_total(enemy_party)
+	var player_hp: int = _side_hp_total(player_party)
+	var progressed: bool = false
+	if _lowest_enemy_hp_total < 0 or enemy_hp < _lowest_enemy_hp_total:
+		_lowest_enemy_hp_total = enemy_hp
+		progressed = true
+	if _lowest_player_hp_total < 0 or player_hp < _lowest_player_hp_total:
+		_lowest_player_hp_total = player_hp
+		progressed = true
+	_rounds_since_progress = 0 if progressed else _rounds_since_progress + 1
+
+	## An authored win condition is allowed an unusual damage flow — withhold_attack WANTS zero
+	## progress — so the deadlock test is skipped for those and only the hard cap applies.
+	var deadlocked: bool = _win_condition.is_empty() and _rounds_since_progress >= STALEMATE_ROUNDS
+	var capped: bool = current_round > MAX_ROUNDS
+	if not deadlocked and not capped:
+		_warn_once_if_stalling()
+		return false
+
+	var why: String = "hit MAX_ROUNDS=%d" % MAX_ROUNDS
+	if deadlocked:
+		why = "deadlocked for %d rounds" % _rounds_since_progress
+	print("[BATTLE] Battle %s — disengaging. enemy HP %d, party HP %d" % [why, enemy_hp, player_hp])
+	push_warning("[BattleManager] Battle %s at round %d — ending as a disengage; the party may be undertuned, or the enemy has a heal/regen loop nothing in the party's kit can out-damage" % [why, current_round])
+	battle_log_message.emit("[color=gray]Neither side can finish this. The party disengages.[/color]")
+	end_battle(false)
+	return true
+
+
+## One line, once per battle, while the player can still act on it.
+func _warn_once_if_stalling() -> void:
+	if _stall_warning_sent or current_round < MAX_ROUNDS - STALL_WARNING_LEAD:
+		return
+	_stall_warning_sent = true
+	battle_log_message.emit("[color=%s]This fight is going nowhere. Change tactics or flee — it will not last much longer.[/color]" % AccessibilityPalette.penalty_bbcode())
 
 
 ## Tick 426: scan the alive enemy_party for monsters with
@@ -2208,6 +2313,12 @@ func group_ap_shortfall(group_type: String, ap_cost: int = -1) -> Combatant:
 	return null
 
 
+## Rounds a formation special must still wait; 0 when it is available now. DERIVED from current_round
+## rather than ticked by its own counter, so there is no increment to lose and nothing to desync.
+func formation_cooldown_remaining() -> int:
+	return maxi(0, GROUP_ATTACK_COOLDOWN - (current_round - _formation_last_round))
+
+
 func player_group_attack(group_type: String, formation_id: String = "") -> void:
 	"""Initiate a group attack — all alive party members pool AP for a combined strike.
 	group_type: "all_out_attack", "limit_break", "combo_magic", or "formation"
@@ -2221,6 +2332,16 @@ func player_group_attack(group_type: String, formation_id: String = "") -> void:
 
 	# Participants are the only PCs whose AP/element should gate group attacks.
 	var participants: Array[Combatant] = group_participants()
+
+	## Formation specials are the one row the cooldown governs — Carmelo approved this and declined
+	## every other balance item, so All-Out Attack and Limit Break stay ungated here.
+	if group_type == "formation" and formation_cooldown_remaining() > 0:
+		battle_log_message.emit("[color=%s]The formation needs %d more round(s) to re-form![/color]" % [
+			AccessibilityPalette.penalty_bbcode(), formation_cooldown_remaining()])
+		print("[GROUP] Formation blocked — %d round(s) of cooldown left" % formation_cooldown_remaining())
+		current_state = BattleState.PLAYER_SELECTING
+		selection_turn_started.emit(current_combatant)
+		return
 
 	# Limit Break requires full AP (>= 4) from every PARTICIPATING member.
 	if group_type == "limit_break":
@@ -2258,6 +2379,10 @@ func player_group_attack(group_type: String, formation_id: String = "") -> void:
 		"participants": participants,
 		"speed": _compute_action_speed(current_combatant, "attack")
 	}
+	## Stamped at SELECTION, which is where the resolver resets its own clock — both engines charge
+	## the round the party committed on, not the round the strike happens to land in.
+	if group_type == "formation":
+		_formation_last_round = current_round
 	_queue_action(action)
 	print("[GROUP] %s initiates group attack '%s' with %d participants" % [
 		current_combatant.combatant_name, group_type, participants.size()])
@@ -4272,6 +4397,26 @@ func _execute_group_action(action: Dictionary) -> void:
 	# The same table the command menu gates these rows on, not a second copy of its numbers
 	var ap_cost: int = int(GROUP_AP_COST.get(group_type, 1))
 
+	## ⛔ THE ONE-SHOT SYSTEM WAS BLIND TO THE PARTY'S OWN ALPHA STRIKE. `_record_first_damage` has
+	## three call sites — _execute_attack, _execute_physical_ability, _execute_magic_ability — and
+	## all NINE `take_damage` sites in the three group paths below call the combatant directly: one
+	## in _execute_physical_group, one in _execute_combo_magic, SEVEN across the six formation
+	## specials. (Counted per function boundary. A first pass read "seven" from a 120-line window
+	## over a 170-line function and cut three of the formation sites off the end — the count a
+	## window produces is a fact about the window.) So
+	## a party that banked AP for a round and then wiped the field with one All-Out Attack left
+	## `_first_damage_phase` at -1, and `_check_one_shot` returns on that sentinel before it reaches
+	## its own `all_dead` test. No rank, no 3.0x S-rank EXP, no trophy — for the most canonical
+	## one-shot the game has, and at exactly the one setup turn `_get_one_shot_rank` calls S.
+	## Measured per group TYPE rather than per hit because the three paths land damage differently
+	## (one target loop each, plus the formation specials' six shapes) and the recorder is
+	## idempotent anyway: one HP-loss observation around the dispatch answers for all four.
+	## Snapshot AFTER the alive filter, so a group action that finds nothing alive records nothing.
+	var _hp_before_group: Dictionary = {}
+	for e in alive_enemies:
+		if is_instance_valid(e):
+			_hp_before_group[e] = e.current_hp
+
 	if group_type == "combo_magic":
 		_execute_combo_magic(participants, alive_enemies, ap_cost)
 	elif group_type == "formation":
@@ -4279,6 +4424,13 @@ func _execute_group_action(action: Dictionary) -> void:
 		_execute_formation_special(participants, alive_enemies, formation_id)
 	else:
 		_execute_physical_group(participants, alive_enemies, group_type, ap_cost)
+
+	## All three dispatches above are synchronous (zero `await` between them and here), so this
+	## reads post-damage HP rather than a value a coroutine has not written yet.
+	for e in _hp_before_group:
+		if is_instance_valid(e) and int(e.current_hp) < int(_hp_before_group[e]):
+			_record_first_damage()
+			break
 
 	# --- Vulnerability Window: all participants become exposed ---
 	_apply_vulnerability_window(participants)
@@ -4310,8 +4462,9 @@ func _execute_group_action(action: Dictionary) -> void:
 ## LIVING participants only — the `is_alive` guard sits three lines above each scale line — and then
 ## raised `participants.size()`, the UNFILTERED roster, to the 1.5 power. A member KO'd between the
 ## selection phase and the execution phase contributed no power, paid no AP, and still inflated the
-## multiplier: a four-strong Limit Break that loses one member hit for pow(4,1.5)/pow(3,1.5) = 1.54x
-## what three members should land. The three `is_alive` guards are the proof the case is reachable —
+## multiplier: a four-strong Limit Break that loses one member hit for pow(4)/pow(3) = 1.33x at the
+## current exponent of 1.0, and 1.54x at the 1.5 it carried until 2026-10-26 — the defect is the
+## unfiltered roster either way. The three `is_alive` guards are the proof the case is reachable —
 ## they are dead code otherwise, and the roster is fixed at selection while execution is speed-sorted.
 func _living_count(participants: Array) -> int:
 	var n: int = 0
@@ -4321,12 +4474,17 @@ func _living_count(participants: Array) -> int:
 	return n
 
 
+## Twin of HeadlessBattleResolver's scale — same expression, same exponent, measured together.
+## 1.5 made a five-member strike 11.18x one member while total_power already grew with the party,
+## so damage scaled ~n^2.5 and ONE Four Heroes cleared the full HP of 42 of the 50 one_shot monsters
+## at level 10. 1.0 costs 2.24x, which the group fights absorb now that they no longer pay the
+## per-enemy division; a single target has nothing to divide, so that is where the cut lands.
 func _group_scale(participants: Array) -> float:
 	var contributing: int = 0
 	for p in participants:
 		if p is Combatant and p.is_alive:
 			contributing += 1
-	return pow(float(maxi(1, contributing)), 1.5)
+	return pow(float(maxi(1, contributing)), 1.0)
 
 
 func _execute_physical_group(participants: Array, alive_enemies: Array[Combatant], group_type: String, ap_cost: int) -> void:
@@ -4357,7 +4515,7 @@ func _execute_physical_group(participants: Array, alive_enemies: Array[Combatant
 	for enemy in alive_enemies:
 		if not enemy.is_alive:
 			continue
-		var raw_damage: int = int(total_power * scale / max(1.0, float(alive_enemies.size())))
+		var raw_damage: int = int(total_power * scale)
 		var mitigated: int = 0
 		if is_limit_break:
 			# 3x damage at 4x the AP of All-Out — same raw formula, same take_damage, so defense applies to both; the trade is burst timing plus _limit_break_cleanse, NOT armor piercing.
@@ -4422,7 +4580,7 @@ func _execute_combo_magic(participants: Array, alive_enemies: Array[Combatant], 
 	for enemy in alive_enemies:
 		if not enemy.is_alive:
 			continue
-		var base_damage: int = int(total_magic * scale / max(1.0, float(alive_enemies.size())))
+		var base_damage: int = int(total_magic * scale)
 
 		# Apply combo bonus effects
 		var effective_def: float = float(enemy.defense)
@@ -4497,7 +4655,7 @@ func _execute_formation_special(participants: Array, alive_enemies: Array[Combat
 					total_power += (p.get_buffed_stat("attack", p.attack) + p.get_buffed_stat("magic", p.magic)) * 0.5
 			for enemy in alive_enemies:
 				if not enemy.is_alive: continue
-				var damage = max(1, int(total_power * scale / max(1.0, float(alive_enemies.size()))))
+				var damage = max(1, int(total_power * scale))
 				var enemy_landed: int = enemy.take_damage(damage)
 				damage_dealt.emit(enemy, enemy_landed, false, "", 1.0)
 			# Heal party 25%
@@ -4522,7 +4680,7 @@ func _execute_formation_special(participants: Array, alive_enemies: Array[Combat
 			for enemy in alive_enemies:
 				if not enemy.is_alive: continue
 				# Ignore resistance — raw magic damage
-				var damage = max(1, int(total_magic * scale / max(1.0, float(alive_enemies.size()))))
+				var damage = max(1, int(total_magic * scale))
 				var enemy_landed: int = enemy.take_damage(damage, true)
 				damage_dealt.emit(enemy, enemy_landed, false, "arcane", 1.0)
 			battle_log_message.emit("[color=magenta]★ Arcane Tempest — raw magic storm ignores all resistances! ★[/color]")
@@ -4561,7 +4719,7 @@ func _execute_formation_special(participants: Array, alive_enemies: Array[Combat
 					total_atk += p.get_buffed_stat("attack", p.attack)
 			for enemy in alive_enemies:
 				if not enemy.is_alive: continue
-				var damage = max(1, int(total_atk * scale * 0.6 / max(1.0, float(alive_enemies.size()))))
+				var damage = max(1, int(total_atk * scale * 0.6))
 				var enemy_landed: int = enemy.take_damage(damage)
 				damage_dealt.emit(enemy, enemy_landed, false, "", 1.0)
 			battle_log_message.emit("[color=cyan]★ Iron Wall — party DEF +50%% (3 turns) + crushing blow! ★[/color]")
@@ -4575,7 +4733,7 @@ func _execute_formation_special(participants: Array, alive_enemies: Array[Combat
 			for enemy in alive_enemies:
 				if not enemy.is_alive: continue
 				var full_hp_bonus = 2.0 if enemy.current_hp == enemy.max_hp else 1.0
-				var damage = int(total_atk * scale * full_hp_bonus / max(1.0, float(alive_enemies.size())))
+				var damage = int(total_atk * scale * full_hp_bonus)
 				damage = max(1, damage)
 				var enemy_landed: int = enemy.take_damage(damage)
 				damage_dealt.emit(enemy, enemy_landed, false, "", 1.0)
@@ -4592,7 +4750,7 @@ func _execute_formation_special(participants: Array, alive_enemies: Array[Combat
 						total_power += (p.get_buffed_stat("attack", p.attack) + p.get_buffed_stat("magic", p.magic))
 				for enemy in alive_enemies:
 					if not enemy.is_alive: continue
-					var damage = max(1, int(total_power * scale * 1.5 / max(1.0, float(alive_enemies.size()))))
+					var damage = max(1, int(total_power * scale * 1.5))
 					var enemy_landed: int = enemy.take_damage(damage, true)
 					damage_dealt.emit(enemy, enemy_landed, false, "", 1.0)
 				battle_log_message.emit("[color=gold]★ Chaos Theory — JACKPOT! Massive damage! ★[/color]")
@@ -4612,7 +4770,7 @@ func _execute_formation_special(participants: Array, alive_enemies: Array[Combat
 						total_power += p.get_buffed_stat("attack", p.attack)
 				for enemy in alive_enemies:
 					if not enemy.is_alive: continue
-					var damage = max(1, int(total_power * scale * 0.8 / max(1.0, float(alive_enemies.size()))))
+					var damage = max(1, int(total_power * scale * 0.8))
 					var enemy_landed: int = enemy.take_damage(damage)
 					damage_dealt.emit(enemy, enemy_landed, false, "", 1.0)
 				for p in participants:
@@ -8370,6 +8528,8 @@ func _on_combatant_died(combatant: Combatant) -> void:
 	# Track party member KOs for permanent injury system
 	if combatant in player_party and combatant not in _ko_this_battle:
 		_ko_this_battle.append(combatant)
+	elif not (combatant in player_party):
+		call_deferred("_dispatch_enemy_felled_party_line", combatant.combatant_name)
 
 
 func _print_defeat_line(name_text: String) -> void:
@@ -9913,6 +10073,59 @@ func _maybe_fire_party_line(combatant: Combatant, event_kind: String, event_data
 	_run_party_line_async(combatant, event_kind, event_data)
 
 
+## A KO reads 0% and is already counted by _ko_this_battle, so the dip a REVIVED member survived is what this adds.
+func _on_hp_changed_for_low_water(_old_value: int, new_value: int, combatant: Combatant) -> void:
+	if combatant == null or not is_instance_valid(combatant) or not (combatant in player_party):
+		return
+	var cap: int = maxi(int(combatant.max_hp), 1)
+	_battle_low_water_pct = minf(_battle_low_water_pct, (float(maxi(new_value, 0)) / float(cap)) * 100.0)
+
+
+## Hooked to the SIGNAL, not to the five sites that set is_crit — a sixth damage path stays covered.
+func _on_damage_dealt_for_party_line(target: Combatant, _amount: int, is_crit: bool, _element: String, _elemental_mod: float) -> void:
+	if not is_crit or target == null or not is_instance_valid(target) or target in player_party:
+		return
+	_fire_moment_line(PartyCombatLineContext.EVENT_CRIT_LANDED, target.combatant_name)
+
+
+## Deferred by the caller: `died` fires inside take_damage, so the field is mid-update on arrival.
+func _dispatch_enemy_felled_party_line(enemy_name: String) -> void:
+	## The last enemy's death IS the victory, and _dispatch_victory_party_line speaks for it 4 lines later.
+	if _get_alive_enemies().is_empty():
+		return
+	_fire_moment_line(PartyCombatLineContext.EVENT_ENEMY_FELLED, enemy_name)
+
+
+## The acting PC speaks; damage_dealt carries no attacker, so current_combatant is who landed it.
+func _fire_moment_line(event_kind: String, target_name: String) -> void:
+	if current_state == BattleState.VICTORY or current_state == BattleState.DEFEAT or current_state == BattleState.INACTIVE:
+		return
+	var speaker: Combatant = current_combatant
+	if speaker == null or not is_instance_valid(speaker) or not (speaker in player_party) or not speaker.is_alive:
+		return
+	_maybe_fire_party_line(speaker, event_kind, {PartyCombatLineContext.MOMENT_TARGET: target_name})
+
+
+## The SPEAKER's own outcome, so a line can say "I levelled" instead of "somebody did".
+static func victory_line_payload(speaker_name: String, char_results: Array, rounds: int, one_shot: bool, low_water_pct: float = 100.0, anyone_fell: bool = false) -> Dictionary:
+	var leveled: bool = false
+	var learned: bool = false
+	for r in char_results:
+		if not (r is Dictionary) or str((r as Dictionary).get("name", "")) != speaker_name:
+			continue
+		leveled = bool((r as Dictionary).get("leveled_up", false))
+		learned = not ((r as Dictionary).get("learned_abilities", []) as Array).is_empty()
+		break
+	return {
+		PartyCombatLineContext.VICTORY_SELF_LEVELED: leveled,
+		PartyCombatLineContext.VICTORY_SELF_LEARNED: learned,
+		PartyCombatLineContext.VICTORY_ROUNDS: rounds,
+		PartyCombatLineContext.VICTORY_ONE_SHOT: one_shot,
+		PartyCombatLineContext.VICTORY_LOW_WATER: low_water_pct,
+		PartyCombatLineContext.VICTORY_ANYONE_FELL: anyone_fell,
+	}
+
+
 ## Pick the freshest alive PC to deliver the post-battle victory line.
 func _dispatch_victory_party_line() -> void:
 	if player_party.is_empty():
@@ -9927,7 +10140,9 @@ func _dispatch_victory_party_line() -> void:
 			speaker = m
 	if speaker == null:
 		return
-	_maybe_fire_party_line(speaker, "victory", {})
+	_maybe_fire_party_line(speaker, "victory", victory_line_payload(
+		speaker.combatant_name, _battle_results.get("char_results", []), current_round, _one_shot_achieved,
+		_battle_low_water_pct, not _ko_this_battle.is_empty()))
 
 
 ## Awaitable producer — kicks off the LLM call OR ships the scripted fallback line.

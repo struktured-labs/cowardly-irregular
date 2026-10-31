@@ -439,3 +439,58 @@ func _setup_npcs() -> void:
 		])
 		casper.npc_id = "casper_kid"
 		npcs.add_child(casper)
+
+	_place_masterites()
+
+
+## W2's Arbiter and Curator, as real fights. Until now GameLoop auto-set both defeat flags the
+## instant the preceding cutscene ended -- its own comment called the battles "off-screen
+## narrative beats" because nothing triggered them -- so two authored Masterites, their intros
+## and their defeat scenes were unreachable. Same MasteriteEncounter the four W1 Masterites use;
+## each names the cutscene_flag_* its world's gates were already waiting for.
+func _place_masterites() -> void:
+	var MasteriteScript = load("res://src/exploration/MasteriteEncounter.gd")
+	if MasteriteScript == null:
+		return
+
+	## ON THE MAIN EAST-WEST PATH, not tucked beside the Annex its intro scene is set in: with the
+	## auto-set gone, chapter5 waits on this defeat, so a player who never walks into the corner
+	## would stall. Row 11 is the path every crossing of this village uses.
+	var arbiter = MasteriteScript.new()
+	arbiter.archetype = "arbiter"
+	arbiter.monster_id = "masterite_arbiter_suburban"
+	arbiter.defeat_flag_name = "cutscene_flag_arbiter_suburban_defeated"
+	arbiter.prereq_flag = "cutscene_flag_arbiter_suburban_intro_complete"
+	arbiter.display_name = "Masterite Arbiter"
+	## NO cutscene_id, DELIBERATELY. world2_arbiter_intro writes
+	## cutscene_flag_arbiter_suburban_intro_complete, which is the flag world2_chapter4 is gated on
+	## NOT having -- so wiring that scene lets it cancel chapter4 permanently. ChapterTitles already
+	## names chapter4 "Arbiter's Appeal": chapter4 IS this boss's intro beat, and the separate scene
+	## is a second authoring of it. test_no_scene_cancels_another_scenes_gate_regression declares the
+	## pair latent and asks for the choice to be made deliberately; this is the choice.
+	arbiter.position = Vector2(20 * TILE_SIZE,11 * TILE_SIZE)
+	npcs.add_child(arbiter)
+
+	## Out in the neighbourhood, which is where its own scenes are set.
+	var curator = MasteriteScript.new()
+	curator.archetype = "curator"
+	curator.monster_id = "masterite_curator_suburban"
+	curator.defeat_flag_name = "cutscene_flag_curator_suburban_defeated"
+	curator.prereq_flag = "cutscene_flag_world2_chapter5_complete"
+	curator.display_name = "Masterite Curator"
+	curator.cutscene_id = "world2_curator_intro"
+	curator.position = Vector2(21 * TILE_SIZE,16 * TILE_SIZE)
+	npcs.add_child(curator)
+
+	## W2's fourth. Tempo of the Rush Hour is level 10 -- the Warden's level, which is why it sits this
+	## early -- and world2_fragment_tempo waits on its defeat. Row 7 is the sidewalk the north half is
+	## crossed on; its own intro scene had no dispatcher until this placement.
+	var tempo = MasteriteScript.new()
+	tempo.archetype = "tempo"
+	tempo.monster_id = "masterite_tempo_suburban"
+	tempo.defeat_flag_name = "cutscene_flag_tempo_suburban_defeated"
+	tempo.prereq_flag = "cutscene_flag_world2_chapter3_complete"
+	tempo.display_name = "Masterite Tempo"
+	tempo.cutscene_id = "world2_tempo_intro"
+	tempo.position = Vector2(11 * TILE_SIZE,7 * TILE_SIZE)
+	npcs.add_child(tempo)

@@ -679,7 +679,15 @@ func _deep_check_rule(rule: Dictionary, character_id: String, reachability_only:
 				errors.append("unknown ability '%s'" % aid)
 				continue
 			if not (aid in kit):
-				errors.append("ability '%s' not in %s's level-1 kit" % [aid, job_id])
+				## ⛔ THE SUFFIX IS THE WHOLE POINT: THIS IS NOT A FIZZLE AND THIS LINT USED TO IMPLY IT
+				## WAS. `_action_can_be_attempted` refuses an ability the character has not learned, so
+				## the rule is SKIPPED and the next one runs -- no turn is consumed. The Cleric's three
+				## `esuna` rules sit above its antidote/echo_herbs rows precisely so a level-1 Cleric
+				## degrades to items, which it does. Read as a fizzle, this message sent me to redesign
+				## three rules whose runtime behaviour was already correct (cowir-main, 2026-10-27).
+				## The leading clause is unchanged because test_rule_composer_fizzle_deep_check asserts
+				## the substring; only the consequence is added.
+				errors.append("ability '%s' not in %s's level-1 kit — the rule is SKIPPED until learned, so a level-1 character never reaches it (a dead rule, NOT a fizzle)" % [aid, job_id])
 			var action_cost: int = int(ability.get("mp_cost", 0))
 			# Upgrades: baseline must be level-1-safe (above), each upgrade must be
 			# learnable somewhere in the job's roster, cost check uses worst case.
@@ -823,9 +831,34 @@ func _resolve_ability_upgrade(combatant: Combatant, action_def: Dictionary) -> S
 		var cand_id: String = str(candidate)
 		if cand_id == "":
 			continue
-		if _combatant_has_learned(combatant, cand_id):
+		if _upgrade_is_usable(combatant, cand_id):
 			chosen = cand_id
 	return chosen
+
+
+## AN UNAFFORDABLE UPGRADE BURNS THE TURN, so affordability belongs to RESOLUTION and not to a
+## guard. `JobSystem.can_use_ability` refuses on `current_mp < cost` and `_execute_ability` simply
+## returns -- no re-selection, no step down to the baseline, turn consumed.
+##
+## The `mp_percent` guard cannot carry this: `_deep_check_rule` sizes it with `ceili` against the
+## job's BASE pool, which is the MINIMUM SUFFICIENT percent and therefore has zero margin by
+## construction (firaga 32 of the Mage's 80 -> exactly 40), while `get_mp_percentage` divides by the
+## LIVE pool. Permanent `max_mp` injuries shrink the live pool and STACK unbounded -- Mana drain
+## wound 5 and Spirit fracture 7, scaled 1 + job_level * 0.05 -- so enough of them put the guard's
+## firing threshold below the spell's cost (cowir-music, 2026-10-27).
+##
+## Asking the SAME function execution asks is the point: it also honours `silence` and the passive
+## `mp_cost_multiplier` through `get_ability_mp_cost`, which a local `current_mp >= mp_cost` would
+## have gotten wrong. Resolution and execution now agree by construction rather than by matching
+## arithmetic in two places.
+func _upgrade_is_usable(combatant: Combatant, ability_id: String) -> bool:
+	if combatant == null or ability_id == "":
+		return false
+	## No JobSystem means no cost data, and an unknown cost is not evidence of unaffordability --
+	## refusing here would silently disable every upgrade, which is the defect this file just fixed.
+	if JobSystem == null:
+		return _combatant_has_learned(combatant, ability_id)
+	return JobSystem.can_use_ability(combatant, ability_id)
 
 
 func _combatant_has_learned(combatant: Combatant, ability_id: String) -> bool:
@@ -1427,7 +1460,9 @@ func _create_fighter_default_script(character_id: String) -> Dictionary:
 			# Power Strike to finish off a wounded enemy
 			{
 				"conditions": [
-					{"type": "enemy_hp_percent", "op": "<", "value": 40}
+					{"type": "enemy_hp_percent", "op": "<", "value": 40},
+					# 8 MP of the Fighter's base 30 pool.
+					{"type": "mp_percent", "op": ">=", "value": 27}
 				],
 				"actions": [{"type": "ability", "id": "power_strike", "target": "lowest_hp_enemy"}]
 			},
@@ -1491,18 +1526,20 @@ func _create_white_mage_default_script(character_id: String) -> Dictionary:
 			{
 				"conditions": [
 					{"type": "hp_percent", "op": "<=", "value": 30},
-					{"type": "mp_percent", "op": ">=", "value": 10}
+					{"type": "mp_percent", "op": ">=", "value": 20}
 				],
-				"actions": [{"type": "ability", "id": "cure", "target": "self"}]
+				# cura is 12 MP of the Cleric's base 70, so the guard must clear 18%.
+				"actions": [{"type": "ability", "id": "cure", "target": "self", "upgrades": ["cura"]}]
 			},
 			# Proactive: any ally (including self) at or below 60% HP — heal before it gets
 			# critical. 60% gives a two-turn buffer against average W1 enemy damage.
 			{
 				"conditions": [
 					{"type": "ally_hp_percent", "op": "<=", "value": 60},
-					{"type": "mp_percent", "op": ">=", "value": 10}
+					{"type": "mp_percent", "op": ">=", "value": 20}
 				],
-				"actions": [{"type": "ability", "id": "cure", "target": "lowest_hp_ally"}]
+				# Same ladder as the self-heal row; cure heals 650, cura 1500.
+				"actions": [{"type": "ability", "id": "cure", "target": "lowest_hp_ally", "upgrades": ["cura"]}]
 			},
 			# Self at or below 60% but MP is gone: use a potion — Cleric can't help others
 			# if she drops first
@@ -1557,17 +1594,23 @@ func _create_thief_default_script(character_id: String) -> Dictionary:
 			# Steal: grab items from a healthy enemy at fight start.
 			# Must come before backstab so steal fires on a fully-HP target (steal
 			# is more likely to succeed on undamaged enemies in many JRPG conventions)
+			# turn<=1 makes it an OPENER: boss HP keeps enemy_hp_percent>75 all fight, so first-match-wins re-picked steal every round and the Rogue dealt 0 damage to Mordaine. Same gate battle_hymn and forecast carry.
 			{
 				"conditions": [
+					{"type": "turn", "op": "<=", "value": 1},
 					{"type": "enemy_hp_percent", "op": ">", "value": 75},
-					{"type": "hp_percent", "op": ">", "value": 70}
+					{"type": "hp_percent", "op": ">", "value": 70},
+					# 4 MP of the Rogue's base 40 pool.
+					{"type": "mp_percent", "op": ">=", "value": 10}
 				],
 				"actions": [{"type": "ability", "id": "steal", "target": "highest_hp_enemy"}]
 			},
 			# Backstab: high-damage hit while the enemy is still mostly healthy
 			{
 				"conditions": [
-					{"type": "enemy_hp_percent", "op": ">", "value": 60}
+					{"type": "enemy_hp_percent", "op": ">", "value": 60},
+					# 14 MP of the Rogue's base 40 pool.
+					{"type": "mp_percent", "op": ">=", "value": 35}
 				],
 				"actions": [{"type": "ability", "id": "backstab", "target": "lowest_hp_enemy"}]
 			},
@@ -1608,16 +1651,18 @@ func _create_black_mage_default_script(character_id: String) -> Dictionary:
 			{
 				"conditions": [
 					{"type": "enemy_count", "op": ">=", "value": 2},
-					{"type": "mp_percent", "op": ">=", "value": 25}
+					{"type": "mp_percent", "op": ">=", "value": 40}
 				],
-				"actions": [{"type": "ability", "id": "fire", "target": "lowest_magic_defense_enemy"}]
+				# firaga is 32 MP of the Mage's base 80, so the guard must clear 40%.
+				"actions": [{"type": "ability", "id": "fire", "target": "lowest_magic_defense_enemy", "upgrades": ["fira", "firaga"]}]
 			},
 			# Single enemy, good MP: Thunder for solid single-target damage
 			{
 				"conditions": [
-					{"type": "mp_percent", "op": ">=", "value": 20}
+					{"type": "mp_percent", "op": ">=", "value": 40}
 				],
-				"actions": [{"type": "ability", "id": "thunder", "target": "lowest_magic_defense_enemy"}]
+				# Ascending order is load-bearing: the resolver keeps the LAST learned candidate.
+				"actions": [{"type": "ability", "id": "thunder", "target": "lowest_magic_defense_enemy", "upgrades": ["thundara", "thundaga"]}]
 			},
 			# MP depleted: basic attack rather than deferring dead weight
 			{
@@ -1661,11 +1706,12 @@ func _create_bard_default_script(character_id: String) -> Dictionary:
 				"actions": [{"type": "ability", "id": "lullaby", "target": "lowest_hp_enemy"}]
 			},
 			# Inspiring Melody: restore MP when any ally is running low (below 30%) and
-			# the Bard still has enough MP to cast it (20%+ own MP)
+			# the Bard can actually pay for it -- 15 MP of its base 65 pool is 24%, not the 20%
+			# this rule asked for, so the guard was 4 points short of its own stated intent.
 			{
 				"conditions": [
 					{"type": "ally_mp_percent", "op": "<", "value": 30},
-					{"type": "mp_percent", "op": ">=", "value": 20}
+					{"type": "mp_percent", "op": ">=", "value": 24}
 				],
 				"actions": [{"type": "ability", "id": "inspiring_melody", "target": "all_allies"}]
 			},

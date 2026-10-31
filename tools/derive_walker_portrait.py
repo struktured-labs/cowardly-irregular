@@ -22,18 +22,20 @@ ROOT = Path(__file__).resolve().parent.parent
 SIZE = 256
 # Share of the figure's height, from the top of the head, that makes the bust.
 BUST_SHARE = 0.46
+# Walkers whose hair stands tall enough that the default share ends at the eyes (Granny Kaya's bun, 2026-10-16).
+BUST_SHARE_FOR = {"granny_kaya": 0.62}
 # npc id -> cell size of its 4x4 walk sheet (row 0 = south).
-WALKERS = {"rotha": 48, "roy": 64, "kid_acrees": 48}
+WALKERS = {"rotha": 48, "roy": 64, "kid_acrees": 48, "granny_kaya": 48}
 
 
-def bust(sheet: Image.Image, cell: int) -> Image.Image:
+def bust(sheet: Image.Image, cell: int, share: float = BUST_SHARE) -> Image.Image:
     """The 256x256 portrait: head and shoulders of the first south frame, integer nearest scale, feet of the crop on the canvas floor."""
     frame = sheet.convert("RGBA").crop((0, 0, cell, cell))
     box = frame.getbbox()
     if box is None:
         raise ValueError("the first south frame is empty")
     x0, y0, x1, y1 = box
-    crop = frame.crop((x0, y0, x1, y0 + max(1, round((y1 - y0) * BUST_SHARE))))
+    crop = frame.crop((x0, y0, x1, y0 + max(1, round((y1 - y0) * share))))
     scale = max(1, min(SIZE // crop.width, SIZE // crop.height))
     big = crop.resize((crop.width * scale, crop.height * scale), Image.NEAREST)
     out = Image.new("RGBA", (SIZE, SIZE), (0, 0, 0, 0))
@@ -72,7 +74,7 @@ def main() -> int:
     for npc, cell in sorted(WALKERS.items()):
         src = ROOT / "assets" / "sprites" / "npcs" / npc / "overworld.png"
         dest = ROOT / "assets" / "sprites" / "portraits" / "npcs" / (npc + ".png")
-        out = bust(Image.open(src), cell)
+        out = bust(Image.open(src), cell, BUST_SHARE_FOR.get(npc, BUST_SHARE))
         out.save(dest)
         print("%s: %s -> %s, bust %s" % (npc, src.relative_to(ROOT), dest.relative_to(ROOT), out.getbbox()))
     return 0

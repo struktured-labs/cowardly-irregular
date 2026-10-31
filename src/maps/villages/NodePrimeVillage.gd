@@ -305,3 +305,47 @@ func _setup_npcs() -> void:
 	])
 	firewall.npc_id = "firewall_attendant_w5"
 	npcs.add_child(firewall)
+	_place_masterites()
+
+
+## W5's three village Masterites. The Root Process already fights arbiter_futuristic; these are the other
+## three, each writing the flag its world5_fragment_* reveal waits on. world4_warden/tempo/curator_intro
+## had no dispatcher until these placements.
+func _place_masterites() -> void:
+	var MasteriteScript = load("res://src/exploration/MasteriteEncounter.gd")
+	if MasteriteScript == null:
+		return
+
+	## Directly north of the entrance, on the circuit floor above the cooling-vent band.
+	var warden = MasteriteScript.new()
+	warden.archetype = "warden"
+	warden.monster_id = "masterite_warden_futuristic"
+	warden.defeat_flag_name = "cutscene_flag_warden_futuristic_defeated"
+	warden.prereq_flag = "cutscene_flag_world5_chapter1_complete"
+	warden.display_name = "Warden of the Firewall"
+	warden.cutscene_id = "world4_warden_intro"
+	warden.position = Vector2(12 * TILE_SIZE,10 * TILE_SIZE)
+	npcs.add_child(warden)
+
+	## Row 12 west of the entrance, the only way past the neon block at cols 5-8.
+	var tempo = MasteriteScript.new()
+	tempo.archetype = "tempo"
+	tempo.monster_id = "masterite_tempo_futuristic"
+	tempo.defeat_flag_name = "cutscene_flag_tempo_futuristic_defeated"
+	tempo.prereq_flag = "cutscene_flag_world5_chapter2_complete"
+	tempo.display_name = "Tempo of the Clock Cycle"
+	tempo.cutscene_id = "world4_tempo_intro"
+	# (10,12) was the save crystal's own cell — the 2x2 trigger swallowed the save point.
+	tempo.position = Vector2(10 * TILE_SIZE,15 * TILE_SIZE)
+	npcs.add_child(tempo)
+
+	## The open row-7 corridor between the data highway and the north shops.
+	var curator = MasteriteScript.new()
+	curator.archetype = "curator"
+	curator.monster_id = "masterite_curator_futuristic"
+	curator.defeat_flag_name = "cutscene_flag_curator_futuristic_defeated"
+	curator.prereq_flag = "cutscene_flag_world5_chapter3_complete"
+	curator.display_name = "Curator of the Memory Pool"
+	curator.cutscene_id = "world4_curator_intro"
+	curator.position = Vector2(15 * TILE_SIZE,7 * TILE_SIZE)
+	npcs.add_child(curator)

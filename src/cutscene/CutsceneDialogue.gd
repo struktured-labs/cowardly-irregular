@@ -1481,6 +1481,7 @@ const PORTRAIT_SPRITES = {
 	"rotha": "res://assets/sprites/portraits/npcs/rotha.png",
 	"roy": "res://assets/sprites/portraits/npcs/roy.png",
 	"kid_acrees": "res://assets/sprites/portraits/npcs/kid_acrees.png",
+	"granny_kaya": "res://assets/sprites/portraits/npcs/granny_kaya.png",
 	"mysterious": "res://assets/sprites/portraits/npcs/mysterious.png",
 	# Name-hash pair targets — OverworldNPC picks these for villager/elder npc_types.
 	"young_man": "res://assets/sprites/portraits/npcs/young_man.png",
