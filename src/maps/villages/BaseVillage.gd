@@ -789,7 +789,8 @@ func _walker_runs() -> Array:
 		if container == null:
 			continue
 		for n in container.get_children():
-			if not (n is Node2D):
+			## A walker moves, so its spawn cell is no obstacle -- and skipping it keeps the derivation a pure function of the map.
+			if not (n is Node2D) or n is WanderingNPC:
 				continue
 			var c := _cell_of((n as Node2D).position)
 			var below: int = 2 if n is AreaTransition else 1

@@ -86,7 +86,8 @@ func test_placement_validation_never_had_to_move_a_walker() -> void:
 		var mine: Array = _walkers(v, true)
 		for i in range(mine.size()):
 			var pts: Array[Vector2] = mine[i].get_patrol()
-			assert_eq(pts, [v._cell_centre(runs[i][0]), v._cell_centre(runs[i][1])] as Array[Vector2],
+			var want: Array[Vector2] = [v._cell_centre(runs[i][0]), v._cell_centre(runs[i][1])]
+			assert_eq(pts, want,
 				"%s/%s was moved by placement validation" % [b["path"].get_file(), mine[i].name])
 
 
