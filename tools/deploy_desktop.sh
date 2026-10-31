@@ -772,6 +772,17 @@ if [ "$PLAT" = "linux" ] || [ "$PLAT" = "windows" ]; then
             echo "        survived it." >&2
             exit 3
         fi
+        # His LIVE game on his real profile: HOLD before booting the battle smoke. Its autosave
+        # would land inside the --sig window and RED this publish after the build (.487). Asked of
+        # tools/his_game_up.sh, the one source; exit 1 = none, 0 (up) and 2 (cannot tell) both
+        # hold. `|| HG=$?` because under set -e a bare `cmd; ec=$?` never reaches its non-zero arm.
+        HG=0; HG_OUT="$(./tools/his_game_up.sh 2>&1)" || HG=$?
+        if [ "$HG" != 1 ]; then
+            echo "[${PLAT}] BLOCKED (HOLD — not a gate failure): his game is up on his real profile, or" >&2
+            echo "        it cannot be told (his_game_up.sh exit $HG). Re-run once it closes; nothing booted." >&2
+            printf '        %s\n' "$HG_OUT" >&2
+            exit 3
+        fi
         REAL_SIG_BEFORE="$(./tools/check_profile_untouched.sh --sig "$USERDATA")"
         REAL_N_BEFORE=$(find "$USERDATA" -type f 2>/dev/null | wc -l)
         if [ "$PLAT" = "windows" ]; then
