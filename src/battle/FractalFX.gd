@@ -191,7 +191,7 @@ func _emit(origin: Vector2, spec: Dictionary, heading: float, k: float, depth_le
 func _fly(s: Sprite2D, start: Vector2, end: Vector2, life: float, size: float, stretch: float,
 		ramp: Gradient, then: Callable, child_at: float) -> void:
 	s.rotation = (end - start).angle()
-	var tw := host.create_tween().set_parallel(true)
+	var tw := s.create_tween().set_parallel(true)
 	tw.tween_method(func(t: float) -> void:
 		if not is_instance_valid(s):
 			return
@@ -211,7 +211,7 @@ func _fly(s: Sprite2D, start: Vector2, end: Vector2, life: float, size: float, s
 func _bloom(pos: Vector2, size: float, life: float, ramp: Gradient) -> void:
 	var g := _flame(pos, size * 0.4, ramp)
 	g.texture = _tex("soft")
-	var tw := host.create_tween().set_parallel(true)
+	var tw := g.create_tween().set_parallel(true)
 	tw.tween_property(g, "scale", Vector2.ONE * size, life * 0.35).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	tw.tween_method(func(t: float) -> void:
 		if is_instance_valid(g):
@@ -232,18 +232,20 @@ func _bolt(from: Vector2, to: Vector2, p: Dictionary, k: float) -> void:
 	head.modulate = ramp.sample(0.05)
 	var mid := (from + to) * 0.5 + Vector2(0, -lift)
 	var last := [from]
-	var tw := host.create_tween()
-	tw.tween_method(func(t: float) -> void:
+	var step := func(t: float) -> void:
 		if not is_instance_valid(head):
 			return
 		var pos := from.lerp(mid, t).lerp(mid.lerp(to, t), t)
-		var step: Vector2 = pos - last[0]
-		if step.length() > 0.01:
-			head.rotation = step.angle()
+		var d: Vector2 = pos - last[0]
+		if d.length() > 0.01:
+			head.rotation = d.angle()
 		head.scale = Vector2(size * 1.8, size)
 		while (pos - last[0]).length() >= spacing:
 			last[0] = last[0] + (pos - last[0]).normalized() * spacing
-			_trail_ember(last[0], size * 0.55, ember), 0.0, 1.0, dur).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
+			_trail_ember(last[0], size * 0.55, ember)
+	## On the head, so the tween dies with it rather than calling a lambda whose capture was freed.
+	var tw := head.create_tween()
+	tw.tween_method(step, 0.0, 1.0, dur).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
 	tw.tween_callback(head.queue_free)
 
 
@@ -251,7 +253,7 @@ func _trail_ember(pos: Vector2, size: float, ramp: Gradient) -> void:
 	var e := _flame(pos, size, ramp)
 	var drift := pos + Vector2(rng.randf_range(-6, 6), rng.randf_range(-22, -10))
 	var life := rng.randf_range(0.18, 0.3)
-	var tw := host.create_tween().set_parallel(true)
+	var tw := e.create_tween().set_parallel(true)
 	tw.tween_property(e, "position", drift, life)
 	tw.tween_property(e, "scale", Vector2.ONE * size * 0.2, life)
 	tw.tween_method(func(t: float) -> void:
@@ -278,7 +280,7 @@ func _spin_fling(center: Vector2, p: Dictionary, k: float) -> void:
 		var a0 := TAU * float(i) / float(n)
 		var s := _flame(center + Vector2.from_angle(a0) * r0, size, ramp)
 		s.modulate = ramp.sample(0.1)
-		var tw := host.create_tween()
+		var tw := s.create_tween()
 		tw.tween_method(func(t: float) -> void:
 			if not is_instance_valid(s):
 				return
@@ -312,7 +314,7 @@ func _ring(pos: Vector2, p: Dictionary, k: float) -> void:
 	r.modulate = _ramp(str(p.get("palette", "fire"))).sample(0.15)
 	host.add_child(r)
 	var dur := float(p.get("dur", 0.3))
-	var tw := host.create_tween().set_parallel(true)
+	var tw := r.create_tween().set_parallel(true)
 	tw.tween_property(r, "scale", Vector2.ONE * float(p.get("scale", 3.5)) * k, dur).set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_OUT)
 	tw.tween_property(r, "modulate:a", 0.0, dur).set_ease(Tween.EASE_IN)
 	tw.chain().tween_callback(r.queue_free)
@@ -326,7 +328,7 @@ func _flash(pos: Vector2, p: Dictionary, k: float) -> void:
 	g.texture = _tex("soft")
 	g.modulate = Color(1.0, 0.95, 0.8, 0.0)
 	var dur := float(p.get("dur", 0.2))
-	var tw := host.create_tween()
+	var tw := g.create_tween()
 	tw.tween_property(g, "modulate:a", peak, dur * 0.15)
 	tw.parallel().tween_property(g, "scale", Vector2.ONE * size, dur * 0.15)
 	tw.tween_property(g, "modulate:a", 0.0, dur * 0.85).set_ease(Tween.EASE_IN)
@@ -352,7 +354,7 @@ func _slash(center: Vector2, p: Dictionary, k: float) -> void:
 			var s := _flame(pos, thick, ramp)
 			s.rotation = a + PI * 0.5
 			s.scale = Vector2(thick * 2.6, thick * 0.6)
-			var tw := host.create_tween()
+			var tw := s.create_tween()
 			tw.tween_method(func(u: float) -> void:
 				if is_instance_valid(s):
 					s.modulate = ramp.sample(u), 0.0, 1.0, float(p.get("life", 0.22)))
@@ -371,7 +373,7 @@ func _lunge(p: Dictionary) -> void:
 	var hold := float(p.get("hold", 0.12))
 	var back := float(p.get("back", 0.2))
 	var every := float(p.get("ghost_every", 0.025))
-	var tw := host.create_tween()
+	var tw := who.create_tween()
 	tw.tween_property(who, "position", dest, dur).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)
 	tw.tween_interval(hold)
 	tw.tween_property(who, "position", home, back).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
@@ -408,7 +410,7 @@ func _afterimage(src: Node2D, p: Dictionary) -> void:
 	g.material = _additive()
 	g.modulate = _color(p.get("ghost_color", [0.55, 0.75, 1.0, 0.55]))
 	host.add_child(g)
-	var tw := host.create_tween()
+	var tw := g.create_tween()
 	tw.tween_property(g, "modulate:a", 0.0, float(p.get("ghost_fade", 0.2)))
 	tw.tween_callback(g.queue_free)
 
@@ -424,7 +426,7 @@ func _impact_frame(p: Dictionary) -> void:
 	mat.set_shader_parameter("tint", Color(0.05, 0.0, 0.1, 1.0))
 	var was: Material = who.material
 	who.material = mat
-	var tw := host.create_tween()
+	var tw := who.create_tween()
 	tw.tween_interval(frame)
 	tw.tween_callback(func() -> void: mat.set_shader_parameter("tint", Color(1, 1, 1, 1)))
 	tw.tween_interval(frame * 1.5)
@@ -441,9 +443,14 @@ func _hitstop(p: Dictionary) -> void:
 			var sprite: AnimatedSprite2D = a
 			var was := sprite.speed_scale
 			sprite.speed_scale = 0.0
-			host.get_tree().create_timer(dur).timeout.connect(func() -> void:
-				if is_instance_valid(sprite):
-					sprite.speed_scale = was)
+			host.get_tree().create_timer(dur).timeout.connect(_unpause.bind(sprite, was))
+
+
+## Bound, not a lambda: a sprite freed mid-hitstop is an argument is_instance_valid can judge,
+## where a freed lambda capture is an engine error.
+func _unpause(sprite: Object, was: float) -> void:
+	if is_instance_valid(sprite):
+		(sprite as AnimatedSprite2D).speed_scale = was
 
 
 func _knockback(p: Dictionary) -> void:
@@ -454,7 +461,7 @@ func _knockback(p: Dictionary) -> void:
 	var base := who.scale
 	var push := Vector2(float(p.get("distance", 18.0)), 0.0)
 	var dur := float(p.get("dur", 0.24))
-	var tw := host.create_tween().set_parallel(true)
+	var tw := who.create_tween().set_parallel(true)
 	tw.tween_property(who, "position", home + push, dur * 0.25).set_ease(Tween.EASE_OUT)
 	tw.tween_property(who, "scale", base * Vector2(0.86, 1.12), dur * 0.2)
 	tw.chain().tween_property(who, "position", home, dur * 0.75).set_trans(Tween.TRANS_ELASTIC).set_ease(Tween.EASE_OUT)
