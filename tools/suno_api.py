@@ -624,6 +624,20 @@ class SunoBrowser:
             if url not in self._audio_urls:
                 self._audio_urls.append(url)
 
+        # ⛔ A REFUSED SUBMIT USED TO BE DROPPED HERE IN SILENCE. The capture below requires
+        # status == 200, so a 4xx/5xx from the generate API left the interceptor with nothing
+        # and the caller printed "Interceptor timed out — falling back to feed-poll", which
+        # reads as "no request was made". Those are OPPOSITE diagnoses: a client-side no-op
+        # (the react-hook-form blur trap at _type_human) versus a server refusal. Measured
+        # 2026-10-29: two tracks reached "Create clicked", produced no clip, and spent no
+        # credits, and nothing in the log could say which half failed.
+        if response.status >= 400 and "suno" in url and "application/json" in ct:
+            try:
+                snippet = response.text()[:300].replace("\n", " ")
+            except Exception:
+                snippet = "(body unreadable)"
+            print("  [net] REFUSED %d %s  %s" % (response.status, url.split("?")[0], snippet))
+
         # Capture generate API responses (clip IDs and audio URLs)
         if "application/json" in ct and response.status == 200:
             try:
@@ -840,6 +854,38 @@ class SunoBrowser:
             print("  Instrumental mode: already active (profile-sticky)")
             return True
 
+        # SUNO v6 (measured 2026-10-30): Instrumental is NO LONGER A TOGGLE. There is no
+        # button or aria-label containing "instrument" anywhere on /create, and the old
+        # confirmation banner never appears — the Lyrics field's own placeholder now reads
+        # "Start writing lyrics, or leave this empty for instrumental", so an EMPTY Lyrics box
+        # IS the mode. This tool never fills Lyrics, so the happy path is already satisfied;
+        # what changed is only how we VERIFY it. Probed headless against the live page: 0
+        # matches for the exact-text button, banner False, that hint present.
+        # v6's Lyrics box carries NO placeholder — the hint "Start writing lyrics, or leave
+        # this empty for instrumental" is page TEXT, not a placeholder, which is why keying on
+        # placeholder matched nothing and this probe returned null. Measured in situ:
+        #   textarea[0] placeholder='' visible   <- Lyrics
+        #   textarea[1] placeholder='female vocals only, …'   <- Styles
+        # Styles is filled AFTER this check, so in a clean run every visible box is empty here.
+        v6_probe = """() => {
+          if (!document.body.innerText.toLowerCase()
+                .includes('leave this empty for instrumental')) return null;
+          const filled = [];
+          for (const ta of document.querySelectorAll('textarea')) {
+            if (ta.offsetParent === null) continue;
+            if ((ta.value || '').trim() !== '') filled.push(ta.placeholder || '(no placeholder)');
+          }
+          return filled;
+        }"""
+        verdict = page.evaluate(v6_probe)
+        if verdict == []:
+            print("  Instrumental mode: v6 implicit (no lyrics entered)")
+            return True
+        if verdict is not None:
+            # The affordance is present but something holds text. Name it rather than guessing
+            # which box to clear — a wrong clear would silently drop the style we rely on.
+            print("  Instrumental mode: v6 hint present but these boxes hold text: %s" % verdict)
+
         # Profile drifted — try the trusted-input path before giving up.
         print("  Instrumental mode: NOT active. Attempting keyboard-nav toggle...")
         inst_btn = page.locator("button").filter(has_text=re.compile(r"^\s*Instrumental\s*$"))
@@ -854,10 +900,34 @@ class SunoBrowser:
         except Exception:
             pass
 
+        # DIAGNOSTIC IN SITU: the standalone probe that found the v6 hint inspected a BARE
+        # /create, while this runs after modal dismissal + advanced mode — a replica of the
+        # page state, not the state. Dump what we actually see so one failed run is enough.
+        try:
+            print("  [diag] textareas on the page:")
+            for i, ta in enumerate(page.locator("textarea").all()):
+                ph = ta.get_attribute("placeholder") or ""
+                val = ta.input_value() or ""
+                print("    [%d] placeholder=%r len(value)=%d visible=%s"
+                      % (i, ph[:70], len(val), ta.is_visible()))
+            txt = page.evaluate("() => document.body.innerText")
+            low = txt.lower()
+            for needle in ("leave this empty for instrumental", "instrument",
+                           "lyrics", "will be instrumental"):
+                print("    innerText contains %-36r %s" % (needle, needle in low))
+            hits = [l.strip()[:90] for l in txt.split("\n")
+                    if "instrument" in l.lower() or "lyric" in l.lower()]
+            print("    lines mentioning instrument/lyric: %s" % (hits[:6] or "NONE"))
+            print("    innerText length: %d" % len(txt))
+        except Exception as _d:
+            print("  [diag] dump failed: %s" % _d)
+
         raise RuntimeError(
-            "Instrumental mode not active and toggle attempts failed. "
-            "Run `uv run tools/suno_api.py --login`, click Instrumental in the "
-            "browser, close the window normally. The mode persists across runs."
+            "Instrumental mode could not be established. Neither the v6 implicit path "
+            "(an empty Lyrics field, hinted by 'leave this empty for instrumental') nor the "
+            "legacy Instrumental toggle was found. If Suno changed /create again, re-probe the "
+            "page before trusting either. Legacy fallback: `uv run tools/suno_api.py --login`, "
+            "set Instrumental in the browser, close the window normally."
         )
 
     def _locate_style_textarea(self):
@@ -1373,6 +1443,15 @@ def align_import_loops(track_keys: list) -> None:
     """
     if not track_keys:
         return
+    # An editor-class `godot --import` inside a NETWORK pipeline couples two things the fleet
+    # schedules separately: generation needs no engine, the import needs a box slot. Deferring
+    # keeps a 10-minute guard run on another lane from contending with this.
+    if os.environ.get("SUNO_SKIP_IMPORT") == "1":
+        print("  SUNO_SKIP_IMPORT=1 — DEFERRED. The OGGs are downloaded and the manifest is")
+        print("  written, but the .import sidecars are NOT aligned yet. In a box slot run:")
+        print("    XDG_DATA_HOME=$PWD/tmp/xdg uv run tools/suno_api.py --align-import %s"
+              % " ".join(track_keys))
+        return
     print("  Importing so Godot writes the .import sidecars...")
     # ⛔ SANDBOXED user://. `--import` is EDITOR-CLASS -- it carries the same E flag as
     # --editor, and --headless means no window, not "not the editor". Unsandboxed it rotates
@@ -1413,6 +1492,9 @@ def main() -> None:
 
     # Generation args
     gen = parser.add_argument_group("generation")
+    gen.add_argument("--align-import", metavar="KEY", nargs="+", default=None,
+                     help="Run ONLY the Godot import + loop alignment for these keys "
+                          "(the deferred half of SUNO_SKIP_IMPORT=1). Needs a box slot.")
     gen.add_argument("--track-id", metavar="ID", nargs="+", default=None,
                      help="Track ID(s) — multiple ride one browser session (one captcha solve)")
     gen.add_argument("--title", default="")
@@ -1484,6 +1566,9 @@ def main() -> None:
         edit_prompts()
         return
 
+    if args.align_import:
+        align_import_loops(list(args.align_import))
+        return
     if not args.login and not args.batch and not args.shared and not args.track_id:
         die("--track-id required (or use --batch/--shared/--login/--list/--pin/--edit-prompts)")
 
@@ -1681,6 +1766,10 @@ def main() -> None:
     print(f"DONE: {succeeded}/{len(queue)} succeeded")
     if failed:
         print(f"Failed: {', '.join(failed)}")
+        # EXIT NON-ZERO. This printed "DONE: 0/2 succeeded" and still exited 0, so a wrapper
+        # that gates on the exit code treats a total failure as a success — the same
+        # false-green class as a `;`-chained check. The caller must be able to branch.
+        sys.exit(1)
     print(f"{'=' * 60}")
 
 

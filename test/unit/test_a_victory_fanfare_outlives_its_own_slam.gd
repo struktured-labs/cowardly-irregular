@@ -106,8 +106,18 @@ func test_the_overlay_routes_the_slam_to_that_voice() -> void:
 	## The control for the OLD routing: play_battle("victory_slam") is what shipped, and it must
 	## not be what the overlay calls.
 	var code: String = _overlay_code()
-	assert_true(code.contains('play_victory_sfx("%s")' % SLAM),
+	## The key is chosen by _slam_key() since the S-rank slam (2026-10-30), so the call takes a variable;
+	## either form routes, and the selector's default is grounded at runtime rather than spelled.
+	var routed_literal: bool = code.contains('play_victory_sfx("%s")' % SLAM)
+	var routed_selected: bool = code.contains("play_victory_sfx(slam)") and code.contains("var slam := _slam_key()")
+	assert_true(routed_literal or routed_selected,
 		"VictoryOverlay no longer routes the slam through play_victory_sfx, so it is back on the shared battle voice")
+	if routed_selected:
+		var ov = load(OVERLAY).new()
+		ov._one_shot_rank = ""
+		assert_eq(ov._slam_key(), SLAM, "with no one-shot rank the overlay selects '%s', not the ordinary slam" % ov._slam_key())
+		ov.free()
+	assert_false(code.contains("play_battle(slam)"), "the selected slam is played through play_battle — the shipped defect, one variable over")
 	assert_false(code.contains('play_battle("%s")' % SLAM),
 		"the overlay plays the slam through play_battle again — that is the shipped defect verbatim, and it fails silently because the slam is still audible; only the fanfare under it dies")
 	## ⛔ THE NAME IS NOT THE METHOD. The two asserts above certify SPELLING in the overlay's own
