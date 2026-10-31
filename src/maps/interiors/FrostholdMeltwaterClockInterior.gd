@@ -122,6 +122,7 @@ func _setup_npcs() -> void:
 	var yrsa = OverworldNPCScript.new()
 	yrsa.npc_name = "Keeper Yrsa"
 	yrsa.npc_type = "villager"
+	yrsa.sprite_archetype = "young_woman"  ## pinned: the name-hash pair drew the other sex
 	yrsa.position = Vector2(4 * TILE_SIZE, 5 * TILE_SIZE)
 	yrsa.dialogue_lines = [
 		"The clock runs on melting. As long as something melts, time is passing. That's the whole mechanism.",
