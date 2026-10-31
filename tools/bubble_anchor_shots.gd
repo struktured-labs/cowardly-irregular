@@ -63,8 +63,11 @@ func _init() -> void:
 		var job: String = str(pc.job.get("id", "?")) if pc.job is Dictionary else "?"
 		var home: Vector2 = sprite.global_position
 		var anchor := home + Vector2(BattleSpeechBubble.head_dx(sprite), -BattleSpeechBubble.head_lift(sprite))
+		## The open command menu draws over a bubble (z 100 > 95) and pushes it aside; hide it for the frame.
+		_hide_menus(scene)
 		scene._spawn_quip_bubble(sprite, pc.combatant_name, "Is this over MY head?", scene._get_job_quip_color(pc), 30.0)
-		await create_timer(0.6, true, false, true).timeout
+		## The fade-in runs in battle time, so 0.6 real s caught it part-transparent at 1x.
+		await create_timer(1.5, true, false, true).timeout
 		var live := BattleSpeechBubble._live.size()
 		var img := root.get_texture().get_image()
 		var c0 := Vector2i(int(anchor.x) - CROP.x / 2, int(anchor.y) - 170)
@@ -86,6 +89,13 @@ func _init() -> void:
 	_clear_bubbles()
 	print("[SHOT] done world=%d shots=%d failed=%d" % [world, shots, fails])
 	quit(0 if fails == 0 and shots > 0 else 1)
+
+
+func _hide_menus(scene: Node) -> void:
+	var m = scene.get("active_win98_menu")
+	while m != null and is_instance_valid(m):
+		m.visible = false
+		m = m.get("submenu")
 
 
 func _clear_bubbles() -> void:
