@@ -111,7 +111,7 @@ func test_the_manager_still_sets_the_flag_on_load() -> void:
 	for want in [false, true]:
 		var cfg := {
 			"version": 2,
-			"active_profile": "8BitDo SN30",
+			"active_profile": "Standard",
 			"nintendo_mode": InputProfileManager.nintendo_mode,
 			"custom_bindings": {},
 			"profile_chosen_by_user": want,

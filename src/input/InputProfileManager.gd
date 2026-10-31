@@ -1,7 +1,7 @@
 extends Node
 
 ## InputProfileManager - Manages controller button profiles and runtime remapping.
-## Handles 8BitDo SN30, 8BitDo Ultimate Pro 2, and Custom profiles.
+## Handles the Standard and Custom profiles.
 ## Persists custom bindings to user://input/controls.json.
 
 const CONFIG_PATH = "user://input/controls.json"
@@ -118,46 +118,22 @@ const PROFILE_STANDARD = {
 	"ui_field_menu": [3],     # NORTH face — the field menu, rebindable since 2026-10-12
 }
 
-const PROFILE_SN30 = {
-	"ui_accept": [1],          # B (East face)
-	"ui_cancel": [0],          # A (South face)
-	"battle_advance": [10],    # RIGHT_SHOULDER (R)
-	"battle_defer": [9],       # LEFT_SHOULDER (L)
-	"battle_toggle_auto": [4], # BACK (Select/Minus)
-	"ui_menu": [6],             # START. L3 moved to battle_open_log 2026-10-04 (struktured: "reuse L3"), deliberately, not dropped
-	"battle_open_log": [7],    # L3 — the full battle log
-	"ui_field_menu": [3],     # NORTH face — the field menu, rebindable since 2026-10-12
-}
-
-const PROFILE_ULTIMATE_PRO_2 = {
-	"ui_accept": [1],          # B (East face)
-	"ui_cancel": [0],          # A (South face)
-	# struktured 2026-07-18: on the actual 8BitDo Ultimate Pro 2 hardware, L physically sends button 10 and R sends button 9 — the Godot JOY_BUTTON_LEFT/RIGHT_SHOULDER constants (9/10) don't match this device's reported indices. Hint bar reads "[L] Defer · [R] Advance"; keep hardware matching the hint bar, not the constant names.
-	# 2026-07-29 ALIGNED. The swap above was measured on real hardware BEFORE ControllerMappings
-	# existed, when a raw index genuinely did not mean what the constant said. With a mapping
-	# registered, 9 IS the left shoulder and 10 IS the right by definition, so keeping the swap
-	# INVERTED Defer and Advance against the hint bar for anyone who picked this profile.
-	# Autodetect never reaches it (neither Ultimate 2 identity contains "ultimate pro 2", pinned
-	# by test) but it stays MANUALLY selectable, and it is the listed name closest to struktured's
-	# actual pad — the tempting choice. Aligning is correct under either half of the open
-	# retire-vs-keep ruling; that ruling now only decides whether the entry exists at all.
-	"battle_advance": [10],    # RIGHT_SHOULDER — aligned with Standard and the hint bar
-	"battle_defer": [9],       # LEFT_SHOULDER — aligned with Standard and the hint bar
-	"battle_toggle_auto": [4], # BACK (Select/Minus)
-	"ui_menu": [6],             # START. L3 moved to battle_open_log 2026-10-04 (struktured: "reuse L3"), deliberately, not dropped
-	"battle_open_log": [7],    # L3 — the full battle log
-	"ui_field_menu": [3],     # NORTH face — the field menu, rebindable since 2026-10-12
-}
-
 ## Profile names
-const PROFILE_NAMES = ["Standard", "8BitDo SN30", "8BitDo Ultimate Pro 2", "Custom"]
+const PROFILE_NAMES = ["Standard", "Custom"]
+
+## Profiles that no longer exist, and what a config naming one loads as. struktured 2026-10-31: the
+## "8BitDo SN30" and "8BitDo Ultimate Pro 2" entries bound exactly what Standard binds, so they were a
+## pad's NAME in the picker over the same table -- collapsed to Standard. Mapped rather than dropped,
+## so a player who picked one keeps their choice instead of reading an "unknown profile" warning.
+const RETIRED_PROFILES := {
+	"8BitDo SN30": "Standard",
+	"8BitDo Ultimate Pro 2": "Standard",
+}
 
 ## Device-name substrings (lowercased) → profile. First match wins; anything unmatched gets Standard.
-const PROFILE_AUTODETECT = [
-	["ultimate pro 2", "8BitDo Ultimate Pro 2"],
-	["sn30", "8BitDo SN30"],
-	["sf30", "8BitDo SN30"],
-]
+## Empty since 2026-10-31: every profile it routed to bound exactly Standard. It stays so a pad that
+## genuinely needs other bindings has somewhere to go.
+const PROFILE_AUTODETECT = []
 
 ## Listed profiles that are DELIBERATELY identical to PROFILE_STANDARD, each with the reason its
 ## entry still exists. Declaring it here is what makes the sameness a decision instead of a
@@ -171,19 +147,7 @@ const PROFILE_AUTODETECT = [
 ##
 ## 📌 Reasons, not permission: there is no flag here that silences the guard. An entry is a sentence
 ## a reader can disagree with, which is the only form that cannot become muscle memory.
-const PROFILE_ALIASES := {
-	"8BitDo SN30":
-		"Identical to Standard since the 2026-05-02 Godot-4 button renumbering. Kept because "
-		+ "PROFILE_AUTODETECT routes the 'sn30' and 'sf30' device-name substrings here, so the "
-		+ "name is what an SN30 owner sees their own pad called, and it is where a real SN30 "
-		+ "divergence would land.",
-	"8BitDo Ultimate Pro 2":
-		"Aligned to Standard on 2026-07-29 when ControllerMappings made the hardware shoulder "
-		+ "swap wrong rather than right. Autodetect never reaches it (neither Ultimate 2 identity "
-		+ "contains 'ultimate pro 2', pinned by test) but it stays manually selectable and is the "
-		+ "listed name closest to struktured's actual pad. Its existence is the open half of the "
-		+ "retire-vs-keep ruling.",
-}
+const PROFILE_ALIASES := {}
 
 ## Human-readable button labels by index — Godot 4 JoyButton enum.
 ## (Pre-2026-05-02 these labels were transcribed from Godot 3, which silently
@@ -294,10 +258,6 @@ func get_profile_bindings(profile_name: String) -> Dictionary:
 	match profile_name:
 		"Standard":
 			return PROFILE_STANDARD
-		"8BitDo SN30":
-			return PROFILE_SN30
-		"8BitDo Ultimate Pro 2":
-			return PROFILE_ULTIMATE_PRO_2
 		"Custom":
 			return custom_bindings
 		_:
@@ -971,6 +931,10 @@ func load_config() -> void:
 	# vanished with no console hint, presenting as "the game forgot my controller profile". Benign
 	# while PROFILE_NAMES only ever grows; the moment a profile is renamed or retired it becomes the
 	# difference between a diagnosable message and a mystery. Warn, then fall through to autodetect.
+	var saved_profile: String = str(data.get("active_profile", ""))
+	if RETIRED_PROFILES.has(saved_profile):
+		print("[InputProfileManager] Saved profile '%s' was retired; loading it as '%s'" % [saved_profile, RETIRED_PROFILES[saved_profile]])
+		data["active_profile"] = RETIRED_PROFILES[saved_profile]
 	if data.has("active_profile") and not (data["active_profile"] in PROFILE_NAMES):
 		push_warning("[InputProfileManager] Saved profile '%s' is not a known profile (known: %s) — falling back to autodetect. A profile was likely renamed or retired." % [str(data["active_profile"]), str(PROFILE_NAMES)])
 
@@ -1000,7 +964,7 @@ func load_config() -> void:
 		# what it still does is clear a choice the player never made, which is reason enough to keep
 		# it. A comment that justifies code by a mechanism that no longer exists is read as current.
 		var cfg_version: int = int(data.get("version", 1))
-		if cfg_version < 2 and active_profile == "8BitDo Ultimate Pro 2":
+		if cfg_version < 2 and saved_profile == "8BitDo Ultimate Pro 2":
 			profile_chosen_by_user = false
 
 	# Absent key keeps the east-confirm default rather than flipping a returning player's

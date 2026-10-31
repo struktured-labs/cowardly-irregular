@@ -90,7 +90,7 @@ func test_the_menu_is_a_binding_the_controls_screen_can_list() -> void:
 		"and it must be remappable, or the Controls screen still cannot show it")
 	assert_ne(str(m.ACTION_LABELS.get(OverworldMenu.FIELD_MENU_ACTION, "")), "",
 		"and it needs a human label for the row")
-	for prof in [m.PROFILE_STANDARD, m.PROFILE_SN30, m.PROFILE_ULTIMATE_PRO_2]:
+	for prof in [m.PROFILE_STANDARD]:
 		assert_true(prof.has(OverworldMenu.FIELD_MENU_ACTION),
 			"every profile must bind it, or the row vanishes on that profile")
 

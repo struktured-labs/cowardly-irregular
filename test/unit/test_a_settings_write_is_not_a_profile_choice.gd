@@ -20,7 +20,8 @@ extends GutTest
 ## silently overriding a deliberate Settings choice is the worse of the two errors. Presence of the
 ## key is the discriminator, so no version bump: absent means pre-fix.
 
-const REAL_PROFILE := "8BitDo SN30"
+## Any listed profile other than the fallback works here; "8BitDo SN30" was retired into Standard 2026-10-31.
+const REAL_PROFILE := "Custom"
 
 var _raw: String = ""
 var _had: bool = false
@@ -157,3 +158,46 @@ func test_a_config_from_before_this_fix_keeps_its_profile() -> void:
 		"an old config cannot say whether the profile was chosen, so it must be treated as chosen — "
 		+ "re-running autodetect would overwrite a choice the player made before the update")
 	assert_eq(InputProfileManager.active_profile, REAL_PROFILE, "…and the saved profile still applies")
+
+
+func _load_from(cfg: Dictionary) -> void:
+	DirAccess.make_dir_recursive_absolute(InputProfileManager.CONFIG_PATH.get_base_dir())
+	var f := FileAccess.open(InputProfileManager.CONFIG_PATH, FileAccess.WRITE)
+	assert_not_null(f, "CONTROL: the fixture config must be writable")
+	f.store_string(JSON.stringify(cfg, "\t"))
+	f.close()
+	InputProfileManager.load_config()
+
+
+## struktured 2026-10-31: the SN30 and Ultimate Pro 2 profiles were collapsed into Standard. A config
+## that picked one must load as Standard and keep the choice, not fall to "unknown profile".
+func test_a_retired_profile_loads_as_standard_and_keeps_the_choice() -> void:
+	InputProfileManager.apply_profile("Custom")
+	InputProfileManager.profile_chosen_by_user = false
+	_load_from({"version": 2, "active_profile": "8BitDo SN30", "nintendo_mode": false,
+		"custom_bindings": {}, "profile_chosen_by_user": true})
+	assert_eq(InputProfileManager.active_profile, "Standard",
+		"a config naming the retired '8BitDo SN30' must load as Standard")
+	assert_true(InputProfileManager.profile_chosen_by_user,
+		"and the player's choice must survive the rename, or autodetect starts overriding it")
+
+
+## The v1 rule still reads the SAVED name: v1 wrote "8BitDo Ultimate Pro 2" as a default, not a choice.
+func test_a_v1_ultimate_pro_2_default_is_still_not_a_choice() -> void:
+	InputProfileManager.apply_profile("Custom")
+	InputProfileManager.profile_chosen_by_user = true
+	_load_from({"version": 1, "active_profile": "8BitDo Ultimate Pro 2", "nintendo_mode": false,
+		"custom_bindings": {}})
+	assert_eq(InputProfileManager.active_profile, "Standard", "the retired name still loads as Standard")
+	assert_false(InputProfileManager.profile_chosen_by_user,
+		"a v1 config's Ultimate Pro 2 was the hardcoded startup default, so it must not read as a choice")
+
+
+## CONTROL: the mapping is for the RETIRED names only; an unknown name is not quietly turned into Standard.
+func test_an_unknown_profile_is_not_mapped() -> void:
+	InputProfileManager.apply_profile("Custom")
+	_load_from({"version": 2, "active_profile": "Nonexistent Pad Profile", "nintendo_mode": false,
+		"custom_bindings": {}, "profile_chosen_by_user": true})
+	assert_eq(InputProfileManager.active_profile, "Custom",
+		"an unknown saved profile must be skipped, leaving the active one alone")
+

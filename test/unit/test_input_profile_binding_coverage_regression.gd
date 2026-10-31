@@ -51,8 +51,9 @@ func _profiles() -> Dictionary:
 ## cannot, and that is the price of deleting the list.
 func test_the_profile_derivation_actually_finds_the_profiles() -> void:
 	var found := _profiles()
-	assert_gt(found.size(), 2, "the shape filter must still match real binding profiles — an empty or tiny set makes every other test here vacuous")
-	for known in ["PROFILE_STANDARD", "PROFILE_SN30", "PROFILE_ULTIMATE_PRO_2"]:
+	## One built-in table since the 2026-10-31 collapse; the floor is that it is still FOUND.
+	assert_gt(found.size(), 0, "the shape filter must still match real binding profiles — an empty set makes every other test here vacuous")
+	for known in ["PROFILE_STANDARD"]:
 		assert_true(found.has(known), "derivation must still find the known profile '%s'" % known)
 	assert_false(found.has("PROFILE_NAMES"), "PROFILE_NAMES is an Array of labels, not a binding profile — the filter must discriminate, or it is matching everything")
 	assert_false(found.has("ACTION_LABELS"), "ACTION_LABELS maps action -> String, not action -> button list; if it enters the set the shape filter is not filtering")
@@ -78,7 +79,7 @@ func test_the_profile_derivation_actually_finds_the_profiles() -> void:
 ## so it holds if the dispatch is rewritten.
 func test_every_menu_profile_resolves_to_its_own_bindings() -> void:
 	var names: Array = _ipm.PROFILE_NAMES
-	assert_gt(names.size(), 2, "positive control: PROFILE_NAMES must list the real profiles, or this test iterates nothing")
+	assert_gt(names.size(), 1, "positive control: PROFILE_NAMES must list the real profiles (Standard + Custom), or this test iterates nothing")
 
 	# The dispatch ARMS, read from source. Two behavioural predicates were tried first and BOTH were
 	# wrong, in a way worth recording because each looked obviously right:
@@ -102,7 +103,7 @@ func test_every_menu_profile_resolves_to_its_own_bindings() -> void:
 	# BOUNDARY: a dispatch rewritten as a lookup table, or arms built from a variable, evades this.
 	# The positive control below fails loudly if the parse ever stops finding arms.
 	var arms := _dispatch_arms()
-	assert_gt(arms.size(), 2, "positive control: the get_profile_bindings dispatch must yield its arms — an empty set makes the check below vacuous")
+	assert_gt(arms.size(), 1, "positive control: the get_profile_bindings dispatch must yield its arms — an empty set makes the check below vacuous")
 
 	var unreachable: Array[String] = []
 	for profile_name in names:
@@ -138,7 +139,10 @@ func test_autodetect_targets_are_real_menu_profiles() -> void:
 	for entry in _ipm.PROFILE_AUTODETECT:
 		if not (entry[1] in names):
 			unknown.append("%s -> %s" % [str(entry[0]), str(entry[1])])
-	assert_gt(_ipm.PROFILE_AUTODETECT.size(), 0, "positive control: the autodetect table must have entries")
+	## Empty since 2026-10-31, so the loop above judges nothing: what autodetect ACTUALLY returns
+	## for real pads must still be a menu profile.
+	for pad in ["8BitDo SN30 Pro", "8BitDo Ultimate Pro 2", "8BitDo Ultimate 2 Wireless Controller", "Xbox 360 Controller"]:
+		assert_true(_ipm.detect_profile_for_device(pad) in names, "autodetect gave '%s' a profile the menu does not offer" % pad)
 	assert_eq(unknown, [] as Array[String],
 		"autodetect maps a device to a profile name that is not in PROFILE_NAMES, so the pad is detected and then given Standard: %s" % str(unknown))
 
