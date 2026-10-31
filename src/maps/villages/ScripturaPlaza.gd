@@ -273,3 +273,11 @@ func _lead_is_rogue() -> bool:
 	elif leader.job is String:
 		return leader.job == "rogue"
 	return false
+
+
+## Ambient walkers: their lines are derived from this map's ground (BaseVillage._walker_runs).
+func _get_ambient_walkers() -> Array:
+	return [
+		{"name": "Courteous Citizen Elsa", "archetype": "noblewoman", "line": "Good day. Lovely weather. Please walk on the left. It is the law, but kindly."},
+		{"name": "Notary's Runner Pim", "archetype": "young_man", "line": "Forty documents, forty stamps, one signature short. It is always one signature short."},
+	]

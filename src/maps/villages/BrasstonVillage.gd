@@ -446,3 +446,12 @@ func _place_masterites() -> void:
 	curator.cutscene_id = "world3_requisition_intro"
 	curator.position = Vector2(18 * TILE_SIZE,3 * TILE_SIZE)
 	npcs.add_child(curator)
+
+
+## Ambient walkers: their lines are derived from this map's ground (BaseVillage._walker_runs).
+func _get_ambient_walkers() -> Array:
+	return [
+		{"name": "Gear Courier Tibbs", "archetype": "young_man", "line": "Delivering a gear to a man who needs a gear to deliver gears. It's gears all the way down."},
+		{"name": "Clockwinder Edda", "archetype": "old_woman", "line": "Every clock in town runs because I walk past it. Don't ask how. I don't."},
+		{"name": "Steam Hawker Bellamy", "archetype": "merchant", "line": "Bottled steam! Fresh this morning! Slightly less fresh now!"},
+	]
