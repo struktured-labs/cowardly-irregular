@@ -763,7 +763,7 @@ var ambient_walker_lines: Dictionary = {}
 func _add_ambient_walkers(roster: Array) -> int:
 	if roster.is_empty() or npcs == null:
 		return 0
-	var runs := _walker_runs()
+	var runs := _walker_runs(roster.size())
 	var added: int = 0
 	for spec in roster:
 		if added >= runs.size():
@@ -786,7 +786,7 @@ func _cell_centre(cell: Vector2i) -> Vector2:
 
 ## Horizontal runs of steppable cells clear of doors, exits and anyone standing still; longest first,
 ## and never two on neighbouring rows over the same columns, so walkers do not pace on top of each other.
-func _walker_runs() -> Array:
+func _walker_runs(want: int = 0) -> Array:
 	var size := _walker_grid_size()
 	if size == Vector2i.ZERO:
 		return []
@@ -830,7 +830,38 @@ func _walker_runs() -> Array:
 				break
 		if not clash:
 			chosen.append(r)
+	## Vertical lines only when the rows cannot fill the roster, so a village the rows already serve is unchanged.
+	if chosen.size() < want:
+		for r in _walker_column_runs(size, avoid, margin):
+			if not chosen.any(func(c): return _run_rect(c).grow(2).intersects(_run_rect(r))):
+				chosen.append(r)
 	return chosen
+
+
+func _walker_column_runs(size: Vector2i, avoid: Dictionary, margin: int) -> Array:
+	var runs: Array = []
+	for x in range(margin, size.x - margin):
+		var start: int = -1
+		for y in range(margin, size.y - margin + 1):
+			var cell := Vector2i(x, y)
+			var open: bool = y < size.y - margin and not avoid.has(cell) and _is_cell_walkable(cell)
+			if open and start >= 0 and _can_step(Vector2i(x, y - 1), cell):
+				continue
+			if start >= 0:
+				var n: int = y - start
+				if n >= WALKER_MIN_RUN:
+					var take: int = mini(n, WALKER_MAX_RUN)
+					var a: int = start + (n - take) / 2
+					runs.append([Vector2i(x, a), Vector2i(x, a + take - 1)])
+			start = y if open else -1
+	runs.sort_custom(func(p, q): return (p[1] - p[0]).length() > (q[1] - q[0]).length())
+	return runs
+
+
+func _run_rect(r: Array) -> Rect2i:
+	var lo := Vector2i(mini(r[0].x, r[1].x), mini(r[0].y, r[1].y))
+	var hi := Vector2i(maxi(r[0].x, r[1].x), maxi(r[0].y, r[1].y))
+	return Rect2i(lo, hi - lo + Vector2i.ONE)
 
 
 ## Map size in cells: the glyph rows when a village has them, else its declared pixel size (the strip mall, the plaza).

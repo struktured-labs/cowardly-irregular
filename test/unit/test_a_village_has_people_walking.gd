@@ -9,6 +9,8 @@ const MapScripts := preload("res://test/unit/helpers/map_scripts.gd")
 
 const VILLAGE_DIR := "res://src/maps/villages"
 const MIN_WALKERS := 2
+## The ONE exemption, with its measurement: every floor island in Vertex is occupied, so no line clears it.
+const NO_ROOM_TO_WALK := {"VertexVillage.gd": "shops, a door, four NPCs and three masterites fill its islands"}
 
 var _built: Array = []
 
@@ -49,6 +51,11 @@ func test_every_village_has_people_walking() -> void:
 	assert_gt(_built.size(), 10, "CONTROL: the walk built the villages (%d)" % _built.size())
 	for b in _built:
 		var n: int = _walkers(b["village"], false).size()
+		var asked: int = b["village"]._get_ambient_walkers().size()
+		assert_eq(_walkers(b["village"], true).size(), asked, "%s asked for %d walker(s) and its ground fit fewer" % [b["path"].get_file(), asked])
+		if NO_ROOM_TO_WALK.has(b["path"].get_file()):
+			assert_eq(asked, 0, "%s is exempt as having no room, so it must not ask for walkers" % b["path"].get_file())
+			continue
 		assert_gte(n, MIN_WALKERS, "%s has %d walker(s): a town with nobody moving reads as a diorama" % [b["path"].get_file(), n])
 
 

@@ -260,9 +260,7 @@ func _place_masterites() -> void:
 	npcs.add_child(arbiter)
 
 
-## Ambient walkers: their lines are derived from this map's ground (BaseVillage._walker_runs).
+## No ambient walkers, by measurement: four shops, a door, four NPCs and three masterites fill every floor island,
+## so no 5-cell line clears them. Vertex stays sparse by design; anyone added here would stand in someone's way.
 func _get_ambient_walkers() -> Array:
-	return [
-		{"name": "The Pacing", "archetype": "traveler", "line": "Here. Then there. Then here. It is the same distance both ways. That is the comfort."},
-		{"name": "The Errand", "archetype": "monk", "line": "I was sent to fetch something. I have forgotten what. I walk anyway; the walking remembers."},
-	]
+	return []
