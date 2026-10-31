@@ -9931,16 +9931,9 @@ func _produce_boss_gloat_async(prompt: String, fallback: String, victory: bool) 
 	_emit_boss_gloat(text, victory)
 
 
-## The model often wraps its whole reply in quotes despite being told not to; the box then reads "…" and the log ""…"".
-## Only a MATCHED outer pair is removed, so authored narration with quoted speech inside is untouched.
+## The gloat's name for DialoguePrompts.clean_model_text, the one rule every model-written line goes through.
 static func strip_wrapping_quotes(text: String) -> String:
-	var t: String = text.strip_edges()
-	for pair in [["\"", "\""], ["“", "”"], ["'", "'"], ["‘", "’"]]:
-		if t.length() >= 2 and t.begins_with(pair[0]) and t.ends_with(pair[1]):
-			var inner: String = t.substr(1, t.length() - 2)
-			if not inner.contains(pair[0]) and not inner.contains(pair[1]):
-				return inner.strip_edges()
-	return t
+	return DialoguePrompts.clean_model_text(text)
 
 
 ## The only emitter of boss_gloat_line: clears the pending flag on every path, so the results can never wait on a line that already spoke.
