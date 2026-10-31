@@ -793,16 +793,7 @@ func _on_battle_triggered(enemies: Array) -> void:
 
 ## Tick 86: see SuburbanOverworld._on_roaming_monster_touched for rationale.
 func _on_roaming_monster_touched(monster_id: String, _monster_types: Array, is_elite: bool = false) -> void:
-	# A field elite fights ALONE -- it is the encounter, not the leader of one. Sourced from
-	# the monster's own field_elite flag so this can never drift from field_elites.json.
-	if is_elite or _is_field_elite(monster_id):
-		_on_battle_triggered([_elite_id(monster_id)])
-		return
-	var enemies: Array = [monster_id]
-	var extra: int = randi_range(0, 2)
-	for _i in range(extra):
-		enemies.append(monster_id)
-	_on_battle_triggered(enemies)
+	_on_battle_triggered(MonsterSpawner.group_for_touch(monster_id, is_elite))
 
 
 func _on_menu_requested() -> void:
@@ -867,24 +858,6 @@ func _add_boundary_wall(parent: StaticBody2D, pos: Vector2, size: Vector2) -> vo
 	collision.shape = shape
 	collision.position = pos
 	parent.add_child(collision)
-
-
-## True when the species is authored as a field elite. Reads the monster DB rather than the
-## elite roster: the roster says which species is THIS world's rare, the flag says what the
-## species IS, and the battle only cares about the latter.
-func _is_field_elite(monster_id: String) -> bool:
-	# BestiarySystem is a class_name with STATIC functions, NOT an autoload -- the node
-	# lookup this used returned null every time, so this returned false for every monster
-	# and field elites never once fought alone. They spawned with the 0-2 random duplicates
-	# any ordinary roamer gets, which is exactly what the solo guard exists to prevent.
-	return bool(BestiarySystem.get_monster_data(monster_id).get("field_elite", false))
-
-## The elite marker rides IN the id, not in a latch. GameLoop hands the id straight to
-## BattleScene and on to EncounterSystem._create_enemy_data, so a value that travels the whole
-## way cannot leak the way a "next encounter is elite" flag would if the battle is blocked --
-## and this chain has already cost the fleet one leaked latch (the 2026-09-06 spider wedge).
-func _elite_id(monster_id: String) -> String:
-	return monster_id + EncounterSystem.ELITE_SUFFIX if not monster_id.ends_with(EncounterSystem.ELITE_SUFFIX) else monster_id
 
 
 ## BaseVillage's convention, which no overworld carried: GameLoop._derive_current_scene_music_key

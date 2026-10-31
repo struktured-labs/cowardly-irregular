@@ -267,15 +267,10 @@ func test_the_bestiary_is_reached_by_the_static_call_not_a_node_lookup() -> void
 
 ## The solo-elite guard depends on that lookup, so it was inert in all six worlds.
 func test_an_elite_is_recognised_as_one() -> void:
-	var scene = load("res://src/exploration/OverworldScene.gd").new()
-	var vp := SubViewport.new()
-	vp.size = Vector2i(64, 64)
-	add_child_autofree(vp)
-	vp.add_child(scene)
-	await get_tree().physics_frame
-	assert_true(scene._is_field_elite("dark_knight"),
+	## One shared rule since the six overworld copies collapsed into MonsterSpawner (lane/one-roamer-touch-rule).
+	assert_true(MonsterSpawner.is_field_elite("dark_knight"),
 		"the authored field elite must be recognised, or it spawns with the 0-2 random duplicates any roamer gets")
-	assert_false(scene._is_field_elite("goblin"),
+	assert_false(MonsterSpawner.is_field_elite("goblin"),
 		"CONTROL: an ordinary monster must not be treated as an elite")
 
 ## ELITE IS A PROPERTY OF THE SPAWN, NOT OF THE SPECIES -- the distinction the data model
