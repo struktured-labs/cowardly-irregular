@@ -2,6 +2,7 @@
   "id": "world6_orrery",
   "title": "The Last Appointment",
   "world": 6,
+  "background": "vertex_village",
   "trigger": "quest_turn_in:world6_last_appointment",
   "quest": "chain_a_traveling_merchant",
   "description": "Something that feels like waiting in The Vertex. A presence that has been traveling so long she barely remembers why. The Calibrant's true name. Permission to stop.",
