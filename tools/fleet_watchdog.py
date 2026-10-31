@@ -59,6 +59,56 @@ def last_record(path):
             continue
     return None
 
+def last_turn(path, max_bytes=16 * 1024 * 1024):
+    """The last record a MODEL actually produced, scanning backward in chunks.
+
+    AN ENTRY IS NOT A TURN, and keying on the file's mtime was this tool's worst defect:
+    attachments, queue-operations, hook context and system notices all append without any
+    turn occurring -- and a <task-notification> arrives with role "user", so even "last user
+    record" is fooled. Measured 2026-10-29 by five lanes on their own transcripts: a shared
+    "Remote Control disconnected -- OAuth token unavailable" system line appended to many
+    files at one instant, and an mtime read called it activity in every one of them. The
+    batch-resumed lanes had ZERO assistant records for 11d22h while their files kept growing.
+    """
+    try:
+        sz = os.path.getsize(path)
+    except OSError:
+        return None
+    chunk, pos, tail = 1024 * 1024, sz, b""
+    while pos > 0 and (sz - pos) < max_bytes:
+        step = min(chunk, pos)
+        pos -= step
+        try:
+            with open(path, "rb") as fh:
+                fh.seek(pos)
+                tail = fh.read(step) + tail
+        except OSError:
+            return None
+        lines = tail.split(b"\n")
+        # the first element may be a partial line unless we are at the start of the file
+        scan = lines if pos == 0 else lines[1:]
+        for line in reversed(scan):
+            line = line.strip()
+            if not line or b'"assistant"' not in line:
+                continue
+            try:
+                r = json.loads(line)
+            except Exception:
+                continue
+            if r.get("type") == "assistant":
+                return r
+        tail = lines[0] if pos > 0 else b""
+    return None
+
+
+def rec_ts(rec):
+    try:
+        return datetime.datetime.fromisoformat(
+            rec["timestamp"].replace("Z", "+00:00")).timestamp()
+    except Exception:
+        return None
+
+
 def assistant_text(rec):
     c = (rec.get("message") or {}).get("content") or []
     if isinstance(c, list):
@@ -129,7 +179,12 @@ def discover_tmux():
                 cwd = os.readlink("/proc/%d/cwd" % pid)
             except OSError:
                 cwd = None
-            sessions.append({"tmux": name, "cwd": cwd,
+            try:
+                etimes = int(subprocess.run(["ps", "-o", "etimes=", "-p", str(pid)],
+                                            capture_output=True, text=True).stdout.strip() or 0)
+            except ValueError:
+                etimes = 0
+            sessions.append({"tmux": name, "cwd": cwd, "proc_age_secs": etimes,
                              "sid": mm.group(1) if mm else None, "pid": pid})
             break
     return sessions
@@ -160,17 +215,35 @@ def classify(sess, root, stall_secs, idle_hours):
     if not path or not os.path.exists(path):
         out["klass"] = "NO_TRANSCRIPT"
         return out
-    age = now_ts() - os.path.getmtime(path)
-    rec = last_record(path)
-    out["idle_secs"] = int(age)
     out["project"] = os.path.basename(os.path.dirname(path))
+    out["entry_age_secs"] = int(now_ts() - os.path.getmtime(path))
+    # An api-error record IS an assistant record (model "<synthetic>"), so one scan answers
+    # both questions: what the model last did, and how long ago it did it.
+    rec = last_turn(path)
     if rec is None:
-        out["klass"] = "NO_RECORD"
+        # Entries exist but no model turn in reach -- the batch-resume shape. Keyed on the
+        # absence of a turn rather than on a quiet file, which is the distinction that matters.
+        out["klass"] = "ENTRIES_NO_TURNS" if last_record(path) else "NO_RECORD"
+        out["idle_secs"] = out["entry_age_secs"]
         return out
+    t = rec_ts(rec)
+    age = (now_ts() - t) if t else (now_ts() - os.path.getmtime(path))
+    out["idle_secs"] = int(age)
     is_err = bool(rec.get("isApiErrorMessage"))
     out["error"] = rec.get("error") if is_err else None
     out["text"] = assistant_text(rec)[:300]
     out["last_record_ts"] = rec.get("timestamp")
+    # NO TURN SINCE THE PROCESS STARTED is the resume deadlock's exact signature, and it is the
+    # one idle-looking state that is SAFE to nudge: a process that has never produced a turn cannot
+    # be deliberately holding for a ruling -- it was never given the chance to decide. Measured
+    # 2026-10-17..29: one batch resume left 13 lanes here for 12 days, because a resumed process
+    # inherits the channel flag but not its intercom registration, and the SessionStart hook that
+    # says to register is only read ON a turn. Nothing self-heals; a keystroke is the only break.
+    pa = int(sess.get("proc_age_secs") or 0)
+    if pa > 0 and age > pa and age >= stall_secs:
+        out["klass"] = "NO_TURN_SINCE_START"
+        out["proc_age_secs"] = pa
+        return out
     if is_err:
         # A session that errored seconds ago may be retrying on its own; only a SETTLED error
         # is a stall. This is why stall_secs exists and why arm 5 pins it.
@@ -223,11 +296,11 @@ def do_pass(args, sessions=None):
 
         # RECOVERY RESET: the transcript moved on to a non-error record after our last nudge,
         # so whatever we did worked (or it recovered by itself) -- forget the attempt history.
-        if c["klass"] != "API_STALL" and ent.get("attempts"):
+        if c["klass"] not in ("API_STALL", "NO_TURN_SINCE_START") and ent.get("attempts"):
             ent = {"attempts": 0, "last_nudge": 0.0, "last_seen_ts": c.get("last_record_ts")}
             action = "reset"
 
-        if c["klass"] == "API_STALL":
+        if c["klass"] in ("API_STALL", "NO_TURN_SINCE_START"):
             if ent["attempts"] >= args.max_attempts:
                 c["klass"], action = "NEEDS_HUMAN", "none"
             else:
@@ -251,7 +324,7 @@ def do_pass(args, sessions=None):
         c["action"], c["attempt"] = action, ent["attempts"]
         c["backoff_secs"] = delay
         rows.append(c)
-        if args.notify_cmd and c["klass"] in ("NEEDS_HUMAN", "IDLE") and not ent.get("notified"):
+        if args.notify_cmd and c["klass"] in ("NEEDS_HUMAN", "IDLE", "ENTRIES_NO_TURNS") and not ent.get("notified"):
             subprocess.run(args.notify_cmd + [c["klass"], c.get("project") or "?",
                                               str(c.get("idle_secs") or 0), (c.get("text") or "")[:200]],
                            check=False)
@@ -259,25 +332,99 @@ def do_pass(args, sessions=None):
             st[key] = ent
             if args.act:
                 save_state(args.state, st)
-        if c["klass"] in ("API_STALL", "NEEDS_HUMAN", "IDLE", "NO_RECORD") or action in ("nudged", "would-nudge"):
+        if c["klass"] in ("API_STALL", "NEEDS_HUMAN", "IDLE", "NO_RECORD", "ENTRIES_NO_TURNS",
+                          "NO_TURN_SINCE_START") or action in ("nudged", "would-nudge"):
             log_event(args.log, {"ts": iso(now_ts()), "klass": c["klass"], "tmux": c.get("tmux"),
                                  "project": c.get("project"), "sid": c.get("sid"),
                                  "error": c.get("error"), "idle_secs": c.get("idle_secs"),
                                  "action": action, "attempt": ent["attempts"],
                                  "backoff_secs": delay, "text": c.get("text", "")[:200]})
+    if args.tick:
+        do_tick(args, rows, st)
     if args.act:
         save_state(args.state, st)
     return rows
 
-def nudge(args, c):
+def do_tick(args, rows, st):
+    """One lane gets its hourly prompt, subject to a budget, or nobody does.
+
+    WHY A TICK IS NEEDED AT ALL: a lane that finishes its work and goes quiet is not woken by
+    anything -- six lanes measured that on 2026-10-29, and one batch resume cost the fleet twelve
+    days. WHY IT IS BUDGETED: the 182 rate_limit hits of 2026-10-13..15 came from the whole fleet
+    working at once, so the danger is not the tick, it is the WORK a tick starts. Hence a cap on
+    how many lanes may be active, a fleet-wide minimum gap, and an hourly ceiling -- and every
+    refusal is logged with its reason, because a silent skip is indistinguishable from a tick."""
+    now = now_ts()
+    log = [t for t in st.get("_ticks", []) if now - t < 3600]
+    st["_ticks"] = log
+
+    def refuse(why, **kw):
+        log_event(args.log, dict({"ts": iso(now), "klass": "TICK", "action": "skipped",
+                                  "reason": why}, **kw))
+        return None
+
+    if args.tick_guard_cmd:
+        # A SAFETY GUARD MUST FAIL CLOSED, and this one did not. box_busy.sh --publish exits
+        # 0 = a publish IS in flight, 1 = none. Every OTHER code means the guard did not
+        # answer: 2 is its own usage error, 127 is "command not found", and a crash is
+        # anything. Testing only `== 0` treated all of those as "no publish, go ahead" --
+        # the fail-toward-GO direction this fleet spent 2026-10-29 cataloguing, written into
+        # the check meant to prevent collisions. Only an explicit 1 releases the hold.
+        import shlex
+        cmd = (shlex.split(args.tick_guard_cmd)
+               if isinstance(args.tick_guard_cmd, str) else list(args.tick_guard_cmd))
+        try:
+            rc = subprocess.run(cmd, capture_output=True).returncode
+        except OSError as e:
+            return refuse("guard-cmd could not run: %s" % e.__class__.__name__)
+        if rc == 0:
+            return refuse("guard-cmd says hold")
+        if rc != 1:
+            return refuse("guard-cmd did not answer (exit %d) — holding" % rc)
+    if len(log) >= args.tick_max_per_hour:
+        return refuse("hourly ceiling", ticks_this_hour=len(log))
+    if log and (now - max(log)) < args.tick_min_gap:
+        return refuse("min-gap", since_last=int(now - max(log)))
+
+    lanes = [r for r in rows if (r.get("project") or "").startswith("-home")
+             and args.tick_prefix in (r.get("project") or "")]
+    active = [r for r in lanes if (r.get("idle_secs") is not None
+                                   and r["idle_secs"] < args.tick_active_window)]
+    if len(active) >= args.tick_max_active:
+        return refuse("budget: lanes already working", active=len(active))
+
+    # oldest-silent first, and never a lane that is working or already in a nudged state
+    due = [r for r in lanes
+           if r.get("idle_secs") is not None
+           and r["idle_secs"] >= args.tick_active_window
+           and r["klass"] not in ("API_STALL", "NEEDS_HUMAN", "NO_TURN_SINCE_START")
+           and (now - float(st.get(r.get("sid") or r["tmux"], {}).get("last_tick", 0)))
+               >= args.tick_interval]
+    if not due:
+        return refuse("none due")
+    pick = max(due, key=lambda r: r["idle_secs"])
+    if args.act:
+        nudge(args, pick, text=args.tick_text)
+    ent = st.setdefault(pick.get("sid") or pick["tmux"], {"attempts": 0, "last_nudge": 0.0})
+    ent["last_tick"] = now
+    st["_ticks"] = log + [now]
+    log_event(args.log, {"ts": iso(now), "klass": "TICK",
+                         "action": "ticked" if args.act else "would-tick",
+                         "project": pick.get("project"), "tmux": pick.get("tmux"),
+                         "idle_secs": pick.get("idle_secs"), "active": len(active)})
+    return pick
+
+
+def nudge(args, c, text=None):
     """Resubmit in the stalled pane. A stalled Claude TUI needs a prompt, not a signal."""
     if args.nudge_cmd:
-        subprocess.run(args.nudge_cmd + [c.get("tmux") or "", c.get("sid") or ""], check=False)
+        subprocess.run(args.nudge_cmd + [c.get("tmux") or "", c.get("sid") or "",
+                                         (text or args.nudge_text)[:40]], check=False)
         return
     t = c.get("tmux")
     if not t:
         return
-    subprocess.run(["tmux", "send-keys", "-t", t, "-l", args.nudge_text], check=False)
+    subprocess.run(["tmux", "send-keys", "-t", t, "-l", text or args.nudge_text], check=False)
     subprocess.run(["tmux", "send-keys", "-t", t, "Enter"], check=False)
 
 # ---------------------------------------------------------------- report
@@ -349,14 +496,35 @@ def build_parser():
     # IDLE is a REPORT, not a repair -- see the header. A log nobody opens is not "surfaced",
     # so an escalation hook can be attached; it fires ONCE per lane per threshold crossing.
     ap.add_argument("--notify-cmd", dest="notify_cmd", nargs="+", default=None)
+    # --- the staggered hourly lane tick (struktured, 2026-10-29) ---------------------------
+    ap.add_argument("--tick", action="store_true",
+                    help="also give each lane its hourly tick, staggered and budgeted")
+    ap.add_argument("--tick-interval", dest="tick_interval", type=float, default=3600)
+    ap.add_argument("--tick-min-gap", dest="tick_min_gap", type=float, default=300,
+                    help="minimum seconds between ANY two ticks fleet-wide -- this is the stagger")
+    ap.add_argument("--tick-max-active", dest="tick_max_active", type=int, default=4,
+                    help="skip ticking while this many lanes are already working (the budget)")
+    ap.add_argument("--tick-active-window", dest="tick_active_window", type=float, default=1200)
+    ap.add_argument("--tick-max-per-hour", dest="tick_max_per_hour", type=int, default=13)
+    ap.add_argument("--tick-prefix", dest="tick_prefix", default="cowir-")
+    # ONE STRING, shlex-split -- NOT nargs="+", which cannot accept a command whose own
+    # argument starts with a dash: `--tick-guard-cmd tools/box_busy.sh --publish` made argparse
+    # claim --publish as an unknown option of ours and print usage instead of running.
+    # The real guard is exactly that shape, so nargs="+" was unusable for its only use case.
+    ap.add_argument("--tick-guard-cmd", dest="tick_guard_cmd", default=None,
+                    help="shell-quoted command whose EXIT 0 means 'hold off', "
+                         "e.g. --tick-guard-cmd 'tools/box_busy.sh --publish'")
+    ap.add_argument("--tick-text", dest="tick_text",
+                    default="Hourly tick: pick ONE feature or fix in your lane and land it. "
+                            "Check tools/box_busy.sh and the channel queue before any godot run.")
     return ap
 
 def print_rows(rows):
     if not rows:
         print("no claude sessions found")
         return
-    order = {"NEEDS_HUMAN": 0, "API_STALL": 1, "NO_RECORD": 2, "IDLE": 3, "QUIET": 4,
-             "NO_TRANSCRIPT": 5, "WORKING": 6}
+    order = {"NEEDS_HUMAN": 0, "NO_TURN_SINCE_START": 1, "API_STALL": 2, "ENTRIES_NO_TURNS": 3,
+             "NO_RECORD": 4, "IDLE": 5, "QUIET": 6, "NO_TRANSCRIPT": 7, "WORKING": 8}
     for c in sorted(rows, key=lambda r: (order.get(r["klass"], 9), -(r.get("idle_secs") or 0))):
         idle = c.get("idle_secs")
         idle_s = "%6.1fh" % (idle / 3600.0) if idle is not None else "      -"
@@ -405,17 +573,24 @@ def selftest():
             fh.write("#!/usr/bin/env bash\necho \"$@\" >> %s\n" % nudges)
         os.chmod(stub, 0o755)
 
-        def write_tx(sid, recs, age_secs):
+        def write_tx(sid, recs, age_secs, extra=None):
             p = os.path.join(proj, sid + ".jsonl")
             with open(p, "w") as fh:
                 for r in recs:
+                    # stamp the RECORD to the intended age: the tool reads the turn's own
+                    # timestamp now, so a fixture that backdates only the mtime tests nothing
+                    r = dict(r, timestamp=iso(now_ts() - age_secs))
+                    fh.write(json.dumps(r, separators=(",", ":")) + "\n")
+                for r in (extra or []):      # appended AFTER the turn, as a real tail does
                     fh.write(json.dumps(r, separators=(",", ":")) + "\n")
             t = time.time() - age_secs
             os.utime(p, (t, t))
             return p
 
         def err_rec(msg="API Error: Overloaded"):
-            return {"timestamp": iso(now_ts()), "isApiErrorMessage": True, "error": "server_error",
+            # a real api-error record IS type=assistant with model "<synthetic>"
+            return {"timestamp": iso(now_ts()), "type": "assistant", "isApiErrorMessage": True,
+                    "error": "server_error",
                     "message": {"content": [{"type": "text", "text": msg}]}}
 
         def ok_rec(msg="done"):
@@ -522,7 +697,9 @@ def selftest():
         # 14 --report counts by RECORD timestamp, not by file mtime
         old = {"timestamp": "2026-01-01T00:00:00.000Z", "isApiErrorMessage": True,
                "error": "rate_limit", "message": {"content": [{"type": "text", "text": "old"}]}}
-        write_tx("s6", [old, err_rec(), err_rec()], 10)
+        # `old` goes in the un-stamped tail: write_tx re-dates the records it stamps, which
+        # would make the deliberately-ancient one recent and leave the window untestable.
+        write_tx("s6", [err_rec(), err_rec()], 10, extra=[old])
         n = report(root, 48)
         ck("arm14", n >= 2, "report returned %s" % n)
 
@@ -546,6 +723,71 @@ def selftest():
         ck("arm19b", lines and lines[0].startswith("IDLE") and "Holding for a ruling" in lines[0],
            "hook payload=%r" % (lines[0] if lines else None))
 
+        # 24 THE RESUME DEADLOCK: a process younger than its last turn has never produced one,
+        #    so it is holding nothing and IS safe to nudge -- unlike IDLE.
+        write_tx("s13", [ok_rec("pre-resume work")], 36_000)
+        S13 = [{"tmux": "t-s13", "cwd": "/home/x/lane", "sid": "s13", "pid": 0,
+                "proc_age_secs": 600}]          # process 10 min old, last turn 10 HOURS old
+        before = nudge_count()
+        r = do_pass(mkargs(), S13)[0]
+        ck("arm24a", r["klass"] == "NO_TURN_SINCE_START", "klass=%s" % r["klass"])
+        ck("arm24b", r["action"] == "nudged" and nudge_count() == before + 1,
+           "the deadlock must be nudged: action=%s nudges %d->%d" % (r["action"], before, nudge_count()))
+
+        # 25 CONTROL: a turn TAKEN since the process started is not the deadlock
+        write_tx("s14", [ok_rec("post-resume work")], 300)
+        S14 = [{"tmux": "t-s14", "cwd": "/home/x/lane", "sid": "s14", "pid": 0,
+                "proc_age_secs": 36_000}]       # process 10h old, turn 5 min old
+        before = nudge_count()
+        r = do_pass(mkargs(), S14)[0]
+        ck("arm25", r["klass"] != "NO_TURN_SINCE_START" and nudge_count() == before,
+           "a worked-since-start session was called a deadlock: klass=%s" % r["klass"])
+
+        # 26 CONTROL: unknown process age must NOT trigger it -- never nudge on missing data
+        write_tx("s15", [ok_rec("old")], 36_000)
+        S15 = [{"tmux": "t-s15", "cwd": "/home/x/lane", "sid": "s15", "pid": 0, "proc_age_secs": 0}]
+        before = nudge_count()
+        r = do_pass(mkargs(), S15)[0]
+        ck("arm26", r["klass"] == "IDLE" and nudge_count() == before,
+           "missing proc age triggered a nudge: klass=%s nudges %d->%d" % (r["klass"], before, nudge_count()))
+
+        # 20 THE DEFECT: entries appended after the last turn must NOT read as activity.
+        #    A shared "Remote Control disconnected" system line appended to many transcripts
+        #    at one instant, and an mtime read called every one of them alive.
+        sysline = {"timestamp": iso(now_ts()), "type": "system", "subtype": "informational",
+                   "content": "Remote Control disconnected - OAuth token unavailable"}
+        attach = {"timestamp": iso(now_ts()), "type": "attachment"}
+        tasknote = {"timestamp": iso(now_ts()), "type": "user",
+                    "message": {"role": "user", "content": "<task-notification>done</task-notification>"}}
+        write_tx("s9", [ok_rec("real work")], 36_000, extra=[attach, sysline])
+        os.utime(os.path.join(proj, "s9.jsonl"), None)       # mtime = NOW, as an append gives
+        r = do_pass(mkargs(), S("s9"))[0]
+        ck("arm20a", r["klass"] == "IDLE",
+           "entries after the turn read as activity: klass=%s" % r["klass"])
+        ck("arm20b", r["idle_secs"] > 30_000,
+           "idle came from mtime, not the turn: idle_secs=%s" % r.get("idle_secs"))
+        ck("arm20c", r.get("entry_age_secs", 9999) < 120,
+           "entry_age must still be reported, and be fresh: %s" % r.get("entry_age_secs"))
+
+        # 21 a <task-notification> arrives with role "user" -- the check that fools a
+        #    "last user record" heuristic specifically
+        write_tx("s10", [ok_rec("real work")], 36_000, extra=[tasknote])
+        os.utime(os.path.join(proj, "s10.jsonl"), None)
+        r = do_pass(mkargs(), S("s10"))[0]
+        ck("arm21", r["klass"] == "IDLE" and r["idle_secs"] > 30_000,
+           "a machine user-record read as a turn: klass=%s idle=%s" % (r["klass"], r.get("idle_secs")))
+
+        # 22 entries but ZERO model turns -- the batch-resume shape, its own class
+        write_tx("s11", [], 10, extra=[attach, attach, sysline])
+        r = do_pass(mkargs(), S("s11"))[0]
+        ck("arm22", r["klass"] == "ENTRIES_NO_TURNS", "klass=%s" % r["klass"])
+
+        # 23 POSITIVE CONTROL: a genuinely fresh turn is still WORKING, so arm20 is not
+        #    passing because everything now reads IDLE
+        write_tx("s12", [ok_rec("just now")], 5)
+        r = do_pass(mkargs(), S("s12"))[0]
+        ck("arm23", r["klass"] == "WORKING", "a fresh turn must read WORKING: %s" % r["klass"])
+
         # 18 a --scan is read-only: it names the stall but spends no backoff budget
         write_tx("s7", [err_rec()], 600)
         a7 = mkargs(act=False)
@@ -560,6 +802,133 @@ def selftest():
         ck("arm18c", r["action"] == "nudged" and r["attempt"] == 1,
            "action=%s attempt=%s" % (r["action"], r["attempt"]))
 
+        # ── the hourly tick: every refusal reason gets an arm, because a budget nobody has
+        #    watched refuse is worth nothing, and a silent skip looks exactly like a tick ──
+        def ticks_of(logp):
+            try:
+                return [json.loads(l) for l in open(logp) if '"TICK"' in l]
+            except OSError:
+                return []
+
+        def tickargs(name="shared", **kw):
+            a = mkargs(tick=True, tick_prefix="x-lane", tick_active_window=1200,
+                       tick_interval=3600, tick_min_gap=300, tick_max_active=4,
+                       tick_max_per_hour=13, tick_guard_cmd=None)
+            a.log = os.path.join(T, "ticklog_%s.jsonl" % name)
+            a.state = os.path.join(T, "tickstate_%s.json" % name)
+            for k, v in kw.items():
+                setattr(a, k, v)
+            return a
+
+        write_tx("t1", [ok_rec("quiet lane")], 7200)      # silent 2h -> due
+        T1 = [{"tmux": "t-t1", "cwd": "/home/x/lane", "sid": "t1", "pid": 0, "proc_age_secs": 99999}]
+
+        # 27 a due, silent lane is ticked, with the TICK text and not the nudge text
+        a = tickargs()
+        before = nudge_count()
+        do_pass(a, T1)
+        ck("arm27a", nudge_count() == before + 1, "no tick fired: %d->%d" % (before, nudge_count()))
+        ck("arm27b", any(t["action"] == "ticked" for t in ticks_of(a.log)),
+           "tick not logged: %s" % ticks_of(a.log))
+        ck("arm27c", "Hourly tick" in open(nudges).read(),
+           "the tick sent the wrong text")
+
+        # 28 immediately again -> refused by the fleet-wide MIN GAP, with that reason logged
+        before = nudge_count()
+        do_pass(a, T1)
+        ck("arm28", nudge_count() == before
+                    and any(t.get("reason") == "min-gap" for t in ticks_of(a.log)),
+           "min-gap not enforced/logged: nudges %d->%d reasons=%s"
+           % (before, nudge_count(), [t.get("reason") for t in ticks_of(a.log)]))
+
+        # 29 THE BUDGET: too many lanes already working -> refuse, reason logged
+        write_tx("t2", [ok_rec("busy lane")], 10)        # active
+        T2 = T1 + [{"tmux": "t-t2", "cwd": "/home/x/lane", "sid": "t2", "pid": 0,
+                    "proc_age_secs": 99999}]
+        a2 = tickargs("budget", tick_max_active=1)
+        before = nudge_count()
+        do_pass(a2, T2)
+        ck("arm29", nudge_count() == before
+                    and any(t.get("reason", "").startswith("budget") for t in ticks_of(a2.log)),
+           "budget did not refuse: nudges %d->%d" % (before, nudge_count()))
+
+        # 30 the hourly CEILING refuses even with nothing else in the way
+        a3 = tickargs("ceiling", tick_max_per_hour=2)
+        st3 = {"_ticks": [now_ts() - 10, now_ts() - 20]}
+        save_state(a3.state, st3)
+        before = nudge_count()
+        do_pass(a3, T1)
+        ck("arm30", nudge_count() == before
+                    and any(t.get("reason") == "hourly ceiling" for t in ticks_of(a3.log)),
+           "ceiling did not refuse: nudges %d->%d" % (before, nudge_count()))
+
+        # 31 the GUARD (exit 0 = hold, matching box_busy.sh --publish) refuses; exit 1 proceeds
+        hold = os.path.join(T, "hold.sh"); go = os.path.join(T, "go.sh")
+        open(hold, "w").write("#!/usr/bin/env bash\nexit 0\n")
+        open(go, "w").write("#!/usr/bin/env bash\nexit 1\n")
+        os.chmod(hold, 0o755); os.chmod(go, 0o755)
+        a4 = tickargs("hold", tick_guard_cmd=[hold]); before = nudge_count()
+        do_pass(a4, T1)
+        ck("arm31a", nudge_count() == before
+                     and any(t.get("reason") == "guard-cmd says hold" for t in ticks_of(a4.log)),
+           "guard did not hold")
+        # 34 the guard accepts a DASH-CARRYING argument as one shlex string -- the real shape
+        flagged = os.path.join(T, "flagged.sh")
+        open(flagged, "w").write('#!/usr/bin/env bash\n[ "$1" = "--publish" ] && exit 0\nexit 1\n')
+        os.chmod(flagged, 0o755)
+        a4b = tickargs("flag", tick_guard_cmd="%s --publish" % flagged); before = nudge_count()
+        do_pass(a4b, T1)
+        ck("arm34a", nudge_count() == before
+                     and any(t.get("reason") == "guard-cmd says hold" for t in ticks_of(a4b.log)),
+           "a dash-carrying guard arg did not reach the command")
+        a4c = tickargs("noflag", tick_guard_cmd=flagged); before = nudge_count()
+        do_pass(a4c, T1)
+        ck("arm34b", nudge_count() == before + 1,
+           "without --publish the same guard must exit 1 and let the tick through")
+
+        # 35 A BROKEN GUARD MUST HOLD, NOT PROCEED. @cowir-autogrind's finding applied to my
+        #    own code: a stale/missing/erroring guard previously read as "no publish, go".
+        for rc, name in ((2, "usage"), (127, "notfound"), (3, "crash")):
+            bad = os.path.join(T, "bad%d.sh" % rc)
+            open(bad, "w").write("#!/usr/bin/env bash\nexit %d\n" % rc)
+            os.chmod(bad, 0o755)
+            ab = tickargs("bad%d" % rc, tick_guard_cmd=bad); before = nudge_count()
+            do_pass(ab, T1)
+            ck("arm35-%s" % name,
+               nudge_count() == before
+               and any("did not answer" in (t.get("reason") or "") for t in ticks_of(ab.log)),
+               "guard exit %d did not hold: nudges %d->%d reasons=%s"
+               % (rc, before, nudge_count(), [t.get("reason") for t in ticks_of(ab.log)]))
+        # and a guard that cannot be executed at all
+        ax = tickargs("noexec", tick_guard_cmd=os.path.join(T, "does_not_exist_at_all"))
+        before = nudge_count()
+        do_pass(ax, T1)
+        ck("arm35-oserror", nudge_count() == before
+           and any("could not run" in (t.get("reason") or "") for t in ticks_of(ax.log)),
+           "an unrunnable guard did not hold")
+
+        a5 = tickargs("go", tick_guard_cmd=[go]); before = nudge_count()
+        do_pass(a5, T1)
+        ck("arm31b", nudge_count() == before + 1, "guard exit 1 should have let the tick through")
+
+        # 32 a lane in the DEADLOCK class is not ALSO ticked -- it is already being nudged
+        write_tx("t3", [ok_rec("pre-resume")], 7200)
+        T3 = [{"tmux": "t-t3", "cwd": "/home/x/lane", "sid": "t3", "pid": 0, "proc_age_secs": 600}]
+        a6 = tickargs("deadlock"); before = nudge_count()
+        r = do_pass(a6, T3)[0]
+        ck("arm32", r["klass"] == "NO_TURN_SINCE_START" and nudge_count() == before + 1,
+           "expected exactly ONE poke (the deadlock nudge), got klass=%s nudges %d->%d"
+           % (r["klass"], before, nudge_count()))
+
+        # 33 a WORKING lane is never ticked, and the reason is "none due" not a budget refusal
+        write_tx("t4", [ok_rec("busy")], 30)
+        T4 = [{"tmux": "t-t4", "cwd": "/home/x/lane", "sid": "t4", "pid": 0, "proc_age_secs": 99999}]
+        a7 = tickargs("nonedue"); before = nudge_count()
+        do_pass(a7, T4)
+        ck("arm33", nudge_count() == before
+                    and any(t.get("reason") == "none due" for t in ticks_of(a7.log)),
+           "a working lane was ticked or refused for the wrong reason")
+
         # 17 the watchdog excludes its own tmux session
         a = mkargs(exclude="t-s1")
         rows = do_pass(a, S("s1"))
@@ -571,7 +940,7 @@ def selftest():
         for f in fails:
             print("  " + f)
         return 1
-    print("fleet_watchdog selftest: 22 arms ran, every assertion held")
+    print("fleet_watchdog selftest: 50 arms ran, every assertion held")
     return 0
 
 if __name__ == "__main__":
