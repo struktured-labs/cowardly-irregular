@@ -85,6 +85,18 @@ EXTRA_DESC = {
     "curator": "a meticulous robed archivist carrying a ledger",
     "tempo": "a nimble courier in fitted travelling clothes",
     "warden": "a stoic armoured gatekeeper",
+    # Harmonia's pictured keepers had a named face and the generic mustached merchant body (struktured
+    # 2026-10-30: "npc looks like mario with the mustache"). Written from their portraits.
+    "keeper_willow": "Willow, a cheerful young woman herbalist with long green hair in a side braid tucked with a "
+                     "sprig of lavender, a green pinafore apron over a cream blouse",
+    "keeper_mortimer": "Mortimer, a tall lean dark-skinned man with long straight dark navy-blue hair past his "
+                       "shoulders, a small blue earring, and a high-collared black coat",
+}
+
+## Ids whose portrait lives outside portraits/npcs/. Everything else resolves by base id as before.
+IDENTITY_PATHS = {
+    "keeper_willow": REPO / "assets/sprites/portraits/keepers/willow.png",
+    "keeper_mortimer": REPO / "assets/sprites/portraits/keepers/mortimer.png",
 }
 
 ## Written from each job's battle idle frame, and preferred over gen_overworld_gpt_image's char_desc:
@@ -217,6 +229,8 @@ def identity_reference(npc: str, entries: dict) -> bytes:
     if PLAYER:
         f = battle_identity_frame(npc)
         return ow.pad_to_square(f.resize((f.width * 3, f.height * 3), Image.NEAREST), 1024)
+    if npc in IDENTITY_PATHS:
+        return ow.pad_to_square(Image.open(IDENTITY_PATHS[npc]).convert("RGBA"), 1024)
     base, _ = base_id(npc)
     for p in (PORTRAITS / f"{base}.png", PORTRAITS / f"{npc}.png"):
         if p.exists():
@@ -420,7 +434,7 @@ def deploy(npc: str, grid: Image.Image) -> None:
     entry["frame_width"] = CELL
     entry["frame_height"] = CELL
     entry["tier"] = "T1"
-    entry["source"] = ("gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid "
+    entry["source"] = (f"{MODEL} redraw in the artist villagers' proportions (Rotha, Roy, Kid "
                        "Acrees as style guide; the NPC's portrait as identity), 48px cells -- "
                        "tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies.")
     if PLAYER:

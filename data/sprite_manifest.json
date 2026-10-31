@@ -5732,6 +5732,58 @@
           "frames": 4
         }
       }
+    },
+    "keeper_willow": {
+      "path": "res://assets/sprites/npcs/keeper_willow/overworld.png",
+      "frame_width": 48,
+      "frame_height": 48,
+      "fps": 8,
+      "tier": "T1",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      },
+      "source": "gpt-image-2 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
+    },
+    "keeper_mortimer": {
+      "path": "res://assets/sprites/npcs/keeper_mortimer/overworld.png",
+      "frame_width": 48,
+      "frame_height": 48,
+      "fps": 8,
+      "tier": "T1",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      },
+      "source": "gpt-image-2 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     }
   },
   "overworld_player_sheets": {
