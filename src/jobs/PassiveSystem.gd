@@ -361,6 +361,9 @@ func get_passive_mods(combatant: Combatant) -> Dictionary:
 	var total_mods = {
 		"attack_multiplier": 1.0,
 		"defense_multiplier": 1.0,
+		## _compose_lens_mods drops any key absent HERE, so a lens tilt needs this seed as well as
+		## LensSystem.NEUTRAL_MODS. A passive needs neither — _compose_mod creates _multiplier keys.
+		"magic_defense_multiplier": 1.0,
 		"magic_multiplier": 1.0,
 		"speed_multiplier": 1.0,
 		"max_hp_multiplier": 1.0,
