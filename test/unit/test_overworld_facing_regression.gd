@@ -25,7 +25,8 @@ extends GutTest
 ##   starters (sword/staff/bow visibility), it's a robust signal.
 
 const STARTER_JOBS = ["fighter", "cleric", "rogue", "mage"]
-const FRAME_SIZE = 32
+## The frame is DERIVED from the sheet (a 4x4 walk grid), never a constant: the party went to 48px on 2026-10-30
+## and a fixed 32 read cells straddling two rows, so the lean arm judged pixels the game never draws.
 
 
 func _load_overworld(job: String) -> Image:
@@ -38,15 +39,20 @@ func _load_overworld(job: String) -> Image:
 	return tex.get_image()
 
 
+func _frame(img: Image) -> int:
+	return img.get_width() / 4
+
+
 func _row_alpha_mass(img: Image, row_idx: int, col_idx: int) -> Array:
 	# Returns [left_half_alpha_count, right_half_alpha_count] for one frame.
+	var fs := _frame(img)
 	var left_count = 0
 	var right_count = 0
-	for y in range(FRAME_SIZE):
-		for x in range(FRAME_SIZE):
-			var a = img.get_pixel(col_idx * FRAME_SIZE + x, row_idx * FRAME_SIZE + y).a
+	for y in range(fs):
+		for x in range(fs):
+			var a = img.get_pixel(col_idx * fs + x, row_idx * fs + y).a
 			if a > 0.1:
-				if x < FRAME_SIZE / 2:
+				if x < fs / 2:
 					left_count += 1
 				else:
 					right_count += 1
@@ -66,12 +72,13 @@ func test_starter_overworld_rows_are_mirrored() -> void:
 		var img = _load_overworld(job)
 		if img == null:
 			continue
+		var fs := _frame(img)
 		var pixel_diff = 0
 		for col in range(4):
-			for y in range(0, FRAME_SIZE, 4):
-				for x in range(0, FRAME_SIZE, 4):
-					var px_left  = img.get_pixel(col * FRAME_SIZE + x,                 32 + y)
-					var px_right = img.get_pixel(col * FRAME_SIZE + (FRAME_SIZE - 1 - x), 64 + y)
+			for y in range(0, fs, 4):
+				for x in range(0, fs, 4):
+					var px_left  = img.get_pixel(col * fs + x,            fs + y)
+					var px_right = img.get_pixel(col * fs + (fs - 1 - x), 2 * fs + y)
 					# Always compare alpha (transparency must be mirrored exactly).
 					if abs(px_left.a - px_right.a) > 0.05:
 						pixel_diff += 1
@@ -119,16 +126,17 @@ func test_starter_overworld_row_facing_via_com() -> void:
 
 
 func test_starter_overworld_dimensions() -> void:
-	# Sheet must be exactly 128x128 (4 rows × 4 cols × 32px).
+	# A 4x4 grid of the frame the MANIFEST declares for the job (the loader cuts at that size and refuses anything else).
+	var m: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/sprite_manifest.json"))
+	var players: Dictionary = (m as Dictionary).get("overworld_player_sheets", {}) if m is Dictionary else {}
 	for job in STARTER_JOBS:
 		var img = _load_overworld(job)
 		if img == null:
 			continue
-		assert_eq(img.get_width(), 128,
-			"'%s' overworld.png width must be 128 (got %d)" % [job, img.get_width()])
-		assert_eq(img.get_height(), 128,
-			"'%s' overworld.png height must be 128 (got %d)" % [job, img.get_height()])
-
+		var fw := int((players.get(job, {}) as Dictionary).get("frame_width", 0))
+		assert_gt(fw, 0, "CONTROL: '%s' must declare its overworld frame" % job)
+		assert_eq(Vector2i(img.get_width(), img.get_height()), Vector2i(fw * 4, fw * 4),
+			"'%s' overworld.png must be a 4x4 grid of its declared %dpx frame" % [job, fw])
 
 func test_each_row_has_visible_content() -> void:
 	# Catch the "fully transparent row" failure mode (e.g., extraction
@@ -137,11 +145,12 @@ func test_each_row_has_visible_content() -> void:
 		var img = _load_overworld(job)
 		if img == null:
 			continue
+		var fs := _frame(img)
 		for row in range(4):
 			var mass = 0
-			for y in range(0, FRAME_SIZE, 4):
-				for x in range(0, 128, 4):
-					if img.get_pixel(x, row * FRAME_SIZE + y).a > 0.1:
+			for y in range(0, fs, 4):
+				for x in range(0, img.get_width(), 4):
+					if img.get_pixel(x, row * fs + y).a > 0.1:
 						mass += 1
 			assert_gt(mass, 30,
 				"'%s' overworld row %d has only %d visible pixels (sparse sample); row may be empty" %
