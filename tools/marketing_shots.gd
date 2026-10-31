@@ -370,5 +370,28 @@ func _shoot_title() -> void:
 		ver = ts._version_label.text
 	print("[SHOT] title_screen (%dx%d) version=%s" % [img.get_width(), img.get_height(), ver])
 	_ok += 1
+
+	## The COVER SOURCE: the same frame with TitleScreen._add_vignette's BOTTOM strip hidden (black,
+	## alpha 0.45, from 70% of the height down). Measured 2026-10-31: the shipped cover_630x500 is this
+	## title cropped (300,0,1056,600) -> LANCZOS 630x500, from a frame WITHOUT that strip (luma ratio 1.00
+	## above it, 0.57 below it) and WITH the top one. The crop itself is done offline from this file, so
+	## the recipe stays in one script. Found by its colour and place, not its child index.
+	var vp_h: float = ts.get_viewport_rect().size.y
+	var hid := 0
+	for c in ts.get_children():
+		if c is ColorRect and is_equal_approx(c.color.a, 0.45) and c.position.y >= vp_h * 0.6:
+			c.visible = false
+			hid += 1
+	if hid != 1:
+		print("[SHOT] FAIL: title_cover_source — expected exactly 1 bottom vignette strip, found %d" % hid)
+		_fail += 1
+	else:
+		await process_frame
+		await process_frame
+		var img2 := root.get_texture().get_image()
+		if not ShotGuard.save_or_refuse(img2, "res://tmp/marketing/title_cover_source.png"):
+			_fail += 1
+		print("[SHOT] title_cover_source (%dx%d), bottom strip hidden" % [img2.get_width(), img2.get_height()])
+		_ok += 1
 	gl.queue_free()
 	await process_frame
