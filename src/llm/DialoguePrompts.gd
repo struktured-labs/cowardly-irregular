@@ -966,7 +966,9 @@ static func build_party_line_choice(persona: String, signature_phrases: Array, c
 	out += "Persona: %s\n" % persona
 	if not signature_phrases.is_empty():
 		out += "Signature phrases: %s\n" % ", ".join(PackedStringArray(signature_phrases.map(func(s): return str(s))))
-	out += "Moment: %s %s is at %d%% HP.\n" % [_party_line_event_hint(event_kind, event_data), speaker, int(float(ctx.get("speaker_hp_pct", 100.0)))]
+	## The kind itself, which this prompt omitted while build_party_line printed it: measured FALSE
+	## here and TRUE there for the same moment, so the chooser saw less than the writer did.
+	out += "Moment (%s): %s %s is at %d%% HP.\n" % [event_kind, _party_line_event_hint(event_kind, event_data), speaker, int(float(ctx.get("speaker_hp_pct", 100.0)))]
 	var party: Array = ctx.get("party", [])
 	if not party.is_empty():
 		out += "Party: %s\n" % ", ".join(PackedStringArray(party.map(func(m): return "%s (%s, %s)" % [m.get("name", "?"), m.get("job_id", "?"), "up" if m.get("is_alive", true) else "down"])))
@@ -980,7 +982,21 @@ static func build_party_line_choice(persona: String, signature_phrases: Array, c
 	return out
 
 
+## Named so a guard can match on the SYMBOL. A copied literal drifts the day the wording changes.
+const PARTY_LINE_GENERIC_HINT := "Speak a single line that fits the moment, in voice."
+
+## Event kinds that are DELIBERATELY generic. Empty on purpose: every kind
+## PartyCombatLineContext declares has its own arm below. A new kind with no arm must be added
+## HERE with a reason, which is why the guard cannot be silenced green — only explained green.
+const PARTY_LINE_GENERIC_EVENTS: Array[String] = []
+
+
 ## Per-event hint string used in build_party_line.
+## .739/.741 added crit_landed, enemy_felled and the six victory keys to the context; this match
+## still had five arms, so those moments reached the LLM as PARTY_LINE_GENERIC_HINT and the
+## payload was dropped at this one seam while the scripted path read it correctly.
+## Patterns are LITERALS on purpose: no file in src/ uses a user class_name's const as a match
+## pattern, and test_every_declared_event_kind_has_its_own_hint is what keeps them in step.
 static func _party_line_event_hint(event_kind: String, event_data: Dictionary) -> String:
 	match event_kind:
 		"turn_start":
@@ -993,10 +1009,44 @@ static func _party_line_event_hint(event_kind: String, event_data: Dictionary) -
 		"used_signature_ability":
 			var ability: String = str(event_data.get("ability_id", "your signature move"))
 			return "You just landed %s — flex or downplay it per your persona." % ability
+		"crit_landed":
+			var crit_on: String = str(event_data.get(PartyCombatLineContext.MOMENT_TARGET, ""))
+			if crit_on.is_empty():
+				return "You just landed a critical hit. React in voice, without naming anyone."
+			return "You just landed a CRITICAL hit on %s. React in voice." % crit_on
+		"enemy_felled":
+			var felled: String = str(event_data.get(PartyCombatLineContext.MOMENT_TARGET, ""))
+			if felled.is_empty():
+				return "An enemy just dropped to your attack, and the fight is not over. React in voice."
+			return "%s just dropped to your attack, and the fight is NOT over. React in voice." % felled
 		"victory":
-			return "The party just won. You speak FIRST — set the tone for the post-battle moment."
+			return "The party just won. You speak FIRST — set the tone for the post-battle moment.%s" \
+				% _victory_shape(event_data)
 		_:
-			return "Speak a single line that fits the moment, in voice."
+			return PARTY_LINE_GENERIC_HINT
+
+
+## The fight's shape, from end_battle's victory payload. Only the notable facts are rendered, so a
+## routine win stays a short prompt and a 17-round scrape reads as one.
+static func _victory_shape(event_data: Dictionary) -> String:
+	var notes: PackedStringArray = PackedStringArray()
+	if bool(event_data.get(PartyCombatLineContext.VICTORY_ONE_SHOT, false)):
+		notes.append("it ended in a single blow")
+	var rounds: int = int(event_data.get(PartyCombatLineContext.VICTORY_ROUNDS, 0))
+	if rounds > 0:
+		notes.append("it took %d round%s" % [rounds, "" if rounds == 1 else "s"])
+	var low: float = float(event_data.get(PartyCombatLineContext.VICTORY_LOW_WATER, 100.0))
+	if low < 100.0:
+		notes.append("you were down to %d%% HP at the worst of it" % int(low))
+	if bool(event_data.get(PartyCombatLineContext.VICTORY_ANYONE_FELL, false)):
+		notes.append("someone in the party went down during it")
+	if bool(event_data.get(PartyCombatLineContext.VICTORY_SELF_LEVELED, false)):
+		notes.append("YOU levelled up")
+	if bool(event_data.get(PartyCombatLineContext.VICTORY_SELF_LEARNED, false)):
+		notes.append("YOU learned a new ability")
+	if notes.is_empty():
+		return ""
+	return " How it went: %s." % ", ".join(notes)
 
 
 # ── Prompt builder: rule composition ─────────────────────────────────────────
