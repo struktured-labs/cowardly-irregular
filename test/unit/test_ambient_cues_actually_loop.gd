@@ -185,7 +185,8 @@ func _const_re() -> RegEx:
 ## introduce a key this guard has not already scanned at that literal site. Stated rather than waved
 ## at, because "add the file here" without the reason is how a pinned-sites list becomes an allowlist.
 func test_unresolvable_play_ambient_sites_are_known() -> void:
-	var known := ["src/audio/SoundManager.gd", "src/exploration/OverworldScene.gd",
+	## AmbientSoundscape plays recipe beds (data/ambient_recipes.json); test_a_bed_loops_and_an_event_does_not requires each to loop.
+	var known := ["src/audio/AmbientSoundscape.gd", "src/audio/SoundManager.gd", "src/exploration/OverworldScene.gd",
 		"src/maps/interiors/BaseInterior.gd", "src/maps/villages/BaseVillage.gd"]
 	var found: Array[String] = []
 	var re := RegEx.new()

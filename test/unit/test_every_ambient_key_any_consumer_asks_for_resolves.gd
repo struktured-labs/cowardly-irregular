@@ -183,8 +183,8 @@ func test_no_play_ambient_call_uses_a_form_this_file_cannot_read() -> void:
 				continue   # CONST path
 			if UNRESOLVABLE_BY_DESIGN.has(arg):
 				continue
-			## The DATA path, by provenance: bed_key() reads the recipe file, whose beds _requested_keys adds above.
-			if arg.begins_with("bed_key(") and path.ends_with("audio/AmbientSoundscape.gd") and code.contains(RECIPES):
+			## The DATA path, by provenance: `key` is a recipe bed (added above) or the weather bed nightfall displaced, which already played.
+			if arg == "key" and path.ends_with("audio/AmbientSoundscape.gd") and code.contains(RECIPES):
 				continue
 			## ⛔ THE VIRTUAL EXEMPTION IS BY PROVENANCE, NOT BY NAME. It was `arg in ["ambient_key",
 			## "key"]` for an hour — a name exemption, so `var key := some_dict[x]` followed by
@@ -208,7 +208,7 @@ func test_no_play_ambient_call_uses_a_form_this_file_cannot_read() -> void:
 		"exploration/WeatherSystem.gd|\"weather_rain\"",
 		"audio/SoundManager.gd|NIGHT_AMBIENCE_KEY",
 		"maps/villages/BaseVillage.gd|key",
-		"audio/AmbientSoundscape.gd|bed_key(",
+		"audio/AmbientSoundscape.gd|key",
 	]:
 		assert_true(examined.has(must),
 			"CONTROL: the walk never EXAMINED `%s` — this arm reports a clean sweep of whatever it managed to read, and an unreadable file is skipped in silence" % must)
