@@ -25,6 +25,7 @@ func before_all() -> void:
 
 func _smoke_lines() -> Array:
 	var out: Array = []
+	var seen := {}
 	for root in ROOTS:
 		for f in DirAccess.get_files_at(root):
 			if not (f.ends_with(".sh") or f.ends_with(".tmpl")):
@@ -46,7 +47,12 @@ func _smoke_lines() -> Array:
 				while j > 0 and rows[j - 1].strip_edges().ends_with("\\"):
 					j -= 1
 					t = rows[j].strip_edges() + " " + t
-				out.append({"path": path, "line": i + 1, "text": t, "src": src})
+				## One command is one launch, keyed by the row it starts on: a flag row and its xvfb-run row are the same.
+				var key: String = "%s:%d" % [path, j]
+				if seen.has(key):
+					continue
+				seen[key] = true
+				out.append({"path": path, "line": j + 1, "text": t, "src": src})
 	return out
 
 
@@ -77,12 +83,15 @@ func test_the_derivation_finds_the_smoke_commands() -> void:
 	assert_true(paths.has("res://tools/deploy_web.sh"), "the derivation no longer sees deploy_web.sh's smoke — it would pass by measuring nothing: %s" % str(paths.keys()))
 	assert_true(paths.has("res://tools/fold_gate/chain.sh.tmpl"), "the derivation no longer sees the fold chain's smoke: %s" % str(paths.keys()))
 	assert_true(paths.has("res://tools/deploy_desktop.sh"), "the derivation no longer sees the desktop battle smoke, which runs the exported binary rather than godot: %s" % str(paths.keys()))
-	assert_true(paths.has("res://tools/shot_sandbox.sh"), "the derivation no longer sees the shared screenshot launcher, which 13 shot tools source: %s" % str(paths.keys()))
+	for shot in ["shot_sandbox.sh", "overworld_screenshot.sh", "village_screenshot.sh", "later_world_dungeon_screenshots.sh"]:
+		assert_true(paths.has("res://tools/" + shot), "the derivation no longer sees %s, a windowed launch outside the smoke flags: %s" % [shot, str(paths.keys())])
 
 
 func test_every_smoke_launch_hides_the_host_pads() -> void:
 	var lines := _smoke_lines()
-	assert_gt(lines.size(), 7, "fewer windowed launches derived than the eight on main today (4 smoke + 4 shot)")
+	## Printed so a run on a composed tree shows the population it judged, not only that it passed.
+	print("[pad-jail] %d windowed launches derived: %s" % [lines.size(), ", ".join(PackedStringArray(lines.map(func(e): return "%s:%d" % [String(e.path).get_file(), e.line])))])
+	assert_gt(lines.size(), 7, "fewer windowed launches derived than the eight on this tree (4 smoke + 4 shot)")
 	for e in lines:
 		assert_true(_jailed(e), "%s:%d launches the smoke without an empty /dev/input, so a pad he is holding drives it:\n%s" % [e.path, e.line, e.text])
 
