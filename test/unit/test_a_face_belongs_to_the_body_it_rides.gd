@@ -46,6 +46,7 @@ const ShopSceneScript := preload("res://src/exploration/ShopScene.gd")
 const ShopInteriorScript := preload("res://src/maps/interiors/ShopInterior.gd")
 
 var _pairs_cache: Dictionary = {}
+var _walkers_seen := 0
 
 
 func _names(arr: Array) -> String:
@@ -71,12 +72,23 @@ func _scripts() -> Array:
 ## Every NPC node under `root`: face = what it speaks with, body = the sheet it actually loaded.
 func _collect(root: Node, scene: String, into: Dictionary) -> void:
 	for n in root.find_children("*", "Area2D", true, false):
-		if not n.has_method("_portrait_key"):
+		var face := ""
+		var body := ""
+		if n.has_method("_portrait_key"):
+			face = str(n._portrait_key())
+			body = str(n.get("_archetype_id"))
+			if body == "":
+				body = "procedural:" + str(n.get("npc_type"))
+		elif n is WanderingNPC:
+			## A walker speaks with dialogue_portrait over its sprite_archetype; it has no _portrait_key, so it was never judged.
+			face = str(n.dialogue_portrait)
+			body = str(n.sprite_archetype)
+			if body == "":
+				body = "procedural:walker"
+			_walkers_seen += 1
+		else:
 			continue
-		var body := str(n.get("_archetype_id"))
-		if body == "":
-			body = "procedural:" + str(n.get("npc_type"))
-		var key := "%s|%s" % [str(n._portrait_key()), body]
+		var key := "%s|%s" % [face, body]
 		if not into.has(key):
 			into[key] = []
 		(into[key] as Array).append("%s @ %s" % [str(n.get("npc_name")), scene])
@@ -158,6 +170,7 @@ func test_the_corpus_reaches_the_villages_and_every_pictured_keeper() -> void:
 		npcs += (pairs[k] as Array).size()
 	assert_gt(_scripts().size(), 20, "FLOOR: the map scripts must be found, or the crawl judged a fraction")
 	assert_gt(npcs, 50, "FLOOR: the crawl must reach the placed NPCs (%d found)" % npcs)
+	assert_gt(_walkers_seen, 0, "CONTROL: the crawl must reach the WanderingNPC walkers too -- they speak with a face over a body")
 	var seen := ""
 	for k in pairs:
 		seen += _names(pairs[k]) + " ; "
