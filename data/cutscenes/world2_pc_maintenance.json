@@ -3,7 +3,7 @@
   "title": "Maintenance",
   "world": 2,
   "trigger": "world2_pc_maintenance",
-  "background": "prologue_forest",
+  "background": "suburban_neighborhood",
   "description": "Suburban ritual observed: watering a plastic hedge in the rain.",
   "steps": [
     {

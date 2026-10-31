@@ -3,7 +3,7 @@
   "title": "The Grand Schedule",
   "world": 3,
   "trigger": "boss_tempo_steampunk",
-  "background": "steampunk_workshop",
+  "background": "mechanism_interior",
   "description": "The Grand Mechanism does not notice intruders. It schedules them. W3's masterite is named as an instrument, not a person, and never says 'I' -- the Schedule has a first rule and no record of who wrote it.",
   "steps": [
     {

@@ -3,7 +3,7 @@
   "title": "Warden of Routine",
   "world": 2,
   "trigger": "boss_warden_suburban",
-  "background": "suburban_park",
+  "background": "maple_heights_street",
   "description": "The crossing guard Masterite. A woman with a STOP sign who has guarded one intersection since the beginning.",
   "steps": [
     {

@@ -3,7 +3,7 @@
   "title": "The Clockwork Sentinels",
   "world": 3,
   "trigger": "world3_sentinel_encounter",
-  "background": "steampunk_airship",
+  "background": "brasston_square",
   "description": "The Regulator's enforcement arm finds them in Brasston. Polished brass humanoids with calibration rods. Deviation logged. The party is outside tolerance range. One sentinel apologizes for the inconvenience, which is also outside its operational parameters.",
   "steps": [
     {

@@ -3,7 +3,7 @@
   "title": "The 4:07 Event",
   "world": 3,
   "trigger": "world3_chat_teatime_brasston",
-  "background": "steampunk_workshop",
+  "background": "brasston_square",
   "description": "Party watches Brasston's synchronized teatime. Character beat, no plot advance.",
   "steps": [
     {
