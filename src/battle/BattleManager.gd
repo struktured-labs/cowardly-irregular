@@ -3808,6 +3808,18 @@ func repeat_previous_actions() -> bool:
 	return true
 
 
+## ⛔ REPEAT ADVERTISES LAST ROUND'S PLAN, AND ALL THREE FALLBACKS BELOW HAND THE MEMBER A BASIC
+## ATTACK INSTEAD. That substitution is deliberate and right — an unaffordable cast would otherwise
+## fail at execution and spend the turn on nothing — but each site had a print() and nothing else, so
+## it reached the log FILE and never the battle log panel. The player pressed Repeat expecting
+## "Fire x3", watched a swing, and was told nothing. The whole-party case is refused earlier with a
+## reason; these three are the per-member cases that still go ahead.
+func _announce_repeat_substitution(combatant: Combatant, why: String) -> void:
+	battle_log_message.emit("[color=gray]%s: %s — attacking instead.[/color]"
+		% [combatant.combatant_name, why])
+	print("[REPEAT] %s: %s, using attack" % [combatant.combatant_name, why])
+
+
 ## One combatant's remembered actions, or a basic attack when none were stored.
 func _queue_repeated_action(combatant: Combatant) -> void:
 	var combatant_id = combatant.combatant_name.to_lower()
@@ -3820,7 +3832,7 @@ func _queue_repeated_action(combatant: Combatant) -> void:
 			"target": alive[0] if alive.size() > 0 else null,
 			"speed": _compute_action_speed(combatant, "attack")
 		})
-		print("[REPEAT] %s: no previous action, using attack" % combatant.combatant_name)
+		_announce_repeat_substitution(combatant, "nothing to repeat")
 		return
 
 	for saved_action in actions:
@@ -3838,7 +3850,7 @@ func _queue_repeated_action(combatant: Combatant) -> void:
 				action = {"combatant": combatant, "type": "attack",
 					"target": alive_foes[0] if alive_foes.size() > 0 else null,
 					"speed": _compute_action_speed(combatant, "attack")}
-				print("[REPEAT] %s: nothing in the saved Advance is affordable, using attack" % combatant.combatant_name)
+				_announce_repeat_substitution(combatant, "the saved Advance is not affordable now")
 			elif kept.size() < subs.size():
 				## Trimmed, so the saved full_bank flag no longer describes it; re-derive as autobattle does.
 				var ruled: Dictionary = _apply_full_bank_rule(combatant, kept)
@@ -3853,7 +3865,8 @@ func _queue_repeated_action(combatant: Combatant) -> void:
 				action = {"combatant": combatant, "type": "attack",
 					"target": foes[0] if foes.size() > 0 else null,
 					"speed": _compute_action_speed(combatant, "attack")}
-				print("[REPEAT] %s: the saved %s is not affordable now, using attack" % [combatant.combatant_name, str(saved_action.get("type", ""))])
+				_announce_repeat_substitution(combatant,
+					"the saved %s is not affordable now" % str(saved_action.get("type", "")))
 
 		# Validity check MUST happen before `is Combatant` — a freed
 		# reference makes `is` error with 'Left operand of is is a
