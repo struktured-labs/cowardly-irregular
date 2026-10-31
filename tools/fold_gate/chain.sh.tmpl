@@ -53,7 +53,10 @@ XDG_DATA_HOME=$PWD/tmp/xdg timeout 900 godot --headless --audio-driver Dummy --i
 IE=$?; echo "import EC=$IE"
 
 S=$PWD/tmp/smoke_xdg_@NNN@_$$
-XDG_DATA_HOME=$S COWIR_SFX_LOG_CUES=1 xvfb-run -a timeout 300 godot --rendering-driver opengl3 --audio-driver Dummy -- --render-smoke > tmp/smoke@NNN@.log 2>&1
+# .746: his live 8BitDo reached the smoke and opened the field menu mid-leg; hide pads like run_tests.sh.
+SJ=(); if command -v bwrap > /dev/null && bwrap --dev-bind / / --tmpfs /dev/input true 2>/dev/null; then SJ=(bwrap --dev-bind / / --tmpfs /dev/input); fi
+echo "smoke pads: ${SJ[0]:+hidden}${SJ[0]:-VISIBLE (no usable bwrap)}"
+XDG_DATA_HOME=$S COWIR_SFX_LOG_CUES=1 "${SJ[@]}" xvfb-run -a timeout 300 godot --rendering-driver opengl3 --audio-driver Dummy -- --render-smoke > tmp/smoke@NNN@.log 2>&1
 SE=$?; echo "smoke EC=$SE"
 command grep -a -E 'VERDICT|\[GAME\] Build|\[SMOKE\] FAIL' tmp/smoke@NNN@.log
 F=$(command grep -a -c 'previously freed' tmp/smoke@NNN@.log)
