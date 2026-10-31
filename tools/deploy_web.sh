@@ -732,7 +732,10 @@ _REAL_SIG_BEFORE="$(./tools/check_profile_untouched.sh --sig "$_REAL_UD")"
 ## logs) and ON here, because this log is machine-read and archived per publish rather than scrolled.
 ## A cue with ONE emitter is a stack frame, not noise: @cowir-overworld located the lever/physics crash
 ## from a `surprised_chime` line, which is played in exactly one function. Their call, 2026-10-12.
-SMOKE_CMD=(env "XDG_DATA_HOME=$_SMOKE_XDG" "COWIR_SFX_LOG_CUES=1" xvfb-run -a timeout 300 godot --rendering-driver opengl3 --audio-driver Dummy -- --render-smoke)
+## .746: his live pad reached the smoke and opened the field menu mid-leg; hide pads like run_tests.sh.
+_SMOKE_JAIL=(); if command -v bwrap > /dev/null && bwrap --dev-bind / / --tmpfs /dev/input true 2>/dev/null; then _SMOKE_JAIL=(bwrap --dev-bind / / --tmpfs /dev/input); fi
+if [ ${#_SMOKE_JAIL[@]} -gt 0 ]; then echo "[deploy] smoke pads: hidden"; else echo "[deploy] smoke pads: VISIBLE (no usable bwrap)"; fi
+SMOKE_CMD=(env "XDG_DATA_HOME=$_SMOKE_XDG" "COWIR_SFX_LOG_CUES=1" "${_SMOKE_JAIL[@]}" xvfb-run -a timeout 300 godot --rendering-driver opengl3 --audio-driver Dummy -- --render-smoke)
 if ! "${SMOKE_CMD[@]}" > tmp/deploy_smoke.log 2>&1; then
   cp tmp/deploy_smoke.log tmp/deploy_smoke.attempt1.log
   echo "[deploy] smoke attempt 1 failed (xvfb flake?) — retrying once"
