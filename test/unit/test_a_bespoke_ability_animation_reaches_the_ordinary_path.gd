@@ -17,8 +17,8 @@ const STD_ANIMS := ["idle", "walk", "attack", "hit", "dead", "death", "cast", "d
 	"victory", "defeat", "advance", "defer", "dash", "lunge", "run", "base", "weak"]
 
 var _scene
-var _saved_pp: Array = []
-var _saved_ep: Array = []
+const BattleStateGuard := preload("res://test/unit/helpers/battle_state.gd")
+var _bm_guard
 var _saved_scale: float = 1.0
 var _hero: Combatant
 var _foe: Combatant
@@ -78,8 +78,9 @@ func _rig(hero_anims: Array, foe_anims: Array) -> Array:
 
 func before_each() -> void:
 	AutobattleSystem._test_disable_persistence = true
-	_saved_pp = BattleManager.player_party.duplicate()
-	_saved_ep = BattleManager.enemy_party.duplicate()
+	## The real scene drives BattleManager into PLAYER_SELECTING, so the whole autoload is snapshotted, not just its parties.
+	_bm_guard = BattleStateGuard.new()
+	_bm_guard.snapshot()
 	_saved_scale = Engine.time_scale
 	_scene = SCENE.instantiate()
 	add_child_autofree(_scene)
@@ -95,8 +96,7 @@ func before_each() -> void:
 
 func after_each() -> void:
 	Engine.time_scale = _saved_scale
-	BattleManager.player_party.assign(_saved_pp.filter(func(x): return is_instance_valid(x)))
-	BattleManager.enemy_party.assign(_saved_ep.filter(func(x): return is_instance_valid(x)))
+	_bm_guard.restore()
 
 
 func _act(ability_id: String, targets: Array) -> void:
