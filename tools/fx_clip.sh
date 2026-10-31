@@ -43,8 +43,9 @@ for S in "${SEQS[@]}"; do
   if [ "$UNIQ" -lt 5 ]; then
     echo "[fx] $S BLOCKED: $N frames but only $UNIQ distinct" >&2; _FAILED=1; continue
   fi
-  ffmpeg -loglevel error -y -framerate "$FPS" -i "$D/f%08d.png" -c:v libx264 -pix_fmt yuv420p -crf 18 "tmp/fx/$S.mp4"
-  ffmpeg -loglevel error -y -framerate "$FPS" -i "$D/f%08d.png" \
+  # Frame 0 precedes the stage (measured: grey, then the backdrop from frame 1).
+  ffmpeg -loglevel error -y -framerate "$FPS" -start_number 1 -i "$D/f%08d.png" -c:v libx264 -pix_fmt yuv420p -crf 18 "tmp/fx/$S.mp4"
+  ffmpeg -loglevel error -y -framerate "$FPS" -start_number 1 -i "$D/f%08d.png" \
     -vf "fps=$FPS,scale=640:-1:flags=lanczos,split[a][b];[a]palettegen=max_colors=192[p];[b][p]paletteuse=dither=sierra2_4a" "tmp/fx/$S.gif"
   echo "[fx] $S: $N frames ($UNIQ distinct) -> tmp/fx/$S.mp4 tmp/fx/$S.gif"
 done

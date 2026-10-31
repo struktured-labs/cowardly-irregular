@@ -56,8 +56,10 @@
               "radius": 26,
               "life": 0.22,
               "size": 0.85,
-              "twist": 30
-            }
+              "twist": 30,
+              "palette": "flame"
+            },
+            "palette": "flame"
           }
         },
         {
@@ -77,7 +79,8 @@
             "radius": 18,
             "life": 0.18,
             "size": 0.65,
-            "scale": 1.0
+            "scale": 1.0,
+            "palette": "flame"
           }
         },
         {
@@ -181,7 +184,7 @@
           "kind": "lunge",
           "actor": "caster",
           "toward": "target",
-          "distance": 0.62,
+          "distance": 0.8,
           "dur": 0.34,
           "hold": 0.2,
           "back": 0.24,

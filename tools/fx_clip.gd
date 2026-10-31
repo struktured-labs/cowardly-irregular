@@ -35,7 +35,9 @@ func _init() -> void:
 	root.add_child(stage)
 	_backdrop(stage)
 	_cam = Camera2D.new()
-	_cam.position = VIEW * 0.5
+	## Zoomed on the two actors: at 1:1 a 256 px frame is a small figure in a 1280 px clip.
+	_cam.position = Vector2(645, 385)
+	_cam.zoom = Vector2(1.5, 1.5)
 	stage.add_child(_cam)
 	_cam.make_current()
 
@@ -132,8 +134,8 @@ func _backdrop(stage: Node2D) -> void:
 func _caption(stage: Node2D, text: String) -> void:
 	var l := Label.new()
 	l.text = text
-	l.position = Vector2(16, VIEW.y - 34)
-	l.add_theme_font_size_override("font_size", 16)
+	l.position = Vector2(645, 385) + (Vector2(16, VIEW.y - 34) - VIEW * 0.5) / 1.5
+	l.add_theme_font_size_override("font_size", 11)
 	l.add_theme_color_override("font_color", Color(0.8, 0.8, 0.9, 0.85))
 	stage.add_child(l)
 

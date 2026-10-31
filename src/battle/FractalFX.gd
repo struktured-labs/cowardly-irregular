@@ -19,6 +19,9 @@ const FLAME_CAP := 900
 const PALETTES := {
 	"fire": [[0.0, Color(1.0, 1.0, 0.85, 1.0)], [0.18, Color(1.0, 0.82, 0.25, 1.0)],
 		[0.5, Color(1.0, 0.42, 0.06, 0.9)], [1.0, Color(0.55, 0.06, 0.02, 0.0)]],
+	## Warm from the first frame: a short-lived child sampled near t=0 under "fire" reads white.
+	"flame": [[0.0, Color(1.0, 0.86, 0.4, 1.0)], [0.35, Color(1.0, 0.5, 0.1, 0.95)],
+		[1.0, Color(0.5, 0.05, 0.0, 0.0)]],
 	"ember": [[0.0, Color(1.0, 0.75, 0.3, 0.9)], [1.0, Color(0.6, 0.1, 0.0, 0.0)]],
 	"spark": [[0.0, Color(1.0, 1.0, 1.0, 1.0)], [0.3, Color(0.75, 0.95, 1.0, 1.0)],
 		[1.0, Color(1.0, 0.85, 0.3, 0.0)]],
