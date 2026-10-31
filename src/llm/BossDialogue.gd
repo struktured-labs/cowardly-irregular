@@ -7,6 +7,7 @@ extends Node
 ##   has_entry(boss_id) -> bool
 ##   get_verbs(boss_id) -> Array[Dictionary]
 ##   get_opening_lines(boss_id) -> Array[String]
+##   get_persona(boss_id) -> String        (authored persona text, "" if none)
 ##   get_phase_transition_line(boss_id, phase) -> String
 ##   get_victory_line(boss_id) -> String   (boss reaction when the PARTY wins)
 ##   get_defeat_line(boss_id) -> String    (boss gloat when it WIPES the party)
@@ -145,6 +146,15 @@ func get_display_name(boss_id: String) -> String:
 		return ""
 	var entry: Dictionary = _data[boss_id]
 	return str(entry.get("display_name", ""))
+
+
+func get_persona(boss_id: String) -> String:
+	"""Returns the boss section's authored persona, or "" if absent. Flavour only,
+	like get_display_name: it voices LLM prompts and never gates a fallback."""
+	if not has_entry(boss_id):
+		return ""
+	var entry: Dictionary = _data[boss_id]
+	return str(entry.get("persona", ""))
 
 
 func get_phase_transition_line(boss_id: String, phase: int) -> String:
