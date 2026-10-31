@@ -9,8 +9,8 @@ extends GutTest
 ## stand within reach of the artist's villagers. Both sides are derived, so a later rescale of either
 ## population reds here instead of quietly reopening the gap.
 ##
-## Pairs with OverworldPlayer.SPRITE_SIZE (cowir-main lands it in the same fold): the art alone is shrunk
-## back to SPRITE_SIZE by _fit_to_sprite_size, so neither half fixes what he sees without the other.
+## Pairs with OverworldPlayer rendering a sheet frame at its DECLARED size (it used to squeeze every frame
+## to SPRITE_SIZE), so the art sets the drawn size and neither half fixes what he sees without the other.
 
 const MANIFEST := "res://data/sprite_manifest.json"
 const HEIGHT_TOLERANCE := 0.15
