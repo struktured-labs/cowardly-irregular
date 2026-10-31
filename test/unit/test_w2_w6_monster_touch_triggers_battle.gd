@@ -61,12 +61,12 @@ func test_handler_delegates_through_on_battle_triggered() -> void:
 		assert_gt(idx, -1, "%s handler must exist" % label)
 		var next_fn: int = src.find("\nfunc ", idx + 1)
 		var body: String = src.substr(idx, next_fn - idx) if next_fn > -1 else src.substr(idx)
-		assert_true(body.contains("_on_battle_triggered(enemies)"),
-			"%s handler must call _on_battle_triggered(enemies) — keeps terrain selection in one place" % label)
-		assert_true(body.contains("enemies.append(monster_id)"),
-			"%s handler must build the enemies array from monster_id" % label)
-		assert_true(body.contains("randi_range(0, 2)"),
-			"%s handler must add 0-2 extra duplicates for variety — matches W1 OverworldScene._on_roaming_monster_touched pattern" % label)
+		assert_true(body.contains("_on_battle_triggered("),
+			"%s handler must call _on_battle_triggered — keeps terrain selection in one place" % label)
+		## The group itself (species x1..3, an elite alone) is ONE shared rule now, judged by behaviour in
+		## test_one_roamer_touch_rule; this arm only pins that the world routes through it.
+		assert_true(body.contains("MonsterSpawner.group_for_touch(monster_id, is_elite)"),
+			"%s handler must take its group from MonsterSpawner.group_for_touch, not a private copy" % label)
 
 
 func test_connect_precedes_setup_so_first_touch_fires() -> void:

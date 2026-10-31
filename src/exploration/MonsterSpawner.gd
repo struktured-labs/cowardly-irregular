@@ -5,6 +5,8 @@ class_name MonsterSpawner
 ## Spawns monsters from the zone pool and keeps them within screen + buffer range
 
 const RoamingMonsterScript = preload("res://src/exploration/RoamingMonster.gd")
+## The elite marker by preload, not via the autoload: a static rule must not need a live singleton to read a const.
+const EncounterSystemScript = preload("res://src/encounters/EncounterSystem.gd")
 
 signal monster_touched(monster_id: String, monster_types: Array, is_elite: bool)
 
@@ -16,6 +18,10 @@ const MIN_MONSTER_SEPARATION: float = 64.0
 const DESPAWN_DISTANCE: float = 640.0
 const SPAWN_BUFFER: float = 480.0
 const CHECK_INTERVAL: float = 3.0
+## A touched roamer's group: up to this many extra copies of its species join it.
+const GROUP_EXTRA_MAX: int = 2
+
+
 ## Per-instance map dimensions (in tiles). Default to the W1 OverworldScene
 ## size (100x70), but each overworld script should call set_map_size with its
 ## own MAP_WIDTH / MAP_HEIGHT after add_child so candidate spawn positions
@@ -348,3 +354,26 @@ func _get_valid_pool_for_overworld() -> Array:
 
 func _on_monster_touched(monster_id: String, monster_types: Array, is_elite: bool = false) -> void:
 	monster_touched.emit(monster_id, monster_types, is_elite)
+
+
+## The ONE rule for what a touched roamer fights as, shared by all six overworlds (each used to carry a copy).
+## A field elite fights ALONE -- it is the encounter, not the leader of one -- else the species x1..(1+GROUP_EXTRA_MAX).
+static func group_for_touch(monster_id: String, is_elite: bool) -> Array:
+	if is_elite or is_field_elite(monster_id):
+		return [elite_id(monster_id)]
+	var enemies: Array = [monster_id]
+	for _i in range(randi_range(0, GROUP_EXTRA_MAX)):
+		enemies.append(monster_id)
+	return enemies
+
+
+## BestiarySystem is a class_name with STATIC functions, not an autoload: a node lookup here returned null every time,
+## so no monster was ever an elite and field elites spawned with the random duplicates the solo rule exists to prevent.
+static func is_field_elite(monster_id: String) -> bool:
+	return bool(BestiarySystem.get_monster_data(monster_id).get("field_elite", false))
+
+
+## The elite marker rides IN the id, not in a latch: the id travels to EncounterSystem._create_enemy_data whole, so it
+## cannot leak the way a "next encounter is elite" flag would if the battle is blocked (the 2026-09-06 spider wedge).
+static func elite_id(monster_id: String) -> String:
+	return monster_id if monster_id.ends_with(EncounterSystemScript.ELITE_SUFFIX) else monster_id + EncounterSystemScript.ELITE_SUFFIX
