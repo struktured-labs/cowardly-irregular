@@ -76,6 +76,8 @@ const NPC_ARCHETYPES := [
 	"traveler_industrial", "young_man_industrial", "young_woman_industrial",
 	# the two base archetypes the variant tool cannot make (2026-09-11).
 	"arbiter", "mysterious",
+	# Shop keepers who draw their own sheet (2026-10-30); a 48px frame, derived from the sheet like the rest.
+	"keeper_willow", "keeper_mortimer",
 ]
 
 

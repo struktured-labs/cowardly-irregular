@@ -115,8 +115,14 @@ func test_the_header_reader_reports_real_dimensions() -> void:
 	# constant reader satisfied both -- the exact vacuity this arm exists to prevent, written
 	# into the arm itself. The second pin is now NON-SQUARE and a different magnitude, so a
 	# constant cannot pass, and a reader that swapped width for height cannot either.
-	assert_eq(_png_size("res://assets/sprites/jobs/bard/overworld.png"), Vector2i(128, 128),
-		"the overworld sheet is a 4x4 grid of 32x32 frames")
+	# The overworld pin was a literal 128x128, true only until the party went to 48px frames (2026-10-30), so
+	# a CORRECT rescale red it. Now it is the relationship: 4x the frame the MANIFEST declares, a source
+	# independent of the reader under test. The non-square battle pin below still defeats a constant reader.
+	var m: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/sprite_manifest.json"))
+	var fw := int((((m as Dictionary).get("overworld_player_sheets", {}) as Dictionary).get("bard", {}) as Dictionary).get("frame_width", 0))
+	assert_gt(fw, 0, "CONTROL: the bard's declared overworld frame must be readable")
+	assert_eq(_png_size("res://assets/sprites/jobs/bard/overworld.png"), Vector2i(fw * 4, fw * 4),
+		"the overworld sheet is a 4x4 grid of its declared %dx%d frames" % [fw, fw])
 	assert_eq(_png_size("res://assets/sprites/jobs/bard/advance.png"), Vector2i(1024, 256),
 		"a battle sheet is a 4-frame strip of 256x256 -- non-square, and W != H catches a swap")
 
