@@ -441,6 +441,11 @@ func _get_ambient_fx_theme() -> String:
 	return "cave"
 
 
+## Base torch. A later world's caves are not lit by fire; roles below keep their own tints.
+func _get_torch_tint() -> Color:
+	return DungeonLightingScript.TORCH_TINT
+
+
 func _setup_lighting() -> void:
 	lighting = DungeonLightingScript.new()
 	lighting.name = "Lighting"
@@ -460,7 +465,7 @@ func _place_torches() -> void:
 	lighting._lamps.clear()
 	for key in spawn_points:
 		var k := str(key)
-		var tint := Color(1.0, 0.80, 0.45)
+		var tint := _get_torch_tint()
 		var radius := 112
 		var energy := 1.0
 		if k == "boss":
