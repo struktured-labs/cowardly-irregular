@@ -121,6 +121,8 @@ func _setup_npcs() -> void:
 	# The Cache Register — REAL reads: session uptime + bestiary residency.
 	var register = OverworldNPCScript.new()
 	register.npc_name = "The Cache Register"
+	register.is_object = true  ## an object, not a person
+	register.object_art = "res://assets/sprites/objects/cache_register.png"
 	register.npc_type = "scholar"
 	register.position = Vector2(9.5 * TILE_SIZE, 2.6 * TILE_SIZE)
 	register.dialogue_lines = [

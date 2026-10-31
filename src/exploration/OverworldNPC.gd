@@ -31,6 +31,8 @@ var _quest_bob_t: float = 0.0
 @export var sprite_archetype: String = ""
 ## An OBJECT that speaks (a clock, a ledger, a map): no person is drawn and no face is shown, only its interaction.
 @export var is_object: bool = false
+## What an object (or an animal) draws instead of a person; empty = nothing, because the room already draws it.
+@export var object_art: String = ""
 
 ## LLM dynamic dialogue opt-in (per docs/llm-integration-design.md:157).
 ## Only NPCs with `dynamic = true` AND a non-empty `persona` participate
@@ -386,6 +388,8 @@ func _generate_sprite() -> void:
 	sprite.scale = _get_context_scale()
 	add_child(sprite)
 	if is_object:
+		if object_art != "" and ResourceLoader.exists(object_art):
+			sprite.texture = load(object_art)
 		return
 
 	# Try archetype sheet first (artist-style 4-row × 4-col 32x32 grid).
