@@ -716,6 +716,17 @@ if [ ! -x tools/check_profile_untouched.sh ]; then
   echo "        for the render smoke without a way to prove his saves survived it." >&2
   exit 3
 fi
+## His LIVE game on his real profile: HOLD before booting anything. Its autosave would land inside the
+## --sig window below and RED this publish after the build (.487). Asked of tools/his_game_up.sh, the
+## one source; exit 1 = none. 0 (up) and 2 (cannot tell) both hold. `|| _HG=$?` because under set -e
+## a bare `cmd; ec=$?` never reaches its non-zero arm.
+_HG=0; _HG_OUT="$(./tools/his_game_up.sh 2>&1)" || _HG=$?
+if [ "$_HG" != 1 ]; then
+  echo "[deploy] BLOCKED (HOLD — not a gate failure): his game is up on his real profile, or it cannot be" >&2
+  echo "        told (his_game_up.sh exit $_HG). Re-run once it closes; nothing was booted." >&2
+  printf '        %s\n' "$_HG_OUT" >&2
+  exit 3
+fi
 _REAL_SIG_BEFORE="$(./tools/check_profile_untouched.sh --sig "$_REAL_UD")"
 ## COWIR_SFX_LOG_CUES: per-cue [SFX] tracing is off in normal play (it was 27-41% of struktured's own
 ## logs) and ON here, because this log is machine-read and archived per publish rather than scrolled.

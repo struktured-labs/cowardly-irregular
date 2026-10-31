@@ -36,7 +36,8 @@ scan() {
   for p in /proc/[0-9]*; do
     n="$(game_name "$p")"
     case "$n" in godot*|cowardly-irregular.x86_64|comm:godot*|comm:cowardly-irregu*) ;; *) continue ;; esac
-    if env="$(tr '\0' '\n' < "$p/environ" 2>/dev/null)"; then
+    # stderr is silenced BEFORE the input redirect: `< f 2>/dev/null` fails on `< f` first and leaks.
+    if env="$( { tr '\0' '\n' < "$p/environ"; } 2>/dev/null)"; then
       x="$(printf '%s\n' "$env" | sed -n 's/^XDG_DATA_HOME=//p' | tail -1)"
       h="$(printf '%s\n' "$env" | sed -n 's/^HOME=//p' | tail -1)"
       d="${x:-$h/.local/share}"; d="${d%/}"
