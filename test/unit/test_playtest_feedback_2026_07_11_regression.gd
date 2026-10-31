@@ -29,7 +29,7 @@ func test_speed_ladder_rebased_engine_quarter_is_one_x() -> void:
 		"engine 0.25 must be LABELED 1x — struktured: the old 0.5x pacing is the correct default")
 	assert_eq(BattleSceneScript.BATTLE_SPEEDS.size(), BattleSceneScript.BATTLE_SPEED_LABELS.size())
 	for i in range(1, BattleSceneScript.BATTLE_SPEED_LABELS.size()):
-		var expect := "%dx" % int(round(BattleSceneScript.BATTLE_SPEEDS[i] * 4.0))
+		var expect := _label_for(BattleSceneScript.BATTLE_SPEEDS[i])
 		assert_eq(BattleSceneScript.BATTLE_SPEED_LABELS[i], expect,
 			"label at %d must be engine*4 (ladder is coherent)" % i)
 
@@ -40,15 +40,22 @@ func test_settings_menu_matches_battle_scale() -> void:
 		"settings and battle must speak the same scale")
 	for i in SettingsMenuScript.BATTLE_SPEED_PRESETS.size():
 		assert_eq(SettingsMenuScript.BATTLE_SPEED_LABELS[i],
-			"%dx" % int(round(SettingsMenuScript.BATTLE_SPEED_PRESETS[i] * 4.0)))
+			_label_for(SettingsMenuScript.BATTLE_SPEED_PRESETS[i]))
 
 
-func test_default_speed_is_quarter_engine_scale() -> void:
+## engine*4, with a fractional rung printed as itself: 0.375 is "1.5x", never rounded to "2x".
+func _label_for(speed: float) -> String:
+	var v := speed * 4.0
+	return ("%d" % int(v) if is_equal_approx(v, roundf(v)) else String.num(v)) + "x"
+
+
+func test_default_speed_is_the_1_5x_rung() -> void:
+	## Overridden 2026-10-30 by struktured: the default is now engine 0.375 ("1.5x").
 	var gs_src := FileAccess.get_file_as_string("res://src/meta/GameState.gd")
-	assert_true("var default_battle_speed: float = 0.25" in gs_src,
-		"fresh-game default must be engine 0.25 (labeled 1x)")
+	assert_true("var default_battle_speed: float = 0.375" in gs_src,
+		"fresh-game default must be engine 0.375 (labeled 1.5x)")
 	var save_src := FileAccess.get_file_as_string("res://src/save/SaveSystem.gd")
 	assert_true("speed_scale_v3" in save_src,
 		"settings migration v3 must exist so pre-rebase files reset once to the new default")
-	assert_true("BATTLE_SCENE_SCRIPT._battle_speed_index = 0" in save_src,
-		"v3 one-time reset must land on index 0 (the new 1x)")
+	assert_true("BATTLE_SCENE_SCRIPT._battle_speed_index = BATTLE_SCENE_SCRIPT.DEFAULT_BATTLE_SPEED_INDEX" in save_src,
+		"v3 one-time reset must land on the named default")
