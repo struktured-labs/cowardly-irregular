@@ -70,6 +70,10 @@ RE=$?; echo "runner selftest EC=$RE"; tail -1 tmp/rpsself@NNN@.log
 tools/run_publish_selftests.sh > tmp/selftests@NNN@.log 2>&1
 TE=$?; echo "selftests EC=$TE"; tail -1 tmp/selftests@NNN@.log
 
+# An ambient bed plays UNDER music, so a pitched one is a second key (2026-10-30: three Suno "ambience" beds were songs).
+python3 tools/check_ambient_is_unpitched.py --selftest > tmp/ambientpitch@NNN@.log 2>&1 && python3 tools/check_ambient_is_unpitched.py >> tmp/ambientpitch@NNN@.log 2>&1
+AE=$?; echo "ambient pitch EC=$AE"; tail -1 tmp/ambientpitch@NNN@.log
+
 PRE_READY_BASE="${PRE_READY_BASE:-origin/main}" tools/pre_ready_guards.sh > tmp/preready@NNN@.log 2>&1
 PE=$?; echo "pre_ready EC=$PE"
 command grep -a -E 'distinct guards|^ *(Passing|Failing)' tmp/preready@NNN@.log
@@ -85,6 +89,7 @@ WHY=""
 [ "$BE" -eq 0 ] || WHY="$WHY box_busy-selftest"
 [ "$RE" -eq 0 ] || WHY="$WHY runner-selftest"
 [ "$TE" -eq 0 ] || WHY="$WHY selftests"
+[ "$AE" -eq 0 ] || WHY="$WHY ambient-pitch"
 [ "$PE" -eq 0 ] || WHY="$WHY sweep"
 [ -z "$(git status --porcelain)" ] || WHY="$WHY dirty"
 [ "$(git rev-parse HEAD)" = "$START_SHA" ] || WHY="$WHY tree-moved"

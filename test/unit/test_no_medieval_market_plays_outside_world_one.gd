@@ -120,8 +120,9 @@ func test_world_one_still_gets_its_village_bed() -> void:
 	if _sm == null:
 		return
 	_sm._current_area = str(_area_for_world().get("medieval", "overworld"))
-	assert_eq(_sm.village_ambient_key(), "ambient_village",
-		"World 1 villages must still layer ambient_village — it is their authored bed")
+	## Flipped 2026-10-30: "Market Morning" is a song, so W1 lost the layer too (struktured's ear).
+	assert_eq(_sm.village_ambient_key(), "",
+		"World 1 villages layered '%s' — ambient_village is a Suno SONG and played a second melody under every W1 village bed" % _sm.village_ambient_key())
 
 
 func test_the_beds_held_for_struktured_are_still_unreachable_from_here() -> void:
