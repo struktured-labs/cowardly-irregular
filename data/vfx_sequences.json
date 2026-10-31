@@ -1,0 +1,272 @@
+{
+  "_doc": "Issue #399 prototype: multi-phase FX sequences read by src/battle/FractalFX.gd. Times are BATTLE seconds (they scale with battle speed like every other battle animation). A phase starts at `at`. kind=emit is the recursive primitive: `count` flames over `arc` degrees (360 = radial symmetry) out to `radius`; each becomes the origin of `child` (a different spec) or, with `depth`, of a smaller copy of itself (`decay` = size, `time_decay` = life). Not wired to any ability yet: judged on clips from tools/fx_clip.sh first.",
+  "sequences": {
+    "fire_fractal": {
+      "label": "Fire: bolt, burst, fan, re-burst, spin and fling",
+      "phases": [
+        {
+          "at": 0.0,
+          "kind": "bolt",
+          "dur": 0.42,
+          "arc_height": 54,
+          "size": 1.3,
+          "trail_spacing": 8
+        },
+        {
+          "at": 0.42,
+          "kind": "flash",
+          "dur": 0.2,
+          "size": 7.0
+        },
+        {
+          "at": 0.42,
+          "kind": "ring",
+          "dur": 0.32,
+          "scale": 3.2
+        },
+        {
+          "at": 0.42,
+          "kind": "shake",
+          "intensity": 7,
+          "dur": 0.25
+        },
+        {
+          "at": 0.42,
+          "kind": "emit",
+          "count": 8,
+          "arc": 360,
+          "radius": 74,
+          "life": 0.32,
+          "size": 1.25,
+          "child_at": 0.75,
+          "decay": 0.62,
+          "twist": 22.5,
+          "child": {
+            "count": 3,
+            "arc": 56,
+            "radius": 56,
+            "life": 0.28,
+            "size": 1.0,
+            "child_at": 0.8,
+            "decay": 0.6,
+            "bloom": false,
+            "child": {
+              "count": 6,
+              "arc": 360,
+              "radius": 26,
+              "life": 0.22,
+              "size": 0.85,
+              "twist": 30
+            }
+          }
+        },
+        {
+          "at": 0.92,
+          "kind": "spin_fling",
+          "count": 12,
+          "radius": 84,
+          "inner": 22,
+          "turns": 1.25,
+          "spin": 0.45,
+          "fling": 0.32,
+          "distance": 175,
+          "size": 1.0,
+          "child": {
+            "count": 4,
+            "arc": 360,
+            "radius": 18,
+            "life": 0.18,
+            "size": 0.65,
+            "scale": 1.0
+          }
+        },
+        {
+          "at": 1.37,
+          "kind": "shake",
+          "intensity": 10,
+          "dur": 0.22
+        },
+        {
+          "at": 1.37,
+          "kind": "ring",
+          "dur": 0.28,
+          "scale": 4.2
+        }
+      ],
+      "start": 0.75,
+      "start_note": "mage/cast releases on f6 at 750 ms (cowir-sprites, read by eye on the artist strip)"
+    },
+    "fire_depth_1": {
+      "label": "Depth knob, tier 1: one burst, one recursion",
+      "phases": [
+        {
+          "at": 0.0,
+          "kind": "bolt",
+          "dur": 0.42,
+          "arc_height": 54,
+          "size": 1.1,
+          "trail_spacing": 9
+        },
+        {
+          "at": 0.42,
+          "kind": "flash",
+          "dur": 0.16,
+          "size": 5.0
+        },
+        {
+          "at": 0.42,
+          "kind": "emit",
+          "count": 6,
+          "arc": 360,
+          "radius": 70,
+          "life": 0.32,
+          "size": 1.2,
+          "depth": 1,
+          "decay": 0.55,
+          "time_decay": 0.8,
+          "twist": 30,
+          "child_at": 0.78
+        }
+      ],
+      "start": 0.75,
+      "start_note": "mage/cast releases on f6 at 750 ms (cowir-sprites, read by eye on the artist strip)"
+    },
+    "fire_depth_3": {
+      "label": "Depth knob, tier 3: the same burst recursing three times",
+      "phases": [
+        {
+          "at": 0.0,
+          "kind": "bolt",
+          "dur": 0.42,
+          "arc_height": 54,
+          "size": 1.4,
+          "trail_spacing": 7
+        },
+        {
+          "at": 0.42,
+          "kind": "flash",
+          "dur": 0.22,
+          "size": 8.0
+        },
+        {
+          "at": 0.42,
+          "kind": "shake",
+          "intensity": 9,
+          "dur": 0.3
+        },
+        {
+          "at": 0.42,
+          "kind": "emit",
+          "count": 6,
+          "arc": 360,
+          "radius": 78,
+          "life": 0.32,
+          "size": 1.3,
+          "depth": 3,
+          "decay": 0.56,
+          "time_decay": 0.8,
+          "twist": 30,
+          "child_at": 0.78,
+          "child_bloom": false
+        }
+      ],
+      "start": 0.75,
+      "start_note": "mage/cast releases on f6 at 750 ms (cowir-sprites, read by eye on the artist strip)"
+    },
+    "strike_impact": {
+      "label": "Physical: lunge with afterimages, slash trail, impact frames, hit-stop, sparks, knockback",
+      "phases": [
+        {
+          "at": 0.0,
+          "kind": "lunge",
+          "actor": "caster",
+          "toward": "target",
+          "distance": 0.62,
+          "dur": 0.34,
+          "hold": 0.2,
+          "back": 0.24,
+          "ghost_every": 0.025,
+          "ghost_from": 0.125
+        },
+        {
+          "at": 0.33,
+          "kind": "slash",
+          "from": -135,
+          "to": 35,
+          "radius": 62,
+          "count": 16,
+          "dur": 0.06,
+          "life": 0.24,
+          "size": 1.3,
+          "palette": "steel"
+        },
+        {
+          "at": 0.375,
+          "kind": "impact_frame",
+          "actor": "target",
+          "frame": 0.03
+        },
+        {
+          "at": 0.375,
+          "kind": "hitstop",
+          "dur": 0.1,
+          "actors": [
+            "caster",
+            "target"
+          ]
+        },
+        {
+          "at": 0.375,
+          "kind": "flash",
+          "dur": 0.12,
+          "size": 3.5,
+          "alpha": 0.7
+        },
+        {
+          "at": 0.475,
+          "kind": "emit",
+          "aim": true,
+          "count": 9,
+          "arc": 110,
+          "radius": 74,
+          "life": 0.22,
+          "size": 0.75,
+          "stretch": 3.0,
+          "palette": "spark",
+          "bloom": false,
+          "child_at": 0.85,
+          "child": {
+            "count": 3,
+            "arc": 360,
+            "radius": 14,
+            "life": 0.14,
+            "size": 0.4,
+            "palette": "spark",
+            "bloom": false
+          }
+        },
+        {
+          "at": 0.475,
+          "kind": "ring",
+          "dur": 0.2,
+          "scale": 2.2,
+          "palette": "steel"
+        },
+        {
+          "at": 0.475,
+          "kind": "knockback",
+          "actor": "target",
+          "distance": 24,
+          "dur": 0.32
+        },
+        {
+          "at": 0.475,
+          "kind": "shake",
+          "intensity": 9,
+          "dur": 0.2
+        }
+      ],
+      "start_note": "fighter/attack contacts on f3 at 375 ms; f0 carries the artist's own slash smear, so afterimages start at f1 (cowir-sprites)"
+    }
+  }
+}
