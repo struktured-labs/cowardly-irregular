@@ -314,8 +314,10 @@ func complete(prompt: String, fallback: String, opts: Dictionary = {}) -> Varian
 		inference_failed.emit(MODE_TEXT, "no ready backend")
 		return fallback
 
+	## opts.cache = false opts OUT, as choose() already allows: a one-shot line must not replay a cached reply.
+	var use_cache: bool = bool(opts.get("cache", true))
 	var cache_key: String = _cache_key(MODE_TEXT, prompt, opts)
-	var cached = _get_cache(cache_key)
+	var cached = _get_cache(cache_key) if use_cache else null
 	if cached != null:
 		return cached
 
@@ -328,7 +330,8 @@ func complete(prompt: String, fallback: String, opts: Dictionary = {}) -> Varian
 	if guarded == fallback:
 		inference_failed.emit(MODE_TEXT, "guard rejected response")
 	else:
-		_set_cache(cache_key, guarded)
+		if use_cache:
+			_set_cache(cache_key, guarded)
 		inference_succeeded.emit(MODE_TEXT)
 	return guarded
 

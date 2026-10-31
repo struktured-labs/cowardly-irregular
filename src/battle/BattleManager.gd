@@ -9921,7 +9921,9 @@ func _produce_boss_gloat_async(prompt: String, fallback: String, victory: bool) 
 		if not spoken["done"]:
 			spoken["done"] = true
 			_emit_boss_gloat(fallback, victory))
-	var line: Variant = await llm_node.complete(prompt, fallback)
+	## Uncached: the cache only clears on an area change, and a duel loss retries on the same map, so a second identical
+	## gloat prompt (spotlight losses log no event to vary it) replayed the first reply word for word.
+	var line: Variant = await llm_node.complete(prompt, fallback, {"cache": false})
 	if spoken["done"]:
 		return
 	spoken["done"] = true
