@@ -48,6 +48,13 @@ const READY_DISMISS_TEXT: String = "Press any button to dismiss"
 
 var _saved_time_scale: float = 1.0
 
+## ⛔ A HINT IS READ IN REAL SECONDS, AND `delta` IS BATTLE TIME. Battle runs Engine.time_scale at
+## 0.25-0.375, so the 2.0 s min-dismiss lock (which swallows EVERY input) held a player 5-8 s, and
+## the 8 s auto-dismiss lasted 21-32 s. Same defect MenuRepeat had; same fix — an injected clock,
+## with `delta` only as the first frame's estimate.
+var clock: Callable = func() -> float: return float(Time.get_ticks_usec()) / 1000000.0
+var _last_t: float = -1.0
+
 func _ready() -> void:
 	layer = 98  # Above game, below game over
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -117,6 +124,7 @@ func show_hint(hint_id: String, title: String, body: String, min_dismiss: float 
 	_body_label.text = body
 	_auto_dismiss_timer = AUTO_DISMISS_TIME
 	_min_dismiss_timer = maxf(0.0, min_dismiss)
+	_last_t = -1.0
 	_update_dismiss_label()
 	visible = true
 	_panel.position.y = PANEL_TOP
@@ -167,11 +175,15 @@ func _process(delta: float) -> void:
 	_panel.size = Vector2(_panel.size.x, 0.0)  # A PanelContainer only grows; measure its real content height each frame.
 	_panel.position.y = maxf(_panel.position.y, top_clear_of(_panel.position.x, _panel.size, _reserved_rects()))
 
+	var now: float = float(clock.call())
+	var real_dt: float = delta if _last_t < 0.0 else maxf(0.0, now - _last_t)
+	_last_t = now
+
 	if _min_dismiss_timer > 0.0:
-		_min_dismiss_timer = maxf(0.0, _min_dismiss_timer - delta)
+		_min_dismiss_timer = maxf(0.0, _min_dismiss_timer - real_dt)
 		_update_dismiss_label()
 
-	_auto_dismiss_timer -= delta
+	_auto_dismiss_timer -= real_dt
 	if _auto_dismiss_timer <= 0:
 		_dismiss()
 
