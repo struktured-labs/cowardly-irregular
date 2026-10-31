@@ -4,7 +4,7 @@
   "world": 4,
   "keep_music": true,
   "trigger": "world4_rivet_row_entry",
-  "background": "industrial_factory",
+  "background": "rivet_row_factory",
   "description": "Industrial world. A union rep on his mandated fifteen-minute break. A shift worker who came back from communication efficiency training with fewer questions. A foreman who used to paint watercolors.",
   "steps": [
     {

@@ -48,8 +48,23 @@ MEDIUM: generic but not wrong
   (-> prologue_forest)
 - no background at all (capture/gradient fallback): world6_orrery (-> vertex_village),
   world3_transition (fallback is arguably right for a transform), npc_showcase_personas (dev)
-DATA: event_chat_dragon_cave is tagged world 3 while it is a W1 dragon-cave scene. The tag drives
-  the gradient fallback, which this scene does not reach, so it is low impact. Flagged, not touched.
+DATA (fixed): event_chat_dragon_cave was tagged world 3 in both its JSON and PartyChatSystem.REGISTRY.
+  It fires from W1's dragon caves (DragonCave.gd), and the registry world only sorts the Party Chat list.
+  Both are now 1.
+
+## 2b. DONE on lane/a-scene-shows-where-it-happens (JSON only, existing keys)
+21 re-points: the 7 pc_* scenes -> their own world's key; Brasston town scenes + world3_chapter2 ->
+brasston_square; grand_schedule intro/defeat -> mechanism_interior; the W2 street scenes ->
+maple_heights_street (Oak Street -> suburban_neighborhood); Rivet Row prologue/npcs -> rivet_row_factory;
+event_chat_level_10 -> prologue_forest. Guard: test_a_backdrop_belongs_to_one_world (cross-world half only).
+Left for art: world1_tempo_intro, Scriptura chapter7/8, the 4 dragon intros, world6_null_chamber_boss,
+world3_arbiter_intro, world6_orrery (no background key at all).
+steampunk_airship now has 0 scenes. Its art is still on disk, unused.
+
+## 2c. Four PNG stills are bare gradients
+maple_heights_street, brasston_square, rivet_row_factory and director_office: each PNG is a sky gradient
+over a ground band. Their .ogv loops carry real scenery, and the video wins, so players see the scenery.
+The still is only what a missing or undecodable video falls back to. Worth redrawing in the same pass.
 
 ## 3. Ask of cowir-sprites, in priority order
 1. harmonia_square, harmonia_square_portal, harmonia_inn, harmonia_shop  (NEW: no .ogv needed)
