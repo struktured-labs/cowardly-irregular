@@ -31,9 +31,15 @@ func after_each() -> void:
 		_overlay.free()
 	_overlay = null
 
+## Saves a REAL entry before anything touches it, so after_each restores it rather than erasing it.
+func _save_real_s_cue() -> void:
+	if _saved_s == null and SoundManager._sfx_manifest.has(S_CUE):
+		_saved_s = SoundManager._sfx_manifest[S_CUE]
+
 func _inject_s_cue() -> void:
-	## A real file, so a leak past after_each degrades to a duplicate pointer rather than a key
-	## naming nothing — and a NEW key, never a write through an existing entry (SoundManager:146).
+	_save_real_s_cue()
+	## A real file, so a leak past after_each degrades to a duplicate pointer rather than a key naming
+	## nothing; a real entry, once cowir-sfx's row lands, was saved above and after_each restores it.
 	SoundManager._sfx_manifest[S_CUE] = {"file": "assets/audio/sfx/victory_slam.ogg"}
 	_injected = true
 
@@ -66,9 +72,8 @@ func test_an_s_rank_takes_its_own_cue_only_once_the_asset_exists() -> void:
 	## Derived, not spelled: hardcoding "S" here red this arm on a correct lockstep rank rename.
 	_overlay._one_shot_rank = str(BattleManager._get_one_shot_rank(1))
 	## The absent case is STATED, not read off today's manifest: the real asset may land (cowir-sfx).
-	if SoundManager._sfx_manifest.has(S_CUE):
-		_saved_s = SoundManager._sfx_manifest[S_CUE]
-		SoundManager._sfx_manifest.erase(S_CUE)
+	_save_real_s_cue()
+	SoundManager._sfx_manifest.erase(S_CUE)
 	assert_eq(_overlay._slam_key(), BASE_CUE, "with no %s in the manifest the ordinary slam must still land — a missing asset may not mean silence" % S_CUE)
 	_inject_s_cue()
 	assert_eq(_overlay._slam_key(), S_CUE, "with %s registered an S-rank one-shot must take it" % S_CUE)
@@ -90,3 +95,23 @@ func test_the_letter_the_selector_keys_on_is_the_one_the_producer_emits() -> voi
 	assert_eq(_overlay._slam_key(), S_CUE, "the top rank BattleManager emits ('%s') does not select the S cue — the selector's literal and the producer have diverged" % best)
 	_overlay._one_shot_rank = lesser
 	assert_eq(_overlay._slam_key(), BASE_CUE, "a lesser rank ('%s') must keep the ordinary slam" % lesser)
+
+
+func test_a_real_s_cue_survives_this_files_teardown() -> void:
+	## cowir-sfx: once the real row exists, inject must not overwrite it and teardown must not erase it.
+	var had: bool = SoundManager._sfx_manifest.has(S_CUE)
+	var orig: Variant = SoundManager._sfx_manifest.get(S_CUE)
+	var stand_in := {"file": "assets/audio/sfx/victory_slam.ogg", "_stand_in_for_the_real_row": true}
+	SoundManager._sfx_manifest[S_CUE] = stand_in
+	_inject_s_cue()
+	assert_ne(SoundManager._sfx_manifest.get(S_CUE), stand_in, "CONTROL: inject did not replace the entry, so the restore below is not being tested")
+	after_each()
+	var back: Variant = SoundManager._sfx_manifest.get(S_CUE)
+	if had:
+		SoundManager._sfx_manifest[S_CUE] = orig
+	else:
+		SoundManager._sfx_manifest.erase(S_CUE)
+	_overlay = OVERLAY.new()
+	_injected = false
+	_saved_s = null
+	assert_eq(back, stand_in, "teardown left %s as %s — the real row was overwritten or erased, so every later reader loses the cue" % [S_CUE, str(back)])
