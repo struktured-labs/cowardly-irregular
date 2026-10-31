@@ -875,13 +875,22 @@ func _world_bed_snapshot() -> Dictionary:
 	if not SoundManager or not SoundManager.has_method("capture_music_state"):
 		return {}
 	var snapshot: Dictionary = SoundManager.capture_music_state()
+	if not bool(snapshot.get("playing", false)) and not _armed_bed().is_empty():
+		snapshot = _armed_bed()
 	if _own_music_track != "" and str(snapshot.get("track", "")) == _own_music_track:
 		return {}
 	return snapshot
 
 
+## A map that just loaded has asked for its bed and not started it yet. A scene GameLoop starts in that frame (every Warden farewell) must still owe it back.
+func _armed_bed() -> Dictionary:
+	if SoundManager and SoundManager.has_method("armed_area_state"):
+		return SoundManager.armed_area_state()
+	return {}
+
+
 func _should_fade_music_for(data: Dictionary) -> bool:
-	if not SoundManager or not SoundManager._music_playing:
+	if not SoundManager or (not SoundManager._music_playing and _armed_bed().is_empty()):
 		return false
 	return not bool(data.get("keep_music", false))
 
