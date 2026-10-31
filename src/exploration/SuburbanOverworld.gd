@@ -676,6 +676,8 @@ func _setup_npcs() -> void:
 		"*It wags its tail knowingly*",
 		"*You feel judged*"
 	])
+	dog.is_object = true  ## an animal, not a person
+	dog.object_art = "res://assets/sprites/objects/dog.png"
 	npcs.add_child(dog)
 
 

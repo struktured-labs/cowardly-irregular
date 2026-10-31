@@ -29,6 +29,10 @@ var _quest_bob_t: float = 0.0
 ## Sprite archetype override. If empty, auto-derived from npc_type.
 ## Available: old_man, old_woman, young_man, young_woman, child, guard, merchant, scholar.
 @export var sprite_archetype: String = ""
+## An OBJECT that speaks (a clock, a ledger, a map): no person is drawn and no face is shown, only its interaction.
+@export var is_object: bool = false
+## What an object (or an animal) draws instead of a person; empty = nothing, because the room already draws it.
+@export var object_art: String = ""
 
 ## LLM dynamic dialogue opt-in (per docs/llm-integration-design.md:157).
 ## Only NPCs with `dynamic = true` AND a non-empty `persona` participate
@@ -383,6 +387,10 @@ func _generate_sprite() -> void:
 	sprite.centered = true
 	sprite.scale = _get_context_scale()
 	add_child(sprite)
+	if is_object:
+		if object_art != "" and ResourceLoader.exists(object_art):
+			sprite.texture = load(object_art)
+		return
 
 	# Try archetype sheet first (artist-style 4-row × 4-col 32x32 grid).
 	# Falls back to procedural drawing if no archetype matches.
@@ -397,6 +405,8 @@ func _generate_sprite() -> void:
 
 ## Resolve which archetype this NPC should use, falling back to "" if procedural.
 func _resolve_archetype() -> String:
+	if is_object:
+		return ""
 	# Explicit override wins.
 	if sprite_archetype != "":
 		return sprite_archetype
@@ -1281,6 +1291,7 @@ func _start_dialogue() -> void:
 				"text": line_text,
 				"theme": npc_type,
 				"portrait": _portrait_key(),
+				"hide_portrait": is_object,
 			})
 		_dialogue_visit_count += 1
 	else:
@@ -1290,6 +1301,7 @@ func _start_dialogue() -> void:
 				"text": str(line_text),
 				"theme": npc_type,
 				"portrait": _portrait_key(),
+				"hide_portrait": is_object,
 			})
 		_quest_state_bucket_visits[_quest_bucket] = int(_quest_state_bucket_visits.get(_quest_bucket, 0)) + 1
 	await _npc_dialogue.say_lines(lines)

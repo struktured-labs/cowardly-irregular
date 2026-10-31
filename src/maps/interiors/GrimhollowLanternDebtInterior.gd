@@ -134,6 +134,7 @@ func _setup_npcs() -> void:
 	# The Debt Book — first page, oldest debt. The room's weight.
 	var book = OverworldNPCScript.new()
 	book.npc_name = "The Debt Book"
+	book.is_object = true  ## the room draws it; no person stands here
 	book.npc_type = "villager"
 	book.position = Vector2(4 * TILE_SIZE, 2.7 * TILE_SIZE)
 	book.dialogue_lines = [

@@ -131,6 +131,8 @@ func _setup_npcs() -> void:
 		else "Your crew's column lists %d recorded incident%s. Each has a form. None have apologies." % [count, "" if count == 1 else "s"]
 	var board = OverworldNPCScript.new()
 	board.npc_name = "The Incident Board"
+	board.is_object = true  ## an object, not a person
+	board.object_art = "res://assets/sprites/objects/incident_board.png"
 	board.npc_type = "villager"
 	board.position = Vector2(3.5 * TILE_SIZE, 1.6 * TILE_SIZE)
 	board.dialogue_lines = [

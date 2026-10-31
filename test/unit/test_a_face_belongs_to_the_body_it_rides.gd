@@ -72,6 +72,8 @@ func _scripts() -> Array:
 ## Every NPC node under `root`: face = what it speaks with, body = the sheet it actually loaded.
 func _collect(root: Node, scene: String, into: Dictionary) -> void:
 	for n in root.find_children("*", "Area2D", true, false):
+		if n.get("is_object") == true:
+			continue  ## an object (a clock, a ledger) has no face and no body; test_an_object_is_not_drawn_as_a_person judges it
 		var face := ""
 		var body := ""
 		if n.has_method("_portrait_key"):
