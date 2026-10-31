@@ -624,6 +624,20 @@ class SunoBrowser:
             if url not in self._audio_urls:
                 self._audio_urls.append(url)
 
+        # ⛔ A REFUSED SUBMIT USED TO BE DROPPED HERE IN SILENCE. The capture below requires
+        # status == 200, so a 4xx/5xx from the generate API left the interceptor with nothing
+        # and the caller printed "Interceptor timed out — falling back to feed-poll", which
+        # reads as "no request was made". Those are OPPOSITE diagnoses: a client-side no-op
+        # (the react-hook-form blur trap at _type_human) versus a server refusal. Measured
+        # 2026-10-29: two tracks reached "Create clicked", produced no clip, and spent no
+        # credits, and nothing in the log could say which half failed.
+        if response.status >= 400 and "suno" in url and "application/json" in ct:
+            try:
+                snippet = response.text()[:300].replace("\n", " ")
+            except Exception:
+                snippet = "(body unreadable)"
+            print("  [net] REFUSED %d %s  %s" % (response.status, url.split("?")[0], snippet))
+
         # Capture generate API responses (clip IDs and audio URLs)
         if "application/json" in ct and response.status == 200:
             try:
