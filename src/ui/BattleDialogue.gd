@@ -32,6 +32,12 @@ var _typing_speed: float = 0.03  # Seconds per character; each line re-reads Set
 var _current_text: String = ""
 var _displayed_chars: int = 0
 var _typing_timer: Timer
+## Per-LINE voice blip, opt-in: a line without a "blip" key keeps the menu_move tick every other caller has always had.
+var _line_blip_key: String = ""
+var _blip_player: AudioStreamPlayer = null
+var _blip_stream: AudioStream = null
+var _blip_pitch: float = 1.0
+var _blip_next_char: int = 0
 
 ## Party reference for custom portrait lookups
 var _party: Array = []
@@ -125,6 +131,10 @@ func _ready() -> void:
 	layer = 100  # Above everything else
 	process_mode = Node.PROCESS_MODE_ALWAYS  # Independent of battle speed
 	_setup_typing_timer()
+	_blip_player = AudioStreamPlayer.new()
+	_blip_player.bus = "SFX" if AudioServer.get_bus_index("SFX") >= 0 else "Master"
+	_blip_player.volume_db = -6.0
+	add_child(_blip_player)
 	_build_ui()
 	visible = false
 
@@ -369,6 +379,24 @@ func show_dialogue(dialogue_lines: Array) -> void:
 	_show_current_line()
 
 
+func show_boss_last_words(speaker: String, text: String, boss_id: String = "") -> void:
+	"""The boss's final line as its own beat: its face, its name, a typewriter and a voice. One line, built
+	directly rather than through show_boss_intro, whose 'Name: text' parsing would split an LLM line on its first colon."""
+	var entry: Dictionary = {"speaker": speaker, "text": text, "portrait": "enemy", "theme": "enemy", "blip": "default"}
+	if boss_id != "":
+		entry["boss_art"] = boss_id
+	show_dialogue([entry])
+
+
+func dismiss() -> void:
+	"""Close whatever is showing, as if the last page were confirmed. The automation path's way out of a beat."""
+	if not visible:
+		return
+	if _is_typing:
+		_finish_typing()
+	_finish_dialogue()
+
+
 func show_boss_intro(boss_name: String, intro_lines: Array, boss_id: String = "") -> void:
 	"""Show boss intro dialogue with automatic speaker assignment"""
 	var dialogue = []
@@ -440,6 +468,10 @@ func _show_current_line() -> void:
 
 	# Set speaker name
 	_speaker_label.text = entry.get("speaker", "")
+	_line_blip_key = str(entry.get("blip", ""))
+	_blip_stream = CutsceneDialogue._load_voice_blip_stream(_line_blip_key) if _line_blip_key != "" else null
+	## A boss reads a fifth lower than the speaker hash would place a party member, so it never sounds like one.
+	_blip_pitch = CutsceneDialogue._hash_pitch(str(entry.get("speaker", ""))) * 0.8
 
 	# Set portrait - the face cutscenes give this character first, then party custom portraits
 	var portrait_type = entry.get("portrait", "narrator")
@@ -519,6 +551,7 @@ func _begin_page(text: String) -> void:
 	# Same Text Speed presets as cutscenes, including Instant's full-line reveal.
 	_current_text = text
 	_displayed_chars = 0
+	_blip_next_char = randi_range(CutsceneDialogue.VOICE_BLIP_STEP_MIN, CutsceneDialogue.VOICE_BLIP_STEP_MAX)
 	_text_label.text = ""
 	_advance_hint.visible = false
 	_typing_speed = CutsceneDialogue._resolve_typing_speed()
@@ -542,11 +575,26 @@ func _on_typing_tick() -> void:
 		_displayed_chars += 1
 		_text_label.text = _current_text.substr(0, _displayed_chars)
 
-		# Play typing sound occasionally
-		if _displayed_chars % 3 == 0 and SoundManager:
+		if _line_blip_key != "":
+			# Same cadence as cutscene dialogue: voiced characters only, every 2-4, so pauses stay silent.
+			if CutsceneDialogue._is_voiced_char(_current_text.substr(_displayed_chars - 1, 1)) and _displayed_chars >= _blip_next_char:
+				_play_line_blip()
+				_blip_next_char = _displayed_chars + randi_range(CutsceneDialogue.VOICE_BLIP_STEP_MIN, CutsceneDialogue.VOICE_BLIP_STEP_MAX)
+		elif _displayed_chars % 3 == 0 and SoundManager:
+			# Play typing sound occasionally
 			SoundManager.play_ui("menu_move")
 	else:
 		_finish_typing()
+
+
+func _play_line_blip() -> void:
+	if _blip_stream == null or _blip_player == null:
+		if SoundManager:
+			SoundManager.play_ui("menu_move")
+		return
+	_blip_player.stream = _blip_stream
+	_blip_player.pitch_scale = _blip_pitch * randf_range(0.9, 1.1)
+	_blip_player.play()
 
 
 func _finish_typing() -> void:

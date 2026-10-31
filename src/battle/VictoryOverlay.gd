@@ -46,6 +46,7 @@ const LOG_CLEAR_X := 190.0
 const STRIP_BOTTOM_MARGIN := 64.0
 
 var _scene = null
+var _one_shot_rank: String = ""
 var _snaps: Array[Callable] = []
 var _tweens: Array[Tween] = []
 var _complete := false
@@ -147,6 +148,7 @@ func build(results: Dictionary, scene) -> void:
 	## Order matters: the strip's rect feeds both the stack's top and the fit cap, so it has to
 	## exist before a single card is placed. Cards were built first before this change, which is
 	## why nothing could keep them clear of it.
+	_one_shot_rank = _one_shot_rank_of(results.get("bonuses", []))
 	_build_slam(flourish)
 	_build_loot_strip(results, flourish)
 	_build_cards(results.get("char_results", []), flourish)
@@ -322,6 +324,21 @@ func _build_slam(flourish: bool) -> void:
 	_spawn_impact(impact_at, grade, tint)
 
 
+## S-rank earns its own slam; absent that asset the ordinary one still lands.
+func _slam_key() -> String:
+	if _one_shot_rank == "S" and SoundManager and SoundManager._sfx_manifest.has("victory_slam_s"):
+		return "victory_slam_s"
+	return "victory_slam"
+
+
+## The rank already rides in the one_shot bonus BattleManager builds, so nothing new is plumbed.
+func _one_shot_rank_of(bonuses: Array) -> String:
+	for b in bonuses:
+		if b is Dictionary and b.get("type", "") == "one_shot":
+			return str(b.get("rank", ""))
+	return ""
+
+
 ## The sweep + punch that makes the landing read as an IMPACT rather than a fade-in. struktured
 ## 2026-10-03: "the victory Circle with victory text in the middle is also amateur imho — we need
 ## VISUALS" — replaces the old expanding-ring with a bolder band that sweeps the full screen width.
@@ -332,8 +349,9 @@ func _spawn_impact(at: Vector2, grade: int, tint: Color) -> void:
 	_spawn_sweep_band(at, tint, grade)
 	## Its OWN voice: on _battle_player this slam replaced the victory fanfare it lands on, and
 	## in W1/W2 (no agreed downbeat, so no wait) it did so in the same frame.
-	if SoundManager and SoundManager._sfx_manifest.has("victory_slam"):
-		SoundManager.play_victory_sfx("victory_slam")
+	var slam := _slam_key()
+	if SoundManager and SoundManager._sfx_manifest.has(slam):
+		SoundManager.play_victory_sfx(slam)
 
 
 ## A bolder banner than a ring: a tinted band sweeps the full screen width through the impact

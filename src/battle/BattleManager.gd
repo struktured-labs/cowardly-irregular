@@ -148,6 +148,8 @@ var _lens_ap_echo_charges: int = 0
 var turbo_mode: bool = false
 ## Wall-clock wait for the LLM's gloat before the scripted line speaks instead; a results screen can close soon after.
 const GLOAT_WAIT_SEC: float = 1.2
+## True from the moment a model is asked for the gloat until it (or the scripted line) is emitted; BattleScene holds the results on it.
+var boss_gloat_pending: bool = false
 ## Bumped by start_battle: a line awaited in one battle can tell it is no longer that battle's.
 var battle_serial: int = 0
 
@@ -614,6 +616,7 @@ func start_battle(players: Array[Combatant], enemies: Array[Combatant]) -> void:
 	# Reset boss-gloat context tracking.
 	_jailbreak_landed_this_battle = false
 	_all_out_attack_this_battle = false
+	boss_gloat_pending = false
 
 	# Clear per-battle combatant state: buffs/debuffs/status effects don't
 	# persist across encounters (was a leak — GameLoop reuses party Combatant
@@ -3808,6 +3811,18 @@ func repeat_previous_actions() -> bool:
 	return true
 
 
+## ⛔ REPEAT ADVERTISES LAST ROUND'S PLAN, AND ALL THREE FALLBACKS BELOW HAND THE MEMBER A BASIC
+## ATTACK INSTEAD. That substitution is deliberate and right — an unaffordable cast would otherwise
+## fail at execution and spend the turn on nothing — but each site had a print() and nothing else, so
+## it reached the log FILE and never the battle log panel. The player pressed Repeat expecting
+## "Fire x3", watched a swing, and was told nothing. The whole-party case is refused earlier with a
+## reason; these three are the per-member cases that still go ahead.
+func _announce_repeat_substitution(combatant: Combatant, why: String) -> void:
+	battle_log_message.emit("[color=gray]%s: %s — attacking instead.[/color]"
+		% [combatant.combatant_name, why])
+	print("[REPEAT] %s: %s, using attack" % [combatant.combatant_name, why])
+
+
 ## One combatant's remembered actions, or a basic attack when none were stored.
 func _queue_repeated_action(combatant: Combatant) -> void:
 	var combatant_id = combatant.combatant_name.to_lower()
@@ -3820,7 +3835,7 @@ func _queue_repeated_action(combatant: Combatant) -> void:
 			"target": alive[0] if alive.size() > 0 else null,
 			"speed": _compute_action_speed(combatant, "attack")
 		})
-		print("[REPEAT] %s: no previous action, using attack" % combatant.combatant_name)
+		_announce_repeat_substitution(combatant, "nothing to repeat")
 		return
 
 	for saved_action in actions:
@@ -3838,7 +3853,7 @@ func _queue_repeated_action(combatant: Combatant) -> void:
 				action = {"combatant": combatant, "type": "attack",
 					"target": alive_foes[0] if alive_foes.size() > 0 else null,
 					"speed": _compute_action_speed(combatant, "attack")}
-				print("[REPEAT] %s: nothing in the saved Advance is affordable, using attack" % combatant.combatant_name)
+				_announce_repeat_substitution(combatant, "the saved Advance is not affordable now")
 			elif kept.size() < subs.size():
 				## Trimmed, so the saved full_bank flag no longer describes it; re-derive as autobattle does.
 				var ruled: Dictionary = _apply_full_bank_rule(combatant, kept)
@@ -3853,7 +3868,8 @@ func _queue_repeated_action(combatant: Combatant) -> void:
 				action = {"combatant": combatant, "type": "attack",
 					"target": foes[0] if foes.size() > 0 else null,
 					"speed": _compute_action_speed(combatant, "attack")}
-				print("[REPEAT] %s: the saved %s is not affordable now, using attack" % [combatant.combatant_name, str(saved_action.get("type", ""))])
+				_announce_repeat_substitution(combatant,
+					"the saved %s is not affordable now" % str(saved_action.get("type", "")))
 
 		# Validity check MUST happen before `is Combatant` — a freed
 		# reference makes `is` error with 'Left operand of is is a
@@ -9878,14 +9894,15 @@ func _dispatch_boss_gloat(victory: bool) -> void:
 
 	if not llm_available or turbo_mode:
 		# Deterministic path — ship the scripted pool line immediately.
-		boss_gloat_line.emit(fallback, victory)
+		_emit_boss_gloat(fallback, victory)
 		return
 
 	# LLM available — capture the context snapshot NOW (enemy_party is about to
 	# be cleared by _cleanup_battle) and hand off to the async producer. We do
 	# NOT await: end_battle stays synchronous and non-blocking.
 	var boss_name: String = _resolve_boss_display_name(persona_id)
-	var prompt: String = _build_gloat_prompt(persona_id, boss_name, victory)
+	var prompt: String = _build_gloat_prompt(persona_id, boss_name, victory, fallback)
+	boss_gloat_pending = true
 	_produce_boss_gloat_async(prompt, fallback, victory)
 
 
@@ -9893,14 +9910,14 @@ func _dispatch_boss_gloat(victory: bool) -> void:
 func _produce_boss_gloat_async(prompt: String, fallback: String, victory: bool) -> void:
 	var llm_node = get_node_or_null("/root/LLMService")
 	if llm_node == null or not llm_node.has_method("complete"):
-		boss_gloat_line.emit(fallback, victory)
+		_emit_boss_gloat(fallback, victory)
 		return
 	var spoken := {"done": false}
 	## ignore_time_scale: the default battle pace runs the engine at 0.25, which would stretch a scaled wait fourfold.
 	get_tree().create_timer(GLOAT_WAIT_SEC, true, false, true).timeout.connect(func() -> void:
 		if not spoken["done"]:
 			spoken["done"] = true
-			boss_gloat_line.emit(fallback, victory))
+			_emit_boss_gloat(fallback, victory))
 	var line: Variant = await llm_node.complete(prompt, fallback)
 	if spoken["done"]:
 		return
@@ -9908,6 +9925,12 @@ func _produce_boss_gloat_async(prompt: String, fallback: String, victory: bool) 
 	var text: String = str(line).strip_edges()
 	if text == "":
 		text = fallback
+	_emit_boss_gloat(text, victory)
+
+
+## The only emitter of boss_gloat_line: clears the pending flag on every path, so the results can never wait on a line that already spoke.
+func _emit_boss_gloat(text: String, victory: bool) -> void:
+	boss_gloat_pending = false
 	boss_gloat_line.emit(text, victory)
 
 
@@ -9916,7 +9939,7 @@ func _produce_boss_gloat_async(prompt: String, fallback: String, victory: bool) 
 ## autobattle-only? all-out attack?). The scripted pool line is the fallback so
 ## the LLM only ever RE-NARRATES a line that already works — it is never the
 ## rules engine and never touches story flags.
-func _build_gloat_prompt(persona_id: String, boss_name: String, victory: bool) -> String:
+func _build_gloat_prompt(persona_id: String, boss_name: String, victory: bool, voice_sample: String = "") -> String:
 	var recent_events: Array = []
 	var gs = get_node_or_null("/root/GameState")
 	if gs and "event_log" in gs and gs.event_log != null:
@@ -9924,8 +9947,17 @@ func _build_gloat_prompt(persona_id: String, boss_name: String, victory: bool) -
 
 	# Deterministic how-the-fight-went facts.
 	var facts: Array[String] = []
-	if _full_autobattle and _autobattle_player_turns > 0:
+	## RETROSPECTIVE, unlike _resolve_party_automation_tier's live toggle read: did automation WIN this fight, not is anyone deciding now.
+	var auto_tier: String = ""
+	var grind_g = get_node_or_null("/root/AutogrindSystem")
+	if grind_g != null and grind_g.has_method("is_battle_automated") and grind_g.is_battle_automated():
+		auto_tier = "autogrind"
+	elif _full_autobattle and _autobattle_player_turns > 0:
+		auto_tier = "autobattle"
+	if auto_tier == "autobattle":
 		facts.append("the party never lifted a finger — every move was automated (autobattle)")
+	elif auto_tier == "autogrind":
+		facts.append("nobody was even watching — an unattended autogrind session ran this fight")
 	if _all_out_attack_this_battle:
 		facts.append("the party pooled their power into an all-out group attack")
 	if _jailbreak_landed_this_battle:
@@ -9953,20 +9985,40 @@ func _build_gloat_prompt(persona_id: String, boss_name: String, victory: bool) -
 	if victory:
 		situation = (
 			"The PARTY has just DEFEATED this boss. Write what the boss says as it "
-			+ "falls — a final gloat, concession, or dark joke. Meta-aware: it may "
-			+ "remark on the player automating their way to victory."
+			+ "falls — a concession, a verdict, or a dark joke, in the boss's own temperament."
 		)
 	else:
 		situation = (
-			"The boss has just WIPED the entire party. Write its triumphant gloat "
-			+ "over the fallen heroes — cruel, smug, and meta-aware."
+			"The boss has just WIPED the entire party. Write what it says over them, "
+			+ "in its own temperament — whatever its persona makes of a win."
 		)
+	## The "lazy" line came from an UNCONDITIONAL invitation here: the model was told it may mock automation in a fight played by hand.
+	if auto_tier != "":
+		situation += (
+			"\nThe party automated this fight (see below). The boss may needle them for it, "
+			+ "but in ITS OWN voice and register — an examiner grades it, a tyrant sneers, "
+			+ "an optimizer may even approve. Never a stock villain's insult."
+		)
+	else:
+		situation += "\nThe player chose every action in this fight by hand; do not suggest otherwise."
+
+	var persona_block: String = ""
+	var boss_dlg_g = get_node_or_null("/root/BossDialogue")
+	if boss_dlg_g and boss_dlg_g.has_method("get_persona"):
+		var persona_text: String = str(boss_dlg_g.get_persona(persona_id)).strip_edges()
+		if persona_text != "":
+			persona_block = "\nPersona — stay in THIS voice, not a generic villain's:\n  %s\n" % persona_text
+	var sample_block: String = ""
+	if voice_sample.strip_edges() != "":
+		sample_block = "\nOne of this boss's own lines for this moment (match its voice; do not copy it):\n  %s\n" % voice_sample.strip_edges()
 
 	return (
 		"You are voicing a boss in a meta-aware JRPG called 'Cowardly Irregular'.\n"
 		+ "%s\n" % situation
 		+ "\n"
 		+ "Boss: %s\n" % boss_name
+		+ persona_block
+		+ sample_block
 		+ facts_block
 		+ events_block
 		+ "\n"

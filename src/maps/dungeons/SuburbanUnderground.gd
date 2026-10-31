@@ -178,3 +178,13 @@ func _setup_transitions_for_floor(floor_num: int) -> void:
 ## Ambient FX: storm drain: drips and puddle glints, not cave crystals.
 func _get_ambient_fx_theme() -> String:
 	return "drain"
+
+
+## Ambient: sodium streetlight through a storm grate, on wet concrete
+func _get_dungeon_ambient() -> Color:
+	return Color(0.30, 0.38, 0.36)
+
+
+## Torch: a fluorescent tube with a bad ballast
+func _get_torch_tint() -> Color:
+	return Color(0.82, 0.96, 0.86)

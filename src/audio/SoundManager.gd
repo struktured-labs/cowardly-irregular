@@ -2983,6 +2983,13 @@ func capture_music_state() -> Dictionary:
 	return {"track": _current_music, "area": _current_area, "playing": _music_playing and not fading_out, "position": pos}
 
 
+## A state to RESTORE, shaped like capture_music_state: the bed play_area_music armed and has not started. "playing" means owed, never audible.
+func armed_area_state() -> Dictionary:
+	if not _area_start_armed or _pending_music_area == "":
+		return {}
+	return {"track": "", "area": _pending_music_area, "playing": true, "position": _pending_resume_position}
+
+
 ## Put back a state captured by capture_music_state(). Safe to call with an
 ## empty/garbage dict; does nothing if nothing was playing.
 func restore_music_state(state: Dictionary) -> void:
@@ -6058,6 +6065,8 @@ func _generate_game_over_buffer(rate: int, duration: float, bpm: float) -> Packe
 var _current_area: String = ""
 var _current_world_suffix: String = "medieval"
 var _pending_music_area: String = ""
+## True from play_area_music's deferral until that start runs. _pending_music_area is NOT cleared by the start, so it cannot say this.
+var _area_start_armed: bool = false
 ## Where the field bed was when play_music took it over. Victory and game-over leave it; stop, the title, and a loaded save drop it.
 var _interrupted_area_bed: Dictionary = {}
 
@@ -6073,6 +6082,7 @@ func _invalidate_pending_area_start() -> void:
 	_pending_music_area = ""
 	_pending_resume_position = 0.0
 	_pending_home_area = ""
+	_area_start_armed = false
 
 
 func discard_interrupted_area_bed() -> void:
@@ -6151,6 +6161,7 @@ func play_area_music(area_type: String, resume_at: float = 0.0, home_area: Strin
 	## beside the resume position and consumed by _start_interior_music's COLD START only — see there.
 	_pending_home_area = home_area
 	_pending_music_area = area_type
+	_area_start_armed = true
 
 	call_deferred("_start_area_music_deferred", area_type)
 
@@ -6159,6 +6170,7 @@ func _start_area_music_deferred(area_type: String) -> void:
 	"""Actually generate and start music - called deferred so scene renders first."""
 	if _pending_music_area != area_type:
 		return  # A newer area was requested before this ran; skip stale call
+	_area_start_armed = false
 
 	if area_type.begins_with("interior_"):
 		_start_interior_music(area_type)

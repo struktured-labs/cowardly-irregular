@@ -35,11 +35,11 @@ func test_panel_height_is_clamped() -> void:
 func test_new_game_resets_per_run_pacing() -> void:
 	var src := FileAccess.get_file_as_string(GL_PATH)
 	var fn := src.substr(src.find("func _on_title_new_game"), 1600)
-	assert_true("default_battle_speed = 0.25" in fn,
-		"New Game must reset battle speed to the 1x default")
+	assert_true("default_battle_speed = BattleSceneScript.DEFAULT_BATTLE_SPEED" in fn,
+		"New Game must reset battle speed to the named default")
 	assert_true("encounter_rate_multiplier = 1.0" in fn,
 		"New Game must reset encounter rate to 100%")
-	assert_true("_battle_speed_index = 0" in fn,
+	assert_true("_battle_speed_index = BattleSceneScript.DEFAULT_BATTLE_SPEED_INDEX" in fn,
 		"New Game must reset the in-battle speed ladder position")
 	assert_true("save_settings()" in fn,
 		"the reset must persist so the settings file agrees")

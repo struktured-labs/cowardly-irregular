@@ -2158,11 +2158,11 @@ func _on_title_new_game() -> void:
 	# game, battle speed was 16x, encounter rate 50%... prob not the right
 	# choice"). System settings (volumes, text, accessibility) persist;
 	# run-pacing choices start fresh.
-	if GameState:
-		GameState.default_battle_speed = 0.25
-		GameState.encounter_rate_multiplier = 1.0
 	var BattleSceneScript = load("res://src/battle/BattleScene.gd")
-	BattleSceneScript._battle_speed_index = 0
+	if GameState:
+		GameState.default_battle_speed = BattleSceneScript.DEFAULT_BATTLE_SPEED
+		GameState.encounter_rate_multiplier = 1.0
+	BattleSceneScript._battle_speed_index = BattleSceneScript.DEFAULT_BATTLE_SPEED_INDEX
 	if SaveSystem and SaveSystem.has_method("save_settings"):
 		SaveSystem.save_settings()
 	## A latched grind meter survives the clean emit: the renderer takes max(stale_grind, 0) and tweens the new game back up.
@@ -2308,10 +2308,123 @@ func _epilogue_done_or_unwired(epilogue_id: String, flags: Dictionary) -> bool:
 const _VILLAGE_INTROS := {
 	"harmonia_village": "world1_harmonia_npcs",
 	"eldertree_village": "world1_eldertree_npcs",
+	"sandrift_village": "world1_sandrift_npcs",
 	"maple_heights_village": "world2_maple_heights_npcs",
 	"brasston_village": "world3_brasston_npcs",
 	"rivet_row_village": "world4_rivet_row_npcs",
 }
+
+
+## A village intro skips every exchange whose locals (non-party speakers) all already spoke in a finished scene, and retires only once ALL its locals have.
+## struktured 2026-10-31 ("trim to strangers"): chapter1 always plays straight after the prologue and meets Theron, Milo and Phil, so Harmonia's intro introduces Marta and the Merchant.
+var _scene_speakers_cache: Dictionary = {}
+var _party_speaker_names_cache: Array = []
+
+
+func _intro_has_lost_its_moment(met_count: int, locals_count: int) -> bool:
+	return locals_count > 0 and met_count >= locals_count
+
+
+func _intro_locals(intro: String) -> Array:
+	var party: Array = _party_speaker_names()
+	var locals: Array = []
+	for sp in _scene_speakers(intro):
+		if not party.has(sp):
+			locals.append(sp)
+	return locals
+
+
+## The intro's locals that already speak in a scene whose completion flag is set.
+func _intro_met_locals(intro: String, flags: Dictionary) -> Array:
+	var locals: Array = _intro_locals(intro)
+	var met: Array = []
+	for cid in _CUTSCENE_COMPLETION_FLAGS:
+		if str(cid) == intro or not bool(flags.get(_CUTSCENE_COMPLETION_FLAGS[cid], false)):
+			continue
+		for sp in _scene_speakers(str(cid)):
+			if locals.has(sp) and not met.has(sp):
+				met.append(sp)
+	return met
+
+
+## Drops each dialogue step whose locals are all in met, with the wait leading into it; party lines ride with their local's exchange.
+func _trim_intro_steps(steps: Array, met: Array, party: Array) -> Array:
+	var out: Array = []
+	for step in steps:
+		if step is Dictionary and str((step as Dictionary).get("type", "")) == "dialogue" and _exchange_already_met(step, met, party):
+			if not out.is_empty() and out.back() is Dictionary and str((out.back() as Dictionary).get("type", "")) == "wait":
+				out.pop_back()
+			continue
+		out.append(step)
+	return out
+
+
+func _exchange_already_met(step: Dictionary, met: Array, party: Array) -> bool:
+	var locals := 0
+	for line in step.get("lines", []):
+		var sp := str((line as Dictionary).get("speaker", "")) if line is Dictionary else ""
+		if sp == "" or party.has(sp):
+			continue
+		locals += 1
+		if not met.has(sp):
+			return false
+	return locals > 0
+
+
+## The village intro's data with its already-met exchanges removed, or {} when this is not a village intro or nothing is cut.
+func _trimmed_intro_data(cutscene_id: String) -> Dictionary:
+	if not _VILLAGE_INTROS.values().has(cutscene_id) or not GameState:
+		return {}
+	var met: Array = _intro_met_locals(cutscene_id, GameState.game_constants)
+	if met.is_empty():
+		return {}
+	var path := "res://data/cutscenes/%s.json" % cutscene_id
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(path)) if FileAccess.file_exists(path) else null
+	if not (parsed is Dictionary):
+		return {}
+	var data: Dictionary = parsed
+	var steps: Array = data.get("steps", [])
+	var trimmed: Array = _trim_intro_steps(steps, met, _party_speaker_names())
+	if trimmed.size() == steps.size():
+		return {}
+	data["steps"] = trimmed
+	print("[CUTSCENE] %s trimmed to strangers: skipping %s (already met)" % [cutscene_id, ", ".join(PackedStringArray(met))])
+	return data
+
+
+func _scene_speakers(cid: String) -> Array:
+	if _scene_speakers_cache.has(cid):
+		return _scene_speakers_cache[cid]
+	var out: Array = []
+	var path := "res://data/cutscenes/%s.json" % cid
+	if FileAccess.file_exists(path):
+		_collect_speakers(JSON.parse_string(FileAccess.get_file_as_string(path)), out)
+	_scene_speakers_cache[cid] = out
+	return out
+
+
+func _collect_speakers(node: Variant, out: Array) -> void:
+	if node is Dictionary:
+		var sp := str((node as Dictionary).get("speaker", ""))
+		if sp != "" and not out.has(sp):
+			out.append(sp)
+		for v in (node as Dictionary).values():
+			_collect_speakers(v, out)
+	elif node is Array:
+		for v in node:
+			_collect_speakers(v, out)
+
+
+## Party members speak in every scene, so they would count as "met" everywhere; jobs.json's display names are theirs.
+func _party_speaker_names() -> Array:
+	if _party_speaker_names_cache.is_empty():
+		var rows: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/jobs.json"))
+		if rows is Dictionary:
+			for id in (rows as Dictionary):
+				var row: Variant = rows[id]
+				if row is Dictionary:
+					_party_speaker_names_cache.append(str((row as Dictionary).get("name", id)))
+	return _party_speaker_names_cache
 
 
 func _get_pending_story_cutscene() -> String:
@@ -2710,6 +2823,12 @@ func _get_pending_story_cutscene() -> String:
 		for vid in _VILLAGE_INTROS:
 			var intro: String = str(_VILLAGE_INTROS[vid])
 			if _current_map_id == vid and not flags.get("cutscene_flag_%s_complete" % intro, false):
+				var met: Array = _intro_met_locals(intro, flags)
+				var locals_count: int = _intro_locals(intro).size()
+				if _intro_has_lost_its_moment(met.size(), locals_count):
+					_set_cutscene_flag_and_mirror("cutscene_flag_%s_complete" % intro)
+					print("[CUTSCENE] %s retired, not played: all %d of its locals were already met in finished scenes" % [intro, locals_count])
+					continue
 				return intro
 
 	# ===== GUIDANCE HINTS — disabled (now opt-in via party chat) =====
@@ -2810,6 +2929,7 @@ const _CUTSCENE_COMPLETION_FLAGS := {
 	## Village introductions — without these the gate that fires them never sees a completion flag and loops.
 	"world1_harmonia_npcs":             "cutscene_flag_world1_harmonia_npcs_complete",
 	"world1_eldertree_npcs":            "cutscene_flag_world1_eldertree_npcs_complete",
+	"world1_sandrift_npcs":             "cutscene_flag_world1_sandrift_npcs_complete",
 	"world2_maple_heights_npcs":        "cutscene_flag_world2_maple_heights_npcs_complete",
 	"world3_brasston_npcs":             "cutscene_flag_world3_brasston_npcs_complete",
 	"world4_rivet_row_npcs":            "cutscene_flag_world4_rivet_row_npcs_complete",
@@ -3003,7 +3123,11 @@ func _play_story_cutscene(cutscene_id: String) -> bool:
 		_resume_exploration_after_cutscene()
 		_flush_chat_toasts()
 	, CONNECT_ONE_SHOT)
-	_cutscene_director.play_cutscene(cutscene_id)
+	var trimmed: Dictionary = _trimmed_intro_data(cutscene_id)
+	if trimmed.is_empty():
+		_cutscene_director.play_cutscene(cutscene_id)
+	else:
+		_cutscene_director.play_cutscene_from_data(cutscene_id, trimmed)
 	return true
 
 
@@ -3989,6 +4113,8 @@ func _on_battle_ended(victory: bool) -> void:
 		# struktured 2026-09-07 "spotlight should have a victory sequence just like reg battles": BattleScene already built the overlay on this same signal; let the duelist see it before the cutscene tears the scene down.
 		if victory:
 			await _wait_for_confirm_victory()
+		else:
+			await _await_boss_beat()
 		spotlight_battle_ended.emit(victory)
 		return
 	if victory:
@@ -4118,6 +4244,7 @@ func _on_battle_ended(victory: bool) -> void:
 		# Diegetic retry (Fable's design): a boss authored with diegetic_retry files the
 		# player's death as ITS OWN calibration error and refuses the game over — full
 		# restore, same fight, its player_wiped line as the retried battle's opener.
+		await _await_boss_beat()
 		if await _maybe_diegetic_retry():
 			return
 		await _show_game_over_screen()
@@ -4270,12 +4397,35 @@ func _apply_pending_boss_defeat() -> void:
 
 ## Victory variant of _wait_for_confirm: the FIRST accept snaps the overlay's
 ## animations to their end state; only a press on a COMPLETED overlay leaves.
+## Derived from BattleScene's own worst case (line arrives, waits behind an authored line, is read), so the two cannot drift apart.
+func boss_beat_hold_cap_sec() -> float:
+	return BattleManager.GLOAT_WAIT_SEC + BattleSceneScript.BOSS_BEAT_ARRIVAL_SLACK_SEC + 2.0 * BattleSceneScript.BOSS_BEAT_READ_CAP_SEC + 1.0
+
+
+## Holds while the battle scene shows the boss's last words. BOUNDED: a flag that never clears still returns at the cap.
+func _await_boss_beat(cap_sec: float = -1.0) -> void:
+	if cap_sec < 0.0:
+		cap_sec = boss_beat_hold_cap_sec()
+	## One frame first, so BattleScene's battle_ended handler has set the flag whichever handler ran first.
+	await get_tree().process_frame
+	var t0: int = Time.get_ticks_msec()
+	while current_scene != null and is_instance_valid(current_scene) \
+			and current_scene.has_method("is_holding_for_boss_beat") and current_scene.is_holding_for_boss_beat():
+		if Time.get_ticks_msec() - t0 >= int(cap_sec * 1000.0):
+			push_warning("[GAMELOOP] boss last-words beat still held after %.1fs — continuing without it" % cap_sec)
+			return
+		await get_tree().process_frame
+
+
 func _wait_for_confirm_victory() -> void:
+	## The beat comes first and the 0.5s below is then the debounce, so the press that dismissed it cannot also confirm the rewards.
+	await _await_boss_beat()
 	## Nothing to confirm means nothing to wait for. BattleScene only builds the overlay when
 	## `not turbo_mode`, so at turbo a spotlight win used to block up to 120s on a press for a
 	## prompt that was never drawn — a two-minute freeze with the cutscene still on screen
 	## (found via cowir-deploy's .236 web render smoke, 2026-09-09).
-	await get_tree().create_timer(0.5).timeout
+	## Real seconds: the battle scene is still up, so its battle speed (0.25-0.375) would stretch a 0.5 s debounce to 1.3-2 s of ignored presses.
+	await get_tree().create_timer(0.5, true, false, true).timeout
 	if current_scene == null or not is_instance_valid(current_scene) \
 			or current_scene.get_node_or_null("VictoryResults") == null:
 		return
@@ -4286,7 +4436,7 @@ func _wait_for_confirm_victory() -> void:
 			var overlay = current_scene.get_node_or_null("VictoryResults") if current_scene and is_instance_valid(current_scene) else null
 			if overlay and overlay.has_method("is_complete") and not overlay.is_complete():
 				overlay.complete_now()
-				await get_tree().create_timer(0.25).timeout  # debounce so one press can't both snap and dismiss
+				await get_tree().create_timer(0.25, true, false, true).timeout  # debounce so one press can't both snap and dismiss
 				continue
 			break
 	if Time.get_ticks_msec() - confirm_t0 >= 120000:
@@ -4296,7 +4446,7 @@ func _wait_for_confirm_victory() -> void:
 func _wait_for_confirm() -> void:
 	"""Wait for the player to press confirm (A/Z/Enter/mouse click) before continuing"""
 	# Small delay so the press that ended the battle doesn't immediately confirm
-	await get_tree().create_timer(0.5).timeout
+	await get_tree().create_timer(0.5, true, false, true).timeout
 	# Bounded per the house pattern (its four teardown siblings all are; this was the file's sole unbounded wait). 120s is generous for a human reading a victory screen; the else is LOUD because silently advancing past an unseen screen would be worse than the hang.
 	var confirm_t0: int = Time.get_ticks_msec()
 	while Time.get_ticks_msec() - confirm_t0 < 120000:

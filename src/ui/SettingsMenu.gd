@@ -39,8 +39,8 @@ var music_volume: int = 100  # 0-100
 var music_volume_index: int = 4
 var sfx_volume: int = 100  # 0-100
 var sfx_volume_index: int = 4
-var battle_speed: float = 1.0
-var battle_speed_index: int = 2
+var battle_speed: float = BATTLE_SCENE_SCRIPT.DEFAULT_BATTLE_SPEED
+var battle_speed_index: int = BATTLE_SCENE_SCRIPT.DEFAULT_BATTLE_SPEED_INDEX
 var text_speed: String = "normal"
 var text_speed_index: int = 1
 # Tick 222: text size scale (accessibility). Defaults to 100% (index 1).
@@ -215,7 +215,7 @@ func _find_volume_preset(value: int) -> int:
 
 func _find_battle_speed_preset(value: float) -> int:
 	"""Find the closest battle speed preset index"""
-	var best_index = 2  # Default to 1x
+	var best_index = BATTLE_SCENE_SCRIPT.DEFAULT_BATTLE_SPEED_INDEX
 	var best_diff = 999.0
 	for i in range(BATTLE_SPEED_PRESETS.size()):
 		var diff = abs(BATTLE_SPEED_PRESETS[i] - value)
@@ -900,7 +900,7 @@ func _create_volume_setting(label_text: String, description: String, options: Ar
 	return container
 
 
-## 60px chips fit five labels in the 400px row. The battle ladder is seven (through 64x).
+## 60px chips fit five labels in the 400px row. The battle ladder is eight (1x, 1.5x, through 64x).
 func _battle_speed_chip_width() -> int:
 	var n: int = maxi(BATTLE_SPEED_LABELS.size(), 1)
 	var gaps: int = maxi(n - 1, 0) * 2

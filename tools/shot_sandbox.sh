@@ -32,7 +32,9 @@ shot_sandbox_run() {
     local _xdg="$PWD/tmp/shot_xdg"
     mkdir -p "$_xdg" || { echo "[shot] cannot create the sandbox at $_xdg" >&2; return 2; }
     local _ec=0
-    XDG_DATA_HOME="$_xdg" xvfb-run -a godot --audio-driver Dummy --rendering-driver opengl3 \
+    # A screenshot battle reads a live pad like any game; hide host pads as run_tests.sh does (.746 smoke).
+    local SHOT_JAIL; SHOT_JAIL=(); if command -v bwrap > /dev/null && bwrap --dev-bind / / --tmpfs /dev/input true 2>/dev/null; then SHOT_JAIL=(bwrap --dev-bind / / --tmpfs /dev/input); fi
+    XDG_DATA_HOME="$_xdg" timeout 600 "${SHOT_JAIL[@]}" xvfb-run -a godot --audio-driver Dummy --rendering-driver opengl3 \
         --resolution 1280x720 -s "$_gd" -- "$@" > "tmp/$(basename "$_gd" .gd).log" 2>&1 || _ec=$?
     command grep -aE 'SCREEN|shot-guard|REFUSED|ERROR' "tmp/$(basename "$_gd" .gd).log" || true
     # PROVE THE REDIRECT FIRED rather than inferring it from an unchanged live directory --

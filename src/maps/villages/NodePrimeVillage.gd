@@ -219,6 +219,8 @@ func _setup_buildings() -> void:
 	# Row 1 is the upper ledge and it is ONE tile tall, so a prop there is a wall across it
 	_add_prop(VillagePropScript.Kind.CRATE, Vector2i(7, 2))
 	_add_prop(VillagePropScript.Kind.CRATE, Vector2i(17, 2))
+	## LAST, so it defers to every building above. Never F, the firewall is a barrier not a building.
+	_spawn_house_facades(["I", "C"], [Color(0.10, 0.12, 0.20)], "neon")
 
 
 func _setup_treasures() -> void:
@@ -349,3 +351,12 @@ func _place_masterites() -> void:
 	curator.cutscene_id = "world4_curator_intro"
 	curator.position = Vector2(15 * TILE_SIZE,7 * TILE_SIZE)
 	npcs.add_child(curator)
+
+
+## Ambient walkers: their lines are derived from this map's ground (BaseVillage._walker_runs).
+func _get_ambient_walkers() -> Array:
+	return [
+		{"name": "PACKET-LOSS", "archetype": "traveler", "line": "I was on my way somewhere. Part of me arrived. Part of me is still—"},
+		{"name": "GARBAGE.COLLECTOR", "archetype": "monk", "line": "Sweeping unreferenced objects. You are referenced. For now."},
+		{"name": "CRON_JOB_04", "archetype": "guard", "line": "I walk this path every 60 seconds. I have done so 41,000,000 times. I am fulfilled."},
+	]
