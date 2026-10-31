@@ -19,38 +19,11 @@ const SPRITES := "res://assets/sprites/"
 const CELL := 32
 const MIN_PIECE := 10
 ## Sheets still cut, keyed by path under assets/sprites without .png, each with why a re-seat cannot fix it.
-const NEEDS_A_REROLL := {
-	"jobs/bard/overworld_industrial": "3 rows of figures, not 4",
-	"jobs/fighter/overworld_abstract": "a detached piece still sits on a cell edge after re-seating",
-	"jobs/fighter/overworld_digital": "seated on the grid, but its own legs are in loose pieces on some frames (key damage)",
-	"jobs/fighter/overworld_steampunk": "seated on the grid, but its own legs are in loose pieces on some frames (key damage)",
-	"jobs/guardian/overworld_abstract": "3 rows of figures, not 4",
-	"jobs/guardian/overworld_digital": "2 rows of figures, not 4",
-	"jobs/guardian/overworld_industrial": "3 rows of figures, not 4",
-	"jobs/guardian/overworld_steampunk": "3 rows of figures, not 4",
-	"jobs/guardian/overworld_suburban": "3 rows of figures, not 4",
-	"jobs/mage/overworld_abstract": "seated on the grid, but its own legs are in loose pieces on some frames (key damage)",
-	"jobs/mage/overworld_steampunk": "a detached piece still sits on a cell edge after re-seating",
-	"jobs/ninja/overworld_abstract": "3 rows of figures, not 4",
-	"jobs/ninja/overworld_digital": "3 rows of figures, not 4",
-	"jobs/ninja/overworld_industrial": "3 rows of figures, not 4",
-	"jobs/ninja/overworld_steampunk": "3 rows of figures, not 4",
-	"jobs/ninja/overworld_suburban": "3 rows of figures, not 4",
-	"jobs/speculator/overworld_abstract": "2 rows of figures, not 4",
-	"jobs/speculator/overworld_digital": "2 rows of figures, not 4",
-	"jobs/speculator/overworld_industrial": "3 rows of figures, not 4",
-	"jobs/speculator/overworld_steampunk": "2 rows of figures, not 4",
-	"jobs/summoner/overworld_abstract": "rows of unequal height: one was cut short",
-	"jobs/summoner/overworld_digital": "6 rows of figures, not 4",
-	"jobs/summoner/overworld_industrial": "3 rows of figures, not 4",
-	"jobs/summoner/overworld_steampunk": "2 rows of figures, not 4",
-	"jobs/summoner/overworld_suburban": "2 rows of figures, not 4",
-}
+## 2026-10-31: all 25 were re-rolled with the party at 48px and measure whole, so the list is empty and may only stay so.
+const NEEDS_A_REROLL := {}
 
 ## Seated sheets whose up-facing row lost its feet to the image edge: that row stands shorter than the down row.
-const UP_ROW_CUT_SHORT := [
-	"jobs/fighter/overworld_digital", "jobs/fighter/overworld_steampunk",
-]
+const UP_ROW_CUT_SHORT := []
 ## An up row at most this share of the down row's height has lost its feet.
 const SHORT_SHARE := 0.82
 
@@ -115,10 +88,13 @@ func _sheets() -> Dictionary:
 			var fw := int(entry.get("frame_width", CELL))
 			if fw == int(entry.get("frame_height", CELL)):
 				out[str(entry["path"])] = fw
+	var players: Dictionary = manifest["overworld_player_sheets"]
 	for job in DirAccess.get_directories_at(SPRITES + "jobs"):
+		## A world costume has no entry of its own: it is cut at its job's declared frame, exactly as OverworldPlayer cuts it.
+		var cell := int((players.get(job, {}) as Dictionary).get("frame_height", CELL))
 		for f in DirAccess.get_files_at(SPRITES + "jobs/" + job):
 			if f.begins_with("overworld_") and f.ends_with(".png"):
-				out[SPRITES + "jobs/" + job + "/" + f] = CELL
+				out[SPRITES + "jobs/" + job + "/" + f] = cell
 	return out
 
 
@@ -152,6 +128,8 @@ func test_every_overworld_walker_is_cut_at_its_own_rows() -> void:
 
 
 func test_the_list_names_real_sheets() -> void:
+	if NEEDS_A_REROLL.is_empty():
+		pass_test("no sheet awaits a re-roll")
 	for key in NEEDS_A_REROLL:
 		assert_true(ResourceLoader.exists(SPRITES + key + ".png"), "%s is listed but is not a sheet" % key)
 
@@ -171,6 +149,8 @@ func _row_height(img: Image, row: int) -> int:
 
 
 func test_a_footless_up_row_is_named_until_it_is_redrawn() -> void:
+	if UP_ROW_CUT_SHORT.is_empty():
+		pass_test("no up row is cut short")
 	for key in UP_ROW_CUT_SHORT:
 		var path: String = SPRITES + key + ".png"
 		assert_true(ResourceLoader.exists(path), "CONTROL: %s is a sheet" % key)
