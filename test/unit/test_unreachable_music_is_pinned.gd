@@ -174,6 +174,24 @@ const KNOWN_UNREACHABLE_AMBIENT_TRACKS: Array[String] = [
 ]
 
 
+## Renamed from ambient_village/_forest/_cave 2026-10-30: Suno songs dropped as layers, kept as Jukebox rows.
+const KNOWN_UNREACHABLE_FORMER_AMBIENT_TRACKS: Array[String] = [
+	"suno_dripping_stone",
+	"suno_market_morning",
+	"suno_whispering_canopy",
+]
+
+
+func test_the_former_ambient_beds_are_named_and_reached_by_nothing_in_play() -> void:
+	var raw: String = FileAccess.get_file_as_string(MANIFEST)
+	var tracks: Dictionary = (JSON.parse_string(raw) as Dictionary).get("tracks", {})
+	var all_src: String = _walk_gd("res://src")
+	assert_true(all_src.contains("play_music(\"boss_mordaine\")"), "CONTROL: the src walk cannot see a known play_music call")
+	for k in KNOWN_UNREACHABLE_FORMER_AMBIENT_TRACKS:
+		assert_true(tracks.has(k), "%s is pinned but not in the music manifest — its file would ship unnamed" % k)
+		assert_false(all_src.contains("\"%s\"" % k), "%s is named in src/ — a song dropped as an ambient layer is being played again; move it out of this pin if that is deliberate" % k)
+
+
 func test_ambient_music_entries_are_all_unreachable_as_pinned() -> void:
 	var raw: String = FileAccess.get_file_as_string(MANIFEST)
 	var tracks: Dictionary = (JSON.parse_string(raw) as Dictionary).get("tracks", {})

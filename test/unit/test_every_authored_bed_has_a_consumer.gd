@@ -1083,7 +1083,7 @@ func _peer_pins() -> Array[String]:
 	assert_gt(src.length(), 2000,
 		"SCOPE control: %s read back %d chars — if it was renamed or retired, this agreement arm is measuring nothing and must be re-pointed, not deleted" % [PEER_GUARD, src.length()])
 	var out: Array[String] = []
-	for name in ["KNOWN_UNREACHABLE_CUTSCENE_TRACKS", "KNOWN_UNREACHABLE_AMBIENT_TRACKS"]:
+	for name in ["KNOWN_UNREACHABLE_CUTSCENE_TRACKS", "KNOWN_UNREACHABLE_AMBIENT_TRACKS", "KNOWN_UNREACHABLE_FORMER_AMBIENT_TRACKS"]:
 		var at: int = src.find(name)
 		assert_gt(at, 0, "SCOPE control: %s no longer declares %s" % [PEER_GUARD, name])
 		if at < 0:
