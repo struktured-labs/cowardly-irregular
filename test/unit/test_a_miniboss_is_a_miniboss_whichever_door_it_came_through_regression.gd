@@ -1,13 +1,17 @@
 extends GutTest
-## Every third battle with no scripted enemies is a miniboss battle (GameLoop:4778,
+## Every third battle with no scripted enemies is a miniboss battle (GameLoop._start_battle_async,
 ## `(battles_won + 1) % 3 == 0`), routed to BattleEnemySpawner.spawn_miniboss(). That path set
 ## `is_miniboss` and NOT `is_boss` -- alone among four spawn paths, the other three setting both
 ## for any monster flagged boss OR miniboss in monsters.json.
 ## Cave Troll and Shadow Knight ARE flagged miniboss there, so the SAME monster was boss-like
 ## through an encounter and an ordinary enemy through this door. Five is_boss consumers have no
-## is_miniboss fallback: BattleScene:795, :3441, :5603 and VictoryOverlay:161, :186 -- so a
+## is_miniboss fallback -- BattleScene._boss_combatant / _on_battle_ended / _on_damage_dealt and
+## VictoryOverlay._victory_grade / _headline_foe -- so a
 ## miniboss took no boss dialogue, no danger-HP treatment, and no ELITE grade on the victory screen.
 ## Found with cowir-music's recurred-class grep, applied to the path my own .654 fix did not cover.
+## Named by SYMBOL, not by line: this header cited :795/:3441/:5603 and :161/:186, which had drifted
+## to :810/:3517/:5699 and :231/:256 while every function and the count of five stayed correct.
+## test_a_miniboss_flag_is_never_set_alone pins the same invariant across EVERY door, derived.
 const SpawnerScript = preload("res://src/battle/BattleEnemySpawner.gd")
 
 const VictoryOverlayScript = preload("res://src/battle/VictoryOverlay.gd")

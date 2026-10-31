@@ -100,6 +100,11 @@ func _get_dungeon_ambient() -> Color:
 	return Color(0.19, 0.17, 0.28)
 
 
+## Torch: the Apex glow, one room short of it
+func _get_torch_tint() -> Color:
+	return Color(0.80, 0.78, 0.96)
+
+
 ## Hands back only what it took — the same shape VertexApex uses, and for the reason recorded there:
 ## _exit_tree has no knowledge of who disabled encounters, so it must not answer for them.
 var _suppressed_encounters: bool = false

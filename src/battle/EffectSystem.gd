@@ -172,14 +172,27 @@ func _play_effect_sound(effect_type: EffectType, power: float = 1.0, weapon_type
 		EffectType.DARK:
 			sound_key = "strike_dark"
 		EffectType.HEAL:
-			sound_key = "ability_heal"
+			## ⛔ WAS "ability_heal" — THE CAST CUE, so one asset played TWICE per heal: play_ability on
+			## _ability_player at -12 dB, then this one on _battle_player at -6 + jitter, 3-9 dB apart.
+			## That is the defect the 2026-09-06 pass fixed for all five elements by moving them to
+			## strike_<element>; HEAL is the arm that missed it (cowir-sfx, from struktured's logs).
+			## Empty until cowir-sfx's `strike_heal` asset exists — it does not today (0 in the
+			## manifest, 0 on disk), and naming a cue that is absent trades a double-play for a
+			## missing-cue warning. The cast cue already spoke, so silence here is correct meanwhile.
+			sound_key = ""
 		EffectType.MP_RESTORE:
-			sound_key = "ability_heal"  # Reuse heal sound for MP restore
+			sound_key = ""  # same: the cast cue already played. Was the cast key, see HEAL above.
 		EffectType.BUFF:
 			sound_key = "buff"
 		EffectType.DEBUFF:
 			sound_key = "debuff"
 		EffectType.POISON:
+			## Reuses a CAST-namespace key, and what makes it safe is that the keys DIFFER: the cast
+			## derives `ability_poison` from SoundManager's element map while this impact plays
+			## `ability_dark`, so there is nothing to double. ⛔ NOT "no cast fires" — eight abilities
+			## resolve to POISON and DO call play_ability (cowir-sfx's measurement, correcting mine).
+			## If either side is repointed so the two match, this becomes the HEAL defect above.
+			## ⚠️ cowir-sfx owns the cue choice and may prefer an authored `strike_poison`.
 			sound_key = "ability_dark"
 
 	## The generic polarity sting is REDUNDANT when BattleScene already played an authored status_* cue for

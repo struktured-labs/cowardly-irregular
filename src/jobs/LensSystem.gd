@@ -27,8 +27,10 @@ const LENS_DATA_PATH := "res://data/lenses.json"
 const NEUTRAL_MODS := {
 	"attack_multiplier": 1.0,
 	"defense_multiplier": 1.0,
-	## The Warden mitigated the physical half only: every wall boss deals AoE magic, and a lens
-	## declaring this key was dropped TWICE — here, and again in PassiveSystem._compose_lens_mods.
+	## FOUR gates stand between a lens key and the damage site: here, get_passive_mods' seed (via
+	## _compose_lens_mods, which drops SILENTLY where this one warns), Combatant.MODDABLE_STATS, and
+	## is_magical. This one and the seed both lacked the key, so no lens could tilt magic defence.
+	## NOT because the Warden axis deals AoE magic: at .745 no masterite warden does at all.
 	"magic_defense_multiplier": 1.0,
 	"magic_multiplier": 1.0,
 	"speed_multiplier": 1.0,

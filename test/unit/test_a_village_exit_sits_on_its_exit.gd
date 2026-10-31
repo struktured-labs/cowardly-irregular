@@ -1,5 +1,7 @@
 extends GutTest
 
+const DrawOrder := preload("res://test/unit/helpers/draw_order.gd")
+
 ## Every village's exit trigger sat 2-2.5 tiles LEFT of its exit tiles. The map loops set spawn_points["exit"] to the
 ## FIRST 'X' (the block's top-left) and the village centred a 4-6-tile trigger on it: Harmonia's exit is X cols 15..20,
 ## its trigger covered cols 12.5..18.5. So the right third of the exit did not take you out, the path beside it did,
@@ -161,6 +163,9 @@ func test_no_prop_is_drawn_across_a_door() -> void:
 			# The arch and pillars as AreaTransition draws them. The sign label draws ON TOP of props, so it is not judged.
 			var shapes: Array = [Rect2(p.x - 30.0, p.y - 60.0, 60.0, 60.0).grow(-2.0)]
 			for prop in props:
+				## A facade sorting BEFORE a y-sorted door draws under its arch, not across it (lane/villages-stand-up).
+				if DrawOrder.draws_over(d, prop):
+					continue
 				for c in prop.get_children():
 					if c is Sprite2D and (c as Sprite2D).texture:
 						var spr := c as Sprite2D

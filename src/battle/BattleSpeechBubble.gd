@@ -46,6 +46,11 @@ const MAX_CONCURRENT: int = 2
 ## Float-up distance for a bubble with headroom; a ceiling-pinned bubble floats only as far as the ceiling allows.
 const FLOAT_UP_PX: float = 10.0
 static var _live: Array = []
+## Texture instance id -> head point in that frame's pixels (see head_point_of).
+static var _head_cache: Dictionary = {}
+const HEAD_BAND: float = 0.05
+const HEAD_FILL: float = 0.6
+const HEAD_ROWS: int = 6
 
 ## Rendered half-width of the speaker's sprite; 0 when the caller does not know it.
 var _speaker_half_width: float = 0.0
@@ -84,26 +89,112 @@ static func _rows_at(text: String, width: float, font: Font, font_size: int) -> 
 	return tp.get_line_count()
 
 
-## Screen px from a sprite's centre to the TOP OF ITS FIGURE — not its frame.
-## The artists' 256px frames hold figures of different heights at different offsets (measured
-## 2026-09-16: top margin 66px on the Fighter, 10px on the Cleric), so lifting by half the FRAME
-## floated the bubble 12-114px above the head, per job. That per-speaker inconsistency is the
-## unfixed half of struktured's 2026-08-29 "not quite aligned to who says them".
+## Screen px from a sprite's centre UP TO ITS HEAD.
+## The artists' 256px frames hold figures of different heights at different offsets, so lifting by
+## half the FRAME floated the bubble 12-114px above the head, per job (2026-09-16). The figure's TOP
+## is not the head either: the Cleric's staff and its wisps rise ~50px above her hood and to her right,
+## so a figure-top anchor put her bubble over the staff (struktured, 2026-10-31). See head_point_of.
 static func head_lift(sprite: Node2D) -> float:
-	if not (sprite is AnimatedSprite2D):
-		return 0.0
-	var anim: AnimatedSprite2D = sprite
-	if anim.sprite_frames == null or not anim.sprite_frames.has_animation(anim.animation):
-		return 0.0
-	var tex: Texture2D = anim.sprite_frames.get_frame_texture(anim.animation, anim.frame)
+	var tex := _frame_tex(sprite)
 	if tex == null:
 		return 0.0
-	# AdvanceAura owns the opaque-bounds scan (cached; whole frame when unreadable, i.e. the old half-frame lift) — the aura seats on the same figure this bubble points at.
-	var top: float = AdvanceAuraClass.figure_rect_of(tex).position.y + anim.offset.y
-	# Where the frame hangs off the origin, read the same way the aura reads it — battle sprites are centered today and nothing here should quietly assume it.
+	var anim: AnimatedSprite2D = sprite
+	var top: float = head_point_of(tex).y + anim.offset.y
 	if anim.centered:
 		top -= float(tex.get_height()) * 0.5
 	return -top * absf(anim.scale.y)
+
+
+## Screen px from the sprite's origin ACROSS to its head, mirrored with flip_h. A figure is rarely
+## centred in its frame, so the frame's centre x put the bubble's tail beside the speaker.
+static func head_dx(sprite: Node2D) -> float:
+	var tex := _frame_tex(sprite)
+	if tex == null:
+		return 0.0
+	var anim: AnimatedSprite2D = sprite
+	var w := float(tex.get_width())
+	var px: float = head_point_of(tex).x
+	## A flipped frame is mirrored inside its own rect, so column px draws at w - px.
+	if anim.flip_h:
+		px = w - px
+	var lx: float = px + anim.offset.x - (w * 0.5 if anim.centered else 0.0)
+	return lx * anim.scale.x
+
+
+## The frame the head is read from: idle frame 0 when the sheet has one, else the frame on screen.
+## A pose is not a head: an attack frame's highest wide row can be the artist's own slash smear
+## (fighter/attack f0), and a bubble that hopped with every frame would not read as one speaker's.
+static func _frame_tex(sprite: Node2D) -> Texture2D:
+	if not (sprite is AnimatedSprite2D):
+		return null
+	var anim: AnimatedSprite2D = sprite
+	if anim.sprite_frames == null:
+		return null
+	if anim.sprite_frames.has_animation("idle") and anim.sprite_frames.get_frame_count("idle") > 0:
+		return anim.sprite_frames.get_frame_texture("idle", 0)
+	if not anim.sprite_frames.has_animation(anim.animation):
+		return null
+	if anim.sprite_frames.get_frame_count(anim.animation) == 0:
+		return null
+	return anim.sprite_frames.get_frame_texture(anim.animation, anim.frame)
+
+
+## Where a frame's HEAD is, in that frame's pixels. The body column is the median x of the opaque
+## pixels in the figure's lower half, which a thin staff or instrument barely moves. The head top is
+## the first row where a band around that column is mostly filled (HEAD_FILL), for HEAD_ROWS rows
+## running: a head is the widest thing atop the body, while a prop crossing the band is thin there.
+## Measured on the five starters' idle frames: a first-opaque-pixel rule put the Cleric's anchor on
+## her staff's wisp and the Bard's on her instrument's scroll. Cached per texture; frame centre and
+## figure top if unreadable.
+static func head_point_of(tex: Texture2D) -> Vector2:
+	if tex == null:
+		return Vector2.ZERO
+	var key: int = tex.get_instance_id()
+	if _head_cache.has(key):
+		return _head_cache[key]
+	var fig: Rect2 = AdvanceAuraClass.figure_rect_of(tex)
+	var head := Vector2(float(tex.get_width()) * 0.5, fig.position.y)
+	var img: Image = tex.get_image()
+	if img != null and not img.is_empty() and fig.size.x > 0 and fig.size.y > 0:
+		if img.is_compressed():
+			img.decompress()
+		var x0 := int(fig.position.x)
+		var x1 := int(fig.end.x)
+		var y_mid := int(fig.position.y + fig.size.y * 0.5)
+		var cols := PackedInt32Array()
+		cols.resize(x1 - x0)
+		var total := 0
+		for y in range(y_mid, int(fig.end.y), 2):
+			for x in range(x0, x1):
+				if img.get_pixel(x, y).a > 0.5:
+					cols[x - x0] += 1
+					total += 1
+		if total > 0:
+			var seen := 0
+			var body_x := x0
+			for i in cols.size():
+				seen += cols[i]
+				if seen * 2 >= total:
+					body_x = x0 + i
+					break
+			var band: int = maxi(6, int(img.get_width() * HEAD_BAND))
+			var bx0: int = maxi(x0, body_x - band)
+			var bx1: int = mini(x1, body_x + band + 1)
+			var need: int = int(float(2 * band + 1) * HEAD_FILL)
+			var top_y := int(fig.position.y)
+			var run := 0
+			for y in range(int(fig.position.y), int(fig.end.y)):
+				var filled := 0
+				for x in range(bx0, bx1):
+					if img.get_pixel(x, y).a > 0.5:
+						filled += 1
+				run = run + 1 if filled >= need else 0
+				if run >= HEAD_ROWS:
+					top_y = y - HEAD_ROWS + 1
+					break
+			head = Vector2(float(body_x) + 0.5, float(top_y))
+	_head_cache[key] = head
+	return head
 
 
 ## Spawns a bubble above anchor_global_pos. Returns null when suppressed.

@@ -8,6 +8,9 @@ func _init() -> void:
 	var village := "harmonia"
 	var phase := 0.3
 	var weather := "clear"
+	## Frame a cell instead of the default spawn: a village shot that needs a particular building in it
+	## had no way to ask, so a facade pass could only be judged from whatever the exit happened to face.
+	var at := Vector2i(-1, -1)
 	for a in args:
 		if a.begins_with("--village="):
 			village = a.get_slice("=", 1)
@@ -15,6 +18,10 @@ func _init() -> void:
 			phase = float(a.get_slice("=", 1))
 		elif a.begins_with("--weather="):
 			weather = a.get_slice("=", 1)
+		elif a.begins_with("--at="):
+			var xy := a.get_slice("=", 1).split(",")
+			if xy.size() == 2:
+				at = Vector2i(int(xy[0]), int(xy[1]))
 	# Autoloads are added AFTER the -s script's _init runs; compiling the village before then fails on SoundManager/GameState
 	await process_frame
 	await process_frame
@@ -47,6 +54,11 @@ func _init() -> void:
 		quit(2)
 		return
 	root.add_child(scene)
+	if at != Vector2i(-1, -1) and "player" in scene and scene.player != null:
+		scene.player.position = Vector2((at.x + 0.5) * 32, (at.y + 0.5) * 32)
+		if "camera" in scene and scene.camera != null:
+			scene.camera.reset_smoothing()
+		print("[SCREEN] framed cell %s" % str(at))
 	# ⛔ A UI SCENE ADDED THIS WAY HAS ZERO SIZE, AND IT RENDERS AS ALMOST-NOTHING.
 	# In the game a Control like TitleScreen becomes the CURRENT SCENE and Godot sizes it to
 	# the viewport; root.add_child() does not, so its anchors resolve against a 0x0 rect.

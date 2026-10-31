@@ -258,3 +258,9 @@ func _place_masterites() -> void:
 	arbiter.cutscene_id = "world5_arbiter_intro"
 	arbiter.position = Vector2(13 * TILE_SIZE,8 * TILE_SIZE)
 	npcs.add_child(arbiter)
+
+
+## No ambient walkers, by measurement: four shops, a door, four NPCs and three masterites fill every floor island,
+## so no 5-cell line clears them. Vertex stays sparse by design; anyone added here would stand in someone's way.
+func _get_ambient_walkers() -> Array:
+	return []

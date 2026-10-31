@@ -201,7 +201,7 @@ func test_a_player_at_2x_sees_a_bubble_and_at_4x_does_not() -> void:
 	host.size = Vector2(1280, 720)
 	add_child_autofree(host)
 	var seen: Dictionary = {}
-	for want in ["1x", "2x", "4x", "8x"]:
+	for want in ["1x", "1.5x", "2x", "4x", "8x"]:
 		var i: int = labels.find(want)
 		assert_gte(i, 0, "CONTROL: the ladder must carry a %s label" % want)
 		Engine.time_scale = float(speeds[i])
@@ -209,6 +209,7 @@ func test_a_player_at_2x_sees_a_bubble_and_at_4x_does_not() -> void:
 		seen[want] = BattleSpeechBubble.spawn(host, Vector2(320, 400), "Fighter", "A line.") != null
 	Engine.time_scale = saved
 	assert_true(seen["1x"], "a bubble must show at 1x")
+	assert_true(seen["1.5x"], "a bubble must show at 1.5x, the default since 2026-10-30")
 	assert_true(seen["2x"], "a bubble must show at 2x — this was the invisible-dialogue complaint")
 	assert_false(seen["4x"], "4x must suppress the bubble; the doc'd rule is 4x and up")
 	assert_false(seen["8x"], "8x must suppress the bubble")

@@ -59,16 +59,18 @@ func _write_settings(d: Dictionary) -> void:
 func test_pre_v2_stale_speed_no_longer_undoes_migration() -> void:
 	_write_settings({"battle_speed_index": 4, "default_battle_speed": 0.25})
 	SaveSystem.load_settings()
-	assert_eq(GameState.default_battle_speed, 0.25,
-		"pre-v3 file: migration's 0.25 must stand — a stale engine value must not undo it")
 	var scene_script = load("res://src/battle/BattleScene.gd")
-	assert_eq(scene_script._battle_speed_index, 0,
-		"pre-v3 file: battle-scene static resets to index 0 (label 1x)")
+	assert_eq(GameState.default_battle_speed, scene_script.DEFAULT_BATTLE_SPEED,
+		"pre-v3 file: migration's default must stand — a stale engine value must not undo it")
+	assert_eq(scene_script._battle_speed_index, scene_script.DEFAULT_BATTLE_SPEED_INDEX,
+		"pre-v3 file: battle-scene static resets to the default index")
 
 
-func test_v2_file_speed_restores_normally() -> void:
+func test_v3_file_speed_restores_normally() -> void:
+	## v3 index 2 was engine 1.0 on the seven-rung ladder; since the 1.5x rung (v4) that speed is
+	## index 3. Same speed, shifted index — the v4 migration, not a reset.
 	_write_settings({"speed_scale_v2": true, "speed_scale_v3": true, "battle_speed_index": 2, "default_battle_speed": 1.0})
 	SaveSystem.load_settings()
 	assert_eq(GameState.default_battle_speed, 1.0)
 	var scene_script = load("res://src/battle/BattleScene.gd")
-	assert_eq(scene_script._battle_speed_index, 2)
+	assert_eq(scene_script._battle_speed_index, 3)

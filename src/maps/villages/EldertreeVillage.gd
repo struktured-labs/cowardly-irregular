@@ -377,3 +377,12 @@ func _place_masterite_tempo() -> void:
 	tempo.quest_flag = "quest_w1_eldertree_rangers_house_searched"
 	tempo.position = Vector2(14 * TILE_SIZE,14 * TILE_SIZE)
 	npcs.add_child(tempo)
+
+
+## Ambient walkers: their lines are derived from this map's ground (BaseVillage._walker_runs).
+func _get_ambient_walkers() -> Array:
+	return [
+		{"name": "Acorn Courier Fen", "archetype": "young_woman", "line": "Three hundred acorns, one address, no street names. Trees all look alike, apparently."},
+		{"name": "Old Sap-Tapper Bryn", "archetype": "old_man", "line": "Tapped this trunk for sixty years. It tapped me back once. We don't discuss it."},
+		{"name": "Moss Kid Tilly", "archetype": "child", "line": "I'm racing the snail. I'm losing. Don't tell anybody."},
+	]

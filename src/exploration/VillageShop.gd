@@ -109,6 +109,10 @@ func _generate_sprite() -> void:
 	var texture = ImageTexture.create_from_image(image)
 	sprite.texture = texture
 	sprite.centered = true
+	## Sort by the art's BASE, not its centre: the offset cancels the shift, so nothing moves on screen.
+	y_sort_enabled = true
+	sprite.position.y += image.get_height() / 2.0
+	sprite.offset.y -= image.get_height() / 2.0
 	add_child(sprite)
 
 

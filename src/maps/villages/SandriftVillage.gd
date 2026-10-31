@@ -207,6 +207,9 @@ func _setup_buildings() -> void:
 	_add_prop(VillagePropScript.Kind.FENCE, Vector2i(4, 11))
 	_add_lamp_post(Vector2i(10, 16))
 	_add_lamp_post(Vector2i(17, 16))
+	## LAST, so it defers to every building above. Adobe; never T, the hidden tent is a secret.
+	_spawn_house_facades(["I", "B"], [Color(0.74, 0.58, 0.38)], "adobe")
+
 
 func _setup_treasures() -> void:
 	# 500 Gold in hidden tent
@@ -360,3 +363,12 @@ func _place_masterite_warden() -> void:
 	warden.quest_flag = "quest_w1_sandrift_water_on_the_road_accepted"
 	warden.position = Vector2(14 * TILE_SIZE,16 * TILE_SIZE)
 	npcs.add_child(warden)
+
+
+## Ambient walkers: their lines are derived from this map's ground (BaseVillage._walker_runs).
+func _get_ambient_walkers() -> Array:
+	return [
+		{"name": "Water Carrier Asha", "archetype": "young_woman", "line": "Forty miles to the next well. I counted. Twice. Out loud."},
+		{"name": "Camel Haggler Omid", "archetype": "merchant", "line": "I sell camels. Not the camel you're thinking of. That one's the camel's idea."},
+		{"name": "Dune Pilgrim Sefa", "archetype": "traveler", "line": "The sand says walk north. Last week it said walk south. Sand's indecisive."},
+	]

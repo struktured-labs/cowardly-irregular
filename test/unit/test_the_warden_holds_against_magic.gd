@@ -92,9 +92,34 @@ func test_the_physical_half_is_exactly_as_it_was() -> void:
 		"and the magic half matches it rather than inventing a second number")
 
 
+# ── the claim the comment now rests on ──────────────────────────────
+
+func test_no_warden_deals_aoe_magic_so_the_comment_stays_true() -> void:
+	## The rationale first shipped with this fix said "every wall boss deals AoE magic". It was
+	## wrong and @cowir-adhoc measured it: the warden AoE (masterite_endurance_test) is PHYSICAL and
+	## its magic (masterite_judgment) is single_enemy. This reds if that flips, which is exactly
+	## when LensSystem's comment and lenses.json's note need re-reading -- not on a magnitude.
+	var ab = JSON.parse_string(FileAccess.get_file_as_string("res://data/abilities.json"))
+	var mo = JSON.parse_string(FileAccess.get_file_as_string("res://data/monsters.json"))
+	var abil: Dictionary = ab.get("abilities", ab)
+	var mons: Dictionary = mo.get("monsters", mo)
+	var wardens := 0
+	for mid in mons.keys():
+		if not str(mid).begins_with("masterite_warden"):
+			continue
+		wardens += 1
+		for aid in (mons[mid] as Dictionary).get("abilities", []):
+			var a: Dictionary = abil.get(aid, {})
+			var is_aoe_magic: bool = str(a.get("type", "")) == "magic" \
+				and str(a.get("target_type", "")).contains("all")
+			assert_false(is_aoe_magic,
+				"%s now carries AoE magic (%s) — re-read LensSystem's magic_defense_multiplier comment and lenses.json's note, which both state no warden does" % [mid, aid])
+	assert_gt(wardens, 0, "the derivation must reach some wardens, or it certifies nothing")
+
+
 # ── the generalizing guard ──────────────────────────────────────────
 
-func test_every_lens_stat_mod_key_survives_both_gates() -> void:
+func test_every_lens_stat_mod_key_survives_the_first_two_gates() -> void:
 	## DERIVED from the data file, so this reds for any FUTURE lens key that nothing consumes --
 	## which is the defect class that made the Warden's magic tilt impossible to author at all.
 	var raw = JSON.parse_string(FileAccess.get_file_as_string(LENS_DATA))
@@ -110,3 +135,32 @@ func test_every_lens_stat_mod_key_survives_both_gates() -> void:
 			assert_true(seed.has(key),
 				"lens '%s' declares '%s', which _compose_lens_mods drops: get_passive_mods' seed lacks it" % [axis, key])
 	assert_gt(checked, 0, "the derivation must actually reach some keys, or it certifies nothing")
+
+
+## Gate 3 is a SEPARATE list, so a key can pass both gates above and still be inert -- the very
+## defect this file was written for, reproduced one gate further down. @cowir-adhoc found the hole.
+## Non-stat keys are allowed through only by NAMING their consumer: the explanation is the fix, and
+## you cannot silence this green, only explain it green.
+const NON_STAT_MULTIPLIERS := {
+	"mp_cost_multiplier": "not a stat — read at the point of MP spend",
+	"healing_multiplier": "not a stat — read in Combatant.heal()",
+}
+
+
+func test_every_multiplier_in_neutral_mods_reaches_gate_three() -> void:
+	var moddable: Array = Combatant.MODDABLE_STATS
+	assert_gt(moddable.size(), 0, "MODDABLE_STATS must resolve, or this arm certifies nothing")
+	var checked := 0
+	for key in LensSystem.NEUTRAL_MODS.keys():
+		var k := str(key)
+		if not k.ends_with("_multiplier"):
+			continue   # crit_chance / evasion are additive and read at the point of use
+		checked += 1
+		if NON_STAT_MULTIPLIERS.has(k):
+			assert_false(str(NON_STAT_MULTIPLIERS[k]).is_empty(),
+				"%s is exempt from gate 3 but names no consumer" % k)
+			continue
+		var stat := k.substr(0, k.length() - "_multiplier".length())
+		assert_true(moddable.has(stat),
+			"NEUTRAL_MODS declares '%s' but Combatant.MODDABLE_STATS has no '%s', so recalculate_stats never applies it — the lens tilt is INERT. Add the stat to MODDABLE_STATS, or exempt the key in NON_STAT_MULTIPLIERS naming its real consumer." % [k, stat])
+	assert_gt(checked, 0, "no multiplier keys reached — the derivation is broken, not clean")

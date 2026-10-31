@@ -71,6 +71,11 @@ func _generate_sprite_frames() -> void:
 
 	if _sprite_frames.size() > 0:
 		sprite.texture = _sprite_frames[0]
+		## Sort by the art's BASE, not its centre: the offset cancels the shift, so nothing moves on screen.
+		y_sort_enabled = true
+		var half: float = _sprite_frames[0].get_height() / 2.0
+		sprite.position.y += half
+		sprite.offset.y -= half
 
 
 func _draw_fountain(image: Image, frame: int) -> void:
