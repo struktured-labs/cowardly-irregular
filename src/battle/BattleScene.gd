@@ -5250,19 +5250,19 @@ func _update_buff_debuff_visuals(_delta: float) -> void:
 		var pulse = (sin(_idle_time * 3.0) + 1.0) * 0.5  # 0-1 pulse
 
 		# Update glow color based on buff/debuff state (threat wins over all).
-		var glow: ColorRect = visuals.get("glow")
+		var glow: Sprite2D = visuals.get("glow")
 		if glow and is_instance_valid(glow):
 			if has_threat:
-				glow.color = Color(THREAT_GLOW_COLOR.r, THREAT_GLOW_COLOR.g, THREAT_GLOW_COLOR.b, 0.15 + pulse * 0.15)
+				glow.modulate = Color(THREAT_GLOW_COLOR.r, THREAT_GLOW_COLOR.g, THREAT_GLOW_COLOR.b, 0.15 + pulse * 0.15)
 			elif has_buffs and has_debuffs:
 				# Mixed: yellow pulse
-				glow.color = Color(0.8, 0.8, 0.0, 0.12 + pulse * 0.1)
+				glow.modulate = Color(0.8, 0.8, 0.0, 0.12 + pulse * 0.1)
 			elif has_buffs:
 				# Buff: cyan-green pulse
-				glow.color = Color(0.2, 0.9, 0.7, 0.1 + pulse * 0.08)
+				glow.modulate = Color(0.2, 0.9, 0.7, 0.1 + pulse * 0.08)
 			else:
 				# Debuff: red pulse
-				glow.color = Color(0.9, 0.2, 0.2, 0.1 + pulse * 0.08)
+				glow.modulate = Color(0.9, 0.2, 0.2, 0.1 + pulse * 0.08)
 
 		# Sigil badge — show above sprite when threat-class buff is active. Pulse-fade modulate alpha 0.6→1.0 on the existing sin drive. Hidden entirely otherwise.
 		var sigil: Sprite2D = visuals.get("sigil")
@@ -5290,17 +5290,48 @@ func _update_buff_debuff_visuals(_delta: float) -> void:
 				p_node.modulate.a = 0.6 + randf() * 0.4
 
 
+## The glow's extent, and the body centre it sits on — the old ColorRect spanned x[-20,20]
+## y[-40,10], so this keeps its centre and widens the footprint, because a radial falloff needs
+## room to reach zero before its own edge. Pixels, deliberately larger than a 32x48 party sprite.
+const BUFF_GLOW_SIZE := Vector2i(64, 80)
+const BUFF_GLOW_CENTER := Vector2(0, -15)
+
+## Built once and shared: modulate carries the per-combatant colour, so one white-to-transparent
+## radial serves every party member and every state.
+static var _buff_glow_tex: GradientTexture2D = null
+
+
+static func buff_glow_texture() -> GradientTexture2D:
+	if _buff_glow_tex != null:
+		return _buff_glow_tex
+	var grad := Gradient.new()
+	grad.set_color(0, Color(1.0, 1.0, 1.0, 1.0))
+	grad.set_color(1, Color(1.0, 1.0, 1.0, 0.0))
+	var tex := GradientTexture2D.new()
+	tex.gradient = grad
+	tex.fill = GradientTexture2D.FILL_RADIAL
+	tex.fill_from = Vector2(0.5, 0.5)
+	tex.fill_to = Vector2(1.0, 0.5)
+	tex.width = BUFF_GLOW_SIZE.x
+	tex.height = BUFF_GLOW_SIZE.y
+	_buff_glow_tex = tex
+	return _buff_glow_tex
+
+
 func _create_buff_visual(combatant: Combatant, sprite: Node2D) -> void:
 	"""Create glow + particle overlay for a buffed/debuffed combatant"""
 	var has_buffs = "active_buffs" in combatant and combatant.active_buffs.size() > 0
 
-	# Glow rectangle behind sprite
-	var glow = ColorRect.new()
+	## ⛔ A GLOW, NOT A RECTANGLE. This was a hard-edged 40x50 ColorRect at z_index -1 behind a
+	## 32x48 sprite, so it stuck out on every side with a visible boundary — struktured, playing
+	## .745: "there is like a rectangular frame that sometimes appears behind the fighter sprite".
+	## "Sometimes" was whenever that character held a buff or a debuff. A radial falloff reaches
+	## zero before its own edge, so there is no boundary left to read as a frame.
+	var glow := Sprite2D.new()
 	glow.name = "BuffGlow"
-	glow.size = Vector2(40, 50)
-	glow.position = Vector2(-20, -40)
-	glow.color = Color(0.2, 0.9, 0.7, 0.1)
-	glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	glow.texture = buff_glow_texture()
+	glow.position = BUFF_GLOW_CENTER
+	glow.modulate = Color(0.2, 0.9, 0.7, 0.1)
 	glow.z_index = -1
 	sprite.add_child(glow)
 
