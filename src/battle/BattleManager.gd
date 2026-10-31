@@ -5007,7 +5007,10 @@ func _execute_advance(combatant: Combatant, advance_action: Dictionary) -> void:
 	## A queued defer ends the turn, which is what the editor means by graying the rest.
 	var queue_ended: bool = false
 	for action in actions:
-		if not combatant.is_alive:
+		## Validity first: the loop awaits between steps, and an actor freed meanwhile (battle torn down,
+		## a test's teardown) made `.is_alive` a SCRIPT ERROR that killed this coroutine before
+		## _execute_next_action, stalling the queue. A freed actor ends its Advance like a fallen one.
+		if not is_instance_valid(combatant) or not combatant.is_alive:
 			break
 
 		if _check_victory_conditions():
