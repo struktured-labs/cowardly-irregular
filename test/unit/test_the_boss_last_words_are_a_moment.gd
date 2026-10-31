@@ -203,6 +203,66 @@ func test_a_defeat_line_gets_its_beat_and_a_victory_line_does_not_leak_into_it()
 	assert_false(t.is_holding_for_boss_beat(), "a VICTORY line must never be staged as a defeat beat")
 
 
+const AUTHORED_DEFEAT := ["Probe Boss: THEORY... REVISED.", "*It shatters into a small pile of dust.*"]
+
+
+func _entry_is_beat() -> bool:
+	## The last-words entry is the only one carrying a "blip" key; an authored scene's entries never do.
+	if not _dialogue.visible or _dialogue._dialogue_queue.is_empty():
+		return false
+	var i: int = mini(_dialogue._current_index, _dialogue._dialogue_queue.size() - 1)
+	return str(_dialogue._dialogue_queue[i].get("blip", "")) != ""
+
+
+func test_last_words_come_before_the_authored_scene() -> void:
+	## struktured 2026-10-31, after the capture showed the Construct "shatter into dust" and THEN speak: last words first.
+	var s: Node = _make_scene()
+	s._boss_dialogue_data = {"defeat": AUTHORED_DEFEAT.duplicate()}
+	BattleManager._emit_boss_gloat(LINE, true)
+	s._stage_defeat_scene(true)
+	assert_false(_dialogue.visible, "with last words on the way, the authored scene must WAIT, not show at battle end")
+	s._finish_victory_after_boss_beat()
+	assert_true(await _wait_until(func() -> bool: return _dialogue.visible, 1000), "something must show")
+	assert_true(_entry_is_beat(), "the FIRST box must be the boss's last words, not the authored scene")
+	await _press_accept()
+	await _press_accept()
+	assert_true(await _wait_until(func() -> bool: return _dialogue.visible and not _entry_is_beat(), 2000),
+		"the authored scene must follow the last words")
+	assert_string_contains(_dialogue._current_text, "THEORY", "and it must be the authored defeat scene")
+	assert_eq(s.results_at, -1, "the rewards must still wait while the authored scene plays")
+	assert_true(s.is_holding_for_boss_beat(), "GameLoop must stay held across the authored scene too")
+	for i in 6:
+		if s.results_at > -1:
+			break
+		await _press_accept()
+	assert_true(await _wait_until(func() -> bool: return s.results_at > -1, 2000), "the rewards come last")
+	assert_false(s.is_holding_for_boss_beat(), "and the hold releases")
+
+
+func test_control_with_no_line_coming_the_authored_scene_shows_at_once() -> void:
+	## CONTROL: a fight with no gloat keeps the old behaviour, so the deferral cannot strand the scene.
+	var s: Node = _make_scene()
+	s._boss_dialogue_data = {"defeat": AUTHORED_DEFEAT.duplicate()}
+	s._stage_defeat_scene(true)
+	assert_true(_dialogue.visible, "with no last words coming, the authored scene must show at battle end, as before")
+	assert_string_contains(_dialogue._current_text, "THEORY", "and it is the authored scene")
+	assert_true(s._deferred_defeat_scene.is_empty(), "and nothing is held back")
+
+
+func test_one_press_dismisses_a_fully_typed_line() -> void:
+	## A player who lets the line finish typing presses ONCE. The other arms press twice (skip the typing, then advance),
+	## so none of them could see a single press failing, and one capture run showed exactly that.
+	var s: Node = _make_scene()
+	BattleManager._emit_boss_gloat(LINE, true)
+	s._finish_victory_after_boss_beat()
+	assert_true(await _wait_until(func() -> bool: return _dialogue.visible, 1000), "the beat shows")
+	assert_true(await _wait_until(func() -> bool: return not _dialogue._is_typing, 8000), "the line finishes typing on its own")
+	await get_tree().process_frame
+	await _press_accept()
+	assert_true(await _wait_until(func() -> bool: return s.results_at > -1, 1500),
+		"ONE press on a fully typed line must dismiss it and let the rewards open")
+
+
 # ── GameLoop: the confirm flow waits for the beat, and one press does one job ─
 
 func _game_loop_with(stub: Node) -> Node:

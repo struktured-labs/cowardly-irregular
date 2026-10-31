@@ -55,15 +55,25 @@ func test_low_hp_handler_in_damage_dealt() -> void:
 
 
 func test_defeat_handler_in_battle_ended() -> void:
+	## Re-pinned 2026-10-31: the scene moved into _stage_defeat_scene so it can wait for the boss's last words
+	## (struktured: last words first). Same contract: fired from battle end, on victory, latched once per battle.
 	var src := _read(BATTLE_SCENE_PATH)
 	var fn_idx: int = src.find("func _on_battle_ended(")
 	assert_gt(fn_idx, -1)
 	var next_fn: int = src.find("\nfunc ", fn_idx + 1)
 	var body: String = src.substr(fn_idx, next_fn - fn_idx) if next_fn > 0 else src.substr(fn_idx)
-	assert_true(body.contains("_boss_dialogue_data.has(\"defeat\")"),
-		"_on_battle_ended must check for defeat dialogue")
-	assert_true(body.contains("victory and not _boss_defeat_spoken"),
-		"_on_battle_ended must gate on victory + not-spoken latch")
+	assert_true(body.contains("_stage_defeat_scene(victory)"),
+		"_on_battle_ended must hand the defeat scene to _stage_defeat_scene with the victory flag")
+	var h_idx: int = src.find("func _stage_defeat_scene(")
+	assert_gt(h_idx, -1, "_stage_defeat_scene must exist")
+	var h_next: int = src.find("\nfunc ", h_idx + 1)
+	var helper: String = src.substr(h_idx, h_next - h_idx) if h_next > 0 else src.substr(h_idx)
+	assert_true(helper.contains("_boss_dialogue_data.has(\"defeat\")"),
+		"_stage_defeat_scene must check for defeat dialogue")
+	assert_true(helper.contains("victory and not _boss_defeat_spoken"),
+		"_stage_defeat_scene must gate on victory + not-spoken latch")
+	assert_true(helper.contains("_boss_defeat_spoken = true"),
+		"_stage_defeat_scene must set the latch (one-shot per battle)")
 
 
 func test_data_still_authors_low_hp_and_defeat() -> void:
