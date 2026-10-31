@@ -20,7 +20,7 @@ extends GutTest
 ## naming the shortening as newly load-bearing.
 ##
 ## It is also the dead-code half of a measured number that is NOT ours to change — a voiceless
-## quip's 2.0 hold is 2 BATTLE seconds, which at the default engine 0.25 is 8.0 REAL seconds,
+## quip's 2.0 hold is 2 BATTLE seconds, which at engine 0.25 (1x) is 8.0 REAL seconds,
 ## against ~2.8s for the same line once it is voiced (the voiced path runs on the real clock since
 ## 2026-09-14). Identical content, 2.9x apart. That is a pacing call for struktured, who has ruled
 ## on battle pacing before; this file states the figure and changes nothing about it.
