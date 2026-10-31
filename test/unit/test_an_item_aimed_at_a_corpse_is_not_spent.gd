@@ -1,9 +1,6 @@
 extends GutTest
 
-## _resolve_item TOOK the item and then returned on a dead target, so a potion aimed at a member
-## who died earlier in the same round was CONSUMED and healed nobody. The REVIVE branch above it
-## was already fixed for exactly this -- its own comment records the feather leaving the bag while
-## the KO stayed down -- and the general path kept the defect. A fix that hid its own sibling.
+## _resolve_item spent the item then returned on a dead target: a potion healed nobody and was gone.
 
 const AutogrindState := preload("res://test/unit/helpers/autogrind_state.gd")
 
@@ -22,9 +19,7 @@ func _member(n: String, alive: bool) -> Combatant:
 	var c := Combatant.new()
 	c.initialize({"name": n, "max_hp": 100, "max_mp": 40, "attack": 10, "defense": 10, "magic": 10, "speed": 10})
 	add_child_autofree(c)
-	## is_alive is its OWN bool (Combatant:89), NOT derived from current_hp -- setting hp to 0 left
-	## every "corpse" ALIVE, so two arms tested the wrong state and the third could not reach the
-	## revive branch at all. die() is what the codebase uses.
+	## is_alive is its OWN bool, NOT derived from current_hp -- die() is what sets it.
 	if alive:
 		c.current_hp = 60
 	else:
@@ -32,12 +27,10 @@ func _member(n: String, alive: bool) -> Combatant:
 	return c
 
 
-## bag == [user] because _resolve_item uses `_player_party if user in _player_party else [user]`,
-## and a bare resolver has an empty _player_party -- so the user's own stock IS the bag.
+## A bare resolver has an empty _player_party, so the user's own stock IS the bag.
 func _resolver():
 	var r = HeadlessBattleResolver.new()
-	## Only parent it if it is a Node -- `add_child_autofree(<non-Node>)` raises "p_child is null",
-	## which is non-fatal here but noise in the log and a real abort if it ever moves earlier.
+	## Only parent a Node -- add_child_autofree(<non-Node>) raises "p_child is null".
 	if r is Node:
 		add_child_autofree(r)
 	return r
@@ -96,8 +89,7 @@ func test_a_revive_on_a_corpse_still_spends_and_raises() -> void:
 		"and it must actually raise them, or the spend bought nothing")
 
 
-## Derived from items.json rather than hardcoded, so a renamed phoenix_down reds the VOID floor
-## above instead of silently skipping the arm.
+## Derived from items.json, so a renamed phoenix_down reds the VOID floor instead of skipping.
 func _a_revive_item() -> String:
 	for id in ItemSystem.items.keys():
 		var it: Dictionary = ItemSystem.items[id]
