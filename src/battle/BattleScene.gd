@@ -3462,6 +3462,13 @@ func _get_dominant_monster_type() -> String:
 	return dominant_type
 
 
+## The victory bed starts BEFORE the boss stinger, so the stinger resumes to it, not to the fight it interrupted.
+static func play_victory_music(is_boss: bool) -> void:
+	SoundManager.play_music("victory")
+	if is_boss:
+		SoundManager.play_music("stinger_boss_defeated")
+
+
 func _check_for_boss() -> bool:
 	"""Check if any enemy is a boss/miniboss"""
 	for enemy in test_enemies:
@@ -3590,10 +3597,7 @@ func _on_battle_ended(victory: bool) -> void:
 			## A spotlight duel authors its own victory cue; every ordinary fight falls back.
 			SoundManager.play_battle(BattleManager.victory_cue_for(test_enemies))
 			_play_staggered_victory_animations()
-			if _check_for_boss():
-				SoundManager.play_music("stinger_boss_defeated")
-			else:
-				SoundManager.play_music("victory")
+			play_victory_music(_check_for_boss())
 			## The boss's last words get their own beat BEFORE the rewards (struktured: "I barely saw it").
 			_finish_victory_after_boss_beat()
 	elif _lost_battle_is_escape():

@@ -2662,7 +2662,7 @@ func _try_play_from_manifest(track_id: String) -> bool:
 			_music_player.finished.disconnect(c["callable"])
 		var resume: Dictionary = _stinger_resume_state.duplicate()
 		_music_player.finished.connect(func():
-			restore_music_state(resume)
+			restore_music_state(_victory_safe_resume(resume))
 		, CONNECT_ONE_SHOT)
 	return true
 
@@ -2752,6 +2752,22 @@ const PROCEDURAL_BATTLE_TRACKS := [
 
 
 ## 2026-09-09: the name check missed all 14 job_*_special, so a Limit Break looped a 5s fragment.
+## struktured 2026-10-31: "it should never go back to the battle music after a victory ditty". Once
+## BattleManager is in VICTORY a stinger resuming to a battle/boss/danger bed takes the victory bed instead;
+## decided when the stinger ENDS, so a mid-battle Limit Break still returns to the fight it interrupted.
+func _victory_safe_resume(resume: Dictionary) -> Dictionary:
+	if str(resume.get("area", "")) != "" or not _is_battle_bed(str(resume.get("track", ""))):
+		return resume
+	var bm: Node = get_node_or_null("/root/BattleManager")
+	if bm == null or not ("current_state" in bm) or int(bm.current_state) != int(bm.BattleState.VICTORY):
+		return resume
+	return {"track": "victory", "area": "", "playing": true, "position": 0.0}
+
+
+static func _is_battle_bed(track_id: String) -> bool:
+	return track_id.begins_with("battle") or track_id.begins_with("boss") or track_id.begins_with("danger")
+
+
 func _is_stinger_track(track_id: String) -> bool:
 	if track_id == "":
 		return false
