@@ -39,6 +39,38 @@
           150,
           150,
           150
+        ],
+        "battle_hymn": [
+          125,
+          125,
+          125,
+          160,
+          110,
+          105
+        ],
+        "discord": [
+          60,
+          55,
+          60,
+          105,
+          180,
+          290
+        ],
+        "inspiring_melody": [
+          165,
+          140,
+          115,
+          150,
+          95,
+          85
+        ],
+        "lullaby": [
+          120,
+          140,
+          150,
+          190,
+          90,
+          60
         ]
       },
       "secondary_accent": [
@@ -46,7 +78,8 @@
         "#b83a42",
         "#8f2537",
         "#73172d"
-      ]
+      ],
+      "generator": ". COMPOSED 2026-10-30 (tools/gen_ability_from_artist_frames.py): discord only, from her own attack arcs. lullaby / battle_hymn / inspiring_melody are LEFT byte-identical ON PURPOSE -- she has two performance poses (cast, song strip) and they read alike, so offsets cannot tell three songs apart. Composing them would replace artist bytes with near-identical composites AND destroy the SHA256 duplicate signal that marks them as needing real art. They are a standing ARTIST ASK."
     },
     "bard_sdxl": {
       "path": "res://assets/sprites/jobs/bard_sdxl",
@@ -107,7 +140,7 @@
         "weak"
       ],
       "tier": "T2",
-      "generator": "MIXED — contains ARTIST animations (attack, cast, idle, walk) alongside v3 LoRA fills for the rest (15 PNGs total). Tier corrected 2026-07-29: was T1 with a bare LoRA generator string, which described the directory before the artist animations landed and was never updated. Provenance verified via git lineage (first decisive ancestor per file), not via this manifest — tier and generator agreed with each other while both were wrong. T1 here meant 'safe to regenerate', which would have destroyed the artist animations named above. T2, not T3: T3 is struktured's call.",
+      "generator": "MIXED — contains ARTIST animations (attack, cast, idle, walk) alongside v3 LoRA fills for the rest (15 PNGs total). Tier corrected 2026-07-29: was T1 with a bare LoRA generator string, which described the directory before the artist animations landed and was never updated. Provenance verified via git lineage (first decisive ancestor per file), not via this manifest — tier and generator agreed with each other while both were wrong. T1 here meant 'safe to regenerate', which would have destroyed the artist animations named above. T2, not T3: T3 is struktured's call. COMPOSED 2026-10-30 (tools/gen_ability_from_artist_frames.py): heal, buff, raise were all byte-identical to advance. Each is now composed from a different beat of HER OWN cast strip -- heal the descending orb, buff the building charge, raise the white burst -- by whole-pixel integer translation only. T1 QUALITY, not drawn; flagged for an artist pass.",
       "source": "artist aseprite drop 2026-09-03 — Cleric Main design.aseprite, 28 frames / 4 tags (Idle 0-6, Weak 7-10, Dead 11-18, Cast 19-27). Ingested BY TAG, 2x nearest-neighbor to 256px. cast and attack both take Cast, matching the pre-existing byte-identical sheets. Backup written for dead.png only — the prior source carried NO tags, so it was never artist-authored. Completes the artist's Weak/Dead split across all five starters (bard 08-28, mage 08-30, fighter 09-02, rogue+cleric 09-03). 🔴 NEITHER weak.png NOR dead.png RENDERS TODAY: BattleScene has no low-HP trigger AND nothing ever enters BattleAnimator's AnimState.DEAD — it is declared and name-mapped but never set, and _on_combatant_died only prints a line. Both are loaded and inert pending one engine change. | 2026-09-09 ability-animation registration: advance, buff, defer, heal, raise were authored, are engine-supported (BattleAnimator.play_named_animation + dedicated AnimStates) and were NOT in this list, so HybridSpriteLoader never loaded them, has_animation() returned false and every one silently fell back to the generic attack. Verified on-model against idle and matching 256px frames before registering. | 2026-09-25 drop (Cleric Main design.aseprite, 39 frames / 5 tags): the artist added Celebration (11 frames, 7-17) -> victory, replacing the April LoRA victory (kept as victory.pre_artist.png). Weak/Dead/Cast shifted +11. Three one-pixel touch-ups also shipped: Idle frames 5 and 6 (one pixel added/removed each) and Dead frame 6 (one pixel recoloured blue -> maroon); Weak and Cast unchanged.",
       "frame_durations_ms": {
         "victory": [
@@ -172,6 +205,28 @@
           60,
           250,
           250
+        ],
+        "cleave": [
+          85,
+          200,
+          55,
+          150,
+          55,
+          205
+        ],
+        "power_strike": [
+          80,
+          105,
+          105,
+          230,
+          95,
+          135
+        ],
+        "provoke": [
+          90,
+          120,
+          200,
+          90
         ]
       },
       "secondary_accent": [
@@ -338,7 +393,7 @@
         "weak"
       ],
       "tier": "T2",
-      "generator": "MIXED — contains ARTIST animations (attack, idle, stab, victory) alongside v3 LoRA fills for the rest. Tier corrected 2026-07-29: was T1 with a bare LoRA generator string, which described the directory before the artist animations landed and was never updated. Provenance verified via git lineage (first decisive ancestor per file), not via this manifest — tier and generator agreed with each other while both were wrong. T1 here meant 'safe to regenerate', which would have destroyed the artist animations named above. T2, not T3: T3 is struktured's call.",
+      "generator": "MIXED — contains ARTIST animations (attack, idle, stab, victory) alongside v3 LoRA fills for the rest. Tier corrected 2026-07-29: was T1 with a bare LoRA generator string, which described the directory before the artist animations landed and was never updated. Provenance verified via git lineage (first decisive ancestor per file), not via this manifest — tier and generator agreed with each other while both were wrong. T1 here meant 'safe to regenerate', which would have destroyed the artist animations named above. T2, not T3: T3 is struktured's call. COMPOSED 2026-10-30 (tools/gen_ability_from_artist_frames.py): backstab, mug, steal, flee were byte-identical copies of walk/idle and are now composed from THIS job's own artist frames (attack, idle, walk) by whole-pixel integer translation -- no resample, no rotation, no palette change, so every opaque pixel is the artist's. T1 QUALITY, not drawn: a re-staging of his poses, flagged for an artist pass. stab is UNTOUCHED (artist_guard refuses it: it is his attack).",
       "source": "artist aseprite drop 2026-09-03 — Rogue Main design.aseprite, 20 frames / 4 tags (Idle 0-3, Weak 4-7, Dead 8-12, ATK 13-19). Ingested BY TAG, 2x nearest-neighbor to 256px. attack and stab both take ATK, matching the pre-existing byte-identical sheets. Backup written for dead.png only — the prior source carried NO tags, so it was never artist-authored. Completes the artist's Weak/Dead split across all five starters (bard 08-28, mage 08-30, fighter 09-02, rogue+cleric 09-03). 🔴 NEITHER weak.png NOR dead.png RENDERS TODAY: BattleScene has no low-HP trigger AND nothing ever enters BattleAnimator's AnimState.DEAD — it is declared and name-mapped but never set, and _on_combatant_died only prints a line. Both are loaded and inert pending one engine change. | 2026-09-18 artist drop (gdrive: cowir/assets/sprites/Game graphics - Characters/ROGUE/Rogue Main design.aseprite, 31 frames / 5 tags). NEW TAG 'Celebration' (frames 4-14, 11 frames) -> ingested as victory.png, replacing the 4-frame T1 procedural (kept at victory.pre_artist.png). 'Celebration' is the ARTIST's label; 'victory' is the engine's animation slot, same convention as bard's 09-18 drop. Inserting Celebration at frame 4 SHIFTED every later tag (Weak 4-7 -> 15-18, Dead 8-12 -> 19-23, ATK 13-19 -> 24-30), which is why ranges are read from the file and never hardcoded. idle/dead re-exported BYTE-IDENTICAL; weak 8px tweak; attack/stab reworked (~1900px). victory is now T2.",
       "frame_durations_ms": {
         "victory": [
@@ -5732,13 +5787,65 @@
           "frames": 4
         }
       }
+    },
+    "keeper_willow": {
+      "path": "res://assets/sprites/npcs/keeper_willow/overworld.png",
+      "frame_width": 48,
+      "frame_height": 48,
+      "fps": 8,
+      "tier": "T1",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      },
+      "source": "gpt-image-2 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
+    },
+    "keeper_mortimer": {
+      "path": "res://assets/sprites/npcs/keeper_mortimer/overworld.png",
+      "frame_width": 48,
+      "frame_height": 48,
+      "fps": 8,
+      "tier": "T1",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      },
+      "source": "gpt-image-2 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     }
   },
   "overworld_player_sheets": {
     "fighter": {
       "path": "res://assets/sprites/jobs/fighter/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "fps": 8,
       "tier": "T1",
       "animations": {
@@ -5758,12 +5865,13 @@
           "row": 3,
           "frames": 4
         }
-      }
+      },
+      "source": "gpt-image-2 redraw at the villagers' 48px scale (Rotha, Roy, Kid Acrees as style guide; the job's battle idle frame as identity) -- tools/gen_npc_artist_walker.py --player, struktured 2026-10-30 'our own characters are too small relative to npcs'. Pairs with OverworldPlayer.SPRITE_SIZE 48. T1: artist veto applies."
     },
     "cleric": {
       "path": "res://assets/sprites/jobs/cleric/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "fps": 8,
       "tier": "T1",
       "animations": {
@@ -5783,12 +5891,13 @@
           "row": 3,
           "frames": 4
         }
-      }
+      },
+      "source": "gpt-image-2 redraw at the villagers' 48px scale (Rotha, Roy, Kid Acrees as style guide; the job's battle idle frame as identity) -- tools/gen_npc_artist_walker.py --player, struktured 2026-10-30 'our own characters are too small relative to npcs'. Pairs with OverworldPlayer.SPRITE_SIZE 48. T1: artist veto applies."
     },
     "mage": {
       "path": "res://assets/sprites/jobs/mage/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "fps": 8,
       "tier": "T1",
       "animations": {
@@ -5808,12 +5917,13 @@
           "row": 3,
           "frames": 4
         }
-      }
+      },
+      "source": "gpt-image-2 redraw at the villagers' 48px scale (Rotha, Roy, Kid Acrees as style guide; the job's battle idle frame as identity) -- tools/gen_npc_artist_walker.py --player, struktured 2026-10-30 'our own characters are too small relative to npcs'. Pairs with OverworldPlayer.SPRITE_SIZE 48. T1: artist veto applies."
     },
     "rogue": {
       "path": "res://assets/sprites/jobs/rogue/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "fps": 8,
       "tier": "T1",
       "animations": {
@@ -5833,12 +5943,13 @@
           "row": 3,
           "frames": 4
         }
-      }
+      },
+      "source": "gpt-image-2 redraw at the villagers' 48px scale (Rotha, Roy, Kid Acrees as style guide; the job's battle idle frame as identity) -- tools/gen_npc_artist_walker.py --player, struktured 2026-10-30 'our own characters are too small relative to npcs'. Pairs with OverworldPlayer.SPRITE_SIZE 48. T1: artist veto applies."
     },
     "bard": {
       "path": "res://assets/sprites/jobs/bard/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "fps": 8,
       "tier": "T1",
       "animations": {
@@ -5858,12 +5969,13 @@
           "row": 3,
           "frames": 4
         }
-      }
+      },
+      "source": "gpt-image-2 redraw at the villagers' 48px scale (Rotha, Roy, Kid Acrees as style guide; the job's battle idle frame as identity) -- tools/gen_npc_artist_walker.py --player, struktured 2026-10-30 'our own characters are too small relative to npcs'. Pairs with OverworldPlayer.SPRITE_SIZE 48. T1: artist veto applies."
     },
     "bossbinder": {
       "path": "res://assets/sprites/jobs/bossbinder/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "fps": 8,
       "tier": "T1",
       "animations": {
@@ -5883,12 +5995,13 @@
           "row": 3,
           "frames": 4
         }
-      }
+      },
+      "source": "gpt-image-2 redraw at the villagers' 48px scale (Rotha, Roy, Kid Acrees as style guide; the job's battle idle frame as identity) -- tools/gen_npc_artist_walker.py --player, struktured 2026-10-30 'our own characters are too small relative to npcs'. Pairs with OverworldPlayer.SPRITE_SIZE 48. T1: artist veto applies."
     },
     "guardian": {
       "path": "res://assets/sprites/jobs/guardian/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "fps": 8,
       "tier": "T1",
       "animations": {
@@ -5908,12 +6021,13 @@
           "row": 3,
           "frames": 4
         }
-      }
+      },
+      "source": "gpt-image-2 redraw at the villagers' 48px scale (Rotha, Roy, Kid Acrees as style guide; the job's battle idle frame as identity) -- tools/gen_npc_artist_walker.py --player, struktured 2026-10-30 'our own characters are too small relative to npcs'. Pairs with OverworldPlayer.SPRITE_SIZE 48. T1: artist veto applies."
     },
     "necromancer": {
       "path": "res://assets/sprites/jobs/necromancer/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "fps": 8,
       "tier": "T1",
       "animations": {
@@ -5933,12 +6047,13 @@
           "row": 3,
           "frames": 4
         }
-      }
+      },
+      "source": "gpt-image-2 redraw at the villagers' 48px scale (Rotha, Roy, Kid Acrees as style guide; the job's battle idle frame as identity) -- tools/gen_npc_artist_walker.py --player, struktured 2026-10-30 'our own characters are too small relative to npcs'. Pairs with OverworldPlayer.SPRITE_SIZE 48. T1: artist veto applies."
     },
     "ninja": {
       "path": "res://assets/sprites/jobs/ninja/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "fps": 8,
       "tier": "T1",
       "animations": {
@@ -5958,12 +6073,13 @@
           "row": 3,
           "frames": 4
         }
-      }
+      },
+      "source": "gpt-image-2 redraw at the villagers' 48px scale (Rotha, Roy, Kid Acrees as style guide; the job's battle idle frame as identity) -- tools/gen_npc_artist_walker.py --player, struktured 2026-10-30 'our own characters are too small relative to npcs'. Pairs with OverworldPlayer.SPRITE_SIZE 48. T1: artist veto applies."
     },
     "scriptweaver": {
       "path": "res://assets/sprites/jobs/scriptweaver/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "fps": 8,
       "tier": "T1",
       "animations": {
@@ -5983,12 +6099,13 @@
           "row": 3,
           "frames": 4
         }
-      }
+      },
+      "source": "gpt-image-2 redraw at the villagers' 48px scale (Rotha, Roy, Kid Acrees as style guide; the job's battle idle frame as identity) -- tools/gen_npc_artist_walker.py --player, struktured 2026-10-30 'our own characters are too small relative to npcs'. Pairs with OverworldPlayer.SPRITE_SIZE 48. T1: artist veto applies."
     },
     "skiptrotter": {
       "path": "res://assets/sprites/jobs/skiptrotter/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "fps": 8,
       "tier": "T1",
       "animations": {
@@ -6008,12 +6125,13 @@
           "row": 3,
           "frames": 4
         }
-      }
+      },
+      "source": "gpt-image-2 redraw at the villagers' 48px scale (Rotha, Roy, Kid Acrees as style guide; the job's battle idle frame as identity) -- tools/gen_npc_artist_walker.py --player, struktured 2026-10-30 'our own characters are too small relative to npcs'. Pairs with OverworldPlayer.SPRITE_SIZE 48. T1: artist veto applies."
     },
     "speculator": {
       "path": "res://assets/sprites/jobs/speculator/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "fps": 8,
       "tier": "T1",
       "animations": {
@@ -6033,12 +6151,13 @@
           "row": 3,
           "frames": 4
         }
-      }
+      },
+      "source": "gpt-image-2 redraw at the villagers' 48px scale (Rotha, Roy, Kid Acrees as style guide; the job's battle idle frame as identity) -- tools/gen_npc_artist_walker.py --player, struktured 2026-10-30 'our own characters are too small relative to npcs'. Pairs with OverworldPlayer.SPRITE_SIZE 48. T1: artist veto applies."
     },
     "summoner": {
       "path": "res://assets/sprites/jobs/summoner/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "fps": 8,
       "tier": "T1",
       "animations": {
@@ -6058,12 +6177,13 @@
           "row": 3,
           "frames": 4
         }
-      }
+      },
+      "source": "gpt-image-2 redraw at the villagers' 48px scale (Rotha, Roy, Kid Acrees as style guide; the job's battle idle frame as identity) -- tools/gen_npc_artist_walker.py --player, struktured 2026-10-30 'our own characters are too small relative to npcs'. Pairs with OverworldPlayer.SPRITE_SIZE 48. T1: artist veto applies."
     },
     "time_mage": {
       "path": "res://assets/sprites/jobs/time_mage/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "fps": 8,
       "tier": "T1",
       "animations": {
@@ -6083,7 +6203,8 @@
           "row": 3,
           "frames": 4
         }
-      }
+      },
+      "source": "gpt-image-2 redraw at the villagers' 48px scale (Rotha, Roy, Kid Acrees as style guide; the job's battle idle frame as identity) -- tools/gen_npc_artist_walker.py --player, struktured 2026-10-30 'our own characters are too small relative to npcs'. Pairs with OverworldPlayer.SPRITE_SIZE 48. T1: artist veto applies."
     }
   },
   "battle_effects": {

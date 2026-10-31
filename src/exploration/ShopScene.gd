@@ -29,8 +29,8 @@ const KEEPER_PORTRAIT_PATHS: Dictionary = {
 }
 ## Who each of those portraits PICTURES, the dialogue key their own NPC speaks with, and the walk sheet that looks like them ("" = none does).
 const PICTURED_KEEPERS: Dictionary = {
-	ShopType.ITEM:        ["Willow", "keeper_willow", ""],
-	ShopType.BLACK_MAGIC: ["Mortimer", "keeper_mortimer", ""],
+	ShopType.ITEM:        ["Willow", "keeper_willow", "keeper_willow"],
+	ShopType.BLACK_MAGIC: ["Mortimer", "keeper_mortimer", "keeper_mortimer"],
 	ShopType.WHITE_MAGIC: ["Sister Lenora", "keeper_lenora", "priestess"],
 	ShopType.BLACKSMITH:  ["Brutus", "keeper_brutus", "blacksmith"],
 }
