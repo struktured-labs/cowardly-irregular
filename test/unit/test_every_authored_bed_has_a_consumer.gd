@@ -75,6 +75,9 @@ const KNOWN_UNREACHED := {
 	"ambient_industrial": "same decision",
 	"ambient_ocean": "same decision",
 	"ambient_steampunk": "same decision",
+	"suno_market_morning": "was ambient_village until 2026-10-30: a Suno SONG (pitch clarity 7.68) layered under every W1 village bed; struktured dropped the layer and kept the track — Jukebox row, possible non-layered cue",
+	"suno_whispering_canopy": "was ambient_forest until 2026-10-30: same finding (7.69) under the forest/swamp overworld bed; Jukebox row only",
+	"suno_dripping_stone": "was ambient_cave until 2026-10-30: same finding (7.49, though its prompt said 'No melody') under the ice zone; Jukebox row only",
 	"cutscene_alt_breaker_speed": "briefed in tools/music_prompts.json shared_tracks (\"Whoever Moves First\"); its scene is the alt_the_breaker novella, which has no cutscene JSON",
 	"cutscene_alt_witness_lament": "briefed (\"For the Guardian Who Did Not Choose the Gate\"); same novella, no scene authored",
 	"cutscene_w5_deprecated_goblin": "briefed (\"The Loop Completed\"); no W5 scene cues it",
@@ -1080,7 +1083,7 @@ func _peer_pins() -> Array[String]:
 	assert_gt(src.length(), 2000,
 		"SCOPE control: %s read back %d chars — if it was renamed or retired, this agreement arm is measuring nothing and must be re-pointed, not deleted" % [PEER_GUARD, src.length()])
 	var out: Array[String] = []
-	for name in ["KNOWN_UNREACHABLE_CUTSCENE_TRACKS", "KNOWN_UNREACHABLE_AMBIENT_TRACKS"]:
+	for name in ["KNOWN_UNREACHABLE_CUTSCENE_TRACKS", "KNOWN_UNREACHABLE_AMBIENT_TRACKS", "KNOWN_UNREACHABLE_FORMER_AMBIENT_TRACKS"]:
 		var at: int = src.find(name)
 		assert_gt(at, 0, "SCOPE control: %s no longer declares %s" % [PEER_GUARD, name])
 		if at < 0:
