@@ -25,7 +25,7 @@
     "body_sha256": "9a00cfc4a863d4dafb8c88d0d5ca45f9db438e762ba8bb9a3829e1d264dd3a53",
     "verdict": "match",
     "reason": "All broad traits match: adult male with long brown hair, beard, and brown apron.",
-    "who": "Borin Ashhand @ BlacksmithInterior.gd, Blacksmith Magda @ IronhavenVillage.gd"
+    "who": "Borin Ashhand @ BlacksmithInterior.gd, Blacksmith Magda @ IronhavenVillage.gd, Ore Hauler Dunn @ IronhavenVillage.gd"
   },
   "bram|bram": {
     "face_sha256": "748b26ca8df3187a07abb60b419fbf4f214114c35c031c2fd448ec984358c56a",
@@ -39,7 +39,7 @@
     "body_sha256": "fe03352f338045e55d13af20aae5c43556bed748982769db5e9107e764f99003",
     "verdict": "match",
     "reason": "All broad traits (sex, age, hair, outfit) match.",
-    "who": "Tomm @ BlacksmithInterior.gd, Casper @ EnrichmentAnnexInterior.gd, Priya @ EnrichmentAnnexInterior.gd, Dev @ EnrichmentAnnexInterior.gd, Ashley @ EnrichmentAnnexInterior.gd, Kenji @ EnrichmentAnnexInterior.gd, Sam @ EnrichmentAnnexInterior.gd, Kid, Asleep @ MapleCommunityCenterInterior.gd, Pip @ ShopInterior.gd, Child Lumi @ FrostholdVillage.gd, Creepy Child Wednesday @ GrimhollowVillage.gd, Young Pip @ HarmoniaVillage.gd, Factory Kid Pell @ RivetRowVillage.gd, Pip @ ShopInterior.gd [Willow], Ada @ ShopInterior.gd [Sister Lenora]"
+    "who": "Tomm @ BlacksmithInterior.gd, Casper @ EnrichmentAnnexInterior.gd, Priya @ EnrichmentAnnexInterior.gd, Dev @ EnrichmentAnnexInterior.gd, Ashley @ EnrichmentAnnexInterior.gd, Kenji @ EnrichmentAnnexInterior.gd, Sam @ EnrichmentAnnexInterior.gd, Kid, Asleep @ MapleCommunityCenterInterior.gd, Pip @ ShopInterior.gd, Child Lumi @ FrostholdVillage.gd, Creepy Child Wednesday @ GrimhollowVillage.gd, Young Pip @ HarmoniaVillage.gd, Factory Kid Pell @ RivetRowVillage.gd, Pip @ ShopInterior.gd [Willow], Ada @ ShopInterior.gd [Sister Lenora], Moss Kid Tilly @ EldertreeVillage.gd, Wisp the Boy @ GrimhollowVillage.gd, Soot-Faced Pip @ IronhavenVillage.gd, Paper Route Kenny @ MapleHeightsVillage.gd, Lunch-Pail Tess @ RivetRowVillage.gd"
   },
   "dancer|procedural:dancer": {
     "face_sha256": "b55e012742a40cf53c9fc72005f781413f1cc7143ba7359a2bf7788b4c21bd2b",
@@ -74,7 +74,7 @@
     "body_sha256": "e8dd6d6687e4f55f82e1c804039b58d31f670906683b2cd1d32aa90b29fa750c",
     "verdict": "match",
     "reason": "Hat, facial hair, and general outfit/role all match.",
-    "who": "Farmer Aldwick @ HarmoniaVillage.gd"
+    "who": "Farmer Aldwick @ HarmoniaVillage.gd, Ice-Cutter Sven @ FrostholdVillage.gd, Lawn Guy Randy @ MapleHeightsVillage.gd"
   },
   "ghost|ghost": {
     "face_sha256": "5bfb0235cceecf024bd0ba1ccfa844fb0b2b2c57e1b30184e518f32a70d40feb",
@@ -83,12 +83,19 @@
     "reason": "Bald adult male with mustache and apron in both images.",
     "who": "Ghost Barkeep Claude @ GrimhollowVillage.gd"
   },
+  "granny_kaya|granny_kaya": {
+    "face_sha256": "db22fe4191fd4cc20aabebf8c2eb70294e6f2dfffa51aba2711e00d4f5ca6955",
+    "body_sha256": "039dce16cbe1ddf696d6afe92619348ac0fd22fb934d5a35ed6f488aecbdec39",
+    "verdict": "match",
+    "reason": "All major traits\u2014hair style and color, outfit, and accessories\u2014match.",
+    "who": "Granny Kaya @ HarmoniaVillage.gd"
+  },
   "guard|guard": {
     "face_sha256": "e297fbc1a0d5ad8180264fc139c9fec3eeb437cd6256c48790bf778a9f794c32",
     "body_sha256": "ece38b6bdf0a244bf587b66c82a2726d96ae1150b0989c8f34146b229e45e886",
     "verdict": "match",
     "reason": "Both are adult males with no facial hair, similar helmet, and matching blue outfit.",
-    "who": "Compliance Officer @ EnrichmentAnnexInterior.gd, Warden Trygg @ FrostholdWardenHutInterior.gd, Drogal the Watcher @ IronhavenWatchtowerInterior.gd, Clem the Lamplighter @ BrasstonVillage.gd, Ranger Ivy @ EldertreeVillage.gd, Guard Ingrid @ FrostholdVillage.gd, Guard Boris @ HarmoniaVillage.gd, War Veteran Koss @ IronhavenVillage.gd, Carriers Reg @ MapleHeightsVillage.gd, Crossing Guard @ MapleHeightsVillage.gd, ADMIN-01 @ NodePrimeVillage.gd, FIREWALL-ALPHA @ NodePrimeVillage.gd, Shift Foreman Grix @ RivetRowVillage.gd, Plaza Warden @ ScripturaPlaza.gd"
+    "who": "Compliance Officer @ EnrichmentAnnexInterior.gd, Warden Trygg @ FrostholdWardenHutInterior.gd, Drogal the Watcher @ IronhavenWatchtowerInterior.gd, Clem the Lamplighter @ BrasstonVillage.gd, Ranger Ivy @ EldertreeVillage.gd, Guard Ingrid @ FrostholdVillage.gd, Guard Boris @ HarmoniaVillage.gd, War Veteran Koss @ IronhavenVillage.gd, Carriers Reg @ MapleHeightsVillage.gd, Crossing Guard @ MapleHeightsVillage.gd, ADMIN-01 @ NodePrimeVillage.gd, FIREWALL-ALPHA @ NodePrimeVillage.gd, Shift Foreman Grix @ RivetRowVillage.gd, Plaza Warden @ ScripturaPlaza.gd, Patroller Sven @ HarmoniaVillage.gd, CRON_JOB_04 @ NodePrimeVillage.gd"
   },
   "herbalist|priestess": {
     "face_sha256": "4687925b21e96dbcbd63940d075e75c266065fae421d0ffe14ddd6577e733542",
@@ -139,6 +146,13 @@
     "reason": "All major traits\u2014hair color and style, outfit, and apparent age/sex\u2014are consistent.",
     "who": "Willow @ ShopInterior.gd [Willow]"
   },
+  "kid_acrees|kid_acrees": {
+    "face_sha256": "8c8da36a0976231c151484d95fc53c4731e386d63e4fa84fafc44ac33effb9ea",
+    "body_sha256": "5f35ae93343cdb73e8df68ac8b62dfae2d3e417342698dc16ca513685bb907e4",
+    "verdict": "match",
+    "reason": "All broad traits\u2014hair color/style, age, sex, and outfit\u2014are consistent.",
+    "who": "Kid Acrees @ HarmoniaVillage.gd"
+  },
   "knight|soldier": {
     "face_sha256": "79fab67b4e5e88e91282c0fd112006c05ee1d36395e76afbbacce9e9910c4f42",
     "body_sha256": "123d66c888790759a0076ef04c77a32bad3495fba163daf53d610b9b495ed67b",
@@ -158,14 +172,14 @@
     "body_sha256": "dff2132baffc6c87c8a4b1939c9b94ab4e29ed2e60da794b3235265caeec231e",
     "verdict": "match",
     "reason": "All broad traits including mustache, hair, and outfit color match.",
-    "who": "Dorian @ InnInterior.gd, Front Desk Clerk @ MapleCommunityCenterInterior.gd, Crusher Pete @ MapleHeightsArcadeInterior.gd, Senga the Glassblower @ SandriftGlassmakerInterior.gd, Aldrin @ ScripturaBookshopInterior.gd, Shopkeeper @ ShopInterior.gd, Merchant Thorn @ EldertreeVillage.gd, Merchant Helga @ FrostholdVillage.gd, Undead Shopkeeper Mort @ GrimhollowVillage.gd, Candle Shop Owner @ MapleStripMall.gd, Armory Owner @ MapleStripMall.gd"
+    "who": "Dorian @ InnInterior.gd, Front Desk Clerk @ MapleCommunityCenterInterior.gd, Crusher Pete @ MapleHeightsArcadeInterior.gd, Senga the Glassblower @ SandriftGlassmakerInterior.gd, Aldrin @ ScripturaBookshopInterior.gd, Shopkeeper @ ShopInterior.gd, Merchant Thorn @ EldertreeVillage.gd, Merchant Helga @ FrostholdVillage.gd, Undead Shopkeeper Mort @ GrimhollowVillage.gd, Candle Shop Owner @ MapleStripMall.gd, Armory Owner @ MapleStripMall.gd, Steam Hawker Bellamy @ BrasstonVillage.gd, Wandering Merchant @ HarmoniaVillage.gd, Camel Haggler Omid @ SandriftVillage.gd"
   },
   "monk|monk": {
     "face_sha256": "4e8df938afb071b1cc5cbaff2f82539324074227ffbd5f896308ebdcec99d0de",
     "body_sha256": "108a7f4cdf4fba3d23445a0cd233ff9e595cd49d61ae55aa15753a234a50875f",
     "verdict": "match",
     "reason": "Bald, young, no facial hair, same orange robe.",
-    "who": "Speedrun Monk Dash @ EldertreeVillage.gd"
+    "who": "Speedrun Monk Dash @ EldertreeVillage.gd, GARBAGE.COLLECTOR @ NodePrimeVillage.gd"
   },
   "mysterious|mysterious": {
     "face_sha256": "e1d98448f5d6f5acea75cdf07312a494568d853781c799600fd80c50b6e451b8",
@@ -181,19 +195,26 @@
     "reason": "Different hair length and color, and different outfits. [differs: sex, hair, outfit]",
     "who": "Vex @ ShopInterior.gd [Mortimer]"
   },
+  "noblewoman|noblewoman": {
+    "face_sha256": "a9b7f1b7f14c26a7cdb8a53368f1a64f8e7069588d5fd96d932db720ed4ab0d2",
+    "body_sha256": "fdbe4389be59168f4dc815b07099eb2cdcc87f6dc99d37cf61c95f638f2e67a0",
+    "verdict": "match",
+    "reason": "All broad traits match: adult female, dark updo hair, no facial hair, long dress.",
+    "who": "Power-Walker Deb @ MapleHeightsVillage.gd, Courteous Citizen Elsa @ ScripturaPlaza.gd"
+  },
   "old_man|old_man": {
     "face_sha256": "ed6483c449f4af3b636e1aaea7908cb207af09d07bc3510da3ec70e672576ea4",
     "body_sha256": "95c6890f2d3c1187f23d594ed6734b7eb307c1ce053578d5380d5aacce15b751",
     "verdict": "match",
     "reason": "Both are elderly bald men with white beards and similar clothing.",
-    "who": "Old Regular @ ScripturaBookshopInterior.gd, Elder Vesper @ EldertreeVillage.gd, Old Man Bj\u00f6rn @ FrostholdVillage.gd, Clockkeeper Yara @ FrostholdVillage.gd, Greta the Grey @ HarmoniaVillage.gd, Data Archivist @ NodePrimeVillage.gd, Retired Hero Gramps @ SandriftVillage.gd, Sand Sage Mirage @ SandriftVillage.gd, The Keeper @ VertexVillage.gd"
+    "who": "Old Regular @ ScripturaBookshopInterior.gd, Elder Vesper @ EldertreeVillage.gd, Old Man Bj\u00f6rn @ FrostholdVillage.gd, Clockkeeper Yara @ FrostholdVillage.gd, Greta the Grey @ HarmoniaVillage.gd, Data Archivist @ NodePrimeVillage.gd, Retired Hero Gramps @ SandriftVillage.gd, Sand Sage Mirage @ SandriftVillage.gd, The Keeper @ VertexVillage.gd, Old Sap-Tapper Bryn @ EldertreeVillage.gd, Pensioner Olaf @ FrostholdVillage.gd, Veteran Smelter Gorr @ IronhavenVillage.gd, Rivet Counter Hobb @ RivetRowVillage.gd"
   },
   "old_woman|old_woman": {
     "face_sha256": "cbf344a73aacb6ffa16c69c85087b2f29cbd140b2d624859b7e449240c701b52",
     "body_sha256": "acf9f3b281230d9a0f3017fd1691609373794071f652417789bbbfd991035451",
     "verdict": "match",
     "reason": "Both depict an elderly woman with gray hair in a bun and similar clothing.",
-    "who": "Brigadier Flux @ BrasstonVillage.gd, Elder Moss @ EldertreeVillage.gd, Madame Hex @ GrimhollowVillage.gd, Swamp Witch Murk @ GrimhollowVillage.gd, Temple Keeper Sella @ IronhavenVillage.gd, Ms. Finch @ MapleHeightsVillage.gd, Mrs. Pemberton @ MapleHeightsVillage.gd, Retired Surveyor @ MapleHeightsVillage.gd"
+    "who": "Brigadier Flux @ BrasstonVillage.gd, Elder Moss @ EldertreeVillage.gd, Madame Hex @ GrimhollowVillage.gd, Swamp Witch Murk @ GrimhollowVillage.gd, Temple Keeper Sella @ IronhavenVillage.gd, Ms. Finch @ MapleHeightsVillage.gd, Mrs. Pemberton @ MapleHeightsVillage.gd, Retired Surveyor @ MapleHeightsVillage.gd, Clockwinder Edda @ BrasstonVillage.gd, Lamplighter Nell @ GrimhollowVillage.gd, Mall Walker Gloria @ MapleStripMall.gd"
   },
   "phil|phil": {
     "face_sha256": "4d7c5aef6ddc95a8c1ec2516f9d701701f6bb8374fc5feebf56e345f1aca81a3",
@@ -209,6 +230,20 @@
     "reason": "Portrait has visible facial hair, sprite does not. [differs: facial_hair]",
     "who": "Pilgrim Lael @ ShopInterior.gd [Sister Lenora]"
   },
+  "rotha|rotha": {
+    "face_sha256": "236b49d618eae965fa06a358d1c4869474e747e0badbcc57dd494074264fe253",
+    "body_sha256": "12b814e7474ebebde799b35fbd7736e38b14147252681dd68eb5e02dae9ec894",
+    "verdict": "match",
+    "reason": "All major traits\u2014hair color and style, apparent sex, age, and outfit\u2014are consistent.",
+    "who": "Rotha @ HarmoniaVillage.gd"
+  },
+  "roy|roy": {
+    "face_sha256": "77c615d3e7b73e04e420a243c3ff5d727cdebe2e2088d709430e360e0fa21653",
+    "body_sha256": "02225f96e4578c837e47672e23fcecd148fe28e37c757e002b557af76b20726b",
+    "verdict": "match",
+    "reason": "All broad traits\u2014sex, age, hair, and outfit\u2014are consistent between portrait and sprite.",
+    "who": "Roy @ HarmoniaVillage.gd"
+  },
   "scholar_milo|scholar_milo": {
     "face_sha256": "04dba0bc6fafd8e42a7ab659760b39a76b423bcfaace6b74f4f391713299a1b2",
     "body_sha256": "b0812e461b7d064e036f63695f49175317f3108eef6ecfb1ec8a13fa4934eb77",
@@ -221,7 +256,7 @@
     "body_sha256": "5e606fbed2046328920ba954108cc645743f4bf6de9337ed87b960909d880161",
     "verdict": "match",
     "reason": "All broad traits\u2014elderly male, gray hair, glasses, brown robe\u2014are consistent.",
-    "who": "Magister Clavis @ BrasstonClockworkLoftInterior.gd, The Spare Archivist @ BrasstonRedundancyArchiveInterior.gd, Shelf 7 @ BrasstonRedundancyArchiveInterior.gd, Greenleaf @ EldertreeHollowTreeInterior.gd, Old Mire @ GrimhollowWitchHutInterior.gd, Wendel Inkhand @ HarmoniaCartographerInterior.gd, The Living Map @ HarmoniaCartographerInterior.gd, Sister Concord @ HarmoniaChapelInterior.gd, Cantor Vell @ HarmoniaLibraryInterior.gd, Yorick Pell @ HarmoniaLibraryInterior.gd, Dr. Absalom Reeve @ HarmoniaLibraryInterior.gd, Scholar Fen @ InnInterior.gd, Registrar Hessa @ IronhavenStrikeRegistryInterior.gd, The Ledger @ IronhavenStrikeRegistryInterior.gd, Prefetch @ NodePrimeCacheInterior.gd, The Cache Register @ NodePrimeCacheInterior.gd, SUDO-1 @ NodePrimeDaemonLoungeInterior.gd, Steward Vetch @ RivetRowUnionHallInterior.gd, Recorder Amara @ SandriftRainLedgerInterior.gd, The Rain Ledger @ SandriftRainLedgerInterior.gd, Scholar-Adept Quill @ ScripturaGuildInterior.gd, Scribe Narrow @ ScripturaGuildInterior.gd, The Witness @ VertexThresholdInterior.gd, Scholar Fynn @ FrostholdVillage.gd, Records Clerk @ ScripturaPlaza.gd"
+    "who": "Magister Clavis @ BrasstonClockworkLoftInterior.gd, The Spare Archivist @ BrasstonRedundancyArchiveInterior.gd, Shelf 7 @ BrasstonRedundancyArchiveInterior.gd, Greenleaf @ EldertreeHollowTreeInterior.gd, Old Mire @ GrimhollowWitchHutInterior.gd, Wendel Inkhand @ HarmoniaCartographerInterior.gd, The Living Map @ HarmoniaCartographerInterior.gd, Sister Concord @ HarmoniaChapelInterior.gd, Cantor Vell @ HarmoniaLibraryInterior.gd, Yorick Pell @ HarmoniaLibraryInterior.gd, Dr. Absalom Reeve @ HarmoniaLibraryInterior.gd, Scholar Fen @ InnInterior.gd, Registrar Hessa @ IronhavenStrikeRegistryInterior.gd, The Ledger @ IronhavenStrikeRegistryInterior.gd, Prefetch @ NodePrimeCacheInterior.gd, The Cache Register @ NodePrimeCacheInterior.gd, SUDO-1 @ NodePrimeDaemonLoungeInterior.gd, Steward Vetch @ RivetRowUnionHallInterior.gd, Recorder Amara @ SandriftRainLedgerInterior.gd, The Rain Ledger @ SandriftRainLedgerInterior.gd, Scholar-Adept Quill @ ScripturaGuildInterior.gd, Scribe Narrow @ ScripturaGuildInterior.gd, The Witness @ VertexThresholdInterior.gd, Scholar Fynn @ FrostholdVillage.gd, Records Clerk @ ScripturaPlaza.gd, Apprentice Vex @ HarmoniaVillage.gd"
   },
   "soldier|soldier": {
     "face_sha256": "ab9dd161923d37879116854cad80d700003457ac0657d40119627eed18bfb719",
@@ -235,20 +270,20 @@
     "body_sha256": "050663fe191200ffe0ab0e7088545cbe3f0b2772a9c9d2e081f4380b8514ca64",
     "verdict": "match",
     "reason": "Both wear brown hooded/cloaked outfits and match in apparent age and sex.",
-    "who": "Melody @ TavernInterior.gd, Knuckles @ TavernInterior.gd, Madame Orrery @ BrasstonVillage.gd, Rowan @ HarmoniaVillage.gd, Madame Orrery @ MapleStripMall.gd, Madame Orrery @ RivetRowVillage.gd, Caravan Master Kes @ SandriftVillage.gd"
+    "who": "Melody @ TavernInterior.gd, Knuckles @ TavernInterior.gd, Madame Orrery @ BrasstonVillage.gd, Rowan @ HarmoniaVillage.gd, Madame Orrery @ MapleStripMall.gd, Madame Orrery @ RivetRowVillage.gd, Caravan Master Kes @ SandriftVillage.gd, PACKET-LOSS @ NodePrimeVillage.gd, Dune Pilgrim Sefa @ SandriftVillage.gd"
   },
   "young_man|young_man": {
     "face_sha256": "428c27814e7be17533b0e93b7dd3f1b0360899b4795d1a1c5cbae0b8aba03f8b",
     "body_sha256": "93315752990f7156aa93d59f4281aa0375c63e7bf7968382b7442f33a6377811",
     "verdict": "mismatch",
     "reason": "The sprite has a mustache, but the portrait is clean-shaven. [differs: facial_hair]",
-    "who": "Half-Grown Figure @ EldertreeGraftingHouseInterior.gd, Keeper Yrsa @ FrostholdMeltwaterClockInterior.gd, Clerk Wick @ GrimhollowLanternDebtInterior.gd, The Debt Book @ GrimhollowLanternDebtInterior.gd, Pip @ HarmoniaLibraryInterior.gd, Gerald @ MapleCommunityCenterInterior.gd, Doreen @ MapleGarageSaleInterior.gd, Safety Marshal Greve @ RivetRowIncidentBoardInterior.gd, The Incident Board @ RivetRowIncidentBoardInterior.gd, Nervous Student @ ScripturaBookshopInterior.gd, Old Mack @ TavernInterior.gd, Martha @ TavernInterior.gd, Sprocket @ BrasstonVillage.gd, Clock Repairman @ BrasstonVillage.gd, Gravedigger Earl @ GrimhollowVillage.gd, Miner Trude @ GrimhollowVillage.gd, Cluck Norris @ HarmoniaVillage.gd, ??? @ HarmoniaVillage.gd, Dr. Cog @ IronhavenVillage.gd, Miner Pete @ IronhavenVillage.gd, Barkeep Ember @ IronhavenVillage.gd, Neighborhood Dad @ MapleHeightsVillage.gd, Doug & Pretzel @ MapleHeightsVillage.gd, Gerald @ MapleHeightsVillage.gd, Basement Developer @ MapleHeightsVillage.gd, Yogurt Shop Owner @ MapleStripMall.gd, DEBUG-7 @ NodePrimeVillage.gd, Union Rep Voss @ RivetRowVillage.gd, Script Dealer Shifty @ SandriftVillage.gd, Caravan Leader Dune @ SandriftVillage.gd"
+    "who": "Half-Grown Figure @ EldertreeGraftingHouseInterior.gd, Keeper Yrsa @ FrostholdMeltwaterClockInterior.gd, Clerk Wick @ GrimhollowLanternDebtInterior.gd, The Debt Book @ GrimhollowLanternDebtInterior.gd, Pip @ HarmoniaLibraryInterior.gd, Gerald @ MapleCommunityCenterInterior.gd, Doreen @ MapleGarageSaleInterior.gd, Safety Marshal Greve @ RivetRowIncidentBoardInterior.gd, The Incident Board @ RivetRowIncidentBoardInterior.gd, Nervous Student @ ScripturaBookshopInterior.gd, Old Mack @ TavernInterior.gd, Martha @ TavernInterior.gd, Sprocket @ BrasstonVillage.gd, Clock Repairman @ BrasstonVillage.gd, Gravedigger Earl @ GrimhollowVillage.gd, Miner Trude @ GrimhollowVillage.gd, Cluck Norris @ HarmoniaVillage.gd, ??? @ HarmoniaVillage.gd, Dr. Cog @ IronhavenVillage.gd, Miner Pete @ IronhavenVillage.gd, Barkeep Ember @ IronhavenVillage.gd, Neighborhood Dad @ MapleHeightsVillage.gd, Doug & Pretzel @ MapleHeightsVillage.gd, Gerald @ MapleHeightsVillage.gd, Basement Developer @ MapleHeightsVillage.gd, Yogurt Shop Owner @ MapleStripMall.gd, DEBUG-7 @ NodePrimeVillage.gd, Union Rep Voss @ RivetRowVillage.gd, Script Dealer Shifty @ SandriftVillage.gd, Caravan Leader Dune @ SandriftVillage.gd, Gear Courier Tibbs @ BrasstonVillage.gd, Mourner-for-Hire Bastien @ GrimhollowVillage.gd, Bored Teen Dex @ MapleStripMall.gd, Notary's Runner Pim @ ScripturaPlaza.gd"
   },
   "young_woman|young_woman": {
     "face_sha256": "09572333429d438e4d4f6f12de016c18c4d732a2fcf2d807f41ea7e44cb97463",
     "body_sha256": "4f3490b316e625014984b2e377c5a11c92e0649089507e9178ebe68f88815662",
     "verdict": "match",
     "reason": "All broad traits including hair color, style, and outfit match.",
-    "who": "Feen @ BlacksmithInterior.gd, Marrow Root @ EldertreeGraftingHouseInterior.gd, The Meltwater Clock @ FrostholdMeltwaterClockInterior.gd, Elowen Dray @ HarmoniaChapelInterior.gd, Bram Coll @ HarmoniaChapelInterior.gd, Wren @ HarmoniaChapelInterior.gd, Denise @ MapleCommunityCenterInterior.gd, The Appraiser @ MapleGarageSaleInterior.gd, Apprentice Fenwick @ ScripturaGuildInterior.gd, Barfton @ TavernInterior.gd, Dewey @ TavernInterior.gd, Cogsworth @ BrasstonVillage.gd, Mushroom Collector Spore @ EldertreeVillage.gd, Hermit Kael @ FrostholdVillage.gd, Zzz... @ HarmoniaVillage.gd, Flora @ HarmoniaVillage.gd, Apprentice Bolt @ IronhavenVillage.gd, Mysterious Stranger @ IronhavenVillage.gd, Tyler on Bike @ MapleHeightsVillage.gd, Surplus Ray @ MapleHeightsVillage.gd, Surplus Teen @ MapleStripMall.gd, TOURIST.EXE @ NodePrimeVillage.gd, Canteen Cook Murl @ RivetRowVillage.gd, Dorrit @ RivetRowVillage.gd, Graffiti Wall @ RivetRowVillage.gd, Conspiracy Theorist Rex @ SandriftVillage.gd, Young Adventurer Kit @ SandriftVillage.gd, Capital Citizen @ ScripturaPlaza.gd, Capital Citizen @ ScripturaPlaza.gd, Capital Citizen @ ScripturaPlaza.gd, Capital Citizen @ ScripturaPlaza.gd, The Echo @ VertexVillage.gd, The Absence @ VertexVillage.gd"
+    "who": "Feen @ BlacksmithInterior.gd, Marrow Root @ EldertreeGraftingHouseInterior.gd, The Meltwater Clock @ FrostholdMeltwaterClockInterior.gd, Elowen Dray @ HarmoniaChapelInterior.gd, Bram Coll @ HarmoniaChapelInterior.gd, Wren @ HarmoniaChapelInterior.gd, Denise @ MapleCommunityCenterInterior.gd, The Appraiser @ MapleGarageSaleInterior.gd, Apprentice Fenwick @ ScripturaGuildInterior.gd, Barfton @ TavernInterior.gd, Dewey @ TavernInterior.gd, Cogsworth @ BrasstonVillage.gd, Mushroom Collector Spore @ EldertreeVillage.gd, Hermit Kael @ FrostholdVillage.gd, Zzz... @ HarmoniaVillage.gd, Flora @ HarmoniaVillage.gd, Apprentice Bolt @ IronhavenVillage.gd, Mysterious Stranger @ IronhavenVillage.gd, Tyler on Bike @ MapleHeightsVillage.gd, Surplus Ray @ MapleHeightsVillage.gd, Surplus Teen @ MapleStripMall.gd, TOURIST.EXE @ NodePrimeVillage.gd, Canteen Cook Murl @ RivetRowVillage.gd, Dorrit @ RivetRowVillage.gd, Graffiti Wall @ RivetRowVillage.gd, Conspiracy Theorist Rex @ SandriftVillage.gd, Young Adventurer Kit @ SandriftVillage.gd, Capital Citizen @ ScripturaPlaza.gd, The Echo @ VertexVillage.gd, The Absence @ VertexVillage.gd, Acorn Courier Fen @ EldertreeVillage.gd, Lantern Girl Saga @ FrostholdVillage.gd, Shift Whistle Marla @ IronhavenVillage.gd, Night-Shift Ola @ RivetRowVillage.gd, Water Carrier Asha @ SandriftVillage.gd"
   }
 }
