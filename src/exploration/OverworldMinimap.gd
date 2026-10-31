@@ -6,6 +6,11 @@ class_name OverworldMinimap
 ## Helps with navigation on Mode 7 view where landmarks are hard to see.
 
 const MAP_SIZE: float = 120.0  # Minimap display size in pixels
+
+## Where the minimap panel sits on the 1280x720 logical screen (top-right corner). The ONE source: the day
+## clock is placed off this rect, so the two can never overlap however either is resized.
+static func panel_rect() -> Rect2:
+	return Rect2(1280.0 - MAP_SIZE - 24.0, 16.0, MAP_SIZE + 8.0, MAP_SIZE + 8.0)
 ## Screen blocks other HUD must keep off (ObjectiveArrow): the map panel plus its legend.
 const HUD_GROUP := &"hud_reserved"
 var _legend_rect := Rect2()
@@ -88,7 +93,7 @@ func setup(parent: Node, player: Node2D, map_w: int, map_h: int, tile_size: int,
 	_bg = ColorRect.new()
 	_bg.color = Color(0.0, 0.0, 0.0, 0.4)
 	_bg.size = Vector2(MAP_SIZE + 8, MAP_SIZE + 8)
-	_bg.position = Vector2(1280 - MAP_SIZE - 24, 16)  # Top-right corner
+	_bg.position = panel_rect().position
 	_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_canvas.add_child(_bg)
 
