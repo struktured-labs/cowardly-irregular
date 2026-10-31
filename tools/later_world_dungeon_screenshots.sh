@@ -16,6 +16,8 @@ mkdir -p tmp/screens
 # breaks when XDG_DATA_HOME moves.
 _RENDER_FAILED=0
 _SHOT_XDG="$PWD/tmp/shot_xdg"; mkdir -p "$_SHOT_XDG"
+# A screenshot run reads a live pad like any game; hide host pads as run_tests.sh does (.746 smoke).
+SHOT_JAIL=(); if command -v bwrap > /dev/null && bwrap --dev-bind / / --tmpfs /dev/input true 2>/dev/null; then SHOT_JAIL=(bwrap --dev-bind / / --tmpfs /dev/input); fi
 
 render() {
   local script="$1" floor="$2" x="$3" y="$4"
@@ -25,7 +27,7 @@ render() {
   # Log first, read the log second, decide on the captured code.
   local log="tmp/screens/$(basename "$script" .gd)_${floor}.log"
   local ec=0
-  XDG_DATA_HOME="$_SHOT_XDG" xvfb-run -a godot --audio-driver Dummy --rendering-driver opengl3 --resolution 1280x720 \
+  XDG_DATA_HOME="$_SHOT_XDG" timeout 600 "${SHOT_JAIL[@]}" xvfb-run -a godot --audio-driver Dummy --rendering-driver opengl3 --resolution 1280x720 \
     -s tools/later_world_dungeon_screenshot.gd -- "--script=$script" "--floor=$floor" "--x=$x" "--y=$y" \
     > "$log" 2>&1 || ec=$?
   command grep -a -E "SCREEN|ERROR|shot-guard" "$log" || true
