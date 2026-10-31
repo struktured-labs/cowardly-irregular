@@ -97,9 +97,11 @@ func _ready() -> void:
 
 	if SoundManager:
 		SoundManager.play_area_music(_get_music_area_id())
-	var ambient_key := _get_ambient_key()
-	if ambient_key != "" and SoundManager and SoundManager.has_method("play_ambient"):
-		SoundManager.play_ambient(ambient_key)
+	## A village with a recipe in data/ambient_recipes.json gets the living soundscape instead of a single loop.
+	if not (SoundManager and SoundManager.has_method("start_soundscape") and SoundManager.start_soundscape(_get_area_id())):
+		var ambient_key := _get_ambient_key()
+		if ambient_key != "" and SoundManager and SoundManager.has_method("play_ambient"):
+			SoundManager.play_ambient(ambient_key)
 
 	# Tick 279: ratchet visited_<village> story_flag. Pre-fix the
 	# *Overworld scripts read visited_maple_heights / visited_brasston /
@@ -774,7 +776,9 @@ func set_player_appearance(leader) -> void:
 
 func _exit_tree() -> void:
 	# Stop the village loop so it does not leak into the next scene, the way BaseInterior does.
-	if _get_ambient_key() != "" and SoundManager and SoundManager.has_method("stop_ambient"):
+	if SoundManager and SoundManager.has_method("soundscape_place") and SoundManager.soundscape_place() == _get_area_id():
+		SoundManager.stop_soundscape(_get_area_id())
+	elif _get_ambient_key() != "" and SoundManager and SoundManager.has_method("stop_ambient"):
 		SoundManager.stop_ambient()
 
 
@@ -783,6 +787,9 @@ func _exit_tree() -> void:
 ## play_ambient with it, and villages had no ambient layer at all until 2026-09-16.
 ## Same hook the overworld carries: weather clearing must hand the layer back to the village.
 func restore_place_ambient() -> void:
+	if SoundManager and SoundManager.has_method("soundscape_place") and SoundManager.soundscape_place() == _get_area_id():
+		SoundManager.restore_soundscape_bed()
+		return
 	var key := _get_ambient_key()
 	if key != "" and SoundManager and SoundManager.has_method("play_ambient"):
 		SoundManager.play_ambient(key)

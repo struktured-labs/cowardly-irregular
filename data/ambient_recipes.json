@@ -1,0 +1,57 @@
+{
+  "version": 1,
+  "description": "Living soundscapes, read by AmbientSoundscape. A place plays one unpitched bed plus scheduled one-shots; every interval, level, pan and pitch is rolled, so it never plays back identically. vol_db is relative to the bed level (music slider + SoundManager.AMBIENT_OFFSET_DB). Phases are day and night; dawn reads day and dusk reads night unless a place names the band itself. PILOT 2026-10-31: built only from sounds already in the bank. `gaps` names what the place still needs and is not yet generated.",
+  "places": {
+    "harmonia_village": {
+      "phases": {
+        "day": {
+          "bed": "ambient_plains",
+          "events": [
+            {"keys": ["anvil_strike"], "every": [5.0, 13.0], "vol_db": [-10.0, -4.0], "pan": [-0.85, -0.45], "pitch": [0.94, 1.06]},
+            {"keys": ["chicken_cluck"], "every": [6.0, 15.0], "vol_db": [-14.0, -8.0], "pan": [0.2, 0.9], "pitch": [0.9, 1.12]},
+            {"keys": ["door_open"], "every": [20.0, 45.0], "vol_db": [-11.0, -5.0], "pan": [-0.7, 0.7], "pitch": [0.95, 1.05]},
+            {"keys": ["door_close"], "every": [22.0, 50.0], "vol_db": [-5.0, 0.0], "pan": [-0.7, 0.7], "pitch": [0.95, 1.05]}
+          ]
+        },
+        "night": {
+          "bed": "night_crickets_wind",
+          "events": [
+            {"keys": ["door_close"], "every": [40.0, 90.0], "vol_db": [-1.0, 2.0], "pan": [-0.8, 0.8], "pitch": [0.93, 1.0]}
+          ]
+        }
+      },
+      "gaps": [
+        "base_day: >=60s unpitched bed, open-air wind under a distant crowd murmur (bank beds are 5s and loop audibly)",
+        "base_night: >=60s crickets and light wind (bank bed is 12s)",
+        "cart_wheels: wooden cart rolling past on cobbles, 3 variants",
+        "laugh_distant: a short laugh across a square, 3 variants",
+        "chapel_bell_distant: one distant bell toll, 2 variants",
+        "dog_bark_distant: one or two barks, far off",
+        "night: lone_dog (single far bark), owl (one call)"
+      ]
+    },
+    "eldertree_village": {
+      "phases": {
+        "day": {
+          "bed": "ambient_forest",
+          "events": [
+            {"keys": ["door_open"], "every": [30.0, 60.0], "vol_db": [-12.0, -6.0], "pan": [-0.7, 0.7], "pitch": [0.95, 1.05]},
+            {"keys": ["door_close"], "every": [32.0, 65.0], "vol_db": [-6.0, -1.0], "pan": [-0.7, 0.7], "pitch": [0.95, 1.05]}
+          ]
+        },
+        "night": {
+          "bed": "night_crickets_wind",
+          "events": []
+        }
+      },
+      "gaps": [
+        "base_day: >=60s unpitched canopy bed, leaves and wind (bank bed is 5s with birdsong baked in, so the birds loop)",
+        "base_night: >=60s crickets and wind (bank bed is 12s)",
+        "birdsong one-shots: 3 species, short phrases, so birds stop looping with the bed",
+        "woodpecker: one short run of knocks",
+        "creek_trickle: a few seconds of water over stones",
+        "night: owl (one call), frogs (short chorus)"
+      ]
+    }
+  }
+}

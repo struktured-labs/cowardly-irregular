@@ -51,6 +51,7 @@ var _sub_player: AudioStreamPlayer  # Crit sub-layer only; separate so the thud 
 var _strike_player: AudioStreamPlayer  # dedicated voice: the elemental strike voice is authored to ride OVER the weapon hit, and replaced it on _battle_player (2026-09-16)
 var _flash_player: AudioStreamPlayer  # dedicated voice: the weakness stinger fires same-frame with the hit by design, so the hit always replaced it (2026-09-16)
 var _current_ambient_key: String = ""
+var _soundscape: AmbientSoundscape  # bed + scheduled one-shots for places with a recipe in data/ambient_recipes.json
 var _crossfade_tween: Tween = null
 ## The SAME tween when a fade-OUT owns it, so "is the bed on its way to silence" is derived from a live object rather than latched in a bool every kill() site would have to clear.
 var _fade_out_tween: Tween = null
@@ -706,6 +707,10 @@ func _setup_audio_players() -> void:
 	# player → MusicNight → MusicDuck → Master).
 	_ensure_music_duck_bus()
 	_ensure_music_night_bus()
+
+	_soundscape = AmbientSoundscape.new()
+	_soundscape.name = "AmbientSoundscape"
+	add_child(_soundscape)
 
 	_music_player = AudioStreamPlayer.new()
 	_music_player.name = "MusicPlayer"
@@ -1589,6 +1594,45 @@ func _on_ambient_finished() -> void:
 	"""Re-loop the ambient sound when it finishes."""
 	if _current_ambient_key != "":
 		_ambient_player.play()
+
+
+func has_soundscape(place_id: String) -> bool:
+	return AmbientSoundscape.has_place(place_id)
+
+
+## Starts a place's living soundscape at the current time of day; false when the place has no recipe.
+func start_soundscape(place_id: String) -> bool:
+	if _soundscape == null:
+		return false
+	var band := "day"
+	var gs = get_node_or_null("/root/GameState")
+	if gs != null:
+		band = gs.get_time_of_day_name()
+		if not gs.time_of_day_changed.is_connected(_on_time_of_day_changed):
+			gs.time_of_day_changed.connect(_on_time_of_day_changed)
+	return _soundscape.start(place_id, band)
+
+
+## Keyed to the place so a scene exiting late cannot stop the soundscape the NEXT scene already started.
+func stop_soundscape(place_id: String) -> void:
+	if _soundscape == null or _soundscape.place() != place_id:
+		return
+	_soundscape.stop()
+	stop_ambient()
+
+
+func soundscape_place() -> String:
+	return _soundscape.place() if _soundscape != null else ""
+
+
+func restore_soundscape_bed() -> void:
+	if _soundscape != null and _soundscape.place() != "":
+		_soundscape.restore_bed()
+
+
+func _on_time_of_day_changed(band: String) -> void:
+	if _soundscape != null:
+		_soundscape.set_band(band)
 
 
 ## Night-music bus setup + toggle (2026-07-16, cowir-main directive msg 2643/2659).
