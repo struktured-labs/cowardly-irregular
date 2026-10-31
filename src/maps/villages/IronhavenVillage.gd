@@ -213,6 +213,9 @@ func _setup_buildings() -> void:
 	_add_lamp_post(Vector2i(17, 18))
 	_add_prop(VillagePropScript.Kind.WELL, Vector2i(23, 13))
 	_add_prop(VillagePropScript.Kind.FENCE, Vector2i(3, 10))
+	## LAST, so it defers to every building above. Soot-black slate and ember-red tile.
+	_spawn_house_facades(["I", "F", "S", "M"], [Color(0.28, 0.27, 0.30), Color(0.46, 0.22, 0.14)], "timber")
+
 
 func _setup_treasures() -> void:
 	# Iron Shield near forge

@@ -207,6 +207,9 @@ func _setup_buildings() -> void:
 	_add_prop(VillagePropScript.Kind.FENCE, Vector2i(4, 11))
 	_add_lamp_post(Vector2i(10, 16))
 	_add_lamp_post(Vector2i(17, 16))
+	## LAST, so it defers to every building above. Adobe; never T, the hidden tent is a secret.
+	_spawn_house_facades(["I", "B"], [Color(0.74, 0.58, 0.38)], "adobe")
+
 
 func _setup_treasures() -> void:
 	# 500 Gold in hidden tent

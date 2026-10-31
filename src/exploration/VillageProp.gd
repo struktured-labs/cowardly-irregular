@@ -51,6 +51,9 @@ var roof_color: Color = Color(0.72, 0.20, 0.18)
 ## Gable (a point) instead of a hip (a ridge). Alternated with the colour, a row of identical blocks
 ## gets two independent axes of variety from one footprint.
 var roof_peaked: bool = false
+## Per-world facade: "timber" (shingles, W1), "adobe" (desert), "corrugated" (W4), "neon" (W5). Flat styles
+## draw a lit roof PLANE above the front wall, which is how a SNES town gives a flat roof its elevation.
+var house_style: String = "timber"
 
 
 static func create(k: int, base_cell: Vector2i) -> VillageProp:
@@ -175,6 +178,10 @@ func _paint(img: Image, size: Vector2i) -> void:
 ## The elevation is the whole point -- a top-down block of wall tiles reads as a map, a drawn
 ## face reads as a town. Its cells already collide as WALL tiles, so this only ever draws.
 func _paint_house(img: Image, size: Vector2i) -> void:
+	match house_style:
+		"adobe", "corrugated", "neon":
+			_paint_flat_house(img, size)
+			return
 	var w := size.x * TILE
 	var h := size.y * TILE
 	var roof_h: int = int(h * 0.5)
@@ -211,6 +218,62 @@ func _paint_house(img: Image, size: Vector2i) -> void:
 		img.fill_rect(Rect2i(cx - 8, roof_h + 10, 16, 14), WOOD)
 		img.fill_rect(Rect2i(cx - 6, roof_h + 12, 12, 10), GLASS)
 		img.fill_rect(Rect2i(cx - 6, roof_h + 16, 12, 2), WOOD)
+
+
+## A flat roof: a lit top plane with a dark lip, then the front wall. Corners stay EMPTY above the
+## plane's inset, so the silhouette still reads as a building standing up rather than a band of colour.
+func _paint_flat_house(img: Image, size: Vector2i) -> void:
+	var w := size.x * TILE
+	var h := size.y * TILE
+	var top_h: int = int(h * 0.38)
+	var inset: int = 4
+	var wall: Color
+	var trim: Color
+	var glass: Color
+	match house_style:
+		"adobe":
+			wall = Color(0.80, 0.66, 0.46)
+			trim = Color(0.56, 0.42, 0.26)
+			glass = Color(0.16, 0.12, 0.10)
+		"corrugated":
+			wall = Color(0.52, 0.52, 0.50)
+			trim = Color(0.30, 0.30, 0.32)
+			glass = Color(0.78, 0.74, 0.46)
+		_:
+			wall = Color(0.12, 0.14, 0.22)
+			trim = Color(0.20, 0.90, 0.95)
+			glass = Color(0.55, 0.95, 1.0)
+	var plane := roof_color.lightened(0.12)
+	img.fill_rect(Rect2i(inset, 0, w - inset * 2, top_h), plane)
+	img.fill_rect(Rect2i(inset, 0, w - inset * 2, 2), roof_color.lightened(0.35))
+	img.fill_rect(Rect2i(inset, top_h - 4, w - inset * 2, 4), roof_color.darkened(0.45))
+	if house_style == "corrugated":
+		for x in range(inset, w - inset, 4):
+			img.fill_rect(Rect2i(x, 2, 1, top_h - 6), roof_color.darkened(0.25))
+	elif house_style == "neon":
+		img.fill_rect(Rect2i(inset, top_h - 6, w - inset * 2, 2), trim)
+	img.fill_rect(Rect2i(0, top_h, w, h - top_h), wall)
+	img.fill_rect(Rect2i(0, top_h, w, 3), trim)
+	img.fill_rect(Rect2i(0, h - 4, w, 4), wall.darkened(0.35))
+	var bays: int = max(1, size.x)
+	var bay_w: float = w / float(bays)
+	for b in range(bays):
+		var cx: int = int((b + 0.5) * bay_w)
+		if h - top_h < 26:
+			continue
+		match house_style:
+			"adobe":
+				img.fill_rect(Rect2i(cx - 5, top_h + 10, 10, 12), glass)
+				img.fill_rect(Rect2i(cx - 7, top_h + 8, 14, 2), trim)
+			"corrugated":
+				img.fill_rect(Rect2i(cx - 9, top_h + 9, 18, 13), trim)
+				img.fill_rect(Rect2i(cx - 8, top_h + 10, 7, 5), glass)
+				img.fill_rect(Rect2i(cx + 1, top_h + 10, 7, 5), glass)
+				img.fill_rect(Rect2i(cx - 8, top_h + 16, 7, 5), glass)
+				img.fill_rect(Rect2i(cx + 1, top_h + 16, 7, 5), glass)
+			_:
+				img.fill_rect(Rect2i(cx - 10, top_h + 12, 20, 4), glass)
+				img.fill_rect(Rect2i(cx - 10, top_h + 18, 20, 1), trim)
 
 
 func _disc(img: Image, c: Vector2i, r: int, col: Color) -> void:

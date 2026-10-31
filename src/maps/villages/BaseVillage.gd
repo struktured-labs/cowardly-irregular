@@ -250,7 +250,7 @@ func _add_prop(kind: int, base_cell: Vector2i) -> VillageProp:
 ## A block whose ART is a building -- an inn, a shop, the bar -- already HAS a face and is skipped.
 ## A DOOR does not claim its block: it sorts below the facade's base, so it draws on the house's front.
 ## Call this LAST in _setup_buildings, so every node it must defer to already exists.
-func _spawn_house_facades(glyphs: Array, roof_colors: Array = []) -> int:
+func _spawn_house_facades(glyphs: Array, roof_colors: Array = [], style: String = "timber") -> int:
 	if _map_rows.is_empty() or props == null:
 		return 0
 	var claimed: Array = []
@@ -290,13 +290,15 @@ func _spawn_house_facades(glyphs: Array, roof_colors: Array = []) -> int:
 				house.roof_color = roof_colors[built % roof_colors.size()]
 			## A different period from the colour cycle, so colour and shape do not lock together.
 			house.roof_peaked = built % 2 == 1
+			house.house_style = style
 			props.add_child(house)
 			built += 1
 	return built
 
 
 func _block_is_claimed(minp: Vector2i, maxp: Vector2i, claimed: Array) -> bool:
-	var block := Rect2i(minp, maxp - minp + Vector2i.ONE)
+	## The facade's extent, not the block's: the roof rises one row ABOVE it, where a shop may stand.
+	var block := Rect2i(minp - Vector2i(0, 1), maxp - minp + Vector2i(1, 2))
 	for r in claimed:
 		if block.intersects(r):
 			return true

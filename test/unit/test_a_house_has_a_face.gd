@@ -145,3 +145,58 @@ func test_every_facade_leaves_its_ground_row_alone() -> void:
 		var row: String = v._map_rows[below]
 		assert_true("HIAPGB".contains(row[r.position.x]),
 			"the row under facade %s is not its block's ground row (glyph '%s')" % [str(r), row[r.position.x]])
+
+
+func test_a_flat_roofed_world_still_stands_up() -> void:
+	## Desert, factory and neon blocks have flat roofs; the lit roof PLANE sits inset, so the corners above it stay empty.
+	for style in ["adobe", "corrugated", "neon"]:
+		var p := VillageProp.create(VillageProp.Kind.HOUSE, Vector2i(0, 0))
+		p.size_tiles = Vector2i(3, 4)
+		p.house_style = style
+		add_child_autofree(p)
+		var img := _image(p)
+		var w := img.get_width()
+		assert_almost_eq(img.get_pixel(0, 0).a, 0.0, 0.01, "%s: the top-left corner is filled, a band not a roof" % style)
+		assert_almost_eq(img.get_pixel(w - 1, 0).a, 0.0, 0.01, "%s: the top-right corner is filled" % style)
+		assert_gt(img.get_pixel(w / 2, 1).a, 0.9, "%s: no roof plane" % style)
+		assert_gt(img.get_pixel(0, img.get_height() - 1).a, 0.9, "%s: the front wall does not reach the base" % style)
+
+
+func _glyph_cells(v: Node, glyph: String) -> Array:
+	var out: Array = []
+	for y in range(v._map_rows.size()):
+		var row: String = v._map_rows[y]
+		for x in range(row.length()):
+			if row[x] == glyph:
+				out.append(Vector2i(x, y))
+	return out
+
+
+func test_a_secret_or_a_barrier_is_never_given_a_face() -> void:
+	## Sandrift's T is a HIDDEN tent with a chest in it; NodePrime's F is a firewall, not a building.
+	for pair in [["res://src/maps/villages/SandriftVillage.gd", "T"], ["res://src/maps/villages/NodePrimeVillage.gd", "F"]]:
+		var v = load(pair[0]).new()
+		add_child_autofree(v)
+		var cells := _glyph_cells(v, pair[1])
+		assert_gt(cells.size(), 0, "CONTROL: %s still has its '%s' block" % [pair[0].get_file(), pair[1]])
+		for f in _facades(v):
+			var r := _covered(f).grow_individual(0, 0, 0, 1)
+			for c in cells:
+				assert_false(r.has_point(c), "%s faced its '%s' block at %s" % [pair[0].get_file(), pair[1], str(c)])
+
+
+func test_no_village_faces_over_a_buildings_art() -> void:
+	## The same contract as Harmonia's arm, across every village that calls _spawn_house_facades.
+	var faced: int = 0
+	for f in DirAccess.get_files_at("res://src/maps/villages"):
+		if not f.ends_with("Village.gd") or f == "BaseVillage.gd":
+			continue
+		var v = load("res://src/maps/villages/" + f).new()
+		add_child_autofree(v)
+		for h in _facades(v):
+			faced += 1
+			var r := _covered(h).grow_individual(0, 0, 0, 1)
+			for b in v.buildings.get_children():
+				if b is Node2D and not (b is AreaTransition):
+					assert_false(r.intersects(v._building_cells(b)), "%s: facade %s covers %s" % [f, str(r), b.name])
+	assert_gt(faced, 5, "CONTROL: facades were built across the villages (%d)" % faced)

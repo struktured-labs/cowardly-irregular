@@ -209,6 +209,8 @@ func _setup_buildings() -> void:
 	# Row 1 is the upper ledge and it is ONE tile tall, so a prop there is a wall across it
 	_add_prop(VillagePropScript.Kind.CRATE, Vector2i(10, 2))
 	_add_prop(VillagePropScript.Kind.BARREL, Vector2i(20, 2))
+	## LAST, so it defers to every building above. Rusted and galvanised sheet.
+	_spawn_house_facades(["I", "G", "C"], [Color(0.50, 0.30, 0.20), Color(0.40, 0.42, 0.44)], "corrugated")
 
 
 func _setup_treasures() -> void:

@@ -207,6 +207,9 @@ func _setup_buildings() -> void:
 	_add_prop(VillagePropScript.Kind.FENCE, Vector2i(3, 12))
 	_add_prop(VillagePropScript.Kind.WELL, Vector2i(20, 14))
 	_add_prop(VillagePropScript.Kind.TREE, Vector2i(24, 9))
+	## LAST, so it defers to every building above. Snow-laden roofs.
+	_spawn_house_facades(["L", "F", "C"], [Color(0.82, 0.88, 0.95), Color(0.36, 0.50, 0.66)], "timber")
+
 
 func _setup_treasures() -> void:
 	# 2x Hi-Potion behind lodge

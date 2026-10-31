@@ -219,6 +219,8 @@ func _setup_buildings() -> void:
 	# Row 1 is the upper ledge and it is ONE tile tall, so a prop there is a wall across it
 	_add_prop(VillagePropScript.Kind.CRATE, Vector2i(7, 2))
 	_add_prop(VillagePropScript.Kind.CRATE, Vector2i(17, 2))
+	## LAST, so it defers to every building above. Never F, the firewall is a barrier not a building.
+	_spawn_house_facades(["I", "C"], [Color(0.10, 0.12, 0.20)], "neon")
 
 
 func _setup_treasures() -> void:

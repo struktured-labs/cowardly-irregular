@@ -203,6 +203,9 @@ func _setup_buildings() -> void:
 	_add_prop(VillagePropScript.Kind.BARREL, Vector2i(9, 11))
 	_add_prop(VillagePropScript.Kind.FENCE, Vector2i(4, 16))
 	_add_prop(VillagePropScript.Kind.FENCE, Vector2i(5, 16))
+	## LAST, so it defers to every building above. Rotten slate.
+	_spawn_house_facades(["R", "C", "D"], [Color(0.30, 0.24, 0.36), Color(0.26, 0.30, 0.26)], "timber")
+
 
 func _setup_treasures() -> void:
 	# Phoenix Down in cemetery
