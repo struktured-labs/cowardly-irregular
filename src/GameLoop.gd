@@ -4424,7 +4424,8 @@ func _wait_for_confirm_victory() -> void:
 	## `not turbo_mode`, so at turbo a spotlight win used to block up to 120s on a press for a
 	## prompt that was never drawn — a two-minute freeze with the cutscene still on screen
 	## (found via cowir-deploy's .236 web render smoke, 2026-09-09).
-	await get_tree().create_timer(0.5).timeout
+	## Real seconds: the battle scene is still up, so its battle speed (0.25-0.375) would stretch a 0.5 s debounce to 1.3-2 s of ignored presses.
+	await get_tree().create_timer(0.5, true, false, true).timeout
 	if current_scene == null or not is_instance_valid(current_scene) \
 			or current_scene.get_node_or_null("VictoryResults") == null:
 		return
@@ -4435,7 +4436,7 @@ func _wait_for_confirm_victory() -> void:
 			var overlay = current_scene.get_node_or_null("VictoryResults") if current_scene and is_instance_valid(current_scene) else null
 			if overlay and overlay.has_method("is_complete") and not overlay.is_complete():
 				overlay.complete_now()
-				await get_tree().create_timer(0.25).timeout  # debounce so one press can't both snap and dismiss
+				await get_tree().create_timer(0.25, true, false, true).timeout  # debounce so one press can't both snap and dismiss
 				continue
 			break
 	if Time.get_ticks_msec() - confirm_t0 >= 120000:
@@ -4445,7 +4446,7 @@ func _wait_for_confirm_victory() -> void:
 func _wait_for_confirm() -> void:
 	"""Wait for the player to press confirm (A/Z/Enter/mouse click) before continuing"""
 	# Small delay so the press that ended the battle doesn't immediately confirm
-	await get_tree().create_timer(0.5).timeout
+	await get_tree().create_timer(0.5, true, false, true).timeout
 	# Bounded per the house pattern (its four teardown siblings all are; this was the file's sole unbounded wait). 120s is generous for a human reading a victory screen; the else is LOUD because silently advancing past an unseen screen would be worse than the hang.
 	var confirm_t0: int = Time.get_ticks_msec()
 	while Time.get_ticks_msec() - confirm_t0 < 120000:
