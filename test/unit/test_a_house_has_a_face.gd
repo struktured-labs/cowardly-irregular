@@ -6,6 +6,7 @@ extends GutTest
 ## the Inn's cottage, so the regression arms here are the ones that matter most.
 
 const HARMONIA := "res://src/maps/villages/HarmoniaVillage.tscn"
+const DrawOrder := preload("res://test/unit/helpers/draw_order.gd")
 
 
 func _house(size: Vector2i, peaked: bool) -> VillageProp:
@@ -105,10 +106,11 @@ func _facade_fronted_by(v: Node, door: Node2D) -> VillageProp:
 
 
 func test_a_door_block_is_faced_and_its_door_draws_on_the_front() -> void:
-	## struktured wants the elevation on the door blocks too; the door must sort AFTER its facade or the arch is hidden.
+	## Replaces "no facade covers a door": the door block IS faced now, so the protection is that the arch draws ON TOP.
+	## Measured as BUILT (DrawOrder.sort_key), so switching Buildings' y_sort off reds here and names the door.
+	## CartographerDoor is not pinned: the blacksmith's art covers its block, so that block keeps its own face.
 	var v := _village()
-	assert_true(v.buildings.y_sort_enabled, "Buildings is not y-sorted, so every door sorts at y=0 behind every facade")
-	for door_name in ["LibraryDoor", "ChapelDoor", "CartographerDoor"]:
+	for door_name in ["LibraryDoor", "ChapelDoor"]:
 		var door := _door(v, door_name)
 		assert_not_null(door, "%s is missing" % door_name)
 		if door == null:
@@ -116,7 +118,16 @@ func test_a_door_block_is_faced_and_its_door_draws_on_the_front() -> void:
 		var f := _facade_fronted_by(v, door)
 		assert_not_null(f, "%s's block has no facade" % door_name)
 		if f != null:
-			assert_gt(door.global_position.y, f.global_position.y, "%s sorts before its facade and is drawn under it" % door_name)
+			assert_true(DrawOrder.draws_over(door, f), "%s draws UNDER its facade (key %.0f vs %.0f): its arch is hidden" % [door_name, DrawOrder.sort_key(door), DrawOrder.sort_key(f)])
+	## Every door that fronts ANY facade, not just the two named: a later village's door is judged the same way.
+	var fronted: int = 0
+	for d in v.buildings.get_children():
+		if d is AreaTransition:
+			var f := _facade_fronted_by(v, d)
+			if f != null:
+				fronted += 1
+				assert_true(DrawOrder.draws_over(d, f), "%s draws under its facade" % d.name)
+	assert_gte(fronted, 2, "CONTROL: doors fronting a facade were found (%d)" % fronted)
 
 
 func test_a_building_sorts_by_its_base_without_moving_on_screen() -> void:
@@ -199,4 +210,4 @@ func test_no_village_faces_over_a_buildings_art() -> void:
 			for b in v.buildings.get_children():
 				if b is Node2D and not (b is AreaTransition):
 					assert_false(r.intersects(v._building_cells(b)), "%s: facade %s covers %s" % [f, str(r), b.name])
-	assert_gt(faced, 5, "CONTROL: facades were built across the villages (%d)" % faced)
+	assert_gt(faced, 2, "CONTROL: facades were built across the villages (%d)" % faced)

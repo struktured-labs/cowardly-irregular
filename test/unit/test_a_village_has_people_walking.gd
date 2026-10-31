@@ -80,15 +80,16 @@ func test_a_walkers_line_is_ground_it_can_walk() -> void:
 func test_placement_validation_never_had_to_move_a_walker() -> void:
 	await _ensure_built()
 	## The derivation is the authority; if the sweep had to clip a line, the derivation and the sweep disagree.
+	var judged: int = 0
 	for b in _built:
 		var v = b["village"]
-		var runs: Array = v._walker_runs()
-		var mine: Array = _walkers(v, true)
-		for i in range(mine.size()):
-			var pts: Array[Vector2] = mine[i].get_patrol()
-			var want: Array[Vector2] = [v._cell_centre(runs[i][0]), v._cell_centre(runs[i][1])]
-			assert_eq(pts, want,
-				"%s/%s was moved by placement validation" % [b["path"].get_file(), mine[i].name])
+		for w in _walkers(v, true):
+			var want: Array = v.ambient_walker_lines.get(String(w.name), [])
+			assert_eq(want.size(), 2, "%s/%s has no recorded line" % [b["path"].get_file(), w.name])
+			var pts: Array[Vector2] = w.get_patrol()
+			assert_eq(Array(pts), Array(want), "%s/%s was moved by placement validation" % [b["path"].get_file(), w.name])
+			judged += 1
+	assert_gt(judged, 15, "CONTROL: walkers were judged (%d)" % judged)
 
 
 func _zone(door: Node2D) -> Rect2:
@@ -99,7 +100,7 @@ func _zone(door: Node2D) -> Rect2:
 	return Rect2()
 
 
-func test_no_walker_crosses_a_doors_press_zone() -> void:
+func test_no_walker_crosses_a_door_or_a_gate() -> void:
 	await _ensure_built()
 	## A walker in a door's zone competes with the door for the press -- the same defect Scholar Fynn was.
 	var zones: int = 0
@@ -111,6 +112,10 @@ func test_no_walker_crosses_a_doors_press_zone() -> void:
 				var z := _zone(d)
 				if z.has_area():
 					rects.append(z.grow(8.0))
+		var gate := v.find_child("Exit", true, false) as Node2D
+		if gate != null:
+			## The same box test_a_village_exit_sits_on_its_exit keeps clear, so a walker never paces through a gate.
+			rects.append(Rect2(gate.global_position + Vector2(-44.0, -76.0), Vector2(88.0, 80.0)))
 		zones += rects.size()
 		for w in _walkers(v, true):
 			var pts: Array[Vector2] = w.get_patrol()

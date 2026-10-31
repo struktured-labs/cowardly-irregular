@@ -89,8 +89,8 @@ func _ready() -> void:
 	_setup_buildings()
 	_setup_treasures()
 	_setup_npcs()
-	_add_ambient_walkers(_get_ambient_walkers())
 	_place_authored_examines()
+	_add_ambient_walkers(_get_ambient_walkers())
 	_validate_placements()
 	_setup_player()
 	_setup_camera()
@@ -753,6 +753,10 @@ func _get_ambient_walkers() -> Array:
 
 const WALKER_MIN_RUN: int = 5
 const WALKER_MAX_RUN: int = 9
+## The village gate's keep-clear box around an exit, the same one test_a_village_exit_sits_on_its_exit judges.
+const GATE_CLEAR := Rect2(-44.0, -76.0, 88.0, 80.0)
+## Each walker's line as DERIVED, by node name: the record placement validation must leave untouched.
+var ambient_walker_lines: Dictionary = {}
 
 
 ## Each walker's line is DERIVED from this village's own walkability, so no map edit can strand one in a wall.
@@ -767,6 +771,7 @@ func _add_ambient_walkers(roster: Array) -> int:
 			break
 		var run: Array = runs[added]
 		var loop: Array[Vector2] = [_cell_centre(run[0]), _cell_centre(run[1])]
+		ambient_walker_lines["Walker_%s" % str(spec["name"]).validate_node_name()] = loop.duplicate()
 		var w := _create_wandering_npc(spec["name"], spec["archetype"], spec["line"], loop,
 			spec.get("theme", "villager"), spec.get("portrait", spec["archetype"]))
 		w.name = "Walker_%s" % str(spec["name"]).validate_node_name()
@@ -782,7 +787,8 @@ func _cell_centre(cell: Vector2i) -> Vector2:
 ## Horizontal runs of steppable cells clear of doors, exits and anyone standing still; longest first,
 ## and never two on neighbouring rows over the same columns, so walkers do not pace on top of each other.
 func _walker_runs() -> Array:
-	if _map_rows.is_empty():
+	var size := _walker_grid_size()
+	if size == Vector2i.ZERO:
 		return []
 	var avoid := {}
 	for container in [npcs, buildings, treasures, transitions]:
@@ -792,15 +798,12 @@ func _walker_runs() -> Array:
 			## A walker moves, so its spawn cell is no obstacle -- and skipping it keeps the derivation a pure function of the map.
 			if not (n is Node2D) or n is WanderingNPC:
 				continue
-			var c := _cell_of((n as Node2D).position)
-			var below: int = 2 if n is AreaTransition else 1
-			for dy in range(-1, below + 1):
-				for dx in range(-1, 2):
-					avoid[c + Vector2i(dx, dy)] = true
+			for r in _keep_clear_rects(n as Node2D, container == transitions):
+				_mark_cells(avoid, r)
 	var margin: int = 3
 	var runs: Array = []
-	for y in range(margin, _map_rows.size() - margin):
-		var width: int = (_map_rows[y] as String).length()
+	for y in range(margin, size.y - margin):
+		var width: int = size.x
 		var start: int = -1
 		for x in range(margin, width - margin + 1):
 			var cell := Vector2i(x, y)
@@ -828,6 +831,35 @@ func _walker_runs() -> Array:
 		if not clash:
 			chosen.append(r)
 	return chosen
+
+
+## Map size in cells: the glyph rows when a village has them, else its declared pixel size (the strip mall, the plaza).
+func _walker_grid_size() -> Vector2i:
+	if not _map_rows.is_empty():
+		return Vector2i((_map_rows[0] as String).length(), _map_rows.size())
+	var px := _get_map_pixel_size()
+	return Vector2i(px.x / TILE_SIZE, px.y / TILE_SIZE)
+
+
+## World-space boxes a walker's line must stay out of: an exit's gate, a door's press zone, else the node's own cell +-1.
+func _keep_clear_rects(n: Node2D, is_exit: bool) -> Array:
+	var out: Array = []
+	if is_exit:
+		out.append(Rect2(n.position + GATE_CLEAR.position, GATE_CLEAR.size).grow(8.0))
+	for c in n.get_children():
+		if n is Area2D and c is CollisionShape2D and c.shape is RectangleShape2D:
+			var sz: Vector2 = (c.shape as RectangleShape2D).size
+			out.append(Rect2(n.position + c.position - sz * 0.5, sz).grow(8.0))
+	var cell := _cell_of(n.position)
+	out.append(Rect2(Vector2(cell - Vector2i.ONE) * TILE_SIZE, Vector2(3, 3) * TILE_SIZE))
+	return out
+
+
+## Every cell whose square touches `r`, not just those whose centre is inside: a line through a corner is still inside.
+func _mark_cells(avoid: Dictionary, r: Rect2) -> void:
+	for y in range(floori(r.position.y / TILE_SIZE), ceili(r.end.y / TILE_SIZE)):
+		for x in range(floori(r.position.x / TILE_SIZE), ceili(r.end.x / TILE_SIZE)):
+			avoid[Vector2i(x, y)] = true
 
 
 func _create_wandering_npc(npc_name: String, archetype: String, dialogue: String, patrol_loop: Array[Vector2], dialogue_theme: String = "elder", dialogue_portrait: String = "elder") -> Area2D:
