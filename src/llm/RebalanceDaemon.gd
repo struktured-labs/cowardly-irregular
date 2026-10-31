@@ -45,6 +45,17 @@ const TRIGGER_AREA_ENTERED := "area_entered"
 const TRIGGER_LEVEL_UP := "level_up"
 const TRIGGER_MANUAL := "manual"
 
+## What each trigger MEANS, spelled out for the model. The prompt used to carry the bare name, so the model invented
+## the implication: his saves hold XP boosts applied for entering Eldertree Hollow and Sandrift and for a level-up,
+## each at exactly the 0.7 auto-apply threshold. Progress is not a difficulty signal; only the evidence is.
+const TRIGGER_MEANINGS := {
+	TRIGGER_PARTY_WIPE: "The whole party was defeated. This is the strongest sign the game may be TOO HARD here.",
+	TRIGGER_BOSS_DEFEAT: "The party beat a boss. That is evidence they CAN handle this part of the game; it is never by itself a reason to make anything easier or more generous.",
+	TRIGGER_AREA_ENTERED: "The player walked into a new area. That says nothing about difficulty by itself: judge ONLY from the recent events, and choose no_change unless they show the party struggling or coasting.",
+	TRIGGER_LEVEL_UP: "A party member levelled up, so the party just got STRONGER. That is progress, not a difficulty problem: making the game easier or more generous because of it compounds the gain. Choose no_change unless the recent events show a real problem.",
+	TRIGGER_MANUAL: "The player asked for a review of the difficulty curve. Judge from the recent events.",
+}
+
 
 ## Schema the LLM response must match. LLMService._guard_json validates
 ## required keys + type/enum constraints; deeper delta-level validation
@@ -172,9 +183,12 @@ func consider(trigger_type: String, context: Dictionary) -> bool:
 ## without firing a real call.
 func build_prompt(trigger_type: String, context: Dictionary, recent_events: Array = []) -> String:
 	var lines: Array[String] = []
-	lines.append("You are the difficulty curator for a JRPG. The player just experienced a high-signal event.")
+	lines.append("You are the difficulty curator for a JRPG. Most events need no change; nudge only when the evidence below shows the curve is genuinely off.")
 	lines.append("")
 	lines.append("EVENT: %s" % trigger_type)
+	var meaning: String = str(TRIGGER_MEANINGS.get(trigger_type, ""))
+	if meaning != "":
+		lines.append("WHAT THIS EVENT MEANS: %s" % meaning)
 	lines.append("CONTEXT:")
 	for key in context.keys():
 		var v_str: String = str(context[key])
