@@ -217,15 +217,7 @@ func _setup_npcs() -> void:
 		npc.npc_id = c["id"]
 		npcs.add_child(npc)
 
-	# Rogue lead spots the shop directly — cowir-story's authored line (msg 2278).
-	# Doubles as the player's first read on Scriptura's wrongness (the collective
-	# not-mentioning is the tell — the Rogue's "sees the second thing" essence).
-	if _lead_is_rogue():
-		var spotter = _create_npc("(the door the plaza walks around)", "villager",
-			Vector2(22 * TILE_SIZE,13 * TILE_SIZE), [
-				"There. The small door the whole plaza's walking around. Four people gave me directions to it and not one of them looked at it. That's not a shop nobody knows — that's a shop everybody's decided not to mention.",
-			])
-		npcs.add_child(spotter)
+	# A Rogue lead's line about the bookshop is hers now: GameLoop plays world1_scriptura_rogue_door on entry (struktured 2026-10-31).
 
 	# ── Ambient texture (2, lean; cowir-story may enrich later) ──
 	# Originals sat inside the guild (7,6) and bookshop (16,6) building
@@ -257,22 +249,6 @@ func _place_book_pickup() -> void:
 	bin.contents_amount = 1
 	bin.position = Vector2(12 * TILE_SIZE,6 * TILE_SIZE)
 	treasures.add_child(bin)
-
-
-func _lead_is_rogue() -> bool:
-	var game_loop = get_node_or_null("/root/GameLoop")
-	if game_loop == null or not ("party" in game_loop) or game_loop.party.is_empty():
-		return false
-	var gs = get_node_or_null("/root/GameState")
-	var idx: int = 0
-	if gs and "party_leader_index" in gs:
-		idx = clampi(gs.party_leader_index, 0, game_loop.party.size() - 1)
-	var leader = game_loop.party[idx]
-	if leader.job is Dictionary:
-		return leader.job.get("id", "") == "rogue"
-	elif leader.job is String:
-		return leader.job == "rogue"
-	return false
 
 
 ## Ambient walkers: their lines are derived from this map's ground (BaseVillage._walker_runs).
