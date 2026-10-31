@@ -5737,8 +5737,8 @@
   "overworld_player_sheets": {
     "fighter": {
       "path": "res://assets/sprites/jobs/fighter/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "fps": 8,
       "tier": "T1",
       "animations": {
@@ -5758,12 +5758,13 @@
           "row": 3,
           "frames": 4
         }
-      }
+      },
+      "source": "gpt-image-2 redraw at the villagers' 48px scale (Rotha, Roy, Kid Acrees as style guide; the job's battle idle frame as identity) -- tools/gen_npc_artist_walker.py --player, struktured 2026-10-30 'our own characters are too small relative to npcs'. Pairs with OverworldPlayer.SPRITE_SIZE 48. T1: artist veto applies."
     },
     "cleric": {
       "path": "res://assets/sprites/jobs/cleric/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "fps": 8,
       "tier": "T1",
       "animations": {
@@ -5783,12 +5784,13 @@
           "row": 3,
           "frames": 4
         }
-      }
+      },
+      "source": "gpt-image-2 redraw at the villagers' 48px scale (Rotha, Roy, Kid Acrees as style guide; the job's battle idle frame as identity) -- tools/gen_npc_artist_walker.py --player, struktured 2026-10-30 'our own characters are too small relative to npcs'. Pairs with OverworldPlayer.SPRITE_SIZE 48. T1: artist veto applies."
     },
     "mage": {
       "path": "res://assets/sprites/jobs/mage/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "fps": 8,
       "tier": "T1",
       "animations": {
@@ -5808,12 +5810,13 @@
           "row": 3,
           "frames": 4
         }
-      }
+      },
+      "source": "gpt-image-2 redraw at the villagers' 48px scale (Rotha, Roy, Kid Acrees as style guide; the job's battle idle frame as identity) -- tools/gen_npc_artist_walker.py --player, struktured 2026-10-30 'our own characters are too small relative to npcs'. Pairs with OverworldPlayer.SPRITE_SIZE 48. T1: artist veto applies."
     },
     "rogue": {
       "path": "res://assets/sprites/jobs/rogue/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "fps": 8,
       "tier": "T1",
       "animations": {
@@ -5833,12 +5836,13 @@
           "row": 3,
           "frames": 4
         }
-      }
+      },
+      "source": "gpt-image-2 redraw at the villagers' 48px scale (Rotha, Roy, Kid Acrees as style guide; the job's battle idle frame as identity) -- tools/gen_npc_artist_walker.py --player, struktured 2026-10-30 'our own characters are too small relative to npcs'. Pairs with OverworldPlayer.SPRITE_SIZE 48. T1: artist veto applies."
     },
     "bard": {
       "path": "res://assets/sprites/jobs/bard/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "fps": 8,
       "tier": "T1",
       "animations": {
@@ -5858,12 +5862,13 @@
           "row": 3,
           "frames": 4
         }
-      }
+      },
+      "source": "gpt-image-2 redraw at the villagers' 48px scale (Rotha, Roy, Kid Acrees as style guide; the job's battle idle frame as identity) -- tools/gen_npc_artist_walker.py --player, struktured 2026-10-30 'our own characters are too small relative to npcs'. Pairs with OverworldPlayer.SPRITE_SIZE 48. T1: artist veto applies."
     },
     "bossbinder": {
       "path": "res://assets/sprites/jobs/bossbinder/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "fps": 8,
       "tier": "T1",
       "animations": {
@@ -5883,12 +5888,13 @@
           "row": 3,
           "frames": 4
         }
-      }
+      },
+      "source": "gpt-image-2 redraw at the villagers' 48px scale (Rotha, Roy, Kid Acrees as style guide; the job's battle idle frame as identity) -- tools/gen_npc_artist_walker.py --player, struktured 2026-10-30 'our own characters are too small relative to npcs'. Pairs with OverworldPlayer.SPRITE_SIZE 48. T1: artist veto applies."
     },
     "guardian": {
       "path": "res://assets/sprites/jobs/guardian/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "fps": 8,
       "tier": "T1",
       "animations": {
@@ -5908,12 +5914,13 @@
           "row": 3,
           "frames": 4
         }
-      }
+      },
+      "source": "gpt-image-2 redraw at the villagers' 48px scale (Rotha, Roy, Kid Acrees as style guide; the job's battle idle frame as identity) -- tools/gen_npc_artist_walker.py --player, struktured 2026-10-30 'our own characters are too small relative to npcs'. Pairs with OverworldPlayer.SPRITE_SIZE 48. T1: artist veto applies."
     },
     "necromancer": {
       "path": "res://assets/sprites/jobs/necromancer/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "fps": 8,
       "tier": "T1",
       "animations": {
@@ -5933,12 +5940,13 @@
           "row": 3,
           "frames": 4
         }
-      }
+      },
+      "source": "gpt-image-2 redraw at the villagers' 48px scale (Rotha, Roy, Kid Acrees as style guide; the job's battle idle frame as identity) -- tools/gen_npc_artist_walker.py --player, struktured 2026-10-30 'our own characters are too small relative to npcs'. Pairs with OverworldPlayer.SPRITE_SIZE 48. T1: artist veto applies."
     },
     "ninja": {
       "path": "res://assets/sprites/jobs/ninja/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "fps": 8,
       "tier": "T1",
       "animations": {
@@ -5958,12 +5966,13 @@
           "row": 3,
           "frames": 4
         }
-      }
+      },
+      "source": "gpt-image-2 redraw at the villagers' 48px scale (Rotha, Roy, Kid Acrees as style guide; the job's battle idle frame as identity) -- tools/gen_npc_artist_walker.py --player, struktured 2026-10-30 'our own characters are too small relative to npcs'. Pairs with OverworldPlayer.SPRITE_SIZE 48. T1: artist veto applies."
     },
     "scriptweaver": {
       "path": "res://assets/sprites/jobs/scriptweaver/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "fps": 8,
       "tier": "T1",
       "animations": {
@@ -5983,12 +5992,13 @@
           "row": 3,
           "frames": 4
         }
-      }
+      },
+      "source": "gpt-image-2 redraw at the villagers' 48px scale (Rotha, Roy, Kid Acrees as style guide; the job's battle idle frame as identity) -- tools/gen_npc_artist_walker.py --player, struktured 2026-10-30 'our own characters are too small relative to npcs'. Pairs with OverworldPlayer.SPRITE_SIZE 48. T1: artist veto applies."
     },
     "skiptrotter": {
       "path": "res://assets/sprites/jobs/skiptrotter/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "fps": 8,
       "tier": "T1",
       "animations": {
@@ -6008,12 +6018,13 @@
           "row": 3,
           "frames": 4
         }
-      }
+      },
+      "source": "gpt-image-2 redraw at the villagers' 48px scale (Rotha, Roy, Kid Acrees as style guide; the job's battle idle frame as identity) -- tools/gen_npc_artist_walker.py --player, struktured 2026-10-30 'our own characters are too small relative to npcs'. Pairs with OverworldPlayer.SPRITE_SIZE 48. T1: artist veto applies."
     },
     "speculator": {
       "path": "res://assets/sprites/jobs/speculator/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "fps": 8,
       "tier": "T1",
       "animations": {
@@ -6033,12 +6044,13 @@
           "row": 3,
           "frames": 4
         }
-      }
+      },
+      "source": "gpt-image-2 redraw at the villagers' 48px scale (Rotha, Roy, Kid Acrees as style guide; the job's battle idle frame as identity) -- tools/gen_npc_artist_walker.py --player, struktured 2026-10-30 'our own characters are too small relative to npcs'. Pairs with OverworldPlayer.SPRITE_SIZE 48. T1: artist veto applies."
     },
     "summoner": {
       "path": "res://assets/sprites/jobs/summoner/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "fps": 8,
       "tier": "T1",
       "animations": {
@@ -6058,12 +6070,13 @@
           "row": 3,
           "frames": 4
         }
-      }
+      },
+      "source": "gpt-image-2 redraw at the villagers' 48px scale (Rotha, Roy, Kid Acrees as style guide; the job's battle idle frame as identity) -- tools/gen_npc_artist_walker.py --player, struktured 2026-10-30 'our own characters are too small relative to npcs'. Pairs with OverworldPlayer.SPRITE_SIZE 48. T1: artist veto applies."
     },
     "time_mage": {
       "path": "res://assets/sprites/jobs/time_mage/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "fps": 8,
       "tier": "T1",
       "animations": {
@@ -6083,7 +6096,8 @@
           "row": 3,
           "frames": 4
         }
-      }
+      },
+      "source": "gpt-image-2 redraw at the villagers' 48px scale (Rotha, Roy, Kid Acrees as style guide; the job's battle idle frame as identity) -- tools/gen_npc_artist_walker.py --player, struktured 2026-10-30 'our own characters are too small relative to npcs'. Pairs with OverworldPlayer.SPRITE_SIZE 48. T1: artist veto applies."
     }
   },
   "battle_effects": {
