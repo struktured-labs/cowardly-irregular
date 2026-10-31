@@ -689,11 +689,14 @@ cowardly-irregular/
 - Generated sprites go in `assets/sprites/jobs/<job_id>/` following the per-animation PNG convention
 
 ### What AI Sprite Agents MUST Do
-- Match the frame size OF THE SURFACE, not one constant. Measured 2026-09-17 across
-  `data/sprite_manifest.json`: **battle** sheets are 256x256 (jobs, monsters, NPC portraits — 127
-  entries, 11 monster sheets at 128x128), **overworld** sheets are 32x32 (npc/player/monster — 169
-  entries, the larger population). "256x256" was stated here unconditionally and would put an
-  overworld sprite at 8x the right size.
+- Match the frame size OF THE SECTION YOU ARE ADDING TO, read from `data/sprite_manifest.json` — **not from this
+  line.** Take the modal `frame_height` of that section's entries. Measured 2026-10-31: `overworld_player_sheets`
+  and `overworld_npc_sheets` are **48** (the party went 32 → 48 in `.747` to stand as tall as the villagers),
+  `overworld_monster_sheets` are still **32**, battle `sheets`/`monster_sheets` are **256** with a few artist
+  monsters at 128. A job's world costume (`overworld_<world>.png`) has no entry and is cut at its JOB's frame.
+  This line said "overworld sheets are 32x32" until 2026-10-31 — true for none of the party or villagers by then,
+  and exactly the size that made the party 2/3 a villager's height. Before it, "256x256" unconditionally, which
+  put an overworld sprite at 8x. Both were right on the day they were written; derive it.
 - Keep the 16-bit aesthetic, and use palettes derived from existing artist work
 - Generate at least the 9 standard animations — idle, walk, attack, hit, dead, cast, defend, item,
   victory — which is a FLOOR, not the set. Shipped jobs carry more: fighter 18, bard 16, cleric 15
