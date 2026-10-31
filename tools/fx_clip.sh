@@ -30,7 +30,7 @@ for S in "${SEQS[@]}"; do
   D="tmp/fx/$S"; rm -rf "$D"; mkdir -p "$D"
   LOG="tmp/fx/$S.log"
   EC=0
-  XDG_DATA_HOME="$_XDG" "${JAIL[@]}" xvfb-run -a -s "-screen 0 1280x720x24" godot --audio-driver Dummy \
+  XDG_DATA_HOME="$_XDG" timeout 300 "${JAIL[@]}" xvfb-run -a -s "-screen 0 1280x720x24" godot --audio-driver Dummy \
     --rendering-driver opengl3 --resolution 1280x720 --fixed-fps "$FPS" --write-movie "$D/f.png" \
     -s tools/fx_clip.gd -- "--seq=$S" "--speed=$SPEED" > "$LOG" 2>&1 || EC=$?
   command grep -a -E '^\[FXCLIP\]|ERROR' "$LOG" || true
