@@ -108,7 +108,9 @@ func test_every_overlay_cutscene_backdrop_resolves() -> void:
 ## before the line can be deleted.
 ##   grows   -> a video shipped for a scene nobody wrote
 ##   shrinks -> someone authored the scene, or deleted the file. Delete the line either way.
-const UNNAMED_BACKDROP_VIDEOS := {}  # drained in .332: story wired both videos into chapter-one scenes
+const UNNAMED_BACKDROP_VIDEOS := {
+	"steampunk_airship": "297 KiB. A night airship deck; its one scene (world3_chapter2) is a street fight, re-pointed to brasston_square 2026-10-31. Deleting it is struktured's call.",
+}
 
 
 func _video_ids() -> Array:
