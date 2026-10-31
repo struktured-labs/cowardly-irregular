@@ -208,8 +208,6 @@ test $EC -eq 0 || { echo "[${PLAT}] BLOCKED: asset import failed — see tmp/${P
 # detected after the fact, let alone recovered. There is no "is this mine?" check
 # available, which is why the answer is to copy first and ask nothing.
 USERDATA="${HOME}/.local/share/godot/app_userdata/Cowardly Irregular"
-EXPORT_DIR_REAL="${USERDATA}/script_exports"
-SNAP_DIR="tmp/script_exports_snapshot"
 # SNAPSHOT BROAD, RESTORE NARROW, REPORT THE REST.
 #
 # The census predicate that settled the fleet's audit asked "does any test write
@@ -255,7 +253,15 @@ SNAP_DIR="tmp/script_exports_snapshot"
 # put back only if ONLY tests write it. That must be established by driving the
 # tests, not inferred from a guard's presence in the writer.
 FULL_SNAP="tmp/userdata_snapshot"
-RESTORE_PATHS=(script_exports)
+# ⛔ EMPTY SINCE 2026-10-31 — script_exports is REPORTED now, like everything else, never restored.
+# It was restored because gate 1 ran the suite against his live user://, and two tests delete or
+# overwrite user://script_exports (see the note that used to sit in _restore_exports). That premise
+# is gone: gate 1 now SKIPS on a gated tag, or runs SANDBOXED under XDG_DATA_HOME=tmp/gate_xdg, so no
+# test reaches his profile. The restore had become an unconditional `cp -a` INTO his live profile
+# at the end of every desktop deploy, protecting against nothing — and rolling back any autobattle
+# script he exported while the deploy ran (cowir-adhoc 20440: .747's postlive counted those 4 ctime
+# hits as expected). Detection, never reversion, now holds for every path.
+RESTORE_PATHS=()
 # Paths excluded from the DRIFT REPORT (not from the snapshot — they are still
 # copied, they just don't get reported). Engine logs only.
 #
@@ -268,33 +274,9 @@ RESTORE_PATHS=(script_exports)
 # Deliberately narrow: ONLY logs. Anything under saves/ or autogrind/ still
 # reports, because those are the paths where a change might be his.
 DRIFT_IGNORE=(logs)
-_restore_exports() {
-    [ -d "$SNAP_DIR" ] || return 0
-    mkdir -p "$EXPORT_DIR_REAL"
-    # `cp -a src/. dst/` REPLACES existing files, and that is load-bearing — do not
-    # "optimise" this into a copy-only-if-missing. There are TWO exposures here, and
-    # only one is deletion:
-    #   DELETE    test_autobattle_grid_share_regression.gd purges the dir
-    #   OVERWRITE test_script_share.gd calls export_autogrind_rules() with NO
-    #             EXPORT_DIR override, writing test data over the FIXED production
-    #             filename autogrind_rules.json — a shipped player action
-    #             (ScriptShareManager.export_autogrind_rules, which writes it into
-    #             EXPORT_DIR = user://script_exports/ — the old AutogrindUI.gd:1687 pointer is
-    #             a blank line in a file that has since moved). Same path, same name, someone else's
-    #             contents, nothing loud. A copy-if-missing restore would "pass"
-    #             while leaving that substitution in place.
-    # Measured, sandboxed (never probe the live dir — planting a canary there is a
-    # destructive act, not a read): original 95e34427 -> clobbered 4947f406 ->
-    # restored 95e34427, with plain deletion as the control. Both axes recover.
-    #
-    # NOTE the declaration form is NOT the discriminator. `static var EXPORT_DIR`
-    # only makes the path assignable; the writer never assigns it, so a "fixed"
-    # tree overwrites production exactly like an unfixed one. An override nobody
-    # sets is a default. This snapshot is a net, not a scope — it does not replace
-    # scoping the writer, it only makes gate 1 non-destructive until that lands.
-    cp -a "$SNAP_DIR/." "$EXPORT_DIR_REAL/" 2>/dev/null || true
-    echo "[${PLAT}] restored $(find "$SNAP_DIR" -type f | wc -l) exported script(s)"
-}
+# _restore_exports() is gone (2026-10-31): see RESTORE_PATHS. Nothing this script runs can write his
+# script_exports any more, so restoring it could only overwrite HIS changes. The pre-deploy copy of
+# the whole profile is still taken (FULL_SNAP), and a change to script_exports is now reported below.
 # Report-only drift check over everything OUTSIDE RESTORE_PATHS. Detection, never
 # reversion — see the RESTORE_PATHS note above for why reverting here is worse.
 _report_userdata_drift() {
@@ -326,7 +308,7 @@ _report_userdata_drift() {
         echo "[${PLAT}]   new: $rel"
     done < <(find "$USERDATA" -type f | sort)
     case $changed in
-        0) echo "[${PLAT}] userdata drift outside ${RESTORE_PATHS[*]}: none" ;;
+        0) echo "[${PLAT}] userdata drift: none (script_exports included)" ;;
         *) echo "[${PLAT}] NOTE: ${changed} user:// file(s) changed during this deploy." >&2
            # This used to read "if you were playing, that is your own save" — which
            # named the wrong author for autogrind/. Gate 1 runs the full suite and the
@@ -371,7 +353,6 @@ _EXIT_DONE=0
 _on_exit() {
     [ "$_EXIT_DONE" = "1" ] && return 0
     _EXIT_DONE=1
-    _restore_exports
     _report_userdata_drift
 }
 # 128+signo, the conventional status for a signal death.
@@ -400,18 +381,9 @@ if [ -d "$USERDATA" ]; then
         exit 1
     fi
 fi
-if [ -d "$EXPORT_DIR_REAL" ] && [ -n "$(ls -A "$EXPORT_DIR_REAL" 2>/dev/null)" ]; then
-    rm -rf "$SNAP_DIR"; mkdir -p "$SNAP_DIR"
-    cp -a "$EXPORT_DIR_REAL/." "$SNAP_DIR/"
-    echo "[${PLAT}] gate 0b: snapshotted $(find "$SNAP_DIR" -type f | wc -l) exported script(s)"
-    # The EXIT trap is installed ONCE, above, as _on_exit — do not re-arm it here.
-    # A second `trap ... EXIT` REPLACES the first rather than adding to it, and
-    # this line used to do exactly that: it silently disarmed the drift report,
-    # which then existed, was correct, and never ran. Caught by a sandbox test
-    # that asserted the report's OUTPUT rather than that the code was present.
-else
-    echo "[${PLAT}] gate 0b: no exported scripts to protect"
-fi
+# gate 0b used to snapshot script_exports here for _restore_exports; both are gone (see RESTORE_PATHS).
+# The EXIT trap is still installed ONCE, above, as _on_exit — do not re-arm it here: a second
+# `trap ... EXIT` REPLACES the first and silently disarms the drift report.
 
 # ── gate 1: test suite ───────────────────────────────────────────────────────
 # gate.sh checks Totals-present, scripts-run == test files on disk, reports

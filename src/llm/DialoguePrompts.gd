@@ -1395,7 +1395,20 @@ static func _with_pronoun_note(body: String) -> String:
 ## enforced rather than a defect being observed — the same reason the block
 ## formatters pin their trailing newline.
 static func flatten_line(line: String) -> String:
-	return line.replace("\r\n", " ").replace("\n", " ").replace("\r", " ").strip_edges()
+	return clean_model_text(line.replace("\r\n", " ").replace("\n", " ").replace("\r", " "))
+
+
+## The one rule for a model-written line before anyone sees it: trimmed, and not wrapped in its own quotes. The model
+## quotes its whole reply despite every prompt saying not to, so the box printed the marks and the log doubled them.
+## Only a MATCHED outer pair goes, and only when that mark appears nowhere inside, so quoted speech in a line stays.
+static func clean_model_text(text: String) -> String:
+	var t: String = text.strip_edges()
+	for pair in [["\"", "\""], ["“", "”"], ["'", "'"], ["‘", "’"]]:
+		if t.length() >= 2 and t.begins_with(pair[0]) and t.ends_with(pair[1]):
+			var inner: String = t.substr(1, t.length() - 2)
+			if not inner.contains(pair[0]) and not inner.contains(pair[1]):
+				return inner.strip_edges()
+	return t
 
 
 # ── Validation helpers ─────────────────────────────────────────────────────────
@@ -1518,7 +1531,9 @@ static func validate_npc_reply(raw: Variant, cycle_index: int = 0) -> Dictionary
 	if not (line is String) or (line as String).strip_edges().is_empty():
 		return _fallback_reply(cycle_index)
 
-	var s: String = (line as String).strip_edges()
+	var s: String = flatten_line(line as String)
+	if s.is_empty():
+		return _fallback_reply(cycle_index)
 	if s.length() > MAX_LINE_CHARS:
 		s = clamp_display(s, MAX_LINE_CHARS)
 
@@ -1612,7 +1627,7 @@ static func validate_boss_intent(raw: Variant, available_intents: Array) -> Dict
 	var taunt: String = ""
 	var taunt_raw: Variant = d.get("taunt", "")
 	if taunt_raw is String:
-		taunt = (taunt_raw as String).strip_edges()
+		taunt = clean_model_text(taunt_raw as String)
 		if taunt.length() > MAX_BOSS_TAUNT_CHARS:
 			taunt = clamp_display(taunt, MAX_BOSS_TAUNT_CHARS)
 
@@ -1631,7 +1646,7 @@ static func validate_party_line(raw: Variant) -> Dictionary:
 	var line_raw: Variant = d.get("line", "")
 	if not (line_raw is String):
 		return FALLBACK_PARTY_LINE.duplicate()
-	var line: String = (line_raw as String).strip_edges()
+	var line: String = clean_model_text(line_raw as String)
 	if line.is_empty():
 		return FALLBACK_PARTY_LINE.duplicate()
 	if line.length() > MAX_PARTY_LINE_CHARS:
@@ -1657,8 +1672,8 @@ static func validate_party_line(raw: Variant) -> Dictionary:
 ## as an invalid_json failure. Grammar-level hard-validation of individual
 ## rules (verb/target allowlists) is a later pass, not this one.
 static func validate_rule_composition(reply: Dictionary, _domain: String) -> Dictionary:
-	var name: String = str(reply.get("name", "")).strip_edges()
-	var desc: String = str(reply.get("description", "")).strip_edges()
+	var name: String = clean_model_text(str(reply.get("name", "")))
+	var desc: String = clean_model_text(str(reply.get("description", "")))
 	# Accept both shapes: the encoded string the prompt asks for, and the nested
 	# array models actually produce. Anything else stays a parse failure.
 	var raw_rules: Variant = reply.get("rules_json", "")

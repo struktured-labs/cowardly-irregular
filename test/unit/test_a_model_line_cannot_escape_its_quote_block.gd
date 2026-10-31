@@ -93,6 +93,15 @@ func test_a_dirty_opening_is_flattened() -> void:
 	assert_eq(str(v["line"]).find("\n"), -1, "an opening round-trips and must be flattened")
 
 
+func test_a_dirty_plain_reply_is_flattened() -> void:
+	## The fourth sibling, missed until 2026-10-31: DynamicConversation:596 validates a plain reply through
+	## validate_npc_reply, :429 stores it as _last_npc_line, and :494/:537/:580/:620 embed it in the next prompt.
+	## It had the bare strip_edges() the three arms above were written to remove.
+	var v: Dictionary = DP.validate_npc_reply({"line": DIRTY})
+	assert_eq(str(v["line"]).find("\n"), -1, "a plain reply round-trips as last_npc_line and must be flattened")
+	assert_true(str(v["line"]).find("NARRATOR") != -1, "CONTROL: flattened, not dropped")
+
+
 # ── the flattener itself ──────────────────────────────────────────────────────
 
 func test_every_line_ending_is_flattened() -> void:
