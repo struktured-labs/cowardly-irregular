@@ -1,9 +1,10 @@
 {
   "version": 1,
-  "description": "Living soundscapes, read by AmbientSoundscape. A place plays one unpitched bed plus scheduled one-shots; every interval, level, pan and pitch is rolled, so it never plays back identically. vol_db is relative to the bed level (music slider + SoundManager.AMBIENT_OFFSET_DB). Phases are day and night; dawn reads day and dusk reads night unless a place names the band itself. LEVEL: a bed sits target_lu_under_music LU under its place's music, by LOUDNESS (EBU R128 integrated, first 60s), not by a volume offset: AmbientSoundscape derives the trim from music_lufs and bed_lufs, so re-measure bed_lufs if a bed is re-rendered. Calibrated with cowir-music against the one ruling we have (rain accepted at 23.8 LU under, called too loud at 15.8). PILOT 2026-10-31: built only from sounds already in the bank. `gaps` names what the place still needs and is not yet generated.",
+  "description": "Living soundscapes, read by AmbientSoundscape. A place plays one unpitched bed plus scheduled one-shots; every interval, level, pan and pitch is rolled, so it never plays back identically. vol_db is relative to the bed level (music slider + SoundManager.AMBIENT_OFFSET_DB). Phases are day and night; dawn reads day and dusk reads night unless a place names the band itself. LEVEL: a bed sits target_lu_under_music LU under its place's music, by LOUDNESS (EBU R128 integrated, first 60s), not by a volume offset: AmbientSoundscape derives the trim from music_lufs (measured on the place's music_key track) and bed_lufs, so re-measure bed_lufs if a bed is re-rendered. Calibrated with cowir-music against the one ruling we have (rain accepted at 23.8 LU under, called too loud at 15.8). PILOT 2026-10-31: built only from sounds already in the bank. `gaps` names what the place still needs and is not yet generated.",
   "target_lu_under_music": 21.0,
   "places": {
     "harmonia_village": {
+      "music_key": "village_harmonia",
       "music_lufs": -14.0,
       "phases": {
         "day": {
@@ -35,6 +36,7 @@
       ]
     },
     "eldertree_village": {
+      "music_key": "village_medieval",
       "music_lufs": -14.5,
       "phases": {
         "day": {

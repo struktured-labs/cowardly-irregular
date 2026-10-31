@@ -331,11 +331,45 @@ func test_every_place_carries_the_loudness_its_level_is_derived_from() -> void:
 		var rec: Dictionary = _recipe_places()[place]
 		if not rec.has("music_lufs") or float(rec["music_lufs"]) > -5.0 or float(rec["music_lufs"]) < -40.0:
 			bad.append("%s music_lufs=%s" % [place, rec.get("music_lufs")])
+		## music_key names the track music_lufs was measured on, so the pre-gate can re-measure it (cowir-music's check).
+		if not SoundManager.has_music_track(str(rec.get("music_key", ""))):
+			bad.append("%s music_key='%s' is no track in music_manifest" % [place, rec.get("music_key", "")])
 		for phase in rec.get("phases", {}):
 			var layer: Dictionary = rec["phases"][phase]
 			if str(layer.get("bed", "")) != "" and (not layer.has("bed_lufs") or float(layer["bed_lufs"]) > -5.0 or float(layer["bed_lufs"]) < -50.0):
 				bad.append("%s/%s bed_lufs=%s" % [place, phase, layer.get("bed_lufs")])
 	assert_eq(bad, [], "a bed's level is derived from these measurements, so a missing or implausible one sets it wrong: %s" % [bad])
+
+
+## The engine can see the place -> track link; a Python pre-gate could only re-implement it (cowir-music 2026-10-31).
+func test_each_place_names_the_track_it_really_plays() -> void:
+	var world_restore: int = GameState.current_world
+	GameState.current_world = 1
+	var checked := 0
+	var wrong: Array[String] = []
+	for place in _recipe_places():
+		var script_path := ""
+		for f in DirAccess.get_files_at(VILLAGES_DIR):
+			if f.ends_with(".gd") and FileAccess.get_file_as_string(VILLAGES_DIR + f).contains("return \"%s\"" % place):
+				script_path = VILLAGES_DIR + f
+		if script_path == "":
+			wrong.append("%s: no village script returns this area id" % place)
+			continue
+		var village: Node = load(script_path).new()
+		var area: String = village.call("_get_music_area_id")
+		village.free()
+		SoundManager.play_area_music(area)
+		await get_tree().process_frame
+		await get_tree().process_frame
+		var want: String = str(SoundManager._music_manifest.get(str(_recipe_places()[place].get("music_key", "")), {}).get("file", "")).get_file().get_basename()
+		var got: String = SoundManager.playing_track_stem()
+		checked += 1
+		if got != want:
+			wrong.append("%s (music area '%s') plays '%s', but the recipe's music_key resolves to '%s'" % [place, area, got, want])
+	SoundManager.stop_music()
+	GameState.current_world = world_restore
+	assert_gt(checked, 1, "VOID: checked %d places" % checked)
+	assert_eq(wrong, [], "music_lufs was measured on the wrong track, so the bed's level is derived from the wrong number: %s" % [wrong])
 
 
 func test_a_bed_sits_its_target_under_the_music() -> void:
