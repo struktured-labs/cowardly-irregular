@@ -3,7 +3,7 @@
   "title": "The Grand Schedule — Aftermath",
   "world": 3,
   "trigger": "boss_tempo_steampunk_defeated",
-  "background": "steampunk_workshop",
+  "background": "mechanism_interior",
   "description": "It does not die. It loses the ability to compensate, and goes on counting. Pays off Clem's 'I was late once. Seven seconds. The Mechanism compensated -- I still don't know how.'",
   "steps": [
     {

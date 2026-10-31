@@ -93,6 +93,10 @@ func _menu_ids(party: Array[Combatant], actor: Combatant, enemy: Combatant) -> A
 func test_floor_the_bag_this_file_drives() -> void:
 	for m in ["party_item_count", "party_inventory", "take_party_item"]:
 		assert_true(ItemSystem.has_method(m), "ItemSystem must still expose %s()" % m)
+	## take_party_item RETURNS remove_item's verdict, so both halves of the spend are this file's
+	var probe: Combatant = autofree(Combatant.new())
+	for m in ["get_item_count", "remove_item", "add_item"]:
+		assert_true(probe.has_method(m), "Combatant must still expose %s()" % m)
 	var gl = autofree(GameLoopScript.new())
 	assert_true(gl.has_method("_create_party"), "GameLoop must still expose _create_party()")
 
@@ -156,3 +160,97 @@ func test_decoy_an_enemy_never_reaches_into_the_party_bag() -> void:
 	BattleManager.enemy_party.assign([goblin] as Array[Combatant])
 	BattleManager._execute_item(goblin, "potion", [goblin])
 	assert_eq(leader.get_item_count("potion"), 3, "an enemy drank from the party's bag")
+
+
+## ⛔ take_party_item RETURNS A VERDICT AND THREE CALL SITES DISCARD IT — BattleManager's live item
+## executor and HeadlessBattleResolver's two. cowir-overworld reported that as a live free-item-use
+## bug. It is NOT one, and the four arms below are the entire reason: a count check gates every one
+## of those paths, and a counted bag always pays. BOTH halves were unpinned — every assert above
+## checks a COUNT after a successful take, and the verdict itself had ZERO asserts anywhere in
+## test/. So "the discard is harmless" was true by coincidence rather than by check, and an edit to
+## either half would turn three sites into silent free uses with nothing to catch it.
+func test_a_countable_bag_always_pays() -> void:
+	var leader := _pc("Bram", "fighter")
+	var cleric := _pc("Marta", "cleric")
+	var outsider := _pc("Phil", "rogue")
+	var bag: Array = [leader, cleric]
+	## take checks the user's own stock, then every OTHER member of the bag. count sums the bag.
+	## These four cases are where those two populations could diverge.
+	for c in [
+		{"label": "the user holds it", "holder": leader, "user": leader},
+		{"label": "another member holds it", "holder": leader, "user": cleric},
+		{"label": "the user is not in the bag", "holder": leader, "user": outsider},
+		{"label": "the user is null", "holder": cleric, "user": null},
+	]:
+		leader.inventory.clear()
+		cleric.inventory.clear()
+		outsider.inventory.clear()
+		(c["holder"] as Combatant).add_item("potion", 1)
+		assert_gt(ItemSystem.party_item_count(bag, "potion"), 0,
+			"PRECONDITION (%s): the bag must count one, or the arm proves nothing" % c["label"])
+		assert_true(ItemSystem.take_party_item(c["user"], bag, "potion"),
+			"a bag counting > 0 must pay — %s. Three call sites discard this verdict, so a false here is a free item use." % c["label"])
+
+
+func test_an_unpayable_take_still_refuses() -> void:
+	var leader := _pc("Bram", "fighter")
+	var cleric := _pc("Marta", "cleric")
+	leader.inventory.clear()
+	cleric.inventory.clear()
+	var bag: Array = [leader, cleric]
+	assert_eq(ItemSystem.party_item_count(bag, "potion"), 0, "CONTROL: nobody holds one")
+	## DECOY: without this arm `return true` satisfies the one above, and a verdict that cannot say
+	## no is exactly as useless to those three call sites as one nobody reads.
+	assert_false(ItemSystem.take_party_item(leader, bag, "potion"),
+		"an empty bag must return false — a take that can only say yes pins nothing")
+
+
+func test_a_counted_item_can_always_be_removed() -> void:
+	var pc := _pc("Bram", "fighter")
+	pc.inventory.clear()
+	pc.add_item("potion", 1)
+	assert_gt(pc.get_item_count("potion"), 0, "PRECONDITION: the stock must read one")
+	## take_party_item consults get_item_count and then RETURNS remove_item's verdict. Repoint
+	## either at a different store and the take reports failure after the effect already landed.
+	assert_true(pc.remove_item("potion", 1),
+		"get_item_count() > 0 must imply remove_item() — take_party_item returns this verdict verbatim")
+	assert_eq(pc.get_item_count("potion"), 0, "and the stock must actually fall")
+
+
+func test_every_discarded_take_verdict_sits_behind_a_count_check() -> void:
+	## ⛔ COMMENTS STRIPPED AND THE SEARCH ANCHORED BY LINE INDEX. A function-body bound cannot
+	## protect an anchor search, because the header lives inside the bound: my last ratchet of this
+	## shape landed on a COMMENT naming the symbol and swept in a guard from the wrong side of the
+	## call. The comment above this very arm names both symbols, so an unstripped search passes
+	## whatever the code does.
+	var bare := RegEx.create_from_string("^[A-Za-z_][A-Za-z0-9_.]*\\.take_party_item\\(")
+	var discarded := 0
+	for path in ["res://src/battle/BattleManager.gd", "res://src/autogrind/HeadlessBattleResolver.gd"]:
+		## ⛔ strip_comments, NOT code_of. code_of partitions on triple-quoted regions and rejoins
+		## the surviving code with
+		## "\n", so it is NOT LINE-PRESERVING — measured on these two files, +57 and +4 lines of
+		## drift, which is exactly how far wrong the line number this arm PRINTS would be.
+		## strip_comments keeps one output line per input line, which is what a positional anchor
+		## needs. Docstrings therefore survive; measured, neither file's docstring half contains
+		## either token, so none can forge a gate. code_of is right for a PRESENCE assert and wrong
+		## for a POSITIONAL one, and this arm is positional.
+		var lines: PackedStringArray = GdSource.strip_comments(FileAccess.get_file_as_string(path)).split("\n")
+		var func_start := 0
+		for i in lines.size():
+			var line: String = lines[i]
+			if line.begins_with("func ") or line.begins_with("static func "):
+				func_start = i
+			if bare.search(line.strip_edges()) == null:
+				continue
+			var guarded := false
+			for j in range(func_start, i):
+				if lines[j].contains("party_item_count(") and lines[j].contains("<= 0"):
+					guarded = true
+					break
+			assert_true(guarded,
+				"%s:%d discards take_party_item()'s verdict with no party_item_count() <= 0 gate above it in its own function — that is a free item use" % [str(path).get_file(), i + 1])
+			discarded += 1
+	## ANTI-VACUITY: the loop proves nothing if it matched no site. No count is pinned — a new
+	## discarded site must be GATED, not merely counted, so this floor is a relationship not a value.
+	assert_gt(discarded, 0,
+		"found no discarded take_party_item() verdict — the search is broken, not the code")

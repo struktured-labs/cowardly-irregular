@@ -161,7 +161,7 @@ func _create_slot_panel(slot: int, panel_size: Vector2) -> Control:
 
 	# Get save info
 	var actual_slot = slot if slot != SaveSystem.QUICK_SAVE_SLOT else SaveSystem.QUICK_SAVE_SLOT
-	var save_info = SaveSystem.get_save_info(actual_slot)
+	var save_info = _save_info_for(actual_slot)
 
 	if save_info.is_empty():
 		# Empty slot
@@ -331,6 +331,11 @@ static func _hp_fill_color(hp_pct: float) -> Color:
 
 
 # Tick 197: ISO-8601 'YYYY-MM-DDTHH:MM:SS' → 'MM/DD HH:MM'. Single fallback path replaces the prior inner-if/else with a silent fall-through hole.
+## A slot's metadata. The one read, so a layout test can supply a save without writing one to user://.
+func _save_info_for(slot: int) -> Dictionary:
+	return SaveSystem.get_save_info(slot)
+
+
 static func _format_save_date(save_date: String) -> String:
 	if save_date == "":
 		return ""

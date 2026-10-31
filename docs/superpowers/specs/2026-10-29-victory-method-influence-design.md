@@ -14,16 +14,40 @@ types are specified here; naming and wiring are cowir-main's. This is the shape 
 
 ## (a) What exists today
 
-### The one live branching mechanism
+### The live branching mechanisms — THREE, not one
 
-`CutsceneDirector.gd:1985-1993` — a **step-level** `condition: "playstyle"` selects from a `cases`
-dictionary, falling back to `default`:
+⛔ **CORRECTED 2026-10-30.** The first draft of this document called playstyle *"the one live
+branching mechanism."* That is wrong. `_execute_branch` dispatches **three** step-level forms, and
+playstyle is the second one checked:
+
+| # | form | selector | live? | shipped users |
+|---|---|---|---|---|
+| 1 | `{"type":"branch","flag":"<name>"}` → `if_true`/`if_false` | `GameState.game_constants["cutscene_flag_" + flag]` | yes, `:1978-1984` | **0 of 200 scenes** |
+| 2 | `{"condition":"playstyle","cases":{…}}` | `_detect_playstyle()` | yes, `:1985-1993` | 7 scenes |
+| 3 | `{"condition":"lead_job","cases":{…}}` | `_lead_job_id()` | yes, `:1995-1999` | 8 scenes |
 
 ```
 var playstyle = _detect_playstyle()
 var cases = step.get("cases", {})
 branch_steps = cases.get(playstyle, cases.get("default", []))
 ```
+
+🔑 **Form 1 matters most to this proposal and the first draft missed it entirely: a branch on
+a STORED FACT is already implemented and has never been used.** `cutscene_flag_` appears in 42
+`src/` files, the dispatcher reads it first, and **not one shipped scene uses `if_true`/`if_false`.**
+So the engine can already fork narration on a saved boolean — which changes the cost of everything
+in section (c).
+
+⚠️ **Form 3 is a live per-character fork and belongs in this design.** `_lead_job_id()` is a real
+detector (`GameState.party_for_queries()` indexed by `party_leader_index`, returning that row's
+`job_id`), and 8 scenes already branch on it — the W1 prologue (×3), `bram_shield`, `orrery`, and
+four of the five spotlight chapters. **"Influence your characters" has an existing mechanism with
+shipped prose precedent, not just the playstyle axis.** Its own caveat is recorded at `:1996`: the
+read is the live job, while `get_party_leader()` is the menu/save snapshot, so an unsaved job change
+reads as the old lead.
+
+ℹ️ A fourth step type, `choice` (`{prompt, options}`), exists in `world6_orrery` — player-facing
+rather than state-driven, so it is not a branch on anything the save knows.
 
 ### What the detector can say
 
@@ -55,6 +79,20 @@ A at ≤3, B at ≤5, C beyond.
 
 ### Which scenes actually fork
 
+**Re-measured 2026-10-30 by parsing all 200 shipped cutscene JSONs from `origin/main`** (every
+nested step at any depth, keyed on `branch`/`choice`/`lead_branch` or the presence of
+`condition`/`cases`), with a positive control: `world6_chapter3` must come back non-zero, and does.
+The first draft listed four rows from a text search and **missed the eight `lead_job` scenes
+entirely.**
+
+```
+15 of 200 scenes contain any conditional step
+  playstyle (7)  world1_chapter2 · world6_chapter3 · world1_{warden,arbiter,curator,tempo}_encounter
+  lead_job  (8)  world1_prologue (×3) · world1_bram_shield · world1_orrery
+                 world1_spotlight_{cleric_ch1,fighter_ch2,mage_ch3,rogue_ch3,bard_ch7}
+  choice    (1)  world6_orrery
+```
+
 | scene | arms authored |
 |---|---|
 | `world1_chapter2` | automator · grinder · exploiter · manual · default |
@@ -69,8 +107,11 @@ Ending Matrix in `docs/narrative_tree.md:231`, already in the player's hands.
 
 ### What does not fork
 
-⛔ **The ending itself is linear.** `data/cutscenes/world6_ending.json` is one scene, 41 steps, and
-**zero** `branch`, `choice` or `lead_branch` steps. Step types present: narration ×9, dialogue ×6,
+⛔ **The ending itself is linear — RE-VERIFIED 2026-10-30 and it holds.** `world6_ending.json` is
+one scene, **41 steps, 0 conditional**, by JSON parse rather than the text search the first draft
+used: every nested step at any depth, counting `branch`/`choice`/`lead_branch` **and** any step
+carrying `condition` or `cases`, on an instrument that fired on `world6_chapter3` first. Zero
+`branch`, `choice` or `lead_branch` steps. Step types present: narration ×9, dialogue ×6,
 wait ×16, set_flag ×2, and one each of letterbox_in/out, chapter_title, play/stop_music,
 screen_flash, play_sfx, roll_credits.
 
@@ -204,7 +245,12 @@ chapter3's arms. What this proposal adds is the per-boss resolution underneath t
 "Heavy autobattle → Automation" stops being a single threshold and becomes a record of where the
 automation was pointed.
 
-**The ending's linearity is the real work.** Any fork there is new structure. The cheapest version
+**The ending's linearity is the real work — but the MECHANISM is not new.** ⛔ The first draft said
+*"any fork there is new structure"*, conflating the **scene** with the **engine**. The scene has no
+fork and authoring one is real work; the engine has had a branch-on-a-stored-fact since before this
+proposal (`flag` → `cutscene_flag_*`, form 1 above) and **no scene has ever used it.** So a
+ledger-driven ending beat needs new JSON and a constant, not a new step type — which lowers the
+price of question 3 below. The cheapest version
 that satisfies 19479 is a **single ledger-driven beat inside the existing 41 steps** rather than a
 branched ending per playstyle — the Calibrant reads back three or four specifics from the ledger,
 and the surrounding scene is unchanged. That keeps one ending, preserves the existing prose, and

@@ -241,6 +241,7 @@ func test_keep_music_defaults_off_for_every_other_scene() -> void:
 			"world1_eldertree_npcs.json",
 			"world1_harmonia_npcs.json",
 			"world1_mordaine_watch_road.json",
+			"world1_sandrift_npcs.json",
 			"world2_maple_heights_npcs.json",
 			"world2_oak_street_npcs.json",
 			"world3_brasston_npcs.json",

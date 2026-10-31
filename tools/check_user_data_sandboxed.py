@@ -45,7 +45,9 @@ tried to fix. Exports now carry a redirect like every other invocation; see tool
 
 Exit 0 every invocation is sandboxed or declared · 1 something is not · 2 nothing was examined.
 """
+import ast
 import glob
+import io
 import subprocess
 import os
 import re
@@ -138,13 +140,171 @@ def _runs_godot(code):
 # Deliberately EMPTY. Kept as a named, greppable place so that adding an exemption is a visible
 # act with a reason attached, rather than a special case buried in the matcher — and so the
 # report keeps a `declared` column that reads 0 instead of silently having no such concept.
-EXEMPT = (
-    # launch.sh IS the player's launcher. Its whole purpose is to start the game against
-    # struktured's real profile, so an import prewarm writing user:// there is the intended
-    # behaviour rather than a leak. This is the one case where "runs unsandboxed" is correct,
-    # and it is declared rather than filtered so the next reader sees WHY it is not a finding.
-    ("launch.sh", "the player's own launcher — running against the real profile is its purpose"),
-)
+# ⛔ DROPPED 2026-10-15, and it was 0-FOR-2 ON ITS OWN JUSTIFICATION (cowir-sfx).
+# The entry was ("launch.sh", "the player's own launcher — running against the real profile is
+# its purpose"). That reason is true of `godot &` at launch.sh:50 and FALSE of the two
+# `godot --headless --import` prewarms at :40 and :45 -- and because the tuple matches on
+# `path == token` it declared the whole FILE, so it licensed exactly the two lines its reason is
+# not about. Worse, the line it IS about was never a finding: `godot &` carries no `--`, so it
+# never matches EDITOR_CLASS. A file-scoped licence for a line-scoped reason.
+# The docstring above already said "THERE ARE NO EXEMPTIONS ANY MORE"; now that is true.
+# ⚠️ The MECHANISM (a declaration may name a FILE, not just a line fragment) is still pinned --
+# selftest injects a synthetic EXEMPT, because an arm that needs a live licence to stay green
+# is a reason never to remove one.
+EXEMPT = ()
+
+
+# ⛔ THE CORPUS WAS A LANGUAGE. main()'s comment celebrates deriving the corpus "from the index,
+# not from a pattern" while the derivation stayed `git ls-files "*.sh"` -- an EXTENSION standing
+# in for "everything that can launch godot", which is the same substitution one layer over.
+# 220 tracked python files exist, one of them launched the engine, and this guard could not see
+# the language it is itself written in. (Seven lanes made the identical shell-only corpus error
+# in their own audits on 2026-10-15; this one was frozen into a guard the publish chain blocks on.)
+#
+# ⛔ AND IT IS AST, NOT REGEX, BECAUSE THE FIRST VERSION FLAGGED ITS OWN SELFTEST FIXTURES.
+# A pattern cannot separate `subprocess.run(["godot"...])` from a STRING containing that text,
+# and this file is full of the latter by construction -- 5 false findings, in the guard itself,
+# on the first run. The shell arm has the same hazard and solves it by hand (`ADVICE TEXT in an
+# echo is not an invocation`); python hands us an exact answer, since a string holding code is a
+# Constant and never a Call. Nothing here can be fooled by a quoted example.
+PY_SUBPROC_FNS = {"run", "Popen", "call", "check_call", "check_output"}
+
+
+def _py_is_subprocess(func):
+    if isinstance(func, ast.Attribute) and func.attr in PY_SUBPROC_FNS:
+        return isinstance(func.value, ast.Name) and func.value.id == "subprocess"
+    if isinstance(func, ast.Attribute) and func.attr in ("system", "popen"):
+        return isinstance(func.value, ast.Name) and func.value.id == "os"
+    return False
+
+
+def _py_names_engine(call):
+    """An engine named as an ARGUMENT, by basename -- so `project.godot` (a filename) and
+    `res://.godot/imported/x` (a path) are data, which is the false-positive class that cost
+    three lanes a wrong audit number on 2026-10-15."""
+    def _is_engine(sval):
+        base = sval.rsplit("/", 1)[-1]
+        return base == "godot" or base.endswith("run_tests.sh")
+
+    for arg in call.args:
+        if isinstance(arg, (ast.List, ast.Tuple)):
+            for el in arg.elts:
+                if isinstance(el, ast.Constant) and isinstance(el.value, str) and _is_engine(el.value):
+                    return True
+        elif isinstance(arg, ast.Constant) and isinstance(arg.value, str):
+            # shell=True form: the engine must be in command position, not merely present.
+            if EDITOR_CLASS.search(arg.value) and _in_command_position(
+                    arg.value[:EDITOR_CLASS.search(arg.value).start()]):
+                return True
+            if "run_tests.sh" in arg.value:
+                return True
+    return False
+
+
+def _py_module_env_governs(tree):
+    """A MODULE-LEVEL os.environ write governs every later subprocess in the process, because
+    subprocess inherits os.environ by default. This has no shell analogue.
+
+    Only `tree.body` counts. An indented write is reached only if its function ran first, which
+    this cannot know -- clearing on it would be textual presence standing in for a structural
+    property, the exact failure _redirect_governs documents for shell."""
+    for node in tree.body:
+        tgts = []
+        if isinstance(node, ast.Assign):
+            tgts = node.targets
+        elif isinstance(node, ast.AnnAssign):
+            tgts = [node.target]
+        for t in tgts:
+            if isinstance(t, ast.Subscript) and isinstance(t.value, ast.Attribute) \
+               and t.value.attr == "environ" and isinstance(t.slice, ast.Constant) \
+               and t.slice.value == "XDG_DATA_HOME":
+                return True
+        if isinstance(node, ast.Expr) and isinstance(node.value, ast.Call) \
+           and isinstance(node.value.func, ast.Attribute) and node.value.func.attr == "setdefault" \
+           and node.value.args and isinstance(node.value.args[0], ast.Constant) \
+           and node.value.args[0].value == "XDG_DATA_HOME":
+            return True
+    return False
+
+
+def _py_env_parents(value):
+    """Names a derived env could have inherited XDG_DATA_HOME FROM. Every idiom that
+    re-derives one mapping from another: dict(base, ...), base.copy(), {**base, ...},
+    and base | {...}. A form not listed yields nothing, so the chain ends and reds."""
+    out = []
+    if isinstance(value, ast.Call):
+        for a in value.args:
+            if isinstance(a, ast.Name):
+                out.append(a.id)
+        if isinstance(value.func, ast.Attribute) and value.func.attr == "copy" \
+           and isinstance(value.func.value, ast.Name):
+            out.append(value.func.value.id)
+    elif isinstance(value, ast.Dict):
+        for k, v in zip(value.keys, value.values):
+            if k is None and isinstance(v, ast.Name):
+                out.append(v.id)
+    elif isinstance(value, ast.BinOp) and isinstance(value.op, ast.BitOr):
+        for side in (value.left, value.right):
+            if isinstance(side, ast.Name):
+                out.append(side.id)
+    return out
+
+
+def _py_env_governs(call, tree):
+    """`env=` on THIS call. Two spellings, plus a CHAIN of name indirection, because a
+    sandboxed base env is routinely re-derived per call: `env = dict(os.environ,
+    XDG_DATA_HOME=sb)` then `e = dict(env, EXTRA=...)` then `env=e`. Resolving only the
+    last hop red `tools/boss_ladder_sweep.py:112`, which IS sandboxed — a false positive
+    that blocks every publish (publish_all.sh gate 0a). An UNRESOLVABLE chain still reds,
+    which is the safe direction and names its own cure."""
+    kw = next((k for k in call.keywords if k.arg == "env"), None)
+    if kw is None:
+        return False
+    if isinstance(kw.value, ast.Dict):
+        for k in kw.value.keys:
+            if isinstance(k, ast.Constant) and k.value == "XDG_DATA_HOME":
+                return True
+    if isinstance(kw.value, ast.Name):
+        pending, seen = [kw.value.id], set()
+        while pending:
+            name = pending.pop()
+            if name in seen or len(seen) >= 16:
+                break
+            seen.add(name)
+            for node in ast.walk(tree):
+                if not isinstance(node, ast.Assign):
+                    continue
+                for t in node.targets:
+                    if isinstance(t, ast.Subscript) and isinstance(t.value, ast.Name) \
+                       and t.value.id == name and isinstance(t.slice, ast.Constant) \
+                       and t.slice.value == "XDG_DATA_HOME":
+                        return True
+                    if isinstance(t, ast.Name) and t.id == name:
+                        if "XDG_DATA_HOME" in ast.dump(node.value):
+                            return True
+                        pending.extend(_py_env_parents(node.value))
+    return False
+
+
+def _py_invocations(path):
+    """Yield (lineno, text, sandboxed) for every engine launch in a python file."""
+    src = io.open(path, encoding="utf-8", errors="replace").read()
+    try:
+        tree = ast.parse(src)
+    except SyntaxError as exc:
+        # A file we cannot parse is a file we cannot certify. All 220 tracked .py parse today;
+        # if that changes, say so rather than reporting it clean.
+        print(f"  BLOCKED   {path}: does not parse ({exc}) -- cannot certify its invocations",
+              file=sys.stderr)
+        return
+    module_ok = _py_module_env_governs(tree)
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call) or not _py_is_subprocess(node.func):
+            continue
+        if not _py_names_engine(node):
+            continue
+        text = (ast.get_source_segment(src, node) or "").split("\n")[0]
+        yield node.lineno, " ".join(text.split())[:100], module_ok or _py_env_governs(node, tree)
 
 
 def _commands(path):
@@ -174,6 +334,18 @@ def audit(paths):
         if not os.path.exists(path):
             continue
         scanned += 1
+        if path.endswith(".py"):
+            for lineno, text, sandboxed in _py_invocations(path):
+                exempt_reason = next((r for token, r in EXEMPT
+                                      if path == token or path.endswith("/" + token)), None)
+                if sandboxed:
+                    ok += 1
+                elif exempt_reason:
+                    declared += 1
+                    print(f"  declared  {path}:{lineno}  {exempt_reason}")
+                else:
+                    findings.append((path, lineno, text, "godot (python)"))
+            continue
         for lineno, cmd in _commands(path):
             code = cmd.split("#", 1)[0] if not cmd.lstrip().startswith("#") else ""
             if not code.strip():
@@ -277,8 +449,11 @@ def main(argv):
         paths = argv
     else:
         try:
-            out = subprocess.run(["git", "ls-files", "*.sh"], capture_output=True, text=True, timeout=30)
-            paths = sorted(p for p in out.stdout.split("\n") if p.endswith(".sh"))
+            # ⛔ `*.sh` ALONE WAS STILL A PATTERN STANDING IN FOR A SET -- see the PY_SUBPROC
+            # comment. The index is the right source; the extension list is the part that was
+            # a hypothesis, and python is where the one missed invocation lived.
+            out = subprocess.run(["git", "ls-files", "*.sh", "*.py"], capture_output=True, text=True, timeout=30)
+            paths = sorted(p for p in out.stdout.split("\n") if p.endswith((".sh", ".py")))
         except Exception:
             paths = []
         if not paths:
@@ -346,10 +521,20 @@ def selftest():
         check("the derived corpus reaches OUTSIDE tools/", len(_outside) > 0, True)
         check("  ...and it is derived, not a glob", "ls-files" in open(__file__).read(), True)
 
-        # a declaration must be able to name a FILE, not only a line fragment
-        f, o, dec, _ = audit([w("launch.sh", 'godot --headless --import\n')])
-        check("a PATH-named exemption is honoured", dec, 1)
-        check("  ...and it is not counted as a finding", len(f), 0)
+        # a declaration must be able to name a FILE, not only a line fragment.
+        # SYNTHETIC since 2026-10-15: EXEMPT is empty, and this pins the MECHANISM rather than
+        # any live entry. Previously it read the real tuple, so the arm could only stay green
+        # while an exemption existed -- a guard that pays you to keep a licence.
+        _saved_exempt = EXEMPT
+        globals()["EXEMPT"] = (("launch.sh", "synthetic: the mechanism, not a live licence"),)
+        try:
+            f, o, dec, _ = audit([w("launch.sh", 'godot --headless --import\n')])
+            check("a PATH-named exemption is honoured (synthetic)", dec, 1)
+            check("  ...and it is not counted as a finding", len(f), 0)
+            check("  ...and the real tuple is EMPTY, so that was the mechanism only",
+                  len(_saved_exempt), 0)
+        finally:
+            globals()["EXEMPT"] = _saved_exempt
 
         # the exported binary, which carries no `godot` at all
         f, o, dec, _ = audit([w("c.sh", '( cd "$OUT" && timeout 240 "./${ARTIFACT}" --headless --quit )\n')])
@@ -413,6 +598,109 @@ def selftest():
         check("a corpus with no invocations is BLOCKED (2)", rc, 2)
         rc = main([os.path.join(d, "does-not-exist.sh")])
         check("a corpus of missing files is BLOCKED (2)", rc, 2)
+        # ---- PYTHON ARM. The corpus was shell-only; these are the forms it could not see. ----
+        PY_BARE = ('import subprocess\n'
+                   'subprocess.run(["godot", "--headless", "--import", "--quit"], timeout=900)\n')
+        f, o, dec, _ = audit([w("p_bare.py", PY_BARE)])
+        check("python: a list-form godot launch is FLAGGED", len(f), 1)
+        check("  ...and the shell matcher alone would have missed it",
+              bool(EDITOR_CLASS.search('["godot", "--headless"]')), False)
+
+        f, o, dec, _ = audit([w("p_env.py",
+            'import os, subprocess\n'
+            'subprocess.run(["godot", "--import"], env={**os.environ, "XDG_DATA_HOME": "sb"})\n')])
+        check("python: a per-call env= redirect is CLEAN", len(f), 0)
+        check("  ...and is COUNTED rather than skipped", o, 1)
+
+        # `env=` is conventionally the LAST argument, so a fixed-width window misses exactly the
+        # thing that clears the finding. Balanced-paren extraction is what makes this arm pass.
+        f, o, dec, _ = audit([w("p_multiline.py",
+            'import os, subprocess\n'
+            'subprocess.run(\n'
+            '    ["godot", "--headless", "--audio-driver", "Dummy", "--import", "--quit"],\n'
+            '    cwd="/x", capture_output=True, timeout=900,\n'
+            '    env={**os.environ, "XDG_DATA_HOME": "sb"},\n'
+            ')\n')])
+        check("python: env= on a LATER line still governs", len(f), 0)
+
+        f, o, dec, _ = audit([w("p_module.py",
+            'import os, subprocess\n'
+            'os.environ["XDG_DATA_HOME"] = "sb"\n'
+            'subprocess.run(["godot", "--import"])\n')])
+        check("python: a module-level os.environ write governs", len(f), 0)
+
+        # Indented => ran only if that function ran first, which this cannot know. Flagging is
+        # the safe direction and names the cure.
+        f, o, dec, _ = audit([w("p_indented.py",
+            'import os, subprocess\n'
+            'def setup():\n'
+            '    os.environ["XDG_DATA_HOME"] = "sb"\n'
+            'subprocess.run(["godot", "--import"])\n')])
+        check("python: an INDENTED os.environ write does NOT clear it", len(f), 1)
+
+        f, o, dec, _ = audit([w("p_named.py",
+            'import os, subprocess\n'
+            'e = dict(os.environ)\n'
+            'e["XDG_DATA_HOME"] = "sb"\n'
+            'subprocess.run(["godot", "--import"], env=e)\n')])
+        check("python: env=NAME resolves one level", len(f), 0)
+
+        # ⛔ THE SHAPE THAT RED tools/boss_ladder_sweep.py:112, WHICH IS SANDBOXED. Resolving only
+        # the last hop reported it UNSANDBOXED, and publish_all.sh gate 0a refuses on that.
+        f, o, dec, _ = audit([w("p_chain.py",
+            'import os, subprocess\n'
+            'env = dict(os.environ, XDG_DATA_HOME="sb")\n'
+            'e = dict(env, BAL_LEVEL="7")\n'
+            'subprocess.run(["godot", "--headless", "-s", "x.gd"], env=e)\n')])
+        check("python: env=NAME resolves a dict(base, ...) CHAIN", len(f), 0)
+
+        f, o, dec, _ = audit([w("p_copy.py",
+            'import os, subprocess\n'
+            'base = dict(os.environ, XDG_DATA_HOME="sb")\n'
+            'e = base.copy()\n'
+            'subprocess.run(["godot", "--import"], env=e)\n')])
+        check("python: env=NAME resolves a .copy() hop", len(f), 0)
+
+        f, o, dec, _ = audit([w("p_splat.py",
+            'import os, subprocess\n'
+            'base = dict(os.environ, XDG_DATA_HOME="sb")\n'
+            'e = {**base, "BAL_GEAR": "1"}\n'
+            'subprocess.run(["godot", "--import"], env=e)\n')])
+        check("python: env=NAME resolves a {**base} hop", len(f), 0)
+
+        # THE SAFE DIRECTION, and the arm that keeps the chain from licensing anything: a hop
+        # whose parent never carries the variable still REDS rather than being assumed clean.
+        f, o, dec, _ = audit([w("p_chain_unsandboxed.py",
+            'import os, subprocess\n'
+            'env = dict(os.environ, BAL_TRIALS="3")\n'
+            'e = dict(env, BAL_LEVEL="7")\n'
+            'subprocess.run(["godot", "--import"], env=e)\n')])
+        check("python: a CHAIN carrying no XDG_DATA_HOME still reds", len(f), 1)
+
+        f, o, dec, _ = audit([w("p_runtests.py",
+            'import subprocess\n'
+            'subprocess.run(["timeout", "900", "tools/run_tests.sh", "x"])\n')])
+        check("python: run_tests.sh in a list is FLAGGED", len(f), 1)
+
+        # ⛔ THE FALSE-POSITIVE CLASSES THAT COST SEVEN LANES A WRONG NUMBER ON 2026-10-15:
+        # `.godot` as a FILE EXTENSION and `.godot/imported` as a PATH, both inside data.
+        f, o, dec, _ = audit([w("p_fp.py",
+            'import subprocess\n'
+            'EXTS = ("gd", "json", "tscn", "cfg", "tres", "godot", "sh", "py")\n'
+            'dest = "res://.godot/imported/x.ctex"\n'
+            'subprocess.run(["git", "ls-files", "project.godot"])\n'
+            'print("run godot --import yourself")\n')])
+        check("python: an extension list / .godot path / project.godot is NOT a launch", len(f), 0)
+        check("  ...and that file yields no invocation at all", o + dec + len(f), 0)
+
+        f, o, dec, _ = audit([w("p_comment.py",
+            'import subprocess\n'
+            '# subprocess.run(["godot", "--import"])\n')])
+        check("python: a COMMENTED-OUT launch is not an invocation", len(f), 0)
+
+        check("the derived corpus now spans BOTH languages",
+              all(e in open(__file__).read() for e in ('"*.sh", "*.py"',)), True)
+
 
     # ⛔ A DECLARATION NOBODY HAS WATCHED FIRE IS INDISTINGUISHABLE FROM A DEAD ENTRY.
     # This file already lost one to that: the EXEMPT tuple was tested only against `code`, so an
@@ -420,12 +708,21 @@ def selftest():
     # measured. That bug was fixed; the CLASS was not. If launch.sh is sandboxed, renamed, or stops
     # invoking godot, its declaration becomes a permanent silent exemption with nothing to say so.
     # So: every EXEMPT token must still produce a `declared` row on the REAL tree.
+    #
+    # ⚠️ AND THAT LOOP GOES VACUOUS THE MOMENT THE TUPLE IS EMPTY, which is now the normal
+    # state -- zero iterations, zero arms, nothing said. The `if not EXEMPT` arm below is what
+    # keeps this section able to fail at all: with no licences issued, the real tree must
+    # declare NOTHING, so a declaration that reappears without an entry is caught too.
+    # This is the anti-vacuity pair, not a second opinion on the same fact.
     import io as _io
     _out = _sp.run([sys.executable, __file__], capture_output=True, text=True, timeout=120).stdout
     for _token, _reason in EXEMPT:
         _fired = any(line.startswith("  declared ") and _token in line for line in _out.splitlines())
         check("EXEMPT '%s' still fires — else DROP it, do not carry a stale exemption" % _token,
               _fired, True)
+    if not EXEMPT:
+        _declared = [l for l in _out.splitlines() if l.startswith("  declared ")]
+        check("EXEMPT is empty, so the real tree declares NOTHING", len(_declared), 0)
 
     # ⛔ THE INTERPRETER RULE, BOTH DIRECTIONS. This LOOSENS a safety guard, so the arms that
     # matter are the ones proving it did not stop flagging a real execution. The third is the
