@@ -217,17 +217,19 @@ func _gd_files_under(root: String) -> Array[String]:
 ## This test's job is now the reverse of what it was: stop the swap coming BACK without evidence.
 ## A future reader who re-measures the hardware and finds the indices really are reversed should
 ## register a MAPPING for that device, not re-invert a profile.
+## RETIRED 2026-10-31 (struktured: collapse the identical profiles into Standard). The swap cannot
+## come back through that name now: a config naming it loads Standard, and Standard is the table
+## the hint bar describes.
 func test_quirk_profile_agrees_with_standard_and_the_hint_bar() -> void:
 	var ipm = load("res://src/input/InputProfileManager.gd").new()
-	var quirk: Dictionary = ipm.PROFILE_ULTIMATE_PRO_2
+	var retired: Dictionary = ipm.RETIRED_PROFILES
+	assert_eq(str(retired.get("8BitDo Ultimate Pro 2", "")), "Standard",
+		"a config naming the old Ultimate Pro 2 profile must load as Standard, not as a table that could carry the old shoulder swap")
+	assert_false(ipm.PROFILE_NAMES.has("8BitDo Ultimate Pro 2"),
+		"and the picker must no longer offer it")
 	var standard: Dictionary = ipm.PROFILE_STANDARD
-	assert_eq(quirk["battle_advance"], standard["battle_advance"],
-		"Advance must sit on the same physical shoulder as Standard — the hint bar says [R] Advance and a mapped pad reports 10 as the right shoulder")
-	assert_eq(quirk["battle_defer"], standard["battle_defer"],
-		"and Defer on the same shoulder as Standard — [L] Defer, button 9 on a mapped pad")
-	var src: String = FileAccess.get_file_as_string("res://src/input/InputProfileManager.gd")
-	assert_true(src.contains("ALIGNED"),
-		"the alignment must carry a note explaining what the swap WAS and why it went away, or the next reader re-measures unmapped hardware and reinstates it")
+	assert_eq(standard["battle_advance"], [10], "[R] Advance: button 10 is the right shoulder on a mapped pad")
+	assert_eq(standard["battle_defer"], [9], "[L] Defer: button 9 is the left shoulder on a mapped pad")
 	ipm.free()
 
 

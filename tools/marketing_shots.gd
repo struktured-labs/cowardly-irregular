@@ -88,6 +88,7 @@ func _init() -> void:
 	for entry in SCENES:
 		await _shoot(entry[0], entry[1])
 
+	await _shoot_title()
 	await _shoot_battle()
 
 	print("[SHOT] done: %d captured, %d failed" % [_ok, _fail])
@@ -335,3 +336,39 @@ func _frame_on_houses(scene: Node) -> String:
 	scene.camera.reset_smoothing()
 	scene.camera.force_update_scroll()
 	return "%d of %d buildings in view · player at %s (%s)" % [best_n, centers.size(), str(stand.round()), "a door" if used_door else "the street below them"]
+
+
+## The title screen (2026-10-31): the source of the store COVER, and the last shipped frame no tool reached —
+## it came from the exported .483 binary, and its corner still read "v3.33.483-alpha". GameLoop opens on it.
+## Stars are placed with randf(), so the RNG is seeded first; the logo float and the star twinkle run on the
+## wall clock (Time.get_ticks_msec), so two runs still differ by a few px. Judge this one by eye.
+func _shoot_title() -> void:
+	seed(748)
+	var gl_res := load("res://src/GameLoop.tscn")
+	if gl_res == null:
+		print("[SHOT] FAIL: title_screen — GameLoop.tscn did not load")
+		_fail += 1
+		return
+	var gl: Node = gl_res.instantiate()
+	root.add_child(gl)
+	## TitleScreen enables input after a 0.5s timer; 1.5s also lets the background and logo settle.
+	await create_timer(1.5).timeout
+	var ts = gl.get("_title_screen")
+	## Refuse rather than photograph whatever is on screen: a GameLoop that skipped its title would
+	## otherwise ship as the store cover.
+	if ts == null or not is_instance_valid(ts) or not ts.visible:
+		print("[SHOT] FAIL: title_screen — GameLoop did not open on its title screen")
+		_fail += 1
+		gl.queue_free()
+		await process_frame
+		return
+	var img := root.get_texture().get_image()
+	if not ShotGuard.save_or_refuse(img, "res://tmp/marketing/title_screen.png"):
+		_fail += 1
+	var ver := "?"
+	if "_version_label" in ts and ts._version_label != null:
+		ver = ts._version_label.text
+	print("[SHOT] title_screen (%dx%d) version=%s" % [img.get_width(), img.get_height(), ver])
+	_ok += 1
+	gl.queue_free()
+	await process_frame

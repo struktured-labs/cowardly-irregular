@@ -27,7 +27,8 @@ const PROJECT := "res://project.godot"
 ## three profiles currently agree with the file on all six actions (measured 2026-09-10).
 const DECLARED_DIVERGENCE := {}
 
-const PROFILES := ["PROFILE_STANDARD", "PROFILE_SN30", "PROFILE_ULTIMATE_PRO_2"]
+## One built-in table since 2026-10-31 (the SN30 and Ultimate Pro 2 copies were collapsed into it).
+const PROFILES := ["PROFILE_STANDARD"]
 
 
 ## project.godot's pad buttons per action, from the TEXT — see the header for why not InputMap.

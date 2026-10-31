@@ -124,9 +124,11 @@ func test_an_unremappable_action_is_still_refused() -> void:
 ## currently UNOBSERVABLE: all three shipped profiles are byte-identical (the Ultimate Pro 2 L/R
 ## swap was aligned 2026-07-29). Pin that, so the moment they diverge this reads as a gap to fill
 ## rather than a passing test that proved nothing.
+## Since 2026-10-31 there is ONE built-in profile, so the seeding stays unobservable until a second exists.
 func test_the_profiles_are_still_identical_so_the_seeding_arm_is_owed() -> void:
 	var a: Dictionary = InputProfileManager.PROFILE_STANDARD
-	var b: Dictionary = InputProfileManager.PROFILE_SN30
-	var c: Dictionary = InputProfileManager.PROFILE_ULTIMATE_PRO_2
-	assert_eq(str(a), str(b), "if these diverge, add an arm that a rebind preserves the OTHER bindings")
-	assert_eq(str(a), str(c), "same for Ultimate Pro 2 — seeding from the live profile then becomes testable")
+	for p in InputProfileManager.PROFILE_NAMES:
+		if p == "Custom":
+			continue
+		assert_eq(str(InputProfileManager.get_profile_bindings(p)), str(a),
+			"profile '%s' binds differently from Standard: add an arm that a rebind preserves the OTHER bindings" % p)
