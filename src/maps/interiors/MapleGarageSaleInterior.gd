@@ -127,6 +127,7 @@ func _setup_npcs() -> void:
 	var doreen = OverworldNPCScript.new()
 	doreen.npc_name = "Doreen"
 	doreen.npc_type = "villager"
+	doreen.sprite_archetype = "young_woman"  ## pinned: the name-hash pair drew the other sex
 	doreen.position = Vector2(4 * TILE_SIZE, 4.5 * TILE_SIZE)
 	doreen.dialogue_lines = [
 		"Everything's for sale, hon. Nothing has ever sold. We find that keeps the inventory stable.",

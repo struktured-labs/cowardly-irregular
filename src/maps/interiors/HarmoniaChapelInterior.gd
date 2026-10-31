@@ -1455,6 +1455,7 @@ func _create_worshiper_bram(NPCScript) -> void:
 	var bram = NPCScript.new()
 	bram.npc_name = "Bram Coll"
 	bram.npc_type = "villager"
+	bram.sprite_archetype = "young_man"  ## pinned: the name-hash pair drew the other sex
 	bram.position = Vector2(13.5 * TILE_SIZE, 9.5 * TILE_SIZE)
 	bram.dialogue_lines = [
 		"*whispering* Third pew from the back. Same as always.",
