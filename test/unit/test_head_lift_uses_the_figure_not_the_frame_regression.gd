@@ -143,9 +143,12 @@ func test_the_real_job_sheets_land_on_their_own_figures() -> void:
 		oracle.centered = spr.centered
 		oracle.offset = spr.offset
 		add_child_autofree(oracle)
-		var expected: float = -(oracle.get_rect().position.y + used_top) * 1.23
+		## Since 2026-10-31 the lift reaches the HEAD, which sits at or under the figure's top (the Cleric's staff wisps top hers by ~38px).
+		var head_y: float = BattleSpeechBubble.head_point_of(tex).y
+		assert_gte(head_y, used_top, "%s: the head (y %.0f) cannot sit above the figure's own top (y %.0f)" % [job, head_y, used_top])
+		var expected: float = -(oracle.get_rect().position.y + head_y) * 1.23
 		assert_almost_eq(BattleSpeechBubble.head_lift(spr), expected, 0.01,
-			"%s: the lift must reach the engine's frame top plus its own transparent margin" % job)
+			"%s: the lift must reach the engine's frame top plus the head's own offset" % job)
 	tops.sort()
 	assert_gt(tops[-1] - tops[0], 20.0,
 		"ANTI-VACUITY: the starter sheets must still place their figures at different heights (%s), else the frame rule and the figure rule agree and every arm above is free" % str(tops))
