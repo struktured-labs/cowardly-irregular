@@ -291,6 +291,8 @@ var _boss_defeat_spoken: bool = false
 ## The boss's last words, buffered: on the scripted path the gloat lands BEFORE battle_ended, on the model path after it.
 var _gloat_line: Dictionary = {}
 var _holding_for_boss_beat: bool = false
+## The authored monsters.json defeat scene, held until the boss's last words have been said (struktured 2026-10-31: last words first).
+var _deferred_defeat_scene: Dictionary = {}
 ## Slack past BattleManager.GLOAT_WAIT_SEC, whose own timer always emits the scripted line by then.
 const BOSS_BEAT_ARRIVAL_SLACK_SEC: float = 0.3
 ## Automation never stalls on a beat; a person gets a long but finite read.
@@ -3433,6 +3435,7 @@ func _on_battle_started() -> void:
 	_boss_defeat_spoken = false
 	_gloat_line = {}
 	_holding_for_boss_beat = false
+	_deferred_defeat_scene = {}
 
 
 func _get_dominant_monster_type() -> String:
@@ -3538,15 +3541,7 @@ func _on_battle_ended(victory: bool) -> void:
 	## "you've bested me" beat. Fires on player victory ONLY if the
 	## dialogue["defeat"] array is present. Find the boss combatant
 	## (first enemy with is_boss meta) for the speaker name.
-	if victory and not _boss_defeat_spoken and _boss_dialogue_data.has("defeat") and _boss_dialogue_data["defeat"].size() > 0:
-		_boss_defeat_spoken = true
-		var boss_name: String = "Boss"
-		for enemy in test_enemies:
-			if enemy and is_instance_valid(enemy) and enemy.has_meta("is_boss"):
-				boss_name = enemy.combatant_name
-				break
-		if _battle_dialogue and _battle_dialogue.has_method("show_boss_intro"):
-			_show_boss_dialogue(boss_name, _boss_dialogue_data["defeat"])
+	_stage_defeat_scene(victory)
 
 	# Clean up any open menus
 	if active_win98_menu and is_instance_valid(active_win98_menu):
@@ -6264,6 +6259,13 @@ func _boss_beat_suppressed() -> bool:
 	return turbo_mode or autogrind_console_mode or BATTLE_SPEEDS[_battle_speed_index] >= 1.0
 
 
+## A beat will run: not suppressed, and a line is either here already or on its way.
+func _boss_beat_expected() -> bool:
+	if _boss_beat_suppressed():
+		return false
+	return not _gloat_line.is_empty() or BattleManager.boss_gloat_pending
+
+
 func _boss_beat_automated() -> bool:
 	if autogrind_console_mode:
 		return true
@@ -6275,9 +6277,7 @@ func _boss_beat_automated() -> bool:
 
 ## Every wait in here is wall-clock (ticks), bounded, and checks the scene is still in the tree.
 func _play_boss_beat(is_victory: bool) -> void:
-	if _boss_beat_suppressed():
-		return
-	if _gloat_line.is_empty() and not BattleManager.boss_gloat_pending:
+	if not _boss_beat_expected():
 		return
 	## Set BEFORE the first await, so GameLoop's first poll sees it whichever battle_ended handler ran first.
 	_holding_for_boss_beat = true
@@ -6313,8 +6313,49 @@ func _finish_victory_after_boss_beat() -> void:
 	await _play_boss_beat(true)
 	if not is_inside_tree():
 		return
+	await _play_deferred_defeat_scene()
+	if not is_inside_tree():
+		return
 	_show_victory_quip()
 	_show_victory_results()
+
+
+## Tick 428's authored defeat scene. It used to show at once and the last words queued behind it, so a boss that had just
+## "shattered into dust" then spoke. When a beat will play, the scene waits for it; otherwise it shows now, as it always did.
+func _stage_defeat_scene(victory: bool) -> void:
+	if not (victory and not _boss_defeat_spoken and _boss_dialogue_data.has("defeat") and _boss_dialogue_data["defeat"].size() > 0):
+		return
+	_boss_defeat_spoken = true
+	var boss_name: String = "Boss"
+	for enemy in test_enemies:
+		if enemy and is_instance_valid(enemy) and enemy.has_meta("is_boss"):
+			boss_name = enemy.combatant_name
+			break
+	if _boss_beat_expected():
+		_deferred_defeat_scene = {"speaker": boss_name, "lines": _boss_dialogue_data["defeat"]}
+		return
+	if _battle_dialogue and _battle_dialogue.has_method("show_boss_intro"):
+		_show_boss_dialogue(boss_name, _boss_dialogue_data["defeat"])
+
+
+## Plays the held scene with the same bounds as the beat, and keeps GameLoop held across it so the rewards wait too.
+func _play_deferred_defeat_scene() -> void:
+	if _deferred_defeat_scene.is_empty():
+		return
+	var scene_data: Dictionary = _deferred_defeat_scene
+	_deferred_defeat_scene = {}
+	if _battle_dialogue == null or not is_instance_valid(_battle_dialogue):
+		return
+	## Set before the first await, in the same frame the beat released, so GameLoop never sees a gap.
+	_holding_for_boss_beat = true
+	_show_boss_dialogue(str(scene_data["speaker"]), scene_data["lines"])
+	var cap_ms: int = int((BOSS_BEAT_AUTO_DISMISS_SEC * scene_data["lines"].size() if _boss_beat_automated() else BOSS_BEAT_READ_CAP_SEC) * 1000.0)
+	var s0: int = Time.get_ticks_msec()
+	while _battle_dialogue.visible and Time.get_ticks_msec() - s0 < cap_ms and is_inside_tree():
+		await get_tree().process_frame
+	if is_instance_valid(_battle_dialogue) and _battle_dialogue.visible:
+		_battle_dialogue.dismiss()
+	_holding_for_boss_beat = false
 
 
 func _gloat_speaker_name(_is_victory: bool) -> String:
