@@ -3989,6 +3989,8 @@ func _on_battle_ended(victory: bool) -> void:
 		# struktured 2026-09-07 "spotlight should have a victory sequence just like reg battles": BattleScene already built the overlay on this same signal; let the duelist see it before the cutscene tears the scene down.
 		if victory:
 			await _wait_for_confirm_victory()
+		else:
+			await _await_boss_beat()
 		spotlight_battle_ended.emit(victory)
 		return
 	if victory:
@@ -4118,6 +4120,7 @@ func _on_battle_ended(victory: bool) -> void:
 		# Diegetic retry (Fable's design): a boss authored with diegetic_retry files the
 		# player's death as ITS OWN calibration error and refuses the game over — full
 		# restore, same fight, its player_wiped line as the retried battle's opener.
+		await _await_boss_beat()
 		if await _maybe_diegetic_retry():
 			return
 		await _show_game_over_screen()
@@ -4270,7 +4273,29 @@ func _apply_pending_boss_defeat() -> void:
 
 ## Victory variant of _wait_for_confirm: the FIRST accept snaps the overlay's
 ## animations to their end state; only a press on a COMPLETED overlay leaves.
+## Derived from BattleScene's own worst case (line arrives, waits behind an authored line, is read), so the two cannot drift apart.
+func boss_beat_hold_cap_sec() -> float:
+	return BattleManager.GLOAT_WAIT_SEC + BattleSceneScript.BOSS_BEAT_ARRIVAL_SLACK_SEC + 2.0 * BattleSceneScript.BOSS_BEAT_READ_CAP_SEC + 1.0
+
+
+## Holds while the battle scene shows the boss's last words. BOUNDED: a flag that never clears still returns at the cap.
+func _await_boss_beat(cap_sec: float = -1.0) -> void:
+	if cap_sec < 0.0:
+		cap_sec = boss_beat_hold_cap_sec()
+	## One frame first, so BattleScene's battle_ended handler has set the flag whichever handler ran first.
+	await get_tree().process_frame
+	var t0: int = Time.get_ticks_msec()
+	while current_scene != null and is_instance_valid(current_scene) \
+			and current_scene.has_method("is_holding_for_boss_beat") and current_scene.is_holding_for_boss_beat():
+		if Time.get_ticks_msec() - t0 >= int(cap_sec * 1000.0):
+			push_warning("[GAMELOOP] boss last-words beat still held after %.1fs — continuing without it" % cap_sec)
+			return
+		await get_tree().process_frame
+
+
 func _wait_for_confirm_victory() -> void:
+	## The beat comes first and the 0.5s below is then the debounce, so the press that dismissed it cannot also confirm the rewards.
+	await _await_boss_beat()
 	## Nothing to confirm means nothing to wait for. BattleScene only builds the overlay when
 	## `not turbo_mode`, so at turbo a spotlight win used to block up to 120s on a press for a
 	## prompt that was never drawn — a two-minute freeze with the cutscene still on screen

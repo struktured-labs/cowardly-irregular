@@ -148,6 +148,8 @@ var _lens_ap_echo_charges: int = 0
 var turbo_mode: bool = false
 ## Wall-clock wait for the LLM's gloat before the scripted line speaks instead; a results screen can close soon after.
 const GLOAT_WAIT_SEC: float = 1.2
+## True from the moment a model is asked for the gloat until it (or the scripted line) is emitted; BattleScene holds the results on it.
+var boss_gloat_pending: bool = false
 ## Bumped by start_battle: a line awaited in one battle can tell it is no longer that battle's.
 var battle_serial: int = 0
 
@@ -614,6 +616,7 @@ func start_battle(players: Array[Combatant], enemies: Array[Combatant]) -> void:
 	# Reset boss-gloat context tracking.
 	_jailbreak_landed_this_battle = false
 	_all_out_attack_this_battle = false
+	boss_gloat_pending = false
 
 	# Clear per-battle combatant state: buffs/debuffs/status effects don't
 	# persist across encounters (was a leak — GameLoop reuses party Combatant
@@ -9878,7 +9881,7 @@ func _dispatch_boss_gloat(victory: bool) -> void:
 
 	if not llm_available or turbo_mode:
 		# Deterministic path — ship the scripted pool line immediately.
-		boss_gloat_line.emit(fallback, victory)
+		_emit_boss_gloat(fallback, victory)
 		return
 
 	# LLM available — capture the context snapshot NOW (enemy_party is about to
@@ -9886,6 +9889,7 @@ func _dispatch_boss_gloat(victory: bool) -> void:
 	# NOT await: end_battle stays synchronous and non-blocking.
 	var boss_name: String = _resolve_boss_display_name(persona_id)
 	var prompt: String = _build_gloat_prompt(persona_id, boss_name, victory, fallback)
+	boss_gloat_pending = true
 	_produce_boss_gloat_async(prompt, fallback, victory)
 
 
@@ -9893,14 +9897,14 @@ func _dispatch_boss_gloat(victory: bool) -> void:
 func _produce_boss_gloat_async(prompt: String, fallback: String, victory: bool) -> void:
 	var llm_node = get_node_or_null("/root/LLMService")
 	if llm_node == null or not llm_node.has_method("complete"):
-		boss_gloat_line.emit(fallback, victory)
+		_emit_boss_gloat(fallback, victory)
 		return
 	var spoken := {"done": false}
 	## ignore_time_scale: the default battle pace runs the engine at 0.25, which would stretch a scaled wait fourfold.
 	get_tree().create_timer(GLOAT_WAIT_SEC, true, false, true).timeout.connect(func() -> void:
 		if not spoken["done"]:
 			spoken["done"] = true
-			boss_gloat_line.emit(fallback, victory))
+			_emit_boss_gloat(fallback, victory))
 	var line: Variant = await llm_node.complete(prompt, fallback)
 	if spoken["done"]:
 		return
@@ -9908,6 +9912,12 @@ func _produce_boss_gloat_async(prompt: String, fallback: String, victory: bool) 
 	var text: String = str(line).strip_edges()
 	if text == "":
 		text = fallback
+	_emit_boss_gloat(text, victory)
+
+
+## The only emitter of boss_gloat_line: clears the pending flag on every path, so the results can never wait on a line that already spoke.
+func _emit_boss_gloat(text: String, victory: bool) -> void:
+	boss_gloat_pending = false
 	boss_gloat_line.emit(text, victory)
 
 

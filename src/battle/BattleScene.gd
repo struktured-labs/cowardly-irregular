@@ -280,6 +280,14 @@ const DANGER_HP_THRESHOLD: float = 0.25  # The low-HP beat: danger music, player
 ## the other two never spoke regardless of the fight state.
 var _boss_low_hp_spoken: bool = false
 var _boss_defeat_spoken: bool = false
+## The boss's last words, buffered: on the scripted path the gloat lands BEFORE battle_ended, on the model path after it.
+var _gloat_line: Dictionary = {}
+var _holding_for_boss_beat: bool = false
+## Slack past BattleManager.GLOAT_WAIT_SEC, whose own timer always emits the scripted line by then.
+const BOSS_BEAT_ARRIVAL_SLACK_SEC: float = 0.3
+## Automation never stalls on a beat; a person gets a long but finite read.
+const BOSS_BEAT_AUTO_DISMISS_SEC: float = 3.0
+const BOSS_BEAT_READ_CAP_SEC: float = 30.0
 
 ## Autobattle state
 var _all_autobattle_enabled: bool = false  # True when all players are on autobattle
@@ -3405,6 +3413,8 @@ func _on_battle_started() -> void:
 	## Tick 428: reset per-battle boss-dialogue latches.
 	_boss_low_hp_spoken = false
 	_boss_defeat_spoken = false
+	_gloat_line = {}
+	_holding_for_boss_beat = false
 
 
 func _get_dominant_monster_type() -> String:
@@ -3567,18 +3577,19 @@ func _on_battle_ended(victory: bool) -> void:
 			## A spotlight duel authors its own victory cue; every ordinary fight falls back.
 			SoundManager.play_battle(BattleManager.victory_cue_for(test_enemies))
 			_play_staggered_victory_animations()
-			_show_victory_quip()
 			if _check_for_boss():
 				SoundManager.play_music("stinger_boss_defeated")
 			else:
 				SoundManager.play_music("victory")
-			_show_victory_results()
+			## The boss's last words get their own beat BEFORE the rewards (struktured: "I barely saw it").
+			_finish_victory_after_boss_beat()
 	elif _lost_battle_is_escape():
 		log_message("\n[color=%s]=== ESCAPED ===[/color]" % AccessibilityPalette.bonus_bbcode())
 	else:
 		# Tick 239: penalty BBCode (defeat header).
 		log_message("\n[color=%s]=== DEFEAT ===[/color]" % AccessibilityPalette.penalty_bbcode())
 		log_message("[color=gray]%s to restart...[/color]" % _accept_token())
+		_play_boss_beat(false)
 		# Play defeat animation for all party members
 		for animator in party_animators:
 			if animator:
@@ -6177,6 +6188,71 @@ func _on_boss_gloat_line(text: String, is_victory: bool) -> void:
 	# boss speaking, not narration.
 	var color: String = "#cc4444" if not is_victory else "#d8b860"
 	log_message('[color=%s]%s: "%s"[/color]' % [color, _gloat_speaker_name(is_victory), DialoguePrompts.spoken_line(text)])
+	_gloat_line = {"text": text, "is_victory": is_victory}
+
+
+## GameLoop holds its confirm and retry flows on this, so the boss's line is never skipped by the rewards or the game over.
+func is_holding_for_boss_beat() -> bool:
+	return _holding_for_boss_beat
+
+
+## The SELECTED speed, not Engine.time_scale: hitlag around the killing blow would read as slow and show a beat at 4x.
+func _boss_beat_suppressed() -> bool:
+	return turbo_mode or autogrind_console_mode or BATTLE_SPEEDS[_battle_speed_index] >= 1.0
+
+
+func _boss_beat_automated() -> bool:
+	if autogrind_console_mode:
+		return true
+	for member in party_members:
+		if is_instance_valid(member) and AutobattleSystem.is_autobattle_enabled(member.combatant_name.to_lower().replace(" ", "_")):
+			return true
+	return false
+
+
+## Every wait in here is wall-clock (ticks), bounded, and checks the scene is still in the tree.
+func _play_boss_beat(is_victory: bool) -> void:
+	if _boss_beat_suppressed():
+		return
+	if _gloat_line.is_empty() and not BattleManager.boss_gloat_pending:
+		return
+	## Set BEFORE the first await, so GameLoop's first poll sees it whichever battle_ended handler ran first.
+	_holding_for_boss_beat = true
+	var arrive_ms: int = int((BattleManager.GLOAT_WAIT_SEC + BOSS_BEAT_ARRIVAL_SLACK_SEC) * 1000.0)
+	var t0: int = Time.get_ticks_msec()
+	while _gloat_line.is_empty() and Time.get_ticks_msec() - t0 < arrive_ms:
+		if not is_inside_tree():
+			_holding_for_boss_beat = false
+			return
+		await get_tree().process_frame
+	if _gloat_line.is_empty() or bool(_gloat_line.get("is_victory", not is_victory)) != is_victory \
+			or _battle_dialogue == null or not is_instance_valid(_battle_dialogue) or not is_inside_tree():
+		_holding_for_boss_beat = false
+		return
+	var cap_ms: int = int((BOSS_BEAT_AUTO_DISMISS_SEC if _boss_beat_automated() else BOSS_BEAT_READ_CAP_SEC) * 1000.0)
+	## An authored defeat dialogue may still be up; the last words wait their turn rather than replacing it.
+	var q0: int = Time.get_ticks_msec()
+	while _battle_dialogue.visible and Time.get_ticks_msec() - q0 < cap_ms and is_inside_tree():
+		await get_tree().process_frame
+	if not is_inside_tree():
+		_holding_for_boss_beat = false
+		return
+	_battle_dialogue.set_party(party_members)
+	_battle_dialogue.show_boss_last_words(_gloat_speaker_name(is_victory), DialoguePrompts.spoken_line(str(_gloat_line.get("text", ""))), _boss_monster_id())
+	var s0: int = Time.get_ticks_msec()
+	while _battle_dialogue.visible and Time.get_ticks_msec() - s0 < cap_ms and is_inside_tree():
+		await get_tree().process_frame
+	if is_instance_valid(_battle_dialogue) and _battle_dialogue.visible:
+		_battle_dialogue.dismiss()
+	_holding_for_boss_beat = false
+
+
+func _finish_victory_after_boss_beat() -> void:
+	await _play_boss_beat(true)
+	if not is_inside_tree():
+		return
+	_show_victory_quip()
+	_show_victory_results()
 
 
 func _gloat_speaker_name(_is_victory: bool) -> String:
