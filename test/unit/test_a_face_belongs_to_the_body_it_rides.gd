@@ -21,6 +21,23 @@ extends GutTest
 ## pair, art changed on either side, or a row whose review said "mismatch" is RED until re-reviewed by
 ## tools/review_npc_face_body.py, which renders each pair side by side and has a vision model judge it.
 
+## Mismatches that were ALREADY on main when this guard landed (2026-10-30 review, each read by eye, not only
+## by the model). Pending struktured's call: redraw a side, or accept the pairing. NOT accepted by this file --
+## the list exists so the guard can land without either hiding them or reding every fold. It must SHRINK:
+## a listed pair that now matches, or is no longer placed, reds below until it is removed.
+const PENDING_DECISION := {
+	"nervous|young_woman": "Vex: a young MAN's face (sweat-drop) on the young_woman sheet -- the sex differs",
+	"elder_theron|elder_theron": "Elder Theron: white hair, GREEN robe face vs a bald, ORANGE-robed sheet -- his own two assets disagree",
+	"herbalist|priestess": "Gethena: an auburn-braided herbalist face on the white priestess robes",
+	"hooded_mage|scholar": "Aldric: a hooded mage with glowing eyes on the old bespectacled scholar sheet",
+	"adventurer|traveler": "Kael: a bearded bareheaded adventurer on the brown-hat traveler with a staff",
+	"apprentice|young_man": "Jend: orange spiky hair face on the dark-haired young_man sheet",
+	"pilgrim|monk": "Pilgrim Lael: a bearded old man in a grey hood on the beardless orange monk sheet",
+	"knight|soldier": "Sir Reginald, Guard Henryk, Sir Corvath: a bearded knight face on the beardless soldier sheet",
+	"innkeeper|innkeeper": "Mira: no mustache on the face, a mustache on the sheet (and a female name on a male innkeeper)",
+	"young_man|young_man": "BORDERLINE: the sheet's mouth shading reads as a mustache at 4x; the face is clean-shaven",
+}
+
 const LEDGER := "res://data/npc_face_body_ledger.json"
 const MANIFEST := "res://data/sprite_manifest.json"
 const MAP_DIRS := ["res://src/maps/villages", "res://src/maps/interiors"]
@@ -76,9 +93,12 @@ func _pairs() -> Dictionary:
 		var vp := SubViewport.new()
 		vp.world_2d = World2D.new()
 		add_child_autofree(vp)
-		var scene: Node = script.new()
-		if not (scene is Node):
+		## Untyped on purpose: some scripts under these dirs are RefCounted helpers, and a typed `Node`
+		## assignment ABORTS this function (the crawl then reads 0 NPCs). Check, then skip.
+		var made = script.new()
+		if not (made is Node):
 			continue
+		var scene: Node = made
 		vp.add_child(scene)
 		await get_tree().process_frame
 		await get_tree().process_frame
@@ -143,7 +163,7 @@ func test_the_corpus_reaches_the_villages_and_every_pictured_keeper() -> void:
 		seen += _names(pairs[k]) + " ; "
 	for t in ShopSceneScript.PICTURED_KEEPERS:
 		var who := str(ShopSceneScript.PICTURED_KEEPERS[t][0])
-		assert_true(seen.contains(who + " @ ShopInterior"), "CONTROL: %s must be in the corpus -- she is the case this guard exists for" % who)
+		assert_true(seen.contains(who + " @ ShopInterior"), "CONTROL: pictured keeper %s must be in the corpus -- the keepers are the case this guard exists for" % who)
 
 
 func test_every_face_and_body_pair_has_been_reviewed() -> void:
@@ -180,7 +200,21 @@ func test_no_pair_the_review_found_broken_ships() -> void:
 	var broken: Array = []
 	for k in pairs:
 		var row: Variant = ledger.get(k, null)
-		if row is Dictionary and not _verdict_ok(str(k), row as Dictionary):
+		if row is Dictionary and not _verdict_ok(str(k), row as Dictionary) and not PENDING_DECISION.has(str(k)):
 			broken.append("%s -- %s (%s)" % [k, str((row as Dictionary).get("reason", "")), _names(pairs[k])])
 	broken.sort()
 	assert_eq(broken, [], "the face and the body under it are different people: %s" % [broken])
+
+
+func test_the_pending_list_only_shrinks() -> void:
+	var pairs: Dictionary = await _pairs()
+	var ledger := _ledger()
+	var stale: Array = []
+	for k in PENDING_DECISION:
+		if not pairs.has(k):
+			stale.append("%s is no longer placed" % k)
+		elif str((ledger.get(k, {}) as Dictionary).get("verdict", "")) == "match":
+			stale.append("%s now MATCHES" % k)
+	stale.sort()
+	assert_eq(stale, [], "fixed or retired -- remove it from PENDING_DECISION so the list keeps meaning 'still broken': %s" % [stale])
+
