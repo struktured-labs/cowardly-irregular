@@ -6237,7 +6237,6 @@ func _play_boss_beat(is_victory: bool) -> void:
 	if not is_inside_tree():
 		_holding_for_boss_beat = false
 		return
-	_battle_dialogue.set_party(party_members)
 	_battle_dialogue.show_boss_last_words(_gloat_speaker_name(is_victory), DialoguePrompts.spoken_line(str(_gloat_line.get("text", ""))), _boss_monster_id())
 	var s0: int = Time.get_ticks_msec()
 	while _battle_dialogue.visible and Time.get_ticks_msec() - s0 < cap_ms and is_inside_tree():
