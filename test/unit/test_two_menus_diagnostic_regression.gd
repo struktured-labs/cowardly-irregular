@@ -63,7 +63,11 @@ func test_set_command_menu_visible_tagged() -> void:
 	# editor open, menu.visible=false, watchdog respawn creates a duplicate).
 	# The [MENU-HIDE] tag captures the visibility toggle event.
 	var src: String = FileAccess.get_file_as_string(BS_PATH)
-	assert_string_contains(src, "print(\"[MENU-HIDE] t=%dms visible=%s",
+	## Re-pinned to the ROUTING, not to `print`. The msg-2503 lifecycle trace is now gated behind
+	## BattleCommandMenu.trace_menu (debug_log_enabled) because it fired on the HEALTHY path -- 70 of
+	## 1101 lines in struktured's 2026-10-13 session -- and a trace that fires on health cannot report
+	## illness. The tag, the format and the target visibility are unchanged; only the call is.
+	assert_string_contains(src, "trace_menu(\"[MENU-HIDE] t=%dms visible=%s",
 		"set_command_menu_visible must emit a [MENU-HIDE] tag with the target visibility for timeline reads")
 
 
