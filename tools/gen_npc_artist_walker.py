@@ -60,6 +60,10 @@ WORLD_RE = re.compile(r"_(suburban|steampunk|industrial|digital|abstract)$")
 SECTION = "overworld_npc_sheets"  # --player switches to overworld_player_sheets
 JOBS = REPO / "assets/sprites/jobs"
 PLAYER = False
+## --world <suffix>: the job's WORLD COSTUME, jobs/<job>/overworld_<suffix>.png. 45 of them (9 jobs x 5 worlds)
+## have no manifest entry: the loader cuts every form at the JOB's declared frame, so a 32px costume under a
+## 48px job is REFUSED as a non-grid and W2-W6 lose the costume. They inherit the job's frame; no declaration.
+WORLD = ""
 
 _spec = importlib.util.spec_from_file_location("ow", REPO / "tools/gen_overworld_gpt_image.py")
 ow = importlib.util.module_from_spec(_spec)
@@ -174,6 +178,15 @@ WARDROBE = {
 def describe(npc: str) -> str:
     if PLAYER:
         cfg = ow.ENTITY_SOURCES.get(npc) or {}
+        if WORLD:
+            # NOT the job's base description. Sent beside a costume, "a dark navy coat", "full steel plate" or
+            # "curved horns" beat the reference: 11 of the first 45 costumes lost their costume that way (the
+            # guardian's armour in three worlds, a tiger-headed summoner drawn human). The costume IS the image.
+            return (f"the {npc.replace('_', ' ')} exactly as Reference Image 2 shows them, in their "
+                    f"{WORLD} costume ({wv.WORLDS[WORLD].split(' — ')[0]}). Copy EVERYTHING from Reference Image 2: the "
+                    "outfit, its colours, any helmet, hood, hat, mask, visor, goggles or headset, the hair, and "
+                    "the species (a beast head stays a beast head). Do not substitute generic clothes, and keep "
+                    "the same costume in every frame and every direction")
         return JOB_DESC.get(npc) or cfg.get("char_desc") or npc.replace("_", " ")
     base, world = base_id(npc)
     cfg = ow.ENTITY_SOURCES.get(base)
@@ -215,7 +228,8 @@ def style_reference(entries: dict) -> bytes:
 
 def battle_identity_frame(job: str) -> Image.Image:
     """The job's first battle frame: idle if it has one. For the five starters that is artist art."""
-    for anim in ("idle", "walk", "attack", "cast", "defend"):
+    names = [f"idle_{WORLD}"] if WORLD else []  # the costume's own battle frame, never the 32px sheet being replaced
+    for anim in names + ["idle", "walk", "attack", "cast", "defend"]:
         p = JOBS / job / f"{anim}.png"
         if p.exists():
             sheet = Image.open(p).convert("RGBA")
@@ -417,6 +431,18 @@ def generate(client, npc: str, entries: dict, quality: str, attempts: int = 3, s
 
 
 def deploy(npc: str, grid: Image.Image) -> None:
+    if PLAYER and WORLD:
+        # A costume has no manifest entry: it inherits the job's declared frame, so nothing to write there.
+        dest = JOBS / npc / f"overworld_{WORLD}.png"
+        sys.path.insert(0, str(REPO / "tools"))
+        import artist_guard
+        artist_guard.assert_writable(str(dest.relative_to(REPO)))
+        backup = WORK / "replaced" / f"{npc}_{WORLD}.png"
+        backup.parent.mkdir(parents=True, exist_ok=True)
+        if dest.exists() and not backup.exists():
+            backup.write_bytes(dest.read_bytes())
+        grid.save(dest)
+        return
     m = manifest()
     entry = m[SECTION][npc]
     refuse_artist(npc, entry)
@@ -448,7 +474,7 @@ def deploy(npc: str, grid: Image.Image) -> None:
 
 
 def main() -> int:
-    global SECTION, PLAYER, WORK, OUT, MODEL
+    global SECTION, PLAYER, WORK, OUT, MODEL, WORLD
     ap = argparse.ArgumentParser()
     ap.add_argument("--ids", nargs="+", default=[])
     ap.add_argument("--all", action="store_true")
@@ -461,12 +487,20 @@ def main() -> int:
                     help="swap the left and right rows of these STAGED sheets (the model drew 'east' facing left), then exit")
     ap.add_argument("--player", action="store_true",
                     help="redraw overworld_player_sheets (the 14 jobs) instead of NPCs; stages under tmp/player_artist_walker")
+    ap.add_argument("--world", default="", choices=[""] + list(wv.WORLDS),
+                    help="with --player: redraw that WORLD COSTUME, jobs/<job>/overworld_<world>.png")
     ap.add_argument("--model", default=MODEL, help=f"image model (default {MODEL}; gpt-image-1 is retired)")
     args = ap.parse_args()
     MODEL = args.model
     if args.player:
         SECTION, PLAYER = "overworld_player_sheets", True
         WORK = REPO / "tmp/player_artist_walker"
+        OUT = WORK / "out"
+    if args.world:
+        if not args.player:
+            raise SystemExit("--world is a party costume; it needs --player")
+        WORLD = args.world
+        WORK = REPO / "tmp/player_artist_walker" / WORLD  # per world, so parallel worlds never share a raw file
         OUT = WORK / "out"
     if args.flip:
         for npc in args.flip:
@@ -480,6 +514,9 @@ def main() -> int:
         return 0
     entries = manifest()[SECTION]
     ids = [k for k in entries if str(entries[k].get("tier")) == "T1"] if args.all else args.ids
+    if WORLD:
+        # Redraw a costume that EXISTS; never invent one for a job that has none (9 of 14 do).
+        ids = [k for k in ids if (JOBS / k / f"overworld_{WORLD}.png").exists()]
     for npc in ids:
         refuse_artist(npc, entries[npc])
     WORK.mkdir(parents=True, exist_ok=True)
