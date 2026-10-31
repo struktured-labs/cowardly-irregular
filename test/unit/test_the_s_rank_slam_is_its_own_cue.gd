@@ -14,15 +14,19 @@ const BASE_CUE := "victory_slam"
 
 var _overlay = null
 var _injected := false
+var _saved_s: Variant = null
 
 func before_each() -> void:
 	_overlay = OVERLAY.new()
 	_injected = false
+	_saved_s = null
 
 func after_each() -> void:
 	## The manifest is autoload state; a leaked key would hand later tests a cue that has no file.
 	if _injected and SoundManager and SoundManager._sfx_manifest.has(S_CUE):
 		SoundManager._sfx_manifest.erase(S_CUE)
+	if _saved_s != null and SoundManager:
+		SoundManager._sfx_manifest[S_CUE] = _saved_s
 	if _overlay != null:
 		_overlay.free()
 	_overlay = null
@@ -61,6 +65,10 @@ func test_the_consumer_reads_the_rank_out_of_that_payload() -> void:
 func test_an_s_rank_takes_its_own_cue_only_once_the_asset_exists() -> void:
 	## Derived, not spelled: hardcoding "S" here red this arm on a correct lockstep rank rename.
 	_overlay._one_shot_rank = str(BattleManager._get_one_shot_rank(1))
+	## The absent case is STATED, not read off today's manifest: the real asset may land (cowir-sfx).
+	if SoundManager._sfx_manifest.has(S_CUE):
+		_saved_s = SoundManager._sfx_manifest[S_CUE]
+		SoundManager._sfx_manifest.erase(S_CUE)
 	assert_eq(_overlay._slam_key(), BASE_CUE, "with no %s in the manifest the ordinary slam must still land — a missing asset may not mean silence" % S_CUE)
 	_inject_s_cue()
 	assert_eq(_overlay._slam_key(), S_CUE, "with %s registered an S-rank one-shot must take it" % S_CUE)
