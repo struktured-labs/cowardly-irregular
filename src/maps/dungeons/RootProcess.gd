@@ -158,6 +158,11 @@ func _get_dungeon_ambient() -> Color:
 	return Color(0.20, 0.26, 0.34)
 
 
+## Torch: terminal phosphor
+func _get_torch_tint() -> Color:
+	return Color(0.48, 1.0, 0.82)
+
+
 func _get_ambient_fx_theme() -> String:
 	return "storm"
 

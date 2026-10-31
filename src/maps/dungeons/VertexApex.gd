@@ -68,6 +68,11 @@ func _get_dungeon_ambient() -> Color:
 	return Color(0.22, 0.19, 0.32)
 
 
+## Torch: the arena lights you to be judged
+func _get_torch_tint() -> Color:
+	return Color(1.0, 0.98, 0.94)
+
+
 ## ⛔ HANDS BACK ONLY WHAT IT TOOK. `_exit_tree` used to write `true` unconditionally, so leaving
 ## this room re-enabled encounters for a caller that had asked for them OFF — the render smoke
 ## disables them at startup and this handed them back mid-run (cowir-deploy/cowir-main, 2026-09-18).
