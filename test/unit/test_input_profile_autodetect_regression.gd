@@ -100,16 +100,13 @@ func test_strukturers_actual_pad_autodetects_to_standard() -> void:
 	)
 
 
+## struktured 2026-10-31: the SN30 and Ultimate Pro 2 profiles bound exactly Standard and were collapsed into it.
 func test_known_quirky_devices_still_get_their_profiles() -> void:
-	assert_eq(
-		InputProfileManager.detect_profile_for_device("8BitDo Ultimate Pro 2"),
-		"8BitDo Ultimate Pro 2",
-		"the measured Ultimate Pro 2 shoulder quirk must survive for that actual device"
-	)
-	assert_eq(
-		InputProfileManager.detect_profile_for_device("8BitDo SN30 Pro"),
-		"8BitDo SN30", "SN30 must still autodetect"
-	)
+	for pad in ["8BitDo Ultimate Pro 2", "8BitDo SN30 Pro", "8BitDo SF30 Pro"]:
+		assert_eq(InputProfileManager.detect_profile_for_device(pad), "Standard",
+			"'%s' must autodetect Standard: its old profile was the same table under another name" % pad)
+	assert_eq(InputProfileManager.PROFILE_NAMES, ["Standard", "Custom"],
+		"the picker offers Standard and Custom only; a new entry must bind something Standard does not")
 
 
 func test_unknown_devices_fall_back_to_standard() -> void:
