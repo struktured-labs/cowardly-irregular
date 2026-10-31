@@ -65,13 +65,13 @@ func _init() -> void:
 			sprite.position = sprite.get_meta("home_position")
 		var job: String = str(pc.job.get("id", "?")) if pc.job is Dictionary else "?"
 		var home: Vector2 = sprite.global_position
-		var anchor := home + Vector2(_bsb.head_dx(sprite), -_bsb.head_lift(sprite))
+		var anchor: Vector2 = home + Vector2(_bsb.head_dx(sprite), -_bsb.head_lift(sprite))
 		## The open command menu draws over a bubble (z 100 > 95) and pushes it aside; hide it for the frame.
 		_hide_menus(scene)
 		scene._spawn_quip_bubble(sprite, pc.combatant_name, "Is this over MY head?", scene._get_job_quip_color(pc), 30.0)
 		## The fade-in runs in battle time, so 0.6 real s caught it part-transparent at 1x.
 		await create_timer(1.5, true, false, true).timeout
-		var live := _bsb._live.size()
+		var live: int = _bsb._live.size()
 		var img := root.get_texture().get_image()
 		## From the bubble's own rect: a party speaker's bubble sits to their LEFT, so a crop centred on the head cut it off.
 		var c0 := Vector2i(int(anchor.x) - CROP.x / 2, int(anchor.y) - 170)
