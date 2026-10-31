@@ -3,6 +3,10 @@
 #
 #   tools/fold_gate/fold.sh NNN branch:sha [branch:sha ...]     (branch without the lane/ prefix)
 #   FOLD_ALLOW_DELETE="path1 path2" declares deletions a READY said were intentional.
+#   FOLD_VERIFIED="sha1 sha2" vouches for tips whose READY carried the evidence while their history still
+#   holds an [UNVERIFIED] subject. Lanes label before verifying and post the numbers after, and striking a
+#   label needs a force-push, so 16 of 41 tips in the .746 batch carried one. Exact commit only: a tip
+#   named under any other sha is still skipped.
 #
 # Each tip is merged only if the announced sha is ON origin/lane/<branch> (the READYed commit is merged
 # even when the branch has moved on since), and its three-dot diff deletes nothing undeclared (a stale tree reverts a release that
@@ -11,6 +15,18 @@
 set -uo pipefail
 ## FOLD_REPO points the fold at another checkout (fold_selftest.sh uses a throwaway worktree).
 cd "${FOLD_REPO:-$(cd "$(dirname "$0")/../.." && pwd)}" || exit 2
+
+## True when FOLD_VERIFIED names exactly this commit. Each token is resolved, so a short sha matches and an
+## unresolvable one vouches for nothing.
+vouched() {
+  local want tok full
+  want="$(git rev-parse -q --verify "$1^{commit}")" || return 1
+  for tok in ${FOLD_VERIFIED:-}; do
+    full="$(git rev-parse -q --verify "$tok^{commit}" 2>/dev/null)" || continue
+    [ "$full" = "$want" ] && return 0
+  done
+  return 1
+}
 NNN="${1:-}"
 case "$NNN" in ''|*[!0-9]*) echo "usage: tools/fold_gate/fold.sh <release number> branch:sha ..." >&2; exit 2 ;; esac
 shift
@@ -42,7 +58,10 @@ for pair in "$@"; do
   if [ -n "$bad" ]; then echo "SKIP $b: undeclared deletion(s):$bad"; SKIPPED=1; continue; fi
   ## Every commit the tip brings is checked, not just the tip: a labelled ancestor rides in silently (overworld, 2026-10-14).
   lab="$(git log --format='%h %s' origin/main.."$have" | grep -m1 -E '^[0-9a-f]+ \[UNVERIFIED\]' || true)"
-  if [ -n "$lab" ]; then echo "SKIP $b: an [UNVERIFIED] commit would ride in: $lab"; SKIPPED=1; continue; fi
+  if [ -n "$lab" ]; then
+    if vouched "$have"; then echo "NOTE $b: [UNVERIFIED] subject(s) ride in, VOUCHED by FOLD_VERIFIED (its READY carried the evidence): $lab"
+    else echo "SKIP $b: an [UNVERIFIED] commit would ride in: $lab"; SKIPPED=1; continue; fi
+  fi
   if git merge -q --no-edit "$have" >/dev/null 2>&1; then
     echo "MERGED $b ${have:0:9}"
   else
