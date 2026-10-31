@@ -32,13 +32,10 @@ extends GutTest
 const MUSIC_MANIFEST := "res://data/music_manifest.json"
 const SFX_MANIFEST := "res://data/sfx_manifest.json"
 
-## Snapshot 2026-07-16. All four have music_manifest entries with no
+## Snapshot 2026-07-16; the three ambient_ dupes left 2026-10-30 (Suno songs, music side retired). They had music_manifest entries with no
 ## known runtime consumer; sfx_manifest side is the live consumer via
 ## SoundManager.play_ambient / stinger family.
 const KNOWN_CROSS_MANIFEST_DUPES: Array[String] = [
-	"ambient_cave",     # sfx-side: OverworldScene ice+swamp zones; music-side: "Dripping Stone" (dead)
-	"ambient_forest",   # sfx-side: OverworldScene forest+swamp zones; music-side: "Whispering Canopy" (dead)
-	"ambient_village",  # sfx-side: village ambient loop; music-side: "Market Morning" (dead)
 	"victory",          # sfx-side: victory stinger; music-side: victory fanfare (both used — pattern differs)
 ]
 

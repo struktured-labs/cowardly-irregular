@@ -32,8 +32,11 @@ const MUSIC_DIR := "assets/audio/music/"
 const SFX_DIR := "assets/audio/sfx/"
 const SELF_PATH := "res://test/unit/test_the_ambient_layer_plays_the_composed_bed.gd"
 
-## In both stores, and reached by a real zone or village route.
-const DUAL_STORE_WIRED := ["ambient_cave", "ambient_forest", "ambient_village"]
+## ⛔ 2026-10-30: the three dual-store beds were Suno SONGS under the music (struktured, Harmonia) and their
+## music entries moved to retired_ambient_beds, so each key now resolves to its sfx twin. Music-first
+## resolution still stands for a music-only key, and ambient_ocean is the one these arms drive.
+const RETIRED_TO_SFX := ["ambient_cave", "ambient_forest", "ambient_village"]
+const COMPOSED := "ambient_ocean"
 
 
 func after_each() -> void:
@@ -46,20 +49,19 @@ func _loaded_path(key: String) -> String:
 	return s.resource_path if s else ""
 
 
-func test_a_dual_store_key_loads_the_composed_bed_not_the_sting() -> void:
-	for key in DUAL_STORE_WIRED:
+func test_a_retired_suno_bed_resolves_to_its_sfx_twin() -> void:
+	for key in RETIRED_TO_SFX:
 		var path: String = _loaded_path(str(key))
-		assert_true(path.contains(MUSIC_DIR),
-			"%s loaded %s — the ambient layer is holding the %s sting again, so the composed bed is unplayed exactly as it was for six months" % [key, path, SFX_DIR])
-		assert_false(path.contains(SFX_DIR),
-			"%s resolved into %s" % [key, SFX_DIR])
+		assert_true(path.contains(SFX_DIR),
+			"%s loaded %s — the retired Suno song is back under the music, a second melody in another key" % [key, path])
 
 
-func test_the_bed_it_loads_is_the_long_one() -> void:
+func test_a_music_only_ambient_key_still_loads_the_long_bed() -> void:
 	## ⛔ THE PATH ALONE IS NOT THE POINT — the sting and the bed differ by two orders of
 	## magnitude in length, and that difference is what a player hears. A path check would pass on
 	## a 5 s file that happened to sit in the music directory.
-	for key in DUAL_STORE_WIRED:
+	for key in [COMPOSED]:
+		assert_true(_loaded_path(str(key)).contains(MUSIC_DIR), "CONTROL: %s did not resolve from the music store" % key)
 		SoundManager.play_ambient(str(key))
 		var s: AudioStream = SoundManager._ambient_player.stream
 		assert_not_null(s, "CONTROL: %s loaded no stream at all" % key)
@@ -81,7 +83,7 @@ func test_an_unknown_key_leaves_nothing_audible() -> void:
 	## resource stays ASSIGNED — harmless, because a stopped player emits nothing and `finished`
 	## never fires to re-loop it. Asserting null here failed against correct pre-existing code and
 	## would have read as a bug in the music-first change that shipped beside it.
-	SoundManager.play_ambient(str(DUAL_STORE_WIRED[0]))
+	SoundManager.play_ambient(COMPOSED)
 	assert_true(SoundManager._ambient_player.playing, "CONTROL: a real bed is playing before the bad key")
 	SoundManager.play_ambient("zzq_not_in_either_store")
 	assert_false(SoundManager._ambient_player.playing,
@@ -151,10 +153,10 @@ func test_a_bed_does_not_play_against_itself() -> void:
 	## while the music player already holds that bed and ambience is suppressed, and if the
 	## music then changes while you STAY in the zone it does not come back either. One class,
 	## two doors, one fix if the single slot is ever worth re-asserting.
-	SoundManager.play_ambient("ambient_cave")
+	SoundManager.play_ambient(COMPOSED)
 	assert_true(SoundManager._ambient_player.playing, "CONTROL: the zone ambience is running before the Jukebox asks")
 	var amb_path: String = SoundManager._ambient_player.stream.resource_path
-	SoundManager.play_music("ambient_cave", true)
+	SoundManager.play_music(COMPOSED, true)
 	await get_tree().create_timer(0.2).timeout
 	assert_true(SoundManager._music_player.stream != null and SoundManager._music_player.stream.resource_path == amb_path,
 		"CONTROL: the music player took the same file — without that there is no collision to defend against")
@@ -173,11 +175,11 @@ func test_the_collision_is_blocked_in_the_other_order_too() -> void:
 	## Latent rather than live at the time: nothing in the tree passes an ambient_* id to
 	## play_music, so only the Jukebox reaches it, and that opens where a player cannot walk into
 	## a zone. The reverse door was held shut by a UI accident, not by the fix.
-	SoundManager.play_music(str(DUAL_STORE_WIRED[0]), true)
+	SoundManager.play_music(COMPOSED, true)
 	await get_tree().create_timer(0.2).timeout
 	assert_true(SoundManager._music_player.playing, "CONTROL: the music player holds the bed first in this order")
 	var mus_path: String = SoundManager._music_player.stream.resource_path
-	SoundManager.play_ambient(str(DUAL_STORE_WIRED[0]))
+	SoundManager.play_ambient(COMPOSED)
 	assert_false(SoundManager._ambient_player.playing,
 		"the ambient layer started %s while the music player was already playing it — same file, two players, the collision the other arm blocks in the opposite order" % mus_path)
 	SoundManager.stop_music()
@@ -190,7 +192,7 @@ func test_the_current_key_never_names_a_bed_that_is_not_playing() -> void:
 	## bed that was not playing. Inert when found — every reader was checked — but this field IS
 	## the record of what is live, and one that lies on one of two paths is the kind nobody
 	## re-checks. Asserted rather than noted, because "does the field match reality" is checkable.
-	var bed: String = str(DUAL_STORE_WIRED[0])
+	var bed: String = COMPOSED
 	SoundManager.play_music(bed, true)
 	await get_tree().create_timer(0.2).timeout
 	SoundManager.play_ambient(bed)

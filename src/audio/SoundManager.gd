@@ -1514,11 +1514,8 @@ func _get_world_sfx_prefix() -> String:
 ## three are authored, on disk, and pinned UNREACHABLE in test_unreachable_music_is_pinned, whose
 ## arm reds when a pinned bed becomes reachable — that pin is an open question for struktured
 ## ("delete, or give W4-W6 an ambient zone"), and wiring them is his call, not this change's.
+## Not in W1 either since 2026-10-30: "Market Morning" was a Suno song, a 2nd melody under the bed (struktured).
 func village_ambient_key() -> String:
-	if _get_current_world_suffix() != "medieval":
-		return ""
-	if has_music_track("ambient_village") and music_is_available("ambient_village"):
-		return "ambient_village"
 	return ""
 
 
@@ -1538,8 +1535,7 @@ func play_ambient(sound_key: String) -> void:
 	## three — the same "was the first instance the only one" that found play_music after
 	## play_area_music, on a fix of my own, twice in one day. Setting it once on success retires
 	## the patch and all four leaks together.
-	## MUSIC MANIFEST FIRST. ambient_cave/forest/village exist in BOTH stores: a 145-214s authored
-	## bed here and a 30-40 KB sting there. Reading sfx only, the long beds had never played once.
+	## MUSIC MANIFEST FIRST. No ambient_ key is in both stores since 2026-10-30 (the three Suno beds were songs).
 	_load_music_manifest()
 	var entry: Dictionary = {}
 	if _music_manifest.has(sound_key):

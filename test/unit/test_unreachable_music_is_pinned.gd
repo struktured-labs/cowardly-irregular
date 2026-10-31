@@ -162,11 +162,8 @@ func test_cutscene_track_reachability_matches_the_pin() -> void:
 ## Wired 2026-09-16 by struktured's ruling. NOT reached by play_music — they route through
 ## play_ambient, which prefers the music manifest since that day. Listed separately so the arm
 ## below reds in BOTH directions: a pinned bed that becomes reachable, and a wired bed that stops.
-const WIRED_AMBIENT_TRACKS: Array[String] = [
-	"ambient_cave",
-	"ambient_forest",
-	"ambient_village",
-]
+## Empty since 2026-10-30: all three were Suno songs and left the music store (retired_ambient_beds).
+const WIRED_AMBIENT_TRACKS: Array[String] = []
 
 
 const KNOWN_UNREACHABLE_AMBIENT_TRACKS: Array[String] = [
