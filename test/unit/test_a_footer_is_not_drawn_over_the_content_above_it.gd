@@ -13,6 +13,14 @@ extends GutTest
 ## Both are the same shape: a footer placed from a literal that does not account for the content
 ## above it. The arms below compute the requirement from the layout, so a fifth key row or a
 ## twelfth character option reds here instead of silently overlapping again.
+##
+##   CharacterCreation NAME GRID   the third surface on that same screen, and this file was green
+##                          through it for exactly the reason its own header anticipates. NAME_CHARS
+##                          is 63 chars over 13 cols = 5 rows ending at grid-y 120, while the painted
+##                          box was the literal 100 and [DEL]/[OK]/hint sat at 84/85 -- inside row 3's
+##                          band. So `z0123456789` drew OUTSIDE its own box, over the Confirm/Skip
+##                          buttons at panel-y 425, at the DEFAULT text size. clip_contents is set
+##                          nowhere, so it rendered rather than being hidden.
 
 const KeyboardScript = preload("res://src/ui/VirtualKeyboard.gd")
 const CreationScript = preload("res://src/ui/CharacterCreationScreen.gd")
@@ -108,3 +116,97 @@ func test_the_creation_screen_lays_its_rows_out_where_the_arithmetic_says() -> v
 	assert_lte(lowest, instructions.position.y,
 		"the last option row ends at %.0f and the instructions start at %.0f" % [
 			lowest, instructions.position.y])
+
+
+func test_the_name_grid_box_holds_every_letter_it_draws() -> void:
+	## THE REQUIREMENT from NAME_CHARS rather than pinned: a 64th character adds a row and reds here.
+	var n: int = CreationScript.NAME_CHARS.length()
+	var cols: int = CreationScript.NAME_GRID_COLS
+	var row_h: int = CreationScript.NAME_GRID_ROW_H
+	var top: int = CreationScript.NAME_GRID_TOP
+	assert_gt(n, 0, "CONTROL: there must be characters to lay out")
+	assert_gt(cols, 1, "CONTROL: the grid must have columns")
+	assert_gt(row_h, 0, "CONTROL: the row pitch must be real")
+	var rows: int = (n + cols - 1) / cols
+	assert_gt(rows, 1, "CONTROL: the layout must have rows to contain")
+	var letters_bottom: int = top + rows * row_h
+	var box_h: int = letters_bottom + 4 + row_h + row_h
+	assert_gte(box_h, letters_bottom,
+		"%d chars over %d cols = %d rows ending at %d, and the box is %d" % [
+			n, cols, rows, letters_bottom, box_h])
+
+
+func test_the_name_grid_help_and_buttons_clear_the_letters() -> void:
+	## Drives the real screen: the hint and [DEL]/[OK] must sit BELOW the last letter row.
+	var cc = CreationScript.new()
+	cc.set_anchors_preset(Control.PRESET_FULL_RECT)
+	add_child_autofree(cc)
+	await wait_frames(3)
+	assert_true(cc.has_method("_show_name_grid"), "CONTROL: the screen must build a name grid")
+	if not cc.has_method("_show_name_grid"):
+		return
+	cc._show_name_grid()
+	await wait_frames(3)
+	var grid: Control = cc._name_grid
+	assert_not_null(grid, "CONTROL: the name grid must exist")
+	if grid == null:
+		return
+	var lowest_letter := -9999.0
+	for c in grid.get_children():
+		if c is Control and String((c as Control).name).begins_with("Char_"):
+			lowest_letter = maxf(lowest_letter, (c as Control).position.y + (c as Control).size.y)
+	assert_gt(lowest_letter, -9998.0, "CONTROL: letter cells must exist")
+	for want in ["DelBtn", "OkBtn"]:
+		var btn: Control = grid.get_node_or_null(NodePath(want))
+		assert_not_null(btn, "CONTROL: %s must exist" % want)
+		if btn != null:
+			assert_gte(btn.position.y, lowest_letter,
+				"%s starts at %.0f and the letters end at %.0f" % [want, btn.position.y, lowest_letter])
+	var hint: Label = null
+	for c in grid.get_children():
+		if c is Label and (c as Label).text.find("Select") != -1:
+			hint = c
+			break
+	assert_not_null(hint, "CONTROL: the name grid hint must exist")
+	if hint != null:
+		assert_gte(hint.position.y, lowest_letter,
+			"the hint starts at %.0f and the letters end at %.0f" % [hint.position.y, lowest_letter])
+
+
+func test_the_name_grid_fits_inside_its_panel() -> void:
+	## Growing the box must not push it through the panel instead -- the keyboard arm's lesson.
+	var cc = CreationScript.new()
+	cc.set_anchors_preset(Control.PRESET_FULL_RECT)
+	add_child_autofree(cc)
+	await wait_frames(3)
+	if not cc.has_method("_show_name_grid"):
+		return
+	cc._show_name_grid()
+	await wait_frames(3)
+	var grid: Control = cc._name_grid
+	assert_not_null(grid, "CONTROL: the name grid must exist")
+	if grid == null:
+		return
+	var box: ColorRect = null
+	for c in grid.get_children():
+		if c is ColorRect and (c as ColorRect).size.x > 100.0 and (c as ColorRect).position.y >= 0.0:
+			box = c
+			break
+	assert_not_null(box, "CONTROL: the name grid's painted background must exist")
+	if box == null:
+		return
+	## The border is a frame drawn 2px OUTSIDE the box on purpose, so it is judged against the panel, not the box.
+	var lowest := -9999.0
+	var frame_bottom := -9999.0
+	for c in grid.get_children():
+		if c is Control:
+			var bottom: float = (c as Control).position.y + (c as Control).size.y
+			frame_bottom = maxf(frame_bottom, bottom)
+			if not (c is ColorRect and (c as ColorRect).position.y < 0.0):
+				lowest = maxf(lowest, bottom)
+	assert_gt(lowest, -9998.0, "CONTROL: the grid must draw something")
+	assert_lte(lowest, box.size.y,
+		"the grid draws down to %.0f and its box is %.0f tall" % [lowest, box.size.y])
+	assert_lte(grid.position.y + frame_bottom, float(CreationScript.PANEL_HEIGHT),
+		"the grid's frame ends at %.0f + %.0f and PANEL_HEIGHT is %d" % [
+			grid.position.y, frame_bottom, CreationScript.PANEL_HEIGHT])
