@@ -3648,7 +3648,7 @@ func _tick_menu_watchdog() -> void:
 	if not (pc in bm.player_party):
 		_reset_menu_watchdog()
 		return
-	if is_instance_valid(active_win98_menu) and active_win98_menu.visible:
+	if (is_instance_valid(active_win98_menu) and active_win98_menu.visible) or _a_boss_line_owns_the_screen():
 		_reset_menu_watchdog()
 		return
 	var now: int = Time.get_ticks_msec()
@@ -3715,6 +3715,13 @@ func _menu_wd_diag(pc: Combatant) -> String:
 func _reset_menu_watchdog() -> void:
 	_menu_wd_started_ms = 0
 	_menu_wd_retries = 0
+
+
+## A boss line mid-selection hides the menu ON PURPOSE (BattleCommandMenu spawns it hidden,
+## _on_dialogue_finished re-shows it). Counting that as a wedge cost a slow reader their turn:
+## 2.5s per retry, three retries, then the terminal fallback autobattles the turn away.
+func _a_boss_line_owns_the_screen() -> bool:
+	return _battle_dialogue != null and is_instance_valid(_battle_dialogue) and _battle_dialogue.visible
 
 
 ## Removed (struktured 2026-10-03): confirm on the Auto row now runs auto immediately and
