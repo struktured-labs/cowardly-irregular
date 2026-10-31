@@ -24,7 +24,7 @@ func _triggers() -> Array:
 	var out: Array = []
 	var cmap: Dictionary = load(DAEMON_PATH).get_script_constant_map()
 	for key in cmap.keys():
-		if str(key).begins_with("TRIGGER_") and str(key) != "TRIGGER_MEANINGS" and cmap[key] is String:
+		if str(key).begins_with("TRIGGER_") and cmap[key] is String:
 			out.append(str(cmap[key]))
 	out.sort()
 	return out
@@ -33,14 +33,14 @@ func _triggers() -> Array:
 func test_every_trigger_has_a_meaning() -> void:
 	var triggers: Array = _triggers()
 	assert_gt(triggers.size(), 4, "FLOOR: derived only %s, so the derivation broke and every arm here is vacuous" % [triggers])
-	var meanings: Dictionary = load(DAEMON_PATH).TRIGGER_MEANINGS
+	var meanings: Dictionary = load(DAEMON_PATH).EVENT_MEANINGS
 	for t in triggers:
 		assert_true(str(meanings.get(t, "")).length() > 20,
 			"trigger '%s' has no meaning, so the model will invent one, as it did for level_up" % t)
 
 
 func test_the_meaning_reaches_the_prompt_for_every_trigger() -> void:
-	var meanings: Dictionary = load(DAEMON_PATH).TRIGGER_MEANINGS
+	var meanings: Dictionary = load(DAEMON_PATH).EVENT_MEANINGS
 	for t in _triggers():
 		var p: String = _daemon().build_prompt(t, {"map_id": "whispering_cave"}, [])
 		assert_true(p.contains("WHAT THIS EVENT MEANS: " + str(meanings[t])), "the meaning of '%s' never reached the prompt" % t)
@@ -48,7 +48,7 @@ func test_the_meaning_reaches_the_prompt_for_every_trigger() -> void:
 
 func test_progress_events_point_at_no_change() -> void:
 	## THE DEFECT: a level-up or a new area is progress, and the model read it as a reason to be generous.
-	var meanings: Dictionary = load(DAEMON_PATH).TRIGGER_MEANINGS
+	var meanings: Dictionary = load(DAEMON_PATH).EVENT_MEANINGS
 	for t in ["level_up", "area_entered"]:
 		assert_string_contains(str(meanings[t]), "no_change", "'%s' must steer the model to no_change" % t)
 	assert_string_contains(str(meanings["boss_defeat"]).to_lower(), "never", "a boss win must never read as a reason to make it easier")
@@ -62,7 +62,7 @@ func test_the_header_no_longer_primes_the_model_to_act() -> void:
 
 func test_control_a_wipe_still_reads_as_too_hard() -> void:
 	## CONTROL: without it, the arms above pass on a prompt that talks the model out of EVERY nudge.
-	var meanings: Dictionary = load(DAEMON_PATH).TRIGGER_MEANINGS
+	var meanings: Dictionary = load(DAEMON_PATH).EVENT_MEANINGS
 	assert_string_contains(str(meanings["party_wipe"]), "TOO HARD", "a wipe is the real signal and must still say so")
 	assert_false(str(meanings["party_wipe"]).contains("no_change"), "and must not steer the model away from acting on it")
 
