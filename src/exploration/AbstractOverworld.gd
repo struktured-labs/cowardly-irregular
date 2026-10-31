@@ -494,6 +494,9 @@ func _generate_map() -> void:
 	spawn_points["vertex_entrance"] = Vector2(19 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 16 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
 	# VertexApex.overworld_exit_spawn is "apex". A missing key left the player on the south entrance.
 	spawn_points["apex"] = Vector2(16 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 4 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
+	# VertexAntechamber.overworld_exit_spawn is "antechamber" — the same lesson as "apex" above:
+	# a missing key leaves the player on the south entrance after clearing the room.
+	spawn_points["antechamber"] = Vector2(22 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 6 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
 
 
 func _char_to_tile_type(char: String) -> int:
@@ -560,9 +563,35 @@ func _setup_transitions() -> void:
 	transitions.add_child(null_trans)
 	transitions.add_child(vertex_trans)
 
-	# The Vertex Apex — the Calibrant's arena. Appears only once The Question has been asked
-	# (world6_chapter3), so the last room in the game cannot be walked into early.
+	# The Vertex Antechamber — the routed trial, on the same gate as the Apex it opens onto. Which
+	# of the three sub-final bosses stands here is decided by TrialRouting from how the save played,
+	# not by anything the player picks at this door.
+	#
+	# This door is also the Apex's signpost, which is why the gate below can be a plain absence: at
+	# chapter3 the Antechamber is the ONLY way forward, and the Apex appears beside it once the trial
+	# is passed. One open door at every moment, so a gated Apex can never read as a dead end.
 	if GameState and GameState.is_story_flag_set("world6_chapter3_complete"):
+		var ante_trans = AreaTransitionScript.new()
+		ante_trans.name = "VertexAntechamberEntrance"
+		ante_trans.target_map = "vertex_antechamber"
+		ante_trans.target_spawn = "default"
+		ante_trans.require_interaction = true
+		ante_trans.indicator_text = "Enter the Antechamber"
+		ante_trans.position = Vector2(22 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 6 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
+		_setup_transition_collision(ante_trans, Vector2(TILE_SIZE * 2, TILE_SIZE * 2))
+		ante_trans.transition_triggered.connect(_on_transition_triggered)
+		transitions.add_child(ante_trans)
+
+	# The Vertex Apex — the Calibrant's arena. Needs The Question asked (world6_chapter3) AND a trial
+	# passed. One Antechamber victory writes TWO DIFFERENT NAMES through one spec (DragonCave:845-851,
+	# applied by GameLoop on victory only): unlock_story_flag "w6_trial_passed" into story_flags, and
+	# boss_flag_key "vertex_antechamber_cleared" into game_constants["dungeon_flags"]. Different names
+	# in different namespaces, so is_story_flag_set's union does NOT make one answer for the other —
+	# EITHER is accepted here deliberately, because this is the gate in front of the game's ending and
+	# a save carrying one name and not the other would softlock with no door and no explanation.
+	if GameState and GameState.is_story_flag_set("world6_chapter3_complete") \
+			and (GameState.is_story_flag_set("w6_trial_passed") \
+				or GameState.is_story_flag_set("vertex_antechamber_cleared")):
 		var apex_trans = AreaTransitionScript.new()
 		apex_trans.name = "VertexApexEntrance"
 		apex_trans.target_map = "vertex_apex"

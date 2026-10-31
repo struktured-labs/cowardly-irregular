@@ -125,9 +125,32 @@ func _label(n: Node) -> String:
 	return str(n.name)
 
 
+## ⛔ A SHAPELESS AREA IS NOT A PRESS TARGET, AND JUDGING ONE REPORTS A LOSS NOTHING CAN LOSE.
+## Group membership alone put 15 MasteriteEncounters in `others`; with no story flags set their
+## prereqs are unmet, so `_ready` returns at its gate BEFORE `_build_collision` and the node carries
+## no CollisionShape2D. Measured on all 15: `visible=false monitoring=false shapes=0`. A point query
+## cannot hit them here and OverworldController cannot press them in the live game either, so the
+## "fully shadowed" arm reported 8 of them — every one within 5 cells of a crystal — while the cause
+## was absence, not the crystal. The one furthest away (12.1 cells) was equally unpressable and went
+## unreported, which is what gives the crystal attribution away.
+##
+## 🔑 KEYED ON HAVING A SHAPE, NOT ON BEING VISIBLE. A hidden interactable that still owns a shape
+## CAN steal a press — that is a live defect class and this predicate leaves it in the corpus.
+## Only something physics cannot reach is dropped, so nothing can be silenced by hiding it.
+func _can_receive_a_press(n: Node2D) -> bool:
+	if not (n is CollisionObject2D):
+		return true
+	var co := n as CollisionObject2D
+	for owner_id in co.get_shape_owners():
+		if co.shape_owner_get_shape_count(owner_id) > 0:
+			return true
+	return false
+
+
 func _split(v: Node2D) -> Dictionary:
 	var saves: Array = []
 	var others: Array = []
+	var absent := 0
 	var stack: Array = [v]
 	while not stack.is_empty():
 		var n = stack.pop_back()
@@ -138,8 +161,11 @@ func _split(v: Node2D) -> Dictionary:
 		if n is SavePoint:
 			saves.append(n)
 		elif n.has_method("interact") or n.is_in_group("interactables"):
-			others.append(n)
-	return {"saves": saves, "others": others}
+			if _can_receive_a_press(n as Node2D):
+				others.append(n)
+			else:
+				absent += 1
+	return {"saves": saves, "others": others, "absent": absent}
 
 
 func _contests(sp: Node2D, others: Array) -> Array:
@@ -210,11 +236,15 @@ func test_no_crystal_steals_or_loses_a_faced_press() -> void:
 	var contested: Array = []
 	var checked := 0
 	var cells := 0
+	var judged := 0
+	var absent := 0
 	for f in _villages():
 		var v = await _build(f)
 		if v == null:
 			continue
 		var got: Dictionary = _split(v)
+		judged += (got["others"] as Array).size()
+		absent += int(got["absent"])
 		for sp in (got["saves"] as Array):
 			checked += 1
 			cells += _winners(sp as Node2D).size()
@@ -224,6 +254,11 @@ func test_no_crystal_steals_or_loses_a_faced_press() -> void:
 	assert_gt(checked, 10, "CONTROL: only %d crystals examined" % checked)
 	assert_gt(cells, 40,
 		"CONTROL: only %d crystal approach cells were standable; the arm would clear vacuously" % cells)
+	## CONTROL on the shapeless exclusion: it must drop the absent and keep the real corpus. If a
+	## future change left nothing to judge, every verdict below would be clean for free.
+	assert_gt(judged, 100,
+		"CONTROL: only %d interactables could receive a press; _can_receive_a_press is over-excluding" % judged)
+	gut.p("  %d interactables judged, %d skipped as shapeless (prereq unmet at build)" % [judged, absent])
 	contested.sort()
 	## ⚠️ ONE LINE PER CONTEST, because GUT TRUNCATES a long assert message. With 24 of these the
 	## message named only the first village and my own mutation read as "the detector found one of

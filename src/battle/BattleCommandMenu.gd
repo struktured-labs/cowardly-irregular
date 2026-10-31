@@ -477,6 +477,11 @@ func build_command_menu_items_with_targets(combatant: Combatant) -> Array:
 		if not formation.is_empty():
 			var formation_cost: int = int(formation.get("ap_cost", 2))
 			var formation_reason: String = _group_ap_reason("formation", formation_cost)
+			## The cooldown is the engine's to answer, like every AP question in this block — a second
+			## copy of the rule here is how the row came to say ENABLED while the engine refused.
+			var formation_cooldown: int = BattleManager.formation_cooldown_remaining()
+			if formation_cooldown > 0:
+				formation_reason = "Re-forming — %d round(s)" % formation_cooldown
 			group_items.append({
 				"id": "group_formation",
 				"label": formation["name"],

@@ -26,7 +26,7 @@
 # Exit:   0 they agree · 5 they diverge · 2 could not evaluate
 set -uo pipefail
 
-TOOLS="${PARITY_TOOLS:-tools/publish_detached.sh tools/tag_gate_evidence.sh tools/store_status.sh tools/verify_store_artifact.sh}"
+TOOLS="${PARITY_TOOLS:-tools/publish_detached.sh tools/tag_gate_evidence.sh tools/store_status.sh tools/origin_tags.sh tools/verify_store_artifact.sh}"
 
 run() {
     local tag="${1:-}"

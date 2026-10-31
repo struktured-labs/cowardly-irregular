@@ -7,9 +7,24 @@ const QUEST := "w1_sandrift_water_on_the_road"
 const STEP2_FLAG := "quest_w1_sandrift_water_on_the_road_accepted"
 const PREREQ := "cutscene_flag_rat_king_defeated"
 
-## W3 included so its dungeon junction is covered; W4-W6 are wholesale unwired (20 stuck steps,
-## no givers) and would drown the signal, so they join when their givers ship.
-const GUARDED_PREFIXES := ["w1_", "world1_", "world2_", "world3_"]
+## ⛔ THIS WAS A PREFIX LIST, AND ITS STATED CONDITION EXPIRED WITHOUT ANYONE NOTICING.
+## It read `["w1_", "world1_", "world2_", "world3_"]`, excusing W4-W6 as "wholesale unwired (20
+## stuck steps, no givers) — they join when their givers ship". **Their givers shipped.**
+## `test_quest_givers_are_reachable.gd` records the day it happened, in the note on the list they
+## left: *"2026-09-11 — foreman/dorrit/madame_orrery_w4 + firewall_attendant_w5 now have ids and
+## left this list"* — and that same file's header warns that placing them "would ship
+## startable-but-unfinishable quests — the W1 trap, on purpose."
+##
+## ⚠️ So three quests became acceptable-and-unfinishable (world4_the_watercolors,
+## world5_termination_condition, world4_form_exception_alpha) in the seam between one guard's
+## exemption expiring and this one's scope filter. Each guard was correct; neither watched the
+## condition the other's note depended on, and `test_exemptions_have_not_expired` below watched
+## `KNOWN_UNBUILT` only — never the scope constant that decided who was examined at all.
+##
+## 🔑 THE SCOPE IS NOW DERIVED: every quest, minus the ones the DATA declares withheld with
+## `"wiring_pending": true`, which `QuestSystem.is_offerable` refuses to offer. A new world cannot
+## fall outside it, and a withheld quest cannot stay withheld once its emitter lands —
+## test_a_withheld_quest_is_fully_unemittable below is the other direction.
 
 ## flag -> why. An exemption carries its justification or it reads as coverage, and
 ## test_exemptions_have_not_expired below deletes it for you the moment it stops being true.
@@ -103,22 +118,18 @@ func _stuck_custom_objectives() -> Array:
 	while qf != "":
 		if qf.ends_with(".json"):
 			var id := qf.trim_suffix(".json")
-			var guarded := false
-			for pre in GUARDED_PREFIXES:
-				if id.begins_with(pre):
-					guarded = true
-			if guarded:
-				var q = JSON.parse_string(FileAccess.get_file_as_string("res://data/quests/" + qf))
-				if q is Dictionary:
-					for o in q.get("objectives", []):
-						if str(o.get("type", "")) != "custom":
-							continue
-						var rf: String = str(o.get("required_flag", ""))
-						if rf == "" or KNOWN_UNBUILT.has(rf):
-							continue
-						checked += 1
-						if not notifiable.has(rf):
-							stuck.append("%s step%s -> %s" % [id, o.get("step", "?"), rf])
+			var q = JSON.parse_string(FileAccess.get_file_as_string("res://data/quests/" + qf))
+			## Withheld quests are not offerable, so a missing emitter cannot reach a player.
+			if q is Dictionary and not bool((q as Dictionary).get("wiring_pending", false)):
+				for o in q.get("objectives", []):
+					if str(o.get("type", "")) != "custom":
+						continue
+					var rf: String = str(o.get("required_flag", ""))
+					if rf == "" or KNOWN_UNBUILT.has(rf):
+						continue
+					checked += 1
+					if not notifiable.has(rf):
+						stuck.append("%s step%s -> %s" % [id, o.get("step", "?"), rf])
 		qf = qd.get_next()
 	qd.list_dir_end()
 	return [checked, stuck, notifiable.size(), notifiable]
@@ -241,11 +252,16 @@ func test_no_playable_custom_flag_is_absent_from_src_entirely() -> void:
 	qd.list_dir_begin()
 	var qf := qd.get_next()
 	while qf != "":
-		var id: String = qf.trim_suffix(".json")
-		if not qf.ends_with(".json") or not (id.begins_with("w1_") or id.begins_with("world1_") or id.begins_with("world2_")):
+		if not qf.ends_with(".json"):
 			qf = qd.get_next()
 			continue
+		var id: String = qf.trim_suffix(".json")
 		var parsed = JSON.parse_string(FileAccess.get_file_as_string("res://data/quests/" + qf))
+		## Same derived scope as the ratchet above. This filter was NARROWER still — w1_, world1_,
+		## world2_, with no world3_ — so one file carried two different answers to "who is playable".
+		if parsed is Dictionary and bool((parsed as Dictionary).get("wiring_pending", false)):
+			qf = qd.get_next()
+			continue
 		for o in (parsed.get("objectives", []) if parsed is Dictionary else []):
 			if str(o.get("type", "")) != "custom":
 				continue
@@ -262,6 +278,68 @@ func test_no_playable_custom_flag_is_absent_from_src_entirely() -> void:
 	assert_eq(dark, [], "this step's required_flag appears NOWHERE in src/, by any mechanism at "
 		+ "all — so nothing can possibly advance it and the quest is unfinishable. Unlike the "
 		+ "shape-aware check above, this cannot be fooled by an emitter style nobody taught it: %s" % [dark])
+
+
+## ⛔ THE OTHER DIRECTION OF THE DERIVED SCOPE, and without it the scope key rots exactly as
+## the prefix list did. A `wiring_pending` quest is withheld from the player; the moment its
+## emitters exist, the key is hiding finished content and must come off. The ratchet above cannot
+## see that — a withheld quest is simply not examined — so this is where the expiry lives.
+##
+## ⚠️ IT USES THE **STRICT** (shape-aware) SET ON PURPOSE, not the permissive corpus. A false
+## "stale" ships an unfinishable quest to a player; a false "not stale" withholds finished content
+## a little longer. The two counts are printed side by side so a divergence is visible rather than
+## silently resolved in one direction.
+func test_a_withheld_quest_is_fully_unemittable() -> void:
+	var r := _stuck_custom_objectives()
+	assert_gt(r.size(), 3, "walk must return the notifiable set, else this cannot fire")
+	if r.size() < 4:
+		return
+	var notifiable: Dictionary = r[3]
+	assert_gt(notifiable.size(), 10, "notifiable set must be populated, else every withheld quest "
+		+ "looks correctly withheld and this arm inverts")
+	var corpus := _src_corpus()
+	assert_gt(corpus.length(), 200000, "src walk must load a real corpus, else the broad count below lies")
+
+	var withheld := 0
+	var flags := 0
+	var mentioned := 0
+	var stale: Array = []
+	var qd := DirAccess.open("res://data/quests/")
+	assert_not_null(qd, "quest dir must be readable")
+	if qd == null:
+		return
+	qd.list_dir_begin()
+	var qf := qd.get_next()
+	while qf != "":
+		if qf.ends_with(".json"):
+			var parsed = JSON.parse_string(FileAccess.get_file_as_string("res://data/quests/" + qf))
+			if parsed is Dictionary and bool((parsed as Dictionary).get("wiring_pending", false)):
+				withheld += 1
+				var customs := 0
+				var emittable := 0
+				for o in (parsed as Dictionary).get("objectives", []):
+					if str(o.get("type", "")) != "custom":
+						continue
+					var rf: String = str(o.get("required_flag", ""))
+					if rf == "":
+						continue
+					customs += 1
+					flags += 1
+					if corpus.contains(rf):
+						mentioned += 1
+					if notifiable.has(rf):
+						emittable += 1
+				if customs > 0 and emittable == customs:
+					stale.append(qf.trim_suffix(".json"))
+		qf = qd.get_next()
+	qd.list_dir_end()
+
+	assert_gt(withheld, 0, "VOID: no quest carries wiring_pending, so this arm examined nobody")
+	gut.p("  %d withheld quests · %d custom flags · %d emittable (strict) · %d mentioned (broad)" % [
+		withheld, flags, stale.size(), mentioned])
+	assert_eq(stale, [], "every custom flag of these quests can now be notified — drop "
+		+ "\"wiring_pending\" so the content ships, and restore the real prereq_flag if the "
+		+ "_wiring_notes spec names one: %s" % [stale])
 
 
 ## Comment-stripped .gd corpus — a flag named only in prose is not a wiring.

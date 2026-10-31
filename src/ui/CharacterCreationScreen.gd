@@ -186,7 +186,12 @@ func _build_ui() -> void:
 	# "A"/"B" are the EAST/SOUTH faces — right on Nintendo only — and "START" is the Xbox name for
 	# what Nintendo calls Plus and PlayStation Options. Skip was advertised nowhere at all.
 	instructions.text = "[↑↓] Option  [←→] Change  [%s] Next Char  [%s] Back  [%s] Confirm  [%s] Skip" % [
-		_route("ui_accept", "Z"), _route("ui_cancel", "X"), _route("ui_menu", "Enter"), _skip_route()]
+		## ⚠️ THE FALLBACKS WERE INVERTED TOO, not just the derivation: "Z" for accept and "X"
+		## for cancel are the pre-2026-09-29 letters. Every other site in src/ already passes
+		## the post-ruling pair -- ControlsMenu:302-303, BattleScene:2334, CutsceneDialogue:45.
+		## Only reachable when an action has NO key event, so it was latent rather than live
+		## once _route derives; left inverted it would resurface the defect on an unbound action.
+		_route("ui_accept", "X"), _route("ui_cancel", "Z"), _route("ui_menu", "Enter"), _skip_route()]
 	instructions.position = Vector2(20, PANEL_HEIGHT - 60)
 	instructions.add_theme_font_size_override("font_size", 10)
 	instructions.add_theme_color_override("font_color", Color(0.5, 0.5, 0.6))
@@ -1019,11 +1024,21 @@ func _confirm_creation() -> void:
 
 ## Key first, then the pad's own name for the button when one is connected — the dual-vocabulary
 ## convention this screen already used, with the pad half derived instead of frozen to Nintendo.
+## ⛔ THE KEYBOARD HALF WAS A FROZEN LITERAL AND IT WENT INVERTED. The pad half derived
+## correctly through hint_for_action; `key` was hardcoded at the call site -- "Z" for ui_accept
+## and "X" for ui_cancel -- which was true before struktured's 2026-09-29 emulator ruling and is
+## exactly backwards after it. With no pad attached this returned `key` outright, so the first
+## screen a new player sees told them "[Z] Next Char  [X] Back" while X confirms and Z goes back.
+## Measured in tools/menu_shots.gd's own render before this change.
+## 📌 DERIVE EVERY SIGNAL A CAPTION CARRIES, NOT THE CONVENIENT ONE: this is one caption with a
+## pad fact and a KEYBOARD fact, and deriving only the pad half left the other free to rot.
+## `key` is now a FALLBACK for an action with no key event, never the answer.
 func _route(action: String, key: String) -> String:
+	var kb: String = InputProfileManager.first_key_label(action, key)
 	if Input.get_connected_joypads().is_empty():
-		return key
+		return kb
 	var pad: String = InputProfileManager.hint_for_action(action)
-	return "%s/%s" % [key, pad] if pad != "" and pad != key else key
+	return "%s/%s" % [kb, pad] if pad != "" and pad != kb else kb
 
 
 func _skip_route() -> String:

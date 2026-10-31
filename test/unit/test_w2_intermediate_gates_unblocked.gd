@@ -12,10 +12,13 @@ extends GutTest
 ## STILL broken inside W2 because the arbiter and curator gates never
 ## fired.
 ##
-## Fix: auto-set the defeat flags after the matching narrative beat
-## completes — arbiter after intro_complete, curator after chapter5_complete.
-## The Masterite battles become off-screen narrative beats rather than
-## actual fights (battle infrastructure for them is unimplemented).
+## Tick 101's fix auto-set both flags after the matching narrative beat, making the battles
+## "off-screen narrative beats" because nothing could trigger them.
+##
+## SUPERSEDED: both are real fights now, placed by MapleHeightsVillage._place_masterites, and the
+## auto-sets are gone. The arms below keep this file's actual subject — every gate in the W2 chain
+## has a writer, so no intermediate chapter is unreachable — and add the half tick 101 could not
+## assert: that the writer is a victory rather than a grant.
 
 const GAME_LOOP := "res://src/GameLoop.gd"
 
@@ -34,55 +37,55 @@ func _pending_cutscene_body() -> String:
 	return src.substr(idx, next_fn - idx) if next_fn > -1 else src.substr(idx)
 
 
-func test_arbiter_defeat_auto_set_after_intro_complete() -> void:
+## The flags each gate reads, and the village that must contain the fight writing them.
+const W2_GATED := {
+	"cutscene_flag_arbiter_suburban_defeated": "return \"world2_chapter5\"",
+	"cutscene_flag_curator_suburban_defeated": "return \"world2_chapter7_infrastructure\"",
+}
+const VILLAGE_DIR := "res://src/maps/villages"
+
+
+func _village_sources() -> String:
+	var all := ""
+	var d := DirAccess.open(VILLAGE_DIR)
+	assert_not_null(d, "FLOOR: %s must be listable — both arms below read it" % VILLAGE_DIR)
+	if d == null:
+		return all
+	for f in d.get_files():
+		if f.ends_with(".gd"):
+			all += FileAccess.get_file_as_string(VILLAGE_DIR + "/" + f)
+	return all
+
+
+func test_each_w2_gate_still_reads_its_defeat_flag() -> void:
+	## Reachability is this file's subject. The gates must still be there to be reached.
 	var body := _pending_cutscene_body()
-	var pattern: String = (
-		"if flags.get(\"cutscene_flag_arbiter_suburban_intro_complete\", false) "
-		+ "and not flags.get(\"cutscene_flag_arbiter_suburban_defeated\", false):"
-	)
-	assert_true(body.contains(pattern),
-		"W2 must auto-set arbiter_suburban_defeated after arbiter_suburban_intro_complete — otherwise chapter5 unreachable")
-	# Tick 220: now via _set_cutscene_flag_and_mirror so the flag also lands in story_flags.
-	assert_true(body.contains("_set_cutscene_flag_and_mirror(\"cutscene_flag_arbiter_suburban_defeated\")"),
-		"the gate must actually assign the flag (via mirror helper) — gate alone is a no-op")
+	for flag in W2_GATED:
+		assert_true(body.contains(flag),
+			"the W2 chain must still gate on %s" % flag)
+		assert_true(body.contains(str(W2_GATED[flag])),
+			"%s must still have its return path" % str(W2_GATED[flag]))
 
 
-func test_curator_defeat_auto_set_after_chapter5_complete() -> void:
+func test_each_w2_defeat_flag_is_written_by_a_fight() -> void:
+	## WAS: "W2 must auto-set arbiter_suburban_defeated ... otherwise chapter5 unreachable".
+	## Tick 101 granted both defeats the instant the preceding beat ended, because the battles
+	## had no trigger — its own comment called them "off-screen narrative beats". They are fought
+	## now (MapleHeightsVillage._place_masterites), so the writer is a victory, not a gate.
+	## The requirement is unchanged in substance: every gating flag must have a writer.
+	var villages := _village_sources()
+	for flag in W2_GATED:
+		assert_true(villages.contains('defeat_flag_name = "%s"' % flag),
+			"%s must be written by a placed MasteriteEncounter — a gate with no writer strands the chain" % flag)
+
+
+func test_no_w2_defeat_is_granted_without_the_fight() -> void:
+	## The other half: re-adding an auto-set would hand back the unfought victory AND make the
+	## placed encounter dead content, with the chain still traversable so nothing else would notice.
 	var body := _pending_cutscene_body()
-	var pattern: String = (
-		"if flags.get(\"cutscene_flag_world2_chapter5_complete\", false) "
-		+ "and not flags.get(\"cutscene_flag_curator_suburban_defeated\", false):"
-	)
-	assert_true(body.contains(pattern),
-		"W2 must auto-set curator_suburban_defeated after world2_chapter5_complete — otherwise chapter7_infrastructure unreachable")
-	# Tick 220: now via _set_cutscene_flag_and_mirror.
-	assert_true(body.contains("_set_cutscene_flag_and_mirror(\"cutscene_flag_curator_suburban_defeated\")"),
-		"the gate must actually assign the flag (via mirror helper)")
-
-
-func test_arbiter_auto_set_precedes_chapter5_gate() -> void:
-	# Ordering: arbiter auto-set must come BEFORE the chapter5 gate
-	# in source so chapter5 reads arbiter_defeated as TRUE on the
-	# same evaluation pass after intro completes.
-	var body := _pending_cutscene_body()
-	# Tick 220: pin the helper call instead of the bare write.
-	var auto_set_idx: int = body.find("_set_cutscene_flag_and_mirror(\"cutscene_flag_arbiter_suburban_defeated\")")
-	var chapter5_idx: int = body.find("return \"world2_chapter5\"")
-	assert_gt(auto_set_idx, -1, "arbiter auto-set must exist")
-	assert_gt(chapter5_idx, -1, "chapter5 return must exist")
-	assert_lt(auto_set_idx, chapter5_idx,
-		"arbiter auto-set must precede the chapter5 return — otherwise chapter5 reads stale defeated=false on first pass")
-
-
-func test_curator_auto_set_precedes_chapter7_gate() -> void:
-	var body := _pending_cutscene_body()
-	# Tick 220: pin the helper call instead of the bare write.
-	var auto_set_idx: int = body.find("_set_cutscene_flag_and_mirror(\"cutscene_flag_curator_suburban_defeated\")")
-	var chapter7_idx: int = body.find("return \"world2_chapter7_infrastructure\"")
-	assert_gt(auto_set_idx, -1, "curator auto-set must exist")
-	assert_gt(chapter7_idx, -1, "chapter7 return must exist")
-	assert_lt(auto_set_idx, chapter7_idx,
-		"curator auto-set must precede the chapter7 return — otherwise chapter7 reads stale defeated=false on first pass")
+	for flag in W2_GATED:
+		assert_false(body.contains('_set_cutscene_flag_and_mirror("%s")' % flag),
+			"%s must not be auto-set: that grants a defeat the player never fought" % flag)
 
 
 func test_full_w2_chain_now_traversable_in_source() -> void:

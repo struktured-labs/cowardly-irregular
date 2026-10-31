@@ -51,6 +51,11 @@ func _count(text: String, needle: String) -> int:
 	return -1
 
 
+## A -1 from _count/_leg_number means THE PHRASE WAS NOT FOUND, which is this parser's defect, not the sweep's.
+func _input_not_found(phrase: String, text: String) -> void:
+	assert_true(false, "INPUT NOT FOUND: no line of %s's output contains '%s', so this arm measured nothing and any number it would have printed describes this parser rather than the sweep. That substring is an INTERFACE this guard reads: if you reworded the tool, restore it verbatim and append your change after it. Got:\n%s" % [TOOL, phrase, text.substr(0, 500)])
+
+
 func test_the_tool_is_there_and_answers() -> void:
 	var text := _list("src/battle/BattleManager.gd")
 	assert_true(text.contains("pre_ready_guards:"),
@@ -60,14 +65,22 @@ func test_the_tool_is_there_and_answers() -> void:
 func test_the_tree_leg_finds_the_directory_walkers() -> void:
 	## These guards name no symbol of yours; a symbol-derived corpus can never contain them, which is
 	## what the first .654 gate red was.
-	var src := _count(_list("src/battle/BattleManager.gd"), "guards walk res://src")
+	var text := _list("src/battle/BattleManager.gd")
+	var src := _count(text, "guards walk res://src")
+	if src < 0:
+		_input_not_found("guards walk res://src", text)
+		return
 	assert_gt(src, 100, "the src tree leg derived %d walkers — it was 245 when written, so the walk scan has broken" % src)
 
 
 func test_the_data_leg_sees_a_manifest_only_change() -> void:
 	## Every manifest lives in data/, which is the most common edit shape in the sprite, sfx and
 	## autogrind lanes, and was invisible to this tool until the trees came from the diff.
-	var data := _count(_list("data/monsters.json"), "guards walk res://data")
+	var dtext := _list("data/monsters.json")
+	var data := _count(dtext, "guards walk res://data")
+	if data < 0:
+		_input_not_found("guards walk res://data", dtext)
+		return
 	assert_gt(data, 50, "the data tree leg derived %d walkers — a manifest-only change would go unchecked" % data)
 
 
@@ -86,6 +99,10 @@ func test_the_class_name_leg_finds_what_no_path_reaches() -> void:
 	## which is the gap the leg exists for; a coincidental count is not.
 	var by_path: int = _leg_number(line, "by path")
 	var by_name: int = _leg_number(line, "by class_name")
+	## A sentinel on EITHER side makes the comparison below unfalsifiable: any real count beats -1.
+	if by_path < 0 or by_name < 0:
+		_input_not_found("by path / by class_name", line)
+		return
 	assert_gt(by_name, by_path,
 		"the class_name leg must out-find the path leg for VoiceLines.gd — that gap is why it exists. Got: %s" % line)
 	assert_gt(by_name, 5, "only %d class_name dependents for VoiceLines.gd; it was 10 when written" % by_name)
@@ -162,6 +179,9 @@ func test_a_project_settings_change_derives_its_readers() -> void:
 		"project.godot derived no dependents, so an input-map or autoload change sweeps nothing:\n%s" % text)
 	var idx: int = text.find("project.godot ->")
 	var by_path: int = _leg_number(text.substr(idx, 90), "by path")
+	if by_path < 0:
+		_input_not_found("by path", text.substr(idx, 90))
+		return
 	## RELATIONSHIP, not the 39 measured today: this grows whenever a guard starts reading the file.
 	assert_gt(by_path, 10,
 		"only %d guards derived for project.godot; it was 39 when written, so the allowlist or the path grep has drifted" % by_path)

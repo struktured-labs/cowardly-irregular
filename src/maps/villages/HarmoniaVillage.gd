@@ -796,6 +796,21 @@ func _setup_npcs() -> void:
 	)
 	npcs.add_child(acrees)
 
+	# Granny Kaya — the artist's fourth overworld villager (2026-10-15 drop), on the grass just south of the fountain.
+	var kaya_loop: Array[Vector2] = [
+		Vector2(13 * TILE_SIZE,14 * TILE_SIZE),
+		Vector2(18 * TILE_SIZE,14 * TILE_SIZE),
+	]
+	var kaya = _create_wandering_npc(
+		"Granny Kaya",
+		"granny_kaya",
+		"Sixty years I've watched that fountain. Not once has it done anything interesting. I keep my hopes up.",
+		kaya_loop,
+		"villager",
+		"granny_kaya"
+	)
+	npcs.add_child(kaya)
+
 
 ## Spawn a QuestChicken for the one_chicken_problem 7-catch puzzle.
 func _place_chicken(chicken_id: String, pos: Vector2, catch_line: String = "") -> void:

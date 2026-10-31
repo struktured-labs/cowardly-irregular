@@ -27,6 +27,9 @@ const LENS_DATA_PATH := "res://data/lenses.json"
 const NEUTRAL_MODS := {
 	"attack_multiplier": 1.0,
 	"defense_multiplier": 1.0,
+	## The Warden mitigated the physical half only: every wall boss deals AoE magic, and a lens
+	## declaring this key was dropped TWICE — here, and again in PassiveSystem._compose_lens_mods.
+	"magic_defense_multiplier": 1.0,
 	"magic_multiplier": 1.0,
 	"speed_multiplier": 1.0,
 	"max_hp_multiplier": 1.0,

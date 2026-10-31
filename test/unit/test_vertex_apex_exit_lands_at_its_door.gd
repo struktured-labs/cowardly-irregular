@@ -14,17 +14,23 @@ const APEX := preload("res://src/maps/dungeons/VertexApex.gd")
 
 var _prior_chapter: bool = false
 var _prior_entered: bool = false
+var _prior_trial: bool = false
 
 
+## w6_trial_passed joined the Apex door's preconditions when the Antechamber became its gate. The
+## door is still the CONTROL here, so this sets every precondition rather than weakening the assert.
 func before_each() -> void:
 	_prior_chapter = GameState.is_story_flag_set("world6_chapter3_complete")
 	_prior_entered = GameState.is_story_flag_set("w6_entered")
+	_prior_trial = GameState.is_story_flag_set("w6_trial_passed")
 	GameState.set_story_flag("world6_chapter3_complete", true)
+	GameState.set_story_flag("w6_trial_passed", true)
 
 
 func after_each() -> void:
 	GameState.set_story_flag("world6_chapter3_complete", _prior_chapter)
 	GameState.set_story_flag("w6_entered", _prior_entered)
+	GameState.set_story_flag("w6_trial_passed", _prior_trial)
 	SoundState.restore()
 
 

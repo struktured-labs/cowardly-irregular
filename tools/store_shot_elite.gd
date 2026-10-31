@@ -59,6 +59,10 @@ func _init() -> void:
 	await process_frame
 	await process_frame
 	_suppress_furniture()
+	# Outdoor frame: weather and clock were a dice roll here too (ShotGuard.pin_conditions).
+	if not ShotGuard.pin_conditions(root, "setup"):
+		_die("weather/clock could not be pinned")
+		return
 	DirAccess.make_dir_recursive_absolute("res://tmp/marketing")
 
 	var world := "medieval"
@@ -78,6 +82,10 @@ func _init() -> void:
 	# The overworld builds tiles, the player and the spawner across several frames.
 	for i in range(30):
 		await process_frame
+	# Re-assert in case the overworld's own setup cleared the pause (a state reset, as _create_party does for marketing_shots); a current_world move alone cannot roll while paused.
+	if not ShotGuard.pin_conditions(root, "overworld"):
+		_die("weather/clock could not be pinned after the overworld loaded")
+		return
 
 	if not ("monster_spawner" in ow) or ow.monster_spawner == null:
 		_die("overworld has no monster_spawner — its API moved")

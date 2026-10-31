@@ -57,14 +57,42 @@ overlay tint and rain are both alpha 0.2 and the rain only covers the top ~150px
 bright daytime background it is invisible. The shot is honest but the weather is doing more
 mechanically than the frame shows.
 
-### `battle.png`
-The same five-job battle with the weather off and the command menu open on **`Auto >`**, tooltip
-legible: *"Run this character's autobattle script, edit it, or delegate every turn."* The menu
-now ends in **`Formation: V-Formation`**. Turn order bottom-left, full party stats right, and the
-banter running underneath — Bard *"Taking requests. Not from you."*, Cleric *"Steady on. The
-verse is long."*, Fighter *"Step forward. That's the whole plan."*
+⛔ **2026-10-24: the lead image is the OLDEST frame in the gallery.** It is byte-identical to
+`capture-history/shots-225/battle_storm.png`, a `.225` capture, so a store visitor's first look is
+the UI from ~485 releases ago: empty HP bars, banter mixed with `selecting...` status lines, no
+LOG panel. `battle.png` beside it is now the `.710` frame. Two `.710` frames with a real storm
+are in `unshipped-captures/` (from `tools/store_shot_storm.gd`, run sandboxed; the cast lands
+this time as Fulmen at the Mage's tier, killing blow on the Goblin, `WEAK!` against the Imp):
+- `battle_storm.710-bolt.png`: burst frame 51, the brightest bolt frame (3,598 px above 235).
+- `battle_storm.710-weak.png`: burst frame 62, the bolt plus the `WEAK!` popup and the
+  "WEAK to Lightning" log tip.
 
-📌 The hint bar reads `` [Q] Defer · [W] Advance · [`] Speed · [Tab] Auto `` because no gamepad was
+Both are taken mid-cinematic, so `BattleJuice.punch_zoom` and the camera shake are scaling the
+HUD out from the centre (PARTY header about 25 px right, ENEMIES about 13 px left of their
+places) and cropping the panel edges, under the cinematic dim. That is deliberate battle juice,
+not a capture fault, but it is what the frame shows.
+
+- `battle_storm.710-settled.png`: burst frame 120, the **clean** one (cowir-main's hypothesis,
+  measured). The zoom and shake are transient and the weather is not. Template-matching the
+  PARTY header against pre-hit frame 0 gives a shift of +26/-12 px at frame 51 and exactly 0/0
+  (match 1.00) on every frame from 100 to 169, while mean luma stays 41-50 against 85
+  pre-hit, so the storm darkness persists. Frame 120 has every panel whole, `~ RAIN ~` legible,
+  the dark sky, the `1277` damage number with `WEAK!` over the Imp, and the elemental tip in the
+  LOG. It loses only the bolt.
+
+Which image leads (this one, `battle.png`, or a storm candidate) is @struktured's call; none has
+been moved.
+
+### `battle.png`
+The same five-job battle, weather pinned clear, with the command menu open on **`Auto: this
+turn`** and the tooltip legible: *"Run this character's autobattle script for this turn"*. The
+next row is **`Trust (every turn): OFF`**, and the menu still ends in **`Formation: V-Formation`**.
+HP and MP now draw as filled bars, the turn order bottom-left carries portraits, and the banter
+sits in its own LOG panel — Rogue *"Heist's on. Try to look natural."*, Bard *"And a one, and a
+two... eh, let's just go."*, Cleric *"Let the record show I was patient."*, Fighter *"My turn.
+Script or stick, the swing's the same."* (`v3.33.710-alpha` frame.)
+
+📌 The hint bar reads `` [Q] Defer · [W] Advance · [`] Speed · [Y] Repeat · [Tab] Auto · [F5] Rules · [L] Log `` because no gamepad was
 connected to the capture box. Earlier frames read `[L] Defer · [R] Advance`; a pad plugged into
 the host changes the glyphs in the shot.
 
@@ -482,3 +510,50 @@ its frames were used.
 re-shoot of any of them would have destroyed the only copy. They are now in
 `capture-history/shots-293/` and `capture-history/shots-483-export/`. Every shipped frame now has an
 archived twin, so the check before each swap can find one.
+
+## 2026-10-24 — re-shoot at `v3.33.710-alpha`: 11 replaced, weather pinned for the first time
+
+Two sandboxed captures of the `marketing_shots.gd` set at `.710`, run with the tool from main
+`66a0bf235`, which pins clear weather and pauses the clock. Every earlier era rolled weather at
+random, so two runs minutes apart differed on 45-97% of pixels in the outdoor and battle frames.
+With the pin, the two captures are **identical (0.00%)** on all ten village and interior frames,
+and 1.11% on battle (1.00% on whispering_cave, its lighting flicker). The era is stored whole in `capture-history/shots-710/`. Every replaced frame
+was already byte-identical in `capture-history/` (checked per file by cksum, 0 unarchived).
+
+Measured in PIXELS (share of the frame where any channel moved by more than 8), shipped `.549`
+frame against `.710` capture C, with C against D as the noise floor:
+
+```
+shot                 shipped -> .710   run-to-run   what moved (reviewed side by side)
+whispering_cave           90.36%          1.00%       the current torchlight: walls and light pool now visible, .549 was near-black
+battle                    32.36%          1.11%       Auto: this turn / Trust rows, filled HP+MP bars, LOG panel, turn-order portraits
+frosthold_village          4.22%          0.00%       redrawn villagers, exit gate moved beside the hero
+ironhaven_village          4.06%          0.00%       redrawn villagers, exit gate moved
+sandrift_village           3.90%          0.00%       redrawn villagers, exit gate moved
+harmonia_village           3.68%          0.00%       redrawn villagers, two more on screen, exit gate moved
+inn_interior               3.09%          0.00%       redrawn NPCs
+eldertree_village          2.88%          0.00%       redrawn villagers, exit gate moved
+grimhollow_village         2.80%          0.00%       redrawn villagers, label positions
+tavern_interior            2.00%          0.00%       redrawn NPCs
+shop_interior              1.71%          0.00%       redrawn shopkeeper and hero
+```
+
+All eleven sit above a zero floor, and none of the fresh frames was worse than the one it replaces.
+`unshipped-captures/battle_advance.png` is the `.710` frame too (the `.549` one is in
+`capture-history/shots-549/`); placing it in the gallery is still @struktured's call.
+
+**Capture conditions:**
+
+```
+worktree   <lane>/tmp/pub710, the publish's own worktree at v3.33.710-alpha (0905a7c7f), imported;
+           tools/marketing_shots.gd byte-identical to main 66a0bf235 (md5 b9072069...)
+command    tools/shot_sandbox.sh -> XDG_DATA_HOME=$PWD/tmp/shot_xdg xvfb-run -a godot
+           --audio-driver Dummy --rendering-driver opengl3 --resolution 1280x720 -s <tool>
+logged     [SHOT] conditions (setup|battle): weather=clear day_phase=0.15 paused=true
+sandbox    his profile: 0 files with a ctime after the first run started
+pads       none connected, hence the keyboard glyphs
+```
+
+Not re-shot: `battle_storm`, the field elites, the dungeon floors, `grimhollow_spiral`,
+`title_screen` — no tool in `marketing_shots.gd` reaches them. **The store page itself is not
+updated by this commit:** itch screenshots are uploaded through the web UI, which is @struktured's.

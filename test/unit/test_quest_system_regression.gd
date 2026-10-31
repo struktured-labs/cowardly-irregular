@@ -79,7 +79,12 @@ func test_offerable_respects_prereq_flag() -> void:
 		GameState.set_story_flag(prereq, false)
 		assert_false(_qs.is_offerable(qid), "%s gated before flag" % qid)
 		GameState.set_story_flag(prereq)
-		assert_true(_qs.is_offerable(qid), "%s offerable after flag" % qid)
+		# A wiring_pending quest is withheld whatever its flag says (.696).
+		match _qs.is_wiring_pending(qid):
+			true:
+				assert_false(_qs.is_offerable(qid), "%s withheld even after its flag" % qid)
+			false:
+				assert_true(_qs.is_offerable(qid), "%s offerable after flag" % qid)
 		GameState.set_story_flag(prereq, false)
 		checked += 1
 	assert_gt(checked, 0, "at least one prereq-gated quest must exist")

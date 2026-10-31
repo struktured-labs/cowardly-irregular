@@ -765,12 +765,28 @@ func _level_up_flare(card: PanelContainer, fill: ColorRect, idx: int) -> void:
 
 ## -- Stage 3: loot toast strip ----------------------------------------------
 
+## The fight's shape as a chip, or {} when it was unremarkable. Pure, so the precedence is testable.
+## ⛔ NO "FLAWLESS" CHIP, DELIBERATELY: most trash fights end untouched, so it would print on nearly
+## every victory and tell the player nothing. Only the two rare, informative outcomes earn a chip.
+static func fight_shape_chip(low_water_pct: float, anyone_fell: bool) -> Dictionary:
+	if anyone_fell:
+		## Outranks a close call: being raised is strictly worse than merely dipping, and injuries
+		## only show the KOs that rolled a permanent one, so this is the rest of that story.
+		return {"text": "COSTLY", "color": Color(1.0, 0.55, 0.35)}
+	if low_water_pct < VoiceLineTags.CLOSE_CALL_PCT:
+		return {"text": "CLOSE CALL", "color": Color(1.0, 0.75, 0.25)}
+	return {}
+
+
 func _build_loot_strip(results: Dictionary, flourish: bool) -> void:
 	var total_gold: int = int(results.get("total_gold", 0))
 	var item_drops: Array = results.get("item_drops", [])
 	var injuries: Array = results.get("injuries", [])
 	var bonuses: Array = results.get("bonuses", [])
-	if total_gold <= 0 and item_drops.is_empty() and injuries.is_empty() and bonuses.is_empty():
+	## How the fight WENT, computed BEFORE the early-return: a close call with no loot is still worth a
+	## strip, and leaving it out of this condition made the chip invisible on exactly those fights.
+	var shape: Dictionary = fight_shape_chip(float(results.get("low_water_pct", 100.0)), bool(results.get("anyone_fell", false)))
+	if total_gold <= 0 and item_drops.is_empty() and injuries.is_empty() and bonuses.is_empty() and shape.is_empty():
 		return
 
 	var vp := get_viewport_rect().size
@@ -806,6 +822,9 @@ func _build_loot_strip(results: Dictionary, flourish: bool) -> void:
 			chips.append(["ONE-SHOT x%.1f" % bonus.get("multiplier", 1.0), "ONE-SHOT x%.1f" % bonus.get("multiplier", 1.0), Color(1.0, 0.9, 0.0), "bonus"])
 		elif bonus.get("type", "") == "autobattle":
 			chips.append(["AUTO x%.1f" % bonus.get("multiplier", 1.0), "AUTO x%.1f" % bonus.get("multiplier", 1.0), Color(0.3, 0.9, 1.0), "bonus"])
+	## Between the bonuses and the injuries that get the final word.
+	if not shape.is_empty():
+		chips.append([str(shape["text"]), str(shape["text"]), shape["color"], "shape"])
 	for inj in injuries:
 		var injury_data: Dictionary = inj.get("injury", {})
 		var itxt: String = "⚠ %s: -%d %s" % [inj.get("name", "?"), int(injury_data.get("penalty", 0)), str(injury_data.get("stat", "")).capitalize()]

@@ -1874,14 +1874,18 @@ func recalculate_stats() -> void:
 	# Apply passive modifiers (via runtime lookup — autoload identifiers
 	# don't resolve in preload() parse contexts used by the test suite,
 	# so we keep this runtime-scoped).
+	## Driven off MODDABLE_STATS for the reason the secondary-job block above and the equipment block
+	## below both state: a hand-listed six silently omits whatever it does not name. This was the last
+	## hand-listed block of the three, and magic_defense was the stat it omitted — so a passive could
+	## declare magic_defense_multiplier and be inert, which is what damage_reduction's "from all
+	## sources" needed. Only MODDABLE_STATS keys are touched: crit_chance, evasion, mp_cost_multiplier
+	## and steal_chance are not stats and are read at their point of use, healing_multiplier in heal().
 	if has_node("/root/PassiveSystem"):
 		var passive_mods = get_node("/root/PassiveSystem").get_passive_mods(self)
-		max_hp = int(max_hp * passive_mods.get("max_hp_multiplier", 1.0))
-		max_mp = int(max_mp * passive_mods.get("max_mp_multiplier", 1.0))
-		attack = int(attack * passive_mods.get("attack_multiplier", 1.0))
-		defense = int(defense * passive_mods.get("defense_multiplier", 1.0))
-		magic = int(magic * passive_mods.get("magic_multiplier", 1.0))
-		speed = int(speed * passive_mods.get("speed_multiplier", 1.0))
+		for stat in MODDABLE_STATS:
+			var mult: float = float(passive_mods.get(stat + "_multiplier", 1.0))
+			if mult != 1.0:
+				set(stat, int(int(get(stat)) * mult))
 
 	# Apply equipment modifiers (same test-preload caveat as above).
 	if has_node("/root/EquipmentSystem"):

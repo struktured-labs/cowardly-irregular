@@ -1,5 +1,6 @@
 {
   "id": "world5_long_way_around",
+  "wiring_pending": true,
   "title": "The Long Way Around",
   "world": 5,
   "chain": "traveling_merchant",

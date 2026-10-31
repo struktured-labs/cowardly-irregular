@@ -1,5 +1,6 @@
 {
   "id": "world5_allocated_never_freed",
+  "wiring_pending": true,
   "title": "Allocated and Never Freed",
   "world": 5,
   "giver": {

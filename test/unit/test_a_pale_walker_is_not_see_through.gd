@@ -9,6 +9,8 @@ extends GutTest
 
 const SECTIONS := ["overworld_npc_sheets", "overworld_player_sheets", "overworld_monster_sheets"]
 const SPRITES := "res://assets/sprites/"
+## The cell of a sheet that declares none; a sheet that declares frame_height is read at its own cell (the 48px
+## villagers of 2026-10-16 were skipped by a 32-only filter, not checked).
 const CELL := 32
 ## A rim pixel is pale when its darkest channel is at least this; a hole is damage when this share of its rim is.
 const PALE_MIN := 200
@@ -17,17 +19,17 @@ const PALE_SHARE := 0.6
 const LEFT_HOLED := {"jobs/speculator/overworld_industrial.png": 166}
 
 
-func pale_hole_pixels(img: Image) -> int:
+func pale_hole_pixels(img: Image, cell: int = CELL) -> int:
 	## Clear pixels in enclosed regions of a cell whose opaque rim is mostly pale.
 	var w := img.get_width()
 	var d := img.get_data()
 	var total := 0
-	for r in img.get_height() / CELL:
-		for c in w / CELL:
+	for r in img.get_height() / cell:
+		for c in w / cell:
 			var seen := PackedByteArray()
-			seen.resize(CELL * CELL)
-			for start in CELL * CELL:
-				if seen[start] or d[((r * CELL + start / CELL) * w + c * CELL + start % CELL) * 4 + 3] >= 128:
+			seen.resize(cell * cell)
+			for start in cell * cell:
+				if seen[start] or d[((r * cell + start / cell) * w + c * cell + start % cell) * 4 + 3] >= 128:
 					continue
 				seen[start] = 1
 				var stack: Array[int] = [start]
@@ -38,36 +40,36 @@ func pale_hole_pixels(img: Image) -> int:
 					var p: int = stack.pop_back()
 					size += 1
 					for step in [Vector2i(0, -1), Vector2i(0, 1), Vector2i(-1, 0), Vector2i(1, 0)]:
-						var nx: int = p % CELL + step.x
-						var ny: int = p / CELL + step.y
-						if nx < 0 or ny < 0 or nx >= CELL or ny >= CELL:
+						var nx: int = p % cell + step.x
+						var ny: int = p / cell + step.y
+						if nx < 0 or ny < 0 or nx >= cell or ny >= cell:
 							enclosed = false
 							continue
-						var o := ((r * CELL + ny) * w + c * CELL + nx) * 4
+						var o := ((r * cell + ny) * w + c * cell + nx) * 4
 						if d[o + 3] >= 128:
-							rim[ny * CELL + nx] = mini(d[o], mini(d[o + 1], d[o + 2])) >= PALE_MIN
-						elif not seen[ny * CELL + nx]:
-							seen[ny * CELL + nx] = 1
-							stack.append(ny * CELL + nx)
+							rim[ny * cell + nx] = mini(d[o], mini(d[o + 1], d[o + 2])) >= PALE_MIN
+						elif not seen[ny * cell + nx]:
+							seen[ny * cell + nx] = 1
+							stack.append(ny * cell + nx)
 				if enclosed and not rim.is_empty() and float(rim.values().count(true)) >= PALE_SHARE * rim.size():
 					total += size
 	return total
 
 
-func _sheets() -> Array:
-	## Every 32px overworld sheet the game can load: the manifest's, plus each job's world costumes.
+func _sheets() -> Dictionary:
+	## path -> cell for every square-celled overworld sheet the game can load: the manifest's, plus each job's world costumes.
 	var manifest: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/sprite_manifest.json"))
-	var out: Array = []
+	var out := {}
 	for section in SECTIONS:
 		for key in manifest[section]:
 			var entry: Dictionary = manifest[section][key]
-			if int(entry.get("frame_width", CELL)) == CELL and int(entry.get("frame_height", CELL)) == CELL:
-				out.append(str(entry["path"]))
+			var fw := int(entry.get("frame_width", CELL))
+			if fw == int(entry.get("frame_height", CELL)):
+				out[str(entry["path"])] = fw
 	for job in DirAccess.get_directories_at(SPRITES + "jobs"):
 		for f in DirAccess.get_files_at(SPRITES + "jobs/" + job):
 			if f.begins_with("overworld_") and f.ends_with(".png"):
-				out.append(SPRITES + "jobs/" + job + "/" + f)
-	out.sort()
+				out[SPRITES + "jobs/" + job + "/" + f] = CELL
 	return out
 
 
@@ -88,7 +90,7 @@ func test_no_overworld_walker_has_a_slot_in_its_pale_cloth() -> void:
 		if not ResourceLoader.exists(path):
 			continue
 		judged += 1
-		var n := pale_hole_pixels(_rgba(path))
+		var n := pale_hole_pixels(_rgba(path), sheets[path])
 		var key: String = path.trim_prefix(SPRITES)
 		if LEFT_HOLED.has(key):
 			assert_gt(n, 0, "%s is whole now: drop it from LEFT_HOLED" % key)

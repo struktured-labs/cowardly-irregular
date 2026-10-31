@@ -115,6 +115,18 @@ const AUTHORED_AHEAD := {
 const CONTROLS := ["attack_multiplier", "healing_multiplier"]
 
 
+## True when `key` is a `<stat>_multiplier` for a MODDABLE stat AND the derived loop that applies
+## them is present in Combatant. Both halves matter: the stat list alone would keep excusing these
+## keys after someone replaced the loop with something that reads none of them.
+func _consumed_by_the_derived_stat_loop(key: String, src: String) -> bool:
+	if not src.contains("stat + \"_multiplier\""):
+		return false
+	for stat in Combatant.MODDABLE_STATS:
+		if key == str(stat) + "_multiplier":
+			return true
+	return false
+
+
 func _passives() -> Dictionary:
 	var d = JSON.parse_string(FileAccess.get_file_as_string(PASSIVES))
 	return d.get("passives", d) if d is Dictionary else {}
@@ -196,6 +208,15 @@ func _unwired() -> Dictionary:
 				continue
 			for key in b:
 				if src.contains(str(key)):
+					continue
+				## ⛔ A DERIVED CONSUMER, AND THE REASON THIS ARM BRIEFLY INVENTED FOUR UNWIRED
+				## PASSIVES. Combatant.recalculate_stats applies `stat + "_multiplier"` over
+				## MODDABLE_STATS, so hp_boost/mp_boost/reckless/glass_cannon are consumed with their
+				## literal appearing NOWHERE in src/. The header above promises this guard "can miss
+				## an unwired passive, never invent one" — a bare substring scan breaks that promise
+				## the moment a consumer stops spelling its keys out. Keyed to the LOOP'S OWN SOURCE
+				## so it retires itself: delete the loop and the literal scan takes back over.
+				if _consumed_by_the_derived_stat_loop(str(key), src):
 					continue
 				## The ONE constructed read in src/: _get_passive_meta_effect_sum(element
 				## + "_absorb"). Enumerated all 8 meta-effect call sites and every

@@ -47,6 +47,11 @@ const FRAME_H: int = 32
 ## Same contract as DragonCave.boss_cutscene_id, including the replay-on-reapproach behaviour.
 @export var cutscene_id: String = ""
 
+## The flag this victory writes. Empty keeps W1's composed `w1_<archetype>_defeated`.
+## W2-W6 set it to the `cutscene_flag_*_defeated` name their world's story gates already read,
+## so a placement needs no new gate — only the flag the gate was already waiting for.
+@export var defeat_flag_name: String = ""
+
 var _fired: bool = false
 
 
@@ -74,7 +79,7 @@ func _ready() -> void:
 
 
 func defeat_flag() -> String:
-	return "w1_%s_defeated" % archetype
+	return defeat_flag_name if defeat_flag_name != "" else "w1_%s_defeated" % archetype
 
 
 ## Re-notify when the quest moves onto this step. The load catch-up already ran, and a one-shot fight will not.
@@ -239,9 +244,14 @@ func _on_body_entered(body: Node2D) -> void:
 	# contract, minus dungeon_flag/unlock_world (masterites are mid-arc, they
 	# don't gate world unlock).
 	if GameState:
+		## A cutscene_flag_* name belongs in `constants`: _apply_pending_boss_defeat routes those
+		## through _set_cutscene_flag_and_mirror (game_constants AND the bare story_flags mirror),
+		## while a bare W1 name set as a constant would never reach the gates that read it.
+		var df: String = defeat_flag()
+		var as_constant: bool = df.begins_with("cutscene_flag_")
 		GameState.pending_boss_defeat = {
-			"story_flags": [defeat_flag()],
-			"constants": [],
+			"story_flags": [] if as_constant else [df],
+			"constants": [df] if as_constant else [],
 			"dungeon_flag": "",
 			"quest_flags": [quest_flag] if quest_flag != "" else [],
 		}

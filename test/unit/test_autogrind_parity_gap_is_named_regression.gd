@@ -37,13 +37,28 @@ const GdSource := preload("res://test/unit/helpers/gd_source.gd")
 
 ## Assessed, with the reason. You cannot silence an entry green here, only explain it green — and an
 ## entry that stops being true reds (arm 2), so a declaration cannot outlive its fact.
+## ⛔ `target_type` SAT HERE FOR MONTHS WITH A REASON THAT WAS TRUE OF HALF THE SYSTEM, AND CLOSED
+## 2026-10-27 BY DELETION RATHER THAN BY EXPLANATION. The declaration read: "consumed UPSTREAM by
+## AutobattleSystem, which hands _resolve_ability an already-resolved target list." That is exactly
+## right for PLAYER actions and silent about FOE actions, which `_select_enemy_action` builds IN THIS
+## FILE and which returned a one-element list whatever `target_type` said. So every enemy AoE hit one
+## party member instead of the party, on the engine `GameLoop:6707` runs for real autogrind.
+##
+## 🔑 THE LESSON IS ABOUT THIS LEDGER'S FORM, NOT ABOUT THAT KEY: A PARITY REASON CAN BE ACCURATE
+## ABOUT ONE SIDE OF A TWO-SIDED MECHANISM. "Consumed upstream" was never wrong, it was PARTIAL, and
+## a partial reason reads exactly like a complete one — the same failure this file's own header
+## records for a census filtered to 3+ abilities. When writing an entry here, say which SIDE
+## consumes it: player actions, foe actions, or both. `heal_amount` and `hits` are symmetric and need
+## no such clause; anything touching TARGETING or SELECTION is not.
+##
+## ⚠️ And it is why arm 2 exists. Nobody re-read this entry in months; the arm red the moment the
+## grind started reading the key, which is the only reason it was revisited at all.
 const DECLARED := {
 	## ── the four UNDECIDED_LIVE_SIDE entries, resolved 2026-09-17; see that const for the method ──
 	"multiplier": "NOT an ability-field read: 0 as `ability[\"multiplier\"]`. Four whole-file hits, four different dictionaries — two EXP-bonus dicts (:1062/:1064), a FOLLOWUP dict (:1541), and a dict WRITE (:5367). None reaches an ability",
 	"penalty": "NOT an ability-field read: 0 as `ability[\"penalty\"]`. :1075 reads injury[\"penalty\"] off a permanent injury and :7353 writes a dict key. warp_to_boss authors it and live enforces nothing — BattleManager:6799 says so in its own comment — so both engines ignore it equally",
 	"name": "presentation only — the grind renders nothing",
 	"description": "presentation only — the grind renders nothing",
-	"target_type": "consumed UPSTREAM by AutobattleSystem, which hands _resolve_ability an already-resolved target list",
 	"summon_id": "live's own spawn is SCENE-SIDE: _execute_summon only emits monster_summoned, and BattleScene builds the combatant. Porting it headless also decides whether summoned enemies grant EXP, which changes the grind's reward economy — struktured's call, not a repair",
 	"summon_count": "see summon_id — same scene-side spawn",
 	"summon_duration": "see summon_id — same scene-side spawn",

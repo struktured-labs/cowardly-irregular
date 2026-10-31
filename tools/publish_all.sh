@@ -445,9 +445,71 @@ if [ "$ROLLBACK" -eq 1 ]; then
     fi
 fi
 
+# ⛔ AN EMPTY RESULT HERE USED TO BE INDISTINGUISHABLE FROM "ORIGIN AGREES WE ARE NEWEST".
+# `2>/dev/null` discarded ls-remote's reason, so an unreachable origin, a dead ssh agent, a
+# bad remote URL and a genuinely empty tag list all returned the same empty string. Both
+# supersession gates below skip on empty (`[ -n "$NEWEST" ]`), so ONE network blip silently
+# turned FOUR consecutive supersession checks into no-ops -- the pre-check and all three
+# per-channel ones -- while --check went on printing "also checked: supersession against
+# origin".
+#
+# PRECISELY WHAT WAS BROKEN, measured 2026-10-15 on three local origins rather than assumed:
+# the old resolver DID signal failure -- pipefail made `grep -v` on empty input exit 1 -- so it
+# returned (empty, ec=1) for an unreachable origin AND for a reachable one with no v3.33 tags,
+# and (tag, ec=0) for a good one. THE STATUS WAS ALREADY THERE AND EVERY CALLER DISCARDED IT,
+# testing `[ -n "$NEWEST" ]` instead. So the defect was never "the resolver cannot tell you":
+# it was that no caller asked, and 2>/dev/null destroyed the one thing a status cannot carry --
+# WHICH failure it was, in git's own words. CLAUDE.md: don't 2>/dev/null a measurement.
+#
+# That gate exists because of the v3.33.374 supersession incident, and CLAUDE.md's rule for
+# this exact shape is "don't 2>/dev/null a measurement command -- it deletes the warning and
+# keeps the wrong number." tools/reap_release_worktrees.sh:103 already captures ls-remote's
+# stderr and exit code instead of discarding them; this is that pattern, applied to the
+# resolver the publish decision actually rests on.
+#
+# FOUR states, because "I could not ask" is not "the answer is no":
+#   0  resolved     -- stdout is the newest tag (unchanged on the success path)
+#   1  unreachable  -- ls-remote itself failed
+#   2  no tags      -- origin answered, and nothing parsed as a v3.33.* tag
+#   3  stale reply  -- given $1, origin answered ec 0 but never listed $1 in 3 replies
+#
+# A SHORT REPLY IS NOT A SUPERSESSION. Measured 2026-10-23, `git ls-remote --tags origin
+# 'refs/tags/v3.33.*'` 12 times in a row: 10 replies of 1160 lines (top .699), 2 of 978 (top
+# .616, every tag after .616 missing, same last line, ec 0). v3.33.699-alpha's first publish
+# aborted "SUPERSEDED before linux: origin now has v3.33.616-alpha" and told the operator to
+# re-run with the OLDER tag, because both callers test `!= "$TAG"` and an incomplete list
+# reads as "a different tag is newest". The in-loop caller runs BETWEEN channels, so the same
+# reply after linux would have split the store, which is the one outcome its comment rules out.
+# The discriminator: $TAG is on origin (the evidence gate checked that), so a reply that lacks
+# it is provably incomplete and is re-sampled. A reply that CONTAINS $TAG has a max >= $TAG,
+# which is what makes the callers' `!=` mean "strictly newer" without a comparator of their own.
+#
+# THE REASON GOES TO STDERR, NOT TO A VARIABLE, AND THAT IS NOT A STYLE CHOICE. The first
+# version of this fix set a global and interpolated it into each caller's message. Every
+# caller invokes this as t="$(...)" -- a COMMAND SUBSTITUTION, which runs in a SUBSHELL -- so
+# the assignment died with the subshell and all four new messages would have printed an empty
+# string inside their own parentheses. Caught before shipping only because the three-state
+# test printed the variable: why=[] in both failure states, next to a correct exit code.
+# stderr crosses the subshell boundary and lands in publish.log where the operator reads it.
+# The resolver itself now lives in tools/origin_tags.sh, shared with store_status.sh and
+# reap_release_worktrees.sh: three copies of it were patched apart, and the unpatched copy in
+# store_status.sh produced .701's false red. Same states and same stderr reasons as above
+# ("[pub] origin reply N/3 is STALE ..."), so every caller's case on 0/1/2/3 is unchanged.
+# shellcheck source=origin_tags.sh
+. "$(dirname "${BASH_SOURCE[0]}")/origin_tags.sh" || {
+    echo "[pub] BLOCKED: $(dirname "${BASH_SOURCE[0]}")/origin_tags.sh is missing, unreadable or did not parse. It is the" >&2
+    echo "      newest-tag resolver this script sources. Without it no tag verdict is possible, and" >&2
+    echo "      continuing would turn 'command not found' into a false supersession." >&2
+    exit 4; }
+# A lib that is PRESENT but defines nothing (zero bytes, a truncated copy, a conflict leftover)
+# sources with status 0 and slips past the `||` above, so check the function itself. Found by
+# @cowir-main: an empty lib gave store_status "command not found" + "no tag to compare against".
+declare -F origin_newest_tag >/dev/null || {
+    echo "[pub] BLOCKED: $(dirname "${BASH_SOURCE[0]}")/origin_tags.sh loaded but defined no origin_newest_tag" >&2
+    echo "      (empty or truncated copy?). No tag verdict is possible without it." >&2
+    exit 4; }
 _newest_tag_on_origin() {
-    git ls-remote --tags origin 'refs/tags/v3.33.*' 2>/dev/null \
-        | grep -v '\^{}' | awk '{print $2}' | sed 's#refs/tags/##' | sort -V | tail -1
+    origin_newest_tag pub "${1:-}" ""
 }
 
 _saves_cksum() {
@@ -513,9 +575,17 @@ echo "═══ publish_all: $TAG ═══"
 # Delegated so the decision is exercised by ITS OWN selftest as a subprocess — same reason
 # as check_import_ok.sh below, and the same reason a re-implemented copy in a probe proves
 # nothing about the shipped code.
+# A failed selftest's output: the last 25 lines here, ALL of it in tmp/publish_selftest_fail.$$.log.
+# The tail alone hid the decisive line of a VOID (2026-10-24: a fixture's git error sat above it).
+_st_dump() {
+    mkdir -p tmp
+    printf '%s\n' "$1" > "tmp/publish_selftest_fail.$$.log"
+    printf '%s\n' "$1" | tail -25 >&2
+    echo "[pub] full selftest output ($(printf '%s\n' "$1" | wc -l | tr -d ' ') lines): tmp/publish_selftest_fail.$$.log" >&2
+}
 if [ -x tools/check_polling_bounded.py ]; then
     if ! _ST=$(./tools/check_polling_bounded.py --selftest 2>&1); then
-        printf '%s\n' "$_ST" | tail -25 >&2
+        _st_dump "$_ST"
         echo "[pub] BLOCKED: tools/check_polling_bounded.py FAILED ITS OWN SELFTEST — the bounded-wait detector" >&2
         echo "      is not answering correctly, so its verdict on this tree means" >&2
         echo "      nothing. A present guard is not a working one." >&2
@@ -545,7 +615,7 @@ fi
 # out-of-scope count is printed every run so it is a stated scope rather than a blind spot.
 if [ -f tools/check_godot_bounded.py ]; then
     if ! _ST=$(python3 tools/check_godot_bounded.py --selftest 2>&1); then
-        printf '%s\n' "$_ST" | tail -25 >&2
+        _st_dump "$_ST"
         echo "[pub] BLOCKED: tools/check_godot_bounded.py FAILED ITS OWN SELFTEST — the unbounded-godot" >&2
         echo "      detector is not answering correctly, so its verdict on this tree means" >&2
         echo "      nothing. A present guard is not a working one." >&2
@@ -576,7 +646,7 @@ fi
 # both documenting "only EC 2 blocks" while unable to print their own BLOCKED diagnostic.
 if [ -f tools/check_exit_capture.py ]; then
     if ! _ST=$(python3 tools/check_exit_capture.py --selftest 2>&1); then
-        printf '%s\n' "$_ST" | tail -25 >&2
+        _st_dump "$_ST"
         echo "[pub] BLOCKED: tools/check_exit_capture.py FAILED ITS OWN SELFTEST — the dead-arm" >&2
         echo "      detector is not answering correctly, so its verdict on this tree means" >&2
         echo "      nothing. A present guard is not a working one." >&2
@@ -604,7 +674,7 @@ fi
 # This runs BEFORE the batch because it is the publish itself that would do the writing.
 if [ -x tools/check_user_data_sandboxed.py ]; then
     if ! _ST=$(./tools/check_user_data_sandboxed.py --selftest 2>&1); then
-        printf '%s\n' "$_ST" | tail -25 >&2
+        _st_dump "$_ST"
         echo "[pub] BLOCKED: tools/check_user_data_sandboxed.py FAILED ITS OWN SELFTEST — the" >&2
         echo "      user:// redirect detector is not answering correctly, so its verdict on this" >&2
         echo "      tree means nothing. A present guard is not a working one." >&2
@@ -633,7 +703,7 @@ fi
 # the worst thing this lane can do, and the flag that prevents it was never checked.
 if [ -x tools/check_publish_is_optin.py ]; then
     if ! _ST=$(./tools/check_publish_is_optin.py --selftest 2>&1); then
-        printf '%s\n' "$_ST" | tail -25 >&2
+        _st_dump "$_ST"
         echo "[pub] BLOCKED: tools/check_publish_is_optin.py FAILED ITS OWN SELFTEST — the --publish detector" >&2
         echo "      is not answering correctly, so its verdict on this tree means" >&2
         echo "      nothing. A present guard is not a working one." >&2
@@ -665,7 +735,7 @@ fi
 # 2.29s for 500 files, no network, no godot — against a ~45min publish.
 if [ -x tools/check_lfs_blobs_current.py ]; then
     if ! _ST=$(./tools/check_lfs_blobs_current.py --selftest 2>&1); then
-        printf '%s\n' "$_ST" | tail -25 >&2
+        _st_dump "$_ST"
         echo "[pub] BLOCKED: tools/check_lfs_blobs_current.py FAILED ITS OWN SELFTEST — the byte" >&2
         echo "      comparator is not answering correctly, so its verdict on this tree means" >&2
         echo "      nothing. A present guard is not a working one." >&2
@@ -782,7 +852,7 @@ for _t in $_ST_CORPUS; do
     esac
     # shellcheck disable=SC2181
     if [ $? -ne 0 ]; then
-        printf '%s\n' "$_ST" | tail -25 >&2
+        _st_dump "$_ST"
         echo "[pub] BLOCKED: tools/$_t FAILED ITS OWN SELFTEST. It runs on this publish path," >&2
         echo "      so its output cannot be trusted for this build. A present guard is not a" >&2
         echo "      working one." >&2
@@ -961,7 +1031,25 @@ fi
 #
 # A check whose verdict does not predict the run it is checking is not a check. So this now
 # fails the SAME WAY the publish would, with the same exit code.
-NEWEST_NOW="$(_newest_tag_on_origin)"
+# The resolver now reports WHY it came back empty, and an unresolved origin stops the run
+# HERE -- before butler is touched, before anything is published, so a refusal costs a retry
+# and cannot split the store. The in-loop gate makes the opposite trade for the opposite
+# reason; see its own comment.
+NEWEST_NOW=""
+SUPERSESSION_CHECKED=0
+if NEWEST_NOW="$(_newest_tag_on_origin "$TAG")"; then
+    SUPERSESSION_CHECKED=1
+elif [ "$ROLLBACK" -eq 1 ]; then
+    echo "[pub] ⚠ supersession UNVERIFIED (reason on the line above) — proceeding because --rollback was given." >&2
+else
+    echo "[pub] BLOCKED: cannot determine the newest tag on origin, so supersession is UNCHECKED." >&2
+    echo "      git's own reason is on the line above, printed by the resolver." >&2
+    echo "      This refusal is before butler: nothing has been published and nothing is split." >&2
+    echo "      An unreachable origin is not agreement that ${TAG} is newest — that is the" >&2
+    echo "      v3.33.374 incident's failure mode. Fix the remote and re-run, or if you have" >&2
+    echo "      confirmed ${TAG} is newest by other means: tools/publish_all.sh --rollback ${TAG}" >&2
+    exit 3
+fi
 if [ -n "$NEWEST_NOW" ] && [ "$NEWEST_NOW" != "$TAG" ]; then
     if [ "$ROLLBACK" -eq 1 ]; then
         echo "[pub] ⚠ ROLLBACK: ${TAG} is SUPERSEDED by ${NEWEST_NOW} on origin, and --rollback was given."
@@ -994,7 +1082,14 @@ if [ "$CHECK_ONLY" -eq 1 ]; then
     # that enumerates what it skipped decays exactly as fast as one that claims "all", just
     # less visibly: nothing re-reads it when a check is added. Kept because naming the gap is
     # still right, corrected because the gap moved.
-    echo "[pub]          also checked: supersession against origin."
+    # A LABEL THAT CANNOT CHANGE WHEN ITS INPUT CHANGES IS NOT REPORTING THAT INPUT -- the rule
+    # stated 60 lines above, which this line was breaking: it printed identically whether the
+    # resolver had answered or silently failed.
+    if [ "$SUPERSESSION_CHECKED" -eq 1 ]; then
+        echo "[pub]          also checked: supersession against origin (newest there: ${NEWEST_NOW})."
+    else
+        echo "[pub]          NOT checked: supersession — origin did not answer (reason logged above)."
+    fi
     echo "[pub]          NOT checked here: prebuilds and every chain gate (suite, export, smokes)."
     echo "[pub]          Stopping before publish."
     exit 0
@@ -1073,7 +1168,20 @@ echo "[pub] prebuild: tier ${TIER_N}/${SRC_N}"
 # ── 5. publish, re-checking supersession before each channel ─────────────────
 PUBLISHED=""
 for CH in linux windows web; do
-    NEWEST="$(_newest_tag_on_origin)"
+    # ⚠ HERE an unresolved origin WARNS and continues, where the pre-check refuses. The
+    # asymmetry is deliberate and it is the v3.33.294/.691 lesson: this runs BETWEEN channels,
+    # so stopping on a transient network error leaves the store serving different builds on
+    # different channels -- a worse outcome than publishing the tag the pre-check already
+    # verified was newest minutes earlier. The authoritative currency check is the store-wide
+    # read-back after every channel. What was wrong before was not the trade, it was that the
+    # skip was SILENT: the log could not tell a verified channel from an unverified one.
+    NEWEST=""
+    if ! NEWEST="$(_newest_tag_on_origin "$TAG")"; then
+        echo "[pub] ⚠ ${CH}: supersession UNVERIFIED (reason on the line above)." >&2
+        echo "      Continuing: stopping mid-batch would split the store. The store-wide" >&2
+        echo "      read-back after this channel is the authoritative check." >&2
+        NEWEST=""
+    fi
     if [ "$ROLLBACK" -eq 1 ]; then
         NEWEST="$TAG"   # --rollback: a newer tag is expected and is not a reason to stop
     fi
@@ -1186,7 +1294,8 @@ butler status struktured/cowardly-irregular 2>&1 | grep -aE 'CHANNEL|linux|windo
 # PENDING is NOT success: it exits non-zero, and no caller may read it as published.
 if [ -x tools/store_status.sh ]; then
     _ss_ec=0
-    ./tools/store_status.sh || _ss_ec=$?
+    # STORE_KNOWN_TAG: the tag just published is on origin, so a tag list without it is stale.
+    STORE_KNOWN_TAG="$TAG" ./tools/store_status.sh || _ss_ec=$?
     if [ "$_ss_ec" -eq 3 ]; then
         echo "[pub] PENDING: every channel that is behind has THIS build queued at itch." >&2
         echo "      The upload succeeded; delivery has not finished. Do NOT report LIVE." >&2

@@ -37,10 +37,42 @@ TARGET="struktured/cowardly-irregular"
 # Overridable so the BLOCKED re-sample path is testable without touching itch.
 STORE_BUTLER="${STORE_BUTLER:-butler}"
 STORE_RECHECK_DELAY="${STORE_RECHECK_DELAY:-15}"
+# How many re-samples a BLOCKED first read gets before it is believed. The budget is
+# DELAY x MAX = 120s by default, sized from the queued->serving HANDOFF gap, NOT from itch's
+# processing time: three gaps measured 2026-10-14..23 were each >15s and the bounded ones <=60s
+# (.700 windows: BLOCKED 21:57:21Z, CURRENT 21:58:21Z), so 120s is twice the worst seen.
+# Processing (42-168 min) is irrelevant here -- a processing build is QUEUED, and queued
+# already reads PENDING without any re-sample. Counted in SAMPLES, not clock time, so the
+# selftest can run it at DELAY=0 and assert an exact butler call count.
+STORE_RECHECK_MAX="${STORE_RECHECK_MAX:-8}"
 
-_newest_tag() {
-    git ls-remote --tags origin 'refs/tags/v3.33.*' 2>/dev/null \
-        | grep -v '\^{}' | awk '{print $2}' | sed 's#refs/tags/##' | sort -V | tail -1
+# The newest tag comes from tools/origin_tags.sh, the one resolver shared with publish_all.sh
+# and reap_release_worktrees.sh. ⛔ This file had its OWN copy until .702, and it is the copy
+# that produced .701's false red: publish_all's last step printed every channel
+# "v3.33.701-alpha <- BEHIND (v3.33.674-alpha)" and exited 1 while all three SERVED .701,
+# because ls-remote answered short with ec 0 and this resolver believed it. Two invariants now
+# judge the reply (see origin_tags.sh):
+#   FLOOR = the newest version butler says is SERVED. Always available, so a standalone run is
+#           covered too. A newest tag older than a served build is impossible -- we ship tags.
+#   WANT  = STORE_KNOWN_TAG, which publish_all passes as the tag it just published.
+# A reply breaking either is re-asked, then UNKNOWN (2) -- never BEHIND (1).
+# shellcheck source=origin_tags.sh
+. "$(dirname "${BASH_SOURCE[0]}")/origin_tags.sh" || {
+    echo "[store] BLOCKED: $(dirname "${BASH_SOURCE[0]}")/origin_tags.sh is missing, unreadable or did not parse. It is the" >&2
+    echo "      newest-tag resolver this script sources. Without it no tag verdict is possible, and" >&2
+    echo "      continuing would turn 'command not found' into a false UNKNOWN." >&2
+    exit 2; }
+# A lib that is PRESENT but defines nothing (zero bytes, a truncated copy, a conflict leftover)
+# sources with status 0 and slips past the `||` above, so check the function itself. Found by
+# @cowir-main: an empty lib gave store_status "command not found" + "no tag to compare against".
+declare -F origin_newest_tag >/dev/null || {
+    echo "[store] BLOCKED: $(dirname "${BASH_SOURCE[0]}")/origin_tags.sh loaded but defined no origin_newest_tag" >&2
+    echo "      (empty or truncated copy?). No tag verdict is possible without it." >&2
+    exit 2; }
+
+# The newest v3.33.* version in the channel rows of a captured butler status, or nothing.
+_served_max() {
+    grep -aE "^\| *(linux|windows|web) " "$1" | grep -oE 'v3\.33\.[0-9]+-alpha' | sort -V | tail -1
 }
 
 # A channel's row can WRAP: butler prints a queued build on continuation lines whose channel
@@ -239,15 +271,19 @@ selftest() {
     # CHANGES between calls. That is the only way to stage the pending->serving gap from
     # outside: stagger the FIXTURE, not the subject.
     local fake="$dir/fakebutler" ctr="$dir/calls" _tout _tec _calls
-    _mkfake() {   # $1 = what butler returns on call 1, $2 = on call 2+
+    _mkfake() {   # butler's answer on call 1, 2, ...; the LAST one repeats forever
         : > "$ctr"
-        printf '%s\n%s\n' "$BANNER" "$1" > "$dir/s1.txt"
-        printf '%s\n%s\n' "$BANNER" "$2" > "$dir/s2.txt"
+        local i=0 body
+        rm -f "$dir"/seq.*.txt
+        for body in "$@"; do
+            i=$((i+1)); printf '%s\n%s\n' "$BANNER" "$body" > "$dir/seq.$i.txt"
+        done
         cat > "$fake" <<FAKE
 #!/usr/bin/env bash
 n=\$(( \$(cat "$ctr" 2>/dev/null || echo 0) + 1 ))
 echo "\$n" > "$ctr"
-if [ "\$n" -le 1 ]; then cat "$dir/s1.txt"; else cat "$dir/s2.txt"; fi
+k=\$n; [ "\$k" -gt $i ] && k=$i
+cat "$dir/seq.\$k.txt"
 FAKE
         chmod +x "$fake"
     }
@@ -263,30 +299,108 @@ FAKE
         if [ -z "$bad" ]; then pass=$((pass+1)); printf '  ok    %-40s exit %s, %s butler call(s)\n' "$name" "$_tec" "$_calls"
         else fail=$((fail+1)); printf '  FAIL  %-40s %s\n' "$name" "$bad"; fi
     }
+    _rs() {  # MAX, then the butler sequence
+        local max="$1"; shift
+        _mkfake "$@"
+        _tout="$(STORE_BUTLER="$fake" STORE_RECHECK_DELAY=0 STORE_RECHECK_MAX="$max" STORE_TAG="${_rstag:-v3.33.279-alpha}" "$self" 2>&1)"; _tec=$?
+    }
 
-    # 1) THE TRANSIENT THIS EXISTS FOR: sample 1 says BLOCKED, sample 2 says CURRENT.
-    #    Must report the RE-SAMPLE (exit 0), not the first read.
-    _mkfake "$WEBLAGS" "$ALL279"
-    _tout="$(STORE_BUTLER="$fake" STORE_RECHECK_DELAY=0 STORE_TAG=v3.33.279-alpha "$self" 2>&1)"; _tec=$?
-    _rsarm "transient BLOCK -> reports re-sample" 0 2 'a re-sample' ''
+    # 1) The transient: sample 1 BLOCKED, sample 2 CURRENT -> report the re-sample.
+    _rs 8 "$WEBLAGS" "$ALL279"
+    _rsarm "transient BLOCK -> reports re-sample" 0 2 'first sample read BLOCKED' 'past the handoff budget'
 
-    # 2) A REAL block must survive: BLOCKED on both samples -> still exit 1, and SAY it was two.
-    _mkfake "$WEBLAGS" "$WEBLAGS"
-    _tout="$(STORE_BUTLER="$fake" STORE_RECHECK_DELAY=0 STORE_TAG=v3.33.279-alpha "$self" 2>&1)"; _tec=$?
-    _rsarm "persistent BLOCK stays BLOCKED" 1 2 'confirmed by TWO samples' ''
+    # 2) THE DEFECT THIS POLL EXISTS FOR: the gap outlasts ONE re-sample (the .698/.700 case,
+    #    BLOCKED at +0s and +15s, CURRENT at +60s). The old single re-sample exited 1 here
+    #    after 2 calls and called it "confirmed by TWO samples".
+    _rs 8 "$WEBLAGS" "$WEBLAGS" "$WEBLAGS" "$ALL279"
+    _rsarm "gap outlasting one re-sample -> CURRENT" 0 4 'first sample read BLOCKED' 'past the handoff budget'
 
-    # 3) CONTROL -- the re-sample must be CONDITIONAL on verdict 1, not unconditional.
-    #    A CURRENT first sample must cost exactly ONE butler call. This is the arm that reds if
-    #    anyone hoists the re-sample above the `[ "$ec" -ne 1 ]` check: the verdict would still
-    #    be 0 and arms 1-2 would still pass, so without a CALL COUNT the change is invisible.
-    _mkfake "$ALL279" "$WEBLAGS"
-    _tout="$(STORE_BUTLER="$fake" STORE_RECHECK_DELAY=0 STORE_TAG=v3.33.279-alpha "$self" 2>&1)"; _tec=$?
+    # 3+4) THE DEADLINE, PINNED FROM BOTH SIDES with one sequence (3 BLOCKED, then serving):
+    #    a budget of 3 re-samples just reaches the serving sample -> CURRENT, 4 calls;
+    #    a budget of 2 stops one short                          -> BLOCKED, 3 calls.
+    #    An off-by-one in the loop bound reds exactly one of the pair.
+    _rs 3 "$WEBLAGS" "$WEBLAGS" "$WEBLAGS" "$ALL279"
+    _rsarm "serving ON the last allowed sample" 0 4 'first sample read BLOCKED' 'past the handoff budget'
+    _rs 2 "$WEBLAGS" "$WEBLAGS" "$WEBLAGS" "$ALL279"
+    _rsarm "serving one sample PAST the budget" 1 3 'past the handoff budget' 'first sample read BLOCKED'
+
+    # 5) A real block survives the whole budget and says how long it waited.
+    _rs 3 "$WEBLAGS"
+    _rsarm "persistent BLOCK stays BLOCKED" 1 4 'BLOCKED on all 4 samples' 'first sample read BLOCKED'
+
+    # 6) The old wording claimed a gap had been ruled out. It must be gone.
+    if grep -q 'confirmed by TWO samples' <<<"$_tout"; then
+        fail=$((fail+1)); printf '  FAIL  %-40s still prints it\n' "no 'confirmed by TWO samples' claim"
+    else
+        pass=$((pass+1)); printf '  ok    %-40s absent\n' "no 'confirmed by TWO samples' claim"
+    fi
+
+    # 7) A re-sample that turns PENDING ends the poll and reports PENDING (3), not BLOCKED.
+    _rstag=v3.33.675-alpha _rs 8 "$REAL_BLOCKED" "$REAL_PENDING"
+    _rsarm "gap then queued -> PENDING" 3 2 '^\[store\] PENDING' 'past the handoff budget'
+    [ "$_tec" -eq 3 ] && saw3=1
+
+    # ── THE TAG LIST ITSELF CAN LIE (.701's false red) ───────────────────────────────────
+    # These drive the no-arg entry point with BOTH a fake butler and a fake git, and no
+    # STORE_TAG, so the tag comes from origin_tags.sh judged against what the store serves.
+    local fgit="$dir/fakegit" gctr="$dir/gcalls"
+    _gfix() { local n; for n in "$@"; do
+        printf '%040d\trefs/tags/v3.33.%s-alpha\n%040d\trefs/tags/v3.33.%s-alpha^{}\n' 0 "$n" 1 "$n"
+    done; }
+    _gfix 616 673 674 699 700 701 > "$dir/g.full"
+    _gfix 616 673 674             > "$dir/g.short"
+    _gfix 98 99                   > "$dir/g.top99"
+    _mkgit() {   # reply files by suffix; the LAST one repeats
+        : > "$gctr"; printf '%s\n' "$@" > "$dir/g.seq"
+        cat > "$fgit" <<FAKE
+#!/usr/bin/env bash
+n=\$(( \$(cat "$gctr" 2>/dev/null || echo 0) + 1 )); echo "\$n" > "$gctr"
+k=\$(wc -l < "$dir/g.seq"); [ "\$n" -lt "\$k" ] && k=\$n
+cat "$dir/g.\$(sed -n "\${k}p" "$dir/g.seq")"
+FAKE
+        chmod +x "$fgit"
+    }
+    _srv() { printf '| linux    | #1 | ✓ #9 | v3.33.%s-alpha+aaa |\n| web      | #2 | ✓ #9 | v3.33.%s-alpha+aaa |\n| windows  | #3 | ✓ #9 | v3.33.%s-alpha+aaa |' "$1" "$1" "$1"; }
+    _tl() {  # name want-ec want-git-calls must-match must-NOT-match KNOWN served git-replies...
+        local name="$1" wec="$2" wg="$3" yes="$4" no="$5" known="$6" served="$7"; shift 7
+        _mkfake "$(_srv "$served")"; _mkgit "$@"
+        _tout="$(STORE_BUTLER="$fake" OT_GIT="$fgit" OT_RETRY_DELAY=0 STORE_RECHECK_DELAY=0 \
+                 STORE_RECHECK_MAX=1 STORE_KNOWN_TAG="$known" "$self" 2>&1)"; _tec=$?
+        local g bad=""; g="$(cat "$gctr")"
+        [ "$_tec" -eq "$wec" ] || bad="exit $_tec (wanted $wec)"
+        [ "$g" -eq "$wg" ]     || bad="${bad}${bad:+; }ls-remote called $g (wanted $wg)"
+        if [ -n "$yes" ] && ! grep -q "$yes" <<<"$_tout"; then bad="${bad}${bad:+; }missing '$yes'"; fi
+        if [ -n "$no" ]  &&   grep -q "$no"  <<<"$_tout"; then bad="${bad}${bad:+; }unexpected '$no'"; fi
+        case "$_tec" in 0) saw0=1 ;; 1) saw1=1 ;; 2) saw2=1 ;; esac
+        if [ -z "$bad" ]; then pass=$((pass+1)); printf '  ok    %-40s exit %s, %s ls-remote call(s)\n' "$name" "$_tec" "$g"
+        else fail=$((fail+1)); printf '  FAIL  %-40s %s\n' "$name" "$bad"; fi
+    }
+    # T1) .701's case exactly: serving .701, origin answers short (top .674) then in full.
+    _tl "short reply under a served .701 -> CURRENT" 0 2 'CURRENT: all 3 channels at v3.33.701' 'BEHIND' "" 701 short full
+    # T2) Short on every reply: UNKNOWN (2), and it must not say BEHIND about a current store.
+    _tl "short x3 under a served .701 -> UNKNOWN"    2 3 'newest tag UNKNOWN' 'BEHIND' "" 701 short
+    # T3) THE TWIN: a store that is TRULY behind a truly newer tag must still read 1. An eager
+    #     FLOOR would re-ask this and report "don't know" -- the one thing this tool exists to say.
+    _tl "TRUE behind (.700 vs .701) stays BEHIND"    1 1 'BEHIND at v3.33.701-alpha' 'STALE' "" 700 full
+    # T4) WANT catches what FLOOR cannot: serving .673, a short reply topping at .674 is ABOVE
+    #     the floor and looks consistent. Only publish_all's known tag shows it is incomplete.
+    _tl "KNOWN .701 catches a short reply > FLOOR"   1 2 'BEHIND at v3.33.701-alpha' 'at v3.33.674' v3.33.701-alpha 673 short full
+    #     ...and its control: the same inputs WITHOUT the known tag are fooled, one call, .674.
+    _tl "  control: no KNOWN -> fooled by .674"      1 1 'BEHIND at v3.33.674-alpha' 'STALE' "" 673 short full
+    # T5) Lexical vs numeric: as strings ".99" sorts above ".674". Serving .674 under a reply
+    #     topping out at .99 is a contradiction and must be UNKNOWN, not CURRENT and not BEHIND.
+    _tl "top .99 under a served .674 -> UNKNOWN"     2 3 'newest tag UNKNOWN' 'BEHIND' "" 674 top99
+
+    # 8) CONTROL -- the poll must be CONDITIONAL on verdict 1. A CURRENT first sample costs
+    #    exactly ONE butler call; hoisting the poll above the `[ "$ec" -ne 1 ]` check would
+    #    keep every verdict above and change only this count.
+    _rs 8 "$ALL279" "$WEBLAGS"
     _rsarm "CURRENT does not re-sample" 0 1 '' 're-sample'
 
     echo
     echo "selftest: ${pass} passed, ${fail} failed"
-    if [ "$saw0" -ne 1 ] || [ "$saw1" -ne 1 ] || [ "$saw2" -ne 1 ]; then
-        echo "selftest: BROKEN — outcomes seen: current=${saw0} behind=${saw1} undetermined=${saw2}; all three required" >&2
+    if [ "$saw0" -ne 1 ] || [ "$saw1" -ne 1 ] || [ "$saw2" -ne 1 ] || [ "$saw3" -ne 1 ]; then
+        echo "selftest: BROKEN — outcomes seen: current=${saw0} behind=${saw1} undetermined=${saw2} pending=${saw3}; all four required" >&2
         return 1
     fi
     [ "$fail" -eq 0 ]
@@ -298,8 +412,10 @@ case "${1:-}" in
                 # The tag is resolved ONCE. Re-resolving it per sample would let a tag cut
                 # between the two samples change the SUBJECT of the comparison, so the
                 # re-check would answer a different question than the one that failed.
-                tag="${STORE_TAG:-$(_newest_tag)}"
+                # The first sample comes BEFORE the tag, because what it SERVES is the FLOOR
+                # the tag list is judged against.
                 "$STORE_BUTLER" status "$TARGET" > "$tmp" 2>&1
+                tag="${STORE_TAG:-$(origin_newest_tag store "${STORE_KNOWN_TAG:-}" "$(_served_max "$tmp")")}"
                 out="$(judge "$tmp" "$tag" 2>&1)"; ec=$?
                 # ⛔ BLOCKED (1) IS THE ONE VERDICT THAT MUST NOT REST ON A SINGLE SAMPLE.
                 # Measured 2026-10-14 on v3.33.693-alpha web: at 20:33:12Z this read
@@ -317,17 +433,34 @@ case "${1:-}" in
                 # them asks the caller to act destructively, and PENDING already tells the
                 # reader to re-check.
                 if [ "$ec" -ne 1 ]; then printf '%s\n' "$out"; exit "$ec"; fi
-                sleep "$STORE_RECHECK_DELAY"
-                "$STORE_BUTLER" status "$TARGET" > "$tmp2" 2>&1
-                out2="$(judge "$tmp2" "$tag" 2>&1)"; ec2=$?
+                # ⛔ ONE RE-SAMPLE 15s LATER DID NOT COVER THE GAP. It fired falsely three
+                # times (.698 web, .700 linux, .700 windows): BLOCKED on both samples, CURRENT
+                # a minute later, and the old message called that "confirmed by TWO samples --
+                # not the pending->serving gap", which is exactly what it was. So the re-sample
+                # is now a bounded poll: the first non-BLOCKED sample is reported, and BLOCKED
+                # is believed only once the whole handoff budget has passed without one.
+                #
+                # butler has no per-build state query (only `status` and `fetch`), so a build
+                # in the gap and a channel that was never pushed are indistinguishable from
+                # one sample. Both get the same poll; a real BLOCK costs at most the budget in
+                # latency, never a different verdict.
+                n=0 ec2=1 out2="$out"
+                while [ "$ec2" -eq 1 ] && [ "$n" -lt "$STORE_RECHECK_MAX" ]; do
+                    sleep "$STORE_RECHECK_DELAY"
+                    n=$((n+1))
+                    "$STORE_BUTLER" status "$TARGET" > "$tmp2" 2>&1
+                    out2="$(judge "$tmp2" "$tag" 2>&1)"; ec2=$?
+                done
                 printf '%s\n' "$out2"
+                waited=$((n * STORE_RECHECK_DELAY))
                 if [ "$ec2" -ne 1 ]; then
-                    echo "[store] note: a first sample read BLOCKED and a re-sample ${STORE_RECHECK_DELAY}s later did not."
+                    echo "[store] note: a first sample read BLOCKED; re-sample ${n} (~${waited}s later) did not."
                     echo "[store]       Reporting the re-sample. The first sample said:"
                     printf '%s\n' "$out" | sed 's/^/[store]         /'
                     exit "$ec2"
                 fi
-                echo "[store] BLOCKED confirmed by TWO samples ${STORE_RECHECK_DELAY}s apart — this is not the pending->serving gap."
+                echo "[store] BLOCKED on all $((n+1)) samples over ~${waited}s -- past the handoff budget"
+                echo "[store]       (gap measured >15s and <=60s), so this channel did not ship."
                 exit "$ec2" ;;
     *)          judge "$1" "${2:-}" ;;
 esac

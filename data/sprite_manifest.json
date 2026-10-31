@@ -3828,6 +3828,84 @@
       },
       "generator": "AI-gen (gpt-image-1, artist-anchored). Was a PLACEHOLDER ALIAS pointing at shadow_knight.png; struktured authorised that reuse 2026-09-06 when he named the Dark Knight field elite ('sprite = shadow_knight sheet placeholder unless cowir-sprites has better'). A real battle sheet landed 2026-09-09 and this field kept saying 'no new art' -- see `source`. The OVERWORLD sheet (assets/sprites/monsters/overworld/dark_knight.png) is NOT registered here: RoamingMonster and MasteriteEncounter resolve it by PATH from the monster id, and the overworld_monster_sheets section has no consumers in src/.",
       "source": "AI-gen 2026-09-09 (gpt-image-1 medium, artist-anchored, $0.042). The W1 BD2 FIELD ELITE finally looks like itself: it shared shadow_knight.png, a placeholder cowir-main put there in .228 to clear a magenta box, so the one monster a player is meant to stop and stare at rendered as an ordinary guard. Briefed from its SHIPPED monsters.json line ('It does not wander, it does not hunt, and it does not leave. It is simply here, and it is watching you') plus struktured's 'sits there menacingly glowing' — hence the planted greatsword, the motionless stance and the violet helm-glow. ⚠️ RECOVERED FROM THE RAW, NOT THE PIPELINE OUTPUT: the generator returned a near-black background (12,12,12) behind black armour (0,0,0), L1 distance 38, and the standard cleanup keyed the subject away with it — the shipped strip came out 96% transparent, i.e. empty. Re-cut with a border-connected flood at tolerance 10, which separates them; final sheet is 60.5% transparent. HORIZONTALLY FLIPPED per-frame: generated facing left, monsters face right; at 256px there is no engine flip so THE FLIP IS BAKED and is only correct above the 128px threshold. T1, not final — the sprite is near-black and may read poorly at night; the violet eyes are its only focal point. shadow_knight.png untouched and still serves shadow_knight + castle_warden (the latter deliberately, per its own note)."
+    },
+    "the_operator": {
+      "path": "res://assets/sprites/monsters/masterite_tempo_abstract.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "tier": "T1",
+      "source": "DELIBERATE REUSE of masterite_tempo_abstract.png — the Operator is the AUTOMATION trial in the Vertex Antechamber, and one more face of the Calibrant, which wears the masks it has already spent on you. Same call as the_calibrant reusing chancellor_mordaine.png, and modelled on that entry down to this field: tier T1 is the REUSED art's tier, not a generation of mine — no PNG was written or touched. The bespoke sheet is cowir-sprites' call, briefed by this monster's _META_trial line in monsters.json and its bestiary entry; replace this entry when it ships. Registering SOMETHING here is not optional polish: without an entry test_monster_sprite_coverage_derived is right that a sub-final boss renders as a SLIME, so this is the floor, not the plan."
+    },
+    "the_examiner": {
+      "path": "res://assets/sprites/monsters/masterite_curator_abstract.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "tier": "T1",
+      "source": "DELIBERATE REUSE of masterite_curator_abstract.png — the Examiner is the CLASSIC-PLAY trial in the Vertex Antechamber, and one more face of the Calibrant, which wears the masks it has already spent on you. Same call as the_calibrant reusing chancellor_mordaine.png, and modelled on that entry down to this field: tier T1 is the REUSED art's tier, not a generation of mine — no PNG was written or touched. The bespoke sheet is cowir-sprites' call, briefed by this monster's _META_trial line in monsters.json and its bestiary entry; replace this entry when it ships. Registering SOMETHING here is not optional polish: without an entry test_monster_sprite_coverage_derived is right that a sub-final boss renders as a SLIME, so this is the floor, not the plan."
+    },
+    "the_margin": {
+      "path": "res://assets/sprites/monsters/masterite_arbiter_abstract.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "tier": "T1",
+      "source": "DELIBERATE REUSE of masterite_arbiter_abstract.png — the Margin is the ONE-SHOT trial in the Vertex Antechamber, and one more face of the Calibrant, which wears the masks it has already spent on you. Same call as the_calibrant reusing chancellor_mordaine.png, and modelled on that entry down to this field: tier T1 is the REUSED art's tier, not a generation of mine — no PNG was written or touched. The bespoke sheet is cowir-sprites' call, briefed by this monster's _META_trial line in monsters.json and its bestiary entry; replace this entry when it ships. Registering SOMETHING here is not optional polish: without an entry test_monster_sprite_coverage_derived is right that a sub-final boss renders as a SLIME, so this is the floor, not the plan."
     }
   },
   "npc_sheets": {
@@ -3987,8 +4065,8 @@
   "overworld_npc_sheets": {
     "blacksmith": {
       "path": "res://assets/sprites/npcs/blacksmith/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "fps": 8,
       "tier": "T1",
       "animations": {
@@ -4008,12 +4086,13 @@
           "row": 3,
           "frames": 4
         }
-      }
+      },
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "bram": {
       "path": "res://assets/sprites/npcs/bram/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "fps": 8,
       "tier": "T1",
       "animations": {
@@ -4033,12 +4112,13 @@
           "row": 3,
           "frames": 4
         }
-      }
+      },
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "child": {
       "path": "res://assets/sprites/npcs/child/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "fps": 8,
       "tier": "T1",
       "animations": {
@@ -4058,12 +4138,13 @@
           "row": 3,
           "frames": 4
         }
-      }
+      },
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "dr_temporal": {
       "path": "res://assets/sprites/npcs/dr_temporal/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "fps": 8,
       "tier": "T1",
       "animations": {
@@ -4083,12 +4164,13 @@
           "row": 3,
           "frames": 4
         }
-      }
+      },
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "elder_theron": {
       "path": "res://assets/sprites/npcs/elder_theron/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "fps": 8,
       "tier": "T1",
       "animations": {
@@ -4108,12 +4190,13 @@
           "row": 3,
           "frames": 4
         }
-      }
+      },
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "farmer": {
       "path": "res://assets/sprites/npcs/farmer/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "fps": 8,
       "tier": "T1",
       "animations": {
@@ -4133,12 +4216,13 @@
           "row": 3,
           "frames": 4
         }
-      }
+      },
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "fisherman": {
       "path": "res://assets/sprites/npcs/fisherman/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "fps": 8,
       "tier": "T1",
       "animations": {
@@ -4158,12 +4242,13 @@
           "row": 3,
           "frames": 4
         }
-      }
+      },
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "guard": {
       "path": "res://assets/sprites/npcs/guard/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "fps": 8,
       "tier": "T1",
       "animations": {
@@ -4183,12 +4268,13 @@
           "row": 3,
           "frames": 4
         }
-      }
+      },
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "innkeeper": {
       "path": "res://assets/sprites/npcs/innkeeper/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "fps": 8,
       "tier": "T1",
       "animations": {
@@ -4208,12 +4294,13 @@
           "row": 3,
           "frames": 4
         }
-      }
+      },
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "king": {
       "path": "res://assets/sprites/npcs/king/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "fps": 8,
       "tier": "T1",
       "animations": {
@@ -4233,12 +4320,13 @@
           "row": 3,
           "frames": 4
         }
-      }
+      },
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "marta": {
       "path": "res://assets/sprites/npcs/marta/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "fps": 8,
       "tier": "T1",
       "animations": {
@@ -4258,12 +4346,13 @@
           "row": 3,
           "frames": 4
         }
-      }
+      },
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "merchant": {
       "path": "res://assets/sprites/npcs/merchant/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "fps": 8,
       "tier": "T1",
       "animations": {
@@ -4283,12 +4372,13 @@
           "row": 3,
           "frames": 4
         }
-      }
+      },
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "monk": {
       "path": "res://assets/sprites/npcs/monk/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "fps": 8,
       "tier": "T1",
       "animations": {
@@ -4308,12 +4398,13 @@
           "row": 3,
           "frames": 4
         }
-      }
+      },
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "noble": {
       "path": "res://assets/sprites/npcs/noble/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "fps": 8,
       "tier": "T1",
       "animations": {
@@ -4333,12 +4424,13 @@
           "row": 3,
           "frames": 4
         }
-      }
+      },
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "noblewoman": {
       "path": "res://assets/sprites/npcs/noblewoman/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "fps": 8,
       "tier": "T1",
       "animations": {
@@ -4358,12 +4450,13 @@
           "row": 3,
           "frames": 4
         }
-      }
+      },
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "old_man": {
       "path": "res://assets/sprites/npcs/old_man/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "fps": 8,
       "tier": "T1",
       "animations": {
@@ -4383,12 +4476,13 @@
           "row": 3,
           "frames": 4
         }
-      }
+      },
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "old_woman": {
       "path": "res://assets/sprites/npcs/old_woman/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "fps": 8,
       "tier": "T1",
       "animations": {
@@ -4408,12 +4502,13 @@
           "row": 3,
           "frames": 4
         }
-      }
+      },
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "phil": {
       "path": "res://assets/sprites/npcs/phil/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "fps": 8,
       "tier": "T1",
       "animations": {
@@ -4433,12 +4528,13 @@
           "row": 3,
           "frames": 4
         }
-      }
+      },
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "priestess": {
       "path": "res://assets/sprites/npcs/priestess/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "fps": 8,
       "tier": "T1",
       "animations": {
@@ -4458,12 +4554,13 @@
           "row": 3,
           "frames": 4
         }
-      }
+      },
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "queen": {
       "path": "res://assets/sprites/npcs/queen/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "fps": 8,
       "tier": "T1",
       "animations": {
@@ -4483,12 +4580,13 @@
           "row": 3,
           "frames": 4
         }
-      }
+      },
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "scholar": {
       "path": "res://assets/sprites/npcs/scholar/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "fps": 8,
       "tier": "T1",
       "animations": {
@@ -4508,12 +4606,13 @@
           "row": 3,
           "frames": 4
         }
-      }
+      },
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "scholar_milo": {
       "path": "res://assets/sprites/npcs/scholar_milo/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "fps": 8,
       "tier": "T1",
       "animations": {
@@ -4533,12 +4632,13 @@
           "row": 3,
           "frames": 4
         }
-      }
+      },
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "soldier": {
       "path": "res://assets/sprites/npcs/soldier/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "fps": 8,
       "tier": "T1",
       "animations": {
@@ -4558,12 +4658,13 @@
           "row": 3,
           "frames": 4
         }
-      }
+      },
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "traveler": {
       "path": "res://assets/sprites/npcs/traveler/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "fps": 8,
       "tier": "T1",
       "animations": {
@@ -4583,12 +4684,13 @@
           "row": 3,
           "frames": 4
         }
-      }
+      },
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "young_man": {
       "path": "res://assets/sprites/npcs/young_man/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "fps": 8,
       "tier": "T1",
       "animations": {
@@ -4608,12 +4710,13 @@
           "row": 3,
           "frames": 4
         }
-      }
+      },
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "young_woman": {
       "path": "res://assets/sprites/npcs/young_woman/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "fps": 8,
       "tier": "T1",
       "animations": {
@@ -4633,12 +4736,13 @@
           "row": 3,
           "frames": 4
         }
-      }
+      },
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "chancellor_mordaine": {
       "path": "res://assets/sprites/npcs/chancellor_mordaine/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "fps": 8,
       "tier": "T1",
       "animations": {
@@ -4659,12 +4763,12 @@
           "frames": 4
         }
       },
-      "source": "gpt-image-1 anchored to the ARTIST battle sheet (Mordaine animations.aseprite, T2); priestess archetype as 4x4 chibi format anchor; up-row headroom normalized (17 -> 0 at cell y+0)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "fairy": {
       "path": "res://assets/sprites/npcs/fairy/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "fps": 8,
       "tier": "T1",
       "animations": {
@@ -4685,12 +4789,12 @@
           "frames": 4
         }
       },
-      "source": "gpt-image-1 anchored to named battle strip (tools/gen_named_npc_overworld.py)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "ghost": {
       "path": "res://assets/sprites/npcs/ghost/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "fps": 8,
       "tier": "T1",
       "animations": {
@@ -4711,819 +4815,819 @@
           "frames": 4
         }
       },
-      "source": "gpt-image-1 anchored to named battle strip (tools/gen_named_npc_overworld.py)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "blacksmith_suburban": {
       "path": "res://assets/sprites/npcs/blacksmith_suburban/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the blacksmith medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "child_suburban": {
       "path": "res://assets/sprites/npcs/child_suburban/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the child medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "fairy_suburban": {
       "path": "res://assets/sprites/npcs/fairy_suburban/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the fairy medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "farmer_suburban": {
       "path": "res://assets/sprites/npcs/farmer_suburban/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the farmer medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "fisherman_suburban": {
       "path": "res://assets/sprites/npcs/fisherman_suburban/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the fisherman medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "ghost_suburban": {
       "path": "res://assets/sprites/npcs/ghost_suburban/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the ghost medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "guard_suburban": {
       "path": "res://assets/sprites/npcs/guard_suburban/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the guard medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "innkeeper_suburban": {
       "path": "res://assets/sprites/npcs/innkeeper_suburban/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the innkeeper medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "king_suburban": {
       "path": "res://assets/sprites/npcs/king_suburban/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the king medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "noblewoman_suburban": {
       "path": "res://assets/sprites/npcs/noblewoman_suburban/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the noblewoman medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "old_man_suburban": {
       "path": "res://assets/sprites/npcs/old_man_suburban/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the old_man medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "old_woman_suburban": {
       "path": "res://assets/sprites/npcs/old_woman_suburban/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the old_woman medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "priestess_suburban": {
       "path": "res://assets/sprites/npcs/priestess_suburban/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the priestess medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "queen_suburban": {
       "path": "res://assets/sprites/npcs/queen_suburban/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the queen medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "soldier_suburban": {
       "path": "res://assets/sprites/npcs/soldier_suburban/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the soldier medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "traveler_suburban": {
       "path": "res://assets/sprites/npcs/traveler_suburban/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the traveler medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "young_man_suburban": {
       "path": "res://assets/sprites/npcs/young_man_suburban/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the young_man medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "young_woman_suburban": {
       "path": "res://assets/sprites/npcs/young_woman_suburban/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the young_woman medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "blacksmith_steampunk": {
       "path": "res://assets/sprites/npcs/blacksmith_steampunk/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the blacksmith medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "fairy_steampunk": {
       "path": "res://assets/sprites/npcs/fairy_steampunk/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the fairy medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "ghost_steampunk": {
       "path": "res://assets/sprites/npcs/ghost_steampunk/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the ghost medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "king_steampunk": {
       "path": "res://assets/sprites/npcs/king_steampunk/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the king medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "monk_steampunk": {
       "path": "res://assets/sprites/npcs/monk_steampunk/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the monk medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "noble_steampunk": {
       "path": "res://assets/sprites/npcs/noble_steampunk/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the noble medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "old_man_steampunk": {
       "path": "res://assets/sprites/npcs/old_man_steampunk/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the old_man medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "old_woman_steampunk": {
       "path": "res://assets/sprites/npcs/old_woman_steampunk/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the old_woman medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "scholar_steampunk": {
       "path": "res://assets/sprites/npcs/scholar_steampunk/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the scholar medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "soldier_steampunk": {
       "path": "res://assets/sprites/npcs/soldier_steampunk/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the soldier medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "traveler_steampunk": {
       "path": "res://assets/sprites/npcs/traveler_steampunk/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the traveler medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "young_man_steampunk": {
       "path": "res://assets/sprites/npcs/young_man_steampunk/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the young_man medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "young_woman_steampunk": {
       "path": "res://assets/sprites/npcs/young_woman_steampunk/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the young_woman medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "blacksmith_industrial": {
       "path": "res://assets/sprites/npcs/blacksmith_industrial/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the blacksmith medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "child_industrial": {
       "path": "res://assets/sprites/npcs/child_industrial/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the child medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "fairy_industrial": {
       "path": "res://assets/sprites/npcs/fairy_industrial/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the fairy medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "farmer_industrial": {
       "path": "res://assets/sprites/npcs/farmer_industrial/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the farmer medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "ghost_industrial": {
       "path": "res://assets/sprites/npcs/ghost_industrial/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the ghost medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "guard_industrial": {
       "path": "res://assets/sprites/npcs/guard_industrial/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the guard medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "king_industrial": {
       "path": "res://assets/sprites/npcs/king_industrial/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the king medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "merchant_industrial": {
       "path": "res://assets/sprites/npcs/merchant_industrial/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the merchant medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "monk_industrial": {
       "path": "res://assets/sprites/npcs/monk_industrial/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the monk medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "noble_industrial": {
       "path": "res://assets/sprites/npcs/noble_industrial/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the noble medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "scholar_industrial": {
       "path": "res://assets/sprites/npcs/scholar_industrial/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the scholar medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "blacksmith_digital": {
       "path": "res://assets/sprites/npcs/blacksmith_digital/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the blacksmith medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "child_digital": {
       "path": "res://assets/sprites/npcs/child_digital/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the child medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "fairy_digital": {
       "path": "res://assets/sprites/npcs/fairy_digital/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the fairy medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "farmer_digital": {
       "path": "res://assets/sprites/npcs/farmer_digital/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the farmer medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "ghost_digital": {
       "path": "res://assets/sprites/npcs/ghost_digital/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the ghost medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "guard_digital": {
       "path": "res://assets/sprites/npcs/guard_digital/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the guard medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "king_digital": {
       "path": "res://assets/sprites/npcs/king_digital/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the king medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "merchant_digital": {
       "path": "res://assets/sprites/npcs/merchant_digital/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the merchant medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "old_man_digital": {
       "path": "res://assets/sprites/npcs/old_man_digital/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the old_man medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "old_woman_digital": {
       "path": "res://assets/sprites/npcs/old_woman_digital/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the old_woman medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "priestess_digital": {
       "path": "res://assets/sprites/npcs/priestess_digital/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the priestess medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "queen_digital": {
       "path": "res://assets/sprites/npcs/queen_digital/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the queen medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "scholar_digital": {
       "path": "res://assets/sprites/npcs/scholar_digital/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the scholar medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "young_man_digital": {
       "path": "res://assets/sprites/npcs/young_man_digital/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the young_man medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "young_woman_digital": {
       "path": "res://assets/sprites/npcs/young_woman_digital/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the young_woman medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "child_abstract": {
       "path": "res://assets/sprites/npcs/child_abstract/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the child medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "fairy_abstract": {
       "path": "res://assets/sprites/npcs/fairy_abstract/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the fairy medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "farmer_abstract": {
       "path": "res://assets/sprites/npcs/farmer_abstract/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the farmer medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "fisherman_abstract": {
       "path": "res://assets/sprites/npcs/fisherman_abstract/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the fisherman medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "ghost_abstract": {
       "path": "res://assets/sprites/npcs/ghost_abstract/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the ghost medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "innkeeper_abstract": {
       "path": "res://assets/sprites/npcs/innkeeper_abstract/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the innkeeper medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "king_abstract": {
       "path": "res://assets/sprites/npcs/king_abstract/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the king medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "merchant_abstract": {
       "path": "res://assets/sprites/npcs/merchant_abstract/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the merchant medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "monk_abstract": {
       "path": "res://assets/sprites/npcs/monk_abstract/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the monk medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "old_man_abstract": {
       "path": "res://assets/sprites/npcs/old_man_abstract/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the old_man medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "old_woman_abstract": {
       "path": "res://assets/sprites/npcs/old_woman_abstract/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the old_woman medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "scholar_abstract": {
       "path": "res://assets/sprites/npcs/scholar_abstract/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the scholar medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "soldier_abstract": {
       "path": "res://assets/sprites/npcs/soldier_abstract/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the soldier medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "young_man_abstract": {
       "path": "res://assets/sprites/npcs/young_man_abstract/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the young_man medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "young_woman_abstract": {
       "path": "res://assets/sprites/npcs/young_woman_abstract/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the young_woman medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "curator": {
       "path": "res://assets/sprites/npcs/curator/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1, identity anchored to masterite_curator_medieval.png (2026-09-07 phase 2; archetype was requested by maps but had NO sheet — rendered procedural)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "warden": {
       "path": "res://assets/sprites/npcs/warden/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1, identity anchored to masterite_warden_medieval.png (2026-09-07 phase 2; archetype was requested by maps but had NO sheet — rendered procedural)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "elder": {
       "path": "res://assets/sprites/npcs/elder/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1, identity anchored to overworld.png (2026-09-07 phase 2; archetype was requested by maps but had NO sheet — rendered procedural)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "tempo": {
       "path": "res://assets/sprites/npcs/tempo/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1, identity anchored to masterite_tempo_medieval.png (2026-09-07 phase 2; archetype was requested by maps but had NO sheet — rendered procedural)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "queen_industrial": {
       "path": "res://assets/sprites/npcs/queen_industrial/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the queen medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "traveler_industrial": {
       "path": "res://assets/sprites/npcs/traveler_industrial/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the traveler medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "young_woman_industrial": {
       "path": "res://assets/sprites/npcs/young_woman_industrial/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the young_woman medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "merchant_suburban": {
       "path": "res://assets/sprites/npcs/merchant_suburban/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the merchant medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "monk_suburban": {
       "path": "res://assets/sprites/npcs/monk_suburban/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the monk medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "noble_suburban": {
       "path": "res://assets/sprites/npcs/noble_suburban/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the noble medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "scholar_suburban": {
       "path": "res://assets/sprites/npcs/scholar_suburban/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the scholar medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "child_steampunk": {
       "path": "res://assets/sprites/npcs/child_steampunk/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the child medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "farmer_steampunk": {
       "path": "res://assets/sprites/npcs/farmer_steampunk/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the farmer medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "fisherman_steampunk": {
       "path": "res://assets/sprites/npcs/fisherman_steampunk/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the fisherman medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "guard_steampunk": {
       "path": "res://assets/sprites/npcs/guard_steampunk/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the guard medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "innkeeper_steampunk": {
       "path": "res://assets/sprites/npcs/innkeeper_steampunk/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the innkeeper medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "merchant_steampunk": {
       "path": "res://assets/sprites/npcs/merchant_steampunk/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the merchant medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "noblewoman_steampunk": {
       "path": "res://assets/sprites/npcs/noblewoman_steampunk/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the noblewoman medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "priestess_steampunk": {
       "path": "res://assets/sprites/npcs/priestess_steampunk/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the priestess medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "queen_steampunk": {
       "path": "res://assets/sprites/npcs/queen_steampunk/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the queen medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "fisherman_industrial": {
       "path": "res://assets/sprites/npcs/fisherman_industrial/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the fisherman medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "innkeeper_industrial": {
       "path": "res://assets/sprites/npcs/innkeeper_industrial/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the innkeeper medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "noblewoman_industrial": {
       "path": "res://assets/sprites/npcs/noblewoman_industrial/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the noblewoman medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "old_man_industrial": {
       "path": "res://assets/sprites/npcs/old_man_industrial/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the old_man medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "old_woman_industrial": {
       "path": "res://assets/sprites/npcs/old_woman_industrial/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the old_woman medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "priestess_industrial": {
       "path": "res://assets/sprites/npcs/priestess_industrial/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the priestess medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "soldier_industrial": {
       "path": "res://assets/sprites/npcs/soldier_industrial/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the soldier medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "young_man_industrial": {
       "path": "res://assets/sprites/npcs/young_man_industrial/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the young_man medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "fisherman_digital": {
       "path": "res://assets/sprites/npcs/fisherman_digital/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the fisherman medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "innkeeper_digital": {
       "path": "res://assets/sprites/npcs/innkeeper_digital/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the innkeeper medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "monk_digital": {
       "path": "res://assets/sprites/npcs/monk_digital/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the monk medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "noble_digital": {
       "path": "res://assets/sprites/npcs/noble_digital/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the noble medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "noblewoman_digital": {
       "path": "res://assets/sprites/npcs/noblewoman_digital/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the noblewoman medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "soldier_digital": {
       "path": "res://assets/sprites/npcs/soldier_digital/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the soldier medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "traveler_digital": {
       "path": "res://assets/sprites/npcs/traveler_digital/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the traveler medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "blacksmith_abstract": {
       "path": "res://assets/sprites/npcs/blacksmith_abstract/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the blacksmith medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "guard_abstract": {
       "path": "res://assets/sprites/npcs/guard_abstract/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the guard medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "noble_abstract": {
       "path": "res://assets/sprites/npcs/noble_abstract/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the noble medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "noblewoman_abstract": {
       "path": "res://assets/sprites/npcs/noblewoman_abstract/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the noblewoman medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "priestess_abstract": {
       "path": "res://assets/sprites/npcs/priestess_abstract/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the priestess medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "queen_abstract": {
       "path": "res://assets/sprites/npcs/queen_abstract/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the queen medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "traveler_abstract": {
       "path": "res://assets/sprites/npcs/traveler_abstract/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1 world-variant, identity+format anchored to the traveler medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "arbiter": {
       "path": "res://assets/sprites/npcs/arbiter/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1, identity anchored to masterite_arbiter_medieval.png (2026-09-07 phase 2; archetype was requested by maps but had NO sheet — rendered procedural)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "mysterious": {
       "path": "res://assets/sprites/npcs/mysterious/overworld.png",
-      "frame_width": 32,
-      "frame_height": 32,
+      "frame_width": 48,
+      "frame_height": 48,
       "tier": "T1",
-      "source": "gpt-image-1, identity anchored to overworld.png (2026-09-07 phase 2; archetype was requested by maps but had NO sheet — rendered procedural)"
+      "source": "gpt-image-1 redraw in the artist villagers' proportions (Rotha, Roy, Kid Acrees as style guide; the NPC's portrait as identity), 48px cells -- tools/gen_npc_artist_walker.py, struktured 2026-10-16. T1: artist veto applies."
     },
     "rotha": {
       "path": "res://assets/sprites/npcs/rotha/overworld.png",
@@ -5584,6 +5688,32 @@
       "fps": 4,
       "tier": "T2",
       "source": "artist aseprite drop 2026-10-13 — Villagers/Villager_Kid Acrees.aseprite, 16 frames / 4 tags (South, West, East, North; 250ms each). The artist's THIRD overworld walker. Exported at NATIVE size by tools/export_artist_overworld_walker.py: figure 23x41 in 48px cells, no resampling. ⚠️ His East tag is an exact copy of West (both face left), so the walk_right row is the walk_left row MIRRORED pixel for pixel (--mirror-right-from-left; struktured ruled 2026-10-14). Every other row is the artist's frames untouched.",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      }
+    },
+    "granny_kaya": {
+      "path": "res://assets/sprites/npcs/granny_kaya/overworld.png",
+      "frame_width": 48,
+      "frame_height": 48,
+      "fps": 4,
+      "tier": "T2",
+      "source": "artist aseprite drop 2026-10-15 — Villagers/Villager_Granny Kaya.aseprite, 16 frames / 4 tags (South, West, East, North). The artist's FOURTH overworld walker. Exported at NATIVE size by tools/export_artist_overworld_walker.py: figure 22x39 in 48px cells, 21 colours, no resampling. Her East tag is the artist's own mirror of West, checked by eye to face right (2026-10-16). Every row is the artist's frames untouched.",
       "animations": {
         "walk_down": {
           "row": 0,

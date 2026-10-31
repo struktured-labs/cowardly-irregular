@@ -2607,14 +2607,22 @@ func _spawn_cast_anticipation(caster_sprite: Variant, ability: Variant) -> void:
 	BattleJuice.flash_sprite(caster_sprite, color * 0.5, 0.0, 0.15)
 
 
+## "" unless the sheet carries art named for this ability id — the one question a melee contact frame can ask, since the `animation` field names a shared bucket and never the art.
+func _ability_sheet_anim(ability: Dictionary, animator: BattleAnimatorClass) -> String:
+	var id: String = str(ability.get("id", ""))
+	if id != "" and animator and animator.has_named_animation(id):
+		return id
+	return ""
+
+
 ## Bespoke per-ability art was unreachable: the engine asked for the ability's `animation` FIELD,
 ## which is a shared bucket ("buff", "skill", "cast_meta"), so a sheet carrying `battle_hymn` or
 ## `cleave` was never requested by that name. Prefer the ability ID when the sheet actually has it;
 ## otherwise nothing changes. Strictly additive — an unregistered id falls back exactly as before.
 func _ability_anim_name(ability: Dictionary, animator: BattleAnimatorClass) -> String:
-	var id: String = str(ability.get("id", ""))
-	if id != "" and animator and animator.has_named_animation(id):
-		return id
+	var bespoke: String = _ability_sheet_anim(ability, animator)
+	if bespoke != "":
+		return bespoke
 	return str(ability.get("animation", "cast"))
 
 
@@ -4217,7 +4225,8 @@ func _on_action_executing(combatant: Combatant, action: Dictionary) -> void:
 			var targets = action.get("targets", [])
 			var ability = JobSystem.get_ability(ability_id)
 			var ability_type = ability.get("type", "magic")
-			var anim_type = ability.get("animation", "cast")
+			## Was ability.get("animation") — the bucket. _ability_anim_name prefers the sheet's own art, and ONLY this call makes it reachable outside Full Render.
+			var anim_type: String = _ability_anim_name(ability, animator)
 
 			# Track ability so damage callback plays element sound instead of generic hit
 			_current_ability_id = ability_id
@@ -4230,7 +4239,7 @@ func _on_action_executing(combatant: Combatant, action: Dictionary) -> void:
 				var target_sprite = _get_combatant_sprite(targets[0])
 				var target_animator = _get_combatant_animator(targets[0])
 				if attacker_sprite and target_sprite:
-					_animate_melee_attack(attacker_sprite, target_sprite, animator, target_animator)
+					_animate_melee_attack(attacker_sprite, target_sprite, animator, target_animator, 0.0, _ability_sheet_anim(ability, animator))
 				else:
 					_play_ability_animation(anim_type, animator)
 					_spawn_ability_effects(ability, targets)
@@ -4652,7 +4661,7 @@ func _spawn_screen_flash(color: Color, fade_duration: float, delay: float = 0.0)
 	t.tween_callback(flash.queue_free)
 
 
-func _animate_melee_attack(attacker_sprite: Node2D, target_sprite: Node2D, attacker_anim: BattleAnimatorClass, target_anim: BattleAnimatorClass, lead_in: float = 0.0) -> void:
+func _animate_melee_attack(attacker_sprite: Node2D, target_sprite: Node2D, attacker_anim: BattleAnimatorClass, target_anim: BattleAnimatorClass, lead_in: float = 0.0, ability_anim: String = "") -> void:
 	"""Animate attacker moving to target, attacking, then returning"""
 	# Store home position as metadata to ensure we can always return
 	if not attacker_sprite.has_meta("home_position"):
@@ -4714,7 +4723,11 @@ func _animate_melee_attack(attacker_sprite: Node2D, target_sprite: Node2D, attac
 		if not is_instance_valid(self):
 			return
 		if attacker_anim and is_instance_valid(attacker_anim):
-			attacker_anim.play_attack()
+			## A bespoke physical ability swings its OWN art here; everything else keeps the generic attack.
+			if ability_anim != "" and attacker_anim.has_named_animation(ability_anim):
+				attacker_anim.play_named_animation(ability_anim)
+			else:
+				attacker_anim.play_attack()
 		_apply_hitstop(attacker_sprite, target_sprite)
 		_delayed_play_hit_fx(target_anim, target_sprite)
 	)

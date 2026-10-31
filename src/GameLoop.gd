@@ -66,6 +66,7 @@ const SuburbanUndergroundScript = preload("res://src/maps/dungeons/SuburbanUnder
 const CastleHarmoniaScript = preload("res://src/maps/dungeons/CastleHarmonia.gd")
 const SteampunkMechanismScript = preload("res://src/maps/dungeons/SteampunkMechanism.gd")
 const VertexApexScript = preload("res://src/maps/dungeons/VertexApex.gd")
+const VertexAntechamberScript = preload("res://src/maps/dungeons/VertexAntechamber.gd")
 const ContrarianDepthsScript = preload("res://src/maps/dungeons/ContrarianDepths.gd")
 const SteampunkOverworldScript = preload("res://src/exploration/SteampunkOverworld.gd")
 const SuburbanOverworldScript = preload("res://src/exploration/SuburbanOverworld.gd")
@@ -813,8 +814,9 @@ func _smoke_enter_map(map_id: String) -> void:
 	# between the walk shots and the village shot and every later leg bailed — the roamer path,
 	# which consults no flag. Same signature this file's :717 comment recorded at .265.
 	_smoke_quiet_the_roamers()
-	if BattleManager and BattleManager.current_state != BattleManager.BattleState.INACTIVE:
-		print("[SMOKE] FAIL: '%s' leg bailed — a live battle owns the screen, this shot is the previous frame" % map_id)
+	var screen_owner: String = _smoke_screen_owner()
+	if screen_owner != "":
+		print("[SMOKE] FAIL: '%s' leg bailed — %s, this shot is the previous frame" % [map_id, screen_owner])
 		_smoke_failed = true
 	elif not is_instance_valid(current_scene) or current_scene.get_instance_id() == before_id:
 		print("[SMOKE] FAIL: '%s' leg built no new scene — _start_exploration returned early, this shot is the previous map" % map_id)
@@ -856,6 +858,36 @@ static func smoke_wipe_verdict(elapsed_ms: int, since_progress_ms: int, since_in
 	if elapsed_ms >= budget_ms:
 		return "budget"
 	return ""
+
+
+## Which of the two owns the screen, or "" for neither; a live battle outranks a starting transition.
+static func smoke_screen_owner(state_inactive: bool, transition_pending: bool) -> String:
+	if not state_inactive:
+		return "a live battle owns the screen"
+	if transition_pending:
+		return "a battle transition is starting"
+	return ""
+
+
+## Both facts off the live engine: current_state flips to BATTLE frames AFTER the trigger (.705).
+func _smoke_screen_owner() -> String:
+	var inactive: bool = BattleManager == null or BattleManager.current_state == BattleManager.BattleState.INACTIVE
+	return smoke_screen_owner(inactive, _battle_transition_starting)
+
+
+## Wait out a starting transition, end whatever battle it produced, and tap until it is gone.
+func _smoke_end_any_battle() -> void:
+	var settling: float = 0.0
+	while _battle_transition_starting and settling < 12.0:
+		await get_tree().create_timer(0.25).timeout
+		settling += 0.25
+	if BattleManager.current_state != BattleManager.BattleState.INACTIVE:
+		BattleManager.end_battle(true)
+	var back: float = 0.0
+	while BattleManager.current_state != BattleManager.BattleState.INACTIVE and back < 15.0:
+		_smoke_tap("ui_accept")
+		await get_tree().create_timer(0.5).timeout
+		back += 0.5
 
 
 ## Wait for the party wipe to produce a GameOverScreen, bounded by PROGRESS rather than by the clock.
@@ -998,21 +1030,33 @@ func _smoke_player_path_battle() -> void:
 	## Back on a map, not just out of the battle: `_smoke_enter_map` early-returns while a battle
 	## scene is up, so a leg that stopped at INACTIVE would leave every later leg shooting this one.
 	## An exploration scene is the thing that owns a monster_spawner.
-	var rewind: float = 0.0
-	var polls: int = 0
-	while rewind < 15.0 and not (current_scene != null and is_instance_valid(current_scene) and "monster_spawner" in current_scene):
-		if polls % 5 == 0:
-			_smoke_tap("ui_accept")
-		polls += 1
-		await get_tree().create_timer(0.1).timeout
-		rewind += 0.1
-	## The map that comes back has a fresh ENABLED spawner: .669's pre-gate took a second roamer battle here and five legs bailed.
-	_smoke_quiet_the_roamers()
-	if BattleManager.current_state != BattleManager.BattleState.INACTIVE:
-		print("[SMOKE] FAIL: the player-path battle never ended — every later leg would bail")
+	var leaked: int = 0
+	var waited_back: float = 0.0
+	## .669 narrowed this window and .705 fell into it anyway: absorb the leak instead of bailing five later legs.
+	for _attempt in range(3):
+		var rewind: float = 0.0
+		var polls: int = 0
+		while rewind < 15.0 and not (current_scene != null and is_instance_valid(current_scene) and "monster_spawner" in current_scene):
+			if polls % 5 == 0:
+				_smoke_tap("ui_accept")
+			polls += 1
+			await get_tree().create_timer(0.1).timeout
+			rewind += 0.1
+		waited_back += rewind
+		## The map that comes back has a fresh ENABLED spawner, and the player stands where the last roamer was.
+		_smoke_quiet_the_roamers()
+		var leak: String = _smoke_screen_owner()
+		if leak == "":
+			break
+		leaked += 1
+		print("[SMOKE] a battle still owns the screen after the hand-back (%s), absorbing it, attempt %d" % [leak, leaked])
+		await _smoke_end_any_battle()
+	var screen_owner: String = _smoke_screen_owner()
+	if screen_owner != "":
+		print("[SMOKE] FAIL: the player-path battle never ended — %s after %d absorb attempt(s), every later leg would bail" % [screen_owner, leaked])
 		_smoke_failed = true
 	elif not (current_scene != null and is_instance_valid(current_scene) and "monster_spawner" in current_scene):
-		print("[SMOKE] FAIL: the player-path battle ended but exploration never came back in %.1fs" % rewind)
+		print("[SMOKE] FAIL: the player-path battle ended but exploration never came back in %.1fs" % waited_back)
 		_smoke_failed = true
 
 
@@ -2460,25 +2504,14 @@ func _get_pending_story_cutscene() -> String:
 	if flags.get("cutscene_flag_chapter4_garage_complete", false) and not flags.get("cutscene_flag_arbiter_suburban_intro_complete", false):
 		if _current_map_id == "maple_heights_village":
 			return "world2_chapter4"
-	# Tick 101: auto-set arbiter_suburban_defeated after the arbiter intro
-	# cutscene completes. Pre-fix, this flag was set ONLY by
-	# world2_arbiter_defeat.json — a cutscene NO code path triggers — so
-	# W2 chapter5 was unreachable. The Masterite Arbiter battle is treated
-	# as an off-screen narrative beat that happens between intro and the
-	# community center reveal. Mirror of the chapter5→curator auto-set
-	# below for the same reason.
-	if flags.get("cutscene_flag_arbiter_suburban_intro_complete", false) and not flags.get("cutscene_flag_arbiter_suburban_defeated", false):
-		_set_cutscene_flag_and_mirror("cutscene_flag_arbiter_suburban_defeated")
+	# The Arbiter is FOUGHT now: MapleHeightsVillage._place_masterites puts a MasteriteEncounter
+	# beside the Enrichment Annex, and its victory writes this flag. The tick-101 auto-set that
+	# stood here granted the defeat the moment the intro ended, which is why its battle, its
+	# intro scene and world2_arbiter_defeat.json were all unreachable.
 	# W2 Chapter 5: community center, Coordinator reveal
 	if flags.get("cutscene_flag_arbiter_suburban_defeated", false) and not flags.get("cutscene_flag_world2_chapter5_complete", false):
 		return "world2_chapter5"
-	# Tick 101: auto-set curator_suburban_defeated after chapter5
-	# (Coordinator reveal). world2_curator_defeat.json exists but has no
-	# code path — same situation as arbiter above. The Curator battle is
-	# treated as an off-screen narrative beat between chapter5 (reveal)
-	# and chapter7_infrastructure (feral shopping cart aftermath).
-	if flags.get("cutscene_flag_world2_chapter5_complete", false) and not flags.get("cutscene_flag_curator_suburban_defeated", false):
-		_set_cutscene_flag_and_mirror("cutscene_flag_curator_suburban_defeated")
+	# The Curator is FOUGHT now, out in the neighbourhood its scenes are set in — same reason.
 	# W2 Chapter 7: feral shopping cart (after curator defeat)
 	if flags.get("cutscene_flag_curator_suburban_defeated", false) and not flags.get("cutscene_flag_chapter7_infrastructure_complete", false):
 		return "world2_chapter7_infrastructure"
@@ -4574,6 +4607,8 @@ func _start_exploration(force_battle_teardown: bool = false) -> void:
 			exploration_scene = _create_dragon_cave_from_script(SteampunkMechanismScript)
 		"vertex_apex":
 			exploration_scene = _create_dragon_cave_from_script(VertexApexScript)
+		"vertex_antechamber":
+			exploration_scene = _create_dragon_cave_from_script(VertexAntechamberScript)
 		"steampunk_overworld":
 			exploration_scene = SteampunkOverworldScript.new()
 		"suburban_overworld":

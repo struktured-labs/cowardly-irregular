@@ -1,0 +1,68 @@
+{
+  "id": "world3_requisition_intro",
+  "title": "The Requisition",
+  "world": 3,
+  "trigger": "boss_curator_steampunk",
+  "background": "brasston_square",
+  "description": "Brasston's curator keeps the column. It never forbids anything — it simply declines to fund it, which in this district is the same thing arriving by a politer road.",
+  "steps": [
+    { "type": "stop_music" },
+    { "type": "letterbox_in", "duration": 0.5 },
+    { "type": "boss_intro", "name": "The Requisition", "title": "Masterite — Steampunk" },
+    { "type": "wait", "duration": 0.4 },
+    {
+      "type": "narration",
+      "text": "The top street was stacked to the shopfronts with crates, and every crate was stencilled APPROVED on one side and HELD on the other, so that whether a thing was coming or going depended entirely on which way round somebody had set it down. Between two of the stacks a ledger stood open on a frame at reading height, and the figures in it were being added to while the party watched."
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "The Requisition",
+          "text": "ENTRY NOTED. Against which line is this to be charged?",
+          "theme": "enemy",
+          "portrait": "masterite_curator_steampunk"
+        },
+        { "speaker": "Cleric", "text": "We're only passing through.", "theme": "cleric" },
+        {
+          "speaker": "The Requisition",
+          "text": "Passage is a line. Everything is a line. A thing with no line does not move.",
+          "theme": "enemy",
+          "portrait": "masterite_curator_steampunk"
+        },
+        { "speaker": "Rogue", "text": "Half this street is crates nobody ever came back for.", "theme": "rogue" },
+        {
+          "speaker": "The Requisition",
+          "text": "Held, not refused. Nothing here was ever refused. There is no stamp for refused.",
+          "theme": "enemy",
+          "portrait": "masterite_curator_steampunk"
+        },
+        { "speaker": "Mage", "text": "Then say yes. If you can't say no, say yes.", "theme": "mage" },
+        {
+          "speaker": "The Requisition",
+          "text": "Approval is not withheld. Approval is UNFUNDED. The column does not balance for this.",
+          "theme": "enemy",
+          "portrait": "masterite_curator_steampunk"
+        },
+        { "speaker": "Bard", "text": "You've built a wall out of arithmetic so nobody can be blamed for it.", "theme": "bard" },
+        {
+          "speaker": "The Requisition",
+          "text": "Blame is also a line. It has never been funded either.",
+          "theme": "enemy",
+          "portrait": "masterite_curator_steampunk"
+        },
+        { "speaker": "Fighter", "text": "Then we'll take it out of your column ourselves.", "theme": "fighter" },
+        {
+          "speaker": "The Requisition",
+          "text": "An unauthorised draw. Those are also recorded. PROCEED, AND IT WILL BE RECORDED.",
+          "theme": "enemy",
+          "portrait": "masterite_curator_steampunk"
+        }
+      ]
+    },
+    { "type": "screen_shake", "duration": 0.3, "intensity": 3.5 },
+    { "type": "screen_flash", "duration": 0.15 },
+    { "type": "set_flag", "flag": "curator_steampunk_intro_complete", "value": true },
+    { "type": "letterbox_out", "duration": 0.3 }
+  ]
+}

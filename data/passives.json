@@ -269,7 +269,8 @@
 		"category": 1,
 		"description": "Take 15% less damage from all sources",
 		"stat_mods": {
-			"defense_multiplier": 1.15
+			"defense_multiplier": 1.15,
+			"magic_defense_multiplier": 1.15
 		}
 	},
 	"cover_ally": {
