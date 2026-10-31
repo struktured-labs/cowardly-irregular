@@ -285,3 +285,11 @@ file never got its own. At the same date the other nine shipped frames matched `
 any swap, with the villages framed on their buildings (see `CAPTIONS.md`'s 2026-10-31 section for the
 per-shot pixel deltas and conditions). Ten replaced the shipped frame; `battle` was kept (inside its own
 noise); `battle_advance` is archived only.
+
+## 2026-10-31 — `capture-history/shots-750/`
+
+The twelve `store_shots_225` + `store_shot_elite` captures at `v3.33.750-alpha`, archived WHOLESALE before
+the swap (including `brasston_lift`, `eldertree_canopy`, `infernal_grotto_f2`/`_f4`, never shipped). Eight
+replaced the shipped frame (deltas in `CAPTIONS.md`). Two storm-burst frames went to `unshipped-captures/` as
+`battle_storm.750-bolt.png` (frame 50) and `battle_storm.750-settled.png` (frame 102), lead candidates only.
+After this, every shipped frame except `title_screen` is from `shots-748` or `shots-750`.
