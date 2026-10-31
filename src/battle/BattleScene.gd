@@ -91,7 +91,10 @@ var use_win98_menus: bool = true  # Toggle for Win98 style menus
 ## Watchdog for the "menu never spawned" soft-lock class (msg 2372).
 const MENU_WATCHDOG_MS: int = 2500
 const MENU_WATCHDOG_MAX_RETRIES: int = 3
+## How long a boss line may hold the watchdog off; far past any read, short of a dialogue that never hides.
+const BOSS_LINE_GRACE_MS: int = 30000
 var _menu_wd_started_ms: int = 0
+var _boss_line_seen_ms: int = 0
 var _menu_wd_retries: int = 0
 
 ## Acting combatant cached from action_executing signal (msg 2749 cycle 12). BattleManager.current_combatant is stale/null during execution — cowir-main's showcase gate fix (57269663) proved it for one reader; this field is the same escape valve for _on_damage_dealt and _play_ability_animation. Set on action_executing, cleared on action_executed so a signal firing outside an action (status tick from round-end, reactive counter) never gets a stale attribution.
@@ -779,6 +782,7 @@ func _on_dialogue_finished() -> void:
 	# Only the pre-battle intro sets this. low_hp and defeat share the signal and must not call start_battle.
 	var start_fight: bool = _waiting_for_dialogue
 	_waiting_for_dialogue = false
+	_boss_line_seen_ms = 0
 	# Re-show the command menu the dialogue hid — only mid-selection (never resurrect it over a victory screen).
 	if BattleManager and BattleManager.is_selecting():
 		set_command_menu_visible(true)
@@ -3659,7 +3663,7 @@ func _tick_menu_watchdog() -> void:
 	if not (pc in bm.player_party):
 		_reset_menu_watchdog()
 		return
-	if is_instance_valid(active_win98_menu) and active_win98_menu.visible:
+	if _a_boss_line_owns_the_screen() or (is_instance_valid(active_win98_menu) and active_win98_menu.visible):
 		_reset_menu_watchdog()
 		return
 	var now: int = Time.get_ticks_msec()
@@ -3726,6 +3730,20 @@ func _menu_wd_diag(pc: Combatant) -> String:
 func _reset_menu_watchdog() -> void:
 	_menu_wd_started_ms = 0
 	_menu_wd_retries = 0
+
+
+## A boss line mid-selection hides the menu ON PURPOSE (BattleCommandMenu spawns it hidden,
+## _on_dialogue_finished re-shows it). Counting that as a wedge cost a slow reader their turn:
+## 2.5s per retry, three retries, then the terminal fallback autobattles the turn away.
+## BOUNDED: a line that never hides must not disarm the one net that keeps a battle un-wedgeable.
+func _a_boss_line_owns_the_screen() -> bool:
+	if not (_battle_dialogue != null and is_instance_valid(_battle_dialogue) and _battle_dialogue.visible):
+		_boss_line_seen_ms = 0
+		return false
+	var now: int = Time.get_ticks_msec()
+	if _boss_line_seen_ms == 0:
+		_boss_line_seen_ms = now
+	return now - _boss_line_seen_ms < BOSS_LINE_GRACE_MS
 
 
 ## Removed (struktured 2026-10-03): confirm on the Auto row now runs auto immediately and
