@@ -1,7 +1,9 @@
 extends GutTest
 
-## The party voice pack: 25 clips, voice_<job>_<trigger>, one per scripted trigger_voices
-## line. struktured heard the five casting samples 2026-08-22 and the pack shipped on that.
+## The party voice pack: voice_<job>_<trigger>, one clip per scripted trigger_voices line. NO COUNT
+## PINNED HERE ON PURPOSE — it read "25 clips" from 2026-08-22 until 2026-10-29, by which point the
+## pack was 720. The arms below derive the figure and the floor further down is a floor, not a total.
+## struktured heard the five casting samples 2026-08-22 and the pack shipped on that.
 ##
 ## THE COUPLING IS THE FRAGILE PART, not the assets. BattleScene builds the key at runtime
 ## as "voice_%s_%s" % [job_id, voice_trigger] and SoundManager is manifest-gated, so a
@@ -14,97 +16,22 @@ const MANIFEST := "res://data/sfx_manifest.json"
 const PERSONAS := "res://data/job_personas.json"
 
 ## Lines authored ahead of their clip, named one by one with the reason — NOT a suppression flag.
-## @cowir-story added 30 moment lines on 2026-10-12 and 24 were cut on the free engine the same day.
-## These six are the Fighter's, and they are his call, not a lane's: struktured ruled the Fighter
-## stays on ElevenLabs Harry ("I is the best but elevenlabs is just SOO much better... I'm not saying
-## forever, I'm saying its the bar we need to meet"), so recasting them free contradicts the ruling
-## and cutting them on ElevenLabs spends credits nobody authorised. Until he says which, the line
-## plays with its text and no audio — exactly as all 30 did before the other 24 landed.
+## BOTH LISTS ARE EMPTY AS OF 2026-10-29: every scripted trigger line now has a clip. The mechanism
+## stays because the next authored-ahead line needs it — an entry here is an EXPLANATION, exact in
+## both directions, so a new unvoiced line reds until someone names it and the day its clip lands
+## the stale entry reds too. You cannot silence this guard green, only explain it green.
 ##
-## The set is EXACT in BOTH directions, which is what makes it an explanation rather than a mute
-## button: a SEVENTH unvoiced line reds, and the day these six are cut the stale entries red too and
-## this block must go with them. You cannot silence this guard green, only explain it green.
-const AWAITING_HIS_CALL: Array[String] = [
-	"voice_fighter_turn_start_10",
-	"voice_fighter_turn_start_11",
-	"voice_fighter_turn_start_12",
-	"voice_fighter_turn_start_13",
-	"voice_fighter_turn_start_14",
-	"voice_fighter_turn_start_15",
-]
+## What was here and why it went: six Fighter turn_start lines awaited a CASTING ruling, and
+## struktured ruled the Fighter stays on ElevenLabs Harry ("I is the best but elevenlabs is just
+## SOO much better... I'm not saying forever, I'm saying its the bar we need to meet"). They were
+## cut on Harry under that ruling, so the reason is discharged rather than still pending.
+const AWAITING_HIS_CALL: Array[String] = []
 
-## Lines authored 2026-10-28 on struktured's ask for quips that react to a level-up, a learned
-## ability, a crit and a kill. The engine side shipped with them; the clips are cowir-sfx's to cut and
-## nobody has authorised spending ElevenLabs credits on fifty new ones. Until they are cut each line
-## plays with its text and no audio, which is the documented fallback and still an improvement on the
-## moment having no line at all.
-##
-## SEPARATE from AWAITING_HIS_CALL on purpose: those six await a CASTING RULING he has to make, these
-## fifty await RECORDING that simply has not happened. Merging them would blur one exact set into
-## another and make both reasons unfalsifiable. Same contract as that block — exact in both
-## directions, so a fifty-first unvoiced line reds and each clip that lands reds its own stale entry.
-const AWAITING_RECORDING: Array[String] = [
-	"voice_fighter_victory_10",
-	"voice_fighter_victory_11",
-	"voice_fighter_victory_12",
-	"voice_fighter_victory_13",
-	"voice_fighter_crit_landed",
-	"voice_fighter_crit_landed_1",
-	"voice_fighter_crit_landed_2",
-	"voice_fighter_enemy_felled",
-	"voice_fighter_enemy_felled_1",
-	"voice_fighter_enemy_felled_2",
-	"voice_cleric_victory_25",
-	"voice_cleric_victory_26",
-	"voice_cleric_victory_27",
-	"voice_cleric_victory_28",
-	"voice_cleric_crit_landed",
-	"voice_cleric_crit_landed_1",
-	"voice_cleric_crit_landed_2",
-	"voice_cleric_enemy_felled",
-	"voice_cleric_enemy_felled_1",
-	"voice_cleric_enemy_felled_2",
-	"voice_mage_victory_25",
-	"voice_mage_victory_26",
-	"voice_mage_victory_27",
-	"voice_mage_victory_28",
-	"voice_mage_crit_landed",
-	"voice_mage_crit_landed_1",
-	"voice_mage_crit_landed_2",
-	"voice_mage_enemy_felled",
-	"voice_mage_enemy_felled_1",
-	"voice_mage_enemy_felled_2",
-	"voice_rogue_victory_25",
-	"voice_rogue_victory_26",
-	"voice_rogue_victory_27",
-	"voice_rogue_victory_28",
-	"voice_rogue_crit_landed",
-	"voice_rogue_crit_landed_1",
-	"voice_rogue_crit_landed_2",
-	"voice_rogue_enemy_felled",
-	"voice_rogue_enemy_felled_1",
-	"voice_rogue_enemy_felled_2",
-	"voice_bard_victory_25",
-	"voice_bard_victory_26",
-	"voice_bard_victory_27",
-	"voice_bard_victory_28",
-	"voice_bard_crit_landed",
-	"voice_bard_crit_landed_1",
-	"voice_bard_crit_landed_2",
-	"voice_bard_enemy_felled",
-	"voice_bard_enemy_felled_1",
-	"voice_bard_enemy_felled_2",
-	"voice_fighter_victory_14",
-	"voice_fighter_victory_15",
-	"voice_cleric_victory_29",
-	"voice_cleric_victory_30",
-	"voice_mage_victory_29",
-	"voice_mage_victory_30",
-	"voice_rogue_victory_29",
-	"voice_rogue_victory_30",
-	"voice_bard_victory_29",
-	"voice_bard_victory_30",
-]
+## Sixty fight-aware quip lines (crit_landed, enemy_felled and the six victory-outcome tags) were
+## authored 2026-10-28 and sat here unvoiced; all sixty were cut 2026-10-29 — 48 on the free engine
+## in each job's own cast voice, 12 Fighter lines on ElevenLabs Harry per the ruling above — so this
+## list is empty and the arms below now check every line against a clip that exists.
+const AWAITING_RECORDING: Array[String] = []
 
 
 func _sfx() -> Dictionary:
