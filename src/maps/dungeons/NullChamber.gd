@@ -129,6 +129,11 @@ func _get_dungeon_ambient() -> Color:
 	return Color(0.22, 0.19, 0.32)
 
 
+## Torch: no source, just the parts still being rendered
+func _get_torch_tint() -> Color:
+	return Color(0.90, 0.86, 0.98)
+
+
 func _get_ambient_fx_theme() -> String:
 	return "shadow"
 
