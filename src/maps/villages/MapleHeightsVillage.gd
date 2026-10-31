@@ -494,3 +494,12 @@ func _place_masterites() -> void:
 	tempo.cutscene_id = "world2_tempo_intro"
 	tempo.position = Vector2(11 * TILE_SIZE,7 * TILE_SIZE)
 	npcs.add_child(tempo)
+
+
+## Ambient walkers: their lines are derived from this map's ground (BaseVillage._walker_runs).
+func _get_ambient_walkers() -> Array:
+	return [
+		{"name": "Power-Walker Deb", "archetype": "noblewoman", "line": "Two laps around the cul-de-sac! Ten thousand steps! Shoes from the catalog!"},
+		{"name": "Paper Route Kenny", "archetype": "child", "line": "Gotta finish before the dog wakes up. The dog always wakes up."},
+		{"name": "Lawn Guy Randy", "archetype": "farmer", "line": "Mowed it Tuesday. It's Thursday. It knows."},
+	]

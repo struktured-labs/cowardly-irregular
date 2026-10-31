@@ -209,6 +209,8 @@ func _setup_buildings() -> void:
 	# Row 1 is the upper ledge and it is ONE tile tall, so a prop there is a wall across it
 	_add_prop(VillagePropScript.Kind.CRATE, Vector2i(10, 2))
 	_add_prop(VillagePropScript.Kind.BARREL, Vector2i(20, 2))
+	## LAST, so it defers to every building above. Rusted and galvanised sheet.
+	_spawn_house_facades(["I", "G", "C"], [Color(0.50, 0.30, 0.20), Color(0.40, 0.42, 0.44)], "corrugated")
 
 
 func _setup_treasures() -> void:
@@ -383,3 +385,12 @@ func _place_masterites() -> void:
 	curator.cutscene_id = "world3_curator_intro"
 	curator.position = Vector2(8 * TILE_SIZE,3 * TILE_SIZE)
 	npcs.add_child(curator)
+
+
+## Ambient walkers: their lines are derived from this map's ground (BaseVillage._walker_runs).
+func _get_ambient_walkers() -> Array:
+	return [
+		{"name": "Night-Shift Ola", "archetype": "young_woman", "line": "Clocked out at dawn. Clocked in at dawn. Same dawn? Hard to say anymore."},
+		{"name": "Rivet Counter Hobb", "archetype": "old_man", "line": "Four million and twelve. Four million and thirteen. Don't talk to me."},
+		{"name": "Lunch-Pail Tess", "archetype": "child", "line": "Bringing Dad his lunch. It's a sandwich. It's always a sandwich."},
+	]
