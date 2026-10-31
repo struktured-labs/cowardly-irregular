@@ -1374,9 +1374,17 @@ def align_import_loops(track_keys: list) -> None:
     if not track_keys:
         return
     print("  Importing so Godot writes the .import sidecars...")
+    # ⛔ SANDBOXED user://. `--import` is EDITOR-CLASS -- it carries the same E flag as
+    # --editor, and --headless means no window, not "not the editor". Unsandboxed it rotates
+    # struktured's live godot.log crash trace and can write .recovery_mode_lock into his
+    # profile. The sidecars this wants land in res:// either way, so the redirect costs
+    # nothing. Caught by tools/check_user_data_sandboxed.py once its corpus included python.
+    sandbox = PROJECT_ROOT / "tmp" / "xdg"
+    sandbox.mkdir(parents=True, exist_ok=True)
     subprocess.run(
         ["godot", "--headless", "--audio-driver", "Dummy", "--import", "--quit"],
         cwd=str(PROJECT_ROOT), capture_output=True, timeout=900,
+        env={**os.environ, "XDG_DATA_HOME": str(sandbox)},
     )
     manifest = json.loads((PROJECT_ROOT / "data" / "music_manifest.json").read_text())["tracks"]
     fixed, unresolved = [], []
