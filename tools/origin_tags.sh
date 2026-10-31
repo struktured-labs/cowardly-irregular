@@ -48,6 +48,8 @@
 #        The reason goes to STDERR, prefixed "[LABEL]": every caller runs this inside $(...),
 #        so a global set here would die with the subshell, and stderr is what reaches the log.
 # Env:   OT_GIT (git) · OT_REMOTE (origin) · OT_RETRIES (3)
+#        OT_TERMINUS: the ref-order-LAST tag a complete reply must contain. Unset = derived
+#        from this repo's local tags; "-" = off (the selftest's existing arms).
 #        OT_RETRY_DELAY (falls back to PUB_STALE_RETRY_DELAY, then 2s)
 #
 # Usage: tools/origin_tags.sh --selftest
@@ -60,7 +62,28 @@ _ot_older() {
 origin_newest_tag() {
     local label="${1:-tags}" want="${2:-}" floor="${3:-}"
     local tries="${OT_RETRIES:-3}" delay="${OT_RETRY_DELAY:-${PUB_STALE_RETRY_DELAY:-2}}"
-    local raw refs ec t try why
+    local raw refs ec t try why term
+    # ⛔ TERMINUS — WANT and FLOOR both ask "is a tag I KNOW listed / not undercut", and a
+    # truncated reply passes both whenever the cut falls AFTER the known tag. ls-remote prints
+    # refs in BYTE order, so ".745" sorts before ".75"/".8"/".9": measured 2026-10-31 on the live
+    # reply, refs/tags/v3.33.745-alpha was line 1198 of 1228 and .746 — the next tag — sorts in
+    # the first of the 30 lines after it. A cut there keeps WANT/FLOOR, drops the newer tag, and
+    # store_status reads CURRENT while the store is BEHIND. Short replies are real and bursty
+    # (5 of 39 polls in one hour that night, 1046 and 986 lines vs a true 1228, all ec 0).
+    # A COMPLETE reply always reaches the ref-order-last tag, so require it. Taken from this
+    # repo's local tags (byte order, LC_ALL=C, as git prints), the same source reap's FLOOR
+    # uses; a stale local list only makes the anchor earlier, never wrong. Outside a repo there
+    # is no anchor and the resolver behaves exactly as before.
+    # ⛔ ONLY WHEN OT_GIT IS UNSET. The anchor must come from the same universe as the reply. A
+    # caller that fakes the remote through OT_GIT (store_status's selftest) is answered from a
+    # fixture, and this repo's real tags are not that fixture's tags: the first version derived
+    # v3.33.99-alpha there and turned 4 of its 25 arms STALE. reap fakes it the other way
+    # (OT_REMOTE = a fixture repo, real git), where local tags ARE the remote's, so it keeps one.
+    term="${OT_TERMINUS-}"
+    if [ -z "$term" ] && [ -z "${OT_GIT:-}" ]; then
+        term="$(git tag -l 'v3.33.*' 2>/dev/null | grep -E '^v3\.33\.[0-9]+-alpha$' | LC_ALL=C sort | tail -1)"
+    fi
+    [ "$term" = "-" ] && term=""
     for try in $(seq 1 "$tries"); do
         raw="$("${OT_GIT:-git}" ls-remote --tags "${OT_REMOTE:-origin}" 'refs/tags/v3.33.*' 2>&1)"; ec=$?
         if [ "$ec" -ne 0 ]; then
@@ -97,6 +120,8 @@ origin_newest_tag() {
             why="${want} not among them"
         elif [ -n "$floor" ] && _ot_older "$t" "$floor"; then
             why="its newest ${t} is OLDER than ${floor}, which has already shipped"
+        elif [ -n "$term" ] && ! printf '%s\n' "$refs" | awk -v w="refs/tags/${term}" '$1 == w { f = 1 } END { exit !f }'; then
+            why="it stops before ${term}, the last tag in ref order, so it was cut short (a newer tag sorts in that gap)"
         fi
         if [ -z "$why" ]; then
             printf '%s' "$t"
@@ -147,7 +172,13 @@ FAKE
         local name="$1" wec="$2" wout="$3" wcalls="$4" want="$5" floor="$6"; shift 6
         _mkgit "$@"
         local out ec calls bad=""
-        out="$(OT_GIT="$fake" OT_RETRY_DELAY=0 origin_newest_tag selftest "$want" "$floor" 2>"$dir/err")"; ec=$?
+        # ARM_PATHGIT: real git with only ls-remote faked (a PATH wrapper), OT_GIT unset — the
+        # only honest way to test the derived anchor, which is off whenever OT_GIT is set.
+        out="$(cd "${ARM_CWD:-.}" && if [ -n "${ARM_PATHGIT:-}" ]; then
+                   PATH="$dir/pathgit:$PATH" OT_TERMINUS="${ARM_TERM--}" OT_RETRY_DELAY=0 origin_newest_tag selftest "$want" "$floor"
+               else
+                   OT_TERMINUS="${ARM_TERM--}" OT_GIT="$fake" OT_RETRY_DELAY=0 origin_newest_tag selftest "$want" "$floor"
+               fi 2>"$dir/err")"; ec=$?
         calls="$(cat "$ctr")"
         [ "$ec" -eq "$wec" ]       || bad="exit $ec (wanted $wec)"
         [ "$out" = "$wout" ]       || bad="${bad}${bad:+; }stdout '$out' (wanted '$wout')"
@@ -197,9 +228,32 @@ FAKE
     # ...and it cannot VOUCH for a short list by naming the wanted tag.
     _arm "quoted WANT does not vouch for a short list" 3 ""   3 "$T" ""             quotedwant
     _arm "only junk -> no tag (2), not a junk tag"     2 ""   1 ""  ""              onlyjunk
+    # TERMINUS. In ref order 701 < 702 < 98 < 99, so a PREFIX cut right after 701 keeps WANT=701
+    # and FLOOR=701 and loses 702: before the anchor this returned .701 with ec 0.
+    _reply 615 616 673 674 699 700 701 702 98 99 > "$dir/fullt"
+    _reply 615 616 673 674 699 700 701             > "$dir/cut701"
+    ARM_TERM=v3.33.99-alpha _arm "TERMINUS: cut after WANT -> STALE, not .701" 3 "" 3 "$T" "$T" cut701
+    ARM_TERM=v3.33.99-alpha _arm "TERMINUS: cut then full -> re-asked, .702"   0 v3.33.702-alpha 2 "$T" "$T" cut701 fullt
+    ARM_TERM=v3.33.99-alpha _arm "TERMINUS: full reply resolves at once"       0 v3.33.702-alpha 1 "$T" "$T" fullt
+    # DERIVED (OT_TERMINUS unset) from a throwaway repo's local tags, byte order: {5, 98, 615}
+    # -> 98. So the arm judges the derivation, not whatever tags the selftest's own repo holds.
+    git init -q "$dir/repo" && git -C "$dir/repo" -c user.email=t@t -c user.name=t commit -q --allow-empty -m t \
+        && for n in 5 98 615; do git -C "$dir/repo" tag "v3.33.${n}-alpha"; done
+    _reply 5 615 616 98 > "$dir/has98"; _reply 5 615 616 > "$dir/no98"
+    mkdir -p "$dir/pathgit"; local realgit; realgit="$(command -v git)"
+    printf '#!/usr/bin/env bash\n[ "$1" = ls-remote ] && exec "%s" "$@"\nexec "%s" "$@"\n' "$fake" "$realgit" > "$dir/pathgit/git"
+    chmod +x "$dir/pathgit/git"
+    ARM_PATHGIT=1 ARM_TERM="" ARM_CWD="$dir/repo" _arm "TERMINUS derived from local tags: present" 0 v3.33.616-alpha 1 "" "" has98
+    ARM_PATHGIT=1 ARM_TERM="" ARM_CWD="$dir/repo" _arm "TERMINUS derived from local tags: cut"     3 "" 3 "" "" no98
+    # THE store_status REGRESSION: a faked remote (OT_GIT) inside a repo WITH tags derives no
+    # anchor, so a fixture reply that lacks the repo's last tag is not called short.
+    ARM_TERM="" ARM_CWD="$dir/repo" _arm "OT_GIT fake in a tagged repo -> no anchor" 0 v3.33.616-alpha 1 "" "" no98
+    # Outside any repo there is no anchor: exactly the old behaviour, by design.
+    mkdir -p "$dir/norepo"
+    ARM_PATHGIT=1 ARM_TERM="" ARM_CWD="$dir/norepo" GIT_CEILING_DIRECTORIES="$dir" _arm "no repo -> no anchor, old behaviour" 0 v3.33.616-alpha 1 "" "" no98
     # The retry budget is the env's, not a constant.
     _mkgit short674
-    OT_GIT="$fake" OT_RETRY_DELAY=0 OT_RETRIES=5 origin_newest_tag selftest "$T" "" >/dev/null 2>&1
+    OT_TERMINUS=- OT_GIT="$fake" OT_RETRY_DELAY=0 OT_RETRIES=5 origin_newest_tag selftest "$T" "" >/dev/null 2>&1
     if [ "$(cat "$ctr")" -eq 5 ]; then pass=$((pass+1)); printf '  ok    %-46s 5 call(s)\n' "OT_RETRIES=5 is honoured"
     else fail=$((fail+1)); printf '  FAIL  %-46s %s call(s)\n' "OT_RETRIES=5 is honoured" "$(cat "$ctr")"; fi
 
