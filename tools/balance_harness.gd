@@ -241,6 +241,8 @@ func _init() -> void:
 ## The game's own roster, reparented into the tree so recalculate_stats can reach
 ## /root/EquipmentSystem and /root/PassiveSystem. BAL_JOBS FILTERS this party; it never invents one.
 func _build_party(gl, want_jobs: PackedStringArray, level: int, gear: bool) -> Array:
+	if gear and _env("BAL_FROM_SAVE", "") != "":
+		return _build_party_from_save(gl, want_jobs, _env("BAL_FROM_SAVE", ""))
 	gl._create_party()
 	var party: Array = []
 	for c in gl.party.duplicate():
@@ -321,6 +323,56 @@ func _equip_lens(party: Array) -> void:
 	if me.is_empty():
 		print("[BAL] the lens equipped but get_lens_meta_effects(%s) is EMPTY — the floor would not fire" % key)
 		_fail += 1
+
+
+## Why a BAL_FROM_SAVE path may not be read, or "" if it is a copy: his live profile is never an input.
+static func save_path_refusal(path: String, user_dir: String) -> String:
+	if path.strip_edges() == "":
+		return "no path given"
+	if path.begins_with("user://"):
+		return "'%s' is inside user:// -- copy the save out first" % path
+	var full := path.simplify_path()
+	if user_dir != "" and full.begins_with(user_dir.simplify_path().trim_suffix("/") + "/"):
+		return "'%s' is under this run's user data dir %s" % [path, user_dir]
+	if "/app_userdata/" in full:
+		return "'%s' is inside a godot app_userdata profile -- copy the save out first" % path
+	return ""
+
+
+## BAL_FROM_SAVE=<save.json>: his party exactly as saved, rebuilt by the game's own load path (levels from the save).
+func _build_party_from_save(gl, want_jobs: PackedStringArray, path: String) -> Array:
+	var refusal := save_path_refusal(path, OS.get_user_data_dir())
+	if refusal != "":
+		_die("BAL_FROM_SAVE refused: %s" % refusal)
+		return []
+	var save: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
+	if not (save is Dictionary) or not ((save as Dictionary).get("party") is Array):
+		_die("BAL_FROM_SAVE '%s' has no party array" % path)
+		return []
+	var gs = root.get_node("GameState")
+	gs.player_party.clear()
+	for entry in (save as Dictionary)["party"]:
+		if entry is Dictionary:
+			gs.player_party.append((entry as Dictionary).duplicate(true))
+	if not gl._restore_party_from_save_data():
+		_die("GameLoop._restore_party_from_save_data refused '%s'" % path)
+		return []
+	var party: Array = []
+	for c in gl.party.duplicate():
+		gl.remove_child(c)
+		var jid: String = str((c.job as Dictionary).get("id", "")) if c.job is Dictionary else ""
+		if not want_jobs.is_empty() and not want_jobs.has(jid):
+			c.free()
+			continue
+		root.add_child(c)
+		c.recalculate_stats()
+		c.current_hp = c.max_hp
+		c.current_mp = c.max_mp
+		c.is_alive = true
+		party.append(c)
+	gl.party.clear()
+	_equip_lens(party)
+	return party
 
 
 func _free_party(party: Array) -> void:
