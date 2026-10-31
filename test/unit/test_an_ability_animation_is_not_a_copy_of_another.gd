@@ -105,7 +105,7 @@ func test_the_composed_abilities_have_their_own_art() -> void:
 	var composed := ["rogue/backstab", "rogue/mug", "rogue/steal", "rogue/flee",
 		"cleric/heal", "cleric/buff", "cleric/raise", "bard/discord"]
 	for key in composed:
-		var parts := key.split("/")
+		var parts: PackedStringArray = str(key).split("/")
 		assert_true(_hashes(parts[0]).has(parts[1]), "CONTROL: %s is on disk and readable" % key)
 		assert_false(dup.has(key),
 			"%s is a byte-copy again -- a regeneration or a revert put another animation's art back" % key)
