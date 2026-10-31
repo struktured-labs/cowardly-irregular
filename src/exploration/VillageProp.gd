@@ -2,7 +2,7 @@ class_name VillageProp
 extends Node2D
 ## Y-sorted procedural prop: origin at the bottom-centre of its base cell, art drawn upward, footprint cells become a StaticBody2D on the wall layer.
 
-enum Kind { TREE, LAMP_POST, BARREL, CRATE, STALL, FENCE, WELL, BANNER, CART, PLANTER }
+enum Kind { TREE, LAMP_POST, BARREL, CRATE, STALL, FENCE, WELL, BANNER, CART, PLANTER, HOUSE }
 
 const TILE := 32
 
@@ -12,12 +12,17 @@ const FOOTPRINTS := {
 	Kind.CRATE: [Vector2i(0, 0)], Kind.STALL: [Vector2i(0, 0), Vector2i(1, 0)], Kind.FENCE: [Vector2i(0, 0)],
 	Kind.WELL: [Vector2i(0, 0), Vector2i(1, 0)], Kind.BANNER: [], Kind.CART: [Vector2i(0, 0), Vector2i(1, 0)],
 	Kind.PLANTER: [Vector2i(0, 0)],
+	## HOUSE blocks nothing of its own: its cells are already WALL tiles in the village's
+	## map_data, and a second collider on the same cells would be two sources for one fact.
+	Kind.HOUSE: [],
 }
 ## Drawn size in tiles (w, h); the art grows UP from the base row
 const SIZES := {
 	Kind.TREE: Vector2i(1, 3), Kind.LAMP_POST: Vector2i(1, 2), Kind.BARREL: Vector2i(1, 1), Kind.CRATE: Vector2i(1, 1),
 	Kind.STALL: Vector2i(2, 2), Kind.FENCE: Vector2i(1, 1), Kind.WELL: Vector2i(2, 2), Kind.BANNER: Vector2i(1, 2),
 	Kind.CART: Vector2i(2, 2), Kind.PLANTER: Vector2i(1, 1),
+	## A default only: a house is sized to the building block it covers, via size_tiles.
+	Kind.HOUSE: Vector2i(3, 4),
 }
 
 const WOOD := Color(0.45, 0.30, 0.16)
@@ -36,6 +41,16 @@ var kind: int = Kind.BARREL
 var sheet_key: String = ""
 ## Local point a lamp should sit at (lamp posts: the glass head)
 var light_anchor: Vector2 = Vector2.ZERO
+## Per-instance size in tiles, overriding SIZES when non-zero. Buildings are not one size:
+## a facade is cut to the block it covers, and the extra row above the block is the roof
+## the player walks behind.
+var size_tiles: Vector2i = Vector2i.ZERO
+## Roof colour. Villages alternate it down a row so three identical houses read as three
+## houses rather than as one long wall -- the trick the SNES towns use to get variety for free.
+var roof_color: Color = Color(0.72, 0.20, 0.18)
+## Gable (a point) instead of a hip (a ridge). Alternated with the colour, a row of identical blocks
+## gets two independent axes of variety from one footprint.
+var roof_peaked: bool = false
 
 
 static func create(k: int, base_cell: Vector2i) -> VillageProp:
@@ -54,7 +69,7 @@ func footprint_cells(base_cell: Vector2i) -> Array:
 
 
 func _ready() -> void:
-	var size: Vector2i = SIZES[kind]
+	var size: Vector2i = size_tiles if size_tiles != Vector2i.ZERO else SIZES[kind]
 	var img: Image = TileSheetManifest.region(sheet_key, "props", Kind.keys()[kind], size) if sheet_key != "" else null
 	if img == null:
 		img = Image.create(size.x * TILE, size.y * TILE, false, Image.FORMAT_RGBA8)
@@ -124,6 +139,8 @@ func _paint(img: Image, size: Vector2i) -> void:
 			img.fill_rect(Rect2i(w - 9, h - 44, 3, 22), WOOD)
 			for i in range(0, w, 8):
 				img.fill_rect(Rect2i(i, h - 52, 8, 10), CLOTH_A if (i / 8) % 2 == 0 else CLOTH_B)
+		Kind.HOUSE:
+			_paint_house(img, size)
 		Kind.FENCE:
 			img.fill_rect(Rect2i(2, 10, 4, 22), WOOD)
 			img.fill_rect(Rect2i(26, 10, 4, 22), WOOD)
@@ -152,6 +169,48 @@ func _paint(img: Image, size: Vector2i) -> void:
 			_disc(img, Vector2i(10, 12), 5, LEAF)
 			_disc(img, Vector2i(18, 10), 6, LEAF_LIGHT)
 			_disc(img, Vector2i(24, 13), 4, CLOTH_A)
+
+
+## A facade: roof above, wall below, drawn upward so the player walks BEHIND the roof.
+## The elevation is the whole point -- a top-down block of wall tiles reads as a map, a drawn
+## face reads as a town. Its cells already collide as WALL tiles, so this only ever draws.
+func _paint_house(img: Image, size: Vector2i) -> void:
+	var w := size.x * TILE
+	var h := size.y * TILE
+	var roof_h: int = int(h * 0.5)
+	var dark := roof_color.darkened(0.45)
+	var light := roof_color.lightened(0.18)
+	## A PITCHED roof, not a band: a rectangle of stripes reads as an awning. Hipped narrows to a
+	## ridge, peaked rises to a gable point; the corners it leaves are the silhouette.
+	for y in range(roof_h):
+		var t: float = float(y) / float(max(1, roof_h - 1))
+		var half: float = (w / 2.0) * (lerpf(0.10, 1.0, t) if roof_peaked else lerpf(0.66, 1.0, t))
+		var x0: int = clampi(int(w / 2.0 - half), 0, w - 1)
+		var x1: int = clampi(int(w / 2.0 + half), x0 + 1, w)
+		var course: int = y / 5
+		img.fill_rect(Rect2i(x0, y, x1 - x0, 1), dark if y % 5 == 4 else (light if course % 2 == 0 else roof_color))
+		if y % 5 != 4:
+			for jx in range(x0 + (0 if course % 2 == 0 else 4), x1, 8):
+				img.set_pixel(jx, y, dark)
+		img.set_pixel(x0, y, dark)
+		img.set_pixel(x1 - 1, y, dark)
+	img.fill_rect(Rect2i(0, roof_h - 3, w, 3), dark)
+	img.fill_rect(Rect2i(0, roof_h, w, h - roof_h), STONE)
+	img.fill_rect(Rect2i(0, roof_h, w, 3), STONE_DARK)
+	var bays: int = max(1, size.x)
+	var bay_w: float = w / float(bays)
+	for b in range(bays + 1):
+		img.fill_rect(Rect2i(clampi(int(b * bay_w) - 2, 0, max(0, w - 4)), roof_h, 4, h - roof_h), WOOD)
+	img.fill_rect(Rect2i(0, h - 6, w, 6), WOOD)
+	## Windows only, never a door: the real doors live on the ground row this art does not cover,
+	## and a painted one beside them would be a second entrance that opens onto nothing.
+	for b in range(bays):
+		var cx: int = int((b + 0.5) * bay_w)
+		if h - roof_h < 26:
+			continue
+		img.fill_rect(Rect2i(cx - 8, roof_h + 10, 16, 14), WOOD)
+		img.fill_rect(Rect2i(cx - 6, roof_h + 12, 12, 10), GLASS)
+		img.fill_rect(Rect2i(cx - 6, roof_h + 16, 12, 2), WOOD)
 
 
 func _disc(img: Image, c: Vector2i, r: int, col: Color) -> void:
