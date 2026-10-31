@@ -148,13 +148,13 @@ func test_the_speed_ladder_is_read_from_the_const() -> void:
 	assert_not_null(bs, "BattleScene.gd must be loadable -- the old comment here denied it")
 	if bs == null:
 		return
-	assert_eq(bs.BATTLE_SPEEDS.size(), 7, "the ladder is seven rungs")
+	assert_eq(bs.BATTLE_SPEEDS.size(), 8, "the ladder is eight rungs (1.5x joined 2026-10-30)")
 	## Engine values, not labels: 8.0 and 16.0 are the top two rungs, LABELLED 32x and 64x. The tests
 	## this replaces conflated the two units, which is how "8x" became a pre-v3 expectation.
 	assert_true(8.0 in bs.BATTLE_SPEEDS, "engine 8.0 (labelled 32x) is a rung")
 	assert_true(16.0 in bs.BATTLE_SPEEDS, "engine 16.0 (labelled 64x) is a rung")
-	assert_eq(bs.BATTLE_SPEED_LABELS[5], "32x", "engine 8.0 is labelled 32x since the v3 relabel")
-	assert_eq(bs.BATTLE_SPEED_LABELS[6], "64x", "engine 16.0 is labelled 64x since the v3 relabel")
+	assert_eq(bs.BATTLE_SPEED_LABELS[bs.BATTLE_SPEEDS.find(8.0)], "32x", "engine 8.0 is labelled 32x since the v3 relabel")
+	assert_eq(bs.BATTLE_SPEED_LABELS[bs.BATTLE_SPEEDS.find(16.0)], "64x", "engine 16.0 is labelled 64x since the v3 relabel")
 
 
 ## Turbo mode, read from the live autoload. BattleManager is an autoload (project.godot:32), so the
