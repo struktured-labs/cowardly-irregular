@@ -4,6 +4,7 @@
 #   tools/box_busy.sh            exit 0 = box free · 1 = busy (the reason is printed) · 2 = usage
 #   tools/box_busy.sh --wait N   poll every 20s for up to N seconds, then answer as above
 #   tools/box_busy.sh --publish  exit 0 = a publish is in flight (named, with its lane) · 1 = none
+#   tools/box_busy.sh --is-player PID  exit 0 = that pid is a player instance (bare `godot`), 1 = not
 #   tools/box_busy.sh --others   exit 0 = another lane has an engine up (count printed) · 1 = none
 #   tools/box_busy.sh --marker   print the BOX_MARKER path every box-protocol script must use
 #   tools/box_busy.sh --roots    print each _detached dir the publish scan reads (exit 1 = none exist)
@@ -259,6 +260,7 @@ if [ "${1:-}" = "--selftest" ]; then  # watch the answer flip, so a FREE is neve
   out="$(env "${PENV[@]}" "$0")"; e=$?
   [ "$e" = 0 ] || { echo "FAIL arm13: a bare-argv engine in the fold tree read BUSY (ec=$e): $out"; fails=1; }
   case "$out" in *"a player instance, not a gate"*) ;; *) echo "FAIL arm13b: FREE did not name the player: $out"; fails=1 ;; esac
+  "$0" --is-player "$PLAYER" || { echo "FAIL arm13c: --is-player said no to a bare-argv engine"; fails=1; }
   kill "$PLAYER" 2>/dev/null; wait "$PLAYER" 2>/dev/null
 
   A  # arm 14 THE CONTROL: same binary, ONE flag, same tree -> BUSY. Without it arm 13 passes for
@@ -268,6 +270,7 @@ if [ "${1:-}" = "--selftest" ]; then  # watch the answer flip, so a FREE is neve
   out="$(env "${PENV[@]}" "$0")"; e=$?
   [ "$e" = 1 ] || { echo "FAIL arm14: a FLAGGED engine in the fold tree read FREE (ec=$e) — the player skip is too wide: $out"; fails=1; }
   case "$out" in *"fold-tree godot running"*) ;; *) echo "FAIL arm14b: BUSY did not name the fold-tree engine: $out"; fails=1 ;; esac
+  "$0" --is-player "$GATE" && { echo "FAIL arm14c: --is-player said yes to a flagged engine"; fails=1; }
   kill "$GATE" 2>/dev/null; wait "$GATE" 2>/dev/null
   exec 9>&-
 
@@ -286,6 +289,10 @@ case "${1:-}" in
   ## checked FREE correctly and then ran a 250s sweep got a gate launched into it seconds later
   ## (@cowir-music, 2026-10-26). Neither instrument was wrong — there was no mutual exclusion at all,
   ## only a point-in-time check on each side. Exit 0 = busy, matching --publish.
+  ## The player test as a QUESTION, so the gate templates ask it instead of carrying a copy. rungate
+  ## had its own godot scan, and it held the .746 gate 35 min on struktured's game after this file
+  ## had already learned to tell a player from a gate. Two scans, one fact, and only one was fixed.
+  --is-player) [ -n "${2:-}" ] && [ "$(argv_len "$2")" = 1 ] && exit 0; exit 1 ;;
   --others) n="$(others)"; [ "${n:-0}" -gt 0 ] && { echo "other lanes' engines up: $n"; exit 0; }; exit 1 ;;
   --marker) printf '%s\n' "$BOX_MARKER"; exit 0 ;;
   --roots) n=0; for r in $(deploy_roots); do [ -d "$r" ] && { echo "$r"; n=$((n+1)); }; done
