@@ -150,6 +150,59 @@ func _function_body(code: String, signature: String) -> String:
 	return code.substr(at, (end - at) if end > at else -1)
 
 
+## What a won spotlight duel writes, pinned against its writer in GameLoop by test_the_walk_wins_duels_the_way_the_game_does.
+const DUEL_WIN_PREFIX := "cutscene_flag_spotlight_unlocked_"
+
+
+## Finishes an offered scene the way a PLAYER does, not just its completion flag: a duel it stages is WON, and a
+## scene the engine plays straight after it (the new-game chain) finishes too. Flag-only walks reported Harmonia's
+## intro reachable right after the prologue, a state no real game reaches, so they could not see 09775787e retire it
+## for every player (@cowir-adhoc, 2026-10-31).
+func _finish_like_a_player(cid: String) -> void:
+	GameState.game_constants[_completion_flag_of(cid)] = true
+	var director = autofree(load("res://src/cutscene/CutsceneDirector.gd").new())
+	for job in director.battle_duelists(cid):
+		GameState.game_constants[DUEL_WIN_PREFIX + str(job)] = true
+	var chained: String = str(_hard_chains().get(cid, ""))
+	if chained != "" and chained != cid:
+		_finish_like_a_player(chained)
+
+
+## Scene -> the scene a GameLoop finish handler plays straight after marking it complete, derived from the code.
+func _hard_chains() -> Dictionary:
+	var code: String = _gameloop_code()
+	var out: Dictionary = {}
+	var marked := RegEx.new()
+	marked.compile('_mark_story_cutscene_complete\\("([a-z0-9_]+)"\\)')
+	var played := RegEx.new()
+	played.compile('play_cutscene\\("([a-z0-9_]+)"\\)')
+	var handler := RegEx.new()
+	handler.compile("\\nfunc (_on_[a-z0-9_]+_finished)\\(")
+	for m in handler.search_all(code):
+		var body: String = _function_body(code, "func %s(" % m.get_string(1))
+		var a: RegExMatch = marked.search(body)
+		var b: RegExMatch = played.search(body)
+		if a != null and b != null:
+			out[a.get_string(1)] = b.get_string(1)
+	return out
+
+
+func test_the_walk_finishes_the_new_game_chain() -> void:
+	## _on_prologue_finished plays world1_chapter1 in the same breath, so no village entry ever sees the prologue alone.
+	var chains: Dictionary = _hard_chains()
+	assert_eq(str(chains.get("world1_prologue", "")), "world1_chapter1",
+		"the derivation must find the prologue -> chapter1 chain in GameLoop's finish handlers, found %s" % [chains])
+
+
+func test_the_walk_wins_duels_the_way_the_game_does() -> void:
+	## The prefix above is only true while GameLoop's duel-win writer uses it; a rename must red here, not walk on a dead flag.
+	assert_true(_gameloop_code().contains('"%s" + _pending_spotlight_unlock' % DUEL_WIN_PREFIX),
+		"GameLoop no longer writes %s<job> on a duel win, so the walk's won duels set a flag nothing reads" % DUEL_WIN_PREFIX)
+	var director = autofree(load("res://src/cutscene/CutsceneDirector.gd").new())
+	assert_eq(director.battle_duelists("world1_spotlight_cleric_ch1"), ["cleric"],
+		"CONTROL: the Cleric spotlight must stage a Cleric duel, or the walk wins nothing")
+
+
 ## Walks the beats a map offers until the intro is what the gate returns; "" if it never is.
 func _walk_to_intro(map_id: String, cid: String) -> bool:
 	var seen: Array[String] = []
@@ -160,7 +213,7 @@ func _walk_to_intro(map_id: String, cid: String) -> bool:
 		if got == "" or seen.has(got):
 			return false
 		seen.append(got)
-		GameState.game_constants[_completion_flag_of(got)] = true
+		_finish_like_a_player(got)
 	return false
 
 
@@ -309,7 +362,7 @@ func test_a_village_eventually_introduces_itself() -> void:
 			if got == "" or seen.has(got):
 				break
 			seen.append(got)
-			GameState.game_constants[_completion_flag_of(got)] = true
+			_finish_like_a_player(got)
 		if not reached:
 			unreachable.append("%s: played %s and never reached %s" % [map_id, seen, cid])
 	assert_eq(unreachable, ([] as Array[String]),
@@ -389,7 +442,7 @@ func _offered_on(map_id: String) -> Array[String]:
 		if got == "" or offered.has(got):
 			break
 		offered.append(got)
-		GameState.game_constants[_completion_flag_of(got)] = true
+		_finish_like_a_player(got)
 	return offered
 
 
