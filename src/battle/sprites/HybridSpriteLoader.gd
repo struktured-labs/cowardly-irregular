@@ -727,14 +727,18 @@ static func _load_external_sheet(sheet_data: Dictionary, job_id: String) -> Spri
 		sprite_frames.add_animation(anim_name)
 		var fps: float = dressed_fps(float(sheet_data.get("fps", 8)), sheet_path, base_sheet, int(frame_count), int(frame_width))
 		var durations: Array = []
-		if anim_name == "victory":
-			var declared = sheet_data.get("frame_durations_ms", {})
-			var authored = declared.get("victory", []) if declared is Dictionary else []
-			if authored is Array and authored.size() == frame_count:
-				durations = authored
-				fps = 1.0  # with fps 1, each frame's duration below is in SECONDS
-			else:
-				fps = victory_fps(int(frame_count), fps) / VICTORY_PACE
+		# Authored rhythm is read for ANY animation, not victory alone: an ability's anticipation and
+		# its impact frame both got 125 ms, which is the same flat-timing defect struktured rejected
+		# for victory on 2026-09-26. Only victory carries VICTORY_PACE (half speed) and the real-time
+		# rate in BattleAnimator; an ability keeps battle-speed scaling.
+		var declared = sheet_data.get("frame_durations_ms", {})
+		var authored = declared.get(anim_name, []) if declared is Dictionary else []
+		var pace: float = VICTORY_PACE if anim_name == "victory" else 1.0
+		if authored is Array and authored.size() == frame_count:
+			durations = authored
+			fps = 1.0  # with fps 1, each frame's duration below is in SECONDS
+		elif anim_name == "victory":
+			fps = victory_fps(int(frame_count), fps) / VICTORY_PACE
 		sprite_frames.set_animation_speed(anim_name, fps)
 		# Rest poses loop (weak breathes like idle); victory plays ONCE and holds its last frame (artist ruling 2026-09-26)
 		sprite_frames.set_animation_loop(anim_name, anim_name in ["idle", "weak"])
@@ -743,7 +747,7 @@ static func _load_external_sheet(sheet_data: Dictionary, job_id: String) -> Spri
 			var atlas = AtlasTexture.new()
 			atlas.atlas = texture
 			atlas.region = Rect2(i * frame_width, 0, frame_width, frame_height)
-			var d: float = float(durations[i]) * VICTORY_PACE / 1000.0 if not durations.is_empty() else 1.0
+			var d: float = float(durations[i]) * pace / 1000.0 if not durations.is_empty() else 1.0
 			sprite_frames.add_frame(anim_name, atlas, d)
 
 		loaded_any = true
