@@ -198,11 +198,16 @@ var forced_enemies: Array = []  # When set, spawn these specific enemies (e.g., 
 var encounter_enemies: Array = []  # When set, spawn these encounter enemies from exploration (e.g., ["clockwork_sentinel", "steam_rat"])
 var autogrind_enemy_data: Array = []  # When set, spawn pre-configured enemies from autogrind system
 
-## Battle speed settings
-## Battle speed recalibrated: old 0.5x is now labeled "1x" (the comfortable default)
-const BATTLE_SPEEDS: Array[float] = [0.25, 0.5, 1.0, 2.0, 4.0, 8.0, 16.0]
-const BATTLE_SPEED_LABELS: Array[String] = ["1x", "2x", "4x", "8x", "16x", "32x", "64x"]
-static var _battle_speed_index: int = 0  # persists across battles; index 0 = label "1x" (engine 0.25) — struktured 2026-07-11: the old 0.5x pacing IS the correct default
+## Battle speed settings. Labels are engine*4, so engine 0.25 reads "1x".
+## struktured 2026-10-30 (overriding his 2026-07-11 ruling that 1x is the default): "2x I find a bit
+## hard to see animations but 1x feels too slow" — so a 1.5x rung exists and IS the default.
+const BATTLE_SPEEDS: Array[float] = [0.25, 0.375, 0.5, 1.0, 2.0, 4.0, 8.0, 16.0]
+const BATTLE_SPEED_LABELS: Array[String] = ["1x", "1.5x", "2x", "4x", "8x", "16x", "32x", "64x"]
+const DEFAULT_BATTLE_SPEED_INDEX: int = 1
+const DEFAULT_BATTLE_SPEED: float = 0.375
+## The ladder before the 1.5x rung, for reading a battle_speed_index saved before speed_scale_v4.
+const LEGACY_V3_BATTLE_SPEEDS: Array[float] = [0.25, 0.5, 1.0, 2.0, 4.0, 8.0, 16.0]
+static var _battle_speed_index: int = DEFAULT_BATTLE_SPEED_INDEX  # persists across battles
 # Crit hitlag nests — two crits in the 80ms window and the second captured 0.1 as "normal"; depth-counted so only the outermost restores
 ## ⛔ THE COMMENT PROMISED THIS AND THE CODE NEVER DID IT. `_on_group_attack_executing`'s
 ## limit_break arm carried "# Stagger lunges slightly for visual impact" while every
@@ -723,19 +728,21 @@ func _update_speed_indicator() -> void:
 	var text = ""
 
 	match _battle_speed_index:
-		0:  # 1x - normal (white/cyan) — the default
+		0:  # 1x - slow (pale grey-cyan)
+			text = "[color=#7a9a9a]▸[/color] [color=#cfdede]%s[/color] [color=#5a7a7a]◂[/color]" % speed_label
+		1:  # 1.5x - normal (white/cyan) — the default
 			text = "[color=#88cccc]▸[/color] [color=#ffffff]%s[/color] [color=#66aaaa]◂[/color]" % speed_label
-		1:  # 2x - brisk (green)
+		2:  # 2x - brisk (green)
 			text = "[color=#66cc88]▸▸[/color] [color=#88ffaa]%s[/color] [color=#44aa66]◂◂[/color]" % speed_label
-		2:  # 4x - fast (yellow)
+		3:  # 4x - fast (yellow)
 			text = "[color=#ccaa44]▸▸[/color] [color=#ffcc00]%s[/color] [color=#aa8822]◂◂[/color]" % speed_label
-		3:  # 8x - turbo (orange)
+		4:  # 8x - turbo (orange)
 			text = "[color=#cc6622]▸▸▸[/color] [color=#ff6600]%s[/color] [color=#aa4400]◂◂◂[/color]" % speed_label
-		4:  # 16x - extreme (red)
+		5:  # 16x - extreme (red)
 			text = "[color=#cc2222]▸▸▸▸[/color] [color=#ff3300]%s[/color] [color=#aa1100]◂◂◂◂[/color]" % speed_label
-		5:  # 32x - very extreme (magenta)
+		6:  # 32x - very extreme (magenta)
 			text = "[color=#cc22cc]▸▸▸▸▸[/color] [color=#ff00ff]%s[/color] [color=#aa00aa]◂◂◂◂◂[/color]" % speed_label
-		6:  # 64x - maximum (bright magenta)
+		7:  # 64x - maximum (bright magenta)
 			text = "[color=#ff22ff]▸▸▸▸▸▸[/color] [color=#ff44ff]%s[/color] [color=#cc00cc]◂◂◂◂◂◂[/color]" % speed_label
 		_:
 			## An eighth tier would render BLANK here, not wrong: no arm sets `text`, so the readout
