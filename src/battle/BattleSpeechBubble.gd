@@ -417,12 +417,12 @@ func _build_tail(pointer: Polygon2D, bubble_size: Vector2, anchor_local: Vector2
 	var to: Vector2 = anchor_local - base
 	## Always leave downward: a head level with the bubble still reads from a tail that dips to it.
 	to.y = maxf(to.y, 10.0)
-	var tip: Vector2 = base + to.normalized() * minf(to.length(), TAIL_MAX_PX)
-	pointer.polygon = PackedVector2Array([
-		Vector2(base_cx - 8.0, bh - 2.0),
-		Vector2(base_cx + 8.0, bh - 2.0),
-		tip,
-	])
+	var dir: Vector2 = to.normalized()
+	var tip: Vector2 = base + dir * minf(to.length(), TAIL_MAX_PX)
+	## The base spans ACROSS the aim, not along the edge: aimed sideways at a head level with the bubble,
+	## an edge-aligned base made a sliver a few px thick (the 2026-10-31 Fighter shot showed no tail at all).
+	var half: Vector2 = Vector2(-dir.y, dir.x) * 8.0
+	pointer.polygon = PackedVector2Array([base - half, base + half, tip])
 
 ## Plays the line's audio (a synthesized stream wins over a shipped clip) and holds the bubble for as long as it lasts.
 func _play_voice(audio_key: String, voice_stream: AudioStream = null) -> void:

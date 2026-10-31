@@ -43,10 +43,17 @@ func test_a_near_head_is_reached_not_overshot() -> void:
 	assert_almost_eq(poly[2].distance_to(head), 0.0, 0.5, "a head within reach is where the tip lands")
 
 
-func test_the_base_stays_on_the_bottom_edge() -> void:
+func test_the_base_is_centred_on_the_bottom_edge() -> void:
 	var poly := _tail(Vector2(-150, BH + 150))
-	assert_almost_eq(poly[0].y, BH - 2.0, 0.01, "base on the bubble's bottom edge")
-	assert_almost_eq(poly[1].y, BH - 2.0, 0.01, "both base points")
+	assert_almost_eq(_base(poly).y, BH - 2.0, 0.01, "the base's midpoint sits on the bubble's bottom edge")
+
+
+## The 2026-10-31 W1 Fighter shot: head level with the bubble, tail aimed sideways, and nothing visible.
+## An edge-aligned base and a near-horizontal tip make a triangle a few px thick.
+func test_a_sideways_tail_is_a_wedge_not_a_sliver() -> void:
+	var poly := _tail(Vector2(BW + 240, BH - 20))
+	var area: float = absf((poly[1] - poly[0]).cross(poly[2] - poly[0])) * 0.5
+	assert_gt(area, 250.0, "a sideways tail must have body (area %.0f px^2); a 16px base and a tail this long make ~400" % area)
 
 
 func test_a_head_level_with_the_bubble_still_gets_a_downward_tail() -> void:
