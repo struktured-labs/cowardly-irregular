@@ -195,13 +195,18 @@ func test_the_name_grid_fits_inside_its_panel() -> void:
 	assert_not_null(box, "CONTROL: the name grid's painted background must exist")
 	if box == null:
 		return
+	## The border is a frame drawn 2px OUTSIDE the box on purpose, so it is judged against the panel, not the box.
 	var lowest := -9999.0
+	var frame_bottom := -9999.0
 	for c in grid.get_children():
 		if c is Control:
-			lowest = maxf(lowest, (c as Control).position.y + (c as Control).size.y)
+			var bottom: float = (c as Control).position.y + (c as Control).size.y
+			frame_bottom = maxf(frame_bottom, bottom)
+			if not (c is ColorRect and (c as ColorRect).position.y < 0.0):
+				lowest = maxf(lowest, bottom)
 	assert_gt(lowest, -9998.0, "CONTROL: the grid must draw something")
 	assert_lte(lowest, box.size.y,
 		"the grid draws down to %.0f and its box is %.0f tall" % [lowest, box.size.y])
-	assert_lte(grid.position.y + box.size.y, float(CreationScript.PANEL_HEIGHT),
-		"the grid sits at %.0f + %.0f and PANEL_HEIGHT is %d" % [
-			grid.position.y, box.size.y, CreationScript.PANEL_HEIGHT])
+	assert_lte(grid.position.y + frame_bottom, float(CreationScript.PANEL_HEIGHT),
+		"the grid's frame ends at %.0f + %.0f and PANEL_HEIGHT is %d" % [
+			grid.position.y, frame_bottom, CreationScript.PANEL_HEIGHT])
