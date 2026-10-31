@@ -205,3 +205,13 @@ func _setup_transitions_for_floor(floor_num: int) -> void:
 	junction.idle_text = "Brass conduit converges at a junction box, humming slightly out of time with the floor."
 	junction.position = (Vector2(4, 7) + Vector2(0.5, 0.5)) * TILE_SIZE
 	transitions.add_child(junction)
+
+
+## Ambient: furnace glow on brass
+func _get_dungeon_ambient() -> Color:
+	return Color(0.44, 0.36, 0.26)
+
+
+## Torch: gas mantle, yellower and steadier than flame
+func _get_torch_tint() -> Color:
+	return Color(1.0, 0.86, 0.56)

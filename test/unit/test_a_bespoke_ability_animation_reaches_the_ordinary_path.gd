@@ -7,15 +7,18 @@ extends GutTest
 ## because `_animate_melee_attack` took no ability argument. These arms pin WHICH path plays the
 ## named art, and the control pins that a sheet without the art is unchanged.
 
-const SCENE := preload("res://src/battle/BattleScene.gd")
+## The SCENE, not the script: a bare BattleScene.gd.new() has no UI tree, so every UI write in the action path
+## aborted (5 SCRIPT ERRORs per run: turn_info at BattleUIManager:970, then the turn-order strip at :1018/:1041)
+## while each arm's own asserts still scored. 25 other battle tests already build the .tscn; this one was the outlier.
+const SCENE := preload("res://src/battle/BattleScene.tscn")
 const MANIFEST := "res://data/sprite_manifest.json"
 const ABILITIES := "res://data/abilities.json"
 const STD_ANIMS := ["idle", "walk", "attack", "hit", "dead", "death", "cast", "defend", "item",
 	"victory", "defeat", "advance", "defer", "dash", "lunge", "run", "base", "weak"]
 
 var _scene
-var _saved_pp: Array = []
-var _saved_ep: Array = []
+const BattleStateGuard := preload("res://test/unit/helpers/battle_state.gd")
+var _bm_guard
 var _saved_scale: float = 1.0
 var _hero: Combatant
 var _foe: Combatant
@@ -75,10 +78,11 @@ func _rig(hero_anims: Array, foe_anims: Array) -> Array:
 
 func before_each() -> void:
 	AutobattleSystem._test_disable_persistence = true
-	_saved_pp = BattleManager.player_party.duplicate()
-	_saved_ep = BattleManager.enemy_party.duplicate()
+	## The real scene drives BattleManager into PLAYER_SELECTING, so the whole autoload is snapshotted, not just its parties.
+	_bm_guard = BattleStateGuard.new()
+	_bm_guard.snapshot()
 	_saved_scale = Engine.time_scale
-	_scene = SCENE.new()
+	_scene = SCENE.instantiate()
 	add_child_autofree(_scene)
 	_hero = _c("Fighter")
 	_foe = _c("Goblin")
@@ -92,8 +96,7 @@ func before_each() -> void:
 
 func after_each() -> void:
 	Engine.time_scale = _saved_scale
-	BattleManager.player_party.assign(_saved_pp.filter(func(x): return is_instance_valid(x)))
-	BattleManager.enemy_party.assign(_saved_ep.filter(func(x): return is_instance_valid(x)))
+	_bm_guard.restore()
 
 
 func _act(ability_id: String, targets: Array) -> void:

@@ -27,7 +27,7 @@ else
 fi
 printf '%s\n' "$PGMSG"
 ## Wait (bounded, 60 min) until no publish is in flight in ANY lane (tools/box_busy.sh --publish; a dead publish.pid does not count, and an answer it cannot give counts as busy) AND no godot runs. Not a load figure: ten idle sessions hold load near 9.
-for i in $(seq 240); do busy=0; why=""; pe=0; pb="$(tools/box_busy.sh --publish 2>/dev/null)" || pe=$?; [ "$pe" = 1 ] || { busy=1; why="$why publish:${pb:-box_busy exit $pe}"; }; for p in /proc/[0-9]*; do [ "$(readlink $p/exe 2>/dev/null)" = "/usr/bin/godot" ] && { busy=1; why="$why godot:${p#/proc/}@$(readlink $p/cwd 2>/dev/null)"; }; done; [ $busy -eq 0 ] && break; sleep 15; done
+for i in $(seq 240); do busy=0; why=""; pe=0; pb="$(tools/box_busy.sh --publish 2>/dev/null)" || pe=$?; [ "$pe" = 1 ] || { busy=1; why="$why publish:${pb:-box_busy exit $pe}"; }; for p in /proc/[0-9]*; do [ "$(readlink $p/exe 2>/dev/null)" = "/usr/bin/godot" ] && ! tools/box_busy.sh --is-player "${p#/proc/}" && { busy=1; why="$why godot:${p#/proc/}@$(readlink $p/cwd 2>/dev/null)"; }; done; [ $busy -eq 0 ] && break; sleep 15; done
 ## The wait is bounded, so it can expire with the box still busy: say so, or a contended gate reads as a quiet one.
 [ $busy -eq 0 ] || echo "WAIT EXPIRED after 60 min, gate started on a BUSY box:$why"
 echo "gate start load=$(cut -d' ' -f1-3 /proc/loadavg) at $(date -u +%H:%M:%SZ)"

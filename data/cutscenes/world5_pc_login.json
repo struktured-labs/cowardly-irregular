@@ -3,7 +3,7 @@
   "title": "Login",
   "world": 5,
   "trigger": "world5_pc_login",
-  "background": "prologue_forest",
+  "background": "node_prime",
   "description": "First steps in the digital world. Everything renders slightly late.",
   "steps": [
     {

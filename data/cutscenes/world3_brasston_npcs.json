@@ -4,7 +4,7 @@
   "world": 3,
   "keep_music": true,
   "trigger": "world3_brasston_entry",
-  "background": "steampunk_workshop",
+  "background": "brasston_square",
   "description": "Clockwork market town. Sprocket checks his watch and finds the time has moved differently than expected. Clem the Lamplighter arrives at exactly 6:47 PM. Citizens nod at exactly the same moment in their walk.",
   "steps": [
     {

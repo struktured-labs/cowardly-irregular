@@ -207,6 +207,9 @@ func _setup_buildings() -> void:
 	_add_prop(VillagePropScript.Kind.FENCE, Vector2i(3, 12))
 	_add_prop(VillagePropScript.Kind.WELL, Vector2i(20, 14))
 	_add_prop(VillagePropScript.Kind.TREE, Vector2i(24, 9))
+	## LAST, so it defers to every building above. Snow-laden roofs.
+	_spawn_house_facades(["L", "F", "C"], [Color(0.82, 0.88, 0.95), Color(0.36, 0.50, 0.66)], "timber")
+
 
 func _setup_treasures() -> void:
 	# 2x Hi-Potion behind lodge
@@ -347,3 +350,12 @@ func _setup_npcs() -> void:
 		"A rune cut into the pool's lip, melting the ice on a schedule. An expert hand cut it. Whoever paid never came here.",
 		"Meltwater runs from the pool above the village. Steady. Too steady.",
 		Vector2(12.5 * TILE_SIZE,2.5 * TILE_SIZE))
+
+
+## Ambient walkers: their lines are derived from this map's ground (BaseVillage._walker_runs).
+func _get_ambient_walkers() -> Array:
+	return [
+		{"name": "Ice-Cutter Sven", "archetype": "farmer", "line": "Cut the ice, haul the ice, sell the ice. Then it melts. Good business, ice."},
+		{"name": "Lantern Girl Saga", "archetype": "young_woman", "line": "Night lasts nine weeks here. I walk this line so it lasts eight."},
+		{"name": "Pensioner Olaf", "archetype": "old_man", "line": "Walked this route every day since the war. Which war? The one with the walking."},
+	]

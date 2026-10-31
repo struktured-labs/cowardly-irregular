@@ -240,3 +240,13 @@ func _place_core_examines(floor_num: int) -> void:
 ## Ambient FX: factory floor: vents, not cave crystals.
 func _get_ambient_fx_theme() -> String:
 	return "steam"
+
+
+## Ambient: work lamps on grey plant concrete
+func _get_dungeon_ambient() -> Color:
+	return Color(0.40, 0.36, 0.32)
+
+
+## Torch: sodium work lamp
+func _get_torch_tint() -> Color:
+	return Color(1.0, 0.70, 0.28)

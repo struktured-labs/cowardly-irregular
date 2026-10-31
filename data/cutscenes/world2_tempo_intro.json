@@ -3,7 +3,7 @@
   "title": "Tempo of the Rush Hour",
   "world": 2,
   "trigger": "boss_tempo_suburban",
-  "background": "suburban_park",
+  "background": "maple_heights_street",
   "description": "The Tempo arrives as a pizza delivery driver in a beat-up compact car with a magnetic MAPLE HEIGHTS PIZZA roof sign. Thirty minutes or less. The timer is always running.",
   "steps": [
     {

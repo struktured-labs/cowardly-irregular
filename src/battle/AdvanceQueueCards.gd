@@ -14,6 +14,12 @@ const BADGES := ["①", "②", "③", "④", "⑤"]
 
 var _cards: Array[PanelContainer] = []
 var _keys: Array[String] = []
+## A fired step's text, kept after _take vacates its slot. `card_text` is how a caller
+## observes that a step named who it ACTUALLY hit (including a retarget), and that read
+## happens AFTER the step fires -- so vacating the slot made the answer "" and red
+## test_a_step_names_who_it_actually_hit_including_a_retarget. The card still leaves
+## `_cards`; only its text outlives it.
+var _taken_text: Dictionary = {}
 
 
 func _ready() -> void:
@@ -88,7 +94,7 @@ func card_count() -> int:
 
 func card_text(i: int) -> String:
 	if i < 0 or i >= _cards.size() or not is_instance_valid(_cards[i]):
-		return ""
+		return str(_taken_text.get(i, ""))
 	var l: Label = _cards[i].find_child("Text", true, false)
 	return l.text if l else ""
 
@@ -125,6 +131,26 @@ func _place(card: Control, i: int, anchor: Rect2, animate: bool) -> void:
 	t.set_parallel(true)
 	t.tween_property(card, "position", rest, 0.16).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	t.tween_property(card, "modulate:a", 1.0, 0.10)
+
+
+## Hand a card out and VACATE its slot, so `_cards` never holds one whose free is pending.
+## ⛔ THE DEFECT THIS FIXES, from struktured's 2026-10-12 session: 20 freed-instance aborts, 15 in
+## `_peel` and 5 in `_pop`. `_peel` schedules `queue_free` through a tween 0.43 s out (0.25 interval
+## + 0.18 fade) and LEFT the card in `_cards`; `run_end` then iterated every slot and peeled the
+## already-freed ones. 9 of the 20 came from that loop alone.
+## The slot becomes null rather than being removed: `_run_index` indexes `_cards`, so erasing would
+## shift every later entry out from under it. A freed reference is already null-ish and every other
+## consumer here already gates on `is_instance_valid`, so a null slot is the state they all handle.
+func _take(i: int) -> PanelContainer:
+	if i < 0 or i >= _cards.size():
+		return null
+	var card: PanelContainer = _cards[i] if is_instance_valid(_cards[i]) else null
+	if card != null:
+		var l: Label = card.find_child("Text", true, false)
+		if l:
+			_taken_text[i] = l.text
+	_cards[i] = null
+	return card
 
 
 func _pop(card, animate: bool) -> void:  # untyped: a freed card must reach the validity check
@@ -242,6 +268,7 @@ static func names_of(targets: Array) -> String:
 
 func run_begin(actions: Array, beside: Rect2, animate: bool) -> void:
 	clear(false)
+	_taken_text.clear()
 	_run_planned.clear()
 	_run_actions = actions.duplicate()
 	var vp := get_viewport_rect().size
@@ -276,7 +303,7 @@ func run_step(targets: Array, animate: bool, action = null) -> void:
 			return  # not one of this run's steps
 		while _run_index < at:
 			_mark_held(_run_index)
-			_peel(_cards[_run_index], animate)
+			_peel(_take(_run_index), animate)
 			_run_index += 1
 	var i := _run_index
 	var hit := names_of(targets)
@@ -285,7 +312,7 @@ func run_step(targets: Array, animate: bool, action = null) -> void:
 		l.text = l.text.split("  → ")[0] + "  → " + hit + " (retarget)"
 	elif l and hit != "":
 		l.text = l.text.split("  → ")[0] + "  → " + hit
-	_peel(_cards[i], animate)
+	_peel(_take(i), animate)
 	_run_index += 1
 	if _run_index < _cards.size():
 		_light(_run_index, animate)
@@ -298,10 +325,11 @@ func run_end(animate: bool) -> void:
 	for i in range(maxi(0, _run_index), _cards.size()):
 		_mark_held(i)
 	_run_index = -1
-	for c in _cards:
-		_peel(c, animate)
+	for i in _cards.size():
+		_peel(_take(i), animate)
 	_cards.clear()
 	_keys.clear()
+	_taken_text.clear()
 
 
 ## A step is still to fire.

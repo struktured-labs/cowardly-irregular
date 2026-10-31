@@ -210,7 +210,7 @@ const REGISTRY := {
 	},
 	"event_chat_dragon_cave": {
 		"title": "At the Cave Mouth",
-		"world": 3,
+		"world": 1,
 		"unlock": ["event_flag_dragon_cave_entered"],
 	},
 	"event_chat_first_autobattle": {
