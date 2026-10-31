@@ -13,17 +13,18 @@ const STARTERS := ["fighter", "cleric", "mage", "rogue", "bard"]
 
 
 ## A figure with a head atop a wider body, and a thin staff rising THROUGH the head's column above it.
-func _figure_tex(head_x0: int = 26) -> ImageTexture:
+## `shift` moves the whole figure left of the frame centre (the body column is what the head is found from).
+func _figure_tex(shift: int = 0) -> ImageTexture:
 	var img := Image.create(FRAME, FRAME, false, Image.FORMAT_RGBA8)
 	img.fill(Color(0, 0, 0, 0))
 	for y in range(30, 64):
-		for x in range(20, 45):
+		for x in range(20 - shift, 45 - shift):
 			img.set_pixel(x, y, Color.WHITE)
 	for y in range(18, 30):
-		for x in range(head_x0, head_x0 + 12):
+		for x in range(26 - shift, 38 - shift):
 			img.set_pixel(x, y, Color.WHITE)
 	for y in range(0, 18):
-		for x in range(36, 39):
+		for x in range(36 - shift, 39 - shift):
 			img.set_pixel(x, y, Color.WHITE)
 	return ImageTexture.create_from_image(img)
 
@@ -53,7 +54,7 @@ func test_a_prop_rising_above_the_head_is_not_the_head() -> void:
 
 
 func test_the_anchor_follows_the_head_across_and_mirrors_with_the_flip() -> void:
-	var tex := _figure_tex(14)
+	var tex := _figure_tex(12)
 	var dx: float = BattleSpeechBubble.head_dx(_sprite(tex))
 	assert_lt(dx, 0.0, "CONTROL: this fixture's body column sits left of the frame centre (dx %.1f)" % dx)
 	assert_almost_eq(BattleSpeechBubble.head_dx(_sprite(tex, true)), -dx, 0.01,
