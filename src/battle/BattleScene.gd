@@ -91,7 +91,10 @@ var use_win98_menus: bool = true  # Toggle for Win98 style menus
 ## Watchdog for the "menu never spawned" soft-lock class (msg 2372).
 const MENU_WATCHDOG_MS: int = 2500
 const MENU_WATCHDOG_MAX_RETRIES: int = 3
+## How long a boss line may hold the watchdog off; far past any read, short of a dialogue that never hides.
+const BOSS_LINE_GRACE_MS: int = 30000
 var _menu_wd_started_ms: int = 0
+var _boss_line_seen_ms: int = 0
 var _menu_wd_retries: int = 0
 
 ## Acting combatant cached from action_executing signal (msg 2749 cycle 12). BattleManager.current_combatant is stale/null during execution — cowir-main's showcase gate fix (57269663) proved it for one reader; this field is the same escape valve for _on_damage_dealt and _play_ability_animation. Set on action_executing, cleared on action_executed so a signal firing outside an action (status tick from round-end, reactive counter) never gets a stale attribution.
@@ -198,11 +201,16 @@ var forced_enemies: Array = []  # When set, spawn these specific enemies (e.g., 
 var encounter_enemies: Array = []  # When set, spawn these encounter enemies from exploration (e.g., ["clockwork_sentinel", "steam_rat"])
 var autogrind_enemy_data: Array = []  # When set, spawn pre-configured enemies from autogrind system
 
-## Battle speed settings
-## Battle speed recalibrated: old 0.5x is now labeled "1x" (the comfortable default)
-const BATTLE_SPEEDS: Array[float] = [0.25, 0.5, 1.0, 2.0, 4.0, 8.0, 16.0]
-const BATTLE_SPEED_LABELS: Array[String] = ["1x", "2x", "4x", "8x", "16x", "32x", "64x"]
-static var _battle_speed_index: int = 0  # persists across battles; index 0 = label "1x" (engine 0.25) — struktured 2026-07-11: the old 0.5x pacing IS the correct default
+## Battle speed settings. Labels are engine*4, so engine 0.25 reads "1x".
+## struktured 2026-10-30 (overriding his 2026-07-11 ruling that 1x is the default): "2x I find a bit
+## hard to see animations but 1x feels too slow" — so a 1.5x rung exists and IS the default.
+const BATTLE_SPEEDS: Array[float] = [0.25, 0.375, 0.5, 1.0, 2.0, 4.0, 8.0, 16.0]
+const BATTLE_SPEED_LABELS: Array[String] = ["1x", "1.5x", "2x", "4x", "8x", "16x", "32x", "64x"]
+const DEFAULT_BATTLE_SPEED_INDEX: int = 1
+const DEFAULT_BATTLE_SPEED: float = 0.375
+## The ladder before the 1.5x rung, for reading a battle_speed_index saved before speed_scale_v4.
+const LEGACY_V3_BATTLE_SPEEDS: Array[float] = [0.25, 0.5, 1.0, 2.0, 4.0, 8.0, 16.0]
+static var _battle_speed_index: int = DEFAULT_BATTLE_SPEED_INDEX  # persists across battles
 # Crit hitlag nests — two crits in the 80ms window and the second captured 0.1 as "normal"; depth-counted so only the outermost restores
 ## ⛔ THE COMMENT PROMISED THIS AND THE CODE NEVER DID IT. `_on_group_attack_executing`'s
 ## limit_break arm carried "# Stagger lunges slightly for visual impact" while every
@@ -280,6 +288,14 @@ const DANGER_HP_THRESHOLD: float = 0.25  # The low-HP beat: danger music, player
 ## the other two never spoke regardless of the fight state.
 var _boss_low_hp_spoken: bool = false
 var _boss_defeat_spoken: bool = false
+## The boss's last words, buffered: on the scripted path the gloat lands BEFORE battle_ended, on the model path after it.
+var _gloat_line: Dictionary = {}
+var _holding_for_boss_beat: bool = false
+## Slack past BattleManager.GLOAT_WAIT_SEC, whose own timer always emits the scripted line by then.
+const BOSS_BEAT_ARRIVAL_SLACK_SEC: float = 0.3
+## Automation never stalls on a beat; a person gets a long but finite read.
+const BOSS_BEAT_AUTO_DISMISS_SEC: float = 3.0
+const BOSS_BEAT_READ_CAP_SEC: float = 30.0
 
 ## Autobattle state
 var _all_autobattle_enabled: bool = false  # True when all players are on autobattle
@@ -643,13 +659,13 @@ func set_command_menu_visible(visible: bool) -> void:
 	"""Public method to show/hide the command menu (called by GameLoop for autobattle editor)"""
 	if visible:
 		if active_win98_menu and is_instance_valid(active_win98_menu):
-			print("[MENU-HIDE] t=%dms visible=%s (called from set_command_menu_visible)" % [Time.get_ticks_msec(), visible])
+			BattleCommandMenu.trace_menu("[MENU-HIDE] t=%dms visible=%s (called from set_command_menu_visible)" % [Time.get_ticks_msec(), visible])
 			active_win98_menu.set_chain_visible(true)
 			active_win98_menu.grab_focus()
 		return
 	# Submenus are SIBLINGS of the root; hiding only the root left a live-battle ability list taking confirm.
 	if active_win98_menu and is_instance_valid(active_win98_menu):
-		print("[MENU-HIDE] t=%dms visible=%s (called from set_command_menu_visible)" % [Time.get_ticks_msec(), visible])
+		BattleCommandMenu.trace_menu("[MENU-HIDE] t=%dms visible=%s (called from set_command_menu_visible)" % [Time.get_ticks_msec(), visible])
 		var sub = active_win98_menu.submenu
 		if sub and is_instance_valid(sub):
 			sub.force_close()
@@ -723,19 +739,21 @@ func _update_speed_indicator() -> void:
 	var text = ""
 
 	match _battle_speed_index:
-		0:  # 1x - normal (white/cyan) — the default
+		0:  # 1x - slow (pale grey-cyan)
+			text = "[color=#7a9a9a]▸[/color] [color=#cfdede]%s[/color] [color=#5a7a7a]◂[/color]" % speed_label
+		1:  # 1.5x - normal (white/cyan) — the default
 			text = "[color=#88cccc]▸[/color] [color=#ffffff]%s[/color] [color=#66aaaa]◂[/color]" % speed_label
-		1:  # 2x - brisk (green)
+		2:  # 2x - brisk (green)
 			text = "[color=#66cc88]▸▸[/color] [color=#88ffaa]%s[/color] [color=#44aa66]◂◂[/color]" % speed_label
-		2:  # 4x - fast (yellow)
+		3:  # 4x - fast (yellow)
 			text = "[color=#ccaa44]▸▸[/color] [color=#ffcc00]%s[/color] [color=#aa8822]◂◂[/color]" % speed_label
-		3:  # 8x - turbo (orange)
+		4:  # 8x - turbo (orange)
 			text = "[color=#cc6622]▸▸▸[/color] [color=#ff6600]%s[/color] [color=#aa4400]◂◂◂[/color]" % speed_label
-		4:  # 16x - extreme (red)
+		5:  # 16x - extreme (red)
 			text = "[color=#cc2222]▸▸▸▸[/color] [color=#ff3300]%s[/color] [color=#aa1100]◂◂◂◂[/color]" % speed_label
-		5:  # 32x - very extreme (magenta)
+		6:  # 32x - very extreme (magenta)
 			text = "[color=#cc22cc]▸▸▸▸▸[/color] [color=#ff00ff]%s[/color] [color=#aa00aa]◂◂◂◂◂[/color]" % speed_label
-		6:  # 64x - maximum (bright magenta)
+		7:  # 64x - maximum (bright magenta)
 			text = "[color=#ff22ff]▸▸▸▸▸▸[/color] [color=#ff44ff]%s[/color] [color=#cc00cc]◂◂◂◂◂◂[/color]" % speed_label
 		_:
 			## An eighth tier would render BLANK here, not wrong: no arm sets `text`, so the readout
@@ -771,6 +789,7 @@ func _on_dialogue_finished() -> void:
 	# Only the pre-battle intro sets this. low_hp and defeat share the signal and must not call start_battle.
 	var start_fight: bool = _waiting_for_dialogue
 	_waiting_for_dialogue = false
+	_boss_line_seen_ms = 0
 	# Re-show the command menu the dialogue hid — only mid-selection (never resurrect it over a victory screen).
 	if BattleManager and BattleManager.is_selecting():
 		set_command_menu_visible(true)
@@ -2124,6 +2143,13 @@ func _build_input_hint_bar() -> void:
 	## at 704, i.e. 64px right of a bar whose whole anchor preset is CENTER_BOTTOM. Only players
 	## whose pad family is unrecognised ever see the fallback, so this went unnoticed.
 	hint_panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	## ⛔ AND THE SAME QUESTION VERTICALLY, WHICH THE LINE ABOVE DID NOT ASK. grow_vertical
+	## defaults to END — DOWNWARD — on a panel anchored CENTER_BOTTOM at offset -6, and a
+	## PanelContainer GROWS to fit its label rather than clipping it. So the bar does not lose
+	## its text at large Text Size, it leaves the screen: measured on the real node at 1280x720,
+	## bottom 728 against a 720-tall parent at 2.0x. Growing BEGIN sends the extra height up into
+	## the battle view, which is an overlay and has the room.
+	hint_panel.grow_vertical = Control.GROW_DIRECTION_BEGIN
 	## 520px held SIX tokens edge to edge; Repeat (2026-10-12) makes seven, so the bar is 600 wide.
 	## Measured on a rendered 1280x720 frame, not computed: seven fit on ONE line, which is why the
 	## 28px height is unchanged. Do not add autowrap — a second line cannot be shown at this height.
@@ -3405,6 +3431,8 @@ func _on_battle_started() -> void:
 	## Tick 428: reset per-battle boss-dialogue latches.
 	_boss_low_hp_spoken = false
 	_boss_defeat_spoken = false
+	_gloat_line = {}
+	_holding_for_boss_beat = false
 
 
 func _get_dominant_monster_type() -> String:
@@ -3522,7 +3550,7 @@ func _on_battle_ended(victory: bool) -> void:
 
 	# Clean up any open menus
 	if active_win98_menu and is_instance_valid(active_win98_menu):
-		print("[MENU-NULL] t=%dms path=battle_ended_cleanup" % Time.get_ticks_msec())
+		BattleCommandMenu.trace_menu("[MENU-NULL] t=%dms path=battle_ended_cleanup" % Time.get_ticks_msec())
 		active_win98_menu.queue_free()
 		active_win98_menu = null
 	## The header is only rewritten during selection/execution, so "Round 1 - SELECT: Fighter (AP: +1)" sat over VICTORY.
@@ -3567,18 +3595,19 @@ func _on_battle_ended(victory: bool) -> void:
 			## A spotlight duel authors its own victory cue; every ordinary fight falls back.
 			SoundManager.play_battle(BattleManager.victory_cue_for(test_enemies))
 			_play_staggered_victory_animations()
-			_show_victory_quip()
 			if _check_for_boss():
 				SoundManager.play_music("stinger_boss_defeated")
 			else:
 				SoundManager.play_music("victory")
-			_show_victory_results()
+			## The boss's last words get their own beat BEFORE the rewards (struktured: "I barely saw it").
+			_finish_victory_after_boss_beat()
 	elif _lost_battle_is_escape():
 		log_message("\n[color=%s]=== ESCAPED ===[/color]" % AccessibilityPalette.bonus_bbcode())
 	else:
 		# Tick 239: penalty BBCode (defeat header).
 		log_message("\n[color=%s]=== DEFEAT ===[/color]" % AccessibilityPalette.penalty_bbcode())
 		log_message("[color=gray]%s to restart...[/color]" % _accept_token())
+		_play_boss_beat(false)
 		# Play defeat animation for all party members
 		for animator in party_animators:
 			if animator:
@@ -3648,7 +3677,7 @@ func _tick_menu_watchdog() -> void:
 	if not (pc in bm.player_party):
 		_reset_menu_watchdog()
 		return
-	if is_instance_valid(active_win98_menu) and active_win98_menu.visible:
+	if _a_boss_line_owns_the_screen() or (is_instance_valid(active_win98_menu) and active_win98_menu.visible):
 		_reset_menu_watchdog()
 		return
 	var now: int = Time.get_ticks_msec()
@@ -3715,6 +3744,20 @@ func _menu_wd_diag(pc: Combatant) -> String:
 func _reset_menu_watchdog() -> void:
 	_menu_wd_started_ms = 0
 	_menu_wd_retries = 0
+
+
+## A boss line mid-selection hides the menu ON PURPOSE (BattleCommandMenu spawns it hidden,
+## _on_dialogue_finished re-shows it). Counting that as a wedge cost a slow reader their turn:
+## 2.5s per retry, three retries, then the terminal fallback autobattles the turn away.
+## BOUNDED: a line that never hides must not disarm the one net that keeps a battle un-wedgeable.
+func _a_boss_line_owns_the_screen() -> bool:
+	if not (_battle_dialogue != null and is_instance_valid(_battle_dialogue) and _battle_dialogue.visible):
+		_boss_line_seen_ms = 0
+		return false
+	var now: int = Time.get_ticks_msec()
+	if _boss_line_seen_ms == 0:
+		_boss_line_seen_ms = now
+	return now - _boss_line_seen_ms < BOSS_LINE_GRACE_MS
 
 
 ## Removed (struktured 2026-10-03): confirm on the Auto row now runs auto immediately and
@@ -3957,7 +4000,7 @@ func _restart_battle() -> void:
 
 	# Clean up any stray menus
 	if active_win98_menu and is_instance_valid(active_win98_menu):
-		print("[MENU-NULL] t=%dms path=restart_battle_cleanup" % Time.get_ticks_msec())
+		BattleCommandMenu.trace_menu("[MENU-NULL] t=%dms path=restart_battle_cleanup" % Time.get_ticks_msec())
 		active_win98_menu.queue_free()
 		active_win98_menu = null
 
@@ -5250,19 +5293,19 @@ func _update_buff_debuff_visuals(_delta: float) -> void:
 		var pulse = (sin(_idle_time * 3.0) + 1.0) * 0.5  # 0-1 pulse
 
 		# Update glow color based on buff/debuff state (threat wins over all).
-		var glow: ColorRect = visuals.get("glow")
+		var glow: Sprite2D = visuals.get("glow")
 		if glow and is_instance_valid(glow):
 			if has_threat:
-				glow.color = Color(THREAT_GLOW_COLOR.r, THREAT_GLOW_COLOR.g, THREAT_GLOW_COLOR.b, 0.15 + pulse * 0.15)
+				glow.modulate = Color(THREAT_GLOW_COLOR.r, THREAT_GLOW_COLOR.g, THREAT_GLOW_COLOR.b, 0.15 + pulse * 0.15)
 			elif has_buffs and has_debuffs:
 				# Mixed: yellow pulse
-				glow.color = Color(0.8, 0.8, 0.0, 0.12 + pulse * 0.1)
+				glow.modulate = Color(0.8, 0.8, 0.0, 0.12 + pulse * 0.1)
 			elif has_buffs:
 				# Buff: cyan-green pulse
-				glow.color = Color(0.2, 0.9, 0.7, 0.1 + pulse * 0.08)
+				glow.modulate = Color(0.2, 0.9, 0.7, 0.1 + pulse * 0.08)
 			else:
 				# Debuff: red pulse
-				glow.color = Color(0.9, 0.2, 0.2, 0.1 + pulse * 0.08)
+				glow.modulate = Color(0.9, 0.2, 0.2, 0.1 + pulse * 0.08)
 
 		# Sigil badge — show above sprite when threat-class buff is active. Pulse-fade modulate alpha 0.6→1.0 on the existing sin drive. Hidden entirely otherwise.
 		var sigil: Sprite2D = visuals.get("sigil")
@@ -5290,17 +5333,48 @@ func _update_buff_debuff_visuals(_delta: float) -> void:
 				p_node.modulate.a = 0.6 + randf() * 0.4
 
 
+## The glow's extent, and the body centre it sits on — the old ColorRect spanned x[-20,20]
+## y[-40,10], so this keeps its centre and widens the footprint, because a radial falloff needs
+## room to reach zero before its own edge. Pixels, deliberately larger than a 32x48 party sprite.
+const BUFF_GLOW_SIZE := Vector2i(64, 80)
+const BUFF_GLOW_CENTER := Vector2(0, -15)
+
+## Built once and shared: modulate carries the per-combatant colour, so one white-to-transparent
+## radial serves every party member and every state.
+static var _buff_glow_tex: GradientTexture2D = null
+
+
+static func buff_glow_texture() -> GradientTexture2D:
+	if _buff_glow_tex != null:
+		return _buff_glow_tex
+	var grad := Gradient.new()
+	grad.set_color(0, Color(1.0, 1.0, 1.0, 1.0))
+	grad.set_color(1, Color(1.0, 1.0, 1.0, 0.0))
+	var tex := GradientTexture2D.new()
+	tex.gradient = grad
+	tex.fill = GradientTexture2D.FILL_RADIAL
+	tex.fill_from = Vector2(0.5, 0.5)
+	tex.fill_to = Vector2(1.0, 0.5)
+	tex.width = BUFF_GLOW_SIZE.x
+	tex.height = BUFF_GLOW_SIZE.y
+	_buff_glow_tex = tex
+	return _buff_glow_tex
+
+
 func _create_buff_visual(combatant: Combatant, sprite: Node2D) -> void:
 	"""Create glow + particle overlay for a buffed/debuffed combatant"""
 	var has_buffs = "active_buffs" in combatant and combatant.active_buffs.size() > 0
 
-	# Glow rectangle behind sprite
-	var glow = ColorRect.new()
+	## ⛔ A GLOW, NOT A RECTANGLE. This was a hard-edged 40x50 ColorRect at z_index -1 behind a
+	## 32x48 sprite, so it stuck out on every side with a visible boundary — struktured, playing
+	## .745: "there is like a rectangular frame that sometimes appears behind the fighter sprite".
+	## "Sometimes" was whenever that character held a buff or a debuff. A radial falloff reaches
+	## zero before its own edge, so there is no boundary left to read as a frame.
+	var glow := Sprite2D.new()
 	glow.name = "BuffGlow"
-	glow.size = Vector2(40, 50)
-	glow.position = Vector2(-20, -40)
-	glow.color = Color(0.2, 0.9, 0.7, 0.1)
-	glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	glow.texture = buff_glow_texture()
+	glow.position = BUFF_GLOW_CENTER
+	glow.modulate = Color(0.2, 0.9, 0.7, 0.1)
 	glow.z_index = -1
 	sprite.add_child(glow)
 
@@ -6177,6 +6251,70 @@ func _on_boss_gloat_line(text: String, is_victory: bool) -> void:
 	# boss speaking, not narration.
 	var color: String = "#cc4444" if not is_victory else "#d8b860"
 	log_message('[color=%s]%s: "%s"[/color]' % [color, _gloat_speaker_name(is_victory), DialoguePrompts.spoken_line(text)])
+	_gloat_line = {"text": text, "is_victory": is_victory}
+
+
+## GameLoop holds its confirm and retry flows on this, so the boss's line is never skipped by the rewards or the game over.
+func is_holding_for_boss_beat() -> bool:
+	return _holding_for_boss_beat
+
+
+## The SELECTED speed, not Engine.time_scale: hitlag around the killing blow would read as slow and show a beat at 4x.
+func _boss_beat_suppressed() -> bool:
+	return turbo_mode or autogrind_console_mode or BATTLE_SPEEDS[_battle_speed_index] >= 1.0
+
+
+func _boss_beat_automated() -> bool:
+	if autogrind_console_mode:
+		return true
+	for member in party_members:
+		if is_instance_valid(member) and AutobattleSystem.is_autobattle_enabled(member.combatant_name.to_lower().replace(" ", "_")):
+			return true
+	return false
+
+
+## Every wait in here is wall-clock (ticks), bounded, and checks the scene is still in the tree.
+func _play_boss_beat(is_victory: bool) -> void:
+	if _boss_beat_suppressed():
+		return
+	if _gloat_line.is_empty() and not BattleManager.boss_gloat_pending:
+		return
+	## Set BEFORE the first await, so GameLoop's first poll sees it whichever battle_ended handler ran first.
+	_holding_for_boss_beat = true
+	var arrive_ms: int = int((BattleManager.GLOAT_WAIT_SEC + BOSS_BEAT_ARRIVAL_SLACK_SEC) * 1000.0)
+	var t0: int = Time.get_ticks_msec()
+	while _gloat_line.is_empty() and Time.get_ticks_msec() - t0 < arrive_ms:
+		if not is_inside_tree():
+			_holding_for_boss_beat = false
+			return
+		await get_tree().process_frame
+	if _gloat_line.is_empty() or bool(_gloat_line.get("is_victory", not is_victory)) != is_victory \
+			or _battle_dialogue == null or not is_instance_valid(_battle_dialogue) or not is_inside_tree():
+		_holding_for_boss_beat = false
+		return
+	var cap_ms: int = int((BOSS_BEAT_AUTO_DISMISS_SEC if _boss_beat_automated() else BOSS_BEAT_READ_CAP_SEC) * 1000.0)
+	## An authored defeat dialogue may still be up; the last words wait their turn rather than replacing it.
+	var q0: int = Time.get_ticks_msec()
+	while _battle_dialogue.visible and Time.get_ticks_msec() - q0 < cap_ms and is_inside_tree():
+		await get_tree().process_frame
+	if not is_inside_tree():
+		_holding_for_boss_beat = false
+		return
+	_battle_dialogue.show_boss_last_words(_gloat_speaker_name(is_victory), DialoguePrompts.spoken_line(str(_gloat_line.get("text", ""))), _boss_monster_id())
+	var s0: int = Time.get_ticks_msec()
+	while _battle_dialogue.visible and Time.get_ticks_msec() - s0 < cap_ms and is_inside_tree():
+		await get_tree().process_frame
+	if is_instance_valid(_battle_dialogue) and _battle_dialogue.visible:
+		_battle_dialogue.dismiss()
+	_holding_for_boss_beat = false
+
+
+func _finish_victory_after_boss_beat() -> void:
+	await _play_boss_beat(true)
+	if not is_inside_tree():
+		return
+	_show_victory_quip()
+	_show_victory_results()
 
 
 func _gloat_speaker_name(_is_victory: bool) -> String:

@@ -317,7 +317,11 @@ func _setup_buildings() -> void:
 	_add_prop(VillagePropScript.Kind.BARREL, Vector2i(25, 24))
 	_add_lamp_post(Vector2i(12, 25))
 	_add_lamp_post(Vector2i(23, 25))
-
+	## LAST, so every door and building node it must defer to already exists. Roofs alternate so a
+	## row of identical blocks reads as separate houses -- the cheapest variety a SNES town buys.
+	_spawn_house_facades(["H", "I", "A", "P", "G", "B"], [
+		Color(0.72, 0.20, 0.18), Color(0.20, 0.34, 0.68), Color(0.30, 0.46, 0.26),
+	])
 
 func _setup_treasures() -> void:
 	# Hidden treasure behind house 1 (top left)

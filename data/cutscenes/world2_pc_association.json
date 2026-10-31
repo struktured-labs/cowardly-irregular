@@ -3,7 +3,7 @@
   "title": "The Association",
   "world": 2,
   "trigger": "world2_pc_association",
-  "background": "prologue_forest",
+  "background": "suburban_neighborhood",
   "description": "Three HOA notices in one day. The party considers its compliance posture.",
   "steps": [
     {

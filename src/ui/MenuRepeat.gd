@@ -21,6 +21,19 @@ var _action: String = ""
 var _held: float = 0.0
 var _since_step: float = 0.0
 
+## ⛔ MENU NAVIGATION IS WALL-CLOCK, AND `delta` IS NOT. Battle sets Engine.time_scale to 0.25 for
+## "1x" (the v3 scale), and _process's delta carries that factor, so every constant above meant
+## FOUR TIMES its number in the player's hand: a 0.40 initial delay became 1.60 s. All eleven
+## callers pass _process(delta), so this is undone beside the poll rather than at eleven call
+## sites — a twelfth caller cannot reintroduce it. Win98Menu's own input debounce already passes
+## ignore_time_scale=true for exactly this reason; the polled ramp was the half that was missed.
+##
+## UNSCALING the delta, not reading a wall clock. A wall clock is just as correct in the player's
+## hand and silently voids the way the ramp is DRIVEN under test: three existing guards step it by
+## passing synthetic deltas in a tight loop, where no real time passes at all. Measured — the
+## wall-clock version red 5 arms across those three files. Delta stays the time source, so the
+## ramp remains deterministic.
+
 ## ⛔ INJECTED SO THE UNFOCUSED BRANCH IS DRIVABLE. Headless reports the window as FOCUSED, so a
 ## test cannot reach that branch through the real query at all. The default IS the real query, and
 ## an arm pins that the two agree — driving an injected predicate while the shipped one is wired to
@@ -65,10 +78,13 @@ func tick(delta: float) -> String:
 		_held = 0.0
 		_since_step = 0.0
 		return ""
-	_held += delta
+	## Real seconds, not engine seconds. Guarded because time_scale 0 is a hard pause, where
+	## delta is 0 as well — so the quotient stays 0 and a paused menu simply does not ramp.
+	var step: float = delta / maxf(Engine.time_scale, 0.0001)
+	_held += step
 	if _held < INITIAL_DELAY:
 		return ""
-	_since_step += delta
+	_since_step += step
 	if _since_step < _interval():
 		return ""
 	_since_step = 0.0

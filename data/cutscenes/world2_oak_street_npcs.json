@@ -4,7 +4,7 @@
   "world": 2,
   "keep_music": true,
   "trigger": "world2_oak_street_entry",
-  "background": "suburban_school",
+  "background": "suburban_neighborhood",
   "description": "The garage sale lady whose items fight back. The crossing guard who's been at her post longer than the neighborhood has existed. The school loudspeaker that has opinions about permanent records.",
   "steps": [
     {

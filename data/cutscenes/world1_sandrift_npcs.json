@@ -1,0 +1,109 @@
+{
+  "id": "world1_sandrift_npcs",
+  "title": "Sandrift Village",
+  "world": 1,
+  "keep_music": true,
+  "trigger": "world1_sandrift_entry",
+  "background": "prologue_village",
+  "description": "Desert oasis and forced caravan layover, where having time on your hands turns everyone into a theorist. Rex has charted the encounter rate. Gramps thinks knowing the odds beforehand is cowardice. Shifty sells the odds to whoever is still listening.",
+  "steps": [
+    {
+      "type": "letterbox_in",
+      "duration": 0.4
+    },
+    {
+      "type": "narration",
+      "text": "Sandrift had grown up around the only water for forty miles. That made it a place everyone passed through and nobody left quickly — and people with time on their hands in a desert do not take up hobbies. They take up theories. By the time the caravans rolled out again, half of them were carrying somebody's explanation of how the world worked underneath."
+    },
+    {
+      "type": "wait",
+      "duration": 0.3
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Conspiracy Theorist Rex",
+          "text": "You're carrying potions. I can tell. Four? Five? Here is the thing nobody in this bazaar will say out loud: walk out that gate with two, and the sand starts moving.",
+          "theme": "villager",
+          "portrait": "villager_m"
+        },
+        {
+          "speaker": "Conspiracy Theorist Rex",
+          "text": "I have kept a tally. Eleven years of it, scratched into the back of a tent panel. The encounters are not random. They are POLITE. They wait until you cannot afford them.",
+          "theme": "villager",
+          "portrait": "villager_m"
+        },
+        {
+          "speaker": "Conspiracy Theorist Rex",
+          "text": "Everyone tells me that is not how numbers work. Fine. Then explain to me why the desert has never once ambushed a man with a full pack.",
+          "theme": "villager",
+          "portrait": "villager_m"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.4
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Retired Hero Gramps",
+          "text": "Do not let Rex get started. He is not wrong, and that is the trouble with him.",
+          "theme": "elder",
+          "portrait": "old_man"
+        },
+        {
+          "speaker": "Retired Hero Gramps",
+          "text": "In my day we walked into the dunes with nothing and the dunes took whatever they wanted. Nobody asked for the odds first. You went, and afterward you knew.",
+          "theme": "elder",
+          "portrait": "old_man"
+        },
+        {
+          "speaker": "Retired Hero Gramps",
+          "text": "Now everybody wants the numbers up front, before they spend a single step. That is not courage. That is shopping.",
+          "theme": "elder",
+          "portrait": "old_man"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.3
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Script Dealer Shifty",
+          "text": "...and yet the numbers sell beautifully. Psst. Friend. Step away from the well a moment.",
+          "theme": "merchant",
+          "portrait": "merchant"
+        },
+        {
+          "speaker": "Script Dealer Shifty",
+          "text": "If you would rather not learn this desert the honest way, I have configurations. Written out, tested, very efficient. They do the going and the knowing on your behalf.",
+          "theme": "merchant",
+          "portrait": "merchant"
+        },
+        {
+          "speaker": "Script Dealer Shifty",
+          "text": "Fifty gold. No refunds, no questions, and I would take it as a kindness if you did not mention whose console they came off.",
+          "theme": "merchant",
+          "portrait": "merchant"
+        }
+      ]
+    },
+    {
+      "type": "set_flag",
+      "flag": "world1_sandrift_npcs_complete",
+      "value": true
+    },
+    {
+      "type": "letterbox_out",
+      "duration": 0.4
+    }
+  ]
+}

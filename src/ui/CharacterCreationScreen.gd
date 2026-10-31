@@ -47,6 +47,9 @@ const OPTIONS: Array[String] = [
 ## Letter grid for name input (classic FF style)
 const NAME_CHARS: String = "ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz0123456789"
 const NAME_GRID_COLS: int = 13
+const NAME_GRID_ROW_H: int = 18
+const NAME_GRID_TOP: int = 30
+const NAME_GRID_PAD: int = 8
 
 ## Job options
 const AVAILABLE_JOBS: Array[String] = ["fighter", "cleric", "mage", "bard", "rogue"]
@@ -758,20 +761,27 @@ func _show_name_grid() -> void:
 	if _name_grid:
 		_name_grid.queue_free()
 
+	## NAME_CHARS outgrew the 4 rows the literal 100px box was built for, so z0123456789 drew outside it.
+	var rows: int = (NAME_CHARS.length() + NAME_GRID_COLS - 1) / NAME_GRID_COLS
+	var letters_bottom: int = NAME_GRID_TOP + rows * NAME_GRID_ROW_H
+	var btn_y: int = letters_bottom + 4
+	var hint_y: int = btn_y + NAME_GRID_ROW_H
+	var box_h: int = hint_y + NAME_GRID_ROW_H
+
 	_name_grid = Control.new()
-	_name_grid.position = Vector2(20, 320)
+	_name_grid.position = Vector2(20, PANEL_HEIGHT - box_h - NAME_GRID_PAD)
 	_panel.add_child(_name_grid)
 
 	# Background - solid color for readability
 	var bg = ColorRect.new()
 	bg.color = Color(0.08, 0.06, 0.15, 1.0)
-	bg.size = Vector2(560, 100)
+	bg.size = Vector2(560, box_h)
 	_name_grid.add_child(bg)
 
 	# Border for visual clarity
 	var border = ColorRect.new()
 	border.color = Color(0.4, 0.35, 0.5)
-	border.size = Vector2(564, 104)
+	border.size = Vector2(564, box_h + 4)
 	border.position = Vector2(-2, -2)
 	border.z_index = -1
 	_name_grid.add_child(border)
@@ -786,8 +796,7 @@ func _show_name_grid() -> void:
 	_name_grid.add_child(name_label)
 
 	# Letter grid
-	var grid_start_y = 30
-	var rows = (NAME_CHARS.length() + NAME_GRID_COLS - 1) / NAME_GRID_COLS
+	var grid_start_y = NAME_GRID_TOP
 	for row_idx in range(rows):
 		for col_idx in range(NAME_GRID_COLS):
 			var char_idx = row_idx * NAME_GRID_COLS + col_idx
@@ -797,7 +806,7 @@ func _show_name_grid() -> void:
 			var letter = Label.new()
 			letter.name = "Char_%d_%d" % [row_idx, col_idx]
 			letter.text = c if c != " " else "_"
-			letter.position = Vector2(15 + col_idx * 22, grid_start_y + row_idx * 18)
+			letter.position = Vector2(15 + col_idx * 22, grid_start_y + row_idx * NAME_GRID_ROW_H)
 			letter.add_theme_font_size_override("font_size", 12)
 			_name_grid.add_child(letter)
 
@@ -805,21 +814,21 @@ func _show_name_grid() -> void:
 	var del_btn = Label.new()
 	del_btn.name = "DelBtn"
 	del_btn.text = "[DEL]"
-	del_btn.position = Vector2(320, grid_start_y + 54)
+	del_btn.position = Vector2(320, btn_y)
 	del_btn.add_theme_font_size_override("font_size", 12)
 	_name_grid.add_child(del_btn)
 
 	var ok_btn = Label.new()
 	ok_btn.name = "OkBtn"
 	ok_btn.text = "[OK]"
-	ok_btn.position = Vector2(380, grid_start_y + 54)
+	ok_btn.position = Vector2(380, btn_y)
 	ok_btn.add_theme_font_size_override("font_size", 12)
 	_name_grid.add_child(ok_btn)
 
 	# Instructions
 	var hint = Label.new()
 	hint.text = "[D-pad] Move  %s Select  %s Delete  %s Done" % [InputProfileManager.hint_for_action("ui_accept"), InputProfileManager.hint_for_action("ui_cancel"), InputProfileManager.hint_for_action("ui_menu")]
-	hint.position = Vector2(10, 85)
+	hint.position = Vector2(10, hint_y)
 	hint.add_theme_font_size_override("font_size", 9)
 	hint.add_theme_color_override("font_color", Color(0.5, 0.5, 0.6))
 	_name_grid.add_child(hint)

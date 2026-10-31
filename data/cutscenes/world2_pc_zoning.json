@@ -3,7 +3,7 @@
   "title": "Zoning",
   "world": 2,
   "trigger": "world2_pc_zoning",
-  "background": "prologue_forest",
+  "background": "suburban_neighborhood",
   "description": "First steps in the suburban world. The party processes the lawns.",
   "steps": [
     {

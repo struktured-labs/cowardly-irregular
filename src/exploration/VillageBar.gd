@@ -59,13 +59,18 @@ func _generate_bar_sprite() -> void:
 	var texture = ImageTexture.create_from_image(image)
 	sprite.texture = texture
 	sprite.centered = true
+	## Sort by the art's BASE, not its centre: the offset cancels the shift, so nothing moves on screen.
+	y_sort_enabled = true
+	sprite.position.y += image.get_height() / 2.0
+	sprite.offset.y -= image.get_height() / 2.0
 	add_child(sprite)
 
 	# Add dancer sprite separately for animation
 	dancer_sprite = Sprite2D.new()
 	dancer_sprite.name = "DancerSprite"
-	dancer_sprite.position = Vector2(20, -8)  # Position on stage
-	add_child(dancer_sprite)
+	## A child of the bar sprite, so it draws in the bar's sort slot rather than under the bar art.
+	dancer_sprite.position = Vector2(20, -8) - sprite.position  # Position on stage
+	sprite.add_child(dancer_sprite)
 
 
 func _draw_bar(image: Image) -> void:
