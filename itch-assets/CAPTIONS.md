@@ -557,3 +557,52 @@ pads       none connected, hence the keyboard glyphs
 Not re-shot: `battle_storm`, the field elites, the dungeon floors, `grimhollow_spiral`,
 `title_screen` — no tool in `marketing_shots.gd` reaches them. **The store page itself is not
 updated by this commit:** itch screenshots are uploaded through the web UI, which is @struktured's.
+
+---
+
+## 2026-10-31 — re-shot at `v3.33.748-alpha`, and the villages framed on their buildings
+
+.747 stood the villages up (roofs, walls and doors on their fronts, walkers) and redrew the party at
+48 px. The old frames were all taken from each village's **entrance plaza**, because the camera follows
+the player and the player spawns at the entrance, so the new buildings sat at the edge of the frame or
+out of it. `tools/marketing_shots.gd` now **frames each village on its densest cluster of buildings**
+(HOUSE facades + every child of `Buildings`, derived from the scene, no coordinate list) and stands the
+player 2.5 tiles below the nearest door in view, so the party is in shot too. Scenes with fewer than 2
+buildings are captured exactly as before; that is the control (below, the interiors and the cave).
+
+**Lead with the villages** (cowir-main 20480): the facades and walkers are what this refresh is for.
+
+Per-shot PIXEL delta vs the shipped frame (share of pixels differing by > 24 levels), with run-to-run
+noise from a second capture:
+
+| shot | vs shipped | noise | verdict |
+|---|---|---|---|
+| `harmonia_village` | 90.46% | 0.01% | **REPLACED** — framed on the library (red roof, door), a house, the stalls and the fountain |
+| `frosthold_village` | 81.63% | 0.00% | **REPLACED** — the town square and its shops |
+| `eldertree_village` | 77.36% | 0.00% | **REPLACED** — 5 of 5 buildings in view (was open grass at the entrance) |
+| `sandrift_village` | 72.62% | 0.00% | **REPLACED** — the market, a facade, the oasis |
+| `grimhollow_village` | 71.00% | 0.00% | **REPLACED** — 2 of 5 buildings in view, the sparsest still |
+| `ironhaven_village` | 43.82% | 0.00% | **REPLACED** — 4 of 7 buildings; no door in view, so the player stands on the street below them |
+| `shop_interior` | 0.46% | 0.00% | **REPLACED** — not re-framed; a real, small change since `.710` |
+| `inn_interior` · `tavern_interior` | 0.43% | 0.00% | **REPLACED** — same |
+| `whispering_cave` | 0.33% | 0.00% | **REPLACED** — same |
+| `battle` | 1.02% | 0.98% | **KEPT** — inside its own animation noise |
+| `battle_advance` | — | 3.37% | not shipped; archived only |
+
+The door labels in the village frames ("Enter Library", "Enter Meltwater Clock") are the game's own
+proximity prompts, visible to a player standing there too.
+
+**Capture conditions:**
+
+```
+worktree   <lane>/tmp/wt-shots748, lane/store-shots-frame-the-houses off main 6c7f8d0bc (= v3.33.748-alpha) + this commit's tool change
+command    tools/marketing_shots.sh -> tools/shot_sandbox.sh -> XDG_DATA_HOME=$PWD/tmp/shot_xdg timeout 600
+           bwrap --dev-bind / / --tmpfs /dev/input xvfb-run -a godot --audio-driver Dummy --rendering-driver opengl3
+           --resolution 1280x720 -s tools/marketing_shots.gd
+logged     [SHOT] conditions (setup|battle): weather=clear day_phase=0.15 paused=true
+sandbox    his profile: check_profile_untouched.sh --sig before the import, --verify after every run: UNCHANGED
+pads       hidden by the jail (none connected anyway)
+```
+
+**The store page itself is not updated by this commit:** itch screenshots are uploaded through the
+web UI, which is @struktured's.
