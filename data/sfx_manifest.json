@@ -1444,6 +1444,20 @@
       "duration_seconds": 0.41,
       "prompt_influence": 0.0
     },
+    "quest_accept": {
+      "file": "assets/audio/sfx/quest_accept.ogg",
+      "source": "sox_synth",
+      "prompt": "Quest ACCEPTED (cowir-main 21087: struktured 'when u accept a quest a pleasant noise should play'). Same family as quest_complete (triangle, G major) one step smaller: G4-B4 rising into a D5+G5 dyad with a soft echo, 1.05 s, -17.5 LUFS so the completion jingle (-16, longer motif + triad tail) stays the bigger of the two. Played once by QuestTracker on quest_state_changed('active').",
+      "duration_seconds": 1.05,
+      "prompt_influence": 0.0
+    },
+    "quest_progress": {
+      "file": "assets/audio/sfx/quest_progress.ogg",
+      "source": "sox_synth",
+      "prompt": "Quest OBJECTIVE ADVANCED: the quiet member of the quest family (accept/progress/complete). A single soft D5+G5 triangle dyad with light reverb, 0.45 s, -20 LUFS. Played by QuestTracker on objective_advanced, except right after an accept (talk-to-giver steps complete in the same frame).",
+      "duration_seconds": 0.45,
+      "prompt_influence": 0.0
+    },
     "quest_complete": {
       "file": "assets/audio/sfx/quest_complete.ogg",
       "source": "sox_synth",
