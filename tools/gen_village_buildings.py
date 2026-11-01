@@ -13,6 +13,7 @@ Usage:
     set -a; . ./setenv.sh; set +a
     uv run python tools/gen_village_buildings.py --style house shop inn       # stage style tiles
     uv run python tools/gen_village_buildings.py --w1 [keys] [--deploy]      # the other W1 villages
+    uv run python tools/gen_village_buildings.py --suburban [keys] [--deploy]  # W2 Maple Heights
 """
 from __future__ import annotations
 
@@ -113,7 +114,31 @@ W1 = {
                            "rugs and baskets of spices and pottery displayed at the front, a hanging sign with a pictured "
                            "coin (no letters), lanterns."),
 }
-BUILDINGS = {**HARMONIA, **W1}
+
+## W2 suburbia (Maple Heights): same seam, its own style -- a 16-bit 90s-America JRPG town, not a medieval one.
+STYLE_SUBURBAN = ("A single detailed 16-bit SNES-era JRPG pixel-art BUILDING for a sunny 1990s American suburb, in the "
+                  "style of quirky suburban JRPG towns: a straight-on front view, the roof seen from above and in front. "
+                  "Rich hand-pixeled detail: asphalt or clapboard shingles in visible rows, painted siding, white trim, "
+                  "windows with shutters or blinds, a front door at the bottom centre with a small step or porch. Crisp dark "
+                  "outline, warm saturated palette, soft top-left lighting. No people, no text or letters, no ground, no "
+                  "grass, no shadow on the ground, nothing else in the picture. The background is one flat, solid, pure "
+                  "magenta (#FF00FF) colour with no gradient. The building fills the frame and is centred.")
+SUBURBAN = {
+    "maple_garage_sale_house": (3, "A two-storey suburban family house with pale yellow siding and a brown shingle roof, an "
+                                   "attached garage with its door open and folding tables of junk for a garage sale in front, "
+                                   "a hand-painted cardboard sign with a pictured price tag (no letters)."),
+    "maple_mart": (3, "A two-storey suburban convenience mart, taller than it is wide, with an apartment window above: a flat roof with a boxy backlit sign showing a pictured shopping "
+                      "basket (no letters), big glass shop windows with posters and shelves visible, a striped awning, a "
+                      "newspaper box and an ice chest by the glass door."),
+    "maple_moms_house": (3, "A cosy suburban home that rents its guest room: blue siding, a red shingle roof with a dormer, a "
+                            "wide covered front porch with a swing and potted ferns, a welcome mat and a little hanging sign "
+                            "with a pictured bed and a heart (no letters)."),
+    "maple_house": (3, "A tidy two-storey suburban house, taller than it is wide: mint-green siding, a grey shingle roof with a "
+                       "chimney, a picture window with flower boxes, a mailbox and a basketball hoop over the front door."),
+}
+BUILDINGS = {**HARMONIA, **W1, **SUBURBAN}
+## Where each pool's art deploys, and the style it is drawn in.
+POOLS = {"harmonia": (HARMONIA, "medieval", None), "w1": (W1, "medieval", None), "suburban": (SUBURBAN, "suburban", STYLE_SUBURBAN)}
 
 
 def key_out(img: Image.Image, tol: int = 90) -> Image.Image:
@@ -170,8 +195,9 @@ def generate_harmonia(key: str, view: str) -> Path:
     """One village building (Harmonia or W1), straight-on ("front", struktured's pick B) or corner-angled ("corner", A)."""
     from openai import OpenAI
     width, what = BUILDINGS[key]
+    style = STYLE_SUBURBAN if key in SUBURBAN else STYLE
     face = f"\n\n{FRONT}" if view == "front" else ""
-    r = OpenAI().images.generate(model=MODEL, prompt=f"{STYLE}{face}\n\nThe building: {what}", size="1024x1024", n=1)
+    r = OpenAI().images.generate(model=MODEL, prompt=f"{style}{face}\n\nThe building: {what}", size="1024x1024", n=1)
     raw = Image.open(io.BytesIO(base64.b64decode(r.data[0].b64_json)))
     STAGE.mkdir(parents=True, exist_ok=True)
     raw.save(STAGE / f"{key}_{view}_raw.png")
@@ -185,19 +211,20 @@ def main() -> int:
     ap.add_argument("--style", nargs="+", choices=sorted(KINDS) + [k + "_front" for k in KINDS], help="stage style tiles for these kinds")
     ap.add_argument("--harmonia", nargs="*", help="stage these Harmonia buildings (no names = all)")
     ap.add_argument("--w1", nargs="*", help="stage these other-W1-village buildings (no names = all)")
+    ap.add_argument("--suburban", nargs="*", help="stage these W2 Maple Heights buildings (no names = all)")
     ap.add_argument("--view", choices=["front", "corner"], default="front", help="straight-on (B, default) or angled (A)")
     ap.add_argument("--deploy", action="store_true", help="copy staged Harmonia art into assets (never overwrites)")
     args = ap.parse_args()
     for k in args.style or []:
         print(f"staged {generate(k).relative_to(ROOT)}")
-    for chosen, pool in ((args.harmonia, HARMONIA), (args.w1, W1)):
+    for chosen, (pool, world, _) in ((args.harmonia, POOLS["harmonia"]), (args.w1, POOLS["w1"]), (args.suburban, POOLS["suburban"])):
         if chosen is None:
             continue
         for k in chosen or sorted(pool):
             if k not in pool:
                 raise SystemExit(f"unknown building {k}")
             if args.deploy:
-                src, dst = STAGE / f"{k}_{args.view}.png", ROOT / f"assets/sprites/buildings/medieval/{k}.png"
+                src, dst = STAGE / f"{k}_{args.view}.png", ROOT / f"assets/sprites/buildings/{world}/{k}.png"
                 if not src.exists():
                     raise SystemExit(f"{k}: nothing staged at {src}")
                 if dst.exists():
