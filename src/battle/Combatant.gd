@@ -105,7 +105,6 @@ static func migrate_stat_scale(data: Dictionary) -> Dictionary:
 		data["level_ladder"] = LEVEL_LADDER
 		if new_level != old_level:
 			data["migrated_from_level"] = old_level
-			print("[SAVE] moved job level %d to %d on the spectrum ladder" % [old_level, new_level])
 	var saved: int = saved_stat_scale(data)
 	if saved == STAT_SCALE:
 		return data
@@ -116,7 +115,6 @@ static func migrate_stat_scale(data: Dictionary) -> Dictionary:
 	data["stat_scale"] = STAT_SCALE
 	## The loader re-derives max stats from the curve, so it needs this to restore current HP/MP as a share of max.
 	data["migrated_from_stat_scale"] = saved
-	print("[SAVE] migrated stat block ×%.2f (was scale %d)" % [factor, saved])
 	return data
 
 

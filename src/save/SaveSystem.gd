@@ -1198,7 +1198,7 @@ func _migrate_stat_denomination(data: Dictionary, slot: int = -1) -> Dictionary:
 		_migration_reported[slot] = true
 		push_warning("[SaveSystem] migrated %d party member(s) to stat scale ×%d — this save "
 			% [migrated, Combatant.STAT_SCALE]
-			+ "was written in an older stat denomination (the 2026-10-31 spectrum curve divides ×10-era stats back down)")
+			+ "was written in an older stat denomination (the 2026-10-31 spectrum curve divides ×10-era stats back down and moves levels onto its ladder)")
 	return data
 
 
