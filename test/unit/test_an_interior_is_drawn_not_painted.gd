@@ -116,3 +116,19 @@ func test_a_back_wall_strip_stands_on_the_top_wall_row_across_the_room() -> void
 	r.position += spr.position
 	assert_almost_eq(r.end.y, float(InteriorArt.TILE), 0.5, "the back wall does not stand on the top wall row's base")
 	assert_almost_eq(r.get_center().x, ShopInteriorScript.MAP_WIDTH * InteriorArt.TILE / 2.0, 0.5, "the back wall is not centred on the room")
+
+
+func test_each_shelf_row_of_stock_is_centred_on_its_shelf() -> void:
+	## cowir-sprites 21175: the left goods sat at 2.5 tiles while the left shelf spans cols 2-4.
+	var centres: Array = ShopInteriorScript.shelf_centres()
+	assert_eq(centres.size(), 2, "CONTROL: the layout has two shelf runs per row")
+	assert_almost_eq(float(centres[0]), 3.5 * InteriorArt.TILE, 0.5, "the left stock is not on the left shelf's centre")
+	assert_almost_eq(float(centres[1]), 12.5 * InteriorArt.TILE, 0.5, "the right stock is not on the right shelf's centre")
+	var shop := _shop({"shelf_goods_shop_item": {"path": ART_B}})
+	var xs: Array = []
+	for n in shop.find_children("Art_shelf_goods*", "", true, false):
+		var spr := n as Sprite2D
+		xs.append(spr.position.x + spr.texture.get_width() / 2.0)
+	xs.sort()
+	assert_eq(xs.size(), 4, "CONTROL: four drawn stock rows")
+	assert_almost_eq(float(xs[0]), 3.5 * InteriorArt.TILE, 0.5, "drawn stock on the left is off its shelf")

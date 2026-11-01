@@ -442,11 +442,26 @@ static func fit_font_size(name: String, font: Font, max_px: float) -> int:
 	return SIGN_FONT_MIN
 
 
+## The x centre (px) of each shelf run on SHOP_LAYOUT's first shelf row, read from the layout rather than typed:
+## the left goods used to sit at 2.5 tiles while its shelf spans cols 2-4 (cowir-sprites 21175), a tile off.
+static func shelf_centres() -> Array:
+	var out: Array = []
+	var row: String = SHOP_LAYOUT[2]
+	var x := 0
+	while x < row.length():
+		if row[x] == "S":
+			var start := x
+			while x < row.length() and row[x] == "S":
+				x += 1
+			out.append((start + x) / 2.0 * TILE_SIZE)
+		else:
+			x += 1
+	return out
+
+
 func _create_shelf_goods() -> void:
-	# Draw goods on the shelf areas based on shop type
-	# Left shelves: x=1..3 rows, Right shelves: x=12..14 rows
-	for side in range(2):
-		var sx = 2.5 * TILE_SIZE if side == 0 else 12.5 * TILE_SIZE
+	# Draw goods on the shelf areas based on shop type, one row per shelf run, on the run's own centre
+	for sx in shelf_centres():
 		for shelf_row in range(2):
 			var sy = float(2 + shelf_row * 5) * TILE_SIZE + 4.0
 			_draw_shelf_row(sx, sy)
