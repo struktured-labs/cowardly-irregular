@@ -30,7 +30,9 @@
 #   --selftest   a fake smoke (bash) under a FAKE HOME: never his profile.
 # Exit: 0 green · 1 red (reasons on stderr) · 2 usage.
 set -u
-SRP_MATCH="${SRP_MATCH:---render-smoke}"
+# The match carries no leading "--": test_the_smoke_cannot_see_his_pad_regression keys REAL game launches on
+# the flag "--render-smoke" in tools/*.sh, and this line launches nothing. A substring of the real argument.
+SRP_MATCH="${SRP_MATCH:-render-smoke}"
 _red() { echo "[redirect] RED: $*" >&2; }
 
 _matches() { # pids under $1 (inclusive) whose args contain $SRP_MATCH: ONE ps per sample
@@ -93,6 +95,8 @@ selftest() {
     local T pass=0 fail=0 REL="godot/app_userdata/Cowardly Irregular"
     mkdir -p "$PWD/tmp"; T="$(mktemp -d "$PWD/tmp/srp_selftest.XXXXXX")"; trap 'rm -rf "$T"' RETURN
     # The fake smoke mimics Godot's resolution: "" and unset both fall back to $HOME/.local/share.
+    # Its flag is --fake-render-smoke: a bash script, not the game, so the pad-jail guard must not read it as a
+    # windowed game launch; SRP_MATCH's "render-smoke" still matches it.
     cat > "$T/fake_smoke.sh" <<'EOF'
 d="${XDG_DATA_HOME:-}"; [ -n "$d" ] || d="$HOME/.local/share"
 u="$d/godot/app_userdata/Cowardly Irregular"; mkdir -p "$u/smoke" "$u/logs"
@@ -102,10 +106,10 @@ EOF
         local label="$1" want="$2" mode="$3" H="$T/$1/home" SB="$T/$1/sandbox" OT="$T/$1/other" pid ec
         mkdir -p "$H/.local/share" "$SB" "$OT"; touch "$T/$1/since"; sleep 1.1
         case "$mode" in
-            good)  env HOME="$H" XDG_DATA_HOME="$SB" bash "$T/fake_smoke.sh" --render-smoke & ;;
-            unset) env -u XDG_DATA_HOME HOME="$H" bash "$T/fake_smoke.sh" --render-smoke & ;;
-            empty) env HOME="$H" XDG_DATA_HOME= bash "$T/fake_smoke.sh" --render-smoke & ;;
-            other) env HOME="$H" XDG_DATA_HOME="$OT" bash "$T/fake_smoke.sh" --render-smoke & ;;
+            good)  env HOME="$H" XDG_DATA_HOME="$SB" bash "$T/fake_smoke.sh" --fake-render-smoke & ;;
+            unset) env -u XDG_DATA_HOME HOME="$H" bash "$T/fake_smoke.sh" --fake-render-smoke & ;;
+            empty) env HOME="$H" XDG_DATA_HOME= bash "$T/fake_smoke.sh" --fake-render-smoke & ;;
+            other) env HOME="$H" XDG_DATA_HOME="$OT" bash "$T/fake_smoke.sh" --fake-render-smoke & ;;
         esac
         pid=$!; watch "$pid" "$T/$1/seen" & local wp=$!; wait "$pid"; wait "$wp"
         ec=0; verdict "$SB" "$T/$1/seen" "$REL" "$H/.local/share" "$T/$1/since" > "$T/$1/out" 2>&1 || ec=$?
