@@ -175,10 +175,21 @@ FUTURISTIC = {
                            "disks and memory chips on shelves, a holographic sign with a pictured disk (no letters), and "
                            "cooling fans on the roof."),
 }
-BUILDINGS = {**HARMONIA, **W1, **SUBURBAN, **STEAMPUNK, **FUTURISTIC}
+
+## Village PROPS (struktured 2026-11-01: "any of that old school procgenylooking art needs to go"). Same style and
+## straight-on view as the medieval buildings; width in tiles is the prop's drawn width.
+STYLE_PROP = STYLE.replace("BUILDING", "village PROP").replace("a wooden front door at the bottom centre. ", "")
+PROPS = {
+    "harmonia_fountain": (3, "Harmonia's plaza fountain: a round two-tier carved stone fountain basin, clear blue water "
+                             "spilling from the upper bowl into the lower pool, and a small blossoming pink cherry tree "
+                             "growing from the centre of the upper tier. Seen straight-on from the front and a little "
+                             "above, so the front rim of the basin and the water surface are both visible."),
+}
+BUILDINGS = {**HARMONIA, **W1, **SUBURBAN, **STEAMPUNK, **FUTURISTIC, **PROPS}
 ## Where each pool's art deploys, and the style it is drawn in.
 POOLS = {"harmonia": (HARMONIA, "medieval", None), "w1": (W1, "medieval", None), "suburban": (SUBURBAN, "suburban", STYLE_SUBURBAN),
-         "steampunk": (STEAMPUNK, "steampunk", STYLE_STEAMPUNK), "futuristic": (FUTURISTIC, "futuristic", STYLE_FUTURISTIC)}
+         "steampunk": (STEAMPUNK, "steampunk", STYLE_STEAMPUNK), "futuristic": (FUTURISTIC, "futuristic", STYLE_FUTURISTIC),
+         "props": (PROPS, "../props/medieval", STYLE_PROP)}
 
 
 def key_out(img: Image.Image, tol: int = 90) -> Image.Image:
@@ -254,13 +265,15 @@ def main() -> int:
     ap.add_argument("--suburban", nargs="*", help="stage these W2 Maple Heights buildings (no names = all)")
     ap.add_argument("--steampunk", nargs="*", help="stage these W3 Brasston buildings (no names = all)")
     ap.add_argument("--futuristic", nargs="*", help="stage these W5 NodePrime buildings (no names = all)")
+    ap.add_argument("--props", nargs="*", help="stage these village props (no names = all)")
     ap.add_argument("--view", choices=["front", "corner"], default="front", help="straight-on (B, default) or angled (A)")
     ap.add_argument("--deploy", action="store_true", help="copy staged Harmonia art into assets (never overwrites)")
     args = ap.parse_args()
     for k in args.style or []:
         print(f"staged {generate(k).relative_to(ROOT)}")
     for chosen, (pool, world, _) in ((args.harmonia, POOLS["harmonia"]), (args.w1, POOLS["w1"]), (args.suburban, POOLS["suburban"]), (args.steampunk, POOLS["steampunk"]),
-                                      (args.futuristic, POOLS["futuristic"])):
+                                      (args.futuristic, POOLS["futuristic"]),
+                                      (args.props, POOLS["props"])):
         if chosen is None:
             continue
         for k in chosen or sorted(pool):
