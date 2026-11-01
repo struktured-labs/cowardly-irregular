@@ -67,6 +67,18 @@ _prev_tag() {
         | awk -v t="$tag" 'f{print; exit} $0==t{f=1}'
 }
 
+# "<sha> <lane name>" for every lane branch tip this repo can see: local branches, fetched
+# remote-tracking refs, and origin's live list. ls-remote failing (offline, no origin — the
+# selftest's repo) only shrinks the list; a fold it cannot name falls back to "[by sha]".
+_lane_tips() {
+    {
+        git for-each-ref --format='%(objectname) %(refname)' refs/heads/lane refs/remotes/origin/lane
+        if git remote get-url origin >/dev/null 2>&1; then
+            git ls-remote origin 'refs/heads/lane/*' | tr '\t' ' '
+        fi
+    } | sed -E 's#refs/(heads|remotes/origin)/##'
+}
+
 # Branch names from merge commits. The fold writes "Merge remote-tracking branch 'origin/<name>'",
 # so the name is recoverable exactly; anything that does not match that shape is reported as a
 # raw subject rather than silently dropped -- a merge this cannot parse is still a merge that
@@ -84,8 +96,26 @@ _merged_branches() {
     # ⚠️ NOT a `' into '` string rule: an in-lane merge can carry "into" as PROSE
     # (a28ee4139 "collapse two owners of ... into one"), so a string test misfires both ways.
     # The distinction is structural. (@cowir-sprites, 2026-09-17)
+    # Lane tips, for the fold shape that names no branch (see the "Merge commit" arm below).
+    local tips; tips="$(_lane_tips)"
     git log --first-parent --merges --format='%h%x09%s' "$range" 2>/dev/null | while IFS=$'\t' read -r sha subj; do
         case "$subj" in
+            "Merge commit '"*)
+                # ⛔ 20 of the 25 folds in v3.33.740..755 have this shape — `git merge <sha>` after
+                # an ls-remote MATCH writes the sha, not the branch — and every one printed
+                # `[unparsed]`, so the note named nothing that landed for fifteen releases.
+                # The sha is the lane's tip AT FOLD TIME, and the note is written at publish
+                # time, minutes later: so name a lane only when its tip IS that sha. NOT
+                # `--contains`: any lane that merged main since contains every folded sha.
+                local full="${subj#Merge commit \'}"; full="${full%%\'*}"
+                local name; name="$(awk -v s="$full" '$1==s{print $2}' <<<"$tips" | sort -u | paste -sd' ' | sed 's/ / = /g')"
+                if [ -n "$name" ]; then
+                    printf '%s\t%s\n' "$sha" "$name"
+                else
+                    # The lane moved on (or is gone): say so, and give the merged commit's own
+                    # subject, which is the next best name, rather than guess a branch.
+                    printf '%s\t%s\n' "$sha" "[by sha] ${full:0:9} $(git log -1 --format=%s "$full" 2>/dev/null)"
+                fi ;;
             "Merge remote-tracking branch '"*)
                 local name="${subj#Merge remote-tracking branch \'}"
                 # ⛔ `${name%\'}` strips a TRAILING apostrophe, and the fold's subject does not
@@ -244,6 +274,30 @@ gated: cafe1234 scripts=11 tests=111 passing=111 failing=0"
     _has   "a caught-up lane's FOLD still appears"       "$outc" "lane/catches-up"
     _hasnt "  ...and its CATCH-UP is not a merged branch" "$outc" '` main'
     _has   "  ...and the count excludes the catch-up"    "$outc" "Branches merged (1)"
+    # ⛔ THE FOLD THAT NAMES NO BRANCH. Main merges the sha it ls-remote MATCHed, so the subject
+    # is "Merge commit '<40 hex>' into fold/...": 20 of 25 folds in .740..755, all `[unparsed]`.
+    # Three shapes: the lane still at that tip; a lane that MOVED after the fold (its new tip
+    # CONTAINS the sha — the arm that fails a `--contains` lookup); two lanes sharing one tip.
+    (cd "$d" && git checkout -q "$MB" 2>/dev/null
+     git checkout -qb lane/by-sha 2>/dev/null; echo w > w.txt; git add w.txt; git commit -qm "the by-sha work"
+     git checkout -qb lane/twin 2>/dev/null; git checkout -q "$MB" 2>/dev/null
+     T="$(git rev-parse lane/by-sha)"
+     git merge -q --no-ff "$T" -m "Merge commit '$T' into fold/v3.33.106"
+     git tag -a v3.33.106-alpha -m "v3.33.106-alpha"
+     git checkout -qb lane/moved 2>/dev/null; echo x > x.txt; git add x.txt; git commit -qm "the moved lane's folded work"
+     M="$(git rev-parse HEAD)"; git checkout -q "$MB" 2>/dev/null
+     git merge -q --no-ff "$M" -m "Merge commit '$M' into fold/v3.33.107"
+     git tag -a v3.33.107-alpha -m "v3.33.107-alpha"
+     git checkout -q lane/moved 2>/dev/null; echo y > y.txt; git add y.txt; git commit -qm later
+     git checkout -q "$MB" 2>/dev/null) >/dev/null 2>&1
+    local fx; fx="$(cd "$d" && bash "$SELF" v3.33.106-alpha --prev v3.33.105-alpha)"
+    _has   "a sha-form fold NAMES the lane at that tip"  "$fx" "lane/by-sha"
+    _has   "  ...and every lane sharing the tip"        "$fx" "lane/by-sha = lane/twin"
+    _hasnt "  ...and is not [unparsed]"                 "$fx" "[unparsed]"
+    local fm; fm="$(cd "$d" && bash "$SELF" v3.33.107-alpha --prev v3.33.106-alpha)"
+    _has   "a lane that MOVED falls back to [by sha]"    "$fm" "[by sha]"
+    _has   "  ...with the merged commit's subject"      "$fm" "the moved lane's folded work"
+    _hasnt "  ...and never names a lane by CONTAINS"    "$fm" "lane/moved"
     _hasnt "a branch that did NOT merge is ABSENT"      "$out" "never-landed"
     _has   "the gate evidence line is carried"          "$out" "scripts=11 tests=111 passing=111 failing=0"
     _hasnt "...and it is THIS tag's, not the previous"  "$out" "scripts=10"
