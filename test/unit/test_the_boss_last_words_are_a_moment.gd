@@ -206,7 +206,9 @@ func test_an_automated_voiced_last_word_is_heard_out() -> void:
 	s._finish_victory_after_boss_beat()
 	assert_true(await _wait_until(func() -> bool: return _dialogue.visible, 1000), "automation still shows the beat")
 	var voice_sec: float = SceneScript.BOSS_BEAT_AUTO_DISMISS_SEC + 1.0
+	## Faked as _show_current_line records a recording: its length AND when it ends, which the automated hold reads.
 	_dialogue._line_voice_sec = voice_sec
+	_dialogue._line_voice_end_ms = Time.get_ticks_msec() + int(voice_sec * 1000.0)
 	var t_show: int = Time.get_ticks_msec()
 	assert_true(await _wait_until(func() -> bool: return s.results_at > -1, int(voice_sec * 1000.0) + 2000),
 		"the beat must still release under automation")
