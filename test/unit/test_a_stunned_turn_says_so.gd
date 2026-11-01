@@ -81,7 +81,7 @@ func test_a_stunned_party_member_is_held_not_handed_a_menu() -> void:
 	watch_signals(_bm)
 	assert_true(_bm._held_turn(pc), "a stunned party member's turn is held")
 	assert_signal_not_emitted(_bm, "selection_turn_started", "no menu opens for a pick that cannot happen")
-	var held := _bm.pending_actions.filter(func(a): return a.get("combatant") == pc)
+	var held: Array = _bm.pending_actions.filter(func(a): return a.get("combatant") == pc)
 	assert_eq(held.size(), 1, "exactly one turn is queued for the stunned member")
 	if held.size() == 1:
 		assert_eq(str(held[0].get("type", "")), "held", "and it is a held turn, not a pick")
