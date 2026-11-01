@@ -107,6 +107,7 @@ func _init() -> void:
 
 	var level := int(_env("BAL_LEVEL", "5"))
 	var trials := int(_env("BAL_TRIALS", "30"))
+	var chain_links := maxi(1, int(_env("BAL_CHAIN", "1")))
 	var enemy_ids := _env("BAL_ENEMIES", "goblin,goblin").split(",", false)
 	var want_jobs := _env("BAL_JOBS", "").split(",", false)
 	var gear := _env("BAL_GEAR", "1") != "0"
@@ -195,6 +196,22 @@ func _init() -> void:
 		var enemies := _build_enemies(gl, mdb, enemy_ids)
 		var resolver = ResolverScript.new()
 		var result: Dictionary = resolver.resolve_battle(party, enemies)
+		## BAL_CHAIN=N: N links back to back, HP carried, BattleManager's between-battle rest between them (cowir-overworld's chained encounters).
+		var link_rounds: int = int(result.get("rounds", 0))
+		for link in range(1, chain_links):
+			if not bool(result.get("victory", false)):
+				break
+			var bm: Node = get_root().get_node_or_null("BattleManager")
+			if bm != null:
+				bm.apply_post_battle_restore(party)
+			for c in enemies:
+				c.queue_free()
+			enemies = _build_enemies(gl, mdb, enemy_ids)
+			resolver = ResolverScript.new()
+			result = resolver.resolve_battle(party, enemies)
+			link_rounds += int(result.get("rounds", 0))
+		if chain_links > 1:
+			result["rounds"] = link_rounds
 		if t == 0 and want_log:
 			print("[BAL] --- battle log, trial 0 ---")
 			for line in (result.get("log", []) as Array):
