@@ -101,6 +101,7 @@ func test_the_breather_heals_the_living_by_its_fraction() -> void:
 	assert_eq(int(got.get("Up", {}).get("hp", -1)), hp, "the card would report a different number than was healed")
 	assert_false(got.has("Down"), "the breather raised the dead")
 	assert_string_contains(ChainCard.detail_for(got), "+%d HP" % hp, "the card does not show what the breather gave")
+	assert_string_contains(ChainCard.detail_for({}), "full strength", "a full party is told +0 HP +0 MP")
 
 
 func _card(hold: float) -> ChainCard:
