@@ -8,7 +8,7 @@ extends GutTest
 ## block added later without art reds here instead of silently staying procedural. The W1 villages joined after.
 
 const VILLAGE := "res://src/maps/villages/HarmoniaVillage.gd"
-## Every W1 village -> the glyphs that are roofed buildings there (open-air shops and Sandrift's secret tent are not).
+## Every W1 village, then Maple Heights (W2), Brasston (W3) and NodePrime (W5) -> the glyphs that are roofed buildings there (open-air shops and Sandrift's secret tent are not).
 const VILLAGES := {
 	"res://src/maps/villages/HarmoniaVillage.gd": "HIAPGB",
 	"res://src/maps/villages/FrostholdVillage.gd": "LFC",
@@ -16,6 +16,9 @@ const VILLAGES := {
 	"res://src/maps/villages/IronhavenVillage.gd": "IFSM",
 	"res://src/maps/villages/EldertreeVillage.gd": "N",
 	"res://src/maps/villages/SandriftVillage.gd": "IB",
+	"res://src/maps/villages/MapleHeightsVillage.gd": "HIS",
+	"res://src/maps/villages/BrasstonVillage.gd": "HIB",
+	"res://src/maps/villages/NodePrimeVillage.gd": "IC",
 }
 
 
@@ -55,11 +58,11 @@ func _blocks(rows: Array, glyphs: String) -> Array:
 	return out
 
 
-## The art prop standing on `block`: a VillageProp whose base cell is the block's bottom-left and that carries art.
+## The art prop standing on `block`: a VillageProp on the block's bottom-left base (sorted 1px above it) carrying art.
 func _art_on(v: Node, block: Rect2i) -> Node:
 	var base := Vector2((block.position.x + 0.5) * 32, (block.end.y) * 32)
 	for p in v.props.get_children():
-		if str(p.get("art_path")) != "" and p.position.is_equal_approx(base):
+		if str(p.get("art_path")) != "" and p.position.distance_to(base) <= 1.0:
 			return p
 	return null
 
@@ -83,8 +86,8 @@ func test_every_w1_building_is_drawn() -> void:
 			if spr != null and spr.texture != null and drawn != null:
 				assert_eq(spr.texture.get_size(), drawn.get_size(), "%s %s must draw its art, not the procedural paint" % [path.get_file(), b])
 				assert_eq(int(spr.texture.get_width()), b.size.x * 32, "%s %s's art must span its block exactly" % [path.get_file(), b])
-	assert_gte(total, 21, "FLOOR: Harmonia's 8 blocks and the other W1 villages' 13 must all be found (%d)" % total)
-	assert_eq(bare, [], "these W1 buildings fell back to the procedural block: %s" % [bare])
+	assert_gte(total, 32, "FLOOR: Harmonia 8, the other W1 villages 13, Maple Heights 4, Brasston 5 and NodePrime 2 must all be found (%d)" % total)
+	assert_eq(bare, [], "these village buildings fell back to the procedural block: %s" % [bare])
 
 
 func test_nothing_draws_over_or_doubles_the_art() -> void:
@@ -122,6 +125,17 @@ func _leaks_in(v: Node, leaks: Array) -> int:
 				if cells.intersects(r):
 					leaks.append("%s: %s's stall sprite still draws over an art block" % [v.name, n.name])
 	return doors
+
+
+func test_an_origin_off_its_block_draws_nothing() -> void:
+	## Maple Heights' staggered H was first keyed on a lawn cell: the flood took the whole lawn as one "building".
+	var v = await _built("res://src/maps/villages/MapleHeightsVillage.gd")
+	var before: int = v._art_blocks.size()
+	assert_gt(before, 0, "CONTROL: Maple Heights' real art blocks must be recorded")
+	var lawn := Vector2i(13, 12)
+	assert_eq(str(v._map_rows[lawn.y])[lawn.x], "g", "CONTROL: (13,12) must still be lawn for this arm to mean anything")
+	assert_eq(v._spawn_building_art({lawn: "maple_house"}), 0, "a lawn origin must draw no building")
+	assert_eq(v._art_blocks.size(), before, "a lawn origin must claim no block")
 
 
 func test_a_village_without_art_keeps_its_facades() -> void:

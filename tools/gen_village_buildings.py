@@ -13,6 +13,7 @@ Usage:
     set -a; . ./setenv.sh; set +a
     uv run python tools/gen_village_buildings.py --style house shop inn       # stage style tiles
     uv run python tools/gen_village_buildings.py --w1 [keys] [--deploy]      # the other W1 villages
+    uv run python tools/gen_village_buildings.py --suburban [keys] [--deploy]  # W2 Maple Heights
 """
 from __future__ import annotations
 
@@ -113,7 +114,71 @@ W1 = {
                            "rugs and baskets of spices and pottery displayed at the front, a hanging sign with a pictured "
                            "coin (no letters), lanterns."),
 }
-BUILDINGS = {**HARMONIA, **W1}
+
+## W2 suburbia (Maple Heights): same seam, its own style -- a 16-bit 90s-America JRPG town, not a medieval one.
+STYLE_SUBURBAN = ("A single detailed 16-bit SNES-era JRPG pixel-art BUILDING for a sunny 1990s American suburb, in the "
+                  "style of quirky suburban JRPG towns: a straight-on front view, the roof seen from above and in front. "
+                  "Rich hand-pixeled detail: asphalt or clapboard shingles in visible rows, painted siding, white trim, "
+                  "windows with shutters or blinds, a front door at the bottom centre with a small step or porch. Crisp dark "
+                  "outline, warm saturated palette, soft top-left lighting. No people, no text or letters, no ground, no "
+                  "grass, no shadow on the ground, nothing else in the picture. The background is one flat, solid, pure "
+                  "magenta (#FF00FF) colour with no gradient. The building fills the frame and is centred.")
+SUBURBAN = {
+    "maple_garage_sale_house": (3, "A two-storey suburban family house with pale yellow siding and a brown shingle roof, an "
+                                   "attached garage with its door open and folding tables of junk for a garage sale in front, "
+                                   "a hand-painted cardboard sign with a pictured price tag (no letters)."),
+    "maple_mart": (3, "A two-storey suburban convenience mart, taller than it is wide, with an apartment window above: a flat roof with a boxy backlit sign showing a pictured shopping "
+                      "basket (no letters), big glass shop windows with posters and shelves visible, a striped awning, a "
+                      "newspaper box and an ice chest by the glass door."),
+    "maple_moms_house": (3, "A cosy suburban home that rents its guest room: blue siding, a red shingle roof with a dormer, a "
+                            "wide covered front porch with a swing and potted ferns, a welcome mat and a little hanging sign "
+                            "with a pictured bed and a heart (no letters)."),
+    "maple_house": (4, "A wide, tidy suburban ranch house with a low second storey, a little wider than it is tall: mint-green siding, a grey shingle roof with a "
+                       "chimney, a picture window with flower boxes, a mailbox and a basketball hoop over the front door."),
+}
+
+## W3 steampunk (Brasston): brass, rivets and steam. Its staggered 4x2 blocks want low wide art, or it climbs over row 12.
+STYLE_STEAMPUNK = ("A single detailed 16-bit SNES-era JRPG pixel-art BUILDING for a Victorian steampunk city, a straight-on "
+                   "front view with the roof seen from above and in front: soot-darkened brick and riveted brass panels, "
+                   "copper pipes and pressure gauges, small chimneys or vents puffing steam, arched windows with iron "
+                   "frames, a heavy front door at the bottom centre. Crisp dark outline, warm brass-and-brick palette, "
+                   "soft top-left lighting. No people, no text or letters, no ground, no shadow on the ground, nothing "
+                   "else in the picture. The background is one flat, solid, pure magenta (#FF00FF) colour with no "
+                   "gradient. The building fills the frame and is centred.")
+STEAMPUNK = {
+    "brasston_house": (3, "A narrow two-storey brick townhouse with a brass-trimmed bay window, a copper drainpipe and "
+                          "a tall chimney puffing steam."),
+    "brasston_forge": (3, "Gearwright's Forge: a brick foundry with a big riveted brass door, a glowing furnace window, a "
+                          "large cog mounted on the front wall and a hanging sign with a pictured hammer and gear (no letters)."),
+    "brasston_inn": (3, "The Cog & Pillow inn: a cosy brick-and-brass inn with warm lit arched windows, a steam-powered "
+                        "clock above the door and a hanging sign with a pictured cog and a pillow (no letters)."),
+    "brasston_cottage": (4, "A long, very low, flat-roofed single-storey workshop, three times as wide as it is tall, seen "
+                            "almost straight from the front so the roof is a thin strip: a round porthole window, a brass "
+                            "door, pipes along the wall, one short stubby vent."),
+    "brasston_shed": (4, "A very low single-storey brick boiler shed, about twice as wide as it is tall, with a shallow tin roof, a "
+                         "stubby steam vent, pipes along the wall and a small iron door."),
+}
+
+## W5 futuristic (NodePrime): a digital city drawn as neon-lit architecture, still 16-bit pixel art.
+STYLE_FUTURISTIC = ("A single detailed 16-bit SNES-era JRPG pixel-art BUILDING for a neon cyber city inside a computer, a "
+                    "straight-on front view with the roof seen from above and in front: dark glossy panels, glowing cyan "
+                    "and magenta neon trim, circuit-trace patterns, holographic screens, a sliding door at the bottom "
+                    "centre. Crisp dark outline, deep navy palette with bright neon accents, soft top-left lighting. No "
+                    "people, no text or letters, no ground, no shadow on the ground, nothing else in the picture. The "
+                    "background is one flat, solid, pure magenta (#FF00FF) colour with no gradient. The building fills "
+                    "the frame and is centred.")
+FUTURISTIC = {
+    "nodeprime_inn": (3, "Sleep.exe, the inn: a tall three-storey capsule hotel, taller than it is wide, with rows of glowing round pod windows, a "
+                         "holographic sign with a pictured crescent moon and the letters Z Z Z as shapes (no words), and a "
+                         "soft blue-lit sliding door."),
+    "nodeprime_cache": (3, "The cache store: a two-storey data shop with a big glass storefront showing glowing floppy "
+                           "disks and memory chips on shelves, a holographic sign with a pictured disk (no letters), and "
+                           "cooling fans on the roof."),
+}
+BUILDINGS = {**HARMONIA, **W1, **SUBURBAN, **STEAMPUNK, **FUTURISTIC}
+## Where each pool's art deploys, and the style it is drawn in.
+POOLS = {"harmonia": (HARMONIA, "medieval", None), "w1": (W1, "medieval", None), "suburban": (SUBURBAN, "suburban", STYLE_SUBURBAN),
+         "steampunk": (STEAMPUNK, "steampunk", STYLE_STEAMPUNK), "futuristic": (FUTURISTIC, "futuristic", STYLE_FUTURISTIC)}
 
 
 def key_out(img: Image.Image, tol: int = 90) -> Image.Image:
@@ -170,8 +235,9 @@ def generate_harmonia(key: str, view: str) -> Path:
     """One village building (Harmonia or W1), straight-on ("front", struktured's pick B) or corner-angled ("corner", A)."""
     from openai import OpenAI
     width, what = BUILDINGS[key]
+    style = next((st for pool, _, st in POOLS.values() if st and key in pool), STYLE)
     face = f"\n\n{FRONT}" if view == "front" else ""
-    r = OpenAI().images.generate(model=MODEL, prompt=f"{STYLE}{face}\n\nThe building: {what}", size="1024x1024", n=1)
+    r = OpenAI().images.generate(model=MODEL, prompt=f"{style}{face}\n\nThe building: {what}", size="1024x1024", n=1)
     raw = Image.open(io.BytesIO(base64.b64decode(r.data[0].b64_json)))
     STAGE.mkdir(parents=True, exist_ok=True)
     raw.save(STAGE / f"{key}_{view}_raw.png")
@@ -185,19 +251,23 @@ def main() -> int:
     ap.add_argument("--style", nargs="+", choices=sorted(KINDS) + [k + "_front" for k in KINDS], help="stage style tiles for these kinds")
     ap.add_argument("--harmonia", nargs="*", help="stage these Harmonia buildings (no names = all)")
     ap.add_argument("--w1", nargs="*", help="stage these other-W1-village buildings (no names = all)")
+    ap.add_argument("--suburban", nargs="*", help="stage these W2 Maple Heights buildings (no names = all)")
+    ap.add_argument("--steampunk", nargs="*", help="stage these W3 Brasston buildings (no names = all)")
+    ap.add_argument("--futuristic", nargs="*", help="stage these W5 NodePrime buildings (no names = all)")
     ap.add_argument("--view", choices=["front", "corner"], default="front", help="straight-on (B, default) or angled (A)")
     ap.add_argument("--deploy", action="store_true", help="copy staged Harmonia art into assets (never overwrites)")
     args = ap.parse_args()
     for k in args.style or []:
         print(f"staged {generate(k).relative_to(ROOT)}")
-    for chosen, pool in ((args.harmonia, HARMONIA), (args.w1, W1)):
+    for chosen, (pool, world, _) in ((args.harmonia, POOLS["harmonia"]), (args.w1, POOLS["w1"]), (args.suburban, POOLS["suburban"]), (args.steampunk, POOLS["steampunk"]),
+                                      (args.futuristic, POOLS["futuristic"])):
         if chosen is None:
             continue
         for k in chosen or sorted(pool):
             if k not in pool:
                 raise SystemExit(f"unknown building {k}")
             if args.deploy:
-                src, dst = STAGE / f"{k}_{args.view}.png", ROOT / f"assets/sprites/buildings/medieval/{k}.png"
+                src, dst = STAGE / f"{k}_{args.view}.png", ROOT / f"assets/sprites/buildings/{world}/{k}.png"
                 if not src.exists():
                     raise SystemExit(f"{k}: nothing staged at {src}")
                 if dst.exists():
