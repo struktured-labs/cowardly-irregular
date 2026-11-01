@@ -105,7 +105,7 @@ func test_every_shipped_entry_names_a_real_prop_world_and_file() -> void:
 	VillageProp.prop_art_override = null
 	VillageProp._prop_art_cache = null
 	var sec := VillageProp._prop_art_section()
-	var kinds: Array = ["fountain"]
+	var kinds: Array = ["fountain", "chest_closed", "chest_open"]
 	for k in VillageProp.Kind.keys():
 		if k != "HOUSE":
 			kinds.append(str(k).to_lower())
@@ -143,3 +143,26 @@ func test_the_inventory_the_art_is_asked_for() -> void:
 	assert_gt(keys.size(), 10, "the inventory found almost nothing to draw")
 	assert_true(placed.has("fountain_medieval"), "Harmonia's fountain is missing from the inventory")
 	assert_true(placed.has("lamp_post_steampunk"), "CONTROL: Brasston's lamp posts are in the inventory")
+
+
+func _chests(v: Node) -> Array:
+	var out: Array = []
+	for b in v.treasures.get_children():
+		if b.has_method("_chest_art"):
+			out.append(b)
+	return out
+
+
+func test_a_chest_takes_its_worlds_drawing_and_keeps_the_shared_pair_otherwise() -> void:
+	var v := _village(HARMONIA)
+	var chests := _chests(v)
+	assert_gt(chests.size(), 0, "CONTROL: Harmonia has a treasure chest")
+	assert_eq(chests[0]._world(), "medieval", "a chest could not tell which world it stands in")
+	assert_eq(chests[0]._chest_art("closed"), "res://assets/sprites/objects/chest_closed.png", "with no prop_art the chest lost the shared pair")
+	VillageProp.prop_art_override = {"chest_closed_medieval": {"path": PLANT}, "chest_open": {"path": "res://assets/sprites/buildings/medieval/harmonia_arms.png"}}
+	assert_eq(chests[0]._chest_art("closed"), PLANT, "the world's chest drawing was not used")
+	assert_eq(chests[0]._chest_art("open"), "res://assets/sprites/buildings/medieval/harmonia_arms.png", "a generic open-chest drawing was not used")
+	var drawn := _chests(_village(HARMONIA))
+	var closed: Array = drawn.filter(func(c): return not c._is_opened)
+	if not closed.is_empty():
+		assert_eq(Vector2i(closed[0].sprite.texture.get_width(), closed[0].sprite.texture.get_height()), _plant_size(), "a closed chest did not draw its world's art")
