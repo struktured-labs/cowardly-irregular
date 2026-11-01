@@ -7175,10 +7175,11 @@ func _on_autogrind_battle_ended(victory: bool) -> void:
 				float(GameState.game_constants.get("exp_multiplier", 1.0)),
 				0.1, 10.0)
 		if not battle_results.is_empty():
-			# Authored parity: BM's actual per-character grant = base_exp * total_multiplier * exp_multiplier (BM:868). Report that same number as the dashboard telemetry.
-			var base_exp: int = int(battle_results.get("base_exp", 0))
-			var total_mult: float = float(battle_results.get("total_multiplier", 1.0))
-			exp_gained = int(base_exp * total_mult * exp_mult)
+			# Authored parity: report the largest per-character grant BM actually paid (over-level halving and the stomp gate are per member, so no product rebuilds it).
+			if battle_results.has("exp_granted_max"):
+				exp_gained = int(battle_results["exp_granted_max"])
+			else:
+				exp_gained = int(int(battle_results.get("base_exp", 0)) * float(battle_results.get("total_multiplier", 1.0)) * exp_mult)
 			# gold: BM.total_gold already has one_shot_gold_bonus * reward_multiplier * gold_multiplier applied (BM:743, post-cadence #22). Read as-is; re-multiplying here would double-apply.
 			items_gained["gold"] = int(battle_results.get("total_gold", 0))
 		else:

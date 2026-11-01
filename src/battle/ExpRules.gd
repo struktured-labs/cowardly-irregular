@@ -17,6 +17,15 @@ static func stomp_bonus_applies(member_level: int, area_level: int) -> bool:
 	return area_level <= 0 or member_level <= area_level
 
 
+## The party's highest job level among the living, for rewards paid to the party as a whole.
+static func party_top_level(party: Array) -> int:
+	var best := 0
+	for c in party:
+		if c != null and is_instance_valid(c) and "job_level" in c and bool(c.get("is_alive")):
+			best = maxi(best, int(c.job_level))
+	return best
+
+
 ## The fight's level: the highest authored level among the enemies, or 0 when none is known.
 static func area_level_of(enemies: Array) -> int:
 	var tree := Engine.get_main_loop() as SceneTree

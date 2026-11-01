@@ -1036,6 +1036,9 @@ func end_battle(victory: bool) -> void:
 			var rank = _get_one_shot_rank(_setup_turns_used)
 			one_shot_exp_bonus = _get_one_shot_exp_multiplier(rank)
 			one_shot_gold_bonus = _get_one_shot_gold_multiplier(rank)
+			## Gold is pooled, so its stomp bonus follows the party's highest level, the same rule as each member's EXP.
+			if not ExpRules.stomp_bonus_applies(ExpRules.party_top_level(player_party), ExpRules.area_level_of(enemy_party)):
+				one_shot_gold_bonus = 1.0
 
 		# Apply autobattle bonus multiplier (stacks with one-shot)
 		var autobattle_exp_bonus = 1.0
@@ -1233,9 +1236,11 @@ func end_battle(victory: bool) -> void:
 
 		# Store battle results for victory screen
 		var bonuses: Array = []
-		if _one_shot_achieved:
+		## A stomp bonus nobody qualified for is not shown: the party's top level stood above the fight.
+		var stomp_paid := ExpRules.stomp_bonus_applies(ExpRules.party_top_level(player_party), area_level)
+		if _one_shot_achieved and stomp_paid:
 			bonuses.append({"type": "one_shot", "multiplier": one_shot_exp_bonus, "rank": _get_one_shot_rank(_setup_turns_used)})
-		if _full_autobattle and _autobattle_player_turns > 0:
+		if _full_autobattle and _autobattle_player_turns > 0 and stomp_paid:
 			bonuses.append({"type": "autobattle", "multiplier": autobattle_exp_bonus, "turns": _autobattle_player_turns})
 		if chain_engaged > 1:
 			bonuses.append({"type": "chain", "multiplier": chain_reward, "drop_multiplier": chain_drop, "groups": chain_engaged})
@@ -1261,7 +1266,8 @@ func end_battle(victory: bool) -> void:
 			"total_gold": total_gold,
 			"item_drops": item_drops,
 			"injuries": injuries,
-			"total_multiplier": reward_multiplier * one_shot_exp_bonus * autobattle_exp_bonus * chain_reward
+			"total_multiplier": reward_multiplier * (one_shot_exp_bonus * autobattle_exp_bonus if stomp_paid else 1.0) * chain_reward,
+			"exp_granted_max": char_results.reduce(func(acc, r): return maxi(acc, int(r.get("exp_gained", 0))), 0)
 		}
 
 		# Record one-shot in save system if achieved
