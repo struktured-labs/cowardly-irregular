@@ -620,6 +620,7 @@ func _setup_npcs() -> void:
 		"I've been complaining to NPCs for HOURS.",
 		"Where. Is. Your. Manager."
 	])
+	karen.sprite_archetype = "young_woman"  ## pinned: the name-hash pair drew the other sex
 	npcs.add_child(karen)
 
 	# === Mall Rat Mike - near arcade store ===
@@ -658,6 +659,7 @@ func _setup_npcs() -> void:
 		"You know what ruins a delivery? Random encounters.",
 		"I swear those crows target me specifically."
 	])
+	pete.sprite_archetype = "young_man"  ## pinned: the name-hash pair drew the other sex
 	npcs.add_child(pete)
 
 	# === Principal Sinclair - near school store ===

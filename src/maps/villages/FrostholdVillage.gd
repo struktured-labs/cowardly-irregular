@@ -290,6 +290,7 @@ func _setup_npcs() -> void:
 		"It is the first advice I have changed in eleven years."
 	]
 	var kael = _create_npc("Hermit Kael", "villager", Vector2(12 * TILE_SIZE,12 * TILE_SIZE), _kael_post if _after_cave_done else _kael_pre)
+	kael.sprite_archetype = "young_man"  ## pinned: the name-hash pair drew the other sex
 	npcs.add_child(kael)
 
 	# Merchant Helga (shivering)
@@ -343,6 +344,7 @@ func _setup_npcs() -> void:
 	])
 	# Without this the quest is UNSTARTABLE — QuestSystem.gd:125 matches npc_id to giver.npc_id.
 	yara.npc_id = "clockkeeper_yara"
+	yara.sprite_archetype = "old_woman"  ## pinned: the name-hash pair drew the other sex
 	npcs.add_child(yara)
 
 	_add_quest_examine_point("w1_frosthold_meltwater_clock",

@@ -319,6 +319,7 @@ func _setup_npcs() -> void:
 		"...Wait. You're not in costume.",
 		"Anyway, gotta go. Mom said dinner's at 6. BYE."
 	])
+	kid.sprite_archetype = "young_man"  ## pinned: the name-hash pair drew the other sex
 	npcs.add_child(kid)
 
 	# Surplus Ray — the last unrecovered voice from world2_maple_heights_npcs, a cutscene with no
@@ -336,6 +337,7 @@ func _setup_npcs() -> void:
 		"The HOA keeps tabs on everything. The Coordinator will find you within the day. Stock up first.",
 	])
 	surplus.npc_id = "surplus_ray_w2"
+	surplus.sprite_archetype = "young_man"  ## pinned: the name-hash pair drew the other sex
 	npcs.add_child(surplus)
 
 	# The one Oak Street voice with no equivalent anywhere — a W2 echo of Phil the Lost.

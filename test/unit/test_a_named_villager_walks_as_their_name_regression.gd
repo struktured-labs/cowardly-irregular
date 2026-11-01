@@ -6,13 +6,42 @@ extends GutTest
 ## ("My mother ran it. HER mother ran it.") as young men, Bram Coll as a young woman. Each is now pinned
 ## with sprite_archetype, which wins over the hash in BOTH _resolve_archetype (the body) and _portrait_key
 ## (the face), so the pair moves together and lands on an already-reviewed face/body ledger row.
+## Second pass (2026-11-01): that replay only read `x.npc_name = ...` placements and missed every `_create_npc(...)`
+## helper call, which is most of the game: 110 hash-picked NPCs, not 18, and the elder (old_man/old_woman) pair too.
+## Ten more read against their own lines: Martha, Miner Trude ("my husband"), Clockkeeper Yara and Karen drawn as
+## men; Dewey, Hermit Kael and Conspiracy Theorist Rex (their code comments say "he"), Tyler, Surplus Ray and
+## Pizza Delivery Pete drawn as women. Greta the Grey is NOT pinned: the author's own comment calls her "him".
 ## Built through the real interior scripts, so a pin that is removed, renamed or set on the wrong variable reds.
 
 const CASES := [
 	["res://src/maps/interiors/FrostholdMeltwaterClockInterior.gd", "Keeper Yrsa", "young_woman"],
 	["res://src/maps/interiors/MapleGarageSaleInterior.gd", "Doreen", "young_woman"],
 	["res://src/maps/interiors/HarmoniaChapelInterior.gd", "Bram Coll", "young_man"],
+	["res://src/maps/interiors/TavernInterior.gd", "Martha", "young_woman"],
+	["res://src/maps/interiors/TavernInterior.gd", "Dewey", "young_man"],
+	["res://src/maps/villages/GrimhollowVillage.gd", "Miner Trude", "young_woman"],
+	["res://src/maps/villages/FrostholdVillage.gd", "Clockkeeper Yara", "old_woman"],
+	["res://src/maps/villages/FrostholdVillage.gd", "Hermit Kael", "young_man"],
+	["res://src/maps/villages/MapleHeightsVillage.gd", "Tyler on Bike", "young_man"],
+	["res://src/maps/villages/MapleHeightsVillage.gd", "Surplus Ray", "young_man"],
+	["res://src/maps/villages/SandriftVillage.gd", "Conspiracy Theorist Rex", "young_man"],
 ]
+
+## Placed by the Suburban overworld, too heavy to build here: judged at the source, on the variable that is added.
+const OVERWORLD_PINS := [
+	["res://src/exploration/SuburbanOverworld.gd", "karen", "Karen", "young_woman"],
+	["res://src/exploration/SuburbanOverworld.gd", "pete", "Pizza Delivery Pete", "young_man"],
+]
+
+
+func test_each_overworld_pin_is_on_the_npc_that_is_added() -> void:
+	for c in OVERWORLD_PINS:
+		var src := FileAccess.get_file_as_string(c[0])
+		assert_true(src.contains('var %s = _create_npc("%s"' % [c[1], c[2]]), "CONTROL: %s must still be built as `%s`" % [c[2], c[1]])
+		var at := src.find('var %s = _create_npc("%s"' % [c[1], c[2]])
+		var added := src.find("npcs.add_child(%s)" % c[1], at)
+		var pin := src.find('%s.sprite_archetype = "%s"' % [c[1], c[3]], at)
+		assert_true(pin > at and pin < added, "%s must be pinned to %s before it is added (its _ready reads the pin)" % [c[2], c[3]])
 
 
 ## The placed NPC named `who` in a freshly built copy of the interior, or null.

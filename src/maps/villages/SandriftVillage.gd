@@ -252,6 +252,7 @@ func _setup_npcs() -> void:
 		"It's a CONSPIRACY by the random number generator!",
 		"...Don't look at me like that. The RNG has EYES."
 	])
+	rex.sprite_archetype = "young_man"  ## pinned: the name-hash pair drew the other sex
 	npcs.add_child(rex)
 
 	# Retired Hero Gramps (nostalgic)
