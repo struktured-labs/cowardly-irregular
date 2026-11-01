@@ -3478,7 +3478,7 @@ func _on_battle_started() -> void:
 	_boss_low_hp_spoken = false
 	_boss_defeat_spoken = false
 	_gloat_line = {}
-	_gloat_voice = {}
+	_drop_gloat_voice()
 	_holding_for_boss_beat = false
 	_deferred_defeat_scene = {}
 
@@ -6360,7 +6360,7 @@ func _play_boss_beat(is_victory: bool) -> void:
 	_battle_dialogue.show_boss_last_words(_gloat_speaker_name(is_victory), spoken, _boss_monster_id(), live_voice)
 	await _hold_beat_dialogue()
 	## Whatever is still synthesizing is abandoned with the line, so it can never speak over what comes next.
-	_gloat_voice = {}
+	_drop_gloat_voice()
 	_holding_for_boss_beat = false
 
 
@@ -6431,7 +6431,7 @@ func _start_gloat_voice(text: String, is_victory: bool) -> void:
 
 ## Static, so a battle freed mid-synthesis has no instance for the await to resume into.
 static func _synthesize_into(job: Dictionary, speaker_id: String, text: String) -> void:
-	job["stream"] = await VoiceService.synthesize(speaker_id, text, GLOAT_VOICE_TIMEOUT_SEC)
+	job["stream"] = await VoiceService.synthesize(speaker_id, text, GLOAT_VOICE_TIMEOUT_SEC, job)
 	job["done"] = true
 
 
@@ -6464,6 +6464,13 @@ func _join_or_drop_gloat_voice(shown_at: int) -> void:
 		return
 	if bool(_gloat_voice["done"]) and in_window and _battle_dialogue.line_index() == 0:
 		_battle_dialogue.join_live_voice(_gloat_voice.get("stream"))
+	_drop_gloat_voice()
+
+
+## Forgets the live voice, and cancels its synthesis if still running so the server is free for the party's lines.
+func _drop_gloat_voice() -> void:
+	if not _gloat_voice.is_empty() and not bool(_gloat_voice.get("done", false)):
+		_gloat_voice["cancel"] = true
 	_gloat_voice = {}
 
 

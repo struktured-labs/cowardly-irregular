@@ -167,6 +167,9 @@ func test_a_voice_after_the_window_is_dropped() -> void:
 		return
 	await get_tree().create_timer(SceneScript.BOSS_BEAT_LIVE_VOICE_JOIN_SEC + 0.3).timeout
 	assert_true(_dialogue.visible, "FIXTURE: the line is still up, so only the window can refuse the voice")
+	assert_has(_replay.cancelled, str(_replay.requests[0]["id"]),
+		"a dropped voice must cancel its synthesis, not hold the server to its timeout")
+	assert_false(VoiceService.is_busy(), "and the party's voice pool, which waits on is_busy(), is free again")
 	_replay._emit(str(_replay.requests[0]["id"]))
 	await get_tree().process_frame
 	await get_tree().process_frame
