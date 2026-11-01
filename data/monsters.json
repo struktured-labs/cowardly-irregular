@@ -2184,12 +2184,12 @@
     "description": "A tie-dye wearing pacifist who attacks with bad vibes and crystal healing. Peace, man.",
     "level": 26,
     "stats": {
-      "max_hp": 2464,
+      "max_hp": 7978,
       "max_mp": 60,
-      "attack": 308,
-      "defense": 205,
-      "magic": 616,
-      "magic_defense": 103,
+      "attack": 997,
+      "defense": 664,
+      "magic": 1995,
+      "magic_defense": 334,
       "speed": 10
     },
     "abilities": [
@@ -2213,7 +2213,7 @@
       "physical"
     ],
     "resistances": [],
-    "spectrum_ratio": 2.053571
+    "spectrum_ratio": 6.649463
   },
   "spiteful_crow": {
     "id": "spiteful_crow",
@@ -2221,12 +2221,12 @@
     "description": "A mean-spirited crow that steals your items. Extremely fast and annoying.",
     "level": 25,
     "stats": {
-      "max_hp": 1180,
+      "max_hp": 3821,
       "max_mp": 20,
-      "attack": 393,
-      "defense": 118,
-      "magic": 197,
-      "magic_defense": 59,
+      "attack": 1273,
+      "defense": 382,
+      "magic": 638,
+      "magic_defense": 191,
       "speed": 22
     },
     "abilities": [
@@ -2250,7 +2250,7 @@
       "lightning"
     ],
     "resistances": [],
-    "spectrum_ratio": 1.966296
+    "spectrum_ratio": 6.366866
   },
   "skate_punk": {
     "id": "skate_punk",
@@ -2258,12 +2258,12 @@
     "description": "A rebellious skateboarder who attacks with sick tricks. Radical, dude.",
     "level": 26,
     "stats": {
-      "max_hp": 2054,
+      "max_hp": 6651,
       "max_mp": 25,
-      "attack": 719,
-      "defense": 246,
-      "magic": 164,
-      "magic_defense": 123,
+      "attack": 2328,
+      "defense": 797,
+      "magic": 531,
+      "magic_defense": 398,
       "speed": 16
     },
     "abilities": [
@@ -2289,7 +2289,7 @@
     "resistances": [
       "physical"
     ],
-    "spectrum_ratio": 2.053571
+    "spectrum_ratio": 6.649463
   },
   "unassuming_dog": {
     "id": "unassuming_dog",
@@ -2297,12 +2297,12 @@
     "description": "Just a regular neighborhood dog. Definitely nothing suspicious about its enormous attack stat.",
     "level": 26,
     "stats": {
-      "max_hp": 3569,
+      "max_hp": 11556,
       "max_mp": 30,
-      "attack": 833,
-      "defense": 297,
-      "magic": 238,
-      "magic_defense": 139,
+      "attack": 2697,
+      "defense": 962,
+      "magic": 771,
+      "magic_defense": 450,
       "speed": 14
     },
     "abilities": [
@@ -2333,7 +2333,7 @@
         "*Something about its eyes says otherwise.*"
       ]
     },
-    "spectrum_ratio": 1.982759
+    "spectrum_ratio": 6.420174
   },
   "cranky_lady": {
     "id": "cranky_lady",
@@ -2341,12 +2341,12 @@
     "description": "An irate suburban resident who attacks with complaints and thrown objects. Wants to speak to your manager.",
     "level": 26,
     "stats": {
-      "max_hp": 2259,
+      "max_hp": 7315,
       "max_mp": 45,
-      "attack": 452,
-      "defense": 288,
-      "magic": 513,
-      "magic_defense": 144,
+      "attack": 1464,
+      "defense": 933,
+      "magic": 1661,
+      "magic_defense": 466,
       "speed": 11
     },
     "abilities": [
@@ -2370,7 +2370,7 @@
       "fire"
     ],
     "resistances": [],
-    "spectrum_ratio": 2.053571
+    "spectrum_ratio": 6.649463
   },
   "clockwork_sentinel": {
     "id": "clockwork_sentinel",
@@ -2378,12 +2378,12 @@
     "description": "A brass-plated mechanical guard that patrols the steampunk district. Its gears grind ominously as it raises a riveted shield.",
     "level": 31,
     "stats": {
-      "max_hp": 4538,
+      "max_hp": 14694,
       "max_mp": 20,
-      "attack": 908,
-      "defense": 624,
-      "magic": 284,
-      "magic_defense": 312,
+      "attack": 2940,
+      "defense": 2021,
+      "magic": 920,
+      "magic_defense": 1010,
       "speed": 10
     },
     "abilities": [
@@ -2410,7 +2410,7 @@
       "poison",
       "ice"
     ],
-    "spectrum_ratio": 2.836207
+    "spectrum_ratio": 9.183638
   },
   "steam_rat": {
     "id": "steam_rat",
@@ -2418,12 +2418,12 @@
     "description": "A mangy sewer rat augmented with crude pneumatic pistons. It scurries through the pipe networks at alarming speed, venting scalding steam from its back.",
     "level": 31,
     "stats": {
-      "max_hp": 2553,
+      "max_hp": 8267,
       "max_mp": 15,
-      "attack": 794,
-      "defense": 227,
-      "magic": 340,
-      "magic_defense": 113,
+      "attack": 2571,
+      "defense": 735,
+      "magic": 1101,
+      "magic_defense": 366,
       "speed": 20
     },
     "abilities": [
@@ -2450,7 +2450,7 @@
     "resistances": [
       "fire"
     ],
-    "spectrum_ratio": 2.836207
+    "spectrum_ratio": 9.183638
   },
   "brass_golem": {
     "id": "brass_golem",
@@ -2458,12 +2458,12 @@
     "description": "A hulking automaton forged from salvaged boiler plate. Extremely durable but slow — its coal furnace heart needs time to build pressure between swings.",
     "level": 32,
     "stats": {
-      "max_hp": 7019,
+      "max_hp": 22728,
       "max_mp": 12,
-      "attack": 1053,
-      "defense": 877,
-      "magic": 146,
-      "magic_defense": 439,
+      "attack": 3410,
+      "defense": 2840,
+      "magic": 473,
+      "magic_defense": 1421,
       "speed": 5
     },
     "abilities": [
@@ -2496,7 +2496,7 @@
       "fire",
       "poison"
     ],
-    "spectrum_ratio": 2.924667
+    "spectrum_ratio": 9.470072
   },
   "cog_swarm": {
     "id": "cog_swarm",
@@ -2504,12 +2504,12 @@
     "description": "A whirling cloud of loose gears, springs, and razor-edged cogs that escaped the factory floor. They move as one, shredding anything in their path with a thousand tiny cuts.",
     "level": 31,
     "stats": {
-      "max_hp": 2836,
+      "max_hp": 9183,
       "max_mp": 25,
-      "attack": 993,
-      "defense": 284,
-      "magic": 425,
-      "magic_defense": 142,
+      "attack": 3215,
+      "defense": 920,
+      "magic": 1376,
+      "magic_defense": 460,
       "speed": 16
     },
     "abilities": [
@@ -2536,7 +2536,7 @@
     "resistances": [
       "poison"
     ],
-    "spectrum_ratio": 2.836207
+    "spectrum_ratio": 9.183638
   },
   "pipe_phantom": {
     "id": "pipe_phantom",
@@ -2544,12 +2544,12 @@
     "description": "A spectral entity formed from superheated steam and industrial sorrow. It drifts through the pipe networks, wailing with the voice of every boiler that ever exploded.",
     "level": 32,
     "stats": {
-      "max_hp": 3802,
+      "max_hp": 12311,
       "max_mp": 70,
-      "attack": 526,
-      "defense": 292,
-      "magic": 1111,
-      "magic_defense": 146,
+      "attack": 1703,
+      "defense": 945,
+      "magic": 3597,
+      "magic_defense": 473,
       "speed": 14
     },
     "abilities": [
@@ -2582,7 +2582,7 @@
       "fire"
     ],
     "undead": true,
-    "spectrum_ratio": 2.924667
+    "spectrum_ratio": 9.470072
   },
   "assembly_line_automaton": {
     "id": "assembly_line_automaton",
@@ -2590,12 +2590,12 @@
     "description": "A malfunctioning factory robot that keeps performing its task even in combat. Repetitive but relentless.",
     "level": 38,
     "stats": {
-      "max_hp": 8833,
+      "max_hp": 22612,
       "max_mp": 30,
-      "attack": 1526,
-      "defense": 1124,
-      "magic": 401,
-      "magic_defense": 562,
+      "attack": 3907,
+      "defense": 2877,
+      "magic": 1027,
+      "magic_defense": 1439,
       "speed": 8
     },
     "abilities": [
@@ -2626,7 +2626,7 @@
       "poison",
       "ice"
     ],
-    "spectrum_ratio": 4.014839
+    "spectrum_ratio": 10.277988
   },
   "shift_supervisor": {
     "id": "shift_supervisor",
@@ -2634,12 +2634,12 @@
     "description": "An overzealous middle-manager type who weaponizes corporate jargon. Can buff other enemies' attack with 'motivational' speeches.",
     "level": 38,
     "stats": {
-      "max_hp": 7227,
+      "max_hp": 18501,
       "max_mp": 60,
-      "attack": 1204,
-      "defense": 723,
-      "magic": 1124,
-      "magic_defense": 361,
+      "attack": 3082,
+      "defense": 1851,
+      "magic": 2877,
+      "magic_defense": 924,
       "speed": 12
     },
     "abilities": [
@@ -2668,7 +2668,7 @@
       "dark"
     ],
     "resistances": [],
-    "spectrum_ratio": 4.014839
+    "spectrum_ratio": 10.277988
   },
   "rust_elemental": {
     "id": "rust_elemental",
@@ -2676,12 +2676,12 @@
     "description": "Living corrosion given form. Born from decades of neglected machinery, it feeds on metal and hope.",
     "level": 38,
     "stats": {
-      "max_hp": 10112,
+      "max_hp": 25887,
       "max_mp": 45,
-      "attack": 1245,
-      "defense": 856,
-      "magic": 1167,
-      "magic_defense": 428,
+      "attack": 3187,
+      "defense": 2191,
+      "magic": 2988,
+      "magic_defense": 1096,
       "speed": 9
     },
     "abilities": [
@@ -2713,7 +2713,7 @@
       "ice"
     ],
     "element": "poison",
-    "spectrum_ratio": 3.889375
+    "spectrum_ratio": 9.9568
   },
   "toxic_sludge": {
     "id": "toxic_sludge",
@@ -2721,12 +2721,12 @@
     "description": "Green industrial waste that gained sentience. It gurgles apologetically as it poisons everything it touches.",
     "level": 37,
     "stats": {
-      "max_hp": 6287,
+      "max_hp": 16095,
       "max_mp": 40,
-      "attack": 982,
-      "defense": 472,
-      "magic": 1257,
-      "magic_defense": 236,
+      "attack": 2514,
+      "defense": 1208,
+      "magic": 3218,
+      "magic_defense": 604,
       "speed": 7
     },
     "abilities": [
@@ -2758,7 +2758,7 @@
       "poison"
     ],
     "element": "poison",
-    "spectrum_ratio": 3.929667
+    "spectrum_ratio": 10.059948
   },
   "conveyor_gremlin": {
     "id": "conveyor_gremlin",
@@ -2766,12 +2766,12 @@
     "description": "A fast, cackling trickster that lives in the machinery. Steals tools, sabotages equipment, and vanishes before anyone can catch it.",
     "level": 37,
     "stats": {
-      "max_hp": 4323,
+      "max_hp": 11067,
       "max_mp": 35,
-      "attack": 1100,
-      "defense": 393,
-      "magic": 707,
-      "magic_defense": 196,
+      "attack": 2816,
+      "defense": 1006,
+      "magic": 1810,
+      "magic_defense": 502,
       "speed": 24
     },
     "abilities": [
@@ -2800,7 +2800,7 @@
       "ice"
     ],
     "resistances": [],
-    "spectrum_ratio": 3.929667
+    "spectrum_ratio": 10.059948
   },
   "rogue_process": {
     "id": "rogue_process",
