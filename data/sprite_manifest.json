@@ -6362,7 +6362,21 @@
           2
         ]
       },
-      "generator": "tools/gen_tile_sheet_medieval.py -- cliff+overlay only. Ground tiles stay procedural (TileGenerator already draws them); the 10 props are routed to the artist. Bitmask tiles are generated from the mask and side-checked, never hand-placed."
+      "tiles": {
+        "FOREST": [
+          0,
+          3
+        ],
+        "FOREST:1": [
+          1,
+          3
+        ],
+        "SNOW_TREE": [
+          2,
+          3
+        ]
+      },
+      "generator": "tools/gen_tile_sheet_medieval.py -- cliff+overlay generated here; any terrain `tiles` (row 3+, drawn by gen_village_buildings.py --tiles) are carried across a regen, and the ground tiles they do not name stay procedural (TileGenerator draws them); the 10 props are routed to the artist. Bitmask tiles are generated from the mask and side-checked, never hand-placed."
     },
     "suburban": {
       "path": "res://assets/sprites/tiles/suburban.png",
@@ -6506,6 +6520,12 @@
         "shadow": [
           1,
           2
+        ]
+      },
+      "tiles": {
+        "SHADE_TREE": [
+          0,
+          3
         ]
       },
       "derived_from": "MapleHeightsVillage",
@@ -7397,6 +7417,11 @@
       "tier": "T1",
       "frames": 4,
       "source": "gpt-image-2, straight-on medieval plaza fountain with a cherry tree in the buildings' style (struktured 2026-11-01: procgen-looking props must go) -- tools/gen_village_buildings.py --props; 4 frames = one painting, water pixels' brightness cycled; T1, artist veto applies."
+    },
+    "tree_medieval": {
+      "path": "res://assets/sprites/props/medieval/tree.png",
+      "tier": "T1",
+      "source": "gpt-image-2, straight-on village oak in the buildings' style, 64px wide over the 1-tile footprint (struktured 2026-11-01: the trees look procgen) -- tools/gen_village_buildings.py --props; T1, artist veto applies."
     }
   }
 }
