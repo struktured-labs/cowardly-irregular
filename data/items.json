@@ -4,7 +4,7 @@
     "name": "Potion",
     "category": 0,
     "target_type": 0,
-    "description": "Restores 500 HP",
+    "description": "Restores some HP",
     "effects": {
       "heal_hp": 500
     },
@@ -16,7 +16,7 @@
     "name": "Hi-Potion",
     "category": 0,
     "target_type": 0,
-    "description": "Restores 2000 HP",
+    "description": "Restores a lot of HP",
     "effects": {
       "heal_hp": 2000
     },
@@ -28,7 +28,7 @@
     "name": "Mega Potion",
     "category": 0,
     "target_type": 1,
-    "description": "Restores 1000 HP to all allies",
+    "description": "Restores HP to all allies",
     "effects": {
       "heal_hp": 1000
     },

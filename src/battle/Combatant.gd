@@ -109,6 +109,11 @@ static func party_x10_ratio(level: int) -> float:
 	return level_multiplier(level) / (10.0 * (1.0 + (x10_era_level(level) - 1.0) * LEVEL_RATE_LINEAR))
 
 
+## A gear stat as it lands on a party member at this level: what equipping grants, so a menu can show it truthfully.
+static func gear_mod_at_level(stat: String, value: int, level: int) -> int:
+	return roundi(float(value) * party_x10_ratio(level)) if stat in SCALED_STAT_FIELDS else value
+
+
 ## Converts a flat number authored in x10 units (gear, item heals and damage, heal and ward amounts) to this combatant.
 func x10_ratio() -> float:
 	if has_meta("monster_type") and has_node("/root/EncounterSystem"):

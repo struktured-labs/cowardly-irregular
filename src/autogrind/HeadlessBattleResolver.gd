@@ -2301,18 +2301,18 @@ func _resolve_item(user, item_id: String, target) -> void:
 		its.use_item(user, item_id, typed_targets)
 		_log("%s uses %s on %s" % [user.combatant_name, item_id, target.combatant_name])
 		return
-	# Fallback: ItemSystem unavailable. Original hardcoded list.
+	# Fallback: ItemSystem unavailable. items.json's ×10-era heals, converted at use like the real path.
 	match item_id:
 		"potion":
-			target.heal(50)
+			target.heal(int(500 * target.x10_ratio()))
 		"hi_potion":
-			target.heal(200)
+			target.heal(int(2000 * target.x10_ratio()))
 		"ether":
 			target.restore_mp(30)
 		"hi_ether":
 			target.restore_mp(100)
 		_:
-			target.heal(50)
+			target.heal(int(500 * target.x10_ratio()))
 	_log("%s uses %s on %s (fallback path — ItemSystem missing)" % [user.combatant_name, item_id, target.combatant_name])
 
 
