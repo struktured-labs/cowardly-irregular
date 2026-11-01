@@ -1,7 +1,7 @@
 extends GutTest
 
 ## The storm bed was 15.4 LU hotter than the rain (struktured via cowir-main 20637: "bring it down to the rain's level").
-## Its manifest gain_db levels it; play_ambient and the music slider must both carry that gain.
+## Its manifest bed_gain_db levels it; play_ambient and the music slider must both carry that gain.
 
 var _saved_music_db: float = 0.0
 
@@ -17,7 +17,7 @@ func after_each() -> void:
 
 
 func _gain(key: String) -> float:
-	return float((SoundManager._sfx_manifest.get(key, {}) as Dictionary).get("gain_db", 0.0))
+	return float((SoundManager._sfx_manifest.get(key, {}) as Dictionary).get("bed_gain_db", 0.0))
 
 
 func _bed_db(key: String) -> float:
@@ -35,7 +35,7 @@ func test_the_storm_carries_a_cut_and_the_rain_does_not() -> void:
 func test_the_storm_plays_its_cut_below_the_rain() -> void:
 	var rain := _bed_db("weather_rain")
 	var storm := _bed_db("weather_storm_bed")
-	assert_almost_eq(storm - rain, _gain("weather_storm_bed"), 0.01, "play_ambient must apply the bed's own gain_db")
+	assert_almost_eq(storm - rain, _gain("weather_storm_bed"), 0.01, "play_ambient must apply the bed's own bed_gain_db")
 
 
 func test_the_music_slider_keeps_the_storms_cut() -> void:
@@ -46,7 +46,7 @@ func test_the_music_slider_keeps_the_storms_cut() -> void:
 		"moving the music slider must not hand the storm its full level back")
 
 
-## A soundscape bed's trim is computed from its file's loudness; a gain_db on top would land it off its target silently (cowir-music 20691).
+## A soundscape bed's trim is computed from its file's loudness; a bed_gain_db on top would land it off its target silently (cowir-music 20691).
 func test_no_soundscape_bed_also_carries_a_gain() -> void:
 	SoundManager._load_music_manifest()
 	var places: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/ambient_recipes.json")).get("places", {})
@@ -57,10 +57,10 @@ func test_no_soundscape_bed_also_carries_a_gain() -> void:
 			var bed := str((phase as Dictionary).get("bed", ""))
 			if bed != "":
 				beds.append(bed)
-				if _gain(bed) != 0.0 or float((SoundManager._music_manifest.get(bed, {}) as Dictionary).get("gain_db", 0.0)) != 0.0:
+				if _gain(bed) != 0.0 or float((SoundManager._music_manifest.get(bed, {}) as Dictionary).get("bed_gain_db", 0.0)) != 0.0:
 					stacked.append(bed)
 	assert_gt(beds.size(), 0, "PREMISE: the recipes must name at least one bed")
-	assert_eq(stacked, [], "a recipe bed with a gain_db stacks it on the loudness trim; fold it into bed_lufs instead")
+	assert_eq(stacked, [], "a recipe bed with a bed_gain_db stacks it on the loudness trim; fold it into bed_lufs instead")
 
 
 func test_the_s_rank_slam_is_a_labelled_placeholder_that_loads() -> void:

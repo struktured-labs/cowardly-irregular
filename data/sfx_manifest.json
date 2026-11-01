@@ -2433,8 +2433,8 @@
       "duration_seconds": 10.0,
       "prompt_influence": 0.75,
       "loop": true,
-      "gain_db": -15.4,
-      "gain_note": "struktured via cowir-main 20637: bring the storm down to the rain's level. Measured EBU R128: this file -6.4 LUFS, weather_rain -21.8 LUFS; -15.4 dB puts them level. play_ambient adds it to the bed's trim; delete the field to revert."
+      "bed_gain_db": -15.4,
+      "gain_note": "struktured via cowir-main 20637: bring the storm down to the rain's level. Measured EBU R128: this file -6.4 LUFS, weather_rain -21.8 LUFS; -15.4 dB puts them level. play_ambient adds it to the bed's trim (its own field: gain_db is play_voice's, guarded to +/-6 dB); delete the field to revert."
     },
     "weather_sunny": {
       "file": "assets/audio/sfx/weather_sunny.ogg",
