@@ -48,6 +48,9 @@ func _authored_lines() -> Array:
 	for trig in BossBarks.TRIGGERS:
 		for l in BossBarks.lines_for("cave_rat_king", trig):
 			out.append(str(l))
+	var bark := str((_json("res://data/monsters.json")["cave_rat_king"] as Dictionary).get("fx_signature_card", {}).get("bark", ""))
+	if bark != "":
+		out.append(bark)
 	for f in ["world1_rat_king_intro", "world1_rat_king_defeat"]:
 		_cutscene_lines(_json("res://data/cutscenes/%s.json" % f), out)
 	var bd: Dictionary = _json("res://data/boss_dialogue.json")["cave_rat_king"]
