@@ -67,7 +67,7 @@ func _generate_sprite() -> void:
 	sprite = Sprite2D.new()
 	sprite.name = "Sprite"
 
-	var art := "res://assets/sprites/objects/chest_%s.png" % ("open" if _is_opened else "closed")
+	var art := _chest_art("open" if _is_opened else "closed")
 	if ResourceLoader.exists(art):
 		sprite.texture = load(art)
 		sprite.centered = true
@@ -81,6 +81,23 @@ func _generate_sprite() -> void:
 	sprite.texture = texture
 	sprite.centered = true
 	add_child(sprite)
+
+
+## manifest prop_art "chest_<state>_<world>", then "chest_<state>", then the shared pair in objects/.
+func _chest_art(state: String) -> String:
+	var drawn := VillageProp.prop_art_path("chest_" + state, _world())
+	return drawn if drawn != "" else "res://assets/sprites/objects/chest_%s.png" % state
+
+
+## The world of the village this chest stands in, read off its tile generator; "" outside a village.
+func _world() -> String:
+	var n: Node = get_parent()
+	while n != null:
+		var tg: Variant = n.get("tile_generator")
+		if tg is Object and (tg as Object).has_method("_get_sheet_key"):
+			return str(tg._get_sheet_key())
+		n = n.get_parent()
+	return ""
 
 
 func _draw_chest(image: Image) -> void:
@@ -462,7 +479,7 @@ func _open_chest(player: Node2D) -> void:
 
 	# Update sprite — the SAME art convention _generate_sprite uses. Without this
 	# an artist-rendered chest snaps to the procedural drawing the moment it opens.
-	var art := "res://assets/sprites/objects/chest_open.png"
+	var art := _chest_art("open")
 	if ResourceLoader.exists(art):
 		sprite.texture = load(art)
 	else:

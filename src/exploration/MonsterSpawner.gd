@@ -22,8 +22,8 @@ const CHECK_INTERVAL: float = 3.0
 const GROUP_EXTRA_MAX: int = 2
 ## Chained encounters (struktured 2026-10-31): enemies one battle holds -- BattleScene has this many enemy_positions.
 const CHAIN_CAPACITY: int = 3
-## A chain never runs longer than this many back-to-back battles; groups past it stay on the field.
-const CHAIN_MAX_BATTLES: int = 4
+## A chain never runs longer than this many back-to-back battles; groups past it stay on the field. 4 wiped autobattle 0/20 even in W1 (cowir-autogrind BAL_CHAIN, 2026-11-01).
+const CHAIN_MAX_BATTLES: int = 2
 
 
 ## Per-instance map dimensions (in tiles). Default to the W1 OverworldScene
