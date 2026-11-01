@@ -50,7 +50,15 @@ func test_a_summon_gets_an_hp_bar_under_its_name() -> void:
 	var bar: ColorRect = scene._enemy_hp_bars[enemy]["bar_bg"]
 	assert_eq(bar.get_parent(), sprite, "the bar belongs to the summon's own sprite")
 	var label: Label = sprite.get_node("NameLabel")
-	assert_gte(bar.position.y, label.position.y + label.get_minimum_size().y - 0.01, "and sits under its name")
+	var settle_by := Time.get_ticks_msec() + 3000
+	while (sprite as Node2D).scale.x < 0.05 and Time.get_ticks_msec() < settle_by:
+		await get_tree().process_frame
+	await get_tree().create_timer(0.4).timeout
+	# On SCREEN: the label and bar each undo the sprite's scale, so their local y's are in different units.
+	var name_bottom: Vector2 = label.get_global_transform() * Vector2(0, label.get_minimum_size().y)
+	var bar_top: Vector2 = bar.get_global_transform() * Vector2.ZERO
+	var gap := bar_top.y - name_bottom.y
+	assert_between(gap, 0.0, 6.0, "and sits right under its name on screen (gap %.1f px)" % gap)
 
 
 func test_a_summon_s_bar_drains_with_its_hp() -> void:
