@@ -460,6 +460,7 @@ func _setup_npcs() -> void:
 		"Come back later. I have a story about the cave from *my* year. Now I finally know whether to tell it."
 	]
 	var retired = _create_npc("Greta the Grey", "elder", Vector2(5 * TILE_SIZE,18 * TILE_SIZE), _greta_post if _after_cave_done else _greta_pre)
+	retired.sprite_archetype = "old_woman"  ## pinned: the name-hash pair drew the other sex
 	npcs.add_child(retired)
 
 	# === HUMOROUS NPCs ===

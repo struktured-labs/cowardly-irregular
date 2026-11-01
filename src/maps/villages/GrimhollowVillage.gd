@@ -338,6 +338,7 @@ func _setup_npcs() -> void:
 	])
 	# Without this the quest is UNSTARTABLE — QuestSystem.gd:125 matches npc_id to giver.npc_id.
 	trude.npc_id = "miner_trude"
+	trude.sprite_archetype = "young_woman"  ## pinned: the name-hash pair drew the other sex
 	npcs.add_child(trude)
 
 	_add_quest_examine_point("w1_grimhollow_foremans_ledger",
