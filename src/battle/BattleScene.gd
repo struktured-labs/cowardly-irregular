@@ -17,6 +17,7 @@ const BattleCommandMenuClass = preload("res://src/battle/BattleCommandMenu.gd")
 const BattleCameraRigClass = preload("res://src/battle/BattleCameraRig.gd")
 const BattleResultsDisplayClass = preload("res://src/battle/BattleResultsDisplay.gd")
 const AdvanceAuraClass = preload("res://src/battle/AdvanceAura.gd")
+const StatusAuraClass = preload("res://src/battle/StatusAura.gd")
 
 ## Base display height for party sprites. Aseprite frames are ground truth —
 ## we don't compensate for non-uniform character fill within the artist's
@@ -334,6 +335,7 @@ static var _hints_shown: Dictionary = {}  # {"hint_id": true}  # Static: persist
 
 ## Status effect icon containers (combatant -> HBoxContainer of icons)
 var _status_icon_containers: Dictionary = {}  # {Combatant: HBoxContainer}
+var _status_auras: Dictionary = {}  # {Combatant: StatusAura}: every status ANIMATED on the battler, beside the badge row
 
 ## Buff/debuff visual overlay nodes (combatant -> {glow: ColorRect, particles: Array, sigil: Sprite2D})
 var _buff_visual_nodes: Dictionary = {}  # {Combatant: Dictionary}
@@ -1130,6 +1132,7 @@ func _create_battle_sprites() -> void:
 	## _buff_visual_nodes is the one with no other way out: _remove_buff_visual is only ever reached
 	## for a combatant still in BattleManager's parties, so a replaced enemy is never visited again.
 	_status_icon_containers.clear()
+	_status_auras.clear()
 	_enemy_hp_bars.clear()
 	_buff_visual_nodes.clear()
 
@@ -1745,6 +1748,7 @@ func _setup_status_icons(combatant: Combatant, sprite: AnimatedSprite2D) -> void
 	container.position = Vector2(centre_x - STATUS_ROW_WIDTH * unscale.x * 0.5, top - STATUS_ROW_LIFT * unscale.y)
 	sprite.add_child(container)
 	_status_icon_containers[combatant] = container
+	_status_auras[combatant] = _make_status_aura(sprite)
 
 	# Connect signals for reactive updates
 	if not combatant.status_added.is_connected(_on_combatant_status_changed):
@@ -1754,6 +1758,25 @@ func _setup_status_icons(combatant: Combatant, sprite: AnimatedSprite2D) -> void
 
 	# Show any existing statuses
 	_refresh_status_icons(combatant)
+
+
+## The animated overlay, counter-scaled to screen pixels and fitted to the idle frame's FIGURE, so a motif is the same
+## size on a 0.5x hero and a 2.5x dragon and stands on the body, not on the frame's empty margin.
+func _make_status_aura(sprite: AnimatedSprite2D) -> Node2D:
+	var aura = StatusAuraClass.new()
+	aura.name = "StatusAura"
+	var sc := sprite.scale
+	aura.scale = Vector2(1.0 / maxf(absf(sc.x), 0.01), 1.0 / maxf(absf(sc.y), 0.01))
+	if sprite.sprite_frames and sprite.sprite_frames.has_animation(&"idle") and sprite.sprite_frames.get_frame_count(&"idle") > 0:
+		var idle_tex = sprite.sprite_frames.get_frame_texture(&"idle", 0)
+		if idle_tex:
+			var fig: Rect2 = AdvanceAuraClass.figure_rect_of(idle_tex)
+			var origin := fig.position - Vector2(idle_tex.get_size()) * 0.5
+			if sprite.flip_h:
+				origin.x = -(origin.x + fig.size.x)
+			aura.body = Rect2(origin * Vector2(absf(sc.x), absf(sc.y)), fig.size * Vector2(absf(sc.x), absf(sc.y)))
+	sprite.add_child(aura)
+	return aura
 
 
 func _on_combatant_status_changed(_status: String, combatant: Combatant) -> void:
@@ -1786,6 +1809,13 @@ func _refresh_status_icons(combatant: Combatant, animate: bool = true) -> void:
 	# doom_counter is a Combatant int field, not a status_effect — surface the lethal countdown so it's trackable after the initial log scrolls away
 	if "doom_counter" in combatant and combatant.doom_counter > 0:
 		wanted.append({"key": "doom_counter", "status": "doom_counter", "text": "☠ %d" % combatant.doom_counter, "color": Color(0.6, 0.1, 0.7)})
+
+	var aura = _status_auras.get(combatant)
+	if aura != null and is_instance_valid(aura):
+		var ids: Array = []
+		for w in wanted:
+			ids.append(w["status"])
+		aura.set_statuses(ids)
 
 	var live_keys: Dictionary = {}
 	for w in wanted:
