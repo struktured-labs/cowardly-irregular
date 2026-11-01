@@ -8,13 +8,14 @@ extends GutTest
 ## block added later without art reds here instead of silently staying procedural. The W1 villages joined after.
 
 const VILLAGE := "res://src/maps/villages/HarmoniaVillage.gd"
-## Every W1 village with roofed blocks -> the glyphs that are buildings there (open-air shops are not listed).
+## Every W1 village -> the glyphs that are roofed buildings there (open-air shops and Sandrift's secret tent are not).
 const VILLAGES := {
 	"res://src/maps/villages/HarmoniaVillage.gd": "HIAPGB",
 	"res://src/maps/villages/FrostholdVillage.gd": "LFC",
 	"res://src/maps/villages/GrimhollowVillage.gd": "RCD",
 	"res://src/maps/villages/IronhavenVillage.gd": "IFSM",
 	"res://src/maps/villages/EldertreeVillage.gd": "N",
+	"res://src/maps/villages/SandriftVillage.gd": "IB",
 }
 
 
@@ -82,7 +83,7 @@ func test_every_w1_building_is_drawn() -> void:
 			if spr != null and spr.texture != null and drawn != null:
 				assert_eq(spr.texture.get_size(), drawn.get_size(), "%s %s must draw its art, not the procedural paint" % [path.get_file(), b])
 				assert_eq(int(spr.texture.get_width()), b.size.x * 32, "%s %s's art must span its block exactly" % [path.get_file(), b])
-	assert_gte(total, 19, "FLOOR: Harmonia's 8 blocks and the other W1 villages' 11 must all be found (%d)" % total)
+	assert_gte(total, 21, "FLOOR: Harmonia's 8 blocks and the other W1 villages' 13 must all be found (%d)" % total)
 	assert_eq(bare, [], "these W1 buildings fell back to the procedural block: %s" % [bare])
 
 
@@ -121,8 +122,8 @@ func _leaks_in(v: Node, leaks: Array) -> int:
 
 
 func test_a_village_without_art_keeps_its_facades() -> void:
-	# CONTROL: the seam is opt-in. A village that lists no building_art still gets the procedural facade.
-	var v = await _built("res://src/maps/villages/SandriftVillage.gd")
+	# CONTROL: the seam is opt-in. A W4 village that lists no building_art still gets the procedural facade.
+	var v = await _built("res://src/maps/villages/RivetRowVillage.gd")
 	var art := 0
 	var painted := 0
 	for p in v.props.get_children():

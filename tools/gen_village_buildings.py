@@ -106,6 +106,12 @@ W1 = {
     "eldertree_inn": (3, "A canopy inn built into the trunk of a giant tree: a round wooden door in the bark, round "
                          "windows with warm light, a leafy roof of branches above, a hanging sign with a pictured leaf "
                          "(no letters), lanterns hung from roots."),
+    "sandrift_inn": (3, "An oasis inn in a desert village: sun-baked adobe walls, a flat roof with a striped cloth canopy "
+                        "and potted palms, a round arched doorway with a hanging curtain, warm lit windows, a hanging "
+                        "sign with a pictured palm tree and a bed (no letters), water jars by the door."),
+    "sandrift_bazaar": (3, "A desert bazaar stall-house: sandstone walls, a flat roof under a colourful striped awning, "
+                           "rugs and baskets of spices and pottery displayed at the front, a hanging sign with a pictured "
+                           "coin (no letters), lanterns."),
 }
 BUILDINGS = {**HARMONIA, **W1}
 
