@@ -1152,6 +1152,7 @@ func end_battle(victory: bool) -> void:
 				float(GameState.game_constants.get("exp_multiplier", 1.0)),
 				0.1, 10.0)
 		var char_results: Array = []
+		var area_level := ExpRules.area_level_of(enemy_party)
 		for combatant in player_party:
 			var exp_gained = 0
 			var old_level = combatant.job_level
@@ -1173,7 +1174,9 @@ func end_battle(victory: bool) -> void:
 				combatant.ability_learned.connect(_collect_learned)
 			# The dead learn nothing — unless a passive/accessory says otherwise (struktured 2026-09-06).
 			if combatant.is_alive or earns_exp_while_dead(combatant):
-				exp_gained = int(base_exp * reward_multiplier * one_shot_exp_bonus * autobattle_exp_bonus * exp_multiplier)
+				## Stomp bonuses only at or above the member's level; every share then halves per 3 levels over the fight.
+				var stomp := one_shot_exp_bonus * autobattle_exp_bonus if ExpRules.stomp_bonus_applies(combatant.job_level, area_level) else 1.0
+				exp_gained = int(base_exp * reward_multiplier * stomp * exp_multiplier * ExpRules.over_level_factor(combatant.job_level, area_level))
 				if not defer_payout:
 					combatant.gain_job_exp(exp_gained)
 			if combatant.has_signal("ability_learned") and combatant.ability_learned.is_connected(_collect_learned):
@@ -2713,6 +2716,19 @@ func _make_ai_decision(combatant: Combatant, alive_allies: Array, alive_enemies:
 	return _execute_archetype_ai(combatant, archetype, available_abilities, alive_allies, alive_enemies)
 
 
+## HP per point of the level curve that makes an enemy a tank. 120 keeps all 66 gate-reaching monsters on their x10-era archetype.
+const TANK_HP_PER_CURVE := 120.0
+
+
+## An enemy's authored level (combatants never store it), else its job level.
+func _archetype_level(combatant: Combatant) -> int:
+	if combatant.has_meta("monster_type") and EncounterSystem:
+		var row: Variant = EncounterSystem.monster_database.get(combatant.get_meta("monster_type", ""), null)
+		if row is Dictionary:
+			return int((row as Dictionary).get("level", combatant.job_level))
+	return combatant.job_level
+
+
 func _get_ai_archetype(combatant: Combatant, available_abilities: Array) -> String:
 	"""Derive AI behavior archetype from combatant stats and abilities"""
 	var healing_abilities = available_abilities.filter(func(a): return a.get("type", "") == "healing")
@@ -2736,9 +2752,8 @@ func _get_ai_archetype(combatant: Combatant, available_abilities: Array) -> Stri
 	# Debuffer: has debuff/status abilities and isn't purely physical
 	if debuff_abilities.size() > 0:
 		return "debuffer"
-	# Tank: high HP and defense relative to attack
-	# 1500 not 150 — scaled with the 2026-07-29 ×10 pass. At the old value every combatant clears it and the whole roster classifies as "tank".
-	if combatant.defense > combatant.attack * 0.5 and combatant.max_hp >= 1500:
+	# Tank: high HP and defense relative to attack, HP judged against its level's curve so the gate reads the same at every level.
+	if combatant.defense > combatant.attack * 0.5 and combatant.max_hp >= TANK_HP_PER_CURVE * Combatant.level_multiplier(_archetype_level(combatant)):
 		return "tank"
 	# Assassin: very fast, targets wounded enemies
 	if combatant.speed >= 18:
@@ -6807,7 +6822,8 @@ func heal_cast_amount(caster: Combatant, ability: Dictionary) -> int:
 	var base: int = int(ability.get("heal_amount", 0))
 	if base <= 0 or caster == null:
 		return 0
-	return int(base * (1.0 + caster.get_buffed_stat("magic", caster.magic) / 20.0))
+	## heal_amount is authored in x10 units: (ratio + MAG/20) is today's (1 + MAG/20) converted to this level.
+	return int(base * (caster.x10_ratio() + caster.get_buffed_stat("magic", caster.magic) / 20.0))
 
 
 ## What this heal will add to THIS target, so a menu quotes the number the cast will deliver.
@@ -7187,7 +7203,7 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 				if target and is_instance_valid(target) and target.is_alive:
 					target.add_status("damage_absorb", duration)
 					if ability.has("absorb_amount"):
-						target.set_meta("_damage_absorb_budget", maxi(0, int(ability["absorb_amount"])))
+						target.set_meta("_damage_absorb_budget", maxi(0, roundi(float(ability["absorb_amount"]) * target.x10_ratio())))
 					elif target.has_meta("_damage_absorb_budget"):
 						target.remove_meta("_damage_absorb_budget")
 					battle_log_message.emit("[color=%s]%s will absorb damage as healing![/color] (%d turns)" % [AccessibilityPalette.bonus_bbcode(), target.combatant_name, duration])

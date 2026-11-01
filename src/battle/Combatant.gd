@@ -95,6 +95,28 @@ static func level_multiplier(level: int) -> float:
 static func linear_level_multiplier(level: int) -> float:
 	return 1.0 + float(max(1, level) - 1) * LEVEL_RATE_LINEAR
 
+
+## The x10-era level a party level corresponds to: the inverse of the ladder (W1 1-25, then the rest up to 58).
+static func x10_era_level(level: int) -> float:
+	var lv := float(clampi(level, 1, 58))
+	if lv <= 25.0:
+		return 1.0 + (lv - 1.0) * 19.0 / 24.0
+	return 20.0 + (lv - 25.0) * 8.0 / 33.0
+
+
+## How much bigger a party stat is now than the x10 era made it at the equivalent level.
+static func party_x10_ratio(level: int) -> float:
+	return level_multiplier(level) / (10.0 * (1.0 + (x10_era_level(level) - 1.0) * LEVEL_RATE_LINEAR))
+
+
+## Converts a flat number authored in x10 units (gear, item heals and damage, heal and ward amounts) to this combatant.
+func x10_ratio() -> float:
+	if has_meta("monster_type") and has_node("/root/EncounterSystem"):
+		var row: Variant = get_node("/root/EncounterSystem").monster_database.get(str(get_meta("monster_type", "")), null)
+		if row is Dictionary and (row as Dictionary).has("spectrum_ratio"):
+			return float((row as Dictionary)["spectrum_ratio"])
+	return party_x10_ratio(job_level)
+
 ## Current state
 var current_hp: int
 var current_mp: int
@@ -1911,8 +1933,12 @@ func recalculate_stats() -> void:
 	if has_node("/root/EquipmentSystem"):
 		var equip_mods = get_node("/root/EquipmentSystem").get_equipment_mods(self)
 		# Driven off MODDABLE_STATS, not a hand-listed six — the old list silently omitted whatever it did not name.
+		var gear_ratio := x10_ratio()
 		for stat in MODDABLE_STATS:
 			var delta: int = int(equip_mods.get(stat, 0))
+			## Gear is authored in x10 units; the scaled stats convert so a sword keeps today's share at every level.
+			if delta != 0 and stat in SCALED_STAT_FIELDS:
+				delta = roundi(float(delta) * gear_ratio)
 			if delta != 0:
 				set(stat, int(get(stat)) + delta)
 

@@ -6889,6 +6889,8 @@ func _resolve_headless_battle(enemy_data: Array) -> void:
 		_autogrind_ui.append_resolver_log(result.get("log", []))
 	var victory = result.get("victory", false)
 	var exp_gained = result.get("exp_gained", 0)
+	if "last_area_level" in AutogrindSystem:
+		AutogrindSystem.last_area_level = int(result.get("area_level", 0))
 	# Tick 342: pick up gold_gained too — the resolver (tick 341) pre-applied
 	# gold_multiplier, so we just forward as-is.
 	var gold_gained_headless: int = int(result.get("gold_gained", 0))

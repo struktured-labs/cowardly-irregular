@@ -1393,7 +1393,7 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 					## comments above document, on the arm nobody revisited. Formula mirrors
 					## BattleManager:5227 so headless and live agree.
 					var authored = int(ability.get("heal_amount", 0))
-					var heal_amount = int(authored * (1.0 + caster.get_buffed_stat("magic", caster.magic) / 20.0)) if authored > 0 else int(caster.get_buffed_stat("magic", caster.magic) * power)
+					var heal_amount = int(authored * (caster.x10_ratio() + caster.get_buffed_stat("magic", caster.magic) / 20.0)) if authored > 0 else int(caster.get_buffed_stat("magic", caster.magic) * power)
 					heal_amount = max(1, heal_amount)
 					var healed = target.heal(heal_amount)
 					_log("%s heals %s for %d" % [caster.combatant_name, target.combatant_name, healed])
@@ -1711,7 +1711,7 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 						## An omitted absorb_amount still means unlimited, on both sides.
 						target.add_status("damage_absorb", duration)
 						if ability.has("absorb_amount"):
-							target.set_meta("_damage_absorb_budget", maxi(0, int(ability["absorb_amount"])))
+							target.set_meta("_damage_absorb_budget", maxi(0, roundi(float(ability["absorb_amount"]) * target.x10_ratio())))
 						elif target.has_meta("_damage_absorb_budget"):
 							target.remove_meta("_damage_absorb_budget")
 						_log("%s wards %s (absorbs %d for %d turns)" % [caster.combatant_name, target.combatant_name, int(ability.get("absorb_amount", -1)), duration])
@@ -2466,6 +2466,7 @@ func _build_results(victory: bool, termination_reason: String = "") -> Dictionar
 		"victory": victory,
 		"rounds": _current_round,
 		"exp_gained": exp,
+		"area_level": ExpRules.area_level_of(_enemy_party),
 		"gold_gained": gold,
 		"item_drops": drops["item_drops"],
 		"rare_drops": drops["rare_drops"],

@@ -14,10 +14,10 @@ WHAT IT DOES, all from one curve so the table and the data cannot drift:
              the one deliberate difficulty change: at-level trash was a 100%/2-round stomp.
   rewards    exp_reward scales by new_level/old_level (the L*100 level cost), so a world takes as
              many at-level battles per level as today.
-  gear+items stat_mods / heal_hp / damage scale by the same ratio at the piece's FIRST availability
-             (its shop's world, placed in the band by cost rank; else its earliest dropper; else L1).
-  abilities  heal_amount / absorb_amount scale at the job level that teaches them; abilities_at_level
-             and evolution level_required move with the player's own level (CAMPAIGN map).
+  flat x10   gear stat_mods, item heal_hp / damage and ability heal_amount / absorb_amount are NOT rewritten:
+             Combatant.x10_ratio() converts them at use (each monster records its own spectrum_ratio; the
+             party's comes from the campaign map), which keeps today's share of HP at every level.
+  unlocks    abilities_at_level and evolution level_required move with the player's own level (CAMPAIGN map).
 
 USAGE   tools/rebalance_spectrum.py --apply     rewrite data/ in place (refuses if already applied)
         tools/rebalance_spectrum.py --check     verify a transformed tree: every boss keeps its ratio
@@ -283,60 +283,14 @@ def apply():
         if "exp_reward" in m:
             m["exp_reward"] = _scale(m["exp_reward"], Ln / float(max(1, Lo)))
         m["level"] = Ln
+        m["spectrum_ratio"] = round(r, 6)
         for d in m.get("drops", []) or []:
             did = d.get("item") or d.get("id") if isinstance(d, dict) else d
             if did:
                 drops.setdefault(did, []).append((Lo, w))
 
-    # gear and items, scaled at first availability
-    gear = {}
-    def walk(d):
-        for k, v in d.items():
-            if isinstance(v, dict) and "stat_mods" in v:
-                gear[v.get("id", k)] = v
-            elif isinstance(v, dict):
-                walk(v)
-    walk(equip_doc)
-    shops = shop_worlds(set(gear) | set(items))
-    costs_by_world = {}
-    for pid, w_list in shops.items():
-        row = gear.get(pid) or items.get(pid) or {}
-        for w in w_list:
-            costs_by_world.setdefault(w, set()).add(int(row.get("cost", 0)))
-    costs_by_world = {w: sorted(c) for w, c in costs_by_world.items()}
-    for pid, g in gear.items():
-        Lo, w = availability(pid, int(g.get("cost", 0)), shops, drops, costs_by_world)
-        r = ratio(Lo, remap(Lo, w))
-        for s in X10_STATS:
-            if s in g.get("stat_mods", {}):
-                g["stat_mods"][s] = _scale(g["stat_mods"][s], r)
-    for pid, it in items.items():
-        fx = it.get("effects") if isinstance(it, dict) else None
-        if not isinstance(fx, dict):
-            continue
-        Lo, w = availability(pid, int(it.get("cost", 0)), shops, drops, costs_by_world)
-        r = ratio(Lo, remap(Lo, w))
-        for f in ("heal_hp", "damage"):
-            if f in fx:
-                fx[f] = _scale(fx[f], r)
-
-    # abilities: at the job level that teaches them
-    learned = {}
-    for j in jobs.values():
-        if isinstance(j, dict):
-            for k, ids in (j.get("abilities_at_level") or {}).items():
-                for a in ids:
-                    learned[a] = min(learned.get(a, 99), int(k))
-    for aid, a in abils.items():
-        if not isinstance(a, dict):
-            continue
-        Ln = learned.get(aid, 1)
-        Lo = next((x for x in range(1, 29) if campaign(x) >= Ln), 1)
-        r = ratio(Lo, Ln)
-        for f in ("heal_amount", "absorb_amount"):
-            if f in a:
-                a[f] = _scale(a[f], r)
-
+    # Gear, item heals/damage and heal/ward amounts STAY in x10 units: Combatant.x10_ratio() converts them at
+    # the moment they are used, so each keeps today's share of HP at every equivalent level, not only at one.
     jobs_doc[MARKER] = {"floor": LEVEL_FLOOR, "curve": LEVEL_CURVE, "trash_dial": TRASH_DIAL}
     _save("data/jobs.json", jobs_doc); _save("data/monsters.json", mons_doc)
     _save("data/equipment.json", equip_doc); _save("data/items.json", items_doc); _save("data/abilities.json", abil_doc)

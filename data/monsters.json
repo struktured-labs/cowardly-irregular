@@ -29,7 +29,8 @@
     ],
     "resistances": [
       "physical"
-    ]
+    ],
+    "spectrum_ratio": 0.05
   },
   "bat": {
     "id": "bat",
@@ -61,7 +62,8 @@
       "fire",
       "lightning"
     ],
-    "resistances": []
+    "resistances": [],
+    "spectrum_ratio": 0.051538
   },
   "mushroom": {
     "id": "mushroom",
@@ -98,7 +100,8 @@
     ],
     "resistances": [
       "poison"
-    ]
+    ],
+    "spectrum_ratio": 0.051538
   },
   "imp": {
     "id": "imp",
@@ -137,7 +140,8 @@
     "resistances": [
       "fire",
       "dark"
-    ]
+    ],
+    "spectrum_ratio": 0.076296
   },
   "goblin": {
     "id": "goblin",
@@ -172,7 +176,8 @@
     "weaknesses": [
       "lightning"
     ],
-    "resistances": []
+    "resistances": [],
+    "spectrum_ratio": 0.076296
   },
   "wolf": {
     "id": "wolf",
@@ -203,7 +208,8 @@
     "weaknesses": [
       "fire"
     ],
-    "resistances": []
+    "resistances": [],
+    "spectrum_ratio": 0.076296
   },
   "spider": {
     "id": "spider",
@@ -236,7 +242,8 @@
     ],
     "resistances": [
       "dark"
-    ]
+    ],
+    "spectrum_ratio": 0.076296
   },
   "fungoid": {
     "id": "fungoid",
@@ -271,7 +278,8 @@
     "resistances": [
       "earth"
     ],
-    "music_track": "battle_mushroom"
+    "music_track": "battle_mushroom",
+    "spectrum_ratio": 0.076296
   },
   "snake": {
     "id": "snake",
@@ -304,7 +312,8 @@
     ],
     "resistances": [
       "earth"
-    ]
+    ],
+    "spectrum_ratio": 0.096071
   },
   "ghost": {
     "id": "ghost",
@@ -339,7 +348,8 @@
     "resistances": [
       "physical",
       "dark"
-    ]
+    ],
+    "spectrum_ratio": 0.096071
   },
   "viper": {
     "id": "viper",
@@ -375,7 +385,8 @@
       "fire",
       "earth"
     ],
-    "music_track": "battle_snake"
+    "music_track": "battle_snake",
+    "spectrum_ratio": 0.12069
   },
   "elemental": {
     "id": "elemental",
@@ -411,7 +422,8 @@
       "physical",
       "fire",
       "earth"
-    ]
+    ],
+    "spectrum_ratio": 0.12069
   },
   "troll": {
     "id": "troll",
@@ -446,7 +458,8 @@
     "resistances": [
       "fire",
       "physical"
-    ]
+    ],
+    "spectrum_ratio": 0.149667
   },
   "corrupted_sprite": {
     "id": "corrupted_sprite",
@@ -479,7 +492,8 @@
     ],
     "resistances": [
       "dark"
-    ]
+    ],
+    "spectrum_ratio": 0.096071
   },
   "glitch_entity": {
     "id": "glitch_entity",
@@ -519,7 +533,8 @@
     "resistances": [
       "dark",
       "lightning"
-    ]
+    ],
+    "spectrum_ratio": 0.12069
   },
   "cave_rat": {
     "id": "cave_rat",
@@ -550,7 +565,8 @@
     "weaknesses": [
       "fire"
     ],
-    "resistances": []
+    "resistances": [],
+    "spectrum_ratio": 0.076296
   },
   "giant_bat": {
     "id": "giant_bat",
@@ -584,7 +600,8 @@
       "lightning"
     ],
     "resistances": [],
-    "music_track": "battle_bat"
+    "music_track": "battle_bat",
+    "spectrum_ratio": 0.12069
   },
   "rat_guard": {
     "id": "rat_guard",
@@ -622,7 +639,8 @@
     ],
     "resistances": [
       "physical"
-    ]
+    ],
+    "spectrum_ratio": 0.149667
   },
   "diseased_rat": {
     "id": "diseased_rat",
@@ -661,7 +679,8 @@
     ],
     "resistances": [
       "poison"
-    ]
+    ],
+    "spectrum_ratio": 0.226129
   },
   "cave_rat_king": {
     "id": "cave_rat_king",
@@ -745,7 +764,8 @@
     ],
     "counter_abilities": [
       "counter"
-    ]
+    ],
+    "spectrum_ratio": 0.357059
   },
   "skeleton": {
     "id": "skeleton",
@@ -785,7 +805,8 @@
       "dark",
       "ice"
     ],
-    "undead": true
+    "undead": true,
+    "spectrum_ratio": 0.12069
   },
   "ice_wolf": {
     "id": "ice_wolf",
@@ -824,7 +845,8 @@
       "ice"
     ],
     "element": "ice",
-    "music_track": "battle_wolf"
+    "music_track": "battle_wolf",
+    "spectrum_ratio": 0.226129
   },
   "specter": {
     "id": "specter",
@@ -865,7 +887,8 @@
       "ice"
     ],
     "undead": true,
-    "music_track": "battle_ghost"
+    "music_track": "battle_ghost",
+    "spectrum_ratio": 0.096071
   },
   "ogre": {
     "id": "ogre",
@@ -904,7 +927,8 @@
     ],
     "resistances": [
       "physical"
-    ]
+    ],
+    "spectrum_ratio": 0.226129
   },
   "barbarian": {
     "id": "barbarian",
@@ -941,7 +965,8 @@
       "ice",
       "holy"
     ],
-    "resistances": []
+    "resistances": [],
+    "spectrum_ratio": 0.226129
   },
   "cave_troll": {
     "id": "cave_troll",
@@ -988,7 +1013,8 @@
     },
     "learns_from": [
       "abilities"
-    ]
+    ],
+    "spectrum_ratio": 0.266875
   },
   "shadow_knight": {
     "id": "shadow_knight",
@@ -1036,7 +1062,8 @@
     },
     "learns_from": [
       "abilities"
-    ]
+    ],
+    "spectrum_ratio": 0.310606
   },
   "treasure_mimic": {
     "id": "treasure_mimic",
@@ -1096,7 +1123,8 @@
     "learns_from": [
       "abilities"
     ],
-    "music_track": "battle_rogue_mailbox"
+    "music_track": "battle_rogue_mailbox",
+    "spectrum_ratio": 0.226129
   },
   "cartographer_wraith": {
     "id": "cartographer_wraith",
@@ -1147,7 +1175,8 @@
         "Hero: Is that a compass made of teeth?",
         "The Lost Cartographer: I mapped every inch of this warren. Nobody read past page one."
       ]
-    }
+    },
+    "spectrum_ratio": 0.581081
   },
   "ironback_beetle": {
     "id": "ironback_beetle",
@@ -1196,7 +1225,8 @@
     },
     "learns_from": [
       "abilities"
-    ]
+    ],
+    "spectrum_ratio": 0.149667
   },
   "cursed_armor": {
     "id": "cursed_armor",
@@ -1251,7 +1281,8 @@
     "learns_from": [
       "abilities"
     ],
-    "music_track": "battle_skeleton"
+    "music_track": "battle_skeleton",
+    "spectrum_ratio": 0.266875
   },
   "blood_wolf_alpha": {
     "id": "blood_wolf_alpha",
@@ -1310,7 +1341,8 @@
     "learns_from": [
       "abilities"
     ],
-    "music_track": "battle_wolf"
+    "music_track": "battle_wolf",
+    "spectrum_ratio": 0.226129
   },
   "crystal_golem": {
     "id": "crystal_golem",
@@ -1366,7 +1398,8 @@
     },
     "learns_from": [
       "abilities"
-    ]
+    ],
+    "spectrum_ratio": 0.310606
   },
   "rogue_automaton": {
     "id": "rogue_automaton",
@@ -1427,7 +1460,8 @@
     "one_shot": {
       "hp_threshold": 1428,
       "setup_hint": "Build AP and strike hard."
-    }
+    },
+    "spectrum_ratio": 0.357059
   },
   "elder_mushroom": {
     "id": "elder_mushroom",
@@ -1481,7 +1515,8 @@
       "hp_threshold": 524,
       "setup_hint": "Build AP and strike hard."
     },
-    "music_track": "battle_mushroom"
+    "music_track": "battle_mushroom",
+    "spectrum_ratio": 0.149667
   },
   "corrupted_guardian": {
     "id": "corrupted_guardian",
@@ -1532,7 +1567,8 @@
     ],
     "counter_abilities": [
       "counter"
-    ]
+    ],
+    "spectrum_ratio": 0.357059
   },
   "time_phantom": {
     "id": "time_phantom",
@@ -1591,7 +1627,8 @@
     ],
     "counter_abilities": [
       "counter"
-    ]
+    ],
+    "spectrum_ratio": 0.524722
   },
   "script_error": {
     "id": "script_error",
@@ -1647,7 +1684,8 @@
     ],
     "counter_abilities": [
       "counter"
-    ]
+    ],
+    "spectrum_ratio": 5.801282
   },
   "adaptive_slime": {
     "id": "adaptive_slime",
@@ -1695,7 +1733,8 @@
       "mimic_ability"
     ],
     "adaptation_speed": 2,
-    "music_track": "battle_slime"
+    "music_track": "battle_slime",
+    "spectrum_ratio": 0.266875
   },
   "meta_knight": {
     "id": "meta_knight",
@@ -1746,7 +1785,8 @@
     ],
     "counter_abilities": [
       "counter"
-    ]
+    ],
+    "spectrum_ratio": 3.185714
   },
   "permadeath_reaper": {
     "id": "permadeath_reaper",
@@ -1804,7 +1844,8 @@
     ],
     "counter_abilities": [
       "counter"
-    ]
+    ],
+    "spectrum_ratio": 1.206591
   },
   "fire_dragon": {
     "id": "fire_dragon",
@@ -1882,7 +1923,8 @@
     ],
     "counter_abilities": [
       "counter"
-    ]
+    ],
+    "spectrum_ratio": 0.639211
   },
   "ice_dragon": {
     "id": "ice_dragon",
@@ -1962,7 +2004,8 @@
     ],
     "counter_abilities": [
       "counter"
-    ]
+    ],
+    "spectrum_ratio": 0.779744
   },
   "lightning_dragon": {
     "id": "lightning_dragon",
@@ -2044,7 +2087,8 @@
     ],
     "counter_abilities": [
       "counter"
-    ]
+    ],
+    "spectrum_ratio": 0.8435
   },
   "shadow_dragon": {
     "id": "shadow_dragon",
@@ -2131,7 +2175,8 @@
     ],
     "counter_abilities": [
       "counter"
-    ]
+    ],
+    "spectrum_ratio": 0.974762
   },
   "new_age_retro_hippie": {
     "id": "new_age_retro_hippie",
@@ -2167,7 +2212,8 @@
     "weaknesses": [
       "physical"
     ],
-    "resistances": []
+    "resistances": [],
+    "spectrum_ratio": 2.053571
   },
   "spiteful_crow": {
     "id": "spiteful_crow",
@@ -2203,7 +2249,8 @@
     "weaknesses": [
       "lightning"
     ],
-    "resistances": []
+    "resistances": [],
+    "spectrum_ratio": 1.966296
   },
   "skate_punk": {
     "id": "skate_punk",
@@ -2241,7 +2288,8 @@
     ],
     "resistances": [
       "physical"
-    ]
+    ],
+    "spectrum_ratio": 2.053571
   },
   "unassuming_dog": {
     "id": "unassuming_dog",
@@ -2284,7 +2332,8 @@
         "*It looks... normal?*",
         "*Something about its eyes says otherwise.*"
       ]
-    }
+    },
+    "spectrum_ratio": 1.982759
   },
   "cranky_lady": {
     "id": "cranky_lady",
@@ -2320,7 +2369,8 @@
     "weaknesses": [
       "fire"
     ],
-    "resistances": []
+    "resistances": [],
+    "spectrum_ratio": 2.053571
   },
   "clockwork_sentinel": {
     "id": "clockwork_sentinel",
@@ -2359,7 +2409,8 @@
     "resistances": [
       "poison",
       "ice"
-    ]
+    ],
+    "spectrum_ratio": 2.836207
   },
   "steam_rat": {
     "id": "steam_rat",
@@ -2398,7 +2449,8 @@
     ],
     "resistances": [
       "fire"
-    ]
+    ],
+    "spectrum_ratio": 2.836207
   },
   "brass_golem": {
     "id": "brass_golem",
@@ -2443,7 +2495,8 @@
       "physical",
       "fire",
       "poison"
-    ]
+    ],
+    "spectrum_ratio": 2.924667
   },
   "cog_swarm": {
     "id": "cog_swarm",
@@ -2482,7 +2535,8 @@
     ],
     "resistances": [
       "poison"
-    ]
+    ],
+    "spectrum_ratio": 2.836207
   },
   "pipe_phantom": {
     "id": "pipe_phantom",
@@ -2527,7 +2581,8 @@
       "physical",
       "fire"
     ],
-    "undead": true
+    "undead": true,
+    "spectrum_ratio": 2.924667
   },
   "assembly_line_automaton": {
     "id": "assembly_line_automaton",
@@ -2570,7 +2625,8 @@
     "resistances": [
       "poison",
       "ice"
-    ]
+    ],
+    "spectrum_ratio": 4.014839
   },
   "shift_supervisor": {
     "id": "shift_supervisor",
@@ -2611,7 +2667,8 @@
       "fire",
       "dark"
     ],
-    "resistances": []
+    "resistances": [],
+    "spectrum_ratio": 4.014839
   },
   "rust_elemental": {
     "id": "rust_elemental",
@@ -2655,7 +2712,8 @@
       "physical",
       "ice"
     ],
-    "element": "poison"
+    "element": "poison",
+    "spectrum_ratio": 3.889375
   },
   "toxic_sludge": {
     "id": "toxic_sludge",
@@ -2699,7 +2757,8 @@
     "resistances": [
       "poison"
     ],
-    "element": "poison"
+    "element": "poison",
+    "spectrum_ratio": 3.929667
   },
   "conveyor_gremlin": {
     "id": "conveyor_gremlin",
@@ -2740,7 +2799,8 @@
       "lightning",
       "ice"
     ],
-    "resistances": []
+    "resistances": [],
+    "spectrum_ratio": 3.929667
   },
   "rogue_process": {
     "id": "rogue_process",
@@ -2784,7 +2844,8 @@
     ],
     "resistances": [
       "physical"
-    ]
+    ],
+    "spectrum_ratio": 4.657222
   },
   "memory_leak": {
     "id": "memory_leak",
@@ -2829,7 +2890,8 @@
     "resistances": [
       "ice",
       "poison"
-    ]
+    ],
+    "spectrum_ratio": 4.571714
   },
   "firewall_sentinel": {
     "id": "firewall_sentinel",
@@ -2876,7 +2938,8 @@
       "physical",
       "ice",
       "fire"
-    ]
+    ],
+    "spectrum_ratio": 4.742973
   },
   "data_wraith": {
     "id": "data_wraith",
@@ -2924,7 +2987,8 @@
       "dark",
       "ice"
     ],
-    "undead": true
+    "undead": true,
+    "spectrum_ratio": 4.828947
   },
   "recursive_loop": {
     "id": "recursive_loop",
@@ -2969,7 +3033,8 @@
     "resistances": [
       "dark",
       "poison"
-    ]
+    ],
+    "spectrum_ratio": 4.657222
   },
   "null_entity": {
     "id": "null_entity",
@@ -3024,7 +3089,8 @@
         "*It's not invisible. It's ABSENT.*",
         "Hero: How do you fight something that isn't there?"
       ]
-    }
+    },
+    "spectrum_ratio": 5.794722
   },
   "forgotten_variable": {
     "id": "forgotten_variable",
@@ -3080,7 +3146,8 @@
         "Hero: What... what ARE you?",
         "Forgotten Variable: I used to be important. I think."
       ]
-    }
+    },
+    "spectrum_ratio": 5.874054
   },
   "empty_set": {
     "id": "empty_set",
@@ -3145,7 +3212,8 @@
         "Hero: It's empty.",
         "Empty Set: That's the point."
       ]
-    }
+    },
+    "spectrum_ratio": 5.719474
   },
   "the_absence": {
     "id": "the_absence",
@@ -3211,7 +3279,8 @@
         "*The Absence shudders - the shape of what's missing becomes clearer*",
         "*For a moment, you almost see what was taken*"
       ]
-    }
+    },
+    "spectrum_ratio": 5.65625
   },
   "optimization_itself": {
     "id": "optimization_itself",
@@ -3314,7 +3383,8 @@
     "counter_abilities": [
       "counter",
       "adapt"
-    ]
+    ],
+    "spectrum_ratio": 5.603333
   },
   "masterite_warden_medieval": {
     "id": "masterite_warden_medieval",
@@ -3371,7 +3441,8 @@
         "Warden of the Old Guard: The Master placed me here to test your resolve.",
         "Warden of the Old Guard: Show me your strength... or perish."
       ]
-    }
+    },
+    "spectrum_ratio": 0.226129
   },
   "masterite_arbiter_medieval": {
     "id": "masterite_arbiter_medieval",
@@ -3426,7 +3497,8 @@
         "Arbiter of Steel: Show me your sharpest edge...",
         "Arbiter of Steel: ...or be found wanting."
       ]
-    }
+    },
+    "spectrum_ratio": 0.266875
   },
   "masterite_tempo_medieval": {
     "id": "masterite_tempo_medieval",
@@ -3483,7 +3555,8 @@
         "Tempo of the Hunt: Can you keep pace...",
         "Tempo of the Hunt: ...or will time leave you behind?"
       ]
-    }
+    },
+    "spectrum_ratio": 0.226129
   },
   "masterite_curator_medieval": {
     "id": "masterite_curator_medieval",
@@ -3540,7 +3613,8 @@
         "Curator of the Flame: Do you waste what you're given...",
         "Curator of the Flame: ...or wield it with purpose?"
       ]
-    }
+    },
+    "spectrum_ratio": 0.266875
   },
   "masterite_warden_suburban": {
     "id": "masterite_warden_suburban",
@@ -3602,7 +3676,8 @@
         "Warden of Routine: The Master's rules are absolute.",
         "Warden of Routine: And I enforce them absolutely."
       ]
-    }
+    },
+    "spectrum_ratio": 2.262941
   },
   "masterite_arbiter_suburban": {
     "id": "masterite_arbiter_suburban",
@@ -3657,7 +3732,8 @@
         "Arbiter of the Grade: You have one attempt.",
         "Arbiter of the Grade: The Master does not grade on a curve."
       ]
-    }
+    },
+    "spectrum_ratio": 2.35
   },
   "masterite_tempo_suburban": {
     "id": "masterite_tempo_suburban",
@@ -3715,7 +3791,8 @@
         "Tempo of the Rush Hour: The Master's schedule waits for no one!",
         "Tempo of the Rush Hour: You're slowing me DOWN!"
       ]
-    }
+    },
+    "spectrum_ratio": 2.262941
   },
   "masterite_curator_suburban": {
     "id": "masterite_curator_suburban",
@@ -3777,7 +3854,8 @@
         "Curator of the Budget: Healing: frivolous. Buffs: unnecessary overhead.",
         "Curator of the Budget: The Master demands austerity."
       ]
-    }
+    },
+    "spectrum_ratio": 2.35
   },
   "masterite_warden_steampunk": {
     "id": "masterite_warden_steampunk",
@@ -3834,7 +3912,8 @@
         "The Standing Order: You are inside it. Barely.",
         "The Standing Order: I am the part that does not move."
       ]
-    }
+    },
+    "spectrum_ratio": 3.185714
   },
   "masterite_arbiter_steampunk": {
     "id": "masterite_arbiter_steampunk",
@@ -3891,7 +3970,8 @@
         "The Tolerance Limit: You have consumed yours.",
         "The Tolerance Limit: Correction is not punishment. It is maintenance."
       ]
-    }
+    },
+    "spectrum_ratio": 3.274722
   },
   "masterite_tempo_steampunk": {
     "id": "masterite_tempo_steampunk",
@@ -3948,7 +4028,8 @@
         "The Grand Schedule: I have adjusted the estimate.",
         "The Grand Schedule: You are now precisely on time."
       ]
-    }
+    },
+    "spectrum_ratio": 3.185714
   },
   "masterite_curator_steampunk": {
     "id": "masterite_curator_steampunk",
@@ -4005,7 +4086,8 @@
         "The Requisition: The account is not in your favour.",
         "The Requisition: Settlement is mandatory."
       ]
-    }
+    },
+    "spectrum_ratio": 3.274722
   },
   "masterite_warden_industrial": {
     "id": "masterite_warden_industrial",
@@ -4067,7 +4149,8 @@
         "Warden of the Assembly Line: The Master's quality control demands perfection.",
         "Warden of the Assembly Line: COMMENCING STRESS TEST."
       ]
-    }
+    },
+    "spectrum_ratio": 4.122703
   },
   "masterite_arbiter_industrial": {
     "id": "masterite_arbiter_industrial",
@@ -4124,7 +4207,8 @@
         "Arbiter of Efficiency: The Master finds this...",
         "Arbiter of Efficiency: ...unacceptable."
       ]
-    }
+    },
+    "spectrum_ratio": 4.210789
   },
   "masterite_tempo_industrial": {
     "id": "masterite_tempo_industrial",
@@ -4181,7 +4265,8 @@
         "Tempo of the Shift: The Master's clock doesn't stop.",
         "Tempo of the Shift: And neither do I."
       ]
-    }
+    },
+    "spectrum_ratio": 4.122703
   },
   "masterite_curator_industrial": {
     "id": "masterite_curator_industrial",
@@ -4243,7 +4328,8 @@
         "Curator of the Pipeline: Your resource allocation is... wasteful.",
         "Curator of the Pipeline: The Master demands optimization."
       ]
-    }
+    },
+    "spectrum_ratio": 4.210789
   },
   "masterite_warden_futuristic": {
     "id": "masterite_warden_futuristic",
@@ -4306,7 +4392,8 @@
         "Warden of the Firewall: The Master's firewall does not yield.",
         "Warden of the Firewall: Prove your authorization through force."
       ]
-    }
+    },
+    "spectrum_ratio": 5.0015
   },
   "masterite_arbiter_futuristic": {
     "id": "masterite_arbiter_futuristic",
@@ -4368,7 +4455,8 @@
         "Arbiter of the Benchmark: The Master expects you to surpass all previous results.",
         "Arbiter of the Benchmark: Begin."
       ]
-    }
+    },
+    "spectrum_ratio": 5.088049
   },
   "masterite_tempo_futuristic": {
     "id": "masterite_tempo_futuristic",
@@ -4430,7 +4518,8 @@
         "Tempo of the Clock Cycle: The Master's scheduler gives you...",
         "Tempo of the Clock Cycle: ...lowest priority."
       ]
-    }
+    },
+    "spectrum_ratio": 5.0015
   },
   "masterite_curator_futuristic": {
     "id": "masterite_curator_futuristic",
@@ -4496,7 +4585,8 @@
         "Curator of the Memory Pool: Initiating garbage collection.",
         "Curator of the Memory Pool: The Master's memory pool has no room for waste."
       ]
-    }
+    },
+    "spectrum_ratio": 5.088049
   },
   "masterite_warden_abstract": {
     "id": "masterite_warden_abstract",
@@ -4559,7 +4649,8 @@
         "Warden of Form: To pass, you must break what cannot be broken.",
         "Warden of Form: Begin."
       ]
-    }
+    },
+    "spectrum_ratio": 5.688605
   },
   "masterite_arbiter_abstract": {
     "id": "masterite_arbiter_abstract",
@@ -4642,7 +4733,8 @@
         "Arbiter of Function: The Master reduced me to this.",
         "Arbiter of Function: Your variables will not save you."
       ]
-    }
+    },
+    "spectrum_ratio": 5.774091
   },
   "masterite_tempo_abstract": {
     "id": "masterite_tempo_abstract",
@@ -4708,7 +4800,8 @@
         "Tempo of Sequence: The Master arranged all things in order.",
         "Tempo of Sequence: You are last."
       ]
-    }
+    },
+    "spectrum_ratio": 5.688605
   },
   "masterite_curator_abstract": {
     "id": "masterite_curator_abstract",
@@ -4778,7 +4871,8 @@
         "Curator of Entropy: The Master's final lesson: everything runs out.",
         "Curator of Entropy: Even you."
       ]
-    }
+    },
+    "spectrum_ratio": 5.774091
   },
   "chancellor_mordaine": {
     "id": "chancellor_mordaine",
@@ -4859,7 +4953,8 @@
     "learns_from": [
       "all"
     ],
-    "counter_abilities": []
+    "counter_abilities": [],
+    "spectrum_ratio": 1.206591
   },
   "fighter_skeleton_knight": {
     "id": "fighter_skeleton_knight",
@@ -4925,7 +5020,8 @@
     "learns_from": [],
     "counter_abilities": [
       "masterite_iron_guard"
-    ]
+    ],
+    "spectrum_ratio": 0.096071
   },
   "cleric_survive_target": {
     "id": "cleric_survive_target",
@@ -4996,7 +5092,8 @@
       ]
     },
     "learns_from": [],
-    "counter_abilities": []
+    "counter_abilities": [],
+    "spectrum_ratio": 0.051538
   },
   "rogue_lockward": {
     "id": "rogue_lockward",
@@ -5067,7 +5164,8 @@
     "counter_abilities": [
       "masterite_counter_stance"
     ],
-    "first_steal_guaranteed": true
+    "first_steal_guaranteed": true,
+    "spectrum_ratio": 0.12069
   },
   "mage_prismatic_construct": {
     "id": "mage_prismatic_construct",
@@ -5144,7 +5242,8 @@
       ]
     },
     "learns_from": [],
-    "counter_abilities": []
+    "counter_abilities": [],
+    "spectrum_ratio": 0.12069
   },
   "bard_hostile_courtier": {
     "id": "bard_hostile_courtier",
@@ -5217,7 +5316,8 @@
       ]
     },
     "learns_from": [],
-    "counter_abilities": []
+    "counter_abilities": [],
+    "spectrum_ratio": 0.149667
   },
   "rogue_mailbox": {
     "id": "rogue_mailbox",
@@ -5251,7 +5351,8 @@
     ],
     "resistances": [
       "ice"
-    ]
+    ],
+    "spectrum_ratio": 0.12069
   },
   "the_calibrant": {
     "id": "the_calibrant",
@@ -5413,7 +5514,8 @@
       ]
     },
     "_META_hp_provisional": "34000 is PROVISIONAL and struktured's to rule. Anchored at ~2x Mordaine (L20/16500), the largest boss on main. Party damage is FLAT L20->L28, so this buys LENGTH, not difficulty -- the phase_faces carry the difficulty. cowir-battle holds 22k/28k/35k for the_coordinator/regulator/director pending the same equipment-vs-HP lever; this number belongs to that ruling and should move with them.",
-    "diegetic_retry": true
+    "diegetic_retry": true,
+    "spectrum_ratio": 5.647308
   },
   "skeleton_soldier": {
     "id": "skeleton_soldier",
@@ -5454,7 +5556,8 @@
       "ice"
     ],
     "undead": true,
-    "music_track": "battle_skeleton"
+    "music_track": "battle_skeleton",
+    "spectrum_ratio": 0.226129
   },
   "bone_warden": {
     "id": "bone_warden",
@@ -5496,7 +5599,8 @@
       "ice"
     ],
     "undead": true,
-    "music_track": "battle_skeleton"
+    "music_track": "battle_skeleton",
+    "spectrum_ratio": 0.310606
   },
   "castle_warden": {
     "id": "castle_warden",
@@ -5550,7 +5654,8 @@
         "Warden: 'Docket... cleared. She will see you now.'",
         "*The stairway to the throne room stands open.*"
       ]
-    }
+    },
+    "spectrum_ratio": 1.136279
   },
   "dark_knight": {
     "id": "dark_knight",
@@ -5593,7 +5698,8 @@
     ],
     "learns_from": [
       "abilities"
-    ]
+    ],
+    "spectrum_ratio": 0.524722
   },
   "the_operator": {
     "id": "the_operator",
@@ -5650,7 +5756,8 @@
       "counter_repeated_actions": true
     },
     "_META_trial": "TRIAL_AUTOMATION. Mechanics are all EXISTING engine hooks, no new battle code: counter_repeated_actions halves a repeated ability (BattleManager._apply_counter_repeated_damage_mod), adaptation_speed 2 teaches it an element in two casts instead of three, counter_abilities retaliate. A static autobattle script loses damage every round it does not change.",
-    "_META_numbers_provisional": "PROVISIONAL, struktured's to rule. THIRD ITERATION, and the arithmetic that forced it: the party's Cleric heals ~1500/round and members drink potions, so SINGLE-TARGET damage under ~2000/round is net-zero against party sustain -- raising the Operator from 1620 to 1800 LEFT MORE party HP (72.5%% -> 77.5%%) because the longer fight gave the Cleric more rounds. And anything above ~1904 one-shots the squishiest member. That gap is why this ladder is bimodal, and with HeadlessBattleResolver._find_attack_ability selecting only the single HIGHEST-multiplier row, a MODEST all_enemies ability is the only lever that produces a fight rather than decoration or a wipe. Sized at ~650 per member: 5 x 650 = 3250/round against ~1800 of sustain is a net drain of ~1450, so a 12500-point party pool lasts ~8 rounds while the boss dies in ~6. FOURTH ITERATION, and the variable I had missed: PHYSICAL damage is mitigated roughly three times harder than magic, because the shipped jobs' magic_defense sits near half their defense (party def 222-382 vs mdef 90-150). A physical all_enemies row at 640/member measured 100%% / 75.7%% party HP remaining while the Examiner's MAGIC row at 648 measured 85%% / 56.8%% -- same nominal number, a third of the effect. So this is now fourth_wall_break, 2.5x all_enemies MAGIC off a deliberately low magic 340 = 850 incoming, ~740 after mdef (magic 300 measured 100% / 62.6% party HP remaining, still decoration by the pre-registered criterion). attack 800 stays for its physical rows, none of which _find_attack_ability will select. The low magic stat is the knob that lands the damage, not an oversight -- and fourth_wall_break on the trial for players who automated the game is the one ability in the roster that belongs here."
+    "_META_numbers_provisional": "PROVISIONAL, struktured's to rule. THIRD ITERATION, and the arithmetic that forced it: the party's Cleric heals ~1500/round and members drink potions, so SINGLE-TARGET damage under ~2000/round is net-zero against party sustain -- raising the Operator from 1620 to 1800 LEFT MORE party HP (72.5%% -> 77.5%%) because the longer fight gave the Cleric more rounds. And anything above ~1904 one-shots the squishiest member. That gap is why this ladder is bimodal, and with HeadlessBattleResolver._find_attack_ability selecting only the single HIGHEST-multiplier row, a MODEST all_enemies ability is the only lever that produces a fight rather than decoration or a wipe. Sized at ~650 per member: 5 x 650 = 3250/round against ~1800 of sustain is a net drain of ~1450, so a 12500-point party pool lasts ~8 rounds while the boss dies in ~6. FOURTH ITERATION, and the variable I had missed: PHYSICAL damage is mitigated roughly three times harder than magic, because the shipped jobs' magic_defense sits near half their defense (party def 222-382 vs mdef 90-150). A physical all_enemies row at 640/member measured 100%% / 75.7%% party HP remaining while the Examiner's MAGIC row at 648 measured 85%% / 56.8%% -- same nominal number, a third of the effect. So this is now fourth_wall_break, 2.5x all_enemies MAGIC off a deliberately low magic 340 = 850 incoming, ~740 after mdef (magic 300 measured 100% / 62.6% party HP remaining, still decoration by the pre-registered criterion). attack 800 stays for its physical rows, none of which _find_attack_ability will select. The low magic stat is the knob that lands the damage, not an oversight -- and fourth_wall_break on the trial for players who automated the game is the one ability in the roster that belongs here.",
+    "spectrum_ratio": 5.6698
   },
   "the_examiner": {
     "id": "the_examiner",
@@ -5709,7 +5816,8 @@
     "learns_from": [],
     "counter_abilities": [],
     "_META_trial": "TRIAL_CLASSIC, and the DEFAULT route -- TrialRouting.trial_for sends manual, grinder, exploiter and balanced here, so an unrecognised playstyle gets a real fight rather than none. weakness_cycle + weakness_cycle_turns are the mage duel's Prismatic Construct mechanic at boss scale (BattleManager._apply_weakness_cycles), which is the one trial that assumes nothing about how the player plays.",
-    "_META_numbers_provisional": "PROVISIONAL, struktured's to rule. THIRD ITERATION, and the arithmetic that forced it: the party's Cleric heals ~1500/round and members drink potions, so SINGLE-TARGET damage under ~2000/round is net-zero against party sustain -- raising the Operator from 1620 to 1800 LEFT MORE party HP (72.5%% -> 77.5%%) because the longer fight gave the Cleric more rounds. And anything above ~1904 one-shots the squishiest member. That gap is why this ladder is bimodal, and with HeadlessBattleResolver._find_attack_ability selecting only the single HIGHEST-multiplier row, a MODEST all_enemies ability is the only lever that produces a fight rather than decoration or a wipe. Sized at ~650 per member: 5 x 650 = 3250/round against ~1800 of sustain is a net drain of ~1450, so a 12500-point party pool lasts ~8 rounds while the boss dies in ~6. void_pulse is 1.8x all_enemies off magic 360 = 648/member. exploit_weakness was REMOVED rather than kept: at 3.0x it would always be selected over void_pulse and revert this to a single-target fight the party out-heals. Its damage identity is dark AoE; the weakness_cycle governs the PLAYER's damage, not its own."
+    "_META_numbers_provisional": "PROVISIONAL, struktured's to rule. THIRD ITERATION, and the arithmetic that forced it: the party's Cleric heals ~1500/round and members drink potions, so SINGLE-TARGET damage under ~2000/round is net-zero against party sustain -- raising the Operator from 1620 to 1800 LEFT MORE party HP (72.5%% -> 77.5%%) because the longer fight gave the Cleric more rounds. And anything above ~1904 one-shots the squishiest member. That gap is why this ladder is bimodal, and with HeadlessBattleResolver._find_attack_ability selecting only the single HIGHEST-multiplier row, a MODEST all_enemies ability is the only lever that produces a fight rather than decoration or a wipe. Sized at ~650 per member: 5 x 650 = 3250/round against ~1800 of sustain is a net drain of ~1450, so a 12500-point party pool lasts ~8 rounds while the boss dies in ~6. void_pulse is 1.8x all_enemies off magic 360 = 648/member. exploit_weakness was REMOVED rather than kept: at 3.0x it would always be selected over void_pulse and revert this to a single-target fight the party out-heals. Its damage identity is dark AoE; the weakness_cycle governs the PLAYER's damage, not its own.",
+    "spectrum_ratio": 5.6698
   },
   "the_margin": {
     "id": "the_margin",
@@ -5754,6 +5862,7 @@
     "learns_from": [],
     "counter_abilities": [],
     "_META_trial": "TRIAL_BURST, routed by SaveSystem.one_shot_records rather than by a playstyle label -- TrialRouting requires 8+ one-shots, at least one at rank S or A, and a fifth of all wins. A glass cannon by construction: the LOWEST HP of the three and the highest damage, so it is the one trial a burst build deletes before it acts twice and the one a slow party loses a member per round to.",
-    "_META_numbers_provisional": "PROVISIONAL, struktured's to rule. Kept single-target BY DESIGN -- the one trial meant to be a race rather than an endurance test. final_compilation at 5.0x off magic 560 lands ~2700 after mdef, above four of the five L26 pools, so it removes a member per round.\nSET FROM THE BATTLE LOG, NOT FROM A MODEL. I estimated party output at ~8600 and 15000/11000/9000/8000 HP all measured 0%. The log says the real figure is ~6566, and why: the Bard spends ROUND ONE entirely on five battle_hymn casts for zero damage; the Fighter missed twice in six rounds; the Mage lands exactly ONE thundaga (3807) before dying in round 2 at speed 26 vs its 20; and the Cleric's attacks are 48-95 because it is a healer with 148 attack. So against a boss that removes a member per round, 'party DPS' is one caster plus scraps. 6500 sits just under that measured ceiling so an ordinary party has a genuine race, and far under the post-.727 formation's measured ~12980 so a committed one-shot build ends it in a single execution phase. Thin for a level 26 boss on purpose: it is a glass cannon, and hp_threshold EQUALS max_hp per the honest form .727 established.\n⚠️ THE BURST PATH IS UNMEASURED: this harness drives default autobattle with no AP stacking, no setup turns and no manual play, so it cannot simulate the build this trial exists for. Every figure here is the NON-burst floor."
+    "_META_numbers_provisional": "PROVISIONAL, struktured's to rule. Kept single-target BY DESIGN -- the one trial meant to be a race rather than an endurance test. final_compilation at 5.0x off magic 560 lands ~2700 after mdef, above four of the five L26 pools, so it removes a member per round.\nSET FROM THE BATTLE LOG, NOT FROM A MODEL. I estimated party output at ~8600 and 15000/11000/9000/8000 HP all measured 0%. The log says the real figure is ~6566, and why: the Bard spends ROUND ONE entirely on five battle_hymn casts for zero damage; the Fighter missed twice in six rounds; the Mage lands exactly ONE thundaga (3807) before dying in round 2 at speed 26 vs its 20; and the Cleric's attacks are 48-95 because it is a healer with 148 attack. So against a boss that removes a member per round, 'party DPS' is one caster plus scraps. 6500 sits just under that measured ceiling so an ordinary party has a genuine race, and far under the post-.727 formation's measured ~12980 so a committed one-shot build ends it in a single execution phase. Thin for a level 26 boss on purpose: it is a glass cannon, and hp_threshold EQUALS max_hp per the honest form .727 established.\n⚠️ THE BURST PATH IS UNMEASURED: this harness drives default autobattle with no AP stacking, no setup turns and no manual play, so it cannot simulate the build this trial exists for. Every figure here is the NON-burst floor.",
+    "spectrum_ratio": 5.6698
   }
 }
