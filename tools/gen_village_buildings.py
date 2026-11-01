@@ -175,10 +175,25 @@ FUTURISTIC = {
                            "disks and memory chips on shelves, a holographic sign with a pictured disk (no letters), and "
                            "cooling fans on the roof."),
 }
-BUILDINGS = {**HARMONIA, **W1, **SUBURBAN, **STEAMPUNK, **FUTURISTIC}
+
+## W6 abstract (Vertex): the end of the visual ladder -- minimalist, existential, almost no detail left.
+STYLE_ABSTRACT = ("A single 16-bit pixel-art BUILDING for a minimalist, existential last town at the edge of a game "
+                  "world, a straight-on front view: pure flat geometric shapes, pale grey and off-white planes, one "
+                  "muted accent colour, crisp dark outline, very few details, a plain rectangular doorway at the bottom "
+                  "centre. Quiet and slightly uncanny, like a building remembered rather than seen. No people, no text "
+                  "or letters, no ground, no shadow on the ground, nothing else in the picture. The background is one "
+                  "flat, solid, pure magenta (#FF00FF) colour with no gradient. The building fills the frame and is centred.")
+ABSTRACT = {
+    "vertex_rest": (2, "The Rest, an inn: a plain pale cube with a single low gabled roof, one small square window glowing a "
+                       "soft warm yellow, and a narrow doorway."),
+    "vertex_exchange": (2, "The Exchange, a shop: a tall plain pale slab with a flat roof, a single horizontal slot of a "
+                           "counter window lit muted teal, and a narrow doorway."),
+}
+BUILDINGS = {**HARMONIA, **W1, **SUBURBAN, **STEAMPUNK, **FUTURISTIC, **ABSTRACT}
 ## Where each pool's art deploys, and the style it is drawn in.
 POOLS = {"harmonia": (HARMONIA, "medieval", None), "w1": (W1, "medieval", None), "suburban": (SUBURBAN, "suburban", STYLE_SUBURBAN),
-         "steampunk": (STEAMPUNK, "steampunk", STYLE_STEAMPUNK), "futuristic": (FUTURISTIC, "futuristic", STYLE_FUTURISTIC)}
+         "steampunk": (STEAMPUNK, "steampunk", STYLE_STEAMPUNK), "futuristic": (FUTURISTIC, "futuristic", STYLE_FUTURISTIC),
+         "abstract": (ABSTRACT, "abstract", STYLE_ABSTRACT)}
 
 
 def key_out(img: Image.Image, tol: int = 90) -> Image.Image:
@@ -254,13 +269,15 @@ def main() -> int:
     ap.add_argument("--suburban", nargs="*", help="stage these W2 Maple Heights buildings (no names = all)")
     ap.add_argument("--steampunk", nargs="*", help="stage these W3 Brasston buildings (no names = all)")
     ap.add_argument("--futuristic", nargs="*", help="stage these W5 NodePrime buildings (no names = all)")
+    ap.add_argument("--abstract", nargs="*", help="stage these W6 Vertex buildings (no names = all)")
     ap.add_argument("--view", choices=["front", "corner"], default="front", help="straight-on (B, default) or angled (A)")
     ap.add_argument("--deploy", action="store_true", help="copy staged Harmonia art into assets (never overwrites)")
     args = ap.parse_args()
     for k in args.style or []:
         print(f"staged {generate(k).relative_to(ROOT)}")
     for chosen, (pool, world, _) in ((args.harmonia, POOLS["harmonia"]), (args.w1, POOLS["w1"]), (args.suburban, POOLS["suburban"]), (args.steampunk, POOLS["steampunk"]),
-                                      (args.futuristic, POOLS["futuristic"])):
+                                      (args.futuristic, POOLS["futuristic"]),
+                                      (args.abstract, POOLS["abstract"])):
         if chosen is None:
             continue
         for k in chosen or sorted(pool):

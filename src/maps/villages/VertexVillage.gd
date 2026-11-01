@@ -15,6 +15,13 @@ const MAP_WIDTH: int = 18
 const MAP_HEIGHT: int = 16
 
 
+## Drawn building art per block, keyed by the block's top-left cell (manifest building_art, T1).
+const BUILDING_ART := {
+	Vector2i(5, 3): "vertex_rest",
+	Vector2i(11, 3): "vertex_exchange",
+}
+
+
 ## ---- BaseVillage hooks ----
 
 func _get_area_id() -> String:
@@ -160,6 +167,8 @@ func _setup_buildings() -> void:
 	# final boss).
 	spawn_points["threshold_exit"] = Vector2(11 * TILE_SIZE, 8 * TILE_SIZE)
 	_add_interior_door("ThresholdDoor", "vertex_threshold", "Enter The Threshold", Vector2(11 * TILE_SIZE, 7 * TILE_SIZE))
+	## LAST, so the doors and stalls it must defer to already exist.
+	_spawn_building_art(BUILDING_ART)
 
 
 func _setup_treasures() -> void:
