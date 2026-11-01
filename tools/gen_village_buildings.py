@@ -54,6 +54,29 @@ KINDS = {
 }
 
 
+## Harmonia, one entry per building block (HarmoniaVillage.BUILDING_ART): key -> (width in tiles, what it is).
+HARMONIA = {
+    "harmonia_library": (3, "The town library: a two-storey building of pale cut stone with a grey slate roof, tall arched "
+                            "windows, ivy climbing one corner, and a hanging sign with a pictured open book (no letters)."),
+    "harmonia_arcana": (3, "A magic shop: a violet-tiled roof with a small dormer, a hanging sign with a pictured crescent "
+                           "moon and star, crystal orbs and spell scrolls in the front window, wisteria over the door."),
+    "harmonia_arms": (3, "A weapon and armour shop and smithy, wider than it is tall, with a small attic window in a dark "
+                         "slate roof and a stone chimney, a hanging sign with a pictured sword and shield (no letters), "
+                         "a weapon rack and an anvil by the door."),
+    "harmonia_inn": (3, "The Sleepy Slime Inn: thatched straw roof with two dormer windows, warm lit windows, a hanging "
+                        "sign with a pictured mug and a sleeping slime (no letters), a lantern by the door, flower boxes."),
+    "harmonia_remedies": (3, "Mystic Remedies, an item and potion shop: a green-tiled roof, a striped awning over a window "
+                             "full of coloured potion bottles, a hanging sign with a pictured potion (no letters), herb "
+                             "pots by the door."),
+    "harmonia_chapel": (3, "A small stone village chapel with a short bell tower and a visible bell above the entrance, an "
+                           "arched stained-glass window, double wooden doors, a slate roof."),
+    "harmonia_tavern": (3, "The Dancing Tonberry tavern: brown shingle roof, warm lit windows, a hanging sign with a pictured "
+                           "small hooded creature holding a lantern (no letters), barrels stacked by the door."),
+    "harmonia_house": (3, "A modest village cottage: green shingle roof with a brick chimney, cream plaster walls in dark "
+                          "timber framing, a flower box of yellow flowers under one window."),
+}
+
+
 def key_out(img: Image.Image, tol: int = 90) -> Image.Image:
     """Flood from the border through backdrop-coloured pixels, so magenta INSIDE the building survives."""
     a = np.array(img.convert("RGBA"))
@@ -104,12 +127,45 @@ def generate(kind: str, width_tiles: int = 3) -> Path:
     return out
 
 
+def generate_harmonia(key: str, view: str) -> Path:
+    """One Harmonia building, straight-on ("front", struktured's pick B) or corner-angled ("corner", A)."""
+    from openai import OpenAI
+    width, what = HARMONIA[key]
+    face = f"\n\n{FRONT}" if view == "front" else ""
+    r = OpenAI().images.generate(model=MODEL, prompt=f"{STYLE}{face}\n\nThe building: {what}", size="1024x1024", n=1)
+    raw = Image.open(io.BytesIO(base64.b64decode(r.data[0].b64_json)))
+    STAGE.mkdir(parents=True, exist_ok=True)
+    raw.save(STAGE / f"{key}_{view}_raw.png")
+    out = STAGE / f"{key}_{view}.png"
+    fit(raw, width).save(out)
+    return out
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--style", nargs="+", choices=sorted(KINDS) + [k + "_front" for k in KINDS], help="stage style tiles for these kinds")
+    ap.add_argument("--harmonia", nargs="*", help="stage these Harmonia buildings (no names = all)")
+    ap.add_argument("--view", choices=["front", "corner"], default="front", help="straight-on (B, default) or angled (A)")
+    ap.add_argument("--deploy", action="store_true", help="copy staged Harmonia art into assets (never overwrites)")
     args = ap.parse_args()
     for k in args.style or []:
         print(f"staged {generate(k).relative_to(ROOT)}")
+    if args.harmonia is not None:
+        keys = args.harmonia or sorted(HARMONIA)
+        for k in keys:
+            if k not in HARMONIA:
+                raise SystemExit(f"unknown Harmonia building {k}")
+            if args.deploy:
+                src, dst = STAGE / f"{k}_{args.view}.png", ROOT / f"assets/sprites/buildings/medieval/{k}.png"
+                if not src.exists():
+                    raise SystemExit(f"{k}: nothing staged at {src}")
+                if dst.exists():
+                    raise SystemExit(f"{k}: {dst} exists; refusing to overwrite")
+                dst.parent.mkdir(parents=True, exist_ok=True)
+                dst.write_bytes(src.read_bytes())
+                print(f"deployed {dst.relative_to(ROOT)} (T1, gpt-image-2, view={args.view})")
+            else:
+                print(f"staged {generate_harmonia(k, args.view).relative_to(ROOT)}")
     return 0
 
 
