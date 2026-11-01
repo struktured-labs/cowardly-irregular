@@ -38,6 +38,8 @@ var _blip_player: AudioStreamPlayer = null
 var _blip_stream: AudioStream = null
 var _blip_pitch: float = 1.0
 var _blip_next_char: int = 0
+## Seconds of the current line's recording, 0.0 when it has none; a recorded line plays no blips.
+var _line_voice_sec: float = 0.0
 
 ## Party reference for custom portrait lookups
 var _party: Array = []
@@ -143,6 +145,9 @@ func _exit_tree() -> void:
 	"""Cleanup timer when node is freed"""
 	if _typing_timer and is_instance_valid(_typing_timer):
 		_typing_timer.stop()
+	# The line player lives on the autoload, so a battle freed mid-line would otherwise keep the boss talking.
+	if SoundManager:
+		SoundManager.stop_voiced_line(self)
 
 
 func _setup_typing_timer() -> void:
@@ -388,6 +393,11 @@ func show_boss_last_words(speaker: String, text: String, boss_id: String = "") -
 	show_dialogue([entry])
 
 
+## How long the line on screen is recorded for, so a timed hold can wait for the voice rather than cut it.
+func line_voice_seconds() -> float:
+	return _line_voice_sec
+
+
 func dismiss() -> void:
 	"""Close whatever is showing, as if the last page were confirmed. The automation path's way out of a beat."""
 	if not visible:
@@ -472,6 +482,10 @@ func _show_current_line() -> void:
 	_blip_stream = CutsceneDialogue._load_voice_blip_stream(_line_blip_key) if _line_blip_key != "" else null
 	## A boss reads a fifth lower than the speaker hash would place a party member, so it never sounds like one.
 	_blip_pitch = CutsceneDialogue._hash_pitch(str(entry.get("speaker", ""))) * 0.8
+	_line_voice_sec = 0.0
+	if SoundManager:
+		SoundManager.stop_voiced_line(self)
+		_line_voice_sec = SoundManager.play_voiced_line(str(entry.get("speaker", "")), str(entry.get("text", "")), self)
 
 	# Set portrait - the face cutscenes give this character first, then party custom portraits
 	var portrait_type = entry.get("portrait", "narrator")
@@ -575,7 +589,9 @@ func _on_typing_tick() -> void:
 		_displayed_chars += 1
 		_text_label.text = _current_text.substr(0, _displayed_chars)
 
-		if _line_blip_key != "":
+		if _line_voice_sec > 0.0:
+			pass
+		elif _line_blip_key != "":
 			# Same cadence as cutscene dialogue: voiced characters only, every 2-4, so pauses stay silent.
 			if CutsceneDialogue._is_voiced_char(_current_text.substr(_displayed_chars - 1, 1)) and _displayed_chars >= _blip_next_char:
 				_play_line_blip()
@@ -637,6 +653,9 @@ func _advance_dialogue() -> void:
 func _finish_dialogue() -> void:
 	"""Complete dialogue sequence"""
 	visible = false
+	_line_voice_sec = 0.0
+	if SoundManager:
+		SoundManager.stop_voiced_line(self)
 	_dialogue_queue.clear()
 	_current_index = 0
 	dialogue_finished.emit()
