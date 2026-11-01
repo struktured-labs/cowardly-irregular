@@ -40,10 +40,10 @@ func test_wearing_it_raises_magic_defense_and_not_spell_power() -> void:
 	assert_true(mods.has("magic_defense"),
 		"magical defense has to be a stat_mods entry or recalculate_stats cannot apply it")
 	assert_gt(int(mods.get("defense", 0)), 0, "the physical half of the description must stay")
-	assert_eq(wearer.defense - bare.defense, int(mods.get("defense", 0)),
+	assert_eq(wearer.defense - bare.defense, roundi(float(mods.get("defense", 0)) * wearer.x10_ratio()),
 		"physical defense must land as the authored flat bonus")
 	assert_gt(int(mods.get("magic_defense", 0)), 0, "the magical-defense bonus must be a real amount")
-	assert_eq(wearer.magic_defense - bare.magic_defense, int(mods.get("magic_defense", 0)),
+	assert_eq(wearer.magic_defense - bare.magic_defense, roundi(float(mods.get("magic_defense", 0)) * wearer.x10_ratio()),
 		"Magic Defense must rise by the ring's bonus — that is the stat a spell divides by")
 	assert_eq(wearer.magic, bare.magic, "the ring must not change spell power")
 	var listed: Dictionary = EquipmentSystem.get_equipment_mods(wearer)

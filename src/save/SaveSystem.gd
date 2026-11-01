@@ -1109,6 +1109,7 @@ func _read_save_file(slot: int) -> Dictionary:
 		push_warning("[SaveSystem] _read_save_file: '%s' parsed but root is not a Dictionary (type=%s) — invalid save" % [file_path, typeof(json.data)])
 		return {}
 
+	_backup_before_migrate(file_path, json.data)
 	return _migrate_stat_denomination(json.data, slot)
 
 
@@ -1134,6 +1135,44 @@ static func applied_settings_summary() -> String:
 	return ", ".join(parts)
 
 
+## The spectrum curve (.757) rewrites an old save's stat blocks; this suffix keeps the untouched original beside it.
+const PRE_SPECTRUM_BACKUP_SUFFIX := ".pre-v757"
+
+
+## Copy a save's original bytes aside the first time it is loaded in an older denomination, so reverting the build plus this file undoes the migration.
+func _backup_before_migrate(file_path: String, data: Dictionary) -> void:
+	var gs: Variant = data.get("game_state")
+	var party: Variant = (gs as Dictionary).get("player_party") if gs is Dictionary else null
+	if not (party is Array):
+		return
+	var stale := false
+	for entry in (party as Array):
+		if entry is Dictionary and Combatant.save_needs_migration(entry as Dictionary):
+			stale = true
+			break
+	var backup := file_path + PRE_SPECTRUM_BACKUP_SUFFIX
+	if not stale or FileAccess.file_exists(backup):
+		return
+	var bytes := FileAccess.get_file_as_bytes(file_path)
+	if bytes.is_empty():
+		push_warning("[SaveSystem] could not read '%s' to back it up before migrating it" % file_path)
+		return
+	## Written aside and renamed into place, so a backup that exists is always complete (cowir-adhoc 20758).
+	var staged := backup + ".tmp"
+	var out := FileAccess.open(staged, FileAccess.WRITE)
+	if out == null:
+		push_warning("[SaveSystem] could not back up '%s' before migrating it (%s)" % [file_path, error_string(FileAccess.get_open_error())])
+		return
+	## store_string, the one write form this file allows (a save is UTF-8 JSON); the byte compare below refuses any other file.
+	out.store_string(bytes.get_string_from_utf8())
+	out.close()
+	if FileAccess.get_file_as_bytes(staged) != bytes or DirAccess.rename_absolute(staged, backup) != OK:
+		push_warning("[SaveSystem] the backup of '%s' did not complete; it will be retried on the next load" % file_path)
+		DirAccess.remove_absolute(staged)
+		return
+	print("[SAVE] backed up %s to %s before the stat migration" % [file_path, backup])
+
+
 func _migrate_stat_denomination(data: Dictionary, slot: int = -1) -> Dictionary:
 	var gs: Variant = data.get("game_state")
 	if not (gs is Dictionary):
@@ -1154,7 +1193,7 @@ func _migrate_stat_denomination(data: Dictionary, slot: int = -1) -> Dictionary:
 		_migration_reported[slot] = true
 		push_warning("[SaveSystem] migrated %d party member(s) to stat scale ×%d — this save "
 			% [migrated, Combatant.STAT_SCALE]
-			+ "predates the 2026-07-29 re-denomination and would otherwise load at 1/10th strength")
+			+ "was written in an older stat denomination (the 2026-10-31 spectrum curve divides ×10-era stats back down)")
 	return data
 
 

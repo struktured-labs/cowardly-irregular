@@ -26,7 +26,7 @@ func test_toggle_on_grants_everything() -> void:
 
 
 func test_toggle_off_strips_only_above_level() -> void:
-	var c := _mage_at(7)  # legitimately has fira(6) + blizzara(7)
+	var c := _mage_at(Combatant.spectrum_level(7))  # old level 7 on the spectrum ladder: has fira + blizzara, not firaga
 	JobSystem.set_dev_full_kits(true, [c])
 	JobSystem.set_dev_full_kits(false, [c])
 	assert_has(c.learned_abilities, "fira", "earned unlock must survive dev OFF")

@@ -16,7 +16,7 @@ func _fighter_mods() -> Dictionary:
 
 
 func _level_mult(level: int) -> float:
-	return 1.0 + float(level - 1) * 0.04
+	return Combatant.level_multiplier(level)
 
 
 func _member() -> Combatant:
@@ -38,7 +38,7 @@ func _confirm_nature(c: Combatant, personality: int) -> void:
 
 
 func _expected_attack(job_attack: int, nature_attack: int, level: int, gear_attack: int) -> int:
-	return int((job_attack + nature_attack) * _level_mult(level)) + gear_attack
+	return maxi(1, int((job_attack + nature_attack) * _level_mult(level))) + roundi(float(gear_attack) * Combatant.party_x10_ratio(level))
 
 
 func test_brave_nature_shows_on_the_status_attack() -> void:
@@ -88,7 +88,8 @@ func test_each_confirmed_nature_lands_on_its_stat() -> void:
 		_confirm_nature(c, int(row[0]))
 		var stat: String = str(row[1])
 		var bonus: int = int(row[2])
-		var expected := int((int(mods[stat]) + bonus) * _level_mult(c.job_level))
+		var grow: float = Combatant.linear_level_multiplier(c.job_level) if not (stat in Combatant.SCALED_STAT_FIELDS) else _level_mult(c.job_level)
+		var expected := int((int(mods[stat]) + bonus) * grow)
 		assert_eq(int(c.get(stat)), expected,
 			"%s must add %+d %s on top of the job total — the creation line is otherwise a lie" % [
 				CharacterCustomization.get_personality_name(int(row[0])), bonus, stat])

@@ -139,12 +139,12 @@ func test_a_repeated_party_potion_with_an_earlier_ko_heals_each_living_ally_once
 	var ada_before := ada.current_hp
 	var cy_before := cy.current_hp
 	var slime_before := slime.current_hp
-	var one := ada.heal_preview(_flat_heal("mega_potion"))
+	var one := ada.heal_preview(ItemSystem._x10_flat(_flat_heal("mega_potion"), ada))
 	assert_gt(ada.max_hp - ada_before, one * 2, "Ada has room to show a second heal")
-	assert_gt(cy.max_hp - cy_before, cy.heal_preview(_flat_heal("mega_potion")) * 2, "Cy has room to show a second heal")
+	assert_gt(cy.max_hp - cy_before, cy.heal_preview(ItemSystem._x10_flat(_flat_heal("mega_potion"), cy)) * 2, "Cy has room to show a second heal")
 	_bm._execute_item(ada, "mega_potion", targets)
 	assert_eq(ada.current_hp - ada_before, one, "Ada receives the party potion once")
-	assert_eq(cy.current_hp - cy_before, cy.heal_preview(_flat_heal("mega_potion")), "Cy receives the party potion once")
+	assert_eq(cy.current_hp - cy_before, cy.heal_preview(ItemSystem._x10_flat(_flat_heal("mega_potion"), cy)), "Cy receives the party potion once")
 	assert_eq(slime.current_hp, slime_before, "the party potion must not heal the enemy")
 	assert_eq(ada.get_item_count("mega_potion"), 0, "one party potion is spent")
 
@@ -166,7 +166,7 @@ func test_a_repeated_party_potion_heals_the_only_living_user_once() -> void:
 	assert_eq(targets.count(ada), 1, "the only living ally appears once")
 	assert_false(targets.has(slime), "a KO'd slot must not be filled with the enemy")
 	var ada_before := ada.current_hp
-	var one := ada.heal_preview(_flat_heal("mega_potion"))
+	var one := ada.heal_preview(ItemSystem._x10_flat(_flat_heal("mega_potion"), ada))
 	assert_gt(ada.max_hp - ada_before, one * 2, "Ada has room to show a second heal")
 	_bm._execute_item(ada, "mega_potion", targets)
 	assert_eq(ada.current_hp - ada_before, one, "the only living ally is healed once")
@@ -195,7 +195,7 @@ func test_a_repeated_party_potion_aimed_only_at_the_ko_heals_one_living_ally() -
 	var ada_before := ada.current_hp
 	var cy_before := cy.current_hp
 	var slime_before := slime.current_hp
-	var one := ada.heal_preview(_flat_heal("mega_potion"))
+	var one := ada.heal_preview(ItemSystem._x10_flat(_flat_heal("mega_potion"), ada))
 	assert_gt(ada.max_hp - ada_before, one * 2, "Ada has room to show a second heal")
 	_bm._execute_item(ada, "mega_potion", targets)
 	assert_eq(ada.current_hp - ada_before, one, "the lowest-HP living ally is healed once")
@@ -222,7 +222,7 @@ func test_a_repeated_single_target_list_of_the_ko_and_ada_heals_ada_once() -> vo
 	assert_false(targets.has(slime), "a KO'd slot must not be filled with the enemy")
 	assert_eq(targets.size(), 1, "one potion, one target")
 	var ada_before := ada.current_hp
-	var one := ada.heal_preview(_flat_heal("potion"))
+	var one := ada.heal_preview(ItemSystem._x10_flat(_flat_heal("potion"), ada))
 	assert_gt(ada.max_hp - ada_before, one * 2, "Ada has room to show a second heal")
 	_bm._execute_item(ada, "potion", targets)
 	assert_eq(ada.current_hp - ada_before, one, "Ada receives the potion once")

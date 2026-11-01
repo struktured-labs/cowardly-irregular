@@ -1179,7 +1179,8 @@ func test_monster_levels_are_reasonable() -> void:
 		var m = monsters[monster_id]
 		var level = m.get("level", 0)
 		assert_gt(level, 0, "Monster '%s' level should be > 0" % monster_id)
-		assert_true(level <= 30, "Monster '%s' level %d seems too high (max 30)" % [monster_id, level])
+		## The spectrum ladder ends at the final boss: the old level 28, on the new ladder (58).
+		assert_true(level <= Combatant.spectrum_level(28), "Monster '%s' level %d seems too high (max %d)" % [monster_id, level, Combatant.spectrum_level(28)])
 
 
 # ===========================================================================

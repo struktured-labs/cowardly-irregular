@@ -75,19 +75,20 @@ func _spell_damage(mdef: int, defense_val: int) -> int:
 	return dealt
 
 
+## The subject is the wolf, not the bat: on the spectrum curve the bat's single-digit M.DEF rounds onto defense/2 (1 == 1), so it can no longer show the drop.
 func test_a_random_encounter_fights_the_codex_magic_defense() -> void:
-	var authored := _codex_mdef("bat")
-	var halved := _half_defense("bat")
+	var authored := _codex_mdef("wolf")
+	var halved := _half_defense("wolf")
 	assert_ne(authored, halved,
 		"CONTROL: bat's authored M.DEF must differ from defense/2 or this cannot see the drop")
 	assert_ne(_spell_damage(authored, 50), _spell_damage(halved, 50),
 		"CONTROL: those two M.DEF values must change spell damage")
 	var host := _host()
-	host.encounter_enemies = ["bat"]
+	host.encounter_enemies = ["wolf"]
 	BattleEnemySpawner.new(host).spawn_encounter_enemies()
 	assert_eq(host.test_enemies.size(), 1, "a bat encounter must spawn the bat")
 	var bat: Combatant = host.test_enemies[0]
-	assert_eq(bat.attack, int(_monsters()["bat"]["stats"]["attack"]),
+	assert_eq(bat.attack, int(_monsters()["wolf"]["stats"]["attack"]),
 		"CONTROL: attack must be the JSON value, not the hardcoded MONSTER_TYPES bat")
 	assert_eq(bat.magic_defense, authored,
 		"the fight's M.DEF is %d; the codex prints %d, so a spell hits a different bat than the entry" % [bat.magic_defense, authored])
@@ -140,9 +141,9 @@ func test_a_flat_spawn_without_magic_defense_still_derives_it() -> void:
 
 
 func test_encounter_data_carries_magic_defense_into_the_combatant() -> void:
-	var authored := _codex_mdef("bat")
-	assert_ne(authored, _half_defense("bat"), "CONTROL: bat M.DEF must disagree with defense/2")
-	var data: Dictionary = EncounterSystem._create_enemy_data("bat")
+	var authored := _codex_mdef("wolf")
+	assert_ne(authored, _half_defense("wolf"), "CONTROL: bat M.DEF must disagree with defense/2")
+	var data: Dictionary = EncounterSystem._create_enemy_data("wolf")
 	assert_eq(int(data.get("magic_defense", -1)), authored,
 		"encounter data dropped magic_defense, so anything that initializes it fights at defense/2")
 	var enemy := Combatant.new()
@@ -153,12 +154,12 @@ func test_encounter_data_carries_magic_defense_into_the_combatant() -> void:
 
 
 func test_headless_spawn_fights_the_codex_magic_defense() -> void:
-	var authored := _codex_mdef("bat")
-	assert_ne(authored, _half_defense("bat"), "CONTROL: bat M.DEF must disagree with defense/2")
+	var authored := _codex_mdef("wolf")
+	assert_ne(authored, _half_defense("wolf"), "CONTROL: bat M.DEF must disagree with defense/2")
 	var gl = load("res://src/GameLoop.gd").new()
-	var stats: Dictionary = _monsters()["bat"]["stats"]
+	var stats: Dictionary = _monsters()["wolf"]["stats"]
 	var enemy: Combatant = gl._combatant_for_headless({
-		"id": "bat",
+		"id": "wolf",
 		"name": "Bat",
 		"stats": stats,
 	})

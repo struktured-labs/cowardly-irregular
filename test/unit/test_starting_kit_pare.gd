@@ -60,18 +60,20 @@ func test_old_save_backfills_on_restore() -> void:
 	# assign_job now grants everything at or below the current level.
 	var c := Combatant.new()
 	add_child_autofree(c)
-	c.from_dict({
+	## Through the file boundary's migration, as a real old save is: level 12 lands on the spectrum ladder's level.
+	c.from_dict(Combatant.migrate_stat_scale({
 		"combatant_name": "Old Save Mage",
 		"job_level": 12,
 		"max_hp": 100, "current_hp": 100,
-	})
+	}))
+	assert_eq(c.job_level, Combatant.spectrum_level(12), "CONTROL: the old level moved onto the ladder")
 	assert_true(JobSystem.assign_job(c, "mage"))
 	var kit: Array = (c.job.get("abilities", []) as Array).duplicate()
 	kit.append_array(c.learned_abilities)
 	for aid in ["fira", "blizzara", "thundara", "firaga", "blizzaga"]:
-		assert_has(kit, aid, "level-12 restored mage must have %s back-granted" % aid)
+		assert_has(kit, aid, "an old level-12 mage must have %s back-granted" % aid)
 	assert_does_not_have(c.learned_abilities, "thundaga",
-		"level-13 unlock must NOT back-grant at level 12")
+		"an old level-13 unlock must NOT back-grant to an old level-12 save")
 
 
 func test_pre_pare_saves_are_grandfathered_in_restore() -> void:
