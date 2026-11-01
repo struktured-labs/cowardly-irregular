@@ -77,7 +77,6 @@ const KNOWN_UNREACHED := {
 	"ambient_steampunk": "same decision",
 	"suno_market_morning": "was ambient_village until 2026-10-30: a Suno SONG (pitch clarity 7.68) layered under every W1 village bed; struktured dropped the layer and kept the track — Jukebox row, possible non-layered cue",
 	"suno_whispering_canopy": "was ambient_forest until 2026-10-30: same finding (7.69) under the forest/swamp overworld bed; Jukebox row only",
-	"inn_rest_ditty": "authored 2026-11-01 for the inn rest beat (struktured via cowir-main 21099); its caller is @cowir-cutscenes' inn sequence, which plays it — delete this entry when that lands",
 	"suno_dripping_stone": "was ambient_cave until 2026-10-30: same finding (7.49, though its prompt said 'No melody') under the ice zone; Jukebox row only",
 	"cutscene_alt_breaker_speed": "briefed in tools/music_prompts.json shared_tracks (\"Whoever Moves First\"); its scene is the alt_the_breaker novella, which has no cutscene JSON",
 	"cutscene_alt_witness_lament": "briefed (\"For the Guardian Who Did Not Choose the Gate\"); same novella, no scene authored",
@@ -502,6 +501,11 @@ func _asked_for_by_a_music_call(id: String, text: String) -> bool:
 			"_try_play_from_manifest(\"%s\")", "\"track\": \"%s\"",
 			"\"music_track\": \"%s\"", "\"music\": \"%s\""]:
 		if text.find(shape % id) >= 0:
+			return true
+	## A key held in a CONST and passed by name: InnRestSequence's `const DITTY_KEY := "inn_rest_ditty"`, then play_music(DITTY_KEY, ...).
+	var held := RegEx.create_from_string("const\\s+(\\w+)\\s*:?=\\s*\"%s\"" % id)
+	for m in held.search_all(text):
+		if text.find("play_music(%s" % m.get_string(1)) >= 0:
 			return true
 	## interior_ keys are resolved per-world before the base key is tried.
 	if id.begins_with("interior_") and text.find("play_area_music(\"%s\")" % id) >= 0:
