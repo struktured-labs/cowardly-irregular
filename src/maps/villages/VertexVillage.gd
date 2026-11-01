@@ -15,6 +15,13 @@ const MAP_WIDTH: int = 18
 const MAP_HEIGHT: int = 16
 
 
+## Drawn building art per block, keyed by the block's top-left cell (manifest building_art, T1).
+const BUILDING_ART := {
+	Vector2i(5, 3): "vertex_rest",
+	Vector2i(11, 3): "vertex_exchange",
+}
+
+
 ## ---- BaseVillage hooks ----
 
 func _get_area_id() -> String:
@@ -81,6 +88,8 @@ func _generate_map() -> void:
 			if char == "X" and not spawn_points.has("exit"):
 				spawn_points["exit"] = Vector2(x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2)
 
+	# Vertex builds no derived layers, so keep the glyph rows the drawn buildings flood from (BaseVillage._spawn_building_art).
+	_map_rows = map_data
 	# Vertex builds no derived layers, so centre its exit here (BaseVillage.exit_centre_of).
 	var exit_at := exit_centre_of(map_data, TILE_SIZE)
 	if exit_at != Vector2.INF:
@@ -160,6 +169,8 @@ func _setup_buildings() -> void:
 	# final boss).
 	spawn_points["threshold_exit"] = Vector2(11 * TILE_SIZE, 8 * TILE_SIZE)
 	_add_interior_door("ThresholdDoor", "vertex_threshold", "Enter The Threshold", Vector2(11 * TILE_SIZE, 7 * TILE_SIZE))
+	## LAST, so the doors and stalls it must defer to already exist.
+	_spawn_building_art(BUILDING_ART)
 
 
 func _setup_treasures() -> void:

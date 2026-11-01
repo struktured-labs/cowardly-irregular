@@ -177,10 +177,107 @@ FUTURISTIC = {
                            "disks and memory chips on shelves, a holographic sign with a pictured disk (no letters), and "
                            "cooling fans on the roof."),
 }
-BUILDINGS = {**HARMONIA, **W1, **SUBURBAN, **STEAMPUNK, **FUTURISTIC}
+
+## Village PROPS (struktured 2026-11-01: "any of that old school procgenylooking art needs to go"). Same style and
+## straight-on view as the medieval buildings; width in tiles is the prop's drawn width.
+STYLE_PROP = STYLE.replace("BUILDING", "village PROP").replace("a wooden front door at the bottom centre. ", "")
+PROPS = {
+    "harmonia_fountain": (3, "Harmonia's plaza fountain: a round two-tier carved stone fountain basin, clear blue water "
+                             "spilling from the upper bowl into the lower pool, and a small blossoming pink cherry tree "
+                             "growing from the centre of the upper tier. Seen straight-on from the front and a little "
+                             "above, so the front rim of the basin and the water surface are both visible."),
+    "tree_medieval": (1, "A single tall slender village tree, like a poplar or a young cypress, about THREE times taller "
+                         "than it is wide: a narrow brown trunk, a tall column of leafy green foliage with clumps of light "
+                         "and shadow. It must stay narrow: it stands one step from doorways."),
+    "tree_frosthold": (2, "A single snow-laden pine tree: a short dark trunk, layered dark-green boughs heavy with white "
+                          "snow, a pointed top. Taller than it is wide."),
+}
+## Props whose art must stand a fixed height (the TREE prop's footprint is 1x3: 96px).
+PROP_HEIGHT = {"tree_medieval": 96}
+
+## Terrain TILES (32x32, opaque, edge to edge): drawn as a square patch of ground filling the whole frame.
+TILE_STYLE = ("A single square 16-bit SNES-era JRPG pixel-art overworld TILE, seen from above at a slight angle, that "
+              "fills the ENTIRE square frame edge to edge with no border, no frame and no background colour of its own. "
+              "Rich hand-pixeled detail, crisp dark outlines, warm limited palette, soft top-left lighting. No people, "
+              "no text.")
+TILES = {
+    "forest_0": "One round leafy deciduous tree, its canopy filling most of the square, on dark green forest undergrowth "
+                "that reaches every edge.",
+    "forest_1": "One tall leafy tree with a slightly different, lopsided canopy, on dark green forest undergrowth that "
+                "reaches every edge.",
+    "snow_tree_0": "One snow-covered pine tree, on white snowy ground with a few dark rocks, the snow reaching every edge.",
+    "shade_tree_0": "One broad suburban shade tree with a full, bright summer-green leafy canopy (green, not autumn), "
+                    "seen from slightly above, on a neat green lawn that reaches every edge.",
+}
+
+
+def tile_from_raw(raw: Image.Image) -> Image.Image:
+    """Trim the model's edge band (it draws a faint frame that reads as a grid when tiled), then scale to one tile."""
+    m = round(min(raw.size) * 0.08)
+    raw = raw.crop((m, m, raw.width - m, raw.height - m))
+    return raw.resize((TILE, TILE), Image.LANCZOS).quantize(colors=COLOURS, method=Image.MEDIANCUT).convert("RGBA")
+
+
+## Where each staged tile lands: world sheet, TileType key (":N" = variant N), [col, row] in tile units.
+## Row 3 is past the generated cliff/overlay rows; gen_tile_sheet_*.py carry it across a regen.
+TILE_SLOTS = {
+    "forest_0": ("medieval", "FOREST", [0, 3]),
+    "forest_1": ("medieval", "FOREST:1", [1, 3]),
+    "snow_tree_0": ("medieval", "SNOW_TREE", [2, 3]),
+    "shade_tree_0": ("suburban", "SHADE_TREE", [0, 3]),
+}
+
+
+def deploy_tiles(keys: list) -> None:
+    """Paste staged tiles into their world sheet and register them under tile_sheets.<world>.tiles."""
+    import json
+    mpath = ROOT / "data/sprite_manifest.json"
+    man = json.loads(mpath.read_text(encoding="utf-8"))
+    for k in keys:
+        world, tile_key, (col, row) = TILE_SLOTS[k]
+        entry = man["tile_sheets"][world]
+        png = ROOT / entry["path"].replace("res://", "")
+        sheet = Image.open(png).convert("RGBA")
+        if sheet.height < (row + 1) * TILE:
+            grown = Image.new("RGBA", (sheet.width, (row + 1) * TILE), (0, 0, 0, 0))
+            grown.paste(sheet, (0, 0))
+            sheet = grown
+        sheet.paste(Image.open(STAGE / f"tile_{k}.png").convert("RGBA"), (col * TILE, row * TILE))
+        sheet.save(png)
+        entry.setdefault("tiles", {})[tile_key] = [col, row]
+        print(f"placed tile_{k} at {world}[{col},{row}] as {tile_key}")
+    mpath.write_text(json.dumps(man, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+
+
+def generate_tile(key: str) -> Path:
+    """One opaque 32px terrain tile: no keying, the square is centre-cropped and scaled down."""
+    from openai import OpenAI
+    r = OpenAI().images.generate(model=MODEL, prompt=f"{TILE_STYLE}\n\nThe tile: {TILES[key]}", size="1024x1024", n=1)
+    raw = Image.open(io.BytesIO(base64.b64decode(r.data[0].b64_json))).convert("RGB")
+    STAGE.mkdir(parents=True, exist_ok=True)
+    raw.save(STAGE / f"tile_{key}_raw.png")
+    out = tile_from_raw(raw)
+    dst = STAGE / f"tile_{key}.png"
+    out.save(dst)
+    return dst
+## W6 abstract (Vertex): the end of the visual ladder -- minimalist, existential, almost no detail left.
+STYLE_ABSTRACT = ("A single 16-bit pixel-art BUILDING for a minimalist, existential last town at the edge of a game "
+                  "world, a straight-on front view: pure flat geometric shapes, pale grey and off-white planes, one "
+                  "muted accent colour, crisp dark outline, very few details, a plain rectangular doorway at the bottom "
+                  "centre. Quiet and slightly uncanny, like a building remembered rather than seen. No people, no text "
+                  "or letters, no ground, no shadow on the ground, nothing else in the picture. The background is one "
+                  "flat, solid, pure magenta (#FF00FF) colour with no gradient. The building fills the frame and is centred.")
+ABSTRACT = {
+    "vertex_rest": (2, "The Rest, an inn: a plain pale cube with a single low gabled roof, one small square window glowing a "
+                       "soft warm yellow, and a narrow doorway."),
+    "vertex_exchange": (2, "The Exchange, a shop: a tall plain pale slab with a flat roof, a single horizontal slot of a "
+                           "counter window lit muted teal, and a narrow doorway."),
+}
+BUILDINGS = {**HARMONIA, **W1, **SUBURBAN, **STEAMPUNK, **FUTURISTIC, **ABSTRACT, **PROPS}
 ## Where each pool's art deploys, and the style it is drawn in.
 POOLS = {"harmonia": (HARMONIA, "medieval", None), "w1": (W1, "medieval", None), "suburban": (SUBURBAN, "suburban", STYLE_SUBURBAN),
-         "steampunk": (STEAMPUNK, "steampunk", STYLE_STEAMPUNK), "futuristic": (FUTURISTIC, "futuristic", STYLE_FUTURISTIC)}
+         "steampunk": (STEAMPUNK, "steampunk", STYLE_STEAMPUNK), "futuristic": (FUTURISTIC, "futuristic", STYLE_FUTURISTIC),
+         "abstract": (ABSTRACT, "abstract", STYLE_ABSTRACT), "props": (PROPS, "../props/medieval", STYLE_PROP)}
 
 
 def key_out(img: Image.Image, tol: int = 90) -> Image.Image:
@@ -202,6 +299,14 @@ def key_out(img: Image.Image, tol: int = 90) -> Image.Image:
     return Image.fromarray(a, "RGBA")
 
 
+def drop_key_fringe(img: Image.Image) -> Image.Image:
+    """Clear leftover magenta-ish edge pixels the border flood missed (a pink fringe on foliage)."""
+    a = np.array(img.convert("RGBA"))
+    r, g, b = a[..., 0].astype(int), a[..., 1].astype(int), a[..., 2].astype(int)
+    a[(r > 150) & (b > 120) & (g < r - 70) & (g < b - 40), 3] = 0
+    return Image.fromarray(a, "RGBA")
+
+
 def fit(img: Image.Image, width_tiles: int) -> Image.Image:
     """Crop to the building and scale its width to the block it stands on (TILE px per tile)."""
     img = key_out(img)
@@ -217,7 +322,7 @@ def fit(img: Image.Image, width_tiles: int) -> Image.Image:
     a = obj.split()[3].point(lambda v: 255 if v >= 128 else 0)
     out = rgb.convert("RGBA")
     out.putalpha(a)
-    return out
+    return drop_key_fringe(out)
 
 
 def generate(kind: str, width_tiles: int = 3) -> Path:
@@ -256,13 +361,26 @@ def main() -> int:
     ap.add_argument("--suburban", nargs="*", help="stage these W2 Maple Heights buildings (no names = all)")
     ap.add_argument("--steampunk", nargs="*", help="stage these W3 Brasston buildings (no names = all)")
     ap.add_argument("--futuristic", nargs="*", help="stage these W5 NodePrime buildings (no names = all)")
+    ap.add_argument("--props", nargs="*", help="stage these village props (no names = all)")
+    ap.add_argument("--tiles", nargs="*", help="stage these 32px terrain tiles (no names = all)")
+    ap.add_argument("--abstract", nargs="*", help="stage these W6 Vertex buildings (no names = all)")
     ap.add_argument("--view", choices=["front", "corner"], default="front", help="straight-on (B, default) or angled (A)")
     ap.add_argument("--deploy", action="store_true", help="copy staged Harmonia art into assets (never overwrites)")
     args = ap.parse_args()
+    tile_keys = args.tiles if args.tiles else (sorted(TILES) if args.tiles is not None else [])
+    for k in tile_keys:
+        if k not in TILES:
+            raise SystemExit(f"unknown tile {k}")
+    if tile_keys and args.deploy:
+        deploy_tiles(tile_keys)
+    else:
+        for k in tile_keys:
+            print(f"staged {generate_tile(k).relative_to(ROOT)}")
     for k in args.style or []:
         print(f"staged {generate(k).relative_to(ROOT)}")
     for chosen, (pool, world, _) in ((args.harmonia, POOLS["harmonia"]), (args.w1, POOLS["w1"]), (args.suburban, POOLS["suburban"]), (args.steampunk, POOLS["steampunk"]),
-                                      (args.futuristic, POOLS["futuristic"])):
+                                      (args.futuristic, POOLS["futuristic"]),
+                                      (args.abstract, POOLS["abstract"]), (args.props, POOLS["props"])):
         if chosen is None:
             continue
         for k in chosen or sorted(pool):
