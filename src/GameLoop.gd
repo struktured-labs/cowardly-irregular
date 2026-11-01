@@ -4166,6 +4166,10 @@ func _on_battle_ended(victory: bool) -> void:
 		# (first press completes the overlay's choreography, the next one leaves — victory revamp 2026-08-18)
 		await _wait_for_confirm_victory()
 
+		if not _chain_links.is_empty():
+			await _continue_chain()
+			return
+
 		# Play exit transition (iris-close) before returning to overworld
 		if BattleTransition:
 			await BattleTransition.play_exit_transition(true)
@@ -4189,6 +4193,7 @@ func _on_battle_ended(victory: bool) -> void:
 		# game-over screen. A flee leaves LIVING party members; a true wipe leaves
 		# none. Gate the whole defeat/game-over flow on the party actually being
 		# down: any survivor means we escaped, so just return to the overworld.
+		_end_chain()
 		var _escape_survivors := 0
 		for _m in party:
 			if _m is Combatant and _m.is_alive:
@@ -5002,6 +5007,7 @@ func _consume_return_tile(scene: Node) -> Vector2:
 
 func _return_to_exploration(force_battle_teardown: bool = false) -> void:
 	"""Return to exploration after battle"""
+	_end_chain()
 	# Reset engine time scale to normal (battle speed shouldn't affect overworld)
 	Engine.time_scale = 1.0
 
@@ -5163,6 +5169,7 @@ func _on_exploration_battle_triggered(enemies: Array, terrain: String = "") -> v
 		InputLockManager.push_lock("encounter_transition")
 	_battle_transition_starting = true
 	_arm_battle_commence_watchdog()
+	enemies = _begin_chain(enemies)
 
 	# LoopState.BATTLE blocks player movement — set in _start_battle_async after transition.
 	# Do NOT set it here — transition needs EXPLORATION state to render the screenshot.
@@ -5228,6 +5235,51 @@ func _on_exploration_battle_triggered(enemies: Array, terrain: String = "") -> v
 
 
 
+## struktured 2026-10-31: alerted roamers near a touch join it -- one battle if they fit, else back-to-back. Returns battle one.
+func _begin_chain(leader: Array) -> Array:
+	_end_chain()
+	var spawner: Node = _exploration_scene.get("monster_spawner") if _exploration_scene and is_instance_valid(_exploration_scene) else null
+	var joiners: Array = spawner.take_chain_joiners() if spawner and is_instance_valid(spawner) and spawner.has_method("take_chain_joiners") else []
+	if joiners.is_empty() or not leader.all(func(e): return e is String):
+		return leader
+	_chain_links = MonsterSpawner.pack_chain([leader] + joiners)
+	if _chain_links.is_empty():
+		return leader
+	print("[CHAIN] %d group(s) in %d battle(s): %s" % [1 + joiners.size(), _chain_links.size(), str(_chain_links)])
+	return _next_chain_link()
+
+
+## Pops the next battle off the chain and counts its groups as engaged; the enemies are its groups flattened.
+func _next_chain_link() -> Array:
+	var link: Array = _chain_links.pop_front()
+	_chain_engaged += link.size()
+	var enemies: Array = []
+	for g in link:
+		enemies.append_array(g)
+	return enemies
+
+
+func _end_chain() -> void:
+	_chain_links = []
+	_chain_engaged = 0
+
+
+## The next link starts from the victory screen: iris-close, swap the battle, iris-open. One victory screen per link.
+func _continue_chain() -> void:
+	var enemies: Array = _next_chain_link()
+	print("[CHAIN] next battle: %s (%d group(s) engaged)" % [str(enemies), _chain_engaged])
+	if BattleTransition:
+		await BattleTransition.play_exit_transition(true)
+	if not await _start_battle_async(enemies, true):
+		_end_chain()
+		await _return_to_exploration()
+		if BattleTransition:
+			await BattleTransition.reveal_exploration()
+		return
+	if BattleTransition:
+		await BattleTransition.fade_out()
+
+
 ## Scenes hide via three routes because they parent three ways: tracked ref, MapSystem (/root), or directly under GameLoop
 func _hide_exploration_scenes() -> void:
 	var hidden_names: Array = []
@@ -5290,6 +5342,8 @@ func _start_battle_async(specific_enemies: Array = [], is_encounter: bool = fals
 	# every battle-entry path funnels through here — sweep once, not per call site
 	_hide_exploration_scenes()
 
+	if BattleManager:
+		BattleManager.chain_groups = maxi(_chain_engaged, 1)
 	# Save battle config for retry
 	_last_battle_enemies = specific_enemies.duplicate()
 	_last_battle_is_encounter = is_encounter
@@ -5829,6 +5883,9 @@ func _area_overworld_transition_out() -> void:
 
 var _transition_in_progress: bool = false
 var _battle_transition_starting: bool = false  # set by _on_exploration_battle_triggered — mutex against area transitions
+## Chained encounters: the battles still to fight after this one (each an Array of groups), and the groups engaged so far.
+var _chain_links: Array = []
+var _chain_engaged: int = 0
 var _transition_wd_gen: int = 0  # generation token so a watchdog never fires on a LATER transition
 
 ## Wall-clock floor under the two no-expiry latches that can strand a session (2026-08-08: InputLockManager's 10s net covered the only gate that never needed one — nets grow where failure is FELT, not where it is severe). Mirrors the battle stall watchdog: gut hard-off, generation token, fires only if THIS transition is still latched, LOUD.
