@@ -163,3 +163,20 @@ func test_the_inn_heals_first_then_plays_the_night() -> void:
 	await get_tree().create_timer(1.8).timeout
 	stub.free()
 	GameState.party_gold = gold_before
+
+
+func test_a_keeper_with_several_morning_lines_never_repeats_back_to_back() -> void:
+	var lines := ["Morning!", "Sleep well?", "Breakfast is on."]
+	var seen: Array = []
+	for i in 6:
+		seen.append(InnDialogue.pick(lines, "zz_test/rest_complete"))
+	for i in range(1, seen.size()):
+		assert_ne(seen[i], seen[i - 1], "the same morning line twice in a row: %s" % str(seen))
+	for l in lines:
+		assert_true(seen.has(l), "every authored morning line gets its turn: %s" % str(seen))
+
+
+func test_a_single_line_and_an_empty_list_still_work() -> void:
+	assert_eq(InnDialogue.pick("Dawn already.", "zz_test/one"), "Dawn already.", "a plain string is used as it is")
+	assert_eq(InnDialogue.pick([], "zz_test/none"), "", "an empty list falls back to the inn's own text")
+	assert_eq(InnDialogue.pick(["Only one."], "zz_test/single"), "Only one.", "a one-line list repeats, which is all it can do")
