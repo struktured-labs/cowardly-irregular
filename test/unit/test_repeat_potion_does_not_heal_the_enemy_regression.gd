@@ -222,7 +222,7 @@ func test_a_repeated_single_target_list_of_the_ko_and_ada_heals_ada_once() -> vo
 	assert_false(targets.has(slime), "a KO'd slot must not be filled with the enemy")
 	assert_eq(targets.size(), 1, "one potion, one target")
 	var ada_before := ada.current_hp
-	var one := ada.heal_preview(_flat_heal("potion"))
+	var one := ada.heal_preview(ItemSystem._x10_flat(_flat_heal("potion"), ada))
 	assert_gt(ada.max_hp - ada_before, one * 2, "Ada has room to show a second heal")
 	_bm._execute_item(ada, "potion", targets)
 	assert_eq(ada.current_hp - ada_before, one, "Ada receives the potion once")

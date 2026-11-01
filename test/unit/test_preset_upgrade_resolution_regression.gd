@@ -202,9 +202,9 @@ func test_cleric_defensive_evolves_cure_to_cura_when_learned() -> void:
 	assert_eq(_ab._resolve_ability_upgrade(fresh, emergency_action), "cure",
 		"level-1 cleric still casts cure")
 	fresh.free()
-	var leveled := _fresh_combatant("cleric", 6)
+	var leveled := _fresh_combatant("cleric", Combatant.spectrum_level(6))
 	assert_eq(_ab._resolve_ability_upgrade(leveled, emergency_action), "cura",
-		"level-6 cleric autobattle now casts cura on emergency heal")
+		"an old level-6 cleric (on the spectrum ladder) now casts cura on emergency heal")
 	leveled.free()
 
 
@@ -217,8 +217,8 @@ func test_mage_aggressive_burst_evolves_fire_to_fira_when_learned() -> void:
 	for action in burst_rule["actions"]:
 		assert_true("fira" in (action.get("upgrades", []) as Array),
 			"both burst actions upgrade to fira")
-	var leveled := _fresh_combatant("mage", 6)
+	var leveled := _fresh_combatant("mage", Combatant.spectrum_level(6))
 	for action in burst_rule["actions"]:
 		assert_eq(_ab._resolve_ability_upgrade(leveled, action), "fira",
-			"level-6 mage burst now casts fira")
+			"an old level-6 mage (on the spectrum ladder) burst now casts fira")
 	leveled.free()
