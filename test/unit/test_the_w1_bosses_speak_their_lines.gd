@@ -97,6 +97,49 @@ func test_a_name_that_only_contains_the_boss_is_not_the_boss() -> void:
 	assert_eq(SoundManager.voiced_line_clip("Theron", line), "", "nor anyone else saying the same words")
 
 
+func _shown_speakers(node: Variant, out: Dictionary) -> void:
+	if node is Dictionary:
+		if str(node.get("speaker", "")) != "":
+			out[str(node["speaker"])] = true
+		for v in node.values():
+			_shown_speakers(v, out)
+	elif node is Array:
+		for v in node:
+			_shown_speakers(v, out)
+
+
+## Only a boss's own battle title may reach his recordings by a non-exact name; "Lady Mordaine" would borrow his voice (cowir-music 20801).
+func test_only_a_bosss_own_title_reaches_his_voice_by_a_longer_name() -> void:
+	var mon: Dictionary = _json("res://data/monsters.json")
+	var shown: Dictionary = {}
+	for f in DirAccess.get_files_at("res://data/cutscenes"):
+		if f.ends_with(".json"):
+			_shown_speakers(_json("res://data/cutscenes/" + f), shown)
+	for id in mon:
+		var e = mon[id]
+		if e is Dictionary:
+			shown[str(e.get("name", ""))] = true
+			for part in (e.get("dialogue", {}) as Dictionary).values():
+				for l in part:
+					if ":" in str(l) and not str(l).begins_with("*"):
+						shown[str(l).split(":", true, 1)[0].strip_edges()] = true
+	var titles: Dictionary = {}
+	for canon in BOSSES:
+		titles[str((mon.get(BOSSES[canon][0], {}) as Dictionary).get("name", ""))] = canon
+	var borrowed: Array = []
+	var titled := 0
+	for name in shown:
+		for canon in BOSSES:
+			if name != canon and SoundManager.speaks_as(canon, name):
+				if titles.get(name, "") == canon:
+					titled += 1
+				else:
+					borrowed.append("%s -> %s" % [name, canon])
+	assert_gt(shown.size(), 50, "PREMISE: the walk must collect the game's speaker names, found %d" % shown.size())
+	assert_eq(titled, BOSSES.size(), "CONTROL: each boss's own battle title must be found reaching his voice")
+	assert_eq(borrowed, [], "these speakers would borrow a boss's recordings through speaks_as; give them their own name or narrow it: %s" % [borrowed])
+
+
 func test_no_boss_line_outlasts_the_boss_line_watchdog_grace() -> void:
 	var grace_sec: float = float(load("res://src/battle/BattleScene.gd").get_script_constant_map().get("BOSS_LINE_GRACE_MS", 0)) / 1000.0
 	assert_gt(grace_sec, 0.0, "PREMISE: BattleScene.BOSS_LINE_GRACE_MS must still exist")
