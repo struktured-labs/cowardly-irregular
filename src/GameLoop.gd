@@ -7388,7 +7388,29 @@ func _on_grind_complete(reason: String) -> void:
 	_show_grind_stop_notification(reason)
 
 	print("[AUTOGRIND] Grind complete: %s" % reason)
+	## struktured 2026-11-01: a grind that ended in a wipe left him on the field all-KO. A wipe is a wipe: the manual defeat flow takes it, field locked behind it.
+	if not _party_can_fight():
+		print("[AUTOGRIND] The grind ended in a party wipe — handing it to the defeat flow")
+		_free_overlays_for_scene_change()
+		var holding: Array[bool] = [true]
+		_hold_field_still_while(holding)
+		await _show_game_over_screen()
+		holding[0] = false
+		if InputLockManager:
+			InputLockManager.pop_lock(WIPE_FIELD_LOCK)
+		return
 	_show_autogrind_summary(final_stats, reason)
+
+
+## The field stays still under a game-over screen shown on it: re-pushed each frame (a lock is reaped after 10 s), released once a battle owns the screen.
+const WIPE_FIELD_LOCK := "autogrind_wipe"
+func _hold_field_still_while(holding: Array[bool]) -> void:
+	while holding[0] and current_state == LoopState.EXPLORATION and is_inside_tree():
+		if InputLockManager:
+			InputLockManager.push_lock(WIPE_FIELD_LOCK)
+		await get_tree().process_frame
+	if InputLockManager:
+		InputLockManager.pop_lock(WIPE_FIELD_LOCK)
 
 
 func _play_grind_stop_sfx(reason: String) -> void:
