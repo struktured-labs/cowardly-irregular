@@ -1385,8 +1385,8 @@
       },
       "tier": "T1",
       "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)",
-      "flip_h": true,
-      "flip_h_reason": "idle drawn facing LEFT, away from the party at screen right, unlike the 256px convention; judged by eye at zoom 2026-10-12 (re-review if the art is redrawn)"
+      "flip_h": false,
+      "flip_h_reason": "NOT flipped: struktured, playing .758 on 2026-11-01, reported it facing the wrong way with the flip on, and chose the unflipped sheet from a frame-by-frame A/B. The sheet is mixed-facing (idle front-on, death swings the other way), so his reading in play is the ruling. Re-review if the art is redrawn."
     },
     "data_wraith": {
       "path": "res://assets/sprites/monsters/data_wraith.png",
@@ -2594,7 +2594,9 @@
         }
       },
       "tier": "T1",
-      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)",
+      "flip_h": true,
+      "flip_h_reason": "idle drawn facing LEFT (sword and body both point left, away from the party at screen right), unlike the 256px convention; found in the 2026-11-01 by-eye sweep of all 117 monster sheets (re-review if the art is redrawn)"
     },
     "mushroom": {
       "path": "res://assets/sprites/monsters/mushroom.png",

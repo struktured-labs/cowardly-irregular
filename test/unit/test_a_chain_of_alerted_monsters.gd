@@ -55,6 +55,13 @@ func test_a_chain_stops_at_its_battle_cap() -> void:
 	assert_eq(MonsterSpawner.pack_chain(groups).size(), MonsterSpawner.CHAIN_MAX_BATTLES, "a chain ran past its cap")
 
 
+func test_a_chain_is_no_longer_than_autobattle_can_win() -> void:
+	## cowir-main 20926: autobattle at the area's level must win >= 90% of every allowed length. Measured with BAL_CHAIN on
+	## 2026-11-01: 4 links won 0/20 even in W1 (L9) and W5 (L44); 2 links won 100% in W2-W4. Raise this only with a new table.
+	assert_lte(MonsterSpawner.CHAIN_MAX_BATTLES, 2, "a chain may run longer than the longest length autobattle was measured to win")
+	assert_gte(MonsterSpawner.CHAIN_MAX_BATTLES, 1, "a chain must allow its first battle")
+
+
 func test_the_reward_formula_counts_groups_and_caps() -> void:
 	assert_almost_eq(BattleManager.chain_reward_factor(1), 1.0, 0.001, "a lone group earned a chain bonus")
 	assert_almost_eq(BattleManager.chain_reward_factor(2), 1.2, 0.001)
