@@ -64,8 +64,8 @@ const LEVEL_RATE_LINEAR := 0.04
 const SCALED_STAT_FIELDS := ["max_hp", "current_hp", "attack", "defense", "magic", "magic_defense"]
 
 
-## Bring a saved stat block up to the current denomination. No-op when already current.
-static func migrate_stat_scale(data: Dictionary) -> Dictionary:
+## The denomination a saved stat block was written in.
+static func saved_stat_scale(data: Dictionary) -> int:
 	var saved: int = int(data.get("stat_scale", 0))
 	if saved <= 0:
 		# Pre-marker file. magic_defense became a real stat minutes before the ×10 pass, and
@@ -73,6 +73,12 @@ static func migrate_stat_scale(data: Dictionary) -> Dictionary:
 		# inside that narrow window would be under-migrated; none exist (verified against the
 		# five local saves) and the marker makes the ambiguity unreachable from here on.
 		saved = X10_ERA_SCALE if data.has("magic_defense") else 1
+	return saved
+
+
+## Bring a saved stat block up to the current denomination. No-op when already current.
+static func migrate_stat_scale(data: Dictionary) -> Dictionary:
+	var saved: int = saved_stat_scale(data)
 	if saved == STAT_SCALE:
 		return data
 	var factor: float = float(STAT_SCALE) / float(saved)

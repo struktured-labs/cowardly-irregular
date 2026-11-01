@@ -16,6 +16,9 @@ extends GutTest
 ## suite is blind to a file written under an older schema by construction. It surfaced only from
 ## asking what a save on disk actually contained.
 ##
+## SINCE THE SPECTRUM CURVE (2026-10-31) STAT_SCALE is 1 again, so the direction reversed: a ×10-era block is
+## divided back down, and a pre-×10 block is already current. The arms below are the same properties, re-aimed.
+##
 ## DETECTION: saves now carry `stat_scale`. Files predating the marker are dated by whether they
 ## carry `magic_defense`, which became a real stat minutes before the ×10 pass — the only thing
 ## separating the two eras. A file written inside that window would be under-migrated; none exist,
@@ -23,10 +26,10 @@ extends GutTest
 
 
 func _presave_party_member() -> Dictionary:
-	# Shaped like a real entry from save_00.json — the Fighter at level 5.
-	return {"combatant_name": "Hero", "job_id": "fighter", "job_level": 5,
-		"max_hp": 208, "current_hp": 208, "max_mp": 36, "current_mp": 36,
-		"attack": 42, "defense": 39, "magic": 14, "speed": 22}
+	# A ×10-era entry: the save_00 Fighter at level 5, as the ×10 migration left it, marker stamped.
+	return {"combatant_name": "Hero", "job_id": "fighter", "job_level": 5, "stat_scale": Combatant.X10_ERA_SCALE,
+		"max_hp": 2080, "current_hp": 2080, "max_mp": 36, "current_mp": 36,
+		"attack": 420, "defense": 390, "magic": 140, "speed": 22}
 
 
 # ── the migration itself ────────────────────────────────────────────
@@ -43,27 +46,27 @@ func test_a_prescale_block_is_multiplied() -> void:
 		if not jobs.has(job_id):
 			continue
 		for lvl in [1, 5, 20]:
-			var block := {"combatant_name": "P", "job_id": job_id, "job_level": lvl,
-				"max_hp": 208, "current_hp": 130, "max_mp": 36,
-				"attack": 42, "defense": 39, "magic": 14, "speed": 22}
+			var block := {"combatant_name": "P", "job_id": job_id, "job_level": lvl, "stat_scale": Combatant.X10_ERA_SCALE,
+				"max_hp": 2080, "current_hp": 1300, "max_mp": 36,
+				"attack": 420, "defense": 390, "magic": 140, "speed": 22}
 			var out := Combatant.migrate_stat_scale(block)
 			checked += 1
-			assert_eq(int(out["max_hp"]), 2080,
+			assert_eq(int(out["max_hp"]), 208,
 				"%s L%d — every job and level must migrate, not just the one this test was written "
 					% [job_id, lvl] + "against")
-			assert_eq(int(out["attack"]), 420, "%s L%d attack" % [job_id, lvl])
-			assert_eq(int(out["defense"]), 390, "%s L%d defense" % [job_id, lvl])
-			assert_eq(int(out["current_hp"]), 1300,
-				"%s L%d — current_hp must move with max_hp, not stay at 1/10th" % [job_id, lvl])
+			assert_eq(int(out["attack"]), 42, "%s L%d attack" % [job_id, lvl])
+			assert_eq(int(out["defense"]), 39, "%s L%d defense" % [job_id, lvl])
+			assert_eq(int(out["current_hp"]), 130,
+				"%s L%d — current_hp must move with max_hp, not stay at ×10" % [job_id, lvl])
 	assert_eq(checked, 15, "positive control — 5 jobs × 3 levels must actually be exercised")
 
 
 func test_migration_does_not_depend_on_job_or_level_being_present() -> void:
 	# A save from a corrupted or partial write may carry stats without job_id. The migration is
 	# about the DENOMINATION, which is a property of the numbers, not of who owns them.
-	var bare := {"max_hp": 208, "attack": 42}
+	var bare := {"max_hp": 2080, "attack": 420, "stat_scale": Combatant.X10_ERA_SCALE}
 	var out := Combatant.migrate_stat_scale(bare)
-	assert_eq(int(out["max_hp"]), 2080,
+	assert_eq(int(out["max_hp"]), 208,
 		"migration must key on the scale marker alone — gating it on job_id or level makes it "
 		+ "silently partial for any block that lacks them")
 
@@ -77,17 +80,23 @@ func test_the_unscaled_stats_are_left_alone() -> void:
 	assert_eq(int(out["job_level"]), 5, "level must not be touched")
 
 
-func test_a_postscale_block_is_not_scaled_twice() -> void:
-	# The dangerous case. save_98.json was written THIS SESSION: already ×10, and with no
-	# stat_scale marker because the marker did not exist yet. Migrating it would produce an
-	# 18,000 HP level-1 fighter — a bug strictly worse than the one being fixed.
-	var already := {"combatant_name": "Hero", "job_id": "fighter", "job_level": 1,
+func test_an_unmarked_x10_block_is_dated_by_magic_defense() -> void:
+	# save_98.json's shape: ×10 numbers, magic_defense present, no marker yet. It must come DOWN.
+	var unmarked := {"combatant_name": "Hero", "job_id": "fighter", "job_level": 1,
 		"max_hp": 1816, "current_hp": 1816, "attack": 400, "defense": 370,
 		"magic": 140, "magic_defense": 70, "speed": 22}
-	var out := Combatant.migrate_stat_scale(already.duplicate(true))
-	assert_eq(int(out["max_hp"]), 1816,
-		"a block carrying magic_defense post-dates the split and must be left alone")
-	assert_eq(int(out["attack"]), 400)
+	var out := Combatant.migrate_stat_scale(unmarked.duplicate(true))
+	assert_eq(int(out["max_hp"]), 182, "a block carrying magic_defense is ×10-era and must divide down")
+	assert_eq(int(out["attack"]), 40)
+
+
+func test_a_pre_x10_block_is_already_current() -> void:
+	# save_00.json's ORIGINAL shape (no marker, no magic_defense) is the denomination we are back in.
+	var old := {"combatant_name": "Hero", "job_id": "fighter", "job_level": 5,
+		"max_hp": 208, "current_hp": 208, "attack": 42, "defense": 39, "magic": 14, "speed": 22}
+	var out := Combatant.migrate_stat_scale(old.duplicate(true))
+	assert_eq(int(out["max_hp"]), 208, "a pre-×10 block must not be divided a second time")
+	assert_false(out.has("migrated_from_stat_scale"), "and it must not claim a migration")
 
 
 func test_the_marker_makes_it_idempotent() -> void:
@@ -111,7 +120,7 @@ func test_the_migration_runs_at_the_FILE_boundary_not_in_from_dict() -> void:
 		"_read_save_file is the single point every save on disk passes through")
 	var comb_src := FileAccess.get_file_as_string("res://src/battle/Combatant.gd")
 	assert_false(comb_src.contains("data = migrate_stat_scale(data)"),
-		"from_dict must NOT migrate — it would ×10 every non-save caller, which is how this was "
+		"from_dict must NOT migrate — it would rescale every non-save caller, which is how this was "
 		+ "caught: 14 red tests holding small fixture stats")
 
 
@@ -120,8 +129,8 @@ func test_a_prescale_party_array_migrates_end_to_end() -> void:
 	var save := {"game_state": {"player_party": [_presave_party_member()]}}
 	var party: Array = (save["game_state"] as Dictionary)["player_party"]
 	party[0] = Combatant.migrate_stat_scale(party[0])
-	assert_eq(int((party[0] as Dictionary)["max_hp"]), 2080,
-		"a pre-scale party inside a save envelope must come out at the current denomination")
+	assert_eq(int((party[0] as Dictionary)["max_hp"]), 208,
+		"a ×10-era party inside a save envelope must come out at the current denomination")
 
 
 func test_to_dict_stamps_the_scale_so_the_next_load_is_unambiguous() -> void:
@@ -158,5 +167,5 @@ func test_the_migration_can_be_observed_to_do_nothing_when_current() -> void:
 	# correctly and one that never runs at all. Prove the function is reached and discriminating.
 	var pre := Combatant.migrate_stat_scale(_presave_party_member())
 	var post := Combatant.migrate_stat_scale({"max_hp": 500, "stat_scale": Combatant.STAT_SCALE})
-	assert_eq(int(pre["max_hp"]), 2080, "pre-scale input must change")
+	assert_eq(int(pre["max_hp"]), 208, "×10-era input must change")
 	assert_eq(int(post["max_hp"]), 500, "current input must not")
