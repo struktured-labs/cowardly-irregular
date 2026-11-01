@@ -69,7 +69,7 @@
       "greeting": "Welcome to the Brass Cog. Sleep is allotted in standardized increments. You've arrived at 11:47.",
       "rest_prompt": "Rest cycle: 8 hours, 14 minutes. Fee: %d gold. Surcharge for irregular sleep patterns.",
       "rest_confirm": "Your bed is calibrated. The mattress has a schedule. Do not argue with it.",
-      "rest_complete": "It is 4:07. You have been woken because it is 4:07. All things happen at 4:07.",
+      "rest_complete": "It is 6:07. Dawn was scheduled for 6:07. Dawn complied. All things comply at the 07.",
       "save_prompt": "Your name enters the register. The register updates every hour, on the 07.",
       "cant_afford": "Insufficient funds detected. The counter requires full payment. The counter does not negotiate.",
       "farewell": "Departure noted. Next arrival expected at 4:07. Coincidence is not permitted here."
@@ -87,7 +87,7 @@
       "greeting": "$ innd --greet\nINFO: guest allocation available. Press A to continue.",
       "rest_prompt": "$ rest --duration=8h --cost=%d --unit=gold\nConfirm? [y/N]",
       "rest_confirm": "$ daemon sleep_cycle.start\nStatus: running. PID: 8047. Do not interrupt.",
-      "rest_complete": "$ daemon sleep_cycle.complete\nHP: restored. MP: restored. AP: reset.\n[Process exited 0]",
+      "rest_complete": "$ daemon sleep_cycle.complete\nUptime reset. Sunrise scheduled, sunrise delivered.\n[Process exited 0]",
       "save_prompt": "$ savepoint --create --tag=inn_node_prime\nWriting to disk. Do not power off.",
       "cant_afford": "$ rest --pay=0\nERROR: insufficient funds. Try `grind --target=slime` in the adjacent sector.",
       "farewell": "$ logout\nSession terminated. State persisted. Safe travels."
