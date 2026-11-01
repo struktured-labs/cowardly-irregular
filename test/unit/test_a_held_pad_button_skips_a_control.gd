@@ -13,6 +13,17 @@ extends GutTest
 const CONTROLS_MENU := "res://src/ui/ControlsMenu.gd"
 const GdSource := preload("res://test/unit/helpers/gd_source.gd")
 
+var _saved_time_scale: float = 1.0
+
+
+func before_each() -> void:
+	_saved_time_scale = Engine.time_scale
+	Engine.time_scale = 1.0
+
+
+func after_each() -> void:
+	Engine.time_scale = _saved_time_scale
+
 
 func _menu() -> Node:
 	var m = load(CONTROLS_MENU).new()
@@ -117,3 +128,15 @@ func test_the_status_line_names_the_hold() -> void:
 	var text: String = str(m._mapping_status.text)
 	assert_true(text.contains("Hold"), "the walk's status must tell the player a held button skips: '%s'" % text)
 	assert_true(text.contains("Keyboard"), "and still name the keyboard exits")
+
+
+
+## The hold is REAL seconds (cowir-main's check): battle runs Engine.time_scale 0.25 for "1x", which
+## scales _process's delta, so an engine-time hold would take 4 s in the player's hand there.
+func test_the_hold_is_real_seconds_under_a_battle_time_scale() -> void:
+	var m: Node = _menu()
+	Engine.time_scale = 0.25
+	_button(m, JOY_BUTTON_A, true)
+	m._process(_hold_sec() * 0.25 + 0.01)
+	assert_false(m._mapping.bindings.has("a"),
+		"at time_scale 0.25 a real-second hold is a quarter as much ENGINE delta, and must still skip")

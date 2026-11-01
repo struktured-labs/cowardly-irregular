@@ -1209,7 +1209,8 @@ func _process(delta: float) -> void:
 	if _mapping == null:
 		_clear_mapping_hold()
 	elif _mapping_hold_button >= 0:
-		_mapping_hold_t += delta
+		## Real seconds, as MenuRepeat does: battle runs at time_scale 0.25 and a 1 s hold must not take 4.
+		_mapping_hold_t += delta / maxf(Engine.time_scale, 0.0001)
 		if _mapping_hold_t >= MAPPING_HOLD_SKIP_SEC:
 			_skip_by_hold()
 	if _mapping != null:
