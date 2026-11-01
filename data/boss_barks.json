@@ -76,7 +76,7 @@
       "speaker": "Voltharion",
       "windup": [
         "Go-go-go!",
-        "Too fast!",
+        "Frame-perfect!",
         "Zap!"
       ],
       "big_hit": [
@@ -86,12 +86,12 @@
       ],
       "low_hp": [
         "Overheating!",
-        "Battery low!",
+        "Lag-spike!",
         "Not done yet!"
       ],
       "party_wipe": [
         "Too slow!",
-        "Best fight ever!",
+        "New-personal-best!",
         "Rematch!"
       ]
     },
@@ -132,8 +132,8 @@
       ],
       "low_hp": [
         "Recess. Briefly.",
-        "Unacceptable.",
-        "Adjust the figures!"
+        "This was not projected.",
+        "The figures require revision."
       ],
       "party_wipe": [
         "Case closed.",
