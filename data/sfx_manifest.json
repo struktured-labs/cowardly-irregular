@@ -1883,6 +1883,13 @@
       "duration_seconds": 0.6,
       "prompt_influence": 0.7
     },
+    "victory_slam_s": {
+      "file": "assets/audio/sfx/victory_slam_s.ogg",
+      "prompt": "PLACEHOLDER (struktured via cowir-main 20637: a labelled local synth now, a real asset later). The S-rank one-shot slam, one tier heavier than victory_slam: victory_slam itself + a 75->38 Hz sine sub-thump + a 2.5 kHz-highpassed noise crack + a 1760/2640 Hz ring that dies in 0.25 s, mixed with sox at 0.4 each and normalised to -17 LUFS under a -1 dBTP limiter (measured -16.0 LUFS vs the ordinary slam's -19.5). Replace with a designed asset; the selector in VictoryOverlay._slam_key only needs this key and file to exist.",
+      "duration_seconds": 0.6,
+      "source": "sox_synth",
+      "placeholder": true
+    },
     "victory_stinger": {
       "file": "assets/audio/sfx/victory_stinger.ogg",
       "prompt": "Quick triumphant hit, short celebratory brass stab with a bright chime accent, victorious exclamation point sound, punchy rewarding impact with ascending sparkle tail",
@@ -2425,7 +2432,9 @@
       "prompt": "Steady heavy rainstorm ambience, dense rain hiss on ground and leaves, gusting wind, occasional far-off thunder rumble underneath, continuous and seamless with no melody",
       "duration_seconds": 10.0,
       "prompt_influence": 0.75,
-      "loop": true
+      "loop": true,
+      "bed_gain_db": -15.4,
+      "gain_note": "struktured via cowir-main 20637: bring the storm down to the rain's level. Measured EBU R128: this file -6.4 LUFS, weather_rain -21.8 LUFS; -15.4 dB puts them level. play_ambient adds it to the bed's trim (its own field: gain_db is play_voice's, guarded to +/-6 dB); delete the field to revert."
     },
     "weather_sunny": {
       "file": "assets/audio/sfx/weather_sunny.ogg",
