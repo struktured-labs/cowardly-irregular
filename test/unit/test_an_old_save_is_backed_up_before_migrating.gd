@@ -27,7 +27,7 @@ func _old_save_text(hp: int) -> String:
 
 
 func _clean() -> void:
-	for p in [_path(), _backup()]:
+	for p in [_path(), _backup(), _backup() + ".tmp"]:
 		if FileAccess.file_exists(p):
 			DirAccess.remove_absolute(p)
 
@@ -63,3 +63,14 @@ func test_a_current_save_is_not_backed_up() -> void:
 	_write('{"game_state":{"player_party":[{"combatant_name":"Hero","max_hp":66,"stat_scale":%d}]}}' % Combatant.STAT_SCALE)
 	SaveSystem._read_save_file(SLOT)
 	assert_false(FileAccess.file_exists(_backup()), "a save already at the current scale needs no backup")
+
+
+func test_an_interrupted_write_is_not_taken_for_the_backup() -> void:
+	var original := _old_save_text(2080)
+	_write(original)
+	var stale := FileAccess.open(_backup() + ".tmp", FileAccess.WRITE)
+	stale.store_string("{ half")
+	stale.close()
+	SaveSystem._read_save_file(SLOT)
+	assert_eq(FileAccess.get_file_as_string(_backup()), original, "a leftover partial write blocked the real backup")
+	assert_false(FileAccess.file_exists(_backup() + ".tmp"), "the staged copy was left behind")

@@ -1197,7 +1197,7 @@ func end_battle(victory: bool) -> void:
 			# The dead learn nothing — unless a passive/accessory says otherwise (struktured 2026-09-06).
 			if combatant.is_alive or earns_exp_while_dead(combatant):
 				## Stomp bonuses only at or above the member's level; the chain bonus always pays, and every share halves per 3 levels over the fight.
-				var stomp := one_shot_exp_bonus * autobattle_exp_bonus if ExpRules.stomp_bonus_applies(combatant.job_level, area_level) else 1.0
+				var stomp: float = one_shot_exp_bonus * autobattle_exp_bonus if ExpRules.stomp_bonus_applies(combatant.job_level, area_level) else 1.0
 				exp_gained = int(base_exp * reward_multiplier * stomp * exp_multiplier * chain_reward * ExpRules.over_level_factor(combatant.job_level, area_level))
 				if not defer_payout:
 					combatant.gain_job_exp(exp_gained)

@@ -1154,12 +1154,21 @@ func _backup_before_migrate(file_path: String, data: Dictionary) -> void:
 	if not stale or FileAccess.file_exists(backup):
 		return
 	var bytes := FileAccess.get_file_as_bytes(file_path)
-	var out := FileAccess.open(backup, FileAccess.WRITE)
-	if bytes.is_empty() or out == null:
+	if bytes.is_empty():
+		push_warning("[SaveSystem] could not read '%s' to back it up before migrating it" % file_path)
+		return
+	## Written aside and renamed into place, so a backup that exists is always complete (cowir-adhoc 20758).
+	var staged := backup + ".tmp"
+	var out := FileAccess.open(staged, FileAccess.WRITE)
+	if out == null:
 		push_warning("[SaveSystem] could not back up '%s' before migrating it (%s)" % [file_path, error_string(FileAccess.get_open_error())])
 		return
 	out.store_buffer(bytes)
 	out.close()
+	if FileAccess.get_file_as_bytes(staged) != bytes or DirAccess.rename_absolute(staged, backup) != OK:
+		push_warning("[SaveSystem] the backup of '%s' did not complete; it will be retried on the next load" % file_path)
+		DirAccess.remove_absolute(staged)
+		return
 	print("[SAVE] backed up %s to %s before the stat migration" % [file_path, backup])
 
 
