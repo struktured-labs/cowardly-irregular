@@ -125,7 +125,7 @@ func get_cached(speaker_id: String, text: String) -> AudioStream:
 	return s
 
 
-## `ticket["cancel"] = true` abandons the request early, freeing the server and is_busy() for whoever waits on them.
+## `ticket["cancel"] = true` abandons the request early (closes its connection) and frees is_busy(); whether the server stops is its own.
 func synthesize(speaker_id: String, text: String, timeout_sec: float, ticket: Dictionary = {}) -> AudioStream:
 	var hit := get_cached(speaker_id, text)
 	if hit != null:

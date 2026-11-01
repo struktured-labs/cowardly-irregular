@@ -6467,7 +6467,7 @@ func _join_or_drop_gloat_voice(shown_at: int) -> void:
 	_drop_gloat_voice()
 
 
-## Forgets the live voice, and cancels its synthesis if still running so the server is free for the party's lines.
+## Forgets the live voice, and cancels a running synthesis so the party's voice pool is no longer held behind it.
 func _drop_gloat_voice() -> void:
 	if not _gloat_voice.is_empty() and not bool(_gloat_voice.get("done", false)):
 		_gloat_voice["cancel"] = true
