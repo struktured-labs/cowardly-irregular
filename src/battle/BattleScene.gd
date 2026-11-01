@@ -3394,6 +3394,8 @@ func _on_battle_started() -> void:
 		% [InputProfileManager.hint_for_action("battle_defer"),
 			InputProfileManager.hint_for_action("battle_advance")])
 
+	_show_chain_intro(BattleManager.chain_link, BattleManager.chain_total)
+
 	# Tutorial popups (fire once per save)
 	TutorialHints.show(self, "first_battle")
 	if _check_for_boss():
@@ -5030,6 +5032,47 @@ func _on_round_ended(round_num: int) -> void:
 
 
 ## Bravely Default-style round boundary: brief centered banner + AP-label gold flash on the party panel. Banner suppressed at 4x+ (same convention as speech bubbles); the CUE is not — struktured 2026-08-22 "still no sound to indicate next round", and the banner threshold was swallowing it whole.
+## The chain says so up front (struktured: "not even obvious it's a chain battle"): a banner, and a tag for the whole fight.
+static func chain_banner_text(link: int, total: int) -> String:
+	return "CHAIN ×%d: more are closing in!" % total if link <= 1 else "CHAIN %d/%d" % [link, total]
+
+
+func _show_chain_intro(link: int, total: int) -> void:
+	if total <= 1:
+		return
+	log_message("[color=orange]%s[/color]" % chain_banner_text(link, total))
+	var ui = get_node_or_null("UI")
+	var tag := Label.new()
+	tag.name = "ChainTag"
+	tag.text = "Chain %d/%d" % [link, total]
+	tag.add_theme_font_size_override("font_size", TextScale.scaled(16))
+	tag.add_theme_color_override("font_color", Color(1.0, 0.78, 0.3))
+	tag.add_theme_color_override("font_outline_color", Color(0.1, 0.08, 0.02))
+	tag.add_theme_constant_override("outline_size", 4)
+	tag.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	(ui if ui else self).add_child(tag)
+	tag.position = Vector2((get_viewport_rect().size.x - tag.get_combined_minimum_size().x) / 2.0, 8)
+	if turbo_mode or autogrind_console_mode:
+		return
+	var banner := Label.new()
+	banner.name = "ChainBanner"
+	banner.text = chain_banner_text(link, total)
+	banner.add_theme_font_size_override("font_size", TextScale.scaled(28))
+	banner.add_theme_color_override("font_color", Color(1.0, 0.78, 0.3))
+	banner.add_theme_color_override("font_outline_color", Color(0.1, 0.08, 0.02))
+	banner.add_theme_constant_override("outline_size", 6)
+	banner.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	banner.z_index = 90
+	banner.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var vp := get_viewport_rect().size
+	(ui if ui else self).add_child(banner)
+	banner.position = Vector2((vp.x - banner.get_combined_minimum_size().x) / 2.0, vp.y * 0.22)
+	var t := create_tween().set_ignore_time_scale(true)
+	t.tween_interval(1.6)
+	t.tween_property(banner, "modulate:a", 0.0, 0.3)
+	t.tween_callback(banner.queue_free)
+
+
 func _show_round_banner(round_num: int) -> void:
 	if turbo_mode or autogrind_console_mode:
 		return
