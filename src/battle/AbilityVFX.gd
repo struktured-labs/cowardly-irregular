@@ -120,6 +120,8 @@ static func resolve(ability: Dictionary) -> Dictionary:
 		"color": null,
 		"shape": "strike",
 		"source": "fallback",
+		## A data/vfx_sequences.json id: when set, the cast plays that FractalFX sequence (#399).
+		"sequence": "",
 	}
 
 	## 1 — authored override wins outright.
@@ -149,6 +151,8 @@ static func resolve(ability: Dictionary) -> Dictionary:
 	elif out["source"] == "inferred" and str(ability.get("type", "")) == "magic":
 		out["color"] = ELEMENT_COLORS["arcane"]
 
+	if vfx.has("sequence"):
+		out["sequence"] = str(vfx["sequence"])
 	if vfx.has("shape") and str(vfx["shape"]) in SHAPES:
 		out["shape"] = str(vfx["shape"])
 	elif _is_musical(ability):

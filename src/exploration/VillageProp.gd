@@ -54,6 +54,8 @@ var roof_peaked: bool = false
 ## Per-world facade: "timber" (shingles, W1), "adobe" (desert), "corrugated" (W4), "neon" (W5). Flat styles
 ## draw a lit roof PLANE above the front wall, which is how a SNES town gives a flat roof its elevation.
 var house_style: String = "timber"
+## A drawn building (manifest building_art): when set, its texture replaces the procedural facade, bottom-aligned on the base row.
+var art_path: String = ""
 
 
 static func create(k: int, base_cell: Vector2i) -> VillageProp:
@@ -74,6 +76,10 @@ func footprint_cells(base_cell: Vector2i) -> Array:
 func _ready() -> void:
 	var size: Vector2i = size_tiles if size_tiles != Vector2i.ZERO else SIZES[kind]
 	var img: Image = TileSheetManifest.region(sheet_key, "props", Kind.keys()[kind], size) if sheet_key != "" else null
+	if art_path != "" and ResourceLoader.exists(art_path):
+		var tex := load(art_path) as Texture2D
+		if tex != null:
+			img = tex.get_image()
 	if img == null:
 		img = Image.create(size.x * TILE, size.y * TILE, false, Image.FORMAT_RGBA8)
 		_paint(img, size)
@@ -90,6 +96,8 @@ func _ready() -> void:
 	# and cart -- art x[-32..32] vs collision x[-16..48]. 1-wide props were always exact,
 	# which is why it read as "close but not spot on" rather than as obviously broken.
 	spr.position = Vector2(-TILE / 2.0, -size.y * TILE)
+	if art_path != "" and img.get_height() != size.y * TILE:
+		spr.position.y = -img.get_height()  ## drawn art has its own height: its base sits on the base row
 	add_child(spr)
 	if not FOOTPRINTS[kind].is_empty():
 		var body := StaticBody2D.new()

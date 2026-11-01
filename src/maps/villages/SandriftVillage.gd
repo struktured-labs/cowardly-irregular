@@ -13,6 +13,13 @@ const MAP_WIDTH: int = 30
 const MAP_HEIGHT: int = 22
 
 
+## Drawn building art per block, keyed by the block's top-left cell (manifest building_art, T1).
+const BUILDING_ART := {
+	Vector2i(6, 4): "sandrift_inn",
+	Vector2i(16, 4): "sandrift_bazaar",
+}
+
+
 ## ---- BaseVillage hooks ----
 
 func _get_area_id() -> String:
@@ -208,6 +215,7 @@ func _setup_buildings() -> void:
 	_add_lamp_post(Vector2i(10, 16))
 	_add_lamp_post(Vector2i(17, 16))
 	## LAST, so it defers to every building above. Adobe; never T, the hidden tent is a secret.
+	_spawn_building_art(BUILDING_ART)
 	_spawn_house_facades(["I", "B"], [Color(0.74, 0.58, 0.38)], "adobe")
 
 

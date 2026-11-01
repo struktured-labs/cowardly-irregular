@@ -1,6 +1,11 @@
 # Cutscene backdrop shot list + fit audit (cowir-cutscenes, 2026-10-31, read on eb41c9954)
 
-## 0. READ FIRST: a redrawn PNG under the same name changes NOTHING on screen
+## 0. RESOLVED 2026-11-01: the videos are retired, and each key IS its PNG still
+cowir-main ruled the .ogv videos retired (20637). All 20 were removed (git keeps them), CutsceneDirector loads only the still,
+and test_no_unplayable_video_ships now guards that they stay gone. The 7 placeholder stills were redrawn from their own video
+frames in the same fold (cowir-sprites f8f025779). The history below is why it mattered.
+
+### (history) a redrawn PNG under the same name changed NOTHING on screen
 CutsceneDirector._try_load_backdrop_image tries assets/cutscene_videos/<key>.ogv BEFORE
 assets/cutscene_backdrops/<key>.png. All 20 keys have an .ogv (6da865867, 2026-04-05), and the
 export presets exclude *.mp4 only, so the .ogv ships on every channel.
