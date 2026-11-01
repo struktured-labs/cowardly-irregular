@@ -46,6 +46,23 @@ func test_the_music_slider_keeps_the_storms_cut() -> void:
 		"moving the music slider must not hand the storm its full level back")
 
 
+## A soundscape bed's trim is computed from its file's loudness; a gain_db on top would land it off its target silently (cowir-music 20691).
+func test_no_soundscape_bed_also_carries_a_gain() -> void:
+	SoundManager._load_music_manifest()
+	var places: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/ambient_recipes.json")).get("places", {})
+	var beds: Array = []
+	var stacked: Array = []
+	for place in places:
+		for phase in (places[place] as Dictionary).get("phases", {}).values():
+			var bed := str((phase as Dictionary).get("bed", ""))
+			if bed != "":
+				beds.append(bed)
+				if _gain(bed) != 0.0 or float((SoundManager._music_manifest.get(bed, {}) as Dictionary).get("gain_db", 0.0)) != 0.0:
+					stacked.append(bed)
+	assert_gt(beds.size(), 0, "PREMISE: the recipes must name at least one bed")
+	assert_eq(stacked, [], "a recipe bed with a gain_db stacks it on the loudness trim; fold it into bed_lufs instead")
+
+
 func test_the_s_rank_slam_is_a_labelled_placeholder_that_loads() -> void:
 	var e: Dictionary = SoundManager._sfx_manifest.get("victory_slam_s", {})
 	assert_false(e.is_empty(), "the S-rank slam key must exist, or VictoryOverlay._slam_key falls back to the ordinary slam")
