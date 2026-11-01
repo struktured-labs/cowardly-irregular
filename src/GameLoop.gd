@@ -5294,6 +5294,8 @@ func _continue_chain() -> void:
 
 ## The beat between links (struktured: "no warning, no preamble"): who is coming, which link, what the breather gave.
 func _show_chain_card(restored: Dictionary) -> void:
+	if not is_inside_tree():
+		return  ## a card outside the tree never ticks, and waiting on it would hang the chain
 	var card := ChainCard.new()
 	card.name = "ChainCard"
 	card.hold_sec = chain_card_seconds
