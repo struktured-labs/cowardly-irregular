@@ -303,7 +303,8 @@ const BOSS_BEAT_READ_CAP_SEC: float = 30.0
 ## A recorded line under automation holds until its voice has finished, plus this.
 const BOSS_BEAT_VOICE_SLACK_SEC: float = 0.3
 ## The line shows at once; a live voice still synthesizing may join it within this window, after which it is dropped.
-const BOSS_BEAT_LIVE_VOICE_JOIN_SEC: float = 4.0
+## cowir-sfx measured ~0.5x realtime on a 3090, so a full 140-character line (~9s spoken) needs ~4.5s.
+const BOSS_BEAT_LIVE_VOICE_JOIN_SEC: float = 6.0
 const GLOAT_VOICE_TIMEOUT_SEC: float = BOSS_BEAT_LIVE_VOICE_JOIN_SEC + 0.5
 
 ## Autobattle state
