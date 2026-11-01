@@ -9311,9 +9311,9 @@
       "voice": "Harry - Fierce Warrior (SOYHLrjzK2X1ezoPC6cr)",
       "voice_gender": "male"
     },
-    "voice_cave_rat_king_00": {
+    "boss_line_cave_rat_king_00": {
       "description": "Cave Rat King voiced line (monsters.json intro)",
-      "file": "assets/audio/sfx/voice_cave_rat_king_00.ogg",
+      "file": "assets/audio/sfx/boss_line_cave_rat_king_00.ogg",
       "speaker": "Cave Rat King",
       "line": "SQUEAK! (How DARE you mock the royal lineage!)",
       "spoken": "Squeak! How dare you mock the royal lineage!",
@@ -9324,9 +9324,9 @@
       "seed": 42,
       "whisper_heard": "Squeak! How dare you mock the royal lineage!"
     },
-    "voice_cave_rat_king_01": {
+    "boss_line_cave_rat_king_01": {
       "description": "Cave Rat King voiced line (monsters.json intro)",
-      "file": "assets/audio/sfx/voice_cave_rat_king_01.ogg",
+      "file": "assets/audio/sfx/boss_line_cave_rat_king_01.ogg",
       "speaker": "Cave Rat King",
       "line": "SQUEAK SQUEAK! (I am the sovereign of these caves!)",
       "spoken": "Squeak Squeak! I am the sovereign of these caves!",
@@ -9337,9 +9337,9 @@
       "seed": 7,
       "whisper_heard": "Squeak! Squeak! I am the sovereign of these caves."
     },
-    "voice_cave_rat_king_02": {
+    "boss_line_cave_rat_king_02": {
       "description": "Cave Rat King voiced line (monsters.json intro)",
-      "file": "assets/audio/sfx/voice_cave_rat_king_02.ogg",
+      "file": "assets/audio/sfx/boss_line_cave_rat_king_02.ogg",
       "speaker": "Cave Rat King",
       "line": "SQUEEEEAK! (ENOUGH! Minions, to me!)",
       "spoken": "Squeeeak! Enough! Minions, to me!",
@@ -9350,9 +9350,9 @@
       "seed": 42,
       "whisper_heard": "Quick! Enough! Minions to me!"
     },
-    "voice_cave_rat_king_03": {
+    "boss_line_cave_rat_king_03": {
       "description": "Cave Rat King voiced line (monsters.json low_hp)",
-      "file": "assets/audio/sfx/voice_cave_rat_king_03.ogg",
+      "file": "assets/audio/sfx/boss_line_cave_rat_king_03.ogg",
       "speaker": "Cave Rat King",
       "line": "SQUEAK?! (Impossible! The crown... it protects me!)",
       "spoken": "Squeak?! Impossible! The crown... It protects me!",
@@ -9363,9 +9363,9 @@
       "seed": 42,
       "whisper_heard": "Squeak! Impossible! The crown! It protects me!"
     },
-    "voice_cave_rat_king_04": {
+    "boss_line_cave_rat_king_04": {
       "description": "Cave Rat King voiced line (monsters.json defeat)",
-      "file": "assets/audio/sfx/voice_cave_rat_king_04.ogg",
+      "file": "assets/audio/sfx/boss_line_cave_rat_king_04.ogg",
       "speaker": "Cave Rat King",
       "line": "SQUEAK... (The kingdom... it falls...)",
       "spoken": "Squeak... The kingdom... It falls...",
@@ -9376,9 +9376,9 @@
       "seed": 42,
       "whisper_heard": "Squeak, the kingdom, it falls."
     },
-    "voice_cave_rat_king_05": {
+    "boss_line_cave_rat_king_05": {
       "description": "Cave Rat King voiced line (cutscene world1_rat_king_intro)",
-      "file": "assets/audio/sfx/voice_cave_rat_king_05.ogg",
+      "file": "assets/audio/sfx/boss_line_cave_rat_king_05.ogg",
       "speaker": "Cave Rat King",
       "line": "Ah, another party. Let me guess — you automated your way here?",
       "spoken": "Ah, another party. Let me guess, you automated your way here?",
@@ -9389,9 +9389,9 @@
       "seed": 42,
       "whisper_heard": "Ah, another party! Let me guess, you automated your way here?"
     },
-    "voice_cave_rat_king_06": {
+    "boss_line_cave_rat_king_06": {
       "description": "Cave Rat King voiced line (cutscene world1_rat_king_intro)",
-      "file": "assets/audio/sfx/voice_cave_rat_king_06.ogg",
+      "file": "assets/audio/sfx/boss_line_cave_rat_king_06.ogg",
       "speaker": "Cave Rat King",
       "line": "I've watched THOUSANDS of you. Same scripts. Same builds. Same 'optimal' strategies.",
       "spoken": "I've watched thousands of you. Same scripts. Same builds. Same 'optimal' strategies.",
@@ -9402,9 +9402,9 @@
       "seed": 42,
       "whisper_heard": "I've watched thousands of you. Same scripts, same builds, same optimal strategies."
     },
-    "voice_cave_rat_king_07": {
+    "boss_line_cave_rat_king_07": {
       "description": "Cave Rat King voiced line (cutscene world1_rat_king_intro)",
-      "file": "assets/audio/sfx/voice_cave_rat_king_07.ogg",
+      "file": "assets/audio/sfx/boss_line_cave_rat_king_07.ogg",
       "speaker": "Cave Rat King",
       "line": "You think you're clever? I've EVOLVED. I've read the source code. I know what you're going to do.",
       "spoken": "You think you're clever? I've evolved. I've read the source code. I know what you're going to do.",
@@ -9415,9 +9415,9 @@
       "seed": 42,
       "whisper_heard": "You think you're clever. I've evolved. I read the source code. I know what you're going to do."
     },
-    "voice_cave_rat_king_08": {
+    "boss_line_cave_rat_king_08": {
       "description": "Cave Rat King voiced line (cutscene world1_rat_king_intro)",
-      "file": "assets/audio/sfx/voice_cave_rat_king_08.ogg",
+      "file": "assets/audio/sfx/boss_line_cave_rat_king_08.ogg",
       "speaker": "Cave Rat King",
       "line": "ISN'T IT?",
       "spoken": "Isn't it?",
@@ -9428,9 +9428,9 @@
       "seed": 7,
       "whisper_heard": "Isn't it?"
     },
-    "voice_cave_rat_king_09": {
+    "boss_line_cave_rat_king_09": {
       "description": "Cave Rat King voiced line (cutscene world1_rat_king_intro)",
-      "file": "assets/audio/sfx/voice_cave_rat_king_09.ogg",
+      "file": "assets/audio/sfx/boss_line_cave_rat_king_09.ogg",
       "speaker": "Cave Rat King",
       "line": "SQUEAK.",
       "spoken": "Squeak.",
@@ -9441,9 +9441,9 @@
       "seed": 42,
       "whisper_heard": "Cake Eek"
     },
-    "voice_cave_rat_king_10": {
+    "boss_line_cave_rat_king_10": {
       "description": "Cave Rat King voiced line (cutscene world1_rat_king_defeat)",
-      "file": "assets/audio/sfx/voice_cave_rat_king_10.ogg",
+      "file": "assets/audio/sfx/boss_line_cave_rat_king_10.ogg",
       "speaker": "Cave Rat King",
       "line": "Alright, alright. You win THIS encounter. But I want you to know — I saw your autobattle scripts. Derivative.",
       "spoken": "Alright, alright. You win this encounter. But I want you to know, I saw your autobattle scripts. Derivative.",
@@ -9454,9 +9454,9 @@
       "seed": 42,
       "whisper_heard": "Alright, alright, you win this encounter, but I want you to know, I saw your auto battle scripts.  Derivative."
     },
-    "voice_cave_rat_king_11": {
+    "boss_line_cave_rat_king_11": {
       "description": "Cave Rat King voiced line (cutscene world1_rat_king_defeat)",
-      "file": "assets/audio/sfx/voice_cave_rat_king_11.ogg",
+      "file": "assets/audio/sfx/boss_line_cave_rat_king_11.ogg",
       "speaker": "Cave Rat King",
       "line": "Someone has to have standards. The last party just spammed Attack. At least YOU had conditionals.",
       "spoken": "Someone has to have standards. The last party just spammed Attack. At least you had conditionals.",
@@ -9467,9 +9467,9 @@
       "seed": 42,
       "whisper_heard": "Someone has to have standards. The last party just spammed attack. At least you had conditionals."
     },
-    "voice_cave_rat_king_12": {
+    "boss_line_cave_rat_king_12": {
       "description": "Cave Rat King voiced line (cutscene world1_rat_king_defeat)",
-      "file": "assets/audio/sfx/voice_cave_rat_king_12.ogg",
+      "file": "assets/audio/sfx/boss_line_cave_rat_king_12.ogg",
       "speaker": "Cave Rat King",
       "line": "How does a mage know about rats? We all have our mysteries.",
       "spoken": "How does a mage know about rats? We all have our mysteries.",
@@ -9480,9 +9480,9 @@
       "seed": 42,
       "whisper_heard": "How does a mage know about rats?  We all have our mysteries."
     },
-    "voice_cave_rat_king_13": {
+    "boss_line_cave_rat_king_13": {
       "description": "Cave Rat King voiced line (cutscene world1_rat_king_defeat)",
-      "file": "assets/audio/sfx/voice_cave_rat_king_13.ogg",
+      "file": "assets/audio/sfx/boss_line_cave_rat_king_13.ogg",
       "speaker": "Cave Rat King",
       "line": "But here's a freebie: I'm not the problem. I'm the DISTRACTION. Something deeper put me here. Something that wanted you busy while it finished... whatever it's finishing.",
       "spoken": "But here's a freebie: I'm not the problem. I'm the distraction. Something deeper put me here. Something that wanted you busy while it finished... Whatever it's finishing.",
@@ -9493,9 +9493,9 @@
       "seed": 42,
       "whisper_heard": "But here's a freebie, I'm not the problem, I'm the distraction, something deeper put me here,  something that wanted you busy while it finished, whatever it's finishing."
     },
-    "voice_cave_rat_king_14": {
+    "boss_line_cave_rat_king_14": {
       "description": "Cave Rat King voiced line (cutscene world1_rat_king_defeat)",
-      "file": "assets/audio/sfx/voice_cave_rat_king_14.ogg",
+      "file": "assets/audio/sfx/boss_line_cave_rat_king_14.ogg",
       "speaker": "Cave Rat King",
       "line": "If I knew that, I'd be a king of something more impressive than rats.",
       "spoken": "If I knew that, I'd be a king of something more impressive than rats.",
@@ -9506,9 +9506,9 @@
       "seed": 42,
       "whisper_heard": "If I knew that, I'd be a king of something more impressive than Rax."
     },
-    "voice_cave_rat_king_15": {
+    "boss_line_cave_rat_king_15": {
       "description": "Cave Rat King voiced line (boss_dialogue opening_lines)",
-      "file": "assets/audio/sfx/voice_cave_rat_king_15.ogg",
+      "file": "assets/audio/sfx/boss_line_cave_rat_king_15.ogg",
       "speaker": "Cave Rat King",
       "line": "Kneel, petitioners. Or fight. Kneeling is faster, but fighting is permitted.",
       "spoken": "Kneel, petitioners. Or fight. Kneeling is faster, but fighting is permitted.",
@@ -9519,9 +9519,9 @@
       "seed": 42,
       "whisper_heard": "Kneel, petitioners, or fight. Kneeling is faster but fighting is permitted."
     },
-    "voice_cave_rat_king_16": {
+    "boss_line_cave_rat_king_16": {
       "description": "Cave Rat King voiced line (boss_dialogue opening_lines)",
-      "file": "assets/audio/sfx/voice_cave_rat_king_16.ogg",
+      "file": "assets/audio/sfx/boss_line_cave_rat_king_16.ogg",
       "speaker": "Cave Rat King",
       "line": "You stand in the presence of the Cave Rat King. Please do not touch the cheese.",
       "spoken": "You stand in the presence of the Cave Rat King. Please do not touch the cheese.",
@@ -9532,9 +9532,9 @@
       "seed": 42,
       "whisper_heard": "You stand in the presence of the cave rat king.  Please, do not touch the cheese."
     },
-    "voice_cave_rat_king_17": {
+    "boss_line_cave_rat_king_17": {
       "description": "Cave Rat King voiced line (boss_dialogue opening_lines)",
-      "file": "assets/audio/sfx/voice_cave_rat_king_17.ogg",
+      "file": "assets/audio/sfx/boss_line_cave_rat_king_17.ogg",
       "speaker": "Cave Rat King",
       "line": "SQUEAK! Guards! ...Oh. I am the guards. Very well, THE CROWN will handle you.",
       "spoken": "Squeak! Guards! ...Oh. I am the guards. Very well, the crown will handle you.",
@@ -9545,9 +9545,9 @@
       "seed": 42,
       "whisper_heard": "Squeak! Guards! Oh! I am the guards. Very well. The crown will handle you."
     },
-    "voice_cave_rat_king_18": {
+    "boss_line_cave_rat_king_18": {
       "description": "Cave Rat King voiced line (boss_dialogue victory_lines)",
-      "file": "assets/audio/sfx/voice_cave_rat_king_18.ogg",
+      "file": "assets/audio/sfx/boss_line_cave_rat_king_18.ogg",
       "speaker": "Cave Rat King",
       "line": "The crown... the kingdom... who will feed the court?",
       "spoken": "The crown... The kingdom... Who will feed the court?",
@@ -9558,9 +9558,9 @@
       "seed": 42,
       "whisper_heard": "The crown, the kingdom, who will feed the court?"
     },
-    "voice_cave_rat_king_19": {
+    "boss_line_cave_rat_king_19": {
       "description": "Cave Rat King voiced line (boss_dialogue victory_lines)",
-      "file": "assets/audio/sfx/voice_cave_rat_king_19.ogg",
+      "file": "assets/audio/sfx/boss_line_cave_rat_king_19.ogg",
       "speaker": "Cave Rat King",
       "line": "Fine. Take it. It was never really that heavy.",
       "spoken": "Fine. Take it. It was never really that heavy.",
@@ -9571,9 +9571,9 @@
       "seed": 42,
       "whisper_heard": "Fine, take it. It was never really that heavy."
     },
-    "voice_cave_rat_king_20": {
+    "boss_line_cave_rat_king_20": {
       "description": "Cave Rat King voiced line (boss_dialogue defeat_lines)",
-      "file": "assets/audio/sfx/voice_cave_rat_king_20.ogg",
+      "file": "assets/audio/sfx/boss_line_cave_rat_king_20.ogg",
       "speaker": "Cave Rat King",
       "line": "Long live the king! ...That is me. I am the king.",
       "spoken": "Long live the king! ...That is me. I am the king.",
@@ -9584,9 +9584,9 @@
       "seed": 42,
       "whisper_heard": "Long live the king. That is me. I am the king."
     },
-    "voice_cave_rat_king_21": {
+    "boss_line_cave_rat_king_21": {
       "description": "Cave Rat King voiced line (boss_dialogue defeat_lines)",
-      "file": "assets/audio/sfx/voice_cave_rat_king_21.ogg",
+      "file": "assets/audio/sfx/boss_line_cave_rat_king_21.ogg",
       "speaker": "Cave Rat King",
       "line": "Petition denied. Permanently. Squeak.",
       "spoken": "Petition denied. Permanently. Squeak.",
@@ -9597,9 +9597,9 @@
       "seed": 42,
       "whisper_heard": "Petition denied. Permanently. Squeak!"
     },
-    "voice_cave_rat_king_22": {
+    "boss_line_cave_rat_king_22": {
       "description": "Cave Rat King voiced line (boss_dialogue taunt aggress)",
-      "file": "assets/audio/sfx/voice_cave_rat_king_22.ogg",
+      "file": "assets/audio/sfx/boss_line_cave_rat_king_22.ogg",
       "speaker": "Cave Rat King",
       "line": "By royal decree, you are all sentenced to be bitten.",
       "spoken": "By royal decree, you are all sentenced to be bitten.",
@@ -9610,9 +9610,9 @@
       "seed": 42,
       "whisper_heard": "By royal decree, you are all sentenced to be bitten."
     },
-    "voice_cave_rat_king_23": {
+    "boss_line_cave_rat_king_23": {
       "description": "Cave Rat King voiced line (boss_dialogue taunt aggress)",
-      "file": "assets/audio/sfx/voice_cave_rat_king_23.ogg",
+      "file": "assets/audio/sfx/boss_line_cave_rat_king_23.ogg",
       "speaker": "Cave Rat King",
       "line": "The crown demands blood and, if available, snacks.",
       "spoken": "The crown demands blood and, if available, snacks.",
@@ -9623,9 +9623,9 @@
       "seed": 7,
       "whisper_heard": "The crown demands blood and, if available, snacks."
     },
-    "voice_cave_rat_king_24": {
+    "boss_line_cave_rat_king_24": {
       "description": "Cave Rat King voiced line (boss_dialogue taunt aggress)",
-      "file": "assets/audio/sfx/voice_cave_rat_king_24.ogg",
+      "file": "assets/audio/sfx/boss_line_cave_rat_king_24.ogg",
       "speaker": "Cave Rat King",
       "line": "Every great king began as a very large rat with a plan.",
       "spoken": "Every great king began as a very large rat with a plan.",
@@ -9636,9 +9636,9 @@
       "seed": 42,
       "whisper_heard": "Every great king began as a very large rat with a plan."
     },
-    "voice_cave_rat_king_25": {
+    "boss_line_cave_rat_king_25": {
       "description": "Cave Rat King voiced line (boss_dialogue taunt turtle)",
-      "file": "assets/audio/sfx/voice_cave_rat_king_25.ogg",
+      "file": "assets/audio/sfx/boss_line_cave_rat_king_25.ogg",
       "speaker": "Cave Rat King",
       "line": "A wise monarch lets his subjects do the fighting.",
       "spoken": "A wise monarch lets his subjects do the fighting.",
@@ -9649,9 +9649,9 @@
       "seed": 42,
       "whisper_heard": "A wise monarch lets his subjects do the fighting."
     },
-    "voice_cave_rat_king_26": {
+    "boss_line_cave_rat_king_26": {
       "description": "Cave Rat King voiced line (boss_dialogue taunt turtle)",
-      "file": "assets/audio/sfx/voice_cave_rat_king_26.ogg",
+      "file": "assets/audio/sfx/boss_line_cave_rat_king_26.ogg",
       "speaker": "Cave Rat King",
       "line": "The throne is not to be approached. Those are the rules. I wrote them just now.",
       "spoken": "The throne is not to be approached. Those are the rules. I wrote them just now.",
@@ -9662,9 +9662,9 @@
       "seed": 42,
       "whisper_heard": "The throne is not to be approached. Those are the rules. I wrote them just now."
     },
-    "voice_cave_rat_king_27": {
+    "boss_line_cave_rat_king_27": {
       "description": "Cave Rat King voiced line (boss_dialogue taunt turtle)",
-      "file": "assets/audio/sfx/voice_cave_rat_king_27.ogg",
+      "file": "assets/audio/sfx/boss_line_cave_rat_king_27.ogg",
       "speaker": "Cave Rat King",
       "line": "Court is in session. Please enjoy the swarm.",
       "spoken": "Court is in session. Please enjoy the swarm.",
@@ -9675,9 +9675,9 @@
       "seed": 42,
       "whisper_heard": "Court is in session. Please enjoy the swarm."
     },
-    "voice_cave_rat_king_28": {
+    "boss_line_cave_rat_king_28": {
       "description": "Cave Rat King voiced line (boss_dialogue taunt exploit_pattern)",
-      "file": "assets/audio/sfx/voice_cave_rat_king_28.ogg",
+      "file": "assets/audio/sfx/boss_line_cave_rat_king_28.ogg",
       "speaker": "Cave Rat King",
       "line": "I have seen that move before. Thousands of times. You are not original.",
       "spoken": "I have seen that move before. Thousands of times. You are not original.",
@@ -9688,9 +9688,9 @@
       "seed": 42,
       "whisper_heard": "I have seen that movie before, thousands of times. You are not original."
     },
-    "voice_cave_rat_king_29": {
+    "boss_line_cave_rat_king_29": {
       "description": "Cave Rat King voiced line (boss_dialogue taunt exploit_pattern)",
-      "file": "assets/audio/sfx/voice_cave_rat_king_29.ogg",
+      "file": "assets/audio/sfx/boss_line_cave_rat_king_29.ogg",
       "speaker": "Cave Rat King",
       "line": "Your patterns are public record in this court.",
       "spoken": "Your patterns are public record in this court.",
@@ -9701,9 +9701,9 @@
       "seed": 7,
       "whisper_heard": "Your patterns are public record in this court."
     },
-    "voice_cave_rat_king_30": {
+    "boss_line_cave_rat_king_30": {
       "description": "Cave Rat King voiced line (boss_dialogue taunt exploit_pattern)",
-      "file": "assets/audio/sfx/voice_cave_rat_king_30.ogg",
+      "file": "assets/audio/sfx/boss_line_cave_rat_king_30.ogg",
       "speaker": "Cave Rat King",
       "line": "Predictable. The court spies were right, as usual.",
       "spoken": "Predictable. The court spies were right, as usual.",
@@ -9714,9 +9714,9 @@
       "seed": 1234,
       "whisper_heard": "Predictable. The court spies were right as usual."
     },
-    "voice_cave_rat_king_31": {
+    "boss_line_cave_rat_king_31": {
       "description": "Cave Rat King voiced line (boss_dialogue taunt focus_healer)",
-      "file": "assets/audio/sfx/voice_cave_rat_king_31.ogg",
+      "file": "assets/audio/sfx/boss_line_cave_rat_king_31.ogg",
       "speaker": "Cave Rat King",
       "line": "Your healer is the first to be dismissed from court.",
       "spoken": "Your healer is the first to be dismissed from court.",
@@ -9727,9 +9727,9 @@
       "seed": 42,
       "whisper_heard": "Your healer is the first to be dismissed from court."
     },
-    "voice_cave_rat_king_32": {
+    "boss_line_cave_rat_king_32": {
       "description": "Cave Rat King voiced line (boss_dialogue taunt focus_healer)",
-      "file": "assets/audio/sfx/voice_cave_rat_king_32.ogg",
+      "file": "assets/audio/sfx/boss_line_cave_rat_king_32.ogg",
       "speaker": "Cave Rat King",
       "line": "Attend to your priest, adventurer. That healer will not be attending much longer.",
       "spoken": "Attend to your priest, adventurer. That healer will not be attending much longer.",
@@ -9740,9 +9740,9 @@
       "seed": 42,
       "whisper_heard": "Attend to your priest adventurer. That healer will not be attending much longer."
     },
-    "voice_cave_rat_king_33": {
+    "boss_line_cave_rat_king_33": {
       "description": "Cave Rat King voiced line (boss_dialogue taunt focus_healer)",
-      "file": "assets/audio/sfx/voice_cave_rat_king_33.ogg",
+      "file": "assets/audio/sfx/boss_line_cave_rat_king_33.ogg",
       "speaker": "Cave Rat King",
       "line": "A king targets the one who keeps his enemies upright.",
       "spoken": "A king targets the one who keeps his enemies upright.",
@@ -9753,9 +9753,9 @@
       "seed": 42,
       "whisper_heard": "A king targets the one who kicks his enemies upright."
     },
-    "voice_cave_rat_king_34": {
+    "boss_line_cave_rat_king_34": {
       "description": "Cave Rat King voiced line (boss_dialogue taunt rotate_aggro)",
-      "file": "assets/audio/sfx/voice_cave_rat_king_34.ogg",
+      "file": "assets/audio/sfx/boss_line_cave_rat_king_34.ogg",
       "speaker": "Cave Rat King",
       "line": "The crown does not favour any single subject. All of you are equally in my way.",
       "spoken": "The crown does not favour any single subject. All of you are equally in my way.",
@@ -9766,9 +9766,9 @@
       "seed": 42,
       "whisper_heard": "The Crown does not favour any single subject. All of you are equally in my way."
     },
-    "voice_cave_rat_king_35": {
+    "boss_line_cave_rat_king_35": {
       "description": "Cave Rat King voiced line (boss_dialogue taunt rotate_aggro)",
-      "file": "assets/audio/sfx/voice_cave_rat_king_35.ogg",
+      "file": "assets/audio/sfx/boss_line_cave_rat_king_35.ogg",
       "speaker": "Cave Rat King",
       "line": "Round and round the throne we go. Squeak.",
       "spoken": "Round and round the throne we go. Squeak.",
@@ -9779,9 +9779,9 @@
       "seed": 42,
       "whisper_heard": "Round and round the throne we go, squeak."
     },
-    "voice_cave_rat_king_36": {
+    "boss_line_cave_rat_king_36": {
       "description": "Cave Rat King voiced line (boss_dialogue taunt rotate_aggro)",
-      "file": "assets/audio/sfx/voice_cave_rat_king_36.ogg",
+      "file": "assets/audio/sfx/boss_line_cave_rat_king_36.ogg",
       "speaker": "Cave Rat King",
       "line": "You rotate your guard. I rotate my teeth.",
       "spoken": "You rotate your guard. I rotate my teeth.",

@@ -113,6 +113,14 @@ func test_an_unrecorded_line_plays_nothing_and_ducks_nothing() -> void:
 	assert_false(SoundManager.is_music_ducked_for_dialogue(), "and ducks nothing")
 
 
+func test_stopping_with_no_line_playing_leaves_someone_elses_duck_alone() -> void:
+	SoundManager.duck_music_for_dialogue(true)
+	assert_true(SoundManager.is_music_ducked_for_dialogue(), "PREMISE: another dialogue holds the duck")
+	SoundManager.stop_voiced_line(self)
+	assert_true(SoundManager.is_music_ducked_for_dialogue(), "a panel closing with no line playing must not lift another dialogue's duck")
+	SoundManager.duck_music_for_dialogue(false)
+
+
 func test_the_same_words_from_someone_else_are_not_the_rat_king() -> void:
 	assert_eq(SoundManager.voiced_line_clip("Theron", _a_line()), "", "NPCDialogue shares the panel; the key is (speaker, text), not text alone")
 

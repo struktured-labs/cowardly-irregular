@@ -13,6 +13,7 @@ var _flourish_player: AudioStreamPlayer  # dedicated voice: a group attack's own
 var _voice_player: AudioStreamPlayer  # dedicated voice: party lines are SECONDS long and every menu blip on _ui_player cut them (2026-09-11)
 var _line_player: AudioStreamPlayer  # dedicated voice: a recorded dialogue line (boss/NPC); never the party voice player, which the victory slam shares
 var _line_owner_id: int = 0
+var _line_ducked: bool = false
 var _pickup_player: AudioStreamPlayer  # dedicated voice: a reward cue always follows the action that earned it, and replaced it on _ui_player (2026-09-12)
 var _bank_player: AudioStreamPlayer  # dedicated voice: full_bank_unleash replaced advance_flourish_5 in the same frame, every full bank (2026-09-14)
 var _refuse_player: AudioStreamPlayer  # dedicated voice: a refused Advance press lands while the job's 3s fifth rung is still ringing (2026-09-14)
@@ -1366,6 +1367,7 @@ func play_voiced_line(speaker: String, text: String, owner: Object = null) -> fl
 	if _line_player.stream == null:
 		return 0.0
 	_line_owner_id = owner.get_instance_id() if owner != null else 0
+	_line_ducked = true
 	duck_music_for_dialogue(true, _line_player)
 	return _line_player.stream.get_length()
 
@@ -1387,7 +1389,10 @@ func is_voiced_line_playing() -> bool:
 
 func _on_voiced_line_finished() -> void:
 	_line_owner_id = 0
-	duck_music_for_dialogue(false, _line_player)
+	## Release only a duck this player took, or a panel freed before any line would cancel another dialogue's duck.
+	if _line_ducked:
+		_line_ducked = false
+		duck_music_for_dialogue(false, _line_player)
 
 
 ## The voice player lives on this autoload, so freeing the battle scene does not stop a line.
