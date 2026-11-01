@@ -1214,7 +1214,8 @@ func _process(delta: float) -> void:
 		if _mapping_hold_t >= MAPPING_HOLD_SKIP_SEC:
 			_skip_by_hold()
 	if _mapping != null:
-		_mapping_idle += delta
+		## Real seconds, like the hold: at battle's time_scale 0.25 a 30 s deadline would take two minutes.
+		_mapping_idle += delta / maxf(Engine.time_scale, 0.0001)
 		_update_mapping_idle_label()
 		if _mapping_idle >= MAPPING_IDLE_LIMIT:
 			_expire_mapping()

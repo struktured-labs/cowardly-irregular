@@ -22,6 +22,17 @@ extends GutTest
 const CONTROLS_MENU := "res://src/ui/ControlsMenu.gd"
 const GdSource := preload("res://test/unit/helpers/gd_source.gd")
 
+var _saved_time_scale: float = 1.0
+
+
+func before_each() -> void:
+	_saved_time_scale = Engine.time_scale
+	Engine.time_scale = 1.0
+
+
+func after_each() -> void:
+	Engine.time_scale = _saved_time_scale
+
 
 ## Built WITHOUT entering the tree on purpose: `_ready` constructs the whole settings panel, and
 ## the walk needs only its own overlay. Nothing here auto-ticks, so every tick below is explicit.
@@ -211,3 +222,15 @@ func test_a_second_walk_starts_with_a_fresh_clock() -> void:
 		"releasing a walk must clear the clock, or the next walk inherits an expired one")
 	assert_eq(m._mapping_idle_label.text, "",
 		"and the stale countdown must not survive on screen after the overlay is reused")
+
+
+## The deadline is REAL seconds: battle runs Engine.time_scale 0.25 for "1x", which scales _process's
+## delta, so an engine-time 30 s deadline would hold a stalled pad-only player for two minutes there.
+func test_the_deadline_is_real_seconds_under_a_battle_time_scale() -> void:
+	var limit: float = _consts()["MAPPING_IDLE_LIMIT"]
+	var m: Node = _menu()
+	_walk(m)
+	Engine.time_scale = 0.25
+	m._process((limit + 1.0) * 0.25)
+	assert_null(m._mapping,
+		"at time_scale 0.25 a real-second deadline is a quarter as much ENGINE delta, and must still release")
