@@ -44,6 +44,7 @@ BINDING_VILLAGE = {
 PALETTE_KEYS = list(gen.PAL.keys())
 
 
+
 def _parse_gd_palette(text, func_name):
     """`"key": Color(r, g, b[, a])` pairs from one GDScript function body."""
     at = text.find("func %s" % func_name)
@@ -123,6 +124,8 @@ def main():
         return
 
     out_png.parent.mkdir(parents=True, exist_ok=True)
+    _old = json.loads(mpath.read_text(encoding="utf-8")).get("tile_sheets", {}).get(args.world, {})
+    sheet, _tiles = gen.carry_terrain_tiles(sheet, _old, out_png)
     sheet.save(out_png)
     print("wrote %s (%dx%d)" % (out_png, sheet.width, sheet.height))
 
@@ -133,6 +136,7 @@ def main():
         "tile": gen.TILE,
         "cliff": regions["cliff"],
         "overlay": regions["overlay"],
+        **({"tiles": _tiles} if _tiles else {}),
         "derived_from": village,
         "derived_palette": {k: list(palette[k]) for k in PALETTE_KEYS},
         "generator": ("tools/gen_tile_sheet_world.py --world %s -- same bitmask geometry as "
