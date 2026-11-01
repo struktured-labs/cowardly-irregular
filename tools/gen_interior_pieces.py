@@ -187,6 +187,35 @@ def floor_pattern(room: str) -> Path:
     return dst
 
 
+## Wall cells (the room's W cells: sides and bottom) as a 128x32 pattern cut from the approved tile, wrapped both ways
+## since side walls stack it vertically: (style tile, x, y).
+WALLS = {
+    "shop_item": ("harmonia_item_shop", 380, 4),      # timber frame and plaster from the back wall's right end
+    "shop_blacksmith": ("harmonia_arms_shop", 0, 342),  # dressed stone from the front wall, clear of its lanterns
+}
+## The back wall (InteriorArt back_wall: base-centred on the bottom of row 0, rising above the map edge), cut at full
+## room width from the approved tile's top band: (style tile, y0, y1). The item shop stops above its shelf tops; the
+## smithy keeps the forge hood, the racks' upper half and the shields, and skips the ceiling dark at the very top.
+BACK_WALLS = {
+    "shop_item": ("harmonia_item_shop", 0, 58),
+    "shop_blacksmith": ("harmonia_arms_shop", 8, 72),
+}
+
+
+def walls(room: str) -> list:
+    out_dir = STAGE / room
+    out_dir.mkdir(parents=True, exist_ok=True)
+    style, x, y = WALLS[room]
+    tile = Image.open(STYLE_DIR / f"{style}.png").convert("RGB")
+    wall = wrap_seamless(tile.crop((x, y, x + PATTERN, y + TILE)), (0, 1))
+    wall.quantize(colors=COLOURS, method=Image.MEDIANCUT).convert("RGBA").save(out_dir / "wall.png")
+    style, y0, y1 = BACK_WALLS[room]
+    tile = Image.open(STYLE_DIR / f"{style}.png").convert("RGB")
+    back = tile.crop((0, y0, tile.width, y1))
+    back.quantize(colors=COLOURS, method=Image.MEDIANCUT).convert("RGBA").save(out_dir / "back_wall.png")
+    return [out_dir / "wall.png", out_dir / "back_wall.png"]
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("rooms", nargs="+")
@@ -196,6 +225,8 @@ def main() -> int:
     if args.floors:
         for room in args.rooms:
             print(f"staged {floor_pattern(room).relative_to(ROOT)}")
+            for w in walls(room):
+                print(f"staged {w.relative_to(ROOT)}")
         return 0
     for room in args.rooms:
         if room not in PIECES:
