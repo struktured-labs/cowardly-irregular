@@ -384,18 +384,36 @@ func show_dialogue(dialogue_lines: Array) -> void:
 	_show_current_line()
 
 
-func show_boss_last_words(speaker: String, text: String, boss_id: String = "") -> void:
+func show_boss_last_words(speaker: String, text: String, boss_id: String = "", voice_stream: AudioStream = null) -> void:
 	"""The boss's final line as its own beat: its face, its name, a typewriter and a voice. One line, built
 	directly rather than through show_boss_intro, whose 'Name: text' parsing would split an LLM line on its first colon."""
 	var entry: Dictionary = {"speaker": speaker, "text": text, "portrait": "enemy", "theme": "enemy", "blip": "default"}
 	if boss_id != "":
 		entry["boss_art"] = boss_id
+	if voice_stream != null:
+		entry["voice_stream"] = voice_stream
 	show_dialogue([entry])
 
 
 ## How long the line on screen is recorded for, so a timed hold can wait for the voice rather than cut it.
 func line_voice_seconds() -> float:
 	return _line_voice_sec
+
+
+## Which line of the queue is showing; a page turn does not change it.
+func line_index() -> int:
+	return _current_index
+
+
+## The automation path's way on to the next LINE, past any pages left on this one.
+func next_line() -> void:
+	if not visible:
+		return
+	if _is_typing:
+		_finish_typing()
+	_current_index += 1
+	dialogue_advanced.emit()
+	_show_current_line()
 
 
 func dismiss() -> void:
@@ -485,7 +503,11 @@ func _show_current_line() -> void:
 	_line_voice_sec = 0.0
 	if SoundManager:
 		SoundManager.stop_voiced_line(self)
-		_line_voice_sec = SoundManager.play_voiced_line(str(entry.get("speaker", "")), str(entry.get("text", "")), self)
+		var live: AudioStream = entry.get("voice_stream") as AudioStream
+		if live != null:
+			_line_voice_sec = SoundManager.play_line_stream(live, self)
+		else:
+			_line_voice_sec = SoundManager.play_voiced_line(str(entry.get("speaker", "")), str(entry.get("text", "")), self)
 
 	# Set portrait - the face cutscenes give this character first, then party custom portraits
 	var portrait_type = entry.get("portrait", "narrator")

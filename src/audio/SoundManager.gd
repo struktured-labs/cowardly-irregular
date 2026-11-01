@@ -1379,6 +1379,28 @@ func play_voiced_line(speaker: String, text: String, owner: Object = null) -> fl
 	return _line_player.stream.get_length()
 
 
+## A synthesized line through the same player, duck and owner rules as a recording. Returns its length, or 0.0.
+func play_line_stream(stream: AudioStream, owner: Object = null) -> float:
+	if stream == null or _line_player == null:
+		return 0.0
+	## A generator swapped off a shared player is the .542 use-after-free; this player takes decoded clips only.
+	if stream is AudioStreamGenerator:
+		push_warning("[AUDIO] refused a generator on the line player")
+		return 0.0
+	if wav_commit_refused():
+		push_warning("[AUDIO] skipped live line — mixer is wedged")
+		return 0.0
+	_line_player.stop()
+	_line_player.stream = stream
+	_line_player.volume_db = VOICE_PLAYER_BASE_DB
+	_line_player.pitch_scale = 1.0
+	_line_player.play()
+	_line_owner_id = owner.get_instance_id() if owner != null else 0
+	_line_ducked = true
+	duck_music_for_dialogue(true, _line_player)
+	return stream.get_length()
+
+
 ## Stops the recording if `owner` started it (null stops any). Advancing, skipping or closing a panel calls this.
 func stop_voiced_line(owner: Object = null) -> void:
 	if _line_player == null:
@@ -1659,8 +1681,8 @@ func play_ambient(sound_key: String, trim_db: float = 0.0) -> void:
 			and _music_player.stream.resource_path == path:
 		return
 	_ambient_player.stream = stream
-	## trim_db is a soundscape bed's loudness match (data/ambient_recipes.json); every other caller passes none and keeps the old level.
-	_ambient_trim_db = trim_db
+	## trim_db is a soundscape bed's loudness match (data/ambient_recipes.json); a bed's own manifest `bed_gain_db` levels a hot file (the storm).
+	_ambient_trim_db = trim_db + float(entry.get("bed_gain_db", 0.0))
 	_ambient_player.volume_db = _music_base_db + AMBIENT_OFFSET_DB + _ambient_trim_db
 	_ambient_player.play()
 	_current_ambient_key = sound_key
