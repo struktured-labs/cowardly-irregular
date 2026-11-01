@@ -1883,6 +1883,13 @@
       "duration_seconds": 0.6,
       "prompt_influence": 0.7
     },
+    "chain_next": {
+      "file": "assets/audio/sfx/chain_next.ogg",
+      "prompt": "PLACEHOLDER (cowir-main 20959: a short rising stinger as the chain card 'Another group closes in!' shows between linked battles; a labelled local synth until a designed asset). sox: square arpeggio A4-C5-E5-A5 at 0.11 s each into a 0.5 s A5+E6 hold with 18 Hz tremolo, over a 300->1400 Hz sine sweep, light reverb, -16 LUFS under a -1 dBTP limiter, padded to 1.0 s with a 0.1 s fade.",
+      "duration_seconds": 1.0,
+      "source": "sox_synth",
+      "placeholder": true
+    },
     "victory_slam_s": {
       "file": "assets/audio/sfx/victory_slam_s.ogg",
       "prompt": "PLACEHOLDER (struktured via cowir-main 20637: a labelled local synth now, a real asset later). The S-rank one-shot slam, one tier heavier than victory_slam: victory_slam itself + a 75->38 Hz sine sub-thump + a 2.5 kHz-highpassed noise crack + a 1760/2640 Hz ring that dies in 0.25 s, mixed with sox at 0.4 each and normalised to -17 LUFS under a -1 dBTP limiter (measured -16.0 LUFS vs the ordinary slam's -19.5). Replace with a designed asset; the selector in VictoryOverlay._slam_key only needs this key and file to exist.",
