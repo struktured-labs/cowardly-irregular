@@ -22,7 +22,6 @@ func _loop(alive_flags: Array) -> Node:
 	for a in alive_flags:
 		p.append(_hero(a))
 	gl.party = p
-	gl.current_state = gl.LoopState.EXPLORATION
 	return gl
 
 
