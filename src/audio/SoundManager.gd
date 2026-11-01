@@ -1382,6 +1382,7 @@ func play_line_stream(stream: AudioStream, owner: Object = null) -> float:
 	_line_player.stop()
 	_line_player.stream = stream
 	_line_player.volume_db = VOICE_PLAYER_BASE_DB
+	_line_player.pitch_scale = 1.0
 	_line_player.play()
 	_line_owner_id = owner.get_instance_id() if owner != null else 0
 	_line_ducked = true
