@@ -189,3 +189,57 @@ func test_a_victory_pays_the_chain_bonus_and_says_so() -> void:
 	assert_eq(chain_bonus.size(), 1, "the victory results do not name the chain bonus")
 	assert_eq(int(chain_bonus[0].get("groups", 0)) if not chain_bonus.is_empty() else 0, 3)
 	assert_eq(BattleManager.chain_groups, 1, "the chain count outlived its battle")
+
+
+const _LoopStub := """
+extends "res://src/GameLoop.gd"
+var started: Array = []
+var returned: int = 0
+func _wait_for_confirm_victory() -> void:
+	pass
+func _start_battle_async(specific_enemies: Array = [], is_encounter: bool = false) -> bool:
+	started.append(specific_enemies.duplicate())
+	BattleManager.chain_groups = maxi(_chain_engaged, 1)
+	return true
+func _return_to_exploration(force_battle_teardown: bool = false) -> void:
+	_end_chain()
+	returned += 1
+"""
+
+
+func _stub_loop() -> Node:
+	var s := GDScript.new()
+	s.source_code = _LoopStub
+	assert_eq(s.reload(), OK, "CONTROL: the GameLoop stub compiles")
+	var gl: Node = s.new()
+	autofree(gl)
+	return gl
+
+
+func test_a_won_link_starts_the_next_instead_of_going_home() -> void:
+	var won_before: int = int(GameState.battles_won)
+	var gl := _stub_loop()
+	gl._chain_links = [[["bat", "bat"]]]
+	gl._chain_engaged = 1
+	await gl._on_battle_ended(true)
+	assert_eq(gl.started, [["bat", "bat"]], "the next link did not start")
+	assert_eq(gl.returned, 0, "a won link went back to the overworld mid-chain")
+	assert_eq(BattleManager.chain_groups, 2, "the next link was not told how many groups are engaged")
+	await gl._on_battle_ended(true)
+	assert_eq(gl.returned, 1, "CONTROL: the last link goes home")
+	assert_eq(gl.started.size(), 1, "a finished chain started another battle")
+	GameState.battles_won = won_before
+
+
+func test_an_escape_ends_the_chain() -> void:
+	var gl := _stub_loop()
+	var hero := Combatant.new()
+	hero.is_alive = true
+	add_child_autofree(hero)
+	var p: Array[Combatant] = [hero]
+	gl.party = p
+	gl._chain_links = [[["bat"]]]
+	gl._chain_engaged = 1
+	await gl._on_battle_ended(false)
+	assert_eq(gl.started, [], "an escape fought the next link")
+	assert_eq([gl._chain_links.size(), gl._chain_engaged], [0, 0], "an escape left the chain queued")
