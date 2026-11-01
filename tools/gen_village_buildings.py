@@ -188,7 +188,15 @@ PROPS = {
                          "full, rounded, leafy green canopy with clumps of light and shadow. Taller than it is wide."),
     "tree_frosthold": (2, "A single snow-laden pine tree: a short dark trunk, layered dark-green boughs heavy with white "
                           "snow, a pointed top. Taller than it is wide."),
+    "lamp_post_medieval": (1, "A single tall thin wrought-iron village street lamp: a slim black iron post on a small stone "
+                              "base, topped by a four-paned lantern with a warm glowing candle flame. Very tall and narrow."),
+    "lamp_post_suburban": (1, "A single tall thin 1990s suburban street lamp: a slim dark-green metal pole on a small concrete "
+                              "base, topped by a round frosted-glass globe lamp glowing warm white. Very tall and narrow."),
+    "lamp_post_steampunk": (1, "A single tall thin Victorian gas street lamp: a slim fluted brass-and-iron post with rivets, a "
+                               "small gauge and a copper pipe, topped by a glass gas lantern glowing amber. Very tall and narrow."),
 }
+## Props whose art must stand a fixed height (the lamp's light anchor sits 50px above its base, VillageProp).
+PROP_HEIGHT = {"lamp_post_medieval": 64, "lamp_post_suburban": 64, "lamp_post_steampunk": 64}
 
 ## Terrain TILES (32x32, opaque, edge to edge): drawn as a square patch of ground filling the whole frame.
 TILE_STYLE = ("A single square 16-bit SNES-era JRPG pixel-art overworld TILE, seen from above at a slight angle, that "
@@ -331,7 +339,12 @@ def generate_harmonia(key: str, view: str) -> Path:
     STAGE.mkdir(parents=True, exist_ok=True)
     raw.save(STAGE / f"{key}_{view}_raw.png")
     out = STAGE / f"{key}_{view}.png"
-    fit(raw, width).save(out)
+    img = fit(raw, width)
+    if key in PROP_HEIGHT and img.height != PROP_HEIGHT[key]:
+        h = PROP_HEIGHT[key]
+        img = img.resize((max(1, round(img.width * h / img.height)), h), Image.LANCZOS)
+        img.putalpha(img.split()[3].point(lambda v: 255 if v >= 128 else 0))
+    img.save(out)
     return out
 
 

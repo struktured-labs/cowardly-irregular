@@ -7422,6 +7422,21 @@
       "path": "res://assets/sprites/props/medieval/tree.png",
       "tier": "T1",
       "source": "gpt-image-2, straight-on village oak in the buildings' style, 64px wide over the 1-tile footprint (struktured 2026-11-01: the trees look procgen) -- tools/gen_village_buildings.py --props; T1, artist veto applies."
+    },
+    "lamp_post_medieval": {
+      "path": "res://assets/sprites/props/medieval/lamp_post.png",
+      "tier": "T1",
+      "source": "gpt-image-2, straight-on medieval street lamp, 64px tall so the lantern meets VillageProp's light anchor 50px above the base (struktured 2026-11-01: procgen props must go) -- tools/gen_village_buildings.py --props. T1, artist veto applies."
+    },
+    "lamp_post_suburban": {
+      "path": "res://assets/sprites/props/suburban/lamp_post.png",
+      "tier": "T1",
+      "source": "gpt-image-2, straight-on suburban street lamp, 64px tall so the lantern meets VillageProp's light anchor 50px above the base (struktured 2026-11-01: procgen props must go) -- tools/gen_village_buildings.py --props. T1, artist veto applies."
+    },
+    "lamp_post_steampunk": {
+      "path": "res://assets/sprites/props/steampunk/lamp_post.png",
+      "tier": "T1",
+      "source": "gpt-image-2, straight-on steampunk street lamp, 64px tall so the lantern meets VillageProp's light anchor 50px above the base (struktured 2026-11-01: procgen props must go) -- tools/gen_village_buildings.py --props. Hand fix: 13 pipe-shadow pixels carried a magenta cast from the key and were pulled to copper. T1, artist veto applies."
     }
   }
 }
