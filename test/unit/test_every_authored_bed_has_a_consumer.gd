@@ -77,6 +77,7 @@ const KNOWN_UNREACHED := {
 	"ambient_steampunk": "same decision",
 	"suno_market_morning": "was ambient_village until 2026-10-30: a Suno SONG (pitch clarity 7.68) layered under every W1 village bed; struktured dropped the layer and kept the track — Jukebox row, possible non-layered cue",
 	"suno_whispering_canopy": "was ambient_forest until 2026-10-30: same finding (7.69) under the forest/swamp overworld bed; Jukebox row only",
+	"inn_rest_ditty": "authored 2026-11-01 for the inn rest beat (struktured via cowir-main 21099); its caller is @cowir-cutscenes' inn sequence, which plays it — delete this entry when that lands",
 	"suno_dripping_stone": "was ambient_cave until 2026-10-30: same finding (7.49, though its prompt said 'No melody') under the ice zone; Jukebox row only",
 	"cutscene_alt_breaker_speed": "briefed in tools/music_prompts.json shared_tracks (\"Whoever Moves First\"); its scene is the alt_the_breaker novella, which has no cutscene JSON",
 	"cutscene_alt_witness_lament": "briefed (\"For the Guardian Who Did Not Choose the Gate\"); same novella, no scene authored",
