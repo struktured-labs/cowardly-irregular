@@ -514,6 +514,8 @@ func _open_chest(player: Node2D) -> void:
 				if not game_loop.equipment_pool.has(pool_key):
 					game_loop.equipment_pool[pool_key] = []
 				game_loop.equipment_pool[pool_key].append(contents_id)
+				if GameState:
+					GameState.note_acquired(contents_id)
 
 	# Show dialogue. The icon sits above the pinned 240x60 panel so the label geometry stays put.
 	_clamp_dialogue_box_to_viewport()

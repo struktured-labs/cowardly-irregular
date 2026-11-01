@@ -55,6 +55,13 @@ static func ap() -> Color:
 	return Color(1.00, 0.30, 0.30)  # Red
 
 
+
+# struktured 2026-11-01: the NEW tag on a newly picked-up item and its menu entry. Gold default, pale yellow in accessibility mode.
+static func new_item() -> Color:
+	if is_on():
+		return Color(1.00, 0.95, 0.55)
+	return Color(1.00, 0.80, 0.20)
+
 # Tick 226: crit popup color — ORANGE default, bright yellow in accessibility mode.
 static func crit() -> Color:
 	if is_on():
