@@ -189,6 +189,55 @@ func test_automation_never_stalls_on_the_beat() -> void:
 	assert_lt(s.results_at - t0, cap_ms + 1500, "within the automation cap, not the 30s read cap")
 
 
+func _automate(s: Node) -> void:
+	var bot := Combatant.new()
+	bot.combatant_name = "Beat Probe Bot"
+	autofree(bot)
+	var typed: Array[Combatant] = [bot]
+	s.party_members.assign(typed)
+	AutobattleSystem.autobattle_enabled["beat_probe_bot"] = true
+
+
+## cowir-sfx voiced the Rat King (7.4s at the longest); the 3s automation dismiss cut him mid-word.
+func test_an_automated_voiced_last_word_is_heard_out() -> void:
+	var s: Node = _make_scene()
+	_automate(s)
+	BattleManager._emit_boss_gloat(LINE, true)
+	s._finish_victory_after_boss_beat()
+	assert_true(await _wait_until(func() -> bool: return _dialogue.visible, 1000), "automation still shows the beat")
+	var voice_sec: float = SceneScript.BOSS_BEAT_AUTO_DISMISS_SEC + 1.0
+	_dialogue._line_voice_sec = voice_sec
+	var t_show: int = Time.get_ticks_msec()
+	assert_true(await _wait_until(func() -> bool: return s.results_at > -1, int(voice_sec * 1000.0) + 2000),
+		"the beat must still release under automation")
+	assert_gte(s.results_at - t_show, int(voice_sec * 1000.0),
+		"THE DEFECT: a recorded line was dismissed before its voice finished")
+
+
+func test_the_automated_hold_is_the_longer_of_the_floor_and_the_voice() -> void:
+	var floor_ms: int = int(SceneScript.BOSS_BEAT_AUTO_DISMISS_SEC * 1000.0)
+	assert_eq(SceneScript.beat_line_hold_ms(0.0), floor_ms, "an unvoiced line keeps the read floor")
+	assert_eq(SceneScript.beat_line_hold_ms(7.4), int((7.4 + SceneScript.BOSS_BEAT_VOICE_SLACK_SEC) * 1000.0),
+		"a long recording holds for itself plus the slack")
+	assert_lt(SceneScript.BOSS_BEAT_VOICE_SLACK_SEC, 1.0, "the slack is a breath, not a second hold")
+
+
+## Under automation the authored scene sat on its FIRST line for 3s x lines and the rest never showed.
+func test_an_automated_authored_scene_shows_every_line() -> void:
+	var s: Node = _make_scene()
+	_automate(s)
+	s._boss_dialogue_data = {"defeat": AUTHORED_DEFEAT.duplicate()}
+	BattleManager._emit_boss_gloat(LINE, true)
+	s._stage_defeat_scene(true)
+	s._finish_victory_after_boss_beat()
+	var floor_ms: int = int(SceneScript.BOSS_BEAT_AUTO_DISMISS_SEC * 1000.0)
+	assert_true(await _wait_until(func() -> bool: return _dialogue.visible and not _entry_is_beat(), floor_ms + 2000),
+		"the authored scene follows the last words under automation")
+	assert_true(await _wait_until(func() -> bool: return _dialogue.visible and _dialogue._current_text.contains("dust"), floor_ms + 2000),
+		"its SECOND line must show too, with nobody pressing")
+	assert_true(await _wait_until(func() -> bool: return s.results_at > -1, floor_ms + 2000), "and the rewards come last")
+
+
 func test_a_defeat_line_gets_its_beat_and_a_victory_line_does_not_leak_into_it() -> void:
 	var s: Node = _make_scene()
 	BattleManager._emit_boss_gloat(LINE, false)
