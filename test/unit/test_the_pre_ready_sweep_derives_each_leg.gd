@@ -249,3 +249,18 @@ func test_an_autoload_is_reached_by_its_registered_name() -> void:
 		_input_not_found("by class_name", line)
 		return
 	assert_gt(by_name, 100, "only %d tests name the BattleManager autoload: %s" % [by_name, line])
+
+
+func test_a_class_name_and_a_different_autoload_name_are_both_searched() -> void:
+	## SoundManager.gd is class SoundManagerClass but autoload SoundManager: 1 test names the class, ~311 the autoload.
+	var text := _list("src/audio/SoundManager.gd")
+	var idx: int = text.find("SoundManager.gd ->")
+	assert_gt(idx, -1, "the per-file leg did not report on SoundManager.gd at all:\n%s" % text)
+	var line: String = text.substr(idx, 200).get_slice("\n", 0)
+	assert_true(line.contains("SoundManagerClass") and line.contains(", SoundManager)"),
+		"the name leg must search the class_name AND the autoload name: %s" % line)
+	var by_name: int = _leg_number(line, "by class_name")
+	if by_name < 0:
+		_input_not_found("by class_name", line)
+		return
+	assert_gt(by_name, 100, "only %d tests reached by SoundManager's names; the autoload name alone reached ~311: %s" % [by_name, line])
