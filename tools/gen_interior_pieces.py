@@ -50,21 +50,30 @@ PIECE_STYLE = ("Redraw ONE piece of furniture from the reference room, in exactl
                "whole and uncropped, standing on nothing. No floor, no rug, no wall, no shadow on the ground, no people, "
                "no text. The background is one flat, solid, pure magenta (#FF00FF) colour with no gradient.")
 
-## room -> piece -> (footprint width in tiles, what to draw)
+## seam room -> piece -> (footprint (cols, rows), style tile, what to draw). Shelves are drawn STOCKED: one shelf_goods
+## sprite cannot sit on both the 3-row and the 2-row unit, so a room whose shelf is drawn skips its painted goods.
 PIECES = {
-    "harmonia_item_shop": {
-        "counter": (3, "The shop counter: a dark polished wooden counter seen from the customer's side, with a brass "
-                       "scale, an open ledger and a small bell on its top."),
-        "display_tall": (3, "A tall wooden shelving unit crowded with coloured potion bottles and jars on three shelves, "
-                            "with baskets of roots and herbs on the bottom shelf."),
-        "display_low": (3, "A low wooden display cabinet with drawers, its top crowded with potion bottles, jars and a "
-                           "basket of mushrooms."),
+    "shop_item": {
+        "counter": ((3, 2), "harmonia_item_shop",
+                    "The shop counter seen from the customer's side and a little above: a dark polished wooden counter "
+                    "with panelled front, a brass scale, an open ledger and a small bell on its top."),
+        "shelf_tall": ((3, 3), "harmonia_item_shop",
+                       "A tall wooden shelving unit seen straight-on, its three shelves crowded with coloured potion bottles, "
+                       "jars and bundles of herbs, with a cupboard base."),
+        "shelf_low": ((3, 2), "harmonia_item_shop",
+                      "A low wooden display cabinet seen straight-on, drawers below and its top crowded with potion bottles, "
+                      "jars and a basket of mushrooms."),
     },
-    "harmonia_arms_shop": {
-        "counter": (3, "The shop counter: a thick oak slab counter seen from the customer's side, with a steel "
-                       "helmet, a whetstone and an anvil-shaped paperweight on its top."),
-        "display_tall": (3, "A row of three suits of armour on wooden mannequin stands, steel, bronze and chainmail."),
-        "display_low": (3, "A low wooden rack holding three longbows and a quiver of arrows."),
+    "shop_blacksmith": {
+        "counter": ((3, 2), "harmonia_arms_shop",
+                    "The shop counter seen from the customer's side and a little above: a thick oak slab counter with "
+                    "iron-banded front, a steel helmet, a whetstone and an anvil-shaped paperweight on its top."),
+        "shelf_tall": ((3, 3), "harmonia_arms_shop",
+                       "A tall dark wooden weapon rack seen straight-on, holding swords, a spear, an axe and a round shield, "
+                       "on an iron-bound base."),
+        "shelf_low": ((3, 2), "harmonia_arms_shop",
+                      "A low sturdy wooden armour bench seen straight-on, with iron corners, a breastplate, a pair of "
+                      "gauntlets and a steel helmet laid on its top."),
     },
 }
 
@@ -121,42 +130,75 @@ def _png(img: Image.Image):
     return ("reference.png", buf, "image/png")
 
 
+def key_all_magenta(img: Image.Image, tol: int = 110) -> Image.Image:
+    """Clear backdrop magenta the border flood cannot reach (a scale's pans, a rack's frame enclose it)."""
+    a = np.array(img.convert("RGBA"))
+    d = np.sqrt(((a[:, :, :3].astype(float) - np.array([255.0, 0.0, 255.0])) ** 2).sum(axis=2))
+    a[d < tol, 3] = 0
+    return Image.fromarray(a, "RGBA")
+
+
 def piece(room: str, name: str) -> Path:
+    """One footprint piece: drawn isolated, keyed, fitted to its footprint, composited on the room's floor pattern
+    (a counter or shelf CELL replaces the floor, so nothing may stay transparent), then rolled so each cell lands
+    where the seam samples it."""
     from openai import OpenAI
-    width, what = PIECES[room][name]
-    ref = Image.open(STYLE_DIR / f"{room}.png").convert("RGB")
-    r = OpenAI().images.edit(model=MODEL, image=[_png(ref)], prompt=f"{PIECE_STYLE}\n\nThe piece: {what}",
-                             size="1024x1024", n=1)
-    raw = Image.open(io.BytesIO(base64.b64decode(r.data[0].b64_json))).convert("RGBA")
+    (cols, rows), style, what = PIECES[room][name]
+    raw_path = STAGE / room / f"{name}_raw.png"
+    raw_path.parent.mkdir(parents=True, exist_ok=True)
+    if not raw_path.exists():
+        ref = Image.open(STYLE_DIR / f"{style}.png").convert("RGB")
+        r = OpenAI().images.edit(model=MODEL, image=[_png(ref)], prompt=f"{PIECE_STYLE}\n\nThe piece: {what}",
+                                 size="1024x1024", n=1)
+        Image.open(io.BytesIO(base64.b64decode(r.data[0].b64_json))).convert("RGBA").save(raw_path)
+    img = key_all_magenta(key_out(Image.open(raw_path).convert("RGBA")))
+    obj = img.crop(img.split()[3].point(lambda v: 255 if v >= 128 else 0).getbbox())
+    w, h = cols * TILE, rows * TILE
+    s = min(w / obj.width, h / obj.height)
+    obj = obj.resize((max(1, round(obj.width * s)), max(1, round(obj.height * s))), Image.LANCZOS)
+    obj.putalpha(obj.split()[3].point(lambda v: 255 if v >= 128 else 0))
+    floor = Image.open(STAGE / room / "floor.png").convert("RGBA")
+    cell = Image.new("RGBA", (w, h))
+    for y in range(0, h, floor.height):
+        for x in range(0, w, floor.width):
+            cell.alpha_composite(floor, (x, y))
+    cell.alpha_composite(obj, ((w - obj.width) // 2, h - obj.height))
     dst = STAGE / room / f"{name}.png"
-    dst.parent.mkdir(parents=True, exist_ok=True)
-    raw.save(STAGE / room / f"{name}_raw.png")
-    img = key_out(raw)
-    box = img.split()[3].point(lambda v: 255 if v >= 128 else 0).getbbox()
-    obj = img.crop(box)
-    w = width * TILE
-    obj = obj.resize((w, max(1, round(obj.height * w / obj.width))), Image.LANCZOS)
-    rgb = obj.convert("RGB").quantize(colors=COLOURS, method=Image.MEDIANCUT).convert("RGBA")
-    rgb.putalpha(obj.split()[3].point(lambda v: 255 if v >= 128 else 0))
-    rgb.save(dst)
+    cell.convert("RGB").quantize(colors=COLOURS, method=Image.MEDIANCUT).convert("RGBA").save(dst)
     return dst
 
 
-## Floor patterns (4x4 tiles = 128px), by recipe, keyed by the seam's ROOM id (InteriorArt.SHOP_ROOMS):
-##   ("strips", style_tile, [(x, y), ...]): clean 128x32 strips cut from the approved tile, stacked four high with each
-##       row rolled sideways so plank joints stagger. The planks ARE the approved pixels.
-##   ("redraw", style_tile, crop): the tile holds too little clean floor to cut (the arms shop's cobble is ~128x70 between
-##       the furniture), so gpt-image-2 draws a patch of the same floor with the tile as the style reference, and the centre
-##       `crop` fraction is kept so the stones come out at the concept's scale (the full patch gave pebbles at half size).
-FLOORS = {
-    "shop_item": ("strips", "harmonia_item_shop", [(180, 240), (200, 250)]),
-    "shop_blacksmith": ("redraw", "harmonia_arms_shop", 0.5),
-}
-PATTERN = 128
-FLOOR_REDRAW = ("Using the reference room only for its art style, draw a square patch of JUST its floor, seen straight down, "
-                "filling the whole square edge to edge, in the same palette, outline weight and soft lighting as the "
-                "reference. About ten stones or boards across the square. Even and uniform all over: no objects, no rug, no "
-                "wall, no shadows, no light patches, no border.")
+## Where each tile kind's cells sit in ShopInterior.SHOP_LAYOUT, so a piece can be rolled into the seam's sampling:
+## the seam reads cell (x mod cols, y mod rows), so a piece whose top-left is at (7, 3) must start at pattern cell
+## (7 mod 3, 3 mod 2) = (1, 1).
+COUNTER_AT = (7, 3)
+SHELF_TALL_ROWS = (2, 4)
+SHELF_LOW_ROWS = (6, 7)
+SHELF_COL = 2  # the left blocks start at col 2; the right ones at col 11, and 11 mod 3 == 2 mod 3
+
+
+def counter_pattern(room: str) -> Path:
+    art = Image.open(piece(room, "counter")).convert("RGBA")
+    ox, oy = COUNTER_AT[0] % 3, COUNTER_AT[1] % 2
+    rolled = np.roll(np.asarray(art), (oy * TILE, ox * TILE), axis=(0, 1))
+    dst = STAGE / room / "counter_pattern.png"
+    Image.fromarray(rolled, "RGBA").save(dst)
+    return dst
+
+
+def shelf_pattern(room: str) -> Path:
+    """One 3x6 image serves both display heights: the tall unit on rows 2-4 and the low unit on rows 6-7 (= 0-1 mod 6)."""
+    tall = Image.open(piece(room, "shelf_tall")).convert("RGBA")
+    low = Image.open(piece(room, "shelf_low")).convert("RGBA")
+    pat = Image.new("RGBA", (3 * TILE, 6 * TILE))
+    pat.paste(Image.open(STAGE / room / "floor.png").convert("RGBA").crop((0, 0, 3 * TILE, TILE)), (0, 5 * TILE))
+    pat.paste(tall, (0, (SHELF_TALL_ROWS[0] % 6) * TILE))
+    pat.paste(low, (0, (SHELF_LOW_ROWS[0] % 6) * TILE))
+    ox = SHELF_COL % 3
+    pat = Image.fromarray(np.roll(np.asarray(pat), ox * TILE, axis=1), "RGBA")
+    dst = STAGE / room / "shelf_pattern.png"
+    pat.save(dst)
+    return dst
 
 
 def floor_pattern(room: str) -> Path:
@@ -216,12 +258,58 @@ def walls(room: str) -> list:
     return [out_dir / "wall.png", out_dir / "back_wall.png"]
 
 
+## staged file -> seam kind. Registered as "<kind>_<room>_<village>": the pilot village only, so every other village's
+## (and world's) shop keeps its painter until it is drawn.
+DEPLOY = {"floor": "floor", "wall": "wall", "counter_pattern": "counter", "shelf_pattern": "shelf", "back_wall": "back_wall"}
+NOTES = {
+    "floor": "a 4x4 floor PATTERN cut from the approved style tile, edge-band wrapped",
+    "wall": "a wall PATTERN cut from the approved style tile",
+    "counter": "the 3x2 counter, drawn stocked on the room's floor, rolled to the seam's (x mod 3, y mod 2) sampling",
+    "shelf": "a 3x6 shelf PATTERN: the tall stocked unit on rows 2-4, the low one on rows 0-1 (= layout rows 6-7)",
+    "back_wall": "the room-wide back wall strip cut from the approved style tile",
+}
+
+
+def deploy(room: str, village: str) -> list:
+    import hashlib
+    import json
+    manifest_path, ledger_path = ROOT / "data/sprite_manifest.json", ROOT / "data/artist_sprite_ledger.json"
+    manifest, ledger = json.loads(manifest_path.read_text()), json.loads(ledger_path.read_text())
+    out = []
+    for staged, kind in DEPLOY.items():
+        rel = f"assets/sprites/interiors/{village}/{kind}_{room}.png"
+        dst = ROOT / rel
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        dst.write_bytes((STAGE / room / f"{staged}.png").read_bytes())
+        manifest["prop_art"][f"{kind}_{room}_{village}"] = {
+            "path": f"res://{rel}", "tier": "T1",
+            "source": f"gpt-image-2 + cut, {NOTES[kind]} (struktured 2026-11-01: the inside of village houses and shops "
+                      f"need a major sprite rework) -- tools/gen_interior_pieces.py; T1, artist veto applies."}
+        ledger[rel] = hashlib.sha256(dst.read_bytes()).hexdigest()
+        out.append(dst)
+    manifest_path.write_text(json.dumps(manifest, indent=2, ensure_ascii=False) + "\n")
+    ledger_path.write_text(json.dumps(ledger, indent=1, sort_keys=True) + "\n")
+    return out
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("rooms", nargs="+")
+    ap.add_argument("--deploy", metavar="VILLAGE", help="copy the staged pieces in and register them for this village")
+    ap.add_argument("--pieces", action="store_true", help="draw the counter and shelf PATTERNS for these seam rooms")
     ap.add_argument("--floors", action="store_true", help="build the 4x4 floor PATTERNS for these seam rooms (FLOORS)")
     ap.add_argument("--only", nargs="*", help="limit to these pieces (floor/wall/counter/...)")
     args = ap.parse_args()
+    if args.deploy:
+        for room in args.rooms:
+            for d in deploy(room, args.deploy):
+                print(f"deployed {d.relative_to(ROOT)}")
+        return 0
+    if args.pieces:
+        for room in args.rooms:
+            for fn in (counter_pattern, shelf_pattern):
+                print(f"staged {fn(room).relative_to(ROOT)}")
+        return 0
     if args.floors:
         for room in args.rooms:
             print(f"staged {floor_pattern(room).relative_to(ROOT)}")

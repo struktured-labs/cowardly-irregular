@@ -460,6 +460,9 @@ static func shelf_centres() -> Array:
 
 
 func _create_shelf_goods() -> void:
+	## A drawn shelf is drawn stocked (one goods row cannot sit on both the 3-row and the 2-row unit).
+	if InteriorArt.path("shelf", art_room(), _art_village()) != "":
+		return
 	# Draw goods on the shelf areas based on shop type, one row per shelf run, on the run's own centre
 	for sx in shelf_centres():
 		for shelf_row in range(2):
