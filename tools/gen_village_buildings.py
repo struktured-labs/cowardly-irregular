@@ -184,11 +184,14 @@ PROPS = {
                              "spilling from the upper bowl into the lower pool, and a small blossoming pink cherry tree "
                              "growing from the centre of the upper tier. Seen straight-on from the front and a little "
                              "above, so the front rim of the basin and the water surface are both visible."),
-    "tree_medieval": (2, "A single village oak tree: a sturdy brown trunk with visible bark and roots at the base, and a "
-                         "full, rounded, leafy green canopy with clumps of light and shadow. Taller than it is wide."),
+    "tree_medieval": (1, "A single tall slender village tree, like a poplar or a young cypress, about THREE times taller "
+                         "than it is wide: a narrow brown trunk, a tall column of leafy green foliage with clumps of light "
+                         "and shadow. It must stay narrow: it stands one step from doorways."),
     "tree_frosthold": (2, "A single snow-laden pine tree: a short dark trunk, layered dark-green boughs heavy with white "
                           "snow, a pointed top. Taller than it is wide."),
 }
+## Props whose art must stand a fixed height (the TREE prop's footprint is 1x3: 96px).
+PROP_HEIGHT = {"tree_medieval": 96}
 
 ## Terrain TILES (32x32, opaque, edge to edge): drawn as a square patch of ground filling the whole frame.
 TILE_STYLE = ("A single square 16-bit SNES-era JRPG pixel-art overworld TILE, seen from above at a slight angle, that "
