@@ -1577,8 +1577,8 @@ func play_ambient(sound_key: String, trim_db: float = 0.0) -> void:
 			and _music_player.stream.resource_path == path:
 		return
 	_ambient_player.stream = stream
-	## trim_db is a soundscape bed's loudness match (data/ambient_recipes.json); every other caller passes none and keeps the old level.
-	_ambient_trim_db = trim_db
+	## trim_db is a soundscape bed's loudness match (data/ambient_recipes.json); a bed's own manifest `gain_db` levels a hot file (the storm).
+	_ambient_trim_db = trim_db + float(entry.get("gain_db", 0.0))
 	_ambient_player.volume_db = _music_base_db + AMBIENT_OFFSET_DB + _ambient_trim_db
 	_ambient_player.play()
 	_current_ambient_key = sound_key
