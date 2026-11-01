@@ -10,7 +10,7 @@ extends GutTest
 ## helper call, which is most of the game: 110 hash-picked NPCs, not 18, and the elder (old_man/old_woman) pair too.
 ## Ten more read against their own lines: Martha, Miner Trude ("my husband"), Clockkeeper Yara and Karen drawn as
 ## men; Dewey, Hermit Kael and Conspiracy Theorist Rex (their code comments say "he"), Tyler, Surplus Ray and
-## Pizza Delivery Pete drawn as women. Greta the Grey is NOT pinned: the author's own comment calls her "him".
+## Pizza Delivery Pete drawn as women. And Greta the Grey ("her stashed cave-story") drawn as an old man.
 ## Built through the real interior scripts, so a pin that is removed, renamed or set on the wrong variable reds.
 
 const CASES := [
@@ -25,6 +25,7 @@ const CASES := [
 	["res://src/maps/villages/MapleHeightsVillage.gd", "Tyler on Bike", "young_man"],
 	["res://src/maps/villages/MapleHeightsVillage.gd", "Surplus Ray", "young_man"],
 	["res://src/maps/villages/SandriftVillage.gd", "Conspiracy Theorist Rex", "young_man"],
+	["res://src/maps/villages/HarmoniaVillage.gd", "Greta the Grey", "old_woman"],
 ]
 
 ## Placed by the Suburban overworld, too heavy to build here: judged at the source, on the variable that is added.
