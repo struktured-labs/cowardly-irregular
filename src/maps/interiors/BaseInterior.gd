@@ -171,6 +171,7 @@ func _setup_decorations() -> void:
 	decorations = Node2D.new()
 	decorations.name = "Decorations"
 	add_child(decorations)
+	InteriorArt.back_wall(decorations, _get_area_id(), _get_map_width())
 
 
 ## Virtual: subclass instantiates NPCs. Default = nothing.

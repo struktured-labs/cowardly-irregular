@@ -253,6 +253,7 @@ func _setup_decorations() -> void:
 	decorations = Node2D.new()
 	decorations.name = "Decorations"
 	add_child(decorations)
+	InteriorArt.back_wall(decorations, "inn", MAP_WIDTH, InteriorArt.village_key(_origin_map_id()))
 
 	_create_registration_desk()
 	_create_fireplace_surround()

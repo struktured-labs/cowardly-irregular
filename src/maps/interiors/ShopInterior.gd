@@ -345,6 +345,7 @@ func _setup_decorations() -> void:
 	decorations.name = "Decorations"
 	add_child(decorations)
 
+	InteriorArt.back_wall(decorations, art_room(), MAP_WIDTH, _art_village())
 	_create_counter_dressing()
 	_create_hanging_sign()
 	_create_shelf_goods()

@@ -104,3 +104,15 @@ func test_every_interior_key_names_a_real_kind_and_room() -> void:
 	assert_true(InteriorArt.accepts_key("wall_harmonia_library"), "a BaseInterior room's own key was refused")
 	assert_false(InteriorArt.accepts_key("floor_nowhere"), "a key no room asks for was accepted")
 	assert_false(InteriorArt.accepts_key("throne_inn"), "a kind no room wires was accepted")
+
+
+func test_a_back_wall_strip_stands_on_the_top_wall_row_across_the_room() -> void:
+	var plain := _shop({})
+	assert_eq(_art_nodes(plain, "back_wall"), 0, "CONTROL: a shop with no back wall art grew one")
+	var shop := _shop({"back_wall_shop_item": {"path": ART_A}})
+	assert_eq(_art_nodes(shop, "back_wall"), 1, "the shop did not stand its back wall")
+	var spr: Sprite2D = shop.find_child("Art_back_wall", true, false)
+	var r: Rect2 = spr.get_rect()
+	r.position += spr.position
+	assert_almost_eq(r.end.y, float(InteriorArt.TILE), 0.5, "the back wall does not stand on the top wall row's base")
+	assert_almost_eq(r.get_center().x, ShopInteriorScript.MAP_WIDTH * InteriorArt.TILE / 2.0, 0.5, "the back wall is not centred on the room")

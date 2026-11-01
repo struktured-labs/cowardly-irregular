@@ -9,7 +9,7 @@ const TILE := 32
 ## Tile kinds a room asks for by name; anything else a room passes is furniture.
 const TILE_KINDS := ["floor", "wall", "counter", "shelf", "hearth", "carpet"]
 ## Furniture kinds wired to the seam so far (each one names its own place_or_paint call).
-const FURNITURE_KINDS := ["shelf_goods"]
+const FURNITURE_KINDS := ["shelf_goods", "back_wall"]
 const WORLDS := ["medieval", "suburban", "steampunk", "industrial", "futuristic", "abstract"]
 const INTERIORS_DIR := "res://src/maps/interiors"
 ## Shared rooms, keyed by what they ARE; a village-specific variant adds "_<village>" (e.g. counter_shop_item_harmonia).
@@ -68,6 +68,13 @@ static func source(img: Image) -> TileSetAtlasSource:
 static func cell(src: TileSetAtlasSource, at: Vector2i) -> Vector2i:
 	var grid := src.get_atlas_grid_size()
 	return Vector2i(posmod(at.x, maxi(grid.x, 1)), posmod(at.y, maxi(grid.y, 1)))
+
+
+## A room-wide strip standing on the top wall row's base (it may rise above the map's top edge); no art = nothing extra.
+static func back_wall(parent: Node, room: String, map_width_tiles: int, village: String = "", world: String = "") -> Node:
+	var none := func() -> Node:
+		return null
+	return place_or_paint(parent, "back_wall", room, Vector2(map_width_tiles * TILE / 2.0, TILE), none, village, world)
 
 
 ## The atlas cell for map cell `at` in a tilemap's source `source_id` (patterns repeat; a single cell stays (0, 0)).
