@@ -24,6 +24,8 @@ const FAST_FORWARD_HOLD_SEC: float = 0.5
 const FAST_FORWARD_LINE_SEC: float = 0.25
 var _accept_hold: float = 0.0
 var _ff_line_timer: float = 0.0
+## Seconds of the current line's recording, 0.0 when it has none; a recorded line plays no blips.
+var _line_voice_sec: float = 0.0
 
 
 ## The cap printed on the pad's confirm button, resolved per device by InputProfileManager — a frozen "A" is true on one pad family and names another button on the rest.
@@ -420,6 +422,8 @@ func _ready() -> void:
 
 func _exit_tree() -> void:
 	_drop_field_lock()
+	if SoundManager:
+		SoundManager.stop_voiced_line(self)
 	if _typing_timer and is_instance_valid(_typing_timer):
 		_typing_timer.stop()
 	# The duck lives on the SoundManager AUTOLOAD, which outlives this node — freeing mid-line otherwise strands music at DUCK_TARGET_DB for the rest of the session.
@@ -1079,6 +1083,11 @@ func _show_current_line() -> void:
 	# NAME so NPCs sharing a blip family (8 scholars / 2 guards) still
 	# sound individually distinct.
 	_load_voice_blip(_resolve_voice_blip_key(portrait_type, theme_name), entry.get("speaker", ""))
+	# A recorded line speaks instead of blipping; the previous line's recording stops either way.
+	_line_voice_sec = 0.0
+	if SoundManager:
+		SoundManager.stop_voiced_line(self)
+		_line_voice_sec = SoundManager.play_voiced_line(str(entry.get("speaker", "")), str(entry.get("text", "")), self)
 
 	# Hide portrait frame for narrator (no-portrait mode)
 	var hide_portrait = entry.get("hide_portrait", false)
@@ -1186,7 +1195,7 @@ func _on_typing_tick() -> void:
 		# doesn't feel metronomic. Punctuation and whitespace don't advance
 		# the step counter so natural pauses stay silent.
 		var ch := _current_text.substr(_displayed_chars - 1, 1)
-		if _is_voiced_char(ch):
+		if _line_voice_sec <= 0.0 and _is_voiced_char(ch):
 			if _displayed_chars >= _voice_blip_next_char:
 				_play_voice_blip()
 				_voice_blip_next_char = _displayed_chars + randi_range(VOICE_BLIP_STEP_MIN, VOICE_BLIP_STEP_MAX)
@@ -1241,6 +1250,9 @@ func _advance_dialogue() -> void:
 
 func _finish_dialogue() -> void:
 	visible = false
+	_line_voice_sec = 0.0
+	if SoundManager:
+		SoundManager.stop_voiced_line(self)
 	close_backlog()
 	_dialogue_queue.clear()
 	_current_index = 0

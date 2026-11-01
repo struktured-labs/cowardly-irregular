@@ -5,6 +5,7 @@
     "rogue": {"voice": "rogue.wav", "rev": 1},
     "bard": {"voice": "bard.wav", "rev": 1},
     "mage": {"voice": "mage.wav", "rev": 1},
-    "cleric": {"voice": "cleric.wav", "rev": 1}
+    "cleric": {"voice": "cleric.wav", "rev": 1},
+    "cave_rat_king": {"voice": "cave_rat_king.wav", "rev": 1}
   }
 }

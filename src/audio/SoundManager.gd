@@ -11,6 +11,8 @@ var _death_player: AudioStreamPlayer  # dedicated voice: death cries survive the
 var _footstep_player: AudioStreamPlayer  # dedicated voice: a step cut every UI cue longer than a step (2026-09-11)
 var _flourish_player: AudioStreamPlayer  # dedicated voice: a group attack's own hits were cutting its cue (2026-09-11)
 var _voice_player: AudioStreamPlayer  # dedicated voice: party lines are SECONDS long and every menu blip on _ui_player cut them (2026-09-11)
+var _line_player: AudioStreamPlayer  # dedicated voice: a recorded dialogue line (boss/NPC); never the party voice player, which the victory slam shares
+var _line_owner_id: int = 0
 var _pickup_player: AudioStreamPlayer  # dedicated voice: a reward cue always follows the action that earned it, and replaced it on _ui_player (2026-09-12)
 var _bank_player: AudioStreamPlayer  # dedicated voice: full_bank_unleash replaced advance_flourish_5 in the same frame, every full bank (2026-09-14)
 var _refuse_player: AudioStreamPlayer  # dedicated voice: a refused Advance press lands while the job's 3s fifth rung is still ringing (2026-09-14)
@@ -638,6 +640,13 @@ func _setup_audio_players() -> void:
 	_voice_player.volume_db = VOICE_PLAYER_BASE_DB
 	_voice_player.bus = SFX_BUS
 	add_child(_voice_player)
+
+	_line_player = AudioStreamPlayer.new()
+	_line_player.name = "LinePlayer"
+	_line_player.volume_db = VOICE_PLAYER_BASE_DB
+	_line_player.bus = SFX_BUS
+	_line_player.finished.connect(_on_voiced_line_finished)
+	add_child(_line_player)
 
 	_pickup_player = AudioStreamPlayer.new()
 	_pickup_player.name = "PickupPlayer"
@@ -1318,6 +1327,67 @@ func play_voice_stream(stream: AudioStream) -> float:
 	_voice_player.pitch_scale = 1.0
 	_voice_player.play()
 	return stream.get_length()
+
+
+## A recorded dialogue line is found by WHO says it and WHAT the panel shows, so the authored text is the key and no id table drifts from it.
+static func voiced_line_key(speaker: String, text: String) -> String:
+	var t: String = " ".join(text.strip_edges().split(" ", false))
+	if t.length() >= 2 and t[0] == t[t.length() - 1] and (t[0] == "'" or t[0] == "\""):
+		t = t.substr(1, t.length() - 2).strip_edges()
+	return speaker.strip_edges().to_lower() + "|" + t
+
+
+## The manifest key recorded for this line, or "" when it has none (then the typing blips carry it, as before).
+static func voiced_line_clip(speaker: String, text: String) -> String:
+	_load_sfx_manifest()
+	if speaker.strip_edges() == "" or text.strip_edges() == "":
+		return ""
+	var want: String = voiced_line_key(speaker, text)
+	for key in _sfx_manifest:
+		var e = _sfx_manifest[key]
+		if e is Dictionary and e.has("line") and voiced_line_key(str(e.get("speaker", "")), str(e["line"])) == want:
+			return str(key)
+	return ""
+
+
+## Plays the line's recording and returns its length, or 0.0 when the line has none. Music ducks while it speaks.
+## `owner` is the panel showing the line: only it can stop the clip, so one panel closing never silences another's.
+func play_voiced_line(speaker: String, text: String, owner: Object = null) -> float:
+	var key: String = voiced_line_clip(speaker, text)
+	if key == "" or _line_player == null:
+		return 0.0
+	if wav_commit_refused():
+		push_warning("[AUDIO] skipped voiced line — mixer is wedged")
+		return 0.0
+	_sfx_cooldowns.erase(key)
+	var gain: float = float((_sfx_manifest.get(key, {}) as Dictionary).get("gain_db", 0.0))
+	if not _try_play_sfx_from_manifest(_line_player, key, VOICE_PLAYER_BASE_DB + gain, 1.0, false):
+		return 0.0
+	if _line_player.stream == null:
+		return 0.0
+	_line_owner_id = owner.get_instance_id() if owner != null else 0
+	duck_music_for_dialogue(true, _line_player)
+	return _line_player.stream.get_length()
+
+
+## Stops the recording if `owner` started it (null stops any). Advancing, skipping or closing a panel calls this.
+func stop_voiced_line(owner: Object = null) -> void:
+	if _line_player == null:
+		return
+	if owner != null and _line_owner_id != 0 and owner.get_instance_id() != _line_owner_id:
+		return
+	if _line_player.playing and not wav_commit_refused():
+		_line_player.stop()
+	_on_voiced_line_finished()
+
+
+func is_voiced_line_playing() -> bool:
+	return _line_player != null and _line_player.playing
+
+
+func _on_voiced_line_finished() -> void:
+	_line_owner_id = 0
+	duck_music_for_dialogue(false, _line_player)
 
 
 ## The voice player lives on this autoload, so freeing the battle scene does not stop a line.

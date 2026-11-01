@@ -15,6 +15,7 @@ of Edinburgh, 2019), licensed **CC BY 4.0**: https://doi.org/10.7488/ds/2645
 | bard_alt_K.wav | Bard (runner-up) | 3575 (+2.5 st) + 1580 | concatenated blend |
 | mage.wav | Mage | VCTK p254 (Surrey) | 3 sentences concatenated, 24 kHz mono, loudness -20 LUFS |
 | cleric.wav | Cleric | VCTK p240 (Southern England) | 4 sentences concatenated, 24 kHz mono, loudness -20 LUFS |
+| cave_rat_king.wav | Cave Rat King (boss) | VCTK p227 (Cumbria) | 12 s trimmed, pitch +7 st, formants shifted (rubberband) |
 
 No ElevenLabs output is used as a reference anywhere: its Prohibited Use Policy bars using Output
 "as input for any machine learning". The ElevenLabs-rendered clips are kept as audio only.
