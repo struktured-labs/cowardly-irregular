@@ -111,6 +111,9 @@ func _leaks_in(v: Node, leaks: Array) -> int:
 						leaks.append("%s: %s draws its archway over the art" % [v.name, n.name])
 					if not n.require_interaction:
 						leaks.append("%s: %s lost its interaction" % [v.name, n.name])
+					var sign = n.get_node_or_null("Indicator")
+					if n.show_indicator and not (sign is CanvasItem and (sign as CanvasItem).visible):
+						leaks.append("%s: %s lost its 'Enter' signpost under the art" % [v.name, n.name])
 			continue
 		var spr = n.get("sprite")
 		if spr is Sprite2D and (spr as Sprite2D).visible and spr.texture != null:

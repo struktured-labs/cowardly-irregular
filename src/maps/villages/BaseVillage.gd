@@ -334,7 +334,7 @@ func _spawn_building_art(art: Dictionary) -> int:
 	return built
 
 
-## The stall sprite or door archway that would draw over (or double) a block now covered by art.
+## The stall sprite or door archway that would draw over (or double) a block now covered by art; the door keeps its signpost.
 func _hide_what_the_art_draws(rect: Rect2i) -> void:
 	if buildings == null:
 		return
@@ -342,10 +342,8 @@ func _hide_what_the_art_draws(rect: Rect2i) -> void:
 		if b is AreaTransition:
 			if rect.has_point(Vector2i(floori(b.position.x / TILE_SIZE), floori(b.position.y / TILE_SIZE))):
 				b.show_gate_visual = false
+				b.label_without_gate = true
 				b.queue_redraw()
-				var label := b.get_node_or_null("Indicator")
-				if label is CanvasItem:
-					(label as CanvasItem).visible = false
 		elif b is Node2D:
 			var spr = b.get("sprite")
 			if spr is Sprite2D and spr.texture != null and _building_cells(b).intersects(rect):
