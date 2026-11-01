@@ -291,6 +291,8 @@ const DANGER_HP_THRESHOLD: float = 0.25  # The low-HP beat: danger music, player
 ## the other two never spoke regardless of the fight state.
 var _boss_low_hp_spoken: bool = false
 var _boss_defeat_spoken: bool = false
+## Voiced mid-battle barks (data/boss_barks.json); one instance per battle carries the cooldown (cowir-main 21086).
+var _boss_barks: BossBarks = BossBarks.new()
 ## The boss's last words, buffered: on the scripted path the gloat lands BEFORE battle_ended, on the model path after it.
 var _gloat_line: Dictionary = {}
 ## The live voice for the last words, started once at the first emit: {"text", "stream", "done"}.
@@ -560,6 +562,8 @@ func _exit_tree() -> void:
 	"""Cleanup signal connections when scene is freed"""
 	_clear_advance_aura()
 	BattleJuice.clear_battle_context()
+	if SoundManager:
+		SoundManager.stop_voiced_line(self)
 	# Disconnect from BattleManager signals to prevent memory leaks
 	if BattleManager.battle_started.is_connected(_on_battle_started):
 		BattleManager.battle_started.disconnect(_on_battle_started)
@@ -3489,6 +3493,7 @@ func _on_battle_started() -> void:
 	## Tick 428: reset per-battle boss-dialogue latches.
 	_boss_low_hp_spoken = false
 	_boss_defeat_spoken = false
+	_boss_barks = BossBarks.new()
 	_gloat_line = {}
 	_gloat_voice = {}
 	_holding_for_boss_beat = false
@@ -3606,6 +3611,8 @@ func _on_battle_ended(victory: bool) -> void:
 	## dialogue["defeat"] array is present. Find the boss combatant
 	## (first enemy with is_boss meta) for the speaker name.
 	_stage_defeat_scene(victory)
+	if not victory:
+		_boss_bark(_boss_combatant(), "party_wipe")
 
 	# Clean up any open menus
 	if active_win98_menu and is_instance_valid(active_win98_menu):
@@ -4275,6 +4282,9 @@ func _on_action_executing(combatant: Combatant, action: Dictionary) -> void:
 	"""Handle action executing - play animations here"""
 	# msg 2749 cycle 12: cache the signal-arg combatant so _on_damage_dealt / _play_ability_animation don't have to read the stale BattleManager.current_combatant. Cleared in _on_action_executed so a status-tick damage_dealt emit outside an action (poison at round-end, reactive counter) never carries a stale attribution.
 	_last_acting_combatant = combatant
+	if combatant in BattleManager.enemy_party and str(action.get("type", "")) in ["attack", "ability"] \
+			and randf() < float(BossBarks.data().get("windup_chance", 0.5)):
+		_boss_bark(combatant, "windup")
 	_update_turn_info()
 	_track_advance_run_begin(combatant, action)
 
@@ -5832,6 +5842,11 @@ func _on_damage_dealt(target: Combatant, amount: int, is_crit: bool, element: St
 				_boss_low_hp_spoken = true
 				if _battle_dialogue and _battle_dialogue.has_method("show_boss_intro"):
 					_show_boss_dialogue(target.combatant_name, _boss_dialogue_data["low_hp"])
+	if target in BattleManager.enemy_party and target.is_alive and target.has_meta("is_boss"):
+		if target.get_hp_percentage() < DANGER_HP_THRESHOLD * 100.0:
+			_boss_bark(target, "low_hp")
+		elif amount >= target.max_hp * 0.15:
+			_boss_bark(target, "big_hit")
 
 	## A crit is a property of the hit that HAPPENED, not a second hit, so it is signalled above the
 	## return below. That return stops an ability stacking a weapon layer on its own cue — it was
@@ -6265,6 +6280,24 @@ func _on_party_combat_line(combatant: Combatant, line: String, voice_trigger: St
 			if job_id != "":
 				audio_key = "voice_%s_%s" % [job_id, voice_trigger]
 		_spawn_quip_bubble(sprite, combatant.combatant_name, line, _get_job_quip_color(combatant), 2.0, audio_key, voice_stream)
+
+
+## A boss's short voiced bark; silent at 4x/turbo, over a scripted line or a bubble, or inside the cooldown.
+func _boss_bark(boss: Node, trigger: String) -> void:
+	if boss == null or not is_instance_valid(boss) or not boss.has_meta("is_boss"):
+		return
+	var bubble_up := false
+	for b in BattleSpeechBubble._live:
+		if is_instance_valid(b):
+			bubble_up = true
+			break
+	var blocked: bool = (_battle_dialogue != null and is_instance_valid(_battle_dialogue) and _battle_dialogue.visible) \
+			or bubble_up or SoundManager.is_voiced_line_playing() or SoundManager._voice_player.playing
+	if not BossBarks.allowed(Engine.time_scale, turbo_mode or autogrind_console_mode, blocked):
+		return
+	var line: String = _boss_barks.pick(str(boss.get_meta("monster_type", "")), trigger, Time.get_ticks_msec())
+	if line != "":
+		SoundManager.play_voiced_line(boss.combatant_name, line, self)
 
 
 # ── Wave E — Boss dialogue surface ───────────────────────────────────────────

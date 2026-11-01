@@ -45,6 +45,9 @@ func _authored_lines() -> Array:
 		for l in mon.get(part, []):
 			if str(l).begins_with(SPEAKER + ":"):
 				out.append(str(l).split(":", true, 1)[1].strip_edges())
+	for trig in BossBarks.TRIGGERS:
+		for l in BossBarks.lines_for("cave_rat_king", trig):
+			out.append(str(l))
 	for f in ["world1_rat_king_intro", "world1_rat_king_defeat"]:
 		_cutscene_lines(_json("res://data/cutscenes/%s.json" % f), out)
 	var bd: Dictionary = _json("res://data/boss_dialogue.json")["cave_rat_king"]

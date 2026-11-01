@@ -1,0 +1,14 @@
+{
+  "_comment": "cowir-sfx owns this. Short voiced battle barks per boss and trigger (cowir-main 21086). Every line has a recording keyed on (speaker, line) in sfx_manifest.json's boss_line_ namespace; edit a line and its recording must be re-rendered, test_a_boss_barks_in_battle reds until it is. BossBarks enforces the cooldown.",
+  "cooldown_sec": 6.0,
+  "windup_chance": 0.5,
+  "bosses": {
+    "cave_rat_king": {
+      "speaker": "Cave Rat King",
+      "windup": ["Squeak! Mine!", "For the crown!", "Squeeeak!"],
+      "big_hit": ["Insolent!", "My whiskers!", "How dare you!"],
+      "low_hp": ["The crown wobbles!", "Minions!", "Squeak... not yet!"],
+      "party_wipe": ["Long live the king!", "Squeak! Victory!", "Kneel. Forever."]
+    }
+  }
+}

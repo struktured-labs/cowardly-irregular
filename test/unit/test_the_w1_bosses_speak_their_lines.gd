@@ -38,6 +38,9 @@ func _authored(canon: String) -> Array:
 			var s := str(l)
 			if not s.begins_with("*") and ":" in s and SoundManager.speaks_as(canon, s.split(":", true, 1)[0]):
 				out.append(s.split(":", true, 1)[1].strip_edges())
+	for trig in BossBarks.TRIGGERS:
+		for l in BossBarks.lines_for(ids[0], trig):
+			out.append(str(l))
 	for f in DirAccess.get_files_at("res://data/cutscenes"):
 		if f.ends_with(".json"):
 			_cutscene_lines(_json("res://data/cutscenes/" + f), canon, out)
