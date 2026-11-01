@@ -306,6 +306,7 @@ func _setup_buildings() -> void:
 	var fountain = VillageFountainScript.new()
 	fountain.fountain_name = "Harmony Fountain"
 	fountain.tree_type = "cherry"
+	fountain.art_world = tile_generator._get_sheet_key()
 	fountain.position = Vector2(14 * TILE_SIZE,10 * TILE_SIZE)
 	buildings.add_child(fountain)
 

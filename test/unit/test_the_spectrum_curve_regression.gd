@@ -286,3 +286,17 @@ func test_an_x10_save_migrates_down_and_keeps_its_share() -> void:
 	assert_eq(int(unmarked.get("migrated_from_stat_scale", 0)), 10, "an unmarked save holding magic_defense is dated to the x10 era")
 	var current: Dictionary = c.migrate_stat_scale({"stat_scale": 1, "max_hp": 66, "current_hp": 66})
 	assert_false(current.has("migrated_from_stat_scale"), "a save already at the current scale is left alone")
+
+
+func test_an_enemy_outside_the_tree_converts_by_its_own_ratio() -> void:
+	# Headless battles (autogrind, the harness) never add enemies to the tree. x10_ratio found its row by absolute path, which
+	# fails off-tree, so a W2 Skate Punk fell back to a level-1 party's 0.05 and a Steal paid 12,549 gold (measured 2026-11-01).
+	var row: Dictionary = EncounterSystem.monster_database.get("skate_punk", {})
+	assert_true(row.has("spectrum_ratio"), "CONTROL: the catalog row carries its ratio")
+	var punk := Combatant.new()
+	punk.set_meta("monster_type", "skate_punk")
+	assert_false(punk.is_inside_tree(), "CONTROL: this enemy is off-tree, like every headless one")
+	assert_almost_eq(punk.x10_ratio(), float(row.get("spectrum_ratio", -1.0)), 0.000001,
+		"an off-tree enemy must convert by its own species' ratio, not a level-1 party's")
+	assert_ne(punk.x10_ratio(), Combatant.party_x10_ratio(punk.job_level), "CONTROL: the two ratios differ, or this cannot see the fallback")
+	punk.free()

@@ -7,17 +7,21 @@ extends GutTest
 ## Found 2026-10-12 by rendering every monster's idle frame as the game shows it and looking, then zooming each.
 ## No pixel measure separates them (head-mass lean was tried on 24 sheets and overlaps completely), so this is a
 ## reviewed list: each id was judged by eye and now declares flip_h. RE-REVIEW an entry when its art is redrawn.
+## Re-reviewed 2026-11-01 (all 117 sheets, zoomed): meta_knight added. cursed_armor moved to the right-facing list on
+## struktured's own A/B in play: its sheet is mixed-facing, and he read the flipped version as turned away.
 
 const Loader := preload("res://src/battle/sprites/HybridSpriteLoader.gd")
 const DRAWN_FACING_LEFT := [
-	"assembly_line_automaton", "blood_wolf_alpha", "conveyor_gremlin", "cranky_lady", "cursed_armor", "fire_dragon",
-	"ice_dragon", "ironback_beetle", "rust_elemental", "troll", "viper",
+	"assembly_line_automaton", "blood_wolf_alpha", "conveyor_gremlin", "cranky_lady", "fire_dragon",
+	"ice_dragon", "ironback_beetle", "meta_knight", "rust_elemental", "troll", "viper",
 ]
 ## Drawn facing left too, but a WORLD VARIANT: battle asks the base id, so a flip declared on its row is read by
 ## nothing (test_a_world_variant_cannot_declare_a_facing_the_engine_never_reads). Still backwards until that lookup learns.
 const STILL_BACKWARDS := ["masterite_curator_futuristic"]
 ## Zoomed in the same pass and found facing the party already: declaring a flip on these would turn them away.
-const DRAWN_FACING_RIGHT := ["cave_rat", "shadow_dragon", "lightning_dragon", "steam_rat", "unassuming_dog", "rat_guard"]
+const DRAWN_FACING_RIGHT := [
+	"cave_rat", "shadow_dragon", "lightning_dragon", "steam_rat", "unassuming_dog", "rat_guard", "cursed_armor",
+]
 
 
 func _sheets() -> Dictionary:
