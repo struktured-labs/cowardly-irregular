@@ -377,7 +377,7 @@ func _ready() -> void:
 	_shift_area(get_node_or_null("BattleField/EnemyArea"), ENEMY_EDGE_SHIFT)
 	var party_panel_for_column := get_node_or_null("UI/PartyStatusPanel") as Control
 	if party_panel_for_column:
-		party_panel_for_column.resized.connect(_place_party.bind(false))
+		party_panel_for_column.item_rect_changed.connect(_queue_party_relayout)
 	# Initialize composed subsystems
 	_enemy_spawner = BattleEnemySpawnerClass.new(self)
 	_ui_manager = BattleUIManagerClass.new(self)
@@ -968,6 +968,23 @@ func _party_home(i: int) -> Vector2:
 	base += _get_formation_offset(i, party_members.size())
 	base.y += party_feet_correction(sprite)
 	return base
+
+
+var _party_relayout_queued := false
+
+
+## The PARTY panel grows LEFT, so its new position can land after `resized`; re-seat once, next frame, from final values.
+func _queue_party_relayout() -> void:
+	if _party_relayout_queued:
+		return
+	_party_relayout_queued = true
+	call_deferred("_run_party_relayout")
+
+
+func _run_party_relayout() -> void:
+	_party_relayout_queued = false
+	if is_inside_tree():
+		_place_party(false)
 
 
 ## Lays the party out and seats every member at its home: battle start, a formation change, the PARTY panel resizing.
