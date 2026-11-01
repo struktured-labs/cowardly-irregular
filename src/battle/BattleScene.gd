@@ -56,9 +56,10 @@ const NAME_LABEL_GAP: float = 6.0
 const NAME_LABEL_WIDTH: float = 200.0
 const NAME_LABEL_PX := 16  # on-screen size for every monster, whatever its sprite scale
 const ENEMY_HP_BAR_SIZE := Vector2(60, 5)  # on-screen, whatever the sprite scale
-## How far each formation stands nearer its own edge (struktured 2026-11-01); the party gives back whatever its panel grows.
+## The enemies stand this much nearer their edge (struktured 2026-11-01); the party is laid out against its panel instead.
 const ENEMY_EDGE_SHIFT := -24.0
-const PARTY_EDGE_SHIFT := 32.0
+const PARTY_PANEL_GAP := 14.0  # the party's rightmost body, in its rightmost formation, to the PARTY panel
+const PARTY_RANK_GAP := 8.0  # between neighbouring members' bodies across the two ranks
 const ENEMY_HP_BAR_FADE := 0.4  # under the 0.5s dissolve it leaves with
 const STATUS_ROW_WIDTH := 120.0  # badges centre in it over the figure (row units, x STATUS_ROW_ZOOM on screen)
 const STATUS_ROW_ZOOM := 1.6  # the badges' ~9px text, read at ~14px on every monster
@@ -263,8 +264,7 @@ var _is_danger_music: bool = false
 var _idle_time: float = 0.0
 var _enemy_base_positions: Array[Vector2] = []
 var _party_base_positions: Array[Vector2] = []
-var _party_column_dx := 0.0  # the party column's live shift: PARTY_EDGE_SHIFT less the PARTY panel's growth
-var _party_panel_authored_left := 0.0
+var _party_rank_x: Array[float] = []  # each member's body-centre x, laid out from the measured figures
 
 ## Party formation system
 enum PartyFormation { V_FORMATION, FRONT_LINE, BACK_ROW, DIAMOND, SPREAD }
@@ -377,9 +377,7 @@ func _ready() -> void:
 	_shift_area(get_node_or_null("BattleField/EnemyArea"), ENEMY_EDGE_SHIFT)
 	var party_panel_for_column := get_node_or_null("UI/PartyStatusPanel") as Control
 	if party_panel_for_column:
-		_party_panel_authored_left = party_panel_for_column.offset_left
-		party_panel_for_column.resized.connect(_sync_party_column)
-	_sync_party_column()
+		party_panel_for_column.resized.connect(_place_party.bind(false))
 	# Initialize composed subsystems
 	_enemy_spawner = BattleEnemySpawnerClass.new(self)
 	_ui_manager = BattleUIManagerClass.new(self)
@@ -929,29 +927,66 @@ func _repeat_previous_actions() -> void:
 		log_message("[color=gray]%s[/color]" % (why if why != "" else "Repeat is not available right now."))
 
 
-## The party stands PARTY_EDGE_SHIFT nearer its edge, less however far its panel has grown left (Text Size), so the gap holds.
-func _sync_party_column() -> void:
-	var area := get_node_or_null("BattleField/PartyArea") as Control
-	if area == null:
-		return
-	var growth := 0.0
+## Two ranks spaced by the members' measured widths, so a wide sheet pushes its neighbours apart ("rogue/bard stacked", 2026-11-01).
+func _layout_party_ranks() -> void:
+	_party_rank_x.clear()
+	var n := party_sprite_nodes.size()
 	var panel := get_node_or_null("UI/PartyStatusPanel") as Control
-	if panel and panel.is_inside_tree():
-		growth = maxf(0.0, (get_viewport_rect().size.x + _party_panel_authored_left) - panel.get_global_rect().position.x)
-	var delta := (PARTY_EDGE_SHIFT - growth) - _party_column_dx
-	if is_zero_approx(delta):
+	if n == 0 or panel == null or not panel.is_visible_in_tree():
 		return
-	_party_column_dx += delta
-	_shift_area(area, delta)
+	var w: Array[float] = []
+	for sprite in party_sprite_nodes:
+		var fig := AdvanceAuraClass.figure_rect_in_sprite(sprite, &"idle") if is_instance_valid(sprite) else Rect2()
+		w.append(fig.size.x if fig.size.x > 0.0 else 120.0)
+	var centre: Array[float] = []
+	for i in n:
+		var d := 0.0
+		if i % 2 == 0:
+			for j in [i - 1, i + 1]:
+				if j >= 0 and j < n:
+					d = maxf(d, (w[i] + w[j]) * 0.5 + PARTY_RANK_GAP)
+		centre.append(-d)
+	var max_dx := 0.0
+	for f in PartyFormation.size():
+		for i in n:
+			max_dx = maxf(max_dx, _get_formation_offset(i, n, f).x)
+	var reach := -INF
+	for i in n:
+		reach = maxf(reach, centre[i] + w[i] * 0.5)
+	var shift := panel.get_global_rect().position.x - PARTY_PANEL_GAP - max_dx - reach
+	for i in n:
+		_party_rank_x.append(centre[i] + shift)
+
+
+## Where member i rests: its rank's x (body-centred), the marker's y, the formation's offset, feet on the slot line.
+func _party_home(i: int) -> Vector2:
+	var sprite = party_sprite_nodes[i]
+	var base: Vector2 = party_positions[i].global_position if i < party_positions.size() else Vector2(600, 100 + i * 100)
+	if i < _party_rank_x.size():
+		var fig := AdvanceAuraClass.figure_rect_in_sprite(sprite, &"idle")
+		base.x = _party_rank_x[i] - (fig.position.x + fig.size.x * 0.5)
+	base += _get_formation_offset(i, party_members.size())
+	base.y += party_feet_correction(sprite)
+	return base
+
+
+## Lays the party out and seats every member at its home: battle start, a formation change, the PARTY panel resizing.
+func _place_party(animate: bool) -> void:
+	_layout_party_ranks()
 	for i in party_sprite_nodes.size():
 		var sprite = party_sprite_nodes[i]
 		if not is_instance_valid(sprite):
 			continue
-		sprite.position.x += delta
-		if sprite.has_meta("home_position"):
-			sprite.set_meta("home_position", sprite.get_meta("home_position") + Vector2(delta, 0))
+		var home := _party_home(i)
+		sprite.set_meta("home_position", home)
 		if i < _party_base_positions.size():
-			_party_base_positions[i].x += delta
+			_party_base_positions[i] = home
+		else:
+			_party_base_positions.append(home)
+		if animate:
+			create_tween().tween_property(sprite, "position", home, 0.25).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+		else:
+			sprite.position = home
 
 
 func _shift_area(area: Control, dx: float) -> void:
@@ -1263,6 +1298,7 @@ func _create_battle_sprites() -> void:
 
 		# Setup status icons for this party member
 		_setup_status_icons(member, sprite)
+	_place_party(false)
 
 	# Create enemy sprites
 	for i in range(test_enemies.size()):
@@ -3888,7 +3924,7 @@ static func party_feet_correction(sprite: AnimatedSprite2D) -> float:
 	return PARTY_FEET_BELOW_SLOT - figure.end.y
 
 
-func _get_formation_offset(member_idx: int, party_size: int) -> Vector2:
+func _get_formation_offset(member_idx: int, party_size: int, formation: int = -1) -> Vector2:
 	"""Calculate position offset for a party member based on current formation.
 
 	Offset arrays are sized for the strict-5 party (Fighter/Cleric/Rogue/Mage/Bard).
@@ -3896,7 +3932,7 @@ func _get_formation_offset(member_idx: int, party_size: int) -> Vector2:
 	temporarily-smaller party (debug scenario) doesn't crash, but for >5 the
 	5th-slot offset is reused — adjust the constants here if the design ever
 	grows past 5."""
-	match current_formation:
+	match (current_formation if formation < 0 else formation):
 		PartyFormation.V_FORMATION:
 			# Classic JRPG V-shape: front members lower, back higher.
 			# Offsets scaled to 110px Y-gap so the stagger reads cleanly
@@ -3950,20 +3986,8 @@ func cycle_formation() -> void:
 	SoundManager.play_ui("menu_move")
 	TutorialHints.show(self, "first_formation")
 
-	# Smoothly reposition party sprites
-	for i in range(party_sprite_nodes.size()):
-		if i >= party_positions.size():
-			break
-		var sprite = party_sprite_nodes[i]
-		if not is_instance_valid(sprite):
-			continue
-		var base_pos = party_positions[i].global_position
-		var offset = _get_formation_offset(i, party_members.size())
-		var new_pos = base_pos + offset
-		_party_base_positions[i] = new_pos
-
-		var tween = create_tween()
-		tween.tween_property(sprite, "position", new_pos, 0.25).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	# Smoothly reposition party sprites, feet and attack home included (both were skipped here before)
+	_place_party(true)
 
 	# Apply formation stat modifiers via BattleManager
 	_apply_formation_stats()

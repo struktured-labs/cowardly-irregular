@@ -1,12 +1,12 @@
 extends GutTest
 
 ## struktured 2026-11-01: "move the party and monsters slightly towards the edges of the screen (party slightly
-## closer to the right and monsters slightly closer to left). see if we got the space for that". Measured in real
-## battles: the enemies had 71px to the left column at 100% text and 33px at 200%, so they moved 24px left
-## (BattleScene.ENEMY_EDGE_SHIFT). The party's top member stood under the AUTO/speed badges, so those moved into the
-## PARTY panel's header row (cowir-main's call), and the party moved PARTY_EDGE_SHIFT right, less whatever the
-## panel grows at larger Text Sizes (at 200% Back Row had overlapped the panel on main). This holds all of it: no
-## combatant body (opaque frame, name, HP bar, status icons) touches its side's column or a badge, at every size.
+## closer to the right and monsters slightly closer to left). see if we got the space for that", then "the rogue/bard
+## are sorta stacked on top of each other in battle ... I think its systemic". Measured in real battles: the enemies
+## had 71px to the left column at 100% text and 33px at 200%, so they stand 24px nearer it (ENEMY_EDGE_SHIFT). The
+## party stood in one diagonal 45px apart with 150-230px bodies (Rogue 68% inside the Mage, 90% in Diamond), under the
+## AUTO/speed badges. Now the badges ride in the PARTY header and the party stands in two ranks spaced by its measured
+## widths, PARTY_PANEL_GAP from its panel at any Text Size. This holds all of it, on each body's opaque frame.
 
 const SCENE := preload("res://src/battle/BattleScene.tscn")
 const BS := preload("res://src/battle/BattleScene.gd")
@@ -14,6 +14,7 @@ const BattleStateGuard := preload("res://test/unit/helpers/battle_state.gd")
 const Body := preload("res://test/unit/helpers/battle_body_rect.gd")
 const SoundState := preload("res://test/unit/helpers/sound_state.gd")
 const SettingsMenuScript := preload("res://src/ui/SettingsMenu.gd")
+const AdvanceAuraScript := preload("res://src/battle/AdvanceAura.gd")
 
 const LINEUPS := [["goblin", "goblin", "goblin"], ["goblin", "goblin"], ["cave_rat_king"]]
 const LEFT_COLUMN := ["EnemyStatusPanel", "BattleLogPanel", "CTBTimeline"]
@@ -132,22 +133,72 @@ func test_the_bodies_measured_are_figures_not_frames() -> void:
 		assert_lt(r.size.x, vp.x * 0.25, "CONTROL: %s is measured by its figure, not a padded frame (%s)" % [s.name, str(r)])
 
 
-func test_each_column_carries_its_shift() -> void:
+## A member's opaque figure on screen, idle frame: what a player sees as "stacked".
+func _figure(sprite: AnimatedSprite2D) -> Rect2:
+	var fig: Rect2 = AdvanceAuraScript.figure_rect_in_sprite(sprite, &"idle")
+	return Rect2(sprite.global_position + fig.position, fig.size)
+
+
+func test_no_two_party_members_stack_in_any_formation() -> void:
+	var bad: Array = []
+	var judged := 0
+	for ts in [1.0, 2.0]:
+		GameState.set_text_size_scale(ts)
+		var scene = await _build(["goblin"])
+		for i in 3:
+			await get_tree().process_frame
+		for f in BS.FORMATION_NAMES.size():
+			if f > 0:
+				scene.cycle_formation()
+				await get_tree().create_timer(0.4).timeout
+			var figs: Array = []
+			for s in scene.party_sprite_nodes:
+				figs.append(_figure(s))
+			for i in figs.size():
+				for j in range(i + 1, figs.size()):
+					var a: Rect2 = figs[i]
+					var b: Rect2 = figs[j]
+					var cut := a.intersection(b)
+					var smaller := minf(a.get_area(), b.get_area())
+					judged += 1
+					if smaller > 0.0 and cut.get_area() > smaller * 0.15:
+						bad.append("text %.2f %s: members %d and %d share %.0f%% of the smaller body" % [
+							ts, BS.FORMATION_NAMES[scene.current_formation], i, j, 100.0 * cut.get_area() / smaller])
+		scene.queue_free()
+		await get_tree().process_frame
+	assert_eq(judged, 2 * BS.FORMATION_NAMES.size() * 10, "CONTROL: every pair of five in every formation, at 100% and 200%")
+	assert_eq(bad, [], "%d stacked pair(s):\n%s" % [bad.size(), "\n".join(bad.slice(0, 8))])
+
+
+func test_the_party_stands_its_gap_from_the_panel_at_every_size() -> void:
 	assert_lt(BS.ENEMY_EDGE_SHIFT, 0.0, "the enemies stand nearer the LEFT edge")
-	assert_gt(BS.PARTY_EDGE_SHIFT, 0.0, "the party stands nearer the RIGHT edge")
+	for ts in SettingsMenuScript.TEXT_SIZE_PRESETS:
+		GameState.set_text_size_scale(ts)
+		var scene = await _build(["goblin"])
+		for i in 3:
+			await get_tree().process_frame
+		var panel_left: float = (scene.get_node("UI/PartyStatusPanel") as Control).get_global_rect().position.x
+		var nearest := INF
+		for f in BS.FORMATION_NAMES.size():
+			if f > 0:
+				scene.cycle_formation()
+				await get_tree().create_timer(0.4).timeout
+			for s in scene.party_sprite_nodes:
+				nearest = minf(nearest, panel_left - _figure(s).end.x)
+		assert_almost_eq(nearest, BS.PARTY_PANEL_GAP, 1.5,
+			"text %.2f: in its rightmost formation the party stands PARTY_PANEL_GAP from its panel (%.1f)" % [ts, nearest])
+		scene.queue_free()
+		await get_tree().process_frame
+
+
+func test_the_enemy_column_carries_its_shift() -> void:
 	var st := SCENE.get_state()
-	var authored := {}
+	var authored := NAN
 	for i in st.get_node_count():
 		for p in st.get_node_property_count(i):
-			if st.get_node_property_name(i, p) == "offset_left":
-				authored[str(st.get_node_name(i))] = float(st.get_node_property_value(i, p))
-	assert_true(authored.has("EnemyArea") and authored.has("PartyArea"), "CONTROL: the scene authors both columns")
-	GameState.set_text_size_scale(1.0)
+			if st.get_node_property_name(i, p) == "offset_left" and str(st.get_node_name(i)) == "EnemyArea":
+				authored = float(st.get_node_property_value(i, p))
+	assert_false(is_nan(authored), "CONTROL: the scene authors the enemy column")
 	var scene = await _build(["goblin"])
-	for i in 3:
-		await get_tree().process_frame
-	assert_almost_eq(scene.get_node("BattleField/EnemyArea").offset_left, authored.get("EnemyArea", 0.0) + BS.ENEMY_EDGE_SHIFT, 0.5,
+	assert_almost_eq(scene.get_node("BattleField/EnemyArea").offset_left, authored + BS.ENEMY_EDGE_SHIFT, 0.5,
 		"the enemy column stands ENEMY_EDGE_SHIFT from where the scene authors it")
-	assert_almost_eq(scene._party_column_dx, BS.PARTY_EDGE_SHIFT, 0.5, "at 100% text the PARTY panel has not grown, so the party takes its whole shift")
-	assert_almost_eq(scene.get_node("BattleField/PartyArea").offset_left, authored.get("PartyArea", 0.0) + scene._party_column_dx, 0.5,
-		"the party column stands where its live shift says")
