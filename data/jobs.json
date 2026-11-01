@@ -5,12 +5,12 @@
     "type": 0,
     "description": "A warrior skilled in physical combat. High HP and attack, excels at dealing consistent damage.",
     "stat_modifiers": {
-      "max_hp": 1320,
+      "max_hp": 132,
       "max_mp": 30,
-      "attack": 150,
-      "defense": 140,
-      "magic": 50,
-      "magic_defense": 70,
+      "attack": 15,
+      "defense": 14,
+      "magic": 5,
+      "magic_defense": 7,
       "speed": 8
     },
     "abilities": [
@@ -19,10 +19,10 @@
       "cleave"
     ],
     "abilities_at_level": {
-      "3": [
+      "4": [
         "shield_bash"
       ],
-      "6": [
+      "7": [
         "slash"
       ]
     },
@@ -45,7 +45,7 @@
     },
     "evolution": {
       "target": "guardian",
-      "level_required": 5,
+      "level_required": 6,
       "description": "Master the art of defense to become a Guardian"
     }
   },
@@ -55,12 +55,12 @@
     "type": 0,
     "description": "A devoted healer who channels restorative light. Low attack but high magic, keeps the party alive through faith and prayer.",
     "stat_modifiers": {
-      "max_hp": 1080,
+      "max_hp": 108,
       "max_mp": 70,
-      "attack": 50,
-      "defense": 100,
-      "magic": 180,
-      "magic_defense": 50,
+      "attack": 5,
+      "defense": 10,
+      "magic": 18,
+      "magic_defense": 5,
       "speed": 10
     },
     "abilities": [
@@ -68,25 +68,25 @@
       "protect"
     ],
     "abilities_at_level": {
-      "4": [
+      "5": [
         "regenerate"
       ],
-      "8": [
+      "10": [
         "crystal_heal"
       ],
-      "5": [
+      "6": [
         "esuna"
       ],
-      "6": [
+      "7": [
         "cura"
       ],
-      "9": [
+      "11": [
         "regen"
       ],
-      "10": [
+      "12": [
         "raise"
       ],
-      "7": [
+      "9": [
         "shell"
       ]
     },
@@ -124,12 +124,12 @@
     "type": 0,
     "description": "A scholar of the arcane arts who wields destructive elemental magic. Low attack but devastating magical damage.",
     "stat_modifiers": {
-      "max_hp": 970,
+      "max_hp": 97,
       "max_mp": 80,
-      "attack": 50,
-      "defense": 80,
-      "magic": 200,
-      "magic_defense": 40,
+      "attack": 5,
+      "defense": 8,
+      "magic": 20,
+      "magic_defense": 4,
       "speed": 9
     },
     "abilities": [
@@ -138,28 +138,28 @@
       "thunder"
     ],
     "abilities_at_level": {
-      "4": [
+      "5": [
         "dark_bolt"
       ],
-      "8": [
+      "10": [
         "chain_lightning"
       ],
-      "6": [
+      "7": [
         "fira"
       ],
-      "7": [
+      "9": [
         "blizzara"
       ],
-      "9": [
+      "11": [
         "thundara"
       ],
-      "11": [
+      "14": [
         "firaga"
       ],
-      "12": [
+      "15": [
         "blizzaga"
       ],
-      "13": [
+      "16": [
         "thundaga"
       ]
     },
@@ -196,12 +196,12 @@
     "type": 0,
     "description": "A cunning operative who strikes from the shadows. High speed, can steal items and gold from enemies.",
     "stat_modifiers": {
-      "max_hp": 1020,
+      "max_hp": 102,
       "max_mp": 40,
-      "attack": 120,
-      "defense": 110,
-      "magic": 70,
-      "magic_defense": 50,
+      "attack": 12,
+      "defense": 11,
+      "magic": 7,
+      "magic_defense": 5,
       "speed": 16
     },
     "abilities": [
@@ -212,10 +212,10 @@
       "scan"
     ],
     "abilities_at_level": {
-      "3": [
+      "4": [
         "smoke_bomb"
       ],
-      "6": [
+      "7": [
         "shadow_step"
       ]
     },
@@ -239,7 +239,7 @@
     },
     "evolution": {
       "target": "ninja",
-      "level_required": 5,
+      "level_required": 6,
       "description": "Embrace the shadows to become a Ninja"
     }
   },
@@ -249,12 +249,12 @@
     "type": 0,
     "description": "A charismatic performer whose songs bolster allies and bewilder foes. Versatile support with party-wide buffs.",
     "stat_modifiers": {
-      "max_hp": 850,
+      "max_hp": 85,
       "max_mp": 65,
-      "attack": 90,
-      "defense": 80,
-      "magic": 140,
-      "magic_defense": 40,
+      "attack": 9,
+      "defense": 8,
+      "magic": 14,
+      "magic_defense": 4,
       "speed": 14
     },
     "abilities": [
@@ -262,10 +262,10 @@
       "lullaby"
     ],
     "abilities_at_level": {
-      "4": [
+      "5": [
         "discord"
       ],
-      "8": [
+      "10": [
         "inspiring_melody"
       ]
     },
@@ -303,12 +303,12 @@
     "type": 2,
     "description": "A meta job that can edit game formulas and constants. Automation master.",
     "stat_modifiers": {
-      "max_hp": 900,
+      "max_hp": 90,
       "max_mp": 60,
-      "attack": 100,
-      "defense": 100,
-      "magic": 150,
-      "magic_defense": 50,
+      "attack": 10,
+      "defense": 10,
+      "magic": 15,
+      "magic_defense": 5,
       "speed": 12
     },
     "abilities": [
@@ -347,12 +347,12 @@
     "type": 2,
     "description": "A meta job that manipulates time and saves. Can rewind, create restore points, and undo permadeath.",
     "stat_modifiers": {
-      "max_hp": 850,
+      "max_hp": 85,
       "max_mp": 75,
-      "attack": 80,
-      "defense": 90,
-      "magic": 170,
-      "magic_defense": 40,
+      "attack": 8,
+      "defense": 9,
+      "magic": 17,
+      "magic_defense": 4,
       "speed": 11
     },
     "abilities": [
@@ -392,12 +392,12 @@
     "type": 2,
     "description": "A meta job with dual-edged death magic. Powerful but dangerous - can wipe your save.",
     "stat_modifiers": {
-      "max_hp": 750,
+      "max_hp": 75,
       "max_mp": 90,
-      "attack": 70,
-      "defense": 70,
-      "magic": 220,
-      "magic_defense": 30,
+      "attack": 7,
+      "defense": 7,
+      "magic": 22,
+      "magic_defense": 3,
       "speed": 9
     },
     "abilities": [
@@ -436,12 +436,12 @@
     "type": 1,
     "description": "A stalwart defender who uses Brave/Default BP stacking. Can bank actions or unleash multiple attacks at once.",
     "stat_modifiers": {
-      "max_hp": 1400,
+      "max_hp": 140,
       "max_mp": 35,
-      "attack": 130,
-      "defense": 150,
-      "magic": 60,
-      "magic_defense": 70,
+      "attack": 13,
+      "defense": 15,
+      "magic": 6,
+      "magic_defense": 7,
       "speed": 8
     },
     "abilities": [
@@ -478,7 +478,7 @@
     },
     "evolution": {
       "target": "bossbinder",
-      "level_required": 8,
+      "level_required": 10,
       "description": "Master the art of control to become a Bossbinder"
     }
   },
@@ -488,12 +488,12 @@
     "type": 1,
     "description": "A speedrun specialist with shortcuts and evasion. Can skip encounters and move through the world faster.",
     "stat_modifiers": {
-      "max_hp": 850,
+      "max_hp": 85,
       "max_mp": 45,
-      "attack": 140,
-      "defense": 80,
-      "magic": 80,
-      "magic_defense": 40,
+      "attack": 14,
+      "defense": 8,
+      "magic": 8,
+      "magic_defense": 4,
       "speed": 18
     },
     "abilities": [
@@ -531,7 +531,7 @@
     },
     "evolution": {
       "target": "skiptrotter",
-      "level_required": 8,
+      "level_required": 10,
       "description": "Master shortcuts to become a Skiptrotter"
     }
   },
@@ -541,12 +541,12 @@
     "type": 1,
     "description": "Calls forth powerful beings. Can recursively summon other summoners for exponential power.",
     "stat_modifiers": {
-      "max_hp": 900,
+      "max_hp": 90,
       "max_mp": 100,
-      "attack": 60,
-      "defense": 70,
-      "magic": 190,
-      "magic_defense": 30,
+      "attack": 6,
+      "defense": 7,
+      "magic": 19,
+      "magic_defense": 3,
       "speed": 10
     },
     "abilities": [
@@ -582,7 +582,7 @@
     },
     "evolution": {
       "target": "necromancer",
-      "level_required": 8,
+      "level_required": 10,
       "description": "Master the beyond to become a Necromancer"
     }
   },
@@ -592,12 +592,12 @@
     "type": 2,
     "description": "A meta job that can swap control with bosses mid-battle. If the boss wins while you control it, your save corrupts.",
     "stat_modifiers": {
-      "max_hp": 950,
+      "max_hp": 95,
       "max_mp": 70,
-      "attack": 110,
-      "defense": 110,
-      "magic": 160,
-      "magic_defense": 50,
+      "attack": 11,
+      "defense": 11,
+      "magic": 16,
+      "magic_defense": 5,
       "speed": 11
     },
     "abilities": [
@@ -641,12 +641,12 @@
     "type": 2,
     "description": "A meta job that warps to objectives and bypasses content. Skips dungeons but misses rewards.",
     "stat_modifiers": {
-      "max_hp": 900,
+      "max_hp": 90,
       "max_mp": 55,
-      "attack": 100,
-      "defense": 90,
-      "magic": 120,
-      "magic_defense": 40,
+      "attack": 10,
+      "defense": 9,
+      "magic": 12,
+      "magic_defense": 4,
       "speed": 14
     },
     "abilities": [
@@ -691,12 +691,12 @@
     "type": 1,
     "description": "A volatility-based combat manipulator who reshapes probability distributions. Profits from chaos, thrives in instability.",
     "stat_modifiers": {
-      "max_hp": 950,
+      "max_hp": 95,
       "max_mp": 65,
-      "attack": 120,
-      "defense": 90,
-      "magic": 140,
-      "magic_defense": 40,
+      "attack": 12,
+      "defense": 9,
+      "magic": 14,
+      "magic_defense": 4,
       "speed": 14
     },
     "abilities": [
@@ -727,8 +727,13 @@
     },
     "evolution": {
       "target": "scriptweaver",
-      "level_required": 8,
+      "level_required": 10,
       "description": "Master the system to become a Scriptweaver"
     }
+  },
+  "_spectrum": {
+    "floor": 0.5,
+    "curve": 0.036,
+    "trash_dial": 1.0
   }
 }

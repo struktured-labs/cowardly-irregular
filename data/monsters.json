@@ -5,12 +5,12 @@
     "description": "A gelatinous blob. Weak but numerous.",
     "level": 1,
     "stats": {
-      "max_hp": 680,
+      "max_hp": 34,
       "max_mp": 20,
-      "attack": 210,
-      "defense": 80,
-      "magic": 120,
-      "magic_defense": 40,
+      "attack": 10,
+      "defense": 4,
+      "magic": 6,
+      "magic_defense": 2,
       "speed": 8
     },
     "abilities": [
@@ -37,12 +37,12 @@
     "description": "A flying menace. Very fast but fragile.",
     "level": 2,
     "stats": {
-      "max_hp": 500,
+      "max_hp": 26,
       "max_mp": 15,
-      "attack": 230,
-      "defense": 50,
-      "magic": 150,
-      "magic_defense": 20,
+      "attack": 12,
+      "defense": 3,
+      "magic": 8,
+      "magic_defense": 1,
       "speed": 18
     },
     "abilities": [
@@ -69,12 +69,12 @@
     "description": "A toxic mushroom creature. Slow but poisonous.",
     "level": 2,
     "stats": {
-      "max_hp": 850,
+      "max_hp": 44,
       "max_mp": 25,
-      "attack": 180,
-      "defense": 120,
-      "magic": 250,
-      "magic_defense": 60,
+      "attack": 9,
+      "defense": 6,
+      "magic": 13,
+      "magic_defense": 3,
       "speed": 5
     },
     "abilities": [
@@ -104,21 +104,21 @@
     "id": "imp",
     "name": "Imp",
     "description": "A tiny demon with fire magic. Annoying but dangerous in groups.",
-    "level": 3,
+    "level": 4,
     "stats": {
-      "max_hp": 620,
+      "max_hp": 47,
       "max_mp": 50,
-      "attack": 180,
-      "defense": 80,
-      "magic": 290,
-      "magic_defense": 40,
+      "attack": 14,
+      "defense": 6,
+      "magic": 22,
+      "magic_defense": 3,
       "speed": 14
     },
     "abilities": [
       "fire",
       "dark_bolt"
     ],
-    "exp_reward": 28,
+    "exp_reward": 37,
     "gold_reward": 22,
     "drop_table": [
       {
@@ -143,21 +143,21 @@
     "id": "goblin",
     "name": "Goblin",
     "description": "A mischievous creature. Faster and craftier than slimes.",
-    "level": 3,
+    "level": 4,
     "stats": {
-      "max_hp": 1000,
+      "max_hp": 76,
       "max_mp": 30,
-      "attack": 270,
-      "defense": 100,
-      "magic": 180,
-      "magic_defense": 50,
+      "attack": 21,
+      "defense": 8,
+      "magic": 14,
+      "magic_defense": 4,
       "speed": 12
     },
     "abilities": [
       "slash",
       "steal"
     ],
-    "exp_reward": 25,
+    "exp_reward": 33,
     "gold_reward": 20,
     "drop_table": [
       {
@@ -178,21 +178,21 @@
     "id": "wolf",
     "name": "Wolf",
     "description": "A forest predator. Hunts in packs and strikes with surprising ferocity.",
-    "level": 3,
+    "level": 4,
     "stats": {
-      "max_hp": 920,
+      "max_hp": 70,
       "max_mp": 10,
-      "attack": 290,
-      "defense": 120,
-      "magic": 80,
-      "magic_defense": 60,
+      "attack": 22,
+      "defense": 9,
+      "magic": 6,
+      "magic_defense": 5,
       "speed": 16
     },
     "abilities": [
       "bite",
       "howl"
     ],
-    "exp_reward": 28,
+    "exp_reward": 37,
     "gold_reward": 18,
     "drop_table": [
       {
@@ -209,21 +209,21 @@
     "id": "spider",
     "name": "Giant Spider",
     "description": "A venomous arachnid that lurks in forests and caves. Its webs slow movement.",
-    "level": 3,
+    "level": 4,
     "stats": {
-      "max_hp": 850,
+      "max_hp": 65,
       "max_mp": 25,
-      "attack": 230,
-      "defense": 80,
-      "magic": 200,
-      "magic_defense": 40,
+      "attack": 18,
+      "defense": 6,
+      "magic": 15,
+      "magic_defense": 3,
       "speed": 14
     },
     "abilities": [
       "bite",
       "web_shot"
     ],
-    "exp_reward": 22,
+    "exp_reward": 29,
     "gold_reward": 15,
     "drop_table": [
       {
@@ -242,21 +242,21 @@
     "id": "fungoid",
     "name": "Fungoid",
     "description": "A shambling mushroom creature. Releases toxic spores when threatened.",
-    "level": 3,
+    "level": 4,
     "stats": {
-      "max_hp": 1000,
+      "max_hp": 76,
       "max_mp": 35,
-      "attack": 220,
-      "defense": 150,
-      "magic": 250,
-      "magic_defense": 70,
+      "attack": 17,
+      "defense": 11,
+      "magic": 19,
+      "magic_defense": 5,
       "speed": 6
     },
     "abilities": [
       "spore_cloud",
       "tackle"
     ],
-    "exp_reward": 24,
+    "exp_reward": 32,
     "gold_reward": 14,
     "drop_table": [
       {
@@ -277,21 +277,21 @@
     "id": "snake",
     "name": "Swamp Viper",
     "description": "A venomous serpent that thrives in wetlands. Quick to strike, quick to flee.",
-    "level": 4,
+    "level": 5,
     "stats": {
-      "max_hp": 750,
+      "max_hp": 72,
       "max_mp": 20,
-      "attack": 300,
-      "defense": 60,
-      "magic": 180,
-      "magic_defense": 30,
+      "attack": 29,
+      "defense": 6,
+      "magic": 17,
+      "magic_defense": 3,
       "speed": 20
     },
     "abilities": [
       "venomous_bite",
       "coil"
     ],
-    "exp_reward": 32,
+    "exp_reward": 40,
     "gold_reward": 16,
     "drop_table": [
       {
@@ -310,21 +310,21 @@
     "id": "ghost",
     "name": "Wandering Spirit",
     "description": "A translucent apparition. Physical attacks pass right through it.",
-    "level": 4,
+    "level": 5,
     "stats": {
-      "max_hp": 700,
+      "max_hp": 67,
       "max_mp": 40,
-      "attack": 180,
-      "defense": 30,
-      "magic": 350,
-      "magic_defense": 10,
+      "attack": 17,
+      "defense": 3,
+      "magic": 34,
+      "magic_defense": 1,
       "speed": 12
     },
     "abilities": [
       "spectral_touch",
       "chill"
     ],
-    "exp_reward": 30,
+    "exp_reward": 38,
     "gold_reward": 20,
     "drop_table": [
       {
@@ -345,21 +345,21 @@
     "id": "viper",
     "name": "Desert Viper",
     "description": "A sand-colored serpent that buries itself and strikes from below. Extremely fast.",
-    "level": 5,
+    "level": 6,
     "stats": {
-      "max_hp": 900,
+      "max_hp": 109,
       "max_mp": 15,
-      "attack": 380,
-      "defense": 80,
-      "magic": 120,
-      "magic_defense": 40,
+      "attack": 46,
+      "defense": 10,
+      "magic": 14,
+      "magic_defense": 5,
       "speed": 22
     },
     "abilities": [
       "venomous_bite",
       "sand_strike"
     ],
-    "exp_reward": 32,
+    "exp_reward": 38,
     "gold_reward": 28,
     "drop_table": [
       {
@@ -381,21 +381,21 @@
     "id": "elemental",
     "name": "Sand Elemental",
     "description": "A whirling column of desert sand animated by ancient magic. Resistant to physical blows.",
-    "level": 5,
+    "level": 6,
     "stats": {
-      "max_hp": 1300,
+      "max_hp": 157,
       "max_mp": 40,
-      "attack": 300,
-      "defense": 200,
-      "magic": 300,
-      "magic_defense": 100,
+      "attack": 36,
+      "defense": 24,
+      "magic": 36,
+      "magic_defense": 12,
       "speed": 10
     },
     "abilities": [
       "sandstorm",
       "slam"
     ],
-    "exp_reward": 38,
+    "exp_reward": 46,
     "gold_reward": 25,
     "drop_table": [
       {
@@ -417,21 +417,21 @@
     "id": "troll",
     "name": "Volcanic Troll",
     "description": "A brutish creature hardened by volcanic heat. Slow but devastating.",
-    "level": 6,
+    "level": 7,
     "stats": {
-      "max_hp": 2000,
+      "max_hp": 299,
       "max_mp": 15,
-      "attack": 450,
-      "defense": 250,
-      "magic": 100,
-      "magic_defense": 120,
+      "attack": 67,
+      "defense": 37,
+      "magic": 15,
+      "magic_defense": 18,
       "speed": 5
     },
     "abilities": [
       "slam",
       "ground_pound"
     ],
-    "exp_reward": 45,
+    "exp_reward": 52,
     "gold_reward": 30,
     "drop_table": [
       {
@@ -452,21 +452,21 @@
     "id": "corrupted_sprite",
     "name": "Corrupted Sprite",
     "description": "Once a benign forest spirit, now twisted by meta-corruption. Erratic and dangerous.",
-    "level": 4,
+    "level": 5,
     "stats": {
-      "max_hp": 650,
+      "max_hp": 62,
       "max_mp": 50,
-      "attack": 150,
-      "defense": 50,
-      "magic": 380,
-      "magic_defense": 20,
+      "attack": 14,
+      "defense": 5,
+      "magic": 37,
+      "magic_defense": 2,
       "speed": 18
     },
     "abilities": [
       "glitch_bolt",
       "static_field"
     ],
-    "exp_reward": 35,
+    "exp_reward": 44,
     "gold_reward": 22,
     "drop_table": [
       {
@@ -485,14 +485,14 @@
     "id": "glitch_entity",
     "name": "Glitch Entity",
     "description": "A fragment of corrupted game data given form. Its appearance shifts constantly.",
-    "level": 5,
+    "level": 6,
     "stats": {
-      "max_hp": 950,
+      "max_hp": 115,
       "max_mp": 60,
-      "attack": 250,
-      "defense": 100,
-      "magic": 400,
-      "magic_defense": 50,
+      "attack": 30,
+      "defense": 12,
+      "magic": 48,
+      "magic_defense": 6,
       "speed": 15
     },
     "abilities": [
@@ -500,7 +500,7 @@
       "pixel_storm",
       "null_pointer"
     ],
-    "exp_reward": 42,
+    "exp_reward": 50,
     "gold_reward": 28,
     "drop_table": [
       {
@@ -525,21 +525,21 @@
     "id": "cave_rat",
     "name": "Cave Rat",
     "description": "A large rat that infests caves. Faster than slimes but just as weak.",
-    "level": 3,
+    "level": 4,
     "stats": {
-      "max_hp": 900,
+      "max_hp": 69,
       "max_mp": 15,
-      "attack": 250,
-      "defense": 80,
-      "magic": 100,
-      "magic_defense": 40,
+      "attack": 19,
+      "defense": 6,
+      "magic": 8,
+      "magic_defense": 3,
       "speed": 14
     },
     "abilities": [
       "bite",
       "scratch"
     ],
-    "exp_reward": 26,
+    "exp_reward": 35,
     "gold_reward": 15,
     "drop_table": [
       {
@@ -556,14 +556,14 @@
     "id": "giant_bat",
     "name": "Giant Bat",
     "description": "An unusually large bat. Still fragile but hits harder.",
-    "level": 5,
+    "level": 6,
     "stats": {
-      "max_hp": 850,
+      "max_hp": 103,
       "max_mp": 20,
-      "attack": 350,
-      "defense": 70,
-      "magic": 180,
-      "magic_defense": 30,
+      "attack": 42,
+      "defense": 8,
+      "magic": 22,
+      "magic_defense": 4,
       "speed": 20
     },
     "abilities": [
@@ -571,7 +571,7 @@
       "screech",
       "dive_attack"
     ],
-    "exp_reward": 35,
+    "exp_reward": 42,
     "gold_reward": 25,
     "drop_table": [
       {
@@ -590,14 +590,14 @@
     "id": "rat_guard",
     "name": "Rat Guard",
     "description": "An armored rat soldier serving the Rat King. Surprisingly well-equipped.",
-    "level": 6,
+    "level": 7,
     "stats": {
-      "max_hp": 1600,
+      "max_hp": 239,
       "max_mp": 25,
-      "attack": 400,
-      "defense": 180,
-      "magic": 120,
-      "magic_defense": 90,
+      "attack": 60,
+      "defense": 27,
+      "magic": 18,
+      "magic_defense": 13,
       "speed": 11
     },
     "abilities": [
@@ -605,7 +605,7 @@
       "defensive_stance",
       "guard_strike"
     ],
-    "exp_reward": 50,
+    "exp_reward": 58,
     "gold_reward": 35,
     "drop_table": [
       {
@@ -628,14 +628,14 @@
     "id": "diseased_rat",
     "name": "Diseased Rat",
     "description": "A plague-ridden rat. Its attacks can poison and sicken.",
-    "level": 7,
+    "level": 9,
     "stats": {
-      "max_hp": 1400,
+      "max_hp": 317,
       "max_mp": 30,
-      "attack": 380,
-      "defense": 100,
-      "magic": 200,
-      "magic_defense": 50,
+      "attack": 86,
+      "defense": 23,
+      "magic": 45,
+      "magic_defense": 11,
       "speed": 13
     },
     "abilities": [
@@ -643,7 +643,7 @@
       "disease_cloud",
       "fester"
     ],
-    "exp_reward": 55,
+    "exp_reward": 71,
     "gold_reward": 40,
     "drop_table": [
       {
@@ -667,15 +667,15 @@
     "id": "cave_rat_king",
     "name": "Cave Rat King",
     "description": "The self-proclaimed ruler of all cave rats. Just a disappointingly large rat with a tiny crown. Surprisingly dangerous.",
-    "level": 10,
+    "level": 12,
     "boss": true,
     "stats": {
-      "max_hp": 6500,
+      "max_hp": 2321,
       "max_mp": 80,
-      "attack": 520,
-      "defense": 280,
-      "magic": 220,
-      "magic_defense": 140,
+      "attack": 186,
+      "defense": 100,
+      "magic": 79,
+      "magic_defense": 50,
       "speed": 20
     },
     "abilities": [
@@ -685,7 +685,7 @@
       "desperate_bite",
       "royal_summon"
     ],
-    "exp_reward": 350,
+    "exp_reward": 420,
     "gold_reward": 250,
     "drop_table": [
       {
@@ -709,7 +709,7 @@
       "poison"
     ],
     "one_shot": {
-      "hp_threshold": 6500,
+      "hp_threshold": 2321,
       "setup_hint": "Stack attack buffs, defer for max AP, then unleash all at once.",
       "reward_item": "boss_trophy"
     },
@@ -751,21 +751,21 @@
     "id": "skeleton",
     "name": "Skeleton",
     "description": "Animated bones. Weak to blunt force, resistant to piercing.",
-    "level": 5,
+    "level": 6,
     "stats": {
-      "max_hp": 1500,
+      "max_hp": 181,
       "max_mp": 25,
-      "attack": 380,
-      "defense": 120,
-      "magic": 150,
-      "magic_defense": 60,
+      "attack": 46,
+      "defense": 14,
+      "magic": 18,
+      "magic_defense": 7,
       "speed": 10
     },
     "abilities": [
       "bone_throw",
       "rattle"
     ],
-    "exp_reward": 40,
+    "exp_reward": 48,
     "gold_reward": 30,
     "drop_table": [
       {
@@ -791,21 +791,21 @@
     "id": "ice_wolf",
     "name": "Ice Wolf",
     "description": "A wolf imbued with ice magic. Fast and hits hard.",
-    "level": 7,
+    "level": 9,
     "stats": {
-      "max_hp": 1800,
+      "max_hp": 407,
       "max_mp": 40,
-      "attack": 450,
-      "defense": 140,
-      "magic": 280,
-      "magic_defense": 70,
+      "attack": 102,
+      "defense": 32,
+      "magic": 63,
+      "magic_defense": 16,
       "speed": 16
     },
     "abilities": [
       "bite",
       "ice_breath"
     ],
-    "exp_reward": 60,
+    "exp_reward": 77,
     "gold_reward": 45,
     "drop_table": [
       {
@@ -830,21 +830,21 @@
     "id": "specter",
     "name": "Specter",
     "description": "A ghostly apparition. Resistant to physical attacks.",
-    "level": 4,
+    "level": 5,
     "stats": {
-      "max_hp": 900,
+      "max_hp": 86,
       "max_mp": 60,
-      "attack": 180,
-      "defense": 50,
-      "magic": 350,
-      "magic_defense": 20,
+      "attack": 17,
+      "defense": 5,
+      "magic": 34,
+      "magic_defense": 2,
       "speed": 14
     },
     "abilities": [
       "soul_drain",
       "chill_touch"
     ],
-    "exp_reward": 35,
+    "exp_reward": 44,
     "gold_reward": 25,
     "drop_table": [
       {
@@ -871,14 +871,14 @@
     "id": "ogre",
     "name": "Ogre",
     "description": "Enormous, slow, and entirely uninterested in your plan. Hits once; that is usually enough.",
-    "level": 7,
+    "level": 9,
     "stats": {
-      "max_hp": 2600,
+      "max_hp": 588,
       "max_mp": 12,
-      "attack": 520,
-      "defense": 230,
-      "magic": 40,
-      "magic_defense": 70,
+      "attack": 118,
+      "defense": 52,
+      "magic": 9,
+      "magic_defense": 16,
       "speed": 4
     },
     "abilities": [
@@ -886,7 +886,7 @@
       "ground_pound",
       "enrage"
     ],
-    "exp_reward": 60,
+    "exp_reward": 77,
     "gold_reward": 40,
     "drop_table": [
       {
@@ -910,14 +910,14 @@
     "id": "barbarian",
     "name": "Barbarian Raider",
     "description": "A human who solved every previous problem with an axe and sees no reason to change method.",
-    "level": 7,
+    "level": 9,
     "stats": {
-      "max_hp": 1750,
+      "max_hp": 396,
       "max_mp": 20,
-      "attack": 500,
-      "defense": 150,
-      "magic": 50,
-      "magic_defense": 60,
+      "attack": 113,
+      "defense": 34,
+      "magic": 11,
+      "magic_defense": 14,
       "speed": 11
     },
     "abilities": [
@@ -925,7 +925,7 @@
       "frenzy",
       "armor_break"
     ],
-    "exp_reward": 55,
+    "exp_reward": 71,
     "gold_reward": 55,
     "drop_table": [
       {
@@ -947,15 +947,15 @@
     "id": "cave_troll",
     "name": "Cave Troll",
     "description": "A hulking brute that guards the cave depths. Miniboss.",
-    "level": 8,
+    "level": 10,
     "miniboss": true,
     "stats": {
-      "max_hp": 4000,
+      "max_hp": 1068,
       "max_mp": 30,
-      "attack": 550,
-      "defense": 250,
-      "magic": 100,
-      "magic_defense": 120,
+      "attack": 147,
+      "defense": 67,
+      "magic": 27,
+      "magic_defense": 32,
       "speed": 6
     },
     "abilities": [
@@ -963,7 +963,7 @@
       "boulder_throw",
       "enrage"
     ],
-    "exp_reward": 150,
+    "exp_reward": 188,
     "gold_reward": 100,
     "drop_table": [
       {
@@ -983,7 +983,7 @@
       "ice"
     ],
     "one_shot": {
-      "hp_threshold": 4000,
+      "hp_threshold": 1068,
       "setup_hint": "Build AP and strike hard."
     },
     "learns_from": [
@@ -994,15 +994,15 @@
     "id": "shadow_knight",
     "name": "Shadow Knight",
     "description": "A fallen warrior consumed by darkness. Miniboss.",
-    "level": 9,
+    "level": 11,
     "miniboss": true,
     "stats": {
-      "max_hp": 3500,
+      "max_hp": 1087,
       "max_mp": 80,
-      "attack": 480,
-      "defense": 300,
-      "magic": 250,
-      "magic_defense": 150,
+      "attack": 149,
+      "defense": 93,
+      "magic": 78,
+      "magic_defense": 47,
       "speed": 12
     },
     "abilities": [
@@ -1010,7 +1010,7 @@
       "shadow_step",
       "life_drain"
     ],
-    "exp_reward": 175,
+    "exp_reward": 214,
     "gold_reward": 120,
     "drop_table": [
       {
@@ -1031,7 +1031,7 @@
       "ice"
     ],
     "one_shot": {
-      "hp_threshold": 3500,
+      "hp_threshold": 1087,
       "setup_hint": "Build AP and strike hard."
     },
     "learns_from": [
@@ -1042,15 +1042,15 @@
     "id": "treasure_mimic",
     "name": "Treasure Mimic",
     "description": "You thought it was a treasure chest. It was not a treasure chest. Miniboss.",
-    "level": 7,
+    "level": 9,
     "miniboss": true,
     "stats": {
-      "max_hp": 3200,
+      "max_hp": 724,
       "max_mp": 40,
-      "attack": 420,
-      "defense": 280,
-      "magic": 150,
-      "magic_defense": 140,
+      "attack": 95,
+      "defense": 63,
+      "magic": 34,
+      "magic_defense": 32,
       "speed": 16
     },
     "abilities": [
@@ -1059,7 +1059,7 @@
       "gold_scatter",
       "lid_slam"
     ],
-    "exp_reward": 140,
+    "exp_reward": 180,
     "gold_reward": 200,
     "drop_table": [
       {
@@ -1083,7 +1083,7 @@
       "ice"
     ],
     "one_shot": {
-      "hp_threshold": 3200,
+      "hp_threshold": 724,
       "setup_hint": "Build AP and strike hard."
     },
     "dialogue": {
@@ -1102,15 +1102,15 @@
     "id": "cartographer_wraith",
     "name": "The Lost Cartographer",
     "description": "Fired for insisting the map was more honest than the terrain. Now the terrain agrees with nobody.",
-    "level": 13,
+    "level": 16,
     "boss": true,
     "stats": {
-      "max_hp": 8200,
+      "max_hp": 4765,
       "max_mp": 130,
-      "attack": 380,
-      "defense": 260,
-      "magic": 430,
-      "magic_defense": 180,
+      "attack": 221,
+      "defense": 151,
+      "magic": 250,
+      "magic_defense": 105,
       "speed": 26
     },
     "abilities": [
@@ -1119,7 +1119,7 @@
       "hallucination_spores",
       "void_pulse"
     ],
-    "exp_reward": 260,
+    "exp_reward": 320,
     "gold_reward": 240,
     "drop_table": [
       {
@@ -1153,15 +1153,15 @@
     "id": "ironback_beetle",
     "name": "Ironback Beetle",
     "description": "A beetle the size of a horse with armor-plated carapace. Miniboss.",
-    "level": 6,
+    "level": 7,
     "miniboss": true,
     "stats": {
-      "max_hp": 2800,
+      "max_hp": 419,
       "max_mp": 20,
-      "attack": 380,
-      "defense": 350,
-      "magic": 80,
-      "magic_defense": 170,
+      "attack": 57,
+      "defense": 52,
+      "magic": 12,
+      "magic_defense": 25,
       "speed": 7
     },
     "abilities": [
@@ -1170,7 +1170,7 @@
       "acid_spray",
       "burrow"
     ],
-    "exp_reward": 120,
+    "exp_reward": 140,
     "gold_reward": 80,
     "drop_table": [
       {
@@ -1191,7 +1191,7 @@
       "lightning"
     ],
     "one_shot": {
-      "hp_threshold": 2800,
+      "hp_threshold": 419,
       "setup_hint": "Build AP and strike hard."
     },
     "learns_from": [
@@ -1202,15 +1202,15 @@
     "id": "cursed_armor",
     "name": "Cursed Armor",
     "description": "A suit of armor animated by a vengeful spirit. It clanks ominously. Miniboss.",
-    "level": 8,
+    "level": 10,
     "miniboss": true,
     "stats": {
-      "max_hp": 3800,
+      "max_hp": 1014,
       "max_mp": 60,
-      "attack": 440,
-      "defense": 320,
-      "magic": 200,
-      "magic_defense": 160,
+      "attack": 117,
+      "defense": 85,
+      "magic": 53,
+      "magic_defense": 43,
       "speed": 9
     },
     "abilities": [
@@ -1219,7 +1219,7 @@
       "soul_wail",
       "reflect_shield"
     ],
-    "exp_reward": 160,
+    "exp_reward": 200,
     "gold_reward": 110,
     "drop_table": [
       {
@@ -1245,7 +1245,7 @@
     ],
     "undead": true,
     "one_shot": {
-      "hp_threshold": 3800,
+      "hp_threshold": 1014,
       "setup_hint": "Build AP and strike hard."
     },
     "learns_from": [
@@ -1257,15 +1257,15 @@
     "id": "blood_wolf_alpha",
     "name": "Blood Wolf Alpha",
     "description": "The leader of a dire wolf pack. Its howl freezes the blood. Miniboss.",
-    "level": 7,
+    "level": 9,
     "miniboss": true,
     "stats": {
-      "max_hp": 3000,
+      "max_hp": 678,
       "max_mp": 35,
-      "attack": 500,
-      "defense": 180,
-      "magic": 220,
-      "magic_defense": 90,
+      "attack": 113,
+      "defense": 41,
+      "magic": 50,
+      "magic_defense": 20,
       "speed": 18
     },
     "abilities": [
@@ -1274,7 +1274,7 @@
       "pack_call",
       "frenzy"
     ],
-    "exp_reward": 145,
+    "exp_reward": 186,
     "gold_reward": 90,
     "drop_table": [
       {
@@ -1297,7 +1297,7 @@
       "ice"
     ],
     "one_shot": {
-      "hp_threshold": 3000,
+      "hp_threshold": 678,
       "setup_hint": "Build AP and strike hard."
     },
     "dialogue": {
@@ -1316,15 +1316,15 @@
     "id": "crystal_golem",
     "name": "Crystal Golem",
     "description": "A construct of living crystal. Reflects magic at random. Miniboss.",
-    "level": 9,
+    "level": 11,
     "miniboss": true,
     "stats": {
-      "max_hp": 4500,
+      "max_hp": 1398,
       "max_mp": 50,
-      "attack": 400,
-      "defense": 300,
-      "magic": 100,
-      "magic_defense": 150,
+      "attack": 124,
+      "defense": 93,
+      "magic": 31,
+      "magic_defense": 47,
       "speed": 5
     },
     "abilities": [
@@ -1333,7 +1333,7 @@
       "gem_shatter",
       "reconstruct"
     ],
-    "exp_reward": 180,
+    "exp_reward": 220,
     "gold_reward": 150,
     "drop_table": [
       {
@@ -1361,7 +1361,7 @@
       "magic_reflect_chance": 0.3
     },
     "one_shot": {
-      "hp_threshold": 4500,
+      "hp_threshold": 1398,
       "setup_hint": "Build AP and strike hard."
     },
     "learns_from": [
@@ -1372,15 +1372,15 @@
     "id": "rogue_automaton",
     "name": "Rogue Automaton",
     "description": "A malfunctioning machine that speaks in error codes. Its attacks glitch reality. Miniboss.",
-    "level": 10,
+    "level": 12,
     "miniboss": true,
     "stats": {
-      "max_hp": 4000,
+      "max_hp": 1428,
       "max_mp": 80,
-      "attack": 350,
-      "defense": 250,
-      "magic": 300,
-      "magic_defense": 120,
+      "attack": 125,
+      "defense": 89,
+      "magic": 107,
+      "magic_defense": 43,
       "speed": 15
     },
     "abilities": [
@@ -1389,7 +1389,7 @@
       "buffer_overflow",
       "emergency_repair"
     ],
-    "exp_reward": 200,
+    "exp_reward": 240,
     "gold_reward": 130,
     "drop_table": [
       {
@@ -1425,7 +1425,7 @@
       "abilities"
     ],
     "one_shot": {
-      "hp_threshold": 4000,
+      "hp_threshold": 1428,
       "setup_hint": "Build AP and strike hard."
     }
   },
@@ -1433,15 +1433,15 @@
     "id": "elder_mushroom",
     "name": "Elder Mushroom",
     "description": "An ancient fungoid the size of a tree. Its spores are hallucinogenic. Miniboss.",
-    "level": 6,
+    "level": 7,
     "miniboss": true,
     "stats": {
-      "max_hp": 3500,
+      "max_hp": 524,
       "max_mp": 70,
-      "attack": 250,
-      "defense": 200,
-      "magic": 400,
-      "magic_defense": 100,
+      "attack": 37,
+      "defense": 30,
+      "magic": 60,
+      "magic_defense": 15,
       "speed": 4
     },
     "abilities": [
@@ -1450,7 +1450,7 @@
       "root_bind",
       "regenerate"
     ],
-    "exp_reward": 130,
+    "exp_reward": 152,
     "gold_reward": 95,
     "drop_table": [
       {
@@ -1478,7 +1478,7 @@
       "abilities"
     ],
     "one_shot": {
-      "hp_threshold": 3500,
+      "hp_threshold": 524,
       "setup_hint": "Build AP and strike hard."
     },
     "music_track": "battle_mushroom"
@@ -1487,15 +1487,15 @@
     "id": "corrupted_guardian",
     "name": "Corrupted Guardian",
     "description": "A boss enemy born from save corruption. Unpredictable and dangerous.",
-    "level": 10,
+    "level": 12,
     "boss": true,
     "stats": {
-      "max_hp": 5000,
+      "max_hp": 1785,
       "max_mp": 100,
-      "attack": 300,
-      "defense": 200,
-      "magic": 250,
-      "magic_defense": 100,
+      "attack": 107,
+      "defense": 71,
+      "magic": 89,
+      "magic_defense": 36,
       "speed": 14
     },
     "abilities": [
@@ -1504,7 +1504,7 @@
       "data_drain",
       "system_crash"
     ],
-    "exp_reward": 250,
+    "exp_reward": 300,
     "gold_reward": 200,
     "drop_table": [
       {
@@ -1523,7 +1523,7 @@
     "meta_enemy": true,
     "corruption_spawned": true,
     "one_shot": {
-      "hp_threshold": 5000,
+      "hp_threshold": 1785,
       "setup_hint": "Debuff its defense first, then stack buffs and advance with full AP.",
       "reward_item": "boss_trophy"
     },
@@ -1538,15 +1538,15 @@
     "id": "time_phantom",
     "name": "Time Phantom",
     "description": "A meta-boss that exists between save states. Can rewind its own actions.",
-    "level": 12,
+    "level": 15,
     "boss": true,
     "stats": {
-      "max_hp": 6000,
+      "max_hp": 3148,
       "max_mp": 150,
-      "attack": 280,
-      "defense": 180,
-      "magic": 300,
-      "magic_defense": 90,
+      "attack": 147,
+      "defense": 94,
+      "magic": 157,
+      "magic_defense": 47,
       "speed": 18
     },
     "abilities": [
@@ -1555,7 +1555,7 @@
       "future_sight",
       "time_stop"
     ],
-    "exp_reward": 350,
+    "exp_reward": 438,
     "gold_reward": 300,
     "drop_table": [
       {
@@ -1582,7 +1582,7 @@
     "meta_enemy": true,
     "time_manipulation": true,
     "one_shot": {
-      "hp_threshold": 6000,
+      "hp_threshold": 3148,
       "setup_hint": "Its speed is high - debuff speed first, then stack attack buffs and advance.",
       "reward_item": "boss_trophy"
     },
@@ -1597,15 +1597,15 @@
     "id": "script_error",
     "name": "SCRIPT ERROR",
     "description": "A glitch enemy spawned by excessive formula editing. Extremely dangerous.",
-    "level": 15,
+    "level": 51,
     "boss": true,
     "stats": {
-      "max_hp": 9990,
+      "max_hp": 57955,
       "max_mp": 999,
-      "attack": 500,
-      "defense": 300,
-      "magic": 400,
-      "magic_defense": 150,
+      "attack": 2901,
+      "defense": 1740,
+      "magic": 2321,
+      "magic_defense": 870,
       "speed": 20
     },
     "abilities": [
@@ -1614,7 +1614,7 @@
       "infinite_loop",
       "memory_leak"
     ],
-    "exp_reward": 500,
+    "exp_reward": 1700,
     "gold_reward": 200,
     "drop_table": [
       {
@@ -1638,7 +1638,7 @@
     "glitch_enemy": true,
     "very_dangerous": true,
     "one_shot": {
-      "hp_threshold": 9990,
+      "hp_threshold": 57955,
       "setup_hint": "Near impossible. Max buffs on all party members, full AP advance with strongest abilities.",
       "reward_item": "boss_trophy"
     },
@@ -1653,14 +1653,14 @@
     "id": "adaptive_slime",
     "name": "Adaptive Slime",
     "description": "A slime that evolved from autogrind exposure. Learns from your tactics.",
-    "level": 8,
+    "level": 10,
     "stats": {
-      "max_hp": 2500,
+      "max_hp": 667,
       "max_mp": 50,
-      "attack": 200,
-      "defense": 150,
-      "magic": 150,
-      "magic_defense": 70,
+      "attack": 53,
+      "defense": 40,
+      "magic": 40,
+      "magic_defense": 19,
       "speed": 12
     },
     "abilities": [
@@ -1668,7 +1668,7 @@
       "counter",
       "mimic_ability"
     ],
-    "exp_reward": 100,
+    "exp_reward": 125,
     "gold_reward": 80,
     "drop_table": [
       {
@@ -1701,15 +1701,15 @@
     "id": "meta_knight",
     "name": "Meta Knight",
     "description": "A knight who knows they're in a game. Uses meta-knowledge against you.",
-    "level": 11,
+    "level": 36,
     "boss": true,
     "stats": {
-      "max_hp": 5500,
+      "max_hp": 17521,
       "max_mp": 80,
-      "attack": 350,
-      "defense": 250,
-      "magic": 200,
-      "magic_defense": 120,
+      "attack": 1115,
+      "defense": 796,
+      "magic": 637,
+      "magic_defense": 382,
       "speed": 16
     },
     "abilities": [
@@ -1718,7 +1718,7 @@
       "exploit_weakness",
       "rules_lawyer"
     ],
-    "exp_reward": 300,
+    "exp_reward": 982,
     "gold_reward": 250,
     "drop_table": [
       {
@@ -1737,7 +1737,7 @@
     "meta_enemy": true,
     "self_aware": true,
     "one_shot": {
-      "hp_threshold": 5500,
+      "hp_threshold": 17521,
       "setup_hint": "It resists physical. Use magic buffs, defer for AP, then magic advance.",
       "reward_item": "boss_trophy"
     },
@@ -1752,15 +1752,15 @@
     "id": "permadeath_reaper",
     "name": "Permadeath Reaper",
     "description": "Appears during high-risk autogrind with permadeath staking. One mistake = permanent loss.",
-    "level": 20,
+    "level": 25,
     "boss": true,
     "stats": {
-      "max_hp": 8000,
+      "max_hp": 9653,
       "max_mp": 200,
-      "attack": 450,
-      "defense": 350,
-      "magic": 500,
-      "magic_defense": 170,
+      "attack": 543,
+      "defense": 422,
+      "magic": 603,
+      "magic_defense": 205,
       "speed": 22
     },
     "abilities": [
@@ -1769,7 +1769,7 @@
       "permakill_strike",
       "save_deletion"
     ],
-    "exp_reward": 1000,
+    "exp_reward": 1250,
     "gold_reward": 500,
     "drop_table": [
       {
@@ -1795,7 +1795,7 @@
     "can_cause_permadeath": true,
     "autogrind_spawned": true,
     "one_shot": {
-      "hp_threshold": 8000,
+      "hp_threshold": 9653,
       "setup_hint": "Resists everything. Stack every buff possible, full party AP advance. Good luck.",
       "reward_item": "boss_trophy"
     },
@@ -1811,15 +1811,15 @@
     "name": "Pyrroth, the Ember Wyrm",
     "description": "An ancient fire dragon whose scales radiate unbearable heat. The cave walls glow red in its presence.",
     "boss_llm_persona_id": "pyrroth",
-    "level": 14,
+    "level": 17,
     "boss": true,
     "stats": {
-      "max_hp": 9000,
+      "max_hp": 5753,
       "max_mp": 120,
-      "attack": 550,
-      "defense": 300,
-      "magic": 450,
-      "magic_defense": 150,
+      "attack": 352,
+      "defense": 192,
+      "magic": 288,
+      "magic_defense": 96,
       "speed": 16
     },
     "abilities": [
@@ -1829,7 +1829,7 @@
       "inferno_rage",
       "tail_sweep"
     ],
-    "exp_reward": 500,
+    "exp_reward": 607,
     "gold_reward": 400,
     "drop_table": [
       {
@@ -1852,7 +1852,7 @@
       "fire"
     ],
     "one_shot": {
-      "hp_threshold": 9000,
+      "hp_threshold": 5753,
       "setup_hint": "Stack ice magic and defer for AP.",
       "reward_item": "boss_trophy"
     },
@@ -1889,15 +1889,15 @@
     "name": "Glacius, the Frozen Sovereign",
     "description": "A majestic ice dragon entombed in permafrost for centuries. Its breath freezes time itself.",
     "boss_llm_persona_id": "glacius",
-    "level": 15,
+    "level": 19,
     "boss": true,
     "stats": {
-      "max_hp": 10000,
+      "max_hp": 7797,
       "max_mp": 140,
-      "attack": 480,
-      "defense": 350,
-      "magic": 520,
-      "magic_defense": 170,
+      "attack": 374,
+      "defense": 273,
+      "magic": 405,
+      "magic_defense": 133,
       "speed": 14
     },
     "abilities": [
@@ -1907,7 +1907,7 @@
       "frost_armor",
       "crystal_shatter"
     ],
-    "exp_reward": 550,
+    "exp_reward": 697,
     "gold_reward": 450,
     "drop_table": [
       {
@@ -1931,7 +1931,7 @@
       "ice"
     ],
     "one_shot": {
-      "hp_threshold": 10000,
+      "hp_threshold": 7797,
       "setup_hint": "Fire magic is key. Buff MAG and defer for maximum AP before unleashing.",
       "reward_item": "boss_trophy"
     },
@@ -1969,15 +1969,15 @@
     "name": "Voltharion, the Storm's Edge",
     "description": "A crackling dragon made of pure electrical fury. It speaks faster than you can think.",
     "boss_llm_persona_id": "voltharion",
-    "level": 16,
+    "level": 20,
     "boss": true,
     "stats": {
-      "max_hp": 8500,
+      "max_hp": 7170,
       "max_mp": 160,
-      "attack": 520,
-      "defense": 220,
-      "magic": 580,
-      "magic_defense": 110,
+      "attack": 439,
+      "defense": 186,
+      "magic": 489,
+      "magic_defense": 93,
       "speed": 22
     },
     "abilities": [
@@ -1988,7 +1988,7 @@
       "lightning_dash",
       "storm_gathering"
     ],
-    "exp_reward": 600,
+    "exp_reward": 750,
     "gold_reward": 500,
     "drop_table": [
       {
@@ -2012,7 +2012,7 @@
       "fire"
     ],
     "one_shot": {
-      "hp_threshold": 8500,
+      "hp_threshold": 7170,
       "setup_hint": "Ice magic pierces its defenses. Debuff speed first - it's FAST.",
       "reward_item": "boss_trophy"
     },
@@ -2051,15 +2051,15 @@
     "name": "Umbraxis, the Void Render",
     "description": "A dragon of living shadow that questions its own existence between attacks. Dangerously philosophical.",
     "boss_llm_persona_id": "umbraxis",
-    "level": 18,
+    "level": 22,
     "boss": true,
     "stats": {
-      "max_hp": 12000,
+      "max_hp": 11697,
       "max_mp": 200,
-      "attack": 450,
-      "defense": 280,
-      "magic": 600,
-      "magic_defense": 140,
+      "attack": 439,
+      "defense": 273,
+      "magic": 585,
+      "magic_defense": 136,
       "speed": 18
     },
     "abilities": [
@@ -2069,7 +2069,7 @@
       "existential_dread",
       "dark_matter"
     ],
-    "exp_reward": 700,
+    "exp_reward": 856,
     "gold_reward": 600,
     "drop_table": [
       {
@@ -2095,7 +2095,7 @@
     ],
     "meta_enemy": true,
     "one_shot": {
-      "hp_threshold": 12000,
+      "hp_threshold": 11697,
       "setup_hint": "Holy and fire magic are your only real options. Stack buffs heavily - this is the hardest dragon.",
       "reward_item": "boss_trophy"
     },
@@ -2137,14 +2137,14 @@
     "id": "new_age_retro_hippie",
     "name": "New Age Retro Hippie",
     "description": "A tie-dye wearing pacifist who attacks with bad vibes and crystal healing. Peace, man.",
-    "level": 4,
+    "level": 26,
     "stats": {
-      "max_hp": 1200,
+      "max_hp": 2464,
       "max_mp": 60,
-      "attack": 150,
-      "defense": 100,
-      "magic": 300,
-      "magic_defense": 50,
+      "attack": 308,
+      "defense": 205,
+      "magic": 616,
+      "magic_defense": 103,
       "speed": 10
     },
     "abilities": [
@@ -2152,7 +2152,7 @@
       "crystal_heal",
       "peace_sign"
     ],
-    "exp_reward": 30,
+    "exp_reward": 195,
     "gold_reward": 25,
     "drop_table": [
       {
@@ -2173,14 +2173,14 @@
     "id": "spiteful_crow",
     "name": "Spiteful Crow",
     "description": "A mean-spirited crow that steals your items. Extremely fast and annoying.",
-    "level": 3,
+    "level": 25,
     "stats": {
-      "max_hp": 600,
+      "max_hp": 1180,
       "max_mp": 20,
-      "attack": 200,
-      "defense": 60,
-      "magic": 100,
-      "magic_defense": 30,
+      "attack": 393,
+      "defense": 118,
+      "magic": 197,
+      "magic_defense": 59,
       "speed": 22
     },
     "abilities": [
@@ -2188,7 +2188,7 @@
       "steal",
       "taunt"
     ],
-    "exp_reward": 22,
+    "exp_reward": 183,
     "gold_reward": 18,
     "drop_table": [
       {
@@ -2209,14 +2209,14 @@
     "id": "skate_punk",
     "name": "Skate Punk",
     "description": "A rebellious skateboarder who attacks with sick tricks. Radical, dude.",
-    "level": 4,
+    "level": 26,
     "stats": {
-      "max_hp": 1000,
+      "max_hp": 2054,
       "max_mp": 25,
-      "attack": 350,
-      "defense": 120,
-      "magic": 80,
-      "magic_defense": 60,
+      "attack": 719,
+      "defense": 246,
+      "magic": 164,
+      "magic_defense": 123,
       "speed": 16
     },
     "abilities": [
@@ -2224,7 +2224,7 @@
       "grind_rail",
       "ollie_slam"
     ],
-    "exp_reward": 32,
+    "exp_reward": 208,
     "gold_reward": 28,
     "drop_table": [
       {
@@ -2247,14 +2247,14 @@
     "id": "unassuming_dog",
     "name": "Unassuming Local Dog",
     "description": "Just a regular neighborhood dog. Definitely nothing suspicious about its enormous attack stat.",
-    "level": 5,
+    "level": 26,
     "stats": {
-      "max_hp": 1800,
+      "max_hp": 3569,
       "max_mp": 30,
-      "attack": 420,
-      "defense": 150,
-      "magic": 120,
-      "magic_defense": 70,
+      "attack": 833,
+      "defense": 297,
+      "magic": 238,
+      "magic_defense": 139,
       "speed": 14
     },
     "abilities": [
@@ -2262,7 +2262,7 @@
       "bark",
       "puppy_eyes"
     ],
-    "exp_reward": 45,
+    "exp_reward": 234,
     "gold_reward": 35,
     "drop_table": [
       {
@@ -2290,14 +2290,14 @@
     "id": "cranky_lady",
     "name": "Cranky Lady",
     "description": "An irate suburban resident who attacks with complaints and thrown objects. Wants to speak to your manager.",
-    "level": 4,
+    "level": 26,
     "stats": {
-      "max_hp": 1100,
+      "max_hp": 2259,
       "max_mp": 45,
-      "attack": 220,
-      "defense": 140,
-      "magic": 250,
-      "magic_defense": 70,
+      "attack": 452,
+      "defense": 288,
+      "magic": 513,
+      "magic_defense": 144,
       "speed": 11
     },
     "abilities": [
@@ -2305,7 +2305,7 @@
       "thrown_newspaper",
       "call_manager"
     ],
-    "exp_reward": 40,
+    "exp_reward": 260,
     "gold_reward": 30,
     "drop_table": [
       {
@@ -2326,14 +2326,14 @@
     "id": "clockwork_sentinel",
     "name": "Clockwork Sentinel",
     "description": "A brass-plated mechanical guard that patrols the steampunk district. Its gears grind ominously as it raises a riveted shield.",
-    "level": 5,
+    "level": 31,
     "stats": {
-      "max_hp": 1600,
+      "max_hp": 4538,
       "max_mp": 20,
-      "attack": 320,
-      "defense": 220,
-      "magic": 100,
-      "magic_defense": 110,
+      "attack": 908,
+      "defense": 624,
+      "magic": 284,
+      "magic_defense": 312,
       "speed": 10
     },
     "abilities": [
@@ -2341,7 +2341,7 @@
       "shield_bash",
       "defensive_stance"
     ],
-    "exp_reward": 42,
+    "exp_reward": 260,
     "gold_reward": 35,
     "drop_table": [
       {
@@ -2365,14 +2365,14 @@
     "id": "steam_rat",
     "name": "Steam Rat",
     "description": "A mangy sewer rat augmented with crude pneumatic pistons. It scurries through the pipe networks at alarming speed, venting scalding steam from its back.",
-    "level": 5,
+    "level": 31,
     "stats": {
-      "max_hp": 900,
+      "max_hp": 2553,
       "max_mp": 15,
-      "attack": 280,
-      "defense": 80,
-      "magic": 120,
-      "magic_defense": 40,
+      "attack": 794,
+      "defense": 227,
+      "magic": 340,
+      "magic_defense": 113,
       "speed": 20
     },
     "abilities": [
@@ -2380,7 +2380,7 @@
       "steam_vent",
       "scratch"
     ],
-    "exp_reward": 38,
+    "exp_reward": 236,
     "gold_reward": 28,
     "drop_table": [
       {
@@ -2404,14 +2404,14 @@
     "id": "brass_golem",
     "name": "Brass Golem",
     "description": "A hulking automaton forged from salvaged boiler plate. Extremely durable but slow — its coal furnace heart needs time to build pressure between swings.",
-    "level": 6,
+    "level": 32,
     "stats": {
-      "max_hp": 2400,
+      "max_hp": 7019,
       "max_mp": 12,
-      "attack": 360,
-      "defense": 300,
-      "magic": 50,
-      "magic_defense": 150,
+      "attack": 1053,
+      "defense": 877,
+      "magic": 146,
+      "magic_defense": 439,
       "speed": 5
     },
     "abilities": [
@@ -2419,7 +2419,7 @@
       "boiler_burst",
       "iron_guard"
     ],
-    "exp_reward": 55,
+    "exp_reward": 293,
     "gold_reward": 45,
     "drop_table": [
       {
@@ -2449,14 +2449,14 @@
     "id": "cog_swarm",
     "name": "Cog Swarm",
     "description": "A whirling cloud of loose gears, springs, and razor-edged cogs that escaped the factory floor. They move as one, shredding anything in their path with a thousand tiny cuts.",
-    "level": 5,
+    "level": 31,
     "stats": {
-      "max_hp": 1000,
+      "max_hp": 2836,
       "max_mp": 25,
-      "attack": 350,
-      "defense": 100,
-      "magic": 150,
-      "magic_defense": 50,
+      "attack": 993,
+      "defense": 284,
+      "magic": 425,
+      "magic_defense": 142,
       "speed": 16
     },
     "abilities": [
@@ -2464,7 +2464,7 @@
       "shrapnel_burst",
       "whirlwind"
     ],
-    "exp_reward": 40,
+    "exp_reward": 248,
     "gold_reward": 32,
     "drop_table": [
       {
@@ -2488,14 +2488,14 @@
     "id": "pipe_phantom",
     "name": "Pipe Phantom",
     "description": "A spectral entity formed from superheated steam and industrial sorrow. It drifts through the pipe networks, wailing with the voice of every boiler that ever exploded.",
-    "level": 6,
+    "level": 32,
     "stats": {
-      "max_hp": 1300,
+      "max_hp": 3802,
       "max_mp": 70,
-      "attack": 180,
-      "defense": 100,
-      "magic": 380,
-      "magic_defense": 50,
+      "attack": 526,
+      "defense": 292,
+      "magic": 1111,
+      "magic_defense": 146,
       "speed": 14
     },
     "abilities": [
@@ -2503,7 +2503,7 @@
       "soul_drain",
       "phantom_wail"
     ],
-    "exp_reward": 50,
+    "exp_reward": 267,
     "gold_reward": 38,
     "drop_table": [
       {
@@ -2533,14 +2533,14 @@
     "id": "assembly_line_automaton",
     "name": "Assembly Line Automaton",
     "description": "A malfunctioning factory robot that keeps performing its task even in combat. Repetitive but relentless.",
-    "level": 7,
+    "level": 38,
     "stats": {
-      "max_hp": 2200,
+      "max_hp": 8833,
       "max_mp": 30,
-      "attack": 380,
-      "defense": 280,
-      "magic": 100,
-      "magic_defense": 140,
+      "attack": 1526,
+      "defense": 1124,
+      "magic": 401,
+      "magic_defense": 562,
       "speed": 8
     },
     "abilities": [
@@ -2548,7 +2548,7 @@
       "assembly_slam",
       "repetitive_strike"
     ],
-    "exp_reward": 65,
+    "exp_reward": 353,
     "gold_reward": 50,
     "drop_table": [
       {
@@ -2576,14 +2576,14 @@
     "id": "shift_supervisor",
     "name": "Shift Supervisor",
     "description": "An overzealous middle-manager type who weaponizes corporate jargon. Can buff other enemies' attack with 'motivational' speeches.",
-    "level": 7,
+    "level": 38,
     "stats": {
-      "max_hp": 1800,
+      "max_hp": 7227,
       "max_mp": 60,
-      "attack": 300,
-      "defense": 180,
-      "magic": 280,
-      "magic_defense": 90,
+      "attack": 1204,
+      "defense": 723,
+      "magic": 1124,
+      "magic_defense": 361,
       "speed": 12
     },
     "abilities": [
@@ -2591,7 +2591,7 @@
       "mandatory_overtime",
       "performance_review"
     ],
-    "exp_reward": 70,
+    "exp_reward": 380,
     "gold_reward": 65,
     "drop_table": [
       {
@@ -2617,14 +2617,14 @@
     "id": "rust_elemental",
     "name": "Rust Elemental",
     "description": "Living corrosion given form. Born from decades of neglected machinery, it feeds on metal and hope.",
-    "level": 8,
+    "level": 38,
     "stats": {
-      "max_hp": 2600,
+      "max_hp": 10112,
       "max_mp": 45,
-      "attack": 320,
-      "defense": 220,
-      "magic": 300,
-      "magic_defense": 110,
+      "attack": 1245,
+      "defense": 856,
+      "magic": 1167,
+      "magic_defense": 428,
       "speed": 9
     },
     "abilities": [
@@ -2632,7 +2632,7 @@
       "oxidize",
       "tetanus_touch"
     ],
-    "exp_reward": 80,
+    "exp_reward": 380,
     "gold_reward": 55,
     "drop_table": [
       {
@@ -2661,14 +2661,14 @@
     "id": "toxic_sludge",
     "name": "Toxic Sludge",
     "description": "Green industrial waste that gained sentience. It gurgles apologetically as it poisons everything it touches.",
-    "level": 6,
+    "level": 37,
     "stats": {
-      "max_hp": 1600,
+      "max_hp": 6287,
       "max_mp": 40,
-      "attack": 250,
-      "defense": 120,
-      "magic": 320,
-      "magic_defense": 60,
+      "attack": 982,
+      "defense": 472,
+      "magic": 1257,
+      "magic_defense": 236,
       "speed": 7
     },
     "abilities": [
@@ -2676,7 +2676,7 @@
       "toxic_embrace",
       "dissolve"
     ],
-    "exp_reward": 55,
+    "exp_reward": 339,
     "gold_reward": 40,
     "drop_table": [
       {
@@ -2705,14 +2705,14 @@
     "id": "conveyor_gremlin",
     "name": "Conveyor Gremlin",
     "description": "A fast, cackling trickster that lives in the machinery. Steals tools, sabotages equipment, and vanishes before anyone can catch it.",
-    "level": 6,
+    "level": 37,
     "stats": {
-      "max_hp": 1100,
+      "max_hp": 4323,
       "max_mp": 35,
-      "attack": 280,
-      "defense": 100,
-      "magic": 180,
-      "magic_defense": 50,
+      "attack": 1100,
+      "defense": 393,
+      "magic": 707,
+      "magic_defense": 196,
       "speed": 24
     },
     "abilities": [
@@ -2720,7 +2720,7 @@
       "steal",
       "sabotage"
     ],
-    "exp_reward": 70,
+    "exp_reward": 432,
     "gold_reward": 60,
     "drop_table": [
       {
@@ -2746,14 +2746,14 @@
     "id": "rogue_process",
     "name": "Rogue Process",
     "description": "A runaway computation given physical form. It forks itself endlessly, consuming all available resources. Kill it fast or it multiplies.",
-    "level": 12,
+    "level": 44,
     "stats": {
-      "max_hp": 2800,
+      "max_hp": 13040,
       "max_mp": 80,
-      "attack": 480,
-      "defense": 180,
-      "magic": 350,
-      "magic_defense": 90,
+      "attack": 2235,
+      "defense": 838,
+      "magic": 1630,
+      "magic_defense": 419,
       "speed": 22
     },
     "abilities": [
@@ -2762,7 +2762,7 @@
       "thread_slash",
       "clone_self"
     ],
-    "exp_reward": 180,
+    "exp_reward": 660,
     "gold_reward": 120,
     "drop_table": [
       {
@@ -2790,14 +2790,14 @@
     "id": "memory_leak",
     "name": "Memory Leak",
     "description": "An amorphous data blob that grows larger each turn, consuming more and more memory. Starts weak but becomes overwhelming if left unchecked.",
-    "level": 11,
+    "level": 43,
     "stats": {
-      "max_hp": 3500,
+      "max_hp": 16001,
       "max_mp": 60,
-      "attack": 280,
-      "defense": 150,
-      "magic": 300,
-      "magic_defense": 70,
+      "attack": 1280,
+      "defense": 686,
+      "magic": 1372,
+      "magic_defense": 320,
       "speed": 8
     },
     "abilities": [
@@ -2806,7 +2806,7 @@
       "null_pointer",
       "bloat"
     ],
-    "exp_reward": 150,
+    "exp_reward": 586,
     "gold_reward": 110,
     "drop_table": [
       {
@@ -2835,14 +2835,14 @@
     "id": "firewall_sentinel",
     "name": "Firewall Sentinel",
     "description": "A towering security program made manifest. Its defenses are nearly impenetrable, but it attacks with bureaucratic slowness. Can reflect magic back at attackers.",
-    "level": 13,
+    "level": 45,
     "stats": {
-      "max_hp": 4200,
+      "max_hp": 19920,
       "max_mp": 90,
-      "attack": 300,
-      "defense": 450,
-      "magic": 380,
-      "magic_defense": 220,
+      "attack": 1423,
+      "defense": 2134,
+      "magic": 1802,
+      "magic_defense": 1043,
       "speed": 6
     },
     "abilities": [
@@ -2852,7 +2852,7 @@
       "security_audit",
       "port_block"
     ],
-    "exp_reward": 140,
+    "exp_reward": 485,
     "gold_reward": 110,
     "drop_table": [
       {
@@ -2882,14 +2882,14 @@
     "id": "data_wraith",
     "name": "Data Wraith",
     "description": "A ghost in the machine — fragmented code that achieved consciousness and chose violence. High magic, devastating attacks, but held together by barely a thread.",
-    "level": 14,
+    "level": 46,
     "stats": {
-      "max_hp": 2000,
+      "max_hp": 9658,
       "max_mp": 150,
-      "attack": 250,
-      "defense": 120,
-      "magic": 580,
-      "magic_defense": 60,
+      "attack": 1207,
+      "defense": 579,
+      "magic": 2801,
+      "magic_defense": 290,
       "speed": 18
     },
     "abilities": [
@@ -2899,7 +2899,7 @@
       "corrupting_touch",
       "bit_rot"
     ],
-    "exp_reward": 160,
+    "exp_reward": 526,
     "gold_reward": 130,
     "drop_table": [
       {
@@ -2930,14 +2930,14 @@
     "id": "recursive_loop",
     "name": "Recursive Loop",
     "description": "An infinite loop made manifest — a spiraling entity that calls itself endlessly. Medium stats across the board, but its 'stack overflow' self-destruct deals massive damage to everything.",
-    "level": 12,
+    "level": 44,
     "stats": {
-      "max_hp": 3200,
+      "max_hp": 14903,
       "max_mp": 100,
-      "attack": 380,
-      "defense": 250,
-      "magic": 420,
-      "magic_defense": 120,
+      "attack": 1770,
+      "defense": 1164,
+      "magic": 1956,
+      "magic_defense": 559,
       "speed": 14
     },
     "abilities": [
@@ -2947,7 +2947,7 @@
       "stack_overflow",
       "base_case"
     ],
-    "exp_reward": 135,
+    "exp_reward": 495,
     "gold_reward": 100,
     "drop_table": [
       {
@@ -2975,14 +2975,14 @@
     "id": "null_entity",
     "name": "Null Entity",
     "description": "The absence of a thing. Not nothing - the specific shape of something that was deleted. Physical attacks pass through it. It occasionally stops existing for a turn, then returns.",
-    "level": 12,
+    "level": 49,
     "stats": {
-      "max_hp": 2800,
+      "max_hp": 16225,
       "max_mp": 120,
-      "attack": 150,
-      "defense": 80,
-      "magic": 550,
-      "magic_defense": 40,
+      "attack": 869,
+      "defense": 464,
+      "magic": 3187,
+      "magic_defense": 232,
       "speed": 14
     },
     "abilities": [
@@ -2991,7 +2991,7 @@
       "void_pulse",
       "undefine"
     ],
-    "exp_reward": 180,
+    "exp_reward": 735,
     "gold_reward": 80,
     "drop_table": [
       {
@@ -3030,14 +3030,14 @@
     "id": "forgotten_variable",
     "name": "Forgotten Variable",
     "description": "A value with no name. Its stats randomize each encounter because its nature keeps changing. It was important once - a counter, a flag, a score. Now it's just a number looking for meaning.",
-    "level": 13,
+    "level": 50,
     "stats": {
-      "max_hp": 3500,
+      "max_hp": 20559,
       "max_mp": 80,
-      "attack": 450,
-      "defense": 200,
-      "magic": 450,
-      "magic_defense": 100,
+      "attack": 2643,
+      "defense": 1175,
+      "magic": 2643,
+      "magic_defense": 587,
       "speed": 18
     },
     "abilities": [
@@ -3047,7 +3047,7 @@
       "garbage_collect",
       "stack_smash"
     ],
-    "exp_reward": 200,
+    "exp_reward": 769,
     "gold_reward": 140,
     "drop_table": [
       {
@@ -3086,14 +3086,14 @@
     "id": "empty_set",
     "name": "Empty Set",
     "description": "Contains nothing. Defined by its emptiness. Its defense is absurdly high because how do you hit nothing? It attacks by removing things from you - your buffs, your stats, your certainty.",
-    "level": 14,
+    "level": 50,
     "stats": {
-      "max_hp": 3000,
+      "max_hp": 17158,
       "max_mp": 100,
-      "attack": 120,
-      "defense": 550,
-      "magic": 480,
-      "magic_defense": 270,
+      "attack": 686,
+      "defense": 3146,
+      "magic": 2745,
+      "magic_defense": 1544,
       "speed": 10
     },
     "abilities": [
@@ -3103,7 +3103,7 @@
       "cardinality_zero",
       "complement"
     ],
-    "exp_reward": 220,
+    "exp_reward": 786,
     "gold_reward": 60,
     "drop_table": [
       {
@@ -3151,14 +3151,14 @@
     "id": "the_absence",
     "name": "The Absence",
     "description": "Where something used to be. A hole in the shape of everything that was deleted. It has enormous HP because damage fills the void rather than hurting it. Must be defeated with status effects or by overwhelming its absorption capacity.",
-    "level": 16,
+    "level": 51,
     "stats": {
-      "max_hp": 8000,
+      "max_hp": 45250,
       "max_mp": 60,
-      "attack": 250,
-      "defense": 180,
-      "magic": 300,
-      "magic_defense": 90,
+      "attack": 1414,
+      "defense": 1018,
+      "magic": 1697,
+      "magic_defense": 509,
       "speed": 8
     },
     "abilities": [
@@ -3168,7 +3168,7 @@
       "memory_drain",
       "absence_pulse"
     ],
-    "exp_reward": 320,
+    "exp_reward": 1020,
     "gold_reward": 120,
     "drop_table": [
       {
@@ -3217,15 +3217,15 @@
     "id": "optimization_itself",
     "name": "Optimization Itself",
     "description": "The force that erased everything. The final villain's echo, reduced to pure function. It is efficiency incarnate - no wasted movement, no unnecessary HP, no mercy. Removes one party member's buffs each turn because buffs are redundant overhead.",
-    "level": 18,
+    "level": 52,
     "boss": true,
     "stats": {
-      "max_hp": 12000,
+      "max_hp": 67240,
       "max_mp": 200,
-      "attack": 650,
-      "defense": 400,
-      "magic": 700,
-      "magic_defense": 200,
+      "attack": 3642,
+      "defense": 2241,
+      "magic": 3922,
+      "magic_defense": 1121,
       "speed": 22
     },
     "abilities": [
@@ -3236,7 +3236,7 @@
       "deprecate",
       "final_compilation"
     ],
-    "exp_reward": 800,
+    "exp_reward": 2311,
     "gold_reward": 500,
     "drop_table": [
       {
@@ -3275,7 +3275,7 @@
       "counter_description": "If the same ability is used twice in a row, Optimization Itself adapts and takes reduced damage from it."
     },
     "one_shot": {
-      "hp_threshold": 12000,
+      "hp_threshold": 67240,
       "setup_hint": "Vary your attacks - it adapts to repetition. Stack AP across the whole party for one massive burst. Holy damage bypasses its resistances.",
       "reward_item": "heart_of_inefficiency"
     },
@@ -3320,18 +3320,18 @@
     "id": "masterite_warden_medieval",
     "name": "Warden of the Old Guard",
     "description": "An ancient knight who has guarded the world's balance since its creation. Its armor is scarred from a thousand tests of strength.",
-    "level": 7,
+    "level": 9,
     "boss": true,
     "masterite": true,
     "masterite_type": "warden",
     "masterite_phase": 1,
     "stats": {
-      "max_hp": 5500,
+      "max_hp": 1244,
       "max_mp": 60,
-      "attack": 380,
-      "defense": 320,
-      "magic": 200,
-      "magic_defense": 160,
+      "attack": 86,
+      "defense": 72,
+      "magic": 45,
+      "magic_defense": 36,
       "speed": 12
     },
     "abilities": [
@@ -3341,7 +3341,7 @@
       "masterite_endurance_test",
       "power_strike"
     ],
-    "exp_reward": 200,
+    "exp_reward": 257,
     "gold_reward": 150,
     "drop_table": [
       {
@@ -3360,7 +3360,7 @@
       "physical"
     ],
     "one_shot": {
-      "hp_threshold": 5500,
+      "hp_threshold": 1244,
       "setup_hint": "High defense - debuff it first, then stack attack buffs and advance.",
       "reward_item": "boss_trophy"
     },
@@ -3377,18 +3377,18 @@
     "id": "masterite_arbiter_medieval",
     "name": "Arbiter of Steel",
     "description": "A dual-wielding swordmaster who measures every blow with mathematical precision. It seeks the perfect strike.",
-    "level": 8,
+    "level": 10,
     "boss": true,
     "masterite": true,
     "masterite_type": "arbiter",
     "masterite_phase": 1,
     "stats": {
-      "max_hp": 4800,
+      "max_hp": 1281,
       "max_mp": 50,
-      "attack": 480,
-      "defense": 220,
-      "magic": 220,
-      "magic_defense": 110,
+      "attack": 128,
+      "defense": 59,
+      "magic": 59,
+      "magic_defense": 29,
       "speed": 16
     },
     "abilities": [
@@ -3398,7 +3398,7 @@
       "masterite_counter_stance",
       "cleave"
     ],
-    "exp_reward": 220,
+    "exp_reward": 275,
     "gold_reward": 160,
     "drop_table": [
       {
@@ -3415,7 +3415,7 @@
     ],
     "resistances": [],
     "one_shot": {
-      "hp_threshold": 4800,
+      "hp_threshold": 1281,
       "setup_hint": "Low defense but high damage. Race it down before its counter stance activates.",
       "reward_item": "boss_trophy"
     },
@@ -3432,18 +3432,18 @@
     "id": "masterite_tempo_medieval",
     "name": "Tempo of the Hunt",
     "description": "A swift ranger who appears and vanishes like the wind. It tests whether you can match its relentless pace.",
-    "level": 7,
+    "level": 9,
     "boss": true,
     "masterite": true,
     "masterite_type": "tempo",
     "masterite_phase": 1,
     "stats": {
-      "max_hp": 4200,
+      "max_hp": 950,
       "max_mp": 70,
-      "attack": 350,
-      "defense": 180,
-      "magic": 280,
-      "magic_defense": 90,
+      "attack": 79,
+      "defense": 41,
+      "magic": 63,
+      "magic_defense": 20,
       "speed": 22
     },
     "abilities": [
@@ -3453,7 +3453,7 @@
       "masterite_quick_strike",
       "masterite_time_tax"
     ],
-    "exp_reward": 200,
+    "exp_reward": 257,
     "gold_reward": 140,
     "drop_table": [
       {
@@ -3472,7 +3472,7 @@
       "wind"
     ],
     "one_shot": {
-      "hp_threshold": 4200,
+      "hp_threshold": 950,
       "setup_hint": "Very fast - use speed debuffs or time your advance carefully.",
       "reward_item": "boss_trophy"
     },
@@ -3489,18 +3489,18 @@
     "id": "masterite_curator_medieval",
     "name": "Curator of the Flame",
     "description": "A robed figure wreathed in controlled flame. It judges how wisely you spend your power.",
-    "level": 8,
+    "level": 10,
     "boss": true,
     "masterite": true,
     "masterite_type": "curator",
     "masterite_phase": 1,
     "stats": {
-      "max_hp": 5000,
+      "max_hp": 1334,
       "max_mp": 100,
-      "attack": 280,
-      "defense": 240,
-      "magic": 400,
-      "magic_defense": 120,
+      "attack": 75,
+      "defense": 64,
+      "magic": 107,
+      "magic_defense": 32,
       "speed": 14
     },
     "abilities": [
@@ -3510,7 +3510,7 @@
       "masterite_audit",
       "fire"
     ],
-    "exp_reward": 220,
+    "exp_reward": 275,
     "gold_reward": 170,
     "drop_table": [
       {
@@ -3529,7 +3529,7 @@
       "fire"
     ],
     "one_shot": {
-      "hp_threshold": 5000,
+      "hp_threshold": 1334,
       "setup_hint": "It drains MP - go physical or burst it down before your casters run dry.",
       "reward_item": "boss_trophy"
     },
@@ -3546,18 +3546,18 @@
     "id": "masterite_warden_suburban",
     "name": "Warden of Routine",
     "description": "An imposing hall monitor who has maintained order in this suburban purgatory for decades. Rules are rules.",
-    "level": 10,
+    "level": 30,
     "boss": true,
     "masterite": true,
     "masterite_type": "warden",
     "masterite_phase": 2,
     "stats": {
-      "max_hp": 7000,
+      "max_hp": 15841,
       "max_mp": 70,
-      "attack": 420,
-      "defense": 380,
-      "magic": 250,
-      "magic_defense": 190,
+      "attack": 950,
+      "defense": 860,
+      "magic": 566,
+      "magic_defense": 430,
       "speed": 13
     },
     "abilities": [
@@ -3567,7 +3567,7 @@
       "masterite_endurance_test",
       "masterite_judgment"
     ],
-    "exp_reward": 350,
+    "exp_reward": 1050,
     "gold_reward": 250,
     "drop_table": [
       {
@@ -3591,7 +3591,7 @@
       "holy"
     ],
     "one_shot": {
-      "hp_threshold": 7000,
+      "hp_threshold": 15841,
       "setup_hint": "Extremely tanky. Use magic attacks and dark-element abilities.",
       "reward_item": "boss_trophy"
     },
@@ -3608,18 +3608,18 @@
     "id": "masterite_arbiter_suburban",
     "name": "Arbiter of the Grade",
     "description": "A perfectionist teacher who grades your combat performance in real-time. Anything less than an A+ is failure.",
-    "level": 11,
+    "level": 31,
     "boss": true,
     "masterite": true,
     "masterite_type": "arbiter",
     "masterite_phase": 2,
     "stats": {
-      "max_hp": 6200,
+      "max_hp": 14570,
       "max_mp": 60,
-      "attack": 550,
-      "defense": 260,
-      "magic": 280,
-      "magic_defense": 130,
+      "attack": 1292,
+      "defense": 611,
+      "magic": 658,
+      "magic_defense": 306,
       "speed": 17
     },
     "abilities": [
@@ -3629,7 +3629,7 @@
       "masterite_counter_stance",
       "masterite_execution"
     ],
-    "exp_reward": 380,
+    "exp_reward": 1071,
     "gold_reward": 270,
     "drop_table": [
       {
@@ -3646,7 +3646,7 @@
     ],
     "resistances": [],
     "one_shot": {
-      "hp_threshold": 6200,
+      "hp_threshold": 14570,
       "setup_hint": "Its execution ability is devastating on low HP targets. Keep everyone topped up and burst it down.",
       "reward_item": "boss_trophy"
     },
@@ -3663,18 +3663,18 @@
     "id": "masterite_tempo_suburban",
     "name": "Tempo of the Rush Hour",
     "description": "A frantic figure perpetually late to everything. Its panic is weaponized into blinding speed.",
-    "level": 10,
+    "level": 30,
     "boss": true,
     "masterite": true,
     "masterite_type": "tempo",
     "masterite_phase": 2,
     "stats": {
-      "max_hp": 5500,
+      "max_hp": 12446,
       "max_mp": 80,
-      "attack": 400,
-      "defense": 220,
-      "magic": 320,
-      "magic_defense": 110,
+      "attack": 905,
+      "defense": 498,
+      "magic": 724,
+      "magic_defense": 249,
       "speed": 24
     },
     "abilities": [
@@ -3684,7 +3684,7 @@
       "masterite_quick_strike",
       "masterite_time_tax"
     ],
-    "exp_reward": 350,
+    "exp_reward": 1050,
     "gold_reward": 240,
     "drop_table": [
       {
@@ -3704,7 +3704,7 @@
       "lightning"
     ],
     "one_shot": {
-      "hp_threshold": 5500,
+      "hp_threshold": 12446,
       "setup_hint": "Will debuff your entire party's speed. Cleanse or power through quickly.",
       "reward_item": "boss_trophy"
     },
@@ -3721,18 +3721,18 @@
     "id": "masterite_curator_suburban",
     "name": "Curator of the Budget",
     "description": "A fastidious accountant who sees your MP pool as a ledger to be balanced. Every spell is a taxable event.",
-    "level": 11,
+    "level": 31,
     "boss": true,
     "masterite": true,
     "masterite_type": "curator",
     "masterite_phase": 2,
     "stats": {
-      "max_hp": 6500,
+      "max_hp": 15275,
       "max_mp": 120,
-      "attack": 320,
-      "defense": 280,
-      "magic": 480,
-      "magic_defense": 140,
+      "attack": 752,
+      "defense": 658,
+      "magic": 1128,
+      "magic_defense": 329,
       "speed": 15
     },
     "abilities": [
@@ -3742,7 +3742,7 @@
       "masterite_audit",
       "masterite_resource_cut"
     ],
-    "exp_reward": 380,
+    "exp_reward": 1071,
     "gold_reward": 300,
     "drop_table": [
       {
@@ -3766,7 +3766,7 @@
       "dark"
     ],
     "one_shot": {
-      "hp_threshold": 6500,
+      "hp_threshold": 15275,
       "setup_hint": "Heavy MP drain. Physical attackers shine here. Save ethers for emergencies.",
       "reward_item": "boss_trophy"
     },
@@ -3783,18 +3783,18 @@
     "id": "masterite_warden_steampunk",
     "name": "The Standing Order",
     "description": "A pressure gauge that has never once moved. It does not attack so much as outlast — the Grand Schedule does not negotiate, and neither does its pressure.",
-    "level": 11,
+    "level": 36,
     "boss": true,
     "masterite": true,
     "masterite_type": "warden",
     "masterite_phase": 3,
     "stats": {
-      "max_hp": 7800,
+      "max_hp": 24849,
       "max_mp": 75,
-      "attack": 460,
-      "defense": 400,
-      "magic": 270,
-      "magic_defense": 200,
+      "attack": 1465,
+      "defense": 1274,
+      "magic": 860,
+      "magic_defense": 637,
       "speed": 13
     },
     "abilities": [
@@ -3804,7 +3804,7 @@
       "masterite_crushing_blow",
       "masterite_judgment"
     ],
-    "exp_reward": 420,
+    "exp_reward": 1375,
     "gold_reward": 300,
     "drop_table": [
       {
@@ -3823,7 +3823,7 @@
       "fire"
     ],
     "one_shot": {
-      "hp_threshold": 7800,
+      "hp_threshold": 24849,
       "setup_hint": "Defense 400 behind 7800 HP — it wins by attrition. Bring sustained damage or strip its guard.",
       "reward_item": "boss_trophy"
     },
@@ -3840,18 +3840,18 @@
     "id": "masterite_arbiter_steampunk",
     "name": "The Tolerance Limit",
     "description": "Machining tolerance expressed as violence. Within spec you are ignored entirely; outside it, you are corrected.",
-    "level": 12,
+    "level": 37,
     "boss": true,
     "masterite": true,
     "masterite_type": "arbiter",
     "masterite_phase": 3,
     "stats": {
-      "max_hp": 7000,
+      "max_hp": 22923,
       "max_mp": 70,
-      "attack": 580,
-      "defense": 280,
-      "magic": 300,
-      "magic_defense": 140,
+      "attack": 1899,
+      "defense": 917,
+      "magic": 982,
+      "magic_defense": 458,
       "speed": 17
     },
     "abilities": [
@@ -3861,7 +3861,7 @@
       "masterite_precise_strike",
       "masterite_execution"
     ],
-    "exp_reward": 450,
+    "exp_reward": 1388,
     "gold_reward": 330,
     "drop_table": [
       {
@@ -3880,7 +3880,7 @@
       "earth"
     ],
     "one_shot": {
-      "hp_threshold": 7000,
+      "hp_threshold": 22923,
       "setup_hint": "Execution triples against wounded targets — do not limp into its range. Stay above the threshold or end it first.",
       "reward_item": "boss_trophy"
     },
@@ -3897,18 +3897,18 @@
     "id": "masterite_tempo_steampunk",
     "name": "The Grand Schedule",
     "description": "Not a figure so much as a cadence. The trains arrive on time because it is standing here, and it is standing here because the trains arrive on time.",
-    "level": 11,
+    "level": 36,
     "boss": true,
     "masterite": true,
     "masterite_type": "tempo",
     "masterite_phase": 3,
     "stats": {
-      "max_hp": 6200,
+      "max_hp": 19751,
       "max_mp": 95,
-      "attack": 420,
-      "defense": 240,
-      "magic": 350,
-      "magic_defense": 120,
+      "attack": 1338,
+      "defense": 765,
+      "magic": 1115,
+      "magic_defense": 382,
       "speed": 25
     },
     "abilities": [
@@ -3918,7 +3918,7 @@
       "masterite_time_tax",
       "masterite_quick_strike"
     ],
-    "exp_reward": 420,
+    "exp_reward": 1375,
     "gold_reward": 300,
     "drop_table": [
       {
@@ -3937,7 +3937,7 @@
       "ice"
     ],
     "one_shot": {
-      "hp_threshold": 6200,
+      "hp_threshold": 19751,
       "setup_hint": "It does not out-damage you, it out-SCHEDULES you. Speed 25 plus time_tax means your turns arrive late — counter-haste or burst it down.",
       "reward_item": "boss_trophy"
     },
@@ -3954,18 +3954,18 @@
     "id": "masterite_curator_steampunk",
     "name": "The Requisition",
     "description": "Steam costs money and money is kept in ledgers. It does not damage you. It bills you, and the invoice comes due in magic.",
-    "level": 12,
+    "level": 37,
     "boss": true,
     "masterite": true,
     "masterite_type": "curator",
     "masterite_phase": 3,
     "stats": {
-      "max_hp": 7300,
+      "max_hp": 23905,
       "max_mp": 120,
-      "attack": 350,
-      "defense": 300,
-      "magic": 510,
-      "magic_defense": 150,
+      "attack": 1146,
+      "defense": 982,
+      "magic": 1670,
+      "magic_defense": 491,
       "speed": 15
     },
     "abilities": [
@@ -3975,7 +3975,7 @@
       "masterite_resource_cut",
       "masterite_audit"
     ],
-    "exp_reward": 450,
+    "exp_reward": 1388,
     "gold_reward": 330,
     "drop_table": [
       {
@@ -3994,7 +3994,7 @@
       "lightning"
     ],
     "one_shot": {
-      "hp_threshold": 7300,
+      "hp_threshold": 23905,
       "setup_hint": "It attacks your RESOURCES, not your HP. Every turn you spend casting funds it. Win before your MP does.",
       "reward_item": "boss_trophy"
     },
@@ -4011,18 +4011,18 @@
     "id": "masterite_warden_industrial",
     "name": "Warden of the Assembly Line",
     "description": "A massive industrial enforcer built from factory parts. It tests structural integrity by applying overwhelming force.",
-    "level": 13,
+    "level": 42,
     "boss": true,
     "masterite": true,
     "masterite_type": "warden",
     "masterite_phase": 3,
     "stats": {
-      "max_hp": 9000,
+      "max_hp": 37104,
       "max_mp": 80,
-      "attack": 500,
-      "defense": 420,
-      "magic": 300,
-      "magic_defense": 210,
+      "attack": 2061,
+      "defense": 1732,
+      "magic": 1237,
+      "magic_defense": 866,
       "speed": 14
     },
     "abilities": [
@@ -4032,7 +4032,7 @@
       "masterite_endurance_test",
       "masterite_judgment"
     ],
-    "exp_reward": 500,
+    "exp_reward": 1615,
     "gold_reward": 380,
     "drop_table": [
       {
@@ -4056,7 +4056,7 @@
       "lightning"
     ],
     "one_shot": {
-      "hp_threshold": 9000,
+      "hp_threshold": 37104,
       "setup_hint": "9000 HP with high defense. Stack fire damage and debuff its defense hard.",
       "reward_item": "boss_trophy"
     },
@@ -4073,18 +4073,18 @@
     "id": "masterite_arbiter_industrial",
     "name": "Arbiter of Efficiency",
     "description": "A production optimizer that has eliminated every inefficiency from its own combat routine. Zero wasted motion.",
-    "level": 14,
+    "level": 43,
     "boss": true,
     "masterite": true,
     "masterite_type": "arbiter",
     "masterite_phase": 3,
     "stats": {
-      "max_hp": 7800,
+      "max_hp": 32844,
       "max_mp": 70,
-      "attack": 620,
-      "defense": 300,
-      "magic": 320,
-      "magic_defense": 150,
+      "attack": 2611,
+      "defense": 1263,
+      "magic": 1347,
+      "magic_defense": 632,
       "speed": 18
     },
     "abilities": [
@@ -4094,7 +4094,7 @@
       "masterite_counter_stance",
       "masterite_execution"
     ],
-    "exp_reward": 530,
+    "exp_reward": 1628,
     "gold_reward": 400,
     "drop_table": [
       {
@@ -4113,7 +4113,7 @@
       "fire"
     ],
     "one_shot": {
-      "hp_threshold": 7800,
+      "hp_threshold": 32844,
       "setup_hint": "Extremely high attack. Its execution can one-shot weakened targets. Don't let anyone drop low.",
       "reward_item": "boss_trophy"
     },
@@ -4130,18 +4130,18 @@
     "id": "masterite_tempo_industrial",
     "name": "Tempo of the Shift",
     "description": "A time-clock manipulator who treats every turn as a work shift. Overtime is mandatory.",
-    "level": 13,
+    "level": 42,
     "boss": true,
     "masterite": true,
     "masterite_type": "tempo",
     "masterite_phase": 3,
     "stats": {
-      "max_hp": 7000,
+      "max_hp": 28859,
       "max_mp": 90,
-      "attack": 450,
-      "defense": 260,
-      "magic": 380,
-      "magic_defense": 130,
+      "attack": 1855,
+      "defense": 1072,
+      "magic": 1567,
+      "magic_defense": 536,
       "speed": 26
     },
     "abilities": [
@@ -4151,7 +4151,7 @@
       "masterite_quick_strike",
       "masterite_time_tax"
     ],
-    "exp_reward": 500,
+    "exp_reward": 1615,
     "gold_reward": 360,
     "drop_table": [
       {
@@ -4170,7 +4170,7 @@
       "ice"
     ],
     "one_shot": {
-      "hp_threshold": 7000,
+      "hp_threshold": 28859,
       "setup_hint": "Speed 26 is brutal. Counter with your own haste buffs or overwhelm with raw damage.",
       "reward_item": "boss_trophy"
     },
@@ -4187,18 +4187,18 @@
     "id": "masterite_curator_industrial",
     "name": "Curator of the Pipeline",
     "description": "A supply chain controller that monitors and restricts the flow of all resources. Nothing moves without its approval.",
-    "level": 14,
+    "level": 43,
     "boss": true,
     "masterite": true,
     "masterite_type": "curator",
     "masterite_phase": 3,
     "stats": {
-      "max_hp": 8200,
+      "max_hp": 34528,
       "max_mp": 140,
-      "attack": 380,
-      "defense": 320,
-      "magic": 550,
-      "magic_defense": 160,
+      "attack": 1600,
+      "defense": 1347,
+      "magic": 2316,
+      "magic_defense": 674,
       "speed": 16
     },
     "abilities": [
@@ -4208,7 +4208,7 @@
       "masterite_audit",
       "masterite_resource_cut"
     ],
-    "exp_reward": 530,
+    "exp_reward": 1628,
     "gold_reward": 420,
     "drop_table": [
       {
@@ -4232,7 +4232,7 @@
       "lightning"
     ],
     "one_shot": {
-      "hp_threshold": 8200,
+      "hp_threshold": 34528,
       "setup_hint": "Dispels your buffs and drains MP. Go all-physical or burst with everything turn one.",
       "reward_item": "boss_trophy"
     },
@@ -4249,18 +4249,18 @@
     "id": "masterite_warden_futuristic",
     "name": "Warden of the Firewall",
     "description": "An advanced security AI that blocks all unauthorized access. Its defensive protocols adapt in real time.",
-    "level": 16,
+    "level": 48,
     "boss": true,
     "masterite": true,
     "masterite_type": "warden",
     "masterite_phase": 4,
     "stats": {
-      "max_hp": 11000,
+      "max_hp": 55016,
       "max_mp": 90,
-      "attack": 550,
-      "defense": 480,
-      "magic": 350,
-      "magic_defense": 240,
+      "attack": 2751,
+      "defense": 2401,
+      "magic": 1751,
+      "magic_defense": 1200,
       "speed": 15
     },
     "abilities": [
@@ -4270,7 +4270,7 @@
       "masterite_endurance_test",
       "masterite_judgment"
     ],
-    "exp_reward": 680,
+    "exp_reward": 2040,
     "gold_reward": 500,
     "drop_table": [
       {
@@ -4295,7 +4295,7 @@
       "holy"
     ],
     "one_shot": {
-      "hp_threshold": 11000,
+      "hp_threshold": 55016,
       "setup_hint": "11000 HP and 480 defense. You need maximum debuffs and party-wide buffs to burst through.",
       "reward_item": "boss_trophy"
     },
@@ -4312,18 +4312,18 @@
     "id": "masterite_arbiter_futuristic",
     "name": "Arbiter of the Benchmark",
     "description": "A performance-testing AI that pushes systems to their breaking point. It has benchmarked thousands of adventurers.",
-    "level": 17,
+    "level": 49,
     "boss": true,
     "masterite": true,
     "masterite_type": "arbiter",
     "masterite_phase": 4,
     "stats": {
-      "max_hp": 9500,
+      "max_hp": 48336,
       "max_mp": 80,
-      "attack": 680,
-      "defense": 320,
-      "magic": 380,
-      "magic_defense": 160,
+      "attack": 3460,
+      "defense": 1628,
+      "magic": 1933,
+      "magic_defense": 814,
       "speed": 20
     },
     "abilities": [
@@ -4333,7 +4333,7 @@
       "masterite_counter_stance",
       "masterite_execution"
     ],
-    "exp_reward": 720,
+    "exp_reward": 2075,
     "gold_reward": 540,
     "drop_table": [
       {
@@ -4357,7 +4357,7 @@
       "lightning"
     ],
     "one_shot": {
-      "hp_threshold": 9500,
+      "hp_threshold": 48336,
       "setup_hint": "680 attack is terrifying. Buff defense aggressively and burst with ice magic.",
       "reward_item": "boss_trophy"
     },
@@ -4374,18 +4374,18 @@
     "id": "masterite_tempo_futuristic",
     "name": "Tempo of the Clock Cycle",
     "description": "A CPU scheduler that allocates clock cycles with ruthless efficiency. It acts twice before you act once.",
-    "level": 16,
+    "level": 48,
     "boss": true,
     "masterite": true,
     "masterite_type": "tempo",
     "masterite_phase": 4,
     "stats": {
-      "max_hp": 8500,
+      "max_hp": 42513,
       "max_mp": 100,
-      "attack": 500,
-      "defense": 280,
-      "magic": 420,
-      "magic_defense": 140,
+      "attack": 2501,
+      "defense": 1400,
+      "magic": 2101,
+      "magic_defense": 700,
       "speed": 28
     },
     "abilities": [
@@ -4395,7 +4395,7 @@
       "masterite_quick_strike",
       "masterite_time_tax"
     ],
-    "exp_reward": 680,
+    "exp_reward": 2040,
     "gold_reward": 480,
     "drop_table": [
       {
@@ -4419,7 +4419,7 @@
       "lightning"
     ],
     "one_shot": {
-      "hp_threshold": 8500,
+      "hp_threshold": 42513,
       "setup_hint": "Speed 28 means it outspeeds almost everything. Use defer to build AP then burst.",
       "reward_item": "boss_trophy"
     },
@@ -4436,18 +4436,18 @@
     "id": "masterite_curator_futuristic",
     "name": "Curator of the Memory Pool",
     "description": "A memory management AI that garbage-collects your magical reserves. It frees what it deems unnecessary.",
-    "level": 17,
+    "level": 49,
     "boss": true,
     "masterite": true,
     "masterite_type": "curator",
     "masterite_phase": 4,
     "stats": {
-      "max_hp": 10000,
+      "max_hp": 50880,
       "max_mp": 160,
-      "attack": 420,
-      "defense": 360,
-      "magic": 620,
-      "magic_defense": 180,
+      "attack": 2137,
+      "defense": 1832,
+      "magic": 3155,
+      "magic_defense": 916,
       "speed": 17
     },
     "abilities": [
@@ -4457,7 +4457,7 @@
       "masterite_audit",
       "masterite_resource_cut"
     ],
-    "exp_reward": 720,
+    "exp_reward": 2075,
     "gold_reward": 560,
     "drop_table": [
       {
@@ -4485,7 +4485,7 @@
       "lightning"
     ],
     "one_shot": {
-      "hp_threshold": 10000,
+      "hp_threshold": 50880,
       "setup_hint": "Resists magic but weak to physical. Stack attack buffs and go all melee.",
       "reward_item": "boss_trophy"
     },
@@ -4506,18 +4506,18 @@
     },
     "name": "Warden of Form",
     "description": "Pure geometric defense given consciousness. It is the shape of immovability, the form of endurance made manifest.",
-    "level": 19,
+    "level": 53,
     "boss": true,
     "masterite": true,
     "masterite_type": "warden",
     "masterite_phase": 5,
     "stats": {
-      "max_hp": 14000,
+      "max_hp": 79640,
       "max_mp": 100,
-      "attack": 620,
-      "defense": 520,
-      "magic": 400,
-      "magic_defense": 260,
+      "attack": 3527,
+      "defense": 2958,
+      "magic": 2275,
+      "magic_defense": 1479,
       "speed": 16
     },
     "abilities": [
@@ -4527,7 +4527,7 @@
       "masterite_endurance_test",
       "masterite_judgment"
     ],
-    "exp_reward": 900,
+    "exp_reward": 2511,
     "gold_reward": 650,
     "drop_table": [
       {
@@ -4548,7 +4548,7 @@
       "physical"
     ],
     "one_shot": {
-      "hp_threshold": 14000,
+      "hp_threshold": 79640,
       "setup_hint": "Resists everything. Stack every debuff possible, full AP advance with your strongest abilities.",
       "reward_item": "boss_trophy"
     },
@@ -4586,18 +4586,18 @@
     },
     "name": "Arbiter of Function",
     "description": "The reduction of combat to its simplest function: damage. No elegance, no waste, just the mathematically optimal strike.",
-    "level": 20,
+    "level": 54,
     "boss": true,
     "masterite": true,
     "masterite_type": "arbiter",
     "masterite_phase": 5,
     "stats": {
-      "max_hp": 12000,
+      "max_hp": 69289,
       "max_mp": 90,
-      "attack": 750,
-      "defense": 350,
-      "magic": 420,
-      "magic_defense": 170,
+      "attack": 4331,
+      "defense": 2021,
+      "magic": 2425,
+      "magic_defense": 982,
       "speed": 22
     },
     "abilities": [
@@ -4607,7 +4607,7 @@
       "masterite_counter_stance",
       "masterite_execution"
     ],
-    "exp_reward": 950,
+    "exp_reward": 2565,
     "gold_reward": 700,
     "drop_table": [
       {
@@ -4631,7 +4631,7 @@
       "physical"
     ],
     "one_shot": {
-      "hp_threshold": 12000,
+      "hp_threshold": 69289,
       "setup_hint": "750 attack. Execution at 3.0x. If anyone drops below 30% HP, heal immediately. Holy damage bypasses its resistances.",
       "reward_item": "boss_trophy"
     },
@@ -4648,18 +4648,18 @@
     "id": "masterite_tempo_abstract",
     "name": "Tempo of Sequence",
     "description": "The order of all things made manifest. It controls sequence itself - what comes first, what comes last, what comes never.",
-    "level": 19,
+    "level": 53,
     "boss": true,
     "masterite": true,
     "masterite_type": "tempo",
     "masterite_phase": 5,
     "stats": {
-      "max_hp": 11000,
+      "max_hp": 62575,
       "max_mp": 120,
-      "attack": 550,
-      "defense": 300,
-      "magic": 480,
-      "magic_defense": 150,
+      "attack": 3129,
+      "defense": 1707,
+      "magic": 2731,
+      "magic_defense": 853,
       "speed": 30
     },
     "abilities": [
@@ -4669,7 +4669,7 @@
       "masterite_quick_strike",
       "masterite_time_tax"
     ],
-    "exp_reward": 900,
+    "exp_reward": 2511,
     "gold_reward": 620,
     "drop_table": [
       {
@@ -4697,7 +4697,7 @@
       "wind"
     ],
     "one_shot": {
-      "hp_threshold": 11000,
+      "hp_threshold": 62575,
       "setup_hint": "Speed 30 is nearly insurmountable. Full party speed buffs and fire damage are your best bet.",
       "reward_item": "boss_trophy"
     },
@@ -4714,18 +4714,18 @@
     "id": "masterite_curator_abstract",
     "name": "Curator of Entropy",
     "description": "Resource decay incarnate. It is the heat death of your MP pool, the inevitable exhaustion of all reserves. The Master's final accountant.",
-    "level": 20,
+    "level": 54,
     "boss": true,
     "masterite": true,
     "masterite_type": "curator",
     "masterite_phase": 5,
     "stats": {
-      "max_hp": 13000,
+      "max_hp": 75063,
       "max_mp": 180,
-      "attack": 480,
-      "defense": 380,
-      "magic": 700,
-      "magic_defense": 190,
+      "attack": 2772,
+      "defense": 2194,
+      "magic": 4042,
+      "magic_defense": 1097,
       "speed": 18
     },
     "abilities": [
@@ -4735,7 +4735,7 @@
       "masterite_audit",
       "masterite_resource_cut"
     ],
-    "exp_reward": 950,
+    "exp_reward": 2565,
     "gold_reward": 750,
     "drop_table": [
       {
@@ -4767,7 +4767,7 @@
       "wind"
     ],
     "one_shot": {
-      "hp_threshold": 13000,
+      "hp_threshold": 75063,
       "setup_hint": "Resists almost everything. Holy damage is your only weakness to exploit. Physical with full buffs can work.",
       "reward_item": "boss_trophy"
     },
@@ -4784,15 +4784,15 @@
     "id": "chancellor_mordaine",
     "name": "Chancellor Mordaine",
     "description": "Sorceress-usurper of Castle Harmonia. The architect of World 1 — and the first mask of the Calibrant. Cold, deliberate, and somehow already knows your build.",
-    "level": 20,
+    "level": 25,
     "boss": true,
     "stats": {
-      "max_hp": 16500,
+      "max_hp": 19909,
       "max_mp": 300,
-      "attack": 380,
-      "defense": 320,
-      "magic": 780,
-      "magic_defense": 160,
+      "attack": 459,
+      "defense": 386,
+      "magic": 941,
+      "magic_defense": 193,
       "speed": 20
     },
     "abilities": [
@@ -4802,7 +4802,7 @@
       "life_drain",
       "void_pulse"
     ],
-    "exp_reward": 900,
+    "exp_reward": 1125,
     "gold_reward": 800,
     "drop_table": [
       {
@@ -4833,7 +4833,7 @@
     },
     "meta_enemy": true,
     "one_shot": {
-      "hp_threshold": 16500,
+      "hp_threshold": 19909,
       "setup_hint": "She's calibrated for the average party — bring something she didn't expect. Holy magic, stacked Bard buffs, and an Advance chain are the canonical answers. She recalibrates at half HP — layer a second element.",
       "reward_item": "calibrant_token"
     },
@@ -4865,7 +4865,7 @@
     "id": "fighter_skeleton_knight",
     "name": "Skeleton Knight",
     "description": "A chivalric plate-armored skeleton who insists on an honorable duel. Alternates advance and defend in a telegraphed tempo. The Fighter's stand-in-front resolve is the answer.",
-    "level": 4,
+    "level": 5,
     "boss": true,
     "spotlight_duel": true,
     "spotlight_pc": "fighter",
@@ -4873,12 +4873,12 @@
     "signature_sfx": "spotlight_fighter_signature",
     "victory_sfx": "spotlight_fighter_victory",
     "stats": {
-      "max_hp": 2200,
+      "max_hp": 211,
       "max_mp": 40,
-      "attack": 420,
-      "defense": 220,
-      "magic": 100,
-      "magic_defense": 110,
+      "attack": 40,
+      "defense": 21,
+      "magic": 10,
+      "magic_defense": 11,
       "speed": 12
     },
     "abilities": [
@@ -4887,7 +4887,7 @@
       "bone_throw",
       "shield_bash"
     ],
-    "exp_reward": 180,
+    "exp_reward": 225,
     "gold_reward": 120,
     "drop_table": [
       {
@@ -4902,7 +4902,7 @@
       "physical"
     ],
     "one_shot": {
-      "hp_threshold": 2200,
+      "hp_threshold": 211,
       "setup_hint": "Defend when he raises his shield, Advance when he telegraphs the swing. His tempo is honor-bound and predictable.",
       "reward_item": "boss_trophy"
     },
@@ -4943,12 +4943,12 @@
       "value": 8
     },
     "stats": {
-      "max_hp": 9990,
+      "max_hp": 515,
       "max_mp": 60,
-      "attack": 220,
-      "defense": 400,
-      "magic": 180,
-      "magic_defense": 200,
+      "attack": 11,
+      "defense": 21,
+      "magic": 9,
+      "magic_defense": 10,
       "speed": 8
     },
     "abilities": [
@@ -4974,7 +4974,7 @@
       "lightning"
     ],
     "one_shot": {
-      "hp_threshold": 9990,
+      "hp_threshold": 515,
       "setup_hint": "Do not attack. Heal, Pray, and endure. The villager must live to the eighth round.",
       "reward_item": "boss_trophy"
     },
@@ -5002,7 +5002,7 @@
     "id": "rogue_lockward",
     "name": "The Lockward",
     "description": "A treasure-guardian construct that ambushes any who reach for the vault. Every round it briefly exposes its flank — the Rogue's Steal, Backstab, and speed are the answer.",
-    "level": 5,
+    "level": 6,
     "boss": true,
     "spotlight_duel": true,
     "spotlight_pc": "rogue",
@@ -5015,12 +5015,12 @@
       "message": "You lifted the Warden's Key from its plate — the guard falls slack."
     },
     "stats": {
-      "max_hp": 1340,
+      "max_hp": 162,
       "max_mp": 30,
-      "attack": 295,
-      "defense": 150,
-      "magic": 80,
-      "magic_defense": 150,
+      "attack": 36,
+      "defense": 18,
+      "magic": 10,
+      "magic_defense": 18,
       "speed": 20
     },
     "abilities": [
@@ -5029,7 +5029,7 @@
       "masterite_measured_blow",
       "power_strike"
     ],
-    "exp_reward": 220,
+    "exp_reward": 264,
     "gold_reward": 160,
     "drop_table": [
       {
@@ -5042,7 +5042,7 @@
       "physical"
     ],
     "one_shot": {
-      "hp_threshold": 1340,
+      "hp_threshold": 162,
       "setup_hint": "Wait for the flank to expose. Steal breaks its guard; Backstab lands the answer. Speed matters more than power.",
       "reward_item": "boss_trophy"
     },
@@ -5073,7 +5073,7 @@
     "id": "mage_prismatic_construct",
     "name": "Prismatic Construct",
     "description": "A crystal automaton whose elemental core rotates each round — fire, then ice, then lightning. The Mage must READ which face is showing and cast the opposing element. Logic as correctable reading.",
-    "level": 5,
+    "level": 6,
     "boss": true,
     "spotlight_duel": true,
     "spotlight_pc": "mage",
@@ -5087,12 +5087,12 @@
     ],
     "weakness_cycle_turns": 1,
     "stats": {
-      "max_hp": 2800,
+      "max_hp": 338,
       "max_mp": 120,
-      "attack": 220,
-      "defense": 280,
-      "magic": 340,
-      "magic_defense": 140,
+      "attack": 27,
+      "defense": 34,
+      "magic": 41,
+      "magic_defense": 17,
       "speed": 14
     },
     "abilities": [
@@ -5101,7 +5101,7 @@
       "thunder",
       "masterite_iron_guard"
     ],
-    "exp_reward": 240,
+    "exp_reward": 288,
     "gold_reward": 180,
     "drop_table": [
       {
@@ -5122,7 +5122,7 @@
       "physical"
     ],
     "one_shot": {
-      "hp_threshold": 2800,
+      "hp_threshold": 338,
       "setup_hint": "Its face rotates each round. Read the color, cast the opposing element. Wrong element does nothing. Right element ends it.",
       "reward_item": "boss_trophy"
     },
@@ -5150,7 +5150,7 @@
     "id": "bard_hostile_courtier",
     "name": "The Sneering Courtier",
     "description": "A haughty capital-city functionary who refuses to yield. He cannot be killed — only talked down. The Bard's listen-first-then-speak-once is the answer. Voice as the naming of what is true.",
-    "level": 6,
+    "level": 7,
     "boss": true,
     "spotlight_duel": true,
     "spotlight_pc": "bard",
@@ -5163,12 +5163,12 @@
       "value": 3
     },
     "stats": {
-      "max_hp": 9990,
+      "max_hp": 1495,
       "max_mp": 50,
-      "attack": 260,
-      "defense": 440,
-      "magic": 200,
-      "magic_defense": 220,
+      "attack": 39,
+      "defense": 66,
+      "magic": 30,
+      "magic_defense": 33,
       "speed": 14
     },
     "abilities": [
@@ -5176,7 +5176,7 @@
       "masterite_iron_guard",
       "power_strike"
     ],
-    "exp_reward": 200,
+    "exp_reward": 233,
     "gold_reward": 140,
     "drop_table": [
       {
@@ -5194,7 +5194,7 @@
       "lightning"
     ],
     "one_shot": {
-      "hp_threshold": 9990,
+      "hp_threshold": 1495,
       "setup_hint": "Blades will do nothing. Sing to him. Discord loosens his composure; Lullaby lands the truth. Three sways and he yields.",
       "reward_item": "boss_trophy"
     },
@@ -5223,14 +5223,14 @@
     "id": "rogue_mailbox",
     "name": "Rogue Mailbox",
     "description": "A regulation blue mailbox that has stopped accepting the concept of routes. It keeps what it's given. The mail carrier wants her package back.",
-    "level": 5,
+    "level": 6,
     "stats": {
-      "max_hp": 1300,
+      "max_hp": 157,
       "max_mp": 20,
-      "attack": 240,
-      "defense": 180,
-      "magic": 100,
-      "magic_defense": 90,
+      "attack": 29,
+      "defense": 22,
+      "magic": 12,
+      "magic_defense": 11,
       "speed": 8
     },
     "abilities": [
@@ -5238,7 +5238,7 @@
       "slam",
       "thrown_newspaper"
     ],
-    "exp_reward": 48,
+    "exp_reward": 58,
     "gold_reward": 25,
     "drop_table": [
       {
@@ -5257,16 +5257,16 @@
     "id": "the_calibrant",
     "name": "The Calibrant",
     "description": "The hand on the dial. It has been adjusting this world's numbers since the first slime, and it wears the faces of everything it already spent on you. Its objection to you is not moral. It is a balance objection.",
-    "level": 28,
+    "level": 58,
     "boss": true,
     "meta_enemy": true,
     "stats": {
-      "max_hp": 34000,
+      "max_hp": 192008,
       "max_mp": 500,
-      "attack": 620,
-      "defense": 340,
-      "magic": 820,
-      "magic_defense": 280,
+      "attack": 3501,
+      "defense": 1920,
+      "magic": 4631,
+      "magic_defense": 1581,
       "speed": 24
     },
     "abilities": [
@@ -5373,7 +5373,7 @@
         "music": "silence"
       }
     ],
-    "exp_reward": 5000,
+    "exp_reward": 10357,
     "gold_reward": 3000,
     "drop_table": [
       {
@@ -5419,21 +5419,21 @@
     "id": "skeleton_soldier",
     "name": "Skeleton Soldier",
     "description": "Bones that remember drill formation. Holds the line long after the war ended, and the army, and the country.",
-    "level": 7,
+    "level": 9,
     "stats": {
-      "max_hp": 2100,
+      "max_hp": 475,
       "max_mp": 25,
-      "attack": 440,
-      "defense": 170,
-      "magic": 150,
-      "magic_defense": 60,
+      "attack": 99,
+      "defense": 38,
+      "magic": 34,
+      "magic_defense": 14,
       "speed": 10
     },
     "abilities": [
       "bone_throw",
       "rattle"
     ],
-    "exp_reward": 60,
+    "exp_reward": 77,
     "gold_reward": 45,
     "drop_table": [
       {
@@ -5460,14 +5460,14 @@
     "id": "bone_warden",
     "name": "Bone Warden",
     "description": "A skeleton that kept its rank. Fights bare-handed because it buried its sword with someone it respected.",
-    "level": 9,
+    "level": 11,
     "stats": {
-      "max_hp": 2600,
+      "max_hp": 808,
       "max_mp": 70,
-      "attack": 520,
-      "defense": 175,
-      "magic": 210,
-      "magic_defense": 110,
+      "attack": 162,
+      "defense": 54,
+      "magic": 65,
+      "magic_defense": 34,
       "speed": 13
     },
     "abilities": [
@@ -5475,7 +5475,7 @@
       "rending_bite",
       "drain_life"
     ],
-    "exp_reward": 85,
+    "exp_reward": 104,
     "gold_reward": 65,
     "drop_table": [
       {
@@ -5501,16 +5501,16 @@
   "castle_warden": {
     "id": "castle_warden",
     "name": "The Chancellor's Warden",
-    "level": 19,
+    "level": 24,
     "boss": true,
     "description": "Mordaine's seneschal-at-arms — the last audit before the throne. It does not hate you. It has simply been told you are out of spec.",
     "stats": {
-      "max_hp": 9200,
+      "max_hp": 10454,
       "max_mp": 180,
-      "attack": 430,
-      "defense": 390,
-      "magic": 240,
-      "magic_defense": 150,
+      "attack": 489,
+      "defense": 443,
+      "magic": 273,
+      "magic_defense": 170,
       "speed": 24
     },
     "abilities": [
@@ -5536,7 +5536,7 @@
         "item": "x_potion"
       }
     ],
-    "exp_reward": 620,
+    "exp_reward": 783,
     "gold_reward": 520,
     "dialogue": {
       "intro": [
@@ -5556,15 +5556,15 @@
     "id": "dark_knight",
     "name": "Dark Knight",
     "description": "A field elite. It does not wander, it does not hunt, and it does not leave. It is simply here, and it is watching you.",
-    "level": 12,
+    "level": 15,
     "field_elite": true,
     "stats": {
-      "max_hp": 2600,
+      "max_hp": 1364,
       "max_mp": 120,
-      "attack": 400,
-      "defense": 260,
-      "magic": 220,
-      "magic_defense": 190,
+      "attack": 210,
+      "defense": 136,
+      "magic": 115,
+      "magic_defense": 100,
       "speed": 14
     },
     "abilities": [
@@ -5572,7 +5572,7 @@
       "shadow_step",
       "life_drain"
     ],
-    "exp_reward": 220,
+    "exp_reward": 275,
     "gold_reward": 180,
     "drop_table": [
       {
@@ -5599,16 +5599,16 @@
     "id": "the_operator",
     "name": "The Operator",
     "description": "It does not fight you. It runs you, the way you have been running yourself since the first slime, and it is better at it. Every repetition you make, it has already filed.",
-    "level": 26,
+    "level": 57,
     "boss": true,
     "meta_enemy": true,
     "stats": {
-      "max_hp": 28000,
+      "max_hp": 158754,
       "max_mp": 400,
-      "attack": 800,
-      "defense": 330,
-      "magic": 340,
-      "magic_defense": 260,
+      "attack": 4536,
+      "defense": 1871,
+      "magic": 1928,
+      "magic_defense": 1474,
       "speed": 22
     },
     "abilities": [
@@ -5617,7 +5617,7 @@
       "mimic_ability",
       "masterite_time_tax"
     ],
-    "exp_reward": 1200,
+    "exp_reward": 2631,
     "gold_reward": 1000,
     "drop_table": [
       {
@@ -5634,7 +5634,7 @@
       "physical"
     ],
     "one_shot": {
-      "hp_threshold": 28000,
+      "hp_threshold": 158754,
       "setup_hint": "It halves the damage of any ability you repeat and learns an element in two casts. Vary everything, or bring one burst large enough that it never gets a second reading.",
       "reward_item": "boss_trophy"
     },
@@ -5656,7 +5656,7 @@
     "id": "the_examiner",
     "name": "The Examiner",
     "description": "It sets a question, waits, and marks the answer. It will not hurry you. It has read every attempt anyone has ever made and it is still, faintly, hoping to be surprised.",
-    "level": 26,
+    "level": 57,
     "boss": true,
     "meta_enemy": true,
     "weakness_cycle": [
@@ -5667,12 +5667,12 @@
     ],
     "weakness_cycle_turns": 2,
     "stats": {
-      "max_hp": 30000,
+      "max_hp": 170094,
       "max_mp": 450,
-      "attack": 460,
-      "defense": 380,
-      "magic": 360,
-      "magic_defense": 300,
+      "attack": 2608,
+      "defense": 2155,
+      "magic": 2041,
+      "magic_defense": 1701,
       "speed": 20
     },
     "abilities": [
@@ -5680,7 +5680,7 @@
       "masterite_audit",
       "masterite_iron_guard"
     ],
-    "exp_reward": 1200,
+    "exp_reward": 2631,
     "gold_reward": 1000,
     "drop_table": [
       {
@@ -5702,7 +5702,7 @@
       "physical"
     ],
     "one_shot": {
-      "hp_threshold": 30000,
+      "hp_threshold": 170094,
       "setup_hint": "Its face turns every second round. Read the element it is showing and answer with that one; anything else is resisted. Physical does almost nothing. This is a reading test, not a damage race.",
       "reward_item": "boss_trophy"
     },
@@ -5715,16 +5715,16 @@
     "id": "the_margin",
     "name": "The Margin",
     "description": "The slack in the numbers. Everything that was left over after the curve was fitted, standing up. It objects to you for the same reason an accountant objects to a rounding error that keeps winning.",
-    "level": 26,
+    "level": 57,
     "boss": true,
     "meta_enemy": true,
     "stats": {
-      "max_hp": 6500,
+      "max_hp": 36854,
       "max_mp": 400,
-      "attack": 620,
-      "defense": 240,
-      "magic": 560,
-      "magic_defense": 180,
+      "attack": 3515,
+      "defense": 1361,
+      "magic": 3175,
+      "magic_defense": 1021,
       "speed": 26
     },
     "abilities": [
@@ -5732,7 +5732,7 @@
       "masterite_execution",
       "masterite_measured_blow"
     ],
-    "exp_reward": 1200,
+    "exp_reward": 2631,
     "gold_reward": 1000,
     "drop_table": [
       {
@@ -5747,7 +5747,7 @@
     "weaknesses": [],
     "resistances": [],
     "one_shot": {
-      "hp_threshold": 6500,
+      "hp_threshold": 36854,
       "setup_hint": "It removes one of you per round and it has the thinnest guard of the three. Spend everything at once. This is the fight your build was for.",
       "reward_item": "calibrant_token"
     },
