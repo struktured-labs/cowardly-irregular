@@ -13,6 +13,8 @@
  "assets/sprites/backgrounds/shop_interior.png": "d930b5523f118ac31cf2c23a4c15d6f9b02acf9a3c8ad119bec700ef7ff523c3",
  "assets/sprites/backgrounds/swamp_battle.png": "ee823d3f057712cb7a4857cca99ae0c00b2b02e26bf77a64d97d183df99762ad",
  "assets/sprites/backgrounds/volcanic_battle.png": "4a49a1367cf7f4bf36e38b69dd83a657c7f22cc7f9d875d0406e765e97907b73",
+ "assets/sprites/buildings/abstract/vertex_exchange.png": "5daa4feebe824e140c29eab347c16add752145c7479f6aedc8fc7aba86341fdb",
+ "assets/sprites/buildings/abstract/vertex_rest.png": "a2bc03451280ab5b6f400d2276f8e414dd80a16dab9b69254d2e33c4a3a2d13b",
  "assets/sprites/buildings/futuristic/nodeprime_cache.png": "fcd965cde7d44c687655a26fdc335d9b8fddc226c6d8624dbfa3595bcb50dd68",
  "assets/sprites/buildings/futuristic/nodeprime_inn.png": "47add570f5cef1e35c5e6e57a4560fc6917b76ed8df45b1656c4d7610e3fe542",
  "assets/sprites/buildings/medieval/eldertree_inn.png": "3422e2e9dc2c56761ec8145a1f612c96410d5bd15e46e4c66c3b78e032d18427",
