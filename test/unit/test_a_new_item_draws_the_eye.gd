@@ -222,3 +222,43 @@ func test_every_equipment_acquisition_marks_news() -> void:
 	assert_eq(silent, [], "these put new gear in the pool without marking it NEW: %s" % [silent])
 	for fn in NOT_AN_ACQUISITION:
 		assert_true(named.has(fn), "the exemption '%s' no longer writes the pool; drop it from NOT_AN_ACQUISITION" % fn)
+
+
+## The battle Item menu is a Win98Menu: the row carries a NEW badge span and marks itself seen on highlight.
+func _battle_item_menu(item_ids: Array) -> Win98Menu:
+	var rows: Array = []
+	for id in item_ids:
+		rows.append(BattleCommandMenu._with_new_badge({"id": "item_" + id, "label": "%s x2" % id, "data": {"item_id": id}}, id))
+	var menu := Win98Menu.new()
+	add_child_autofree(menu)
+	menu.setup("Item", rows, Vector2(40, 40), "fighter")
+	await get_tree().create_timer(0.25, true, false, true).timeout
+	return menu
+
+
+func test_the_battle_item_menu_badges_a_new_row_and_the_cursor_clears_it() -> void:
+	GameState.note_acquired("potion")
+	var menu: Win98Menu = await _battle_item_menu(["ether", "potion"])
+	var container := menu._get_items_container()
+	assert_eq(menu.selected_index, 0, "the cursor opens on the first row (ether)")
+	assert_null(container.get_child(0).get_node_or_null("Badge"), "a seen item's row wears no badge")
+	var badge := container.get_child(1).get_node_or_null("Badge") as Label
+	assert_not_null(badge, "the new potion's row must wear the NEW badge")
+	if badge == null:
+		return
+	assert_eq(badge.text, NewItemTag.TEXT)
+	var clip := container.get_child(1).get_node("LabelClip") as Control
+	assert_gte(badge.position.x + 0.5, clip.position.x + clip.size.x, "the badge sits right of the name, not over it")
+	var need := badge.get_theme_font("font").get_string_size(badge.text, HORIZONTAL_ALIGNMENT_LEFT, -1, badge.get_theme_font_size("font_size")).x
+	assert_gte(badge.size.x + 0.5, need, "the badge's span holds its own text")
+	assert_lte(badge.position.x + need, container.get_child(1).size.x + 0.5, "the badge ends inside its row")
+	assert_true(GameState.is_unseen("potion"), "the cursor has not rested on the potion yet")
+	menu.selected_index = 1
+	menu._update_selection()
+	assert_false(GameState.is_unseen("potion"), "resting the cursor on the potion's row must clear its NEW")
+
+
+func test_a_seen_item_gets_no_battle_badge() -> void:
+	var row := BattleCommandMenu._with_new_badge({"id": "item_ether", "label": "Ether x1"}, "ether")
+	assert_false(row.has("badge"), "an item nobody just picked up wears no badge")
+	assert_false(row.has("on_highlight"), "and has nothing to clear")
