@@ -104,7 +104,7 @@ func _ids(ctx: Dictionary) -> Array:
 func test_an_unlocked_spell_is_offered() -> void:
 	## THE ARM. firaga unlocks at 11; a level-12 mage has had it for a level and
 	## the composer had never heard of it.
-	var ids: Array = _ids(_kit_for(12))
+	var ids: Array = _ids(_kit_for(Combatant.spectrum_level(12)))
 	assert_true(ids.has("firaga"), "a spell this character has unlocked must be offered: %s" % str(ids))
 	assert_true(ids.has("fira"), "and so must the tier below it: %s" % str(ids))
 
@@ -112,7 +112,7 @@ func test_an_unlocked_spell_is_offered() -> void:
 func test_the_level_one_kit_is_still_there() -> void:
 	## CORRECT-WORK: widening must add, never replace. `channel` is the free move
 	## and is the member a kit walker loses first.
-	var ids: Array = _ids(_kit_for(12))
+	var ids: Array = _ids(_kit_for(Combatant.spectrum_level(12)))
 	for base in ["fire", "blizzard", "thunder", "channel"]:
 		assert_true(ids.has(base), "the level-1 kit must survive widening: %s missing from %s" % [base, str(ids)])
 
@@ -122,7 +122,7 @@ func test_the_level_one_kit_is_still_there() -> void:
 func test_a_spell_not_yet_unlocked_is_withheld() -> void:
 	## The failure mode of rendering full_kit instead: thundaga unlocks at 13, so
 	## a level-12 mage would author a rule it cannot cast, and it fizzles in play.
-	var ids: Array = _ids(_kit_for(12))
+	var ids: Array = _ids(_kit_for(Combatant.spectrum_level(12)))
 	assert_false(ids.has("thundaga"),
 		"thundaga unlocks at 13 and this mage is 12 — offering it authors a rule that fizzles: %s" % str(ids))
 
@@ -140,7 +140,7 @@ func test_everything_offered_is_inside_the_validators_vocabulary() -> void:
 	## THE INVARIANT that keeps this safe: the deep check validates ability ids
 	## against full_kit, so anything offered outside it would be composed and then
 	## dropped as unrunnable — telling the player a rule they can run cannot run.
-	var ctx: Dictionary = _kit_for(12)
+	var ctx: Dictionary = _kit_for(Combatant.spectrum_level(12))
 	var full: Array = ctx.get("full_kit", []) as Array
 	var outside: Array[String] = []
 	for aid in _ids(ctx):
@@ -159,7 +159,7 @@ func test_every_added_spell_carries_its_real_mp_cost() -> void:
 	## A missing cost renders as "0 MP", the model omits the guard, and the rule
 	## fizzles for want of MP — the exact failure _supply_missing_mp_guards exists
 	## to repair. The widening must not create work for that repair.
-	var ctx: Dictionary = _kit_for(12)
+	var ctx: Dictionary = _kit_for(Combatant.spectrum_level(12))
 	var costs: Dictionary = ctx.get("costs", {}) as Dictionary
 	var zero_cost: Array[String] = []
 	for aid in _ids(ctx):
@@ -186,7 +186,7 @@ func test_without_a_live_party_the_kit_is_untouched() -> void:
 func test_a_name_that_matches_nobody_is_not_widened() -> void:
 	## CONTROL on the matcher: the party is searched by name→id, and a miss must
 	## fall back rather than widen from whoever happens to be first.
-	_party_of(_mage_at(12))
+	_party_of(_mage_at(Combatant.spectrum_level(12)))
 	var base: Dictionary = AutobattleSystem.get_deep_check_kit("mage")
 	var before: Array = (base.get("kit", []) as Array).duplicate()
 	var after: Dictionary = _rc()._widen_kit_to_what_this_character_knows(base, "somebody_else")
@@ -210,7 +210,7 @@ func test_compose_async_actually_widens_before_building_the_prompt() -> void:
 
 func test_the_prompt_renders_the_widened_kit() -> void:
 	## The consequence a player meets: the ids reach the text the model reads.
-	var ctx: Dictionary = _kit_for(12)
+	var ctx: Dictionary = _kit_for(Combatant.spectrum_level(12))
 	var prompt: String = DP.build_rule_composition("autobattle", "hit them hard", [], ctx)
 	assert_true(prompt.find("firaga") != -1, "the unlocked spell must appear in the prompt")
 	assert_true(prompt.find("Ability ids you may use") != -1, "CONTROL: the kit block must render")

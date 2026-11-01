@@ -21,9 +21,16 @@ func _injured(stat: String, base_val: int, penalty: int) -> Combatant:
 	c.combatant_name = "Maimed"
 	c.set(STAT_BASES[stat], base_val)
 	c.set(stat, base_val)
-	c.job_level = 1  # level_mult = 1.0, no job dict → stat == base
+	c.job_level = 1  # no job dict → stat == base grown by the level-1 curve
 	c.apply_permanent_injury({"stat": stat, "penalty": penalty})
 	return c
+
+
+## What recalc rebuilds a base of `v` to at level 1 before the injury comes off (spectrum curve, 2026-10-31).
+func _grown(stat: String, v: int) -> int:
+	if stat in Combatant.SCALED_STAT_FIELDS:
+		return maxi(1, int(v * Combatant.level_multiplier(1)))
+	return int(v * Combatant.linear_level_multiplier(1))
 
 
 func test_each_stat_injury_survives_one_recalc() -> void:
@@ -31,7 +38,7 @@ func test_each_stat_injury_survives_one_recalc() -> void:
 		var c := _injured(stat, 50, 10)
 		assert_eq(c.get(stat), 40, "%s injury must apply immediately (50-10)" % stat)
 		c.recalculate_stats()
-		assert_eq(c.get(stat), 40,
+		assert_eq(c.get(stat), _grown(stat, 50) - 10,
 			"%s injury must SURVIVE recalculate_stats — 'permanent' is the whole mechanic" % stat)
 
 
@@ -40,8 +47,8 @@ func test_injury_not_double_applied_across_repeated_recalcs() -> void:
 	var c := _injured("attack", 50, 10)
 	c.recalculate_stats()
 	c.recalculate_stats()
-	assert_eq(c.get("attack"), 40,
-		"repeated recalcs must not compound the injury (40, never 30) — base reset guarantees single application")
+	assert_eq(c.get("attack"), _grown("attack", 50) - 10,
+		"repeated recalcs must not compound the injury (one penalty, never two) — base reset guarantees single application")
 
 
 func test_injury_floor_is_one_for_combat_stats() -> void:

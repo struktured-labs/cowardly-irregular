@@ -80,8 +80,8 @@ func test_heal_party_heals_what_the_item_says() -> void:
 		_sys.apply_autogrind_actions([{"type": "heal_party"}])
 		var gained: int = m.current_hp - before
 		gut.p("  %-10s items.json authors %5d   restored %5d" % [item_id, authored, gained])
-		assert_eq(gained, authored,
-			"'%s' restored %d where items.json authors %d — a hardcoded amount is back" % [item_id, gained, authored])
+		assert_eq(gained, ItemSystem._x10_flat(authored, m),
+			"'%s' restored %d where items.json authors %d (converted at use) — a hardcoded amount is back" % [item_id, gained, authored])
 
 
 ## The 10x is the specific regression. Stated as a RELATIONSHIP so it survives a rebalance of

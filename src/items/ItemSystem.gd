@@ -27,6 +27,12 @@ enum TargetType {
 }
 
 
+## Item heal_hp and damage are authored in x10 units; convert to the target so a potion keeps today's share of HP.
+static func _x10_flat(value, target) -> int:
+	if target != null and target.has_method("x10_ratio"):
+		return maxi(1, roundi(float(value) * float(target.x10_ratio())))
+	return int(value)
+
 func _ready() -> void:
 	_load_item_data()
 
@@ -339,7 +345,7 @@ func estimate_item_heal(item_id: String, target: Combatant) -> int:
 	var effects: Dictionary = get_item(item_id).get("effects", {})
 	var total: int = 0
 	if effects.has("heal_hp"):
-		total += target.heal_preview(int(effects["heal_hp"]))
+		total += target.heal_preview(_x10_flat(effects["heal_hp"], target))
 	if effects.has("heal_hp_percent"):
 		total += target.heal_preview(int(target.max_hp * effects["heal_hp_percent"] / 100.0))
 	return total
@@ -351,7 +357,7 @@ func _item_revive_hp(effects: Dictionary, target: Combatant) -> int:
 	if effects.has("heal_hp_percent"):
 		return max(1, int(target.max_hp * effects["heal_hp_percent"] / 100.0))
 	if effects.has("heal_hp"):
-		return max(1, int(effects["heal_hp"]))
+		return max(1, _x10_flat(effects["heal_hp"], target))
 	return 0
 
 
@@ -418,7 +424,7 @@ func _apply_item_effects(user: Combatant, target: Combatant, item: Dictionary) -
 
 	# HP healing (flat amount) — skip if revive already consumed it.
 	if effects.has("heal_hp") and not _heal_consumed_by_revive:
-		var heal_amount = effects["heal_hp"]
+		var heal_amount = _x10_flat(effects["heal_hp"], target)
 		var actual = target.heal(heal_amount)
 		# Emit healing_done so BattleScene's heal popup + glow fire — without
 		# this, items that heal would tick the HP bar silently.
@@ -502,7 +508,7 @@ func _apply_item_effects(user: Combatant, target: Combatant, item: Dictionary) -
 
 	# Damage
 	if effects.has("damage"):
-		var damage = effects["damage"]
+		var damage = _x10_flat(effects["damage"], target)
 		var element = effects.get("element", "physical")
 
 		# Apply elemental modifiers if target has weaknesses/resistances

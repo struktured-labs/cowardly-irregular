@@ -39,6 +39,7 @@ extends SceneTree
 ## chain failed to compile and the harness reported "JobSystem autoload absent" about a tree that
 ## has all 33 of them one frame later. Load after the first frame instead.
 var GameLoopScript: Resource
+var CombatantScript
 var ResolverScript: Resource
 
 var _fail := 0
@@ -101,6 +102,7 @@ func _die(msg: String) -> void:
 func _init() -> void:
 	await process_frame   # autoloads are children of root only from here on
 	GameLoopScript = load("res://src/GameLoop.gd")
+	CombatantScript = load("res://src/battle/Combatant.gd")
 	ResolverScript = load("res://src/autogrind/HeadlessBattleResolver.gd")
 
 	var level := int(_env("BAL_LEVEL", "5"))
@@ -121,7 +123,8 @@ func _init() -> void:
 	## rate, and leaves passives and gear (applied afterwards) untouched, which is also what a real
 	## rate change would do. Measuring a proposal by post-hoc editing the OUTPUT would price gear and
 	## passives into the change, which is the error the first version of this harness made in reverse.
-	var level_rate := float(_env("BAL_LEVEL_RATE", "0.04"))
+	var level_rate_env := _env("BAL_LEVEL_RATE", "")
+	var level_rate := float(level_rate_env) if level_rate_env != "" else -1.0
 	var party_scale := _kv(_env("BAL_PARTY_SCALE", ""))
 	var enemy_scale := _kv(_env("BAL_ENEMY_SCALE", ""))
 	var mdef_from_def := float(_env("BAL_PARTY_MDEF_FROM_DEF", "0"))
@@ -143,11 +146,12 @@ func _init() -> void:
 		if not mdb.has(eid):
 			_die("no monster '%s' in monsters.json" % eid); quit(1); return
 
-	var rate_ratio := (1.0 + (level - 1) * level_rate) / (1.0 + (level - 1) * 0.04)
+	## BAL_LEVEL_RATE asks "what if the scaled stats grew linearly at this rate instead of on the curve".
+	var rate_ratio: float = (1.0 + (level - 1) * level_rate) / CombatantScript.level_multiplier(level) if level_rate >= 0.0 else 1.0
 	_apply_job_whatifs(party_scale, mdef_from_def, rate_ratio)
 	for eid in enemy_ids:
 		_apply_enemy_whatif(mdb, str(eid), enemy_scale)
-	if not party_scale.is_empty() or not enemy_scale.is_empty() or mdef_from_def > 0.0 or not is_equal_approx(level_rate, 0.04):
+	if not party_scale.is_empty() or not enemy_scale.is_empty() or mdef_from_def > 0.0 or level_rate >= 0.0:
 		print("[BAL] WHAT-IF  level_rate=%.3f (x%.4f on job mods)  party_scale=%s  mdef_from_def=%.2f  enemy_scale=%s" % [
 			level_rate, rate_ratio, str(party_scale), mdef_from_def, str(enemy_scale)])
 
@@ -397,7 +401,7 @@ func _build_enemies(gl, mdb: Dictionary, enemy_ids: PackedStringArray) -> Array:
 ## measurement wearing the full-kit label.
 func _print_party_blocks(gl, want_jobs: PackedStringArray, level: int) -> void:
 	print("[BAL] party at level %d (job stat_modifiers x level_mult %.2f, then passives, then gear):" % [
-		level, 1.0 + (level - 1) * 0.04])
+		level, CombatantScript.level_multiplier(level)])
 	var bare := _build_party(gl, want_jobs, level, false)
 	var bare_rows: Dictionary = {}
 	for c in bare:

@@ -41,6 +41,18 @@ func after_each() -> void:
 		BattleManager.all_combatants.pop_back()
 
 
+## A species' authored stat, read from monsters.json, so these pins follow the data through a rescale (spectrum curve, 2026-10-31).
+func _cat(id: String, stat: String) -> int:
+	return int(((EncounterSystem.monster_database.get(id, {}) as Dictionary).get("stats", {}) as Dictionary).get(stat, -1))
+
+
+func _hardcoded(id: String, stat: String) -> int:
+	for mt in BattleEnemySpawner.MONSTER_TYPES:
+		if mt["id"] == id:
+			return int(mt["stats"].get(stat, -1))
+	return -1
+
+
 func test_a_rogue_process_clone_joins_the_fight_with_its_own_kit() -> void:
 	var scene := QuietSummon.new()
 	var caster := Combatant.new()
@@ -56,8 +68,8 @@ func test_a_rogue_process_clone_joins_the_fight_with_its_own_kit() -> void:
 	var clone: Combatant = BattleManager.enemy_party[BattleManager.enemy_party.size() - 1]
 	assert_eq(clone.get_meta("monster_type", ""), "rogue_process",
 		"the summon must be the caster's species, not a fallback mook")
-	assert_eq(clone.max_hp, 2800, "the copy must use the catalog HP, not a hardcoded early-game block")
-	assert_eq(clone.attack, 480, "the copy must use the catalog attack")
+	assert_eq(clone.max_hp, _cat("rogue_process", "max_hp"), "the copy must use the catalog HP, not a hardcoded early-game block")
+	assert_eq(clone.attack, _cat("rogue_process", "attack"), "the copy must use the catalog attack")
 	assert_eq(clone.combatant_name, "Rogue Process", "a lone clone keeps the species name")
 	assert_true("ice" in clone.elemental_weaknesses, "the copy keeps the species weakness")
 	assert_true("physical" in clone.elemental_resistances, "the copy keeps the species resistance")
@@ -84,7 +96,9 @@ func test_a_hardcoded_summon_does_not_gain_the_catalog_kit() -> void:
 		caster.free()
 		return
 	var guard: Combatant = BattleManager.enemy_party[BattleManager.enemy_party.size() - 1]
-	assert_eq(guard.max_hp, 1600, "rat_guard keeps the MONSTER_TYPES stat block")
+	assert_gt(_hardcoded("rat_guard", "max_hp"), 0, "CONTROL: rat_guard is on MONSTER_TYPES")
+	assert_ne(_hardcoded("rat_guard", "max_hp"), _cat("rat_guard", "max_hp"), "CONTROL: the two blocks must differ or this cannot tell them apart")
+	assert_eq(guard.max_hp, _hardcoded("rat_guard", "max_hp"), "rat_guard keeps the MONSTER_TYPES stat block")
 	assert_null(guard.job, "the hardcoded summon path does not import the json kit")
 	scene.free()
 	caster.free()
@@ -104,8 +118,9 @@ func test_an_unlisted_summon_uses_catalog_magic_defense() -> void:
 		return
 	var leak: Combatant = BattleManager.enemy_party[BattleManager.enemy_party.size() - 1]
 	assert_eq(leak.get_meta("monster_type", ""), "memory_leak")
-	assert_eq(leak.magic_defense, 70, "catalog magic_defense must win over the defense/2 fallback")
-	assert_eq(leak.max_hp, 3500)
+	assert_ne(_cat("memory_leak", "magic_defense"), int(_cat("memory_leak", "defense") * 0.5), "CONTROL: the catalog M.DEF must differ from defense/2")
+	assert_eq(leak.magic_defense, _cat("memory_leak", "magic_defense"), "catalog magic_defense must win over the defense/2 fallback")
+	assert_eq(leak.max_hp, _cat("memory_leak", "max_hp"))
 	assert_not_null(leak.job, "an unlisted summon still brings its species kit")
 	scene.free()
 	caster.free()

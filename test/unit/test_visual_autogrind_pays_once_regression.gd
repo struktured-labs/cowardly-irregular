@@ -110,7 +110,8 @@ class _Ctrl extends Node:
 func _hero() -> Combatant:
 	var c := Combatant.new()
 	c.combatant_name = "Grinder"
-	c.job_level = 40
+	## At the slime's own level: a level-40 hero earns 0.5^13 of it under the over-level halving (2026-10-31), which floors to 0.
+	c.job_level = maxi(1, int((EncounterSystem.monster_database.get("slime", {}) as Dictionary).get("level", 1)))
 	c.job_exp = 0
 	c.is_alive = true
 	c.current_hp = c.max_hp

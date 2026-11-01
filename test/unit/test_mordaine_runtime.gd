@@ -40,7 +40,8 @@ func test_mordaine_combatant_instantiates_from_json() -> void:
 	c.speed = m["stats"]["speed"]
 	c.is_alive = true
 
-	assert_eq(c.max_hp, 16500, "Mordaine max_hp must round-trip from JSON (cycle 18 msg 2805 stat bump; ×10 scale 2026-07-29)")
+	assert_eq(c.max_hp, int(m["stats"]["max_hp"]), "Mordaine max_hp must round-trip from JSON")
+	assert_almost_eq(c.max_hp, roundi(16500 * float(m.get("spectrum_ratio", 0.0))), 1, "the ×10 tuning (16500) carried by the spectrum ratio")
 	assert_eq(c.max_mp, 300, "Mordaine max_mp must round-trip from JSON")
 	assert_gt(c.magic, c.attack,
 		"Mordaine is magic-heavy — magic should exceed attack (regression: balance shift)")

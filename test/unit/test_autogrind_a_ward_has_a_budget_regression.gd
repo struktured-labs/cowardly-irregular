@@ -77,8 +77,8 @@ func test_the_ward_carries_the_authored_budget() -> void:
 	_res._enemy_party = [caster]
 	_res._resolve_ability(caster, "fill_the_void", [caster])
 	assert_true(caster.has_status("damage_absorb"), "precondition: the ward is up")
-	assert_eq(int(caster.get_meta("_damage_absorb_budget", -1)), budget,
-		"the ward must carry the authored budget — absent meta is UNLIMITED and is what the grind had")
+	assert_eq(int(caster.get_meta("_damage_absorb_budget", -1)), roundi(float(budget) * caster.x10_ratio()),
+		"the ward must carry the authored budget (converted at use) — absent meta is UNLIMITED and is what the grind had")
 
 
 func test_damage_past_the_budget_lands_instead_of_being_erased() -> void:

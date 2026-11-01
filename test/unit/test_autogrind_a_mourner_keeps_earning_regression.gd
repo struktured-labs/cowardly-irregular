@@ -164,11 +164,12 @@ func test_the_headless_path_credits_a_mourner_too() -> void:
 		"the headless path records per-character EXP itself, so the bar is a second ledger beside the amount paid")
 
 	var pay := _fn_body(GRIND, "func on_battle_victory")
-	assert_true(pay.contains("gain_job_exp(adjusted_exp)"),
-		"CONTROL: on_battle_victory must still pay adjusted_exp, or this arm is reading the wrong function")
+	## Since the spectrum's over-level halving (2026-10-31) each earner is paid `gained`, adjusted_exp halved per 3 levels over the fight.
+	assert_true(pay.contains("var gained := int(adjusted_exp * ExpRules.over_level_factor(") and pay.contains("gain_job_exp(gained)"),
+		"CONTROL: on_battle_victory must still pay adjusted_exp (halved over level), or this arm is reading the wrong function")
 	assert_true(pay.contains("_earns_exp_while_dead(member)"),
 		"the victory payout dropped the mourner predicate, so a KO'd Cleric with posthumous_credit is paid nothing")
-	assert_true(pay.contains("track_character_exp(member.combatant_name, adjusted_exp)"),
+	assert_true(pay.contains("track_character_exp(member.combatant_name, gained)"),
 		"the session bar must record the EXP each earner was paid, yield and time bonus included")
 
 

@@ -58,8 +58,9 @@ func test_every_masterite_resolves_in_monsters_json() -> void:
 		assert_true(entry.get("boss", false),
 			"%s is tagged boss:true (per design doc L84-86)" % mid)
 		var lvl: int = int(entry.get("level", 0))
-		assert_true(lvl == 7 or lvl == 8,
-			"%s is L7 or L8 per doc's mid-arc curve (got %d)" % [mid, lvl])
+		## The doc's L7-8 mid-arc, where it sits on the spectrum ladder (2026-10-31).
+		assert_true(lvl == Combatant.spectrum_level(7) or lvl == Combatant.spectrum_level(8),
+			"%s is the doc's L7 or L8 on the spectrum ladder (got %d)" % [mid, lvl])
 
 
 # ── Placement source pins ───────────────────────────────────────────
