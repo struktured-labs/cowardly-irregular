@@ -60,6 +60,7 @@ func test_a_world_specific_drawing_outranks_the_generic_one() -> void:
 
 
 func test_an_entry_whose_file_is_missing_keeps_the_painted_prop() -> void:
+	## Planted entries REPLACE the manifest's, so a shipped barrel drawing cannot make this arm pass for the wrong reason.
 	VillageProp.prop_art_override = {"barrel": {"path": "res://assets/sprites/props/no_such_barrel.png"}}
 	assert_eq(VillageProp.prop_art_path("barrel", "medieval"), "", "a missing file was handed out as art, which would draw nothing")
 	var v := _village(HARMONIA)
@@ -89,6 +90,7 @@ func _fountain(v: Node) -> Node:
 
 
 func test_the_fountain_draws_its_art_on_the_same_base() -> void:
+	VillageProp.prop_art_override = {}  ## no art, whatever the manifest ships: the control is the painted fountain
 	var painted := _fountain(_village(HARMONIA))
 	assert_not_null(painted, "CONTROL: Harmonia has its fountain")
 	assert_eq(painted._sprite_frames.size(), 4, "CONTROL: with no art the fountain is the painted 4-frame one")
@@ -154,6 +156,7 @@ func _chests(v: Node) -> Array:
 
 
 func test_a_chest_takes_its_worlds_drawing_and_keeps_the_shared_pair_otherwise() -> void:
+	VillageProp.prop_art_override = {}
 	var v := _village(HARMONIA)
 	var chests := _chests(v)
 	assert_gt(chests.size(), 0, "CONTROL: Harmonia has a treasure chest")
