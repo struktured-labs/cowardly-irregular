@@ -11,6 +11,14 @@
 # THE CORPUS: every assets/audio/sfx/voice_*.ogg EXCEPT voice_blip_* — those are 6 synthesised
 # UI typing blips (44.1 kHz STEREO, 45-90 ms, loaded by path from CutsceneDialogue.gd), not
 # speech, and not the growth problem. Everything else is a party line keyed voice_<job>_<trigger>.
+# PLUS every boss_line_*.ogg (2026-11-01, cowir-main 20798): recorded boss/NPC lines, keyed
+# boss_line_<speaker>_NN because the party pack's guards own `voice_` (cowir-sfx). Same format as
+# the party lines (44.1 kHz mono speech). .757 ships 37 (the Rat King, 1.40 MB of masters); the W1
+# bosses add ~271 (~11.7 MB). They shipped at master quality on web until this line.
+# ONE definition: _corpus() below. make_web_stage.sh counts `make_web_voice.sh --list` rather
+# than re-spelling the globs, so the tier and the stage's count check can never disagree.
+#
+# Usage: tools/make_web_voice.sh --list     print the corpus, one path per line, sorted; exit 0
 #
 # Measured on the 211 clips of v3.33.490-alpha (all ffmpeg libvorbis, mono):
 #     24 kHz 32 kbps  3.49 MB   0/211 dts warnings
@@ -27,6 +35,16 @@
 set -euo pipefail
 cd "$(cd "$(dirname "$0")/.." && pwd)"
 
+SRC_DIR="assets/audio/sfx"
+# Sorted: this box's find (bfs) returns a different order every run.
+_corpus() {
+    find "$SRC_DIR" -maxdepth 1 \( -name 'voice_*.ogg' ! -name 'voice_blip_*' -o -name 'boss_line_*.ogg' \) | sort
+}
+if [ "${1:-}" = "--list" ]; then
+    [ -d "$SRC_DIR" ] || { echo "[web-voice] no $SRC_DIR — wrong cwd?" >&2; exit 2; }
+    _corpus; exit 0
+fi
+
 KBPS="${1:-}"
 AR="${2:-}"
 # A flag must not become a tier name (make_web_audio.sh learned this at EC=234): validate first.
@@ -39,14 +57,12 @@ case "$AR" in 16000|22050|24000|32000|44100|48000) ;; *)
     echo "[web-voice] REFUSED: ${AR} Hz is not one of 16000 22050 24000 32000 44100 48000." >&2; exit 2 ;;
 esac
 
-SRC_DIR="assets/audio/sfx"
 # Scoped by BOTH parameters: two encodings must never share a directory (make_web_audio.sh:53-61).
 OUT_DIR="tmp/web_audio/voice_${KBPS}k_${AR}"
 command -v ffmpeg >/dev/null || { echo "[web-voice] ffmpeg not found" >&2; exit 2; }
 [ -d "$SRC_DIR" ] || { echo "[web-voice] no $SRC_DIR — wrong cwd?" >&2; exit 2; }
 
-# Sorted: this box's find (bfs) returns a different order every run.
-mapfile -t SRCS < <(find "$SRC_DIR" -maxdepth 1 -name 'voice_*.ogg' ! -name 'voice_blip_*' | sort)
+mapfile -t SRCS < <(_corpus)
 TOTAL=${#SRCS[@]}
 [ "$TOTAL" -gt 0 ] || { echo "[web-voice] found 0 voice masters — refusing to build an empty tier" >&2; exit 2; }
 

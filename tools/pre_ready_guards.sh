@@ -138,14 +138,29 @@ for f in ${TOUCHED[@]+"${TOUCHED[@]}"}; do
       # A file reached by `class_name X` has NO path dependents at all in some cases, so this leg is
       # not a refinement of the path leg — for VoiceLines.gd it is the only leg that finds anything.
       cn="$(sed -n 's/^class_name[[:space:]]\+\([A-Za-z_][A-Za-z0-9_]*\).*/\1/p' "$f" | head -1)"
+      # An AUTOLOAD is reached everywhere by its project.godot name, which may differ from its class_name
+      # (SoundManager vs SoundManagerClass: 311 tests vs 1), so BOTH names are searched, never either/or.
+      an="$(sed -n "s|^\([A-Za-z_][A-Za-z0-9_]*\)=\"\*res://$f\"\$|\1|p" project.godot | head -1)"
+      [ "$an" = "$cn" ] && an=""
+      [ -n "$an" ] && cn="${cn:+$cn, }$an"
       if [ -n "$cn" ]; then
-        mapfile -t BY_NAME < <(grep -rlw "$cn" test/unit --include='test_*.gd' 2>/dev/null | sort)
+        mapfile -t BY_NAME < <(for nm in ${cn//,/ }; do grep -rlw "$nm" test/unit --include='test_*.gd' 2>/dev/null; done | sort -u)
       fi ;;
   esac
-  n=$(( ${#BY_PATH[@]} + ${#BY_NAME[@]} ))
+  # A script attached by a .tscn is reached by every test that loads that SCENE, and those tests may
+  # never name the .gd: 33 BattleScene.tscn loaders did not, and the .757 gate's red was one of them.
+  BY_SCENE=()
+  case "$f" in
+    *.gd)
+      mapfile -t SCENES < <(grep -rlF --include='*.tscn' "path=\"res://$f\"" . 2>/dev/null | sed 's|^\./||' | grep -v '^\.godot/' | grep -v '^tmp/' | sort)
+      for sc in ${SCENES[@]+"${SCENES[@]}"}; do
+        mapfile -t -O "${#BY_SCENE[@]}" BY_SCENE < <(grep -rlF "$sc" test/unit --include='test_*.gd' 2>/dev/null | sort)
+      done ;;
+  esac
+  n=$(( ${#BY_PATH[@]} + ${#BY_NAME[@]} + ${#BY_SCENE[@]} ))
   [ "$n" -gt 0 ] || continue
-  echo "pre_ready_guards: $f -> ${#BY_PATH[@]} by path + ${#BY_NAME[@]} by class_name${cn:+ ($cn)}"
-  FILES+=(${BY_PATH[@]+"${BY_PATH[@]}"} ${BY_NAME[@]+"${BY_NAME[@]}"})
+  echo "pre_ready_guards: $f -> ${#BY_PATH[@]} by path + ${#BY_NAME[@]} by class_name${cn:+ ($cn)} + ${#BY_SCENE[@]} by scene"
+  FILES+=(${BY_PATH[@]+"${BY_PATH[@]}"} ${BY_NAME[@]+"${BY_NAME[@]}"} ${BY_SCENE[@]+"${BY_SCENE[@]}"})
   cn=""
 done
 
