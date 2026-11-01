@@ -8,7 +8,7 @@ const ITEMS := "res://data/items.json"
 const PROSE := ["res://data/abilities.json", "res://data/items.json", "res://data/lore.json", "res://data/autobattle_rule_templates.json"]
 
 ## FF spell tiers (Fira, Blizzaga, Curaja...): a classic stem plus a tier suffix. The bare words (Fire, Cure) are ours to use.
-const SPELL_TIER := "(?i)\\b(fir|blizz|thund|cur|aer|wat|quak)(a|ra|ga|aga|ja|aja)\\b"
+const SPELL_TIER := "(?i)\\b(fir|blizz|thund|cur|aer|wat|quak)(a|ra|ara|ga|aga|ja|aja)\\b"
 ## FF's item ladder (Hi-Potion, X-Potion, Mega Ether) and Megalixir.
 const ITEM_LADDER := "(?i)^(hi|x|mega)[- ]|megalixir"
 ## Names that are FF's alone and must not appear in any player-facing prose.
