@@ -6642,6 +6642,7 @@ func _open_autogrind_ui() -> void:
 	_autogrind_ui.grind_resume_requested.connect(_resume_autogrind)
 	_autogrind_ui.grind_stop_requested.connect(_on_autogrind_stop_requested)
 	_autogrind_ui.tier_cycle_requested.connect(_on_ui_tier_cycle_requested)
+	_autogrind_ui.visibility_changed.connect(_field_hud_steps_aside_for_console)
 
 	SoundManager.play_ui("menu_open")
 	print("[AUTOGRIND] Config UI opened")
@@ -6682,6 +6683,12 @@ func _free_overlays_for_scene_change() -> void:
 			_autobattle_editor.save_and_close()
 		else:
 			_on_autobattle_editor_closed()
+
+
+## Starting a grind brings the field HUD back; the console shows itself again on stop, so the tracker drew over its header (struktured .758).
+func _field_hud_steps_aside_for_console() -> void:
+	if _autogrind_ui_open():
+		_set_field_hud_hidden(true)
 
 
 func _on_autogrind_ui_closed() -> void:
@@ -6866,6 +6873,8 @@ func _stop_autogrind(reason: String) -> void:
 	else:
 		current_state = LoopState.EXPLORATION
 		InputLockManager.pop_all()  # Clear any leaked locks
+	# The return can build a NEW field scene whose HUD was never hidden; the console is already up over it.
+	_field_hud_steps_aside_for_console()
 
 	_show_autogrind_summary(final_stats, reason)
 
