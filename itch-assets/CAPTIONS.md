@@ -10,7 +10,18 @@ pixel measurement behind it, is the last section of this file.
 matches `capture-history/shots-225/` byte for byte), and `battle_storm` in particular carries the
 caveat below. The two medieval field-elite frames are `.293` (their sections say so).
 
-**`title_screen` is the exception and is NEWER than everything else: captured from the
+**2026-10-31: `title_screen` re-shot at `v3.33.752-alpha`.** The `.483` frame below had gone 269
+releases stale on the one string it depicts. `tools/marketing_shots.gd` now sets the label to
+`"v" + Version.semver()` before capturing, which is exactly what an export shows — so a source run
+no longer needs the `butler fetch` detour. Old vs new: 485 pixels differ, 282 in the version box
+and 203 scattered across the sky (the stars twinkle; `.483` recorded 242). Two runs agree to 0.0000%.
+The `.483` frame is kept at `capture-history/shots-483-export/title_screen.png`.
+The same run writes `title_cover_source.png` — the title with the bottom vignette strip hidden —
+which is what the cover is cut from (`cover_630x500` = crop `(300,0,1056,600)` → LANCZOS; preview =
+cover → LANCZOS 315x250). Cut from `.752`, it matches the shipped cover except 0.03% of pixels, all
+stars in the top 211 rows, so **the shipped cover is current and was left as it is**.
+
+History: **`title_screen` was the exception: captured from the
 EXPORTED `v3.33.483-alpha` binary, fetched from the store with `butler fetch`, on 2026-09-24.**
 It reads `v3.33.483-alpha` with NO hash suffix — exactly what a player sees.
 
@@ -60,7 +71,7 @@ mechanically than the frame shows.
 ⛔ **2026-10-24: the lead image is the OLDEST frame in the gallery.** It is byte-identical to
 `capture-history/shots-225/battle_storm.png`, a `.225` capture, so a store visitor's first look is
 the UI from ~485 releases ago: empty HP bars, banter mixed with `selecting...` status lines, no
-LOG panel. `battle.png` beside it is now the `.710` frame. Two `.710` frames with a real storm
+LOG panel. `battle.png` beside it is now the `.752` frame. Two `.710` frames with a real storm
 are in `unshipped-captures/` (from `tools/store_shot_storm.gd`, run sandboxed; the cast lands
 this time as Fulmen at the Mage's tier, killing blow on the Goblin, `WEAK!` against the Imp):
 - `battle_storm.710-bolt.png`: burst frame 51, the brightest bolt frame (3,598 px above 235).
@@ -88,9 +99,12 @@ The same five-job battle, weather pinned clear, with the command menu open on **
 turn`** and the tooltip legible: *"Run this character's autobattle script for this turn"*. The
 next row is **`Trust (every turn): OFF`**, and the menu still ends in **`Formation: V-Formation`**.
 HP and MP now draw as filled bars, the turn order bottom-left carries portraits, and the banter
-sits in its own LOG panel — Rogue *"Heist's on. Try to look natural."*, Bard *"And a one, and a
-two... eh, let's just go."*, Cleric *"Let the record show I was patient."*, Fighter *"My turn.
-Script or stick, the swing's the same."* (`v3.33.710-alpha` frame.)
+sits in its own LOG panel — Rogue *"My move. Your problem."*, Bard *"Let's make this a ballad,
+not an obituary."*, Cleric *"A short prayer. A long look."*, Fighter *"Step forward. That's the
+whole plan."* The speed chip reads **`1.5x`**, the default since `47b98083f` (2026-10-30, in every
+build from `.750` on). (`v3.33.752-alpha` frame, 2026-10-31; two runs agree to 0.0000% of pixels.
+The `.710` frame it replaces showed `1x`, which no fresh player sees any more; it is kept at
+`capture-history/shots-710/battle.png`.)
 
 📌 The hint bar reads `` [Q] Defer · [W] Advance · [`] Speed · [Y] Repeat · [Tab] Auto · [F5] Rules · [L] Log `` because no gamepad was
 connected to the capture box. Earlier frames read `[L] Defer · [R] Advance`; a pad plugged into
