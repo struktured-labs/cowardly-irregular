@@ -1,0 +1,75 @@
+{
+  "_why": "A walk sheet's facing cannot be measured: a silhouette compared against the last reviewed sheet called 2 broken sheets OK and 3 correct ones SWAPPED (2026-11-01, margins within 0.05). So a HUMAN looks, at a committed 4-direction strip, and this row pins what they looked at: the sheet's sha256. Redrawing a sheet reds test_a_walk_sheet_faces_where_it_walks until someone re-renders the strip (tools/render_facing_strips.py), looks at it, and updates the row with what they checked.",
+  "sheets": {
+    "bard": {
+      "sheet_sha256": "d248e1d16f664fab366c5723894e7168348f80c299254fed8e19507c86529b09",
+      "strip": "res://docs/art/facing/bard.png",
+      "reviewed": "2026-11-01, cowir-sprites, by eye at 4x/8x: DOWN shows the face, UP the back of the head, LEFT/RIGHT in profile facing travel"
+    },
+    "bossbinder": {
+      "sheet_sha256": "3072f853d502472d810b704d6f182b3ba3823a01b89b5201599a585d9aff3cae",
+      "strip": "res://docs/art/facing/bossbinder.png",
+      "reviewed": "2026-11-01, cowir-sprites, by eye at 4x/8x: DOWN shows the face, UP the back of the head, LEFT/RIGHT in profile facing travel"
+    },
+    "cleric": {
+      "sheet_sha256": "141b15397be03ebf811646b315173681ed0b80a4f5158d25d0ce0c0cbf589b35",
+      "strip": "res://docs/art/facing/cleric.png",
+      "reviewed": "2026-11-01, cowir-sprites, by eye at 4x/8x: DOWN shows the face, UP the back of the head, LEFT/RIGHT in profile facing travel"
+    },
+    "fighter": {
+      "sheet_sha256": "8929fd845a86dc59b92a9ad1d51819f6133c680c17b1bd955fb92ad630e00ef6",
+      "strip": "res://docs/art/facing/fighter.png",
+      "reviewed": "2026-11-01, cowir-sprites, by eye at 4x/8x: DOWN shows the face, UP the back of the head, LEFT/RIGHT in profile facing travel"
+    },
+    "guardian": {
+      "sheet_sha256": "52a477570bb1924e19fe2beb27f9fcc9ba1806a7a446dd935ca8059891632cb0",
+      "strip": "res://docs/art/facing/guardian.png",
+      "reviewed": "2026-11-01, cowir-sprites, by eye at 4x/8x: DOWN shows the face, UP the back of the head, LEFT/RIGHT in profile facing travel"
+    },
+    "mage": {
+      "sheet_sha256": "e8ec3c90f5933ad5b1ce2962983e3025a4cc99c1b5b3b01205cb28abde711a84",
+      "strip": "res://docs/art/facing/mage.png",
+      "reviewed": "2026-11-01, cowir-sprites, by eye at 4x/8x: DOWN shows the face, UP the back of the head, LEFT/RIGHT in profile facing travel; LEFT and RIGHT were SWAPPED in the 48px redraw (413810980) and are swapped back here: struktured, 'blackmage walks backwards ... from left/right'"
+    },
+    "necromancer": {
+      "sheet_sha256": "aa6f3c9101475c81b827c69f3f1639ed5c4988ad03220feb466b99b450f4aa60",
+      "strip": "res://docs/art/facing/necromancer.png",
+      "reviewed": "2026-11-01, cowir-sprites, by eye at 4x/8x: DOWN shows the face, UP the back of the head, LEFT/RIGHT in profile facing travel; LEFT and RIGHT were SWAPPED in the 48px redraw (413810980) and are swapped back here: struktured, 'blackmage walks backwards ... from left/right'"
+    },
+    "ninja": {
+      "sheet_sha256": "c8962e5c4575c7846e786535d44642257fde69285d3cf9d573f38173629fb669",
+      "strip": "res://docs/art/facing/ninja.png",
+      "reviewed": "2026-11-01, cowir-sprites, by eye at 4x/8x: DOWN shows the face, UP the back of the head, LEFT/RIGHT in profile facing travel"
+    },
+    "rogue": {
+      "sheet_sha256": "8631b85408e622ca3fd8fc75cbd225d9c2231893f7507001a2e2ae0aa1ca0991",
+      "strip": "res://docs/art/facing/rogue.png",
+      "reviewed": "2026-11-01, cowir-sprites, by eye at 4x/8x: DOWN shows the face, UP the back of the head, LEFT/RIGHT in profile facing travel"
+    },
+    "scriptweaver": {
+      "sheet_sha256": "fe0bb42514bb314946395b75b0f22c639b66ae007bd86dd80255e580221eb777",
+      "strip": "res://docs/art/facing/scriptweaver.png",
+      "reviewed": "2026-11-01, cowir-sprites, by eye at 4x/8x: DOWN shows the face, UP the back of the head, LEFT/RIGHT in profile facing travel"
+    },
+    "skiptrotter": {
+      "sheet_sha256": "c0ee2e7b7521276a90e8a7256c7af9296b5f9bfda0aabb3e98594656f3a57552",
+      "strip": "res://docs/art/facing/skiptrotter.png",
+      "reviewed": "2026-11-01, cowir-sprites, by eye at 4x/8x: DOWN shows the face, UP the back of the head, LEFT/RIGHT in profile facing travel"
+    },
+    "speculator": {
+      "sheet_sha256": "10e3af94dd81f5c36e9378950102517eb2d421938f4edfe9ea20b32fe5e5e261",
+      "strip": "res://docs/art/facing/speculator.png",
+      "reviewed": "2026-11-01, cowir-sprites, by eye at 4x/8x: DOWN shows the face, UP the back of the head, LEFT/RIGHT in profile facing travel"
+    },
+    "summoner": {
+      "sheet_sha256": "beecf9e7237fc78c1a5508392c84729be25868d056f954686773fd980b44b09a",
+      "strip": "res://docs/art/facing/summoner.png",
+      "reviewed": "2026-11-01, cowir-sprites, by eye at 4x/8x: DOWN shows the face, UP the back of the head, LEFT/RIGHT in profile facing travel"
+    },
+    "time_mage": {
+      "sheet_sha256": "3bdffd3c14f4ab97372524bd717b3364a3ddc2ca83499f436171de0acbb835c4",
+      "strip": "res://docs/art/facing/time_mage.png",
+      "reviewed": "2026-11-01, cowir-sprites, by eye at 4x/8x: DOWN shows the face, UP the back of the head, LEFT/RIGHT in profile facing travel"
+    }
+  }
+}
