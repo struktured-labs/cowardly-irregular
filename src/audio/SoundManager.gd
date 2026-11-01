@@ -1372,6 +1372,23 @@ func play_voiced_line(speaker: String, text: String, owner: Object = null) -> fl
 	return _line_player.stream.get_length()
 
 
+## A synthesized line through the same player, duck and owner rules as a recording. Returns its length, or 0.0.
+func play_line_stream(stream: AudioStream, owner: Object = null) -> float:
+	if stream == null or _line_player == null:
+		return 0.0
+	if wav_commit_refused():
+		push_warning("[AUDIO] skipped live line — mixer is wedged")
+		return 0.0
+	_line_player.stop()
+	_line_player.stream = stream
+	_line_player.volume_db = VOICE_PLAYER_BASE_DB
+	_line_player.play()
+	_line_owner_id = owner.get_instance_id() if owner != null else 0
+	_line_ducked = true
+	duck_music_for_dialogue(true, _line_player)
+	return stream.get_length()
+
+
 ## Stops the recording if `owner` started it (null stops any). Advancing, skipping or closing a panel calls this.
 func stop_voiced_line(owner: Object = null) -> void:
 	if _line_player == null:

@@ -290,6 +290,8 @@ var _boss_low_hp_spoken: bool = false
 var _boss_defeat_spoken: bool = false
 ## The boss's last words, buffered: on the scripted path the gloat lands BEFORE battle_ended, on the model path after it.
 var _gloat_line: Dictionary = {}
+## The live voice for the last words, started once at the first emit: {"text", "stream", "done"}.
+var _gloat_voice: Dictionary = {}
 var _holding_for_boss_beat: bool = false
 ## The authored monsters.json defeat scene, held until the boss's last words have been said (struktured 2026-10-31: last words first).
 var _deferred_defeat_scene: Dictionary = {}
@@ -300,6 +302,9 @@ const BOSS_BEAT_AUTO_DISMISS_SEC: float = 3.0
 const BOSS_BEAT_READ_CAP_SEC: float = 30.0
 ## A recorded line under automation holds until its voice has finished, plus this.
 const BOSS_BEAT_VOICE_SLACK_SEC: float = 0.3
+## How long the beat waits for a live voice still being synthesized; a voice later than this is dropped, never played late.
+const BOSS_BEAT_LIVE_VOICE_WAIT_SEC: float = 2.0
+const GLOAT_VOICE_TIMEOUT_SEC: float = 6.0
 
 ## Autobattle state
 var _all_autobattle_enabled: bool = false  # True when all players are on autobattle
@@ -3473,6 +3478,7 @@ func _on_battle_started() -> void:
 	_boss_low_hp_spoken = false
 	_boss_defeat_spoken = false
 	_gloat_line = {}
+	_gloat_voice = {}
 	_holding_for_boss_beat = false
 	_deferred_defeat_scene = {}
 
@@ -6292,6 +6298,7 @@ func _on_boss_gloat_line(text: String, is_victory: bool) -> void:
 	var color: String = "#cc4444" if not is_victory else "#d8b860"
 	log_message('[color=%s]%s: "%s"[/color]' % [color, _gloat_speaker_name(is_victory), DialoguePrompts.spoken_line(text)])
 	_gloat_line = {"text": text, "is_victory": is_victory}
+	_start_gloat_voice(text, is_victory)
 
 
 ## GameLoop holds its confirm and retry flows on this, so the boss's line is never skipped by the rewards or the game over.
@@ -6345,7 +6352,18 @@ func _play_boss_beat(is_victory: bool) -> void:
 	if not is_inside_tree():
 		_holding_for_boss_beat = false
 		return
-	_battle_dialogue.show_boss_last_words(_gloat_speaker_name(is_victory), DialoguePrompts.spoken_line(str(_gloat_line.get("text", ""))), _boss_monster_id())
+	var spoken: String = DialoguePrompts.spoken_line(str(_gloat_line.get("text", "")))
+	var v0: int = Time.get_ticks_msec()
+	while not _gloat_voice.is_empty() and not bool(_gloat_voice["done"]) \
+			and Time.get_ticks_msec() - v0 < int(BOSS_BEAT_LIVE_VOICE_WAIT_SEC * 1000.0) and is_inside_tree():
+		await get_tree().process_frame
+	if not is_inside_tree():
+		_holding_for_boss_beat = false
+		return
+	var live_voice: AudioStream = _gloat_voice.get("stream") if bool(_gloat_voice.get("done", false)) else null
+	## Taken or abandoned here, so a synthesis finishing after the line shows can never speak it a second time.
+	_gloat_voice = {}
+	_battle_dialogue.show_boss_last_words(_gloat_speaker_name(is_victory), spoken, _boss_monster_id(), live_voice)
 	await _hold_beat_dialogue()
 	_holding_for_boss_beat = false
 
@@ -6392,6 +6410,33 @@ func _play_deferred_defeat_scene() -> void:
 	_show_boss_dialogue(str(scene_data["speaker"]), scene_data["lines"])
 	await _hold_beat_dialogue()
 	_holding_for_boss_beat = false
+
+
+## A cast boss's LLM last words are spoken by its live voice; a recorded clip for the same text outranks it.
+func _gloat_voice_wanted(boss_id: String, speaker: String, spoken: String) -> bool:
+	if boss_id == "" or spoken.strip_edges() == "" or VoiceService == null or VoiceService.is_web:
+		return false
+	if not bool(GameState.get("tts_live_enabled")) or VoiceService.voice_for(boss_id).is_empty():
+		return false
+	return VoiceService.is_live_ready() and SoundManager.voiced_line_clip(speaker, spoken) == ""
+
+
+## Chosen once, at the first emit: a later line for the same fight never starts a second voice.
+func _start_gloat_voice(text: String, is_victory: bool) -> void:
+	if not _gloat_voice.is_empty() or not _boss_beat_expected():
+		return
+	var spoken: String = DialoguePrompts.spoken_line(text)
+	var boss_id: String = _boss_monster_id()
+	if not _gloat_voice_wanted(boss_id, _gloat_speaker_name(is_victory), spoken):
+		return
+	_gloat_voice = {"text": spoken, "stream": null, "done": false}
+	_synthesize_into(_gloat_voice, boss_id, spoken)
+
+
+## Static, so a battle freed mid-synthesis has no instance for the await to resume into.
+static func _synthesize_into(job: Dictionary, speaker_id: String, text: String) -> void:
+	job["stream"] = await VoiceService.synthesize(speaker_id, text, GLOAT_VOICE_TIMEOUT_SEC)
+	job["done"] = true
 
 
 ## Manual: the player reads, up to READ_CAP. Automated: each line holds until its voice is done, then moves on.
