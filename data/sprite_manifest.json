@@ -7217,7 +7217,8 @@
   "_field_indirect_readers": {
     "_why": "Fields the census cannot see as READ because the key is supplied by a VARIABLE rather than a literal, so no get(\"key\") appears anywhere. Recorded so a zero here is never mistaken for an unwired promise — the opposite error to _field_provenance's.",
     "cliff": "READ. TileSheetManifest.region(key, section, name) takes the section as a PARAMETER; EnvironmentTileSets passes \"cliff\" at its _art_or call sites for the edge and face tiles. The literal lives in the caller, which is not a file that parses the manifest.",
-    "overlay": "READ, same path: EnvironmentTileSets passes \"overlay\" to TileSheetManifest.region(key, section, name) for the fringe tiles, so the literal lives in the caller rather than in a file that parses the manifest."
+    "overlay": "READ, same path: EnvironmentTileSets passes \"overlay\" to TileSheetManifest.region(key, section, name) for the fringe tiles, so the literal lives in the caller rather than in a file that parses the manifest.",
+    "tiles": "READ, same path as cliff/overlay: BaseTileGenerator._artist_tile passes \"tiles\" to TileSheetManifest.region(key, section, name) for terrain tiles named by TileType (e.g. FOREST, FOREST:1), so the literal lives in the caller rather than in a file that parses the manifest. test_a_tree_is_drawn_not_painted reads it back."
   },
   "ability_icons": {
     "tier": "T1",
@@ -7409,6 +7410,16 @@
       "path": "res://assets/sprites/buildings/futuristic/nodeprime_cache.png",
       "tier": "T1",
       "source": "gpt-image-2, straight-on 16-bit neon cyber facade (W5 style, after struktured's direction B, 2026-11-01) -- tools/gen_village_buildings.py --futuristic; T1, artist veto applies."
+    },
+    "vertex_rest": {
+      "path": "res://assets/sprites/buildings/abstract/vertex_rest.png",
+      "tier": "T1",
+      "source": "gpt-image-2, straight-on minimalist facade (W6 style, after struktured's direction B, 2026-11-01) -- tools/gen_village_buildings.py --abstract; T1, artist veto applies."
+    },
+    "vertex_exchange": {
+      "path": "res://assets/sprites/buildings/abstract/vertex_exchange.png",
+      "tier": "T1",
+      "source": "gpt-image-2, straight-on minimalist facade (W6 style, after struktured's direction B, 2026-11-01) -- tools/gen_village_buildings.py --abstract; T1, artist veto applies."
     }
   },
   "prop_art": {
@@ -7416,12 +7427,12 @@
       "path": "res://assets/sprites/props/medieval/fountain.png",
       "tier": "T1",
       "frames": 4,
-      "source": "gpt-image-2, straight-on medieval plaza fountain with a cherry tree in the buildings' style (struktured 2026-11-01: procgen-looking props must go) -- tools/gen_village_buildings.py --props; 4 frames = one painting, water pixels' brightness cycled; T1, artist veto applies."
+      "source": "gpt-image-2, straight-on medieval plaza fountain with a cherry tree in the buildings' style (struktured 2026-11-01: procgen-looking props must go) -- tools/gen_village_buildings.py --props; 4 frames of 96x96 like the painted fountain (a 100px strip moved its art 2px on screen) = one painting, water pixels' brightness cycled; T1, artist veto applies."
     },
     "tree_medieval": {
       "path": "res://assets/sprites/props/medieval/tree.png",
       "tier": "T1",
-      "source": "gpt-image-2, straight-on village oak in the buildings' style, 64px wide over the 1-tile footprint (struktured 2026-11-01: the trees look procgen) -- tools/gen_village_buildings.py --props; T1, artist veto applies."
+      "source": "gpt-image-2, a straight-on slender poplar 20x96, exactly the TREE prop's 1x3 footprint height and narrow enough to clear a door beside it (the first 64px oak drew across Harmonia's ForgeEntrance arch) (struktured 2026-11-01: the trees look procgen) -- tools/gen_village_buildings.py --props; T1, artist veto applies."
     },
     "lamp_post_medieval": {
       "path": "res://assets/sprites/props/medieval/lamp_post.png",
