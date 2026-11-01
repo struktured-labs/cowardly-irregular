@@ -169,3 +169,30 @@ func test_the_migration_can_be_observed_to_do_nothing_when_current() -> void:
 	var post := Combatant.migrate_stat_scale({"max_hp": 500, "stat_scale": Combatant.STAT_SCALE})
 	assert_eq(int(pre["max_hp"]), 208, "×10-era input must change")
 	assert_eq(int(post["max_hp"]), 500, "current input must not")
+
+
+# ── the level ladder (2026-10-31) ───────────────────────────────────
+
+func test_an_old_level_moves_to_the_same_point_on_the_spectrum_ladder() -> void:
+	var out := Combatant.migrate_stat_scale({"job_level": 12, "job_exp": 600, "max_hp": 2080, "stat_scale": Combatant.X10_ERA_SCALE})
+	assert_eq(int(out["job_level"]), Combatant.spectrum_level(12), "an old level-12 save must land where level 12 sits on the new ladder")
+	assert_gt(int(out["job_level"]), 12, "CONTROL: the ladder stretched, so the level must have moved up")
+	assert_eq(int(out["job_exp"]), int(600.0 * Combatant.spectrum_level(12) / 12.0), "the share of the next level is kept")
+	assert_eq(int(out.get("level_ladder", 0)), Combatant.LEVEL_LADDER, "the ladder stamp must be written")
+
+
+func test_a_stamped_level_is_never_moved_twice() -> void:
+	var once := Combatant.migrate_stat_scale({"job_level": 12, "stat_scale": Combatant.X10_ERA_SCALE})
+	var twice := Combatant.migrate_stat_scale(once.duplicate(true))
+	assert_eq(int(twice["job_level"]), int(once["job_level"]), "a migrated level must not be remapped on the next load")
+	var fresh := Combatant.new()
+	fresh.job_level = 30
+	var saved := fresh.to_dict()
+	fresh.free()
+	assert_eq(int(Combatant.migrate_stat_scale(saved)["job_level"]), 30, "a save written today keeps its level")
+
+
+func test_the_ladder_matches_the_transform_tool() -> void:
+	# tools/rebalance_spectrum.py campaign(): W1 1-20 onto 1-25, then 25-58 for the old 20-28.
+	for pair in [[1, 1], [10, 12], [20, 25], [24, 42], [28, 58]]:
+		assert_eq(Combatant.spectrum_level(pair[0]), pair[1], "old level %d must land on %d" % pair)

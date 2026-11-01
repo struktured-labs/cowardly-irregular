@@ -2036,7 +2036,7 @@ func _roll_steal(caster, ability: Dictionary, targets: Array, base_rate: float) 
 		## BattleManager:6147 verbatim. rogue_lockward's first_steal_guaranteed and steal_response are
 		## NOT ported: it is the only monster authoring either, and it is neither pooled nor
 		## autogrind_spawned, so no grind can field it by any of the four spawn forms.
-		var amount: int = randi_range(5, 50) * (1 + int(target.max_hp / STEAL_GOLD_HP_DIVISOR))
+		var amount: int = randi_range(5, 50) * (1 + int(target.max_hp / (target.x10_ratio() * STEAL_GOLD_HP_DIVISOR)))
 		var shown: int = amount
 		if party_side:
 			var before: int = _stolen_gold

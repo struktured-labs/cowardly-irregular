@@ -1147,7 +1147,7 @@ func _backup_before_migrate(file_path: String, data: Dictionary) -> void:
 		return
 	var stale := false
 	for entry in (party as Array):
-		if entry is Dictionary and Combatant.saved_stat_scale(entry as Dictionary) != Combatant.STAT_SCALE:
+		if entry is Dictionary and Combatant.save_needs_migration(entry as Dictionary):
 			stale = true
 			break
 	var backup := file_path + PRE_SPECTRUM_BACKUP_SUFFIX
@@ -1163,7 +1163,8 @@ func _backup_before_migrate(file_path: String, data: Dictionary) -> void:
 	if out == null:
 		push_warning("[SaveSystem] could not back up '%s' before migrating it (%s)" % [file_path, error_string(FileAccess.get_open_error())])
 		return
-	out.store_buffer(bytes)
+	## store_string, the one write form this file allows (a save is UTF-8 JSON); the byte compare below refuses any other file.
+	out.store_string(bytes.get_string_from_utf8())
 	out.close()
 	if FileAccess.get_file_as_bytes(staged) != bytes or DirAccess.rename_absolute(staged, backup) != OK:
 		push_warning("[SaveSystem] the backup of '%s' did not complete; it will be retried on the next load" % file_path)

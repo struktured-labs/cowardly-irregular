@@ -77,7 +77,12 @@ func _pairs() -> Array:
 ## perfectly — the guard would go green having compared nothing.
 func test_control_pairs_are_found() -> void:
 	assert_gt(_items().size(), 40, "items.json must parse with a real corpus")
-	assert_gt(_pairs().size(), 7, "must find description/effect pairs to compare — 0 makes the "
+	## Since the spectrum curve (2026-10-31) HP heals and item damage convert at use, so their prose quotes no number
+	## (test_the_spectrum_curve_regression guards that); the MP restores are the pairs left, and they are named.
+	var labels: Array = _pairs().map(func(p): return str(p[2]))
+	for want in ["ether", "hi_ether", "mega_ether"]:
+		assert_true(labels.any(func(l): return l.begins_with(want)), "the %s MP pair must still be compared: %s" % [want, str(labels)])
+	assert_gt(_pairs().size(), 2, "must find description/effect pairs to compare — 0 makes the "
 		+ "check below vacuous rather than passing")
 
 

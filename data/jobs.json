@@ -730,10 +730,5 @@
       "level_required": 10,
       "description": "Master the system to become a Scriptweaver"
     }
-  },
-  "_spectrum": {
-    "floor": 0.5,
-    "curve": 0.036,
-    "trash_dial": 1.0
   }
 }

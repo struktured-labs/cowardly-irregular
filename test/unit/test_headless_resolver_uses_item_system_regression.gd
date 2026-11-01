@@ -61,10 +61,12 @@ func test_mega_potion_heals_correct_amount() -> void:
 	var target: Combatant = _make("Target", 200, 50)
 	target.current_hp = 50
 	resolver._resolve_item(user, "mega_potion", target)
-	# Live ItemSystem heals 100 (per data); pre-fix the hardcoded
-	# default would have healed only 50.
-	assert_gt(target.current_hp, 100,
-		"mega_potion must heal MORE than 50 HP — pre-fix the unconditional fallback healed 50")
+	# Live ItemSystem heals the authored amount, converted at use; the fallback's default heals a converted Potion.
+	var authored := int(its.items["mega_potion"].get("effects", {}).get("heal_hp", 0))
+	assert_eq(target.current_hp - 50, ItemSystem._x10_flat(authored, target),
+		"mega_potion must heal its authored amount (converted) through ItemSystem")
+	assert_gt(target.current_hp - 50, ItemSystem._x10_flat(500, target),
+		"mega_potion must heal MORE than the fallback's default Potion")
 
 
 func test_unknown_item_does_not_fizzle_to_heal() -> void:

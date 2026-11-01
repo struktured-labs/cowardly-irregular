@@ -58,9 +58,9 @@ func test_resolver_returns_baseline_when_no_upgrade_learned() -> void:
 
 
 func test_resolver_picks_upgrade_when_learned() -> void:
-	var c := _fresh_combatant("cleric", 6)
+	var c := _fresh_combatant("cleric", Combatant.spectrum_level(6))
 	assert_eq(_ab._resolve_ability_upgrade(c, {"id": "cure", "upgrades": ["cura"]}), "cura",
-		"level 6 cleric has cura (unlocks at 6) → resolver picks it")
+		"a cleric at cura's unlock level (old 6, on the spectrum ladder) has cura → resolver picks it")
 	c.free()
 
 

@@ -55,7 +55,7 @@ func test_a_potion_between_battles_heals_what_it_says() -> void:
 	assert_gt(authored, 50, "CONTROL: potion must author more than the old literal 50, or this arm cannot see the bug")
 	var m := _hurt("potion", 2)
 	_loop._autogrind_heal_member(m)
-	assert_eq(m.current_hp - 100, authored, "a Potion between autogrind battles restored %d, and the item authors %d" % [m.current_hp - 100, authored])
+	assert_eq(m.current_hp - 100, ItemSystem._x10_flat(authored, m), "a Potion between autogrind battles restored %d, and the item authors %d, converted at use" % [m.current_hp - 100, authored])
 	assert_eq(m.get_item_count("potion"), 1, "exactly one Potion is spent")
 	m.free()
 
@@ -68,7 +68,7 @@ func test_a_hi_potion_is_spent_before_a_potion_and_heals_what_it_says() -> void:
 	_loop._autogrind_heal_member(m)
 	assert_eq(m.get_item_count("hi_potion"), 0, "the stronger potion is the one that is spent")
 	assert_eq(m.get_item_count("potion"), 1, "the ordinary potion stays in the bag")
-	assert_eq(m.current_hp - 100, authored, "a Hi-Potion between autogrind battles restored %d, and the item authors %d" % [m.current_hp - 100, authored])
+	assert_eq(m.current_hp - 100, ItemSystem._x10_flat(authored, m), "a Hi-Potion between autogrind battles restored %d, and the item authors %d, converted at use" % [m.current_hp - 100, authored])
 	m.free()
 
 

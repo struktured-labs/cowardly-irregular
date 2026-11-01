@@ -16,7 +16,7 @@ func _fighter_mods() -> Dictionary:
 
 
 func _level_mult(level: int) -> float:
-	return 1.0 + float(level - 1) * 0.04
+	return Combatant.level_multiplier(level)
 
 
 func _member() -> Combatant:
@@ -38,7 +38,7 @@ func _confirm_nature(c: Combatant, personality: int) -> void:
 
 
 func _expected_attack(job_attack: int, nature_attack: int, level: int, gear_attack: int) -> int:
-	return int((job_attack + nature_attack) * _level_mult(level)) + gear_attack
+	return maxi(1, int((job_attack + nature_attack) * _level_mult(level))) + roundi(float(gear_attack) * Combatant.party_x10_ratio(level))
 
 
 func test_brave_nature_shows_on_the_status_attack() -> void:

@@ -124,7 +124,7 @@ func test_a_bundled_heal_still_lands_when_use_item_runs() -> void:
 	assert_eq(sys.ineffective_use_reason("salve", [scratched]), "",
 		"an item that both revives and heals is unchanged for callers that run use_item")
 	assert_true(sys.use_item(scratched, "salve", [scratched] as Array[Combatant]))
-	assert_eq(scratched.current_hp, 50, "the flat heal on a living ally must still land")
+	assert_eq(scratched.current_hp, 10 + ItemSystem._x10_flat(40, scratched), "the flat heal on a living ally must still land")
 	var other := _person("Bram", 40, 100)
 	assert_true(sys.use_item(other, "phoenix", [other] as Array[Combatant]))
 	assert_eq(other.current_hp, 65, "Phoenix Down's 25%% still heals when use_item itself runs")

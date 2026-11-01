@@ -23,10 +23,10 @@ USAGE   tools/rebalance_spectrum.py --apply     rewrite data/ in place (refuses 
         tools/rebalance_spectrum.py --check     verify a transformed tree: every boss keeps its ratio
         tools/rebalance_spectrum.py --selftest  curve and map arms, no data read
 """
-import json, os, re, sys
+import json, os, re, subprocess, sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-MARKER = "_spectrum"          # written into jobs.json so a second --apply refuses
+MARKER_FILE = "tools/rebalance_spectrum.applied.json"   # outside data/: every job-roster reader would count a key in jobs.json as a job
 
 LEVEL_FLOOR, LEVEL_CURVE, LEVEL_RATE_OLD = 0.5, 0.036, 0.04
 TRASH_DIAL = float(os.environ.get("SPECTRUM_TRASH_DIAL", "1.0"))
@@ -244,8 +244,8 @@ def availability(pid, cost, shops, drops, costs_by_world):
 def apply():
     jobs_doc = _load("data/jobs.json")
     jobs = _rows(jobs_doc, "jobs")
-    if MARKER in jobs_doc:
-        raise SystemExit("rebalance_spectrum: data/ is already transformed (jobs.json carries %s)" % MARKER)
+    if os.path.exists(os.path.join(ROOT, MARKER_FILE)):
+        raise SystemExit("rebalance_spectrum: data/ is already transformed (%s exists)" % MARKER_FILE)
     mons_doc = _load("data/monsters.json"); mons = _rows(mons_doc, "monsters")
     pools = _load("data/enemy_pools.json")
     equip_doc = _load("data/equipment.json")
@@ -291,18 +291,68 @@ def apply():
 
     # Gear, item heals/damage and heal/ward amounts STAY in x10 units: Combatant.x10_ratio() converts them at
     # the moment they are used, so each keeps today's share of HP at every equivalent level, not only at one.
-    jobs_doc[MARKER] = {"floor": LEVEL_FLOOR, "curve": LEVEL_CURVE, "trash_dial": TRASH_DIAL}
     _save("data/jobs.json", jobs_doc); _save("data/monsters.json", mons_doc)
     _save("data/equipment.json", equip_doc); _save("data/items.json", items_doc); _save("data/abilities.json", abil_doc)
+    with open(os.path.join(ROOT, MARKER_FILE), "w", encoding="utf-8") as f:
+        json.dump({"floor": LEVEL_FLOOR, "curve": LEVEL_CURVE, "trash_dial": TRASH_DIAL}, f, indent=2)
+        f.write("\n")
     print("rebalance_spectrum: applied (trash dial %.2f)" % TRASH_DIAL)
 
 
 def check():
-    jobs_doc = _load("data/jobs.json")
-    if MARKER not in jobs_doc:
+    path = os.path.join(ROOT, MARKER_FILE)
+    if not os.path.exists(path):
         raise SystemExit("rebalance_spectrum --check: data/ is not transformed")
-    print("rebalance_spectrum --check: transformed with %s" % json.dumps(jobs_doc[MARKER]))
-    return 0
+    with open(path, encoding="utf-8") as f:
+        print("rebalance_spectrum --check: transformed with %s" % json.dumps(json.load(f)))
+    return story_order_check()
+
+
+# The last tree before the transform: the parent of fcb670dd8, which applied it.
+PRE_SPECTRUM_REF = "fcb670dd8^"
+
+
+def _at_ref(rel):
+    out = subprocess.run(["git", "-C", ROOT, "show", "%s:%s" % (PRE_SPECTRUM_REF, rel)],
+                         capture_output=True, text=True)
+    if out.returncode != 0:
+        raise SystemExit("rebalance_spectrum --check: cannot read %s at %s (%s)" % (rel, PRE_SPECTRUM_REF, out.stderr.strip()))
+    return json.loads(out.stdout)
+
+
+def story_order_check():
+    """cowir-main 20766: every unlock sits between the same two W1 bosses before and after, from the real old data."""
+    old_jobs, new_jobs = _rows(_at_ref("data/jobs.json"), "jobs"), _rows(_load("data/jobs.json"), "jobs")
+    old_mons, new_mons = _rows(_at_ref("data/monsters.json"), "monsters"), _rows(_load("data/monsters.json"), "monsters")
+    pools = _load("data/enemy_pools.json")
+    bosses = [(mid, int(m["level"]), int(new_mons[mid]["level"])) for mid, m in old_mons.items()
+              if isinstance(m, dict) and m.get("boss") and world_of(mid, pools) == "W1" and mid in new_mons]
+    sign = lambda x: (x > 0) - (x < 0)
+    bad, seen = [], 0
+    for jid, oj in old_jobs.items():
+        nj = new_jobs.get(jid)
+        if not (isinstance(oj, dict) and isinstance(nj, dict)):
+            continue
+        olds = sorted(int(k) for k in (oj.get("abilities_at_level") or {}))
+        news = sorted(int(k) for k in (nj.get("abilities_at_level") or {}))
+        if len(olds) != len(news):
+            bad.append("%s: %d unlock levels became %d (two merged)" % (jid, len(olds), len(news)))
+            continue
+        for Lo, Ln in zip(olds, news):
+            seen += 1
+            if Ln != campaign(Lo):
+                bad.append("%s: unlock %d became %d, not the ladder's %d" % (jid, Lo, Ln, campaign(Lo)))
+            for mid, Bo, Bn in bosses:
+                if sign(Lo - Bo) != sign(Ln - Bn):
+                    bad.append("%s: unlock %d->%d crossed %s (%d->%d)" % (jid, Lo, Ln, mid, Bo, Bn))
+    for b in bad:
+        print("  FAIL " + b)
+    if seen < 20 or len(bosses) < 5:
+        print("  FAIL only %d unlocks against %d W1 bosses: the comparison saw too little" % (seen, len(bosses)))
+        return 1
+    print("rebalance_spectrum --check: %d unlocks keep their place among %d W1 bosses%s"
+          % (seen, len(bosses), "" if not bad else ", %d FAILED" % len(bad)))
+    return 1 if bad else 0
 
 
 def selftest():

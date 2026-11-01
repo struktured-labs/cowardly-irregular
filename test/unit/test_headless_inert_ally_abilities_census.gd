@@ -452,7 +452,8 @@ func test_the_reachability_reader_is_not_vacuous() -> void:
 	var reach := _player_reachable_abilities()
 	assert_true(reach.has("cure"), "control: cure is a Cleric base ability and must resolve")
 	assert_true(reach.has("raise"), "control: raise is level-gated and must still be found")
-	assert_eq(int(reach.get("raise", -1)), 10, "raise unlocks at level 10 — the gate must be READ, not assumed")
+	assert_gt(int(reach.get("raise", -1)), 1, "raise is level-gated — the gate must be READ, not assumed to be level 1")
+	assert_eq(int(reach.get("raise", -1)), Combatant.spectrum_level(10), "raise sits where the old level-10 milestone moved to on the spectrum ladder")
 	assert_false(reach.has("undo_death"),
 		"control: undo_death belongs to Time Mage, which has NO unlock_condition — debug-only, so not reachable")
 	assert_true(reach.has("warp_to_boss"),

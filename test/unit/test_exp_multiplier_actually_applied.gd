@@ -29,7 +29,8 @@ func test_exp_multiplier_factors_into_exp_gained_formula() -> void:
 	# Pin: the multiplier is in the actual exp_gained computation,
 	# not just read and ignored.
 	var src := _read(BATTLE_MANAGER)
-	assert_true(src.contains("base_exp * reward_multiplier * one_shot_exp_bonus * autobattle_exp_bonus * exp_multiplier"),
+	## The stomp bonuses sit in `stomp` since the spectrum's over-level gate (2026-10-31); exp_multiplier is still a factor.
+	assert_true(src.contains("base_exp * reward_multiplier * stomp * exp_multiplier"),
 		"exp_gained formula must include exp_multiplier — otherwise the read is dead")
 
 
