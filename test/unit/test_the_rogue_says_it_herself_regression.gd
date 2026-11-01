@@ -38,7 +38,11 @@ func _led_by(job_id: String) -> void:
 	var member := Combatant.new()
 	autofree(member)
 	member.job = JobSystem.get_job(job_id)
-	_loop.party = [member]
+	## party is a TYPED Array[Combatant]: assigning a plain [member] is a SCRIPT ERROR that aborts this helper,
+	## and an empty party reads as no lead, so every "not offered" arm would then pass for the wrong reason.
+	_loop.party.clear()
+	_loop.party.append(member)
+	assert_eq(_loop.party.size(), 1, "CONTROL: the lead must actually be in the party")
 
 
 func _pending_on(map_id: String) -> String:
