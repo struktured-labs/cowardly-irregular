@@ -1198,9 +1198,12 @@ func _show_flash(msg: String) -> void:
 
 
 func _process(delta: float) -> void:
+	## Every timer on this screen is in the player's hand, so all of them count REAL seconds, as
+	## MenuRepeat does: battle runs Engine.time_scale 0.25 for "1x", so a 5 s capture took 20 there.
+	var real: float = delta / maxf(Engine.time_scale, 0.0001)
 	# Flash message timer
 	if _flash_timer > 0:
-		_flash_timer -= delta
+		_flash_timer -= real
 		if _flash_timer <= 0 and _flash_label:
 			_flash_label.visible = false
 
@@ -1209,20 +1212,18 @@ func _process(delta: float) -> void:
 	if _mapping == null:
 		_clear_mapping_hold()
 	elif _mapping_hold_button >= 0:
-		## Real seconds, as MenuRepeat does: battle runs at time_scale 0.25 and a 1 s hold must not take 4.
-		_mapping_hold_t += delta / maxf(Engine.time_scale, 0.0001)
+		_mapping_hold_t += real
 		if _mapping_hold_t >= MAPPING_HOLD_SKIP_SEC:
 			_skip_by_hold()
 	if _mapping != null:
-		## Real seconds, like the hold: at battle's time_scale 0.25 a 30 s deadline would take two minutes.
-		_mapping_idle += delta / maxf(Engine.time_scale, 0.0001)
+		_mapping_idle += real
 		_update_mapping_idle_label()
 		if _mapping_idle >= MAPPING_IDLE_LIMIT:
 			_expire_mapping()
 
 	# Capture timeout
 	if _capturing:
-		_capture_timer -= delta
+		_capture_timer -= real
 		# Update timer display
 		var timer_label = _capture_overlay.get_node_or_null("CaptureBox/TimerLabel")
 		if timer_label:
