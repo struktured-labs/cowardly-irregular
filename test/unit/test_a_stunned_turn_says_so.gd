@@ -123,7 +123,11 @@ func test_a_held_turn_whose_stun_was_cured_passes_quietly() -> void:
 		return
 	var pc := _make("Fighter")
 	_stage(pc)
+	## A foe still standing, so the battle is not already won before the held turn is reached.
+	var foe := _make("Goblin")
+	_bm.enemy_party.append(foe)
+	_bm.all_combatants.append(foe)
 	_bm.current_state = _bm.BattleState.PROCESSING_ACTION
 	_bm.execution_order.append({"type": "held", "combatant": pc, "speed": 1.0})
 	_bm._execute_next_action()
-	assert_true(_logged("Fighter shakes it off"), "a held turn after a cure says so rather than vanishing: %s" % str(_log))
+	assert_true(_logged("shakes it off, too late to act"), "a held turn after a cure says so rather than vanishing: %s" % str(_log))
