@@ -11086,8 +11086,8 @@
       "voice_gender": "male",
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.95 cfg 0.3",
       "seed": 42,
-      "whisper_heard": "Finally, finally, finally, a fight, a real fight.",
-      "whisper_score": 1.0
+      "whisper_heard": "Finally, finally! A fight! A real fight!",
+      "whisper_score": 0.933
     },
     "boss_line_voltharion_01": {
       "description": "Voltharion voiced line (monsters lightning_dragon.intro)",
@@ -11100,7 +11100,7 @@
       "voice_gender": "male",
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.95 cfg 0.3",
       "seed": 42,
-      "whisper_heard": "Do you know how long I've been waiting too long?",
+      "whisper_heard": "Do you know how long I've been waiting? Too long!",
       "whisper_score": 1.0
     },
     "boss_line_voltharion_02": {
@@ -11128,7 +11128,7 @@
       "voice_gender": "male",
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.95 cfg 0.3",
       "seed": 42,
-      "whisper_heard": "Less talking more fighting go go go",
+      "whisper_heard": "Less talking, more fighting, go go go!",
       "whisper_score": 1.0
     },
     "boss_line_voltharion_04": {
@@ -11142,7 +11142,7 @@
       "voice_gender": "male",
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.95 cfg 0.3",
       "seed": 42,
-      "whisper_heard": "Yes, this is it, the thrill, the rush.",
+      "whisper_heard": "Yes! This is it! The Thrill! The Rush!",
       "whisper_score": 1.0
     },
     "boss_line_voltharion_05": {
@@ -11156,7 +11156,7 @@
       "voice_gender": "male",
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.95 cfg 0.3",
       "seed": 42,
-      "whisper_heard": "Hit me again, harder, faster.",
+      "whisper_heard": "Hit me again, harder, faster",
       "whisper_score": 1.0
     },
     "boss_line_voltharion_06": {
@@ -11197,8 +11197,8 @@
       "voice": "Chatterbox clone of VCTK p243 (London), reference +2 st formants shifted, voice_refs/voltharion.wav (CC BY 4.0)",
       "voice_gender": "male",
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.95 cfg 0.3",
-      "seed": 2026,
-      "whisper_heard": "finally finally finally finally",
+      "seed": 42,
+      "whisper_heard": "Finally, finally, finally, finally!",
       "whisper_score": 1.0
     },
     "boss_line_voltharion_09": {
@@ -11239,8 +11239,8 @@
       "voice": "Chatterbox clone of VCTK p243 (London), reference +2 st formants shifted, voice_refs/voltharion.wav (CC BY 4.0)",
       "voice_gender": "male",
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.95 cfg 0.3",
-      "seed": 2026,
-      "whisper_heard": "Slow? Slow is for CPUs with thermal throttling.",
+      "seed": 42,
+      "whisper_heard": "Slow. Slow is for CPUs with thermal throttling.",
       "whisper_score": 1.0
     },
     "boss_line_voltharion_12": {
@@ -11282,7 +11282,7 @@
       "voice_gender": "male",
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.95 cfg 0.3",
       "seed": 42,
-      "whisper_heard": "Do you know how long I've been waiting too long go go go",
+      "whisper_heard": "Do you know how long I've been waiting too long? Go, go, go!",
       "whisper_score": 1.0
     },
     "boss_line_voltharion_15": {
@@ -11324,8 +11324,8 @@
       "voice_gender": "male",
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.95 cfg 0.3",
       "seed": 42,
-      "whisper_heard": "Worth the wait worth every second come back any time",
-      "whisper_score": 0.842
+      "whisper_heard": "worth the wait, worth every second, come back anytime.",
+      "whisper_score": 1.0
     },
     "boss_line_voltharion_18": {
       "description": "Voltharion voiced line (boss_dialogue voltharion.defeat_lines)",
@@ -11337,8 +11337,8 @@
       "voice": "Chatterbox clone of VCTK p243 (London), reference +2 st formants shifted, voice_refs/voltharion.wav (CC BY 4.0)",
       "voice_gender": "male",
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.95 cfg 0.3",
-      "seed": 2026,
-      "whisper_heard": "Too slow, too slow, too slow, should've kept up!",
+      "seed": 42,
+      "whisper_heard": "Too slow, too slow, too slow! Should've kept up!",
       "whisper_score": 1.0
     },
     "boss_line_voltharion_19": {
@@ -11351,8 +11351,8 @@
       "voice": "Chatterbox clone of VCTK p243 (London), reference +2 st formants shifted, voice_refs/voltharion.wav (CC BY 4.0)",
       "voice_gender": "male",
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.95 cfg 0.3",
-      "seed": 2026,
-      "whisper_heard": "Great fight though, best I've had, shame about you!",
+      "seed": 42,
+      "whisper_heard": "Great fight, though. Best I've had. Shame about you.",
       "whisper_score": 1.0
     },
     "boss_line_voltharion_20": {
@@ -11380,7 +11380,7 @@
       "voice_gender": "male",
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.95 cfg 0.3",
       "seed": 42,
-      "whisper_heard": "Speed is, the strategy, keep up or fry.",
+      "whisper_heard": "Speed is the strategy, keep up or fry.",
       "whisper_score": 1.0
     },
     "boss_line_voltharion_22": {
@@ -11394,7 +11394,7 @@
       "voice_gender": "male",
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.95 cfg 0.3",
       "seed": 42,
-      "whisper_heard": "Two turns for me, one for you, fair, right? Right?",
+      "whisper_heard": "Two turns for me, one for you.  Fair, right? Right?",
       "whisper_score": 1.0
     },
     "boss_line_voltharion_23": {
@@ -11422,7 +11422,7 @@
       "voice_gender": "male",
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.95 cfg 0.3",
       "seed": 42,
-      "whisper_heard": "Slow is for ice dragons. I am never slow",
+      "whisper_heard": "Slow is for ice dragons. I am never slow.",
       "whisper_score": 1.0
     },
     "boss_line_voltharion_25": {
@@ -11450,7 +11450,7 @@
       "voice_gender": "male",
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.95 cfg 0.3",
       "seed": 42,
-      "whisper_heard": "I can go faster, watch this!",
+      "whisper_heard": "I can go faster.  Watch this!",
       "whisper_score": 1.0
     },
     "boss_line_voltharion_27": {
@@ -11464,7 +11464,7 @@
       "voice_gender": "male",
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.95 cfg 0.3",
       "seed": 42,
-      "whisper_heard": "The. Thrill. The. Rush. Don't make me stop.",
+      "whisper_heard": "The thrill, the rush, don't make me stop.",
       "whisper_score": 1.0
     },
     "boss_line_voltharion_28": {
@@ -11478,7 +11478,7 @@
       "voice_gender": "male",
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.95 cfg 0.3",
       "seed": 42,
-      "whisper_heard": "Buyers slow, I'm already past where it lands.",
+      "whisper_heard": "Fires! Slow! I'm already past where it lands!",
       "whisper_score": 0.875
     },
     "boss_line_voltharion_29": {
@@ -11492,7 +11492,7 @@
       "voice_gender": "male",
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.95 cfg 0.3",
       "seed": 42,
-      "whisper_heard": "Heat rises, I'm already up there, catch up!",
+      "whisper_heard": "Heat rises, I'm already up there! Catch up!",
       "whisper_score": 1.0
     },
     "boss_line_voltharion_30": {
@@ -11505,9 +11505,9 @@
       "voice": "Chatterbox clone of VCTK p243 (London), reference +2 st formants shifted, voice_refs/voltharion.wav (CC BY 4.0)",
       "voice_gender": "male",
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.95 cfg 0.3",
-      "seed": 7,
-      "whisper_heard": "For me, if you can keep the pace, most can't!",
-      "whisper_score": 0.9
+      "seed": 42,
+      "whisper_heard": "Burn me if you can keep the pace. Most can't.",
+      "whisper_score": 1.0
     },
     "boss_line_voltharion_31": {
       "description": "Voltharion voiced line (boss_dialogue voltharion.taunt.ice_resist)",
@@ -11534,7 +11534,7 @@
       "voice_gender": "male",
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.95 cfg 0.3",
       "seed": 42,
-      "whisper_heard": "You want me still?  Never!  Not even for one frame!",
+      "whisper_heard": "You want me still? Never! Not even for one frame!",
       "whisper_score": 1.0
     },
     "boss_line_voltharion_33": {
@@ -11548,8 +11548,8 @@
       "voice_gender": "male",
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.95 cfg 0.3",
       "seed": 42,
-      "whisper_heard": "Cold is. Just a debuff. I haven't bothered to read.",
-      "whisper_score": 1.0
+      "whisper_heard": "Code is just a debuff I haven't bothered to read!",
+      "whisper_score": 0.9
     },
     "boss_line_voltharion_34": {
       "description": "Voltharion voiced line (boss_dialogue voltharion.taunt.lightning_resist)",
@@ -11562,7 +11562,7 @@
       "voice_gender": "male",
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.95 cfg 0.3",
       "seed": 42,
-      "whisper_heard": "Lightning, at me, your circuits, echo my little storm.",
+      "whisper_heard": "Lightning, at me, your circuits echo my little storm!",
       "whisper_score": 0.889
     },
     "boss_line_voltharion_35": {
@@ -11576,7 +11576,7 @@
       "voice_gender": "male",
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.95 cfg 0.3",
       "seed": 42,
-      "whisper_heard": "You, throw vault at a vault dragon. I absorb it and go faster.",
+      "whisper_heard": "You throw vaults at a Volk Dragon, I absorb it and go faster!",
       "whisper_score": 0.846
     },
     "boss_line_voltharion_36": {
@@ -11590,7 +11590,7 @@
       "voice_gender": "male",
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.95 cfg 0.3",
       "seed": 42,
-      "whisper_heard": "Thunder. Doesn't scare thunder. Try something slower to dodge.",
+      "whisper_heard": "Thunder doesn't scare Thunder. Try something slower to dodge.",
       "whisper_score": 1.0
     },
     "boss_line_voltharion_37": {
@@ -11603,9 +11603,9 @@
       "voice": "Chatterbox clone of VCTK p243 (London), reference +2 st formants shifted, voice_refs/voltharion.wav (CC BY 4.0)",
       "voice_gender": "male",
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.95 cfg 0.3",
-      "seed": 42,
-      "whisper_heard": "You all, huddle round one battery, unplug it first.",
-      "whisper_score": 1.0
+      "seed": 777,
+      "whisper_heard": "You will huddle round one battery. Unplug it first.",
+      "whisper_score": 0.889
     },
     "boss_line_voltharion_38": {
       "description": "Voltharion voiced line (boss_dialogue voltharion.taunt.focus_healer)",
@@ -11631,7 +11631,7 @@
       "voice": "Chatterbox clone of VCTK p243 (London), reference +2 st formants shifted, voice_refs/voltharion.wav (CC BY 4.0)",
       "voice_gender": "male",
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.95 cfg 0.3",
-      "seed": 42,
+      "seed": 7,
       "whisper_heard": "Your healers the breaker switch flip it",
       "whisper_score": 0.857
     },
@@ -11646,7 +11646,7 @@
       "voice_gender": "male",
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.95 cfg 0.3",
       "seed": 42,
-      "whisper_heard": "You, raise the shield. I, raise the voltage. Numbers climb faster than yours.",
+      "whisper_heard": "You raise the shield, I raise the voltage. Numbers climb faster than yours.",
       "whisper_score": 0.923
     },
     "boss_line_voltharion_41": {
@@ -11674,8 +11674,8 @@
       "voice_gender": "male",
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.95 cfg 0.3",
       "seed": 42,
-      "whisper_heard": "Slow and sturdies a turtle strategy. This is not a turtle fight",
-      "whisper_score": 0.917
+      "whisper_heard": "Slow and sturdy is a turtle strategy. This is not a turtle fight!",
+      "whisper_score": 0.88
     },
     "boss_line_voltharion_43": {
       "description": "Voltharion voiced line (boss_dialogue voltharion.taunt.rotate_aggro)",
@@ -11688,8 +11688,8 @@
       "voice_gender": "male",
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.95 cfg 0.3",
       "seed": 42,
-      "whisper_heard": "The ground's my alley, and so is every one of you.  I strike all four!",
-      "whisper_score": 0.933
+      "whisper_heard": "The ground's my ally, and so is every one of you. I strike all four.",
+      "whisper_score": 1.0
     },
     "boss_line_voltharion_44": {
       "description": "Voltharion voiced line (boss_dialogue voltharion.taunt.rotate_aggro)",
@@ -11716,7 +11716,7 @@
       "voice_gender": "male",
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.95 cfg 0.3",
       "seed": 42,
-      "whisper_heard": "favorites ah slow I hit whoever's closest to the ground",
+      "whisper_heard": "Favourites are slow. I hit whoever's closest to the ground.",
       "whisper_score": 0.9
     },
     "boss_line_umbraxis_00": {
@@ -11751,15 +11751,15 @@
       "description": "Umbraxis voiced line (monsters shadow_dragon.intro)",
       "file": "assets/audio/sfx/boss_line_umbraxis_02.ogg",
       "speaker": "Umbraxis",
-      "line": "My HP is 12000 because someone typed it. My dialogue is predetermined.",
-      "spoken": "My HP is 12000 because someone typed it. My dialogue is predetermined.",
-      "source_sha": "eed871f2c89e9f59",
+      "line": "My HP is 11697 because someone typed it. My dialogue is predetermined.",
+      "spoken": "My HP is eleven thousand, six hundred and ninety-seven because someone typed it. My dialogue is predetermined.",
+      "source_sha": "5c1e6c0d74ca2ca7",
       "voice": "Chatterbox clone of VCTK p232 (Southern England), reference -4 st formants shifted, voice_refs/umbraxis.wav (CC BY 4.0)",
       "voice_gender": "male",
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.4 cfg 0.5",
-      "seed": 42,
-      "whisper_heard": "My HP is 12,000 because someone typed it. My dialog is predetermined.",
-      "whisper_score": 0.909
+      "seed": 7,
+      "whisper_heard": "My HP is 11,697 because someone typed it.  My dialogue is predetermined.",
+      "whisper_score": 0.759
     },
     "boss_line_umbraxis_03": {
       "description": "Umbraxis voiced line (monsters shadow_dragon.intro)",
@@ -11975,15 +11975,15 @@
       "description": "Umbraxis voiced line (boss_dialogue umbraxis.opening_lines)",
       "file": "assets/audio/sfx/boss_line_umbraxis_18.ogg",
       "speaker": "Umbraxis",
-      "line": "My HP is 12000 because someone typed it. Let us see if your damage numbers mean anything.",
-      "spoken": "My HP is 12000 because someone typed it. Let us see if your damage numbers mean anything.",
-      "source_sha": "9107f394d9ec0843",
+      "line": "My HP is 11697 because someone typed it. Let us see if your damage numbers mean anything.",
+      "spoken": "My HP is eleven thousand, six hundred and ninety-seven because someone typed it. Let us see if your damage numbers mean anything.",
+      "source_sha": "ca3d0240042bbaf6",
       "voice": "Chatterbox clone of VCTK p232 (Southern England), reference -4 st formants shifted, voice_refs/umbraxis.wav (CC BY 4.0)",
       "voice_gender": "male",
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.4 cfg 0.5",
-      "seed": 42,
-      "whisper_heard": "My HP is 12,000 because someone typed it. Let us see if your damage numbers mean anything.",
-      "whisper_score": 1.0
+      "seed": 7,
+      "whisper_heard": "My HP is 11,697 because someone typed it.  Let us see if your damage numbers mean anything.",
+      "whisper_score": 0.821
     },
     "boss_line_umbraxis_19": {
       "description": "Umbraxis voiced line (boss_dialogue umbraxis.opening_lines)",
@@ -12443,7 +12443,7 @@
       "voice": "Chatterbox clone of VCTK p258 (Southern England), reference -2 st formants shifted, voice_refs/mordaine.wav (CC BY 4.0)",
       "voice_gender": "male",
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5",
-      "seed": 42,
+      "seed": 7,
       "whisper_heard": "Let us see if you are an anomaly worth keeping.",
       "whisper_score": 1.0
     },
