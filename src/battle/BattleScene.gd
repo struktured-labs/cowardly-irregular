@@ -298,6 +298,8 @@ const BOSS_BEAT_ARRIVAL_SLACK_SEC: float = 0.3
 ## Automation never stalls on a beat; a person gets a long but finite read.
 const BOSS_BEAT_AUTO_DISMISS_SEC: float = 3.0
 const BOSS_BEAT_READ_CAP_SEC: float = 30.0
+## A recorded line under automation holds until its voice has finished, plus this.
+const BOSS_BEAT_VOICE_SLACK_SEC: float = 0.3
 
 ## Autobattle state
 var _all_autobattle_enabled: bool = false  # True when all players are on autobattle
@@ -6305,11 +6307,7 @@ func _play_boss_beat(is_victory: bool) -> void:
 		_holding_for_boss_beat = false
 		return
 	_battle_dialogue.show_boss_last_words(_gloat_speaker_name(is_victory), DialoguePrompts.spoken_line(str(_gloat_line.get("text", ""))), _boss_monster_id())
-	var s0: int = Time.get_ticks_msec()
-	while _battle_dialogue.visible and Time.get_ticks_msec() - s0 < cap_ms and is_inside_tree():
-		await get_tree().process_frame
-	if is_instance_valid(_battle_dialogue) and _battle_dialogue.visible:
-		_battle_dialogue.dismiss()
+	await _hold_beat_dialogue()
 	_holding_for_boss_beat = false
 
 
@@ -6353,13 +6351,32 @@ func _play_deferred_defeat_scene() -> void:
 	## Set before the first await, in the same frame the beat released, so GameLoop never sees a gap.
 	_holding_for_boss_beat = true
 	_show_boss_dialogue(str(scene_data["speaker"]), scene_data["lines"])
-	var cap_ms: int = int((BOSS_BEAT_AUTO_DISMISS_SEC * scene_data["lines"].size() if _boss_beat_automated() else BOSS_BEAT_READ_CAP_SEC) * 1000.0)
+	await _hold_beat_dialogue()
+	_holding_for_boss_beat = false
+
+
+## Manual: the player reads, up to READ_CAP. Automated: each line holds until its voice is done, then moves on.
+func _hold_beat_dialogue() -> void:
+	var automated: bool = _boss_beat_automated()
 	var s0: int = Time.get_ticks_msec()
-	while _battle_dialogue.visible and Time.get_ticks_msec() - s0 < cap_ms and is_inside_tree():
+	var line: int = -1
+	var line_t0: int = s0
+	while _battle_dialogue.visible and Time.get_ticks_msec() - s0 < int(BOSS_BEAT_READ_CAP_SEC * 1000.0) and is_inside_tree():
+		if automated:
+			var now: int = Time.get_ticks_msec()
+			if _battle_dialogue.line_index() != line:
+				line = _battle_dialogue.line_index()
+				line_t0 = now
+			if now - line_t0 >= beat_line_hold_ms(_battle_dialogue.line_voice_seconds()):
+				_battle_dialogue.next_line()
 		await get_tree().process_frame
 	if is_instance_valid(_battle_dialogue) and _battle_dialogue.visible:
 		_battle_dialogue.dismiss()
-	_holding_for_boss_beat = false
+
+
+## An automated line's hold: the read floor, or the recording plus slack when that is longer.
+static func beat_line_hold_ms(voice_sec: float) -> int:
+	return int(maxf(BOSS_BEAT_AUTO_DISMISS_SEC, voice_sec + BOSS_BEAT_VOICE_SLACK_SEC) * 1000.0)
 
 
 func _gloat_speaker_name(_is_victory: bool) -> String:
