@@ -184,3 +184,10 @@ func test_a_suppressed_beat_is_not_voiced() -> void:
 	var s: Node = _make_scene()
 	s._on_boss_gloat_line(LINE, true)
 	assert_eq(_replay.requests.size(), 0, "no beat at 4x, so no voice is synthesized for one")
+
+
+## cowir-music: the .542 freeze was a generator freed under a shared player; the line player refuses one outright.
+func test_the_line_player_refuses_a_generator() -> void:
+	var gen := AudioStreamGenerator.new()
+	assert_eq(SoundManager.play_line_stream(gen), 0.0, "a generator must not reach the line player")
+	assert_ne(SoundManager._line_player.stream, gen, "and the player must not hold it")

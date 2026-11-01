@@ -1376,6 +1376,10 @@ func play_voiced_line(speaker: String, text: String, owner: Object = null) -> fl
 func play_line_stream(stream: AudioStream, owner: Object = null) -> float:
 	if stream == null or _line_player == null:
 		return 0.0
+	## A generator swapped off a shared player is the .542 use-after-free; this player takes decoded clips only.
+	if stream is AudioStreamGenerator:
+		push_warning("[AUDIO] refused a generator on the line player")
+		return 0.0
 	if wav_commit_refused():
 		push_warning("[AUDIO] skipped live line — mixer is wedged")
 		return 0.0
