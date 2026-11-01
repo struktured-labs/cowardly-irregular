@@ -56,9 +56,9 @@ const NAME_LABEL_GAP: float = 6.0
 const NAME_LABEL_WIDTH: float = 200.0
 const NAME_LABEL_PX := 16  # on-screen size for every monster, whatever its sprite scale
 const ENEMY_HP_BAR_SIZE := Vector2(60, 5)  # on-screen, whatever the sprite scale
-## How far each formation stands nearer its own edge (struktured 2026-11-01); the party has no room under its badges yet.
+## How far each formation stands nearer its own edge (struktured 2026-11-01); the party gives back whatever its panel grows.
 const ENEMY_EDGE_SHIFT := -24.0
-const PARTY_EDGE_SHIFT := 0.0
+const PARTY_EDGE_SHIFT := 32.0
 const ENEMY_HP_BAR_FADE := 0.4  # under the 0.5s dissolve it leaves with
 const STATUS_ROW_WIDTH := 120.0  # badges centre in it over the figure (row units, x STATUS_ROW_ZOOM on screen)
 const STATUS_ROW_ZOOM := 1.6  # the badges' ~9px text, read at ~14px on every monster
@@ -263,6 +263,8 @@ var _is_danger_music: bool = false
 var _idle_time: float = 0.0
 var _enemy_base_positions: Array[Vector2] = []
 var _party_base_positions: Array[Vector2] = []
+var _party_column_dx := 0.0  # the party column's live shift: PARTY_EDGE_SHIFT less the PARTY panel's growth
+var _party_panel_authored_left := 0.0
 
 ## Party formation system
 enum PartyFormation { V_FORMATION, FRONT_LINE, BACK_ROW, DIAMOND, SPREAD }
@@ -373,7 +375,11 @@ func set_terrain(terrain: String) -> void:
 
 func _ready() -> void:
 	_shift_area(get_node_or_null("BattleField/EnemyArea"), ENEMY_EDGE_SHIFT)
-	_shift_area(get_node_or_null("BattleField/PartyArea"), PARTY_EDGE_SHIFT)
+	var party_panel_for_column := get_node_or_null("UI/PartyStatusPanel") as Control
+	if party_panel_for_column:
+		_party_panel_authored_left = party_panel_for_column.offset_left
+		party_panel_for_column.resized.connect(_sync_party_column)
+	_sync_party_column()
 	# Initialize composed subsystems
 	_enemy_spawner = BattleEnemySpawnerClass.new(self)
 	_ui_manager = BattleUIManagerClass.new(self)
@@ -714,7 +720,12 @@ func _create_speed_indicator() -> void:
 	style.content_margin_top = 2
 	style.content_margin_bottom = 2
 	panel.add_theme_stylebox_override("panel", style)
-	ui.add_child(panel)
+	var row: HFlowContainer = _ui_manager.party_header_row() if _ui_manager else null
+	if row:
+		panel.set_anchors_preset(Control.PRESET_TOP_LEFT)
+		row.add_child(panel)
+	else:
+		ui.add_child(panel)
 
 	_speed_indicator = RichTextLabel.new()
 	_speed_indicator.name = "SpeedIndicator"
@@ -887,7 +898,7 @@ func _toggle_battle_speed() -> void:
 
 func _animate_speed_change() -> void:
 	"""Pop animation on the speed indicator when toggled"""
-	var panel = $UI.get_node_or_null("SpeedPanel")
+	var panel = $UI.find_child("SpeedPanel", true, false)
 	if not panel:
 		return
 	# Scale pop: 1.0 -> 1.25 -> 1.0, around the TOP-RIGHT corner: the default top-left pivot swelled it into the PARTY panel.
@@ -916,6 +927,31 @@ func _repeat_previous_actions() -> void:
 	else:
 		var why: String = str(BattleManager.last_repeat_refusal)
 		log_message("[color=gray]%s[/color]" % (why if why != "" else "Repeat is not available right now."))
+
+
+## The party stands PARTY_EDGE_SHIFT nearer its edge, less however far its panel has grown left (Text Size), so the gap holds.
+func _sync_party_column() -> void:
+	var area := get_node_or_null("BattleField/PartyArea") as Control
+	if area == null:
+		return
+	var growth := 0.0
+	var panel := get_node_or_null("UI/PartyStatusPanel") as Control
+	if panel and panel.is_inside_tree():
+		growth = maxf(0.0, (get_viewport_rect().size.x + _party_panel_authored_left) - panel.get_global_rect().position.x)
+	var delta := (PARTY_EDGE_SHIFT - growth) - _party_column_dx
+	if is_zero_approx(delta):
+		return
+	_party_column_dx += delta
+	_shift_area(area, delta)
+	for i in party_sprite_nodes.size():
+		var sprite = party_sprite_nodes[i]
+		if not is_instance_valid(sprite):
+			continue
+		sprite.position.x += delta
+		if sprite.has_meta("home_position"):
+			sprite.set_meta("home_position", sprite.get_meta("home_position") + Vector2(delta, 0))
+		if i < _party_base_positions.size():
+			_party_base_positions[i].x += delta
 
 
 func _shift_area(area: Control, dx: float) -> void:
@@ -3620,7 +3656,7 @@ func _on_battle_ended(victory: bool) -> void:
 	var hint_bar := get_node_or_null("UI/InputHintBar") as CanvasItem
 	if hint_bar:
 		hint_bar.visible = false
-	var speed_panel := get_node_or_null("UI/SpeedPanel") as CanvasItem
+	var speed_panel := find_child("SpeedPanel", true, false) as CanvasItem
 	if speed_panel:
 		speed_panel.visible = false
 

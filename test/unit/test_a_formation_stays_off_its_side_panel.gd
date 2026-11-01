@@ -3,9 +3,10 @@ extends GutTest
 ## struktured 2026-11-01: "move the party and monsters slightly towards the edges of the screen (party slightly
 ## closer to the right and monsters slightly closer to left). see if we got the space for that". Measured in real
 ## battles: the enemies had 71px to the left column at 100% text and 33px at 200%, so they moved 24px left
-## (BattleScene.ENEMY_EDGE_SHIFT). The party had no room: its top member already stands under the speed/AUTO
-## badges, so PARTY_EDGE_SHIFT stays 0. This holds what the move used: no combatant's on-screen body (opaque frame,
-## name, HP bar, status icons) touches its side's column panels, in every formation and every Text Size preset.
+## (BattleScene.ENEMY_EDGE_SHIFT). The party's top member stood under the AUTO/speed badges, so those moved into the
+## PARTY panel's header row (cowir-main's call), and the party moved PARTY_EDGE_SHIFT right, less whatever the
+## panel grows at larger Text Sizes (at 200% Back Row had overlapped the panel on main). This holds all of it: no
+## combatant body (opaque frame, name, HP bar, status icons) touches its side's column or a badge, at every size.
 
 const SCENE := preload("res://src/battle/BattleScene.tscn")
 const BS := preload("res://src/battle/BattleScene.gd")
@@ -84,17 +85,42 @@ func test_no_enemy_touches_the_left_column_at_any_text_size() -> void:
 	assert_eq(bad, [], "%d touch(es):\n%s" % [bad.size(), "\n".join(bad.slice(0, 6))])
 
 
-func test_no_party_member_touches_the_party_panel_in_any_formation() -> void:
+func test_no_party_member_touches_the_party_panel_or_a_badge_at_any_size() -> void:
 	var bad: Array = []
-	var scene = await _build(["goblin"])
-	assert_eq(scene.party_sprite_nodes.size(), 5, "CONTROL: the full party stands")
-	assert_true(Body.walls(scene).has("PartyStatusPanel"), "CONTROL: the PARTY panel stands")
-	for f in BS.FORMATION_NAMES.size():
-		if f > 0:
-			scene.cycle_formation()
-			await get_tree().create_timer(0.4).timeout
-		bad.append_array(_touches(scene, scene.party_sprite_nodes, ["PartyStatusPanel"], BS.FORMATION_NAMES[scene.current_formation]))
+	var judged := 0
+	for ts in SettingsMenuScript.TEXT_SIZE_PRESETS:
+		GameState.set_text_size_scale(ts)
+		var scene = await _build(["goblin"])
+		for i in 3:
+			await get_tree().process_frame
+		var w: Dictionary = Body.walls(scene)
+		assert_eq(scene.party_sprite_nodes.size(), 5, "CONTROL: the full party stands")
+		assert_true(w.has("PartyStatusPanel") and w.has("SpeedPanel") and w.has("AutoToggleButton"),
+			"CONTROL: the PARTY panel and both badges stand (%s)" % str(w.keys()))
+		for f in BS.FORMATION_NAMES.size():
+			if f > 0:
+				scene.cycle_formation()
+				await get_tree().create_timer(0.4).timeout
+			var tag := "text %.2f %s" % [ts, BS.FORMATION_NAMES[scene.current_formation]]
+			bad.append_array(_touches(scene, scene.party_sprite_nodes, ["PartyStatusPanel", "SpeedPanel", "AutoToggleButton"], tag))
+			bad.append_array(_touches(scene, scene.enemy_sprite_nodes, ["SpeedPanel", "AutoToggleButton"], tag))
+			judged += 1
+		scene.queue_free()
+		await get_tree().process_frame
+	assert_eq(judged, SettingsMenuScript.TEXT_SIZE_PRESETS.size() * BS.FORMATION_NAMES.size(), "CONTROL: every size and formation was judged")
 	assert_eq(bad, [], "%d touch(es):\n%s" % [bad.size(), "\n".join(bad.slice(0, 6))])
+
+
+func test_the_badges_ride_in_the_party_header() -> void:
+	var scene = await _build(["goblin"])
+	for i in 3:
+		await get_tree().process_frame
+	var panel: Control = scene.get_node("UI/PartyStatusPanel")
+	for name in ["SpeedPanel", "AutoToggleButton"]:
+		var badge := scene.find_child(name, true, false) as Control
+		assert_not_null(badge, "CONTROL: %s is built" % name)
+		if badge:
+			assert_true(panel.is_ancestor_of(badge), "%s rides inside the PARTY panel, off the column above the party" % name)
 
 
 func test_the_bodies_measured_are_figures_not_frames() -> void:
@@ -108,7 +134,7 @@ func test_the_bodies_measured_are_figures_not_frames() -> void:
 
 func test_each_column_carries_its_shift() -> void:
 	assert_lt(BS.ENEMY_EDGE_SHIFT, 0.0, "the enemies stand nearer the LEFT edge")
-	assert_gte(BS.PARTY_EDGE_SHIFT, 0.0, "the party never moves away from its edge")
+	assert_gt(BS.PARTY_EDGE_SHIFT, 0.0, "the party stands nearer the RIGHT edge")
 	var st := SCENE.get_state()
 	var authored := {}
 	for i in st.get_node_count():
@@ -116,8 +142,12 @@ func test_each_column_carries_its_shift() -> void:
 			if st.get_node_property_name(i, p) == "offset_left":
 				authored[str(st.get_node_name(i))] = float(st.get_node_property_value(i, p))
 	assert_true(authored.has("EnemyArea") and authored.has("PartyArea"), "CONTROL: the scene authors both columns")
+	GameState.set_text_size_scale(1.0)
 	var scene = await _build(["goblin"])
+	for i in 3:
+		await get_tree().process_frame
 	assert_almost_eq(scene.get_node("BattleField/EnemyArea").offset_left, authored.get("EnemyArea", 0.0) + BS.ENEMY_EDGE_SHIFT, 0.5,
 		"the enemy column stands ENEMY_EDGE_SHIFT from where the scene authors it")
-	assert_almost_eq(scene.get_node("BattleField/PartyArea").offset_left, authored.get("PartyArea", 0.0) + BS.PARTY_EDGE_SHIFT, 0.5,
-		"the party column stands PARTY_EDGE_SHIFT from where the scene authors it")
+	assert_almost_eq(scene._party_column_dx, BS.PARTY_EDGE_SHIFT, 0.5, "at 100% text the PARTY panel has not grown, so the party takes its whole shift")
+	assert_almost_eq(scene.get_node("BattleField/PartyArea").offset_left, authored.get("PartyArea", 0.0) + scene._party_column_dx, 0.5,
+		"the party column stands where its live shift says")
