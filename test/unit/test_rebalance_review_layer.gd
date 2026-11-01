@@ -10,6 +10,23 @@ extends GutTest
 
 const DAEMON_PATH := "res://src/llm/RebalanceDaemon.gd"
 
+## force_apply writes through the LIVE GameState autoload, and the suite is one process: these arms
+## halved exp_multiplier for every file that ran after this one. Restored after EACH arm, abort-proof.
+var _constants_at_start: Dictionary = {}
+
+
+func before_all() -> void:
+	var gs: Node = get_tree().root.get_node_or_null("GameState")
+	if gs != null:
+		_constants_at_start = gs.game_constants.duplicate(true)
+
+
+func after_each() -> void:
+	var gs: Node = get_tree().root.get_node_or_null("GameState")
+	if gs != null:
+		gs.game_constants.clear()
+		gs.game_constants.merge(_constants_at_start.duplicate(true))
+
 
 func _make_daemon():
 	return load(DAEMON_PATH).new()
@@ -149,3 +166,13 @@ func test_format_for_review_handles_empty_deltas() -> void:
 	var msg: String = daemon.format_for_review(prop)
 	assert_true(msg.contains("no concrete deltas") or msg.contains("(no"),
 		"empty deltas must surface as an explicit note — silent omission would look like a bug to the user")
+
+
+## Runs LAST (GUT keeps source order): the file must hand the next one the constants it was given.
+func test_the_file_leaves_game_constants_as_it_found_them() -> void:
+	var gs: Node = get_tree().root.get_node_or_null("GameState")
+	assert_not_null(gs, "FIXTURE: the force_apply arms write through the GameState autoload")
+	assert_true(_constants_at_start.has("exp_multiplier"),
+		"FIXTURE: exp_multiplier must exist, or force_apply writes nothing and this arm cannot fail")
+	assert_eq(gs.game_constants.get("exp_multiplier"), _constants_at_start.get("exp_multiplier"),
+		"a force_apply arm leaked its write into every later test file")
