@@ -119,3 +119,24 @@ func test_the_battle_scene_is_silent_at_4x() -> void:
 	Engine.time_scale = 4.0
 	scene._boss_bark(_boss(), "big_hit")
 	assert_false(SoundManager.is_voiced_line_playing(), "barks are suppressed at 4x, like the party's lines")
+
+
+## cowir-ai 21120: on a wipe the boss's last words take the line player, so the wipe bark must yield to them.
+func test_a_wipe_bark_yields_to_the_bosss_last_words() -> void:
+	var scene = load(SCENE).instantiate()
+	add_child_autofree(scene)
+	await get_tree().process_frame
+	Engine.time_scale = 1.0
+	var boss := _boss()
+	scene.test_enemies.clear()
+	scene.test_enemies.append(boss)
+	scene._gloat_line = {}
+	BattleManager.boss_gloat_pending = false
+	scene._wipe_bark()
+	assert_true(SoundManager.is_voiced_line_playing(), "CONTROL: a wipe with no last words to come barks")
+	SoundManager.stop_voiced_line()
+	scene._boss_barks = BossBarks.new()
+	scene._gloat_line = {"text": "Petition denied.", "is_victory": false}
+	scene._wipe_bark()
+	assert_false(SoundManager.is_voiced_line_playing(), "with last words pending, a wipe bark would be cut or make the boss speak twice")
+	scene._gloat_line = {}

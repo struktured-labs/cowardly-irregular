@@ -3614,7 +3614,7 @@ func _on_battle_ended(victory: bool) -> void:
 	## (first enemy with is_boss meta) for the speaker name.
 	_stage_defeat_scene(victory)
 	if not victory:
-		_boss_bark(_boss_combatant(), "party_wipe")
+		_wipe_bark()
 
 	# Clean up any open menus
 	if active_win98_menu and is_instance_valid(active_win98_menu):
@@ -6324,6 +6324,13 @@ func _on_party_combat_line(combatant: Combatant, line: String, voice_trigger: St
 			if job_id != "":
 				audio_key = "voice_%s_%s" % [job_id, voice_trigger]
 		_spawn_quip_bubble(sprite, combatant.combatant_name, line, _get_job_quip_color(combatant), 2.0, audio_key, voice_stream)
+
+
+## A wipe barks only when no last words will follow on the same line player (cowir-ai 21120: a boss never speaks twice).
+func _wipe_bark() -> void:
+	if _boss_beat_expected():
+		return
+	_boss_bark(_boss_combatant(), "party_wipe")
 
 
 ## A boss's short voiced bark; silent at 4x/turbo, over a scripted line or a bubble, or inside the cooldown.
