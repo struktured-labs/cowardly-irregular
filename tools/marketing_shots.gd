@@ -362,6 +362,13 @@ func _shoot_title() -> void:
 		gl.queue_free()
 		await process_frame
 		return
+	## Show what a PLAYER sees. Version.display() appends the git short-hash on every editor-build source
+	## run (src/meta/Version.gd _should_ask_git), so a capture from any checkout — even one at the tag —
+	## reads "vX (hash)", while the exported builds on the store read plain "vX". The store frame shows
+	## the exported string, from Version.semver(), the same source display() uses.
+	if "_version_label" in ts and ts._version_label != null:
+		ts._version_label.text = "v" + load("res://src/meta/Version.gd").semver()
+		await process_frame
 	var img := root.get_texture().get_image()
 	if not ShotGuard.save_or_refuse(img, "res://tmp/marketing/title_screen.png"):
 		_fail += 1
