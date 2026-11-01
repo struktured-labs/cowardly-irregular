@@ -9974,7 +9974,8 @@ func _produce_boss_gloat_async(prompt: String, fallback: String, victory: bool) 
 	spoken["done"] = true
 	## complete() hands back the AUTHORED fallback verbatim on any failure; only the model's own words are cleaned, so a recorded line keeps its key.
 	var raw: String = str(line)
-	var text: String = raw if raw == fallback else strip_wrapping_quotes(raw)
+	## Models overshoot a stated budget and break lines; the taunt and party line are clamped the same way.
+	var text: String = raw if raw == fallback else DialoguePrompts.clamp_display(DialoguePrompts.flatten_line(raw), DialoguePrompts.MAX_BOSS_GLOAT_CHARS)
 	if text == "":
 		text = fallback
 	_emit_boss_gloat(text, victory)
@@ -10081,7 +10082,7 @@ func _build_gloat_prompt(persona_id: String, boss_name: String, victory: bool, v
 		+ "\n"
 		+ "Rules:\n"
 		+ "- Stay fully in character as the boss; first person.\n"
-		+ "- ONE short line, maximum 140 characters.\n"
+		+ "- ONE short line, maximum %d characters.\n" % DialoguePrompts.MAX_BOSS_GLOAT_CHARS
 		+ DialoguePrompts.HYPHEN_RUN_RULE % DialoguePrompts.MAX_HYPHEN_RUN_WORDS
 		+ "- Do NOT include the boss name or a speaker label.\n"
 		+ "- Respond with ONLY the line itself, no quotes, no JSON.\n"

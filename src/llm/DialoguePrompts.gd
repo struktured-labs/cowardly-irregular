@@ -213,6 +213,8 @@ const FALLBACK_BOSS_INTENT: Dictionary = {
 ## Hard cap on the LLM's freeform reason/taunt strings so a runaway
 ## generation doesn't blow up the combat log.
 const MAX_BOSS_TAUNT_CHARS: int = 140
+## The last words: the gloat prompt states it and the producer enforces it, as for the taunt.
+const MAX_BOSS_GLOAT_CHARS: int = 140
 const MAX_BOSS_REASON_CHARS: int = 240
 
 ## Fallback envelope for party-line — empty line signals caller to use scripted pool.
