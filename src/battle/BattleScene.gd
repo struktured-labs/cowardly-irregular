@@ -984,7 +984,7 @@ func _queue_party_relayout() -> void:
 func _run_party_relayout() -> void:
 	_party_relayout_queued = false
 	if is_inside_tree():
-		_place_party(false)
+		_place_party(true)
 
 
 ## Lays the party out and seats every member at its home: battle start, a formation change, the PARTY panel resizing.
@@ -995,15 +995,17 @@ func _place_party(animate: bool) -> void:
 		if not is_instance_valid(sprite):
 			continue
 		var home := _party_home(i)
+		var rest := home + (_stepped_out_shift if i == _stepped_out_idx else Vector2.ZERO)
 		sprite.set_meta("home_position", home)
 		if i < _party_base_positions.size():
 			_party_base_positions[i] = home
 		else:
 			_party_base_positions.append(home)
+		# Animated re-seats outlast ACTIVE_PC_STEP_TWEEN_TIME: a step tween aimed at the old layout must not finish last.
 		if animate:
-			create_tween().tween_property(sprite, "position", home, 0.25).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+			create_tween().tween_property(sprite, "position", rest, 0.25).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 		else:
-			sprite.position = home
+			sprite.position = rest
 
 
 func _shift_area(area: Control, dx: float) -> void:
