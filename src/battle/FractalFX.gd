@@ -82,6 +82,20 @@ func _release() -> void:
 	_live.erase(self)
 
 
+## When the sequence first lands on its target, in battle seconds: the end of its bolt if it has one,
+## else its first phase at the target. The caller holds damage numbers until then.
+static func impact_time(seq: Dictionary) -> float:
+	var start := float(seq.get("start", 0.0))
+	for phase in seq.get("phases", []):
+		if phase is Dictionary and str(phase.get("kind", "")) == "bolt":
+			return start + float(phase.get("at", 0.0)) + float(phase.get("dur", 0.4))
+	var first := INF
+	for phase in seq.get("phases", []):
+		if phase is Dictionary and str(phase.get("origin", "target")) == "target":
+			first = minf(first, float(phase.get("at", 0.0)))
+	return start + (first if first != INF else 0.0)
+
+
 ## How long a phase occupies the timeline, recursion included.
 static func phase_duration(phase: Dictionary) -> float:
 	match str(phase.get("kind", "")):

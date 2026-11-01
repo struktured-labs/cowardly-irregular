@@ -73,6 +73,8 @@ var spawn_points: Dictionary = {}
 var _height_grid: Array = []
 ## The village's own glyph rows, captured where every village already hands them over.
 var _map_rows: Array = []
+## Building blocks this village has drawn art for (manifest building_art); the procedural facade leaves them alone.
+var _art_blocks: Array = []
 var _stair_cells: Dictionary = {}
 var _face_cells: Dictionary = {}
 var _prop_blocked: Dictionary = {}
@@ -260,6 +262,7 @@ func _spawn_house_facades(glyphs: Array, roof_colors: Array = [], style: String 
 		for b in buildings.get_children():
 			if b is Node2D and not (b is AreaTransition):
 				claimed.append(_building_cells(b))
+	claimed.append_array(_art_blocks)
 	var want := {}
 	for g in glyphs:
 		want[g] = true
@@ -296,6 +299,71 @@ func _spawn_house_facades(glyphs: Array, roof_colors: Array = [], style: String 
 			props.add_child(house)
 			built += 1
 	return built
+
+
+## Drawn building art: each entry maps a block's origin cell (any cell of the block) to a manifest building_art key.
+## The art covers the whole block, door included, bottom-aligned on its base row, so the party walks in front of
+## the base and behind the roof. What the art replaces on that block is hidden but kept: a stall's sprite, and a
+## door's drawn archway (its prompt still appears in range). Call it after the shops and doors exist and BEFORE
+## _spawn_house_facades, which then skips these blocks. Returns how many blocks got art.
+func _spawn_building_art(art: Dictionary) -> int:
+	if _map_rows.is_empty() or props == null:
+		return 0
+	var paths := _building_art_paths()
+	var built: int = 0
+	for origin in art:
+		var key := str(art[origin])
+		var path := str(paths.get(key, ""))
+		if path == "" or not ResourceLoader.exists(path):
+			push_warning("[VILLAGE] building_art '%s' has no art on disk (%s); the block stays procedural" % [key, path])
+			continue
+		var cell := origin as Vector2i
+		var glyph: String = str(_map_rows[cell.y])[cell.x]
+		var block: Array = _flood_block(cell, {glyph: true}, {})
+		var minp := block[0] as Vector2i
+		var maxp := block[1] as Vector2i
+		var house: VillageProp = VillagePropScript.create(VillagePropScript.Kind.HOUSE, Vector2i(minp.x, maxp.y))
+		house.name = "BuildingArt_%s" % key
+		house.art_path = path
+		house.size_tiles = maxp - minp + Vector2i.ONE
+		props.add_child(house)
+		var rect := Rect2i(minp, maxp - minp + Vector2i.ONE)
+		_art_blocks.append(rect)
+		_hide_what_the_art_draws(rect)
+		built += 1
+	return built
+
+
+## The stall sprite or door archway that would draw over (or double) a block now covered by art; the door keeps its signpost.
+func _hide_what_the_art_draws(rect: Rect2i) -> void:
+	if buildings == null:
+		return
+	for b in buildings.get_children():
+		if b is AreaTransition:
+			if rect.has_point(Vector2i(floori(b.position.x / TILE_SIZE), floori(b.position.y / TILE_SIZE))):
+				b.show_gate_visual = false
+				b.label_without_gate = true
+				b.queue_redraw()
+		elif b is Node2D:
+			var spr = b.get("sprite")
+			if spr is Sprite2D and spr.texture != null and _building_cells(b).intersects(rect):
+				(spr as Sprite2D).visible = false
+
+
+static var _art_path_cache: Dictionary = {}
+
+
+## manifest building_art: key -> res:// path of the drawn building.
+static func _building_art_paths() -> Dictionary:
+	if _art_path_cache.is_empty():
+		var m: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/sprite_manifest.json"))
+		var sec: Variant = (m as Dictionary).get("building_art", {}) if m is Dictionary else {}
+		if sec is Dictionary:
+			for k in sec:
+				var e: Variant = sec[k]
+				if e is Dictionary:
+					_art_path_cache[str(k)] = str((e as Dictionary).get("path", ""))
+	return _art_path_cache
 
 
 func _block_is_claimed(minp: Vector2i, maxp: Vector2i, claimed: Array) -> bool:
