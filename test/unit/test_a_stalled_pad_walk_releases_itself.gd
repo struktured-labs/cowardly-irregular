@@ -49,11 +49,17 @@ func _walk(m: Node) -> void:
 	m._refresh_mapping_prompt()
 
 
+## A TAP: press then release. Since the long-press skip (2026-11-01) a press that is never released
+## is a HOLD and skips the control after MAPPING_HOLD_SKIP_SEC, which these arms never meant.
 func _press(m: Node, button: int) -> void:
 	var ev := InputEventJoypadButton.new()
 	ev.button_index = button
 	ev.pressed = true
 	m._handle_mapping_input(ev)
+	var up := InputEventJoypadButton.new()
+	up.button_index = button
+	up.pressed = false
+	m._handle_mapping_input(up)
 
 
 func _consts() -> Dictionary:
