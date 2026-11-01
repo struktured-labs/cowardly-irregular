@@ -58,6 +58,35 @@ var house_style: String = "timber"
 var art_path: String = ""
 
 
+## manifest prop_art: "<kind>_<world>" first, then "<kind>"; "" when neither has art on disk, so the prop stays procedural.
+static func prop_art_entry(kind_name: String, world: String) -> Dictionary:
+	var sec := _prop_art_section()
+	for key in [kind_name + "_" + world, kind_name]:
+		var e: Variant = sec.get(key, null)
+		if e is Dictionary and ResourceLoader.exists(str((e as Dictionary).get("path", ""))):
+			return e
+	return {}
+
+
+static func prop_art_path(kind_name: String, world: String) -> String:
+	return str(prop_art_entry(kind_name, world).get("path", ""))
+
+
+static var _prop_art_cache: Variant = null
+## Tests plant entries here instead of editing the manifest; null = read the manifest.
+static var prop_art_override: Variant = null
+
+
+static func _prop_art_section() -> Dictionary:
+	if prop_art_override is Dictionary:
+		return prop_art_override
+	if _prop_art_cache == null:
+		var m: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/sprite_manifest.json"))
+		var sec: Variant = (m as Dictionary).get("prop_art", {}) if m is Dictionary else {}
+		_prop_art_cache = sec if sec is Dictionary else {}
+	return _prop_art_cache
+
+
 static func create(k: int, base_cell: Vector2i) -> VillageProp:
 	var p := VillageProp.new()
 	p.kind = k
@@ -98,6 +127,8 @@ func _ready() -> void:
 	spr.position = Vector2(-TILE / 2.0, -size.y * TILE)
 	if art_path != "" and img.get_height() != size.y * TILE:
 		spr.position.y = -img.get_height()  ## drawn art has its own height: its base sits on the base row
+	if art_path != "" and img.get_width() != size.x * TILE:
+		spr.position.x += (size.x * TILE - img.get_width()) / 2.0  ## and its own width: centred over the footprint
 	add_child(spr)
 	if not FOOTPRINTS[kind].is_empty():
 		var body := StaticBody2D.new()
