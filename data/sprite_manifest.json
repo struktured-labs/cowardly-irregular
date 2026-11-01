@@ -7467,6 +7467,51 @@
       "path": "res://assets/sprites/props/medieval/well.png",
       "tier": "T1",
       "source": "gpt-image-2, straight-on round stone well with a peaked roof and winch; keyed everywhere so the backdrop between its posts is clear, 64px wide over the 2-tile footprint (struktured 2026-11-01: procgen props must go) -- tools/gen_village_buildings.py --props; T1, artist veto applies."
+    },
+    "barrel": {
+      "path": "res://assets/sprites/props/common/barrel.png",
+      "tier": "T1",
+      "source": "gpt-image-2, straight-on sturdy wooden barrel; generic, so every world without its own reads it (struktured 2026-11-01: procgen props must go) -- tools/gen_village_buildings.py --props; T1, artist veto applies."
+    },
+    "crate": {
+      "path": "res://assets/sprites/props/common/crate.png",
+      "tier": "T1",
+      "source": "gpt-image-2, straight-on nailed wooden shipping crate; generic (struktured 2026-11-01: procgen props must go) -- tools/gen_village_buildings.py --props; T1, artist veto applies."
+    },
+    "planter": {
+      "path": "res://assets/sprites/props/common/planter.png",
+      "tier": "T1",
+      "source": "gpt-image-2, straight-on half-barrel planter with red flowers; generic (struktured 2026-11-01: procgen props must go) -- tools/gen_village_buildings.py --props; T1, artist veto applies."
+    },
+    "planter_suburban": {
+      "path": "res://assets/sprites/props/suburban/planter.png",
+      "tier": "T1",
+      "source": "gpt-image-2, straight-on terracotta pot of geraniums (struktured 2026-11-01: procgen props must go) -- tools/gen_village_buildings.py --props; T1, artist veto applies."
+    },
+    "planter_steampunk": {
+      "path": "res://assets/sprites/props/steampunk/planter.png",
+      "tier": "T1",
+      "source": "gpt-image-2, straight-on riveted copper planter on iron feet (struktured 2026-11-01: procgen props must go) -- tools/gen_village_buildings.py --props; T1, artist veto applies."
+    },
+    "fence": {
+      "path": "res://assets/sprites/props/common/fence.png",
+      "tier": "T1",
+      "source": "gpt-image-2, straight-on rustic wooden fence section whose rails meet its neighbours; generic (struktured 2026-11-01: procgen props must go) -- tools/gen_village_buildings.py --props; T1, artist veto applies."
+    },
+    "fence_suburban": {
+      "path": "res://assets/sprites/props/suburban/fence.png",
+      "tier": "T1",
+      "source": "gpt-image-2, straight-on white picket fence section (struktured 2026-11-01: procgen props must go) -- tools/gen_village_buildings.py --props; T1, artist veto applies."
+    },
+    "banner": {
+      "path": "res://assets/sprites/props/common/banner.png",
+      "tier": "T1",
+      "source": "gpt-image-2, straight-on red cloth banner with a golden crest, 64px tall like the painted one; generic (struktured 2026-11-01: procgen props must go) -- tools/gen_village_buildings.py --props; T1, artist veto applies."
+    },
+    "banner_steampunk": {
+      "path": "res://assets/sprites/props/steampunk/banner.png",
+      "tier": "T1",
+      "source": "gpt-image-2, straight-on green cloth banner with a golden cog, 64px tall (struktured 2026-11-01: procgen props must go) -- tools/gen_village_buildings.py --props; T1, artist veto applies."
     }
   }
 }

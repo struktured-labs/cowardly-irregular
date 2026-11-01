@@ -178,7 +178,11 @@ FUTURISTIC = {
 
 ## Village PROPS (struktured 2026-11-01: "any of that old school procgenylooking art needs to go"). Same style and
 ## straight-on view as the medieval buildings; width in tiles is the prop's drawn width.
-STYLE_PROP = STYLE.replace("BUILDING", "village PROP").replace("a wooden front door at the bottom centre. ", "")
+STYLE_PROP = ("A single small 16-bit SNES-era JRPG pixel-art OBJECT -- not a building, no walls, no roof, no windows, "
+              "no house -- seen from the front and a little above, like the props in the towns of classic Square RPGs. "
+              "Rich hand-pixeled detail, crisp dark outline, warm limited palette, soft top-left lighting. No people, no "
+              "text or letters, no ground, no grass, no shadow on the ground, nothing else in the picture. The background "
+              "is one flat, solid, pure magenta (#FF00FF) colour with no gradient. The object fills the frame and is centred.")
 PROPS = {
     "harmonia_fountain": (3, "Harmonia's plaza fountain: a round two-tier carved stone fountain basin, clear blue water "
                              "spilling from the upper bowl into the lower pool, and a small blossoming pink cherry tree "
@@ -207,11 +211,25 @@ PROPS = {
                            "copper canopy, a little steam pipe, with jars, cogs and pocket watches laid out for sale."),
     "well_medieval": (2, "A single round stone village well: a ring of grey fieldstone, a small peaked wooden roof on two posts "
                          "with a winch, a rope and a wooden bucket."),
+    "barrel": (1, "A single sturdy wooden barrel with dark iron hoops, standing upright."),
+    "crate": (1, "A single square wooden shipping crate with nailed planks and a darker frame."),
+    "planter": (1, "A single wooden half-barrel planter overflowing with green leaves and small red flowers."),
+    "planter_suburban": (1, "A single round terracotta flower pot full of bright red geraniums, 1990s front-porch style."),
+    "planter_steampunk": (1, "A single riveted copper planter box on little iron feet, holding a small fern."),
+    "fence": (1, "One short square section of a rustic wooden village fence, as tall as it is wide: two stout posts and "
+                 "two horizontal rails, the rails running all the way off both the left and right edges so sections join."),
+    "fence_suburban": (1, "One short square section of a white wooden picket fence, as tall as it is wide: tall pointed white "
+                          "pickets on two rails, the rails running off both the left and right edges so sections join."),
+    "banner": (1, "A single tall cloth village banner hanging from a wooden pole with a crossbar: deep red cloth with a "
+                  "golden crest, a forked bottom edge. Tall and narrow."),
+    "banner_steampunk": (1, "A single tall cloth banner hanging from a brass pole with a crossbar: dark green cloth with a "
+                            "golden cog emblem, a straight fringed bottom edge. Tall and narrow."),
 }
 ## See-through props (wire mesh): the border flood cannot reach backdrop enclosed by the wires, so key it everywhere.
-KEY_EVERYWHERE = {"cart_suburban", "well_medieval"}
+KEY_EVERYWHERE = {"cart_suburban", "well_medieval", "fence", "fence_suburban"}
 ## Props whose art must stand a fixed height (the lamp's light anchor sits 50px above its base, VillageProp).
-PROP_HEIGHT = {"lamp_post_medieval": 64, "lamp_post_suburban": 64, "lamp_post_steampunk": 64}
+PROP_HEIGHT = {"lamp_post_medieval": 64, "lamp_post_suburban": 64, "lamp_post_steampunk": 64,
+               "banner": 64, "banner_steampunk": 64}
 
 ## Terrain TILES (32x32, opaque, edge to edge): drawn as a square patch of ground filling the whole frame.
 TILE_STYLE = ("A single square 16-bit SNES-era JRPG pixel-art overworld TILE, seen from above at a slight angle, that "
