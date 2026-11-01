@@ -1343,12 +1343,19 @@ static func voiced_line_clip(speaker: String, text: String) -> String:
 	_load_sfx_manifest()
 	if speaker.strip_edges() == "" or text.strip_edges() == "":
 		return ""
-	var want: String = voiced_line_key(speaker, text)
+	var want: String = voiced_line_key("", text)
 	for key in _sfx_manifest:
 		var e = _sfx_manifest[key]
-		if e is Dictionary and e.has("line") and voiced_line_key(str(e.get("speaker", "")), str(e["line"])) == want:
+		if e is Dictionary and e.has("line") and voiced_line_key("", str(e["line"])) == want and speaks_as(str(e.get("speaker", "")), speaker):
 			return str(key)
 	return ""
+
+
+## A panel may name a boss by a titled form ("Pyrroth, the Ember Wyrm", "Chancellor Mordaine") where a cutscene says "Pyrroth".
+static func speaks_as(recorded: String, shown: String) -> bool:
+	var r: String = recorded.strip_edges().to_lower()
+	var s: String = shown.strip_edges().to_lower()
+	return r != "" and (s == r or s.begins_with(r + ",") or s.ends_with(" " + r))
 
 
 ## Plays the line's recording and returns its length, or 0.0 when the line has none. Music ducks while it speaks.
