@@ -6949,7 +6949,11 @@ func _present_summoned_enemy(enemy: Combatant, monster_type: String, new_idx: in
 		sprite.position = base_pos + Vector2(new_idx * 80, (new_idx % 2) * 50)
 
 	sprite.play("idle")
-	sprite.scale = Vector2(0.01, 0.01)  # Start nearly invisible (not ZERO to avoid tween issues)
+	## Built at its FINAL scale: the name, HP bar and status icons below each undo the sprite's scale AT
+	## CREATION, so building them at the pop-in's 0.01 made them 100x too big. The HP bar's dark backing
+	## then covered half the screen for the rest of the fight (struktured's 2026-10-31 "the whole screen
+	## darkened" after a summon). The pop-in drops to 0.01 below, once everything hanging off it exists.
+	sprite.scale = Vector2(final_scale, final_scale)
 
 	$BattleField/EnemySprites.add_child(sprite)
 	enemy_sprite_nodes.append(sprite)
@@ -6971,6 +6975,7 @@ func _present_summoned_enemy(enemy: Combatant, monster_type: String, new_idx: in
 	_create_enemy_hp_bar(enemy, sprite)
 
 	# Spawn animation - pop in with flash (overshoot and settle at the computed size, not 1.0)
+	sprite.scale = Vector2(0.01, 0.01)  # Start nearly invisible (not ZERO to avoid tween issues)
 	var tween = create_tween()
 	tween.tween_property(sprite, "scale", Vector2(final_scale * 1.3, final_scale * 1.3), 0.15)
 	tween.tween_property(sprite, "scale", Vector2(final_scale, final_scale), 0.1)
