@@ -45,3 +45,44 @@ func test_every_boss_prompt_states_the_limit() -> void:
 		"the gloat prompt (where his line came from) must state the limit the cleaner enforces")
 	var taunt_prompt: String = DialoguePrompts.build_boss_intent("Voltharion", {"persona": "EVERYTHING-IS-URGENT."})
 	assert_string_contains(taunt_prompt, rule, "and so must the taunt prompt")
+
+
+## complete() returns the AUTHORED fallback verbatim on any failure; cleaning it would move a recorded line's key and
+## silence cowir-sfx's clip. Driven through the real producer with the model off.
+func test_an_authored_fallback_reaches_the_screen_untouched() -> void:
+	var authored: String = "I-have-never-been-prouder-to-lose. Full-send-unattended!"
+	var bm: Node = get_tree().root.get_node("BattleManager")
+	var llm: Node = get_tree().root.get_node("LLMService")
+	var was_enabled: bool = llm.llm_enabled
+	llm.llm_enabled = false
+	var heard: Array = []
+	var cb := func(text: String, _v: bool): heard.append(text)
+	bm.boss_gloat_line.connect(cb)
+	bm._produce_boss_gloat_async("prompt", authored, false)
+	var t0 := Time.get_ticks_msec()
+	while heard.is_empty() and Time.get_ticks_msec() - t0 < int(bm.GLOAT_WAIT_SEC * 1000.0) + 500:
+		await get_tree().process_frame
+	bm.boss_gloat_line.disconnect(cb)
+	llm.llm_enabled = was_enabled
+	assert_eq(heard.size(), 1, "FIXTURE: one line was emitted")
+	if heard.size() != 1:
+		return
+	assert_eq(str(heard[0]), authored, "THE RISK: an authored line was respaced, so its recording no longer matches it")
+
+
+func test_the_prompts_quote_no_long_run() -> void:
+	var bm: Node = get_tree().root.get_node("BattleManager")
+	var long_sample: String = "I-have-never-been-prouder-to-lose"
+	var gloat: String = bm._build_gloat_prompt("voltharion", "Voltharion", false, long_sample)
+	assert_false(gloat.contains(long_sample), "the voice sample must not show the model a run the cleaner removes")
+	assert_false(gloat.contains("maximum-DPS-per-second"), "nor may the persona quoted in the gloat prompt")
+	var taunt: String = DialoguePrompts.build_boss_intent("Voltharion", {"persona": "maximum-DPS-per-second, always."})
+	assert_false(taunt.contains("maximum-DPS-per-second"), "nor may the persona quoted in the taunt prompt")
+
+
+## cowir-main 20955: the persona said only "You hyphenate.", pulling against the rule; it now says how.
+func test_his_persona_agrees_with_the_rule() -> void:
+	var persona: String = str(get_tree().root.get_node("BossDialogue").get_persona("voltharion"))
+	assert_ne(persona, "", "FIXTURE: Voltharion has a persona")
+	assert_false(persona.contains("You hyphenate. "), "the bare instruction to hyphenate is gone")
+	assert_string_contains(persona, "never a whole sentence", "it says the same limit the rule states")

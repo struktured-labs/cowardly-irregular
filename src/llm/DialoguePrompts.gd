@@ -711,7 +711,8 @@ static func build_boss_intent(
 	display_name: String,
 	ctx: Dictionary,
 ) -> String:
-	var persona: String = str(ctx.get("persona", ""))
+	## Quoted to the model as its voice, so it must not show the long hyphen runs the cleaner removes.
+	var persona: String = unrun_hyphens(str(ctx.get("persona", "")))
 	if persona.is_empty():
 		persona = "A formidable JRPG boss."
 	var phase: int = int(ctx.get("phase", 1))

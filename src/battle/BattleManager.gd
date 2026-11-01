@@ -9972,7 +9972,9 @@ func _produce_boss_gloat_async(prompt: String, fallback: String, victory: bool) 
 	if spoken["done"]:
 		return
 	spoken["done"] = true
-	var text: String = strip_wrapping_quotes(str(line))
+	## complete() hands back the AUTHORED fallback verbatim on any failure; only the model's own words are cleaned, so a recorded line keeps its key.
+	var raw: String = str(line)
+	var text: String = raw if raw == fallback else strip_wrapping_quotes(raw)
 	if text == "":
 		text = fallback
 	_emit_boss_gloat(text, victory)
@@ -10062,10 +10064,10 @@ func _build_gloat_prompt(persona_id: String, boss_name: String, victory: bool, v
 	if boss_dlg_g and boss_dlg_g.has_method("get_persona"):
 		var persona_text: String = str(boss_dlg_g.get_persona(persona_id)).strip_edges()
 		if persona_text != "":
-			persona_block = "\nPersona — stay in THIS voice, not a generic villain's:\n  %s\n" % persona_text
+			persona_block = "\nPersona — stay in THIS voice, not a generic villain's:\n  %s\n" % DialoguePrompts.unrun_hyphens(persona_text)
 	var sample_block: String = ""
 	if voice_sample.strip_edges() != "":
-		sample_block = "\nOne of this boss's own lines for this moment (match its voice; do not copy it):\n  %s\n" % voice_sample.strip_edges()
+		sample_block = "\nOne of this boss's own lines for this moment (match its voice; do not copy it):\n  %s\n" % DialoguePrompts.unrun_hyphens(voice_sample.strip_edges())
 
 	return (
 		"You are voicing a boss in a meta-aware JRPG called 'Cowardly Irregular'.\n"
