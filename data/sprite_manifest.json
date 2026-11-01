@@ -7390,5 +7390,13 @@
       "tier": "T1",
       "source": "gpt-image-2, straight-on 16-bit neon cyber facade (W5 style, after struktured's direction B, 2026-11-01) -- tools/gen_village_buildings.py --futuristic; T1, artist veto applies."
     }
+  },
+  "prop_art": {
+    "fountain_medieval": {
+      "path": "res://assets/sprites/props/medieval/fountain.png",
+      "tier": "T1",
+      "frames": 4,
+      "source": "gpt-image-2, straight-on medieval plaza fountain with a cherry tree in the buildings' style (struktured 2026-11-01: procgen-looking props must go) -- tools/gen_village_buildings.py --props; 4 frames = one painting, water pixels' brightness cycled; T1, artist veto applies."
+    }
   }
 }
