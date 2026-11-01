@@ -217,6 +217,19 @@ func _setup_transitions() -> void:
 		transitions.add_child(suburban_portal)
 
 
+## Drawn building art per block, keyed by the block's top-left cell (manifest building_art, T1).
+const BUILDING_ART := {
+	Vector2i(6, 4): "harmonia_library",
+	Vector2i(16, 4): "harmonia_arcana",
+	Vector2i(25, 5): "harmonia_arms",
+	Vector2i(6, 9): "harmonia_inn",
+	Vector2i(24, 9): "harmonia_remedies",
+	Vector2i(6, 15): "harmonia_chapel",
+	Vector2i(26, 15): "harmonia_tavern",
+	Vector2i(7, 19): "harmonia_house",
+}
+
+
 func _setup_buildings() -> void:
 	# === CASTLE VISTA === north skyline the after_cave scene looks up at
 	var castle_vista = CastleVistaScript.new()
@@ -319,6 +332,7 @@ func _setup_buildings() -> void:
 	_add_lamp_post(Vector2i(23, 25))
 	## LAST, so every door and building node it must defer to already exists. Roofs alternate so a
 	## row of identical blocks reads as separate houses -- the cheapest variety a SNES town buys.
+	_spawn_building_art(BUILDING_ART)
 	_spawn_house_facades(["H", "I", "A", "P", "G", "B"], [
 		Color(0.72, 0.20, 0.18), Color(0.20, 0.34, 0.68), Color(0.30, 0.46, 0.26),
 	])

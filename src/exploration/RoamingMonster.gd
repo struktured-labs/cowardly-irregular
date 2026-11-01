@@ -724,6 +724,15 @@ func deactivate() -> void:
 		_sprite.visible = false
 
 
+## Chained encounters: an ALERTED or ANGRY roamer near a touch joins the fight; a calm, afraid, fading or elite one does not.
+func can_join_chain() -> bool:
+	if not _active or _fading or elite or not is_inside_tree():
+		return false
+	if _repel_active():
+		return false
+	return _mood == Mood.ALERTED or _mood == Mood.ANGRY
+
+
 func _begin_fade() -> void:
 	_fading = true
 	_fade_timer = 0.0

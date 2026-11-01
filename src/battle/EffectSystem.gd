@@ -132,6 +132,20 @@ func spawn_ability_effect(ability: Variant, target_position: Vector2, on_complet
 		float(vfx["power"]) if power == 1.0 else power, "", vfx["color"])
 
 
+## Plays a data/vfx_sequences.json sequence from `from` to `to` (#399, struktured via cowir-main 2026-10-31:
+## "wire it into Fire first, playable"). Returns {"total", "impact"} in battle seconds: impact is when the
+## sequence first lands on the target, so a caller can hold the damage numbers for it. {} if the id is unknown.
+func spawn_sequence(seq_id: String, from: Vector2, to: Vector2, power: float = 1.0) -> Dictionary:
+	var seq: Dictionary = FractalFX.load_sequence(seq_id)
+	if seq.is_empty() or _effects_container == null:
+		return {}
+	var fx := FractalFX.new(_effects_container)
+	fx.reduce_flashes = _reduce_flashes()
+	fx.on_shake = _trigger_screen_shake
+	var total: float = fx.play(seq, from, to, clampf(power, POWER_MIN, POWER_MAX))
+	return {"total": total, "impact": FractalFX.impact_time(seq)}
+
+
 ## Ladder moved to AbilityVFX.power_for so the resolver and this path cannot drift apart.
 func _get_ability_power_tier(ability_id: String) -> float:
 	"""Get power tier based on ability name suffix (basic -> -a -> -aga)"""
