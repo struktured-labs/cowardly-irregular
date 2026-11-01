@@ -5159,6 +5159,10 @@ func _on_exploration_battle_triggered(enemies: Array, terrain: String = "") -> v
 	if _battle_transition_starting:
 		print("[GAMELOOP] BLOCKED — a battle transition is already starting (double-commence guard)")
 		return
+	# struktured 2026-11-01: a grind that ended in a wipe left him on the field all-KO, and the next touch started a chain he lost instantly.
+	if not _party_can_fight():
+		print("[GAMELOOP] BLOCKED — no party member is standing; an encounter now would be an instant defeat")
+		return
 	# 2026-07-14: reciprocal mutex against _on_area_transition. If the player is mid-scene-load (walked into a village) and an encounter fires the same frame, drop the encounter — the transition owns the scene state.
 	if _transition_in_progress:
 		print("[GAMELOOP] BLOCKED — area transition in flight, dropping encounter")
@@ -5233,6 +5237,14 @@ func _on_exploration_battle_triggered(enemies: Array, terrain: String = "") -> v
 		# No transition — load battle directly
 		await _start_battle_async(enemies, true)
 
+
+
+## True when at least one party member can fight. An encounter (or a chain) never starts against an all-KO party.
+func _party_can_fight() -> bool:
+	for m in party:
+		if m is Combatant and is_instance_valid(m) and m.is_alive and m.current_hp > 0:
+			return true
+	return party.is_empty()
 
 
 ## struktured 2026-10-31: alerted roamers near a touch join it -- one battle if they fit, else back-to-back. Returns battle one.
