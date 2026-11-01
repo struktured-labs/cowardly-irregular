@@ -298,6 +298,21 @@ var _all_out_attack_this_battle: bool = false    # The party used a pooled group
 var _battle_results: Dictionary = {}  # {exp_per_char: int, bonuses: Array, char_results: Array}
 ## Visual autogrind records EXP and gold here but does not pay them — on_battle_victory is that battle's payer. One-shot; end_battle clears it.
 var defer_victory_payout: bool = false
+## Chained encounters: groups engaged so far in this chain, set by GameLoop per link. One-shot; end_battle clears it.
+var chain_groups: int = 1
+## struktured 2026-10-31: EXP and gold +20% per extra group (cap 2x), drops +10% (cap 1.5x), under any over-level halving.
+const CHAIN_REWARD_STEP: float = 0.20
+const CHAIN_REWARD_CAP: float = 2.0
+const CHAIN_DROP_STEP: float = 0.10
+const CHAIN_DROP_CAP: float = 1.5
+
+
+static func chain_reward_factor(groups: int) -> float:
+	return minf(1.0 + CHAIN_REWARD_STEP * float(maxi(groups, 1) - 1), CHAIN_REWARD_CAP)
+
+
+static func chain_drop_factor(groups: int) -> float:
+	return minf(1.0 + CHAIN_DROP_STEP * float(maxi(groups, 1) - 1), CHAIN_DROP_CAP)
 
 ## Permanent injury tracking — party members who were KO'd during battle
 var _ko_this_battle: Array[Combatant] = []
@@ -915,6 +930,10 @@ func end_battle(victory: bool) -> void:
 	# Read before clearing. A grind that stopped mid-fight must still be paid here — its settler is gone.
 	var defer_payout: bool = victory and _defer_victory_payout()
 	defer_victory_payout = false
+	var chain_reward: float = chain_reward_factor(chain_groups)
+	var chain_drop: float = chain_drop_factor(chain_groups)
+	var chain_engaged: int = maxi(chain_groups, 1)
+	chain_groups = 1
 	## Tick 472: clear the custom win_condition BEFORE any downstream
 	## work so a subsequent normal battle starts with default "all
 	## enemies dead" behavior. Set once per battle by GameLoop.
@@ -1046,7 +1065,7 @@ func end_battle(victory: bool) -> void:
 				# Symptom: "the rare mimic gives me bonus EXP but the same
 				# gold as a regular encounter." Aligns with line 441's EXP
 				# formula where reward_multiplier IS applied.
-				total_gold += int(gold * one_shot_gold_bonus * reward_multiplier * gold_multiplier)
+				total_gold += int(gold * one_shot_gold_bonus * reward_multiplier * gold_multiplier * chain_reward)
 		if total_gold > 0 and not defer_payout:
 			# total_gold already includes gold_multiplier; add_gold would apply the dial again.
 			GameState.party_gold += total_gold
@@ -1077,7 +1096,7 @@ func end_battle(victory: bool) -> void:
 					# the SAME drop rate as a regular encounter — the third
 					# reward axis was the only one not respecting the
 					# rarity flag. Closes the rare-reward asymmetry trio.
-					if randf() < drop.get("chance", 0.0) * drop_rate_mult * reward_multiplier:
+					if randf() < drop.get("chance", 0.0) * drop_rate_mult * reward_multiplier * chain_drop:
 						var item_id = drop.get("item", "")
 						if item_id == "":
 							continue
@@ -1173,7 +1192,7 @@ func end_battle(victory: bool) -> void:
 				combatant.ability_learned.connect(_collect_learned)
 			# The dead learn nothing — unless a passive/accessory says otherwise (struktured 2026-09-06).
 			if combatant.is_alive or earns_exp_while_dead(combatant):
-				exp_gained = int(base_exp * reward_multiplier * one_shot_exp_bonus * autobattle_exp_bonus * exp_multiplier)
+				exp_gained = int(base_exp * reward_multiplier * one_shot_exp_bonus * autobattle_exp_bonus * exp_multiplier * chain_reward)
 				if not defer_payout:
 					combatant.gain_job_exp(exp_gained)
 			if combatant.has_signal("ability_learned") and combatant.ability_learned.is_connected(_collect_learned):
@@ -1215,6 +1234,9 @@ func end_battle(victory: bool) -> void:
 			bonuses.append({"type": "one_shot", "multiplier": one_shot_exp_bonus, "rank": _get_one_shot_rank(_setup_turns_used)})
 		if _full_autobattle and _autobattle_player_turns > 0:
 			bonuses.append({"type": "autobattle", "multiplier": autobattle_exp_bonus, "turns": _autobattle_player_turns})
+		if chain_engaged > 1:
+			bonuses.append({"type": "chain", "multiplier": chain_reward, "drop_multiplier": chain_drop, "groups": chain_engaged})
+			battle_log_message.emit("Chain of %d groups: EXP and gold x%.1f, drops x%.1f" % [chain_engaged, chain_reward, chain_drop])
 		# Check for permanent injuries on KO'd party members (25% chance per KO)
 		var injuries: Array = []
 		for combatant in _ko_this_battle:
@@ -1236,7 +1258,7 @@ func end_battle(victory: bool) -> void:
 			"total_gold": total_gold,
 			"item_drops": item_drops,
 			"injuries": injuries,
-			"total_multiplier": reward_multiplier * one_shot_exp_bonus * autobattle_exp_bonus
+			"total_multiplier": reward_multiplier * one_shot_exp_bonus * autobattle_exp_bonus * chain_reward
 		}
 
 		# Record one-shot in save system if achieved

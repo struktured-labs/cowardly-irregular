@@ -9,11 +9,10 @@ extends GutTest
 ## boss content in tonight's playtest window.
 ##
 ## Ratchet: every `background` id referenced by an overlay cutscene must
-## resolve to either an OGV video backdrop (assets/cutscene_videos/) or a
+## resolve to a
 ## PNG image backdrop (assets/cutscene_backdrops/). Staged scenes
 ## (presentation:"staged") don't render a backdrop and are skipped.
 
-const OGV_DIR := "res://assets/cutscene_videos"
 const PNG_DIR := "res://assets/cutscene_backdrops"
 
 
@@ -33,7 +32,7 @@ func _cutscene_files() -> Array:
 
 
 func _backdrop_resolves(bg: String) -> bool:
-	return ResourceLoader.exists("%s/%s.ogv" % [OGV_DIR, bg]) or ResourceLoader.exists("%s/%s.png" % [PNG_DIR, bg])
+	return ResourceLoader.exists("%s/%s.png" % [PNG_DIR, bg])
 
 
 func test_castle_harmonia_throne_repointed_to_existing_asset() -> void:
@@ -76,12 +75,13 @@ func test_every_overlay_cutscene_backdrop_resolves() -> void:
 	for bg in offenders:
 		reports.append("'%s' (e.g. in %s)" % [bg, ", ".join(offenders[bg])])
 	assert_true(false,
-		"cutscene JSON references backdrops with no OGV or PNG on disk (silent world-gradient fallback):\n  %s" % "\n  ".join(reports))
+		"cutscene JSON references backdrops with no PNG on disk (silent world-gradient fallback):\n  %s" % "\n  ".join(reports))
 
 
 ## ── THE OTHER DIRECTION, added 2026-09-12 ──────────────────────────────────
 ##
-## THE ARM ABOVE QUANTIFIES OVER BACKGROUNDS. IT CANNOT SEE A SHIPPED VIDEO NOBODY NAMES.
+## THE ARM ABOVE QUANTIFIES OVER BACKGROUNDS. IT CANNOT SEE A SHIPPED BACKDROP NOBODY NAMES.
+## (2026-11-01: the .ogv videos were retired, so this now walks the PNG stills; the history below is the video era.)
 ##
 ## `_try_load_backdrop_image` composes `res://assets/cutscene_videos/<background>.ogv` — a
 ## COMPOSED path, so no video's filename appears in any source file and a literal scan reports
@@ -104,29 +104,29 @@ func test_every_overlay_cutscene_backdrop_resolves() -> void:
 ## ⚠️ WHAT THIS DOES NOT CLAIM. "Named by a cutscene" is not "a player sees it" — the scene
 ## carrying it may itself be undispatched. That is a different corpus and a different guard.
 
-## video id -> why it ships unnamed. Each line is a claim about the CORPUS, so it must be false
+## still id -> why it ships unnamed. Each line is a claim about the CORPUS, so it must be false
 ## before the line can be deleted.
-##   grows   -> a video shipped for a scene nobody wrote
+##   grows   -> a still shipped for a scene nobody wrote
 ##   shrinks -> someone authored the scene, or deleted the file. Delete the line either way.
-const UNNAMED_BACKDROP_VIDEOS := {
-	"steampunk_airship": "297 KiB. A night airship deck; its one scene (world3_chapter2) is a street fight, re-pointed to brasston_square 2026-10-31. Deleting it is struktured's call.",
+const UNNAMED_BACKDROP_STILLS := {
+	"steampunk_airship": "25 KiB. A night airship deck; its one scene (world3_chapter2) is a street fight, re-pointed to brasston_square 2026-10-31. Deleting it is struktured's call.",
 }
 
 
-func _video_ids() -> Array:
+func _still_ids() -> Array:
 	var out: Array = []
-	var d := DirAccess.open(OGV_DIR)
+	var d := DirAccess.open(PNG_DIR)
 	if d == null:
 		return out
 	for f in d.get_files():
-		if f.ends_with(".ogv"):
-			out.append(f.trim_suffix(".ogv"))
+		if f.ends_with(".png"):
+			out.append(f.trim_suffix(".png"))
 	out.sort()
 	return out
 
 
 ## Every background any cutscene names, staged included: a staged scene renders no backdrop,
-## but a video it names is authored-for, not orphaned, and deleting it would be a content loss.
+## but a still it names is authored-for, not orphaned, and deleting it would be a content loss.
 func _named_backgrounds() -> Dictionary:
 	var out: Dictionary = {}
 	for path in _cutscene_files():
@@ -139,45 +139,45 @@ func _named_backgrounds() -> Dictionary:
 	return out
 
 
-## PREMISE. Both corpora real, and the reader answers BOTH ways — a walk that finds no videos
-## reports zero orphans, and a walk that finds no backgrounds reports every video as one.
+## PREMISE. Both corpora real, and the reader answers BOTH ways — a walk that finds no stills
+## reports zero orphans, and a walk that finds no backgrounds reports every still as one.
 func test_premise_the_reverse_reader_answers_both_ways() -> void:
-	var vids := _video_ids()
+	var vids := _still_ids()
 	var named := _named_backgrounds()
 	assert_gt(vids.size(), 15,
-		"only %d .ogv found — the video walk is short, and a short walk reports zero orphans no matter what ships" % vids.size())
+		"only %d backdrop .png found — the still walk is short, and a short walk reports zero orphans no matter what ships" % vids.size())
 	assert_gt(named.size(), 12,
-		"only %d distinct backgrounds parsed — a short read makes EVERY video look orphaned and inverts this arm" % named.size())
+		"only %d distinct backgrounds parsed — a short read makes EVERY still look orphaned and inverts this arm" % named.size())
 	# NAMED members, not counts: a sweep that resolved nothing also reports zero missing.
 	assert_true(named.has("prologue_forest"),
 		"CONTROL: prologue_forest is named by ~25 cutscenes; if it reads unnamed the background walk is broken and every verdict below is noise")
 	assert_true(vids.has("prologue_forest"),
-		"CONTROL: prologue_forest.ogv must be found by the video walk, or the walk is not reading the asset dir")
+		"CONTROL: prologue_forest.png must be found by the still walk, or the walk is not reading the asset dir")
 	assert_false(named.has("zzz_no_such_backdrop"),
 		"CONTROL: a fabricated background must read as unnamed, or the check cannot return a positive")
 
 
-## THE RATCHET. A video nobody names is web-pck weight for a scene that does not exist.
-func test_every_shipped_backdrop_video_is_named_by_a_cutscene() -> void:
+## THE RATCHET. A still nobody names is pck weight for a scene that does not exist.
+func test_every_shipped_backdrop_still_is_named_by_a_cutscene() -> void:
 	var named := _named_backgrounds()
 	var orphans: Array[String] = []
-	for vid in _video_ids():
-		if not named.has(vid) and not UNNAMED_BACKDROP_VIDEOS.has(vid):
+	for vid in _still_ids():
+		if not named.has(vid) and not UNNAMED_BACKDROP_STILLS.has(vid):
 			orphans.append(vid)
 	orphans.sort()
 	assert_eq(orphans.size(), 0,
-		"a backdrop video ships that no cutscene names — it costs web-pck bytes for a scene nobody wrote: %s. Author the scene, or add it to UNNAMED_BACKDROP_VIDEOS with its byte cost so the weight stays visible." % ", ".join(orphans))
+		"a backdrop still ships that no cutscene names — it costs pck bytes for a scene nobody wrote: %s. Author the scene, or add it to UNNAMED_BACKDROP_STILLS with its byte cost so the weight stays visible." % ", ".join(orphans))
 
 
-## THE STALE-LIST DUAL. The ratchet only compares videos that still SHIP, so an entry whose file
+## THE STALE-LIST DUAL. The ratchet only compares stills that still SHIP, so an entry whose file
 ## was deleted leaves an inert suppression behind — a debt line created by deletion rather than
 ## by being written wrong. Reds in the good direction too: someone authored the scene.
 func test_the_unnamed_list_still_describes_the_corpus() -> void:
 	var named := _named_backgrounds()
-	var vids := _video_ids()
+	var vids := _still_ids()
 	var now_named: Array[String] = []
 	var gone: Array[String] = []
-	for k in UNNAMED_BACKDROP_VIDEOS.keys():
+	for k in UNNAMED_BACKDROP_STILLS.keys():
 		var vid := str(k)
 		if not vids.has(vid):
 			gone.append(vid)
@@ -186,6 +186,6 @@ func test_the_unnamed_list_still_describes_the_corpus() -> void:
 	now_named.sort()
 	gone.sort()
 	assert_eq(now_named.size(), 0,
-		"GOOD NEWS, STALE LIST: %s is now named by a cutscene, so it is content rather than weight. Delete the line(s) from UNNAMED_BACKDROP_VIDEOS." % ", ".join(now_named))
+		"GOOD NEWS, STALE LIST: %s is now named by a cutscene, so it is content rather than weight. Delete the line(s) from UNNAMED_BACKDROP_STILLS." % ", ".join(now_named))
 	assert_eq(gone.size(), 0,
-		"UNNAMED_BACKDROP_VIDEOS names a video that no longer ships: %s — the entry is describing a corpus that has moved on. Delete the line." % ", ".join(gone))
+		"UNNAMED_BACKDROP_STILLS names a still that no longer ships: %s — the entry is describing a corpus that has moved on. Delete the line." % ", ".join(gone))
