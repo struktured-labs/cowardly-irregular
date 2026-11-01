@@ -121,6 +121,6 @@ func test_sell_descriptions_stay_inside_the_panel() -> void:
 	shop._update_description_for_item("potion")
 	assert_true(shop.description_label.text.contains("Sell:"),
 		"sell text still names the sell price. Got:\n%s" % shop.description_label.text)
-	assert_true(shop.description_label.text.contains("Restores 500 HP"),
+	assert_true(shop.description_label.text.contains(str(ItemSystem.get_item("potion").get("description", "?"))),
 		"potion wording is unchanged. Got:\n%s" % shop.description_label.text)
 	await get_tree().create_timer(0.05, true, false, true).timeout

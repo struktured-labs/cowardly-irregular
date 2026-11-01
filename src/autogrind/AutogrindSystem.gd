@@ -63,6 +63,8 @@ var battles_without_heal: int = 0  # Longest un-broken run of victorious battles
 
 ## Efficiency system
 const DEFAULT_MAX_EFFICIENCY := 10.0
+## The level of the battle just resolved (GameLoop sets it from the resolver's area_level); 0 = unknown, no halving.
+var last_area_level: int = 0
 var efficiency_multiplier: float = 1.0  # Increases rewards but also danger
 var max_efficiency: float = DEFAULT_MAX_EFFICIENCY
 var efficiency_growth_rate: float = 0.1  # Per battle
@@ -711,9 +713,10 @@ func on_battle_victory(exp_gained: int, items_gained: Dictionary = {}) -> void:
 	# Award EXP to party — the dead earn nothing without the gear or passive that says otherwise, and the bar records that same full amount.
 	for member in grind_party:
 		if member is Combatant and (member.is_alive or _earns_exp_while_dead(member)):
-			member.gain_job_exp(adjusted_exp)
-			if adjusted_exp > 0:
-				track_character_exp(member.combatant_name, adjusted_exp)
+			var gained := int(adjusted_exp * ExpRules.over_level_factor(member.job_level, last_area_level))
+			member.gain_job_exp(gained)
+			if gained > 0:
+				track_character_exp(member.combatant_name, gained)
 
 	# Derive JP: 1 base JP per battle, scaled by yield and efficiency
 	var jp_gained: int = maxi(1, int(1.0 * reward_scale * efficiency_multiplier))
@@ -1398,18 +1401,18 @@ func build_meta_boss_enemy_data(is_collapse_boss: bool = false) -> Dictionary:
 func _build_fallback_meta_boss(is_collapse_boss: bool) -> Dictionary:
 	"""Fallback boss when monsters.json cannot be read"""
 	var name_str := "NULL::ENTITY" if is_collapse_boss else _generate_meta_boss_name()
-	var hp := int(6000 * (1.0 + meta_corruption_level * 0.2))
+	var hp := int(600 * (1.0 + meta_corruption_level * 0.2))
 	if is_collapse_boss:
 		hp = int(hp * 1.5)
 	return {
 		"id": "null_entity" if is_collapse_boss else "meta_boss_generated",
 		"name": name_str,
 		"color": Color(0.5, 0.0, 0.8),
-		"stats": {"max_hp": hp, "max_mp": 100, "attack": 400, "defense": 300, "magic": 350, "speed": 16},
+		"stats": {"max_hp": hp, "max_mp": 100, "attack": 40, "defense": 30, "magic": 35, "speed": 16},
 		"max_hp": hp,
-		"attack": 400,
-		"defense": 300,
-		"magic": 350,
+		"attack": 40,
+		"defense": 30,
+		"magic": 35,
 		"speed": 16,
 		"exp_reward": 500,
 		"gold_reward": 300,
@@ -2761,7 +2764,7 @@ func apply_autogrind_actions(actions: Array) -> void:
 							if not cast.is_empty():
 								var caster = cast["caster"]
 								caster.current_mp -= int(cast["mp_cost"])
-								var amount := maxi(1, int(int(cast["heal_amount"]) * (1.0 + caster.get_buffed_stat("magic", caster.magic) / 20.0)))
+								var amount := maxi(1, int(int(cast["heal_amount"]) * (caster.x10_ratio() + caster.get_buffed_stat("magic", caster.magic) / 20.0)))
 								member.heal(amount)
 								healed_count += 1
 								continue

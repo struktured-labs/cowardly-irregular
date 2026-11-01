@@ -23,8 +23,9 @@ extends GutTest
 ## stat comparison, so the absolute-threshold sweep that found the tank gate could not see them.
 
 
-func _steal_range(max_hp: int) -> Array:
-	var mult: int = 1 + int(max_hp / BattleManager.STEAL_GOLD_HP_DIVISOR)
+## The payout range for a victim of `max_hp` whose x10_ratio is `ratio` (its spectrum_ratio), as both steal sites compute it.
+func _steal_range(max_hp: int, ratio: float = 1.0) -> Array:
+	var mult: int = 1 + int(max_hp / (ratio * BattleManager.STEAL_GOLD_HP_DIVISOR))
 	return [5 * mult, 50 * mult]
 
 
@@ -42,6 +43,7 @@ func test_stealing_from_trash_cannot_outearn_killing_the_hardest_boss() -> void:
 	var best_reward: int = 0
 	var weakest_id: String = ""
 	var weakest_hp: int = 1 << 30
+	var weakest_ratio: float = 1.0
 	for id in mons:
 		var e: Dictionary = mons[id]
 		best_reward = maxi(best_reward, int(e.get("gold_reward", 0)))
@@ -49,8 +51,9 @@ func test_stealing_from_trash_cannot_outearn_killing_the_hardest_boss() -> void:
 		if hp > 0 and hp < weakest_hp:
 			weakest_hp = hp
 			weakest_id = str(id)
+			weakest_ratio = float(e.get("spectrum_ratio", 1.0))
 	assert_gt(best_reward, 0, "corpus must declare gold rewards or this test measures nothing")
-	var worst_case: int = _steal_range(weakest_hp)[1]
+	var worst_case: int = _steal_range(weakest_hp, weakest_ratio)[1]
 	assert_lt(worst_case, best_reward,
 		"a max-roll steal from %s (%d hp) pays %d, against the game's best authored reward of %d — "
 			% [weakest_id, weakest_hp, worst_case, best_reward]
@@ -69,10 +72,11 @@ func test_steal_stays_proportionate_to_each_monsters_own_reward() -> void:
 		var hp: int = int((e.get("stats", {}) as Dictionary).get("max_hp", 0))
 		if reward <= 0 or hp <= 0:
 			continue
-		var ratio: float = float(_steal_range(hp)[1]) / float(reward)
+		var r: float = float(e.get("spectrum_ratio", 1.0))
+		var ratio: float = float(_steal_range(hp, r)[1]) / float(reward)
 		if ratio > 12.0:
 			offenders.append("%s: max steal %d vs reward %d (%.0f×)"
-				% [id, _steal_range(hp)[1], reward, ratio])
+				% [id, _steal_range(hp, r)[1], reward, ratio])
 	assert_eq(offenders, [], "steal payout has drifted from the authored economy:\n  %s"
 		% "\n  ".join(offenders))
 
@@ -83,9 +87,12 @@ func test_the_divisor_tracks_the_stat_scale() -> void:
 	# Pinning `== 500.0` would go red on a correct future rescale and stay green on a wrong value
 	# spelled the same way — the coincidental-magnitude trap. The divisor was 50 when stats were
 	# at scale 1, so the relationship is what wants defending.
-	assert_eq(BattleManager.STEAL_GOLD_HP_DIVISOR, 50.0 * float(Combatant.STAT_SCALE),
-		"the divisor is an absolute magnitude and must move with Combatant.STAT_SCALE — leaving "
-		+ "it behind is exactly how a slime came to pay out 700 gold")
+	## Since the spectrum curve both sites convert the victim's HP back to ×10-era units, so the divisor is the ×10 era's.
+	assert_eq(BattleManager.STEAL_GOLD_HP_DIVISOR, 50.0 * float(Combatant.X10_ERA_SCALE),
+		"the divisor is an absolute magnitude in ×10-era HP — leaving it behind is exactly how a slime came to pay out 700 gold")
+	var src := FileAccess.get_file_as_string("res://src/battle/BattleManager.gd")
+	assert_true(src.contains("target.x10_ratio() * STEAL_GOLD_HP_DIVISOR"),
+		"the steal must convert the victim's HP to ×10-era units before dividing, or a level-58 boss pays like 400 slimes")
 
 
 func test_no_steal_site_hardcodes_the_old_divisor() -> void:

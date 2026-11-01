@@ -105,8 +105,8 @@ func test_revive_with_flat_heal_hp() -> void:
 	sys._apply_item_effects(target, target, flat_revive)
 
 	assert_true(target.is_alive, "Flat revive should still revive")
-	assert_eq(target.current_hp, 80,
-		"Flat revive should grant heal_hp directly (got %d, expected 80)" % target.current_hp)
+	assert_eq(target.current_hp, ItemSystem._x10_flat(80, target),
+		"Flat revive should grant heal_hp directly, converted at use (got %d)" % target.current_hp)
 
 
 func test_phoenix_down_no_double_apply() -> void:
@@ -164,5 +164,5 @@ func test_potion_still_heals_living_target() -> void:
 	}
 	sys._apply_item_effects(target, target, potion)
 
-	assert_eq(target.current_hp, 90,
-		"Potion should heal flat 50 HP (got %d, expected 90)" % target.current_hp)
+	assert_eq(target.current_hp, 40 + ItemSystem._x10_flat(50, target),
+		"Potion should heal its flat 50, converted at use (got %d)" % target.current_hp)

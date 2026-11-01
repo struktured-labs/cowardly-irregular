@@ -117,6 +117,10 @@ func test_the_marker_and_the_arrows_follow_gear_equipped_after_the_snapshot() ->
 	var stale_amulet := shop._equipped_by("mp_amulet")
 	var stale_staff := shop._equipped_by("oak_staff")
 	var delta: Dictionary = shop._compare_equipment("iron_armor", iron)
+	## The shop shows gear converted at the leader's level (spectrum curve, 2026-10-31).
+	var lv: int = shop._leader_level()
+	iron_hp = Combatant.gear_mod_at_level("max_hp", iron_hp, lv)
+	expected_hp = iron_hp - Combatant.gear_mod_at_level("max_hp", robe_hp, lv)
 	shop._update_description_for_item("iron_armor")
 	var text := str(shop.description_label.text)
 	shop.shop_inventory = ["cloth_robe", "iron_armor"] as Array[String]

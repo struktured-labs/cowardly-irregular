@@ -3307,13 +3307,13 @@ func _create_party_from_customizations(customizations: Array) -> void:
 
 	# Base stats for party members
 	# Overwritten by JobSystem.assign_job for any customization with a job (all of them today —
-	# starting_jobs defaults to two). Kept as the no-job floor, and scaled with the 2026-07-29 ×10
-	# pass so that floor is in the same denomination as everything it would sit beside.
+	# starting_jobs defaults to two). Kept as the no-job floor, in the same denomination as jobs.json
+	# (÷10 again since the 2026-10-31 spectrum curve) so it matches everything it would sit beside.
 	var base_stats_list = [
-		{"max_hp": 1500, "max_mp": 50, "attack": 250, "defense": 150, "magic": 120, "speed": 12},
-		{"max_hp": 1000, "max_mp": 120, "attack": 100, "defense": 120, "magic": 280, "speed": 14},
-		{"max_hp": 900, "max_mp": 40, "attack": 180, "defense": 100, "magic": 80, "speed": 22},
-		{"max_hp": 800, "max_mp": 150, "attack": 80, "defense": 80, "magic": 350, "speed": 12}
+		{"max_hp": 150, "max_mp": 50, "attack": 25, "defense": 15, "magic": 12, "speed": 12},
+		{"max_hp": 100, "max_mp": 120, "attack": 10, "defense": 12, "magic": 28, "speed": 14},
+		{"max_hp": 90, "max_mp": 40, "attack": 18, "defense": 10, "magic": 8, "speed": 22},
+		{"max_hp": 80, "max_mp": 150, "attack": 8, "defense": 8, "magic": 35, "speed": 12}
 	]
 
 	for i in range(min(customizations.size(), 4)):
@@ -3560,6 +3560,9 @@ func _restore_party_from_save_data() -> bool:
 		var c: Combatant = party[i]
 		if saved.has("current_hp"):
 			c.current_hp = clampi(saved["current_hp"], 0, c.max_hp)
+			## A save from another stat scale gets its max re-derived by the curve, so keep its HP as a share of max.
+			if (saved.has("migrated_from_stat_scale") or saved.has("migrated_from_level")) and int(saved.get("max_hp", 0)) > 0:
+				c.current_hp = clampi(roundi(float(saved["current_hp"]) / float(saved["max_hp"]) * c.max_hp), 0, c.max_hp)
 		if saved.has("current_mp"):
 			c.current_mp = clampi(saved["current_mp"], 0, c.max_mp)
 		if saved.has("current_ap"):
@@ -3617,11 +3620,11 @@ func _create_party() -> void:
 	var hero = Combatant.new()
 	hero.initialize({
 		"name": "Fighter",
-		"max_hp": 1500,
+		"max_hp": 150,
 		"max_mp": 50,
-		"attack": 250,
-		"defense": 150,
-		"magic": 120,
+		"attack": 25,
+		"defense": 15,
+		"magic": 12,
 		"speed": 12
 	})
 	add_child(hero)
@@ -3653,11 +3656,11 @@ func _create_party() -> void:
 	var mira = Combatant.new()
 	mira.initialize({
 		"name": "Cleric",
-		"max_hp": 1000,
+		"max_hp": 100,
 		"max_mp": 120,
-		"attack": 100,
-		"defense": 120,
-		"magic": 280,
+		"attack": 10,
+		"defense": 12,
+		"magic": 28,
 		"speed": 14
 	})
 	add_child(mira)
@@ -3678,11 +3681,11 @@ func _create_party() -> void:
 	var rogue = Combatant.new()
 	rogue.initialize({
 		"name": "Rogue",
-		"max_hp": 900,
+		"max_hp": 90,
 		"max_mp": 40,
-		"attack": 180,
-		"defense": 100,
-		"magic": 80,
+		"attack": 18,
+		"defense": 10,
+		"magic": 8,
 		"speed": 22
 	})
 	add_child(rogue)
@@ -3703,11 +3706,11 @@ func _create_party() -> void:
 	var vex = Combatant.new()
 	vex.initialize({
 		"name": "Mage",
-		"max_hp": 800,
+		"max_hp": 80,
 		"max_mp": 150,
-		"attack": 80,
-		"defense": 80,
-		"magic": 350,
+		"attack": 8,
+		"defense": 8,
+		"magic": 35,
 		"speed": 12
 	})
 	add_child(vex)
@@ -3730,11 +3733,11 @@ func _create_party() -> void:
 	var bard = Combatant.new()
 	bard.initialize({
 		"name": "Bard",
-		"max_hp": 950,
+		"max_hp": 95,
 		"max_mp": 90,
-		"attack": 120,
-		"defense": 90,
-		"magic": 220,
+		"attack": 12,
+		"defense": 9,
+		"magic": 22,
 		"speed": 16
 	})
 	add_child(bard)
@@ -6943,6 +6946,8 @@ func _resolve_headless_battle(enemy_data: Array) -> void:
 		_autogrind_ui.append_resolver_log(result.get("log", []))
 	var victory = result.get("victory", false)
 	var exp_gained = result.get("exp_gained", 0)
+	if "last_area_level" in AutogrindSystem:
+		AutogrindSystem.last_area_level = int(result.get("area_level", 0))
 	# Tick 342: pick up gold_gained too — the resolver (tick 341) pre-applied
 	# gold_multiplier, so we just forward as-is.
 	var gold_gained_headless: int = int(result.get("gold_gained", 0))
@@ -7170,10 +7175,11 @@ func _on_autogrind_battle_ended(victory: bool) -> void:
 				float(GameState.game_constants.get("exp_multiplier", 1.0)),
 				0.1, 10.0)
 		if not battle_results.is_empty():
-			# Authored parity: BM's actual per-character grant = base_exp * total_multiplier * exp_multiplier (BM:868). Report that same number as the dashboard telemetry.
-			var base_exp: int = int(battle_results.get("base_exp", 0))
-			var total_mult: float = float(battle_results.get("total_multiplier", 1.0))
-			exp_gained = int(base_exp * total_mult * exp_mult)
+			# Authored parity: report the largest per-character grant BM actually paid (over-level halving and the stomp gate are per member, so no product rebuilds it).
+			if battle_results.has("exp_granted_max"):
+				exp_gained = int(battle_results["exp_granted_max"])
+			else:
+				exp_gained = int(int(battle_results.get("base_exp", 0)) * float(battle_results.get("total_multiplier", 1.0)) * exp_mult)
 			# gold: BM.total_gold already has one_shot_gold_bonus * reward_multiplier * gold_multiplier applied (BM:743, post-cadence #22). Read as-is; re-multiplying here would double-apply.
 			items_gained["gold"] = int(battle_results.get("total_gold", 0))
 		else:
