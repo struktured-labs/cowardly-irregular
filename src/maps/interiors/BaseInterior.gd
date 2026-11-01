@@ -197,20 +197,10 @@ func _setup_tilemap() -> void:
 	var tileset = TileSet.new()
 	tileset.tile_size = Vector2i(TILE_SIZE, TILE_SIZE)
 
-	var floor_source = TileSetAtlasSource.new()
-	var floor_img = Image.create(TILE_SIZE, TILE_SIZE, false, Image.FORMAT_RGBA8)
-	_draw_floor_tile(floor_img)
-	floor_source.texture = ImageTexture.create_from_image(floor_img)
-	floor_source.texture_region_size = Vector2i(TILE_SIZE, TILE_SIZE)
-	floor_source.create_tile(Vector2i(0, 0))
+	var floor_source := InteriorArt.source(InteriorArt.tile("floor", _get_area_id(), _draw_floor_tile))
 	tileset.add_source(floor_source, 0)
 
-	var wall_source = TileSetAtlasSource.new()
-	var wall_img = Image.create(TILE_SIZE, TILE_SIZE, false, Image.FORMAT_RGBA8)
-	_draw_wall_tile(wall_img)
-	wall_source.texture = ImageTexture.create_from_image(wall_img)
-	wall_source.texture_region_size = Vector2i(TILE_SIZE, TILE_SIZE)
-	wall_source.create_tile(Vector2i(0, 0))
+	var wall_source := InteriorArt.source(InteriorArt.tile("wall", _get_area_id(), _draw_wall_tile))
 	tileset.add_source(wall_source, 1)
 
 	tilemap.tile_set = tileset
@@ -223,9 +213,9 @@ func _setup_tilemap() -> void:
 		for x in range(w):
 			var ch: String = row[x] if x < row.length() else "W"
 			if ch == "W":
-				tilemap.set_cell(Vector2i(x, y), 1, Vector2i(0, 0))
+				tilemap.set_cell(Vector2i(x, y), 1, InteriorArt.cell_in(tilemap, 1, Vector2i(x, y)))
 			else:
-				tilemap.set_cell(Vector2i(x, y), 0, Vector2i(0, 0))
+				tilemap.set_cell(Vector2i(x, y), 0, InteriorArt.cell_in(tilemap, 0, Vector2i(x, y)))
 
 
 ## Standard player setup. Interior = slower movement speed (matches

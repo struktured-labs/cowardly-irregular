@@ -175,39 +175,19 @@ func _setup_tilemap() -> void:
 	tileset.tile_size = Vector2i(TILE_SIZE, TILE_SIZE)
 
 	# Source 0 — floor
-	var floor_src = TileSetAtlasSource.new()
-	var floor_img = Image.create(TILE_SIZE, TILE_SIZE, false, Image.FORMAT_RGBA8)
-	_draw_floor_tile(floor_img)
-	floor_src.texture = ImageTexture.create_from_image(floor_img)
-	floor_src.texture_region_size = Vector2i(TILE_SIZE, TILE_SIZE)
-	floor_src.create_tile(Vector2i(0, 0))
+	var floor_src := InteriorArt.source(InteriorArt.tile("floor", art_room(), _draw_floor_tile, _art_village()))
 	tileset.add_source(floor_src, 0)
 
 	# Source 1 — wall
-	var wall_src = TileSetAtlasSource.new()
-	var wall_img = Image.create(TILE_SIZE, TILE_SIZE, false, Image.FORMAT_RGBA8)
-	_draw_wall_tile(wall_img)
-	wall_src.texture = ImageTexture.create_from_image(wall_img)
-	wall_src.texture_region_size = Vector2i(TILE_SIZE, TILE_SIZE)
-	wall_src.create_tile(Vector2i(0, 0))
+	var wall_src := InteriorArt.source(InteriorArt.tile("wall", art_room(), _draw_wall_tile, _art_village()))
 	tileset.add_source(wall_src, 1)
 
 	# Source 2 — counter
-	var counter_src = TileSetAtlasSource.new()
-	var counter_img = Image.create(TILE_SIZE, TILE_SIZE, false, Image.FORMAT_RGBA8)
-	_draw_counter_tile(counter_img)
-	counter_src.texture = ImageTexture.create_from_image(counter_img)
-	counter_src.texture_region_size = Vector2i(TILE_SIZE, TILE_SIZE)
-	counter_src.create_tile(Vector2i(0, 0))
+	var counter_src := InteriorArt.source(InteriorArt.tile("counter", art_room(), _draw_counter_tile, _art_village()))
 	tileset.add_source(counter_src, 2)
 
 	# Source 3 — shelf back panel
-	var shelf_src = TileSetAtlasSource.new()
-	var shelf_img = Image.create(TILE_SIZE, TILE_SIZE, false, Image.FORMAT_RGBA8)
-	_draw_shelf_tile(shelf_img)
-	shelf_src.texture = ImageTexture.create_from_image(shelf_img)
-	shelf_src.texture_region_size = Vector2i(TILE_SIZE, TILE_SIZE)
-	shelf_src.create_tile(Vector2i(0, 0))
+	var shelf_src := InteriorArt.source(InteriorArt.tile("shelf", art_room(), _draw_shelf_tile, _art_village()))
 	tileset.add_source(shelf_src, 3)
 
 	tilemap.tile_set = tileset
@@ -315,19 +295,29 @@ func _draw_shelf_tile(img: Image) -> void:
 			img.set_pixel(x, y, edge if gap else back)
 
 
+## This shop's room key for drawn art (InteriorArt.SHOP_ROOMS); the village it was entered from adds a variant.
+func art_room() -> String:
+	return InteriorArt.SHOP_ROOMS[clampi(shop_type, 0, InteriorArt.SHOP_ROOMS.size() - 1)]
+
+
+func _art_village() -> String:
+	var gl: Node = get_node_or_null("/root/GameLoop") if is_inside_tree() else null
+	return InteriorArt.village_key(str(gl.get_village_origin_id())) if gl and gl.has_method("get_village_origin_id") else ""
+
+
 func _generate_floor() -> void:
 	for y in range(MAP_HEIGHT):
 		for x in range(MAP_WIDTH):
 			var ch = SHOP_LAYOUT[y][x]
 			match ch:
 				"W":
-					tilemap.set_cell(Vector2i(x, y), 1, Vector2i(0, 0))
+					tilemap.set_cell(Vector2i(x, y), 1, InteriorArt.cell_in(tilemap, 1, Vector2i(x, y)))
 				"C":
-					tilemap.set_cell(Vector2i(x, y), 2, Vector2i(0, 0))
+					tilemap.set_cell(Vector2i(x, y), 2, InteriorArt.cell_in(tilemap, 2, Vector2i(x, y)))
 				"S":
-					tilemap.set_cell(Vector2i(x, y), 3, Vector2i(0, 0))
+					tilemap.set_cell(Vector2i(x, y), 3, InteriorArt.cell_in(tilemap, 3, Vector2i(x, y)))
 				_:
-					tilemap.set_cell(Vector2i(x, y), 0, Vector2i(0, 0))
+					tilemap.set_cell(Vector2i(x, y), 0, InteriorArt.cell_in(tilemap, 0, Vector2i(x, y)))
 
 
 # ---------------------------------------------------------------------------
@@ -462,7 +452,6 @@ func _create_shelf_goods() -> void:
 
 
 func _draw_shelf_row(sx: float, sy: float) -> void:
-	var goods = Sprite2D.new()
 	var img = Image.create(TILE_SIZE * 3, 20, false, Image.FORMAT_RGBA8)
 	img.fill(Color.TRANSPARENT)
 
@@ -476,9 +465,14 @@ func _draw_shelf_row(sx: float, sy: float) -> void:
 		ShopType.BLACKSMITH:
 			_draw_weapon_rack_row(img)
 
-	goods.texture = ImageTexture.create_from_image(img)
-	goods.position = Vector2(sx, sy)
-	decorations.add_child(goods)
+	## A drawn shelf of stock stands on the row's own line; the painted row is the fallback.
+	var paint := func() -> Node:
+		var goods := Sprite2D.new()
+		goods.texture = ImageTexture.create_from_image(img)
+		goods.position = Vector2(sx, sy)
+		decorations.add_child(goods)
+		return goods
+	InteriorArt.place_or_paint(decorations, "shelf_goods", art_room(), Vector2(sx, sy + 10.0), paint, _art_village())
 
 
 func _draw_potion_row(img: Image) -> void:
