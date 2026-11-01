@@ -6,6 +6,11 @@
     "bard": {"voice": "bard.wav", "rev": 1},
     "mage": {"voice": "mage.wav", "rev": 1},
     "cleric": {"voice": "cleric.wav", "rev": 1},
-    "cave_rat_king": {"voice": "cave_rat_king.wav", "rev": 1}
+    "cave_rat_king": {"voice": "cave_rat_king.wav", "rev": 1},
+    "fire_dragon": {"voice": "pyrroth.wav", "rev": 1},
+    "ice_dragon": {"voice": "glacius.wav", "rev": 1},
+    "lightning_dragon": {"voice": "voltharion.wav", "rev": 1},
+    "shadow_dragon": {"voice": "umbraxis.wav", "rev": 1},
+    "chancellor_mordaine": {"voice": "mordaine.wav", "rev": 1}
   }
 }
