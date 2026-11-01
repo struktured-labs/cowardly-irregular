@@ -314,7 +314,9 @@ func _setup_buildings() -> void:
 	var fountain = VillageFountainScript.new()
 	fountain.fountain_name = "Harmony Fountain"
 	fountain.tree_type = "cherry"
-	fountain.position = Vector2(17 * TILE_SIZE, 11 * TILE_SIZE)
+	## Centred in the 8x6 pond (cols 16-23, rows 9-14); its press area is the pond plus half a tile, so any shore cell reaches it.
+	fountain.position = Vector2(20 * TILE_SIZE, 12 * TILE_SIZE)
+	fountain.reach_tiles = Vector2(9, 7)
 	buildings.add_child(fountain)
 
 	# === TIER DRESSING (CrossCode pass 2026-08-21) ===

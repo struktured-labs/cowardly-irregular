@@ -6,6 +6,8 @@ class_name VillageFountain
 
 @export var fountain_name: String = "Village Fountain"
 @export var tree_type: String = "cherry"  # cherry, oak, willow
+## Press area in tiles, centred on the art; zero = the 2x2 basin trigger. A pond sets its own size so its edge is pressable.
+@export var reach_tiles: Vector2 = Vector2.ZERO
 
 ## Visual
 var sprite: Sprite2D
@@ -329,6 +331,9 @@ func _setup_collision() -> void:
 	shape.size = Vector2(TILE_SIZE * 2, TILE_SIZE * 2)
 	collision.shape = shape
 	collision.position = Vector2(0, TILE_SIZE / 2)  # Centered on base
+	if reach_tiles != Vector2.ZERO:
+		shape.size = reach_tiles * TILE_SIZE
+		collision.position = Vector2.ZERO
 	add_child(collision)
 
 	collision_layer = 4
@@ -339,6 +344,8 @@ func _setup_collision() -> void:
 
 func _setup_name_label() -> void:
 	name_label = Label.new()
+	## y-sorted with the art, so a label above it sorts BEHIND it; draw it over its own art.
+	name_label.z_index = 1
 	name_label.text = fountain_name
 	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	name_label.position = Vector2(-50, -50)
