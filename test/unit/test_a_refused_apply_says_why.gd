@@ -67,11 +67,26 @@ func test_a_rejected_status_never_travels_without_a_reason() -> void:
 
 
 ## CONTROL: an ALLOWED dial must still apply, or the refusal above proves only that nothing works.
+## A success MOVES the proposal to applied[], so pending[0] is gone: reading it aborted this arm
+## after its first assert, and the stale-reason check below it never ran.
 func test_an_allowed_constant_still_applies() -> void:
+	var gs: Node = get_tree().root.get_node_or_null("GameState")
+	assert_not_null(gs, "FIXTURE: force_apply writes through the GameState autoload")
+	var had: bool = gs.game_constants.has("exp_multiplier")
+	var before: Variant = gs.game_constants.get("exp_multiplier")
 	var d := _daemon_with([{"constant": "exp_multiplier", "value": 1.05}])
 	var out: String = d.force_apply(0)
+	if had:
+		gs.game_constants["exp_multiplier"] = before
+	else:
+		gs.game_constants.erase("exp_multiplier")
 	assert_ne(out, REJECTED, "a listed dial must not be refused by the safelist")
-	assert_eq(str(d.pending[0].get("reject_reason", "")), "",
+	assert_eq(d.pending.size(), 0, "FIXTURE: a successful apply leaves review")
+	assert_eq(d.applied.size(), 1, "FIXTURE: and lands in the applied history")
+	if d.applied.size() != 1:
+		return
+	assert_eq(str(d.applied[0].get("status", "")), "applied", "the moved entry must say applied")
+	assert_eq(str(d.applied[0].get("reject_reason", "")), "",
 		"and a successful apply must not leave a stale refusal reason behind")
 
 
