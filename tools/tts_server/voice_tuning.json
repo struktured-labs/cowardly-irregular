@@ -5,6 +5,11 @@
     "bard.wav":  {"exaggeration": 0.9,  "cfg_weight": 0.3, "seed": 42},
     "mage.wav":  {"exaggeration": 0.8,  "cfg_weight": 0.3, "seed": 42},
     "cleric.wav": {"exaggeration": 0.5, "cfg_weight": 0.5, "seed": 42},
-    "cave_rat_king.wav": {"exaggeration": 0.85, "cfg_weight": 0.3, "seed": 42}
+    "cave_rat_king.wav": {"exaggeration": 0.85, "cfg_weight": 0.3, "seed": 42},
+    "pyrroth.wav": {"exaggeration": 0.6, "cfg_weight": 0.4, "seed": 42},
+    "glacius.wav": {"exaggeration": 0.5, "cfg_weight": 0.5, "seed": 42},
+    "voltharion.wav": {"exaggeration": 0.95, "cfg_weight": 0.3, "seed": 42},
+    "umbraxis.wav": {"exaggeration": 0.4, "cfg_weight": 0.5, "seed": 42},
+    "mordaine.wav": {"exaggeration": 0.45, "cfg_weight": 0.5, "seed": 42}
   }
 }

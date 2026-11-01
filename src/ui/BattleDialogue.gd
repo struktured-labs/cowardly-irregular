@@ -40,6 +40,8 @@ var _blip_pitch: float = 1.0
 var _blip_next_char: int = 0
 ## Seconds of the current line's recording, 0.0 when it has none; a recorded line plays no blips.
 var _line_voice_sec: float = 0.0
+## Ticks at which the current line's voice ends, 0 when it has none.
+var _line_voice_end_ms: int = 0
 
 ## Party reference for custom portrait lookups
 var _party: Array = []
@@ -400,6 +402,22 @@ func line_voice_seconds() -> float:
 	return _line_voice_sec
 
 
+func line_voice_end_msec() -> int:
+	return _line_voice_end_ms
+
+
+## A live voice that arrives after its line appeared joins it, if nothing voices the line yet; its blips stop here.
+func join_live_voice(stream: AudioStream) -> bool:
+	if not visible or _line_voice_sec > 0.0 or stream == null or SoundManager == null:
+		return false
+	var sec: float = SoundManager.play_line_stream(stream, self)
+	if sec <= 0.0:
+		return false
+	_line_voice_sec = sec
+	_line_voice_end_ms = Time.get_ticks_msec() + int(sec * 1000.0)
+	return true
+
+
 ## Which line of the queue is showing; a page turn does not change it.
 func line_index() -> int:
 	return _current_index
@@ -508,6 +526,7 @@ func _show_current_line() -> void:
 			_line_voice_sec = SoundManager.play_line_stream(live, self)
 		else:
 			_line_voice_sec = SoundManager.play_voiced_line(str(entry.get("speaker", "")), str(entry.get("text", "")), self)
+	_line_voice_end_ms = Time.get_ticks_msec() + int(_line_voice_sec * 1000.0) if _line_voice_sec > 0.0 else 0
 
 	# Set portrait - the face cutscenes give this character first, then party custom portraits
 	var portrait_type = entry.get("portrait", "narrator")
@@ -676,6 +695,7 @@ func _finish_dialogue() -> void:
 	"""Complete dialogue sequence"""
 	visible = false
 	_line_voice_sec = 0.0
+	_line_voice_end_ms = 0
 	if SoundManager:
 		SoundManager.stop_voiced_line(self)
 	_dialogue_queue.clear()

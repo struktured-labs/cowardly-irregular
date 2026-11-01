@@ -56,6 +56,9 @@ const NAME_LABEL_GAP: float = 6.0
 const NAME_LABEL_WIDTH: float = 200.0
 const NAME_LABEL_PX := 16  # on-screen size for every monster, whatever its sprite scale
 const ENEMY_HP_BAR_SIZE := Vector2(60, 5)  # on-screen, whatever the sprite scale
+## How far each formation stands nearer its own edge (struktured 2026-11-01); the party has no room under its badges yet.
+const ENEMY_EDGE_SHIFT := -24.0
+const PARTY_EDGE_SHIFT := 0.0
 const ENEMY_HP_BAR_FADE := 0.4  # under the 0.5s dissolve it leaves with
 const STATUS_ROW_WIDTH := 120.0  # badges centre in it over the figure (row units, x STATUS_ROW_ZOOM on screen)
 const STATUS_ROW_ZOOM := 1.6  # the badges' ~9px text, read at ~14px on every monster
@@ -302,9 +305,9 @@ const BOSS_BEAT_AUTO_DISMISS_SEC: float = 3.0
 const BOSS_BEAT_READ_CAP_SEC: float = 30.0
 ## A recorded line under automation holds until its voice has finished, plus this.
 const BOSS_BEAT_VOICE_SLACK_SEC: float = 0.3
-## How long the beat waits for a live voice still being synthesized; a voice later than this is dropped, never played late.
-const BOSS_BEAT_LIVE_VOICE_WAIT_SEC: float = 2.0
-const GLOAT_VOICE_TIMEOUT_SEC: float = 6.0
+## A live voice may join the line on screen within this window (a 140-char line needs ~4.5s at 0.5x realtime), then is dropped.
+const BOSS_BEAT_LIVE_VOICE_JOIN_SEC: float = 6.0
+const GLOAT_VOICE_TIMEOUT_SEC: float = BOSS_BEAT_LIVE_VOICE_JOIN_SEC + 0.5
 
 ## Autobattle state
 var _all_autobattle_enabled: bool = false  # True when all players are on autobattle
@@ -369,6 +372,8 @@ func set_terrain(terrain: String) -> void:
 
 
 func _ready() -> void:
+	_shift_area(get_node_or_null("BattleField/EnemyArea"), ENEMY_EDGE_SHIFT)
+	_shift_area(get_node_or_null("BattleField/PartyArea"), PARTY_EDGE_SHIFT)
 	# Initialize composed subsystems
 	_enemy_spawner = BattleEnemySpawnerClass.new(self)
 	_ui_manager = BattleUIManagerClass.new(self)
@@ -912,6 +917,13 @@ func _repeat_previous_actions() -> void:
 		var why: String = str(BattleManager.last_repeat_refusal)
 		log_message("[color=gray]%s[/color]" % (why if why != "" else "Repeat is not available right now."))
 
+
+func _shift_area(area: Control, dx: float) -> void:
+	# A scene built from its script alone has no areas; _ready must go on past this line as it did before.
+	if area == null:
+		return
+	area.offset_left += dx
+	area.offset_right += dx
 
 func _start_test_battle() -> void:
 	"""Start a test battle with sprite display"""
@@ -6396,18 +6408,14 @@ func _play_boss_beat(is_victory: bool) -> void:
 		_holding_for_boss_beat = false
 		return
 	var spoken: String = DialoguePrompts.spoken_line(str(_gloat_line.get("text", "")))
-	var v0: int = Time.get_ticks_msec()
-	while not _gloat_voice.is_empty() and not bool(_gloat_voice["done"]) \
-			and Time.get_ticks_msec() - v0 < int(BOSS_BEAT_LIVE_VOICE_WAIT_SEC * 1000.0) and is_inside_tree():
-		await get_tree().process_frame
-	if not is_inside_tree():
-		_holding_for_boss_beat = false
-		return
-	var live_voice: AudioStream = _gloat_voice.get("stream") if bool(_gloat_voice.get("done", false)) else null
-	## Taken or abandoned here, so a synthesis finishing after the line shows can never speak it a second time.
-	_gloat_voice = {}
+	var live_voice: AudioStream = null
+	if bool(_gloat_voice.get("done", false)):
+		live_voice = _gloat_voice.get("stream")
+		_gloat_voice = {}
 	_battle_dialogue.show_boss_last_words(_gloat_speaker_name(is_victory), spoken, _boss_monster_id(), live_voice)
 	await _hold_beat_dialogue()
+	## Whatever is still synthesizing is abandoned with the line, so it can never speak over what comes next.
+	_gloat_voice = {}
 	_holding_for_boss_beat = false
 
 
@@ -6489,21 +6497,37 @@ func _hold_beat_dialogue() -> void:
 	var line: int = -1
 	var line_t0: int = s0
 	while _battle_dialogue.visible and Time.get_ticks_msec() - s0 < int(BOSS_BEAT_READ_CAP_SEC * 1000.0) and is_inside_tree():
+		_join_or_drop_gloat_voice(s0)
 		if automated:
 			var now: int = Time.get_ticks_msec()
 			if _battle_dialogue.line_index() != line:
 				line = _battle_dialogue.line_index()
 				line_t0 = now
-			if now - line_t0 >= beat_line_hold_ms(_battle_dialogue.line_voice_seconds()):
+			if _gloat_voice.is_empty() and now >= beat_line_deadline_ms(line_t0, _battle_dialogue.line_voice_end_msec()):
 				_battle_dialogue.next_line()
 		await get_tree().process_frame
 	if is_instance_valid(_battle_dialogue) and _battle_dialogue.visible:
 		_battle_dialogue.dismiss()
 
 
-## An automated line's hold: the read floor, or the recording plus slack when that is longer.
-static func beat_line_hold_ms(voice_sec: float) -> int:
-	return int(maxf(BOSS_BEAT_AUTO_DISMISS_SEC, voice_sec + BOSS_BEAT_VOICE_SLACK_SEC) * 1000.0)
+## A voice that finishes inside the window joins the last words on screen; past it, or once the line moved on, it is dropped.
+func _join_or_drop_gloat_voice(shown_at: int) -> void:
+	if _gloat_voice.is_empty():
+		return
+	var in_window: bool = Time.get_ticks_msec() - shown_at < int(BOSS_BEAT_LIVE_VOICE_JOIN_SEC * 1000.0)
+	if not bool(_gloat_voice["done"]) and in_window:
+		return
+	if bool(_gloat_voice["done"]) and in_window and _battle_dialogue.line_index() == 0:
+		_battle_dialogue.join_live_voice(_gloat_voice.get("stream"))
+	_gloat_voice = {}
+
+
+## When an automated line may move on: the read floor after it appeared, or its voice's end plus slack when later.
+static func beat_line_deadline_ms(line_t0: int, voice_end_ms: int) -> int:
+	var deadline: int = line_t0 + int(BOSS_BEAT_AUTO_DISMISS_SEC * 1000.0)
+	if voice_end_ms > 0:
+		deadline = maxi(deadline, voice_end_ms + int(BOSS_BEAT_VOICE_SLACK_SEC * 1000.0))
+	return deadline
 
 
 func _gloat_speaker_name(_is_victory: bool) -> String:
