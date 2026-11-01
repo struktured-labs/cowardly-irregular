@@ -1,5 +1,5 @@
 itch-assets/.gdignore 4294967295 0
-itch-assets/CAPTIONS.md 2774708558 40746
+itch-assets/CAPTIONS.md 1003270263 41686
 itch-assets/PROVENANCE.md 3230051840 17021
 itch-assets/capture-history/shoot-prep/backwards_warren.png 3215387116 248241
 itch-assets/capture-history/shoot-prep/battle.png 4233415631 155720
@@ -237,7 +237,7 @@ itch-assets/screenshots/ironhaven_village.png 2163386264 72818
 itch-assets/screenshots/sandrift_village.png 1870990947 88856
 itch-assets/screenshots/shop_interior.png 1120969309 61312
 itch-assets/screenshots/tavern_interior.png 1700639315 150902
-itch-assets/screenshots/title_screen.png 4257718575 755212
+itch-assets/screenshots/title_screen.png 1308586233 868523
 itch-assets/screenshots/warren_lever_portals.png 961837313 362868
 itch-assets/screenshots/warren_wrap_field.png 1253505346 387728
 itch-assets/screenshots/whispering_cave.png 1606759773 299784

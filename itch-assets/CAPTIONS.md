@@ -10,7 +10,18 @@ pixel measurement behind it, is the last section of this file.
 matches `capture-history/shots-225/` byte for byte), and `battle_storm` in particular carries the
 caveat below. The two medieval field-elite frames are `.293` (their sections say so).
 
-**`title_screen` is the exception and is NEWER than everything else: captured from the
+**2026-10-31: `title_screen` re-shot at `v3.33.752-alpha`.** The `.483` frame below had gone 269
+releases stale on the one string it depicts. `tools/marketing_shots.gd` now sets the label to
+`"v" + Version.semver()` before capturing, which is exactly what an export shows — so a source run
+no longer needs the `butler fetch` detour. Old vs new: 485 pixels differ, 282 in the version box
+and 203 scattered across the sky (the stars twinkle; `.483` recorded 242). Two runs agree to 0.0000%.
+The `.483` frame is kept at `capture-history/shots-483-export/title_screen.png`.
+The same run writes `title_cover_source.png` — the title with the bottom vignette strip hidden —
+which is what the cover is cut from (`cover_630x500` = crop `(300,0,1056,600)` → LANCZOS; preview =
+cover → LANCZOS 315x250). Cut from `.752`, it matches the shipped cover except 0.03% of pixels, all
+stars in the top 211 rows, so **the shipped cover is current and was left as it is**.
+
+History: **`title_screen` was the exception: captured from the
 EXPORTED `v3.33.483-alpha` binary, fetched from the store with `butler fetch`, on 2026-09-24.**
 It reads `v3.33.483-alpha` with NO hash suffix — exactly what a player sees.
 
