@@ -26,6 +26,8 @@ static func detail_for(restored: Dictionary) -> String:
 	for k in restored:
 		hp += int((restored[k] as Dictionary).get("hp", 0))
 		mp += int((restored[k] as Dictionary).get("mp", 0))
+	if hp + mp <= 0:
+		return "The party is already at full strength."
 	return "The party catches its breath:  +%d HP  +%d MP" % [hp, mp]
 
 

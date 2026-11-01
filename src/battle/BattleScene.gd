@@ -5073,7 +5073,8 @@ func _show_chain_intro(link: int, total: int) -> void:
 	tag.add_theme_constant_override("outline_size", 4)
 	tag.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	(ui if ui else self).add_child(tag)
-	tag.position = Vector2((get_viewport_rect().size.x - tag.get_combined_minimum_size().x) / 2.0, 8)
+	## Under the round title, not on it: the title panel spans the top ~52 px (seen in tools/chain_shots).
+	tag.position = Vector2((get_viewport_rect().size.x - tag.get_combined_minimum_size().x) / 2.0, 54)
 	if turbo_mode or autogrind_console_mode:
 		return
 	var banner := Label.new()

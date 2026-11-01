@@ -5,6 +5,8 @@ extends GutTest
 ## is coming and what the breather gave back -- skippable, wall-clock, and the real iris path still runs.
 
 const BATTLE := "res://src/battle/BattleScene.tscn"
+## BattleScene declares no class_name; a bare reach to it is a PARSE error that stops this whole file running.
+const BattleSceneScript := preload("res://src/battle/BattleScene.gd")
 const BattleState := preload("res://test/unit/helpers/battle_state.gd")
 
 var _saved_scale = null
@@ -27,8 +29,8 @@ func after_each() -> void:
 
 
 func test_the_banner_names_the_chain_and_its_length() -> void:
-	assert_string_contains(BattleScene.chain_banner_text(1, 2), "CHAIN ×2", "battle one does not say how long the chain is")
-	assert_eq(BattleScene.chain_banner_text(2, 2), "CHAIN 2/2", "a later link does not say which one it is")
+	assert_string_contains(BattleSceneScript.chain_banner_text(1, 2), "CHAIN ×2", "battle one does not say how long the chain is")
+	assert_eq(BattleSceneScript.chain_banner_text(2, 2), "CHAIN 2/2", "a later link does not say which one it is")
 
 
 func _scene() -> Node:
@@ -99,6 +101,7 @@ func test_the_breather_heals_the_living_by_its_fraction() -> void:
 	assert_eq(int(got.get("Up", {}).get("hp", -1)), hp, "the card would report a different number than was healed")
 	assert_false(got.has("Down"), "the breather raised the dead")
 	assert_string_contains(ChainCard.detail_for(got), "+%d HP" % hp, "the card does not show what the breather gave")
+	assert_string_contains(ChainCard.detail_for({}), "full strength", "a full party is told +0 HP +0 MP")
 
 
 func _card(hold: float) -> ChainCard:
