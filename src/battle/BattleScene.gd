@@ -6813,6 +6813,17 @@ func _show_victory_results() -> void:
 	_results_display.show_victory_results()
 
 
+## Every name on the field, the DEFEATED included: the enemy panel still lists "Goblin A ✗ DEFEATED", so a summon
+## taking that letter showed two Goblin A rows (struktured, 2026-10-31). Was living-only, to stop a survivor's
+## letter being reused; counting the dead too keeps that and closes the second collision.
+static func summon_names_taken(enemies: Array) -> Array:
+	var out: Array = []
+	for e in enemies:
+		if is_instance_valid(e):
+			out.append(str(e.combatant_name))
+	return out
+
+
 static func pick_summon_name(base_name: String, living_same_type: Array) -> String:
 	if living_same_type.is_empty():
 		return base_name
@@ -6836,12 +6847,7 @@ func _on_monster_summoned(monster_type: String, summoner: Combatant) -> void:
 	var enemy = Combatant.new()
 	var stats = monster_data["stats"].duplicate()
 
-	# letter must be unique among LIVING same-types — alive-count indexing collided (survivor "B" + new summon → second "B")
-	var living_names: Array = []
-	for e in test_enemies:
-		if is_instance_valid(e) and e.is_alive and e.get_meta("monster_type", "") == monster_type:
-			living_names.append(e.combatant_name)
-	stats["name"] = pick_summon_name(str(monster_data["name"]), living_names)
+	stats["name"] = pick_summon_name(str(monster_data["name"]), summon_names_taken(test_enemies))
 
 	enemy.initialize(stats)
 	add_child(enemy)
