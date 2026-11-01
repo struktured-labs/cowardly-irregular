@@ -270,6 +270,8 @@ func _setup_collision() -> void:
 
 func _setup_name_label() -> void:
 	name_label = Label.new()
+	## y-sorted with the art, so a label above it sorts BEHIND it; draw it over its own art.
+	name_label.z_index = 1
 	name_label.text = inn_name
 	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	name_label.position = Vector2(-40, -40)

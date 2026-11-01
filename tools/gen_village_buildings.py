@@ -42,7 +42,7 @@ STYLE = ("A single detailed 16-bit SNES-era JRPG pixel-art BUILDING for a mediev
          "The background is one flat, solid, pure magenta (#FF00FF) colour with no gradient. The building fills the "
          "frame and is centred.")
 
-FRONT = ("Draw it STRAIGHT-ON and symmetric, like the towns of Final Fantasy VI: the front wall faces the viewer "
+FRONT = ("A WIDE, generous building, wider than it is tall, with a full second storey. Draw it STRAIGHT-ON and symmetric, like the towns of Final Fantasy VI: the front wall faces the viewer "
          "squarely, the roof is seen from above and in front, no side wall is visible and nothing is drawn at a corner angle.")
 
 KINDS = {
@@ -57,24 +57,26 @@ KINDS = {
 
 
 ## Harmonia, one entry per building block (HarmoniaVillage.BUILDING_ART): key -> (width in tiles, what it is).
+## Widths follow the stretched pilot map (cowir-overworld 9a498fc3b, struktured 2026-11-01: "houses look small"):
+## 6 or 5 tiles wide, and the art stands well above its 4-row block so a house reads ~3x the party's height.
 HARMONIA = {
-    "harmonia_library": (3, "The town library: a two-storey building of pale cut stone with a grey slate roof, tall arched "
+    "harmonia_library": (6, "The town library: a two-storey building of pale cut stone with a grey slate roof, tall arched "
                             "windows, ivy climbing one corner, and a hanging sign with a pictured open book (no letters)."),
-    "harmonia_arcana": (3, "A magic shop: a violet-tiled roof with a small dormer, a hanging sign with a pictured crescent "
+    "harmonia_arcana": (5, "A magic shop: a violet-tiled roof with a small dormer, a hanging sign with a pictured crescent "
                            "moon and star, crystal orbs and spell scrolls in the front window, wisteria over the door."),
-    "harmonia_arms": (3, "A weapon and armour shop and smithy, wider than it is tall, with a small attic window in a dark "
+    "harmonia_arms": (6, "A weapon and armour shop and smithy, wider than it is tall, with a small attic window in a dark "
                          "slate roof and a stone chimney, a hanging sign with a pictured sword and shield (no letters), "
                          "a weapon rack and an anvil by the door."),
-    "harmonia_inn": (3, "The Sleepy Slime Inn: thatched straw roof with two dormer windows, warm lit windows, a hanging "
+    "harmonia_inn": (6, "The Sleepy Slime Inn: thatched straw roof with two dormer windows, warm lit windows, a hanging "
                         "sign with a pictured mug and a sleeping slime (no letters), a lantern by the door, flower boxes."),
-    "harmonia_remedies": (3, "Mystic Remedies, an item and potion shop: a green-tiled roof, a striped awning over a window "
+    "harmonia_remedies": (6, "Mystic Remedies, an item and potion shop: a green-tiled roof, a striped awning over a window "
                              "full of coloured potion bottles, a hanging sign with a pictured potion (no letters), herb "
                              "pots by the door."),
-    "harmonia_chapel": (3, "A small stone village chapel with a short bell tower and a visible bell above the entrance, an "
+    "harmonia_chapel": (6, "A small stone village chapel with a short bell tower and a visible bell above the entrance, an "
                            "arched stained-glass window, double wooden doors, a slate roof."),
-    "harmonia_tavern": (3, "The Dancing Tonberry tavern: brown shingle roof, warm lit windows, a hanging sign with a pictured "
+    "harmonia_tavern": (5, "The Dancing Tonberry tavern: brown shingle roof, warm lit windows, a hanging sign with a pictured "
                            "small hooded creature holding a lantern (no letters), barrels stacked by the door."),
-    "harmonia_house": (3, "A modest village cottage: green shingle roof with a brick chimney, cream plaster walls in dark "
+    "harmonia_house": (5, "A modest village cottage: green shingle roof with a brick chimney, cream plaster walls in dark "
                           "timber framing, a flower box of yellow flowers under one window."),
 }
 
