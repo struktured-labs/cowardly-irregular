@@ -2799,6 +2799,43 @@ func _play_ability_full_render(caster: Combatant, caster_sprite: Node2D, animato
 		_full_render_set_dim(false)
 
 
+## A data/vfx_sequences.json id the ability names (AbilityVFX), or "" for the ordinary effects.
+func _ability_sequence(ability: Dictionary) -> String:
+	return str(AbilityVFX.resolve(ability).get("sequence", ""))
+
+
+## #399 (struktured via cowir-main, 2026-10-31: "wire it into Fire first, playable"). The cast plays, the
+## sequence flies from the caster to each target, and the damage numbers wait for the burst rather than
+## landing on the first frame of the cast. The battle holds until just after the burst; the closing fling
+## overlaps whatever acts next, so a Fire turn costs about what a spotlight turn did.
+func _play_ability_sequence(caster: Combatant, caster_sprite: Node2D, animator: BattleAnimatorClass, ability: Dictionary, targets: Array) -> void:
+	var seq_id := _ability_sequence(ability)
+	if animator:
+		_play_ability_animation(_ability_anim_name(ability, animator), animator)
+	var from := Vector2.ZERO
+	if caster_sprite != null and is_instance_valid(caster_sprite):
+		var facing: float = -1.0 if party_sprite_nodes.has(caster_sprite) else 1.0
+		from = _stable_sprite_anchor(caster_sprite) + Vector2(40.0 * facing, -20.0)
+	var impact := 0.0
+	for target in targets:
+		var ts = _get_combatant_sprite(target)
+		if ts == null or not is_instance_valid(ts):
+			continue
+		var played: Dictionary = EffectSystem.spawn_sequence(seq_id, from, _stable_sprite_anchor(ts), float(AbilityVFX.resolve(ability)["power"]))
+		impact = maxf(impact, float(played.get("impact", 0.0)))
+	if impact <= 0.0:
+		_spawn_ability_effects(ability, targets)
+		return
+	_flush_full_render_damage()
+	_full_render_dmg_buffer = []
+	_full_render_dmg_attacker = caster
+	BattleManager.presentation_hold = maxf(BattleManager.presentation_hold, impact + 0.35)
+	await get_tree().create_timer(impact).timeout
+	if not is_instance_valid(self):
+		return
+	_flush_full_render_damage()
+
+
 ## Dim sits between the parallax background (z -100..-10) and combatant sprites (z 0).
 func _full_render_set_dim(on: bool) -> void:
 	if _full_render_dim_rect == null or not is_instance_valid(_full_render_dim_rect):
@@ -4285,6 +4322,8 @@ func _on_action_executing(combatant: Combatant, action: Dictionary) -> void:
 				else:
 					_play_ability_animation(anim_type, animator)
 					_spawn_ability_effects(ability, targets)
+			elif _ability_sequence(ability) != "":
+				_play_ability_sequence(combatant, attacker_sprite, animator, ability, targets)
 			elif full_render_this:
 				_play_ability_full_render(combatant, attacker_sprite, animator, ability, targets)
 			else:

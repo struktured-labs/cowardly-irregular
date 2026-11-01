@@ -270,6 +270,92 @@
         }
       ],
       "start_note": "fighter/attack contacts on f3 at 375 ms; f0 carries the artist's own slash smear, so afterimages start at f1 (cowir-sprites)"
+    },
+    "fire_battle": {
+      "label": "Fire, battle pacing: bolt, burst, fan, re-burst, fling",
+      "start": 0.75,
+      "start_note": "mage/cast releases on f6 at 750 ms; the battle holds only until the burst, the fling overlaps the next action",
+      "phases": [
+        {
+          "at": 0.0,
+          "kind": "bolt",
+          "dur": 0.32,
+          "arc_height": 44,
+          "size": 1.2,
+          "trail_spacing": 9
+        },
+        {
+          "at": 0.32,
+          "kind": "flash",
+          "dur": 0.16,
+          "size": 5.5
+        },
+        {
+          "at": 0.32,
+          "kind": "ring",
+          "dur": 0.26,
+          "scale": 2.8
+        },
+        {
+          "at": 0.32,
+          "kind": "shake",
+          "intensity": 6,
+          "dur": 0.2
+        },
+        {
+          "at": 0.32,
+          "kind": "emit",
+          "count": 8,
+          "arc": 360,
+          "radius": 64,
+          "life": 0.26,
+          "size": 1.15,
+          "child_at": 0.75,
+          "decay": 0.62,
+          "twist": 22.5,
+          "child": {
+            "count": 3,
+            "arc": 56,
+            "radius": 46,
+            "life": 0.22,
+            "size": 0.95,
+            "child_at": 0.8,
+            "decay": 0.6,
+            "bloom": false,
+            "palette": "flame",
+            "child": {
+              "count": 5,
+              "arc": 360,
+              "radius": 22,
+              "life": 0.18,
+              "size": 0.8,
+              "twist": 30,
+              "palette": "flame"
+            }
+          }
+        },
+        {
+          "at": 0.7,
+          "kind": "spin_fling",
+          "count": 10,
+          "radius": 70,
+          "inner": 20,
+          "turns": 1.0,
+          "spin": 0.28,
+          "fling": 0.24,
+          "distance": 140,
+          "size": 0.95,
+          "child": {
+            "count": 4,
+            "arc": 360,
+            "radius": 16,
+            "life": 0.15,
+            "size": 0.6,
+            "scale": 1.0,
+            "palette": "flame"
+          }
+        }
+      ]
     }
   }
 }

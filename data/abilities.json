@@ -134,6 +134,7 @@
     "description": "Fire magic damage to one enemy",
     "damage_multiplier": 2.0,
     "element": "fire",
+    "vfx": {"sequence": "fire_battle"},
     "target_type": "single_enemy",
     "magic_school": "black",
     "cost": 300
