@@ -2427,6 +2427,18 @@ func _party_speaker_names() -> Array:
 	return _party_speaker_names_cache
 
 
+## The job the party is led by right now, from the live roster: the same read the player's appearance uses.
+func _lead_job_now() -> String:
+	if party.is_empty():
+		return ""
+	var leader = party[clampi(int(GameState.party_leader_index), 0, party.size() - 1)]
+	if leader == null or not is_instance_valid(leader) or not ("job" in leader):
+		return ""
+	if leader.job is Dictionary:
+		return str(leader.job.get("id", ""))
+	return str(leader.job) if leader.job is String else ""
+
+
 func _get_pending_story_cutscene() -> String:
 	"""Check if a story cutscene should play based on flags.
 	Returns cutscene ID or empty string."""
@@ -2811,6 +2823,12 @@ func _get_pending_story_cutscene() -> String:
 				and not flags.get("cutscene_flag_%s_complete" % fid, false):
 			return fid
 
+	# Scriptura's bookshop, seen by a Rogue lead: she says it herself, once, on the first plaza entry she leads.
+	# It replaced a coin-flip stranger who stood on the plaza floor speaking her first-person line (struktured 2026-10-31).
+	if not _chaining_story_cutscene and _current_map_id == "scriptura_plaza" \
+			and not flags.get("cutscene_flag_world1_scriptura_rogue_door_complete", false) and _lead_job_now() == "rogue":
+		return "world1_scriptura_rogue_door"
+
 	# ===== VILLAGE INTRODUCTIONS — last, so a story beat always wins the entry =====
 	# Six authored scenes reached no player: nothing dispatched them, so ~90 lines were
 	# unreachable (struktured 2026-10-12, "wire all six"). Each fires ONCE, on first entry to the
@@ -2926,6 +2944,7 @@ const _CUTSCENE_COMPLETION_FLAGS := {
 	"world1_prologue":                  "cutscene_flag_prologue_complete",
 	"world1_chapter1":                  "cutscene_flag_chapter1_complete",
 	"world1_bram_shield":               "cutscene_flag_world1_bram_shield_complete",
+	"world1_scriptura_rogue_door":      "cutscene_flag_world1_scriptura_rogue_door_complete",
 	## Village introductions — without these the gate that fires them never sees a completion flag and loops.
 	"world1_harmonia_npcs":             "cutscene_flag_world1_harmonia_npcs_complete",
 	"world1_eldertree_npcs":            "cutscene_flag_world1_eldertree_npcs_complete",

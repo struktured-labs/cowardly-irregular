@@ -79,6 +79,7 @@ func test_every_backdrop_is_shown_by_one_world() -> void:
 ## Story scenes that render the dimmed live capture ON PURPOSE. Each entry is a reason, not a permission.
 const SHOWS_THE_LIVE_SCREEN := {
 	"world3_transition": "brass becomes steel in the prose; a still of either world would contradict the transformation",
+	"world1_scriptura_rogue_door": "the Rogue is looking at the plaza itself; the live plaza behind her line, its door included, is the subject",
 }
 
 
