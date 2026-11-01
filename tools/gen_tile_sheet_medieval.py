@@ -308,6 +308,24 @@ def draw_shadow():
     return img
 
 
+
+
+def carry_terrain_tiles(sheet, old_entry, old_png):
+    """Keep the hand-placed terrain TILES (tile_sheets.<world>.tiles, rows past the generated ones) across a regen."""
+    from PIL import Image as _Image
+    tiles = dict((old_entry or {}).get("tiles", {}))
+    if not tiles or not old_png.exists():
+        return sheet, tiles
+    old = _Image.open(old_png).convert("RGBA")
+    rows = max(int(r[1]) for r in tiles.values()) + 1
+    out = _Image.new("RGBA", (sheet.width, max(sheet.height, rows * TILE)), (0, 0, 0, 0))
+    out.paste(sheet, (0, 0))
+    for col, row in tiles.values():
+        box = (int(col) * TILE, int(row) * TILE, (int(col) + 1) * TILE, (int(row) + 1) * TILE)
+        out.paste(old.crop(box), box[:2])
+    return out, tiles
+
+
 # ------------------------------------------------------------------- assembly
 def build():
     """Layout: row0 = face + edge_1..15, row1 = fringe_1..15 + stair,
@@ -391,6 +409,8 @@ def main():
                  sum(len(v) for v in regions.values())))
         return 0
     out_png.parent.mkdir(parents=True, exist_ok=True)
+    _old = json.loads((repo / "data/sprite_manifest.json").read_text()).get("tile_sheets", {}).get("medieval", {})
+    sheet, _tiles = carry_terrain_tiles(sheet, _old, out_png)
     sheet.save(out_png)
     print("wrote %s  %dx%d" % (out_png, *sheet.size))
 
@@ -402,8 +422,10 @@ def main():
         "tile": TILE,
         "cliff": regions["cliff"],
         "overlay": regions["overlay"],
-        "generator": ("tools/gen_tile_sheet_medieval.py -- cliff+overlay only. "
-                      "Ground tiles stay procedural (TileGenerator already draws them); "
+        **({"tiles": _tiles} if _tiles else {}),
+        "generator": ("tools/gen_tile_sheet_medieval.py -- cliff+overlay generated here; any terrain `tiles` "
+                      "(row 3+, drawn by gen_village_buildings.py --tiles) are carried across a regen, and the "
+                      "ground tiles they do not name stay procedural (TileGenerator draws them); "
                       "the 10 props are routed to the artist. Bitmask tiles are generated "
                       "from the mask and side-checked, never hand-placed."),
     }

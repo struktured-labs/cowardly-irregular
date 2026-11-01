@@ -69,6 +69,7 @@ func after_each() -> void:
 	SceneScript._battle_speed_index = int(_saved["speed"])
 	BattleManager.boss_gloat_pending = bool(_saved["pending"])
 	Input.action_release("ui_accept")
+	AutobattleSystem.autobattle_enabled.erase("beat_probe_bot")
 	InputLockManager.pop_all()
 	_wipe()
 	_bm_guard.restore()
@@ -99,8 +100,18 @@ func _wait_until(cond: Callable, cap_ms: int) -> bool:
 	return bool(cond.call())
 
 
+## The line no longer waits for its voice, so it shows within the text's own wait.
 func _show_cap_ms() -> int:
-	return int((BattleManager.GLOAT_WAIT_SEC + SceneScript.BOSS_BEAT_LIVE_VOICE_WAIT_SEC) * 1000.0) + 1500
+	return int(BattleManager.GLOAT_WAIT_SEC * 1000.0) + 1000
+
+
+func _automate(s: Node) -> void:
+	var bot := Combatant.new()
+	bot.combatant_name = "Beat Probe Bot"
+	autofree(bot)
+	var typed: Array[Combatant] = [bot]
+	s.party_members.assign(typed)
+	AutobattleSystem.autobattle_enabled["beat_probe_bot"] = true
 
 
 func test_a_cast_boss_speaks_its_llm_last_words() -> void:
@@ -113,7 +124,9 @@ func test_a_cast_boss_speaks_its_llm_last_words() -> void:
 		return
 	assert_eq(str(_replay.requests[0]["voice"]), "cave_rat_king.wav", "in the boss's own cast voice")
 	assert_eq(str(_replay.requests[0]["text"]), DialoguePrompts.spoken_line(LINE), "speaking the line on screen")
-	assert_almost_eq(_dialogue.line_voice_seconds(), VOICE_SEC, 0.1, "THE DEFECT: the LLM last words played no voice")
+	assert_true(await _wait_until(func() -> bool: return _dialogue.line_voice_seconds() > 0.0, 1000),
+		"THE DEFECT: the LLM last words played no voice")
+	assert_almost_eq(_dialogue.line_voice_seconds(), VOICE_SEC, 0.1, "the voice is the synthesized clip")
 	assert_true(SoundManager.is_voiced_line_playing(), "and it is actually playing")
 
 
@@ -124,21 +137,62 @@ func test_the_voice_is_chosen_once() -> void:
 	assert_eq(_replay.requests.size(), 1, "a second emit must not start a second voice")
 
 
-func test_a_late_voice_is_dropped_not_played_late() -> void:
+## Synthesis of a 140-character line outruns a short wait, so the line shows at once and the voice joins it.
+func test_the_line_shows_at_once_and_a_late_voice_joins_it() -> void:
 	_replay.silent = true
 	var s: Node = _make_scene()
 	BattleManager._emit_boss_gloat(LINE, true)
 	s._finish_victory_after_boss_beat()
-	assert_true(await _wait_until(func() -> bool: return _dialogue.visible, _show_cap_ms()),
-		"a voice that never comes must not hold the line past its bound")
-	assert_eq(_dialogue.line_voice_seconds(), 0.0, "the line shows unvoiced, with its blips")
+	assert_true(await _wait_until(func() -> bool: return _dialogue.visible, 500),
+		"THE DEFECT: the line must not wait on its voice")
+	assert_eq(_dialogue.line_voice_seconds(), 0.0, "it shows unvoiced while the voice is still coming")
 	assert_eq(_replay.requests.size(), 1, "FIXTURE: the synthesis was asked for")
 	if _replay.requests.size() != 1:
 		return
+	await get_tree().create_timer(SceneScript.BOSS_BEAT_LIVE_VOICE_JOIN_SEC * 0.5).timeout
+	_replay._emit(str(_replay.requests[0]["id"]))
+	assert_true(await _wait_until(func() -> bool: return _dialogue.line_voice_seconds() > 0.0, 1000),
+		"a voice finishing inside the window joins the line already on screen")
+	assert_true(SoundManager.is_voiced_line_playing(), "and it is actually playing")
+
+
+func test_a_voice_after_the_window_is_dropped() -> void:
+	_replay.silent = true
+	var s: Node = _make_scene()
+	BattleManager._emit_boss_gloat(LINE, true)
+	s._finish_victory_after_boss_beat()
+	assert_true(await _wait_until(func() -> bool: return _dialogue.visible, _show_cap_ms()), "the beat shows")
+	assert_eq(_replay.requests.size(), 1, "FIXTURE: the synthesis was asked for")
+	if _replay.requests.size() != 1:
+		return
+	await get_tree().create_timer(SceneScript.BOSS_BEAT_LIVE_VOICE_JOIN_SEC + 0.3).timeout
+	assert_true(_dialogue.visible, "FIXTURE: the line is still up, so only the window can refuse the voice")
 	_replay._emit(str(_replay.requests[0]["id"]))
 	await get_tree().process_frame
 	await get_tree().process_frame
-	assert_false(SoundManager.is_voiced_line_playing(), "a voice arriving after the line showed must never speak it")
+	assert_false(SoundManager.is_voiced_line_playing(), "a voice later than the window must never speak the line")
+	assert_eq(_dialogue.line_voice_seconds(), 0.0, "the line stays on its blips")
+
+
+## Under automation a joined voice must be heard out from where IT started, not from where the line did.
+func test_an_automated_line_holds_to_a_joined_voices_end() -> void:
+	_replay.silent = true
+	var s: Node = _make_scene()
+	_automate(s)
+	BattleManager._emit_boss_gloat(LINE, true)
+	s._finish_victory_after_boss_beat()
+	assert_true(await _wait_until(func() -> bool: return _dialogue.visible, _show_cap_ms()), "the beat shows")
+	assert_eq(_replay.requests.size(), 1, "FIXTURE: the synthesis was asked for")
+	if _replay.requests.size() != 1:
+		return
+	await get_tree().create_timer(SceneScript.BOSS_BEAT_AUTO_DISMISS_SEC - 0.5).timeout
+	assert_eq(s.results_at, -1, "FIXTURE: the automated floor has not passed yet")
+	_replay._emit(str(_replay.requests[0]["id"]))
+	var joined_at: int = Time.get_ticks_msec()
+	assert_true(await _wait_until(func() -> bool: return s.results_at > -1, int(VOICE_SEC * 1000.0) + 2000),
+		"the beat still releases")
+	assert_gte(s.results_at - joined_at, int(VOICE_SEC * 1000.0) - 50,
+		"a voice that joined late was cut at the floor instead of being heard out")
 
 
 func test_a_recorded_line_outranks_the_live_voice() -> void:

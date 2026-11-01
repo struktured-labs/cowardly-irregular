@@ -6,6 +6,8 @@ class_name VillageFountain
 
 @export var fountain_name: String = "Village Fountain"
 @export var tree_type: String = "cherry"  # cherry, oak, willow
+## World for the drawn-art lookup (manifest prop_art "fountain_<world>", then "fountain"); no art = the procedural fountain.
+@export var art_world: String = "medieval"
 
 ## Visual
 var sprite: Sprite2D
@@ -24,6 +26,8 @@ var _player_nearby: bool = false
 var _dialogue_state: int = 0
 
 const TILE_SIZE: int = 32
+## Where the art's base sits below the node: the painted fountain is 3 tiles tall and centred, so 1.5 tiles.
+const BASE_Y: float = TILE_SIZE * 1.5
 
 ## Fountain lore dialogue
 const FOUNTAIN_DIALOGUE = [
@@ -61,9 +65,10 @@ func _generate_sprite_frames() -> void:
 	add_child(sprite)
 
 	_sprite_frames.clear()
+	_load_drawn_frames()
 
 	# Generate 4 animation frames
-	for frame in range(4):
+	for frame in range(4 if _sprite_frames.is_empty() else 0):
 		var image = Image.create(TILE_SIZE * 3, TILE_SIZE * 3, false, Image.FORMAT_RGBA8)
 		_draw_fountain(image, frame)
 		var texture = ImageTexture.create_from_image(image)
@@ -74,8 +79,20 @@ func _generate_sprite_frames() -> void:
 		## Sort by the art's BASE, not its centre: the offset cancels the shift, so nothing moves on screen.
 		y_sort_enabled = true
 		var half: float = _sprite_frames[0].get_height() / 2.0
-		sprite.position.y += half
+		sprite.position.y += BASE_Y
 		sprite.offset.y -= half
+
+
+## A drawn fountain is a horizontal strip of `frames` equal cells (default 1), base on the same row as the painted one.
+func _load_drawn_frames() -> void:
+	var e: Dictionary = VillageProp.prop_art_entry("fountain", art_world)
+	if e.is_empty():
+		return
+	var img: Image = (load(str(e["path"])) as Texture2D).get_image()
+	var n: int = maxi(int(e.get("frames", 1)), 1)
+	var w: int = img.get_width() / n
+	for i in range(n):
+		_sprite_frames.append(ImageTexture.create_from_image(img.get_region(Rect2i(i * w, 0, w, img.get_height()))))
 
 
 func _draw_fountain(image: Image, frame: int) -> void:
