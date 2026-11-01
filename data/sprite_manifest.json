@@ -7389,6 +7389,16 @@
       "path": "res://assets/sprites/buildings/futuristic/nodeprime_cache.png",
       "tier": "T1",
       "source": "gpt-image-2, straight-on 16-bit neon cyber facade (W5 style, after struktured's direction B, 2026-11-01) -- tools/gen_village_buildings.py --futuristic; T1, artist veto applies."
+    },
+    "vertex_rest": {
+      "path": "res://assets/sprites/buildings/abstract/vertex_rest.png",
+      "tier": "T1",
+      "source": "gpt-image-2, straight-on minimalist facade (W6 style, after struktured's direction B, 2026-11-01) -- tools/gen_village_buildings.py --abstract; T1, artist veto applies."
+    },
+    "vertex_exchange": {
+      "path": "res://assets/sprites/buildings/abstract/vertex_exchange.png",
+      "tier": "T1",
+      "source": "gpt-image-2, straight-on minimalist facade (W6 style, after struktured's direction B, 2026-11-01) -- tools/gen_village_buildings.py --abstract; T1, artist veto applies."
     }
   }
 }
