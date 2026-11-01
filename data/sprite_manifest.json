@@ -7435,6 +7435,26 @@
       "path": "res://assets/sprites/props/medieval/tree.png",
       "tier": "T1",
       "source": "gpt-image-2, a straight-on slender poplar 20x96, exactly the TREE prop's 1x3 footprint height and narrow enough to clear a door beside it (the first 64px oak drew across Harmonia's ForgeEntrance arch) (struktured 2026-11-01: the trees look procgen) -- tools/gen_village_buildings.py --props; T1, artist veto applies."
+    },
+    "shop_stall_white_magic_medieval": {
+      "path": "res://assets/sprites/props/medieval/shop_stall_white_magic.png",
+      "tier": "T1",
+      "source": "gpt-image-2 open-air shop stall, holy: white canvas, gold trim, pale blue stripes, a sun emblem; 72px wide over the VillageShop's 2-tile footprint, standing where the painted stall stood. struktured 2026-11-01 (via cowir-main 21164): the painted stall looked crappy and the magic shops read in the wrong colours. tools/gen_shop_stalls.py; T1, artist veto applies."
+    },
+    "shop_stall_black_magic_medieval": {
+      "path": "res://assets/sprites/props/medieval/shop_stall_black_magic.png",
+      "tier": "T1",
+      "source": "gpt-image-2 open-air shop stall, dark: deep purple and black, an arcane green orb; 72px wide over the VillageShop's 2-tile footprint, standing where the painted stall stood. struktured 2026-11-01 (via cowir-main 21164): the painted stall looked crappy and the magic shops read in the wrong colours. tools/gen_shop_stalls.py; T1, artist veto applies."
+    },
+    "shop_stall_item_medieval": {
+      "path": "res://assets/sprites/props/medieval/shop_stall_item.png",
+      "tier": "T1",
+      "source": "gpt-image-2 open-air shop stall, potions and supplies under a green-striped awning; 72px wide over the VillageShop's 2-tile footprint, standing where the painted stall stood. struktured 2026-11-01 (via cowir-main 21164): the painted stall looked crappy and the magic shops read in the wrong colours. tools/gen_shop_stalls.py; T1, artist veto applies."
+    },
+    "shop_stall_blacksmith_medieval": {
+      "path": "res://assets/sprites/props/medieval/shop_stall_blacksmith.png",
+      "tier": "T1",
+      "source": "gpt-image-2 open-air shop stall, anvil, blades and a coal brazier under dark canvas; 72px wide over the VillageShop's 2-tile footprint, standing where the painted stall stood. struktured 2026-11-01 (via cowir-main 21164): the painted stall looked crappy and the magic shops read in the wrong colours. tools/gen_shop_stalls.py; T1, artist veto applies."
     }
   }
 }

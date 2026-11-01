@@ -265,7 +265,7 @@ func _setup_buildings() -> void:
 	white_magic_shop.shop_name = "Chapel of Light"
 	white_magic_shop.shop_type = VillageShopScript.ShopType.WHITE_MAGIC
 	white_magic_shop.keeper_name = "Sister Lenora"
-	white_magic_shop.position = Vector2(24 * TILE_SIZE, 6 * TILE_SIZE)
+	white_magic_shop.position = Vector2(16 * TILE_SIZE, 6 * TILE_SIZE)  ## an open-air stall, drawn in its holy palette
 	buildings.add_child(white_magic_shop)
 
 	# === ITEM SHOP ===
@@ -281,7 +281,7 @@ func _setup_buildings() -> void:
 	black_magic_shop.shop_name = "Mortimer's Arcana"
 	black_magic_shop.shop_type = VillageShopScript.ShopType.BLACK_MAGIC
 	black_magic_shop.keeper_name = "Mortimer"
-	black_magic_shop.position = Vector2(16 * TILE_SIZE, 6 * TILE_SIZE)
+	black_magic_shop.position = Vector2(24 * TILE_SIZE, 6 * TILE_SIZE)  ## at the arcana building, so the purple shop IS the dark one
 	buildings.add_child(black_magic_shop)
 
 	# === BAR ===
