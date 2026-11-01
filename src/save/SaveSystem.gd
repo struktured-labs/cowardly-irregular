@@ -1135,8 +1135,10 @@ static func applied_settings_summary() -> String:
 	return ", ".join(parts)
 
 
-## The spectrum curve (.757) rewrites an old save's stat blocks; this suffix keeps the untouched original beside it.
-const PRE_SPECTRUM_BACKUP_SUFFIX := ".pre-v757"
+## The balance spectrum (.758) rewrites an old save's stat blocks; this suffix keeps the untouched original beside it.
+const PRE_SPECTRUM_BACKUP_SUFFIX := ".pre-balance"
+## What .758 named the same backup (cowir-main 20831): one already on disk under it still counts as the backup.
+const LEGACY_SPECTRUM_BACKUP_SUFFIXES := [".pre-v757"]
 
 
 ## Copy a save's original bytes aside the first time it is loaded in an older denomination, so reverting the build plus this file undoes the migration.
@@ -1153,6 +1155,9 @@ func _backup_before_migrate(file_path: String, data: Dictionary) -> void:
 	var backup := file_path + PRE_SPECTRUM_BACKUP_SUFFIX
 	if not stale or FileAccess.file_exists(backup):
 		return
+	for legacy in LEGACY_SPECTRUM_BACKUP_SUFFIXES:
+		if FileAccess.file_exists(file_path + str(legacy)):
+			return
 	var bytes := FileAccess.get_file_as_bytes(file_path)
 	if bytes.is_empty():
 		push_warning("[SaveSystem] could not read '%s' to back it up before migrating it" % file_path)
