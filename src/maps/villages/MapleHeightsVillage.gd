@@ -16,6 +16,15 @@ const MAP_WIDTH: int = 30
 const MAP_HEIGHT: int = 22
 
 
+## Drawn building art per block, keyed by the block's top-left cell (manifest building_art, T1).
+const BUILDING_ART := {
+	Vector2i(5, 4): "maple_garage_sale_house",
+	Vector2i(12, 8): "maple_mart",
+	Vector2i(19, 8): "maple_moms_house",
+	Vector2i(14, 12): "maple_house",
+}
+
+
 ## ---- BaseVillage hooks ----
 
 func _get_area_id() -> String:
@@ -248,6 +257,8 @@ func _setup_buildings() -> void:
 	# (22,12) was drawn into the strip-mall road's arch at (23,14); two cells out clears it.
 	_add_prop(VillagePropScript.Kind.PLANTER, Vector2i(20, 12))
 	_add_lamp_post(Vector2i(12, 3))
+	## LAST, so the doors and stalls it must defer to already exist.
+	_spawn_building_art(BUILDING_ART)
 
 func _setup_treasures() -> void:
 	# Hidden behind the house — a forgotten lunchbox with supplies
