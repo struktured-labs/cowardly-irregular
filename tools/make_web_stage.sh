@@ -86,7 +86,9 @@ if [ "$VOICE_KBPS" -ne 0 ]; then
     echo "[stage] 1b voice tier @ ${VOICE_KBPS} kbps / ${VOICE_AR} Hz"
     VOICE_TIER="$(./tools/make_web_voice.sh "$VOICE_KBPS" "$VOICE_AR" | tail -1)"
     V_TIER_N=$(find "$VOICE_TIER" -name '*.ogg' | wc -l)
-    V_SRC_N=$(find assets/audio/sfx -maxdepth 1 -name 'voice_*.ogg' ! -name 'voice_blip_*' | wc -l)
+    # The corpus is make_web_voice.sh's own --list: one definition, so this count cannot drift
+    # from the tier when the corpus grows (it did: boss_line_* joined voice_* on 2026-11-01).
+    V_SRC_N=$(./tools/make_web_voice.sh --list | wc -l)
     [ "$V_TIER_N" -gt 0 ] && [ "$V_TIER_N" -eq "$V_SRC_N" ] || {
         echo "[stage] BLOCKED: voice tier ${VOICE_TIER:-<none>} has ${V_TIER_N} clips, masters have ${V_SRC_N}." >&2
         exit 2; }
