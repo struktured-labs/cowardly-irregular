@@ -13,6 +13,15 @@ const MAP_WIDTH: int = 30
 const MAP_HEIGHT: int = 24
 
 
+## Drawn building art per block, keyed by the block's top-left cell (manifest building_art, T1).
+const BUILDING_ART := {
+	Vector2i(5, 4): "ironhaven_inn",
+	Vector2i(13, 4): "ironhaven_forge",
+	Vector2i(19, 5): "ironhaven_steamworks",
+	Vector2i(5, 13): "ironhaven_tavern",
+}
+
+
 ## ---- BaseVillage hooks ----
 
 func _get_area_id() -> String:
@@ -214,6 +223,7 @@ func _setup_buildings() -> void:
 	_add_prop(VillagePropScript.Kind.WELL, Vector2i(23, 13))
 	_add_prop(VillagePropScript.Kind.FENCE, Vector2i(3, 10))
 	## LAST, so it defers to every building above. Soot-black slate and ember-red tile.
+	_spawn_building_art(BUILDING_ART)
 	_spawn_house_facades(["I", "F", "S", "M"], [Color(0.28, 0.27, 0.30), Color(0.46, 0.22, 0.14)], "timber")
 
 

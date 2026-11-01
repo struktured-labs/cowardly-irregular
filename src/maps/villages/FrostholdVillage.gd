@@ -13,6 +13,14 @@ const MAP_WIDTH: int = 26
 const MAP_HEIGHT: int = 22
 
 
+## Drawn building art per block, keyed by the block's top-left cell (manifest building_art, T1).
+const BUILDING_ART := {
+	Vector2i(5, 4): "frosthold_lodge",
+	Vector2i(14, 4): "frosthold_chapel",
+	Vector2i(15, 9): "frosthold_furs",
+}
+
+
 ## ---- BaseVillage hooks ----
 
 func _get_area_id() -> String:
@@ -208,6 +216,7 @@ func _setup_buildings() -> void:
 	_add_prop(VillagePropScript.Kind.WELL, Vector2i(20, 14))
 	_add_prop(VillagePropScript.Kind.TREE, Vector2i(24, 9))
 	## LAST, so it defers to every building above. Snow-laden roofs.
+	_spawn_building_art(BUILDING_ART)
 	_spawn_house_facades(["L", "F", "C"], [Color(0.82, 0.88, 0.95), Color(0.36, 0.50, 0.66)], "timber")
 
 

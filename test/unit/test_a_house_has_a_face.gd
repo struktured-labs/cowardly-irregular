@@ -58,7 +58,16 @@ func _village() -> Node:
 	return v
 
 
+## PROCEDURAL facades only. A drawn building (art_path set) is judged by test_a_village_building_is_drawn_not_painted.
 func _facades(v: Node) -> Array:
+	var out: Array = []
+	for c in _houses(v):
+		if c.art_path == "":
+			out.append(c)
+	return out
+
+
+func _houses(v: Node) -> Array:
 	var out: Array = []
 	for c in v.props.get_children():
 		if c is VillageProp and c.kind == VillageProp.Kind.HOUSE:
@@ -73,8 +82,8 @@ func _covered(f: VillageProp) -> Rect2i:
 
 
 func test_harmonia_has_faced_houses() -> void:
-	## Floor: without it every arm below passes on a village that faced nothing.
-	assert_gt(_facades(_village()).size(), 0, "Harmonia built no facades at all")
+	## Floor: Harmonia's buildings stand up, as procedural facades or (since the drawn-art pass) as building art.
+	assert_gt(_houses(_village()).size(), 0, "Harmonia's buildings are flat wall tiles again: no facade and no drawn art")
 
 
 func test_no_facade_covers_a_building_that_already_has_a_face() -> void:
@@ -105,29 +114,31 @@ func _facade_fronted_by(v: Node, door: Node2D) -> VillageProp:
 	return null
 
 
-func test_a_door_block_is_faced_and_its_door_draws_on_the_front() -> void:
-	## Replaces "no facade covers a door": the door block IS faced now, so the protection is that the arch draws ON TOP.
-	## Measured as BUILT (DrawOrder.sort_key), so switching Buildings' y_sort off reds here and names the door.
-	## CartographerDoor is not pinned: the blacksmith's art covers its block, so that block keeps its own face.
+func test_a_door_draws_over_the_facade_of_its_block() -> void:
+	## A door on a faced block must draw ON its facade, or the arch is hidden. Measured as BUILT (DrawOrder.sort_key)
+	## inside a REAL village's containers, so it judges BaseVillage's own sort setup and Buildings' y_sort off reds it.
+	## The door and facade are PLACED: Harmonia's door blocks became drawn art with their arches hidden on purpose,
+	## and every other door block is claimed by shop art, so no shipped door fronts a procedural facade today.
 	var v := _village()
-	for door_name in ["LibraryDoor", "ChapelDoor"]:
-		var door := _door(v, door_name)
-		assert_not_null(door, "%s is missing" % door_name)
-		if door == null:
-			continue
-		var f := _facade_fronted_by(v, door)
-		assert_not_null(f, "%s's block has no facade" % door_name)
-		if f != null:
-			assert_true(DrawOrder.draws_over(door, f), "%s draws UNDER its facade (key %.0f vs %.0f): its arch is hidden" % [door_name, DrawOrder.sort_key(door), DrawOrder.sort_key(f)])
-	## Every door that fronts ANY facade, not just the two named: a later village's door is judged the same way.
-	var fronted: int = 0
+	assert_true(v.buildings.y_sort_enabled, "Buildings is not y-sorted, so every door sorts at y=0 behind every facade")
+	var cell := Vector2i(2, 2)
+	var door = load("res://src/exploration/AreaTransition.gd").new()
+	door.name = "PlacedDoor"
+	door.target_map = "harmonia_library"
+	door.show_gate_visual = true
+	door.position = Vector2((cell.x + 0.5) * 32.0, (cell.y + 0.5) * 32.0)
+	v.buildings.add_child(door)
+	var f := VillageProp.create(VillageProp.Kind.HOUSE, cell - Vector2i(1, 1))
+	f.size_tiles = Vector2i(3, 3)
+	v.props.add_child(f)
+	assert_eq(_facade_fronted_by(v, door), f, "CONTROL: the placed door stands on the placed facade's ground row")
+	assert_true(DrawOrder.draws_over(door, f), "a door draws UNDER its facade (key %.0f vs %.0f): its arch is hidden" % [DrawOrder.sort_key(door), DrawOrder.sort_key(f)])
+	## Any SHIPPED door that does front a procedural facade is judged the same way.
 	for d in v.buildings.get_children():
-		if d is AreaTransition:
-			var f := _facade_fronted_by(v, d)
-			if f != null:
-				fronted += 1
-				assert_true(DrawOrder.draws_over(d, f), "%s draws under its facade" % d.name)
-	assert_gte(fronted, 2, "CONTROL: doors fronting a facade were found (%d)" % fronted)
+		if d is AreaTransition and d != door and d.show_gate_visual:
+			var g := _facade_fronted_by(v, d)
+			if g != null:
+				assert_true(DrawOrder.draws_over(d, g), "%s draws under its facade" % d.name)
 
 
 func test_a_building_sorts_by_its_base_without_moving_on_screen() -> void:
@@ -148,14 +159,22 @@ func test_a_building_sorts_by_its_base_without_moving_on_screen() -> void:
 
 
 func test_every_facade_leaves_its_ground_row_alone() -> void:
-	## Entrances live on a block's bottom row, so the art stops one row above it.
-	var v := _village()
-	for f in _facades(v):
-		var r := _covered(f)
-		var below: int = r.position.y + r.size.y
-		var row: String = v._map_rows[below]
-		assert_true("HIAPGB".contains(row[r.position.x]),
-			"the row under facade %s is not its block's ground row (glyph '%s')" % [str(r), row[r.position.x]])
+	## Entrances live on a block's bottom row, so a facade stops one row above it: the row under it is still the block.
+	var faced: int = 0
+	for f in DirAccess.get_files_at("res://src/maps/villages"):
+		if not f.ends_with("Village.gd") or f == "BaseVillage.gd":
+			continue
+		var v = load("res://src/maps/villages/" + f).new()
+		add_child_autofree(v)
+		for h in _facades(v):
+			faced += 1
+			var r := _covered(h)
+			var below: int = r.position.y + r.size.y
+			var block_glyph: String = str(v._map_rows[below - 1])[r.position.x]
+			var ground_glyph: String = str(v._map_rows[below])[r.position.x]
+			assert_eq(ground_glyph, block_glyph, "%s: facade %s paints over its block's ground row (glyph '%s' under '%s')" % [f, str(r), ground_glyph, block_glyph])
+	## Floor 1: every W1 block is drawn art now; the procedural facades left are the later worlds' (RivetRow's canteen).
+	assert_gte(faced, 1, "CONTROL: procedural facades were found across the villages (%d)" % faced)
 
 
 func test_a_flat_roofed_world_still_stands_up() -> void:
@@ -210,4 +229,5 @@ func test_no_village_faces_over_a_buildings_art() -> void:
 			for b in v.buildings.get_children():
 				if b is Node2D and not (b is AreaTransition):
 					assert_false(r.intersects(v._building_cells(b)), "%s: facade %s covers %s" % [f, str(r), b.name])
-	assert_gt(faced, 2, "CONTROL: facades were built across the villages (%d)" % faced)
+	## Floor, not a pin: RivetRow's canteen; every W1 block (Ironhaven's forge included) is drawn art now.
+	assert_gte(faced, 1, "CONTROL: procedural facades were built across the villages (%d)" % faced)

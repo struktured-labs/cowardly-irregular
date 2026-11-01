@@ -21,6 +21,8 @@ signal transition_triggered(target_map: String, spawn_point: String)
 @export var show_indicator: bool = true
 @export var indicator_text: String = ""  # Empty = auto ("Enter Cave", etc.)
 @export var show_gate_visual: bool = true  # Draw a visible gate/archway
+## A door on a drawn building has no archway but keeps its signpost (BaseVillage._hide_what_the_art_draws).
+var label_without_gate: bool = false
 
 ## Gate visual colors per exit type
 const GATE_COLORS = {
@@ -175,7 +177,7 @@ func _setup_indicator() -> void:
 	_indicator_label.text = indicator_text if indicator_text != "" else _get_default_indicator_text()
 	_indicator_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_indicator_label.position = FLAT_OFFSET
-	_indicator_label.visible = show_gate_visual  # Always visible when gate is drawn
+	_indicator_label.visible = show_gate_visual or label_without_gate  # Always visible when gate is drawn
 	_indicator_label.add_theme_font_size_override("font_size", 12)
 	_indicator_label.add_theme_color_override("font_color", Color.WHITE)
 	_indicator_label.add_theme_color_override("font_shadow_color", Color.BLACK)
@@ -220,7 +222,7 @@ func _return_prompt_to_the_world() -> void:
 	## `drop` restores the raw offset and zeroes the width, so the centring is redone or it holds
 	## only until the player's first trip through a Mode 7 map.
 	_centre_indicator.call_deferred()
-	_indicator_label.visible = show_gate_visual
+	_indicator_label.visible = show_gate_visual or label_without_gate
 	_prompt_layer = null
 
 
