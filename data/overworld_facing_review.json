@@ -1,75 +1,880 @@
 {
   "_why": "A walk sheet's facing cannot be measured: a silhouette compared against the last reviewed sheet called 2 broken sheets OK and 3 correct ones SWAPPED (2026-11-01, margins within 0.05). So a HUMAN looks, at a committed 4-direction strip, and this row pins what they looked at: the sheet's sha256. Redrawing a sheet reds test_a_walk_sheet_faces_where_it_walks until someone re-renders the strip (tools/render_facing_strips.py), looks at it, and updates the row with what they checked.",
   "sheets": {
-    "bard": {
+    "overworld_monster_sheets/bat": {
+      "sheet_sha256": "fb0ed4d7cb3f94373e5ac7b9545b234f2cee760bff47090e6384c8581f2d9c5b",
+      "strip": "res://docs/art/facing/overworld_monster_sheets/bat.png",
+      "reviewed": "2026-11-01, cowir-sprites, at 6x: goblin/skeleton/snake/troll/wolf in profile toward travel; bat/ghost/imp/slime/spider are drawn front-on, so facing is not defined for them and the pin only stops an unreviewed redraw"
+    },
+    "overworld_monster_sheets/ghost": {
+      "sheet_sha256": "b9ac79c508929c113a49137c2aef55c0b17c923fe95bbc57e1a74b4f0b3cd173",
+      "strip": "res://docs/art/facing/overworld_monster_sheets/ghost.png",
+      "reviewed": "2026-11-01, cowir-sprites, at 6x: goblin/skeleton/snake/troll/wolf in profile toward travel; bat/ghost/imp/slime/spider are drawn front-on, so facing is not defined for them and the pin only stops an unreviewed redraw"
+    },
+    "overworld_monster_sheets/goblin": {
+      "sheet_sha256": "74e6cf7be52d1987f976922ec4e91925487c8d3875f59cc72e9041d828bf603c",
+      "strip": "res://docs/art/facing/overworld_monster_sheets/goblin.png",
+      "reviewed": "2026-11-01, cowir-sprites, at 6x: goblin/skeleton/snake/troll/wolf in profile toward travel; bat/ghost/imp/slime/spider are drawn front-on, so facing is not defined for them and the pin only stops an unreviewed redraw"
+    },
+    "overworld_monster_sheets/imp": {
+      "sheet_sha256": "1c27fd47586393e924f637908903bd21cc00536ce02ffd3323ee40b1d8377e27",
+      "strip": "res://docs/art/facing/overworld_monster_sheets/imp.png",
+      "reviewed": "2026-11-01, cowir-sprites, at 6x: goblin/skeleton/snake/troll/wolf in profile toward travel; bat/ghost/imp/slime/spider are drawn front-on, so facing is not defined for them and the pin only stops an unreviewed redraw"
+    },
+    "overworld_monster_sheets/skeleton": {
+      "sheet_sha256": "81b1ea98ecc61ab1f3adbc0b77b6640a60571e0d4bd5cb14de2f0d8fd975dde2",
+      "strip": "res://docs/art/facing/overworld_monster_sheets/skeleton.png",
+      "reviewed": "2026-11-01, cowir-sprites, at 6x: goblin/skeleton/snake/troll/wolf in profile toward travel; bat/ghost/imp/slime/spider are drawn front-on, so facing is not defined for them and the pin only stops an unreviewed redraw"
+    },
+    "overworld_monster_sheets/slime": {
+      "sheet_sha256": "2fb55dc45da160a825b484a420134ca7d88d63a84ff71c60f19f0cdcb051595f",
+      "strip": "res://docs/art/facing/overworld_monster_sheets/slime.png",
+      "reviewed": "2026-11-01, cowir-sprites, at 6x: goblin/skeleton/snake/troll/wolf in profile toward travel; bat/ghost/imp/slime/spider are drawn front-on, so facing is not defined for them and the pin only stops an unreviewed redraw"
+    },
+    "overworld_monster_sheets/snake": {
+      "sheet_sha256": "1fc501f369b026923691fd2ed043a4baae0022caaa21b1db1115ba477b2ccc53",
+      "strip": "res://docs/art/facing/overworld_monster_sheets/snake.png",
+      "reviewed": "2026-11-01, cowir-sprites, at 6x: goblin/skeleton/snake/troll/wolf in profile toward travel; bat/ghost/imp/slime/spider are drawn front-on, so facing is not defined for them and the pin only stops an unreviewed redraw"
+    },
+    "overworld_monster_sheets/spider": {
+      "sheet_sha256": "53320b68c253ab010ff56d964750669c68c3371c6d97315928884a16a53d4bea",
+      "strip": "res://docs/art/facing/overworld_monster_sheets/spider.png",
+      "reviewed": "2026-11-01, cowir-sprites, at 6x: goblin/skeleton/snake/troll/wolf in profile toward travel; bat/ghost/imp/slime/spider are drawn front-on, so facing is not defined for them and the pin only stops an unreviewed redraw"
+    },
+    "overworld_monster_sheets/troll": {
+      "sheet_sha256": "e32c425cbf0d31fad7e509de8158d22ae9e069085add53814179ca453d5ad761",
+      "strip": "res://docs/art/facing/overworld_monster_sheets/troll.png",
+      "reviewed": "2026-11-01, cowir-sprites, at 6x: goblin/skeleton/snake/troll/wolf in profile toward travel; bat/ghost/imp/slime/spider are drawn front-on, so facing is not defined for them and the pin only stops an unreviewed redraw"
+    },
+    "overworld_monster_sheets/wolf": {
+      "sheet_sha256": "ea8a338e4ab117750eb20ebb07e8e0cefaa1620f1aefd423b034ccb758fb933d",
+      "strip": "res://docs/art/facing/overworld_monster_sheets/wolf.png",
+      "reviewed": "2026-11-01, cowir-sprites, at 6x: goblin/skeleton/snake/troll/wolf in profile toward travel; bat/ghost/imp/slime/spider are drawn front-on, so facing is not defined for them and the pin only stops an unreviewed redraw"
+    },
+    "overworld_npc_sheets/arbiter": {
+      "sheet_sha256": "d9dfa9ebf9fec8a307fe5a540147008382b000b855ec4479eeca718d585aedcf",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/arbiter.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/blacksmith": {
+      "sheet_sha256": "9a00cfc4a863d4dafb8c88d0d5ca45f9db438e762ba8bb9a3829e1d264dd3a53",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/blacksmith.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/blacksmith_abstract": {
+      "sheet_sha256": "c3d8f2be6ff38e33fd4d3d94204c87e14493978636a041a980121f40dadea0ce",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/blacksmith_abstract.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/blacksmith_digital": {
+      "sheet_sha256": "ff0a5b6367d312874d15dd0a02573cd21e6e660e535f4f32c62345e03d8571fa",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/blacksmith_digital.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/blacksmith_industrial": {
+      "sheet_sha256": "4ca63111ee20e64ac1655ef7ccb5346d828613c5ca412fd1ec3545c9c20269bf",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/blacksmith_industrial.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/blacksmith_steampunk": {
+      "sheet_sha256": "6f99db2d40635fbc644e79a416cdca655110a6cabae77f511f2bc870c5051248",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/blacksmith_steampunk.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/blacksmith_suburban": {
+      "sheet_sha256": "8ff458cb528ab5aa95fd72988a5ac5a7d5851dc236b52c38d6c52967083bff97",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/blacksmith_suburban.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/bram": {
+      "sheet_sha256": "5d1b15b5f36660966d18e4c9a61eacee440d40a3e16c84701dd752bb373fe431",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/bram.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/chancellor_mordaine": {
+      "sheet_sha256": "7bdaa964f3f0ad90af9c30ca36f6743d910ae776848da97ac09bc371b4ba2956",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/chancellor_mordaine.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/child": {
+      "sheet_sha256": "fe03352f338045e55d13af20aae5c43556bed748982769db5e9107e764f99003",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/child.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/child_abstract": {
+      "sheet_sha256": "ef8aec0848a4d1ae0138aec1c083467b89ca8c122de324a8dae320068beca943",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/child_abstract.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/child_digital": {
+      "sheet_sha256": "2250fe5b83ebb5003f64ae45143113bc7a0e08f11450579966e8831fbbdc638c",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/child_digital.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/child_industrial": {
+      "sheet_sha256": "6b486513817dc3b17b715bf0f194e0d60600642ee34bd61c0ab68d835ad5deb9",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/child_industrial.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/child_steampunk": {
+      "sheet_sha256": "28237db1415f4c1196d47ec688412021395caff428c9799c29b035a6d3cefa7f",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/child_steampunk.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/child_suburban": {
+      "sheet_sha256": "d362496b6e5f847ebc4857408a344a475c44122c08f0be0282b2009a6fa4ee0c",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/child_suburban.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/curator": {
+      "sheet_sha256": "36a0399f9920e67a9850db4a76fca3c6e0ea48bb59bc389dfdca35021978de0e",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/curator.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/dr_temporal": {
+      "sheet_sha256": "d6b2af095e42c232ce3e4599c24466212bd3ba011a29b05ffbb795d5e8112adf",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/dr_temporal.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/elder": {
+      "sheet_sha256": "c68c63e7cee4cff7a6cb1b34932bd4820668ccd156c238a9ca1ce2026949186a",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/elder.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/elder_theron": {
+      "sheet_sha256": "a09f6e3a2aa5bd21ad952f6fe37bc54447e12fac59d1e35f1ad7314f54a8834e",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/elder_theron.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/fairy": {
+      "sheet_sha256": "842867a88c7894e0bf15327990746bd9cade53f8e64dc82ac8587ef85702374f",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/fairy.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/fairy_abstract": {
+      "sheet_sha256": "eaea4edd461d48cc300b1feff157f8021c542989277d3cf1146e8d971dcf6f59",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/fairy_abstract.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/fairy_digital": {
+      "sheet_sha256": "e8eeb3eaccdfacae525c80c3447954f428130c26a98c2fe4ac406c44adfe66a2",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/fairy_digital.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/fairy_industrial": {
+      "sheet_sha256": "47f6e32355d1bb1727d37521602bcab8cbec1ce9e80126f78cdf095466136b33",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/fairy_industrial.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/fairy_steampunk": {
+      "sheet_sha256": "00cc03f718720205dace0b19c93ff72c5b436b28ce79a45d9bda7502b99ebbb8",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/fairy_steampunk.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/fairy_suburban": {
+      "sheet_sha256": "741ef41cc8a2bf524a7fc68df19929f8c42d6e8f612a1bc9ad7b1210ec01f603",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/fairy_suburban.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/farmer": {
+      "sheet_sha256": "e8dd6d6687e4f55f82e1c804039b58d31f670906683b2cd1d32aa90b29fa750c",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/farmer.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/farmer_abstract": {
+      "sheet_sha256": "a1436a4a41b990ee6e131ea5ca7cf1161e9f8bdb74ae1aff4a6e496cb4957cd9",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/farmer_abstract.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/farmer_digital": {
+      "sheet_sha256": "6fb0fecefd4697143552308a133a7c6606eabf498e5c8292b2e8d22b1ee67be6",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/farmer_digital.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/farmer_industrial": {
+      "sheet_sha256": "b1f642ac70df016b3a9e63d805a1f6c45261c13b2f69e6ff689cb25013578fd5",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/farmer_industrial.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/farmer_steampunk": {
+      "sheet_sha256": "479e3b37cbb549d0813b31660ef5bb187c04002ea1f2221e01ffdd56c4f7e753",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/farmer_steampunk.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/farmer_suburban": {
+      "sheet_sha256": "0aac21e47823c2808aab05d66ec040f1ec7830d10f15e8a5705d5f34ae1fb498",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/farmer_suburban.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/fisherman": {
+      "sheet_sha256": "f0ee1bea25b6afddd12909c144308c30847bb66b3b4cbf5905ad3f57b48efb13",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/fisherman.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/fisherman_abstract": {
+      "sheet_sha256": "117dac142afc8a5fd0159536aa8f3ab8ec22f2762e90cfe829cf63d312aa83b9",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/fisherman_abstract.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/fisherman_digital": {
+      "sheet_sha256": "f82633ca5664e716adeb3601db01d2a98be6225f2ac42defbf94fd56b66063d7",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/fisherman_digital.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/fisherman_industrial": {
+      "sheet_sha256": "a312d9af7083ed9c3fd8f8839d2a3a9af575a3194e3a0086907d24dd3826a5c7",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/fisherman_industrial.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/fisherman_steampunk": {
+      "sheet_sha256": "3060bb9526f41b107c548a0be28d171855de9fdb394b3c2065afe9170fb14a61",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/fisherman_steampunk.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/fisherman_suburban": {
+      "sheet_sha256": "648dd1a21e4b4bd75fa89d93804f9dc3e0b3f00556427986eae423f6c3c2e437",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/fisherman_suburban.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/ghost": {
+      "sheet_sha256": "973d97a2cc8612e151c2274656cf4b9bac3271bb833c2e9675f580ffd291e87a",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/ghost.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/ghost_abstract": {
+      "sheet_sha256": "7867b72d3b225d240dca51b407687f058f2ec568735854518312487c235f6e88",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/ghost_abstract.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/ghost_digital": {
+      "sheet_sha256": "602b577fe0330b07aa5cb189b9957b6ea4f842e0c81050bfe7138e7aed43a824",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/ghost_digital.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/ghost_industrial": {
+      "sheet_sha256": "a3b8ef0ba9aa1dffbf9488b608c2f13d9ba6e42dae071ffd64eda512e8ae6ef8",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/ghost_industrial.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/ghost_steampunk": {
+      "sheet_sha256": "fea2643af5a68ba1db16fa82745d4fb2de1f24ce95b2a1fa39bed0671f2f6816",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/ghost_steampunk.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/ghost_suburban": {
+      "sheet_sha256": "6c450fff65d048c23fef54e2d364a1fcd4c4dfbc3cbb014315c84a9d25a77a6b",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/ghost_suburban.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/granny_kaya": {
+      "sheet_sha256": "039dce16cbe1ddf696d6afe92619348ac0fd22fb934d5a35ed6f488aecbdec39",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/granny_kaya.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/guard": {
+      "sheet_sha256": "ece38b6bdf0a244bf587b66c82a2726d96ae1150b0989c8f34146b229e45e886",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/guard.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/guard_abstract": {
+      "sheet_sha256": "4fa41209bb0e1175c832413d170eb6c07de91d93121a71edb5791125273be9f2",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/guard_abstract.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/guard_digital": {
+      "sheet_sha256": "396e7d9d414e3da144e379bc13ce6f0c0144f339d886c899c62a1f296d24f217",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/guard_digital.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/guard_industrial": {
+      "sheet_sha256": "5f5eb984c23779c661bb169c3e879f8ddbdb563303d1a2fd707d95fcb008f6ae",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/guard_industrial.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/guard_steampunk": {
+      "sheet_sha256": "11fcff6f6f112442afe42dfb7902a7aa97bfa550af7e9c900f7d014deed69e87",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/guard_steampunk.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/guard_suburban": {
+      "sheet_sha256": "181dd2f23ce0c35fa54baa48014324554199a6616ea214f914dd32fb73e9047f",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/guard_suburban.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/innkeeper": {
+      "sheet_sha256": "b43ab0b8c8bfc4af6a7acd8cb9115e4a2f659e1a5ccef7eb1875487b4b436b51",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/innkeeper.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/innkeeper_abstract": {
+      "sheet_sha256": "9ad03393b55d761ed30b1942e5da4d151268b05c07b4e1d272f36b7179af161c",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/innkeeper_abstract.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/innkeeper_digital": {
+      "sheet_sha256": "d359a5cee9f6bb71f90ab8aa5a73cc2603ac8c255f3d8df13be583c369c38fdc",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/innkeeper_digital.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/innkeeper_industrial": {
+      "sheet_sha256": "57657e8e8ea227422f11834a9029c5593539299bc70a7854dc75b53c636f936a",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/innkeeper_industrial.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/innkeeper_steampunk": {
+      "sheet_sha256": "da04056fa46994147fe81f9d9a7b2843dcda40150c5af168d6b319d5316be83a",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/innkeeper_steampunk.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/innkeeper_suburban": {
+      "sheet_sha256": "3168a6c9a68d56f19ff523fd990d420403f5ef5f468ac9488ebad33f3fb01927",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/innkeeper_suburban.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/keeper_mortimer": {
+      "sheet_sha256": "560beaedb20b088a386cd1dd61293dfae8d30e75741a30225bccb0fb78260b8f",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/keeper_mortimer.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/keeper_willow": {
+      "sheet_sha256": "bed59e0edffa7b68ed2847412b3706e2d5fa31b7bf2a77be0dbda70c6e2304b1",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/keeper_willow.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/kid_acrees": {
+      "sheet_sha256": "5f35ae93343cdb73e8df68ac8b62dfae2d3e417342698dc16ca513685bb907e4",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/kid_acrees.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/king": {
+      "sheet_sha256": "28ca970b4884a445dc732dffc6d5a2af60787fea7fbc4d392e0c18d5588cf528",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/king.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/king_abstract": {
+      "sheet_sha256": "a973dcdc766ed396976d937672fdccbcb3c93862ecd80e0647312793d88589eb",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/king_abstract.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/king_digital": {
+      "sheet_sha256": "8b8bfe256741ab8d66cb180fbcbb78301a60e00b12d0bb493e22c810e198d427",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/king_digital.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/king_industrial": {
+      "sheet_sha256": "3ea8f446856dffa03bba6964fa417c2ef9b6a6a7a964102bffa064c6da5f3142",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/king_industrial.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/king_steampunk": {
+      "sheet_sha256": "d674227999fab6a44c7ee655d79c38b54bc137be8ca40a75f923edd473e8de46",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/king_steampunk.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/king_suburban": {
+      "sheet_sha256": "29f04c54a7ce0801f88d846579989ce7bceda191706e23522c4bfae09dee7e6a",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/king_suburban.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/marta": {
+      "sheet_sha256": "a2618e252e2cb8ea63197a4422cea9ce3471afc51262731847919f88855655fc",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/marta.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/merchant": {
+      "sheet_sha256": "dff2132baffc6c87c8a4b1939c9b94ab4e29ed2e60da794b3235265caeec231e",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/merchant.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/merchant_abstract": {
+      "sheet_sha256": "599566dd0aa3296e98acb9047bac65104b4fa705ee8d8890e6ad0411442195ca",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/merchant_abstract.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/merchant_digital": {
+      "sheet_sha256": "873e6fcadd9c2de8c549e56cd3e8fbf5dc129f5dae1f20c09b5c17312949a0f6",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/merchant_digital.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/merchant_industrial": {
+      "sheet_sha256": "2a29e78b42b0dac7d1ed775ab9616c5fbdbfa80e71fb81987c5879a14372820c",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/merchant_industrial.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/merchant_steampunk": {
+      "sheet_sha256": "7444586bdb79e1fc4643816293f49b7d3c47a7c687d24d780caafa56b232399c",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/merchant_steampunk.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/merchant_suburban": {
+      "sheet_sha256": "b3880810210d3da378dace65659cc129e13e8f9c9346475c13b1e813c49eb931",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/merchant_suburban.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/monk": {
+      "sheet_sha256": "108a7f4cdf4fba3d23445a0cd233ff9e595cd49d61ae55aa15753a234a50875f",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/monk.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/monk_abstract": {
+      "sheet_sha256": "68dea731d38b554e9eb12e469b9f7fb9d066cb41c76b01e46a711ee9f8d947f8",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/monk_abstract.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/monk_digital": {
+      "sheet_sha256": "3ba8875326d675aebfdde5cf617801882ccbc37ac4d28c155c564d9f4527284e",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/monk_digital.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/monk_industrial": {
+      "sheet_sha256": "8e3aa178a422b352491fe53ece0121e5b3124b8f82ba5957b58ab541f2257574",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/monk_industrial.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/monk_steampunk": {
+      "sheet_sha256": "072b7000a9efd4f1fd092dbe01143feb713004397b7249aecccdee70dcdf45b4",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/monk_steampunk.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/monk_suburban": {
+      "sheet_sha256": "c7ed87fcd5379f07764546854222b6381d3abd05a4ebdfe3e708ec21a93fc7e2",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/monk_suburban.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/mysterious": {
+      "sheet_sha256": "582da91d5a928d31357d570ad9907ae571d3c30e0094d4a129abed0874420ef4",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/mysterious.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/noble": {
+      "sheet_sha256": "30d92133d8ce9cc403ea1fe0f96ff30b3f4da6b9af3d4faed5cb8ef0f540e2ae",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/noble.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/noble_abstract": {
+      "sheet_sha256": "25973fd367a3f64fe0de5dfa38034e89d86879133710dcda0560e5abeb01a515",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/noble_abstract.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/noble_digital": {
+      "sheet_sha256": "cf4bceb9796690941aa6d918b42c69c43ce9bb6a670b3e5e40d1c63691c37346",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/noble_digital.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/noble_industrial": {
+      "sheet_sha256": "b89cf8efa768b60719dd867ab861dfb46d9d2db2643f7facf591644c1a9ad949",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/noble_industrial.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/noble_steampunk": {
+      "sheet_sha256": "02460431d6aae78e530bb86dd836ce61806fd955a0bc2f8fd56c182a8a8c7bf8",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/noble_steampunk.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/noble_suburban": {
+      "sheet_sha256": "229bdfc9ac76222bf970746314ff006f134556b54776cae26716683a84bbdf41",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/noble_suburban.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/noblewoman": {
+      "sheet_sha256": "fdbe4389be59168f4dc815b07099eb2cdcc87f6dc99d37cf61c95f638f2e67a0",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/noblewoman.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/noblewoman_abstract": {
+      "sheet_sha256": "8fad4550c4b7880055f486fd6b2d4a327358b0aaacaea4921a97bb1ef1990e75",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/noblewoman_abstract.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/noblewoman_digital": {
+      "sheet_sha256": "caa1d42ad0977925343ad4209286dfdee3578ce6ae529045f72960799454201a",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/noblewoman_digital.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/noblewoman_industrial": {
+      "sheet_sha256": "39b2dbd2614cdfd9f641bc102d5713edfb94214e1515e18a6fbce656d54000c7",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/noblewoman_industrial.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/noblewoman_steampunk": {
+      "sheet_sha256": "e4edb6d605bc06651e7e42ea43299e88c089eb74dd8d188869258b271a387639",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/noblewoman_steampunk.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/noblewoman_suburban": {
+      "sheet_sha256": "845d953f0c3b0ce60a98b40e51c228f8aecf365d713a4cf6f9115a2fc2004ba9",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/noblewoman_suburban.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/old_man": {
+      "sheet_sha256": "95c6890f2d3c1187f23d594ed6734b7eb307c1ce053578d5380d5aacce15b751",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/old_man.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/old_man_abstract": {
+      "sheet_sha256": "b1f758ce82d03dbd2b1c10835e4d5841af1d006649b7dde03cb4ce72d4849cc7",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/old_man_abstract.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/old_man_digital": {
+      "sheet_sha256": "d7affe4f7ba5a89504ecbd21804df9c04d88373ee6a7caa0d40762d8f7860921",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/old_man_digital.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/old_man_industrial": {
+      "sheet_sha256": "89de7d620e1956287d9ec3820de3bbf51c5045a579f0550da89e80d0bacc0875",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/old_man_industrial.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/old_man_steampunk": {
+      "sheet_sha256": "9efbc271cb2f8bd544446d78606f92e0aed75b1a65b76287c7feb0f5de0d3f1a",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/old_man_steampunk.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/old_man_suburban": {
+      "sheet_sha256": "457e3ea85cbeb1c6032ffad5a1a259269ba1409e81aeed5b79a7748cc6fe6a62",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/old_man_suburban.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/old_woman": {
+      "sheet_sha256": "acf9f3b281230d9a0f3017fd1691609373794071f652417789bbbfd991035451",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/old_woman.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/old_woman_abstract": {
+      "sheet_sha256": "b064a566b9cd4db82a46815d9486250fe3ddef2eabd798f73e52ba9d8dcdea02",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/old_woman_abstract.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/old_woman_digital": {
+      "sheet_sha256": "52940c7b18ceef08fe9b92e00637eb3eea2a0d54d8960f3b25f08bf311907b07",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/old_woman_digital.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/old_woman_industrial": {
+      "sheet_sha256": "c4e3a80cd98c75cbd767ce7eaf64602a7fcf27dc613226a709b39f2137ad2026",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/old_woman_industrial.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/old_woman_steampunk": {
+      "sheet_sha256": "ee8db67f13d0830e01e6dc51852655b1eb81bdd7276a25d015225686fb7b82cb",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/old_woman_steampunk.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/old_woman_suburban": {
+      "sheet_sha256": "f7c098d371bf7994ce0c2ccbee2f71a83a0acd0da6c65be84890a9d62c8789fd",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/old_woman_suburban.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/phil": {
+      "sheet_sha256": "3cac7e66163f1bdae1889244e6c90bea2785721a9e1670973d2655938342da18",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/phil.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/priestess": {
+      "sheet_sha256": "7ec01d8736e05d67de2ae3ad3a127af3e98019a549d31978a88a080d4f0d5d4b",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/priestess.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/priestess_abstract": {
+      "sheet_sha256": "fcbaadc05000a79c1b1bff6c5812c3a27ea6551e5f89ba460ac08ad2afe6de59",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/priestess_abstract.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/priestess_digital": {
+      "sheet_sha256": "2f84e74ebcf8e9e1313c8394e1b22facd93bc18c4da7c180985c966eb3e3d29c",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/priestess_digital.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/priestess_industrial": {
+      "sheet_sha256": "2c40d86182bf4fbaa57d5125825455872804266a7a30173bb3430eef66d40a1e",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/priestess_industrial.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/priestess_steampunk": {
+      "sheet_sha256": "96c0037a056f4f1637b9eddb357f14154fe4db703fa9d3cdbde428663d69613e",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/priestess_steampunk.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/priestess_suburban": {
+      "sheet_sha256": "e427b833fc79a7ab5c52b41a1e6c6428fcf90f3fd599b8858591b747f70ddc1b",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/priestess_suburban.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/queen": {
+      "sheet_sha256": "a3d7612577e848523ac95e35584464ac9798f52a677a3197b63c0f2fb39176e6",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/queen.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/queen_abstract": {
+      "sheet_sha256": "c231c824c41ceaa622ce3e73d547d772b5c918b50d8bbb1e9f2fcda535560962",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/queen_abstract.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/queen_digital": {
+      "sheet_sha256": "36e5c9a680847c92fee44253f64129d2490f3c5c14e2845f36fecab913db8bac",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/queen_digital.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/queen_industrial": {
+      "sheet_sha256": "a2a86186db956cb9747a657e2de05848bf692d85b267a839ed4857514219988e",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/queen_industrial.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/queen_steampunk": {
+      "sheet_sha256": "35ae03da53cfe97103d96ca7117db7cb9a98dc4cd52f1441ebddf1059ac0a2eb",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/queen_steampunk.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/queen_suburban": {
+      "sheet_sha256": "8f5a1e3ed3ac2987264c4524b64e5061a29aaf9140b0d41bb6cdc81e6ccdb580",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/queen_suburban.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/rotha": {
+      "sheet_sha256": "12b814e7474ebebde799b35fbd7736e38b14147252681dd68eb5e02dae9ec894",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/rotha.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/roy": {
+      "sheet_sha256": "02225f96e4578c837e47672e23fcecd148fe28e37c757e002b557af76b20726b",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/roy.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/scholar": {
+      "sheet_sha256": "5e606fbed2046328920ba954108cc645743f4bf6de9337ed87b960909d880161",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/scholar.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/scholar_abstract": {
+      "sheet_sha256": "89a35cc4e4290a35c458a6787e7981119678c1463143e3ee9e6b42642f8257b9",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/scholar_abstract.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/scholar_digital": {
+      "sheet_sha256": "3296d8ae32b15b416a1b8187cf43836a9bdacb7a09d1ae631b7207092bb0b6ec",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/scholar_digital.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/scholar_industrial": {
+      "sheet_sha256": "658af0351b0e6dc29cde3883b7d01a88e61b4ab3bf6c43f522f03200c26f7336",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/scholar_industrial.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/scholar_milo": {
+      "sheet_sha256": "b0812e461b7d064e036f63695f49175317f3108eef6ecfb1ec8a13fa4934eb77",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/scholar_milo.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/scholar_steampunk": {
+      "sheet_sha256": "bcc4510810a44b9e8f745cf8e67ebf33bbac2f980db4b4966afb20d7d50112a8",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/scholar_steampunk.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/scholar_suburban": {
+      "sheet_sha256": "9efce5d2eac5e20651ce08d06f4d184e5ba3f19115e8622c3e7e3f69d59faad2",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/scholar_suburban.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/soldier": {
+      "sheet_sha256": "123d66c888790759a0076ef04c77a32bad3495fba163daf53d610b9b495ed67b",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/soldier.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/soldier_abstract": {
+      "sheet_sha256": "898a494f328facf93cae18b7546d031483565daa548771e860885c77f7adf527",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/soldier_abstract.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/soldier_digital": {
+      "sheet_sha256": "80302ee6d17127ca1ebac4febf2005bdfdd2459b27de37000a71509e05b923a3",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/soldier_digital.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/soldier_industrial": {
+      "sheet_sha256": "23f9b39e940351112a4ce80172d896e1f6dfad5ae2888ae5cc7734b733802f9d",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/soldier_industrial.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/soldier_steampunk": {
+      "sheet_sha256": "7ca472e59a1101ca0fcc6ecf476cdb254edbc85739668b70573d8c8bd72ab4c2",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/soldier_steampunk.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/soldier_suburban": {
+      "sheet_sha256": "bd21e8e502dd4559415a30fce78ddace85708ea16c633080a5399cefac4eb076",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/soldier_suburban.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/tempo": {
+      "sheet_sha256": "1f33764bcc3ede99ceec7a8298ce1dc0033112c2dd30c8f372987e906ff54313",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/tempo.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/traveler": {
+      "sheet_sha256": "050663fe191200ffe0ab0e7088545cbe3f0b2772a9c9d2e081f4380b8514ca64",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/traveler.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/traveler_abstract": {
+      "sheet_sha256": "6d884ceb6372cb371e2987b7c54dea453effa1d79e4e5a4d7ea5e9cdcbc861de",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/traveler_abstract.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/traveler_digital": {
+      "sheet_sha256": "b824d2c614f51e8704bdde3e5293e86b128b2160345b8c4ca76315759cf851bd",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/traveler_digital.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/traveler_industrial": {
+      "sheet_sha256": "3043133f92662dd51db1c3497385a9a312b650e55282ea61e8ddbdf075e6803c",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/traveler_industrial.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/traveler_steampunk": {
+      "sheet_sha256": "b7d9f813dfae61d1046f4fbf45d611e27550a95f66e2373189189966fbeebdc8",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/traveler_steampunk.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/traveler_suburban": {
+      "sheet_sha256": "dd96f257085cc5b5285d08bff1a0c378e1e3ed2534c342fa9b0c022d1c2501f7",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/traveler_suburban.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/warden": {
+      "sheet_sha256": "6ad1355831581ec7b41229ad72c963f882795a43e47d711bb50ca38a33d40c59",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/warden.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/young_man": {
+      "sheet_sha256": "93315752990f7156aa93d59f4281aa0375c63e7bf7968382b7442f33a6377811",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/young_man.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/young_man_abstract": {
+      "sheet_sha256": "e8c681e4acb4059ec7d9af263058f291046ce5c036aa23c96c1c6a151f1e6118",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/young_man_abstract.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/young_man_digital": {
+      "sheet_sha256": "194c4421ff77771c5cfef16a9162393d25f8ab3bc74466afdf12e466985e3cca",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/young_man_digital.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/young_man_industrial": {
+      "sheet_sha256": "698f0c3ab16f9db1b4126116be57b894a4f36be8c86e7cf531d157f01f0b720f",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/young_man_industrial.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/young_man_steampunk": {
+      "sheet_sha256": "4eb8804bf3022bc04cb3585d318da008f3163227f1ebac2a66bc6a5f5e9527b8",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/young_man_steampunk.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/young_man_suburban": {
+      "sheet_sha256": "596e35791a58b83c2764bd96870ca30f14b385aabaf27549ac68d8e9881e29f9",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/young_man_suburban.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/young_woman": {
+      "sheet_sha256": "4f3490b316e625014984b2e377c5a11c92e0649089507e9178ebe68f88815662",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/young_woman.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/young_woman_abstract": {
+      "sheet_sha256": "e5d56588b92f2286ed0d905c7aaf719454cdd09784290e3e9071520560a663df",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/young_woman_abstract.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/young_woman_digital": {
+      "sheet_sha256": "c9f919565653b0a207f0a9a68aa3d2c313761730957b3b12e53b540ae4bca549",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/young_woman_digital.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/young_woman_industrial": {
+      "sheet_sha256": "6676549ec117a05ea7784ce83359979af3c81a26227b51acdd81c98cbbf34190",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/young_woman_industrial.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/young_woman_steampunk": {
+      "sheet_sha256": "18ff0759e4db4e8bd1adb59f2dc72844721d8ddf263bb4f3b079e339857f911e",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/young_woman_steampunk.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_npc_sheets/young_woman_suburban": {
+      "sheet_sha256": "bb02c87fafaa728e18aa11135228f3f88a579b1f6385bac32ff780abf180c0a0",
+      "strip": "res://docs/art/facing/overworld_npc_sheets/young_woman_suburban.png",
+      "reviewed": "2026-11-01, cowir-sprites, contact sheets of every sheet's DOWN/LEFT/RIGHT at 2x, the 22 ambiguous ones (named villagers, kings, queens, hooded and abstract variants) heads at 5x: every LEFT row shows its face on the left edge"
+    },
+    "overworld_player_sheets/bard": {
       "sheet_sha256": "d248e1d16f664fab366c5723894e7168348f80c299254fed8e19507c86529b09",
-      "strip": "res://docs/art/facing/bard.png",
-      "reviewed": "2026-11-01, cowir-sprites, by eye at 4x/8x: DOWN shows the face, UP the back of the head, LEFT/RIGHT in profile facing travel"
+      "strip": "res://docs/art/facing/overworld_player_sheets/bard.png",
+      "reviewed": "2026-11-01, cowir-sprites, by eye at 4x (guardian/summoner/rogue at 8-12x): DOWN face, UP back of head, LEFT/RIGHT profile toward travel"
     },
-    "bossbinder": {
+    "overworld_player_sheets/bossbinder": {
       "sheet_sha256": "3072f853d502472d810b704d6f182b3ba3823a01b89b5201599a585d9aff3cae",
-      "strip": "res://docs/art/facing/bossbinder.png",
-      "reviewed": "2026-11-01, cowir-sprites, by eye at 4x/8x: DOWN shows the face, UP the back of the head, LEFT/RIGHT in profile facing travel"
+      "strip": "res://docs/art/facing/overworld_player_sheets/bossbinder.png",
+      "reviewed": "2026-11-01, cowir-sprites, by eye at 4x (guardian/summoner/rogue at 8-12x): DOWN face, UP back of head, LEFT/RIGHT profile toward travel"
     },
-    "cleric": {
+    "overworld_player_sheets/cleric": {
       "sheet_sha256": "141b15397be03ebf811646b315173681ed0b80a4f5158d25d0ce0c0cbf589b35",
-      "strip": "res://docs/art/facing/cleric.png",
-      "reviewed": "2026-11-01, cowir-sprites, by eye at 4x/8x: DOWN shows the face, UP the back of the head, LEFT/RIGHT in profile facing travel"
+      "strip": "res://docs/art/facing/overworld_player_sheets/cleric.png",
+      "reviewed": "2026-11-01, cowir-sprites, by eye at 4x (guardian/summoner/rogue at 8-12x): DOWN face, UP back of head, LEFT/RIGHT profile toward travel"
     },
-    "fighter": {
+    "overworld_player_sheets/fighter": {
       "sheet_sha256": "8929fd845a86dc59b92a9ad1d51819f6133c680c17b1bd955fb92ad630e00ef6",
-      "strip": "res://docs/art/facing/fighter.png",
-      "reviewed": "2026-11-01, cowir-sprites, by eye at 4x/8x: DOWN shows the face, UP the back of the head, LEFT/RIGHT in profile facing travel"
+      "strip": "res://docs/art/facing/overworld_player_sheets/fighter.png",
+      "reviewed": "2026-11-01, cowir-sprites, by eye at 4x (guardian/summoner/rogue at 8-12x): DOWN face, UP back of head, LEFT/RIGHT profile toward travel"
     },
-    "guardian": {
+    "overworld_player_sheets/guardian": {
       "sheet_sha256": "52a477570bb1924e19fe2beb27f9fcc9ba1806a7a446dd935ca8059891632cb0",
-      "strip": "res://docs/art/facing/guardian.png",
-      "reviewed": "2026-11-01, cowir-sprites, by eye at 4x/8x: DOWN shows the face, UP the back of the head, LEFT/RIGHT in profile facing travel"
+      "strip": "res://docs/art/facing/overworld_player_sheets/guardian.png",
+      "reviewed": "2026-11-01, cowir-sprites, by eye at 4x (guardian/summoner/rogue at 8-12x): DOWN face, UP back of head, LEFT/RIGHT profile toward travel"
     },
-    "mage": {
+    "overworld_player_sheets/mage": {
       "sheet_sha256": "e8ec3c90f5933ad5b1ce2962983e3025a4cc99c1b5b3b01205cb28abde711a84",
-      "strip": "res://docs/art/facing/mage.png",
-      "reviewed": "2026-11-01, cowir-sprites, by eye at 4x/8x: DOWN shows the face, UP the back of the head, LEFT/RIGHT in profile facing travel; LEFT and RIGHT were SWAPPED in the 48px redraw (413810980) and are swapped back here: struktured, 'blackmage walks backwards ... from left/right'"
+      "strip": "res://docs/art/facing/overworld_player_sheets/mage.png",
+      "reviewed": "2026-11-01, cowir-sprites, by eye at 8-12x: LEFT and RIGHT were SWAPPED by the 48px redraw (413810980) and are swapped back here (struktured: 'blackmage walks backwards ... from left/right'); now DOWN face, UP back, LEFT/RIGHT profile toward travel"
     },
-    "necromancer": {
+    "overworld_player_sheets/necromancer": {
       "sheet_sha256": "aa6f3c9101475c81b827c69f3f1639ed5c4988ad03220feb466b99b450f4aa60",
-      "strip": "res://docs/art/facing/necromancer.png",
-      "reviewed": "2026-11-01, cowir-sprites, by eye at 4x/8x: DOWN shows the face, UP the back of the head, LEFT/RIGHT in profile facing travel; LEFT and RIGHT were SWAPPED in the 48px redraw (413810980) and are swapped back here: struktured, 'blackmage walks backwards ... from left/right'"
+      "strip": "res://docs/art/facing/overworld_player_sheets/necromancer.png",
+      "reviewed": "2026-11-01, cowir-sprites, by eye at 8-12x: LEFT and RIGHT were SWAPPED by the 48px redraw (413810980) and are swapped back here (struktured: 'blackmage walks backwards ... from left/right'); now DOWN face, UP back, LEFT/RIGHT profile toward travel"
     },
-    "ninja": {
+    "overworld_player_sheets/ninja": {
       "sheet_sha256": "c8962e5c4575c7846e786535d44642257fde69285d3cf9d573f38173629fb669",
-      "strip": "res://docs/art/facing/ninja.png",
-      "reviewed": "2026-11-01, cowir-sprites, by eye at 4x/8x: DOWN shows the face, UP the back of the head, LEFT/RIGHT in profile facing travel"
+      "strip": "res://docs/art/facing/overworld_player_sheets/ninja.png",
+      "reviewed": "2026-11-01, cowir-sprites, by eye at 4x (guardian/summoner/rogue at 8-12x): DOWN face, UP back of head, LEFT/RIGHT profile toward travel"
     },
-    "rogue": {
+    "overworld_player_sheets/rogue": {
       "sheet_sha256": "8631b85408e622ca3fd8fc75cbd225d9c2231893f7507001a2e2ae0aa1ca0991",
-      "strip": "res://docs/art/facing/rogue.png",
-      "reviewed": "2026-11-01, cowir-sprites, by eye at 4x/8x: DOWN shows the face, UP the back of the head, LEFT/RIGHT in profile facing travel"
+      "strip": "res://docs/art/facing/overworld_player_sheets/rogue.png",
+      "reviewed": "2026-11-01, cowir-sprites, by eye at 4x (guardian/summoner/rogue at 8-12x): DOWN face, UP back of head, LEFT/RIGHT profile toward travel"
     },
-    "scriptweaver": {
+    "overworld_player_sheets/scriptweaver": {
       "sheet_sha256": "fe0bb42514bb314946395b75b0f22c639b66ae007bd86dd80255e580221eb777",
-      "strip": "res://docs/art/facing/scriptweaver.png",
-      "reviewed": "2026-11-01, cowir-sprites, by eye at 4x/8x: DOWN shows the face, UP the back of the head, LEFT/RIGHT in profile facing travel"
+      "strip": "res://docs/art/facing/overworld_player_sheets/scriptweaver.png",
+      "reviewed": "2026-11-01, cowir-sprites, by eye at 4x (guardian/summoner/rogue at 8-12x): DOWN face, UP back of head, LEFT/RIGHT profile toward travel"
     },
-    "skiptrotter": {
+    "overworld_player_sheets/skiptrotter": {
       "sheet_sha256": "c0ee2e7b7521276a90e8a7256c7af9296b5f9bfda0aabb3e98594656f3a57552",
-      "strip": "res://docs/art/facing/skiptrotter.png",
-      "reviewed": "2026-11-01, cowir-sprites, by eye at 4x/8x: DOWN shows the face, UP the back of the head, LEFT/RIGHT in profile facing travel"
+      "strip": "res://docs/art/facing/overworld_player_sheets/skiptrotter.png",
+      "reviewed": "2026-11-01, cowir-sprites, by eye at 4x (guardian/summoner/rogue at 8-12x): DOWN face, UP back of head, LEFT/RIGHT profile toward travel"
     },
-    "speculator": {
+    "overworld_player_sheets/speculator": {
       "sheet_sha256": "10e3af94dd81f5c36e9378950102517eb2d421938f4edfe9ea20b32fe5e5e261",
-      "strip": "res://docs/art/facing/speculator.png",
-      "reviewed": "2026-11-01, cowir-sprites, by eye at 4x/8x: DOWN shows the face, UP the back of the head, LEFT/RIGHT in profile facing travel"
+      "strip": "res://docs/art/facing/overworld_player_sheets/speculator.png",
+      "reviewed": "2026-11-01, cowir-sprites, by eye at 4x (guardian/summoner/rogue at 8-12x): DOWN face, UP back of head, LEFT/RIGHT profile toward travel"
     },
-    "summoner": {
+    "overworld_player_sheets/summoner": {
       "sheet_sha256": "beecf9e7237fc78c1a5508392c84729be25868d056f954686773fd980b44b09a",
-      "strip": "res://docs/art/facing/summoner.png",
-      "reviewed": "2026-11-01, cowir-sprites, by eye at 4x/8x: DOWN shows the face, UP the back of the head, LEFT/RIGHT in profile facing travel"
+      "strip": "res://docs/art/facing/overworld_player_sheets/summoner.png",
+      "reviewed": "2026-11-01, cowir-sprites, by eye at 4x (guardian/summoner/rogue at 8-12x): DOWN face, UP back of head, LEFT/RIGHT profile toward travel"
     },
-    "time_mage": {
+    "overworld_player_sheets/time_mage": {
       "sheet_sha256": "3bdffd3c14f4ab97372524bd717b3364a3ddc2ca83499f436171de0acbb835c4",
-      "strip": "res://docs/art/facing/time_mage.png",
-      "reviewed": "2026-11-01, cowir-sprites, by eye at 4x/8x: DOWN shows the face, UP the back of the head, LEFT/RIGHT in profile facing travel"
+      "strip": "res://docs/art/facing/overworld_player_sheets/time_mage.png",
+      "reviewed": "2026-11-01, cowir-sprites, by eye at 4x (guardian/summoner/rogue at 8-12x): DOWN face, UP back of head, LEFT/RIGHT profile toward travel"
     }
   }
 }

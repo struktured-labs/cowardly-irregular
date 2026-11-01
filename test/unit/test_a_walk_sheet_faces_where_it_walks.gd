@@ -8,6 +8,8 @@ extends GutTest
 
 const REVIEW := "res://data/overworld_facing_review.json"
 const MANIFEST := "res://data/sprite_manifest.json"
+## Every overworld section whose sheets walk in four directions.
+const SECTIONS := ["overworld_player_sheets", "overworld_npc_sheets", "overworld_monster_sheets"]
 
 
 func _json(path: String) -> Dictionary:
@@ -15,45 +17,66 @@ func _json(path: String) -> Dictionary:
 	return parsed if parsed is Dictionary else {}
 
 
-func _party_sheets() -> Dictionary:
-	return _json(MANIFEST).get("overworld_player_sheets", {})
+## {"<section>/<id>": manifest entry} for every walk sheet.
+func _walk_sheets() -> Dictionary:
+	var man := _json(MANIFEST)
+	var out := {}
+	for sec in SECTIONS:
+		var store = man.get(sec, {})
+		for id in store:
+			if store[id] is Dictionary:
+				out["%s/%s" % [sec, id]] = store[id]
+	return out
 
 
-func test_every_party_walk_sheet_was_reviewed_as_it_is_now() -> void:
-	var sheets := _party_sheets()
-	var reviewed: Dictionary = _json(REVIEW).get("sheets", {})
-	assert_gte(sheets.size(), 14, "FLOOR: the 14 party sheets must be found (%d)" % sheets.size())
+func _reviewed() -> Dictionary:
+	return _json(REVIEW).get("sheets", {})
+
+
+func test_every_walk_sheet_was_reviewed_as_it_is_now() -> void:
+	var sheets := _walk_sheets()
+	var reviewed := _reviewed()
+	## FLOOR: the 14 party sheets alone; the corpus is every sheet any of the three sections names.
+	assert_gte(sheets.size(), 14, "FLOOR: the walk sheets must be found (%d)" % sheets.size())
 	var stale: Array = []
-	for job in sheets:
-		var e = sheets[job]
-		if not (e is Dictionary):
-			continue
-		var row: Dictionary = reviewed.get(job, {})
-		var sha := FileAccess.get_sha256(str(e["path"]))
+	for key in sheets:
+		var row: Dictionary = reviewed.get(key, {})
 		if row.is_empty():
-			stale.append("%s: never reviewed" % job)
-		elif str(row.get("sheet_sha256", "")) != sha:
-			stale.append("%s: changed since its facing review (render tools/render_facing_strips.py %s, LOOK, then --pin)" % [job, job])
+			stale.append("%s: never reviewed" % key)
+		elif str(row.get("sheet_sha256", "")) != FileAccess.get_sha256(str(sheets[key]["path"])):
+			stale.append("%s: changed since its facing review (tools/render_facing_strips.py %s, LOOK, then --pin --note)" % [key, key])
 		elif str(row.get("reviewed", "")).strip_edges() == "":
-			stale.append("%s: the review does not say who looked" % job)
+			stale.append("%s: the review does not say who looked" % key)
 	assert_eq(stale, [], "these walk sheets need a facing review: %s" % [stale])
 
 
 func test_every_review_has_its_strip() -> void:
-	var reviewed: Dictionary = _json(REVIEW).get("sheets", {})
+	var reviewed := _reviewed()
 	assert_gt(reviewed.size(), 0, "CONTROL: the review file must parse and list sheets")
 	var missing: Array = []
-	for job in reviewed:
-		var strip := str(reviewed[job].get("strip", ""))
+	for key in reviewed:
+		var strip := str(reviewed[key].get("strip", ""))
 		if strip == "" or not FileAccess.file_exists(strip):
-			missing.append(job)
+			missing.append(key)
 	assert_eq(missing, [], "a review must leave the strip it looked at: %s" % [missing])
 
 
-func test_a_review_cannot_outlive_its_sheet() -> void:
-	## CONTROL: the pin really is the sheet's hash, so a review of ANOTHER sheet would not pass for this one.
-	var reviewed: Dictionary = _json(REVIEW).get("sheets", {})
-	var sheets := _party_sheets()
-	assert_true(reviewed.has("mage") and reviewed.has("fighter"), "CONTROL: mage and fighter are reviewed")
-	assert_ne(str(reviewed["mage"]["sheet_sha256"]), FileAccess.get_sha256(str(sheets["fighter"]["path"])),
+func test_no_review_outlives_its_sheet() -> void:
+	## A review of a sheet the manifest no longer names is a promise about nothing.
+	var sheets := _walk_sheets()
+	var orphans: Array = []
+	for key in _reviewed():
+		if not sheets.has(key):
+			orphans.append(key)
+	assert_eq(orphans, [], "reviews of sheets that are gone: %s" % [orphans])
+
+
+func test_a_pin_is_the_sheets_own_hash() -> void:
+	## CONTROL: the pin is THIS sheet's hash, so a review of another sheet cannot pass for it.
+	var reviewed := _reviewed()
+	var sheets := _walk_sheets()
+	var mage := "overworld_player_sheets/mage"
+	var fighter := "overworld_player_sheets/fighter"
+	assert_true(reviewed.has(mage) and sheets.has(fighter), "CONTROL: the mage is reviewed and the fighter is a walk sheet")
+	assert_ne(str(reviewed[mage]["sheet_sha256"]), FileAccess.get_sha256(str(sheets[fighter]["path"])),
 		"the mage's review must not match the fighter's sheet")
