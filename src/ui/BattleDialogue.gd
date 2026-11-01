@@ -398,6 +398,22 @@ func line_voice_seconds() -> float:
 	return _line_voice_sec
 
 
+## Which line of the queue is showing; a page turn does not change it.
+func line_index() -> int:
+	return _current_index
+
+
+## The automation path's way on to the next LINE, past any pages left on this one.
+func next_line() -> void:
+	if not visible:
+		return
+	if _is_typing:
+		_finish_typing()
+	_current_index += 1
+	dialogue_advanced.emit()
+	_show_current_line()
+
+
 func dismiss() -> void:
 	"""Close whatever is showing, as if the last page were confirmed. The automation path's way out of a beat."""
 	if not visible:
