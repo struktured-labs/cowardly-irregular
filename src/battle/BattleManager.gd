@@ -10080,6 +10080,7 @@ func _build_gloat_prompt(persona_id: String, boss_name: String, victory: bool, v
 		+ "Rules:\n"
 		+ "- Stay fully in character as the boss; first person.\n"
 		+ "- ONE short line, maximum 140 characters.\n"
+		+ DialoguePrompts.HYPHEN_RUN_RULE % DialoguePrompts.MAX_HYPHEN_RUN_WORDS
 		+ "- Do NOT include the boss name or a speaker label.\n"
 		+ "- Respond with ONLY the line itself, no quotes, no JSON.\n"
 	)
