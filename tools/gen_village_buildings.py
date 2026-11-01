@@ -194,7 +194,16 @@ PROPS = {
                               "base, topped by a round frosted-glass globe lamp glowing warm white. Very tall and narrow."),
     "lamp_post_steampunk": (1, "A single tall thin Victorian gas street lamp: a slim fluted brass-and-iron post with rivets, a "
                                "small gauge and a copper pipe, topped by a glass gas lantern glowing amber. Very tall and narrow."),
+    "cart_medieval": (2, "A single wooden village hand cart with two big spoked wooden wheels and long handles, loaded with "
+                         "a few sacks, a crate and some hay. Seen from the side and slightly above, wider than it is tall."),
+    "cart_suburban": (2, "A single 1990s supermarket shopping cart: a silver wire-mesh basket with a red plastic handle on four "
+                         "small swivel wheels, empty. Seen from the side and slightly above, wider than it is tall."),
+    "cart_steampunk": (2, "A single Victorian steampunk handcart: riveted brass-and-iron body, two spoked iron wheels, a small "
+                          "boiler with a pressure gauge and a copper pipe, carrying a crate of gears. Seen from the side and "
+                          "slightly above, wider than it is tall."),
 }
+## See-through props (wire mesh): the border flood cannot reach backdrop enclosed by the wires, so key it everywhere.
+KEY_EVERYWHERE = {"cart_suburban"}
 ## Props whose art must stand a fixed height (the lamp's light anchor sits 50px above its base, VillageProp).
 PROP_HEIGHT = {"lamp_post_medieval": 64, "lamp_post_suburban": 64, "lamp_post_steampunk": 64}
 
@@ -297,6 +306,20 @@ def drop_key_fringe(img: Image.Image) -> Image.Image:
     return Image.fromarray(a, "RGBA")
 
 
+def key_everywhere(img: Image.Image, tol: int = 110) -> Image.Image:
+    """Clear EVERY backdrop-coloured pixel, not just the border-connected ones (for see-through art)."""
+    a = np.array(img.convert("RGBA"))
+    d = np.sqrt(((a[:, :, :3].astype(float) - np.array([255.0, 0.0, 255.0])) ** 2).sum(axis=2))
+    a[d < tol, 3] = 0
+    # Thin wires were antialiased against the magenta: pull any purple cast (red AND blue over green) back to grey.
+    r, g, b = a[..., 0].astype(int), a[..., 1].astype(int), a[..., 2].astype(int)
+    cast = (r > g + 20) & (b > g + 20)
+    grey = ((r + g + b) // 3).astype(np.uint8)
+    for c in range(3):
+        a[..., c] = np.where(cast, grey, a[..., c])
+    return Image.fromarray(a, "RGBA")
+
+
 def fit(img: Image.Image, width_tiles: int) -> Image.Image:
     """Crop to the building and scale its width to the block it stands on (TILE px per tile)."""
     img = key_out(img)
@@ -338,6 +361,8 @@ def generate_harmonia(key: str, view: str) -> Path:
     raw = Image.open(io.BytesIO(base64.b64decode(r.data[0].b64_json)))
     STAGE.mkdir(parents=True, exist_ok=True)
     raw.save(STAGE / f"{key}_{view}_raw.png")
+    if key in KEY_EVERYWHERE:
+        raw = key_everywhere(raw)
     out = STAGE / f"{key}_{view}.png"
     img = fit(raw, width)
     if key in PROP_HEIGHT and img.height != PROP_HEIGHT[key]:
