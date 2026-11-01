@@ -368,6 +368,14 @@ func _advance_day_phase(delta: float) -> void:
 		time_of_day_changed.emit(after)
 
 
+## Jumps the clock (an inn's night). Fires time_of_day_changed when the band moves, like _advance_day_phase and the save load.
+func set_day_phase(phase: float) -> void:
+	var before: String = get_time_of_day_name()
+	day_phase = fposmod(phase, 1.0)
+	if get_time_of_day_name() != before:
+		time_of_day_changed.emit(get_time_of_day_name())
+
+
 func get_time_of_day_name() -> String:
 	var p: float = fposmod(day_phase, 1.0)
 	if p < 0.10:
