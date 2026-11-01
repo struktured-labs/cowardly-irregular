@@ -201,9 +201,15 @@ PROPS = {
     "cart_steampunk": (2, "A single Victorian steampunk handcart: riveted brass-and-iron body, two spoked iron wheels, a small "
                           "boiler with a pressure gauge and a copper pipe, carrying a crate of gears. Seen from the side and "
                           "slightly above, wider than it is tall."),
+    "stall_medieval": (2, "A single small village market stall: a wooden counter under a striped red-and-cream cloth awning on "
+                          "two posts, with baskets of apples, bread and pottery on the counter."),
+    "stall_steampunk": (2, "A single small Victorian steampunk market stall: a brass-trimmed wooden counter under a riveted "
+                           "copper canopy, a little steam pipe, with jars, cogs and pocket watches laid out for sale."),
+    "well_medieval": (2, "A single round stone village well: a ring of grey fieldstone, a small peaked wooden roof on two posts "
+                         "with a winch, a rope and a wooden bucket."),
 }
 ## See-through props (wire mesh): the border flood cannot reach backdrop enclosed by the wires, so key it everywhere.
-KEY_EVERYWHERE = {"cart_suburban"}
+KEY_EVERYWHERE = {"cart_suburban", "well_medieval"}
 ## Props whose art must stand a fixed height (the lamp's light anchor sits 50px above its base, VillageProp).
 PROP_HEIGHT = {"lamp_post_medieval": 64, "lamp_post_suburban": 64, "lamp_post_steampunk": 64}
 
