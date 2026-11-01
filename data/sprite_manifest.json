@@ -7379,6 +7379,16 @@
       "path": "res://assets/sprites/buildings/steampunk/brasston_shed.png",
       "tier": "T1",
       "source": "gpt-image-2, straight-on 16-bit steampunk facade (W3 style, after struktured's direction B, 2026-11-01) -- tools/gen_village_buildings.py --steampunk; T1, artist veto applies."
+    },
+    "nodeprime_inn": {
+      "path": "res://assets/sprites/buildings/futuristic/nodeprime_inn.png",
+      "tier": "T1",
+      "source": "gpt-image-2, straight-on 16-bit neon cyber facade (W5 style, after struktured's direction B, 2026-11-01) -- tools/gen_village_buildings.py --futuristic; T1, artist veto applies."
+    },
+    "nodeprime_cache": {
+      "path": "res://assets/sprites/buildings/futuristic/nodeprime_cache.png",
+      "tier": "T1",
+      "source": "gpt-image-2, straight-on 16-bit neon cyber facade (W5 style, after struktured's direction B, 2026-11-01) -- tools/gen_village_buildings.py --futuristic; T1, artist veto applies."
     }
   }
 }

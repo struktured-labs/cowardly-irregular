@@ -8,7 +8,7 @@ extends GutTest
 ## block added later without art reds here instead of silently staying procedural. The W1 villages joined after.
 
 const VILLAGE := "res://src/maps/villages/HarmoniaVillage.gd"
-## Every W1 village, then W2's Maple Heights and W3's Brasston -> the glyphs that are roofed buildings there (open-air shops and Sandrift's secret tent are not).
+## Every W1 village, then Maple Heights (W2), Brasston (W3) and NodePrime (W5) -> the glyphs that are roofed buildings there (open-air shops and Sandrift's secret tent are not).
 const VILLAGES := {
 	"res://src/maps/villages/HarmoniaVillage.gd": "HIAPGB",
 	"res://src/maps/villages/FrostholdVillage.gd": "LFC",
@@ -18,6 +18,7 @@ const VILLAGES := {
 	"res://src/maps/villages/SandriftVillage.gd": "IB",
 	"res://src/maps/villages/MapleHeightsVillage.gd": "HIS",
 	"res://src/maps/villages/BrasstonVillage.gd": "HIB",
+	"res://src/maps/villages/NodePrimeVillage.gd": "IC",
 }
 
 
@@ -85,7 +86,7 @@ func test_every_w1_building_is_drawn() -> void:
 			if spr != null and spr.texture != null and drawn != null:
 				assert_eq(spr.texture.get_size(), drawn.get_size(), "%s %s must draw its art, not the procedural paint" % [path.get_file(), b])
 				assert_eq(int(spr.texture.get_width()), b.size.x * 32, "%s %s's art must span its block exactly" % [path.get_file(), b])
-	assert_gte(total, 30, "FLOOR: Harmonia 8, the other W1 villages 13, Maple Heights 4 and Brasston 5 must all be found (%d)" % total)
+	assert_gte(total, 32, "FLOOR: Harmonia 8, the other W1 villages 13, Maple Heights 4, Brasston 5 and NodePrime 2 must all be found (%d)" % total)
 	assert_eq(bare, [], "these village buildings fell back to the procedural block: %s" % [bare])
 
 

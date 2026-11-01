@@ -157,10 +157,27 @@ STEAMPUNK = {
     "brasston_shed": (3, "A low single-storey brick boiler shed, much wider than it is tall, with a shallow tin roof, a "
                          "stubby steam vent, pipes along the wall and a small iron door."),
 }
-BUILDINGS = {**HARMONIA, **W1, **SUBURBAN, **STEAMPUNK}
+
+## W5 futuristic (NodePrime): a digital city drawn as neon-lit architecture, still 16-bit pixel art.
+STYLE_FUTURISTIC = ("A single detailed 16-bit SNES-era JRPG pixel-art BUILDING for a neon cyber city inside a computer, a "
+                    "straight-on front view with the roof seen from above and in front: dark glossy panels, glowing cyan "
+                    "and magenta neon trim, circuit-trace patterns, holographic screens, a sliding door at the bottom "
+                    "centre. Crisp dark outline, deep navy palette with bright neon accents, soft top-left lighting. No "
+                    "people, no text or letters, no ground, no shadow on the ground, nothing else in the picture. The "
+                    "background is one flat, solid, pure magenta (#FF00FF) colour with no gradient. The building fills "
+                    "the frame and is centred.")
+FUTURISTIC = {
+    "nodeprime_inn": (3, "Sleep.exe, the inn: a tall three-storey capsule hotel, taller than it is wide, with rows of glowing round pod windows, a "
+                         "holographic sign with a pictured crescent moon and the letters Z Z Z as shapes (no words), and a "
+                         "soft blue-lit sliding door."),
+    "nodeprime_cache": (3, "The cache store: a two-storey data shop with a big glass storefront showing glowing floppy "
+                           "disks and memory chips on shelves, a holographic sign with a pictured disk (no letters), and "
+                           "cooling fans on the roof."),
+}
+BUILDINGS = {**HARMONIA, **W1, **SUBURBAN, **STEAMPUNK, **FUTURISTIC}
 ## Where each pool's art deploys, and the style it is drawn in.
 POOLS = {"harmonia": (HARMONIA, "medieval", None), "w1": (W1, "medieval", None), "suburban": (SUBURBAN, "suburban", STYLE_SUBURBAN),
-         "steampunk": (STEAMPUNK, "steampunk", STYLE_STEAMPUNK)}
+         "steampunk": (STEAMPUNK, "steampunk", STYLE_STEAMPUNK), "futuristic": (FUTURISTIC, "futuristic", STYLE_FUTURISTIC)}
 
 
 def key_out(img: Image.Image, tol: int = 90) -> Image.Image:
@@ -217,7 +234,7 @@ def generate_harmonia(key: str, view: str) -> Path:
     """One village building (Harmonia or W1), straight-on ("front", struktured's pick B) or corner-angled ("corner", A)."""
     from openai import OpenAI
     width, what = BUILDINGS[key]
-    style = STYLE_SUBURBAN if key in SUBURBAN else STYLE_STEAMPUNK if key in STEAMPUNK else STYLE
+    style = next((st for pool, _, st in POOLS.values() if st and key in pool), STYLE)
     face = f"\n\n{FRONT}" if view == "front" else ""
     r = OpenAI().images.generate(model=MODEL, prompt=f"{style}{face}\n\nThe building: {what}", size="1024x1024", n=1)
     raw = Image.open(io.BytesIO(base64.b64decode(r.data[0].b64_json)))
@@ -235,12 +252,14 @@ def main() -> int:
     ap.add_argument("--w1", nargs="*", help="stage these other-W1-village buildings (no names = all)")
     ap.add_argument("--suburban", nargs="*", help="stage these W2 Maple Heights buildings (no names = all)")
     ap.add_argument("--steampunk", nargs="*", help="stage these W3 Brasston buildings (no names = all)")
+    ap.add_argument("--futuristic", nargs="*", help="stage these W5 NodePrime buildings (no names = all)")
     ap.add_argument("--view", choices=["front", "corner"], default="front", help="straight-on (B, default) or angled (A)")
     ap.add_argument("--deploy", action="store_true", help="copy staged Harmonia art into assets (never overwrites)")
     args = ap.parse_args()
     for k in args.style or []:
         print(f"staged {generate(k).relative_to(ROOT)}")
-    for chosen, (pool, world, _) in ((args.harmonia, POOLS["harmonia"]), (args.w1, POOLS["w1"]), (args.suburban, POOLS["suburban"]), (args.steampunk, POOLS["steampunk"])):
+    for chosen, (pool, world, _) in ((args.harmonia, POOLS["harmonia"]), (args.w1, POOLS["w1"]), (args.suburban, POOLS["suburban"]), (args.steampunk, POOLS["steampunk"]),
+                                      (args.futuristic, POOLS["futuristic"])):
         if chosen is None:
             continue
         for k in chosen or sorted(pool):

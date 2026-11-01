@@ -16,6 +16,13 @@ const MAP_WIDTH: int = 24
 const MAP_HEIGHT: int = 22
 
 
+## Drawn building art per block, keyed by the block's top-left cell (manifest building_art, T1).
+const BUILDING_ART := {
+	Vector2i(4, 4): "nodeprime_inn",
+	Vector2i(11, 4): "nodeprime_cache",
+}
+
+
 ## ---- BaseVillage hooks ----
 
 func _get_area_id() -> String:
@@ -220,6 +227,7 @@ func _setup_buildings() -> void:
 	_add_prop(VillagePropScript.Kind.CRATE, Vector2i(7, 2))
 	_add_prop(VillagePropScript.Kind.CRATE, Vector2i(17, 2))
 	## LAST, so it defers to every building above. Never F, the firewall is a barrier not a building.
+	_spawn_building_art(BUILDING_ART)
 	_spawn_house_facades(["I", "C"], [Color(0.10, 0.12, 0.20)], "neon")
 
 
