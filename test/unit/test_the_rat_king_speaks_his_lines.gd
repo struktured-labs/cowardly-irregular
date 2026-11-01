@@ -89,6 +89,21 @@ func test_every_recording_belongs_to_a_line_that_still_exists() -> void:
 	assert_eq(orphans, [], "these recordings speak a line no panel shows any more: %s" % [orphans])
 
 
+## The orphan audit exempts the whole boss_line_ prefix on this lookup, so every such key, any boss, must round-trip through it (cowir-adhoc 20736).
+func test_every_boss_line_key_is_reached_by_its_own_speaker_and_line() -> void:
+	var seen := 0
+	var unreached: Array = []
+	for key in SoundManager._sfx_manifest:
+		if not str(key).begins_with("boss_line_"):
+			continue
+		seen += 1
+		var e: Dictionary = SoundManager._sfx_manifest[key]
+		if SoundManager.voiced_line_clip(str(e.get("speaker", "")), str(e.get("line", ""))) != str(key):
+			unreached.append(key)
+	assert_gt(seen, 0, "PREMISE: the manifest must carry boss_line_ keys")
+	assert_eq(unreached, [], "these boss_line_ keys are exempt from the orphan audit but their own speaker+line does not reach them (missing field or a duplicate line): %s" % [unreached])
+
+
 func test_a_recorded_line_plays_on_its_own_player_and_says_how_long() -> void:
 	var sec := SoundManager.play_voiced_line(SPEAKER, _a_line(), self)
 	assert_gt(sec, 0.5, "a recorded line must report its length")
