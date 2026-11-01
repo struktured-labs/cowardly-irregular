@@ -682,11 +682,11 @@
   },
   "default": {
     "id": "default",
-    "name": "Default",
+    "name": "Stand Fast",
     "type": "support",
     "animation": "buff",
     "mp_cost": 0,
-    "description": "Take a defensive stance, halving damage and banking 1 BP",
+    "description": "Defer behind your shield: halve incoming damage and bank 1 AP",
     "target_type": "self",
     "effect": "default_stance",
     "damage_reduction": 0.5,
@@ -694,11 +694,11 @@
   },
   "brave": {
     "id": "brave",
-    "name": "Brave",
+    "name": "All In",
     "type": "support",
     "animation": "buff",
     "mp_cost": 0,
-    "description": "Spend stored BP to take extra actions this turn",
+    "description": "Advance on banked AP to take extra actions this turn",
     "target_type": "self",
     "effect": "brave_actions",
     "bp_cost": 1

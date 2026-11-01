@@ -12,6 +12,9 @@ const SPELL_TIER := "(?i)\\b(fir|blizz|thund|cur|aer|wat|quak)(a|ra|ga|aga|ja|aj
 ## FF's item ladder (Hi-Potion, X-Potion, Mega Ether) and Megalixir.
 const ITEM_LADDER := "(?i)^(hi|x|mega)[- ]|megalixir"
 ## Names that are FF's alone and must not appear in any player-facing prose.
+## Bravely Default's battle terms; ours are Advance / Defer / AP (struktured: "should be Advance/Defer"). Case-sensitive, so prose "default" passes.
+const BRAVE_DEFAULT := "\\b(BP|Brave|Default|Defaulting|Defaulted)\\b"
+const BATTLE_TEXT := ["res://data/jobs.json", "res://data/abilities.json", "res://data/passives.json"]
 const BORROWED := "(?i)\\b(ifrit|shiva|ramuh|bahamut|eidolons?|judgment bolt|mega flare|phoenix down)\\b"
 
 
@@ -43,6 +46,10 @@ func test_the_patterns_see_the_names_they_forbid() -> void:
 	for n in ["Potion", "Ether", "Elixir", "Remedy", "Potio Maior", "Elixir Communis"]:
 		assert_false(_matches(ITEM_LADDER, n), "the item-ladder pattern must leave '%s' alone" % n)
 	assert_true(_matches(BORROWED, "Summon the dragon king Bahamut"), "CONTROL: the borrowed-name pattern must catch Bahamut")
+	for n in ["Brave/Default BP stacking", "banking 1 BP", "when Defaulting", "Default"]:
+		assert_true(_matches(BRAVE_DEFAULT, n), "CONTROL: the Brave/Default pattern must catch '%s'" % n)
+	for n in ["by default", "Defer", "Advance", "AP Recovery", "bravely"]:
+		assert_false(_matches(BRAVE_DEFAULT, n), "the Brave/Default pattern must leave '%s' alone" % n)
 
 
 func test_no_ability_wears_a_borrowed_name() -> void:
@@ -78,3 +85,28 @@ func test_the_renamed_ids_still_exist() -> void:
 	var items := _table(ITEMS, "items")
 	for id in ["hi_potion", "x_potion", "mega_potion", "hi_ether", "mega_ether", "megalixir"]:
 		assert_true(items.has(id), "%s must keep its id; saves and drops name it" % id)
+
+
+func test_no_battle_text_says_brave_or_default() -> void:
+	for path in BATTLE_TEXT:
+		var data = JSON.parse_string(FileAccess.get_file_as_string(path))
+		assert_not_null(data, "CONTROL: %s must parse" % path)
+		var hits: Array = []
+		_collect_text(data, "", hits)
+		assert_gt(hits.size(), 20, "CONTROL: %s must yield names and descriptions" % path)
+		for h in hits:
+			assert_false(_matches(BRAVE_DEFAULT, h[1]), "%s %s says '%s' — our terms are Advance / Defer / AP" % [path, h[0], h[1]])
+
+
+## Every "name" / "description" string anywhere in the tree, with its key path.
+func _collect_text(node, path: String, out: Array) -> void:
+	if node is Dictionary:
+		for k in node:
+			var v = node[k]
+			if (k == "name" or k == "description") and v is String:
+				out.append([path + "." + str(k), v])
+			else:
+				_collect_text(v, path + "." + str(k), out)
+	elif node is Array:
+		for i in node.size():
+			_collect_text(node[i], "%s[%d]" % [path, i], out)
