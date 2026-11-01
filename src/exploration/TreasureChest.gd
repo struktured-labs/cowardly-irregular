@@ -85,7 +85,7 @@ func _generate_sprite() -> void:
 
 ## manifest prop_art "chest_<state>_<world>", then "chest_<state>", then the shared pair in objects/.
 func _chest_art(state: String) -> String:
-	var drawn := VillageProp.prop_art_path("chest_" + state, _world())
+	var drawn := VillageProp.prop_art_path("chest_" + state, _world(), _village())
 	return drawn if drawn != "" else "res://assets/sprites/objects/chest_%s.png" % state
 
 
@@ -96,6 +96,16 @@ func _world() -> String:
 		var tg: Variant = n.get("tile_generator")
 		if tg is Object and (tg as Object).has_method("_get_sheet_key"):
 			return str(tg._get_sheet_key())
+		n = n.get_parent()
+	return ""
+
+
+## The prop_art name of the village this chest stands in; "" in a dungeon or anywhere else.
+func _village() -> String:
+	var n: Node = get_parent()
+	while n != null:
+		if n.has_method("_get_area_id") and n.get("tile_generator") != null:
+			return VillageProp.village_art_key(str(n._get_area_id()))
 		n = n.get_parent()
 	return ""
 

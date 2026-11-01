@@ -117,9 +117,9 @@ func test_every_shipped_entry_names_a_real_prop_world_and_file() -> void:
 		assert_ne(str(e.get("tier", "")), "", "prop_art '%s' does not say its tier" % key)
 		var ok: bool = false
 		for k in kinds:
-			if key == k or (str(key).begins_with(k + "_") and str(key).trim_prefix(k + "_") in WORLDS):
+			if key == k or (str(key).begins_with(k + "_") and str(key).trim_prefix(k + "_") in WORLDS + _village_keys()):
 				ok = true
-		assert_true(ok, "prop_art '%s' is not <kind> or <kind>_<world>, so nothing will ever read it" % key)
+		assert_true(ok, "prop_art '%s' is not <kind> or <kind>_<world> or <kind>_<village>, so nothing will ever read it" % key)
 	assert_true(sec is Dictionary, "prop_art did not parse as a section")
 
 
@@ -169,3 +169,27 @@ func test_a_chest_takes_its_worlds_drawing_and_keeps_the_shared_pair_otherwise()
 	var closed: Array = drawn.filter(func(c): return not c._is_opened)
 	if not closed.is_empty():
 		assert_eq(Vector2i(closed[0].sprite.texture.get_width(), closed[0].sprite.texture.get_height()), _plant_size(), "a closed chest did not draw its world's art")
+
+
+## Every village's prop_art name, derived from the _get_area_id each village script declares.
+func _village_keys() -> Array:
+	var out: Array = []
+	var rx := RegEx.create_from_string('func _get_area_id\\(\\)[^\\n]*\\n\\s*return "([a-z_]+)"')
+	for f in DirAccess.get_files_at(VILLAGES):
+		if f.ends_with(".gd") and f != "BaseVillage.gd":
+			var m := rx.search(FileAccess.get_file_as_string(VILLAGES + "/" + f))
+			if m != null:
+				out.append(VillageProp.village_art_key(m.get_string(1)))
+	return out
+
+
+func test_a_village_drawing_outranks_its_worlds() -> void:
+	assert_true("frosthold" in _village_keys(), "CONTROL: the village names derive (got %s)" % str(_village_keys()))
+	VillageProp.prop_art_override = {"tree_frosthold": {"path": PLANT}, "tree_medieval": {"path": "res://assets/sprites/buildings/medieval/harmonia_arms.png"}}
+	assert_eq(VillageProp.prop_art_path("tree", "medieval", "frosthold"), PLANT, "Frosthold's own tree lost to the world's")
+	assert_eq(VillageProp.prop_art_path("tree", "medieval", "harmonia"), "res://assets/sprites/buildings/medieval/harmonia_arms.png", "a village without its own tree did not fall back to the world's")
+	var v := _village("res://src/maps/villages/FrostholdVillage.gd")
+	var trees := _props(v, VillageProp.Kind.TREE)
+	assert_gt(trees.size(), 0, "CONTROL: Frosthold places a tree")
+	for t in trees:
+		assert_eq(_tex_size(t), _plant_size(), "%s did not take Frosthold's drawing" % t.name)
