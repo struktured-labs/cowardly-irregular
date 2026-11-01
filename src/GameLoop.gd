@@ -3560,6 +3560,9 @@ func _restore_party_from_save_data() -> bool:
 		var c: Combatant = party[i]
 		if saved.has("current_hp"):
 			c.current_hp = clampi(saved["current_hp"], 0, c.max_hp)
+			## A save from another stat scale gets its max re-derived by the curve, so keep its HP as a share of max.
+			if saved.has("migrated_from_stat_scale") and int(saved.get("max_hp", 0)) > 0:
+				c.current_hp = clampi(roundi(float(saved["current_hp"]) / float(saved["max_hp"]) * c.max_hp), 0, c.max_hp)
 		if saved.has("current_mp"):
 			c.current_mp = clampi(saved["current_mp"], 0, c.max_mp)
 		if saved.has("current_ap"):

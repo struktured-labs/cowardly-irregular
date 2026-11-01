@@ -51,8 +51,15 @@ const MODDABLE_STATS := ["max_hp", "max_mp", "attack", "defense", "magic", "magi
 ## primary. 0.10 is a starting value, not a tuned one — struktured's call.
 const SECONDARY_JOB_STAT_FRACTION: float = 0.10
 
-## Denomination of the stat fields below. Bumped by the 2026-07-29 ×10 pass; every save records it so a file written at an older scale can be migrated instead of loading a 1/10th-strength party into a ×10 world.
-const STAT_SCALE := 10
+## Denomination of the stat fields below: ×10 from 2026-07-29, back to 1 with the 2026-10-31 spectrum curve. Every save records it so a file written at another scale is migrated, not loaded at the wrong strength.
+const STAT_SCALE := 1
+## The ×10 denomination (2026-07-29 to 2026-10-31): what an unmarked save holding magic_defense was written at.
+const X10_ERA_SCALE := 10
+## The spectrum curve (struktured 2026-10-31): double-digit HP at level 1, 5 digits by the 50s, applied to SCALED_STAT_FIELDS only.
+const LEVEL_FLOOR := 0.5
+const LEVEL_CURVE := 0.036
+## Speed and max_mp keep the old linear growth: a quadratic speed would break turn order and the speed>=18 assassin gate.
+const LEVEL_RATE_LINEAR := 0.04
 ## Exactly the fields the ×10 data pass touched. max_mp/speed are absent because the MP economy and turn order were deliberately left alone.
 const SCALED_STAT_FIELDS := ["max_hp", "current_hp", "attack", "defense", "magic", "magic_defense"]
 
@@ -65,16 +72,28 @@ static func migrate_stat_scale(data: Dictionary) -> Dictionary:
 		# nothing else separates the two eras, so its presence dates the save. A file written
 		# inside that narrow window would be under-migrated; none exist (verified against the
 		# five local saves) and the marker makes the ambiguity unreachable from here on.
-		saved = STAT_SCALE if data.has("magic_defense") else 1
-	if saved >= STAT_SCALE:
+		saved = X10_ERA_SCALE if data.has("magic_defense") else 1
+	if saved == STAT_SCALE:
 		return data
-	var factor: int = STAT_SCALE / saved
+	var factor: float = float(STAT_SCALE) / float(saved)
 	for field in SCALED_STAT_FIELDS:
 		if data.has(field):
-			data[field] = int(data[field]) * factor
+			data[field] = maxi(1 if field != "current_hp" else 0, roundi(float(data[field]) * factor))
 	data["stat_scale"] = STAT_SCALE
-	print("[SAVE] migrated stat block ×%d (was scale %d)" % [factor, saved])
+	## The loader re-derives max stats from the curve, so it needs this to restore current HP/MP as a share of max.
+	data["migrated_from_stat_scale"] = saved
+	print("[SAVE] migrated stat block ×%.2f (was scale %d)" % [factor, saved])
 	return data
+
+
+## The multiplier the spectrum curve gives SCALED_STAT_FIELDS at a job level.
+static func level_multiplier(level: int) -> float:
+	return LEVEL_FLOOR + LEVEL_CURVE * pow(float(max(1, level) - 1), 2.0)
+
+
+## The multiplier speed and max_mp keep: today's linear growth.
+static func linear_level_multiplier(level: int) -> float:
+	return 1.0 + float(max(1, level) - 1) * LEVEL_RATE_LINEAR
 
 ## Current state
 var current_hp: int
@@ -1861,15 +1880,16 @@ func recalculate_stats() -> void:
 				if lent != 0:
 					set(stat, int(get(stat)) + lent)
 
-	# Apply job level bonuses (+4% all stats per level)
-	var level_mult = 1.0 + (job_level - 1) * 0.04
-	max_hp = int(max_hp * level_mult)
-	max_mp = int(max_mp * level_mult)
-	attack = int(attack * level_mult)
-	defense = int(defense * level_mult)
-	magic = int(magic * level_mult)
-	magic_defense = int(magic_defense * level_mult)
-	speed = int(speed * level_mult)
+	# Job level: the spectrum curve on the scaled stats, linear growth on speed and max_mp.
+	var level_mult := level_multiplier(job_level)
+	var linear_mult := linear_level_multiplier(job_level)
+	max_hp = maxi(1, int(max_hp * level_mult))
+	max_mp = int(max_mp * linear_mult)
+	attack = maxi(1, int(attack * level_mult))
+	defense = maxi(1, int(defense * level_mult))
+	magic = maxi(1, int(magic * level_mult))
+	magic_defense = maxi(1, int(magic_defense * level_mult))
+	speed = int(speed * linear_mult)
 
 	# Apply passive modifiers (via runtime lookup — autoload identifiers
 	# don't resolve in preload() parse contexts used by the test suite,
