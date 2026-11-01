@@ -27,7 +27,7 @@ func _old_save_text(hp: int) -> String:
 
 
 func _clean() -> void:
-	for p in [_path(), _backup(), _backup() + ".tmp"]:
+	for p in [_path(), _backup(), _backup() + ".tmp", _path() + ".pre-v757"]:
 		if FileAccess.file_exists(p):
 			DirAccess.remove_absolute(p)
 
@@ -74,3 +74,21 @@ func test_an_interrupted_write_is_not_taken_for_the_backup() -> void:
 	SaveSystem._read_save_file(SLOT)
 	assert_eq(FileAccess.get_file_as_string(_backup()), original, "a leftover partial write blocked the real backup")
 	assert_false(FileAccess.file_exists(_backup() + ".tmp"), "the staged copy was left behind")
+
+
+func test_the_backup_name_is_release_independent() -> void:
+	assert_eq(SaveSystem.PRE_SPECTRUM_BACKUP_SUFFIX, ".pre-balance", "the suffix names the change, not a release number")
+	_write(_old_save_text(2080))
+	SaveSystem._read_save_file(SLOT)
+	assert_true(FileAccess.file_exists(_path() + ".pre-balance"), "a first load writes <save>.pre-balance")
+
+
+func test_a_backup_made_by_758_still_counts() -> void:
+	var original := _old_save_text(2080)
+	_write(original)
+	var legacy := FileAccess.open(_path() + ".pre-v757", FileAccess.WRITE)
+	legacy.store_string(original)
+	legacy.close()
+	SaveSystem._read_save_file(SLOT)
+	assert_false(FileAccess.file_exists(_backup()), "a .pre-v757 backup from .758 already holds the original; a second copy would be of nothing new")
+	assert_eq(FileAccess.get_file_as_string(_path() + ".pre-v757"), original, "and the .758 backup is left untouched")

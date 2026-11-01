@@ -355,6 +355,52 @@ def story_order_check():
     return 1 if bad else 0
 
 
+def retune_trash(spec):
+    """Move the trash dial on a transformed tree, per world: `W2=2.5,W5=0.8` (or one number for every world). Bosses untouched."""
+    path = os.path.join(ROOT, MARKER_FILE)
+    if not os.path.exists(path):
+        raise SystemExit("rebalance_spectrum --retune-trash: data/ is not transformed")
+    with open(path, encoding="utf-8") as f:
+        marker = json.load(f)
+    cur = marker.get("trash_dial", 1.0)
+    cur = cur if isinstance(cur, dict) else {w: float(cur) for w in BANDS}
+    want = dict(cur)
+    for part in str(spec).split(","):
+        if "=" in part:
+            w, v = part.split("=", 1)
+            if w.strip() not in BANDS:
+                raise SystemExit("rebalance_spectrum --retune-trash: unknown world %r" % w)
+            want[w.strip()] = float(v)
+        else:
+            want = {w: float(part) for w in BANDS}
+    mons_doc = _load("data/monsters.json"); mons = _rows(mons_doc, "monsters")
+    pools = _load("data/enemy_pools.json")
+    moved = {}
+    for mid, m in mons.items():
+        if not isinstance(m, dict) or m.get("boss"):
+            continue
+        w = world_of(mid, pools)
+        k = want[w] / float(cur.get(w, 1.0))
+        if k == 1.0:
+            continue
+        st = m.get("stats", {})
+        for s_ in X10_STATS:
+            if s_ in st:
+                st[s_] = _scale(st[s_], k)
+        os_ = m.get("one_shot")
+        if isinstance(os_, dict) and "hp_threshold" in os_:
+            os_["hp_threshold"] = _scale(os_["hp_threshold"], k)
+        if "spectrum_ratio" in m:
+            m["spectrum_ratio"] = round(float(m["spectrum_ratio"]) * k, 6)
+        moved[w] = moved.get(w, 0) + 1
+    _save("data/monsters.json", mons_doc)
+    marker["trash_dial"] = want
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(marker, f, indent=2)
+        f.write("\n")
+    print("rebalance_spectrum: trash dial now %s (moved %s)" % (json.dumps(want), json.dumps(moved)))
+
+
 def selftest():
     fails = 0
     def ok(cond, msg):
@@ -375,6 +421,8 @@ if __name__ == "__main__":
     arg = sys.argv[1] if len(sys.argv) > 1 else ""
     if arg == "--apply":
         apply()
+    elif arg == "--retune-trash":
+        retune_trash(sys.argv[2])
     elif arg == "--check":
         sys.exit(check())
     elif arg == "--selftest":
