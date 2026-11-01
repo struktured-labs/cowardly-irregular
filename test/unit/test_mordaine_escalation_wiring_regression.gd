@@ -237,11 +237,14 @@ func test_keep_music_defaults_off_for_every_other_scene() -> void:
 	## village its theme back only once the scene ended. They keep the bed instead of naming one.
 	## world2_oak_street_npcs keeps its entry while UNWIRED: the opt-in is a property of the scene,
 	## which still plays inside a map that owns a bed, not of whether GameLoop dispatches it today.
+	## world1_scriptura_rogue_door joined 2026-10-31: one Rogue line said over the live plaza on entry; fading the
+	## plaza bed for a single remark would announce it louder than the remark itself.
 	assert_eq(opted, [
 			"world1_eldertree_npcs.json",
 			"world1_harmonia_npcs.json",
 			"world1_mordaine_watch_road.json",
 			"world1_sandrift_npcs.json",
+			"world1_scriptura_rogue_door.json",
 			"world2_maple_heights_npcs.json",
 			"world2_oak_street_npcs.json",
 			"world3_brasston_npcs.json",
