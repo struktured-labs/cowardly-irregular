@@ -732,6 +732,8 @@ func _create_speed_indicator() -> void:
 	_speed_indicator.scroll_active = false
 	_speed_indicator.custom_minimum_size = Vector2(80, 24)
 	_speed_indicator.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# In the PARTY header's wrapping row a wrapping label is squeezed to one glyph a line at large Text Sizes.
+	_speed_indicator.autowrap_mode = TextServer.AUTOWRAP_OFF
 
 	# Style it
 	_speed_indicator.add_theme_font_size_override("normal_font_size", TextScale.scaled(16))
