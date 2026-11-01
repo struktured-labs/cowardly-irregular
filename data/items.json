@@ -4,7 +4,7 @@
     "name": "Potion",
     "category": 0,
     "target_type": 0,
-    "description": "Restores 500 HP",
+    "description": "Restores some HP",
     "effects": {
       "heal_hp": 500
     },
@@ -16,7 +16,7 @@
     "name": "Hi-Potion",
     "category": 0,
     "target_type": 0,
-    "description": "Restores 2000 HP",
+    "description": "Restores a lot of HP",
     "effects": {
       "heal_hp": 2000
     },
@@ -28,7 +28,7 @@
     "name": "Mega Potion",
     "category": 0,
     "target_type": 1,
-    "description": "Restores 1000 HP to all allies",
+    "description": "Restores HP to all allies",
     "effects": {
       "heal_hp": 1000
     },
@@ -162,7 +162,7 @@
     "name": "Bomb Fragment",
     "category": 3,
     "target_type": 2,
-    "description": "Deals 1000 fire damage",
+    "description": "Deals heavy fire damage",
     "effects": {
       "damage": 1000,
       "element": "fire"
@@ -175,7 +175,7 @@
     "name": "Arctic Wind",
     "category": 3,
     "target_type": 3,
-    "description": "Deals 800 ice damage to all enemies",
+    "description": "Deals ice damage to all enemies",
     "effects": {
       "damage": 800,
       "element": "ice"
@@ -254,7 +254,7 @@
     "name": "Lightning Bolt",
     "category": 3,
     "target_type": 2,
-    "description": "Deals 1200 lightning damage to one enemy",
+    "description": "Deals heavy lightning damage to one enemy",
     "effects": {
       "damage": 1200,
       "element": "lightning"
@@ -267,7 +267,7 @@
     "name": "Holy Water",
     "category": 3,
     "target_type": 2,
-    "description": "Deals 1500 holy damage to undead. Weak against living foes.",
+    "description": "Deals massive holy damage to undead. Weak against living foes.",
     "effects": {
       "damage": 1500,
       "element": "holy",

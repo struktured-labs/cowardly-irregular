@@ -18,11 +18,16 @@ func after_each() -> void:
 	AutogrindState.restore(_ag)
 
 
+## HP in the file's ×10-era units, converted the way a level-1 drinker converts the potions (spectrum curve, 2026-10-31).
+func _hp(x10_amount: int) -> int:
+	return roundi(x10_amount * Combatant.party_x10_ratio(1))
+
+
 func _member(max_hp: int, missing: int, potions: int = 3, hi: int = 3) -> Combatant:
 	var c := Combatant.new()
-	c.initialize({"name": "Drinker", "max_hp": max_hp, "max_mp": 10, "attack": 10, "defense": 10, "magic": 10, "speed": 10})
+	c.initialize({"name": "Drinker", "max_hp": _hp(max_hp), "max_mp": 10, "attack": 10, "defense": 10, "magic": 10, "speed": 10})
 	add_child_autofree(c)
-	c.current_hp = max_hp - missing
+	c.current_hp = _hp(max_hp) - _hp(missing)
 	if potions > 0:
 		c.add_item("potion", potions)
 	if hi > 0:
@@ -37,8 +42,8 @@ func _first(c: Combatant) -> String:
 
 func test_the_heal_amounts_are_what_this_file_assumes() -> void:
 	var c := _member(5000, 4000)
-	assert_eq(ItemSystem.estimate_item_heal("potion", c), 500, "CONTROL: a Potion heals 500 here")
-	assert_eq(ItemSystem.estimate_item_heal("hi_potion", c), 2000, "CONTROL: a Hi-Potion heals 2000 here")
+	assert_eq(ItemSystem.estimate_item_heal("potion", c), ItemSystem._x10_flat(500, c), "CONTROL: a Potion heals its authored 500, converted")
+	assert_eq(ItemSystem.estimate_item_heal("hi_potion", c), ItemSystem._x10_flat(2000, c), "CONTROL: a Hi-Potion heals its authored 2000, converted")
 
 
 func test_a_scratch_takes_a_potion_not_a_hi_potion() -> void:
@@ -64,7 +69,7 @@ func test_the_between_battle_heal_spends_the_potion() -> void:
 	var typed: Array[Combatant] = [c]
 	gl.party = typed
 	gl._autogrind_heal_member(c)
-	assert_eq(c.current_hp, 3000, "CONTROL: the drink must land")
+	assert_eq(c.current_hp, _hp(3000), "CONTROL: the drink must land")
 	assert_eq(c.get_item_count("potion"), 2, "the automatic between-fight heal must spend a Potion on a scratch")
 	assert_eq(c.get_item_count("hi_potion"), 3, "and keep every Hi-Potion")
 
@@ -78,6 +83,6 @@ func test_heal_party_spends_the_potion() -> void:
 	var typed: Array[Combatant] = [holder, hurt]
 	sys.grind_party = typed
 	sys.apply_autogrind_actions([{"type": "heal_party"}])
-	assert_eq(hurt.current_hp, 1000, "CONTROL: the 70%% ally must be healed")
+	assert_eq(hurt.current_hp, _hp(1000), "CONTROL: the 70%% ally must be healed")
 	assert_eq(holder.get_item_count("potion"), 2, "Heal Party must spend a Potion on a 300-HP gap")
 	assert_eq(holder.get_item_count("hi_potion"), 3, "and keep every Hi-Potion")

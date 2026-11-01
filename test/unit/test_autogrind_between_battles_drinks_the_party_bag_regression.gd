@@ -66,7 +66,7 @@ func test_a_hurt_ally_drinks_the_leaders_potion_between_battles() -> void:
 	var roster := _roster([leader, cleric, bard])
 	_loop.party = roster
 	_loop._autogrind_heal_member(cleric)
-	assert_eq(cleric.current_hp - 100, authored,
+	assert_eq(cleric.current_hp - 100, ItemSystem._x10_flat(authored, cleric),
 		"the Cleric stayed at 100 — the potion was on the Fighter, and between-battle healing only looked in the drinker's own pockets")
 	assert_eq(leader.get_item_count("potion"), 0, "the one potion must leave the leader's bag")
 	assert_eq(cleric.get_item_count("potion"), 0, "the drink must not invent a potion on the Cleric")
@@ -85,7 +85,7 @@ func test_a_ko_leader_still_holds_the_bag_the_party_drinks_from() -> void:
 	var cleric := _pc("Cleric", 100, 200)
 	_loop.party = _roster([leader, cleric])
 	_loop._autogrind_heal_member(cleric)
-	assert_eq(cleric.current_hp - 100, authored,
+	assert_eq(cleric.current_hp - 100, ItemSystem._x10_flat(authored, cleric),
 		"the leader was down, so the potion in their bag was unreachable between battles")
 	assert_eq(leader.get_item_count("potion"), 0, "the potion must still be spent from the KO'd leader")
 	leader.free()
@@ -113,7 +113,7 @@ func test_heal_party_uses_the_shared_bag() -> void:
 	leader.add_item("potion", 1)
 	_sys.grind_party = _roster([leader, cleric])
 	_sys.apply_autogrind_actions([{"type": "heal_party"}])
-	assert_eq(cleric.current_hp - 100, authored,
+	assert_eq(cleric.current_hp - 100, ItemSystem._x10_flat(authored, cleric),
 		"heal_party left the Cleric at 100 while the Fighter was holding the only potion")
 	assert_eq(leader.get_item_count("potion"), 0, "heal_party must spend the party's potion, not look only in the patient's pockets")
 	assert_eq(leader.current_hp, 9000, "the healthy leader must not be the one who drinks it")

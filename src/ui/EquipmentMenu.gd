@@ -625,9 +625,10 @@ func _create_item_row(item_id: String, index: int) -> Control:
 	var positive_count = 0
 	var negative_count = 0
 
+	var lv: int = character.job_level if character != null else 1
 	for stat_name in all_stats:
-		var new_val = stat_mods.get(stat_name, 0)
-		var current_val = current_mods.get(stat_name, 0)
+		var new_val = Combatant.gear_mod_at_level(str(stat_name), int(stat_mods.get(stat_name, 0)), lv)
+		var current_val = Combatant.gear_mod_at_level(str(stat_name), int(current_mods.get(stat_name, 0)), lv)
 		var diff = new_val - current_val
 
 		if diff > 0:

@@ -34,6 +34,13 @@ const MAGE := {
 }
 
 
+## A fixture stat as recalculate_stats grows it at `level` (spectrum curve, 2026-10-31): the scaled stats ride the curve, MP and speed stay linear.
+func _at(stat: String, v: float, level: int = 1) -> int:
+	if stat in Combatant.SCALED_STAT_FIELDS:
+		return maxi(1, int(v * Combatant.level_multiplier(level)))
+	return int(v * Combatant.linear_level_multiplier(level))
+
+
 func _pc(secondary: Variant = null, level: int = 1) -> Combatant:
 	var c := Combatant.new()
 	autofree(c)
@@ -62,9 +69,9 @@ func test_secondary_job_lends_a_fraction_of_its_magic() -> void:
 	var dual := _pc(MAGE)
 	# CONTROL: the primary alone must NOT already contain the mage's magic —
 	# otherwise "dual is higher" would be true for reasons unrelated to lending.
-	assert_eq(solo.magic, 50,
-		"fixture drift: a level-1 fighter with no secondary should read the fighter's own magic 50, got %d" % solo.magic)
-	var expected: int = 50 + roundi(200.0 * FRACTION)
+	assert_eq(solo.magic, _at("magic", 50),
+		"fixture drift: a level-1 fighter with no secondary should read the fighter's own magic 50 on the curve, got %d" % solo.magic)
+	var expected: int = _at("magic", 50 + roundi(200.0 * FRACTION))
 	assert_eq(dual.magic, expected,
 		"fighter/mage magic should be the fighter's 50 plus %s of the mage's 200 (= %d), got %d" % [FRACTION, expected, dual.magic])
 	assert_gt(dual.magic, solo.magic,
@@ -86,6 +93,8 @@ func test_every_moddable_stat_is_lent_not_just_the_named_ones() -> void:
 		if lent == 0:
 			continue
 		var got: int = int(dual.get(stat)) - int(solo.get(stat))
+		var own: float = float(FIGHTER["stat_modifiers"].get(stat, 0))
+		lent = _at(stat, own + lent) - _at(stat, own)
 		assert_eq(got, lent,
 			"%s should gain %d from the secondary, gained %d" % [stat, lent, got])
 		moved.append(stat)
@@ -102,9 +111,10 @@ func test_lent_aptitude_scales_with_job_level_like_the_primary() -> void:
 	## 1.4x the lent magic, not a flat bonus that dilutes as you level.
 	var l1 := _pc(MAGE, 1)
 	var l11 := _pc(MAGE, 11)
-	var mult: float = 1.0 + (11 - 1) * 0.04
-	assert_eq(l11.magic, int(float(l1.magic) * mult),
-		"lent aptitude should scale with job_level (x%s): level 1 read %d, level 11 read %d" % [mult, l1.magic, l11.magic])
+	var lent_total: float = 50.0 + roundi(200.0 * FRACTION)
+	assert_eq(l11.magic, _at("magic", lent_total, 11),
+		"lent aptitude should ride the curve like the primary: level 1 read %d, level 11 read %d" % [l1.magic, l11.magic])
+	assert_gt(l11.magic, l1.magic, "CONTROL: level 11 must read above level 1")
 
 
 func test_dropping_the_secondary_gives_the_stats_back() -> void:
@@ -113,8 +123,8 @@ func test_dropping_the_secondary_gives_the_stats_back() -> void:
 	c.secondary_job = null
 	c.secondary_job_id = ""
 	c.recalculate_stats()
-	assert_eq(c.magic, 50,
-		"clearing the secondary should return magic to the fighter's own 50, got %d" % c.magic)
+	assert_eq(c.magic, _at("magic", 50),
+		"clearing the secondary should return magic to the fighter's own 50 on the curve, got %d" % c.magic)
 	assert_lt(c.magic, with_secondary,
 		"clearing the secondary changed nothing — still %d" % c.magic)
 
@@ -123,7 +133,7 @@ func test_no_secondary_is_exactly_the_old_behaviour() -> void:
 	## The zero-risk path: a character with no secondary must read identically
 	## to pre-fix, so this change cannot move a single-job party.
 	var c := _pc()
-	assert_eq(c.magic, 50, "magic")
-	assert_eq(c.attack, 150, "attack")
-	assert_eq(c.max_hp, 1000, "max_hp")
-	assert_eq(c.speed, 8, "speed")
+	assert_eq(c.magic, _at("magic", 50), "magic")
+	assert_eq(c.attack, _at("attack", 150), "attack")
+	assert_eq(c.max_hp, _at("max_hp", 1000), "max_hp")
+	assert_eq(c.speed, _at("speed", 8), "speed")

@@ -106,5 +106,5 @@ func test_max_hp_injury_still_survives_recalc() -> void:
 
 	c.apply_permanent_injury({"stat": "max_hp", "penalty": 20})
 	c.recalculate_stats()
-	assert_eq(c.max_hp, 80,
+	assert_eq(c.max_hp, int(100 * Combatant.level_multiplier(c.job_level)) - 20,
 		"max_hp injury must persist through recalc (existing behavior, not regressed by the max_mp fix)")

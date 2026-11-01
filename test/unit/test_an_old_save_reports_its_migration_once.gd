@@ -14,14 +14,14 @@ func after_each() -> void:
 
 
 func _old_save() -> Dictionary:
-	return {"game_state": {"player_party": [{"name": "Fighter", "max_hp": 100, "current_hp": 100, "attack": 20}]}}
+	return {"game_state": {"player_party": [{"name": "Fighter", "max_hp": 1000, "current_hp": 1000, "attack": 200, "stat_scale": Combatant.X10_ERA_SCALE}]}}
 
 
 func test_the_second_read_still_migrates() -> void:
 	var a: Dictionary = SaveSystem._migrate_stat_denomination(_old_save(), 2)
 	var b: Dictionary = SaveSystem._migrate_stat_denomination(_old_save(), 2)
-	assert_eq(int(a["game_state"]["player_party"][0]["max_hp"]), 100 * Combatant.STAT_SCALE, "SCOPE: the first read migrates")
-	assert_eq(int(b["game_state"]["player_party"][0]["max_hp"]), 100 * Combatant.STAT_SCALE, "a quiet re-read must still migrate the stats")
+	assert_eq(int(a["game_state"]["player_party"][0]["max_hp"]), 1000 * Combatant.STAT_SCALE / Combatant.X10_ERA_SCALE, "SCOPE: the first read migrates")
+	assert_eq(int(b["game_state"]["player_party"][0]["max_hp"]), 1000 * Combatant.STAT_SCALE / Combatant.X10_ERA_SCALE, "a quiet re-read must still migrate the stats")
 
 
 func test_a_slot_is_reported_once() -> void:
