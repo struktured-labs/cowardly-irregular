@@ -21,7 +21,7 @@ const BUILDING_ART := {
 	Vector2i(5, 4): "maple_garage_sale_house",
 	Vector2i(12, 8): "maple_mart",
 	Vector2i(19, 8): "maple_moms_house",
-	Vector2i(13, 12): "maple_house",
+	Vector2i(14, 12): "maple_house",
 }
 
 

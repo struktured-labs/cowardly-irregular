@@ -22,7 +22,7 @@ const BUILDING_ART := {
 	Vector2i(15, 4): "brasston_forge",
 	Vector2i(6, 9): "brasston_inn",
 	Vector2i(8, 13): "brasston_cottage",
-	Vector2i(15, 13): "brasston_shed",
+	Vector2i(16, 13): "brasston_shed",
 }
 
 

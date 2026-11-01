@@ -322,11 +322,20 @@ func _spawn_building_art(art: Dictionary) -> int:
 		var block: Array = _flood_block(cell, {glyph: true}, {})
 		var minp := block[0] as Vector2i
 		var maxp := block[1] as Vector2i
+		## An origin off its building floods the lawn or the street around it; no building block is that big.
+		if (maxp - minp).x >= MAX_ART_BLOCK_TILES or (maxp - minp).y >= MAX_ART_BLOCK_TILES:
+			push_warning("[VILLAGE] building_art '%s' origin %s is not on a building block ('%s' floods %s); skipped" % [key, cell, glyph, maxp - minp + Vector2i.ONE])
+			continue
 		var house: VillageProp = VillagePropScript.create(VillagePropScript.Kind.HOUSE, Vector2i(minp.x, maxp.y))
 		house.name = "BuildingArt_%s" % key
 		house.art_path = path
 		house.size_tiles = maxp - minp + Vector2i.ONE
 		props.add_child(house)
+		## Sort 1px above the base, pixels unmoved: whatever stands on the next row (a door, the player) draws in front.
+		house.position.y -= 1.0
+		var spr := house.get_node_or_null("Sprite") as Sprite2D
+		if spr != null:
+			spr.position.y += 1.0
 		var rect := Rect2i(minp, maxp - minp + Vector2i.ONE)
 		_art_blocks.append(rect)
 		_hide_what_the_art_draws(rect)
@@ -351,6 +360,8 @@ func _hide_what_the_art_draws(rect: Rect2i) -> void:
 
 
 static var _art_path_cache: Dictionary = {}
+## The largest building block a drawn building may cover, in tiles per side.
+const MAX_ART_BLOCK_TILES: int = 6
 
 
 ## manifest building_art: key -> res:// path of the drawn building.

@@ -58,11 +58,11 @@ func _blocks(rows: Array, glyphs: String) -> Array:
 	return out
 
 
-## The art prop standing on `block`: a VillageProp whose base cell is the block's bottom-left and that carries art.
+## The art prop standing on `block`: a VillageProp on the block's bottom-left base (sorted 1px above it) carrying art.
 func _art_on(v: Node, block: Rect2i) -> Node:
 	var base := Vector2((block.position.x + 0.5) * 32, (block.end.y) * 32)
 	for p in v.props.get_children():
-		if str(p.get("art_path")) != "" and p.position.is_equal_approx(base):
+		if str(p.get("art_path")) != "" and p.position.distance_to(base) <= 1.0:
 			return p
 	return null
 
@@ -125,6 +125,17 @@ func _leaks_in(v: Node, leaks: Array) -> int:
 				if cells.intersects(r):
 					leaks.append("%s: %s's stall sprite still draws over an art block" % [v.name, n.name])
 	return doors
+
+
+func test_an_origin_off_its_block_draws_nothing() -> void:
+	## Maple Heights' staggered H was first keyed on a lawn cell: the flood took the whole lawn as one "building".
+	var v = await _built("res://src/maps/villages/MapleHeightsVillage.gd")
+	var before: int = v._art_blocks.size()
+	assert_gt(before, 0, "CONTROL: Maple Heights' real art blocks must be recorded")
+	var lawn := Vector2i(13, 12)
+	assert_eq(str(v._map_rows[lawn.y])[lawn.x], "g", "CONTROL: (13,12) must still be lawn for this arm to mean anything")
+	assert_eq(v._spawn_building_art({lawn: "maple_house"}), 0, "a lawn origin must draw no building")
+	assert_eq(v._art_blocks.size(), before, "a lawn origin must claim no block")
 
 
 func test_a_village_without_art_keeps_its_facades() -> void:

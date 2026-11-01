@@ -133,11 +133,11 @@ SUBURBAN = {
     "maple_moms_house": (3, "A cosy suburban home that rents its guest room: blue siding, a red shingle roof with a dormer, a "
                             "wide covered front porch with a swing and potted ferns, a welcome mat and a little hanging sign "
                             "with a pictured bed and a heart (no letters)."),
-    "maple_house": (3, "A tidy two-storey suburban house, taller than it is wide: mint-green siding, a grey shingle roof with a "
+    "maple_house": (4, "A wide, tidy suburban ranch house with a low second storey, a little wider than it is tall: mint-green siding, a grey shingle roof with a "
                        "chimney, a picture window with flower boxes, a mailbox and a basketball hoop over the front door."),
 }
 
-## W3 steampunk (Brasston): brass, rivets and steam. Its 3x2 blocks want single-storey art, or it climbs over row 12.
+## W3 steampunk (Brasston): brass, rivets and steam. Its staggered 4x2 blocks want low wide art, or it climbs over row 12.
 STYLE_STEAMPUNK = ("A single detailed 16-bit SNES-era JRPG pixel-art BUILDING for a Victorian steampunk city, a straight-on "
                    "front view with the roof seen from above and in front: soot-darkened brick and riveted brass panels, "
                    "copper pipes and pressure gauges, small chimneys or vents puffing steam, arched windows with iron "
@@ -152,9 +152,10 @@ STEAMPUNK = {
                           "large cog mounted on the front wall and a hanging sign with a pictured hammer and gear (no letters)."),
     "brasston_inn": (3, "The Cog & Pillow inn: a cosy brick-and-brass inn with warm lit arched windows, a steam-powered "
                         "clock above the door and a hanging sign with a pictured cog and a pillow (no letters)."),
-    "brasston_cottage": (3, "A low single-storey workshop cottage, much wider than it is tall, with a shallow riveted "
-                            "roof, one small chimney, a round porthole window and a brass door."),
-    "brasston_shed": (3, "A low single-storey brick boiler shed, much wider than it is tall, with a shallow tin roof, a "
+    "brasston_cottage": (4, "A long, very low, flat-roofed single-storey workshop, three times as wide as it is tall, seen "
+                            "almost straight from the front so the roof is a thin strip: a round porthole window, a brass "
+                            "door, pipes along the wall, one short stubby vent."),
+    "brasston_shed": (4, "A very low single-storey brick boiler shed, about twice as wide as it is tall, with a shallow tin roof, a "
                          "stubby steam vent, pipes along the wall and a small iron door."),
 }
 
