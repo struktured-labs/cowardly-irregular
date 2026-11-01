@@ -72,6 +72,8 @@ const DYNAMIC_PREFIXES := {
 	"footstep_": "\"footstep_\" +",
 	"formation_": "formation_key",
 	"voice_": "voice_",
+	# Recorded dialogue lines: SoundManager.voiced_line_clip finds them by the manifest entry's speaker+line, never by literal key; test_the_rat_king_speaks_his_lines proves each resolves.
+	"boss_line_": "voiced_line_clip",
 	"w2_": "_get_world_sfx_prefix",
 	"w3_": "_get_world_sfx_prefix",
 	"w4_": "_get_world_sfx_prefix",
