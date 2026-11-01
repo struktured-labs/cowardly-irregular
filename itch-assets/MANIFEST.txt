@@ -1,5 +1,5 @@
 itch-assets/.gdignore 4294967295 0
-itch-assets/CAPTIONS.md 1003270263 41686
+itch-assets/CAPTIONS.md 3234782785 41949
 itch-assets/PROVENANCE.md 3230051840 17021
 itch-assets/capture-history/shoot-prep/backwards_warren.png 3215387116 248241
 itch-assets/capture-history/shoot-prep/battle.png 4233415631 155720
@@ -221,7 +221,7 @@ itch-assets/cover-test/title_deband.png 2604951117 793130
 itch-assets/cover/cover_315x250_preview.png 993137753 124125
 itch-assets/cover/cover_630x500.png 2635103598 388949
 itch-assets/eldertree_tile_bug_crop.png 2897233908 32412
-itch-assets/screenshots/battle.png 2440191521 177466
+itch-assets/screenshots/battle.png 137207132 176176
 itch-assets/screenshots/battle_storm.png 1101425309 177157
 itch-assets/screenshots/eldertree_village.png 3022263372 113756
 itch-assets/screenshots/field_elite_medieval.png 4060120550 1131562
