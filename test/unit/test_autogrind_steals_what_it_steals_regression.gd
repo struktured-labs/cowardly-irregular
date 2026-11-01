@@ -153,8 +153,10 @@ func test_the_amount_matches_lives_formula_and_a_missed_roll_takes_nothing() -> 
 	var victim := _combatant("Goblin", 500)
 	_res._roll_steal(rogue, {}, [victim], 1.0)
 	gut.p("    guaranteed steal off a 500 HP victim -> %d" % _res._stolen_gold)
-	assert_between(_res._stolen_gold, 10, 100,
-		"a 500 HP victim yields randi_range(5,50) x 2 = 10..100, and the grind took %d" % _res._stolen_gold)
+	## The victim's HP is read in ×10-era units since the spectrum curve: 500 / x10_ratio, then / 500.
+	var mult: int = 1 + int(500 / (victim.x10_ratio() * 500.0))
+	assert_between(_res._stolen_gold, 5 * mult, 50 * mult,
+		"a 500 HP victim yields randi_range(5,50) x %d, and the grind took %d" % [mult, _res._stolen_gold])
 
 	_res._stolen_gold = 0
 	_res._roll_steal(rogue, {}, [victim], 0.0)

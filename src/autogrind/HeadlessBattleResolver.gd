@@ -1393,7 +1393,7 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 					## comments above document, on the arm nobody revisited. Formula mirrors
 					## BattleManager:5227 so headless and live agree.
 					var authored = int(ability.get("heal_amount", 0))
-					var heal_amount = int(authored * (1.0 + caster.get_buffed_stat("magic", caster.magic) / 20.0)) if authored > 0 else int(caster.get_buffed_stat("magic", caster.magic) * power)
+					var heal_amount = int(authored * (caster.x10_ratio() + caster.get_buffed_stat("magic", caster.magic) / 20.0)) if authored > 0 else int(caster.get_buffed_stat("magic", caster.magic) * power)
 					heal_amount = max(1, heal_amount)
 					var healed = target.heal(heal_amount)
 					_log("%s heals %s for %d" % [caster.combatant_name, target.combatant_name, healed])
@@ -1711,7 +1711,7 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 						## An omitted absorb_amount still means unlimited, on both sides.
 						target.add_status("damage_absorb", duration)
 						if ability.has("absorb_amount"):
-							target.set_meta("_damage_absorb_budget", maxi(0, int(ability["absorb_amount"])))
+							target.set_meta("_damage_absorb_budget", maxi(0, roundi(float(ability["absorb_amount"]) * target.x10_ratio())))
 						elif target.has_meta("_damage_absorb_budget"):
 							target.remove_meta("_damage_absorb_budget")
 						_log("%s wards %s (absorbs %d for %d turns)" % [caster.combatant_name, target.combatant_name, int(ability.get("absorb_amount", -1)), duration])
@@ -2036,7 +2036,7 @@ func _roll_steal(caster, ability: Dictionary, targets: Array, base_rate: float) 
 		## BattleManager:6147 verbatim. rogue_lockward's first_steal_guaranteed and steal_response are
 		## NOT ported: it is the only monster authoring either, and it is neither pooled nor
 		## autogrind_spawned, so no grind can field it by any of the four spawn forms.
-		var amount: int = randi_range(5, 50) * (1 + int(target.max_hp / STEAL_GOLD_HP_DIVISOR))
+		var amount: int = randi_range(5, 50) * (1 + int(target.max_hp / (target.x10_ratio() * STEAL_GOLD_HP_DIVISOR)))
 		var shown: int = amount
 		if party_side:
 			var before: int = _stolen_gold
@@ -2301,18 +2301,18 @@ func _resolve_item(user, item_id: String, target) -> void:
 		its.use_item(user, item_id, typed_targets)
 		_log("%s uses %s on %s" % [user.combatant_name, item_id, target.combatant_name])
 		return
-	# Fallback: ItemSystem unavailable. Original hardcoded list.
+	# Fallback: ItemSystem unavailable. items.json's ×10-era heals, converted at use like the real path.
 	match item_id:
 		"potion":
-			target.heal(50)
+			target.heal(int(500 * target.x10_ratio()))
 		"hi_potion":
-			target.heal(200)
+			target.heal(int(2000 * target.x10_ratio()))
 		"ether":
 			target.restore_mp(30)
 		"hi_ether":
 			target.restore_mp(100)
 		_:
-			target.heal(50)
+			target.heal(int(500 * target.x10_ratio()))
 	_log("%s uses %s on %s (fallback path — ItemSystem missing)" % [user.combatant_name, item_id, target.combatant_name])
 
 
@@ -2466,6 +2466,7 @@ func _build_results(victory: bool, termination_reason: String = "") -> Dictionar
 		"victory": victory,
 		"rounds": _current_round,
 		"exp_gained": exp,
+		"area_level": ExpRules.area_level_of(_enemy_party),
 		"gold_gained": gold,
 		"item_drops": drops["item_drops"],
 		"rare_drops": drops["rare_drops"],

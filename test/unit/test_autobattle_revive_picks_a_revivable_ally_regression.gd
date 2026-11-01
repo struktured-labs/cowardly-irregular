@@ -41,6 +41,15 @@ func after_each() -> void:
 			_abs.character_profiles.erase(cid)
 
 
+## The level the Cleric learns Raise at, read from jobs.json: the spectrum ladder moved it (10 -> 12), and a fixture must follow the data.
+func _raise_level() -> int:
+	var at: Dictionary = JobSystem.get_job("cleric").get("abilities_at_level", {})
+	for k in at:
+		if "raise" in at[k]:
+			return int(k)
+	return 99
+
+
 func _member(cname: String, job_id: String) -> Combatant:
 	var c := Combatant.new()
 	c.initialize({
@@ -49,7 +58,7 @@ func _member(cname: String, job_id: String) -> Combatant:
 	})
 	if job_id != "":
 		c.job = JobSystem.get_job(job_id)
-	c.job_level = 10
+	c.job_level = _raise_level()
 	add_child_autofree(c)
 	return c
 
@@ -174,7 +183,7 @@ func test_raise_skips_a_permakilled_ally_for_the_ordinary_ko() -> void:
 		return
 	var cleric := _member("Raise Order", "cleric")
 	assert_true(cleric.knows_ability("raise"),
-		"precondition: a level-10 cleric knows raise, or this arm is not the spell players script")
+		"precondition: a cleric at Raise's unlock level knows raise, or this arm is not the spell players script")
 	var gone := _member("Raise Gone", "fighter")
 	var fallen := _member("Raise Fallen", "mage")
 	_register([cleric, gone, fallen])

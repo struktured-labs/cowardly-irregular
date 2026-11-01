@@ -319,11 +319,11 @@ func _generate_hero_mimics_party() -> Array:
 		var mimic_data = {
 			"id": "hero_mimic",
 			"name": "Hero Mimic %d" % (i + 1),
-			"max_hp": 1000,
+			"max_hp": 100,
 			"max_mp": 50,
-			"attack": 150,
-			"defense": 1200,
-			"magic": 150,
+			"attack": 15,
+			"defense": 120,
+			"magic": 15,
 			"speed": 14,
 			"is_mimic": true,
 			"mimic_index": i,
@@ -732,7 +732,11 @@ func _apply_field_elite_scaling(data: Dictionary) -> Dictionary:
 	target = maxf(target, base_level)
 	# Growth compounds the gap the further the elite is pinned above where it was authored,
 	# so a late-game party does not out-stat a rare that was written for chapter one.
-	var growth := 1.0 + maxf(0.0, target - base_level) * float(sc.get("per_level_stat_growth", 0.0))
+	var gap := maxf(0.0, target - base_level)
+	var linear_growth := 1.0 + gap * float(sc.get("per_level_stat_growth", 0.0))
+	## The scaled stats ride the level curve (as the party's do) plus the extra per-level margin the table adds over the old +4%.
+	var curve_growth := Combatant.level_multiplier(int(round(target))) / Combatant.level_multiplier(int(round(base_level)))
+	var growth := curve_growth * (1.0 + gap * maxf(0.0, float(sc.get("per_level_stat_growth", 0.0)) - Combatant.LEVEL_RATE_LINEAR))
 
 	data["level"] = int(round(target))
 	data["field_elite"] = true
@@ -740,7 +744,8 @@ func _apply_field_elite_scaling(data: Dictionary) -> Dictionary:
 				["defense", "defense_multiplier"], ["magic", "magic_multiplier"],
 				["magic_defense", "magic_defense_multiplier"], ["speed", "speed_multiplier"]]:
 		if data.has(key[0]):
-			data[key[0]] = int(round(float(data[key[0]]) * float(sc.get(key[1], 1.0)) * growth))
+			var g := linear_growth if key[0] == "speed" else growth
+			data[key[0]] = int(round(float(data[key[0]]) * float(sc.get(key[1], 1.0)) * g))
 	data["exp_reward"] = int(round(float(data.get("exp_reward", 0)) * float(sc.get("exp_multiplier", 1.0))))
 	data["gold_reward"] = int(round(float(data.get("gold_reward", 0)) * float(sc.get("gold_multiplier", 1.0))))
 	return data

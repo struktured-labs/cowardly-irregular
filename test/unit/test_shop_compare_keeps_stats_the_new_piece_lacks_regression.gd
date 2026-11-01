@@ -34,13 +34,16 @@ func test_replacing_iron_armor_with_a_robe_names_the_hp_and_speed_you_lose() -> 
 	assert_eq(int(iron.get("stat_mods", {}).get("max_hp", 0)), 250, "CONTROL: iron_armor's HP bonus is the number this arm judges")
 	assert_eq(int(iron.get("stat_mods", {}).get("speed", 0)), -3, "CONTROL: iron_armor's speed penalty is the number this arm judges")
 	var delta: Dictionary = shop._compare_equipment("cloth_robe", robe)
-	assert_eq(int(delta.get("max_hp", 0)), -250,
-		"swapping Iron Armor for a robe that lists no HP must show -250 Max HP, not silence")
+	## The row carries no job_level, so the shop shows level 1's conversion of the authored 250.
+	var shown_hp: int = Combatant.gear_mod_at_level("max_hp", 250, 1)
+	assert_gt(shown_hp, 0, "CONTROL: a level-1 conversion of 250 HP is still a loss worth showing")
+	assert_eq(int(delta.get("max_hp", 0)), -shown_hp,
+		"swapping Iron Armor for a robe that lists no HP must show the HP it loses, not silence")
 	assert_eq(int(delta.get("speed", 0)), 3,
 		"dropping Iron Armor's speed penalty must show +3 Speed")
 	shop._update_description_for_item("cloth_robe")
 	var text: String = str(shop.description_label.text)
-	assert_true(text.contains("Max HP: +0  (-250)"),
+	assert_true(text.contains("Max HP: +0  (-%d)" % shown_hp),
 		"the buy panel hid the Max HP loss. Got:\n%s" % text)
 	assert_true(text.contains("Speed: +0  (+3)"),
 		"the buy panel hid the Speed change. Got:\n%s" % text)

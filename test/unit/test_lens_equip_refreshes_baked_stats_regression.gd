@@ -124,7 +124,7 @@ func test_recalculate_and_level_up_apply_the_tilt_once() -> void:
 	GameState.owned_lenses.append("warden")
 	LensSystem.equip_lens("fighter", "warden")
 	var mult: float = _tilt("warden", "defense_multiplier")
-	var once: int = int(_DEF_BASE * mult)
+	var once: int = int(int(_DEF_BASE * Combatant.level_multiplier(fighter.job_level)) * mult)
 	assert_eq(fighter.defense, once)
 	fighter.recalculate_stats()
 	fighter.recalculate_stats()
@@ -132,7 +132,7 @@ func test_recalculate_and_level_up_apply_the_tilt_once() -> void:
 		"a second and third recalculation must not stack the Warden tilt")
 	fighter.gain_job_exp(fighter.job_level * 100)
 	assert_eq(fighter.job_level, 2)
-	var level_mult := 1.0 + float(fighter.job_level - 1) * 0.04
+	var level_mult := Combatant.level_multiplier(fighter.job_level)
 	var leveled: int = int(int(_DEF_BASE * level_mult) * mult)
 	assert_eq(fighter.defense, leveled,
 		"a level-up recalculation includes the tilt once, on the new level")
@@ -175,9 +175,10 @@ func test_a_job_change_keeps_the_lens_tilt_once() -> void:
 	var mult: float = _tilt("warden", "defense_multiplier")
 	var hp_mult: float = _tilt("warden", "max_hp_multiplier")
 	var job_mods: Dictionary = JobSystem.get_job("fighter").get("stat_modifiers", {})
-	assert_eq(defense_worn, int(int(job_mods["defense"]) * mult),
+	var lm: float = Combatant.level_multiplier(fighter.job_level)
+	assert_eq(defense_worn, int(maxi(1, int(int(job_mods["defense"]) * lm)) * mult),
 		"the baked defense is the job's defense with the Warden tilt applied once")
-	assert_eq(hp_worn, int(int(job_mods["max_hp"]) * hp_mult),
+	assert_eq(hp_worn, int(maxi(1, int(int(job_mods["max_hp"]) * lm)) * hp_mult),
 		"and max HP the same way")
 	_change_job(fighter, "mage")
 	_change_job(fighter, "fighter")

@@ -63,6 +63,18 @@ func test_the_producer_still_ships_a_rank_with_its_one_shot_bonus() -> void:
 	assert_ne(line, "", "no bonuses.append carrying type one_shot — the victory bonus payload moved, and the slam selector reads its rank")
 	assert_true(line.contains("\"rank\""), "the one_shot bonus no longer carries a rank, so VictoryOverlay._one_shot_rank_of can never see one: %s" % line.strip_edges())
 
+func test_an_unpaid_one_shot_still_carries_its_rank() -> void:
+	## Over-levelled: the stomp bonus is not paid, so no one_shot entry; results.one_shot_rank still names it.
+	assert_eq(_overlay._one_shot_rank_of([{"type": "chain", "multiplier": 1.2}], "S"), "S", "an unpaid S-rank one-shot lost its rank, so it plays the ordinary slam")
+	assert_eq(_overlay._one_shot_rank_of([], ""), "", "CONTROL: no one-shot and no reported rank must mean no rank")
+	assert_eq(_overlay._one_shot_rank_of([{"type": "one_shot", "rank": "A"}], "S"), "A", "the paid entry is the source when it exists")
+	var reported := false
+	for l in _bm_source().split("\n"):
+		if l.contains("\"one_shot_rank\":") and l.contains("_get_one_shot_rank("):
+			reported = true
+	assert_true(reported, "BattleManager no longer reports one_shot_rank from _get_one_shot_rank, so an over-levelled S-rank can never reach its slam")
+
+
 func test_the_consumer_reads_the_rank_out_of_that_payload() -> void:
 	assert_eq(_overlay._one_shot_rank_of([{"type": "one_shot", "multiplier": 1.5, "rank": "S"}]), "S", "the rank in a one_shot bonus did not reach the selector")
 	assert_eq(_overlay._one_shot_rank_of([]), "", "no bonuses must mean no rank")

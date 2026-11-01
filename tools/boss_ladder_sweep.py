@@ -45,11 +45,17 @@ def _json(rel):
 def level_mult_formula():
     """Parsed out of the engine so this tool's curve cannot silently diverge from it."""
     src = open(os.path.join(ROOT, "src/battle/Combatant.gd"), encoding="utf-8").read()
-    m = re.search(r"level_mult\s*=\s*1\.0\s*\+\s*\(\s*job_level\s*-\s*1\s*\)\s*\*\s*([0-9.]+)", src)
-    if not m:
-        raise SystemExit("Combatant.gd no longer carries the 1.0 + (job_level - 1) * K form — "
+    f = re.search(r"const LEVEL_FLOOR\s*:?=\s*([0-9.]+)", src)
+    c = re.search(r"const LEVEL_CURVE\s*:?=\s*([0-9.]+)", src)
+    if not (f and c):
+        raise SystemExit("Combatant.gd no longer carries LEVEL_FLOOR / LEVEL_CURVE — "
                          "re-read it before trusting any ratio this tool prints")
-    return float(m.group(1))
+    return float(f.group(1)), float(c.group(1))
+
+
+def level_mult(level, k):
+    """The spectrum curve (2026-10-31): FLOOR + CURVE * (L - 1)^2 on the scaled stats."""
+    return k[0] + k[1] * (level - 1) ** 2
 
 
 def bosses():
@@ -87,7 +93,7 @@ def weakest_pool(level, k):
     jobs = _json("data/jobs.json")
     pools = [int(j.get("stat_modifiers", {}).get("max_hp", 0)) for j in jobs.values()
              if int(j.get("stat_modifiers", {}).get("max_hp", 0)) > 0]
-    return min(pools) * (1.0 + (level - 1) * k)
+    return min(pools) * level_mult(level, k)
 
 
 def cmd_model():
@@ -126,10 +132,10 @@ def cmd_selftest():
     fails = []
 
     k = level_mult_formula()
-    if abs(k - 0.04) > 1e-9:
-        print("note: the engine's per-level coefficient is %s, not the 0.04 measured on 2026-10-27" % k)
-    for lvl, want in ((20, 1.76), (26, 2.00), (36, 2.40)):
-        got = 1.0 + (lvl - 1) * k
+    if k != (0.5, 0.036):
+        print("note: the engine's curve is floor %s / curve %s, not the 0.5 / 0.036 set on 2026-10-31" % k)
+    for lvl, want in ((20, 13.496), (26, 23.0), (36, 44.6)):
+        got = level_mult(lvl, k)
         if abs(got - want) > 0.005:
             fails.append("level_mult(%d) = %.3f, but the harness printed %.2f" % (lvl, got, want))
 
@@ -159,8 +165,8 @@ def cmd_selftest():
         for f in fails:
             print("FAIL %s" % f)
         return 1
-    print("ok boss_ladder_sweep: %d bosses derived, level curve +%.0f%%/level agrees with the "
-          "harness at L20/L26/L36, biggest_hit picks by damage not by type" % (len(bs), k * 100))
+    print("ok boss_ladder_sweep: %d bosses derived, level curve %.1f + %.3f*(L-1)^2 agrees with the "
+          "harness at L20/L26/L36, biggest_hit picks by damage not by type" % (len(bs), k[0], k[1]))
     return 0
 
 

@@ -33,7 +33,16 @@ func after_each() -> void:
 			_abs.character_profiles.erase(cid)
 
 
-func _member(cname: String, job_id: String, lvl: int = 10) -> Combatant:
+## The level the Cleric learns Raise at, read from jobs.json: the spectrum ladder moved it (10 -> 12), and a fixture must follow the data.
+func _raise_level() -> int:
+	var at: Dictionary = JobSystem.get_job("cleric").get("abilities_at_level", {})
+	for k in at:
+		if "raise" in at[k]:
+			return int(k)
+	return 99
+
+
+func _member(cname: String, job_id: String, lvl: int = -1) -> Combatant:
 	var c := Combatant.new()
 	c.initialize({
 		"name": cname, "max_hp": 400, "max_mp": 80,
@@ -41,7 +50,7 @@ func _member(cname: String, job_id: String, lvl: int = 10) -> Combatant:
 	})
 	if job_id != "":
 		c.job = JobSystem.get_job(job_id)
-	c.job_level = lvl
+	c.job_level = lvl if lvl > 0 else _raise_level()
 	add_child_autofree(c)
 	return c
 
@@ -67,7 +76,7 @@ func test_a_cleric_raises_a_fallen_ally_during_a_grind() -> void:
 	var fallen := _member("Revive Fallen", "fighter")
 	add_child_autofree(fallen)
 	assert_true(cleric.knows_ability("raise"),
-		"precondition: raise is a level-10 Cleric ability and the fixture must know it")
+		"precondition: the fixture Cleric stands at Raise's unlock level and must know it")
 
 	## ally_count drops when a member dies, because _get_allies_for filters the dead out. It is
 	## the only condition in the shipped grammar that can notice a death at all.
