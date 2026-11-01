@@ -204,6 +204,9 @@ func _init() -> void:
 			var bm: Node = get_root().get_node_or_null("BattleManager")
 			if bm != null:
 				bm.apply_post_battle_restore(party)
+				## The chain's own breather (cowir-overworld 20964, .760), when the build carries it: measure what ships.
+				if bm.has_method("apply_chain_breather"):
+					bm.apply_chain_breather(party)
 			for c in enemies:
 				c.queue_free()
 			enemies = _build_enemies(gl, mdb, enemy_ids)
