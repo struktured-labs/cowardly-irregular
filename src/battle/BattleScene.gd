@@ -56,6 +56,9 @@ const NAME_LABEL_GAP: float = 6.0
 const NAME_LABEL_WIDTH: float = 200.0
 const NAME_LABEL_PX := 16  # on-screen size for every monster, whatever its sprite scale
 const ENEMY_HP_BAR_SIZE := Vector2(60, 5)  # on-screen, whatever the sprite scale
+## How far each formation stands nearer its own edge (struktured 2026-11-01); the party has no room under its badges yet.
+const ENEMY_EDGE_SHIFT := -24.0
+const PARTY_EDGE_SHIFT := 0.0
 const ENEMY_HP_BAR_FADE := 0.4  # under the 0.5s dissolve it leaves with
 const STATUS_ROW_WIDTH := 120.0  # badges centre in it over the figure (row units, x STATUS_ROW_ZOOM on screen)
 const STATUS_ROW_ZOOM := 1.6  # the badges' ~9px text, read at ~14px on every monster
@@ -369,6 +372,8 @@ func set_terrain(terrain: String) -> void:
 
 
 func _ready() -> void:
+	_shift_area(get_node_or_null("BattleField/EnemyArea"), ENEMY_EDGE_SHIFT)
+	_shift_area(get_node_or_null("BattleField/PartyArea"), PARTY_EDGE_SHIFT)
 	# Initialize composed subsystems
 	_enemy_spawner = BattleEnemySpawnerClass.new(self)
 	_ui_manager = BattleUIManagerClass.new(self)
@@ -912,6 +917,13 @@ func _repeat_previous_actions() -> void:
 		var why: String = str(BattleManager.last_repeat_refusal)
 		log_message("[color=gray]%s[/color]" % (why if why != "" else "Repeat is not available right now."))
 
+
+func _shift_area(area: Control, dx: float) -> void:
+	# A scene built from its script alone has no areas; _ready must go on past this line as it did before.
+	if area == null:
+		return
+	area.offset_left += dx
+	area.offset_right += dx
 
 func _start_test_battle() -> void:
 	"""Start a test battle with sprite display"""
