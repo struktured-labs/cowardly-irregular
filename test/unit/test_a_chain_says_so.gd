@@ -81,20 +81,21 @@ func test_end_battle_forgets_the_chain_link() -> void:
 
 
 func test_the_breather_heals_the_living_by_its_fraction() -> void:
+	## Stats are set AFTER add_child: a Combatant's _ready recalculates them, which would undo a fixture set before it.
 	var up := Combatant.new()
+	add_child_autofree(up)
 	up.combatant_name = "Up"
 	up.max_hp = 100
 	up.current_hp = 10
 	up.max_mp = 40
 	up.current_mp = 0
 	up.is_alive = true
-	add_child_autofree(up)
 	var down := Combatant.new()
+	add_child_autofree(down)
 	down.combatant_name = "Down"
 	down.max_hp = 100
 	down.current_hp = 0
 	down.is_alive = false
-	add_child_autofree(down)
 	var got: Dictionary = BattleManager.apply_chain_breather([up, down])
 	var hp := int(100 * BattleManager.CHAIN_BREATHER_FRACTION)
 	assert_eq(up.current_hp, 10 + hp, "the breather did not restore its fraction of max HP")
