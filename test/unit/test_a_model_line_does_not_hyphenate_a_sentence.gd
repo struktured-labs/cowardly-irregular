@@ -30,7 +30,7 @@ func test_short_bursts_and_compounds_stay() -> void:
 
 func test_the_limit_is_exactly_the_constant() -> void:
 	var n: int = DialoguePrompts.MAX_HYPHEN_RUN_WORDS
-	var words: Array[String] = []
+	var words := PackedStringArray()
 	for i in n + 1:
 		words.append("w%d" % i)
 	var at_limit: String = "-".join(words.slice(0, n))
