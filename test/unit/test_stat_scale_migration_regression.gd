@@ -77,7 +77,7 @@ func test_the_unscaled_stats_are_left_alone() -> void:
 	var out := Combatant.migrate_stat_scale(_presave_party_member())
 	assert_eq(int(out["max_mp"]), 36, "MP must not scale — mp_cost did not either")
 	assert_eq(int(out["speed"]), 22, "speed is comparative; scaling it moves the assassin gate")
-	assert_eq(int(out["job_level"]), 5, "level must not be touched")
+	assert_eq(int(out["job_level"]), Combatant.spectrum_level(5), "level moves only by the ladder, never by the stat factor")
 
 
 func test_an_unmarked_x10_block_is_dated_by_magic_defense() -> void:

@@ -88,7 +88,8 @@ func test_each_confirmed_nature_lands_on_its_stat() -> void:
 		_confirm_nature(c, int(row[0]))
 		var stat: String = str(row[1])
 		var bonus: int = int(row[2])
-		var expected := int((int(mods[stat]) + bonus) * _level_mult(c.job_level))
+		var grow: float = Combatant.linear_level_multiplier(c.job_level) if not (stat in Combatant.SCALED_STAT_FIELDS) else _level_mult(c.job_level)
+		var expected := int((int(mods[stat]) + bonus) * grow)
 		assert_eq(int(c.get(stat)), expected,
 			"%s must add %+d %s on top of the job total — the creation line is otherwise a lie" % [
 				CharacterCustomization.get_personality_name(int(row[0])), bonus, stat])
