@@ -19,8 +19,8 @@ func test_recalc_applies_passive_mod_from_populated_array() -> void:
 	c.max_hp = 100
 	c.equipped_passives = ["hp_boost"] as Array[String]  # +30% max HP
 	c.recalculate_stats()
-	assert_eq(c.max_hp, 130,
-		"recalculate_stats must apply hp_boost from the restored array (130 = 100 * 1.3) — this is what the dead equip loop was supposed to achieve")
+	assert_eq(c.max_hp, int(int(100 * Combatant.level_multiplier(c.job_level)) * 1.3),
+		"recalculate_stats must apply hp_boost from the restored array (+30% on the level-grown 100) — this is what the dead equip loop was supposed to achieve")
 
 
 func test_restore_loop_no_longer_calls_equip_passive() -> void:

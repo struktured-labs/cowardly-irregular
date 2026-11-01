@@ -91,8 +91,8 @@ func test_assigning_cleric_equips_healing_boost_and_posthumous_credit() -> void:
 	assert_true("healing_boost" in healer.equipped_passives)
 	assert_true("posthumous_credit" in healer.equipped_passives)
 	healer.current_hp = 10
-	assert_eq(healer.heal(40), 60,
-		"a Cleric's Healing Boost must turn heal(40) into 60")
+	assert_eq(healer.heal(20), 30,
+		"a Cleric's Healing Boost must turn heal(20) into 30 (small enough to fit a level-1 Cleric's pool)")
 	assert_true(BattleManager.earns_exp_while_dead(healer),
 		"a Cleric's Posthumous Credit must let them earn EXP while KO'd")
 

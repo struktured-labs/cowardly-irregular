@@ -352,9 +352,12 @@ func test_lockward_hp_tuned_for_crescendo() -> void:
 	var data: Dictionary = JSON.parse_string(f.get_as_text())
 	f.close()
 	var stats: Dictionary = data["rogue_lockward"]["stats"]
-	assert_eq(int(stats.get("max_hp", -1)), 1340,
-		"Lockward HP must be 1340 — 2026-08-20 rebalance, ~5 post-Steal Backstabs to kill")
-	assert_eq(int(stats.get("attack", -1)), 295,
-		"Lockward attack must be 295 — the Rogue must survive ~5 hits, not <3")
-	assert_eq(int(stats.get("defense", -1)), 150,
-		"Lockward defense must be 150 — at 300 the atk²/(atk+def) formula ate the Steal bonus")
+	## The 2026-08-20 ×10 numbers carried onto the spectrum curve by the duel's own ratio, which keeps the fight's shape.
+	var r: float = float(data["rogue_lockward"].get("spectrum_ratio", 0.0))
+	assert_gt(r, 0.0, "CONTROL: Lockward carries the ratio the spectrum transform applied")
+	assert_almost_eq(int(stats.get("max_hp", -1)), roundi(1340 * r), 1,
+		"Lockward HP must be 1340 rescaled — 2026-08-20 rebalance, ~5 post-Steal Backstabs to kill")
+	assert_almost_eq(int(stats.get("attack", -1)), roundi(295 * r), 1,
+		"Lockward attack must be 295 rescaled — the Rogue must survive ~5 hits, not <3")
+	assert_almost_eq(int(stats.get("defense", -1)), roundi(150 * r), 1,
+		"Lockward defense must be 150 rescaled — at 300 the atk²/(atk+def) formula ate the Steal bonus")

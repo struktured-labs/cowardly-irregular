@@ -237,9 +237,9 @@ func _recover_enemy_selection_stall() -> void:
 var _current_terrain: String = "plains"
 var _terrain_modifiers: Dictionary = {"boost": [], "reduce": []}
 const TERRAIN_MODIFIER_VALUE: float = 0.25  # +25% or -25% damage
-## Steal/Mug gold scales with the target's max_hp, so this divisor is an ABSOLUTE magnitude and
-## must move with Combatant.STAT_SCALE. At the pre-×10 value of 50 a slime paid out up to 700 gold
-## against its authored reward of 10, and Mordaine up to 16,550 against her 800.
+## Steal/Mug gold scales with the target's max_hp, so this divisor is an ABSOLUTE magnitude in ×10-era HP. At the pre-×10 value of 50 a
+## slime paid out up to 700 gold against its authored reward of 10. Since the spectrum curve the victim's HP is converted back to those
+## units by its own x10_ratio(), so a level-58 boss's 190k HP is not read as 400 slimes.
 const STEAL_GOLD_HP_DIVISOR: float = 500.0
 
 ## Rules per PC sent to the boss-intent prompt — 5 PCs, so this is a token budget.
@@ -6637,7 +6637,7 @@ func earns_exp_while_dead(combatant: Combatant) -> bool:
 func _award_stolen_gold(caster: Combatant, target: Combatant, verb: String = "stole") -> void:
 	if caster == null or not is_instance_valid(caster) or target == null or not is_instance_valid(target):
 		return
-	var gold_amount: int = randi_range(5, 50) * (1 + int(target.max_hp / STEAL_GOLD_HP_DIVISOR))
+	var gold_amount: int = randi_range(5, 50) * (1 + int(target.max_hp / (target.x10_ratio() * STEAL_GOLD_HP_DIVISOR)))
 	if not (caster in player_party):
 		battle_log_message.emit("[color=gray]%s rifles through %s's pack and comes up empty.[/color]" % [
 			caster.combatant_name, target.combatant_name])

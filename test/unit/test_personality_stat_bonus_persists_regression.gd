@@ -75,6 +75,11 @@ func test_apply_stat_bonus_modifies_base_stats() -> void:
 
 # ── Behavioural ──────────────────────────────────────────────────────────────
 
+## A level-1 base stat as recalculate_stats grows it on the spectrum curve (speed stays linear, so its pins are unchanged).
+func _lv(v: int) -> int:
+	return maxi(1, int(v * Combatant.level_multiplier(1)))
+
+
 func _make_combatant(base_atk: int = 10, base_def: int = 10, base_mag: int = 10, base_spd: int = 10) -> Combatant:
 	var c := Combatant.new()
 	c.combatant_name = "PersonalityTester"
@@ -97,12 +102,12 @@ func test_brave_personality_persists_through_recalc() -> void:
 	var custom = CharacterCustomizationScript.new("Hero")
 	custom.personality = CharacterCustomizationScript.Personality.BRAVE
 	custom.apply_stat_bonus(c)
-	assert_eq(c.attack, 12,
+	assert_eq(c.attack, _lv(12),
 		"BRAVE personality must leave attack at 12 (base 10 + 2) after apply_stat_bonus")
 	# The bug-shape regression: a subsequent recalculate_stats must NOT
 	# wipe the bonus. This is the actual test that fails pre-fix.
 	c.recalculate_stats()
-	assert_eq(c.attack, 12,
+	assert_eq(c.attack, _lv(12),
 		"BRAVE personality bonus must SURVIVE a subsequent recalculate_stats (the pre-fix bug shape)")
 
 
@@ -112,7 +117,7 @@ func test_cautious_personality_persists_through_recalc() -> void:
 	custom.personality = CharacterCustomizationScript.Personality.CAUTIOUS
 	custom.apply_stat_bonus(c)
 	c.recalculate_stats()
-	assert_eq(c.defense, 12,
+	assert_eq(c.defense, _lv(12),
 		"CAUTIOUS personality bonus must persist through recalc (base 10 + 2)")
 
 
@@ -122,7 +127,7 @@ func test_scholarly_personality_persists_through_recalc() -> void:
 	custom.personality = CharacterCustomizationScript.Personality.SCHOLARLY
 	custom.apply_stat_bonus(c)
 	c.recalculate_stats()
-	assert_eq(c.magic, 12,
+	assert_eq(c.magic, _lv(12),
 		"SCHOLARLY personality bonus must persist through recalc (base 10 + 2)")
 
 
@@ -142,7 +147,7 @@ func test_charismatic_persists_both_mag_and_spd() -> void:
 	custom.personality = CharacterCustomizationScript.Personality.CHARISMATIC
 	custom.apply_stat_bonus(c)
 	c.recalculate_stats()
-	assert_eq(c.magic, 12,
+	assert_eq(c.magic, _lv(12),
 		"CHARISMATIC personality must give +2 MAG (10 + 2 = 12) through recalc")
 	assert_eq(c.speed, 11,
 		"CHARISMATIC personality must give +1 SPD (10 + 1 = 11) through recalc")

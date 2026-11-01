@@ -167,16 +167,16 @@ func test_fighter_evolves_to_guardian() -> void:
 	assert_true(_jobs["fighter"].has("evolution"), "Fighter should have evolution field")
 	assert_eq(_jobs["fighter"]["evolution"]["target"], "guardian",
 		"Fighter should evolve to guardian")
-	assert_eq(int(_jobs["fighter"]["evolution"]["level_required"]), 5,
-		"Fighter evolution should require level 5")
+	assert_eq(int(_jobs["fighter"]["evolution"]["level_required"]), Combatant.spectrum_level(5),
+		"Fighter evolution should require the old level 5, on the spectrum ladder")
 
 
 func test_rogue_evolves_to_ninja() -> void:
 	assert_true(_jobs["rogue"].has("evolution"), "Rogue should have evolution field")
 	assert_eq(_jobs["rogue"]["evolution"]["target"], "ninja",
 		"Rogue should evolve to ninja")
-	assert_eq(int(_jobs["rogue"]["evolution"]["level_required"]), 5,
-		"Rogue evolution should require level 5")
+	assert_eq(int(_jobs["rogue"]["evolution"]["level_required"]), Combatant.spectrum_level(5),
+		"Rogue evolution should require the old level 5, on the spectrum ladder")
 
 
 func test_guardian_evolves_from_fighter() -> void:

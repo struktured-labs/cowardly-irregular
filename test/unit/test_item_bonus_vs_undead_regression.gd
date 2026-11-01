@@ -103,6 +103,9 @@ func test_holy_water_does_2x_damage_to_undead() -> void:
 	var living = _make_combatant("TestSlime")
 	living.set_meta("monster_type", "slime")
 
+	## Defense off, so each hit is exactly its flat damage (converted by its own species' spectrum_ratio) times the bonus.
+	undead.defense = 0
+	living.defense = 0
 	var hp_undead_before = undead.current_hp
 	var hp_living_before = living.current_hp
 
@@ -129,7 +132,7 @@ func test_holy_water_does_2x_damage_to_undead() -> void:
 	var dmg_undead = hp_undead_before - undead.current_hp
 	var dmg_living = hp_living_before - living.current_hp
 
-	assert_gt(dmg_undead, dmg_living,
+	assert_gt(float(dmg_undead) / ItemSystem._x10_flat(100, undead), float(dmg_living) / ItemSystem._x10_flat(100, living),
 		"holy_water must deal MORE damage to undead than to non-undead (got %d vs %d)" % [
 			dmg_undead, dmg_living])
 	# Ratio check with wide tolerance: take_damage applies defense
@@ -137,7 +140,7 @@ func test_holy_water_does_2x_damage_to_undead() -> void:
 	# above 2x (e.g. dmg=100, def=10 → 90 base; dmg=200, def=10 → 190
 	# undead → ratio 2.11x). Accept anything in [1.7x, 2.5x] — the
 	# design contract is "noticeably more damage", not a precise 2x.
-	var ratio: float = float(dmg_undead) / float(max(1, dmg_living))
+	var ratio: float = (float(dmg_undead) / float(ItemSystem._x10_flat(100, undead))) / (float(max(1, dmg_living)) / float(ItemSystem._x10_flat(100, living)))
 	assert_true(ratio >= 1.7 and ratio <= 2.5,
 		"undead/non-undead damage ratio must be ~2x (got %.2f from dmg %d vs %d)" % [
 			ratio, dmg_undead, dmg_living])

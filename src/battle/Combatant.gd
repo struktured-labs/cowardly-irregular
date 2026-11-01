@@ -76,8 +76,36 @@ static func saved_stat_scale(data: Dictionary) -> int:
 	return saved
 
 
-## Bring a saved stat block up to the current denomination. No-op when already current.
+## Which level ladder a save was written on: 2 is the spectrum ladder (2026-10-31); a save without the stamp predates it.
+const LEVEL_LADDER := 2
+
+
+## The spectrum ladder's level for an old-ladder level: W1's 1-20 onto 1-25, then the rest of the campaign onto 25-58.
+static func spectrum_level(old_level: int) -> int:
+	var lo := float(maxi(1, old_level))
+	if lo <= 20.0:
+		return roundi(1.0 + (lo - 1.0) * 24.0 / 19.0)
+	return roundi(25.0 + (minf(lo, 28.0) - 20.0) * 33.0 / 8.0)
+
+
+## True when a saved block predates the spectrum curve in its stats or its level ladder.
+static func save_needs_migration(data: Dictionary) -> bool:
+	return saved_stat_scale(data) != STAT_SCALE or (data.has("job_level") and int(data.get("level_ladder", 0)) < LEVEL_LADDER)
+
+
+## Bring a saved stat block up to the current denomination and level ladder. No-op when already current.
 static func migrate_stat_scale(data: Dictionary) -> Dictionary:
+	## Same point in the story (cowir-main 20766): an old level moves to the ladder's level, keeping its share of the next level.
+	if data.has("job_level") and int(data.get("level_ladder", 0)) < LEVEL_LADDER:
+		var old_level: int = maxi(1, int(data["job_level"]))
+		var new_level: int = spectrum_level(old_level)
+		data["job_level"] = new_level
+		if data.has("job_exp"):
+			data["job_exp"] = int(float(data["job_exp"]) * float(new_level) / float(old_level))
+		data["level_ladder"] = LEVEL_LADDER
+		if new_level != old_level:
+			data["migrated_from_level"] = old_level
+			print("[SAVE] moved job level %d to %d on the spectrum ladder" % [old_level, new_level])
 	var saved: int = saved_stat_scale(data)
 	if saved == STAT_SCALE:
 		return data
@@ -118,6 +146,11 @@ static func party_x10_ratio(level: int) -> float:
 ## A gear stat as it lands on a party member at this level: what equipping grants, so a menu can show it truthfully.
 static func gear_mod_at_level(stat: String, value: int, level: int) -> int:
 	return roundi(float(value) * party_x10_ratio(level)) if stat in SCALED_STAT_FIELDS else value
+
+
+## A stat on the curve: a positive stat never rounds to 0 under the level-1 floor of 0.5; a zero stays zero.
+static func _grow(value: int, mult: float) -> int:
+	return 0 if value <= 0 else maxi(1, int(value * mult))
 
 
 ## Converts a flat number authored in x10 units (gear, item heals and damage, heal and ward amounts) to this combatant.
@@ -1374,6 +1407,7 @@ func to_dict() -> Dictionary:
 		"magic": magic,
 		"magic_defense": magic_defense,
 		"stat_scale": STAT_SCALE,
+		"level_ladder": LEVEL_LADDER,
 		"speed": speed,
 		"job_level": job_level,
 		"job_exp": job_exp,
@@ -1916,12 +1950,12 @@ func recalculate_stats() -> void:
 	# Job level: the spectrum curve on the scaled stats, linear growth on speed and max_mp.
 	var level_mult := level_multiplier(job_level)
 	var linear_mult := linear_level_multiplier(job_level)
-	max_hp = maxi(1, int(max_hp * level_mult))
+	max_hp = _grow(max_hp, level_mult)
 	max_mp = int(max_mp * linear_mult)
-	attack = maxi(1, int(attack * level_mult))
-	defense = maxi(1, int(defense * level_mult))
-	magic = maxi(1, int(magic * level_mult))
-	magic_defense = maxi(1, int(magic_defense * level_mult))
+	attack = _grow(attack, level_mult)
+	defense = _grow(defense, level_mult)
+	magic = _grow(magic, level_mult)
+	magic_defense = _grow(magic_defense, level_mult)
 	speed = int(speed * linear_mult)
 
 	# Apply passive modifiers (via runtime lookup — autoload identifiers

@@ -121,8 +121,8 @@ func test_no_description_misstates_its_own_heal_value() -> void:
 	# "Restores 50 HP" on an item that heals 500 is the failure this catches. Generalised rather
 	# than pinned to the five that needed fixing, so the next rescale cannot reintroduce it.
 	var offenders: Array = []
-	var num := RegEx.create_from_string("([0-9]+)\\s*HP")
-	for spec in [["res://data/items.json", "heal_hp"], ["res://data/abilities.json", "heal_amount"]]:
+	var num := RegEx.create_from_string("([0-9]+)\\s*(HP|\\w*\\s*damage)")
+	for spec in [["res://data/items.json", "heal_hp"], ["res://data/abilities.json", "heal_amount"], ["res://data/items.json", "damage"]]:
 		var data: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(spec[0]))
 		for id in data:
 			var entry: Variant = data[id]
@@ -134,7 +134,7 @@ func test_no_description_misstates_its_own_heal_value() -> void:
 				continue
 			var m := num.search(str(e.get("description", "")))
 			if m != null:
-				offenders.append("%s says %s HP, but a flat heal now converts with the target's level" % [id, m.get_string(1)])
+				offenders.append("%s says %s, but a flat heal or item damage now converts with the target's level" % [id, m.get_string(0)])
 	assert_eq(offenders, [], "descriptions contradicting their own effect:\n  %s" % "\n  ".join(offenders))
 
 

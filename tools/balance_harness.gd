@@ -147,7 +147,7 @@ func _init() -> void:
 			_die("no monster '%s' in monsters.json" % eid); quit(1); return
 
 	## BAL_LEVEL_RATE asks "what if the scaled stats grew linearly at this rate instead of on the curve".
-	var rate_ratio := (1.0 + (level - 1) * level_rate) / CombatantScript.level_multiplier(level) if level_rate >= 0.0 else 1.0
+	var rate_ratio: float = (1.0 + (level - 1) * level_rate) / CombatantScript.level_multiplier(level) if level_rate >= 0.0 else 1.0
 	_apply_job_whatifs(party_scale, mdef_from_def, rate_ratio)
 	for eid in enemy_ids:
 		_apply_enemy_whatif(mdb, str(eid), enemy_scale)
