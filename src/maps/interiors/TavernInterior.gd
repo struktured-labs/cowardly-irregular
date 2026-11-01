@@ -2249,7 +2249,7 @@ func _setup_npcs() -> void:
 		"Martha: Too many, and reality starts to... glitch.",
 		"Martha: *whispers* I've seen adventurers flicker.",
 		"Martha: Here one moment, gone the next. Like they never existed."
-	])
+	], "young_woman")
 
 	# Traveling minstrel with lute at table
 	_create_npc("Melody", "bard", Vector2(10.5, 13.5), [
@@ -2285,7 +2285,7 @@ func _setup_npcs() -> void:
 		"Dewey: He says that EVERY time. And I keep losing.",
 		"Dewey: There's definitely something wrong with these dice.",
 		"Dewey: ...or with me. Hard to tell at this point."
-	])
+	], "young_man")
 
 	# Off-duty guard nursing a drink
 	_create_npc("Guard Henryk", "knight", Vector2(12.5, 6.5), [
@@ -2313,13 +2313,15 @@ func _setup_npcs() -> void:
 	])
 
 
-func _create_npc(npc_name: String, npc_type: String, grid_pos: Vector2, dialogue: Array) -> void:
+func _create_npc(npc_name: String, npc_type: String, grid_pos: Vector2, dialogue: Array, archetype: String = "") -> void:
 	var OverworldNPCScript = load("res://src/exploration/OverworldNPC.gd")
 	if OverworldNPCScript:
 		var npc = OverworldNPCScript.new()
 		npc.npc_name = npc_name
 		npc.npc_type = npc_type
 		npc.dialogue_lines = dialogue
+		if archetype != "":
+			npc.sprite_archetype = archetype  ## pinned: the name-hash pair can draw the other sex
 		npc.position = grid_pos * TILE_SIZE
 		npcs.add_child(npc)
 	else:
