@@ -12,6 +12,7 @@ never overwrites an existing file.
 Usage:
     set -a; . ./setenv.sh; set +a
     uv run python tools/gen_village_buildings.py --style house shop inn       # stage style tiles
+    uv run python tools/gen_village_buildings.py --w1 [keys] [--deploy]      # the other W1 villages
 """
 from __future__ import annotations
 
@@ -77,6 +78,38 @@ HARMONIA = {
 }
 
 
+## The other W1 villages, same seam (<Village>Village.BUILDING_ART). Ironhaven's forge block is 3x4, still 3 wide.
+W1 = {
+    "frosthold_lodge": (3, "A snowbound mountain lodge that serves as the inn: a steep roof heavy with snow and icicles on "
+                           "the eave, thick log walls, warm lit windows, a hanging sign with a pictured bed (no letters), "
+                           "firewood stacked by the door."),
+    "frosthold_chapel": (3, "A small frost-covered stone chapel: snow on a steep slate roof, a short bell tower with a "
+                            "bell, a round pale-blue stained-glass window, double wooden doors."),
+    "frosthold_furs": (3, "A fur trader's hut: snow on a shingle roof, pelts and furs hung on a rack beside the door, a "
+                          "hanging sign with a pictured bear paw (no letters), a sled leaning on the wall."),
+    "grimhollow_inn": (3, "A gloomy, crooked village inn in a haunted hamlet: a sagging dark shingle roof, a leaning "
+                          "chimney, dim greenish lit windows, a hanging sign with a pictured sleeping ghost (no letters), "
+                          "a lantern with a pale flame."),
+    "grimhollow_chapel": (3, "A decrepit old chapel: cracked grey stone, a broken bell tower with a crooked bell, a "
+                             "boarded window, moss and dead vines, a sagging wooden door."),
+    "grimhollow_curios": (3, "A cursed curio shop: a purple-black shingle roof, a crooked dormer, a window full of skulls, "
+                             "jars and candles, a hanging sign with a pictured eye (no letters), a raven on the sign."),
+    "ironhaven_inn": (3, "A sturdy mining-town inn: a dark slate roof, soot-stained brick walls, iron-banded shutters, "
+                         "warm lit windows, a hanging sign with a pictured pickaxe and a bed (no letters)."),
+    "ironhaven_forge": (3, "The master forge, taller than it is wide: a big stone chimney billowing smoke, a glowing "
+                           "furnace mouth by the open door, an anvil and a rack of hammers outside, a dark iron roof, a "
+                           "hanging sign with a pictured hammer (no letters)."),
+    "ironhaven_steamworks": (3, "A steamworks workshop: riveted iron walls, brass pipes and a pressure gauge on the front, "
+                                "two small chimneys venting steam, a big gear over the door, a dark slate roof."),
+    "ironhaven_tavern": (3, "A miner's tavern: a low dark shingle roof, rough stone walls, warm lit windows, a hanging "
+                            "sign with a pictured mug and a pickaxe (no letters), barrels and a mine cart by the door."),
+    "eldertree_inn": (3, "A canopy inn built into the trunk of a giant tree: a round wooden door in the bark, round "
+                         "windows with warm light, a leafy roof of branches above, a hanging sign with a pictured leaf "
+                         "(no letters), lanterns hung from roots."),
+}
+BUILDINGS = {**HARMONIA, **W1}
+
+
 def key_out(img: Image.Image, tol: int = 90) -> Image.Image:
     """Flood from the border through backdrop-coloured pixels, so magenta INSIDE the building survives."""
     a = np.array(img.convert("RGBA"))
@@ -128,9 +161,9 @@ def generate(kind: str, width_tiles: int = 3) -> Path:
 
 
 def generate_harmonia(key: str, view: str) -> Path:
-    """One Harmonia building, straight-on ("front", struktured's pick B) or corner-angled ("corner", A)."""
+    """One village building (Harmonia or W1), straight-on ("front", struktured's pick B) or corner-angled ("corner", A)."""
     from openai import OpenAI
-    width, what = HARMONIA[key]
+    width, what = BUILDINGS[key]
     face = f"\n\n{FRONT}" if view == "front" else ""
     r = OpenAI().images.generate(model=MODEL, prompt=f"{STYLE}{face}\n\nThe building: {what}", size="1024x1024", n=1)
     raw = Image.open(io.BytesIO(base64.b64decode(r.data[0].b64_json)))
@@ -145,16 +178,18 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--style", nargs="+", choices=sorted(KINDS) + [k + "_front" for k in KINDS], help="stage style tiles for these kinds")
     ap.add_argument("--harmonia", nargs="*", help="stage these Harmonia buildings (no names = all)")
+    ap.add_argument("--w1", nargs="*", help="stage these other-W1-village buildings (no names = all)")
     ap.add_argument("--view", choices=["front", "corner"], default="front", help="straight-on (B, default) or angled (A)")
     ap.add_argument("--deploy", action="store_true", help="copy staged Harmonia art into assets (never overwrites)")
     args = ap.parse_args()
     for k in args.style or []:
         print(f"staged {generate(k).relative_to(ROOT)}")
-    if args.harmonia is not None:
-        keys = args.harmonia or sorted(HARMONIA)
-        for k in keys:
-            if k not in HARMONIA:
-                raise SystemExit(f"unknown Harmonia building {k}")
+    for chosen, pool in ((args.harmonia, HARMONIA), (args.w1, W1)):
+        if chosen is None:
+            continue
+        for k in chosen or sorted(pool):
+            if k not in pool:
+                raise SystemExit(f"unknown building {k}")
             if args.deploy:
                 src, dst = STAGE / f"{k}_{args.view}.png", ROOT / f"assets/sprites/buildings/medieval/{k}.png"
                 if not src.exists():

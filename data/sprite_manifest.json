@@ -7269,6 +7269,61 @@
       "path": "res://assets/sprites/buildings/medieval/harmonia_house.png",
       "tier": "T1",
       "source": "gpt-image-2, straight-on 3/4 village facade (struktured picked direction B, 2026-11-01) -- tools/gen_village_buildings.py --harmonia; T1, artist veto applies."
+    },
+    "frosthold_lodge": {
+      "path": "res://assets/sprites/buildings/medieval/frosthold_lodge.png",
+      "tier": "T1",
+      "source": "gpt-image-2, straight-on village facade in the Harmonia style (struktured picked direction B, 2026-11-01) -- tools/gen_village_buildings.py --w1; T1, artist veto applies."
+    },
+    "frosthold_chapel": {
+      "path": "res://assets/sprites/buildings/medieval/frosthold_chapel.png",
+      "tier": "T1",
+      "source": "gpt-image-2, straight-on village facade in the Harmonia style (struktured picked direction B, 2026-11-01) -- tools/gen_village_buildings.py --w1; T1, artist veto applies."
+    },
+    "frosthold_furs": {
+      "path": "res://assets/sprites/buildings/medieval/frosthold_furs.png",
+      "tier": "T1",
+      "source": "gpt-image-2, straight-on village facade in the Harmonia style (struktured picked direction B, 2026-11-01) -- tools/gen_village_buildings.py --w1; T1, artist veto applies."
+    },
+    "grimhollow_inn": {
+      "path": "res://assets/sprites/buildings/medieval/grimhollow_inn.png",
+      "tier": "T1",
+      "source": "gpt-image-2, straight-on village facade in the Harmonia style (struktured picked direction B, 2026-11-01) -- tools/gen_village_buildings.py --w1; T1, artist veto applies."
+    },
+    "grimhollow_chapel": {
+      "path": "res://assets/sprites/buildings/medieval/grimhollow_chapel.png",
+      "tier": "T1",
+      "source": "gpt-image-2, straight-on village facade in the Harmonia style (struktured picked direction B, 2026-11-01) -- tools/gen_village_buildings.py --w1; T1, artist veto applies."
+    },
+    "grimhollow_curios": {
+      "path": "res://assets/sprites/buildings/medieval/grimhollow_curios.png",
+      "tier": "T1",
+      "source": "gpt-image-2, straight-on village facade in the Harmonia style (struktured picked direction B, 2026-11-01) -- tools/gen_village_buildings.py --w1; T1, artist veto applies."
+    },
+    "ironhaven_inn": {
+      "path": "res://assets/sprites/buildings/medieval/ironhaven_inn.png",
+      "tier": "T1",
+      "source": "gpt-image-2, straight-on village facade in the Harmonia style (struktured picked direction B, 2026-11-01) -- tools/gen_village_buildings.py --w1; T1, artist veto applies."
+    },
+    "ironhaven_forge": {
+      "path": "res://assets/sprites/buildings/medieval/ironhaven_forge.png",
+      "tier": "T1",
+      "source": "gpt-image-2, straight-on village facade in the Harmonia style (struktured picked direction B, 2026-11-01) -- tools/gen_village_buildings.py --w1; T1, artist veto applies."
+    },
+    "ironhaven_steamworks": {
+      "path": "res://assets/sprites/buildings/medieval/ironhaven_steamworks.png",
+      "tier": "T1",
+      "source": "gpt-image-2, straight-on village facade in the Harmonia style (struktured picked direction B, 2026-11-01) -- tools/gen_village_buildings.py --w1; T1, artist veto applies."
+    },
+    "ironhaven_tavern": {
+      "path": "res://assets/sprites/buildings/medieval/ironhaven_tavern.png",
+      "tier": "T1",
+      "source": "gpt-image-2, straight-on village facade in the Harmonia style (struktured picked direction B, 2026-11-01) -- tools/gen_village_buildings.py --w1; T1, artist veto applies."
+    },
+    "eldertree_inn": {
+      "path": "res://assets/sprites/buildings/medieval/eldertree_inn.png",
+      "tier": "T1",
+      "source": "gpt-image-2, straight-on village facade in the Harmonia style (struktured picked direction B, 2026-11-01) -- tools/gen_village_buildings.py --w1; T1, artist veto applies."
     }
   }
 }

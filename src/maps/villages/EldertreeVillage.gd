@@ -13,6 +13,12 @@ const MAP_WIDTH: int = 30
 const MAP_HEIGHT: int = 24
 
 
+## Drawn building art per block, keyed by the block's top-left cell (manifest building_art, T1).
+const BUILDING_ART := {
+	Vector2i(5, 4): "eldertree_inn",
+}
+
+
 ## ---- BaseVillage hooks ----
 
 func _get_area_id() -> String:
@@ -189,6 +195,8 @@ func _setup_buildings() -> void:
 	training.keeper_name = "Ranger Oak"
 	training.position = Vector2(21 * TILE_SIZE,5 * TILE_SIZE)
 	buildings.add_child(training)
+	## The canopy inn is the one roofed block; the garden and hollow are open ground.
+	_spawn_building_art(BUILDING_ART)
 
 	# === HOLLOW TREE DOOR ===
 	# One of the 'T' tiles (row 5 col 11) hides Greenleaf's sanctum.
