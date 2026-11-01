@@ -20,6 +20,10 @@ const SPAWN_BUFFER: float = 480.0
 const CHECK_INTERVAL: float = 3.0
 ## A touched roamer's group: up to this many extra copies of its species join it.
 const GROUP_EXTRA_MAX: int = 2
+## Chained encounters (struktured 2026-10-31): enemies one battle holds -- BattleScene has this many enemy_positions.
+const CHAIN_CAPACITY: int = 3
+## A chain never runs longer than this many back-to-back battles; groups past it stay on the field.
+const CHAIN_MAX_BATTLES: int = 4
 
 
 ## Per-instance map dimensions (in tiles). Default to the W1 OverworldScene
@@ -177,7 +181,7 @@ func _try_spawn_elite() -> void:
 	monster.elite = true
 	monster.global_position = candidate
 	monster.set_player_ref(_player)
-	monster.touched.connect(_on_monster_touched)
+	monster.touched.connect(_on_monster_touched.bind(monster))
 	_spawn_parent.add_child(monster)
 	_monsters.append(monster)
 
@@ -235,7 +239,7 @@ func _try_spawn_monster() -> void:
 	monster.monster_types = [mid]
 	monster.global_position = candidate
 	monster.set_player_ref(_player)
-	monster.touched.connect(_on_monster_touched)
+	monster.touched.connect(_on_monster_touched.bind(monster))
 	_spawn_parent.add_child(monster)
 	_monsters.append(monster)
 
@@ -352,8 +356,67 @@ func _get_valid_pool_for_overworld() -> Array:
 	return ["slime"]
 
 
-func _on_monster_touched(monster_id: String, monster_types: Array, is_elite: bool = false) -> void:
+## The groups that join the fight the touched roamer started, nearest first, and the physics frame they were read on.
+var _chain_joiners: Array = []
+var _chain_frame: int = -1
+
+
+func _on_monster_touched(monster_id: String, monster_types: Array, is_elite: bool = false, toucher: Node = null) -> void:
+	_chain_joiners = chain_joiners_for(toucher, _monsters) if not (is_elite or is_field_elite(monster_id)) else []
+	_chain_frame = Engine.get_physics_frames()
 	monster_touched.emit(monster_id, monster_types, is_elite)
+
+
+## Each alerted roamer other than the toucher joins as its own group, nearest to the toucher first.
+static func chain_joiners_for(toucher: Node, roamers: Array) -> Array:
+	if toucher == null or not is_instance_valid(toucher):
+		return []
+	var near: Array = []
+	for m in roamers:
+		if m == toucher or not is_instance_valid(m) or not m.has_method("can_join_chain") or not m.can_join_chain():
+			continue
+		if is_field_elite(m.monster_id):
+			continue
+		near.append(m)
+	near.sort_custom(func(a, b): return a.global_position.distance_squared_to(toucher.global_position) < b.global_position.distance_squared_to(toucher.global_position))
+	var groups: Array = []
+	for m in near:
+		groups.append(group_for_touch(m.monster_id, false))
+	return groups
+
+
+## GameLoop reads the joiners in the SAME physics frame as the touch; anything older belonged to a battle that never began.
+func take_chain_joiners() -> Array:
+	if _chain_frame != Engine.get_physics_frames():
+		return []
+	var out: Array = _chain_joiners
+	_chain_joiners = []
+	_chain_frame = -1
+	return out
+
+
+## One battle if they fit, else back-to-back: first-fit in order, a group never split, the leader's group in battle one.
+static func pack_chain(groups: Array, capacity: int = CHAIN_CAPACITY, max_battles: int = CHAIN_MAX_BATTLES) -> Array:
+	var links: Array = []
+	for g in groups:
+		if g.is_empty() or g.size() > capacity:
+			continue
+		var placed: bool = false
+		for link in links:
+			if _link_size(link) + g.size() <= capacity:
+				link.append(g)
+				placed = true
+				break
+		if not placed and links.size() < max_battles:
+			links.append([g])
+	return links
+
+
+static func _link_size(link: Array) -> int:
+	var n: int = 0
+	for g in link:
+		n += g.size()
+	return n
 
 
 ## The ONE rule for what a touched roamer fights as, shared by all six overworlds (each used to carry a copy).
