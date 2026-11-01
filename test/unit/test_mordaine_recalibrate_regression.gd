@@ -53,10 +53,13 @@ func test_mordaine_stat_bump_pinned() -> void:
 	var ms: Dictionary = JSON.parse_string(f.get_as_text())
 	var m: Dictionary = ms["chancellor_mordaine"]
 	var stats: Dictionary = m["stats"]
-	assert_eq(int(stats.get("max_hp", 0)), 16500,
-		"max_hp bumped 15000 → 16500 (+10%), in ×10 scale. If struktured re-tunes, update this pin.")
-	assert_eq(int(stats.get("magic", 0)), 780,
-		"magic bumped 72 → 78 (+8%). If struktured re-tunes, update this pin.")
+	## The ×10 tuning (16500 HP, 780 MAG) carried onto the spectrum curve by the fight's own spectrum_ratio.
+	var r: float = float(m.get("spectrum_ratio", 0.0))
+	assert_gt(r, 0.0, "CONTROL: Mordaine carries the ratio the spectrum transform applied")
+	assert_almost_eq(int(stats.get("max_hp", 0)), roundi(16500 * r), 1,
+		"max_hp bumped 15000 → 16500 (+10%) in ×10 scale, then rescaled. If struktured re-tunes, update this pin.")
+	assert_almost_eq(int(stats.get("magic", 0)), roundi(780 * r), 1,
+		"magic bumped 72 → 78 (+8%), then rescaled. If struktured re-tunes, update this pin.")
 
 
 ## ── (2) Precondition: initial weaknesses + resistances allow the swap ─

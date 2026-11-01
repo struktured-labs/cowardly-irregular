@@ -51,30 +51,115 @@ const MODDABLE_STATS := ["max_hp", "max_mp", "attack", "defense", "magic", "magi
 ## primary. 0.10 is a starting value, not a tuned one — struktured's call.
 const SECONDARY_JOB_STAT_FRACTION: float = 0.10
 
-## Denomination of the stat fields below. Bumped by the 2026-07-29 ×10 pass; every save records it so a file written at an older scale can be migrated instead of loading a 1/10th-strength party into a ×10 world.
-const STAT_SCALE := 10
+## Denomination of the stat fields below: ×10 from 2026-07-29, back to 1 with the 2026-10-31 spectrum curve. Every save records it so a file written at another scale is migrated, not loaded at the wrong strength.
+const STAT_SCALE := 1
+## The ×10 denomination (2026-07-29 to 2026-10-31): what an unmarked save holding magic_defense was written at.
+const X10_ERA_SCALE := 10
+## The spectrum curve (struktured 2026-10-31): double-digit HP at level 1, 5 digits by the 50s, applied to SCALED_STAT_FIELDS only.
+const LEVEL_FLOOR := 0.5
+const LEVEL_CURVE := 0.036
+## Speed and max_mp keep the old linear growth: a quadratic speed would break turn order and the speed>=18 assassin gate.
+const LEVEL_RATE_LINEAR := 0.04
 ## Exactly the fields the ×10 data pass touched. max_mp/speed are absent because the MP economy and turn order were deliberately left alone.
 const SCALED_STAT_FIELDS := ["max_hp", "current_hp", "attack", "defense", "magic", "magic_defense"]
 
 
-## Bring a saved stat block up to the current denomination. No-op when already current.
-static func migrate_stat_scale(data: Dictionary) -> Dictionary:
+## The denomination a saved stat block was written in.
+static func saved_stat_scale(data: Dictionary) -> int:
 	var saved: int = int(data.get("stat_scale", 0))
 	if saved <= 0:
 		# Pre-marker file. magic_defense became a real stat minutes before the ×10 pass, and
 		# nothing else separates the two eras, so its presence dates the save. A file written
 		# inside that narrow window would be under-migrated; none exist (verified against the
 		# five local saves) and the marker makes the ambiguity unreachable from here on.
-		saved = STAT_SCALE if data.has("magic_defense") else 1
-	if saved >= STAT_SCALE:
+		saved = X10_ERA_SCALE if data.has("magic_defense") else 1
+	return saved
+
+
+## Which level ladder a save was written on: 2 is the spectrum ladder (2026-10-31); a save without the stamp predates it.
+const LEVEL_LADDER := 2
+
+
+## The spectrum ladder's level for an old-ladder level: W1's 1-20 onto 1-25, then the rest of the campaign onto 25-58.
+static func spectrum_level(old_level: int) -> int:
+	var lo := float(maxi(1, old_level))
+	if lo <= 20.0:
+		return roundi(1.0 + (lo - 1.0) * 24.0 / 19.0)
+	return roundi(25.0 + (minf(lo, 28.0) - 20.0) * 33.0 / 8.0)
+
+
+## True when a saved block predates the spectrum curve in its stats or its level ladder.
+static func save_needs_migration(data: Dictionary) -> bool:
+	return saved_stat_scale(data) != STAT_SCALE or (data.has("job_level") and int(data.get("level_ladder", 0)) < LEVEL_LADDER)
+
+
+## Bring a saved stat block up to the current denomination and level ladder. No-op when already current.
+static func migrate_stat_scale(data: Dictionary) -> Dictionary:
+	## Same point in the story (cowir-main 20766): an old level moves to the ladder's level, keeping its share of the next level.
+	if data.has("job_level") and int(data.get("level_ladder", 0)) < LEVEL_LADDER:
+		var old_level: int = maxi(1, int(data["job_level"]))
+		var new_level: int = spectrum_level(old_level)
+		data["job_level"] = new_level
+		if data.has("job_exp"):
+			data["job_exp"] = int(float(data["job_exp"]) * float(new_level) / float(old_level))
+		data["level_ladder"] = LEVEL_LADDER
+		if new_level != old_level:
+			data["migrated_from_level"] = old_level
+			print("[SAVE] moved job level %d to %d on the spectrum ladder" % [old_level, new_level])
+	var saved: int = saved_stat_scale(data)
+	if saved == STAT_SCALE:
 		return data
-	var factor: int = STAT_SCALE / saved
+	var factor: float = float(STAT_SCALE) / float(saved)
 	for field in SCALED_STAT_FIELDS:
 		if data.has(field):
-			data[field] = int(data[field]) * factor
+			data[field] = maxi(1 if field != "current_hp" else 0, roundi(float(data[field]) * factor))
 	data["stat_scale"] = STAT_SCALE
-	print("[SAVE] migrated stat block ×%d (was scale %d)" % [factor, saved])
+	## The loader re-derives max stats from the curve, so it needs this to restore current HP/MP as a share of max.
+	data["migrated_from_stat_scale"] = saved
+	print("[SAVE] migrated stat block ×%.2f (was scale %d)" % [factor, saved])
 	return data
+
+
+## The multiplier the spectrum curve gives SCALED_STAT_FIELDS at a job level.
+static func level_multiplier(level: int) -> float:
+	return LEVEL_FLOOR + LEVEL_CURVE * pow(float(max(1, level) - 1), 2.0)
+
+
+## The multiplier speed and max_mp keep: today's linear growth.
+static func linear_level_multiplier(level: int) -> float:
+	return 1.0 + float(max(1, level) - 1) * LEVEL_RATE_LINEAR
+
+
+## The x10-era level a party level corresponds to: the inverse of the ladder (W1 1-25, then the rest up to 58).
+static func x10_era_level(level: int) -> float:
+	var lv := float(clampi(level, 1, 58))
+	if lv <= 25.0:
+		return 1.0 + (lv - 1.0) * 19.0 / 24.0
+	return 20.0 + (lv - 25.0) * 8.0 / 33.0
+
+
+## How much bigger a party stat is now than the x10 era made it at the equivalent level.
+static func party_x10_ratio(level: int) -> float:
+	return level_multiplier(level) / (10.0 * (1.0 + (x10_era_level(level) - 1.0) * LEVEL_RATE_LINEAR))
+
+
+## A gear stat as it lands on a party member at this level: what equipping grants, so a menu can show it truthfully.
+static func gear_mod_at_level(stat: String, value: int, level: int) -> int:
+	return roundi(float(value) * party_x10_ratio(level)) if stat in SCALED_STAT_FIELDS else value
+
+
+## A stat on the curve: a positive stat never rounds to 0 under the level-1 floor of 0.5; a zero stays zero.
+static func _grow(value: int, mult: float) -> int:
+	return 0 if value <= 0 else maxi(1, int(value * mult))
+
+
+## Converts a flat number authored in x10 units (gear, item heals and damage, heal and ward amounts) to this combatant.
+func x10_ratio() -> float:
+	if has_meta("monster_type") and has_node("/root/EncounterSystem"):
+		var row: Variant = get_node("/root/EncounterSystem").monster_database.get(str(get_meta("monster_type", "")), null)
+		if row is Dictionary and (row as Dictionary).has("spectrum_ratio"):
+			return float((row as Dictionary)["spectrum_ratio"])
+	return party_x10_ratio(job_level)
 
 ## Current state
 var current_hp: int
@@ -1322,6 +1407,7 @@ func to_dict() -> Dictionary:
 		"magic": magic,
 		"magic_defense": magic_defense,
 		"stat_scale": STAT_SCALE,
+		"level_ladder": LEVEL_LADDER,
 		"speed": speed,
 		"job_level": job_level,
 		"job_exp": job_exp,
@@ -1861,15 +1947,16 @@ func recalculate_stats() -> void:
 				if lent != 0:
 					set(stat, int(get(stat)) + lent)
 
-	# Apply job level bonuses (+4% all stats per level)
-	var level_mult = 1.0 + (job_level - 1) * 0.04
-	max_hp = int(max_hp * level_mult)
-	max_mp = int(max_mp * level_mult)
-	attack = int(attack * level_mult)
-	defense = int(defense * level_mult)
-	magic = int(magic * level_mult)
-	magic_defense = int(magic_defense * level_mult)
-	speed = int(speed * level_mult)
+	# Job level: the spectrum curve on the scaled stats, linear growth on speed and max_mp.
+	var level_mult := level_multiplier(job_level)
+	var linear_mult := linear_level_multiplier(job_level)
+	max_hp = _grow(max_hp, level_mult)
+	max_mp = int(max_mp * linear_mult)
+	attack = _grow(attack, level_mult)
+	defense = _grow(defense, level_mult)
+	magic = _grow(magic, level_mult)
+	magic_defense = _grow(magic_defense, level_mult)
+	speed = int(speed * linear_mult)
 
 	# Apply passive modifiers (via runtime lookup — autoload identifiers
 	# don't resolve in preload() parse contexts used by the test suite,
@@ -1891,8 +1978,12 @@ func recalculate_stats() -> void:
 	if has_node("/root/EquipmentSystem"):
 		var equip_mods = get_node("/root/EquipmentSystem").get_equipment_mods(self)
 		# Driven off MODDABLE_STATS, not a hand-listed six — the old list silently omitted whatever it did not name.
+		var gear_ratio := x10_ratio()
 		for stat in MODDABLE_STATS:
 			var delta: int = int(equip_mods.get(stat, 0))
+			## Gear is authored in x10 units; the scaled stats convert so a sword keeps today's share at every level.
+			if delta != 0 and stat in SCALED_STAT_FIELDS:
+				delta = roundi(float(delta) * gear_ratio)
 			if delta != 0:
 				set(stat, int(get(stat)) + delta)
 

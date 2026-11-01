@@ -70,14 +70,17 @@ func test_bard_abilities_at_level_thresholds_match_other_starters() -> void:
 	var jobs := _load_jobs()
 	var bard: Dictionary = jobs.get("bard", {})
 	var unlocks: Dictionary = bard.get("abilities_at_level", {})
-	assert_true(unlocks.has("4"),
-		"abilities_at_level must have a '4' key — mid-tier unlock matches cleric/mage cadence")
-	assert_true(unlocks.has("8"),
-		"abilities_at_level must have an '8' key — high-tier unlock matches cleric/mage cadence")
-	assert_eq(unlocks["4"], ["discord"],
-		"L4 unlock must grant discord — defense debuff, complements party damage")
-	assert_eq(unlocks["8"], ["inspiring_melody"],
-		"L8 unlock must grant inspiring_melody — the powerful party MP+AP regen")
+	## The old 4 and 8, where they sit on the spectrum ladder (2026-10-31), so the cadence is unchanged in story terms.
+	var mid := str(Combatant.spectrum_level(4))
+	var high := str(Combatant.spectrum_level(8))
+	assert_true(unlocks.has(mid),
+		"abilities_at_level must have a '%s' key — mid-tier unlock matches cleric/mage cadence" % mid)
+	assert_true(unlocks.has(high),
+		"abilities_at_level must have a '%s' key — high-tier unlock matches cleric/mage cadence" % high)
+	assert_eq(unlocks.get(mid, []), ["discord"],
+		"the mid-tier unlock must grant discord — defense debuff, complements party damage")
+	assert_eq(unlocks.get(high, []), ["inspiring_melody"],
+		"the high-tier unlock must grant inspiring_melody — the powerful party MP+AP regen")
 
 
 func test_bard_total_abilities_unchanged_for_high_level_chars() -> void:

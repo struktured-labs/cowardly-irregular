@@ -72,8 +72,12 @@ func test_the_warden_exists_and_every_reference_resolves() -> void:
 	for drop in w.get("drop_table", []):
 		var item: String = str((drop as Dictionary).get("item", ""))
 		assert_true(ItemSystem.get_item(item).size() > 0, "drop must resolve: %s" % item)
-	assert_true(int(w.get("level", 0)) > 18 and int(w.get("level", 0)) < 20,
-		"the Warden sits between Umbraxis (18) and Mordaine (20), got %s" % str(w.get("level")))
+	var mons: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/monsters.json"))
+	var umbraxis: int = int((mons.get("shadow_dragon", {}) as Dictionary).get("level", 0))
+	var mordaine: int = int((mons.get("chancellor_mordaine", {}) as Dictionary).get("level", 0))
+	assert_gt(mordaine, umbraxis, "CONTROL: Mordaine is above Umbraxis on the ladder")
+	assert_true(int(w.get("level", 0)) > umbraxis and int(w.get("level", 0)) < mordaine,
+		"the Warden sits between Umbraxis (%d) and Mordaine (%d), got %s" % [umbraxis, mordaine, str(w.get("level"))])
 
 
 func test_the_warden_has_a_sprite_and_a_bestiary_page() -> void:

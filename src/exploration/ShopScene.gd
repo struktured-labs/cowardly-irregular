@@ -999,8 +999,9 @@ func _update_description_for_item(item_id: String) -> void:
 			var comparison := _compare_equipment(item_id, item_data)
 			if comparison.is_empty():
 				desc += "Stats:\n"
+				var lv := _leader_level()
 				for stat in stat_mods:
-					var value = stat_mods[stat]
+					var value = Combatant.gear_mod_at_level(str(stat), int(stat_mods[stat]), lv)
 					if value != 0:
 						# Tick 211: shared StatNames preserves HP/MP acronyms.
 						desc += "  %s: %+d\n" % [StatNames.display_name(stat), value]
@@ -1012,8 +1013,9 @@ func _update_description_for_item(item_id: String) -> void:
 					shown[str(stat)] = true
 				for stat in comparison:
 					shown[str(stat)] = true
+				var lv := _leader_level()
 				for stat in shown:
-					var value: int = int(stat_mods.get(stat, 0))
+					var value: int = Combatant.gear_mod_at_level(str(stat), int(stat_mods.get(stat, 0)), lv)
 					var delta: int = int(comparison.get(stat, 0))
 					if value == 0 and delta == 0:
 						continue
@@ -1057,6 +1059,7 @@ func _party_gear_rows() -> Array:
 			"equipped_weapon": str(member.equipped_weapon) if "equipped_weapon" in member else "",
 			"equipped_armor": str(member.equipped_armor) if "equipped_armor" in member else "",
 			"equipped_accessory": str(member.equipped_accessory) if "equipped_accessory" in member else "",
+			"job_level": int(member.job_level) if "job_level" in member else 1,
 		})
 		saw_live = true
 	if saw_live or game_state == null:
@@ -1122,9 +1125,18 @@ func _compare_equipment(item_id: String, item_data: Dictionary) -> Dictionary:
 	for stat in current_mods:
 		stats[str(stat)] = true
 	var delta: Dictionary = {}
+	var lv := int(leader.get("job_level", 1))
 	for stat in stats:
-		delta[stat] = int(new_mods.get(stat, 0)) - int(current_mods.get(stat, 0))
+		delta[stat] = Combatant.gear_mod_at_level(str(stat), int(new_mods.get(stat, 0)), lv) - Combatant.gear_mod_at_level(str(stat), int(current_mods.get(stat, 0)), lv)
 	return delta
+
+
+## The level the shop's numbers are shown for: the party leader's, as the comparison uses.
+func _leader_level() -> int:
+	var rows := _party_gear_rows()
+	if rows.is_empty() or typeof(rows[0]) != TYPE_DICTIONARY:
+		return 1
+	return int((rows[0] as Dictionary).get("job_level", 1))
 
 
 func _flash_gold_label() -> void:

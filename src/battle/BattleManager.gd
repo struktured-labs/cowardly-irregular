@@ -237,9 +237,9 @@ func _recover_enemy_selection_stall() -> void:
 var _current_terrain: String = "plains"
 var _terrain_modifiers: Dictionary = {"boost": [], "reduce": []}
 const TERRAIN_MODIFIER_VALUE: float = 0.25  # +25% or -25% damage
-## Steal/Mug gold scales with the target's max_hp, so this divisor is an ABSOLUTE magnitude and
-## must move with Combatant.STAT_SCALE. At the pre-×10 value of 50 a slime paid out up to 700 gold
-## against its authored reward of 10, and Mordaine up to 16,550 against her 800.
+## Steal/Mug gold scales with the target's max_hp, so this divisor is an ABSOLUTE magnitude in ×10-era HP. At the pre-×10 value of 50 a
+## slime paid out up to 700 gold against its authored reward of 10. Since the spectrum curve the victim's HP is converted back to those
+## units by its own x10_ratio(), so a level-58 boss's 190k HP is not read as 400 slimes.
 const STEAL_GOLD_HP_DIVISOR: float = 500.0
 
 ## Rules per PC sent to the boss-intent prompt — 5 PCs, so this is a token budget.
@@ -1036,6 +1036,9 @@ func end_battle(victory: bool) -> void:
 			var rank = _get_one_shot_rank(_setup_turns_used)
 			one_shot_exp_bonus = _get_one_shot_exp_multiplier(rank)
 			one_shot_gold_bonus = _get_one_shot_gold_multiplier(rank)
+			## Gold is pooled, so its stomp bonus follows the party's highest level, the same rule as each member's EXP.
+			if not ExpRules.stomp_bonus_applies(ExpRules.party_top_level(player_party), ExpRules.area_level_of(enemy_party)):
+				one_shot_gold_bonus = 1.0
 
 		# Apply autobattle bonus multiplier (stacks with one-shot)
 		var autobattle_exp_bonus = 1.0
@@ -1171,6 +1174,7 @@ func end_battle(victory: bool) -> void:
 				float(GameState.game_constants.get("exp_multiplier", 1.0)),
 				0.1, 10.0)
 		var char_results: Array = []
+		var area_level := ExpRules.area_level_of(enemy_party)
 		for combatant in player_party:
 			var exp_gained = 0
 			var old_level = combatant.job_level
@@ -1192,7 +1196,9 @@ func end_battle(victory: bool) -> void:
 				combatant.ability_learned.connect(_collect_learned)
 			# The dead learn nothing — unless a passive/accessory says otherwise (struktured 2026-09-06).
 			if combatant.is_alive or earns_exp_while_dead(combatant):
-				exp_gained = int(base_exp * reward_multiplier * one_shot_exp_bonus * autobattle_exp_bonus * exp_multiplier * chain_reward)
+				## Stomp bonuses only at or above the member's level; the chain bonus always pays, and every share halves per 3 levels over the fight.
+				var stomp: float = one_shot_exp_bonus * autobattle_exp_bonus if ExpRules.stomp_bonus_applies(combatant.job_level, area_level) else 1.0
+				exp_gained = int(base_exp * reward_multiplier * stomp * exp_multiplier * chain_reward * ExpRules.over_level_factor(combatant.job_level, area_level))
 				if not defer_payout:
 					combatant.gain_job_exp(exp_gained)
 			if combatant.has_signal("ability_learned") and combatant.ability_learned.is_connected(_collect_learned):
@@ -1230,9 +1236,11 @@ func end_battle(victory: bool) -> void:
 
 		# Store battle results for victory screen
 		var bonuses: Array = []
-		if _one_shot_achieved:
+		## A stomp bonus nobody qualified for is not shown: the party's top level stood above the fight.
+		var stomp_paid := ExpRules.stomp_bonus_applies(ExpRules.party_top_level(player_party), area_level)
+		if _one_shot_achieved and stomp_paid:
 			bonuses.append({"type": "one_shot", "multiplier": one_shot_exp_bonus, "rank": _get_one_shot_rank(_setup_turns_used)})
-		if _full_autobattle and _autobattle_player_turns > 0:
+		if _full_autobattle and _autobattle_player_turns > 0 and stomp_paid:
 			bonuses.append({"type": "autobattle", "multiplier": autobattle_exp_bonus, "turns": _autobattle_player_turns})
 		if chain_engaged > 1:
 			bonuses.append({"type": "chain", "multiplier": chain_reward, "drop_multiplier": chain_drop, "groups": chain_engaged})
@@ -1258,7 +1266,9 @@ func end_battle(victory: bool) -> void:
 			"total_gold": total_gold,
 			"item_drops": item_drops,
 			"injuries": injuries,
-			"total_multiplier": reward_multiplier * one_shot_exp_bonus * autobattle_exp_bonus * chain_reward
+			"total_multiplier": reward_multiplier * (one_shot_exp_bonus * autobattle_exp_bonus if stomp_paid else 1.0) * chain_reward,
+			"one_shot_rank": _get_one_shot_rank(_setup_turns_used) if _one_shot_achieved else "",
+			"exp_granted_max": char_results.reduce(func(acc, r): return maxi(acc, int(r.get("exp_gained", 0))), 0)
 		}
 
 		# Record one-shot in save system if achieved
@@ -2735,6 +2745,19 @@ func _make_ai_decision(combatant: Combatant, alive_allies: Array, alive_enemies:
 	return _execute_archetype_ai(combatant, archetype, available_abilities, alive_allies, alive_enemies)
 
 
+## HP per point of the level curve that makes an enemy a tank. 120 keeps all 66 gate-reaching monsters on their x10-era archetype.
+const TANK_HP_PER_CURVE := 120.0
+
+
+## An enemy's authored level (combatants never store it), else its job level.
+func _archetype_level(combatant: Combatant) -> int:
+	if combatant.has_meta("monster_type") and EncounterSystem:
+		var row: Variant = EncounterSystem.monster_database.get(combatant.get_meta("monster_type", ""), null)
+		if row is Dictionary:
+			return int((row as Dictionary).get("level", combatant.job_level))
+	return combatant.job_level
+
+
 func _get_ai_archetype(combatant: Combatant, available_abilities: Array) -> String:
 	"""Derive AI behavior archetype from combatant stats and abilities"""
 	var healing_abilities = available_abilities.filter(func(a): return a.get("type", "") == "healing")
@@ -2758,9 +2781,8 @@ func _get_ai_archetype(combatant: Combatant, available_abilities: Array) -> Stri
 	# Debuffer: has debuff/status abilities and isn't purely physical
 	if debuff_abilities.size() > 0:
 		return "debuffer"
-	# Tank: high HP and defense relative to attack
-	# 1500 not 150 — scaled with the 2026-07-29 ×10 pass. At the old value every combatant clears it and the whole roster classifies as "tank".
-	if combatant.defense > combatant.attack * 0.5 and combatant.max_hp >= 1500:
+	# Tank: high HP and defense relative to attack, HP judged against its level's curve so the gate reads the same at every level.
+	if combatant.defense > combatant.attack * 0.5 and combatant.max_hp >= TANK_HP_PER_CURVE * Combatant.level_multiplier(_archetype_level(combatant)):
 		return "tank"
 	# Assassin: very fast, targets wounded enemies
 	if combatant.speed >= 18:
@@ -6615,7 +6637,7 @@ func earns_exp_while_dead(combatant: Combatant) -> bool:
 func _award_stolen_gold(caster: Combatant, target: Combatant, verb: String = "stole") -> void:
 	if caster == null or not is_instance_valid(caster) or target == null or not is_instance_valid(target):
 		return
-	var gold_amount: int = randi_range(5, 50) * (1 + int(target.max_hp / STEAL_GOLD_HP_DIVISOR))
+	var gold_amount: int = randi_range(5, 50) * (1 + int(target.max_hp / (target.x10_ratio() * STEAL_GOLD_HP_DIVISOR)))
 	if not (caster in player_party):
 		battle_log_message.emit("[color=gray]%s rifles through %s's pack and comes up empty.[/color]" % [
 			caster.combatant_name, target.combatant_name])
@@ -6829,7 +6851,8 @@ func heal_cast_amount(caster: Combatant, ability: Dictionary) -> int:
 	var base: int = int(ability.get("heal_amount", 0))
 	if base <= 0 or caster == null:
 		return 0
-	return int(base * (1.0 + caster.get_buffed_stat("magic", caster.magic) / 20.0))
+	## heal_amount is authored in x10 units: (ratio + MAG/20) is today's (1 + MAG/20) converted to this level.
+	return int(base * (caster.x10_ratio() + caster.get_buffed_stat("magic", caster.magic) / 20.0))
 
 
 ## What this heal will add to THIS target, so a menu quotes the number the cast will deliver.
@@ -7209,7 +7232,7 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 				if target and is_instance_valid(target) and target.is_alive:
 					target.add_status("damage_absorb", duration)
 					if ability.has("absorb_amount"):
-						target.set_meta("_damage_absorb_budget", maxi(0, int(ability["absorb_amount"])))
+						target.set_meta("_damage_absorb_budget", maxi(0, roundi(float(ability["absorb_amount"]) * target.x10_ratio())))
 					elif target.has_meta("_damage_absorb_budget"):
 						target.remove_meta("_damage_absorb_budget")
 					battle_log_message.emit("[color=%s]%s will absorb damage as healing![/color] (%d turns)" % [AccessibilityPalette.bonus_bbcode(), target.combatant_name, duration])

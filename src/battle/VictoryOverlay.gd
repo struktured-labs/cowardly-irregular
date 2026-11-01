@@ -148,7 +148,7 @@ func build(results: Dictionary, scene) -> void:
 	## Order matters: the strip's rect feeds both the stack's top and the fit cap, so it has to
 	## exist before a single card is placed. Cards were built first before this change, which is
 	## why nothing could keep them clear of it.
-	_one_shot_rank = _one_shot_rank_of(results.get("bonuses", []))
+	_one_shot_rank = _one_shot_rank_of(results.get("bonuses", []), str(results.get("one_shot_rank", "")))
 	_build_slam(flourish)
 	_build_loot_strip(results, flourish)
 	_build_cards(results.get("char_results", []), flourish)
@@ -331,12 +331,12 @@ func _slam_key() -> String:
 	return "victory_slam"
 
 
-## The rank already rides in the one_shot bonus BattleManager builds, so nothing new is plumbed.
-func _one_shot_rank_of(bonuses: Array) -> String:
+## The slam celebrates the RANK, so an unpaid (over-levelled) one-shot keeps it through results.one_shot_rank.
+func _one_shot_rank_of(bonuses: Array, reported_rank: String = "") -> String:
 	for b in bonuses:
 		if b is Dictionary and b.get("type", "") == "one_shot":
 			return str(b.get("rank", ""))
-	return ""
+	return reported_rank
 
 
 ## The sweep + punch that makes the landing read as an IMPACT rather than a fade-in. struktured

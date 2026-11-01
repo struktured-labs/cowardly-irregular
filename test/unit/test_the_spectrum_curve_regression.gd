@@ -1,31 +1,8 @@
 extends GutTest
 
-## ×10 numeric re-denomination, 2026-07-29 (struktured ruling: "these HP values are stupidly low
-## ... multiply by 10 practically if we playing along canon Bravely Default / Octopath / FF6").
-##
-## At the World 1 FINAL BOSS the fighter hit for 21 and Mordaine had 1650 HP. Two-digit damage,
-## four-digit boss HP, sixteen rounds.
-##
-## The damage formula is dealt = raw² / (raw + def), homogeneous of degree 1 — scale raw and def
-## together and dealt scales with them. So ×10 on stats AND hp is a PURE RE-DENOMINATION: every
-## fight plays identically, the numbers just read like a JRPG. That property is the entire
-## justification for the change, so it is what this file pins.
-##
-## SCALED: monster/job max_hp, attack, defense, magic, magic_defense · equipment stat_mods attack,
-##         defense, magic, max_hp · ability heal_amount + absorb_amount · item heal_hp + damage
-## NOT SCALED, deliberately:
-##   speed          purely comparative (turn order) — scaling it changes nothing and risks
-##                  the `speed >= 18` assassin threshold
-##   MP economy     max_mp, mp_cost, heal_mp are self-consistent; scaling one side breaks it
-##   exp / gold     progression pacing must not move
-##   *_percent      already scale-free
-##   poison tick    int(max_hp * 0.05), a percentage
-##
-## ONE code constant had to move with the data: BattleManager's tank archetype gated on
-## `max_hp >= 150`. At ×10 every combatant clears that, so the entire roster would have silently
-## reclassified as "tank" — a game-wide AI change hiding inside a "pure re-denomination". It was
-## the ONLY absolute HP threshold in src/, found by scanning for the shape rather than by reading.
+## The spectrum curve (struktured 2026-10-31), replacing the x10 pass: one factor on both sides of ATK^2/(ATK+DEF) keeps every fight.
 
+const COMBATANT := "res://src/battle/Combatant.gd"
 const JRPG_FLOOR := 10000
 
 
@@ -67,7 +44,7 @@ func test_round_counts_are_unchanged_at_the_new_scale() -> void:
 		var boss: Dictionary = mons[boss_id]
 		var bstats: Dictionary = boss["stats"]
 		var lvl: int = int(boss["level"])
-		var mult: float = 1.0 + (lvl - 1) * 0.04
+		var mult: float = load(COMBATANT).level_multiplier(lvl)
 		var per_round := 0
 		for pair in [["fighter", "power_strike"], ["mage", "fire"], ["rogue", "backstab"]]:
 			var mods: Dictionary = (jobs[pair[0]] as Dictionary)["stat_modifiers"]
@@ -79,7 +56,7 @@ func test_round_counts_are_unchanged_at_the_new_scale() -> void:
 			per_round += _dealt(raw, int(bstats[def_key]))
 		var rounds: float = float(int(bstats["max_hp"])) / float(maxi(1, per_round))
 		assert_almost_eq(rounds, float(expected[boss_id]), 0.6,
-			"%s must still take ~%.1f rounds — ×10 is a re-denomination, not a rebalance"
+			"%s must still take ~%.1f rounds at its NEW level: the rescale keeps every boss's tuned fight"
 				% [boss_id, expected[boss_id]])
 
 
@@ -107,42 +84,35 @@ func test_mp_economy_was_not_scaled() -> void:
 		"mp_cost must not scale — max_mp did not either, and moving one side breaks the economy")
 
 
-func test_exp_and_gold_were_not_scaled() -> void:
+func test_the_ladder_is_in_world_order() -> void:
+	## W2's masterites sat at L10-11 below W1's L20 Mordaine, so the post-Mordaine game stomped; every world now sits above the last.
 	var mons: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/monsters.json"))
-	var boss: Dictionary = mons["chancellor_mordaine"]
-	assert_lt(int(boss.get("exp_reward", 0)), 5000,
-		"exp must not scale — the level curve and every gate on it would move")
+	var worlds := ["medieval", "suburban", "steampunk", "industrial", "futuristic", "abstract"]
+	var prev_max := int((mons["chancellor_mordaine"] as Dictionary)["level"])
+	for i in range(1, worlds.size()):
+		var lo := 999
+		var hi := 0
+		for role in ["warden", "tempo", "arbiter", "curator"]:
+			var lv := int((mons["masterite_%s_%s" % [role, worlds[i]]] as Dictionary)["level"])
+			lo = mini(lo, lv)
+			hi = maxi(hi, lv)
+		assert_gte(lo, prev_max, "%s's masterites (from L%d) must not sit below the previous world's top (L%d)" % [worlds[i], lo, prev_max])
+		prev_max = hi
 
 
-func test_the_tank_threshold_moved_with_the_data() -> void:
-	# Was `assert_string_contains(src, "combatant.max_hp >= 1500")`. Mutation-tested it per
-	# cowir-battle's 6/6 result and it FAILED — on a CORRECT refactor. Rewriting the gate as
-	# `max_hp > 1499` is identical for integers and turned this red, while a pin like that stays
-	# green for any wrong value spelled the same way. Coincidental spelling, in a guard written
-	# hours after citing that exact rule to another lane.
-	#
-	# Asserts the RELATIONSHIP instead: whatever the threshold is, it must sit in the scaled HP
-	# band rather than the pre-scale one. Survives >=1500, >1499, >=1600; fails at 150.
-	var src := FileAccess.get_file_as_string("res://src/battle/BattleManager.gd")
-	var gate := RegEx.create_from_string("combatant\\.max_hp\\s*>=?\\s*([0-9]+)")
-	var m := gate.search(src)
-	assert_not_null(m, "the tank archetype gate must still compare max_hp against a literal — "
-		+ "if it was rewritten some other way this guard is measuring nothing")
-	if m == null:
+func test_the_tank_threshold_sits_above_the_frailest_job_at_every_level() -> void:
+	## The gate is HP per point of the level curve, so it holds at L1 and L58 alike; an absolute number would fail at one end.
+	var k: Variant = load("res://src/battle/BattleManager.gd").get_script_constant_map().get("TANK_HP_PER_CURVE", null)
+	assert_not_null(k, "BattleManager must carry TANK_HP_PER_CURVE, the level-relative tank gate")
+	if k == null:
 		return
-	var threshold: int = int(m.get_string(1))
-	# Floor derived from the data: the weakest job in the game at level 1.
 	var jobs: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/jobs.json"))
-	var weakest: int = 999999
+	var weakest := 999999
 	for jid in jobs:
-		var mods: Variant = (jobs[jid] as Dictionary).get("stat_modifiers")
+		var mods: Variant = (jobs[jid] as Dictionary).get("stat_modifiers") if jobs[jid] is Dictionary else null
 		if mods is Dictionary and (mods as Dictionary).has("max_hp"):
 			weakest = mini(weakest, int((mods as Dictionary)["max_hp"]))
-	assert_gt(threshold, weakest,
-		"the tank gate (%d) must sit ABOVE the frailest level-1 job (%d hp) — at the pre-scale "
-		% [threshold, weakest]
-		+ "150 every combatant clears it and the entire roster classifies as tank, changing "
-		+ "enemy AI game-wide")
+	assert_gt(float(k), float(weakest), "the tank gate (%s per curve point) must sit above the frailest job's base HP (%d)" % [str(k), weakest])
 
 
 # ── lie-in-the-label ratchet ────────────────────────────────────────
@@ -151,8 +121,8 @@ func test_no_description_misstates_its_own_heal_value() -> void:
 	# "Restores 50 HP" on an item that heals 500 is the failure this catches. Generalised rather
 	# than pinned to the five that needed fixing, so the next rescale cannot reintroduce it.
 	var offenders: Array = []
-	var num := RegEx.create_from_string("([0-9]+)\\s*HP")
-	for spec in [["res://data/items.json", "heal_hp"], ["res://data/abilities.json", "heal_amount"]]:
+	var num := RegEx.create_from_string("([0-9]+)\\s*(HP|\\w*\\s*damage)")
+	for spec in [["res://data/items.json", "heal_hp"], ["res://data/abilities.json", "heal_amount"], ["res://data/items.json", "damage"]]:
 		var data: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(spec[0]))
 		for id in data:
 			var entry: Variant = data[id]
@@ -163,8 +133,8 @@ func test_no_description_misstates_its_own_heal_value() -> void:
 			if not effects.has(spec[1]):
 				continue
 			var m := num.search(str(e.get("description", "")))
-			if m != null and int(m.get_string(1)) != int(effects[spec[1]]):
-				offenders.append("%s says %s HP but heals %d" % [id, m.get_string(1), int(effects[spec[1]])])
+			if m != null:
+				offenders.append("%s says %s, but a flat heal or item damage now converts with the target's level" % [id, m.get_string(0)])
 	assert_eq(offenders, [], "descriptions contradicting their own effect:\n  %s" % "\n  ".join(offenders))
 
 
@@ -279,3 +249,40 @@ func test_the_label_ratchet_can_see_a_mismatch() -> void:
 	var m := num.search("Restores 50 HP")
 	assert_not_null(m, "the ratchet's regex must actually match the authored description shape")
 	assert_eq(int(m.get_string(1)), 50, "and must extract the number it compares against")
+
+
+# ── the spectrum's own guarantees ──────────────────────────────────
+
+func test_party_hp_follows_his_spectrum() -> void:
+	## Double digits at the start, triple by level 5, four digits mid-game, five digits toward the end.
+	var c: GDScript = load(COMBATANT)
+	var jobs: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/jobs.json"))
+	for jid in ["fighter", "cleric", "mage", "rogue", "bard"]:
+		var base := int(((jobs[jid] as Dictionary)["stat_modifiers"] as Dictionary)["max_hp"])
+		assert_lt(int(base * c.level_multiplier(1)), 100, "%s must start in double digits" % jid)
+		assert_gte(int(base * c.level_multiplier(20)), 1000, "%s must reach four digits by level 20" % jid)
+		assert_gte(int(base * c.level_multiplier(58)), 9900, "%s must reach five digits at the final boss" % jid)
+	var fb := int(((jobs["fighter"] as Dictionary)["stat_modifiers"] as Dictionary)["max_hp"])
+	assert_gte(int(fb * c.level_multiplier(5)), 100, "the Fighter must reach triple digits by level 5")
+
+
+func test_flat_numbers_convert_at_use() -> void:
+	## Gear, item heals and heal/ward amounts stay in x10 units and convert with the party ratio; speed and MP never do.
+	var c: GDScript = load(COMBATANT)
+	assert_almost_eq(float(c.party_x10_ratio(1)), 0.05, 0.0001, "level 1 must be exactly the x10 era divided by 20")
+	assert_eq(int(c.gear_mod_at_level("attack", 120, 1)), 6, "an iron sword's +120 lands as +6 at level 1")
+	assert_eq(int(c.gear_mod_at_level("speed", 5, 40)), 5, "speed from gear is never converted")
+	assert_gt(float(c.party_x10_ratio(40)), float(c.party_x10_ratio(10)), "the ratio grows with level, so gear keeps pace with HP")
+
+
+func test_an_x10_save_migrates_down_and_keeps_its_share() -> void:
+	## A save written at stat_scale 10 divides back and records where it came from, so the loader can restore HP as a share.
+	var c: GDScript = load(COMBATANT)
+	var marked: Dictionary = c.migrate_stat_scale({"stat_scale": 10, "max_hp": 4914, "current_hp": 2457, "attack": 600, "magic_defense": 140})
+	assert_eq(int(marked["max_hp"]), 491, "max_hp divides by 10")
+	assert_eq(int(marked["current_hp"]), 246, "current_hp divides by the same factor, so its share of max is kept")
+	assert_eq(int(marked.get("migrated_from_stat_scale", 0)), 10, "the block records the scale it came from")
+	var unmarked: Dictionary = c.migrate_stat_scale({"max_hp": 4914, "current_hp": 4914, "magic_defense": 140})
+	assert_eq(int(unmarked.get("migrated_from_stat_scale", 0)), 10, "an unmarked save holding magic_defense is dated to the x10 era")
+	var current: Dictionary = c.migrate_stat_scale({"stat_scale": 1, "max_hp": 66, "current_hp": 66})
+	assert_false(current.has("migrated_from_stat_scale"), "a save already at the current scale is left alone")

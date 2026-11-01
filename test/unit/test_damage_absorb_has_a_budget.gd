@@ -106,8 +106,8 @@ func test_the_handler_parks_the_authored_amount() -> void:
 	var targets: Array[Combatant] = [c]
 	bm._execute_support_ability(null, ability, targets)
 	assert_true(c.has_status("damage_absorb"), "CONTROL: the status is still applied")
-	assert_eq(int(c.get_meta("_damage_absorb_budget", -1)), int(ability["absorb_amount"]),
-		"the ward must be worth exactly what the ability authored")
+	assert_eq(int(c.get_meta("_damage_absorb_budget", -1)), roundi(float(ability["absorb_amount"]) * c.x10_ratio()),
+		"the ward must be worth exactly what the ability authored, converted at use")
 
 func test_the_ability_still_authors_a_finite_budget() -> void:
 	## The premise. If absorb_amount is ever deleted from fill_the_void the mechanic goes back to
