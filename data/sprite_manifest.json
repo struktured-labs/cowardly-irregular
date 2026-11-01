@@ -7512,6 +7512,21 @@
       "path": "res://assets/sprites/props/steampunk/banner.png",
       "tier": "T1",
       "source": "gpt-image-2, straight-on green cloth banner with a golden cog, 64px tall (struktured 2026-11-01: procgen props must go) -- tools/gen_village_buildings.py --props; T1, artist veto applies."
+    },
+    "crate_futuristic": {
+      "path": "res://assets/sprites/props/futuristic/crate.png",
+      "tier": "T1",
+      "source": "gpt-image-2, straight-on neon-trimmed sci-fi cargo crate for NodePrime, so the generic wooden one does not stand in a world it was not drawn for (cowir-overworld/cowir-adhoc 2026-11-01) -- tools/gen_village_buildings.py --props; T1, artist veto applies."
+    },
+    "crate_industrial": {
+      "path": "res://assets/sprites/props/industrial/crate.png",
+      "tier": "T1",
+      "source": "gpt-image-2, straight-on riveted steel crate with a hazard stripe for RivetRow, so the generic wooden one does not stand in a world it was not drawn for (cowir-overworld/cowir-adhoc 2026-11-01) -- tools/gen_village_buildings.py --props; T1, artist veto applies."
+    },
+    "barrel_industrial": {
+      "path": "res://assets/sprites/props/industrial/barrel.png",
+      "tier": "T1",
+      "source": "gpt-image-2, straight-on dented blue steel oil drum for RivetRow, so the generic wooden one does not stand in a world it was not drawn for (cowir-overworld/cowir-adhoc 2026-11-01) -- tools/gen_village_buildings.py --props; T1, artist veto applies."
     }
   }
 }

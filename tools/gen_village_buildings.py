@@ -224,6 +224,11 @@ PROPS = {
                   "golden crest, a forked bottom edge. Tall and narrow."),
     "banner_steampunk": (1, "A single tall cloth banner hanging from a brass pole with a crossbar: dark green cloth with a "
                             "golden cog emblem, a straight fringed bottom edge. Tall and narrow."),
+    "crate_futuristic": (1, "A single sleek sci-fi cargo crate: dark glossy panels with glowing cyan neon trim and a small "
+                            "holographic label light (no letters)."),
+    "crate_industrial": (1, "A single grey steel industrial shipping crate with riveted corners, a yellow-and-black hazard "
+                            "stripe and stencil-style marks (no readable letters)."),
+    "barrel_industrial": (1, "A single dented blue steel oil drum with ribbed bands and a small hazard sticker, standing upright."),
 }
 ## See-through props (wire mesh): the border flood cannot reach backdrop enclosed by the wires, so key it everywhere.
 KEY_EVERYWHERE = {"cart_suburban", "well_medieval", "fence", "fence_suburban"}
