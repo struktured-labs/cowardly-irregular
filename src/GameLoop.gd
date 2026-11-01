@@ -6642,7 +6642,8 @@ func _open_autogrind_ui() -> void:
 	_autogrind_ui.grind_resume_requested.connect(_resume_autogrind)
 	_autogrind_ui.grind_stop_requested.connect(_on_autogrind_stop_requested)
 	_autogrind_ui.tier_cycle_requested.connect(_on_ui_tier_cycle_requested)
-	_autogrind_ui.visibility_changed.connect(_field_hud_steps_aside_for_console)
+	_autogrind_ui.visibility_changed.connect(_field_hud_steps_aside_for_console.bind(_autogrind_ui))
+	_autogrind_ui.tree_exited.connect(_field_hud_steps_aside_for_console.bind(_autogrind_ui))
 
 	SoundManager.play_ui("menu_open")
 	print("[AUTOGRIND] Config UI opened")
@@ -6686,9 +6687,12 @@ func _free_overlays_for_scene_change() -> void:
 
 
 ## Starting a grind brings the field HUD back; the console shows itself again on stop, so the tracker drew over its header (struktured .758).
-func _field_hud_steps_aside_for_console() -> void:
-	if _autogrind_ui_open():
+## Keyed on the console that SIGNALLED, not only the tracked one: his drawn console was one GameLoop no longer tracked.
+func _field_hud_steps_aside_for_console(console = null) -> void:
+	if _ui_is_showing(console) or _autogrind_ui_open():
 		_set_field_hud_hidden(true)
+	elif console != null and not _is_autogrinding and not _field_editor_open() and not _field_modal_open() and not _ui_is_showing(_overworld_menu):
+		_set_field_hud_hidden(false)
 
 
 func _on_autogrind_ui_closed() -> void:

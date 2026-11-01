@@ -41,18 +41,25 @@ func before_each() -> void:
 	_console = Control.new()
 	add_child_autofree(_console)
 	_gl._autogrind_ui = _console
-	_console.visibility_changed.connect(_gl._field_hud_steps_aside_for_console)
+	_console.visibility_changed.connect(_gl._field_hud_steps_aside_for_console.bind(_console))
+	_console.tree_exited.connect(_gl._field_hud_steps_aside_for_console.bind(_console))
 
 
 func after_each() -> void:
+	# Off before autofree: freeing the console emits tree_exited into a GameLoop that may already be gone.
+	for sig in [_console.visibility_changed, _console.tree_exited]:
+		for c in sig.get_connections():
+			sig.disconnect(c["callable"])
 	_gl._autogrind_ui = null
 
 
 func test_the_console_wires_its_visibility_to_the_hud() -> void:
 	var src := FileAccess.get_file_as_string("res://src/GameLoop.gd")
 	var open_fn := src.substr(src.find("func _open_autogrind_ui"), 3000)
-	assert_true("visibility_changed.connect(_field_hud_steps_aside_for_console)" in open_fn,
+	assert_true("visibility_changed.connect(_field_hud_steps_aside_for_console.bind(_autogrind_ui))" in open_fn,
 		"_open_autogrind_ui must hand the console's visibility to the HUD hider, or the arms below test a wire nothing makes")
+	assert_true("tree_exited.connect(_field_hud_steps_aside_for_console.bind(_autogrind_ui))" in open_fn,
+		"and its leaving, so a console that goes away by any path gives the field its HUD back")
 
 
 func test_the_tracker_steps_aside_when_the_console_comes_back_after_a_grind() -> void:
@@ -95,3 +102,31 @@ func test_a_hidden_console_hides_nothing() -> void:
 	_console.visible = false
 	_gl._field_hud_steps_aside_for_console()
 	assert_true(_field._quest_tracker.visible, "while the grind runs (console hidden) the tracker stays on the field")
+
+
+func test_an_untracked_console_still_hides_the_tracker_and_gives_it_back() -> void:
+	# His drawn console was one GameLoop no longer tracked (the overworld menu opened under it).
+	_gl._autogrind_ui = null
+	_console.visible = false
+	_console.visible = true
+	assert_false(_field._quest_tracker.visible, "a console that shows hides the tracker even when GameLoop lost track of it")
+	_console.visible = false
+	assert_true(_field._quest_tracker.visible, "and when it goes away the tracker comes back, so the HUD is never stranded")
+
+
+func test_a_console_leaving_gives_the_tracker_back() -> void:
+	_gl._autogrind_ui = null
+	_console.visible = false
+	_console.visible = true
+	assert_false(_field._quest_tracker.visible, "CONTROL: hidden under the console")
+	remove_child(_console)
+	assert_true(_field._quest_tracker.visible, "a console freed or removed by any path restores the tracker")
+	add_child(_console)
+
+
+func test_a_running_grind_keeps_what_start_restored() -> void:
+	_gl._is_autogrinding = true
+	_gl._set_field_hud_hidden(true)
+	_console.visible = false
+	assert_false(_field._quest_tracker.visible, "the hide-on-leave rule does not run mid-grind; _start_autogrind owns that restore")
+	_gl._is_autogrinding = false
