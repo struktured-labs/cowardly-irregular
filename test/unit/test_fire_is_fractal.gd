@@ -45,9 +45,11 @@ func before_each() -> void:
 	_bm_guard = BattleStateGuard.new()
 	_bm_guard.snapshot()
 	_saved_scale = Engine.time_scale
-	Engine.time_scale = 1.0
 	_scene = SCENE.instantiate()
 	add_child_autofree(_scene)
+	## After the scene: its _ready re-applies the battle speed. At 1.0 (above 0.55) the control spell takes the
+	## ordinary path instead of the spotlight, which arms the same damage buffer and would hide the difference.
+	Engine.time_scale = 1.0
 	_hero = _c("Mage")
 	_foe = _c("Goblin")
 	_scene.party_members.assign([_hero] as Array[Combatant])
