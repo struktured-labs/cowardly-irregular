@@ -153,8 +153,11 @@ static func _grow(value: int, mult: float) -> int:
 
 ## Converts a flat number authored in x10 units (gear, item heals and damage, heal and ward amounts) to this combatant.
 func x10_ratio() -> float:
-	if has_meta("monster_type") and has_node("/root/EncounterSystem"):
-		var row: Variant = get_node("/root/EncounterSystem").monster_database.get(str(get_meta("monster_type", "")), null)
+	## Through the SceneTree, not has_node("/root/…"): a headless battle's enemies are never in the tree, and an absolute path from outside it finds nothing.
+	var tree := Engine.get_main_loop() as SceneTree
+	var es: Node = tree.root.get_node_or_null("EncounterSystem") if tree != null and tree.root != null else null
+	if has_meta("monster_type") and es != null:
+		var row: Variant = es.monster_database.get(str(get_meta("monster_type", "")), null)
 		if row is Dictionary and (row as Dictionary).has("spectrum_ratio"):
 			return float((row as Dictionary)["spectrum_ratio"])
 	return party_x10_ratio(job_level)
