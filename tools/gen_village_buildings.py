@@ -136,9 +136,31 @@ SUBURBAN = {
     "maple_house": (3, "A tidy two-storey suburban house, taller than it is wide: mint-green siding, a grey shingle roof with a "
                        "chimney, a picture window with flower boxes, a mailbox and a basketball hoop over the front door."),
 }
-BUILDINGS = {**HARMONIA, **W1, **SUBURBAN}
+
+## W3 steampunk (Brasston): brass, rivets and steam. Its 3x2 blocks want single-storey art, or it climbs over row 12.
+STYLE_STEAMPUNK = ("A single detailed 16-bit SNES-era JRPG pixel-art BUILDING for a Victorian steampunk city, a straight-on "
+                   "front view with the roof seen from above and in front: soot-darkened brick and riveted brass panels, "
+                   "copper pipes and pressure gauges, small chimneys or vents puffing steam, arched windows with iron "
+                   "frames, a heavy front door at the bottom centre. Crisp dark outline, warm brass-and-brick palette, "
+                   "soft top-left lighting. No people, no text or letters, no ground, no shadow on the ground, nothing "
+                   "else in the picture. The background is one flat, solid, pure magenta (#FF00FF) colour with no "
+                   "gradient. The building fills the frame and is centred.")
+STEAMPUNK = {
+    "brasston_house": (3, "A narrow two-storey brick townhouse with a brass-trimmed bay window, a copper drainpipe and "
+                          "a tall chimney puffing steam."),
+    "brasston_forge": (3, "Gearwright's Forge: a brick foundry with a big riveted brass door, a glowing furnace window, a "
+                          "large cog mounted on the front wall and a hanging sign with a pictured hammer and gear (no letters)."),
+    "brasston_inn": (3, "The Cog & Pillow inn: a cosy brick-and-brass inn with warm lit arched windows, a steam-powered "
+                        "clock above the door and a hanging sign with a pictured cog and a pillow (no letters)."),
+    "brasston_cottage": (3, "A low single-storey workshop cottage, much wider than it is tall, with a shallow riveted "
+                            "roof, one small chimney, a round porthole window and a brass door."),
+    "brasston_shed": (3, "A low single-storey brick boiler shed, much wider than it is tall, with a shallow tin roof, a "
+                         "stubby steam vent, pipes along the wall and a small iron door."),
+}
+BUILDINGS = {**HARMONIA, **W1, **SUBURBAN, **STEAMPUNK}
 ## Where each pool's art deploys, and the style it is drawn in.
-POOLS = {"harmonia": (HARMONIA, "medieval", None), "w1": (W1, "medieval", None), "suburban": (SUBURBAN, "suburban", STYLE_SUBURBAN)}
+POOLS = {"harmonia": (HARMONIA, "medieval", None), "w1": (W1, "medieval", None), "suburban": (SUBURBAN, "suburban", STYLE_SUBURBAN),
+         "steampunk": (STEAMPUNK, "steampunk", STYLE_STEAMPUNK)}
 
 
 def key_out(img: Image.Image, tol: int = 90) -> Image.Image:
@@ -195,7 +217,7 @@ def generate_harmonia(key: str, view: str) -> Path:
     """One village building (Harmonia or W1), straight-on ("front", struktured's pick B) or corner-angled ("corner", A)."""
     from openai import OpenAI
     width, what = BUILDINGS[key]
-    style = STYLE_SUBURBAN if key in SUBURBAN else STYLE
+    style = STYLE_SUBURBAN if key in SUBURBAN else STYLE_STEAMPUNK if key in STEAMPUNK else STYLE
     face = f"\n\n{FRONT}" if view == "front" else ""
     r = OpenAI().images.generate(model=MODEL, prompt=f"{style}{face}\n\nThe building: {what}", size="1024x1024", n=1)
     raw = Image.open(io.BytesIO(base64.b64decode(r.data[0].b64_json)))
@@ -212,12 +234,13 @@ def main() -> int:
     ap.add_argument("--harmonia", nargs="*", help="stage these Harmonia buildings (no names = all)")
     ap.add_argument("--w1", nargs="*", help="stage these other-W1-village buildings (no names = all)")
     ap.add_argument("--suburban", nargs="*", help="stage these W2 Maple Heights buildings (no names = all)")
+    ap.add_argument("--steampunk", nargs="*", help="stage these W3 Brasston buildings (no names = all)")
     ap.add_argument("--view", choices=["front", "corner"], default="front", help="straight-on (B, default) or angled (A)")
     ap.add_argument("--deploy", action="store_true", help="copy staged Harmonia art into assets (never overwrites)")
     args = ap.parse_args()
     for k in args.style or []:
         print(f"staged {generate(k).relative_to(ROOT)}")
-    for chosen, (pool, world, _) in ((args.harmonia, POOLS["harmonia"]), (args.w1, POOLS["w1"]), (args.suburban, POOLS["suburban"])):
+    for chosen, (pool, world, _) in ((args.harmonia, POOLS["harmonia"]), (args.w1, POOLS["w1"]), (args.suburban, POOLS["suburban"]), (args.steampunk, POOLS["steampunk"])):
         if chosen is None:
             continue
         for k in chosen or sorted(pool):

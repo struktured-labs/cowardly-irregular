@@ -16,6 +16,16 @@ const MAP_WIDTH: int = 26
 const MAP_HEIGHT: int = 22
 
 
+## Drawn building art per block, keyed by the block's top-left cell (manifest building_art, T1).
+const BUILDING_ART := {
+	Vector2i(4, 4): "brasston_house",
+	Vector2i(15, 4): "brasston_forge",
+	Vector2i(6, 9): "brasston_inn",
+	Vector2i(8, 13): "brasston_cottage",
+	Vector2i(15, 13): "brasston_shed",
+}
+
+
 ## ---- BaseVillage hooks ----
 
 func _get_area_id() -> String:
@@ -246,6 +256,8 @@ func _setup_buildings() -> void:
 	# (7,12) drew its awning and counter across the Clockwork Loft door at (9,12); (4,12) keeps the market clear of it.
 	_add_prop(VillagePropScript.Kind.STALL, Vector2i(4, 12))
 	_add_prop(VillagePropScript.Kind.CRATE, Vector2i(14, 16))
+	## LAST, so the doors and stalls it must defer to already exist.
+	_spawn_building_art(BUILDING_ART)
 
 
 func _setup_treasures() -> void:
