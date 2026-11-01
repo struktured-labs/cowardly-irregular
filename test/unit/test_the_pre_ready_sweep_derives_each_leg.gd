@@ -222,3 +222,45 @@ func test_an_unknown_flag_is_refused_before_anything_runs() -> void:
 		assert_false(text.contains("Totals") or text.contains("Scripts "), "%s RAN guards instead of refusing:\n%s" % [flag, text])
 	var control := _list("tools/pre_ready_guards.sh")
 	assert_true(control.contains("distinct guards"), "CONTROL: --list must still answer, or the refusal arm proves nothing:\n%s" % control)
+
+
+func test_a_scene_attached_script_reaches_the_tests_that_load_its_scene() -> void:
+	## BattleScene.gd has no class_name and 33 of its 49 scene loaders never name the .gd: the .757 gate's red was one of them.
+	var text := _list("src/battle/BattleScene.gd")
+	var idx: int = text.find("BattleScene.gd ->")
+	assert_gt(idx, -1, "the per-file leg did not report on BattleScene.gd at all:\n%s" % text)
+	var line: String = text.substr(idx, 160).get_slice("\n", 0)
+	var by_scene: int = _leg_number(line, "by scene")
+	if by_scene < 0:
+		_input_not_found("by scene", line)
+		return
+	assert_gt(by_scene, 20, "only %d tests reach BattleScene.gd through BattleScene.tscn; 49 did when written: %s" % [by_scene, line])
+
+
+func test_an_autoload_is_reached_by_its_registered_name() -> void:
+	## BattleManager.gd declares no class_name; tests reach it as the autoload `BattleManager`, which the name leg must use.
+	var text := _list("src/battle/BattleManager.gd")
+	var idx: int = text.find("BattleManager.gd ->")
+	assert_gt(idx, -1, "the per-file leg did not report on BattleManager.gd at all:\n%s" % text)
+	var line: String = text.substr(idx, 160).get_slice("\n", 0)
+	assert_true(line.contains("(BattleManager)"), "the name leg did not take the autoload name from project.godot: %s" % line)
+	var by_name: int = _leg_number(line, "by class_name")
+	if by_name < 0:
+		_input_not_found("by class_name", line)
+		return
+	assert_gt(by_name, 100, "only %d tests name the BattleManager autoload: %s" % [by_name, line])
+
+
+func test_a_class_name_and_a_different_autoload_name_are_both_searched() -> void:
+	## SoundManager.gd is class SoundManagerClass but autoload SoundManager: 1 test names the class, ~311 the autoload.
+	var text := _list("src/audio/SoundManager.gd")
+	var idx: int = text.find("SoundManager.gd ->")
+	assert_gt(idx, -1, "the per-file leg did not report on SoundManager.gd at all:\n%s" % text)
+	var line: String = text.substr(idx, 200).get_slice("\n", 0)
+	assert_true(line.contains("SoundManagerClass") and line.contains(", SoundManager)"),
+		"the name leg must search the class_name AND the autoload name: %s" % line)
+	var by_name: int = _leg_number(line, "by class_name")
+	if by_name < 0:
+		_input_not_found("by class_name", line)
+		return
+	assert_gt(by_name, 100, "only %d tests reached by SoundManager's names; the autoload name alone reached ~311: %s" % [by_name, line])
