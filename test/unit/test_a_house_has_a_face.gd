@@ -173,7 +173,8 @@ func test_every_facade_leaves_its_ground_row_alone() -> void:
 			var block_glyph: String = str(v._map_rows[below - 1])[r.position.x]
 			var ground_glyph: String = str(v._map_rows[below])[r.position.x]
 			assert_eq(ground_glyph, block_glyph, "%s: facade %s paints over its block's ground row (glyph '%s' under '%s')" % [f, str(r), ground_glyph, block_glyph])
-	assert_gte(faced, 2, "CONTROL: procedural facades were found across the villages (%d)" % faced)
+	## Floor 1: every W1 block is drawn art now; the procedural facades left are the later worlds' (RivetRow's canteen).
+	assert_gte(faced, 1, "CONTROL: procedural facades were found across the villages (%d)" % faced)
 
 
 func test_a_flat_roofed_world_still_stands_up() -> void:
@@ -228,5 +229,5 @@ func test_no_village_faces_over_a_buildings_art() -> void:
 			for b in v.buildings.get_children():
 				if b is Node2D and not (b is AreaTransition):
 					assert_false(r.intersects(v._building_cells(b)), "%s: facade %s covers %s" % [f, str(r), b.name])
-	## Floor, not a pin: Ironhaven's forge and RivetRow's canteen; Harmonia's blocks are drawn art now.
-	assert_gte(faced, 2, "CONTROL: procedural facades were built across the villages (%d)" % faced)
+	## Floor, not a pin: RivetRow's canteen; every W1 block (Ironhaven's forge included) is drawn art now.
+	assert_gte(faced, 1, "CONTROL: procedural facades were built across the villages (%d)" % faced)
