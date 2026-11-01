@@ -338,18 +338,46 @@ def generate(kind: str, width_tiles: int = 3) -> Path:
     return out
 
 
+## Buildings standing one row below a higher tier: the roof may cover that row's cliff face but not the walkable row
+## above it (struktured's pilot, cowir-overworld 21137: the inn's thatch rose over the ledge). Max art height in px:
+## the 4-row block (128) plus 24, so the top of the wall stays visible. The floor keeps the art over its whole block:
+## shorter than 128 leaves bare footprint showing above the roof (the first low draws came out 107 and 119).
+HEIGHT_BAND = {"harmonia_inn": (136, 152), "harmonia_remedies": (136, 152)}
+LOW_ROOF = ("Keep the roof MODEST: one full storey of wall with windows and the door, then a moderate roof with small "
+            "dormers. It is noticeably wider than it is tall, but it is NOT a squat shed: the wall is a full storey.")
+TRIES = 6
+
+
 def generate_harmonia(key: str, view: str) -> Path:
-    """One village building (Harmonia or W1), straight-on ("front", struktured's pick B) or corner-angled ("corner", A)."""
+    """One village building (Harmonia or W1), straight-on ("front", struktured's pick B) or corner-angled ("corner", A).
+
+    A building in HEIGHT_BAND is redrawn (up to TRIES) until its height lands in the band; the draw nearest the band's
+    top is kept, and nothing is staged if none fits."""
     from openai import OpenAI
     width, what = BUILDINGS[key]
     style = next((st for pool, _, st in POOLS.values() if st and key in pool), STYLE)
     face = f"\n\n{FRONT}" if view == "front" else ""
-    r = OpenAI().images.generate(model=MODEL, prompt=f"{style}{face}\n\nThe building: {what}", size="1024x1024", n=1)
-    raw = Image.open(io.BytesIO(base64.b64decode(r.data[0].b64_json)))
+    band = HEIGHT_BAND.get(key)
+    low = f"\n\n{LOW_ROOF}" if band else ""
     STAGE.mkdir(parents=True, exist_ok=True)
-    raw.save(STAGE / f"{key}_{view}_raw.png")
     out = STAGE / f"{key}_{view}.png"
-    fit(raw, width).save(out)
+    best = None
+    for i in range(TRIES if band else 1):
+        r = OpenAI().images.generate(model=MODEL, prompt=f"{style}{face}{low}\n\nThe building: {what}", size="1024x1024", n=1)
+        raw = Image.open(io.BytesIO(base64.b64decode(r.data[0].b64_json)))
+        raw.save(STAGE / f"{key}_{view}_raw{i}.png")
+        art = fit(raw, width)
+        print(f"  {key} try {i + 1}: {art.width}x{art.height}" + (f" (band {band[0]}-{band[1]})" if band else ""))
+        if band is None:
+            best = art
+            break
+        if band[0] <= art.height <= band[1] and (best is None or art.height > best.height):
+            best = art
+        if best is not None and best.height >= band[1] - 6:
+            break
+    if best is None:
+        raise SystemExit(f"{key}: none of {TRIES} draws landed in {band[0]}-{band[1]}px; nothing staged")
+    best.save(out)
     return out
 
 
