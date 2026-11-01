@@ -90,6 +90,8 @@ func test_a_stomp_pays_at_level_and_not_over_it() -> void:
 	assert_eq(int(over_stomp["total_gold"]), int(over_plain["total_gold"]), "an over-levelled one-shot paid its gold bonus")
 	var shown := (over_stomp["bonuses"] as Array).filter(func(b): return b.get("type", "") == "one_shot")
 	assert_eq(shown.size(), 0, "the victory screen named a one-shot bonus nobody was paid")
+	assert_eq(str(over_stomp.get("one_shot_rank", "")), "S", "the rank survives an unpaid bonus (the S-rank slam reads it)")
+	assert_eq(str(over_plain.get("one_shot_rank", "?")), "", "no one-shot, no rank")
 
 
 func test_the_dashboard_reads_what_was_granted() -> void:

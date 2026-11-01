@@ -1267,6 +1267,7 @@ func end_battle(victory: bool) -> void:
 			"item_drops": item_drops,
 			"injuries": injuries,
 			"total_multiplier": reward_multiplier * (one_shot_exp_bonus * autobattle_exp_bonus if stomp_paid else 1.0) * chain_reward,
+			"one_shot_rank": _get_one_shot_rank(_setup_turns_used) if _one_shot_achieved else "",
 			"exp_granted_max": char_results.reduce(func(acc, r): return maxi(acc, int(r.get("exp_gained", 0))), 0)
 		}
 
