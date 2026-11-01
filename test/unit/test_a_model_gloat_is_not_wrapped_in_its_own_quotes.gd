@@ -116,3 +116,27 @@ func test_only_a_matched_outer_pair_is_removed() -> void:
 	for raw in cases:
 		assert_eq(BattleManager.strip_wrapping_quotes(str(raw)), str(cases[raw]),
 			"strip_wrapping_quotes(%s) — only a matched OUTER pair may go; quoted speech inside a line stays" % JSON.stringify(raw))
+
+
+## The taunt and party line were clamped in code; the gloat only ASKED for 140 characters, so an overshoot shipped whole.
+func test_an_overlong_reply_is_clamped_to_the_gloat_budget() -> void:
+	var long_reply: String = "You will remember this throne."
+	while long_reply.length() < DialoguePrompts.MAX_BOSS_GLOAT_CHARS * 3:
+		long_reply += " And the cheese, and the crown, and every rat that ever bowed."
+	var spoken: String = await _spoken_for(long_reply)
+	assert_ne(spoken, "<nothing emitted>", "FIXTURE: the producer emitted a line")
+	assert_lte(spoken.length(), DialoguePrompts.MAX_BOSS_GLOAT_CHARS,
+		"THE DEFECT: a %d-char reply reached the beat, the log and the voice whole" % long_reply.length())
+	assert_true(spoken.ends_with("…"), "a clamped line says it was cut, at a word, as the taunt does")
+
+
+func test_a_multi_line_reply_is_one_line() -> void:
+	var spoken: String = await _spoken_for("Fine.\nKeep your cheese.\r\nThe throne remembers.")
+	assert_false(spoken.contains("\n") or spoken.contains("\r"), "a model's line breaks must not reach the box or the log")
+	assert_eq(spoken, "Fine. Keep your cheese. The throne remembers.", "and the words survive, joined")
+
+
+func test_the_prompt_states_the_budget_the_producer_enforces() -> void:
+	var prompt: String = _bm._build_gloat_prompt(TEST_BOSS_ID, "The Quote Boss", true)
+	assert_string_contains(prompt, "maximum %d characters" % DialoguePrompts.MAX_BOSS_GLOAT_CHARS,
+		"the model must be told the same number the clamp enforces")
