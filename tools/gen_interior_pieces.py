@@ -201,6 +201,24 @@ def shelf_pattern(room: str) -> Path:
     return dst
 
 
+## Floor patterns (4x4 tiles = 128px), by recipe, keyed by the seam's ROOM id (InteriorArt.SHOP_ROOMS):
+##   ("strips", style_tile, [(x, y), ...]): clean 128x32 strips cut from the approved tile, stacked four high with each
+##       row rolled sideways so plank joints stagger. The planks ARE the approved pixels.
+##   ("redraw", style_tile, crop): the tile holds too little clean floor to cut (the arms shop's cobble is ~128x70 between
+##       the furniture), so gpt-image-2 draws a patch of the same floor with the tile as the style reference, and the centre
+##       `crop` fraction is kept so the stones come out at the concept's scale (the full patch gave pebbles at half size).
+FLOORS = {
+    "shop_item": ("strips", "harmonia_item_shop", [(180, 240), (200, 250)]),
+    "shop_blacksmith": ("redraw", "harmonia_arms_shop", 0.5),
+    "inn": ("strips", "harmonia_inn", [(130, 326), (390, 322)]),  # clean planks below the carpet, clear of door and packs
+}
+PATTERN = 128
+FLOOR_REDRAW = ("Using the reference room only for its art style, draw a square patch of JUST its floor, seen straight down, "
+                "filling the whole square edge to edge, in the same palette, outline weight and soft lighting as the "
+                "reference. About ten stones or boards across the square. Even and uniform all over: no objects, no rug, no "
+                "wall, no shadows, no light patches, no border.")
+
+
 def floor_pattern(room: str) -> Path:
     from PIL import ImageEnhance
     recipe, style, arg = FLOORS[room]
@@ -234,6 +252,7 @@ def floor_pattern(room: str) -> Path:
 WALLS = {
     "shop_item": ("harmonia_item_shop", 380, 4),      # timber frame and plaster from the back wall's right end
     "shop_blacksmith": ("harmonia_arms_shop", 0, 342),  # dressed stone from the front wall, clear of its lanterns
+    "inn": ("harmonia_inn", 400, 414),  # the front wall's stone course, clear of the door's lanterns
 }
 ## The back wall (InteriorArt back_wall: base-centred on the bottom of row 0, rising above the map edge), cut at full
 ## room width from the approved tile's top band: (style tile, y0, y1). The item shop stops above its shelf tops; the
@@ -241,6 +260,22 @@ WALLS = {
 BACK_WALLS = {
     "shop_item": ("harmonia_item_shop", 0, 58),
     "shop_blacksmith": ("harmonia_arms_shop", 8, 72),
+    "inn": ("harmonia_inn", 20, 84),  # window, key board, painting, antlers, mug shelf, the chimney, the stairs' top
+}
+## Patterns cut whole from the approved tile (kind -> (style tile, x, y, cols, rows)): the inn's hearth IS the drawn
+## fire box. It covers layout cells 12-14 x 2-3, and 12 mod 3 == 0, 2 mod 2 == 0, so it lands unrolled.
+CUT_PATTERNS = {
+    "inn": {"hearth": ("harmonia_inn", 384, 84, 3, 2)},
+}
+## A carpet block is ONE drawn runner, border and all, the size of the layout's carpet block: gpt-image-2 draws it from
+## the approved tile, then it is fitted to cols x rows and rolled so the seam's (x mod cols, y mod rows) sampling puts
+## its top-left on the block's first cell: (style tile, cols, rows, block origin cell, what to draw).
+CARPETS = {
+    "inn": ("harmonia_inn", 9, 2, (3, 7),
+            "A long rectangular woven runner rug seen straight down from above, filling the whole frame edge to edge: deep "
+            "red field with a gold and dark-red patterned border all the way round and a repeating gold diamond motif "
+            "along its length, in exactly the reference room's carpet style and palette. Only the rug: no floor, no table, "
+            "no furniture, no shadows, nothing on it."),
 }
 
 
@@ -255,18 +290,43 @@ def walls(room: str) -> list:
     tile = Image.open(STYLE_DIR / f"{style}.png").convert("RGB")
     back = tile.crop((0, y0, tile.width, y1))
     back.quantize(colors=COLOURS, method=Image.MEDIANCUT).convert("RGBA").save(out_dir / "back_wall.png")
-    return [out_dir / "wall.png", out_dir / "back_wall.png"]
+    out = [out_dir / "wall.png", out_dir / "back_wall.png"]
+    for kind, (style, x, y, cols, rows) in CUT_PATTERNS.get(room, {}).items():
+        tile = Image.open(STYLE_DIR / f"{style}.png").convert("RGB")
+        tile.crop((x, y, x + cols * TILE, y + rows * TILE)).quantize(colors=COLOURS, method=Image.MEDIANCUT) \
+            .convert("RGBA").save(out_dir / f"{kind}.png")
+        out.append(out_dir / f"{kind}.png")
+    if room in CARPETS:
+        style, cols, rows, at, what = CARPETS[room]
+        raw_path = out_dir / "carpet_raw.png"
+        if not raw_path.exists():
+            from openai import OpenAI
+            ref = Image.open(STYLE_DIR / f"{style}.png").convert("RGB")
+            r = OpenAI().images.edit(model=MODEL, image=[_png(ref)], prompt=what, size="1536x1024", n=1)
+            Image.open(io.BytesIO(base64.b64decode(r.data[0].b64_json))).convert("RGB").save(raw_path)
+        raw = Image.open(raw_path).convert("RGB")
+        w, h = cols * TILE, rows * TILE
+        ch = round(raw.width * h / w)  ## centre-crop to the block's aspect, then fit
+        raw = raw.crop((0, (raw.height - ch) // 2, raw.width, (raw.height + ch) // 2)) if ch <= raw.height else raw
+        rug = raw.resize((w, h), Image.LANCZOS).quantize(colors=COLOURS, method=Image.MEDIANCUT).convert("RGBA")
+        rolled = np.roll(np.asarray(rug), ((at[1] % rows) * TILE, (at[0] % cols) * TILE), axis=(0, 1))
+        Image.fromarray(rolled, "RGBA").save(out_dir / "carpet.png")
+        out.append(out_dir / "carpet.png")
+    return out
 
 
 ## staged file -> seam kind. Registered as "<kind>_<room>_<village>": the pilot village only, so every other village's
 ## (and world's) shop keeps its painter until it is drawn.
-DEPLOY = {"floor": "floor", "wall": "wall", "counter_pattern": "counter", "shelf_pattern": "shelf", "back_wall": "back_wall"}
+DEPLOY = {"floor": "floor", "wall": "wall", "counter_pattern": "counter", "shelf_pattern": "shelf", "back_wall": "back_wall",
+          "hearth": "hearth", "carpet": "carpet"}
 NOTES = {
     "floor": "a 4x4 floor PATTERN cut from the approved style tile, edge-band wrapped",
     "wall": "a wall PATTERN cut from the approved style tile",
     "counter": "the 3x2 counter, drawn stocked on the room's floor, rolled to the seam's (x mod 3, y mod 2) sampling",
     "shelf": "a 3x6 shelf PATTERN: the tall stocked unit on rows 2-4, the low one on rows 0-1 (= layout rows 6-7)",
     "back_wall": "the room-wide back wall strip cut from the approved style tile",
+    "hearth": "the drawn fire box cut whole from the approved style tile, a 3x2 pattern on the hearth cells",
+    "carpet": "one drawn runner the size of the carpet block (9x2), rolled to the seam's sampling",
 }
 
 
@@ -277,6 +337,8 @@ def deploy(room: str, village: str) -> list:
     manifest, ledger = json.loads(manifest_path.read_text()), json.loads(ledger_path.read_text())
     out = []
     for staged, kind in DEPLOY.items():
+        if not (STAGE / room / f"{staged}.png").exists():  ## a room only has the pieces its layout draws
+            continue
         rel = f"assets/sprites/interiors/{village}/{kind}_{room}.png"
         dst = ROOT / rel
         dst.parent.mkdir(parents=True, exist_ok=True)

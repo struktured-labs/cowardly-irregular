@@ -7485,6 +7485,26 @@
       "path": "res://assets/sprites/interiors/harmonia/back_wall_shop_blacksmith.png",
       "tier": "T1",
       "source": "gpt-image-2 + cut, the room-wide back wall strip cut from the approved style tile (struktured 2026-11-01: the inside of village houses and shops need a major sprite rework) -- tools/gen_interior_pieces.py; T1, artist veto applies."
+    },
+    "floor_inn_harmonia": {
+      "path": "res://assets/sprites/interiors/harmonia/floor_inn.png",
+      "tier": "T1",
+      "source": "gpt-image-2 + cut, a 4x4 floor PATTERN cut from the approved style tile, edge-band wrapped (struktured 2026-11-01: the inside of village houses and shops need a major sprite rework) -- tools/gen_interior_pieces.py; T1, artist veto applies."
+    },
+    "wall_inn_harmonia": {
+      "path": "res://assets/sprites/interiors/harmonia/wall_inn.png",
+      "tier": "T1",
+      "source": "gpt-image-2 + cut, a wall PATTERN cut from the approved style tile (struktured 2026-11-01: the inside of village houses and shops need a major sprite rework) -- tools/gen_interior_pieces.py; T1, artist veto applies."
+    },
+    "back_wall_inn_harmonia": {
+      "path": "res://assets/sprites/interiors/harmonia/back_wall_inn.png",
+      "tier": "T1",
+      "source": "gpt-image-2 + cut, the room-wide back wall strip cut from the approved style tile (struktured 2026-11-01: the inside of village houses and shops need a major sprite rework) -- tools/gen_interior_pieces.py; T1, artist veto applies."
+    },
+    "hearth_inn_harmonia": {
+      "path": "res://assets/sprites/interiors/harmonia/hearth_inn.png",
+      "tier": "T1",
+      "source": "gpt-image-2 + cut, the drawn fire box cut whole from the approved style tile, a 3x2 pattern on the hearth cells (struktured 2026-11-01: the inside of village houses and shops need a major sprite rework) -- tools/gen_interior_pieces.py; T1, artist veto applies."
     }
   }
 }
