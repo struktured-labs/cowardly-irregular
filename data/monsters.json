@@ -816,7 +816,7 @@
     "stats": {
       "max_hp": 407,
       "max_mp": 40,
-      "attack": 102,
+      "attack": 92,
       "defense": 32,
       "magic": 63,
       "magic_defense": 16,
@@ -5567,7 +5567,7 @@
     "stats": {
       "max_hp": 808,
       "max_mp": 70,
-      "attack": 162,
+      "attack": 130,
       "defense": 54,
       "magic": 65,
       "magic_defense": 34,
