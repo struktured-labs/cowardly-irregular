@@ -1823,8 +1823,10 @@ func _hint_strip_text(device_name: String = "") -> String:
 	var l_sh: String = InputProfileManager.button_name_for_index(JOY_BUTTON_LEFT_SHOULDER, device_name)
 	var r_sh: String = InputProfileManager.button_name_for_index(JOY_BUTTON_RIGHT_SHOULDER, device_name)
 	var opts: String = "[O]" if l_sh == "" else "%s/%s or [O]" % [l_sh, r_sh]
-	return "%s Edit   %s Close   %s%s Start/Stop   [R] Resume   %s Ludicrous   %s OPTIONS: Permadeath - Presets - Resume - Files" % [
-		confirm, cancel, del, start, ludi, opts,
+	## With a pad, "[R]" reads as the R shoulder, which opens the options ring; a pad reaches Resume through that ring.
+	var resume: String = "[R] Resume   " if l_sh == "" else ""
+	return "%s Edit   %s Close   %s%s Start/Stop   %s%s Ludicrous   %s OPTIONS: Permadeath - Presets - Resume - Files" % [
+		confirm, cancel, del, start, resume, ludi, opts,
 	]
 
 
