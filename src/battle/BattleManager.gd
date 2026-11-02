@@ -115,6 +115,26 @@ var execution_order: Array[Dictionary] = []  # Sorted by computed turn order
 var presentation_hold: float = 0.0
 
 
+## #763 (struktured: "the mage's fire attack kills the monster before it lands"): BattleScene sets this
+## during the action_executing dispatch when it launches a projectile-style ability sequence (Fire and
+## every other AbilityVFX "sequence" spell), to the sequence's impact time in battle seconds.
+## _execute_ability awaits it BEFORE resolving the effect, so the HP drop, the death and the despawn all
+## happen at the moment the bolt lands instead of on the cast frame. 0 = resolve immediately (headless,
+## tests, turbo/console, non-projectile abilities). The timer runs on Engine.time_scale exactly like the
+## VFX, so 1.5x / max speed stay in sync.
+var impact_hold: float = 0.0
+const IMPACT_HOLD_MAX := 3.0
+var _ability_exec_depth: int = 0
+
+
+func _take_impact_hold() -> float:
+	var h: float = clampf(impact_hold, 0.0, IMPACT_HOLD_MAX)
+	impact_hold = 0.0
+	if turbo_mode or not is_inside_tree():
+		return 0.0
+	return h
+
+
 func _consume_presentation_hold(base_delay: float) -> float:
 	var hold: float = maxf(base_delay, presentation_hold)
 	presentation_hold = 0.0
@@ -561,6 +581,7 @@ func start_battle(players: Array[Combatant], enemies: Array[Combatant]) -> void:
 
 	## Tick 406: reset per-battle mimic tracking.
 	_last_ability_cast_id = ""
+	impact_hold = 0.0
 	_last_ability_cast_caster = null
 
 	## Tick 419: gate escape on boss presence. Pre-fix escape_allowed
@@ -4308,7 +4329,7 @@ func _execute_next_action() -> void:
 		"attack":
 			_execute_attack(combatant, action.get("target"))
 		"ability":
-			_execute_ability(combatant, action.get("ability_id", ""), action.get("targets", []))
+			await _execute_ability(combatant, action.get("ability_id", ""), action.get("targets", []))
 		"item":
 			_execute_item(combatant, action.get("item_id", ""), action.get("targets", []))
 		"defer":
@@ -5116,7 +5137,9 @@ func _execute_advance(combatant: Combatant, advance_action: Dictionary) -> void:
 				_execute_attack(combatant, action.get("target"))
 				combatant.spend_restriction_clocks()
 			"ability":
-				_execute_ability(combatant, action.get("ability_id", ""), action.get("targets", []))
+				await _execute_ability(combatant, action.get("ability_id", ""), action.get("targets", []))
+				if not is_instance_valid(self) or not is_instance_valid(combatant):
+					return
 				combatant.spend_restriction_clocks()
 			"item":
 				_execute_item(combatant, action.get("item_id", ""), action.get("targets", []))
@@ -5711,6 +5734,23 @@ func _execute_ability(caster: Combatant, ability_id: String, targets: Array) -> 
 		_last_ability_cast_id = ability_id
 		_last_ability_cast_caster = caster
 
+	## #763: wait for the projectile to land. Only the outermost cast waits (a Mimic replay nested inside
+	## an ability resolves right after its parent's impact).
+	var _impact_wait: float = _take_impact_hold()
+	if _impact_wait > 0.0 and _ability_exec_depth == 0:
+		## The post-action hold BattleScene set already counts the flight; don't pay it twice.
+		presentation_hold = maxf(0.0, presentation_hold - _impact_wait)
+		await get_tree().create_timer(_impact_wait).timeout
+		if not is_instance_valid(self) or not is_instance_valid(caster):
+			return
+		## A target may have left the field during the flight (fled, despawned by a scripted event).
+		retargeted = retargeted.filter(func(t): return is_instance_valid(t))
+	_ability_exec_depth += 1
+	_execute_ability_resolve(caster, ability_id, ability, ability_type, retargeted)
+	_ability_exec_depth -= 1
+
+
+func _execute_ability_resolve(caster: Combatant, ability_id: String, ability, ability_type, retargeted: Array) -> void:
 	match ability_type:
 		"physical":
 			_execute_physical_ability(caster, ability, retargeted)

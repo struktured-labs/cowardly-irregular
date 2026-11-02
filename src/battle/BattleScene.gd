@@ -3217,11 +3217,18 @@ func _play_ability_sequence(caster: Combatant, caster_sprite: Node2D, animator: 
 		if buffering:
 			_flush_full_render_damage()
 		return
+	BattleManager.presentation_hold = maxf(BattleManager.presentation_hold, impact + 0.35)
+	## #763: hold the whole RESOLUTION (HP drop, death, despawn), not just the numbers. BattleManager
+	## awaits impact_hold before applying the ability, so damage_dealt itself arrives at the impact and
+	## needs no buffering. Turbo/console skip the wait there, so they keep the old number buffer.
+	if not buffering and not BattleManager.turbo_mode:
+		_flush_full_render_damage()
+		BattleManager.impact_hold = maxf(BattleManager.impact_hold, impact)
+		return
 	if not buffering:
 		_flush_full_render_damage()
 		_full_render_dmg_buffer = []
 		_full_render_dmg_attacker = caster
-	BattleManager.presentation_hold = maxf(BattleManager.presentation_hold, impact + 0.35)
 	await get_tree().create_timer(impact).timeout
 	if not is_instance_valid(self):
 		return
