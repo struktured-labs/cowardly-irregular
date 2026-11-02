@@ -216,6 +216,11 @@ const DEFAULT_BATTLE_SPEED: float = 0.375
 ## The ladder before the 1.5x rung, for reading a battle_speed_index saved before speed_scale_v4.
 const LEGACY_V3_BATTLE_SPEEDS: Array[float] = [0.25, 0.5, 1.0, 2.0, 4.0, 8.0, 16.0]
 static var _battle_speed_index: int = DEFAULT_BATTLE_SPEED_INDEX  # persists across battles
+## Tap the speed button = one rung UP (wrapping, as always); hold it this long = one rung DOWN, clamped at
+## the slowest (struktured 2026-11-01). Wall clock, like Win98Menu's Auto hold: battle time is scaled.
+const SPEED_HOLD_MS: int = 400
+var _speed_hold_start_ms: int = -1
+var _speed_hold_fired: bool = false
 # Crit hitlag nests — two crits in the 80ms window and the second captured 0.1 as "normal"; depth-counted so only the outermost restores
 ## ⛔ THE COMMENT PROMISED THIS AND THE CODE NEVER DID IT. `_on_group_attack_executing`'s
 ## limit_break arm carried "# Stagger lunges slightly for visual impact" while every
@@ -871,8 +876,52 @@ func _start_battle_after_dialogue() -> void:
 
 
 func _toggle_battle_speed() -> void:
-	"""Cycle through battle speeds"""
-	_battle_speed_index = (_battle_speed_index + 1) % BATTLE_SPEEDS.size()
+	"""One rung up the speed ladder, wrapping from the fastest to the slowest."""
+	_apply_battle_speed_index((_battle_speed_index + 1) % BATTLE_SPEEDS.size())
+
+
+## One rung DOWN, clamped: at the slowest a hold changes nothing and says so.
+func _slow_battle_speed() -> void:
+	if _battle_speed_index <= 0:
+		SoundManager.play_ui("menu_error")
+		log_message("[color=gray]Battle speed: %s is the slowest[/color]" % BATTLE_SPEED_LABELS[_battle_speed_index])
+		return
+	_apply_battle_speed_index(_battle_speed_index - 1)
+
+
+## The speed button's press and release. A tap steps up on RELEASE; a hold steps down ONCE when it reaches
+## SPEED_HOLD_MS (in _process), and its release then does nothing, so one press is never both.
+func _speed_button(pressed: bool) -> void:
+	if pressed:
+		if _speed_hold_start_ms < 0:
+			_speed_hold_start_ms = Time.get_ticks_msec()
+			_speed_hold_fired = false
+		return
+	if _speed_hold_start_ms < 0:
+		return
+	var held: int = Time.get_ticks_msec() - _speed_hold_start_ms
+	var fired: bool = _speed_hold_fired
+	_speed_hold_start_ms = -1
+	_speed_hold_fired = false
+	if fired:
+		return
+	if held >= SPEED_HOLD_MS:
+		_slow_battle_speed()
+	else:
+		_toggle_battle_speed()
+
+
+func _tick_speed_hold() -> void:
+	if _speed_hold_start_ms < 0 or _speed_hold_fired:
+		return
+	if Time.get_ticks_msec() - _speed_hold_start_ms >= SPEED_HOLD_MS:
+		_speed_hold_fired = true
+		_slow_battle_speed()
+
+
+## The ONE writer of the persisted speed: the tap, the hold and any later caller all land here.
+func _apply_battle_speed_index(index: int) -> void:
+	_battle_speed_index = index
 	var speed = BATTLE_SPEEDS[_battle_speed_index]
 	# Options reads default_battle_speed; battle start applies this index. Same speed.
 	if GameState and "default_battle_speed" in GameState:
@@ -884,7 +933,7 @@ func _toggle_battle_speed() -> void:
 	log_message("[color=gray]Battle speed: %s[/color]" % BATTLE_SPEED_LABELS[_battle_speed_index])
 	## ASK Win98Menu, do not restate: speed is raw JOY_BUTTON_Y with no InputMap action, and that file
 	## is where the pad/keyboard decision already lives — "X" is Nintendo-only and ✕ is Cancel on a DualSense.
-	_show_hint("speed_toggle", "Press %s to change battle speed. Higher speeds skip animations for faster grinding." % Win98MenuClass.speed_hint())
+	_show_hint("speed_toggle", "Tap %s for a faster battle, hold it for a slower one. Higher speeds skip animations for faster grinding." % Win98MenuClass.speed_hint())
 
 
 func _animate_speed_change() -> void:
@@ -3850,6 +3899,8 @@ func _process(delta: float) -> void:
 
 	_tick_menu_watchdog()
 
+	_tick_speed_hold()
+
 	_process_weather_layer(delta)
 
 	if _battle_ended and not managed_by_game_loop:
@@ -5852,14 +5903,14 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 		return
 
-	# Battle speed toggle — ` key only. (Was documented as "Tab or `"; Tab is battle_toggle_auto.)
+	# Battle speed — ` key only. (Was documented as "Tab or `"; Tab is battle_toggle_auto.) Tap up, hold down.
+	if event is InputEventKey and not event.echo and event.keycode == KEY_QUOTELEFT:
+		_speed_button(event.pressed)
+		get_viewport().set_input_as_handled()
+		return
 	if event is InputEventKey and event.pressed and not event.echo:
-		if event.keycode == KEY_QUOTELEFT:
-			_toggle_battle_speed()
-			get_viewport().set_input_as_handled()
-			return
 		# Y key to repeat previous actions
-		elif event.keycode == KEY_Y:
+		if event.keycode == KEY_Y:
 			_repeat_previous_actions()
 			get_viewport().set_input_as_handled()
 			return
@@ -5869,11 +5920,17 @@ func _input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 			return
 
+	# The speed button's RELEASE: a tap steps up here, and a hold has already stepped down.
+	if event is InputEventJoypadButton and not event.pressed and event.button_index == JOY_BUTTON_Y:
+		_speed_button(false)
+		get_viewport().set_input_as_handled()
+		return
+
 	# Gamepad buttons (Nintendo layout: Y=left, X=top)
 	if event is InputEventJoypadButton and event.pressed:
-		# Y button - toggle battle speed
+		# Y button - battle speed (its release is routed above)
 		if event.button_index == JOY_BUTTON_Y:
-			_toggle_battle_speed()
+			_speed_button(true)
 			get_viewport().set_input_as_handled()
 			return
 		# X button - repeat previous actions
