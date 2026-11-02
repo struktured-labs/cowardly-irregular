@@ -255,9 +255,9 @@
 	},
 	"bp_recovery": {
 		"id": "bp_recovery",
-		"name": "BP Recovery",
+		"name": "AP Recovery",
 		"category": 2,
-		"description": "Recover 1 extra BP per turn when Defaulting",
+		"description": "Recover 1 extra AP per turn when Deferring",
 		"stat_mods": {},
 		"meta_effects": {
 			"bp_regen_bonus": 1
