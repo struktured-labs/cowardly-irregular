@@ -1,0 +1,109 @@
+{
+  "id": "world1_frosthold_npcs",
+  "title": "Frosthold Village",
+  "world": 1,
+  "keep_music": true,
+  "trigger": "world1_frosthold_entry",
+  "background": "prologue_village",
+  "description": "Mountain village under the Ice Dragon's peak, where the night lasts nine weeks and everyone has had time to form an opinion about you. Guard Ingrid has already judged your level. Old Man Björn remembers the first winter, or possibly the first compile. Hermit Kael automated his life and would like to tell you about it.",
+  "steps": [
+    {
+      "type": "letterbox_in",
+      "duration": 0.4
+    },
+    {
+      "type": "narration",
+      "text": "Frosthold sat in the shadow of the frozen peak, close enough to hear the dragon breathe on a still night. Nine weeks of the year the sun did not bother coming up at all. The village had decided long ago that this was not a hardship but a test, and that anyone who arrived from the warm side of the pass had failed it on the way in."
+    },
+    {
+      "type": "wait",
+      "duration": 0.3
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Guard Ingrid",
+          "text": "Stop there. Let me look at you.",
+          "theme": "guard",
+          "portrait": "guard"
+        },
+        {
+          "speaker": "Guard Ingrid",
+          "text": "No. Not high enough level. I can tell by the way you are standing. Warm-country stance. All knees.",
+          "theme": "guard",
+          "portrait": "guard"
+        },
+        {
+          "speaker": "Guard Ingrid",
+          "text": "I will let you in, because turning people away is paperwork. But the peak is up there, and it does not care about your stance either.",
+          "theme": "guard",
+          "portrait": "guard"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.4
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Old Man Björn",
+          "text": "Ingrid says that to everyone. She said it to me, and I was born here.",
+          "theme": "elder",
+          "portrait": "old_man"
+        },
+        {
+          "speaker": "Old Man Björn",
+          "text": "Glacius has held that mountain since the first compile. The first winter. Since the first winter. My memory has gaps in it the shape of words I am not supposed to use.",
+          "theme": "elder",
+          "portrait": "old_man"
+        },
+        {
+          "speaker": "Old Man Björn",
+          "text": "You want the Ice Scale, you will need more than warm clothes. Though warm clothes would be a start. Look at you.",
+          "theme": "elder",
+          "portrait": "old_man"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.3
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Hermit Kael",
+          "text": "Newcomers. Wonderful. I have a speech for this. I wrote it eleven years ago and it has run every time since.",
+          "theme": "villager",
+          "portrait": "young_man"
+        },
+        {
+          "speaker": "Hermit Kael",
+          "text": "Out here a man has two choices: freeze doing everything by hand, or write it down once and let it do itself. I chose the second. My breakfast makes itself. My small talk makes itself. This speech is making itself right now.",
+          "theme": "villager",
+          "portrait": "young_man"
+        },
+        {
+          "speaker": "Hermit Kael",
+          "text": "Come find me when you are tired of pressing the same button. Everyone gets tired. The ones who live up here just get tired faster.",
+          "theme": "villager",
+          "portrait": "young_man"
+        }
+      ]
+    },
+    {
+      "type": "set_flag",
+      "flag": "world1_frosthold_npcs_complete",
+      "value": true
+    },
+    {
+      "type": "letterbox_out",
+      "duration": 0.4
+    }
+  ]
+}
