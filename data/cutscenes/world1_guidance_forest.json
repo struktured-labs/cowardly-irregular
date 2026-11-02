@@ -3,7 +3,7 @@
   "title": "Village Guidance — The Forest",
   "world": 1,
   "trigger": "world1_guidance_forest",
-  "background": "prologue_village",
+  "background": "harmonia_square",
   "description": "After the cave, Elder Theron points toward Eldertree and the corrupted forest.",
   "steps": [
     {

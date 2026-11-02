@@ -42,7 +42,7 @@ STYLE = ("A single detailed 16-bit SNES-era JRPG pixel-art BUILDING for a mediev
          "The background is one flat, solid, pure magenta (#FF00FF) colour with no gradient. The building fills the "
          "frame and is centred.")
 
-FRONT = ("Draw it STRAIGHT-ON and symmetric, like the towns of Final Fantasy VI: the front wall faces the viewer "
+FRONT = ("A WIDE, generous building, wider than it is tall, with a full second storey. Draw it STRAIGHT-ON and symmetric, like the towns of Final Fantasy VI: the front wall faces the viewer "
          "squarely, the roof is seen from above and in front, no side wall is visible and nothing is drawn at a corner angle.")
 
 KINDS = {
@@ -57,24 +57,26 @@ KINDS = {
 
 
 ## Harmonia, one entry per building block (HarmoniaVillage.BUILDING_ART): key -> (width in tiles, what it is).
+## Widths follow the stretched pilot map (cowir-overworld 9a498fc3b, struktured 2026-11-01: "houses look small"):
+## 6 or 5 tiles wide, and the art stands well above its 4-row block so a house reads ~3x the party's height.
 HARMONIA = {
-    "harmonia_library": (3, "The town library: a two-storey building of pale cut stone with a grey slate roof, tall arched "
+    "harmonia_library": (6, "The town library: a two-storey building of pale cut stone with a grey slate roof, tall arched "
                             "windows, ivy climbing one corner, and a hanging sign with a pictured open book (no letters)."),
-    "harmonia_arcana": (3, "A magic shop: a violet-tiled roof with a small dormer, a hanging sign with a pictured crescent "
+    "harmonia_arcana": (5, "A magic shop: a violet-tiled roof with a small dormer, a hanging sign with a pictured crescent "
                            "moon and star, crystal orbs and spell scrolls in the front window, wisteria over the door."),
-    "harmonia_arms": (3, "A weapon and armour shop and smithy, wider than it is tall, with a small attic window in a dark "
+    "harmonia_arms": (6, "A weapon and armour shop and smithy, wider than it is tall, with a small attic window in a dark "
                          "slate roof and a stone chimney, a hanging sign with a pictured sword and shield (no letters), "
                          "a weapon rack and an anvil by the door."),
-    "harmonia_inn": (3, "The Sleepy Slime Inn: thatched straw roof with two dormer windows, warm lit windows, a hanging "
+    "harmonia_inn": (6, "The Sleepy Slime Inn: thatched straw roof with two dormer windows, warm lit windows, a hanging "
                         "sign with a pictured mug and a sleeping slime (no letters), a lantern by the door, flower boxes."),
-    "harmonia_remedies": (3, "Mystic Remedies, an item and potion shop: a green-tiled roof, a striped awning over a window "
+    "harmonia_remedies": (6, "Mystic Remedies, an item and potion shop: a green-tiled roof, a striped awning over a window "
                              "full of coloured potion bottles, a hanging sign with a pictured potion (no letters), herb "
                              "pots by the door."),
-    "harmonia_chapel": (3, "A small stone village chapel with a short bell tower and a visible bell above the entrance, an "
+    "harmonia_chapel": (6, "A small stone village chapel with a short bell tower and a visible bell above the entrance, an "
                            "arched stained-glass window, double wooden doors, a slate roof."),
-    "harmonia_tavern": (3, "The Dancing Tonberry tavern: brown shingle roof, warm lit windows, a hanging sign with a pictured "
+    "harmonia_tavern": (5, "The Dancing Tonberry tavern: brown shingle roof, warm lit windows, a hanging sign with a pictured "
                            "small hooded creature holding a lantern (no letters), barrels stacked by the door."),
-    "harmonia_house": (3, "A modest village cottage: green shingle roof with a brick chimney, cream plaster walls in dark "
+    "harmonia_house": (5, "A modest village cottage: green shingle roof with a brick chimney, cream plaster walls in dark "
                           "timber framing, a flower box of yellow flowers under one window."),
 }
 
@@ -178,7 +180,11 @@ FUTURISTIC = {
 
 ## Village PROPS (struktured 2026-11-01: "any of that old school procgenylooking art needs to go"). Same style and
 ## straight-on view as the medieval buildings; width in tiles is the prop's drawn width.
-STYLE_PROP = STYLE.replace("BUILDING", "village PROP").replace("a wooden front door at the bottom centre. ", "")
+STYLE_PROP = ("A single small 16-bit SNES-era JRPG pixel-art OBJECT -- not a building, no walls, no roof, no windows, "
+              "no house -- seen from the front and a little above, like the props in the towns of classic Square RPGs. "
+              "Rich hand-pixeled detail, crisp dark outline, warm limited palette, soft top-left lighting. No people, no "
+              "text or letters, no ground, no grass, no shadow on the ground, nothing else in the picture. The background "
+              "is one flat, solid, pure magenta (#FF00FF) colour with no gradient. The object fills the frame and is centred.")
 PROPS = {
     "harmonia_fountain": (3, "Harmonia's plaza fountain: a round two-tier carved stone fountain basin, clear blue water "
                              "spilling from the upper bowl into the lower pool, and a small blossoming pink cherry tree "
@@ -189,9 +195,50 @@ PROPS = {
                          "and shadow. It must stay narrow: it stands one step from doorways."),
     "tree_frosthold": (2, "A single snow-laden pine tree: a short dark trunk, layered dark-green boughs heavy with white "
                           "snow, a pointed top. Taller than it is wide."),
+    "lamp_post_medieval": (1, "A single tall thin wrought-iron village street lamp: a slim black iron post on a small stone "
+                              "base, topped by a four-paned lantern with a warm glowing candle flame. Very tall and narrow."),
+    "lamp_post_suburban": (1, "A single tall thin 1990s suburban street lamp: a slim dark-green metal pole on a small concrete "
+                              "base, topped by a round frosted-glass globe lamp glowing warm white. Very tall and narrow."),
+    "lamp_post_steampunk": (1, "A single tall thin Victorian gas street lamp: a slim fluted brass-and-iron post with rivets, a "
+                               "small gauge and a copper pipe, topped by a glass gas lantern glowing amber. Very tall and narrow."),
+    "cart_medieval": (2, "A single wooden village hand cart with two big spoked wooden wheels and long handles, loaded with "
+                         "a few sacks, a crate and some hay. Seen from the side and slightly above, wider than it is tall."),
+    "cart_suburban": (2, "A single 1990s supermarket shopping cart: a silver wire-mesh basket with a red plastic handle on four "
+                         "small swivel wheels, empty. Seen from the side and slightly above, wider than it is tall."),
+    "cart_steampunk": (2, "A single Victorian steampunk handcart: riveted brass-and-iron body, two spoked iron wheels, a small "
+                          "boiler with a pressure gauge and a copper pipe, carrying a crate of gears. Seen from the side and "
+                          "slightly above, wider than it is tall."),
+    "stall_medieval": (2, "A single small village market stall: a wooden counter under a striped red-and-cream cloth awning on "
+                          "two posts, with baskets of apples, bread and pottery on the counter."),
+    "stall_steampunk": (2, "A single small Victorian steampunk market stall: a brass-trimmed wooden counter under a riveted "
+                           "copper canopy, a little steam pipe, with jars, cogs and pocket watches laid out for sale."),
+    "well_medieval": (2, "A single round stone village well: a ring of grey fieldstone, a small peaked wooden roof on two posts "
+                         "with a winch, a rope and a wooden bucket."),
+    "barrel": (1, "A single sturdy wooden barrel with dark iron hoops, standing upright."),
+    "crate": (1, "A single square wooden shipping crate with nailed planks and a darker frame."),
+    "planter": (1, "A single wooden half-barrel planter overflowing with green leaves and small red flowers."),
+    "planter_suburban": (1, "A single round terracotta flower pot full of bright red geraniums, 1990s front-porch style."),
+    "planter_steampunk": (1, "A single riveted copper planter box on little iron feet, holding a small fern."),
+    "fence": (1, "One short square section of a rustic wooden village fence, as tall as it is wide: two stout posts and "
+                 "two horizontal rails, the rails running all the way off both the left and right edges so sections join."),
+    "fence_suburban": (1, "One short square section of a white wooden picket fence, as tall as it is wide: tall pointed white "
+                          "pickets on two rails, the rails running off both the left and right edges so sections join."),
+    "banner": (1, "A single tall cloth village banner hanging from a wooden pole with a crossbar: deep red cloth with a "
+                  "golden crest, a forked bottom edge. Tall and narrow."),
+    "banner_steampunk": (1, "A single tall cloth banner hanging from a brass pole with a crossbar: dark green cloth with a "
+                            "golden cog emblem, a straight fringed bottom edge. Tall and narrow."),
+    "crate_futuristic": (1, "A single sleek sci-fi cargo crate: dark glossy panels with glowing cyan neon trim and a small "
+                            "holographic label light (no letters)."),
+    "crate_industrial": (1, "A single grey steel industrial shipping crate with riveted corners, a yellow-and-black hazard "
+                            "stripe and stencil-style marks (no readable letters)."),
+    "barrel_industrial": (1, "A single dented blue steel oil drum with ribbed bands and a small hazard sticker, standing upright."),
 }
-## Props whose art must stand a fixed height (the TREE prop's footprint is 1x3: 96px).
-PROP_HEIGHT = {"tree_medieval": 96}
+## See-through props (wire mesh): the border flood cannot reach backdrop enclosed by the wires, so key it everywhere.
+KEY_EVERYWHERE = {"cart_suburban", "well_medieval", "fence", "fence_suburban"}
+## Props whose art must stand a fixed height: the lamp's light anchor sits 50px above its base (VillageProp), and the
+## TREE prop's footprint is 1x3, so 96px.
+PROP_HEIGHT = {"lamp_post_medieval": 64, "lamp_post_suburban": 64, "lamp_post_steampunk": 64,
+               "banner": 64, "banner_steampunk": 64, "tree_medieval": 96}
 
 ## Terrain TILES (32x32, opaque, edge to edge): drawn as a square patch of ground filling the whole frame.
 TILE_STYLE = ("A single square 16-bit SNES-era JRPG pixel-art overworld TILE, seen from above at a slight angle, that "
@@ -206,7 +253,14 @@ TILES = {
     "snow_tree_0": "One snow-covered pine tree, on white snowy ground with a few dark rocks, the snow reaching every edge.",
     "shade_tree_0": "One broad suburban shade tree with a full, bright summer-green leafy canopy (green, not autumn), "
                     "seen from slightly above, on a neat green lawn that reaches every edge.",
+    "water_0": "Calm pond water seen from above, in the restrained style of 16-bit JRPG water tiles: ONE even medium "
+               "blue over the whole square, no light or dark patches, no gradient, with only a few short thin pale "
+               "ripple strokes and two or three tiny white glints scattered sparsely. No shore, no rocks, no plants.",
 }
+## Tiles that repeat edge to edge (every water cell is the SAME atlas id), so they must wrap onto themselves.
+SEAMLESS = {"water_0"}
+## TileGenerator.PALETTES[TileType.WATER] base / light / foam, as 8-bit RGB.
+WATER_BASE, WATER_LIGHT, WATER_FOAM = (51, 115, 191), (97, 158, 224), (209, 230, 250)
 
 
 def tile_from_raw(raw: Image.Image) -> Image.Image:
@@ -216,6 +270,40 @@ def tile_from_raw(raw: Image.Image) -> Image.Image:
     return raw.resize((TILE, TILE), Image.LANCZOS).quantize(colors=COLOURS, method=Image.MEDIANCUT).convert("RGBA")
 
 
+def make_seamless(raw: Image.Image) -> Image.Image:
+    """Even-blue water tiles onto itself for free; only its sparse glints need carrying down to 32px.
+
+    A 1024px glint is a few pixels wide, so an averaging resize erases it. Take the 256px window holding the most
+    glints and reduce each 8x8 block by its BRIGHTEST pixel: a block with a glint becomes one pale pixel, a block
+    with a fainter ripple a mid tone, everything else the median base. The base is uniform, so every edge matches."""
+    import numpy as np
+    a = np.asarray(raw.convert("RGB"), float)
+    lum = a.mean(axis=2)
+    base_lum = float(np.median(lum))
+    win = TILE * 8
+    best, best_n = (0, 0), -1
+    for y in range(0, a.shape[0] - win + 1, 64):
+        for x in range(0, a.shape[1] - win + 1, 64):
+            n = int((lum[y:y + win, x:x + win] > base_lum + 40).sum())
+            if 0 < n and (best_n < 0 or abs(n - 900) < abs(best_n - 900)):
+                best, best_n = (y, x), n
+    y, x = best
+    w = a[y:y + win, x:x + win]
+    wl = w.mean(axis=2).reshape(TILE, 8, TILE, 8).max(axis=(1, 3))
+    # The drawn SHAPES, in the world's own water palette (TileGenerator.PALETTES[WATER] base/light/foam), so the
+    # pond sits with every procedural water edge and shore beside it instead of in the model's colder blue.
+    out = np.empty((TILE, TILE, 3))
+    out[:] = WATER_BASE
+    out[wl > base_lum + 15] = WATER_LIGHT
+    out[wl > base_lum + 60] = WATER_FOAM
+    # Roll so no stroke is cut by an edge (the neighbour tile is plain base there); the base is uniform, so it wraps.
+    marks = wl > base_lum + 15
+    rows = min(range(TILE), key=lambda r: marks[r].sum() + marks[(r - 1) % TILE].sum())
+    cols = min(range(TILE), key=lambda c: marks[:, c].sum() + marks[:, (c - 1) % TILE].sum())
+    out = np.roll(out, (-rows, -cols), axis=(0, 1))
+    return Image.fromarray(np.clip(out, 0, 255).astype(np.uint8)).convert("RGBA")
+
+
 ## Where each staged tile lands: world sheet, TileType key (":N" = variant N), [col, row] in tile units.
 ## Row 3 is past the generated cliff/overlay rows; gen_tile_sheet_*.py carry it across a regen.
 TILE_SLOTS = {
@@ -223,6 +311,7 @@ TILE_SLOTS = {
     "forest_1": ("medieval", "FOREST:1", [1, 3]),
     "snow_tree_0": ("medieval", "SNOW_TREE", [2, 3]),
     "shade_tree_0": ("suburban", "SHADE_TREE", [0, 3]),
+    "water_0": ("medieval", "WATER", [3, 3]),
 }
 
 
@@ -254,7 +343,7 @@ def generate_tile(key: str) -> Path:
     raw = Image.open(io.BytesIO(base64.b64decode(r.data[0].b64_json))).convert("RGB")
     STAGE.mkdir(parents=True, exist_ok=True)
     raw.save(STAGE / f"tile_{key}_raw.png")
-    out = tile_from_raw(raw)
+    out = make_seamless(raw) if key in SEAMLESS else tile_from_raw(raw)
     dst = STAGE / f"tile_{key}.png"
     out.save(dst)
     return dst
@@ -305,6 +394,20 @@ def drop_key_fringe(img: Image.Image) -> Image.Image:
     return Image.fromarray(a, "RGBA")
 
 
+def key_everywhere(img: Image.Image, tol: int = 110) -> Image.Image:
+    """Clear EVERY backdrop-coloured pixel, not just the border-connected ones (for see-through art)."""
+    a = np.array(img.convert("RGBA"))
+    d = np.sqrt(((a[:, :, :3].astype(float) - np.array([255.0, 0.0, 255.0])) ** 2).sum(axis=2))
+    a[d < tol, 3] = 0
+    # Thin wires were antialiased against the magenta: pull any purple cast (red AND blue over green) back to grey.
+    r, g, b = a[..., 0].astype(int), a[..., 1].astype(int), a[..., 2].astype(int)
+    cast = (r > g + 20) & (b > g + 20)
+    grey = ((r + g + b) // 3).astype(np.uint8)
+    for c in range(3):
+        a[..., c] = np.where(cast, grey, a[..., c])
+    return Image.fromarray(a, "RGBA")
+
+
 def fit(img: Image.Image, width_tiles: int) -> Image.Image:
     """Crop to the building and scale its width to the block it stands on (TILE px per tile)."""
     img = key_out(img)
@@ -336,18 +439,52 @@ def generate(kind: str, width_tiles: int = 3) -> Path:
     return out
 
 
+## Buildings standing one row below a higher tier: the roof may cover that row's cliff face but not the walkable row
+## above it (struktured's pilot, cowir-overworld 21137: the inn's thatch rose over the ledge). Max art height in px:
+## the 4-row block (128) plus 24, so the top of the wall stays visible. The floor keeps the art over its whole block:
+## shorter than 128 leaves bare footprint showing above the roof (the first low draws came out 107 and 119).
+HEIGHT_BAND = {"harmonia_inn": (136, 152), "harmonia_remedies": (136, 152)}
+LOW_ROOF = ("Keep the roof MODEST: one full storey of wall with windows and the door, then a moderate roof with small "
+            "dormers. It is noticeably wider than it is tall, but it is NOT a squat shed: the wall is a full storey.")
+TRIES = 6
+
+
 def generate_harmonia(key: str, view: str) -> Path:
-    """One village building (Harmonia or W1), straight-on ("front", struktured's pick B) or corner-angled ("corner", A)."""
+    """One village building (Harmonia or W1), straight-on ("front", struktured's pick B) or corner-angled ("corner", A).
+
+    A building in HEIGHT_BAND is redrawn (up to TRIES) until its height lands in the band; the draw nearest the band's
+    top is kept, and nothing is staged if none fits."""
     from openai import OpenAI
     width, what = BUILDINGS[key]
     style = next((st for pool, _, st in POOLS.values() if st and key in pool), STYLE)
     face = f"\n\n{FRONT}" if view == "front" else ""
-    r = OpenAI().images.generate(model=MODEL, prompt=f"{style}{face}\n\nThe building: {what}", size="1024x1024", n=1)
-    raw = Image.open(io.BytesIO(base64.b64decode(r.data[0].b64_json)))
+    band = HEIGHT_BAND.get(key)
+    low = f"\n\n{LOW_ROOF}" if band else ""
     STAGE.mkdir(parents=True, exist_ok=True)
-    raw.save(STAGE / f"{key}_{view}_raw.png")
     out = STAGE / f"{key}_{view}.png"
-    fit(raw, width).save(out)
+    best = None
+    for i in range(TRIES if band else 1):
+        r = OpenAI().images.generate(model=MODEL, prompt=f"{style}{face}{low}\n\nThe building: {what}", size="1024x1024", n=1)
+        raw = Image.open(io.BytesIO(base64.b64decode(r.data[0].b64_json)))
+        raw.save(STAGE / f"{key}_{view}_raw{i}.png")
+        if key in KEY_EVERYWHERE:
+            raw = key_everywhere(raw)
+        art = fit(raw, width)
+        if key in PROP_HEIGHT and art.height != PROP_HEIGHT[key]:
+            h = PROP_HEIGHT[key]
+            art = art.resize((max(1, round(art.width * h / art.height)), h), Image.LANCZOS)
+            art.putalpha(art.split()[3].point(lambda v: 255 if v >= 128 else 0))
+        print(f"  {key} try {i + 1}: {art.width}x{art.height}" + (f" (band {band[0]}-{band[1]})" if band else ""))
+        if band is None:
+            best = art
+            break
+        if band[0] <= art.height <= band[1] and (best is None or art.height > best.height):
+            best = art
+        if best is not None and best.height >= band[1] - 6:
+            break
+    if best is None:
+        raise SystemExit(f"{key}: none of {TRIES} draws landed in {band[0]}-{band[1]}px; nothing staged")
+    best.save(out)
     return out
 
 

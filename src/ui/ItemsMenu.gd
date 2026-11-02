@@ -18,6 +18,8 @@ var selected_item_index: int = 0
 var selected_target_index: int = 0
 var mode: int = 0  # 0 = item list, 1 = target selection
 var _item_list: Array = []  # Array of {id, quantity} for display
+## Ids that were NEW when the menu opened: their tag stays drawn for this visit even after the cursor clears them.
+var _new_at_open: Dictionary = {}
 ## First visible row of the item window. MenuScroll needs the PREVIOUS offset to decide whether
 ## the window must move at all, so this is stored rather than recomputed.
 var _item_scroll: int = 0
@@ -72,9 +74,23 @@ func setup(game_party: Array, party_inventory: Dictionary = {}) -> void:
 	else:
 		inventory = party_inventory
 
+	_new_at_open.clear()
+	if GameState:
+		for id in GameState.unseen_items:
+			_new_at_open[id] = true
+
 	# Build item list (only usable outside battle)
 	_build_item_list()
 	call_deferred("_build_ui")
+
+
+## The one rule for which items this list shows: known, and usable outside battle. OverworldMenu asks it too, so its
+## NEW marker never counts an item that has no row here to be seen on.
+static func lists_item(item_id: String) -> bool:
+	var item_data = ItemSystem.get_item(item_id)
+	if item_data.is_empty():
+		return false
+	return item_data.get("category", ItemSystem.ItemCategory.CONSUMABLE) != ItemSystem.ItemCategory.OFFENSIVE
 
 
 func _build_item_list() -> void:
@@ -85,14 +101,9 @@ func _build_item_list() -> void:
 		if inventory[item_id] <= 0:
 			continue
 
-		var item_data = ItemSystem.get_item(item_id)
-		if item_data.is_empty():
+		if not lists_item(str(item_id)):
 			continue
-
-		# Only include items usable outside battle (consumables, curatives, buffs)
-		var category = item_data.get("category", ItemSystem.ItemCategory.CONSUMABLE)
-		if category == ItemSystem.ItemCategory.OFFENSIVE:
-			continue  # Can't use offensive items outside battle
+		var item_data = ItemSystem.get_item(item_id)
 
 		_item_list.append({
 			"id": item_id,
@@ -256,6 +267,19 @@ func _create_item_row(item: Dictionary, index: int) -> Control:
 	name_label.add_theme_color_override("font_color", _get_item_color(item["data"]))
 	name_label.name = "Name"
 	row.add_child(name_label)
+
+	if _new_at_open.has(str(item.get("id", ""))):
+		var tag_w: float = NewItemTag.width(10) + 6.0
+		var tag := NewItemTag.make(10)
+		tag.anchor_left = 1.0
+		tag.anchor_right = 1.0
+		tag.offset_left = -52.0 - tag_w
+		tag.offset_right = -52.0
+		tag.offset_top = 0
+		tag.offset_bottom = 32
+		tag.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		row.add_child(tag)
+		name_label.offset_right = -52.0 - tag_w - 4.0
 
 	# Quantity sits on the right edge of the row, not a fixed x that long names run into.
 	var qty_label = Label.new()
@@ -645,9 +669,16 @@ func _create_target_row(member: Combatant, index: int) -> Control:
 	return row
 
 
+## The cursor resting on a row is the player seeing it: the item stops being news (its tag stays for this visit).
+func _note_seen_under_cursor() -> void:
+	if GameState and selected_item_index >= 0 and selected_item_index < _item_list.size():
+		GameState.mark_seen(str(_item_list[selected_item_index].get("id", "")))
+
+
 func _update_selection() -> void:
 	"""Update visual selection state"""
 	if mode == 0:
+		_note_seen_under_cursor()
 		# Update item list selection
 		for i in range(_item_labels.size()):
 			var row = _item_labels[i]
