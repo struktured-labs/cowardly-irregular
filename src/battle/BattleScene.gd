@@ -2744,6 +2744,7 @@ func _play_ability_animation(anim_type: String, animator: BattleAnimatorClass = 
 ## ============================================================
 
 var _full_render_dmg_buffer = null  # null = pass-through; Array = buffering until impact
+var _deaths_after_impact: Array = []  # enemy indices killed by a held hit, dissolved when it lands
 var _full_render_dmg_attacker: Combatant = null  # caster captured at buffer-arm; flush restores it for attribution
 var _full_render_depth: int = 0
 var _full_render_dim_rect: ColorRect = null
@@ -2933,6 +2934,37 @@ func _play_signature(caster: Combatant, caster_sprite: Node2D, animator: BattleA
 		_set_battle_time_scale(restore_to)
 
 
+## Secret of Mana-style (struktured 2026-11-01): how grand a cast LOOKS follows its caster's level and stat. Presentation only.
+const INTENSITY_TIERS := [0.0, 0.35, 0.7]  # score at which tiers 1, 2 and 3 begin
+const INTENSITY_LEVEL_CAP := 58.0  # the Calibrant's level, the top of the ladder
+const INTENSITY_STAT_GLORY := 1000.0  # a stat this high reads as full glory (Mordaine's magic is 941)
+
+
+## {k: size/shake multiplier 0.85-1.4, tier: 1-3, score: 0-1}; 60% level, 40% the cast's stat on a log scale.
+func cast_intensity(caster: Combatant, ability: Dictionary) -> Dictionary:
+	var level := 1.0
+	var stat := 0.0
+	if caster != null and is_instance_valid(caster):
+		level = float(caster.job_level)
+		var entry = _load_monsters_data().get(str(caster.get_meta("monster_type", "")), {})
+		if entry is Dictionary and entry.has("level"):
+			level = float(entry["level"])
+		var physical := str(ability.get("type", "")) == "physical"
+		stat = float(caster.get_buffed_stat("attack" if physical else "magic", caster.attack if physical else caster.magic))
+	return intensity_for(level, stat)
+
+
+static func intensity_for(level: float, stat: float) -> Dictionary:
+	var lv := clampf((level - 1.0) / (INTENSITY_LEVEL_CAP - 1.0), 0.0, 1.0)
+	var st := clampf(log(1.0 + maxf(stat, 0.0)) / log(1.0 + INTENSITY_STAT_GLORY), 0.0, 1.0)
+	var score := 0.6 * lv + 0.4 * st
+	var tier := 1
+	for i in INTENSITY_TIERS.size():
+		if score >= float(INTENSITY_TIERS[i]):
+			tier = i + 1
+	return {"k": lerpf(0.85, 1.4, score), "tier": tier, "score": score}
+
+
 ## A sequence's whole length in battle seconds, recursion included (FractalFX.play's own sum).
 static func sequence_total(seq_id: String) -> float:
 	var seq: Dictionary = FractalFX.load_sequence(seq_id)
@@ -3028,6 +3060,7 @@ func _play_ability_sequence(caster: Combatant, caster_sprite: Node2D, animator: 
 		from = _stable_sprite_anchor(caster_sprite) + Vector2(40.0 * facing, -20.0)
 	var impact := 0.0
 	var first := true
+	var intensity := cast_intensity(caster, ability)
 	for target in targets:
 		var ts = _get_combatant_sprite(target)
 		if ts == null or not is_instance_valid(ts):
@@ -3035,7 +3068,8 @@ func _play_ability_sequence(caster: Combatant, caster_sprite: Node2D, animator: 
 		# Sprite-moving phases (lunge, hitstop, impact frames) act once, on the first target, not once per target.
 		var actors: Dictionary = {"caster": caster_sprite, "target": ts} if first else {}
 		first = false
-		var played: Dictionary = EffectSystem.spawn_sequence(seq_id, from, _stable_sprite_anchor(ts), float(AbilityVFX.resolve(ability)["power"]), actors)
+		var played: Dictionary = EffectSystem.spawn_sequence(seq_id, from, _stable_sprite_anchor(ts),
+			float(AbilityVFX.resolve(ability)["power"]) * float(intensity["k"]), actors, int(intensity["tier"]))
 		impact = maxf(impact, float(played.get("impact", 0.0)))
 	if impact <= 0.0:
 		_spawn_ability_effects(ability, targets)
@@ -3318,6 +3352,10 @@ func _flush_full_render_damage() -> void:
 		_on_damage_dealt(args[0], args[1], args[2], args[3], args[4])
 	_last_acting_combatant = prev_acting
 	_full_render_dmg_attacker = null
+	var deaths: Array = _deaths_after_impact
+	_deaths_after_impact = []
+	for idx in deaths:
+		_on_enemy_died(idx)
 
 
 func _on_item_pressed() -> void:
@@ -5757,6 +5795,11 @@ func _on_enemy_hp_changed(old_value: int, new_value: int, enemy_idx: int) -> voi
 func _on_enemy_died(enemy_idx: int) -> void:
 	"""Handle enemy death"""
 	_command_menu.invalidate_alive_cache()
+	# A held hit has not landed yet: dissolving now left Fractal Fire's bolt flying at an empty spot (struktured, .760 preview).
+	if _full_render_dmg_buffer != null:
+		if not enemy_idx in _deaths_after_impact:
+			_deaths_after_impact.append(enemy_idx)
+		return
 	# enemy_death moved INTO the death tween (after the flash): fired here it started first and the killing blow's hit sound stomped it on the shared _battle_player — the scorch was never audible (struktured 2026-08-15).
 	# The duck stays HERE rather than moving with the cue: it writes a bus effect, not a player, so the stomping that motivated that move cannot reach it, and punctuation should land on the death event rather than on the flash.
 	if _intent_tier() == BattleJuice.Tier.FULL and BattleJuice.flag("audio_kill_duck"):
