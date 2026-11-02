@@ -239,7 +239,7 @@ func _add_lamp_post(base_cell: Vector2i) -> VillageProp:
 func _add_prop(kind: int, base_cell: Vector2i) -> VillageProp:
 	var p: VillageProp = VillagePropScript.create(kind, base_cell)
 	p.sheet_key = tile_generator._get_sheet_key()
-	p.art_path = VillagePropScript.prop_art_path(VillagePropScript.Kind.keys()[kind].to_lower(), p.sheet_key)
+	p.art_path = VillagePropScript.prop_art_path(VillagePropScript.Kind.keys()[kind].to_lower(), p.sheet_key, VillagePropScript.village_art_key(_get_area_id()))
 	for c in p.footprint_cells(base_cell):
 		_prop_blocked[c] = true
 	props.add_child(p)

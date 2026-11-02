@@ -3,7 +3,7 @@
   "title": "Village Guidance — The Cave",
   "world": 1,
   "trigger": "world1_guidance_cave",
-  "background": "prologue_village",
+  "background": "harmonia_square",
   "description": "After prologue, NPCs hint that the Whispering Cave to the northwest is where the monsters are coming from.",
   "steps": [
     {
