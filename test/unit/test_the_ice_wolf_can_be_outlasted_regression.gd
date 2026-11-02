@@ -5,6 +5,8 @@ extends GutTest
 ## wolf's own attack moved. This pins the INTENT both ways, derived from the data rather than a stat value:
 ##   clever — a full-HP back-liner who Defers outlives the wolf's biggest crit;
 ##   still dangerous — an undefended back-liner's average crit stays near the whole of their HP, so it is no stroll.
+## Survivable if you Defer; undefended is a coin flip by design (cowir-main 21328, his "lucky and/or clever").
+## cowir-main 21325 widened arm 1 to every W1 trash monster: the bone_warden was the one other that failed (attack 162 → 143).
 
 const WOLF := "ice_wolf"
 const BACK_ROW := ["cleric", "mage", "bard", "rogue"]
@@ -102,9 +104,29 @@ func test_an_undefended_back_liner_still_fears_the_crit() -> void:
 	assert_lt(frailest, 1.1, "the wolf must stay dangerous: its average crit should take ~90%+ of the frailest back-liner's HP")
 
 
-func test_every_monster_in_the_wolfs_band_can_be_outlasted_the_same_way() -> void:
-	var band := _wolf_band()
-	assert_true(WOLF in band and band.size() >= 3, "CONTROL: the band is derived from the pools and holds the wolf's companions: %s" % str(band))
+## Every non-boss monster in a World 1 pool: pools whose every member stands below the W1 final boss's level.
+func _w1_trash() -> Array:
+	var mons := _monsters()
+	var cap: int = int((mons.get("chancellor_mordaine", {}) as Dictionary).get("level", 0))
+	var out: Array = []
+	for ids in _pools().values():
+		var w1 := true
+		for id in ids:
+			if mons.has(str(id)) and int((mons[str(id)] as Dictionary).get("level", 0)) >= cap:
+				w1 = false
+		if not w1:
+			continue
+		for id in ids:
+			if mons.has(str(id)) and not bool((mons[str(id)] as Dictionary).get("boss", false)) and not (str(id) in out):
+				out.append(str(id))
+	return out
+
+
+func test_every_w1_trash_monster_can_be_outlasted_the_same_way() -> void:
+	var band := _w1_trash()
+	assert_true(WOLF in band and "bone_warden" in band and band.size() >= 20, "CONTROL: the W1 trash set is derived from the pools: %d" % band.size())
+	for wolf_mate in _wolf_band():
+		assert_true(wolf_mate in band, "CONTROL: the wolf's own band sits inside it (%s)" % wolf_mate)
 	for who in band:
 		var level := maxi(1, _meeting_level_of(str(who)))
 		for job_id in BACK_ROW:
