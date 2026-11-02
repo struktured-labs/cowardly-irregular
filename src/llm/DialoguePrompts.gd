@@ -713,7 +713,8 @@ static func build_boss_intent(
 	display_name: String,
 	ctx: Dictionary,
 ) -> String:
-	var persona: String = str(ctx.get("persona", ""))
+	## Quoted to the model as its voice, so it must not show the long hyphen runs the cleaner removes.
+	var persona: String = unrun_hyphens(str(ctx.get("persona", "")))
 	if persona.is_empty():
 		persona = "A formidable JRPG boss."
 	var phase: int = int(ctx.get("phase", 1))
@@ -835,6 +836,7 @@ static func build_boss_intent(
 		+ "- intent_id MUST be one of the listed values, verbatim.\n"
 		+ "- reason: one short sentence (≤ %d chars) explaining WHY this intent fits the moment. Internal use only.\n" % MAX_BOSS_REASON_CHARS
 		+ "- taunt: one in-character line (≤ %d chars) to surface in the combat log. No quote marks.\n" % MAX_BOSS_TAUNT_CHARS
+		+ HYPHEN_RUN_RULE % MAX_HYPHEN_RUN_WORDS
 		+ "- Respond with ONLY valid JSON: {\"intent_id\": \"...\", \"reason\": \"...\", \"taunt\": \"...\"}\n"
 	)
 	return prompt
@@ -1409,8 +1411,28 @@ static func clean_model_text(text: String) -> String:
 		if t.length() >= 2 and t.begins_with(pair[0]) and t.ends_with(pair[1]):
 			var inner: String = t.substr(1, t.length() - 2)
 			if not inner.contains(pair[0]) and not inner.contains(pair[1]):
-				return inner.strip_edges()
-	return t
+				t = inner.strip_edges()
+				break
+	return unrun_hyphens(t)
+
+
+## Longest run of hyphen-joined words a model line keeps; longer runs read as one unbroken word (struktured, Voltharion).
+const MAX_HYPHEN_RUN_WORDS: int = 3
+## Said in every boss prompt, so the model is told the same limit the cleaner enforces.
+const HYPHEN_RUN_RULE: String = "- If this voice joins words with hyphens, keep each burst to at most %d words; never hyphenate a whole sentence.\n"
+
+
+## A run of more than MAX_HYPHEN_RUN_WORDS hyphen-joined words gets plain spaces; shorter bursts and compounds stay.
+static func unrun_hyphens(text: String) -> String:
+	var re := RegEx.create_from_string("[\\w']+(?:-[\\w']+)+")
+	var out: String = text
+	var hits: Array = re.search_all(text)
+	hits.reverse()
+	for m in hits:
+		var run: String = (m as RegExMatch).get_string()
+		if run.count("-") + 1 > MAX_HYPHEN_RUN_WORDS:
+			out = out.substr(0, m.get_start()) + run.replace("-", " ") + out.substr(m.get_end())
+	return out
 
 
 # ── Validation helpers ─────────────────────────────────────────────────────────
