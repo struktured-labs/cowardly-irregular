@@ -4340,7 +4340,7 @@ func _execute_defer(combatant: Combatant) -> void:
 	if bp_bonus > 0:
 		combatant.gain_ap(bp_bonus)
 		ap_granted.emit(combatant, bp_bonus)
-		battle_log_message.emit("[color=cyan]%s recovers %d extra AP (BP Recovery)![/color]" % [combatant.combatant_name, bp_bonus])
+		battle_log_message.emit("[color=cyan]%s recovers %d extra AP (AP Recovery)![/color]" % [combatant.combatant_name, bp_bonus])
 	print("%s defers (AP: %d)" % [combatant.combatant_name, combatant.current_ap])
 
 
