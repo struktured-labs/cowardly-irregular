@@ -160,3 +160,13 @@ func test_no_two_console_commands_share_a_pad_button() -> void:
 		if (owners[idx] as Array).size() > 1:
 			shared.append("button %d: %s" % [idx, ", ".join(owners[idx])])
 	assert_eq(shared, [], "two console commands on one pad button:\n  %s" % "\n  ".join(shared))
+
+
+## With a pad attached "[R]" reads as the R shoulder, which opens the options ring; the keyboard strip keeps it.
+func test_a_pad_strip_does_not_offer_r_for_resume() -> void:
+	var ui := _console()
+	assert_string_contains(ui._hint_strip_text(), "[R] Resume", "CONTROL: the keyboard strip still names R for Resume")
+	for pad in ["Nintendo Switch Pro Controller", "Xbox Series Controller", "Sony DualSense Wireless Controller"]:
+		var strip: String = ui._hint_strip_text(pad)
+		assert_false(strip.contains("[R]"), "%s: '[R]' sits beside the R shoulder that opens options: %s" % [pad, strip])
+		assert_string_contains(strip, "Resume", "%s: Resume is still named, in the options list" % pad)
