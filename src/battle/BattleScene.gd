@@ -5074,6 +5074,10 @@ func _on_round_ended(round_num: int) -> void:
 
 
 ## Bravely Default-style round boundary: brief centered banner + AP-label gold flash on the party panel. Banner suppressed at 4x+ (same convention as speech bubbles); the CUE is not — struktured 2026-08-22 "still no sound to indicate next round", and the banner threshold was swallowing it whole.
+## Clear sky above the ENEMIES panel (which starts at y 60): no bubble, title or panel ever draws there.
+const CHAIN_TAG_POS := Vector2(14, 32)
+
+
 ## The chain says so up front (struktured: "not even obvious it's a chain battle"): a banner, and a tag for the whole fight.
 static func chain_banner_text(link: int, total: int) -> String:
 	return "CHAIN ×%d: more are closing in!" % total if link <= 1 else "CHAIN %d/%d" % [link, total]
@@ -5093,8 +5097,9 @@ func _show_chain_intro(link: int, total: int) -> void:
 	tag.add_theme_constant_override("outline_size", 4)
 	tag.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	(ui if ui else self).add_child(tag)
-	## Under the round title, not on it: the title panel spans the top ~52 px (seen in tools/chain_shots).
-	tag.position = Vector2((get_viewport_rect().size.x - tag.get_combined_minimum_size().x) / 2.0, 54)
+	## Top-left, above the ENEMIES panel: centre-top is where the round title and the opening party bubbles sit (tools/chain_shots).
+	tag.z_index = 90
+	tag.position = Vector2(CHAIN_TAG_POS)
 	if turbo_mode or autogrind_console_mode:
 		return
 	var banner := Label.new()
