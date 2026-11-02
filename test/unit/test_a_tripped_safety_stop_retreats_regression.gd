@@ -94,8 +94,8 @@ func test_a_retreat_that_got_away_stops_the_grind_with_its_reason() -> void:
 	watch_signals(ctrl)
 	ctrl.request_safety_retreat("Safety stop: retreated at Cleric 22% HP")
 	ctrl.on_battle_ended(false)
-	assert_signal_emitted_with_parameters(ctrl, "grind_complete", ["Safety stop: retreated at Cleric 22% HP"],
-		"an escape after a safety stop is not 'Party defeated': the grind stops with the reason that sent it home")
+	## An escape after a safety stop is not "Party defeated": the grind stops with the reason that sent it home.
+	assert_signal_emitted_with_parameters(ctrl, "grind_complete", ["Safety stop: retreated at Cleric 22% HP"])
 
 
 ## Ludicrous (headless) grinds never take party turns, so the resolver asks the same check each round and retreats on its own.

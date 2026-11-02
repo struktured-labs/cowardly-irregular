@@ -66,9 +66,11 @@ func _texts(root: Node) -> Array:
 
 
 func test_a_rule_stop_puts_up_no_two_texts_on_top_of_each_other() -> void:
+	## A bare GameLoop also builds its title screen (SETTINGS/HELP); only what the grind's end puts up is judged.
+	var before: Array = _texts(_gl).map(func(t): return t["node"])
 	_gl._on_grind_complete("Your rule #1 stopped the grind")
 	await wait_frames(3)
-	var texts := _texts(_gl)
+	var texts := _texts(_gl).filter(func(t): return not (t["node"] in before))
 	assert_gt(texts.size(), 1, "CONTROL: the end of a grind puts text on screen")
 	var stacked: Array = []
 	for i in texts.size():
