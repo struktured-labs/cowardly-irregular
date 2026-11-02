@@ -1859,7 +1859,8 @@ func _edit_current_cell() -> void:
 
 	match cell_type:
 		"condition":
-			_cycle_condition_type()
+			_open_condition_picker()
+			return
 		"action":
 			_cycle_action_type()
 		"empty_condition":
@@ -1990,21 +1991,66 @@ func _cycle_condition_type() -> void:
 
 		# Cycle to next
 		idx = (idx + 1) % CONDITION_TYPES.size()
-		var new_type = CONDITION_TYPES[idx]
-
-		cond["type"] = new_type["id"]
-		if new_type["has_value"]:
-			## From AutogrindSystem, which owns the grammar. The per-entry default_op/default_value
-			## that used to sit in CONDITION_TYPES were correct and unreachable from the grid
-			## editor, so the editor grew its own and got six of nine wrong.
-			var _d: Dictionary = AutogrindSystem.condition_defaults_for(str(new_type.get("id", "")))
-			cond["op"] = _d.get("op", "<")
-			cond["value"] = _d.get("value", 0)
-		else:
-			cond.erase("op")
-			cond.erase("value")
-
+		_set_condition_type(cond, CONDITION_TYPES[idx])
 		_refresh_grid()
+
+
+func _set_condition_type(cond: Dictionary, new_type: Dictionary) -> void:
+	cond["type"] = new_type["id"]
+	if new_type["has_value"]:
+		## From AutogrindSystem, which owns the grammar; a private default table here got six of nine wrong.
+		var _d: Dictionary = AutogrindSystem.condition_defaults_for(str(new_type.get("id", "")))
+		cond["op"] = _d.get("op", "<")
+		cond["value"] = _d.get("value", 0)
+	else:
+		cond.erase("op")
+		cond.erase("value")
+
+
+const DELETE_CONDITION_ID := "delete_condition"
+
+
+## A on a condition (cowir-main 21465): the type list with "Delete condition" LAST, so opening it never lands on Delete.
+func _condition_picker_spec() -> Dictionary:
+	var cond := _condition_at_cursor()
+	var options: Array = []
+	var selected := 0
+	for i in CONDITION_TYPES.size():
+		options.append({"id": CONDITION_TYPES[i]["id"], "label": CONDITION_TYPES[i]["label"]})
+		if CONDITION_TYPES[i]["id"] == cond.get("type", ""):
+			selected = i
+	var only_one: bool = cursor_row < rules.size() and (rules[cursor_row].get("conditions", []) as Array).size() == 1
+	options.append({"id": DELETE_CONDITION_ID, "label": "Delete condition (and its rule)" if only_one else "Delete condition"})
+	return {"title": "Condition Type", "kind": "autogrind_condition", "selected": selected, "options": options}
+
+
+func _open_condition_picker() -> void:
+	if (_options_ring and is_instance_valid(_options_ring)) or _condition_at_cursor().is_empty():
+		return
+	var ring: Control = load("res://src/ui/RadialPicker.gd").new()
+	ring.setup(_condition_picker_spec())
+	ring.set_anchors_preset(Control.PRESET_FULL_RECT)
+	ring.option_chosen.connect(func(chosen_id: String, _spec: Dictionary):
+		_close_options_ring()
+		_commit_condition_choice(chosen_id))
+	ring.cancelled.connect(_close_options_ring)
+	_options_ring = ring
+	add_child(ring)
+	SoundManager.play_ui("menu_open")
+
+
+func _commit_condition_choice(chosen_id: String) -> void:
+	if chosen_id == DELETE_CONDITION_ID:
+		_delete_current_cell()
+		_update_cursor()
+		return
+	var cond := _condition_at_cursor()
+	for t in CONDITION_TYPES:
+		if t["id"] == chosen_id and not cond.is_empty():
+			_set_condition_type(cond, t)
+			_refresh_grid()
+			_update_cursor()
+			return
 
 
 ## validate_rule REFUSES an action missing its required fields, and _cycle_action_type only ever set
