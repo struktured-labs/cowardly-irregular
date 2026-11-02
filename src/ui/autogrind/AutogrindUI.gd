@@ -3622,6 +3622,9 @@ func set_grinding(active: bool) -> void:
 	if not active:
 		_hide_monitor()
 		visible = true  # Show config UI again when grinding stops
+		## The console comes back on "+ Add Rule", where B closes it. It came back on rule 1's first cell, where B DELETES it: his "B doesn't close" (2026-11-01).
+		cursor_row = rules.size()
+		cursor_col = 0
 	_build_ui()
 
 
