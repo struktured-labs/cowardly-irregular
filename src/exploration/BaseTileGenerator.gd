@@ -93,6 +93,23 @@ func _artist_tile(tile_type: int, variant: int) -> Image:
 	return TileSheetManifest.region(key, "tiles", name)
 
 
+const WATER_SURFACE_SHADER := preload("res://src/shaders/water_surface.gdshader")
+
+
+## The DRAWN water tile moves (drift, travelling glints, fountain rings); a painted one is left as it was.
+func _animate_drawn_water(atlas: TileSetAtlasSource, tile_order: Array, variants: Dictionary, cols: int, rows: int) -> void:
+	for i in range(tile_order.size()):
+		## Per cell's OWN variant: the medieval atlas keeps four painted "water frame" cells beside the drawn base tile.
+		if _get_tile_type_name(tile_order[i]) != "WATER" or _artist_tile(tile_order[i], int(variants.get(i, 0))) == null:
+			continue
+		var coords := Vector2i(i % cols, i / cols)
+		var mat := ShaderMaterial.new()
+		mat.shader = WATER_SURFACE_SHADER
+		mat.set_shader_parameter("region", Vector4(float(coords.x) / cols, float(coords.y) / rows, 1.0 / cols, 1.0 / rows))
+		mat.set_shader_parameter("tile_px", Vector2(TILE_SIZE, TILE_SIZE))
+		atlas.get_tile_data(coords, 0).material = mat
+
+
 ## Create a TileSet with all tile types for use in TileMap
 func create_tileset() -> TileSet:
 	var dims = _get_atlas_dimensions()
@@ -145,6 +162,7 @@ func create_tileset() -> TileSet:
 
 	# Add the atlas source to the tileset BEFORE setting collision data
 	tileset.add_source(atlas)
+	_animate_drawn_water(atlas, tile_order, tile_variants, atlas_cols, atlas_rows)
 
 	# Add collision for impassable tiles
 	for i in range(tile_order.size()):
