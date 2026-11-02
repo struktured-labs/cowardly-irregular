@@ -6324,16 +6324,12 @@ func _spawn_elemental_indicator(target: Combatant, element: String, modifier: fl
 	# Tick 209: stagger so multi-element hits (formation combos, weakness chains) don't pile labels on top of each other.
 	pos.y -= _count_recent_elem_indicators_near(pos) * ELEM_STAGGER_STEP
 
-	var label = Label.new()
-	label.text = text
-	label.add_theme_font_size_override("font_size", TextScale.scaled(14))
-	label.add_theme_color_override("font_color", color)
-	# Tick 218: add full-perimeter outline so RESIST/IMMUNE colors don't blend into the Mode 7 floor grid lines. Shadow alone is offset (lower-right only) — top-left edges go unprotected against busy backgrounds. Matches the contrast scheme DamageNumber uses.
-	label.add_theme_constant_override("outline_size", 2)
-	label.add_theme_color_override("font_outline_color", Color.BLACK)
-	label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.8))
-	label.add_theme_constant_override("shadow_offset_x", 1)
-	label.add_theme_constant_override("shadow_offset_y", 1)
+	# Pixel pass 2026-11-02: the same PixelText face as the damage numbers, so floating battle text is one family. Its
+	# outline and drop shadow are baked into every glyph (the tick 218 contrast fix, now in pixels).
+	var label := PixelText.new(text, DamageNumber.pixel_scale_for(2))
+	label.modulate = color
+	var half: Vector2 = Vector2(label.base_size() * label.pixel_scale) / 2.0
+	pos = (pos + half).round()
 	label.position = pos
 	label.z_index = 100
 	# Tick 209: tag for the stagger counter — bare Labels at BattleScene root would otherwise match generic Label checks.
@@ -6341,9 +6337,14 @@ func _spawn_elemental_indicator(target: Combatant, element: String, modifier: fl
 	add_child(label)
 
 	var tween = create_tween()
-	tween.tween_property(label, "position:y", pos.y - 30, 0.8)
+	tween.tween_method(func(y: float) -> void: _rise_on_whole_pixels(label, y), pos.y, pos.y - 30, 0.8)
 	tween.parallel().tween_property(label, "modulate:a", 0.0, 0.8).set_delay(0.3)
 	tween.tween_callback(label.queue_free)
+
+
+func _rise_on_whole_pixels(label: Node2D, y: float) -> void:
+	if is_instance_valid(label):
+		label.position.y = roundf(y)
 
 
 # Tick 209: stagger constants for elemental indicator labels. Same insight as tick 205 (Toast) + tick 208 (damage popups), different node type.
@@ -6360,7 +6361,7 @@ func _elem_weak_color() -> Color:
 func _count_recent_elem_indicators_near(pos: Vector2) -> int:
 	var count: int = 0
 	for child in get_children():
-		if is_instance_valid(child) and child is Label and child.has_meta("elem_indicator"):
+		if is_instance_valid(child) and child is PixelText and child.has_meta("elem_indicator"):
 			if child.position.distance_squared_to(pos) < ELEM_STAGGER_RADIUS_SQUARED:
 				count += 1
 	return count
