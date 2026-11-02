@@ -216,3 +216,55 @@ func test_an_empty_slot_with_nothing_to_undo_does_nothing_in_both() -> void:
 	var c := _press_at(ui, empty)
 	assert_eq(c, e, "both screens must do the same on an empty slot with no delete to undo")
 	assert_eq(e, "nothing", "and that is NOTHING")
+
+
+## ── .763 (cowir-main 21465): A on a condition opens the type list, and both end with the same Delete. ──
+
+## The last row each screen offers on a condition, read off its own picker spec.
+func _editor_delete_row(ed: Node) -> Dictionary:
+	ed.cursor_col = 0
+	ed._open_condition_editor()
+	var options: Array = (ed._option_picker.get_meta("spec") as Dictionary).get("options", [])
+	return options[-1] if not options.is_empty() else {}
+
+
+func _console_delete_row(ui: Node) -> Dictionary:
+	ui.cursor_col = _console_col(ui, "condition", 0)
+	ui._update_cursor()
+	var options: Array = (ui._condition_picker_spec() as Dictionary).get("options", [])
+	return options[-1] if not options.is_empty() else {}
+
+
+func test_both_condition_pickers_end_with_the_same_delete() -> void:
+	var e := _editor_delete_row(_editor())
+	var c := _console_delete_row(_console())
+	assert_eq(str(c.get("label", "")), str(e.get("label", "")), "both screens must name the Delete row the same")
+	assert_eq(str(e.get("label", "")), "Delete condition", "and that name is the ruled one")
+
+
+## Choosing Delete in each screen removes exactly one condition, and the north button on an empty slot brings it back.
+func test_choosing_delete_removes_one_condition_and_undoes_in_both() -> void:
+	var ed := _editor()
+	ed.cursor_col = 0
+	var e_before: Array = (ed.rules as Array).duplicate(true)
+	ed._commit_option_choice("condition_type", ed.DELETE_CONDITION_ID, {})
+	var ui := _console()
+	ui.cursor_col = _console_col(ui, "condition", 0)
+	ui._update_cursor()
+	var c_before: Array = (ui.rules as Array).duplicate(true)
+	ui._commit_condition_choice(ui.DELETE_CONDITION_ID)
+	for pair in [[ed, e_before, "editor"], [ui, c_before, "console"]]:
+		var after: Array = pair[0].rules
+		assert_eq(_conditions(after).size(), _conditions(pair[1]).size() - 1, "%s: exactly one condition must go" % pair[2])
+		assert_eq(_actions(after), _actions(pair[1]), "%s: the actions must be untouched" % pair[2])
+	var e_empty := 2 - 1   # one condition fewer: the editor's empty AND slot moved one column left
+	ed.cursor_col = e_empty
+	_north(ed)
+	var c_empty := _console_col(ui, "empty_condition")
+	if c_empty == -1:
+		c_empty = _console_col(ui, "empty_action")
+	ui.cursor_col = c_empty
+	ui._update_cursor()
+	_north(ui)
+	assert_eq(ed.rules, e_before, "editor: the north button on an empty slot must restore the deleted condition")
+	assert_eq(ui.rules, c_before, "console: the north button on an empty slot must restore the deleted condition")
