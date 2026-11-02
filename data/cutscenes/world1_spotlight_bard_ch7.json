@@ -3,7 +3,7 @@
   "title": "The Courtier at the Inn",
   "world": 1,
   "trigger": "world1_spotlight_bard_trigger",
-  "background": "prologue_village",
+  "background": "harmonia_inn",
   "description": "Harmonia, post-Rat King. A well-dressed woman from Scriptura sits at the inn asking questions that aren't quite questions. The Bard's solo duel — talk her down before she catalogues the party. Voice-as-mechanic. First pre-echo of Mordaine's measure. Filename _ch7 is vestigial; location is Harmonia.",
   "steps": [
     {

@@ -3,7 +3,7 @@
   "title": "Magic as Merchandise",
   "world": 1,
   "trigger": "event_chat_first_magic_shop",
-  "background": "prologue_village",
+  "background": "harmonia_shop",
   "description": "First time the party enters a shop selling magic scrolls/spells. Short beat, no plot advance.",
   "steps": [
     {"type": "letterbox_in", "duration": 0.3},
