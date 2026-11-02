@@ -12,8 +12,10 @@ var game_overs := 0
 var summaries := 0
 var locked_during := false
 var release := false
+var retry_against_seen := ""
 func _show_game_over_screen() -> void:
 	game_overs += 1
+	retry_against_seen = _game_over_retry_against
 	await get_tree().process_frame
 	await get_tree().process_frame
 	locked_during = InputLockManager.has_lock(WIPE_FIELD_LOCK)
@@ -91,3 +93,38 @@ func test_a_grind_that_stops_with_someone_standing_shows_the_summary() -> void:
 	await wait_frames(4)
 	assert_eq(_gl.summaries, 1, "CONTROL: an ordinary stop still shows its summary")
 	assert_eq(_gl.game_overs, 0, "one member standing is not a wipe")
+
+
+## struktured, preview 2026-11-01: "when retrying from autogrind it put me in some other battle" — Retry fought his last
+## MANUAL battle (a Bat) instead of the Ice Wolf that wiped the grind, because grind battles never set _last_battle_enemies.
+func test_retry_after_a_grind_wipe_refights_the_grind_battle_and_names_it() -> void:
+	_party([false, false])
+	_gl._last_battle_enemies = ["bat"]
+	_gl._last_grind_enemies = _gl._grind_enemy_ids([{"id": "ice_wolf", "stats": {}}])
+	assert_eq(_gl._last_grind_enemies, ["ice_wolf"], "CONTROL: a grind row yields its monster id")
+	_gl._on_grind_complete("Party defeated")
+	await wait_frames(4)
+	assert_eq(_gl._last_battle_enemies, ["ice_wolf"], "Retry must re-fight the grind battle that wiped, not the last one played by hand")
+	assert_true(_gl._last_battle_is_encounter, "and as the encounter it was")
+	var name: String = str((EncounterSystem.monster_database.get("ice_wolf", {}) as Dictionary).get("name", ""))
+	assert_ne(name, "", "CONTROL: the ice wolf has a display name")
+	assert_eq(_gl.retry_against_seen, name, "the defeat screen must be told what Retry fights")
+
+
+func test_the_retry_row_says_what_it_fights() -> void:
+	var screen := GameOverScreen.new()
+	add_child_autofree(screen)
+	screen.retry_against = "Goblin ×3"
+	screen._update_selection()
+	assert_string_contains(screen._retry_label.text, "Retry: vs Goblin ×3", "the Retry row must name its fight")
+	screen.retry_against = ""
+	screen._update_selection()
+	assert_eq(screen._retry_label.text, "> Retry", "CONTROL: a manual defeat keeps the plain row")
+
+
+func test_an_encounter_is_named_by_species_and_count() -> void:
+	var db: Dictionary = EncounterSystem.monster_database
+	var goblin: String = str((db.get("goblin", {}) as Dictionary).get("name", "Goblin"))
+	var bat: String = str((db.get("bat", {}) as Dictionary).get("name", "Bat"))
+	assert_eq(_gl._encounter_label(["goblin", "goblin", "bat"]), "%s ×2, %s" % [goblin, bat])
+	assert_eq(_gl._encounter_label(["bat"]), bat, "one of a kind carries no count")

@@ -258,6 +258,10 @@ var _current_terrain: String = "plains"  # Current terrain type for battle backg
 ## Last battle config for retry
 var _last_battle_enemies: Array = []  # Enemy IDs from last battle
 var _last_battle_is_encounter: bool = false  # Was it a random encounter?
+## The species of the grind's current battle, so a grind wipe's Retry re-fights THAT fight (struktured 2026-11-01: it fought his last manual one).
+var _last_grind_enemies: Array = []
+## Shown on the game-over screen's Retry row; set by whoever knows what Retry will fight, cleared when the screen closes.
+var _game_over_retry_against: String = ""
 
 ## Tick 471: Spotlight Duel state. `start_solo_battle` sets these
 ## before firing `_start_battle_async`; `_on_battle_ended` reads them
@@ -4545,6 +4549,8 @@ func _maybe_diegetic_retry() -> bool:
 func _show_game_over_screen() -> void:
 	"""Show the game over screen and handle retry/continue."""
 	var game_over = GameOverScreen.new()
+	game_over.retry_against = _game_over_retry_against
+	_game_over_retry_against = ""
 	add_child(game_over)
 
 	# Check if a save exists
@@ -6937,6 +6943,7 @@ func _combatant_for_headless(data: Dictionary) -> Combatant:
 
 
 func _resolve_headless_battle(enemy_data: Array) -> void:
+	_last_grind_enemies = _grind_enemy_ids(enemy_data)
 	var resolver = HeadlessBattleResolver.new()
 	## _on_grind_battle_requested stored the terrain one frame up; only the live branch was reading it.
 	resolver.terrain = _current_terrain
@@ -7113,6 +7120,7 @@ func _show_autogrind_transition() -> void:
 
 func _start_autogrind_battle(enemy_data: Array) -> void:
 	"""Start a battle scene with pre-configured autogrind enemies"""
+	_last_grind_enemies = _grind_enemy_ids(enemy_data)
 	_show_autogrind_transition()
 
 	# Remove old scene
@@ -7392,6 +7400,11 @@ func _on_grind_complete(reason: String) -> void:
 	if not _party_can_fight():
 		print("[AUTOGRIND] The grind ended in a party wipe — handing it to the defeat flow")
 		_free_overlays_for_scene_change()
+		## Retry re-fights the battle that wiped, never the last one played by hand, and says which.
+		if not _last_grind_enemies.is_empty():
+			_last_battle_enemies = _last_grind_enemies.duplicate()
+			_last_battle_is_encounter = true
+			_game_over_retry_against = _encounter_label(_last_battle_enemies)
 		var holding: Array[bool] = [true]
 		_hold_field_still_while(holding)
 		await _show_game_over_screen()
@@ -7400,6 +7413,37 @@ func _on_grind_complete(reason: String) -> void:
 			InputLockManager.pop_lock(WIPE_FIELD_LOCK)
 		return
 	_show_autogrind_summary(final_stats, reason)
+
+
+## Monster ids of a grind battle's enemy rows (the rows carry their id under "id", older ones under "type").
+static func _grind_enemy_ids(enemy_data: Array) -> Array:
+	var ids: Array = []
+	for row in enemy_data:
+		if row is Dictionary:
+			var id: String = str((row as Dictionary).get("id", (row as Dictionary).get("type", "")))
+			if id != "":
+				ids.append(id)
+		elif row is String:
+			ids.append(row)
+	return ids
+
+
+## "Ice Wolf", "Goblin ×3", "Goblin ×2, Bat": the display names, counted, in first-seen order.
+func _encounter_label(ids: Array) -> String:
+	var order: Array = []
+	var counts: Dictionary = {}
+	for id in ids:
+		var name := str(id).replace("_", " ").capitalize()
+		var es: Node = get_node_or_null("/root/EncounterSystem")
+		if es != null and es.monster_database.has(str(id)):
+			name = str((es.monster_database[str(id)] as Dictionary).get("name", name))
+		if not counts.has(name):
+			order.append(name)
+		counts[name] = int(counts.get(name, 0)) + 1
+	var parts: Array = []
+	for n in order:
+		parts.append(n if counts[n] == 1 else "%s ×%d" % [n, counts[n]])
+	return ", ".join(parts)
 
 
 ## The field stays still under a game-over screen shown on it: re-pushed each frame (a lock is reaped after 10 s), released once a battle owns the screen.
