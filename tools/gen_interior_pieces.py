@@ -330,6 +330,13 @@ NOTES = {
 }
 
 
+DRAWN_FOR = {
+    ("shop_item", "counter"): [list(COUNTER_AT)], ("shop_blacksmith", "counter"): [list(COUNTER_AT)],
+    ("shop_item", "shelf"): [[2, 2], [11, 2], [2, 6], [11, 6]], ("shop_blacksmith", "shelf"): [[2, 2], [11, 2], [2, 6], [11, 6]],
+    ("inn", "hearth"): [[12, 2]],
+}
+
+
 def deploy(room: str, village: str) -> list:
     import hashlib
     import json
@@ -347,6 +354,8 @@ def deploy(room: str, village: str) -> list:
             "path": f"res://{rel}", "tier": "T1",
             "source": f"gpt-image-2 + cut, {NOTES[kind]} (struktured 2026-11-01: the inside of village houses and shops "
                       f"need a major sprite rework) -- tools/gen_interior_pieces.py; T1, artist veto applies."}
+        if (room, kind) in DRAWN_FOR:  ## the layout blocks a rolled pattern was cut for; a guard checks they still start there
+            manifest["prop_art"][f"{kind}_{room}_{village}"]["drawn_for"] = DRAWN_FOR[(room, kind)]
         ledger[rel] = hashlib.sha256(dst.read_bytes()).hexdigest()
         out.append(dst)
     manifest_path.write_text(json.dumps(manifest, indent=2, ensure_ascii=False) + "\n")
