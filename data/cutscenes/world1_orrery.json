@@ -3,7 +3,7 @@
   "title": "A Fool's Spread",
   "world": 1,
   "trigger": "quest_turn_in:world1_fools_spread",
-  "background": "prologue_village",
+  "background": "harmonia_square",
   "quest": "chain_a_traveling_merchant",
   "description": "Madame Orrery's wagon on the eastern road out of Harmonia. A tarot reading, a blank card, and a crumpled paper Phil has been carrying since before.",
   "steps": [

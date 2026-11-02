@@ -33,7 +33,7 @@ const GATED_CHEST_FLAG := "quest_world1_thirty_seven_favor_asked"
 
 const HARMONIA := "res://src/maps/villages/HarmoniaVillage.gd"
 const NOOK_CHEST := "harmonia_chest_hedge_nook"
-const NOOK_THROAT := Vector2i(18, 2)  # the single gap in the row-2 hedge screen
+const NOOK_THROAT := Vector2i(23, 2)  # the single gap in the row-2 hedge screen
 
 const VILLAGE_SCRIPTS := [
 	"res://src/maps/villages/HarmoniaVillage.gd",
