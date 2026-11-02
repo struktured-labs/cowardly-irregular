@@ -5750,8 +5750,9 @@ func _area_interior_transition_in(location_name: String) -> void:
 		await _area_fade_to_black()
 		return
 
-	# door_open SFX cues the interior threshold (cowir-sfx msg 2165)
-	if SoundManager:
+	# door_open SFX cues the interior threshold (cowir-sfx msg 2165); a village door that just animated already played its own cue
+	var village_door: bool = _exploration_scene != null and is_instance_valid(_exploration_scene) and _exploration_scene.get("door_cue_played") == true
+	if SoundManager and not village_door:
 		SoundManager.play_ui("door_open")
 
 	var fade_tween = create_tween()
