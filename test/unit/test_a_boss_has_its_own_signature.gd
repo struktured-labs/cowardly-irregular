@@ -145,6 +145,7 @@ func test_the_first_signature_plays_at_1x_then_the_speed_comes_back() -> void:
 	autofree(king)
 	var sprite: Node2D = scene.enemy_sprite_nodes[0] if scene.enemy_sprite_nodes.size() > 0 else null
 	var ability: Dictionary = JobSystem.get_ability("rat_swarm")
+	var picked: int = scene._battle_speed_index
 	scene._set_battle_time_scale(1.0)
 	scene._play_signature(king, sprite, null, ability, [king], "sig_cave_rat_king")
 	await get_tree().process_frame
@@ -153,6 +154,7 @@ func test_the_first_signature_plays_at_1x_then_the_speed_comes_back() -> void:
 	while Time.get_ticks_msec() < deadline and not is_equal_approx(Engine.time_scale, 1.0):
 		await get_tree().process_frame
 	assert_almost_eq(Engine.time_scale, 1.0, 0.001, "then the player's 4x comes back")
+	assert_eq(scene._battle_speed_index, picked, "the 1x beat is a transient override: the persisted speed choice never moved")
 	scene._play_signature(king, sprite, null, ability, [king], "sig_cave_rat_king")
 	await get_tree().process_frame
 	assert_almost_eq(Engine.time_scale, 1.0, 0.001, "a second Rat Swarm in the same battle compresses")
