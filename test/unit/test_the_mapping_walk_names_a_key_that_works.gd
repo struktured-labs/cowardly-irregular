@@ -1,5 +1,6 @@
 extends GutTest
 
+## 📌 2026-11-01: a HELD pad button now skips one control (test_a_held_pad_button_skips_a_control); a PRESS still binds, which is what this file pins.
 ## ⛔ THE "MAP THIS PAD" WALK ADVERTISED A PAD EXIT THAT DOES NOT EXIST. Its status line read
 ## "B / X = skip this control · Esc = cancel", and `_handle_mapping_input` records EVERY
 ## InputEventJoypadButton as the binding — so pressing pad B BOUND B to whatever control was being

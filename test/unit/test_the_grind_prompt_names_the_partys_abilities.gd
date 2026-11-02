@@ -117,8 +117,9 @@ func _roster(p: String) -> String:
 
 
 ## Ids are printed as `<id> (N MP)`, so the trailing paren is the word boundary.
+## An id is offered as `id (N MP)` or, when its menu name differs, `id "Name" (N MP)` (the rule-name fix).
 func _offers(p: String, id: String) -> bool:
-	return _roster(p).find("%s (" % id) != -1
+	return _roster(p).find("%s (" % id) != -1 or _roster(p).find("%s \"" % id) != -1
 
 
 # ── the defect ────────────────────────────────────────────────────────────────

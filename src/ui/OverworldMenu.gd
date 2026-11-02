@@ -68,6 +68,8 @@ var _footer: Label = null
 var selected_index: int = 0
 var selected_character: int = 0
 var _menu_labels: Array = []
+## Entry id -> its NEW tag, so the in-place refresh can hide it once the player has looked inside.
+var _news_tags: Dictionary = {}
 var _party_panels: Array = []
 var _submenu_open: bool = false
 ## What _hide_main_ui actually hid, so the restore cannot un-hide something the menu wanted hidden.
@@ -99,6 +101,7 @@ const SUBTITLE_COLOR = Color(0.72, 0.75, 0.85)
 ## derived from it — see _menu_row_h.
 const MENU_FONT_SIZE := 14
 const MENU_LABEL_X := 24.0
+const NEWS_TAG_GAP := 8.0
 const MENU_ROW_PAD_X := 24.0
 const MENU_ROW_GAP := 4.0
 const INFO_FONT_SIZE := 11
@@ -196,12 +199,14 @@ func _build_ui() -> void:
 	if _ui_built:
 		_update_party_stats()
 		_update_selection()
+		_refresh_news_tags()
 		return
 
 	# Clear existing
 	for child in get_children():
 		child.queue_free()
 	_menu_labels.clear()
+	_news_tags.clear()
 	_party_panels.clear()
 	_highlight_refs.clear()
 	_cursor_refs.clear()
@@ -531,7 +536,10 @@ func _menu_row_w(panel_w: float) -> float:
 	var widest := 0.0
 	if f != null:
 		for o in _menu_options:
-			widest = maxf(widest, f.get_string_size(str(o["label"]), HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x)
+			var w: float = f.get_string_size(str(o["label"]), HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+			if _option_has_news(o):
+				w += NEWS_TAG_GAP + NewItemTag.width(MENU_FONT_SIZE)
+			widest = maxf(widest, w)
 	return clampf(MENU_LABEL_X + widest + MENU_ROW_PAD_X, 200.0, maxf(200.0, panel_w - 16.0))
 
 
@@ -647,6 +655,35 @@ static func _corruption_summary(level: float, effects: Array) -> Array:
 	return lines
 
 
+## An entry holds something the player has not looked at yet. Only ids still owned AND shown inside count, so a
+## potion drunk before it was seen, or a bomb the field Items list never lists, cannot light the entry forever.
+func _option_has_news(option: Dictionary) -> bool:
+	if GameState == null:
+		return false
+	match str(option.get("id", "")):
+		"items":
+			var owned: Array = []
+			for member in party:
+				if member != null and "inventory" in member:
+					for item_id in member.inventory:
+						if int(member.inventory[item_id]) > 0 and ItemsMenu.lists_item(str(item_id)):
+							owned.append(str(item_id))
+			return GameState.any_unseen_in(owned)
+		"equipment":
+			var gear: Array = []
+			for entries in _shared_equipment_pool().values():
+				gear.append_array(entries)
+			return GameState.any_unseen_in(gear)
+	return false
+
+
+func _refresh_news_tags() -> void:
+	for o in _menu_options:
+		var tag = _news_tags.get(str(o.get("id", "")))
+		if tag != null and is_instance_valid(tag):
+			tag.visible = _option_has_news(o)
+
+
 func _create_menu_item(option: Dictionary, index: int, row_w: float, row_h: float) -> Control:
 	"""Create a single menu item. `row_w`/`row_h` are derived from the scaled font by the caller."""
 	var item = Control.new()
@@ -678,6 +715,16 @@ func _create_menu_item(option: Dictionary, index: int, row_w: float, row_h: floa
 	label.add_theme_color_override("font_color", TEXT_COLOR if option["enabled"] else DISABLED_COLOR)
 	label.name = "Label"
 	item.add_child(label)
+
+	if str(option.get("id", "")) in ["items", "equipment"]:
+		var tag := NewItemTag.make(MENU_FONT_SIZE)
+		var fs: int = TextScale.scaled(MENU_FONT_SIZE)
+		var f: Font = _menu_font()
+		var label_w: float = float(str(option["label"]).length() * fs) if f == null else f.get_string_size(str(option["label"]), HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+		tag.position = Vector2(MENU_LABEL_X + label_w + NEWS_TAG_GAP, 2)
+		tag.visible = _option_has_news(option)
+		item.add_child(tag)
+		_news_tags[str(option["id"])] = tag
 
 	# Mouse click overlay
 	## From the ROW, not a literal 180x24: at 200% the row is taller and wider than that, so the
