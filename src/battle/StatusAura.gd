@@ -47,16 +47,16 @@ const STAT_COLOR := {
 
 const FALLBACK := "mote"
 
-const ARROW := PackedVector2Array([Vector2(0, -7), Vector2(6, 0), Vector2(2, 0), Vector2(2, 7), Vector2(-2, 7), Vector2(-2, 0), Vector2(-6, 0)])
-const STAR := PackedVector2Array([Vector2(0, -5), Vector2(1.5, -1.5), Vector2(5, -1.5), Vector2(2.3, 0.9), Vector2(3.1, 4.6),
+static var ARROW := PackedVector2Array([Vector2(0, -7), Vector2(6, 0), Vector2(2, 0), Vector2(2, 7), Vector2(-2, 7), Vector2(-2, 0), Vector2(-6, 0)])
+static var STAR := PackedVector2Array([Vector2(0, -5), Vector2(1.5, -1.5), Vector2(5, -1.5), Vector2(2.3, 0.9), Vector2(3.1, 4.6),
 	Vector2(0, 2.4), Vector2(-3.1, 4.6), Vector2(-2.3, 0.9), Vector2(-5, -1.5), Vector2(-1.5, -1.5)])
-const FLAME := PackedVector2Array([Vector2(0, -9), Vector2(3.5, -2), Vector2(3, 2.5), Vector2(0, 4), Vector2(-3, 2.5), Vector2(-3.5, -2)])
-const HEART := PackedVector2Array([Vector2(0, 4), Vector2(-4.5, -0.5), Vector2(-4, -3.5), Vector2(-1.5, -4), Vector2(0, -2),
+static var FLAME := PackedVector2Array([Vector2(0, -9), Vector2(3.5, -2), Vector2(3, 2.5), Vector2(0, 4), Vector2(-3, 2.5), Vector2(-3.5, -2)])
+static var HEART := PackedVector2Array([Vector2(0, 4), Vector2(-4.5, -0.5), Vector2(-4, -3.5), Vector2(-1.5, -4), Vector2(0, -2),
 	Vector2(1.5, -4), Vector2(4, -3.5), Vector2(4.5, -0.5)])
-const DROP := PackedVector2Array([Vector2(0, -5), Vector2(2.5, 0), Vector2(1.8, 2.6), Vector2(0, 3.3), Vector2(-1.8, 2.6), Vector2(-2.5, 0)])
-const PLUS := PackedVector2Array([Vector2(-1.5, -5), Vector2(1.5, -5), Vector2(1.5, -1.5), Vector2(5, -1.5), Vector2(5, 1.5), Vector2(1.5, 1.5),
+static var DROP := PackedVector2Array([Vector2(0, -5), Vector2(2.5, 0), Vector2(1.8, 2.6), Vector2(0, 3.3), Vector2(-1.8, 2.6), Vector2(-2.5, 0)])
+static var PLUS := PackedVector2Array([Vector2(-1.5, -5), Vector2(1.5, -5), Vector2(1.5, -1.5), Vector2(5, -1.5), Vector2(5, 1.5), Vector2(1.5, 1.5),
 	Vector2(1.5, 5), Vector2(-1.5, 5), Vector2(-1.5, 1.5), Vector2(-5, 1.5), Vector2(-5, -1.5), Vector2(-1.5, -1.5)])
-const HOURGLASS := PackedVector2Array([Vector2(-4, -6), Vector2(4, -6), Vector2(0.6, 0), Vector2(4, 6), Vector2(-4, 6), Vector2(-0.6, 0)])
+static var HOURGLASS := PackedVector2Array([Vector2(-4, -6), Vector2(4, -6), Vector2(0.6, 0), Vector2(4, 6), Vector2(-4, 6), Vector2(-0.6, 0)])
 
 ## The figure on screen, in this node's units (screen px): set by the scene from the sprite's idle frame.
 var body := Rect2(-24, -64, 48, 64)
