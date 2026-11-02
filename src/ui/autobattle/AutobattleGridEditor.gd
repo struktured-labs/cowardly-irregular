@@ -31,6 +31,8 @@ var current_party_index: int = 0
 var rules: Array = []  # Array of rule rows
 ## One level of undo for a delete. Holds the LIVE `rules` array it was taken from: every load swaps that array, so a stale snapshot refuses.
 var _undo_snapshot: Dictionary = {}
+## The condition picker's Delete row: not a condition type, so it can never collide with one.
+const DELETE_CONDITION_ID := "__delete_condition__"
 var cursor_row: int = 0  # Current rule (row)
 ## Vertical only: left/right move between CELLS, and repeating those would thrash a rule's fields.
 var _nav_repeat := MenuRepeat.new(PackedStringArray(["ui_up", "ui_down"]))
@@ -2183,10 +2185,13 @@ func _open_condition_editor() -> void:
 	if idx == -1:
 		SoundManager.play_ui("menu_error")
 		return
+	## Delete rides LAST so `idx` still selects the current type; it is the pad's only route to remove a condition (cowir-main 21465).
+	var options: Array = _build_condition_type_options(type_keys)
+	options.append({"id": DELETE_CONDITION_ID, "label": "Delete condition"})
 	_open_option_picker({
 		"title": "Condition Type",
 		"kind": "condition_type",
-		"options": _build_condition_type_options(type_keys),
+		"options": options,
 		"selected": idx,
 	})
 
@@ -2832,7 +2837,10 @@ func _commit_option_choice(kind: String, chosen_id: String, ctx: Dictionary) -> 
 		"more_actions":
 			_commit_more_action(chosen_id)
 		"condition_type":
-			_apply_condition_type(chosen_id)
+			if chosen_id == DELETE_CONDITION_ID:
+				_delete_current_cell()
+			else:
+				_apply_condition_type(chosen_id)
 		"action_type":
 			_apply_action_type(chosen_id, ctx)
 		"ability_id":
