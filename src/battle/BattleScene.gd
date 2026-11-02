@@ -17,6 +17,7 @@ const BattleCommandMenuClass = preload("res://src/battle/BattleCommandMenu.gd")
 const BattleCameraRigClass = preload("res://src/battle/BattleCameraRig.gd")
 const BattleResultsDisplayClass = preload("res://src/battle/BattleResultsDisplay.gd")
 const AdvanceAuraClass = preload("res://src/battle/AdvanceAura.gd")
+const StatusAuraClass = preload("res://src/battle/StatusAura.gd")
 
 ## Base display height for party sprites. Aseprite frames are ground truth —
 ## we don't compensate for non-uniform character fill within the artist's
@@ -341,6 +342,7 @@ static var _hints_shown: Dictionary = {}  # {"hint_id": true}  # Static: persist
 
 ## Status effect icon containers (combatant -> HBoxContainer of icons)
 var _status_icon_containers: Dictionary = {}  # {Combatant: HBoxContainer}
+var _status_auras: Dictionary = {}  # {Combatant: StatusAura}: every status ANIMATED on the battler, beside the badge row
 
 ## Buff/debuff visual overlay nodes (combatant -> {glow: ColorRect, particles: Array, sigil: Sprite2D})
 var _buff_visual_nodes: Dictionary = {}  # {Combatant: Dictionary}
@@ -1151,6 +1153,7 @@ func _create_battle_sprites() -> void:
 	## _buff_visual_nodes is the one with no other way out: _remove_buff_visual is only ever reached
 	## for a combatant still in BattleManager's parties, so a replaced enemy is never visited again.
 	_status_icon_containers.clear()
+	_status_auras.clear()
 	_enemy_hp_bars.clear()
 	_buff_visual_nodes.clear()
 
@@ -1766,6 +1769,7 @@ func _setup_status_icons(combatant: Combatant, sprite: AnimatedSprite2D) -> void
 	container.position = Vector2(centre_x - STATUS_ROW_WIDTH * unscale.x * 0.5, top - STATUS_ROW_LIFT * unscale.y)
 	sprite.add_child(container)
 	_status_icon_containers[combatant] = container
+	_status_auras[combatant] = _make_status_aura(sprite)
 
 	# Connect signals for reactive updates
 	if not combatant.status_added.is_connected(_on_combatant_status_changed):
@@ -1775,6 +1779,25 @@ func _setup_status_icons(combatant: Combatant, sprite: AnimatedSprite2D) -> void
 
 	# Show any existing statuses
 	_refresh_status_icons(combatant)
+
+
+## The animated overlay, counter-scaled to screen pixels and fitted to the idle frame's FIGURE, so a motif is the same
+## size on a 0.5x hero and a 2.5x dragon and stands on the body, not on the frame's empty margin.
+func _make_status_aura(sprite: AnimatedSprite2D) -> Node2D:
+	var aura = StatusAuraClass.new()
+	aura.name = "StatusAura"
+	var sc := sprite.scale
+	aura.scale = Vector2(1.0 / maxf(absf(sc.x), 0.01), 1.0 / maxf(absf(sc.y), 0.01))
+	if sprite.sprite_frames and sprite.sprite_frames.has_animation(&"idle") and sprite.sprite_frames.get_frame_count(&"idle") > 0:
+		var idle_tex = sprite.sprite_frames.get_frame_texture(&"idle", 0)
+		if idle_tex:
+			var fig: Rect2 = AdvanceAuraClass.figure_rect_of(idle_tex)
+			var origin := fig.position - Vector2(idle_tex.get_size()) * 0.5
+			if sprite.flip_h:
+				origin.x = -(origin.x + fig.size.x)
+			aura.body = Rect2(origin * Vector2(absf(sc.x), absf(sc.y)), fig.size * Vector2(absf(sc.x), absf(sc.y)))
+	sprite.add_child(aura)
+	return aura
 
 
 func _on_combatant_status_changed(_status: String, combatant: Combatant) -> void:
@@ -1807,6 +1830,13 @@ func _refresh_status_icons(combatant: Combatant, animate: bool = true) -> void:
 	# doom_counter is a Combatant int field, not a status_effect — surface the lethal countdown so it's trackable after the initial log scrolls away
 	if "doom_counter" in combatant and combatant.doom_counter > 0:
 		wanted.append({"key": "doom_counter", "status": "doom_counter", "text": "☠ %d" % combatant.doom_counter, "color": Color(0.6, 0.1, 0.7)})
+
+	var aura = _status_auras.get(combatant)
+	if aura != null and is_instance_valid(aura):
+		var ids: Array = []
+		for w in wanted:
+			ids.append(w["status"])
+		aura.set_statuses(ids)
 
 	var live_keys: Dictionary = {}
 	for w in wanted:
@@ -3687,7 +3717,7 @@ func _on_battle_started() -> void:
 	_boss_defeat_spoken = false
 	_boss_barks = BossBarks.new()
 	_gloat_line = {}
-	_gloat_voice = {}
+	_drop_gloat_voice()
 	_holding_for_boss_beat = false
 	_deferred_defeat_scene = {}
 
@@ -6661,7 +6691,7 @@ func _play_boss_beat(is_victory: bool) -> void:
 	_battle_dialogue.show_boss_last_words(_gloat_speaker_name(is_victory), spoken, _boss_monster_id(), live_voice)
 	await _hold_beat_dialogue()
 	## Whatever is still synthesizing is abandoned with the line, so it can never speak over what comes next.
-	_gloat_voice = {}
+	_drop_gloat_voice()
 	_holding_for_boss_beat = false
 
 
@@ -6732,7 +6762,7 @@ func _start_gloat_voice(text: String, is_victory: bool) -> void:
 
 ## Static, so a battle freed mid-synthesis has no instance for the await to resume into.
 static func _synthesize_into(job: Dictionary, speaker_id: String, text: String) -> void:
-	job["stream"] = await VoiceService.synthesize(speaker_id, text, GLOAT_VOICE_TIMEOUT_SEC)
+	job["stream"] = await VoiceService.synthesize(speaker_id, text, GLOAT_VOICE_TIMEOUT_SEC, job)
 	job["done"] = true
 
 
@@ -6765,6 +6795,13 @@ func _join_or_drop_gloat_voice(shown_at: int) -> void:
 		return
 	if bool(_gloat_voice["done"]) and in_window and _battle_dialogue.line_index() == 0:
 		_battle_dialogue.join_live_voice(_gloat_voice.get("stream"))
+	_drop_gloat_voice()
+
+
+## Forgets the live voice, and cancels a running synthesis so the party's voice pool is no longer held behind it.
+func _drop_gloat_voice() -> void:
+	if not _gloat_voice.is_empty() and not bool(_gloat_voice.get("done", false)):
+		_gloat_voice["cancel"] = true
 	_gloat_voice = {}
 
 

@@ -21,22 +21,12 @@ extends GutTest
 ## pair, art changed on either side, or a row whose review said "mismatch" is RED until re-reviewed by
 ## tools/review_npc_face_body.py, which renders each pair side by side and has a vision model judge it.
 
-## Mismatches that were ALREADY on main when this guard landed (2026-10-30 review, each read by eye, not only
-## by the model). Pending struktured's call: redraw a side, or accept the pairing. NOT accepted by this file --
-## the list exists so the guard can land without either hiding them or reding every fold. It must SHRINK:
-## a listed pair that now matches, or is no longer placed, reds below until it is removed.
-const PENDING_DECISION := {
-	"nervous|young_woman": "Vex: a young MAN's face (sweat-drop) on the young_woman sheet -- the sex differs",
-	"elder_theron|elder_theron": "Elder Theron: white hair, GREEN robe face vs a bald, ORANGE-robed sheet -- his own two assets disagree",
-	"herbalist|priestess": "Gethena: an auburn-braided herbalist face on the white priestess robes",
-	"hooded_mage|scholar": "Aldric: a hooded mage with glowing eyes on the old bespectacled scholar sheet",
-	"adventurer|traveler": "Kael: a bearded bareheaded adventurer on the brown-hat traveler with a staff",
-	"apprentice|young_man": "Jend: orange spiky hair face on the dark-haired young_man sheet",
-	"pilgrim|monk": "Pilgrim Lael: a bearded old man in a grey hood on the beardless orange monk sheet",
-	"knight|soldier": "Sir Reginald, Guard Henryk, Sir Corvath: a bearded knight face on the beardless soldier sheet",
-	"innkeeper|innkeeper": "Mira: no mustache on the face, a mustache on the sheet (and a female name on a male innkeeper)",
-	"young_man|young_man": "BORDERLINE: the sheet's mouth shading reads as a mustache at 4x; the face is clean-shaven",
-}
+## Mismatches that were ALREADY on main when this guard landed (2026-10-30 review). All 10 were resolved 2026-11-01
+## by redrawing the FACE to match the BODY (cowir-main 20910, under struktured's reversibility rule: a body sheet
+## is shared, a portrait is one face; tools/redraw_face_to_body.py), and each re-reviewed as a match. Kept as an
+## empty list so a future pre-existing mismatch has a home: it must SHRINK, and a listed pair that now matches,
+## or is no longer placed, reds below until it is removed.
+const PENDING_DECISION := {}
 
 const LEDGER := "res://data/npc_face_body_ledger.json"
 const MANIFEST := "res://data/sprite_manifest.json"

@@ -3,7 +3,7 @@
   "title": "After",
   "world": 1,
   "trigger": "world1_mordaine_defeated",
-  "background": "throne_room",
+  "background": "harmonia_square_portal",
   "description": "After Mordaine's defeat. The throne room flickers. A portal to World 2 opens. The party questions the nature of their journey.",
   "steps": [
     {
