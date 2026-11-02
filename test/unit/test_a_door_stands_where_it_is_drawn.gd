@@ -24,6 +24,15 @@ func _house(v: Node, key: String) -> Node2D:
 	return v.props.get_node_or_null("BuildingArt_" + key) as Node2D
 
 
+## The building's own door record, as the runtime reads it: a list takes its first entry, absence is {}.
+func _door_of(house: Node2D) -> Dictionary:
+	var key := str(house.name).trim_prefix("BuildingArt_")
+	var d: Variant = (BaseVillage._building_art_entries().get(key, {}) as Dictionary).get("door", {})
+	if d is Array:
+		d = (d as Array)[0] if not (d as Array).is_empty() else {}
+	return d if d is Dictionary else {}
+
+
 func _shop_named(v: Node, shop_name: String) -> Node2D:
 	for b in v.buildings.get_children():
 		if str(b.get("shop_name")) == shop_name:
@@ -39,7 +48,7 @@ func test_the_harmonia_item_shop_enters_from_under_its_drawn_door() -> void:
 	assert_not_null(shop, "CONTROL: Harmonia has its item shop")
 	if house == null or shop == null:
 		return
-	var door_x := VillageDoor.entrance_x(house, {})
+	var door_x := VillageDoor.entrance_x(house, _door_of(house))
 	assert_almost_eq(shop.global_position.x, door_x, 1.0, "the item shop's entrance is %.0f px off its drawn door" % (shop.global_position.x - door_x))
 	## Walking straight up from the cell under the door: that point must sit inside the entrance's trigger.
 	var cs := shop.get_node_or_null("CollisionShape2D") as CollisionShape2D
@@ -71,7 +80,7 @@ func test_every_drawn_building_with_one_entrance_has_it_under_its_door() -> void
 			if found.size() != 1:
 				continue
 			judged += 1
-			var x := VillageDoor.entrance_x(house, {})
+			var x := VillageDoor.entrance_x(house, _door_of(house))
 			assert_almost_eq((found[0] as Node2D).global_position.x, x, 1.0, "%s: %s stands off its drawn door" % [f, house.name])
 	assert_gt(judged, 10, "only %d drawn buildings with one entrance were judged" % judged)
 
