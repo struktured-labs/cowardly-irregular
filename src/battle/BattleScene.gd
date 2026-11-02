@@ -2865,9 +2865,9 @@ func _play_signature(caster: Combatant, caster_sprite: Node2D, animator: BattleA
 	await _play_ability_sequence(caster, caster_sprite, animator, ability, targets, seq_id, true)
 
 
-## Signature sounds play below 3x, like the bark; at 4x+ the beat is compressed and a skipped stinger reads as speed (cowir-battle 21191).
+## Signature sounds play at every speed the player picks, 4x included; only autogrind/turbo is silent (cowir-main 21194).
 func signature_sound_allowed() -> bool:
-	return Engine.time_scale < 0.75 and not turbo_mode and not autogrind_console_mode
+	return not turbo_mode and not autogrind_console_mode
 
 
 ## The sound paired to a boss's signature sequence, timed to its beats; "" when none is recorded.

@@ -48,14 +48,15 @@ func test_the_scene_names_the_cue_by_the_casters_own_id() -> void:
 	assert_eq(scene.signature_cue(nobody), "", "a monster with no recorded signature asks for nothing")
 
 
-func test_signature_sounds_skip_at_4x_and_play_below_3x() -> void:
+func test_signature_sounds_play_at_4x_and_only_the_grind_is_silent() -> void:
 	var scene = load(SCENE).instantiate()
 	add_child_autofree(scene)
 	var saved := Engine.time_scale
-	Engine.time_scale = 0.5
-	var at_2x: bool = scene.signature_sound_allowed()
 	Engine.time_scale = 1.0
 	var at_4x: bool = scene.signature_sound_allowed()
+	scene.autogrind_console_mode = true
+	var in_grind: bool = scene.signature_sound_allowed()
+	scene.autogrind_console_mode = false
 	Engine.time_scale = saved
-	assert_true(at_2x, "CONTROL: at 2x the signature still sounds")
-	assert_false(at_4x, "at 4x the beat is compressed; the stinger is skipped, never pitched up")
+	assert_true(at_4x, "he plays at 4x; the move he asked for must be heard there (cowir-main 21194)")
+	assert_false(in_grind, "the autogrind console stays silent")
