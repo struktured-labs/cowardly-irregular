@@ -64,6 +64,16 @@ func test_the_npc_hands_its_scripted_face_to_the_llm_path() -> void:
 	assert_true(src.contains("\"portrait\": _portrait_key(),"), "CONTROL: the scripted path reads the same key")
 
 
+## WanderingNPC has its own LLM path with the same hardcode (cowir-ai 21315); its scripted line says dialogue_portrait.
+func test_a_wanderer_hands_its_scripted_face_to_the_llm_path() -> void:
+	var src := FileAccess.get_file_as_string("res://src/exploration/WanderingNPC.gd")
+	var run := _body(src, "_run_dynamic_conversation")
+	assert_true(run.contains("_dynamic_conv.portrait_key = dialogue_portrait"), "a wanderer's LLM turns wear its own portrait")
+	assert_true(run.contains("_dynamic_conv.theme_key = dialogue_theme"), "and its own theme")
+	assert_lt(run.find("_dynamic_conv.portrait_key"), run.find("await _dynamic_conv.run(player)"), "set before the conversation runs")
+	assert_true(src.contains("say(npc_name, text, dialogue_theme, dialogue_portrait)"), "CONTROL: the scripted line reads the same keys")
+
+
 func test_theron_is_why_the_generic_face_was_wrong() -> void:
 	var npc := OverworldNPC.new()
 	npc.npc_name = "Elder Theron"
