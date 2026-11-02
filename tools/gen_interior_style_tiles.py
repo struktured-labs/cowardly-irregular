@@ -46,6 +46,15 @@ SHOP_LAYOUT = ("The room is 16 tiles wide and 12 tall. The back wall spans the t
                "wall, upper and middle. The lower third of the room is open floor, and the ENTRANCE door is in the middle "
                "of the bottom wall.")
 
+## InnInterior.INN_LAYOUT, in words: 20x14 tiles, its blocks where the layout draws them.
+INN_LAYOUT = ("The room is 20 tiles wide and 14 tall. The back wall spans the top row. Top left, a few tiles in from the "
+              "left wall: the innkeeper's REGISTRATION DESK, three tiles wide and two deep. Top right: a big stone "
+              "FIREPLACE, three tiles wide, set into the back wall with a fire burning, and beside it to its right a "
+              "wooden STAIRCASE going up to the rooms, two tiles wide, against the corner. Across the middle of the room: "
+              "a long woven CARPET, nine tiles wide and two deep, with a long communal dining table and benches beside it. "
+              "Two armchairs face the fire. The lower part of the room is open floor, and the ENTRANCE door is in the "
+              "middle of the bottom wall.")
+
 ROOMS = {
     "harmonia_item_shop": ("Mystic Remedies, the village item and potion shop. Warm honey-coloured wood-plank floor with "
                            "a deep green woven rug before the counter. The back wall is timber-framed plaster with "
@@ -63,12 +72,21 @@ ROOMS = {
                            "warm orange forge light against cool stone."),
 }
 
-SIZES = {"harmonia_item_shop": (512, 384), "harmonia_arms_shop": (512, 384)}
+ROOMS["harmonia_inn"] = (
+    "The Harmonia inn's common room, a cosy timber-framed tavern-inn. Warm wide wooden plank floor. The back wall is "
+    "half-timbered plaster with a framed landscape painting, a mounted antler rack and a shelf of mugs and plates. The "
+    "fireplace is fieldstone with a deep orange fire, a kettle and logs stacked beside it; two worn red-leather armchairs "
+    "face it. The registration desk is dark oak with a guest ledger, a brass bell and a key board behind it. The carpet "
+    "is a deep red and gold woven runner. The long table is scrubbed oak with candles, bread and tankards. A coat rack "
+    "with cloaks and a pile of travellers' packs by the door, hanging iron lanterns, warm amber firelight everywhere.")
+
+LAYOUTS = {"harmonia_inn": INN_LAYOUT}
+SIZES = {"harmonia_item_shop": (512, 384), "harmonia_arms_shop": (512, 384), "harmonia_inn": (640, 448)}
 
 
 def draw(key: str) -> Path:
     from openai import OpenAI
-    r = OpenAI().images.generate(model=MODEL, prompt=f"{STYLE}\n\n{SHOP_LAYOUT}\n\nThe room: {ROOMS[key]}",
+    r = OpenAI().images.generate(model=MODEL, prompt=f"{STYLE}\n\n{LAYOUTS.get(key, SHOP_LAYOUT)}\n\nThe room: {ROOMS[key]}",
                                  size="1536x1024", n=1)
     raw = Image.open(io.BytesIO(base64.b64decode(r.data[0].b64_json))).convert("RGB")
     STAGE.mkdir(parents=True, exist_ok=True)
