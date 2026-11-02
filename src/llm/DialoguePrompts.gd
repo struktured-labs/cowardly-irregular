@@ -281,7 +281,7 @@ enemy is weak to that element — the oldest decision in the genre, and until no
 unsayable in a rule. Elements that actually appear as a weakness in the
 bestiary: fire (38 of 106 monsters), holy (32), lightning (30), ice (27),
 water, physical, dark. Pair it with an ability of the SAME element, e.g.
-{\"type\":\"enemy_weak_to\",\"element\":\"fire\"} + 'fire' or 'summon_ifrit'.
+{\"type\":\"enemy_weak_to\",\"element\":\"fire\"} + 'fire'.
 An element nothing is weak to simply never fires.
 item_count takes an 'item_id' field NAMING the item to count, alongside op and
 value — {\"type\":\"item_count\",\"item_id\":\"potion\",\"op\":\">\",\"value\":0}.
@@ -713,7 +713,8 @@ static func build_boss_intent(
 	display_name: String,
 	ctx: Dictionary,
 ) -> String:
-	var persona: String = str(ctx.get("persona", ""))
+	## Quoted to the model as its voice, so it must not show the long hyphen runs the cleaner removes.
+	var persona: String = unrun_hyphens(str(ctx.get("persona", "")))
 	if persona.is_empty():
 		persona = "A formidable JRPG boss."
 	var phase: int = int(ctx.get("phase", 1))
@@ -835,6 +836,7 @@ static func build_boss_intent(
 		+ "- intent_id MUST be one of the listed values, verbatim.\n"
 		+ "- reason: one short sentence (≤ %d chars) explaining WHY this intent fits the moment. Internal use only.\n" % MAX_BOSS_REASON_CHARS
 		+ "- taunt: one in-character line (≤ %d chars) to surface in the combat log. No quote marks.\n" % MAX_BOSS_TAUNT_CHARS
+		+ HYPHEN_RUN_RULE % MAX_HYPHEN_RUN_WORDS
 		+ "- Respond with ONLY valid JSON: {\"intent_id\": \"...\", \"reason\": \"...\", \"taunt\": \"...\"}\n"
 	)
 	return prompt
@@ -1205,7 +1207,7 @@ static func _format_party_kit(kit_context: Dictionary) -> String:
 		var costs: Dictionary = entry.get("costs", {})
 		var parts: PackedStringArray = PackedStringArray()
 		for aid in (entry.get("kit", []) as Array):
-			parts.append("%s (%d MP)" % [str(aid), int(costs.get(str(aid), 0))])
+			parts.append("%s%s (%d MP)" % [str(aid), _shown_as(str(aid)), int(costs.get(str(aid), 0))])
 		lines.append("  %s [%s]: %s" % [
 			str(entry.get("member", "?")), str(entry.get("job_id", "?")), ", ".join(parts)])
 		## member_ability runs BETWEEN fights, and the engine refuses anything without an
@@ -1236,6 +1238,7 @@ static func _format_party_kit(kit_context: Dictionary) -> String:
 	lines.append("switch_profile's \"character_id\" is one of the members above and nothing else:")
 	lines.append("there is no \"everyone\", \"all\" or \"*\". To switch the whole party, emit one")
 	lines.append("switch_profile action per member. \"profile_index\" is that member's own slot.")
+	lines.append(SHOWN_NAME_RULE)
 	return "\n".join(lines)
 
 
@@ -1265,12 +1268,13 @@ static func _format_rule_kit(kit_context: Dictionary) -> String:
 	var cheapest_cost: int = 0
 	for aid in kit:
 		var cost: int = int(costs.get(str(aid), 0))
-		lines.append("  %s - %d MP" % [str(aid), cost])
+		lines.append("  %s%s - %d MP" % [str(aid), _shown_as(str(aid)), cost])
 		if cost > 0 and (cheapest_id == "" or cost < cheapest_cost):
 			cheapest_id = str(aid)
 			cheapest_cost = cost
 	lines.append("Anything not on that list — including abilities from other jobs —")
 	lines.append("is rejected and DISCARDS THE WHOLE RULE SET. Prefer 'attack' when unsure.")
+	lines.append(SHOWN_NAME_RULE)
 	## An `item` action's id is deep-checked, so one wrong id discards the whole ruleset —
 	## the same cost as a wrong ability, and the grammar named only "potion".
 	var item_ids: Array = kit_context.get("items", [])
@@ -1304,6 +1308,22 @@ static func _format_rule_kit(kit_context: Dictionary) -> String:
 			% [cheapest_id, cheapest_cost, max_mp])
 		lines.append("needs the condition {\"type\":\"mp_percent\",\"op\":\">=\",\"value\":%d}." % pct)
 	return "\n".join(lines)
+
+
+## The rule set's name and description reach the player; an id like fira or summon_ifrit is not a name he ever sees.
+const SHOWN_NAME_RULE: String = "In the rule set's NAME and DESCRIPTION, call an ability by the name in quotes after its id, never by the id."
+
+
+## ` "Name"` after an id whose player-facing name differs from it, else "". The name is what the menus show.
+static func _shown_as(ability_id: String) -> String:
+	var tree: SceneTree = Engine.get_main_loop() as SceneTree
+	var js: Node = tree.root.get_node_or_null("JobSystem") if tree != null and tree.root != null else null
+	if js == null:
+		return ""
+	var shown: String = str((js.get_ability(ability_id) as Dictionary).get("name", "")).strip_edges()
+	if shown == "" or shown.to_lower().replace(" ", "_") == ability_id:
+		return ""
+	return " \"%s\"" % shown
 
 
 ## Ability ids the grammar's own worked examples spend, PARSED rather than listed.
@@ -1409,8 +1429,28 @@ static func clean_model_text(text: String) -> String:
 		if t.length() >= 2 and t.begins_with(pair[0]) and t.ends_with(pair[1]):
 			var inner: String = t.substr(1, t.length() - 2)
 			if not inner.contains(pair[0]) and not inner.contains(pair[1]):
-				return inner.strip_edges()
-	return t
+				t = inner.strip_edges()
+				break
+	return unrun_hyphens(t)
+
+
+## Longest run of hyphen-joined words a model line keeps; longer runs read as one unbroken word (struktured, Voltharion).
+const MAX_HYPHEN_RUN_WORDS: int = 3
+## Said in every boss prompt, so the model is told the same limit the cleaner enforces.
+const HYPHEN_RUN_RULE: String = "- If this voice joins words with hyphens, keep each burst to at most %d words; never hyphenate a whole sentence.\n"
+
+
+## A run of more than MAX_HYPHEN_RUN_WORDS hyphen-joined words gets plain spaces; shorter bursts and compounds stay.
+static func unrun_hyphens(text: String) -> String:
+	var re := RegEx.create_from_string("[\\w']+(?:-[\\w']+)+")
+	var out: String = text
+	var hits: Array = re.search_all(text)
+	hits.reverse()
+	for m in hits:
+		var run: String = (m as RegExMatch).get_string()
+		if run.count("-") + 1 > MAX_HYPHEN_RUN_WORDS:
+			out = out.substr(0, m.get_start()) + run.replace("-", " ") + out.substr(m.get_end())
+	return out
 
 
 # ── Validation helpers ─────────────────────────────────────────────────────────

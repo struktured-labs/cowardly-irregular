@@ -2153,7 +2153,7 @@
       "job_id": "summoner",
       "stance": "defensive",
       "name": "Defensive",
-      "description": "Spend an eidolon only on a weakness and only above a 60% reserve; heal early and swing the rest of the time.",
+      "description": "Spend a summon only on a weakness and only above a 60% reserve; heal early and swing the rest of the time.",
       "rules": [
         {
           "conditions": [
@@ -2392,7 +2392,7 @@
       "job_id": "summoner",
       "stance": "aggressive",
       "name": "Aggressive",
-      "description": "Bahamut into a crowd, deepen the pact once, exploit whatever weakness is on the field, and never stand still.",
+      "description": "Legacy System into a crowd, deepen the pact once, exploit whatever weakness is on the field, and never stand still.",
       "rules": [
         {
           "conditions": [

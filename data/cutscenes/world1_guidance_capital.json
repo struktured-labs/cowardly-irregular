@@ -3,7 +3,7 @@
   "title": "Village Guidance — The Capital",
   "world": 1,
   "trigger": "world1_guidance_capital",
-  "background": "prologue_village",
+  "background": "harmonia_square",
   "description": "After the forest, Theron sends the party toward Scriptura, the capital.",
   "steps": [
     {
