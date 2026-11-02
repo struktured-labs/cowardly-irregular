@@ -489,6 +489,7 @@ func _ready() -> void:
 	BattleManager.damage_dealt.connect(_on_damage_dealt)
 	BattleManager.attack_missed.connect(_on_attack_missed)
 	BattleManager.hit_negated.connect(_on_hit_negated)
+	BattleManager.status_resisted.connect(_on_status_resisted)
 	BattleManager.healing_done.connect(_on_healing_done)
 	BattleManager.mp_restored.connect(_on_mp_restored)
 	BattleManager.ap_granted.connect(_on_ap_granted)
@@ -595,6 +596,8 @@ func _exit_tree() -> void:
 		BattleManager.damage_dealt.disconnect(_on_damage_dealt)
 	if BattleManager.attack_missed.is_connected(_on_attack_missed):
 		BattleManager.attack_missed.disconnect(_on_attack_missed)
+	if BattleManager.status_resisted.is_connected(_on_status_resisted):
+		BattleManager.status_resisted.disconnect(_on_status_resisted)
 	if BattleManager.hit_negated.is_connected(_on_hit_negated):
 		BattleManager.hit_negated.disconnect(_on_hit_negated)
 	if BattleManager.healing_done.is_connected(_on_healing_done):
@@ -6005,6 +6008,13 @@ func _on_hit_negated(target: Combatant, banner: String) -> void:
 		return
 	_results_display.on_hit_negated(target, banner)
 	SoundManager.play_battle("attack_miss")
+
+
+## A status that failed to land: a soft glancing tink and a RESIST banner, never silence (struktured 2026-11-01).
+func _on_status_resisted(target: Combatant, _effect: String) -> void:
+	if is_instance_valid(_results_display):
+		_results_display.on_hit_negated(target, "RESIST")
+	SoundManager.play_battle("status_resisted")
 
 
 func _on_healing_done(target: Combatant, amount: int) -> void:
