@@ -97,9 +97,10 @@ const WATER_SURFACE_SHADER := preload("res://src/shaders/water_surface.gdshader"
 
 
 ## The DRAWN water tile moves (drift, travelling glints, fountain rings); a painted one is left as it was.
-func _animate_drawn_water(atlas: TileSetAtlasSource, tile_order: Array, cols: int, rows: int) -> void:
+func _animate_drawn_water(atlas: TileSetAtlasSource, tile_order: Array, variants: Dictionary, cols: int, rows: int) -> void:
 	for i in range(tile_order.size()):
-		if _get_tile_type_name(tile_order[i]) != "WATER" or _artist_tile(tile_order[i], 0) == null:
+		## Per cell's OWN variant: the medieval atlas keeps four painted "water frame" cells beside the drawn base tile.
+		if _get_tile_type_name(tile_order[i]) != "WATER" or _artist_tile(tile_order[i], int(variants.get(i, 0))) == null:
 			continue
 		var coords := Vector2i(i % cols, i / cols)
 		var mat := ShaderMaterial.new()
@@ -161,7 +162,7 @@ func create_tileset() -> TileSet:
 
 	# Add the atlas source to the tileset BEFORE setting collision data
 	tileset.add_source(atlas)
-	_animate_drawn_water(atlas, tile_order, atlas_cols, atlas_rows)
+	_animate_drawn_water(atlas, tile_order, tile_variants, atlas_cols, atlas_rows)
 
 	# Add collision for impassable tiles
 	for i in range(tile_order.size()):

@@ -8,16 +8,8 @@ const ShopInteriorScript := preload("res://src/maps/interiors/ShopInterior.gd")
 const KINDS := ["floor", "wall", "counter", "shelf", "back_wall"]
 const ROOMS := {ShopInteriorScript.ShopType.ITEM: "shop_item", ShopInteriorScript.ShopType.BLACKSMITH: "shop_blacksmith"}
 
-var _origin := ""
-
-
-func before_each() -> void:
-	_origin = GameLoop._village_origin_id
-
-
 func after_each() -> void:
 	VillageProp.prop_art_override = null
-	GameLoop._village_origin_id = _origin
 
 
 func _shop(type: int) -> Node:
@@ -53,6 +45,9 @@ func test_harmonia_shops_resolve_every_piece_to_harmonia_art() -> void:
 ## Sum of colour jumps across the internal 32px cell boundaries of a cols x rows block, assembled cell by cell.
 func _seam_cost(src: Image, origin: Vector2i, size: Vector2i, grid: Vector2i) -> float:
 	var img := Image.create(size.x * 32, size.y * 32, false, Image.FORMAT_RGBA8)
+	## blit_rect needs matching formats and copies NOTHING otherwise, which reads as zero seams on every sampling.
+	src = src.duplicate()
+	src.convert(Image.FORMAT_RGBA8)
 	for y in range(size.y):
 		for x in range(size.x):
 			var c := Vector2i(posmod(origin.x + x, grid.x), posmod(origin.y + y, grid.y))
@@ -72,8 +67,12 @@ func _seam_cost(src: Image, origin: Vector2i, size: Vector2i, grid: Vector2i) ->
 
 
 func test_the_counter_and_shelves_land_whole_where_the_room_samples_them() -> void:
-	GameLoop._village_origin_id = "harmonia_village"
 	for type in ROOMS:
+		## The room's own drawn pieces, planted at room level: a test has no village origin to resolve "_harmonia" by.
+		var room: String = ROOMS[type]
+		VillageProp.prop_art_override = {
+			"counter_" + room: {"path": "res://assets/sprites/interiors/harmonia/counter_%s.png" % room},
+			"shelf_" + room: {"path": "res://assets/sprites/interiors/harmonia/shelf_%s.png" % room}}
 		var shop := _shop(type)
 		## Where each piece stands in ShopInterior.SHOP_LAYOUT: (origin cell, size in cells, source id).
 		for piece in [[Vector2i(7, 3), Vector2i(3, 2), 2], [Vector2i(2, 2), Vector2i(3, 3), 3], [Vector2i(11, 6), Vector2i(3, 2), 3]]:

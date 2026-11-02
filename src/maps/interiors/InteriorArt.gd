@@ -95,7 +95,8 @@ static func place_or_paint(parent: Node, kind: String, room: String, base: Vecto
 	spr.centered = false
 	spr.texture = load(p)
 	spr.position = base - Vector2(spr.texture.get_width() / 2.0, spr.texture.get_height())
-	parent.add_child(spr)
+	## Readable names: repeated pieces under one parent stay Art_<kind>, Art_<kind>2..., not @Sprite2D@N.
+	parent.add_child(spr, true)
 	return spr
 
 
