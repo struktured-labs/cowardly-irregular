@@ -19,11 +19,11 @@ var _capture_timer: float = 0.0
 const MAPPING_SKIP_KEY := KEY_X
 const MAPPING_CANCEL_KEY := KEY_ESCAPE
 
-## ⛔ THE WALK'S ONLY PAD-REACHABLE EXIT, AND IT CLAIMS NO BUTTON -- which is why it is a clock and
-## not a gesture. `_handle_mapping_input` records every InputEventJoypadButton as the binding, so a
-## reserved button or a hold would have to steal one from the very mapping it is capturing. A
-## deadline takes nothing and cannot collide. Whether a gesture should ALSO exist is struktured's
-## call; adding one later does not undo this.
+## ⛔ THE WALK'S PAD-REACHABLE WAY OUT OF THE WHOLE WALK, AND IT CLAIMS NO BUTTON -- which is why it is a
+## clock. `_handle_mapping_input` binds every pad button on press, so a RESERVED button would steal one
+## from the mapping being captured; a deadline takes nothing and cannot collide. Skipping ONE control by
+## pad is the hold (MAPPING_HOLD_SKIP_SEC, struktured's long-press ruling 2026-11-01), which steals
+## nothing either: it undoes the binding its own press made.
 ##
 ## 🔑 MEASURED FROM THE LAST PROGRESS, NOT THE LAST INPUT, and that is the whole fix. A player
 ## working through the walk resets it on every binding and never sees it. A player whose presses are
@@ -34,6 +34,12 @@ const MAPPING_IDLE_LIMIT := 30.0
 
 ## The warning shows only inside this tail, so a calm walk is not run against a visible clock.
 const MAPPING_IDLE_WARN_AT := 10.0
+
+## The pad's own skip (struktured, via cowir-main 2026-11-01: "long-press to skip"). It steals no
+## button: a press still binds at once, and holding that button this long UNDOES the binding it just
+## made, leaving the control skipped. A press that was refused (an already-bound button) skips the
+## control it was refused for. The clock is `_process` delta, like the deadline, so tests drive it.
+const MAPPING_HOLD_SKIP_SEC := 1.0
 
 const CAPTURE_TIMEOUT = 5.0
 var _testing: bool = false
@@ -85,6 +91,11 @@ var _mapping_status: Label = null
 ## duplicate-input refusal that shares _mapping_status.
 var _mapping_idle: float = 0.0
 var _mapping_idle_label: Label = null
+## The held pad button, the control its press bound ("" if refused) and the walk index it was pressed on.
+var _mapping_hold_button: int = -1
+var _mapping_hold_control: String = ""
+var _mapping_hold_index: int = -1
+var _mapping_hold_t: float = 0.0
 
 
 func _compute_row_indices() -> void:
@@ -864,8 +875,8 @@ func _map_pad_hint() -> String:
 	## control and cancelling on the spot are still keyboard keys; being released is not.
 	var secs: int = int(MAPPING_IDLE_LIMIT)
 	if Input.is_joy_known(pads[0]):
-		return "SDL knows this pad — recapture only if it misbehaves (keyboard skips a control; a stall releases it after %ds)" % secs
-	return "THIS PAD IS UNMAPPED — capture it (keyboard skips a control; a stall releases it after %ds)" % secs
+		return "SDL knows this pad — recapture only if it misbehaves (hold a button or keyboard skips a control; a stall releases it after %ds)" % secs
+	return "THIS PAD IS UNMAPPED — capture it (hold a button or keyboard skips a control; a stall releases it after %ds)" % secs
 
 
 func _start_pad_mapping() -> void:
@@ -877,6 +888,7 @@ func _start_pad_mapping() -> void:
 	var CaptureScript = load("res://src/input/ControllerMappingCapture.gd")
 	_mapping = CaptureScript.new(Input.get_joy_guid(device), Input.get_joy_name(device))
 	_mapping_idle = 0.0
+	_clear_mapping_hold()
 	_build_mapping_overlay()
 	_mapping_overlay.visible = true
 	_refresh_mapping_prompt()
@@ -892,8 +904,8 @@ func _refresh_mapping_prompt() -> void:
 	if _mapping_status:
 		## Keyboard only, and it says so: every pad button here is a BINDING, so there is no pad
 		## button left to mean "skip". The key names come from the consts the handler reads.
-		_mapping_status.text = "%s   ·   %s\nKeyboard %s = skip this control   ·   Keyboard %s = cancel" % [
-			_mapping.pad_name, _mapping.guid,
+		_mapping_status.text = "%s   ·   %s\nHold any pad button %.0fs = skip this control   ·   Keyboard %s = skip   ·   Keyboard %s = cancel" % [
+			_mapping.pad_name, _mapping.guid, MAPPING_HOLD_SKIP_SEC,
 			OS.get_keycode_string(MAPPING_SKIP_KEY), OS.get_keycode_string(MAPPING_CANCEL_KEY)]
 
 
@@ -911,16 +923,56 @@ func _handle_mapping_input(event: InputEvent) -> void:
 			return
 		return
 	if event is InputEventJoypadButton and not (event as InputEventJoypadButton).pressed:
+		if (event as InputEventJoypadButton).button_index == _mapping_hold_button:
+			_clear_mapping_hold()
 		return
+	var pressed_index: int = _mapping.index
+	var pressed_control: String = _mapping.current_control()
 	if _mapping.record(event):
+		if event is InputEventJoypadButton:
+			_start_mapping_hold((event as InputEventJoypadButton).button_index, pressed_control, pressed_index)
 		_advance_mapping()
 		return
+	if event is InputEventJoypadButton:
+		_start_mapping_hold((event as InputEventJoypadButton).button_index, "", pressed_index)
 	# A refused event must SAY why — a walk that silently ignores you reads as a frozen screen.
 	var token: String = _mapping.binding_token(event)
 	if token != "" and _mapping_status:
 		var owner: String = _mapping.control_using(token)
 		if owner != "":
-			_mapping_status.text = "That input is already '%s'. Use a DIFFERENT control, or keyboard %s to skip." % [owner, OS.get_keycode_string(MAPPING_SKIP_KEY)]
+			_mapping_status.text = "That input is already '%s'. Use a DIFFERENT control, hold it to skip, or keyboard %s to skip." % [owner, OS.get_keycode_string(MAPPING_SKIP_KEY)]
+
+
+func _start_mapping_hold(button: int, bound_control: String, at_index: int) -> void:
+	_mapping_hold_button = button
+	_mapping_hold_control = bound_control
+	_mapping_hold_index = at_index
+	_mapping_hold_t = 0.0
+
+
+func _clear_mapping_hold() -> void:
+	_mapping_hold_button = -1
+	_mapping_hold_control = ""
+	_mapping_hold_index = -1
+	_mapping_hold_t = 0.0
+
+
+## The hold reached MAPPING_HOLD_SKIP_SEC: the control that press was about ends up skipped.
+func _skip_by_hold() -> void:
+	var control: String = _mapping_hold_control
+	var at_index: int = _mapping_hold_index
+	_clear_mapping_hold()
+	if control != "":
+		_mapping.bindings.erase(control)
+		_mapping_idle = 0.0
+		_refresh_mapping_prompt()
+	elif _mapping.index == at_index:
+		_mapping.skip()
+		_advance_mapping()
+	else:
+		return
+	if SoundManager:
+		SoundManager.play_ui("menu_move")
 
 
 func _advance_mapping() -> void:
@@ -1146,23 +1198,32 @@ func _show_flash(msg: String) -> void:
 
 
 func _process(delta: float) -> void:
+	## Every timer on this screen is in the player's hand, so all of them count REAL seconds, as
+	## MenuRepeat does: battle runs Engine.time_scale 0.25 for "1x", so a 5 s capture took 20 there.
+	var real: float = delta / maxf(Engine.time_scale, 0.0001)
 	# Flash message timer
 	if _flash_timer > 0:
-		_flash_timer -= delta
+		_flash_timer -= real
 		if _flash_timer <= 0 and _flash_label:
 			_flash_label.visible = false
 
 	# The mapping walk's no-progress deadline. There was no arm here at all: the sibling
 	# single-action capture below has timed out since it shipped, and the walk never did.
+	if _mapping == null:
+		_clear_mapping_hold()
+	elif _mapping_hold_button >= 0:
+		_mapping_hold_t += real
+		if _mapping_hold_t >= MAPPING_HOLD_SKIP_SEC:
+			_skip_by_hold()
 	if _mapping != null:
-		_mapping_idle += delta
+		_mapping_idle += real
 		_update_mapping_idle_label()
 		if _mapping_idle >= MAPPING_IDLE_LIMIT:
 			_expire_mapping()
 
 	# Capture timeout
 	if _capturing:
-		_capture_timer -= delta
+		_capture_timer -= real
 		# Update timer display
 		var timer_label = _capture_overlay.get_node_or_null("CaptureBox/TimerLabel")
 		if timer_label:

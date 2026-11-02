@@ -71,11 +71,11 @@
 			]
 		},
 		"summoner": {
-			"origin": "Summoners bind eidolons at the Convergence Stones, forming pacts that blur the line between ally and weapon.",
+			"origin": "Summoners bind summons at the Convergence Stones, forming pacts that blur the line between ally and weapon.",
 			"personality_traits": ["mystical", "codependent", "commanding", "lonely"],
 			"worldview": "Why fight alone when you can fight with the embodiment of elemental fury?",
 			"flavor_quotes": [
-				"Bahamut and I have an understanding. I ask, and he obliges.",
+				"Legacy System and I have an understanding. Nobody touches him, and he keeps running.",
 				"Summoning is just very aggressive networking.",
 				"I contain multitudes. Literally."
 			]
