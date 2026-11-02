@@ -85,3 +85,19 @@ func test_the_pads_cancel_closes_a_console_brought_back_by_a_stop() -> void:
 	assert_false(_gl._autogrind_ui_open(), "two presses of the pad's cancel did not close the stopped console")
 	assert_true(_gl._autogrind_summary == null or not is_instance_valid(_gl._autogrind_summary),
 		"and the summary above it is gone too")
+
+
+## struktured, preview: "also I can't hit B again to close autogrind after 2 runs". Whatever is left behind is per-run, so
+## the same stop-then-close cycle is driven three times on ONE GameLoop, reopening the console each time as the player does.
+func test_the_pads_cancel_still_closes_it_after_three_runs() -> void:
+	var button := _pad_cancel_button()
+	assert_gt(button, -1, "CONTROL: ui_cancel must carry a pad button")
+	for run in 3:
+		var ui: Node = await _stopped_console()
+		assert_true(is_instance_valid(ui) and _gl._autogrind_ui_open(), "CONTROL: run %d brought the console back" % (run + 1))
+		for i in 2:
+			if _gl._autogrind_ui_open():
+				await _press_pad(button)
+		assert_false(_gl._autogrind_ui_open(), "after run %d, two presses of the pad's cancel did not close the console" % (run + 1))
+		if _gl._autogrind_ui_open():
+			return
