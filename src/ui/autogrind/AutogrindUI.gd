@@ -1523,6 +1523,13 @@ func _input(event: InputEvent) -> void:
 	# rows. Measured 2026-09-17 — rules=0: dpad 1 stick 1 (the clamp `min(rules.size() + 1, …)`
 	# bounds BOTH routes at row 1 and hides it); rules=12: dpad 1 stick 5.
 	# Read AFTER the options-ring return above, which owns its own d-pad.
+	## Above every action arm: ui_cancel is plain Z and an action match tolerates extra modifiers, so Ctrl+Z read as Cancel and closed the screen (cowir-controller 21436).
+	if event is InputEventKey and event.pressed and not event.is_echo() and event.keycode == KEY_Z and event.ctrl_pressed:
+		_undo_delete()
+		_update_cursor()
+		get_viewport().set_input_as_handled()
+		return
+
 	var nav: String = MenuNav.step(event)
 
 	# Navigation
@@ -1594,10 +1601,7 @@ func _input(event: InputEvent) -> void:
 			_press_delete_button()
 		get_viewport().set_input_as_handled()
 
-	elif event is InputEventKey and event.pressed and not event.is_echo() and event.keycode == KEY_Z and event.ctrl_pressed:
-		_undo_delete()
-		_update_cursor()
-		get_viewport().set_input_as_handled()
+
 
 	elif event is InputEventJoypadButton and event.pressed and event.button_index == JOY_BUTTON_X:
 		_toggle_ludicrous_speed()

@@ -106,3 +106,23 @@ func test_no_two_console_commands_share_a_pad_button() -> void:
 		if (owners[idx] as Array).size() > 1:
 			shared.append("button %d: %s" % [idx, ", ".join(owners[idx])])
 	assert_eq(shared, [], "two console commands on one pad button:\n  %s" % "\n  ".join(shared))
+
+
+## Through _input, not the helpers: Ctrl+Z must undo and leave the console up (ui_cancel is plain Z, and an action match
+## tolerates extra modifiers), and a real delete-button press must delete (cowir-controller 21436).
+func test_the_routed_presses_delete_and_undo() -> void:
+	var ui := _console()
+	var before: Array = ui.rules.duplicate(true)
+	_at(ui, 0, 0)
+	var y := InputEventJoypadButton.new()
+	y.button_index = ui.DELETE_BUTTON
+	y.pressed = true
+	ui._input(y)
+	assert_ne(ui.rules, before, "CONTROL: the routed delete button deleted a condition")
+	var z := InputEventKey.new()
+	z.keycode = KEY_Z
+	z.ctrl_pressed = true
+	z.pressed = true
+	ui._input(z)
+	assert_eq(ui.rules, before, "Ctrl+Z through _input must undo the delete")
+	assert_true(ui.visible, "and must not close the console the way Cancel does")
