@@ -538,7 +538,7 @@ named. Never copy a letter out of this table into a caption.**
 | Cancel/Back | B | Z/Escape |
 | Queue action (Advance) | R shoulder | W key |
 | Defer | L shoulder | Q key |
-| Change battle speed | X (top face button) | ` (backtick) |
+| Change battle speed: TAP = one rung faster (wraps) · HOLD = one rung slower, stopping at the slowest (`BattleScene.SPEED_HOLD_MS`, wall clock; struktured 2026-11-01) | X (top face button) | ` (backtick) |
 | Repeat last turn's actions | Y (west face button) | Y key |
 | Cycle party formation | command menu row | F key |
 
