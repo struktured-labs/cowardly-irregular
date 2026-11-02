@@ -2522,6 +2522,13 @@ func _get_pending_story_cutscene() -> String:
 	if flags.get("cutscene_flag_rat_king_defeated", false) and not flags.get("cutscene_flag_world1_rat_king_defeat_complete", false):
 		if _current_map_id == "whispering_cave":
 			return "world1_rat_king_defeat"
+	## #763: Mordaine (unnamed yet) announces the secondary-job unlock right after the Rat King scene,
+	## in place of a system popup. Once only (completion flag). Saves already past chapter4 have used the
+	## slot for a whole act, so the beat would be news to nobody: it is skipped for them, not replayed late.
+	## Above the demo boundary so the demo, which ends at this fight, still hears it (before its card, never after).
+	if flags.get("cutscene_flag_world1_rat_king_defeat_complete", false) and not flags.get("cutscene_flag_world1_mordaine_secondary_unlock_complete", false) and not flags.get("cutscene_flag_chapter4_complete", false) and not flags.get("cutscene_flag_demo_end_complete", false):
+		if _current_map_id == "whispering_cave":
+			return "world1_mordaine_secondary_unlock"
 	## DEMO BOUNDARY. Placed AFTER world1_rat_king_defeat so that beat still plays, and BEFORE
 	## chapter4 so nothing past the tested mission chains. Returns "" once the card is seen —
 	## short-circuiting every later gate, including the Mordaine escalation, rather than
@@ -2969,6 +2976,7 @@ const _CUTSCENE_COMPLETION_FLAGS := {
 	"world1_chapter3":                  "cutscene_flag_chapter3_complete",
 	"world1_chapter4":                  "cutscene_flag_chapter4_complete",
 	"world1_rat_king_defeat":           "cutscene_flag_world1_rat_king_defeat_complete",
+	"world1_mordaine_secondary_unlock": "cutscene_flag_world1_mordaine_secondary_unlock_complete",
 	# 2026-07-15 (task #27): staged village-reaction scene after the Rat King falls
 	"world1_harmonia_after_cave":       "cutscene_flag_world1_harmonia_after_cave_complete",
 	# Tick 104: W1 Mordaine final post-defeat dialogue
