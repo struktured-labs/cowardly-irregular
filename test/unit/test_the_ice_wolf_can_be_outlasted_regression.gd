@@ -98,7 +98,8 @@ func test_a_back_liner_who_defers_outlives_the_wolfs_biggest_crit() -> void:
 
 func test_an_undefended_back_liner_still_fears_the_crit() -> void:
 	var level := _meeting_level()
-	var frailest := 1.0
+	## Starts high: seeded at 1.0, a running min could never pass 1.1, and this arm was green at half the wolf's attack (slot mutation F2).
+	var frailest := INF
 	for job_id in BACK_ROW:
 		var c := _member(job_id, level)
 		var taken: int = c.take_damage(_crit(1.0))
