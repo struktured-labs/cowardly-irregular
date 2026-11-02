@@ -152,6 +152,7 @@ func test_damage_number_outline_pattern_unchanged() -> void:
 	# DamageNumber set the precedent. All these BattleScene labels
 	# now match the same scheme. Confirm DamageNumber wasn't touched.
 	var dn: String = FileAccess.get_file_as_string("res://src/ui/DamageNumber.gd")
-	# Fable pass 2026-07-16: reference width deliberately 2→5 (struktured: damage font "fatter and bigger").
-	assert_true(dn.contains("add_theme_constant_override(\"outline_size\", 5)"),
-		"DamageNumber outline_size=5 preserved (the fable-pass reference)")
+	# Pixel pass 2026-11-02: the numbers are PixelText glyphs whose dark outline is baked in, so the reference is that rim.
+	assert_true(dn.contains("PixelText.new("), "DamageNumber draws PixelText glyphs (the pixel-pass reference)")
+	var pt: String = FileAccess.get_file_as_string("res://src/ui/PixelText.gd")
+	assert_true(pt.contains("img.set_pixelv(p, OUTLINE)"), "PixelText bakes the dark outline into every glyph")
