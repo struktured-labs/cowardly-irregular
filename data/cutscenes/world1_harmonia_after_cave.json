@@ -18,8 +18,8 @@
     {
       "type": "camera_focus",
       "target": [
-        544,
-        416
+        640,
+        480
       ],
       "duration": 0.8
     },
@@ -29,8 +29,8 @@
       "kind": "party",
       "job": "fighter",
       "at": [
-        496,
-        464
+        592,
+        528
       ],
       "facing": "up"
     },
@@ -44,8 +44,8 @@
       "kind": "party",
       "job": "cleric",
       "at": [
-        544,
-        464
+        640,
+        528
       ],
       "facing": "up"
     },
@@ -59,8 +59,8 @@
       "kind": "party",
       "job": "mage",
       "at": [
-        592,
-        464
+        752,
+        528
       ],
       "facing": "up"
     },
@@ -74,8 +74,8 @@
       "kind": "party",
       "job": "rogue",
       "at": [
-        640,
-        464
+        800,
+        528
       ],
       "facing": "up"
     },
@@ -89,8 +89,8 @@
       "kind": "party",
       "job": "bard",
       "at": [
-        688,
-        464
+        848,
+        528
       ],
       "facing": "up"
     },
@@ -104,8 +104,8 @@
       "kind": "npc",
       "archetype": "old_man",
       "at": [
-        336,
-        448
+        432,
+        512
       ],
       "facing": "right"
     },
@@ -115,8 +115,8 @@
       "kind": "npc",
       "archetype": "young_woman",
       "at": [
-        752,
-        464
+        912,
+        528
       ],
       "facing": "left"
     },
@@ -126,8 +126,8 @@
       "kind": "npc",
       "archetype": "child",
       "at": [
-        816,
-        448
+        992,
+        512
       ],
       "facing": "left"
     },
@@ -137,8 +137,8 @@
       "kind": "npc",
       "archetype": "young_man",
       "at": [
-        848,
-        448
+        1072,
+        512
       ],
       "facing": "left"
     },
@@ -157,8 +157,8 @@
     {
       "type": "camera_focus",
       "target": [
-        336,
-        448
+        432,
+        512
       ],
       "duration": 0.6
     },
@@ -176,8 +176,8 @@
     {
       "type": "camera_focus",
       "target": [
-        752,
-        464
+        912,
+        528
       ],
       "duration": 0.6
     },
@@ -195,8 +195,8 @@
     {
       "type": "camera_focus",
       "target": [
-        640,
-        464
+        800,
+        528
       ],
       "duration": 0.5
     },
@@ -220,8 +220,8 @@
     {
       "type": "camera_focus",
       "target": [
-        816,
-        448
+        992,
+        512
       ],
       "duration": 0.6
     },
@@ -243,8 +243,8 @@
       "type": "move_actor",
       "id": "child",
       "to": [
-        840,
-        448
+        1048,
+        512
       ]
     },
     {
@@ -261,8 +261,8 @@
     {
       "type": "camera_focus",
       "target": [
-        544,
-        464
+        640,
+        528
       ],
       "duration": 0.6
     },
@@ -280,8 +280,8 @@
       "kind": "npc",
       "archetype": "elder_theron",
       "at": [
-        276,
-        384
+        360,
+        448
       ],
       "facing": "down"
     },
@@ -293,15 +293,15 @@
       "type": "move_actor",
       "id": "elder",
       "to": [
-        448,
-        448
+        544,
+        512
       ]
     },
     {
       "type": "camera_focus",
       "target": [
-        448,
-        448
+        544,
+        512
       ],
       "duration": 0.6
     },
@@ -374,7 +374,7 @@
     {
       "type": "camera_focus",
       "target": [
-        576,
+        736,
         -60
       ],
       "duration": 1.4
@@ -398,8 +398,8 @@
     {
       "type": "camera_focus",
       "target": [
-        448,
-        448
+        544,
+        512
       ],
       "duration": 0.9
     },
@@ -457,8 +457,8 @@
       "type": "move_actor",
       "id": "elder",
       "to": [
-        296,
-        384
+        392,
+        448
       ]
     },
     {
@@ -479,8 +479,8 @@
     {
       "type": "camera_focus",
       "target": [
-        688,
-        464
+        848,
+        528
       ],
       "duration": 0.7
     },
@@ -512,8 +512,8 @@
     {
       "type": "camera_focus",
       "target": [
-        544,
-        464
+        640,
+        528
       ],
       "duration": 0.8
     },

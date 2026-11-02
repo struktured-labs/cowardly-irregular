@@ -41,14 +41,14 @@ func test_description_updates_when_cursor_moves_in_buy_menu() -> void:
 		"Buy menu should open describing the first item (Potion). Got: %s" % shop.description_label.text
 	)
 
-	# Move the menu cursor to the second row (Hi-Potion) like a ui_down press,
+	# Move the menu cursor to the second row (hi_potion) like a ui_down press,
 	# then run the per-frame poll that ShopScene uses in lieu of a signal.
 	shop.current_menu.selected_index = 1
 	shop._process(0.0)
 
 	assert_true(
-		shop.description_label.text.findn("Hi-Potion") != -1,
-		"Description should follow the cursor to Hi-Potion. Got: %s" % shop.description_label.text
+		shop.description_label.text.findn("Potio Maior") != -1,
+		"Description should follow the cursor to Potio Maior. Got: %s" % shop.description_label.text
 	)
 	# And it must NOT still be showing the original first item.
 	assert_eq(
@@ -75,7 +75,7 @@ func test_process_is_noop_when_cursor_unchanged() -> void:
 	# Force a sentinel into the label, leave the cursor on the same row, and
 	# verify the poll does NOT repaint (it only fires on a real selection change).
 	shop.current_menu.selected_index = 1
-	shop._process(0.0)  # paints Hi-Potion, syncs tracker
+	shop._process(0.0)  # paints Potio Maior, syncs tracker
 	shop.description_label.text = "SENTINEL"
 	shop._process(0.0)  # cursor unchanged -> must not overwrite
 

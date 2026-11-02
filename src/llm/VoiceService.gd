@@ -125,7 +125,8 @@ func get_cached(speaker_id: String, text: String) -> AudioStream:
 	return s
 
 
-func synthesize(speaker_id: String, text: String, timeout_sec: float) -> AudioStream:
+## `ticket["cancel"] = true` abandons the request early (closes its connection) and frees is_busy(); whether the server stops is its own.
+func synthesize(speaker_id: String, text: String, timeout_sec: float, ticket: Dictionary = {}) -> AudioStream:
 	var hit := get_cached(speaker_id, text)
 	if hit != null:
 		return hit
@@ -139,13 +140,13 @@ func synthesize(speaker_id: String, text: String, timeout_sec: float) -> AudioSt
 	var backend := _backend
 	var t0 := Time.get_ticks_msec()
 	backend.synthesize(id, text, str(v["voice"]))
-	while not box["done"] and Time.get_ticks_msec() - t0 < int(timeout_sec * 1000.0):
+	while not box["done"] and not bool(ticket.get("cancel", false)) and Time.get_ticks_msec() - t0 < int(timeout_sec * 1000.0):
 		await get_tree().process_frame
 	_pending.erase(id)
 	if not box["done"]:
 		if is_instance_valid(backend):
 			backend.cancel(id)
-		_last_error = "timed out after %.1fs" % timeout_sec
+		_last_error = "cancelled by its caller" if bool(ticket.get("cancel", false)) else "timed out after %.1fs" % timeout_sec
 		return null
 	if not box["ok"]:
 		_last_error = str(box["error"])

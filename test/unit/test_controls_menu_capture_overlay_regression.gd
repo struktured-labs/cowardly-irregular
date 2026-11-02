@@ -18,6 +18,17 @@ extends GutTest
 
 const ControlsMenuScript = preload("res://src/ui/ControlsMenu.gd")
 
+var _saved_time_scale: float = 1.0
+
+
+func before_each() -> void:
+	_saved_time_scale = Engine.time_scale
+	Engine.time_scale = 1.0
+
+
+func after_each() -> void:
+	Engine.time_scale = _saved_time_scale
+
 
 func _make_menu() -> ControlsMenu:
 	var menu = ControlsMenuScript.new()
@@ -78,3 +89,28 @@ func test_process_updates_countdown_label() -> void:
 	assert_eq(timer_label.text, "%.1fs" % (ControlsMenu.CAPTURE_TIMEOUT - 0.25),
 		"TimerLabel should reflect the decremented capture countdown, not stay frozen at '5.0s'")
 	menu._cancel_capture()
+
+
+## The countdown is REAL seconds: battle runs Engine.time_scale 0.25 for "1x", which scales _process's
+## delta, so an engine-time 5 s capture took 20 s in the player's hand there.
+func test_the_capture_countdown_is_real_seconds_under_a_battle_time_scale() -> void:
+	var menu = _make_menu()
+	menu._start_capture(InputProfileManager.REMAPPABLE_ACTIONS[0])
+	assert_true(menu._capturing, "CONTROL: a capture must be live before the clock runs")
+	Engine.time_scale = 0.25
+	menu._process((ControlsMenu.CAPTURE_TIMEOUT + 0.5) * 0.25)
+	assert_false(menu._capturing,
+		"at time_scale 0.25 the 5 s capture is a quarter as much ENGINE delta, and must still time out")
+
+
+## The flash message is read in real seconds too.
+func test_a_flash_message_clears_in_real_seconds_under_a_battle_time_scale() -> void:
+	var menu = _make_menu()
+	menu._show_flash("probe")
+	assert_true(menu._flash_label.visible, "CONTROL: the flash must be showing first")
+	var shown: float = menu._flash_timer
+	Engine.time_scale = 0.25
+	menu._process((shown + 0.1) * 0.25)
+	assert_false(menu._flash_label.visible,
+		"at time_scale 0.25 a real-second flash is a quarter as much ENGINE delta, and must still clear")
+

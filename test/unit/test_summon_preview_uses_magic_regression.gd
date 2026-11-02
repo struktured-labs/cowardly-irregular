@@ -206,6 +206,6 @@ func test_the_menu_prints_the_magic_total() -> void:
 			for row in item.get("submenu", []):
 				if str(row.get("id", "")) == "ability_summon_ifrit":
 					label = str(row.get("label", ""))
-	assert_ne(label, "", "CONTROL: the Ability menu must list Summon Ifrit")
+	assert_ne(label, "", "CONTROL: the Ability menu must list summon_ifrit (Summon Overclock)")
 	assert_true(label.contains("~%d total" % expected),
 		"the row the player reads must be the magic total %d, not an attack estimate — got '%s'" % [expected, label])

@@ -20,6 +20,8 @@ enum Mode { SLOT_SELECT, ITEM_SELECT }
 var mode: int = Mode.SLOT_SELECT
 var selected_slot: int = 0  # 0=weapon, 1=armor, 2=accessory
 var selected_item_index: int = 0
+## Ids that were NEW when the menu opened: their tag stays drawn for this visit even after the cursor clears them.
+var _new_at_open: Dictionary = {}
 ## Sticky window start for the item list; MenuScroll moves it only when the selection leaves it.
 var _item_scroll: int = 0
 var _slot_labels: Array = []
@@ -82,6 +84,10 @@ func setup(target: Combatant, weapons = null, armors = null, accessories = null)
 	available_weapons = weapons if weapons is Array else _all_catalog_ids(EquipmentSystem.weapons)
 	available_armors = armors if armors is Array else _all_catalog_ids(EquipmentSystem.armors)
 	available_accessories = accessories if accessories is Array else _all_catalog_ids(EquipmentSystem.accessories)
+	_new_at_open.clear()
+	if GameState:
+		for id in GameState.unseen_items:
+			_new_at_open[id] = true
 
 	call_deferred("_build_ui")
 
@@ -330,6 +336,10 @@ func _create_slot_row(slot_index: int) -> Control:
 	slot_label.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	slot_label.add_theme_color_override("font_color", SUBTITLE_COLOR)
 	row.add_child(slot_label)
+	if GameState and GameState.any_unseen_in(_slot_items(slot_index)):
+		var slot_tag := NewItemTag.make(10)
+		slot_tag.position = Vector2(24.0 + NewItemTag.text_width(SLOTS[slot_index], 10) + 6.0, 0)
+		row.add_child(slot_tag)
 
 	# Current equipment, icon and name on one line under the slot title
 	var equip_name = _get_equipped_name(slot_index)
@@ -525,6 +535,9 @@ func _create_items_panel(panel_size: Vector2) -> Control:
 
 	# Get available items for this slot
 	var items = _get_available_items_for_slot()
+	## The cursor resting on a row while choosing gear is the player seeing it (its tag stays for this visit).
+	if mode == Mode.ITEM_SELECT and GameState and selected_item_index >= 0 and selected_item_index < items.size():
+		GameState.mark_seen(str(items[selected_item_index]))
 
 	if items.is_empty():
 		var empty_label = Label.new()
@@ -553,6 +566,14 @@ func _create_items_panel(panel_size: Vector2) -> Control:
 		_item_labels.append(item_row)
 
 	return panel
+
+
+func _slot_items(slot_index: int) -> Array:
+	match slot_index:
+		0: return available_weapons
+		1: return available_armors
+		2: return available_accessories
+	return []
 
 
 func _get_available_items_for_slot() -> Array:
@@ -612,6 +633,11 @@ func _create_item_row(item_id: String, index: int) -> Control:
 	name_label.add_theme_font_size_override("font_size", TextScale.scaled(12))
 	name_label.add_theme_color_override("font_color", _get_slot_color(selected_slot))
 	row.add_child(name_label)
+	if _new_at_open.has(item_id):
+		var item_tag := NewItemTag.make(10)
+		item_tag.position = Vector2(54.0 + NewItemTag.text_width(name_label.text, 12) + 8.0, 0)
+		item_tag.size = Vector2(NewItemTag.width(10) + 4.0, 32)
+		row.add_child(item_tag)
 
 	# Stat comparison (union of old + new stats so we catch drops from stats-only-on-old)
 	var stat_mods = item_data.get("stat_mods", {})
