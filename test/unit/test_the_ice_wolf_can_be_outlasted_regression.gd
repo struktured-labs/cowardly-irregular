@@ -17,21 +17,47 @@ func _monsters() -> Dictionary:
 	return d.get("monsters", d)
 
 
-## The level of a party that meets the wolf: its toughest companion in the gentlest field it roams.
-func _meeting_level() -> int:
+## Pool id lists, flattened from either pool shape.
+func _pools() -> Dictionary:
 	var pools: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/enemy_pools.json"))
 	pools = pools.get("pools", pools)
-	var mons := _monsters()
-	var best := 1 << 20
+	var out := {}
 	for key in pools:
 		var ids: Variant = pools[key]
 		if ids is Dictionary:
 			ids = (ids as Dictionary).get("enemies", (ids as Dictionary).get("monsters", []))
-		if not (ids is Array) or not (WOLF in ids):
+		if ids is Array:
+			out[key] = ids
+	return out
+
+
+## Every non-boss monster sharing a field with the wolf (cowir-main 21320: the ruling covers its band, derived, not hand-listed).
+func _wolf_band() -> Array:
+	var mons := _monsters()
+	var band: Array = []
+	for ids in _pools().values():
+		if not (WOLF in ids):
+			continue
+		for id in ids:
+			if mons.has(str(id)) and not bool((mons[str(id)] as Dictionary).get("boss", false)) and not (str(id) in band):
+				band.append(str(id))
+	return band
+
+
+## The level of a party that meets the wolf: its toughest companion in the gentlest field it roams.
+func _meeting_level() -> int:
+	return _meeting_level_of(WOLF)
+
+
+func _meeting_level_of(who: String) -> int:
+	var mons := _monsters()
+	var best := 1 << 20
+	for ids in _pools().values():
+		if not (who in ids):
 			continue
 		var top := 0
 		for id in ids:
-			if str(id) != WOLF and mons.has(str(id)):
+			if str(id) != who and mons.has(str(id)):
 				top = maxi(top, int((mons[str(id)] as Dictionary).get("level", 0)))
 		if top > 0:
 			best = mini(best, top)
@@ -50,8 +76,8 @@ func _member(job_id: String, level: int) -> Combatant:
 	return c
 
 
-func _crit(variance: float) -> int:
-	var atk: int = int(((_monsters()[WOLF] as Dictionary).get("stats", {}) as Dictionary).get("attack", 0))
+func _crit(variance: float, who: String = WOLF) -> int:
+	var atk: int = int(((_monsters()[who] as Dictionary).get("stats", {}) as Dictionary).get("attack", 0))
 	return int(int(atk * variance) * 1.5)
 
 
@@ -74,3 +100,15 @@ func test_an_undefended_back_liner_still_fears_the_crit() -> void:
 		var taken: int = c.take_damage(_crit(1.0))
 		frailest = minf(frailest, float(c.max_hp) / float(maxi(1, taken)))
 	assert_lt(frailest, 1.1, "the wolf must stay dangerous: its average crit should take ~90%+ of the frailest back-liner's HP")
+
+
+func test_every_monster_in_the_wolfs_band_can_be_outlasted_the_same_way() -> void:
+	var band := _wolf_band()
+	assert_true(WOLF in band and band.size() >= 3, "CONTROL: the band is derived from the pools and holds the wolf's companions: %s" % str(band))
+	for who in band:
+		var level := maxi(1, _meeting_level_of(str(who)))
+		for job_id in BACK_ROW:
+			var c := _member(job_id, level)
+			c.is_defending = true
+			c.take_damage(_crit(VARIANCE_MAX, str(who)))
+			assert_gt(c.current_hp, 0, "a full-HP %s who Defers must outlive %s's biggest crit at level %d" % [job_id, who, level])
