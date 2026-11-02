@@ -140,7 +140,7 @@ func test_every_ink_pixel_is_rimmed() -> void:
 					continue
 				ink += 1
 				for d in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
-					var q := Vector2i(x, y) + d
+					var q: Vector2i = Vector2i(x, y) + (d as Vector2i)
 					if img.get_pixelv(q).a == 0.0:
 						bare += 1
 		assert_gt(ink, 0, "'%s' has ink" % ch)

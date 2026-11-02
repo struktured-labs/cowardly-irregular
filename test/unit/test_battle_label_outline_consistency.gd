@@ -140,10 +140,10 @@ func test_tick_218_elem_indicator_outline_preserved() -> void:
 	var fn_idx: int = src.find("func _spawn_elemental_indicator")
 	var next_fn: int = src.find("\nfunc ", fn_idx + 1)
 	var body: String = src.substr(fn_idx, next_fn - fn_idx)
-	assert_true(body.contains("label.add_theme_constant_override(\"outline_size\", 2)"),
-		"tick 218 elem indicator outline preserved")
-	assert_true(body.contains("label.add_theme_color_override(\"font_outline_color\", Color.BLACK)"),
-		"tick 218 BLACK outline color preserved")
+	# Pixel pass 2026-11-02: the indicator is PixelText; the tick 218 outline is baked into every glyph.
+	assert_true(body.contains("PixelText.new(text"), "tick 218 elem indicator draws outlined PixelText glyphs")
+	var pt: String = _read("res://src/ui/PixelText.gd")
+	assert_true(pt.contains("img.set_pixelv(p, OUTLINE)"), "tick 218 dark outline preserved, baked into the glyph")
 
 
 # ── Symmetry with DamageNumber's pre-existing scheme ──────────────────
