@@ -1596,9 +1596,16 @@ func _input(event: InputEvent) -> void:
 		_press_delete_button()
 		get_viewport().set_input_as_handled()
 
+	elif event is InputEventKey and event.pressed and not event.is_echo() and event.keycode == KEY_C and not event.ctrl_pressed and not event.shift_pressed:
+		if _cell_type_at_cursor() == "condition":
+			_cycle_condition_operator()
+			_update_cursor()
+		get_viewport().set_input_as_handled()
+
 	elif event is InputEventKey and event.pressed and not event.is_echo() and event.keycode in [KEY_DELETE, KEY_BACKSPACE]:
 		if _on_rule_cell():
-			_press_delete_button()
+			_delete_current_cell()
+			_update_cursor()
 		get_viewport().set_input_as_handled()
 
 	elif event is InputEventJoypadButton and event.pressed and event.button_index == JOY_BUTTON_X:
@@ -1810,7 +1817,7 @@ func _hint_strip_text(device_name: String = "") -> String:
 	## consume both earlier in the same elif chain, so naming them would name keys that edit a cell.
 	var start: String = _pad_or_key(_pad_name_for_action("ui_menu", device_name), "+")
 	var del_word := _delete_button_word()
-	var del_key := "Del" if del_word == "Delete" else "Ctrl+Z"
+	var del_key: String = {"Delete": "Del", "Operator": "C"}.get(del_word, "Ctrl+Z")
 	var del: String = "" if del_word == "" else "%s %s   " % [_pad_or_key(InputProfileManager.button_name_for_index(DELETE_BUTTON, device_name), del_key), del_word]
 	var ludi: String = _pad_or_key(InputProfileManager.button_name_for_index(JOY_BUTTON_X, device_name), "H")
 	var l_sh: String = InputProfileManager.button_name_for_index(JOY_BUTTON_LEFT_SHOULDER, device_name)
@@ -1878,23 +1885,67 @@ func _on_rule_cell() -> bool:
 	return cell != null and cell.has_meta("cell_type") and str(cell.get_meta("cell_type")) in ["condition", "action"]
 
 
-## The delete button's word for this cursor: what pressing it now would do, or "" when it does nothing here.
+## The north button's word for this cursor, the autobattle editor's verbs (cowir-main 21462); "" where it does nothing.
 func _delete_button_word() -> String:
-	if _on_rule_cell():
-		return "Delete"
-	return "Undo" if not _undo_snapshot.is_empty() else ""
+	match _cell_type_at_cursor():
+		"condition":
+			return "Operator" if _condition_has_operator() else ""
+		"action":
+			return "Delete"
+	return "Undo" if _undo_is_live() else ""
 
 
 func _press_delete_button() -> void:
-	if _on_rule_cell():
-		_delete_current_cell()
-	elif not _undo_snapshot.is_empty():
-		_undo_delete()
+	match _cell_type_at_cursor():
+		"condition":
+			_cycle_condition_operator()
+		"action":
+			_delete_current_cell()
+		_:
+			if _undo_is_live():
+				_undo_delete()
 	_update_cursor()
 
 
+func _cell_type_at_cursor() -> String:
+	var cell = _get_cell_at_cursor()
+	return str(cell.get_meta("cell_type")) if cell != null and cell.has_meta("cell_type") else ""
+
+
+func _condition_at_cursor() -> Dictionary:
+	if cursor_row >= rules.size():
+		return {}
+	var conditions: Array = rules[cursor_row].get("conditions", [])
+	return conditions[cursor_col] if cursor_col < conditions.size() else {}
+
+
+func _condition_has_operator() -> bool:
+	var cond := _condition_at_cursor()
+	for t in CONDITION_TYPES:
+		if t["id"] == cond.get("type", ""):
+			return bool(t["has_value"])
+	return false
+
+
+func _cycle_condition_operator() -> void:
+	if not _condition_has_operator():
+		SoundManager.play_ui("menu_error")
+		return
+	var cond := _condition_at_cursor()
+	var ops: Array = AutogrindSystem.OPERATORS.keys()
+	cond["op"] = ops[(ops.find(str(cond.get("op", "<"))) + 1) % ops.size()]
+	_refresh_grid()
+	SoundManager.play_ui("menu_select")
+
+
+## An undo is only the last delete's while the rules still read as that delete left them; a preset load or edit since retires it.
+func _undo_is_live() -> bool:
+	return not _undo_snapshot.is_empty() and rules == _undo_snapshot.get("after", null)
+
+
 func _undo_delete() -> void:
-	if _undo_snapshot.is_empty():
+	if not _undo_is_live():
+		_undo_snapshot = {}
 		return
 	rules = (_undo_snapshot["rules"] as Array).duplicate(true)
 	cursor_row = int(_undo_snapshot["row"])
@@ -2647,7 +2698,7 @@ func _delete_current_cell() -> void:
 	_delete_cell_now()
 	if rules != before:
 		var what := "rule" if rules.size() < before.size() else "condition or action"
-		_undo_snapshot = {"rules": before, "row": at_row, "col": at_col, "what": what}
+		_undo_snapshot = {"rules": before, "after": rules.duplicate(true), "row": at_row, "col": at_col, "what": what}
 		var undo_btn: String = _pad_or_key(InputProfileManager.button_name_for_index(DELETE_BUTTON), "Ctrl+Z")
 		_log_message("[color=yellow]Deleted the %s — %s to undo.[/color]" % [what, undo_btn])
 

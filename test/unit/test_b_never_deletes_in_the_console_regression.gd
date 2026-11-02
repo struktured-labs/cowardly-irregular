@@ -2,8 +2,8 @@ extends GutTest
 
 ## struktured, 2026-11-01: B "doesn't close" the autogrind console, and his profile went from three rules (hp<30, mp<20,
 ## member_dead) to one. B on a rule cell was the console's DELETE, and deleting a rule's last condition deletes the rule, while
-## the strip said "B Close". Ruling (cowir-main 21420/21422/21426): B never deletes; delete is the autobattle editor's own pad
-## index; one level of undo; the strip names what each button does where the cursor stands.
+## the strip said "B Close". Ruling (cowir-main 21420/21422/21426/21462): B never deletes; the north button does what the
+## autobattle editor's does (operator on a condition, delete on an action, undo off a cell); one level of undo.
 
 const AutogrindState := preload("res://test/unit/helpers/autogrind_state.gd")
 const UI := "res://src/ui/autogrind/AutogrindUI.gd"
@@ -26,7 +26,8 @@ func _console() -> Node:
 	add_child_autofree(ui)
 	ui.visible = true
 	ui.rules = [
-		{"conditions": [{"type": "member_hp", "op": "<", "value": 30}, {"type": "member_dead"}], "actions": [{"type": "stop_grinding"}], "enabled": true},
+		{"conditions": [{"type": "member_hp", "op": "<", "value": 30}, {"type": "member_dead"}],
+			"actions": [{"type": "heal_party"}, {"type": "stop_grinding"}], "enabled": true},
 		{"conditions": [{"type": "member_mp", "op": "<", "value": 20}], "actions": [{"type": "stop_grinding"}], "enabled": true},
 	]
 	ui._refresh_grid()
@@ -37,8 +38,34 @@ func _at(ui: Node, row: int, col: int) -> String:
 	ui.cursor_row = row
 	ui.cursor_col = col
 	ui._update_cursor()
-	var cell = ui._get_cell_at_cursor()
-	return str(cell.get_meta("cell_type", "?")) if cell != null and cell.has_meta("cell_type") else "none"
+	return ui._cell_type_at_cursor()
+
+
+## The first column on `row` holding a cell of `kind`, so the fixture does not hardcode the grid's slot arithmetic.
+func _find(ui: Node, row: int, kind: String) -> int:
+	for col in 12:
+		if _at(ui, row, col) == kind:
+			return col
+	return -1
+
+
+func _press(ui: Node, ev: InputEvent) -> void:
+	ui._input(ev)
+
+
+func _pad(idx: int) -> InputEventJoypadButton:
+	var e := InputEventJoypadButton.new()
+	e.button_index = idx
+	e.pressed = true
+	return e
+
+
+func _key(code: Key, ctrl := false) -> InputEventKey:
+	var e := InputEventKey.new()
+	e.keycode = code
+	e.ctrl_pressed = ctrl
+	e.pressed = true
+	return e
 
 
 func test_b_deletes_nothing_on_any_cell_and_closes() -> void:
@@ -52,43 +79,70 @@ func test_b_deletes_nothing_on_any_cell_and_closes() -> void:
 		assert_signal_emitted(ui, "closed", "B on a %s cell must close the console" % kind)
 
 
-func test_the_delete_button_deletes_exactly_one_condition() -> void:
+func test_the_north_button_cycles_an_operator_and_deletes_no_condition() -> void:
 	var ui := _console()
-	assert_eq(_at(ui, 0, 0), "condition", "CONTROL: the cursor is on rule 1's first condition")
-	ui._press_delete_button()
-	assert_eq((ui.rules[0]["conditions"] as Array).size(), 1, "one press deletes one condition")
-	assert_eq(ui.rules.size(), 2, "and no rule")
+	assert_eq(_at(ui, 0, 0), "condition", "CONTROL: the cursor is on rule 1's hp < 30")
+	_press(ui, _pad(ui.DELETE_BUTTON))
+	assert_eq((ui.rules[0]["conditions"] as Array).size(), 2, "the north button on a condition deletes nothing")
+	assert_eq(str(ui.rules[0]["conditions"][0]["op"]), "<=", "it steps hp < 30 to the next operator")
+	assert_eq(ui._delete_button_word(), "Operator", "and the strip names the operator")
 
 
-func test_a_delete_can_be_undone_to_the_identical_profile() -> void:
+func test_a_condition_without_an_operator_is_left_alone() -> void:
+	var ui := _console()
+	assert_eq(_at(ui, 0, 1), "condition", "CONTROL: the cursor is on Any Dead")
+	var before: Array = ui.rules.duplicate(true)
+	_press(ui, _pad(ui.DELETE_BUTTON))
+	assert_eq(ui.rules, before, "Any Dead has no operator, so the north button changes nothing")
+	assert_eq(ui._delete_button_word(), "", "and the strip names no verb there")
+
+
+func test_the_north_button_deletes_exactly_one_action_and_undo_restores_it() -> void:
 	var ui := _console()
 	var before: Array = ui.rules.duplicate(true)
-	_at(ui, 1, 0)
-	ui._press_delete_button()
-	assert_eq(ui.rules.size(), 1, "CONTROL: deleting a rule's only condition deletes the rule, which is what cost him his rules")
+	var col := _find(ui, 0, "action")
+	assert_gt(col, -1, "CONTROL: rule 1 shows an action cell")
+	_press(ui, _pad(ui.DELETE_BUTTON))
+	assert_eq((ui.rules[0]["actions"] as Array).size(), 1, "one press deletes one action")
+	assert_eq((ui.rules[0]["conditions"] as Array).size(), 2, "and touches no condition")
 	_at(ui, ui.rules.size(), 0)
-	ui._press_delete_button()
-	assert_eq(ui.rules, before, "the delete button off a rule cell undoes the last delete, exactly")
+	assert_eq(ui._delete_button_word(), "Undo", "off a cell after a delete, the strip names Undo")
+	_press(ui, _pad(ui.DELETE_BUTTON))
+	assert_eq(ui.rules, before, "the north button off a cell undoes the last delete, exactly")
 
 
-func test_the_strip_names_what_the_delete_button_does_here() -> void:
+func test_the_keyboard_deletes_one_condition_and_ctrl_z_undoes_it_without_closing() -> void:
 	var ui := _console()
+	var before: Array = ui.rules.duplicate(true)
 	_at(ui, 0, 0)
-	assert_string_contains(ui._hint_strip_text(), "Delete", "on a rule cell the strip names Delete")
-	assert_eq(ui._delete_button_word(), "Delete")
+	_press(ui, _key(KEY_DELETE))
+	assert_eq((ui.rules[0]["conditions"] as Array).size(), 1, "Delete removes one condition")
+	_press(ui, _key(KEY_Z, true))
+	assert_eq(ui.rules, before, "Ctrl+Z through _input restores it exactly")
+	assert_true(ui.visible, "and does not close the console the way Cancel does")
+
+
+## cowir-controller 21460: an undo taken before the rules were swapped must not paste the old list over the new one.
+func test_an_undo_refuses_once_the_rules_changed_since_the_delete() -> void:
+	var ui := _console()
+	_find(ui, 0, "action")
+	_press(ui, _pad(ui.DELETE_BUTTON))
+	assert_true(ui._undo_is_live(), "CONTROL: right after the delete there is an undo")
+	var swapped: Array = [{"conditions": [{"type": "always"}], "actions": [{"type": "stop_grinding"}], "enabled": true}]
+	ui.rules = swapped.duplicate(true)
+	ui._refresh_grid()
 	_at(ui, ui.rules.size(), 0)
-	assert_false(ui._hint_strip_text().contains("Delete") or ui._hint_strip_text().contains("Undo"), "off a cell, with nothing to undo, it names neither")
-	_at(ui, 0, 0)
-	ui._press_delete_button()
-	_at(ui, ui.rules.size(), 0)
-	assert_string_contains(ui._hint_strip_text(), "Undo", "after a delete, off a cell, it names Undo")
+	assert_eq(ui._delete_button_word(), "", "a retired undo is not offered")
+	_press(ui, _pad(ui.DELETE_BUTTON))
+	_press(ui, _key(KEY_Z, true))
+	assert_eq(ui.rules, swapped, "neither the button nor Ctrl+Z pastes the old rules over the new ones")
 
 
 func test_no_two_console_commands_share_a_pad_button() -> void:
 	var ui := _console()
-	assert_eq(ui.DELETE_BUTTON, JOY_BUTTON_Y, "delete is the autobattle editor's own index")
-	assert_true(FileAccess.get_file_as_string("res://src/ui/autobattle/AutobattleGridEditor.gd").contains("button_name_for_index(JOY_BUTTON_Y)"),
-		"CONTROL: the autobattle editor still names its delete on JOY_BUTTON_Y")
+	assert_eq(ui.DELETE_BUTTON, JOY_BUTTON_Y, "the north verb is the autobattle editor's own index")
+	assert_true(FileAccess.get_file_as_string("res://src/ui/autobattle/AutobattleGridEditor.gd").contains("event.button_index == JOY_BUTTON_Y:"),
+		"CONTROL: the autobattle editor still handles JOY_BUTTON_Y")
 	var owners := {}
 	var add := func(name: String, idx: int) -> void:
 		if not owners.has(idx):
@@ -97,7 +151,7 @@ func test_no_two_console_commands_share_a_pad_button() -> void:
 	for action in ["ui_accept", "ui_cancel", "ui_menu"]:
 		for idx in InputProfileManager.get_current_button_indices(action):
 			add.call(action, int(idx))
-	add.call("delete", ui.DELETE_BUTTON)
+	add.call("north verb", ui.DELETE_BUTTON)
 	add.call("ludicrous", JOY_BUTTON_X)
 	add.call("options(L)", JOY_BUTTON_LEFT_SHOULDER)
 	add.call("options(R)", JOY_BUTTON_RIGHT_SHOULDER)
@@ -106,23 +160,3 @@ func test_no_two_console_commands_share_a_pad_button() -> void:
 		if (owners[idx] as Array).size() > 1:
 			shared.append("button %d: %s" % [idx, ", ".join(owners[idx])])
 	assert_eq(shared, [], "two console commands on one pad button:\n  %s" % "\n  ".join(shared))
-
-
-## Through _input, not the helpers: Ctrl+Z must undo and leave the console up (ui_cancel is plain Z, and an action match
-## tolerates extra modifiers), and a real delete-button press must delete (cowir-controller 21436).
-func test_the_routed_presses_delete_and_undo() -> void:
-	var ui := _console()
-	var before: Array = ui.rules.duplicate(true)
-	_at(ui, 0, 0)
-	var y := InputEventJoypadButton.new()
-	y.button_index = ui.DELETE_BUTTON
-	y.pressed = true
-	ui._input(y)
-	assert_ne(ui.rules, before, "CONTROL: the routed delete button deleted a condition")
-	var z := InputEventKey.new()
-	z.keycode = KEY_Z
-	z.ctrl_pressed = true
-	z.pressed = true
-	ui._input(z)
-	assert_eq(ui.rules, before, "Ctrl+Z through _input must undo the delete")
-	assert_true(ui.visible, "and must not close the console the way Cancel does")
