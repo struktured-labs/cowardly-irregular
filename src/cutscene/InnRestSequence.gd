@@ -121,6 +121,12 @@ func _abort() -> void:
 	_finish(true)
 
 
+## Freed without the beat ending (the root torn down, a caller freeing it): the lock must not outlive the node.
+func _exit_tree() -> void:
+	if not _done:
+		_abort()
+
+
 ## The ditty's length in seconds, 0.0 if nothing with a length played. A missing cue falls back to the old rest chime.
 func _play_ditty() -> float:
 	if SoundManager == null:
