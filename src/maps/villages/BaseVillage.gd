@@ -342,7 +342,14 @@ func _spawn_building_art(art: Dictionary) -> int:
 		_art_blocks.append(rect)
 		_hide_what_the_art_draws(rect)
 		var door: Variant = (entries.get(key, {}) as Dictionary).get("door", {})
-		_align_entrance(rect, house, door if door is Dictionary else {})
+		## A block with several doors carries a list; each gets its strip, and the one entrance follows the first.
+		var doors: Array = door if door is Array else ([door] if door is Dictionary and not (door as Dictionary).is_empty() else [])
+		for i in range(1, doors.size()):
+			if doors[i] is Dictionary:
+				var extra := VillageDoor.attach(house, doors[i])
+				if extra != null:
+					_door_strips.append(extra)
+		_align_entrance(rect, house, doors[0] if not doors.is_empty() and doors[0] is Dictionary else {})
 		built += 1
 	return built
 
