@@ -21,6 +21,8 @@ enum ShopType { ITEM, BLACK_MAGIC, WHITE_MAGIC, BLACKSMITH }
 ## Set to false to keep the legacy outdoor shop menu instead of transitioning
 ## to the ShopInterior scene keyed by shop_type.
 @export var use_interior: bool = true
+## World for the drawn stall (prop_art "shop_stall_<type>_<world>"); "" = ask the enclosing village. No art = the painted stall.
+@export var art_world: String = ""
 
 ## Visual
 var sprite: Sprite2D
@@ -102,6 +104,8 @@ func _interior_target() -> String:
 func _generate_sprite() -> void:
 	sprite = Sprite2D.new()
 	sprite.name = "Sprite"
+	if _use_drawn_stall():
+		return
 
 	var image = Image.create(TILE_SIZE * 2, TILE_SIZE * 2, false, Image.FORMAT_RGBA8)
 	_draw_shop(image)
@@ -114,6 +118,47 @@ func _generate_sprite() -> void:
 	sprite.position.y += image.get_height() / 2.0
 	sprite.offset.y -= image.get_height() / 2.0
 	add_child(sprite)
+
+
+## The drawn stall for this shop's type in its village's world, seated like the painted one (art centred on the node).
+func _use_drawn_stall() -> bool:
+	var world := art_world if art_world != "" else _village_world()
+	if world == "":
+		return false
+	var e: Dictionary = VillageProp.prop_art_entry("shop_stall_" + _stall_key(), world)
+	if e.is_empty():
+		return false
+	sprite.texture = load(str(e["path"]))
+	## Seated exactly like the painted stall: art centred on the node, sorted by its base (the facade guard's invariant).
+	var half: float = sprite.texture.get_height() / 2.0
+	y_sort_enabled = true
+	sprite.position.y += half
+	sprite.offset.y -= half
+	add_child(sprite)
+	return true
+
+
+static func stall_key_for(type: int) -> String:
+	match type:
+		ShopType.BLACK_MAGIC: return "black_magic"
+		ShopType.WHITE_MAGIC: return "white_magic"
+		ShopType.BLACKSMITH: return "blacksmith"
+	return "item"
+
+
+func _stall_key() -> String:
+	return stall_key_for(shop_type)
+
+
+## The world of the village this shop stands in (its tile generator's sheet key), or "" outside a village.
+func _village_world() -> String:
+	var n: Node = get_parent()
+	while n != null:
+		var tg = n.get("tile_generator")
+		if tg != null and tg.has_method("_get_sheet_key"):
+			return str(tg._get_sheet_key())
+		n = n.get_parent()
+	return ""
 
 
 func _draw_shop(image: Image) -> void:
@@ -371,6 +416,8 @@ func _setup_collision() -> void:
 
 func _setup_name_label() -> void:
 	name_label = Label.new()
+	## y-sorted with the art, so a label above it sorts BEHIND it; draw it over its own art.
+	name_label.z_index = 1
 	name_label.text = shop_name
 	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	name_label.position = Vector2(-50, -40)

@@ -275,6 +275,8 @@ func _route_reward_to_equipment_pool(game_loop, item_id: String, count: int) -> 
 	## The pool is a multiset — equip_from_pool erases one entry, so count copies need count entries.
 	for _i in range(maxi(1, count)):
 		game_loop.equipment_pool[pool_key].append(item_id)
+	if GameState:
+		GameState.note_acquired(item_id)
 	return true
 
 

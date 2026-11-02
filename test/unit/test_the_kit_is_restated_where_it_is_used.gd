@@ -88,4 +88,5 @@ func test_the_original_kit_block_is_untouched() -> void:
 		"autobattle", "heal", [], _kit("cleric", ["cure"], {"cure": 6}))
 	assert_true(p.find("Ability ids you may use, and NOTHING else") != -1,
 		"the original allowlist block must survive")
-	assert_true(p.find("cure - 6 MP") != -1, "with its MP costs, which the guard supplier depends on")
+	## cure shows its menu name beside it (cowir-ai, rule names); the cost after it is what this pins.
+	assert_true(p.find("cure%s - 6 MP" % DP._shown_as("cure")) != -1, "with its MP costs, which the guard supplier depends on")

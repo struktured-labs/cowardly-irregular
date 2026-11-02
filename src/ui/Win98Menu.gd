@@ -251,6 +251,8 @@ const COST_COLUMN_WIDTH = 46
 const ROW_LABEL_FONT := 16
 const COST_LABEL_FONT := 10
 var _cost_column_width: int = COST_COLUMN_WIDTH
+## A row's "badge" (e.g. NEW on a just-picked-up item) is its own span right of the name, measured like the cost.
+var _badge_column_width: int = 0
 ## 0 = half the viewport. A submenu sets this so it can sit left of its parent without covering the enemy panel.
 var _width_cap: int = 0
 
@@ -839,6 +841,11 @@ func _build_menu() -> void:
 		if item.has("cost"):
 			cost_column = maxi(cost_column, _text_px("%d MP" % int(item["cost"]), cost_font) + 8)
 	_cost_column_width = cost_column
+	var badge_column := 0
+	for item in menu_items:
+		if str(item.get("badge", "")) != "":
+			badge_column = maxi(badge_column, _text_px(str(item["badge"]), cost_font) + 8)
+	_badge_column_width = badge_column
 	var max_label_width := 0
 	for item in menu_items:
 		var label_text := str(item.get("label", "Item"))
@@ -847,6 +854,8 @@ func _build_menu() -> void:
 		var text_width := _text_px(label_text, row_font) + _icon_advance(item)
 		if item.has("cost"):
 			text_width += cost_column
+		if str(item.get("badge", "")) != "":
+			text_width += badge_column
 		max_label_width = maxi(max_label_width, text_width)
 	var viewport_width = 1280
 	if is_inside_tree():
@@ -1075,6 +1084,9 @@ func _create_menu_item(index: int, item: Dictionary, content_width: int = 120) -
 	var label_w := content_width - 14 - icon_advance
 	if item.has("cost"):
 		label_w -= _cost_column_width
+	var badge_text := str(item.get("badge", ""))
+	if badge_text != "":
+		label_w -= _badge_column_width
 	if icon_advance > 0:
 		var icon_id := str(item.get("icon_id", ""))
 		# icon_kind picks the resolver: an ability id through ItemIcons would draw the generic item scroll.
@@ -1127,6 +1139,18 @@ func _create_menu_item(index: int, item: Dictionary, content_width: int = 120) -
 		cost_clip.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		cost_clip.add_child(cost_label)
 		row.add_child(cost_clip)
+
+	if badge_text != "":
+		var badge_label := Label.new()
+		badge_label.name = "Badge"
+		badge_label.text = badge_text
+		badge_label.add_theme_font_size_override("font_size", _cost_label_font_size())
+		badge_label.vertical_alignment = VERTICAL_ALIGNMENT_TOP
+		badge_label.size = Vector2(_badge_column_width - 4, row_h)
+		badge_label.position = Vector2(10 + icon_advance + label_w, FontFallbacks.row_label_y(_menu_font(), _cost_label_font_size(), row_h))
+		badge_label.add_theme_color_override("font_color", AccessibilityPalette.new_item())
+		badge_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		row.add_child(badge_label)
 
 	if _row_unavailable(item):
 		text_label.add_theme_color_override("font_color", style.text.darkened(0.5))
@@ -1187,6 +1211,12 @@ func _update_selection() -> void:
 				label.add_theme_color_override("font_color", item["text_color"])
 			else:
 				label.add_theme_color_override("font_color", style.text)
+
+	# A row may ask to hear that the cursor rested on it (the battle Item menu marks a NEW item seen).
+	if selected_index >= 0 and selected_index < menu_items.size():
+		var on_highlight = menu_items[selected_index].get("on_highlight", null)
+		if on_highlight is Callable and (on_highlight as Callable).is_valid():
+			(on_highlight as Callable).call()
 
 	# Update target highlight to show selected enemy/ally
 	_update_target_highlight()

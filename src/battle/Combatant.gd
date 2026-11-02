@@ -2103,6 +2103,25 @@ func add_item(item_id: String, quantity: int = 1) -> void:
 		inventory[item_id] += quantity
 	else:
 		inventory[item_id] = quantity
+	if quantity > 0:
+		_note_if_party_acquisition(item_id)
+
+
+## A drop, chest, shop or quest reward to a party member is news. A starting kit is added BEFORE the member joins the
+## party, and a detached combatant (a test, a standalone battle) belongs to no party, so neither marks anything.
+func _note_if_party_acquisition(item_id: String) -> void:
+	var tree := Engine.get_main_loop() as SceneTree
+	if tree == null or tree.root == null:
+		return
+	var gl = tree.root.get_node_or_null("GameLoop")
+	var gs = tree.root.get_node_or_null("GameState")
+	if gl == null or gs == null or not ("party" in gl) or not gs.has_method("note_acquired"):
+		return
+	var in_party: bool = (gl.party as Array).has(self)
+	if not in_party and "_spotlight_saved_party" in gl and gl._spotlight_saved_party is Array:
+		in_party = (gl._spotlight_saved_party as Array).has(self)
+	if in_party:
+		gs.note_acquired(item_id)
 
 
 func remove_item(item_id: String, quantity: int = 1) -> bool:

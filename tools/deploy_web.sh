@@ -530,6 +530,11 @@ _PCK_REPORT="$(cd "$(dirname "$0")" && pwd)/pck_cache_report.sh"
 # caches the pck. Without it the report printed "re-downloads EVERY visit" unconditionally --
 # including in the .334 chain, the release that stopped it being true.
 "$_PCK_REPORT" "$PCK" "$PCK_CACHE_LINE" "$PCK_WARN" "$PCK_LIMIT" builds/web
+## WHAT the pack is made of, on every web build (cowir-main 21082): the report above says how big and how
+## much headroom; tools/pck_budget.py --summary reads the pck's own table and says where it goes (at .754:
+## audio 63%, textures 26%), so a release that eats headroom names its own culprit. A REPORT, never a gate:
+## PCK_LIMIT/PCK_WARN own the verdicts. Its --selftest runs in the publish corpus because this line names it.
+python3 "$(cd "$(dirname "$0")" && pwd)/pck_budget.py" --summary builds/web/index.pck 2>&1 | head -18 | sed 's/^/[budget] /' || true
 if [ "${PCK}" -ge "${PCK_LIMIT}" ]; then
   echo "[deploy] BLOCKED: pck >= 200 MB — itch will refuse the HTML5 embed." >&2
   echo "[deploy] check export_presets.cfg exclude_filter and recent large assets." >&2
@@ -701,6 +706,8 @@ mkdir -p tmp
 # needs the templates that live under the real XDG_DATA_HOME (see the ⛔ note above).
 _SMOKE_XDG="$PWD/tmp/smoke_xdg"
 mkdir -p "$_SMOKE_XDG"
+_SMOKE_XDG="$(realpath "$_SMOKE_XDG")"   # its own realpath: smoke_redirect_proof.sh compares exact values
+_SMOKE_REL="godot/app_userdata/Cowardly Irregular"
 # ⛔ PROVE THE REDIRECT HELD, PER RUN. The sandbox above is the FIX; this is the CHECK, and
 # until now only the desktop chain had one. deploy_desktop.sh takes a signature of his real
 # profile before its boot smoke and verifies it after (:737/:753); the web smoke redirected
@@ -716,18 +723,26 @@ if [ ! -x tools/check_profile_untouched.sh ]; then
   echo "        for the render smoke without a way to prove his saves survived it." >&2
   exit 3
 fi
-## His LIVE game on his real profile: HOLD before booting anything. Its autosave would land inside the
-## --sig window below and RED this publish after the build (.487). Asked of tools/his_game_up.sh, the
-## one source; exit 1 = none. 0 (up) and 2 (cannot tell) both hold. `|| _HG=$?` because under set -e
-## a bare `cmd; ec=$?` never reaches its non-zero arm.
+## His LIVE game on his real profile. This used to HOLD the whole web channel (.487: his autosave inside
+## the --sig window false-REDs the verify below), which on .758 left the store split for hours. Now
+## (cowir-main 20906) the redirect is proven POSITIVELY by tools/smoke_redirect_proof.sh on every run;
+## the real-profile signature is kept as an ADDITIONAL check only when his game is NOT up, so a quiet
+## box loses nothing. `|| _HG=$?` because under set -e a bare `cmd; ec=$?` never reaches its non-zero arm.
 _HG=0; _HG_OUT="$(./tools/his_game_up.sh 2>&1)" || _HG=$?
-if [ "$_HG" != 1 ]; then
-  echo "[deploy] BLOCKED (HOLD — not a gate failure): his game is up on his real profile, or it cannot be" >&2
-  echo "        told (his_game_up.sh exit $_HG). Re-run once it closes; nothing was booted." >&2
-  printf '        %s\n' "$_HG_OUT" >&2
+[ -x tools/smoke_redirect_proof.sh ] || {
+  echo "[deploy] BLOCKED: tools/smoke_redirect_proof.sh missing -- nothing would prove the smoke ran in its sandbox." >&2
+  exit 3; }
+if ! ./tools/smoke_redirect_proof.sh --check-value "$_SMOKE_XDG" "$HOME/.local/share"; then
+  echo "[deploy] BLOCKED: the smoke sandbox value is not safe to hand to XDG_DATA_HOME (see above)." >&2
   exit 3
 fi
-_REAL_SIG_BEFORE="$(./tools/check_profile_untouched.sh --sig "$_REAL_UD")"
+_REAL_SIG_BEFORE=""
+if [ "$_HG" = 1 ]; then
+  _REAL_SIG_BEFORE="$(./tools/check_profile_untouched.sh --sig "$_REAL_UD")"
+else
+  echo "[deploy] his game is up (his_game_up.sh exit $_HG): the real-profile signature is SKIPPED this run;"
+  echo "         the positive redirect proof decides isolation. $(printf '%s' "$_HG_OUT" | head -1)"
+fi
 ## COWIR_SFX_LOG_CUES: per-cue [SFX] tracing is off in normal play (it was 27-41% of struktured's own
 ## logs) and ON here, because this log is machine-read and archived per publish rather than scrolled.
 ## A cue with ONE emitter is a stack frame, not noise: @cowir-overworld located the lever/physics crash
@@ -736,17 +751,37 @@ _REAL_SIG_BEFORE="$(./tools/check_profile_untouched.sh --sig "$_REAL_UD")"
 _SMOKE_JAIL=(); if command -v bwrap > /dev/null && bwrap --dev-bind / / --tmpfs /dev/input true 2>/dev/null; then _SMOKE_JAIL=(bwrap --dev-bind / / --tmpfs /dev/input); fi
 if [ ${#_SMOKE_JAIL[@]} -gt 0 ]; then echo "[deploy] smoke pads: hidden"; else echo "[deploy] smoke pads: VISIBLE (no usable bwrap)"; fi
 SMOKE_CMD=(env "XDG_DATA_HOME=$_SMOKE_XDG" "COWIR_SFX_LOG_CUES=1" "${_SMOKE_JAIL[@]}" xvfb-run -a timeout 300 godot --rendering-driver opengl3 --audio-driver Dummy -- --render-smoke)
-if ! "${SMOKE_CMD[@]}" > tmp/deploy_smoke.log 2>&1; then
+## One smoke attempt with its redirect PROVEN: a watcher records the XDG_DATA_HOME the smoke process
+## itself carried, then the verdict requires it to equal the sandbox, the engine's own boot log to have
+## landed IN the sandbox, and nothing new in his profile's smoke/ or rotated logs. Any of those = a leak,
+## which blocks outright (no retry). A smoke that FAILED before any process was seen did not run, so it
+## keeps its retry; the retry is proven in full.
+_smoke_proven() {
+  touch tmp/smoke_since
+  "${SMOKE_CMD[@]}" > tmp/deploy_smoke.log 2>&1 &
+  local sp=$! wp ec=0
+  ./tools/smoke_redirect_proof.sh --watch "$sp" tmp/smoke_env_seen.txt & wp=$!
+  wait "$sp" || ec=$?
+  wait "$wp" || true
+  if [ "$ec" -ne 0 ] && [ ! -s tmp/smoke_env_seen.txt ]; then return "$ec"; fi
+  if ! ./tools/smoke_redirect_proof.sh --verdict "$_SMOKE_XDG" tmp/smoke_env_seen.txt "$_SMOKE_REL" \
+         "$HOME/.local/share" tmp/smoke_since; then
+    echo "[deploy] BLOCKED: the render smoke's redirect is NOT proven (see [redirect] above). Refusing to" >&2
+    echo "        keep running the game while it may be writing struktured's real profile." >&2
+    exit 3
+  fi
+  return "$ec"
+}
+if ! _smoke_proven; then
   cp tmp/deploy_smoke.log tmp/deploy_smoke.attempt1.log
   echo "[deploy] smoke attempt 1 failed (xvfb flake?) — retrying once"
-  if ! "${SMOKE_CMD[@]}" > tmp/deploy_smoke.log 2>&1; then
+  if ! _smoke_proven; then
     echo "[deploy] BLOCKED: render smoke failed TWICE — see tmp/deploy_smoke.log (+ attempt1)" >&2; exit 3
   fi
 fi
-# Isolation first: a leak matters more than a failed smoke. The sandbox is passed so a RED can
-# tell "he was playing during the deploy" from "the redirect did not work" — a smoke that ran
-# and left an EMPTY sandbox did not have a working XDG_DATA_HOME.
-if ! ./tools/check_profile_untouched.sh --verify "$_REAL_UD" "$_REAL_SIG_BEFORE" "$_SMOKE_XDG"; then
+# The real-profile signature, ADDITIONALLY, when it was taken (his game was not up). The sandbox is
+# passed so a RED can tell "he was playing" from "the redirect did not work".
+if [ -n "$_REAL_SIG_BEFORE" ] && ! ./tools/check_profile_untouched.sh --verify "$_REAL_UD" "$_REAL_SIG_BEFORE" "$_SMOKE_XDG"; then
   echo "[deploy] BLOCKED: the render smoke touched struktured's real profile. Refusing to" >&2
   echo "        keep running the game against his live save data." >&2
   exit 3

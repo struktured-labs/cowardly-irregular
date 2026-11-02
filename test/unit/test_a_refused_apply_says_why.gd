@@ -7,8 +7,8 @@ extends GutTest
 ## _refresh() filters out of the needs_review list -- so from the player's seat: click Apply, hear
 ## an error, watch the proposal disappear, learn nothing.
 ##
-## REACHABLE AT THE SHIPPED DEFAULT, which is why this is not a latent hole: REBALANCE_SCHEMA
-## declares `"deltas": "Array"` and constrains NOTHING about the constant names inside it. So a
+## REACHABLE AT THE SHIPPED DEFAULT, which is why this is not a latent hole: request_llm_proposal
+## checks that deltas is an Array and constrains NOTHING about the constant names inside it. So a
 ## model naming a dial outside ALLOWED_CONSTANTS passes the schema, lands in review, and is refused
 ## only at force_apply's safelist -- and an LLM inventing a plausible constant is the expected case,
 ## not an exotic one.
