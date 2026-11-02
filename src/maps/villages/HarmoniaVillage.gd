@@ -315,6 +315,7 @@ func _setup_buildings() -> void:
 	fountain.fountain_name = "Harmony Fountain"
 	fountain.tree_type = "cherry"
 	fountain.art_world = tile_generator._get_sheet_key()
+	fountain.art_village = VillageProp.village_art_key(_get_area_id())
 	## Centred in the 8x6 pond (cols 16-23, rows 9-14); its press area is the pond plus half a tile, so any shore cell reaches it.
 	fountain.position = Vector2(20 * TILE_SIZE, 12 * TILE_SIZE)
 	fountain.reach_tiles = Vector2(9, 7)

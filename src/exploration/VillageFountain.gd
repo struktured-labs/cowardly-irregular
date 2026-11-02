@@ -10,6 +10,8 @@ class_name VillageFountain
 @export var reach_tiles: Vector2 = Vector2.ZERO
 ## World for the drawn-art lookup (manifest prop_art "fountain_<world>", then "fountain"); no art = the procedural fountain.
 @export var art_world: String = "medieval"
+## The village's prop_art name; "fountain_<village>" outranks the world's drawing.
+@export var art_village: String = ""
 
 ## Visual
 var sprite: Sprite2D
@@ -87,7 +89,7 @@ func _generate_sprite_frames() -> void:
 
 ## A drawn fountain is a horizontal strip of `frames` equal cells (default 1), base on the same row as the painted one.
 func _load_drawn_frames() -> void:
-	var e: Dictionary = VillageProp.prop_art_entry("fountain", art_world)
+	var e: Dictionary = VillageProp.prop_art_entry("fountain", art_world, art_village)
 	if e.is_empty():
 		return
 	var img: Image = (load(str(e["path"])) as Texture2D).get_image()
