@@ -42,7 +42,7 @@ STYLE = ("A single detailed 16-bit SNES-era JRPG pixel-art BUILDING for a mediev
          "The background is one flat, solid, pure magenta (#FF00FF) colour with no gradient. The building fills the "
          "frame and is centred.")
 
-FRONT = ("Draw it STRAIGHT-ON and symmetric, like the towns of Final Fantasy VI: the front wall faces the viewer "
+FRONT = ("A WIDE, generous building, wider than it is tall, with a full second storey. Draw it STRAIGHT-ON and symmetric, like the towns of Final Fantasy VI: the front wall faces the viewer "
          "squarely, the roof is seen from above and in front, no side wall is visible and nothing is drawn at a corner angle.")
 
 KINDS = {
@@ -57,24 +57,26 @@ KINDS = {
 
 
 ## Harmonia, one entry per building block (HarmoniaVillage.BUILDING_ART): key -> (width in tiles, what it is).
+## Widths follow the stretched pilot map (cowir-overworld 9a498fc3b, struktured 2026-11-01: "houses look small"):
+## 6 or 5 tiles wide, and the art stands well above its 4-row block so a house reads ~3x the party's height.
 HARMONIA = {
-    "harmonia_library": (3, "The town library: a two-storey building of pale cut stone with a grey slate roof, tall arched "
+    "harmonia_library": (6, "The town library: a two-storey building of pale cut stone with a grey slate roof, tall arched "
                             "windows, ivy climbing one corner, and a hanging sign with a pictured open book (no letters)."),
-    "harmonia_arcana": (3, "A magic shop: a violet-tiled roof with a small dormer, a hanging sign with a pictured crescent "
+    "harmonia_arcana": (5, "A magic shop: a violet-tiled roof with a small dormer, a hanging sign with a pictured crescent "
                            "moon and star, crystal orbs and spell scrolls in the front window, wisteria over the door."),
-    "harmonia_arms": (3, "A weapon and armour shop and smithy, wider than it is tall, with a small attic window in a dark "
+    "harmonia_arms": (6, "A weapon and armour shop and smithy, wider than it is tall, with a small attic window in a dark "
                          "slate roof and a stone chimney, a hanging sign with a pictured sword and shield (no letters), "
                          "a weapon rack and an anvil by the door."),
-    "harmonia_inn": (3, "The Sleepy Slime Inn: thatched straw roof with two dormer windows, warm lit windows, a hanging "
+    "harmonia_inn": (6, "The Sleepy Slime Inn: thatched straw roof with two dormer windows, warm lit windows, a hanging "
                         "sign with a pictured mug and a sleeping slime (no letters), a lantern by the door, flower boxes."),
-    "harmonia_remedies": (3, "Mystic Remedies, an item and potion shop: a green-tiled roof, a striped awning over a window "
+    "harmonia_remedies": (6, "Mystic Remedies, an item and potion shop: a green-tiled roof, a striped awning over a window "
                              "full of coloured potion bottles, a hanging sign with a pictured potion (no letters), herb "
                              "pots by the door."),
-    "harmonia_chapel": (3, "A small stone village chapel with a short bell tower and a visible bell above the entrance, an "
+    "harmonia_chapel": (6, "A small stone village chapel with a short bell tower and a visible bell above the entrance, an "
                            "arched stained-glass window, double wooden doors, a slate roof."),
-    "harmonia_tavern": (3, "The Dancing Tonberry tavern: brown shingle roof, warm lit windows, a hanging sign with a pictured "
+    "harmonia_tavern": (5, "The Dancing Tonberry tavern: brown shingle roof, warm lit windows, a hanging sign with a pictured "
                            "small hooded creature holding a lantern (no letters), barrels stacked by the door."),
-    "harmonia_house": (3, "A modest village cottage: green shingle roof with a brick chimney, cream plaster walls in dark "
+    "harmonia_house": (5, "A modest village cottage: green shingle roof with a brick chimney, cream plaster walls in dark "
                           "timber framing, a flower box of yellow flowers under one window."),
 }
 
@@ -437,25 +439,52 @@ def generate(kind: str, width_tiles: int = 3) -> Path:
     return out
 
 
+## Buildings standing one row below a higher tier: the roof may cover that row's cliff face but not the walkable row
+## above it (struktured's pilot, cowir-overworld 21137: the inn's thatch rose over the ledge). Max art height in px:
+## the 4-row block (128) plus 24, so the top of the wall stays visible. The floor keeps the art over its whole block:
+## shorter than 128 leaves bare footprint showing above the roof (the first low draws came out 107 and 119).
+HEIGHT_BAND = {"harmonia_inn": (136, 152), "harmonia_remedies": (136, 152)}
+LOW_ROOF = ("Keep the roof MODEST: one full storey of wall with windows and the door, then a moderate roof with small "
+            "dormers. It is noticeably wider than it is tall, but it is NOT a squat shed: the wall is a full storey.")
+TRIES = 6
+
+
 def generate_harmonia(key: str, view: str) -> Path:
-    """One village building (Harmonia or W1), straight-on ("front", struktured's pick B) or corner-angled ("corner", A)."""
+    """One village building (Harmonia or W1), straight-on ("front", struktured's pick B) or corner-angled ("corner", A).
+
+    A building in HEIGHT_BAND is redrawn (up to TRIES) until its height lands in the band; the draw nearest the band's
+    top is kept, and nothing is staged if none fits."""
     from openai import OpenAI
     width, what = BUILDINGS[key]
     style = next((st for pool, _, st in POOLS.values() if st and key in pool), STYLE)
     face = f"\n\n{FRONT}" if view == "front" else ""
-    r = OpenAI().images.generate(model=MODEL, prompt=f"{style}{face}\n\nThe building: {what}", size="1024x1024", n=1)
-    raw = Image.open(io.BytesIO(base64.b64decode(r.data[0].b64_json)))
+    band = HEIGHT_BAND.get(key)
+    low = f"\n\n{LOW_ROOF}" if band else ""
     STAGE.mkdir(parents=True, exist_ok=True)
-    raw.save(STAGE / f"{key}_{view}_raw.png")
-    if key in KEY_EVERYWHERE:
-        raw = key_everywhere(raw)
     out = STAGE / f"{key}_{view}.png"
-    img = fit(raw, width)
-    if key in PROP_HEIGHT and img.height != PROP_HEIGHT[key]:
-        h = PROP_HEIGHT[key]
-        img = img.resize((max(1, round(img.width * h / img.height)), h), Image.LANCZOS)
-        img.putalpha(img.split()[3].point(lambda v: 255 if v >= 128 else 0))
-    img.save(out)
+    best = None
+    for i in range(TRIES if band else 1):
+        r = OpenAI().images.generate(model=MODEL, prompt=f"{style}{face}{low}\n\nThe building: {what}", size="1024x1024", n=1)
+        raw = Image.open(io.BytesIO(base64.b64decode(r.data[0].b64_json)))
+        raw.save(STAGE / f"{key}_{view}_raw{i}.png")
+        if key in KEY_EVERYWHERE:
+            raw = key_everywhere(raw)
+        art = fit(raw, width)
+        if key in PROP_HEIGHT and art.height != PROP_HEIGHT[key]:
+            h = PROP_HEIGHT[key]
+            art = art.resize((max(1, round(art.width * h / art.height)), h), Image.LANCZOS)
+            art.putalpha(art.split()[3].point(lambda v: 255 if v >= 128 else 0))
+        print(f"  {key} try {i + 1}: {art.width}x{art.height}" + (f" (band {band[0]}-{band[1]})" if band else ""))
+        if band is None:
+            best = art
+            break
+        if band[0] <= art.height <= band[1] and (best is None or art.height > best.height):
+            best = art
+        if best is not None and best.height >= band[1] - 6:
+            break
+    if best is None:
+        raise SystemExit(f"{key}: none of {TRIES} draws landed in {band[0]}-{band[1]}px; nothing staged")
+    best.save(out)
     return out
 
 

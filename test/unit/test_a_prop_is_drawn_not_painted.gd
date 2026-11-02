@@ -111,6 +111,8 @@ func test_every_shipped_entry_names_a_real_prop_world_and_file() -> void:
 	for k in VillageProp.Kind.keys():
 		if k != "HOUSE":
 			kinds.append(str(k).to_lower())
+	for t in VillageShop.ShopType.values():
+		kinds.append("shop_stall_" + VillageShop.stall_key_for(t))
 	for key in sec:
 		var e: Dictionary = sec[key]
 		assert_true(ResourceLoader.exists(str(e.get("path", ""))), "prop_art '%s' has no file: %s" % [key, e.get("path", "")])
