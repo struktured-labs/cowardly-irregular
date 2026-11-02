@@ -6,12 +6,14 @@ extends GutTest
 ##   clever — a full-HP back-liner who Defers outlives the wolf's biggest crit;
 ##   still dangerous — an undefended back-liner's average crit stays near the whole of their HP, so it is no stroll.
 ## Survivable if you Defer. Undefended odds vary by monster: the wolf is ~a coin flip, the bone_warden is lethal (cowir-main 21335).
-## cowir-main 21325 widened arm 1 to every W1 trash monster: the bone_warden was the one other that failed (attack 162 → 143).
+## cowir-main 21325/21337 widened arm 1 to every W1 trash monster with a 90% ceiling: the bone_warden was the one other that failed (attack 162 → 130).
 
 const WOLF := "ice_wolf"
 const BACK_ROW := ["cleric", "mage", "bard", "rogue"]
 ## BattleManager's default variance ceiling (volatility's widest band is wider only under chaos).
 const VARIANCE_MAX := 1.15
+## The clever lane needs room, not a 1-HP edge: a Deferring back-liner keeps at least a tenth of their HP (cowir-main 21337).
+const DEFER_CEILING := 0.9
 
 
 func _monsters() -> Dictionary:
@@ -90,8 +92,8 @@ func test_a_back_liner_who_defers_outlives_the_wolfs_biggest_crit() -> void:
 		var c := _member(job_id, level)
 		c.is_defending = true
 		var taken: int = c.take_damage(_crit(VARIANCE_MAX))
-		assert_gt(c.current_hp, 0, "a full-HP %s who Defers must outlive the wolf's biggest crit (took %d of %d at level %d)"
-			% [job_id, taken, c.max_hp, level])
+		assert_true(taken <= DEFER_CEILING * c.max_hp, "a full-HP %s who Defers must keep a tenth of their HP against the wolf's biggest crit (took %d of %d = %d%% at level %d)"
+			% [job_id, taken, c.max_hp, roundi(100.0 * taken / c.max_hp), level])
 
 
 func test_an_undefended_back_liner_still_fears_the_crit() -> void:
@@ -132,5 +134,6 @@ func test_every_w1_trash_monster_can_be_outlasted_the_same_way() -> void:
 		for job_id in BACK_ROW:
 			var c := _member(job_id, level)
 			c.is_defending = true
-			c.take_damage(_crit(VARIANCE_MAX, str(who)))
-			assert_gt(c.current_hp, 0, "a full-HP %s who Defers must outlive %s's biggest crit at level %d" % [job_id, who, level])
+			var taken: int = c.take_damage(_crit(VARIANCE_MAX, str(who)))
+			assert_true(taken <= DEFER_CEILING * c.max_hp, "a full-HP %s who Defers must keep a tenth of their HP against %s's biggest crit (took %d of %d = %d%% at level %d)"
+				% [job_id, who, taken, c.max_hp, roundi(100.0 * taken / c.max_hp), level])
