@@ -1097,7 +1097,24 @@ func _smoke_group_action() -> void:
 		_smoke_failed = true
 		return
 
+	## #763: turn order is NOT fixed — the starting party lost its secondary jobs and with them the
+	## speed that put the fighter early, so the leg can land on the LAST selector, who has nobody after
+	## them to pool with. Defer such turns (bounded) until a selector has at least one later-acting ally.
 	var participants: Array = BattleManager.group_participants()
+	var deferred: int = 0
+	while participants.size() < 2 and deferred < 8:
+		if not BattleManager.player_defer():
+			break
+		deferred += 1
+		var w2: float = 0.0
+		while BattleManager.current_state != BattleManager.BattleState.PLAYER_SELECTING and w2 < 20.0:
+			await get_tree().create_timer(0.25).timeout
+			w2 += 0.25
+		if BattleManager.current_state != BattleManager.BattleState.PLAYER_SELECTING:
+			break
+		participants = BattleManager.group_participants()
+	if deferred > 0:
+		print("[SMOKE] group action: deferred %d turn(s) to reach a selector with later-acting allies (%d participants)" % [deferred, participants.size()])
 	if participants.size() < 2:
 		print("[SMOKE] FAIL: only %d group participant(s) available — SETUP, not the feature: a group action needs the party to pool, and this smoke's party should supply several" % participants.size())
 		_smoke_failed = true
