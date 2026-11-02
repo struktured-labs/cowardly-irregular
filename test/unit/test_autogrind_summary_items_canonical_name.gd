@@ -47,7 +47,7 @@ func test_the_shared_formatter_renders_canonical_names() -> void:
 	assert_eq(AutogrindSystem.format_items_consumed({}), "None",
 		"the empty state must read None")
 	var many: String = AutogrindSystem.format_items_consumed({"potion": 3, "hi_potion": 1})
-	assert_true(many.contains("Potion x3") and many.contains("Hi-Potion x1") and many.contains(", "),
+	assert_true(many.contains("Potion x3") and many.contains(ItemNameResolver.resolve("hi_potion") + " x1") and many.contains(", "),
 		"multiple items must be comma-joined with canonical names, got '%s'" % many)
 	## The original bug: a raw id reaching the player. `potion` lower-case would be the tell.
 	assert_false(AutogrindSystem.format_items_consumed({"potion": 1}).begins_with("potion"),

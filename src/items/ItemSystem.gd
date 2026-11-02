@@ -90,7 +90,7 @@ func _create_default_items() -> void:
 		},
 		"hi_potion": {
 			"id": "hi_potion",
-			"name": "Hi-Potion",
+			"name": "Potio Maior",
 			"category": ItemCategory.CONSUMABLE,
 			"target_type": TargetType.SINGLE_ALLY,
 			"description": "Restores 200 HP",
@@ -101,7 +101,7 @@ func _create_default_items() -> void:
 		},
 		"mega_potion": {
 			"id": "mega_potion",
-			"name": "Mega Potion",
+			"name": "Potio Communis",
 			"category": ItemCategory.CONSUMABLE,
 			"target_type": TargetType.ALL_ALLIES,
 			"description": "Restores 100 HP to all allies",
@@ -137,7 +137,7 @@ func _create_default_items() -> void:
 		},
 		"hi_ether": {
 			"id": "hi_ether",
-			"name": "Hi-Ether",
+			"name": "Aether Maior",
 			"category": ItemCategory.CONSUMABLE,
 			"target_type": TargetType.SINGLE_ALLY,
 			"description": "Restores 100 MP",
