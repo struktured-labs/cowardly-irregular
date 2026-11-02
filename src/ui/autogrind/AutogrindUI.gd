@@ -208,6 +208,11 @@ var _custom_presets: Array = []  # Array of {name, rules, ludicrous, permadeath,
 ## UI nodes
 var _grid_container: Control
 var _cursor: Control
+## The pad's delete is the autobattle editor's own index (one muscle memory); B never deletes here (cowir-main 21420/21426).
+const DELETE_BUTTON := JOY_BUTTON_Y
+## One level of undo: the whole rule list and cursor as they were before the last delete (cowir-main 21422).
+var _undo_snapshot: Dictionary = {}
+var _footer_label: Label = null
 var _grid_scroll: float = 0.0
 var _scrolling: bool = false
 var _status_panel: Control
@@ -715,6 +720,7 @@ func _create_party_status_row(member: Combatant, width: float) -> Control:
 func _build_footer(vp_size: Vector2) -> void:
 	"""Build footer with controls help, ludicrous speed toggle, and permadeath staking toggle"""
 	var footer = Label.new()
+	_footer_label = footer
 	footer.text = _hint_strip_text()
 	footer.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	footer.add_theme_color_override("font_color", DISABLED_COLOR)
@@ -1323,6 +1329,8 @@ func _scroll_cursor_into_view() -> bool:
 
 func _update_cursor() -> void:
 	"""Update cursor visual"""
+	if _footer_label != null and is_instance_valid(_footer_label):
+		_footer_label.text = _hint_strip_text()
 	if _cursor == null or _grid_container == null:
 		return
 	# A rebuild re-enters here with the scroll already satisfied, so this recurses once at most.
@@ -1577,9 +1585,19 @@ func _input(event: InputEvent) -> void:
 		_toggle_grinding()
 		get_viewport().set_input_as_handled()
 
-	elif event is InputEventJoypadButton and event.pressed and event.button_index == JOY_BUTTON_Y:
-		if _request_resume():
-			get_viewport().set_input_as_handled()
+	elif event is InputEventJoypadButton and event.pressed and event.button_index == DELETE_BUTTON:
+		_press_delete_button()
+		get_viewport().set_input_as_handled()
+
+	elif event is InputEventKey and event.pressed and not event.is_echo() and event.keycode in [KEY_DELETE, KEY_BACKSPACE]:
+		if _on_rule_cell():
+			_press_delete_button()
+		get_viewport().set_input_as_handled()
+
+	elif event is InputEventKey and event.pressed and not event.is_echo() and event.keycode == KEY_Z and event.ctrl_pressed:
+		_undo_delete()
+		_update_cursor()
+		get_viewport().set_input_as_handled()
 
 	elif event is InputEventJoypadButton and event.pressed and event.button_index == JOY_BUTTON_X:
 		_toggle_ludicrous_speed()
@@ -1712,6 +1730,7 @@ func _options_ring_spec() -> Dictionary:
 			{"id": "preset_hardcore", "label": "Preset: Hardcore        (3)"},
 			{"id": "save_preset", "label": "Save as Preset          (S)"},
 			{"id": "delete_preset", "label": "Delete Last Preset      (D)"},
+			{"id": "resume", "label": "Resume Saved Grind      (R)"},
 			{"id": "custom_1", "label": "Custom Slot 1           (4)"},
 			{"id": "custom_2", "label": "Custom Slot 2           (5)"},
 			{"id": "custom_3", "label": "Custom Slot 3           (6)"},
@@ -1760,6 +1779,8 @@ func _commit_autogrind_option(chosen_id: String) -> void:
 			_save_current_as_preset()
 		"delete_preset":
 			_delete_last_custom_preset()
+		"resume":
+			_request_resume()
 		"custom_1":
 			_apply_custom_preset(0)
 		"custom_2":
@@ -1786,13 +1807,15 @@ func _hint_strip_text(device_name: String = "") -> String:
 	## Keyboard half is the KEY_PLUS arm, NOT ui_menu's own Enter/Escape -- ui_accept and ui_cancel
 	## consume both earlier in the same elif chain, so naming them would name keys that edit a cell.
 	var start: String = _pad_or_key(_pad_name_for_action("ui_menu", device_name), "+")
-	var resume: String = _pad_or_key(InputProfileManager.button_name_for_index(JOY_BUTTON_Y, device_name), "R")
+	var del_word := _delete_button_word()
+	var del_key := "Del" if del_word == "Delete" else "Ctrl+Z"
+	var del: String = "" if del_word == "" else "%s %s   " % [_pad_or_key(InputProfileManager.button_name_for_index(DELETE_BUTTON, device_name), del_key), del_word]
 	var ludi: String = _pad_or_key(InputProfileManager.button_name_for_index(JOY_BUTTON_X, device_name), "H")
 	var l_sh: String = InputProfileManager.button_name_for_index(JOY_BUTTON_LEFT_SHOULDER, device_name)
 	var r_sh: String = InputProfileManager.button_name_for_index(JOY_BUTTON_RIGHT_SHOULDER, device_name)
 	var opts: String = "[O]" if l_sh == "" else "%s/%s or [O]" % [l_sh, r_sh]
-	return "%s Edit   %s Close   %s Start/Stop   %s Resume   %s Ludicrous   %s OPTIONS: Permadeath - Presets - Files" % [
-		confirm, cancel, start, resume, ludi, opts,
+	return "%s Edit   %s Close   %s%s Start/Stop   [R] Resume   %s Ludicrous   %s OPTIONS: Permadeath - Presets - Resume - Files" % [
+		confirm, cancel, del, start, ludi, opts,
 	]
 
 
@@ -1843,15 +1866,42 @@ func _edit_current_cell() -> void:
 
 
 func _handle_cancel() -> void:
-	"""Handle cancel - delete cell or close"""
-	var cell = _get_cell_at_cursor()
-	if cell and cell.has_meta("cell_type"):
-		var cell_type = cell.get_meta("cell_type")
-		if cell_type == "condition" or cell_type == "action":
-			_delete_current_cell()
-			return
-
+	"""Cancel always backs out. It used to DELETE on a rule cell, which ate his rules while the strip said Close (2026-11-01)."""
 	_close_ui()
+
+
+## True when the cursor stands on a condition or action cell, the only place the delete button deletes.
+func _on_rule_cell() -> bool:
+	var cell = _get_cell_at_cursor()
+	return cell != null and cell.has_meta("cell_type") and str(cell.get_meta("cell_type")) in ["condition", "action"]
+
+
+## The delete button's word for this cursor: what pressing it now would do, or "" when it does nothing here.
+func _delete_button_word() -> String:
+	if _on_rule_cell():
+		return "Delete"
+	return "Undo" if not _undo_snapshot.is_empty() else ""
+
+
+func _press_delete_button() -> void:
+	if _on_rule_cell():
+		_delete_current_cell()
+	elif not _undo_snapshot.is_empty():
+		_undo_delete()
+	_update_cursor()
+
+
+func _undo_delete() -> void:
+	if _undo_snapshot.is_empty():
+		return
+	rules = (_undo_snapshot["rules"] as Array).duplicate(true)
+	cursor_row = int(_undo_snapshot["row"])
+	cursor_col = int(_undo_snapshot["col"])
+	var what: String = str(_undo_snapshot["what"])
+	_undo_snapshot = {}
+	_refresh_grid()
+	_log_message("[color=%s]Restored the %s.[/color]" % [AccessibilityPalette.bonus_bbcode(), what])
+	SoundManager.play_ui("menu_select")
 
 
 func _cycle_condition_type() -> void:
@@ -2589,6 +2639,18 @@ func _add_rule() -> void:
 
 func _delete_current_cell() -> void:
 	"""Delete current condition or action"""
+	var before: Array = rules.duplicate(true)
+	var at_row := cursor_row
+	var at_col := cursor_col
+	_delete_cell_now()
+	if rules != before:
+		var what := "rule" if rules.size() < before.size() else "condition or action"
+		_undo_snapshot = {"rules": before, "row": at_row, "col": at_col, "what": what}
+		var undo_btn: String = _pad_or_key(InputProfileManager.button_name_for_index(DELETE_BUTTON), "Ctrl+Z")
+		_log_message("[color=yellow]Deleted the %s — %s to undo.[/color]" % [what, undo_btn])
+
+
+func _delete_cell_now() -> void:
 	if cursor_row >= rules.size():
 		return
 
