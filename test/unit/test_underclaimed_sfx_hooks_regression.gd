@@ -3,8 +3,8 @@ extends GutTest
 ## cowir-sfx msg 2160 (2026-07-04) — three underclaimed one-line hooks
 ## wired in engine files without new SFX authoring. Pins each so the
 ## wiring can't silently rot back:
-## 1. QuestTracker branches on the state arg — 'complete' → quest_complete jingle,
-##    everything else keeps soft_chime (so objective_advanced doesn't sound identical to done)
+## 1. QuestTracker branches on the state arg — 'complete' → quest_complete jingle, an objective
+##    → quest_progress (so objective_advanced doesn't sound identical to done; see test_a_quest_accept_chimes_once)
 ## 2. QuestLog nav/cancel play menu_move/menu_cancel like every other menu
 ## 3. FastTravelMenu warp confirm fires portal_enter alongside menu_select
 ##
@@ -36,10 +36,10 @@ func _between(body: String, from_marker: String, to_marker: String) -> String:
 
 
 func test_quest_tracker_branches_completion_from_progress() -> void:
-	var src: String = GdSource.code_of("res://src/exploration/QuestTracker.gd")
-	assert_ne(src, "", "CONTROL: QuestTracker code must survive the comment strip")
-	assert_true(src.contains("SoundManager.play_ui(\"quest_complete\" if str(_b) == \"complete\" else \"soft_chime\")"),
-		"QuestTracker must branch on str(_b) == 'complete' — bare _b == \"complete\" throws int-vs-string at runtime because objective_advanced sends an int index")
+	# Behaviour, not spelling (2026-11-01, the quest family): an int index must not throw and must not sound like done.
+	assert_eq(QuestTracker.quest_cue_for("complete", 99999), "quest_complete", "a completed quest plays the completion jingle")
+	assert_eq(QuestTracker.quest_cue_for(2, 99999), "quest_progress", "objective_advanced sends an int index; it must not sound identical to done")
+	assert_ne(QuestTracker.quest_cue_for(2, 99999), QuestTracker.quest_cue_for("complete", 99999), "progress and completion stay distinct")
 
 
 func test_quest_log_cancel_is_chirped() -> void:
