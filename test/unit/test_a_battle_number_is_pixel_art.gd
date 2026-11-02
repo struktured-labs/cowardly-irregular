@@ -32,6 +32,7 @@ func _spawn_every_kind() -> Array:
 	_display.spawn_damage_number(Vector2(300, 300), 1, true, false, "ap")
 	_display.spawn_miss_number(Vector2(500, 300))
 	_display.spawn_banner(Vector2(700, 300), "IMMUNE")
+	_display.spawn_banner(Vector2(900, 300), "RESIST")
 	var out: Array = []
 	for c in _scene.get_children():
 		if c is DamageNumber:
@@ -50,7 +51,7 @@ func _labels_under(n: Node) -> int:
 
 func test_every_number_kind_is_drawn_in_pixel_glyphs() -> void:
 	var nums := _spawn_every_kind()
-	assert_eq(nums.size(), 8, "eight spawns made eight popups")
+	assert_eq(nums.size(), 9, "nine spawns made nine popups")
 	for n in nums:
 		assert_true(n._label is PixelText, "%s draws with PixelText" % n._label)
 		assert_gt(n._label.glyph_sprites.size(), 0, "'%s' put glyphs on screen" % n._label.text)
@@ -61,7 +62,7 @@ func test_the_words_on_screen_are_the_ones_the_battle_meant() -> void:
 	var texts: Array = []
 	for n in _spawn_every_kind():
 		texts.append(n._label.text)
-	for want in ["12", "140", "77", "30", "15 MP", "+1 AP", "MISS", "IMMUNE"]:
+	for want in ["12", "140", "77", "30", "15 MP", "+1 AP", "MISS", "IMMUNE", "RESIST"]:
 		assert_true(texts.has(want), "'%s' is on screen — got %s" % [want, str(texts)])
 
 
@@ -153,3 +154,15 @@ func test_every_letter_and_digit_has_a_glyph_and_an_unknown_one_is_visible() -> 
 	var t := PixelText.new("~", 2)
 	autofree(t)
 	assert_eq(t.glyph_sprites.size(), 1, "an unknown character still draws (as '?') instead of vanishing")
+
+
+## The elemental indicators are the same family; every word they and the negation banners can float has its glyphs.
+func test_every_floating_word_is_drawable() -> void:
+	for word in ["WEAK!", "RESIST", "IMMUNE!", "IMMUNE", "BLOCK", "MISS", "MP", "AP"]:
+		for ch in word:
+			assert_true(PixelText.can_draw(ch), "'%s' in %s has a glyph" % [ch, word])
+	var src := FileAccess.get_file_as_string("res://src/battle/BattleScene.gd")
+	var i := src.find("func _spawn_elemental_indicator")
+	var body := src.substr(i, src.find("\nfunc ", i + 1) - i)
+	assert_true(body.contains("PixelText.new(text"), "WEAK!/RESIST/IMMUNE! are drawn in PixelText")
+	assert_false(body.contains("Label.new()"), "and no smooth Label is built beside them")

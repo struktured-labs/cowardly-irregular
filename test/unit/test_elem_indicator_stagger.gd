@@ -60,8 +60,8 @@ func test_helper_filters_by_meta_tag() -> void:
 	var body: String = src.substr(fn_idx, next_fn - fn_idx)
 	assert_true(body.contains("child.has_meta(\"elem_indicator\")"),
 		"helper must filter by has_meta(\"elem_indicator\") tag")
-	assert_true(body.contains("child is Label"),
-		"helper must also gate on `child is Label` (cheaper than has_meta for non-Labels)")
+	assert_true(body.contains("child is PixelText"),
+		"helper must also gate on `child is PixelText` (cheaper than has_meta for other nodes; pixel pass 2026-11-02)")
 	assert_true(body.contains("is_instance_valid(child)"),
 		"helper must guard with is_instance_valid")
 
