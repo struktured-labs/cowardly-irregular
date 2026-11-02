@@ -180,6 +180,121 @@ def _write_pck(path, entries):
         f.write(head + table + blobs)
 
 
+# ── --predict <base-rev> <tip-rev>... [--base-pck <pck>] : a batch's web-pck delta BEFORE it folds ──────
+# cowir-main 21216: every READY that adds textures or audio states its predicted web delta, and the fold
+# refuses a batch that would take headroom under 8 MiB. One shared model instead of each lane's guess.
+# Factors are MEASURED on real web pcks (packed bytes / master bytes), never modelled:
+WEB_AUDIO_FACTOR = {
+    'voice': 0.729,   # voice_* (not voice_blip_) + boss_line_*, through make_web_voice: .759 pck, 1028 clips
+    'sfx':   1.071,   # every other sfx .ogg ships as-is plus container: .759 pck, 339 clips
+    'music': 0.523,   # assets/audio/music through make_web_audio's 40 kbps tier: .759 pck, 161 tracks
+}
+# Godot's lossless .ctex vs PIL's lossless WebP of the same pixels: .760 backdrops 7,140,948 B vs 6.34 MiB.
+TEXTURE_FACTOR = 1.07
+IMAGE_EXT = ('.png', '.jpg', '.jpeg', '.webp')
+
+
+def _blob(rev, path):
+    import subprocess
+    r = subprocess.run(["git", "cat-file", "-p", "%s:%s" % (rev, path)], capture_output=True)
+    return r.stdout if r.returncode == 0 else None
+
+
+def _lfs_size(b):
+    m = re.match(rb"version https://git-lfs[^\n]*\noid [^\n]*\nsize (\d+)", b or b"")
+    return int(m.group(1)) if m else None
+
+
+def _audio_kind(path):
+    f = os.path.basename(path)
+    if path.startswith("assets/audio/music/"):
+        return 'music'
+    if path.startswith("assets/audio/sfx/") and (f.startswith("boss_line_") or
+                                                  (f.startswith("voice_") and not f.startswith("voice_blip_"))):
+        return 'voice'
+    return 'sfx'
+
+
+def _web_excludes(cfg_text):
+    """The Web preset's exclude_filter patterns, read from export_presets.cfg's own text."""
+    for block in cfg_text.split("[preset.")[1:]:
+        if 'platform="Web"' in block:
+            m = re.search(r'exclude_filter="([^"]*)"', block)
+            return [x.strip() for x in (m.group(1) if m else "").split(",") if x.strip()]
+    return []
+
+
+def _gdignored(path, has_gdignore):
+    """True when any ancestor directory of path holds a .gdignore (Godot skips that whole subtree)."""
+    parts = path.split("/")[:-1]
+    return any(has_gdignore("/".join(parts[:i]) + "/.gdignore") for i in range(1, len(parts) + 1))
+
+
+def _predict_cost(rev, path):
+    b = _blob(rev, path)
+    if b is None:
+        return 0
+    lfs = _lfs_size(b)
+    low = path.lower()
+    if low.endswith(IMAGE_EXT):
+        if lfs is not None:
+            return lfs           # an LFS image cannot be decoded from its pointer: raw bytes, flagged in the output
+        try:
+            from PIL import Image
+        except ImportError:
+            sys.exit("--predict needs pillow for textures: uv run --no-project --with pillow python tools/pck_budget.py --predict ...")
+        import io
+        im = Image.open(io.BytesIO(b)); im.load(); o = io.BytesIO(); im.save(o, "WEBP", lossless=True)
+        return int(len(o.getvalue()) * TEXTURE_FACTOR)
+    raw = lfs if lfs is not None else len(b)
+    if low.endswith(".ogg"):
+        return int(raw * WEB_AUDIO_FACTOR[_audio_kind(path)])
+    return raw
+
+
+def predict(base, tips, base_pck=None):
+    import subprocess, fnmatch
+    head = tips[-1]
+    cfg = _blob(head, "export_presets.cfg")
+    excl = _web_excludes(cfg.decode("utf-8", "replace") if cfg else "")
+    cache = {}
+    def has_gd(p):
+        if p not in cache:
+            cache[p] = subprocess.run(["git", "cat-file", "-e", "%s:%s" % (head, p)], capture_output=True).returncode == 0
+        return cache[p]
+    final = {}
+    for t in tips:   # the LAST tip to touch a path decides its content, like a fold in this order
+        out = subprocess.run(["git", "diff", "--name-status", "--no-renames", "%s...%s" % (base, t)],
+                             capture_output=True, text=True).stdout
+        for line in out.splitlines():
+            st, p = line.split("\t", 1)
+            final[p] = (st, t)
+    by = collections.Counter(); skipped = collections.Counter(); n = 0
+    for p, (st, t) in sorted(final.items()):
+        if p.endswith((".import", ".uid")) or any(fnmatch.fnmatch(p, x) for x in excl):
+            skipped["export exclude / sidecar"] += 1; continue
+        if _gdignored(p, has_gd):
+            skipped[".gdignore"] += 1; continue
+        new = 0 if st == "D" else _predict_cost(t, p)
+        old = _predict_cost(base, p)
+        low = p.lower()
+        k = ("textures" if low.endswith(IMAGE_EXT) else
+             "audio:" + _audio_kind(p) if low.endswith(".ogg") else "other")
+        by[k] += new - old; n += 1
+    tot = sum(by.values())
+    print("predict %s -> %s : %d shipped path(s) changed" % (base, " + ".join(tips), n))
+    for k, v in sorted(by.items(), key=lambda kv: -abs(kv[1])):
+        print("  %-14s %+9.2f MiB" % (k, v / 1048576.0))
+    print("  %-14s %+9.2f MiB   (skipped: %s)" % ("TOTAL", tot / 1048576.0,
+          ", ".join("%d %s" % (c, w) for w, c in skipped.items()) or "none"))
+    if base_pck:
+        size = os.path.getsize(base_pck) + tot
+        print("  predicted web pck %.2f MiB · headroom %.2f MiB to %.2f (floor 8 MiB: %s)" % (
+            size / 1048576.0, (PCK_LIMIT - size) / 1048576.0, PCK_LIMIT / 1048576.0,
+            "OK" if PCK_LIMIT - size >= 8 * 1048576 else "UNDER, needs his say"))
+    return tot
+
+
 def selftest():
     import tempfile, shutil
     p = f = 0
@@ -244,6 +359,18 @@ def selftest():
             parse(bad); chk("non-pck is refused", "parsed", "SystemExit")
         except SystemExit:
             chk("non-pck is refused", "SystemExit", "SystemExit")
+        # 9 — --predict's pure parts: audio routing, LFS pointer, the Web preset filter, .gdignore
+        chk("predict: party voice -> voice tier", _audio_kind("assets/audio/sfx/voice_mage_hit_01.ogg"), 'voice')
+        chk("predict: boss line -> voice tier", _audio_kind("assets/audio/sfx/boss_line_glacius_03.ogg"), 'voice')
+        chk("predict: CONTROL voice_blip is NOT voice", _audio_kind("assets/audio/sfx/voice_blip_a.ogg"), 'sfx')
+        chk("predict: music -> music tier", _audio_kind("assets/audio/music/town/harmonia.ogg"), 'music')
+        chk("predict: LFS pointer size is read", _lfs_size(b"version https://git-lfs.github.com/spec/v1\noid sha256:ab\nsize 36820\n"), 36820)
+        chk("predict: CONTROL a real ogg is not a pointer", _lfs_size(b"OggS\x00\x02" + b"\x00" * 40), None)
+        cfg = '[preset.0]\nplatform="Linux"\nexclude_filter="a/*"\n[preset.1]\nplatform="Web"\nexclude_filter="docs/*, tmp/*"\n'
+        chk("predict: the WEB preset's filter, not another's", _web_excludes(cfg), ["docs/*", "tmp/*"])
+        g = {"voice_refs/.gdignore"}.__contains__
+        chk("predict: a .gdignore'd subtree is skipped", _gdignored("voice_refs/x/y.wav", g), True)
+        chk("predict: CONTROL an unignored path is kept", _gdignored("assets/sprites/a.png", g), False)
     finally:
         shutil.rmtree(d, ignore_errors=True)
     print()
@@ -254,7 +381,7 @@ def selftest():
 if __name__ == '__main__':
     a = sys.argv[1:]
     if not a or a[0] in ('-h', '--help'):
-        print(__doc__); print("usage: %s --summary <pck> | --cost <pck> <src>... | --selftest"
+        print(__doc__); print("usage: %s --summary <pck> | --cost <pck> <src>... | --predict <base> <tip>... [--base-pck <pck>] | --selftest"
                               % sys.argv[0]); sys.exit(2)
     if a[0] == '--selftest':
         sys.exit(selftest())
@@ -262,4 +389,9 @@ if __name__ == '__main__':
         summary(a[1]); sys.exit(0)
     if a[0] == '--cost' and len(a) >= 3:
         cost(a[1], a[2:]); sys.exit(0)
-    print("usage: %s --summary <pck> | --cost <pck> <src>... | --selftest" % sys.argv[0]); sys.exit(2)
+    if a[0] == '--predict' and len(a) >= 3:
+        bp = None
+        if '--base-pck' in a:
+            i = a.index('--base-pck'); bp = a[i + 1]; a = a[:i] + a[i + 2:]
+        predict(a[1], a[2:], bp); sys.exit(0)
+    print("usage: %s --summary <pck> | --cost <pck> <src>... | --predict <base> <tip>... [--base-pck <pck>] | --selftest" % sys.argv[0]); sys.exit(2)
