@@ -7507,6 +7507,9 @@ func _encounter_label(ids: Array) -> String:
 func _after_the_stop_banner(reason: String) -> void:
 	if "manual" in reason.to_lower() or not is_inside_tree():
 		return
+	## The summary's own lock, taken now so the field cannot walk into an encounter while the banner fades; dismiss pops it.
+	if InputLockManager:
+		InputLockManager.push_lock("autogrind_summary")
 	await get_tree().create_timer(GRIND_STOP_BANNER_SEC + 0.05, true, false, true).timeout
 
 
