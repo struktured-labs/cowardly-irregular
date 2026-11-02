@@ -2024,6 +2024,9 @@ func _refresh_all_status_icons(_round_num: int = 0) -> void:
 func _animate_status_icon_pop_in(icon: Control) -> void:
 	# Defer one frame so the PanelContainer has a real size for pivot_offset
 	# (mirrors the deferred-pivot pattern noted in CLAUDE.md polish item #24).
+	# Off stage there is no frame to wait for: get_tree() is null and the await was a SCRIPT ERROR in every derived run.
+	if not is_inside_tree():
+		return
 	await get_tree().process_frame
 	if not is_instance_valid(icon):
 		return
