@@ -30,6 +30,9 @@ func _layout_has_hearth_at(at: Vector2i, size: Vector2i) -> bool:
 
 func _seam_cost(src: Image, origin: Vector2i, size: Vector2i, grid: Vector2i) -> float:
 	var img := Image.create(size.x * 32, size.y * 32, false, Image.FORMAT_RGBA8)
+	## blit_rect needs matching formats and copies NOTHING otherwise, which reads as zero seams on every sampling.
+	src = src.duplicate()
+	src.convert(Image.FORMAT_RGBA8)
 	for y in range(size.y):
 		for x in range(size.x):
 			var c := Vector2i(posmod(origin.x + x, grid.x), posmod(origin.y + y, grid.y))
