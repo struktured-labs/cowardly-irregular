@@ -172,7 +172,18 @@ func test_no_two_party_members_stack_in_any_formation() -> void:
 
 ## struktured on .759: "where the rogue is relative to mage and cleric looks so proportionally off". Each rank is ONE
 ## column (body centres within 2px) with evenly spaced feet, in every formation whose offsets are uniform per rank.
+## Diamond is NOT here, by ruling (cowir-main 2026-11-01): its offsets are authored geometry, a diamond on purpose.
 const RANK_UNIFORM_FORMATIONS := ["V-Formation", "Front Line", "Back Row", "Spread"]
+## Diamond's own contract instead: these exact offsets, and no stacking (test_no_two_party_members_stack covers it).
+const DIAMOND_OFFSETS := [Vector2(-25, 0), Vector2(0, -30), Vector2(0, 30), Vector2(25, -18), Vector2(25, 18)]
+
+
+func test_diamond_keeps_its_authored_shape() -> void:
+	var scene = await _build(["goblin"])
+	assert_true("Diamond" in BS.FORMATION_NAMES, "CONTROL: Diamond is still a formation")
+	for i in DIAMOND_OFFSETS.size():
+		assert_eq(scene._get_formation_offset(i, 5, BS.PartyFormation.DIAMOND), DIAMOND_OFFSETS[i],
+			"Diamond's member %d keeps its authored offset" % i)
 
 
 func test_each_rank_is_one_evenly_spaced_column() -> void:
