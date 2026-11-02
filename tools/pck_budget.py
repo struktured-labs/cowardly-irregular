@@ -191,6 +191,17 @@ WEB_AUDIO_FACTOR = {
 }
 # Godot's lossless .ctex vs PIL's lossless WebP of the same pixels: .760 backdrops 7,140,948 B vs 6.34 MiB.
 TEXTURE_FACTOR = 1.07
+# ACCURACY (cowir-adhoc 21266): +/-0.5 MiB per release hop, ~6% of a big delta, whichever is larger.
+# Measured hop by hop on .754 -> .758 -> .759; a multi-hop total can look far better only because the
+# hops' errors cancel. Fine for the 8 MiB floor; NOT for sub-MiB calls near it.
+#
+# MUSIC by DURATION, not by master bytes (cowir-music 21263: the average x0.523 overstated a 96k mono
+# master ~2x, since the tier's ratio depends on each master's bitrate). Packed bytes per nominal byte
+# (seconds x kbps x 1000/8), per tier: 40 -> 0.994 MEASURED (161 tracks, .759 pck 87.66 MiB vs 88.18
+# nominal); 32 -> 1.092 = cowir-music's measured 32k encode 72.56 MiB x the 40k container 1.062, over
+# 70.54 nominal, to be re-measured on the first 32k pck (.761). The tier is read from the TIP's own
+# deploy_web.sh default. No duration (no local LFS object) or an unknown tier -> the average, said so.
+MUSIC_PACKED_PER_NOMINAL = {40: 0.994, 32: 1.092}
 IMAGE_EXT = ('.png', '.jpg', '.jpeg', '.webp')
 
 
@@ -202,6 +213,35 @@ def _blob(rev, path):
 
 def _lfs_size(b):
     m = re.match(rb"version https://git-lfs[^\n]*\noid [^\n]*\nsize (\d+)", b or b"")
+    return int(m.group(1)) if m else None
+
+
+def _lfs_object(b):
+    """Local path of an LFS pointer's object, or None when it isn't a pointer or isn't fetched."""
+    import subprocess
+    m = re.match(rb"version https://git-lfs[^\n]*\noid sha256:([0-9a-f]{64})", b or b"")
+    if not m:
+        return None
+    common = subprocess.run(["git", "rev-parse", "--git-common-dir"], capture_output=True, text=True).stdout.strip()
+    oid = m.group(1).decode()
+    p = os.path.join(common, "lfs", "objects", oid[:2], oid[2:4], oid)
+    return p if os.path.isfile(p) else None
+
+
+def _ogg_seconds(data):
+    """Duration of an Ogg Vorbis stream: the last page's granule position / the id header's rate."""
+    i = data.find(b"\x01vorbis")
+    j = data.rfind(b"OggS")
+    if i < 0 or j < 0 or len(data) < j + 14:
+        return None
+    rate = struct.unpack("<I", data[i + 12:i + 16])[0]
+    gran = struct.unpack("<q", data[j + 6:j + 14])[0]
+    return gran / float(rate) if rate and gran > 0 else None
+
+
+def _tier_kbps(rev):
+    b = _blob(rev, "tools/deploy_web.sh") or b""
+    m = re.search(rb'WEB_AUDIO_KBPS="\$\{WEB_AUDIO_KBPS:-(\d+)\}"', b)
     return int(m.group(1)) if m else None
 
 
@@ -248,8 +288,20 @@ def _predict_cost(rev, path):
         return int(len(o.getvalue()) * TEXTURE_FACTOR)
     raw = lfs if lfs is not None else len(b)
     if low.endswith(".ogg"):
-        return int(raw * WEB_AUDIO_FACTOR[_audio_kind(path)])
+        kind = _audio_kind(path)
+        if kind == 'music':
+            kbps = _tier_kbps(rev)
+            obj = _lfs_object(b)
+            data = open(obj, "rb").read() if obj else (b if lfs is None else None)
+            sec = _ogg_seconds(data) if data else None
+            if sec and kbps in MUSIC_PACKED_PER_NOMINAL:
+                return int(min(raw * 1.10, sec * kbps * 1000 / 8.0 * MUSIC_PACKED_PER_NOMINAL[kbps]))
+            _MUSIC_FALLBACKS.append(path)
+        return int(raw * WEB_AUDIO_FACTOR[kind])
     return raw
+
+
+_MUSIC_FALLBACKS = []
 
 
 def predict(base, tips, base_pck=None):
@@ -283,6 +335,9 @@ def predict(base, tips, base_pck=None):
         by[k] += new - old; n += 1
     tot = sum(by.values())
     print("predict %s -> %s : %d shipped path(s) changed" % (base, " + ".join(tips), n))
+    if _MUSIC_FALLBACKS:
+        print("  note: %d music file(s) costed by the AVERAGE factor (no local LFS object or unknown tier): %s"
+              % (len(_MUSIC_FALLBACKS), ", ".join(sorted(set(_MUSIC_FALLBACKS))[:3])))
     for k, v in sorted(by.items(), key=lambda kv: -abs(kv[1])):
         print("  %-14s %+9.2f MiB" % (k, v / 1048576.0))
     print("  %-14s %+9.2f MiB   (skipped: %s)" % ("TOTAL", tot / 1048576.0,
@@ -371,6 +426,12 @@ def selftest():
         g = {"voice_refs/.gdignore"}.__contains__
         chk("predict: a .gdignore'd subtree is skipped", _gdignored("voice_refs/x/y.wav", g), True)
         chk("predict: CONTROL an unignored path is kept", _gdignored("assets/sprites/a.png", g), False)
+        # an Ogg: a vorbis id header (rate 48000) and a last page with granule 96000 -> 2.0 s
+        idh = b"\x01vorbis" + struct.pack("<I", 0) + b"\x01" + struct.pack("<I", 48000) + b"\x00" * 20
+        last = b"OggS\x00\x04" + struct.pack("<q", 96000) + b"\x00" * 20
+        chk("predict: ogg duration = last granule / rate", _ogg_seconds(b"OggS" + b"\x00" * 24 + idh + last), 2.0)
+        chk("predict: CONTROL not an ogg -> no duration", _ogg_seconds(b"RIFF" + b"\x00" * 60), None)
+        chk("predict: CONTROL a non-pointer has no LFS object", _lfs_object(b"OggS..."), None)
     finally:
         shutil.rmtree(d, ignore_errors=True)
     print()
@@ -389,9 +450,14 @@ if __name__ == '__main__':
         summary(a[1]); sys.exit(0)
     if a[0] == '--cost' and len(a) >= 3:
         cost(a[1], a[2:]); sys.exit(0)
-    if a[0] == '--predict' and len(a) >= 3:
+    if a[0] == '--predict':
         bp = None
         if '--base-pck' in a:
-            i = a.index('--base-pck'); bp = a[i + 1]; a = a[:i] + a[i + 2:]
+            i = a.index('--base-pck')
+            if i + 1 >= len(a):
+                sys.exit("--base-pck needs a path")
+            bp = a[i + 1]; a = a[:i] + a[i + 2:]
+        if len(a) < 3:   # was: counted before --base-pck was stripped, so no tip at all -> IndexError
+            sys.exit("usage: --predict <base> <tip>... [--base-pck <pck>]  (at least one tip)")
         predict(a[1], a[2:], bp); sys.exit(0)
     print("usage: %s --summary <pck> | --cost <pck> <src>... | --predict <base> <tip>... [--base-pck <pck>] | --selftest" % sys.argv[0]); sys.exit(2)
