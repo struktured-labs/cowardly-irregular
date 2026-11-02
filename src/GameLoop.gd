@@ -6887,6 +6887,7 @@ func _stop_autogrind(reason: String) -> void:
 		current_state = LoopState.EXPLORATION
 		InputLockManager.pop_all()  # Clear any leaked locks
 
+	await _after_the_stop_banner(reason)
 	_show_autogrind_summary(final_stats, reason)
 
 
@@ -7420,6 +7421,7 @@ func _on_grind_complete(reason: String) -> void:
 		if InputLockManager:
 			InputLockManager.pop_lock(WIPE_FIELD_LOCK)
 		return
+	await _after_the_stop_banner(reason)
 	_show_autogrind_summary(final_stats, reason)
 
 
@@ -7468,6 +7470,13 @@ func _encounter_label(ids: Array) -> String:
 	return ", ".join(parts)
 
 
+## struktured: "two yellow texts appeared on top of each other … I couldn't read them": the stop banner sat over the summary's rows.
+func _after_the_stop_banner(reason: String) -> void:
+	if "manual" in reason.to_lower() or not is_inside_tree():
+		return
+	await get_tree().create_timer(GRIND_STOP_BANNER_SEC + 0.05, true, false, true).timeout
+
+
 ## The field stays still under a game-over screen shown on it: re-pushed each frame (a lock is reaped after 10 s), released once a battle owns the screen.
 const WIPE_FIELD_LOCK := "autogrind_wipe"
 func _hold_field_still_while(holding: Array[bool]) -> void:
@@ -7496,6 +7505,10 @@ func _play_grind_stop_sfx(reason: String) -> void:
 
 ## Full-screen flash + OS taskbar attention + loud sting so the player notices the grind stop even when tabbed out.
 ## Manual stops skip the fanfare — the player already knows.
+## How long the stop banner stays up (the flash in, then out); the summary waits this out so the two never stack.
+const GRIND_STOP_BANNER_SEC := 0.12 + 0.55
+
+
 func _show_grind_stop_notification(reason: String) -> void:
 	if "manual" in reason.to_lower():
 		return
@@ -7537,7 +7550,7 @@ func _show_grind_stop_notification(reason: String) -> void:
 	var tween := create_tween()
 	tween.set_parallel(true)
 	tween.tween_property(flash, "color:a", 0.55, 0.12)
-	tween.chain().tween_property(flash, "color:a", 0.0, 0.55)
+	tween.chain().tween_property(flash, "color:a", 0.0, GRIND_STOP_BANNER_SEC - 0.12)
 	tween.chain().tween_callback(func():
 		if is_instance_valid(layer):
 			layer.queue_free()
