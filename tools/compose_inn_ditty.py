@@ -9,7 +9,7 @@ chord arpeggios, resolving onto a held tonic. 8-bit voices to sit with W1's medi
 the same run writes the same samples. Writes a 44.1 kHz mono master, then ffmpeg encodes 96 kbps Ogg and
 loudness-normalises it to the other stingers (-17 LUFS, measured: save_point -17.0, quest_complete -17.3).
 
-    uv run tools/compose_inn_ditty.py [out.ogg]      (default assets/audio/music/inn_rest_ditty.ogg)
+    uv run tools/compose_inn_ditty.py [out.ogg]      (default assets/audio/music/inn_rest_ditty.ogg, then trimmed)
 """
 import subprocess
 import sys
@@ -22,6 +22,7 @@ SR = 44100
 BPM = 100.0
 BEAT = 60.0 / BPM
 TARGET_LUFS = -17.0
+DEFAULT_DST = "assets/audio/music/inn_rest_ditty.ogg"
 
 
 def hz(note: str) -> float:
@@ -84,7 +85,8 @@ def compose() -> np.ndarray:
     for note in ["F3", "A3", "C4"]:
         n = int(3.4 * BEAT * SR)
         place(out, 6, 0.07 * tri(hz(note), n) * env(n, 0.05, 1.4))
-    # Warmth: a short feedback echo, then a gentle fade over the last 0.6 s.
+    # Warmth: a short feedback echo, then a gentle fade over the last 0.6 s that stops at -20 dB and
+    # closes in 10 ms: a fade to zero leaves ~130 ms under audit_wrap_seams' -60 dB pad floor.
     d = int(0.21 * SR)
     wet = out.copy()
     for k in range(1, 4):
@@ -93,12 +95,14 @@ def compose() -> np.ndarray:
     end = int(total_beats * BEAT * SR)
     out = out[:end]
     f = int(0.6 * SR)
-    out[-f:] *= np.linspace(1.0, 0.0, f) ** 1.5
+    out[-f:] *= 0.1 + 0.9 * np.linspace(1.0, 0.0, f) ** 1.5
+    c = int(0.010 * SR)
+    out[-c:] *= np.linspace(1.0, 0.0, c)
     return out / max(1e-9, np.max(np.abs(out))) * 0.89
 
 
 def main() -> int:
-    dst = sys.argv[1] if len(sys.argv) > 1 else "assets/audio/music/inn_rest_ditty.ogg"
+    dst = sys.argv[1] if len(sys.argv) > 1 else DEFAULT_DST
     pcm = (compose() * 32767).astype(np.int16)
     with tempfile.NamedTemporaryFile(suffix=".wav", dir="tmp", delete=False) as tf:
         with wave.open(tf.name, "wb") as w:
@@ -111,6 +115,9 @@ def main() -> int:
                     "loudnorm=I=%g:TP=-1.5:LRA=11" % TARGET_LUFS, "-ar", str(SR), "-ac", "1",
                     "-c:a", "libvorbis", "-b:a", "96k", dst], check=True)
     subprocess.run(["rm", "-f", src])
+    if dst == DEFAULT_DST:
+        # The encoder still leaves ~60 ms under the pad floor; the repo's own trimmer takes it off, as audit_wrap_seams asks.
+        subprocess.run(["uv", "run", "tools/trim_wrap_padding.py", "--only", "inn_rest_ditty", "--apply"], check=True)
     print("wrote %s (%.2f s)" % (dst, len(pcm) / SR))
     return 0
 
