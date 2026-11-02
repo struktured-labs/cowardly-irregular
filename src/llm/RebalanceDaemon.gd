@@ -142,6 +142,11 @@ var _last_consideration_ts: int = 0
 ## GameLoop's _kick_off_rebalance_fetch.call_deferred then awaits
 ## request_llm_proposal which flips the status through awaiting_llm →
 ## proposed | failed_*.
+## Triggers refused by the throttle since the last consideration. A party levelling together sent five in one second,
+## each its own log line (45 of one 7,481-line play log); the first is printed, the rest are counted.
+var throttled_since_last: int = 0
+
+
 func consider(trigger_type: String, context: Dictionary) -> bool:
 	var now: int = int(Time.get_unix_time_from_system())
 	var elapsed: int = now - _last_consideration_ts
@@ -156,10 +161,15 @@ func consider(trigger_type: String, context: Dictionary) -> bool:
 	if elapsed < 0:
 		elapsed = int(min_consideration_interval_sec)
 	if _last_consideration_ts > 0 and elapsed < int(min_consideration_interval_sec):
-		print("[REBALANCE] throttled (%ds since last) — trigger=%s" % [
-			elapsed, trigger_type])
+		throttled_since_last += 1
+		if throttled_since_last == 1:
+			print("[REBALANCE] throttled (%ds since last) — trigger=%s; further throttled triggers are counted" % [
+				elapsed, trigger_type])
 		return false
 	_last_consideration_ts = now
+	if throttled_since_last > 1:
+		print("[REBALANCE] %d triggers were throttled since the last consideration" % throttled_since_last)
+	throttled_since_last = 0
 	# Stub proposal — what the LLM-driven version will eventually return.
 	# Recorded so the pending UI (later tick) has something to display
 	# and so tests can assert the daemon was reached.
