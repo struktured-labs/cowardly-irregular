@@ -72,6 +72,10 @@ func test_the_live_menu_never_covers_the_one_choosing() -> void:
 		add_child_autofree(scene)
 		Engine.time_scale = 1.0
 		await get_tree().create_timer(0.4).timeout
+		## The default battle story-locks all but the Hero, and the menu (rightly) never opens for a locked member.
+		for m in BattleManager.player_party:
+			if "autobattle_locked" in m:
+				m.autobattle_locked = false
 		for f in BS.FORMATION_NAMES.size():
 			if f > 0:
 				scene._command_menu.close_win98_menu()

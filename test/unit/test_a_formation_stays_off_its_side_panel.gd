@@ -202,8 +202,10 @@ func test_each_rank_is_one_evenly_spaced_column() -> void:
 		for rank in [0, 1]:
 			var xs: Array = []
 			for i in range(rank, scene.party_sprite_nodes.size(), 2):
-				var fig := _figure(scene.party_sprite_nodes[i])
-				xs.append(fig.get_center().x)
+				## Where it RESTS (home): the acting member's 80px step-out is not its place in the rank.
+				var sprite: AnimatedSprite2D = scene.party_sprite_nodes[i]
+				var fig: Rect2 = AdvanceAuraScript.figure_rect_in_sprite(sprite, &"idle")
+				xs.append((sprite.get_meta("home_position", sprite.position) as Vector2).x + fig.get_center().x)
 			for k in range(1, xs.size()):
 				if absf(xs[k] - xs[0]) > 2.0:
 					bad.append("%s rank %d: member %d stands %.1fpx off its rank's column" % [fname, rank, rank + 2 * k, xs[k] - xs[0]])
