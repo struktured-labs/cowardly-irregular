@@ -44,12 +44,12 @@ func test_only_one_listener_sounds_the_quest_family() -> void:
 		for f in DirAccess.get_files_at(d):
 			if not f.ends_with(".gd"):
 				continue
-			var path := d + "/" + f
+			var path: String = d + "/" + str(f)
 			var code := GdSource.code_of(path)
 			var re := RegEx.create_from_string("(quest_state_changed|objective_advanced)\\.connect\\((\\w+)")
 			for hit in re.search_all(code):
 				connected += 1
-				var handler := hit.get_string(2)
+				var handler: String = (hit as RegExMatch).get_string(2)
 				var start := code.find("func %s(" % handler)
 				if start < 0:
 					continue
