@@ -75,11 +75,12 @@ The still is only what a missing or undecodable video falls back to. Worth redra
 1. harmonia_square, harmonia_square_portal, harmonia_inn, harmonia_shop  (NEW: no .ogv needed)
 2. Redraws of an existing key: also replace or delete its .ogv (section 0)
 3. Optional NEW: scriptura_guild, a W1 city street for the Tempo, 4 elemental dragon caves
-4. NEW for cowir-story's first-entry intros (29317ebdb, 2026-11-02), each borrowing a generic W1 key today:
+4. NEW for the first-entry village intros (cowir-story 29317ebdb, cowir-overworld c9a85e699, 2026-11-02), each borrowing a generic W1 key today:
    | key | shows (from the scene's own narration) | scene, current stand-in |
    |---|---|---|
    | grimhollow_square | the northeastern swamp town at evening: fog rolling in over boardwalks, a fortune-teller's lantern, a dim shop front | world1_grimhollow_npcs, prologue_forest |
    | ironhaven_forge_street | a town built over its own furnace: forges glowing day and night, warm streets, an anvil yard | world1_ironhaven_npcs, prologue_village |
+   | frosthold_lane | the mountain village under the Ice Dragon's peak in the long night ("nine weeks of the year the sun did not bother coming up"): snow on timber roofs, the peak's glow above, a guard post at the gate | world1_frosthold_npcs (cowir-overworld c9a85e699), prologue_village |
    NEW keys need no .ogv; the scene picks the still up once its JSON names it (cutscenes re-points it).
    Budget: ~0.4 MiB each lossless at 1280x720 (the .760 Harmonia measurement), against the .761 web headroom.
 Every re-point in section 2 to an EXISTING key is JSON-only: cutscenes will do those, no art needed.
