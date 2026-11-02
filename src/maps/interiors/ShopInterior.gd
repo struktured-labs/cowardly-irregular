@@ -1060,8 +1060,9 @@ func _decorate_blacksmith_shop() -> void:
 	# Anvil at x=2, y=7
 	_create_anvil(Vector2(2 * TILE_SIZE, 7 * TILE_SIZE))
 
-	# Weapon wall rack on east side
-	_create_weapon_wall_rack(Vector2(13 * TILE_SIZE, 2 * TILE_SIZE))
+	# Weapon wall rack on east side; a drawn shelf IS the rack, and the painted one would cover it
+	if InteriorArt.path("shelf", art_room(), _art_village()) == "":
+		_create_weapon_wall_rack(Vector2(13 * TILE_SIZE, 2 * TILE_SIZE))
 
 	# Weapon crates at x=1, y=9
 	_create_weapon_crates(Vector2(1 * TILE_SIZE, 9 * TILE_SIZE))
@@ -1220,6 +1221,7 @@ func _create_anvil(pos: Vector2) -> void:
 
 func _create_weapon_wall_rack(pos: Vector2) -> void:
 	var rack = Sprite2D.new()
+	rack.name = "WeaponWallRack"
 	var rw = TILE_SIZE * 2
 	var rh = TILE_SIZE * 6
 	var img = Image.create(rw, rh, false, Image.FORMAT_RGBA8)
