@@ -282,7 +282,10 @@
           "dur": 0.32,
           "arc_height": 44,
           "size": 1.2,
-          "trail_spacing": 9
+          "trail_spacing": 9,
+          "palette": "flame",
+          "palette_t3": "fire",
+          "trail_palette": "ember"
         },
         {
           "at": 0.32,
@@ -294,7 +297,9 @@
           "at": 0.32,
           "kind": "ring",
           "dur": 0.26,
-          "scale": 2.8
+          "scale": 2.8,
+          "palette": "flame",
+          "palette_t3": "fire"
         },
         {
           "at": 0.32,
@@ -332,7 +337,9 @@
               "twist": 30,
               "palette": "flame"
             }
-          }
+          },
+          "palette": "flame",
+          "palette_t3": "fire"
         },
         {
           "at": 0.7,
@@ -353,9 +360,20 @@
             "size": 0.6,
             "scale": 1.0,
             "palette": "flame"
-          }
+          },
+          "palette": "flame",
+          "palette_t3": "fire"
+        },
+        {
+          "at": 0.32,
+          "kind": "ring",
+          "dur": 0.32,
+          "scale": 4.0,
+          "palette": "fire",
+          "min_tier": 3
         }
-      ]
+      ],
+      "palette_note": "flame (orange-red) until the caster's intensity tier 3, where it goes white-hot: struktured didn't read the white bolt as fire"
     },
     "sig_cave_rat_king": {
       "label": "Rat King: Rat Swarm, the court spills out of him in rings of rot",
