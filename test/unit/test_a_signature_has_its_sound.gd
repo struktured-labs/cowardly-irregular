@@ -4,6 +4,20 @@ extends GutTest
 ## wind-up under the title card. Derived from monsters.json, so a new fx_signature without a sound reds here.
 
 const SCENE := "res://src/battle/BattleScene.tscn"
+const BattleState := preload("res://test/unit/helpers/battle_state.gd")
+
+var _guard: RefCounted = null
+
+
+## A live BattleScene starts a battle on the autoload; without this the leak sentinel downstream reads state=3.
+func before_each() -> void:
+	_guard = BattleState.new()
+	_guard.snapshot()
+
+
+func after_each() -> void:
+	if _guard != null:
+		_guard.restore()
 
 
 func _holders() -> Array:

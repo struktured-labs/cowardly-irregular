@@ -101,11 +101,23 @@ func _boss() -> Combatant:
 	return boss
 
 
+## The scene's own battle start voices a party turn_start line (and may raise a bubble), which correctly blocks a bark.
+func _quiet_the_party() -> void:
+	SoundManager.stop_voice()
+	SoundManager.stop_voiced_line()
+	for b in BattleSpeechBubble._live:
+		if is_instance_valid(b):
+			b.free()
+	BattleSpeechBubble._live.clear()
+	assert_false(SoundManager._voice_player.playing or SoundManager.is_voiced_line_playing(), "CONTROL: nothing is speaking before the bark")
+
+
 func test_the_battle_scene_voices_a_bark_and_honours_the_cooldown() -> void:
 	var scene = load(SCENE).instantiate()
 	add_child_autofree(scene)
 	await get_tree().process_frame
 	Engine.time_scale = 1.0
+	_quiet_the_party()
 	var boss := _boss()
 	scene._boss_bark(boss, "big_hit")
 	assert_true(SoundManager.is_voiced_line_playing(), "a boss's bark must actually speak in a real battle scene")
@@ -119,6 +131,7 @@ func test_the_battle_scene_barks_at_4x_and_not_in_the_grind() -> void:
 	add_child_autofree(scene)
 	await get_tree().process_frame
 	Engine.time_scale = 4.0
+	_quiet_the_party()
 	scene.autogrind_console_mode = true
 	scene._boss_bark(_boss(), "big_hit")
 	assert_false(SoundManager.is_voiced_line_playing(), "the autogrind console stays silent")
@@ -138,6 +151,7 @@ func test_a_wipe_bark_yields_to_the_bosss_last_words() -> void:
 	scene.test_enemies.append(boss)
 	scene._gloat_line = {}
 	BattleManager.boss_gloat_pending = false
+	_quiet_the_party()
 	scene._wipe_bark()
 	assert_true(SoundManager.is_voiced_line_playing(), "CONTROL: a wipe with no last words to come barks")
 	SoundManager.stop_voiced_line()
