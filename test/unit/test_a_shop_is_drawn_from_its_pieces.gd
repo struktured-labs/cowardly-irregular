@@ -34,6 +34,14 @@ func test_a_drawn_shelf_carries_its_own_stock() -> void:
 	assert_eq(_painted_goods(_shop(ShopInteriorScript.ShopType.ITEM)), 0, "painted goods were drawn over a drawn, stocked shelf")
 
 
+func test_a_drawn_smithy_shelf_is_not_covered_by_the_painted_rack() -> void:
+	## The .761 shots: the smithy's painted 2x6 weapon wall rack stood on the right shelf block, over the drawn rack.
+	VillageProp.prop_art_override = {}
+	assert_not_null(_shop(ShopInteriorScript.ShopType.BLACKSMITH).find_child("WeaponWallRack", true, false), "CONTROL: a painted smithy hangs its wall rack")
+	VillageProp.prop_art_override = {"shelf_shop_blacksmith": {"path": "res://assets/sprites/interiors/harmonia/shelf_shop_blacksmith.png"}}
+	assert_null(_shop(ShopInteriorScript.ShopType.BLACKSMITH).find_child("WeaponWallRack", true, false), "the painted wall rack was hung over a drawn smithy shelf")
+
+
 func test_harmonia_shops_resolve_every_piece_to_harmonia_art() -> void:
 	for type in ROOMS:
 		for kind in KINDS:
