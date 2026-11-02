@@ -2850,6 +2850,7 @@ func _play_signature(caster: Combatant, caster_sprite: Node2D, animator: BattleA
 		var sec: float = SoundManager.play_voiced_line(caster.combatant_name, bark, self)
 		windup = maxf(windup, sec * Engine.time_scale)
 	BattleManager.presentation_hold = maxf(BattleManager.presentation_hold, windup + 1.6)
+	SoundManager.play_flourish("boss_signature_card")
 	_show_signature_card(card, ability, windup)
 	if caster_sprite != null and is_instance_valid(caster_sprite) and BattleJuice.camera_rig != null:
 		BattleJuice.camera_rig.punch_zoom(_stable_sprite_anchor(caster_sprite), 0.06, windup)
@@ -2857,7 +2858,18 @@ func _play_signature(caster: Combatant, caster_sprite: Node2D, animator: BattleA
 	if not is_instance_valid(self):
 		return
 	SoundManager.stop_voiced_line(self)
+	var cue := signature_cue(caster)
+	if cue != "":
+		SoundManager.play_flourish(cue)
 	await _play_ability_sequence(caster, caster_sprite, animator, ability, targets, seq_id, true)
+
+
+## The sound paired to a boss's signature sequence, timed to its beats; "" when none is recorded.
+func signature_cue(caster: Combatant) -> String:
+	if caster == null or not is_instance_valid(caster):
+		return ""
+	var key := "boss_signature_" + str(caster.get_meta("monster_type", ""))
+	return key if SoundManager._sfx_manifest.has(key) else ""
 
 
 func _show_signature_card(card: Dictionary, ability: Dictionary, hold: float) -> void:

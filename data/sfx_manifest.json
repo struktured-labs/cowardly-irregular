@@ -13601,6 +13601,69 @@
       "seed": 42,
       "whisper_heard": "You always press the same PC. I will press 5.",
       "whisper_score": 1.0
+    },
+    "boss_signature_card": {
+      "file": "assets/audio/sfx/boss_signature_card.ogg",
+      "source": "sox_synth",
+      "placeholder": true,
+      "prompt": "PLACEHOLDER (cowir-main 21004: 'crazy boss attacks', cues paired to cowir-battle's batch-1 signature sequences, timed to their beats at 1x). the 0.55 s title-card wind-up before any boss's signature: a pink-noise riser over a 120->480 Hz sine sweep, -18 LUFS so it sits under the move. Played on the flourish player so the sequence's own hits cannot cut it.",
+      "duration_seconds": 0.55
+    },
+    "boss_signature_cave_rat_king": {
+      "file": "assets/audio/sfx/boss_signature_cave_rat_king.ogg",
+      "source": "sox_synth",
+      "placeholder": true,
+      "prompt": "PLACEHOLDER (cowir-main 21004: 'crazy boss attacks', cues paired to cowir-battle's batch-1 signature sequences, timed to their beats at 1x). rat_swarm (0.95 s): twelve rising 30 ms chirps at 70 ms spacing over a tremolo'd high-passed brown-noise scurry. Played on the flourish player so the sequence's own hits cannot cut it.",
+      "duration_seconds": 0.95
+    },
+    "boss_signature_fire_dragon": {
+      "file": "assets/audio/sfx/boss_signature_fire_dragon.ogg",
+      "source": "sox_synth",
+      "placeholder": true,
+      "prompt": "PLACEHOLDER (cowir-main 21004: 'crazy boss attacks', cues paired to cowir-battle's batch-1 signature sequences, timed to their beats at 1x). inferno_rage (1.4 s): low-passed brown-noise roar + a 60->35 Hz sub drop + a high crackle bed. Played on the flourish player so the sequence's own hits cannot cut it.",
+      "duration_seconds": 1.4
+    },
+    "boss_signature_ice_dragon": {
+      "file": "assets/audio/sfx/boss_signature_ice_dragon.ogg",
+      "source": "sox_synth",
+      "placeholder": true,
+      "prompt": "PLACEHOLDER (cowir-main 21004: 'crazy boss attacks', cues paired to cowir-battle's batch-1 signature sequences, timed to their beats at 1x). absolute_zero (1.5 s): a C7/G7 shimmer to 1.1 s, 0.1 s of silence for the freeze-frame, then the shatter at 1.2 (noise burst + C8/E8 bells). Played on the flourish player so the sequence's own hits cannot cut it.",
+      "duration_seconds": 1.5
+    },
+    "boss_signature_lightning_dragon": {
+      "file": "assets/audio/sfx/boss_signature_lightning_dragon.ogg",
+      "source": "sox_synth",
+      "placeholder": true,
+      "prompt": "PLACEHOLDER (cowir-main 21004: 'crazy boss attacks', cues paired to cowir-battle's batch-1 signature sequences, timed to their beats at 1x). lightning_dash (0.75 s): a 200->2400 Hz saw sweep with a noise crack at 0.08 s. Played on the flourish player so the sequence's own hits cannot cut it.",
+      "duration_seconds": 0.75
+    },
+    "boss_signature_shadow_dragon": {
+      "file": "assets/audio/sfx/boss_signature_shadow_dragon.ogg",
+      "source": "sox_synth",
+      "placeholder": true,
+      "prompt": "PLACEHOLDER (cowir-main 21004: 'crazy boss attacks', cues paired to cowir-battle's batch-1 signature sequences, timed to their beats at 1x). void_breath (2.0 s): a 1 s inward pink-noise swell, then a 45->30 Hz dark bloom in a long reverb. Played on the flourish player so the sequence's own hits cannot cut it.",
+      "duration_seconds": 2.0
+    },
+    "boss_signature_chancellor_mordaine": {
+      "file": "assets/audio/sfx/boss_signature_chancellor_mordaine.ogg",
+      "source": "sox_synth",
+      "placeholder": true,
+      "prompt": "PLACEHOLDER (cowir-main 21004: 'crazy boss attacks', cues paired to cowir-battle's batch-1 signature sequences, timed to their beats at 1x). Summary Judgment, cast as thundaga (1.45 s): three A5/E6 seal rings at 0/0.2/0.4 s and a 70->40 Hz stamp at 0.85 s. Played on the flourish player so the sequence's own hits cannot cut it.",
+      "duration_seconds": 1.45
+    },
+    "boss_line_mordaine_card_bark": {
+      "description": "Mordaine voiced line (Summary Judgment wind-up bark, monsters.json chancellor_mordaine presentation)",
+      "file": "assets/audio/sfx/boss_line_mordaine_card_bark.ogg",
+      "speaker": "Mordaine",
+      "line": "The assessment is complete. I am only reading it into the record.",
+      "spoken": "The assessment is complete. I am only reading it into the record.",
+      "source_sha": "f729ed9f47d56a29",
+      "voice": "Chatterbox clone of VCTK p258 (Southern England), reference -2 st formants shifted, voice_refs/mordaine.wav (CC BY 4.0)",
+      "voice_gender": "male",
+      "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5",
+      "seed": 1234,
+      "whisper_heard": "The assessment is complete. I am only reading it into the record.",
+      "whisper_score": 1.0
     }
   }
 }
