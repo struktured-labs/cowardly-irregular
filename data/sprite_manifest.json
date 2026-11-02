@@ -7261,17 +7261,50 @@
     "harmonia_library": {
       "path": "res://assets/sprites/buildings/medieval/harmonia_library.png",
       "tier": "T1",
-      "source": "gpt-image-2, straight-on village facade at the Harmonia pilot's bigger footprint (5-6 tiles wide, standing ~3x the party's height; struktured 2026-11-01: \"houses look small\") -- tools/gen_village_buildings.py --harmonia; T1, artist veto applies."
+      "source": "gpt-image-2, straight-on village facade at the Harmonia pilot's bigger footprint (5-6 tiles wide, standing ~3x the party's height; struktured 2026-11-01: \"houses look small\") -- tools/gen_village_buildings.py --harmonia; T1, artist veto applies.",
+      "door": {
+        "rect": [
+          80,
+          126,
+          22,
+          39
+        ],
+        "open": "res://assets/sprites/buildings/medieval/door_open_harmonia_library.png",
+        "frames": 4,
+        "style": "house"
+      }
     },
     "harmonia_arcana": {
       "path": "res://assets/sprites/buildings/medieval/harmonia_arcana.png",
       "tier": "T1",
-      "source": "gpt-image-2, straight-on village facade at the Harmonia pilot's bigger footprint (5-6 tiles wide, standing ~3x the party's height; struktured 2026-11-01: \"houses look small\") -- tools/gen_village_buildings.py --harmonia; T1, artist veto applies."
+      "source": "gpt-image-2, straight-on village facade at the Harmonia pilot's bigger footprint (5-6 tiles wide, standing ~3x the party's height; struktured 2026-11-01: \"houses look small\") -- tools/gen_village_buildings.py --harmonia; T1, artist veto applies.",
+      "door": {
+        "rect": [
+          68,
+          102,
+          35,
+          38
+        ],
+        "open": "res://assets/sprites/buildings/medieval/door_open_harmonia_arcana.png",
+        "frames": 4,
+        "style": "shop"
+      }
     },
     "harmonia_arms": {
       "path": "res://assets/sprites/buildings/medieval/harmonia_arms.png",
       "tier": "T1",
-      "source": "gpt-image-2, straight-on village facade at the Harmonia pilot's bigger footprint (5-6 tiles wide, standing ~3x the party's height; struktured 2026-11-01: \"houses look small\") -- tools/gen_village_buildings.py --harmonia; T1, artist veto applies."
+      "source": "gpt-image-2, straight-on village facade at the Harmonia pilot's bigger footprint (5-6 tiles wide, standing ~3x the party's height; struktured 2026-11-01: \"houses look small\") -- tools/gen_village_buildings.py --harmonia; T1, artist veto applies.",
+      "door": {
+        "rect": [
+          85,
+          134,
+          22,
+          29
+        ],
+        "open": "res://assets/sprites/buildings/medieval/door_open_harmonia_arms.png",
+        "frames": 4,
+        "style": "shop"
+      }
     },
     "harmonia_inn": {
       "path": "res://assets/sprites/buildings/medieval/harmonia_inn.png",
@@ -7286,42 +7319,130 @@
     "harmonia_chapel": {
       "path": "res://assets/sprites/buildings/medieval/harmonia_chapel.png",
       "tier": "T1",
-      "source": "gpt-image-2, straight-on village facade at the Harmonia pilot's bigger footprint (5-6 tiles wide, standing ~3x the party's height; struktured 2026-11-01: \"houses look small\") -- tools/gen_village_buildings.py --harmonia; T1, artist veto applies."
+      "source": "gpt-image-2, straight-on village facade at the Harmonia pilot's bigger footprint (5-6 tiles wide, standing ~3x the party's height; struktured 2026-11-01: \"houses look small\") -- tools/gen_village_buildings.py --harmonia; T1, artist veto applies.",
+      "door": {
+        "rect": [
+          84,
+          140,
+          28,
+          34
+        ],
+        "open": "res://assets/sprites/buildings/medieval/door_open_harmonia_chapel.png",
+        "frames": 4,
+        "style": "house"
+      }
     },
     "harmonia_tavern": {
       "path": "res://assets/sprites/buildings/medieval/harmonia_tavern.png",
       "tier": "T1",
-      "source": "gpt-image-2, straight-on village facade at the Harmonia pilot's bigger footprint (5-6 tiles wide, standing ~3x the party's height; struktured 2026-11-01: \"houses look small\") -- tools/gen_village_buildings.py --harmonia; T1, artist veto applies."
+      "source": "gpt-image-2, straight-on village facade at the Harmonia pilot's bigger footprint (5-6 tiles wide, standing ~3x the party's height; struktured 2026-11-01: \"houses look small\") -- tools/gen_village_buildings.py --harmonia; T1, artist veto applies.",
+      "door": {
+        "rect": [
+          70,
+          108,
+          35,
+          44
+        ],
+        "open": "res://assets/sprites/buildings/medieval/door_open_harmonia_tavern.png",
+        "frames": 4,
+        "style": "shop"
+      }
     },
     "harmonia_house": {
       "path": "res://assets/sprites/buildings/medieval/harmonia_house.png",
       "tier": "T1",
-      "source": "gpt-image-2, straight-on village facade at the Harmonia pilot's bigger footprint (5-6 tiles wide, standing ~3x the party's height; struktured 2026-11-01: \"houses look small\") -- tools/gen_village_buildings.py --harmonia; T1, artist veto applies."
+      "source": "gpt-image-2, straight-on village facade at the Harmonia pilot's bigger footprint (5-6 tiles wide, standing ~3x the party's height; struktured 2026-11-01: \"houses look small\") -- tools/gen_village_buildings.py --harmonia; T1, artist veto applies.",
+      "door": {
+        "rect": [
+          70,
+          110,
+          20,
+          32
+        ],
+        "open": "res://assets/sprites/buildings/medieval/door_open_harmonia_house.png",
+        "frames": 4,
+        "style": "house"
+      }
     },
     "frosthold_lodge": {
       "path": "res://assets/sprites/buildings/medieval/frosthold_lodge.png",
       "tier": "T1",
-      "source": "gpt-image-2, straight-on village facade in the Harmonia style (struktured picked direction B, 2026-11-01) -- tools/gen_village_buildings.py --w1; T1, artist veto applies."
+      "source": "gpt-image-2, straight-on village facade in the Harmonia style (struktured picked direction B, 2026-11-01) -- tools/gen_village_buildings.py --w1; T1, artist veto applies.",
+      "door": {
+        "rect": [
+          41,
+          72,
+          14,
+          16
+        ],
+        "open": "res://assets/sprites/buildings/medieval/door_open_frosthold_lodge.png",
+        "frames": 4,
+        "style": "house"
+      }
     },
     "frosthold_chapel": {
       "path": "res://assets/sprites/buildings/medieval/frosthold_chapel.png",
       "tier": "T1",
-      "source": "gpt-image-2, straight-on village facade in the Harmonia style (struktured picked direction B, 2026-11-01) -- tools/gen_village_buildings.py --w1; T1, artist veto applies."
+      "source": "gpt-image-2, straight-on village facade in the Harmonia style (struktured picked direction B, 2026-11-01) -- tools/gen_village_buildings.py --w1; T1, artist veto applies.",
+      "door": {
+        "rect": [
+          40,
+          86,
+          21,
+          25
+        ],
+        "open": "res://assets/sprites/buildings/medieval/door_open_frosthold_chapel.png",
+        "frames": 4,
+        "style": "house"
+      }
     },
     "frosthold_furs": {
       "path": "res://assets/sprites/buildings/medieval/frosthold_furs.png",
       "tier": "T1",
-      "source": "gpt-image-2, straight-on village facade in the Harmonia style (struktured picked direction B, 2026-11-01) -- tools/gen_village_buildings.py --w1; T1, artist veto applies."
+      "source": "gpt-image-2, straight-on village facade in the Harmonia style (struktured picked direction B, 2026-11-01) -- tools/gen_village_buildings.py --w1; T1, artist veto applies.",
+      "door": {
+        "rect": [
+          34,
+          48,
+          28,
+          45
+        ],
+        "open": "res://assets/sprites/buildings/medieval/door_open_frosthold_furs.png",
+        "frames": 4,
+        "style": "shop"
+      }
     },
     "grimhollow_inn": {
       "path": "res://assets/sprites/buildings/medieval/grimhollow_inn.png",
       "tier": "T1",
-      "source": "gpt-image-2, straight-on village facade in the Harmonia style (struktured picked direction B, 2026-11-01) -- tools/gen_village_buildings.py --w1; T1, artist veto applies."
+      "source": "gpt-image-2, straight-on village facade in the Harmonia style (struktured picked direction B, 2026-11-01) -- tools/gen_village_buildings.py --w1; T1, artist veto applies.",
+      "door": {
+        "rect": [
+          35,
+          71,
+          20,
+          23
+        ],
+        "open": "res://assets/sprites/buildings/medieval/door_open_grimhollow_inn.png",
+        "frames": 4,
+        "style": "shop"
+      }
     },
     "grimhollow_chapel": {
       "path": "res://assets/sprites/buildings/medieval/grimhollow_chapel.png",
       "tier": "T1",
-      "source": "gpt-image-2, straight-on village facade in the Harmonia style (struktured picked direction B, 2026-11-01) -- tools/gen_village_buildings.py --w1; T1, artist veto applies."
+      "source": "gpt-image-2, straight-on village facade in the Harmonia style (struktured picked direction B, 2026-11-01) -- tools/gen_village_buildings.py --w1; T1, artist veto applies.",
+      "door": {
+        "rect": [
+          41,
+          70,
+          24,
+          37
+        ],
+        "open": "res://assets/sprites/buildings/medieval/door_open_grimhollow_chapel.png",
+        "frames": 4,
+        "style": "house"
+      }
     },
     "grimhollow_curios": {
       "path": "res://assets/sprites/buildings/medieval/grimhollow_curios.png",
@@ -7341,27 +7462,82 @@
     "ironhaven_steamworks": {
       "path": "res://assets/sprites/buildings/medieval/ironhaven_steamworks.png",
       "tier": "T1",
-      "source": "gpt-image-2, straight-on village facade in the Harmonia style (struktured picked direction B, 2026-11-01) -- tools/gen_village_buildings.py --w1; T1, artist veto applies."
+      "source": "gpt-image-2, straight-on village facade in the Harmonia style (struktured picked direction B, 2026-11-01) -- tools/gen_village_buildings.py --w1; T1, artist veto applies.",
+      "door": {
+        "rect": [
+          32,
+          68,
+          27,
+          27
+        ],
+        "open": "res://assets/sprites/buildings/medieval/door_open_ironhaven_steamworks.png",
+        "frames": 4,
+        "style": "shop"
+      }
     },
     "ironhaven_tavern": {
       "path": "res://assets/sprites/buildings/medieval/ironhaven_tavern.png",
       "tier": "T1",
-      "source": "gpt-image-2, straight-on village facade in the Harmonia style (struktured picked direction B, 2026-11-01) -- tools/gen_village_buildings.py --w1; T1, artist veto applies."
+      "source": "gpt-image-2, straight-on village facade in the Harmonia style (struktured picked direction B, 2026-11-01) -- tools/gen_village_buildings.py --w1; T1, artist veto applies.",
+      "door": {
+        "rect": [
+          42,
+          70,
+          12,
+          18
+        ],
+        "open": "res://assets/sprites/buildings/medieval/door_open_ironhaven_tavern.png",
+        "frames": 4,
+        "style": "shop"
+      }
     },
     "eldertree_inn": {
       "path": "res://assets/sprites/buildings/medieval/eldertree_inn.png",
       "tier": "T1",
-      "source": "gpt-image-2, straight-on village facade in the Harmonia style (struktured picked direction B, 2026-11-01) -- tools/gen_village_buildings.py --w1; T1, artist veto applies."
+      "source": "gpt-image-2, straight-on village facade in the Harmonia style (struktured picked direction B, 2026-11-01) -- tools/gen_village_buildings.py --w1; T1, artist veto applies.",
+      "door": {
+        "rect": [
+          36,
+          67,
+          24,
+          26
+        ],
+        "open": "res://assets/sprites/buildings/medieval/door_open_eldertree_inn.png",
+        "frames": 4,
+        "style": "shop"
+      }
     },
     "sandrift_inn": {
       "path": "res://assets/sprites/buildings/medieval/sandrift_inn.png",
       "tier": "T1",
-      "source": "gpt-image-2, straight-on village facade in the Harmonia style (struktured picked direction B, 2026-11-01) -- tools/gen_village_buildings.py --w1; T1, artist veto applies."
+      "source": "gpt-image-2, straight-on village facade in the Harmonia style (struktured picked direction B, 2026-11-01) -- tools/gen_village_buildings.py --w1; T1, artist veto applies.",
+      "door": {
+        "rect": [
+          37,
+          69,
+          17,
+          26
+        ],
+        "open": "res://assets/sprites/buildings/medieval/door_open_sandrift_inn.png",
+        "frames": 4,
+        "style": "shop"
+      }
     },
     "sandrift_bazaar": {
       "path": "res://assets/sprites/buildings/medieval/sandrift_bazaar.png",
       "tier": "T1",
-      "source": "gpt-image-2, straight-on village facade in the Harmonia style (struktured picked direction B, 2026-11-01) -- tools/gen_village_buildings.py --w1; T1, artist veto applies."
+      "source": "gpt-image-2, straight-on village facade in the Harmonia style (struktured picked direction B, 2026-11-01) -- tools/gen_village_buildings.py --w1; T1, artist veto applies.",
+      "door": {
+        "rect": [
+          41,
+          69,
+          16,
+          24
+        ],
+        "open": "res://assets/sprites/buildings/medieval/door_open_sandrift_bazaar.png",
+        "frames": 4,
+        "style": "shop"
+      }
     },
     "maple_garage_sale_house": {
       "path": "res://assets/sprites/buildings/suburban/maple_garage_sale_house.png",
@@ -7371,27 +7547,82 @@
     "maple_mart": {
       "path": "res://assets/sprites/buildings/suburban/maple_mart.png",
       "tier": "T1",
-      "source": "gpt-image-2, straight-on 16-bit 90s-suburban facade (W2 style, after struktured's direction B, 2026-11-01) -- tools/gen_village_buildings.py --suburban; T1, artist veto applies."
+      "source": "gpt-image-2, straight-on 16-bit 90s-suburban facade (W2 style, after struktured's direction B, 2026-11-01) -- tools/gen_village_buildings.py --suburban; T1, artist veto applies.",
+      "door": {
+        "rect": [
+          41,
+          77,
+          24,
+          28
+        ],
+        "open": "res://assets/sprites/buildings/suburban/door_open_maple_mart.png",
+        "frames": 4,
+        "style": "shop"
+      }
     },
     "maple_moms_house": {
       "path": "res://assets/sprites/buildings/suburban/maple_moms_house.png",
       "tier": "T1",
-      "source": "gpt-image-2, straight-on 16-bit 90s-suburban facade (W2 style, after struktured's direction B, 2026-11-01) -- tools/gen_village_buildings.py --suburban; T1, artist veto applies."
+      "source": "gpt-image-2, straight-on 16-bit 90s-suburban facade (W2 style, after struktured's direction B, 2026-11-01) -- tools/gen_village_buildings.py --suburban; T1, artist veto applies.",
+      "door": {
+        "rect": [
+          44,
+          62,
+          8,
+          17
+        ],
+        "open": "res://assets/sprites/buildings/suburban/door_open_maple_moms_house.png",
+        "frames": 4,
+        "style": "house"
+      }
     },
     "maple_house": {
       "path": "res://assets/sprites/buildings/suburban/maple_house.png",
       "tier": "T1",
-      "source": "gpt-image-2, straight-on 16-bit 90s-suburban facade (W2 style, after struktured's direction B, 2026-11-01) -- tools/gen_village_buildings.py --suburban; T1, artist veto applies."
+      "source": "gpt-image-2, straight-on 16-bit 90s-suburban facade (W2 style, after struktured's direction B, 2026-11-01) -- tools/gen_village_buildings.py --suburban; T1, artist veto applies.",
+      "door": {
+        "rect": [
+          53,
+          70,
+          14,
+          22
+        ],
+        "open": "res://assets/sprites/buildings/suburban/door_open_maple_house.png",
+        "frames": 4,
+        "style": "house"
+      }
     },
     "brasston_house": {
       "path": "res://assets/sprites/buildings/steampunk/brasston_house.png",
       "tier": "T1",
-      "source": "gpt-image-2, straight-on 16-bit steampunk facade (W3 style, after struktured's direction B, 2026-11-01) -- tools/gen_village_buildings.py --steampunk; T1, artist veto applies."
+      "source": "gpt-image-2, straight-on 16-bit steampunk facade (W3 style, after struktured's direction B, 2026-11-01) -- tools/gen_village_buildings.py --steampunk; T1, artist veto applies.",
+      "door": {
+        "rect": [
+          41,
+          91,
+          19,
+          38
+        ],
+        "open": "res://assets/sprites/buildings/steampunk/door_open_brasston_house.png",
+        "frames": 4,
+        "style": "house"
+      }
     },
     "brasston_forge": {
       "path": "res://assets/sprites/buildings/steampunk/brasston_forge.png",
       "tier": "T1",
-      "source": "gpt-image-2, straight-on 16-bit steampunk facade (W3 style, after struktured's direction B, 2026-11-01) -- tools/gen_village_buildings.py --steampunk; T1, artist veto applies."
+      "source": "gpt-image-2, straight-on 16-bit steampunk facade (W3 style, after struktured's direction B, 2026-11-01) -- tools/gen_village_buildings.py --steampunk; T1, artist veto applies.",
+      "door": {
+        "rect": [
+          40,
+          64,
+          28,
+          43
+        ],
+        "open": "res://assets/sprites/buildings/steampunk/door_open_brasston_forge.png",
+        "frames": 4,
+        "style": "shop"
+      }
     },
     "brasston_inn": {
       "path": "res://assets/sprites/buildings/steampunk/brasston_inn.png",
@@ -7401,7 +7632,18 @@
     "brasston_cottage": {
       "path": "res://assets/sprites/buildings/steampunk/brasston_cottage.png",
       "tier": "T1",
-      "source": "gpt-image-2, straight-on 16-bit steampunk facade (W3 style, after struktured's direction B, 2026-11-01) -- tools/gen_village_buildings.py --steampunk; T1, artist veto applies."
+      "source": "gpt-image-2, straight-on 16-bit steampunk facade (W3 style, after struktured's direction B, 2026-11-01) -- tools/gen_village_buildings.py --steampunk; T1, artist veto applies.",
+      "door": {
+        "rect": [
+          50,
+          37,
+          34,
+          43
+        ],
+        "open": "res://assets/sprites/buildings/steampunk/door_open_brasston_cottage.png",
+        "frames": 4,
+        "style": "house"
+      }
     },
     "brasston_shed": {
       "path": "res://assets/sprites/buildings/steampunk/brasston_shed.png",
@@ -7411,22 +7653,66 @@
     "nodeprime_inn": {
       "path": "res://assets/sprites/buildings/futuristic/nodeprime_inn.png",
       "tier": "T1",
-      "source": "gpt-image-2, straight-on 16-bit neon cyber facade (W5 style, after struktured's direction B, 2026-11-01) -- tools/gen_village_buildings.py --futuristic; T1, artist veto applies."
+      "source": "gpt-image-2, straight-on 16-bit neon cyber facade (W5 style, after struktured's direction B, 2026-11-01) -- tools/gen_village_buildings.py --futuristic; T1, artist veto applies.",
+      "door": {
+        "rect": [
+          35,
+          88,
+          26,
+          27
+        ],
+        "open": "res://assets/sprites/buildings/futuristic/door_open_nodeprime_inn.png",
+        "frames": 4,
+        "style": "shop"
+      }
     },
     "nodeprime_cache": {
       "path": "res://assets/sprites/buildings/futuristic/nodeprime_cache.png",
       "tier": "T1",
-      "source": "gpt-image-2, straight-on 16-bit neon cyber facade (W5 style, after struktured's direction B, 2026-11-01) -- tools/gen_village_buildings.py --futuristic; T1, artist veto applies."
+      "source": "gpt-image-2, straight-on 16-bit neon cyber facade (W5 style, after struktured's direction B, 2026-11-01) -- tools/gen_village_buildings.py --futuristic; T1, artist veto applies.",
+      "door": {
+        "rect": [
+          39,
+          72,
+          18,
+          25
+        ],
+        "open": "res://assets/sprites/buildings/futuristic/door_open_nodeprime_cache.png",
+        "frames": 4,
+        "style": "shop"
+      }
     },
     "vertex_rest": {
       "path": "res://assets/sprites/buildings/abstract/vertex_rest.png",
       "tier": "T1",
-      "source": "gpt-image-2, straight-on minimalist facade (W6 style, after struktured's direction B, 2026-11-01) -- tools/gen_village_buildings.py --abstract; T1, artist veto applies."
+      "source": "gpt-image-2, straight-on minimalist facade (W6 style, after struktured's direction B, 2026-11-01) -- tools/gen_village_buildings.py --abstract; T1, artist veto applies.",
+      "door": {
+        "rect": [
+          28,
+          50,
+          8,
+          18
+        ],
+        "open": "res://assets/sprites/buildings/abstract/door_open_vertex_rest.png",
+        "frames": 4,
+        "style": "shop"
+      }
     },
     "vertex_exchange": {
       "path": "res://assets/sprites/buildings/abstract/vertex_exchange.png",
       "tier": "T1",
-      "source": "gpt-image-2, straight-on minimalist facade (W6 style, after struktured's direction B, 2026-11-01) -- tools/gen_village_buildings.py --abstract; T1, artist veto applies."
+      "source": "gpt-image-2, straight-on minimalist facade (W6 style, after struktured's direction B, 2026-11-01) -- tools/gen_village_buildings.py --abstract; T1, artist veto applies.",
+      "door": {
+        "rect": [
+          28,
+          58,
+          8,
+          20
+        ],
+        "open": "res://assets/sprites/buildings/abstract/door_open_vertex_exchange.png",
+        "frames": 4,
+        "style": "shop"
+      }
     }
   },
   "prop_art": {
