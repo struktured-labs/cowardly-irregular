@@ -71,3 +71,18 @@ func test_remaining_reports_what_is_left_in_order() -> void:
 	var left: Array = _scene.w1_spine_remaining(_gs)
 	assert_eq(left.size(), 3, "three bosses should remain")
 	assert_eq(left[0], "ice_dragon_defeated", "order must follow the spine")
+
+
+## A flag planted in ANY of is_story_flag_set's four namespaces must not survive the setup (the .760 sandbox shape).
+func test_a_planted_flag_in_any_namespace_does_not_survive_setup() -> void:
+	assert_not_null(_gs, "GameState autoload missing")
+	for plant in ["story", "cutscene", "bare", "dungeon"]:
+		match plant:
+			"story": _gs.story_flags["rat_king_defeated"] = true
+			"cutscene": _gs.game_constants["cutscene_flag_rat_king_defeated"] = true
+			"bare": _gs.game_constants["rat_king_defeated"] = true
+			"dungeon": _gs.game_constants["dungeon_flags"] = {"rat_king_defeated": true}
+		assert_true(_gs.is_story_flag_set("rat_king_defeated"), "CONTROL: the %s plant is visible" % plant)
+		after_each()
+		before_each()
+		assert_false(_gs.is_story_flag_set("rat_king_defeated"), "a flag planted as %s survived the setup" % plant)

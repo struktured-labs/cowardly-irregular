@@ -99,3 +99,18 @@ func test_a_missing_game_state_does_not_claim_the_castle_is_open() -> void:
 	assert_false(text.contains("stands open"),
 		"with no GameState the line must not promise an open castle; got: " + text)
 	assert_ne(text, "", "the null path must still say something to the player")
+
+
+## A flag planted in ANY of is_story_flag_set's four namespaces must not survive the setup (the .760 sandbox shape).
+func test_a_planted_flag_in_any_namespace_does_not_survive_setup() -> void:
+	assert_not_null(_gs, "GameState autoload missing")
+	for plant in ["story", "cutscene", "bare", "dungeon"]:
+		match plant:
+			"story": _gs.story_flags["rat_king_defeated"] = true
+			"cutscene": _gs.game_constants["cutscene_flag_rat_king_defeated"] = true
+			"bare": _gs.game_constants["rat_king_defeated"] = true
+			"dungeon": _gs.game_constants["dungeon_flags"] = {"rat_king_defeated": true}
+		assert_true(_gs.is_story_flag_set("rat_king_defeated"), "CONTROL: the %s plant is visible" % plant)
+		after_each()
+		before_each()
+		assert_false(_gs.is_story_flag_set("rat_king_defeated"), "a flag planted as %s survived the setup" % plant)
