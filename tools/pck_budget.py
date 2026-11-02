@@ -180,6 +180,176 @@ def _write_pck(path, entries):
         f.write(head + table + blobs)
 
 
+# ── --predict <base-rev> <tip-rev>... [--base-pck <pck>] : a batch's web-pck delta BEFORE it folds ──────
+# cowir-main 21216: every READY that adds textures or audio states its predicted web delta, and the fold
+# refuses a batch that would take headroom under 8 MiB. One shared model instead of each lane's guess.
+# Factors are MEASURED on real web pcks (packed bytes / master bytes), never modelled:
+WEB_AUDIO_FACTOR = {
+    'voice': 0.729,   # voice_* (not voice_blip_) + boss_line_*, through make_web_voice: .759 pck, 1028 clips
+    'sfx':   1.071,   # every other sfx .ogg ships as-is plus container: .759 pck, 339 clips
+    'music': 0.523,   # assets/audio/music through make_web_audio's 40 kbps tier: .759 pck, 161 tracks
+}
+# Godot's lossless .ctex vs PIL's lossless WebP of the same pixels: .760 backdrops 7,140,948 B vs 6.34 MiB.
+TEXTURE_FACTOR = 1.07
+# ACCURACY (cowir-adhoc 21266): +/-0.5 MiB per release hop, ~6% of a big delta, whichever is larger.
+# Measured hop by hop on .754 -> .758 -> .759; a multi-hop total can look far better only because the
+# hops' errors cancel. Fine for the 8 MiB floor; NOT for sub-MiB calls near it.
+#
+# MUSIC by DURATION, not by master bytes (cowir-music 21263: the average x0.523 overstated a 96k mono
+# master ~2x, since the tier's ratio depends on each master's bitrate). Packed bytes per nominal byte
+# (seconds x kbps x 1000/8), per tier: 40 -> 0.994 MEASURED (161 tracks, .759 pck 87.66 MiB vs 88.18
+# nominal); 32 -> 1.092 = cowir-music's measured 32k encode 72.56 MiB x the 40k container 1.062, over
+# 70.54 nominal, to be re-measured on the first 32k pck (.761). The tier is read from the TIP's own
+# deploy_web.sh default. No duration (no local LFS object) or an unknown tier -> the average, said so.
+MUSIC_PACKED_PER_NOMINAL = {40: 0.994, 32: 1.092}
+IMAGE_EXT = ('.png', '.jpg', '.jpeg', '.webp')
+
+
+def _blob(rev, path):
+    import subprocess
+    r = subprocess.run(["git", "cat-file", "-p", "%s:%s" % (rev, path)], capture_output=True)
+    return r.stdout if r.returncode == 0 else None
+
+
+def _lfs_size(b):
+    m = re.match(rb"version https://git-lfs[^\n]*\noid [^\n]*\nsize (\d+)", b or b"")
+    return int(m.group(1)) if m else None
+
+
+def _lfs_object(b):
+    """Local path of an LFS pointer's object, or None when it isn't a pointer or isn't fetched."""
+    import subprocess
+    m = re.match(rb"version https://git-lfs[^\n]*\noid sha256:([0-9a-f]{64})", b or b"")
+    if not m:
+        return None
+    common = subprocess.run(["git", "rev-parse", "--git-common-dir"], capture_output=True, text=True).stdout.strip()
+    oid = m.group(1).decode()
+    p = os.path.join(common, "lfs", "objects", oid[:2], oid[2:4], oid)
+    return p if os.path.isfile(p) else None
+
+
+def _ogg_seconds(data):
+    """Duration of an Ogg Vorbis stream: the last page's granule position / the id header's rate."""
+    i = data.find(b"\x01vorbis")
+    j = data.rfind(b"OggS")
+    if i < 0 or j < 0 or len(data) < j + 14:
+        return None
+    rate = struct.unpack("<I", data[i + 12:i + 16])[0]
+    gran = struct.unpack("<q", data[j + 6:j + 14])[0]
+    return gran / float(rate) if rate and gran > 0 else None
+
+
+def _tier_kbps(rev):
+    b = _blob(rev, "tools/deploy_web.sh") or b""
+    m = re.search(rb'WEB_AUDIO_KBPS="\$\{WEB_AUDIO_KBPS:-(\d+)\}"', b)
+    return int(m.group(1)) if m else None
+
+
+def _audio_kind(path):
+    f = os.path.basename(path)
+    if path.startswith("assets/audio/music/"):
+        return 'music'
+    if path.startswith("assets/audio/sfx/") and (f.startswith("boss_line_") or
+                                                  (f.startswith("voice_") and not f.startswith("voice_blip_"))):
+        return 'voice'
+    return 'sfx'
+
+
+def _web_excludes(cfg_text):
+    """The Web preset's exclude_filter patterns, read from export_presets.cfg's own text."""
+    for block in cfg_text.split("[preset.")[1:]:
+        if 'platform="Web"' in block:
+            m = re.search(r'exclude_filter="([^"]*)"', block)
+            return [x.strip() for x in (m.group(1) if m else "").split(",") if x.strip()]
+    return []
+
+
+def _gdignored(path, has_gdignore):
+    """True when any ancestor directory of path holds a .gdignore (Godot skips that whole subtree)."""
+    parts = path.split("/")[:-1]
+    return any(has_gdignore("/".join(parts[:i]) + "/.gdignore") for i in range(1, len(parts) + 1))
+
+
+def _predict_cost(rev, path):
+    b = _blob(rev, path)
+    if b is None:
+        return 0
+    lfs = _lfs_size(b)
+    low = path.lower()
+    if low.endswith(IMAGE_EXT):
+        if lfs is not None:
+            return lfs           # an LFS image cannot be decoded from its pointer: raw bytes, flagged in the output
+        try:
+            from PIL import Image
+        except ImportError:
+            sys.exit("--predict needs pillow for textures: uv run --no-project --with pillow python tools/pck_budget.py --predict ...")
+        import io
+        im = Image.open(io.BytesIO(b)); im.load(); o = io.BytesIO(); im.save(o, "WEBP", lossless=True)
+        return int(len(o.getvalue()) * TEXTURE_FACTOR)
+    raw = lfs if lfs is not None else len(b)
+    if low.endswith(".ogg"):
+        kind = _audio_kind(path)
+        if kind == 'music':
+            kbps = _tier_kbps(rev)
+            obj = _lfs_object(b)
+            data = open(obj, "rb").read() if obj else (b if lfs is None else None)
+            sec = _ogg_seconds(data) if data else None
+            if sec and kbps in MUSIC_PACKED_PER_NOMINAL:
+                return int(min(raw * 1.10, sec * kbps * 1000 / 8.0 * MUSIC_PACKED_PER_NOMINAL[kbps]))
+            _MUSIC_FALLBACKS.append(path)
+        return int(raw * WEB_AUDIO_FACTOR[kind])
+    return raw
+
+
+_MUSIC_FALLBACKS = []
+
+
+def predict(base, tips, base_pck=None):
+    import subprocess, fnmatch
+    head = tips[-1]
+    cfg = _blob(head, "export_presets.cfg")
+    excl = _web_excludes(cfg.decode("utf-8", "replace") if cfg else "")
+    cache = {}
+    def has_gd(p):
+        if p not in cache:
+            cache[p] = subprocess.run(["git", "cat-file", "-e", "%s:%s" % (head, p)], capture_output=True).returncode == 0
+        return cache[p]
+    final = {}
+    for t in tips:   # the LAST tip to touch a path decides its content, like a fold in this order
+        out = subprocess.run(["git", "diff", "--name-status", "--no-renames", "%s...%s" % (base, t)],
+                             capture_output=True, text=True).stdout
+        for line in out.splitlines():
+            st, p = line.split("\t", 1)
+            final[p] = (st, t)
+    by = collections.Counter(); skipped = collections.Counter(); n = 0
+    for p, (st, t) in sorted(final.items()):
+        if p.endswith((".import", ".uid")) or any(fnmatch.fnmatch(p, x) for x in excl):
+            skipped["export exclude / sidecar"] += 1; continue
+        if _gdignored(p, has_gd):
+            skipped[".gdignore"] += 1; continue
+        new = 0 if st == "D" else _predict_cost(t, p)
+        old = _predict_cost(base, p)
+        low = p.lower()
+        k = ("textures" if low.endswith(IMAGE_EXT) else
+             "audio:" + _audio_kind(p) if low.endswith(".ogg") else "other")
+        by[k] += new - old; n += 1
+    tot = sum(by.values())
+    print("predict %s -> %s : %d shipped path(s) changed" % (base, " + ".join(tips), n))
+    if _MUSIC_FALLBACKS:
+        print("  note: %d music file(s) costed by the AVERAGE factor (no local LFS object or unknown tier): %s"
+              % (len(_MUSIC_FALLBACKS), ", ".join(sorted(set(_MUSIC_FALLBACKS))[:3])))
+    for k, v in sorted(by.items(), key=lambda kv: -abs(kv[1])):
+        print("  %-14s %+9.2f MiB" % (k, v / 1048576.0))
+    print("  %-14s %+9.2f MiB   (skipped: %s)" % ("TOTAL", tot / 1048576.0,
+          ", ".join("%d %s" % (c, w) for w, c in skipped.items()) or "none"))
+    if base_pck:
+        size = os.path.getsize(base_pck) + tot
+        print("  predicted web pck %.2f MiB · headroom %.2f MiB to %.2f (floor 8 MiB: %s)" % (
+            size / 1048576.0, (PCK_LIMIT - size) / 1048576.0, PCK_LIMIT / 1048576.0,
+            "OK" if PCK_LIMIT - size >= 8 * 1048576 else "UNDER, needs his say"))
+    return tot
+
+
 def selftest():
     import tempfile, shutil
     p = f = 0
@@ -244,6 +414,24 @@ def selftest():
             parse(bad); chk("non-pck is refused", "parsed", "SystemExit")
         except SystemExit:
             chk("non-pck is refused", "SystemExit", "SystemExit")
+        # 9 — --predict's pure parts: audio routing, LFS pointer, the Web preset filter, .gdignore
+        chk("predict: party voice -> voice tier", _audio_kind("assets/audio/sfx/voice_mage_hit_01.ogg"), 'voice')
+        chk("predict: boss line -> voice tier", _audio_kind("assets/audio/sfx/boss_line_glacius_03.ogg"), 'voice')
+        chk("predict: CONTROL voice_blip is NOT voice", _audio_kind("assets/audio/sfx/voice_blip_a.ogg"), 'sfx')
+        chk("predict: music -> music tier", _audio_kind("assets/audio/music/town/harmonia.ogg"), 'music')
+        chk("predict: LFS pointer size is read", _lfs_size(b"version https://git-lfs.github.com/spec/v1\noid sha256:ab\nsize 36820\n"), 36820)
+        chk("predict: CONTROL a real ogg is not a pointer", _lfs_size(b"OggS\x00\x02" + b"\x00" * 40), None)
+        cfg = '[preset.0]\nplatform="Linux"\nexclude_filter="a/*"\n[preset.1]\nplatform="Web"\nexclude_filter="docs/*, tmp/*"\n'
+        chk("predict: the WEB preset's filter, not another's", _web_excludes(cfg), ["docs/*", "tmp/*"])
+        g = {"voice_refs/.gdignore"}.__contains__
+        chk("predict: a .gdignore'd subtree is skipped", _gdignored("voice_refs/x/y.wav", g), True)
+        chk("predict: CONTROL an unignored path is kept", _gdignored("assets/sprites/a.png", g), False)
+        # an Ogg: a vorbis id header (rate 48000) and a last page with granule 96000 -> 2.0 s
+        idh = b"\x01vorbis" + struct.pack("<I", 0) + b"\x01" + struct.pack("<I", 48000) + b"\x00" * 20
+        last = b"OggS\x00\x04" + struct.pack("<q", 96000) + b"\x00" * 20
+        chk("predict: ogg duration = last granule / rate", _ogg_seconds(b"OggS" + b"\x00" * 24 + idh + last), 2.0)
+        chk("predict: CONTROL not an ogg -> no duration", _ogg_seconds(b"RIFF" + b"\x00" * 60), None)
+        chk("predict: CONTROL a non-pointer has no LFS object", _lfs_object(b"OggS..."), None)
     finally:
         shutil.rmtree(d, ignore_errors=True)
     print()
@@ -254,7 +442,7 @@ def selftest():
 if __name__ == '__main__':
     a = sys.argv[1:]
     if not a or a[0] in ('-h', '--help'):
-        print(__doc__); print("usage: %s --summary <pck> | --cost <pck> <src>... | --selftest"
+        print(__doc__); print("usage: %s --summary <pck> | --cost <pck> <src>... | --predict <base> <tip>... [--base-pck <pck>] | --selftest"
                               % sys.argv[0]); sys.exit(2)
     if a[0] == '--selftest':
         sys.exit(selftest())
@@ -262,4 +450,14 @@ if __name__ == '__main__':
         summary(a[1]); sys.exit(0)
     if a[0] == '--cost' and len(a) >= 3:
         cost(a[1], a[2:]); sys.exit(0)
-    print("usage: %s --summary <pck> | --cost <pck> <src>... | --selftest" % sys.argv[0]); sys.exit(2)
+    if a[0] == '--predict':
+        bp = None
+        if '--base-pck' in a:
+            i = a.index('--base-pck')
+            if i + 1 >= len(a):
+                sys.exit("--base-pck needs a path")
+            bp = a[i + 1]; a = a[:i] + a[i + 2:]
+        if len(a) < 3:   # was: counted before --base-pck was stripped, so no tip at all -> IndexError
+            sys.exit("usage: --predict <base> <tip>... [--base-pck <pck>]  (at least one tip)")
+        predict(a[1], a[2:], bp); sys.exit(0)
+    print("usage: %s --summary <pck> | --cost <pck> <src>... | --predict <base> <tip>... [--base-pck <pck>] | --selftest" % sys.argv[0]); sys.exit(2)
