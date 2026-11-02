@@ -326,8 +326,7 @@
       "prompt": "Fighter advance press 2 (STEEL) — sword drawn (metallic slide into ring) + shield braced with weight + sub. Heavier, closer. Tier 2/3, ~-14.7 dB.",
       "duration_seconds": 0.75,
       "prompt_influence": 0.0,
-      "fallback_to": "advance_queue",
-      "repair": "POLISH PASS 2026-11-01 (struktured approved the listening list; a fresh render remains the real fix): levelled to -16 LUFS. Measured before: very hot master (-8.2 LUFS)."
+      "fallback_to": "advance_queue"
     },
     "advance_fighter_3": {
       "file": "assets/audio/sfx/advance_fighter_3.ogg",
@@ -335,8 +334,7 @@
       "prompt": "Fighter advance press 3 full ham (STEEL) — full draw + a big ringing steel CLANG (sustained, spectrally verified 65% high-mid tail) over the shield thunk + sub punch. The ring is the payoff. Tier 3/3, ~-13.9 dB, PCM peak -0.8.",
       "duration_seconds": 1.03,
       "prompt_influence": 0.0,
-      "fallback_to": "advance_queue",
-      "repair": "POLISH PASS 2026-11-01 (struktured approved the listening list; a fresh render remains the real fix): levelled to -16 LUFS. Measured before: very hot master (-6.7 LUFS)."
+      "fallback_to": "advance_queue"
     },
     "advance_fighter_4": {
       "file": "assets/audio/sfx/advance_fighter_4.ogg",
@@ -344,8 +342,7 @@
       "duration_seconds": 0.9,
       "prompt_influence": 0.8,
       "source": "elevenlabs_foley",
-      "fallback_to": "advance_queue",
-      "repair": "POLISH PASS 2026-11-01 (struktured approved the listening list; a fresh render remains the real fix): levelled to -16 LUFS. Measured before: very hot master (-9.8 LUFS)."
+      "fallback_to": "advance_queue"
     },
     "advance_fighter_5": {
       "file": "assets/audio/sfx/advance_fighter_5.ogg",
@@ -381,8 +378,7 @@
       "prompt": "SYNTHESISED — advance flourish at 5 queued actions (struktured 2026-09-09: 4 actions becomes SOMETIMES 5). The 4->5 step is the LARGEST by construction — +1.9 dB rms and +0.26s against +1.1/+0.10 for 3->4 — because the visuals put their biggest jump there. Octave-lower root and a sixth voice, not one more increment. Run the tool.",
       "duration_seconds": 0.78,
       "prompt_influence": 0.8,
-      "source": "tools/gen_chiptune_sfx.py advance_flourish_5",
-      "repair": "POLISH PASS 2026-11-01 (struktured approved the listening list; a fresh render remains the real fix): levelled to -16 LUFS. Measured before: very hot master (-10.1 LUFS)."
+      "source": "tools/gen_chiptune_sfx.py advance_flourish_5"
     },
     "advance_generic_1": {
       "file": "assets/audio/sfx/advance_generic_1.ogg",
@@ -433,8 +429,7 @@
       "prompt": "Mage advance press 2 — a WRONG celesta chime (F#5), then the RIGHT one (G5) re-strikes over its shimmer: 'No—wait. Then it's the other thing.' Revision without flinching; the wrong note stays hearable. Tier 2/3, ~-13 dB.",
       "duration_seconds": 1.2,
       "prompt_influence": 0.0,
-      "fallback_to": "advance_queue",
-      "repair": "POLISH PASS 2026-11-01 (struktured approved the listening list; a fresh render remains the real fix): levelled to -16 LUFS. Measured before: very hot master (-10.1 LUFS)."
+      "fallback_to": "advance_queue"
     },
     "advance_mage_3": {
       "file": "assets/audio/sfx/advance_mage_3.ogg",
@@ -442,8 +437,7 @@
       "prompt": "Mage advance press 3 full ham — an ascending cascade of celesta computations (C-E-G-B), the LAST one self-corrects (C#6 wrong -> D6 right) and rings out. Tier 3/3, ~-11 dB.",
       "duration_seconds": 1.7,
       "prompt_influence": 0.0,
-      "fallback_to": "advance_queue",
-      "repair": "POLISH PASS 2026-11-01 (struktured approved the listening list; a fresh render remains the real fix): levelled to -16 LUFS. Measured before: very hot master (-7.5 LUFS)."
+      "fallback_to": "advance_queue"
     },
     "advance_mage_4": {
       "file": "assets/audio/sfx/advance_mage_4.ogg",
@@ -451,8 +445,7 @@
       "duration_seconds": 2.69,
       "prompt_influence": 0.8,
       "source": "lmms_sf2_fluidr3",
-      "fallback_to": "advance_queue",
-      "repair": "POLISH PASS 2026-11-01 (struktured approved the listening list; a fresh render remains the real fix): levelled to -16 LUFS. Measured before: very hot master (-8.6 LUFS)."
+      "fallback_to": "advance_queue"
     },
     "advance_mage_5": {
       "file": "assets/audio/sfx/advance_mage_5.ogg",
@@ -460,8 +453,7 @@
       "duration_seconds": 2.96,
       "prompt_influence": 0.8,
       "source": "lmms_sf2_fluidr3",
-      "fallback_to": "advance_queue",
-      "repair": "POLISH PASS 2026-11-01 (struktured approved the listening list; a fresh render remains the real fix): levelled to -16 LUFS. Measured before: very hot master (-7.1 LUFS)."
+      "fallback_to": "advance_queue"
     },
     "advance_queue": {
       "file": "assets/audio/sfx/advance_queue_arcade.ogg",
@@ -484,8 +476,7 @@
       "prompt": "Rogue advance press 1 — bright confident coin-flick + a tiny lockpick pre-tick. Essence: Edge, 'the click that was, more than anything, over.' The rogue's ladder INVERTS (loudest here). Tier 1/3, ~-14 dB.",
       "duration_seconds": 0.5,
       "prompt_influence": 0.0,
-      "fallback_to": "advance_queue",
-      "repair": "POLISH PASS 2026-11-01 (struktured approved the listening list; a fresh render remains the real fix): levelled to -16 LUFS, 30 ms tail fade. Measured before: very hot master (-7.8 LUFS) ends abruptly (tail -4.0 dB)."
+      "fallback_to": "advance_queue"
     },
     "advance_rogue_2": {
       "file": "assets/audio/sfx/advance_rogue_2.ogg",
@@ -493,8 +484,7 @@
       "prompt": "Rogue advance press 2 — QUIETER: lockpick tick + a softer coin. The inversion recedes. Tier 2/3, ~-17 dB.",
       "duration_seconds": 0.55,
       "prompt_influence": 0.0,
-      "fallback_to": "advance_queue",
-      "repair": "POLISH PASS 2026-11-01 (struktured approved the listening list; a fresh render remains the real fix): 30 ms tail fade. Measured before: ends abruptly (tail -4.8 dB)."
+      "fallback_to": "advance_queue"
     },
     "advance_rogue_3": {
       "file": "assets/audio/sfx/advance_rogue_3.ogg",
