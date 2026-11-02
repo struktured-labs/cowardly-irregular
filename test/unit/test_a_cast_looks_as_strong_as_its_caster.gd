@@ -67,19 +67,16 @@ func test_fire_reads_as_flame_until_its_caster_is_a_master() -> void:
 		if str(p.get("kind", "")) in ["bolt", "ring", "emit", "spin_fling"] and int(p.get("min_tier", 1)) <= 1:
 			assert_eq(str(p.get("palette", "fire")), "flame", "Fire's %s is orange flame at tier 1, not white-hot" % p["kind"])
 			assert_eq(str(p.get("palette_t3", "")), "fire", "and goes white-hot at tier 3")
+	## The tier filter itself, on a one-beat sequence so nothing random can hide it: a min_tier 3 ring plays only at 3.
 	var host := Node2D.new()
 	add_child_autofree(host)
-	var counts := {}
+	var only_t3 := {"phases": [{"at": 0.0, "kind": "ring", "dur": 0.3, "scale": 2.0, "palette": "fire", "min_tier": 3}]}
 	for t in [1, 3]:
 		var fx := FractalFX.new(host, 11)
 		fx.tier = t
-		fx.play(seq, Vector2(900, 300), Vector2(300, 300))
-		await get_tree().create_timer(1.2).timeout
-		counts[t] = host.get_child_count()
-		for c in host.get_children():
-			c.queue_free()
-		await get_tree().process_frame
-	assert_gt(int(counts[3]), int(counts[1]), "a tier-3 Fire adds its extra ring (%d vs %d nodes)" % [counts[3], counts[1]])
+		var before := host.get_child_count()
+		fx.play(only_t3, Vector2(900, 300), Vector2(300, 300))
+		assert_eq(host.get_child_count() - before, 1 if t >= 3 else 0, "a tier-3 beat %s at tier %d" % ["plays" if t >= 3 else "is skipped", t])
 
 
 func test_a_held_hit_keeps_its_target_standing_until_it_lands() -> void:

@@ -57,6 +57,7 @@ func test_a_cast_at_a_fallen_foe_shows_on_the_one_it_retargets_to() -> void:
 	if _bm == null:
 		return
 	var mage := _make("Mage")
+	mage.learned_abilities.append("fire")
 	var a := _make("Goblin A")
 	var b := _make("Goblin B")
 	_bm.player_party.clear()
