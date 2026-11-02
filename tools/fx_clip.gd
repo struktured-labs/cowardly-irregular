@@ -2,7 +2,7 @@ extends SceneTree
 
 ## Plays one data/vfx_sequences.json sequence on a small battle stage, for --write-movie capture.
 ## Run through tools/fx_clip.sh (it owns the sandbox, xvfb, the pad jail and the encode).
-## Args: --seq=<id> --speed=<engine time_scale, default 0.375 = the 1.5x default> --seed=<int>
+## Args: --seq=<id> --speed=<engine time_scale, default 0.375 = the 1.5x default> --seed=<int> --power=<k> --tier=<1-3>
 ## The sprites are the artist's own strips, loaded read-only; FX are layered over them.
 
 const FX := preload("res://src/battle/FractalFX.gd")
@@ -16,6 +16,8 @@ func _init() -> void:
 	var seq_id := "fire_fractal"
 	var speed := 0.375
 	var seed := 399
+	var power := 1.0
+	var tier := 1
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--seq="):
 			seq_id = a.get_slice("=", 1)
@@ -23,6 +25,10 @@ func _init() -> void:
 			speed = float(a.get_slice("=", 1))
 		elif a.begins_with("--seed="):
 			seed = int(a.get_slice("=", 1))
+		elif a.begins_with("--power="):
+			power = float(a.get_slice("=", 1))
+		elif a.begins_with("--tier="):
+			tier = int(a.get_slice("=", 1))
 	await process_frame
 	await process_frame
 	var seq: Dictionary = FX.load_sequence(seq_id)
@@ -66,19 +72,20 @@ func _init() -> void:
 	var layer := Node2D.new()
 	layer.z_index = 50
 	stage.add_child(layer)
-	_caption(stage, "%s  ·  %s  ·  battle speed %sx (engine %s)" % [
-		seq_id, str(seq.get("label", "")), String.num(speed * 4.0), String.num(speed)])
+	_caption(stage, "%s  ·  %s  ·  battle speed %sx (engine %s)  ·  intensity %.2f tier %d" % [
+		seq_id, str(seq.get("label", "")), String.num(speed * 4.0), String.num(speed), power, tier])
 
 	await _wait_real(0.35)
 	Engine.time_scale = speed
 	var fx = FX.new(layer, seed)
 	fx.actors = {"caster": caster, "target": target}
 	fx.on_shake = _shake
+	fx.tier = tier
 	caster.play("default")
 	caster.animation_finished.connect(func() -> void: caster.play("idle"), CONNECT_ONE_SHOT)
 	var hand := caster.position + Vector2(-70, -20)
 	var total: float = fx.play(seq, Vector2(caster.position.x - 40, caster.position.y) if physical else hand,
-		target.position + Vector2(0, -10))
+		target.position + Vector2(0, -10), power)
 	print("[FXCLIP] seq=%s speed=%s total_battle_s=%.2f real_s=%.2f" % [seq_id, str(speed), total, total / speed])
 	await create_timer(total).timeout
 	await _wait_real(0.6)
