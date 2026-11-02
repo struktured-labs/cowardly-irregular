@@ -4,6 +4,8 @@ extends GutTest
 ## trigger from data/boss_barks.json, each recorded; a per-battle cooldown keeps them flavour, not spam.
 
 const SCENE := "res://src/battle/BattleScene.tscn"
+const BattleState := preload("res://test/unit/helpers/battle_state.gd")
+const SoundState := preload("res://test/unit/helpers/sound_state.gd")
 
 var _guard: RefCounted = null
 var _saved_scale: float = 1.0

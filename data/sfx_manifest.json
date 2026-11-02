@@ -877,13 +877,19 @@
     },
     "debuff": {
       "file": "assets/audio/sfx/debuff.ogg",
-      "prompt": "REPLACED 2026-11-01 (struktured: 'a sfx that sounds like a fart noise when a status effect doesn't land … something less silly'). The old base file was 'sad descending pitch drop, deflating rubber balloon losing air, comical weakening spiral', at -10 LUFS, and it plays at CAST time (BattleScene._on_action_executed's stat-reduction arm), so a debuff that then failed was heard as that noise and nothing else. Now a clean glassy drop: E6->C6 and B5->G5 sine partials falling together over airy filtered noise, light reverb, 0.6 s, -15.3 LUFS. The miss itself is now status_resisted. v2/v3 (ominous drain, dissolving chord) are unchanged.",
+      "prompt": "REPLACED 2026-11-01 (struktured: 'a sfx that sounds like a fart noise when a status effect doesn't land … something less silly'). The old base file was 'sad descending pitch drop, deflating rubber balloon losing air, comical weakening spiral', at -10 LUFS, and it plays at CAST time (BattleScene._on_action_executed's stat-reduction arm), so a debuff that then failed was heard as that noise and nothing else. Now a clean glassy drop: E6->C6 and B5->G5 sine partials falling together over airy filtered noise, light reverb, 0.6 s, -15.3 LUFS. The miss itself is now resist_deflect. v2/v3 (ominous drain, dissolving chord) are unchanged.",
       "duration_seconds": 0.6,
       "variants": [
         "debuff_v2",
         "debuff_v3"
       ],
       "source": "sox_synth"
+    },
+    "resist_deflect": {
+      "file": "assets/audio/sfx/resist_deflect.ogg",
+      "source": "sox_synth",
+      "prompt": "Key renamed from status_resisted (2026-11-02): any status_<x> key is read as a status effect's own cue. A status that FAILED to land (BattleManager.status_resisted, from a harmful support roll that missed): a soft glancing 'tink' (E7 triangle + B7 sine) with a brief muted fizzle away, 0.32 s, peak-levelled to -9 dBFS (RMS matches buff). Clean and readable, never comic; paired with a RESIST banner and a log line so a miss is never silent.",
+      "duration_seconds": 0.32
     },
     "debuff_v2": {
       "file": "assets/audio/sfx/debuff_v2.ogg",
@@ -14686,12 +14692,6 @@
       "seed": 42,
       "whisper_heard": "Be nothing.",
       "whisper_score": 1.0
-    },
-    "status_resisted": {
-      "file": "assets/audio/sfx/status_resisted.ogg",
-      "source": "sox_synth",
-      "prompt": "A status that FAILED to land (BattleManager.status_resisted, from a harmful support roll that missed): a soft glancing 'tink' (E7 triangle + B7 sine) with a brief muted fizzle away, 0.32 s, peak-levelled to -9 dBFS (RMS matches buff). Clean and readable, never comic; paired with a RESIST banner and a log line so a miss is never silent.",
-      "duration_seconds": 0.32
     }
   }
 }

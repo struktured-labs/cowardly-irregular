@@ -6239,7 +6239,7 @@ func _on_hit_negated(target: Combatant, banner: String) -> void:
 func _on_status_resisted(target: Combatant, _effect: String) -> void:
 	if is_instance_valid(_results_display):
 		_results_display.on_hit_negated(target, "RESIST")
-	SoundManager.play_battle("status_resisted")
+	SoundManager.play_battle("resist_deflect")
 
 
 func _on_healing_done(target: Combatant, amount: int) -> void:
