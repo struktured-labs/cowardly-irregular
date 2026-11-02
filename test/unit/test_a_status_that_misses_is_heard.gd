@@ -4,6 +4,8 @@ extends GutTest
 ## roll used to be silent, so the cast-time debuff sample (a deflating balloon) was all he heard. A miss now says so.
 
 const SCENE := "res://src/battle/BattleScene.tscn"
+const BattleState := preload("res://test/unit/helpers/battle_state.gd")
+const SoundState := preload("res://test/unit/helpers/sound_state.gd")
 
 var _guard: RefCounted = null
 
@@ -52,11 +54,11 @@ func test_a_ward_that_fails_is_not_called_a_resist() -> void:
 
 
 func test_the_scene_plays_the_resist_tink() -> void:
-	var e: Dictionary = SoundManager._sfx_manifest.get("status_resisted", {})
+	var e: Dictionary = SoundManager._sfx_manifest.get("resist_deflect", {})
 	assert_false(e.is_empty(), "the resist cue must exist")
 	var scene = load(SCENE).instantiate()
 	add_child_autofree(scene)
 	await get_tree().process_frame
-	SoundManager._sfx_cooldowns.erase("status_resisted")
+	SoundManager._sfx_cooldowns.erase("resist_deflect")
 	BattleManager.status_resisted.emit(_target(), "poison")
-	assert_true(SoundManager._sfx_cooldowns.has("status_resisted"), "a resisted status must play its tink in a real battle scene")
+	assert_true(SoundManager._sfx_cooldowns.has("resist_deflect"), "a resisted status must play its tink in a real battle scene")
