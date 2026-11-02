@@ -281,7 +281,7 @@ enemy is weak to that element — the oldest decision in the genre, and until no
 unsayable in a rule. Elements that actually appear as a weakness in the
 bestiary: fire (38 of 106 monsters), holy (32), lightning (30), ice (27),
 water, physical, dark. Pair it with an ability of the SAME element, e.g.
-{\"type\":\"enemy_weak_to\",\"element\":\"fire\"} + 'fire' or 'summon_ifrit'.
+{\"type\":\"enemy_weak_to\",\"element\":\"fire\"} + 'fire'.
 An element nothing is weak to simply never fires.
 item_count takes an 'item_id' field NAMING the item to count, alongside op and
 value — {\"type\":\"item_count\",\"item_id\":\"potion\",\"op\":\">\",\"value\":0}.
@@ -1207,7 +1207,7 @@ static func _format_party_kit(kit_context: Dictionary) -> String:
 		var costs: Dictionary = entry.get("costs", {})
 		var parts: PackedStringArray = PackedStringArray()
 		for aid in (entry.get("kit", []) as Array):
-			parts.append("%s (%d MP)" % [str(aid), int(costs.get(str(aid), 0))])
+			parts.append("%s%s (%d MP)" % [str(aid), _shown_as(str(aid)), int(costs.get(str(aid), 0))])
 		lines.append("  %s [%s]: %s" % [
 			str(entry.get("member", "?")), str(entry.get("job_id", "?")), ", ".join(parts)])
 		## member_ability runs BETWEEN fights, and the engine refuses anything without an
@@ -1238,6 +1238,7 @@ static func _format_party_kit(kit_context: Dictionary) -> String:
 	lines.append("switch_profile's \"character_id\" is one of the members above and nothing else:")
 	lines.append("there is no \"everyone\", \"all\" or \"*\". To switch the whole party, emit one")
 	lines.append("switch_profile action per member. \"profile_index\" is that member's own slot.")
+	lines.append(SHOWN_NAME_RULE)
 	return "\n".join(lines)
 
 
@@ -1267,12 +1268,13 @@ static func _format_rule_kit(kit_context: Dictionary) -> String:
 	var cheapest_cost: int = 0
 	for aid in kit:
 		var cost: int = int(costs.get(str(aid), 0))
-		lines.append("  %s - %d MP" % [str(aid), cost])
+		lines.append("  %s%s - %d MP" % [str(aid), _shown_as(str(aid)), cost])
 		if cost > 0 and (cheapest_id == "" or cost < cheapest_cost):
 			cheapest_id = str(aid)
 			cheapest_cost = cost
 	lines.append("Anything not on that list — including abilities from other jobs —")
 	lines.append("is rejected and DISCARDS THE WHOLE RULE SET. Prefer 'attack' when unsure.")
+	lines.append(SHOWN_NAME_RULE)
 	## An `item` action's id is deep-checked, so one wrong id discards the whole ruleset —
 	## the same cost as a wrong ability, and the grammar named only "potion".
 	var item_ids: Array = kit_context.get("items", [])
@@ -1306,6 +1308,22 @@ static func _format_rule_kit(kit_context: Dictionary) -> String:
 			% [cheapest_id, cheapest_cost, max_mp])
 		lines.append("needs the condition {\"type\":\"mp_percent\",\"op\":\">=\",\"value\":%d}." % pct)
 	return "\n".join(lines)
+
+
+## The rule set's name and description reach the player; an id like fira or summon_ifrit is not a name he ever sees.
+const SHOWN_NAME_RULE: String = "In the rule set's NAME and DESCRIPTION, call an ability by the name in quotes after its id, never by the id."
+
+
+## ` "Name"` after an id whose player-facing name differs from it, else "". The name is what the menus show.
+static func _shown_as(ability_id: String) -> String:
+	var tree: SceneTree = Engine.get_main_loop() as SceneTree
+	var js: Node = tree.root.get_node_or_null("JobSystem") if tree != null and tree.root != null else null
+	if js == null:
+		return ""
+	var shown: String = str((js.get_ability(ability_id) as Dictionary).get("name", "")).strip_edges()
+	if shown == "" or shown.to_lower().replace(" ", "_") == ability_id:
+		return ""
+	return " \"%s\"" % shown
 
 
 ## Ability ids the grammar's own worked examples spend, PARSED rather than listed.
