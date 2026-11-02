@@ -133,6 +133,17 @@ func test_a_hold_whose_release_is_lost_to_a_focus_change_is_dropped() -> void:
 	assert_eq(BS._battle_speed_index, 4, "and the next tap must step up, not be eaten by the stale hold")
 
 
+## The player's reference must say what a hold does: the slow-down is invisible until someone tells you.
+func test_the_controls_reference_names_both_the_tap_and_the_hold() -> void:
+	var row := ""
+	for line in HowToPlayOverlay.build_text().split("\n"):
+		if line.contains("Battle speed"):
+			row = line
+	assert_ne(row, "", "PRECONDITION: the How to Play reference still has a Battle speed row")
+	assert_string_contains(row.to_lower(), "tap", "the row must say a TAP speeds up")
+	assert_string_contains(row.to_lower(), "hold", "the row must say a HOLD slows down, or nobody finds it")
+
+
 ## The persisted choice and the live scale follow the one writer, both ways.
 func test_both_directions_persist_through_the_one_writer() -> void:
 	var s: Node = await _battle()
