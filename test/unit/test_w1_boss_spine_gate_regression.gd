@@ -7,6 +7,11 @@ const SPINE := ["rat_king_defeated", "fire_dragon_defeated", "ice_dragon_defeate
 var _scene = null
 var _gs: Node = null
 var _saved: Dictionary = {}
+## is_story_flag_set reads FOUR namespaces; clearing dungeon_flags alone let a persisted cutscene_flag_ keep "start cleared" false.
+const _CLEARED := ["rat_king_defeated", "fire_dragon_defeated", "ice_dragon_defeated", "lightning_dragon_defeated",
+	"shadow_dragon_defeated", "world1_mordaine_defeated"]
+var _saved_story: Dictionary = {}
+var _saved_constants: Dictionary = {}
 
 
 func before_each() -> void:
@@ -15,12 +20,29 @@ func before_each() -> void:
 	if _gs != null:
 		_saved = (_gs.game_constants.get("dungeon_flags", {}) as Dictionary).duplicate(true)
 		_gs.game_constants["dungeon_flags"] = {}
-		_gs.story_flags.erase("world1_mordaine_defeated")
+		_saved_story.clear()
+		_saved_constants.clear()
+		for f in _CLEARED:
+			if _gs.story_flags.has(f):
+				_saved_story[f] = _gs.story_flags[f]
+				_gs.story_flags.erase(f)
+			for k in [f, "cutscene_flag_" + f]:
+				if _gs.game_constants.has(k):
+					_saved_constants[k] = _gs.game_constants[k]
+					_gs.game_constants.erase(k)
 
 
 func after_each() -> void:
 	if _gs != null:
 		_gs.game_constants["dungeon_flags"] = _saved
+		for f in _CLEARED:
+			_gs.story_flags.erase(f)
+			_gs.game_constants.erase(f)
+			_gs.game_constants.erase("cutscene_flag_" + f)
+		for f in _saved_story:
+			_gs.story_flags[f] = _saved_story[f]
+		for k in _saved_constants:
+			_gs.game_constants[k] = _saved_constants[k]
 	if _scene != null:
 		_scene.free()
 
