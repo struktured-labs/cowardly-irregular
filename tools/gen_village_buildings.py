@@ -251,7 +251,14 @@ TILES = {
     "snow_tree_0": "One snow-covered pine tree, on white snowy ground with a few dark rocks, the snow reaching every edge.",
     "shade_tree_0": "One broad suburban shade tree with a full, bright summer-green leafy canopy (green, not autumn), "
                     "seen from slightly above, on a neat green lawn that reaches every edge.",
+    "water_0": "Calm pond water seen from above, in the restrained style of 16-bit JRPG water tiles: ONE even medium "
+               "blue over the whole square, no light or dark patches, no gradient, with only a few short thin pale "
+               "ripple strokes and two or three tiny white glints scattered sparsely. No shore, no rocks, no plants.",
 }
+## Tiles that repeat edge to edge (every water cell is the SAME atlas id), so they must wrap onto themselves.
+SEAMLESS = {"water_0"}
+## TileGenerator.PALETTES[TileType.WATER] base / light / foam, as 8-bit RGB.
+WATER_BASE, WATER_LIGHT, WATER_FOAM = (51, 115, 191), (97, 158, 224), (209, 230, 250)
 
 
 def tile_from_raw(raw: Image.Image) -> Image.Image:
@@ -261,6 +268,40 @@ def tile_from_raw(raw: Image.Image) -> Image.Image:
     return raw.resize((TILE, TILE), Image.LANCZOS).quantize(colors=COLOURS, method=Image.MEDIANCUT).convert("RGBA")
 
 
+def make_seamless(raw: Image.Image) -> Image.Image:
+    """Even-blue water tiles onto itself for free; only its sparse glints need carrying down to 32px.
+
+    A 1024px glint is a few pixels wide, so an averaging resize erases it. Take the 256px window holding the most
+    glints and reduce each 8x8 block by its BRIGHTEST pixel: a block with a glint becomes one pale pixel, a block
+    with a fainter ripple a mid tone, everything else the median base. The base is uniform, so every edge matches."""
+    import numpy as np
+    a = np.asarray(raw.convert("RGB"), float)
+    lum = a.mean(axis=2)
+    base_lum = float(np.median(lum))
+    win = TILE * 8
+    best, best_n = (0, 0), -1
+    for y in range(0, a.shape[0] - win + 1, 64):
+        for x in range(0, a.shape[1] - win + 1, 64):
+            n = int((lum[y:y + win, x:x + win] > base_lum + 40).sum())
+            if 0 < n and (best_n < 0 or abs(n - 900) < abs(best_n - 900)):
+                best, best_n = (y, x), n
+    y, x = best
+    w = a[y:y + win, x:x + win]
+    wl = w.mean(axis=2).reshape(TILE, 8, TILE, 8).max(axis=(1, 3))
+    # The drawn SHAPES, in the world's own water palette (TileGenerator.PALETTES[WATER] base/light/foam), so the
+    # pond sits with every procedural water edge and shore beside it instead of in the model's colder blue.
+    out = np.empty((TILE, TILE, 3))
+    out[:] = WATER_BASE
+    out[wl > base_lum + 15] = WATER_LIGHT
+    out[wl > base_lum + 60] = WATER_FOAM
+    # Roll so no stroke is cut by an edge (the neighbour tile is plain base there); the base is uniform, so it wraps.
+    marks = wl > base_lum + 15
+    rows = min(range(TILE), key=lambda r: marks[r].sum() + marks[(r - 1) % TILE].sum())
+    cols = min(range(TILE), key=lambda c: marks[:, c].sum() + marks[:, (c - 1) % TILE].sum())
+    out = np.roll(out, (-rows, -cols), axis=(0, 1))
+    return Image.fromarray(np.clip(out, 0, 255).astype(np.uint8)).convert("RGBA")
+
+
 ## Where each staged tile lands: world sheet, TileType key (":N" = variant N), [col, row] in tile units.
 ## Row 3 is past the generated cliff/overlay rows; gen_tile_sheet_*.py carry it across a regen.
 TILE_SLOTS = {
@@ -268,6 +309,7 @@ TILE_SLOTS = {
     "forest_1": ("medieval", "FOREST:1", [1, 3]),
     "snow_tree_0": ("medieval", "SNOW_TREE", [2, 3]),
     "shade_tree_0": ("suburban", "SHADE_TREE", [0, 3]),
+    "water_0": ("medieval", "WATER", [3, 3]),
 }
 
 
@@ -299,7 +341,7 @@ def generate_tile(key: str) -> Path:
     raw = Image.open(io.BytesIO(base64.b64decode(r.data[0].b64_json))).convert("RGB")
     STAGE.mkdir(parents=True, exist_ok=True)
     raw.save(STAGE / f"tile_{key}_raw.png")
-    out = tile_from_raw(raw)
+    out = make_seamless(raw) if key in SEAMLESS else tile_from_raw(raw)
     dst = STAGE / f"tile_{key}.png"
     out.save(dst)
     return dst

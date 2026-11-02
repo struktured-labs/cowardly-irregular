@@ -6376,6 +6376,10 @@
         "SNOW_TREE": [
           2,
           3
+        ],
+        "WATER": [
+          3,
+          3
         ]
       },
       "generator": "tools/gen_tile_sheet_medieval.py -- cliff+overlay generated here; any terrain `tiles` (row 3+, drawn by gen_village_buildings.py --tiles) are carried across a regen, and the ground tiles they do not name stay procedural (TileGenerator draws them); the 10 props are routed to the artist. Bitmask tiles are generated from the mask and side-checked, never hand-placed."
