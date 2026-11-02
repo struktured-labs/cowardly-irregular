@@ -940,14 +940,15 @@ func _layout_party_ranks() -> void:
 	for sprite in party_sprite_nodes:
 		var fig := AdvanceAuraClass.figure_rect_in_sprite(sprite, &"idle") if is_instance_valid(sprite) else Rect2()
 		w.append(fig.size.x if fig.size.x > 0.0 else 120.0)
+	# One front column, set back by its widest neighbouring pair: per-member offsets put the Rogue nearer the back rank.
+	var d := 0.0
+	for i in range(0, n, 2):
+		for j in [i - 1, i + 1]:
+			if j >= 0 and j < n:
+				d = maxf(d, (w[i] + w[j]) * 0.5 + PARTY_RANK_GAP)
 	var centre: Array[float] = []
 	for i in n:
-		var d := 0.0
-		if i % 2 == 0:
-			for j in [i - 1, i + 1]:
-				if j >= 0 and j < n:
-					d = maxf(d, (w[i] + w[j]) * 0.5 + PARTY_RANK_GAP)
-		centre.append(-d)
+		centre.append(-d if i % 2 == 0 else 0.0)
 	var max_dx := 0.0
 	for f in PartyFormation.size():
 		for i in n:

@@ -170,6 +170,45 @@ func test_no_two_party_members_stack_in_any_formation() -> void:
 	assert_eq(bad, [], "%d stacked pair(s):\n%s" % [bad.size(), "\n".join(bad.slice(0, 8))])
 
 
+## struktured on .759: "where the rogue is relative to mage and cleric looks so proportionally off". Each rank is ONE
+## column (body centres within 2px) with evenly spaced feet, in every formation whose offsets are uniform per rank.
+const RANK_UNIFORM_FORMATIONS := ["V-Formation", "Front Line", "Back Row", "Spread"]
+
+
+func test_each_rank_is_one_evenly_spaced_column() -> void:
+	var bad: Array = []
+	var judged := 0
+	var scene = await _build(["goblin"])
+	for i in 3:
+		await get_tree().process_frame
+	for f in BS.FORMATION_NAMES.size():
+		if f > 0:
+			scene.cycle_formation()
+			await get_tree().create_timer(0.4).timeout
+		var fname: String = BS.FORMATION_NAMES[scene.current_formation]
+		if not (fname in RANK_UNIFORM_FORMATIONS):
+			continue
+		for rank in [0, 1]:
+			var xs: Array = []
+			for i in range(rank, scene.party_sprite_nodes.size(), 2):
+				var fig := _figure(scene.party_sprite_nodes[i])
+				xs.append(fig.get_center().x)
+			for k in range(1, xs.size()):
+				if absf(xs[k] - xs[0]) > 2.0:
+					bad.append("%s rank %d: member %d stands %.1fpx off its rank's column" % [fname, rank, rank + 2 * k, xs[k] - xs[0]])
+			var steps: Array = []
+			for i in range(rank, scene.party_sprite_nodes.size(), 2):
+				steps.append(float(scene._party_base_positions[i].y) - scene.party_feet_correction(scene.party_sprite_nodes[i]))
+			for k in range(2, steps.size()):
+				var a: float = steps[k] - steps[k - 1]
+				var b: float = steps[k - 1] - steps[k - 2]
+				if absf(a - b) > 2.0:
+					bad.append("%s rank %d: slot steps %.1f vs %.1f" % [fname, rank, b, a])
+			judged += 1
+	assert_eq(judged, RANK_UNIFORM_FORMATIONS.size() * 2, "CONTROL: both ranks judged in every rank-uniform formation")
+	assert_eq(bad, [], "%d uneven:\n%s" % [bad.size(), "\n".join(bad.slice(0, 8))])
+
+
 func test_the_party_stands_its_gap_from_the_panel_at_every_size() -> void:
 	assert_lt(BS.ENEMY_EDGE_SHIFT, 0.0, "the enemies stand nearer the LEFT edge")
 	for ts in SettingsMenuScript.TEXT_SIZE_PRESETS:
