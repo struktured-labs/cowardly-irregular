@@ -3350,9 +3350,9 @@ func _create_party_from_customizations(customizations: Array) -> void:
 		if custom.starting_jobs.size() > 0:
 			JobSystem.assign_job(member, custom.starting_jobs[0])
 
-		# Assign secondary job
-		if custom.starting_jobs.size() > 1:
-			JobSystem.assign_secondary_job(member, custom.starting_jobs[1])
+		# #763: NO secondary job at new game. The slot stays empty and LOCKED
+		# until JobSystem.is_secondary_job_unlocked() (first boss, Rat King).
+		# custom.starting_jobs[1] is deliberately ignored here.
 
 		# Add starting items from personality
 		var starting_items = custom.get_starting_items()
@@ -3638,7 +3638,7 @@ func _create_party() -> void:
 	add_child(hero)
 	hero.customization = default_customs[0] if default_customs.size() > 0 else null
 	JobSystem.assign_job(hero, "fighter")
-	JobSystem.assign_secondary_job(hero, "rogue")
+	# #763: no starting secondary (was "rogue"); slot unlocks after the first boss.
 	EquipmentSystem.equip_weapon(hero, "iron_sword")
 	EquipmentSystem.equip_armor(hero, "leather_armor")
 	EquipmentSystem.equip_accessory(hero, "power_ring")
@@ -3674,7 +3674,7 @@ func _create_party() -> void:
 	add_child(mira)
 	mira.customization = default_customs[1] if default_customs.size() > 1 else null
 	JobSystem.assign_job(mira, "cleric")
-	JobSystem.assign_secondary_job(mira, "bard")
+	# #763: no starting secondary (was "bard"); slot unlocks after the first boss.
 	EquipmentSystem.equip_weapon(mira, "oak_staff")
 	EquipmentSystem.equip_armor(mira, "cloth_robe")
 	EquipmentSystem.equip_accessory(mira, "magic_ring")
@@ -3699,7 +3699,7 @@ func _create_party() -> void:
 	add_child(rogue)
 	rogue.customization = default_customs[2] if default_customs.size() > 2 else null
 	JobSystem.assign_job(rogue, "rogue")
-	JobSystem.assign_secondary_job(rogue, "fighter")
+	# #763: no starting secondary (was "fighter"); slot unlocks after the first boss.
 	EquipmentSystem.equip_weapon(rogue, "iron_dagger")
 	EquipmentSystem.equip_armor(rogue, "thief_garb")
 	EquipmentSystem.equip_accessory(rogue, "speed_boots")
@@ -3724,7 +3724,7 @@ func _create_party() -> void:
 	add_child(vex)
 	vex.customization = default_customs[3] if default_customs.size() > 3 else null
 	JobSystem.assign_job(vex, "mage")
-	JobSystem.assign_secondary_job(vex, "cleric")
+	# #763: no starting secondary (was "cleric"); slot unlocks after the first boss.
 	EquipmentSystem.equip_weapon(vex, "shadow_rod")
 	EquipmentSystem.equip_armor(vex, "dark_robe")
 	EquipmentSystem.equip_accessory(vex, "mp_amulet")
@@ -3751,7 +3751,7 @@ func _create_party() -> void:
 	add_child(bard)
 	bard.customization = default_customs[4] if default_customs.size() > 4 else null
 	JobSystem.assign_job(bard, "bard")
-	JobSystem.assign_secondary_job(bard, "rogue")
+	# #763: no starting secondary (was "rogue"); slot unlocks after the first boss.
 	EquipmentSystem.equip_weapon(bard, "piano_scythe")
 	EquipmentSystem.equip_armor(bard, "cloth_robe")
 	EquipmentSystem.equip_accessory(bard, "magic_ring")
