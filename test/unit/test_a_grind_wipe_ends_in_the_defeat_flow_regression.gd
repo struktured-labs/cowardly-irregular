@@ -78,7 +78,8 @@ func test_a_wiped_grind_reaches_the_game_over_screen_not_the_field() -> void:
 	assert_eq(_gl.game_overs, 1, "a grind that ended in a wipe must hand the party to the defeat flow")
 	assert_eq(_gl.summaries, 0, "and must not drop them on the field behind a summary instead")
 	assert_true(_gl._autogrind_ui == null, "the console must not sit over the game-over screen")
-	assert_true(_gl.locked_during, "the field must be held still while the game-over screen is up")
+	## Read here, not by the stub: the stub's process frames and this wait's physics frames do not advance together.
+	assert_true(InputLockManager.has_lock(_gl.WIPE_FIELD_LOCK), "the field must be held still while the game-over screen is up")
 
 
 func test_the_field_is_released_when_the_defeat_flow_returns() -> void:
