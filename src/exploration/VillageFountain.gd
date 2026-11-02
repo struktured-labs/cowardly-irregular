@@ -51,6 +51,7 @@ func _ready() -> void:
 	_setup_name_label()
 	_setup_dialogue_box()
 
+	call_deferred("_ripple_the_water")
 	body_entered.connect(_on_body_entered)
 	body_exited.connect(_on_body_exited)
 
@@ -87,6 +88,24 @@ func _generate_sprite_frames() -> void:
 		var half: float = _sprite_frames[0].get_height() / 2.0
 		sprite.position.y += BASE_Y
 		sprite.offset.y -= half
+
+
+## Rings on the village's drawn water spread from here (the water tile's shader reads ripple_center).
+func _ripple_the_water() -> void:
+	var n: Node = get_parent()
+	while n != null and not ("tile_map" in n):
+		n = n.get_parent()
+	var tm = n.get("tile_map") if n != null else null
+	if tm == null or tm.tile_set == null:
+		return
+	for k in range(tm.tile_set.get_source_count()):
+		var src := tm.tile_set.get_source(tm.tile_set.get_source_id(k)) as TileSetAtlasSource
+		if src == null:
+			continue
+		for t in range(src.get_tiles_count()):
+			var td: TileData = src.get_tile_data(src.get_tile_id(t), 0)
+			if td != null and td.material is ShaderMaterial and (td.material as ShaderMaterial).shader == BaseTileGenerator.WATER_SURFACE_SHADER:
+				(td.material as ShaderMaterial).set_shader_parameter("ripple_center", tm.to_local(global_position))
 
 
 ## A drawn fountain is a horizontal strip of `frames` equal cells (default 1), base on the same row as the painted one.
