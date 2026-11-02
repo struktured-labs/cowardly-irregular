@@ -48,6 +48,8 @@ static var _silhouette_shader: Shader = null
 var host: Node2D
 var actors: Dictionary = {}
 var reduce_flashes: bool = false
+## The caster's intensity tier (1-3, BattleScene.cast_intensity): a phase with `min_tier` waits for it, `palette_t3` recolours at 3.
+var tier: int = 1
 ## (intensity_px, duration_s) — the caller owns the camera.
 var on_shake: Callable = Callable()
 var spawned: int = 0
@@ -74,8 +76,11 @@ func play(seq: Dictionary, from: Vector2, to: Vector2, power: float = 1.0) -> fl
 	var total := 0.0
 	var start := float(seq.get("start", 0.0))
 	for phase in seq.get("phases", []):
-		if not (phase is Dictionary):
+		if not (phase is Dictionary) or int(phase.get("min_tier", 1)) > tier:
 			continue
+		if tier >= 3 and phase.has("palette_t3"):
+			phase = (phase as Dictionary).duplicate()
+			phase["palette"] = phase["palette_t3"]
 		var at := start + float(phase.get("at", 0.0))
 		total = maxf(total, at + phase_duration(phase))
 		if at <= 0.0:
