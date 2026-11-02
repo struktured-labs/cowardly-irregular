@@ -5,7 +5,7 @@ extends GutTest
 ## wolf's own attack moved. This pins the INTENT both ways, derived from the data rather than a stat value:
 ##   clever — a full-HP back-liner who Defers outlives the wolf's biggest crit;
 ##   still dangerous — an undefended back-liner's average crit stays near the whole of their HP, so it is no stroll.
-## Survivable if you Defer; undefended is a coin flip by design (cowir-main 21328, his "lucky and/or clever").
+## Survivable if you Defer. Undefended odds vary by monster: the wolf is ~a coin flip, the bone_warden is lethal (cowir-main 21335).
 ## cowir-main 21325 widened arm 1 to every W1 trash monster: the bone_warden was the one other that failed (attack 162 → 143).
 
 const WOLF := "ice_wolf"
