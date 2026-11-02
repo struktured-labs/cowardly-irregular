@@ -157,13 +157,14 @@ func _daemon_with_stamp(offset_sec: int):
 
 func test_a_save_from_a_clock_that_is_ahead_does_not_disable_the_daemon() -> void:
 	var d = _daemon_with_stamp(21600)  # 6 hours ahead
-	assert_true(d.consider(RD.TRIGGER_BOSS_DEFEAT, {}),
+	## A routine trigger: it reads the PERSISTED stamp; boss_defeat/party_wipe read a session-only one since .761.
+	assert_true(d.consider(RD.TRIGGER_LEVEL_UP, {}),
 		"a future-dated stamp is not a baseline — throttling on it disabled the daemon for six hours")
 
 
 func test_a_wildly_future_stamp_does_not_disable_it_either() -> void:
 	var d = _daemon_with_stamp(31536000)  # a year
-	assert_true(d.consider(RD.TRIGGER_PARTY_WIPE, {}),
+	assert_true(d.consider(RD.TRIGGER_AREA_ENTERED, {}),
 		"the lockout scales with the offset, so a badly wrong clock disabled the daemon for a year")
 
 

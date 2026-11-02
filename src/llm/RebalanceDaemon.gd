@@ -44,6 +44,8 @@ const TRIGGER_BOSS_DEFEAT := "boss_defeat"
 const TRIGGER_AREA_ENTERED := "area_entered"
 const TRIGGER_LEVEL_UP := "level_up"
 const TRIGGER_MANUAL := "manual"
+## Throttled only by EACH OTHER: a boss win's own level_up claimed the window and its boss_defeat was dropped (11 in his logs).
+const SIGNIFICANT_TRIGGERS: Array[String] = [TRIGGER_PARTY_WIPE, TRIGGER_BOSS_DEFEAT]
 
 ## What each trigger MEANS, spelled out for the model. The prompt used to carry the bare name, so the model invented
 ## the implication: his saves hold XP boosts applied for entering Eldertree Hollow and Sandrift and for a level-up,
@@ -131,6 +133,8 @@ var min_consideration_interval_sec: float = 60.0
 var pending: Array[Dictionary] = []
 var applied: Array[Dictionary] = []
 var _last_consideration_ts: int = 0
+## When a SIGNIFICANT trigger was last considered; session-only, so the first after a load always goes through.
+var _last_significant_ts: int = 0
 
 
 ## Public entry point. GameLoop calls this from party_wipe / boss_defeat
@@ -149,7 +153,9 @@ var throttled_since_last: int = 0
 
 func consider(trigger_type: String, context: Dictionary) -> bool:
 	var now: int = int(Time.get_unix_time_from_system())
-	var elapsed: int = now - _last_consideration_ts
+	var significant: bool = trigger_type in SIGNIFICANT_TRIGGERS
+	var since: int = _last_significant_ts if significant else _last_consideration_ts
+	var elapsed: int = now - since
 	# A FUTURE-dated stamp is not a baseline. last_consideration_ts persists in the
 	# save and is WALL CLOCK, so loading a save written under a clock that is ahead
 	# makes this subtraction negative — and `< interval` then throttles for the
@@ -160,13 +166,15 @@ func consider(trigger_type: String, context: Dictionary) -> bool:
 	# subtraction thresholded in one direction only.
 	if elapsed < 0:
 		elapsed = int(min_consideration_interval_sec)
-	if _last_consideration_ts > 0 and elapsed < int(min_consideration_interval_sec):
+	if since > 0 and elapsed < int(min_consideration_interval_sec):
 		throttled_since_last += 1
 		if throttled_since_last == 1:
 			print("[REBALANCE] throttled (%ds since last) — trigger=%s; further throttled triggers are counted" % [
 				elapsed, trigger_type])
 		return false
 	_last_consideration_ts = now
+	if significant:
+		_last_significant_ts = now
 	if throttled_since_last > 1:
 		print("[REBALANCE] %d triggers were throttled since the last consideration" % throttled_since_last)
 	throttled_since_last = 0
