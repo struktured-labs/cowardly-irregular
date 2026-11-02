@@ -117,4 +117,33 @@ func test_the_menu_casts_raise_on_the_fallen_member() -> void:
 	assert_eq(menu._pick_index, 1, "the picker starts on the fallen member")
 	menu._finish_cast([menu.party[menu._pick_index]])
 	assert_true(down.is_alive, "Accept in the picker revives them")
-	assert_false(menu._picking, "a landed cast closes the picker")
+	assert_false(menu._picking, "with no one left to raise, the picker closes")
+
+
+## Items' rule (struktured 2026-07-16): a second potion needs no reselect, and neither does a second Cure.
+func test_the_picker_stays_open_while_another_cast_can_help() -> void:
+	var cleric := _pc("Cleric")
+	var a := _pc("Fighter", 20)
+	var b := _pc("Mage", 30)
+	var menu = load("res://src/ui/AbilitiesMenu.gd").new()
+	menu.setup(cleric, [cleric, a, b])
+	add_child_autofree(menu)
+	await get_tree().process_frame
+	var idx := -1
+	for i in range(menu._abilities_list.size()):
+		if menu._abilities_list[i]["id"] == "cure":
+			idx = i
+	assert_ne(idx, -1, "PRECONDITION: cure is in the cleric's list")
+	if idx == -1:
+		return
+	menu.selected_index = idx
+	menu._begin_cast()
+	assert_true(menu._picking, "CONTROL: cure opens the picker")
+	menu._finish_cast([menu.party[menu._pick_index]])
+	assert_true(menu._picking, "two hurt members and MP to spare: the picker stays open for the next cast")
+	cleric.current_mp = 0
+	menu._finish_cast([b])
+	assert_true(menu._picking, "CONTROL: a refused cast (no MP) leaves the picker where it was")
+	cleric.current_mp = JobSystem.get_ability_mp_cost(cleric, "cure")
+	menu._finish_cast([b])
+	assert_false(menu._picking, "MP for exactly one more cast, spent: the picker closes")

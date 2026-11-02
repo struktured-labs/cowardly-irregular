@@ -855,6 +855,15 @@ func _begin_cast() -> void:
 			_build_ui()
 
 
+func _can_cast_again(a: Dictionary) -> bool:
+	if character.current_mp < int(JobSystem.get_ability_mp_cost(character, str(a["id"]))):
+		return false
+	for m in party:
+		if m is Combatant and FieldCast.refusal(a["data"], m) == "":
+			return true
+	return false
+
+
 ## Open the picker on someone the cast would help, so Raise starts on the fallen member.
 func _first_useful_target(data: Dictionary) -> int:
 	for i in range(party.size()):
@@ -885,8 +894,11 @@ func _finish_cast(targets: Array) -> void:
 	var a := _selected_ability()
 	var result: Dictionary = FieldCast.cast(character, str(a.get("id", "")), targets)
 	if result.get("ok", false):
-		_picking = false
-		SoundManager.play_ui("menu_select")
+		## Items' rule (struktured 2026-07-16): stay in the picker while another cast can still help someone.
+		_picking = _picking and _can_cast_again(a)
+		if _picking and FieldCast.refusal(a["data"], party[_pick_index]) != "":
+			_pick_index = _first_useful_target(a["data"])
+		SoundManager.play_ui("heal")
 		Toast.show_success(self, str(result["text"]))
 	else:
 		SoundManager.play_ui("menu_error")
