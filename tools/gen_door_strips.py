@@ -91,10 +91,10 @@ def leaf_at(art: Image.Image, x: float, base_y: float, tol: float = 58.0):
     return None
 
 
-def strip(art: Image.Image, rect: tuple) -> tuple:
+def strip(art: Image.Image, rect: tuple, whole: bool = False) -> tuple:
     x0, y0, x1, y1 = rect
     crop = np.asarray(art.crop(rect)).copy()
-    mask = leaf_mask(crop)
+    mask = (crop[:, :, 3] > 0) if whole else leaf_mask(crop)
     if not mask.any():  ## the rect IS the reviewed leaf box: when the colour flood misses, the leaf is its opaque pixels
         mask = crop[:, :, 3] > 0
     h, w = mask.shape
@@ -143,11 +143,16 @@ REFUSED = {
     "brasston_inn": "the flood boxed a window panel right of the door (the arched door is left of centre)",
     "ironhaven_inn": "boxed the wall right of the doorway",
     "maple_garage_sale_house": "boxed a porch column, not the green door",
-    "harmonia_remedies": "boxed only the lower half of the arched leaf",
     "grimhollow_curios": "a dark wall panel; not certain it is the door",
     "ironhaven_forge": "the forge's fire mouth, not a door",
     "brasston_shed": "the flood never isolated the arched leaf",
-    "harmonia_inn": "the flood never isolated the leaf (it bleeds into the frame)",
+}
+## Leaves the flood could not isolate, measured by eye on a pixel grid (tmp/door_hand.png) and checked drawn on the art:
+## (x0, y0, x1, y1) in the art's own pixels. The whole rect is the leaf. cowir-overworld 21441: every harmonia_* entrance
+## building needs a door record, and the remedies is his pinned case.
+HAND = {
+    "harmonia_inn": (86, 100, 112, 135),       # the iron-banded plank leaf between its lintel and its step
+    "harmonia_remedies": (90, 113, 111, 146),  # the leaf under the transom window, between the potted plants
 }
 SHOP_WORDS = ("inn", "tavern", "mart", "bazaar", "arms", "remedies", "arcana", "curios", "furs", "forge", "steamworks",
               "cache", "exchange", "rest")
@@ -158,9 +163,9 @@ def deploy() -> int:
     found = json.loads((ROOT / "tmp/door_rects.json").read_text())
     mp, lp = ROOT / "data/sprite_manifest.json", ROOT / "data/artist_sprite_ledger.json"
     m, ledger = json.loads(mp.read_text()), json.loads(lp.read_text())
-    for key in REVIEWED:
-        x0, y0, x1, y1 = found[key]["rect"]
-        img, _ = strip(building_art(key), (x0, y0, x1, y1))
+    for key in REVIEWED + sorted(HAND):
+        x0, y0, x1, y1 = HAND[key] if key in HAND else found[key]["rect"]
+        img, _ = strip(building_art(key), (x0, y0, x1, y1), whole=key in HAND)
         art_path = str(m["building_art"][key]["path"]).replace("res://", "")
         rel = str(Path(art_path).parent / f"door_open_{key}.png")
         img.save(ROOT / rel)
@@ -171,7 +176,7 @@ def deploy() -> int:
         print(f"door {key}: rect {m['building_art'][key]['door']['rect']} -> {rel}")
     mp.write_text(json.dumps(m, indent=2, ensure_ascii=False) + "\n")
     lp.write_text(json.dumps(ledger, indent=1, sort_keys=True) + "\n")
-    print(f"{len(REVIEWED)} doors registered; refused {len(REFUSED)}: {sorted(REFUSED)}")
+    print(f"{len(REVIEWED) + len(HAND)} doors registered ({len(HAND)} by hand); refused {len(REFUSED)}: {sorted(REFUSED)}")
     return 0
 
 
