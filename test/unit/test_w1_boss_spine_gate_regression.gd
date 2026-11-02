@@ -6,43 +6,26 @@ const SPINE := ["rat_king_defeated", "fire_dragon_defeated", "ice_dragon_defeate
 
 var _scene = null
 var _gs: Node = null
-var _saved: Dictionary = {}
-## is_story_flag_set reads FOUR namespaces; clearing dungeon_flags alone let a persisted cutscene_flag_ keep "start cleared" false.
-const _CLEARED := ["rat_king_defeated", "fire_dragon_defeated", "ice_dragon_defeated", "lightning_dragon_defeated",
-	"shadow_dragon_defeated", "world1_mordaine_defeated"]
-var _saved_story: Dictionary = {}
+## Arms start from what New Game resets to: is_story_flag_set reads FOUR namespaces, and clearing dungeon_flags alone let a persisted profile's cutscene_flag_ leak in.
 var _saved_constants: Dictionary = {}
+var _saved_story: Dictionary = {}
 
 
 func before_each() -> void:
 	_scene = load("res://src/exploration/OverworldScene.gd").new()
 	_gs = get_node_or_null("/root/GameState")
 	if _gs != null:
-		_saved = (_gs.game_constants.get("dungeon_flags", {}) as Dictionary).duplicate(true)
+		_saved_constants = _gs.game_constants.duplicate(true)
+		_saved_story = _gs.story_flags.duplicate(true)
+		_gs.game_constants = _gs.DEFAULT_GAME_CONSTANTS.duplicate(true)
 		_gs.game_constants["dungeon_flags"] = {}
-		_saved_story.clear()
-		_saved_constants.clear()
-		for f in _CLEARED:
-			if _gs.story_flags.has(f):
-				_saved_story[f] = _gs.story_flags[f]
-				_gs.story_flags.erase(f)
-			for k in [f, "cutscene_flag_" + f]:
-				if _gs.game_constants.has(k):
-					_saved_constants[k] = _gs.game_constants[k]
-					_gs.game_constants.erase(k)
+		_gs.story_flags = {}
 
 
 func after_each() -> void:
 	if _gs != null:
-		_gs.game_constants["dungeon_flags"] = _saved
-		for f in _CLEARED:
-			_gs.story_flags.erase(f)
-			_gs.game_constants.erase(f)
-			_gs.game_constants.erase("cutscene_flag_" + f)
-		for f in _saved_story:
-			_gs.story_flags[f] = _saved_story[f]
-		for k in _saved_constants:
-			_gs.game_constants[k] = _saved_constants[k]
+		_gs.game_constants = _saved_constants
+		_gs.story_flags = _saved_story
 	if _scene != null:
 		_scene.free()
 
