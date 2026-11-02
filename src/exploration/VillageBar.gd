@@ -489,6 +489,8 @@ func _setup_collision() -> void:
 
 func _setup_name_label() -> void:
 	name_label = Label.new()
+	## y-sorted with the art, so a label above it sorts BEHIND it; draw it over its own art.
+	name_label.z_index = 1
 	name_label.text = bar_name
 	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	name_label.position = Vector2(-70, -50)
@@ -504,6 +506,7 @@ func _setup_name_label() -> void:
 
 func _setup_enter_label() -> void:
 	enter_label = Label.new()
+	enter_label.z_index = 1
 	enter_label.text = "%s Enter" % InputProfileManager.hint_for_action("ui_accept")
 	enter_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	enter_label.position = Vector2(-30, 35)

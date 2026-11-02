@@ -58,18 +58,26 @@ var house_style: String = "timber"
 var art_path: String = ""
 
 
-## manifest prop_art: "<kind>_<world>" first, then "<kind>"; "" when neither has art on disk, so the prop stays procedural.
-static func prop_art_entry(kind_name: String, world: String) -> Dictionary:
+## manifest prop_art: "<kind>_<village>", then "<kind>_<world>", then "<kind>"; {} when none has art on disk, so it stays painted.
+static func prop_art_entry(kind_name: String, world: String, village: String = "") -> Dictionary:
 	var sec := _prop_art_section()
-	for key in [kind_name + "_" + world, kind_name]:
+	var keys: Array = [kind_name + "_" + world, kind_name]
+	if village != "":
+		keys.push_front(kind_name + "_" + village)
+	for key in keys:
 		var e: Variant = sec.get(key, null)
 		if e is Dictionary and ResourceLoader.exists(str((e as Dictionary).get("path", ""))):
 			return e
 	return {}
 
 
-static func prop_art_path(kind_name: String, world: String) -> String:
-	return str(prop_art_entry(kind_name, world).get("path", ""))
+static func prop_art_path(kind_name: String, world: String, village: String = "") -> String:
+	return str(prop_art_entry(kind_name, world, village).get("path", ""))
+
+
+## A village's prop_art name: its area id without the "_village" suffix (frosthold, maple_heights, scriptura_plaza).
+static func village_art_key(area_id: String) -> String:
+	return area_id.trim_suffix("_village")
 
 
 static var _prop_art_cache: Variant = null

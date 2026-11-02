@@ -237,6 +237,9 @@ var lens_assignments: Dictionary = {}
 ## GameLoop→here on sync, read here→GameLoop on load, never the reverse, so
 ## the two can't drift the way equipment_inventory did.
 var equipment_pool: Dictionary = {"weapons": [], "armors": [], "accessories": []}
+## Item and gear ids picked up and not yet looked at in a menu (struktured 2026-11-01: "a newly picked up item should
+## draw attention to itself"). An id leaves when the cursor rests on its row; picking more up puts it back, because that is news.
+var unseen_items: Array[String] = []
 
 ## World progression — tracks which worlds are unlocked and story flags
 var current_world: int = 1  # 1-6
@@ -497,6 +500,7 @@ func _create_save_data() -> Dictionary:
 		"owned_lenses": owned_lenses.duplicate(),
 		"lens_assignments": lens_assignments.duplicate(),
 		"equipment_pool": equipment_pool.duplicate(true),
+		"unseen_items": unseen_items.duplicate(),
 		"current_world": current_world,
 		"worlds_unlocked": worlds_unlocked,
 		"story_flags": story_flags.duplicate(),
@@ -779,6 +783,12 @@ func _apply_save_data(save_data: Dictionary) -> void:
 	else:
 		# pre-pool save owned no shared gear; keeping the live pool handed it the other save's drops (measured: 2 of 5 local saves predate the key)
 		equipment_pool = {"weapons": [], "armors": [], "accessories": []}
+	# Typed coercion: a JSON Array assigned to Array[String] aborts the load. A save from before the key has nothing new.
+	unseen_items.clear()
+	if save_data.get("unseen_items") is Array:
+		for entry in save_data["unseen_items"]:
+			if str(entry) != "" and not unseen_items.has(str(entry)):
+				unseen_items.append(str(entry))
 	## Tick 156: world bookkeeping is int 1-6 (matches the 6 worlds
 	## shipped). Coerce from JSON's float + clamp to valid range so
 	## a corrupted save with 0 or 99 doesn't leak into is_world_unlocked
@@ -1266,6 +1276,27 @@ func get_playtime_formatted() -> String:
 	return "%02d:%02d:%02d" % [hours, minutes, seconds]
 
 
+func note_acquired(item_id: String) -> void:
+	if item_id != "" and not unseen_items.has(item_id):
+		unseen_items.append(item_id)
+
+
+func mark_seen(item_id: String) -> void:
+	unseen_items.erase(item_id)
+
+
+func is_unseen(item_id: String) -> bool:
+	return unseen_items.has(item_id)
+
+
+## True only for an id still OWNED: one used up or sold before it was seen must not light a menu entry forever.
+func any_unseen_in(owned_ids: Array) -> bool:
+	for id in owned_ids:
+		if unseen_items.has(str(id)):
+			return true
+	return false
+
+
 func reset_game_state() -> void:
 	"""Reset game state to defaults.
 	Bug fix (2026-04-30): now also clears story_flags, worlds_unlocked,
@@ -1312,6 +1343,7 @@ func reset_game_state() -> void:
 	permakilled_monster_types.clear()
 	# Same leak class: a New Game would otherwise inherit last run's gear.
 	equipment_pool = {"weapons": [], "armors": [], "accessories": []}
+	unseen_items.clear()
 
 	# 2026-07-04: same leak class — these persist via to_dict but weren't
 	# reset, so a New Game inherited the prior run's battle count
