@@ -7,11 +7,11 @@ extends GutTest
 
 
 func test_resolves_consumable_via_item_system() -> void:
-	# "hi_potion" is in data/items.json with canonical name "Hi-Potion"
-	# (hyphen). Pre-tick-130 the prettifier returned "Hi Potion".
+	# "hi_potion" is in data/items.json with canonical name "Potio Maior"
+	# (renamed off FF's Hi-Potion, ids unchanged). The prettifier would return "Hi Potion".
 	var name: String = ItemNameResolver.resolve("hi_potion")
-	assert_eq(name, "Hi-Potion",
-		"hi_potion must resolve to canonical 'Hi-Potion' (hyphen) from items.json — not the prettified 'Hi Potion'")
+	assert_eq(name, "Potio Maior",
+		"hi_potion must resolve to canonical 'Potio Maior' from items.json — not the prettified 'Hi Potion'")
 
 
 func test_resolves_spell_via_job_system() -> void:

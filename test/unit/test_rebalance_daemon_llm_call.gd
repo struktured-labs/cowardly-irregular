@@ -18,13 +18,13 @@ func _read(p: String) -> String:
 
 
 func test_schema_has_required_fields() -> void:
-	# LLMService._guard_json checks the schema's required keys exist
-	# in the response. Missing any of these means the proposal can't
-	# carry the LLM verdict into the apply layer.
-	var src := _read(DAEMON_PATH)
-	for field in ["verdict", "confidence", "deltas", "reason"]:
-		assert_true(src.contains("\"" + field + "\""),
-			"REBALANCE_SCHEMA must include the '%s' field — needed by the apply layer" % field)
+	# LLMService._guard_json drops a reply missing ANY schema key. Read from the CONSTANT: the raw-source contains()
+	# this replaced was satisfied by proposal["deltas"] elsewhere in the file, so it never looked at the schema.
+	var schema: Dictionary = load(DAEMON_PATH).REBALANCE_SCHEMA
+	for field in ["verdict", "confidence", "reason"]:
+		assert_true(schema.has(field), "REBALANCE_SCHEMA must require '%s' — needed by the apply layer" % field)
+	assert_false(schema.has("deltas"),
+		"deltas is checked by request_llm_proposal, so a no_change reply that omits it is not dropped by the guard")
 
 
 func test_verdict_enum_is_three_states() -> void:

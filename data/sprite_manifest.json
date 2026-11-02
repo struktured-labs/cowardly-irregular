@@ -6376,6 +6376,10 @@
         "SNOW_TREE": [
           2,
           3
+        ],
+        "WATER": [
+          3,
+          3
         ]
       },
       "generator": "tools/gen_tile_sheet_medieval.py -- cliff+overlay generated here; any terrain `tiles` (row 3+, drawn by gen_village_buildings.py --tiles) are carried across a regen, and the ground tiles they do not name stay procedural (TileGenerator draws them); the 10 props are routed to the artist. Bitmask tiles are generated from the mask and side-checked, never hand-placed."
@@ -7214,7 +7218,8 @@
     "weapon_sheets": "4 weapon sheets — ONE tagged T2_artist_draft (iron_sword), THREE tagged T1 (bronze_sword, flame_sword, ice_blade) — (10 PNGs, 44 KB of art / 52 KB with .import sidecars, all present and imported) for a compositing feature that does not exist: no file in src/ names weapon_sheets or assets/sprites/weapons. The note on each entry says \"Compose over body animations\" — the art is ready and the code was never written. DECLARED rather than excluded from export, because CLAUDE.md's artist-first rule makes what ships a visible decision and quietly dropping artist work from the build is the opposite of it. Wire it or retire it is struktured's call; 44 KB is not a payload argument. CORRECTED 2026-09-18: this note said all FOUR were tagged T2_artist_draft; only iron_sword is. The error direction is attribution INFLATION — it credits the artist for three AI-generated sheets, which is the opposite of the usual artist-first concern and is the half CLAUDE.md principle 5 cares about (the artist always knows what is AI vs hand-drawn). The DATA is right and the note was wrong: tools/audit_sprite_tiers.py now walks weapon_sheets (it read three hardcoded sections until 2026-09-18) and examined all three T1 entries against git, finding no provable artist pixels in any. Note also that T2_artist_draft is not a value in CLAUDE.md's tier table; artist_guard.tier_refusal refuses any tier it does not recognise, so the spelling is safe rather than a fail-open. This note had been audited twice for SIZE and never once for TIER. CORRECTED 2026-09-16: this note said 132 KB twice; the real figure is 44 KB of PNG (52 KB counting .import sidecars, 20 files). The 132 was never a different basis, just wrong, and it had been repeated to struktured several times as the size of the decision. Re-verified the same day with `command grep -raF -f <the 10 declared paths>` (real GNU, not the session shim that silently skips gitignored subtrees) plus a data/ control returning 10: the zero-reference claim HOLDS in both forms, by section name and by exact asset path, and `weapons` appears in no export exclude_filter, so they do ship.",
     "npc_sheets": "SIX conversational NPC sheets, 1326 KB, tier T1, all present and imported: 2048x256, EIGHT 256px frames animating idle / talk / gesture / react. Nothing in src/ builds `assets/sprites/npcs/<name>.png` — the only path forms are `<archetype>/overworld.png` and `<archetype>_<world>/overworld.png`, which are DIRECTORIES. bram, marta, scholar_milo and elder_theron have a live twin there, so those CHARACTERS ship and the talking art does not; elder_theron's is the largest of the six and he is the first NPC in the game. ⛔ ONE DIRECTORY, TWO MEANINGS: a flat `<name>.png` is a talking sheet and `<name>/overworld.png` is a walk sheet, and nothing in the tree says which is which — CutsceneDialogue:1271 records a lane having to correct a portrait registered against the directory form believing it was portrait art. Declared rather than dropped from the export: wire it or retire it is struktured's, and 1.3 MB is not the argument either way.",
     "party_sheets": "EMPTY — zero entries, and no reader. It has never held anything in this tree. Kept rather than deleted because an empty authored section is a decision someone may have been part-way through, and deleting authored structure is not a guard's call; recorded so the next reader knows it is empty on purpose rather than by accident.",
-    "ability_icons": "A LEDGER, NOT A ROUTE: AbilityIcons resolves an icon by path convention (DIR + key + .png) and never opens the manifest, exactly like overworld_npc_sheets. The entry exists so the artist-first tooling and the artist can see these 22 icons are T1 procedural placeholders, replaceable file by file. A zero reader here does NOT mean unreachable art."
+    "ability_icons": "A LEDGER, NOT A ROUTE: AbilityIcons resolves an icon by path convention (DIR + key + .png) and never opens the manifest, exactly like overworld_npc_sheets. The entry exists so the artist-first tooling and the artist can see these 22 icons are T1 procedural placeholders, replaceable file by file. A zero reader here does NOT mean unreachable art.",
+    "summon_art": "No runtime reader YET, declared on purpose: struktured 2026-11-01 asked for 'ridiculous summons'; cowir-battle's summon sequence (21015) will read summon_art.<ability_id> plus summon_art.circle. Until it lands the art is on disk and unshown. Keys are ABILITY ids (unchanged by the summon rename), so a rename never moves this section."
   },
   "_field_indirect_readers": {
     "_why": "Fields the census cannot see as READ because the key is supplied by a VARIABLE rather than a literal, so no get(\"key\") appears anywhere. Recorded so a zero here is never mistaken for an unwired promise — the opposite error to _field_provenance's.",
@@ -7256,42 +7261,42 @@
     "harmonia_library": {
       "path": "res://assets/sprites/buildings/medieval/harmonia_library.png",
       "tier": "T1",
-      "source": "gpt-image-2, straight-on 3/4 village facade (struktured picked direction B, 2026-11-01) -- tools/gen_village_buildings.py --harmonia; T1, artist veto applies."
+      "source": "gpt-image-2, straight-on village facade at the Harmonia pilot's bigger footprint (5-6 tiles wide, standing ~3x the party's height; struktured 2026-11-01: \"houses look small\") -- tools/gen_village_buildings.py --harmonia; T1, artist veto applies."
     },
     "harmonia_arcana": {
       "path": "res://assets/sprites/buildings/medieval/harmonia_arcana.png",
       "tier": "T1",
-      "source": "gpt-image-2, straight-on 3/4 village facade (struktured picked direction B, 2026-11-01) -- tools/gen_village_buildings.py --harmonia; T1, artist veto applies."
+      "source": "gpt-image-2, straight-on village facade at the Harmonia pilot's bigger footprint (5-6 tiles wide, standing ~3x the party's height; struktured 2026-11-01: \"houses look small\") -- tools/gen_village_buildings.py --harmonia; T1, artist veto applies."
     },
     "harmonia_arms": {
       "path": "res://assets/sprites/buildings/medieval/harmonia_arms.png",
       "tier": "T1",
-      "source": "gpt-image-2, straight-on 3/4 village facade (struktured picked direction B, 2026-11-01) -- tools/gen_village_buildings.py --harmonia; T1, artist veto applies."
+      "source": "gpt-image-2, straight-on village facade at the Harmonia pilot's bigger footprint (5-6 tiles wide, standing ~3x the party's height; struktured 2026-11-01: \"houses look small\") -- tools/gen_village_buildings.py --harmonia; T1, artist veto applies."
     },
     "harmonia_inn": {
       "path": "res://assets/sprites/buildings/medieval/harmonia_inn.png",
       "tier": "T1",
-      "source": "gpt-image-2, straight-on 3/4 village facade (struktured picked direction B, 2026-11-01) -- tools/gen_village_buildings.py --harmonia; T1, artist veto applies."
+      "source": "gpt-image-2, straight-on village facade at the Harmonia pilot's bigger footprint (5-6 tiles wide, standing ~3x the party's height; struktured 2026-11-01: \"houses look small\") -- tools/gen_village_buildings.py --harmonia; T1, artist veto applies."
     },
     "harmonia_remedies": {
       "path": "res://assets/sprites/buildings/medieval/harmonia_remedies.png",
       "tier": "T1",
-      "source": "gpt-image-2, straight-on 3/4 village facade (struktured picked direction B, 2026-11-01) -- tools/gen_village_buildings.py --harmonia; T1, artist veto applies."
+      "source": "gpt-image-2, straight-on village facade at the Harmonia pilot's bigger footprint (5-6 tiles wide, standing ~3x the party's height; struktured 2026-11-01: \"houses look small\") -- tools/gen_village_buildings.py --harmonia; T1, artist veto applies."
     },
     "harmonia_chapel": {
       "path": "res://assets/sprites/buildings/medieval/harmonia_chapel.png",
       "tier": "T1",
-      "source": "gpt-image-2, straight-on 3/4 village facade (struktured picked direction B, 2026-11-01) -- tools/gen_village_buildings.py --harmonia; T1, artist veto applies."
+      "source": "gpt-image-2, straight-on village facade at the Harmonia pilot's bigger footprint (5-6 tiles wide, standing ~3x the party's height; struktured 2026-11-01: \"houses look small\") -- tools/gen_village_buildings.py --harmonia; T1, artist veto applies."
     },
     "harmonia_tavern": {
       "path": "res://assets/sprites/buildings/medieval/harmonia_tavern.png",
       "tier": "T1",
-      "source": "gpt-image-2, straight-on 3/4 village facade (struktured picked direction B, 2026-11-01) -- tools/gen_village_buildings.py --harmonia; T1, artist veto applies."
+      "source": "gpt-image-2, straight-on village facade at the Harmonia pilot's bigger footprint (5-6 tiles wide, standing ~3x the party's height; struktured 2026-11-01: \"houses look small\") -- tools/gen_village_buildings.py --harmonia; T1, artist veto applies."
     },
     "harmonia_house": {
       "path": "res://assets/sprites/buildings/medieval/harmonia_house.png",
       "tier": "T1",
-      "source": "gpt-image-2, straight-on 3/4 village facade (struktured picked direction B, 2026-11-01) -- tools/gen_village_buildings.py --harmonia; T1, artist veto applies."
+      "source": "gpt-image-2, straight-on village facade at the Harmonia pilot's bigger footprint (5-6 tiles wide, standing ~3x the party's height; struktured 2026-11-01: \"houses look small\") -- tools/gen_village_buildings.py --harmonia; T1, artist veto applies."
     },
     "frosthold_lodge": {
       "path": "res://assets/sprites/buildings/medieval/frosthold_lodge.png",
@@ -7505,6 +7510,163 @@
       "path": "res://assets/sprites/interiors/harmonia/hearth_inn.png",
       "tier": "T1",
       "source": "gpt-image-2 + cut, the drawn fire box cut whole from the approved style tile, a 3x2 pattern on the hearth cells (struktured 2026-11-01: the inside of village houses and shops need a major sprite rework) -- tools/gen_interior_pieces.py; T1, artist veto applies."
+    },
+    "lamp_post_medieval": {
+      "path": "res://assets/sprites/props/medieval/lamp_post.png",
+      "tier": "T1",
+      "source": "gpt-image-2, straight-on medieval street lamp, 64px tall so the lantern meets VillageProp's light anchor 50px above the base (struktured 2026-11-01: procgen props must go) -- tools/gen_village_buildings.py --props. T1, artist veto applies."
+    },
+    "lamp_post_suburban": {
+      "path": "res://assets/sprites/props/suburban/lamp_post.png",
+      "tier": "T1",
+      "source": "gpt-image-2, straight-on suburban street lamp, 64px tall so the lantern meets VillageProp's light anchor 50px above the base (struktured 2026-11-01: procgen props must go) -- tools/gen_village_buildings.py --props. T1, artist veto applies."
+    },
+    "lamp_post_steampunk": {
+      "path": "res://assets/sprites/props/steampunk/lamp_post.png",
+      "tier": "T1",
+      "source": "gpt-image-2, straight-on steampunk street lamp, 64px tall so the lantern meets VillageProp's light anchor 50px above the base (struktured 2026-11-01: procgen props must go) -- tools/gen_village_buildings.py --props. Hand fix: 13 pipe-shadow pixels carried a magenta cast from the key and were pulled to copper. T1, artist veto applies."
+    },
+    "cart_medieval": {
+      "path": "res://assets/sprites/props/medieval/cart.png",
+      "tier": "T1",
+      "source": "gpt-image-2, straight-on wooden hand cart with sacks and hay, 64px wide over the 2-tile footprint (struktured 2026-11-01: procgen props must go) -- tools/gen_village_buildings.py --props; T1, artist veto applies."
+    },
+    "cart_suburban": {
+      "path": "res://assets/sprites/props/suburban/cart.png",
+      "tier": "T1",
+      "source": "gpt-image-2, straight-on supermarket shopping cart (the strip mall's carts are retail clutter); keyed everywhere so the wire mesh is see-through, its magenta cast pulled to grey, 64px wide over the 2-tile footprint (struktured 2026-11-01: procgen props must go) -- tools/gen_village_buildings.py --props; T1, artist veto applies."
+    },
+    "cart_steampunk": {
+      "path": "res://assets/sprites/props/steampunk/cart.png",
+      "tier": "T1",
+      "source": "gpt-image-2, straight-on riveted brass handcart with a small boiler, 64px wide over the 2-tile footprint (struktured 2026-11-01: procgen props must go) -- tools/gen_village_buildings.py --props; T1, artist veto applies."
+    },
+    "stall_medieval": {
+      "path": "res://assets/sprites/props/medieval/stall.png",
+      "tier": "T1",
+      "source": "gpt-image-2, straight-on village market stall with a striped awning, 64px wide over the 2-tile footprint (struktured 2026-11-01: procgen props must go) -- tools/gen_village_buildings.py --props; T1, artist veto applies."
+    },
+    "stall_steampunk": {
+      "path": "res://assets/sprites/props/steampunk/stall.png",
+      "tier": "T1",
+      "source": "gpt-image-2, straight-on brass-and-copper market stall, 64px wide over the 2-tile footprint (struktured 2026-11-01: procgen props must go) -- tools/gen_village_buildings.py --props; T1, artist veto applies."
+    },
+    "well_medieval": {
+      "path": "res://assets/sprites/props/medieval/well.png",
+      "tier": "T1",
+      "source": "gpt-image-2, straight-on round stone well with a peaked roof and winch; keyed everywhere so the backdrop between its posts is clear, 64px wide over the 2-tile footprint (struktured 2026-11-01: procgen props must go) -- tools/gen_village_buildings.py --props; T1, artist veto applies."
+    },
+    "barrel": {
+      "path": "res://assets/sprites/props/common/barrel.png",
+      "tier": "T1",
+      "source": "gpt-image-2, straight-on sturdy wooden barrel; generic, so every world without its own reads it (struktured 2026-11-01: procgen props must go) -- tools/gen_village_buildings.py --props; T1, artist veto applies."
+    },
+    "crate": {
+      "path": "res://assets/sprites/props/common/crate.png",
+      "tier": "T1",
+      "source": "gpt-image-2, straight-on nailed wooden shipping crate; generic (struktured 2026-11-01: procgen props must go) -- tools/gen_village_buildings.py --props; T1, artist veto applies."
+    },
+    "planter": {
+      "path": "res://assets/sprites/props/common/planter.png",
+      "tier": "T1",
+      "source": "gpt-image-2, straight-on half-barrel planter with red flowers; generic (struktured 2026-11-01: procgen props must go) -- tools/gen_village_buildings.py --props; T1, artist veto applies."
+    },
+    "planter_suburban": {
+      "path": "res://assets/sprites/props/suburban/planter.png",
+      "tier": "T1",
+      "source": "gpt-image-2, straight-on terracotta pot of geraniums (struktured 2026-11-01: procgen props must go) -- tools/gen_village_buildings.py --props; T1, artist veto applies."
+    },
+    "planter_steampunk": {
+      "path": "res://assets/sprites/props/steampunk/planter.png",
+      "tier": "T1",
+      "source": "gpt-image-2, straight-on riveted copper planter on iron feet (struktured 2026-11-01: procgen props must go) -- tools/gen_village_buildings.py --props; T1, artist veto applies."
+    },
+    "fence": {
+      "path": "res://assets/sprites/props/common/fence.png",
+      "tier": "T1",
+      "source": "gpt-image-2, straight-on rustic wooden fence section whose rails meet its neighbours; generic (struktured 2026-11-01: procgen props must go) -- tools/gen_village_buildings.py --props; T1, artist veto applies."
+    },
+    "fence_suburban": {
+      "path": "res://assets/sprites/props/suburban/fence.png",
+      "tier": "T1",
+      "source": "gpt-image-2, straight-on white picket fence section (struktured 2026-11-01: procgen props must go) -- tools/gen_village_buildings.py --props; T1, artist veto applies."
+    },
+    "banner": {
+      "path": "res://assets/sprites/props/common/banner.png",
+      "tier": "T1",
+      "source": "gpt-image-2, straight-on red cloth banner with a golden crest, 64px tall like the painted one; generic (struktured 2026-11-01: procgen props must go) -- tools/gen_village_buildings.py --props; T1, artist veto applies."
+    },
+    "banner_steampunk": {
+      "path": "res://assets/sprites/props/steampunk/banner.png",
+      "tier": "T1",
+      "source": "gpt-image-2, straight-on green cloth banner with a golden cog, 64px tall (struktured 2026-11-01: procgen props must go) -- tools/gen_village_buildings.py --props; T1, artist veto applies."
+    },
+    "crate_futuristic": {
+      "path": "res://assets/sprites/props/futuristic/crate.png",
+      "tier": "T1",
+      "source": "gpt-image-2, straight-on neon-trimmed sci-fi cargo crate for NodePrime, so the generic wooden one does not stand in a world it was not drawn for (cowir-overworld/cowir-adhoc 2026-11-01) -- tools/gen_village_buildings.py --props; T1, artist veto applies."
+    },
+    "crate_industrial": {
+      "path": "res://assets/sprites/props/industrial/crate.png",
+      "tier": "T1",
+      "source": "gpt-image-2, straight-on riveted steel crate with a hazard stripe for RivetRow, so the generic wooden one does not stand in a world it was not drawn for (cowir-overworld/cowir-adhoc 2026-11-01) -- tools/gen_village_buildings.py --props; T1, artist veto applies."
+    },
+    "barrel_industrial": {
+      "path": "res://assets/sprites/props/industrial/barrel.png",
+      "tier": "T1",
+      "source": "gpt-image-2, straight-on dented blue steel oil drum for RivetRow, so the generic wooden one does not stand in a world it was not drawn for (cowir-overworld/cowir-adhoc 2026-11-01) -- tools/gen_village_buildings.py --props; T1, artist veto applies."
+    },
+    "shop_stall_white_magic_medieval": {
+      "path": "res://assets/sprites/props/medieval/shop_stall_white_magic.png",
+      "tier": "T1",
+      "source": "gpt-image-2 open-air shop stall, holy: white canvas, gold trim, pale blue stripes, a sun emblem; 72px wide over the VillageShop's 2-tile footprint, standing where the painted stall stood. struktured 2026-11-01 (via cowir-main 21164): the painted stall looked crappy and the magic shops read in the wrong colours. tools/gen_shop_stalls.py; T1, artist veto applies."
+    },
+    "shop_stall_black_magic_medieval": {
+      "path": "res://assets/sprites/props/medieval/shop_stall_black_magic.png",
+      "tier": "T1",
+      "source": "gpt-image-2 open-air shop stall, dark: deep purple and black, an arcane green orb; 72px wide over the VillageShop's 2-tile footprint, standing where the painted stall stood. struktured 2026-11-01 (via cowir-main 21164): the painted stall looked crappy and the magic shops read in the wrong colours. tools/gen_shop_stalls.py; T1, artist veto applies."
+    },
+    "shop_stall_item_medieval": {
+      "path": "res://assets/sprites/props/medieval/shop_stall_item.png",
+      "tier": "T1",
+      "source": "gpt-image-2 open-air shop stall, potions and supplies under a green-striped awning; 72px wide over the VillageShop's 2-tile footprint, standing where the painted stall stood. struktured 2026-11-01 (via cowir-main 21164): the painted stall looked crappy and the magic shops read in the wrong colours. tools/gen_shop_stalls.py; T1, artist veto applies."
+    },
+    "shop_stall_blacksmith_medieval": {
+      "path": "res://assets/sprites/props/medieval/shop_stall_blacksmith.png",
+      "tier": "T1",
+      "source": "gpt-image-2 open-air shop stall, anvil, blades and a coal brazier under dark canvas; 72px wide over the VillageShop's 2-tile footprint, standing where the painted stall stood. struktured 2026-11-01 (via cowir-main 21164): the painted stall looked crappy and the magic shops read in the wrong colours. tools/gen_shop_stalls.py; T1, artist veto applies."
+    }
+  },
+  "summon_art": {
+    "recursive_summon": {
+      "path": "res://assets/sprites/effects/summons/recursive_summoner.png",
+      "tier": "T1",
+      "source": "The Summoner as a spectral giant mid-incantation, anchored on the job's own idle frame so it is the same person. gpt-image-2 on magenta, keyed and quantized to 64 colours -- tools/gen_summon_splash.py; T1, artist veto applies. One still on a transparent background, figure standing on its bottom edge; the battle sequence owns the motion (cowir-battle 21015)."
+    },
+    "summon_ifrit": {
+      "path": "res://assets/sprites/effects/summons/summon_overclock.png",
+      "tier": "T1",
+      "source": "OVERCLOCK (renamed from an FF name, cowir-main 21010; name cowir-story 21016): an original furnace golem running past spec. gpt-image-2 on magenta, keyed and quantized to 64 colours -- tools/gen_summon_splash.py; T1, artist veto applies. One still on a transparent background, figure standing on its bottom edge; the battle sequence owns the motion (cowir-battle 21015)."
+    },
+    "summon_shiva": {
+      "path": "res://assets/sprites/effects/summons/summon_cold_storage.png",
+      "tier": "T1",
+      "source": "COLD STORAGE: an original walking glacier with a lanyard and a clipboard. gpt-image-2 on magenta, keyed and quantized to 64 colours -- tools/gen_summon_splash.py; T1, artist veto applies. One still on a transparent background, figure standing on its bottom edge; the battle sequence owns the motion (cowir-battle 21015)."
+    },
+    "summon_ramuh": {
+      "path": "res://assets/sprites/effects/summons/summon_surge_protector.png",
+      "tier": "T1",
+      "source": "SURGE PROTECTOR: an original storm-cloud ox in a hard hat dragging a power strip. gpt-image-2 on magenta, keyed and quantized to 64 colours -- tools/gen_summon_splash.py; T1, artist veto applies. One still on a transparent background, figure standing on its bottom edge; the battle sequence owns the motion (cowir-battle 21015)."
+    },
+    "summon_bahamut": {
+      "path": "res://assets/sprites/effects/summons/summon_legacy_system.png",
+      "tier": "T1",
+      "source": "LEGACY SYSTEM: an original ancient dragon overgrown with ruins and old machinery. gpt-image-2 on magenta, keyed and quantized to 64 colours -- tools/gen_summon_splash.py; T1, artist veto applies. One still on a transparent background, figure standing on its bottom edge; the battle sequence owns the motion (cowir-battle 21015)."
+    },
+    "circle": {
+      "path": "res://assets/sprites/effects/summons/summon_circle.png",
+      "tier": "T1",
+      "source": "The shared summoning circle every summon rises from (a separate still, cowir-battle 21015). gpt-image-2 on magenta, keyed and quantized to 64 colours -- tools/gen_summon_splash.py; T1, artist veto applies. One still on a transparent background, figure standing on its bottom edge; the battle sequence owns the motion (cowir-battle 21015)."
     }
   }
 }
