@@ -502,11 +502,6 @@ func _asked_for_by_a_music_call(id: String, text: String) -> bool:
 			"\"music_track\": \"%s\"", "\"music\": \"%s\""]:
 		if text.find(shape % id) >= 0:
 			return true
-	## A key held in a CONST and passed by name: InnRestSequence's `const DITTY_KEY := "inn_rest_ditty"`, then play_music(DITTY_KEY, ...).
-	var held := RegEx.create_from_string("const\\s+(\\w+)\\s*:?=\\s*\"%s\"" % id)
-	for m in held.search_all(text):
-		if text.find("play_music(%s" % m.get_string(1)) >= 0:
-			return true
 	## interior_ keys are resolved per-world before the base key is tried.
 	if id.begins_with("interior_") and text.find("play_area_music(\"%s\")" % id) >= 0:
 		return true
