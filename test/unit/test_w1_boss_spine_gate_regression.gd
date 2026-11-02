@@ -83,6 +83,13 @@ func test_a_planted_flag_in_any_namespace_does_not_survive_setup() -> void:
 			"bare": _gs.game_constants["rat_king_defeated"] = true
 			"dungeon": _gs.game_constants["dungeon_flags"] = {"rat_king_defeated": true}
 		assert_true(_gs.is_story_flag_set("rat_king_defeated"), "CONTROL: the %s plant is visible" % plant)
-		after_each()
+		# The SETUP must face the plant: keep the true originals so the final after_each restores them, not the plant.
+		var keep_constants: Dictionary = _saved_constants
+		var keep_story: Dictionary = _saved_story
+		var old_scene = _scene
 		before_each()
 		assert_false(_gs.is_story_flag_set("rat_king_defeated"), "a flag planted as %s survived the setup" % plant)
+		_saved_constants = keep_constants
+		_saved_story = keep_story
+		if old_scene != null:
+			old_scene.free()
