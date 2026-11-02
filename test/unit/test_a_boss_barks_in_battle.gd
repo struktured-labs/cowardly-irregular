@@ -80,9 +80,9 @@ func test_low_hp_barks_once_a_battle() -> void:
 	assert_eq(b.pick("cave_rat_king", "low_hp", BossBarks.cooldown_ms() * 3), "", "low HP is one moment, not a loop")
 
 
-func test_barks_respect_speed_turbo_and_whatever_is_already_speaking() -> void:
+func test_barks_play_at_4x_but_respect_turbo_and_whatever_is_already_speaking() -> void:
 	assert_true(BossBarks.allowed(1.0, false, false), "CONTROL: an ordinary moment allows a bark")
-	assert_false(BossBarks.allowed(4.0, false, false), "at 4x the party's lines are silent; so are the boss's")
+	assert_true(BossBarks.allowed(4.0, false, false), "he plays at 4x; the barks must be heard there (cowir-main 21194)")
 	assert_false(BossBarks.allowed(1.0, true, false), "turbo is silent")
 	assert_false(BossBarks.allowed(1.0, false, true), "never over a scripted line or a speech bubble")
 
@@ -112,13 +112,17 @@ func test_the_battle_scene_voices_a_bark_and_honours_the_cooldown() -> void:
 	assert_false(SoundManager.is_voiced_line_playing(), "the scene's own cooldown must hold the next one")
 
 
-func test_the_battle_scene_is_silent_at_4x() -> void:
+func test_the_battle_scene_barks_at_4x_and_not_in_the_grind() -> void:
 	var scene = load(SCENE).instantiate()
 	add_child_autofree(scene)
 	await get_tree().process_frame
 	Engine.time_scale = 4.0
+	scene.autogrind_console_mode = true
 	scene._boss_bark(_boss(), "big_hit")
-	assert_false(SoundManager.is_voiced_line_playing(), "barks are suppressed at 4x, like the party's lines")
+	assert_false(SoundManager.is_voiced_line_playing(), "the autogrind console stays silent")
+	scene.autogrind_console_mode = false
+	scene._boss_bark(_boss(), "big_hit")
+	assert_true(SoundManager.is_voiced_line_playing(), "at 4x the boss still barks (cowir-main 21194)")
 
 
 ## cowir-ai 21120: on a wipe the boss's last words take the line player, so the wipe bark must yield to them.

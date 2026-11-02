@@ -31,9 +31,9 @@ static func lines_for(monster_id: String, trigger: String) -> Array:
 	return ((data().get("bosses", {}) as Dictionary).get(monster_id, {}) as Dictionary).get(trigger, [])
 
 
-## Barks never play at 4x+ or turbo (the party's lines don't either) nor over a scripted line or a speech bubble.
-static func allowed(time_scale: float, turbo: bool, blocked: bool) -> bool:
-	return not turbo and not blocked and time_scale < 4.0
+## Barks play at every speed the player picks (cowir-main 21194); never in turbo/autogrind, over a scripted line or a bubble.
+static func allowed(_time_scale: float, turbo: bool, blocked: bool) -> bool:
+	return not turbo and not blocked
 
 
 ## The line to speak now, or "" (cooldown, no lines, or low_hp already spoken this battle). Never repeats the last line.
