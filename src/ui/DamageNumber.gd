@@ -23,6 +23,7 @@ var _polish_tween: Tween = null
 func _ready() -> void:
 	_start_pos = position
 	_pos = position
+	position = _pos.round()
 	# Random horizontal drift
 	_velocity = Vector2(randf_range(-30, 30), -60)
 	_create_label()
