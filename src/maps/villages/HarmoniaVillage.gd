@@ -13,8 +13,8 @@ const CastleVistaScript = preload("res://src/exploration/CastleVista.gd")
 const ReadablePropScript = preload("res://src/exploration/ReadableProp.gd")
 
 ## Map dimensions (expanded for full village)
-const MAP_WIDTH: int = 36
-const MAP_HEIGHT: int = 30
+const MAP_WIDTH: int = 44
+const MAP_HEIGHT: int = 34
 
 
 ## ---- BaseVillage hooks ----
@@ -43,11 +43,11 @@ func _get_map_pixel_size() -> Vector2i:
 ## crystal won every approach and the fountain's five rotating lines could never be read.
 ## Three cells south keeps it at the fountain's edge, where it steals nothing.
 func _get_save_point_position() -> Vector2:
-	return Vector2(13 * TILE_SIZE, 13 * TILE_SIZE)
+	return Vector2(16 * TILE_SIZE, 15 * TILE_SIZE)
 
 
 func _get_player_spawn_fallback() -> Vector2:
-	return Vector2(592, 656)
+	return Vector2(752, 768)
 
 
 func _generate_map() -> void:
@@ -63,69 +63,77 @@ func _generate_map() -> void:
 	# X = exit path (cobblestone leading out)
 	# Each row is exactly MAP_WIDTH (36) characters
 	var map_data: Array[String] = [
-		"WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
-		"Weeeeeeeeeeeeeee.....eeeeeeeeeeeeeeW",
-		"We.............eee.eee............eW",
-		"We..gfgpppppgggggfgfggpppgfgfggg..eW",
-		"We..ggHHHgdppgfgAAAgddppgggfgfgg..eW",
-		"We..gfHHHgdppgggAAAggdppgPPPgfgg..eW",
-		"We..ggHHHgdppggfAAAggdppgPPPgfgg..eW",
-		"We..gggggddpppppppppppppppggfggg..eW",
-		"We..gfgggdd^^FFFFFFggd^^ggfgfggg..eW",
-		"We..ggIIIgdppFFFFFFggdppGGGgfggg..eW",
-		"We..ggIIIgdppFFFFFFggdppGGGggfgg..eW",
-		"We..gfIIIgdppFFFFFFggdppGGGgfgfg..eW",
-		"We..gggggddppFFFFFFggdppgggggfgg..eW",
-		"We..gfgggddpppppppppppppppgfgfgg..eW",
-		"We..ggggggdppggggfggggggdppggfgg..eW",
-		"We..gfHHHgdppgfgfggfggdppgBBBfgg..eW",
-		"We..ggHHHgdppggggggggfgdppBBBfgg..eW",
-		"We..ggHHHgdppgfgggggggdppgBBBfgg..eW",
-		"We..gfggggdpppppppppppppppggfggg..eW",
-		"We..gggHHHgd^^ggfggfgg^^gggfgfgg..eW",
-		"We..gfgHHHgdppggggggfggfggfgfgfg..eW",
-		"We..gggHHHgdppgfggggggggggfggfgg..eW",
-		"We..ggfggggddpppppppppggfgggfggg..eW",
-		"We..gggfgggddppXXXXXXdppggggfggg..eW",
-		"We..ggggfggddppXXXXXXdppgfgfgggg..eW",
-		"We..gfgggggdddddddddddppgggfgggg..eW",
-		"We................................eW",
-		"We................................eW",
-		"WeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeW",
-		"WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
+		"WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
+		"Weeeeeeeeeeeeeeeeee.......eeeeeeeeeeeeeeeeeW",
+		"We................eeeee.eee...............eW",
+		"We..gfggpppppppgggggfffgfggpppggfffgfggg..eW",
+		"We..ggHHHHHHgdppgfgAAAAAgddppggggggfgfgg..eW",
+		"We..gfHHHHHHgdppgggAAAAAggdppgPPPPPPgfgg..eW",
+		"We..gfHHHHHHgdppgggAAAAAggdppgPPPPPPgfgg..eW",
+		"We..ggHHHHHHgdppggfAAAAAggdppgPPPPPPgfgg..eW",
+		"We..ggggggggddppppppppppppppppppggggfggg..eW",
+		"We..gfggggggdd^^FFFFFFFFggd^^gggfffgfggg..eW",
+		"We..ggIIIIIIgdppFFFFFFFFggdppGGGGGGgfggg..eW",
+		"We..ggIIIIIIgdppFFFFFFFFggdppGGGGGGggfgg..eW",
+		"We..ggIIIIIIgdppFFFFFFFFggdppGGGGGGggfgg..eW",
+		"We..gfIIIIIIgdppFFFFFFFFggdppGGGGGGgfgfg..eW",
+		"We..ggggggggddppFFFFFFFFggdppggggggggfgg..eW",
+		"We..gfggggggddppppppppppppppppppgggfgfgg..eW",
+		"We..gggggggggdppggggfffggggggdpppppggfgg..eW",
+		"We..gfHHHHHHgdppgfgfggggfggdppggBBBBBfgg..eW",
+		"We..ggHHHHHHgdppggggggggggfgdpppBBBBBfgg..eW",
+		"We..ggHHHHHHgdppggggggggggfgdpppBBBBBfgg..eW",
+		"We..ggHHHHHHgdppgfgggggggggdppggBBBBBfgg..eW",
+		"We..gfgggggggdppppppppppppppppppggggfggg..eW",
+		"We..ggggHHHHHgd^^ggfggggfgg^^ggggggfgfgg..eW",
+		"We..gfggHHHHHgdppggggggggfggfgggfffgfgfg..eW",
+		"We..gfggHHHHHgdppggggggggfggfgggfffgfgfg..eW",
+		"We..ggggHHHHHgdppgfgggggggggggggfffggfgg..eW",
+		"We..ggffggggggddpppppppppppggfggggggfggg..eW",
+		"We..ggggffggggddppXXXXXXXXdppgggggggfggg..eW",
+		"We..ggggggffggddppXXXXXXXXdppgffgggfgggg..eW",
+		"We..gfggggggggdddddddddddddppggggggfgggg..eW",
+		"We........................................eW",
+		"We........................................eW",
+		"WeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeW",
+		"WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
 	]
 	# Elevation: castle approach (2) / town (1) / market + gate (0); cliffs are DERIVED, stairs are the '^' cells above
 	var height_data: Array[String] = [
-		"222222222222222222222222222222222222",
-		"222222222222222222222222222222222222",
-		"222222222222222222222222222222222222",
-		"222222222222222222222222222222222222",
-		"222222222222222222222222222222222222",
-		"222222222222222222222222222222222222",
-		"222222222222222222222222222222222222",
-		"222222222222222222222222222222222222",
-		"111111111111111111111111111111111111",
-		"111111111111111111111111111111111111",
-		"111111111111111111111111111111111111",
-		"111111111111111111111111111111111111",
-		"111111111111111111111111111111111111",
-		"111111111111111111111111111111111111",
-		"111111111111111111111111111111111111",
-		"111111111111111111111111111111111111",
-		"111111111111111111111111111111111111",
-		"111111111111111111111111111111111111",
-		"111111111111111111111111111111111111",
-		"000000000000000000000000000000000000",
-		"000000000000000000000000000000000000",
-		"000000000000000000000000000000000000",
-		"000000000000000000000000000000000000",
-		"000000000000000000000000000000000000",
-		"000000000000000000000000000000000000",
-		"000000000000000000000000000000000000",
-		"000000000000000000000000000000000000",
-		"000000000000000000000000000000000000",
-		"000000000000000000000000000000000000",
-		"000000000000000000000000000000000000",
+		"22222222222222222222222222222222222222222222",
+		"22222222222222222222222222222222222222222222",
+		"22222222222222222222222222222222222222222222",
+		"22222222222222222222222222222222222222222222",
+		"22222222222222222222222222222222222222222222",
+		"22222222222222222222222222222222222222222222",
+		"22222222222222222222222222222222222222222222",
+		"22222222222222222222222222222222222222222222",
+		"22222222222222222222222222222222222222222222",
+		"11111111111111111111111111111111111111111111",
+		"11111111111111111111111111111111111111111111",
+		"11111111111111111111111111111111111111111111",
+		"11111111111111111111111111111111111111111111",
+		"11111111111111111111111111111111111111111111",
+		"11111111111111111111111111111111111111111111",
+		"11111111111111111111111111111111111111111111",
+		"11111111111111111111111111111111111111111111",
+		"11111111111111111111111111111111111111111111",
+		"11111111111111111111111111111111111111111111",
+		"11111111111111111111111111111111111111111111",
+		"11111111111111111111111111111111111111111111",
+		"11111111111111111111111111111111111111111111",
+		"00000000000000000000000000000000000000000000",
+		"00000000000000000000000000000000000000000000",
+		"00000000000000000000000000000000000000000000",
+		"00000000000000000000000000000000000000000000",
+		"00000000000000000000000000000000000000000000",
+		"00000000000000000000000000000000000000000000",
+		"00000000000000000000000000000000000000000000",
+		"00000000000000000000000000000000000000000000",
+		"00000000000000000000000000000000000000000000",
+		"00000000000000000000000000000000000000000000",
+		"00000000000000000000000000000000000000000000",
+		"00000000000000000000000000000000000000000000",
 	]
 
 	for y in range(MAP_HEIGHT):
@@ -142,17 +150,17 @@ func _generate_map() -> void:
 
 	_build_derived_layers(map_data, height_data)
 
-	# Entrance spawn, CENTRED in cell (18,20): the cell corner touches the row-19 cliff faces (spawn-overlap ratchet)
-	spawn_points["entrance"] = Vector2(18 * TILE_SIZE + TILE_SIZE / 2, 20 * TILE_SIZE + TILE_SIZE / 2)
+	# Entrance spawn, CENTRED in cell (23,24): a cell corner would touch the row-22 cliff faces (spawn-overlap ratchet)
+	spawn_points["entrance"] = Vector2(23 * TILE_SIZE + TILE_SIZE / 2, 24 * TILE_SIZE + TILE_SIZE / 2)
 	spawn_points["default"] = spawn_points["entrance"]
 	# Bar exit spawn (in front of The Dancing Tonberry)
-	spawn_points["bar_exit"] = Vector2(29 * TILE_SIZE + TILE_SIZE / 2, 18 * TILE_SIZE + TILE_SIZE / 2)
+	spawn_points["bar_exit"] = Vector2(37 * TILE_SIZE + TILE_SIZE / 2, 21 * TILE_SIZE + TILE_SIZE / 2)
 	# Chapel exit spawn (in front of the H cluster at columns 3-5, rows 13-15)
-	spawn_points["chapel_exit"] = Vector2(7 * TILE_SIZE + TILE_SIZE / 2, 18 * TILE_SIZE + TILE_SIZE / 2)
+	spawn_points["chapel_exit"] = Vector2(8 * TILE_SIZE + TILE_SIZE / 2, 21 * TILE_SIZE + TILE_SIZE / 2)
 	# Library exit spawn (in front of the top-left H cluster at cols 3-5, rows 2-4)
-	spawn_points["library_exit"] = Vector2(7 * TILE_SIZE + TILE_SIZE / 2, 7 * TILE_SIZE + TILE_SIZE / 2)
+	spawn_points["library_exit"] = Vector2(8 * TILE_SIZE + TILE_SIZE / 2, 8 * TILE_SIZE + TILE_SIZE / 2)
 	# Cartographer exit spawn (in front of the top-right PPP cluster at cols 22-24, rows 2-4)
-	spawn_points["cartographer_exit"] = Vector2(26 * TILE_SIZE + TILE_SIZE / 2, 7 * TILE_SIZE + TILE_SIZE / 2)
+	spawn_points["cartographer_exit"] = Vector2(33 * TILE_SIZE + TILE_SIZE / 2, 8 * TILE_SIZE + TILE_SIZE / 2)
 
 
 func _char_to_tile_type(char: String) -> int:
@@ -183,8 +191,8 @@ func _setup_transitions() -> void:
 	exit_trans.target_map = "overworld"
 	exit_trans.target_spawn = "village_entrance"
 	exit_trans.require_interaction = false  # Auto-exit on touch
-	exit_trans.position = spawn_points.get("exit", Vector2(576, 768))
-	_setup_transition_collision(exit_trans, Vector2(TILE_SIZE * 6, TILE_SIZE))
+	exit_trans.position = spawn_points.get("exit", Vector2(736, 896))
+	_setup_transition_collision(exit_trans, Vector2(TILE_SIZE * 8, TILE_SIZE))
 	exit_trans.transition_triggered.connect(_on_transition_triggered)
 	transitions.add_child(exit_trans)
 
@@ -196,7 +204,7 @@ func _setup_transitions() -> void:
 	forge_entrance.target_spawn = "entrance"
 	forge_entrance.require_interaction = true
 	forge_entrance.indicator_text = "The Forge (rear entrance)"
-	forge_entrance.position = Vector2(30 * TILE_SIZE,6 * TILE_SIZE)
+	forge_entrance.position = Vector2(38 * TILE_SIZE, 7 * TILE_SIZE)
 	_setup_transition_collision(forge_entrance, Vector2(TILE_SIZE, TILE_SIZE))
 	forge_entrance.transition_triggered.connect(_on_transition_triggered)
 	transitions.add_child(forge_entrance)
@@ -211,7 +219,7 @@ func _setup_transitions() -> void:
 		suburban_portal.target_spawn = "entrance"
 		suburban_portal.require_interaction = true
 		suburban_portal.indicator_text = "Strange Device (90s???)"
-		suburban_portal.position = Vector2(23 * TILE_SIZE,13 * TILE_SIZE)
+		suburban_portal.position = Vector2(28 * TILE_SIZE, 15 * TILE_SIZE)
 		_setup_transition_collision(suburban_portal, Vector2(TILE_SIZE, TILE_SIZE))
 		suburban_portal.transition_triggered.connect(_on_transition_triggered)
 		transitions.add_child(suburban_portal)
@@ -220,13 +228,13 @@ func _setup_transitions() -> void:
 ## Drawn building art per block, keyed by the block's top-left cell (manifest building_art, T1).
 const BUILDING_ART := {
 	Vector2i(6, 4): "harmonia_library",
-	Vector2i(16, 4): "harmonia_arcana",
-	Vector2i(25, 5): "harmonia_arms",
-	Vector2i(6, 9): "harmonia_inn",
-	Vector2i(24, 9): "harmonia_remedies",
-	Vector2i(6, 15): "harmonia_chapel",
-	Vector2i(26, 15): "harmonia_tavern",
-	Vector2i(7, 19): "harmonia_house",
+	Vector2i(19, 4): "harmonia_arcana",
+	Vector2i(30, 5): "harmonia_arms",
+	Vector2i(6, 10): "harmonia_inn",
+	Vector2i(29, 10): "harmonia_remedies",
+	Vector2i(6, 17): "harmonia_chapel",
+	Vector2i(32, 17): "harmonia_tavern",
+	Vector2i(8, 22): "harmonia_house",
 }
 
 
@@ -235,13 +243,13 @@ func _setup_buildings() -> void:
 	var castle_vista = CastleVistaScript.new()
 	castle_vista.name = "CastleVista"
 	# y=0 = the map's top edge; the vista draws ABOVE it, where no tile can occlude it.
-	castle_vista.position = Vector2(18 * TILE_SIZE, 0)
+	castle_vista.position = Vector2(23 * TILE_SIZE, 0)
 	buildings.add_child(castle_vista)
 
 	# === INN ===
 	var inn = VillageInnScript.new()
 	inn.inn_name = "Sleepy Slime Inn"
-	inn.position = Vector2(6.5 * TILE_SIZE,10 * TILE_SIZE)
+	inn.position = Vector2(7 * TILE_SIZE, 11 * TILE_SIZE)
 	buildings.add_child(inn)
 
 	# === BLACKSMITH ===
@@ -249,7 +257,7 @@ func _setup_buildings() -> void:
 	blacksmith.shop_name = "Ironclad Arms"
 	blacksmith.shop_type = VillageShopScript.ShopType.BLACKSMITH
 	blacksmith.keeper_name = "Brutus"
-	blacksmith.position = Vector2(28 * TILE_SIZE,5.5 * TILE_SIZE)
+	blacksmith.position = Vector2(36 * TILE_SIZE, 6 * TILE_SIZE)
 	buildings.add_child(blacksmith)
 
 	# === WHITE MAGIC SHOP ===
@@ -257,7 +265,7 @@ func _setup_buildings() -> void:
 	white_magic_shop.shop_name = "Chapel of Light"
 	white_magic_shop.shop_type = VillageShopScript.ShopType.WHITE_MAGIC
 	white_magic_shop.keeper_name = "Sister Lenora"
-	white_magic_shop.position = Vector2(19 * TILE_SIZE,5.5 * TILE_SIZE)
+	white_magic_shop.position = Vector2(16 * TILE_SIZE, 6 * TILE_SIZE)  ## an open-air stall, drawn in its holy palette
 	buildings.add_child(white_magic_shop)
 
 	# === ITEM SHOP ===
@@ -265,7 +273,7 @@ func _setup_buildings() -> void:
 	item_shop.shop_name = "Mystic Remedies"
 	item_shop.shop_type = VillageShopScript.ShopType.ITEM
 	item_shop.keeper_name = "Willow"
-	item_shop.position = Vector2(25 * TILE_SIZE,10 * TILE_SIZE)
+	item_shop.position = Vector2(30 * TILE_SIZE, 11 * TILE_SIZE)
 	buildings.add_child(item_shop)
 
 	# === BLACK MAGIC SHOP ===
@@ -273,13 +281,13 @@ func _setup_buildings() -> void:
 	black_magic_shop.shop_name = "Mortimer's Arcana"
 	black_magic_shop.shop_type = VillageShopScript.ShopType.BLACK_MAGIC
 	black_magic_shop.keeper_name = "Mortimer"
-	black_magic_shop.position = Vector2(13 * TILE_SIZE,5.5 * TILE_SIZE)
+	black_magic_shop.position = Vector2(24 * TILE_SIZE, 6 * TILE_SIZE)  ## at the arcana building, so the purple shop IS the dark one
 	buildings.add_child(black_magic_shop)
 
 	# === BAR ===
 	var bar = VillageBarScript.new()
 	bar.bar_name = "The Dancing Tonberry"
-	bar.position = Vector2(29 * TILE_SIZE,16.5 * TILE_SIZE)
+	bar.position = Vector2(37 * TILE_SIZE, 19 * TILE_SIZE)
 	bar.transition_triggered.connect(_on_transition_triggered)
 	buildings.add_child(bar)
 
@@ -288,14 +296,14 @@ func _setup_buildings() -> void:
 	# Door sits on the south face so the player walks into it from
 	# the path at row 16. show_gate_visual draws the archway so the
 	# player can SEE there's an interior here.
-	_add_interior_door("ChapelDoor", "harmonia_chapel", "Enter Chapel", Vector2(7 * TILE_SIZE,17.5 * TILE_SIZE))
+	_add_interior_door("ChapelDoor", "harmonia_chapel", "Enter Chapel", Vector2(8 * TILE_SIZE, 20.5 * TILE_SIZE))
 	# === LIBRARY DOOR ===
 	# Top-left H cluster (cols 3-5, rows 2-4). Door on the south face
 	# at row 4.5 so the player walking on path row 5 hits it.
-	_add_interior_door("LibraryDoor", "harmonia_library", "Enter Library", Vector2(7 * TILE_SIZE,6.5 * TILE_SIZE))
+	_add_interior_door("LibraryDoor", "harmonia_library", "Enter Library", Vector2(8 * TILE_SIZE, 7.5 * TILE_SIZE))
 	# === CARTOGRAPHER DOOR ===
 	# Top-right PPP cluster (cols 22-24, rows 2-4), mirroring the library corner.
-	_add_interior_door("CartographerDoor", "harmonia_cartographer", "Enter Attic", Vector2(26 * TILE_SIZE,6.5 * TILE_SIZE))
+	_add_interior_door("CartographerDoor", "harmonia_cartographer", "Enter Attic", Vector2(32 * TILE_SIZE, 7.5 * TILE_SIZE))
 
 
 ## tick 37: _add_interior_door moved up to BaseVillage so every village
@@ -307,30 +315,32 @@ func _setup_buildings() -> void:
 	fountain.fountain_name = "Harmony Fountain"
 	fountain.tree_type = "cherry"
 	fountain.art_world = tile_generator._get_sheet_key()
-	fountain.position = Vector2(14 * TILE_SIZE,10 * TILE_SIZE)
+	## Centred in the 8x6 pond (cols 16-23, rows 9-14); its press area is the pond plus half a tile, so any shore cell reaches it.
+	fountain.position = Vector2(20 * TILE_SIZE, 12 * TILE_SIZE)
+	fountain.reach_tiles = Vector2(9, 7)
 	buildings.add_child(fountain)
 
 	# === TIER DRESSING (CrossCode pass 2026-08-21) ===
 	# Castle approach (tier 2): lamps flank the top path, trees soften the corners
 	_add_lamp_post(Vector2i(6, 3))
-	_add_lamp_post(Vector2i(12, 3))
+	_add_lamp_post(Vector2i(15, 3))
 	_add_prop(VillagePropScript.Kind.TREE, Vector2i(4, 5))
-	_add_prop(VillagePropScript.Kind.TREE, Vector2i(31, 5))
-	_add_prop(VillagePropScript.Kind.PLANTER, Vector2i(20, 3))
+	_add_prop(VillagePropScript.Kind.TREE, Vector2i(39, 5))
+	_add_prop(VillagePropScript.Kind.PLANTER, Vector2i(25, 3))
 	# Town (tier 1): trees at the edges, barrels behind the smithy
-	_add_prop(VillagePropScript.Kind.TREE, Vector2i(4, 12))
-	_add_prop(VillagePropScript.Kind.TREE, Vector2i(31, 12))
-	_add_prop(VillagePropScript.Kind.BARREL, Vector2i(30, 9))
-	_add_prop(VillagePropScript.Kind.CRATE, Vector2i(31, 9))
-	_add_prop(VillagePropScript.Kind.FENCE, Vector2i(9, 14))
+	_add_prop(VillagePropScript.Kind.TREE, Vector2i(4, 14))
+	_add_prop(VillagePropScript.Kind.TREE, Vector2i(39, 14))
+	_add_prop(VillagePropScript.Kind.BARREL, Vector2i(38, 10))
+	_add_prop(VillagePropScript.Kind.CRATE, Vector2i(39, 10))
+	_add_prop(VillagePropScript.Kind.FENCE, Vector2i(12, 16))
 	# Market + gate (tier 0): stalls either side of the entrance, a cart, crates, lamps on the road
-	_add_prop(VillagePropScript.Kind.STALL, Vector2i(14, 21))
-	_add_prop(VillagePropScript.Kind.STALL, Vector2i(21, 21))
-	_add_prop(VillagePropScript.Kind.CART, Vector2i(27, 21))
-	_add_prop(VillagePropScript.Kind.CRATE, Vector2i(24, 24))
-	_add_prop(VillagePropScript.Kind.BARREL, Vector2i(25, 24))
-	_add_lamp_post(Vector2i(12, 25))
-	_add_lamp_post(Vector2i(23, 25))
+	_add_prop(VillagePropScript.Kind.STALL, Vector2i(17, 25))
+	_add_prop(VillagePropScript.Kind.STALL, Vector2i(26, 25))
+	_add_prop(VillagePropScript.Kind.CART, Vector2i(35, 25))
+	_add_prop(VillagePropScript.Kind.CRATE, Vector2i(29, 28))
+	_add_prop(VillagePropScript.Kind.BARREL, Vector2i(30, 28))
+	_add_lamp_post(Vector2i(15, 29))
+	_add_lamp_post(Vector2i(28, 29))
 	## LAST, so every door and building node it must defer to already exists. Roofs alternate so a
 	## row of identical blocks reads as separate houses -- the cheapest variety a SNES town buys.
 	_spawn_building_art(BUILDING_ART)
@@ -345,7 +355,7 @@ func _setup_treasures() -> void:
 	chest1.contents_type = "item"
 	chest1.contents_id = "potion"
 	chest1.contents_amount = 3
-	chest1.position = Vector2(4.5 * TILE_SIZE,6 * TILE_SIZE)
+	chest1.position = Vector2(4.5 * TILE_SIZE, 7 * TILE_SIZE)
 	treasures.add_child(chest1)
 
 	# Treasure near bar
@@ -353,7 +363,7 @@ func _setup_treasures() -> void:
 	chest2.chest_id = "harmonia_chest_2"
 	chest2.contents_type = "gold"
 	chest2.gold_amount = 150
-	chest2.position = Vector2(31 * TILE_SIZE,15 * TILE_SIZE)
+	chest2.position = Vector2(39 * TILE_SIZE, 17 * TILE_SIZE)
 	treasures.add_child(chest2)
 
 	# Treasure behind bottom left house
@@ -362,7 +372,7 @@ func _setup_treasures() -> void:
 	chest3.contents_type = "item"
 	chest3.contents_id = "ether"
 	chest3.contents_amount = 2
-	chest3.position = Vector2(4.5 * TILE_SIZE,22 * TILE_SIZE)
+	chest3.position = Vector2(4.5 * TILE_SIZE, 26 * TILE_SIZE)
 	treasures.add_child(chest3)
 
 	# Equipment treasure (hidden corner)
@@ -370,7 +380,7 @@ func _setup_treasures() -> void:
 	chest4.chest_id = "harmonia_chest_4"
 	chest4.contents_type = "equipment"
 	chest4.contents_id = "lucky_charm"
-	chest4.position = Vector2(31 * TILE_SIZE,3.5 * TILE_SIZE)
+	chest4.position = Vector2(39 * TILE_SIZE, 3.5 * TILE_SIZE)
 	treasures.add_child(chest4)
 
 	# Inside the hedge nook — reached only through the gap at (18,2). Flora hints at it.
@@ -379,7 +389,7 @@ func _setup_treasures() -> void:
 	chest5.contents_type = "item"
 	chest5.contents_id = "elixir"
 	chest5.contents_amount = 1
-	chest5.position = Vector2(16 * TILE_SIZE,1 * TILE_SIZE)
+	chest5.position = Vector2(19 * TILE_SIZE, 1 * TILE_SIZE)
 	treasures.add_child(chest5)
 
 
@@ -431,7 +441,7 @@ func _setup_npcs() -> void:
 	var _theron_gs = get_node_or_null("/root/GameState")
 	if _theron_gs:
 		_theron_chapter1_done = bool(_theron_gs.game_constants.get("cutscene_flag_chapter1_complete", false))
-	var elder = _create_npc("Elder Theron", "elder", Vector2(11 * TILE_SIZE,9 * TILE_SIZE), _theron_post if _theron_chapter1_done else _theron_pre)
+	var elder = _create_npc("Elder Theron", "elder", Vector2(14 * TILE_SIZE, 10 * TILE_SIZE), _theron_post if _theron_chapter1_done else _theron_pre)
 	elder.dynamic = true
 	# Named canon sheet (2fd985bb); must match his staged-cutscene puppet (HARMONIA_NPC_CANON).
 	elder.sprite_archetype = "elder_theron"
@@ -442,7 +452,7 @@ func _setup_npcs() -> void:
 	# Scholar (hints about automation)
 	# Wave D showcase NPC #2 — fourth-wall-aware autobattle townie.
 	# Persona text + fallback lines hydrated from the same JSON cache.
-	var scholar = _create_npc("Scholar Milo", "villager", Vector2(19 * TILE_SIZE,9 * TILE_SIZE), [
+	var scholar = _create_npc("Scholar Milo", "villager", Vector2(24 * TILE_SIZE, 10 * TILE_SIZE), [
 		"Ah, a fellow seeker of knowledge!",
 		"I've been studying an ancient art called 'AUTOBATTLE'.",
 		"F5 opens the Autobattle Editor. On a pad it's the start button mid-battle — Start, Options or Plus, depending whose plastic you're holding — or pick Auto Rules from the menu!",
@@ -474,7 +484,7 @@ func _setup_npcs() -> void:
 		"I'm going to sit here with my cough and hope you keep doing what you're doing.",
 		"Come back later. I have a story about the cave from *my* year. Now I finally know whether to tell it."
 	]
-	var retired = _create_npc("Greta the Grey", "elder", Vector2(5 * TILE_SIZE,18 * TILE_SIZE), _greta_post if _after_cave_done else _greta_pre)
+	var retired = _create_npc("Greta the Grey", "elder", Vector2(5 * TILE_SIZE, 21 * TILE_SIZE), _greta_post if _after_cave_done else _greta_pre)
 	retired.sprite_archetype = "old_woman"  ## pinned: the name-hash pair drew the other sex
 	npcs.add_child(retired)
 
@@ -482,7 +492,7 @@ func _setup_npcs() -> void:
 
 	# Existential Villager
 	# His NAME carried the premise and nothing he said did — so the notebook beside him had no reason to exist.
-	var existential = _create_npc("Phil the Lost", "villager", Vector2(23 * TILE_SIZE,18 * TILE_SIZE), [
+	var existential = _create_npc("Phil the Lost", "villager", Vector2(28 * TILE_SIZE, 21 * TILE_SIZE), [
 		"Phil. Phil the Lost. Called that because I lose things.",
 		"Mostly I lose track of what's happened before.",
 		"That's why I write it down. In the book. I can't hold it myself.",
@@ -501,12 +511,12 @@ func _setup_npcs() -> void:
 	var notebook = ReadablePropScript.new()
 	notebook.name = "PhilNotebook"
 	# Cell-CENTRED at (22,18) beside Phil: a 28px prop parked on a cell corner sits 24px off every axis-aligned probe (reachability audit); (24,18) was also the chicken's cell.
-	notebook.position = Vector2(22 * TILE_SIZE + TILE_SIZE / 2, 18 * TILE_SIZE + TILE_SIZE / 2)
+	notebook.position = Vector2(27 * TILE_SIZE + TILE_SIZE / 2, 21 * TILE_SIZE + TILE_SIZE / 2)
 	notebook.setup("Phil's Notebook", _phil_notebook_entries)
 	npcs.add_child(notebook)
 
 	# Chicken Chaser wannabe
-	var chicken = _create_npc("Cluck Norris", "villager", Vector2(11 * TILE_SIZE,21 * TILE_SIZE), [
+	var chicken = _create_npc("Cluck Norris", "villager", Vector2(14 * TILE_SIZE, 25 * TILE_SIZE), [
 		"HAVE YOU SEEN MY CHICKENS?!",
 		"They escaped during the last monster attack!",
 		"I had SEVENTEEN of them!",
@@ -517,7 +527,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(chicken)
 
 	# Fourth Wall Breaker
-	var meta = _create_npc("???", "villager", Vector2(28 * TILE_SIZE,22 * TILE_SIZE), [
+	var meta = _create_npc("???", "villager", Vector2(36 * TILE_SIZE, 26 * TILE_SIZE), [
 		"Psst... hey... over here...",
 		"I know things. SECRET things.",
 		"Like how the save file is just JSON.",
@@ -528,7 +538,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(meta)
 
 	# Sleeping NPC
-	var sleepy = _create_npc("Zzz...", "villager", Vector2(5 * TILE_SIZE,7 * TILE_SIZE), [
+	var sleepy = _create_npc("Zzz...", "villager", Vector2(5 * TILE_SIZE, 8 * TILE_SIZE), [
 		"Zzz...",
 		"Zzz... five more minutes...",
 		"Zzz... no... I don't want to fight slimes...",
@@ -581,7 +591,7 @@ func _setup_npcs() -> void:
 		"Take the road slow. It's dark. There's dark and there's DARK and this is only the first kind."
 	]
 	var _boris_lines: Array = (_boris_post_night if _is_night else _boris_post) if _after_cave_done else (_boris_pre_night if _is_night else _boris_pre)
-	var guard = _create_npc("Guard Boris", "guard", Vector2(11 * TILE_SIZE,23 * TILE_SIZE), _boris_lines)
+	var guard = _create_npc("Guard Boris", "guard", Vector2(14 * TILE_SIZE, 27 * TILE_SIZE), _boris_lines)
 	guard.dynamic = true
 	npcs.add_child(guard)
 
@@ -605,13 +615,13 @@ func _setup_npcs() -> void:
 		"Not IN. Just at.",
 		"*swings imaginary sword, one time, at nothing*"
 	]
-	var kid = _create_npc("Young Pip", "child", Vector2(19 * TILE_SIZE,12 * TILE_SIZE), _pip_post if _after_cave_done else _pip_pre)
+	var kid = _create_npc("Young Pip", "child", Vector2(24 * TILE_SIZE, 14 * TILE_SIZE), _pip_post if _after_cave_done else _pip_pre)
 	npcs.add_child(kid)
 
 	# === SIDE-QUEST GIVERS (dialogue owned by QuestSystem when quest business exists) ===
 
 	# Farmer Aldwick — one_chicken_problem giver, north fence
-	var aldwick = _create_npc("Farmer Aldwick", "farmer", Vector2(10 * TILE_SIZE,4 * TILE_SIZE), [
+	var aldwick = _create_npc("Farmer Aldwick", "farmer", Vector2(13 * TILE_SIZE, 4 * TILE_SIZE), [
 		"Seven chickens. Seven names. One mistake per name.",
 	])
 	# Without this the quest is UNSTARTABLE — QuestSystem.gd:125 matches npc_id to giver.npc_id.
@@ -622,18 +632,18 @@ func _setup_npcs() -> void:
 	# (Cave approach + Inn kitchen + the Scriptura Guild carry the other
 	# three — the guild hen moved home 2026-07-11; its temp spot here sat
 	# inside the Inn wall block and was uncatchable, live playtest find.)
-	_place_chicken("chicken_harmonia_market", Vector2(18 * TILE_SIZE,14 * TILE_SIZE))
-	_place_chicken("chicken_harmonia_flowerbed", Vector2(29 * TILE_SIZE,4 * TILE_SIZE))
-	_place_chicken("chicken_harmonia_backlot", Vector2(6 * TILE_SIZE,21 * TILE_SIZE))
+	_place_chicken("chicken_harmonia_market", Vector2(23 * TILE_SIZE, 16 * TILE_SIZE))
+	_place_chicken("chicken_harmonia_flowerbed", Vector2(37 * TILE_SIZE, 4 * TILE_SIZE))
+	_place_chicken("chicken_harmonia_backlot", Vector2(6 * TILE_SIZE, 25 * TILE_SIZE))
 	# The unnamed seventh — beside Phil the Lost at the well. Phil's line lands
 	# on catch (the hen keeps returning to him, mirroring Phil to Harmonia).
-	_place_chicken("chicken_phil_well", Vector2(24 * TILE_SIZE,18 * TILE_SIZE),
+	_place_chicken("chicken_phil_well", Vector2(29 * TILE_SIZE, 21 * TILE_SIZE),
 		"Phil: \"It keeps coming back to me. Maybe it knows something.\"")
 
 	# Bram the smith's apprentice — untested_edge giver, by Ironclad Arms.
 	# 2026-09-06 (struktured): at (27,9) he was boxed in — item-shop footprint S/W, sword
 	# rack + barrel + crate E, tier cliff N — "u gotta go around him to backside to talk".
-	var bram = _create_npc("Bram Smith", "blacksmith", Vector2(27 * TILE_SIZE,12 * TILE_SIZE), [
+	var bram = _create_npc("Bram Smith", "blacksmith", Vector2(35 * TILE_SIZE, 14 * TILE_SIZE), [
 		"Master Brutus forges them. I catalogue them. One came BACK.",
 	])
 	bram.npc_id = "bram_smith"
@@ -646,11 +656,11 @@ func _setup_npcs() -> void:
 	var SwordScript = load("res://src/exploration/SwordInscription.gd")
 	if SwordScript:
 		var sword = SwordScript.new()
-		sword.position = Vector2(29 * TILE_SIZE,12 * TILE_SIZE)
+		sword.position = Vector2(37 * TILE_SIZE, 14 * TILE_SIZE)
 		npcs.add_child(sword)
 
 	# Rowan the courier — word_from_capital giver, by the fountain square
-	var rowan = _create_npc("Rowan", "traveler", Vector2(16 * TILE_SIZE,7 * TILE_SIZE), [
+	var rowan = _create_npc("Rowan", "traveler", Vector2(19 * TILE_SIZE, 8 * TILE_SIZE), [
 		"A letter for Scriptura. No stamp, no seal, no sender. Typical.",
 	])
 	rowan.npc_id = "rowan_harmonia"
@@ -695,7 +705,7 @@ func _setup_npcs() -> void:
 		"The gap in the north hedge is still there. I've stopped meaning to close it."
 	]
 	var _flora_lines: Array = (_flora_post_night if _is_night else _flora_post) if _after_cave_done else (_flora_pre_night if _is_night else _flora_pre)
-	var flower = _create_npc("Flora", "villager", Vector2(20 * TILE_SIZE,14 * TILE_SIZE), _flora_lines)
+	var flower = _create_npc("Flora", "villager", Vector2(25 * TILE_SIZE, 16 * TILE_SIZE), _flora_lines)
 	npcs.add_child(flower)
 
 	# === PORTAL GUIDE ===
@@ -706,7 +716,7 @@ func _setup_npcs() -> void:
 	# ui_accept is joypad button 1 — the EAST face — so the old frozen "press A" was right on Nintendo
 	# pads only. Derived at spawn; the village re-instances on entry, so it refreshes per visit.
 	var _portal_confirm: String = InputProfileManager.hint_for_action("ui_accept")
-	var temporal = _create_npc("Dr. Temporal", "mysterious", Vector2(21 * TILE_SIZE,13 * TILE_SIZE), [
+	var temporal = _create_npc("Dr. Temporal", "mysterious", Vector2(26 * TILE_SIZE, 15 * TILE_SIZE), [
 		"This device materialized overnight... it hums with a '16-bit' frequency.",
 		"My instruments detect suburban housing developments on the other side.",
 		"Strip malls. Parking lots. The horror.",
@@ -726,8 +736,8 @@ func _setup_npcs() -> void:
 	# Wandering merchant — short horizontal patrol on the row-11 path,
 	# between the fountain and the right-side path junction.
 	var market_loop: Array[Vector2] = [
-		Vector2(16 * TILE_SIZE,13 * TILE_SIZE),
-		Vector2(23 * TILE_SIZE,13 * TILE_SIZE),
+		Vector2(19 * TILE_SIZE, 15 * TILE_SIZE),
+		Vector2(28 * TILE_SIZE, 15 * TILE_SIZE),
 	]
 	var merchant = _create_wandering_npc(
 		"Wandering Merchant",
@@ -742,8 +752,8 @@ func _setup_npcs() -> void:
 	# Patrolling guard — north horizontal path at row 5 (clear from x=10
 	# through x=20 between the magic / armor shops and the weapon shop).
 	var patrol_loop: Array[Vector2] = [
-		Vector2(14 * TILE_SIZE,7 * TILE_SIZE),
-		Vector2(23 * TILE_SIZE,7 * TILE_SIZE),
+		Vector2(17 * TILE_SIZE, 8 * TILE_SIZE),
+		Vector2(28 * TILE_SIZE, 8 * TILE_SIZE),
 	]
 	var patroller = _create_wandering_npc(
 		"Patroller Sven",
@@ -758,8 +768,8 @@ func _setup_npcs() -> void:
 	# Wandering scholar — south horizontal path at row 16, between the
 	# bottom-row buildings. Clear path from x=10 through x=22.
 	var scholar_loop: Array[Vector2] = [
-		Vector2(16 * TILE_SIZE,18 * TILE_SIZE),
-		Vector2(23 * TILE_SIZE,18 * TILE_SIZE),
+		Vector2(19 * TILE_SIZE, 21 * TILE_SIZE),
+		Vector2(28 * TILE_SIZE, 21 * TILE_SIZE),
 	]
 	var wandering_scholar = _create_wandering_npc(
 		"Apprentice Vex",
@@ -773,8 +783,8 @@ func _setup_npcs() -> void:
 
 	# Rotha — the artist's first overworld villager (2026-10-08 drop), on the open lower-left ground, clear of the exit road and the other loops.
 	var rotha_loop: Array[Vector2] = [
-		Vector2(3 * TILE_SIZE,23 * TILE_SIZE),
-		Vector2(8 * TILE_SIZE,23 * TILE_SIZE),
+		Vector2(3 * TILE_SIZE, 27 * TILE_SIZE),
+		Vector2(10 * TILE_SIZE, 27 * TILE_SIZE),
 	]
 	var rotha = _create_wandering_npc(
 		"Rotha",
@@ -788,8 +798,8 @@ func _setup_npcs() -> void:
 
 	# Roy — the artist's second overworld villager (2026-10-11 drop), on the lower-right green opposite Rotha, clear of the crate and barrel at (24-25, 24) with a tile to spare.
 	var roy_loop: Array[Vector2] = [
-		Vector2(27 * TILE_SIZE,24 * TILE_SIZE),
-		Vector2(31 * TILE_SIZE,24 * TILE_SIZE),
+		Vector2(35 * TILE_SIZE, 28 * TILE_SIZE),
+		Vector2(39 * TILE_SIZE, 28 * TILE_SIZE),
 	]
 	var roy = _create_wandering_npc(
 		"Roy",
@@ -803,8 +813,8 @@ func _setup_npcs() -> void:
 
 	# Kid Acrees — the artist's third overworld villager (2026-10-13 drop), on the grass north of the stall and cart.
 	var acrees_loop: Array[Vector2] = [
-		Vector2(24 * TILE_SIZE,20 * TILE_SIZE),
-		Vector2(29 * TILE_SIZE,20 * TILE_SIZE),
+		Vector2(29 * TILE_SIZE, 23 * TILE_SIZE),
+		Vector2(37 * TILE_SIZE, 23 * TILE_SIZE),
 	]
 	var acrees = _create_wandering_npc(
 		"Kid Acrees",
@@ -818,8 +828,8 @@ func _setup_npcs() -> void:
 
 	# Granny Kaya — the artist's fourth overworld villager (2026-10-15 drop), on the grass just south of the fountain.
 	var kaya_loop: Array[Vector2] = [
-		Vector2(13 * TILE_SIZE,14 * TILE_SIZE),
-		Vector2(18 * TILE_SIZE,14 * TILE_SIZE),
+		Vector2(16 * TILE_SIZE, 16 * TILE_SIZE),
+		Vector2(23 * TILE_SIZE, 16 * TILE_SIZE),
 	]
 	var kaya = _create_wandering_npc(
 		"Granny Kaya",
