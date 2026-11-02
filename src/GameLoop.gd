@@ -1099,11 +1099,14 @@ func _smoke_group_action() -> void:
 
 	## #763: turn order is NOT fixed — the starting party lost its secondary jobs and with them the
 	## speed that put the fighter early, so the leg can land on the LAST selector, who has nobody after
-	## them to pool with. Defer such turns (bounded) until a selector has at least one later-acting ally.
+	## them to pool with. Step BACK (go_back_to_previous_player, bounded) to an earlier selector who has at
+	## least one later-acting ally. Not defer: deferring runs the round, and the party kills the lone goblin.
 	var participants: Array = BattleManager.group_participants()
 	var deferred: int = 0
 	while participants.size() < 2 and deferred < 8:
-		if not BattleManager.player_defer():
+		var was = BattleManager.current_combatant
+		BattleManager.go_back_to_previous_player()
+		if BattleManager.current_combatant == was:
 			break
 		deferred += 1
 		var w2: float = 0.0
@@ -1114,7 +1117,7 @@ func _smoke_group_action() -> void:
 			break
 		participants = BattleManager.group_participants()
 	if deferred > 0:
-		print("[SMOKE] group action: deferred %d turn(s) to reach a selector with later-acting allies (%d participants)" % [deferred, participants.size()])
+		print("[SMOKE] group action: stepped back %d selector(s) to reach one with later-acting allies (%d participants)" % [deferred, participants.size()])
 	if participants.size() < 2:
 		print("[SMOKE] FAIL: only %d group participant(s) available — SETUP, not the feature: a group action needs the party to pool, and this smoke's party should supply several" % participants.size())
 		_smoke_failed = true
