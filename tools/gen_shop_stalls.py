@@ -6,7 +6,7 @@ looks like black magic shop ... and to the right of that I think is the holy mag
 VillageShop that no building block covers draws a procedural 2x2 awning stall; this tool draws the real ones, one per
 shop type, in a palette that reads at a glance. VillageShop looks up prop_art "shop_stall_<type>_<world>" (world-keyed
 ONLY, so a village in another world keeps its painted stall until that world's art exists) and stands the art with its
-base where the painted stall's base was.
+art centred on the node, exactly as the painted stall is seated.
 
 Staged under tmp/shop_stalls/; --deploy copies to assets/sprites/props/<world>/shop_stall_<type>.png.
 

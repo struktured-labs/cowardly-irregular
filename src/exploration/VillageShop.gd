@@ -120,7 +120,7 @@ func _generate_sprite() -> void:
 	add_child(sprite)
 
 
-## The drawn stall for this shop's type in its village's world, standing where the painted stall's base stood.
+## The drawn stall for this shop's type in its village's world, seated like the painted one (art centred on the node).
 func _use_drawn_stall() -> bool:
 	var world := art_world if art_world != "" else _village_world()
 	if world == "":
@@ -129,9 +129,10 @@ func _use_drawn_stall() -> bool:
 	if e.is_empty():
 		return false
 	sprite.texture = load(str(e["path"]))
+	## Seated exactly like the painted stall: art centred on the node, sorted by its base (the facade guard's invariant).
 	var half: float = sprite.texture.get_height() / 2.0
 	y_sort_enabled = true
-	sprite.position.y += TILE_SIZE
+	sprite.position.y += half
 	sprite.offset.y -= half
 	add_child(sprite)
 	return true
