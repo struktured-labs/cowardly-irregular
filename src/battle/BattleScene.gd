@@ -56,6 +56,7 @@ const NAME_LABEL_GAP: float = 6.0
 const NAME_LABEL_WIDTH: float = 200.0
 const NAME_LABEL_PX := 16  # on-screen size for every monster, whatever its sprite scale
 const ENEMY_HP_BAR_SIZE := Vector2(60, 5)  # on-screen, whatever the sprite scale
+const SIGNATURE_WINDUP := 0.55  # battle seconds of title card and camera push before a boss's signature sequence
 ## How far each formation stands nearer its own edge (struktured 2026-11-01); the party has no room under its badges yet.
 const ENEMY_EDGE_SHIFT := -24.0
 const PARTY_EDGE_SHIFT := 0.0
@@ -2819,6 +2820,99 @@ func _play_ability_full_render(caster: Combatant, caster_sprite: Node2D, animato
 
 
 ## A data/vfx_sequences.json id the ability names (AbilityVFX), or "" for the ordinary effects.
+## A boss's fx_signature, cast BY that boss, plays sig_<monster_id> ("all the bosses need their own animated attacks").
+func signature_sequence(caster: Combatant, ability_id: String) -> String:
+	if caster == null or not is_instance_valid(caster) or ability_id == "":
+		return ""
+	var monster_id := str(caster.get_meta("monster_type", ""))
+	if monster_id == "":
+		return ""
+	var entry = _load_monsters_data().get(monster_id, {})
+	if not (entry is Dictionary) or str(entry.get("fx_signature", "")) != ability_id:
+		return ""
+	var seq_id := str(entry.get("fx_signature_sequence", "sig_" + monster_id))
+	return seq_id if not FractalFX.load_sequence(seq_id).is_empty() else ""
+
+
+## The card, the bark and the push, then the sequence. Damage numbers wait for its impact like Fire's.
+func _play_signature(caster: Combatant, caster_sprite: Node2D, animator: BattleAnimatorClass, ability: Dictionary, targets: Array, seq_id: String) -> void:
+	_flush_full_render_damage()
+	_full_render_dmg_buffer = []
+	_full_render_dmg_attacker = caster
+	var card: Dictionary = {}
+	var entry = _load_monsters_data().get(str(caster.get_meta("monster_type", "")), {})
+	if entry is Dictionary and entry.get("fx_signature_card") is Dictionary:
+		card = entry["fx_signature_card"]
+	var windup := SIGNATURE_WINDUP
+	var bark := str(card.get("bark", ""))
+	# The bark is a held beat at 1x-2x; at 4x and up the card still shows and the line stays text.
+	if bark != "" and Engine.time_scale < 0.75:
+		var sec: float = SoundManager.play_voiced_line(caster.combatant_name, bark, self)
+		windup = maxf(windup, sec * Engine.time_scale)
+	BattleManager.presentation_hold = maxf(BattleManager.presentation_hold, windup + 1.6)
+	_show_signature_card(card, ability, windup)
+	if caster_sprite != null and is_instance_valid(caster_sprite) and BattleJuice.camera_rig != null:
+		BattleJuice.camera_rig.punch_zoom(_stable_sprite_anchor(caster_sprite), 0.06, windup)
+	await get_tree().create_timer(windup).timeout
+	if not is_instance_valid(self):
+		return
+	SoundManager.stop_voiced_line(self)
+	await _play_ability_sequence(caster, caster_sprite, animator, ability, targets, seq_id, true)
+
+
+func _show_signature_card(card: Dictionary, ability: Dictionary, hold: float) -> void:
+	var title := str(card.get("title", ability.get("name", "")))
+	if title == "":
+		return
+	var old := get_node_or_null("UI/SignatureCard")
+	if old:
+		old.queue_free()
+	var panel := PanelContainer.new()
+	panel.name = "SignatureCard"
+	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.04, 0.03, 0.08, 0.88)
+	style.border_color = Color(1.0, 0.82, 0.35, 0.9)
+	style.border_width_top = 2
+	style.border_width_bottom = 2
+	style.content_margin_left = 24
+	style.content_margin_right = 24
+	style.content_margin_top = 8
+	style.content_margin_bottom = 8
+	panel.add_theme_stylebox_override("panel", style)
+	var box := VBoxContainer.new()
+	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panel.add_child(box)
+	var head := Label.new()
+	head.text = title
+	head.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	head.add_theme_font_size_override("font_size", TextScale.scaled(30))
+	head.add_theme_color_override("font_color", Color(1.0, 0.9, 0.55))
+	box.add_child(head)
+	var sub := str(card.get("subtitle", ""))
+	if sub != "":
+		var line := Label.new()
+		line.text = sub
+		line.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		line.custom_minimum_size = Vector2(520, 0)
+		line.add_theme_font_size_override("font_size", TextScale.scaled(15))
+		box.add_child(line)
+	var ui := get_node_or_null("UI")
+	if ui == null:
+		return
+	ui.add_child(panel)
+	panel.z_index = 90
+	panel.reset_size()
+	panel.position = Vector2((get_viewport_rect().size.x - panel.size.x) * 0.5, 84.0)
+	panel.modulate.a = 0.0
+	var tw := panel.create_tween()
+	tw.tween_property(panel, "modulate:a", 1.0, 0.12)
+	tw.tween_interval(maxf(hold, 0.3))
+	tw.tween_property(panel, "modulate:a", 0.0, 0.25)
+	tw.tween_callback(panel.queue_free)
+
+
 func _ability_sequence(ability: Dictionary) -> String:
 	return str(AbilityVFX.resolve(ability).get("sequence", ""))
 
@@ -2827,8 +2921,8 @@ func _ability_sequence(ability: Dictionary) -> String:
 ## sequence flies from the caster to each target, and the damage numbers wait for the burst rather than
 ## landing on the first frame of the cast. The battle holds until just after the burst; the closing fling
 ## overlaps whatever acts next, so a Fire turn costs about what a spotlight turn did.
-func _play_ability_sequence(caster: Combatant, caster_sprite: Node2D, animator: BattleAnimatorClass, ability: Dictionary, targets: Array) -> void:
-	var seq_id := _ability_sequence(ability)
+func _play_ability_sequence(caster: Combatant, caster_sprite: Node2D, animator: BattleAnimatorClass, ability: Dictionary, targets: Array, seq_override: String = "", buffering: bool = false) -> void:
+	var seq_id := seq_override if seq_override != "" else _ability_sequence(ability)
 	if animator:
 		_play_ability_animation(_ability_anim_name(ability, animator), animator)
 	var from := Vector2.ZERO
@@ -2836,18 +2930,25 @@ func _play_ability_sequence(caster: Combatant, caster_sprite: Node2D, animator: 
 		var facing: float = -1.0 if party_sprite_nodes.has(caster_sprite) else 1.0
 		from = _stable_sprite_anchor(caster_sprite) + Vector2(40.0 * facing, -20.0)
 	var impact := 0.0
+	var first := true
 	for target in targets:
 		var ts = _get_combatant_sprite(target)
 		if ts == null or not is_instance_valid(ts):
 			continue
-		var played: Dictionary = EffectSystem.spawn_sequence(seq_id, from, _stable_sprite_anchor(ts), float(AbilityVFX.resolve(ability)["power"]))
+		# Sprite-moving phases (lunge, hitstop, impact frames) act once, on the first target, not once per target.
+		var actors: Dictionary = {"caster": caster_sprite, "target": ts} if first else {}
+		first = false
+		var played: Dictionary = EffectSystem.spawn_sequence(seq_id, from, _stable_sprite_anchor(ts), float(AbilityVFX.resolve(ability)["power"]), actors)
 		impact = maxf(impact, float(played.get("impact", 0.0)))
 	if impact <= 0.0:
 		_spawn_ability_effects(ability, targets)
+		if buffering:
+			_flush_full_render_damage()
 		return
-	_flush_full_render_damage()
-	_full_render_dmg_buffer = []
-	_full_render_dmg_attacker = caster
+	if not buffering:
+		_flush_full_render_damage()
+		_full_render_dmg_buffer = []
+		_full_render_dmg_attacker = caster
 	BattleManager.presentation_hold = maxf(BattleManager.presentation_hold, impact + 0.35)
 	await get_tree().create_timer(impact).timeout
 	if not is_instance_valid(self):
@@ -4333,8 +4434,11 @@ func _on_action_executing(combatant: Combatant, action: Dictionary) -> void:
 			# Play the ability-specific sound (fire, ice, lightning, etc.)
 			SoundManager.play_ability(ability_id)
 
+			var sig_seq := signature_sequence(combatant, ability_id)
+			if sig_seq != "":
+				_play_signature(combatant, attacker_sprite, animator, ability, targets, sig_seq)
 			# Physical abilities move to target
-			if ability_type == "physical" and targets.size() > 0:
+			elif ability_type == "physical" and targets.size() > 0:
 				var target_sprite = _get_combatant_sprite(targets[0])
 				var target_animator = _get_combatant_animator(targets[0])
 				if attacker_sprite and target_sprite:

@@ -684,6 +684,8 @@
   },
   "cave_rat_king": {
     "id": "cave_rat_king",
+    "fx_signature": "rat_swarm",
+    "fx_signature_card": {"title": "Rat Swarm", "subtitle": "The court is in session. All of it."},
     "name": "Cave Rat King",
     "description": "The self-proclaimed ruler of all cave rats. Just a disappointingly large rat with a tiny crown. Surprisingly dangerous.",
     "level": 12,
@@ -1849,6 +1851,8 @@
   },
   "fire_dragon": {
     "id": "fire_dragon",
+    "fx_signature": "inferno_rage",
+    "fx_signature_card": {"title": "Inferno Rage", "subtitle": "Pyrroth stops holding back."},
     "name": "Pyrroth, the Ember Wyrm",
     "description": "An ancient fire dragon whose scales radiate unbearable heat. The cave walls glow red in its presence.",
     "boss_llm_persona_id": "pyrroth",
@@ -1928,6 +1932,8 @@
   },
   "ice_dragon": {
     "id": "ice_dragon",
+    "fx_signature": "absolute_zero",
+    "fx_signature_card": {"title": "Absolute Zero", "subtitle": "Every degree, taken back at once."},
     "name": "Glacius, the Frozen Sovereign",
     "description": "A majestic ice dragon entombed in permafrost for centuries. Its breath freezes time itself.",
     "boss_llm_persona_id": "glacius",
@@ -2009,6 +2015,8 @@
   },
   "lightning_dragon": {
     "id": "lightning_dragon",
+    "fx_signature": "lightning_dash",
+    "fx_signature_card": {"title": "Lightning Dash", "subtitle": "Faster than the turn order can say."},
     "name": "Voltharion, the Storm's Edge",
     "description": "A crackling dragon made of pure electrical fury. It speaks faster than you can think.",
     "boss_llm_persona_id": "voltharion",
@@ -2092,6 +2100,8 @@
   },
   "shadow_dragon": {
     "id": "shadow_dragon",
+    "fx_signature": "void_breath",
+    "fx_signature_card": {"title": "Void Breath", "subtitle": "What it breathes on stops having been."},
     "name": "Umbraxis, the Void Render",
     "description": "A dragon of living shadow that questions its own existence between attacks. Dangerously philosophical.",
     "boss_llm_persona_id": "umbraxis",
@@ -4876,6 +4886,8 @@
   },
   "chancellor_mordaine": {
     "id": "chancellor_mordaine",
+    "fx_signature": "thundaga",
+    "fx_signature_card": {"title": "Summary Judgment", "subtitle": "Mordaine reads her findings into the record. Every irregular is assessed at once; appeals may be filed afterward, by the survivors.", "bark": "The assessment is complete. I am only reading it into the record."},
     "name": "Chancellor Mordaine",
     "description": "Sorceress-usurper of Castle Harmonia. The architect of World 1 — and the first mask of the Calibrant. Cold, deliberate, and somehow already knows your build.",
     "level": 25,

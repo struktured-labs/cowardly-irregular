@@ -27,6 +27,15 @@ const PALETTES := {
 		[1.0, Color(1.0, 0.85, 0.3, 0.0)]],
 	"steel": [[0.0, Color(1.0, 1.0, 1.0, 0.95)], [0.4, Color(0.7, 0.85, 1.0, 0.7)],
 		[1.0, Color(0.4, 0.5, 0.9, 0.0)]],
+	## W1 boss signatures (batch 1): the Rat King's rot, Glacius's frost, Umbraxis's void, Mordaine's verdict.
+	"rot": [[0.0, Color(0.95, 1.0, 0.6, 1.0)], [0.35, Color(0.55, 0.75, 0.2, 0.95)],
+		[1.0, Color(0.25, 0.2, 0.05, 0.0)]],
+	"frost": [[0.0, Color(1.0, 1.0, 1.0, 1.0)], [0.3, Color(0.7, 0.95, 1.0, 0.95)],
+		[1.0, Color(0.2, 0.45, 1.0, 0.0)]],
+	"void": [[0.0, Color(1.0, 0.85, 1.0, 1.0)], [0.3, Color(0.7, 0.25, 1.0, 0.95)],
+		[1.0, Color(0.15, 0.0, 0.35, 0.0)]],
+	"verdict": [[0.0, Color(1.0, 1.0, 0.95, 1.0)], [0.3, Color(1.0, 0.85, 0.35, 0.95)],
+		[1.0, Color(0.6, 0.35, 0.05, 0.0)]],
 }
 
 static var _tex_cache: Dictionary = {}
@@ -86,6 +95,9 @@ func _release() -> void:
 ## else its first phase at the target. The caller holds damage numbers until then.
 static func impact_time(seq: Dictionary) -> float:
 	var start := float(seq.get("start", 0.0))
+	## A sequence played on its own caster (a self-buff, a summon) has no first-at-the-target phase to read.
+	if seq.has("impact"):
+		return start + float(seq["impact"])
 	for phase in seq.get("phases", []):
 		if phase is Dictionary and str(phase.get("kind", "")) == "bolt":
 			return start + float(phase.get("at", 0.0)) + float(phase.get("dur", 0.4))
@@ -244,7 +256,7 @@ func _bolt(from: Vector2, to: Vector2, p: Dictionary, k: float) -> void:
 	var size := float(p.get("size", 1.4)) * k
 	var spacing := float(p.get("trail_spacing", 10.0))
 	var ramp := _ramp(str(p.get("palette", "fire")))
-	var ember := _ramp("ember")
+	var ember := _ramp(str(p.get("trail_palette", "ember")))
 	var head := _flame(from, size, ramp)
 	head.modulate = ramp.sample(0.05)
 	var mid := (from + to) * 0.5 + Vector2(0, -lift)

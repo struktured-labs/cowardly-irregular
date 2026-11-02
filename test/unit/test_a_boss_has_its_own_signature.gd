@@ -1,0 +1,131 @@
+extends GutTest
+
+## struktured 2026-11-01: "all the bosses need their own interesting animated attacks". Batch 1 gives each W1 boss its
+## own presentation of one move: monsters.json `fx_signature` (an ability in its kit) and `fx_signature_card` (a title,
+## a subtitle, and for Mordaine a spoken bark). When THAT boss casts it, BattleScene plays sig_<monster_id> from
+## data/vfx_sequences.json behind a title card. Anyone else casting the same ability gets the plain effect, so a shared
+## ability (and W1's balance, which he locked) is untouched: no numbers move, only what you see.
+
+const SCENE := preload("res://src/battle/BattleScene.tscn")
+const BattleStateGuard := preload("res://test/unit/helpers/battle_state.gd")
+const SoundState := preload("res://test/unit/helpers/sound_state.gd")
+
+## The floor batch 1 must not fall below: each W1 boss and the move it was given.
+const W1 := {
+	"cave_rat_king": "rat_swarm",
+	"fire_dragon": "inferno_rage",
+	"ice_dragon": "absolute_zero",
+	"lightning_dragon": "lightning_dash",
+	"shadow_dragon": "void_breath",
+	"chancellor_mordaine": "thundaga",
+}
+
+var _monsters: Dictionary
+var _sequences: Dictionary
+var _guard
+var _saved_flash := false
+
+
+func before_all() -> void:
+	_monsters = JSON.parse_string(FileAccess.get_file_as_string("res://data/monsters.json"))
+	var raw = JSON.parse_string(FileAccess.get_file_as_string("res://data/vfx_sequences.json"))
+	_sequences = raw.get("sequences", {}) if raw is Dictionary else {}
+
+
+func before_each() -> void:
+	AutobattleSystem._test_disable_persistence = true
+	_guard = BattleStateGuard.new()
+	_guard.snapshot()
+	_saved_flash = bool(GameState.reduce_flashes)
+
+
+func after_each() -> void:
+	GameState.reduce_flashes = _saved_flash
+	_guard.restore()
+
+
+func after_all() -> void:
+	SoundState.restore()
+
+
+func _kit(entry: Dictionary) -> Array:
+	var out: Array = []
+	for a in entry.get("abilities", []):
+		out.append(a if a is String else str((a as Dictionary).get("id", "")))
+	return out
+
+
+func test_every_w1_boss_carries_its_signature() -> void:
+	for mid in W1:
+		var e: Dictionary = _monsters.get(mid, {})
+		assert_eq(str(e.get("fx_signature", "")), W1[mid], "%s presents %s as its own" % [mid, W1[mid]])
+
+
+## Derived over every holder, so a boss added in a later batch is judged by the same rules without editing this file.
+func test_every_signature_resolves_to_its_own_sequence_and_card() -> void:
+	var holders := 0
+	for mid in _monsters:
+		var e = _monsters[mid]
+		if not (e is Dictionary) or not e.has("fx_signature"):
+			continue
+		holders += 1
+		var sig := str(e["fx_signature"])
+		assert_true(sig in _kit(e), "%s's fx_signature '%s' is a move in its own kit" % [mid, sig])
+		assert_true(JobSystem.get_ability(sig).size() > 0, "%s's fx_signature '%s' resolves in abilities.json" % [mid, sig])
+		var seq_id := str(e.get("fx_signature_sequence", "sig_" + mid))
+		var seq = _sequences.get(seq_id, {})
+		assert_true(seq is Dictionary and (seq.get("phases", []) as Array).size() >= 4,
+			"%s's signature plays a bespoke sequence '%s' of at least four beats" % [mid, seq_id])
+		var card = e.get("fx_signature_card", {})
+		assert_true(card is Dictionary and str(card.get("title", "")) != "", "%s's signature has a title card" % mid)
+	assert_gte(holders, W1.size(), "CONTROL: the batch-1 bosses were found and judged (%d)" % holders)
+
+
+func test_the_boss_casting_its_move_plays_its_sequence_and_nobody_else_does() -> void:
+	var scene = SCENE.instantiate()
+	add_child_autofree(scene)
+	await get_tree().process_frame
+	var mordaine := Combatant.new()
+	mordaine.set_meta("monster_type", "chancellor_mordaine")
+	autofree(mordaine)
+	assert_eq(scene.signature_sequence(mordaine, "thundaga"), "sig_chancellor_mordaine", "Mordaine's Thundaga is Summary Judgment")
+	assert_eq(scene.signature_sequence(mordaine, "firaga"), "", "her other moves stay plain")
+	var other := Combatant.new()
+	other.set_meta("monster_type", "fire_dragon")
+	autofree(other)
+	assert_eq(scene.signature_sequence(other, "thundaga"), "", "another caster's Thundaga stays plain")
+	assert_eq(scene.signature_sequence(other, "inferno_rage"), "sig_fire_dragon", "CONTROL: Pyrroth's own move is his")
+	var party := Combatant.new()
+	autofree(party)
+	assert_eq(scene.signature_sequence(party, "thundaga"), "", "a party member is never a boss")
+
+
+func test_the_verdict_card_carries_its_title_and_bark() -> void:
+	var card: Dictionary = _monsters["chancellor_mordaine"]["fx_signature_card"]
+	assert_eq(str(card.get("title", "")), "Summary Judgment")
+	assert_eq(str(card.get("bark", "")), "The assessment is complete. I am only reading it into the record.",
+		"the bark is keyed to its recording on this exact text")
+
+
+func test_reduce_flashes_dims_the_signature_but_still_plays_it() -> void:
+	var host := Node2D.new()
+	add_child_autofree(host)
+	var sizes := {}
+	for reduce in [false, true]:
+		var fx := FractalFX.new(host, 7)
+		fx.reduce_flashes = reduce
+		var before := host.get_child_count()
+		var total: float = fx.play(FractalFX.load_sequence("sig_chancellor_mordaine"), Vector2(200, 300), Vector2(900, 300))
+		assert_gt(total, 0.5, "the signature plays with reduce_flashes=%s" % reduce)
+		await get_tree().create_timer(0.9).timeout
+		var biggest := 0.0
+		for i in range(before, host.get_child_count()):
+			var c = host.get_child(i)
+			if c is Sprite2D:
+				biggest = maxf(biggest, (c as Sprite2D).scale.x)
+		sizes[reduce] = biggest
+		for c in host.get_children():
+			c.queue_free()
+		await get_tree().process_frame
+	assert_gt(sizes[false], 0.0, "CONTROL: the flash was measured")
+	assert_lt(sizes[true], sizes[false], "Reduce Flashes shrinks the verdict's flash (%.2f vs %.2f)" % [sizes[true], sizes[false]])
