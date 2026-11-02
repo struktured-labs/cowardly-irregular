@@ -797,8 +797,10 @@ if [ "$PLAT" = "linux" ] || [ "$PLAT" = "windows" ]; then
         wait "$WP" || true
         # The sandbox's own profile path: linux mirrors his; wine's is under drive_c/users/<user>/, so it is
         # read back from what the engine created. None found -> a path that cannot exist, so (b) REDs.
+        # Measured on the .759 publish's prefix: users/struktured/AppData/Roaming/Godot/app_userdata/
+        # Cowardly Irregular sits at depth 6 exactly (5 misses it), so 8 is the margin, not a guess.
         if [ "$PLAT" = "windows" ]; then
-            _wd="$(find "$SMOKE_HOME/drive_c/users" -maxdepth 6 -type d -path "*/app_userdata/Cowardly Irregular" -print -quit 2>/dev/null || true)"
+            _wd="$(find "$SMOKE_HOME/drive_c/users" -maxdepth 8 -type d -path "*/app_userdata/Cowardly Irregular" -print -quit 2>/dev/null || true)"
             SB_REL="${_wd#"$SMOKE_HOME"/}"; [ -n "$_wd" ] || SB_REL="drive_c/users/NOT-FOUND/$PROFILE_REL"
         else SB_REL="$PROFILE_REL"; fi
         if ! ./tools/smoke_redirect_proof.sh --verdict "$SRP_SB" "tmp/${PLAT}_smoke_env_seen.txt" "$SB_REL" \
