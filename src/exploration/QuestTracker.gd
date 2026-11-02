@@ -125,13 +125,33 @@ func setup(parent: Node) -> void:
 		qs.quest_state_changed.connect(_on_quest_progress)
 
 
+## Last quest_accept, so the talk-to-giver step that completes in the same frame does not chime a second time.
+var _accept_cue_ms: int = -100000
+const ACCEPT_SWALLOWS_PROGRESS_MS := 400
+
+
+## The quest family (cowir-main 21087): accept, quiet progress, bigger complete. An objective_advanced arrives as an int.
+static func quest_cue_for(state_or_index, ms_since_accept: int) -> String:
+	if state_or_index is String:
+		match state_or_index:
+			"active":
+				return "quest_accept"
+			"complete":
+				return "quest_complete"
+		return ""
+	return "" if ms_since_accept < ACCEPT_SWALLOWS_PROGRESS_MS else "quest_progress"
+
+
 func _on_quest_progress(_a = null, _b = null) -> void:
 	if _label == null:
 		return
 	_update_objective()
 	if SoundManager:
-		# str() guards against int (objective_advanced sends int idx); only quest_state_changed sends "complete" (cowir-sfx msg 2160)
-		SoundManager.play_ui("quest_complete" if str(_b) == "complete" else "soft_chime")
+		var cue := quest_cue_for(_b, Time.get_ticks_msec() - _accept_cue_ms)
+		if cue == "quest_accept":
+			_accept_cue_ms = Time.get_ticks_msec()
+		if cue != "":
+			SoundManager.play_ui(cue)
 	if _side_label != null and _side_label.visible:
 		_side_label.modulate = Color(1.6, 1.4, 0.6)
 		var tw := create_tween()

@@ -57,6 +57,8 @@ const NAME_LABEL_GAP: float = 6.0
 const NAME_LABEL_WIDTH: float = 200.0
 const NAME_LABEL_PX := 16  # on-screen size for every monster, whatever its sprite scale
 const ENEMY_HP_BAR_SIZE := Vector2(60, 5)  # on-screen, whatever the sprite scale
+const SIGNATURE_WINDUP := 0.55  # battle seconds of title card and camera push before a boss's signature sequence
+var _signatures_shown: Dictionary = {}  # monster_id -> true once its signature has played at 1x this battle
 ## The enemies stand this much nearer their edge (struktured 2026-11-01); the party is laid out against its panel instead.
 const ENEMY_EDGE_SHIFT := -24.0
 const PARTY_PANEL_GAP := 14.0  # the party's rightmost body, in its rightmost formation, to the PARTY panel
@@ -294,6 +296,8 @@ const DANGER_HP_THRESHOLD: float = 0.25  # The low-HP beat: danger music, player
 ## the other two never spoke regardless of the fight state.
 var _boss_low_hp_spoken: bool = false
 var _boss_defeat_spoken: bool = false
+## Voiced mid-battle barks (data/boss_barks.json); one instance per battle carries the cooldown (cowir-main 21086).
+var _boss_barks: BossBarks = BossBarks.new()
 ## The boss's last words, buffered: on the scripted path the gloat lands BEFORE battle_ended, on the model path after it.
 var _gloat_line: Dictionary = {}
 ## The live voice for the last words, started once at the first emit: {"text", "stream", "done"}.
@@ -493,6 +497,7 @@ func _ready() -> void:
 	BattleManager.damage_dealt.connect(_on_damage_dealt)
 	BattleManager.attack_missed.connect(_on_attack_missed)
 	BattleManager.hit_negated.connect(_on_hit_negated)
+	BattleManager.status_resisted.connect(_on_status_resisted)
 	BattleManager.healing_done.connect(_on_healing_done)
 	BattleManager.mp_restored.connect(_on_mp_restored)
 	BattleManager.ap_granted.connect(_on_ap_granted)
@@ -566,6 +571,8 @@ func _exit_tree() -> void:
 	"""Cleanup signal connections when scene is freed"""
 	_clear_advance_aura()
 	BattleJuice.clear_battle_context()
+	if SoundManager:
+		SoundManager.stop_voiced_line(self)
 	# Disconnect from BattleManager signals to prevent memory leaks
 	if BattleManager.battle_started.is_connected(_on_battle_started):
 		BattleManager.battle_started.disconnect(_on_battle_started)
@@ -597,6 +604,8 @@ func _exit_tree() -> void:
 		BattleManager.damage_dealt.disconnect(_on_damage_dealt)
 	if BattleManager.attack_missed.is_connected(_on_attack_missed):
 		BattleManager.attack_missed.disconnect(_on_attack_missed)
+	if BattleManager.status_resisted.is_connected(_on_status_resisted):
+		BattleManager.status_resisted.disconnect(_on_status_resisted)
 	if BattleManager.hit_negated.is_connected(_on_hit_negated):
 		BattleManager.hit_negated.disconnect(_on_hit_negated)
 	if BattleManager.healing_done.is_connected(_on_healing_done):
@@ -2817,6 +2826,7 @@ func _play_ability_animation(anim_type: String, animator: BattleAnimatorClass = 
 ## ============================================================
 
 var _full_render_dmg_buffer = null  # null = pass-through; Array = buffering until impact
+var _deaths_after_impact: Array = []  # enemy indices killed by a held hit, dissolved when it lands
 var _full_render_dmg_attacker: Combatant = null  # caster captured at buffer-arm; flush restores it for attribution
 var _full_render_depth: int = 0
 var _full_render_dim_rect: ColorRect = null
@@ -2943,6 +2953,177 @@ func _play_ability_full_render(caster: Combatant, caster_sprite: Node2D, animato
 
 
 ## A data/vfx_sequences.json id the ability names (AbilityVFX), or "" for the ordinary effects.
+## A boss's fx_signature, cast BY that boss, plays sig_<monster_id> ("all the bosses need their own animated attacks").
+func signature_sequence(caster: Combatant, ability_id: String) -> String:
+	if caster == null or not is_instance_valid(caster) or ability_id == "":
+		return ""
+	var monster_id := str(caster.get_meta("monster_type", ""))
+	if monster_id == "":
+		return ""
+	var entry = _load_monsters_data().get(monster_id, {})
+	if not (entry is Dictionary) or str(entry.get("fx_signature", "")) != ability_id:
+		return ""
+	var seq_id := str(entry.get("fx_signature_sequence", "sig_" + monster_id))
+	return seq_id if not FractalFX.load_sequence(seq_id).is_empty() else ""
+
+
+## The card, the bark and the push, then the sequence. Damage numbers wait for its impact like Fire's.
+func _play_signature(caster: Combatant, caster_sprite: Node2D, animator: BattleAnimatorClass, ability: Dictionary, targets: Array, seq_id: String) -> void:
+	_flush_full_render_damage()
+	_full_render_dmg_buffer = []
+	_full_render_dmg_attacker = caster
+	var card: Dictionary = {}
+	var entry = _load_monsters_data().get(str(caster.get_meta("monster_type", "")), {})
+	if entry is Dictionary and entry.get("fx_signature_card") is Dictionary:
+		card = entry["fx_signature_card"]
+	var monster_id := str(caster.get_meta("monster_type", ""))
+	var quiet: bool = not signature_sound_allowed()
+	# He plays at 4x (cowir-main 2026-11-01): a boss's FIRST signature each battle is shown at 1x pacing, later ones compress.
+	var slowed := false
+	var restore_to := _hitlag_base_scale
+	if not quiet and not _signatures_shown.has(monster_id) and restore_to > BATTLE_SPEEDS[0]:
+		_set_battle_time_scale(BATTLE_SPEEDS[0])
+		slowed = true
+	_signatures_shown[monster_id] = true
+	var windup := SIGNATURE_WINDUP
+	var bark := str(card.get("bark", ""))
+	if bark != "" and not quiet:
+		var sec: float = SoundManager.play_voiced_line(caster.combatant_name, bark, self)
+		windup = maxf(windup, sec * Engine.time_scale)
+	var seq_total := sequence_total(seq_id)
+	BattleManager.presentation_hold = maxf(BattleManager.presentation_hold, windup + seq_total + 0.2)
+	if not quiet:
+		SoundManager.play_flourish("boss_signature_card")
+	_show_signature_card(card, ability, windup)
+	if caster_sprite != null and is_instance_valid(caster_sprite) and BattleJuice.camera_rig != null:
+		BattleJuice.camera_rig.punch_zoom(_stable_sprite_anchor(caster_sprite), 0.06, windup)
+	await get_tree().create_timer(windup).timeout
+	if not is_instance_valid(self):
+		return
+	SoundManager.stop_voiced_line(self)
+	var began := Time.get_ticks_msec()
+	var cue := signature_cue(caster)
+	if cue != "" and not quiet:
+		SoundManager.play_flourish(cue)
+	await _play_ability_sequence(caster, caster_sprite, animator, ability, targets, seq_id, true)
+	if not slowed or not is_instance_valid(self):
+		return
+	var left := seq_total - float(Time.get_ticks_msec() - began) / 1000.0 * Engine.time_scale
+	if left > 0.0:
+		await get_tree().create_timer(left).timeout
+	# A speed the player picked during the beat stands; only an untouched 1x is put back.
+	if is_instance_valid(self) and is_equal_approx(_hitlag_base_scale, BATTLE_SPEEDS[0]):
+		_set_battle_time_scale(restore_to)
+
+
+## Secret of Mana-style (struktured 2026-11-01): how grand a cast LOOKS follows its caster's level and stat. Presentation only.
+const INTENSITY_TIERS := [0.0, 0.35, 0.7]  # score at which tiers 1, 2 and 3 begin
+const INTENSITY_LEVEL_CAP := 58.0  # the Calibrant's level, the top of the ladder
+const INTENSITY_STAT_GLORY := 1000.0  # a stat this high reads as full glory (Mordaine's magic is 941)
+
+
+## {k: size/shake multiplier 0.85-1.4, tier: 1-3, score: 0-1}; 60% level, 40% the cast's stat on a log scale.
+func cast_intensity(caster: Combatant, ability: Dictionary) -> Dictionary:
+	var level := 1.0
+	var stat := 0.0
+	if caster != null and is_instance_valid(caster):
+		level = float(caster.job_level)
+		var entry = _load_monsters_data().get(str(caster.get_meta("monster_type", "")), {})
+		if entry is Dictionary and entry.has("level"):
+			level = float(entry["level"])
+		var physical := str(ability.get("type", "")) == "physical"
+		stat = float(caster.get_buffed_stat("attack" if physical else "magic", caster.attack if physical else caster.magic))
+	return intensity_for(level, stat)
+
+
+static func intensity_for(level: float, stat: float) -> Dictionary:
+	var lv := clampf((level - 1.0) / (INTENSITY_LEVEL_CAP - 1.0), 0.0, 1.0)
+	var st := clampf(log(1.0 + maxf(stat, 0.0)) / log(1.0 + INTENSITY_STAT_GLORY), 0.0, 1.0)
+	var score := 0.6 * lv + 0.4 * st
+	var tier := 1
+	for i in INTENSITY_TIERS.size():
+		if score >= float(INTENSITY_TIERS[i]):
+			tier = i + 1
+	return {"k": lerpf(0.85, 1.4, score), "tier": tier, "score": score}
+
+
+## A sequence's whole length in battle seconds, recursion included (FractalFX.play's own sum).
+static func sequence_total(seq_id: String) -> float:
+	var seq: Dictionary = FractalFX.load_sequence(seq_id)
+	var start := float(seq.get("start", 0.0))
+	var total := 0.0
+	for phase in seq.get("phases", []):
+		if phase is Dictionary:
+			total = maxf(total, start + float(phase.get("at", 0.0)) + FractalFX.phase_duration(phase))
+	return total
+
+
+## Signature sounds play at every speed the player picks, 4x included; only autogrind/turbo is silent (cowir-main 21194).
+func signature_sound_allowed() -> bool:
+	return not turbo_mode and not autogrind_console_mode
+
+
+## The sound paired to a boss's signature sequence, timed to its beats; "" when none is recorded.
+func signature_cue(caster: Combatant) -> String:
+	if caster == null or not is_instance_valid(caster):
+		return ""
+	var key := "boss_signature_" + str(caster.get_meta("monster_type", ""))
+	return key if SoundManager._sfx_manifest.has(key) else ""
+
+
+func _show_signature_card(card: Dictionary, ability: Dictionary, hold: float) -> void:
+	var title := str(card.get("title", ability.get("name", "")))
+	if title == "":
+		return
+	var old := get_node_or_null("UI/SignatureCard")
+	if old:
+		old.queue_free()
+	var panel := PanelContainer.new()
+	panel.name = "SignatureCard"
+	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.04, 0.03, 0.08, 0.88)
+	style.border_color = Color(1.0, 0.82, 0.35, 0.9)
+	style.border_width_top = 2
+	style.border_width_bottom = 2
+	style.content_margin_left = 24
+	style.content_margin_right = 24
+	style.content_margin_top = 8
+	style.content_margin_bottom = 8
+	panel.add_theme_stylebox_override("panel", style)
+	var box := VBoxContainer.new()
+	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panel.add_child(box)
+	var head := Label.new()
+	head.text = title
+	head.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	head.add_theme_font_size_override("font_size", TextScale.scaled(30))
+	head.add_theme_color_override("font_color", Color(1.0, 0.9, 0.55))
+	box.add_child(head)
+	var sub := str(card.get("subtitle", ""))
+	if sub != "":
+		var line := Label.new()
+		line.text = sub
+		line.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		line.custom_minimum_size = Vector2(520, 0)
+		line.add_theme_font_size_override("font_size", TextScale.scaled(15))
+		box.add_child(line)
+	var ui := get_node_or_null("UI")
+	if ui == null:
+		return
+	ui.add_child(panel)
+	panel.z_index = 90
+	panel.reset_size()
+	panel.position = Vector2((get_viewport_rect().size.x - panel.size.x) * 0.5, 84.0)
+	panel.modulate.a = 0.0
+	var tw := panel.create_tween()
+	tw.tween_property(panel, "modulate:a", 1.0, 0.12)
+	tw.tween_interval(maxf(hold, 0.3))
+	tw.tween_property(panel, "modulate:a", 0.0, 0.25)
+	tw.tween_callback(panel.queue_free)
+
+
 func _ability_sequence(ability: Dictionary) -> String:
 	return str(AbilityVFX.resolve(ability).get("sequence", ""))
 
@@ -2951,8 +3132,8 @@ func _ability_sequence(ability: Dictionary) -> String:
 ## sequence flies from the caster to each target, and the damage numbers wait for the burst rather than
 ## landing on the first frame of the cast. The battle holds until just after the burst; the closing fling
 ## overlaps whatever acts next, so a Fire turn costs about what a spotlight turn did.
-func _play_ability_sequence(caster: Combatant, caster_sprite: Node2D, animator: BattleAnimatorClass, ability: Dictionary, targets: Array) -> void:
-	var seq_id := _ability_sequence(ability)
+func _play_ability_sequence(caster: Combatant, caster_sprite: Node2D, animator: BattleAnimatorClass, ability: Dictionary, targets: Array, seq_override: String = "", buffering: bool = false) -> void:
+	var seq_id := seq_override if seq_override != "" else _ability_sequence(ability)
 	if animator:
 		_play_ability_animation(_ability_anim_name(ability, animator), animator)
 	var from := Vector2.ZERO
@@ -2960,18 +3141,27 @@ func _play_ability_sequence(caster: Combatant, caster_sprite: Node2D, animator: 
 		var facing: float = -1.0 if party_sprite_nodes.has(caster_sprite) else 1.0
 		from = _stable_sprite_anchor(caster_sprite) + Vector2(40.0 * facing, -20.0)
 	var impact := 0.0
+	var first := true
+	var intensity := cast_intensity(caster, ability)
 	for target in targets:
 		var ts = _get_combatant_sprite(target)
 		if ts == null or not is_instance_valid(ts):
 			continue
-		var played: Dictionary = EffectSystem.spawn_sequence(seq_id, from, _stable_sprite_anchor(ts), float(AbilityVFX.resolve(ability)["power"]))
+		# Sprite-moving phases (lunge, hitstop, impact frames) act once, on the first target, not once per target.
+		var actors: Dictionary = {"caster": caster_sprite, "target": ts} if first else {}
+		first = false
+		var played: Dictionary = EffectSystem.spawn_sequence(seq_id, from, _stable_sprite_anchor(ts),
+			float(AbilityVFX.resolve(ability)["power"]) * float(intensity["k"]), actors, int(intensity["tier"]))
 		impact = maxf(impact, float(played.get("impact", 0.0)))
 	if impact <= 0.0:
 		_spawn_ability_effects(ability, targets)
+		if buffering:
+			_flush_full_render_damage()
 		return
-	_flush_full_render_damage()
-	_full_render_dmg_buffer = []
-	_full_render_dmg_attacker = caster
+	if not buffering:
+		_flush_full_render_damage()
+		_full_render_dmg_buffer = []
+		_full_render_dmg_attacker = caster
 	BattleManager.presentation_hold = maxf(BattleManager.presentation_hold, impact + 0.35)
 	await get_tree().create_timer(impact).timeout
 	if not is_instance_valid(self):
@@ -3244,6 +3434,10 @@ func _flush_full_render_damage() -> void:
 		_on_damage_dealt(args[0], args[1], args[2], args[3], args[4])
 	_last_acting_combatant = prev_acting
 	_full_render_dmg_attacker = null
+	var deaths: Array = _deaths_after_impact
+	_deaths_after_impact = []
+	for idx in deaths:
+		_on_enemy_died(idx)
 
 
 func _on_item_pressed() -> void:
@@ -3615,6 +3809,7 @@ func _on_battle_started() -> void:
 	## Tick 428: reset per-battle boss-dialogue latches.
 	_boss_low_hp_spoken = false
 	_boss_defeat_spoken = false
+	_boss_barks = BossBarks.new()
 	_gloat_line = {}
 	_drop_gloat_voice()
 	_holding_for_boss_beat = false
@@ -3732,6 +3927,8 @@ func _on_battle_ended(victory: bool) -> void:
 	## dialogue["defeat"] array is present. Find the boss combatant
 	## (first enemy with is_boss meta) for the speaker name.
 	_stage_defeat_scene(victory)
+	if not victory:
+		_wipe_bark()
 
 	# Clean up any open menus
 	if active_win98_menu and is_instance_valid(active_win98_menu):
@@ -4389,6 +4586,9 @@ func _on_action_executing(combatant: Combatant, action: Dictionary) -> void:
 	"""Handle action executing - play animations here"""
 	# msg 2749 cycle 12: cache the signal-arg combatant so _on_damage_dealt / _play_ability_animation don't have to read the stale BattleManager.current_combatant. Cleared in _on_action_executed so a status-tick damage_dealt emit outside an action (poison at round-end, reactive counter) never carries a stale attribution.
 	_last_acting_combatant = combatant
+	if combatant in BattleManager.enemy_party and str(action.get("type", "")) in ["attack", "ability"] \
+			and randf() < float(BossBarks.data().get("windup_chance", 0.5)):
+		_boss_bark(combatant, "windup")
 	_update_turn_info()
 	_track_advance_run_begin(combatant, action)
 
@@ -4447,8 +4647,11 @@ func _on_action_executing(combatant: Combatant, action: Dictionary) -> void:
 			# Play the ability-specific sound (fire, ice, lightning, etc.)
 			SoundManager.play_ability(ability_id)
 
+			var sig_seq := signature_sequence(combatant, ability_id)
+			if sig_seq != "":
+				_play_signature(combatant, attacker_sprite, animator, ability, targets, sig_seq)
 			# Physical abilities move to target
-			if ability_type == "physical" and targets.size() > 0:
+			elif ability_type == "physical" and targets.size() > 0:
 				var target_sprite = _get_combatant_sprite(targets[0])
 				var target_animator = _get_combatant_animator(targets[0])
 				if attacker_sprite and target_sprite:
@@ -5666,6 +5869,11 @@ func _on_enemy_hp_changed(old_value: int, new_value: int, enemy_idx: int) -> voi
 func _on_enemy_died(enemy_idx: int) -> void:
 	"""Handle enemy death"""
 	_command_menu.invalidate_alive_cache()
+	# A held hit has not landed yet: dissolving now left Fractal Fire's bolt flying at an empty spot (struktured, .760 preview).
+	if _full_render_dmg_buffer != null:
+		if not enemy_idx in _deaths_after_impact:
+			_deaths_after_impact.append(enemy_idx)
+		return
 	# enemy_death moved INTO the death tween (after the flash): fired here it started first and the killing blow's hit sound stomped it on the shared _battle_player — the scorch was never audible (struktured 2026-08-15).
 	# The duck stays HERE rather than moving with the cue: it writes a bus effect, not a player, so the stomping that motivated that move cannot reach it, and punctuation should land on the death event rather than on the flash.
 	if _intent_tier() == BattleJuice.Tier.FULL and BattleJuice.flag("audio_kill_duck"):
@@ -5988,6 +6196,11 @@ func _on_damage_dealt(target: Combatant, amount: int, is_crit: bool, element: St
 				_boss_low_hp_spoken = true
 				if _battle_dialogue and _battle_dialogue.has_method("show_boss_intro"):
 					_show_boss_dialogue(target.combatant_name, _boss_dialogue_data["low_hp"])
+	if target in BattleManager.enemy_party and target.is_alive and target.has_meta("is_boss"):
+		if target.get_hp_percentage() < DANGER_HP_THRESHOLD * 100.0:
+			_boss_bark(target, "low_hp")
+		elif amount >= target.max_hp * 0.15:
+			_boss_bark(target, "big_hit")
 
 	## A crit is a property of the hit that HAPPENED, not a second hit, so it is signalled above the
 	## return below. That return stops an ability stacking a weapon layer on its own cue — it was
@@ -6102,6 +6315,13 @@ func _on_hit_negated(target: Combatant, banner: String) -> void:
 		return
 	_results_display.on_hit_negated(target, banner)
 	SoundManager.play_battle("attack_miss")
+
+
+## A status that failed to land: a soft glancing tink and a RESIST banner, never silence (struktured 2026-11-01).
+func _on_status_resisted(target: Combatant, _effect: String) -> void:
+	if is_instance_valid(_results_display):
+		_results_display.on_hit_negated(target, "RESIST")
+	SoundManager.play_battle("status_resisted")
 
 
 func _on_healing_done(target: Combatant, amount: int) -> void:
@@ -6421,6 +6641,31 @@ func _on_party_combat_line(combatant: Combatant, line: String, voice_trigger: St
 			if job_id != "":
 				audio_key = "voice_%s_%s" % [job_id, voice_trigger]
 		_spawn_quip_bubble(sprite, combatant.combatant_name, line, _get_job_quip_color(combatant), 2.0, audio_key, voice_stream)
+
+
+## A wipe barks only when no last words will follow on the same line player (cowir-ai 21120: a boss never speaks twice).
+func _wipe_bark() -> void:
+	if _boss_beat_expected():
+		return
+	_boss_bark(_boss_combatant(), "party_wipe")
+
+
+## A boss's short voiced bark; silent at 4x/turbo, over a scripted line or a bubble, or inside the cooldown.
+func _boss_bark(boss: Node, trigger: String) -> void:
+	if boss == null or not is_instance_valid(boss) or not boss.has_meta("is_boss"):
+		return
+	var bubble_up := false
+	for b in BattleSpeechBubble._live:
+		if is_instance_valid(b):
+			bubble_up = true
+			break
+	var blocked: bool = (_battle_dialogue != null and is_instance_valid(_battle_dialogue) and _battle_dialogue.visible) \
+			or bubble_up or SoundManager.is_voiced_line_playing() or SoundManager._voice_player.playing
+	if not BossBarks.allowed(Engine.time_scale, turbo_mode or autogrind_console_mode, blocked):
+		return
+	var line: String = _boss_barks.pick(str(boss.get_meta("monster_type", "")), trigger, Time.get_ticks_msec())
+	if line != "":
+		SoundManager.play_voiced_line(boss.combatant_name, line, self)
 
 
 # ── Wave E — Boss dialogue surface ───────────────────────────────────────────

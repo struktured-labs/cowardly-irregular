@@ -29,6 +29,8 @@ signal damage_dealt(target: Combatant, amount: int, is_crit: bool, element: Stri
 signal attack_missed(target: Combatant)
 ## A hit that never connected for a reason other than a miss. Banner is the sprite text: "IMMUNE" or "BLOCK".
 signal hit_negated(target: Combatant, banner: String)
+## A harmful support roll (an ailment or a stat drop) failed on this target, so the miss is heard and logged, not silent.
+signal status_resisted(target: Combatant, effect: String)
 signal healing_done(target: Combatant, amount: int)
 ## struktured 2026-09-07: MP gains and ability AP grants get their own popups (purple / red) — never healing_done's green.
 signal mp_restored(target: Combatant, amount: int)
@@ -7019,7 +7021,11 @@ func _support_harm_lands(target: Combatant, chance: float) -> bool:
 ## The predicate decides. Wards and ally buffs keep the raw roll.
 func _support_roll_lands(target: Combatant, effect: String, chance: float) -> bool:
 	if support_effect_is_harmful(effect):
-		return _support_harm_lands(target, chance)
+		var landed: bool = _support_harm_lands(target, chance)
+		if not landed:
+			status_resisted.emit(target, effect)
+			battle_log_message.emit("[color=gray]%s resists %s.[/color]" % [target.combatant_name, effect.replace("_", " ")])
+		return landed
 	return randf() < chance
 
 
