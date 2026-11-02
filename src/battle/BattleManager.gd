@@ -10668,6 +10668,8 @@ func _route_drop_to_equipment_pool(item_id: String) -> bool:
 	if not game_loop.equipment_pool.has(pool_key):
 		game_loop.equipment_pool[pool_key] = []
 	game_loop.equipment_pool[pool_key].append(item_id)
+	if GameState:
+		GameState.note_acquired(item_id)
 	return true
 
 
