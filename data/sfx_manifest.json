@@ -212,7 +212,7 @@
     },
     "ability_summon": {
       "file": "assets/audio/sfx/ability_summon.ogg",
-      "prompt": "SYNTHESISED, not generated — held low root+fifth drone with a noise swell and a sub thump. All seven summons (Ifrit/Shiva/Ramuh/Bahamut/rat_swarm/royal_summon/pack_call) played the melee thump. Weight comes from held low pitch, NOT a descending glide — a fall is a sweep too. Run the tool.",
+      "prompt": "SYNTHESISED, not generated — held low root+fifth drone with a noise swell and a sub thump. All seven summons (summon_ifrit/summon_shiva/summon_ramuh/summon_bahamut by ability id, now Overclock/Cold Storage/Surge Protector/Legacy System, plus rat_swarm/royal_summon/pack_call) played the melee thump. Weight comes from held low pitch, NOT a descending glide — a fall is a sweep too. Run the tool.",
       "duration_seconds": 1.3,
       "prompt_influence": 0.8,
       "source": "tools/gen_chiptune_sfx.py summon"
@@ -1882,6 +1882,13 @@
       "prompt": "Huge close-miked drum hit with a sharp rimshot crack on top, loud and full-bodied, deep resonant thump underneath a bright snapping attack, powerful cinematic percussion hit, strong and forward in the mix",
       "duration_seconds": 0.6,
       "prompt_influence": 0.7
+    },
+    "chain_next": {
+      "file": "assets/audio/sfx/chain_next.ogg",
+      "prompt": "PLACEHOLDER (cowir-main 20959: a short rising stinger as the chain card 'Another group closes in!' shows between linked battles; a labelled local synth until a designed asset). sox: square arpeggio A4-C5-E5-A5 at 0.11 s each into a 0.5 s A5+E6 hold with 18 Hz tremolo, over a 300->1400 Hz sine sweep, light reverb, -16 LUFS under a -1 dBTP limiter, padded to 1.0 s with a 0.1 s fade.",
+      "duration_seconds": 1.0,
+      "source": "sox_synth",
+      "placeholder": true
     },
     "victory_slam_s": {
       "file": "assets/audio/sfx/victory_slam_s.ogg",

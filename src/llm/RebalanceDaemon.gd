@@ -70,10 +70,10 @@ const EVENT_MEANINGS := {
 ## entry checks happen later.
 ## reason — short prose explanation for the diegetic "what did the AI
 ## change for me" surface.
+## `deltas` is checked in request_llm_proposal, not here: a no_change reply may leave it out, and the guard would drop it.
 const REBALANCE_SCHEMA: Dictionary = {
 	"verdict":    ["nudge_easier", "nudge_harder", "no_change"],
 	"confidence": "float",
-	"deltas":     "Array",
 	"reason":     "String",
 }
 
@@ -286,9 +286,15 @@ func request_llm_proposal(proposal_idx: int, recent_events: Array = []) -> bool:
 		print(outcome_line(str(trigger), str(proposal["status"]), proposal))
 		return false
 	var r: Dictionary = result as Dictionary
+	## A nudge must say what it moves; "nothing to change" needs no list (his .758 log: three right answers dropped as unusable).
+	var deltas: Variant = r.get("deltas", [] if str(r.get("verdict", "")) == "no_change" else null)
+	if not (deltas is Array):
+		proposal["status"] = "failed_fallback"
+		print(outcome_line(str(trigger), str(proposal["status"]), proposal))
+		return false
 	proposal["verdict"]    = str(r.get("verdict", "no_change"))
 	proposal["confidence"] = float(r.get("confidence", 0.0))
-	proposal["deltas"]     = r.get("deltas", [])
+	proposal["deltas"]     = deltas
 	proposal["reason"]     = str(r.get("reason", ""))
 	proposal["status"]     = "proposed"
 	print(outcome_line(str(trigger), str(proposal["status"]), proposal))
@@ -432,7 +438,7 @@ func force_apply(proposal_idx: int) -> String:
 			return _reject(proposal, "one of the model's deltas was malformed")
 		var cname: String = str((delta as Dictionary).get("constant", ""))
 		if cname not in ALLOWED_CONSTANTS:
-			# REBALANCE_SCHEMA constrains deltas to an Array and not the names inside it, so a
+			# request_llm_proposal checks deltas is an Array, not the names inside it, so a
 			# model naming an unlisted constant reaches review and is refused only here.
 			return _reject(proposal, "'%s' is not a dial this game lets the AI turn" % cname)
 	var gs: Node = _resolve_game_state()

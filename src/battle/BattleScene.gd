@@ -17,6 +17,7 @@ const BattleCommandMenuClass = preload("res://src/battle/BattleCommandMenu.gd")
 const BattleCameraRigClass = preload("res://src/battle/BattleCameraRig.gd")
 const BattleResultsDisplayClass = preload("res://src/battle/BattleResultsDisplay.gd")
 const AdvanceAuraClass = preload("res://src/battle/AdvanceAura.gd")
+const StatusAuraClass = preload("res://src/battle/StatusAura.gd")
 
 ## Base display height for party sprites. Aseprite frames are ground truth —
 ## we don't compensate for non-uniform character fill within the artist's
@@ -337,6 +338,7 @@ static var _hints_shown: Dictionary = {}  # {"hint_id": true}  # Static: persist
 
 ## Status effect icon containers (combatant -> HBoxContainer of icons)
 var _status_icon_containers: Dictionary = {}  # {Combatant: HBoxContainer}
+var _status_auras: Dictionary = {}  # {Combatant: StatusAura}: every status ANIMATED on the battler, beside the badge row
 
 ## Buff/debuff visual overlay nodes (combatant -> {glow: ColorRect, particles: Array, sigil: Sprite2D})
 var _buff_visual_nodes: Dictionary = {}  # {Combatant: Dictionary}
@@ -1142,6 +1144,7 @@ func _create_battle_sprites() -> void:
 	## _buff_visual_nodes is the one with no other way out: _remove_buff_visual is only ever reached
 	## for a combatant still in BattleManager's parties, so a replaced enemy is never visited again.
 	_status_icon_containers.clear()
+	_status_auras.clear()
 	_enemy_hp_bars.clear()
 	_buff_visual_nodes.clear()
 
@@ -1757,6 +1760,7 @@ func _setup_status_icons(combatant: Combatant, sprite: AnimatedSprite2D) -> void
 	container.position = Vector2(centre_x - STATUS_ROW_WIDTH * unscale.x * 0.5, top - STATUS_ROW_LIFT * unscale.y)
 	sprite.add_child(container)
 	_status_icon_containers[combatant] = container
+	_status_auras[combatant] = _make_status_aura(sprite)
 
 	# Connect signals for reactive updates
 	if not combatant.status_added.is_connected(_on_combatant_status_changed):
@@ -1766,6 +1770,25 @@ func _setup_status_icons(combatant: Combatant, sprite: AnimatedSprite2D) -> void
 
 	# Show any existing statuses
 	_refresh_status_icons(combatant)
+
+
+## The animated overlay, counter-scaled to screen pixels and fitted to the idle frame's FIGURE, so a motif is the same
+## size on a 0.5x hero and a 2.5x dragon and stands on the body, not on the frame's empty margin.
+func _make_status_aura(sprite: AnimatedSprite2D) -> Node2D:
+	var aura = StatusAuraClass.new()
+	aura.name = "StatusAura"
+	var sc := sprite.scale
+	aura.scale = Vector2(1.0 / maxf(absf(sc.x), 0.01), 1.0 / maxf(absf(sc.y), 0.01))
+	if sprite.sprite_frames and sprite.sprite_frames.has_animation(&"idle") and sprite.sprite_frames.get_frame_count(&"idle") > 0:
+		var idle_tex = sprite.sprite_frames.get_frame_texture(&"idle", 0)
+		if idle_tex:
+			var fig: Rect2 = AdvanceAuraClass.figure_rect_of(idle_tex)
+			var origin := fig.position - Vector2(idle_tex.get_size()) * 0.5
+			if sprite.flip_h:
+				origin.x = -(origin.x + fig.size.x)
+			aura.body = Rect2(origin * Vector2(absf(sc.x), absf(sc.y)), fig.size * Vector2(absf(sc.x), absf(sc.y)))
+	sprite.add_child(aura)
+	return aura
 
 
 func _on_combatant_status_changed(_status: String, combatant: Combatant) -> void:
@@ -1798,6 +1821,13 @@ func _refresh_status_icons(combatant: Combatant, animate: bool = true) -> void:
 	# doom_counter is a Combatant int field, not a status_effect — surface the lethal countdown so it's trackable after the initial log scrolls away
 	if "doom_counter" in combatant and combatant.doom_counter > 0:
 		wanted.append({"key": "doom_counter", "status": "doom_counter", "text": "☠ %d" % combatant.doom_counter, "color": Color(0.6, 0.1, 0.7)})
+
+	var aura = _status_auras.get(combatant)
+	if aura != null and is_instance_valid(aura):
+		var ids: Array = []
+		for w in wanted:
+			ids.append(w["status"])
+		aura.set_statuses(ids)
 
 	var live_keys: Dictionary = {}
 	for w in wanted:
@@ -3406,6 +3436,8 @@ func _on_battle_started() -> void:
 		% [InputProfileManager.hint_for_action("battle_defer"),
 			InputProfileManager.hint_for_action("battle_advance")])
 
+	_show_chain_intro(BattleManager.chain_link, BattleManager.chain_total)
+
 	# Tutorial popups (fire once per save)
 	TutorialHints.show(self, "first_battle")
 	if _check_for_boss():
@@ -3490,7 +3522,7 @@ func _on_battle_started() -> void:
 	_boss_low_hp_spoken = false
 	_boss_defeat_spoken = false
 	_gloat_line = {}
-	_gloat_voice = {}
+	_drop_gloat_voice()
 	_holding_for_boss_beat = false
 	_deferred_defeat_scene = {}
 
@@ -5042,6 +5074,48 @@ func _on_round_ended(round_num: int) -> void:
 
 
 ## Bravely Default-style round boundary: brief centered banner + AP-label gold flash on the party panel. Banner suppressed at 4x+ (same convention as speech bubbles); the CUE is not — struktured 2026-08-22 "still no sound to indicate next round", and the banner threshold was swallowing it whole.
+## The chain says so up front (struktured: "not even obvious it's a chain battle"): a banner, and a tag for the whole fight.
+static func chain_banner_text(link: int, total: int) -> String:
+	return "CHAIN ×%d: more are closing in!" % total if link <= 1 else "CHAIN %d/%d" % [link, total]
+
+
+func _show_chain_intro(link: int, total: int) -> void:
+	if total <= 1:
+		return
+	log_message("[color=orange]%s[/color]" % chain_banner_text(link, total))
+	var ui = get_node_or_null("UI")
+	var tag := Label.new()
+	tag.name = "ChainTag"
+	tag.text = "Chain %d/%d" % [link, total]
+	tag.add_theme_font_size_override("font_size", TextScale.scaled(16))
+	tag.add_theme_color_override("font_color", Color(1.0, 0.78, 0.3))
+	tag.add_theme_color_override("font_outline_color", Color(0.1, 0.08, 0.02))
+	tag.add_theme_constant_override("outline_size", 4)
+	tag.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	(ui if ui else self).add_child(tag)
+	## Under the round title, not on it: the title panel spans the top ~52 px (seen in tools/chain_shots).
+	tag.position = Vector2((get_viewport_rect().size.x - tag.get_combined_minimum_size().x) / 2.0, 54)
+	if turbo_mode or autogrind_console_mode:
+		return
+	var banner := Label.new()
+	banner.name = "ChainBanner"
+	banner.text = chain_banner_text(link, total)
+	banner.add_theme_font_size_override("font_size", TextScale.scaled(28))
+	banner.add_theme_color_override("font_color", Color(1.0, 0.78, 0.3))
+	banner.add_theme_color_override("font_outline_color", Color(0.1, 0.08, 0.02))
+	banner.add_theme_constant_override("outline_size", 6)
+	banner.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	banner.z_index = 90
+	banner.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var vp := get_viewport_rect().size
+	(ui if ui else self).add_child(banner)
+	banner.position = Vector2((vp.x - banner.get_combined_minimum_size().x) / 2.0, vp.y * 0.22)
+	var t := create_tween().set_ignore_time_scale(true)
+	t.tween_interval(1.6)
+	t.tween_property(banner, "modulate:a", 0.0, 0.3)
+	t.tween_callback(banner.queue_free)
+
+
 func _show_round_banner(round_num: int) -> void:
 	if turbo_mode or autogrind_console_mode:
 		return
@@ -6372,7 +6446,7 @@ func _play_boss_beat(is_victory: bool) -> void:
 	_battle_dialogue.show_boss_last_words(_gloat_speaker_name(is_victory), spoken, _boss_monster_id(), live_voice)
 	await _hold_beat_dialogue()
 	## Whatever is still synthesizing is abandoned with the line, so it can never speak over what comes next.
-	_gloat_voice = {}
+	_drop_gloat_voice()
 	_holding_for_boss_beat = false
 
 
@@ -6443,7 +6517,7 @@ func _start_gloat_voice(text: String, is_victory: bool) -> void:
 
 ## Static, so a battle freed mid-synthesis has no instance for the await to resume into.
 static func _synthesize_into(job: Dictionary, speaker_id: String, text: String) -> void:
-	job["stream"] = await VoiceService.synthesize(speaker_id, text, GLOAT_VOICE_TIMEOUT_SEC)
+	job["stream"] = await VoiceService.synthesize(speaker_id, text, GLOAT_VOICE_TIMEOUT_SEC, job)
 	job["done"] = true
 
 
@@ -6476,6 +6550,13 @@ func _join_or_drop_gloat_voice(shown_at: int) -> void:
 		return
 	if bool(_gloat_voice["done"]) and in_window and _battle_dialogue.line_index() == 0:
 		_battle_dialogue.join_live_voice(_gloat_voice.get("stream"))
+	_drop_gloat_voice()
+
+
+## Forgets the live voice, and cancels a running synthesis so the party's voice pool is no longer held behind it.
+func _drop_gloat_voice() -> void:
+	if not _gloat_voice.is_empty() and not bool(_gloat_voice.get("done", false)):
+		_gloat_voice["cancel"] = true
 	_gloat_voice = {}
 
 

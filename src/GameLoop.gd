@@ -5245,6 +5245,7 @@ func _begin_chain(leader: Array) -> Array:
 	_chain_links = MonsterSpawner.pack_chain([leader] + joiners)
 	if _chain_links.is_empty():
 		return leader
+	_chain_total = _chain_links.size()
 	print("[CHAIN] %d group(s) in %d battle(s): %s" % [1 + joiners.size(), _chain_links.size(), str(_chain_links)])
 	return _next_chain_link()
 
@@ -5253,21 +5254,32 @@ func _begin_chain(leader: Array) -> Array:
 func _next_chain_link() -> Array:
 	var link: Array = _chain_links.pop_front()
 	_chain_engaged += link.size()
+	_chain_index += 1
 	var enemies: Array = []
 	for g in link:
 		enemies.append_array(g)
 	return enemies
 
 
+## What the next battle needs to know about its chain: groups engaged for the rewards, link N of M for the banner and tag.
+func _publish_chain_to_battle() -> void:
+	BattleManager.chain_groups = maxi(_chain_engaged, 1)
+	BattleManager.chain_link = _chain_index if _chain_total > 1 else 0
+	BattleManager.chain_total = _chain_total if _chain_total > 1 else 0
+
+
 func _end_chain() -> void:
 	_chain_links = []
 	_chain_engaged = 0
+	_chain_total = 0
+	_chain_index = 0
 
 
 ## The next link starts from the victory screen: iris-close, swap the battle, iris-open. One victory screen per link.
 func _continue_chain() -> void:
 	var enemies: Array = _next_chain_link()
 	print("[CHAIN] next battle: %s (%d group(s) engaged)" % [str(enemies), _chain_engaged])
+	await _show_chain_card(BattleManager.apply_chain_breather(party) if BattleManager else {})
 	if BattleTransition:
 		await BattleTransition.play_exit_transition(true)
 	if not await _start_battle_async(enemies, true):
@@ -5278,6 +5290,22 @@ func _continue_chain() -> void:
 		return
 	if BattleTransition:
 		await BattleTransition.fade_out()
+
+
+## The beat between links (struktured: "no warning, no preamble"): who is coming, which link, what the breather gave.
+func _show_chain_card(restored: Dictionary) -> void:
+	if not is_inside_tree():
+		return  ## a card outside the tree never ticks, and waiting on it would hang the chain
+	var card := ChainCard.new()
+	card.name = "ChainCard"
+	card.hold_sec = chain_card_seconds
+	card.title_text = ChainCard.title_for(_chain_index, _chain_total)
+	card.detail_text = ChainCard.detail_for(restored)
+	add_child(card)
+	if SoundManager and SoundManager._sfx_manifest.has("chain_next"):
+		SoundManager.play_ui("chain_next")
+	await card.finished
+	card.queue_free()
 
 
 ## Scenes hide via three routes because they parent three ways: tracked ref, MapSystem (/root), or directly under GameLoop
@@ -5343,7 +5371,7 @@ func _start_battle_async(specific_enemies: Array = [], is_encounter: bool = fals
 	_hide_exploration_scenes()
 
 	if BattleManager:
-		BattleManager.chain_groups = maxi(_chain_engaged, 1)
+		_publish_chain_to_battle()
 	# Save battle config for retry
 	_last_battle_enemies = specific_enemies.duplicate()
 	_last_battle_is_encounter = is_encounter
@@ -5886,6 +5914,11 @@ var _battle_transition_starting: bool = false  # set by _on_exploration_battle_t
 ## Chained encounters: the battles still to fight after this one (each an Array of groups), and the groups engaged so far.
 var _chain_links: Array = []
 var _chain_engaged: int = 0
+## Battles in this chain and which one is on (1-based); 0/0 when no chain is running.
+var _chain_total: int = 0
+var _chain_index: int = 0
+## Seconds the between-links card holds; tests shorten it.
+var chain_card_seconds: float = ChainCard.HOLD_SEC
 var _transition_wd_gen: int = 0  # generation token so a watchdog never fires on a LATER transition
 
 ## Wall-clock floor under the two no-expiry latches that can strand a session (2026-08-08: InputLockManager's 10s net covered the only gate that never needed one — nets grow where failure is FELT, not where it is severe). Mirrors the battle stall watchdog: gut hard-off, generation token, fires only if THIS transition is still latched, LOUD.

@@ -6,8 +6,8 @@ extends GutTest
 
 const HARMONIA_TSCN := "res://src/maps/villages/HarmoniaVillage.tscn"
 const TILE := 32
-const STAIRS := [Vector2i(11, 8), Vector2i(12, 8), Vector2i(22, 8), Vector2i(23, 8),
-	Vector2i(12, 19), Vector2i(13, 19), Vector2i(22, 19), Vector2i(23, 19)]
+const STAIRS := [Vector2i(14, 9), Vector2i(15, 9), Vector2i(27, 9), Vector2i(28, 9),
+	Vector2i(15, 22), Vector2i(16, 22), Vector2i(27, 22), Vector2i(28, 22)]
 const SCENES := ["res://data/cutscenes/world1_chapter1.json", "res://data/cutscenes/world1_harmonia_after_cave.json"]
 
 var _v: Node
@@ -26,24 +26,24 @@ func _cell(pos: Vector2) -> Vector2i:
 
 func test_three_tiers_and_eight_stairs() -> void:
 	var HG := preload("res://src/exploration/HeightGrid.gd")
-	assert_eq(HG.height_at(_v._height_grid, Vector2i(18, 4)), 2, "castle approach")
-	assert_eq(HG.height_at(_v._height_grid, Vector2i(18, 13)), 1, "town")
-	assert_eq(HG.height_at(_v._height_grid, Vector2i(18, 22)), 0, "market")
+	assert_eq(HG.height_at(_v._height_grid, Vector2i(23, 4)), 2, "castle approach")
+	assert_eq(HG.height_at(_v._height_grid, Vector2i(23, 15)), 1, "town")
+	assert_eq(HG.height_at(_v._height_grid, Vector2i(23, 26)), 0, "market")
 	assert_eq(_v._stair_cells.size(), STAIRS.size())
 	for s in STAIRS:
 		assert_true(_v._stair_cells.has(s), "stair at %s" % s)
 		assert_true(_v._is_cell_walkable(s), "stair %s walkable" % s)
 	assert_gt(_v._face_cells.size(), 30, "two cliff lines derive faces")
-	assert_false(_v._is_cell_walkable(Vector2i(6, 8)), "row 8 face blocks")
-	assert_false(_v._is_cell_walkable(Vector2i(15, 19)), "row 19 face blocks")
+	assert_false(_v._is_cell_walkable(Vector2i(6, 9)), "row 9 face blocks")
+	assert_false(_v._is_cell_walkable(Vector2i(18, 22)), "row 22 face blocks")
 
 
 func test_stairs_connect_and_ledges_do_not() -> void:
-	assert_true(_v._can_step(Vector2i(11, 7), Vector2i(11, 8)), "down the west stair")
-	assert_true(_v._can_step(Vector2i(23, 8), Vector2i(23, 9)), "off the east stair into town")
-	assert_true(_v._can_step(Vector2i(12, 18), Vector2i(12, 19)), "town -> market stair")
-	assert_false(_v._can_step(Vector2i(9, 7), Vector2i(9, 8)), "straight off the ledge")
-	assert_false(_v._can_step(Vector2i(20, 18), Vector2i(20, 19)), "straight off the lower ledge")
+	assert_true(_v._can_step(Vector2i(14, 8), Vector2i(14, 9)), "down the west stair")
+	assert_true(_v._can_step(Vector2i(28, 9), Vector2i(28, 10)), "off the east stair into town")
+	assert_true(_v._can_step(Vector2i(15, 21), Vector2i(15, 22)), "town -> market stair")
+	assert_false(_v._can_step(Vector2i(12, 8), Vector2i(12, 9)), "straight off the ledge")
+	assert_false(_v._can_step(Vector2i(25, 21), Vector2i(25, 22)), "straight off the lower ledge")
 
 
 func test_staged_marks_are_walkable_and_paths_never_leave_a_tier_without_a_stair() -> void:
