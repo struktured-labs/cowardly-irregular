@@ -24,10 +24,12 @@ func test_a_renamed_spell_shows_its_menu_name_beside_its_id() -> void:
 	assert_string_contains(kit_block, DialoguePrompts.SHOWN_NAME_RULE, "and is told to write the name, not the id")
 
 
+## cure shows players "Sanatio" and fire "Ignis" (25 such); power_strike shows "Power Strike", one of the 264 that match.
 func test_an_id_that_is_its_own_name_is_not_repeated() -> void:
+	assert_eq(_shown("power_strike").to_lower().replace(" ", "_"), "power_strike", "FIXTURE: its menu name is its id")
 	var kit_block: String = DialoguePrompts._format_rule_kit(
-		{"resolved": true, "job_id": "cleric", "kit": ["cure"], "max_mp": 30, "costs": {"cure": 6}})
-	assert_string_contains(kit_block, "cure - 6 MP", "cure is shown as Cure, so the line stays as it was")
+		{"resolved": true, "job_id": "fighter", "kit": ["power_strike"], "max_mp": 30, "costs": {"power_strike": 4}})
+	assert_string_contains(kit_block, "  power_strike - 4 MP", "a name that only spells its id adds nothing to the line")
 
 
 func test_the_party_kit_shows_the_names_too() -> void:
