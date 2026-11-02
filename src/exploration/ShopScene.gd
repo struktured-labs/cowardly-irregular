@@ -931,6 +931,8 @@ func _add_item_to_inventory(item_id: String) -> bool:
 			if not pool.has(key):
 				pool[key] = []
 			pool[key].append(item_id)
+			if GameState:
+				GameState.note_acquired(item_id)
 		return true
 	# Magic purchases handled separately in _attempt_magic_purchase. Any
 	# other shop_type values reaching here are an authoring error — refuse
