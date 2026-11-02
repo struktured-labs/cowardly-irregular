@@ -19,6 +19,7 @@ const VP := Vector2(1280, 720)
 var _guard
 var _saved_scale := 1.0
 var _saved_text := 1.0
+var _saved_formation := 0
 
 
 func before_each() -> void:
@@ -27,9 +28,12 @@ func before_each() -> void:
 	_guard.snapshot()
 	_saved_scale = Engine.time_scale
 	_saved_text = GameState.text_size_scale
+	_saved_formation = BS.current_formation
 
 
 func after_each() -> void:
+	## current_formation is STATIC and the headless resolver applies it: a cycled formation left behind buffed the next file's grind party.
+	BS.current_formation = _saved_formation
 	GameState.set_text_size_scale(_saved_text)
 	Engine.time_scale = _saved_scale
 	_guard.restore()
