@@ -13601,6 +13601,18 @@
       "seed": 42,
       "whisper_heard": "You always press the same PC. I will press 5.",
       "whisper_score": 1.0
+    },
+    "door_house_open": {
+      "file": "assets/audio/sfx/door_house_open.ogg",
+      "source": "derived",
+      "prompt": "A house door opening on the ~0.25 s village door animation (cowir-main 21319; cowir-overworld's VillageDoor plays door_<style>_open and falls back to this). Cut from door_open's first 0.42 s, pitched up 12% for a lighter wooden door than the dungeon one, 5 ms fade-in, 100 ms fade-out, levelled to -19 LUFS.",
+      "duration_seconds": 0.42
+    },
+    "door_house_close": {
+      "file": "assets/audio/sfx/door_house_close.ogg",
+      "source": "derived",
+      "prompt": "A house door closing behind the player as the village door animation runs open->closed (fallback for door_<style>_close). Cut from door_close's first 0.34 s (the thud and latch), pitched up 12%, +3 dB, 80 ms fade-out.",
+      "duration_seconds": 0.34
     }
   }
 }
