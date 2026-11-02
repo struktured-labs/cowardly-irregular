@@ -3,7 +3,7 @@
   "title": "The Next One",
   "world": 1,
   "trigger": "world1_epilogue_complete",
-  "background": "prologue_village",
+  "background": "harmonia_square_portal",
   "description": "The party stands at the portal in Dr. Temporal's workshop. They reckon with the diagram \u2014 a map of phases, not an administrative chart. Five more worlds like this one. The Fighter steps through first.",
   "steps": [
     {

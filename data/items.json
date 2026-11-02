@@ -13,7 +13,7 @@
   },
   "hi_potion": {
     "id": "hi_potion",
-    "name": "Hi-Potion",
+    "name": "Potio Maior",
     "category": 0,
     "target_type": 0,
     "description": "Restores a lot of HP",
@@ -25,7 +25,7 @@
   },
   "mega_potion": {
     "id": "mega_potion",
-    "name": "Mega Potion",
+    "name": "Potio Communis",
     "category": 0,
     "target_type": 1,
     "description": "Restores HP to all allies",
@@ -62,7 +62,7 @@
   },
   "hi_ether": {
     "id": "hi_ether",
-    "name": "Hi-Ether",
+    "name": "Aether Maior",
     "category": 0,
     "target_type": 0,
     "description": "Restores 100 MP",
@@ -185,7 +185,7 @@
   },
   "x_potion": {
     "id": "x_potion",
-    "name": "X-Potion",
+    "name": "Potio Maxima",
     "category": 0,
     "target_type": 0,
     "description": "Fully restores one ally's HP",
@@ -322,7 +322,7 @@
   },
   "mega_ether": {
     "id": "mega_ether",
-    "name": "Mega Ether",
+    "name": "Aether Communis",
     "category": 0,
     "target_type": 1,
     "description": "Restores 50 MP to all allies",
@@ -1224,7 +1224,7 @@
   },
   "megalixir": {
     "id": "megalixir",
-    "name": "Megalixir",
+    "name": "Elixir Communis",
     "category": 0,
     "target_type": 1,
     "description": "Fully restores HP and MP for the entire party.",

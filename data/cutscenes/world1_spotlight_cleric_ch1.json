@@ -3,7 +3,7 @@
   "title": "The Half-Second Before",
   "world": 1,
   "trigger": "world1_spotlight_cleric_trigger",
-  "background": "prologue_village",
+  "background": "harmonia_square",
   "description": "Harmonia, ch.1. An old woman at the well is carrying a hurt that is older than the scrape she is holding. Cleric's solo duel — outlast, not defeat. The party cannot help with this. They watch.",
   "steps": [
     {

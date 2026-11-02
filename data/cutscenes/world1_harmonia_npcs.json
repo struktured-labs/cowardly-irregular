@@ -4,7 +4,7 @@
   "world": 1,
   "keep_music": true,
   "trigger": "world1_harmonia_entry",
-  "background": "prologue_village",
+  "background": "harmonia_square",
   "description": "First village. Elder Theron who's permanently exhausted by heroism. Scholar Milo who invented the autobattle journal. Phil the Lost who remembers things he shouldn't. Marta at the Sleepy Slime. A merchant who's sixty percent sure his swords work.",
   "steps": [
     {
