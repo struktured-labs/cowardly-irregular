@@ -72,6 +72,21 @@ func _stopped_console() -> Node:
 	return ui
 
 
+## Found by this file's first run: the console came back with the cursor on rule 1's first cell, and B there DELETES the cell
+## rather than closing (_handle_cancel). Pressed twice, it ate a condition and left the console up.
+func test_a_stopped_console_comes_back_where_b_closes_it_and_deletes_nothing() -> void:
+	var ui: Node = await _stopped_console()
+	var rules_before: int = ui.rules.size()
+	var cell = ui._get_cell_at_cursor()
+	assert_false(cell != null and cell.has_meta("cell_type") and str(cell.get_meta("cell_type")) in ["condition", "action"],
+		"a stop must not bring the console back with the cursor on a rule cell, where B deletes")
+	var button := _pad_cancel_button()
+	for i in 2:
+		if _gl._autogrind_ui_open():
+			await _press_pad(button)
+	assert_eq(AutogrindSystem.get_autogrind_rules().size() if is_instance_valid(ui) else rules_before, rules_before, "pressing B to leave must delete no rule")
+
+
 func test_the_pads_cancel_closes_a_console_brought_back_by_a_stop() -> void:
 	var button := _pad_cancel_button()
 	assert_gt(button, -1, "CONTROL: ui_cancel must carry a pad button, or this press is not the one the hint names")
