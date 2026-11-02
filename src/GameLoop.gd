@@ -287,6 +287,8 @@ var _overworld_menu_layer: CanvasLayer = null
 var _teleport_transition_pending: bool = false  # set before the teardown on a teleport: the destination sets music, so restoring the pre-menu bed would play the world being LEFT
 var _pre_menu_music_state: Dictionary = {}  # capture_music_state() snapshot while pause menu is open — a raw _current_music string cannot carry AREA beds, so W2+ overworlds restored wrong (struktured in-play report 2026-08-08)
 var _menu_hidden_hud: Array = []
+## The last autogrind console that signalled; it can outlive GameLoop's own handle (his .758 screenshot).
+var _signalled_console = null
 
 ## Party Chat (opt-in flavor cutscenes)
 var _party_chat_menu: Control = null
@@ -6675,6 +6677,8 @@ func _open_autogrind_ui() -> void:
 	_autogrind_ui.grind_resume_requested.connect(_resume_autogrind)
 	_autogrind_ui.grind_stop_requested.connect(_on_autogrind_stop_requested)
 	_autogrind_ui.tier_cycle_requested.connect(_on_ui_tier_cycle_requested)
+	_autogrind_ui.visibility_changed.connect(_field_hud_steps_aside_for_console.bind(_autogrind_ui))
+	_autogrind_ui.tree_exited.connect(_field_hud_steps_aside_for_console.bind(_autogrind_ui))
 
 	SoundManager.play_ui("menu_open")
 	print("[AUTOGRIND] Config UI opened")
@@ -6715,6 +6719,34 @@ func _free_overlays_for_scene_change() -> void:
 			_autobattle_editor.save_and_close()
 		else:
 			_on_autobattle_editor_closed()
+
+
+## Starting a grind brings the field HUD back; the console shows itself again on stop, so the tracker drew over its header (struktured .758).
+## Keyed on the console that SIGNALLED, not only the tracked one: his drawn console was one GameLoop no longer tracked.
+func _field_hud_steps_aside_for_console(console = null) -> void:
+	if console != null:
+		_signalled_console = console
+	_field_hud_follows_the_screen()
+
+
+## A full-screen panel owns the field: the same states that refuse the field-menu toggle, plus the menu itself.
+func _a_screen_owns_the_field() -> bool:
+	return _field_editor_open() or _field_modal_open() or (_overworld_menu != null and is_instance_valid(_overworld_menu)) \
+			or _ui_is_showing(_signalled_console)
+
+
+## The tracker and its siblings drew over the autogrind rules (adhoc, his 16:24 shots); every frame the HUD follows who owns the screen.
+func _field_hud_follows_the_screen() -> void:
+	if current_state != LoopState.EXPLORATION or _is_autogrinding:
+		return
+	if _a_screen_owns_the_field():
+		_set_field_hud_hidden(true)
+	elif not _menu_hidden_hud.is_empty():
+		_set_field_hud_hidden(false)
+
+
+func _process(_delta: float) -> void:
+	_field_hud_follows_the_screen()
 
 
 func _on_autogrind_ui_closed() -> void:
@@ -6899,6 +6931,8 @@ func _stop_autogrind(reason: String) -> void:
 	else:
 		current_state = LoopState.EXPLORATION
 		InputLockManager.pop_all()  # Clear any leaked locks
+	# The return can build a NEW field scene whose HUD was never hidden; the console is already up over it.
+	_field_hud_steps_aside_for_console()
 
 	_show_autogrind_summary(final_stats, reason)
 
