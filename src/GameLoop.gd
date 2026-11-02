@@ -6730,6 +6730,8 @@ func _start_autogrind(config: Dictionary) -> void:
 	add_child(_autogrind_controller)
 
 	# Connect controller signals
+	if not BattleManager.selection_turn_started.is_connected(_on_grind_turn_safety_check):
+		BattleManager.selection_turn_started.connect(_on_grind_turn_safety_check)
 	_autogrind_controller.grind_battle_requested.connect(_on_grind_battle_requested)
 	_autogrind_controller.grind_complete.connect(_on_grind_complete)
 	_autogrind_controller.grind_paused.connect(_on_autogrind_paused)
@@ -7342,6 +7344,9 @@ func _on_autogrind_battle_ended(victory: bool) -> void:
 func _on_grind_complete(reason: String) -> void:
 	"""Handle autogrind session completion"""
 	_is_autogrinding = false
+	BattleManager.autogrind_retreat = false
+	if BattleManager.selection_turn_started.is_connected(_on_grind_turn_safety_check):
+		BattleManager.selection_turn_started.disconnect(_on_grind_turn_safety_check)
 	## Same hoist as _stop_autogrind: this entry reaches the identical stranded state by its own
 	## route, so fixing only the other one leaves this one live.
 	BattleManager.turbo_mode = false
@@ -7413,6 +7418,20 @@ func _on_grind_complete(reason: String) -> void:
 			InputLockManager.pop_lock(WIPE_FIELD_LOCK)
 		return
 	_show_autogrind_summary(final_stats, reason)
+
+
+## Each party turn of a watched grind battle asks the stop rules; one that fires turns the party to retreat (struktured 2026-11-01).
+func _on_grind_turn_safety_check(combatant: Combatant) -> void:
+	if not _is_autogrinding or BattleManager.autogrind_retreat or not (combatant in party):
+		return
+	if not (_autogrind_controller and is_instance_valid(_autogrind_controller)):
+		return
+	var reason: String = AutogrindSystem.safety_retreat_reason(party)
+	if reason == "":
+		return
+	BattleManager.autogrind_retreat = true
+	_autogrind_controller.request_safety_retreat(reason)
+	BattleManager.battle_log_message.emit("[color=%s]%s — the party falls back.[/color]" % [AccessibilityPalette.penalty_bbcode(), reason])
 
 
 ## Monster ids of a grind battle's enemy rows (the rows carry their id under "id", older ones under "type").

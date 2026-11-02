@@ -2211,6 +2211,27 @@ func evaluate_autogrind_rules(party: Array) -> Dictionary:
 	return {}
 
 
+## A stop the grind would take between battles, asked mid-battle so a watched fight retreats before it wipes (struktured 2026-11-01).
+func safety_retreat_reason(party: Array) -> String:
+	var threshold := float(interrupt_rules.get("hp_threshold", 0))
+	if threshold > 0.0:
+		for m in party:
+			if m is Combatant and m.is_alive and m.get_hp_percentage() < threshold:
+				return "Safety stop: retreated at %s %d%% HP" % [m.combatant_name, int(m.get_hp_percentage())]
+	var rules: Array = get_autogrind_rules()
+	for i in rules.size():
+		var rule: Dictionary = rules[i]
+		if not rule.get("enabled", true):
+			continue
+		var stops := false
+		for a in rule.get("actions", []):
+			if a is Dictionary and str((a as Dictionary).get("type", "")) == "stop_grinding":
+				stops = true
+		if stops and _evaluate_party_rule(party, rule):
+			return "Safety stop: retreated — your rule #%d fired" % (i + 1)
+	return ""
+
+
 func _evaluate_party_rule(party: Array, rule: Dictionary) -> bool:
 	"""Evaluate a party-level rule (AND chain of conditions)"""
 	var conditions = rule.get("conditions", [])
