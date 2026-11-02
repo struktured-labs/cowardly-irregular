@@ -6957,7 +6957,10 @@ func _resolve_headless_battle(enemy_data: Array) -> void:
 	for data in enemy_data:
 		enemies.append(_combatant_for_headless(data))
 
+	resolver.safety_check = func(p: Array) -> String: return AutogrindSystem.safety_retreat_reason(p)
 	var result = resolver.resolve_battle(party, enemies)
+	if resolver.retreat_reason != "" and _autogrind_controller and is_instance_valid(_autogrind_controller):
+		_autogrind_controller.request_safety_retreat(resolver.retreat_reason)
 	## cowir-autogrind: the resolver has set termination_reason since cadence #19 and nothing read it.
 	if str(result.get("termination_reason", "")) == "stalemate" and AutogrindSystem.has_method("on_battle_stalemate"):
 		AutogrindSystem.on_battle_stalemate()

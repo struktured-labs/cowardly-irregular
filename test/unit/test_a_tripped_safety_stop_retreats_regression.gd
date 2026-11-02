@@ -96,3 +96,39 @@ func test_a_retreat_that_got_away_stops_the_grind_with_its_reason() -> void:
 	ctrl.on_battle_ended(false)
 	assert_signal_emitted_with_parameters(ctrl, "grind_complete", ["Safety stop: retreated at Cleric 22% HP"],
 		"an escape after a safety stop is not 'Party defeated': the grind stops with the reason that sent it home")
+
+
+## Ludicrous (headless) grinds never take party turns, so the resolver asks the same check each round and retreats on its own.
+func _headless_fight(enemy_type: String, seed_value: int) -> Dictionary:
+	seed(seed_value)
+	var r = HeadlessBattleResolver.new()
+	r.safety_check = func(_p: Array) -> String: return "Safety stop: retreated at Bard 9% HP"
+	var party: Array = [_member("Fighter", 0.9, "fighter")]
+	var foe := Combatant.new()
+	foe.combatant_name = enemy_type
+	foe.max_hp = 9999
+	foe.current_hp = 9999
+	foe.attack = 1
+	foe.is_alive = true
+	foe.set_meta("monster_type", enemy_type)
+	add_child_autofree(foe)
+	var result: Dictionary = r.resolve_battle(party, [foe])
+	result["reason_seen"] = r.retreat_reason
+	return result
+
+
+func test_a_headless_grind_retreats_on_its_own() -> void:
+	var escaped := 0
+	for s in 12:
+		var res := _headless_fight("goblin", 100 + s)
+		assert_eq(str(res.get("reason_seen", "")), "Safety stop: retreated at Bard 9% HP", "CONTROL: the resolver asked the check and kept its reason")
+		if str(res.get("termination_reason", "")) == "retreat":
+			escaped += 1
+			assert_false(bool(res.get("victory", true)), "an escape is not a win")
+	assert_gt(escaped, 6, "at Flee's 75%%, most of 12 tripped fights must end in a retreat (got %d)" % escaped)
+
+
+func test_a_headless_boss_fight_is_never_fled() -> void:
+	for s in 6:
+		assert_ne(str(_headless_fight("chancellor_mordaine", 200 + s).get("termination_reason", "")), "retreat",
+			"a boss fight must not be fled, in a fast grind as in a watched one")
