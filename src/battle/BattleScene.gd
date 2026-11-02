@@ -57,6 +57,7 @@ const NAME_LABEL_WIDTH: float = 200.0
 const NAME_LABEL_PX := 16  # on-screen size for every monster, whatever its sprite scale
 const ENEMY_HP_BAR_SIZE := Vector2(60, 5)  # on-screen, whatever the sprite scale
 const SIGNATURE_WINDUP := 0.55  # battle seconds of title card and camera push before a boss's signature sequence
+var _signatures_shown: Dictionary = {}  # monster_id -> true once its signature has played at 1x this battle
 ## How far each formation stands nearer its own edge (struktured 2026-11-01); the party has no room under its badges yet.
 const ENEMY_EDGE_SHIFT := -24.0
 const PARTY_EDGE_SHIFT := 0.0
@@ -2843,14 +2844,23 @@ func _play_signature(caster: Combatant, caster_sprite: Node2D, animator: BattleA
 	var entry = _load_monsters_data().get(str(caster.get_meta("monster_type", "")), {})
 	if entry is Dictionary and entry.get("fx_signature_card") is Dictionary:
 		card = entry["fx_signature_card"]
+	var monster_id := str(caster.get_meta("monster_type", ""))
+	var quiet: bool = not signature_sound_allowed()
+	# He plays at 4x (cowir-main 2026-11-01): a boss's FIRST signature each battle is shown at 1x pacing, later ones compress.
+	var slowed := false
+	var restore_to := _hitlag_base_scale
+	if not quiet and not _signatures_shown.has(monster_id) and restore_to > BATTLE_SPEEDS[0]:
+		_set_battle_time_scale(BATTLE_SPEEDS[0])
+		slowed = true
+	_signatures_shown[monster_id] = true
 	var windup := SIGNATURE_WINDUP
 	var bark := str(card.get("bark", ""))
-	# The bark is a held beat at 1x-2x; at 4x and up the card still shows and the line stays text.
-	if bark != "" and Engine.time_scale < 0.75:
+	if bark != "" and not quiet:
 		var sec: float = SoundManager.play_voiced_line(caster.combatant_name, bark, self)
 		windup = maxf(windup, sec * Engine.time_scale)
-	BattleManager.presentation_hold = maxf(BattleManager.presentation_hold, windup + 1.6)
-	if signature_sound_allowed():
+	var seq_total := sequence_total(seq_id)
+	BattleManager.presentation_hold = maxf(BattleManager.presentation_hold, windup + seq_total + 0.2)
+	if not quiet:
 		SoundManager.play_flourish("boss_signature_card")
 	_show_signature_card(card, ability, windup)
 	if caster_sprite != null and is_instance_valid(caster_sprite) and BattleJuice.camera_rig != null:
@@ -2859,10 +2869,30 @@ func _play_signature(caster: Combatant, caster_sprite: Node2D, animator: BattleA
 	if not is_instance_valid(self):
 		return
 	SoundManager.stop_voiced_line(self)
+	var began := Time.get_ticks_msec()
 	var cue := signature_cue(caster)
-	if cue != "" and signature_sound_allowed():
+	if cue != "" and not quiet:
 		SoundManager.play_flourish(cue)
 	await _play_ability_sequence(caster, caster_sprite, animator, ability, targets, seq_id, true)
+	if not slowed or not is_instance_valid(self):
+		return
+	var left := seq_total - float(Time.get_ticks_msec() - began) / 1000.0 * Engine.time_scale
+	if left > 0.0:
+		await get_tree().create_timer(left).timeout
+	# A speed the player picked during the beat stands; only an untouched 1x is put back.
+	if is_instance_valid(self) and is_equal_approx(_hitlag_base_scale, BATTLE_SPEEDS[0]):
+		_set_battle_time_scale(restore_to)
+
+
+## A sequence's whole length in battle seconds, recursion included (FractalFX.play's own sum).
+static func sequence_total(seq_id: String) -> float:
+	var seq: Dictionary = FractalFX.load_sequence(seq_id)
+	var start := float(seq.get("start", 0.0))
+	var total := 0.0
+	for phase in seq.get("phases", []):
+		if phase is Dictionary:
+			total = maxf(total, start + float(phase.get("at", 0.0)) + FractalFX.phase_duration(phase))
+	return total
 
 
 ## Signature sounds play at every speed the player picks, 4x included; only autogrind/turbo is silent (cowir-main 21194).

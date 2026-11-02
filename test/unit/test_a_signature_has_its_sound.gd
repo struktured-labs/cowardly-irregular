@@ -57,6 +57,10 @@ func test_signature_sounds_play_at_4x_and_only_the_grind_is_silent() -> void:
 	scene.autogrind_console_mode = true
 	var in_grind: bool = scene.signature_sound_allowed()
 	scene.autogrind_console_mode = false
+	scene.turbo_mode = true
+	var in_turbo: bool = scene.signature_sound_allowed()
+	scene.turbo_mode = false
 	Engine.time_scale = saved
+	assert_false(in_turbo, "turbo stays silent")
 	assert_true(at_4x, "he plays at 4x; the move he asked for must be heard there (cowir-main 21194)")
 	assert_false(in_grind, "the autogrind console stays silent")

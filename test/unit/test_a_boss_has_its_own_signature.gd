@@ -9,6 +9,7 @@ extends GutTest
 const SCENE := preload("res://src/battle/BattleScene.tscn")
 const BattleStateGuard := preload("res://test/unit/helpers/battle_state.gd")
 const SoundState := preload("res://test/unit/helpers/sound_state.gd")
+const BS_SPEEDS_1X := 0.25
 
 ## The floor batch 1 must not fall below: each W1 boss and the move it was given.
 const W1 := {
@@ -129,3 +130,38 @@ func test_reduce_flashes_dims_the_signature_but_still_plays_it() -> void:
 		await get_tree().process_frame
 	assert_gt(sizes[false], 0.0, "CONTROL: the flash was measured")
 	assert_lt(sizes[true], sizes[false], "Reduce Flashes shrinks the verdict's flash (%.2f vs %.2f)" % [sizes[true], sizes[false]])
+
+
+## He plays at 4x (cowir-main 2026-11-01): a boss's FIRST signature each battle runs at 1x pacing, the rest compress,
+## and autogrind/turbo never slows. A speed the player picks mid-beat is left alone.
+func test_the_first_signature_plays_at_1x_then_the_speed_comes_back() -> void:
+	var scene = SCENE.instantiate()
+	add_child_autofree(scene)
+	await get_tree().process_frame
+	var saved := Engine.time_scale
+	var king := Combatant.new()
+	king.set_meta("monster_type", "cave_rat_king")
+	king.combatant_name = "Cave Rat King"
+	autofree(king)
+	var sprite: Node2D = scene.enemy_sprite_nodes[0] if scene.enemy_sprite_nodes.size() > 0 else null
+	var ability: Dictionary = JobSystem.get_ability("rat_swarm")
+	scene._set_battle_time_scale(1.0)
+	scene._play_signature(king, sprite, null, ability, [king], "sig_cave_rat_king")
+	await get_tree().process_frame
+	assert_almost_eq(Engine.time_scale, BS_SPEEDS_1X, 0.001, "the first Rat Swarm of the battle is shown at 1x")
+	var deadline := Time.get_ticks_msec() + 12000
+	while Time.get_ticks_msec() < deadline and not is_equal_approx(Engine.time_scale, 1.0):
+		await get_tree().process_frame
+	assert_almost_eq(Engine.time_scale, 1.0, 0.001, "then the player's 4x comes back")
+	scene._play_signature(king, sprite, null, ability, [king], "sig_cave_rat_king")
+	await get_tree().process_frame
+	assert_almost_eq(Engine.time_scale, 1.0, 0.001, "a second Rat Swarm in the same battle compresses")
+	var dragon := Combatant.new()
+	dragon.set_meta("monster_type", "fire_dragon")
+	autofree(dragon)
+	scene.turbo_mode = true
+	scene._play_signature(dragon, sprite, null, JobSystem.get_ability("inferno_rage"), [dragon], "sig_fire_dragon")
+	await get_tree().process_frame
+	assert_almost_eq(Engine.time_scale, 1.0, 0.001, "turbo never slows, even for a first cast")
+	scene.turbo_mode = false
+	Engine.time_scale = saved

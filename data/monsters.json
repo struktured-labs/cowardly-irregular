@@ -1852,7 +1852,7 @@
   "fire_dragon": {
     "id": "fire_dragon",
     "fx_signature": "inferno_rage",
-    "fx_signature_card": {"title": "Inferno Rage", "subtitle": "Pyrroth stops holding back."},
+    "fx_signature_card": {"title": "Inferno Rage", "subtitle": "The cave was only the warm-up."},
     "name": "Pyrroth, the Ember Wyrm",
     "description": "An ancient fire dragon whose scales radiate unbearable heat. The cave walls glow red in its presence.",
     "boss_llm_persona_id": "pyrroth",
