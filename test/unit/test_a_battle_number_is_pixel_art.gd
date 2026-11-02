@@ -166,3 +166,15 @@ func test_every_floating_word_is_drawable() -> void:
 	var body := src.substr(i, src.find("\nfunc ", i + 1) - i)
 	assert_true(body.contains("PixelText.new(text"), "WEAK!/RESIST/IMMUNE! are drawn in PixelText")
 	assert_false(body.contains("Label.new()"), "and no smooth Label is built beside them")
+
+
+## A popup at nameplate height drew UNDER the plate (cowir-adhoc 21469: "M" of MISS left of "GOBLIN B").
+func test_a_popup_draws_over_every_nameplate_and_under_the_menu() -> void:
+	var nums := _spawn_every_kind()
+	var scene_consts: Dictionary = load("res://src/battle/BattleScene.gd").get_script_constant_map()
+	var plate_z: int = int(scene_consts.get("NAME_LABEL_Z", -999))
+	assert_ne(plate_z, -999, "floor: BattleScene.NAME_LABEL_Z was read")
+	for n in nums:
+		assert_gt(n.z_index, plate_z, "'%s' (z %d) draws over the nameplates (z %d)" % [n._label.text, n.z_index, plate_z])
+		assert_lt(n.z_index, 100, "'%s' stays under the live command menu (z 100)" % n._label.text)
+		assert_true(n.z_as_relative, "CONTROL: relative z, parented to the scene root at z 0")
