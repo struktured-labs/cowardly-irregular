@@ -530,6 +530,11 @@ _PCK_REPORT="$(cd "$(dirname "$0")" && pwd)/pck_cache_report.sh"
 # caches the pck. Without it the report printed "re-downloads EVERY visit" unconditionally --
 # including in the .334 chain, the release that stopped it being true.
 "$_PCK_REPORT" "$PCK" "$PCK_CACHE_LINE" "$PCK_WARN" "$PCK_LIMIT" builds/web
+## WHAT the pack is made of, on every web build (cowir-main 21082): the report above says how big and how
+## much headroom; tools/pck_budget.py --summary reads the pck's own table and says where it goes (at .754:
+## audio 63%, textures 26%), so a release that eats headroom names its own culprit. A REPORT, never a gate:
+## PCK_LIMIT/PCK_WARN own the verdicts. Its --selftest runs in the publish corpus because this line names it.
+python3 "$(cd "$(dirname "$0")" && pwd)/pck_budget.py" --summary builds/web/index.pck 2>&1 | head -18 | sed 's/^/[budget] /' || true
 if [ "${PCK}" -ge "${PCK_LIMIT}" ]; then
   echo "[deploy] BLOCKED: pck >= 200 MB — itch will refuse the HTML5 embed." >&2
   echo "[deploy] check export_presets.cfg exclude_filter and recent large assets." >&2

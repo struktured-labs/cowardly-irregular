@@ -427,12 +427,12 @@ func build_command_menu_items_with_targets(combatant: Combatant) -> Array:
 						continue
 					ally_targets.append(_item_ally_row(item_id, member, i))
 				if ally_targets.size() > 0:
-					item_items.append({
+					item_items.append(_with_new_badge({
 						"id": "item_menu_" + item_id,
 						"label": "%s x%d" % [item["name"], quantity],
 						"icon_id": item_id,
 						"submenu": ally_targets
-					})
+					}, item_id))
 			# For SINGLE_ENEMY items, add enemy target submenu
 			elif target_type == ItemSystem.TargetType.SINGLE_ENEMY and alive_enemies.size() > 0:
 				var enemy_targets = []
@@ -448,15 +448,15 @@ func build_command_menu_items_with_targets(combatant: Combatant) -> Array:
 						"label": "%s (%d HP)" % [enemy.combatant_name, enemy.current_hp],
 						"data": {"item_id": item_id, "target_idx": enemy_idx, "target_type": "enemy", "target_pos": target_pos}
 					}, item_id, [enemy]))
-				item_items.append({
+				item_items.append(_with_new_badge({
 					"id": "item_menu_" + item_id,
 					"label": "%s x%d" % [item["name"], quantity],
 					"icon_id": item_id,
 					"submenu": enemy_targets
-				})
+				}, item_id))
 			else:
 				# Other target types (ALL_ALLIES, ALL_ENEMIES, SELF) don't need submenu
-				item_items.append(_item_flat_row(item_id, item, quantity, _targets_for_item_without_picker(item, combatant, alive_enemies)))
+				item_items.append(_with_new_badge(_item_flat_row(item_id, item, quantity, _targets_for_item_without_picker(item, combatant, alive_enemies)), item_id))
 		if item_items.size() > 0:
 			items.append({
 				"id": "item_menu",
@@ -985,6 +985,14 @@ func _heal_span_suffix(amounts: Array) -> String:
 
 
 ## The row for an item with no target picker (party-wide, all enemies, self).
+## A just-picked-up item wears NEW until the cursor rests on its row (struktured 2026-11-01), same as the field menus.
+static func _with_new_badge(row: Dictionary, item_id: String) -> Dictionary:
+	if GameState and GameState.is_unseen(item_id):
+		row["badge"] = NewItemTag.TEXT
+		row["on_highlight"] = func(): GameState.mark_seen(item_id)
+	return row
+
+
 func _item_flat_row(item_id: String, item: Dictionary, quantity: int, targets: Array) -> Dictionary:
 	var ests: Array = []
 	for t in targets:

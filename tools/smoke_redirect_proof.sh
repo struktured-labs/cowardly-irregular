@@ -40,7 +40,7 @@ _matches() { # pids under $1 (inclusive) whose args contain $SRP_MATCH: ONE ps p
     ps -eo pid=,ppid=,args= 2>/dev/null | awk -v root="$1" -v m="$SRP_MATCH" '
         { pid[NR]=$1; pp[NR]=$2; $1=""; $2=""; a[NR]=$0; n=NR }
         END { inset[root]=1; ch=1
-              while (ch) { ch=0; for (i=1;i<=n;i++) if (!(pid[i] in inset) && (pp[i] in inset)) { inset[pid[i]]=1; ch=1 } }
+              for (it=0; ch && it<=n; it++) { ch=0; for (i=1;i<=n;i++) if (!(pid[i] in inset) && (pp[i] in inset)) { inset[pid[i]]=1; ch=1 } }
               for (i=1;i<=n;i++) if ((pid[i] in inset) && index(a[i], m)) print pid[i] }'
 }
 
@@ -55,9 +55,11 @@ check_value() {
 }
 
 watch() {
-    local pid="$1" out="$2" q env v
+    # BOUNDED (check_polling_bounded): a counter of 0.2 s ticks, SRP_WATCH_MAX seconds (default 600 = 2x the
+    # smoke's own `timeout 300`). Hitting it stops the sampling only; the verdict still judges what was seen.
+    local pid="$1" out="$2" q env v i=0 max=$(( ${SRP_WATCH_MAX:-600} * 5 ))
     : > "$out"
-    while kill -0 "$pid" 2>/dev/null; do
+    while [ "$i" -lt "$max" ] && kill -0 "$pid" 2>/dev/null; do
         for q in $(_matches "$pid"); do
             env="$(tr '\0' '\n' 2>/dev/null < "/proc/$q/environ")" || continue
             [ -n "$env" ] || continue
@@ -67,6 +69,7 @@ watch() {
             command grep -qxF -- "$q $v" "$out" || echo "$q $v" >> "$out"
         done
         sleep 0.2
+        i=$((i + 1))
     done
 }
 

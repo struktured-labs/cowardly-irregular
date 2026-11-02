@@ -45,7 +45,7 @@ func test_the_formatter_resolves_display_names() -> void:
 ## The canonical accessor keeps its one test caller working and now delegates rather than duplicating.
 func test_the_system_summary_delegates_to_the_shared_formatter() -> void:
 	AutogrindSystem.items_consumed = {"hi_potion": 1}
-	assert_eq(AutogrindSystem.get_items_consumed_summary(), "Hi-Potion x1",
+	assert_eq(AutogrindSystem.get_items_consumed_summary(), ItemNameResolver.resolve("hi_potion") + " x1",
 		"get_items_consumed_summary must produce what the shared formatter produces")
 	AutogrindSystem.items_consumed = {}
 	assert_eq(AutogrindSystem.get_items_consumed_summary(), "None")
