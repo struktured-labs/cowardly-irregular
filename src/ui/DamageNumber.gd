@@ -20,7 +20,13 @@ var _flash_tween: Tween = null
 var _polish_tween: Tween = null
 
 
+## Over every nameplate (BattleScene.NAME_LABEL_Z) and spell effect, under the advance cards (99) and the live menu (100).
+## Popups had no z at all, so a MISS at nameplate height drew UNDER "GOBLIN B" (cowir-adhoc 21469, visible on main).
+const POPUP_Z := 98
+
+
 func _ready() -> void:
+	z_index = POPUP_Z
 	_start_pos = position
 	_pos = position
 	position = _pos.round()
