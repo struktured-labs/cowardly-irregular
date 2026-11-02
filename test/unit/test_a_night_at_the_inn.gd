@@ -127,6 +127,14 @@ func test_an_inn_that_goes_away_leaves_no_lock_behind() -> void:
 	assert_false(InputLockManager.is_locked(), "no lock outlives the inn")
 
 
+func test_a_night_freed_mid_beat_gives_input_back() -> void:
+	var seq := InnRestSequence.start(_host)
+	await get_tree().process_frame
+	assert_true(InputLockManager.is_locked(), "CONTROL: the lock is held")
+	seq.free()
+	assert_false(InputLockManager.is_locked(), "a night freed before it ends releases the lock on its way out")
+
+
 const _STUB_GAMELOOP := "extends Node\nvar party: Array = []\n"
 
 
