@@ -65,13 +65,9 @@ func _texts(root: Node) -> Array:
 	return out
 
 
-func test_a_rule_stop_puts_up_no_two_texts_on_top_of_each_other() -> void:
-	## A bare GameLoop also builds its title screen (SETTINGS/HELP); only what the grind's end puts up is judged.
-	var before: Array = _texts(_gl).map(func(t): return t["node"])
-	_gl._on_grind_complete("Your rule #1 stopped the grind")
-	await wait_frames(3)
+## Pairs of grind-end texts covering >50% of the smaller, named; only nodes absent from `before` are judged.
+func _stacked(before: Array) -> Array:
 	var texts := _texts(_gl).filter(func(t): return not (t["node"] in before))
-	assert_gt(texts.size(), 1, "CONTROL: the end of a grind puts text on screen")
 	var stacked: Array = []
 	for i in texts.size():
 		for j in range(i + 1, texts.size()):
@@ -86,4 +82,16 @@ func test_a_rule_stop_puts_up_no_two_texts_on_top_of_each_other() -> void:
 			if overlap > 0.5:
 				stacked.append("'%s' (layer %d) over '%s' (layer %d), %d%% covered"
 					% [texts[i]["text"], texts[i]["layer"], texts[j]["text"], texts[j]["layer"], roundi(overlap * 100)])
-	assert_eq(stacked, [], "two texts drawn on top of each other at the end of a grind:\n  %s" % "\n  ".join(stacked))
+	return stacked
+
+
+func test_a_rule_stop_puts_up_no_two_texts_on_top_of_each_other() -> void:
+	## A bare GameLoop also builds its title screen (SETTINGS/HELP); only what the grind's end puts up is judged.
+	var before: Array = _texts(_gl).map(func(t): return t["node"])
+	_gl._on_grind_complete("Your rule #1 stopped the grind")
+	await wait_frames(3)
+	var early := _stacked(before)
+	await wait_seconds(1.2)
+	var late := _stacked(before)
+	assert_true(_gl._autogrind_summary != null and is_instance_valid(_gl._autogrind_summary), "CONTROL: the summary came up")
+	assert_eq(early + late, [], "two texts drawn on top of each other at the end of a grind:\n  %s" % "\n  ".join(early + late))

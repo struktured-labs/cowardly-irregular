@@ -95,7 +95,7 @@ func test_the_field_is_released_when_the_defeat_flow_returns() -> void:
 func test_a_grind_that_stops_with_someone_standing_shows_the_summary() -> void:
 	_party([false, true, false])
 	_gl._on_grind_complete("Healing items depleted")
-	await wait_frames(4)
+	await wait_seconds(1.0)  # the summary waits out the stop banner
 	assert_eq(_gl.summaries, 1, "CONTROL: an ordinary stop still shows its summary")
 	assert_eq(_gl.game_overs, 0, "one member standing is not a wipe")
 
