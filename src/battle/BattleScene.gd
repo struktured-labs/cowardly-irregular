@@ -2850,7 +2850,8 @@ func _play_signature(caster: Combatant, caster_sprite: Node2D, animator: BattleA
 		var sec: float = SoundManager.play_voiced_line(caster.combatant_name, bark, self)
 		windup = maxf(windup, sec * Engine.time_scale)
 	BattleManager.presentation_hold = maxf(BattleManager.presentation_hold, windup + 1.6)
-	SoundManager.play_flourish("boss_signature_card")
+	if signature_sound_allowed():
+		SoundManager.play_flourish("boss_signature_card")
 	_show_signature_card(card, ability, windup)
 	if caster_sprite != null and is_instance_valid(caster_sprite) and BattleJuice.camera_rig != null:
 		BattleJuice.camera_rig.punch_zoom(_stable_sprite_anchor(caster_sprite), 0.06, windup)
@@ -2859,9 +2860,14 @@ func _play_signature(caster: Combatant, caster_sprite: Node2D, animator: BattleA
 		return
 	SoundManager.stop_voiced_line(self)
 	var cue := signature_cue(caster)
-	if cue != "":
+	if cue != "" and signature_sound_allowed():
 		SoundManager.play_flourish(cue)
 	await _play_ability_sequence(caster, caster_sprite, animator, ability, targets, seq_id, true)
+
+
+## Signature sounds play below 3x, like the bark; at 4x+ the beat is compressed and a skipped stinger reads as speed (cowir-battle 21191).
+func signature_sound_allowed() -> bool:
+	return Engine.time_scale < 0.75 and not turbo_mode and not autogrind_console_mode
 
 
 ## The sound paired to a boss's signature sequence, timed to its beats; "" when none is recorded.
