@@ -919,6 +919,13 @@ func _tick_speed_hold() -> void:
 		_slow_battle_speed()
 
 
+## Focus out clears key state but sends NO release, so an armed hold would slow the battle and eat the next tap: drop it.
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_APPLICATION_FOCUS_OUT:
+		_speed_hold_start_ms = -1
+		_speed_hold_fired = false
+
+
 ## The ONE writer of the persisted speed: the tap, the hold and any later caller all land here.
 func _apply_battle_speed_index(index: int) -> void:
 	_battle_speed_index = index

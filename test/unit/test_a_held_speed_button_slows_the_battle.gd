@@ -117,6 +117,22 @@ func test_a_hold_at_the_slowest_stays_there() -> void:
 	assert_eq(BS._battle_speed_index, 0, "a hold at the slowest must clamp, not wrap to the fastest")
 
 
+## Alt-tab mid-press: the release never arrives. Without the drop, the hold slows the battle and eats the next tap.
+func test_a_hold_whose_release_is_lost_to_a_focus_change_is_dropped() -> void:
+	var s: Node = await _battle()
+	BS._battle_speed_index = 3
+	s._speed_button(true)
+	s._notification(NOTIFICATION_APPLICATION_FOCUS_OUT)
+	assert_lt(s._speed_hold_start_ms, 0, "losing focus must drop the armed hold")
+	if s._speed_hold_start_ms >= 0:
+		_held_for(s, BS.SPEED_HOLD_MS + 50)   # the time that passes while the player is away
+	s._tick_speed_hold()
+	assert_eq(BS._battle_speed_index, 3, "a hold whose release was lost must not slow the battle")
+	s._speed_button(true)
+	s._speed_button(false)
+	assert_eq(BS._battle_speed_index, 4, "and the next tap must step up, not be eaten by the stale hold")
+
+
 ## The persisted choice and the live scale follow the one writer, both ways.
 func test_both_directions_persist_through_the_one_writer() -> void:
 	var s: Node = await _battle()
