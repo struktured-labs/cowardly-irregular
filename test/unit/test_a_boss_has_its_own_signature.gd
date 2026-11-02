@@ -101,6 +101,28 @@ func test_the_boss_casting_its_move_plays_its_sequence_and_nobody_else_does() ->
 	assert_eq(scene.signature_sequence(party, "thundaga"), "", "a party member is never a boss")
 
 
+## The DISPATCH, not just the lookup: a boss's real cast through _on_action_executing raises its title card.
+func test_a_bosss_real_cast_raises_its_title_card() -> void:
+	var scene = SCENE.instantiate()
+	scene.encounter_enemies = ["goblin"]
+	add_child_autofree(scene)
+	for i in 3:
+		await get_tree().process_frame
+	var saved := Engine.time_scale
+	var boss: Combatant = BattleManager.enemy_party[0] if BattleManager.enemy_party.size() > 0 else null
+	assert_not_null(boss, "CONTROL: a foe to play the boss")
+	if boss == null:
+		return
+	boss.set_meta("monster_type", "chancellor_mordaine")
+	scene._on_action_executing(boss, {"type": "ability", "ability_id": "thundaga", "targets": [BattleManager.player_party[0]]})
+	await get_tree().process_frame
+	var card := scene.get_node_or_null("UI/SignatureCard")
+	assert_not_null(card, "Mordaine's Thundaga raises the Summary Judgment card")
+	if card:
+		assert_true(str((card.get_child(0).get_child(0) as Label).text) == "Summary Judgment", "and it reads her title")
+	Engine.time_scale = saved
+
+
 func test_the_verdict_card_carries_its_title_and_bark() -> void:
 	var card: Dictionary = _monsters["chancellor_mordaine"]["fx_signature_card"]
 	assert_eq(str(card.get("title", "")), "Summary Judgment")

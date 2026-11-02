@@ -2037,6 +2037,12 @@ func _process_next_selection() -> void:
 	else:
 		current_state = BattleState.ENEMY_SELECTING
 
+	# A stunned party member was handed the full menu and its pick was thrown away at execution (.758 Skeleton Knight duel).
+	if current_combatant in player_party and _held_turn(current_combatant):
+		selection_index += 1
+		_process_next_selection()
+		return
+
 	# Later allies get their AP above, then the remembered action; the first enemy clears this and selects.
 	if _filling_repeat:
 		if current_combatant in player_party:
@@ -2165,6 +2171,24 @@ func request_trust_interrupt() -> bool:
 ## handler consults this before swallowing cancel input.
 func is_trust_interrupt_window_open() -> bool:
 	return _trust_window_pc != null and is_instance_valid(_trust_window_pc)
+
+
+## A party member certain to lose the round (stun, cannot_act) is told so and held, not menued; sleep/confuse/fear can still lift.
+func _held_turn(c: Combatant) -> bool:
+	var why := ""
+	if c.has_status("stun"):
+		why = "stunned"
+	elif c.has_status("cannot_act"):
+		why = "held"
+	if why == "":
+		return false
+	var key := "stun" if why == "stunned" else "cannot_act"
+	var left: int = maxi(1, int(c.status_durations.get(key, 1)))
+	battle_log_message.emit("[color=%s]%s is %s and loses this turn%s.[/color]" % [
+		AccessibilityPalette.penalty_bbcode(), c.combatant_name, why,
+		"" if left <= 1 else " (%d turns left)" % left])
+	_queue_action({"type": "held", "combatant": c, "speed": _compute_action_speed(c, "attack")})
+	return true
 
 
 func _end_selection_turn() -> void:
@@ -4294,6 +4318,11 @@ func _execute_next_action() -> void:
 		"advance":
 			_execute_advance(combatant, action)
 			return  # Advance handles its own continuation
+		"held":
+			# Queued by _held_turn; the status checks above spend it. Here only if the status was cured in between.
+			battle_log_message.emit("[color=yellow]%s[/color] shakes it off, too late to act this round." % combatant.combatant_name)
+			_execute_next_action()
+			return
 		_:
 			push_warning("BattleManager: Unknown action type '%s'" % action.get("type", ""))
 			# Do NOT return here — fall through to keep the execution chain alive.
