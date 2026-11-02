@@ -134,3 +134,25 @@ func test_both_directions_persist_through_the_one_writer() -> void:
 	assert_eq(src.count("_battle_speed_index = "), 1,
 		"inside BattleScene, _apply_battle_speed_index must stay the ONE writer of the persisted index " +
 		"(New Game, save load and Settings set it from outside, by design)")
+
+
+## REAL ROUTING, not a direct call: the command menu is a CHILD of BattleScene, so it sees the speed
+## button first. If it ever ate the RELEASE, a tap would never step up, and after SPEED_HOLD_MS it
+## would step DOWN instead. A live battle-mode menu, a pad press and release pushed through the viewport.
+func test_a_tap_through_a_live_command_menu_steps_up_once() -> void:
+	var s: Node = await _battle()
+	BS._battle_speed_index = 2
+	var menu := Win98Menu.new()
+	menu.battle_mode = true
+	s.add_child(menu)
+	menu.setup("Fighter", [{"id": "attack", "label": "Attack"}], Vector2(400, 300), "fighter")
+	menu._can_accept_input = true
+	assert_false(menu._nav_is_blocked(), "CONTROL: the menu must be LIVE, or the release never meets it")
+	for pressed in [true, false]:
+		var ev := InputEventJoypadButton.new()
+		ev.button_index = JOY_BUTTON_Y
+		ev.pressed = pressed
+		get_tree().root.push_input(ev)
+	assert_eq(BS._battle_speed_index, 3, "a tap with the command menu up must reach BattleScene and step ONE rung up")
+	assert_lt(s._speed_hold_start_ms, 0, "and its release must have arrived, or the next tick turns the tap into a slow-down")
+	menu.queue_free()
