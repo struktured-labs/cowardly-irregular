@@ -51,6 +51,9 @@ func after_each() -> void:
 		for c in sig.get_connections():
 			sig.disconnect(c["callable"])
 	_gl._autogrind_ui = null
+	_gl._signalled_console = null
+	for prop in ["_overworld_menu", "_autobattle_editor", "_field_settings_menu", "_party_chat_menu"]:
+		_gl.set(prop, null)
 
 
 func test_the_console_wires_its_visibility_to_the_hud() -> void:
@@ -130,3 +133,60 @@ func test_a_running_grind_keeps_what_start_restored() -> void:
 	_console.visible = false
 	assert_false(_field._quest_tracker.visible, "the hide-on-leave rule does not run mid-grind; _start_autogrind owns that restore")
 	_gl._is_autogrinding = false
+
+
+## adhoc, his 16:24 shots: the rule is any full-screen panel, derived from the states that already refuse the field-menu toggle.
+const SCREENS := ["_overworld_menu", "_autobattle_editor", "_field_settings_menu", "_party_chat_menu"]
+
+
+func _panel() -> Control:
+	var c := Control.new()
+	add_child_autofree(c)
+	return c
+
+
+func test_every_screen_that_owns_the_field_hides_the_tracker_and_gives_it_back() -> void:
+	_console.visible = false
+	_gl._signalled_console = null
+	_gl._autogrind_ui = null
+	for prop in SCREENS:
+		_gl._process(0.0)
+		assert_true(_field._quest_tracker.visible, "CONTROL: no screen open, the tracker is on the field (before %s)" % prop)
+		var panel := _panel()
+		_gl.set(prop, panel)
+		_gl._process(0.0)
+		assert_false(_field._quest_tracker.visible, "%s owns the screen: the tracker must step aside" % prop)
+		assert_false(_field._objective_arrow.visible, "%s owns the screen: so must the objective arrow" % prop)
+		_gl.set(prop, null)
+		panel.queue_free()
+		_gl._process(0.0)
+		assert_true(_field._quest_tracker.visible, "%s closed: the tracker comes back" % prop)
+
+
+func test_a_field_menu_hidden_behind_its_own_submenu_still_owns_the_screen() -> void:
+	_console.visible = false
+	_gl._signalled_console = null
+	_gl._autogrind_ui = null
+	var menu := _panel()
+	_gl._overworld_menu = menu
+	menu.visible = false
+	_gl._process(0.0)
+	assert_false(_field._quest_tracker.visible, "a submenu hides the field menu's own panel; the menu still owns the screen")
+	_gl._overworld_menu = null
+
+
+func test_ownership_is_derived_from_the_toggle_gate() -> void:
+	var src := FileAccess.get_file_as_string("res://src/GameLoop.gd")
+	var owns := src.substr(src.find("func _a_screen_owns_the_field"), 600)
+	for pred in ["_field_editor_open()", "_field_modal_open()"]:
+		assert_true(pred in owns, "screen ownership must reuse %s, the predicate the field-menu toggle refuses on" % pred)
+	var toggle := src.substr(src.find("var x_pressed := OverworldMenu.is_toggle_event(event)"), 800)
+	assert_true("_field_modal_open()" in toggle, "CONTROL: the toggle gate still refuses on _field_modal_open()")
+
+
+func test_the_field_hud_is_left_alone_outside_exploration() -> void:
+	_gl._set_field_hud_hidden(true)
+	_gl.current_state = GL.LoopState.BATTLE
+	_gl._process(0.0)
+	assert_false(_field._quest_tracker.visible, "outside exploration the reconciler touches nothing")
+	_gl.current_state = GL.LoopState.EXPLORATION
