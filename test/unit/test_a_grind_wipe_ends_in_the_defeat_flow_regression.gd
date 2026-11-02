@@ -66,7 +66,11 @@ func _party(alive: Array) -> void:
 
 func test_a_wiped_grind_reaches_the_game_over_screen_not_the_field() -> void:
 	_party([false, false, false])
-	var console := Control.new()
+	## A stand-in console with the one call _on_grind_complete makes on it; a bare Control aborted the handler there.
+	var console_script := GDScript.new()
+	console_script.source_code = "extends Control\nfunc set_grinding(_active: bool) -> void:\n\tpass\n"
+	console_script.reload()
+	var console: Control = console_script.new()
 	_gl.add_child(console)
 	_gl._autogrind_ui = console
 	_gl._on_grind_complete("Party defeated")
