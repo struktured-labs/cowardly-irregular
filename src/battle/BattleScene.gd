@@ -3022,7 +3022,7 @@ const INTENSITY_LEVEL_CAP := 58.0  # the Calibrant's level, the top of the ladde
 const INTENSITY_STAT_GLORY := 1000.0  # a stat this high reads as full glory (Mordaine's magic is 941)
 
 
-## {k: size/shake multiplier 0.85-1.4, tier: 1-3, score: 0-1}; 60% level, 40% the cast's stat on a log scale.
+## {k: size/shake multiplier 0.8-1.5, tier: 1-3, score: 0-1}; 60% level, 40% the cast's stat on a log scale.
 func cast_intensity(caster: Combatant, ability: Dictionary) -> Dictionary:
 	var level := 1.0
 	var stat := 0.0
@@ -3044,7 +3044,7 @@ static func intensity_for(level: float, stat: float) -> Dictionary:
 	for i in INTENSITY_TIERS.size():
 		if score >= float(INTENSITY_TIERS[i]):
 			tier = i + 1
-	return {"k": lerpf(0.85, 1.4, score), "tier": tier, "score": score}
+	return {"k": lerpf(0.8, 1.5, score), "tier": tier, "score": score}
 
 
 ## A sequence's whole length in battle seconds, recursion included (FractalFX.play's own sum).
