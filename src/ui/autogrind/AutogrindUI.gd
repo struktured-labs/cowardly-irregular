@@ -1601,8 +1601,6 @@ func _input(event: InputEvent) -> void:
 			_press_delete_button()
 		get_viewport().set_input_as_handled()
 
-
-
 	elif event is InputEventJoypadButton and event.pressed and event.button_index == JOY_BUTTON_X:
 		_toggle_ludicrous_speed()
 		get_viewport().set_input_as_handled()
