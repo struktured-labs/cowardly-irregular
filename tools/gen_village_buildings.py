@@ -178,7 +178,11 @@ FUTURISTIC = {
 
 ## Village PROPS (struktured 2026-11-01: "any of that old school procgenylooking art needs to go"). Same style and
 ## straight-on view as the medieval buildings; width in tiles is the prop's drawn width.
-STYLE_PROP = STYLE.replace("BUILDING", "village PROP").replace("a wooden front door at the bottom centre. ", "")
+STYLE_PROP = ("A single small 16-bit SNES-era JRPG pixel-art OBJECT -- not a building, no walls, no roof, no windows, "
+              "no house -- seen from the front and a little above, like the props in the towns of classic Square RPGs. "
+              "Rich hand-pixeled detail, crisp dark outline, warm limited palette, soft top-left lighting. No people, no "
+              "text or letters, no ground, no grass, no shadow on the ground, nothing else in the picture. The background "
+              "is one flat, solid, pure magenta (#FF00FF) colour with no gradient. The object fills the frame and is centred.")
 PROPS = {
     "harmonia_fountain": (3, "Harmonia's plaza fountain: a round two-tier carved stone fountain basin, clear blue water "
                              "spilling from the upper bowl into the lower pool, and a small blossoming pink cherry tree "
@@ -189,9 +193,50 @@ PROPS = {
                          "and shadow. It must stay narrow: it stands one step from doorways."),
     "tree_frosthold": (2, "A single snow-laden pine tree: a short dark trunk, layered dark-green boughs heavy with white "
                           "snow, a pointed top. Taller than it is wide."),
+    "lamp_post_medieval": (1, "A single tall thin wrought-iron village street lamp: a slim black iron post on a small stone "
+                              "base, topped by a four-paned lantern with a warm glowing candle flame. Very tall and narrow."),
+    "lamp_post_suburban": (1, "A single tall thin 1990s suburban street lamp: a slim dark-green metal pole on a small concrete "
+                              "base, topped by a round frosted-glass globe lamp glowing warm white. Very tall and narrow."),
+    "lamp_post_steampunk": (1, "A single tall thin Victorian gas street lamp: a slim fluted brass-and-iron post with rivets, a "
+                               "small gauge and a copper pipe, topped by a glass gas lantern glowing amber. Very tall and narrow."),
+    "cart_medieval": (2, "A single wooden village hand cart with two big spoked wooden wheels and long handles, loaded with "
+                         "a few sacks, a crate and some hay. Seen from the side and slightly above, wider than it is tall."),
+    "cart_suburban": (2, "A single 1990s supermarket shopping cart: a silver wire-mesh basket with a red plastic handle on four "
+                         "small swivel wheels, empty. Seen from the side and slightly above, wider than it is tall."),
+    "cart_steampunk": (2, "A single Victorian steampunk handcart: riveted brass-and-iron body, two spoked iron wheels, a small "
+                          "boiler with a pressure gauge and a copper pipe, carrying a crate of gears. Seen from the side and "
+                          "slightly above, wider than it is tall."),
+    "stall_medieval": (2, "A single small village market stall: a wooden counter under a striped red-and-cream cloth awning on "
+                          "two posts, with baskets of apples, bread and pottery on the counter."),
+    "stall_steampunk": (2, "A single small Victorian steampunk market stall: a brass-trimmed wooden counter under a riveted "
+                           "copper canopy, a little steam pipe, with jars, cogs and pocket watches laid out for sale."),
+    "well_medieval": (2, "A single round stone village well: a ring of grey fieldstone, a small peaked wooden roof on two posts "
+                         "with a winch, a rope and a wooden bucket."),
+    "barrel": (1, "A single sturdy wooden barrel with dark iron hoops, standing upright."),
+    "crate": (1, "A single square wooden shipping crate with nailed planks and a darker frame."),
+    "planter": (1, "A single wooden half-barrel planter overflowing with green leaves and small red flowers."),
+    "planter_suburban": (1, "A single round terracotta flower pot full of bright red geraniums, 1990s front-porch style."),
+    "planter_steampunk": (1, "A single riveted copper planter box on little iron feet, holding a small fern."),
+    "fence": (1, "One short square section of a rustic wooden village fence, as tall as it is wide: two stout posts and "
+                 "two horizontal rails, the rails running all the way off both the left and right edges so sections join."),
+    "fence_suburban": (1, "One short square section of a white wooden picket fence, as tall as it is wide: tall pointed white "
+                          "pickets on two rails, the rails running off both the left and right edges so sections join."),
+    "banner": (1, "A single tall cloth village banner hanging from a wooden pole with a crossbar: deep red cloth with a "
+                  "golden crest, a forked bottom edge. Tall and narrow."),
+    "banner_steampunk": (1, "A single tall cloth banner hanging from a brass pole with a crossbar: dark green cloth with a "
+                            "golden cog emblem, a straight fringed bottom edge. Tall and narrow."),
+    "crate_futuristic": (1, "A single sleek sci-fi cargo crate: dark glossy panels with glowing cyan neon trim and a small "
+                            "holographic label light (no letters)."),
+    "crate_industrial": (1, "A single grey steel industrial shipping crate with riveted corners, a yellow-and-black hazard "
+                            "stripe and stencil-style marks (no readable letters)."),
+    "barrel_industrial": (1, "A single dented blue steel oil drum with ribbed bands and a small hazard sticker, standing upright."),
 }
-## Props whose art must stand a fixed height (the TREE prop's footprint is 1x3: 96px).
-PROP_HEIGHT = {"tree_medieval": 96}
+## See-through props (wire mesh): the border flood cannot reach backdrop enclosed by the wires, so key it everywhere.
+KEY_EVERYWHERE = {"cart_suburban", "well_medieval", "fence", "fence_suburban"}
+## Props whose art must stand a fixed height: the lamp's light anchor sits 50px above its base (VillageProp), and the
+## TREE prop's footprint is 1x3, so 96px.
+PROP_HEIGHT = {"lamp_post_medieval": 64, "lamp_post_suburban": 64, "lamp_post_steampunk": 64,
+               "banner": 64, "banner_steampunk": 64, "tree_medieval": 96}
 
 ## Terrain TILES (32x32, opaque, edge to edge): drawn as a square patch of ground filling the whole frame.
 TILE_STYLE = ("A single square 16-bit SNES-era JRPG pixel-art overworld TILE, seen from above at a slight angle, that "
@@ -305,6 +350,20 @@ def drop_key_fringe(img: Image.Image) -> Image.Image:
     return Image.fromarray(a, "RGBA")
 
 
+def key_everywhere(img: Image.Image, tol: int = 110) -> Image.Image:
+    """Clear EVERY backdrop-coloured pixel, not just the border-connected ones (for see-through art)."""
+    a = np.array(img.convert("RGBA"))
+    d = np.sqrt(((a[:, :, :3].astype(float) - np.array([255.0, 0.0, 255.0])) ** 2).sum(axis=2))
+    a[d < tol, 3] = 0
+    # Thin wires were antialiased against the magenta: pull any purple cast (red AND blue over green) back to grey.
+    r, g, b = a[..., 0].astype(int), a[..., 1].astype(int), a[..., 2].astype(int)
+    cast = (r > g + 20) & (b > g + 20)
+    grey = ((r + g + b) // 3).astype(np.uint8)
+    for c in range(3):
+        a[..., c] = np.where(cast, grey, a[..., c])
+    return Image.fromarray(a, "RGBA")
+
+
 def fit(img: Image.Image, width_tiles: int) -> Image.Image:
     """Crop to the building and scale its width to the block it stands on (TILE px per tile)."""
     img = key_out(img)
@@ -346,8 +405,15 @@ def generate_harmonia(key: str, view: str) -> Path:
     raw = Image.open(io.BytesIO(base64.b64decode(r.data[0].b64_json)))
     STAGE.mkdir(parents=True, exist_ok=True)
     raw.save(STAGE / f"{key}_{view}_raw.png")
+    if key in KEY_EVERYWHERE:
+        raw = key_everywhere(raw)
     out = STAGE / f"{key}_{view}.png"
-    fit(raw, width).save(out)
+    img = fit(raw, width)
+    if key in PROP_HEIGHT and img.height != PROP_HEIGHT[key]:
+        h = PROP_HEIGHT[key]
+        img = img.resize((max(1, round(img.width * h / img.height)), h), Image.LANCZOS)
+        img.putalpha(img.split()[3].point(lambda v: 255 if v >= 128 else 0))
+    img.save(out)
     return out
 
 
