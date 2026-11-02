@@ -733,6 +733,7 @@ if [ "$PLAT" = "linux" ] || [ "$PLAT" = "windows" ]; then
         # the sandbox is a whole fake Windows, not just a relocated directory.
         SMOKE_HOME="$(pwd)/tmp/smoke_home"
         rm -rf "$SMOKE_HOME"; mkdir -p "$SMOKE_HOME"
+        SMOKE_HOME="$(realpath "$SMOKE_HOME")"   # its own realpath: smoke_redirect_proof.sh compares exact values
         # CONTENT, not a count. The previous baseline was `find | wc -l`, which cannot see a
         # save OVERWRITTEN IN PLACE — the exact shape of a partially-failed HOME redirect,
         # where the game finds an existing profile and rewrites slot files already there.
@@ -744,22 +745,42 @@ if [ "$PLAT" = "linux" ] || [ "$PLAT" = "windows" ]; then
             echo "        survived it." >&2
             exit 3
         fi
-        # His LIVE game on his real profile: HOLD before booting the battle smoke. Its autosave
-        # would land inside the --sig window and RED this publish after the build (.487). Asked of
-        # tools/his_game_up.sh, the one source; exit 1 = none, 0 (up) and 2 (cannot tell) both
-        # hold. `|| HG=$?` because under set -e a bare `cmd; ec=$?` never reaches its non-zero arm.
+        # His LIVE game on his real profile. This used to HOLD the whole desktop channel (.487: his
+        # autosave inside the --sig window false-REDs the verify below), which kept linux/windows on
+        # .759 for hours while web shipped .760. Now the redirect is proven POSITIVELY by
+        # tools/smoke_redirect_proof.sh on every run, exactly as deploy_web.sh does: what the smoke
+        # PROCESS carried, that the engine's own log landed in the sandbox, nothing new in his profile.
+        # The real-profile signature stays as an ADDITIONAL check whenever his game is NOT up.
+        # The relocating variable differs by platform: XDG_DATA_HOME for linux (set explicitly beside
+        # HOME, so the proof watches the variable Godot reads first), WINEPREFIX for windows, whose
+        # user:// lives inside the prefix. `|| HG=$?` because under set -e a bare `cmd; ec=$?` never
+        # reaches its non-zero arm.
         HG=0; HG_OUT="$(./tools/his_game_up.sh 2>&1)" || HG=$?
-        if [ "$HG" != 1 ]; then
-            echo "[${PLAT}] BLOCKED (HOLD — not a gate failure): his game is up on his real profile, or" >&2
-            echo "        it cannot be told (his_game_up.sh exit $HG). Re-run once it closes; nothing booted." >&2
-            printf '        %s\n' "$HG_OUT" >&2
+        if [ ! -x tools/smoke_redirect_proof.sh ]; then
+            echo "[${PLAT}] BLOCKED: tools/smoke_redirect_proof.sh missing -- nothing would prove the smoke ran in its sandbox." >&2
             exit 3
         fi
-        REAL_SIG_BEFORE="$(./tools/check_profile_untouched.sh --sig "$USERDATA")"
-        REAL_N_BEFORE=$(find "$USERDATA" -type f 2>/dev/null | wc -l)
+        PROFILE_REL="godot/app_userdata/Cowardly Irregular"
+        if [ "$PLAT" = "windows" ]; then SRP_VAR=WINEPREFIX; SRP_SB="$SMOKE_HOME"
+        else SRP_VAR=XDG_DATA_HOME; SRP_SB="$SMOKE_HOME/.local/share"; mkdir -p "$SRP_SB"; fi
+        export SRP_VAR SRP_MATCH=battle-smoke SRP_WATCH_MAX=960 SRP_REAL_REL="$PROFILE_REL"
+        if ! ./tools/smoke_redirect_proof.sh --check-value "$SRP_SB" "$HOME/.local/share"; then
+            echo "[${PLAT}] BLOCKED: the smoke sandbox value is not safe to hand to ${SRP_VAR} (see above)." >&2
+            exit 3
+        fi
+        REAL_SIG_BEFORE=""; REAL_N_BEFORE=""
+        if [ "$HG" = 1 ]; then
+            REAL_SIG_BEFORE="$(./tools/check_profile_untouched.sh --sig "$USERDATA")"
+            REAL_N_BEFORE=$(find "$USERDATA" -type f 2>/dev/null | wc -l)
+        else
+            echo "[${PLAT}] his game is up (his_game_up.sh exit $HG): the real-profile signature is SKIPPED this run;"
+            echo "[${PLAT}]   the positive redirect proof decides isolation. $(printf '%s' "$HG_OUT" | head -1)"
+        fi
         # .746: his live pad drove a smoke beside his own game; hide host pads like run_tests.sh.
         SMOKE_JAIL=(); if command -v bwrap > /dev/null && bwrap --dev-bind / / --tmpfs /dev/input true 2>/dev/null; then SMOKE_JAIL=(bwrap --dev-bind / / --tmpfs /dev/input); fi
         if [ ${#SMOKE_JAIL[@]} -gt 0 ]; then echo "[${PLAT}] smoke pads: hidden"; else echo "[${PLAT}] smoke pads: VISIBLE (no usable bwrap)"; fi
+        # A marker FILE, not $SMOKE_HOME: the engine creating anything in that dir moves its mtime past its own log.
+        touch "tmp/${PLAT}_smoke_since"
         if [ "$PLAT" = "windows" ]; then
             # 900s, not 600: creating a fresh WINEPREFIX dominates the first minutes and is
             # not the game being slow. Measured 2026-09-10 — prefix creation, then engine
@@ -767,14 +788,29 @@ if [ "$PLAT" = "linux" ] || [ "$PLAT" = "windows" ]; then
             ( cd "$OUT_DIR" && WINEPREFIX="$SMOKE_HOME" timeout 900 "${SMOKE_JAIL[@]}" xvfb-run -a \
                 wine "./${ARTIFACT}" -- --battle-smoke ) > "tmp/${PLAT}_battle.log" 2>&1 &
         else
-            HOME="$SMOKE_HOME" timeout 600 "${SMOKE_JAIL[@]}" xvfb-run -a "$BIN" -- --battle-smoke \
+            HOME="$SMOKE_HOME" XDG_DATA_HOME="$SRP_SB" timeout 600 "${SMOKE_JAIL[@]}" xvfb-run -a "$BIN" -- --battle-smoke \
                 > "tmp/${PLAT}_battle.log" 2>&1 &
         fi
-        SEC=0; wait $! || SEC=$?
+        SP=$!
+        ./tools/smoke_redirect_proof.sh --watch "$SP" "tmp/${PLAT}_smoke_env_seen.txt" & WP=$!
+        SEC=0; wait "$SP" || SEC=$?
+        wait "$WP" || true
+        # The sandbox's own profile path: linux mirrors his; wine's is under drive_c/users/<user>/, so it is
+        # read back from what the engine created. None found -> a path that cannot exist, so (b) REDs.
+        if [ "$PLAT" = "windows" ]; then
+            _wd="$(find "$SMOKE_HOME/drive_c/users" -maxdepth 6 -type d -path "*/app_userdata/Cowardly Irregular" -print -quit 2>/dev/null || true)"
+            SB_REL="${_wd#"$SMOKE_HOME"/}"; [ -n "$_wd" ] || SB_REL="drive_c/users/NOT-FOUND/$PROFILE_REL"
+        else SB_REL="$PROFILE_REL"; fi
+        if ! ./tools/smoke_redirect_proof.sh --verdict "$SRP_SB" "tmp/${PLAT}_smoke_env_seen.txt" "$SB_REL" \
+               "$HOME/.local/share" "tmp/${PLAT}_smoke_since"; then
+            echo "[${PLAT}] BLOCKED: the battle smoke's redirect is NOT proven (see [redirect] above). Refusing" >&2
+            echo "        to keep running the game while it may be writing struktured's real profile." >&2
+            exit 3
+        fi
         # Isolation first: a leak matters more than a failed battle. The sandbox is passed so
         # the RED can distinguish "he was playing during the deploy" from "the redirect did
         # not work" — a battle that ran and left an EMPTY sandbox did not have a working HOME.
-        if ! ./tools/check_profile_untouched.sh --verify "$USERDATA" "$REAL_SIG_BEFORE" "$SMOKE_HOME"; then
+        if [ -n "$REAL_SIG_BEFORE" ] && ! ./tools/check_profile_untouched.sh --verify "$USERDATA" "$REAL_SIG_BEFORE" "$SMOKE_HOME"; then
             echo "[${PLAT}] BLOCKED: refusing to keep running the game against real save data." >&2
             exit 3
         fi
@@ -800,7 +836,11 @@ if [ "$PLAT" = "linux" ] || [ "$PLAT" = "windows" ]; then
         # files, signature matched" attaches a verified verb to an unverified number — the
         # same substitution this whole gate was rewritten to remove.
         echo "[${PLAT}] reached a battle ('Battle commenced') · ${SHOTS} screenshot(s) in the sandbox"
-        echo "[${PLAT}] his profile: ${REAL_N_BEFORE} files total; signature verified unchanged over all of them except user://logs/ (see [profile] line above for the covered count)"
+        if [ -n "$REAL_SIG_BEFORE" ]; then
+            echo "[${PLAT}] his profile: ${REAL_N_BEFORE} files total; signature verified unchanged over all of them except user://logs/ (see [profile] line above for the covered count)"
+        else
+            echo "[${PLAT}] his profile: signature NOT taken (his game was up); isolation rests on the [redirect] GREEN above"
+        fi
     fi
 else
     echo "[${PLAT}] gate 3b: SKIPPED — no combat smoke defined for platform '${PLAT}'"
