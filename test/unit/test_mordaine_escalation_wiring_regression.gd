@@ -241,6 +241,7 @@ func test_keep_music_defaults_off_for_every_other_scene() -> void:
 	## plaza bed for a single remark would announce it louder than the remark itself.
 	assert_eq(opted, [
 			"world1_eldertree_npcs.json",
+			"world1_frosthold_npcs.json",
 			"world1_grimhollow_npcs.json",
 			"world1_harmonia_npcs.json",
 			"world1_ironhaven_npcs.json",

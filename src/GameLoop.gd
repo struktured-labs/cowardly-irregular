@@ -2308,6 +2308,7 @@ func _epilogue_done_or_unwired(epilogue_id: String, flags: Dictionary) -> bool:
 const _VILLAGE_INTROS := {
 	"harmonia_village": "world1_harmonia_npcs",
 	"eldertree_village": "world1_eldertree_npcs",
+	"frosthold_village": "world1_frosthold_npcs",
 	"sandrift_village": "world1_sandrift_npcs",
 	"grimhollow_village": "world1_grimhollow_npcs",
 	"ironhaven_village": "world1_ironhaven_npcs",
@@ -2951,6 +2952,7 @@ const _CUTSCENE_COMPLETION_FLAGS := {
 	"world1_harmonia_npcs":             "cutscene_flag_world1_harmonia_npcs_complete",
 	"world1_eldertree_npcs":            "cutscene_flag_world1_eldertree_npcs_complete",
 	"world1_sandrift_npcs":             "cutscene_flag_world1_sandrift_npcs_complete",
+	"world1_frosthold_npcs":            "cutscene_flag_world1_frosthold_npcs_complete",
 	"world1_grimhollow_npcs":           "cutscene_flag_world1_grimhollow_npcs_complete",
 	"world1_ironhaven_npcs":            "cutscene_flag_world1_ironhaven_npcs_complete",
 	"world2_maple_heights_npcs":        "cutscene_flag_world2_maple_heights_npcs_complete",

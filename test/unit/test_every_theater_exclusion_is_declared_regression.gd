@@ -47,6 +47,7 @@ const HIDDEN := {
 	"world6_guidance_question": "LIVE",
 	"world1_eldertree_npcs": "LIVE",             # GameLoop._VILLAGE_INTROS, first entry to eldertree_village
 	"world1_sandrift_npcs": "LIVE",              # GameLoop._VILLAGE_INTROS, first entry to sandrift_village
+	"world1_frosthold_npcs": "LIVE",             # GameLoop._VILLAGE_INTROS, first entry to frosthold_village
 	"world1_grimhollow_npcs": "LIVE",            # GameLoop._VILLAGE_INTROS, first entry to grimhollow_village
 	"world1_ironhaven_npcs": "LIVE",             # GameLoop._VILLAGE_INTROS, first entry to ironhaven_village
 	"world1_harmonia_npcs": "LIVE",              # GameLoop._VILLAGE_INTROS, first entry to harmonia_village
