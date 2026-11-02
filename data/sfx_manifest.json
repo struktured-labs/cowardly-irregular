@@ -91,7 +91,8 @@
       "file": "assets/audio/sfx/ability_heal_v2.ogg",
       "prompt": "Soft wordless choir on a sustained warm chord, gentle swell and settle, cathedral air, smooth and vocal, no bells, no chimes, no sparkle, no birdsong, no chirping",
       "duration_seconds": 1.2,
-      "prompt_influence": 0.8
+      "prompt_influence": 0.8,
+      "repair": "POLISH PASS 2026-11-01 (struktured approved the listening list; a fresh render remains the real fix): levelled to -16 LUFS. Measured before: very hot master (-10.6 LUFS)."
     },
     "ability_heal_v3": {
       "file": "assets/audio/sfx/ability_heal_v3.ogg",
@@ -602,7 +603,8 @@
       "file": "assets/audio/sfx/armor_clank.ogg",
       "prompt": "Medieval plate armor clanking together, metal gauntlet striking breastplate in salute, military honor gesture",
       "duration_seconds": 0.8,
-      "prompt_influence": 0.7
+      "prompt_influence": 0.7,
+      "repair": "POLISH PASS 2026-11-01 (struktured approved the listening list; a fresh render remains the real fix): declipped, levelled to -16 LUFS. Measured before: clips (flat-topped ×8) very hot master (-9.7 LUFS)."
     },
     "attack_hit": {
       "file": "assets/audio/sfx/attack_hit.ogg",
@@ -692,7 +694,8 @@
       "file": "assets/audio/sfx/autobattle_off.ogg",
       "prompt": "Heavy switch thrown to off position, solid mechanical disengagement clunk, power-down lever release",
       "duration_seconds": 0.5,
-      "prompt_influence": 0.6
+      "prompt_influence": 0.6,
+      "repair": "POLISH PASS 2026-11-01 (struktured approved the listening list; a fresh render remains the real fix): 30 ms tail fade. Measured before: ends abruptly (tail -4.5 dB)."
     },
     "autobattle_on": {
       "file": "assets/audio/sfx/autobattle_on.ogg",
@@ -706,7 +709,8 @@
       "prompt": "SYNTHESISED. Swept downward and read as a whoop; replaced with held steps that do not glide. struktured has rejected sweeping cues four times. Run the tool.",
       "duration_seconds": 0.6,
       "prompt_influence": 0.5,
-      "source": "tools/gen_chiptune_sfx.py ui_open"
+      "source": "tools/gen_chiptune_sfx.py ui_open",
+      "repair": "POLISH PASS 2026-11-01 (struktured approved the listening list; a fresh render remains the real fix): levelled to -16 LUFS. Measured before: very hot master (-10.9 LUFS)."
     },
     "autogrind_stop_sting": {
       "file": "assets/audio/sfx/autogrind_stop_sting.ogg",
@@ -780,7 +784,8 @@
       "file": "assets/audio/sfx/cave_whispers.ogg",
       "prompt": "Eerie cave whispers echoing in darkness, ghostly murmuring voices in a deep cavern, unsettling ambient wind through stone tunnels",
       "duration_seconds": 3.0,
-      "prompt_influence": 0.7
+      "prompt_influence": 0.7,
+      "repair": "POLISH PASS 2026-11-01 (struktured approved the listening list; a fresh render remains the real fix): levelled to -16 LUFS. Measured before: very hot master (-8.6 LUFS)."
     },
     "chalk_tap": {
       "file": "assets/audio/sfx/chalk_tap.ogg",
@@ -829,7 +834,8 @@
       "file": "assets/audio/sfx/corruption_gain_bp_instability.ogg",
       "prompt": "Short unstable-power sting: an electrical tone flickering and dropping out erratically, gating and stuttering as if the supply is failing, jittery and unreliable, no melody",
       "duration_seconds": 1.2,
-      "prompt_influence": 0.8
+      "prompt_influence": 0.8,
+      "repair": "POLISH PASS 2026-11-01 (struktured approved the listening list; a fresh render remains the real fix): levelled to -16 LUFS. Measured before: very hot master (-5.3 LUFS)."
     },
     "corruption_gain_encounter_surge": {
       "file": "assets/audio/sfx/corruption_gain_encounter_surge.ogg",
@@ -841,7 +847,8 @@
       "file": "assets/audio/sfx/corruption_gain_stat_drain.ogg",
       "prompt": "Short draining sting: a warm tone sagging downward in pitch as it thins out and loses body, energy leaving something, hollow and defeated, no melody",
       "duration_seconds": 1.2,
-      "prompt_influence": 0.8
+      "prompt_influence": 0.8,
+      "repair": "POLISH PASS 2026-11-01 (struktured approved the listening list; a fresh render remains the real fix): levelled to -16 LUFS. Measured before: very hot master (-1.2 LUFS)."
     },
     "corruption_gain_visual_glitch": {
       "file": "assets/audio/sfx/corruption_gain_visual_glitch.ogg",
@@ -853,7 +860,8 @@
       "file": "assets/audio/sfx/corruption_misfire.ogg",
       "prompt": "A magic spell going WRONG mid-cast: a bright cast tone smearing into a detuned bitcrushed warble, pitch bending the wrong way, glitched stutter and a reversed swallow at the end, sounds broken and unintended, not triumphant, no melody",
       "duration_seconds": 1.0,
-      "prompt_influence": 0.8
+      "prompt_influence": 0.8,
+      "repair": "POLISH PASS 2026-11-01 (struktured approved the listening list; a fresh render remains the real fix): declipped, -2.5 dB headroom. Measured before: clips (flat-topped ×6)."
     },
     "critical_hit": {
       "file": "assets/audio/sfx/critical_hit.ogg",
@@ -986,7 +994,8 @@
       "file": "assets/audio/sfx/exp_tick.ogg",
       "prompt": "Ultra short soft digital pip, tiny progress bar increment tick, minimal quiet blip like a meter filling up one notch",
       "duration_seconds": 0.5,
-      "prompt_influence": 0.8
+      "prompt_influence": 0.8,
+      "repair": "POLISH PASS 2026-11-01 (struktured approved the listening list; a fresh render remains the real fix): 30 ms tail fade. Measured before: ends abruptly (tail -2.9 dB)."
     },
     "footstep_grass": {
       "file": "assets/audio/sfx/footstep_grass.ogg",
@@ -1166,7 +1175,8 @@
       "file": "assets/audio/sfx/formation_iron_wall.ogg",
       "prompt": "Massive shields slamming together into formation, deep resonant metal wall impact, fortress defense activating with a heavy bass shockwave",
       "duration_seconds": 1.5,
-      "prompt_influence": 0.7
+      "prompt_influence": 0.7,
+      "repair": "POLISH PASS 2026-11-01 (struktured approved the listening list; a fresh render remains the real fix): declipped, -2.5 dB headroom. Measured before: clips (flat-topped ×5)."
     },
     "formation_shadow_strike": {
       "file": "assets/audio/sfx/formation_shadow_strike.ogg",
@@ -1193,7 +1203,8 @@
       "file": "assets/audio/sfx/goblin_fanfare.ogg",
       "prompt": "Comical goblin merchant entrance fanfare, silly kazoo and off-key trumpet, goofy carnival jingle, mischievous and funny",
       "duration_seconds": 1.5,
-      "prompt_influence": 0.7
+      "prompt_influence": 0.7,
+      "repair": "POLISH PASS 2026-11-01 (struktured approved the listening list; a fresh render remains the real fix): levelled to -16 LUFS. Measured before: very hot master (-10.5 LUFS)."
     },
     "gold_pickup": {
       "file": "assets/audio/sfx/gold_pickup.ogg",
@@ -1234,13 +1245,15 @@
         "heal_v2",
         "heal_v3"
       ],
-      "note": "heal.ogg measured 93.9% of energy >4kHz, mean peak 9380Hz — a bird chirp; struktured 2026-08-30 'crap'"
+      "note": "heal.ogg measured 93.9% of energy >4kHz, mean peak 9380Hz — a bird chirp; struktured 2026-08-30 'crap'",
+      "repair": "POLISH PASS 2026-11-01 (struktured approved the listening list; a fresh render remains the real fix): levelled to -16 LUFS. Measured before: very hot master (-6.7 LUFS)."
     },
     "heal_v2": {
       "file": "assets/audio/sfx/heal_v2.ogg",
       "prompt": "Brief wordless choir swell, warm and breathy with cathedral reverb, then settling DOWNWARD into stillness, darker and softer as it fades, no bells, no chimes, no sparkle, no birdsong, no rising shimmer at the end",
       "duration_seconds": 1.0,
-      "prompt_influence": 0.85
+      "prompt_influence": 0.85,
+      "repair": "POLISH PASS 2026-11-01 (struktured approved the listening list; a fresh render remains the real fix): levelled to -16 LUFS. Measured before: very hot master (-9.9 LUFS)."
     },
     "heal_v3": {
       "file": "assets/audio/sfx/heal_v3.ogg",
@@ -1297,7 +1310,8 @@
       "file": "assets/audio/sfx/letterbox_out.ogg",
       "prompt": "Smooth cinematic curtain opening whoosh, subtle film projector disengaging, quiet dramatic transition out",
       "duration_seconds": 0.6,
-      "prompt_influence": 0.6
+      "prompt_influence": 0.6,
+      "repair": "POLISH PASS 2026-11-01 (struktured approved the listening list; a fresh render remains the real fix): levelled to -16 LUFS. Measured before: very hot master (-9.7 LUFS)."
     },
     "level_up": {
       "file": "assets/audio/sfx/level_up.ogg",
@@ -1323,7 +1337,8 @@
       "file": "assets/audio/sfx/lute_strum.ogg",
       "prompt": "Quick medieval lute chord strum, bright acoustic string pluck, bard playing a confident flourish, warm wooden instrument",
       "duration_seconds": 0.8,
-      "prompt_influence": 0.7
+      "prompt_influence": 0.7,
+      "repair": "POLISH PASS 2026-11-01 (struktured approved the listening list; a fresh render remains the real fix): levelled to -16 LUFS. Measured before: very hot master (-9.5 LUFS)."
     },
     "magic_surge": {
       "file": "assets/audio/sfx/magic_surge.ogg",
@@ -1370,7 +1385,8 @@
       "file": "assets/audio/sfx/menu_move.ogg",
       "prompt": "Very short low bubbly boing tick, quick wobbly digital dink with a silly wah bend, playful retro menu cursor — dampened highs, pitched up 50%",
       "duration_seconds": 0.5,
-      "prompt_influence": 0.95
+      "prompt_influence": 0.95,
+      "keep_ruling": "struktured 2026-11-01, on the polish listening list: \"it suggests changing the menu cursor sound - DON'T do that\". The audit flagged this cue's own prompt words (boing, silly, wah); he heard it and ruled it stays. A future audit reads this field and does not re-flag it."
     },
     "menu_open": {
       "file": "assets/audio/sfx/menu_open.ogg",
@@ -1415,7 +1431,8 @@
       "file": "assets/audio/sfx/phase_select.ogg",
       "prompt": "Clear bell ding, single clean notification chime, present and noticeable, like a service bell tap",
       "duration_seconds": 0.5,
-      "prompt_influence": 0.6
+      "prompt_influence": 0.6,
+      "repair": "POLISH PASS 2026-11-01 (struktured approved the listening list; a fresh render remains the real fix): levelled to -16 LUFS. Measured before: very hot master (-8.2 LUFS)."
     },
     "plate_engage": {
       "file": "assets/audio/sfx/plate_engage.ogg",
@@ -1461,13 +1478,15 @@
       "file": "assets/audio/sfx/rat_king_squeak.ogg",
       "prompt": "Dramatic oversized rat squeaking menacingly, deep pitched rodent squeal building to a threatening screech, comically intimidating boss entrance",
       "duration_seconds": 1.2,
-      "prompt_influence": 0.7
+      "prompt_influence": 0.7,
+      "repair": "POLISH PASS 2026-11-01 (struktured approved the listening list; a fresh render remains the real fix): levelled to -16 LUFS. Measured before: very hot master (-6.3 LUFS)."
     },
     "reality_glitch": {
       "file": "assets/audio/sfx/reality_glitch.ogg",
       "prompt": "Reality flickering and glitching, digital static mixed with broken record skipping, world tearing momentarily, unsettling distortion",
       "duration_seconds": 1.0,
-      "prompt_influence": 0.7
+      "prompt_influence": 0.7,
+      "repair": "POLISH PASS 2026-11-01 (struktured approved the listening list; a fresh render remains the real fix): levelled to -16 LUFS, 30 ms tail fade. Measured before: very hot master (-6.2 LUFS) ends abruptly (tail -1.9 dB)."
     },
     "respawn_chime": {
       "file": "assets/audio/sfx/respawn_chime.ogg",
@@ -1595,7 +1614,8 @@
       "source": "elevenlabs",
       "prompt": "Sharp metallic ward-snap on parry for rogue_lockward — quick crisp lock-mechanism click layered with a bright short metal spring release, cold and mechanical, treasure-guardian precision, very short and snappy.",
       "duration_seconds": 0.5,
-      "prompt_influence": 0.75
+      "prompt_influence": 0.75,
+      "repair": "POLISH PASS 2026-11-01 (struktured approved the listening list; a fresh render remains the real fix): 30 ms tail fade. Measured before: ends abruptly (tail -4.8 dB)."
     },
     "spotlight_rogue_victory": {
       "file": "assets/audio/sfx/spotlight_rogue_victory.ogg",
@@ -1652,9 +1672,9 @@
     },
     "status_confuse": {
       "file": "assets/audio/sfx/status_confuse.ogg",
-      "prompt": "Cartoon dizzy birds circling head, wobbly spiraling sound, comical disorientation, spinning stars",
-      "duration_seconds": 0.8,
-      "prompt_influence": 0.5
+      "prompt": "REPLACED 2026-11-01 (struktured's polish pass: 'the rest is fine to change'; the old cue was 'cartoon dizzy birds circling head, comical'). A detuned A5 shimmer (880/932 Hz, 7 Hz tremolo) over a slow E6->D6 glide, light reverb, 0.8 s, -17 LUFS: disorienting, not slapstick.",
+      "duration_seconds": 0.7,
+      "source": "sox_synth"
     },
     "status_controlled": {
       "file": "assets/audio/sfx/status_controlled.ogg",
@@ -1674,7 +1694,8 @@
       "source": "sox_synth",
       "prompt": "Dissonant low minor-second grind (D3 146Hz vs D#3 155Hz beating) under an eerie descending shimmer + echo — unsettling hex. For the curse status (cursed_strike). 0.83s, ~-14 LUFS.",
       "duration_seconds": 0.83,
-      "prompt_influence": 0.0
+      "prompt_influence": 0.0,
+      "repair": "POLISH PASS 2026-11-01 (struktured approved the listening list; a fresh render remains the real fix): levelled to -16 LUFS. Measured before: very hot master (-10.9 LUFS)."
     },
     "status_doom": {
       "file": "assets/audio/sfx/status_doom.ogg",
@@ -1730,7 +1751,8 @@
       "file": "assets/audio/sfx/status_paralyze.ogg",
       "prompt": "Electric taser zap followed by frozen stillness, sharp static crackle then silence, stunning shock",
       "duration_seconds": 0.7,
-      "prompt_influence": 0.6
+      "prompt_influence": 0.6,
+      "repair": "POLISH PASS 2026-11-01 (struktured approved the listening list; a fresh render remains the real fix): levelled to -16 LUFS, 30 ms tail fade. Measured before: very hot master (-8.9 LUFS) ends abruptly (tail +1.8 dB)."
     },
     "status_permakilled": {
       "file": "assets/audio/sfx/status_permakilled.ogg",
@@ -1823,13 +1845,15 @@
       "file": "assets/audio/sfx/sword_draw_heavy.ogg",
       "prompt": "Heavy two-handed greatsword being drawn from scabbard, long slow steel scraping against leather, weighty and deliberate unsheathe",
       "duration_seconds": 1.2,
-      "prompt_influence": 0.7
+      "prompt_influence": 0.7,
+      "repair": "POLISH PASS 2026-11-01 (struktured approved the listening list; a fresh render remains the real fix): declipped, levelled to -16 LUFS. Measured before: clips (flat-topped ×4) very hot master (-10.1 LUFS)."
     },
     "sword_on_stone": {
       "file": "assets/audio/sfx/sword_on_stone.ogg",
       "prompt": "Heavy sword being placed point-down on stone floor, metallic ring echoing in a hall, solemn weapon resting, armor settling",
       "duration_seconds": 1.5,
-      "prompt_influence": 0.7
+      "prompt_influence": 0.7,
+      "repair": "POLISH PASS 2026-11-01 (struktured approved the listening list; a fresh render remains the real fix): declipped, levelled to -16 LUFS. Measured before: clips (flat-topped ×13) very hot master (-5.8 LUFS)."
     },
     "throne_room_doors": {
       "file": "assets/audio/sfx/throne_room_doors.ogg",
@@ -1881,7 +1905,8 @@
       "file": "assets/audio/sfx/victory.ogg",
       "prompt": "Triumphant brass fanfare melody, classic RPG victory jingle, celebratory horns and chimes, joyful short tune",
       "duration_seconds": 3.0,
-      "prompt_influence": 0.5
+      "prompt_influence": 0.5,
+      "repair": "POLISH PASS 2026-11-01 (struktured approved the listening list; a fresh render remains the real fix): levelled to -16 LUFS. Measured before: very hot master (-8.7 LUFS)."
     },
     "victory_slam": {
       "file": "assets/audio/sfx/victory_slam.ogg",
@@ -2190,13 +2215,15 @@
       "file": "assets/audio/sfx/w2_ability_dark.ogg",
       "prompt": "Old basement door creaking open, dark cellar moaning with distant furnace rumble, suburban house with something wrong underneath",
       "duration_seconds": 1.2,
-      "prompt_influence": 0.7
+      "prompt_influence": 0.7,
+      "repair": "POLISH PASS 2026-11-01 (struktured approved the listening list; a fresh render remains the real fix): declipped, -2.5 dB headroom. Measured before: clips (flat-topped ×24)."
     },
     "w2_ability_fire": {
       "file": "assets/audio/sfx/w2_ability_fire.ogg",
       "prompt": "Gas stove burner igniting with a whoosh, kitchen flame flaring up, domestic fire sound, suburban cooking gone wrong",
       "duration_seconds": 1.2,
-      "prompt_influence": 0.7
+      "prompt_influence": 0.7,
+      "repair": "POLISH PASS 2026-11-01 (struktured approved the listening list; a fresh render remains the real fix): declipped, levelled to -16 LUFS. Measured before: clips (flat-topped ×10) very hot master (-9.3 LUFS)."
     },
     "w2_ability_heal": {
       "file": "assets/audio/sfx/ability_heal.ogg",
@@ -2215,25 +2242,29 @@
       "file": "assets/audio/sfx/w2_ability_ice.ogg",
       "prompt": "Garden sprinkler system bursting on, pressurized water spray freezing in air, suburban lawn irrigation gone icy",
       "duration_seconds": 1.2,
-      "prompt_influence": 0.7
+      "prompt_influence": 0.7,
+      "repair": "POLISH PASS 2026-11-01 (struktured approved the listening list; a fresh render remains the real fix): levelled to -16 LUFS. Measured before: very hot master (-8.5 LUFS)."
     },
     "w2_ability_lightning": {
       "file": "assets/audio/sfx/w2_ability_lightning.ogg",
       "prompt": "Leaf blower revving to maximum power, aggressive electric motor whine with gusting wind, suburban yard tool weaponized",
       "duration_seconds": 1.2,
-      "prompt_influence": 0.7
+      "prompt_influence": 0.7,
+      "repair": "POLISH PASS 2026-11-01 (struktured approved the listening list; a fresh render remains the real fix): declipped, levelled to -16 LUFS. Measured before: clips (flat-topped ×11) very hot master (-10.3 LUFS)."
     },
     "w2_ability_physical": {
       "file": "assets/audio/sfx/w2_ability_physical.ogg",
       "prompt": "Screen door slamming shut, satisfying suburban door bang, quick domestic impact",
       "duration_seconds": 1.2,
-      "prompt_influence": 0.7
+      "prompt_influence": 0.7,
+      "repair": "POLISH PASS 2026-11-01 (struktured approved the listening list; a fresh render remains the real fix): declipped. Measured before: clips (flat-topped ×16)."
     },
     "w3_ability_dark": {
       "file": "assets/audio/sfx/w3_ability_dark.ogg",
       "prompt": "Heavy machinery grinding to a halt, gears seizing with metallic screeching, broken clockwork failing ominously",
       "duration_seconds": 1.2,
-      "prompt_influence": 0.7
+      "prompt_influence": 0.7,
+      "repair": "POLISH PASS 2026-11-01 (struktured approved the listening list; a fresh render remains the real fix): levelled to -16 LUFS. Measured before: very hot master (-10.9 LUFS)."
     },
     "w3_ability_fire": {
       "file": "assets/audio/sfx/w3_ability_fire.ogg",
@@ -2252,25 +2283,29 @@
       "file": "assets/audio/sfx/w3_ability_holy.ogg",
       "prompt": "Grand clocktower bell chiming, ornate brass bell with mechanical hammer strike, steampunk cathedral clock",
       "duration_seconds": 1.2,
-      "prompt_influence": 0.7
+      "prompt_influence": 0.7,
+      "repair": "POLISH PASS 2026-11-01 (struktured approved the listening list; a fresh render remains the real fix): declipped, levelled to -16 LUFS. Measured before: clips (flat-topped ×4) very hot master (-10.2 LUFS)."
     },
     "w3_ability_ice": {
       "file": "assets/audio/sfx/w3_ability_ice.ogg",
       "prompt": "High pressure steam valve releasing, sharp hissing jet of freezing steam, industrial coolant venting with pipe rattle",
       "duration_seconds": 1.2,
-      "prompt_influence": 0.7
+      "prompt_influence": 0.7,
+      "repair": "POLISH PASS 2026-11-01 (struktured approved the listening list; a fresh render remains the real fix): levelled to -16 LUFS. Measured before: very hot master (-8.8 LUFS)."
     },
     "w3_ability_lightning": {
       "file": "assets/audio/sfx/w3_ability_lightning.ogg",
       "prompt": "Tesla coil arcing with buzzing electricity, steampunk generator spark discharge, crackling copper coil energy",
       "duration_seconds": 1.2,
-      "prompt_influence": 0.7
+      "prompt_influence": 0.7,
+      "repair": "POLISH PASS 2026-11-01 (struktured approved the listening list; a fresh render remains the real fix): levelled to -16 LUFS. Measured before: very hot master (-8.6 LUFS)."
     },
     "w3_ability_physical": {
       "file": "assets/audio/sfx/w3_ability_physical.ogg",
       "prompt": "Pneumatic piston firing, compressed air cylinder punching, steampunk mechanical arm striking with a hiss",
       "duration_seconds": 1.2,
-      "prompt_influence": 0.7
+      "prompt_influence": 0.7,
+      "repair": "POLISH PASS 2026-11-01 (struktured approved the listening list; a fresh render remains the real fix): levelled to -16 LUFS. Measured before: very hot master (-8.2 LUFS)."
     },
     "w4_ability_dark": {
       "file": "assets/audio/sfx/w4_ability_dark.ogg",
@@ -2294,25 +2329,29 @@
       "file": "assets/audio/sfx/w4_ability_holy.ogg",
       "prompt": "Factory PA chime + fluorescent hum",
       "duration_seconds": 1.2,
-      "prompt_influence": 0.7
+      "prompt_influence": 0.7,
+      "repair": "POLISH PASS 2026-11-01 (struktured approved the listening list; a fresh render remains the real fix): declipped, levelled to -16 LUFS. Measured before: clips (flat-topped ×94) very hot master (-5.1 LUFS)."
     },
     "w4_ability_ice": {
       "file": "assets/audio/sfx/w4_ability_ice.ogg",
       "prompt": "Industrial coolant spray",
       "duration_seconds": 1.2,
-      "prompt_influence": 0.7
+      "prompt_influence": 0.7,
+      "repair": "POLISH PASS 2026-11-01 (struktured approved the listening list; a fresh render remains the real fix): levelled to -16 LUFS. Measured before: very hot master (-7.1 LUFS)."
     },
     "w4_ability_lightning": {
       "file": "assets/audio/sfx/w4_ability_lightning.ogg",
       "prompt": "High voltage breaker tripping",
       "duration_seconds": 1.2,
-      "prompt_influence": 0.7
+      "prompt_influence": 0.7,
+      "repair": "POLISH PASS 2026-11-01 (struktured approved the listening list; a fresh render remains the real fix): levelled to -16 LUFS. Measured before: very hot master (-10.2 LUFS)."
     },
     "w4_ability_physical": {
       "file": "assets/audio/sfx/w4_ability_physical.ogg",
       "prompt": "Punch clock stamping",
       "duration_seconds": 1.2,
-      "prompt_influence": 0.7
+      "prompt_influence": 0.7,
+      "repair": "POLISH PASS 2026-11-01 (struktured approved the listening list; a fresh render remains the real fix): declipped, levelled to -16 LUFS. Measured before: clips (flat-topped ×32) very hot master (-9.4 LUFS)."
     },
     "w4_enemy_death": {
       "file": "assets/audio/sfx/w4_enemy_death.ogg",
@@ -2324,13 +2363,15 @@
       "file": "assets/audio/sfx/w5_ability_dark.ogg",
       "prompt": "Memory dump rumble + corrupted audio",
       "duration_seconds": 1.2,
-      "prompt_influence": 0.7
+      "prompt_influence": 0.7,
+      "repair": "POLISH PASS 2026-11-01 (struktured approved the listening list; a fresh render remains the real fix): declipped, levelled to -16 LUFS. Measured before: clips (flat-topped ×10) very hot master (-6.3 LUFS)."
     },
     "w5_ability_fire": {
       "file": "assets/audio/sfx/w5_ability_fire.ogg",
       "prompt": "Digital data corruption burning",
       "duration_seconds": 1.2,
-      "prompt_influence": 0.7
+      "prompt_influence": 0.7,
+      "repair": "POLISH PASS 2026-11-01 (struktured approved the listening list; a fresh render remains the real fix): levelled to -16 LUFS. Measured before: very hot master (-7.1 LUFS)."
     },
     "w5_ability_heal": {
       "file": "assets/audio/sfx/w5_ability_heal.ogg",
@@ -2342,43 +2383,50 @@
       "file": "assets/audio/sfx/w5_ability_holy.ogg",
       "prompt": "Pure sine wave chord resolving",
       "duration_seconds": 1.2,
-      "prompt_influence": 0.7
+      "prompt_influence": 0.7,
+      "repair": "POLISH PASS 2026-11-01 (struktured approved the listening list; a fresh render remains the real fix): levelled to -16 LUFS. Measured before: very hot master (-4.1 LUFS)."
     },
     "w5_ability_ice": {
       "file": "assets/audio/sfx/w5_ability_ice.ogg",
       "prompt": "Buffer overflow freeze",
       "duration_seconds": 1.2,
-      "prompt_influence": 0.7
+      "prompt_influence": 0.7,
+      "repair": "POLISH PASS 2026-11-01 (struktured approved the listening list; a fresh render remains the real fix): levelled to -16 LUFS. Measured before: very hot master (-8.4 LUFS)."
     },
     "w5_ability_lightning": {
       "file": "assets/audio/sfx/w5_ability_lightning.ogg",
       "prompt": "Bandwidth screech + signal overload",
       "duration_seconds": 1.2,
-      "prompt_influence": 0.7
+      "prompt_influence": 0.7,
+      "repair": "POLISH PASS 2026-11-01 (struktured approved the listening list; a fresh render remains the real fix): declipped, levelled to -16 LUFS, 30 ms tail fade. Measured before: clips (flat-topped ×5) very hot master (-2.3 LUFS) ends abruptly (tail -0.4 dB)."
     },
     "w5_ability_physical": {
       "file": "assets/audio/sfx/w5_ability_physical.ogg",
       "prompt": "Quick glitch pop + digital clipping",
       "duration_seconds": 1.2,
-      "prompt_influence": 0.7
+      "prompt_influence": 0.7,
+      "repair": "POLISH PASS 2026-11-01 (struktured approved the listening list; a fresh render remains the real fix): declipped, levelled to -16 LUFS. Measured before: clips (flat-topped ×37) very hot master (-9.7 LUFS)."
     },
     "w6_ability_dark": {
       "file": "assets/audio/sfx/w6_ability_dark.ogg",
       "prompt": "Low tone fading to silence — concept of absence",
       "duration_seconds": 1.5,
-      "prompt_influence": 0.8
+      "prompt_influence": 0.8,
+      "repair": "POLISH PASS 2026-11-01 (struktured approved the listening list; a fresh render remains the real fix): levelled to -16 LUFS. Measured before: very hot master (-4.7 LUFS)."
     },
     "w6_ability_fire": {
       "file": "assets/audio/sfx/w6_ability_fire.ogg",
       "prompt": "Pure rising tone — concept of heat",
       "duration_seconds": 1.5,
-      "prompt_influence": 0.8
+      "prompt_influence": 0.8,
+      "repair": "POLISH PASS 2026-11-01 (struktured approved the listening list; a fresh render remains the real fix): levelled to -16 LUFS, 30 ms tail fade. Measured before: very hot master (-1.8 LUFS) ends abruptly (tail -2.9 dB)."
     },
     "w6_ability_heal": {
       "file": "assets/audio/sfx/w6_ability_heal.ogg",
       "prompt": "Two tones converging to unison — becoming whole",
       "duration_seconds": 1.5,
-      "prompt_influence": 0.8
+      "prompt_influence": 0.8,
+      "repair": "POLISH PASS 2026-11-01 (struktured approved the listening list; a fresh render remains the real fix): levelled to -16 LUFS. Measured before: very hot master (-2.6 LUFS)."
     },
     "w6_ability_holy": {
       "file": "assets/audio/sfx/w6_ability_holy.ogg",
@@ -2390,7 +2438,8 @@
       "file": "assets/audio/sfx/w6_ability_ice.ogg",
       "prompt": "Pure descending tone — concept of cold",
       "duration_seconds": 1.5,
-      "prompt_influence": 0.8
+      "prompt_influence": 0.8,
+      "repair": "POLISH PASS 2026-11-01 (struktured approved the listening list; a fresh render remains the real fix): levelled to -16 LUFS. Measured before: very hot master (-4.7 LUFS)."
     },
     "w6_ability_lightning": {
       "file": "assets/audio/sfx/w6_ability_lightning.ogg",
