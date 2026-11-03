@@ -188,10 +188,20 @@ func _hard_chains() -> Dictionary:
 
 
 func test_the_walk_finishes_the_new_game_chain() -> void:
-	## _on_prologue_finished plays world1_chapter1 in the same breath, so no village entry ever sees the prologue alone.
+	## struktured 2026-11-02: chapter1 is started by the player talking to Theron, so the prologue hands control back
+	## rather than chaining. A chain reappearing here would steal the conscious elder talk again.
 	var chains: Dictionary = _hard_chains()
-	assert_eq(str(chains.get("world1_prologue", "")), "world1_chapter1",
-		"the derivation must find the prologue -> chapter1 chain in GameLoop's finish handlers, found %s" % [chains])
+	assert_false(chains.has("world1_prologue"),
+		"the prologue must hand control back, not chain into %s (found %s)" % [chains.get("world1_prologue", ""), chains])
+
+
+func test_harmonia_intro_waits_for_the_elder_scene() -> void:
+	## After the prologue alone, Harmonia's entry must not offer its intro: it would re-introduce Theron, Milo and Phil
+	## before the player has talked to Theron. Talking to him offers chapter1.
+	GameState.game_constants[_completion_flag_of("world1_prologue")] = true
+	assert_ne(_pending_on("harmonia_village"), "world1_harmonia_npcs", "the intro fired before chapter1")
+	GameState.game_constants["talked_to_theron"] = true
+	assert_eq(_pending_on("harmonia_village"), "world1_chapter1", "talking to Theron must offer chapter1")
 
 
 func test_the_walk_wins_duels_the_way_the_game_does() -> void:
@@ -204,12 +214,20 @@ func test_the_walk_wins_duels_the_way_the_game_does() -> void:
 
 
 ## Walks the beats a map offers until the intro is what the gate returns; "" if it never is.
+## Talks the player starts consciously, written by OverworldNPC on interaction (struktured 2026-11-02: Theron starts chapter1).
+const CONSCIOUS_TALKS := {"harmonia_village": "talked_to_theron"}
+
+
 func _walk_to_intro(map_id: String, cid: String) -> bool:
 	var seen: Array[String] = []
 	for _step in STORY_WALK_CAP:
 		var got: String = _pending_on(map_id)
 		if got == cid:
 			return true
+		## A beat the player starts on purpose: when the gate has nothing to offer, walk up and talk, like a player would.
+		if got == "" and CONSCIOUS_TALKS.has(map_id) and not bool(GameState.game_constants.get(CONSCIOUS_TALKS[map_id], false)):
+			GameState.game_constants[CONSCIOUS_TALKS[map_id]] = true
+			continue
 		if got == "" or seen.has(got):
 			return false
 		seen.append(got)
@@ -359,6 +377,9 @@ func test_a_village_eventually_introduces_itself() -> void:
 			if got == cid:
 				reached = true
 				break
+			if got == "" and CONSCIOUS_TALKS.has(str(map_id)) and not bool(GameState.game_constants.get(CONSCIOUS_TALKS[str(map_id)], false)):
+				GameState.game_constants[CONSCIOUS_TALKS[str(map_id)]] = true
+				continue
 			if got == "" or seen.has(got):
 				break
 			seen.append(got)
