@@ -114,6 +114,8 @@ var _current_world: int = 0
 ## restore below silently no-opped — leaving the cutscene's own music playing
 ## over gameplay. Verified at runtime 2026-07-26; same family as bug 2801.
 var _pre_cutscene_music: Dictionary = {}
+## #764: `music_after` names an AREA bed to crossfade into when a keep_music scene that owns its track ends (Harmonia prologue → town theme).
+var _music_after_area: String = ""
 
 ## HUD countdown timer — driven by cutscene start_timer / stop_timer steps.
 ## Spec from cowir-story: atmospheric only, never a fail state. Small
@@ -336,6 +338,7 @@ func play_cutscene(cutscene_id: String, replay: bool = false) -> void:
 	_music_stopped_by_step = false
 	_skip_hint_left = SKIP_HINT_SEC
 	_cutscene_id = cutscene_id
+	_music_after_area = str(data.get("music_after", ""))
 	_active = true
 	_skipping = false
 	_fast_forward = false
@@ -401,6 +404,7 @@ func play_cutscene_from_data(cutscene_id: String, data: Dictionary, replay: bool
 	_music_stopped_by_step = false
 	_skip_hint_left = SKIP_HINT_SEC
 	_cutscene_id = cutscene_id
+	_music_after_area = str(data.get("music_after", ""))
 	_active = true
 	_skipping = false
 	_fast_forward = false
@@ -868,6 +872,23 @@ func _step_screen_flash(step: Dictionary) -> void:
 ## opens with the previous scene's theme still playing; restoring that drops a cutscene cue onto the
 ## map the player walks out into (measured on the W1 ending: Mordaine's dissolution theme over Castle
 ## Harmonia). Empty means "this scene owes the world nothing", which leaves its authored ending intact.
+## Fade the scene's own track out, then start the area bed — unless something else took the music meanwhile (the player left, a battle began).
+func _crossfade_to_area_after(area: String, fade_sec: float = 1.5) -> void:
+	if not SoundManager or not SoundManager.has_method("play_area_music"):
+		return
+	if not SoundManager._music_playing:
+		SoundManager.play_area_music(area)
+		return
+	var fading_track: String = str(SoundManager._current_music)
+	SoundManager.fade_out_music(fade_sec)
+	await get_tree().create_timer(fade_sec + 0.05).timeout
+	if _active:
+		return  # another scene started; it owns the music now
+	if SoundManager._current_area != "" or (SoundManager._music_playing and str(SoundManager._current_music) != fading_track):
+		return
+	SoundManager.play_area_music(area)
+
+
 func _world_bed_snapshot() -> Dictionary:
 	if not SoundManager or not SoundManager.has_method("capture_music_state"):
 		return {}
@@ -2389,7 +2410,10 @@ func _end_cutscene() -> void:
 	# raw track name, and so a map-set bed restores at all.
 	if not _pre_cutscene_music.is_empty() and SoundManager:
 		SoundManager.restore_music_state(_pre_cutscene_music)
+	elif _music_after_area != "" and not _music_stopped_by_step and not _replay:
+		_crossfade_to_area_after(_music_after_area)
 	_pre_cutscene_music = {}
+	_music_after_area = ""
 
 	# Defensive: tear down the HUD timer if a cutscene ended without firing
 	# a matching stop_timer (skip path or malformed cutscene script). Without
