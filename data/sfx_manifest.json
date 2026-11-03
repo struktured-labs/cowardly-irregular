@@ -13723,8 +13723,8 @@
     "quest_accept": {
       "file": "assets/audio/sfx/quest_accept.ogg",
       "source": "sox_synth",
-      "prompt": "Quest ACCEPTED (cowir-main 21087: struktured 'when u accept a quest a pleasant noise should play'). Same family as quest_complete (triangle, G major) one step smaller: G4-B4 rising into a D5+G5 dyad with a soft echo, 1.05 s, -17.5 LUFS so the completion jingle (-16, longer motif + triad tail) stays the bigger of the two. Played once by QuestTracker on quest_state_changed('active').",
-      "duration_seconds": 1.05,
+      "prompt": "Quest ACCEPTED ditty (struktured 2026-11-02: did not hear an accept quest ditty). Triangle chiptune in G major, quest_complete family one step smaller: D5-G5-A5-B5 sixteenth pickup into a held G5+B5+D6 triad over a soft G3 square bass, light echo, 1.39 s, -16 LUFS. tools/gen_quest_accept_jingle.sh. Played by QuestTracker via SoundManager.play_jingle (own player, brief bed duck).",
+      "duration_seconds": 1.39,
       "prompt_influence": 0.0
     },
     "quest_progress": {
