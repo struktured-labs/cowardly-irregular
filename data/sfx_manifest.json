@@ -14742,9 +14742,9 @@
       "whisper_heard": "Be nothing.",
       "whisper_score": 1.0
     },
-    "mordaine_secondary_unlock_1": {
+    "boss_line_mordaine_unlock_1": {
       "description": "Mordaine voiced line (#763 secondary-job unlock, world1_mordaine_secondary_unlock; shown as '???')",
-      "file": "assets/audio/sfx/mordaine_secondary_unlock_1.ogg",
+      "file": "assets/audio/sfx/boss_line_mordaine_unlock_1.ogg",
       "speaker": "???",
       "line": "Well done. The rat was a placeholder, but you hit it with such conviction.",
       "spoken": "Well done. The rat was a placeholder, but you hit it with such conviction.",
@@ -14756,9 +14756,9 @@
       "whisper_heard": "Well done. The rat was a placeholder, but you hit it with such conviction.",
       "whisper_score": 1.0
     },
-    "mordaine_secondary_unlock_2": {
+    "boss_line_mordaine_unlock_2": {
       "description": "Mordaine voiced line (#763 secondary-job unlock, world1_mordaine_secondary_unlock; shown as '???')",
-      "file": "assets/audio/sfx/mordaine_secondary_unlock_2.ogg",
+      "file": "assets/audio/sfx/boss_line_mordaine_unlock_2.ogg",
       "speaker": "???",
       "line": "Since you insist on progressing, I have unlocked something for you. A second job. Two hats, one head.",
       "spoken": "Since you insist on progressing, I have unlocked something for you. A second job. Two hats, one head.",
@@ -14770,9 +14770,9 @@
       "whisper_heard": "Since you insist on progressing, I have unlocked something for you.  A second job. Two hats, one head.",
       "whisper_score": 1.0
     },
-    "mordaine_secondary_unlock_3": {
+    "boss_line_mordaine_unlock_3": {
       "description": "Mordaine voiced line (#763 secondary-job unlock, world1_mordaine_secondary_unlock; shown as '???')",
-      "file": "assets/audio/sfx/mordaine_secondary_unlock_3.ogg",
+      "file": "assets/audio/sfx/boss_line_mordaine_unlock_3.ogg",
       "speaker": "???",
       "line": "Open the menu. Yes, that one. The one you pretend the characters cannot see.",
       "spoken": "Open the menu. Yes, that one. The one you pretend the characters cannot see.",
@@ -14784,9 +14784,9 @@
       "whisper_heard": "Open the menu. Yes, that one. The one you pretend the characters cannot see.",
       "whisper_score": 1.0
     },
-    "mordaine_secondary_unlock_4": {
+    "boss_line_mordaine_unlock_4": {
       "description": "Mordaine voiced line (#763 secondary-job unlock, world1_mordaine_secondary_unlock; shown as '???')",
-      "file": "assets/audio/sfx/mordaine_secondary_unlock_4.ogg",
+      "file": "assets/audio/sfx/boss_line_mordaine_unlock_4.ogg",
       "speaker": "???",
       "line": "Choose carefully. Or don't. The wrong choices are so much more informative.",
       "spoken": "Choose carefully. Or don't. The wrong choices are so much more informative.",
@@ -14798,9 +14798,9 @@
       "whisper_heard": "Choose carefully, or don't, the wrong choices are so much more informative.",
       "whisper_score": 1.0
     },
-    "mordaine_secondary_unlock_5": {
+    "boss_line_mordaine_unlock_5": {
       "description": "Mordaine voiced line (#763 secondary-job unlock, world1_mordaine_secondary_unlock; shown as '???')",
-      "file": "assets/audio/sfx/mordaine_secondary_unlock_5.ogg",
+      "file": "assets/audio/sfx/boss_line_mordaine_unlock_5.ogg",
       "speaker": "???",
       "line": "Carry on. I will be taking notes.",
       "spoken": "Carry on. I will be taking notes.",

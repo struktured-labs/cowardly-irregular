@@ -21,8 +21,7 @@ func test_gate_once_after_rat_king_scene_and_skipped_for_old_saves() -> void:
 	var body := _body()
 	var gate: String = ("if flags.get(\"cutscene_flag_world1_rat_king_defeat_complete\", false) "
 		+ "and not flags.get(\"cutscene_flag_world1_mordaine_secondary_unlock_complete\", false) "
-		+ "and not flags.get(\"cutscene_flag_chapter4_complete\", false) "
-		+ "and not flags.get(\"cutscene_flag_demo_end_complete\", false):")
+				+ "and not flags.get(\"cutscene_flag_demo_end_complete\", false):")
 	assert_true(body.contains(gate), "gate must follow the Rat King scene, close on its own flag, and skip post-chapter4 saves")
 	var ret: int = body.find("return \"world1_mordaine_secondary_unlock\"")
 	assert_gt(ret, -1)
@@ -47,7 +46,26 @@ func test_every_line_is_voiced_in_mordaines_voice() -> void:
 		for line in step["lines"]:
 			var key: String = SoundManagerScript.voiced_line_clip(str(line["speaker"]), str(line["text"]))
 			assert_ne(key, "", "unvoiced line: %s" % line["text"])
-			assert_true(key.begins_with("mordaine_secondary_unlock_"), "voiced by her clip, not another speaker's: %s" % key)
+			assert_true(key.begins_with("boss_line_mordaine_unlock_"), "voiced by her clip, not another speaker's: %s" % key)
 			assert_true(FileAccess.file_exists("res://assets/audio/sfx/%s.ogg" % key), "clip on disk: %s" % key)
 			spoken += 1
 	assert_between(spoken, 3, 6, "3-6 lines")
+
+
+func test_old_saves_past_chapter4_retire_the_beat_at_load() -> void:
+	var src: String = FileAccess.get_file_as_string(GAME_LOOP)
+	var r: int = src.find("func _restore_party_from_save_data")
+	assert_gt(r, -1)
+	assert_true(src.substr(r, src.find("\nfunc ", r + 1) - r).contains("_retire_secondary_unlock_beat_for_old_saves()"), "every load path restores through here")
+	var gs = get_node_or_null("/root/GameState")
+	assert_not_null(gs)
+	var saved: Dictionary = gs.game_constants.duplicate(true)
+	var gl = load(GAME_LOOP).new()
+	gs.game_constants = {"cutscene_flag_chapter4_complete": true}
+	gl._retire_secondary_unlock_beat_for_old_saves()
+	assert_true(gs.game_constants.get("cutscene_flag_world1_mordaine_secondary_unlock_complete", false), "old save past chapter4: beat closed")
+	gs.game_constants = {"cutscene_flag_world1_rat_king_defeat_complete": true}
+	gl._retire_secondary_unlock_beat_for_old_saves()
+	assert_false(gs.game_constants.get("cutscene_flag_world1_mordaine_secondary_unlock_complete", false), "save still in the cave: beat stays pending")
+	gs.game_constants = saved
+	gl.free()
