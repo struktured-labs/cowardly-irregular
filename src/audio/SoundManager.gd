@@ -2812,6 +2812,11 @@ func _try_play_from_manifest(track_id: String) -> bool:
 		stream.loop = should_loop
 	_music_player.stream = stream
 	_music_player.volume_db = _music_base_db
+	## Incoming beds ramp in; a stinger hits on its downbeat.
+	if is_stinger:
+		_kill_fade_in()
+	else:
+		_fade_in_music(_music_base_db)
 	## A crossfade-looped bed's opening is the ending mixed over the head. Enter after that blend; the wrap still seeks to 0.
 	var blend: float = float(entry.get("loop_blend_seconds", 0.0))
 	if blend > 0.0 and _pending_resume_position < blend:
@@ -3013,25 +3018,7 @@ func play_music(track: String, exact: bool = false, resume_at: float = 0.0) -> v
 	_music_player_b.stop()
 
 	# If music is playing, crossfade: move old stream to B player and fade out
-	if _music_playing and _music_player.playing:
-		_music_player_b.stream = _music_player.stream
-		_music_player_b.volume_db = _music_player.volume_db
-		_music_player_b.pitch_scale = _music_player.pitch_scale
-		_music_player_b.play(_music_player.get_playback_position())
-		_music_player.stop()
-
-		# Fade out old track on B
-		_crossfade_tween = create_tween()
-		# Mixer-clock subject: a bare envelope stretches by 1/time_scale while the audio it drives does not (9a883dcf).
-		_crossfade_tween.set_ignore_time_scale(true)
-		## ⛔ NEVER FADE UP. -40 is "silent enough" only above it: the slider maps to -80 at mute and
-		## anything under ~3.2% sits below -40, so the outgoing bed RAMPED OUT OF SILENCE for 0.5 s at
-		## every track change. Measured muted 2026-09-16: B climbed -79.5 → -76.8 over six frames,
-		## heading for -40. minf keeps the fade at -40 from any normal level — identical to before —
-		## and leaves a quiet player where it already was.
-		var fade_to: float = minf(-40.0, _music_player_b.volume_db)
-		_crossfade_tween.tween_property(_music_player_b, "volume_db", fade_to, CROSSFADE_DURATION)
-		_crossfade_tween.tween_callback(func(): _music_player_b.stop())
+	_hand_off_to_b()
 
 	_current_music = track
 
@@ -3262,11 +3249,73 @@ func disarm_stinger_resume() -> void:
 		, CONNECT_ONE_SHOT)
 
 
-func stop_music() -> void:
-	"""Stop currently playing music"""
+## Move the audible bed onto player B and fade it out over CROSSFADE_DURATION, leaving
+## _music_player free (stopped) for the incoming track. Shared by play_music and
+## play_area_music so an area change is a crossfade, not stop_music's hard cut.
+## Returns true when something was handed off. Kills any previous crossfade and stops B first.
+func _hand_off_to_b() -> bool:
+	if _crossfade_tween and _crossfade_tween.is_valid():
+		_crossfade_tween.kill()
+	_kill_fade_in()
+	if _music_player_b:
+		_music_player_b.stop()
+	if not (_music_playing and _music_player and _music_player.playing and _music_player_b):
+		return false
+	_music_player_b.stream = _music_player.stream
+	_music_player_b.volume_db = _music_player.volume_db
+	_music_player_b.pitch_scale = _music_player.pitch_scale
+	_music_player_b.play(_music_player.get_playback_position())
+	_music_player.stop()
+	_crossfade_tween = create_tween()
+	# Mixer-clock subject: a bare envelope stretches by 1/time_scale while the audio it drives does not (9a883dcf).
+	_crossfade_tween.set_ignore_time_scale(true)
+	## NEVER FADE UP. -40 is "silent enough" only above it: the slider maps to -80 at mute and
+	## anything under ~3.2% sits below -40, so the outgoing bed RAMPED OUT OF SILENCE for 0.5 s at
+	## every track change (measured muted 2026-09-16). minf leaves a quiet player where it was.
+	var fade_to: float = minf(-40.0, _music_player_b.volume_db)
+	_crossfade_tween.tween_property(_music_player_b, "volume_db", fade_to, CROSSFADE_DURATION)
+	_crossfade_tween.tween_callback(func(): _music_player_b.stop())
+	return true
+
+
+## Incoming-bed fade-in. Separate from _crossfade_tween (which owns the OUTGOING player B) so
+## killing one never strands the other.
+var _fade_in_tween: Tween = null
+const FADE_IN_DURATION: float = 0.5
+const FADE_IN_FLOOR_DB: float = -40.0
+
+
+func _kill_fade_in() -> void:
+	if _fade_in_tween and _fade_in_tween.is_valid():
+		_fade_in_tween.kill()
+	_fade_in_tween = null
+
+
+## Ramp _music_player from FADE_IN_FLOOR_DB up to `target_db`. NEVER FADE UP FROM MUTE: a target
+## at or below the floor (slider under ~3%, or muted at -80) is set directly with no ramp, so a
+## quiet player never swells. The target is _music_base_db, which already carries the -10 dB
+## ceiling and the user's slider.
+func _fade_in_music(target_db: float) -> void:
+	_kill_fade_in()
+	if _music_player == null:
+		return
+	if target_db <= FADE_IN_FLOOR_DB:
+		_music_player.volume_db = target_db
+		return
+	_music_player.volume_db = FADE_IN_FLOOR_DB
+	_fade_in_tween = create_tween()
+	# Mixer-clock subject: a bare envelope stretches by 1/time_scale while the audio it drives does not (9a883dcf).
+	_fade_in_tween.set_ignore_time_scale(true)
+	_fade_in_tween.tween_property(_music_player, "volume_db", target_db, FADE_IN_DURATION)
+
+
+func stop_music(keep_outgoing: bool = false) -> void:
+	"""Stop currently playing music. `keep_outgoing` leaves player B's crossfade running
+	(play_area_music's hand-off); every other caller wants the hard stop."""
+	_kill_fade_in()
 	_music_playing = false
 	_current_music = ""
-	if _crossfade_tween and _crossfade_tween.is_valid():
+	if not keep_outgoing and _crossfade_tween and _crossfade_tween.is_valid():
 		_crossfade_tween.kill()
 	## stop means "and do not come back": a pending stinger resume would otherwise fire on the NEXT track's finish, and a parked field position would seek a later visit.
 	if _music_player:
@@ -3279,7 +3328,7 @@ func stop_music() -> void:
 	_invalidate_pending_area_start()
 	if _music_player:
 		_music_player.stop()
-	if _music_player_b:
+	if _music_player_b and not keep_outgoing:
 		_music_player_b.stop()
 
 
@@ -3295,6 +3344,10 @@ func stop_music() -> void:
 ## OUTGOING bed, so it is stopped rather than resurrected.
 func _cancel_pending_fade() -> void:
 	if not (_crossfade_tween and _crossfade_tween.is_valid()):
+		return
+	## A running CROSSFADE (B out, A in) is not a fade to silence: leave it, or an "already
+	## playing" re-request mid-crossfade cuts B and snaps A to full.
+	if _crossfade_tween != _fade_out_tween:
 		return
 	_crossfade_tween.kill()
 	_crossfade_tween = null
@@ -3323,6 +3376,7 @@ func fade_out_music(duration: float = CROSSFADE_DURATION) -> void:
 	## Same parity, the other disarm: a deferred area start fires mid-ramp and enters at FULL level,
 	## which is louder than whatever the caller was fading away from.
 	_invalidate_pending_area_start()
+	_kill_fade_in()
 	if _crossfade_tween and _crossfade_tween.is_valid():
 		_crossfade_tween.kill()
 	_crossfade_tween = create_tween()
@@ -5215,6 +5269,7 @@ func set_music_volume(normalized: float) -> void:
 	var attenuation = linear_to_db(clamp(normalized, 0.0, 1.0)) if normalized > 0.01 else -80.0
 	var db = MUSIC_VOLUME_CEILING_DB + attenuation if normalized > 0.01 else -80.0
 	_music_base_db = db
+	_kill_fade_in()  # the slider wins; a ramp in flight would land on the OLD level
 	if _music_player:
 		_music_player.volume_db = db
 	## ⛔ AND PUT BACK THE ENVELOPE THE LINE ABOVE JUST FLATTENED. The danger cue sits +3 dB over the
@@ -6388,7 +6443,11 @@ func play_area_music(area_type: String, resume_at: float = 0.0, home_area: Strin
 	if resume_from <= 0.0 and str(_interrupted_area_bed.get("area", "")) == area_type:
 		resume_from = float(_interrupted_area_bed.get("position", 0.0))
 	_interrupted_area_bed = {}
-	stop_music()
+	## Crossfade, not a hard cut: the outgoing bed moves to player B and fades over
+	## CROSSFADE_DURATION while the deferred start fades the new one in. stop_music(true) still
+	## does every disarm (stinger resume, interrupted bed, armed start) but spares B.
+	_hand_off_to_b()
+	stop_music(true)
 	## ALL THREE armed AFTER the stop, for the reason the area line already gave: arming before it
 	## would cancel our own. The resume READ above must stay before the stop (it discards the
 	## interrupted bed), but the assignment belongs here — parking it earlier is what let an

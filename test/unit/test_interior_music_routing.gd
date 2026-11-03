@@ -88,7 +88,8 @@ func test_guard_sits_before_stop_music_in_source() -> void:
 	var fn_start: int = src.find("func play_area_music(")
 	assert_true(fn_start >= 0, "play_area_music must exist")
 	var guard_pos: int = src.find("begins_with(\"interior_\")", fn_start)
-	var stop_pos: int = src.find("stop_music()", fn_start)
+	# 2026-11-02: the area path now stops with stop_music(true) after _hand_off_to_b (crossfade).
+	var stop_pos: int = src.find("stop_music(", fn_start)
 	assert_true(guard_pos >= 0, "play_area_music must carry the interior_ inherit guard")
 	assert_true(stop_pos >= 0, "play_area_music must still stop before switching real areas")
 	assert_true(guard_pos < stop_pos,
