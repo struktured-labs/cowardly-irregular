@@ -2316,6 +2316,11 @@ func _epilogue_done_or_unwired(epilogue_id: String, flags: Dictionary) -> bool:
 ## test_world_transition_scenes_wired_regression requires nothing pending on suburban_overworld both
 ## before and after W2 completes; an intro keyed there reds it twice. Oak Street stays unwired until
 ## it gets a trigger of its own (an interaction, as the prologue has), which is a separate change.
+## Village intro -> completion flag that must be SET before it may play (see the intro loop in _get_pending_story_cutscene).
+const _VILLAGE_INTRO_PREREQS := {
+	"world1_harmonia_npcs": "cutscene_flag_chapter1_complete",
+}
+
 const _VILLAGE_INTROS := {
 	"harmonia_village": "world1_harmonia_npcs",
 	"eldertree_village": "world1_eldertree_npcs",
@@ -2855,8 +2860,11 @@ func _get_pending_story_cutscene() -> String:
 		for vid in _VILLAGE_INTROS:
 			var intro: String = str(_VILLAGE_INTROS[vid])
 			if _current_map_id == vid and not flags.get("cutscene_flag_%s_complete" % intro, false):
-				## Harmonia's intro trims to the strangers chapter1 has not met, so it waits for the elder scene the player starts.
-				if intro == "world1_harmonia_npcs" and not flags.get("cutscene_flag_chapter1_complete", false):
+				## A PREREQUISITE (the flag must be SET), not a blocking flag: e.g. Harmonia's intro trims to the strangers
+				## chapter1 has not met, so it waits for the elder scene the player starts. Kept in a table so the
+				## gate scan does not read a prerequisite as a scene that cancels another scene's gate.
+				var prereq: String = str(_VILLAGE_INTRO_PREREQS.get(intro, ""))
+				if prereq != "" and not bool(flags.get(prereq, false)):
 					continue
 				var met: Array = _intro_met_locals(intro, flags)
 				var locals_count: int = _intro_locals(intro).size()
