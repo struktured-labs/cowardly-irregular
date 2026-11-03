@@ -1084,11 +1084,23 @@ func _on_quest_progress_changed(_a = null, _b = null) -> void:
 	_refresh_quest_marker()
 
 
+## Story-beat "!" over Elder Theron: the QuestLog objective "Speak with Elder Theron in Harmonia"
+## (flag talked_to_theron) is live — the prologue has played and chapter1 has not started yet.
+## Talking to him sets talked_to_theron, which is what starts chapter1, so the marker clears then.
+static func theron_awaits_the_party(id: String, flags: Dictionary) -> bool:
+	return id == "elder_theron" \
+		and bool(flags.get("cutscene_flag_prologue_complete", false)) \
+		and not bool(flags.get("talked_to_theron", false)) \
+		and not bool(flags.get("cutscene_flag_chapter1_complete", false))
+
+
 func _refresh_quest_marker() -> void:
 	if _quest_marker == null or not is_instance_valid(_quest_marker):
 		return
 	var qs = get_node_or_null("/root/QuestSystem")
 	var kind: String = qs.giver_business_kind(get_npc_id()) if qs != null else ""
+	if kind == "" and GameState != null and theron_awaits_the_party(get_npc_id(), GameState.game_constants):
+		kind = "offer"
 	match kind:
 		"offer":
 			_quest_marker.text = "!"
@@ -1200,6 +1212,7 @@ func _start_dialogue() -> void:
 
 	if npc_name == "Elder Theron" and GameState:
 		GameState.game_constants["talked_to_theron"] = true
+		_refresh_quest_marker()
 		# Notify GameLoop to check for pending cutscenes after dialogue finishes
 		dialogue_ended.connect(func(_name):
 			var game_loop = get_node_or_null("/root/GameLoop")
