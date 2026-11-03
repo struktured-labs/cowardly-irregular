@@ -2240,22 +2240,11 @@ func _play_new_game_cutscenes() -> void:
 
 
 func _on_prologue_finished(_cutscene_id: String) -> void:
-	"""After prologue, chain into chapter1 (Elder Theron briefing)."""
+	"""After prologue, hand control back in Harmonia; chapter1 waits for the player to walk up to Elder Theron."""
 	# This path plays cutscenes DIRECTLY, so it must set the completion flags itself — _play_story_cutscene is the only other place that does, and it isn't involved here (2026-07-25: prologue replayed on every harmonia_village entry forever).
 	_mark_story_cutscene_complete("world1_prologue")
-	## NOT _on_chapter1_finished: that marks chapter1 complete, and a scene that never played must stay replayable.
-	if not _cutscene_director.can_play("world1_chapter1"):
-		push_warning("[GameLoop] world1_chapter1 was refused — completion flag NOT set, gate left open; handing control back")
-		current_state = LoopState.EXPLORATION
-		_start_exploration()
-		return
-	_cutscene_director.cutscene_finished.connect(_on_chapter1_finished, CONNECT_ONE_SHOT)
-	_cutscene_director.play_cutscene("world1_chapter1")
-
-
-func _on_chapter1_finished(_cutscene_id: String) -> void:
-	"""After chapter1 briefing, start exploration."""
-	_mark_story_cutscene_complete("world1_chapter1")
+	## struktured 2026-11-02: talking to the elder "is done by players consciously". The prologue ends on the notice sending
+	## the party to Theron, so chapter1 fires from his talk (the talked_to_theron gate), not chained here.
 	current_state = LoopState.EXPLORATION
 	_start_exploration()
 
@@ -2327,6 +2316,11 @@ func _epilogue_done_or_unwired(epilogue_id: String, flags: Dictionary) -> bool:
 ## test_world_transition_scenes_wired_regression requires nothing pending on suburban_overworld both
 ## before and after W2 completes; an intro keyed there reds it twice. Oak Street stays unwired until
 ## it gets a trigger of its own (an interaction, as the prologue has), which is a separate change.
+## Village intro -> completion flag that must be SET before it may play (see the intro loop in _get_pending_story_cutscene).
+const _VILLAGE_INTRO_PREREQS := {
+	"world1_harmonia_npcs": "cutscene_flag_chapter1_complete",
+}
+
 const _VILLAGE_INTROS := {
 	"harmonia_village": "world1_harmonia_npcs",
 	"eldertree_village": "world1_eldertree_npcs",
@@ -2866,6 +2860,12 @@ func _get_pending_story_cutscene() -> String:
 		for vid in _VILLAGE_INTROS:
 			var intro: String = str(_VILLAGE_INTROS[vid])
 			if _current_map_id == vid and not flags.get("cutscene_flag_%s_complete" % intro, false):
+				## A PREREQUISITE (the flag must be SET), not a blocking flag: e.g. Harmonia's intro trims to the strangers
+				## chapter1 has not met, so it waits for the elder scene the player starts. Kept in a table so the
+				## gate scan does not read a prerequisite as a scene that cancels another scene's gate.
+				var prereq: String = str(_VILLAGE_INTRO_PREREQS.get(intro, ""))
+				if prereq != "" and not bool(flags.get(prereq, false)):
+					continue
 				var met: Array = _intro_met_locals(intro, flags)
 				var locals_count: int = _intro_locals(intro).size()
 				if _intro_has_lost_its_moment(met.size(), locals_count):

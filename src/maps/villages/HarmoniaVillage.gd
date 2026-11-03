@@ -28,6 +28,15 @@ func _get_music_area_id() -> String:
 	return "harmonia_village"
 
 
+## #764: the prologue fires on first entry and plays cutscene_w1_conscription; starting the town bed first meant two songs fighting. Pick the prologue's lane from the load.
+const PROLOGUE_MUSIC_TRACK := "cutscene_w1_conscription"
+
+func _get_entry_music_track() -> String:
+	if GameState and "game_constants" in GameState and not bool(GameState.game_constants.get("cutscene_flag_prologue_complete", false)):
+		return PROLOGUE_MUSIC_TRACK
+	return ""
+
+
 func _get_village_display_name() -> String:
 	return "Harmonia"
 
