@@ -239,6 +239,8 @@ func test_keep_music_defaults_off_for_every_other_scene() -> void:
 	## which still plays inside a map that owns a bed, not of whether GameLoop dispatches it today.
 	## world1_scriptura_rogue_door joined 2026-10-31: one Rogue line said over the live plaza on entry; fading the
 	## plaza bed for a single remark would announce it louder than the remark itself.
+	## world1_prologue joined 2026-11-02 (#764): it keeps the bed so the conscription song plays once and
+	## then crossfades to the town theme via music_after, instead of a restart when the scene ends.
 	assert_eq(opted, [
 			"world1_eldertree_npcs.json",
 			"world1_frosthold_npcs.json",
@@ -246,6 +248,7 @@ func test_keep_music_defaults_off_for_every_other_scene() -> void:
 			"world1_harmonia_npcs.json",
 			"world1_ironhaven_npcs.json",
 			"world1_mordaine_watch_road.json",
+			"world1_prologue.json",
 			"world1_sandrift_npcs.json",
 			"world1_scriptura_rogue_door.json",
 			"world2_maple_heights_npcs.json",
