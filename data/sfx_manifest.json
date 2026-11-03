@@ -14741,6 +14741,76 @@
       "seed": 42,
       "whisper_heard": "Be nothing.",
       "whisper_score": 1.0
+    },
+    "boss_line_mordaine_unlock_1": {
+      "description": "Mordaine voiced line (#763 secondary-job unlock, world1_mordaine_secondary_unlock; shown as '???')",
+      "file": "assets/audio/sfx/boss_line_mordaine_unlock_1.ogg",
+      "speaker": "???",
+      "line": "Well done. The rat was a placeholder, but you hit it with such conviction.",
+      "spoken": "Well done. The rat was a placeholder, but you hit it with such conviction.",
+      "source_sha": "735f28aaef8d3cc0",
+      "voice": "Chatterbox clone of VCTK p258 (Southern England), reference -2 st formants shifted, voice_refs/mordaine.wav (CC BY 4.0)",
+      "voice_gender": "male",
+      "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5",
+      "seed": 23,
+      "whisper_heard": "Well done. The rat was a placeholder, but you hit it with such conviction.",
+      "whisper_score": 1.0
+    },
+    "boss_line_mordaine_unlock_2": {
+      "description": "Mordaine voiced line (#763 secondary-job unlock, world1_mordaine_secondary_unlock; shown as '???')",
+      "file": "assets/audio/sfx/boss_line_mordaine_unlock_2.ogg",
+      "speaker": "???",
+      "line": "Since you insist on progressing, I have unlocked something for you. A second job. Two hats, one head.",
+      "spoken": "Since you insist on progressing, I have unlocked something for you. A second job. Two hats, one head.",
+      "source_sha": "d04d3b73a6cd9a24",
+      "voice": "Chatterbox clone of VCTK p258 (Southern England), reference -2 st formants shifted, voice_refs/mordaine.wav (CC BY 4.0)",
+      "voice_gender": "male",
+      "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5",
+      "seed": 23,
+      "whisper_heard": "Since you insist on progressing, I have unlocked something for you.  A second job. Two hats, one head.",
+      "whisper_score": 1.0
+    },
+    "boss_line_mordaine_unlock_3": {
+      "description": "Mordaine voiced line (#763 secondary-job unlock, world1_mordaine_secondary_unlock; shown as '???')",
+      "file": "assets/audio/sfx/boss_line_mordaine_unlock_3.ogg",
+      "speaker": "???",
+      "line": "Open the menu. Yes, that one. The one you pretend the characters cannot see.",
+      "spoken": "Open the menu. Yes, that one. The one you pretend the characters cannot see.",
+      "source_sha": "577bf0e6331d5810",
+      "voice": "Chatterbox clone of VCTK p258 (Southern England), reference -2 st formants shifted, voice_refs/mordaine.wav (CC BY 4.0)",
+      "voice_gender": "male",
+      "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5",
+      "seed": 42,
+      "whisper_heard": "Open the menu. Yes, that one. The one you pretend the characters cannot see.",
+      "whisper_score": 1.0
+    },
+    "boss_line_mordaine_unlock_4": {
+      "description": "Mordaine voiced line (#763 secondary-job unlock, world1_mordaine_secondary_unlock; shown as '???')",
+      "file": "assets/audio/sfx/boss_line_mordaine_unlock_4.ogg",
+      "speaker": "???",
+      "line": "Choose carefully. Or don't. The wrong choices are so much more informative.",
+      "spoken": "Choose carefully. Or don't. The wrong choices are so much more informative.",
+      "source_sha": "456c9e0c2096cf5b",
+      "voice": "Chatterbox clone of VCTK p258 (Southern England), reference -2 st formants shifted, voice_refs/mordaine.wav (CC BY 4.0)",
+      "voice_gender": "male",
+      "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5",
+      "seed": 42,
+      "whisper_heard": "Choose carefully, or don't, the wrong choices are so much more informative.",
+      "whisper_score": 1.0
+    },
+    "boss_line_mordaine_unlock_5": {
+      "description": "Mordaine voiced line (#763 secondary-job unlock, world1_mordaine_secondary_unlock; shown as '???')",
+      "file": "assets/audio/sfx/boss_line_mordaine_unlock_5.ogg",
+      "speaker": "???",
+      "line": "Carry on. I will be taking notes.",
+      "spoken": "Carry on. I will be taking notes.",
+      "source_sha": "79c82c89dbc0ae83",
+      "voice": "Chatterbox clone of VCTK p258 (Southern England), reference -2 st formants shifted, voice_refs/mordaine.wav (CC BY 4.0)",
+      "voice_gender": "male",
+      "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.45 cfg 0.5",
+      "seed": 42,
+      "whisper_heard": "Carry on, I will be taking notes.",
+      "whisper_score": 1.0
     }
   }
 }

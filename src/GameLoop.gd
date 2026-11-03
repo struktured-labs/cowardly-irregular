@@ -2536,6 +2536,15 @@ func _get_pending_story_cutscene() -> String:
 	if flags.get("cutscene_flag_rat_king_defeated", false) and not flags.get("cutscene_flag_world1_rat_king_defeat_complete", false):
 		if _current_map_id == "whispering_cave":
 			return "world1_rat_king_defeat"
+	## #763: Mordaine (unnamed yet) announces the secondary-job unlock right after the Rat King scene,
+	## in place of a system popup. Once only (completion flag). Saves already past chapter4 have used the
+	## slot for a whole act: _retire_secondary_unlock_beat_for_old_saves closes the flag at load, so the
+	## beat is not replayed late on a return to the cave (not a gate on chapter4: that would let another
+	## scene cancel this one — test_no_scene_cancels_another_scenes_gate_regression).
+	## Above the demo boundary so the demo, which ends at this fight, still hears it (before its card, never after).
+	if flags.get("cutscene_flag_world1_rat_king_defeat_complete", false) and not flags.get("cutscene_flag_world1_mordaine_secondary_unlock_complete", false) and not flags.get("cutscene_flag_demo_end_complete", false):
+		if _current_map_id == "whispering_cave":
+			return "world1_mordaine_secondary_unlock"
 	## DEMO BOUNDARY. Placed AFTER world1_rat_king_defeat so that beat still plays, and BEFORE
 	## chapter4 so nothing past the tested mission chains. Returns "" once the card is seen —
 	## short-circuiting every later gate, including the Mordaine escalation, rather than
@@ -2989,6 +2998,7 @@ const _CUTSCENE_COMPLETION_FLAGS := {
 	"world1_chapter3":                  "cutscene_flag_chapter3_complete",
 	"world1_chapter4":                  "cutscene_flag_chapter4_complete",
 	"world1_rat_king_defeat":           "cutscene_flag_world1_rat_king_defeat_complete",
+	"world1_mordaine_secondary_unlock": "cutscene_flag_world1_mordaine_secondary_unlock_complete",
 	# 2026-07-15 (task #27): staged village-reaction scene after the Rat King falls
 	"world1_harmonia_after_cave":       "cutscene_flag_world1_harmonia_after_cave_complete",
 	# Tick 104: W1 Mordaine final post-defeat dialogue
@@ -3504,6 +3514,14 @@ func _restore_equipment_pool_from_game_state() -> void:
 		equipment_pool[slot_key] = restored
 
 
+## #763: a save made before the Mordaine unlock beat existed, and already past chapter4, has had the
+## secondary slot for a whole act; announcing it now would be news to nobody. Close its flag instead.
+func _retire_secondary_unlock_beat_for_old_saves() -> void:
+	var gc: Dictionary = GameState.game_constants
+	if gc.get("cutscene_flag_chapter4_complete", false) and not gc.get("cutscene_flag_world1_mordaine_secondary_unlock_complete", false):
+		gc["cutscene_flag_world1_mordaine_secondary_unlock_complete"] = true
+
+
 func _restore_party_from_save_data() -> bool:
 	"""Reconstruct runtime party from GameState.player_party (post-load).
 
@@ -3516,6 +3534,7 @@ func _restore_party_from_save_data() -> bool:
 	function closes the gap. Pairs with the expanded Combatant.to_dict /
 	from_dict and the full-state _sync_party_to_game_state.
 	"""
+	_retire_secondary_unlock_beat_for_old_saves()
 	# Doorstep latch is not in the save. Drop it on every restore, including a party-less one, so the loaded room exits at the village gate.
 	_clear_interior_doorstep()
 	if not GameState or GameState.player_party.is_empty():
