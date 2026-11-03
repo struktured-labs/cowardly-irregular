@@ -25,7 +25,10 @@ const SM_SRC: String = "res://src/audio/SoundManager.gd"
 const CLASSIFIED: Dictionary = {
 	"duck_music_for_dialogue": false,
 	"duck_music_for_kill": true,
-	"play_music": true,
+	# 2026-11-02 area crossfade: play_music's outgoing fade moved into _hand_off_to_b (shared with
+	# play_area_music); the incoming ramp is _fade_in_music. Both drive player volume_db.
+	"_hand_off_to_b": true,
+	"_fade_in_music": true,
 	"fade_out_music": true,
 	"set_danger_intensity": true,
 	# 2026-09-06 sfx/corruption-audible: set_corruption_intensity now stores its meter and the
