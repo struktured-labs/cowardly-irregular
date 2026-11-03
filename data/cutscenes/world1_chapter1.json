@@ -29,10 +29,6 @@
       "duration": 0.8
     },
     {
-      "type": "narration",
-      "text": "The bats were bigger. The slimes were angrier. Traders stopped coming through, then stopped sending messages, then stopped existing in conversation entirely."
-    },
-    {
       "type": "spawn_actor",
       "id": "fighter",
       "kind": "party",
