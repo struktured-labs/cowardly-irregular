@@ -118,3 +118,43 @@ func test_a_stinger_still_hits_at_full_level() -> void:
 	await _settle_on(AREA_A)
 	SoundManager.play_music("stinger_item_found")
 	assert_almost_eq(_a().volume_db, SoundManager._music_base_db, 0.5, "a stinger is not faded in")
+
+
+## .764 interaction: the quest-accept jingle ducks the MusicDuck BUS (slot 3) while the area change
+## crossfades the PLAYERS. They are independent layers; neither may strand the other.
+func test_a_jingle_during_an_area_change_ducks_and_both_settle() -> void:
+	await _settle_on(AREA_A)
+	var base: float = SoundManager._music_base_db
+	SoundManager.play_area_music(AREA_B)
+	assert_true(SoundManager.play_jingle("quest_accept"), "PREMISE: the quest_accept jingle is a real file on JinglePlayer")
+	var jingle_len: float = 1.0
+	if SoundManager._jingle_player.stream:
+		jingle_len = SoundManager._jingle_player.stream.get_length()
+	var deepest: float = 0.0
+	var t_end: int = Time.get_ticks_msec() + int((SoundManager.CROSSFADE_DURATION + 0.3) * 1000.0)
+	while Time.get_ticks_msec() < t_end:
+		await wait_process_frames(1)
+		deepest = minf(deepest, SoundManager.get_jingle_duck_db())
+		assert_lte(_a().volume_db, base + 0.01, "incoming bed overshot its level under a jingle")
+		if _b().playing:
+			assert_lte(_b().volume_db, base + 0.01, "outgoing bed rose under a jingle")
+	assert_lt(deepest, -4.0, "the jingle ducked the music bus during the crossfade (deepest %.1f dB)" % deepest)
+	assert_false(_b().playing, "the crossfade still finished: player B stopped")
+	assert_true(_a().playing, "the new bed is playing")
+	await wait_seconds(maxf(jingle_len + SoundManager.JINGLE_DUCK_RELEASE_TIME + 0.4 - (SoundManager.CROSSFADE_DURATION + 0.3), 0.3))
+	assert_almost_eq(SoundManager.get_jingle_duck_db(), 0.0, 0.05, "the jingle duck released after the area change")
+	assert_almost_eq(_a().volume_db, base, 0.5, "and the new bed sits at the user's level")
+
+
+## A jingle that is already ducking when the area changes keeps its release; the stop_music(true) disarm does not touch the duck bus.
+func test_an_area_change_mid_jingle_does_not_strand_the_duck() -> void:
+	await _settle_on(AREA_A)
+	assert_true(SoundManager.play_jingle("quest_accept"), "PREMISE: jingle played")
+	var jingle_len: float = SoundManager._jingle_player.stream.get_length() if SoundManager._jingle_player.stream else 1.0
+	await wait_seconds(0.15)
+	assert_lt(SoundManager.get_jingle_duck_db(), -4.0, "PREMISE: the duck is engaged")
+	SoundManager.play_area_music(AREA_B)
+	await wait_seconds(jingle_len + SoundManager.JINGLE_DUCK_RELEASE_TIME + 0.4)
+	assert_almost_eq(SoundManager.get_jingle_duck_db(), 0.0, 0.05, "the duck released despite the area change")
+	assert_false(_b().playing, "the crossfade finished")
+	assert_almost_eq(_a().volume_db, SoundManager._music_base_db, 0.5, "new bed at the user's level")
