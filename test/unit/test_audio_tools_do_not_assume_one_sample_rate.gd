@@ -44,6 +44,7 @@ const NOT_A_REWRITER := {
 	"gen_freight_lift.sh": "GENERATES freight_lift.ogg from sox synthesis; 44.1 kHz is the rate the samples are MADE at, so no master's rate can disagree with it. Its `sox -R` seed is load-bearing for provenance, not its rate",
 	"gen_block_seat.sh": "GENERATES block_seat.ogg from sox synthesis; 44.1 kHz is the rate the samples are MADE at, so no master's rate can disagree with it",
 	"gen_passage_grind.sh": "GENERATES passage_grind.ogg from sox synthesis; same",
+	"gen_quest_accept_jingle.sh": "GENERATES quest_accept.ogg from sox synthesis; 44.1 kHz is the rate the samples are MADE at, so no master can disagree with it",
 	"gen_pickup_small.sh": "GENERATES pickup_small.ogg from sox synthesis; same",
 	"gen_steam_bed.py": "GENERATES; same",
 	"seam_loop_beds.py": "reads and reports seam figures",

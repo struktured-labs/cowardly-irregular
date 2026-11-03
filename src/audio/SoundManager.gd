@@ -14,6 +14,7 @@ var _voice_player: AudioStreamPlayer  # dedicated voice: party lines are SECONDS
 var _line_player: AudioStreamPlayer  # dedicated voice: a recorded dialogue line (boss/NPC); never the party voice player, which the victory slam shares
 var _line_owner_id: int = 0
 var _line_ducked: bool = false
+var _jingle_player: AudioStreamPlayer  # dedicated voice: the quest-accept ditty died on the next line's menu_select on _ui_player and sat at -16 dB under the bed (2026-11-02, struktured: "didn't hear an accept quest ditty")
 var _pickup_player: AudioStreamPlayer  # dedicated voice: a reward cue always follows the action that earned it, and replaced it on _ui_player (2026-09-12)
 var _bank_player: AudioStreamPlayer  # dedicated voice: full_bank_unleash replaced advance_flourish_5 in the same frame, every full bank (2026-09-14)
 var _refuse_player: AudioStreamPlayer  # dedicated voice: a refused Advance press lands while the job's 3s fifth rung is still ringing (2026-09-14)
@@ -115,6 +116,13 @@ const KILL_DUCK_EFFECT_SLOT: int = 1
 const KILL_DUCK_TARGET_DB: float = -4.0
 const KILL_DUCK_ATTACK_TIME: float = 0.05
 const KILL_DUCK_RELEASE_TIME: float = 0.4
+## Jingle duck: its own Amplify (slot 2) so it composes with the dialogue duck (slot 0, held during the
+## giver's accept lines) and the kill duck (slot 1) instead of killing their tweens.
+const JINGLE_DUCK_EFFECT_SLOT: int = 2
+const JINGLE_DUCK_TARGET_DB: float = -8.0
+const JINGLE_DUCK_ATTACK_TIME: float = 0.08
+const JINGLE_DUCK_RELEASE_TIME: float = 0.6
+const JINGLE_PLAYER_BASE_DB: float = -8.0
 ## Crit sub-layer: sits UNDER the existing crit cue (which already carries pitch/echo identity in its OGG) so crits land in the chest without doubling the transient.
 const CRIT_THUD_FREQ: float = 62.0
 const CRIT_THUD_DURATION: float = 0.18
@@ -648,6 +656,12 @@ func _setup_audio_players() -> void:
 	_line_player.bus = SFX_BUS
 	_line_player.finished.connect(_on_voiced_line_finished)
 	add_child(_line_player)
+
+	_jingle_player = AudioStreamPlayer.new()
+	_jingle_player.name = "JinglePlayer"
+	_jingle_player.volume_db = JINGLE_PLAYER_BASE_DB
+	_jingle_player.bus = SFX_BUS
+	add_child(_jingle_player)
 
 	_pickup_player = AudioStreamPlayer.new()
 	_pickup_player.name = "PickupPlayer"
@@ -1999,6 +2013,55 @@ func duck_music_for_kill() -> void:
 	_kill_duck_tween.set_ignore_time_scale(true)
 	_kill_duck_tween.tween_property(amp, "volume_db", KILL_DUCK_TARGET_DB, KILL_DUCK_ATTACK_TIME)
 	_kill_duck_tween.tween_property(amp, "volume_db", 0.0, KILL_DUCK_RELEASE_TIME)
+
+
+var _jingle_duck_tween: Tween = null
+
+
+## A short musical ditty over the bed (quest accepted): its own player so no menu blip cuts it, and a
+## brief duck of the music bus on slot 2 — attack, hold for the cue's length, smooth release. The bed is
+## never stopped or swapped, so nothing fights over the track and the area music carries on underneath.
+func play_jingle(sound_key: String) -> bool:
+	var ok := _try_play_sfx_from_manifest(_jingle_player, sound_key, JINGLE_PLAYER_BASE_DB, 1.0, false)
+	if not ok:
+		play_ui(sound_key)
+		return false
+	var length: float = 1.0
+	if _jingle_player.stream:
+		length = _jingle_player.stream.get_length()
+	print("[MUSIC] jingle %s (%.2fs) ducking bed to %.1f dB" % [sound_key, length, JINGLE_DUCK_TARGET_DB])
+	_duck_music_for_jingle(length)
+	return true
+
+
+func _duck_music_for_jingle(length: float) -> void:
+	var idx: int = _ensure_kill_duck_effect()
+	if idx == -1:
+		return
+	while AudioServer.get_bus_effect_count(idx) <= JINGLE_DUCK_EFFECT_SLOT:
+		var a := AudioEffectAmplify.new()
+		a.volume_db = 0.0
+		AudioServer.add_bus_effect(idx, a)
+		AudioServer.set_bus_effect_enabled(idx, AudioServer.get_bus_effect_count(idx) - 1, true)
+	var amp = AudioServer.get_bus_effect(idx, JINGLE_DUCK_EFFECT_SLOT)
+	if amp == null:
+		return
+	if _jingle_duck_tween and _jingle_duck_tween.is_valid():
+		_jingle_duck_tween.kill()
+	_jingle_duck_tween = create_tween()
+	_jingle_duck_tween.set_ignore_time_scale(true)
+	_jingle_duck_tween.tween_property(amp, "volume_db", JINGLE_DUCK_TARGET_DB, JINGLE_DUCK_ATTACK_TIME)
+	_jingle_duck_tween.tween_interval(maxf(length - JINGLE_DUCK_ATTACK_TIME - 0.2, 0.1))
+	_jingle_duck_tween.tween_property(amp, "volume_db", 0.0, JINGLE_DUCK_RELEASE_TIME)
+
+
+## Public: current jingle-duck attenuation in dB (0.0 at rest). Test seam.
+func get_jingle_duck_db() -> float:
+	var idx: int = AudioServer.get_bus_index(MUSIC_DUCK_BUS)
+	if idx == -1 or AudioServer.get_bus_effect_count(idx) <= JINGLE_DUCK_EFFECT_SLOT:
+		return 0.0
+	var amp = AudioServer.get_bus_effect(idx, JINGLE_DUCK_EFFECT_SLOT)
+	return amp.volume_db if amp else 0.0
 
 
 ## Public: current kill-duck attenuation in dB (0.0 at rest). Test seam — reading the bus is the only way to observe this without ears.

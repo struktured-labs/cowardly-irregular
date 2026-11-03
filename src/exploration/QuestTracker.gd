@@ -150,7 +150,9 @@ func _on_quest_progress(_a = null, _b = null) -> void:
 		var cue := quest_cue_for(_b, Time.get_ticks_msec() - _accept_cue_ms)
 		if cue == "quest_accept":
 			_accept_cue_ms = Time.get_ticks_msec()
-		if cue != "":
+		if cue == "quest_accept":
+			SoundManager.play_jingle(cue)
+		elif cue != "":
 			SoundManager.play_ui(cue)
 	if _side_label != null and _side_label.visible:
 		_side_label.modulate = Color(1.6, 1.4, 0.6)
