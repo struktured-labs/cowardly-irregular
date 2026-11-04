@@ -1313,6 +1313,591 @@
         0.5,
         0.95
       ]
+    },
+    "summon_overclock": {
+      "label": "Overclock: the furnace golem vents Thermal Throttle across the field",
+      "start": 0.15,
+      "start_note": "the figure has already risen during the wind-up; the sequence fires from the stage",
+      "phases": [
+        {
+          "at": 0.0,
+          "kind": "ring",
+          "origin": "caster",
+          "dur": 0.3,
+          "scale": 2.86,
+          "palette": "flame",
+          "palette_t3": "fire"
+        },
+        {
+          "at": 0.05,
+          "kind": "bolt",
+          "dur": 0.36,
+          "arc_height": 70,
+          "size": 2.08,
+          "trail_spacing": 8,
+          "palette": "flame",
+          "palette_t3": "fire",
+          "trail_palette": "ember"
+        },
+        {
+          "at": 0.41,
+          "kind": "flash",
+          "dur": 0.18,
+          "size": 9.1
+        },
+        {
+          "at": 0.41,
+          "kind": "ring",
+          "dur": 0.3,
+          "scale": 4.42,
+          "palette": "fire"
+        },
+        {
+          "at": 0.41,
+          "kind": "shake",
+          "intensity": 11,
+          "dur": 0.24
+        },
+        {
+          "at": 0.41,
+          "kind": "emit",
+          "count": 10,
+          "arc": 360,
+          "radius": 104,
+          "life": 0.3,
+          "size": 1.56,
+          "twist": 18,
+          "palette": "flame",
+          "palette_t3": "fire",
+          "child_at": 0.75,
+          "decay": 0.6,
+          "child": {
+            "count": 3,
+            "arc": 60,
+            "radius": 40,
+            "life": 0.22,
+            "size": 0.9,
+            "palette": "flame"
+          }
+        },
+        {
+          "at": 0.65,
+          "kind": "emit",
+          "count": 14,
+          "arc": 360,
+          "radius": 169,
+          "life": 0.3,
+          "size": 1.3,
+          "twist": 13,
+          "palette": "flame",
+          "palette_t3": "fire",
+          "min_tier": 2
+        },
+        {
+          "at": 0.65,
+          "kind": "shake",
+          "intensity": 12,
+          "dur": 0.2,
+          "min_tier": 2
+        },
+        {
+          "at": 0.9,
+          "kind": "ring",
+          "dur": 0.35,
+          "scale": 7.15,
+          "palette": "fire",
+          "min_tier": 3
+        },
+        {
+          "at": 0.9,
+          "kind": "emit",
+          "count": 18,
+          "arc": 360,
+          "radius": 234,
+          "life": 0.32,
+          "size": 1.17,
+          "twist": 10,
+          "palette": "fire",
+          "min_tier": 3
+        },
+        {
+          "at": 1.15,
+          "kind": "emit",
+          "count": 20,
+          "arc": 360,
+          "radius": 230,
+          "life": 0.34,
+          "size": 1.0,
+          "twist": 9,
+          "palette": "fire"
+        },
+        {
+          "at": 1.15,
+          "kind": "shake",
+          "intensity": 12,
+          "dur": 0.28
+        }
+      ],
+      "tint": [
+        0.85,
+        0.3,
+        0.05
+      ]
+    },
+    "summon_cold_storage": {
+      "label": "Cold Storage: Deep Archive, the field filed under ice",
+      "start": 0.15,
+      "start_note": "the figure has already risen during the wind-up; the sequence fires from the stage",
+      "phases": [
+        {
+          "at": 0.0,
+          "kind": "ring",
+          "origin": "caster",
+          "dur": 0.3,
+          "scale": 2.6,
+          "palette": "frost"
+        },
+        {
+          "at": 0.1,
+          "kind": "bolt",
+          "dur": 0.34,
+          "arc_height": 36,
+          "size": 1.69,
+          "trail_spacing": 9,
+          "palette": "frost",
+          "trail_palette": "frost"
+        },
+        {
+          "at": 0.44,
+          "kind": "flash",
+          "dur": 0.16,
+          "size": 7.8
+        },
+        {
+          "at": 0.44,
+          "kind": "ring",
+          "dur": 0.3,
+          "scale": 3.9,
+          "palette": "frost"
+        },
+        {
+          "at": 0.44,
+          "kind": "shake",
+          "intensity": 10,
+          "dur": 0.2
+        },
+        {
+          "at": 0.44,
+          "kind": "emit",
+          "count": 6,
+          "arc": 360,
+          "radius": 91,
+          "life": 0.35,
+          "size": 1.43,
+          "twist": 30,
+          "palette": "frost",
+          "child_at": 0.8,
+          "child": {
+            "count": 2,
+            "arc": 40,
+            "radius": 40,
+            "life": 0.25,
+            "size": 0.8,
+            "palette": "frost"
+          }
+        },
+        {
+          "at": 0.8,
+          "kind": "hitstop",
+          "dur": 0.1,
+          "min_tier": 2
+        },
+        {
+          "at": 0.9,
+          "kind": "emit",
+          "count": 12,
+          "arc": 360,
+          "radius": 143,
+          "life": 0.3,
+          "size": 1.17,
+          "palette": "frost",
+          "min_tier": 2
+        },
+        {
+          "at": 0.9,
+          "kind": "shake",
+          "intensity": 12,
+          "dur": 0.22,
+          "min_tier": 2
+        },
+        {
+          "at": 0.9,
+          "kind": "ring",
+          "dur": 0.4,
+          "scale": 6.5,
+          "palette": "frost",
+          "min_tier": 3
+        },
+        {
+          "at": 0.9,
+          "kind": "flash",
+          "dur": 0.2,
+          "size": 10.4,
+          "min_tier": 3
+        },
+        {
+          "at": 1.2,
+          "kind": "ring",
+          "dur": 0.45,
+          "scale": 7.0,
+          "palette": "frost"
+        },
+        {
+          "at": 1.2,
+          "kind": "emit",
+          "count": 18,
+          "arc": 360,
+          "radius": 200,
+          "life": 0.32,
+          "size": 0.9,
+          "palette": "frost"
+        }
+      ],
+      "tint": [
+        0.3,
+        0.6,
+        0.95
+      ]
+    },
+    "summon_surge_protector": {
+      "label": "Surge Protector: Brownout, every bolt at once",
+      "start": 0.15,
+      "start_note": "the figure has already risen during the wind-up; the sequence fires from the stage",
+      "phases": [
+        {
+          "at": 0.0,
+          "kind": "ring",
+          "origin": "caster",
+          "dur": 0.2,
+          "scale": 2.6,
+          "palette": "spark"
+        },
+        {
+          "at": 0.05,
+          "kind": "bolt",
+          "dur": 0.18,
+          "arc_height": 8,
+          "size": 2.08,
+          "trail_spacing": 6,
+          "palette": "spark",
+          "trail_palette": "spark"
+        },
+        {
+          "at": 0.23,
+          "kind": "flash",
+          "dur": 0.14,
+          "size": 8.45
+        },
+        {
+          "at": 0.23,
+          "kind": "shake",
+          "intensity": 12,
+          "dur": 0.22
+        },
+        {
+          "at": 0.23,
+          "kind": "slash",
+          "count": 12,
+          "radius": 78,
+          "dur": 0.12,
+          "life": 0.2,
+          "palette": "spark"
+        },
+        {
+          "at": 0.23,
+          "kind": "emit",
+          "count": 5,
+          "arc": 360,
+          "radius": 104,
+          "life": 0.22,
+          "size": 1.3,
+          "depth": 2,
+          "decay": 0.55,
+          "time_decay": 0.8,
+          "palette": "spark"
+        },
+        {
+          "at": 0.5,
+          "kind": "flash",
+          "dur": 0.12,
+          "size": 6.5,
+          "min_tier": 2
+        },
+        {
+          "at": 0.5,
+          "kind": "slash",
+          "count": 16,
+          "radius": 117,
+          "dur": 0.12,
+          "life": 0.2,
+          "palette": "spark",
+          "min_tier": 2
+        },
+        {
+          "at": 0.5,
+          "kind": "shake",
+          "intensity": 13,
+          "dur": 0.2,
+          "min_tier": 2
+        },
+        {
+          "at": 0.7,
+          "kind": "ring",
+          "dur": 0.25,
+          "scale": 5.85,
+          "palette": "spark",
+          "min_tier": 3
+        },
+        {
+          "at": 0.7,
+          "kind": "emit",
+          "count": 8,
+          "arc": 360,
+          "radius": 182,
+          "life": 0.25,
+          "size": 1.43,
+          "depth": 2,
+          "decay": 0.55,
+          "palette": "spark",
+          "min_tier": 3
+        },
+        {
+          "at": 0.95,
+          "kind": "slash",
+          "count": 22,
+          "radius": 130,
+          "dur": 0.12,
+          "life": 0.22,
+          "palette": "spark"
+        },
+        {
+          "at": 0.95,
+          "kind": "flash",
+          "dur": 0.14,
+          "size": 7.0
+        },
+        {
+          "at": 0.95,
+          "kind": "shake",
+          "intensity": 12,
+          "dur": 0.24
+        }
+      ],
+      "tint": [
+        0.5,
+        0.55,
+        1.0
+      ]
+    },
+    "summon_legacy_system": {
+      "label": "Legacy System: Hard Reset, the old dragon powers the whole field down",
+      "start": 0.15,
+      "start_note": "the figure has already risen during the wind-up",
+      "phases": [
+        {
+          "at": 0.0,
+          "kind": "ring",
+          "origin": "caster",
+          "dur": 0.35,
+          "scale": 3.0,
+          "palette": "verdict"
+        },
+        {
+          "at": 0.1,
+          "kind": "bolt",
+          "dur": 0.4,
+          "arc_height": 90,
+          "size": 2.0,
+          "trail_spacing": 8,
+          "palette": "void",
+          "trail_palette": "void"
+        },
+        {
+          "at": 0.5,
+          "kind": "flash",
+          "dur": 0.22,
+          "size": 9.0
+        },
+        {
+          "at": 0.5,
+          "kind": "ring",
+          "dur": 0.4,
+          "scale": 5.0,
+          "palette": "void"
+        },
+        {
+          "at": 0.5,
+          "kind": "shake",
+          "intensity": 12,
+          "dur": 0.3
+        },
+        {
+          "at": 0.5,
+          "kind": "emit",
+          "count": 14,
+          "arc": 360,
+          "radius": 110,
+          "life": 0.34,
+          "size": 1.4,
+          "twist": 14,
+          "palette": "void",
+          "child_at": 0.75,
+          "decay": 0.6,
+          "child": {
+            "count": 3,
+            "arc": 60,
+            "radius": 50,
+            "life": 0.24,
+            "size": 1.0,
+            "palette": "verdict"
+          }
+        },
+        {
+          "at": 0.8,
+          "kind": "hitstop",
+          "dur": 0.14
+        },
+        {
+          "at": 0.95,
+          "kind": "ring",
+          "dur": 0.45,
+          "scale": 8.0,
+          "palette": "verdict"
+        },
+        {
+          "at": 0.95,
+          "kind": "emit",
+          "count": 22,
+          "arc": 360,
+          "radius": 240,
+          "life": 0.34,
+          "size": 1.1,
+          "twist": 9,
+          "palette": "void"
+        },
+        {
+          "at": 0.95,
+          "kind": "shake",
+          "intensity": 14,
+          "dur": 0.32
+        },
+        {
+          "at": 0.95,
+          "kind": "flash",
+          "dur": 0.24,
+          "size": 10.0,
+          "min_tier": 2
+        },
+        {
+          "at": 1.2,
+          "kind": "emit",
+          "count": 16,
+          "arc": 360,
+          "radius": 160,
+          "life": 0.3,
+          "size": 1.0,
+          "palette": "verdict",
+          "min_tier": 2
+        },
+        {
+          "at": 1.35,
+          "kind": "ring",
+          "dur": 0.5,
+          "scale": 10.0,
+          "palette": "void",
+          "min_tier": 3
+        }
+      ],
+      "tint": [
+        0.35,
+        0.15,
+        0.55
+      ]
+    },
+    "summon_recursive": {
+      "label": "Recursive Summon: a summoner summons a summoner summons a summoner",
+      "start": 0.15,
+      "start_note": "self-aimed: every phase lands on the caster, rings within rings",
+      "impact": 0.4,
+      "phases": [
+        {
+          "at": 0.0,
+          "kind": "ring",
+          "origin": "caster",
+          "dur": 0.3,
+          "scale": 2.0,
+          "palette": "verdict"
+        },
+        {
+          "at": 0.25,
+          "kind": "ring",
+          "origin": "caster",
+          "dur": 0.3,
+          "scale": 3.2,
+          "palette": "verdict"
+        },
+        {
+          "at": 0.4,
+          "kind": "flash",
+          "dur": 0.18,
+          "size": 6.0
+        },
+        {
+          "at": 0.5,
+          "kind": "ring",
+          "origin": "caster",
+          "dur": 0.35,
+          "scale": 4.6,
+          "palette": "void"
+        },
+        {
+          "at": 0.5,
+          "kind": "emit",
+          "origin": "caster",
+          "count": 9,
+          "arc": 360,
+          "radius": 90,
+          "life": 0.3,
+          "size": 1.0,
+          "depth": 2,
+          "decay": 0.55,
+          "time_decay": 0.8,
+          "palette": "verdict"
+        },
+        {
+          "at": 0.75,
+          "kind": "ring",
+          "origin": "caster",
+          "dur": 0.4,
+          "scale": 6.2,
+          "palette": "void",
+          "min_tier": 2
+        },
+        {
+          "at": 1.0,
+          "kind": "ring",
+          "origin": "caster",
+          "dur": 0.45,
+          "scale": 8.0,
+          "palette": "verdict",
+          "min_tier": 3
+        }
+      ],
+      "tint": [
+        0.45,
+        0.3,
+        0.7
+      ]
     }
   }
 }
