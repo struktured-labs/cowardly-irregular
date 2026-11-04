@@ -684,6 +684,7 @@
   },
   "cave_rat_king": {
     "id": "cave_rat_king",
+    "boss_terrain": "cave",
     "fx_signature": "rat_swarm",
     "fx_signature_card": {"title": "Rat Swarm", "subtitle": "The court is in session. All of it."},
     "name": "Cave Rat King",
@@ -1851,6 +1852,7 @@
   },
   "fire_dragon": {
     "id": "fire_dragon",
+    "boss_terrain": "volcanic",
     "fx_signature": "inferno_rage",
     "fx_signature_card": {"title": "Inferno Rage", "subtitle": "The cave was only the warm-up."},
     "name": "Pyrroth, the Ember Wyrm",
@@ -1932,6 +1934,7 @@
   },
   "ice_dragon": {
     "id": "ice_dragon",
+    "boss_terrain": "ice",
     "fx_signature": "absolute_zero",
     "fx_signature_card": {"title": "Absolute Zero", "subtitle": "Every degree, taken back at once."},
     "name": "Glacius, the Frozen Sovereign",
@@ -2015,6 +2018,7 @@
   },
   "lightning_dragon": {
     "id": "lightning_dragon",
+    "boss_terrain": "cave",
     "fx_signature": "lightning_dash",
     "fx_signature_card": {"title": "Lightning Dash", "subtitle": "Faster than the turn order can say."},
     "name": "Voltharion, the Storm's Edge",
@@ -2100,6 +2104,7 @@
   },
   "shadow_dragon": {
     "id": "shadow_dragon",
+    "boss_terrain": "cave",
     "fx_signature": "void_breath",
     "fx_signature_card": {"title": "Void Breath", "subtitle": "What it breathes on stops having been."},
     "name": "Umbraxis, the Void Render",
@@ -4886,6 +4891,7 @@
   },
   "chancellor_mordaine": {
     "id": "chancellor_mordaine",
+    "boss_terrain": "boss",
     "fx_signature": "thundaga",
     "fx_signature_card": {"title": "Summary Judgment", "subtitle": "Mordaine reads her findings into the record. Every irregular is assessed at once; appeals may be filed afterward, by the survivors.", "bark": "The assessment is complete. I am only reading it into the record."},
     "name": "Chancellor Mordaine",

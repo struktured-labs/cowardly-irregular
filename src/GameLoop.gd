@@ -5483,7 +5483,7 @@ func _start_battle_async(specific_enemies: Array = [], is_encounter: bool = fals
 		# Boss/scripted battle — use forced_enemies path
 		battle_scene.forced_enemies = enemy_ids
 		print("[BOSS] Forcing specific enemies: %s" % [enemy_ids])
-		battle_scene.set_terrain("boss")
+		battle_scene.set_terrain(boss_terrain_for(enemy_ids))
 	elif is_miniboss_battle:
 		battle_scene.force_miniboss = true
 		print("[MINIBOSS] Battle %d - A miniboss approaches!" % (battles_won + 1))
@@ -6337,6 +6337,19 @@ func _quick_load_with_toast() -> void:
 	# so the state that skips this is BATTLE after VICTORY/DEFEAT — is_battle_active() is false there.
 	if current_state == LoopState.EXPLORATION:
 		_start_exploration()
+
+
+## A scripted boss fights in its own dungeon (cowir-main 2026-11-04): its monsters.json boss_terrain, else the shared "boss".
+static func boss_terrain_for(enemy_ids: Array) -> String:
+	if enemy_ids.is_empty():
+		return "boss"
+	var db: Dictionary = EncounterSystem.monster_database if EncounterSystem and not EncounterSystem.monster_database.is_empty() else {}
+	if db.is_empty():
+		var raw = JSON.parse_string(FileAccess.get_file_as_string("res://data/monsters.json"))
+		db = raw if raw is Dictionary else {}
+	var entry = db.get(str(enemy_ids[0]), {})
+	var t := str(entry.get("boss_terrain", "")) if entry is Dictionary else ""
+	return t if t != "" else "boss"
 
 
 func _get_terrain_for_map(map_id: String) -> String:
