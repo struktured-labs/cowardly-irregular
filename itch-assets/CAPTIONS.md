@@ -1,12 +1,13 @@
 # Store screenshot captions — Cowardly Irregular
 
-**Current vintage of every shipped frame (2026-11-02, read from git, not remembered):**
+**Current vintage of every shipped frame (2026-11-04, read from git, not remembered):**
 
 | captured at | shots | section |
 |---|---|---|
-| `v3.33.748-alpha` | the six villages · `inn_interior` · `shop_interior` · `tavern_interior` · `whispering_cave` | "re-shot at `v3.33.748-alpha`" |
+| `v3.33.748-alpha` | `tavern_interior` · `whispering_cave` | "re-shot at `v3.33.748-alpha`" |
 | `v3.33.750-alpha` | `battle_storm` · `field_elite_medieval` · `field_elite_prompt_medieval` · `field_elite_steampunk` · `grimhollow_spiral` · `infernal_grotto_f3` · `warren_lever_portals` · `warren_wrap_field` | commit `1df31b2fb` |
-| `v3.33.752-alpha` | `battle` (1.5x speed chip) · `title_screen` | commits `438ff3e68`, `21f990b47` |
+| `v3.33.752-alpha` | (none left: both re-shot at `.767`) | commits `438ff3e68`, `21f990b47` |
+| `v3.33.767-alpha` | the six villages · `inn_interior` · `shop_interior` · `battle` · `title_screen` | "re-shot at `v3.33.767-alpha`" |
 
 Re-derive it rather than trusting this table: `git log -1 --format=%h -- itch-assets/screenshots/<shot>.png`
 names the commit, and that commit's message names the tag it was shot from. Which of them have gone
@@ -666,3 +667,37 @@ Which image leads (`battle_storm`, `battle`, or one of these) stays @struktured'
 **Capture conditions:** as the village section above, from `pub750` at `3cc6e9221`; pads hidden by the jail;
 his profile `--sig` before / `--verify` after every one of the 9 runs: UNCHANGED. The store page itself is
 @struktured's to update.
+
+---
+
+## 2026-11-04 — re-shot at `v3.33.767-alpha`, judged in PIXELS
+
+`.766` took NPCs off the shop shelf and the inn counter, `.767` took the painted props off the drawn
+furniture, and the villages had gained drawn buildings since `.748`. Re-shot from a fresh worktree at
+`v3.33.767-alpha` (`1301e066a`, live on all three channels), two runs, decided by
+`tools/store_shot_pixels.py` (share of pixels over 24 levels vs the shipped frame; MOVED = >= 1% and
+> 3x the run-to-run noise). The byte report (`store_shot_staleness.py --compare`) called `inn_interior`
+and `shop_interior` "same"; pixels did not.
+
+| shot | vs shipped | noise | verdict |
+|---|---|---|---|
+| `harmonia_village` | 91.72% | 0.00% | **REPLACED**: the drawn forge and the green-roofed shop |
+| `frosthold_village` | 86.09% | 0.00% | **REPLACED**: snow-roofed cabins and the clock tower |
+| `grimhollow_village` | 76.23% | 0.00% | **REPLACED** |
+| `eldertree_village` | 74.62% | 0.00% | **REPLACED** |
+| `sandrift_village` | 63.88% | 0.00% | **REPLACED** |
+| `ironhaven_village` | 61.18% | 0.00% | **REPLACED** |
+| `battle` | 24.88% | 0.00% | **REPLACED**: the party in formation, not stacked; a starting party's stats |
+| `shop_interior` | 3.88% | 0.00% | **REPLACED**: the robed shopper stands on the floor, the barrels off the shelf |
+| `inn_interior` | 1.37% | 0.00% | **REPLACED**: the guest off the counter, the door label clear of the player |
+| `title_screen` | 0.01% | 0.00% | **REPLACED anyway**: that 0.01% IS the version label, `v3.33.752` -> `v3.33.767` |
+| `tavern_interior` | 0.77% | 0.00% | KEPT (under 1%) |
+| `whispering_cave` | 0.00% | 0.00% | KEPT (identical) |
+
+Every REPLACED frame was looked at beside the one it replaces before committing. The inn frame does not
+show the north wall, so the misplaced painted fireplace that `.768` fixes is not in shot.
+
+**Capture conditions:** `tools/marketing_shots.sh` (sandboxed `XDG_DATA_HOME`, pads jailed) from
+`<lane>/tmp/wt-shoot767`; a sandboxed `--import` first (EC=0, 0 SCRIPT/Parse errors); his real profile:
+0 new rotated logs. The store page itself is uploaded through the web UI, which is @struktured's.
+
