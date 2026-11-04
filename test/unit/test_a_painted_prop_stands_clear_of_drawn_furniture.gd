@@ -54,3 +54,11 @@ func test_nothing_painted_stands_on_a_drawn_shops_furniture() -> void:
 		VillageProp.prop_art_override = _drawn(type)
 		var hits := _on_furniture(_shop(type))
 		assert_eq(hits.size(), 0, "%s: painted props on drawn furniture: %s" % [ROOMS[type], hits])
+
+
+func test_a_drawn_counter_carries_its_own_top() -> void:
+	## The painted counter trim was placed at x=5.5 tiles, off the counter (cols 7-9) and onto the left shelf.
+	VillageProp.prop_art_override = {}
+	assert_not_null(_shop(ShopInteriorScript.ShopType.ITEM).decorations.find_child("CounterTrim", false, false), "CONTROL: a painted counter is dressed with its trim")
+	VillageProp.prop_art_override = _drawn(ShopInteriorScript.ShopType.ITEM)
+	assert_null(_shop(ShopInteriorScript.ShopType.ITEM).decorations.find_child("CounterTrim", false, false), "a painted trim was laid over a drawn counter")
