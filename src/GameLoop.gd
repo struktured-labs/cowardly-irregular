@@ -5221,7 +5221,7 @@ func _on_exploration_battle_triggered(enemies: Array, terrain: String = "") -> v
 		print("[GAMELOOP] BLOCKED — area transition in flight, dropping encounter")
 		return
 
-	# Dead-stop player during transition; pop_all in _start_exploration clears it.
+	# Dead-stop player during transition; _enter_battle_state releases it once BATTLE owns movement.
 	if InputLockManager:
 		InputLockManager.push_lock("encounter_transition")
 	_battle_transition_starting = true
@@ -5412,6 +5412,15 @@ func _adopt_monster_win_condition(enemy_ids: Array) -> void:
 			return
 
 
+## BATTLE takes over from the encounter's dead-stop: state now blocks movement and owns the mutex vs area transitions,
+## so 'encounter_transition' goes here. A chain never passes _start_exploration's pop_all, and the lock was reaped stale.
+func _enter_battle_state() -> void:
+	current_state = LoopState.BATTLE
+	_battle_transition_starting = false
+	if InputLockManager:
+		InputLockManager.pop_lock("encounter_transition")
+
+
 ## Returns false when battle entry was SUPPRESSED — no battle started, so nothing downstream
 ## should wait on a battle signal. start_solo_battle awaited one that has a single emitter inside
 ## _on_battle_ended, which cannot run if no battle began.
@@ -5422,8 +5431,7 @@ func _start_battle_async(specific_enemies: Array = [], is_encounter: bool = fals
 		_battle_transition_starting = false
 		push_warning("[BATTLE] entry suppressed — world transition mid-dissolve; encounter dropped")
 		return false
-	current_state = LoopState.BATTLE
-	_battle_transition_starting = false  # state=BATTLE now owns the mutex vs area transitions
+	_enter_battle_state()
 	if _day_night_overlay:
 		_day_night_overlay.set_outdoor(false)  # battle owns the canvas; _start_exploration recomputes on return
 	# Battle audio is mood-exempt: strip the night hush + crickets for the fight
