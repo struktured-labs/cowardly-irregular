@@ -123,6 +123,7 @@ func test_the_menu_casts_raise_on_the_fallen_member() -> void:
 ## Items' rule (struktured 2026-07-16): a second potion needs no reselect, and neither does a second Cure.
 func test_the_picker_stays_open_while_another_cast_can_help() -> void:
 	var cleric := _pc("Cleric")
+	cleric.learned_abilities.append("cure")
 	var a := _pc("Fighter", 20)
 	var b := _pc("Mage", 30)
 	var menu = load("res://src/ui/AbilitiesMenu.gd").new()

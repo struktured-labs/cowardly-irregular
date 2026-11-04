@@ -33,6 +33,15 @@ func _door_of(house: Node2D) -> Dictionary:
 	return d if d is Dictionary else {}
 
 
+## Where the drawn door is, computed here rather than through entrance_x, so a broken entrance_x cannot agree with itself.
+func _drawn_door_x(house: Node2D) -> float:
+	var door := _door_of(house)
+	if door.has("rect"):
+		return VillageDoor.world_rect(house, door["rect"]).get_center().x
+	var spr := house.get_node_or_null("Sprite") as Sprite2D
+	return house.global_position.x + spr.position.x + spr.texture.get_width() / 2.0 if spr and spr.texture else house.global_position.x
+
+
 func _shop_named(v: Node, shop_name: String) -> Node2D:
 	for b in v.buildings.get_children():
 		if str(b.get("shop_name")) == shop_name:
@@ -48,16 +57,16 @@ func test_the_harmonia_item_shop_enters_from_under_its_drawn_door() -> void:
 	assert_not_null(shop, "CONTROL: Harmonia has its item shop")
 	if house == null or shop == null:
 		return
-	var door_x := VillageDoor.entrance_x(house, _door_of(house))
+	var door_x := _drawn_door_x(house)
 	assert_almost_eq(shop.global_position.x, door_x, 1.0, "the item shop's entrance is %.0f px off its drawn door" % (shop.global_position.x - door_x))
-	## Walking straight up from the cell under the door: that point must sit inside the entrance's trigger.
+	## Walking straight up into the door: the point just above the building's base must sit inside the entrance's trigger.
 	var cs := shop.get_node_or_null("CollisionShape2D") as CollisionShape2D
 	if cs == null:
 		for c in shop.get_children():
 			if c is CollisionShape2D:
 				cs = c
 	var r := Rect2(cs.global_position - (cs.shape as RectangleShape2D).size / 2.0, (cs.shape as RectangleShape2D).size)
-	var below := Vector2(door_x, house.global_position.y + 16.0)
+	var below := Vector2(door_x, house.global_position.y - 8.0)
 	assert_true(r.has_point(below), "standing right under the drawn door (%s) is outside the shop's trigger %s" % [below, r])
 
 
@@ -80,7 +89,7 @@ func test_every_drawn_building_with_one_entrance_has_it_under_its_door() -> void
 			if found.size() != 1:
 				continue
 			judged += 1
-			var x := VillageDoor.entrance_x(house, _door_of(house))
+			var x := _drawn_door_x(house)
 			assert_almost_eq((found[0] as Node2D).global_position.x, x, 1.0, "%s: %s stands off its drawn door" % [f, house.name])
 	assert_gt(judged, 10, "only %d drawn buildings with one entrance were judged" % judged)
 

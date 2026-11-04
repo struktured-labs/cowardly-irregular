@@ -106,6 +106,8 @@ static func _apply(caster: Combatant, ability: Dictionary, t: Combatant) -> Stri
 			return "%s recovers %d HP." % [who, t.heal(per * int(ability.get("duration", 3)))]
 		"revive":
 			t.revive(int(t.max_hp * float(ability.get("revive_percentage", 50)) / 100.0))
+			if not t.is_alive:
+				return "%s is beyond reviving." % who
 			return "%s is revived with %d HP." % [who, t.current_hp]
 		"mp":
 			var before: int = t.current_mp
