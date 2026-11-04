@@ -51,10 +51,12 @@ func _fire_ms(scale: float, phase: Dictionary, tier: int = 1) -> int:
 	fx.play({"phases": [phase]}, Vector2.ZERO, Vector2(100, 0))
 	var early := t0 + int(float(phase.get("at", 0.0)) / scale * 500.0)
 	while Time.get_ticks_msec() < early:
+		Engine.time_scale = scale  # an earlier file's leaked battle can move the scale mid-wait (sfx 21734)
 		await get_tree().process_frame
 	assert_eq(fired.size(), 0, "the cue does not fire before its phase (engine %.2f)" % scale)
 	var deadline := t0 + int(float(phase.get("at", 0.0)) / scale * 1000.0) + 1500
 	while fired.is_empty() and Time.get_ticks_msec() < deadline:
+		Engine.time_scale = scale
 		await get_tree().process_frame
 	Engine.time_scale = _saved_scale
 	# FractalFX holds itself in a static list until its release timer; drop our lambda and let it go before the test ends.
@@ -135,3 +137,12 @@ func test_a_finished_battle_takes_its_gate_with_it() -> void:
 	assert_false(EffectSystem.phase_sfx_gate.is_valid(), "the battle's gate left with it")
 	assert_true(EffectSystem.phase_sfx_gate.is_null(), "cleared, not a dangling reference to a freed scene")
 	assert_true(EffectSystem.play_phase_sfx(_known_key()), "and with no battle running, a phase cue plays")
+
+
+## CONTROL for the re-assert in _fire_ms (sfx 21734 / main 21735): a leaked battle from an earlier file moving
+## Engine.time_scale mid-wait must not move the measured beat. Planted here: 0.2 s of wall clock into a 1x run.
+func test_a_scale_change_mid_wait_does_not_move_the_beat() -> void:
+	get_tree().create_timer(0.2, true, false, true).timeout.connect(func() -> void: Engine.time_scale = 1.0)
+	var ms: int = await _fire_ms(0.25, {"at": AT, "kind": "cue", "sfx": "planted_probe"})
+	assert_gt(ms, -1, "CONTROL: the cue fired")
+	assert_almost_eq(float(ms), AT / 0.25 * 1000.0, 150.0, "the planted 4x did not pull the 1x beat early (%d ms)" % ms)
