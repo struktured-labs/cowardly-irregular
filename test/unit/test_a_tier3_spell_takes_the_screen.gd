@@ -13,6 +13,7 @@ const GLORY := ["firaga", "blizzaga", "thundaga"]
 
 var _guard
 var _saved_flash := false
+var _saved_speed: float = 0.0
 
 
 func before_each() -> void:
@@ -20,10 +21,12 @@ func before_each() -> void:
 	_guard = BattleStateGuard.new()
 	_guard.snapshot()
 	_saved_flash = bool(GameState.reduce_flashes)
+	_saved_speed = float(GameState.default_battle_speed)
 
 
 func after_each() -> void:
 	GameState.reduce_flashes = _saved_flash
+	GameState.default_battle_speed = _saved_speed
 	_guard.restore()
 
 
@@ -154,3 +157,43 @@ func test_a_stronger_caster_gets_a_grander_glory() -> void:
 			await get_tree().process_frame
 		assert_gt(counts[1], 0, "CONTROL: glory_%s spawned at tier 1" % id)
 		assert_gt(counts[3], counts[1], "glory_%s grows at tier 3 (%d vs %d)" % [id, counts[3], counts[1]])
+
+
+## cowir-controller 21655: a speed the player CHOOSES during the 1x beat stands, even when it is 1x itself; the beat
+## must not put the old speed back over the player's pick (indicator and GameState would say 1x while it ran at 4x).
+func test_choosing_1x_during_the_beat_is_not_overridden() -> void:
+	var scene = await _scene_with_party()
+	var saved := Engine.time_scale
+	if BattleManager.player_party.is_empty() or BattleManager.enemy_party.is_empty():
+		assert_true(false, "CONTROL: a party and a foe")
+		return
+	var top: int = scene.BATTLE_SPEEDS.size() - 1
+	scene._apply_battle_speed_index(top)
+	scene._play_signature(BattleManager.player_party[0], null, null, JobSystem.get_ability("blizzaga"), BattleManager.enemy_party.duplicate(), "glory_blizzaga")
+	await get_tree().process_frame
+	assert_almost_eq(Engine.time_scale, BS_SPEEDS_1X, 0.001, "CONTROL: the beat slowed to 1x")
+	scene._apply_battle_speed_index(0)
+	var beat: float = (scene.SIGNATURE_WINDUP + scene.sequence_total("glory_blizzaga") + 1.0) / BS_SPEEDS_1X
+	await get_tree().create_timer(beat * 1.2, true, false, true).timeout
+	assert_eq(scene._battle_speed_index, 0, "the player's 1x is still the choice")
+	assert_almost_eq(Engine.time_scale, scene.BATTLE_SPEEDS[0], 0.001, "and the battle still runs at it, not the old top speed")
+	scene._apply_battle_speed_index(1)
+	Engine.time_scale = saved
+
+
+## CONTROL for the arm above: an untouched beat still hands the player's top speed back.
+func test_an_untouched_beat_gives_the_speed_back() -> void:
+	var scene = await _scene_with_party()
+	var saved := Engine.time_scale
+	if BattleManager.player_party.is_empty() or BattleManager.enemy_party.is_empty():
+		assert_true(false, "CONTROL: a party and a foe")
+		return
+	var top: int = scene.BATTLE_SPEEDS.size() - 1
+	scene._apply_battle_speed_index(top)
+	scene._play_signature(BattleManager.player_party[0], null, null, JobSystem.get_ability("blizzaga"), BattleManager.enemy_party.duplicate(), "glory_blizzaga")
+	await get_tree().process_frame
+	var beat: float = (scene.SIGNATURE_WINDUP + scene.sequence_total("glory_blizzaga") + 1.0) / BS_SPEEDS_1X
+	await get_tree().create_timer(beat * 1.2, true, false, true).timeout
+	assert_almost_eq(Engine.time_scale, scene.BATTLE_SPEEDS[top], 0.001, "the untouched beat restores the top speed")
+	scene._apply_battle_speed_index(1)
+	Engine.time_scale = saved

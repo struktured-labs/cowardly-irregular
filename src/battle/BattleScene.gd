@@ -3057,6 +3057,7 @@ func _play_signature(caster: Combatant, caster_sprite: Node2D, animator: BattleA
 	# He plays at 4x (cowir-main 2026-11-01): a boss's FIRST signature each battle is shown at 1x pacing, later ones compress.
 	var slowed := false
 	var restore_to := _hitlag_base_scale
+	var picked_at_slow := _battle_speed_index
 	if not quiet and not _signatures_shown.has(shown_key) and restore_to > BATTLE_SPEEDS[0]:
 		_set_battle_time_scale(BATTLE_SPEEDS[0])
 		slowed = true
@@ -3097,8 +3098,8 @@ func _play_signature(caster: Combatant, caster_sprite: Node2D, animator: BattleA
 	if not is_instance_valid(self):
 		return
 	_signature_stage(false, Color.TRANSPARENT)
-	# A speed the player picked during the beat stands; only an untouched 1x is put back.
-	if slowed and is_equal_approx(_hitlag_base_scale, BATTLE_SPEEDS[0]):
+	# A speed the player picked during the beat stands (1x included); only an untouched beat is put back.
+	if slowed and _battle_speed_index == picked_at_slow:
 		_set_battle_time_scale(restore_to)
 
 
