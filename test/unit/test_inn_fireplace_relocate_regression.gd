@@ -20,9 +20,6 @@ extends GutTest
 const INN := "res://src/maps/interiors/InnInterior.gd"
 const SECRET := "res://src/exploration/FireplaceSecret.gd"
 
-## New hearth anchor, in tiles.
-const HEARTH_X := 11.5
-const HEARTH_Y := 1.5
 ## Innkeeper's grid position — the thing we're moving AWAY from.
 const KEEPER := Vector2(2, 3)
 ## Far enough that the fire is plainly not on his counter.
@@ -62,16 +59,40 @@ func test_hearth_tiles_are_on_the_back_wall() -> void:
 			"hearth tile at %s must be clear of the innkeeper's corner" % str(c))
 
 
+## The centre of INN_LAYOUT's h block, in tiles.
+func _hearth_centre() -> Vector2:
+	var rows := _layout_rows()
+	var lo := Vector2(INF, INF)
+	var hi := Vector2(-INF, -INF)
+	for y in range(rows.size()):
+		for x in range(str(rows[y]).length()):
+			if str(rows[y])[x] == "h":
+				lo = Vector2(minf(lo.x, x), minf(lo.y, y))
+				hi = Vector2(maxf(hi.x, x + 1), maxf(hi.y, y + 1))
+	return (lo + hi) / 2.0
+
+
+## `<ident>.position = Vector2(X * TILE_SIZE, Y * TILE_SIZE)` in the inn's source, in tiles.
+func _anchor(ident: String) -> Vector2:
+	var m := RegEx.create_from_string("\\b" + ident + "\\.position = Vector2\\(([0-9.]+) \\* TILE_SIZE, ([0-9.]+) \\* TILE_SIZE\\)").search(_read(INN))
+	return Vector2(float(m.get_string(1)), float(m.get_string(2))) if m else Vector2.INF
+
+
 ## Distance from the keeper is the actual complaint, so assert the outcome
 ## rather than just the new coordinates.
 func test_hearth_is_no_longer_beside_the_innkeeper() -> void:
-	var d: float = Vector2(HEARTH_X, HEARTH_Y).distance_to(KEEPER)
+	var d: float = _hearth_centre().distance_to(KEEPER)
 	assert_gt(d, MIN_SAFE_TILES,
 		"hearth is %.1f tiles from the innkeeper at %s — was 2.5, which read as 'about to burn his place down'" % [d, str(KEEPER)])
-	# And the source must actually carry the new anchor.
-	var src := _read(INN)
-	assert_true(src.contains("Vector2(11.5 * TILE_SIZE, 1.5 * TILE_SIZE)"),
-		"surround + collision body sit at the new hearth anchor")
+
+
+## 2026-11-04: the surround was pinned at a literal (11.5, 1.5) while the h block sat at (13.5, 3), so the painted
+## fireplace stood beside the hearth (and beside Harmonia's drawn one). Pin the relationship: it stands ON the block.
+func test_the_surround_and_its_collider_stand_on_the_hearth_block() -> void:
+	var centre := _hearth_centre()
+	assert_ne(centre, Vector2(INF, INF), "INN_LAYOUT has an h block")
+	assert_eq(_anchor("surround"), centre, "the painted surround stands on INN_LAYOUT's h block")
+	assert_eq(_anchor("hearth_body"), centre, "the hearth's collider covers INN_LAYOUT's h block")
 
 
 ## All six coupled pieces must travel together. The failure this catches is
@@ -90,10 +111,9 @@ func test_every_fireplace_piece_moved_together() -> void:
 			"stale fireplace anchor left behind: %s" % stale)
 	# Fire sprite + light stay BELOW the surround (they sit in the hearth
 	# mouth, not on the mantle) — pins the relative geometry survived.
-	assert_true(src.contains("_fire_sprite.position = Vector2(11.5 * TILE_SIZE, 2.0 * TILE_SIZE)"),
-		"fire sprite in the hearth mouth, one half-tile below the surround")
-	assert_true(src.contains("_fire_light.position = Vector2(11.5 * TILE_SIZE, 2.5 * TILE_SIZE)"),
-		"fire light below the sprite, as before the move")
+	assert_eq(_anchor("_fire_sprite"), _anchor("surround") + Vector2(0, 0.5), "fire sprite in the hearth mouth, one half-tile below the surround")
+	assert_eq(_anchor("_fire_light"), _anchor("_fire_sprite") + Vector2(0, 0.5), "fire light below the sprite, as before the move")
+	assert_eq(_anchor("zone").x, _anchor("surround").x, "the secret's examine zone stands in front of the hearth")
 
 
 # ── The secret ─────────────────────────────────────────────────────────
