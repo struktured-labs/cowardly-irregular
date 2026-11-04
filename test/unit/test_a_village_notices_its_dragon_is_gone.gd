@@ -67,7 +67,7 @@ func test_after_the_dragon_falls_the_village_notices() -> void:
 		var n = await _placed(c[0], c[1])
 		assert_not_null(n, "CONTROL: %s must be placed by %s" % [c[1], c[0].get_file()])
 		if n != null:
-			assert_eq(_first_line(n), c[4], "%s must notice %s; she or he still says the warning" % [c[1], c[2]])
+			assert_eq(_first_line(n), c[4], "%s must notice %s, not repeat the warning" % [c[1], c[2]])
 		GameState.game_constants["dungeon_flags"] = {}
 
 

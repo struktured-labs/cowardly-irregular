@@ -311,7 +311,7 @@ func _setup_npcs() -> void:
 	var dune = _create_npc("Caravan Leader Dune", "villager", Vector2(13 * TILE_SIZE,12 * TILE_SIZE), _dune_post if _after_cave_done else _dune_pre)
 	npcs.add_child(dune)
 
-	# Sand Sage Mirage (cryptic) — dragon-lore focused; after Voltharion falls she has noticed.
+	# Sand Sage Mirage (cryptic) — dragon-lore focused; after Voltharion falls, Mirage has noticed.
 	# Post-dragon: the village noticed. Reads every flag namespace, like the spine gate.
 	var _voltharion_gs = get_node_or_null("/root/GameState")
 	var _voltharion_down: bool = _voltharion_gs != null and _voltharion_gs.is_story_flag_set("lightning_dragon_defeated")
