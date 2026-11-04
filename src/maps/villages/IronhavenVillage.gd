@@ -303,8 +303,17 @@ func _setup_npcs() -> void:
 	var cog = _create_npc("Dr. Cog", "villager", Vector2(23 * TILE_SIZE,8 * TILE_SIZE), _cog_post if _after_cave_done else _cog_pre)
 	npcs.add_child(cog)
 
+	# Post-dragon: the village noticed. Reads every flag namespace, like the spine gate.
+	var _pyrroth_gs = get_node_or_null("/root/GameState")
+	var _pyrroth_down: bool = _pyrroth_gs != null and _pyrroth_gs.is_story_flag_set("fire_dragon_defeated")
+	var _pete_post_dragon := [
+		"You beat the fire dragon? The one that laughed at my boots?",
+		"I'd shake your hand, but mine are still a bit melted.",
+		"Vacation's cancelled. If the caves are quiet, the ore is ours again.",
+		"...Don't tell Magda I said quiet. She'll want the scale by tonight."
+	]
 	# Miner Pete (tired)
-	var pete = _create_npc("Miner Pete", "villager", Vector2(8 * TILE_SIZE,12 * TILE_SIZE), [
+	var pete = _create_npc("Miner Pete", "villager", Vector2(8 * TILE_SIZE,12 * TILE_SIZE), _pete_post_dragon if _pyrroth_down else [
 		"The volcanic caves are brutal.",
 		"My pickaxe melted. MY BOOTS melted.",
 		"The dragon just laughed.",

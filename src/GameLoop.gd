@@ -258,6 +258,10 @@ var _current_terrain: String = "plains"  # Current terrain type for battle backg
 ## Last battle config for retry
 var _last_battle_enemies: Array = []  # Enemy IDs from last battle
 var _last_battle_is_encounter: bool = false  # Was it a random encounter?
+## The species of the grind's current battle, so a grind wipe's Retry re-fights THAT fight (struktured 2026-11-01: it fought his last manual one).
+var _last_grind_enemies: Array = []
+## Shown on the game-over screen's Retry row; set by whoever knows what Retry will fight, cleared when the screen closes.
+var _game_over_retry_against: String = ""
 
 ## Tick 471: Spotlight Duel state. `start_solo_battle` sets these
 ## before firing `_start_battle_async`; `_on_battle_ended` reads them
@@ -4592,6 +4596,8 @@ func _maybe_diegetic_retry() -> bool:
 func _show_game_over_screen() -> void:
 	"""Show the game over screen and handle retry/continue."""
 	var game_over = GameOverScreen.new()
+	game_over.retry_against = _game_over_retry_against
+	_game_over_retry_against = ""
 	add_child(game_over)
 
 	# Check if a save exists
@@ -5206,6 +5212,10 @@ func _on_exploration_battle_triggered(enemies: Array, terrain: String = "") -> v
 	if _battle_transition_starting:
 		print("[GAMELOOP] BLOCKED — a battle transition is already starting (double-commence guard)")
 		return
+	# struktured 2026-11-01: a grind that ended in a wipe left him on the field all-KO, and the next touch started a chain he lost instantly.
+	if not _party_can_fight():
+		print("[GAMELOOP] BLOCKED — no party member is standing; an encounter now would be an instant defeat")
+		return
 	# 2026-07-14: reciprocal mutex against _on_area_transition. If the player is mid-scene-load (walked into a village) and an encounter fires the same frame, drop the encounter — the transition owns the scene state.
 	if _transition_in_progress:
 		print("[GAMELOOP] BLOCKED — area transition in flight, dropping encounter")
@@ -5280,6 +5290,14 @@ func _on_exploration_battle_triggered(enemies: Array, terrain: String = "") -> v
 		# No transition — load battle directly
 		await _start_battle_async(enemies, true)
 
+
+
+## True when at least one party member can fight. An encounter (or a chain) never starts against an all-KO party.
+func _party_can_fight() -> bool:
+	for m in party:
+		if m is Combatant and is_instance_valid(m) and m.is_alive and m.current_hp > 0:
+			return true
+	return party.is_empty()
 
 
 ## struktured 2026-10-31: alerted roamers near a touch join it -- one battle if they fit, else back-to-back. Returns battle one.
@@ -5483,7 +5501,7 @@ func _start_battle_async(specific_enemies: Array = [], is_encounter: bool = fals
 		# Boss/scripted battle — use forced_enemies path
 		battle_scene.forced_enemies = enemy_ids
 		print("[BOSS] Forcing specific enemies: %s" % [enemy_ids])
-		battle_scene.set_terrain("boss")
+		battle_scene.set_terrain(boss_terrain_for(enemy_ids))
 	elif is_miniboss_battle:
 		battle_scene.force_miniboss = true
 		print("[MINIBOSS] Battle %d - A miniboss approaches!" % (battles_won + 1))
@@ -5797,8 +5815,9 @@ func _area_interior_transition_in(location_name: String) -> void:
 		await _area_fade_to_black()
 		return
 
-	# door_open SFX cues the interior threshold (cowir-sfx msg 2165)
-	if SoundManager:
+	# door_open SFX cues the interior threshold (cowir-sfx msg 2165); a village door that just animated already played its own cue
+	var village_door: bool = _exploration_scene != null and is_instance_valid(_exploration_scene) and _exploration_scene.get("door_cue_played") == true
+	if SoundManager and not village_door:
 		SoundManager.play_ui("door_open")
 
 	var fade_tween = create_tween()
@@ -6339,6 +6358,19 @@ func _quick_load_with_toast() -> void:
 		_start_exploration()
 
 
+## A scripted boss fights in its own dungeon (cowir-main 2026-11-04): its monsters.json boss_terrain, else the shared "boss".
+static func boss_terrain_for(enemy_ids: Array) -> String:
+	if enemy_ids.is_empty():
+		return "boss"
+	var db: Dictionary = EncounterSystem.monster_database if EncounterSystem and not EncounterSystem.monster_database.is_empty() else {}
+	if db.is_empty():
+		var raw = JSON.parse_string(FileAccess.get_file_as_string("res://data/monsters.json"))
+		db = raw if raw is Dictionary else {}
+	var entry = db.get(str(enemy_ids[0]), {})
+	var t := str(entry.get("boss_terrain", "")) if entry is Dictionary else ""
+	return t if t != "" else "boss"
+
+
 func _get_terrain_for_map(map_id: String) -> String:
 	"""Get the terrain type for a given map ID"""
 	match map_id:
@@ -6822,6 +6854,8 @@ func _start_autogrind(config: Dictionary) -> void:
 	add_child(_autogrind_controller)
 
 	# Connect controller signals
+	if not BattleManager.selection_turn_started.is_connected(_on_grind_turn_safety_check):
+		BattleManager.selection_turn_started.connect(_on_grind_turn_safety_check)
 	_autogrind_controller.grind_battle_requested.connect(_on_grind_battle_requested)
 	_autogrind_controller.grind_complete.connect(_on_grind_complete)
 	_autogrind_controller.grind_paused.connect(_on_autogrind_paused)
@@ -6979,6 +7013,7 @@ func _stop_autogrind(reason: String) -> void:
 	# The return can build a NEW field scene whose HUD was never hidden; the console is already up over it.
 	_field_hud_steps_aside_for_console()
 
+	await _after_the_stop_banner(reason)
 	_show_autogrind_summary(final_stats, reason)
 
 
@@ -7037,6 +7072,7 @@ func _combatant_for_headless(data: Dictionary) -> Combatant:
 
 
 func _resolve_headless_battle(enemy_data: Array) -> void:
+	_last_grind_enemies = _grind_enemy_ids(enemy_data)
 	var resolver = HeadlessBattleResolver.new()
 	## _on_grind_battle_requested stored the terrain one frame up; only the live branch was reading it.
 	resolver.terrain = _current_terrain
@@ -7048,7 +7084,10 @@ func _resolve_headless_battle(enemy_data: Array) -> void:
 	for data in enemy_data:
 		enemies.append(_combatant_for_headless(data))
 
+	resolver.safety_check = func(p: Array) -> String: return AutogrindSystem.safety_retreat_reason(p)
 	var result = resolver.resolve_battle(party, enemies)
+	if resolver.retreat_reason != "" and _autogrind_controller and is_instance_valid(_autogrind_controller):
+		_autogrind_controller.request_safety_retreat(resolver.retreat_reason)
 	## cowir-autogrind: the resolver has set termination_reason since cadence #19 and nothing read it.
 	if str(result.get("termination_reason", "")) == "stalemate" and AutogrindSystem.has_method("on_battle_stalemate"):
 		AutogrindSystem.on_battle_stalemate()
@@ -7213,6 +7252,7 @@ func _show_autogrind_transition() -> void:
 
 func _start_autogrind_battle(enemy_data: Array) -> void:
 	"""Start a battle scene with pre-configured autogrind enemies"""
+	_last_grind_enemies = _grind_enemy_ids(enemy_data)
 	_show_autogrind_transition()
 
 	# Remove old scene
@@ -7434,6 +7474,9 @@ func _on_autogrind_battle_ended(victory: bool) -> void:
 func _on_grind_complete(reason: String) -> void:
 	"""Handle autogrind session completion"""
 	_is_autogrinding = false
+	BattleManager.autogrind_retreat = false
+	if BattleManager.selection_turn_started.is_connected(_on_grind_turn_safety_check):
+		BattleManager.selection_turn_started.disconnect(_on_grind_turn_safety_check)
 	## Same hoist as _stop_autogrind: this entry reaches the identical stranded state by its own
 	## route, so fixing only the other one leaves this one live.
 	BattleManager.turbo_mode = false
@@ -7488,7 +7531,90 @@ func _on_grind_complete(reason: String) -> void:
 	_show_grind_stop_notification(reason)
 
 	print("[AUTOGRIND] Grind complete: %s" % reason)
+	## struktured 2026-11-01: a grind that ended in a wipe left him on the field all-KO. A wipe is a wipe: the manual defeat flow takes it, field locked behind it.
+	if not _party_can_fight():
+		print("[AUTOGRIND] The grind ended in a party wipe — handing it to the defeat flow")
+		_free_overlays_for_scene_change()
+		## Retry re-fights the battle that wiped, never the last one played by hand, and says which.
+		if not _last_grind_enemies.is_empty():
+			_last_battle_enemies = _last_grind_enemies.duplicate()
+			_last_battle_is_encounter = true
+			_game_over_retry_against = _encounter_label(_last_battle_enemies)
+		var holding: Array[bool] = [true]
+		_hold_field_still_while(holding)
+		await _show_game_over_screen()
+		holding[0] = false
+		if InputLockManager:
+			InputLockManager.pop_lock(WIPE_FIELD_LOCK)
+		return
+	await _after_the_stop_banner(reason)
 	_show_autogrind_summary(final_stats, reason)
+
+
+## Each party turn of a watched grind battle asks the stop rules; one that fires turns the party to retreat (struktured 2026-11-01).
+func _on_grind_turn_safety_check(combatant: Combatant) -> void:
+	if not _is_autogrinding or BattleManager.autogrind_retreat or not (combatant in party):
+		return
+	if not (_autogrind_controller and is_instance_valid(_autogrind_controller)):
+		return
+	var reason: String = AutogrindSystem.safety_retreat_reason(party)
+	if reason == "":
+		return
+	BattleManager.autogrind_retreat = true
+	_autogrind_controller.request_safety_retreat(reason)
+	BattleManager.battle_log_message.emit("[color=%s]%s — the party falls back.[/color]" % [AccessibilityPalette.penalty_bbcode(), reason])
+
+
+## Monster ids of a grind battle's enemy rows (the rows carry their id under "id", older ones under "type").
+static func _grind_enemy_ids(enemy_data: Array) -> Array:
+	var ids: Array = []
+	for row in enemy_data:
+		if row is Dictionary:
+			var id: String = str((row as Dictionary).get("id", (row as Dictionary).get("type", "")))
+			if id != "":
+				ids.append(id)
+		elif row is String:
+			ids.append(row)
+	return ids
+
+
+## "Ice Wolf", "Goblin ×3", "Goblin ×2, Bat": the display names, counted, in first-seen order.
+func _encounter_label(ids: Array) -> String:
+	var order: Array = []
+	var counts: Dictionary = {}
+	for id in ids:
+		var name := str(id).replace("_", " ").capitalize()
+		var es: Node = get_node_or_null("/root/EncounterSystem")
+		if es != null and es.monster_database.has(str(id)):
+			name = str((es.monster_database[str(id)] as Dictionary).get("name", name))
+		if not counts.has(name):
+			order.append(name)
+		counts[name] = int(counts.get(name, 0)) + 1
+	var parts: Array = []
+	for n in order:
+		parts.append(n if counts[n] == 1 else "%s ×%d" % [n, counts[n]])
+	return ", ".join(parts)
+
+
+## struktured: "two yellow texts appeared on top of each other … I couldn't read them": the stop banner sat over the summary's rows.
+func _after_the_stop_banner(reason: String) -> void:
+	if "manual" in reason.to_lower() or not is_inside_tree():
+		return
+	## The summary's own lock, taken now so the field cannot walk into an encounter while the banner fades; dismiss pops it.
+	if InputLockManager:
+		InputLockManager.push_lock("autogrind_summary")
+	await get_tree().create_timer(GRIND_STOP_BANNER_SEC + 0.05, true, false, true).timeout
+
+
+## The field stays still under a game-over screen shown on it: re-pushed each frame (a lock is reaped after 10 s), released once a battle owns the screen.
+const WIPE_FIELD_LOCK := "autogrind_wipe"
+func _hold_field_still_while(holding: Array[bool]) -> void:
+	while holding[0] and current_state == LoopState.EXPLORATION and is_inside_tree():
+		if InputLockManager:
+			InputLockManager.push_lock(WIPE_FIELD_LOCK)
+		await get_tree().process_frame
+	if InputLockManager:
+		InputLockManager.pop_lock(WIPE_FIELD_LOCK)
 
 
 func _play_grind_stop_sfx(reason: String) -> void:
@@ -7508,6 +7634,10 @@ func _play_grind_stop_sfx(reason: String) -> void:
 
 ## Full-screen flash + OS taskbar attention + loud sting so the player notices the grind stop even when tabbed out.
 ## Manual stops skip the fanfare — the player already knows.
+## How long the stop banner stays up (the flash in, then out); the summary waits this out so the two never stack.
+const GRIND_STOP_BANNER_SEC := 0.12 + 0.55
+
+
 func _show_grind_stop_notification(reason: String) -> void:
 	if "manual" in reason.to_lower():
 		return
@@ -7549,7 +7679,7 @@ func _show_grind_stop_notification(reason: String) -> void:
 	var tween := create_tween()
 	tween.set_parallel(true)
 	tween.tween_property(flash, "color:a", 0.55, 0.12)
-	tween.chain().tween_property(flash, "color:a", 0.0, 0.55)
+	tween.chain().tween_property(flash, "color:a", 0.0, GRIND_STOP_BANNER_SEC - 0.12)
 	tween.chain().tween_callback(func():
 		if is_instance_valid(layer):
 			layer.queue_free()

@@ -9,6 +9,11 @@ signal passive_changed(passive_id: String, equipped: bool)
 
 ## Character reference
 var character: Combatant = null
+## The whole party, so a field Cast can pick who it lands on (setup's second argument).
+var party: Array = []
+## True while a single-target field Cast is choosing its target; _pick_index walks `party`.
+var _picking: bool = false
+var _pick_index: int = 0
 
 ## UI state
 enum Tab { ABILITIES, PASSIVES }
@@ -54,9 +59,10 @@ func _ready() -> void:
 	call_deferred("_build_ui")
 
 
-func setup(target: Combatant) -> void:
+func setup(target: Combatant, game_party: Array = []) -> void:
 	"""Initialize menu with character data"""
 	character = target
+	party = game_party if not game_party.is_empty() else [target]
 	_build_abilities_list()
 	_build_passives_list()
 	call_deferred("_build_ui")
@@ -174,7 +180,15 @@ func _build_ui() -> void:
 
 	# Main content (below character info)
 	var content_height = viewport_size.y - 180
-	if current_tab == Tab.ABILITIES:
+	if current_tab == Tab.ABILITIES and _picking:
+		var abilities_panel = _create_abilities_panel(Vector2(viewport_size.x * 0.5 - 24, content_height))
+		abilities_panel.position = Vector2(16, 132)
+		add_child(abilities_panel)
+
+		var target_panel = _create_target_panel(Vector2(viewport_size.x * 0.5 - 24, content_height))
+		target_panel.position = Vector2(viewport_size.x * 0.5 + 8, 132)
+		add_child(target_panel)
+	elif current_tab == Tab.ABILITIES:
 		var abilities_panel = _create_abilities_panel(Vector2(viewport_size.x * 0.5 - 24, content_height))
 		abilities_panel.position = Vector2(16, 132)
 		add_child(abilities_panel)
@@ -198,7 +212,11 @@ func _build_ui() -> void:
 	var accept_hint := InputProfileManager.hint_for_action("ui_accept")
 	var cancel_hint := InputProfileManager.hint_for_action("ui_cancel")
 	var footer_text = "←→/Click: Tab  ↑↓: Select  %s/RClick: Back" % cancel_hint
-	if current_tab == Tab.PASSIVES:
+	if current_tab == Tab.ABILITIES and _picking:
+		footer_text = "↑↓: Target  %s: Cast  %s: Back" % [accept_hint, cancel_hint]
+	elif current_tab == Tab.ABILITIES and _selected_castable():
+		footer_text = "←→/Click: Tab  ↑↓: Select  %s: Cast  %s/RClick: Back" % [accept_hint, cancel_hint]
+	elif current_tab == Tab.PASSIVES:
 		footer_text = "←→/Click: Tab  ↑↓: Select  %s/Click: Equip/Unequip  %s/RClick: Back" % [accept_hint, cancel_hint]
 	var footer = Label.new()
 	footer.text = footer_text
@@ -471,6 +489,44 @@ func _create_ability_details_panel(panel_size: Vector2) -> Control:
 	desc_label.size = Vector2(panel_size.x - 24, 100)
 	panel.add_child(desc_label)
 
+	var field_label = Label.new()
+	field_label.name = "FieldUse"
+	field_label.text = "Usable here" if FieldCast.castable(data) else "Battle only"
+	field_label.position = Vector2(12, 196)
+	field_label.add_theme_font_size_override("font_size", 10)
+	field_label.add_theme_color_override("font_color", SUPPORT_COLOR if FieldCast.castable(data) else DISABLED_COLOR)
+	panel.add_child(field_label)
+
+	return panel
+
+
+## The party, for a single-target field Cast: name, HP and MP, the cursor on _pick_index.
+func _create_target_panel(panel_size: Vector2) -> Control:
+	var panel = Control.new()
+	panel.size = panel_size
+	var panel_bg = ColorRect.new()
+	panel_bg.color = PANEL_COLOR
+	panel_bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	panel.add_child(panel_bg)
+	RetroPanel.add_border(panel, panel_size, BORDER_LIGHT, BORDER_SHADOW)
+	var title = Label.new()
+	title.text = "CAST ON"
+	title.position = Vector2(8, 4)
+	title.add_theme_font_size_override("font_size", 12)
+	title.add_theme_color_override("font_color", TEXT_COLOR)
+	panel.add_child(title)
+	for i in range(party.size()):
+		var m = party[i]
+		if not (m is Combatant) or not is_instance_valid(m):
+			continue
+		var row = Label.new()
+		row.name = "Target%d" % i
+		var state := "KO" if not m.is_alive else "HP %d/%d  MP %d/%d" % [m.current_hp, m.max_hp, m.current_mp, m.max_mp]
+		row.text = "%s %s  %s" % [">" if i == _pick_index else " ", m.combatant_name, state]
+		row.position = Vector2(12, 28 + i * 22)
+		row.add_theme_font_size_override("font_size", 11)
+		row.add_theme_color_override("font_color", Color.YELLOW if i == _pick_index else (DISABLED_COLOR if not m.is_alive else TEXT_COLOR))
+		panel.add_child(row)
 	return panel
 
 
@@ -714,6 +770,10 @@ func _input(event: InputEvent) -> void:
 	# page_delta CONSUMES the trigger axis, so a second read in the branch paged nothing on L2/R2.
 	var page := MenuPaging.page_delta(event)
 
+	if _picking:
+		_picking_input(event, nav)
+		return
+
 	# Tab switching. The 2026-04-30 fix echo-guarded this because holding Left/Right rebuilt the
 	# whole UI per echo and spammed menu_move — and a stick ramp did exactly that anyway, because
 	# an echo guard cannot see an axis. Same defect, fixed for the keyboard half only.
@@ -754,11 +814,96 @@ func _input(event: InputEvent) -> void:
 	elif event.is_action_pressed("ui_accept") and not event.is_echo():
 		if current_tab == Tab.PASSIVES:
 			_toggle_passive()
+		else:
+			_begin_cast()
 		get_viewport().set_input_as_handled()
 
 	elif event.is_action_pressed("ui_cancel") and not event.is_echo():
 		_close_menu()
 		get_viewport().set_input_as_handled()
+
+
+func _selected_ability() -> Dictionary:
+	if current_tab != Tab.ABILITIES or selected_index < 0 or selected_index >= _abilities_list.size():
+		return {}
+	return _abilities_list[selected_index]
+
+
+func _selected_castable() -> bool:
+	var a := _selected_ability()
+	return not a.is_empty() and FieldCast.castable(a["data"])
+
+
+## Accept on an ability: battle-only says so; self and party casts land now; one target opens the picker.
+func _begin_cast() -> void:
+	var a := _selected_ability()
+	if a.is_empty():
+		return
+	if not FieldCast.castable(a["data"]):
+		SoundManager.play_ui("menu_error")
+		Toast.show_warning(self, "%s only works in battle." % a["data"].get("name", a["id"]))
+		return
+	match FieldCast.target_mode(a["data"]):
+		"self":
+			_finish_cast([character])
+		"all":
+			_finish_cast(party)
+		_:
+			_picking = true
+			_pick_index = _first_useful_target(a["data"])
+			SoundManager.play_ui("menu_select")
+			_build_ui()
+
+
+func _can_cast_again(a: Dictionary) -> bool:
+	if character.current_mp < int(JobSystem.get_ability_mp_cost(character, str(a["id"]))):
+		return false
+	for m in party:
+		if m is Combatant and FieldCast.refusal(a["data"], m) == "":
+			return true
+	return false
+
+
+## Open the picker on someone the cast would help, so Raise starts on the fallen member.
+func _first_useful_target(data: Dictionary) -> int:
+	for i in range(party.size()):
+		if party[i] is Combatant and FieldCast.refusal(data, party[i]) == "":
+			return i
+	return 0
+
+
+func _picking_input(event: InputEvent, nav: String) -> void:
+	if nav == "ui_up" or nav == "ui_down":
+		if not party.is_empty():
+			_pick_index = (_pick_index + (-1 if nav == "ui_up" else 1) + party.size()) % party.size()
+			SoundManager.play_ui("menu_move")
+			_build_ui()
+	elif event.is_action_pressed("ui_accept") and not event.is_echo():
+		if _pick_index < party.size():
+			_finish_cast([party[_pick_index]])
+	elif event.is_action_pressed("ui_cancel") and not event.is_echo():
+		_picking = false
+		SoundManager.play_ui("menu_close")
+		_build_ui()
+	else:
+		return
+	get_viewport().set_input_as_handled()
+
+
+func _finish_cast(targets: Array) -> void:
+	var a := _selected_ability()
+	var result: Dictionary = FieldCast.cast(character, str(a.get("id", "")), targets)
+	if result.get("ok", false):
+		## Items' rule (struktured 2026-07-16): stay in the picker while another cast can still help someone.
+		_picking = _picking and _can_cast_again(a)
+		if _picking and FieldCast.refusal(a["data"], party[_pick_index]) != "":
+			_pick_index = _first_useful_target(a["data"])
+		SoundManager.play_ui("heal")
+		Toast.show_success(self, str(result["text"]))
+	else:
+		SoundManager.play_ui("menu_error")
+		Toast.show_warning(self, str(result["text"]))
+	_build_ui()
 
 
 func _toggle_passive() -> void:

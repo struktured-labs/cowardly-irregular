@@ -328,8 +328,17 @@ func _setup_npcs() -> void:
 	])
 	npcs.add_child(earl)
 
+	# Post-dragon: the village noticed. Reads every flag namespace, like the spine gate.
+	var _umbraxis_gs = get_node_or_null("/root/GameState")
+	var _umbraxis_down: bool = _umbraxis_gs != null and _umbraxis_gs.is_story_flag_set("shadow_dragon_defeated")
+	var _murk_post_dragon := [
+		"The shadow dragon is gone. The swamp is quieter. I don't trust it.",
+		"No more null pointers in my dreams. Just regular nightmares now. A relief.",
+		"It spoke in broken promises. You kept one, apparently.",
+		"...Just kidding about not trusting it. Mostly."
+	]
 	# Swamp Witch Murk (warnings)
-	var murk = _create_npc("Swamp Witch Murk", "elder", Vector2(14 * TILE_SIZE,12 * TILE_SIZE), [
+	var murk = _create_npc("Swamp Witch Murk", "elder", Vector2(14 * TILE_SIZE,12 * TILE_SIZE), _murk_post_dragon if _umbraxis_down else [
 		"The shadow dragon speaks in null pointers and broken promises.",
 		"Fun at parties though.",
 		"It lives in the darkest cave to the northeast.",
