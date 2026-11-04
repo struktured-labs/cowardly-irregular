@@ -61,6 +61,7 @@ func test_hitstop_helper_is_visual_only_and_restores() -> void:
 
 func test_damage_numbers_bigger_and_fatter() -> void:
 	var src := FileAccess.get_file_as_string(DMG)
-	assert_true("var base_size = 24" in src, "base damage font 16→24")
-	assert_true("base_size = 34" in src, "top tier 24→34")
-	assert_true("outline_size\", 5" in src, "outline 2→5 — the 'fatter' half")
+	# Pixel pass 2026-11-02 keeps both halves in whole pixels: a big tier above the base, and the baked outline.
+	assert_true("const BASE_PX := 3" in src, "base glyph pixel = 3x (a 5x7 glyph stands 21px)")
+	assert_true("const BIG_PX := 4" in src, "the big tier is a whole pixel larger")
+	assert_true("PixelText.new(" in src, "the 'fatter' half is PixelText's baked outline")

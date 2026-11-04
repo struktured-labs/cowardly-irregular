@@ -29,7 +29,7 @@ func _body_of(func_name: String) -> String:
 
 
 func test_unknown_ability_id_pushes_warning() -> void:
-	var body := _body_of("_execute_ability")
+	var body := (_body_of("_execute_ability(") + _body_of("_execute_ability_resolve("))
 	# Anchor on the literal text — search-quote escaping was a tick 26
 	# pitfall.
 	var idx := body.find("Unknown ability %s")
@@ -40,7 +40,7 @@ func test_unknown_ability_id_pushes_warning() -> void:
 
 
 func test_unknown_ability_type_pushes_warning() -> void:
-	var body := _body_of("_execute_ability")
+	var body := (_body_of("_execute_ability(") + _body_of("_execute_ability_resolve("))
 	var idx := body.find("Unknown ability type:")
 	assert_gt(idx, -1, "unknown-ability-type print must exist as anchor")
 	var window := body.substr(idx, 400)
@@ -51,7 +51,7 @@ func test_unknown_ability_type_pushes_warning() -> void:
 func test_warnings_name_the_offender() -> void:
 	# Each warning must include the offending string so the dev can
 	# grep for it. Vague "ability resolution failed" is unactionable.
-	var body := _body_of("_execute_ability")
+	var body := (_body_of("_execute_ability(") + _body_of("_execute_ability_resolve("))
 	# Ability-id warning must reference both ability_id and caster.
 	var ability_warning_idx := body.find("push_warning(\"BattleManager._execute_ability: unknown ability_id")
 	assert_gt(ability_warning_idx, -1, "ability_id warning must exist and name itself")

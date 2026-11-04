@@ -282,7 +282,10 @@
           "dur": 0.32,
           "arc_height": 44,
           "size": 1.2,
-          "trail_spacing": 9
+          "trail_spacing": 9,
+          "palette": "flame",
+          "palette_t3": "fire",
+          "trail_palette": "ember"
         },
         {
           "at": 0.32,
@@ -294,7 +297,9 @@
           "at": 0.32,
           "kind": "ring",
           "dur": 0.26,
-          "scale": 2.8
+          "scale": 2.8,
+          "palette": "flame",
+          "palette_t3": "fire"
         },
         {
           "at": 0.32,
@@ -332,7 +337,9 @@
               "twist": 30,
               "palette": "flame"
             }
-          }
+          },
+          "palette": "flame",
+          "palette_t3": "fire"
         },
         {
           "at": 0.7,
@@ -353,7 +360,502 @@
             "size": 0.6,
             "scale": 1.0,
             "palette": "flame"
+          },
+          "palette": "flame",
+          "palette_t3": "fire"
+        },
+        {
+          "at": 0.32,
+          "kind": "ring",
+          "dur": 0.32,
+          "scale": 4.0,
+          "palette": "fire",
+          "min_tier": 3
+        }
+      ],
+      "palette_note": "flame (orange-red) until the caster's intensity tier 3, where it goes white-hot: struktured didn't read the white bolt as fire"
+    },
+    "sig_cave_rat_king": {
+      "label": "Rat King: Rat Swarm, the court spills out of him in rings of rot",
+      "impact": 0.35,
+      "phases": [
+        {
+          "at": 0.0,
+          "kind": "ring",
+          "dur": 0.3,
+          "scale": 2.4,
+          "palette": "rot"
+        },
+        {
+          "at": 0.0,
+          "kind": "flash",
+          "dur": 0.15,
+          "size": 5.0
+        },
+        {
+          "at": 0.1,
+          "kind": "emit",
+          "count": 10,
+          "arc": 360,
+          "radius": 110,
+          "life": 0.35,
+          "size": 1.1,
+          "twist": 18,
+          "palette": "rot",
+          "child_at": 0.7,
+          "child": {
+            "count": 3,
+            "arc": 80,
+            "radius": 46,
+            "life": 0.26,
+            "size": 0.8,
+            "palette": "rot"
           }
+        },
+        {
+          "at": 0.35,
+          "kind": "shake",
+          "intensity": 6,
+          "dur": 0.25
+        },
+        {
+          "at": 0.5,
+          "kind": "emit",
+          "count": 16,
+          "arc": 360,
+          "radius": 170,
+          "life": 0.4,
+          "size": 0.8,
+          "twist": 11,
+          "palette": "rot"
+        },
+        {
+          "at": 0.55,
+          "kind": "ring",
+          "dur": 0.3,
+          "scale": 3.6,
+          "palette": "rot"
+        }
+      ]
+    },
+    "sig_fire_dragon": {
+      "label": "Pyrroth: Inferno Rage, a spinning furnace that throws three waves",
+      "impact": 0.3,
+      "phases": [
+        {
+          "at": 0.0,
+          "kind": "ring",
+          "dur": 0.25,
+          "scale": 2.0,
+          "palette": "fire"
+        },
+        {
+          "at": 0.0,
+          "kind": "flash",
+          "dur": 0.18,
+          "size": 6.0
+        },
+        {
+          "at": 0.1,
+          "kind": "spin_fling",
+          "count": 14,
+          "radius": 90,
+          "inner": 20,
+          "turns": 1.5,
+          "spin": 0.5,
+          "fling": 0.3,
+          "distance": 190,
+          "size": 1.1,
+          "palette": "flame",
+          "child": {
+            "count": 3,
+            "arc": 360,
+            "radius": 20,
+            "life": 0.18,
+            "size": 0.6,
+            "palette": "flame"
+          }
+        },
+        {
+          "at": 0.3,
+          "kind": "emit",
+          "count": 12,
+          "arc": 360,
+          "radius": 80,
+          "life": 0.3,
+          "size": 1.2,
+          "twist": 15,
+          "palette": "flame"
+        },
+        {
+          "at": 0.3,
+          "kind": "shake",
+          "intensity": 8,
+          "dur": 0.22
+        },
+        {
+          "at": 0.55,
+          "kind": "emit",
+          "count": 14,
+          "arc": 360,
+          "radius": 130,
+          "life": 0.3,
+          "size": 1.0,
+          "twist": 13,
+          "palette": "flame"
+        },
+        {
+          "at": 0.8,
+          "kind": "emit",
+          "count": 16,
+          "arc": 360,
+          "radius": 180,
+          "life": 0.32,
+          "size": 0.9,
+          "twist": 11,
+          "palette": "fire"
+        },
+        {
+          "at": 0.8,
+          "kind": "shake",
+          "intensity": 10,
+          "dur": 0.25
+        },
+        {
+          "at": 0.8,
+          "kind": "ring",
+          "dur": 0.3,
+          "scale": 4.5,
+          "palette": "fire"
+        }
+      ]
+    },
+    "sig_ice_dragon": {
+      "label": "Glacius: Absolute Zero, a frost bolt, a crystal bloom, a held breath, the shatter",
+      "phases": [
+        {
+          "at": 0.0,
+          "kind": "ring",
+          "origin": "caster",
+          "dur": 0.3,
+          "scale": 2.0,
+          "palette": "frost"
+        },
+        {
+          "at": 0.15,
+          "kind": "emit",
+          "origin": "caster",
+          "count": 8,
+          "arc": 360,
+          "radius": 60,
+          "life": 0.3,
+          "size": 0.9,
+          "palette": "frost"
+        },
+        {
+          "at": 0.35,
+          "kind": "bolt",
+          "dur": 0.38,
+          "arc_height": 30,
+          "size": 1.2,
+          "trail_spacing": 9,
+          "palette": "frost",
+          "trail_palette": "frost"
+        },
+        {
+          "at": 0.73,
+          "kind": "flash",
+          "dur": 0.18,
+          "size": 6.0
+        },
+        {
+          "at": 0.73,
+          "kind": "ring",
+          "dur": 0.3,
+          "scale": 3.0,
+          "palette": "frost"
+        },
+        {
+          "at": 0.73,
+          "kind": "shake",
+          "intensity": 7,
+          "dur": 0.2
+        },
+        {
+          "at": 0.73,
+          "kind": "emit",
+          "count": 6,
+          "arc": 360,
+          "radius": 70,
+          "life": 0.35,
+          "size": 1.1,
+          "twist": 30,
+          "palette": "frost",
+          "child_at": 0.8,
+          "child": {
+            "count": 2,
+            "arc": 40,
+            "radius": 40,
+            "life": 0.25,
+            "size": 0.8,
+            "palette": "frost"
+          }
+        },
+        {
+          "at": 1.1,
+          "kind": "hitstop",
+          "dur": 0.12
+        },
+        {
+          "at": 1.2,
+          "kind": "emit",
+          "count": 12,
+          "arc": 360,
+          "radius": 110,
+          "life": 0.3,
+          "size": 0.9,
+          "palette": "frost"
+        },
+        {
+          "at": 1.2,
+          "kind": "shake",
+          "intensity": 9,
+          "dur": 0.22
+        }
+      ]
+    },
+    "sig_lightning_dragon": {
+      "label": "Voltharion: Lightning Dash, afterimages and a branching strike",
+      "phases": [
+        {
+          "at": 0.0,
+          "kind": "lunge",
+          "distance": 0.85,
+          "dur": 0.16,
+          "hold": 0.1,
+          "back": 0.22,
+          "ghost_every": 0.025,
+          "ghost_color": [
+            0.75,
+            0.9,
+            1.0,
+            0.6
+          ]
+        },
+        {
+          "at": 0.1,
+          "kind": "bolt",
+          "dur": 0.2,
+          "arc_height": 10,
+          "size": 1.3,
+          "trail_spacing": 7,
+          "palette": "spark",
+          "trail_palette": "spark"
+        },
+        {
+          "at": 0.3,
+          "kind": "flash",
+          "dur": 0.12,
+          "size": 5.0
+        },
+        {
+          "at": 0.3,
+          "kind": "shake",
+          "intensity": 8,
+          "dur": 0.2
+        },
+        {
+          "at": 0.3,
+          "kind": "slash",
+          "count": 14,
+          "radius": 60,
+          "dur": 0.12,
+          "life": 0.2,
+          "palette": "spark"
+        },
+        {
+          "at": 0.3,
+          "kind": "emit",
+          "count": 5,
+          "arc": 360,
+          "radius": 80,
+          "life": 0.22,
+          "size": 1.0,
+          "depth": 2,
+          "decay": 0.55,
+          "time_decay": 0.8,
+          "palette": "spark"
+        },
+        {
+          "at": 0.55,
+          "kind": "ring",
+          "dur": 0.2,
+          "scale": 3.0,
+          "palette": "spark"
+        }
+      ]
+    },
+    "sig_shadow_dragon": {
+      "label": "Umbraxis: Void Breath, a dark aura, a beam, a recursive unmaking",
+      "phases": [
+        {
+          "at": 0.0,
+          "kind": "emit",
+          "origin": "caster",
+          "count": 12,
+          "arc": 360,
+          "radius": 90,
+          "life": 0.4,
+          "size": 1.0,
+          "twist": 15,
+          "palette": "void"
+        },
+        {
+          "at": 0.0,
+          "kind": "ring",
+          "origin": "caster",
+          "dur": 0.35,
+          "scale": 3.0,
+          "palette": "void"
+        },
+        {
+          "at": 0.4,
+          "kind": "bolt",
+          "dur": 0.5,
+          "arc_height": 0,
+          "size": 1.6,
+          "trail_spacing": 6,
+          "palette": "void",
+          "trail_palette": "void"
+        },
+        {
+          "at": 0.9,
+          "kind": "flash",
+          "dur": 0.2,
+          "size": 7.0
+        },
+        {
+          "at": 0.9,
+          "kind": "ring",
+          "dur": 0.32,
+          "scale": 4.0,
+          "palette": "void"
+        },
+        {
+          "at": 0.9,
+          "kind": "shake",
+          "intensity": 9,
+          "dur": 0.25
+        },
+        {
+          "at": 0.9,
+          "kind": "emit",
+          "count": 9,
+          "arc": 360,
+          "radius": 90,
+          "life": 0.4,
+          "size": 1.3,
+          "twist": 20,
+          "depth": 2,
+          "decay": 0.6,
+          "time_decay": 0.8,
+          "palette": "void"
+        },
+        {
+          "at": 1.3,
+          "kind": "spin_fling",
+          "count": 10,
+          "radius": 70,
+          "inner": 16,
+          "turns": 1.0,
+          "spin": 0.4,
+          "fling": 0.3,
+          "distance": 150,
+          "size": 0.9,
+          "palette": "void"
+        }
+      ]
+    },
+    "sig_chancellor_mordaine": {
+      "label": "Mordaine: Summary Judgment, three seals, the bolt of the finding, the stamp",
+      "phases": [
+        {
+          "at": 0.0,
+          "kind": "ring",
+          "origin": "caster",
+          "dur": 0.35,
+          "scale": 2.2,
+          "palette": "verdict"
+        },
+        {
+          "at": 0.2,
+          "kind": "ring",
+          "origin": "caster",
+          "dur": 0.35,
+          "scale": 3.0,
+          "palette": "verdict"
+        },
+        {
+          "at": 0.4,
+          "kind": "ring",
+          "origin": "caster",
+          "dur": 0.35,
+          "scale": 3.8,
+          "palette": "verdict"
+        },
+        {
+          "at": 0.55,
+          "kind": "bolt",
+          "dur": 0.3,
+          "arc_height": 70,
+          "size": 1.4,
+          "trail_spacing": 8,
+          "palette": "verdict",
+          "trail_palette": "verdict"
+        },
+        {
+          "at": 0.85,
+          "kind": "flash",
+          "dur": 0.2,
+          "size": 8.0
+        },
+        {
+          "at": 0.85,
+          "kind": "shake",
+          "intensity": 10,
+          "dur": 0.25
+        },
+        {
+          "at": 0.85,
+          "kind": "impact_frame"
+        },
+        {
+          "at": 0.85,
+          "kind": "emit",
+          "count": 4,
+          "arc": 360,
+          "radius": 60,
+          "life": 0.3,
+          "size": 1.4,
+          "twist": 45,
+          "palette": "verdict",
+          "child_at": 0.8,
+          "child": {
+            "count": 4,
+            "arc": 360,
+            "radius": 40,
+            "life": 0.25,
+            "size": 1.0,
+            "twist": 45,
+            "palette": "verdict"
+          }
+        },
+        {
+          "at": 1.15,
+          "kind": "ring",
+          "dur": 0.3,
+          "scale": 4.5,
+          "palette": "verdict"
         }
       ]
     }

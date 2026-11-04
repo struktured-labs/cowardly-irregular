@@ -402,6 +402,20 @@ func get_equipment_mods(combatant: Combatant) -> Dictionary:
 	return total_mods
 
 
+## The gear deltas AS APPLIED to this combatant's stats. stat_mods are authored in x10 units and
+## Combatant.recalculate_stats converts the scaled fields by x10_ratio(); a UI that printed the raw
+## table showed "ATK+220" on a Fighter whose ATK was 19 (demo playthrough 2026-11-03).
+func get_applied_equipment_mods(combatant: Combatant) -> Dictionary:
+	var raw: Dictionary = get_equipment_mods(combatant)
+	if raw.is_empty():
+		return raw
+	var ratio: float = combatant.x10_ratio()
+	var out: Dictionary = {}
+	for stat in raw:
+		out[stat] = Combatant.applied_gear_delta(stat, int(raw[stat]), ratio)
+	return out
+
+
 func get_weapon(weapon_id: String) -> Dictionary:
 	return weapons.get(weapon_id, {})
 

@@ -57,6 +57,8 @@ func test_an_area_bed_starts_unpitched() -> void:
 	await get_tree().process_frame
 	assert_almost_eq(SoundManager._music_player.pitch_scale, 1.0, 0.001,
 		"an area bed inherited the last fight's danger pitch (%.3f). FIX: play_area_music must call reset_danger() before it starts a track — it reaches _try_play_from_manifest through _start_*_music, so play_music's reset never runs on this path" % SoundManager._music_player.pitch_scale)
+	## 2026-11-02 area crossfade: a bed now ramps in over FADE_IN_DURATION; read the level once it has landed.
+	await get_tree().create_timer(SoundManager.FADE_IN_DURATION + 0.2).timeout
 	assert_almost_eq(SoundManager._music_player.volume_db, SoundManager._music_base_db, 0.01,
 		"an area bed inherited the danger VOLUME boost (%.1f, base %.1f) — the same bypass, and the quieter half of it" % [SoundManager._music_player.volume_db, SoundManager._music_base_db])
 

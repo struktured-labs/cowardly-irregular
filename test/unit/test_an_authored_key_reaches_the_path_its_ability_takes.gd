@@ -263,6 +263,9 @@ func test_the_dispatcher_still_sends_each_type_where_this_guard_thinks() -> void
 	## corrected three times today.
 	var next_func: int = code.find("\nfunc ", at + 1)
 	var body: String = code.substr(at, (next_func - at) if next_func > at else 8000)
+	## #763: the type match moved to _execute_ability_resolve, which _execute_ability awaits the
+	## projectile impact before calling — the dispatch is the pair, so the control reads both.
+	body += _function_body(code, "_execute_ability_resolve")
 	for type in TYPE_EXECUTOR:
 		assert_true(body.contains('"%s"' % type), "the dispatcher still matches ability type '%s'" % type)
 	for executor in _all_executors():

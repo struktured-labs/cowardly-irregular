@@ -34,6 +34,11 @@ func test_summon_arm_exists() -> void:
 	assert_gt(fn_idx, -1)
 	var next_fn: int = src.find("\nfunc ", fn_idx + 1)
 	var body: String = src.substr(fn_idx, next_fn - fn_idx) if next_fn > 0 else src.substr(fn_idx)
+	# #763: the type match now lives in _execute_ability_resolve (called after the impact await).
+	var res_idx: int = src.find("func _execute_ability_resolve(")
+	assert_gt(res_idx, -1, "_execute_ability_resolve must exist")
+	var res_next: int = src.find("\nfunc ", res_idx + 1)
+	body += src.substr(res_idx, res_next - res_idx) if res_next > 0 else src.substr(res_idx)
 	# Must include "summon": match arm.
 	assert_true(body.contains("\"summon\":"),
 		"_execute_ability match must have a \"summon\" arm")
