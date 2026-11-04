@@ -79,7 +79,7 @@ static func build_text() -> String:
 		_face_cell("ui_accept", "East"), _face_cell("ui_cancel", "South")) + "\n" + _bound_rows() + """
 Start / Plus / Options F5           —                Open Autobattle Editor
 Back / Select / Minus / Share F6    —                Toggle Autobattle
-%-17s ` (backtick)      —                Battle speed: tap faster · hold slower (the key left of 1)
+%-17s %-17s —                Battle speed: tap faster · hold slower (a backtick on US keyboards)
 %-17s Y                 —                [color=lime]Repeat last turn's actions — in battle[/color]
                   F                 —                Cycle party formation (also in the command menu)
 L3 Stick Click    L                 —                Battle log: open the full log in battle (also the log panel's button)
@@ -93,7 +93,7 @@ R3 Stick Click    F1                —                [color=lime]This screen �
 
 [b][color=yellow]WHILE AUTOGRINDING[/color][/b]
 [color=gray]Gamepad          Keyboard          Description[/color]
-""" % [_face_cell_for_index(JOY_BUTTON_Y, "North"), _face_cell_for_index(JOY_BUTTON_X, "West")] + AutogrindInputHelper.grind_reference_rows() + """
+""" % [_face_cell_for_index(JOY_BUTTON_Y, "North"), Win98Menu.speed_key_label() + " (left of 1)", _face_cell_for_index(JOY_BUTTON_X, "West")] + AutogrindInputHelper.grind_reference_rows() + """
 [b][color=yellow]BATTLE SYSTEM (CTB)[/color][/b]
 Each turn you choose: [color=lime]Attack[/color], use [color=cyan]Magic[/color], or strategize with AP.
 
