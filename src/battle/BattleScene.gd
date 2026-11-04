@@ -581,6 +581,9 @@ func _exit_tree() -> void:
 	"""Cleanup signal connections when scene is freed"""
 	_clear_advance_aura()
 	BattleJuice.clear_battle_context()
+	# Our gate leaves with us (adhoc 21681); a newer battle's gate is not ours to clear.
+	if EffectSystem.phase_sfx_gate == Callable(self, "signature_sound_allowed"):
+		EffectSystem.phase_sfx_gate = Callable()
 	if SoundManager:
 		SoundManager.stop_voiced_line(self)
 	# Disconnect from BattleManager signals to prevent memory leaks
@@ -679,6 +682,7 @@ func _create_battle_background() -> void:
 	_battle_background.set_terrain_from_string(_current_terrain)
 	# Give EffectSystem a reference so it can tint the background during spells
 	EffectSystem.battle_background = _battle_background
+	EffectSystem.phase_sfx_gate = signature_sound_allowed
 	BattleJuice.env_background = _battle_background
 
 	# Mode 7 perspective floor overlay — sits BEHIND sprites but on top of the
