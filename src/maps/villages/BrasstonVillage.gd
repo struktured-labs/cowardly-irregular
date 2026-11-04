@@ -311,8 +311,6 @@ func _setup_npcs() -> void:
 	])
 	# Without this the quest is UNSTARTABLE — QuestSystem matches npc_id to giver.npc_id.
 	sprocket.npc_id = "sprocket_brasston"
-	# He has his own drawn bust; the name hash gave him a generic face in the village and his own one in cutscenes.
-	sprocket.portrait_override = "sprocket"
 	npcs.add_child(sprocket)
 
 	# Lamplighter (night-shift, shadows in the pipes)
