@@ -39,9 +39,12 @@ func _init() -> void:
 		print("[BOSSSHOT] FAIL: no BattleScene")
 		quit(1)
 		return
-	# Let the intro settle; boss intros may hold the screen with dialogue.
-	await create_timer(2.5, true, false, true).timeout
+	# The boss battle starts after its transition and intro: wait for BattleManager to hold the boss, not a fixed time.
 	var bm = root.get_node("BattleManager")
+	var deadline := Time.get_ticks_msec() + 25000
+	while bm.enemy_party.size() == 0 and Time.get_ticks_msec() < deadline:
+		await process_frame
+	await create_timer(1.0, true, false, true).timeout
 	var boss = bm.enemy_party[0] if bm.enemy_party.size() > 0 else null
 	if boss == null:
 		print("[BOSSSHOT] FAIL: no boss in the enemy party")
