@@ -593,7 +593,7 @@ func _update_stat_mods_label(label: RichTextLabel, member: Combatant) -> void:
 
 	# Equipment bonuses (flat numbers)
 	if EquipmentSystem:
-		var equip_mods = EquipmentSystem.get_equipment_mods(member)
+		var equip_mods = EquipmentSystem.get_applied_equipment_mods(member)
 		var equip_parts: Array[String] = []
 		for stat in ["attack", "defense", "magic", "magic_defense", "speed"]:
 			var val = equip_mods.get(stat, 0)

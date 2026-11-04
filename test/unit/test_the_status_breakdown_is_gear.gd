@@ -28,7 +28,7 @@ func _breakdowns(n: Node, out: Array) -> Array:
 
 func test_the_attack_breakdown_is_the_weapon_not_the_job() -> void:
 	var c := _fighter()
-	var gear: Dictionary = EquipmentSystem.get_equipment_mods(c)
+	var gear: Dictionary = EquipmentSystem.get_applied_equipment_mods(c)
 	assert_gt(int(gear.get("attack", 0)), 0, "CONTROL: the iron sword adds attack")
 	var menu = StatusMenuScript.new()
 	add_child_autofree(menu)
@@ -42,7 +42,7 @@ func test_the_attack_breakdown_is_the_weapon_not_the_job() -> void:
 
 func test_a_stat_gear_does_not_touch_shows_no_breakdown() -> void:
 	var c := _fighter()
-	var gear: Dictionary = EquipmentSystem.get_equipment_mods(c)
+	var gear: Dictionary = EquipmentSystem.get_applied_equipment_mods(c)
 	assert_eq(int(gear.get("max_mp", 0)), 0, "CONTROL: nothing equipped changes MP")
 	var menu = StatusMenuScript.new()
 	add_child_autofree(menu)
