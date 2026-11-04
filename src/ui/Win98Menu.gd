@@ -2063,11 +2063,26 @@ static func repeat_hint() -> String:
 ## no InputMap action, so hint_for_action cannot reach it — this is the one place that knows.
 static func speed_hint() -> String:
 	if Input.get_connected_joypads().is_empty():
-		return "the ` key"
+		return "the %s key" % speed_key_label()
 	if not InputProfileManager:
 		return "X"
 	var g: String = InputProfileManager.face_glyph_for_index(JOY_BUTTON_Y)
 	return "X" if g == "?" else g
+
+
+## The speed key is matched by POSITION (left of 1), so name it as THIS keyboard prints it: ` on US, ^ on QWERTZ,
+## ² on AZERTY. Only desktop display servers can answer; headless and web keep the US glyph.
+static func speed_key_label() -> String:
+	if DisplayServer.get_name() == "headless" or not (OS.get_name() in ["Windows", "Linux", "macOS", "FreeBSD", "NetBSD", "OpenBSD", "BSD"]):
+		return "`"
+	return speed_key_glyph(int(DisplayServer.keyboard_get_label_from_physical(KEY_QUOTELEFT)))
+
+
+## A printable key's own character, else the US backtick.
+static func speed_key_glyph(code: int) -> String:
+	if code <= 32 or code >= int(KEY_SPECIAL):
+		return "`"
+	return String.chr(code)
 
 
 ## The keyboard bar, derived like the pad bar: it read a frozen "[L] … [R]" and went stale the day the
@@ -2083,7 +2098,7 @@ static func _keyboard_hint_text() -> String:
 		return HINT_KEYBOARD_TEXT
 	# F5, the backtick and the Y of Repeat are raw keycodes with no InputMap action (the handlers
 	# check event.keycode directly) — literal, not derived, because there is nothing to derive.
-	return "[%s] Defer  ·  [%s] Advance  ·  [`] Speed  ·  [Y] Repeat  ·  [%s] Auto  ·  [F5] Rules  ·  [%s] Log" % [defer, adv, auto, log_key]
+	return "[%s] Defer  ·  [%s] Advance  ·  [%s] Speed  ·  [Y] Repeat  ·  [%s] Auto  ·  [F5] Rules  ·  [%s] Log" % [defer, adv, speed_key_label(), auto, log_key]
 
 
 static func hint_text() -> String:

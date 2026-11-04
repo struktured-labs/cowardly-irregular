@@ -162,6 +162,17 @@ func test_the_speed_key_works_where_a_german_keyboard_puts_it() -> void:
 	assert_lt(s._speed_hold_start_ms, 0, "and its release must have arrived")
 
 
+## The bar and the hint name the key as the keyboard prints it; the glyph mapping is pure, so it is pinned here.
+func test_the_speed_key_is_named_as_the_keyboard_prints_it() -> void:
+	assert_eq(Win98Menu.speed_key_glyph(KEY_QUOTELEFT), "`", "US prints a backtick")
+	assert_eq(Win98Menu.speed_key_glyph(KEY_ASCIICIRCUM), "^", "QWERTZ prints a caret there")
+	assert_eq(Win98Menu.speed_key_glyph(178), "²", "AZERTY prints a superscript two there")
+	assert_eq(Win98Menu.speed_key_glyph(KEY_NONE), "`", "no answer falls back to the US glyph")
+	assert_eq(Win98Menu.speed_key_glyph(KEY_F1), "`", "a non-printing answer falls back too")
+	assert_eq(Win98Menu.speed_key_label(), "`", "headless never asks the display server, so tests and web read the US glyph")
+	assert_string_contains(Win98Menu._keyboard_hint_text(), "[%s] Speed" % Win98Menu.speed_key_label(), "the bar names that key")
+
+
 ## CONTROL: matching by position must not make the printed character a speed key wherever it sits.
 func test_the_same_character_elsewhere_is_not_the_speed_key() -> void:
 	var s: Node = await _battle()

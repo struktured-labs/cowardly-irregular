@@ -303,7 +303,8 @@ func test_the_speed_helper_covers_the_no_pad_case() -> void:
 	var body: String = w.substr(i, (j - i) if j > -1 else 600)
 	assert_true(body.contains("get_connected_joypads().is_empty()"),
 		"no pad means keyboard vocabulary, decided before any glyph lookup")
-	assert_true(body.contains("` key"), "and the keyboard answer is the backtick, the real binding")
+	## The key is matched by position since .768, so the answer is named by the helper that reads this keyboard's label.
+	assert_true(body.contains("speed_key_label()"), "and the keyboard answer names the speed key as this keyboard prints it")
 
 func test_the_bar_and_the_hint_agree_on_where_speed_lives() -> void:
 	## Both read JOY_BUTTON_Y. If one moved, a player would see two different buttons for one
