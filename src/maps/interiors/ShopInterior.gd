@@ -1060,8 +1060,8 @@ func _decorate_blacksmith_shop() -> void:
 	# Animated forge with glowing embers
 	_setup_forge_anim()
 
-	# Anvil on the free floor below the left shelf block (rows 6-7), beside the crates
-	_create_anvil(Vector2(3.5 * TILE_SIZE, 9 * TILE_SIZE))
+	# Anvil on free floor below the right shelf block, clear of Sir Corvath (3,8), Jend (6,9) and the door path
+	_create_anvil(Vector2(11 * TILE_SIZE, 9 * TILE_SIZE))
 
 	# Weapon wall rack on east side; a drawn shelf IS the rack, and the painted one would cover it
 	if InteriorArt.path("shelf", art_room(), _art_village()) == "":
