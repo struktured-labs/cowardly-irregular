@@ -679,6 +679,7 @@ func _create_battle_background() -> void:
 	_battle_background.set_terrain_from_string(_current_terrain)
 	# Give EffectSystem a reference so it can tint the background during spells
 	EffectSystem.battle_background = _battle_background
+	EffectSystem.phase_sfx_gate = signature_sound_allowed
 	BattleJuice.env_background = _battle_background
 
 	# Mode 7 perspective floor overlay — sits BEHIND sprites but on top of the
