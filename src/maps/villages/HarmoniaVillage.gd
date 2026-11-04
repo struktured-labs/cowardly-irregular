@@ -494,7 +494,16 @@ func _setup_npcs() -> void:
 		"I'm going to sit here with my cough and hope you keep doing what you're doing.",
 		"Come back later. I have a story about the cave from *my* year. Now I finally know whether to tell it."
 	]
-	var retired = _create_npc("Greta the Grey", "elder", Vector2(5 * TILE_SIZE, 21 * TILE_SIZE), _greta_post if _after_cave_done else _greta_pre)
+	# After Mordaine: the town notices the Chancellor is gone. Reads every flag namespace, like the spine gate.
+	var _chancellor_gs = get_node_or_null("/root/GameState")
+	var _chancellor_gone: bool = _chancellor_gs != null and _chancellor_gs.is_story_flag_set("world1_mordaine_defeated")
+	var _greta_after_chancellor := [
+		"*cough* The Chancellor's gone. I've outlived three of them, and she never once coughed.",
+		"She kept a ledger with everyone in this town in it. I hope somebody burns it. I hope they read my page first.",
+		"In my day you didn't beat a Chancellor. You waited one out.",
+		"You didn't wait. I'm still deciding whether that's the young way or the right one."
+	]
+	var retired = _create_npc("Greta the Grey", "elder", Vector2(5 * TILE_SIZE, 21 * TILE_SIZE), _greta_after_chancellor if _chancellor_gone else (_greta_post if _after_cave_done else _greta_pre))
 	retired.sprite_archetype = "old_woman"  ## pinned: the name-hash pair drew the other sex
 	npcs.add_child(retired)
 
@@ -625,7 +634,13 @@ func _setup_npcs() -> void:
 		"Not IN. Just at.",
 		"*swings imaginary sword, one time, at nothing*"
 	]
-	var kid = _create_npc("Young Pip", "child", Vector2(24 * TILE_SIZE, 14 * TILE_SIZE), _pip_post if _after_cave_done else _pip_pre)
+	var _pip_after_chancellor := [
+		"Mom says the Chancellor isn't the Chancellor anymore.",
+		"She says it in a whisper, like the Chancellor can still hear. Can she?",
+		"*checks over shoulder*",
+		"I'm still gonna be just like you when I grow up. But I'm never writing anybody down in a ledger. Ever."
+	]
+	var kid = _create_npc("Young Pip", "child", Vector2(24 * TILE_SIZE, 14 * TILE_SIZE), _pip_after_chancellor if _chancellor_gone else (_pip_post if _after_cave_done else _pip_pre))
 	npcs.add_child(kid)
 
 	# === SIDE-QUEST GIVERS (dialogue owned by QuestSystem when quest business exists) ===
@@ -714,7 +729,13 @@ func _setup_npcs() -> void:
 		"The story isn't finished. That's true both hours.",
 		"The gap in the north hedge is still there. I've stopped meaning to close it."
 	]
-	var _flora_lines: Array = (_flora_post_night if _is_night else _flora_post) if _after_cave_done else (_flora_pre_night if _is_night else _flora_pre)
+	var _flora_after_chancellor := [
+		"The castle bells rang this morning. Nobody pulled the ropes.",
+		"The flowers along the castle road opened all at once. All of them. I counted.",
+		"She used to have them cut back. 'Untidy,' the notice said. It's still pinned up. Nobody's taken it down yet.",
+		"Take one. Nobody's writing them down anymore."
+	]
+	var _flora_lines: Array = _flora_after_chancellor if _chancellor_gone else ((_flora_post_night if _is_night else _flora_post) if _after_cave_done else (_flora_pre_night if _is_night else _flora_pre))
 	var flower = _create_npc("Flora", "villager", Vector2(25 * TILE_SIZE, 16 * TILE_SIZE), _flora_lines)
 	npcs.add_child(flower)
 
