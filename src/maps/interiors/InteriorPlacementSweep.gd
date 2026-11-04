@@ -38,6 +38,7 @@ static func sweep(scene_root: Node, npcs: Node, decorations: Node, layout: Array
 		return
 	sweeps += 1
 	var furniture := _collect_furniture_rects(scene_root, decorations)
+	var blocked := blocked_cells(layout, blocked_glyphs)
 	## Reserve every stationary NPC's cell BEFORE moving anyone. Two NPCs whose authored spots are
 	## both blocked ring-search independently and can land on the SAME nearest clear cell — measured
 	## in Harmonia's library, where Yorick Pell and Cantor Vell both ended at (336,336) and the
@@ -50,13 +51,13 @@ static func sweep(scene_root: Node, npcs: Node, decorations: Node, layout: Array
 		if not (n is Node2D):
 			continue
 		var origin: Vector2 = (n as Node2D).position
-		if _is_position_clear(origin, layout, furniture, blocked_glyphs):
+		if _is_position_clear(origin, layout, furniture, blocked):
 			taken[_cell_of(origin)] = true
 		else:
 			movers.append(n)
 	for n in movers:
 		var origin: Vector2 = (n as Node2D).position
-		var fixed := _find_clear_near(origin, layout, furniture, taken, blocked_glyphs)
+		var fixed := _find_clear_near(origin, layout, furniture, taken, blocked)
 		if fixed != origin:
 			push_warning("[%s] relocated '%s' off wall/furniture %s -> %s" % [
 				area_id, n.name, origin, fixed])
@@ -98,13 +99,22 @@ static func _walk_sprites_for_furniture(scene_root: Node, node: Node, out: Array
 
 ## Walkability from the authored layout string. Legacy interiors +
 ## BaseInterior both write 'W' for walls; anything else is floor.
-static func _is_cell_walkable(cell: Vector2i, layout: Array, blocked_glyphs: String = "") -> bool:
+## The tile-furniture cells, from InteriorArt's footprint helper: ONE definition of where a room's furniture is.
+static func blocked_cells(layout: Array, glyphs: String) -> Dictionary:
+	var out := {}
+	if glyphs != "":
+		for c in InteriorArt.furniture_cells(layout, glyphs):
+			out[c] = true
+	return out
+
+
+static func _is_cell_walkable(cell: Vector2i, layout: Array, blocked: Dictionary = {}) -> bool:
 	if cell.y < 0 or cell.y >= layout.size():
 		return false
 	var row: String = str(layout[cell.y])
 	if cell.x < 0 or cell.x >= row.length():
 		return false
-	return row[cell.x] != "W" and not (blocked_glyphs != "" and blocked_glyphs.contains(row[cell.x]))
+	return row[cell.x] != "W" and not blocked.has(cell)
 
 
 ## NPC sprites are ~32×48 with the origin near the sprite's chest. The
@@ -123,9 +133,9 @@ static func _npc_footprint(pos: Vector2) -> Rect2:
 		Vector2(NPC_FOOT_HALF_W * 2.0, NPC_FOOT_BOTTOM_OFFSET - NPC_FOOT_TOP_OFFSET))
 
 
-static func _is_position_clear(pos: Vector2, layout: Array, furniture: Array, blocked_glyphs: String = "") -> bool:
+static func _is_position_clear(pos: Vector2, layout: Array, furniture: Array, blocked: Dictionary = {}) -> bool:
 	var cell := Vector2i(int(floor(pos.x / TILE_SIZE)), int(floor(pos.y / TILE_SIZE)))
-	if not _is_cell_walkable(cell, layout, blocked_glyphs):
+	if not _is_cell_walkable(cell, layout, blocked):
 		return false
 	var foot := _npc_footprint(pos)
 	for r in furniture:
@@ -140,8 +150,8 @@ static func _cell_of(pos: Vector2) -> Vector2i:
 
 ## Ring-search up to 8 tiles for the nearest cell that's walkable, outside every furniture rect,
 ## and not already claimed by another NPC. `taken` may be empty for a single-NPC caller.
-static func _find_clear_near(pos: Vector2, layout: Array, furniture: Array, taken: Dictionary = {}, blocked_glyphs: String = "") -> Vector2:
-	if _is_position_clear(pos, layout, furniture, blocked_glyphs) and not taken.has(_cell_of(pos)):
+static func _find_clear_near(pos: Vector2, layout: Array, furniture: Array, taken: Dictionary = {}, blocked: Dictionary = {}) -> Vector2:
+	if _is_position_clear(pos, layout, furniture, blocked) and not taken.has(_cell_of(pos)):
 		return pos
 	var start := _cell_of(pos)
 	for radius in range(1, 9):
@@ -153,7 +163,7 @@ static func _find_clear_near(pos: Vector2, layout: Array, furniture: Array, take
 				if taken.has(c):
 					continue
 				var probe := Vector2((c.x + 0.5) * TILE_SIZE, (c.y + 0.5) * TILE_SIZE)
-				if _is_position_clear(probe, layout, furniture, blocked_glyphs):
+				if _is_position_clear(probe, layout, furniture, blocked):
 					return probe
 	## Gave up. The caller only warns when the position CHANGED, so without this a failed
 	## relocation is silent and the NPC stays standing on the furniture. Standing on a table is

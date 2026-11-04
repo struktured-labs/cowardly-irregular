@@ -88,3 +88,22 @@ func test_no_inn_npc_stands_on_a_bench() -> void:
 			if r.intersects(foot):
 				offenders.append(str(n.name))
 	assert_eq(offenders, [], "an inn NPC stands on a bench: %s" % [offenders])
+
+
+## adhoc 21587: ONE definition of where a room's tile furniture is. The sweep blocks exactly InteriorArt's footprint cells,
+## so a new glyph or layout change cannot make the sweep and the footprint guard disagree while both stay green.
+func test_the_sweep_blocks_exactly_the_footprint_cells() -> void:
+	var layout: Array = ShopInteriorScript.SHOP_LAYOUT
+	var foot: Array = InteriorArt.furniture_cells(layout, ShopInteriorScript.SHELF_GLYPHS)
+	assert_gt(foot.size(), 4, "FLOOR: the shop's shelves must resolve to footprint cells (got %d)" % foot.size())
+	var blocked := InteriorPlacementSweep.blocked_cells(layout, ShopInteriorScript.SHELF_GLYPHS)
+	var disagree: Array = []
+	for y in layout.size():
+		for x in str(layout[y]).length():
+			var c := Vector2i(x, y)
+			if str(layout[y])[x] == "W":
+				continue
+			var walkable := InteriorPlacementSweep._is_cell_walkable(c, layout, blocked)
+			if walkable == (c in foot):
+				disagree.append(c)
+	assert_eq(disagree, [], "cells where the sweep and InteriorArt.furniture_cells disagree: %s" % [disagree])

@@ -216,6 +216,7 @@
   },
   "firaga": {
     "id": "firaga",
+    "vfx": {"glory": "glory_firaga"},
     "name": "Ignis Maximus",
     "family": "fire",
     "tier": 3,
@@ -231,6 +232,7 @@
   },
   "blizzaga": {
     "id": "blizzaga",
+    "vfx": {"glory": "glory_blizzaga"},
     "name": "Glacies Maxima",
     "family": "ice",
     "tier": 3,
@@ -246,6 +248,7 @@
   },
   "thundaga": {
     "id": "thundaga",
+    "vfx": {"glory": "glory_thundaga"},
     "name": "Fulmen Maximum",
     "family": "lightning",
     "tier": 3,
