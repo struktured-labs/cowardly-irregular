@@ -69,3 +69,11 @@ func test_a_finished_world_lists_nothing_as_standing() -> void:
 	var facts: String = DialoguePrompts.campaign_facts()
 	assert_eq(facts.count("\n- "), DialoguePrompts.CAMPAIGN_MILESTONES.size(), "every milestone is listed as done")
 	assert_false(facts.contains("Not yet defeated"), "and none as standing")
+
+
+## The consequence, on purpose: once a boss falls the block names her ("she still rules"), so the existing pronoun note
+## rides EVERY NPC prompt from then on. The pronoun tests whose premise is "nobody mentioned her" start a fresh campaign.
+func test_a_fallen_boss_brings_her_pronoun_into_every_prompt() -> void:
+	assert_false(_opening().contains("she/her"), "CONTROL: a fresh campaign that never names her carries no note")
+	_plant_dungeon_flag("cave_rat_king_defeated")
+	assert_string_contains(_opening(), "she/her", "with her named as still ruling, the prompt says how to refer to her")
