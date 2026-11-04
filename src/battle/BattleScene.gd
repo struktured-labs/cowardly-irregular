@@ -17,6 +17,7 @@ const BattleCommandMenuClass = preload("res://src/battle/BattleCommandMenu.gd")
 const BattleCameraRigClass = preload("res://src/battle/BattleCameraRig.gd")
 const BattleResultsDisplayClass = preload("res://src/battle/BattleResultsDisplay.gd")
 const AdvanceAuraClass = preload("res://src/battle/AdvanceAura.gd")
+const StatusAuraClass = preload("res://src/battle/StatusAura.gd")
 
 ## Base display height for party sprites. Aseprite frames are ground truth —
 ## we don't compensate for non-uniform character fill within the artist's
@@ -58,14 +59,15 @@ const NAME_LABEL_PX := 16  # on-screen size for every monster, whatever its spri
 const ENEMY_HP_BAR_SIZE := Vector2(60, 5)  # on-screen, whatever the sprite scale
 const SIGNATURE_WINDUP := 0.55  # battle seconds of title card and camera push before a boss's signature sequence
 var _signatures_shown: Dictionary = {}  # monster_id -> true once its signature has played at 1x this battle
-## How far each formation stands nearer its own edge (struktured 2026-11-01); the party has no room under its badges yet.
+## The enemies stand this much nearer their edge (struktured 2026-11-01); the party is laid out against its panel instead.
 const ENEMY_EDGE_SHIFT := -24.0
-const PARTY_EDGE_SHIFT := 0.0
+const PARTY_PANEL_GAP := 14.0  # the party's rightmost body, in its rightmost formation, to the PARTY panel
+const PARTY_RANK_GAP := 8.0  # between neighbouring members' bodies across the two ranks
 const ENEMY_HP_BAR_FADE := 0.4  # under the 0.5s dissolve it leaves with
 const STATUS_ROW_WIDTH := 120.0  # badges centre in it over the figure (row units, x STATUS_ROW_ZOOM on screen)
 const STATUS_ROW_ZOOM := 1.6  # the badges' ~9px text, read at ~14px on every monster
 const STATUS_ROW_LIFT := 16.0  # row units from the figure's top to the badge row's top
-const NAME_LABEL_Z := 5  # over every monster (0), under the damage popups (100+)
+const NAME_LABEL_Z := 5  # over every monster (0), under the damage popups (DamageNumber.POPUP_Z)
 const NAME_PLATE_COLOR := Color(0.04, 0.03, 0.08, 0.72)  # reads over sky, floor grid and a neighbour's body alike
 const NAME_PLATE_PAD_X := 5.0
 const NAME_PLATE_PAD_Y := 1.0
@@ -216,6 +218,11 @@ const DEFAULT_BATTLE_SPEED: float = 0.375
 ## The ladder before the 1.5x rung, for reading a battle_speed_index saved before speed_scale_v4.
 const LEGACY_V3_BATTLE_SPEEDS: Array[float] = [0.25, 0.5, 1.0, 2.0, 4.0, 8.0, 16.0]
 static var _battle_speed_index: int = DEFAULT_BATTLE_SPEED_INDEX  # persists across battles
+## Tap the speed button = one rung UP (wrapping, as always); hold it this long = one rung DOWN, clamped at
+## the slowest (struktured 2026-11-01). Wall clock, like Win98Menu's Auto hold: battle time is scaled.
+const SPEED_HOLD_MS: int = 400
+var _speed_hold_start_ms: int = -1
+var _speed_hold_fired: bool = false
 # Crit hitlag nests — two crits in the 80ms window and the second captured 0.1 as "normal"; depth-counted so only the outermost restores
 ## ⛔ THE COMMENT PROMISED THIS AND THE CODE NEVER DID IT. `_on_group_attack_executing`'s
 ## limit_break arm carried "# Stagger lunges slightly for visual impact" while every
@@ -260,11 +267,14 @@ var _active_inline_editor: Control = null  # 2026-07-14 (cowir-music msg 2539): 
 
 ## Danger music state
 var _is_danger_music: bool = false
+var _danger_baseline: Dictionary = {}  # instance_id -> carried-in danger state (1 low, 2 down)
+var _danger_baseline_taken: bool = false
 
 ## Idle animation state (sway/breathing)
 var _idle_time: float = 0.0
 var _enemy_base_positions: Array[Vector2] = []
 var _party_base_positions: Array[Vector2] = []
+var _party_rank_x: Array[float] = []  # each member's body-centre x, laid out from the measured figures
 
 ## Party formation system
 enum PartyFormation { V_FORMATION, FRONT_LINE, BACK_ROW, DIAMOND, SPREAD }
@@ -293,6 +303,8 @@ const DANGER_HP_THRESHOLD: float = 0.25  # The low-HP beat: danger music, player
 ## the other two never spoke regardless of the fight state.
 var _boss_low_hp_spoken: bool = false
 var _boss_defeat_spoken: bool = false
+## Voiced mid-battle barks (data/boss_barks.json); one instance per battle carries the cooldown (cowir-main 21086).
+var _boss_barks: BossBarks = BossBarks.new()
 ## The boss's last words, buffered: on the scripted path the gloat lands BEFORE battle_ended, on the model path after it.
 var _gloat_line: Dictionary = {}
 ## The live voice for the last words, started once at the first emit: {"text", "stream", "done"}.
@@ -339,6 +351,7 @@ static var _hints_shown: Dictionary = {}  # {"hint_id": true}  # Static: persist
 
 ## Status effect icon containers (combatant -> HBoxContainer of icons)
 var _status_icon_containers: Dictionary = {}  # {Combatant: HBoxContainer}
+var _status_auras: Dictionary = {}  # {Combatant: StatusAura}: every status ANIMATED on the battler, beside the badge row
 
 ## Buff/debuff visual overlay nodes (combatant -> {glow: ColorRect, particles: Array, sigil: Sprite2D})
 var _buff_visual_nodes: Dictionary = {}  # {Combatant: Dictionary}
@@ -375,7 +388,9 @@ func set_terrain(terrain: String) -> void:
 
 func _ready() -> void:
 	_shift_area(get_node_or_null("BattleField/EnemyArea"), ENEMY_EDGE_SHIFT)
-	_shift_area(get_node_or_null("BattleField/PartyArea"), PARTY_EDGE_SHIFT)
+	var party_panel_for_column := get_node_or_null("UI/PartyStatusPanel") as Control
+	if party_panel_for_column:
+		party_panel_for_column.item_rect_changed.connect(_queue_party_relayout)
 	# Initialize composed subsystems
 	_enemy_spawner = BattleEnemySpawnerClass.new(self)
 	_ui_manager = BattleUIManagerClass.new(self)
@@ -489,6 +504,7 @@ func _ready() -> void:
 	BattleManager.damage_dealt.connect(_on_damage_dealt)
 	BattleManager.attack_missed.connect(_on_attack_missed)
 	BattleManager.hit_negated.connect(_on_hit_negated)
+	BattleManager.status_resisted.connect(_on_status_resisted)
 	BattleManager.healing_done.connect(_on_healing_done)
 	BattleManager.mp_restored.connect(_on_mp_restored)
 	BattleManager.ap_granted.connect(_on_ap_granted)
@@ -562,6 +578,8 @@ func _exit_tree() -> void:
 	"""Cleanup signal connections when scene is freed"""
 	_clear_advance_aura()
 	BattleJuice.clear_battle_context()
+	if SoundManager:
+		SoundManager.stop_voiced_line(self)
 	# Disconnect from BattleManager signals to prevent memory leaks
 	if BattleManager.battle_started.is_connected(_on_battle_started):
 		BattleManager.battle_started.disconnect(_on_battle_started)
@@ -593,6 +611,8 @@ func _exit_tree() -> void:
 		BattleManager.damage_dealt.disconnect(_on_damage_dealt)
 	if BattleManager.attack_missed.is_connected(_on_attack_missed):
 		BattleManager.attack_missed.disconnect(_on_attack_missed)
+	if BattleManager.status_resisted.is_connected(_on_status_resisted):
+		BattleManager.status_resisted.disconnect(_on_status_resisted)
 	if BattleManager.hit_negated.is_connected(_on_hit_negated):
 		BattleManager.hit_negated.disconnect(_on_hit_negated)
 	if BattleManager.healing_done.is_connected(_on_healing_done):
@@ -716,7 +736,12 @@ func _create_speed_indicator() -> void:
 	style.content_margin_top = 2
 	style.content_margin_bottom = 2
 	panel.add_theme_stylebox_override("panel", style)
-	ui.add_child(panel)
+	var row: HFlowContainer = _ui_manager.party_header_row() if _ui_manager else null
+	if row:
+		panel.set_anchors_preset(Control.PRESET_TOP_LEFT)
+		row.add_child(panel)
+	else:
+		ui.add_child(panel)
 
 	_speed_indicator = RichTextLabel.new()
 	_speed_indicator.name = "SpeedIndicator"
@@ -725,6 +750,8 @@ func _create_speed_indicator() -> void:
 	_speed_indicator.scroll_active = false
 	_speed_indicator.custom_minimum_size = Vector2(80, 24)
 	_speed_indicator.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# In the PARTY header's wrapping row a wrapping label is squeezed to one glyph a line at large Text Sizes.
+	_speed_indicator.autowrap_mode = TextServer.AUTOWRAP_OFF
 
 	# Style it
 	_speed_indicator.add_theme_font_size_override("normal_font_size", TextScale.scaled(16))
@@ -871,8 +898,59 @@ func _start_battle_after_dialogue() -> void:
 
 
 func _toggle_battle_speed() -> void:
-	"""Cycle through battle speeds"""
-	_battle_speed_index = (_battle_speed_index + 1) % BATTLE_SPEEDS.size()
+	"""One rung up the speed ladder, wrapping from the fastest to the slowest."""
+	_apply_battle_speed_index((_battle_speed_index + 1) % BATTLE_SPEEDS.size())
+
+
+## One rung DOWN, clamped: at the slowest a hold changes nothing and says so.
+func _slow_battle_speed() -> void:
+	if _battle_speed_index <= 0:
+		SoundManager.play_ui("menu_error")
+		log_message("[color=gray]Battle speed: %s is the slowest[/color]" % BATTLE_SPEED_LABELS[_battle_speed_index])
+		return
+	_apply_battle_speed_index(_battle_speed_index - 1)
+
+
+## The speed button's press and release. A tap steps up on RELEASE; a hold steps down ONCE when it reaches
+## SPEED_HOLD_MS (in _process), and its release then does nothing, so one press is never both.
+func _speed_button(pressed: bool) -> void:
+	if pressed:
+		if _speed_hold_start_ms < 0:
+			_speed_hold_start_ms = Time.get_ticks_msec()
+			_speed_hold_fired = false
+		return
+	if _speed_hold_start_ms < 0:
+		return
+	var held: int = Time.get_ticks_msec() - _speed_hold_start_ms
+	var fired: bool = _speed_hold_fired
+	_speed_hold_start_ms = -1
+	_speed_hold_fired = false
+	if fired:
+		return
+	if held >= SPEED_HOLD_MS:
+		_slow_battle_speed()
+	else:
+		_toggle_battle_speed()
+
+
+func _tick_speed_hold() -> void:
+	if _speed_hold_start_ms < 0 or _speed_hold_fired:
+		return
+	if Time.get_ticks_msec() - _speed_hold_start_ms >= SPEED_HOLD_MS:
+		_speed_hold_fired = true
+		_slow_battle_speed()
+
+
+## Focus out clears key state but sends NO release, so an armed hold would slow the battle and eat the next tap: drop it.
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_APPLICATION_FOCUS_OUT:
+		_speed_hold_start_ms = -1
+		_speed_hold_fired = false
+
+
+## The ONE writer of the persisted speed: the tap, the hold and any later caller all land here.
+func _apply_battle_speed_index(index: int) -> void:
+	_battle_speed_index = index
 	var speed = BATTLE_SPEEDS[_battle_speed_index]
 	# Options reads default_battle_speed; battle start applies this index. Same speed.
 	if GameState and "default_battle_speed" in GameState:
@@ -884,12 +962,12 @@ func _toggle_battle_speed() -> void:
 	log_message("[color=gray]Battle speed: %s[/color]" % BATTLE_SPEED_LABELS[_battle_speed_index])
 	## ASK Win98Menu, do not restate: speed is raw JOY_BUTTON_Y with no InputMap action, and that file
 	## is where the pad/keyboard decision already lives — "X" is Nintendo-only and ✕ is Cancel on a DualSense.
-	_show_hint("speed_toggle", "Press %s to change battle speed. Higher speeds skip animations for faster grinding." % Win98MenuClass.speed_hint())
+	_show_hint("speed_toggle", "Tap %s for a faster battle, hold it for a slower one. Higher speeds skip animations for faster grinding." % Win98MenuClass.speed_hint())
 
 
 func _animate_speed_change() -> void:
 	"""Pop animation on the speed indicator when toggled"""
-	var panel = $UI.get_node_or_null("SpeedPanel")
+	var panel = $UI.find_child("SpeedPanel", true, false)
 	if not panel:
 		return
 	# Scale pop: 1.0 -> 1.25 -> 1.0, around the TOP-RIGHT corner: the default top-left pivot swelled it into the PARTY panel.
@@ -918,6 +996,88 @@ func _repeat_previous_actions() -> void:
 	else:
 		var why: String = str(BattleManager.last_repeat_refusal)
 		log_message("[color=gray]%s[/color]" % (why if why != "" else "Repeat is not available right now."))
+
+
+## Two ranks spaced by the members' measured widths, so a wide sheet pushes its neighbours apart ("rogue/bard stacked", 2026-11-01).
+func _layout_party_ranks() -> void:
+	_party_rank_x.clear()
+	var n := party_sprite_nodes.size()
+	var panel := get_node_or_null("UI/PartyStatusPanel") as Control
+	if n == 0 or panel == null or not panel.is_visible_in_tree():
+		return
+	var w: Array[float] = []
+	for sprite in party_sprite_nodes:
+		var fig := AdvanceAuraClass.figure_rect_in_sprite(sprite, &"idle") if is_instance_valid(sprite) else Rect2()
+		w.append(fig.size.x if fig.size.x > 0.0 else 120.0)
+	# One front column, set back by its widest neighbouring pair: per-member offsets put the Rogue nearer the back rank.
+	var d := 0.0
+	for i in range(0, n, 2):
+		for j in [i - 1, i + 1]:
+			if j >= 0 and j < n:
+				d = maxf(d, (w[i] + w[j]) * 0.5 + PARTY_RANK_GAP)
+	var centre: Array[float] = []
+	for i in n:
+		centre.append(-d if i % 2 == 0 else 0.0)
+	var max_dx := 0.0
+	for f in PartyFormation.size():
+		for i in n:
+			max_dx = maxf(max_dx, _get_formation_offset(i, n, f).x)
+	var reach := -INF
+	for i in n:
+		reach = maxf(reach, centre[i] + w[i] * 0.5)
+	var shift := panel.get_global_rect().position.x - PARTY_PANEL_GAP - max_dx - reach
+	for i in n:
+		_party_rank_x.append(centre[i] + shift)
+
+
+## Where member i rests: its rank's x (body-centred), the marker's y, the formation's offset, feet on the slot line.
+func _party_home(i: int) -> Vector2:
+	var sprite = party_sprite_nodes[i]
+	var base: Vector2 = party_positions[i].global_position if i < party_positions.size() else Vector2(600, 100 + i * 100)
+	if i < _party_rank_x.size():
+		var fig := AdvanceAuraClass.figure_rect_in_sprite(sprite, &"idle")
+		base.x = _party_rank_x[i] - (fig.position.x + fig.size.x * 0.5)
+	base += _get_formation_offset(i, party_members.size())
+	base.y += party_feet_correction(sprite)
+	return base
+
+
+var _party_relayout_queued := false
+
+
+## The PARTY panel grows LEFT, so its new position can land after `resized`; re-seat once, next frame, from final values.
+func _queue_party_relayout() -> void:
+	if _party_relayout_queued:
+		return
+	_party_relayout_queued = true
+	call_deferred("_run_party_relayout")
+
+
+func _run_party_relayout() -> void:
+	_party_relayout_queued = false
+	if is_inside_tree():
+		_place_party(true)
+
+
+## Lays the party out and seats every member at its home: battle start, a formation change, the PARTY panel resizing.
+func _place_party(animate: bool) -> void:
+	_layout_party_ranks()
+	for i in party_sprite_nodes.size():
+		var sprite = party_sprite_nodes[i]
+		if not is_instance_valid(sprite):
+			continue
+		var home := _party_home(i)
+		var rest := home + (_stepped_out_shift if i == _stepped_out_idx else Vector2.ZERO)
+		sprite.set_meta("home_position", home)
+		if i < _party_base_positions.size():
+			_party_base_positions[i] = home
+		else:
+			_party_base_positions.append(home)
+		# Animated re-seats outlast ACTIVE_PC_STEP_TWEEN_TIME: a step tween aimed at the old layout must not finish last.
+		if animate:
+			create_tween().tween_property(sprite, "position", rest, 0.25).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+		else:
+			sprite.position = rest
 
 
 func _shift_area(area: Control, dx: float) -> void:
@@ -1144,6 +1304,7 @@ func _create_battle_sprites() -> void:
 	## _buff_visual_nodes is the one with no other way out: _remove_buff_visual is only ever reached
 	## for a combatant still in BattleManager's parties, so a replaced enemy is never visited again.
 	_status_icon_containers.clear()
+	_status_auras.clear()
 	_enemy_hp_bars.clear()
 	_buff_visual_nodes.clear()
 
@@ -1229,6 +1390,7 @@ func _create_battle_sprites() -> void:
 
 		# Setup status icons for this party member
 		_setup_status_icons(member, sprite)
+	_place_party(false)
 
 	# Create enemy sprites
 	for i in range(test_enemies.size()):
@@ -1759,6 +1921,7 @@ func _setup_status_icons(combatant: Combatant, sprite: AnimatedSprite2D) -> void
 	container.position = Vector2(centre_x - STATUS_ROW_WIDTH * unscale.x * 0.5, top - STATUS_ROW_LIFT * unscale.y)
 	sprite.add_child(container)
 	_status_icon_containers[combatant] = container
+	_status_auras[combatant] = _make_status_aura(sprite)
 
 	# Connect signals for reactive updates
 	if not combatant.status_added.is_connected(_on_combatant_status_changed):
@@ -1768,6 +1931,25 @@ func _setup_status_icons(combatant: Combatant, sprite: AnimatedSprite2D) -> void
 
 	# Show any existing statuses
 	_refresh_status_icons(combatant)
+
+
+## The animated overlay, counter-scaled to screen pixels and fitted to the idle frame's FIGURE, so a motif is the same
+## size on a 0.5x hero and a 2.5x dragon and stands on the body, not on the frame's empty margin.
+func _make_status_aura(sprite: AnimatedSprite2D) -> Node2D:
+	var aura = StatusAuraClass.new()
+	aura.name = "StatusAura"
+	var sc := sprite.scale
+	aura.scale = Vector2(1.0 / maxf(absf(sc.x), 0.01), 1.0 / maxf(absf(sc.y), 0.01))
+	if sprite.sprite_frames and sprite.sprite_frames.has_animation(&"idle") and sprite.sprite_frames.get_frame_count(&"idle") > 0:
+		var idle_tex = sprite.sprite_frames.get_frame_texture(&"idle", 0)
+		if idle_tex:
+			var fig: Rect2 = AdvanceAuraClass.figure_rect_of(idle_tex)
+			var origin := fig.position - Vector2(idle_tex.get_size()) * 0.5
+			if sprite.flip_h:
+				origin.x = -(origin.x + fig.size.x)
+			aura.body = Rect2(origin * Vector2(absf(sc.x), absf(sc.y)), fig.size * Vector2(absf(sc.x), absf(sc.y)))
+	sprite.add_child(aura)
+	return aura
 
 
 func _on_combatant_status_changed(_status: String, combatant: Combatant) -> void:
@@ -1800,6 +1982,13 @@ func _refresh_status_icons(combatant: Combatant, animate: bool = true) -> void:
 	# doom_counter is a Combatant int field, not a status_effect — surface the lethal countdown so it's trackable after the initial log scrolls away
 	if "doom_counter" in combatant and combatant.doom_counter > 0:
 		wanted.append({"key": "doom_counter", "status": "doom_counter", "text": "☠ %d" % combatant.doom_counter, "color": Color(0.6, 0.1, 0.7)})
+
+	var aura = _status_auras.get(combatant)
+	if aura != null and is_instance_valid(aura):
+		var ids: Array = []
+		for w in wanted:
+			ids.append(w["status"])
+		aura.set_statuses(ids)
 
 	var live_keys: Dictionary = {}
 	for w in wanted:
@@ -1837,6 +2026,9 @@ func _refresh_all_status_icons(_round_num: int = 0) -> void:
 func _animate_status_icon_pop_in(icon: Control) -> void:
 	# Defer one frame so the PanelContainer has a real size for pivot_offset
 	# (mirrors the deferred-pivot pattern noted in CLAUDE.md polish item #24).
+	# Off stage there is no frame to wait for: get_tree() is null and the await was a SCRIPT ERROR in every derived run.
+	if not is_inside_tree():
+		return
 	await get_tree().process_frame
 	if not is_instance_valid(icon):
 		return
@@ -2846,7 +3038,7 @@ func _play_signature(caster: Combatant, caster_sprite: Node2D, animator: BattleA
 	if entry is Dictionary and entry.get("fx_signature_card") is Dictionary:
 		card = entry["fx_signature_card"]
 	var monster_id := str(caster.get_meta("monster_type", ""))
-	var quiet: bool = turbo_mode or autogrind_console_mode
+	var quiet: bool = not signature_sound_allowed()
 	# He plays at 4x (cowir-main 2026-11-01): a boss's FIRST signature each battle is shown at 1x pacing, later ones compress.
 	var slowed := false
 	var restore_to := _hitlag_base_scale
@@ -2861,6 +3053,8 @@ func _play_signature(caster: Combatant, caster_sprite: Node2D, animator: BattleA
 		windup = maxf(windup, sec * Engine.time_scale)
 	var seq_total := sequence_total(seq_id)
 	BattleManager.presentation_hold = maxf(BattleManager.presentation_hold, windup + seq_total + 0.2)
+	if not quiet:
+		SoundManager.play_flourish("boss_signature_card")
 	_show_signature_card(card, ability, windup)
 	if caster_sprite != null and is_instance_valid(caster_sprite) and BattleJuice.camera_rig != null:
 		BattleJuice.camera_rig.punch_zoom(_stable_sprite_anchor(caster_sprite), 0.06, windup)
@@ -2869,6 +3063,9 @@ func _play_signature(caster: Combatant, caster_sprite: Node2D, animator: BattleA
 		return
 	SoundManager.stop_voiced_line(self)
 	var began := Time.get_ticks_msec()
+	var cue := signature_cue(caster)
+	if cue != "" and not quiet:
+		SoundManager.play_flourish(cue)
 	await _play_ability_sequence(caster, caster_sprite, animator, ability, targets, seq_id, true)
 	if not slowed or not is_instance_valid(self):
 		return
@@ -2920,6 +3117,19 @@ static func sequence_total(seq_id: String) -> float:
 		if phase is Dictionary:
 			total = maxf(total, start + float(phase.get("at", 0.0)) + FractalFX.phase_duration(phase))
 	return total
+
+
+## Signature sounds play at every speed the player picks, 4x included; only autogrind/turbo is silent (cowir-main 21194).
+func signature_sound_allowed() -> bool:
+	return not turbo_mode and not autogrind_console_mode
+
+
+## The sound paired to a boss's signature sequence, timed to its beats; "" when none is recorded.
+func signature_cue(caster: Combatant) -> String:
+	if caster == null or not is_instance_valid(caster):
+		return ""
+	var key := "boss_signature_" + str(caster.get_meta("monster_type", ""))
+	return key if SoundManager._sfx_manifest.has(key) else ""
 
 
 func _show_signature_card(card: Dictionary, ability: Dictionary, hold: float) -> void:
@@ -3009,11 +3219,18 @@ func _play_ability_sequence(caster: Combatant, caster_sprite: Node2D, animator: 
 		if buffering:
 			_flush_full_render_damage()
 		return
+	BattleManager.presentation_hold = maxf(BattleManager.presentation_hold, impact + 0.35)
+	## #763: hold the whole RESOLUTION (HP drop, death, despawn), not just the numbers. BattleManager
+	## awaits impact_hold before applying the ability, so damage_dealt itself arrives at the impact and
+	## needs no buffering. Turbo/console skip the wait there, so they keep the old number buffer.
+	if not buffering and not BattleManager.turbo_mode:
+		_flush_full_render_damage()
+		BattleManager.impact_hold = maxf(BattleManager.impact_hold, impact)
+		return
 	if not buffering:
 		_flush_full_render_damage()
 		_full_render_dmg_buffer = []
 		_full_render_dmg_attacker = caster
-	BattleManager.presentation_hold = maxf(BattleManager.presentation_hold, impact + 0.35)
 	await get_tree().create_timer(impact).timeout
 	if not is_instance_valid(self):
 		return
@@ -3575,6 +3792,8 @@ func _on_battle_started() -> void:
 		% [InputProfileManager.hint_for_action("battle_defer"),
 			InputProfileManager.hint_for_action("battle_advance")])
 
+	_show_chain_intro(BattleManager.chain_link, BattleManager.chain_total)
+
 	# Tutorial popups (fire once per save)
 	TutorialHints.show(self, "first_battle")
 	if _check_for_boss():
@@ -3652,14 +3871,16 @@ func _on_battle_started() -> void:
 			if terrain_track != "battle":
 				print("[MUSIC] Playing %s terrain battle theme" % _current_terrain)
 	_is_danger_music = false
+	_take_danger_baseline()
 	_masterite_phase2_swapped = false
 	if _battle_background and is_instance_valid(_battle_background):
 		_battle_background.set_unrest(0.0)
 	## Tick 428: reset per-battle boss-dialogue latches.
 	_boss_low_hp_spoken = false
 	_boss_defeat_spoken = false
+	_boss_barks = BossBarks.new()
 	_gloat_line = {}
-	_gloat_voice = {}
+	_drop_gloat_voice()
 	_holding_for_boss_beat = false
 	_deferred_defeat_scene = {}
 
@@ -3775,6 +3996,8 @@ func _on_battle_ended(victory: bool) -> void:
 	## dialogue["defeat"] array is present. Find the boss combatant
 	## (first enemy with is_boss meta) for the speaker name.
 	_stage_defeat_scene(victory)
+	if not victory:
+		_wipe_bark()
 
 	# Clean up any open menus
 	if active_win98_menu and is_instance_valid(active_win98_menu):
@@ -3789,7 +4012,7 @@ func _on_battle_ended(victory: bool) -> void:
 	var hint_bar := get_node_or_null("UI/InputHintBar") as CanvasItem
 	if hint_bar:
 		hint_bar.visible = false
-	var speed_panel := get_node_or_null("UI/SpeedPanel") as CanvasItem
+	var speed_panel := find_child("SpeedPanel", true, false) as CanvasItem
 	if speed_panel:
 		speed_panel.visible = false
 
@@ -3867,6 +4090,8 @@ func _process(delta: float) -> void:
 	_process_idle_animations(delta)
 
 	_tick_menu_watchdog()
+
+	_tick_speed_hold()
 
 	_process_weather_layer(delta)
 
@@ -4021,7 +4246,7 @@ static func party_feet_correction(sprite: AnimatedSprite2D) -> float:
 	return PARTY_FEET_BELOW_SLOT - figure.end.y
 
 
-func _get_formation_offset(member_idx: int, party_size: int) -> Vector2:
+func _get_formation_offset(member_idx: int, party_size: int, formation: int = -1) -> Vector2:
 	"""Calculate position offset for a party member based on current formation.
 
 	Offset arrays are sized for the strict-5 party (Fighter/Cleric/Rogue/Mage/Bard).
@@ -4029,7 +4254,7 @@ func _get_formation_offset(member_idx: int, party_size: int) -> Vector2:
 	temporarily-smaller party (debug scenario) doesn't crash, but for >5 the
 	5th-slot offset is reused — adjust the constants here if the design ever
 	grows past 5."""
-	match current_formation:
+	match (current_formation if formation < 0 else formation):
 		PartyFormation.V_FORMATION:
 			# Classic JRPG V-shape: front members lower, back higher.
 			# Offsets scaled to 110px Y-gap so the stagger reads cleanly
@@ -4083,20 +4308,8 @@ func cycle_formation() -> void:
 	SoundManager.play_ui("menu_move")
 	TutorialHints.show(self, "first_formation")
 
-	# Smoothly reposition party sprites
-	for i in range(party_sprite_nodes.size()):
-		if i >= party_positions.size():
-			break
-		var sprite = party_sprite_nodes[i]
-		if not is_instance_valid(sprite):
-			continue
-		var base_pos = party_positions[i].global_position
-		var offset = _get_formation_offset(i, party_members.size())
-		var new_pos = base_pos + offset
-		_party_base_positions[i] = new_pos
-
-		var tween = create_tween()
-		tween.tween_property(sprite, "position", new_pos, 0.25).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	# Smoothly reposition party sprites, feet and attack home included (both were skipped here before)
+	_place_party(true)
 
 	# Apply formation stat modifiers via BattleManager
 	_apply_formation_stats()
@@ -4444,6 +4657,9 @@ func _on_action_executing(combatant: Combatant, action: Dictionary) -> void:
 	"""Handle action executing - play animations here"""
 	# msg 2749 cycle 12: cache the signal-arg combatant so _on_damage_dealt / _play_ability_animation don't have to read the stale BattleManager.current_combatant. Cleared in _on_action_executed so a status-tick damage_dealt emit outside an action (poison at round-end, reactive counter) never carries a stale attribution.
 	_last_acting_combatant = combatant
+	if combatant in BattleManager.enemy_party and str(action.get("type", "")) in ["attack", "ability"] \
+			and randf() < float(BossBarks.data().get("windup_chance", 0.5)):
+		_boss_bark(combatant, "windup")
 	_update_turn_info()
 	_track_advance_run_begin(combatant, action)
 
@@ -5214,6 +5430,48 @@ func _on_round_ended(round_num: int) -> void:
 
 
 ## Bravely Default-style round boundary: brief centered banner + AP-label gold flash on the party panel. Banner suppressed at 4x+ (same convention as speech bubbles); the CUE is not — struktured 2026-08-22 "still no sound to indicate next round", and the banner threshold was swallowing it whole.
+## The chain says so up front (struktured: "not even obvious it's a chain battle"): a banner, and a tag for the whole fight.
+static func chain_banner_text(link: int, total: int) -> String:
+	return "CHAIN ×%d: more are closing in!" % total if link <= 1 else "CHAIN %d/%d" % [link, total]
+
+
+func _show_chain_intro(link: int, total: int) -> void:
+	if total <= 1:
+		return
+	log_message("[color=orange]%s[/color]" % chain_banner_text(link, total))
+	var ui = get_node_or_null("UI")
+	var tag := Label.new()
+	tag.name = "ChainTag"
+	tag.text = "Chain %d/%d" % [link, total]
+	tag.add_theme_font_size_override("font_size", TextScale.scaled(16))
+	tag.add_theme_color_override("font_color", Color(1.0, 0.78, 0.3))
+	tag.add_theme_color_override("font_outline_color", Color(0.1, 0.08, 0.02))
+	tag.add_theme_constant_override("outline_size", 4)
+	tag.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	(ui if ui else self).add_child(tag)
+	## Under the round title, not on it: the title panel spans the top ~52 px (seen in tools/chain_shots).
+	tag.position = Vector2((get_viewport_rect().size.x - tag.get_combined_minimum_size().x) / 2.0, 54)
+	if turbo_mode or autogrind_console_mode:
+		return
+	var banner := Label.new()
+	banner.name = "ChainBanner"
+	banner.text = chain_banner_text(link, total)
+	banner.add_theme_font_size_override("font_size", TextScale.scaled(28))
+	banner.add_theme_color_override("font_color", Color(1.0, 0.78, 0.3))
+	banner.add_theme_color_override("font_outline_color", Color(0.1, 0.08, 0.02))
+	banner.add_theme_constant_override("outline_size", 6)
+	banner.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	banner.z_index = 90
+	banner.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var vp := get_viewport_rect().size
+	(ui if ui else self).add_child(banner)
+	banner.position = Vector2((vp.x - banner.get_combined_minimum_size().x) / 2.0, vp.y * 0.22)
+	var t := create_tween().set_ignore_time_scale(true)
+	t.tween_interval(1.6)
+	t.tween_property(banner, "modulate:a", 0.0, 0.3)
+	t.tween_callback(banner.queue_free)
+
+
 func _show_round_banner(round_num: int) -> void:
 	if turbo_mode or autogrind_console_mode:
 		return
@@ -5833,14 +6091,14 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 		return
 
-	# Battle speed toggle — ` key only. (Was documented as "Tab or `"; Tab is battle_toggle_auto.)
+	# Battle speed — ` key only. (Was documented as "Tab or `"; Tab is battle_toggle_auto.) Tap up, hold down.
+	if event is InputEventKey and not event.echo and event.keycode == KEY_QUOTELEFT:
+		_speed_button(event.pressed)
+		get_viewport().set_input_as_handled()
+		return
 	if event is InputEventKey and event.pressed and not event.echo:
-		if event.keycode == KEY_QUOTELEFT:
-			_toggle_battle_speed()
-			get_viewport().set_input_as_handled()
-			return
 		# Y key to repeat previous actions
-		elif event.keycode == KEY_Y:
+		if event.keycode == KEY_Y:
 			_repeat_previous_actions()
 			get_viewport().set_input_as_handled()
 			return
@@ -5850,11 +6108,17 @@ func _input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 			return
 
+	# The speed button's RELEASE: a tap steps up here, and a hold has already stepped down.
+	if event is InputEventJoypadButton and not event.pressed and event.button_index == JOY_BUTTON_Y:
+		_speed_button(false)
+		get_viewport().set_input_as_handled()
+		return
+
 	# Gamepad buttons (Nintendo layout: Y=left, X=top)
 	if event is InputEventJoypadButton and event.pressed:
-		# Y button - toggle battle speed
+		# Y button - battle speed (its release is routed above)
 		if event.button_index == JOY_BUTTON_Y:
-			_toggle_battle_speed()
+			_speed_button(true)
 			get_viewport().set_input_as_handled()
 			return
 		# X button - repeat previous actions
@@ -6009,6 +6273,11 @@ func _on_damage_dealt(target: Combatant, amount: int, is_crit: bool, element: St
 				_boss_low_hp_spoken = true
 				if _battle_dialogue and _battle_dialogue.has_method("show_boss_intro"):
 					_show_boss_dialogue(target.combatant_name, _boss_dialogue_data["low_hp"])
+	if target in BattleManager.enemy_party and target.is_alive and target.has_meta("is_boss"):
+		if target.get_hp_percentage() < DANGER_HP_THRESHOLD * 100.0:
+			_boss_bark(target, "low_hp")
+		elif amount >= target.max_hp * 0.15:
+			_boss_bark(target, "big_hit")
 
 	## A crit is a property of the hit that HAPPENED, not a second hit, so it is signalled above the
 	## return below. That return stops an ability stacking a weapon layer on its own cue — it was
@@ -6068,16 +6337,12 @@ func _spawn_elemental_indicator(target: Combatant, element: String, modifier: fl
 	# Tick 209: stagger so multi-element hits (formation combos, weakness chains) don't pile labels on top of each other.
 	pos.y -= _count_recent_elem_indicators_near(pos) * ELEM_STAGGER_STEP
 
-	var label = Label.new()
-	label.text = text
-	label.add_theme_font_size_override("font_size", TextScale.scaled(14))
-	label.add_theme_color_override("font_color", color)
-	# Tick 218: add full-perimeter outline so RESIST/IMMUNE colors don't blend into the Mode 7 floor grid lines. Shadow alone is offset (lower-right only) — top-left edges go unprotected against busy backgrounds. Matches the contrast scheme DamageNumber uses.
-	label.add_theme_constant_override("outline_size", 2)
-	label.add_theme_color_override("font_outline_color", Color.BLACK)
-	label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.8))
-	label.add_theme_constant_override("shadow_offset_x", 1)
-	label.add_theme_constant_override("shadow_offset_y", 1)
+	# Pixel pass 2026-11-02: the same PixelText face as the damage numbers, so floating battle text is one family. Its
+	# outline and drop shadow are baked into every glyph (the tick 218 contrast fix, now in pixels).
+	var label := PixelText.new(text, DamageNumber.pixel_scale_for(2))
+	label.modulate = color
+	var half: Vector2 = Vector2(label.base_size() * label.pixel_scale) / 2.0
+	pos = (pos + half).round()
 	label.position = pos
 	label.z_index = 100
 	# Tick 209: tag for the stagger counter — bare Labels at BattleScene root would otherwise match generic Label checks.
@@ -6085,9 +6350,14 @@ func _spawn_elemental_indicator(target: Combatant, element: String, modifier: fl
 	add_child(label)
 
 	var tween = create_tween()
-	tween.tween_property(label, "position:y", pos.y - 30, 0.8)
+	tween.tween_method(func(y: float) -> void: _rise_on_whole_pixels(label, y), pos.y, pos.y - 30, 0.8)
 	tween.parallel().tween_property(label, "modulate:a", 0.0, 0.8).set_delay(0.3)
 	tween.tween_callback(label.queue_free)
+
+
+func _rise_on_whole_pixels(label: Node2D, y: float) -> void:
+	if is_instance_valid(label):
+		label.position.y = roundf(y)
 
 
 # Tick 209: stagger constants for elemental indicator labels. Same insight as tick 205 (Toast) + tick 208 (damage popups), different node type.
@@ -6104,7 +6374,7 @@ func _elem_weak_color() -> Color:
 func _count_recent_elem_indicators_near(pos: Vector2) -> int:
 	var count: int = 0
 	for child in get_children():
-		if is_instance_valid(child) and child is Label and child.has_meta("elem_indicator"):
+		if is_instance_valid(child) and child is PixelText and child.has_meta("elem_indicator"):
 			if child.position.distance_squared_to(pos) < ELEM_STAGGER_RADIUS_SQUARED:
 				count += 1
 	return count
@@ -6123,6 +6393,13 @@ func _on_hit_negated(target: Combatant, banner: String) -> void:
 		return
 	_results_display.on_hit_negated(target, banner)
 	SoundManager.play_battle("attack_miss")
+
+
+## A status that failed to land: a soft glancing tink and a RESIST banner, never silence (struktured 2026-11-01).
+func _on_status_resisted(target: Combatant, _effect: String) -> void:
+	if is_instance_valid(_results_display):
+		_results_display.on_hit_negated(target, "RESIST")
+	SoundManager.play_battle("resist_deflect")
 
 
 func _on_healing_done(target: Combatant, amount: int) -> void:
@@ -6444,6 +6721,31 @@ func _on_party_combat_line(combatant: Combatant, line: String, voice_trigger: St
 		_spawn_quip_bubble(sprite, combatant.combatant_name, line, _get_job_quip_color(combatant), 2.0, audio_key, voice_stream)
 
 
+## A wipe barks only when no last words will follow on the same line player (cowir-ai 21120: a boss never speaks twice).
+func _wipe_bark() -> void:
+	if _boss_beat_expected():
+		return
+	_boss_bark(_boss_combatant(), "party_wipe")
+
+
+## A boss's short voiced bark; silent at 4x/turbo, over a scripted line or a bubble, or inside the cooldown.
+func _boss_bark(boss: Node, trigger: String) -> void:
+	if boss == null or not is_instance_valid(boss) or not boss.has_meta("is_boss"):
+		return
+	var bubble_up := false
+	for b in BattleSpeechBubble._live:
+		if is_instance_valid(b):
+			bubble_up = true
+			break
+	var blocked: bool = (_battle_dialogue != null and is_instance_valid(_battle_dialogue) and _battle_dialogue.visible) \
+			or bubble_up or SoundManager.is_voiced_line_playing() or SoundManager._voice_player.playing
+	if not BossBarks.allowed(Engine.time_scale, turbo_mode or autogrind_console_mode, blocked):
+		return
+	var line: String = _boss_barks.pick(str(boss.get_meta("monster_type", "")), trigger, Time.get_ticks_msec())
+	if line != "":
+		SoundManager.play_voiced_line(boss.combatant_name, line, self)
+
+
 # ── Wave E — Boss dialogue surface ───────────────────────────────────────────
 
 func _on_boss_taunt(boss: Combatant, line: String) -> void:
@@ -6549,7 +6851,7 @@ func _play_boss_beat(is_victory: bool) -> void:
 	_battle_dialogue.show_boss_last_words(_gloat_speaker_name(is_victory), spoken, _boss_monster_id(), live_voice)
 	await _hold_beat_dialogue()
 	## Whatever is still synthesizing is abandoned with the line, so it can never speak over what comes next.
-	_gloat_voice = {}
+	_drop_gloat_voice()
 	_holding_for_boss_beat = false
 
 
@@ -6620,7 +6922,7 @@ func _start_gloat_voice(text: String, is_victory: bool) -> void:
 
 ## Static, so a battle freed mid-synthesis has no instance for the await to resume into.
 static func _synthesize_into(job: Dictionary, speaker_id: String, text: String) -> void:
-	job["stream"] = await VoiceService.synthesize(speaker_id, text, GLOAT_VOICE_TIMEOUT_SEC)
+	job["stream"] = await VoiceService.synthesize(speaker_id, text, GLOAT_VOICE_TIMEOUT_SEC, job)
 	job["done"] = true
 
 
@@ -6653,6 +6955,13 @@ func _join_or_drop_gloat_voice(shown_at: int) -> void:
 		return
 	if bool(_gloat_voice["done"]) and in_window and _battle_dialogue.line_index() == 0:
 		_battle_dialogue.join_live_voice(_gloat_voice.get("stream"))
+	_drop_gloat_voice()
+
+
+## Forgets the live voice, and cancels a running synthesis so the party's voice pool is no longer held behind it.
+func _drop_gloat_voice() -> void:
+	if not _gloat_voice.is_empty() and not bool(_gloat_voice.get("done", false)):
+		_gloat_voice["cancel"] = true
 	_gloat_voice = {}
 
 
@@ -7261,25 +7570,59 @@ func _spawn_damage_number(pos: Vector2, amount: int, is_heal: bool, is_crit: boo
 	_results_display.spawn_damage_number(pos, amount, is_heal, is_crit)
 
 
-func _check_danger_music() -> void:
-	"""Switch to danger music if any player is critically low HP or dead"""
-	if _battle_ended:
-		return
+## 0 = fine, 1 = below DANGER_HP_THRESHOLD, 2 = down.
+func _danger_state_of(member) -> int:
+	if not member.is_alive:
+		return 2
+	if member.max_hp > 0 and float(member.current_hp) / float(member.max_hp) < DANGER_HP_THRESHOLD:
+		return 1
+	return 0
 
-	# Check if any party member is dead or critically low HP
-	var any_in_danger = false
-	var any_dead = false
+
+## Snapshot what the party brought INTO this battle, so only new trouble triggers danger.
+func _take_danger_baseline() -> void:
+	_danger_baseline = {}
 	for member in party_members:
 		if member and is_instance_valid(member):
-			if not member.is_alive:
-				any_dead = true
-				any_in_danger = true
-				break
+			var st: int = _danger_state_of(member)
+			if st > 0:
+				_danger_baseline[member.get_instance_id()] = st
+	_danger_baseline_taken = party_members.size() > 0
+
+
+## Pure: highest danger state that is NEW this battle (worse than the carried-in baseline).
+## A member that recovers lowers its baseline, so falling back into danger later counts.
+## Mutates baseline. Returns 0 (none), 1 (fresh low HP), 2 (fresh KO).
+static func fresh_danger_level(now: Dictionary, baseline: Dictionary) -> int:
+	var fresh: int = 0
+	for key in now:
+		var st: int = int(now[key])
+		var base: int = int(baseline.get(key, 0))
+		if st < base:
+			if st == 0:
+				baseline.erase(key)
 			else:
-				var hp_percent = float(member.current_hp) / float(member.max_hp)
-				if hp_percent < DANGER_HP_THRESHOLD:
-					any_in_danger = true
-					break
+				baseline[key] = st
+		elif st > base:
+			fresh = maxi(fresh, st)
+	return fresh
+
+
+func _check_danger_music() -> void:
+	"""Switch to danger music when a party member goes down or drops below the low-HP line DURING
+	this battle. Carried-in state does not count (Carmelo 2026-11-03, .765 demo ruling): a member
+	still KO'd or low from an earlier fight must not flip the bed to danger at battle start."""
+	if _battle_ended:
+		return
+	if not _danger_baseline_taken:
+		_take_danger_baseline()
+	var now: Dictionary = {}
+	for member in party_members:
+		if member and is_instance_valid(member):
+			now[member.get_instance_id()] = _danger_state_of(member)
+	var fresh: int = fresh_danger_level(now, _danger_baseline)
+	var any_in_danger: bool = fresh > 0
+	var any_dead: bool = fresh >= 2
 
 	# Switch music if danger state changed
 	# Once in danger (dead or critical), stay in danger until healed above threshold

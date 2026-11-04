@@ -101,7 +101,12 @@ func _ready() -> void:
 	_setup_weather()
 
 	if SoundManager:
-		SoundManager.play_area_music(_get_music_area_id())
+		## An entry cutscene that owns this visit's music (Harmonia's prologue) starts its track HERE, crossfading from the road, so the town bed never starts just to be faded out 0.3 s later (#764).
+		var entry_track: String = _get_entry_music_track()
+		if entry_track != "" and SoundManager.has_method("play_music") and SoundManager.has_music_track(entry_track):
+			SoundManager.play_music(entry_track, true)
+		else:
+			SoundManager.play_area_music(_get_music_area_id())
 	## A village with a recipe in data/ambient_recipes.json gets the living soundscape instead of a single loop.
 	if not (SoundManager and SoundManager.has_method("start_soundscape") and SoundManager.start_soundscape(_get_area_id())):
 		var ambient_key := _get_ambient_key()
@@ -128,6 +133,11 @@ func _ready() -> void:
 
 func _get_area_id() -> String:
 	return "village"
+
+
+## Virtual: a track to play INSTEAD of the area bed on this load, for a first-entry cutscene that owns the music. "" = the normal bed.
+func _get_entry_music_track() -> String:
+	return ""
 
 
 ## Tick 92: per-village music routing. Default returns "village"
@@ -239,7 +249,7 @@ func _add_lamp_post(base_cell: Vector2i) -> VillageProp:
 func _add_prop(kind: int, base_cell: Vector2i) -> VillageProp:
 	var p: VillageProp = VillagePropScript.create(kind, base_cell)
 	p.sheet_key = tile_generator._get_sheet_key()
-	p.art_path = VillagePropScript.prop_art_path(VillagePropScript.Kind.keys()[kind].to_lower(), p.sheet_key)
+	p.art_path = VillagePropScript.prop_art_path(VillagePropScript.Kind.keys()[kind].to_lower(), p.sheet_key, VillagePropScript.village_art_key(_get_area_id()))
 	for c in p.footprint_cells(base_cell):
 		_prop_blocked[c] = true
 	props.add_child(p)

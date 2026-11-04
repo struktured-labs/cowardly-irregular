@@ -3,7 +3,7 @@
   "title": "The Untested Shield",
   "world": 1,
   "trigger": "bram_first_interaction",
-  "background": "prologue_village",
+  "background": "harmonia_shop",
   "description": "First interaction with Bram Smith. The untested sword shop, the creed, and the shield he throws in gratis — because the Fighter's earnestness is painful to witness. Canon: world1_the_usurpers_crown ch.1.",
   "steps": [
     {

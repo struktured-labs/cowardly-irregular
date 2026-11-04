@@ -38,9 +38,19 @@ var _saved_constants: Dictionary = {}
 var _saved_story_flags = null
 
 
+## Every arm starts from a NEW GAME's story, not from whatever profile the run inherited: a persisted save's
+## cutscene_flag_* / story_flags rode into the gate and red six arms in a long-lived sandbox (.760 gate, 2026-11-02).
+## The as-found state is kept only so after_each can put it back.
+func _new_game_story() -> void:
+	GameState.game_constants = GameState.DEFAULT_GAME_CONSTANTS.duplicate(true)
+	if _saved_story_flags != null:
+		GameState.story_flags = {}
+
+
 func before_each() -> void:
 	_saved_constants = GameState.game_constants.duplicate(true)
 	_saved_story_flags = GameState.story_flags.duplicate(true) if "story_flags" in GameState and GameState.story_flags is Dictionary else null
+	_new_game_story()
 
 
 func after_each() -> void:
@@ -247,7 +257,7 @@ func test_every_lead_still_reaches_its_own_scene() -> void:
 	# closed their own gate, so all five of those arms were dead prose.
 	for job in SCENE_OF:
 		var gl = _detached_loop()
-		GameState.game_constants = _saved_constants.duplicate(true)
+		_new_game_story()
 		var ctx: Dictionary = GATE_CONTEXT[job]
 		GameState.game_constants["cutscene_flag_prologue_complete"] = true
 		GameState.game_constants["talked_to_theron"] = true
@@ -265,3 +275,13 @@ func test_every_lead_still_reaches_its_own_scene() -> void:
 		_play_lead_arm(job)
 		assert_eq(gl._get_pending_story_cutscene(), SCENE_OF[job],
 			"leading with %s must not close %s" % [job, SCENE_OF[job]])
+
+
+## A planted "already played every spotlight" profile must not reach the arms: the baseline is a new game's.
+func test_the_arms_start_from_a_new_game_not_the_inherited_profile() -> void:
+	GameState.game_constants["cutscene_flag_spotlight_unlocked_cleric"] = true
+	GameState.game_constants["cutscene_flag_prologue_complete"] = true
+	_new_game_story()
+	assert_false(GameState.game_constants.has("cutscene_flag_spotlight_unlocked_cleric"), "a planted spotlight flag is gone")
+	assert_false(GameState.is_story_flag_set("prologue_complete"), "and the story is back at its start")
+	assert_eq(GameState.game_constants, GameState.DEFAULT_GAME_CONSTANTS, "the baseline IS a new game's constants")

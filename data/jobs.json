@@ -434,7 +434,7 @@
     "id": "guardian",
     "name": "Guardian",
     "type": 1,
-    "description": "A stalwart defender who uses Brave/Default BP stacking. Can bank actions or unleash multiple attacks at once.",
+    "description": "A stalwart defender who builds AP with Defer and spends it with Advance. Can bank actions or unleash multiple attacks at once.",
     "stat_modifiers": {
       "max_hp": 140,
       "max_mp": 35,

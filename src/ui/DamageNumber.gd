@@ -9,17 +9,27 @@ var is_critical: bool = false
 var is_miss: bool = false
 var banner_text: String = ""
 
-var _label: Label = null
+var _label: PixelText = null
 var _lifetime: float = 1.2
 var _elapsed: float = 0.0
 var _start_pos: Vector2
+## The float path; the node itself sits on whole pixels so the glyphs never straddle one.
+var _pos: Vector2
 var _velocity: Vector2
 var _flash_tween: Tween = null
 var _polish_tween: Tween = null
 
 
+## Over every nameplate (BattleScene.NAME_LABEL_Z) and spell effect, under the advance cards (99) and the live menu (100).
+## Popups had no z at all, so a MISS at nameplate height drew UNDER "GOBLIN B" (cowir-adhoc 21469, visible on main).
+const POPUP_Z := 98
+
+
 func _ready() -> void:
+	z_index = POPUP_Z
 	_start_pos = position
+	_pos = position
+	position = _pos.round()
 	# Random horizontal drift
 	_velocity = Vector2(randf_range(-30, 30), -60)
 	_create_label()
@@ -49,78 +59,111 @@ func setup_banner(text: String) -> void:
 
 
 func _create_label() -> void:
-	_label = Label.new()
-	_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-
-	# Fable pass 2026-07-16 (struktured: "font for showing damage is too small, should prob be fatter and bigger in general") — base 16→24, tiers up, outline 2→5.
-	var base_size = 24
+	# Pixel pass 2026-11-02 (struktured: "more pixel 16 bit esque"): a 5x7 PixelText at an integer scale, tiered by size and
+	# Text Size, replaces the smooth Label. Fatness is the baked outline; tiers step in whole pixels.
+	var px: int = BASE_PX
+	var text := ""
 	var color: Color
 
 	if banner_text != "":
-		_label.text = banner_text
-		base_size = 24
+		text = banner_text
 		color = Color(0.45, 0.9, 1.0) if banner_text == "BLOCK" else Color(0.78, 0.78, 0.82)
 		_lifetime = 0.9
 	elif is_miss:
-		_label.text = "MISS"
-		base_size = 24
+		text = "MISS"
 		color = Color(0.65, 0.65, 0.65)
 		_lifetime = 0.9
 	else:
-		_label.text = str(value)
+		text = str(value)
 
-		# Size based on damage amount
-		if value >= 100:
-			base_size = 34
-		elif value >= 50:
-			base_size = 30
-		elif value >= 25:
-			base_size = 27
+		if value >= 50:
+			px = BIG_PX
 
 		if is_critical:
-			base_size += 8
+			px += 1
 
 		# Tick 226: color-blind friendly palette swaps green→cyan (heal) and orange→yellow (crit). Both are distinguishable for deuteranopia/protanopia (red-green color blindness, ~5% of males).
 		if is_heal:
 			color = _heal_color()
 			if kind == "mp":
 				color = AccessibilityPalette.mp()
-				_label.text = "%d MP" % value
+				text = "%d MP" % value
 			elif kind == "ap":
 				color = AccessibilityPalette.ap()
-				_label.text = "+%d AP" % value
+				text = "+%d AP" % value
 		elif is_critical:
 			color = _crit_color()
 		else:
 			color = Color.WHITE
 
-	_label.add_theme_font_size_override("font_size", base_size)
-	_label.add_theme_color_override("font_color", color)
-
-	# Fat outline — the "weight" half of bigger+fatter (Labels have no bold toggle without a font swap; a 5px outline reads as heavy stroke at these sizes).
-	_label.add_theme_constant_override("outline_size", 5)
-	_label.add_theme_color_override("font_outline_color", Color.BLACK)
-
-	# Center the label. A banner word is wider than a number, so the box grows with it.
-	var label_w := 140 if banner_text != "" else 100
-	_label.position = Vector2(-label_w / 2.0, -10)
-	_label.custom_minimum_size = Vector2(label_w, 20)
-
+	_px = pixel_scale_for(px)
+	_label = PixelText.new(text, _px)
+	_label.modulate = color
 	add_child(_label)
 
-	# Flash effect for big damage
-	if value >= 50 or is_critical:
-		_flash_effect()
+	if is_critical:
+		_add_crit_glow(text, color)
 
-	# Polish animations based on type
+	_stagger_in()
+	if value >= 50 or is_critical or is_heal:
+		_flash_effect()
 	if is_critical:
 		_crit_wobble_effect()
 	elif is_heal:
 		_heal_bounce_effect()
 
-	if not is_heal and not is_miss and value > 50:
-		_high_damage_pulse_effect()
+
+const BASE_PX := 3
+const BIG_PX := 4
+
+
+## Text Size scales the glyph pixel, never the texture: TextScale rounds to a whole number, floor 1.
+static func pixel_scale_for(px: int) -> int:
+	return maxi(1, TextScale.scaled(px))
+
+
+var _px: int = BASE_PX
+var _glow: Array[PixelText] = []
+
+
+## Each digit lands on its own beat and drops in from above with a whole-pixel overshoot.
+func _stagger_in() -> void:
+	var i := 0
+	for spr in _label.glyph_sprites:
+		spr.visible = false
+		var t := create_tween()
+		t.tween_interval(i * STAGGER_S)
+		t.tween_callback(func() -> void: spr.visible = true)
+		t.tween_method(func(k: float) -> void: _place_glyph(spr, k), -HOP_PX, 0.0, 0.16).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		i += 1
+
+
+const STAGGER_S := 0.035
+const HOP_PX := 3.0
+
+
+func _place_glyph(spr: Sprite2D, k: float) -> void:
+	if is_instance_valid(spr) and is_instance_valid(_label):
+		spr.position = _label.rest_position(spr) + Vector2(0, roundf(k) * _label.pixel_scale.y)
+
+
+## Beyond retro: an additive halo of the same glyphs, offset a pixel each way, that pulses out.
+func _add_crit_glow(text: String, color: Color) -> void:
+	var mat := CanvasItemMaterial.new()
+	mat.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
+	for d in [Vector2i(-1, 0), Vector2i(1, 0), Vector2i(0, -1), Vector2i(0, 1)]:
+		var g := PixelText.new(text, _px)
+		g.material = mat
+		g.use_parent_material = false
+		g.modulate = Color(color.r, color.g, color.b, 0.55)
+		g.position = Vector2(d * _px)
+		g.z_index = -1
+		add_child(g)
+		_glow.append(g)
+	var t := create_tween()
+	t.tween_interval(0.08)
+	for g in _glow:
+		t.parallel().tween_property(g, "modulate:a", 0.0, 0.5)
 
 
 # Tick 226/228: heal popup color via shared AccessibilityPalette util.
@@ -134,50 +177,48 @@ func _crit_color() -> Color:
 
 
 func _flash_effect() -> void:
-	"""Flash the number for emphasis"""
+	"""Pop: one whole pixel bigger, a squash, then back to rest"""
 	if _flash_tween and _flash_tween.is_valid():
 		_flash_tween.kill()
 	_flash_tween = create_tween()
-	_flash_tween.tween_property(_label, "scale", Vector2(1.3, 1.3), 0.1)
-	_flash_tween.tween_property(_label, "scale", Vector2(1.0, 1.0), 0.1)
+	_flash_tween.tween_callback(func() -> void: _set_px(_px + 1, _px + 1))
+	_flash_tween.tween_interval(0.07)
+	_flash_tween.tween_callback(func() -> void: _set_px(_px + 1, maxi(1, _px - 1)))
+	_flash_tween.tween_interval(0.05)
+	_flash_tween.tween_callback(func() -> void: _set_px(_px, _px))
+
+
+func _set_px(sx: int, sy: int) -> void:
+	if is_instance_valid(_label):
+		_label.set_pixel_scale(sx, sy)
+	for g in _glow:
+		if is_instance_valid(g):
+			g.set_pixel_scale(sx, sy)
 
 
 func _crit_wobble_effect() -> void:
-	"""Crit numbers get a dramatic rotation wobble + color cycle"""
+	"""Crit: a whole-pixel shake + a colour flash that settles on the crit colour"""
 	if _polish_tween and _polish_tween.is_valid():
 		_polish_tween.kill()
 	_polish_tween = create_tween()
-	var wobble_deg = deg_to_rad(15.0)
-	# Quick wobble: 0 -> +15 -> -15 -> +8 -> -8 -> 0 over lifetime
-	_polish_tween.tween_property(_label, "rotation", wobble_deg, 0.06)
-	_polish_tween.tween_property(_label, "rotation", -wobble_deg, 0.10)
-	_polish_tween.tween_property(_label, "rotation", deg_to_rad(8.0), 0.08)
-	_polish_tween.tween_property(_label, "rotation", deg_to_rad(-8.0), 0.08)
-	_polish_tween.tween_property(_label, "rotation", 0.0, 0.10)
+	for step in 8:
+		var off := Vector2(randi_range(-1, 1), randi_range(-1, 1)) * _px
+		_polish_tween.tween_callback(func() -> void: _shake_to(off))
+		_polish_tween.tween_interval(0.03)
+	_polish_tween.tween_callback(func() -> void: _shake_to(Vector2.ZERO))
 	# Tick 226: crit cycle returns to crit color (ORANGE default, yellow in color-blind mode) for consistency with the initial setup color.
-	_polish_tween.parallel().tween_property(_label, "theme_override_colors/font_color", Color(1.0, 1.0, 0.7), 0.08)
-	_polish_tween.tween_property(_label, "theme_override_colors/font_color", _crit_color(), 0.15)
+	_polish_tween.parallel().tween_property(_label, "modulate", Color(1.0, 1.0, 0.7), 0.08)
+	_polish_tween.tween_property(_label, "modulate", _crit_color(), 0.15)
+
+
+func _shake_to(off: Vector2) -> void:
+	if is_instance_valid(_label):
+		_label.position = off
 
 
 func _heal_bounce_effect() -> void:
-	"""Heal numbers bounce upward with EASE_OUT for a satisfying arc"""
-	# Override velocity to move straight up faster with a bounce feel
+	"""Heal numbers rise straight up, floatier than damage"""
 	_velocity = Vector2(randf_range(-15.0, 15.0), -90.0)
-	# Scale bounce: pop up then settle
-	if _polish_tween and _polish_tween.is_valid():
-		_polish_tween.kill()
-	_polish_tween = create_tween()
-	_polish_tween.tween_property(_label, "scale", Vector2(1.25, 1.25), 0.12).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	_polish_tween.tween_property(_label, "scale", Vector2(1.0, 1.0), 0.18).set_trans(Tween.TRANS_ELASTIC).set_ease(Tween.EASE_OUT)
-
-
-func _high_damage_pulse_effect() -> void:
-	"""High damage (>50): scale pulse 1.0 -> 1.2 -> 1.0 over lifetime"""
-	if _polish_tween and _polish_tween.is_valid():
-		_polish_tween.kill()
-	_polish_tween = create_tween()
-	_polish_tween.tween_property(_label, "scale", Vector2(1.2, 1.2), _lifetime * 0.35).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
-	_polish_tween.tween_property(_label, "scale", Vector2(1.0, 1.0), _lifetime * 0.65).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
 
 
 func _exit_tree() -> void:
@@ -196,7 +237,8 @@ func _process(delta: float) -> void:
 	# Heals use lighter gravity for a floatier bounce feel
 	var gravity = 45.0 if is_heal else 80.0
 	_velocity.y += gravity * delta
-	position += _velocity * delta
+	_pos += _velocity * delta
+	position = _pos.round()
 
 	# Fade out near end
 	var fade_start = _lifetime * 0.6

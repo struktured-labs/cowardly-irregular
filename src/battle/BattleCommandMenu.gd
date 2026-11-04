@@ -5,6 +5,7 @@ class_name BattleCommandMenu
 ## Extracted from BattleScene to reduce god class complexity
 
 const Win98MenuClass = preload("res://src/ui/Win98Menu.gd")
+const AdvanceAuraClass = preload("res://src/battle/AdvanceAura.gd")
 
 ## Command-menu opacity. Below 1.0 so the acting PC stays readable under the panel.
 const MENU_ALPHA_OVER_ACTOR: float = 0.85
@@ -191,6 +192,11 @@ func show_win98_command_menu(combatant: Combatant) -> void:
 	_scene.active_win98_menu.set_chain_visible(not _dialogue_owns_screen)
 	_scene.add_child(_scene.active_win98_menu)
 	_scene.active_win98_menu.setup(combatant.combatant_name, menu_items, menu_pos, job_id)
+	# The front rank stands in the menu's column since the two-rank layout: never cover the one choosing (struktured 2026-11-01).
+	var actor_rect := actor_rect_for_menu(sprite, combatant_idx)
+	if actor_rect.has_area():
+		_scene.active_win98_menu.position = menu_clear_of(actor_rect,
+			Rect2(_scene.active_win98_menu.position, _scene.active_win98_menu.size), viewport_size)
 	_animate_menu_open(_scene.active_win98_menu)
 
 	# Connect signals — bind THIS menu instance to _on_win98_menu_closed so the handler can identity-guard the null-write. Root cause of msg 2503 two-menus bug (repro cap timeline named it, msg 2529): actions_submitted returns → BM dispatches turn end → next PC's menu spawns → control returns to _submit_actions:1230 → force_close(old menu) → menu_closed fires → handler blindly null'd active_win98_menu which by then was the NEW menu, orphaning it and triggering watchdog respawn on top.
@@ -225,7 +231,9 @@ func show_win98_command_menu(combatant: Combatant) -> void:
 	_scene.active_win98_menu.set_can_go_back(can_go_back)
 
 	# Apply command memory if enabled
-	if _scene.command_memory_enabled and combatant.last_menu_selection != "":
+	## Memory never lands the cursor on a hand-the-turn-away row (see Win98Menu._opening_index).
+	if _scene.command_memory_enabled and combatant.last_menu_selection != "" \
+			and not (combatant.last_menu_selection in ["autobattle", "trust_toggle"]):
 		print("[CMD MEM] Applying %s -> %s" % [combatant.combatant_name, combatant.last_menu_selection])
 		var submenu_memory = {}
 		if combatant.last_attack_selection != "":
@@ -324,6 +332,7 @@ func build_command_menu_items_with_targets(combatant: Combatant) -> Array:
 		## after asking what "Trust: ON/OFF vs Run Auto" meant).
 		"label": "Auto: this turn",
 		"tooltip": "Run this character's autobattle script for this turn",
+		"skip_default": true,
 		"data": {"action": "autobattle", "combatant": combatant}
 	})
 	# Trust — per-PC delegation. Toggling ON sets player_trust=true so the
@@ -338,6 +347,7 @@ func build_command_menu_items_with_targets(combatant: Combatant) -> Array:
 	items.append({
 		"id": "trust_toggle",
 		"label": trust_label,
+		"skip_default": true,
 		"data": {"action": "trust_toggle", "combatant": combatant}
 	})
 
@@ -427,12 +437,12 @@ func build_command_menu_items_with_targets(combatant: Combatant) -> Array:
 						continue
 					ally_targets.append(_item_ally_row(item_id, member, i))
 				if ally_targets.size() > 0:
-					item_items.append({
+					item_items.append(_with_new_badge({
 						"id": "item_menu_" + item_id,
 						"label": "%s x%d" % [item["name"], quantity],
 						"icon_id": item_id,
 						"submenu": ally_targets
-					})
+					}, item_id))
 			# For SINGLE_ENEMY items, add enemy target submenu
 			elif target_type == ItemSystem.TargetType.SINGLE_ENEMY and alive_enemies.size() > 0:
 				var enemy_targets = []
@@ -448,15 +458,15 @@ func build_command_menu_items_with_targets(combatant: Combatant) -> Array:
 						"label": "%s (%d HP)" % [enemy.combatant_name, enemy.current_hp],
 						"data": {"item_id": item_id, "target_idx": enemy_idx, "target_type": "enemy", "target_pos": target_pos}
 					}, item_id, [enemy]))
-				item_items.append({
+				item_items.append(_with_new_badge({
 					"id": "item_menu_" + item_id,
 					"label": "%s x%d" % [item["name"], quantity],
 					"icon_id": item_id,
 					"submenu": enemy_targets
-				})
+				}, item_id))
 			else:
 				# Other target types (ALL_ALLIES, ALL_ENEMIES, SELF) don't need submenu
-				item_items.append(_item_flat_row(item_id, item, quantity, _targets_for_item_without_picker(item, combatant, alive_enemies)))
+				item_items.append(_with_new_badge(_item_flat_row(item_id, item, quantity, _targets_for_item_without_picker(item, combatant, alive_enemies)), item_id))
 		if item_items.size() > 0:
 			items.append({
 				"id": "item_menu",
@@ -985,6 +995,14 @@ func _heal_span_suffix(amounts: Array) -> String:
 
 
 ## The row for an item with no target picker (party-wide, all enemies, self).
+## A just-picked-up item wears NEW until the cursor rests on its row (struktured 2026-11-01), same as the field menus.
+static func _with_new_badge(row: Dictionary, item_id: String) -> Dictionary:
+	if GameState and GameState.is_unseen(item_id):
+		row["badge"] = NewItemTag.TEXT
+		row["on_highlight"] = func(): GameState.mark_seen(item_id)
+	return row
+
+
 func _item_flat_row(item_id: String, item: Dictionary, quantity: int, targets: Array) -> Dictionary:
 	var ests: Array = []
 	for t in targets:
@@ -1041,6 +1059,30 @@ func _ally_state_tag(member: Combatant) -> String:
 	if member.current_hp >= member.max_hp:
 		return " [Full]"
 	return ""
+
+
+## The acting member's figure where it will stand while choosing: home, plus the step-out when it is the one stepped out.
+func actor_rect_for_menu(sprite: Node2D, idx: int) -> Rect2:
+	if not (sprite is AnimatedSprite2D):
+		return Rect2()
+	var at: Vector2 = sprite.get_meta("home_position", sprite.position)
+	if _scene.get("_stepped_out_idx") == idx:
+		at += _scene.get("_stepped_out_shift")
+	var fig: Rect2 = AdvanceAuraClass.figure_rect_in_sprite(sprite, &"idle")
+	return Rect2(at + fig.position, fig.size)
+
+
+## A menu that would cover the actor goes below it, else above it, else to its left; one that does not stays put.
+static func menu_clear_of(actor: Rect2, menu: Rect2, vp: Vector2, margin: float = 8.0, top: float = 30.0, bottom: float = 40.0) -> Vector2:
+	if not menu.intersects(actor.grow(margin - 1.0)):
+		return menu.position
+	var below := actor.end.y + margin
+	if below + menu.size.y <= vp.y - bottom:
+		return Vector2(menu.position.x, below)
+	var above := actor.position.y - margin - menu.size.y
+	if above >= top:
+		return Vector2(menu.position.x, above)
+	return Vector2(maxf(10.0, actor.position.x - margin - menu.size.x), menu.position.y)
 
 
 ## Where party member i is standing for the target box: home, or stepped out if it is their selection turn. ZERO = no sprite.

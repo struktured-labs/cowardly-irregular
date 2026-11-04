@@ -1,0 +1,145 @@
+{
+  "_comment": "cowir-sfx owns this. Short voiced battle barks per boss and trigger (cowir-main 21086). Every line has a recording keyed on (speaker, line) in sfx_manifest.json's boss_line_ namespace; edit a line and its recording must be re-rendered, test_a_boss_barks_in_battle reds until it is. BossBarks enforces the cooldown.",
+  "cooldown_sec": 6.0,
+  "windup_chance": 0.5,
+  "bosses": {
+    "cave_rat_king": {
+      "speaker": "Cave Rat King",
+      "windup": [
+        "Squeak! Mine!",
+        "For the crown!",
+        "Squeeeak!"
+      ],
+      "big_hit": [
+        "Insolent!",
+        "My whiskers!",
+        "How dare you!"
+      ],
+      "low_hp": [
+        "The crown wobbles!",
+        "Minions!",
+        "Squeak... not yet!"
+      ],
+      "party_wipe": [
+        "Long live the king!",
+        "Squeak! Victory!",
+        "Kneel. Forever."
+      ]
+    },
+    "fire_dragon": {
+      "speaker": "Pyrroth",
+      "windup": [
+        "Burn.",
+        "Feel the heat!",
+        "Up in smoke!"
+      ],
+      "big_hit": [
+        "Lucky shot.",
+        "That stung!",
+        "Hot. Hot!"
+      ],
+      "low_hp": [
+        "My embers fade!",
+        "Not like this!",
+        "Still burning!"
+      ],
+      "party_wipe": [
+        "Ash and ember.",
+        "Extra crispy.",
+        "Next group."
+      ]
+    },
+    "ice_dragon": {
+      "speaker": "Glacius",
+      "windup": [
+        "Freeze.",
+        "Hold still.",
+        "Cold snap."
+      ],
+      "big_hit": [
+        "Rude.",
+        "Ice cracks!",
+        "How tiresome."
+      ],
+      "low_hp": [
+        "I'm thawing!",
+        "Not melting yet!",
+        "The frost wanes!"
+      ],
+      "party_wipe": [
+        "Archived.",
+        "Preserved forever.",
+        "So boring."
+      ]
+    },
+    "lightning_dragon": {
+      "speaker": "Voltharion",
+      "windup": [
+        "Go-go-go!",
+        "Frame-perfect!",
+        "Zap!"
+      ],
+      "big_hit": [
+        "Ow-ow-ow!",
+        "Nice one!",
+        "Again! Again!"
+      ],
+      "low_hp": [
+        "Overheating!",
+        "Lag-spike!",
+        "Not done yet!"
+      ],
+      "party_wipe": [
+        "Too slow!",
+        "New-personal-best!",
+        "Rematch!"
+      ]
+    },
+    "shadow_dragon": {
+      "speaker": "Umbraxis",
+      "windup": [
+        "Be unmade.",
+        "Into the void.",
+        "Be nothing."
+      ],
+      "big_hit": [
+        "Fascinating.",
+        "Pain is data.",
+        "That registered."
+      ],
+      "low_hp": [
+        "I fade. Fine.",
+        "Darkness waits.",
+        "Is this ending?"
+      ],
+      "party_wipe": [
+        "Nullified.",
+        "Returned to nothing.",
+        "Silence, at last."
+      ]
+    },
+    "chancellor_mordaine": {
+      "speaker": "Mordaine",
+      "windup": [
+        "Noted.",
+        "Proceeding.",
+        "For the record."
+      ],
+      "big_hit": [
+        "Most irregular.",
+        "Objection noted.",
+        "That will be filed."
+      ],
+      "low_hp": [
+        "Recess. Briefly.",
+        "This was not projected.",
+        "The figures require revision."
+      ],
+      "party_wipe": [
+        "Case closed.",
+        "Motion carried.",
+        "Dismissed."
+      ]
+    }
+  }
+}

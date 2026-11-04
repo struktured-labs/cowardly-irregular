@@ -6,8 +6,12 @@ class_name VillageFountain
 
 @export var fountain_name: String = "Village Fountain"
 @export var tree_type: String = "cherry"  # cherry, oak, willow
+## Press area in tiles, centred on the art; zero = the 2x2 basin trigger. A pond sets its own size so its edge is pressable.
+@export var reach_tiles: Vector2 = Vector2.ZERO
 ## World for the drawn-art lookup (manifest prop_art "fountain_<world>", then "fountain"); no art = the procedural fountain.
 @export var art_world: String = "medieval"
+## The village's prop_art name; "fountain_<village>" outranks the world's drawing.
+@export var art_village: String = ""
 
 ## Visual
 var sprite: Sprite2D
@@ -19,6 +23,8 @@ var dialogue_label: Label
 var _anim_frame: int = 0
 var _anim_timer: float = 0.0
 const ANIM_SPEED: float = 0.25
+## Seconds per frame: ANIM_SPEED for the painted fountain, 1/fps when the drawn one declares a rate.
+var _frame_time: float = ANIM_SPEED
 var _sprite_frames: Array[ImageTexture] = []
 
 ## State
@@ -45,6 +51,7 @@ func _ready() -> void:
 	_setup_name_label()
 	_setup_dialogue_box()
 
+	call_deferred("_ripple_the_water")
 	body_entered.connect(_on_body_entered)
 	body_exited.connect(_on_body_exited)
 
@@ -52,8 +59,8 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	# Animate water
 	_anim_timer += delta
-	if _anim_timer >= ANIM_SPEED:
-		_anim_timer -= ANIM_SPEED
+	if _anim_timer >= _frame_time:
+		_anim_timer -= _frame_time
 		_anim_frame = (_anim_frame + 1) % _sprite_frames.size()
 		if sprite and _sprite_frames.size() > 0:
 			sprite.texture = _sprite_frames[_anim_frame]
@@ -83,13 +90,33 @@ func _generate_sprite_frames() -> void:
 		sprite.offset.y -= half
 
 
+## Rings on the village's drawn water spread from here (the water tile's shader reads ripple_center).
+func _ripple_the_water() -> void:
+	var n: Node = get_parent()
+	while n != null and not ("tile_map" in n):
+		n = n.get_parent()
+	var tm = n.get("tile_map") if n != null else null
+	if tm == null or tm.tile_set == null:
+		return
+	for k in range(tm.tile_set.get_source_count()):
+		var src := tm.tile_set.get_source(tm.tile_set.get_source_id(k)) as TileSetAtlasSource
+		if src == null:
+			continue
+		for t in range(src.get_tiles_count()):
+			var td: TileData = src.get_tile_data(src.get_tile_id(t), 0)
+			if td != null and td.material is ShaderMaterial and (td.material as ShaderMaterial).shader == BaseTileGenerator.WATER_SURFACE_SHADER:
+				(td.material as ShaderMaterial).set_shader_parameter("ripple_center", tm.to_local(global_position))
+
+
 ## A drawn fountain is a horizontal strip of `frames` equal cells (default 1), base on the same row as the painted one.
 func _load_drawn_frames() -> void:
-	var e: Dictionary = VillageProp.prop_art_entry("fountain", art_world)
+	var e: Dictionary = VillageProp.prop_art_entry("fountain", art_world, art_village)
 	if e.is_empty():
 		return
 	var img: Image = (load(str(e["path"])) as Texture2D).get_image()
 	var n: int = maxi(int(e.get("frames", 1)), 1)
+	if float(e.get("fps", 0.0)) > 0.0:
+		_frame_time = 1.0 / float(e["fps"])
 	var w: int = img.get_width() / n
 	for i in range(n):
 		_sprite_frames.append(ImageTexture.create_from_image(img.get_region(Rect2i(i * w, 0, w, img.get_height()))))
@@ -346,6 +373,9 @@ func _setup_collision() -> void:
 	shape.size = Vector2(TILE_SIZE * 2, TILE_SIZE * 2)
 	collision.shape = shape
 	collision.position = Vector2(0, TILE_SIZE / 2)  # Centered on base
+	if reach_tiles != Vector2.ZERO:
+		shape.size = reach_tiles * TILE_SIZE
+		collision.position = Vector2.ZERO
 	add_child(collision)
 
 	collision_layer = 4
@@ -356,6 +386,8 @@ func _setup_collision() -> void:
 
 func _setup_name_label() -> void:
 	name_label = Label.new()
+	## y-sorted with the art, so a label above it sorts BEHIND it; draw it over its own art.
+	name_label.z_index = 1
 	name_label.text = fountain_name
 	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	name_label.position = Vector2(-50, -50)

@@ -81,9 +81,17 @@ func test_duck_bus_carries_one_amplify_PER_SOURCE() -> void:
 		pass_test("Bus not present in this context")
 		return
 	var sm = _sm()
-	assert_eq(AudioServer.get_bus_effect_count(idx), 2,
-		"MusicDuck must carry one Amplify per duck SOURCE: slot 0 dialogue (msg 2700), slot 1 kill. A third means a source was added without declaring itself here; one means a source is sharing a slot.")
-	for slot in [0, sm.KILL_DUCK_EFFECT_SLOT]:
+	## .764 declared the third source: slot 2 = the quest-accept JINGLE duck. _duck_music_for_jingle
+	## appends it LAZILY on the first play_jingle, so the count is 2 before any jingle and 3 after —
+	## the old hard 2 was order-dependent (green only while every play_jingle test sorted after this file).
+	var count: int = AudioServer.get_bus_effect_count(idx)
+	assert_true(count == 2 or count == 3,
+		"MusicDuck must carry one Amplify per duck SOURCE: slot 0 dialogue (msg 2700), slot 1 kill, slot 2 jingle (lazy). Got %d: more means a source was added without declaring itself here; fewer means a source is sharing a slot." % count)
+	assert_eq(sm.JINGLE_DUCK_EFFECT_SLOT, 2, "the jingle duck owns slot 2, not dialogue's or kill's")
+	var slots: Array = [0, sm.KILL_DUCK_EFFECT_SLOT]
+	if count == 3:
+		slots.append(sm.JINGLE_DUCK_EFFECT_SLOT)
+	for slot in slots:
 		assert_true(AudioServer.get_bus_effect(idx, slot) is AudioEffectAmplify,
 			"Effect %d must be AudioEffectAmplify — it's what we taper for the duck" % slot)
 	assert_eq(sm.KILL_DUCK_EFFECT_SLOT, 1,

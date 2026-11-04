@@ -23,8 +23,8 @@
     {
       "type": "camera_focus",
       "target": [
-        640,
-        416
+        800,
+        480
       ],
       "duration": 0.8
     },
@@ -34,8 +34,8 @@
       "kind": "party",
       "job": "fighter",
       "at": [
-        592,
-        416
+        752,
+        480
       ],
       "facing": "down"
     },
@@ -49,8 +49,8 @@
       "kind": "party",
       "job": "bard",
       "at": [
-        544,
-        416
+        640,
+        480
       ],
       "facing": "down"
     },
@@ -64,8 +64,8 @@
       "kind": "party",
       "job": "cleric",
       "at": [
-        640,
-        416
+        800,
+        480
       ],
       "facing": "down"
     },
@@ -79,8 +79,8 @@
       "kind": "party",
       "job": "mage",
       "at": [
-        688,
-        416
+        848,
+        480
       ],
       "facing": "down"
     },
@@ -94,8 +94,8 @@
       "kind": "party",
       "job": "rogue",
       "at": [
-        736,
-        416
+        896,
+        480
       ],
       "facing": "down"
     },
@@ -123,16 +123,16 @@
       "type": "move_actor",
       "id": "elder",
       "to": [
-        352,
-        416
+        448,
+        480
       ]
     },
     {
       "type": "move_actor",
       "id": "elder",
       "to": [
-        496,
-        416
+        592,
+        480
       ]
     },
     {
@@ -167,11 +167,7 @@
     },
     {
       "type": "narration",
-      "lines": [
-        "Harmonia was the kind of village that existed to be left. A waypoint. A place you were from, not a place you stayed.",
-        "The bats were bigger. The slimes were angrier. Traders stopped coming through, then stopped sending messages, then stopped existing in conversation entirely.",
-        "Elder Theron stood in the village square and regarded the party with a look that suggested they absolutely would not do, but that complaining about it would take energy he didn't have."
-      ]
+      "text": "Elder Theron stood in the village square and regarded the party with a look that suggested they absolutely would not do, but that complaining about it would take energy he didn't have."
     },
     {
       "type": "emote",
@@ -227,8 +223,8 @@
       "type": "move_actor",
       "id": "milo",
       "to": [
-        608,
-        384
+        768,
+        448
       ]
     },
     {
@@ -360,16 +356,16 @@
       "type": "move_actor",
       "id": "mage",
       "to": [
-        736,
-        416
+        896,
+        480
       ]
     },
     {
       "type": "move_actor",
       "id": "mage",
       "to": [
-        736,
-        528
+        896,
+        608
       ]
     },
     {
@@ -445,8 +441,8 @@
       "type": "move_actor",
       "id": "rogue",
       "to": [
-        736,
-        224
+        896,
+        256
       ],
       "speed": 160
     },
@@ -454,8 +450,8 @@
       "type": "move_actor",
       "id": "rogue",
       "to": [
-        864,
-        224
+        1120,
+        256
       ],
       "speed": 160
     },
@@ -490,8 +486,8 @@
     {
       "type": "camera_focus",
       "target": [
-        640,
-        416
+        800,
+        480
       ],
       "duration": 0.9
     },

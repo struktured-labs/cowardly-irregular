@@ -287,6 +287,8 @@ var _overworld_menu_layer: CanvasLayer = null
 var _teleport_transition_pending: bool = false  # set before the teardown on a teleport: the destination sets music, so restoring the pre-menu bed would play the world being LEFT
 var _pre_menu_music_state: Dictionary = {}  # capture_music_state() snapshot while pause menu is open — a raw _current_music string cannot carry AREA beds, so W2+ overworlds restored wrong (struktured in-play report 2026-08-08)
 var _menu_hidden_hud: Array = []
+## The last autogrind console that signalled; it can outlive GameLoop's own handle (his .758 screenshot).
+var _signalled_console = null
 
 ## Party Chat (opt-in flavor cutscenes)
 var _party_chat_menu: Control = null
@@ -1095,7 +1097,27 @@ func _smoke_group_action() -> void:
 		_smoke_failed = true
 		return
 
+	## #763: turn order is NOT fixed — the starting party lost its secondary jobs and with them the
+	## speed that put the fighter early, so the leg can land on the LAST selector, who has nobody after
+	## them to pool with. Step BACK (go_back_to_previous_player, bounded) to an earlier selector who has at
+	## least one later-acting ally. Not defer: deferring runs the round, and the party kills the lone goblin.
 	var participants: Array = BattleManager.group_participants()
+	var deferred: int = 0
+	while participants.size() < 2 and deferred < 8:
+		var was = BattleManager.current_combatant
+		BattleManager.go_back_to_previous_player()
+		if BattleManager.current_combatant == was:
+			break
+		deferred += 1
+		var w2: float = 0.0
+		while BattleManager.current_state != BattleManager.BattleState.PLAYER_SELECTING and w2 < 20.0:
+			await get_tree().create_timer(0.25).timeout
+			w2 += 0.25
+		if BattleManager.current_state != BattleManager.BattleState.PLAYER_SELECTING:
+			break
+		participants = BattleManager.group_participants()
+	if deferred > 0:
+		print("[SMOKE] group action: stepped back %d selector(s) to reach one with later-acting allies (%d participants)" % [deferred, participants.size()])
 	if participants.size() < 2:
 		print("[SMOKE] FAIL: only %d group participant(s) available — SETUP, not the feature: a group action needs the party to pool, and this smoke's party should supply several" % participants.size())
 		_smoke_failed = true
@@ -2218,22 +2240,11 @@ func _play_new_game_cutscenes() -> void:
 
 
 func _on_prologue_finished(_cutscene_id: String) -> void:
-	"""After prologue, chain into chapter1 (Elder Theron briefing)."""
+	"""After prologue, hand control back in Harmonia; chapter1 waits for the player to walk up to Elder Theron."""
 	# This path plays cutscenes DIRECTLY, so it must set the completion flags itself — _play_story_cutscene is the only other place that does, and it isn't involved here (2026-07-25: prologue replayed on every harmonia_village entry forever).
 	_mark_story_cutscene_complete("world1_prologue")
-	## NOT _on_chapter1_finished: that marks chapter1 complete, and a scene that never played must stay replayable.
-	if not _cutscene_director.can_play("world1_chapter1"):
-		push_warning("[GameLoop] world1_chapter1 was refused — completion flag NOT set, gate left open; handing control back")
-		current_state = LoopState.EXPLORATION
-		_start_exploration()
-		return
-	_cutscene_director.cutscene_finished.connect(_on_chapter1_finished, CONNECT_ONE_SHOT)
-	_cutscene_director.play_cutscene("world1_chapter1")
-
-
-func _on_chapter1_finished(_cutscene_id: String) -> void:
-	"""After chapter1 briefing, start exploration."""
-	_mark_story_cutscene_complete("world1_chapter1")
+	## struktured 2026-11-02: talking to the elder "is done by players consciously". The prologue ends on the notice sending
+	## the party to Theron, so chapter1 fires from his talk (the talked_to_theron gate), not chained here.
 	current_state = LoopState.EXPLORATION
 	_start_exploration()
 
@@ -2305,10 +2316,18 @@ func _epilogue_done_or_unwired(epilogue_id: String, flags: Dictionary) -> bool:
 ## test_world_transition_scenes_wired_regression requires nothing pending on suburban_overworld both
 ## before and after W2 completes; an intro keyed there reds it twice. Oak Street stays unwired until
 ## it gets a trigger of its own (an interaction, as the prologue has), which is a separate change.
+## Village intro -> completion flag that must be SET before it may play (see the intro loop in _get_pending_story_cutscene).
+const _VILLAGE_INTRO_PREREQS := {
+	"world1_harmonia_npcs": "cutscene_flag_chapter1_complete",
+}
+
 const _VILLAGE_INTROS := {
 	"harmonia_village": "world1_harmonia_npcs",
 	"eldertree_village": "world1_eldertree_npcs",
+	"frosthold_village": "world1_frosthold_npcs",
 	"sandrift_village": "world1_sandrift_npcs",
+	"grimhollow_village": "world1_grimhollow_npcs",
+	"ironhaven_village": "world1_ironhaven_npcs",
 	"maple_heights_village": "world2_maple_heights_npcs",
 	"brasston_village": "world3_brasston_npcs",
 	"rivet_row_village": "world4_rivet_row_npcs",
@@ -2517,6 +2536,15 @@ func _get_pending_story_cutscene() -> String:
 	if flags.get("cutscene_flag_rat_king_defeated", false) and not flags.get("cutscene_flag_world1_rat_king_defeat_complete", false):
 		if _current_map_id == "whispering_cave":
 			return "world1_rat_king_defeat"
+	## #763: Mordaine (unnamed yet) announces the secondary-job unlock right after the Rat King scene,
+	## in place of a system popup. Once only (completion flag). Saves already past chapter4 have used the
+	## slot for a whole act: _retire_secondary_unlock_beat_for_old_saves closes the flag at load, so the
+	## beat is not replayed late on a return to the cave (not a gate on chapter4: that would let another
+	## scene cancel this one — test_no_scene_cancels_another_scenes_gate_regression).
+	## Above the demo boundary so the demo, which ends at this fight, still hears it (before its card, never after).
+	if flags.get("cutscene_flag_world1_rat_king_defeat_complete", false) and not flags.get("cutscene_flag_world1_mordaine_secondary_unlock_complete", false) and not flags.get("cutscene_flag_demo_end_complete", false):
+		if _current_map_id == "whispering_cave":
+			return "world1_mordaine_secondary_unlock"
 	## DEMO BOUNDARY. Placed AFTER world1_rat_king_defeat so that beat still plays, and BEFORE
 	## chapter4 so nothing past the tested mission chains. Returns "" once the card is seen —
 	## short-circuiting every later gate, including the Mordaine escalation, rather than
@@ -2841,6 +2869,12 @@ func _get_pending_story_cutscene() -> String:
 		for vid in _VILLAGE_INTROS:
 			var intro: String = str(_VILLAGE_INTROS[vid])
 			if _current_map_id == vid and not flags.get("cutscene_flag_%s_complete" % intro, false):
+				## A PREREQUISITE (the flag must be SET), not a blocking flag: e.g. Harmonia's intro trims to the strangers
+				## chapter1 has not met, so it waits for the elder scene the player starts. Kept in a table so the
+				## gate scan does not read a prerequisite as a scene that cancels another scene's gate.
+				var prereq: String = str(_VILLAGE_INTRO_PREREQS.get(intro, ""))
+				if prereq != "" and not bool(flags.get(prereq, false)):
+					continue
 				var met: Array = _intro_met_locals(intro, flags)
 				var locals_count: int = _intro_locals(intro).size()
 				if _intro_has_lost_its_moment(met.size(), locals_count):
@@ -2949,6 +2983,9 @@ const _CUTSCENE_COMPLETION_FLAGS := {
 	"world1_harmonia_npcs":             "cutscene_flag_world1_harmonia_npcs_complete",
 	"world1_eldertree_npcs":            "cutscene_flag_world1_eldertree_npcs_complete",
 	"world1_sandrift_npcs":             "cutscene_flag_world1_sandrift_npcs_complete",
+	"world1_frosthold_npcs":            "cutscene_flag_world1_frosthold_npcs_complete",
+	"world1_grimhollow_npcs":           "cutscene_flag_world1_grimhollow_npcs_complete",
+	"world1_ironhaven_npcs":            "cutscene_flag_world1_ironhaven_npcs_complete",
 	"world2_maple_heights_npcs":        "cutscene_flag_world2_maple_heights_npcs_complete",
 	"world3_brasston_npcs":             "cutscene_flag_world3_brasston_npcs_complete",
 	"world4_rivet_row_npcs":            "cutscene_flag_world4_rivet_row_npcs_complete",
@@ -2961,6 +2998,7 @@ const _CUTSCENE_COMPLETION_FLAGS := {
 	"world1_chapter3":                  "cutscene_flag_chapter3_complete",
 	"world1_chapter4":                  "cutscene_flag_chapter4_complete",
 	"world1_rat_king_defeat":           "cutscene_flag_world1_rat_king_defeat_complete",
+	"world1_mordaine_secondary_unlock": "cutscene_flag_world1_mordaine_secondary_unlock_complete",
 	# 2026-07-15 (task #27): staged village-reaction scene after the Rat King falls
 	"world1_harmonia_after_cave":       "cutscene_flag_world1_harmonia_after_cave_complete",
 	# Tick 104: W1 Mordaine final post-defeat dialogue
@@ -3342,9 +3380,9 @@ func _create_party_from_customizations(customizations: Array) -> void:
 		if custom.starting_jobs.size() > 0:
 			JobSystem.assign_job(member, custom.starting_jobs[0])
 
-		# Assign secondary job
-		if custom.starting_jobs.size() > 1:
-			JobSystem.assign_secondary_job(member, custom.starting_jobs[1])
+		# #763: NO secondary job at new game. The slot stays empty and LOCKED
+		# until JobSystem.is_secondary_job_unlocked() (first boss, Rat King).
+		# custom.starting_jobs[1] is deliberately ignored here.
 
 		# Add starting items from personality
 		var starting_items = custom.get_starting_items()
@@ -3476,6 +3514,14 @@ func _restore_equipment_pool_from_game_state() -> void:
 		equipment_pool[slot_key] = restored
 
 
+## #763: a save made before the Mordaine unlock beat existed, and already past chapter4, has had the
+## secondary slot for a whole act; announcing it now would be news to nobody. Close its flag instead.
+func _retire_secondary_unlock_beat_for_old_saves() -> void:
+	var gc: Dictionary = GameState.game_constants
+	if gc.get("cutscene_flag_chapter4_complete", false) and not gc.get("cutscene_flag_world1_mordaine_secondary_unlock_complete", false):
+		gc["cutscene_flag_world1_mordaine_secondary_unlock_complete"] = true
+
+
 func _restore_party_from_save_data() -> bool:
 	"""Reconstruct runtime party from GameState.player_party (post-load).
 
@@ -3488,6 +3534,7 @@ func _restore_party_from_save_data() -> bool:
 	function closes the gap. Pairs with the expanded Combatant.to_dict /
 	from_dict and the full-state _sync_party_to_game_state.
 	"""
+	_retire_secondary_unlock_beat_for_old_saves()
 	# Doorstep latch is not in the save. Drop it on every restore, including a party-less one, so the loaded room exits at the village gate.
 	_clear_interior_doorstep()
 	if not GameState or GameState.player_party.is_empty():
@@ -3630,7 +3677,7 @@ func _create_party() -> void:
 	add_child(hero)
 	hero.customization = default_customs[0] if default_customs.size() > 0 else null
 	JobSystem.assign_job(hero, "fighter")
-	JobSystem.assign_secondary_job(hero, "rogue")
+	# #763: no starting secondary (was "rogue"); slot unlocks after the first boss.
 	EquipmentSystem.equip_weapon(hero, "iron_sword")
 	EquipmentSystem.equip_armor(hero, "leather_armor")
 	EquipmentSystem.equip_accessory(hero, "power_ring")
@@ -3666,7 +3713,7 @@ func _create_party() -> void:
 	add_child(mira)
 	mira.customization = default_customs[1] if default_customs.size() > 1 else null
 	JobSystem.assign_job(mira, "cleric")
-	JobSystem.assign_secondary_job(mira, "bard")
+	# #763: no starting secondary (was "bard"); slot unlocks after the first boss.
 	EquipmentSystem.equip_weapon(mira, "oak_staff")
 	EquipmentSystem.equip_armor(mira, "cloth_robe")
 	EquipmentSystem.equip_accessory(mira, "magic_ring")
@@ -3691,7 +3738,7 @@ func _create_party() -> void:
 	add_child(rogue)
 	rogue.customization = default_customs[2] if default_customs.size() > 2 else null
 	JobSystem.assign_job(rogue, "rogue")
-	JobSystem.assign_secondary_job(rogue, "fighter")
+	# #763: no starting secondary (was "fighter"); slot unlocks after the first boss.
 	EquipmentSystem.equip_weapon(rogue, "iron_dagger")
 	EquipmentSystem.equip_armor(rogue, "thief_garb")
 	EquipmentSystem.equip_accessory(rogue, "speed_boots")
@@ -3716,7 +3763,7 @@ func _create_party() -> void:
 	add_child(vex)
 	vex.customization = default_customs[3] if default_customs.size() > 3 else null
 	JobSystem.assign_job(vex, "mage")
-	JobSystem.assign_secondary_job(vex, "cleric")
+	# #763: no starting secondary (was "cleric"); slot unlocks after the first boss.
 	EquipmentSystem.equip_weapon(vex, "shadow_rod")
 	EquipmentSystem.equip_armor(vex, "dark_robe")
 	EquipmentSystem.equip_accessory(vex, "mp_amulet")
@@ -3743,7 +3790,7 @@ func _create_party() -> void:
 	add_child(bard)
 	bard.customization = default_customs[4] if default_customs.size() > 4 else null
 	JobSystem.assign_job(bard, "bard")
-	JobSystem.assign_secondary_job(bard, "rogue")
+	# #763: no starting secondary (was "rogue"); slot unlocks after the first boss.
 	EquipmentSystem.equip_weapon(bard, "piano_scythe")
 	EquipmentSystem.equip_armor(bard, "cloth_robe")
 	EquipmentSystem.equip_accessory(bard, "magic_ring")
@@ -5245,6 +5292,7 @@ func _begin_chain(leader: Array) -> Array:
 	_chain_links = MonsterSpawner.pack_chain([leader] + joiners)
 	if _chain_links.is_empty():
 		return leader
+	_chain_total = _chain_links.size()
 	print("[CHAIN] %d group(s) in %d battle(s): %s" % [1 + joiners.size(), _chain_links.size(), str(_chain_links)])
 	return _next_chain_link()
 
@@ -5253,21 +5301,32 @@ func _begin_chain(leader: Array) -> Array:
 func _next_chain_link() -> Array:
 	var link: Array = _chain_links.pop_front()
 	_chain_engaged += link.size()
+	_chain_index += 1
 	var enemies: Array = []
 	for g in link:
 		enemies.append_array(g)
 	return enemies
 
 
+## What the next battle needs to know about its chain: groups engaged for the rewards, link N of M for the banner and tag.
+func _publish_chain_to_battle() -> void:
+	BattleManager.chain_groups = maxi(_chain_engaged, 1)
+	BattleManager.chain_link = _chain_index if _chain_total > 1 else 0
+	BattleManager.chain_total = _chain_total if _chain_total > 1 else 0
+
+
 func _end_chain() -> void:
 	_chain_links = []
 	_chain_engaged = 0
+	_chain_total = 0
+	_chain_index = 0
 
 
 ## The next link starts from the victory screen: iris-close, swap the battle, iris-open. One victory screen per link.
 func _continue_chain() -> void:
 	var enemies: Array = _next_chain_link()
 	print("[CHAIN] next battle: %s (%d group(s) engaged)" % [str(enemies), _chain_engaged])
+	await _show_chain_card(BattleManager.apply_chain_breather(party) if BattleManager else {})
 	if BattleTransition:
 		await BattleTransition.play_exit_transition(true)
 	if not await _start_battle_async(enemies, true):
@@ -5278,6 +5337,22 @@ func _continue_chain() -> void:
 		return
 	if BattleTransition:
 		await BattleTransition.fade_out()
+
+
+## The beat between links (struktured: "no warning, no preamble"): who is coming, which link, what the breather gave.
+func _show_chain_card(restored: Dictionary) -> void:
+	if not is_inside_tree():
+		return  ## a card outside the tree never ticks, and waiting on it would hang the chain
+	var card := ChainCard.new()
+	card.name = "ChainCard"
+	card.hold_sec = chain_card_seconds
+	card.title_text = ChainCard.title_for(_chain_index, _chain_total)
+	card.detail_text = ChainCard.detail_for(restored)
+	add_child(card)
+	if SoundManager and SoundManager._sfx_manifest.has("chain_next"):
+		SoundManager.play_ui("chain_next")
+	await card.finished
+	card.queue_free()
 
 
 ## Scenes hide via three routes because they parent three ways: tracked ref, MapSystem (/root), or directly under GameLoop
@@ -5343,7 +5418,7 @@ func _start_battle_async(specific_enemies: Array = [], is_encounter: bool = fals
 	_hide_exploration_scenes()
 
 	if BattleManager:
-		BattleManager.chain_groups = maxi(_chain_engaged, 1)
+		_publish_chain_to_battle()
 	# Save battle config for retry
 	_last_battle_enemies = specific_enemies.duplicate()
 	_last_battle_is_encounter = is_encounter
@@ -5886,6 +5961,11 @@ var _battle_transition_starting: bool = false  # set by _on_exploration_battle_t
 ## Chained encounters: the battles still to fight after this one (each an Array of groups), and the groups engaged so far.
 var _chain_links: Array = []
 var _chain_engaged: int = 0
+## Battles in this chain and which one is on (1-based); 0/0 when no chain is running.
+var _chain_total: int = 0
+var _chain_index: int = 0
+## Seconds the between-links card holds; tests shorten it.
+var chain_card_seconds: float = ChainCard.HOLD_SEC
 var _transition_wd_gen: int = 0  # generation token so a watchdog never fires on a LATER transition
 
 ## Wall-clock floor under the two no-expiry latches that can strand a session (2026-08-08: InputLockManager's 10s net covered the only gate that never needed one — nets grow where failure is FELT, not where it is severe). Mirrors the battle stall watchdog: gut hard-off, generation token, fires only if THIS transition is still latched, LOUD.
@@ -6642,6 +6722,8 @@ func _open_autogrind_ui() -> void:
 	_autogrind_ui.grind_resume_requested.connect(_resume_autogrind)
 	_autogrind_ui.grind_stop_requested.connect(_on_autogrind_stop_requested)
 	_autogrind_ui.tier_cycle_requested.connect(_on_ui_tier_cycle_requested)
+	_autogrind_ui.visibility_changed.connect(_field_hud_steps_aside_for_console.bind(_autogrind_ui))
+	_autogrind_ui.tree_exited.connect(_field_hud_steps_aside_for_console.bind(_autogrind_ui))
 
 	SoundManager.play_ui("menu_open")
 	print("[AUTOGRIND] Config UI opened")
@@ -6682,6 +6764,34 @@ func _free_overlays_for_scene_change() -> void:
 			_autobattle_editor.save_and_close()
 		else:
 			_on_autobattle_editor_closed()
+
+
+## Starting a grind brings the field HUD back; the console shows itself again on stop, so the tracker drew over its header (struktured .758).
+## Keyed on the console that SIGNALLED, not only the tracked one: his drawn console was one GameLoop no longer tracked.
+func _field_hud_steps_aside_for_console(console = null) -> void:
+	if console != null:
+		_signalled_console = console
+	_field_hud_follows_the_screen()
+
+
+## A full-screen panel owns the field: the same states that refuse the field-menu toggle, plus the menu itself.
+func _a_screen_owns_the_field() -> bool:
+	return _field_editor_open() or _field_modal_open() or (_overworld_menu != null and is_instance_valid(_overworld_menu)) \
+			or _ui_is_showing(_signalled_console)
+
+
+## The tracker and its siblings drew over the autogrind rules (adhoc, his 16:24 shots); every frame the HUD follows who owns the screen.
+func _field_hud_follows_the_screen() -> void:
+	if current_state != LoopState.EXPLORATION or _is_autogrinding:
+		return
+	if _a_screen_owns_the_field():
+		_set_field_hud_hidden(true)
+	elif not _menu_hidden_hud.is_empty():
+		_set_field_hud_hidden(false)
+
+
+func _process(_delta: float) -> void:
+	_field_hud_follows_the_screen()
 
 
 func _on_autogrind_ui_closed() -> void:
@@ -6866,6 +6976,8 @@ func _stop_autogrind(reason: String) -> void:
 	else:
 		current_state = LoopState.EXPLORATION
 		InputLockManager.pop_all()  # Clear any leaked locks
+	# The return can build a NEW field scene whose HUD was never hidden; the console is already up over it.
+	_field_hud_steps_aside_for_console()
 
 	_show_autogrind_summary(final_stats, reason)
 

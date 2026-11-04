@@ -50,8 +50,24 @@ static func lines_for(map_id: String) -> Dictionary:
 
 
 ## "" when this village authored nothing, which is the caller's signal to keep its own text.
+## A kind may hold a STRING or a LIST of lines; a list rotates per call, so a keeper never repeats herself back to back.
 static func line(map_id: String, kind: String) -> String:
-	return str(lines_for(map_id).get(kind, ""))
+	return pick(lines_for(map_id).get(kind, ""), village_key(map_id) + "/" + kind)
+
+
+static var _rotation: Dictionary = {}
+
+
+## Pure apart from the rotation counter: a string is itself, a list yields its next entry, an empty list is "".
+static func pick(value: Variant, rotation_key: String) -> String:
+	if value is Array:
+		var lines: Array = value
+		if lines.is_empty():
+			return ""
+		var i: int = (int(_rotation.get(rotation_key, -1)) + 1) % lines.size()
+		_rotation[rotation_key] = i
+		return str(lines[i])
+	return str(value) if value != null else ""
 
 
 ## Formatted with the live cost. Returns "" rather than a half-substituted string when the

@@ -7,10 +7,13 @@ cd "$(dirname "$0")/.."
 command -v xvfb-run >/dev/null || { echo "[fx] xvfb-run missing"; exit 3; }
 command -v ffmpeg >/dev/null || { echo "[fx] ffmpeg missing"; exit 3; }
 SPEED=0.375
+EXTRA=()
+TAG=""
 SEQS=()
 for a in "$@"; do
   case "$a" in
     --speed=*) SPEED="${a#--speed=}" ;;
+    --power=*|--tier=*) EXTRA+=("$a"); TAG="$TAG${a#--}" ;;
     *) SEQS+=("$a") ;;
   esac
 done
@@ -27,26 +30,27 @@ fi
 FPS=30
 _FAILED=0
 for S in "${SEQS[@]}"; do
-  D="tmp/fx/$S"; rm -rf "$D"; mkdir -p "$D"
-  LOG="tmp/fx/$S.log"
+  N_="$S${TAG:+_$TAG}"; N_="${N_//=/}"
+  D="tmp/fx/$N_"; rm -rf "$D"; mkdir -p "$D"
+  LOG="tmp/fx/$N_.log"
   EC=0
   XDG_DATA_HOME="$_XDG" timeout 300 "${JAIL[@]}" xvfb-run -a -s "-screen 0 1280x720x24" godot --audio-driver Dummy \
     --rendering-driver opengl3 --resolution 1280x720 --fixed-fps "$FPS" --write-movie "$D/f.png" \
-    -s tools/fx_clip.gd -- "--seq=$S" "--speed=$SPEED" > "$LOG" 2>&1 || EC=$?
+    -s tools/fx_clip.gd -- "--seq=$S" "--speed=$SPEED" "${EXTRA[@]}" > "$LOG" 2>&1 || EC=$?
   command grep -a -E '^\[FXCLIP\]|ERROR' "$LOG" || true
   N=$(find "$D" -name 'f*.png' | wc -l)
   if [ "$EC" -ne 0 ] || [ "$N" -lt 10 ]; then
-    echo "[fx] $S FAILED (exit $EC, $N frames) — $LOG" >&2; _FAILED=1; continue
+    echo "[fx] $N_ FAILED (exit $EC, $N frames) — $LOG" >&2; _FAILED=1; continue
   fi
   # A clip whose frames are all one image depicts nothing; refuse it rather than ship it.
   UNIQ=$(find "$D" -name 'f*.png' -print0 | xargs -0 md5sum | awk '{print $1}' | sort -u | wc -l)
   if [ "$UNIQ" -lt 5 ]; then
-    echo "[fx] $S BLOCKED: $N frames but only $UNIQ distinct" >&2; _FAILED=1; continue
+    echo "[fx] $N_ BLOCKED: $N frames but only $UNIQ distinct" >&2; _FAILED=1; continue
   fi
   # Frame 0 precedes the stage (measured: grey, then the backdrop from frame 1).
-  ffmpeg -loglevel error -y -framerate "$FPS" -start_number 1 -i "$D/f%08d.png" -c:v libx264 -pix_fmt yuv420p -crf 18 "tmp/fx/$S.mp4"
+  ffmpeg -loglevel error -y -framerate "$FPS" -start_number 1 -i "$D/f%08d.png" -c:v libx264 -pix_fmt yuv420p -crf 18 "tmp/fx/$N_.mp4"
   ffmpeg -loglevel error -y -framerate "$FPS" -start_number 1 -i "$D/f%08d.png" \
-    -vf "fps=$FPS,scale=640:-1:flags=lanczos,split[a][b];[a]palettegen=max_colors=192[p];[b][p]paletteuse=dither=sierra2_4a" "tmp/fx/$S.gif"
-  echo "[fx] $S: $N frames ($UNIQ distinct) -> tmp/fx/$S.mp4 tmp/fx/$S.gif"
+    -vf "fps=$FPS,scale=640:-1:flags=lanczos,split[a][b];[a]palettegen=max_colors=192[p];[b][p]paletteuse=dither=sierra2_4a" "tmp/fx/$N_.gif"
+  echo "[fx] $N_: $N frames ($UNIQ distinct) -> tmp/fx/$N_.mp4 tmp/fx/$N_.gif"
 done
 exit "$_FAILED"

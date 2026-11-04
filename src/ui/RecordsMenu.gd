@@ -69,9 +69,10 @@ func _collect_records() -> Array:
 	var marks := 0
 	if GameState:
 		marks = int(GameState.game_constants.get("cutscene_flag_fool_card_marks", 0))
+	## This run's count (#193). session_history is machine-global and capped at 10, so New Game showed old sessions.
 	var sessions := 0
-	if AutogrindSystem and "session_history" in AutogrindSystem:
-		sessions = AutogrindSystem.session_history.size()
+	if GameState and "autogrind_sessions" in GameState:
+		sessions = int(GameState.autogrind_sessions)
 	var banks := 0
 	if GameState and "full_banks_unleashed" in GameState:
 		banks = int(GameState.full_banks_unleashed)
@@ -90,7 +91,7 @@ func _collect_records() -> Array:
 		["Quests Complete", str(_quests_complete()), "The paperwork was the real quest."],
 		["Crystals Attuned", str(GameState.activated_crystals.size() if GameState else 0), "Each one remembers you saving."],
 		["Fool Card Marks", "%d / 5" % marks, "The card is counting." if marks > 0 else "The card is patient."],
-		["Autogrind Sessions", str(sessions), "All saves. Enlightenment, quantified."],  # lifetime by design: autogrind_history.json is machine-global (#193)
+		["Autogrind Sessions", str(sessions), "Enlightenment, quantified."],
 		["Best Grind", best_value, best_quip],
 		["Time Automated", _fmt_span(automated) if automated > 0.0 else "—", "Hours you did not have to be here." if automated > 0.0 else "You have not delegated anything yet."],
 		["Full Banks", str(banks), "The fifth one was never paid for." if banks > 0 else "Bank four. Spend five. Not yet."],
