@@ -158,7 +158,11 @@ func play_phase_sfx(sound_key: String) -> bool:
 		return false
 	if SoundManager == null or not (SoundManager._sfx_manifest.has(sound_key) or SoundManager.SOUNDS.has(sound_key)):
 		return false
-	SoundManager.play_flourish(sound_key)
+	# cowir-sfx's beat pool (a later beat must not cut an earlier one's tail); the flourish channel until it lands.
+	if SoundManager.has_method("play_sequence_beat"):
+		SoundManager.call("play_sequence_beat", sound_key)
+	else:
+		SoundManager.play_flourish(sound_key)
 	return true
 
 
