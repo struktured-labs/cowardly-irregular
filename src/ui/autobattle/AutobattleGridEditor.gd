@@ -2297,16 +2297,13 @@ func _apply_condition_type(new_type: String) -> void:
 
 
 func _cycle_condition_operator() -> void:
-	"""Cycle through operators (<, <=, ==, >=, >, !=) - X button"""
+	"""Cycle through operators (<, <=, ==, >=, >, !=) - the north face (JOY_BUTTON_Y) or C. No per-press print: every print lands in his log."""
 	var rule = rules[cursor_row] if cursor_row >= 0 and cursor_row < rules.size() else {}
 	var conditions = rule.get("conditions", [])
-
-	print("[CYCLE_OP] row=%d col=%d, conditions.size=%d" % [cursor_row, cursor_col, conditions.size()])
 
 	if cursor_col < conditions.size():
 		var cond = conditions[cursor_col]
 		var cond_type = cond.get("type", "always")
-		print("[CYCLE_OP] cond_type=%s, cond=%s" % [cond_type, cond])
 
 		# Nullary conditions have no operator to cycle
 		if _nullary_condition_types().has(cond_type):
@@ -2318,12 +2315,9 @@ func _cycle_condition_operator() -> void:
 		var idx = operators.find(current_op)
 		idx = (idx + 1) % operators.size()
 		cond["op"] = operators[idx]
-		print("[CYCLE_OP] changed op to: %s" % operators[idx])
 
 		SoundManager.play_ui("menu_select")
 		_refresh_grid()
-	else:
-		print("[CYCLE_OP] cursor_col >= conditions.size, not on condition")
 
 
 ## Same dial as the autogrind editor, deliberately identical so the two grids agree. A pad could
