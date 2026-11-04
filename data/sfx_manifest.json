@@ -13688,47 +13688,137 @@
       "prompt": "PLACEHOLDER (cowir-main 21004: 'crazy boss attacks', cues paired to cowir-battle's batch-1 signature sequences, timed to their beats at 1x). the 0.55 s title-card wind-up before any boss's signature: a pink-noise riser over a 120->480 Hz sine sweep, -18 LUFS so it sits under the move. Played on the flourish player so the sequence's own hits cannot cut it.",
       "duration_seconds": 0.55
     },
-    "boss_signature_cave_rat_king": {
-      "file": "assets/audio/sfx/boss_signature_cave_rat_king.ogg",
-      "source": "sox_synth",
-      "placeholder": true,
-      "prompt": "PLACEHOLDER (cowir-main 21004: 'crazy boss attacks', cues paired to cowir-battle's batch-1 signature sequences, timed to their beats at 1x). rat_swarm (0.95 s): twelve rising 30 ms chirps at 70 ms spacing over a tremolo'd high-passed brown-noise scurry. Played on the flourish player so the sequence's own hits cannot cut it.",
-      "duration_seconds": 0.95
+    "beat_fire_bloom": {
+      "file": "assets/audio/sfx/beat_fire_bloom.ogg",
+      "source": "numpy_synth",
+      "prompt": "One beat of a signature/glory sequence, fired by its phase's \"sfx\" key when that phase runs (cowir-main 21676; battle time, so in sync at every speed). The fire's outer bloom: a slow low rumble (tier 3). Local numpy synthesis (tmp/beats/synth.py), active-RMS matched to the boss signature cues it replaces, peak <= -1 dB.",
+      "duration_seconds": 0.9
     },
-    "boss_signature_fire_dragon": {
-      "file": "assets/audio/sfx/boss_signature_fire_dragon.ogg",
-      "source": "sox_synth",
-      "placeholder": true,
-      "prompt": "PLACEHOLDER (cowir-main 21004: 'crazy boss attacks', cues paired to cowir-battle's batch-1 signature sequences, timed to their beats at 1x). inferno_rage (1.4 s): low-passed brown-noise roar + a 60->35 Hz sub drop + a high crackle bed. Played on the flourish player so the sequence's own hits cannot cut it.",
-      "duration_seconds": 1.4
+    "beat_fire_burst": {
+      "file": "assets/audio/sfx/beat_fire_burst.ogg",
+      "source": "numpy_synth",
+      "prompt": "One beat of a signature/glory sequence, fired by its phase's \"sfx\" key when that phase runs (cowir-main 21676; battle time, so in sync at every speed). A fire burst: dark whoomp with a 90->40 Hz drop. Local numpy synthesis (tmp/beats/synth.py), active-RMS matched to the boss signature cues it replaces, peak <= -1 dB.",
+      "duration_seconds": 0.5
     },
-    "boss_signature_ice_dragon": {
-      "file": "assets/audio/sfx/boss_signature_ice_dragon.ogg",
-      "source": "sox_synth",
-      "placeholder": true,
-      "prompt": "PLACEHOLDER (cowir-main 21004: 'crazy boss attacks', cues paired to cowir-battle's batch-1 signature sequences, timed to their beats at 1x). absolute_zero (1.5 s): a C7/G7 shimmer to 1.1 s, 0.1 s of silence for the freeze-frame, then the shatter at 1.2 (noise burst + C8/E8 bells). Played on the flourish player so the sequence's own hits cannot cut it.",
-      "duration_seconds": 1.5
+    "beat_fire_impact": {
+      "file": "assets/audio/sfx/beat_fire_impact.ogg",
+      "source": "numpy_synth",
+      "prompt": "One beat of a signature/glory sequence, fired by its phase's \"sfx\" key when that phase runs (cowir-main 21676; battle time, so in sync at every speed). The fire impact: roar, 70->32 Hz sub fall, a crackle on top. Local numpy synthesis (tmp/beats/synth.py), active-RMS matched to the boss signature cues it replaces, peak <= -1 dB.",
+      "duration_seconds": 0.8
     },
-    "boss_signature_lightning_dragon": {
-      "file": "assets/audio/sfx/boss_signature_lightning_dragon.ogg",
-      "source": "sox_synth",
-      "placeholder": true,
-      "prompt": "PLACEHOLDER (cowir-main 21004: 'crazy boss attacks', cues paired to cowir-battle's batch-1 signature sequences, timed to their beats at 1x). lightning_dash (0.75 s): a 200->2400 Hz saw sweep with a noise crack at 0.08 s. Played on the flourish player so the sequence's own hits cannot cut it.",
-      "duration_seconds": 0.75
+    "beat_fire_open": {
+      "file": "assets/audio/sfx/beat_fire_open.ogg",
+      "source": "numpy_synth",
+      "prompt": "One beat of a signature/glory sequence, fired by its phase's \"sfx\" key when that phase runs (cowir-main 21676; battle time, so in sync at every speed). Fire gathering: low-passed rush swelling in. Local numpy synthesis (tmp/beats/synth.py), active-RMS matched to the boss signature cues it replaces, peak <= -1 dB.",
+      "duration_seconds": 0.45
     },
-    "boss_signature_shadow_dragon": {
-      "file": "assets/audio/sfx/boss_signature_shadow_dragon.ogg",
-      "source": "sox_synth",
-      "placeholder": true,
-      "prompt": "PLACEHOLDER (cowir-main 21004: 'crazy boss attacks', cues paired to cowir-battle's batch-1 signature sequences, timed to their beats at 1x). void_breath (2.0 s): a 1 s inward pink-noise swell, then a 45->30 Hz dark bloom in a long reverb. Played on the flourish player so the sequence's own hits cannot cut it.",
-      "duration_seconds": 2.0
+    "beat_ice_bolt": {
+      "file": "assets/audio/sfx/beat_ice_bolt.ogg",
+      "source": "numpy_synth",
+      "prompt": "One beat of a signature/glory sequence, fired by its phase's \"sfx\" key when that phase runs (cowir-main 21676; battle time, so in sync at every speed). An ice bolt: a high crack with a glassy ping. Local numpy synthesis (tmp/beats/synth.py), active-RMS matched to the boss signature cues it replaces, peak <= -1 dB.",
+      "duration_seconds": 0.25
     },
-    "boss_signature_chancellor_mordaine": {
-      "file": "assets/audio/sfx/boss_signature_chancellor_mordaine.ogg",
-      "source": "sox_synth",
-      "placeholder": true,
-      "prompt": "PLACEHOLDER (cowir-main 21004: 'crazy boss attacks', cues paired to cowir-battle's batch-1 signature sequences, timed to their beats at 1x). Summary Judgment, cast as thundaga (1.45 s): three A5/E6 seal rings at 0/0.2/0.4 s and a 70->40 Hz stamp at 0.85 s. Played on the flourish player so the sequence's own hits cannot cut it.",
-      "duration_seconds": 1.45
+    "beat_ice_impact": {
+      "file": "assets/audio/sfx/beat_ice_impact.ogg",
+      "source": "numpy_synth",
+      "prompt": "One beat of a signature/glory sequence, fired by its phase's \"sfx\" key when that phase runs (cowir-main 21676; battle time, so in sync at every speed). The ice impact: bright crack, a struck-glass tone, a short sub drop. Local numpy synthesis (tmp/beats/synth.py), active-RMS matched to the boss signature cues it replaces, peak <= -1 dB.",
+      "duration_seconds": 0.7
+    },
+    "beat_ice_open": {
+      "file": "assets/audio/sfx/beat_ice_open.ogg",
+      "source": "numpy_synth",
+      "prompt": "One beat of a signature/glory sequence, fired by its phase's \"sfx\" key when that phase runs (cowir-main 21676; battle time, so in sync at every speed). Ice forming: three cold bell partials. Local numpy synthesis (tmp/beats/synth.py), active-RMS matched to the boss signature cues it replaces, peak <= -1 dB.",
+      "duration_seconds": 0.5
+    },
+    "beat_ice_shatter": {
+      "file": "assets/audio/sfx/beat_ice_shatter.ogg",
+      "source": "numpy_synth",
+      "prompt": "One beat of a signature/glory sequence, fired by its phase's \"sfx\" key when that phase runs (cowir-main 21676; battle time, so in sync at every speed). The shatter: nine glass shards scattered over 0.35 s. Local numpy synthesis (tmp/beats/synth.py), active-RMS matched to the boss signature cues it replaces, peak <= -1 dB.",
+      "duration_seconds": 0.65
+    },
+    "beat_rat_impact": {
+      "file": "assets/audio/sfx/beat_rat_impact.ogg",
+      "source": "numpy_synth",
+      "prompt": "One beat of a signature/glory sequence, fired by its phase's \"sfx\" key when that phase runs (cowir-main 21676; battle time, so in sync at every speed). The swarm lands: a thump and a 110->50 Hz drop. Local numpy synthesis (tmp/beats/synth.py), active-RMS matched to the boss signature cues it replaces, peak <= -1 dB.",
+      "duration_seconds": 0.4
+    },
+    "beat_rat_open": {
+      "file": "assets/audio/sfx/beat_rat_open.ogg",
+      "source": "numpy_synth",
+      "prompt": "One beat of a signature/glory sequence, fired by its phase's \"sfx\" key when that phase runs (cowir-main 21676; battle time, so in sync at every speed). The swarm: fourteen tiny squeaks scattered. Local numpy synthesis (tmp/beats/synth.py), active-RMS matched to the boss signature cues it replaces, peak <= -1 dB.",
+      "duration_seconds": 0.35
+    },
+    "beat_seal_1": {
+      "file": "assets/audio/sfx/beat_seal_1.ogg",
+      "source": "numpy_synth",
+      "prompt": "One beat of a signature/glory sequence, fired by its phase's \"sfx\" key when that phase runs (cowir-main 21676; battle time, so in sync at every speed). The first seal: a struck bell (D5). Local numpy synthesis (tmp/beats/synth.py), active-RMS matched to the boss signature cues it replaces, peak <= -1 dB.",
+      "duration_seconds": 0.6
+    },
+    "beat_seal_2": {
+      "file": "assets/audio/sfx/beat_seal_2.ogg",
+      "source": "numpy_synth",
+      "prompt": "One beat of a signature/glory sequence, fired by its phase's \"sfx\" key when that phase runs (cowir-main 21676; battle time, so in sync at every speed). The second seal, higher (F5). Local numpy synthesis (tmp/beats/synth.py), active-RMS matched to the boss signature cues it replaces, peak <= -1 dB.",
+      "duration_seconds": 0.6
+    },
+    "beat_seal_3": {
+      "file": "assets/audio/sfx/beat_seal_3.ogg",
+      "source": "numpy_synth",
+      "prompt": "One beat of a signature/glory sequence, fired by its phase's \"sfx\" key when that phase runs (cowir-main 21676; battle time, so in sync at every speed). The third seal, higher still (A5). Local numpy synthesis (tmp/beats/synth.py), active-RMS matched to the boss signature cues it replaces, peak <= -1 dB.",
+      "duration_seconds": 0.6
+    },
+    "beat_thunder_bolt": {
+      "file": "assets/audio/sfx/beat_thunder_bolt.ogg",
+      "source": "numpy_synth",
+      "prompt": "One beat of a signature/glory sequence, fired by its phase's \"sfx\" key when that phase runs (cowir-main 21676; battle time, so in sync at every speed). A bolt: a hard electric snap. Local numpy synthesis (tmp/beats/synth.py), active-RMS matched to the boss signature cues it replaces, peak <= -1 dB.",
+      "duration_seconds": 0.15
+    },
+    "beat_thunder_crack": {
+      "file": "assets/audio/sfx/beat_thunder_crack.ogg",
+      "source": "numpy_synth",
+      "prompt": "One beat of a signature/glory sequence, fired by its phase's \"sfx\" key when that phase runs (cowir-main 21676; battle time, so in sync at every speed). The thunder crack: a sharp snap over a long low rumble. Local numpy synthesis (tmp/beats/synth.py), active-RMS matched to the boss signature cues it replaces, peak <= -1 dB.",
+      "duration_seconds": 1.0
+    },
+    "beat_thunder_open": {
+      "file": "assets/audio/sfx/beat_thunder_open.ogg",
+      "source": "numpy_synth",
+      "prompt": "One beat of a signature/glory sequence, fired by its phase's \"sfx\" key when that phase runs (cowir-main 21676; battle time, so in sync at every speed). A spark: bright fizz with a rising zip. Local numpy synthesis (tmp/beats/synth.py), active-RMS matched to the boss signature cues it replaces, peak <= -1 dB.",
+      "duration_seconds": 0.2
+    },
+    "beat_thunder_ring": {
+      "file": "assets/audio/sfx/beat_thunder_ring.ogg",
+      "source": "numpy_synth",
+      "prompt": "One beat of a signature/glory sequence, fired by its phase's \"sfx\" key when that phase runs (cowir-main 21676; battle time, so in sync at every speed). The storm's afterglow: a soft rumble ring (tier 3). Local numpy synthesis (tmp/beats/synth.py), active-RMS matched to the boss signature cues it replaces, peak <= -1 dB.",
+      "duration_seconds": 0.8
+    },
+    "beat_verdict": {
+      "file": "assets/audio/sfx/beat_verdict.ogg",
+      "source": "numpy_synth",
+      "prompt": "One beat of a signature/glory sequence, fired by its phase's \"sfx\" key when that phase runs (cowir-main 21676; battle time, so in sync at every speed). The verdict: a gavel boom under a low bell. Local numpy synthesis (tmp/beats/synth.py), active-RMS matched to the boss signature cues it replaces, peak <= -1 dB.",
+      "duration_seconds": 0.9
+    },
+    "beat_void_bolt": {
+      "file": "assets/audio/sfx/beat_void_bolt.ogg",
+      "source": "numpy_synth",
+      "prompt": "One beat of a signature/glory sequence, fired by its phase's \"sfx\" key when that phase runs (cowir-main 21676; battle time, so in sync at every speed). A dark bolt: a filtered whoosh. Local numpy synthesis (tmp/beats/synth.py), active-RMS matched to the boss signature cues it replaces, peak <= -1 dB.",
+      "duration_seconds": 0.35
+    },
+    "beat_void_fling": {
+      "file": "assets/audio/sfx/beat_void_fling.ogg",
+      "source": "numpy_synth",
+      "prompt": "One beat of a signature/glory sequence, fired by its phase's \"sfx\" key when that phase runs (cowir-main 21676; battle time, so in sync at every speed). The fling: a dark whoosh out. Local numpy synthesis (tmp/beats/synth.py), active-RMS matched to the boss signature cues it replaces, peak <= -1 dB.",
+      "duration_seconds": 0.5
+    },
+    "beat_void_impact": {
+      "file": "assets/audio/sfx/beat_void_impact.ogg",
+      "source": "numpy_synth",
+      "prompt": "One beat of a signature/glory sequence, fired by its phase's \"sfx\" key when that phase runs (cowir-main 21676; battle time, so in sync at every speed). The void impact: a deep boom, 55->28 Hz. Local numpy synthesis (tmp/beats/synth.py), active-RMS matched to the boss signature cues it replaces, peak <= -1 dB.",
+      "duration_seconds": 1.0
+    },
+    "beat_void_open": {
+      "file": "assets/audio/sfx/beat_void_open.ogg",
+      "source": "numpy_synth",
+      "prompt": "One beat of a signature/glory sequence, fired by its phase's \"sfx\" key when that phase runs (cowir-main 21676; battle time, so in sync at every speed). The void opening: a low dark swell. Local numpy synthesis (tmp/beats/synth.py), active-RMS matched to the boss signature cues it replaces, peak <= -1 dB.",
+      "duration_seconds": 0.6
     },
     "boss_line_mordaine_card_bark": {
       "description": "Mordaine voiced line (Summary Judgment wind-up bark, monsters.json chancellor_mordaine presentation)",
