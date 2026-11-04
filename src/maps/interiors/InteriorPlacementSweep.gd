@@ -32,7 +32,8 @@ static var sweeps: int = 0
 ## `scene_root` is the local origin used to derive furniture rects in the
 ## same coordinate space as the NPCs — pass the interior scene itself
 ## (self), not a child container.
-static func sweep(scene_root: Node, npcs: Node, decorations: Node, layout: Array, area_id: String) -> void:
+## `blocked_glyphs`: layout cells that are furniture drawn as TILES (a shop's shelves), which no decoration sprite stands for.
+static func sweep(scene_root: Node, npcs: Node, decorations: Node, layout: Array, area_id: String, blocked_glyphs: String = "") -> void:
 	if npcs == null:
 		return
 	sweeps += 1
@@ -49,13 +50,13 @@ static func sweep(scene_root: Node, npcs: Node, decorations: Node, layout: Array
 		if not (n is Node2D):
 			continue
 		var origin: Vector2 = (n as Node2D).position
-		if _is_position_clear(origin, layout, furniture):
+		if _is_position_clear(origin, layout, furniture, blocked_glyphs):
 			taken[_cell_of(origin)] = true
 		else:
 			movers.append(n)
 	for n in movers:
 		var origin: Vector2 = (n as Node2D).position
-		var fixed := _find_clear_near(origin, layout, furniture, taken)
+		var fixed := _find_clear_near(origin, layout, furniture, taken, blocked_glyphs)
 		if fixed != origin:
 			push_warning("[%s] relocated '%s' off wall/furniture %s -> %s" % [
 				area_id, n.name, origin, fixed])
@@ -79,7 +80,8 @@ static func _walk_sprites_for_furniture(scene_root: Node, node: Node, out: Array
 			if sp.texture != null and sp.visible:
 				var raw: Vector2 = sp.texture.get_size()
 				var size: Vector2 = raw * sp.scale
-				if size.x >= MIN_FURNITURE_SIZE_PX and size.y >= MIN_FURNITURE_SIZE_PX:
+				## A sprite marked furniture blocks at any size: the inn's 14 px benches were stood on.
+				if bool(sp.get_meta("furniture", false)) or (size.x >= MIN_FURNITURE_SIZE_PX and size.y >= MIN_FURNITURE_SIZE_PX):
 					# Walk up the parent chain so composite furniture
 					# (Node2D wrapper around several sprites) contributes
 					# each sub-sprite at its scene-root origin.
@@ -96,13 +98,13 @@ static func _walk_sprites_for_furniture(scene_root: Node, node: Node, out: Array
 
 ## Walkability from the authored layout string. Legacy interiors +
 ## BaseInterior both write 'W' for walls; anything else is floor.
-static func _is_cell_walkable(cell: Vector2i, layout: Array) -> bool:
+static func _is_cell_walkable(cell: Vector2i, layout: Array, blocked_glyphs: String = "") -> bool:
 	if cell.y < 0 or cell.y >= layout.size():
 		return false
 	var row: String = str(layout[cell.y])
 	if cell.x < 0 or cell.x >= row.length():
 		return false
-	return row[cell.x] != "W"
+	return row[cell.x] != "W" and not (blocked_glyphs != "" and blocked_glyphs.contains(row[cell.x]))
 
 
 ## NPC sprites are ~32×48 with the origin near the sprite's chest. The
@@ -121,9 +123,9 @@ static func _npc_footprint(pos: Vector2) -> Rect2:
 		Vector2(NPC_FOOT_HALF_W * 2.0, NPC_FOOT_BOTTOM_OFFSET - NPC_FOOT_TOP_OFFSET))
 
 
-static func _is_position_clear(pos: Vector2, layout: Array, furniture: Array) -> bool:
+static func _is_position_clear(pos: Vector2, layout: Array, furniture: Array, blocked_glyphs: String = "") -> bool:
 	var cell := Vector2i(int(floor(pos.x / TILE_SIZE)), int(floor(pos.y / TILE_SIZE)))
-	if not _is_cell_walkable(cell, layout):
+	if not _is_cell_walkable(cell, layout, blocked_glyphs):
 		return false
 	var foot := _npc_footprint(pos)
 	for r in furniture:
@@ -138,8 +140,8 @@ static func _cell_of(pos: Vector2) -> Vector2i:
 
 ## Ring-search up to 8 tiles for the nearest cell that's walkable, outside every furniture rect,
 ## and not already claimed by another NPC. `taken` may be empty for a single-NPC caller.
-static func _find_clear_near(pos: Vector2, layout: Array, furniture: Array, taken: Dictionary = {}) -> Vector2:
-	if _is_position_clear(pos, layout, furniture) and not taken.has(_cell_of(pos)):
+static func _find_clear_near(pos: Vector2, layout: Array, furniture: Array, taken: Dictionary = {}, blocked_glyphs: String = "") -> Vector2:
+	if _is_position_clear(pos, layout, furniture, blocked_glyphs) and not taken.has(_cell_of(pos)):
 		return pos
 	var start := _cell_of(pos)
 	for radius in range(1, 9):
@@ -151,7 +153,7 @@ static func _find_clear_near(pos: Vector2, layout: Array, furniture: Array, take
 				if taken.has(c):
 					continue
 				var probe := Vector2((c.x + 0.5) * TILE_SIZE, (c.y + 0.5) * TILE_SIZE)
-				if _is_position_clear(probe, layout, furniture):
+				if _is_position_clear(probe, layout, furniture, blocked_glyphs):
 					return probe
 	## Gave up. The caller only warns when the position CHANGED, so without this a failed
 	## relocation is silent and the NPC stays standing on the furniture. Standing on a table is
