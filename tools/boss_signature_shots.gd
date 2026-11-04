@@ -33,7 +33,7 @@ func _init() -> void:
 		gl._close_title_screen()
 	await process_frame
 	gl._create_party()
-	await gl._start_battle_async([boss_id], false)
+	await gl._start_battle_async([boss_id], true)
 	var scene: Node = _find(root)
 	if scene == null:
 		print("[BOSSSHOT] FAIL: no BattleScene")
