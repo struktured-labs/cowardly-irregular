@@ -654,6 +654,7 @@ func _create_communal_table() -> void:
 		bench.texture = ImageTexture.create_from_image(bimg)
 		var by = 8.5 * TILE_SIZE if bench_side == 0 else 11.0 * TILE_SIZE
 		bench.position = Vector2(6.0 * TILE_SIZE, by)
+		bench.set_meta("furniture", true)
 		node.add_child(bench)
 
 	# Table items — bowls, mugs, a dropped spoon
@@ -1130,7 +1131,7 @@ func _setup_npcs() -> void:
 	])
 
 	# Traveling scholar at table
-	_create_npc("Scholar Fen", "scholarly", Vector2(7.5, 10.5), [
+	_create_npc("Scholar Fen", "scholarly", Vector2(7.5, 12.0), [
 		"Scholar Fen: Ah, a fellow traveler! I've been studying the local ruins.",
 		"Scholar Fen: The ancient scripts pre-date the current world by eons.",
 		"Scholar Fen: They spoke of a 'loop' — an endless repetition of events.",

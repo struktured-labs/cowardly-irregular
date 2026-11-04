@@ -760,6 +760,18 @@ SMOKE_CMD=(env "XDG_DATA_HOME=$_SMOKE_XDG" "COWIR_SFX_LOG_CUES=1" "${_SMOKE_JAIL
 ## which blocks outright (no retry). A smoke that FAILED before any process was seen did not run, so it
 ## keeps its retry; the retry is proven in full.
 _smoke_proven() {
+  # EVERY attempt starts from an EMPTY sandbox. A smoke leaves user:// state behind (measured on a real
+  # run: 46 files, among them autobattle/profiles.json, the shader cache and its own smoke/*.png), and
+  # this directory persists across attempt 2 of a retry, a --web-first / --resume-web re-run in the same
+  # pubNNN tree, and any gates-only run in a worktree. Determinism (b) above says the smoke tests
+  # DEFAULTS, what a new player gets; a leftover profiles.json is not that. Same class as the persisted
+  # save_98 that poisoned the .760 pre-gate (cowir-main 21365). Guarded: only the realpath'd sandbox
+  # that --check-value just approved is ever emptied.
+  case "$_SMOKE_XDG" in "$(realpath "$PWD/tmp")"/smoke_xdg) ;; *)
+    echo "[deploy] BLOCKED: refusing to empty '$_SMOKE_XDG': it is not this tree's tmp/smoke_xdg." >&2; exit 3 ;; esac
+  find "$_SMOKE_XDG" -mindepth 1 -delete
+  [ -z "$(find "$_SMOKE_XDG" -mindepth 1 | head -1)" ] || {
+    echo "[deploy] BLOCKED: the smoke sandbox could not be emptied: $_SMOKE_XDG" >&2; exit 3; }
   touch tmp/smoke_since
   "${SMOKE_CMD[@]}" > tmp/deploy_smoke.log 2>&1 &
   local sp=$! wp ec=0

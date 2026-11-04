@@ -51,6 +51,11 @@ func test_a_chain_battle_shows_its_tag_and_banner_and_a_lone_battle_does_not() -
 	var tag := s.find_child("ChainTag", true, false) as Label
 	assert_not_null(tag, "a chain battle has no Chain N/M tag")
 	assert_eq(tag.text if tag else "", "Chain 1/2")
+	var tag_rect := Rect2(tag.position, tag.get_combined_minimum_size()) if tag else Rect2()
+	var enemies_panel := s.find_child("EnemyStatusPanel", true, false) as Control
+	if enemies_panel:
+		assert_false(tag_rect.intersects(enemies_panel.get_global_rect()), "the chain tag draws on the ENEMIES panel")
+	assert_lt(tag_rect.end.x, 230.0, "the chain tag reaches the band where the opening party bubbles sit")
 	var banner := s.find_child("ChainBanner", true, false) as Label
 	assert_not_null(banner, "the first link did not announce the chain")
 	assert_string_contains(banner.text if banner else "", "CHAIN ×2")

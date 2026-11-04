@@ -1380,7 +1380,7 @@ func _open_abilities_menu(target: Combatant) -> void:
 	_submenu_open = true
 	var abilities_menu = AbilitiesMenuClass.new()
 	abilities_menu.set_anchors_preset(Control.PRESET_FULL_RECT)
-	abilities_menu.setup(target)
+	abilities_menu.setup(target, party)
 	abilities_menu.closed.connect(_on_submenu_closed)
 	abilities_menu.passive_changed.connect(_on_passive_changed)
 	add_child(abilities_menu)
