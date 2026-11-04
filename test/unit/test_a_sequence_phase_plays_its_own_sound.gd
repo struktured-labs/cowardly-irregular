@@ -57,6 +57,9 @@ func _fire_ms(scale: float, phase: Dictionary, tier: int = 1) -> int:
 	while fired.is_empty() and Time.get_ticks_msec() < deadline:
 		await get_tree().process_frame
 	Engine.time_scale = _saved_scale
+	# FractalFX holds itself in a static list until its release timer; drop our lambda and let it go before the test ends.
+	fx.on_sfx = Callable()
+	FractalFX._live.erase(fx)
 	if fired.is_empty():
 		return -1
 	assert_eq(str(fired[0][0]), str(phase.get("sfx", "")), "it fires the phase's own key")
@@ -83,7 +86,7 @@ func test_a_phase_cue_lands_on_its_beat_at_1x_and_at_4x() -> void:
 	for scale in [0.25, 1.0]:
 		var ms: int = await _fire_ms(scale, phase)
 		assert_gt(ms, -1, "the cue fired at engine %.2f" % scale)
-		var want := AT / scale * 1000.0
+		var want: float = AT / float(scale) * 1000.0
 		assert_almost_eq(float(ms), want, 150.0, "at engine %.2f it waits for its phase: %d ms, the beat is %d ms" % [scale, ms, int(want)])
 
 
