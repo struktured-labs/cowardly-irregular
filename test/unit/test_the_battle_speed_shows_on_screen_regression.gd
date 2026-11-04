@@ -51,7 +51,7 @@ func _battle() -> Node:
 
 
 func _readout() -> RichTextLabel:
-	return _scene.get_node_or_null("UI/SpeedPanel/SpeedIndicator") as RichTextLabel
+	return _scene.find_child("SpeedIndicator", true, false) as RichTextLabel
 
 
 func test_the_speed_shows_during_the_battle() -> void:
@@ -121,7 +121,7 @@ func test_the_readout_overlaps_no_other_panel() -> void:
 		await get_tree().process_frame
 		var mine: Rect2 = (label.get_parent() as Control).get_global_rect()
 		for c in _scene.get_node("UI").get_children():
-			if not (c is Control) or c == label.get_parent() or not (c as Control).is_visible_in_tree():
+			if not (c is Control) or c == label.get_parent() or c.is_ancestor_of(label) or not (c as Control).is_visible_in_tree():
 				continue
 			var r: Rect2 = (c as Control).get_global_rect()
 			if r.size.x <= 0 or r.size.y <= 0 or r.get_area() >= screen.get_area() * 0.5:

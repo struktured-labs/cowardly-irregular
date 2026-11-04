@@ -1447,8 +1447,12 @@ func _do_rest() -> void:
 			if not member.is_alive:
 				beyond_rest.append(str(member.combatant_name))
 
-	if SoundManager:
-		SoundManager.play_ui("heal")
+	## The night (struktured 2026-11-01): fade out, the rest ditty, morning, fade in. The heal above already landed, in
+	## the same step as the payment, so a scene change mid-fade can never leave a paid rest unhealed.
+	var seq := InnRestSequence.start(self)
+	await seq.finished
+	if seq.aborted:
+		return
 
 	var done: String = InnDialogue.line(_origin_map_id(), "rest_complete")
 	if done == "":

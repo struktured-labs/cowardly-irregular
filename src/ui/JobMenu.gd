@@ -379,7 +379,7 @@ func _create_slot_row(slot_index: int, row_width: float) -> Control:
 	equip_label.text = job_name
 	equip_label.position = Vector2(24, _slot_equip_y())
 	equip_label.add_theme_font_size_override("font_size", TextScale.scaled(12))
-	equip_label.add_theme_color_override("font_color", slot_color if job_name != "(none)" else EMPTY_SLOT_COLOR)
+	equip_label.add_theme_color_override("font_color", slot_color if job_name != "(none)" and job_name != "(locked)" else EMPTY_SLOT_COLOR)
 	row.add_child(equip_label)
 
 	# Description
@@ -452,6 +452,8 @@ func _get_current_job_name(slot_index: int) -> String:
 		1:  # Secondary
 			if character.secondary_job_id != "":
 				return JobSystem.get_job_display_name(character.secondary_job_id)
+			if not JobSystem.is_secondary_job_unlocked():
+				return "(locked)"
 			return "(none)"
 	return "(none)"
 
@@ -468,6 +470,8 @@ func _get_current_job_desc(slot_index: int) -> String:
 			if character.secondary_job_id != "":
 				var sec_job = JobSystem.get_job(character.secondary_job_id)
 				return sec_job.get("description", "")
+			if not JobSystem.is_secondary_job_unlocked():
+				return SECONDARY_LOCKED_HINT
 	return ""
 
 
@@ -637,6 +641,17 @@ func _create_job_list_panel(panel_size: Vector2) -> Control:
 		_job_labels.append(job_row)
 
 	return panel
+
+
+const SECONDARY_LOCKED_HINT := "Unlocks after defeating the first boss."
+
+
+## #763: the secondary slot can't be opened while locked. A legacy save that
+## already HAS a secondary keeps it (we never strip), and may still edit it.
+func is_slot_locked(slot_index: int) -> bool:
+	if slot_index != 1 or character == null:
+		return false
+	return character.secondary_job_id == "" and not JobSystem.is_secondary_job_unlocked()
 
 
 func _get_available_jobs() -> Array:
@@ -874,7 +889,7 @@ func _handle_slot_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 	elif event.is_action_pressed("ui_accept") and not event.is_echo():
-		var jobs = _get_available_jobs()
+		var jobs = [] if is_slot_locked(selected_slot) else _get_available_jobs()
 		if jobs.size() > 0:
 			mode = Mode.JOB_SELECT
 			selected_job_index = 0
@@ -1050,7 +1065,7 @@ func _on_job_slot_click(slot_index: int) -> void:
 	if mode != Mode.SLOT_SELECT:
 		return
 	selected_slot = slot_index
-	var jobs = _get_available_jobs()
+	var jobs = [] if is_slot_locked(selected_slot) else _get_available_jobs()
 	if jobs.size() > 0:
 		mode = Mode.JOB_SELECT
 		selected_job_index = 0

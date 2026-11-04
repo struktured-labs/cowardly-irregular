@@ -34,16 +34,31 @@ extends GutTest
 const DIRECTOR := "res://src/cutscene/CutsceneDirector.gd"
 
 var _saved_playing: bool = false
+var _saved_armed: Dictionary = {}
 
 
+## _should_fade_music_for reads TWO facts: _music_playing AND the armed area bed
+## (armed_area_state). Saving only the first let an earlier file's armed-but-unstarted
+## play_area_music (test_interior_music_routing) make "nothing is playing" fade anyway.
 func before_each() -> void:
 	if SoundManager:
 		_saved_playing = SoundManager._music_playing
+		_saved_armed = {
+			"armed": SoundManager._area_start_armed,
+			"area": SoundManager._pending_music_area,
+			"pos": SoundManager._pending_resume_position,
+			"home": SoundManager._pending_home_area,
+		}
+		SoundManager._invalidate_pending_area_start()
 
 
 func after_each() -> void:
 	if SoundManager:
 		SoundManager._music_playing = _saved_playing
+		SoundManager._area_start_armed = bool(_saved_armed.get("armed", false))
+		SoundManager._pending_music_area = str(_saved_armed.get("area", ""))
+		SoundManager._pending_resume_position = float(_saved_armed.get("pos", 0.0))
+		SoundManager._pending_home_area = str(_saved_armed.get("home", ""))
 
 
 func _director():

@@ -745,11 +745,19 @@ func _opening_index() -> int:
 		var item: Dictionary = menu_items[i]
 		if bool(item.get("disabled", false)):
 			continue
+		## A row that hands the turn away (Auto: this turn / Trust) is never the OPENING cursor: mashing
+		## confirm through the first menu autobattled (demo playthrough 2026-11-03). Still reachable by moving.
+		if bool(item.get("skip_default", false)):
+			continue
 		if not have_fallback:
 			fallback = i
 			have_fallback = true
 		if str(item.get("reject_reason", "")) == "":
 			return i
+	if not have_fallback:
+		for i in range(menu_items.size()):
+			if not bool(menu_items[i].get("disabled", false)):
+				return i
 	return fallback
 
 

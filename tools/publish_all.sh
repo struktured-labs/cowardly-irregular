@@ -1150,7 +1150,15 @@ fi
 # say 48 in three places — the message, the argument and the directory it then counted — so a tier
 # change that missed one would prebuild one tier and count another, and report the count as proof.
 # struktured's ruling 2026-09-16 moved web music to 40k; see deploy_web.sh for why the lever is here.
-WEB_AUDIO_KBPS="${WEB_AUDIO_KBPS:-40}"
+# Derived, not a second default: this used to say `:-40` while deploy_web.sh said the same number, two
+# spellings that a tier change updates separately (the 48 -> 40 ruling had to touch both). Read the one
+# home, deploy_web.sh, the way make_web_audio.sh does, and REFUSE rather than fall back to a constant.
+if [ -z "${WEB_AUDIO_KBPS:-}" ]; then
+    WEB_AUDIO_KBPS="$(sed -nE 's/^WEB_AUDIO_KBPS="\$\{WEB_AUDIO_KBPS:-([0-9]+)\}".*/\1/p' tools/deploy_web.sh | head -1)"
+    [ -n "$WEB_AUDIO_KBPS" ] || {
+        echo "[pub] BLOCKED: could not read WEB_AUDIO_KBPS's default from tools/deploy_web.sh -- refusing to guess a tier." >&2
+        exit 4; }
+fi
 export WEB_AUDIO_KBPS
 echo "[pub] prebuild: ${WEB_AUDIO_KBPS}k audio tier"
 if ! ./tools/make_web_audio.sh "$WEB_AUDIO_KBPS" > tmp/publish_all_audio.log 2>&1; then

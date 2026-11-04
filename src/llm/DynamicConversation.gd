@@ -656,9 +656,16 @@ func _show_npc_line(line: String) -> void:
 	await _npc_dialogue.say(
 		_npc_name,
 		LLMService.escape_markup(line),
-		"villager",  # theme — caller may override by subclassing
-		"villager",  # portrait
+		theme_key,
+		portrait_key,
 	)
+
+
+## The speaker's own face and box colours, set by the NPC that runs this. They were hardcoded "villager", so an NPC's
+## LLM turns wore a generic face while its scripted lines wore its own (struktured 2026-11-02: Theron "messed up on my
+## 2nd or 3rd time chatting").
+var portrait_key: String = "villager"
+var theme_key: String = "villager"
 
 
 func _show_choice_menu(choices: Array[String]) -> String:

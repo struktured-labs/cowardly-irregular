@@ -51,6 +51,10 @@ func _read(p: String) -> String:
 ## _load_music_manifest early-returns on _manifest_loaded so nothing later removes it.
 func after_each() -> void:
 	var sm: Node = _sound_manager()
+	## play_area_music ARMS a deferred start (_area_start_armed/_pending_music_area) that
+	## outlives the test and reads as an owed bed to the next file (armed_area_state).
+	if sm != null and sm.has_method("_invalidate_pending_area_start"):
+		sm._invalidate_pending_area_start()
 	if sm == null or not ("_music_manifest" in sm):
 		return
 	for k in sm._music_manifest.keys():
@@ -84,7 +88,8 @@ func test_guard_sits_before_stop_music_in_source() -> void:
 	var fn_start: int = src.find("func play_area_music(")
 	assert_true(fn_start >= 0, "play_area_music must exist")
 	var guard_pos: int = src.find("begins_with(\"interior_\")", fn_start)
-	var stop_pos: int = src.find("stop_music()", fn_start)
+	# 2026-11-02: the area path now stops with stop_music(true) after _hand_off_to_b (crossfade).
+	var stop_pos: int = src.find("stop_music(", fn_start)
 	assert_true(guard_pos >= 0, "play_area_music must carry the interior_ inherit guard")
 	assert_true(stop_pos >= 0, "play_area_music must still stop before switching real areas")
 	assert_true(guard_pos < stop_pos,

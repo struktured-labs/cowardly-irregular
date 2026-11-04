@@ -7434,8 +7434,9 @@
     "fountain_medieval": {
       "path": "res://assets/sprites/props/medieval/fountain.png",
       "tier": "T1",
-      "frames": 4,
-      "source": "gpt-image-2, straight-on medieval plaza fountain with a cherry tree in the buildings' style (struktured 2026-11-01: procgen-looking props must go) -- tools/gen_village_buildings.py --props; 4 frames of 96x96 like the painted fountain (a 100px strip moved its art 2px on screen) = one painting, water pixels' brightness cycled; T1, artist veto applies."
+      "frames": 12,
+      "source": "gpt-image-2 painting (tools/gen_village_buildings.py --props) + MOTION drawn on it by tools/gen_fountain_motion.py: falling stream segments, splash droplets, spreading surface rings, drifting glints; 12 frames of 96x96 at 12 fps (struktured 2026-11-01: 'looks like just lighting right now'); T1, artist veto applies.",
+      "fps": 12
     },
     "tree_medieval": {
       "path": "res://assets/sprites/props/medieval/tree.png",

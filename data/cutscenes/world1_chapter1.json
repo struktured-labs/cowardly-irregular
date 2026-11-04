@@ -167,11 +167,7 @@
     },
     {
       "type": "narration",
-      "lines": [
-        "Harmonia was the kind of village that existed to be left. A waypoint. A place you were from, not a place you stayed.",
-        "The bats were bigger. The slimes were angrier. Traders stopped coming through, then stopped sending messages, then stopped existing in conversation entirely.",
-        "Elder Theron stood in the village square and regarded the party with a look that suggested they absolutely would not do, but that complaining about it would take energy he didn't have."
-      ]
+      "text": "Elder Theron stood in the village square and regarded the party with a look that suggested they absolutely would not do, but that complaining about it would take energy he didn't have."
     },
     {
       "type": "emote",

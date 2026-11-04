@@ -39,10 +39,10 @@ func test_elem_indicator_has_outline() -> void:
 	assert_gt(fn_idx, -1)
 	var next_fn: int = src.find("\nfunc ", fn_idx + 1)
 	var body: String = src.substr(fn_idx, next_fn - fn_idx)
-	assert_true(body.contains("label.add_theme_constant_override(\"outline_size\", 2)"),
-		"_spawn_elemental_indicator must set outline_size=2")
-	assert_true(body.contains("label.add_theme_color_override(\"font_outline_color\", Color.BLACK)"),
-		"_spawn_elemental_indicator must set font_outline_color=BLACK")
+	# Pixel pass 2026-11-02: the indicator is a PixelText; the tick 218 outline + shadow are baked into every glyph.
+	assert_true(body.contains("PixelText.new(text"), "_spawn_elemental_indicator draws PixelText glyphs")
+	var pt: String = FileAccess.get_file_as_string("res://src/ui/PixelText.gd")
+	assert_true(pt.contains("img.set_pixelv(p, OUTLINE)"), "every glyph carries its dark outline")
 
 
 func test_shadow_kept_alongside_outline() -> void:
@@ -53,26 +53,23 @@ func test_shadow_kept_alongside_outline() -> void:
 	var fn_idx: int = src.find("func _spawn_elemental_indicator")
 	var next_fn: int = src.find("\nfunc ", fn_idx + 1)
 	var body: String = src.substr(fn_idx, next_fn - fn_idx)
-	assert_true(body.contains("label.add_theme_color_override(\"font_shadow_color\", Color(0, 0, 0, 0.8))"),
-		"shadow color preserved as a secondary contrast layer")
-	assert_true(body.contains("label.add_theme_constant_override(\"shadow_offset_x\", 1)"),
-		"shadow_offset_x preserved")
+	assert_true(body.contains("PixelText.new(text"), "the indicator is PixelText, whose glyphs bake the shadow")
+	var pt: String = FileAccess.get_file_as_string("res://src/ui/PixelText.gd")
+	assert_true(pt.contains("img.set_pixelv(s, SHADOW)"), "shadow kept as the secondary contrast layer")
 
 
 func test_outline_ordering_before_shadow() -> void:
 	# Pin: outline overrides come BEFORE shadow overrides so reading
 	# the code top-to-bottom, the "primary contrast" mechanism shows
 	# up first.
-	var src := _read(BATTLE_SCENE)
-	var fn_idx: int = src.find("func _spawn_elemental_indicator")
-	var next_fn: int = src.find("\nfunc ", fn_idx + 1)
-	var body: String = src.substr(fn_idx, next_fn - fn_idx)
-	var outline_idx: int = body.find("outline_size")
-	var shadow_idx: int = body.find("font_shadow_color")
+	# Pixel pass 2026-11-02: the layering now lives in PixelText.glyph_texture — the rim is painted over the shadow.
+	var body: String = FileAccess.get_file_as_string("res://src/ui/PixelText.gd")
+	var shadow_idx: int = body.find("img.set_pixelv(s, SHADOW)")
+	var outline_idx: int = body.find("img.set_pixelv(p, OUTLINE)")
 	assert_gt(outline_idx, -1)
 	assert_gt(shadow_idx, -1)
-	assert_lt(outline_idx, shadow_idx,
-		"outline_size override must come BEFORE shadow_color (reading order = primary contrast first)")
+	assert_lt(shadow_idx, outline_idx,
+		"the shadow is painted FIRST so the dark rim always covers it (in pixels, paint order is precedence)")
 
 
 # ── Symmetry with DamageNumber's existing contrast scheme ─────────────
@@ -82,11 +79,10 @@ func test_matches_damage_number_outline_pattern() -> void:
 	# The elemental indicator now uses the same pattern — single
 	# visual language across floating text.
 	var dn: String = _read(DAMAGE_NUMBER)
-	# Fable pass 2026-07-16: DamageNumber's width moved to 5 (bigger+fatter); the shared PATTERN is black-outline-present, not the exact width.
-	assert_true(dn.contains("add_theme_constant_override(\"outline_size\", 5)"),
-		"DamageNumber's outline_size=5 must still be the fable-pass reference")
-	assert_true(dn.contains("add_theme_color_override(\"font_outline_color\", Color.BLACK)"),
-		"DamageNumber's BLACK outline must still be the reference pattern")
+	# Pixel pass 2026-11-02: the shared PATTERN is a dark rim on every glyph, now baked into PixelText.
+	assert_true(dn.contains("PixelText.new("), "DamageNumber draws PixelText glyphs")
+	var pt: String = FileAccess.get_file_as_string("res://src/ui/PixelText.gd")
+	assert_true(pt.contains("img.set_pixelv(p, OUTLINE)"), "PixelText's dark outline is the reference pattern")
 
 
 # ── Mode 7 floor color sanity (catches future visibility regressions) ──

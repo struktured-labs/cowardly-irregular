@@ -2114,6 +2114,19 @@
       "loop": true,
       "generated_at": "2026-04-14",
       "unlayered": "was ambient_cave until 2026-10-30: a Suno song (pitch clarity 7.5-7.7; real ambience <= 4.99) that played under the music. struktured dropped it as an ambient layer; kept as a Jukebox row and a possible non-layered cue. The key ambient_cave now resolves to its sfx_manifest twin."
+    },
+    "inn_rest_ditty": {
+      "file": "assets/audio/music/inn_rest_ditty.ogg",
+      "tier": "T1",
+      "provider": "procedural",
+      "title": "A Night's Rest",
+      "prompt": "PLACEHOLDER (struktured via cowir-main 21099: an inn rest ditty, ~4-6 s, warm and resolving). Composed in code by tools/compose_inn_ditty.py because Suno submit is parked: I-IV-V7-I in F major at 100 BPM, a soft pulse lead over a triangle bass and chord arpeggios, resolving onto a held tonic, -17 LUFS like the other stingers. Replace with a Suno render when he unparks it; the key stays.",
+      "style": "JRPG inn rest jingle, chiptune, warm, resolving, 5-6 seconds",
+      "model": "compose_inn_ditty.py",
+      "duration": 5.7,
+      "loop": false,
+      "stinger": true,
+      "generated_at": "2026-11-01"
     }
   },
   "tier_priority": [
