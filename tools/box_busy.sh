@@ -4,7 +4,8 @@
 #   tools/box_busy.sh            exit 0 = box free · 1 = busy (the reason is printed) · 2 = usage
 #   tools/box_busy.sh --wait N   poll every 20s for up to N seconds, then answer as above
 #   tools/box_busy.sh --publish  exit 0 = a publish is in flight (named, with its lane) · 1 = none
-#   tools/box_busy.sh --is-player PID  exit 0 = that pid is a player instance (bare `godot`), 1 = not
+#   tools/box_busy.sh --is-player PID  exit 0 = that pid is a player instance (bare `godot`, or
+#                                `godot --path <dir>` alone: a preview build), 1 = not
 #   tools/box_busy.sh --others   exit 0 = another lane has an engine up (count printed) · 1 = none
 #   tools/box_busy.sh --marker   print the BOX_MARKER path every box-protocol script must use
 #   tools/box_busy.sh --roots    print each _detached dir the publish scan reads (exit 1 = none exist)
@@ -76,6 +77,25 @@ argv_len() {
   printf "%s\n" "$n"
 }
 
+## THE PLAYER TEST, ONE PLACE. A human-launched game is argv of exactly 1 (launch.sh's bare `godot`)
+## OR exactly `godot --path <dir>` and nothing else: cowir-main starts his PREVIEW builds that way from
+## tmp/preview<N>/. On 2026-11-04 his .760 preview (pid 1335547, cwd cowir-main/tmp/preview760) read
+## "fold-tree godot running" to every lane for hours, and two lanes declined a free box over it.
+## Still narrow: `git grep -- --path` over tools/ finds NO automated godot invocation passing --path
+## at all, and every automated one passes some other flag, so any extra argument is still a gate.
+## <dir> must exist (resolved against the process's own cwd when relative). Reads a cmdline FILE
+## so the selftest can feed it argv fixtures without starting anything shaped like an engine.
+## Unreadable or empty -> not a player: the fail-closed direction.
+argv_is_player() {  # <cmdline file> <cwd of that process>
+  local -a a=(); local x d
+  while IFS= read -r -d "" x; do a+=("$x"); done 2>/dev/null < "$1"
+  [ "${#a[@]}" = 1 ] && return 0
+  [ "${#a[@]}" = 3 ] && [ "${a[1]}" = --path ] || return 1
+  case "${a[2]}" in /*) d="${a[2]}" ;; "") return 1 ;; *) d="$2/${a[2]}" ;; esac
+  [ -d "$d" ]
+}
+is_player() { argv_is_player "/proc/$1/cmdline" "$(readlink "/proc/$1/cwd" 2>/dev/null)"; }
+
 busy_reason() {
   if [ -f "$BOX_MARKER" ]; then
     local pid; pid="$(sed -n 's/^pid=//p' "$BOX_MARKER" | head -1)"
@@ -99,7 +119,7 @@ busy_reason() {
     c="$(readlink "$p/cwd" 2>/dev/null)"
     case "$c" in "$FOLD_TREE"|"$FOLD_TREE"/*) ;; *) continue ;; esac
     pid="${p#/proc/}"
-    if [ "$(argv_len "$pid")" = 1 ]; then PLAYER_PIDS="${PLAYER_PIDS}${PLAYER_PIDS:+ }$pid"; continue; fi
+    if is_player "$pid"; then PLAYER_PIDS="${PLAYER_PIDS}${PLAYER_PIDS:+ }$pid"; continue; fi
     echo "fold-tree godot running: pid $pid cwd=$c"; return 0
   done
   publish_reason && return 0
@@ -132,7 +152,7 @@ if [ "${1:-}" = "--selftest" ]; then  # watch the answer flip, so a FREE is neve
   ## the grouping into arms is a judgement the output cannot settle, which is half of why the old
   ## literal went unexamined for so long.
   arms=0
-  EXPECT_ARMS=14
+  EXPECT_ARMS=15
   A() { arms=$((arms + 1)); }
   A  # arm 1  nothing set -> FREE
   BOX_MARKER="$T/m" DEPLOY_DIR="$T/d" FOLD_TREE="$T/none" "$0" >/dev/null || { echo "FAIL: not FREE with nothing set"; fails=1; }
@@ -274,6 +294,29 @@ if [ "${1:-}" = "--selftest" ]; then  # watch the answer flip, so a FREE is neve
   kill "$GATE" 2>/dev/null; wait "$GATE" 2>/dev/null
   exec 9>&-
 
+  A  # arm 15 the PREVIEW player: argv fixtures through the same predicate the scan and --is-player use.
+     #        Each case is the argv a real process carried; the -s case is the shape of cowir-main's
+     #        bare GUT run from tmp/preview760 on 2026-11-02 (main 21546), which must stay a GATE.
+  mkdir -p "$TA/pv/tree" "$TA/pv/cwd/rel"
+  _argv() { local f="$TA/pv/argv.$1"; shift; : > "$f"; local x; for x in "$@"; do printf '%s\0' "$x" >> "$f"; done; printf '%s' "$f"; }
+  _pl() { # label want(yes|no) argv...
+    local label="$1" want="$2" f got; shift 2; f="$(_argv "$label" "$@")"
+    if argv_is_player "$f" "$TA/pv/cwd"; then got=yes; else got=no; fi
+    [ "$got" = "$want" ] || { echo "FAIL arm15 $label: player=$got, want $want (argv: $*)"; fails=1; }
+  }
+  _pl bare            yes godot
+  _pl preview_abs     yes godot --path "$TA/pv/tree"
+  _pl preview_rel     yes godot --path rel
+  _pl preview_missing no  godot --path "$TA/pv/nope"
+  _pl preview_empty   no  godot --path ""
+  _pl path_no_dir     no  godot --path
+  _pl gut_from_tree   no  godot --path "$TA/pv/tree" -s addons/gut/gut_cmdln.gd
+  _pl headless_first  no  godot --headless --path "$TA/pv/tree"
+  _pl other_flag      no  godot --rendering-driver "$TA/pv/tree"
+  : > "$TA/pv/argv.empty"
+  argv_is_player "$TA/pv/argv.empty" "$TA/pv/cwd" && { echo "FAIL arm15 empty: an empty cmdline read as a player"; fails=1; }
+  argv_is_player "$TA/pv/argv.gone" "$TA/pv/cwd" && { echo "FAIL arm15 gone: an unreadable cmdline read as a player"; fails=1; }
+
   [ "$arms" = "$EXPECT_ARMS" ] \
     || { echo "FAIL: $arms of $EXPECT_ARMS arms ran — one was dropped, never wired, or an earlier arm exited"; fails=1; }
   [ "$fails" = 0 ] && echo "box_busy selftest: $arms/$EXPECT_ARMS arms ran, every assertion held"
@@ -292,7 +335,7 @@ case "${1:-}" in
   ## The player test as a QUESTION, so the gate templates ask it instead of carrying a copy. rungate
   ## had its own godot scan, and it held the .746 gate 35 min on struktured's game after this file
   ## had already learned to tell a player from a gate. Two scans, one fact, and only one was fixed.
-  --is-player) [ -n "${2:-}" ] && [ "$(argv_len "$2")" = 1 ] && exit 0; exit 1 ;;
+  --is-player) [ -n "${2:-}" ] && is_player "$2" && exit 0; exit 1 ;;
   --others) n="$(others)"; [ "${n:-0}" -gt 0 ] && { echo "other lanes' engines up: $n"; exit 0; }; exit 1 ;;
   --marker) printf '%s\n' "$BOX_MARKER"; exit 0 ;;
   --roots) n=0; for r in $(deploy_roots); do [ -d "$r" ] && { echo "$r"; n=$((n+1)); }; done
