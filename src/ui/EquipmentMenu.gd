@@ -496,7 +496,7 @@ func _create_stats_panel(panel_size: Vector2) -> Control:
 	bonus_title.add_theme_color_override("font_color", DISABLED_COLOR)
 	panel.add_child(bonus_title)
 
-	var equip_mods = EquipmentSystem.get_equipment_mods(character)
+	var equip_mods = EquipmentSystem.get_applied_equipment_mods(character)
 	bonus_y += 20
 
 	for stat_name in equip_mods:
