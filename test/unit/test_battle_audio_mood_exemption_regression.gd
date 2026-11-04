@@ -59,7 +59,10 @@ func test_speed_indicator_never_fades() -> void:
 ## the CTB timeline moved (frame measured 2026-10-06), and the function was never even called, so the pin
 ## was green over an indicator nobody could see. The relationship is now guarded behaviourally by
 ## test_the_battle_speed_shows_on_screen_regression (no overlap at any speed); this only pins the anchor.
-func test_speed_indicator_hangs_under_the_auto_badge() -> void:
+## Since 2026-11-01 both badges ride in the PARTY panel's header row (they stood over the party's top member);
+## the old anchor under the AUTO badge remains only for a scene with no PARTY panel.
+func test_speed_indicator_rides_with_the_auto_badge() -> void:
 	var body := _body_of(SCENE, "_create_speed_indicator")
+	assert_true("party_header_row()" in body, "the speed readout joins the AUTO badge in the PARTY header row")
 	assert_true("BattleUIManagerClass.AUTO_BADGE_BOTTOM" in body,
-		"the speed readout hangs under the AUTO badge, from the badge's own anchor constants")
+		"and without a PARTY panel it still hangs under the AUTO badge, from the badge's own anchor constants")

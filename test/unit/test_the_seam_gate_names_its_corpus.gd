@@ -188,7 +188,8 @@ func test_the_report_names_the_audio_it_measured() -> void:
 ## Tiers this file's seam numbers were actually measured at (2026-09-12, both corpora).
 ## A shipped tier outside this list has no measurement behind it, and the verdict would
 ## again describe audio nobody hears — the exact defect this file exists to prevent.
-const MEASURED_TIERS: Array[int] = [48, 44, 40]
+## 32 measured 2026-11-02 for the .761 ruling: 146 beds, 0 cross 12 dB, 4 under 1 dB (closest 0.3).
+const MEASURED_TIERS: Array[int] = [48, 44, 40, 32]
 
 
 ## Derived, never restated: a second copy of the number here would go stale the next

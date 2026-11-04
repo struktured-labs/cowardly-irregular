@@ -178,7 +178,7 @@ func test_damage_number_crit_wobble_uses_helper() -> void:
 	# helper too so accessibility mode is consistent through the
 	# animation.
 	var src := _read(DAMAGE_NUMBER)
-	assert_true(src.contains("tween_property(_label, \"theme_override_colors/font_color\", _crit_color(), 0.15)"),
+	assert_true(src.contains("tween_property(_label, \"modulate\", _crit_color(), 0.15)"),
 		"crit wobble effect must use _crit_color() helper (consistent with initial color)")
 
 

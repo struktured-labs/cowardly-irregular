@@ -46,6 +46,15 @@ func _scene_with_menu() -> Array:
 	return [scene, scene.active_win98_menu]
 
 
+## .765: the menu now opens on the first real command (5eb0880f3), which may carry no description;
+## the Auto row that used to be the default did. Park the cursor on a row that has one.
+func _select_a_row_with_a_tooltip(menu) -> void:
+	for i in menu.menu_items.size():
+		if str(menu.menu_items[i].get("tooltip", "")) != "":
+			menu.selected_index = i
+			return
+
+
 ## CONTROL: the tooltip really is a sibling. This is WHY visibility does not inherit, and without it
 ## the arms below read as an ordinary show/hide bug rather than the sibling class.
 func test_control_the_tooltip_is_a_sibling_not_a_child() -> void:
@@ -55,6 +64,7 @@ func test_control_the_tooltip_is_a_sibling_not_a_child() -> void:
 	assert_not_null(menu, "PRECONDITION: a command menu must spawn, or every arm here measures nothing")
 	if menu == null:
 		return
+	_select_a_row_with_a_tooltip(menu)
 	menu._update_tooltip()
 	await wait_frames(1)
 	var tip = menu._tooltip_label
@@ -74,6 +84,7 @@ func test_hiding_the_menu_takes_its_tooltip_with_it() -> void:
 	if menu == null:
 		fail_test("PRECONDITION: no menu")
 		return
+	_select_a_row_with_a_tooltip(menu)
 	menu._update_tooltip()
 	await wait_frames(1)
 	var tip = menu._tooltip_label
@@ -96,6 +107,7 @@ func test_showing_the_menu_brings_its_tooltip_back() -> void:
 	if menu == null:
 		fail_test("PRECONDITION: no menu")
 		return
+	_select_a_row_with_a_tooltip(menu)
 	menu._update_tooltip()
 	await wait_frames(1)
 	var tip = menu._tooltip_label
