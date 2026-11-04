@@ -173,7 +173,7 @@ func _process(delta: float) -> void:
 		return
 	# Down only while shown: the arrival banner fades out under the hint, and a panel that climbed back would jump.
 	_panel.size = Vector2(_panel.size.x, 0.0)  # A PanelContainer only grows; measure its real content height each frame.
-	_panel.position.y = maxf(_panel.position.y, top_clear_of(_panel.position.x, _panel.size, _reserved_rects()))
+	_panel.position.y = fit_on_screen(maxf(_panel.position.y, top_clear_of(_panel.position.x, _panel.size, _reserved_rects())), _panel.size.y, get_viewport().get_visible_rect().size.y)
 
 	var now: float = float(clock.call())
 	var real_dt: float = delta if _last_t < 0.0 else maxf(0.0, now - _last_t)
@@ -223,11 +223,22 @@ func _reserved_rects() -> Array:
 			var r: Rect2 = n.reserved_rect()
 			if r.has_area():
 				out.append(r)
+	# An open command/field menu is never covered: the battle hint sat on the command menu (demo 2026-11).
+	for m in get_tree().get_nodes_in_group("win98_menus"):
+		if m is Control and (m as Control).is_visible_in_tree():
+			var mr: Rect2 = (m as Control).get_global_rect()
+			if mr.has_area():
+				out.append(mr)
 	return out
 
 
 ## The "New World" hint covered the arrival banner and cut the quest tracker off mid-word: start below any
 ## reserved HUD block in the panel's columns that would overlap it at PANEL_TOP.
+## Never push the panel off the bottom edge while clearing a tall menu.
+static func fit_on_screen(y: float, panel_h: float, view_h: float) -> float:
+	return clampf(y, PANEL_TOP, maxf(PANEL_TOP, view_h - panel_h - 8.0))
+
+
 static func top_clear_of(panel_x: float, panel_size: Vector2, reserved: Array) -> float:
 	var y := PANEL_TOP
 	for r in reserved:

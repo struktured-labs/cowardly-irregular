@@ -43,4 +43,4 @@ func test_the_real_scene_still_builds_its_speed_readout() -> void:
 	var scene = load("res://src/battle/BattleScene.tscn").instantiate()
 	add_child_autofree(scene)
 	await get_tree().process_frame
-	assert_not_null(scene.get_node_or_null("UI/SpeedPanel"), "CONTROL: with a UI the speed readout is still built")
+	assert_not_null(scene.find_child("SpeedPanel", true, false), "CONTROL: with a UI the speed readout is still built")

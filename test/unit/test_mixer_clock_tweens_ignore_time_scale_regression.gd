@@ -25,12 +25,18 @@ const SM_SRC: String = "res://src/audio/SoundManager.gd"
 const CLASSIFIED: Dictionary = {
 	"duck_music_for_dialogue": false,
 	"duck_music_for_kill": true,
-	"play_music": true,
+	# 2026-11-02 area crossfade: play_music's outgoing fade moved into _hand_off_to_b (shared with
+	# play_area_music); the incoming ramp is _fade_in_music. Both drive player volume_db.
+	"_hand_off_to_b": true,
+	"_fade_in_music": true,
 	"fade_out_music": true,
 	"set_danger_intensity": true,
 	# 2026-09-06 sfx/corruption-audible: set_corruption_intensity now stores its meter and the
 	# single renderer _apply_corruption_max builds the tween (max of grind + save meters).
 	"_apply_corruption_max": true,
+	# 2026-11-02 lane/music-quest-accept-jingle: drives the MusicDuck bus Amplify (slot 2) volume_db under the
+	# quest-accept ditty; bus level runs on the mixer clock, so it opts out of Engine.time_scale.
+	"_duck_music_for_jingle": true,
 }
 
 const NOMINAL_MS: float = 500.0

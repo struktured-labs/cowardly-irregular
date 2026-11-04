@@ -3,21 +3,26 @@ extends GutTest
 
 var _scene = null
 var _gs: Node = null
-var _saved: Dictionary = {}
+## Arms start from what New Game resets to: is_story_flag_set reads FOUR namespaces, and clearing dungeon_flags alone let a persisted profile's cutscene_flag_ leak in.
+var _saved_constants: Dictionary = {}
+var _saved_story: Dictionary = {}
 
 
 func before_each() -> void:
 	_scene = load("res://src/exploration/OverworldScene.gd").new()
 	_gs = get_node_or_null("/root/GameState")
 	if _gs != null:
-		_saved = (_gs.game_constants.get("dungeon_flags", {}) as Dictionary).duplicate(true)
+		_saved_constants = _gs.game_constants.duplicate(true)
+		_saved_story = _gs.story_flags.duplicate(true)
+		_gs.game_constants = _gs.DEFAULT_GAME_CONSTANTS.duplicate(true)
 		_gs.game_constants["dungeon_flags"] = {}
-		_gs.story_flags.erase("world1_mordaine_defeated")
+		_gs.story_flags = {}
 
 
 func after_each() -> void:
 	if _gs != null:
-		_gs.game_constants["dungeon_flags"] = _saved
+		_gs.game_constants = _saved_constants
+		_gs.story_flags = _saved_story
 	if _scene != null:
 		_scene.free()
 
@@ -94,3 +99,25 @@ func test_a_missing_game_state_does_not_claim_the_castle_is_open() -> void:
 	assert_false(text.contains("stands open"),
 		"with no GameState the line must not promise an open castle; got: " + text)
 	assert_ne(text, "", "the null path must still say something to the player")
+
+
+## A flag planted in ANY of is_story_flag_set's four namespaces must not survive the setup (the .760 sandbox shape).
+func test_a_planted_flag_in_any_namespace_does_not_survive_setup() -> void:
+	assert_not_null(_gs, "GameState autoload missing")
+	for plant in ["story", "cutscene", "bare", "dungeon"]:
+		match plant:
+			"story": _gs.story_flags["rat_king_defeated"] = true
+			"cutscene": _gs.game_constants["cutscene_flag_rat_king_defeated"] = true
+			"bare": _gs.game_constants["rat_king_defeated"] = true
+			"dungeon": _gs.game_constants["dungeon_flags"] = {"rat_king_defeated": true}
+		assert_true(_gs.is_story_flag_set("rat_king_defeated"), "CONTROL: the %s plant is visible" % plant)
+		# The SETUP must face the plant: keep the true originals so the final after_each restores them, not the plant.
+		var keep_constants: Dictionary = _saved_constants
+		var keep_story: Dictionary = _saved_story
+		var old_scene = _scene
+		before_each()
+		assert_false(_gs.is_story_flag_set("rat_king_defeated"), "a flag planted as %s survived the setup" % plant)
+		_saved_constants = keep_constants
+		_saved_story = keep_story
+		if old_scene != null:
+			old_scene.free()

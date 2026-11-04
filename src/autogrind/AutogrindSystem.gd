@@ -3426,6 +3426,9 @@ func _record_session(results: Dictionary, stats: Dictionary) -> void:
 		"items_consumed": items_consumed.duplicate(),
 	}
 	session_history.append(entry)
+	## The per-run tally the Records page shows (#193); the history above stays machine-global for the history browser.
+	if GameState:
+		GameState.autogrind_sessions += 1
 	if session_history.size() > MAX_SESSION_HISTORY:
 		session_history.remove_at(0)
 	_save_session_history()

@@ -29,6 +29,8 @@ signal damage_dealt(target: Combatant, amount: int, is_crit: bool, element: Stri
 signal attack_missed(target: Combatant)
 ## A hit that never connected for a reason other than a miss. Banner is the sprite text: "IMMUNE" or "BLOCK".
 signal hit_negated(target: Combatant, banner: String)
+## A harmful support roll (an ailment or a stat drop) failed on this target, so the miss is heard and logged, not silent.
+signal status_resisted(target: Combatant, effect: String)
 signal healing_done(target: Combatant, amount: int)
 ## struktured 2026-09-07: MP gains and ability AP grants get their own popups (purple / red) — never healing_done's green.
 signal mp_restored(target: Combatant, amount: int)
@@ -113,6 +115,26 @@ var execution_order: Array[Dictionary] = []  # Sorted by computed turn order
 var presentation_hold: float = 0.0
 
 
+## #763 (struktured: "the mage's fire attack kills the monster before it lands"): BattleScene sets this
+## during the action_executing dispatch when it launches a projectile-style ability sequence (Fire and
+## every other AbilityVFX "sequence" spell), to the sequence's impact time in battle seconds.
+## _execute_ability awaits it BEFORE resolving the effect, so the HP drop, the death and the despawn all
+## happen at the moment the bolt lands instead of on the cast frame. 0 = resolve immediately (headless,
+## tests, turbo/console, non-projectile abilities). The timer runs on Engine.time_scale exactly like the
+## VFX, so 1.5x / max speed stay in sync.
+var impact_hold: float = 0.0
+const IMPACT_HOLD_MAX := 3.0
+var _ability_exec_depth: int = 0
+
+
+func _take_impact_hold() -> float:
+	var h: float = clampf(impact_hold, 0.0, IMPACT_HOLD_MAX)
+	impact_hold = 0.0
+	if turbo_mode or not is_inside_tree():
+		return 0.0
+	return h
+
+
 func _consume_presentation_hold(base_delay: float) -> float:
 	var hold: float = maxf(base_delay, presentation_hold)
 	presentation_hold = 0.0
@@ -156,6 +178,10 @@ var battle_serial: int = 0
 # wall-clock (not time_scale'd) so 32x battle speed can't distort the stall threshold
 const _WD_STALL_MS: int = 10000
 var _wd_last_progress_ms: int = 0
+# battle-time budget spent since the last bump: each frame adds its wall ms × min(1, time_scale), so a 0.25x beat that ends
+# (signature restore) mid-hold can't be judged by the NEW scale against wall ms accrued at the old one (Umbraxis false stall).
+var _wd_scaled_ms: float = 0.0
+var _wd_last_tick_ms: int = 0
 # armed only inside start_battle..end_battle — tests poke states without the lifecycle
 var _wd_armed: bool = false
 # hard-off under gut_cmdln: a mid-suite recovery end_battles empty parties and poisons awaiting tests
@@ -165,6 +191,8 @@ var _wd_disabled_for_tests: bool = false
 
 func _wd_bump() -> void:
 	_wd_last_progress_ms = Time.get_ticks_msec()
+	_wd_scaled_ms = 0.0
+	_wd_last_tick_ms = _wd_last_progress_ms
 
 
 func _process(_delta: float) -> void:
@@ -188,19 +216,25 @@ func _process(_delta: float) -> void:
 			or current_state == BattleState.ENEMY_SELECTING)
 	if not is_watched:
 		_wd_last_progress_ms = 0
+		_wd_scaled_ms = 0.0
 		return
 	var now: int = Time.get_ticks_msec()
 	if _wd_last_progress_ms == 0:
 		_wd_last_progress_ms = now
+		_wd_last_tick_ms = now
+		_wd_scaled_ms = 0.0
 		return
-	var slack: float = maxf(1.0, 1.0 / maxf(Engine.time_scale, 0.001))
-	if now - _wd_last_progress_ms < int(_WD_STALL_MS * slack):
+	_wd_scaled_ms += float(now - _wd_last_tick_ms) * minf(1.0, maxf(Engine.time_scale, 0.001))
+	_wd_last_tick_ms = now
+	if _wd_scaled_ms < float(_WD_STALL_MS):
 		return
+	_wd_scaled_ms = 0.0
 	var who: String = current_combatant.combatant_name if current_combatant else "?"
 	push_error("BattleManager: %s stalled %dms at %s — watchdog recovering" % [
 		BattleState.keys()[current_state], now - _wd_last_progress_ms, who])
 	battle_log_message.emit("[color=orange]⚠ Battle stalled — auto-recovering...[/color]")
 	_wd_last_progress_ms = now
+	_wd_last_tick_ms = now
 	if current_state == BattleState.ENEMY_SELECTING:
 		_recover_enemy_selection_stall()
 	else:
@@ -559,6 +593,7 @@ func start_battle(players: Array[Combatant], enemies: Array[Combatant]) -> void:
 
 	## Tick 406: reset per-battle mimic tracking.
 	_last_ability_cast_id = ""
+	impact_hold = 0.0
 	_last_ability_cast_caster = null
 
 	## Tick 419: gate escape on boss presence. Pre-fix escape_allowed
@@ -2035,6 +2070,12 @@ func _process_next_selection() -> void:
 	else:
 		current_state = BattleState.ENEMY_SELECTING
 
+	# A stunned party member was handed the full menu and its pick was thrown away at execution (.758 Skeleton Knight duel).
+	if current_combatant in player_party and _held_turn(current_combatant):
+		selection_index += 1
+		_process_next_selection()
+		return
+
 	# Later allies get their AP above, then the remembered action; the first enemy clears this and selects.
 	if _filling_repeat:
 		if current_combatant in player_party:
@@ -2163,6 +2204,24 @@ func request_trust_interrupt() -> bool:
 ## handler consults this before swallowing cancel input.
 func is_trust_interrupt_window_open() -> bool:
 	return _trust_window_pc != null and is_instance_valid(_trust_window_pc)
+
+
+## A party member certain to lose the round (stun, cannot_act) is told so and held, not menued; sleep/confuse/fear can still lift.
+func _held_turn(c: Combatant) -> bool:
+	var why := ""
+	if c.has_status("stun"):
+		why = "stunned"
+	elif c.has_status("cannot_act"):
+		why = "held"
+	if why == "":
+		return false
+	var key := "stun" if why == "stunned" else "cannot_act"
+	var left: int = maxi(1, int(c.status_durations.get(key, 1)))
+	battle_log_message.emit("[color=%s]%s is %s and loses this turn%s.[/color]" % [
+		AccessibilityPalette.penalty_bbcode(), c.combatant_name, why,
+		"" if left <= 1 else " (%d turns left)" % left])
+	_queue_action({"type": "held", "combatant": c, "speed": _compute_action_speed(c, "attack")})
+	return true
 
 
 func _end_selection_turn() -> void:
@@ -4282,7 +4341,7 @@ func _execute_next_action() -> void:
 		"attack":
 			_execute_attack(combatant, action.get("target"))
 		"ability":
-			_execute_ability(combatant, action.get("ability_id", ""), action.get("targets", []))
+			await _execute_ability(combatant, action.get("ability_id", ""), action.get("targets", []))
 		"item":
 			_execute_item(combatant, action.get("item_id", ""), action.get("targets", []))
 		"defer":
@@ -4292,6 +4351,11 @@ func _execute_next_action() -> void:
 		"advance":
 			_execute_advance(combatant, action)
 			return  # Advance handles its own continuation
+		"held":
+			# Queued by _held_turn; the status checks above spend it. Here only if the status was cured in between.
+			battle_log_message.emit("[color=yellow]%s[/color] shakes it off, too late to act this round." % combatant.combatant_name)
+			_execute_next_action()
+			return
 		_:
 			push_warning("BattleManager: Unknown action type '%s'" % action.get("type", ""))
 			# Do NOT return here — fall through to keep the execution chain alive.
@@ -5085,7 +5149,9 @@ func _execute_advance(combatant: Combatant, advance_action: Dictionary) -> void:
 				_execute_attack(combatant, action.get("target"))
 				combatant.spend_restriction_clocks()
 			"ability":
-				_execute_ability(combatant, action.get("ability_id", ""), action.get("targets", []))
+				await _execute_ability(combatant, action.get("ability_id", ""), action.get("targets", []))
+				if not is_instance_valid(self) or not is_instance_valid(combatant):
+					return
 				combatant.spend_restriction_clocks()
 			"item":
 				_execute_item(combatant, action.get("item_id", ""), action.get("targets", []))
@@ -5680,6 +5746,23 @@ func _execute_ability(caster: Combatant, ability_id: String, targets: Array) -> 
 		_last_ability_cast_id = ability_id
 		_last_ability_cast_caster = caster
 
+	## #763: wait for the projectile to land. Only the outermost cast waits (a Mimic replay nested inside
+	## an ability resolves right after its parent's impact).
+	var _impact_wait: float = _take_impact_hold()
+	if _impact_wait > 0.0 and _ability_exec_depth == 0:
+		## The post-action hold BattleScene set already counts the flight; don't pay it twice.
+		presentation_hold = maxf(0.0, presentation_hold - _impact_wait)
+		await get_tree().create_timer(_impact_wait).timeout
+		if not is_instance_valid(self) or not is_instance_valid(caster):
+			return
+		## A target may have left the field during the flight (fled, despawned by a scripted event).
+		retargeted = retargeted.filter(func(t): return is_instance_valid(t))
+	_ability_exec_depth += 1
+	_execute_ability_resolve(caster, ability_id, ability, ability_type, retargeted)
+	_ability_exec_depth -= 1
+
+
+func _execute_ability_resolve(caster: Combatant, ability_id: String, ability, ability_type, retargeted: Array) -> void:
 	match ability_type:
 		"physical":
 			_execute_physical_ability(caster, ability, retargeted)
@@ -6990,7 +7073,11 @@ func _support_harm_lands(target: Combatant, chance: float) -> bool:
 ## The predicate decides. Wards and ally buffs keep the raw roll.
 func _support_roll_lands(target: Combatant, effect: String, chance: float) -> bool:
 	if support_effect_is_harmful(effect):
-		return _support_harm_lands(target, chance)
+		var landed: bool = _support_harm_lands(target, chance)
+		if not landed:
+			status_resisted.emit(target, effect)
+			battle_log_message.emit("[color=gray]%s resists %s.[/color]" % [target.combatant_name, effect.replace("_", " ")])
+		return landed
 	return randf() < chance
 
 

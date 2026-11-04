@@ -180,8 +180,10 @@ func test_tick_218_outline_preserved() -> void:
 	var fn_idx: int = src.find("func _spawn_elemental_indicator")
 	var next_fn: int = src.find("\nfunc ", fn_idx + 1)
 	var body: String = src.substr(fn_idx, next_fn - fn_idx)
-	assert_true(body.contains("label.add_theme_constant_override(\"outline_size\", 2)"),
-		"tick 218 outline preserved")
+	# Pixel pass 2026-11-02: the indicator is a PixelText; the tick 218 outline + shadow are baked into every glyph.
+	assert_true(body.contains("PixelText.new(text"), "_spawn_elemental_indicator draws PixelText glyphs")
+	var pt: String = FileAccess.get_file_as_string("res://src/ui/PixelText.gd")
+	assert_true(pt.contains("img.set_pixelv(p, OUTLINE)"), "every glyph carries its dark outline")
 
 
 func test_tick_226_damage_palette_preserved() -> void:

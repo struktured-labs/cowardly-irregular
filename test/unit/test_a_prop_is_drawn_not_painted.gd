@@ -121,7 +121,8 @@ func test_every_shipped_entry_names_a_real_prop_world_and_file() -> void:
 		for k in kinds:
 			if key == k or (str(key).begins_with(k + "_") and str(key).trim_prefix(k + "_") in WORLDS + _village_keys()):
 				ok = true
-		assert_true(ok, "prop_art '%s' is not <kind> or <kind>_<world> or <kind>_<village>, so nothing will ever read it" % key)
+		ok = ok or InteriorArt.accepts_key(str(key))
+		assert_true(ok, "prop_art '%s' is not <kind>, <kind>_<world>, <kind>_<village> or an interior key, so nothing will ever read it" % key)
 	assert_true(sec is Dictionary, "prop_art did not parse as a section")
 
 

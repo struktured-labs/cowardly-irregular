@@ -71,6 +71,8 @@ func test_the_inherited_bed_comes_back_to_full_level() -> void:
 	SoundManager.play_area_music(VILLAGE)
 	await get_tree().process_frame
 	await get_tree().process_frame
+	## 2026-11-02 area crossfade: a bed now ramps in over FADE_IN_DURATION; read the level once it has landed.
+	await get_tree().create_timer(SoundManager.FADE_IN_DURATION + 0.2).timeout
 	var base: float = SoundManager._music_base_db
 	assert_almost_eq(SoundManager._music_player.volume_db, base, 0.01,
 		"CONTROL: the bed must start at the user's level")

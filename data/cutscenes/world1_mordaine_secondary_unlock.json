@@ -1,0 +1,79 @@
+{
+  "id": "world1_mordaine_secondary_unlock",
+  "title": "Two Hats, One Head",
+  "world": 1,
+  "trigger": "after_world1_rat_king_defeat",
+  "presentation": "staged",
+  "background": "cave_entrance",
+  "description": "#763: the secondary-job slot opens when the Cave Rat King falls (JobSystem.SECONDARY_UNLOCK_FLAG). Carmelo asked that the unlock be announced not by a system popup but by Mordaine, for her own amusement. She is unnamed here (speaker '???', mysterious theme) because the party does not learn her name until Act 2; the voice is her cast voice (voice_refs/mordaine.wav), so a replay recognises it. Fourth-wall in the game's established register: reality_glitch + a short flash, then she talks about the menu as a menu. Plays once, in the cave, right after world1_rat_king_defeat; gated off for saves already past chapter4 (they have had the slot all along). DRAFT text pending Carmelo's ruling.",
+  "steps": [
+    {
+      "type": "play_sfx",
+      "sfx": "reality_glitch"
+    },
+    {
+      "type": "screen_flash",
+      "duration": 0.2
+    },
+    {
+      "type": "letterbox_in",
+      "duration": 0.4
+    },
+    {
+      "type": "narration",
+      "text": "The cave went quiet in a way caves do not. Somewhere just past the edge of the screen, someone was clapping. Slowly."
+    },
+    {
+      "type": "wait",
+      "duration": 0.4
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "???",
+          "text": "Well done. The rat was a placeholder, but you hit it with such conviction.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "???",
+          "text": "Since you insist on progressing, I have unlocked something for you. A second job. Two hats, one head.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "???",
+          "text": "Open the menu. Yes, that one. The one you pretend the characters cannot see.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "???",
+          "text": "Choose carefully. Or don't. The wrong choices are so much more informative.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "???",
+          "text": "Carry on. I will be taking notes.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "play_sfx",
+      "sfx": "reality_glitch"
+    },
+    {
+      "type": "set_flag",
+      "flag": "mordaine_secondary_unlock_seen",
+      "value": true
+    },
+    {
+      "type": "letterbox_out",
+      "duration": 0.4
+    }
+  ]
+}

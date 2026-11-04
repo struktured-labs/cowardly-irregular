@@ -12,10 +12,6 @@
       "duration": 0.4
     },
     {
-      "type": "narration",
-      "text": "Harmonia was the kind of village where nothing happened at dawn. Things happened at a responsible mid-morning hour, after porridge and before the first ale. The party arrived at neither of these times."
-    },
-    {
       "type": "wait",
       "duration": 0.3
     },

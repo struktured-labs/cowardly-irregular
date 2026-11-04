@@ -45,6 +45,9 @@ func _authored_lines() -> Array:
 		for l in mon.get(part, []):
 			if str(l).begins_with(SPEAKER + ":"):
 				out.append(str(l).split(":", true, 1)[1].strip_edges())
+	for trig in BossBarks.TRIGGERS:
+		for l in BossBarks.lines_for("cave_rat_king", trig):
+			out.append(str(l))
 	var bark := str((_json("res://data/monsters.json")["cave_rat_king"] as Dictionary).get("fx_signature_card", {}).get("bark", ""))
 	if bark != "":
 		out.append(bark)

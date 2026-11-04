@@ -82,7 +82,10 @@ PCK_CACHE_LINE=167772160
 # drops every music exclusion from its own copy of that file, so editing it changes nothing on web.
 # A variable rather than a literal: the previous code passed 48 in one place and PRINTED "48 kbps
 # tier" in another, two spellings of one number that a change updates separately.
-WEB_AUDIO_KBPS="${WEB_AUDIO_KBPS:-40}"
+# 2026-11-02, cowir-main 21346 (struktured: "pick whatever for web, I don't care"): 40 -> 32, measured by
+# @cowir-music on all 162 masters (82.54 -> 72.56 MiB of tier, ~10 MiB back on web) to fit the W1 interiors.
+# THIS LINE IS THE ONE HOME: publish_all.sh and make_web_audio.sh both READ it, neither carries its own.
+WEB_AUDIO_KBPS="${WEB_AUDIO_KBPS:-32}"
 # The web-only VOICE tier (tools/make_web_voice.sh): party voice lines re-encoded for the web pck.
 # 0 = OFF — voice ships at master quality, as it always has. The encoding is @cowir-sfx's call;
 # it is set HERE and nowhere else. Measured on 211 clips: 24000 Hz at 32 or 40 kbps decode clean;
