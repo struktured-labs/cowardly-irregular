@@ -149,7 +149,7 @@ func test_the_floating_word_is_the_banner_and_a_miss_stays_miss() -> void:
 		if child.get_child_count() == 0:
 			continue
 		var label = child.get_child(0)
-		if label is Label:
+		if label is Label or label is PixelText:
 			words.append(label.text)
 	assert_true(words.has("IMMUNE"), "the immunity popup says IMMUNE, not MISS — got %s" % str(words))
 	assert_true(words.has("BLOCK"), "the ward popup says BLOCK — got %s" % str(words))

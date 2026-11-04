@@ -28,11 +28,18 @@
 #           engine BOOTS on that profile; his running game appends to godot.log, which is not checked.
 #
 #   --selftest   a fake smoke (bash) under a FAKE HOME: never his profile.
+#
+# SRP_VAR (default XDG_DATA_HOME) names the variable that relocates user:// for THIS smoke, so the
+# desktop battle smoke can be proven the same way (deploy_desktop.sh gate 3b): XDG_DATA_HOME for the
+# linux build, WINEPREFIX for the windows one, whose user:// lives inside the prefix. SRP_REAL_REL
+# (default: the <profile_rel> argument) is the profile path under <real_data_home> that arm (c)
+# inspects, for a smoke whose sandbox layout differs from his (wine's drive_c/users/...).
 # Exit: 0 green · 1 red (reasons on stderr) · 2 usage.
 set -u
 # The match carries no leading "--": test_the_smoke_cannot_see_his_pad_regression keys REAL game launches on
 # the flag "--render-smoke" in tools/*.sh, and this line launches nothing. A substring of the real argument.
 SRP_MATCH="${SRP_MATCH:-render-smoke}"
+SRP_VAR="${SRP_VAR:-XDG_DATA_HOME}"
 _red() { echo "[redirect] RED: $*" >&2; }
 
 _matches() { # pids under $1 (inclusive) whose args contain $SRP_MATCH: ONE ps per sample
@@ -40,33 +47,36 @@ _matches() { # pids under $1 (inclusive) whose args contain $SRP_MATCH: ONE ps p
     ps -eo pid=,ppid=,args= 2>/dev/null | awk -v root="$1" -v m="$SRP_MATCH" '
         { pid[NR]=$1; pp[NR]=$2; $1=""; $2=""; a[NR]=$0; n=NR }
         END { inset[root]=1; ch=1
-              while (ch) { ch=0; for (i=1;i<=n;i++) if (!(pid[i] in inset) && (pp[i] in inset)) { inset[pid[i]]=1; ch=1 } }
+              for (it=0; ch && it<=n; it++) { ch=0; for (i=1;i<=n;i++) if (!(pid[i] in inset) && (pp[i] in inset)) { inset[pid[i]]=1; ch=1 } }
               for (i=1;i<=n;i++) if ((pid[i] in inset) && index(a[i], m)) print pid[i] }'
 }
 
 check_value() {
     local v="$1" real="$2" rv rr
-    [ -n "$v" ] || { _red "XDG_DATA_HOME value is EMPTY (Godot falls back to his ~/.local/share)"; return 1; }
-    [ -d "$v" ] || { _red "XDG_DATA_HOME '$v' is not an existing directory"; return 1; }
+    [ -n "$v" ] || { _red "$SRP_VAR value is EMPTY (Godot/wine fall back to his home)"; return 1; }
+    [ -d "$v" ] || { _red "$SRP_VAR '$v' is not an existing directory"; return 1; }
     rv="$(realpath "$v")"; rr="$(realpath -m "$real")"
-    [ "$rv" = "$v" ] || { _red "XDG_DATA_HOME '$v' is not its own realpath ('$rv')"; return 1; }
-    case "$rv/" in "$rr/"*) _red "XDG_DATA_HOME '$v' is his data home or inside it ('$rr')"; return 1 ;; esac
+    [ "$rv" = "$v" ] || { _red "$SRP_VAR '$v' is not its own realpath ('$rv')"; return 1; }
+    case "$rv/" in "$rr/"*) _red "$SRP_VAR '$v' is his data home or inside it ('$rr')"; return 1 ;; esac
     return 0
 }
 
 watch() {
-    local pid="$1" out="$2" q env v
+    # BOUNDED (check_polling_bounded): a counter of 0.2 s ticks, SRP_WATCH_MAX seconds (default 600 = 2x the
+    # smoke's own `timeout 300`). Hitting it stops the sampling only; the verdict still judges what was seen.
+    local pid="$1" out="$2" q env v i=0 max=$(( ${SRP_WATCH_MAX:-600} * 5 ))
     : > "$out"
-    while kill -0 "$pid" 2>/dev/null; do
+    while [ "$i" -lt "$max" ] && kill -0 "$pid" 2>/dev/null; do
         for q in $(_matches "$pid"); do
             env="$(tr '\0' '\n' 2>/dev/null < "/proc/$q/environ")" || continue
             [ -n "$env" ] || continue
-            if printf '%s\n' "$env" | command grep -q '^XDG_DATA_HOME='; then
-                v="$(printf '%s\n' "$env" | sed -n 's/^XDG_DATA_HOME=//p' | head -1)"; [ -n "$v" ] || v="<empty>"
+            if printf '%s\n' "$env" | command grep -q "^$SRP_VAR="; then
+                v="$(printf '%s\n' "$env" | sed -n "s/^$SRP_VAR=//p" | head -1)"; [ -n "$v" ] || v="<empty>"
             else v="<unset>"; fi
             command grep -qxF -- "$q $v" "$out" || echo "$q $v" >> "$out"
         done
         sleep 0.2
+        i=$((i + 1))
     done
 }
 
@@ -77,15 +87,15 @@ verdict() {
     if [ "${n:-0}" -eq 0 ]; then _red "no smoke process was ever seen (match '$SRP_MATCH'): the environ arm saw nothing"; bad=1
     else
         while read -r _ v; do
-            [ "$v" = "$rs" ] || { _red "the smoke ran with XDG_DATA_HOME='$v', not the sandbox '$rs'"; bad=1; }
+            [ "$v" = "$rs" ] || { _red "the smoke ran with $SRP_VAR='$v', not the sandbox '$rs'"; bad=1; }
         done < "$seen"
     fi
     if [ -z "$(find "$sb/$rel/logs" -maxdepth 1 -name 'godot*.log' -newer "$since" 2>/dev/null | head -1)" ]; then
         _red "the engine left no fresh log under the sandbox ($sb/$rel/logs): user:// did not resolve there"; bad=1
     fi
-    local leak
-    leak="$( { find "$real/$rel/smoke" -type f -newer "$since" 2>/dev/null; \
-               find "$real/$rel/logs" -maxdepth 1 -name 'godot2*.log' -newer "$since" 2>/dev/null; } | head -3)"
+    local leak rr="${SRP_REAL_REL:-$rel}"
+    leak="$( { find "$real/$rr/smoke" -type f -newer "$since" 2>/dev/null; \
+               find "$real/$rr/logs" -maxdepth 1 -name 'godot2*.log' -newer "$since" 2>/dev/null; } | head -3)"
     [ -z "$leak" ] || { _red "fresh files in the REAL profile: $(printf '%s' "$leak" | tr '\n' ' ')"; bad=1; }
     [ "$bad" = 0 ] && echo "[redirect] GREEN: the smoke ran in $rs (seen in $n process environ(s)) and left nothing new in the real profile"
     return "$bad"
@@ -133,6 +143,38 @@ EOF
         if command grep -q 'fresh files in the REAL profile' "$T/$a/out"; then pass=$((pass+1)); printf '  ok    %-44s leak arm fired\n' "$a: fake profile written"
         else fail=$((fail+1)); printf '  FAIL  %-44s leak arm did not fire\n' "$a: fake profile written"; fi
     done
+    # WINE (SRP_VAR=WINEPREFIX): the windows battle smoke's user:// lives inside the prefix, and wine with no
+    # prefix falls back to $HOME/.wine. Flag --fake-battle-smoke so SRP_MATCH "battle-smoke" matches it.
+    # "linux" makes the fake ALSO boot a linux engine on the fake HOME's profile: only SRP_REAL_REL can see that.
+    cat > "$T/fake_wine.sh" <<'EOF2'
+d="${WINEPREFIX:-}"; [ -n "$d" ] || d="$HOME/.wine"
+u="$d/drive_c/users/u/AppData/Roaming/Godot/app_userdata/Cowardly Irregular"; mkdir -p "$u/logs"
+sleep 0.8; echo boot > "$u/logs/godot2026-11-01T00.00.00.log"; echo log > "$u/logs/godot.log"
+if [ "${1:-}" = linux ]; then l="$HOME/.local/share/godot/app_userdata/Cowardly Irregular/logs"; mkdir -p "$l"; echo boot > "$l/godot2026-11-01T00.00.00.log"; fi
+EOF2
+    local WREL="drive_c/users/u/AppData/Roaming/Godot/app_userdata/Cowardly Irregular"
+    _warm() { # label want_ec mode(good|unset|linux) real_rel(""=unset)
+        local label="$1" want="$2" mode="$3" H="$T/$1/home" SB="$T/$1/sandbox" pid ec wp
+        mkdir -p "$H/.local/share" "$SB"; touch "$T/$1/since"; sleep 1.1
+        case "$mode" in
+            good)  env HOME="$H" WINEPREFIX="$SB" bash "$T/fake_wine.sh" x --fake-battle-smoke & ;;
+            linux) env HOME="$H" WINEPREFIX="$SB" bash "$T/fake_wine.sh" linux --fake-battle-smoke & ;;
+            unset) env -u WINEPREFIX HOME="$H" bash "$T/fake_wine.sh" x --fake-battle-smoke & ;;
+        esac
+        pid=$!; SRP_VAR=WINEPREFIX SRP_MATCH=battle-smoke watch "$pid" "$T/$1/seen" & wp=$!; wait "$pid"; wait "$wp"
+        ec=0; SRP_VAR=WINEPREFIX SRP_REAL_REL="$4" verdict "$SB" "$T/$1/seen" "$WREL" "$H/.local/share" "$T/$1/since" > "$T/$1/out" 2>&1 || ec=$?
+        if [ "$ec" = "$want" ]; then pass=$((pass+1)); printf '  ok    %-44s exit %s  (seen: %s)\n' "$label" "$ec" "$(cut -d' ' -f2- "$T/$1/seen" | tr '\n' ' ')"
+        else fail=$((fail+1)); printf '  FAIL  %-44s exit %s want %s\n' "$label" "$ec" "$want"; sed 's/^/        /' "$T/$1/out"; fi
+    }
+    _warm "wine: prefix sandbox is GREEN" 0 good "$REL"
+    _warm "wine: unset WINEPREFIX is RED" 1 unset "$REL"
+    _warm "wine: linux boot on his profile is RED" 1 linux "$REL"
+    # CONTROL for SRP_REAL_REL: the same leak with it unset looks under his profile at the WINE path and is blind.
+    _warm "wine: same leak, no SRP_REAL_REL, is BLIND" 0 linux ""
+    if command grep -q 'fresh files in the REAL profile' "$T/wine: linux boot on his profile is RED/out"; then pass=$((pass+1)); printf '  ok    %-44s leak arm fired\n' "wine linux boot: SRP_REAL_REL"
+    else fail=$((fail+1)); printf '  FAIL  %-44s leak arm did not fire\n' "wine linux boot: SRP_REAL_REL"; fi
+    if command grep -q "<unset>" "$T/wine: unset WINEPREFIX is RED/seen"; then pass=$((pass+1)); printf '  ok    %-44s saw <unset>\n' "wine unset: environ arm"
+    else fail=$((fail+1)); printf '  FAIL  %-44s did not see <unset>\n' "wine unset: environ arm"; fi
     # value arm, both directions
     local R="$T/vals"; mkdir -p "$R/share/inside" "$R/sb"
     _v() { local ec=0; check_value "$2" "$R/share" 2>/dev/null || ec=$?; [ "$ec" = "$3" ] && { pass=$((pass+1)); printf '  ok    %-44s exit %s\n' "$1" "$ec"; } || { fail=$((fail+1)); printf '  FAIL  %-44s exit %s want %s\n' "$1" "$ec" "$3"; }; }

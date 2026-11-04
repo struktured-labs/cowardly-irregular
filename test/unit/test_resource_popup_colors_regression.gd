@@ -20,9 +20,9 @@ func test_three_resources_three_colors() -> void:
 	var hp := _popup("hp")
 	var mp := _popup("mp")
 	var ap := _popup("ap")
-	var c_hp: Color = hp._label.get_theme_color("font_color")
-	var c_mp: Color = mp._label.get_theme_color("font_color")
-	var c_ap: Color = ap._label.get_theme_color("font_color")
+	var c_hp: Color = hp._label.modulate
+	var c_mp: Color = mp._label.modulate
+	var c_ap: Color = ap._label.modulate
 	assert_eq(c_hp, AccessibilityPalette.heal(), "HP heals keep the heal palette (green by default)")
 	assert_eq(c_mp, AccessibilityPalette.mp(), "MP gains use the MP palette")
 	assert_eq(c_ap, AccessibilityPalette.ap(), "AP grants use the AP palette")
@@ -53,7 +53,7 @@ func test_the_default_kind_is_hp_so_every_existing_caller_is_unchanged() -> void
 	n.setup(10, true, false)
 	add_child_autofree(n)
 	assert_eq(n.kind, "hp")
-	assert_eq(n._label.get_theme_color("font_color"), AccessibilityPalette.heal())
+	assert_eq(n._label.modulate, AccessibilityPalette.heal())
 
 
 func test_no_mp_restore_site_still_pops_green() -> void:

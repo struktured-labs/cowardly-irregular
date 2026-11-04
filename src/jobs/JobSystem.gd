@@ -627,6 +627,27 @@ func set_dev_full_kits(enabled: bool, party_members: Array) -> void:
 				pc.learned_abilities.erase(str(aid))
 
 
+## #763: the secondary-job slot is locked on a new game and opens at the first
+## real milestone: defeating the Cave Rat King (W1's first boss). That defeat sets
+## game_constants["cutscene_flag_rat_king_defeated"] and mirrors the bare story
+## flag "rat_king_defeated" (GameLoop._set_cutscene_flag_and_mirror). Either is
+## accepted so older saves that only carry one of the two still unlock.
+const SECONDARY_UNLOCK_FLAG := "rat_king_defeated"
+
+func is_secondary_job_unlocked() -> bool:
+	var gs = get_node_or_null("/root/GameState")
+	if gs == null:
+		return true
+	if gs.get("debug_log_enabled") == true:
+		return true
+	if gs.has_method("is_story_flag_set") and gs.is_story_flag_set(SECONDARY_UNLOCK_FLAG):
+		return true
+	var gc = gs.get("game_constants")
+	if gc is Dictionary and gc.get("cutscene_flag_" + SECONDARY_UNLOCK_FLAG, false):
+		return true
+	return false
+
+
 func assign_secondary_job(combatant: Combatant, job_id: String) -> bool:
 	"""Assign a secondary job: visual accents, its base ability kit, and
 	Combatant.SECONDARY_JOB_STAT_FRACTION of its stats."""

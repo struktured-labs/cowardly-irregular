@@ -7211,7 +7211,8 @@
     "derived_from": "the village whose _get_cliff_palette() a world atlas was recoloured from. Read by test_a_village_palette_is_not_silently_overridden, not by src/ — it is the evidence that an override is a no-op in hue.",
     "derived_palette": "the exact colours used at generation time. Its job is to EXPIRE: if the village's colours change, the guard reds and the atlas is stale.",
     "tier": "the artist-first pipeline tier (T0 procedural / T1 AI / T2 artist draft / T3 artist final) from CLAUDE.md. Authored on every entry; read across tools/ (24 scripts at last sweep — derive it, do not trust this sentence to age) and by the artist deciding what an AI regen may touch — never by src/. The \"tier\" hits in src/ are autogrind's grind tier and ShopScene's spell tier, different data under the same name.",
-    "source": "how the sheet was produced — model, prompt or ingest run. Provenance for the artist ledger and for a human judging whether a sheet may be regenerated. The \"source\" hits in src/ are RuleComposer's and AbilityVFX's own provenance strings, not this field."
+    "source": "how the sheet was produced — model, prompt or ingest run. Provenance for the artist ledger and for a human judging whether a sheet may be regenerated. The \"source\" hits in src/ are RuleComposer's and AbilityVFX's own provenance strings, not this field.",
+    "drawn_for": "prop_art interior patterns (counter, shelf, hearth): the layout cells [x, y] a ROLLED pattern was cut for, so its piece lands whole where the room samples it (x mod cols, y mod rows). No runtime reads it: the room samples by position alone. Written by tools/gen_interior_pieces.py --deploy (DRAWN_FOR); held by test_a_shop_is_drawn_from_its_pieces, which reds when a layout block no longer starts at a cell its art was rolled for. Owner: cowir-sprites."
   },
   "_section_provenance": {
     "_why": "Whole SECTIONS with no runtime reader. A FIELD census cannot see these: every key in an unconsumed section is individually dead, and a section whose fields are all read ELSEWHERE is invisible entirely — `frame_width` is read by the battle sheet loader, so a field census passes over a section nothing opens. Derived, not listed: a section is READ when its quoted name appears in comment-stripped src/.",
@@ -7741,13 +7742,138 @@
     "fountain_medieval": {
       "path": "res://assets/sprites/props/medieval/fountain.png",
       "tier": "T1",
-      "frames": 4,
-      "source": "gpt-image-2, straight-on medieval plaza fountain with a cherry tree in the buildings' style (struktured 2026-11-01: procgen-looking props must go) -- tools/gen_village_buildings.py --props; 4 frames of 96x96 like the painted fountain (a 100px strip moved its art 2px on screen) = one painting, water pixels' brightness cycled; T1, artist veto applies."
+      "frames": 12,
+      "source": "gpt-image-2 painting (tools/gen_village_buildings.py --props) + MOTION drawn on it by tools/gen_fountain_motion.py: falling stream segments, splash droplets, spreading surface rings, drifting glints; 12 frames of 96x96 at 12 fps (struktured 2026-11-01: 'looks like just lighting right now'); T1, artist veto applies.",
+      "fps": 12
     },
     "tree_medieval": {
       "path": "res://assets/sprites/props/medieval/tree.png",
       "tier": "T1",
       "source": "gpt-image-2, a straight-on slender poplar 20x96, exactly the TREE prop's 1x3 footprint height and narrow enough to clear a door beside it (the first 64px oak drew across Harmonia's ForgeEntrance arch) (struktured 2026-11-01: the trees look procgen) -- tools/gen_village_buildings.py --props; T1, artist veto applies."
+    },
+    "floor_shop_item_harmonia": {
+      "path": "res://assets/sprites/interiors/harmonia/floor_shop_item.png",
+      "tier": "T1",
+      "source": "gpt-image-2 + cut, a 4x4 floor PATTERN cut from the approved style tile, edge-band wrapped (struktured 2026-11-01: the inside of village houses and shops need a major sprite rework) -- tools/gen_interior_pieces.py; T1, artist veto applies."
+    },
+    "wall_shop_item_harmonia": {
+      "path": "res://assets/sprites/interiors/harmonia/wall_shop_item.png",
+      "tier": "T1",
+      "source": "gpt-image-2 + cut, a wall PATTERN cut from the approved style tile (struktured 2026-11-01: the inside of village houses and shops need a major sprite rework) -- tools/gen_interior_pieces.py; T1, artist veto applies."
+    },
+    "counter_shop_item_harmonia": {
+      "path": "res://assets/sprites/interiors/harmonia/counter_shop_item.png",
+      "tier": "T1",
+      "source": "gpt-image-2 + cut, the 3x2 counter, drawn stocked on the room's floor, rolled to the seam's (x mod 3, y mod 2) sampling (struktured 2026-11-01: the inside of village houses and shops need a major sprite rework) -- tools/gen_interior_pieces.py; T1, artist veto applies.",
+      "drawn_for": [
+        [
+          7,
+          3
+        ]
+      ]
+    },
+    "shelf_shop_item_harmonia": {
+      "path": "res://assets/sprites/interiors/harmonia/shelf_shop_item.png",
+      "tier": "T1",
+      "source": "gpt-image-2 + cut, a 3x6 shelf PATTERN: the tall stocked unit on rows 2-4, the low one on rows 0-1 (= layout rows 6-7) (struktured 2026-11-01: the inside of village houses and shops need a major sprite rework) -- tools/gen_interior_pieces.py; T1, artist veto applies.",
+      "drawn_for": [
+        [
+          2,
+          2
+        ],
+        [
+          11,
+          2
+        ],
+        [
+          2,
+          6
+        ],
+        [
+          11,
+          6
+        ]
+      ]
+    },
+    "back_wall_shop_item_harmonia": {
+      "path": "res://assets/sprites/interiors/harmonia/back_wall_shop_item.png",
+      "tier": "T1",
+      "source": "gpt-image-2 + cut, the room-wide back wall strip cut from the approved style tile (struktured 2026-11-01: the inside of village houses and shops need a major sprite rework) -- tools/gen_interior_pieces.py; T1, artist veto applies."
+    },
+    "floor_shop_blacksmith_harmonia": {
+      "path": "res://assets/sprites/interiors/harmonia/floor_shop_blacksmith.png",
+      "tier": "T1",
+      "source": "gpt-image-2 + cut, a 4x4 floor PATTERN cut from the approved style tile, edge-band wrapped (struktured 2026-11-01: the inside of village houses and shops need a major sprite rework) -- tools/gen_interior_pieces.py; T1, artist veto applies."
+    },
+    "wall_shop_blacksmith_harmonia": {
+      "path": "res://assets/sprites/interiors/harmonia/wall_shop_blacksmith.png",
+      "tier": "T1",
+      "source": "gpt-image-2 + cut, a wall PATTERN cut from the approved style tile (struktured 2026-11-01: the inside of village houses and shops need a major sprite rework) -- tools/gen_interior_pieces.py; T1, artist veto applies."
+    },
+    "counter_shop_blacksmith_harmonia": {
+      "path": "res://assets/sprites/interiors/harmonia/counter_shop_blacksmith.png",
+      "tier": "T1",
+      "source": "gpt-image-2 + cut, the 3x2 counter, drawn stocked on the room's floor, rolled to the seam's (x mod 3, y mod 2) sampling (struktured 2026-11-01: the inside of village houses and shops need a major sprite rework) -- tools/gen_interior_pieces.py; T1, artist veto applies.",
+      "drawn_for": [
+        [
+          7,
+          3
+        ]
+      ]
+    },
+    "shelf_shop_blacksmith_harmonia": {
+      "path": "res://assets/sprites/interiors/harmonia/shelf_shop_blacksmith.png",
+      "tier": "T1",
+      "source": "gpt-image-2 + cut, a 3x6 shelf PATTERN: the tall stocked unit on rows 2-4, the low one on rows 0-1 (= layout rows 6-7) (struktured 2026-11-01: the inside of village houses and shops need a major sprite rework) -- tools/gen_interior_pieces.py; T1, artist veto applies.",
+      "drawn_for": [
+        [
+          2,
+          2
+        ],
+        [
+          11,
+          2
+        ],
+        [
+          2,
+          6
+        ],
+        [
+          11,
+          6
+        ]
+      ]
+    },
+    "back_wall_shop_blacksmith_harmonia": {
+      "path": "res://assets/sprites/interiors/harmonia/back_wall_shop_blacksmith.png",
+      "tier": "T1",
+      "source": "gpt-image-2 + cut, the room-wide back wall strip cut from the approved style tile (struktured 2026-11-01: the inside of village houses and shops need a major sprite rework) -- tools/gen_interior_pieces.py; T1, artist veto applies."
+    },
+    "floor_inn_harmonia": {
+      "path": "res://assets/sprites/interiors/harmonia/floor_inn.png",
+      "tier": "T1",
+      "source": "gpt-image-2 + cut, a 4x4 floor PATTERN cut from the approved style tile, edge-band wrapped (struktured 2026-11-01: the inside of village houses and shops need a major sprite rework) -- tools/gen_interior_pieces.py; T1, artist veto applies."
+    },
+    "wall_inn_harmonia": {
+      "path": "res://assets/sprites/interiors/harmonia/wall_inn.png",
+      "tier": "T1",
+      "source": "gpt-image-2 + cut, a wall PATTERN cut from the approved style tile (struktured 2026-11-01: the inside of village houses and shops need a major sprite rework) -- tools/gen_interior_pieces.py; T1, artist veto applies."
+    },
+    "back_wall_inn_harmonia": {
+      "path": "res://assets/sprites/interiors/harmonia/back_wall_inn.png",
+      "tier": "T1",
+      "source": "gpt-image-2 + cut, the room-wide back wall strip cut from the approved style tile (struktured 2026-11-01: the inside of village houses and shops need a major sprite rework) -- tools/gen_interior_pieces.py; T1, artist veto applies."
+    },
+    "hearth_inn_harmonia": {
+      "path": "res://assets/sprites/interiors/harmonia/hearth_inn.png",
+      "tier": "T1",
+      "source": "gpt-image-2 + cut, the drawn fire box cut whole from the approved style tile, a 3x2 pattern on the hearth cells (struktured 2026-11-01: the inside of village houses and shops need a major sprite rework) -- tools/gen_interior_pieces.py; T1, artist veto applies.",
+      "drawn_for": [
+        [
+          12,
+          2
+        ]
+      ]
     },
     "lamp_post_medieval": {
       "path": "res://assets/sprites/props/medieval/lamp_post.png",
