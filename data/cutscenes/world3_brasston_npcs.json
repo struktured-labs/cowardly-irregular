@@ -26,7 +26,7 @@
           "speaker": "Sprocket",
           "text": "Newcomers! Welcome to Brasston! You're — seven seconds late. My fault, I should have accounted for dimensional transition lag.",
           "theme": "scholar",
-          "portrait": "young_man"
+          "portrait": "sprocket"
         },
         {
           "speaker": "Fighter",
@@ -38,7 +38,7 @@
           "speaker": "Sprocket",
           "text": "Standard allowance in the Schedule for first-time arrivals. The Regulator accounts for variables. Most variables, anyway. You might be something new. Hard to tell yet.",
           "theme": "scholar",
-          "portrait": "young_man"
+          "portrait": "sprocket"
         }
       ]
     },
@@ -53,7 +53,7 @@
           "speaker": "Sprocket",
           "text": "Everything here runs on the Grand Schedule. The Regulator set it up years ago. Or maybe always. Nobody remembers a time before the schedule.",
           "theme": "scholar",
-          "portrait": "young_man"
+          "portrait": "sprocket"
         },
         {
           "speaker": "Mage",
@@ -65,7 +65,7 @@
           "speaker": "Sprocket",
           "text": "I check my watch more than anyone else in town. Sometimes I find the time has moved differently than I expected. Very small discrepancies. The sort that could be explained away. I've stopped explaining them away.",
           "theme": "scholar",
-          "portrait": "young_man"
+          "portrait": "sprocket"
         }
       ]
     },
@@ -80,7 +80,7 @@
           "speaker": "Sprocket",
           "text": "I've been trying to find out who wrote the first rule of the Schedule for three years. The Schedule simply exists. The Regulator enforces it. I have never found anyone who wrote the first rule.",
           "theme": "scholar",
-          "portrait": "young_man"
+          "portrait": "sprocket"
         }
       ]
     },

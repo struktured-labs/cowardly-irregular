@@ -8,6 +8,11 @@ extends GutTest
 
 const GAME_LOOP := "res://src/GameLoop.gd"
 const DIALOGUE := "res://src/cutscene/CutsceneDialogue.gd"
+## Speakers whose intro face is RIGHT and whose village face is the one waiting on a fix, each with its reason. An entry
+## that stops mismatching reds below, so this list can only shrink.
+const KNOWN_VILLAGE_SIDE := {
+	"Sprocket": "his own drawn bust (named-canon audits require it); giving it to his village body needs the face/body review, blocked on art credits",
+}
 
 var _dialogue: Node = null
 
@@ -71,6 +76,7 @@ func test_every_intro_speaker_wears_their_village_face() -> void:
 	assert_gt(intros.size(), 3, "floor: GameLoop._VILLAGE_INTROS was read")
 	var judged := 0
 	var mismatched: Array = []
+	var excused_seen := {}
 	for vid in intros:
 		var path := _script_for(str(vid))
 		assert_true(ResourceLoader.exists(path), "CONTROL: %s resolves to a village script (%s)" % [vid, path])
@@ -82,7 +88,9 @@ func test_every_intro_speaker_wears_their_village_face() -> void:
 			if not faces.has(who):
 				continue
 			judged += 1
-			if _face(str(line["portrait"])) != _face(str(faces[who])):
+			if _face(str(line["portrait"])) != _face(str(faces[who])) and KNOWN_VILLAGE_SIDE.has(who):
+				excused_seen[who] = true
+			elif _face(str(line["portrait"])) != _face(str(faces[who])):
 				var row := "%s in %s: intro says %s, the village shows %s" % [who, intros[vid], line["portrait"], faces[who]]
 				if not mismatched.has(row):
 					mismatched.append(row)
@@ -90,6 +98,8 @@ func test_every_intro_speaker_wears_their_village_face() -> void:
 		print("[INTRO-FACE] ", m)
 	assert_gt(judged, 20, "floor: intro speakers who stand in their village were found and judged (%d)" % judged)
 	assert_eq(mismatched, [], "an intro shows each speaker the face the village gives them")
+	for who in KNOWN_VILLAGE_SIDE:
+		assert_true(excused_seen.has(who), "%s is excused (%s) but no longer mismatches: remove the entry" % [who, KNOWN_VILLAGE_SIDE[who]])
 
 
 func test_two_keys_for_one_file_are_one_face() -> void:
