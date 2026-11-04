@@ -83,7 +83,11 @@ argv_len() {
 ## "fold-tree godot running" to every lane for hours, and two lanes declined a free box over it.
 ## Still narrow: `git grep -- --path` over tools/ finds NO automated godot invocation passing --path
 ## at all, and every automated one passes some other flag, so any extra argument is still a gate.
-## <dir> must exist (resolved against the process's own cwd when relative). Reads a cmdline FILE
+## ⛔ SHAPE ALONE IS TOO WIDE (cowir-adhoc 21558): rungate.sh.tmpl asks --is-player of EVERY godot on
+## the box, so a lane opening a windowed `godot --path <its own tree>` to eyeball a build would be
+## waved through as "his game". So <dir> must resolve (realpath, against the process's own cwd when
+## relative) INSIDE "$FOLD_TREE"/tmp/preview*: the trees main builds for him and nothing else. The
+## pid cannot be told apart by ancestry: his preview is reparented to init (PPID 1). Reads a cmdline FILE
 ## so the selftest can feed it argv fixtures without starting anything shaped like an engine.
 ## Unreadable or empty -> not a player: the fail-closed direction.
 argv_is_player() {  # <cmdline file> <cwd of that process>
@@ -92,7 +96,10 @@ argv_is_player() {  # <cmdline file> <cwd of that process>
   [ "${#a[@]}" = 1 ] && return 0
   [ "${#a[@]}" = 3 ] && [ "${a[1]}" = --path ] || return 1
   case "${a[2]}" in /*) d="${a[2]}" ;; "") return 1 ;; *) d="$2/${a[2]}" ;; esac
-  [ -d "$d" ]
+  [ -d "$d" ] || return 1
+  d="$(realpath "$d")"
+  case "$d/" in "$(realpath -m "$FOLD_TREE")"/tmp/preview*/*) return 0 ;; esac
+  return 1
 }
 is_player() { argv_is_player "/proc/$1/cmdline" "$(readlink "/proc/$1/cwd" 2>/dev/null)"; }
 
@@ -297,25 +304,34 @@ if [ "${1:-}" = "--selftest" ]; then  # watch the answer flip, so a FREE is neve
   A  # arm 15 the PREVIEW player: argv fixtures through the same predicate the scan and --is-player use.
      #        Each case is the argv a real process carried; the -s case is the shape of cowir-main's
      #        bare GUT run from tmp/preview760 on 2026-11-02 (main 21546), which must stay a GATE.
-  mkdir -p "$TA/pv/tree" "$TA/pv/cwd/rel"
+  ## Fixtures live under a FAKE fold tree ($TA/fold, as arms 13/14), so the preview rule is exercised
+  ## against FOLD_TREE and never against the real cowir-main.
+  mkdir -p "$TA/fold/tmp/preview760" "$TA/fold/tmp/preview760/sub" "$TA/fold/tmp/notpreview" "$TA/lanes/cowir-sprites" "$TA/pv/cwd"
+  ln -s "$TA/lanes/cowir-sprites" "$TA/fold/tmp/preview999"   # a "preview" that is really a lane tree
+  ln -s "$TA/fold/tmp/preview760" "$TA/pv/cwd/rel"
   _argv() { local f="$TA/pv/argv.$1"; shift; : > "$f"; local x; for x in "$@"; do printf '%s\0' "$x" >> "$f"; done; printf '%s' "$f"; }
   _pl() { # label want(yes|no) argv...
     local label="$1" want="$2" f got; shift 2; f="$(_argv "$label" "$@")"
-    if argv_is_player "$f" "$TA/pv/cwd"; then got=yes; else got=no; fi
+    if FOLD_TREE="$TA/fold" argv_is_player "$f" "$TA/pv/cwd"; then got=yes; else got=no; fi
     [ "$got" = "$want" ] || { echo "FAIL arm15 $label: player=$got, want $want (argv: $*)"; fails=1; }
   }
   _pl bare            yes godot
-  _pl preview_abs     yes godot --path "$TA/pv/tree"
+  _pl preview_abs     yes godot --path "$TA/fold/tmp/preview760"
+  _pl preview_sub     yes godot --path "$TA/fold/tmp/preview760/sub"
   _pl preview_rel     yes godot --path rel
-  _pl preview_missing no  godot --path "$TA/pv/nope"
+  _pl lane_tree       no  godot --path "$TA/lanes/cowir-sprites"
+  _pl fold_root       no  godot --path "$TA/fold"
+  _pl fold_tmp_other  no  godot --path "$TA/fold/tmp/notpreview"
+  _pl preview_symlink_to_lane no godot --path "$TA/fold/tmp/preview999"
+  _pl preview_missing no  godot --path "$TA/fold/tmp/preview404"
   _pl preview_empty   no  godot --path ""
   _pl path_no_dir     no  godot --path
-  _pl gut_from_tree   no  godot --path "$TA/pv/tree" -s addons/gut/gut_cmdln.gd
-  _pl headless_first  no  godot --headless --path "$TA/pv/tree"
-  _pl other_flag      no  godot --rendering-driver "$TA/pv/tree"
+  _pl gut_from_tree   no  godot --path "$TA/fold/tmp/preview760" -s addons/gut/gut_cmdln.gd
+  _pl headless_first  no  godot --headless --path "$TA/fold/tmp/preview760"
+  _pl other_flag      no  godot --rendering-driver "$TA/fold/tmp/preview760"
   : > "$TA/pv/argv.empty"
-  argv_is_player "$TA/pv/argv.empty" "$TA/pv/cwd" && { echo "FAIL arm15 empty: an empty cmdline read as a player"; fails=1; }
-  argv_is_player "$TA/pv/argv.gone" "$TA/pv/cwd" && { echo "FAIL arm15 gone: an unreadable cmdline read as a player"; fails=1; }
+  FOLD_TREE="$TA/fold" argv_is_player "$TA/pv/argv.empty" "$TA/pv/cwd" && { echo "FAIL arm15 empty: an empty cmdline read as a player"; fails=1; }
+  FOLD_TREE="$TA/fold" argv_is_player "$TA/pv/argv.gone" "$TA/pv/cwd" && { echo "FAIL arm15 gone: an unreadable cmdline read as a player"; fails=1; }
 
   [ "$arms" = "$EXPECT_ARMS" ] \
     || { echo "FAIL: $arms of $EXPECT_ARMS arms ran — one was dropped, never wired, or an earlier arm exited"; fails=1; }
