@@ -62,7 +62,7 @@ for pair in "$@"; do
     if vouched "$have"; then echo "NOTE $b: [UNVERIFIED] subject(s) ride in, VOUCHED by FOLD_VERIFIED (its READY carried the evidence): $lab"
     else echo "SKIP $b: an [UNVERIFIED] commit would ride in: $lab"; SKIPPED=1; continue; fi
   fi
-  if git merge -q --no-edit "$have" >/dev/null 2>&1; then
+  if git merge -q --no-ff --no-edit "$have" >/dev/null 2>&1; then
     echo "MERGED $b ${have:0:9}"
   else
     git merge --abort; echo "SKIP $b: conflicts with the fold so far"; SKIPPED=1

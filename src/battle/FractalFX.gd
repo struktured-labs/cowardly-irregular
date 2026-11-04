@@ -52,6 +52,8 @@ var reduce_flashes: bool = false
 var tier: int = 1
 ## (intensity_px, duration_s) — the caller owns the camera.
 var on_shake: Callable = Callable()
+## (sound_key) — a phase's optional "sfx" fires here when that phase runs, in battle time, so it lands on the beat at any speed.
+var on_sfx: Callable = Callable()
 var spawned: int = 0
 var rng := RandomNumberGenerator.new()
 var _ramps: Dictionary = {}
@@ -142,6 +144,8 @@ func _run(phase: Dictionary, from: Vector2, to: Vector2, power: float) -> void:
 		return
 	var at_pos: Vector2 = from if str(phase.get("origin", "target")) == "caster" else to
 	at_pos += _vec(phase.get("offset", [0, 0]))
+	if str(phase.get("sfx", "")) != "" and on_sfx.is_valid():
+		on_sfx.call(str(phase["sfx"]))
 	match str(phase.get("kind", "")):
 		"bolt":
 			_bolt(from, to, phase, power)
@@ -169,6 +173,8 @@ func _run(phase: Dictionary, from: Vector2, to: Vector2, power: float) -> void:
 			_knockback(phase)
 		"slash":
 			_slash(at_pos, phase, power)
+		"cue":
+			pass  # a sound-only beat: its "sfx" already fired above
 		_:
 			push_warning("[FractalFX] unknown phase kind '%s'" % str(phase.get("kind", "")))
 

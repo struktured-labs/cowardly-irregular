@@ -26,19 +26,19 @@
           "speaker": "Blacksmith Magda",
           "text": "Travelers! Good. Hold this. ...No, put it down. You're holding it wrong.",
           "theme": "shopkeeper",
-          "portrait": "shopkeeper"
+          "portrait": "blacksmith"
         },
         {
           "speaker": "Blacksmith Magda",
           "text": "Ironhaven makes the best steel in the realm. Bring me dragon scales and I'll prove it.",
           "theme": "shopkeeper",
-          "portrait": "shopkeeper"
+          "portrait": "blacksmith"
         },
         {
           "speaker": "Blacksmith Magda",
           "text": "Four of them. With receipts. I was burned once by a man with a lizard.",
           "theme": "shopkeeper",
-          "portrait": "shopkeeper"
+          "portrait": "blacksmith"
         }
       ]
     },
@@ -80,19 +80,19 @@
           "speaker": "Dr. Cog",
           "text": "Fascinating. You walked in here on your own, or something walked you in. I genuinely cannot tell.",
           "theme": "scholar",
-          "portrait": "scholar"
+          "portrait": "young_man"
         },
         {
           "speaker": "Dr. Cog",
           "text": "Most visitors can't either. That's the interesting part.",
           "theme": "scholar",
-          "portrait": "scholar"
+          "portrait": "young_man"
         },
         {
           "speaker": "Dr. Cog",
           "text": "If you ever find out which it was, come and tell me. I have been trying to find out about myself for years.",
           "theme": "scholar",
-          "portrait": "scholar"
+          "portrait": "young_man"
         }
       ]
     },

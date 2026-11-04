@@ -144,8 +144,27 @@ func spawn_sequence(seq_id: String, from: Vector2, to: Vector2, power: float = 1
 	fx.tier = tier
 	fx.reduce_flashes = _reduce_flashes()
 	fx.on_shake = _trigger_screen_shake
+	fx.on_sfx = play_phase_sfx
 	var total: float = fx.play(seq, from, to, clampf(power, POWER_MIN, POWER_MAX))
 	return {"total": total, "impact": FractalFX.impact_time(seq)}
+
+
+## A sequence phase's "sfx" cue; false when muted (autogrind/turbo, via the battle's own gate) or the key is unknown.
+## No gate means no battle is running, so nothing mutes it: a field cast's cue plays. BattleScene clears its gate on exit.
+var phase_sfx_gate: Callable = Callable()
+
+
+func play_phase_sfx(sound_key: String) -> bool:
+	if sound_key == "" or (phase_sfx_gate.is_valid() and not bool(phase_sfx_gate.call())):
+		return false
+	if SoundManager == null or not (SoundManager._sfx_manifest.has(sound_key) or SoundManager.SOUNDS.has(sound_key)):
+		return false
+	# cowir-sfx's beat pool (a later beat must not cut an earlier one's tail); the flourish channel until it lands.
+	if SoundManager.has_method("play_sequence_beat"):
+		SoundManager.call("play_sequence_beat", sound_key)
+	else:
+		SoundManager.play_flourish(sound_key)
+	return true
 
 
 ## Ladder moved to AbilityVFX.power_for so the resolver and this path cannot drift apart.
