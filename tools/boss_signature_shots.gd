@@ -75,7 +75,13 @@ func _init() -> void:
 	print("[BOSSSHOT] %s casts %s (%s) at %d target(s), speed %s" % [boss_id, sig, str(ability.get("name", "")), targets.size(), str(speed)])
 	scene._on_action_executing(boss, {"type": "ability", "ability_id": sig, "targets": targets})
 	var total: float = 0.55 + float(scene.sequence_total("sig_" + boss_id)) + 0.6
-	await create_timer(total / maxf(Engine.time_scale, 0.01) + 0.8, true, false, true).timeout
+	# The menu watchdog re-opens a closed menu on purpose (so a battle cannot wedge), so hide it every frame instead.
+	var until := Time.get_ticks_msec() + int((total / maxf(Engine.time_scale, 0.01) + 0.8) * 1000.0)
+	while Time.get_ticks_msec() < until:
+		var menu = scene.get("active_win98_menu")
+		if menu != null and is_instance_valid(menu) and menu.has_method("set_chain_visible"):
+			menu.set_chain_visible(false)
+		await process_frame
 	print("[BOSSSHOT] done %s" % boss_id)
 	quit(0)
 
