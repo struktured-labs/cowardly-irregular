@@ -1,15 +1,17 @@
 #!/usr/bin/env bash
 # A party's tier-3 glory spells recorded in a REAL battle at low/mid/high intensity -> tmp/glory/<spell>_<tier>.mp4.
-# Usage: tools/glory_spell_shots.sh [spell ...] [--speed=0.375]
+# Usage: tools/glory_spell_shots.sh [spell ...] [--speed=0.375] [--tiers=low,mid,high]  (summons work too: summon_ifrit ...)
 set -euo pipefail
 cd "$(dirname "$0")/.."
 command -v xvfb-run >/dev/null || { echo "[glory] xvfb-run missing"; exit 3; }
 command -v ffmpeg >/dev/null || { echo "[glory] ffmpeg missing"; exit 3; }
 SPEED=0.375
 SPELLS=()
+TIERS=(low mid high)
 for a in "$@"; do
   case "$a" in
     --speed=*) SPEED="${a#--speed=}" ;;
+    --tiers=*) IFS=, read -r -a TIERS <<< "${a#--tiers=}" ;;
     *) SPELLS+=("$a") ;;
   esac
 done
@@ -22,7 +24,7 @@ fi
 FPS=30
 _FAILED=0
 for S in "${SPELLS[@]}"; do
-  for T in low mid high; do
+  for T in "${TIERS[@]}"; do
     N_="${S}_$T"; D="tmp/glory/$N_"; rm -rf "$D"; mkdir -p "$D"
     LOG="tmp/glory/$N_.log"
     EC=0

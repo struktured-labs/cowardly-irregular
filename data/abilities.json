@@ -800,6 +800,7 @@
   },
   "summon_ifrit": {
     "id": "summon_ifrit",
+    "vfx": {"glory": "summon_overclock"},
     "name": "Summon Overclock",
     "type": "summon",
     "animation": "cast_fire",
@@ -812,6 +813,7 @@
   },
   "summon_shiva": {
     "id": "summon_shiva",
+    "vfx": {"glory": "summon_cold_storage"},
     "name": "Summon Cold Storage",
     "type": "summon",
     "animation": "cast_ice",
@@ -824,6 +826,7 @@
   },
   "summon_ramuh": {
     "id": "summon_ramuh",
+    "vfx": {"glory": "summon_surge_protector"},
     "name": "Summon Surge Protector",
     "type": "summon",
     "animation": "cast_lightning",
@@ -836,6 +839,7 @@
   },
   "summon_bahamut": {
     "id": "summon_bahamut",
+    "vfx": {"glory": "summon_legacy_system"},
     "name": "Summon Legacy System",
     "type": "summon",
     "animation": "cast_meta",
@@ -847,6 +851,7 @@
   },
   "recursive_summon": {
     "id": "recursive_summon",
+    "vfx": {"glory": "summon_recursive"},
     "name": "Recursive Summon",
     "type": "meta",
     "animation": "cast_meta",
