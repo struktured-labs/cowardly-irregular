@@ -59,6 +59,9 @@ func _init() -> void:
 		quit(1)
 		return
 	scene._set_battle_time_scale(speed)
+	# The capture lands mid-selection; the open command menu would sit over the spectacle.
+	if scene._command_menu:
+		scene._command_menu.close_win98_menu()
 	var ability: Dictionary = root.get_node("JobSystem").get_ability(sig)
 	var targets: Array = []
 	if str(ability.get("target_type", "")) in ["self"]:
