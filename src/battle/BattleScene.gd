@@ -267,6 +267,8 @@ var _active_inline_editor: Control = null  # 2026-07-14 (cowir-music msg 2539): 
 
 ## Danger music state
 var _is_danger_music: bool = false
+var _danger_baseline: Dictionary = {}  # instance_id -> carried-in danger state (1 low, 2 down)
+var _danger_baseline_taken: bool = false
 
 ## Idle animation state (sway/breathing)
 var _idle_time: float = 0.0
@@ -3869,6 +3871,7 @@ func _on_battle_started() -> void:
 			if terrain_track != "battle":
 				print("[MUSIC] Playing %s terrain battle theme" % _current_terrain)
 	_is_danger_music = false
+	_take_danger_baseline()
 	_masterite_phase2_swapped = false
 	if _battle_background and is_instance_valid(_battle_background):
 		_battle_background.set_unrest(0.0)
@@ -7567,25 +7570,59 @@ func _spawn_damage_number(pos: Vector2, amount: int, is_heal: bool, is_crit: boo
 	_results_display.spawn_damage_number(pos, amount, is_heal, is_crit)
 
 
-func _check_danger_music() -> void:
-	"""Switch to danger music if any player is critically low HP or dead"""
-	if _battle_ended:
-		return
+## 0 = fine, 1 = below DANGER_HP_THRESHOLD, 2 = down.
+func _danger_state_of(member) -> int:
+	if not member.is_alive:
+		return 2
+	if member.max_hp > 0 and float(member.current_hp) / float(member.max_hp) < DANGER_HP_THRESHOLD:
+		return 1
+	return 0
 
-	# Check if any party member is dead or critically low HP
-	var any_in_danger = false
-	var any_dead = false
+
+## Snapshot what the party brought INTO this battle, so only new trouble triggers danger.
+func _take_danger_baseline() -> void:
+	_danger_baseline = {}
 	for member in party_members:
 		if member and is_instance_valid(member):
-			if not member.is_alive:
-				any_dead = true
-				any_in_danger = true
-				break
+			var st: int = _danger_state_of(member)
+			if st > 0:
+				_danger_baseline[member.get_instance_id()] = st
+	_danger_baseline_taken = party_members.size() > 0
+
+
+## Pure: highest danger state that is NEW this battle (worse than the carried-in baseline).
+## A member that recovers lowers its baseline, so falling back into danger later counts.
+## Mutates baseline. Returns 0 (none), 1 (fresh low HP), 2 (fresh KO).
+static func fresh_danger_level(now: Dictionary, baseline: Dictionary) -> int:
+	var fresh: int = 0
+	for key in now:
+		var st: int = int(now[key])
+		var base: int = int(baseline.get(key, 0))
+		if st < base:
+			if st == 0:
+				baseline.erase(key)
 			else:
-				var hp_percent = float(member.current_hp) / float(member.max_hp)
-				if hp_percent < DANGER_HP_THRESHOLD:
-					any_in_danger = true
-					break
+				baseline[key] = st
+		elif st > base:
+			fresh = maxi(fresh, st)
+	return fresh
+
+
+func _check_danger_music() -> void:
+	"""Switch to danger music when a party member goes down or drops below the low-HP line DURING
+	this battle. Carried-in state does not count (Carmelo 2026-11-03, .765 demo ruling): a member
+	still KO'd or low from an earlier fight must not flip the bed to danger at battle start."""
+	if _battle_ended:
+		return
+	if not _danger_baseline_taken:
+		_take_danger_baseline()
+	var now: Dictionary = {}
+	for member in party_members:
+		if member and is_instance_valid(member):
+			now[member.get_instance_id()] = _danger_state_of(member)
+	var fresh: int = fresh_danger_level(now, _danger_baseline)
+	var any_in_danger: bool = fresh > 0
+	var any_dead: bool = fresh >= 2
 
 	# Switch music if danger state changed
 	# Once in danger (dead or critical), stay in danger until healed above threshold
