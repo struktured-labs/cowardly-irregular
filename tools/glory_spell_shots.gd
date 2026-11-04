@@ -67,6 +67,7 @@ func _init() -> void:
 	var got: Dictionary = scene.cast_intensity(caster, ability)
 	scene._set_battle_time_scale(speed)
 	bm.current_state = bm.BattleState.PROCESSING_ACTION
+	bm.current_combatant = caster  # a real execution names its actor; the banner read the Fighter in every clip
 	if scene._command_menu:
 		scene._command_menu.close_win98_menu()
 	await create_timer(0.6, true, false, true).timeout
