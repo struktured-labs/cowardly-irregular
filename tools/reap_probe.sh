@@ -122,7 +122,7 @@ probe() {
 # and a real run of the real reaper. A canned reaper would agree with whatever this file
 # expects and could not reject it. [[arrival-is-not-effect]]
 selftest() {
-    local pass=0 fail=0 self dir out
+    local pass=0 fail=0 void=0 self dir out
     self="$(cd "$(dirname "$0")" && pwd)/$(basename "$0")"
     local repo; repo="$(cd "$(dirname "$0")/.." && pwd)"
     # ⛔ THE FIXTURE MUST LIVE INSIDE THE REPO, AND THIS LINE IS WHY THIS TOOL BLOCKED A PUBLISH.
@@ -176,11 +176,27 @@ selftest() {
     # THE CASE THAT PRODUCED THE WRONG VERDICT: a root whose own tmp/ holds no worktrees while
     # the repo's registered population is large. The REAL reaper runs here.
     out="$(cd "$dir/caller" && ./tools/reap_probe.sh 4091 "$dir/p1.log" "$repo_wt" 2>&1)"
-    chk "a probe that saw no population says so"      "COULD NOT SEE THIS LANE'S POPULATION" 0
-    chk "...and does NOT claim cleanup cannot help"    "CANNOT CLEAR THIS FLOOR"              1
-    chk "...and does NOT blame outside this lane"      "space is held outside this lane"      1
-    chk "...and quotes the reaper's own population"    "registered worktree"                  0
-    chk "...and says nobody looked, not nothing there" "It is 'nobody looked'"                0
+    # ⛔ THIS ARM NEEDS ORIGIN. The real reaper asks origin for the tag list, and refuses (exit 3,
+    # "cannot reach origin") when it cannot. The probe then correctly says COULD NOT ASK THE REAPER,
+    # and the five asserts below used to report 3 FAILs that read like a probe bug: .766's pre-gate
+    # 2026-11-04, when the box's SSH agent refused ~5 of 6 signatures (it was 42/0 at 09:13Z when SSH
+    # answered). So THAT cause, read from the reaper's own log, is ONE VOID with its reason, and the
+    # selftest still fails: a VOID is not a pass, it is "this arm could not be measured here".
+    # Any other way of failing to ask (timeout, crash) still runs the asserts, which then fail.
+    local why=""
+    case "$out" in *"COULD NOT ASK THE REAPER"*)
+        why="$(command grep -a -m1 -E 'cannot reach origin|UNREACHABLE' "$dir/p1.log" 2>/dev/null | cut -c1-140)" ;; esac
+    if [ -n "$why" ]; then
+        fail=$((fail+1)); void=$((void+1))
+        printf '  VOID  %-56s\n        the real reaper could not reach origin: %s\n        its 5 asserts were NOT run; re-run once `git ls-remote origin` answers.\n' \
+            "the blind arm (needs origin)" "$why"
+    else
+        chk "a probe that saw no population says so"      "COULD NOT SEE THIS LANE'S POPULATION" 0
+        chk "...and does NOT claim cleanup cannot help"    "CANNOT CLEAR THIS FLOOR"              1
+        chk "...and does NOT blame outside this lane"      "space is held outside this lane"      1
+        chk "...and quotes the reaper's own population"    "registered worktree"                  0
+        chk "...and says nobody looked, not nothing there" "It is 'nobody looked'"                0
+    fi
 
     # THE CONTROL: the same zero, over a population that really was scanned, must still refuse.
     # Without it the fix above could simply delete the verdict.
@@ -242,7 +258,7 @@ STUB
     lane_case "no tmp component -> itself"          /home/x/other/tools                   /home/x/other/tools
 
     echo
-    echo "selftest: ${pass} passed, ${fail} failed"
+    echo "selftest: ${pass} passed, ${fail} failed${void:+$( [ "$void" -gt 0 ] && printf ' (%s of them VOID: origin unreachable, not a probe defect)' "$void")}"
     [ "$fail" -eq 0 ]
 }
 
