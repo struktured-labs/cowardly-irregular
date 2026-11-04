@@ -231,7 +231,9 @@ func show_win98_command_menu(combatant: Combatant) -> void:
 	_scene.active_win98_menu.set_can_go_back(can_go_back)
 
 	# Apply command memory if enabled
-	if _scene.command_memory_enabled and combatant.last_menu_selection != "":
+	## Memory never lands the cursor on a hand-the-turn-away row (see Win98Menu._opening_index).
+	if _scene.command_memory_enabled and combatant.last_menu_selection != "" \
+			and not (combatant.last_menu_selection in ["autobattle", "trust_toggle"]):
 		print("[CMD MEM] Applying %s -> %s" % [combatant.combatant_name, combatant.last_menu_selection])
 		var submenu_memory = {}
 		if combatant.last_attack_selection != "":
@@ -330,6 +332,7 @@ func build_command_menu_items_with_targets(combatant: Combatant) -> Array:
 		## after asking what "Trust: ON/OFF vs Run Auto" meant).
 		"label": "Auto: this turn",
 		"tooltip": "Run this character's autobattle script for this turn",
+		"skip_default": true,
 		"data": {"action": "autobattle", "combatant": combatant}
 	})
 	# Trust — per-PC delegation. Toggling ON sets player_trust=true so the
@@ -344,6 +347,7 @@ func build_command_menu_items_with_targets(combatant: Combatant) -> Array:
 	items.append({
 		"id": "trust_toggle",
 		"label": trust_label,
+		"skip_default": true,
 		"data": {"action": "trust_toggle", "combatant": combatant}
 	})
 
