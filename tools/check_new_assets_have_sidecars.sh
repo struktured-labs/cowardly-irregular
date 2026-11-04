@@ -12,6 +12,10 @@
 # NEW ADDITIONS ONLY, by design: main carries ~558 older tracked assets with no tracked sidecar (measured by
 # cowir-overworld 21638). A check that reds on all of them would be switched off; this one reds on the
 # commit that adds the next one. Assets under a .gdignore subtree at <tip> are not imported, so not counted.
+# Nor is an asset whose SIDECAR is gitignored on purpose (git check-ignore, against the working tree's
+# .gitignore, so run this from a checkout of <tip>): such a sidecar can never be untracked, so it can never
+# turn tag_gate_evidence to RUN. The one case today is assets/sprites/jobs/*_sdxl/hero_reference.png.import
+# (.gitignore:122, cowir-sprites 21698): Godot mints a new uid per worktree, so tracking it blocks merges.
 #
 # Exit: 0 every added importable asset has a tracked sidecar · 1 at least one does not (each named) ·
 #       2 usage / a ref that does not resolve (never "0 missing" about a diff nobody computed).
@@ -39,6 +43,7 @@ check() {
   while IFS= read -r a; do
     [ -n "$a" ] || continue
     _ignored "$a" "$ign" && continue
+    git check-ignore -q -- "$a.import" 2> /dev/null && continue
     n=$((n + 1))
     git cat-file -e "$tip:$a.import" 2> /dev/null && continue
     missing=$((missing + 1)); echo "  MISSING  $a.import"
@@ -60,6 +65,7 @@ selftest() {
   printf 's\n' > "$T/assets/bare.ogg"
   printf 'x\n' > "$T/itch-assets/shot.png"
   printf 'c\n' > "$T/assets/code.gd"
+  mkdir -p "$T/assets/ref" && printf 'r\n' > "$T/assets/ref/hero_reference.png" && printf 'assets/ref/*.png.import\n' > "$T/.gitignore"
   git -C "$T" add -A; git -C "$T" commit -qm tip; git -C "$T" tag red
   printf 's\n' > "$T/assets/bare.ogg.import"; git -C "$T" add -A; git -C "$T" commit -qm fix; git -C "$T" tag green
   _arm() { # label want_ec want_substring ref_base ref_tip [absent_substring]
@@ -73,6 +79,7 @@ selftest() {
   _arm "...counted over importable assets only (2, not 4)"       1 "1 of 2 importable"                base red
   _arm "...an asset WITH its sidecar is not named"               1 "of 2"                             base red "new.png.import"
   _arm "...a .gdignore'd asset is not judged"                    1 "of 2"                             base red "itch-assets"
+  _arm "...an asset whose sidecar is GITIGNORED is not judged"   1 "of 2"                             base red "hero_reference"
   _arm "CONTROL: once the sidecar is committed it is GREEN"      0 "every one has a committed .import" base green
   _arm "an unresolvable ref BLOCKS, never reads as 0 missing"    2 "does not resolve"                 base nosuchref
   _arm "an empty diff is green and says 0"                       0 "0 importable asset(s)"            green green
