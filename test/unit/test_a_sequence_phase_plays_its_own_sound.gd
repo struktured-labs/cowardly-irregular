@@ -57,6 +57,9 @@ func _fire_ms(scale: float, phase: Dictionary, tier: int = 1) -> int:
 	while fired.is_empty() and Time.get_ticks_msec() < deadline:
 		await get_tree().process_frame
 	Engine.time_scale = _saved_scale
+	# FractalFX holds itself in a static list until its release timer; drop our lambda and let it go before the test ends.
+	fx.on_sfx = Callable()
+	FractalFX._live.erase(fx)
 	if fired.is_empty():
 		return -1
 	assert_eq(str(fired[0][0]), str(phase.get("sfx", "")), "it fires the phase's own key")
