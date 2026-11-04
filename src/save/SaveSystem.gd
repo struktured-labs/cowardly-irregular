@@ -97,6 +97,7 @@ func _ready() -> void:
 	_ensure_save_directory()
 	# Load persisted settings
 	load_settings()
+	timer_held = OS.get_environment("COWIR_HOLD_AUTOSAVE_TIMER") == "1"
 
 
 ## Tick 329: how long to delay the next retry when the auto-save attempt
@@ -114,7 +115,13 @@ var _last_party_refusal: String = ""
 var _migration_reported: Dictionary = {}
 
 
+## True under tools/run_tests.sh: the timed autosave saved a test's mid-run state into the sandbox (the .760 leak).
+var timer_held: bool = false
+
+
 func _process(delta: float) -> void:
+	if timer_held:
+		return
 	# Auto-save timer
 	if auto_save_enabled:
 		time_since_last_auto_save += delta

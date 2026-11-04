@@ -418,6 +418,16 @@ func _generate_scaled_enemies() -> Array:
 
 
 ## Called when a battle ends
+## Set mid-battle when a safety stop trips: the party retreats, and the grind stops after this battle with this reason.
+var _safety_stop_reason: String = ""
+
+
+func request_safety_retreat(reason: String) -> void:
+	if _safety_stop_reason == "":
+		_safety_stop_reason = reason
+		print("[AUTOGRIND] %s — the party retreats and the grind stops after this battle" % reason)
+
+
 func on_battle_ended(victory: bool, exp_gained: int = 0, items_gained: Dictionary = {}) -> void:
 	if _state != State.BATTLE_RUNNING:
 		return
@@ -469,6 +479,14 @@ func on_battle_ended(victory: bool, exp_gained: int = 0, items_gained: Dictionar
 		_activate_deferred_pause()
 		return
 
+	## A retreat that got away is not a defeat; a wipe before it could still is, and the defeat flow takes that.
+	var retreat := _safety_stop_reason
+	_safety_stop_reason = ""
+	if retreat != "" and not victory and _party.any(func(m): return m is Combatant and m.is_alive):
+		_next_battle_exp_bonus = 0.0
+		stop_grind(retreat)
+		return
+
 	# Normal battle resolution
 	if victory:
 		var effective_exp = exp_gained
@@ -478,6 +496,9 @@ func on_battle_ended(victory: bool, exp_gained: int = 0, items_gained: Dictionar
 		AutogrindSystem.on_battle_victory(effective_exp, items_gained)
 		_state = State.BETWEEN_BATTLES
 		_between_battle_timer = _get_between_battle_delay()
+		if retreat != "":
+			stop_grind(retreat)
+			return
 	else:
 		_next_battle_exp_bonus = 0.0
 		AutogrindSystem.on_battle_defeat()

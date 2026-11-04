@@ -113,6 +113,11 @@ func test_a_start_that_stops_immediately_leaves_exploration_intact() -> void:
 
 func test_the_stop_summary_is_shown_once_and_its_lock_is_released_on_dismiss() -> void:
 	_gl._start_autogrind({})
+	assert_true(InputLockManager.has_lock("autogrind_summary"), "the field is held while the stop banner fades, before the summary is up")
+	## The summary waits out the stop banner (GameLoop._after_the_stop_banner), so it arrives a beat later.
+	var t0 := Time.get_ticks_msec()
+	while Time.get_ticks_msec() - t0 < 3000 and not (_gl._autogrind_summary != null and is_instance_valid(_gl._autogrind_summary)):
+		await wait_frames(2)
 	assert_true(_gl._autogrind_summary != null and is_instance_valid(_gl._autogrind_summary),
 		"the player must be told WHY it stopped (HP threshold) instead of a silent bounce")
 	assert_true(InputLockManager.has_lock("autogrind_summary"), "the summary holds the input lock while up")
