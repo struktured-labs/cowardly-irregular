@@ -4,6 +4,8 @@
   "world": 1,
   "trigger": "harmonia_first_entry",
   "background": "harmonia_square",
+  "keep_music": true,
+  "music_after": "harmonia_village",
   "description": "First village entry. Lead-focused intro. The other four are present but unspoken — their introductions land in their respective spotlight chapters.",
   "steps": [
     {"type": "fade_from_black", "duration": 1.5},

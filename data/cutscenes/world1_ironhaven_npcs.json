@@ -1,0 +1,109 @@
+{
+  "id": "world1_ironhaven_npcs",
+  "title": "Ironhaven Village",
+  "world": 1,
+  "keep_music": true,
+  "trigger": "world1_ironhaven_entry",
+  "background": "prologue_village",
+  "description": "Forge town built over its own furnace, where nothing cools down, including the people. Magda wants dragon scales, with receipts. Koss has seen past the southern gate and will only say 'streetlights'. Dr. Cog cannot tell whether you walked in or something walked you in.",
+  "steps": [
+    {
+      "type": "letterbox_in",
+      "duration": 0.4
+    },
+    {
+      "type": "narration",
+      "text": "Ironhaven was built over its own furnace and never let anyone forget it. The forges ran day and night, the streets were warm in winter and unbearable in summer, and every third citizen had an opinion about efficiency that they would share whether or not you had stopped walking."
+    },
+    {
+      "type": "wait",
+      "duration": 0.3
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Blacksmith Magda",
+          "text": "Travelers! Good. Hold this. ...No, put it down. You're holding it wrong.",
+          "theme": "shopkeeper",
+          "portrait": "shopkeeper"
+        },
+        {
+          "speaker": "Blacksmith Magda",
+          "text": "Ironhaven makes the best steel in the realm. Bring me dragon scales and I'll prove it.",
+          "theme": "shopkeeper",
+          "portrait": "shopkeeper"
+        },
+        {
+          "speaker": "Blacksmith Magda",
+          "text": "Four of them. With receipts. I was burned once by a man with a lizard.",
+          "theme": "shopkeeper",
+          "portrait": "shopkeeper"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.4
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "War Veteran Koss",
+          "text": "Don't let her rush you. Nothing in this town ever cools down, including the people.",
+          "theme": "guard",
+          "portrait": "guard"
+        },
+        {
+          "speaker": "War Veteran Koss",
+          "text": "I fought past the southern gate, once. I won't tell you what's out there.",
+          "theme": "guard",
+          "portrait": "guard"
+        },
+        {
+          "speaker": "War Veteran Koss",
+          "text": "...Streetlights. That's all I'll say. Streetlights.",
+          "theme": "guard",
+          "portrait": "guard"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.3
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Dr. Cog",
+          "text": "Fascinating. You walked in here on your own, or something walked you in. I genuinely cannot tell.",
+          "theme": "scholar",
+          "portrait": "scholar"
+        },
+        {
+          "speaker": "Dr. Cog",
+          "text": "Most visitors can't either. That's the interesting part.",
+          "theme": "scholar",
+          "portrait": "scholar"
+        },
+        {
+          "speaker": "Dr. Cog",
+          "text": "If you ever find out which it was, come and tell me. I have been trying to find out about myself for years.",
+          "theme": "scholar",
+          "portrait": "scholar"
+        }
+      ]
+    },
+    {
+      "type": "set_flag",
+      "flag": "world1_ironhaven_npcs_complete",
+      "value": true
+    },
+    {
+      "type": "letterbox_out",
+      "duration": 0.4
+    }
+  ]
+}

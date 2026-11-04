@@ -115,39 +115,19 @@ func _setup_tilemap() -> void:
 	tileset.tile_size = Vector2i(TILE_SIZE, TILE_SIZE)
 
 	# Source 0 — wood plank floor
-	var floor_src = TileSetAtlasSource.new()
-	var floor_img = Image.create(TILE_SIZE, TILE_SIZE, false, Image.FORMAT_RGBA8)
-	_draw_plank_floor(floor_img)
-	floor_src.texture = ImageTexture.create_from_image(floor_img)
-	floor_src.texture_region_size = Vector2i(TILE_SIZE, TILE_SIZE)
-	floor_src.create_tile(Vector2i(0, 0))
+	var floor_src := InteriorArt.source(InteriorArt.tile("floor", "inn", _draw_plank_floor, InteriorArt.village_key(_origin_map_id())))
 	tileset.add_source(floor_src, 0)
 
 	# Source 1 — half-timbered wall
-	var wall_src = TileSetAtlasSource.new()
-	var wall_img = Image.create(TILE_SIZE, TILE_SIZE, false, Image.FORMAT_RGBA8)
-	_draw_halftimber_wall(wall_img)
-	wall_src.texture = ImageTexture.create_from_image(wall_img)
-	wall_src.texture_region_size = Vector2i(TILE_SIZE, TILE_SIZE)
-	wall_src.create_tile(Vector2i(0, 0))
+	var wall_src := InteriorArt.source(InteriorArt.tile("wall", "inn", _draw_halftimber_wall, InteriorArt.village_key(_origin_map_id())))
 	tileset.add_source(wall_src, 1)
 
 	# Source 2 — stone hearth
-	var hearth_src = TileSetAtlasSource.new()
-	var hearth_img = Image.create(TILE_SIZE, TILE_SIZE, false, Image.FORMAT_RGBA8)
-	_draw_hearth_tile(hearth_img)
-	hearth_src.texture = ImageTexture.create_from_image(hearth_img)
-	hearth_src.texture_region_size = Vector2i(TILE_SIZE, TILE_SIZE)
-	hearth_src.create_tile(Vector2i(0, 0))
+	var hearth_src := InteriorArt.source(InteriorArt.tile("hearth", "inn", _draw_hearth_tile, InteriorArt.village_key(_origin_map_id())))
 	tileset.add_source(hearth_src, 2)
 
 	# Source 3 — red/gold carpet
-	var carpet_src = TileSetAtlasSource.new()
-	var carpet_img = Image.create(TILE_SIZE, TILE_SIZE, false, Image.FORMAT_RGBA8)
-	_draw_carpet_tile(carpet_img)
-	carpet_src.texture = ImageTexture.create_from_image(carpet_img)
-	carpet_src.texture_region_size = Vector2i(TILE_SIZE, TILE_SIZE)
-	carpet_src.create_tile(Vector2i(0, 0))
+	var carpet_src := InteriorArt.source(InteriorArt.tile("carpet", "inn", _draw_carpet_tile, InteriorArt.village_key(_origin_map_id())))
 	tileset.add_source(carpet_src, 3)
 
 	tilemap.tile_set = tileset
@@ -256,13 +236,13 @@ func _generate_floor() -> void:
 			var ch = INN_LAYOUT[y][x]
 			match ch:
 				"W":
-					tilemap.set_cell(Vector2i(x, y), 1, Vector2i(0, 0))
+					tilemap.set_cell(Vector2i(x, y), 1, InteriorArt.cell_in(tilemap, 1, Vector2i(x, y)))
 				"h":
-					tilemap.set_cell(Vector2i(x, y), 2, Vector2i(0, 0))
+					tilemap.set_cell(Vector2i(x, y), 2, InteriorArt.cell_in(tilemap, 2, Vector2i(x, y)))
 				"c":
-					tilemap.set_cell(Vector2i(x, y), 3, Vector2i(0, 0))
+					tilemap.set_cell(Vector2i(x, y), 3, InteriorArt.cell_in(tilemap, 3, Vector2i(x, y)))
 				_:
-					tilemap.set_cell(Vector2i(x, y), 0, Vector2i(0, 0))
+					tilemap.set_cell(Vector2i(x, y), 0, InteriorArt.cell_in(tilemap, 0, Vector2i(x, y)))
 
 
 # ---------------------------------------------------------------------------
@@ -273,6 +253,7 @@ func _setup_decorations() -> void:
 	decorations = Node2D.new()
 	decorations.name = "Decorations"
 	add_child(decorations)
+	InteriorArt.back_wall(decorations, "inn", MAP_WIDTH, InteriorArt.village_key(_origin_map_id()))
 
 	_create_registration_desk()
 	_create_fireplace_surround()
@@ -1466,8 +1447,12 @@ func _do_rest() -> void:
 			if not member.is_alive:
 				beyond_rest.append(str(member.combatant_name))
 
-	if SoundManager:
-		SoundManager.play_ui("heal")
+	## The night (struktured 2026-11-01): fade out, the rest ditty, morning, fade in. The heal above already landed, in
+	## the same step as the payment, so a scene change mid-fade can never leave a paid rest unhealed.
+	var seq := InnRestSequence.start(self)
+	await seq.finished
+	if seq.aborted:
+		return
 
 	var done: String = InnDialogue.line(_origin_map_id(), "rest_complete")
 	if done == "":

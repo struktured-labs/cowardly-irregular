@@ -122,7 +122,34 @@ func _create_auto_toggle_button() -> void:
 	_auto_toggle_button.tooltip_text = "Toggle global autobattle (sticky). Same as %s / F6." % (
 		InputProfileManager.hint_for_action("battle_toggle_auto"))
 	_auto_toggle_button.pressed.connect(_on_auto_toggle_pressed)
-	ui.add_child(_auto_toggle_button)
+	var row := party_header_row()
+	if row:
+		_auto_toggle_button.set_anchors_preset(Control.PRESET_TOP_LEFT)
+		row.add_child(_auto_toggle_button)
+	else:
+		ui.add_child(_auto_toggle_button)
+
+
+## The PARTY panel's title row, made wrapping once so the AUTO and speed badges ride beside the title (struktured 2026-11-01).
+func party_header_row() -> HFlowContainer:
+	var box := _scene.get_node_or_null("UI/PartyStatusPanel/VBoxContainer") as VBoxContainer
+	if box == null:
+		return null
+	var row := box.get_node_or_null("HeaderRow") as HFlowContainer
+	if row:
+		return row
+	row = HFlowContainer.new()
+	row.name = "HeaderRow"
+	row.alignment = FlowContainer.ALIGNMENT_CENTER
+	row.add_theme_constant_override("h_separation", 6)
+	row.add_theme_constant_override("v_separation", 4)
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var title := box.get_node_or_null("Label") as Label
+	box.add_child(row)
+	box.move_child(row, title.get_index() if title else 0)
+	if title:
+		title.reparent(row)
+	return row
 
 
 func _update_auto_toggle_button() -> void:
@@ -566,7 +593,7 @@ func _update_stat_mods_label(label: RichTextLabel, member: Combatant) -> void:
 
 	# Equipment bonuses (flat numbers)
 	if EquipmentSystem:
-		var equip_mods = EquipmentSystem.get_equipment_mods(member)
+		var equip_mods = EquipmentSystem.get_applied_equipment_mods(member)
 		var equip_parts: Array[String] = []
 		for stat in ["attack", "defense", "magic", "magic_defense", "speed"]:
 			var val = equip_mods.get(stat, 0)

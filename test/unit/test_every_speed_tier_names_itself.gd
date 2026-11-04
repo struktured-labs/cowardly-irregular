@@ -75,7 +75,7 @@ func _battle() -> Node:
 
 
 func _readout() -> RichTextLabel:
-	return _scene.get_node_or_null("UI/SpeedPanel/SpeedIndicator") as RichTextLabel
+	return _scene.find_child("SpeedIndicator", true, false) as RichTextLabel
 
 
 ## What the player reads once the arrow ramp and the turbo tag are taken off.

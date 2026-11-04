@@ -140,10 +140,10 @@ func test_tick_218_elem_indicator_outline_preserved() -> void:
 	var fn_idx: int = src.find("func _spawn_elemental_indicator")
 	var next_fn: int = src.find("\nfunc ", fn_idx + 1)
 	var body: String = src.substr(fn_idx, next_fn - fn_idx)
-	assert_true(body.contains("label.add_theme_constant_override(\"outline_size\", 2)"),
-		"tick 218 elem indicator outline preserved")
-	assert_true(body.contains("label.add_theme_color_override(\"font_outline_color\", Color.BLACK)"),
-		"tick 218 BLACK outline color preserved")
+	# Pixel pass 2026-11-02: the indicator is PixelText; the tick 218 outline is baked into every glyph.
+	assert_true(body.contains("PixelText.new(text"), "tick 218 elem indicator draws outlined PixelText glyphs")
+	var pt: String = _read("res://src/ui/PixelText.gd")
+	assert_true(pt.contains("img.set_pixelv(p, OUTLINE)"), "tick 218 dark outline preserved, baked into the glyph")
 
 
 # ── Symmetry with DamageNumber's pre-existing scheme ──────────────────
@@ -152,6 +152,7 @@ func test_damage_number_outline_pattern_unchanged() -> void:
 	# DamageNumber set the precedent. All these BattleScene labels
 	# now match the same scheme. Confirm DamageNumber wasn't touched.
 	var dn: String = FileAccess.get_file_as_string("res://src/ui/DamageNumber.gd")
-	# Fable pass 2026-07-16: reference width deliberately 2→5 (struktured: damage font "fatter and bigger").
-	assert_true(dn.contains("add_theme_constant_override(\"outline_size\", 5)"),
-		"DamageNumber outline_size=5 preserved (the fable-pass reference)")
+	# Pixel pass 2026-11-02: the numbers are PixelText glyphs whose dark outline is baked in, so the reference is that rim.
+	assert_true(dn.contains("PixelText.new("), "DamageNumber draws PixelText glyphs (the pixel-pass reference)")
+	var pt: String = FileAccess.get_file_as_string("res://src/ui/PixelText.gd")
+	assert_true(pt.contains("img.set_pixelv(p, OUTLINE)"), "PixelText bakes the dark outline into every glyph")

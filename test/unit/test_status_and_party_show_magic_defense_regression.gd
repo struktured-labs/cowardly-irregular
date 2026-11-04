@@ -72,7 +72,7 @@ func test_status_screen_lists_magic_defense_not_a_copy_of_defense() -> void:
 	var c := _member("Mira", 16, 77)
 	# The breakdown is (without gear +gear) since base_* turned out to be placeholders; give her gear that moves it.
 	c.equipped_accessory = "barrier_ring"
-	var ring_mdef: int = int(EquipmentSystem.get_equipment_mods(c).get("magic_defense", 0))
+	var ring_mdef: int = int(EquipmentSystem.get_applied_equipment_mods(c).get("magic_defense", 0))
 	var menu: StatusMenu = SM.new()
 	add_child_autofree(menu)
 	menu.character = c

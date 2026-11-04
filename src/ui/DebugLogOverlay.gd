@@ -122,10 +122,25 @@ func set_enabled(enabled: bool) -> void:
 		GameState.debug_log_enabled = enabled
 
 
+## Drawn only in a DEV run: never in an exported release build and never under --demo (the Indie Hall
+## build showed "Debug" bottom-left on the overworld, 2026-11-03). Only the PANEL is gated —
+## `debug_log_enabled` stays as it is, because that flag also gates an in-game escape route
+## (see tools/marketing_shots.gd) and must never be shipped false.
+static func dev_run(args: PackedStringArray = OS.get_cmdline_user_args(), debug_build: bool = OS.is_debug_build()) -> bool:
+	if not debug_build or "--demo" in args:
+		return false
+	var ml := Engine.get_main_loop()
+	if ml is SceneTree:
+		var gs := (ml as SceneTree).root.get_node_or_null("GameState")
+		if gs and "game_constants" in gs and bool(gs.game_constants.get("demo_mode", false)):
+			return false
+	return true
+
+
 func _update_visibility() -> void:
 	"""Visible only when enabled AND holding lines — an empty gray panel was
 	painting itself over every player's screen (caught by the web smoke)."""
-	var show := _enabled and _logs.size() > 0
+	var show := _enabled and _logs.size() > 0 and dev_run()
 	if _background:
 		_background.visible = show
 	if _log_container:
