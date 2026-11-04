@@ -123,6 +123,57 @@ func test_a_bosss_real_cast_raises_its_title_card() -> void:
 	Engine.time_scale = saved
 
 
+## The stage is the boss's (cowir-main 2026-11-04): a real cast dims it and tints the backdrop in the sequence's colour.
+func test_a_signature_takes_the_stage() -> void:
+	var scene = SCENE.instantiate()
+	scene.encounter_enemies = ["goblin"]
+	add_child_autofree(scene)
+	for i in 3:
+		await get_tree().process_frame
+	var saved := Engine.time_scale
+	var boss: Combatant = BattleManager.enemy_party[0] if BattleManager.enemy_party.size() > 0 else null
+	assert_not_null(boss, "CONTROL: a foe to play the boss")
+	if boss == null:
+		return
+	boss.set_meta("monster_type", "chancellor_mordaine")
+	scene._on_action_executing(boss, {"type": "ability", "ability_id": "thundaga", "targets": [BattleManager.player_party[0]]})
+	await get_tree().create_timer(0.3).timeout
+	var tint := scene.get_node_or_null("SignatureTint") as ColorRect
+	assert_not_null(tint, "the backdrop takes the boss's colour")
+	if tint:
+		var want: Color = scene.signature_tint("sig_chancellor_mordaine")
+		assert_almost_eq(tint.color.r, want.r, 0.01, "in the sequence's own tint")
+		assert_gt(tint.color.a, 0.0, "and it is showing")
+	Engine.time_scale = saved
+
+
+## A self-aimed signature (Rat Swarm) still lands on the PARTY: its _wave sequence rolls onto every living member.
+func test_a_self_aimed_signature_rolls_onto_the_party() -> void:
+	var scene = SCENE.instantiate()
+	scene.encounter_enemies = ["goblin"]
+	add_child_autofree(scene)
+	for i in 3:
+		await get_tree().process_frame
+	var boss: Combatant = BattleManager.enemy_party[0] if BattleManager.enemy_party.size() > 0 else null
+	if boss == null:
+		fail_test("CONTROL: a foe to play the boss")
+		return
+	boss.set_meta("monster_type", "cave_rat_king")
+	var host: Node = EffectSystem._effects_container
+	assert_not_null(host, "CONTROL: the effects layer exists")
+	if host == null:
+		return
+	var before := host.get_child_count()
+	scene._spawn_signature_wave(boss, scene.enemy_sprite_nodes[0], JobSystem.get_ability("rat_swarm"), [boss], "sig_cave_rat_king")
+	await get_tree().process_frame
+	var living := BattleManager.player_party.filter(func(m): return m.is_alive).size()
+	assert_gte(host.get_child_count() - before, living, "one wave per living member (%d members)" % living)
+	before = host.get_child_count()
+	scene._spawn_signature_wave(boss, scene.enemy_sprite_nodes[0], JobSystem.get_ability("thundaga"), [BattleManager.player_party[0]], "sig_chancellor_mordaine")
+	await get_tree().process_frame
+	assert_eq(host.get_child_count() - before, 0, "CONTROL: a party-aimed signature needs no wave")
+
+
 func test_the_verdict_card_carries_its_title_and_bark() -> void:
 	var card: Dictionary = _monsters["chancellor_mordaine"]["fx_signature_card"]
 	assert_eq(str(card.get("title", "")), "Summary Judgment")

@@ -58,6 +58,9 @@ const NAME_LABEL_WIDTH: float = 200.0
 const NAME_LABEL_PX := 16  # on-screen size for every monster, whatever its sprite scale
 const ENEMY_HP_BAR_SIZE := Vector2(60, 5)  # on-screen, whatever the sprite scale
 const SIGNATURE_WINDUP := 0.55  # battle seconds of title card and camera push before a boss's signature sequence
+const SIGNATURE_PUSH := 0.12  # camera push-in for a signature (a crit's is 0.04)
+const SIGNATURE_HITSTOP := 0.14  # seconds of hit-stop on a signature's impact
+const SIGNATURE_TINT_ALPHA := 0.32  # how strongly the backdrop takes the boss's colour during its signature
 var _signatures_shown: Dictionary = {}  # monster_id -> true once its signature has played at 1x this battle
 ## The enemies stand this much nearer their edge (struktured 2026-11-01); the party is laid out against its panel instead.
 const ENEMY_EDGE_SHIFT := -24.0
@@ -3055,9 +3058,12 @@ func _play_signature(caster: Combatant, caster_sprite: Node2D, animator: BattleA
 	BattleManager.presentation_hold = maxf(BattleManager.presentation_hold, windup + seq_total + 0.2)
 	if not quiet:
 		SoundManager.play_flourish("boss_signature_card")
+	BattleManager.presentation_hold += SIGNATURE_HITSTOP
 	_show_signature_card(card, ability, windup)
+	# The stage is the boss's for the whole beat: dimmed, the backdrop tinted to its palette (cowir-main 2026-11-04).
+	_signature_stage(true, signature_tint(seq_id))
 	if caster_sprite != null and is_instance_valid(caster_sprite) and BattleJuice.camera_rig != null:
-		BattleJuice.camera_rig.punch_zoom(_stable_sprite_anchor(caster_sprite), 0.06, windup)
+		BattleJuice.camera_rig.punch_zoom(_stable_sprite_anchor(caster_sprite), SIGNATURE_PUSH, windup)
 	await get_tree().create_timer(windup).timeout
 	if not is_instance_valid(self):
 		return
@@ -3066,15 +3072,68 @@ func _play_signature(caster: Combatant, caster_sprite: Node2D, animator: BattleA
 	var cue := signature_cue(caster)
 	if cue != "" and not quiet:
 		SoundManager.play_flourish(cue)
+	_spawn_signature_wave(caster, caster_sprite, ability, targets, seq_id)
 	await _play_ability_sequence(caster, caster_sprite, animator, ability, targets, seq_id, true)
-	if not slowed or not is_instance_valid(self):
+	if not is_instance_valid(self):
 		return
+	# Hit-stop AFTER the impact frame, so cowir-sfx's one-sample cue still booms on the hit (21569, option a).
+	if not quiet:
+		_begin_hitlag(SIGNATURE_HITSTOP * HITLAG_SCALE)
 	var left := seq_total - float(Time.get_ticks_msec() - began) / 1000.0 * Engine.time_scale
 	if left > 0.0:
 		await get_tree().create_timer(left).timeout
+	if not is_instance_valid(self):
+		return
+	_signature_stage(false, Color.TRANSPARENT)
 	# A speed the player picked during the beat stands; only an untouched 1x is put back.
-	if is_instance_valid(self) and is_equal_approx(_hitlag_base_scale, BATTLE_SPEEDS[0]):
+	if slowed and is_equal_approx(_hitlag_base_scale, BATTLE_SPEEDS[0]):
 		_set_battle_time_scale(restore_to)
+
+
+## A self-aimed signature (a buff, a summon) still has to land on the PARTY: sig_<id>_wave rolls from the boss to each of them.
+func _spawn_signature_wave(caster: Combatant, caster_sprite: Node2D, ability: Dictionary, targets: Array, seq_id: String) -> void:
+	if not (targets.size() == 1 and targets[0] == caster) or caster_sprite == null or not is_instance_valid(caster_sprite):
+		return
+	var wave_id := seq_id + "_wave"
+	if FractalFX.load_sequence(wave_id).is_empty():
+		return
+	var intensity := cast_intensity(caster, ability)
+	for member in BattleManager.player_party:
+		var ms = _get_combatant_sprite(member)
+		if member == null or not is_instance_valid(member) or not member.is_alive or ms == null:
+			continue
+		EffectSystem.spawn_sequence(wave_id, _stable_sprite_anchor(caster_sprite), _stable_sprite_anchor(ms),
+			float(intensity["k"]), {}, int(intensity["tier"]))
+
+
+## The sequence's own "tint" ([r, g, b]) or a neutral dusk, for the backdrop under a signature.
+static func signature_tint(seq_id: String) -> Color:
+	var t = FractalFX.load_sequence(seq_id).get("tint", null)
+	if t is Array and (t as Array).size() >= 3:
+		return Color(float(t[0]), float(t[1]), float(t[2]), SIGNATURE_TINT_ALPHA)
+	return Color(0.25, 0.1, 0.35, SIGNATURE_TINT_ALPHA)
+
+
+func _signature_stage(on: bool, tint: Color) -> void:
+	_full_render_set_dim(on)
+	var rect := get_node_or_null("SignatureTint") as ColorRect
+	if rect == null:
+		if not on:
+			return
+		rect = ColorRect.new()
+		rect.name = "SignatureTint"
+		rect.anchors_preset = Control.PRESET_FULL_RECT
+		rect.size = get_viewport_rect().size
+		rect.z_index = -6
+		rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		rect.color = Color(tint.r, tint.g, tint.b, 0.0)
+		add_child(rect)
+	if on:
+		rect.color = Color(tint.r, tint.g, tint.b, rect.color.a)
+	var tw := create_tween()
+	tw.tween_property(rect, "color:a", tint.a if on else 0.0, 0.2)
+	if not on:
+		tw.tween_callback(rect.queue_free)
 
 
 ## Secret of Mana-style (struktured 2026-11-01): how grand a cast LOOKS follows its caster's level and stat. Presentation only.
@@ -5430,6 +5489,10 @@ func _on_round_ended(round_num: int) -> void:
 
 
 ## Bravely Default-style round boundary: brief centered banner + AP-label gold flash on the party panel. Banner suppressed at 4x+ (same convention as speech bubbles); the CUE is not — struktured 2026-08-22 "still no sound to indicate next round", and the banner threshold was swallowing it whole.
+## Clear sky above the ENEMIES panel (which starts at y 60): no bubble, title or panel ever draws there.
+const CHAIN_TAG_POS := Vector2(14, 32)
+
+
 ## The chain says so up front (struktured: "not even obvious it's a chain battle"): a banner, and a tag for the whole fight.
 static func chain_banner_text(link: int, total: int) -> String:
 	return "CHAIN ×%d: more are closing in!" % total if link <= 1 else "CHAIN %d/%d" % [link, total]
@@ -5449,8 +5512,9 @@ func _show_chain_intro(link: int, total: int) -> void:
 	tag.add_theme_constant_override("outline_size", 4)
 	tag.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	(ui if ui else self).add_child(tag)
-	## Under the round title, not on it: the title panel spans the top ~52 px (seen in tools/chain_shots).
-	tag.position = Vector2((get_viewport_rect().size.x - tag.get_combined_minimum_size().x) / 2.0, 54)
+	## Top-left, above the ENEMIES panel: centre-top is where the round title and the opening party bubbles sit (tools/chain_shots).
+	tag.z_index = 90
+	tag.position = Vector2(CHAIN_TAG_POS)
 	if turbo_mode or autogrind_console_mode:
 		return
 	var banner := Label.new()

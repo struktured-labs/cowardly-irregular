@@ -27,7 +27,7 @@ const RAW_SITES_WITH_REASONS := {
 	"src/ui/autogrind/AutogrindGridEditor.gd::JOY_BUTTON_Y":
 		"the same cell verb in the autogrind grid; same modal reasoning as the autobattle editor.",
 	"src/ui/autogrind/AutogrindUI.gd::JOY_BUTTON_Y":
-		"the grind console. GameLoop's opener returns early on _autogrind_ui_open(), so the field "
+		"delete / undo in the grind console (its DELETE_BUTTON). GameLoop's opener returns early on _autogrind_ui_open(), so the field "
 		+ "menu never opens over the console and the two cannot answer one press.",
 	"src/ui/RebalanceReviewPanel.gd::JOY_BUTTON_Y":
 		"DISMISS ONE ENTRY in the rebalance review, a raw read its own comment already calls out. "
