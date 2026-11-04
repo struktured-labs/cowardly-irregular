@@ -136,6 +136,22 @@ _merged_branches() {
     done
 }
 
+# What landed WITHOUT a merge commit: non-merge commits on the tag's first-parent line, minus the
+# version bump. ⛔ _merged_branches walks merges only, so a fold whose first tip FAST-FORWARDS the fold
+# branch is invisible there: v3.33.767-alpha's chain runs bump <- 10 merges <- 1ceceb0e4 (sfx's Mordaine
+# re-cast, all 102 voice clips) and the note named 10 branches and never her; v3.33.763-alpha's note
+# named NOTHING (six fast-forwarded fixes, incl. "spell damage waits for the projectile impact").
+# Its own section, not "Branches merged": a commit made on main directly is no branch.
+_landed_unmerged() {
+    local range="$1" tips sha parents subj full nm
+    tips="$(_lane_tips)"
+    git log --first-parent --no-merges --format='%h%x09%H%x09%s' "$range" 2>/dev/null | while IFS=$'\t' read -r sha full subj; do
+        case "$subj" in "chore: bump to v"*) continue ;; esac
+        nm="$(awk -v s="$full" '$1==s{print $2}' <<<"$tips" | sort -u | paste -sd' ' | sed 's/ / = /g')"
+        printf '%s\t%s\n' "$sha" "${nm:+$nm: }$subj"
+    done
+}
+
 # The fold's own machine-written evidence line, if the annotation carries one.
 _gate_line() {
     git for-each-ref "refs/tags/$1" --format='%(contents)' 2>/dev/null \
@@ -155,6 +171,7 @@ note() {
 
     local merges commits files
     merges="$(_merged_branches "$range")"
+    local direct nd; direct="$(_landed_unmerged "$range")"; nd="$(printf '%s' "$direct" | command grep -c .)"
     commits="$(git rev-list --count "$range" 2>/dev/null || echo 0)"
     files="$(git diff --name-only "${prev}" "${tag}" 2>/dev/null | wc -l)"
 
@@ -194,9 +211,15 @@ note() {
             [ -n "$name" ] && printf -- '- `%s` %s\n' "$sha" "$name"
         done
     fi
+    if [ "${nd:-0}" -gt 0 ]; then
+        printf '\n**Landed without a merge commit (%s):** fast-forwarded folds, or commits made on main directly\n\n' "$nd"
+        printf '%s\n' "$direct" | while IFS=$'\t' read -r sha name; do
+            [ -n "$name" ] && printf -- '- `%s` %s\n' "$sha" "$name"
+        done
+    fi
     printf '\n---\n'
     printf '_This note is derived from the tag'"'"'s own merge history by `tools/release_note.sh`._\n'
-    printf '_Every branch listed has a merge commit in `%s`; a branch that did not land cannot appear here._\n' "$tag"
+    printf '_Every branch listed has a merge commit in `%s`, and every commit in the second list is on its first-parent line; nothing that did not land can appear here._\n' "$tag"
 }
 
 # ── self-test ────────────────────────────────────────────────────────────────────────────────
@@ -274,6 +297,9 @@ gated: cafe1234 scripts=11 tests=111 passing=111 failing=0"
     _has   "a caught-up lane's FOLD still appears"       "$outc" "lane/catches-up"
     _hasnt "  ...and its CATCH-UP is not a merged branch" "$outc" '` main'
     _has   "  ...and the count excludes the catch-up"    "$outc" "Branches merged (1)"
+    # The fixture's commit `v` was made on main directly: it landed, it is no branch, so it is listed in
+    # its own section and the branch count above stays 1. (v3.33.767's Mordaine fold had this shape.)
+    _has   "a commit on main WITHOUT a merge is listed"   "$outc" "Landed without a merge commit (1)"
     # ⛔ THE FOLD THAT NAMES NO BRANCH. Main merges the sha it ls-remote MATCHed, so the subject
     # is "Merge commit '<40 hex>' into fold/...": 20 of 25 folds in .740..755, all `[unparsed]`.
     # Three shapes: the lane still at that tip; a lane that MOVED after the fold (its new tip
