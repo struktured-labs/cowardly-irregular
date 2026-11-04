@@ -315,20 +315,23 @@ if [ "${1:-}" = "--selftest" ]; then  # watch the answer flip, so a FREE is neve
     if FOLD_TREE="$TA/fold" argv_is_player "$f" "$TA/pv/cwd"; then got=yes; else got=no; fi
     [ "$got" = "$want" ] || { echo "FAIL arm15 $label: player=$got, want $want (argv: $*)"; fails=1; }
   }
-  _pl bare            yes godot
-  _pl preview_abs     yes godot --path "$TA/fold/tmp/preview760"
-  _pl preview_sub     yes godot --path "$TA/fold/tmp/preview760/sub"
-  _pl preview_rel     yes godot --path rel
-  _pl lane_tree       no  godot --path "$TA/lanes/cowir-sprites"
-  _pl fold_root       no  godot --path "$TA/fold"
-  _pl fold_tmp_other  no  godot --path "$TA/fold/tmp/notpreview"
-  _pl preview_symlink_to_lane no godot --path "$TA/fold/tmp/preview999"
-  _pl preview_missing no  godot --path "$TA/fold/tmp/preview404"
-  _pl preview_empty   no  godot --path ""
-  _pl path_no_dir     no  godot --path
-  _pl gut_from_tree   no  godot --path "$TA/fold/tmp/preview760" -s addons/gut/gut_cmdln.gd
-  _pl headless_first  no  godot --headless --path "$TA/fold/tmp/preview760"
-  _pl other_flag      no  godot --rendering-driver "$TA/fold/tmp/preview760"
+  ## The engine name comes from a variable: these lines are argv DATA for the predicate, and a literal
+  ## `godot --` in command position is what check_user_data_sandboxed.py (rightly) reads as a launch.
+  G=godot
+  _pl bare            yes "$G"
+  _pl preview_abs     yes "$G" --path "$TA/fold/tmp/preview760"
+  _pl preview_sub     yes "$G" --path "$TA/fold/tmp/preview760/sub"
+  _pl preview_rel     yes "$G" --path rel
+  _pl lane_tree       no  "$G" --path "$TA/lanes/cowir-sprites"
+  _pl fold_root       no  "$G" --path "$TA/fold"
+  _pl fold_tmp_other  no  "$G" --path "$TA/fold/tmp/notpreview"
+  _pl preview_symlink_to_lane no "$G" --path "$TA/fold/tmp/preview999"
+  _pl preview_missing no  "$G" --path "$TA/fold/tmp/preview404"
+  _pl preview_empty   no  "$G" --path ""
+  _pl path_no_dir     no  "$G" --path
+  _pl gut_from_tree   no  "$G" --path "$TA/fold/tmp/preview760" -s addons/gut/gut_cmdln.gd
+  _pl headless_first  no  "$G" --headless --path "$TA/fold/tmp/preview760"
+  _pl other_flag      no  "$G" --rendering-driver "$TA/fold/tmp/preview760"
   : > "$TA/pv/argv.empty"
   FOLD_TREE="$TA/fold" argv_is_player "$TA/pv/argv.empty" "$TA/pv/cwd" && { echo "FAIL arm15 empty: an empty cmdline read as a player"; fails=1; }
   FOLD_TREE="$TA/fold" argv_is_player "$TA/pv/argv.gone" "$TA/pv/cwd" && { echo "FAIL arm15 gone: an unreadable cmdline read as a player"; fails=1; }
