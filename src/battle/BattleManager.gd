@@ -178,6 +178,10 @@ var battle_serial: int = 0
 # wall-clock (not time_scale'd) so 32x battle speed can't distort the stall threshold
 const _WD_STALL_MS: int = 10000
 var _wd_last_progress_ms: int = 0
+# battle-time budget spent since the last bump: each frame adds its wall ms × min(1, time_scale), so a 0.25x beat that ends
+# (signature restore) mid-hold can't be judged by the NEW scale against wall ms accrued at the old one (Umbraxis false stall).
+var _wd_scaled_ms: float = 0.0
+var _wd_last_tick_ms: int = 0
 # armed only inside start_battle..end_battle — tests poke states without the lifecycle
 var _wd_armed: bool = false
 # hard-off under gut_cmdln: a mid-suite recovery end_battles empty parties and poisons awaiting tests
@@ -187,6 +191,8 @@ var _wd_disabled_for_tests: bool = false
 
 func _wd_bump() -> void:
 	_wd_last_progress_ms = Time.get_ticks_msec()
+	_wd_scaled_ms = 0.0
+	_wd_last_tick_ms = _wd_last_progress_ms
 
 
 func _process(_delta: float) -> void:
@@ -210,19 +216,25 @@ func _process(_delta: float) -> void:
 			or current_state == BattleState.ENEMY_SELECTING)
 	if not is_watched:
 		_wd_last_progress_ms = 0
+		_wd_scaled_ms = 0.0
 		return
 	var now: int = Time.get_ticks_msec()
 	if _wd_last_progress_ms == 0:
 		_wd_last_progress_ms = now
+		_wd_last_tick_ms = now
+		_wd_scaled_ms = 0.0
 		return
-	var slack: float = maxf(1.0, 1.0 / maxf(Engine.time_scale, 0.001))
-	if now - _wd_last_progress_ms < int(_WD_STALL_MS * slack):
+	_wd_scaled_ms += float(now - _wd_last_tick_ms) * minf(1.0, maxf(Engine.time_scale, 0.001))
+	_wd_last_tick_ms = now
+	if _wd_scaled_ms < float(_WD_STALL_MS):
 		return
+	_wd_scaled_ms = 0.0
 	var who: String = current_combatant.combatant_name if current_combatant else "?"
 	push_error("BattleManager: %s stalled %dms at %s — watchdog recovering" % [
 		BattleState.keys()[current_state], now - _wd_last_progress_ms, who])
 	battle_log_message.emit("[color=orange]⚠ Battle stalled — auto-recovering...[/color]")
 	_wd_last_progress_ms = now
+	_wd_last_tick_ms = now
 	if current_state == BattleState.ENEMY_SELECTING:
 		_recover_enemy_selection_stall()
 	else:
