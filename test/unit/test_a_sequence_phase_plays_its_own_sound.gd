@@ -115,3 +115,20 @@ func test_a_battle_in_turbo_mutes_phase_cues() -> void:
 	scene.turbo_mode = true
 	assert_false(EffectSystem.play_phase_sfx(key), "turbo mutes it")
 	scene.turbo_mode = false
+
+
+## adhoc 21681: the gate is bound to ONE battle. When that battle leaves, it is cleared rather than left dangling,
+## and with no battle running a phase cue plays (turbo and autogrind are battle modes; outside one nothing mutes it).
+func test_a_finished_battle_takes_its_gate_with_it() -> void:
+	var scene = SCENE.instantiate()
+	add_child(scene)
+	for i in 3:
+		await get_tree().process_frame
+	assert_true(EffectSystem.phase_sfx_gate.is_valid(), "CONTROL: the live battle installed its gate")
+	scene.turbo_mode = true
+	assert_false(EffectSystem.play_phase_sfx(_known_key()), "CONTROL: its turbo mutes")
+	remove_child(scene)
+	scene.free()
+	assert_false(EffectSystem.phase_sfx_gate.is_valid(), "the battle's gate left with it")
+	assert_true(EffectSystem.phase_sfx_gate.is_null(), "cleared, not a dangling reference to a freed scene")
+	assert_true(EffectSystem.play_phase_sfx(_known_key()), "and with no battle running, a phase cue plays")

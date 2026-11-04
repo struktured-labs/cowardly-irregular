@@ -150,6 +150,7 @@ func spawn_sequence(seq_id: String, from: Vector2, to: Vector2, power: float = 1
 
 
 ## A sequence phase's "sfx" cue; false when muted (autogrind/turbo, via the battle's own gate) or the key is unknown.
+## No gate means no battle is running, so nothing mutes it: a field cast's cue plays. BattleScene clears its gate on exit.
 var phase_sfx_gate: Callable = Callable()
 
 

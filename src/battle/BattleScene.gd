@@ -581,6 +581,9 @@ func _exit_tree() -> void:
 	"""Cleanup signal connections when scene is freed"""
 	_clear_advance_aura()
 	BattleJuice.clear_battle_context()
+	# Our gate leaves with us (adhoc 21681); a newer battle's gate is not ours to clear.
+	if EffectSystem.phase_sfx_gate == Callable(self, "signature_sound_allowed"):
+		EffectSystem.phase_sfx_gate = Callable()
 	if SoundManager:
 		SoundManager.stop_voiced_line(self)
 	# Disconnect from BattleManager signals to prevent memory leaks
