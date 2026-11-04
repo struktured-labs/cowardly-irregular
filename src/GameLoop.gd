@@ -6594,7 +6594,7 @@ func _create_dragon_cave_from_script(script_res: GDScript) -> Node:
 
 
 func _create_tavern_scene() -> Node:
-	"""Create The Dancing Tonberry tavern interior scene"""
+	"""Create The Dancing Lantern tavern interior scene"""
 	return TavernInteriorScript.new()
 
 
