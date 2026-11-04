@@ -170,6 +170,9 @@ var battles_won: int = 0
 ## Full Banks unleashed — five actions for four AP, the top of the AP economy (struktured, design B).
 var full_banks_unleashed: int = 0
 
+## Autogrind sessions finished on THIS run (#193). AutogrindSystem.session_history is machine-global and capped, so the Records page counts here instead.
+var autogrind_sessions: int = 0
+
 ## Spotlight duels won — the five 1v1 fights that unlock each party member.
 ##
 ## struktured ruling 2026-07-29: "the fights which unlock each of the 5 party members — remove
@@ -522,6 +525,7 @@ func _create_save_data() -> Dictionary:
 		## every restart.
 		"battles_won": battles_won,
 		"full_banks_unleashed": full_banks_unleashed,
+		"autogrind_sessions": autogrind_sessions,
 		"spotlight_duels_won": spotlight_duels_won,
 		## Tick 453: persist the boss-memory list so the pattern_
 		## recognition bonus survives a save+load.
@@ -871,6 +875,8 @@ func _apply_save_data(save_data: Dictionary) -> void:
 		battles_won = 0
 	## Absent on every save written before Full Bank shipped — those runs banked none.
 	full_banks_unleashed = max(0, int(save_data.get("full_banks_unleashed", 0)))
+	## Absent on saves written before #193: those runs were never counted, so 0, never the global history.
+	autogrind_sessions = max(0, int(save_data.get("autogrind_sessions", 0)))
 
 	## Tick 453: restore boss memory. Explicit Array[String] coercion
 	## via str() in a per-entry loop dodges the typed-array silent-
@@ -1354,6 +1360,7 @@ func reset_game_state() -> void:
 	# is deliberately cross-run (a PB survives New Game — see its docstring).
 	battles_won = 0
 	full_banks_unleashed = 0
+	autogrind_sessions = 0
 	spotlight_duels_won = 0
 	previously_fought_bosses.clear()
 	boss_splits.clear()
