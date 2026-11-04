@@ -98,8 +98,9 @@ func test_every_glory_spell_voices_its_first_impact() -> void:
 
 
 func test_no_wall_clock_sample_plays_under_the_beats() -> void:
+	# Off-tree: these arms read two pure functions, and a live scene starts a battle that outlives the file (it moved the next file's clock).
 	var scene = load(SCENE).instantiate()
-	add_child_autofree(scene)
+	autofree(scene)
 	var holders := _holders()
 	assert_gt(holders.size(), 5, "PREMISE: the holders are found")
 	var doubled: Array = []
@@ -119,8 +120,9 @@ func test_the_title_card_has_its_wind_up() -> void:
 
 
 func test_signature_sounds_play_at_4x_and_only_the_grind_is_silent() -> void:
+	# Off-tree: these arms read two pure functions, and a live scene starts a battle that outlives the file (it moved the next file's clock).
 	var scene = load(SCENE).instantiate()
-	add_child_autofree(scene)
+	autofree(scene)
 	var saved := Engine.time_scale
 	Engine.time_scale = 1.0
 	var at_4x: bool = scene.signature_sound_allowed()
