@@ -26,25 +26,25 @@
           "speaker": "Madame Hex",
           "text": "Ah. Travelers. I saw you coming.",
           "theme": "elder",
-          "portrait": "elder"
+          "portrait": "old_woman"
         },
         {
           "speaker": "Madame Hex",
           "text": "I see everyone coming. It is a small town and I have a window.",
           "theme": "elder",
-          "portrait": "elder"
+          "portrait": "old_woman"
         },
         {
           "speaker": "Madame Hex",
           "text": "But I also see your future, and for once I will tell it for free: there is a dragon in the dark to the northeast, and it will be a BOSS FIGHT.",
           "theme": "elder",
-          "portrait": "elder"
+          "portrait": "old_woman"
         },
         {
           "speaker": "Madame Hex",
           "text": "...It is always a boss fight. Fifty gold if you want to know the element.",
           "theme": "elder",
-          "portrait": "elder"
+          "portrait": "old_woman"
         }
       ]
     },
@@ -59,19 +59,19 @@
           "speaker": "Undead Shopkeeper Mort",
           "text": "Welcome to Grimhollow. Population: stable.",
           "theme": "shopkeeper",
-          "portrait": "shopkeeper"
+          "portrait": "merchant"
         },
         {
           "speaker": "Undead Shopkeeper Mort",
           "text": "Nobody leaves and nobody quite dies. It does wonders for the census.",
           "theme": "shopkeeper",
-          "portrait": "shopkeeper"
+          "portrait": "merchant"
         },
         {
           "speaker": "Undead Shopkeeper Mort",
           "text": "I keep the shop. I used to adventure. You can see how that went. Buy a potion; it is the one investment I would make again.",
           "theme": "shopkeeper",
-          "portrait": "shopkeeper"
+          "portrait": "merchant"
         }
       ]
     },
@@ -86,19 +86,19 @@
           "speaker": "Creepy Child Wednesday",
           "text": "You have a save file. I can see it from here.",
           "theme": "villager",
-          "portrait": "villager"
+          "portrait": "child"
         },
         {
           "speaker": "Creepy Child Wednesday",
           "text": "It is very small. You have not done very much yet.",
           "theme": "villager",
-          "portrait": "villager"
+          "portrait": "child"
         },
         {
           "speaker": "Creepy Child Wednesday",
           "text": "That's all right. Files grow. Mine stopped, but yours will grow.",
           "theme": "villager",
-          "portrait": "villager"
+          "portrait": "child"
         }
       ]
     },

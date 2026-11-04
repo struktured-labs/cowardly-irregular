@@ -26,19 +26,19 @@
           "speaker": "Conspiracy Theorist Rex",
           "text": "You're carrying potions. I can tell. Four? Five? Here is the thing nobody in this bazaar will say out loud: walk out that gate with two, and the sand starts moving.",
           "theme": "villager",
-          "portrait": "villager_m"
+          "portrait": "young_man"
         },
         {
           "speaker": "Conspiracy Theorist Rex",
           "text": "I have kept a tally. Eleven years of it, scratched into the back of a tent panel. The encounters are not random. They are POLITE. They wait until you cannot afford them.",
           "theme": "villager",
-          "portrait": "villager_m"
+          "portrait": "young_man"
         },
         {
           "speaker": "Conspiracy Theorist Rex",
           "text": "Everyone tells me that is not how numbers work. Fine. Then explain to me why the desert has never once ambushed a man with a full pack.",
           "theme": "villager",
-          "portrait": "villager_m"
+          "portrait": "young_man"
         }
       ]
     },
@@ -80,19 +80,19 @@
           "speaker": "Script Dealer Shifty",
           "text": "...and yet the numbers sell beautifully. Psst. Friend. Step away from the well a moment.",
           "theme": "merchant",
-          "portrait": "merchant"
+          "portrait": "young_man"
         },
         {
           "speaker": "Script Dealer Shifty",
           "text": "If you would rather not learn this desert the honest way, I have configurations. Written out, tested, very efficient. They do the going and the knowing on your behalf.",
           "theme": "merchant",
-          "portrait": "merchant"
+          "portrait": "young_man"
         },
         {
           "speaker": "Script Dealer Shifty",
           "text": "Fifty gold. No refunds, no questions, and I would take it as a kindness if you did not mention whose console they came off.",
           "theme": "merchant",
-          "portrait": "merchant"
+          "portrait": "young_man"
         }
       ]
     },

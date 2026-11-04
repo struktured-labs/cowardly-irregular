@@ -95,7 +95,7 @@
           "speaker": "Clem the Lamplighter",
           "text": "Dusk. Right on schedule. Always on schedule. The lamps need lighting and I light them and they stay lit until dawn, which is also on schedule.",
           "theme": "elder",
-          "portrait": "elder"
+          "portrait": "guard"
         },
         {
           "speaker": "Bard",
@@ -107,13 +107,13 @@
           "speaker": "Clem the Lamplighter",
           "text": "Once. I was seven seconds behind. Just seven. The Mechanism... compensated. I don't know how. But the lamps were lit at the correct time despite my delay. As though the world lit them for me.",
           "theme": "elder",
-          "portrait": "elder"
+          "portrait": "guard"
         },
         {
           "speaker": "Clem the Lamplighter",
           "text": "I've been exactly on time ever since. Not because I have to be. Because I want to know if it's me or the Mechanism. And as long as I'm on time, I can pretend it's me.",
           "theme": "elder",
-          "portrait": "elder"
+          "portrait": "guard"
         }
       ]
     },

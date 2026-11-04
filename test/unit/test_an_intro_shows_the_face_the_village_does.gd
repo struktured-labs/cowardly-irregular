@@ -7,6 +7,21 @@ extends GutTest
 ## Corpus is DERIVED: every village in GameLoop._VILLAGE_INTROS, every intro speaker who stands in that village.
 
 const GAME_LOOP := "res://src/GameLoop.gd"
+const DIALOGUE := "res://src/cutscene/CutsceneDialogue.gd"
+
+var _dialogue: Node = null
+
+
+## The face a key actually SHOWS, through the dialogue's own resolver: two keys aliasing one file (theron / elder_theron)
+## are one face. Art compares by file; a drawn (procedural) face compares by key.
+func _face(key: String) -> String:
+	if _dialogue == null:
+		_dialogue = load(DIALOGUE).new()
+		autofree(_dialogue)
+	var tex: Texture2D = _dialogue.portrait_texture(key)
+	if tex != null and not (tex is ImageTexture) and tex.resource_path != "":
+		return tex.resource_path
+	return "drawn:" + key
 
 
 func _intros() -> Dictionary:
@@ -67,7 +82,16 @@ func test_every_intro_speaker_wears_their_village_face() -> void:
 			if not faces.has(who):
 				continue
 			judged += 1
-			if str(line["portrait"]) != str(faces[who]):
-				mismatched.append("%s in %s: intro says %s, the village shows %s" % [who, intros[vid], line["portrait"], faces[who]])
+			if _face(str(line["portrait"])) != _face(str(faces[who])):
+				var row := "%s in %s: intro says %s, the village shows %s" % [who, intros[vid], line["portrait"], faces[who]]
+				if not mismatched.has(row):
+					mismatched.append(row)
+	for m in mismatched:
+		print("[INTRO-FACE] ", m)
 	assert_gt(judged, 20, "floor: intro speakers who stand in their village were found and judged (%d)" % judged)
 	assert_eq(mismatched, [], "an intro shows each speaker the face the village gives them")
+
+
+func test_two_keys_for_one_file_are_one_face() -> void:
+	assert_eq(_face("theron"), _face("elder_theron"), "an alias is the same face, so it is not a mismatch")
+	assert_ne(_face("child"), _face("villager"), "CONTROL: a child is not a villager")
