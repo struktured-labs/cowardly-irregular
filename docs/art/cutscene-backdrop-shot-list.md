@@ -11,9 +11,10 @@ assets/cutscene_backdrops/<key>.png. All 20 keys have an .ogv (6da865867, 2026-0
 export presets exclude *.mp4 only, so the .ogv ships on every channel.
 => For every redraw: regenerate the .ogv loop too, or delete it (then the PNG shows).
 => For a NEW key: no .ogv exists, so the PNG shows as soon as the JSON names it.
-Also: the 7 `presentation:"staged"` scenes never show a backdrop (they play on the live map).
-Their `background` field is dead, so 4 of the 11 throne_room and 3 of the 17 prologue_village
-uses need no art.
+Also: `presentation:"staged"` scenes never show a backdrop (they play on the live map), so their
+`background` field is dead. Read on 8f96e0b17: 8 staged scenes, 4 of the 10 throne_room uses,
+3 of the 8 prologue_village uses and 1 of the 22 cave_entrance uses (world1_mordaine_secondary_unlock).
+It said 7 / 11 / 17 when written on 10-31; re-derive before costing art against these keys.
 
 ## 1. Harmonia: 4 new keys, 640x360, W1 medieval
 | key | shows | scenes |
