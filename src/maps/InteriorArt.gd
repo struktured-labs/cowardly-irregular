@@ -128,3 +128,32 @@ static func accepts_key(key: String) -> bool:
 			if rest == room or rest.begins_with(room + "_"):
 				return true
 	return false
+
+
+## The layout cells a room's furniture occupies: every cell holding one of `glyphs`, skipping the outer wall rows
+## (an inn's bottom-row "D" is its door, its top-row "D" block the desk). For NPC-placement guards.
+static func furniture_cells(layout: Array, glyphs: String) -> Array[Vector2i]:
+	var out: Array[Vector2i] = []
+	for y in range(1, layout.size() - 1):
+		var row: String = layout[y]
+		for x in range(row.length()):
+			if glyphs.contains(row[x]):
+				out.append(Vector2i(x, y))
+	return out
+
+
+## Every drawn piece standing in a room (the Art_* sprites place_or_paint adds), as its rect in the room's own space.
+static func drawn_piece_rects(room: Node) -> Array[Rect2]:
+	var out: Array[Rect2] = []
+	for n in room.find_children("Art_*", "Sprite2D", true, false):
+		var spr := n as Sprite2D
+		if spr.texture == null:
+			continue
+		var r := spr.get_rect()
+		r.position += spr.position
+		var p := spr.get_parent()
+		while p != null and p != room and p is Node2D:
+			r.position += (p as Node2D).position
+			p = p.get_parent()
+		out.append(r)
+	return out

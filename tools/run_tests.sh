@@ -25,6 +25,9 @@ if [ -z "${XDG_DATA_HOME:-}" ] && [ "${RUN_TESTS_REAL_PROFILE:-0}" != "1" ]; the
   export XDG_DATA_HOME="$PWD/tmp/xdg"
   echo "run_tests.sh: XDG_DATA_HOME was unset — sandboxed to tmp/xdg (RUN_TESTS_REAL_PROFILE=1 opts out)" >&2
 fi
+# SaveSystem's 5-minute autosave fired mid-suite and saved whatever a test held (corruption 0.35) into the shared
+# sandbox, which a later Continue test loaded: the .760 gate's leak. Tests save on purpose; never on a timer.
+export COWIR_HOLD_AUTOSAVE_TIMER=1
 
 # PER-PROCESS LOG PATHS. These were shared (tmp/gut_manual_godot.log and tmp/run_tests_last.log),
 # and up to 6 lanes/agents run this concurrently. A neighbour's run truncates the file between our

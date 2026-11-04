@@ -119,8 +119,15 @@ SEAM_TOLERANCE_DB = 4.0
 #     NO audible jump, because the head is 18 dB under body as well).
 # The wrap is tail -> head. That is the quantity, and it is immune to both.
 SEAM_S = 0.3
+# ⛔ AND ONE WINDOW WAS NOT ENOUGH: the audit judges the worst of SEAM_WINDOWS_S, this judged 0.3s alone, so
+# ambient_cave (+12.1 @ 100ms on the shipped 40k tier, .760) read "+7.0 dB, it already loops" here. One source now.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from audit_wrap_seams import SEAM_WINDOWS_S  # noqa: E402
 # A wrap that steps up more than this is audible as a snap back to full.
 WRAP_JUMP_DB = 12.0
+# The web tier is a RE-ENCODE and moves a step by ~0.3-0.4 dB (ambient_cave: masters +11.8, 40k +12.1, 32k +11.7),
+# so a master inside this margin of the line is folded too: the gate measures the tier, this tool can only fix masters.
+REENCODE_MARGIN_DB = 1.0
 # After the fold the wrap must be flatter than this.
 WRAP_OK_DB = 6.0
 # (retained for the ritardando scan below, which is a different question)
@@ -302,6 +309,28 @@ def wrap_step_ok(out):
     return wrap <= float(np.percentile(steps, 99)), wrap
 
 
+def worst_wrap_step(y):
+    """Worst POSITIVE tail -> head step across the audit's own windows, as (dB, window s), or None."""
+    worst = None
+    for ws in SEAM_WINDOWS_S:
+        n = int(ws * SR)
+        if len(y) < 3 * n:
+            continue
+        step = db(y[:n]) - db(y[-n:])
+        if worst is None or step > worst[0]:
+            worst = (step, ws)
+    return worst
+
+
+def wrap_flat(y):
+    """Flat at EVERY audit window, not only 0.3s: a short fade hides from any window longer than itself."""
+    for ws in SEAM_WINDOWS_S:
+        n = int(ws * SR)
+        if len(y) >= 3 * n and abs(db(y[:n]) - db(y[-n:])) > WRAP_OK_DB:
+            return False
+    return True
+
+
 def wrap_sample(y, seconds=3.0):
     """What the player hears ACROSS the loop point: tail then head, twice."""
     k = int(seconds * SR)
@@ -323,10 +352,10 @@ def process(key, path, xfade_s, apply_it, preview_dir, max_trim_db=3.0, source=N
     dur = len(y) / SR
     body_db = db(y[: max(SR, len(y) - int(30 * SR))])
 
-    seam_n = int(SEAM_S * SR)
-    wrap_step = db(y[:seam_n]) - db(y[-seam_n:])
-    if wrap_step <= WRAP_JUMP_DB:
-        return key, "SKIP wrap steps only %+.1f dB at a %.1fs seam - it already loops" % (wrap_step, SEAM_S), None
+    worst = worst_wrap_step(y)
+    if worst is None or worst[0] <= WRAP_JUMP_DB - REENCODE_MARGIN_DB:
+        step, ws = worst if worst else (float("nan"), SEAM_S)
+        return key, "SKIP wrap steps at most %+.1f dB (%.0fms window) - it already loops" % (step, ws * 1000), None
 
     xfade_n = int(xfade_s * SR)
     attempts = 0
@@ -364,7 +393,7 @@ def process(key, path, xfade_s, apply_it, preview_dir, max_trim_db=3.0, source=N
         ## itself must be flat. level_ok is body-relative and mis-reads sparse
         ## material; this one cannot, because it compares the two moments the
         ## player actually hears back to back.
-        seam_flat = abs(db(scaled[:seam_n]) - db(scaled[-seam_n:])) <= WRAP_OK_DB
+        seam_flat = wrap_flat(scaled)
         if level_ok and click_ok and seam_flat:
             chosen = (end, cand)
             break

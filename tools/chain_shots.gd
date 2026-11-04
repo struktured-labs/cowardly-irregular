@@ -31,6 +31,9 @@ func _init() -> void:
 	gl._chain_engaged = 1
 	gl.chain_card_seconds = 6.0
 	await gl._start_battle_async(["slime"], true)
+	var dbg = root.get_node_or_null("DebugLogOverlay")
+	if dbg and dbg.has_method("set_enabled"):
+		dbg.set_enabled(false)
 	if not await _wait_for("ChainBanner", 300):
 		print("[SHOT] FAIL: battle one never showed its chain banner")
 		quit(1)

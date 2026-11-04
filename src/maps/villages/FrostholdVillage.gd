@@ -249,8 +249,17 @@ func _setup_npcs() -> void:
 	if _after_cave_gs:
 		_after_cave_done = bool(_after_cave_gs.game_constants.get("cutscene_flag_rat_king_defeated", false))
 
+	# Post-dragon: the village noticed. Reads every flag namespace, like the spine gate.
+	var _glacius_gs = get_node_or_null("/root/GameState")
+	var _glacius_down: bool = _glacius_gs != null and _glacius_gs.is_story_flag_set("ice_dragon_defeated")
+	var _bjorn_post_dragon := [
+		"Glacius is gone? It has been on that peak since the first compile.",
+		"...The first winter. I keep doing that.",
+		"The ice on the river is already talking about leaving. Ice always knows first.",
+		"Keep that Ice Scale somewhere cold. Out of respect."
+	]
 	# Old Man Björn (exposition)
-	var bjorn = _create_npc("Old Man Björn", "elder", Vector2(8 * TILE_SIZE,8 * TILE_SIZE), [
+	var bjorn = _create_npc("Old Man Björn", "elder", Vector2(8 * TILE_SIZE,8 * TILE_SIZE), _bjorn_post_dragon if _glacius_down else [
 		"The ice dragon Glacius has been here since the first compile...",
 		"I mean, the first winter.",
 		"It guards the frozen peak with breath that freezes code— er, BONE.",

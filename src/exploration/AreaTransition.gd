@@ -82,6 +82,8 @@ func _process(delta: float) -> void:
 			_drive_screen_prompt()
 		elif _prompt_layer != null:
 			_return_prompt_to_the_world()
+		else:
+			_keep_indicator_clear_of_the_player()
 
 	if show_gate_visual:
 		_arrow_blink += delta * 2.0
@@ -214,6 +216,34 @@ func _drive_screen_prompt() -> void:
 	_indicator_label.visible = showing
 	if showing:
 		Mode7Prompt.place(_indicator_label, get_viewport_rect().size, Mode7Prompt.ROW_ACTION)
+
+
+## Pinned over sprites, the label is drawn ACROSS a player standing in the doorway; lift it clear of their head, measured off their own sprite.
+const PLAYER_CLEARANCE_PX := 2.0
+
+
+func _keep_indicator_clear_of_the_player() -> void:
+	if _indicator_label == null or not _indicator_label.visible or not is_inside_tree():
+		return
+	var y := FLAT_OFFSET.y
+	var head := _player_sprite_rect_local()
+	if head.size != Vector2.ZERO:
+		var lbl := Rect2(_indicator_label.position.x, FLAT_OFFSET.y, _indicator_label.size.x, _indicator_label.size.y)
+		if lbl.intersects(head):
+			y = head.position.y - _indicator_label.size.y - PLAYER_CLEARANCE_PX
+	if _indicator_label.position.y != y:
+		_indicator_label.position.y = y
+
+
+## The player's drawn sprite as a rect in this transition's space; empty when there is no player on the map.
+func _player_sprite_rect_local() -> Rect2:
+	var p := get_tree().get_first_node_in_group("player") as Node2D
+	var spr := p.get_node_or_null("Sprite") as Sprite2D if p else null
+	if spr == null or spr.texture == null:
+		return Rect2()
+	var r := spr.get_rect()
+	var tl: Vector2 = spr.global_position + r.position * spr.global_scale - global_position
+	return Rect2(tl, r.size * spr.global_scale)
 
 
 ## A scene can drop out of Mode 7 under a live transition; put the label back where flat maps expect it.

@@ -345,16 +345,24 @@ func is_idle() -> bool:
 ## `schema` keys are required; primitive type and enum constraints are checked.
 ## Returns `fallback` on any failure.
 ## MUST be awaited.
+## `opts.report` (a Dictionary) receives THIS call's fallback reason; inference_failed can't say whose request failed.
+static func _report(opts: Dictionary, reason: String) -> void:
+	if opts.get("report") is Dictionary:
+		(opts["report"] as Dictionary)["reason"] = reason
+
+
 func complete_json(prompt: String, schema: Dictionary, fallback: Variant, opts: Dictionary = {}) -> Variant:
 	if not llm_enabled:
 		return fallback
 	_select_backend()
 	if _active_backend == null or not _active_backend.is_ready():
+		_report(opts, "no ready backend")
 		inference_failed.emit(MODE_JSON, "no ready backend")
 		return fallback
 
 	# NullBackend is always ready and declares supports_json() == false — don't ask it for JSON.
 	if _active_backend.has_method("supports_json") and not _active_backend.supports_json():
+		_report(opts, "backend cannot produce JSON")
 		inference_failed.emit(MODE_JSON, "backend cannot produce JSON")
 		return fallback
 
@@ -364,12 +372,14 @@ func complete_json(prompt: String, schema: Dictionary, fallback: Variant, opts: 
 
 	var raw: Variant = await _submit_and_wait(prompt, merged_opts)
 	if raw == null:
+		_report(opts, "request failed or cancelled")
 		inference_failed.emit(MODE_JSON, "request failed or cancelled")
 		return fallback
 
 	var guarded: Variant = _guard_json(str(raw), schema, fallback)
 	# `==` on mismatched Variant types is a GDScript error that aborts this function.
 	if typeof(guarded) == typeof(fallback) and guarded == fallback:
+		_report(opts, "guard rejected response")
 		inference_failed.emit(MODE_JSON, "guard rejected response")
 	else:
 		inference_succeeded.emit(MODE_JSON)
