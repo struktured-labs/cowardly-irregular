@@ -83,7 +83,7 @@ func test_a_phase_cue_lands_on_its_beat_at_1x_and_at_4x() -> void:
 	for scale in [0.25, 1.0]:
 		var ms: int = await _fire_ms(scale, phase)
 		assert_gt(ms, -1, "the cue fired at engine %.2f" % scale)
-		var want := AT / scale * 1000.0
+		var want: float = AT / float(scale) * 1000.0
 		assert_almost_eq(float(ms), want, 150.0, "at engine %.2f it waits for its phase: %d ms, the beat is %d ms" % [scale, ms, int(want)])
 
 
