@@ -2110,7 +2110,7 @@
       "prompt": "Cave ambient loop. Slow dripping water echoing off stone walls, distant rumbling, subtle wind through crevices, occasional pebble falling. Dark and atmospheric with deep reverb. No melody — pure environmental texture. Seamless loop, 60 seconds.",
       "style": "ambient, cave, dripping water, reverb, dark, atmospheric, looping",
       "model": "suno-v4",
-      "duration": 186.96,
+      "duration": 185.5,
       "loop": true,
       "generated_at": "2026-04-14",
       "unlayered": "was ambient_cave until 2026-10-30: a Suno song (pitch clarity 7.5-7.7; real ambience <= 4.99) that played under the music. struktured dropped it as an ambient layer; kept as a Jukebox row and a possible non-layered cue. The key ambient_cave now resolves to its sfx_manifest twin."
