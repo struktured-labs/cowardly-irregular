@@ -29,6 +29,10 @@ var current_party_index: int = 0
 
 ## Grid state
 var rules: Array = []  # Array of rule rows
+## One level of undo for a delete. Holds the LIVE `rules` array it was taken from: every load swaps that array, so a stale snapshot refuses.
+var _undo_snapshot: Dictionary = {}
+## The condition picker's Delete row: not a condition type, so it can never collide with one.
+const DELETE_CONDITION_ID := "__delete_condition__"
 var cursor_row: int = 0  # Current rule (row)
 ## Vertical only: left/right move between CELLS, and repeating those would thrash a rule's fields.
 var _nav_repeat := MenuRepeat.new(PackedStringArray(["ui_up", "ui_down"]))
@@ -1925,6 +1929,13 @@ func _input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 		return
 
+	# Ctrl+Z precedes every ui_cancel arm: ui_cancel binds plain Z and matches with Ctrl held, so it would close instead.
+	if event is InputEventKey and event.pressed and not event.is_echo() and event.keycode == KEY_Z and event.ctrl_pressed:
+		if not _undo_delete():
+			SoundManager.play_ui("menu_error")
+		get_viewport().set_input_as_handled()
+		return
+
 	# Portrait panel focus mode (character selection via D-pad)
 	if _portrait_focused:
 		if nav == "ui_up":
@@ -2072,6 +2083,8 @@ func _input(event: InputEvent) -> void:
 	elif event is InputEventJoypadButton and event.pressed and event.button_index == JOY_BUTTON_Y:
 		if _is_on_condition_cell():
 			_cycle_condition_operator()
+		elif _on_empty_slot() and _undo_delete():
+			pass  # Y where nothing can be deleted restores the last delete
 		else:
 			# Was a dead end. Delete lives here now that ui_cancel means back out.
 			_delete_current_cell()
@@ -2172,10 +2185,13 @@ func _open_condition_editor() -> void:
 	if idx == -1:
 		SoundManager.play_ui("menu_error")
 		return
+	## Delete rides LAST so `idx` still selects the current type; it is the pad's only route to remove a condition (cowir-main 21465).
+	var options: Array = _build_condition_type_options(type_keys)
+	options.append({"id": DELETE_CONDITION_ID, "label": "Delete condition"})
 	_open_option_picker({
 		"title": "Condition Type",
 		"kind": "condition_type",
-		"options": _build_condition_type_options(type_keys),
+		"options": options,
 		"selected": idx,
 	})
 
@@ -2815,7 +2831,10 @@ func _commit_option_choice(kind: String, chosen_id: String, ctx: Dictionary) -> 
 		"more_actions":
 			_commit_more_action(chosen_id)
 		"condition_type":
-			_apply_condition_type(chosen_id)
+			if chosen_id == DELETE_CONDITION_ID:
+				_delete_current_cell()
+			else:
+				_apply_condition_type(chosen_id)
 		"action_type":
 			_apply_action_type(chosen_id, ctx)
 		"ability_id":
@@ -3042,7 +3061,58 @@ func _show_rule_menu() -> void:
 		SoundManager.play_ui("menu_cancel")
 
 
+## Every delete route lands here, so every delete is undoable and says how.
 func _delete_current_cell() -> void:
+	var before: Array = rules.duplicate(true)
+	var at_row := cursor_row
+	var at_col := cursor_col
+	_delete_cell_now()
+	if rules != before:
+		_undo_snapshot = {"of": rules, "rules": before, "row": at_row, "col": at_col}
+		_flash_status("Deleted. Undo: %s" % _undo_route(), Color.YELLOW)
+
+
+## "Ctrl+Z", plus the pad route when a pad is connected.
+func _undo_route() -> String:
+	var pad := InputProfileManager.button_name_for_index(JOY_BUTTON_Y)
+	return "Ctrl+Z, or %s on an empty slot" % pad if pad != "" else "Ctrl+Z"
+
+
+## Restores the grid as it was before the last delete. Refuses a snapshot from another grid (character, profile or import).
+func _undo_delete() -> bool:
+	if _undo_snapshot.is_empty() or not is_same(_undo_snapshot["of"], rules):
+		_undo_snapshot = {}
+		return false
+	rules.assign((_undo_snapshot["rules"] as Array).duplicate(true))
+	cursor_row = int(_undo_snapshot["row"])
+	cursor_col = int(_undo_snapshot["col"])
+	_undo_snapshot = {}
+	_refresh_grid()
+	_flash_status("Restored.", Color.LIME)
+	SoundManager.play_ui("menu_select")
+	return true
+
+
+## True when the cursor stands on a slot holding nothing: an empty condition slot or past the last action group.
+func _on_empty_slot() -> bool:
+	if cursor_row >= rules.size():
+		return true
+	var conditions: Array = rules[cursor_row].get("conditions", [])
+	if cursor_col < conditions.size():
+		return false
+	var slots := conditions.size()
+	var has_always := false
+	for cond in conditions:
+		if cond.get("type", "") == "always":
+			has_always = true
+	if conditions.size() < MAX_CONDITIONS and not has_always:
+		slots += 1
+	if cursor_col < slots:
+		return true
+	return cursor_col - slots >= _group_actions(rules[cursor_row].get("actions", [])).size()
+
+
+func _delete_cell_now() -> void:
 	"""Delete the current cell (condition or action)"""
 	var rule = rules[cursor_row]
 	var conditions = rule.get("conditions", [])

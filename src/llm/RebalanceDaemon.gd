@@ -44,6 +44,8 @@ const TRIGGER_BOSS_DEFEAT := "boss_defeat"
 const TRIGGER_AREA_ENTERED := "area_entered"
 const TRIGGER_LEVEL_UP := "level_up"
 const TRIGGER_MANUAL := "manual"
+## Throttled only by EACH OTHER: a boss win's own level_up claimed the window and its boss_defeat was dropped (11 in his logs).
+const SIGNIFICANT_TRIGGERS: Array[String] = [TRIGGER_PARTY_WIPE, TRIGGER_BOSS_DEFEAT]
 
 ## What each trigger MEANS, spelled out for the model. The prompt used to carry the bare name, so the model invented
 ## the implication: his saves hold XP boosts applied for entering Eldertree Hollow and Sandrift and for a level-up,
@@ -131,6 +133,8 @@ var min_consideration_interval_sec: float = 60.0
 var pending: Array[Dictionary] = []
 var applied: Array[Dictionary] = []
 var _last_consideration_ts: int = 0
+## When a SIGNIFICANT trigger was last considered; session-only, so the first after a load always goes through.
+var _last_significant_ts: int = 0
 
 
 ## Public entry point. GameLoop calls this from party_wipe / boss_defeat
@@ -142,9 +146,16 @@ var _last_consideration_ts: int = 0
 ## GameLoop's _kick_off_rebalance_fetch.call_deferred then awaits
 ## request_llm_proposal which flips the status through awaiting_llm →
 ## proposed | failed_*.
+## Triggers refused by the throttle since the last consideration. A party levelling together sent five in one second,
+## each its own log line (45 of one 7,481-line play log); the first is printed, the rest are counted.
+var throttled_since_last: int = 0
+
+
 func consider(trigger_type: String, context: Dictionary) -> bool:
 	var now: int = int(Time.get_unix_time_from_system())
-	var elapsed: int = now - _last_consideration_ts
+	var significant: bool = trigger_type in SIGNIFICANT_TRIGGERS
+	var since: int = _last_significant_ts if significant else _last_consideration_ts
+	var elapsed: int = now - since
 	# A FUTURE-dated stamp is not a baseline. last_consideration_ts persists in the
 	# save and is WALL CLOCK, so loading a save written under a clock that is ahead
 	# makes this subtraction negative — and `< interval` then throttles for the
@@ -155,11 +166,18 @@ func consider(trigger_type: String, context: Dictionary) -> bool:
 	# subtraction thresholded in one direction only.
 	if elapsed < 0:
 		elapsed = int(min_consideration_interval_sec)
-	if _last_consideration_ts > 0 and elapsed < int(min_consideration_interval_sec):
-		print("[REBALANCE] throttled (%ds since last) — trigger=%s" % [
-			elapsed, trigger_type])
+	if since > 0 and elapsed < int(min_consideration_interval_sec):
+		throttled_since_last += 1
+		if throttled_since_last == 1:
+			print("[REBALANCE] throttled (%ds since last) — trigger=%s; further throttled triggers are counted" % [
+				elapsed, trigger_type])
 		return false
 	_last_consideration_ts = now
+	if significant:
+		_last_significant_ts = now
+	if throttled_since_last > 1:
+		print("[REBALANCE] %d triggers were throttled since the last consideration" % throttled_since_last)
+	throttled_since_last = 0
 	# Stub proposal — what the LLM-driven version will eventually return.
 	# Recorded so the pending UI (later tick) has something to display
 	# and so tests can assert the daemon was reached.
@@ -229,7 +247,7 @@ static func outcome_line(trigger: String, status: String, proposal: Dictionary =
 		"failed_unavailable":
 			return "[REBALANCE] %s produced no proposal — no LLM backend reachable" % trigger
 		"failed_fallback":
-			return "[REBALANCE] %s produced no proposal — the model's reply was not usable" % trigger
+			return "[REBALANCE] %s produced no proposal — %s" % [trigger, fallback_cause(str(proposal.get("fail_reason", "")))]
 		"failed_bad_index":
 			return "[REBALANCE] produced no proposal — index %d is outside pending[%d]" % [
 				int(proposal.get("idx", -1)), int(proposal.get("pending", 0))]
@@ -240,6 +258,18 @@ static func outcome_line(trigger: String, status: String, proposal: Dictionary =
 				trigger, str(proposal.get("verdict", "?")),
 				float(proposal.get("confidence", 0.0)) * 100.0, n_deltas]
 	return ""
+
+
+## Why a proposal fell back; his .760 log blamed "the model's reply" for a request a scene change had cancelled.
+static func fallback_cause(reason: String) -> String:
+	match reason:
+		"request failed or cancelled":
+			return "the request was cancelled or failed before the model answered (a scene change cancels it)"
+		"no ready backend", "backend cannot produce JSON":
+			return "no backend could answer (%s)" % reason
+		"deltas not a list":
+			return "the model's list of changes was missing or not a list"
+	return "the model's reply was not usable"
 
 
 ## Returns true on success (proposal updated with deltas), false if
@@ -270,9 +300,11 @@ func request_llm_proposal(proposal_idx: int, recent_events: Array = []) -> bool:
 		print(outcome_line(str(trigger), str(proposal["status"]), proposal))
 		return false
 	var fallback: Variant = null
-	var result: Variant = await svc.complete_json(prompt, REBALANCE_SCHEMA, fallback)
+	var report: Dictionary = {}
+	var result: Variant = await svc.complete_json(prompt, REBALANCE_SCHEMA, fallback, {"report": report})
 	if not (result is Dictionary):
 		proposal["status"] = "failed_fallback"
+		proposal["fail_reason"] = str(report.get("reason", ""))
 		print(outcome_line(str(trigger), str(proposal["status"]), proposal))
 		return false
 	var r: Dictionary = result as Dictionary
@@ -280,6 +312,7 @@ func request_llm_proposal(proposal_idx: int, recent_events: Array = []) -> bool:
 	var deltas: Variant = r.get("deltas", [] if str(r.get("verdict", "")) == "no_change" else null)
 	if not (deltas is Array):
 		proposal["status"] = "failed_fallback"
+		proposal["fail_reason"] = "deltas not a list"
 		print(outcome_line(str(trigger), str(proposal["status"]), proposal))
 		return false
 	proposal["verdict"]    = str(r.get("verdict", "no_change"))

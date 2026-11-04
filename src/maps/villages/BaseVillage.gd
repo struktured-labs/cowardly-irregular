@@ -321,6 +321,7 @@ func _spawn_building_art(art: Dictionary) -> int:
 	if _map_rows.is_empty() or props == null:
 		return 0
 	var paths := _building_art_paths()
+	var entries := _building_art_entries()
 	var built: int = 0
 	for origin in art:
 		var key := str(art[origin])
@@ -350,6 +351,15 @@ func _spawn_building_art(art: Dictionary) -> int:
 		var rect := Rect2i(minp, maxp - minp + Vector2i.ONE)
 		_art_blocks.append(rect)
 		_hide_what_the_art_draws(rect)
+		var door: Variant = (entries.get(key, {}) as Dictionary).get("door", {})
+		## A block with several doors carries a list; each gets its strip, and the one entrance follows the first.
+		var doors: Array = door if door is Array else ([door] if door is Dictionary and not (door as Dictionary).is_empty() else [])
+		for i in range(1, doors.size()):
+			if doors[i] is Dictionary:
+				var extra := VillageDoor.attach(house, doors[i])
+				if extra != null:
+					_door_strips.append(extra)
+		_align_entrance(rect, house, doors[0] if not doors.is_empty() and doors[0] is Dictionary else {})
 		built += 1
 	return built
 
@@ -371,6 +381,50 @@ func _hide_what_the_art_draws(rect: Rect2i) -> void:
 
 
 static var _art_path_cache: Dictionary = {}
+static var _art_entry_cache: Dictionary = {}
+## Tests plant building_art entries here instead of editing the manifest; null = read the manifest.
+static var building_art_override: Variant = null
+## The opening strips this village built, one per drawn door that has one.
+var _door_strips: Array = []
+var _door_busy: bool = false
+## True for the one transition a village door animated, so GameLoop does not also play its heavy dungeon door.
+var door_cue_played: bool = false
+
+
+## The block's ONE entrance (door, shop, inn or bar) stands under the drawn door: struktured 2026-11-01, "you can be right
+## on the door and not be allowed to enter, but LEFT of the door is fine". Two entrances in one block are left alone.
+func _align_entrance(rect: Rect2i, house: Node2D, door: Dictionary) -> void:
+	var strip := VillageDoor.attach(house, door)
+	if strip != null:
+		_door_strips.append(strip)
+	if buildings == null:
+		return
+	var found: Array = []
+	for b in buildings.get_children():
+		if b is AreaTransition:
+			if rect.grow_individual(0, 0, 0, 1).has_point(Vector2i(floori(b.position.x / TILE_SIZE), floori(b.position.y / TILE_SIZE))):
+				found.append(b)
+		elif b is Area2D and b.has_method("interact") and _building_cells(b).intersects(rect):
+			found.append(b)
+	if found.size() != 1:
+		if found.size() > 1:
+			push_warning("[VILLAGE] block %s has %d entrances; none moved under its drawn door" % [rect, found.size()])
+		return
+	(found[0] as Node2D).position.x = VillageDoor.entrance_x(house, door) - (found[0] as Node2D).get_parent().global_position.x
+
+
+## manifest building_art: key -> its whole entry (path, tier, door…).
+static func _building_art_entries() -> Dictionary:
+	if building_art_override is Dictionary:
+		return building_art_override
+	if _art_entry_cache.is_empty():
+		var m: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/sprite_manifest.json"))
+		var sec: Variant = (m as Dictionary).get("building_art", {}) if m is Dictionary else {}
+		if sec is Dictionary:
+			for k in sec:
+				if sec[k] is Dictionary:
+					_art_entry_cache[str(k)] = sec[k]
+	return _art_entry_cache
 ## The largest building block a drawn building may cover, in tiles per side.
 const MAX_ART_BLOCK_TILES: int = 6
 
@@ -1058,7 +1112,34 @@ func _on_save_requested() -> void:
 
 
 func _on_transition_triggered(target_map: String, spawn_point: String) -> void:
+	door_cue_played = false
+	var strip := _door_at(player.global_position if player else Vector2.INF)
+	if strip != null and not _door_busy:
+		## The door opens first, then the fade: a beat with the field held still.
+		_door_busy = true
+		var lock: Node = get_node_or_null("/root/InputLockManager")
+		if lock and lock.has_method("push_lock"):
+			lock.push_lock("door_open")
+		await VillageDoor.play(strip, true)
+		if lock and lock.has_method("pop_lock"):
+			lock.pop_lock("door_open")
+		_door_busy = false
+		door_cue_played = true
 	area_transition.emit(target_map, spawn_point)
+
+
+## The opening strip whose door the player stands at (within a tile and a half of its foot), or null.
+func _door_at(pos: Vector2) -> Sprite2D:
+	if pos == Vector2.INF:
+		return null
+	for s in _door_strips:
+		if not is_instance_valid(s):
+			continue
+		var tex := (s as Sprite2D).texture
+		var foot: Vector2 = (s as Sprite2D).global_position + Vector2(tex.get_width() / float((s as Sprite2D).hframes) / 2.0, tex.get_height())
+		if foot.distance_to(pos) <= TILE_SIZE * 1.5:
+			return s
+	return null
 
 
 func _on_battle_triggered(enemies: Array) -> void:
@@ -1077,6 +1158,10 @@ func spawn_player_at(spawn_name: String) -> void:
 		player.teleport(spawn_points[spawn_name])
 		if player.has_method("reset_step_count"):
 			player.reset_step_count()
+		## Stepping out of a building: its door closes behind the player.
+		var strip := _door_at(player.global_position)
+		if strip != null:
+			VillageDoor.play(strip, false)
 
 
 ## Weather v2 (2026-09-04): villages inherit the world's live weather — same renderer

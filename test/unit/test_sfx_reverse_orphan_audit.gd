@@ -76,6 +76,8 @@ const DYNAMIC_PREFIXES := {
 	"boss_line_": "voiced_line_clip",
 	# A boss's signature sequence sound, composed from its monster id in BattleScene.signature_cue.
 	"boss_signature_": "\"boss_signature_\" +",
+	# A door style's own cue, composed from the record's style in VillageDoor.play; test_every_door_style_has_its_own_voice proves each resolves.
+	"door_shop_": "\"door_%s_%s\"",
 	"w2_": "_get_world_sfx_prefix",
 	"w3_": "_get_world_sfx_prefix",
 	"w4_": "_get_world_sfx_prefix",

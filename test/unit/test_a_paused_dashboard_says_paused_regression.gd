@@ -72,12 +72,21 @@ func test_a_real_fast_grind_pause_reaches_the_dashboard() -> void:
 		m.current_hp = 999999
 		m.defense = 99999
 		m.magic_defense = 99999
+	## Every stop a grind can take, pinned here: it passed alone and red in a sweep (cowir-main 21385), because a rule,
+	## a battle cap or corruption left by an earlier file stopped this grind inside its first 4 frames and freed the dashboard.
 	AutogrindSystem.interrupt_rules["hp_threshold"] = 0.0
 	AutogrindSystem.interrupt_rules["party_death"] = false
 	AutogrindSystem.interrupt_rules["item_depleted"] = false
+	AutogrindSystem.interrupt_rules["max_battles"] = 100
+	AutogrindSystem.interrupt_rules["corruption_limit"] = 4.5
+	AutogrindSystem.meta_corruption_level = 0.0
+	AutogrindSystem.battles_completed = 0
+	assert_true(AutogrindSystem.set_autogrind_rules([]), "CONTROL: an empty rule list is a valid one, so no rule of an earlier file can stop this grind")
 	_gl._start_autogrind({"ludicrous_speed": true, "auto_advance": false})
 	await wait_frames(4)
-	assert_true(_gl._autogrind_dashboard != null and is_instance_valid(_gl._autogrind_dashboard), "CONTROL: fast mode must show the dashboard")
+	assert_true(_gl._autogrind_dashboard != null and is_instance_valid(_gl._autogrind_dashboard),
+		"CONTROL: fast mode must show the dashboard (grinding=%s, corruption=%.2f, rules=%d)"
+		% [_gl._is_autogrinding, AutogrindSystem.meta_corruption_level, AutogrindSystem.get_autogrind_rules().size()])
 	_gl._toggle_autogrind_pause()
 	var t0 := Time.get_ticks_msec()
 	while Time.get_ticks_msec() - t0 < 5000 and not _gl._autogrind_controller.is_paused():

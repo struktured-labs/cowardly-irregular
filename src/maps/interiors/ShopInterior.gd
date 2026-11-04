@@ -40,6 +40,8 @@ var spawn_points: Dictionary = {
 
 ## Layout — 16 cols × 12 rows
 ## W = wall, . = floor, C = counter, S = shelf/display, D = entrance door
+## Shelves are drawn as tiles, so the sweep is told they are furniture; the counter is not: the keeper stands in its back row.
+const SHELF_GLYPHS := "S"
 const SHOP_LAYOUT = [
 	"WWWWWWWWWWWWWWWW",
 	"W..............W",
@@ -93,7 +95,7 @@ func _ready() -> void:
 	_setup_decorations()
 	_setup_npcs()
 	# msg 2764: NPC-vs-furniture sweep (shared with BaseInterior + InnInterior).
-	InteriorPlacementSweep.sweep(self, npcs, decorations, SHOP_LAYOUT, "shop_interior")
+	InteriorPlacementSweep.sweep(self, npcs, decorations, SHOP_LAYOUT, "shop_interior", SHELF_GLYPHS)
 	_create_browse_interactable()
 	_setup_transitions()
 	_setup_player()
@@ -1396,7 +1398,7 @@ func _setup_npcs() -> void:
 	# Customers — vary by shop type
 	match shop_type:
 		ShopType.ITEM:
-			_create_npc("Gethena", "herbalist", Vector2(4, 7), [
+			_create_npc("Gethena", "herbalist", Vector2(4, 8), [
 				"Gethena: These potions are fresh — brewed this morning.",
 				"Gethena: I grow the herbs myself. The window box outside is mine.",
 				"Gethena: You'd be surprised what an elixir can do for autobattle endurance.",
@@ -1409,7 +1411,7 @@ func _setup_npcs() -> void:
 				"Pip: *stares at floor* His name was Mr. Biscuit.",
 			])
 		ShopType.BLACK_MAGIC:
-			_create_npc("Aldric", "hooded_mage", Vector2(4, 7), [
+			_create_npc("Aldric", "hooded_mage", Vector2(4, 8), [
 				"Aldric: *browsing* ...no, no, that fire tome is obsolete.",
 				"Aldric: I require something that rhymes with 'CORRUPTED SAVE'.",
 				"Aldric: Don't judge me. Necromancy has excellent DPS.",
@@ -1434,7 +1436,7 @@ func _setup_npcs() -> void:
 				"Ada: *whispers to crystal* I got an A on my exam.",
 			])
 		ShopType.BLACKSMITH:
-			_create_npc("Sir Corvath", "knight", Vector2(3, 7), [
+			_create_npc("Sir Corvath", "knight", Vector2(3, 8), [
 				"Sir Corvath: *examining blade* Hmm. The tempering is inconsistent.",
 				"Sir Corvath: A battle-tested weapon must hold an edge through 500 strikes.",
 				"Sir Corvath: I autobattle with a damage-per-second script. Every dull blade shows.",
