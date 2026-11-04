@@ -116,6 +116,8 @@ func test_a_normal_player_still_gets_the_same_fade() -> void:
 func _start_a_crossfade() -> void:
 	SoundManager.play_music(BED)
 	await _frames(6)
+	## 2026-11-02 area crossfade: a bed now ramps in over FADE_IN_DURATION; read the level once it has landed.
+	await _wait_ms(int(SoundManager.FADE_IN_DURATION * 1000.0) + 200)
 	SoundManager.play_music(NEXT)
 	await _frames(2)
 

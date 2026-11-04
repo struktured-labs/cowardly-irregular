@@ -210,7 +210,7 @@ func _create_stats_panel(panel_size: Vector2) -> Control:
 	# Core stats with breakdown. Magic Defense is the magical-hit divisor; equipment and job screens already print it.
 	# The breakdown is (without gear +gear). base_* are placeholder defaults that recalculate_stats replaces with the job's
 	# own values, so "(10 +404)" put the whole job into the bonus and "(50 -16)" invented an MP penalty.
-	var gear: Dictionary = EquipmentSystem.get_equipment_mods(character) if EquipmentSystem else {}
+	var gear: Dictionary = EquipmentSystem.get_applied_equipment_mods(character) if EquipmentSystem else {}
 	var stats = []
 	for row_spec in [["Attack", "attack"], ["Defense", "defense"], ["Magic", "magic"], ["Magic Defense", "magic_defense"],
 			["Speed", "speed"], ["Max HP", "max_hp"], ["Max MP", "max_mp"]]:

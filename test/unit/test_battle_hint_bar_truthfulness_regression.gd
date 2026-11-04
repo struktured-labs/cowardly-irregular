@@ -265,17 +265,17 @@ func test_speed_toggle_is_actually_wired_to_the_advertised_button() -> void:
 	var lines := _read(BATTLE_PATH).split("\n")
 	var wired := false
 	for i in lines.size():
-		if lines[i].contains("JOY_BUTTON_Y") and _calls_within_block(lines, i, "_toggle_battle_speed("):
+		if lines[i].contains("JOY_BUTTON_Y") and _calls_within_block(lines, i, "_speed_button("):
 			wired = true
 	assert_true(wired,
-		"the [X] hint promises the north/top face toggles speed — JOY_BUTTON_Y must actually CALL _toggle_battle_speed, not merely appear in the same 390KB file")
+		"the [X] hint promises the north/top face changes speed — JOY_BUTTON_Y must actually CALL _speed_button (tap up, hold down; 2026-11-01), not merely appear in the same 390KB file")
 
 	var kb_wired := false
 	for i in lines.size():
-		if lines[i].contains("KEY_QUOTELEFT") and _calls_within_block(lines, i, "_toggle_battle_speed("):
+		if lines[i].contains("KEY_QUOTELEFT") and _calls_within_block(lines, i, "_speed_button("):
 			kb_wired = true
 	assert_true(kb_wired,
-		"the keyboard half (` key) must call _toggle_battle_speed, same reasoning")
+		"the keyboard half (` key) must call _speed_button, same reasoning")
 
 
 ## Repeat joined the bar on 2026-10-12 and is the SECOND raw claim in it, so it needs its own

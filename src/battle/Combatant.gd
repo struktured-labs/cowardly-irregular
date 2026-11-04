@@ -152,6 +152,14 @@ static func _grow(value: int, mult: float) -> int:
 
 
 ## Converts a flat number authored in x10 units (gear, item heals and damage, heal and ward amounts) to this combatant.
+## Gear is authored in x10 units; the scaled stats convert so a sword keeps today's share at every level.
+## The ONE conversion: recalculate_stats and every gear readout (EquipmentSystem.get_applied_equipment_mods).
+static func applied_gear_delta(stat: String, raw: int, ratio: float) -> int:
+	if raw != 0 and stat in SCALED_STAT_FIELDS:
+		return roundi(float(raw) * ratio)
+	return raw
+
+
 func x10_ratio() -> float:
 	## Through the SceneTree, not has_node("/root/…"): a headless battle's enemies are never in the tree, and an absolute path from outside it finds nothing.
 	var tree := Engine.get_main_loop() as SceneTree
@@ -1981,10 +1989,7 @@ func recalculate_stats() -> void:
 		# Driven off MODDABLE_STATS, not a hand-listed six — the old list silently omitted whatever it did not name.
 		var gear_ratio := x10_ratio()
 		for stat in MODDABLE_STATS:
-			var delta: int = int(equip_mods.get(stat, 0))
-			## Gear is authored in x10 units; the scaled stats convert so a sword keeps today's share at every level.
-			if delta != 0 and stat in SCALED_STAT_FIELDS:
-				delta = roundi(float(delta) * gear_ratio)
+			var delta: int = applied_gear_delta(stat, int(equip_mods.get(stat, 0)), gear_ratio)
 			if delta != 0:
 				set(stat, int(get(stat)) + delta)
 

@@ -1,0 +1,115 @@
+{
+  "id": "world1_grimhollow_npcs",
+  "title": "Grimhollow Village",
+  "world": 1,
+  "keep_music": true,
+  "trigger": "world1_grimhollow_entry",
+  "background": "prologue_forest",
+  "description": "Haunted hamlet on the edge of the northeastern swamp, where the living and the dead keep the same hours. Madame Hex has foreseen a boss fight, as she does for everyone. Mort keeps the shop because being dead is good for overhead. Wednesday can see your save file.",
+  "steps": [
+    {
+      "type": "letterbox_in",
+      "duration": 0.4
+    },
+    {
+      "type": "narration",
+      "text": "Grimhollow sat at the edge of the northeastern swamp, where the fog came in every evening and the town had long since stopped arguing with it. The living and the dead kept the same hours here. Nobody remembered agreeing to that. It had simply been easier than the alternative."
+    },
+    {
+      "type": "wait",
+      "duration": 0.3
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Madame Hex",
+          "text": "Ah. Travelers. I saw you coming.",
+          "theme": "elder",
+          "portrait": "elder"
+        },
+        {
+          "speaker": "Madame Hex",
+          "text": "I see everyone coming. It is a small town and I have a window.",
+          "theme": "elder",
+          "portrait": "elder"
+        },
+        {
+          "speaker": "Madame Hex",
+          "text": "But I also see your future, and for once I will tell it for free: there is a dragon in the dark to the northeast, and it will be a BOSS FIGHT.",
+          "theme": "elder",
+          "portrait": "elder"
+        },
+        {
+          "speaker": "Madame Hex",
+          "text": "...It is always a boss fight. Fifty gold if you want to know the element.",
+          "theme": "elder",
+          "portrait": "elder"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.4
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Undead Shopkeeper Mort",
+          "text": "Welcome to Grimhollow. Population: stable.",
+          "theme": "shopkeeper",
+          "portrait": "shopkeeper"
+        },
+        {
+          "speaker": "Undead Shopkeeper Mort",
+          "text": "Nobody leaves and nobody quite dies. It does wonders for the census.",
+          "theme": "shopkeeper",
+          "portrait": "shopkeeper"
+        },
+        {
+          "speaker": "Undead Shopkeeper Mort",
+          "text": "I keep the shop. I used to adventure. You can see how that went. Buy a potion; it is the one investment I would make again.",
+          "theme": "shopkeeper",
+          "portrait": "shopkeeper"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.3
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Creepy Child Wednesday",
+          "text": "You have a save file. I can see it from here.",
+          "theme": "villager",
+          "portrait": "villager"
+        },
+        {
+          "speaker": "Creepy Child Wednesday",
+          "text": "It is very small. You have not done very much yet.",
+          "theme": "villager",
+          "portrait": "villager"
+        },
+        {
+          "speaker": "Creepy Child Wednesday",
+          "text": "That's all right. Files grow. Mine stopped, but yours will grow.",
+          "theme": "villager",
+          "portrait": "villager"
+        }
+      ]
+    },
+    {
+      "type": "set_flag",
+      "flag": "world1_grimhollow_npcs_complete",
+      "value": true
+    },
+    {
+      "type": "letterbox_out",
+      "duration": 0.4
+    }
+  ]
+}

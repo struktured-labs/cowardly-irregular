@@ -29,6 +29,7 @@ func after_each() -> void:
 	if AutogrindSystem.is_grinding:
 		AutogrindSystem.stop_autogrind("test teardown")
 	Engine.time_scale = 1.0
+	randomize()  # undo the test's fixed seed for whatever runs next
 	AutogrindState.restore(_ag)
 	_bm.restore()
 	ABProfiles.restore(AutobattleSystem, _prof)
@@ -62,6 +63,15 @@ func test_a_real_fast_grind_pause_reaches_the_dashboard() -> void:
 	_gl._current_map_id = "overworld"
 	_gl.current_state = _gl.LoopState.EXPLORATION
 	_gl._create_party()
+	## DETERMINISM: random fast battles sometimes ended in "Party defeated" within 4 frames, tearing the dashboard down
+	## before the CONTROL below (flaky in the full suite). A fixed seed plus an unkillable party keeps the grind running,
+	## so this test checks the pause, not the dice. Nothing about the dashboard or the pause path is stubbed.
+	seed(193764)
+	for m in _gl.party:
+		m.max_hp = 999999
+		m.current_hp = 999999
+		m.defense = 99999
+		m.magic_defense = 99999
 	AutogrindSystem.interrupt_rules["hp_threshold"] = 0.0
 	AutogrindSystem.interrupt_rules["party_death"] = false
 	AutogrindSystem.interrupt_rules["item_depleted"] = false
@@ -74,6 +84,7 @@ func test_a_real_fast_grind_pause_reaches_the_dashboard() -> void:
 		await wait_frames(2)
 	await wait_frames(2)
 	assert_true(_gl._autogrind_controller.is_paused(), "CONTROL: the grind must actually pause")
+	assert_true(_gl._is_autogrinding, "CONTROL: the grind must still be running (no defeat) when the pause is checked")
 	assert_true(_gl._autogrind_dashboard._paused_label.visible, "the dashboard must show the pause, or it reads as hung")
 	_gl._toggle_autogrind_pause()
 	await wait_frames(2)

@@ -548,6 +548,9 @@ func _run_dynamic_conversation(player: Node) -> void:
 	# Wanderers author no npc_id and no quest bucket; the name slug is the reward identity.
 	_dynamic_conv.setup(npc_name, persona, location, event_log, fallback_lines, [], [],
 		ConversationRewards.resolve_npc_id("", npc_name), "")
+	# The same face and theme as this wanderer's scripted line (_start_conversation's say()).
+	_dynamic_conv.portrait_key = dialogue_portrait
+	_dynamic_conv.theme_key = dialogue_theme
 	await _dynamic_conv.run(player)
 
 

@@ -111,7 +111,11 @@ func test_a_fire_cast_plays_the_sequence_and_holds_the_damage_for_the_burst() ->
 	var before: int = host.get_child_count()
 	BattleManager.presentation_hold = 0.0
 	_cast("fire")
-	assert_true(_scene._full_render_dmg_buffer is Array, "the damage numbers must wait for the burst, not land on the cast")
+	## #763: the wait moved from the damage NUMBERS to the whole resolution — BattleManager holds the
+	## HP drop / death until the impact, so the scene hands it the impact time instead of buffering.
+	assert_almost_eq(BattleManager.impact_hold, 1.07, 0.05, "the HP drop and death must wait for the burst, not land on the cast")
+	assert_eq(_scene._full_render_dmg_buffer, null, "damage arrives at the impact itself, nothing to buffer")
+	BattleManager.impact_hold = 0.0
 	assert_gte(BattleManager.presentation_hold, 1.07, "the battle must hold until the fire lands (hold %.2f)" % BattleManager.presentation_hold)
 	assert_true(await _until(func() -> bool: return host.get_child_count() > before, 2.0), "the sequence must draw into the effects layer")
 	assert_true(await _until(func() -> bool: return _scene._full_render_dmg_buffer == null, 3.0),
