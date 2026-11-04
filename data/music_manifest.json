@@ -1392,7 +1392,7 @@
       "prompt": "Frozen dragon cave dungeon theme. Crystalline chime arpeggios echoing off ice walls, cold wind howling through chambers, sparse piano notes that ring and fade in frozen air. Everything is brittle and vast. The cold slows everything down including the music. SNES-era haunting ice dungeon. Looping.",
       "style": "SNES dungeon, icy, crystalline chimes, cold wind, sparse piano, haunting, 80 BPM",
       "model": "suno-v4",
-      "duration": 155.52,
+      "duration": 154.0,
       "loop": true,
       "generated_at": "2026-04-14"
     },

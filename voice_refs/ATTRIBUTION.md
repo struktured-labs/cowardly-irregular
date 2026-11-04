@@ -20,7 +20,7 @@ of Edinburgh, 2019), licensed **CC BY 4.0**: https://doi.org/10.7488/ds/2645
 | glacius.wav | Glacius (boss) | VCTK p231 (Southern England) | 12 s of sentences 10-24 concatenated, pitch -2 st, formants shifted (rubberband), 24 kHz mono, -20 LUFS |
 | voltharion.wav | Voltharion (boss) | VCTK p243 (London) | 12 s of sentences 10-24 concatenated, pitch +2 st, formants shifted (rubberband), 24 kHz mono, -20 LUFS |
 | umbraxis.wav | Umbraxis (boss) | VCTK p232 (Southern England) | 12 s of sentences 10-24 concatenated, pitch -4 st, formants shifted (rubberband), 24 kHz mono, -20 LUFS |
-| mordaine.wav | Chancellor Mordaine (boss) | VCTK p258 (Southern England) | 12 s of sentences 10-24 concatenated, pitch -2 st, formants shifted (rubberband), 24 kHz mono, -20 LUFS |
+| mordaine.wav | Chancellor Mordaine (boss) | VCTK p225 (Southern England) | 12 s of sentences 10-24 concatenated, pitch -1 st, formants shifted (rubberband), 24 kHz mono, -20 LUFS. Re-cast 2026-11-04: she was voiced from p258, a male speaker |
 
 No ElevenLabs output is used as a reference anywhere: its Prohibited Use Policy bars using Output
 "as input for any machine learning". The ElevenLabs-rendered clips are kept as audio only.
