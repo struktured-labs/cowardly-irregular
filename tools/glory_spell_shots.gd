@@ -77,7 +77,9 @@ func _init() -> void:
 			targets.append(e)
 	print("[GLORYSHOT] %s casts %s (%s) at %d foe(s), %s: tier %d k %.2f, speed %s" % [caster.combatant_name, spell, str(ability.get("name", "")), targets.size(), tier, int(got["tier"]), float(got["k"]), str(speed)])
 	scene._on_action_executing(caster, {"type": "ability", "ability_id": spell, "targets": targets})
-	var total: float = 0.55 + float(scene.sequence_total("glory_" + spell)) + 0.6
+	var vfx = ability.get("vfx", {})
+	var seq_id := str(vfx.get("glory", "glory_" + spell)) if vfx is Dictionary else "glory_" + spell
+	var total: float = maxf(0.55, float(scene.SUMMON_RISE) if not scene.summon_art_for(spell).is_empty() else 0.0) + float(scene.sequence_total(seq_id)) + 0.9
 	await create_timer(total / maxf(Engine.time_scale, 0.01) + 0.8, true, false, true).timeout
 	print("[GLORYSHOT] done %s %s" % [spell, tier])
 	quit(0)

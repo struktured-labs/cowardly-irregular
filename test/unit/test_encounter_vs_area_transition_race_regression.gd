@@ -54,7 +54,10 @@ func test_mutex_flag_declared_and_toggled_at_state_boundaries() -> void:
 	# Function-bounded, not a fixed char window — a 400-char window went blind when a comment grew (2026-08-08).
 	var fn_end := src.find("\nfunc ", i + 1)
 	var body := src.substr(i, fn_end - i if fn_end > -1 else 4000)
-	assert_true("_battle_transition_starting = false" in body,
+	# Cleared through _enter_battle_state (2026-11-04), the one place BATTLE takes over; follow the call.
+	var k := src.find("func _enter_battle_state")
+	var enter := src.substr(k, src.find("\nfunc ", k + 1) - k) if k > -1 else ""
+	assert_true("_battle_transition_starting = false" in body or ("_enter_battle_state()" in body and "_battle_transition_starting = false" in enter),
 		"_start_battle_async must clear the mutex — state=BATTLE now owns exclusion")
 	# Safety pop on return to exploration — leak proof.
 	var j := src.find("func _start_exploration")

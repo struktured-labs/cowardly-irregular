@@ -144,6 +144,45 @@ func test_the_controls_reference_names_both_the_tap_and_the_hold() -> void:
 	assert_string_contains(row.to_lower(), "hold", "the row must say a HOLD slows down, or nobody finds it")
 
 
+## QWERTZ/AZERTY print ^ or ² left of 1 and reach ` only as a dead key, so the speed key is matched by POSITION too.
+func _layout_key(keycode: Key, physical: Key, pressed: bool) -> InputEventKey:
+	var e := InputEventKey.new()
+	e.keycode = keycode
+	e.physical_keycode = physical
+	e.pressed = pressed
+	return e
+
+
+func test_the_speed_key_works_where_a_german_keyboard_puts_it() -> void:
+	var s: Node = await _battle()
+	BS._battle_speed_index = 2
+	for pressed in [true, false]:
+		get_tree().root.push_input(_layout_key(KEY_ASCIICIRCUM, KEY_QUOTELEFT, pressed))
+	assert_eq(BS._battle_speed_index, 3, "the key left of 1 must tap the speed up whatever the layout prints on it")
+	assert_lt(s._speed_hold_start_ms, 0, "and its release must have arrived")
+
+
+## The bar and the hint name the key as the keyboard prints it; the glyph mapping is pure, so it is pinned here.
+func test_the_speed_key_is_named_as_the_keyboard_prints_it() -> void:
+	assert_eq(Win98Menu.speed_key_glyph(KEY_QUOTELEFT), "`", "US prints a backtick")
+	assert_eq(Win98Menu.speed_key_glyph(KEY_ASCIICIRCUM), "^", "QWERTZ prints a caret there")
+	assert_eq(Win98Menu.speed_key_glyph(178), "²", "AZERTY prints a superscript two there")
+	assert_eq(Win98Menu.speed_key_glyph(KEY_NONE), "`", "no answer falls back to the US glyph")
+	assert_eq(Win98Menu.speed_key_glyph(KEY_F1), "`", "a non-printing answer falls back too")
+	assert_eq(Win98Menu.speed_key_label(), "`", "headless never asks the display server, so tests and web read the US glyph")
+	assert_string_contains(Win98Menu._keyboard_hint_text(), "[%s] Speed" % Win98Menu.speed_key_label(), "the bar names that key")
+
+
+## CONTROL: matching by position must not make the printed character a speed key wherever it sits.
+func test_the_same_character_elsewhere_is_not_the_speed_key() -> void:
+	var s: Node = await _battle()
+	BS._battle_speed_index = 2
+	for pressed in [true, false]:
+		get_tree().root.push_input(_layout_key(KEY_ASCIICIRCUM, KEY_EQUAL, pressed))
+	assert_eq(BS._battle_speed_index, 2, "a ^ printed on some other key must not change the speed")
+	assert_lt(s._speed_hold_start_ms, 0, "and must not arm a hold")
+
+
 ## The persisted choice and the live scale follow the one writer, both ways.
 func test_both_directions_persist_through_the_one_writer() -> void:
 	var s: Node = await _battle()
