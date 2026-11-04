@@ -1321,7 +1321,10 @@ static func _format_rule_kit(kit_context: Dictionary) -> String:
 		lines.append("ITEM IDS. An \"item\" action's \"id\" and an item_count's \"item_id\" must be")
 		lines.append("one of these EXACTLY — singular where the list is singular, plural where it")
 		lines.append("is plural. A near miss is rejected and DISCARDS THE WHOLE RULE SET:")
-		lines.append("  " + ", ".join(item_ids))
+		var shown_items: PackedStringArray = PackedStringArray()
+		for iid in item_ids:
+			shown_items.append(str(iid) + _item_shown_as(str(iid)))
+		lines.append("  " + ", ".join(shown_items))
 	lines.append("")
 	lines.append("STATUS IDS. has_status / not_has_status / ally_has_status / enemy_has_status /")
 	lines.append("not_enemy_has_status take a \"status\" matched LITERALLY — an English word like")
@@ -1349,7 +1352,7 @@ static func _format_rule_kit(kit_context: Dictionary) -> String:
 
 
 ## The rule set's name and description reach the player; an id like fira or summon_ifrit is not a name he ever sees.
-const SHOWN_NAME_RULE: String = "In the rule set's NAME and DESCRIPTION, call an ability by the name in quotes after its id, never by the id."
+const SHOWN_NAME_RULE: String = "In the rule set's NAME and DESCRIPTION, call an ability or item by the name in quotes after its id, never by the id."
 
 
 ## ` "Name"` after an id whose player-facing name differs from it, else "". The name is what the menus show.
@@ -1360,6 +1363,18 @@ static func _shown_as(ability_id: String) -> String:
 		return ""
 	var shown: String = str((js.get_ability(ability_id) as Dictionary).get("name", "")).strip_edges()
 	if shown == "" or shown.to_lower().replace(" ", "_") == ability_id:
+		return ""
+	return " \"%s\"" % shown
+
+
+## The item twin of _shown_as: 45 items show a name that is not their id (hi_potion is "Potio Maior", phoenix_down "Resurgo Plume").
+static func _item_shown_as(item_id: String) -> String:
+	var tree: SceneTree = Engine.get_main_loop() as SceneTree
+	var items: Node = tree.root.get_node_or_null("ItemSystem") if tree != null and tree.root != null else null
+	if items == null or not items.has_method("get_item"):
+		return ""
+	var shown: String = str((items.get_item(item_id) as Dictionary).get("name", "")).strip_edges()
+	if shown == "" or shown.to_lower().replace(" ", "_").replace("-", "_") == item_id:
 		return ""
 	return " \"%s\"" % shown
 

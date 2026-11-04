@@ -71,13 +71,13 @@
           "speaker": "Dorrit",
           "text": "The Director appeared three years ago. Or maybe always. Things changed. The work used to be hard but human. Now it's easy and not.",
           "theme": "shopkeeper",
-          "portrait": "shopkeeper"
+          "portrait": "young_woman"
         },
         {
           "speaker": "Dorrit",
           "text": "Everything's measured. Output per hour. Steps per shift. Words per conversation. Twelve is optimal. I'm over quota talking to you.",
           "theme": "shopkeeper",
-          "portrait": "shopkeeper"
+          "portrait": "young_woman"
         },
         {
           "speaker": "Cleric",
@@ -89,13 +89,13 @@
           "speaker": "Dorrit",
           "text": "The Director schedules you for communication efficiency training. After training, twelve words feels like plenty.",
           "theme": "shopkeeper",
-          "portrait": "shopkeeper"
+          "portrait": "young_woman"
         },
         {
           "speaker": "Dorrit",
           "text": "The questions came back, though. After a few months. The Director's recalibration doesn't hold perfectly. There are always deviations.",
           "theme": "shopkeeper",
-          "portrait": "shopkeeper"
+          "portrait": "young_woman"
         }
       ]
     },

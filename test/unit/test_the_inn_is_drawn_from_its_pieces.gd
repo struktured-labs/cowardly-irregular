@@ -64,3 +64,18 @@ func test_the_drawn_hearth_lands_whole_on_its_cells() -> void:
 	var whole := _seam_cost(img, as_sampled, HEARTH_SIZE, grid)
 	var shifted := _seam_cost(img, as_sampled + Vector2i(1, 0), HEARTH_SIZE, grid)
 	assert_lt(whole, shifted * 0.8, "the hearth does not land whole (seams %.0f vs %.0f one cell off)" % [whole, shifted])
+
+
+func test_a_drawn_hearth_is_the_only_fireplace() -> void:
+	## The 2026-11-04 render: Harmonia's inn stood the painted stone surround and flame BESIDE its drawn hearth, two fireplaces.
+	VillageProp.prop_art_override = {}
+	var painted = InnInteriorScript.new()
+	add_child_autofree(painted)
+	assert_gt(painted.find_child("FireplaceSurround", true, false).find_children("*", "Sprite2D", false, false).size(), 0, "CONTROL: a painted inn stands its painted surround")
+	assert_not_null(painted.find_child("FireFlame", false, false), "CONTROL: a painted inn burns its painted flame")
+	VillageProp.prop_art_override = {"hearth_inn": {"path": "res://assets/sprites/interiors/harmonia/hearth_inn.png"}}
+	var inn = InnInteriorScript.new()
+	add_child_autofree(inn)
+	assert_eq(inn.find_child("FireplaceSurround", true, false).find_children("*", "Sprite2D", false, false).size(), 0, "a painted surround stood beside the drawn hearth")
+	assert_null(inn.find_child("FireFlame", false, false), "a painted flame burned beside the drawn hearth's own fire")
+	assert_not_null(inn.find_child("HearthCollision", true, false), "the drawn hearth lost its collider")

@@ -10,6 +10,10 @@ var _battle_player: AudioStreamPlayer
 var _death_player: AudioStreamPlayer  # dedicated voice: death cries survive the next action's sounds (2026-08-18)
 var _footstep_player: AudioStreamPlayer  # dedicated voice: a step cut every UI cue longer than a step (2026-09-11)
 var _flourish_player: AudioStreamPlayer  # dedicated voice: a group attack's own hits were cutting its cue (2026-09-11)
+## A signature/glory sequence's per-phase beats, round-robin so one beat's tail is not cut by the next (cowir-main 21676).
+const SEQUENCE_BEAT_VOICES := 3
+var _beat_players: Array[AudioStreamPlayer] = []
+var _beat_next: int = 0
 var _voice_player: AudioStreamPlayer  # dedicated voice: party lines are SECONDS long and every menu blip on _ui_player cut them (2026-09-11)
 var _line_player: AudioStreamPlayer  # dedicated voice: a recorded dialogue line (boss/NPC); never the party voice player, which the victory slam shares
 var _line_owner_id: int = 0
@@ -644,6 +648,14 @@ func _setup_audio_players() -> void:
 	_flourish_player.bus = SFX_BUS
 	add_child(_flourish_player)
 
+	for i in SEQUENCE_BEAT_VOICES:
+		var bp := AudioStreamPlayer.new()
+		bp.name = "BeatPlayer%d" % i
+		bp.volume_db = SFX_BATTLE_BASE_DB
+		bp.bus = SFX_BUS
+		add_child(bp)
+		_beat_players.append(bp)
+
 	_voice_player = AudioStreamPlayer.new()
 	_voice_player.name = "VoicePlayer"
 	_voice_player.volume_db = VOICE_PLAYER_BASE_DB
@@ -1269,6 +1281,17 @@ func play_death(sound_key: String) -> void:
 ## Third instance of one defect class — death cries (2026-08-15), party voice lines and this.
 ## A long cue sharing a player with a frequent short one is always the short one's to lose.
 ## Same volume as the battle channel: the cue was being CUT, not being quiet.
+## One beat of a signature/glory sequence, fired by the sequence player when its phase fires (battle time, so in sync at any speed).
+func play_sequence_beat(sound_key: String) -> void:
+	if _beat_players.is_empty():
+		play_flourish(sound_key)
+		return
+	var p: AudioStreamPlayer = _beat_players[_beat_next % _beat_players.size()]
+	_beat_next += 1
+	_sfx_cooldowns.erase(sound_key)
+	_try_play_sfx_from_manifest(p, sound_key, SFX_BATTLE_BASE_DB)
+
+
 func play_flourish(sound_key: String) -> void:
 	if _flourish_player == null:
 		play_battle(sound_key)
