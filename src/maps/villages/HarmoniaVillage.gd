@@ -498,7 +498,7 @@ func _setup_npcs() -> void:
 	var _chancellor_gs = get_node_or_null("/root/GameState")
 	var _chancellor_gone: bool = _chancellor_gs != null and _chancellor_gs.is_story_flag_set("world1_mordaine_defeated")
 	var _greta_after_chancellor := [
-		"*cough* The Chancellor's gone. I've outlived three of them, and she never once coughed."
+		"*cough* The Chancellor's gone. I've outlived three of them, and she never once coughed.",
 		"She kept a ledger with everyone in this town in it. I hope somebody burns it. I hope they read my page first.",
 		"In my day you didn't beat a Chancellor. You waited one out.",
 		"You didn't wait. I'm still deciding whether that's the young way or the right one."
