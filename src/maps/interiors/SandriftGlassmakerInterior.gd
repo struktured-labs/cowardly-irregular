@@ -5,7 +5,7 @@ class_name SandriftGlassmakerInterior
 ## Senga blows desert glass collected from sand fused by dragon-breath
 ## carrying on the wind. Her shelves hold fragments of Pyrroth's
 ## exhale — concrete physical foreshadowing rather than just a story
-## NPC. Sets up Pyrroth (W1 fire dragon) without spoiling her cave.
+## NPC. Sets up Pyrroth (W1 fire dragon) without spoiling his cave.
 
 const SHOP_LAYOUT = [
 	"WWWWWWWWWWWWWW",
