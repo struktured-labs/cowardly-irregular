@@ -22,8 +22,10 @@ func test_off_the_tree_the_banner_builds_nothing() -> void:
 func test_in_the_tree_the_banner_still_shows() -> void:
 	var gl: Node = load(GL_SRC).new()
 	add_child_autofree(gl)
+	## A GameLoop in the tree builds layer-90 nodes of its own; judge only what the banner adds.
+	var before := _banners(gl)
 	gl._show_grind_stop_notification("Your rule #1 stopped the grind")
-	var layers := _banners(gl)
+	var layers := _banners(gl).filter(func(l): return not (l in before))
 	assert_eq(layers.size(), 1, "CONTROL: in the tree the stop banner still goes up")
 	var said := ""
 	for n in (layers[0] as Node).find_children("*", "Label", true, false):
