@@ -122,7 +122,8 @@ func test_each_glory_spell_is_shown_once_at_1x() -> void:
 	scene._play_signature(mage, null, null, firaga, foes, "glory_firaga")
 	await get_tree().process_frame
 	assert_almost_eq(Engine.time_scale, BS_SPEEDS_1X, 0.001, "the first Firaga is shown at 1x")
-	var deadline := Time.get_ticks_msec() + 12000
+	var beat: float = (scene.SIGNATURE_WINDUP + scene.sequence_total("glory_firaga") + 1.0) / BS_SPEEDS_1X
+	var deadline := Time.get_ticks_msec() + int(beat * 1500.0)
 	while Time.get_ticks_msec() < deadline and not is_equal_approx(Engine.time_scale, 1.0):
 		await get_tree().process_frame
 	assert_almost_eq(Engine.time_scale, 1.0, 0.001, "then the player's speed comes back")
