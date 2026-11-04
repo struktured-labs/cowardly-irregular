@@ -173,3 +173,13 @@ func test_a_pad_strip_does_not_offer_r_for_resume() -> void:
 		var strip: String = ui._hint_strip_text(pad)
 		assert_false(strip.contains("[R]"), "%s: '[R]' sits beside the R shoulder that opens options: %s" % [pad, strip])
 		assert_string_contains(strip, "Resume", "%s: Resume is still named, in the options list" % pad)
+
+
+## The north face is named per family on a cell where it acts, the half test_autogrind_hud_names_the_players_pad dropped.
+func test_on_an_action_each_family_names_its_own_north_face() -> void:
+	var ui: Node = await _console()
+	_find(ui, 0, "action")
+	var north := {"Nintendo Switch Pro Controller": "Ⓧ", "Xbox Series Controller": "Ⓨ", "Sony DualSense Wireless Controller": "△"}
+	for pad in north:
+		var strip: String = ui._hint_strip_text(pad)
+		assert_string_contains(strip, "%s / [Del] Delete" % north[pad], "%s names its own north face for Delete: %s" % [pad, strip])

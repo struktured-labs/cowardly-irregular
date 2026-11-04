@@ -1592,7 +1592,8 @@ func _input(event: InputEvent) -> void:
 		_toggle_grinding()
 		get_viewport().set_input_as_handled()
 
-	elif event is InputEventJoypadButton and event.pressed and event.button_index == DELETE_BUTTON:
+	## Literal, not DELETE_BUTTON: the remap guard finds raw handlers by their JOY_BUTTON_ name.
+	elif event is InputEventJoypadButton and event.pressed and event.button_index == JOY_BUTTON_Y:
 		_press_delete_button()
 		get_viewport().set_input_as_handled()
 
