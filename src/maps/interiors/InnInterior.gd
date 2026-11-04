@@ -1595,7 +1595,7 @@ func _create_fireplace_secret() -> void:
 		add_child(transitions)
 	var zone := FireplaceSecret.new()
 	zone.name = "FireplaceSecret"
-	zone.position = Vector2(13.5 * TILE_SIZE, 4.0 * TILE_SIZE)
+	zone.position = Vector2(13.5 * TILE_SIZE, 5.5 * TILE_SIZE)  # its 2-tile zone starts half a tile south of the hearth's collider
 	transitions.add_child(zone)
 
 

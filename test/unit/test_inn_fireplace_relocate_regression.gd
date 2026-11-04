@@ -168,5 +168,7 @@ func test_inn_wires_the_secret() -> void:
 		"inn calls the secret factory from _ready")
 	assert_true(src.contains("FireplaceSecret.new()"),
 		"secret is instantiated by class, not a bare Area2D with a set_script")
-	assert_true(src.contains("Vector2(11.5 * TILE_SIZE, 4.0 * TILE_SIZE)"),
-		"secret zone sits in FRONT of the hearth (south of it), reachable without standing in the fire")
+	## FireplaceSecret's zone is 2 tiles tall and the collider 2 tiles: the zone's top must clear the collider's bottom, by under a tile.
+	var gap := (_anchor("zone").y - 1.0) - (_anchor("hearth_body").y + 1.0)
+	assert_true(gap >= 0.0 and gap < 1.0,
+		"secret zone sits in FRONT of the hearth (south of it), reachable without standing in the fire (gap %.2f tiles)" % gap)
