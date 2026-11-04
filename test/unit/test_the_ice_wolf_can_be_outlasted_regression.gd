@@ -138,3 +138,22 @@ func test_every_w1_trash_monster_can_be_outlasted_the_same_way() -> void:
 			var taken: int = c.take_damage(_crit(VARIANCE_MAX, str(who)))
 			assert_true(taken <= DEFER_CEILING * c.max_hp, "a full-HP %s who Defers must keep a tenth of their HP against %s's biggest crit (took %d of %d = %d%% at level %d)"
 				% [job_id, who, taken, c.max_hp, roundi(100.0 * taken / c.max_hp), level])
+
+
+## cowir-main 21418: Ice Breath (magic x 2.2, every target) is what wiped his L5 party, not the crit. The wolf breathes ONCE a
+## fight (max_mp below two casts), and the clever lane holds for magic too: Defer halves it, so a Deferring back-liner lives.
+func test_the_wolf_breathes_once_and_a_deferring_back_liner_outlasts_it() -> void:
+	var wolf: Dictionary = _monsters()[WOLF]
+	var breath: Dictionary = JobSystem.get_ability("ice_breath")
+	assert_true("ice_breath" in (wolf.get("abilities", []) as Array) and not breath.is_empty(), "CONTROL: the wolf breathes ice")
+	var cost: int = int(breath.get("mp_cost", 0))
+	var mp: int = int((wolf.get("stats", {}) as Dictionary).get("max_mp", 0))
+	assert_true(mp >= cost and mp < 2 * cost, "one breath a fight: %d MP against a %d-MP breath" % [mp, cost])
+	var raw: int = int(int((wolf.get("stats", {}) as Dictionary).get("magic", 0)) * float(breath.get("damage_multiplier", 1.0)) * VARIANCE_MAX)
+	var level := _meeting_level()
+	for job_id in BACK_ROW:
+		var c := _member(job_id, level)
+		c.is_defending = true
+		var taken: int = c.take_damage(raw, true)
+		assert_true(taken <= DEFER_CEILING * c.max_hp, "a full-HP %s who Defers must keep a tenth of their HP against the breath (took %d of %d at level %d)"
+			% [job_id, taken, c.max_hp, level])
