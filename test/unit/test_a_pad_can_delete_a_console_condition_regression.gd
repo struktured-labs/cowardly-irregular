@@ -24,12 +24,15 @@ func _console() -> Node:
 	var ui: Node = load(UI).new()
 	add_child_autofree(ui)
 	ui.visible = true
+	## _ready defers _build_ui, so the grid does not exist until a frame has passed; rules set before it would draw nowhere.
+	await wait_frames(2)
 	ui.rules = [
 		{"conditions": [{"type": "member_hp", "op": "<", "value": 30}, {"type": "member_dead"}],
 			"actions": [{"type": "heal_party"}, {"type": "stop_grinding"}], "enabled": true},
 		{"conditions": [{"type": "member_mp", "op": "<", "value": 20}], "actions": [{"type": "stop_grinding"}], "enabled": true},
 	]
 	ui._refresh_grid()
+	assert_not_null(ui._grid_container, "CONTROL: the console built its grid")
 	return ui
 
 
@@ -45,7 +48,7 @@ func _picker_ids(spec: Dictionary) -> Array:
 
 
 func test_a_on_a_condition_opens_the_type_list_with_delete_last() -> void:
-	var ui := _console()
+	var ui: Node = await _console()
 	assert_eq(_at(ui, 0, 0), "condition", "CONTROL: the cursor is on hp < 30")
 	ui._edit_current_cell()
 	assert_true(ui._options_ring != null and is_instance_valid(ui._options_ring), "A on a condition opens a picker")
@@ -59,7 +62,7 @@ func test_a_on_a_condition_opens_the_type_list_with_delete_last() -> void:
 
 
 func test_choosing_delete_removes_exactly_that_condition_and_undo_restores_it() -> void:
-	var ui := _console()
+	var ui: Node = await _console()
 	var before: Array = ui.rules.duplicate(true)
 	_at(ui, 0, 1)
 	ui._commit_condition_choice(ui.DELETE_CONDITION_ID)
@@ -71,14 +74,14 @@ func test_choosing_delete_removes_exactly_that_condition_and_undo_restores_it() 
 
 
 func test_a_rules_only_condition_says_the_rule_goes_with_it() -> void:
-	var ui := _console()
+	var ui: Node = await _console()
 	_at(ui, 1, 0)
 	assert_string_contains(str((ui._condition_picker_spec()["options"] as Array).back()["label"]), "and its rule",
 		"deleting a rule's only condition deletes the rule, which is what cost him his rules, so the label says so")
 
 
 func test_choosing_a_type_still_changes_it() -> void:
-	var ui := _console()
+	var ui: Node = await _console()
 	_at(ui, 0, 0)
 	ui._commit_condition_choice("party_mp_avg")
 	var cond: Dictionary = ui.rules[0]["conditions"][0]
