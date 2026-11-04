@@ -5,6 +5,7 @@ extends GutTest
 ## monsters.json `boss_terrain`, else "boss". The terrain must be one the background actually understands.
 
 const BG_PATH := "res://src/battle/BattleBackground.gd"
+const GameLoopScript := preload("res://src/GameLoop.gd")
 const W1 := ["cave_rat_king", "fire_dragon", "ice_dragon", "lightning_dragon", "shadow_dragon", "chancellor_mordaine"]
 
 
@@ -27,14 +28,14 @@ func test_every_w1_boss_resolves_to_a_terrain_that_exists() -> void:
 	for id in W1:
 		var authored := str(monsters[id].get("boss_terrain", ""))
 		assert_ne(authored, "", "%s names its own battleground" % id)
-		var t: String = GameLoop.boss_terrain_for([id])
+		var t: String = GameLoopScript.boss_terrain_for([id])
 		assert_eq(t, authored, "%s fights on its own boss_terrain" % id)
 		assert_true(t in known, "%s's terrain '%s' is one the background understands" % [id, t])
 
 
 func test_a_boss_without_one_keeps_the_shared_arena() -> void:
-	assert_eq(GameLoop.boss_terrain_for(["goblin"]), "boss", "no boss_terrain → the shared boss backdrop")
-	assert_eq(GameLoop.boss_terrain_for([]), "boss", "and no enemies at all → the same")
+	assert_eq(GameLoopScript.boss_terrain_for(["goblin"]), "boss", "no boss_terrain → the shared boss backdrop")
+	assert_eq(GameLoopScript.boss_terrain_for([]), "boss", "and no enemies at all → the same")
 
 
 ## The scripted-boss branch must ASK, not force: a source pin, since driving a whole boss start here is a GameLoop boot.
