@@ -144,6 +144,34 @@ func test_the_controls_reference_names_both_the_tap_and_the_hold() -> void:
 	assert_string_contains(row.to_lower(), "hold", "the row must say a HOLD slows down, or nobody finds it")
 
 
+## QWERTZ/AZERTY print ^ or ² left of 1 and reach ` only as a dead key, so the speed key is matched by POSITION too.
+func _layout_key(keycode: Key, physical: Key, pressed: bool) -> InputEventKey:
+	var e := InputEventKey.new()
+	e.keycode = keycode
+	e.physical_keycode = physical
+	e.pressed = pressed
+	return e
+
+
+func test_the_speed_key_works_where_a_german_keyboard_puts_it() -> void:
+	var s: Node = await _battle()
+	BS._battle_speed_index = 2
+	for pressed in [true, false]:
+		get_tree().root.push_input(_layout_key(KEY_ASCIICIRCUM, KEY_QUOTELEFT, pressed))
+	assert_eq(BS._battle_speed_index, 3, "the key left of 1 must tap the speed up whatever the layout prints on it")
+	assert_lt(s._speed_hold_start_ms, 0, "and its release must have arrived")
+
+
+## CONTROL: matching by position must not make the printed character a speed key wherever it sits.
+func test_the_same_character_elsewhere_is_not_the_speed_key() -> void:
+	var s: Node = await _battle()
+	BS._battle_speed_index = 2
+	for pressed in [true, false]:
+		get_tree().root.push_input(_layout_key(KEY_ASCIICIRCUM, KEY_EQUAL, pressed))
+	assert_eq(BS._battle_speed_index, 2, "a ^ printed on some other key must not change the speed")
+	assert_lt(s._speed_hold_start_ms, 0, "and must not arm a hold")
+
+
 ## The persisted choice and the live scale follow the one writer, both ways.
 func test_both_directions_persist_through_the_one_writer() -> void:
 	var s: Node = await _battle()

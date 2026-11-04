@@ -79,7 +79,7 @@ static func build_text() -> String:
 		_face_cell("ui_accept", "East"), _face_cell("ui_cancel", "South")) + "\n" + _bound_rows() + """
 Start / Plus / Options F5           —                Open Autobattle Editor
 Back / Select / Minus / Share F6    —                Toggle Autobattle
-%-17s ` (backtick)      —                Battle speed: tap faster · hold slower
+%-17s ` (backtick)      —                Battle speed: tap faster · hold slower (the key left of 1)
 %-17s Y                 —                [color=lime]Repeat last turn's actions — in battle[/color]
                   F                 —                Cycle party formation (also in the command menu)
 L3 Stick Click    L                 —                Battle log: open the full log in battle (also the log panel's button)

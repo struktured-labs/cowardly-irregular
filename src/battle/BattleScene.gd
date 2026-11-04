@@ -6156,7 +6156,8 @@ func _input(event: InputEvent) -> void:
 		return
 
 	# Battle speed — ` key only. (Was documented as "Tab or `"; Tab is battle_toggle_auto.) Tap up, hold down.
-	if event is InputEventKey and not event.echo and event.keycode == KEY_QUOTELEFT:
+	# Also by POSITION, the key left of 1: QWERTZ/AZERTY print ^ or ² there and reach ` only as a dead key.
+	if event is InputEventKey and not event.echo and (event.keycode == KEY_QUOTELEFT or event.physical_keycode == KEY_QUOTELEFT):
 		_speed_button(event.pressed)
 		get_viewport().set_input_as_handled()
 		return
