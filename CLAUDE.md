@@ -145,7 +145,8 @@ Each starter job has a free 0-cost AP action available in the command menu:
 | Toggle ALL autobattle | Select | F6 |
 | Navigate grid | D-pad | Arrow keys |
 | Edit cell | A | X |
-| Delete cell | Y (off a condition cell) | Delete / Backspace |
+| Delete cell | X, the top face (`JOY_BUTTON_Y`), on an action; on a condition it cycles the operator instead (cowir-main 2026-11-02: same verbs in the autogrind console) | Delete / Backspace |
+| Undo last delete | X, the top face, on an empty slot | Ctrl+Z |
 | Add condition | L trigger | Q key |
 | Add action | R trigger | W key |
 | Close editor | B | Z |

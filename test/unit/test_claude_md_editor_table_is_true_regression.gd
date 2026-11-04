@@ -96,6 +96,22 @@ func test_escape_and_start_still_close_rather_than_delete() -> void:
 		"no ui_cancel branch may DELETE — that was the old binding the table still described")
 
 
+## The Gamepad column uses NINTENDO names, and the delete is raw JOY_BUTTON_Y: the NORTH face, which Nintendo
+## calls X. This row said "Y" (Nintendo's WEST face) while the Battle Controls table names the same index "X (top
+## face button)" for speed. Also pins the undo row, which is a control nothing else on the page names.
+func test_the_delete_and_undo_rows_name_the_top_face() -> void:
+	var src := _editor_source()
+	assert_true(src.contains("event.button_index == JOY_BUTTON_Y"),
+		"PRECONDITION: the editor's pad delete is raw JOY_BUTTON_Y — if it moved, fix both rows")
+	var row := _table_row("Delete cell")
+	assert_string_contains(row, "top face", "the Delete row must name the north face by position: %s" % row)
+	assert_false(row.contains("| Y ") or row.contains("| Y("),
+		"the Delete row must not name Nintendo's Y, which is the WEST face: %s" % row)
+	var undo := _table_row("Undo last delete")
+	assert_string_contains(undo, "Ctrl+Z", "the Undo row must name the keyboard undo: %s" % undo)
+	assert_true(src.contains("KEY_Z and event.ctrl_pressed"), "PRECONDITION: the editor reads Ctrl+Z")
+
+
 ## CONTROL: the table reader must be able to report a row ABSENT, or every arm above could be
 ## passing on an empty string.
 func test_the_table_reader_discriminates() -> void:
