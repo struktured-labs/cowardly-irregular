@@ -51,6 +51,17 @@ extends GutTest
 ## TWICE after being measured and rejected.
 
 const DP := preload("res://src/llm/DialoguePrompts.gd")
+## A fresh campaign: once a W1 boss falls, campaign_facts names her in EVERY prompt, so a flag left set elsewhere breaks "nobody mentioned her".
+var _campaign = preload("res://test/unit/helpers/fresh_campaign.gd").new()
+
+
+func before_each() -> void:
+	_campaign.clear()
+
+
+func after_each() -> void:
+	_campaign.restore()
+
 
 const HER := "Chancellor Mordaine"
 const NOTE := "Chancellor Mordaine uses she/her"

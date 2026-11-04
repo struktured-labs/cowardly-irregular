@@ -403,7 +403,45 @@ static func _context_blocks(
 		+ _format_memory(memory_lines)
 		+ _format_events(recent_events, CONTEXT_EVENTS)
 		+ _format_quest_state_voice(quest_state_lines)
+		+ campaign_facts()
 	)
+
+
+## World 1's milestones, each by the flags the game itself writes (is_story_flag_set reads all four namespaces).
+const CAMPAIGN_MILESTONES: Array = [
+	{"flags": ["cave_rat_king_defeated", "rat_king_defeated"], "done": "The Cave Rat King has been defeated.", "open": "the Cave Rat King"},
+	{"flags": ["fire_dragon_defeated"], "done": "Pyrroth, the fire dragon, has been slain.", "open": "Pyrroth"},
+	{"flags": ["ice_dragon_defeated"], "done": "Glacius, the ice dragon, has been slain.", "open": "Glacius"},
+	{"flags": ["lightning_dragon_defeated"], "done": "Voltharion, the storm dragon, has been slain.", "open": "Voltharion"},
+	{"flags": ["shadow_dragon_defeated"], "done": "Umbraxis, the shadow dragon, has been slain.", "open": "Umbraxis"},
+	{"flags": ["world1_mordaine_defeated"], "done": "Chancellor Mordaine has fallen; she no longer rules from Castle Harmonia.", "open": "Chancellor Mordaine (she still rules from Castle Harmonia)"},
+]
+
+
+## The campaign so far, which the recent-events window forgets: a boss beaten an hour ago scrolls out of it. "" until a milestone falls.
+static func campaign_facts() -> String:
+	var tree: SceneTree = Engine.get_main_loop() as SceneTree
+	var gs: Node = tree.root.get_node_or_null("GameState") if tree != null and tree.root != null else null
+	if gs == null or not gs.has_method("is_story_flag_set"):
+		return ""
+	var done: PackedStringArray = PackedStringArray()
+	var still: PackedStringArray = PackedStringArray()
+	for m in CAMPAIGN_MILESTONES:
+		var fell: bool = false
+		for f in m["flags"]:
+			if gs.is_story_flag_set(str(f)):
+				fell = true
+				break
+		if fell:
+			done.append("- " + str(m["done"]))
+		else:
+			still.append(str(m["open"]))
+	if done.is_empty():
+		return ""
+	var out: String = "\nCAMPAIGN SO FAR (true however long ago it happened):\n" + "\n".join(done) + "\n"
+	if not still.is_empty():
+		out += "Not yet defeated: %s. Do not claim otherwise.\n" % ", ".join(still)
+	return out
 
 
 ## Build a prompt asking the LLM to generate a single NPC opening statement.
