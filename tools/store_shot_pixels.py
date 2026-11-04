@@ -1,0 +1,168 @@
+#!/usr/bin/env python3
+"""Judge a store re-shoot in PIXELS: which fresh frames really differ from the shipped ones.
+
+    tools/store_shot_pixels.py STORED FRESH_A FRESH_B     per-shot verdicts, exit 0
+    tools/store_shot_pixels.py --selftest
+
+WHY THIS EXISTS
+---------------
+store_shot_staleness.py --compare judges by FILE SIZE. Bytes are a candidate, never a verdict:
+measured 2026-11-04 on the real stored set, half of harmonia_village colour-inverted read as
+"~noise~ NOT a finding" by bytes. The re-shoots at .748/.750/.752 were decided in pixels instead,
+by a throwaway lane script hardcoded to the title frames (the audit instrument held to a lower
+standard than the tool it audited). This is that measurement as a tool.
+
+THE MEASURE: the share of pixels whose largest per-channel difference exceeds 24 levels (the
+.748 re-shoot's threshold, which separates real content from PNG/dither jitter). FRESH_B is a
+second capture of the SAME tree: FRESH_A vs FRESH_B is that shot's run-to-run noise (walkers,
+twinkling stars, animation phase).
+
+VERDICT, per shot present in all three dirs:
+    MOVED   delta >= 1.0% AND delta > 3 x noise   a real change: a re-shoot candidate for a human eye
+    NOISE   delta > 0 but inside that bound         the difference is the shot's own animation
+    SAME    delta == 0
+    SIZE    the frames differ in size               always reported, never silently skipped
+A shot missing from any dir is listed as MISSING. MOVED says which frames to LOOK at, not which
+is better: a fresh frame can be worse (measured 2026-09-13).
+"""
+import os
+import sys
+
+from PIL import Image, ImageChops
+
+LEVEL = 24
+MIN_MOVED = 0.01
+NOISE_FACTOR = 3.0
+
+
+def delta(a_path, b_path):
+    """Share of pixels whose max channel difference exceeds LEVEL, or None when sizes differ."""
+    a = Image.open(a_path).convert("RGB")
+    b = Image.open(b_path).convert("RGB")
+    if a.size != b.size:
+        return None
+    diff = ImageChops.difference(a, b)
+    mx = ImageChops.lighter(ImageChops.lighter(diff.getchannel(0), diff.getchannel(1)), diff.getchannel(2))
+    hist = mx.histogram()
+    over = sum(hist[LEVEL + 1:])
+    return over / (a.size[0] * a.size[1])
+
+
+def verdict(d, noise):
+    if d is None or noise is None:
+        return "SIZE"
+    if d == 0:
+        return "SAME"
+    if d >= MIN_MOVED and d > NOISE_FACTOR * noise:
+        return "MOVED"
+    return "NOISE"
+
+
+def judge(stored, fa, fb):
+    names = sorted({f[:-4] for d in (stored, fa, fb) if os.path.isdir(d) for f in os.listdir(d) if f.endswith(".png")})
+    rows = []
+    for n in names:
+        paths = [os.path.join(d, n + ".png") for d in (stored, fa, fb)]
+        if not all(os.path.isfile(p) for p in paths):
+            rows.append((n, "MISSING", None, None))
+            continue
+        d = delta(paths[1], paths[0])
+        noise = delta(paths[1], paths[2])
+        rows.append((n, verdict(d, noise), d, noise))
+    return rows
+
+
+def fmt(x):
+    return "   n/a" if x is None else f"{x:7.2%}"
+
+
+def main(argv):
+    if len(argv) != 3:
+        print(__doc__.split("WHY")[0].strip(), file=sys.stderr)
+        return 2
+    stored, fa, fb = argv
+    for d in (stored, fa, fb):
+        if not os.path.isdir(d):
+            print(f"[pixels] BLOCKED: no such directory {d}", file=sys.stderr)
+            return 2
+    rows = judge(stored, fa, fb)
+    if not rows:
+        print(f"[pixels] BLOCKED: no .png in any of the three dirs: a check over nothing passes everything", file=sys.stderr)
+        return 2
+    print(f"[pixels] {len(rows)} shot(s) · share of pixels over {LEVEL} levels · MOVED = >= {MIN_MOVED:.0%} and > {NOISE_FACTOR:g}x noise")
+    for n, v, d, noise in rows:
+        print(f"  {v:<7} {n:<30} vs stored {fmt(d)}   noise a/b {fmt(noise)}")
+    counts = {}
+    for _, v, _, _ in rows:
+        counts[v] = counts.get(v, 0) + 1
+    print("[pixels] " + " · ".join(f"{k} {counts[k]}" for k in ("MOVED", "NOISE", "SAME", "SIZE", "MISSING") if k in counts))
+    return 0
+
+
+def selftest():
+    import tempfile
+    fails = 0
+    ran = 0
+    t = tempfile.mkdtemp(prefix="pixels_selftest.", dir=os.path.join(os.getcwd(), "tmp") if os.path.isdir("tmp") else None)
+    S, A, B = (os.path.join(t, x) for x in ("stored", "a", "b"))
+    for d in (S, A, B):
+        os.makedirs(d)
+    base = Image.new("RGB", (100, 100), (40, 80, 120))
+
+    def put(d, name, img):
+        img.save(os.path.join(d, name + ".png"))
+
+    def patch(img, box, colour):
+        im = img.copy()
+        im.paste(colour, box)
+        return im
+
+    # same: identical everywhere
+    for d in (S, A, B):
+        put(d, "same", base)
+    # moved: a 30% block changed in BOTH fresh runs, which agree with each other
+    moved = patch(base, (0, 0, 100, 30), (250, 250, 250))
+    put(S, "moved", base); put(A, "moved", moved); put(B, "moved", moved)
+    # noise: the two fresh runs disagree as much as fresh disagrees with stored (an animating shot)
+    put(S, "noisy", base); put(A, "noisy", patch(base, (0, 0, 100, 20), (250, 0, 0))); put(B, "noisy", patch(base, (0, 50, 100, 70), (250, 0, 0)))
+    # jitter: every pixel off by 10 levels (under LEVEL) -> SAME
+    put(S, "jitter", base); put(A, "jitter", Image.new("RGB", (100, 100), (50, 90, 130))); put(B, "jitter", Image.new("RGB", (100, 100), (50, 90, 130)))
+    # tiny: 0.5% changed, stable across runs -> under MIN_MOVED -> NOISE, never MOVED
+    tiny = patch(base, (0, 0, 50, 1), (250, 250, 250))
+    put(S, "tiny", base); put(A, "tiny", tiny); put(B, "tiny", tiny)
+    # size: a resized capture
+    put(S, "resized", base); put(A, "resized", Image.new("RGB", (100, 90), (40, 80, 120))); put(B, "resized", Image.new("RGB", (100, 90), (40, 80, 120)))
+    # missing from one run
+    put(S, "gone", base); put(A, "gone", base)
+
+    got = {n: (v, d) for n, v, d, _ in judge(S, A, B)}
+    want = {"same": "SAME", "moved": "MOVED", "noisy": "NOISE", "jitter": "SAME", "tiny": "NOISE", "resized": "SIZE", "gone": "MISSING"}
+    for n, w in want.items():
+        v = got.get(n, ("absent", None))[0]
+        ok = v == w
+        fails += 0 if ok else 1; ran += 1
+        print(f"  {'ok  ' if ok else 'FAIL'}  {n:<8} -> {v:<7} (want {w})")
+    d = got["moved"][1]
+    ok = d is not None and abs(d - 0.30) < 1e-9
+    fails += 0 if ok else 1; ran += 1
+    print(f"  {'ok  ' if ok else 'FAIL'}  the moved block measures exactly 30.00% (got {fmt(d)})")
+    rc = main([S, A, os.path.join(t, "nowhere")])
+    ok = rc == 2
+    fails += 0 if ok else 1; ran += 1
+    print(f"  {'ok  ' if ok else 'FAIL'}  a missing directory BLOCKS (exit {rc})")
+    empty = os.path.join(t, "empty")
+    os.makedirs(empty)
+    rc = main([empty, empty, empty])
+    ok = rc == 2
+    fails += 0 if ok else 1; ran += 1
+    print(f"  {'ok  ' if ok else 'FAIL'}  three empty dirs BLOCK, never 'all same' (exit {rc})")
+    import shutil
+    shutil.rmtree(t, ignore_errors=True)
+    print(f"\nselftest: {ran - fails} passed, {fails} failed ({ran} checks ran)")
+    return 1 if fails else 0
+
+
+if __name__ == "__main__":
+    if sys.argv[1:] == ["--selftest"]:
+        sys.exit(selftest())
+    sys.exit(main(sys.argv[1:]))

@@ -44,5 +44,10 @@ run "declared deletion merges"       0 "MERGED zz-selftest-del"               FO
 run "a labelled ancestor is skipped" 1 "SKIP zz-selftest-label: an \[UNVERIFIED\] commit would ride in" FOLD_REPO="$WT" FOLD_ALLOW_DELETE= "$F" 997 "zz-selftest-label:$(git rev-parse --short=9 "$REF2")"
 run "a labelled tip vouched by FOLD_VERIFIED merges" 0 "VOUCHED by FOLD_VERIFIED" FOLD_REPO="$WT" FOLD_ALLOW_DELETE= FOLD_VERIFIED="$(git rev-parse --short=9 "$REF2")" "$F" 997 "zz-selftest-label:$(git rev-parse --short=9 "$REF2")"
 run "a vouch for ANOTHER sha does not cover it" 1 "SKIP zz-selftest-label: an \[UNVERIFIED\] commit would ride in" FOLD_REPO="$WT" FOLD_ALLOW_DELETE= FOLD_VERIFIED="${DEL:0:9}" "$F" 997 "zz-selftest-label:$(git rev-parse --short=9 "$REF2")"
+## A first tip that could fast-forward must still land as a merge commit, or release_note.sh never names it (.767: Mordaine's re-cast).
+env FOLD_REPO="$WT" FOLD_ALLOW_DELETE="$VICTIM" "$F" 997 "zz-selftest-del:${DEL:0:9}" >/dev/null 2>&1
+P2="$(git -C "$WT" log -1 --format=%P fold/v3.33.997~1 2>/dev/null | wc -w)"
+git checkout -q --detach origin/main; git branch -D fold/v3.33.997 >/dev/null 2>&1
+if [ "$P2" = 2 ]; then echo "ok   a fast-forwardable first tip lands as a merge commit"; else echo "FAIL a fast-forwardable first tip lands as a merge commit (parents=$P2, want 2)"; FAILS=1; fi
 rm -f "$WT"/tmp/chain997.sh tmp/gate997.sh tmp/rungate997.sh tmp/wedgewatch997.sh
 exit "$FAILS"
