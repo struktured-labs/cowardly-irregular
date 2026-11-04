@@ -10,6 +10,14 @@ const BattleStateGuard := preload("res://test/unit/helpers/battle_state.gd")
 const SoundState := preload("res://test/unit/helpers/sound_state.gd")
 const AT := 0.4
 
+## What a leaked battle does to the scale: writes its own, every frame.
+class ScaleLeak extends Node:
+	var scale := 1.0
+
+	func _process(_delta: float) -> void:
+		Engine.time_scale = scale
+
+
 var _guard
 var _saved_scale := 1.0
 var _saved_gate: Callable
@@ -38,35 +46,38 @@ func _known_key() -> String:
 	return str(keys[0]) if keys.size() > 0 else ""
 
 
-## Plays one cue phase at engine `scale`; returns the wall ms from play() to the cue, or -1 if it never fired.
-func _fire_ms(scale: float, phase: Dictionary, tier: int = 1) -> int:
+## Plays one cue phase at engine `scale` beside a reference SceneTreeTimer for the same `at`: the engine's own battle
+## clock, whatever an earlier file left behind (sfx 21734: wall AND summed-delta clocks both drifted after
+## test_a_secondary_job_shows_on_the_artist_sprite). Returns frames from the reference to the cue (0 = same frame,
+## negative = early), or NO_CUE if it never fired.
+const NO_CUE := -9999
+
+
+func _cue_vs_clock(scale: float, phase: Dictionary, tier: int = 1) -> int:
 	var host := Node2D.new()
 	add_child_autofree(host)
-	var fired: Array = []
+	var cue: Array = []
+	var ref: Array = []
 	var fx := FractalFX.new(host, 7)
 	fx.tier = tier
-	fx.on_sfx = func(key: String) -> void: fired.append([key, Time.get_ticks_msec()])
+	fx.on_sfx = func(key: String) -> void: cue.append([key, Engine.get_process_frames()])
 	Engine.time_scale = scale
-	var t0 := Time.get_ticks_msec()
+	var at := float(phase.get("at", 0.0))
+	get_tree().create_timer(at).timeout.connect(func() -> void: ref.append(Engine.get_process_frames()))
 	fx.play({"phases": [phase]}, Vector2.ZERO, Vector2(100, 0))
-	var early := t0 + int(float(phase.get("at", 0.0)) / scale * 500.0)
-	while Time.get_ticks_msec() < early:
-		Engine.time_scale = scale  # an earlier file's leaked battle can move the scale mid-wait (sfx 21734)
-		await get_tree().process_frame
-	assert_eq(fired.size(), 0, "the cue does not fire before its phase (engine %.2f)" % scale)
-	var deadline := t0 + int(float(phase.get("at", 0.0)) / scale * 1000.0) + 1500
-	while fired.is_empty() and Time.get_ticks_msec() < deadline:
-		Engine.time_scale = scale
+	var wall_deadline := Time.get_ticks_msec() + int(at / minf(scale, 1.0) * 1000.0) + 3000
+	while (cue.is_empty() or ref.is_empty()) and Time.get_ticks_msec() < wall_deadline:
 		await get_tree().process_frame
 	Engine.time_scale = _saved_scale
 	# FractalFX holds itself in a static list until its release timer; drop our lambda and let it go before the test ends.
 	fx.on_sfx = Callable()
 	FractalFX._live.erase(fx)
-	if fired.is_empty():
-		return -1
-	assert_eq(str(fired[0][0]), str(phase.get("sfx", "")), "it fires the phase's own key")
-	assert_eq(fired.size(), 1, "exactly once")
-	return int(fired[0][1]) - t0
+	assert_false(ref.is_empty(), "CONTROL: the reference clock reached %.2f s" % at)
+	if cue.is_empty() or ref.is_empty():
+		return NO_CUE
+	assert_eq(str(cue[0][0]), str(phase.get("sfx", "")), "it fires the phase's own key")
+	assert_eq(cue.size(), 1, "exactly once")
+	return int(cue[0][1]) - int(ref[0])
 
 
 func test_every_sfx_a_phase_names_is_a_cue_the_game_can_play() -> void:
@@ -86,16 +97,15 @@ func test_every_sfx_a_phase_names_is_a_cue_the_game_can_play() -> void:
 func test_a_phase_cue_lands_on_its_beat_at_1x_and_at_4x() -> void:
 	var phase := {"at": AT, "kind": "cue", "sfx": "phase_probe"}
 	for scale in [0.25, 1.0]:
-		var ms: int = await _fire_ms(scale, phase)
-		assert_gt(ms, -1, "the cue fired at engine %.2f" % scale)
-		var want: float = AT / float(scale) * 1000.0
-		assert_almost_eq(float(ms), want, 150.0, "at engine %.2f it waits for its phase: %d ms, the beat is %d ms" % [scale, ms, int(want)])
+		var d: int = await _cue_vs_clock(scale, phase)
+		assert_ne(d, NO_CUE, "the cue fired at engine %.2f" % scale)
+		assert_between(d, -1, 1, "at engine %.2f it fires on the frame its phase's battle clock does (%d frames off)" % [scale, d])
 
 
 func test_a_tiered_phase_sounds_only_for_a_caster_who_gets_it() -> void:
 	var phase := {"at": 0.1, "kind": "cue", "sfx": "tier_probe", "min_tier": 2}
-	assert_eq(await _fire_ms(1.0, phase, 1), -1, "a tier-1 caster neither sees nor hears a tier-2 phase")
-	assert_gt(await _fire_ms(1.0, phase, 2), -1, "CONTROL: a tier-2 caster hears it")
+	assert_eq(await _cue_vs_clock(1.0, phase, 1), NO_CUE, "a tier-1 caster neither sees nor hears a tier-2 phase")
+	assert_ne(await _cue_vs_clock(1.0, phase, 2), NO_CUE, "CONTROL: a tier-2 caster hears it")
 
 
 func test_play_phase_sfx_plays_a_known_cue_and_refuses_the_rest() -> void:
@@ -139,10 +149,13 @@ func test_a_finished_battle_takes_its_gate_with_it() -> void:
 	assert_true(EffectSystem.play_phase_sfx(_known_key()), "and with no battle running, a phase cue plays")
 
 
-## CONTROL for the re-assert in _fire_ms (sfx 21734 / main 21735): a leaked battle from an earlier file moving
-## Engine.time_scale mid-wait must not move the measured beat. Planted here: 0.2 s of wall clock into a 1x run.
-func test_a_scale_change_mid_wait_does_not_move_the_beat() -> void:
-	get_tree().create_timer(0.2, true, false, true).timeout.connect(func() -> void: Engine.time_scale = 1.0)
-	var ms: int = await _fire_ms(0.25, {"at": AT, "kind": "cue", "sfx": "planted_probe"})
-	assert_gt(ms, -1, "CONTROL: the cue fired")
-	assert_almost_eq(float(ms), AT / 0.25 * 1000.0, 150.0, "the planted 4x did not pull the 1x beat early (%d ms)" % ms)
+## CONTROL for measuring against the engine's own clock (sfx 21734 / main 21735): an earlier file's leaked battle writes its own
+## Engine.time_scale every frame. Planted here at 4x through a whole 1x run; the beat still lands on its phase.
+func test_a_leaked_battle_writing_the_scale_does_not_move_the_beat() -> void:
+	var leak := ScaleLeak.new()
+	leak.scale = 1.0
+	add_child_autofree(leak)
+	var d: int = await _cue_vs_clock(0.25, {"at": AT, "kind": "cue", "sfx": "planted_probe"})
+	leak.queue_free()
+	assert_ne(d, NO_CUE, "CONTROL: the cue fired")
+	assert_between(d, -1, 1, "a leaked 4x moves wall time, not the beat: %d frames off its clock" % d)
