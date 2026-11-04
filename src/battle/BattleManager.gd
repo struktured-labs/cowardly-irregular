@@ -147,6 +147,9 @@ var previous_round_actions: Dictionary = {}  # {combatant_id: Array[actions]}
 var is_autobattle_enabled: bool = false  # Legacy global flag
 var autobattle_script: Dictionary = {}  # Legacy script
 var escape_allowed: bool = true
+## A grind's safety stop tripped mid-battle: party turns retreat (one escape try per round, else heal the weakest, else Defer).
+var autogrind_retreat: bool = false
+var _retreat_escape_round: int = -1
 
 ## Tick 472: custom win_condition seam for the Spotlight Duels'
 ## non-HP minibosses. Set by GameLoop.start_solo_battle before
@@ -549,6 +552,8 @@ func start_battle(players: Array[Combatant], enemies: Array[Combatant]) -> void:
 	battle_serial += 1
 	current_state = BattleState.STARTING
 	current_round = 0
+	autogrind_retreat = false
+	_retreat_escape_round = -1
 	## A carried-over minimum would read the previous battle's progress as this one's.
 	_lowest_enemy_hp_total = -1
 	_lowest_player_hp_total = -1
@@ -2703,6 +2708,11 @@ func _process_ai_selection(combatant: Combatant) -> void:
 		_end_selection_turn()
 		return
 
+	if is_player_controlled and autogrind_retreat:
+		_queue_action(_retreat_action(combatant, alive_allies))
+		_end_selection_turn()
+		return
+
 	# Check for per-character autobattle script (players only)
 	var char_id = _get_character_id(combatant)
 	if is_player_controlled and AutobattleSystem.is_autobattle_enabled(char_id):
@@ -4346,6 +4356,8 @@ func _execute_next_action() -> void:
 			_execute_item(combatant, action.get("item_id", ""), action.get("targets", []))
 		"defer":
 			_execute_defer(combatant)
+		"retreat":
+			_execute_escape_ability(combatant, JobSystem.get_ability("flee"))
 		"summon":
 			_execute_summon(combatant, action.get("monster_type", "slime"))
 		"advance":
@@ -8268,6 +8280,26 @@ func _execute_meta_ability(caster: Combatant, ability: Dictionary, targets: Arra
 			# shipped.
 			print("  → Unknown meta effect: %s" % meta_effect)
 			push_warning("BattleManager._execute_meta_ability: unknown meta_effect '%s' (ability '%s') applied no mechanical change" % [meta_effect, ability.get("id", "?")])
+
+
+## One escape try per round (Flee's own odds, refused in a boss fight); everyone else heals the weakest ally if they can, else Defers.
+func _retreat_action(combatant: Combatant, alive_allies: Array) -> Dictionary:
+	if escape_allowed and _retreat_escape_round != current_round:
+		_retreat_escape_round = current_round
+		return {"type": "retreat", "combatant": combatant, "speed": _compute_action_speed(combatant, "defer")}
+	var weakest: Combatant = null
+	for a in alive_allies:
+		if a is Combatant and (weakest == null or a.get_hp_percentage() < weakest.get_hp_percentage()):
+			weakest = a
+	if weakest != null and weakest.current_hp < weakest.max_hp:
+		for ability_id in combatant.get_known_abilities():
+			var ab: Dictionary = JobSystem.get_ability(str(ability_id))
+			if str(ab.get("type", "")) == "healing" and str(ab.get("target_type", "")) in ["single_ally", "all_allies"] \
+					and JobSystem.can_use_ability(combatant, str(ability_id)):
+				var t: Array[Combatant] = [weakest]
+				return {"type": "ability", "combatant": combatant, "ability_id": str(ability_id), "targets": t,
+					"speed": _compute_action_speed(combatant, "ability")}
+	return {"type": "defer", "combatant": combatant, "speed": _compute_action_speed(combatant, "defer")}
 
 
 func _execute_escape_ability(caster: Combatant, ability: Dictionary) -> void:

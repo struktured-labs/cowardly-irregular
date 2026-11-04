@@ -104,10 +104,12 @@ func test_the_strip_speaks_one_family_at_a_time() -> void:
 
 
 func test_each_family_names_its_own_buttons() -> void:
+	## The north face (Ⓧ/Ⓨ/△) left this list when it stopped meaning Resume: it is named only on a cell where it acts
+	## (test_b_never_deletes_in_the_console_regression pins that per family).
 	var expected := {
-		"nintendo": ["Ⓧ", "Ⓨ", "Plus", "L/R"],
-		"xbox": ["Ⓨ", "Ⓧ", "Start", "LB/RB"],
-		"playstation": ["△", "□", "Options", "L1/R1"],
+		"nintendo": ["Ⓨ", "Plus", "L/R"],
+		"xbox": ["Ⓧ", "Start", "LB/RB"],
+		"playstation": ["□", "Options", "L1/R1"],
 	}
 	for family in expected.keys():
 		var strip: String = _ui._hint_strip_text(PADS[family])
