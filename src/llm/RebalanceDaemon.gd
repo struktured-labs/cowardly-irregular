@@ -247,7 +247,7 @@ static func outcome_line(trigger: String, status: String, proposal: Dictionary =
 		"failed_unavailable":
 			return "[REBALANCE] %s produced no proposal — no LLM backend reachable" % trigger
 		"failed_fallback":
-			return "[REBALANCE] %s produced no proposal — the model's reply was not usable" % trigger
+			return "[REBALANCE] %s produced no proposal — %s" % [trigger, fallback_cause(str(proposal.get("fail_reason", "")))]
 		"failed_bad_index":
 			return "[REBALANCE] produced no proposal — index %d is outside pending[%d]" % [
 				int(proposal.get("idx", -1)), int(proposal.get("pending", 0))]
@@ -258,6 +258,18 @@ static func outcome_line(trigger: String, status: String, proposal: Dictionary =
 				trigger, str(proposal.get("verdict", "?")),
 				float(proposal.get("confidence", 0.0)) * 100.0, n_deltas]
 	return ""
+
+
+## Why a proposal fell back; his .760 log blamed "the model's reply" for a request a scene change had cancelled.
+static func fallback_cause(reason: String) -> String:
+	match reason:
+		"request failed or cancelled":
+			return "the request was cancelled or failed before the model answered (a scene change cancels it)"
+		"no ready backend", "backend cannot produce JSON":
+			return "no backend could answer (%s)" % reason
+		"deltas not a list":
+			return "the model's list of changes was missing or not a list"
+	return "the model's reply was not usable"
 
 
 ## Returns true on success (proposal updated with deltas), false if
@@ -288,9 +300,11 @@ func request_llm_proposal(proposal_idx: int, recent_events: Array = []) -> bool:
 		print(outcome_line(str(trigger), str(proposal["status"]), proposal))
 		return false
 	var fallback: Variant = null
-	var result: Variant = await svc.complete_json(prompt, REBALANCE_SCHEMA, fallback)
+	var report: Dictionary = {}
+	var result: Variant = await svc.complete_json(prompt, REBALANCE_SCHEMA, fallback, {"report": report})
 	if not (result is Dictionary):
 		proposal["status"] = "failed_fallback"
+		proposal["fail_reason"] = str(report.get("reason", ""))
 		print(outcome_line(str(trigger), str(proposal["status"]), proposal))
 		return false
 	var r: Dictionary = result as Dictionary
@@ -298,6 +312,7 @@ func request_llm_proposal(proposal_idx: int, recent_events: Array = []) -> bool:
 	var deltas: Variant = r.get("deltas", [] if str(r.get("verdict", "")) == "no_change" else null)
 	if not (deltas is Array):
 		proposal["status"] = "failed_fallback"
+		proposal["fail_reason"] = "deltas not a list"
 		print(outcome_line(str(trigger), str(proposal["status"]), proposal))
 		return false
 	proposal["verdict"]    = str(r.get("verdict", "no_change"))
