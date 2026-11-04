@@ -3031,6 +3031,15 @@ func signature_sequence(caster: Combatant, ability_id: String) -> String:
 	return seq_id if not FractalFX.load_sequence(seq_id).is_empty() else ""
 
 
+## A tier-3 spell a PARTY member casts takes the screen like a boss signature (struktured batch 2): its vfx "glory" sequence.
+func glory_sequence(caster: Combatant, ability: Dictionary) -> String:
+	if caster == null or not is_instance_valid(caster) or not BattleManager.player_party.has(caster):
+		return ""
+	var vfx = ability.get("vfx", {})
+	var seq_id := str(vfx.get("glory", "")) if vfx is Dictionary else ""
+	return seq_id if seq_id != "" and not FractalFX.load_sequence(seq_id).is_empty() else ""
+
+
 ## The card, the bark and the push, then the sequence. Damage numbers wait for its impact like Fire's.
 func _play_signature(caster: Combatant, caster_sprite: Node2D, animator: BattleAnimatorClass, ability: Dictionary, targets: Array, seq_id: String) -> void:
 	_flush_full_render_damage()
@@ -3041,14 +3050,18 @@ func _play_signature(caster: Combatant, caster_sprite: Node2D, animator: BattleA
 	if entry is Dictionary and entry.get("fx_signature_card") is Dictionary:
 		card = entry["fx_signature_card"]
 	var monster_id := str(caster.get_meta("monster_type", ""))
+	var is_boss := monster_id != ""
+	# A party glory spell is shown once per SPELL per battle at 1x; a boss's once per boss.
+	var shown_key := monster_id if is_boss else "glory:" + str(ability.get("id", seq_id))
 	var quiet: bool = not signature_sound_allowed()
 	# He plays at 4x (cowir-main 2026-11-01): a boss's FIRST signature each battle is shown at 1x pacing, later ones compress.
 	var slowed := false
 	var restore_to := _hitlag_base_scale
-	if not quiet and not _signatures_shown.has(monster_id) and restore_to > BATTLE_SPEEDS[0]:
+	var picked_at_slow := _battle_speed_index
+	if not quiet and not _signatures_shown.has(shown_key) and restore_to > BATTLE_SPEEDS[0]:
 		_set_battle_time_scale(BATTLE_SPEEDS[0])
 		slowed = true
-	_signatures_shown[monster_id] = true
+	_signatures_shown[shown_key] = true
 	var windup := SIGNATURE_WINDUP
 	var bark := str(card.get("bark", ""))
 	if bark != "" and not quiet:
@@ -3056,7 +3069,7 @@ func _play_signature(caster: Combatant, caster_sprite: Node2D, animator: BattleA
 		windup = maxf(windup, sec * Engine.time_scale)
 	var seq_total := sequence_total(seq_id)
 	BattleManager.presentation_hold = maxf(BattleManager.presentation_hold, windup + seq_total + 0.2)
-	if not quiet:
+	if not quiet and is_boss:
 		SoundManager.play_flourish("boss_signature_card")
 	BattleManager.presentation_hold += SIGNATURE_HITSTOP
 	_show_signature_card(card, ability, windup)
@@ -3085,8 +3098,8 @@ func _play_signature(caster: Combatant, caster_sprite: Node2D, animator: BattleA
 	if not is_instance_valid(self):
 		return
 	_signature_stage(false, Color.TRANSPARENT)
-	# A speed the player picked during the beat stands; only an untouched 1x is put back.
-	if slowed and is_equal_approx(_hitlag_base_scale, BATTLE_SPEEDS[0]):
+	# A speed the player picked during the beat stands (1x included); only an untouched beat is put back.
+	if slowed and _battle_speed_index == picked_at_slow:
 		_set_battle_time_scale(restore_to)
 
 
@@ -4778,6 +4791,8 @@ func _on_action_executing(combatant: Combatant, action: Dictionary) -> void:
 			SoundManager.play_ability(ability_id)
 
 			var sig_seq := signature_sequence(combatant, ability_id)
+			if sig_seq == "":
+				sig_seq = glory_sequence(combatant, ability)
 			if sig_seq != "":
 				_play_signature(combatant, attacker_sprite, animator, ability, targets, sig_seq)
 			# Physical abilities move to target

@@ -361,8 +361,11 @@ func _setup_decorations() -> void:
 
 
 func _create_counter_dressing() -> void:
-	# Counter trim sprite — a 3-tile wide polished top with type-specific inlay
+	# Counter trim sprite — a 3-tile wide polished top with type-specific inlay; a drawn counter carries its own
+	if InteriorArt.path("counter", art_room(), _art_village()) != "":
+		return
 	var trim = Sprite2D.new()
+	trim.name = "CounterTrim"
 	var img = Image.create(TILE_SIZE * 3, 10, false, Image.FORMAT_RGBA8)
 	var top_color = _pal_counter.lightened(0.25)
 	var inlay = _pal_accent
@@ -379,7 +382,7 @@ func _create_counter_dressing() -> void:
 				img.set_pixel(x, y, c)
 
 	trim.texture = ImageTexture.create_from_image(img)
-	trim.position = Vector2(5.5 * TILE_SIZE, 2.8 * TILE_SIZE)
+	trim.position = Vector2(8.5 * TILE_SIZE, 2.8 * TILE_SIZE)  # centred on SHOP_LAYOUT's counter, cols 7-9
 	decorations.add_child(trim)
 
 
@@ -608,8 +611,8 @@ func _draw_weapon_rack_row(img: Image) -> void:
 # ---------------------------------------------------------------------------
 
 func _decorate_item_shop() -> void:
-	# Barrel cluster at grid x=13..14, y=8..9
-	_create_barrel_cluster(Vector2(13.5 * TILE_SIZE, 8 * TILE_SIZE))
+	# Barrel cluster at grid x=13..14, y=8..9 (centred, so y=9 keeps it off the right shelf block's rows 6-7)
+	_create_barrel_cluster(Vector2(13.5 * TILE_SIZE, 9 * TILE_SIZE))
 
 	# Herb window box at x=1, y=1 (inside window on west wall)
 	_create_herb_box(Vector2(1.2 * TILE_SIZE, 1.0 * TILE_SIZE))
@@ -621,6 +624,7 @@ func _decorate_item_shop() -> void:
 
 func _create_barrel_cluster(pos: Vector2) -> void:
 	var node = Sprite2D.new()
+	node.name = "BarrelCluster"
 	var img = Image.create(TILE_SIZE * 2, TILE_SIZE * 2, false, Image.FORMAT_RGBA8)
 	img.fill(Color.TRANSPARENT)
 
@@ -1059,8 +1063,8 @@ func _decorate_blacksmith_shop() -> void:
 	# Animated forge with glowing embers
 	_setup_forge_anim()
 
-	# Anvil at x=2, y=7
-	_create_anvil(Vector2(2 * TILE_SIZE, 7 * TILE_SIZE))
+	# Anvil on free floor below the right shelf block, clear of Sir Corvath (3,8), Jend (6,9) and the door path
+	_create_anvil(Vector2(11 * TILE_SIZE, 9 * TILE_SIZE))
 
 	# Weapon wall rack on east side; a drawn shelf IS the rack, and the painted one would cover it
 	if InteriorArt.path("shelf", art_room(), _art_village()) == "":
