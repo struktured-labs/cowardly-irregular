@@ -3110,22 +3110,9 @@ func _play_signature(caster: Combatant, caster_sprite: Node2D, animator: BattleA
 		_set_battle_time_scale(restore_to)
 
 
-static var _summon_art_cache: Dictionary = {}
-
-
-## sprite_manifest.json summon_art: {"figure": path, "circle": path} for a summon ability, {} for anything else.
+## A summon ability's art (SummonArt reads sprite_manifest.json's summon_art), {} for anything else.
 static func summon_art_for(ability_id: String) -> Dictionary:
-	if _summon_art_cache.is_empty():
-		var raw = JSON.parse_string(FileAccess.get_file_as_string("res://data/sprite_manifest.json"))
-		var section = raw.get("summon_art", {}) if raw is Dictionary else {}
-		_summon_art_cache = section if section is Dictionary else {}
-		if _summon_art_cache.is_empty():
-			_summon_art_cache = {"_none": true}
-	var entry = _summon_art_cache.get(ability_id, null)
-	if ability_id == "" or ability_id == "circle" or not (entry is Dictionary) or str(entry.get("path", "")) == "":
-		return {}
-	var circle = _summon_art_cache.get("circle", {})
-	return {"figure": str(entry["path"]), "circle": str(circle.get("path", "")) if circle is Dictionary else ""}
+	return SummonArt.for_ability(ability_id)
 
 
 ## struktured 2026-11-01 "ridiculous summons": the circle opens centre stage and the figure rises out of it over `rise`.
