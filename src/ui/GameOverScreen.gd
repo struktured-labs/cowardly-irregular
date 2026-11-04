@@ -64,6 +64,8 @@ var _container: Control
 var _title_label: Label
 var _subtitle_label: Label
 var _retry_label: Label
+## What Retry re-fights, shown on its row ("vs Ice Wolf"); empty keeps the plain "Retry".
+var retry_against: String = ""
 var _continue_label: Label
 var _selected_index: int = 0
 var _active: bool = false
@@ -184,13 +186,14 @@ func _apply_world_flavor() -> void:
 
 
 func _update_selection() -> void:
+	var retry: String = "Retry" if retry_against == "" else "Retry: vs %s" % retry_against
 	if _selected_index == 0:
-		_retry_label.text = "> Retry"
+		_retry_label.text = "> " + retry
 		_retry_label.add_theme_color_override("font_color", Color(0.9, 0.85, 0.7))
 		_continue_label.text = "  Continue"
 		_continue_label.add_theme_color_override("font_color", Color(0.5, 0.5, 0.45))
 	else:
-		_retry_label.text = "  Retry"
+		_retry_label.text = "  " + retry
 		_retry_label.add_theme_color_override("font_color", Color(0.5, 0.5, 0.45))
 		_continue_label.text = "> Continue"
 		_continue_label.add_theme_color_override("font_color", Color(0.9, 0.85, 0.7))

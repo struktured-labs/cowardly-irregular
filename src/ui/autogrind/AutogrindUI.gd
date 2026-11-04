@@ -208,6 +208,11 @@ var _custom_presets: Array = []  # Array of {name, rules, ludicrous, permadeath,
 ## UI nodes
 var _grid_container: Control
 var _cursor: Control
+## The pad's delete is the autobattle editor's own index (one muscle memory); B never deletes here (cowir-main 21420/21426).
+const DELETE_BUTTON := JOY_BUTTON_Y
+## One level of undo: the whole rule list and cursor as they were before the last delete (cowir-main 21422).
+var _undo_snapshot: Dictionary = {}
+var _footer_label: Label = null
 var _grid_scroll: float = 0.0
 var _scrolling: bool = false
 var _status_panel: Control
@@ -715,6 +720,7 @@ func _create_party_status_row(member: Combatant, width: float) -> Control:
 func _build_footer(vp_size: Vector2) -> void:
 	"""Build footer with controls help, ludicrous speed toggle, and permadeath staking toggle"""
 	var footer = Label.new()
+	_footer_label = footer
 	footer.text = _hint_strip_text()
 	footer.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	footer.add_theme_color_override("font_color", DISABLED_COLOR)
@@ -1323,6 +1329,8 @@ func _scroll_cursor_into_view() -> bool:
 
 func _update_cursor() -> void:
 	"""Update cursor visual"""
+	if _footer_label != null and is_instance_valid(_footer_label):
+		_footer_label.text = _hint_strip_text()
 	if _cursor == null or _grid_container == null:
 		return
 	# A rebuild re-enters here with the scroll already satisfied, so this recurses once at most.
@@ -1515,6 +1523,13 @@ func _input(event: InputEvent) -> void:
 	# rows. Measured 2026-09-17 — rules=0: dpad 1 stick 1 (the clamp `min(rules.size() + 1, …)`
 	# bounds BOTH routes at row 1 and hides it); rules=12: dpad 1 stick 5.
 	# Read AFTER the options-ring return above, which owns its own d-pad.
+	## Above every action arm: ui_cancel is plain Z and an action match tolerates extra modifiers, so Ctrl+Z read as Cancel and closed the screen (cowir-controller 21436).
+	if event is InputEventKey and event.pressed and not event.is_echo() and event.keycode == KEY_Z and event.ctrl_pressed:
+		_undo_delete()
+		_update_cursor()
+		get_viewport().set_input_as_handled()
+		return
+
 	var nav: String = MenuNav.step(event)
 
 	# Navigation
@@ -1577,9 +1592,21 @@ func _input(event: InputEvent) -> void:
 		_toggle_grinding()
 		get_viewport().set_input_as_handled()
 
-	elif event is InputEventJoypadButton and event.pressed and event.button_index == JOY_BUTTON_Y:
-		if _request_resume():
-			get_viewport().set_input_as_handled()
+	elif event is InputEventJoypadButton and event.pressed and event.button_index == DELETE_BUTTON:
+		_press_delete_button()
+		get_viewport().set_input_as_handled()
+
+	elif event is InputEventKey and event.pressed and not event.is_echo() and event.keycode == KEY_C and not event.ctrl_pressed and not event.shift_pressed:
+		if _cell_type_at_cursor() == "condition":
+			_cycle_condition_operator()
+			_update_cursor()
+		get_viewport().set_input_as_handled()
+
+	elif event is InputEventKey and event.pressed and not event.is_echo() and event.keycode in [KEY_DELETE, KEY_BACKSPACE]:
+		if _on_rule_cell():
+			_delete_current_cell()
+			_update_cursor()
+		get_viewport().set_input_as_handled()
 
 	elif event is InputEventJoypadButton and event.pressed and event.button_index == JOY_BUTTON_X:
 		_toggle_ludicrous_speed()
@@ -1712,6 +1739,7 @@ func _options_ring_spec() -> Dictionary:
 			{"id": "preset_hardcore", "label": "Preset: Hardcore        (3)"},
 			{"id": "save_preset", "label": "Save as Preset          (S)"},
 			{"id": "delete_preset", "label": "Delete Last Preset      (D)"},
+			{"id": "resume", "label": "Resume Saved Grind      (R)"},
 			{"id": "custom_1", "label": "Custom Slot 1           (4)"},
 			{"id": "custom_2", "label": "Custom Slot 2           (5)"},
 			{"id": "custom_3", "label": "Custom Slot 3           (6)"},
@@ -1760,6 +1788,8 @@ func _commit_autogrind_option(chosen_id: String) -> void:
 			_save_current_as_preset()
 		"delete_preset":
 			_delete_last_custom_preset()
+		"resume":
+			_request_resume()
 		"custom_1":
 			_apply_custom_preset(0)
 		"custom_2":
@@ -1786,13 +1816,17 @@ func _hint_strip_text(device_name: String = "") -> String:
 	## Keyboard half is the KEY_PLUS arm, NOT ui_menu's own Enter/Escape -- ui_accept and ui_cancel
 	## consume both earlier in the same elif chain, so naming them would name keys that edit a cell.
 	var start: String = _pad_or_key(_pad_name_for_action("ui_menu", device_name), "+")
-	var resume: String = _pad_or_key(InputProfileManager.button_name_for_index(JOY_BUTTON_Y, device_name), "R")
+	var del_word := _delete_button_word()
+	var del_key: String = {"Delete": "Del", "Operator": "C"}.get(del_word, "Ctrl+Z")
+	var del: String = "" if del_word == "" else "%s %s   " % [_pad_or_key(InputProfileManager.button_name_for_index(DELETE_BUTTON, device_name), del_key), del_word]
 	var ludi: String = _pad_or_key(InputProfileManager.button_name_for_index(JOY_BUTTON_X, device_name), "H")
 	var l_sh: String = InputProfileManager.button_name_for_index(JOY_BUTTON_LEFT_SHOULDER, device_name)
 	var r_sh: String = InputProfileManager.button_name_for_index(JOY_BUTTON_RIGHT_SHOULDER, device_name)
 	var opts: String = "[O]" if l_sh == "" else "%s/%s or [O]" % [l_sh, r_sh]
-	return "%s Edit   %s Close   %s Start/Stop   %s Resume   %s Ludicrous   %s OPTIONS: Permadeath - Presets - Files" % [
-		confirm, cancel, start, resume, ludi, opts,
+	## With a pad, "[R]" reads as the R shoulder, which opens the options ring; a pad reaches Resume through that ring.
+	var resume: String = "[R] Resume   " if l_sh == "" else ""
+	return "%s Edit   %s Close   %s%s Start/Stop   %s%s Ludicrous   %s OPTIONS: Permadeath - Presets - Resume - Files" % [
+		confirm, cancel, del, start, resume, ludi, opts,
 	]
 
 
@@ -1825,7 +1859,8 @@ func _edit_current_cell() -> void:
 
 	match cell_type:
 		"condition":
-			_cycle_condition_type()
+			_open_condition_picker()
+			return
 		"action":
 			_cycle_action_type()
 		"empty_condition":
@@ -1843,15 +1878,86 @@ func _edit_current_cell() -> void:
 
 
 func _handle_cancel() -> void:
-	"""Handle cancel - delete cell or close"""
-	var cell = _get_cell_at_cursor()
-	if cell and cell.has_meta("cell_type"):
-		var cell_type = cell.get_meta("cell_type")
-		if cell_type == "condition" or cell_type == "action":
-			_delete_current_cell()
-			return
-
+	"""Cancel always backs out. It used to DELETE on a rule cell, which ate his rules while the strip said Close (2026-11-01)."""
 	_close_ui()
+
+
+## True when the cursor stands on a condition or action cell, the only place the delete button deletes.
+func _on_rule_cell() -> bool:
+	var cell = _get_cell_at_cursor()
+	return cell != null and cell.has_meta("cell_type") and str(cell.get_meta("cell_type")) in ["condition", "action"]
+
+
+## The north button's word for this cursor, the autobattle editor's verbs (cowir-main 21462); "" where it does nothing.
+func _delete_button_word() -> String:
+	match _cell_type_at_cursor():
+		"condition":
+			return "Operator" if _condition_has_operator() else ""
+		"action":
+			return "Delete"
+	return "Undo" if _undo_is_live() else ""
+
+
+func _press_delete_button() -> void:
+	match _cell_type_at_cursor():
+		"condition":
+			_cycle_condition_operator()
+		"action":
+			_delete_current_cell()
+		_:
+			if _undo_is_live():
+				_undo_delete()
+	_update_cursor()
+
+
+func _cell_type_at_cursor() -> String:
+	var cell = _get_cell_at_cursor()
+	return str(cell.get_meta("cell_type")) if cell != null and cell.has_meta("cell_type") else ""
+
+
+func _condition_at_cursor() -> Dictionary:
+	if cursor_row >= rules.size():
+		return {}
+	var conditions: Array = rules[cursor_row].get("conditions", [])
+	return conditions[cursor_col] if cursor_col < conditions.size() else {}
+
+
+func _condition_has_operator() -> bool:
+	var cond := _condition_at_cursor()
+	for t in CONDITION_TYPES:
+		if t["id"] == cond.get("type", ""):
+			return bool(t["has_value"])
+	return false
+
+
+func _cycle_condition_operator() -> void:
+	if not _condition_has_operator():
+		SoundManager.play_ui("menu_error")
+		return
+	var cond := _condition_at_cursor()
+	var ops: Array = AutogrindSystem.OPERATORS.keys()
+	cond["op"] = ops[(ops.find(str(cond.get("op", "<"))) + 1) % ops.size()]
+	_refresh_grid()
+	SoundManager.play_ui("menu_select")
+
+
+## An undo is only the last delete's while the rules still read as that delete left them; a preset load or edit since retires it.
+func _undo_is_live() -> bool:
+	return not _undo_snapshot.is_empty() and rules == _undo_snapshot.get("after", null)
+
+
+func _undo_delete() -> void:
+	if not _undo_is_live():
+		_undo_snapshot = {}
+		return
+	rules = (_undo_snapshot["rules"] as Array).duplicate(true)
+	cursor_row = int(_undo_snapshot["row"])
+	cursor_col = int(_undo_snapshot["col"])
+	var what: String = str(_undo_snapshot["what"])
+	_undo_snapshot = {}
+	_refresh_grid()
+	_log_message("[color=%s]Restored the %s.[/color]" % [AccessibilityPalette.bonus_bbcode(), what])
+	SoundManager.play_ui("menu_select")
 
 
 func _cycle_condition_type() -> void:
@@ -1885,21 +1991,66 @@ func _cycle_condition_type() -> void:
 
 		# Cycle to next
 		idx = (idx + 1) % CONDITION_TYPES.size()
-		var new_type = CONDITION_TYPES[idx]
-
-		cond["type"] = new_type["id"]
-		if new_type["has_value"]:
-			## From AutogrindSystem, which owns the grammar. The per-entry default_op/default_value
-			## that used to sit in CONDITION_TYPES were correct and unreachable from the grid
-			## editor, so the editor grew its own and got six of nine wrong.
-			var _d: Dictionary = AutogrindSystem.condition_defaults_for(str(new_type.get("id", "")))
-			cond["op"] = _d.get("op", "<")
-			cond["value"] = _d.get("value", 0)
-		else:
-			cond.erase("op")
-			cond.erase("value")
-
+		_set_condition_type(cond, CONDITION_TYPES[idx])
 		_refresh_grid()
+
+
+func _set_condition_type(cond: Dictionary, new_type: Dictionary) -> void:
+	cond["type"] = new_type["id"]
+	if new_type["has_value"]:
+		## From AutogrindSystem, which owns the grammar; a private default table here got six of nine wrong.
+		var _d: Dictionary = AutogrindSystem.condition_defaults_for(str(new_type.get("id", "")))
+		cond["op"] = _d.get("op", "<")
+		cond["value"] = _d.get("value", 0)
+	else:
+		cond.erase("op")
+		cond.erase("value")
+
+
+const DELETE_CONDITION_ID := "delete_condition"
+
+
+## A on a condition (cowir-main 21465): the type list with "Delete condition" LAST, so opening it never lands on Delete.
+func _condition_picker_spec() -> Dictionary:
+	var cond := _condition_at_cursor()
+	var options: Array = []
+	var selected := 0
+	for i in CONDITION_TYPES.size():
+		options.append({"id": CONDITION_TYPES[i]["id"], "label": CONDITION_TYPES[i]["label"]})
+		if CONDITION_TYPES[i]["id"] == cond.get("type", ""):
+			selected = i
+	var only_one: bool = cursor_row < rules.size() and (rules[cursor_row].get("conditions", []) as Array).size() == 1
+	options.append({"id": DELETE_CONDITION_ID, "label": "Delete condition (and its rule)" if only_one else "Delete condition"})
+	return {"title": "Condition Type", "kind": "autogrind_condition", "selected": selected, "options": options}
+
+
+func _open_condition_picker() -> void:
+	if (_options_ring and is_instance_valid(_options_ring)) or _condition_at_cursor().is_empty():
+		return
+	var ring: Control = load("res://src/ui/RadialPicker.gd").new()
+	ring.setup(_condition_picker_spec())
+	ring.set_anchors_preset(Control.PRESET_FULL_RECT)
+	ring.option_chosen.connect(func(chosen_id: String, _spec: Dictionary):
+		_close_options_ring()
+		_commit_condition_choice(chosen_id))
+	ring.cancelled.connect(_close_options_ring)
+	_options_ring = ring
+	add_child(ring)
+	SoundManager.play_ui("menu_open")
+
+
+func _commit_condition_choice(chosen_id: String) -> void:
+	if chosen_id == DELETE_CONDITION_ID:
+		_delete_current_cell()
+		_update_cursor()
+		return
+	var cond := _condition_at_cursor()
+	for t in CONDITION_TYPES:
+		if t["id"] == chosen_id and not cond.is_empty():
+			_set_condition_type(cond, t)
+			_refresh_grid()
+			_update_cursor()
+			return
 
 
 ## validate_rule REFUSES an action missing its required fields, and _cycle_action_type only ever set
@@ -2589,6 +2740,18 @@ func _add_rule() -> void:
 
 func _delete_current_cell() -> void:
 	"""Delete current condition or action"""
+	var before: Array = rules.duplicate(true)
+	var at_row := cursor_row
+	var at_col := cursor_col
+	_delete_cell_now()
+	if rules != before:
+		var what := "rule" if rules.size() < before.size() else "condition or action"
+		_undo_snapshot = {"rules": before, "after": rules.duplicate(true), "row": at_row, "col": at_col, "what": what}
+		var undo_btn: String = _pad_or_key(InputProfileManager.button_name_for_index(DELETE_BUTTON), "Ctrl+Z")
+		_log_message("[color=yellow]Deleted the %s — %s to undo.[/color]" % [what, undo_btn])
+
+
+func _delete_cell_now() -> void:
 	if cursor_row >= rules.size():
 		return
 
@@ -3622,6 +3785,9 @@ func set_grinding(active: bool) -> void:
 	if not active:
 		_hide_monitor()
 		visible = true  # Show config UI again when grinding stops
+		## The console comes back on "+ Add Rule", where B closes it. It came back on rule 1's first cell, where B DELETES it: his "B doesn't close" (2026-11-01).
+		cursor_row = rules.size()
+		cursor_col = 0
 	_build_ui()
 
 
