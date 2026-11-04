@@ -57,6 +57,7 @@ const NAME_LABEL_GAP: float = 6.0
 const NAME_LABEL_WIDTH: float = 200.0
 const NAME_LABEL_PX := 16  # on-screen size for every monster, whatever its sprite scale
 const ENEMY_HP_BAR_SIZE := Vector2(60, 5)  # on-screen, whatever the sprite scale
+const SUMMON_RISE := 0.9  # battle seconds for a summon to rise out of its circle before it acts
 const SIGNATURE_WINDUP := 0.55  # battle seconds of title card and camera push before a boss's signature sequence
 const SIGNATURE_PUSH := 0.12  # camera push-in for a signature (a crit's is 0.04)
 const SIGNATURE_HITSTOP := 0.14  # seconds of hit-stop on a signature's impact
@@ -3067,12 +3068,17 @@ func _play_signature(caster: Combatant, caster_sprite: Node2D, animator: BattleA
 	if bark != "" and not quiet:
 		var sec: float = SoundManager.play_voiced_line(caster.combatant_name, bark, self)
 		windup = maxf(windup, sec * Engine.time_scale)
+	var summon_art := summon_art_for(str(ability.get("id", "")))
+	if not summon_art.is_empty():
+		windup = maxf(windup, SUMMON_RISE)
 	var seq_total := sequence_total(seq_id)
 	BattleManager.presentation_hold = maxf(BattleManager.presentation_hold, windup + seq_total + 0.2)
 	if not quiet and is_boss:
 		SoundManager.play_flourish("boss_signature_card")
 	BattleManager.presentation_hold += SIGNATURE_HITSTOP
 	_show_signature_card(card, ability, windup)
+	if not summon_art.is_empty():
+		_show_summon_splash(summon_art, windup)
 	# The stage is the boss's for the whole beat: dimmed, the backdrop tinted to its palette (cowir-main 2026-11-04).
 	_signature_stage(true, signature_tint(seq_id))
 	if caster_sprite != null and is_instance_valid(caster_sprite) and BattleJuice.camera_rig != null:
@@ -3098,9 +3104,77 @@ func _play_signature(caster: Combatant, caster_sprite: Node2D, animator: BattleA
 	if not is_instance_valid(self):
 		return
 	_signature_stage(false, Color.TRANSPARENT)
+	_hide_summon_splash()
 	# A speed the player picked during the beat stands (1x included); only an untouched beat is put back.
 	if slowed and _battle_speed_index == picked_at_slow:
 		_set_battle_time_scale(restore_to)
+
+
+static var _summon_art_cache: Dictionary = {}
+
+
+## sprite_manifest.json summon_art: {"figure": path, "circle": path} for a summon ability, {} for anything else.
+static func summon_art_for(ability_id: String) -> Dictionary:
+	if _summon_art_cache.is_empty():
+		var raw = JSON.parse_string(FileAccess.get_file_as_string("res://data/sprite_manifest.json"))
+		var section = raw.get("summon_art", {}) if raw is Dictionary else {}
+		_summon_art_cache = section if section is Dictionary else {}
+		if _summon_art_cache.is_empty():
+			_summon_art_cache = {"_none": true}
+	var entry = _summon_art_cache.get(ability_id, null)
+	if ability_id == "" or ability_id == "circle" or not (entry is Dictionary) or str(entry.get("path", "")) == "":
+		return {}
+	var circle = _summon_art_cache.get("circle", {})
+	return {"figure": str(entry["path"]), "circle": str(circle.get("path", "")) if circle is Dictionary else ""}
+
+
+## struktured 2026-11-01 "ridiculous summons": the circle opens centre stage and the figure rises out of it over `rise`.
+func _show_summon_splash(art: Dictionary, rise: float) -> void:
+	var old := get_node_or_null("SummonSplash")
+	if old:
+		old.queue_free()
+	var root := Node2D.new()
+	root.name = "SummonSplash"
+	root.z_index = 2
+	add_child(root)
+	var vp := get_viewport_rect().size
+	var base := Vector2(vp.x * 0.5, vp.y * 0.76)
+	var circle_tex = load(str(art.get("circle", ""))) if str(art.get("circle", "")) != "" else null
+	if circle_tex is Texture2D:
+		var c := Sprite2D.new()
+		c.name = "Circle"
+		c.texture = circle_tex
+		c.position = base
+		c.scale = Vector2.ZERO
+		root.add_child(c)
+		var cs := vp.x * 0.42 / float((circle_tex as Texture2D).get_width())
+		create_tween().tween_property(c, "scale", Vector2(cs, cs), rise * 0.4).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	var fig_tex = load(str(art.get("figure", "")))
+	if not (fig_tex is Texture2D):
+		return
+	var tex := fig_tex as Texture2D
+	var f := Sprite2D.new()
+	f.name = "Figure"
+	f.texture = tex
+	f.offset = Vector2(0, -tex.get_height() * 0.5)
+	var fs := minf(vp.y * 0.6 / float(tex.get_height()), vp.x * 0.6 / float(tex.get_width()))
+	f.scale = Vector2(fs, fs)
+	f.position = base + Vector2(0, vp.y * 0.3)
+	f.modulate.a = 0.0
+	root.add_child(f)
+	var tw := create_tween().set_parallel(true)
+	tw.tween_property(f, "position", base, rise * 0.85).set_delay(rise * 0.15).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tw.tween_property(f, "modulate:a", 0.95, rise * 0.5).set_delay(rise * 0.15)
+
+
+func _hide_summon_splash() -> void:
+	var root := get_node_or_null("SummonSplash")
+	if root == null:
+		return
+	root.name = "SummonSplashLeaving"
+	var tw := create_tween()
+	tw.tween_property(root, "modulate:a", 0.0, 0.3)
+	tw.tween_callback(root.queue_free)
 
 
 ## A self-aimed signature (a buff, a summon) still has to land on the PARTY: sig_<id>_wave rolls from the boss to each of them.
