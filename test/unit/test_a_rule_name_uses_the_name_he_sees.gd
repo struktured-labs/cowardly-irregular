@@ -42,3 +42,18 @@ func test_the_party_kit_shows_the_names_too() -> void:
 func test_the_grammar_example_names_no_summon_id() -> void:
 	assert_false(DialoguePrompts.AUTOBATTLE_GRAMMAR_DESCRIPTION.contains("summon_ifrit"),
 		"a worked example is copied by the model; it must not teach an FF-shaped id")
+
+
+## The item twin (2026-11-04): the ITEM IDS block listed hi_potion bare, so a composed rule could be named "Hi-Potion",
+## the FF name the item renames retired. Names are read at runtime, never written here.
+func _item_name(iid: String) -> String:
+	return str(ItemSystem.get_item(iid).get("name", ""))
+
+
+func test_a_renamed_item_shows_its_menu_name_beside_its_id() -> void:
+	assert_ne(_item_name("hi_potion").to_lower().replace(" ", "_"), "hi_potion", "FIXTURE: hi_potion shows another name")
+	var kit_block: String = DialoguePrompts._format_rule_kit({"resolved": true, "job_id": "cleric", "kit": ["cure"],
+		"max_mp": 30, "costs": {"cure": 6}, "items": ["potion", "hi_potion"]})
+	assert_string_contains(kit_block, "hi_potion \"%s\"" % _item_name("hi_potion"),
+		"THE DEFECT: the model saw only the id, so it could name a rule after the retired FF item")
+	assert_false(kit_block.contains("potion \"Potion\""), "an item whose name is just its id gets nothing added")
