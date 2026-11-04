@@ -3,8 +3,8 @@ class_name IronhavenWatchtowerInterior
 
 ## IronhavenWatchtowerInterior - "Drogal's Watchtower" at Ironhaven.
 ## A signaler stationed in a stone tower above the volcanic foothills.
-## He listens for Voltharion (W1 lightning dragon) — she doesn't speak
-## in words, she speaks in current. Sets up the Lightning Dragon Cave
+## He listens for Voltharion (W1 lightning dragon) — he doesn't speak
+## in words, he speaks in current. Sets up the Lightning Dragon Cave
 ## arc with a sense of weather instead of horror.
 
 const TOWER_LAYOUT = [
