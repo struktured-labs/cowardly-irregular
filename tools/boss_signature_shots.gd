@@ -8,11 +8,14 @@ extends SceneTree
 func _init() -> void:
 	var boss_id := "chancellor_mordaine"
 	var speed := 0.375
+	var mode7 := false
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--boss="):
 			boss_id = a.get_slice("=", 1)
 		elif a.begins_with("--speed="):
 			speed = float(a.get_slice("=", 1))
+		elif a == "--mode7":
+			mode7 = true
 	await process_frame
 	await process_frame
 	var gs = root.get_node_or_null("GameState")
@@ -58,10 +61,21 @@ func _init() -> void:
 		print("[BOSSSHOT] FAIL: %s has no fx_signature" % boss_id)
 		quit(1)
 		return
+	# The boss's own battleground, as the real boss branch now sets it (GameLoop.boss_terrain_for).
+	scene.set_terrain(gl.boss_terrain_for([boss_id]))
+	if mode7 and scene.get("_mode7_floor") == null:
+		## Exactly what BattleScene._ready does when _mode7_floor_enabled is true: the spike, for his look only.
+		var floor_node: Node = scene.Mode7FloorClass.new()
+		floor_node.name = "Mode7Floor"
+		scene.add_child(floor_node)
+		scene.move_child(floor_node, 1)
+		scene._mode7_floor = floor_node
 	scene._set_battle_time_scale(speed)
-	# The capture lands mid-selection; the open command menu would sit over the spectacle.
+	# A real signature fires mid-EXECUTION; the menu watchdog stands down outside selection by its own guard.
+	bm.current_state = bm.BattleState.PROCESSING_ACTION
 	if scene._command_menu:
 		scene._command_menu.close_win98_menu()
+	await create_timer(0.6, true, false, true).timeout
 	var ability: Dictionary = root.get_node("JobSystem").get_ability(sig)
 	var targets: Array = []
 	if str(ability.get("target_type", "")) in ["self"]:
@@ -75,13 +89,7 @@ func _init() -> void:
 	print("[BOSSSHOT] %s casts %s (%s) at %d target(s), speed %s" % [boss_id, sig, str(ability.get("name", "")), targets.size(), str(speed)])
 	scene._on_action_executing(boss, {"type": "ability", "ability_id": sig, "targets": targets})
 	var total: float = 0.55 + float(scene.sequence_total("sig_" + boss_id)) + 0.6
-	# The menu watchdog re-opens a closed menu on purpose (so a battle cannot wedge), so hide it every frame instead.
-	var until := Time.get_ticks_msec() + int((total / maxf(Engine.time_scale, 0.01) + 0.8) * 1000.0)
-	while Time.get_ticks_msec() < until:
-		var menu = scene.get("active_win98_menu")
-		if menu != null and is_instance_valid(menu) and menu.has_method("set_chain_visible"):
-			menu.set_chain_visible(false)
-		await process_frame
+	await create_timer(total / maxf(Engine.time_scale, 0.01) + 0.8, true, false, true).timeout
 	print("[BOSSSHOT] done %s" % boss_id)
 	quit(0)
 

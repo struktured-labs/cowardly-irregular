@@ -436,6 +436,11 @@
           "scale": 3.6,
           "palette": "rot"
         }
+      ],
+      "tint": [
+        0.35,
+        0.45,
+        0.1
       ]
     },
     "sig_fire_dragon": {
@@ -528,6 +533,11 @@
           "scale": 4.5,
           "palette": "fire"
         }
+      ],
+      "tint": [
+        0.7,
+        0.2,
+        0.02
       ]
     },
     "sig_ice_dragon": {
@@ -621,7 +631,25 @@
           "kind": "shake",
           "intensity": 9,
           "dur": 0.22
+        },
+        {
+          "at": 0.73,
+          "kind": "ring",
+          "dur": 0.4,
+          "scale": 5.5,
+          "palette": "frost"
+        },
+        {
+          "at": 1.2,
+          "kind": "flash",
+          "dur": 0.2,
+          "size": 9.0
         }
+      ],
+      "tint": [
+        0.25,
+        0.55,
+        0.9
       ]
     },
     "sig_lightning_dragon": {
@@ -693,6 +721,11 @@
           "scale": 3.0,
           "palette": "spark"
         }
+      ],
+      "tint": [
+        0.65,
+        0.75,
+        1.0
       ]
     },
     "sig_shadow_dragon": {
@@ -774,6 +807,11 @@
           "size": 0.9,
           "palette": "void"
         }
+      ],
+      "tint": [
+        0.35,
+        0.05,
+        0.55
       ]
     },
     "sig_chancellor_mordaine": {
@@ -782,25 +820,25 @@
         {
           "at": 0.0,
           "kind": "ring",
-          "origin": "caster",
+          "origin": "target",
           "dur": 0.35,
-          "scale": 2.2,
+          "scale": 3.08,
           "palette": "verdict"
         },
         {
           "at": 0.2,
           "kind": "ring",
-          "origin": "caster",
+          "origin": "target",
           "dur": 0.35,
-          "scale": 3.0,
+          "scale": 4.199999999999999,
           "palette": "verdict"
         },
         {
           "at": 0.4,
           "kind": "ring",
-          "origin": "caster",
+          "origin": "target",
           "dur": 0.35,
-          "scale": 3.8,
+          "scale": 5.319999999999999,
           "palette": "verdict"
         },
         {
@@ -856,6 +894,93 @@
           "dur": 0.3,
           "scale": 4.5,
           "palette": "verdict"
+        },
+        {
+          "at": 0.85,
+          "kind": "emit",
+          "count": 12,
+          "arc": 360,
+          "radius": 150,
+          "life": 0.4,
+          "size": 1.2,
+          "twist": 15,
+          "palette": "verdict"
+        }
+      ],
+      "tint": [
+        0.75,
+        0.55,
+        0.12
+      ]
+    },
+    "sig_cave_rat_king_wave": {
+      "label": "Rat King: the swarm pours across the floor onto each member",
+      "impact": 0.45,
+      "phases": [
+        {
+          "at": 0.0,
+          "kind": "bolt",
+          "dur": 0.45,
+          "arc_height": 20,
+          "size": 1.1,
+          "trail_spacing": 6,
+          "palette": "rot",
+          "trail_palette": "rot"
+        },
+        {
+          "at": 0.45,
+          "kind": "emit",
+          "count": 8,
+          "arc": 360,
+          "radius": 70,
+          "life": 0.3,
+          "size": 1.0,
+          "twist": 20,
+          "palette": "rot",
+          "depth": 1,
+          "decay": 0.6,
+          "time_decay": 0.8
+        },
+        {
+          "at": 0.45,
+          "kind": "ring",
+          "dur": 0.3,
+          "scale": 3.2,
+          "palette": "rot"
+        }
+      ]
+    },
+    "sig_fire_dragon_wave": {
+      "label": "Pyrroth: the inferno breaks over each member",
+      "impact": 0.5,
+      "phases": [
+        {
+          "at": 0.2,
+          "kind": "bolt",
+          "dur": 0.3,
+          "arc_height": 60,
+          "size": 1.4,
+          "trail_spacing": 7,
+          "palette": "flame",
+          "trail_palette": "ember"
+        },
+        {
+          "at": 0.5,
+          "kind": "ring",
+          "dur": 0.32,
+          "scale": 4.0,
+          "palette": "fire"
+        },
+        {
+          "at": 0.5,
+          "kind": "emit",
+          "count": 10,
+          "arc": 360,
+          "radius": 90,
+          "life": 0.32,
+          "size": 1.2,
+          "twist": 18,
+          "palette": "flame"
         }
       ]
     }
