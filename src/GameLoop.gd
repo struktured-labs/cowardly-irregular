@@ -7645,6 +7645,9 @@ func _show_grind_stop_notification(reason: String) -> void:
 	# No-op on headless / unsupported platforms.
 	if DisplayServer.has_method("window_request_attention"):
 		DisplayServer.window_request_attention()
+	## Off the tree (a test's bare GameLoop) there is no viewport to measure and no tree to tween in.
+	if not is_inside_tree():
+		return
 
 	var layer := CanvasLayer.new()
 	layer.layer = 90
