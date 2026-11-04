@@ -1,14 +1,21 @@
 # Store screenshot captions — Cowardly Irregular
 
-**2026-09-29: the ten villages, interiors, cave and `battle` are re-shot at `v3.33.549-alpha`**
-(`dc4284506`), the build the store serves on all three channels. Sandboxed profile, debug overlay
-and tutorial hints suppressed at runtime, nothing persisted, no game file edited. Why, and the
-pixel measurement behind it, is the last section of this file.
+**Current vintage of every shipped frame (2026-11-02, read from git, not remembered):**
 
-⚠️ **Mixed vintage, stated so nobody assumes otherwise.** The Warren floors, Infernal Grotto,
-`field_elite_steampunk`, `grimhollow_spiral` and `battle_storm` are still `.225` captures (each
-matches `capture-history/shots-225/` byte for byte), and `battle_storm` in particular carries the
-caveat below. The two medieval field-elite frames are `.293` (their sections say so).
+| captured at | shots | section |
+|---|---|---|
+| `v3.33.748-alpha` | the six villages · `inn_interior` · `shop_interior` · `tavern_interior` · `whispering_cave` | "re-shot at `v3.33.748-alpha`" |
+| `v3.33.750-alpha` | `battle_storm` · `field_elite_medieval` · `field_elite_prompt_medieval` · `field_elite_steampunk` · `grimhollow_spiral` · `infernal_grotto_f3` · `warren_lever_portals` · `warren_wrap_field` | commit `1df31b2fb` |
+| `v3.33.752-alpha` | `battle` (1.5x speed chip) · `title_screen` | commits `438ff3e68`, `21f990b47` |
+
+Re-derive it rather than trusting this table: `git log -1 --format=%h -- itch-assets/screenshots/<shot>.png`
+names the commit, and that commit's message names the tag it was shot from. Which of them have gone
+stale since: `tools/store_shot_staleness.py --from <capture tag> --to <store tag>` (a candidate list,
+never a verdict; decide in pixels with `--compare`).
+
+This header used to say the set was `.549` with five `.225` frames. It stayed that way through
+three re-shoots because each one added its own section further down and left the header alone.
+None of the six frames it called `.225` still matches `capture-history/shots-225/` (checked with `cmp`).
 
 **2026-10-31: `title_screen` re-shot at `v3.33.752-alpha`.** The `.483` frame below had gone 269
 releases stale on the one string it depicts. `tools/marketing_shots.gd` now sets the label to

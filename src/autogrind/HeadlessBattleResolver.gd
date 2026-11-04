@@ -6,6 +6,12 @@ class_name HeadlessBattleResolver
 
 const MAX_ROUNDS = 50
 const ACTION_SPEEDS = {"attack": 5, "ability": 10, "item": 8, "defend": 0, "defer": 0}
+## Flee's own odds (abilities.json "flee".success_rate), used for a safety retreat in a headless grind.
+const RETREAT_ESCAPE_CHANCE := 0.75
+## Asked each round with the party; a non-empty reason turns it to retreat (struktured 2026-11-01). Unset = never.
+var safety_check: Callable = Callable()
+## Why this battle retreated, or "" if it never had to.
+var retreat_reason: String = ""
 
 ## Twin of BattleManager.PRIORITY_OFFSET — same name, same value, same meaning: SUBTRACTED from a
 ## priority action's speed so it outruns the queue while priority actions still sort against each
@@ -185,7 +191,22 @@ func resolve_battle(player_party: Array, enemy_party: Array) -> Dictionary:
 
 		_tick_round_start()
 
+		if retreat_reason == "" and safety_check.is_valid():
+			retreat_reason = str(safety_check.call(_player_party))
+			if retreat_reason != "":
+				_log("%s — the party falls back" % retreat_reason)
+		if retreat_reason != "" and not _boss_on_field():
+			if randf() < RETREAT_ESCAPE_CHANCE:
+				_log("The party escaped.")
+				if bm:
+					_restore_bm(bm, _bm_player_backup, _bm_enemy_backup, _bm_round_backup)
+				return _build_results(false, "retreat")
+			_log("The party failed to escape.")
+
 		var actions = _selection_phase()
+		## Retreating, the party only Defers (headless models no heal pick); a boss fight is never fled.
+		if retreat_reason != "":
+			actions = actions.map(func(a): return {"type": "defer", "combatant": a.get("combatant"), "speed": 0} if a.get("combatant") in _player_party else a)
 
 		actions.sort_custom(func(a, b): return a.get("speed", 0) < b.get("speed", 0))
 
@@ -2346,6 +2367,16 @@ func _all_dead(party: Array) -> bool:
 		if combatant.is_alive:
 			return false
 	return true
+
+
+func _boss_on_field() -> bool:
+	var es: Node = Engine.get_main_loop().root.get_node_or_null("EncounterSystem") if Engine.get_main_loop() is SceneTree else null
+	for e in _enemy_party:
+		if is_instance_valid(e) and e.is_alive and es != null:
+			var row: Variant = es.monster_database.get(str(e.get_meta("monster_type", "")), null)
+			if row is Dictionary and bool((row as Dictionary).get("boss", false)):
+				return true
+	return false
 
 
 func _build_results(victory: bool, termination_reason: String = "") -> Dictionary:
