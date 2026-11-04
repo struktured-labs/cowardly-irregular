@@ -1358,7 +1358,8 @@
           "dur": 0.3,
           "scale": 2.86,
           "palette": "flame",
-          "palette_t3": "fire"
+          "palette_t3": "fire",
+          "sfx": "beat_fire_open"
         },
         {
           "at": 0.05,
@@ -1375,7 +1376,8 @@
           "at": 0.41,
           "kind": "flash",
           "dur": 0.18,
-          "size": 9.1
+          "size": 9.1,
+          "sfx": "beat_fire_impact"
         },
         {
           "at": 0.41,
@@ -1430,7 +1432,8 @@
           "kind": "shake",
           "intensity": 12,
           "dur": 0.2,
-          "min_tier": 2
+          "min_tier": 2,
+          "sfx": "beat_fire_burst"
         },
         {
           "at": 0.9,
@@ -1438,7 +1441,8 @@
           "dur": 0.35,
           "scale": 7.15,
           "palette": "fire",
-          "min_tier": 3
+          "min_tier": 3,
+          "sfx": "beat_fire_bloom"
         },
         {
           "at": 0.9,
@@ -1467,7 +1471,8 @@
           "at": 1.15,
           "kind": "shake",
           "intensity": 12,
-          "dur": 0.28
+          "dur": 0.28,
+          "sfx": "beat_fire_burst"
         }
       ],
       "tint": [
@@ -1487,7 +1492,8 @@
           "origin": "caster",
           "dur": 0.3,
           "scale": 2.6,
-          "palette": "frost"
+          "palette": "frost",
+          "sfx": "beat_ice_open"
         },
         {
           "at": 0.1,
@@ -1497,13 +1503,15 @@
           "size": 1.69,
           "trail_spacing": 9,
           "palette": "frost",
-          "trail_palette": "frost"
+          "trail_palette": "frost",
+          "sfx": "beat_ice_bolt"
         },
         {
           "at": 0.44,
           "kind": "flash",
           "dur": 0.16,
-          "size": 7.8
+          "size": 7.8,
+          "sfx": "beat_ice_impact"
         },
         {
           "at": 0.44,
@@ -1575,7 +1583,8 @@
           "kind": "flash",
           "dur": 0.2,
           "size": 10.4,
-          "min_tier": 3
+          "min_tier": 3,
+          "sfx": "beat_ice_shatter"
         },
         {
           "at": 1.2,
@@ -1612,7 +1621,8 @@
           "origin": "caster",
           "dur": 0.2,
           "scale": 2.6,
-          "palette": "spark"
+          "palette": "spark",
+          "sfx": "beat_thunder_open"
         },
         {
           "at": 0.05,
@@ -1622,13 +1632,15 @@
           "size": 2.08,
           "trail_spacing": 6,
           "palette": "spark",
-          "trail_palette": "spark"
+          "trail_palette": "spark",
+          "sfx": "beat_thunder_bolt"
         },
         {
           "at": 0.23,
           "kind": "flash",
           "dur": 0.14,
-          "size": 8.45
+          "size": 8.45,
+          "sfx": "beat_thunder_crack"
         },
         {
           "at": 0.23,
@@ -1663,7 +1675,8 @@
           "kind": "flash",
           "dur": 0.12,
           "size": 6.5,
-          "min_tier": 2
+          "min_tier": 2,
+          "sfx": "beat_thunder_crack"
         },
         {
           "at": 0.5,
@@ -1688,7 +1701,8 @@
           "dur": 0.25,
           "scale": 5.85,
           "palette": "spark",
-          "min_tier": 3
+          "min_tier": 3,
+          "sfx": "beat_thunder_ring"
         },
         {
           "at": 0.7,
@@ -1716,7 +1730,8 @@
           "at": 0.95,
           "kind": "flash",
           "dur": 0.14,
-          "size": 7.0
+          "size": 7.0,
+          "sfx": "beat_thunder_crack"
         },
         {
           "at": 0.95,
@@ -1742,7 +1757,8 @@
           "origin": "caster",
           "dur": 0.35,
           "scale": 3.0,
-          "palette": "verdict"
+          "palette": "verdict",
+          "sfx": "beat_void_open"
         },
         {
           "at": 0.1,
@@ -1752,13 +1768,15 @@
           "size": 2.0,
           "trail_spacing": 8,
           "palette": "void",
-          "trail_palette": "void"
+          "trail_palette": "void",
+          "sfx": "beat_void_bolt"
         },
         {
           "at": 0.5,
           "kind": "flash",
           "dur": 0.22,
-          "size": 9.0
+          "size": 9.0,
+          "sfx": "beat_void_impact"
         },
         {
           "at": 0.5,
@@ -1821,7 +1839,8 @@
           "at": 0.95,
           "kind": "shake",
           "intensity": 14,
-          "dur": 0.32
+          "dur": 0.32,
+          "sfx": "beat_verdict"
         },
         {
           "at": 0.95,
@@ -1847,7 +1866,8 @@
           "dur": 0.5,
           "scale": 10.0,
           "palette": "void",
-          "min_tier": 3
+          "min_tier": 3,
+          "sfx": "beat_fire_bloom"
         }
       ],
       "tint": [
@@ -1868,7 +1888,8 @@
           "origin": "caster",
           "dur": 0.3,
           "scale": 2.0,
-          "palette": "verdict"
+          "palette": "verdict",
+          "sfx": "beat_seal_1"
         },
         {
           "at": 0.25,
@@ -1876,13 +1897,15 @@
           "origin": "caster",
           "dur": 0.3,
           "scale": 3.2,
-          "palette": "verdict"
+          "palette": "verdict",
+          "sfx": "beat_seal_2"
         },
         {
           "at": 0.4,
           "kind": "flash",
           "dur": 0.18,
-          "size": 6.0
+          "size": 6.0,
+          "sfx": "beat_verdict"
         },
         {
           "at": 0.5,
@@ -1890,7 +1913,8 @@
           "origin": "caster",
           "dur": 0.35,
           "scale": 4.6,
-          "palette": "void"
+          "palette": "void",
+          "sfx": "beat_seal_3"
         },
         {
           "at": 0.5,
@@ -1913,7 +1937,8 @@
           "dur": 0.4,
           "scale": 6.2,
           "palette": "void",
-          "min_tier": 2
+          "min_tier": 2,
+          "sfx": "beat_seal_2"
         },
         {
           "at": 1.0,
@@ -1922,7 +1947,8 @@
           "dur": 0.45,
           "scale": 8.0,
           "palette": "verdict",
-          "min_tier": 3
+          "min_tier": 3,
+          "sfx": "beat_seal_3"
         }
       ],
       "tint": [
