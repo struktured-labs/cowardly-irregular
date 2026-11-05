@@ -131,7 +131,7 @@ func _get_music_track() -> String:
 ## fact SoundManager cannot derive: it receives `interior_chapel`, never `harmonia_chapel`.
 ##
 ## "" is right for Inn and Shop, which are reused across villages and have no single owner.
-## The Dancing Tonberry is Harmonia-only and names its home from TavernInterior, not this hook.
+## The Dancing Lantern is Harmonia-only and names its home from TavernInterior, not this hook.
 func _get_music_home_area() -> String:
 	return ""
 
