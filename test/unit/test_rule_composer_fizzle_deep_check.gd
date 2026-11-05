@@ -122,7 +122,8 @@ func test_a_supplied_guard_reaches_the_result_the_ui_reads() -> void:
 	var notes = result.get("notes", [])
 	assert_true(notes is Array and (notes as Array).size() > 0,
 				"the edit must reach result.notes — the confirm screen has nothing else to show")
-	assert_true(str((notes as Array)[0]).find("power_strike") != -1,
+	## The note names the ability as the menu does (cowir-ai 22072), not by its id.
+	assert_true(str((notes as Array)[0]).find(AbilityIcons.name_of("power_strike")) != -1,
 				"and must name the rule it changed")
 
 

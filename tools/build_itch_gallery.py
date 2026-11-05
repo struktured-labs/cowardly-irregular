@@ -31,7 +31,7 @@ Measured 2026-09-10 on the current set: 20 screenshots ship, 17 have a stated po
 the interesting one: the captions RESTORE it ("eldertree_village is BACK IN THE SET", after
 the masterite silhouette fix) without ever giving it a place in the order.
 
-Usage:  build_itch_gallery.py <itch-assets-dir> [out-dir]
+Usage:  build_itch_gallery.py <itch-assets-dir> [out-dir]   (default out: <repo>/tmp/itch_gallery)
         build_itch_gallery.py --check <itch-assets-dir>     report only, write nothing
         build_itch_gallery.py --selftest
 Exit:   0 every shipped screenshot placed · 3 some ship with no stated position · 2 unusable
@@ -127,7 +127,10 @@ def build(assets_dir, out_dir=None, check_only=False):
     if check_only:
         return rc
 
-    out = out_dir or os.path.join(assets_dir, "gallery")
+    ## The default lands OUTSIDE the store material: <repo>/tmp/itch_gallery (tmp/ is gitignored).
+    ## It used to be <itch-assets>/gallery, and 20 numbered copies there are UNLISTED in MANIFEST.txt,
+    ## so a bare run reddened check_store_assets.sh --verify on files nobody committed (2026-11-05).
+    out = out_dir or os.path.join(os.path.dirname(os.path.abspath(assets_dir)), "tmp", "itch_gallery")
     if os.path.isdir(out):
         shutil.rmtree(out)
     os.makedirs(out)

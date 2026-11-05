@@ -61,8 +61,9 @@ func test_but_the_player_is_TOLD_it_will_not_fire() -> void:
 	var adv: String = SSM.last_import_advisory_text()
 	assert_ne(adv, "",
 		"an imported rule that cannot fire for THIS character must be reported, or the script silently fizzles a turn every time it matches")
-	assert_true(adv.contains("rule 0"), "the advisory must name which rule: %s" % adv)
-	assert_true(adv.contains("cura"), "and which ability: %s" % adv)
+	## Player-facing since 2026-11-05: rules count from 1 and the ability reads as the menu names it.
+	assert_true(adv.contains("Rule 1"), "the advisory must name which rule, counted as a player counts: %s" % adv)
+	assert_true(adv.contains(AbilityIcons.name_of("cura")), "and which ability, by its menu name: %s" % adv)
 
 
 func test_a_hallucinated_ability_is_caught_on_an_untrusted_code() -> void:
