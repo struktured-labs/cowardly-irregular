@@ -259,7 +259,7 @@ func _setup_npcs() -> void:
 		"Keep that Ice Scale somewhere cold. Out of respect."
 	]
 	# Old Man Björn (exposition)
-	var bjorn = _create_npc("Old Man Björn", "elder", Vector2(8 * TILE_SIZE,8 * TILE_SIZE), _bjorn_post_dragon if _glacius_down else [
+	var bjorn = _create_npc("Old Man Björn", "elder", Vector2(8.5 * TILE_SIZE,8 * TILE_SIZE), _bjorn_post_dragon if _glacius_down else [
 		"The ice dragon Glacius has been here since the first compile...",
 		"I mean, the first winter.",
 		"It guards the frozen peak with breath that freezes code— er, BONE.",
@@ -284,7 +284,7 @@ func _setup_npcs() -> void:
 		"Turn back from THOSE. Not this one. This one you earned."
 	]
 	# Beside the exit, not on it: (10,16) stood on the gate once the gate sat on its X tiles (BaseVillage.exit_centre_of).
-	var ingrid = _create_npc("Guard Ingrid", "guard", Vector2(7 * TILE_SIZE,16 * TILE_SIZE), _ingrid_post if _after_cave_done else _ingrid_pre)
+	var ingrid = _create_npc("Guard Ingrid", "guard", Vector2(7.5 * TILE_SIZE,16 * TILE_SIZE), _ingrid_post if _after_cave_done else _ingrid_pre)
 	npcs.add_child(ingrid)
 
 	# Hermit Kael (autobattle)
@@ -307,7 +307,7 @@ func _setup_npcs() -> void:
 		"Automate the combat. Keep the walking-back-out-alive part manual. That is my new advice.",
 		"It is the first advice I have changed in eleven years."
 	]
-	var kael = _create_npc("Hermit Kael", "villager", Vector2(12 * TILE_SIZE,12 * TILE_SIZE), _kael_post if _after_cave_done else _kael_pre)
+	var kael = _create_npc("Hermit Kael", "villager", Vector2(12.5 * TILE_SIZE,12 * TILE_SIZE), _kael_post if _after_cave_done else _kael_pre)
 	kael.sprite_archetype = "young_man"  ## pinned: the name-hash pair drew the other sex
 	npcs.add_child(kael)
 

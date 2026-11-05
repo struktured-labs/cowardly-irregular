@@ -641,7 +641,7 @@ func _setup_npcs() -> void:
 		"*checks over shoulder*",
 		"I'm still gonna be just like you when I grow up. But I'm never writing anybody down in a ledger. Ever."
 	]
-	var kid = _create_npc("Young Pip", "child", Vector2(24 * TILE_SIZE, 14 * TILE_SIZE), _pip_after_chancellor if _chancellor_gone else (_pip_post if _after_cave_done else _pip_pre))
+	var kid = _create_npc("Young Pip", "child", Vector2(24.5 * TILE_SIZE, 14 * TILE_SIZE), _pip_after_chancellor if _chancellor_gone else (_pip_post if _after_cave_done else _pip_pre))
 	npcs.add_child(kid)
 
 	# === SIDE-QUEST GIVERS (dialogue owned by QuestSystem when quest business exists) ===
