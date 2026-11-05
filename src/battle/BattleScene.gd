@@ -227,6 +227,8 @@ static var _battle_speed_index: int = DEFAULT_BATTLE_SPEED_INDEX  # persists acr
 const SPEED_HOLD_MS: int = 400
 var _speed_hold_start_ms: int = -1
 var _speed_hold_fired: bool = false
+## The trusted-turn window's offer on screen; freed when the window closes or the scene goes.
+var _trust_pill: Control = null
 # Crit hitlag nests — two crits in the 80ms window and the second captured 0.1 as "normal"; depth-counted so only the outermost restores
 ## ⛔ THE COMMENT PROMISED THIS AND THE CODE NEVER DID IT. `_on_group_attack_executing`'s
 ## limit_break arm carried "# Stagger lunges slightly for visual impact" while every
@@ -6820,16 +6822,39 @@ func _build_log_overlay() -> void:
 
 
 ## Trust option (a): BM opens a short window before AI takes over on a
-## player-trusted PC. The battle log line from BM is the visible cue;
-## input capture lives in _input's ui_cancel guard so cancel during the
-## window claims the turn. Handlers here are hooks — if a future toast /
-## highlight is added, this is the anchor.
-func _on_trust_interrupt_window_opened(_pc: Combatant, _seconds: float) -> void:
-	pass
+## player-trusted PC. The visible cue is BM's log line AND the TrustTurnPill over the member (2026-11-05);
+## input capture lives in _input's ui_cancel guard so cancel during the window claims the turn.
+func _on_trust_interrupt_window_opened(pc: Combatant, seconds: float) -> void:
+	_clear_trust_pill()
+	SoundManager.play_ui("trust_window_open")  # the cue sounds even when the member has no sprite to hang the pill on
+	var sprite: Node2D = _get_combatant_sprite(pc)
+	if sprite == null or not is_instance_valid(sprite):
+		return
+	var head: Vector2 = _stable_sprite_anchor(sprite)
+	if sprite is AnimatedSprite2D:
+		head.y -= BattleSpeechBubble.head_lift(sprite)
+		head.x += BattleSpeechBubble.head_dx(sprite)
+	_trust_pill = TrustTurnPill.show_over(self, head, BattleManager._trust_interrupt_token(), seconds, _trust_pill_keep_out())
 
 
 func _on_trust_interrupt_window_closed(_pc: Combatant, _interrupted: bool) -> void:
-	pass
+	_clear_trust_pill()
+
+
+## What the pill must not cover: the open command menu and its tooltip (the bubbles' own list) and the live bubbles.
+func _trust_pill_keep_out() -> Array:
+	var out: Array = _bubble_keep_out_rects()
+	for e in BattleSpeechBubble._live:
+		var b = e.get("bubble")
+		if is_instance_valid(b) and b is Control and (b as Control).is_visible_in_tree():
+			out.append((b as Control).get_global_rect())
+	return out
+
+
+func _clear_trust_pill() -> void:
+	if _trust_pill != null and is_instance_valid(_trust_pill):
+		_trust_pill.queue_free()
+	_trust_pill = null
 
 
 func _on_advance_trash_talk(combatant: Combatant, line: String) -> void:
@@ -6839,7 +6864,6 @@ func _on_advance_trash_talk(combatant: Combatant, line: String) -> void:
 	var sprite = _get_combatant_sprite(combatant)
 	if sprite and is_instance_valid(sprite):
 		_spawn_quip_bubble(sprite, combatant.combatant_name, line, _get_job_quip_color(combatant))
-	var job_name = combatant.job.get("name", "Fighter") if combatant.job else "Fighter"
 	log_message('[color=yellow]%s: "%s"[/color]' % [combatant.combatant_name, line])
 
 

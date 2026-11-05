@@ -119,7 +119,7 @@ func _create_header_panel(panel_size: Vector2, at: Vector2) -> Control:
 	var row_bottom := MenuChrome.place_header(name_label, exp_label, panel.size.x, 8.0, false, 16.0)
 
 	# Job and level
-	var job_name = character.job.get("name", "Fighter") if character.job else "Fighter"
+	var job_name = character.job_display_name("Fighter") if character.job else "Fighter"
 	var job_label = Label.new()
 	job_label.text = "%s  Lv %d" % [job_name, character.job_level]
 	job_label.add_theme_font_size_override("font_size", TextScale.scaled(12))

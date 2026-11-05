@@ -571,16 +571,9 @@ func _build_stats_panel() -> void:
 		_stats_panel.add_child(mdf_label)
 
 
+## The job as THIS world names it (School Nurse in W2; the base name in W1). Keyed on the id, so the portrait key is untouched.
 func _get_job_name() -> String:
-	"""Get display name for character's job"""
-	if combatant and combatant.job:
-		return combatant.job.get("name", "Fighter")
-	match character_id:
-		"hero": return "Fighter"
-		"mira": return "Cleric"
-		"zack": return "Rogue"
-		"vex": return "Mage"
-		_: return "Fighter"
+	return Combatant.job_display_name_for_id(_get_job_id())
 
 
 func _get_job_id() -> String:
@@ -1160,6 +1153,13 @@ func _draw_or_connector(y_pos: float) -> void:
 	_grid_container.add_child(label)
 
 
+## An item as the player's menu names it ("Resurgo Plume", not the id's "Phoenix Down"); the picker already did.
+func _item_label(item_id: String) -> String:
+	if item_id == "":
+		return "Item"
+	return ItemNameResolver.resolve(item_id)
+
+
 func _format_condition(condition: Dictionary) -> String:
 	"""Format a condition for display"""
 	var cond_type = condition.get("type", "always")
@@ -1210,7 +1210,7 @@ func _format_condition(condition: Dictionary) -> String:
 		"ally_mp_percent":
 			return "Ally MP %s %d%%" % [op, value]
 		"item_count":
-			return "%s %s %d" % [str(condition.get("item_id", "Item")).capitalize(), op, value]
+			return "%s %s %d" % [_item_label(str(condition.get("item_id", ""))), op, value]
 		"setup_complete":
 			return "Setup Done"
 		"ally_dead":
@@ -1238,7 +1238,7 @@ func _format_action(action: Dictionary) -> String:
 			return "%s\n%s" % [AbilityIcons.name_of(ability_id), _short_target(target)]
 		"item":
 			var item_id = action.get("id", "")
-			return "Use %s" % item_id.capitalize()
+			return "Use %s" % _item_label(str(item_id))
 		"defer":
 			return "DEFER"
 		_:
@@ -2582,7 +2582,9 @@ func _get_character_consumables() -> Array:
 		allowed_categories = [cat.CONSUMABLE, cat.CURATIVE, cat.BUFF, cat.OFFENSIVE]
 	for item_id in all_items.keys():
 		var entry: Dictionary = all_items[item_id]
-		var cat_val = entry.get("category", 0)
+		## int(): JSON hands every category back as a FLOAT, and `0.0 in [0, 1, 2, 3]` is false, so this picker
+		## offered NOTHING in the real game ("No consumable items available") until 2026-11-05. Measured: 172 items, 0 offered.
+		var cat_val := int(entry.get("category", 0))
 		if cat_val in allowed_categories:
 			rows.append({"id": item_id, "name": entry.get("name", item_id)})
 	rows.sort_custom(func(a, b): return str(a.get("name", "")) < str(b.get("name", "")))

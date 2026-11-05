@@ -99,8 +99,7 @@ var known_characters: Array = ["hero", "mira", "zack", "vex"]
 ## "Any" vs a named member — the coarse/fine split must be visible on the cell, or two rules
 ## that read identically on screen behave differently.
 func _member_label(condition: Dictionary) -> String:
-	var who := str(condition.get("member", ""))
-	return "Any" if who == "" else who.capitalize()
+	return AutogrindSystem.member_display_name(str(condition.get("member", "")))
 
 func _init() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
@@ -336,7 +335,7 @@ func _build_details_panel() -> void:
 	# Show party member list with current profiles
 	var y_offset = 52
 	for char_id in known_characters:
-		var char_name = char_id.capitalize()
+		var char_name = AutogrindSystem.member_display_name(str(char_id))
 		var profile_name = AutobattleSystem.get_active_profile_name(char_id)
 
 		var name_lbl = Label.new()
@@ -825,7 +824,7 @@ func _format_action(action: Dictionary) -> String:
 		"switch_profile":
 			var char_id = action.get("character_id", "hero")
 			var profile_idx = action.get("profile_index", 0)
-			var char_name = char_id.capitalize()
+			var char_name = AutogrindSystem.member_display_name(str(char_id))
 			var profile_name = _get_profile_name_for(char_id, profile_idx)
 			return "%s\n→ %s" % [char_name, profile_name]
 
@@ -834,7 +833,7 @@ func _format_action(action: Dictionary) -> String:
 
 		"member_ability":
 			# Two lines, like the console: one line overran the cell even before the names got longer.
-			return "%s casts\n%s" % [str(action.get("member", "Any")).capitalize(), AbilityIcons.name_of(str(action.get("ability", "?")))]
+			return "%s casts\n%s" % [AutogrindSystem.member_display_name(str(action.get("member", ""))), AbilityIcons.name_of(str(action.get("ability", "?")))]
 		"heal_party":
 			return "Use\nPotions"
 
