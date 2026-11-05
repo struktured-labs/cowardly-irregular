@@ -4,9 +4,23 @@ extends SceneTree
 
 const Lib := preload("res://tools/demo_walk_lib.gd")
 const BUDGET_S := 120.0
+const LEVEL := 10
 
 var w
 var _player: Node = null
+
+
+## Raise the party the way battle's demo_boss_segment --level does: job level, its kit, full HP/MP (idempotent).
+func _level_party(level: int) -> void:
+	var js = root.get_node("JobSystem")
+	for m in w.gl.party:
+		m.job_level = level
+		js.learn_abilities_for_level(m, level)
+		m.recalculate_stats()
+		m.current_hp = m.max_hp
+		m.current_mp = m.max_mp
+		m.is_alive = true
+	w.say("party at level %d: %s" % [level, ", ".join(w.gl.party.map(func(m): return "%s %d/%d" % [m.combatant_name, m.max_hp, m.max_mp]))])
 
 
 ## Unlock all five starters the game's own way and check every input of the AI-routing gate per member (battle 8ec249ca9 / controller 22351).
@@ -43,6 +57,7 @@ func _init() -> void:
 	if not await w.boot("overworld", "village_entrance"):
 		quit(1)
 		return
+	_level_party(LEVEL)
 	if not _hand_routed():
 		quit(1)
 		return
