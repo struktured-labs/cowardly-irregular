@@ -430,18 +430,22 @@ func _build_abilities_column(member, x: float, y: float, w: float, h: float) -> 
 
 
 func _job_label(member) -> String:
-	# Tick 207: cascade name → prettified id → "(no job)". Pre-fix the bare "Job" fallback looked like a UI label, not a value, so a briefly-unassigned or data-drifted combatant rendered as the literal word "Job" in their card.
+	# Tick 207: never the bare "Job" fallback. 2026-11-05: the world's name from the id first; the stored name only for an id-less job.
 	if "job" in member and member.job != null:
+		var jid := ""
 		if member.job is Dictionary:
-			if member.job.has("name") and str(member.job["name"]) != "":
-				return str(member.job["name"])
-			if member.job.has("id") and str(member.job["id"]) != "":
-				return _format_id(str(member.job["id"]))
-		elif member.job is Object:
-			if "name" in member.job and str(member.job.name) != "":
-				return str(member.job.name)
-			if "id" in member.job and str(member.job.id) != "":
-				return _format_id(str(member.job.id))
+			jid = str(member.job.get("id", ""))
+		elif member.job is Object and "id" in member.job:
+			jid = str(member.job.id)
+		if jid != "":
+			return Combatant.job_display_name_for_id(jid)
+		var stored := ""
+		if member.job is Dictionary:
+			stored = str(member.job.get("name", ""))
+		elif member.job is Object and "name" in member.job:
+			stored = str(member.job.name)
+		if stored != "":
+			return stored
 	return "(no job)"
 
 

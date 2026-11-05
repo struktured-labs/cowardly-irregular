@@ -573,7 +573,7 @@ func _build_stats_panel() -> void:
 
 ## The job as THIS world names it (School Nurse in W2; the base name in W1). Keyed on the id, so the portrait key is untouched.
 func _get_job_name() -> String:
-	return JobSystem.get_job_display_name(_get_job_id())
+	return Combatant.job_display_name_for_id(_get_job_id())
 
 
 func _get_job_id() -> String:
