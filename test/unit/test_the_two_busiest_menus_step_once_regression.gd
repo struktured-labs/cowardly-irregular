@@ -67,7 +67,8 @@ func _overworld() -> Node:
 	m.modulate.a = 1.0
 	m._submenu_open = false
 	m.party = [{"name": "A"}, {"name": "B"}]
-	m._menu_options = ["Items", "Abilities", "Equipment", "Status", "Save"]
+	## The real shape (BASE_MENU_OPTIONS): bare Strings made _refresh_news_tags abort on .get().
+	m._menu_options = [{"id": "items", "label": "Items", "enabled": true}, {"id": "abilities", "label": "Abilities", "enabled": true}, {"id": "equipment", "label": "Equipment", "enabled": true}, {"id": "status", "label": "Status", "enabled": true}, {"id": "save", "label": "Save", "enabled": true}]
 	m.selected_index = 0
 	return m
 
