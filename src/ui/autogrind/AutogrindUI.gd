@@ -70,6 +70,7 @@ const ACTION_TYPES = [
 	{"id": "member_ability", "label": "Member Casts"},
 	{"id": "restore_mp", "label": "Use Ethers"},
 	{"id": "flee_battle", "label": "Flee Next Battle"},
+	{"id": "revive_fallen", "label": "Revive Fallen"},
 	{"id": "switch_profile", "label": "Switch Profile", "has_target": true},
 ]
 
@@ -1301,6 +1302,8 @@ func _format_action(action: Dictionary) -> String:
 			return "Use\nEthers"
 		"flee_battle":
 			return "Flee\nNext"
+		"revive_fallen":
+			return "Revive\nFallen"
 		_:
 			return action_type
 
