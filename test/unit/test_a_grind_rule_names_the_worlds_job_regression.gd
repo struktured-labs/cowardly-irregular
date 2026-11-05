@@ -5,17 +5,23 @@ extends GutTest
 ## where the field said School Nurse. Every console site now goes through AutogrindSystem.member_display_name, which names a job id
 ## through Combatant.job_display_name_for_id (cowir-battle's one helper) and passes anything else through.
 
+const AutogrindState := preload("res://test/unit/helpers/autogrind_state.gd")
 const STARTERS := ["fighter", "cleric", "mage", "rogue", "bard"]
 
 var _world_was: int = 1
+var _ag: Dictionary
 
 
 func before_each() -> void:
+	_ag = AutogrindState.snapshot()
+	AutogrindSystem._test_disable_persistence = true
+	AutobattleSystem._test_disable_persistence = true
 	_world_was = int(GameState.current_world)
 
 
 func after_each() -> void:
 	GameState.current_world = _world_was
+	AutogrindState.restore(_ag)
 
 
 func test_in_world_two_a_job_member_reads_that_worlds_name() -> void:
