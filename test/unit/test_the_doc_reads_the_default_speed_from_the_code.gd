@@ -9,7 +9,6 @@ extends GutTest
 ## literal default is what stays true.
 
 const CLAUDE_MD := "res://CLAUDE.md"
-const BS := preload("res://src/battle/BattleScene.gd")
 
 
 func _speed_line() -> String:
@@ -25,7 +24,8 @@ func test_the_speed_line_names_the_default_const() -> void:
 	var line := _speed_line()
 	assert_ne(line, "", "the Project Status battle-speed line must exist")
 	assert_string_contains(line, "DEFAULT_BATTLE_SPEED_INDEX", "the default must be read from the const it names")
-	assert_true(BS.get_script_constant_map().has("DEFAULT_BATTLE_SPEED_INDEX"),
+	var bs: Script = load("res://src/battle/BattleScene.gd")
+	assert_true(bs.get_script_constant_map().has("DEFAULT_BATTLE_SPEED_INDEX"),
 		"CONTROL: the const the doc names must exist in BattleScene")
 
 
