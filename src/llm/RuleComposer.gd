@@ -356,7 +356,11 @@ func _drop_unusable_rules(rules: Array, character_id: String, domain_system) -> 
 		if errs.is_empty():
 			kept.append(r)
 		else:
-			dropped.append(str(errs[0]))
+			## The note reaches the player; the deep check's text is the model's repair hint, so translate rather than reword it.
+			var said: String = str(errs[0])
+			if character_id != "" and r is Dictionary:
+				said = ScriptShareManager.player_text_for_finding(said, r, character_id)
+			dropped.append(said)
 	if dropped.is_empty():
 		return notes
 	# SUBSTANTIVE FLOOR — and it subsumes the empty case: an empty `kept` has no

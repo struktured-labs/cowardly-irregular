@@ -139,7 +139,9 @@ func test_a_night_freed_mid_beat_gives_input_back() -> void:
 	assert_false(InputLockManager.is_locked(), "a night freed before it ends releases the lock on its way out")
 
 
-const _STUB_GAMELOOP := "extends Node\nvar party: Array = []\n"
+## A whole-enough GameLoop: OverworldPlayer._can_move asks /root/GameLoop for current_state every frame while the night
+## plays, and a stub without it wrote 192 SCRIPT ERRORs into every sweep (cowir-battle 22085).
+const _STUB_GAMELOOP := "extends Node\nenum LoopState { EXPLORATION }\nvar current_state = LoopState.EXPLORATION\nvar party: Array = []\n"
 
 
 func test_the_inn_heals_first_then_plays_the_night() -> void:

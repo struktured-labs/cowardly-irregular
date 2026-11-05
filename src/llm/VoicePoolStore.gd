@@ -95,6 +95,19 @@ static func names_anyone(line: String, names: Array) -> bool:
 	return false
 
 
+## Case-SENSITIVE, mid-sentence only: "the Steamknight falls" names a job; "my resolve holds" and a capital that opens a sentence do not.
+static func names_a_title(line: String, titles: Array) -> bool:
+	for t in titles:
+		var title := str(t).strip_edges()
+		if title == "":
+			continue
+		var re := RegEx.new()
+		re.compile("(?<=[a-z0-9,;:] )" + _escape(title) + "(?![A-Za-z0-9])")
+		if re.search(line) != null:
+			return true
+	return false
+
+
 static func _escape(s: String) -> String:
 	var out := ""
 	for c in s:
