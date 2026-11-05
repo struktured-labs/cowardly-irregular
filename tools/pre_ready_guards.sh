@@ -205,7 +205,16 @@ echo "pre_ready_guards: ${#FILES[@]} distinct guards for: $LABEL"
 # Under tools/spinwatch.sh, as the fold gate runs: two lane sweeps wedged at 1800s on the #224 Dummy mix-thread
 # class (2026-11-04/05, sprites + music), neither wrapped, so neither left a stack. It is inert unless a godot's
 # mix thread spins, and passes run_tests.sh's exit status through untouched. PRE_READY_SPINWATCH=0 opts out.
-if [ "${PRE_READY_SPINWATCH:-1}" != 0 ] && [ -x tools/spinwatch.sh ]; then
+# Not when a caller already wrapped this run (lanes did by hand after 21852): two watchers would both reach for gdb.
+_under_spinwatch() {
+  local p=$PPID
+  while [ -n "$p" ] && [ "$p" -gt 1 ]; do
+    tr '\0' ' ' < "/proc/$p/cmdline" 2>/dev/null | command grep -q 'spinwatch\.py' && return 0
+    p="$(sed 's/.*) //' "/proc/$p/stat" 2>/dev/null | awk '{print $2}')"
+  done
+  return 1
+}
+if [ "${PRE_READY_SPINWATCH:-1}" != 0 ] && [ -x tools/spinwatch.sh ] && ! _under_spinwatch; then
   exec tools/spinwatch.sh -- tools/run_tests.sh "${FILES[@]/#/res://}"
 fi
 exec tools/run_tests.sh "${FILES[@]/#/res://}"
