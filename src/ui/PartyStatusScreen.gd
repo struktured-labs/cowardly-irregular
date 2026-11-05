@@ -430,20 +430,24 @@ func _build_abilities_column(member, x: float, y: float, w: float, h: float) -> 
 
 
 func _job_label(member) -> String:
-	# Tick 207: cascade name → prettified id → "(no job)". Pre-fix the bare "Job" fallback looked like a UI label, not a value, so a briefly-unassigned or data-drifted combatant rendered as the literal word "Job" in their card.
+	# Tick 207 cascade, world-first since 2026-11-05 (cowir-story canon): a job the game KNOWS reads as THIS world names it,
+	# else its stored name, else its id title-cased (tick 204's _format_id), else the explicit "(no job)".
 	if "job" in member and member.job != null:
+		var jid := ""
+		var stored := ""
 		if member.job is Dictionary:
-			if member.job.has("name") and str(member.job["name"]) != "":
-				return str(member.job["name"])
-			if member.job.has("id") and str(member.job["id"]) != "":
-				return _format_id(str(member.job["id"]))
+			jid = str(member.job.get("id", ""))
+			stored = str(member.job.get("name", ""))
 		elif member.job is Object:
-			if "name" in member.job and str(member.job.name) != "":
-				return str(member.job.name)
-			if "id" in member.job and str(member.job.id) != "":
-				return _format_id(str(member.job.id))
+			jid = str(member.job.id) if "id" in member.job else ""
+			stored = str(member.job.name) if "name" in member.job else ""
+		if jid != "" and not JobSystem.get_job(jid).is_empty():
+			return Combatant.job_display_name_for_id(jid)
+		if stored != "":
+			return stored
+		if jid != "":
+			return _format_id(jid)
 	return "(no job)"
-
 
 func _get_level(member) -> int:
 	if "job_level" in member:
