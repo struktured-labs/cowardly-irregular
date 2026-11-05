@@ -125,20 +125,19 @@ func _init() -> void:
 	player_node.intro_read_lines = int(spec["read"])
 	player_node.victory_hold = 9.6
 	root.add_child(player_node)
-	var started := false
 	await _press("ui_accept")
-	for i in 60:
+	# The press starts the boss through the cave's own trigger; it registers the pending defeat at once. Never start it
+	# a second time (a fallback interact() wedged the first Rat King take on a double start).
+	var started := false
+	for i in 100:
 		await _beat(0.1)
-		if gl.get("current_state") == gl.LoopState.BATTLE:
-			started = true
-			break
-		var dlg = gl.get_cutscene_director().get("_dialogue") if gl.has_method("get_cutscene_director") and gl.get_cutscene_director() else null
-		if dlg != null and dlg.visible:
+		if not (gs.get("pending_boss_defeat") as Dictionary).is_empty() or gl.get("current_state") == gl.LoopState.BATTLE:
 			started = true
 			break
 	if not started:
-		print("[DEMO] the confirm press did not reach the trigger; calling its interact() as the press would")
-		trigger.interact(player)
+		print("[DEMO] ABORT the confirm press did not start the boss at %s" % str((trigger as Node2D).global_position))
+		quit(1)
+		return
 	# Watch the fight: a KO is a failed take, the battle's end is the segment's end.
 	var kos: Array = []
 	var in_battle := false

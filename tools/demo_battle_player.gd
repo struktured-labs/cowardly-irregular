@@ -68,13 +68,22 @@ func _battle_scene() -> Node:
 	return s if s != null and is_instance_valid(s) and "active_win98_menu" in s else null
 
 
+## The dialogue box on screen, whichever director owns it: the Rat King's cave plays its intro on its OWN
+## CutsceneDirector, not GameLoop's, so the box is found by its script anywhere in the tree.
 func _cutscene_dialogue() -> Node:
-	var gl := _gl()
-	if gl == null or not gl.has_method("get_cutscene_director"):
-		return null
-	var d = gl.get_cutscene_director()
-	var dlg = d.get("_dialogue") if d != null else null
-	return dlg if dlg != null and is_instance_valid(dlg) else null
+	return _find_dialogue(get_tree().root)
+
+
+func _find_dialogue(n: Node) -> Node:
+	var sc = n.get_script()
+	if sc != null and str(sc.resource_path).ends_with("CutsceneDialogue.gd") and n.get("visible") == true \
+			and n.get("_dialogue_queue") is Array and (n.get("_dialogue_queue") as Array).size() > 0:
+		return n
+	for c in n.get_children():
+		var f := _find_dialogue(c)
+		if f != null:
+			return f
+	return null
 
 
 func _run() -> void:
