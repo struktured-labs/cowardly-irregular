@@ -6,7 +6,7 @@ class_name VillageBar
 
 signal transition_triggered(target_map: String, target_spawn: String)
 
-@export var bar_name: String = "The Dancing Tonberry"
+@export var bar_name: String = "The Dancing Lantern"
 
 ## Visual
 var sprite: Sprite2D

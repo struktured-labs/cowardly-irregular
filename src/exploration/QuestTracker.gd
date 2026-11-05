@@ -142,6 +142,11 @@ static func quest_cue_for(state_or_index, ms_since_accept: int) -> String:
 	return "" if ms_since_accept < ACCEPT_SWALLOWS_PROGRESS_MS else "quest_progress"
 
 
+## One completion sound per turn-in (cowir-main 21783): QuestSystem's music stinger, when it is what is actually playing, IS it.
+static func already_sounding(cue: String) -> bool:
+	return cue == "quest_complete" and SoundManager != null and SoundManager.playing_track_stem() == "stinger_quest_complete"
+
+
 func _on_quest_progress(_a = null, _b = null) -> void:
 	if _label == null:
 		return
@@ -152,7 +157,7 @@ func _on_quest_progress(_a = null, _b = null) -> void:
 			_accept_cue_ms = Time.get_ticks_msec()
 		if cue == "quest_accept":
 			SoundManager.play_jingle(cue)
-		elif cue != "":
+		elif cue != "" and not already_sounding(cue):
 			SoundManager.play_ui(cue)
 	if _side_label != null and _side_label.visible:
 		_side_label.modulate = Color(1.6, 1.4, 0.6)

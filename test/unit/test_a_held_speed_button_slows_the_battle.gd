@@ -173,6 +173,17 @@ func test_the_speed_key_is_named_as_the_keyboard_prints_it() -> void:
 	assert_string_contains(Win98Menu._keyboard_hint_text(), "[%s] Speed" % Win98Menu.speed_key_label(), "the bar names that key")
 
 
+## The reference names the key the way the hint bar does. Headless always answers `, so the WIRING is pinned in source.
+func test_the_reference_names_the_speed_key_as_the_bar_does() -> void:
+	var row := ""
+	for line in HowToPlayOverlay.build_text().split("\n"):
+		if line.contains("Battle speed"):
+			row = line
+	assert_string_contains(row, "%s (left of 1)" % Win98Menu.speed_key_label(), "the reference's key column must be the bar's key")
+	var src := FileAccess.get_file_as_string("res://src/ui/HowToPlayOverlay.gd")
+	assert_string_contains(src, "Win98Menu.speed_key_label()", "the reference must ASK the helper, or a QWERTZ desktop reads ` here and ^ on the bar")
+
+
 ## CONTROL: matching by position must not make the printed character a speed key wherever it sits.
 func test_the_same_character_elsewhere_is_not_the_speed_key() -> void:
 	var s: Node = await _battle()

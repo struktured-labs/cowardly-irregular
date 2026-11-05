@@ -162,7 +162,7 @@ func _generate_map() -> void:
 	# Entrance spawn, CENTRED in cell (23,24): a cell corner would touch the row-22 cliff faces (spawn-overlap ratchet)
 	spawn_points["entrance"] = Vector2(23 * TILE_SIZE + TILE_SIZE / 2, 24 * TILE_SIZE + TILE_SIZE / 2)
 	spawn_points["default"] = spawn_points["entrance"]
-	# Bar exit spawn (in front of The Dancing Tonberry)
+	# Bar exit spawn (in front of The Dancing Lantern)
 	spawn_points["bar_exit"] = Vector2(37 * TILE_SIZE + TILE_SIZE / 2, 21 * TILE_SIZE + TILE_SIZE / 2)
 	# Chapel exit spawn (in front of the H cluster at columns 3-5, rows 13-15)
 	spawn_points["chapel_exit"] = Vector2(8 * TILE_SIZE + TILE_SIZE / 2, 21 * TILE_SIZE + TILE_SIZE / 2)
@@ -295,7 +295,7 @@ func _setup_buildings() -> void:
 
 	# === BAR ===
 	var bar = VillageBarScript.new()
-	bar.bar_name = "The Dancing Tonberry"
+	bar.bar_name = "The Dancing Lantern"
 	bar.position = Vector2(37 * TILE_SIZE, 19 * TILE_SIZE)
 	bar.transition_triggered.connect(_on_transition_triggered)
 	buildings.add_child(bar)

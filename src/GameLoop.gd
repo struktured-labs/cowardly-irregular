@@ -6602,7 +6602,7 @@ func _create_dragon_cave_from_script(script_res: GDScript) -> Node:
 
 
 func _create_tavern_scene() -> Node:
-	"""Create The Dancing Tonberry tavern interior scene"""
+	"""Create The Dancing Lantern tavern interior scene"""
 	return TavernInteriorScript.new()
 
 
@@ -7653,6 +7653,9 @@ func _show_grind_stop_notification(reason: String) -> void:
 	# No-op on headless / unsupported platforms.
 	if DisplayServer.has_method("window_request_attention"):
 		DisplayServer.window_request_attention()
+	## Off the tree (a test's bare GameLoop) there is no viewport to measure and no tree to tween in.
+	if not is_inside_tree():
+		return
 
 	var layer := CanvasLayer.new()
 	layer.layer = 90
