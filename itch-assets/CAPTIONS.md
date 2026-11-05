@@ -592,7 +592,11 @@ out of it. `tools/marketing_shots.gd` now **frames each village on its densest c
 player 2.5 tiles below the nearest door in view, so the party is in shot too. Scenes with fewer than 2
 buildings are captured exactly as before; that is the control (below, the interiors and the cave).
 
-**Lead with the villages** (cowir-main 20480): the facades and walkers are what this refresh is for.
+**The villages are what this refresh is for:** the facades and walkers. cowir-main 20480 agreed the
+*framing pass* (a per-village camera on a house cluster, facades and doors in frame) before the re-shoot.
+It did not rule on the gallery ORDER, which is unchanged: the battle still leads (the order note above).
+_Corrected 2026-11-05: this line used to read "Lead with the villages (cowir-main 20480)", a ruling
+20480 does not contain, and it contradicted the stated order._
 
 Per-shot PIXEL delta vs the shipped frame (share of pixels differing by > 24 levels), with run-to-run
 noise from a second capture:
