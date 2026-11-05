@@ -2126,17 +2126,19 @@ func _process_next_selection() -> void:
 	# auto paths (global autoscript on, spotlight-locked, enemy) — those
 	# aren't player-set intent and shouldn't offer a manual override here.
 	if is_player_trusted and current_state == BattleState.PLAYER_SELECTING \
-			and not is_autobattle_enabled and not is_char_autobattle and not is_spotlight_locked:
+			and not is_autobattle_enabled and not is_char_autobattle and not is_spotlight_locked \
+			and trust_window_offered():
 		_run_trust_interrupt_window(current_combatant)
 		return
 	if current_state == BattleState.ENEMY_SELECTING or is_autobattle_enabled or is_char_autobattle or is_spotlight_locked or is_player_trusted:
 		_process_ai_selection(current_combatant)
 
 
-## Trust option (a) constants + window state. The window is deliberately
-## short so autobattle-fast pacing still feels snappy; long enough that a
-## player who fumbled a Trust toggle can catch it.
-const TRUST_INTERRUPT_WINDOW_SECONDS: float = 0.9
+## Trust option (a) constants + window state. A REACTION window, so WALL seconds (controller 21831, main 21836): in
+## battle time it was 3.6 s of dead air at 1x and unanswerable at the top of the ladder.
+const TRUST_INTERRUPT_WINDOW_SECONDS: float = 1.0
+## Above this engine scale (and in turbo) there is no window and no offer: the player chose not to watch.
+const TRUST_WINDOW_MAX_SCALE: float = 1.0  # "4x" inclusive (main 21841); one number if he wants it higher
 var _trust_window_pc: Combatant = null
 
 
@@ -2149,6 +2151,11 @@ func _trust_interrupt_token() -> String:
 		return "X"
 	var tok: String = ipm.hint_for_action("ui_cancel")
 	return tok if tok != "" else "X"
+
+
+## Whether a trusted turn offers its take-it-back window at the speed the battle is running now.
+func trust_window_offered() -> bool:
+	return not turbo_mode and Engine.time_scale <= TRUST_WINDOW_MAX_SCALE + 0.001
 
 
 ## Emit the window signal, then await the timeout.
@@ -2172,7 +2179,7 @@ func _run_trust_interrupt_window(pc: Combatant) -> void:
 	battle_log_message.emit("[color=cyan]%s: Trusted — press %s to take this turn[/color]" % [pc.combatant_name, _trust_interrupt_token()])
 	var tree: SceneTree = get_tree()
 	if tree:
-		await tree.create_timer(TRUST_INTERRUPT_WINDOW_SECONDS).timeout
+		await tree.create_timer(TRUST_INTERRUPT_WINDOW_SECONDS, true, false, true).timeout
 	# Untrust intervened → early out (state / menu are handled there).
 	if _trust_window_pc != pc:
 		trust_interrupt_window_closed.emit(pc, true)
