@@ -62,3 +62,14 @@ func test_the_box_renders_the_tag_and_keeps_the_line() -> void:
 	assert_true(src.contains("_speaker_label.text = speaker_label("), "the live label goes through speaker_label")
 	assert_false(src.contains('_speaker_label.text = entry.get("speaker"'), "and no longer prints the tag verbatim")
 	assert_ne(base, JobSystem.get_job_display_name(renamed[0]), "CONTROL: the base name differs in world 2")
+
+
+## The voice blip's pitch is hashed from the speaker NAME, so it must keep reading the AUTHORED tag: otherwise the Cleric
+## would blip at another pitch in W2 ("School Nurse" hashes differently), audibly and with nothing red (cowir-music 21970).
+func test_the_voice_keeps_the_authored_speaker() -> void:
+	var src := FileAccess.get_file_as_string(DIALOGUE)
+	var i := src.find("_load_voice_blip(")
+	assert_gt(i, -1, "CONTROL: the blip loader is called")
+	var call_line := src.substr(i, src.find("\n", i) - i)
+	assert_true(call_line.contains('entry.get("speaker"'), "the blip is pitched from the authored tag: %s" % call_line)
+	assert_false(call_line.contains("speaker_label("), "never from the rendered, per-world name")
