@@ -93,8 +93,7 @@ func test_a_specific_arm_is_not_gated_by_the_seam() -> void:
 ## `ability_<element>` at impact was the doubled "boop" struktured reported. HEAL and MP_RESTORE were
 ## left on `ability_heal` — so one asset played twice per heal, cast on _ability_player at -12 dB and
 ## impact on _battle_player at -6 + jitter, 3-9 dB apart (cowir-sfx, from his logs).
-## `strike_heal` does not exist (0 in the manifest, 0 on disk), so the impact arm is EMPTY rather than
-## repointed: the cast already spoke, and naming an absent cue trades a double-play for a warning.
+## Since 2026-11-05 the impact arm has its own voice, `strike_heal`; the arms below pin both halves.
 func test_the_cast_side_member_this_file_drives_exists() -> void:
 	assert_true(_sm.has_method("play_ability"), "SoundManager.play_ability is the cast path BattleScene:4226 uses")
 	assert_true(_sm._sfx_manifest.has("ability_heal"), "ability_heal must be authored or these arms mean nothing")
@@ -110,6 +109,15 @@ func test_a_heal_does_not_replay_its_cast_cue_at_impact() -> void:
 	_es._play_effect_sound(_es.EffectType.HEAL, 1.0, "")
 	assert_false(_sm._sfx_cooldowns.has("ability_heal"),
 		"the impact voice replayed the CAST cue — one asset twice per heal, 3-9 dB apart, which is the defect the 09-06 pass fixed for the five elements")
+
+
+## The silence 7a482bc78 left is now a different voice: a heal lands with strike_heal, which is not the cast cue and is authored.
+func test_a_heal_lands_with_its_own_voice() -> void:
+	assert_true(_sm._sfx_manifest.has("strike_heal"), "FLOOR: strike_heal is in the manifest")
+	assert_ne(str(_sm._sfx_manifest["strike_heal"].get("file", "")), str(_sm._sfx_manifest["ability_heal"].get("file", "")), "the impact voice is a different file from the cast choir")
+	_sm._sfx_cooldowns.clear()
+	_es._play_effect_sound(_es.EffectType.HEAL, 1.0, "")
+	assert_true(_sm._sfx_cooldowns.has("strike_heal"), "a heal landed silent: the HEAL arm does not serve strike_heal")
 
 
 func test_an_mp_restore_does_not_replay_the_heal_cast_cue() -> void:

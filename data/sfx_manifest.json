@@ -1843,6 +1843,13 @@
       "duration_seconds": 0.14,
       "prompt_influence": 0.0
     },
+    "strike_heal": {
+      "file": "assets/audio/sfx/strike_heal.ogg",
+      "source": "numpy_synth",
+      "prompt": "SYNTHESISED, not generated. Heal IMPACT voice, the landing under the cast choir (ability_heal). Warm open fifth C5+G5 over a soft C4 body, 12-20ms attack, ~240ms decay, plus a breath of noise low-passed to ~1.6kHz for the first 70ms. No bells, no sparkle, no chirp: 0.0% energy >4kHz, centroid ~570Hz (heal.ogg was rejected as 'crap' at 94% >4kHz). Active RMS -18 dB, peak -6 dB, ~6 dB under the strike_<element> family so the cast choir stays the lead. EffectSystem's HEAL arm was SILENT after 7a482bc78 took the doubled cast cue off it; this fills that silence with a different voice.",
+      "duration_seconds": 0.24,
+      "prompt_influence": 0.0
+    },
     "strike_holy": {
       "file": "assets/audio/sfx/strike_holy.ogg",
       "source": "sox_synth",

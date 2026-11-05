@@ -207,14 +207,8 @@ func _play_effect_sound(effect_type: EffectType, power: float = 1.0, weapon_type
 		EffectType.DARK:
 			sound_key = "strike_dark"
 		EffectType.HEAL:
-			## ⛔ WAS "ability_heal" — THE CAST CUE, so one asset played TWICE per heal: play_ability on
-			## _ability_player at -12 dB, then this one on _battle_player at -6 + jitter, 3-9 dB apart.
-			## That is the defect the 2026-09-06 pass fixed for all five elements by moving them to
-			## strike_<element>; HEAL is the arm that missed it (cowir-sfx, from struktured's logs).
-			## Empty until cowir-sfx's `strike_heal` asset exists — it does not today (0 in the
-			## manifest, 0 on disk), and naming a cue that is absent trades a double-play for a
-			## missing-cue warning. The cast cue already spoke, so silence here is correct meanwhile.
-			sound_key = ""
+			## Its own impact voice, never "ability_heal": that is the CAST cue, which played twice per heal until 7a482bc78.
+			sound_key = "strike_heal"
 		EffectType.MP_RESTORE:
 			sound_key = ""  # same: the cast cue already played. Was the cast key, see HEAL above.
 		EffectType.BUFF:
