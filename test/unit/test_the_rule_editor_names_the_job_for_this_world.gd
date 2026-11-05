@@ -97,4 +97,7 @@ func test_every_routed_screen_asks_the_shared_helper() -> void:
 			"res://src/ui/autobattle/AutobattleGridEditor.gd"]:
 		var src := FileAccess.get_file_as_string(path)
 		assert_gt(src.length(), 100, "PRECONDITION: %s must be readable" % path)
-		assert_true(src.contains("job_display_name("), "%s must name the job through job_display_name / job_display_name_for_id" % path)
+		## Either form of the helper: `job_display_name(` (a Combatant) or `job_display_name_for_id(` (an id). The first
+		## version of this arm matched only the former, so the editor's correct id call read as missing.
+		assert_true(src.contains("job_display_name(") or src.contains("job_display_name_for_id("),
+			"%s must name the job through job_display_name / job_display_name_for_id" % path)
