@@ -138,31 +138,31 @@ func test_old_job_literal_fallback_gone() -> void:
 # ── Source-level pins: cascade structure ──────────────────────────────
 
 func test_cascade_calls_format_id_on_id_fallback() -> void:
-	# Pin: the id fallback goes through _format_id (tick 204's proper
-	# title-case helper). Otherwise we'd regress to broken capitalize().
+	# Pin: an id the game does NOT know still goes through _format_id (tick 204's title-case helper), never capitalize().
 	var src := _read(PARTY_STATUS_SCREEN)
 	var fn_idx: int = src.find("func _job_label")
 	var next_fn: int = src.find("\nfunc ", fn_idx + 1)
 	var body: String = src.substr(fn_idx, next_fn - fn_idx)
-	assert_true(body.contains("return _format_id(str(member.job[\"id\"]))"),
-		"dict-shape id fallback must use _format_id")
-	assert_true(body.contains("return _format_id(str(member.job.id))"),
-		"object-shape id fallback must use _format_id")
+	assert_true(body.contains("return _format_id(jid)"),
+		"the unknown-id fallback must use _format_id, for both job shapes")
 
 
-func test_cascade_checks_name_before_id() -> void:
-	# Pin: the if-chain checks name FIRST so author-set names win.
+func test_cascade_puts_the_world_name_before_the_stored_name() -> void:
+	# RE-PINNED 2026-11-05. This arm read "the data-file name wins" (name before id). cowir-story's canon reversed that
+	# for a job the game knows: it reads as THIS world names it (a stored "Cleric" must not show in W2). The stored
+	# name still wins over the id's words, which is what the arm protected.
 	var src := _read(PARTY_STATUS_SCREEN)
 	var fn_idx: int = src.find("func _job_label")
 	var next_fn: int = src.find("\nfunc ", fn_idx + 1)
 	var body: String = src.substr(fn_idx, next_fn - fn_idx)
-	# In the Dictionary branch, 'name' check should come before 'id' check.
-	var name_check: int = body.find("member.job.has(\"name\")")
-	var id_check: int = body.find("member.job.has(\"id\")")
-	assert_gt(name_check, -1)
-	assert_gt(id_check, -1)
-	assert_lt(name_check, id_check,
-		"name check must come before id check (data-file name wins)")
+	var world: int = body.find("job_display_name_for_id(jid)")
+	var stored: int = body.find("return stored")
+	var words: int = body.find("return _format_id(jid)")
+	assert_gt(world, -1)
+	assert_gt(stored, -1)
+	assert_gt(words, -1)
+	assert_lt(world, stored, "a known job's world name comes before its stored name")
+	assert_lt(stored, words, "the stored name still wins over the id's words")
 
 
 # ── Cross-pin: tick 204 _format_id preserved ──────────────────────────

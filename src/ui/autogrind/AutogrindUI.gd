@@ -235,8 +235,7 @@ var _region_id: String = ""
 ## "Any" vs a named member — the coarse/fine split must be visible on the cell, or two rules
 ## that read identically on screen behave differently.
 func _member_label(condition: Dictionary) -> String:
-	var who := str(condition.get("member", ""))
-	return "Any" if who == "" else who.capitalize()
+	return AutogrindSystem.member_display_name(str(condition.get("member", "")))
 
 func _ready() -> void:
 	_load_custom_presets()
@@ -1295,7 +1294,7 @@ func _format_action(action: Dictionary) -> String:
 			var target = action.get("target", "all")
 			return "Switch\nProfile (%s)" % target
 		"member_ability":
-			return "%s casts\n%s" % [str(action.get("member", "Any")).capitalize(), AbilityIcons.name_of(str(action.get("ability", "?")))]
+			return "%s casts\n%s" % [AutogrindSystem.member_display_name(str(action.get("member", ""))), AbilityIcons.name_of(str(action.get("ability", "?")))]
 		"heal_party":
 			return "Use\nPotions"
 		"restore_mp":
@@ -2192,8 +2191,7 @@ func _cursor_member_label() -> String:
 	var d := _cursor_cell_dict()
 	if d.is_empty() or not (_is_member_scoped(d) or str(d.get("type", "")) == "member_ability"):
 		return "n/a"
-	var who := str(d.get("member", ""))
-	return "Any" if who == "" else who.capitalize()
+	return AutogrindSystem.member_display_name(str(d.get("member", "")))
 
 
 ## Afflictions worth stopping a grind for. Every entry is guarded against BattleScene's
