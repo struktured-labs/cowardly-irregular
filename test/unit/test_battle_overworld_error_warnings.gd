@@ -59,9 +59,9 @@ func test_item_use_failure_emits_battle_log() -> void:
 	var src := _read(BATTLE_MANAGER)
 	assert_true(src.contains("[color=gray]Failed to use %s.[/color]"),
 		"item-use failure must emit battle_log with prettified item name")
-	# Pin: uses standard snake_case → Title Case prettifier.
-	assert_true(src.contains("item_id.replace(\"_\", \" \").capitalize()"),
-		"item-use failure log must prettify item_id")
+	# Pin: the item's menu name (2026-11-05), not the id in words, which was a retired FF name.
+	assert_true(src.contains("Failed to use %s.[/color]\" % _item_display_name(item_id)"),
+		"item-use failure log must name the item as the menu does")
 
 
 # ── OverworldController missing pool ────────────────────────────────────
