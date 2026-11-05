@@ -49,6 +49,23 @@ func _renamed() -> Array:
 	return out
 
 
+## The picker read each JSON category as a float, and `0.0 in [0, 1, 2, 3]` is false: it offered no items at all.
+func test_the_item_picker_offers_the_consumables() -> void:
+	var offered: Array = _ed._get_character_consumables()
+	assert_gt(offered.size(), 10, "the editor's item picker must offer the consumables, got %d" % offered.size())
+	var ids: Array = []
+	for row in offered:
+		ids.append(str(row["id"]))
+	assert_true("potion" in ids, "CONTROL: a plain Potion is offered")
+	var meta_item := ""
+	for id in ItemSystem.items:
+		if int(ItemSystem.items[id].get("category", 0)) == int(ItemSystem.ItemCategory.META):
+			meta_item = str(id)
+			break
+	assert_ne(meta_item, "", "CONTROL: the data holds META items (the category the picker leaves out)")
+	assert_false(meta_item in ids, "and a META item is not offered (%s)" % meta_item)
+
+
 func test_the_floor_names_every_member_this_file_drives() -> void:
 	for m in ["_format_action", "_format_condition", "_item_label", "_get_character_consumables"]:
 		assert_true(_ed.has_method(m), "AutobattleGridEditor.%s must exist" % m)

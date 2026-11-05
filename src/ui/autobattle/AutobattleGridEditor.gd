@@ -2589,7 +2589,9 @@ func _get_character_consumables() -> Array:
 		allowed_categories = [cat.CONSUMABLE, cat.CURATIVE, cat.BUFF, cat.OFFENSIVE]
 	for item_id in all_items.keys():
 		var entry: Dictionary = all_items[item_id]
-		var cat_val = entry.get("category", 0)
+		## int(): JSON hands every category back as a FLOAT, and `0.0 in [0, 1, 2, 3]` is false, so this picker
+		## offered NOTHING in the real game ("No consumable items available") until 2026-11-05. Measured: 172 items, 0 offered.
+		var cat_val := int(entry.get("category", 0))
 		if cat_val in allowed_categories:
 			rows.append({"id": item_id, "name": entry.get("name", item_id)})
 	rows.sort_custom(func(a, b): return str(a.get("name", "")) < str(b.get("name", "")))
