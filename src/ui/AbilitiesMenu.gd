@@ -278,7 +278,7 @@ func _create_character_panel(panel_size: Vector2) -> Control:
 	name_label.add_theme_color_override("font_color", TEXT_COLOR)
 	panel.add_child(name_label)
 
-	var job_name = character.job.get("name", "Fighter") if character.job else "Fighter"
+	var job_name = character.job_display_name()
 	var job_label = Label.new()
 	job_label.text = "Lv %d %s" % [character.job_level, job_name]
 	job_label.position = Vector2(12, 26)
