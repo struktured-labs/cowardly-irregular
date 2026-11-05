@@ -375,7 +375,7 @@ func _create_character_card(member: Combatant, index: int) -> Control:
 
 	var job_label = Label.new()
 	job_label.name = "JobLabel"
-	job_label.text = member.job_display_name()
+	job_label.text = card_job_text(member)
 	job_label.position = Vector2(58, 20)
 	job_label.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	job_label.add_theme_color_override("font_color", SUBTITLE_COLOR)
@@ -470,6 +470,12 @@ func _create_stat_bar(label: String, current: int, maximum: int, color_full: Col
 	container.add_child(value)
 
 	return container
+
+
+## The card's job line, blank when the job IS the name (W1's "Fighter"), since the name line already says it.
+static func card_job_text(member: Combatant) -> String:
+	var job_name: String = member.job_display_name()
+	return "" if BattleUIManager.job_is_name(member.combatant_name, job_name) else job_name
 
 
 func _create_exp_indicator(member: Combatant) -> Control:
@@ -767,7 +773,7 @@ func _update_party_stats() -> void:
 
 		var job_lbl = card.get_node_or_null("JobLabel")
 		if job_lbl:
-			job_lbl.text = member.job_display_name()
+			job_lbl.text = card_job_text(member)
 		# Job text refreshes in place; the face was baked at open and kept the previous job.
 		_refresh_card_portrait(card, member)
 
