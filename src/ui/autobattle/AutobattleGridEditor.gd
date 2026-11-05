@@ -571,16 +571,9 @@ func _build_stats_panel() -> void:
 		_stats_panel.add_child(mdf_label)
 
 
+## The job as THIS world names it (School Nurse in W2; the base name in W1). Keyed on the id, so the portrait key is untouched.
 func _get_job_name() -> String:
-	"""Get display name for character's job"""
-	if combatant and combatant.job:
-		return combatant.job.get("name", "Fighter")
-	match character_id:
-		"hero": return "Fighter"
-		"mira": return "Cleric"
-		"zack": return "Rogue"
-		"vex": return "Mage"
-		_: return "Fighter"
+	return Combatant.job_display_name_for_id(_get_job_id())
 
 
 func _get_job_id() -> String:

@@ -775,7 +775,7 @@ static func build_boss_intent(
 		var status_tag: String = ("/" + ",".join(_strs_packed(status_arr))) if status_arr.size() > 0 else ""
 		party_lines.append("  - %s (%s): HP %d%%, AP %d %s%s" % [
 			str(member.get("name", "?")),
-			str(member.get("job_id", "?")),
+			_job_named(str(member.get("job_id", "?"))),
 			int(member.get("hp_pct", 100)),
 			int(member.get("ap", 0)),
 			alive_tag,
@@ -825,6 +825,7 @@ static func build_boss_intent(
 		+ "command, protect or heal THEM. Guarding YOURSELF is always open to you — the\n"
 		+ "intent you pick is about your own position, not about deserving to attack.\n"
 		+ "Enemy party state:\n%s\n" % party_block
+		+ _job_rule(party.map(func(m): return str(m.get("job_id", "")) if m is Dictionary else ""))
 		+ "Recent exchange (oldest → newest):\n%s\n" % recent_block
 	)
 	# The party's authored automation, as prose. Falls back to the lead-PC JSON.
@@ -841,7 +842,7 @@ static func build_boss_intent(
 				continue
 			prompt += "\n%s (%s):\n%s\n" % [
 				str(entry.get("name", "?")),
-				str(entry.get("job_id", "?")),
+				_job_named(str(entry.get("job_id", "?"))),
 				str(entry.get("rules", "")),
 			]
 		prompt += (
@@ -914,7 +915,7 @@ static func build_party_line(
 		var alive_tag: String = "alive" if bool(member.get("is_alive", true)) else "DEAD"
 		party_lines.append("  - %s (%s): HP %d%%, %s" % [
 			str(member.get("name", "?")),
-			str(member.get("job_id", "?")),
+			_job_named(str(member.get("job_id", "?"))),
 			int(member.get("hp_pct", 100)),
 			alive_tag,
 		])
@@ -961,7 +962,8 @@ static func build_party_line(
 		)
 
 	return (
-		"You voice %s, the party's %s, in the meta-aware JRPG 'Cowardly Irregular'.\n" % [speaker_name, speaker_job]
+		"You voice %s, the party's %s, in the meta-aware JRPG 'Cowardly Irregular'.\n" % [speaker_name, _job_named(speaker_job)]
+		+ _job_rule([speaker_job] + party.map(func(m): return str(m.get("job_id", "")) if m is Dictionary else ""))
 		+ "Stay rigorously in character. Persona:\n"
 		+ "  %s\n" % persona
 		+ personality_block
@@ -1005,7 +1007,7 @@ static func build_party_line_choice(persona: String, signature_phrases: Array, c
 	var job: String = str(ctx.get("speaker_job_id", ""))
 	var event_kind: String = str(ctx.get("event_kind", "turn_start"))
 	var event_data: Dictionary = ctx.get("event_data", {}) if ctx.get("event_data", {}) is Dictionary else {}
-	var out: String = "You are choosing a combat line for %s, the %s.\n" % [speaker, job]
+	var out: String = "You are choosing a combat line for %s, the %s.\n" % [speaker, _job_named(job)]
 	out += "Persona: %s\n" % persona
 	if not signature_phrases.is_empty():
 		out += "Signature phrases: %s\n" % ", ".join(PackedStringArray(signature_phrases.map(func(s): return str(s))))
@@ -1014,7 +1016,8 @@ static func build_party_line_choice(persona: String, signature_phrases: Array, c
 	out += "Moment (%s): %s %s is at %d%% HP.\n" % [event_kind, _party_line_event_hint(event_kind, event_data), speaker, int(float(ctx.get("speaker_hp_pct", 100.0)))]
 	var party: Array = ctx.get("party", [])
 	if not party.is_empty():
-		out += "Party: %s\n" % ", ".join(PackedStringArray(party.map(func(m): return "%s (%s, %s)" % [m.get("name", "?"), m.get("job_id", "?"), "up" if m.get("is_alive", true) else "down"])))
+		out += "Party: %s\n" % ", ".join(PackedStringArray(party.map(func(m): return "%s (%s, %s)" % [m.get("name", "?"), _job_named(str(m.get("job_id", "?"))), "up" if m.get("is_alive", true) else "down"])))
+	out += _job_rule([job] + party.map(func(m): return str(m.get("job_id", "")) if m is Dictionary else ""))
 	var enemies: Array = ctx.get("enemies", [])
 	if not enemies.is_empty():
 		out += "Enemies: %s\n" % ", ".join(PackedStringArray(enemies.map(func(e): return str(e.get("name", "?")))))
@@ -1248,7 +1251,7 @@ static func _format_party_kit(kit_context: Dictionary) -> String:
 		for aid in (entry.get("kit", []) as Array):
 			parts.append("%s%s (%d MP)" % [str(aid), _shown_as(str(aid)), int(costs.get(str(aid), 0))])
 		lines.append("  %s [%s]: %s" % [
-			str(entry.get("member", "?")), str(entry.get("job_id", "?")), ", ".join(parts)])
+			str(entry.get("member", "?")), _job_named(str(entry.get("job_id", "?"))), ", ".join(parts)])
 		## member_ability runs BETWEEN fights, and the engine refuses anything without an
 		## authored heal/MP effect. Listing the whole kit above taught the model ids that
 		## cannot run, so the usable set is named separately rather than implied.
@@ -1301,7 +1304,7 @@ static func _format_rule_kit(kit_context: Dictionary) -> String:
 	var costs: Dictionary = kit_context.get("costs", {})
 	var max_mp: int = int(kit_context.get("max_mp", 0))
 	var lines: PackedStringArray = PackedStringArray()
-	lines.append("\n\nTHIS CHARACTER is a %s with a %d MP pool." % [str(kit_context.get("job_id", "?")), max_mp])
+	lines.append("\n\nTHIS CHARACTER is a %s with a %d MP pool." % [_job_named(str(kit_context.get("job_id", "?"))), max_mp])
 	lines.append("Ability ids you may use, and NOTHING else (0 MP needs no guard):")
 	var cheapest_id: String = ""
 	var cheapest_cost: int = 0
@@ -1353,7 +1356,28 @@ static func _format_rule_kit(kit_context: Dictionary) -> String:
 
 
 ## The rule set's name and description reach the player; an id like fira or summon_ifrit is not a name he ever sees.
-const SHOWN_NAME_RULE: String = "In the rule set's NAME and DESCRIPTION, call an ability or item by the name in quotes after its id, never by the id."
+const SHOWN_NAME_RULE: String = "In the rule set's NAME and DESCRIPTION, call an ability, item or job by the name in quotes after its id, never by the id."
+
+
+## A job as this world names it beside its id (`cleric "School Nurse"`); the bare id where they agree, which is all of World 1.
+static func _job_named(job_id: String) -> String:
+	if job_id == "" or job_id == "?":
+		return job_id
+	var shown: String = Combatant.job_display_name_for_id(job_id).strip_edges()
+	if shown == "" or shown.to_lower().replace(" ", "_").replace("-", "_") == job_id.to_lower():
+		return job_id
+	return "%s \"%s\"" % [job_id, shown]
+
+
+const JOB_NAME_RULE: String = "A job with a name in quotes after its id is called that in this world: say that name, never the id.\n"
+
+
+## JOB_NAME_RULE when any of these jobs reads differently in this world, else "" (World 1's prompts are unchanged).
+static func _job_rule(job_ids: Array) -> String:
+	for j in job_ids:
+		if _job_named(str(j)) != str(j):
+			return JOB_NAME_RULE
+	return ""
 
 
 ## ` "Name"` after an id whose player-facing name differs from it, else "". The name is what the menus show.
