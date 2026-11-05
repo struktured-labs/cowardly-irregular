@@ -4,10 +4,11 @@ extends SceneTree
 ## boots GameLoop, applies the shared demo prep, raises the party to --level, enters the boss floor, walks up to the
 ## REAL BossTrigger and confirms there (the intro cutscene plays as in the game), then hands every press to
 ## DemoBattlePlayer. Ends after the victory is confirmed: `[DEMO] segment done`, quit 0. A KO prints `[DEMO] KO`.
-##   godot -s tools/demo_boss_segment.gd -- --boss=rat_king|mordaine [--level=N]
+##   godot -s tools/demo_boss_segment.gd -- --boss=rat_king|pyrroth|mordaine [--level=N]
 
 const BOSSES := {
 	"rat_king": {"map": "whispering_cave", "floor": 6, "read": 2, "level": 14, "flags": []},
+	"pyrroth": {"map": "fire_dragon_cave", "floor": 5, "read": 3, "level": 20, "flags": []},
 	"mordaine": {"map": "castle_harmonia", "floor": 4, "read": 7, "level": 22,
 		"flags": ["cutscene_flag_world1_throne_room_approach_complete"]},
 }
