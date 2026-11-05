@@ -74,7 +74,7 @@ HARMONIA = {
                              "pots by the door."),
     "harmonia_chapel": (6, "A small stone village chapel with a short bell tower and a visible bell above the entrance, an "
                            "arched stained-glass window, double wooden doors, a slate roof."),
-    "harmonia_tavern": (5, "The Dancing Tonberry tavern: brown shingle roof, warm lit windows, a hanging sign with a pictured "
+    "harmonia_tavern": (5, "The Dancing Lantern tavern: brown shingle roof, warm lit windows, a hanging sign with a pictured "
                            "small hooded creature holding a lantern (no letters), barrels stacked by the door."),
     "harmonia_house": (5, "A modest village cottage: green shingle roof with a brick chimney, cream plaster walls in dark "
                           "timber framing, a flower box of yellow flowers under one window."),
