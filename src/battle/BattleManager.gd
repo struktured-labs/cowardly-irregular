@@ -2168,14 +2168,10 @@ func trust_window_offered() -> bool:
 ## ⚠️ HALF OF WHAT THIS USED TO SAY WAS FALSE, and it was the half a reader would rely on. It read
 ## "BattleScene renders the take-control affordance and captures CANCEL input". The CAPTURE is real
 ## — BattleScene:4964 routes ui_cancel to request_trust_interrupt() and :3250 has the menu watchdog
-## stand down while the window is open. The RENDER is not: both signal handlers
-## (_on_trust_interrupt_window_opened / _closed) are `pass`. A wired seam, symmetrically connected,
-## with nothing in it.
-## 📌 So the window's only announcement to the player is ONE battle_log_message line in a scrolling
-## log, for TRUST_INTERRUPT_WINDOW_SECONDS. Whether that wants a widget is struktured's call — the
-## two empty handlers are the natural place for one — and this comment now describes what is there
-## rather than what was intended. (cowir-sfx measured it; the audio half is fine, `player_turn`
-## fires 37 lines earlier in the same function.)
+## stand down while the window is open. The RENDER was `pass` in both handlers until 2026-11-05; they now
+## show a TrustTurnPill over the member ("<cancel> Take this turn", a wall-time bar for the window) beside
+## the log line below, and free it on close (controller, cowir-main 21910). (cowir-sfx measured the audio:
+## `player_turn` fires earlier in the same function.)
 ## If request_trust_interrupt() fired during the window, _trust_window_pc
 ## was cleared and we return without kicking AI — the state is already
 ## PLAYER_SELECTING and BattleScene's normal command-menu path picks up.
