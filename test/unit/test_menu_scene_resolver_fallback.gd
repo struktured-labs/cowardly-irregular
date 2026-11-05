@@ -72,11 +72,10 @@ func test_missing_item_emits_battle_log() -> void:
 
 
 func test_missing_item_log_uses_prettified_id() -> void:
-	# Pin: snake_case → Title Case prettifier on item_id.
+	# Pin: the item's MENU name via the shared resolver; the id in words is only the resolver's own last resort (2026-11-05).
 	var src := _read(BATTLE_MANAGER)
-	# The prettifier expression should be near the new battle_log emit.
-	assert_true(src.contains("var item_display: String = item_id.replace(\"_\", \" \").capitalize()"),
-		"item_display must use the standard prettifier (snake_case → Title Case)")
+	assert_true(src.contains("var item_display: String = _item_display_name(item_id)"),
+		"item_display must read the item's menu name, not one built from its id")
 
 
 func test_missing_item_print_preserved() -> void:

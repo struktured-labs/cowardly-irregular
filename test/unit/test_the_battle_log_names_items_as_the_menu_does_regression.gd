@@ -44,9 +44,9 @@ func test_a_renamed_item_reads_as_its_menu_name_in_the_log() -> void:
 	for id in ids:
 		lines.clear()
 		BattleManager._execute_item(user, id, [])
-		var menu := str(ItemSystem.get_item(id).get("name", ""))
-		var built := id.replace("_", " ").capitalize()
-		var said := " | ".join(PackedStringArray(lines))
+		var menu: String = str(ItemSystem.get_item(id).get("name", ""))
+		var built: String = str(id).replace("_", " ").capitalize()
+		var said: String = " | ".join(PackedStringArray(lines))
 		assert_string_contains(said, menu, "%s: the log names it as the menu does" % id)
 		assert_false(built in said, "%s: the log never says the id-built '%s'" % [id, built])
 	BattleManager.battle_log_message.disconnect(grab)
@@ -63,14 +63,14 @@ func test_an_ability_reads_as_its_own_name_not_its_id() -> void:
 	var table: Dictionary = raw.get("abilities", raw) if raw is Dictionary else {}
 	var renamed: Array = []
 	for id in table:
-		var shown := str((table[id] as Dictionary).get("name", "")) if table[id] is Dictionary else ""
+		var shown: String = str((table[id] as Dictionary).get("name", "")) if table[id] is Dictionary else ""
 		var built := str(id).replace("_", " ").capitalize()
 		if shown != "" and shown != built and not (built in shown):
 			renamed.append(str(id))
 	assert_gte(renamed.size(), 10, "CONTROL: renamed abilities were found (%d)" % renamed.size())
 	assert_true("cure" in renamed and "raise" in renamed, "CONTROL: cure and raise, the report's pair, are in the corpus")
 	for id in renamed:
-		var name := BattleManager._ability_display_name(id)
+		var name: String = str(BattleManager._ability_display_name(id))
 		assert_eq(name, str(JobSystem.get_ability(id).get("name", "")), "%s reads as its own name" % id)
 		assert_ne(name, str(id).replace("_", " ").capitalize(), "%s never reads as its id in words" % id)
 	assert_eq(BattleManager._ability_display_name("zz_no_such_spell"), "Zz No Such Spell", "an unknown id keeps its words")
