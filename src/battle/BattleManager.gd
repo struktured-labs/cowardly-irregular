@@ -5630,7 +5630,7 @@ func _execute_ability(caster: Combatant, ability_id: String, targets: Array) -> 
 		var others: Array = caster.learned_abilities.filter(func(a): return str(a) != ability_id)
 		if not others.is_empty():
 			var swapped: String = str(others[randi() % others.size()])
-			battle_log_message.emit("[color=magenta]✦ CORRUPTED CAST — %s's %s comes out as %s![/color]" % [caster.combatant_name, ability_id.capitalize(), swapped.capitalize()])
+			battle_log_message.emit("[color=magenta]✦ CORRUPTED CAST — %s's %s comes out as %s![/color]" % [caster.combatant_name, _ability_display_name(ability_id), _ability_display_name(swapped)])
 			## The routing is corrupted, so the cast must SOUND wrong — the correct spell's cue plays a beat later and would otherwise read as a normal turn.
 			SoundManager.play_battle("corruption_misfire")
 			ability_id = swapped
@@ -7544,7 +7544,7 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 				var cost_refund: int = int(negated_ability.get("mp_cost", 0))
 				if cost_refund > 0:
 					_last_ability_cast_caster.restore_mp(cost_refund)
-				battle_log_message.emit("[color=magenta]✦ %s negates %s's %s![/color]" % [caster.combatant_name, _last_ability_cast_caster.combatant_name, _last_ability_cast_id.capitalize().replace("_", " ")])
+				battle_log_message.emit("[color=magenta]✦ %s negates %s's %s![/color]" % [caster.combatant_name, _last_ability_cast_caster.combatant_name, _ability_display_name(_last_ability_cast_id)])
 				_last_ability_cast_id = ""
 				_last_ability_cast_caster = null
 		## Tick 405: break_mind_swap (release_binding ability — Time
@@ -7914,7 +7914,7 @@ func _replay_last_ability(caster: Combatant, targets: Array) -> void:
 	if _last_ability_cast_id == "":
 		battle_log_message.emit("[color=gray]%s reaches for a memory... but there's nothing to mimic yet.[/color]" % caster.combatant_name)
 		return
-	battle_log_message.emit("[color=magenta]✦ %s mimics %s![/color]" % [caster.combatant_name, _last_ability_cast_id.capitalize().replace("_", " ")])
+	battle_log_message.emit("[color=magenta]✦ %s mimics %s![/color]" % [caster.combatant_name, _ability_display_name(_last_ability_cast_id)])
 	## Replay with the caster as the new source and the same targets — "do what they did".
 	_execute_ability(caster, _last_ability_cast_id, targets)
 
@@ -8367,6 +8367,13 @@ func _execute_mp_restore_ability(caster: Combatant, ability: Dictionary, targets
 ## knows): building it from the id said "Phoenix Down" where the menu says "Resurgo Plume" (ai 21928).
 func _item_display_name(item_id: String) -> String:
 	return ItemNameResolver.resolve(item_id)
+
+
+## The ability twin (controller 21937): abilities.json "name" (thundaga is "Fulmen Maximum"), not the resolver, which
+## checks ITEMS first and would name an ability by an item sharing its id. The id in words only for an unknown id.
+func _ability_display_name(ability_id: String) -> String:
+	var shown := str(JobSystem.get_ability(ability_id).get("name", "")) if JobSystem else ""
+	return shown if shown != "" else ability_id.replace("_", " ").capitalize()
 
 
 func _execute_item(user: Combatant, item_id: String, targets: Array) -> void:
@@ -11084,7 +11091,7 @@ func _apply_counter_repeated_damage_mod(target: Combatant, ability_id: String, d
 		# lands a hit (and triggers downstream signals like
 		# damage_dealt) — the design wants reduced, not negated.
 		adjusted = max(1, int(round(damage * 0.5)))
-		battle_log_message.emit("[color=cyan]%s adapts to %s — damage reduced![/color]" % [target.combatant_name, ability_id.capitalize().replace("_", " ")])
+		battle_log_message.emit("[color=cyan]%s adapts to %s — damage reduced![/color]" % [target.combatant_name, _ability_display_name(ability_id)])
 	target.set_meta("_last_ability_against", ability_id)
 	return adjusted
 
