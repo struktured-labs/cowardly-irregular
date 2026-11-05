@@ -213,6 +213,7 @@ const DELETE_BUTTON := JOY_BUTTON_Y
 ## One level of undo: the whole rule list and cursor as they were before the last delete (cowir-main 21422).
 var _undo_snapshot: Dictionary = {}
 var _footer_label: Label = null
+var _footer_bottom: float = 0.0
 var _grid_scroll: float = 0.0
 var _scrolling: bool = false
 var _status_panel: Control
@@ -717,6 +718,14 @@ func _create_party_status_row(member: Combatant, width: float) -> Control:
 	return row
 
 
+## The strip's text changes with the cursor (Delete / Operator / Undo), so its line count can too; it is re-anchored by its own height every time.
+func _anchor_footer() -> void:
+	if _footer_label == null or not is_instance_valid(_footer_label):
+		return
+	var strip_h := float(_footer_label.get_line_count() * _footer_label.get_line_height())
+	_footer_label.position = Vector2(8, _footer_bottom - max(_grew(24), strip_h + 4.0))
+
+
 func _build_footer(vp_size: Vector2) -> void:
 	"""Build footer with controls help, ludicrous speed toggle, and permadeath staking toggle"""
 	var footer = Label.new()
@@ -730,8 +739,8 @@ func _build_footer(vp_size: Vector2) -> void:
 	footer.autowrap_mode = TextServer.AUTOWRAP_WORD
 	add_child(footer)
 	footer.size = Vector2(vp_size.x - 16.0 - (tog_w * 2.0 + 20.0), 0.0)
-	var strip_h := float(footer.get_line_count() * footer.get_line_height())
-	footer.position = Vector2(8, vp_size.y - max(_grew(24), strip_h + 4.0))
+	_footer_bottom = vp_size.y
+	_anchor_footer()
 
 	# Ludicrous speed toggle button
 	var ls_btn := Control.new()
@@ -1331,6 +1340,7 @@ func _update_cursor() -> void:
 	"""Update cursor visual"""
 	if _footer_label != null and is_instance_valid(_footer_label):
 		_footer_label.text = _hint_strip_text()
+		_anchor_footer()
 	if _cursor == null or _grid_container == null:
 		return
 	# A rebuild re-enters here with the scroll already satisfied, so this recurses once at most.
