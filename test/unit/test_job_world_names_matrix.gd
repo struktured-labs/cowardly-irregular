@@ -25,9 +25,9 @@ func test_control_the_file_parses_and_names_a_known_member() -> void:
 	assert_false(_jobs.is_empty(), "the jobs map must be non-empty")
 	assert_true(_jobs.has("fighter"),
 		"NAMED-member control, not a count: a count passes on an empty parse. got keys: %s" % [_jobs.keys()])
-	assert_eq(str((_jobs.get("fighter", {}) as Dictionary).get("suburban", "")), "Mall Cop",
-		"a NAMED member with a known value is the floor control. This name is AUTHORED, not "
-		+ "struktured's — see _attribution_correction in the json; it anchors the check, not the register")
+	assert_eq(str((_jobs.get("fighter", {}) as Dictionary).get("suburban", "")), "Security Guard",
+		"a NAMED member with a known value is the floor control: struktured's own W2 Fighter, from "
+		+ "docs/job_evolutions_by_world.md, the name the novellas use (see _canon_restored in the json)")
 
 
 ## The world key space must EQUAL 1-6, not merely contain it.
