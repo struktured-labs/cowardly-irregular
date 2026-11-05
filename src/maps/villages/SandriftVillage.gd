@@ -352,7 +352,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(kit)
 
 	# Caravan Master Kes — water_on_the_road giver, east edge of the bazaar.
-	var kes = _create_npc("Caravan Master Kes", "traveler", Vector2(19 * TILE_SIZE,5 * TILE_SIZE), [
+	var kes = _create_npc("Caravan Master Kes", "traveler", Vector2(20 * TILE_SIZE,4 * TILE_SIZE), [
 		"Nine days camped at the edge of a town I was supposed to pass through.",
 		"There's a man on the road east in gold armor. He won't move.",
 		"He doesn't want a toll. He wants PROOF. Of legitimate business.",
