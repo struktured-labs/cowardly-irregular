@@ -844,6 +844,9 @@ func _format_action(action: Dictionary) -> String:
 		"flee_battle":
 			return "Flee\nNext"
 
+		"revive_fallen":
+			return "Revive\nFallen"
+
 		_:
 			return action_type
 
