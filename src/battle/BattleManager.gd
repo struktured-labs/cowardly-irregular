@@ -4479,13 +4479,19 @@ func _execute_summon(combatant: Combatant, monster_type: String) -> void:
 	## Tick 177: announce in the battle log. Pre-fix the new enemy
 	## sprite appeared via the monster_summoned signal but no log
 	## line said "X summons a Goblin!" — players got confused why
-	## a new enemy showed up mid-battle. Standard snake_case →
-	## Title Case prettifier on the monster type for display.
-	var display_name: String = monster_type.replace("_", " ").capitalize()
-	var article: String = "an" if display_name.substr(0, 1).to_lower() in ["a", "e", "i", "o", "u"] else "a"
-	battle_log_message.emit("[color=purple]%s summons %s %s![/color]" % [combatant.combatant_name, article, display_name])
-	print("  → %s summons %s %s!" % [combatant.combatant_name, article, display_name])
+	## a new enemy showed up mid-battle. The foe's own monsters.json name (the one its panel shows: a snake is a
+	## "Swamp Viper"), the id in words only for a type with no data (2026-11-05, the name-from-data class).
+	var display_name: String = _monster_display_name(monster_type)
+	var lead: String = "" if display_name.begins_with("The ") else ("an " if display_name.substr(0, 1).to_lower() in ["a", "e", "i", "o", "u"] else "a ")
+	battle_log_message.emit("[color=purple]%s summons %s%s![/color]" % [combatant.combatant_name, lead, display_name])
+	print("  → %s summons %s%s!" % [combatant.combatant_name, lead, display_name])
 	monster_summoned.emit(monster_type, combatant)
+
+
+func _monster_display_name(monster_type: String) -> String:
+	var data = EncounterSystem.monster_database.get(monster_type, {}) if EncounterSystem else {}
+	var shown: String = str(data.get("name", "")) if data is Dictionary else ""
+	return shown if shown != "" else monster_type.replace("_", " ").capitalize()
 
 
 func _alive_enemy_count() -> int:
