@@ -44,6 +44,18 @@ func press(action: String) -> void:
 	await _beat(0.05)
 
 
+func _bm() -> Node:
+	return get_tree().root.get_node("BattleManager")
+
+
+func _js() -> Node:
+	return get_tree().root.get_node("JobSystem")
+
+
+func _is() -> Node:
+	return get_tree().root.get_node("ItemSystem")
+
+
 func _gl() -> Node:
 	return get_tree().root.get_node_or_null("GameLoop")
 
@@ -92,7 +104,7 @@ func _step() -> void:
 		await _beat(1.0)
 		return
 	var menu = scene.get("active_win98_menu")
-	if BattleManager.current_state == BattleManager.BattleState.PLAYER_SELECTING and menu != null \
+	if _bm().current_state == _bm().BattleState.PLAYER_SELECTING and menu != null \
 			and is_instance_valid(menu) and menu.visible and menu.get("_can_accept_input") == true:
 		await _take_turn(scene, menu)
 
@@ -128,12 +140,12 @@ func _hp_frac(c) -> float:
 
 
 func _knows(pc, aid: String) -> bool:
-	return aid in pc.learned_abilities and not JobSystem.get_ability(aid).is_empty() \
-			and JobSystem.get_ability_mp_cost(pc, aid) <= pc.current_mp
+	return aid in pc.learned_abilities and not _js().get_ability(aid).is_empty() \
+			and _js().get_ability_mp_cost(pc, aid) <= pc.current_mp
 
 
 func _plan(scene: Node, pc) -> Dictionary:
-	var party: Array = _living(BattleManager.player_party)
+	var party: Array = _living(_bm().player_party)
 	var foes: Array = _living(scene.get("test_enemies"))
 	if foes.is_empty():
 		return {}
@@ -148,13 +160,13 @@ func _plan(scene: Node, pc) -> Dictionary:
 		if _hp_frac(m) < 0.40 and (hurt == null or _hp_frac(m) < _hp_frac(hurt)):
 			hurt = m
 	if hurt != null:
-		var h_idx: int = BattleManager.player_party.find(hurt)
+		var h_idx: int = _bm().player_party.find(hurt)
 		for aid in ["curaga", "cura", "cure"]:
 			if _knows(pc, aid):
 				return {"why": "%s at %d%%, heal" % [hurt.combatant_name, int(_hp_frac(hurt) * 100)],
 					"steps": [{"path": ["ability_menu", ["ability_menu_" + aid, "ability_" + aid], "ability_%s_ally_%d" % [aid, h_idx]], "commit": "accept"}]}
 		for iid in ["hi_potion", "potion"]:
-			if ItemSystem.party_item_count(BattleManager.consumable_bag(pc), iid) > 0:
+			if _is().party_item_count(_bm().consumable_bag(pc), iid) > 0:
 				return {"why": "%s at %d%%, potion" % [hurt.combatant_name, int(_hp_frac(hurt) * 100)],
 					"steps": [{"path": ["item_menu", "item_menu_" + iid, "item_%s_ally_%d" % [iid, h_idx]], "commit": "accept"}]}
 	# A telegraphed big hit, or AP in debt: Defer and take it on the chin.
@@ -184,12 +196,12 @@ func _best_strike(pc, t_idx: int) -> Array:
 	var best := ""
 	var best_mult := 0.0
 	for aid in pc.learned_abilities:
-		var a: Dictionary = JobSystem.get_ability(str(aid))
+		var a: Dictionary = _js().get_ability(str(aid))
 		if a.is_empty() or str(a.get("target_type", "")) != "single_enemy":
 			continue
 		if not (str(a.get("type", "")) in ["magic", "physical"]):
 			continue
-		var cost: int = JobSystem.get_ability_mp_cost(pc, str(aid))
+		var cost: int = _js().get_ability_mp_cost(pc, str(aid))
 		if cost > pc.current_mp * 0.5:
 			continue
 		var mult: float = float(a.get("damage_multiplier", 1.0))
@@ -230,7 +242,7 @@ func _walk_to(menu, idx: int) -> void:
 
 
 func _take_turn(scene: Node, root) -> void:
-	var pc = BattleManager.current_combatant
+	var pc = _bm().current_combatant
 	if pc == null:
 		return
 	var plan := _plan(scene, pc)

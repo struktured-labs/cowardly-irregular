@@ -73,21 +73,15 @@ func _init() -> void:
 		m.current_mp = m.max_mp
 		m.is_alive = true
 	print("[DEMO] party at level %d: %s" % [level, ", ".join(gl.party.map(func(m): return "%s %d/%d" % [m.combatant_name, m.max_hp, m.max_mp]))])
-	# Clear any story beat that would fire on the way in, by its own completion flag; never record over one.
-	var flags: Dictionary = gl.get("_CUTSCENE_COMPLETION_FLAGS") if "_CUTSCENE_COMPLETION_FLAGS" in gl else {}
-	for i in 12:
-		var pending := str(gl._get_pending_story_cutscene()) if gl.has_method("_get_pending_story_cutscene") else ""
-		if pending == "":
-			break
-		if flags.has(pending):
-			gs.game_constants[str(flags[pending])] = true
-			print("[DEMO] story beat %s marked seen for the segment" % pending)
-		else:
-			print("[DEMO] ABORT a story beat is pending and has no completion flag: %s" % pending)
-			quit(1)
-			return
 	gl._current_cave_floor = int(spec["floor"])
 	gl._set_current_map_id(str(spec["map"]))
+	# Settle every story beat the arrival would fire, BEFORE the map loads (the check reads _current_map_id).
+	if prep and prep.has_method("clear_pending_story"):
+		var cleared: Array = prep.clear_pending_story(gl)
+		if cleared.size() > 0 and str(cleared[-1]).begins_with("ABORT:"):
+			print("[DEMO] ABORT %s" % str(cleared[-1]))
+			quit(1)
+			return
 	await gl._start_exploration()
 	await _beat(1.0)
 	var scene = gl.get("current_scene")
@@ -105,7 +99,7 @@ func _init() -> void:
 	# Stand a step south of the trigger, a human beat, then confirm: the interact path a player takes.
 	player.global_position = (trigger as Node2D).global_position + Vector2(0, 30)
 	await _beat(1.6)
-	var player_node := DemoBattlePlayer.new()
+	var player_node: Node = load("res://tools/demo_battle_player.gd").new()
 	player_node.intro_read_lines = int(spec["read"])
 	player_node.victory_hold = 9.6
 	root.add_child(player_node)
