@@ -10,16 +10,19 @@ const BM_PATH := "res://src/battle/BattleManager.gd"
 
 var _guard
 var _saved_scale := 1.0
+var _saved_speed: float = 0.0
 
 
 func before_each() -> void:
 	_guard = BattleStateGuard.new()
 	_guard.snapshot()
 	_saved_scale = Engine.time_scale
+	_saved_speed = float(GameState.default_battle_speed)
 
 
 func after_each() -> void:
 	Engine.time_scale = _saved_scale
+	GameState.default_battle_speed = _saved_speed
 	BattleManager.turbo_mode = false
 	BattleManager._trust_window_pc = null
 	_guard.restore()
@@ -67,15 +70,26 @@ func test_the_window_closes_after_the_same_wall_time_at_1x_and_4x() -> void:
 
 func test_the_offer_stands_up_to_4x_and_not_above_or_in_turbo() -> void:
 	var bm = BattleManager
-	for scale in [0.25, 0.5, 1.0]:
-		Engine.time_scale = scale
-		assert_true(bm.trust_window_offered(), "engine %.2f (up to 4x) offers the window" % scale)
-	for scale in [2.0, 4.0, 16.0]:
-		Engine.time_scale = scale
-		assert_false(bm.trust_window_offered(), "engine %.2f (above 4x) offers nothing the player could take" % scale)
-	Engine.time_scale = 0.25
+	for speed in [0.25, 0.5, 1.0]:
+		GameState.default_battle_speed = speed
+		assert_true(bm.trust_window_offered(), "a player at engine %.2f (up to 4x) is offered the window" % speed)
+	for speed in [2.0, 4.0, 16.0]:
+		GameState.default_battle_speed = speed
+		assert_false(bm.trust_window_offered(), "a player at engine %.2f (above 4x) is offered nothing they could take" % speed)
+	GameState.default_battle_speed = 0.25
 	bm.turbo_mode = true
 	assert_false(bm.trust_window_offered(), "turbo never offers it, even at 1x")
+
+
+## adhoc 21845: it keys on the player's CHOSEN speed, not the live engine scale a beat lowers for a moment.
+func test_a_transient_slowdown_does_not_change_the_offer() -> void:
+	var bm = BattleManager
+	GameState.default_battle_speed = 16.0
+	Engine.time_scale = 0.1  # hit-lag, or a first signature's forced 1x
+	assert_false(bm.trust_window_offered(), "a 16x player in a hit-stop is still a 16x player: no surprise window")
+	GameState.default_battle_speed = 0.5
+	Engine.time_scale = 16.0
+	assert_true(bm.trust_window_offered(), "CONTROL: a 2x player is offered it whatever the engine reads this frame")
 
 
 ## The routing asks: a trusted turn opens its window only when the window is offered, else goes straight to the AI.

@@ -2153,9 +2153,15 @@ func _trust_interrupt_token() -> String:
 	return tok if tok != "" else "X"
 
 
-## Whether a trusted turn offers its take-it-back window at the speed the battle is running now.
+## Whether a trusted turn offers its take-it-back window at the speed the PLAYER chose. Not Engine.time_scale:
+## hit-lag and a first signature's forced 1x lower it for a beat at any rung (adhoc 21845).
 func trust_window_offered() -> bool:
-	return not turbo_mode and Engine.time_scale <= TRUST_WINDOW_MAX_SCALE + 0.001
+	if turbo_mode:
+		return false
+	var chosen: float = Engine.time_scale
+	if GameState and "default_battle_speed" in GameState:
+		chosen = float(GameState.default_battle_speed)
+	return chosen <= TRUST_WINDOW_MAX_SCALE + 0.001
 
 
 ## Emit the window signal, then await the timeout.
