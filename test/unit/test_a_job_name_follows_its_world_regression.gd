@@ -15,8 +15,6 @@ const SRC := "res://src"
 const ALLOWED := {
 	"res://src/battle/Combatant.gd": [1, "HELPER", "job_display_name()'s own read, for a job dict with no id"],
 	"res://src/ui/JobMenu.gd": [2, "FALLBACK", "after get_job_display_name, only when the job has no id"],
-	"res://src/ui/OverworldMenu.gd": [2, "PENDING", "cowir-overworld (field menu party row + member card)"],
-	"res://src/ui/AbilitiesMenu.gd": [1, "PENDING", "cowir-overworld (character panel)"],
 	"res://src/ui/autobattle/AutobattleGridEditor.gd": [1, "PENDING", "cowir-controller (editor header)"],
 	"res://src/ui/MenuScene.gd": [4, "PENDING", "unassigned UI (party/status rows): cowir-main to route"],
 	"res://src/ui/StatusMenu.gd": [1, "PENDING", "unassigned UI: cowir-main to route"],
