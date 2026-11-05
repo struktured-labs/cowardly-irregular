@@ -49,10 +49,10 @@ func test_a_combat_line_and_a_taunt_see_it_too() -> void:
 	var party: Array = [{"name": "Kai", "job_id": id, "hp_pct": 80, "is_alive": true}]
 	var line: String = DP.build_party_line("A voice.", [], {"speaker_name": "Kai", "speaker_job_id": id, "party": party})
 	assert_string_contains(line, "the party's %s \"%s\"" % [id, shown], "a party member's own line knows what they are called")
-	assert_string_contains(line, DP.JOB_NAME_RULE, "and is told to say that name")
+	assert_string_contains(line, DP.NAME_IN_QUOTES_RULE, "and is told to say that name")
 	var taunt: String = DP.build_boss_intent("Pyrroth", {"persona": "A dragon.", "party": party})
 	assert_string_contains(taunt, "Kai (%s \"%s\")" % [id, shown], "a boss sizing up the party sees the same name")
-	assert_string_contains(taunt, DP.JOB_NAME_RULE, "and the same rule")
+	assert_string_contains(taunt, DP.NAME_IN_QUOTES_RULE, "and the same rule")
 
 
 func test_world_one_prompts_are_unchanged() -> void:
@@ -60,6 +60,6 @@ func test_world_one_prompts_are_unchanged() -> void:
 	var party: Array = [{"name": "Kai", "job_id": "cleric", "hp_pct": 80, "is_alive": true}]
 	var line: String = DP.build_party_line("A voice.", [], {"speaker_name": "Kai", "speaker_job_id": "cleric", "party": party})
 	assert_string_contains(line, "the party's cleric, in", "world 1 keeps the bare id, as before")
-	assert_false(line.contains(DP.JOB_NAME_RULE), "and adds no rule where every name agrees")
+	assert_false(line.contains(DP.NAME_IN_QUOTES_RULE), "and adds no rule where every name agrees")
 	assert_string_contains(DP._format_rule_kit({"resolved": true, "job_id": "cleric", "kit": ["attack"], "max_mp": 10,
 		"costs": {"attack": 0}}), "THIS CHARACTER is a cleric with", "the composer line is the same in world 1")

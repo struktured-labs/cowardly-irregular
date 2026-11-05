@@ -1027,6 +1027,12 @@ func _smoke_player_path_battle() -> void:
 
 	## Hand the fight back immediately. The leg covers the ENTRY, and a real fight here would cost
 	## the wipe leg's budget for coverage the goblin leg already has.
+	## And no CHAIN after it: alerted roamers near the touch join as further links, and this victory would
+	## start the next one, a real fight the hand-back plays by tapping accept and can LOSE (.772 try1, 761, 766:
+	## every recent smoke FAIL had chain=1). The chain forming is still covered by its [CHAIN] line above.
+	var dropped: int = _smoke_drop_chain()
+	if dropped > 0:
+		print("[SMOKE] player-path battle: dropped %d chained battle(s); the leg covers the entry" % dropped)
 	BattleManager.end_battle(true)
 	var back: float = 0.0
 	while BattleManager.current_state != BattleManager.BattleState.INACTIVE and back < 15.0:
@@ -1064,6 +1070,14 @@ func _smoke_player_path_battle() -> void:
 	elif not (current_scene != null and is_instance_valid(current_scene) and "monster_spawner" in current_scene):
 		print("[SMOKE] FAIL: the player-path battle ended but exploration never came back in %.1fs" % waited_back)
 		_smoke_failed = true
+
+
+## Ends any chain the player-path touch started and returns how many links it dropped. The victory path continues
+## a chain only while _chain_links is non-empty, so an empty one returns to the map.
+func _smoke_drop_chain() -> int:
+	var dropped: int = _chain_links.size()
+	_end_chain()
+	return dropped
 
 
 ## Pool the party's AP into one strike — the design pillar nothing in automation had ever executed.
