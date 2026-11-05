@@ -21,8 +21,8 @@
     {
       "type": "dialogue",
       "lines": [
-        { "speaker": "The Lost Cartographer", "text": "You found the shortcut. Nobody finds the shortcut.", "theme": "enemy", "portrait": "mysterious" },
-        { "speaker": "The Lost Cartographer", "text": "I drew it in on my last day, out of spite. The only honest line in the whole warren.", "theme": "enemy", "portrait": "mysterious" }
+        { "speaker": "The Lost Cartographer", "text": "You found the shortcut. Nobody finds the shortcut.", "theme": "enemy", "portrait": "cartographer_wraith" },
+        { "speaker": "The Lost Cartographer", "text": "I drew it in on my last day, out of spite. The only honest line in the whole warren.", "theme": "enemy", "portrait": "cartographer_wraith" }
       ]
     },
     {
@@ -34,8 +34,8 @@
     {
       "type": "dialogue",
       "lines": [
-        { "speaker": "The Lost Cartographer", "text": "None of it was supposed to be BUILT. I was a cartographer, not an architect. They made me draw it anyway.", "theme": "enemy", "portrait": "mysterious" },
-        { "speaker": "The Lost Cartographer", "text": "Let's see if you read the map better than they did.", "theme": "enemy", "portrait": "mysterious" }
+        { "speaker": "The Lost Cartographer", "text": "None of it was supposed to be BUILT. I was a cartographer, not an architect. They made me draw it anyway.", "theme": "enemy", "portrait": "cartographer_wraith" },
+        { "speaker": "The Lost Cartographer", "text": "Let's see if you read the map better than they did.", "theme": "enemy", "portrait": "cartographer_wraith" }
       ]
     },
     { "type": "screen_shake", "duration": 0.3, "intensity": 3.0 },
