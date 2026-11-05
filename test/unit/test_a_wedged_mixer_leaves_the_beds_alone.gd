@@ -84,3 +84,23 @@ func test_a_music_start_and_stop_never_reach_a_latched_driver() -> void:
 	assert_true(_plant(), "CONTROL: the plant latched")
 	SoundManager.stop_music()
 	assert_true(SoundManager._music_player.playing, "a latched mixer still stopped the bed (the driver mutex)")
+
+
+## cowir-music 21876: skip the mutex, keep the cleanup. A latch must not leave the next music test on stale state.
+func test_a_latched_stop_still_clears_the_music_bookkeeping() -> void:
+	SoundManager.play_music("dungeon_medieval")
+	assert_ne(SoundManager._current_music, "", "CONTROL: a bed is current before the stop")
+	assert_true(_plant(), "CONTROL: the plant latched")
+	SoundManager.stop_music()
+	assert_eq(SoundManager._current_music, "", "a latched stop_music skipped its bookkeeping: the next music test starts on this bed")
+	assert_false(SoundManager._music_playing, "a latched stop_music left _music_playing set")
+	assert_true(SoundManager._music_player.playing, "CONTROL: the player itself was never stopped (the mutex call was skipped)")
+
+
+func test_a_latched_ambient_stop_still_clears_its_key() -> void:
+	SoundManager.play_ambient(AMBIENT_KEY)
+	assert_eq(SoundManager._current_ambient_key, AMBIENT_KEY, "CONTROL: the bed's key is current")
+	assert_true(_plant(), "CONTROL: the plant latched")
+	SoundManager.stop_ambient()
+	assert_eq(SoundManager._current_ambient_key, "", "a latched stop_ambient kept its key, so play_ambient(same) would take its already-playing early-out")
+
