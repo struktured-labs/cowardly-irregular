@@ -254,6 +254,14 @@ func _shoot(name: String, paths: Array) -> void:
 			await process_frame
 		print("[SHOT] %s framing: %s" % [name, framing])
 
+	## A marketing still is not the HUD (cowir-adhoc 21988): AreaTransition draws its "Enter Attic" /
+	## "The Forge (rear entrance)" sign whenever the gate is drawn, not only near it, so a village frame
+	## carried door labels across its facades. Hidden for the CAPTURE only; the game is untouched, and
+	## CAPTIONS says the shots omit them. Counted and printed, so the log proves it ran.
+	var hid := _hide_transition_labels(scene)
+	await process_frame
+	print("[SHOT] %s hid %d door label(s)" % [name, hid])
+
 	var img := root.get_texture().get_image()
 	var out := "res://tmp/marketing/%s.png" % name
 	if not ShotGuard.save_or_refuse(img, out):
@@ -263,6 +271,44 @@ func _shoot(name: String, paths: Array) -> void:
 
 	scene.queue_free()
 	await process_frame
+
+
+func _walkable_stand(scene: Node, stand: Vector2) -> Vector2:
+	if not scene.has_method("_is_cell_walkable"):
+		return stand
+	var t := float(VillagePropScript.TILE)
+	var c0 := Vector2i(floori(stand.x / t), floori(stand.y / t))
+	if scene._is_cell_walkable(c0):
+		print("[SHOT] stand cell %s is walkable" % str(c0))
+		return stand
+	var best := Vector2i(-1, -1)
+	var best_d := INF
+	for dy in range(-4, 5):
+		for dx in range(-4, 5):
+			var c := c0 + Vector2i(dx, dy)
+			var d := Vector2(dx, dy).length()
+			if d < best_d and scene._is_cell_walkable(c):
+				best_d = d
+				best = c
+	if best_d == INF:
+		print("[SHOT] stand cell %s is NOT walkable and nothing within 4 tiles is: kept as is" % str(c0))
+		return stand
+	print("[SHOT] stand cell %s is NOT walkable: nudged to %s" % [str(c0), str(best)])
+	return Vector2((best.x + 0.5) * t, (best.y + 0.5) * t)
+
+
+## Every AreaTransition's sign label (its "_indicator_label"), hidden for the capture. Returns how many
+## were visible and are now hidden; one that was already hidden is not counted.
+func _hide_transition_labels(n: Node) -> int:
+	var hid := 0
+	if "_indicator_label" in n:
+		var l = n.get("_indicator_label")
+		if l != null and is_instance_valid(l) and l.visible:
+			l.visible = false
+			hid += 1
+	for c in n.get_children():
+		hid += _hide_transition_labels(c)
+	return hid
 
 
 ## Frame a village on its HOUSES, not its entrance (2026-10-31). The camera follows the player, who
@@ -329,7 +375,13 @@ func _frame_on_houses(scene: Node) -> String:
 	## Smoothing OFF for the shot: with it on, the camera was still easing toward the new spot when the
 	## frame was taken, so two identical runs differed by a 2-3 px pan (45% of pixels on Frosthold).
 	scene.camera.position_smoothing_enabled = false
+	## Stand somewhere a player CAN stand (cowir-overworld 21994): the door-foot point is synthetic and once
+	## landed on Harmonia's river/wall seam. Ask the village itself (BaseVillage._is_cell_walkable), and step
+	## to the nearest walkable cell within 4 tiles. Nothing walkable in reach keeps the point and SAYS so.
+	stand = _walkable_stand(scene, stand)
 	scene.player.global_position = stand
+	## Where the tool stood the player, in world px (cowir-overworld 21992 asks whether a seam is a spawn or framing).
+	print("[SHOT] player stood at world px (%d, %d), door=%s" % [int(stand.x), int(stand.y), str(used_door)])
 	## Keep the player inside the frame: the offset never pushes them past the view's edge.
 	var keep := VIEW * 0.5 - Vector2(48, 72)
 	scene.camera.offset = (target - stand).clamp(-keep, keep)

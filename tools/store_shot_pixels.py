@@ -18,8 +18,14 @@ second capture of the SAME tree: FRESH_A vs FRESH_B is that shot's run-to-run no
 twinkling stars, animation phase).
 
 VERDICT, per shot present in all three dirs:
-    MOVED   delta >= 1.0% AND delta > 3 x noise   a real change: a re-shoot candidate for a human eye
+    MOVED   noise == 0 and delta > 0                a DETERMINISTIC change: two runs agree to the pixel,
+                                                    so any difference from the stored frame is real
+            noise > 0: delta >= 1.0% AND > 3 x noise  a change bigger than the shot's own animation
     NOISE   delta > 0 but inside that bound         the difference is the shot's own animation
+    The 1% floor only makes sense where the shot MOVES between runs. Measured 2026-11-05 on the .770
+    re-shoot (noise 0.00% on every shot): a hidden door sign changed 0.07-0.90% of a frame and the
+    title's version label 0.01%, and the floor called all of them NOISE while the capture log named
+    the cause of each.
     SAME    delta == 0
     SIZE    the frames differ in size               always reported, never silently skipped
 A shot missing from any dir is listed as MISSING. MOVED says which frames to LOOK at, not which
@@ -53,6 +59,8 @@ def verdict(d, noise):
         return "SIZE"
     if d == 0:
         return "SAME"
+    if noise == 0:
+        return "MOVED"
     if d >= MIN_MOVED and d > NOISE_FACTOR * noise:
         return "MOVED"
     return "NOISE"
@@ -89,7 +97,7 @@ def main(argv):
     if not rows:
         print(f"[pixels] BLOCKED: no .png in any of the three dirs: a check over nothing passes everything", file=sys.stderr)
         return 2
-    print(f"[pixels] {len(rows)} shot(s) · share of pixels over {LEVEL} levels · MOVED = >= {MIN_MOVED:.0%} and > {NOISE_FACTOR:g}x noise")
+    print(f"[pixels] {len(rows)} shot(s) · share of pixels over {LEVEL} levels · MOVED = any change when noise is 0, else >= {MIN_MOVED:.0%} and > {NOISE_FACTOR:g}x noise")
     for n, v, d, noise in rows:
         print(f"  {v:<7} {n:<30} vs stored {fmt(d)}   noise a/b {fmt(noise)}")
     counts = {}
@@ -127,16 +135,18 @@ def selftest():
     put(S, "noisy", base); put(A, "noisy", patch(base, (0, 0, 100, 20), (250, 0, 0))); put(B, "noisy", patch(base, (0, 50, 100, 70), (250, 0, 0)))
     # jitter: every pixel off by 10 levels (under LEVEL) -> SAME
     put(S, "jitter", base); put(A, "jitter", Image.new("RGB", (100, 100), (50, 90, 130))); put(B, "jitter", Image.new("RGB", (100, 100), (50, 90, 130)))
-    # tiny: 0.5% changed, stable across runs -> under MIN_MOVED -> NOISE, never MOVED
+    # tiny, DETERMINISTIC: 0.5% changed, identical in both runs (noise 0) -> MOVED. The door-sign case.
     tiny = patch(base, (0, 0, 50, 1), (250, 250, 250))
     put(S, "tiny", base); put(A, "tiny", tiny); put(B, "tiny", tiny)
+    # tiny, NOISY: 0.5% changed, but the runs disagree by 0.3% elsewhere -> under the 1% floor -> NOISE
+    put(S, "tinynoisy", base); put(A, "tinynoisy", tiny); put(B, "tinynoisy", patch(tiny, (0, 99, 30, 100), (0, 250, 0)))
     # size: a resized capture
     put(S, "resized", base); put(A, "resized", Image.new("RGB", (100, 90), (40, 80, 120))); put(B, "resized", Image.new("RGB", (100, 90), (40, 80, 120)))
     # missing from one run
     put(S, "gone", base); put(A, "gone", base)
 
     got = {n: (v, d) for n, v, d, _ in judge(S, A, B)}
-    want = {"same": "SAME", "moved": "MOVED", "noisy": "NOISE", "jitter": "SAME", "tiny": "NOISE", "resized": "SIZE", "gone": "MISSING"}
+    want = {"same": "SAME", "moved": "MOVED", "noisy": "NOISE", "jitter": "SAME", "tiny": "MOVED", "tinynoisy": "NOISE", "resized": "SIZE", "gone": "MISSING"}
     for n, w in want.items():
         v = got.get(n, ("absent", None))[0]
         ok = v == w
