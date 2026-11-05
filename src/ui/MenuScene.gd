@@ -122,7 +122,7 @@ func _create_party_row(index: int, member: Combatant) -> Control:
 	# Job label
 	var job_name = "???"
 	if member.job:
-		job_name = member.job.get("name", "???")
+		job_name = member.job_display_name("???")
 	var job_label = Label.new()
 	job_label.name = "JobLabel"
 	job_label.text = job_name
@@ -279,7 +279,7 @@ func _show_status_view() -> void:
 	# Job info
 	var job_name = "None"
 	if member.job:
-		job_name = member.job.get("name", "Unknown")
+		job_name = member.job_display_name("Unknown")
 	var job_info = Label.new()
 	job_info.text = "%s  Lv.%d  (EXP: %d/%d)" % [job_name, member.job_level, member.job_exp, member.job_level * 100]
 	job_info.add_theme_font_size_override("font_size", 12)
@@ -653,7 +653,7 @@ func _show_abilities_view() -> void:
 	# Header
 	var job_name = "None"
 	if member.job:
-		job_name = member.job.get("name", "Unknown")
+		job_name = member.job_display_name("Unknown")
 
 	var header = Label.new()
 	header.text = "Abilities - %s (%s)" % [member.combatant_name, job_name]
@@ -1120,7 +1120,7 @@ func _show_formation_view() -> void:
 
 		var job_name = "???"
 		if member.job:
-			job_name = member.job.get("name", "???")
+			job_name = member.job_display_name("???")
 		var job_lbl = Label.new()
 		job_lbl.text = job_name
 		job_lbl.add_theme_font_size_override("font_size", 11)

@@ -288,10 +288,28 @@ static func _deep_advisories(script: Dictionary, character_id: String) -> Array:
 			if msg.begins_with("cannot resolve job"):
 				unchecked = true
 				continue
-			out.append("rule %d: %s" % [i, msg])
+			out.append("Rule %d: %s" % [i + 1, _for_player(msg, rules[i], character_id)])
 	if unchecked and out.is_empty():
 		out.append("could not check this code against '%s' — the character's job did not resolve, so there is no compatibility advice either way" % character_id)
 	return out
+
+
+## A reachability finding in the player's words: the ability as the menu names it, the job as THIS world does,
+## no lint vocabulary (2026-11-05). The kind is read off the rule's own action ids; anything not recognised passes
+## through unchanged. The lint text itself stays as written: it is the Rule Composer's repair hint (model-facing).
+static func _for_player(msg: String, rule: Dictionary, character_id: String) -> String:
+	var job_id: String = str(AutobattleSystem.get_deep_check_kit(character_id).get("job_id", ""))
+	var job_name: String = Combatant.job_display_name_for_id(job_id) if job_id != "" else "character"
+	for a in rule.get("actions", []):
+		if str(a.get("type", "")) != "ability":
+			continue
+		var aid: String = str(a.get("id", ""))
+		if msg.begins_with("ability '%s' not in " % aid):
+			return "%s isn't learned yet by this %s, so the rule is skipped until then" % [AbilityIcons.name_of(aid), job_name]
+		for up in (a.get("upgrades", []) as Array):
+			if msg.begins_with("upgrade ability '%s' not learnable" % str(up)):
+				return "%s can't be learned by this %s at any level" % [AbilityIcons.name_of(str(up)), job_name]
+	return msg
 
 
 ## Rules that imported but will not fire for this character, in player-facing form.

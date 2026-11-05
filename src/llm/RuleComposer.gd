@@ -332,7 +332,7 @@ func _rule_ability_label(rule: Dictionary) -> String:
 		if typeof(a) == TYPE_DICTIONARY and str(a.get("type", "")) == "ability":
 			var aid: String = str(a.get("id", ""))
 			if aid != "":
-				return "'%s'" % aid
+				return "'%s'" % AbilityIcons.name_of(aid)
 	return "costed"
 
 
@@ -715,8 +715,9 @@ func _drop_unrunnable_member_abilities(rules: Array, domain_system) -> Array[Str
 			if aid == "" or domain_system.ability_works_between_battles(aid):
 				live.append(a)
 				continue
+			var who: String = str(a.get("member", ""))
 			pending.append("Dropped '%s' for %s — it only works inside a battle, and member_ability runs between them."
-				% [aid, str(a.get("member", "that member"))])
+				% [AbilityIcons.name_of(aid), domain_system.member_display_name(who) if who != "" and domain_system.has_method("member_display_name") else "that member"])
 		if live.size() == had:
 			kept.append(rule)
 			continue
@@ -950,7 +951,7 @@ func _normalise_item_ids(rules: Array, item_ids: Array) -> Array[String]:
 			if real == "":
 				continue
 			a["id"] = real
-			notes.append("Read item '%s' as '%s'." % [raw, real])
+			notes.append("Read item '%s' as %s." % [raw, ItemNameResolver.resolve(real)])
 		for c in rule.get("conditions", []):
 			if typeof(c) != TYPE_DICTIONARY or str(c.get("type", "")) != "item_count":
 				continue
@@ -961,7 +962,7 @@ func _normalise_item_ids(rules: Array, item_ids: Array) -> Array[String]:
 			if real_c == "":
 				continue
 			c["item_id"] = real_c
-			notes.append("Read item '%s' as '%s'." % [raw_c, real_c])
+			notes.append("Read item '%s' as %s." % [raw_c, ItemNameResolver.resolve(real_c)])
 	return notes
 
 
@@ -1217,7 +1218,7 @@ func _aim_untargeted_abilities(rules: Array) -> Array[String]:
 			if aim == "":
 				continue
 			a["target"] = aim
-			notes.append("Aimed '%s' at %s — it had no target, and an untargeted ability is sent at the enemy." % [aid, aim])
+			notes.append("Aimed '%s' at %s — it had no target, and an untargeted ability is sent at the enemy." % [AbilityIcons.name_of(aid), aim])
 	return notes
 
 

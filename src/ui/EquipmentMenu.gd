@@ -203,7 +203,7 @@ func _create_character_panel(panel_size: Vector2, at: Vector2) -> Control:
 	var row_bottom := MenuChrome.place_header(name_label, level_label, panel.size.x, 8.0, false, 8.0)
 
 	# Job
-	var job_name = character.job.get("name", "Fighter") if character.job else "Fighter"
+	var job_name = character.job_display_name("Fighter") if character.job else "Fighter"
 	var job_label = Label.new()
 	job_label.text = job_name
 	job_label.add_theme_font_size_override("font_size", TextScale.scaled(11))
