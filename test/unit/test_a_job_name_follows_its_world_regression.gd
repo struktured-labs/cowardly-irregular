@@ -16,7 +16,6 @@ const ALLOWED := {
 	"res://src/battle/Combatant.gd": [1, "HELPER", "job_display_name()'s own read, for a job dict with no id"],
 	"res://src/ui/JobMenu.gd": [2, "FALLBACK", "after get_job_display_name, only when the job has no id"],
 	"res://src/ui/PartyStatusScreen.gd": [2, "FALLBACK", "cowir-controller: the stored name only for a job with no id, after the id goes through the world helper"],
-	"res://src/maps/interiors/EldertreeGraftingHouseInterior.gd": [1, "PENDING", "cowir-story/overworld (an NPC names the leader's job)"],
 }
 
 var _guard
