@@ -37,6 +37,22 @@ func _ready() -> void:
 	_load_item_data()
 
 
+## Fields that are ENUMS, compared and matched as ints. JSON hands every number back as a FLOAT, and in Godot 4
+## `0.0 in [0, 1, 2, 3]` is false and `match` is type-strict: the autobattle item picker offered NO items for that
+## (controller 22016). Coerced where JSON enters (main 22029), so no consumer meets a float. Quantities stay as loaded.
+const INT_FIELDS := ["category", "target_type"]
+
+
+static func coerce_int_fields(table: Dictionary) -> void:
+	for id in table:
+		var entry = table[id]
+		if not (entry is Dictionary):
+			continue
+		for key in INT_FIELDS:
+			if (entry as Dictionary).has(key) and entry[key] is float:
+				entry[key] = int(entry[key])
+
+
 func _load_item_data() -> void:
 	"""Load item definitions from data/items.json"""
 	var file_path = "res://data/items.json"
@@ -64,6 +80,7 @@ func _load_item_data() -> void:
 	if parse_result == OK:
 		if json.data is Dictionary:
 			items = json.data
+			coerce_int_fields(items)
 			print("Loaded %d items" % items.size())
 		else:
 			push_warning("[ItemSystem] items.json parsed but root is not a Dictionary — falling back to hardcoded defaults")
