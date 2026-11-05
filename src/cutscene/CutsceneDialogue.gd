@@ -1046,7 +1046,7 @@ func _on_thinking_tick() -> void:
 
 
 ## A speaker tag that names a party job reads that job's name in the CURRENT world (cowir-story canon 21964: in W2-W6 the
-## Fighter "simply *is*" a Mall Cop). The authored line text is never touched, W1 is byte-identical (its world name is the
+## Fighter "simply *is*" a Security Guard). The authored line text is never touched, W1 is byte-identical (its world name is the
 ## base name), and any other speaker, Theron, a monster, "???", passes through as written.
 func speaker_label(speaker: String) -> String:
 	var job_id := job_id_named_by(speaker)
