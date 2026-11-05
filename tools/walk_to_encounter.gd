@@ -6,6 +6,32 @@ const Lib := preload("res://tools/demo_walk_lib.gd")
 const BUDGET_S := 120.0
 
 var w
+var _player: Node = null
+
+
+## Unlock all five starters the game's own way and check every input of the AI-routing gate per member (battle 8ec249ca9 / controller 22351).
+func _hand_routed() -> bool:
+	var gl: Node = w.gl
+	for job in ["fighter", "cleric", "mage", "rogue", "bard"]:
+		gl._set_cutscene_flag_and_mirror("cutscene_flag_spotlight_unlocked_" + job)
+	if gl.has_method("_reconcile_spotlight_locks"):
+		gl._reconcile_spotlight_locks()
+	var ab = root.get_node_or_null("AutobattleSystem")
+	var bm = root.get_node("BattleManager")
+	bm.is_autobattle_enabled = false
+	var to_ai: Array = []
+	for m in gl.party:
+		var cid: String = str(m.combatant_name).to_lower().replace(" ", "_")
+		if ab and ab.is_autobattle_enabled(cid):
+			ab.set_autobattle_enabled(cid, false)
+		var char_on: bool = ab.is_autobattle_enabled(cid) if ab else false
+		print("[DEMO] route %s: global=%s char=%s locked=%s trust=%s" % [m.combatant_name, bm.is_autobattle_enabled, char_on, m.autobattle_locked, m.player_trust])
+		if bm.is_autobattle_enabled or char_on or m.autobattle_locked or m.player_trust:
+			to_ai.append(str(m.combatant_name))
+	if not to_ai.is_empty():
+		print("[DEMO] ABORT these members would be played by AI, not by hand: %s" % str(to_ai))
+		return false
+	return true
 
 
 func _fired() -> bool:
@@ -15,6 +41,9 @@ func _fired() -> bool:
 func _init() -> void:
 	w = Lib.new(self)
 	if not await w.boot("overworld", "village_entrance"):
+		quit(1)
+		return
+	if not _hand_routed():
 		quit(1)
 		return
 	var gs = root.get_node_or_null("GameState")
@@ -68,7 +97,8 @@ func _init() -> void:
 	w.say("encounter after %d leg(s), %.1fs wall" % [walked, (Time.get_ticks_msec() - t0) / 1000.0])
 	const PLAYER_PATH := "res://tools/demo_battle_player.gd"
 	if ResourceLoader.exists(PLAYER_PATH):
-		root.add_child(load(PLAYER_PATH).new())
+		_player = load(PLAYER_PATH).new()
+		root.add_child(_player)
 		w.say("DemoBattlePlayer plays the fight")
 		var t := 0.0
 		while not w.in_battle() and t < 15.0:
@@ -79,5 +109,13 @@ func _init() -> void:
 			t += 0.5
 		w.say("battle over after %.0fs of video, back on '%s'" % [t, w.map_id()])
 	await w.beat(2.5)
+	if _player and _player.has_method("missing_menu_members"):
+		var missing: Array = _player.missing_menu_members(w.gl.party)
+		w.say("played by hand %s" % str(_player.played.keys() if "played" in _player else []))
+		if not missing.is_empty():
+			print("[DEMO] ASSERT FAIL: %s never got a command menu (autobattle or a spotlight lock played them)" % str(missing))
+			print("[DEMO] segment done")
+			quit(1)
+			return
 	print("[DEMO] segment done")
 	quit(0)
