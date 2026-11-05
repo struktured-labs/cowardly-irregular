@@ -430,24 +430,24 @@ func _build_abilities_column(member, x: float, y: float, w: float, h: float) -> 
 
 
 func _job_label(member) -> String:
-	# Tick 207: never the bare "Job" fallback. 2026-11-05: the world's name from the id first; the stored name only for an id-less job.
+	# Tick 207 cascade, world-first since 2026-11-05 (cowir-story canon): a job the game KNOWS reads as THIS world names it,
+	# else its stored name, else its id title-cased (tick 204's _format_id), else the explicit "(no job)".
 	if "job" in member and member.job != null:
 		var jid := ""
-		if member.job is Dictionary:
-			jid = str(member.job.get("id", ""))
-		elif member.job is Object and "id" in member.job:
-			jid = str(member.job.id)
-		if jid != "":
-			return Combatant.job_display_name_for_id(jid)
 		var stored := ""
 		if member.job is Dictionary:
+			jid = str(member.job.get("id", ""))
 			stored = str(member.job.get("name", ""))
-		elif member.job is Object and "name" in member.job:
-			stored = str(member.job.name)
+		elif member.job is Object:
+			jid = str(member.job.id) if "id" in member.job else ""
+			stored = str(member.job.name) if "name" in member.job else ""
+		if jid != "" and not JobSystem.get_job(jid).is_empty():
+			return Combatant.job_display_name_for_id(jid)
 		if stored != "":
 			return stored
+		if jid != "":
+			return _format_id(jid)
 	return "(no job)"
-
 
 func _get_level(member) -> int:
 	if "job_level" in member:
