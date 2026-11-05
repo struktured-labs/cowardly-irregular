@@ -54,7 +54,7 @@ func _init() -> void:
 		await w.beat(0.3)
 		if w.dialogue_open():
 			var lines: int = greta.dialogue_lines.size() if "dialogue_lines" in greta else 6
-			var presses: int = await w.read_dialogue([3.2, 3.2], 0.8, lines + 2)
+			var presses: int = await w.read_dialogue([2.6, 3.0], 0.8, lines + 2)
 			w.say("Greta: %d press(es) to close" % presses)
 		else:
 			w.say("WARNING Greta's dialogue did not open")

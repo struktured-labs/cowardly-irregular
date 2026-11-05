@@ -318,6 +318,7 @@ func dialogue_open() -> bool:
 func read_dialogue(first_lines_s: Array, rest_s: float = 0.9, cap: int = 14) -> int:
 	var n := 0
 	for s in first_lines_s:
+		await _typing_done()
 		await beat(s)
 		if not dialogue_open():
 			return n
@@ -358,3 +359,20 @@ func reach(max_dist: int, blocked: Dictionary = {}) -> Dictionary:
 			dist[n] = dist[c] + 1
 			q.append(n)
 	return dist
+
+
+## Wait (bounded) until no visible dialogue box is still typing its line.
+func _typing_done(cap_s: float = 8.0) -> void:
+	var t := 0.0
+	while t < cap_s and _any_typing(tree.root):
+		await beat(0.05)
+		t += 0.05
+
+
+func _any_typing(n: Node) -> bool:
+	if n.get("_is_typing") == true and (not ("visible" in n) or n.visible):
+		return true
+	for c in n.get_children():
+		if _any_typing(c):
+			return true
+	return false
