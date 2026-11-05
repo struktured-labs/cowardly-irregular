@@ -63,15 +63,18 @@ func test_a_freed_fixture_leaves_its_generator_alive() -> void:
 
 
 func test_no_test_drops_a_kept_generator() -> void:
-	## Only the keeper's lifetime makes the raw pointer safe; a test that erases an entry under a live player brings #224 back.
+	## Only the keeper's lifetime makes the raw pointer safe; a test that drops an entry under a live player brings #224 back.
+	## Known hole (cowir-sfx): freeing a whole SoundManager INSTANCE frees its keeper too; this walk cannot see that.
+	var drop := RegEx.create_from_string("_procedural_generators\\s*(\\.erase\\(|\\.clear\\(|=[^=])")
+	var strings := RegEx.create_from_string("\"(?:[^\"\\\\]|\\\\.)*\"")
 	var offenders: Array[String] = []
 	for f in _gd_files("res://test"):
 		var lines: PackedStringArray = FileAccess.get_file_as_string(f).split("\n")
 		for i in lines.size():
-			var t: String = lines[i].strip_edges()
-			if t.begins_with("#") or t.contains("\""):
+			var t: String = strings.sub(lines[i].strip_edges(), "\"\"", true)
+			if t.begins_with("#"):
 				continue
-			if t.contains("_procedural_generators.erase(") or t.contains("_procedural_generators.clear("):
+			if drop.search(t) != null:
 				offenders.append("%s:%d" % [f, i + 1])
 	assert_gt(_gd_files("res://test").size(), 100, "SCOPE: the walk reached the test tree")
 	assert_eq(offenders, [] as Array[String], "a test drops a kept generator, so a player can outlive it mid-fade: %s" % [offenders])
