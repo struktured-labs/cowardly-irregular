@@ -205,9 +205,8 @@ var job = null
 ## canon ruling 21964: W2-W6 show the world's name everywhere. The one display read of a job name; KEY reads use the id.
 static func job_display_name_for_id(job_id: String) -> String:
 	var js: Node = (Engine.get_main_loop() as SceneTree).root.get_node_or_null("JobSystem") if Engine.get_main_loop() is SceneTree else null
-	if js != null and job_id != "":
-		return str(js.get_job_display_name(job_id))
-	return job_id.replace("_", " ").capitalize()
+	var shown: String = str(js.get_job_display_name(job_id)) if js != null and job_id != "" else ""
+	return shown if shown != "" else job_id.replace("_", " ").capitalize()
 
 
 func job_display_name(fallback: String = "Fighter") -> String:
