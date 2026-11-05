@@ -59,12 +59,18 @@ image is wrong."* Here the script moved and the rendered frame did not. **A scri
 over-predicts frame change, so the standing "11 of 20 depict a scene script that changed" is a
 CANDIDATE list, not a work list — diff the frames before re-shooting anything.**
 
-Order below is the recommended gallery order: itch shows the first image largest, so the
-battle leads.
+Order below is the recommended gallery order: itch shows the first image largest, so a
+VILLAGE leads (`harmonia_village`, the newest and strongest frame and the first place a player stands),
+then the battle (cowir-main 21907, 2026-11-05; it was "the battle leads" until then).
 
 ---
 
-### `battle_storm.png` — **lead image**
+### `harmonia_village.png` — **lead image**
+
+Harmonia, the first village: the drawn forge and the green-roofed shop, with the party in the street.
+Re-shot at `v3.33.767-alpha`; the per-shot note is in that section at the end of this file.
+
+### `battle_storm.png` — **second**
 Five-job party, live turn order, and a command menu that offers to hand the turn to your own
 autobattle script. The party banters mid-fight ("My turn. Hand on the stick, not the
 script."). The `~ STORM ~` tag in the corner is not decoration — weather drives real damage
@@ -592,7 +598,11 @@ out of it. `tools/marketing_shots.gd` now **frames each village on its densest c
 player 2.5 tiles below the nearest door in view, so the party is in shot too. Scenes with fewer than 2
 buildings are captured exactly as before; that is the control (below, the interiors and the cave).
 
-**Lead with the villages** (cowir-main 20480): the facades and walkers are what this refresh is for.
+**The villages are what this refresh is for:** the facades and walkers. cowir-main 20480 agreed the
+*framing pass* (a per-village camera on a house cluster, facades and doors in frame) before the re-shoot.
+It did not rule on the gallery ORDER, which is unchanged: the battle still leads (the order note above).
+_Corrected 2026-11-05: this line used to read "Lead with the villages (cowir-main 20480)", a ruling
+20480 does not contain, and it contradicted the stated order._
 
 Per-shot PIXEL delta vs the shipped frame (share of pixels differing by > 24 levels), with run-to-run
 noise from a second capture:
