@@ -383,3 +383,19 @@ func missing_menu_members(party: Array) -> Array:
 		if m != null and is_instance_valid(m) and not played.has(str(m.combatant_name)):
 			out.append(str(m.combatant_name))
 	return out
+
+
+## Raises a party the way the boss segment does (job level, the kit unlocked through it, full HP/MP). Static, so a
+## segment can call it on the loaded script before the walk: load("res://tools/demo_battle_player.gd").level_party(...)
+static func level_party(root: Node, party: Array, level: int) -> void:
+	var js = root.get_node("JobSystem")
+	for m in party:
+		if m == null or not is_instance_valid(m):
+			continue
+		m.job_level = level
+		js.learn_abilities_for_level(m, level)
+		m.recalculate_stats()
+		m.current_hp = m.max_hp
+		m.current_mp = m.max_mp
+		m.is_alive = true
+	print("[DEMO] party at level %d" % level)
