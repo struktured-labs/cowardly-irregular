@@ -77,8 +77,9 @@ func test_the_note_names_the_ability_and_the_member() -> void:
 	var rules: Array = [_rule([_ma("bard", "battle_hymn"), _ma("cleric", "cure")])]
 	var notes: Array = _rc()._drop_unrunnable_member_abilities(rules, _sys())
 	var joined: String = " ".join(PackedStringArray(notes))
-	assert_true(joined.contains("battle_hymn"), "the note names the ability: %s" % joined)
-	assert_true(joined.contains("bard"), "and the member: %s" % joined)
+	## Named as the player's screens name them (cowir-ai 22072), so the pins read those names rather than the ids.
+	assert_true(joined.contains(AbilityIcons.name_of("battle_hymn")), "the note names the ability: %s" % joined)
+	assert_true(joined.contains(_sys().member_display_name("bard")), "and the member: %s" % joined)
 
 
 func test_a_rule_left_with_no_actions_goes_too() -> void:

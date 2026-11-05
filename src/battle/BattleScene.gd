@@ -6864,7 +6864,6 @@ func _on_advance_trash_talk(combatant: Combatant, line: String) -> void:
 	var sprite = _get_combatant_sprite(combatant)
 	if sprite and is_instance_valid(sprite):
 		_spawn_quip_bubble(sprite, combatant.combatant_name, line, _get_job_quip_color(combatant))
-	var job_name = combatant.job.get("name", "Fighter") if combatant.job else "Fighter"
 	log_message('[color=yellow]%s: "%s"[/color]' % [combatant.combatant_name, line])
 
 

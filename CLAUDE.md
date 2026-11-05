@@ -230,7 +230,7 @@ Old IDs (white_mage, black_mage, thief) are aliased to new IDs (cleric, mage, ro
 - **SnesPartySprites**: Procedural 32x48 SNES-style sprites with composable layers (body→hair→face→outfit→headgear→weapon)
 - Each job maps to an outfit type and headgear type via OUTFIT_MAP/HEADGEAR_MAP
 - All 5 starters (fighter, mage, cleric, rogue, bard) ship with artist-made sheets in `assets/sprites/jobs/<job_id>/`
-- Bard added 2026-05-22 (commit 0b53f19) — idle/cast/attack done; other animations pending
+- Bard (first drop 2026-05-22, 0b53f19): the artist's frames now cover idle, cast, attack, dead, weak and victory; walk/hit/defend/item are still T1 gap-fills, and lullaby / battle_hymn / inspiring_melody are a standing artist ask. This line said "idle/cast/attack done; other animations pending" for five months after the 08-28 and 09-18 drops. The bard entry's `source` field in `data/sprite_manifest.json` is the per-drop record; read that, not this line.
 - Monster sheets: registered in the `monster_sheets` section, mostly 256x256 frames, AI-generated (T1) with artist passes pending
 - Per-world monster variants supported: lookup `<monster>_<world_suffix>` first, fallback to base (e.g., `slime_suburban`)
 

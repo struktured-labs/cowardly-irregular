@@ -375,7 +375,7 @@ func _create_character_card(member: Combatant, index: int) -> Control:
 
 	var job_label = Label.new()
 	job_label.name = "JobLabel"
-	job_label.text = member.job.get("name", "Fighter") if member.job else "Fighter"
+	job_label.text = member.job_display_name()
 	job_label.position = Vector2(58, 20)
 	job_label.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	job_label.add_theme_color_override("font_color", SUBTITLE_COLOR)
@@ -767,7 +767,7 @@ func _update_party_stats() -> void:
 
 		var job_lbl = card.get_node_or_null("JobLabel")
 		if job_lbl:
-			job_lbl.text = member.job.get("name", "Fighter") if member.job else "Fighter"
+			job_lbl.text = member.job_display_name()
 		# Job text refreshes in place; the face was baked at open and kept the previous job.
 		_refresh_card_portrait(card, member)
 
