@@ -1458,6 +1458,12 @@
       "prompt_influence": 0.6,
       "repair": "POLISH PASS 2026-11-01 (struktured approved the listening list; a fresh render remains the real fix): levelled to -16 LUFS. Measured before: very hot master (-8.2 LUFS)."
     },
+    "trust_window_open": {
+      "file": "assets/audio/sfx/trust_window_open.ogg",
+      "source": "numpy_synth",
+      "prompt": "The trusted-turn interrupt window opening (cowir-main 21913, with cowir-controller's pill): a quiet two-note rising ping, E6 then A6 90 ms apart, soft bell partials, 0.32 s. Deliberately softer than player_turn (about 5 dB RMS under) so it reads as an offer, not a turn. No close cue: the turn itself answers. Local numpy synthesis (tmp/trustcue/synth.py).",
+      "duration_seconds": 0.32
+    },
     "plate_engage": {
       "file": "assets/audio/sfx/plate_engage.ogg",
       "source": "sox_synth",
