@@ -33,8 +33,23 @@ func _console(scale: float, box: Vector2) -> Node:
 	var ui: Node = load(UI).new()
 	ui.size = box
 	add_child_autofree(ui)
+	## setup() is what loads the rules into the console; without it the grid is empty and there is no cell to move onto.
+	ui.setup(_party())
+	## Built with the cursor OFF a cell, as a stop leaves it (on "+ Add Rule"): the strip is anchored for its SHORT text.
+	ui.cursor_row = ui.rules.size()
+	ui.cursor_col = 0
 	await wait_frames(3)
 	return ui
+
+
+func _party() -> Array[Combatant]:
+	var out: Array[Combatant] = []
+	for nm in ["Fighter", "Cleric"]:
+		var c := Combatant.new()
+		autofree(c)
+		c.initialize({"name": nm, "max_hp": 100, "max_mp": 50})
+		out.append(c)
+	return out
 
 
 func _at(ui: Node, row: int, col: int) -> void:
@@ -63,7 +78,7 @@ func test_the_strip_stays_on_screen_as_the_cursor_moves() -> void:
 		for box in [Vector2(1280, 720), Vector2(960, 720)]:
 			var ui: Node = await _console(float(scale), box)
 			assert_not_null(ui._footer_label, "CONTROL: the console built its strip")
-			_at(ui, 1, 0)
+			assert_eq(ui._cell_type_at_cursor(), "add_rule", "CONTROL: the console was built with the cursor off a cell")
 			var lines_off: int = ui._footer_label.get_line_count()
 			var col := _action_col(ui)
 			assert_gt(col, -1, "CONTROL: the rule shows an action cell")
