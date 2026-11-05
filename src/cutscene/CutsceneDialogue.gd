@@ -1132,7 +1132,8 @@ func _show_current_line() -> void:
 	# next box, not the next cutscene.
 	# One entry per LINE, recorded where the line is resolved rather than where a page is typed — a
 	# paged line is one thing the player read, not three.
-	_record_in_backlog(str(entry.get("speaker", "")), str(entry.get("text", "")))
+	# The backlog keeps what the player READ, so a W2 row says the world's name like the box did.
+	_record_in_backlog(speaker_label(str(entry.get("speaker", ""))), str(entry.get("text", "")))
 	# Paginate AFTER the hide_portrait block above — a narrator line owns the portrait's width too.
 	_pages = _paginate(str(entry.get("text", "")))
 	_page_index = 0

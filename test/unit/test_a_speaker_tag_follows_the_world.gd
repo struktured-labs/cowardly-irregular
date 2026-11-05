@@ -88,3 +88,18 @@ func test_a_voiced_line_resolves_by_the_authored_speaker() -> void:
 	var call_line := src.substr(i, src.find("\n", i) - i)
 	assert_true(call_line.contains('entry.get("speaker"'), "a voiced line is found by its authored speaker: %s" % call_line)
 	assert_false(call_line.contains("speaker_label("), "never by the rendered, per-world name")
+
+
+## The backlog (the box's history view) shows what the player read: a W2 row names the world's job, like the box did.
+func test_the_backlog_keeps_the_name_the_box_showed() -> void:
+	var renamed := _renamed_in(2)
+	assert_gt(renamed.size(), 0, "CONTROL: a renamed job exists")
+	var base := str(JobSystem.get_job(renamed[0]).get("name", renamed[0]))
+	var src := FileAccess.get_file_as_string(DIALOGUE)
+	var show := src.find("func _show_current_line")
+	var i := src.find("_record_in_backlog(", show)
+	assert_gt(i, -1, "CONTROL: the line renderer records the backlog")
+	var call_line := src.substr(i, src.find("\n", i) - i)
+	assert_true(call_line.contains("speaker_label("), "the backlog records the rendered tag: %s" % call_line)
+	_d._record_in_backlog(_d.speaker_label(base), "A line.")
+	assert_eq(str(_d._backlog[-1]["speaker"]), JobSystem.get_job_display_name(renamed[0]), "the row names %s in world 2" % JobSystem.get_job_display_name(renamed[0]))
