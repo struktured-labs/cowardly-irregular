@@ -307,7 +307,7 @@ func _setup_npcs() -> void:
 		"And things that are bigger have more room in them for other things.",
 		"...Congratulations, probably? That is usually what a bigger file means."
 	]
-	var wednesday = _create_npc("Creepy Child Wednesday", "child", Vector2(8 * TILE_SIZE,11 * TILE_SIZE), _wednesday_post if _after_cave_done else _wednesday_pre)
+	var wednesday = _create_npc("Creepy Child Wednesday", "child", Vector2(8 * TILE_SIZE,12 * TILE_SIZE), _wednesday_post if _after_cave_done else _wednesday_pre)
 	npcs.add_child(wednesday)
 
 	# Ghost Barkeep Claude (friendly)
