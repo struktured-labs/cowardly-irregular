@@ -44,7 +44,8 @@ func test_supplying_a_guard_produces_a_note() -> void:
 	var rules: Array = [_unguarded_cure_rule()]
 	var notes: Array = _rc._supply_missing_mp_guards(rules, _kit("cleric"))
 	assert_eq(notes.size(), 1, "an edited rule must produce exactly one note")
-	assert_true(str(notes[0]).find("cure") != -1,
+	## The note names the ability as the menu does (cowir-ai 22072), not by its id.
+	assert_true(str(notes[0]).find(AbilityIcons.name_of("cure")) != -1,
 		"the note must name the ability, so the player can find the rule it changed")
 	assert_true(str(notes[0]).find("%") != -1,
 		"and state the threshold that was added")
