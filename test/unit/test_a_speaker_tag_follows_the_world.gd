@@ -68,8 +68,10 @@ func test_the_box_renders_the_tag_and_keeps_the_line() -> void:
 ## would blip at another pitch in W2 ("School Nurse" hashes differently), audibly and with nothing red (cowir-music 21970).
 func test_the_voice_keeps_the_authored_speaker() -> void:
 	var src := FileAccess.get_file_as_string(DIALOGUE)
-	var i := src.find("_load_voice_blip(")
-	assert_gt(i, -1, "CONTROL: the blip loader is called")
+	var show := src.find("func _show_current_line")
+	assert_gt(show, -1, "CONTROL: the line renderer exists")
+	var i := src.find("_load_voice_blip(", show)
+	assert_gt(i, -1, "CONTROL: the line renderer calls the blip loader")
 	var call_line := src.substr(i, src.find("\n", i) - i)
 	assert_true(call_line.contains('entry.get("speaker"'), "the blip is pitched from the authored tag: %s" % call_line)
 	assert_false(call_line.contains("speaker_label("), "never from the rendered, per-world name")
