@@ -1369,14 +1369,25 @@ static func _shown_as(ability_id: String) -> String:
 
 ## The item twin of _shown_as: 45 items show a name that is not their id (hi_potion is "Potio Maior", phoenix_down "Resurgo Plume").
 static func _item_shown_as(item_id: String) -> String:
+	var shown: String = _item_menu_name(item_id)
+	if shown == "" or shown.to_lower().replace(" ", "_").replace("-", "_") == item_id:
+		return ""
+	return " \"%s\"" % shown
+
+
+## What the item menu calls it, or "" when ItemSystem is absent or does not know the id.
+static func _item_menu_name(item_id: String) -> String:
 	var tree: SceneTree = Engine.get_main_loop() as SceneTree
 	var items: Node = tree.root.get_node_or_null("ItemSystem") if tree != null and tree.root != null else null
 	if items == null or not items.has_method("get_item"):
 		return ""
-	var shown: String = str((items.get_item(item_id) as Dictionary).get("name", "")).strip_edges()
-	if shown == "" or shown.to_lower().replace(" ", "_").replace("-", "_") == item_id:
-		return ""
-	return " \"%s\"" % shown
+	return str((items.get_item(item_id) as Dictionary).get("name", "")).strip_edges()
+
+
+## An item as a speaker in the world names it: its menu name, or the id in words when no item record exists.
+static func item_display_name(item_id: String) -> String:
+	var shown: String = _item_menu_name(item_id)
+	return shown if shown != "" else item_id.replace("_", " ")
 
 
 ## Ability ids the grammar's own worked examples spend, PARSED rather than listed.
