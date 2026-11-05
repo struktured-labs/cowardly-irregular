@@ -26,7 +26,9 @@ func after_each() -> void:
 
 
 func _loop() -> Node:
-	var gl: Node = autofree(GameLoopScript.new())
+	## In the tree, so _input's get_viewport().set_input_as_handled() has a viewport (off it, every press logged a SCRIPT ERROR).
+	var gl: Node = GameLoopScript.new()
+	add_child_autofree(gl)
 	# _ready shows the title and flips the state; the press under test is exploration.
 	gl.current_state = gl.LoopState.EXPLORATION
 	gl._transition_in_progress = false
@@ -52,6 +54,7 @@ func _settings_open(gl: Node) -> bool:
 
 func test_start_during_fade_in_does_not_open_settings() -> void:
 	var gl := _loop()
+	assert_true(gl.is_inside_tree(), "CONTROL: the loop is in the tree, so the hand-called _input has a viewport to mark handled")
 	gl._transition_in_progress = true
 	assert_false(InputLockManager.is_locked(),
 		"CONTROL: fade-in holds no lock — a guard that only reads is_locked() cannot see this window")
