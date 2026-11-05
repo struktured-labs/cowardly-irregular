@@ -232,7 +232,40 @@ func _best_strike(pc, t_idx: int) -> Array:
 			best = str(aid)
 	if best != "" and best_mult > 1.2:
 		return ["ability_menu", "ability_menu_" + best, "ability_%s_enemy_%d" % [best, t_idx]]
-	return ["attack_menu", "attack_%d" % t_idx]
+	return ["BASIC", t_idx]
+
+
+## This member's own plain strike, read off the menu it was given: Attack where it exists, else the first top-level
+## row whose target list reaches the foe (the Bard's attack row is Riff; main 22370). [] when nothing offers one.
+func _basic_strike(root, t_idx: int) -> Array:
+	if root == null or not is_instance_valid(root):
+		return []
+	var items: Array = root.get("menu_items")
+	# A job whose free move REPLACES Attack (the Bard's Riff) strikes with that row.
+	var pc = _bm().current_combatant
+	var fm = pc.job.get("free_move", {}) if pc != null and pc.job is Dictionary else {}
+	if fm is Dictionary and fm.get("replaces_attack", false) and str(fm.get("ability_id", "")) != "":
+		var aid := str(fm["ability_id"])
+		for row in items:
+			if str(row.get("id", "")) == "ability_menu_" + aid:
+				return ["ability_menu_" + aid, "ability_%s_enemy_%d" % [aid, t_idx]]
+	for row in items:
+		if str(row.get("id", "")) == "attack_menu":
+			return ["attack_menu", "attack_%d" % t_idx]
+	for row in items:
+		var sub = row.get("submenu")
+		if not (sub is Array) or row.get("disabled", false):
+			continue
+		var first := ""
+		for child in sub:
+			var cid := str(child.get("id", ""))
+			if cid.ends_with("_enemy_%d" % t_idx) or cid == "attack_%d" % t_idx:
+				return [str(row["id"]), cid]
+			if first == "" and (cid.contains("_enemy_") or cid.begins_with("attack_")):
+				first = cid
+		if first != "":
+			return [str(row["id"]), first]
+	return []
 
 
 # ── Driving the menu ─────────────────────────────────────────────────────────
@@ -277,12 +310,20 @@ func _take_turn(scene: Node, root) -> void:
 		await press("battle_defer")
 		return
 	for step in plan["steps"]:
-		var ok: bool = await _do_step(scene, step)
+		var path: Array = step["path"]
+		if path.size() == 2 and str(path[0]) == "BASIC":
+			path = _basic_strike(scene.get("active_win98_menu"), int(path[1]))
+			step = {"path": path, "commit": step.get("commit", "accept")}
+		var ok: bool = path.size() > 0 and await _do_step(scene, step)
 		if not ok:
-			print("[DEMO] %s: %s -> path %s not offered, attacking instead" % [pc.combatant_name, plan["why"], str(step["path"])])
 			await _back_to_root(scene)
-			var t_idx: int = int(str(step["path"][-1]).get_slice("_", str(step["path"][-1]).get_slice_count("_") - 1)) if step["path"].size() > 0 else 0
-			await _do_step(scene, {"path": ["attack_menu", ["attack_%d" % t_idx]], "commit": "accept"})
+			var fallback := _basic_strike(scene.get("active_win98_menu"), 0)
+			if fallback.size() > 0 and fallback != path and await _do_step(scene, {"path": fallback, "commit": "accept"}):
+				print("[DEMO] %s: %s -> %s not offered, struck with %s" % [pc.combatant_name, plan["why"], str(path), str(fallback)])
+			else:
+				print("[DEMO] %s: %s -> %s not offered and no strike row, defer" % [pc.combatant_name, plan["why"], str(path)])
+				await _back_to_root(scene)
+				await press("battle_defer")
 			return
 	print("[DEMO] %s: %s -> %s" % [pc.combatant_name, plan["why"], str(plan["steps"].map(func(s): return s["path"]))])
 
