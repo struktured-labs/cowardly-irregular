@@ -26,6 +26,10 @@ func after_each() -> void:
 	_host = null
 	GameState.day_phase = _phase_before
 	InputLockManager.pop_lock(InnRestSequence.LOCK_ID)
+	# Every arm starts the 5.7 s ditty and most never stop it; leave the next file the silence this one found
+	# (cowir-sprites 21863: a derived run's second mixer stall latched in this file).
+	if SoundManager:
+		SoundManager.stop_music()
 
 
 func _until_skippable(seq: InnRestSequence) -> bool:
