@@ -22,7 +22,6 @@ const ALLOWED := {
 	"res://src/ui/StatusMenu.gd": [1, "PENDING", "unassigned UI: cowir-main to route"],
 	"res://src/ui/EquipmentMenu.gd": [1, "PENDING", "unassigned UI: cowir-main to route"],
 	"res://src/ui/PartyStatusScreen.gd": [4, "PENDING", "unassigned UI: cowir-main to route"],
-	"res://src/maps/interiors/EldertreeGraftingHouseInterior.gd": [1, "PENDING", "cowir-story/overworld (an NPC names the leader's job)"],
 }
 
 var _guard
