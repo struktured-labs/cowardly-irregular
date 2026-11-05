@@ -4,10 +4,10 @@
 
 | captured at | shots | section |
 |---|---|---|
-| `v3.33.748-alpha` | `tavern_interior` · `whispering_cave` | "re-shot at `v3.33.748-alpha`" |
 | `v3.33.750-alpha` | `battle_storm` · `field_elite_medieval` · `field_elite_prompt_medieval` · `field_elite_steampunk` · `grimhollow_spiral` · `infernal_grotto_f3` · `warren_lever_portals` · `warren_wrap_field` | commit `1df31b2fb` |
 | `v3.33.752-alpha` | (none left: both re-shot at `.767`) | commits `438ff3e68`, `21f990b47` |
-| `v3.33.767-alpha` | the six villages · `inn_interior` · `shop_interior` · `battle` · `title_screen` | "re-shot at `v3.33.767-alpha`" |
+| `v3.33.767-alpha` | `battle` | "re-shot at `v3.33.767-alpha`" |
+| `v3.33.770-alpha` | the six villages · the three interiors · `whispering_cave` · `title_screen` | "re-shot at `v3.33.770-alpha`, door labels hidden" |
 
 Re-derive it rather than trusting this table: `git log -1 --format=%h -- itch-assets/screenshots/<shot>.png`
 names the commit, and that commit's message names the tag it was shot from. Which of them have gone
@@ -710,4 +710,25 @@ show the north wall, so the misplaced painted fireplace that `.768` fixes is not
 **Capture conditions:** `tools/marketing_shots.sh` (sandboxed `XDG_DATA_HOME`, pads jailed) from
 `<lane>/tmp/wt-shoot767`; a sandboxed `--import` first (EC=0, 0 SCRIPT/Parse errors); his real profile:
 0 new rotated logs. The store page itself is uploaded through the web UI, which is @struktured's.
+
+---
+
+## 2026-11-05 — re-shot at `v3.33.770-alpha`, door labels hidden, the player on walkable ground
+
+cowir-adhoc 21988 on the new lead frame: the door signs ("Enter Attic", "The Forge (rear entrance)") read as UI
+on a marketing still, and the player stood on the river/wall seam. `tools/marketing_shots.gd` now (capture
+only, the game is untouched) **hides every door sign** after framing, and **stands the player on a cell the
+village says is walkable** (`BaseVillage._is_cell_walkable`, cowir-overworld 21994). The capture log proves
+both: harmonia hid 5 labels, the other villages 3 each, every interior and the cave 1; the stand point was
+nudged on Harmonia (32,10)→(32,8) and Frosthold (15,9)→(14,9), and was already walkable on the other four.
+**In the game those signs DO show**; the stills omit them.
+
+Replaced: the six villages, the three interiors, `whispering_cave` (each lost its door sign) and
+`title_screen` (its version label now reads `v3.33.770-alpha`). Pixel deltas vs the shipped frames, run-to-run
+noise 0.00% on every shot: harmonia 71.33% · frosthold 48.50% · inn 1.66% · the rest 0.07–0.90%. Under the
+pixel tool's 1% floor those read "NOISE", but with zero noise the change is deterministic and the log names
+it (a hidden sign), so they are replaced too. Kept: `battle` (no door signs in a battle).
+
+Still in the lead frame, NOT a capture-tool matter: a black-coated NPC stands at the river/wall seam at the
+left edge, and two walkers are clipped by the bottom edge (they move; framing cannot pin them).
 
