@@ -140,7 +140,7 @@ func _build_row(f: Dictionary, qualifies: bool, x: float, y: float, w: float) ->
 	var jobs := _party_job_ids()
 	var parts: PackedStringArray = []
 	for jid in f.get("required_jobs", []):
-		parts.append("%s%s" % ["✓" if jid in jobs else "✗", str(jid).capitalize()])
+		parts.append("%s%s" % ["✓" if jid in jobs else "✗", _job_label(str(jid))])
 	req.text = "Requires: " + ", ".join(parts)
 	req.add_theme_font_size_override("font_size", TextScale.scaled(11))
 	req.add_theme_color_override("font_color", Color(0.6, 0.65, 0.8))
@@ -149,6 +149,11 @@ func _build_row(f: Dictionary, qualifies: bool, x: float, y: float, w: float) ->
 	row.add_child(req)
 	return row
 
+
+## The job's name as every other screen shows it: JobSystem's, which follows the world (W2's Fighter is a Mall Cop).
+func _job_label(jid: String) -> String:
+	var js: Node = get_node_or_null("/root/JobSystem")
+	return str(js.get_job_display_name(jid)) if js != null else jid
 
 func _update_selection() -> void:
 	for i in _rows.size():
