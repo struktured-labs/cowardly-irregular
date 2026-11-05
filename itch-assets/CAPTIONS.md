@@ -59,12 +59,18 @@ image is wrong."* Here the script moved and the rendered frame did not. **A scri
 over-predicts frame change, so the standing "11 of 20 depict a scene script that changed" is a
 CANDIDATE list, not a work list — diff the frames before re-shooting anything.**
 
-Order below is the recommended gallery order: itch shows the first image largest, so the
-battle leads.
+Order below is the recommended gallery order: itch shows the first image largest, so a
+VILLAGE leads (`harmonia_village`, the newest and strongest frame and the first place a player stands),
+then the battle (cowir-main 21907, 2026-11-05; it was "the battle leads" until then).
 
 ---
 
-### `battle_storm.png` — **lead image**
+### `harmonia_village.png` — **lead image**
+
+Harmonia, the first village: the drawn forge and the green-roofed shop, with the party in the street.
+Re-shot at `v3.33.767-alpha`; the per-shot note is in that section at the end of this file.
+
+### `battle_storm.png` — **second**
 Five-job party, live turn order, and a command menu that offers to hand the turn to your own
 autobattle script. The party banters mid-fight ("My turn. Hand on the stick, not the
 script."). The `~ STORM ~` tag in the corner is not decoration — weather drives real damage
