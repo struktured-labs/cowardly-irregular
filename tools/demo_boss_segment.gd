@@ -72,6 +72,28 @@ func _init() -> void:
 		m.current_hp = m.max_hp
 		m.current_mp = m.max_mp
 		m.is_alive = true
+	# The spotlight LOCK routes a member's turn to AI until that member's duel counts as won (autogrind 22348): unlock
+	# all five starters the game's own way, then check the four inputs of the routing gate per member (controller 22351).
+	for job in ["fighter", "cleric", "mage", "rogue", "bard"]:
+		gl._set_cutscene_flag_and_mirror("cutscene_flag_spotlight_unlocked_" + job)
+	if gl.has_method("_reconcile_spotlight_locks"):
+		gl._reconcile_spotlight_locks()
+	var ab = root.get_node_or_null("AutobattleSystem")
+	var bm = root.get_node("BattleManager")
+	bm.is_autobattle_enabled = false
+	var routed_to_ai: Array = []
+	for m in gl.party:
+		var cid: String = str(m.combatant_name).to_lower().replace(" ", "_")
+		if ab and ab.is_autobattle_enabled(cid):
+			ab.set_autobattle_enabled(cid, false)
+		var row := "global=%s char=%s locked=%s trust=%s" % [bm.is_autobattle_enabled, ab.is_autobattle_enabled(cid) if ab else false, m.autobattle_locked, m.player_trust]
+		print("[DEMO] route %s: %s" % [m.combatant_name, row])
+		if bm.is_autobattle_enabled or (ab and ab.is_autobattle_enabled(cid)) or m.autobattle_locked or m.player_trust:
+			routed_to_ai.append(str(m.combatant_name))
+	if not routed_to_ai.is_empty():
+		print("[DEMO] ABORT these members would be played by AI, not by hand: %s" % str(routed_to_ai))
+		quit(1)
+		return
 	print("[DEMO] party at level %d: %s" % [level, ", ".join(gl.party.map(func(m): return "%s %d/%d" % [m.combatant_name, m.max_hp, m.max_mp]))])
 	gl._current_cave_floor = int(spec["floor"])
 	gl._set_current_map_id(str(spec["map"]))
