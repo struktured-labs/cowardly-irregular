@@ -983,6 +983,6 @@ func _top_items(tally: Dictionary, limit: int = 4) -> Array:
 	for i in mini(limit, ids.size()):
 		var id_str: String = str(ids[i])
 		var n: int = int(tally[id_str])
-		var pretty: String = DialoguePrompts.item_display_name(id_str)
+		var pretty: String = ItemNameResolver.resolve(id_str)
 		out.append("%s x%d" % [pretty, n] if n > 1 else pretty)
 	return out
