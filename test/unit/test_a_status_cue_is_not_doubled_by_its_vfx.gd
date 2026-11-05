@@ -120,6 +120,18 @@ func test_a_heal_lands_with_its_own_voice() -> void:
 	assert_true(_sm._sfx_cooldowns.has("strike_heal"), "a heal landed silent: the HEAL arm does not serve strike_heal")
 
 
+## cowir-battle 22191: the HEAL arm fires once per TARGET, so a party heal must collapse to one settle in the same frame.
+func test_a_party_heal_lands_once_not_once_per_target() -> void:
+	_sm._sfx_cooldowns.clear()
+	_es._play_effect_sound(_es.EffectType.HEAL, 1.0, "")
+	assert_true(_sm._sfx_cooldowns.has("strike_heal"), "CONTROL: the first target's landing played")
+	var first: int = int(_sm._sfx_cooldowns["strike_heal"])
+	for i in 4:
+		_es._play_effect_sound(_es.EffectType.HEAL, 1.0, "")
+		assert_true(_sm._sfx_suppressed_by_cooldown, "target %d replayed strike_heal in the same frame, so a party heal stacks" % (i + 2))
+	assert_eq(int(_sm._sfx_cooldowns["strike_heal"]), first, "a later target re-stamped the cooldown, so it played again")
+
+
 func test_an_mp_restore_does_not_replay_the_heal_cast_cue() -> void:
 	_sm._sfx_cooldowns.clear()
 	_es._play_effect_sound(_es.EffectType.MP_RESTORE, 1.0, "")
