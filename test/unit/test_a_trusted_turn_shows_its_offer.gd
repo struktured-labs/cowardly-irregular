@@ -111,8 +111,17 @@ func test_the_bar_drains_on_the_wall_clock_at_every_speed() -> void:
 		Engine.time_scale = scale
 		s._on_trust_interrupt_window_opened(r[1], 1.0)
 		var pill = s._trust_pill
-		await get_tree().create_timer(0.3, true, false, true).timeout   # a WALL reference
-		assert_almost_eq(pill.remaining_fraction(), 0.7, 0.15, "at engine %s the bar must have lost the WALL 0.3 s, not %s battle-s" % [scale, 0.3 * scale])
+		## Measured on the wall clock ITSELF. A SceneTreeTimer reference fired early late in a long GUT sweep (the runner's
+		## timer skew, sprites 21800), reading 0.86 for a correct bar; frames are awaited until real time has passed.
+		var start := Time.get_ticks_msec()
+		var frames := 0
+		while Time.get_ticks_msec() - start < 300 and frames < 2000:
+			await get_tree().process_frame
+			frames += 1
+		var waited := float(Time.get_ticks_msec() - start) / 1000.0
+		assert_gt(waited, 0.29, "CONTROL: real time must actually have passed (frames %d)" % frames)
+		assert_almost_eq(pill.remaining_fraction(), 1.0 - waited, 0.08,
+			"at engine %s the bar must have lost the WALL %.2f s, not %.3f battle-s" % [scale, waited, waited * scale])
 		s._on_trust_interrupt_window_closed(r[1], false)
 
 
