@@ -1916,7 +1916,7 @@ func _tick_summon_followup(combatant: Combatant) -> void:
 		else:
 			dealt = target.take_damage(damage, true)
 		var elem_text: String = element if element != "" else "magic"
-		battle_log_message.emit("[color=cyan]Eidolon lingers — %s takes %d %s damage![/color]" % [target.combatant_name, dealt, elem_text])
+		battle_log_message.emit("[color=cyan]The summon lingers — %s takes %d %s damage![/color]" % [target.combatant_name, dealt, elem_text])
 		damage_dealt.emit(target, dealt, false, element, 1.0)
 		hit_any = true
 	followup["remaining_turns"] = remaining - 1
