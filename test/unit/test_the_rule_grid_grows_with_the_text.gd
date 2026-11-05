@@ -258,6 +258,45 @@ func test_every_real_ability_fits_the_cell_it_derives() -> void:
 
 ## FLOOR for the preset derivation — without it an empty list makes every preset loop above iterate
 ## ZERO times and pass, which is the shrinking-corpus shape a derived guard fails into silently.
+func test_every_offered_item_fits_the_cell_it_derives() -> void:
+	## The item twin (2026-11-05): cells now print the MENU name, and those run longer than the ids did.
+	var ab: Array = []
+	var bad: Array = []
+	for scale in _presets():
+		var ed: Control = await _editor_at(float(scale))
+		if ab.is_empty():
+			for row in ed._get_character_consumables():
+				ab.append(str(row["id"]))
+			assert_gt(ab.size(), 10, "PRECONDITION: the editor must offer its consumables, got %d" % ab.size())
+		var fnt: Font = ed.get_theme_font("font", "Label")
+		if fnt == null:
+			continue
+		var px: int = TextScale.scaled(11)
+		var inner: float = float(ed.CELL_WIDTH - 12)
+		var brk: int = (load(GE) as GDScript).get_script_constant_map()["CELL_TEXT_BREAK"]
+		var probe := Label.new()
+		probe.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		probe.add_theme_font_size_override("font_size", px)
+		ed.add_child(probe)
+		probe.size = Vector2(inner, 20.0)
+		for aid in ab:
+			var text: String = ed._format_action({"type": "item", "id": str(aid), "target": "self"})
+			probe.text = text
+			await get_tree().process_frame
+			var drawn: float = float(probe.get_line_count()) * float(probe.get_line_height())
+			var budget: float = fnt.get_multiline_string_size(text, HORIZONTAL_ALIGNMENT_CENTER,
+				inner, px, -1, brk).y + 8.0
+			if budget < drawn:
+				bad.append("%.2fx: '%s' derives %.0f, draws %.0f"
+					% [scale, str(aid), budget, drawn])
+		probe.queue_free()
+	assert_eq(bad, [],
+		"every offered item's cell budget must cover what its Label draws -- a budget measured under "
+		+ "different break flags than the node wraps with comes out SHORT: %s" % [bad.slice(0, 6)])
+
+
+## FLOOR for the preset derivation — without it an empty list makes every preset loop above iterate
+## ZERO times and pass, which is the shrinking-corpus shape a derived guard fails into silently.
 func test_the_preset_list_derives_from_settings() -> void:
 	var p: Array = _presets()
 	assert_gt(p.size(), 1,
