@@ -27,9 +27,9 @@ func test_fighter_renames_across_worlds() -> void:
 	_gs.current_world = 1
 	assert_eq(JobSystem.get_job_display_name("fighter"), "Fighter", "W1 medieval")
 	_gs.current_world = 2
-	assert_eq(JobSystem.get_job_display_name("fighter"), "Mall Cop", "W2 suburban")
+	assert_eq(JobSystem.get_job_display_name("fighter"), "Security Guard", "W2 suburban")
 	_gs.current_world = 6
-	assert_eq(JobSystem.get_job_display_name("fighter"), "Blunt Instrument", "W6 abstract")
+	assert_eq(JobSystem.get_job_display_name("fighter"), "Resolve", "W6 abstract")
 
 
 func test_every_starter_job_changes_between_w1_and_w2() -> void:
