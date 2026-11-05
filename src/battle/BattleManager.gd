@@ -8363,6 +8363,12 @@ func _execute_mp_restore_ability(caster: Combatant, ability: Dictionary, targets
 		battle_log_message.emit("[color=gray]%s's MP restore fizzles — everyone's already full.[/color]" % caster.combatant_name)
 
 
+## The name the item menu shows, via the one shared resolver (data first, the id in words only for an id nothing
+## knows): building it from the id said "Phoenix Down" where the menu says "Resurgo Plume" (ai 21928).
+func _item_display_name(item_id: String) -> String:
+	return ItemNameResolver.resolve(item_id)
+
+
 func _execute_item(user: Combatant, item_id: String, targets: Array) -> void:
 	"""Execute item use (costs 1 AP)"""
 	if user in player_party:
@@ -8377,7 +8383,7 @@ func _execute_item(user: Combatant, item_id: String, targets: Array) -> void:
 		## Pre-fix print() only — character's turn was silently
 		## wasted with no in-game explanation.
 		print("%s doesn't have item: %s" % [user.combatant_name, item_id])
-		var item_display: String = item_id.replace("_", " ").capitalize()
+		var item_display: String = _item_display_name(item_id)
 		battle_log_message.emit("[color=gray]%s has no %s left.[/color]" % [user.combatant_name, item_display])
 		return
 
@@ -8438,7 +8444,7 @@ func _execute_item(user: Combatant, item_id: String, targets: Array) -> void:
 		## Smart-retarget came up empty: nobody down to revive, or nobody hurt to heal —
 		## a correct guess resolving to "no one needed it", named distinctly from a
 		## generic fizzle (which still means the item was wasted and consumed below).
-		var item_display: String = item_id.replace("_", " ").capitalize()
+		var item_display: String = _item_display_name(item_id)
 		if is_revival_item:
 			## "everyone is standing" is false when a corpse IS present and merely unraisable, which
 			## is now how a permakilled-only party reaches here. Name the real reason; keep the item.
@@ -8485,7 +8491,7 @@ func _execute_item(user: Combatant, item_id: String, targets: Array) -> void:
 		## battle-log surface too.
 		print("Failed to use item: %s" % item_id)
 		push_warning("[BattleManager] _execute_item: ItemSystem.use_item returned false for '%s' — item not consumed, turn wasted" % item_id)
-		battle_log_message.emit("[color=gray]Failed to use %s.[/color]" % item_id.replace("_", " ").capitalize())
+		battle_log_message.emit("[color=gray]Failed to use %s.[/color]" % _item_display_name(item_id))
 
 
 ## Victory/defeat conditions
