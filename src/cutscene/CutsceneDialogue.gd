@@ -1064,7 +1064,7 @@ static func job_id_named_by(speaker: String) -> String:
 
 
 func _job_display_name(job_id: String) -> String:
-	return JobSystem.get_job_display_name(job_id)
+	return Combatant.job_display_name_for_id(job_id)
 
 
 ## =====================
