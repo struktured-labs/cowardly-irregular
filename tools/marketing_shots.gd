@@ -254,6 +254,14 @@ func _shoot(name: String, paths: Array) -> void:
 			await process_frame
 		print("[SHOT] %s framing: %s" % [name, framing])
 
+	## A marketing still is not the HUD (cowir-adhoc 21988): AreaTransition draws its "Enter Attic" /
+	## "The Forge (rear entrance)" sign whenever the gate is drawn, not only near it, so a village frame
+	## carried door labels across its facades. Hidden for the CAPTURE only; the game is untouched, and
+	## CAPTIONS says the shots omit them. Counted and printed, so the log proves it ran.
+	var hid := _hide_transition_labels(scene)
+	await process_frame
+	print("[SHOT] %s hid %d door label(s)" % [name, hid])
+
 	var img := root.get_texture().get_image()
 	var out := "res://tmp/marketing/%s.png" % name
 	if not ShotGuard.save_or_refuse(img, out):
@@ -263,6 +271,20 @@ func _shoot(name: String, paths: Array) -> void:
 
 	scene.queue_free()
 	await process_frame
+
+
+## Every AreaTransition's sign label (its "_indicator_label"), hidden for the capture. Returns how many
+## were visible and are now hidden; one that was already hidden is not counted.
+func _hide_transition_labels(n: Node) -> int:
+	var hid := 0
+	if "_indicator_label" in n:
+		var l = n.get("_indicator_label")
+		if l != null and is_instance_valid(l) and l.visible:
+			l.visible = false
+			hid += 1
+	for c in n.get_children():
+		hid += _hide_transition_labels(c)
+	return hid
 
 
 ## Frame a village on its HOUSES, not its entrance (2026-10-31). The camera follows the player, who
