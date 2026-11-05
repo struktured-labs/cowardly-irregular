@@ -18,6 +18,12 @@ func test_a_world_title_still_shows_beside_the_name() -> void:
 	assert_eq(BattleUIManager.name_with_job("Mira", "Fighter"), "Mira (Fighter)", "a renamed member keeps the job")
 
 
+func test_the_predicate_is_the_one_rule_other_surfaces_ask() -> void:
+	assert_true(BattleUIManager.job_is_name("Fighter", " fighter "), "trim and case")
+	assert_false(BattleUIManager.job_is_name("Fighter", "Security Guard"))
+	assert_false(BattleUIManager.job_is_name("Mira", "Fighter"))
+
+
 func test_every_party_label_in_the_panel_goes_through_the_helper() -> void:
 	var src := FileAccess.get_file_as_string(UI_PATH)
 	assert_gt(src.length(), 0, "read %s" % UI_PATH)

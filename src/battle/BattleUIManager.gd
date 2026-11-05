@@ -4,9 +4,14 @@ class_name BattleUIManager
 ## BattleUIManager - Handles battle UI status display (party/enemy status boxes, action buttons, log)
 ## Extracted from BattleScene to reduce god class complexity
 
-## "Name (Job Lv.N)", with the job said once when it IS the name (W1 calls the party by class title: "Fighter (Lv.14)").
+## True when the job IS the name (W1 calls the party by class title), so a label says it once; every surface asks this.
+static func job_is_name(member_name: String, job_name: String) -> bool:
+	return member_name.strip_edges().to_lower() == job_name.strip_edges().to_lower()
+
+
+## "Name (Job Lv.N)", with the job said once when it IS the name: "Fighter (Lv.14)".
 static func name_with_job(member_name: String, job_name: String, level_text: String = "") -> String:
-	var inner: String = level_text.strip_edges() if member_name.strip_edges().to_lower() == job_name.strip_edges().to_lower() else job_name + level_text
+	var inner: String = level_text.strip_edges() if job_is_name(member_name, job_name) else job_name + level_text
 	return member_name if inner == "" else "%s (%s)" % [member_name, inner]
 
 const CharacterPortraitClass = preload("res://src/ui/CharacterPortrait.gd")
