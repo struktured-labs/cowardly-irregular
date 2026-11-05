@@ -89,8 +89,9 @@ func test_item_fizzle_uses_prettified_item_name() -> void:
 	var fizzle_idx: int = body.find("fizzles — no valid targets", block_idx)
 	assert_gt(fizzle_idx, -1)
 	var pre: String = body.substr(block_idx, fizzle_idx - block_idx)
-	assert_true(pre.contains("var item_display: String = item_id.replace(\"_\", \" \").capitalize()"),
-		"item fizzle must compute prettified item_display before emitting")
+	# 2026-11-05: the menu's name, not one built from the id (ai 21928): "Phoenix Down" was a retired FF name.
+	assert_true(pre.contains("var item_display: String = _item_display_name(item_id)"),
+		"item fizzle must compute the item's menu name before emitting")
 
 
 # ── Pre-existing print preserved for dev console ──────────────────────
