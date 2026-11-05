@@ -352,6 +352,8 @@ func _frame_on_houses(scene: Node) -> String:
 	## frame was taken, so two identical runs differed by a 2-3 px pan (45% of pixels on Frosthold).
 	scene.camera.position_smoothing_enabled = false
 	scene.player.global_position = stand
+	## Where the tool stood the player, in world px (cowir-overworld 21992 asks whether a seam is a spawn or framing).
+	print("[SHOT] player stood at world px (%d, %d), door=%s" % [int(stand.x), int(stand.y), str(used_door)])
 	## Keep the player inside the frame: the offset never pushes them past the view's edge.
 	var keep := VIEW * 0.5 - Vector2(48, 72)
 	scene.camera.offset = (target - stand).clamp(-keep, keep)
