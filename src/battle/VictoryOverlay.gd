@@ -586,7 +586,8 @@ func _make_card(cr: Dictionary) -> PanelContainer:
 	card.add_child(h)
 
 	# Portrait chip — through the world-aware resolver, never a hand-built path (2026-08-09 six-surfaces defect)
-	var job_key := str(cr.get("job_name", "")).to_lower()
+	# A KEY, so the job id: the name lowercased was "time mage" for time_mage.png, and is "school nurse" in W2 (sprites 21968).
+	var job_key := str(cr.get("job_id", "")) if str(cr.get("job_id", "")) != "" else str(cr.get("job_name", "")).to_lower()
 	var tex_path: String = HybridSpriteLoader.portrait_path(job_key)
 	if tex_path != "" and ResourceLoader.exists(tex_path):
 		var chip := TextureRect.new()

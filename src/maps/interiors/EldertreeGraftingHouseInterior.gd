@@ -112,8 +112,8 @@ func _leader_job_name() -> String:
 		if GameState and "party_leader_index" in GameState:
 			idx = clampi(int(GameState.party_leader_index), 0, gl.party.size() - 1)
 		var leader = gl.party[idx]
-		if leader and "job" in leader and leader.job is Dictionary:
-			return str(leader.job.get("name", "Adventurer"))
+		if leader and leader.has_method("job_display_name"):
+			return str(leader.job_display_name("Adventurer"))
 	return "Adventurer"
 
 

@@ -101,7 +101,8 @@ func test_a_composed_cure_leaves_with_an_ally_in_mind() -> void:
 func test_the_repair_says_it_aimed_the_heal() -> void:
 	var result: Dictionary = await _compose(UNTARGETED_CURE, "mira", "heal whoever is hurt worst")
 	var blob: String = "|".join(result.get("notes", []))
-	assert_true(blob.find("Aimed 'cure' at lowest_hp_ally") != -1,
+	## The note names the ability as the menu does (cowir-ai 22000), so it reads the name rather than pinning one.
+	assert_true(blob.find("Aimed '%s' at lowest_hp_ally" % AbilityIcons.name_of("cure")) != -1,
 		"the player must be told their heal was aimed; got: %s" % blob)
 
 

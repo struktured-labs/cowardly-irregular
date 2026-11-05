@@ -1045,6 +1045,28 @@ func _on_thinking_tick() -> void:
 	_thinking_label.text = THINKING_FRAMES[_thinking_dots_step]
 
 
+## A speaker tag that names a party job reads that job's name in the CURRENT world (cowir-story canon 21964: in W2-W6 the
+## Fighter "simply *is*" a Security Guard). The authored line text is never touched, W1 is byte-identical (its world name is the
+## base name), and any other speaker, Theron, a monster, "???", passes through as written.
+func speaker_label(speaker: String) -> String:
+	var job_id := job_id_named_by(speaker)
+	return _job_display_name(job_id) if job_id != "" else speaker
+
+
+## The job id a speaker tag names (its id or base name, any case), or "" for everyone else.
+static func job_id_named_by(speaker: String) -> String:
+	var tree := Engine.get_main_loop() as SceneTree
+	var js: Node = tree.root.get_node_or_null("JobSystem") if tree else null
+	if js == null or speaker.strip_edges() == "":
+		return ""
+	var key: String = js.resolve_job_id(speaker.strip_edges().to_lower().replace(" ", "_"))
+	return key if js.jobs.has(key) else ""
+
+
+func _job_display_name(job_id: String) -> String:
+	return Combatant.job_display_name_for_id(job_id)
+
+
 ## =====================
 ## DIALOGUE FLOW
 ## =====================
@@ -1060,7 +1082,7 @@ func _show_current_line() -> void:
 
 	_create_dialogue_visuals(theme)
 
-	_speaker_label.text = entry.get("speaker", "")
+	_speaker_label.text = speaker_label(str(entry.get("speaker", "")))
 
 	# Set portrait (supports expression suffix: "fighter_angry", "cleric_sad")
 	var portrait_raw = entry.get("portrait", theme_name)
@@ -1110,7 +1132,8 @@ func _show_current_line() -> void:
 	# next box, not the next cutscene.
 	# One entry per LINE, recorded where the line is resolved rather than where a page is typed — a
 	# paged line is one thing the player read, not three.
-	_record_in_backlog(str(entry.get("speaker", "")), str(entry.get("text", "")))
+	# The backlog keeps what the player READ, so a W2 row says the world's name like the box did.
+	_record_in_backlog(speaker_label(str(entry.get("speaker", ""))), str(entry.get("text", "")))
 	# Paginate AFTER the hide_portrait block above — a narrator line owns the portrait's width too.
 	_pages = _paginate(str(entry.get("text", "")))
 	_page_index = 0

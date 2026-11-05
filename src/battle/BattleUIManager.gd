@@ -291,7 +291,7 @@ func _create_character_status_box(idx: int, member: Combatant) -> VBoxContainer:
 	# Name label with autobattle indicator
 	var name_label = Label.new()
 	name_label.name = "Name"
-	var job_name = member.job.get("name", "None") if member.job else "None"
+	var job_name = member.job_display_name("None")
 	var char_id = member.combatant_name.to_lower().replace(" ", "_")
 	var auto_indicator = " [A]" if AutobattleSystem.is_autobattle_enabled(char_id) else ""
 	var tag_color: Color = Color(0.4, 1.0, 0.4)
@@ -395,7 +395,7 @@ func _update_member_status(idx: int, member: Combatant) -> void:
 	# Update name with autobattle indicator
 	var name_label = box.get_node_or_null("Header/Name")
 	if name_label:
-		var job_name = member.job.get("name", "None") if member.job else "None"
+		var job_name = member.job_display_name("None")
 		var level_text = " Lv.%d" % member.job_level if member.job_level > 1 else ""
 		var char_id = member.combatant_name.to_lower().replace(" ", "_")
 		var is_auto_enabled = AutobattleSystem.is_autobattle_enabled(char_id)
