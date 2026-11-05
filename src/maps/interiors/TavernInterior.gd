@@ -1,7 +1,7 @@
 extends Node2D
 class_name TavernInterior
 
-## TavernInterior - "The Dancing Tonberry" tavern interior
+## TavernInterior - "The Dancing Lantern" tavern interior
 ## Expanded 28x18 layout: bar zone, dining hall, stage, kitchen, fireside lounge, stairs corner
 ## Shining Force III / Breath of Fire aesthetic — warm candle-lit, deeply textured, lived-in
 
@@ -2199,7 +2199,7 @@ func _setup_npcs() -> void:
 
 	# --- Bar zone ---
 	_create_npc("Osric", "bartender", Vector2(1.5, 3.5), [
-		"Osric: Welcome to The Dancing Tonberry!",
+		"Osric: Welcome to The Dancing Lantern!",
 		"Osric: What'll it be? Mead? Ale? Liquid courage?",
 		"Osric: *polishes glass* The cave's been... hungry lately.",
 		"Osric: Some say the monsters are learning. Adapting.",
