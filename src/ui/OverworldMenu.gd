@@ -375,7 +375,7 @@ func _create_character_card(member: Combatant, index: int) -> Control:
 
 	var job_label = Label.new()
 	job_label.name = "JobLabel"
-	job_label.text = member.job.get("name", "Fighter") if member.job else "Fighter"
+	job_label.text = _job_shown_as(member)
 	job_label.position = Vector2(58, 20)
 	job_label.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	job_label.add_theme_color_override("font_color", SUBTITLE_COLOR)
@@ -637,6 +637,16 @@ func _create_menu_panel(panel_size: Vector2) -> Control:
 
 
 ## [] at zero corruption; ["Corruption: N% (k effects)"] plus an
+## A member's job as THIS world names it (W2: "School Nurse", not "Cleric"), through the one helper every other screen uses.
+static func _job_shown_as(member) -> String:
+	if member == null or not member.job:
+		return "Fighter"
+	var id := str(member.job.get("id", ""))
+	if id == "" or not JobSystem:
+		return str(member.job.get("name", "Fighter"))
+	return JobSystem.get_job_display_name(id)
+
+
 ## optional pretty-named effects line otherwise. Static for testability.
 static func _corruption_summary(level: float, effects: Array) -> Array:
 	if level <= 0.0:
@@ -767,7 +777,7 @@ func _update_party_stats() -> void:
 
 		var job_lbl = card.get_node_or_null("JobLabel")
 		if job_lbl:
-			job_lbl.text = member.job.get("name", "Fighter") if member.job else "Fighter"
+			job_lbl.text = _job_shown_as(member)
 		# Job text refreshes in place; the face was baked at open and kept the previous job.
 		_refresh_card_portrait(card, member)
 
