@@ -17,6 +17,8 @@ var _rng := RandomNumberGenerator.new()
 var _group_used := false
 var _seen_line := -1
 var _busy := false
+## Members whose command menu this player drove: a member missing here acted on AI, not by hand.
+var played: Dictionary = {}
 
 
 func _ready() -> void:
@@ -85,7 +87,27 @@ func _run() -> void:
 		_busy = false
 
 
+## A new save leaves some members on autobattle, and they then act with no menu at all (four of five in the
+## encounter take: "one person choosing and four on autopilot"). Every member is played by hand here.
+func _manual_party() -> void:
+	var ab = get_tree().root.get_node_or_null("AutobattleSystem")
+	var gl := _gl()
+	var party: Array = gl.get("party") if gl and "party" in gl else []
+	for m in party + _bm().player_party:
+		if m == null or not is_instance_valid(m):
+			continue
+		var cid: String = str(m.combatant_name).to_lower().replace(" ", "_")
+		if ab and ab.is_autobattle_enabled(cid):
+			ab.set_autobattle_enabled(cid, false)
+			print("[DEMO] %s: autobattle off, this member is played by hand" % m.combatant_name)
+		if "autobattle_locked" in m and m.autobattle_locked:
+			m.autobattle_locked = false
+	if "is_autobattle_enabled" in _bm():
+		_bm().is_autobattle_enabled = false
+
+
 func _step() -> void:
+	_manual_party()
 	var dlg := _cutscene_dialogue()
 	if dlg != null and dlg.visible and (dlg.get("_dialogue_queue") as Array).size() > 0:
 		await _read_line(dlg)
@@ -245,6 +267,7 @@ func _take_turn(scene: Node, root) -> void:
 	var pc = _bm().current_combatant
 	if pc == null:
 		return
+	played[str(pc.combatant_name)] = true
 	var plan := _plan(scene, pc)
 	await _beat(0.8, 1.4)
 	if plan.is_empty():
@@ -310,3 +333,12 @@ func _back_to_root(scene: Node) -> void:
 		await press("ui_cancel")
 		await _beat(0.3)
 		guard += 1
+
+
+## The party members who fought without this player ever opening their menu (cowir-main 22349: assert every turn).
+func missing_menu_members(party: Array) -> Array:
+	var out: Array = []
+	for m in party:
+		if m != null and is_instance_valid(m) and not played.has(str(m.combatant_name)):
+			out.append(str(m.combatant_name))
+	return out

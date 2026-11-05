@@ -134,6 +134,12 @@ func _init() -> void:
 		elif in_battle and state == gl.LoopState.EXPLORATION:
 			break
 	await _beat(1.5)
-	print("[DEMO] %s at level %d: KOs %s · %.0f s" % [boss, level, str(kos), t])
+	var missing: Array = player_node.missing_menu_members(gl.party)
+	print("[DEMO] %s at level %d: KOs %s · played by hand %s · %.0f s" % [boss, level, str(kos), str(player_node.played.keys()), t])
+	if not missing.is_empty():
+		print("[DEMO] ASSERT FAIL: %s never got a command menu (autobattle or a spotlight lock played them)" % str(missing))
+		print("[DEMO] segment done")
+		quit(1)
+		return
 	print("[DEMO] segment done")
 	quit(0 if in_battle else 1)
