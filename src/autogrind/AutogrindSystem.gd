@@ -902,6 +902,16 @@ const AUTOGRIND_ACTION_TYPES = {
 	"revive_fallen": "Revive Fallen"
 }
 
+## A rule's member key as a player reads it: "Any", the CURRENT world's job name for a job id (story 21964), else the name as stored.
+func member_display_name(who: String) -> String:
+	if who == "":
+		return "Any"
+	var js: Node = _get_autoload_node("JobSystem")
+	if js != null and "jobs" in js and js.jobs.has(js.resolve_job_id(who.to_lower())):
+		return Combatant.job_display_name_for_id(who.to_lower())
+	return who.capitalize()
+
+
 ## Default autogrind profile templates
 const DEFAULT_AUTOGRIND_TEMPLATES = ["Standard Grind", "Safe Grind", "Aggressive Grind"]
 
