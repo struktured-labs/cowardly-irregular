@@ -13,7 +13,14 @@ func before_each() -> void:
 
 func after_each() -> void:
 	if is_instance_valid(_player):
-		SoundManager._procedural_generators.erase(_player.get_instance_id())
+		_release(_player)
+
+
+## The teardown was the defect it guards (#224, 2026-11-05): it erased the keeper's entry, then autofree freed the PLAYING
+## player, so the last ref to the generator went while its playback was still fading out in the mix list (story's spinwatch
+## capture: _mix_internal <- Resampled::mix <- _mix_step). Stop, and leave the keeper's ref, as it is for every real player.
+func _release(player: AudioStreamPlayer) -> void:
+	player.stop()
 
 
 func _blip() -> void:
@@ -40,6 +47,34 @@ func test_a_player_reuses_one_generator() -> void:
 	_player.stream = AudioStreamWAV.new()
 	_blip()
 	assert_same(_player.stream, first, "each cue built a new generator, so every swap orphaned the last one")
+
+
+func test_a_freed_fixture_leaves_its_generator_alive() -> void:
+	var p := AudioStreamPlayer.new()
+	add_child(p)
+	SoundManager._play_sound(p, {"type": "blip", "duration": 0.05, "freq": 440.0})
+	assert_true(p.stream is AudioStreamGenerator and p.playing, "CONTROL: the fixture really plays a generator")
+	var ref: WeakRef = weakref(p.stream)
+	_release(p)
+	p.free()
+	await wait_frames(2)
+	assert_not_null(ref.get_ref(),
+		"freeing a player that played a generator freed the generator too, while its playback can still be fading out in the mix list (#224)")
+
+
+func test_no_test_drops_a_kept_generator() -> void:
+	## Only the keeper's lifetime makes the raw pointer safe; a test that erases an entry under a live player brings #224 back.
+	var offenders: Array[String] = []
+	for f in _gd_files("res://test"):
+		var lines: PackedStringArray = FileAccess.get_file_as_string(f).split("\n")
+		for i in lines.size():
+			var t: String = lines[i].strip_edges()
+			if t.begins_with("#") or t.contains("\""):
+				continue
+			if t.contains("_procedural_generators.erase(") or t.contains("_procedural_generators.clear("):
+				offenders.append("%s:%d" % [f, i + 1])
+	assert_gt(_gd_files("res://test").size(), 100, "SCOPE: the walk reached the test tree")
+	assert_eq(offenders, [] as Array[String], "a test drops a kept generator, so a player can outlive it mid-fade: %s" % [offenders])
 
 
 func test_nothing_else_in_src_builds_a_generator() -> void:
