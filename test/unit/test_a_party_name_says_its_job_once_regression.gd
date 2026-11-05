@@ -29,7 +29,7 @@ func test_every_party_label_in_the_panel_goes_through_the_helper() -> void:
 	assert_gt(src.length(), 0, "read %s" % UI_PATH)
 	var reaches := 0
 	for line in src.split("\n"):
-		if "name_label.text" in line and "combatant_name" in line:
+		if "name_label.text" in line and "member.combatant_name" in line:
 			reaches += 1
 			assert_true("name_with_job(" in line, "a party label formats the job by hand: %s" % line.strip_edges())
 	assert_eq(reaches, 2, "the build and the refresh each set the party label once")
