@@ -199,6 +199,29 @@ var elemental_immunities: Array[String] = []   # Takes 0x damage from these
 
 ## Job reference and progression
 var job = null
+
+
+## The job's name as the player reads it in the CURRENT world (data/job_world_names.json; W1 is the base name). Story's
+## canon ruling 21964: W2-W6 show the world's name everywhere. The one display read of a job name; KEY reads use the id.
+static func job_display_name_for_id(job_id: String) -> String:
+	var js: Node = (Engine.get_main_loop() as SceneTree).root.get_node_or_null("JobSystem") if Engine.get_main_loop() is SceneTree else null
+	if js != null and job_id != "":
+		return str(js.get_job_display_name(job_id))
+	return job_id.replace("_", " ").capitalize()
+
+
+func job_display_name(fallback: String = "Fighter") -> String:
+	if not (job is Dictionary):
+		return fallback
+	var jid := str(job.get("id", ""))
+	if jid != "":
+		return job_display_name_for_id(jid)
+	return str(job.get("name", fallback))
+
+
+## The job's id, for KEYS (portraits, sprites, lookups): never a display name, which changes per world.
+func job_id_key() -> String:
+	return str(job.get("id", "")) if job is Dictionary else ""
 var job_level: int = 1
 var job_exp: int = 0
 
