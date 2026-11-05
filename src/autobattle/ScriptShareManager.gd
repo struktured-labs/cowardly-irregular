@@ -288,7 +288,7 @@ static func _deep_advisories(script: Dictionary, character_id: String) -> Array:
 			if msg.begins_with("cannot resolve job"):
 				unchecked = true
 				continue
-			out.append("Rule %d: %s" % [i + 1, _for_player(msg, rules[i], character_id)])
+			out.append("Rule %d: %s" % [i + 1, player_text_for_finding(msg, rules[i], character_id)])
 	if unchecked and out.is_empty():
 		out.append("could not check this code against '%s' — the character's job did not resolve, so there is no compatibility advice either way" % character_id)
 	return out
@@ -297,7 +297,7 @@ static func _deep_advisories(script: Dictionary, character_id: String) -> Array:
 ## A reachability finding in the player's words: the ability as the menu names it, the job as THIS world does,
 ## no lint vocabulary (2026-11-05). The kind is read off the rule's own action ids; anything not recognised passes
 ## through unchanged. The lint text itself stays as written: it is the Rule Composer's repair hint (model-facing).
-static func _for_player(msg: String, rule: Dictionary, character_id: String) -> String:
+static func player_text_for_finding(msg: String, rule: Dictionary, character_id: String) -> String:
 	var job_id: String = str(AutobattleSystem.get_deep_check_kit(character_id).get("job_id", ""))
 	var job_name: String = Combatant.job_display_name_for_id(job_id) if job_id != "" else "character"
 	for a in rule.get("actions", []):
