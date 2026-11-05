@@ -1717,7 +1717,7 @@ func play_ambient(sound_key: String, trim_db: float = 0.0) -> void:
 	if _music_player and _music_player.playing and _music_player.stream \
 			and _music_player.stream.resource_path == path:
 		return
-	## Headless/Dummy only: a latched mix never returns the driver mutex this takes (issue #224); live devices never latch.
+	## SILENT BY DESIGN: a latched headless mix never returns the driver mutex this takes (#224); the latch already warned.
 	if wav_commit_refused():
 		return
 	_ambient_player.stream = stream
