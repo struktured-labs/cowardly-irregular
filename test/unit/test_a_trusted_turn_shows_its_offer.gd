@@ -124,6 +124,9 @@ func test_the_offer_steps_clear_of_what_it_would_cover() -> void:
 	var menu := Rect2(natural.position.x - 10, natural.position.y - 5, size.x + 20, size.y + 10)
 	var placed := TrustTurnPill.placed_rect(HEAD, size, [menu], vp)
 	assert_false(placed.intersects(menu), "it must not cover the command menu / a bubble standing where it would go")
+	var tall := Rect2(natural.position.x - 10, 0, size.x + 20, HEAD.y - 2)   # a menu from the top edge down to the head
+	var under := TrustTurnPill.placed_rect(HEAD, size, [tall], vp)
+	assert_false(under.intersects(tall), "with no room above a tall menu it goes below it, not back onto it after the clamp")
 	var edge := TrustTurnPill.placed_rect(Vector2(5, 10), size, [], vp)
 	assert_true(Rect2(Vector2.ZERO, vp).encloses(edge), "and it stays on screen near an edge")
 

@@ -63,7 +63,8 @@ func remaining_fraction() -> float:
 
 
 ## Where a pill of `size` goes for a head at `head`: centred above it, stepped up over anything in `keep_out` it
-## would cover, then kept on screen. Pure, so placement is testable without a battle.
+## would cover, then kept on screen. Pure, so placement is testable without a battle. Keep-out rects are UI
+## (screen) rects and the pill is in the scene canvas: equal unless a camera push is live, the bubbles' assumption too.
 static func placed_rect(head: Vector2, size: Vector2, keep_out: Array, vp: Vector2) -> Rect2:
 	var x := clampf(head.x - size.x * 0.5, EDGE, maxf(EDGE, vp.x - size.x - EDGE))
 	var r := Rect2(x, head.y - size.y - GAP, size.x, size.y)
@@ -76,4 +77,9 @@ static func placed_rect(head: Vector2, size: Vector2, keep_out: Array, vp: Vecto
 		if not moved:
 			break
 	r.position.y = clampf(r.position.y, EDGE, maxf(EDGE, vp.y - size.y - EDGE))
+	# A rect reaching the top (a tall command menu) leaves no room above, and the clamp put the pill back ON it:
+	# go below that rect instead (cowir-battle review, 2026-11-05).
+	for k in keep_out:
+		if k is Rect2 and r.intersects(k):
+			r.position.y = clampf((k as Rect2).end.y + GAP, EDGE, maxf(EDGE, vp.y - size.y - EDGE))
 	return r
