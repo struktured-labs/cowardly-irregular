@@ -898,7 +898,8 @@ const AUTOGRIND_ACTION_TYPES = {
 	"heal_party": "Heal Party",
 	"restore_mp": "Restore MP",
 	"flee_battle": "Flee Battle",
-	"member_ability": "Member Casts"
+	"member_ability": "Member Casts",
+	"revive_fallen": "Revive Fallen"
 }
 
 ## Default autogrind profile templates
@@ -2836,6 +2837,28 @@ func apply_autogrind_actions(actions: Array) -> void:
 					print("[AUTOGRIND] restore_mp: %d members needed MP but no ethers in party inventory" % eligible_count)
 					_note_rule_noop("Restore MP: out of ethers")
 
+			"revive_fallen":
+				## Opt-in (cowir-main 21886): heal_party's fixed list is struktured's balance call, so revives are their own action.
+				var revived := 0
+				var fallen := 0
+				for member in grind_party:
+					if not (member is Combatant) or member.is_alive or not member.can_be_revived():
+						continue
+					fallen += 1
+					for item_id in revive_items_cheapest_first(member):
+						if not _apply_item_to(member, item_id, "revive_fallen"):
+							continue
+						_track_item_consumed(item_id)
+						revived += 1
+						break
+				if revived > 0:
+					print("[AUTOGRIND] revive_fallen: revived %d members" % revived)
+				elif fallen == 0:
+					print("[AUTOGRIND] revive_fallen: nobody is down — no-op")
+				else:
+					print("[AUTOGRIND] revive_fallen: %d members down but no revive item in party inventory" % fallen)
+					_note_rule_noop("Revive Fallen: out of revive items")
+
 			"flee_battle":
 				# flee_battle is handled by AutogrindController (_skip_next_battle flag). Reaching this branch means the controller filter was bypassed — a real code-path regression. push_warning surfaces it in the editor warnings panel + CI (cadence #18).
 				push_warning("[AUTOGRIND] flee_battle action reached AutogrindSystem.apply_autogrind_actions directly — AutogrindController filter regression; falling back to stop_autogrind so the action is never silently ignored")
@@ -2884,6 +2907,24 @@ func heal_items_by_preference(member, bag: Array) -> Array:
 	covers.sort_custom(func(a, b): return a[0] < b[0])
 	short.sort_custom(func(a, b): return a[0] > b[0])
 	return (covers + short).map(func(pair): return pair[1])
+
+
+## Every battle-usable revive the party holds, cheapest first, read from items.json's effects so a new revive works unchanged.
+func revive_items_cheapest_first(member) -> Array:
+	var its: Node = _get_autoload_node("ItemSystem")
+	if its == null or not ("items" in its):
+		return []
+	var found: Array = []
+	for item_id in its.items:
+		var rec: Dictionary = its.items[item_id]
+		var fx: Dictionary = rec.get("effects", {})
+		if not bool(fx.get("revive", false)) or bool(rec.get("save_point_only", fx.get("save_point_only", false))):
+			continue
+		if _party_bag_count(member, str(item_id)) <= 0:
+			continue
+		found.append([int(rec.get("cost", 0)), str(item_id)])
+	found.sort_custom(func(a, b): return a[0] < b[0] or (a[0] == b[0] and a[1] < b[1]))
+	return found.map(func(pair): return pair[1])
 
 
 ## The MP twin of HEAL_PARTY_ITEM_ORDER, and UNCHANGED for the same reason: elixir and megalixir

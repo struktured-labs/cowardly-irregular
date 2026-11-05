@@ -1717,6 +1717,9 @@ func play_ambient(sound_key: String, trim_db: float = 0.0) -> void:
 	if _music_player and _music_player.playing and _music_player.stream \
 			and _music_player.stream.resource_path == path:
 		return
+	## SILENT BY DESIGN: a latched headless mix never returns the driver mutex this takes (#224); the latch already warned.
+	if wav_commit_refused():
+		return
 	_ambient_player.stream = stream
 	## trim_db is a soundscape bed's loudness match (data/ambient_recipes.json); a bed's own manifest `bed_gain_db` levels a hot file (the storm).
 	_ambient_trim_db = trim_db + float(entry.get("bed_gain_db", 0.0))
@@ -1727,7 +1730,9 @@ func play_ambient(sound_key: String, trim_db: float = 0.0) -> void:
 
 func stop_ambient() -> void:
 	"""Stop the current ambient loop."""
-	_ambient_player.stop()
+	## A latched headless mix never returns the driver mutex stop() takes (issue #224); the key still clears.
+	if not wav_commit_refused():
+		_ambient_player.stop()
 	_current_ambient_key = ""
 
 
@@ -2983,6 +2988,9 @@ func _play_parked_position() -> void:
 		return
 	var resume_at: float = _pending_resume_position
 	_pending_resume_position = 0.0
+	## A latched headless mix never returns the driver mutex play() takes (issue #224); the parked position is still consumed.
+	if wav_commit_refused():
+		return
 	var length: float = _music_player.stream.get_length() if _music_player.stream else 0.0
 	if resume_at > 0.0 and length > 0.0 and resume_at < length - 1.0:
 		_music_player.play(resume_at)
@@ -3349,6 +3357,9 @@ func stop_music(keep_outgoing: bool = false) -> void:
 	## THIRD member of the same set, and the one this function missed: play_area_music defers its
 	## real start, so a stop with one armed went silent and the bed returned two frames later.
 	_invalidate_pending_area_start()
+	## A latched headless mix never returns the driver mutex stop() takes (issue #224); the bookkeeping above still ran.
+	if wav_commit_refused():
+		return
 	if _music_player:
 		_music_player.stop()
 	if _music_player_b and not keep_outgoing:

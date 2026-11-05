@@ -351,7 +351,7 @@ without it, about ANY party member. member_status takes the status NAME in "valu
 the only ids that exist are listed below.
 
 Actions. type is one of:
-  stop_grinding, heal_party, restore_mp, flee_battle, switch_profile, member_ability
+  stop_grinding, heal_party, restore_mp, flee_battle, switch_profile, member_ability, revive_fallen
 switch_profile requires character_id (ONE member) and profile_index (int).
 member_ability takes "member" (job id such as "cleric", or a character name), "ability" (an
 ability id that member knows), and an optional "target". A target names ANOTHER MEMBER the same
@@ -359,6 +359,7 @@ way "member" does; omit it, or use "lowest_hp_ally", for the ally who most needs
 target words other than lowest_hp_ally (self, all_allies, lowest_hp_enemy) are NOT member keys
 and do not belong here.
 Use it for "have <member> cast <ability>"; heal_party spends POTIONS, member_ability spends MP.
+revive_fallen spends the cheapest revive item the bag holds on each fallen member; heal_party never revives.
 
 Canonical example:
   {\"conditions\":[{\"type\":\"party_hp_min\",\"op\":\"<\",\"value\":30}],

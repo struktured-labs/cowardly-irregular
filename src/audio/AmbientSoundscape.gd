@@ -104,6 +104,8 @@ func stop() -> void:
 	_layer = {}
 	_displaced = ""
 	_due_in = []
+	if _driver_refused():
+		return
 	for v in _voices:
 		(v as AudioStreamPlayer).stop()
 
@@ -236,6 +238,8 @@ func _play(shot: Dictionary) -> void:
 	if stream == null:
 		push_warning("[SOUNDSCAPE] '%s' (%s) resolved no stream — that event stays silent" % [shot["key"], _place])
 		return
+	if _driver_refused():
+		return
 	_ensure_voices()
 	var i := _next_voice
 	_next_voice = (_next_voice + 1) % VOICE_COUNT
@@ -248,6 +252,12 @@ func _play(shot: Dictionary) -> void:
 	player.volume_db = base_db() + float(shot["volume_db"])
 	player.pitch_scale = float(shot["pitch"])
 	player.play()
+
+
+## A wedged headless mix never returns the driver mutex that stream assignment, play and stop take (issue #224).
+func _driver_refused() -> bool:
+	var sm = get_parent()
+	return sm != null and sm.has_method("wav_commit_refused") and sm.wav_commit_refused()
 
 
 ## The music slider re-applies each voice's rolled offset, so a sound already playing follows it like the bed does.
