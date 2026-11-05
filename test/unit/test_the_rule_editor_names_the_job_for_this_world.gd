@@ -97,7 +97,8 @@ func test_every_routed_screen_asks_the_shared_helper() -> void:
 			"res://src/ui/autobattle/AutobattleGridEditor.gd"]:
 		var src := FileAccess.get_file_as_string(path)
 		assert_gt(src.length(), 100, "PRECONDITION: %s must be readable" % path)
-		## Either form of the helper: `job_display_name(` (a Combatant) or `job_display_name_for_id(` (an id). The first
-		## version of this arm matched only the former, so the editor's correct id call read as missing.
-		assert_true(src.contains("job_display_name(") or src.contains("job_display_name_for_id("),
-			"%s must name the job through job_display_name / job_display_name_for_id" % path)
+		## Either form of the SHARED helper: `job_display_name(` (a Combatant) or `job_display_name_for_id(` (an id), and NOT
+		## `JobSystem.get_job_display_name(`, which contains the same substring but bypasses the one mechanism. A plain
+		## contains() was blind both ways (measured: missed the id form, passed a direct JobSystem call).
+		var rx := RegEx.create_from_string("(?<!get_)job_display_name(_for_id)?\\(")
+		assert_not_null(rx.search(src), "%s must name the job through job_display_name / job_display_name_for_id" % path)
