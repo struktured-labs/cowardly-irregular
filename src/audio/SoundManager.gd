@@ -1717,6 +1717,9 @@ func play_ambient(sound_key: String, trim_db: float = 0.0) -> void:
 	if _music_player and _music_player.playing and _music_player.stream \
 			and _music_player.stream.resource_path == path:
 		return
+	## Headless/Dummy only: a latched mix never returns the driver mutex this takes (issue #224); live devices never latch.
+	if wav_commit_refused():
+		return
 	_ambient_player.stream = stream
 	## trim_db is a soundscape bed's loudness match (data/ambient_recipes.json); a bed's own manifest `bed_gain_db` levels a hot file (the storm).
 	_ambient_trim_db = trim_db + float(entry.get("bed_gain_db", 0.0))
@@ -1726,6 +1729,9 @@ func play_ambient(sound_key: String, trim_db: float = 0.0) -> void:
 
 
 func stop_ambient() -> void:
+	## Headless/Dummy only: a latched mix never returns the driver mutex this takes (issue #224); live devices never latch.
+	if wav_commit_refused():
+		return
 	"""Stop the current ambient loop."""
 	_ambient_player.stop()
 	_current_ambient_key = ""
@@ -2979,6 +2985,9 @@ func _is_stinger_track(track_id: String) -> bool:
 ## Anything within 1 s of the end restarts instead: resuming there is a wrap the player hears as a
 ## stutter.
 func _play_parked_position() -> void:
+	## Headless/Dummy only: a latched mix never returns the driver mutex this takes (issue #224); live devices never latch.
+	if wav_commit_refused():
+		return
 	if _music_player == null:
 		return
 	var resume_at: float = _pending_resume_position
@@ -3333,6 +3342,9 @@ func _fade_in_music(target_db: float) -> void:
 
 
 func stop_music(keep_outgoing: bool = false) -> void:
+	## Headless/Dummy only: a latched mix never returns the driver mutex this takes (issue #224); live devices never latch.
+	if wav_commit_refused():
+		return
 	"""Stop currently playing music. `keep_outgoing` leaves player B's crossfade running
 	(play_area_music's hand-off); every other caller wants the hard stop."""
 	_kill_fade_in()
