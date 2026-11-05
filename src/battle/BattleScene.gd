@@ -6826,6 +6826,7 @@ func _build_log_overlay() -> void:
 ## input capture lives in _input's ui_cancel guard so cancel during the window claims the turn.
 func _on_trust_interrupt_window_opened(pc: Combatant, seconds: float) -> void:
 	_clear_trust_pill()
+	SoundManager.play_ui("trust_window_open")  # the cue sounds even when the member has no sprite to hang the pill on
 	var sprite: Node2D = _get_combatant_sprite(pc)
 	if sprite == null or not is_instance_valid(sprite):
 		return

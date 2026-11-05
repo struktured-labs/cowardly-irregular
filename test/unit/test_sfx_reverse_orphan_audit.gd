@@ -93,8 +93,6 @@ const DYNAMIC_PREFIXES := {
 ## live entries) sees the pair. Collapse them only if the two directions ever agree, which
 ## would mean the audits had stopped being opposites.
 const KNOWN_PENDING_CONSUMER := {
-	# cowir-main 21913: cowir-controller's trusted-turn pill (.771) adds the play_ui line in BattleScene._on_trust_interrupt_window_opened.
-	"trust_window_open": "cowir-controller: the trusted-turn pill plays it in _on_trust_interrupt_window_opened; that tip removes this entry",
 	# Unwired 2026-10-30 with its music twin (a song): a 5 s loop, which his 09-16 ruling chose the composed bed over.
 	"ambient_village": "cowir-music: W1 village layer is off until a non-tonal 60s+ settlement bed exists (needs ELEVENLABS_API_KEY); struktured may instead rule this 5 s loop back in",
 	# cowir-battle: contact-frame seam (their cycle, confirmed msg 2910)
