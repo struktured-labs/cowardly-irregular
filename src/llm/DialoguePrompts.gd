@@ -793,7 +793,7 @@ static func build_boss_intent(
 		var dmg: int = int(entry.get("damage", 0))
 		var dmg_tag: String = (" (%d dmg)" % dmg) if dmg != 0 else ""
 		var tgt_tag: String = (" → %s" % target) if target != "" else ""
-		recent_lines.append("  - [%s] %s used %s%s%s" % [kind, actor, ability, tgt_tag, dmg_tag])
+		recent_lines.append("  - [%s] %s used %s%s%s" % [kind, actor, _ability_named(ability), tgt_tag, dmg_tag])
 
 	var intent_block: String = ""
 	for id in intents:
@@ -825,7 +825,7 @@ static func build_boss_intent(
 		+ "command, protect or heal THEM. Guarding YOURSELF is always open to you — the\n"
 		+ "intent you pick is about your own position, not about deserving to attack.\n"
 		+ "Enemy party state:\n%s\n" % party_block
-		+ _job_rule(party.map(func(m): return str(m.get("job_id", "")) if m is Dictionary else ""))
+		+ _name_rule(party.map(func(m): return str(m.get("job_id", "")) if m is Dictionary else ""), _recent_ability_ids(recent))
 		+ "Recent exchange (oldest → newest):\n%s\n" % recent_block
 	)
 	# The party's authored automation, as prose. Falls back to the lead-PC JSON.
@@ -936,7 +936,7 @@ static func build_party_line(
 			continue
 		recent_lines.append("  - %s used %s%s" % [
 			str(entry.get("actor", "?")),
-			str(entry.get("ability_id", "?")),
+			_ability_named(str(entry.get("ability_id", "?"))),
 			(" (%d dmg)" % int(entry.get("damage", 0))) if int(entry.get("damage", 0)) != 0 else "",
 		])
 
@@ -963,7 +963,7 @@ static func build_party_line(
 
 	return (
 		"You voice %s, the party's %s, in the meta-aware JRPG 'Cowardly Irregular'.\n" % [speaker_name, _job_named(speaker_job)]
-		+ _job_rule([speaker_job] + party.map(func(m): return str(m.get("job_id", "")) if m is Dictionary else ""))
+		+ _name_rule([speaker_job] + party.map(func(m): return str(m.get("job_id", "")) if m is Dictionary else ""), _recent_ability_ids(recent))
 		+ "Stay rigorously in character. Persona:\n"
 		+ "  %s\n" % persona
 		+ personality_block
@@ -1017,7 +1017,7 @@ static func build_party_line_choice(persona: String, signature_phrases: Array, c
 	var party: Array = ctx.get("party", [])
 	if not party.is_empty():
 		out += "Party: %s\n" % ", ".join(PackedStringArray(party.map(func(m): return "%s (%s, %s)" % [m.get("name", "?"), _job_named(str(m.get("job_id", "?"))), "up" if m.get("is_alive", true) else "down"])))
-	out += _job_rule([job] + party.map(func(m): return str(m.get("job_id", "")) if m is Dictionary else ""))
+	out += _name_rule([job] + party.map(func(m): return str(m.get("job_id", "")) if m is Dictionary else ""))
 	var enemies: Array = ctx.get("enemies", [])
 	if not enemies.is_empty():
 		out += "Enemies: %s\n" % ", ".join(PackedStringArray(enemies.map(func(e): return str(e.get("name", "?")))))
@@ -1369,15 +1369,29 @@ static func _job_named(job_id: String) -> String:
 	return "%s \"%s\"" % [job_id, shown]
 
 
-const JOB_NAME_RULE: String = "A job with a name in quotes after its id is called that in this world: say that name, never the id.\n"
+const NAME_IN_QUOTES_RULE: String = "A job or ability with a name in quotes after its id is called that in this world: say that name, never the id.\n"
 
 
-## JOB_NAME_RULE when any of these jobs reads differently in this world, else "" (World 1's prompts are unchanged).
-static func _job_rule(job_ids: Array) -> String:
+## NAME_IN_QUOTES_RULE when any of these jobs or abilities shows a name its id does not spell, else "".
+static func _name_rule(job_ids: Array, ability_ids: Array = []) -> String:
 	for j in job_ids:
 		if _job_named(str(j)) != str(j):
-			return JOB_NAME_RULE
+			return NAME_IN_QUOTES_RULE
+	for a in ability_ids:
+		if _shown_as(str(a)) != "":
+			return NAME_IN_QUOTES_RULE
 	return ""
+
+
+## An ability as the menu names it beside its id (`cure "Sanatio"`); the bare id where they agree or it is unknown.
+static func _ability_named(ability_id: String) -> String:
+	if ability_id == "" or ability_id == "?":
+		return ability_id
+	return ability_id + _shown_as(ability_id)
+
+
+static func _recent_ability_ids(recent: Array) -> Array:
+	return recent.map(func(e): return str(e.get("ability_id", "")) if e is Dictionary else "")
 
 
 ## ` "Name"` after an id whose player-facing name differs from it, else "". The name is what the menus show.
