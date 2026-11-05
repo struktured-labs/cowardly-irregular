@@ -75,3 +75,16 @@ func test_the_voice_keeps_the_authored_speaker() -> void:
 	var call_line := src.substr(i, src.find("\n", i) - i)
 	assert_true(call_line.contains('entry.get("speaker"'), "the blip is pitched from the authored tag: %s" % call_line)
 	assert_false(call_line.contains("speaker_label("), "never from the rendered, per-world name")
+
+
+## A recorded line resolves by the manifest's `speaker`, the AUTHORED tag ("Mordaine"); the per-world name would never
+## match, and play_voiced_line returns 0.0 on a miss, so every voiced line in W2-W6 would go silent with nothing red
+## (cowir-sfx re e5905eb40).
+func test_a_voiced_line_resolves_by_the_authored_speaker() -> void:
+	var src := FileAccess.get_file_as_string(DIALOGUE)
+	var show := src.find("func _show_current_line")
+	var i := src.find("play_voiced_line(", show)
+	assert_gt(i, -1, "CONTROL: the line renderer plays voiced lines")
+	var call_line := src.substr(i, src.find("\n", i) - i)
+	assert_true(call_line.contains('entry.get("speaker"'), "a voiced line is found by its authored speaker: %s" % call_line)
+	assert_false(call_line.contains("speaker_label("), "never by the rendered, per-world name")
