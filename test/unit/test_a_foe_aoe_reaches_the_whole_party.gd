@@ -66,7 +66,6 @@ func test_the_subject_exposes_what_these_arms_drive() -> void:
 		"CONTROL: firaga must still be an all_enemies row, or the AoE arm proves nothing")
 	assert_eq(str(JobSystem.get_ability("fira").get("target_type", "")), "single_enemy",
 		"CONTROL: fira must still be single_enemy, or the control arm proves nothing")
-	r.free()
 
 
 func test_an_all_enemies_ability_targets_every_living_member() -> void:
@@ -77,7 +76,6 @@ func test_an_all_enemies_ability_targets_every_living_member() -> void:
 		"the foe must actually select firaga, else the cardinality below is about a basic attack")
 	assert_eq((action.get("targets", []) as Array).size(), PARTY_SIZE,
 		"firaga is all_enemies: it must target all %d living members, not one" % PARTY_SIZE)
-	r.free()
 
 
 ## THE CONTROL. Same shape, same caster, a single_enemy row — this must NOT fan out, or the fix
@@ -89,7 +87,6 @@ func test_a_single_enemy_ability_still_targets_exactly_one() -> void:
 	assert_eq(str(action.get("ability_id", "")), "fira", "the foe must select fira")
 	assert_eq((action.get("targets", []) as Array).size(), 1,
 		"fira is single_enemy: fanning it out would mean the fix widened every foe ability")
-	r.free()
 
 
 ## The cardinality that a player actually feels: how many members a single foe turn damages.
@@ -108,7 +105,6 @@ func test_a_foe_turn_damages_the_party_not_a_member() -> void:
 			hurt += 1
 	assert_eq(hurt, PARTY_SIZE,
 		"one firaga must damage all %d members; it damaged %d" % [PARTY_SIZE, hurt])
-	r.free()
 
 
 func test_the_target_list_shrinks_with_the_living_party() -> void:
@@ -120,4 +116,3 @@ func test_the_target_list_shrinks_with_the_living_party() -> void:
 	var action: Dictionary = r._select_enemy_action(_foe("firaga"))
 	assert_eq((action.get("targets", []) as Array).size(), PARTY_SIZE - 2,
 		"all_enemies is the LIVING party, not the roster — a dead member must not be targeted")
-	r.free()

@@ -975,7 +975,7 @@ func _resolve_party_state() -> Dictionary:
 	return out
 
 
-## The few items worth an NPC's notice — highest count first, ids humanised.
+## The few items worth an NPC's notice — highest count first, by the name the item menu shows.
 func _top_items(tally: Dictionary, limit: int = 4) -> Array:
 	var ids: Array = tally.keys()
 	ids.sort_custom(func(a, b): return int(tally[a]) > int(tally[b]))
@@ -983,6 +983,6 @@ func _top_items(tally: Dictionary, limit: int = 4) -> Array:
 	for i in mini(limit, ids.size()):
 		var id_str: String = str(ids[i])
 		var n: int = int(tally[id_str])
-		var pretty: String = id_str.replace("_", " ")
+		var pretty: String = ItemNameResolver.resolve(id_str)
 		out.append("%s x%d" % [pretty, n] if n > 1 else pretty)
 	return out
