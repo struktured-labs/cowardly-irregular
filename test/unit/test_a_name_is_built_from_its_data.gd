@@ -11,12 +11,12 @@ const CAPITALIZED := "([\\w\\.\\]\\)\"]+?)((?:\\.replace\\([^()]*\\))*)\\.capita
 ## A receiver that names an item, ability, job, spell or passive id. Keyed on the NAME, so a renamed variable escapes.
 const NAMED_ID := "(?i)(item|abilit|job|spell|passive)|^jid$"
 ## The line reads the data's own name, so the capitalize is that lookup's fallback.
-const READS_DATA := "get\\(\"(name|label|title)\"|get_job_display_name|ItemNameResolver|_display_name\\("
+const READS_DATA := "get\\(\"(name|label|title)\"|get_job_display_name|ItemNameResolver|_display_name\\(|\\b(?<v>\\w+) if \\k<v> != \"\" else "
+## (the last form is `shown if shown != "" else id...`: the id only when the looked-up name came back empty)
 ## Fallbacks whose data read sits on a NEIGHBOURING line. Each must still exist, so the list can only shrink.
 const KNOWN_FALLBACKS := {
 	"src/GameLoop.gd": ["var ability_name: String = ability_id.replace(\"_\", \" \").capitalize()", "overwritten by JobSystem's name on the next lines"],
 	"src/ui/AbilitiesMenu.gd": ["\"name\": ability_id.replace(\"_\", \" \").capitalize(),", "the stub returned only after JobSystem.get_ability found nothing"],
-	"src/jobs/AbilityIcons.gd": ["return name if name != \"\" else ability_id.capitalize()", "`name` is the data's; the id only when it is empty"],
 	"src/items/ItemNameResolver.gd": ["return item_id.replace(\"_\", \" \").capitalize()", "the resolver's own last resort, after every table"],
 }
 
@@ -71,7 +71,7 @@ func test_the_detector_sees_the_shapes_it_forbids() -> void:
 			"emit(\"%s mimics %s\" % [a, _last_ability_cast_id.capitalize().replace(\"_\", \" \")])",
 			"var d: String = item_id.replace(\"_\", \" \").capitalize()"]:
 		assert_eq(_offenders("planted", planted).size(), 1, "CONTROL: the detector must catch: %s" % planted)
-	for fine in ["ability.get(\"name\", ability_id.replace(\"_\", \" \").capitalize())", "var region := map_id.capitalize()",
+	for fine in ["ability.get(\"name\", ability_id.replace(\"_\", \" \").capitalize())", "return shown if shown != \"\" else ability_id.capitalize()", "var region := map_id.capitalize()",
 			"label.text = element.capitalize()", "# item_id.capitalize() in a comment"]:
 		assert_eq(_offenders("fine", fine).size(), 0, "the detector must leave alone: %s" % fine)
 
