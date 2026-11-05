@@ -2285,7 +2285,7 @@ func _between_battle_cast_blocked(caster, ability_id: String) -> String:
 	if not caster.has_method("has_status"):
 		return ""
 	if caster.has_status("silence"):
-		return "%s is silenced — %s won't come out" % [caster.combatant_name, ability_id]
+		return "%s is silenced — %s won't come out" % [caster.combatant_name, AbilityIcons.name_of(ability_id)]
 	if caster.has_status("stun"):
 		return "%s is stunned and cannot act" % caster.combatant_name
 	if caster.has_status("sleep"):
@@ -2386,13 +2386,13 @@ func _member_ability_apply(caster, ability_id: String, target_key: String) -> Di
 	## purchased / level / free_move). Guarded rather than assumed so a Combatant stub in a test
 	## does not abort the whole action.
 	if caster.has_method("knows_ability") and not caster.knows_ability(ability_id):
-		return {"ok": false, "reason": "%s does not know %s" % [caster.combatant_name, ability_id]}
+		return {"ok": false, "reason": "%s does not know %s" % [caster.combatant_name, AbilityIcons.name_of(ability_id)]}
 	var blocked: String = _between_battle_cast_blocked(caster, ability_id)
 	if blocked != "":
 		return {"ok": false, "reason": blocked}
 	var cost := int(ability.get("mp_cost", 0))
 	if caster.current_mp < cost:
-		return {"ok": false, "reason": "%s lacks MP for %s" % [caster.combatant_name, ability_id]}
+		return {"ok": false, "reason": "%s lacks MP for %s" % [caster.combatant_name, AbilityIcons.name_of(ability_id)]}
 
 	## Default target: the ally who most needs it. A `target` naming a MEMBER wins; a target using
 	## the generic ally vocabulary means the default, because that is what the grammar promises —
@@ -2414,7 +2414,7 @@ func _member_ability_apply(caster, ability_id: String, target_key: String) -> Di
 	var heal := int(effect.get("heal", 0))
 	var mp_amt := int(effect.get("mp", 0))
 	if not bool(effect.get("ok", false)):
-		return {"ok": false, "reason": "'%s' has no between-battle effect this system models" % ability_id}
+		return {"ok": false, "reason": "%s has no between-battle effect this system models" % AbilityIcons.name_of(ability_id)}
 
 	caster.current_mp -= cost
 	if heal > 0:

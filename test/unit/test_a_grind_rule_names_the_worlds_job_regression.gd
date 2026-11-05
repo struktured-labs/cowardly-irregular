@@ -53,3 +53,22 @@ func test_the_console_cells_use_it() -> void:
 	add_child_autofree(ed)
 	assert_string_contains(ed._format_action({"type": "member_ability", "member": "cleric", "ability": "cure"}), nurse,
 		"the grind's rule editor too")
+
+
+## Found on the same sweep: the Summary's "did nothing" rows print member_ability's skip reason, which named the ability by its
+## ID ("Mira does not know cure") where the menu says its data name. A renamed ability must read as the menu shows it.
+func test_a_skip_reason_names_the_ability_as_the_menu_does() -> void:
+	var renamed := ""
+	for aid in ["cure", "raise", "protect", "fire"]:
+		if not JobSystem.get_ability(aid).is_empty() and AbilityIcons.name_of(aid).to_lower() != aid.replace("_", " "):
+			renamed = aid
+			break
+	assert_ne(renamed, "", "CONTROL: some candidate ability shows a name that is not its id, or this arm proves nothing")
+	var mage := Combatant.new()
+	add_child_autofree(mage)
+	mage.initialize({"name": "Mira", "max_hp": 100, "max_mp": 50})
+	var info: Dictionary = AutogrindSystem._member_ability_apply(mage, renamed, "")
+	var reason := str(info.get("reason", ""))
+	assert_false(info.get("ok", true), "CONTROL: Mira cannot cast %s here (%s)" % [renamed, reason])
+	assert_string_contains(reason, AbilityIcons.name_of(renamed), "the reason names the ability as the menu shows it")
+	assert_false(reason.to_lower().contains(renamed), "and never by its bare id: '%s'" % reason)
