@@ -88,7 +88,11 @@ func test_the_field_is_released_when_the_defeat_flow_returns() -> void:
 	await wait_frames(4)
 	assert_true(InputLockManager.has_lock(_gl.WIPE_FIELD_LOCK), "CONTROL: held while the screen waits")
 	_gl.release = true
-	await wait_frames(4)
+	## Waits on PROCESS frames for the condition, bounded: GUT's frame count and the hold loop's do not advance together (red in a sweep).
+	for i in 120:
+		if not InputLockManager.has_lock(_gl.WIPE_FIELD_LOCK):
+			break
+		await get_tree().process_frame
 	assert_false(InputLockManager.has_lock(_gl.WIPE_FIELD_LOCK), "a choice made must give the field back")
 
 
