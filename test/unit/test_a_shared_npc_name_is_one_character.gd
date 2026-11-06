@@ -1,8 +1,8 @@
 extends GutTest
 
-## Two DIFFERENT characters shared a placed-NPC name twice (the shop's "Aldric" vs the puppet king; W3's clocktower keeper vs Brasston's cat, both "Cogsworth"),
-## and name-keyed systems (MAY_STAND_OFF_GRID, personas, quest givers) merge whatever shares a name. A name placed in two scripts must be declared ONE character, with why.
-## Scope, stated: literal `_create_npc("Name", ...)` calls only; a name passed through a variable is invisible to this scan.
+## Two DIFFERENT placed NPCs shared a name (W3's clocktower keeper vs Brasston's cat, both "Cogsworth"), and name-keyed systems (MAY_STAND_OFF_GRID, personas, quest givers) merge whatever shares a name.
+## A name placed in two scripts must be declared ONE character, with why. Scope: literal `_create_npc("Name", ...)` calls only; a name passed through a variable is invisible here.
+## NOT covered: a placed NPC against a CUTSCENE speaker ("Aldric" in the shop vs "King Aldric"); the king is never placed, and story measured that corpus as all-exemptions (22568).
 
 const ROOTS := ["res://src/maps", "res://src/exploration"]
 const SAME_CHARACTER := {
