@@ -2187,7 +2187,7 @@ func trust_window_offered() -> bool:
 ## PLAYER_SELECTING and BattleScene's normal command-menu path picks up.
 func _run_trust_interrupt_window(pc: Combatant) -> void:
 	_trust_window_pc = pc
-	## Created BEFORE the signal, so the offer it opens can read this timer from its first frame.
+	## Kept in _trust_window_timer, the clock the offer's bar reads (trust_window_time_left).
 	var tree: SceneTree = get_tree()
 	var timer: SceneTreeTimer = tree.create_timer(TRUST_INTERRUPT_WINDOW_SECONDS, true, false, true) if tree else null
 	_trust_window_timer = timer
