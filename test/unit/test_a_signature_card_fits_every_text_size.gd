@@ -135,3 +135,16 @@ func test_a_second_card_replaces_the_first_by_name() -> void:
 		if c is PanelContainer and c.get_child_count() > 0 and _head_of(c) != null and str(_head_of(c).text).ends_with(" Card"):
 			cards += 1
 	assert_eq(cards, 1, "the first card is gone, not left beside the second until its own hold runs out")
+
+
+## A cast that raises the tint while the last one fades gets a tint of its own, not the one about to be freed.
+func test_a_tint_raised_during_the_fade_out_is_its_own() -> void:
+	var scene: Node = await _get_scene()
+	scene._signature_stage(true, Color(0.3, 0.1, 0.4, 0.5))
+	var first: Node = scene.get_node_or_null("SignatureTint")
+	assert_not_null(first, "CONTROL: the tint went up")
+	scene._signature_stage(false, Color(0.3, 0.1, 0.4, 0.5))
+	scene._signature_stage(true, Color(0.1, 0.3, 0.4, 0.5))
+	var second: Node = scene.get_node_or_null("SignatureTint")
+	assert_not_null(second, "the new cast has a tint")
+	assert_ne(second, first, "and it is not the fading one its tween is about to free")

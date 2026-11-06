@@ -3217,6 +3217,7 @@ func _signature_stage(on: bool, tint: Color) -> void:
 	var tw := create_tween()
 	tw.tween_property(rect, "color:a", tint.a if on else 0.0, 0.2)
 	if not on:
+		rect.name = "SignatureTintLeaving"  # a cast during the fade builds its own tint instead of reusing this dying one
 		tw.tween_callback(rect.queue_free)
 
 
