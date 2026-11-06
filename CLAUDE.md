@@ -552,8 +552,9 @@ the menu opened ON TOP of them (measured on main before the fix).
 
 ### Menu Navigation
 - All menus expand LEFT (tree-style, like classic JRPGs)
-- D-pad Left = confirm/enter submenu
-- D-pad Right = back/cancel
+- Confirm stays `ui_accept` (keyboard X/Enter, pad east face). Back stays `ui_cancel` (keyboard Z/Escape, pad south face)
+- Up/Down move the highlighted row. In command menus, Left/Right do not
+- Left/Right as confirm and back is **off** unless Settings → "Left/Right Confirm" is on (`GameState.left_right_confirm`, key `left_right_confirm` in `user://settings.json`). A file with no key stays off, including settings saved before the option existed. An explicit true or false in that file is kept. When the option is on, Left confirms or opens the submenu and Right goes back on left-expanding menus; a right-expanding menu swaps those two directions. The autobattle editor's portrait Left still opens More Actions — that is the pad's only route to those verbs, not this confirm alias
 
 ## File Structure
 
