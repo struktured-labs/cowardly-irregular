@@ -51,6 +51,7 @@ var color_blind_mode: bool = false
 var reduce_flashes: bool = false
 var screen_shake_enabled: bool = true
 var advance_commits_at_limit: bool = false
+var left_right_confirm: bool = false
 
 ## The 'ridiculous menu of toggles' (struktured 2026-08-14) — [flag_key, label, description]; audio lanes append theirs here
 const BATTLE_FX_FLAGS := [
@@ -168,6 +169,8 @@ func _ready() -> void:
 			screen_shake_enabled = GameState.screen_shake_enabled
 		if "advance_commits_at_limit" in GameState:
 			advance_commits_at_limit = bool(GameState.advance_commits_at_limit)
+		if "left_right_confirm" in GameState:
+			left_right_confirm = bool(GameState.left_right_confirm)
 		if "dash_always_on" in GameState:
 			dash_always_on = GameState.dash_always_on
 		if "llm_enabled" in GameState:
@@ -411,6 +414,19 @@ func _build_ui() -> void:
 	_settings_items.append({"control": adv_item, "type": "toggle", "id": "advance_commits_at_limit"})
 	MenuMouseHelper.make_clickable(adv_item, adv_idx, 400, 60,
 		_on_setting_click.bind(adv_idx), _on_setting_hover.bind(adv_idx))
+
+	# Carmelo 2026-11-06: Left/Right confirm and back, off unless the player turns it on.
+	var lr_idx: int = _settings_items.size()
+	var lr_item = _create_toggle_setting(
+		"Left/Right Confirm",
+		"Off: Left and Right never confirm or go back. On: Left confirms, Right goes back",
+		left_right_confirm,
+		lr_idx
+	)
+	vbox.add_child(lr_item)
+	_settings_items.append({"control": lr_item, "type": "toggle", "id": "left_right_confirm"})
+	MenuMouseHelper.make_clickable(lr_item, lr_idx, 400, 60,
+		_on_setting_click.bind(lr_idx), _on_setting_hover.bind(lr_idx))
 
 	# Item 9: dash always-on (testing/accessibility) — hold-to-dash works regardless.
 	var dash_idx: int = _settings_items.size()
@@ -1328,6 +1344,12 @@ func _adjust_setting(delta: int) -> void:
 		_save_advance_commits_setting()
 		if SoundManager:
 			SoundManager.play_ui("menu_move")
+	elif item["id"] == "left_right_confirm":
+		left_right_confirm = not left_right_confirm
+		_update_toggle_display(selected_index, left_right_confirm)
+		_save_left_right_confirm_setting()
+		if SoundManager:
+			SoundManager.play_ui("menu_move")
 	elif str(item["id"]).begins_with("fx_"):
 		# Battle FX flags: sparse overrides on GameState, persisted with the other settings
 		var fx_key: String = str(item["id"]).substr(3)
@@ -1506,6 +1528,14 @@ func _save_advance_commits_setting() -> void:
 		GameState.advance_commits_at_limit = advance_commits_at_limit
 	settings_changed.emit("advance_commits_at_limit", advance_commits_at_limit)
 	print("[SETTINGS] Advance commits at limit %s" % ("enabled" if advance_commits_at_limit else "disabled"))
+	_persist_settings()
+
+
+func _save_left_right_confirm_setting() -> void:
+	if GameState:
+		GameState.left_right_confirm = left_right_confirm
+	settings_changed.emit("left_right_confirm", left_right_confirm)
+	print("[SETTINGS] Left/Right confirm %s" % ("enabled" if left_right_confirm else "disabled"))
 	_persist_settings()
 
 

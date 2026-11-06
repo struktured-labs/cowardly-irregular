@@ -763,12 +763,25 @@ func _guard_json(raw: String, schema: Dictionary, fallback: Variant) -> Variant:
 				push_warning("[LLMService][guard/json] Key '%s' type mismatch (expected %s)." % [key, spec])
 				return fallback
 		elif spec is Array:
-			# Treat spec as an enum of valid values.
-			if not (val in spec):
+			# Treat spec as an enum of valid values; the caller receives the AUTHORED member, never JSON's float.
+			var member: Variant = _enum_member(spec, val)
+			if member == null:
 				push_warning("[LLMService][guard/json] Key '%s' value '%s' not in enum %s." % [key, val, spec])
 				return fallback
+			parsed[key] = member
 
 	return parsed
+
+
+## The enum entry `val` names, or null. JSON parses every number as a float and `2.0 in [1, 2, 3]` is false in Godot 4.
+static func _enum_member(spec: Array, val: Variant) -> Variant:
+	if val in spec:
+		return spec[spec.find(val)]
+	if val is float or val is int:
+		for e in spec:
+			if (e is int or e is float) and float(e) == float(val):
+				return e
+	return null
 
 
 # ── JSON utilities ─────────────────────────────────────────────────────────────

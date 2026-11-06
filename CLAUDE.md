@@ -80,7 +80,7 @@ Entire party can pool their Advance Points for combined attacks:
 - **Types**:
   - **All-Out Attack**: Physical damage, all party members strike together
   - **Combo Magic**: Elemental fusion (Fire + Ice = Steam, etc.)
-  - **Formation Specials**: Unlocked by specific party compositions (six formations defined in `HeadlessBattleResolver.FORMATIONS`)
+  - **Formation Specials**: Unlocked by specific party compositions (six formations defined in `HeadlessBattleResolver.FORMATIONS`). Confirm or Advance with an empty personal queue launches one. It is not a slot in that queue; a press while attacks are already queued is refused and the queue stays.
   - **Limit Breaks**: Ultimate attacks requiring full AP from all members
 - **Strategic tradeoff**: Powerful but leaves entire party vulnerable next turn
 
@@ -121,7 +121,7 @@ Each starter job has a free 0-cost AP action available in the command menu:
 
 - Mordaine's intro plays `world1_mordaine_intro` cutscene before battle (CastleHarmonia extends DragonCave)
 - Defeat sets BOTH `dungeon_flags["world1_mordaine_defeated"]` AND `game_constants["cutscene_flag_world1_mordaine_defeated"]` via the `defeat_cutscene_flags` bridge declared in the subclass
-- Sprite is `shadow_knight` placeholder (tier T1) pending artist sheet
+- Battle sprite: the `chancellor_mordaine` entry in `data/sprite_manifest.json` `monster_sheets`, the artist's own sheet since 2026-07-25 (`caf43710f`). Read its tier and `source` there, not here. This line said "`shadow_knight` placeholder (tier T1) pending artist sheet" until 2026-11-06, three and a half months after the art shipped; `shadow_knight` is a separate W1 monster, and nothing routes Mordaine to it
 - Castle Harmonia placed on the W1 overworld (revealed post-Rat-King; tick 335 dual-namespace gate) + reachable via TeleportMenu
 
 ## Autobattle System
@@ -541,7 +541,7 @@ named. Never copy a letter out of this table into a caption.**
 | Defer | L shoulder | Q key |
 | Change battle speed: TAP = one rung faster (wraps) · HOLD = one rung slower, stopping at the slowest (`BattleScene.SPEED_HOLD_MS`, wall clock; struktured 2026-11-01) | X (top face button) | ` (backtick) |
 | Repeat last turn's actions | Y (west face button) | Y key |
-| Cycle party formation | command menu row | F key |
+| Cycle party formation | command menu row — Confirm or Advance cycles it in place. It is not queued and does not spend the turn | F key |
 
 **The keyboard is a SNES pad in the emulator (RetroArch) layout** (struktured 2026-09-29, after Q/W):
 **X** = A (Confirm, east) · **Z** = B (Back, south) · **S** = X (top: the field menu) · **A** = Y (left: Dash,
@@ -552,8 +552,9 @@ the menu opened ON TOP of them (measured on main before the fix).
 
 ### Menu Navigation
 - All menus expand LEFT (tree-style, like classic JRPGs)
-- D-pad Left = confirm/enter submenu
-- D-pad Right = back/cancel
+- Confirm stays `ui_accept` (keyboard X/Enter, pad east face). Back stays `ui_cancel` (keyboard Z/Escape, pad south face)
+- Up/Down move the highlighted row. In command menus, Left/Right do not
+- Left/Right as confirm and back is **off** unless Settings → "Left/Right Confirm" is on (`GameState.left_right_confirm`, key `left_right_confirm` in `user://settings.json`). A file with no key stays off, including settings saved before the option existed. An explicit true or false in that file is kept. When the option is on, Left confirms or opens the submenu and Right goes back on left-expanding menus; a right-expanding menu swaps those two directions. The autobattle editor's portrait Left still opens More Actions — that is the pad's only route to those verbs, not this confirm alias
 
 ## File Structure
 

@@ -35,14 +35,20 @@ const BODY_TOP: float = HEADING_TOP + HEADING_H + 6.0
 ## a guard that copied `PANEL_W - 28` and `12` would keep measuring the old box after a resize and
 ## pass prose that no longer fits. Both are read, not duplicated.
 const BODY_FONT: int = 12
+const FOOTER_FONT: int = 10
+
+
+## The panel scales by the BODY font's own rounded ratio, so a page that fits at 100% still fits: exactly 1.0 at 100%.
+static func panel_scale() -> float:
+	return float(TextScale.scaled(BODY_FONT)) / float(BODY_FONT)
 
 
 static func heading_box() -> Vector2:
-	return Vector2(PANEL_W - 28.0, HEADING_H)
+	return Vector2(PANEL_W - 28.0, HEADING_H) * panel_scale()
 
 
 static func body_box() -> Vector2:
-	return Vector2(PANEL_W - 28.0, PANEL_H - BODY_TOP - 36.0)
+	return Vector2(PANEL_W - 28.0, PANEL_H - BODY_TOP - 36.0) * panel_scale()
 const LOCK_NAME: String = "readable_prop"
 ## ⛔ NOT Signpost's recipe — this copied its two CONSTANTS and not its LAYOUT, and the comment here
 ## used to claim "verbatim", which is what hid the gap. Signpost's `_layout_flat` sets a width and
@@ -214,10 +220,11 @@ func _open_panel() -> void:
 	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_layer.add_child(holder)
 
+	var k := panel_scale()
 	var panel := Panel.new()
-	panel.size = Vector2(PANEL_W, PANEL_H)
+	panel.size = Vector2(PANEL_W, PANEL_H) * k
 	panel.set_anchors_preset(Control.PRESET_CENTER)
-	panel.position = Vector2(-PANEL_W / 2.0, -PANEL_H / 2.0)
+	panel.position = -panel.size / 2.0
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color(0.12, 0.11, 0.09, 0.97)
 	style.border_color = Color(0.62, 0.56, 0.42)
@@ -227,26 +234,26 @@ func _open_panel() -> void:
 	holder.add_child(panel)
 
 	_heading_label = Label.new()
-	_heading_label.position = Vector2(14, HEADING_TOP)
+	_heading_label.position = Vector2(14, HEADING_TOP) * k
 	_heading_label.size = heading_box()
 	_heading_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_heading_label.add_theme_font_size_override("font_size", HEADING_FONT)
+	_heading_label.add_theme_font_size_override("font_size", TextScale.scaled(HEADING_FONT))
 	_heading_label.add_theme_color_override("font_color", Color(0.92, 0.84, 0.58))
 	panel.add_child(_heading_label)
 
 	_body_label = Label.new()
-	_body_label.position = Vector2(14, BODY_TOP)
+	_body_label.position = Vector2(14, BODY_TOP) * k
 	_body_label.size = body_box()
-	_body_label.add_theme_font_size_override("font_size", BODY_FONT)
+	_body_label.add_theme_font_size_override("font_size", TextScale.scaled(BODY_FONT))
 	_body_label.add_theme_color_override("font_color", Color(0.88, 0.86, 0.80))
 	_body_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_body_label.vertical_alignment = VERTICAL_ALIGNMENT_TOP
 	panel.add_child(_body_label)
 
 	_footer_label = Label.new()
-	_footer_label.position = Vector2(14, PANEL_H - 30)
-	_footer_label.size = Vector2(PANEL_W - 28, 20)
-	_footer_label.add_theme_font_size_override("font_size", 10)
+	_footer_label.position = Vector2(14, PANEL_H - 30) * k
+	_footer_label.size = Vector2(PANEL_W - 28, 20) * k
+	_footer_label.add_theme_font_size_override("font_size", TextScale.scaled(FOOTER_FONT))
 	_footer_label.add_theme_color_override("font_color", Color(0.62, 0.58, 0.48))
 	_footer_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	panel.add_child(_footer_label)
