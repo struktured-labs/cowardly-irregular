@@ -312,7 +312,16 @@ func _setup_npcs() -> void:
 	npcs.add_child(kael)
 
 	# Merchant Helga (shivering)
-	var helga = _create_npc("Merchant Helga", "merchant", Vector2(18 * TILE_SIZE,13 * TILE_SIZE), [
+	# After Mordaine: the news reaches Frosthold. Reads every flag namespace, like the spine gate.
+	var _chancellor_gs = get_node_or_null("/root/GameState")
+	var _chancellor_gone: bool = _chancellor_gs != null and _chancellor_gs.is_story_flag_set("world1_mordaine_defeated")
+	var _helga_after_chancellor := [
+		"The Chancellor's gone. Word came up the pass with the last caravan.",
+		"First thing they did in the capital? Lit every hearth in the castle. Every one.",
+		"N-nobody's sent any of that heat up here yet.",
+		"I'll wait. I'm v-very good at waiting. It's the only skill this tile has."
+	]
+	var helga = _create_npc("Merchant Helga", "merchant", Vector2(18 * TILE_SIZE,13 * TILE_SIZE), _helga_after_chancellor if _chancellor_gone else [
 		"B-buy something warm, please.",
 		"The d-developer forgot to add heating.",
 		"I've been standing here since the scene loaded.",

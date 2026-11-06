@@ -2563,34 +2563,63 @@ func _show_piano_fail_dialogue() -> void:
 	_show_dialogue(message)
 
 
-func _show_dialogue(text: String) -> void:
-	var dialogue = Control.new()
-	dialogue.z_index = 100
+const DIALOGUE_FONT := 12
+const DIALOGUE_MIN := Vector2(300, 60)  ## the authored panel; it only grows when the scaled text needs it
+const DIALOGUE_PAD := 10.0
+## WORD_SMART's own break rule (QuestTracker.WRAP_FLAGS): the default flags count fewer lines than the label draws.
+const WRAP_FLAGS := TextServer.BREAK_MANDATORY | TextServer.BREAK_WORD_BOUND | TextServer.BREAK_ADAPTIVE
+
+
+## The panel at the live Text Size, grown to its wrapped text (never below the authored 300x60 scaled).
+static func dialogue_size(text: String) -> Vector2:
+	var k := float(TextScale.scaled(DIALOGUE_FONT)) / float(DIALOGUE_FONT)
+	var w := DIALOGUE_MIN.x * k
+	var font: Font = ThemeDB.fallback_font
+	var h: float = font.get_multiline_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, w - DIALOGUE_PAD * 2.0 * k, TextScale.scaled(DIALOGUE_FONT), -1, WRAP_FLAGS).y if font else 0.0
+	return Vector2(w, maxf(DIALOGUE_MIN.y * k, h + DIALOGUE_PAD * 2.0 * k))
+
+
+## ON A CANVASLAYER, like the Inn's rest panel (its 2026-07-25 fix): parented to this Node2D, the panel's
+## screen numbers were read as WORLD coordinates and the camera left it behind.
+func _make_dialogue_layer(text: String) -> CanvasLayer:
+	var k := float(TextScale.scaled(DIALOGUE_FONT)) / float(DIALOGUE_FONT)
+	var layer := CanvasLayer.new()
+	layer.name = "TavernDialogueLayer"
+	layer.layer = 60
+	var holder := Control.new()
+	holder.set_anchors_preset(Control.PRESET_FULL_RECT)
+	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	layer.add_child(holder)
 
 	var panel = Panel.new()
-	panel.position = Vector2(100, 280)
-	panel.size = Vector2(300, 60)
-
+	panel.size = dialogue_size(text)
+	panel.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	panel.position = Vector2(-panel.size.x / 2.0, 96)
 	var style = StyleBoxFlat.new()
 	style.bg_color = Color(0.1, 0.1, 0.2, 0.95)
 	style.border_color = Color(0.8, 0.8, 0.9)
 	style.set_border_width_all(2)
 	style.set_corner_radius_all(4)
 	panel.add_theme_stylebox_override("panel", style)
-	dialogue.add_child(panel)
+	holder.add_child(panel)
 
 	var label = Label.new()
 	label.text = text
-	label.position = Vector2(110, 290)
-	label.size = Vector2(280, 50)
-	label.add_theme_font_size_override("font_size", 12)
+	label.position = Vector2(DIALOGUE_PAD, DIALOGUE_PAD) * k
+	label.size = panel.size - Vector2(DIALOGUE_PAD, DIALOGUE_PAD) * 2.0 * k
+	label.add_theme_font_size_override("font_size", TextScale.scaled(DIALOGUE_FONT))
 	label.add_theme_color_override("font_color", Color.WHITE)
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	dialogue.add_child(label)
+	panel.add_child(label)
+	return layer
 
-	add_child(dialogue)
+
+func _show_dialogue(text: String) -> void:
+	var layer := _make_dialogue_layer(text)
+	add_child(layer)
 	await get_tree().create_timer(2.0).timeout
-	dialogue.queue_free()
+	if is_instance_valid(layer):
+		layer.queue_free()
 
 
 ## Regressed during the 28×18 expansion (cowir-overworld village-

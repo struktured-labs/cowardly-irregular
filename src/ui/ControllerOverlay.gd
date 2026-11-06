@@ -59,7 +59,11 @@ const LABEL_OFFSETS = {
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	size = OVERLAY_SIZE
+	scale = Vector2.ONE * overlay_scale()
 	Input.joy_connection_changed.connect(_on_pad_changed)
+	# Cached for a whole grind session, so a Text Size change made meanwhile must reach it, shown or hidden.
+	if has_node("/root/GameState") and GameState.has_signal("text_size_scale_changed"):
+		GameState.text_size_scale_changed.connect(_on_text_size_changed)
 	get_viewport().size_changed.connect(_reanchor)
 	_reanchor()
 	var show = true
@@ -79,13 +83,14 @@ func _reanchor() -> void:
 	var vp: Vector2 = get_viewport().get_visible_rect().size
 	if vp.x <= 0.0 or vp.y <= 0.0:
 		return
+	var drawn := drawn_size()
 	var pos := Vector2(
-		maxf(0.0, vp.x - OVERLAY_SIZE.x - SCREEN_MARGIN),
-		maxf(0.0, vp.y - OVERLAY_SIZE.y - SCREEN_MARGIN))
+		maxf(0.0, vp.x - drawn.x - SCREEN_MARGIN),
+		maxf(0.0, vp.y - drawn.y - SCREEN_MARGIN))
 	## The bottom-right corner is also where the battle's PARTY panel ends, so the legend sat on top of
 	## the last two members' HP/MP for the whole grind. Slide left of whatever the caller protects.
-	if keep_clear_rect.get_area() > 0.0 and Rect2(pos, OVERLAY_SIZE).intersects(keep_clear_rect):
-		pos.x = keep_clear_rect.position.x - OVERLAY_SIZE.x - SCREEN_MARGIN
+	if keep_clear_rect.get_area() > 0.0 and Rect2(pos, drawn).intersects(keep_clear_rect):
+		pos.x = keep_clear_rect.position.x - drawn.x - SCREEN_MARGIN
 		## A viewport too narrow to hold both keeps the overlay ON SCREEN: a legend pushed to a negative
 		## corner is exactly the off-screen defect this function already exists to prevent.
 		pos.x = maxf(0.0, pos.x)
@@ -104,6 +109,24 @@ func set_keep_clear_rect(rect: Rect2) -> void:
 	keep_clear_rect = rect
 	if is_inside_tree():
 		_reanchor()
+
+
+## The whole legend scales with Text Size: its letters sit at fixed offsets from the buttons, so growing the text alone
+## would push every label off its button. Exactly 1.0 at 100%, so the authored 320x190 is unchanged there.
+static func overlay_scale() -> float:
+	return float(TextScale.scaled(100)) / 100.0
+
+
+## The legend's on-screen footprint at the current Text Size: what anchoring and the keep-clear slide must place.
+func drawn_size() -> Vector2:
+	return OVERLAY_SIZE * scale
+
+
+func _on_text_size_changed(_scale: float) -> void:
+	scale = Vector2.ONE * overlay_scale()
+	if is_inside_tree():
+		_reanchor()
+	queue_redraw()
 
 
 ## A pad arriving or leaving changes every face letter _draw resolves, and nothing else asks.
