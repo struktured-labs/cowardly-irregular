@@ -120,7 +120,11 @@ func test_a_live_change_reaches_every_built_surface() -> void:
 	GameState.set_text_size_scale(2.0)
 	assert_gt(_px(t._icon_label), icon_before, "the '!' follows the live change")
 	assert_eq(t._icon_label.size.y, float(TextScale.scaled(ThreatScript.ICON_BOX)), "and its box is re-laid-out")
-	assert_gt(m._legend_rows[1][1].position.y - m._legend_rows[0][1].position.y, pitch_before, "the legend re-pitches its rows")
+	var pitch_after: float = m._legend_rows[1][1].position.y - m._legend_rows[0][1].position.y
+	assert_gt(pitch_after, pitch_before, "the legend re-pitches its rows")
+	## Against the font measured at the NEW size (controller 22729: a Label's minimum refreshes a frame late).
+	assert_gte(pitch_after, _h(m._legend_rows[0][1]) - 2.0, "the new pitch clears a row of text at the NEW size")
+	assert_lte(_h(t._icon_label), t._icon_label.size.y + 1.0, "the '!' box holds its glyph at the NEW size")
 	assert_gt(dial.size.x, dial_before, "the dial grows")
 	assert_eq(dial.position, DayClockWidget.dial_position(), "and sits where its rule says, at the live size")
 
