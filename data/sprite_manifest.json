@@ -2109,6 +2109,8 @@
       "frame_width": 256,
       "frame_height": 256,
       "fps": 8,
+      "flip_h": true,
+      "flip_h_reason": "idle mech steps LEFT (cockpit light, lead leg and spark arm on the left) and the attack holds its tablet out left, away from the party at screen right; judged by eye at zoom 2026-10-12 and again 2026-11-05. Read because it spawns under this full id (NodePrimeVillage), not as a world variant (re-review if the art is redrawn)",
       "animations": {
         "idle": {
           "start": 0,

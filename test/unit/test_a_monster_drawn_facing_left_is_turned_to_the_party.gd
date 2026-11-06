@@ -9,15 +9,14 @@ extends GutTest
 ## reviewed list: each id was judged by eye and now declares flip_h. RE-REVIEW an entry when its art is redrawn.
 ## Re-reviewed 2026-11-01 (all 117 sheets, zoomed): meta_knight added. cursed_armor moved to the right-facing list on
 ## struktured's own A/B in play: its sheet is mixed-facing, and he read the flipped version as turned away.
+## 2026-11-05: masterite_curator_futuristic added. It was parked as an unreadable world variant, but it is spawned
+## under its own full id (NodePrimeVillage), so battle asks its own row and the flip is read.
 
 const Loader := preload("res://src/battle/sprites/HybridSpriteLoader.gd")
 const DRAWN_FACING_LEFT := [
 	"assembly_line_automaton", "blood_wolf_alpha", "conveyor_gremlin", "cranky_lady", "fire_dragon",
-	"ice_dragon", "ironback_beetle", "meta_knight", "rust_elemental", "troll", "viper",
+	"ice_dragon", "ironback_beetle", "masterite_curator_futuristic", "meta_knight", "rust_elemental", "troll", "viper",
 ]
-## Drawn facing left too, but a WORLD VARIANT: battle asks the base id, so a flip declared on its row is read by
-## nothing (test_a_world_variant_cannot_declare_a_facing_the_engine_never_reads). Still backwards until that lookup learns.
-const STILL_BACKWARDS := ["masterite_curator_futuristic"]
 ## Zoomed in the same pass and found facing the party already: declaring a flip on these would turn them away.
 const DRAWN_FACING_RIGHT := [
 	"cave_rat", "shadow_dragon", "lightning_dragon", "steam_rat", "unassuming_dog", "rat_guard", "cursed_armor",
@@ -47,10 +46,17 @@ func test_a_monster_drawn_facing_right_is_left_alone() -> void:
 		assert_false(Loader.monster_faces_party(id, false), "%s already faces the party; a flip would turn it away" % id)
 
 
-func test_the_variant_left_backwards_is_still_named() -> void:
-	for id in STILL_BACKWARDS:
-		assert_true(_sheets().has(id), "CONTROL: %s is a monster sheet" % id)
-		assert_false((_sheets()[id] as Dictionary).has("flip_h"), "%s declares a flip now: if battle reads it, move it to DRAWN_FACING_LEFT" % id)
+func test_a_masterite_flip_is_read_because_it_spawns_by_its_full_id() -> void:
+	## The id battle asks facing for is the enemy's monster_type, i.e. the monsters.json key. A masterite's key is its
+	## full dressed id, so its own manifest row is the one consulted, with no base-id lookup in between.
+	var monsters: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/monsters.json"))
+	assert_true(monsters is Dictionary and (monsters as Dictionary).has("masterite_curator_futuristic"),
+		"CONTROL: the futuristic curator is a monster under its full id")
+	var village := FileAccess.get_file_as_string("res://src/maps/villages/NodePrimeVillage.gd")
+	assert_true(village.contains('monster_id = "masterite_curator_futuristic"'),
+		"CONTROL: NodePrimeVillage spawns the curator by its full id")
+	assert_true(Loader.monster_faces_party("masterite_curator_futuristic", false),
+		"the futuristic curator is drawn facing left and must be turned to the party")
 
 
 func test_the_flip_is_declared_on_the_sheet_not_inferred() -> void:
