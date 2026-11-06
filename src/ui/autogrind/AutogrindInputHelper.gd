@@ -35,9 +35,8 @@ static func classify_event(event: InputEvent) -> String:
 
 ## The KEY this classifier binds for each action — the single place the fallbacks are written down,
 ## so a footer legend cannot name a key classify_event does not accept.
-## The KEYBOARD key each action offers. "exit" is here too, so the no-profile-manager fallback below
-## reads from this one table instead of carrying its own literal.
-const ACTION_KEYS := {"pause": "P", "adjust_rules": "R", "tier_cycle": "T", "exit": "X"}
+## The KEYBOARD key each action offers. "exit" is only the fallback: stop_keys() reads ui_cancel's real keys.
+const ACTION_KEYS := {"pause": "P", "adjust_rules": "R", "tier_cycle": "T", "exit": "Z"}
 
 ## ⛔ THE TIER CONTROL'S PLAYER-FACING NAME, OWNED HERE BECAUSE IT WAS COPIED INTO FIVE SURFACES.
 ## The BUTTON was already owned by this file; the LABEL was not, so on 2026-09-17 two surfaces were
@@ -145,12 +144,19 @@ static func grind_reference_rows(device_name: String = "") -> String:
 		# same index classify_event maps for the dashboard, so the cell is live on both tiers.
 		[_reference_cell(rules), str(ACTION_KEYS["adjust_rules"]), "Adjust rules mid-grind"],
 		[_reference_cell(turbo), "Y", "Turbo — run it faster"],
-		[_reference_cell(stop), "%s / Esc" % str(ACTION_KEYS["exit"]), "Stop grinding and return"],
+		[_reference_cell(stop), stop_keys(), "Stop grinding and return"],
 	]
 	var out := ""
 	for row in rows:
 		out += "%-*s%-*s%s\n" % [REFERENCE_COL, row[0], REFERENCE_COL, row[1], row[2]]
 	return out
+
+
+## Every keyboard key ui_cancel binds, read off InputMap; said "X / Esc" after X became Confirm (2026-09-29).
+static func stop_keys() -> String:
+	var ipm := _profile_manager()
+	var label: String = str(ipm.get_action_key_label("ui_cancel")) if ipm and ipm.has_method("get_action_key_label") else ""
+	return label if label != "" and label != "—" else "%s / Esc" % str(ACTION_KEYS["exit"])
 
 
 ## The one-line legend GameLoop's AUTOGRIND overlay prints, and it lives beside grind_reference_rows
