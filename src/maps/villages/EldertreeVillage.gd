@@ -275,7 +275,16 @@ func _setup_npcs() -> void:
 		"I'll be over here. Not muted. Just... reflective. It's fine.",
 		"...Do you want to hear about the moss? I have a moss tutorial. Six pages. Different mushrooms though."
 	]
-	var pip = _create_npc("Tutorial Fairy Pip", "fairy", Vector2(14 * TILE_SIZE,7 * TILE_SIZE), _pip_post if _after_cave_done else _pip_pre)
+	# After Mordaine: the news reaches Eldertree. Reads every flag namespace, like the spine gate.
+	var _chancellor_gs = get_node_or_null("/root/GameState")
+	var _chancellor_gone: bool = _chancellor_gs != null and _chancellor_gs.is_story_flag_set("world1_mordaine_defeated")
+	var _pip_after_chancellor := [
+		"You beat World 1! That's... that's the whole tutorial!",
+		"I had a speech prepared for this. It was mostly about the Defer button.",
+		"*checks notes* 'And now, brave hero, the real game begins.' ...Wait. There's a REAL game?",
+		"Nobody tells the tutorial fairy anything. Go on, the portal's that way. I'll be here. Tutorialing."
+	]
+	var pip = _create_npc("Tutorial Fairy Pip", "fairy", Vector2(14 * TILE_SIZE,7 * TILE_SIZE), _pip_after_chancellor if _chancellor_gone else (_pip_post if _after_cave_done else _pip_pre))
 	npcs.add_child(pip)
 
 	# Merchant Thorn (suspicious) — timeless voice, no branch.

@@ -54,13 +54,15 @@ static func show(parent: Node, text: String, color: Color = DEFAULT_COLOR, hold_
 				vp_size = Vector2(1280, 720)
 
 	var y: float = BASE_Y + stack_offset
+	# Text Size: built per show, so the live scale is read here; the band below is measured at it.
+	var px: int = TextScale.scaled(FONT_SIZE)
 
 	var shadow := Label.new()
 	shadow.text = text
 	shadow.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	shadow.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	shadow.position = Vector2(2, y + 2)
-	shadow.add_theme_font_size_override("font_size", FONT_SIZE)
+	shadow.add_theme_font_size_override("font_size", px)
 	shadow.add_theme_color_override("font_color", Color(0, 0, 0, 0.6))
 
 	## Tick 207: neither label carried an autowrap_mode, so a message of ANY length was drawn as
@@ -80,7 +82,7 @@ static func show(parent: Node, text: String, color: Color = DEFAULT_COLOR, hold_
 	var font: Font = shadow.get_theme_font("font")
 	if font != null:
 		band_h = maxf(LINE_BAND, font.get_multiline_string_size(
-			text, HORIZONTAL_ALIGNMENT_CENTER, vp_size.x, FONT_SIZE).y)
+			text, HORIZONTAL_ALIGNMENT_CENTER, vp_size.x, px).y)
 
 	shadow.size = Vector2(vp_size.x, band_h)
 	shadow.modulate.a = 0.0
@@ -92,7 +94,7 @@ static func show(parent: Node, text: String, color: Color = DEFAULT_COLOR, hold_
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	label.position = Vector2(0, y)
 	label.size = Vector2(vp_size.x, band_h)
-	label.add_theme_font_size_override("font_size", FONT_SIZE)
+	label.add_theme_font_size_override("font_size", px)
 	label.add_theme_color_override("font_color", color)
 	label.modulate.a = 0.0
 	layer.add_child(label)
