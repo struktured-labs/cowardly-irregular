@@ -39,6 +39,12 @@ from PIL import Image, ImageChops
 LEVEL = 24
 MIN_MOVED = 0.01
 NOISE_FACTOR = 3.0
+## A NOISE verdict is promoted to MOVED when this share of the frame changed OUTSIDE the shot's own animation (the
+## pixels where its two runs disagree, dilated by NOISE_GROW px). Measured on the .773 recheck: sandrift read NOISE
+## (0.66% vs 0.35% run noise) yet 3714 px (0.40%) of its change lay outside the noise, and at .774 they were the
+## villagers .773 had moved; battle and tavern (noise, 0 changed px) stay SAME. 0.05% leaves an 8x margin under it.
+MIN_STABLE = 0.0005
+NOISE_GROW = 9
 
 
 def delta(a_path, b_path):
@@ -81,7 +87,26 @@ def fmt_where(count, bb):
     return f"   {count} px in {x0},{y0}-{x1},{y1} ({x1 - x0 + 1}x{y1 - y0 + 1})"
 
 
-def verdict(d, noise):
+def stable_change(fresh_a, stored, fresh_b):
+    """Share of pixels that changed vs the stored frame OUTSIDE the shot's own animation (A vs B, dilated)."""
+    from PIL import ImageFilter
+    a = Image.open(fresh_a).convert("RGB")
+    s = Image.open(stored).convert("RGB")
+    b = Image.open(fresh_b).convert("RGB")
+    if a.size != s.size or a.size != b.size:
+        return None
+
+    def mask(x, y):
+        d = ImageChops.difference(x, y)
+        m = ImageChops.lighter(ImageChops.lighter(d.getchannel(0), d.getchannel(1)), d.getchannel(2))
+        return m.point(lambda v: 255 if v > LEVEL else 0)
+
+    moving = mask(a, b).filter(ImageFilter.MaxFilter(NOISE_GROW))
+    outside = ImageChops.multiply(mask(a, s), ImageChops.invert(moving))
+    return outside.histogram()[255] / (a.size[0] * a.size[1])
+
+
+def verdict(d, noise, stable=None):
     if d is None or noise is None:
         return "SIZE"
     if d == 0:
@@ -90,6 +115,8 @@ def verdict(d, noise):
         return "MOVED"
     if d >= MIN_MOVED and d > NOISE_FACTOR * noise:
         return "MOVED"
+    if stable is not None and stable >= MIN_STABLE:
+        return "MOVED"   # the change sits where the shot does NOT animate, so its run noise cannot explain it
     return "NOISE"
 
 
@@ -103,7 +130,8 @@ def judge(stored, fa, fb):
             continue
         d = delta(paths[1], paths[0])
         noise = delta(paths[1], paths[2])
-        rows.append((n, verdict(d, noise), d, noise))
+        st = stable_change(paths[1], paths[0], paths[2]) if (d and noise) else None
+        rows.append((n, verdict(d, noise, st), d, noise))
     return rows
 
 
@@ -166,15 +194,19 @@ def selftest():
     # tiny, DETERMINISTIC: 0.5% changed, identical in both runs (noise 0) -> MOVED. The door-sign case.
     tiny = patch(base, (0, 0, 50, 1), (250, 250, 250))
     put(S, "tiny", base); put(A, "tiny", tiny); put(B, "tiny", tiny)
-    # tiny, NOISY: 0.5% changed, but the runs disagree by 0.3% elsewhere -> under the 1% floor -> NOISE
+    # tiny, the runs disagree ELSEWHERE: 0.5% changed identically in both runs, the animation is a far-off row -> the
+    # change sits outside the animation -> MOVED. This arm read NOISE until .775: the 1% floor excused it, and that is
+    # how sandrift's moved villagers read NOISE at .773 (its water animated, the villagers did not).
     put(S, "tinynoisy", base); put(A, "tinynoisy", tiny); put(B, "tinynoisy", patch(tiny, (0, 99, 30, 100), (0, 250, 0)))
+    # the change sits INSIDE the animation: both runs change the same strip, differently -> the noise explains it -> NOISE
+    put(S, "animoverlap", base); put(A, "animoverlap", patch(base, (0, 0, 50, 2), (250, 0, 0))); put(B, "animoverlap", patch(base, (0, 0, 50, 2), (0, 250, 0)))
     # size: a resized capture
     put(S, "resized", base); put(A, "resized", Image.new("RGB", (100, 90), (40, 80, 120))); put(B, "resized", Image.new("RGB", (100, 90), (40, 80, 120)))
     # missing from one run
     put(S, "gone", base); put(A, "gone", base)
 
     got = {n: (v, d) for n, v, d, _ in judge(S, A, B)}
-    want = {"same": "SAME", "moved": "MOVED", "noisy": "NOISE", "jitter": "SAME", "tiny": "MOVED", "tinynoisy": "NOISE", "resized": "SIZE", "gone": "MISSING"}
+    want = {"same": "SAME", "moved": "MOVED", "noisy": "NOISE", "jitter": "SAME", "tiny": "MOVED", "tinynoisy": "MOVED", "animoverlap": "NOISE", "resized": "SIZE", "gone": "MISSING"}
     for n, w in want.items():
         v = got.get(n, ("absent", None))[0]
         ok = v == w
