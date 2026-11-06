@@ -253,7 +253,16 @@ func _setup_npcs() -> void:
 		_after_cave_done = bool(_after_cave_gs.game_constants.get("cutscene_flag_rat_king_defeated", false))
 
 	# Conspiracy Theorist Rex (paranoid) — timeless, no cave hook.
-	var rex = _create_npc("Conspiracy Theorist Rex", "villager", Vector2(9 * TILE_SIZE,8 * TILE_SIZE), [
+	# After Mordaine: the news reaches Sandrift. Reads every flag namespace, like the spine gate.
+	var _chancellor_gs = get_node_or_null("/root/GameState")
+	var _chancellor_gone: bool = _chancellor_gs != null and _chancellor_gs.is_story_flag_set("world1_mordaine_defeated")
+	var _rex_after_chancellor := [
+		"The Chancellor is GONE and NOBODY will tell me where she WENT!",
+		"Official story: 'defeated'. Convenient. No body. No trial. Just a portal that opened the SAME DAY.",
+		"I'm not saying she's in the next world. I'm saying the timing is SUSPICIOUS.",
+		"...Write that down. When she turns up somewhere with a different face, I want credit."
+	]
+	var rex = _create_npc("Conspiracy Theorist Rex", "villager", Vector2(9 * TILE_SIZE,8 * TILE_SIZE), _rex_after_chancellor if _chancellor_gone else [
 		"The encounter rate is RIGGED!",
 		"I've done the math. It's supposed to be 5%...",
 		"But I SWEAR it's higher when you're low on potions!",
