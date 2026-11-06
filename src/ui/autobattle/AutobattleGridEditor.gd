@@ -871,17 +871,18 @@ func _create_collapsed_action_cell(row_idx: int, first_action: Dictionary, total
 
 	# Text showing first action type + total count
 	var label = Label.new()
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART   # first, as the cells above: a long name + "… ×N" must wrap, not spill
 	var first_type = first_action.get("type", "attack")
 	var type_text = first_type.capitalize()
 	if first_type == "ability":
 		type_text = AbilityIcons.name_of(str(first_action.get("id", "Ability")))
 	label.text = "%s... ×%d" % [type_text, total_count]
 	label.position = Vector2(6, 4)
-	label.size = Vector2(CELL_WIDTH - 12, _cell_h() - 8)
 	label.add_theme_font_size_override("font_size", TextScale.scaled(11))
 	label.add_theme_color_override("font_color", style.text)
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.size = Vector2(CELL_WIDTH - 12, _cell_h() - 8)
 	cell.add_child(label)
 	if first_type == "ability" and str(first_action.get("id", "")) != "":
 		AbilityIcons.attach_to_cell(cell, str(first_action.get("id", "")))
