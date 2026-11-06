@@ -1540,6 +1540,22 @@ func _charge_for_rest() -> bool:
 	return true
 
 
+const DIALOG_FONT := 13
+const DIALOG_MIN := Vector2(300, 88)  ## the authored panel; it only grows when the scaled text needs it
+const DIALOG_PAD := 10.0
+## WORD_SMART's own break rule (QuestTracker.WRAP_FLAGS): the default flags count fewer lines than the label draws.
+const WRAP_FLAGS := TextServer.BREAK_MANDATORY | TextServer.BREAK_WORD_BOUND | TextServer.BREAK_ADAPTIVE
+
+
+## The rest panel at the live Text Size, grown to its wrapped text (never below the authored 300x88 scaled).
+static func dialog_size(text: String) -> Vector2:
+	var k := float(TextScale.scaled(DIALOG_FONT)) / float(DIALOG_FONT)
+	var w := DIALOG_MIN.x * k
+	var font: Font = ThemeDB.fallback_font
+	var h: float = font.get_multiline_string_size(text, HORIZONTAL_ALIGNMENT_CENTER, w - DIALOG_PAD * 2.0 * k, TextScale.scaled(DIALOG_FONT), -1, WRAP_FLAGS).y if font else 0.0
+	return Vector2(w, maxf(DIALOG_MIN.y * k, h + DIALOG_PAD * 2.0 * k))
+
+
 func _make_inn_dialog(text: String) -> CanvasLayer:
 	# 2026-07-25 playtest ("spawns a menu out of sight to right of the inn"): the panel was a Control parented to this Node2D, so screen-center pixels were read as WORLD coords and the camera left them behind. A CanvasLayer is the only thing that makes Control coords mean screen coords — same root cause the local-panel dialogs hit before NPCDialogue moved to CutsceneDialogue.
 	var layer = CanvasLayer.new()
@@ -1552,8 +1568,9 @@ func _make_inn_dialog(text: String) -> CanvasLayer:
 	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	layer.add_child(holder)
 
+	var k := float(TextScale.scaled(DIALOG_FONT)) / float(DIALOG_FONT)
 	var panel = Panel.new()
-	panel.size = Vector2(300, 88)
+	panel.size = dialog_size(text)
 	# Anchored to the layer's own rect, so this is genuinely screen-centered on any resolution.
 	panel.set_anchors_preset(Control.PRESET_CENTER_TOP)
 	panel.position = Vector2(-panel.size.x / 2, 96)
@@ -1566,9 +1583,9 @@ func _make_inn_dialog(text: String) -> CanvasLayer:
 	holder.add_child(panel)
 
 	var label = Label.new()
-	label.position = Vector2(10, 10)
-	label.size = Vector2(panel.size.x - 20, panel.size.y - 20)
-	label.add_theme_font_size_override("font_size", 13)
+	label.position = Vector2(DIALOG_PAD, DIALOG_PAD) * k
+	label.size = panel.size - Vector2(DIALOG_PAD, DIALOG_PAD) * 2.0 * k
+	label.add_theme_font_size_override("font_size", TextScale.scaled(DIALOG_FONT))
 	label.add_theme_color_override("font_color", Color(1.0, 0.95, 0.7))
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
