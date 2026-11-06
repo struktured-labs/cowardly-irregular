@@ -42,7 +42,10 @@ func test_the_roster_names_the_sheet_the_boss_fight_loads() -> void:
 func test_the_roster_calls_no_artist_sheet_a_placeholder() -> void:
 	var tier := str(_sheet().get("tier", ""))
 	assert_true(tier in ["T2", "T3"], "CONTROL: %s is artist art (tier %s)" % [BOSS_ID, tier])
-	var line := _sprite_line()
-	for claim in ["Sprite is `shadow_knight`", "pending artist sheet", "(tier T1)"]:
-		assert_false(line.begins_with("- Sprite is") and line.contains(claim),
+	## Judge the CLAIM, not the history: the line quotes its old wrong text after "This line said", so a plain
+	## search would red the fix, and a begins_with("- Sprite is") gate was blind to the same claim reworded.
+	var claim_part := _sprite_line().get_slice("This line said", 0)
+	assert_ne(claim_part, "", "the W1 Boss Roster notes must carry a sprite line for Mordaine")
+	for claim in ["placeholder", "pending artist sheet", "shadow_knight"]:
+		assert_false(claim_part.contains(claim),
 			"the line must not claim an artist-drawn boss is a placeholder: found %s" % claim)
