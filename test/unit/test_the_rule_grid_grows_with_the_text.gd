@@ -123,8 +123,10 @@ func _break_flags_of(l: Label) -> int:
 		TextServer.AUTOWRAP_WORD:
 			return TextServer.BREAK_MANDATORY | TextServer.BREAK_WORD_BOUND
 		TextServer.AUTOWRAP_WORD_SMART:
+			# Godot's Label draws WORD_SMART as WORD_BOUND | ADAPTIVE (a word too long for the line breaks inside it);
+			# this said GRAPHEME_BOUND, a different wrap from the one the label draws (cowir-autogrind 22869).
 			return TextServer.BREAK_MANDATORY | TextServer.BREAK_WORD_BOUND \
-				| TextServer.BREAK_GRAPHEME_BOUND
+				| TextServer.BREAK_ADAPTIVE
 		_:
 			return TextServer.BREAK_MANDATORY
 
@@ -178,12 +180,40 @@ func test_no_cell_text_spills_sideways_at_any_preset() -> void:
 			if fnt == null:
 				continue
 			var px: int = l.get_theme_font_size("font_size")
+			## Wrapped at the CELL's inner width, not l.size.x: a Label that cached its unwrapped line clamps size.x UP to
+			## it, so measuring against its own width can never find the spill (cowir-autogrind 22869).
+			var inner: float = float(_cell_width(ed)) - 12.0
 			var wrapped: float = fnt.get_multiline_string_size(l.text,
-				HORIZONTAL_ALIGNMENT_CENTER, l.size.x, px, -1, _break_flags_of(l)).x
-			if wrapped > l.size.x + 1.0:
-				bad.append("%.2fx: '%s' wraps to %.0f in a %.0f box"
-					% [scale, l.text.replace("\n", "/"), wrapped, l.size.x])
+				HORIZONTAL_ALIGNMENT_CENTER, inner, px, -1, _break_flags_of(l)).x
+			if wrapped > inner + 1.0:
+				bad.append("%.2fx: '%s' wraps to %.0f in a %.0f cell"
+					% [scale, l.text.replace("\n", "/"), wrapped, inner])
 	assert_eq(bad, [], "wrapped cell text must stay inside its box: %s" % [bad])
+
+
+## The cell width, read off the script (a CONTROL that the editor's geometry is what the arms below judge).
+func _cell_width(ed: Control) -> int:
+	return int((ed.get_script() as GDScript).get_script_constant_map()["CELL_WIDTH"])
+
+
+## ARM 3b — the BUILT Label keeps the cell's width. Given text and a size while unwrapped, a Label caches its whole line
+## as its minimum width and clamps size.x UP to it: the text then spills past the cell edge, whatever the wrap rule.
+## Overworld's probe (22866): the built Label's size.x against its container's inner width.
+func test_every_built_cell_label_keeps_the_cells_width() -> void:
+	var bad: Array = []
+	var checked := 0
+	for scale in _presets():
+		var ed: Control = await _editor_at(float(scale))
+		var inner: float = float(_cell_width(ed)) - 12.0
+		for pair in _cell_labels(ed):
+			var l: Label = pair["label"] as Label
+			if l.autowrap_mode == TextServer.AUTOWRAP_OFF:
+				continue   # the fixed-box glyphs (AND, the arrows) do not wrap
+			checked += 1
+			if l.size.x > inner + 0.5 or l.position.x + l.size.x > float(_cell_width(ed)) + 0.5:
+				bad.append("%.2fx: '%s' is %.0f wide in a %.0f cell" % [scale, l.text.replace("\n", "/"), l.size.x, inner])
+	assert_gt(checked, 10, "CONTROL: the arm measured real wrapping cells (%d)" % checked)
+	assert_eq(bad, [], "a built cell Label must keep its cell's width: %s" % [bad.slice(0, 6)])
 
 
 ## ARM 4 — the floor, in the ONE direction it is actually a claim. This arm first asserted that

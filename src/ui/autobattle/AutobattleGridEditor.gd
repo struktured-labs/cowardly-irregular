@@ -773,14 +773,16 @@ func _create_condition_cell(row_idx: int, cond_idx: int, condition: Dictionary) 
 
 	# Text
 	var label = Label.new()
+	# Wrap FIRST: given text and a size while unwrapped, a Label caches the whole line as its minimum width and a later
+	# size cannot shrink it (the grind twin measured a 201 px label in its 108 px cell; overworld scan 22866).
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	label.text = _format_condition(condition)
 	label.position = Vector2(6, 4)
-	label.size = Vector2(CELL_WIDTH - 12, _cell_h() - 8)
 	label.add_theme_font_size_override("font_size", TextScale.scaled(11))
 	label.add_theme_color_override("font_color", style.text)
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	label.size = Vector2(CELL_WIDTH - 12, _cell_h() - 8)
 	cell.add_child(label)
 
 	# Mouse: click to edit, hover to highlight
@@ -815,6 +817,7 @@ func _create_action_cell(row_idx: int, act_idx: int, action: Dictionary, count: 
 
 	# Text with cycle indicator
 	var label = Label.new()
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART   # first, as the condition cell above
 	var action_text = _format_action(action)
 	if count > 1:
 		# Add cycle indicator
@@ -822,12 +825,11 @@ func _create_action_cell(row_idx: int, act_idx: int, action: Dictionary, count: 
 	else:
 		label.text = action_text
 	label.position = Vector2(6, 2)
-	label.size = Vector2(CELL_WIDTH - 12, _cell_h() - 4)
 	label.add_theme_font_size_override("font_size", TextScale.scaled(11))
 	label.add_theme_color_override("font_color", style.text)
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	label.size = Vector2(CELL_WIDTH - 12, _cell_h() - 4)
 	cell.add_child(label)
 	if action.get("type", "") == "ability" and str(action.get("id", "")) != "":
 		AbilityIcons.attach_to_cell(cell, str(action.get("id", "")))
