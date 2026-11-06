@@ -185,10 +185,26 @@ func _plan(scene: Node, pc) -> Dictionary:
 		if _hp_frac(f) < _hp_frac(target):
 			target = f
 	var t_idx: int = (scene.get("test_enemies") as Array).find(target)
-	# Heal the lowest ally under 40%, before anything else.
+	# A member down first: Raise, else a Phoenix Down (Mordaine's lv30 take lost the Mage and the Bard with no way back).
+	var down = null
+	for m in _bm().player_party:
+		if is_instance_valid(m) and not m.is_alive:
+			down = m
+			break
+	if down != null:
+		var d_idx: int = _bm().player_party.find(down)
+		if _knows(pc, "raise"):
+			return {"why": "%s is down, raise" % down.combatant_name,
+				"steps": [{"path": ["ability_menu", ["ability_menu_raise", "ability_raise"], "ability_raise_dead_%d" % d_idx], "commit": "accept"}]}
+		if _is().party_item_count(_bm().consumable_bag(pc), "phoenix_down") > 0:
+			return {"why": "%s is down, phoenix down" % down.combatant_name,
+				"steps": [{"path": ["item_menu", "item_menu_phoenix_down", "item_phoenix_down_ally_%d" % d_idx], "commit": "accept"}]}
+	# Heal the lowest ally under 40%, or under 50% once two are that low (a spread hit is coming again).
+	var low_count := party.filter(func(m): return _hp_frac(m) < 0.50).size()
+	var heal_at: float = 0.50 if low_count >= 2 else 0.40
 	var hurt = null
 	for m in party:
-		if _hp_frac(m) < 0.40 and (hurt == null or _hp_frac(m) < _hp_frac(hurt)):
+		if _hp_frac(m) < heal_at and (hurt == null or _hp_frac(m) < _hp_frac(hurt)):
 			hurt = m
 	if hurt != null:
 		var h_idx: int = _bm().player_party.find(hurt)
