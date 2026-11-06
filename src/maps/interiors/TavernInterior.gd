@@ -2604,12 +2604,13 @@ func _make_dialogue_layer(text: String) -> CanvasLayer:
 	holder.add_child(panel)
 
 	var label = Label.new()
-	label.text = text
+	# Wrap before size, text last: a Label holding its text unwrapped clamps its width to the whole line.
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	label.position = Vector2(DIALOGUE_PAD, DIALOGUE_PAD) * k
 	label.size = panel.size - Vector2(DIALOGUE_PAD, DIALOGUE_PAD) * 2.0 * k
 	label.add_theme_font_size_override("font_size", TextScale.scaled(DIALOGUE_FONT))
 	label.add_theme_color_override("font_color", Color.WHITE)
-	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	label.text = text
 	panel.add_child(label)
 	return layer
 
