@@ -95,3 +95,18 @@ func test_a_rule_stop_puts_up_no_two_texts_on_top_of_each_other() -> void:
 	var late := _stacked(before)
 	assert_true(_gl._autogrind_summary != null and is_instance_valid(_gl._autogrind_summary), "CONTROL: the summary came up")
 	assert_eq(early + late, [], "two texts drawn on top of each other at the end of a grind:\n  %s" % "\n  ".join(early + late))
+
+
+## The .779 pre-gate red: after 32 other files the banner outlived its fade and the summary opened under it. The banner
+## frees itself on GameLoop's tween while the summary waits on a tree timer, two clocks. Holding the tween reproduces it.
+func test_a_banner_whose_fade_is_held_does_not_sit_on_the_summary() -> void:
+	var before: Array = _texts(_gl).map(func(t): return t["node"])
+	_gl._on_grind_complete("Your rule #1 stopped the grind")
+	_gl.process_mode = Node.PROCESS_MODE_DISABLED
+	await wait_frames(3)
+	assert_true(is_instance_valid(_gl._grind_stop_banner), "CONTROL: the banner is up")
+	await wait_seconds(1.2)
+	var late := _stacked(before)
+	_gl.process_mode = Node.PROCESS_MODE_INHERIT
+	assert_true(_gl._autogrind_summary != null and is_instance_valid(_gl._autogrind_summary), "CONTROL: the summary came up")
+	assert_eq(late, [], "the summary opened under a banner that never faded:\n  %s" % "\n  ".join(late))
