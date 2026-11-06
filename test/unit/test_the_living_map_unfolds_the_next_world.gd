@@ -61,7 +61,7 @@ func test_before_mordaine_falls_the_worlds_stay_folded() -> void:
 	var lines: Dictionary = await _lines()
 	assert_true(lines.has(WENDEL) and lines.has(MAP), "CONTROL: Wendel and the Living Map must both be placed, or this arm judges nobody")
 	assert_eq(_first(lines, WENDEL), WENDEL_BEFORE, "before the castle Wendel still complains about honest work")
-	assert_string_contains(_last(lines, MAP), FOLDED, "before the castle all five worlds are still folded")
+	assert_true(_last(lines, MAP).contains(FOLDED), "before the castle all five worlds are still folded")
 
 
 func test_after_mordaine_falls_the_map_unfolds_a_world() -> void:
@@ -69,7 +69,7 @@ func test_after_mordaine_falls_the_map_unfolds_a_world() -> void:
 	GameState.game_constants["dungeon_flags"] = {"world1_mordaine_defeated": true}
 	var lines: Dictionary = await _lines()
 	assert_eq(_first(lines, WENDEL), WENDEL_AFTER, "Wendel must have noticed his map change")
-	assert_string_contains(_last(lines, MAP), UNFOLDED, "the next world must have come unfolded")
+	assert_true(_last(lines, MAP).contains(UNFOLDED), "the next world must have come unfolded")
 	assert_eq((lines.get(MAP, []) as Array).size(), 4, "the map keeps its crystal line; only the corner changes")
 
 
@@ -77,4 +77,4 @@ func test_the_cutscene_flag_alone_is_heard_too() -> void:
 	GameState.game_constants["cutscene_flag_world1_mordaine_defeated"] = true
 	var lines: Dictionary = await _lines()
 	assert_eq(_first(lines, WENDEL), WENDEL_AFTER, "Wendel must hear it from the cutscene flag's namespace as well")
-	assert_string_contains(_last(lines, MAP), UNFOLDED, "the map must hear it from the cutscene flag's namespace as well")
+	assert_true(_last(lines, MAP).contains(UNFOLDED), "the map must hear it from the cutscene flag's namespace as well")
