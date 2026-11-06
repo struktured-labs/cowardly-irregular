@@ -119,3 +119,19 @@ func test_an_overlong_title_wraps_to_the_screen() -> void:
 	assert_eq(head.text, long_title, "CONTROL: it is the long title")
 	assert_true(_inside_screen(panel), "the overlong card stays on screen: %s" % str(panel.get_global_rect()))
 	assert_gt(head.get_line_count(), 1, "by wrapping, not by shrinking the text")
+
+
+## ARM 4: a card raised over another replaces it in the same frame, keeps the name, and leaves one card on screen.
+func test_a_second_card_replaces_the_first_by_name() -> void:
+	var scene: Node = await _get_scene()
+	scene._show_signature_card({"title": "First Card"}, {}, 5.0)
+	scene._show_signature_card({"title": "Second Card"}, {}, 5.0)
+	var named := scene.get_node_or_null("UI/SignatureCard") as PanelContainer
+	assert_not_null(named, "the second card answers to its own name in the frame it was raised")
+	assert_eq(str(_head_of(named).text) if named else "", "Second Card")
+	await get_tree().process_frame
+	var cards := 0
+	for c in scene.get_node("UI").get_children():
+		if c is PanelContainer and c.get_child_count() > 0 and _head_of(c) != null and str(_head_of(c).text).ends_with(" Card"):
+			cards += 1
+	assert_eq(cards, 1, "the first card is gone, not left beside the second until its own hold runs out")

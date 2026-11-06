@@ -3279,6 +3279,8 @@ func _show_signature_card(card: Dictionary, ability: Dictionary, hold: float) ->
 		return
 	var old := get_node_or_null("UI/SignatureCard")
 	if old:
+		# Detached first: a queued node keeps the name until frame end, so the new card would be renamed and lost.
+		old.get_parent().remove_child(old)
 		old.queue_free()
 	var panel := PanelContainer.new()
 	panel.name = "SignatureCard"
