@@ -27,10 +27,10 @@ func _room() -> float:
 	return minf(720.0, vp.x - 80) - 80.0
 
 
-func _built_empty_label() -> Label:
+func _built_panel():
 	var panel = PanelScript.new()
 	add_child_autofree(panel)
-	return panel._empty_label
+	return panel
 
 
 func test_the_sentence_cannot_fit_one_line() -> void:
@@ -44,7 +44,8 @@ func test_the_built_line_stays_in_its_room_at_every_text_size() -> void:
 	var room: float = _room()
 	for p in PRESETS:
 		GameState.text_size_scale = float(p)
-		var l: Label = _built_empty_label()
+		var panel = _built_panel()
+		var l: Label = panel._empty_label
 		assert_not_null(l, "CONTROL: the panel builds its empty-state label")
 		if l == null:
 			return
@@ -52,3 +53,9 @@ func test_the_built_line_stays_in_its_room_at_every_text_size() -> void:
 		assert_lte(l.size.x, room + 0.5,
 			"THE DEFECT: at %.2fx the empty-state line is %.0f px in %.0f px of room (it clamped to the unwrapped sentence)" % [float(p), l.size.x, room])
 		assert_gt(l.get_line_count(), 1, "at %.2fx the sentence wraps rather than running on" % float(p))
+		## The wrapped lines grow the Label DOWN; judged on what draws (lines x font height + the theme's line gaps).
+		var px: int = TextScale.scaled(PanelScript.EMPTY_FONT)
+		var gap: int = l.get_theme_constant("line_spacing")
+		var drawn: float = l.get_line_count() * ThemeDB.fallback_font.get_height(px) + (l.get_line_count() - 1) * gap
+		assert_lt(l.position.y + drawn, panel._reset_btn.position.y,
+			"at %.2fx the wrapped line (%.0f px tall) reaches the Reset button" % [float(p), drawn])
