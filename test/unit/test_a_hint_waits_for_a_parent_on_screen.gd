@@ -7,12 +7,25 @@ extends GutTest
 const HINT := "spotlight_locked_intro"
 
 
+var _held_active: int = 0
+var _held_pending: Array = []
+
+
+## An active hint from an earlier file would QUEUE this one instead of presenting it, so the control would red for
+## another reason; hold both statics and start from a quiet slate.
 func before_each() -> void:
 	_forget()
+	_held_active = TutorialHint._active_count
+	_held_pending = TutorialHints._pending.duplicate()
+	TutorialHint._active_count = 0
+	TutorialHints._pending.clear()
 
 
 func after_each() -> void:
 	_forget()
+	TutorialHint._active_count = _held_active
+	TutorialHints._pending.clear()
+	TutorialHints._pending.append_array(_held_pending)
 
 
 func _forget() -> void:
