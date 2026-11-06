@@ -48,6 +48,9 @@ func _ready() -> void:
 	set_anchors_preset(PRESET_FULL_RECT)
 	mouse_filter = MOUSE_FILTER_STOP
 	_build_ui()
+	# Settings opens OVER this screen, so a Text Size change made there must reach the menu already built.
+	if GameState and GameState.has_signal("text_size_scale_changed"):
+		GameState.text_size_scale_changed.connect(_on_text_size_changed)
 	if SoundManager:
 		SoundManager.play_music("title")
 	await get_tree().create_timer(0.5).timeout
@@ -102,8 +105,7 @@ func _build_ui() -> void:
 
 	# Menu (built hidden, revealed after PRESS START)
 	_menu_container = VBoxContainer.new()
-	_menu_container.position = Vector2(vp.x / 2 - 100, vp.y * 0.58)
-	_menu_container.add_theme_constant_override("separation", 8)
+	_menu_container.add_theme_constant_override("separation", int(round(8 * text_k())))
 	_menu_container.modulate.a = 0.0
 	add_child(_menu_container)
 	_build_menu()
@@ -112,10 +114,7 @@ func _build_ui() -> void:
 	_version_label = Label.new()
 	_version_label.text = Version.display()
 	# 80px clipped "v3.33.1xx-alpha (hash)" off the right edge (title smoke shot 2026-07-11) — right-align in a real box.
-	_version_label.position = Vector2(vp.x - 292, vp.y - 28)
-	_version_label.size = Vector2(280, 20)
-	_version_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	_version_label.add_theme_font_size_override("font_size", 10)
+	_size_version_label()
 	_version_label.add_theme_color_override("font_color", Color(0.4, 0.35, 0.5, 0.6))
 	add_child(_version_label)
 
@@ -191,6 +190,7 @@ func _build_menu() -> void:
 
 	for i in menu_items.size():
 		_menu_container.add_child(_create_menu_row(i, menu_items[i]))
+	_place_menu()
 	_update_selection()
 
 
@@ -227,6 +227,7 @@ func _build_load_menu() -> void:
 	menu_items.append({"id": "load_back", "label": "BACK", "enabled": true})
 	for i in menu_items.size():
 		_menu_container.add_child(_create_menu_row(i, menu_items[i]))
+	_place_menu()
 	selected_index = 0
 	_update_selection()
 
@@ -243,8 +244,9 @@ func _create_menu_row(index: int, item: Dictionary) -> Control:
 	# so they need extra vertical room. Other items stay at the original
 	# compact height so the menu reads tightly.
 	var subtitle: String = str(item.get("subtitle", ""))
-	var row_h: int = 44 if subtitle != "" else 28
-	row.custom_minimum_size = Vector2(360, row_h)
+	var k := text_k()
+	var row_h: float = (44.0 if subtitle != "" else 28.0) * k
+	row.custom_minimum_size = Vector2(360.0 * k, row_h)
 	row.name = "MenuItem_%d" % index
 	row.mouse_filter = MOUSE_FILTER_STOP
 	row.mouse_entered.connect(_on_menu_hover.bind(index))
@@ -253,8 +255,8 @@ func _create_menu_row(index: int, item: Dictionary) -> Control:
 	var cursor := Label.new()
 	cursor.name = "Cursor"
 	cursor.text = "▸"
-	cursor.position = Vector2(0, 2)
-	cursor.add_theme_font_size_override("font_size", 18)
+	cursor.position = Vector2(0, 2) * k
+	cursor.add_theme_font_size_override("font_size", TextScale.scaled(18))
 	cursor.add_theme_color_override("font_color", CURSOR_COLOR)
 	cursor.visible = (index == selected_index)
 	cursor.mouse_filter = MOUSE_FILTER_IGNORE
@@ -263,8 +265,8 @@ func _create_menu_row(index: int, item: Dictionary) -> Control:
 	var label := Label.new()
 	label.name = "Label"
 	label.text = item.label
-	label.position = Vector2(24, 2)
-	label.add_theme_font_size_override("font_size", 18)
+	label.position = Vector2(24, 2) * k
+	label.add_theme_font_size_override("font_size", TextScale.scaled(18))
 	label.mouse_filter = MOUSE_FILTER_IGNORE
 	label.add_theme_color_override("font_color",
 		(MENU_SELECTED if index == selected_index else MENU_COLOR) if item.enabled else MENU_DISABLED)
@@ -274,9 +276,9 @@ func _create_menu_row(index: int, item: Dictionary) -> Control:
 		var sub := Label.new()
 		sub.name = "Subtitle"
 		sub.text = subtitle
-		sub.position = Vector2(40, 22)
-		sub.size = Vector2(320, 16)
-		sub.add_theme_font_size_override("font_size", 11)
+		sub.position = Vector2(40, 22) * k
+		sub.size = Vector2(320, 16) * k
+		sub.add_theme_font_size_override("font_size", TextScale.scaled(11))
 		sub.add_theme_color_override("font_color", Color(0.7, 0.7, 0.8, 0.85))
 		sub.mouse_filter = MOUSE_FILTER_IGNORE
 		row.add_child(sub)
@@ -498,6 +500,56 @@ static func _format_continue_slot_label(slot: int) -> String:
 		if "AUTO_SAVE_SLOT" in SaveSystem and slot == SaveSystem.AUTO_SAVE_SLOT:
 			return "Auto-Save"
 	return "Slot %d" % (slot + 1)
+
+
+## The Text Size factor the menu's geometry grows by (fonts go through TextScale). Exactly 1.0 at 100%.
+static func text_k() -> float:
+	return float(TextScale.scaled(100)) / 100.0
+
+
+## The menu's height from its rows (the container sizes itself a frame late, so it is summed, not read).
+func menu_height() -> float:
+	var h := 0.0
+	var rows := 0
+	for row in _menu_container.get_children():
+		if row.is_queued_for_deletion():
+			continue
+		h += (row as Control).custom_minimum_size.y
+		rows += 1
+	return h + maxf(0.0, rows - 1) * float(_menu_container.get_theme_constant("separation"))
+
+
+## The menu's authored spot (58% down, its left edge 100 px left of centre), lifted only as far as it must to stay on
+## screen once Text Size grows its rows. At 100% it never moves.
+func _place_menu() -> void:
+	var vp := _vp_size()
+	var k := text_k()
+	var y: float = minf(vp.y * 0.58, vp.y - menu_height() - 12.0 * k)
+	_menu_container.position = Vector2(vp.x / 2 - 100.0 * k, maxf(0.0, y))
+
+
+## The version tag, right-aligned in a box anchored to the bottom-right corner, at the live Text Size.
+func _size_version_label() -> void:
+	var vp := _vp_size()
+	var k := text_k()
+	_version_label.add_theme_font_size_override("font_size", TextScale.scaled(10))
+	_version_label.size = Vector2(280, 20) * k
+	_version_label.position = Vector2(vp.x - 12.0 - 280.0 * k, vp.y - 8.0 - 20.0 * k)
+	_version_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+
+
+func _on_text_size_changed(_scale: float) -> void:
+	if _menu_container == null:
+		return
+	_menu_container.add_theme_constant_override("separation", int(round(8 * text_k())))
+	var keep := selected_index
+	if _load_mode:
+		_build_load_menu()
+	else:
+		_build_menu()
+	selected_index = clampi(keep, 0, maxi(0, menu_items.size() - 1))
+	_update_selection()
+	_size_version_label()
 
 
 func _vp_size() -> Vector2:

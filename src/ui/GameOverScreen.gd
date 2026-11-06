@@ -99,7 +99,7 @@ func _build_ui() -> void:
 	_title_label.text = "GAME OVER"
 	_title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_title_label.size = Vector2(screen_size.x, 60)
-	_title_label.add_theme_font_size_override("font_size", 48)
+	_title_label.add_theme_font_size_override("font_size", TextScale.scaled(48))
 	_title_label.add_theme_color_override("font_color", Color(0.8, 0.2, 0.15))
 	_title_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_container.add_child(_title_label)
@@ -109,7 +109,7 @@ func _build_ui() -> void:
 	_subtitle_label.text = "The party has fallen."
 	_subtitle_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_subtitle_label.size = Vector2(screen_size.x, 25)
-	_subtitle_label.add_theme_font_size_override("font_size", 16)
+	_subtitle_label.add_theme_font_size_override("font_size", TextScale.scaled(16))
 	_subtitle_label.add_theme_color_override("font_color", Color(0.6, 0.5, 0.45))
 	_subtitle_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_container.add_child(_subtitle_label)
@@ -121,7 +121,7 @@ func _build_ui() -> void:
 	_retry_label.text = "> Retry"
 	_retry_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_retry_label.size = Vector2(screen_size.x, 25)
-	_retry_label.add_theme_font_size_override("font_size", 20)
+	_retry_label.add_theme_font_size_override("font_size", TextScale.scaled(20))
 	_retry_label.add_theme_color_override("font_color", Color(0.9, 0.85, 0.7))
 	_retry_label.mouse_filter = Control.MOUSE_FILTER_STOP
 	_retry_label.gui_input.connect(_on_retry_input)
@@ -133,7 +133,7 @@ func _build_ui() -> void:
 	_continue_label.text = "  Continue"
 	_continue_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_continue_label.size = Vector2(screen_size.x, 25)
-	_continue_label.add_theme_font_size_override("font_size", 20)
+	_continue_label.add_theme_font_size_override("font_size", TextScale.scaled(20))
 	_continue_label.add_theme_color_override("font_color", Color(0.5, 0.5, 0.45))
 	_continue_label.mouse_filter = Control.MOUSE_FILTER_STOP
 	_continue_label.gui_input.connect(_on_continue_input)
@@ -151,10 +151,16 @@ func show_game_over(has_save: bool = false) -> void:
 	_apply_world_flavor()
 
 	var screen_size = get_viewport().get_visible_rect().size
+	# Text Size, read per show: built per wipe, so the live scale is current here. The offsets grow with the fonts.
+	var k := float(TextScale.scaled(100)) / 100.0
+	_title_label.add_theme_font_size_override("font_size", TextScale.scaled(48))
+	_subtitle_label.add_theme_font_size_override("font_size", TextScale.scaled(16))
+	_retry_label.add_theme_font_size_override("font_size", TextScale.scaled(20))
+	_continue_label.add_theme_font_size_override("font_size", TextScale.scaled(20))
 	_title_label.position.y = screen_size.y * 0.3
-	_subtitle_label.position.y = screen_size.y * 0.3 + 60
+	_subtitle_label.position.y = screen_size.y * 0.3 + 60 * k
 	_retry_label.position.y = screen_size.y * 0.55
-	_continue_label.position.y = screen_size.y * 0.55 + 35
+	_continue_label.position.y = screen_size.y * 0.55 + 35 * k
 	_continue_label.visible = has_save
 
 
