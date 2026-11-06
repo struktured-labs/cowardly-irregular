@@ -114,6 +114,9 @@ func setup(parent: Node) -> void:
 	_canvas.add_child(_side_label)
 
 	_update_objective()
+	## A Text Size change in Settings reaches the kept strip now, not on the next map load.
+	if not GameState.text_size_scale_changed.is_connected(_on_text_size_changed):
+		GameState.text_size_scale_changed.connect(_on_text_size_changed)
 
 	# Signal-driven quest feedback (2026-07-02): objective_advanced /
 	# quest_state_changed had NO feedback consumer — mid-quest talk
@@ -244,6 +247,19 @@ func _update_objective() -> void:
 
 	_update_side_quest_line()
 	_apply_plate()
+
+
+func _on_text_size_changed(_scale: float) -> void:
+	if _label == null or _side_label == null:
+		return
+	_label.add_theme_font_size_override("font_size", TextScale.scaled(MAIN_FONT_SIZE))
+	_side_label.add_theme_font_size_override("font_size", TextScale.scaled(SIDE_FONT_SIZE))
+	_apply_plate()
+
+
+func _exit_tree() -> void:
+	if GameState.text_size_scale_changed.is_connected(_on_text_size_changed):
+		GameState.text_size_scale_changed.disconnect(_on_text_size_changed)
 
 
 ## One place that sizes the plate, from both lines. The old derivation lived inline in
