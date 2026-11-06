@@ -61,12 +61,12 @@ const FLAT_FONT: int = 10
 
 ## ⛔ `if InputProfileManager:` guards the AUTOLOAD, not a pad — so the "B" fallback never fired in a
 ## real game and `glyph_for_action` handed a KEYBOARD player an xbox glyph. Measured with no pad:
-## close_glyph() -> Ⓐ, while ui_cancel binds X/Escape. `hint_for_action` is the pair's safe half —
+## close_glyph() -> Ⓐ, while ui_cancel binds Z/Escape. `hint_for_action` is the pair's safe half —
 ## pad glyph when a pad is connected, the KEY when not.
 static func close_glyph(device_name: String = "") -> String:
 	if InputProfileManager:
 		return InputProfileManager.hint_for_action("ui_cancel", device_name)
-	return "X"  # autoload absent (isolated tests only); ui_cancel's first keyboard binding
+	return KeyLabel.first_key("ui_cancel", "Back")  # autoload absent (isolated tests only)
 
 @export var display_name: String = "Notebook"
 

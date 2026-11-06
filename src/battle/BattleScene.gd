@@ -2569,9 +2569,9 @@ func autogrind_console_log(text: String) -> void:
 func _accept_token() -> String:
 	var ipm = Engine.get_main_loop().root.get_node_or_null("InputProfileManager")
 	if ipm == null:
-		return "Z"
+		return KeyLabel.first_key("ui_accept", "Confirm")
 	var tok: String = ipm.hint_for_action("ui_accept")
-	return tok if tok != "" else "Z"
+	return tok if tok != "" else KeyLabel.first_key("ui_accept", "Confirm")
 
 
 ## The grind console's own control line. Every token was frozen in Nintendo spelling and two named
