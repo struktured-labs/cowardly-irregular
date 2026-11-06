@@ -57,6 +57,8 @@ const NAME_LABEL_GAP: float = 6.0
 const NAME_LABEL_WIDTH: float = 200.0
 const NAME_LABEL_PX := 16  # on-screen size for every monster, whatever its sprite scale
 const ENEMY_HP_BAR_SIZE := Vector2(60, 5)  # on-screen, whatever the sprite scale
+const SIGNATURE_CARD_EDGE := 16.0  # the title card keeps this far from each side of the screen
+const SIGNATURE_CARD_TOP := 84.0
 const SUMMON_RISE := 0.9  # battle seconds for a summon to rise out of its circle before it acts
 const SIGNATURE_WINDUP := 0.55  # battle seconds of title card and camera push before a boss's signature sequence
 const SIGNATURE_PUSH := 0.12  # camera push-in for a signature (a crit's is 0.04)
@@ -3125,6 +3127,8 @@ static func summon_art_for(ability_id: String) -> Dictionary:
 func _show_summon_splash(art: Dictionary, rise: float) -> void:
 	var old := get_node_or_null("SummonSplash")
 	if old:
+		# Detached first, as the signature card: a queued node keeps its name, so the new splash would be renamed and never dismissed.
+		remove_child(old)
 		old.queue_free()
 	var root := Node2D.new()
 	root.name = "SummonSplash"
@@ -3213,6 +3217,7 @@ func _signature_stage(on: bool, tint: Color) -> void:
 	var tw := create_tween()
 	tw.tween_property(rect, "color:a", tint.a if on else 0.0, 0.2)
 	if not on:
+		rect.name = "SignatureTintLeaving"  # a cast during the fade builds its own tint instead of reusing this dying one
 		tw.tween_callback(rect.queue_free)
 
 
@@ -3277,6 +3282,8 @@ func _show_signature_card(card: Dictionary, ability: Dictionary, hold: float) ->
 		return
 	var old := get_node_or_null("UI/SignatureCard")
 	if old:
+		# Detached first: a queued node keeps the name until frame end, so the new card would be renamed and lost.
+		old.get_parent().remove_child(old)
 		old.queue_free()
 	var panel := PanelContainer.new()
 	panel.name = "SignatureCard"
@@ -3315,7 +3322,19 @@ func _show_signature_card(card: Dictionary, ability: Dictionary, hold: float) ->
 	ui.add_child(panel)
 	panel.z_index = 90
 	panel.reset_size()
-	panel.position = Vector2((get_viewport_rect().size.x - panel.size.x) * 0.5, 84.0)
+	# A long title at a large Text Size ran off both edges: past the screen, it wraps to fit instead (2026-11-05).
+	var vp := get_viewport_rect().size
+	var max_w := vp.x - 2.0 * SIGNATURE_CARD_EDGE
+	if panel.size.x > max_w:
+		var inner := max_w - style.content_margin_left - style.content_margin_right
+		head.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		head.custom_minimum_size.x = inner
+		for c in box.get_children():
+			if c is Label and c != head:
+				(c as Label).custom_minimum_size.x = minf((c as Label).custom_minimum_size.x, inner)
+		panel.size = Vector2.ZERO
+		panel.reset_size()
+	panel.position = Vector2(maxf((vp.x - panel.size.x) * 0.5, SIGNATURE_CARD_EDGE), SIGNATURE_CARD_TOP)
 	panel.modulate.a = 0.0
 	var tw := panel.create_tween()
 	tw.tween_property(panel, "modulate:a", 1.0, 0.12)
