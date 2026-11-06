@@ -8038,7 +8038,9 @@ func _create_autogrind_overlay() -> void:
 	if vp_size.x == 0 or vp_size.y == 0:
 		vp_size = Vector2(1280, 720)
 
-	var bar_height = 148.0
+	## The stats strip grows with Text Size; the bar and the hints below it make room by its real height (42 at 1.0x).
+	var strip_h: float = AutogrindStatsStrip.height_for_width(vp_size.x - 8)
+	var bar_height = 148.0 + maxf(0.0, strip_h - 42.0)
 	var bar_bg = ColorRect.new()
 	bar_bg.color = Color(0.03, 0.02, 0.06, 0.85)
 	bar_bg.position = Vector2(0, vp_size.y - bar_height)
@@ -8134,14 +8136,14 @@ func _create_autogrind_overlay() -> void:
 	var strip = AutogrindStatsStrip.new()
 	strip.name = "StatsStrip"
 	strip.position = Vector2(4, vp_size.y - bar_height + 62)
-	strip.size = Vector2(vp_size.x - 8, 42)
+	strip.size = Vector2(vp_size.x - 8, strip_h)
 	_autogrind_overlay.add_child(strip)
 
 	# Control hints
 	var hints = Label.new()
 	hints.name = "HintsLabel"
 	hints.text = AutogrindInputHelper.grind_hud_strip()
-	hints.position = Vector2(16, vp_size.y - bar_height + 112)
+	hints.position = Vector2(16, vp_size.y - bar_height + 112 + maxf(0.0, strip_h - 42.0))
 	hints.size = Vector2(vp_size.x - 32, 24)
 	hints.add_theme_font_size_override("font_size", 13)
 	hints.add_theme_color_override("font_color", Color(0.6, 0.6, 0.7))

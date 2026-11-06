@@ -35,6 +35,9 @@ var _current_zone: String = ""
 const FADE_IN: float = 0.4
 const HOLD: float = 2.0
 const FADE_OUT: float = 0.6
+const BANNER_FONT_SIZE := 20
+const BANNER_TOP: float = 20.0
+const BANNER_MIN_H: float = 48.0  ## the authored strip; it only grows past this when the scaled name needs it
 
 
 func setup(parent: Node) -> void:
@@ -66,11 +69,14 @@ func setup(parent: Node) -> void:
 	_label.offset_top = 20
 	_label.offset_bottom = 68
 	_label.clip_text = false
-	_label.add_theme_font_size_override("font_size", 20)
+	_label.add_theme_font_size_override("font_size", BANNER_FONT_SIZE)
+	TextScale.apply(_label)
 	_label.add_theme_color_override("font_color", Color(1.0, 1.0, 0.85))
 	_label.modulate.a = 0.0
 	_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_canvas.add_child(_label)
+	if not GameState.text_size_scale_changed.is_connected(_on_text_size_changed):
+		GameState.text_size_scale_changed.connect(_on_text_size_changed)
 
 
 func show_zone(zone_id: String) -> void:
@@ -115,3 +121,19 @@ func _fit_banner_to(text: String) -> void:
 	_bg.anchor_right = 0.5
 	_bg.offset_left = -half
 	_bg.offset_right = half
+	var h: float = maxf(BANNER_MIN_H, (font.get_height(_label.get_theme_font_size("font_size")) if font else 0.0) + 16.0)
+	_bg.offset_bottom = BANNER_TOP + h
+	_label.offset_bottom = BANNER_TOP + h
+
+
+## A Text Size change re-scales the kept banner and re-fits it around the name it holds.
+func _on_text_size_changed(_scale: float) -> void:
+	if _label == null:
+		return
+	TextScale.apply(_label)
+	_fit_banner_to(_label.text)
+
+
+func _exit_tree() -> void:
+	if GameState.text_size_scale_changed.is_connected(_on_text_size_changed):
+		GameState.text_size_scale_changed.disconnect(_on_text_size_changed)

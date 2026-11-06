@@ -106,3 +106,24 @@ func test_a_pad_plugged_in_refreshes_the_chip() -> void:
 	var c := _chip()
 	assert_true(Input.joy_connection_changed.is_connected(c._on_joy_connection_changed),
 		"the chip re-reads its button when a pad is connected or pulled out")
+
+
+## A Text Size change made in Settings reaches the chip it did not rebuild. Settings is opened through the overworld
+## menu, which HIDES the field HUD, so the change lands on a hidden chip: this arm hides it first, as play does.
+func test_a_live_text_size_change_reaches_the_hidden_chip() -> void:
+	GameState.set_text_size_scale(1.0)
+	var c := _chip()
+	c.show_count(3)
+	await get_tree().process_frame
+	var before: Vector2 = c._panel.size
+	var px_before: int = c._label.get_theme_font_size("font_size")
+	c.visible = false
+	GameState.set_text_size_scale(2.0)
+	await get_tree().process_frame
+	assert_true(GameState.text_size_scale_changed.is_connected(c._on_text_size_changed), "CONTROL: the chip listens for the change")
+	var px_after: int = c._label.get_theme_font_size("font_size")
+	assert_eq(px_after, TextScale.scaled(c.BASE_FONT_SIZE), "the hidden chip's font follows the new scale (%d -> %d)" % [px_before, px_after])
+	assert_gt(px_after, px_before, "and it actually grew")
+	assert_lte(c._label.get_combined_minimum_size().x, c._panel.size.x - 2.0, "the grown text still fits its re-fitted panel")
+	assert_gt(c._panel.size.x, before.x, "so the panel grew with it (%s -> %s)" % [before, c._panel.size])
+	GameState.set_text_size_scale(1.0)
