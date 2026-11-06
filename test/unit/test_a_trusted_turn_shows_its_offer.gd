@@ -127,8 +127,9 @@ func test_the_bar_drains_on_the_wall_clock_at_every_speed() -> void:
 		## Against the WINDOW, not the wall: headless GUT runs an unscaled timer fast at engine < 1 (0.45 s lost in 0.30).
 		assert_almost_eq(pill.remaining_fraction(), BattleManager.trust_window_time_left(), 0.02,
 			"at engine %s the bar must show exactly the time its window has left" % scale)
-		assert_gt(1.0 - pill.remaining_fraction(), waited * scale * 2.0,
-			"and it is not battle time: at engine %s it lost more than the %.3f battle-s that passed" % [scale, waited * scale])
+		if scale < 1.0:  # at 1.0 battle time IS unscaled time, so there is nothing to tell apart
+			assert_gt(1.0 - pill.remaining_fraction(), waited * scale * 2.0,
+				"and it is not battle time: at engine %s it lost more than the %.3f battle-s that passed" % [scale, waited * scale])
 		s._on_trust_interrupt_window_closed(r[1], false)
 
 
