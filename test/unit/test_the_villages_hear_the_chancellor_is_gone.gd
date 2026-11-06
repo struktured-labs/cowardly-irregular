@@ -66,8 +66,22 @@ func test_the_cutscene_flag_alone_is_heard_too() -> void:
 		assert_eq(await _first_line(path, AFTER[path][0]), AFTER[path][1], "%s must hear it from the cutscene flag's namespace as well" % AFTER[path][0])
 
 
+## The flag these two villages read to switch to their after-the-cave lines.
+func _set_the_cave_done() -> void:
+	GameState.game_constants["cutscene_flag_rat_king_defeated"] = true
+	GameState.game_constants["dungeon_flags"]["rat_king_defeated"] = true
+	GameState.story_flags["rat_king_defeated"] = true
+
+
 func test_the_chancellor_outranks_the_rat_king() -> void:
-	GameState.game_constants["dungeon_flags"] = {"rat_king_defeated": true, "world1_mordaine_defeated": true}
-	GameState.story_flags = {"rat_king_defeated": true}
+	# CONTROL: the cave lines must actually be in play, or this arm is green whatever the order is.
+	var before_the_cave := {}
+	for path in AFTER_THE_CAVE_TOO:
+		before_the_cave[path] = await _first_line(path, AFTER[path][0])
+	_set_the_cave_done()
+	for path in AFTER_THE_CAVE_TOO:
+		var cave_line: String = await _first_line(path, AFTER[path][0])
+		assert_ne(cave_line, before_the_cave[path], "CONTROL: %s must change after the cave, or the cave lines are not in contention" % AFTER[path][0])
+	GameState.game_constants["dungeon_flags"]["world1_mordaine_defeated"] = true
 	for path in AFTER_THE_CAVE_TOO:
 		assert_eq(await _first_line(path, AFTER[path][0]), AFTER[path][1], "%s must lead with the Chancellor, not the cave" % AFTER[path][0])
