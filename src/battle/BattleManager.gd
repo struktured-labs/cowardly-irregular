@@ -2223,6 +2223,7 @@ func request_trust_interrupt() -> bool:
 		return false
 	var pc: Combatant = _trust_window_pc
 	_trust_window_pc = null
+	_trust_window_timer = null  # the window is over now, not when its timer would have run out
 	if "player_trust" in pc:
 		pc.player_trust = false
 	battle_log_message.emit("[color=cyan]%s: Trust released. Take it.[/color]" % pc.combatant_name)

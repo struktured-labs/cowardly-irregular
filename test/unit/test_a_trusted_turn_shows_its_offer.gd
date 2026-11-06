@@ -197,3 +197,18 @@ func test_a_real_window_opens_full_and_closes_on_its_timer() -> void:
 		await get_tree().process_frame
 	assert_null(s._trust_pill, "the window's own timer closes it and takes the offer away")
 	assert_eq(BattleManager.trust_window_time_left(), -1.0, "and BattleManager forgets the finished timer")
+
+
+## A window the player claims early is over at once: its clock must not keep reporting time until the timer runs out.
+func test_a_claimed_window_reports_no_time_left() -> void:
+	var r: Array = await _battle_with_member()
+	var pc: Combatant = r[1]
+	pc.player_trust = true
+	BattleManager.current_combatant = null
+	BattleManager._run_trust_interrupt_window(pc)
+	assert_gt(BattleManager.trust_window_time_left(), 0.5, "CONTROL: the window is open with time left")
+	assert_true(BattleManager.request_trust_interrupt(), "CONTROL: the player claims the turn")
+	assert_eq(BattleManager.trust_window_time_left(), -1.0, "a claimed window reports no time left, not the rest of its timer")
+	var start := Time.get_ticks_msec()
+	while Time.get_ticks_msec() - start < 1500:
+		await get_tree().process_frame
