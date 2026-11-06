@@ -130,6 +130,12 @@ func _monster_sheets() -> Dictionary:
 	return (parsed as Dictionary).get("monster_sheets", {}) if parsed is Dictionary else {}
 
 
+func _monster_ids() -> Dictionary:
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/monsters.json"))
+	assert_true(parsed is Dictionary, "monsters.json must parse")
+	return parsed if parsed is Dictionary else {}
+
+
 func _gd_files(root: String) -> Array[String]:
 	var out: Array[String] = []
 	var dirs: Array[String] = [root]
@@ -211,8 +217,15 @@ func test_no_surface_decides_a_facing_from_a_frame_height_alone() -> void:
 ## 20 of the 25 have no base row at all (the masterites ship dressed-only), so for those the
 ## engine asks an id that is not in the manifest and takes the convention. Requiring the base to
 ## exist would have excluded exactly the rows where a declaration is most thoroughly ignored.
+##
+## EXCEPT an id that is itself a monster: a masterite is spawned under its full id (NodePrimeVillage
+## sets monster_id "masterite_curator_futuristic"), so battle asks THAT row and a flip there is read.
+## This arm used to flag every suffixed row, which kept the futuristic curator backwards by fiat.
 func test_a_world_variant_cannot_declare_a_facing_the_engine_never_reads() -> void:
 	var sheets := _monster_sheets()
+	var monsters := _monster_ids()
+	assert_true(monsters.has("masterite_curator_futuristic"),
+		"CONTROL: the full-id exemption needs monsters.json to list a masterite by its full id")
 	var variants: int = 0
 	var unread: Array = []
 	for mid in sheets:
@@ -224,7 +237,7 @@ func test_a_world_variant_cannot_declare_a_facing_the_engine_never_reads() -> vo
 		if base == "":
 			continue
 		variants += 1
-		if (sheets[mid] as Dictionary).has("flip_h"):
+		if (sheets[mid] as Dictionary).has("flip_h") and not monsters.has(id):
 			unread.append("%s declares flip_h but battle asks '%s'" % [id, base])
 	assert_gt(variants, 20,
 		"ANTI-VACUITY: only %d world-variant sheets found — the suffix vocabulary no longer matches the data" % variants)

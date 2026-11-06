@@ -46,6 +46,8 @@ func _read(p: String) -> String:
 ##   (a) PORTRAIT_SPRITES artist bust asset (direct sprite path)
 ##   (b) auto-crop bust from res://assets/sprites/jobs/<id>/idle.png (any job)
 ##   (c) an explicit case in the procedural match statement
+##   (d) any other ART rung, asked of the real resolver (portrait_art) rather than modelled here: the monster-sheet
+##       bust (2026-09-16) was invisible to this list, so the dragons' own faces read as the narrator blur.
 ## Anything NOT in this union hits `_:` and draws the narrator procedural.
 func _resolvable_bases() -> Dictionary:
 	var src := _read(CUTSCENE_DIALOGUE)
@@ -97,6 +99,8 @@ func test_villager_portrait_resolves() -> void:
 
 func test_every_cutscene_portrait_resolves() -> void:
 	var resolvable := _resolvable_bases()
+	var dialogue: Node = load(CUTSCENE_DIALOGUE).new()
+	autofree(dialogue)
 	var offenders: Dictionary = {}  # portrait -> [example files]
 	var dir = DirAccess.open("res://data/cutscenes")
 	assert_not_null(dir, "cutscenes dir must open")
@@ -121,7 +125,7 @@ func test_every_cutscene_portrait_resolves() -> void:
 				if p == "":
 					continue
 				var base := _strip_emotion(p)
-				if resolvable.has(base):
+				if resolvable.has(base) or dialogue.portrait_art(base) != null:
 					continue
 				if not offenders.has(p):
 					offenders[p] = []

@@ -58,7 +58,9 @@ func test_a_real_shoulder_press_opens_the_options_ring() -> void:
 ## call still reports success because the handler is fine. Real routing correctly sees nothing.
 ## That gap is exactly what hid Pyrroth's unselectable fire breath behind seven green tests.
 func test_a_direct_call_cannot_tell_that_nothing_reaches_it() -> void:
-	_layer.remove_child(_ui)
+	## Unreachable by switching its input off, IN the tree: detaching it (the first version) left the hand call with no
+	## viewport, so the handler's set_input_as_handled() logged a SCRIPT ERROR in every sweep (cowir-ai 22162).
+	_ui.set_process_input(false)
 	await get_tree().process_frame
 
 	# the handler still works when invoked by hand — this is the reassuring, useless result
@@ -67,13 +69,13 @@ func test_a_direct_call_cannot_tell_that_nothing_reaches_it() -> void:
 		"CONTROL: called directly the handler still runs, which is what makes the weak test green")
 	_ui._close_options_ring()
 
-	# but the engine reaches nothing, because the node is not in the tree
+	# but the engine reaches nothing, because the node does not process input
 	_vp.push_input(_shoulder())
 	await get_tree().process_frame
 	assert_null(_ui._options_ring,
 		"an unreachable console must stay closed under REAL routing — if this opens, the test is not routing")
 
-	_layer.add_child(_ui)
+	_ui.set_process_input(true)
 
 
 ## A press must not open the ring when the console is hidden — the guard the real path exercises

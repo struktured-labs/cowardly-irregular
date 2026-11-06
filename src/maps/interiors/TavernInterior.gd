@@ -2197,8 +2197,24 @@ func _setup_npcs() -> void:
 	npcs.name = "NPCs"
 	add_child(npcs)
 
+	# After Mordaine: the tavern has heard the Chancellor is gone. Reads every flag namespace, like the spine gate.
+	var _gs = get_node_or_null("/root/GameState")
+	var _chancellor_gone: bool = _gs != null and _gs.is_story_flag_set("world1_mordaine_defeated")
+	var _osric_after_chancellor := [
+		"Osric: *sets down the glass* So. The Chancellor.",
+		"Osric: Half this room drank to her health every quarter-day. Mandatory toast. It was on a notice.",
+		"Osric: The notice is still up. Nobody's toasted anything since. Nobody knows what you toast INSTEAD.",
+		"Osric: *pours one, slides it to an empty stool* That's for whoever kept her ledger. They'll be in. They always come in eventually."
+	]
+	var _henryk_after_chancellor := [
+		"Guard Henryk: Off duty. Still off duty. Possibly permanently.",
+		"Guard Henryk: Six years I said nothing ever happens here. Then something happened, up at the castle, and I was HERE.",
+		"Guard Henryk: The captain says all our orders came from her desk. Even the ones about standing still.",
+		"Guard Henryk: So who signs my orders now? *drinks* Nobody. Which means I'm finally doing exactly what I was told."
+	]
+
 	# --- Bar zone ---
-	_create_npc("Osric", "bartender", Vector2(1.5, 3.5), [
+	_create_npc("Osric", "bartender", Vector2(1.5, 3.5), _osric_after_chancellor if _chancellor_gone else [
 		"Osric: Welcome to The Dancing Lantern!",
 		"Osric: What'll it be? Mead? Ale? Liquid courage?",
 		"Osric: *polishes glass* The cave's been... hungry lately.",
@@ -2288,7 +2304,7 @@ func _setup_npcs() -> void:
 	], "young_man")
 
 	# Off-duty guard nursing a drink
-	_create_npc("Guard Henryk", "knight", Vector2(12.5, 6.5), [
+	_create_npc("Guard Henryk", "knight", Vector2(12.5, 6.5), _henryk_after_chancellor if _chancellor_gone else [
 		"Guard Henryk: Off duty. Don't look at me.",
 		"Guard Henryk: ...fine. You want to know why I drink?",
 		"Guard Henryk: I've guarded this village for six YEARS.",

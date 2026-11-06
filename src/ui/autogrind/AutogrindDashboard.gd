@@ -127,8 +127,19 @@ func _on_readout_round_started(round_num: int) -> void:
 
 func _on_readout_action_executing(combatant: Combatant, action: Dictionary) -> void:
 	var who: String = combatant.combatant_name if is_instance_valid(combatant) else "?"
-	_readout_action = "%s → %s" % [who, str(action.get("type", "act")).replace("_", " ")]
+	_readout_action = "%s → %s" % [who, readout_action_label(action)]
 	_refresh_battle_readout()
+
+
+## What a watching player wants is WHAT was cast: an ability or item by the menu's name, anything else by its verb.
+static func readout_action_label(action: Dictionary) -> String:
+	var ability_id := str(action.get("ability_id", ""))
+	if ability_id != "":
+		return AbilityIcons.name_of(ability_id)
+	var item_id := str(action.get("item_id", ""))
+	if item_id != "":
+		return ItemNameResolver.resolve(item_id)
+	return str(action.get("type", "act")).replace("_", " ")
 
 
 func _on_readout_damage_dealt(target: Combatant, amount: int, is_crit: bool, _element: String, elemental_mod: float) -> void:

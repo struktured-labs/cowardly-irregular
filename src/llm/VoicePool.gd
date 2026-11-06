@@ -100,6 +100,10 @@ func forbidden_names() -> Array[String]:
 	if js != null and "jobs" in js:
 		for j in js.jobs.keys():
 			out.append(str(j).replace("_", " "))
+			out.append(str((js.jobs[j] as Dictionary).get("name", "")))
+	for n in _world_job_names():
+		if n.contains(" "):
+			out.append(n)
 	var gs := get_node_or_null("/root/GameState")
 	if gs != null:
 		for m in gs.player_party:
@@ -109,6 +113,34 @@ func forbidden_names() -> Array[String]:
 		for id in es.monster_database:
 			out.append(str(id).replace("_", " "))
 			out.append(str((es.monster_database[id] as Dictionary).get("name", "")))
+	return out
+
+
+## A single-word world job name (Steamknight, Faith, Voice) is a TITLE only when capitalised mid-sentence; as a plain word it is fine.
+func forbidden_titles() -> Array[String]:
+	var out: Array[String] = []
+	for n in _world_job_names():
+		if not n.contains(" "):
+			out.append(n)
+	return out
+
+
+## Every job's name in every world: a pooled line may play in any of them, so none of them may appear in it.
+func _world_job_names() -> Array[String]:
+	var out: Array[String] = []
+	var js := get_node_or_null("/root/JobSystem")
+	if js == null or not ("job_world_names" in js):
+		return out
+	var per_job: Variant = (js.job_world_names as Dictionary).get("jobs", {})
+	if not (per_job is Dictionary):
+		return out
+	for j in per_job:
+		var names: Variant = per_job[j]
+		if names is Dictionary:
+			for theme in names:
+				var n := str(names[theme]).strip_edges()
+				if n != "" and not out.has(n):
+					out.append(n)
 	return out
 
 
@@ -148,7 +180,7 @@ func _fill(speaker: String, trigger: String) -> bool:
 	var line := str(DialoguePrompts.validate_party_line(raw).get("line", ""))
 	if line == "" or not is_enabled():
 		return false
-	if VoicePoolStore.names_anyone(line, forbidden_names()):
+	if VoicePoolStore.names_anyone(line, forbidden_names()) or VoicePoolStore.names_a_title(line, forbidden_titles()):
 		discarded += 1
 		return false
 	if _repeats_the_pool(speaker, line, phrases):

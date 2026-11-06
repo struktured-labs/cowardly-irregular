@@ -102,6 +102,21 @@ report() {
     fi
     printf '%s\n' "$out"
 
+    # A CHAIN IN THE SMOKE IS A FIGHT NO LEG MEANT TO PLAY (cowir-main 22171). The player-path leg's
+    # touch can pull alerted roamers into a chain; its hand-back victory then started the next link,
+    # a real fight the smoke plays by tapping accept. .772 try1 LOST it (5 dominant FAILs downstream),
+    # and the .772 re-roll that went green had chained too and WON: a green resting on a coin. The leg
+    # now drops the chain (GameLoop._smoke_drop_chain), so a follow-up battle here means that broke.
+    # Reported, not judged, like everything in this tool.
+    local nc nd nn
+    nc="$(command grep -ac '^\[CHAIN\] [0-9]* group' "$log" || true)"
+    if [ "${nc:-0}" -gt 0 ]; then
+        nd="$(command grep -ac '^\[SMOKE\] player-path battle: dropped' "$log" || true)"
+        nn="$(command grep -ac '^\[CHAIN\] next battle' "$log" || true)"
+        echo "[smoke] chain: ${nc} formed · ${nd:-0} dropped by the player-path leg · ${nn:-0} follow-up battle(s) played"
+        [ "${nn:-0}" -gt 0 ] && echo "[smoke] ⚠️ a follow-up battle ran inside the smoke: its verdict rested on a fight no leg meant to play"
+    fi
+
     # ⛔ A FAIL WITH NO REASON IS THE .654 EXPERIENCE, AND THIS TOOL USED TO REPRODUCE IT SILENTLY.
     # Extracting "what is there" is right, but when the verdict is FAIL and no `[SMOKE] FAIL:` line
     # accompanies it, the reader gets a bare `VERDICT: FAIL` — indistinguishable from the state this
@@ -207,6 +222,25 @@ sys.exit(0 if b'\x00' in open('$dir/nul.log','rb').read() else 1)" \
     else
         fail=$((fail+1)); printf '  FAIL  %-54s\n' "the forms differ on a CLEAN log — not the NUL"
     fi
+
+    # A CHAIN that played its follow-up battle is NAMED; a dropped one is counted, not warned about;
+    # a log with no chain says nothing about chains. (main 22171: .772 try1 lost the second fight.)
+    {   printf '[CHAIN] 2 group(s) in 2 battle(s): [[["skate_punk"]], [["spiteful_crow"]]]\n'
+        printf '[CHAIN] next battle: ["spiteful_crow"] (2 group(s) engaged)\n'
+        printf '[SMOKE] VERDICT: PASS\n'
+    } > "$dir/played.log"
+    out="$("$self" "$dir/played.log" 2>&1)"
+    chk "a chain that PLAYED its next battle is counted"  '1 follow-up battle(s) played'  0
+    chk "...and warned about"                             'a follow-up battle ran inside the smoke'  0
+    {   printf '[CHAIN] 2 group(s) in 2 battle(s): [[["a"]], [["b"]]]\n'
+        printf '[SMOKE] player-path battle: dropped 1 chained battle(s); the leg covers the entry\n'
+        printf '[SMOKE] VERDICT: PASS\n'
+    } > "$dir/dropped.log"
+    out="$("$self" "$dir/dropped.log" 2>&1)"
+    chk "a DROPPED chain is counted as dropped"           '1 dropped by the player-path leg · 0 follow-up'  0
+    chk "...and NOT warned about"                         'a follow-up battle ran inside the smoke'  1
+    out="$("$self" "$dir/pass.log" 2>&1)"
+    chk "a log with no chain prints no chain line"        '\[smoke\] chain:'  1
 
     # A log with no verdict at all must SAY SO, not print nothing.
     printf '[SMOKE] cave saved err=0\n' > "$dir/noverdict.log"

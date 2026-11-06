@@ -40,19 +40,19 @@
           "speaker": "Pyrroth",
           "text": "Oh. Another one.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "fire_dragon"
         },
         {
           "speaker": "Pyrroth",
           "text": "Tell me something.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "fire_dragon"
         },
         {
           "speaker": "Pyrroth",
           "text": "Are you actually PLAYING this game?",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "fire_dragon"
         },
         {
           "speaker": "Fighter",
@@ -64,13 +64,13 @@
           "speaker": "Pyrroth",
           "text": "I mean... are YOU making the decisions? Or is it the autobattle script?",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "fire_dragon"
         },
         {
           "speaker": "Pyrroth",
           "text": "Because if it's the script... then I'm not really fighting YOU, am I? I'm fighting a JSON file.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "fire_dragon"
         },
         {
           "speaker": "Fighter",
@@ -82,13 +82,13 @@
           "speaker": "Pyrroth",
           "text": "Did you though? Or did you copy it from a guide?",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "fire_dragon"
         },
         {
           "speaker": "Pyrroth",
           "text": "Let's find out what happens when the script breaks.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "fire_dragon"
         }
       ]
     },

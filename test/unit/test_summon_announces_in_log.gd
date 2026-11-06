@@ -42,7 +42,8 @@ func _summon_body() -> String:
 
 func test_summon_emits_battle_log() -> void:
 	var body := _summon_body()
-	assert_true(body.contains("[color=purple]%s summons %s %s![/color]"),
+	# The article carries its own space since 2026-11-05, so a "The …" name takes none.
+	assert_true(body.contains("[color=purple]%s summons %s%s![/color]"),
 		"_execute_summon must emit '<X> summons a/an <Y>!' battle_log — purple matches the 'spawn/conjure' family")
 
 
@@ -61,10 +62,10 @@ func test_summon_log_emit_precedes_monster_summoned_signal() -> void:
 
 
 func test_summon_uses_prettified_monster_type() -> void:
-	# Pin: snake_case → Title Case via the standard prettifier.
+	# Pin (2026-11-05): the foe's monsters.json name, which its panel shows; the id in words only for a type with no data.
 	var body := _summon_body()
-	assert_true(body.contains("monster_type.replace(\"_\", \" \").capitalize()"),
-		"summon must use the standard replace+capitalize prettifier on monster_type")
+	assert_true(body.contains("_monster_display_name(monster_type)"),
+		"summon must name the foe from its data, not build the name from monster_type")
 
 
 # ── Cross-pins: audited-clean paths must remain ─────────────────────────
