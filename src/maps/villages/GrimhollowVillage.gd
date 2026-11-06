@@ -267,7 +267,16 @@ func _setup_npcs() -> void:
 		"Fifty gold for what comes next. Free preview: another boss fight.",
 		"It is always another boss fight. I have raised my prices accordingly."
 	]
-	var hex = _create_npc("Madame Hex", "elder", Vector2(10 * TILE_SIZE,7 * TILE_SIZE), _hex_post if _after_cave_done else _hex_pre)
+	# After Mordaine: the news reaches Grimhollow. Reads every flag namespace, like the spine gate.
+	var _chancellor_gs = get_node_or_null("/root/GameState")
+	var _chancellor_gone: bool = _chancellor_gs != null and _chancellor_gs.is_story_flag_set("world1_mordaine_defeated")
+	var _hex_after_chancellor := [
+		"The cards told me the Chancellor would fall. I said nothing. Nobody pays for good news.",
+		"*turns a card* The Tower. Of course it's the Tower. It's always the Tower.",
+		"*turns another* ...That one I don't recognise. It has the same face as the first one.",
+		"Go on through your portal. I'll keep reading. Someone should."
+	]
+	var hex = _create_npc("Madame Hex", "elder", Vector2(10 * TILE_SIZE,7 * TILE_SIZE), _hex_after_chancellor if _chancellor_gone else (_hex_post if _after_cave_done else _hex_pre))
 	npcs.add_child(hex)
 
 	# Undead Shopkeeper Mort (deadpan)
