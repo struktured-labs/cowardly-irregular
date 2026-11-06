@@ -142,10 +142,22 @@ func _init() -> void:
 	# Watch the fight: a KO is a failed take, the battle's end is the segment's end.
 	var kos: Array = []
 	var in_battle := false
+	var won := [false]
+	var won_for := 0.0
+	var results_seen := false
+	bm.battle_ended.connect(func(victory: bool): won[0] = won[0] or victory)
 	var t := 0.0
 	while t < 900.0:
 		await _beat(0.25)
 		t += 0.25
+		# A win ends the take once its results are confirmed: Mordaine's chains the W1 ending and credits (music 22761).
+		if won[0]:
+			won_for += 0.25
+			var bs = player_node._battle_scene()
+			var showing: bool = bs != null and bs.get_node_or_null("VictoryResults") != null
+			results_seen = results_seen or showing
+			if (results_seen and not showing) or won_for > 15.0 and not results_seen:
+				break
 		var state = gl.get("current_state")
 		if state == gl.LoopState.BATTLE:
 			in_battle = true
