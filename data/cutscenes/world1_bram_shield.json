@@ -72,7 +72,7 @@
                 "speaker": "Bram",
                 "text": "You. Hold there a moment.",
                 "theme": "villager",
-                "portrait": "villager"
+                "portrait": "bram"
               }
             ]
           }
@@ -89,7 +89,7 @@
                 "speaker": "Bram",
                 "text": "Not you. Him. The one practicing his grip on my floor. Hold there a moment.",
                 "theme": "villager",
-                "portrait": "villager"
+                "portrait": "bram"
               }
             ]
           }
