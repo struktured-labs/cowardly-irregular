@@ -3127,6 +3127,8 @@ static func summon_art_for(ability_id: String) -> Dictionary:
 func _show_summon_splash(art: Dictionary, rise: float) -> void:
 	var old := get_node_or_null("SummonSplash")
 	if old:
+		# Detached first, as the signature card: a queued node keeps its name, so the new splash would be renamed and never dismissed.
+		remove_child(old)
 		old.queue_free()
 	var root := Node2D.new()
 	root.name = "SummonSplash"
