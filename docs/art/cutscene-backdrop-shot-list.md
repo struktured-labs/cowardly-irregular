@@ -84,7 +84,7 @@ The still is only what a missing or undecodable video falls back to. Worth redra
    | frosthold_lane | the mountain village under the Ice Dragon's peak in the long night ("nine weeks of the year the sun did not bother coming up"): snow on timber roofs, the peak's glow above, a guard post at the gate | world1_frosthold_npcs (cowir-overworld c9a85e699), prologue_village |
    NEW keys need no .ogv; the scene picks the still up once its JSON names it (cutscenes re-points it).
    Budget: ~0.4 MiB each lossless at 1280x720 (the .760 Harmonia measurement), against the .761 web headroom.
-5. DONE, no art needed: **King Aldric** (world1_chapter9, 4 lines) wore `mysterious` as a fallback, not intent (cowir-story 22557). He is the king on Harmonia's throne, so he wears the shipped `king` bust (portraits/npcs/king.png, the Harmonia king NPC's face; cowir-sprites 22559).
+5. DONE, no art needed: **King Aldric** (world1_chapter9, 4 lines) wore `mysterious` as a fallback, not intent (cowir-story 22557). He is the W1 king on the capital's throne (locations.json lists `king` under capital_city, Scriptura), so he wears the shipped `king` bust (portraits/npcs/king.png, an unassigned king face until now; cowir-sprites 22559, cowir-overworld 22561).
 Every re-point in section 2 to an EXISTING key is JSON-only: cutscenes will do those, no art needed.
 
 ## 4. Filed for after the backdrop pilot: a redrawn PNG behind a stale video
