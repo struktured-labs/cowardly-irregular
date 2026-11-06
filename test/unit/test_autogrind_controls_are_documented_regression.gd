@@ -89,7 +89,17 @@ func _rows() -> Array:
 	return rows
 
 
-## Single-letter keys a rendered keyboard cell offers. "X / Esc" yields X; "Esc" is not a keycode
+func _ui_cancel_letters() -> Array:
+	var out: Array = []
+	for ev in InputMap.action_get_events("ui_cancel"):
+		if ev is InputEventKey:
+			var kc: int = (ev as InputEventKey).keycode if (ev as InputEventKey).keycode != 0 else (ev as InputEventKey).physical_keycode
+			if kc != 0:
+				out.append(OS.get_keycode_string(kc))
+	return out
+
+
+## Single-letter keys a rendered keyboard cell offers. "Z / Escape" yields Z; "Esc" is not a keycode
 ## this guard can resolve and is covered by the ui_cancel arm instead.
 func _cell_letters(cell: String) -> Array:
 	var out: Array = []
@@ -116,9 +126,8 @@ func test_every_key_the_reference_advertises_is_really_bound() -> void:
 	var unbound: Array = []
 	for row in _rows():
 		for letter in _cell_letters(row[1]):
-			# The stop row's X comes from ACTION_KEYS["exit"] and is bound as the ui_cancel ACTION,
-			# not as a raw keycode, so it is answered by its own arm below.
-			if letter == str(AutogrindInputHelper.ACTION_KEYS["exit"]):
+			# The stop row's keys are ui_cancel's own (stop_keys), bound as the ACTION, not a raw keycode.
+			if _ui_cancel_letters().has(letter):
 				continue
 			if not bound.has(letter):
 				unbound.append("%s (%s)" % [letter, row[2].strip_edges()])
