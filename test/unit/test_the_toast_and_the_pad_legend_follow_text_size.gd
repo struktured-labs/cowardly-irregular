@@ -45,21 +45,27 @@ func test_the_floor_names_every_member_this_file_drives() -> void:
 		assert_true(o.has_method(m), "ControllerOverlay.%s must exist" % m)
 
 
-func test_a_toast_grows_with_the_text_and_its_band_holds_it() -> void:
+func test_a_toast_grows_with_the_text() -> void:
 	var sizes: Array = []
 	for s in _presets():
 		GameState.set_text_size_scale(s)
 		Toast.show(self, LONG)
 		var labels := _toast_labels()
 		assert_eq(labels.size(), 2, "CONTROL: a toast builds its label and its shadow")
-		var label: Label = labels[1]
-		var px: int = label.get_theme_font_size("font_size")
-		sizes.append(px)
-		var font: Font = label.get_theme_font("font")
-		var need: float = font.get_multiline_string_size(LONG, HORIZONTAL_ALIGNMENT_CENTER, label.size.x, px).y
-		assert_gte(label.size.y, need - 0.5, "at Text Size %s the band (%.0f) holds the wrapped text (%.0f)" % [s, label.size.y, need])
+		sizes.append((labels[1] as Label).get_theme_font_size("font_size"))
 	for i in range(1, sizes.size()):
 		assert_gt(sizes[i], sizes[i - 1], "the toast's font must grow at every Text Size step: %s" % [sizes])
+
+
+## Judged off the FONT at the size the label holds, never the label's own (deferred) minimum.
+func test_a_toast_band_holds_its_wrapped_text_at_every_size() -> void:
+	for s in _presets():
+		GameState.set_text_size_scale(s)
+		Toast.show(self, LONG)
+		var label: Label = _toast_labels()[1]
+		var px: int = label.get_theme_font_size("font_size")
+		var need: float = label.get_theme_font("font").get_multiline_string_size(LONG, HORIZONTAL_ALIGNMENT_CENTER, label.size.x, px).y
+		assert_gte(label.size.y, need - 0.5, "at Text Size %s the band (%.0f) holds the wrapped text (%.0f)" % [s, label.size.y, need])
 
 
 func test_two_large_toasts_do_not_print_through_each_other() -> void:
