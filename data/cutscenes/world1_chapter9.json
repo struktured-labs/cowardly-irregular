@@ -89,7 +89,7 @@
           "speaker": "King Aldric",
           "text": "You shouldn't be here.",
           "theme": "elder",
-          "portrait": "mysterious"
+          "portrait": "king"
         },
         {
           "speaker": "Fighter",
@@ -101,7 +101,7 @@
           "speaker": "King Aldric",
           "text": "She's trying to help. The kingdom was failing. She—",
           "theme": "elder",
-          "portrait": "mysterious"
+          "portrait": "king"
         }
       ]
     },
@@ -116,7 +116,7 @@
           "speaker": "King Aldric",
           "text": "I know what she's done. I know and I cannot—",
           "theme": "elder",
-          "portrait": "mysterious"
+          "portrait": "king"
         }
       ]
     },
@@ -135,7 +135,7 @@
           "speaker": "King Aldric",
           "text": "I am still here. Somewhere.",
           "theme": "elder",
-          "portrait": "mysterious"
+          "portrait": "king"
         }
       ]
     },

@@ -21,7 +21,7 @@ const NOT_A_ROOM := ["BaseInterior.gd", "InteriorPlacementSweep.gd"]
 ## for the same reason, which is a different case: a readable's cell is computed, an NPC's is written.
 ##
 ## ⚠️ A SOURCE SCAN GETS THIS WRONG IN BOTH DIRECTIONS, which is why this is a runtime arm. Scanning
-## for two `_create_npc` calls on one coordinate reports `ShopInterior`'s Gethena and Aldric — who
+## for two `_create_npc` calls on one coordinate reports `ShopInterior`'s Gethena and Silas — who
 ## are in `ShopType.ITEM` and `ShopType.BLACK_MAGIC`, mutually exclusive match arms that never
 ## coexist. That was my own first measurement and it was a false positive. The other direction is
 ## worse: positions computed from a spawn, a const or a `.repeat()` expression are invisible to any
