@@ -217,6 +217,11 @@ func _build_ui() -> void:
 		badge_rows = int(badge_layout[badge_layout.size() - 1]["row"]) + 1 if badge_layout.size() > 0 else 0
 		badge_row_h = _grew(40.0) * badge_rows
 		panel_h = head_h + rows_per_col * row_h + badge_header_h + badge_row_h + 50.0
+		## Hidden badges are counted in their header, so badge ROWS give way before a stats row shrinks onto the prompt (2.0x).
+		if panel_h > max_h and badge_rows > 0:
+			var spare: float = max_h - (head_h + rows_per_col * row_h + badge_header_h + 50.0)
+			badge_row_h = clampf(floorf(spare / _grew(40.0)), 0.0, float(badge_rows)) * _grew(40.0)
+			panel_h = head_h + rows_per_col * row_h + badge_header_h + badge_row_h + 50.0
 		if panel_h > max_h:
 			row_h = maxf(18.0, (max_h - head_h - badge_header_h - badge_row_h - 50.0) / maxf(rows_per_col, 1))
 			panel_h = head_h + rows_per_col * row_h + badge_header_h + badge_row_h + 50.0
