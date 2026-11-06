@@ -5,7 +5,7 @@
 **Genre:** Retro-inspired JRPG with CRPG-level mechanical depth
 **Visual Target:** 8-16-bit evolution aesthetic
 **Core Influence Set:** Bravely Default, Chrono Trigger, EarthBound
-**Engine:** Godot 4.3
+**Engine:** Godot 4.4 (`project.godot` config/features)
 **Design Goal:** "Build the JRPG that understands optimization culture without sacrificing narrative weight"
 
 ---
