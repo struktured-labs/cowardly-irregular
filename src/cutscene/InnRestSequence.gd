@@ -60,9 +60,12 @@ func _ready() -> void:
 	_moon = Label.new()
 	_moon.text = "☾  z z z"
 	_moon.set_anchors_preset(Control.PRESET_CENTER)
+	# A zero-size label anchored at the centre grows right by default, so its left edge sat on the middle of the screen.
+	_moon.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	_moon.grow_vertical = Control.GROW_DIRECTION_BOTH
 	_moon.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_moon.add_theme_color_override("font_color", Color(0.85, 0.85, 1.0))
-	_moon.add_theme_font_size_override("font_size", 28)
+	_moon.add_theme_font_size_override("font_size", TextScale.scaled(28))
 	_moon.modulate.a = 0.0
 	_rect.add_child(_moon)
 

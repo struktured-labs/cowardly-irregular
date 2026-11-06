@@ -313,6 +313,8 @@ var _autogrind_overlay_layer: CanvasLayer = null
 var _autogrind_paused_layer: CanvasLayer = null
 var _autogrind_battle_summaries: Array = []
 var _autogrind_summary: Control = null
+## The stop banner's layer while it is up, so the summary can take the screen from it (_after_the_stop_banner).
+var _grind_stop_banner: CanvasLayer = null
 var _controller_overlay: ControllerOverlay = null
 var _controller_overlay_layer: CanvasLayer = null
 
@@ -7626,6 +7628,10 @@ func _after_the_stop_banner(reason: String) -> void:
 	if InputLockManager:
 		InputLockManager.push_lock("autogrind_summary")
 	await get_tree().create_timer(GRIND_STOP_BANNER_SEC + 0.05, true, false, true).timeout
+	## The banner frees itself on GameLoop's own tween, a different clock: if that tween is held, the summary must not open under it.
+	if is_instance_valid(_grind_stop_banner):
+		_grind_stop_banner.queue_free()
+	_grind_stop_banner = null
 
 
 ## The field stays still under a game-over screen shown on it: re-pushed each frame (a lock is reaped after 10 s), released once a battle owns the screen.
@@ -7674,6 +7680,7 @@ func _show_grind_stop_notification(reason: String) -> void:
 	var layer := CanvasLayer.new()
 	layer.layer = 90
 	add_child(layer)
+	_grind_stop_banner = layer
 
 	var flash := ColorRect.new()
 	flash.color = Color(1.0, 0.95, 0.35, 0.0)

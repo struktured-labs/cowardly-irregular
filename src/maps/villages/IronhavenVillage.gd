@@ -272,7 +272,16 @@ func _setup_npcs() -> void:
 	npcs.add_child(magda)
 
 	# War Veteran Koss (mysterious)
-	var koss = _create_npc("War Veteran Koss", "guard", Vector2(20 * TILE_SIZE,12 * TILE_SIZE), [
+	# After Mordaine: the news reaches Ironhaven. Reads every flag namespace, like the spine gate.
+	var _chancellor_gs = get_node_or_null("/root/GameState")
+	var _chancellor_gone: bool = _chancellor_gs != null and _chancellor_gs.is_story_flag_set("world1_mordaine_defeated")
+	var _koss_after_chancellor := [
+		"So she's gone. The Chancellor.",
+		"Twenty years I took orders from a desk I never saw. Turns out it was hers.",
+		"And now you've opened the southern gate for real. I can hear the saxophone from here.",
+		"Bring earplugs. I said that already. I'm saying it louder now."
+	]
+	var koss = _create_npc("War Veteran Koss", "guard", Vector2(20 * TILE_SIZE,12 * TILE_SIZE), _koss_after_chancellor if _chancellor_gone else [
 		"I've seen what lies beyond the southern gate.",
 		"Concrete. Streetlights. ...Saxophone music.",
 		"The future is WEIRD.",

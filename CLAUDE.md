@@ -121,7 +121,7 @@ Each starter job has a free 0-cost AP action available in the command menu:
 
 - Mordaine's intro plays `world1_mordaine_intro` cutscene before battle (CastleHarmonia extends DragonCave)
 - Defeat sets BOTH `dungeon_flags["world1_mordaine_defeated"]` AND `game_constants["cutscene_flag_world1_mordaine_defeated"]` via the `defeat_cutscene_flags` bridge declared in the subclass
-- Sprite is `shadow_knight` placeholder (tier T1) pending artist sheet
+- Battle sprite: the `chancellor_mordaine` entry in `data/sprite_manifest.json` `monster_sheets`, the artist's own sheet since 2026-07-25 (`caf43710f`). Read its tier and `source` there, not here. This line said "`shadow_knight` placeholder (tier T1) pending artist sheet" until 2026-11-06, three and a half months after the art shipped; `shadow_knight` is a separate W1 monster, and nothing routes Mordaine to it
 - Castle Harmonia placed on the W1 overworld (revealed post-Rat-King; tick 335 dual-namespace gate) + reachable via TeleportMenu
 
 ## Autobattle System

@@ -125,9 +125,9 @@ func test_command_menu_zero_valid_actions_ends_turn() -> void:
 	# softlocking the selection phase. Must defer like the autobattle
 	# zero-valid path does.
 	var src: String = FileAccess.get_file_as_string("res://src/battle/BattleCommandMenu.gd")
-	var anchor: int = src.find("advances with %d actions!")
-	assert_gt(anchor, -1, "advance commit site must exist")
-	var window: String = src.substr(anchor, 700)
+	var anchor: int = src.find("No valid actions left")
+	assert_gt(anchor, -1, "zero-valid-actions branch must exist")
+	var window: String = src.substr(anchor, 200)
 	assert_true(window.contains("player_defer()"),
 		"zero-valid-actions branch must defer or the selection phase softlocks")
 
