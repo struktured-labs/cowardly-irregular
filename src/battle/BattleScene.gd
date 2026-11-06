@@ -487,6 +487,10 @@ func _ready() -> void:
 	_create_speed_indicator()
 	_build_weather_layer()
 
+	# Only BattleScene.tscn has these nodes; the bare script (unit tests) stops before it can hear or start a battle.
+	if btn_attack == null:
+		return
+
 	# Connect to BattleManager signals (CTB system)
 	BattleManager.battle_started.connect(_on_battle_started)
 	BattleManager.battle_ended.connect(_on_battle_ended)
@@ -546,9 +550,6 @@ func _ready() -> void:
 	if BattleManager.has_signal("boss_gloat_line"):
 		BattleManager.boss_gloat_line.connect(_on_boss_gloat_line)
 
-	# Only BattleScene.tscn has these nodes; the bare script (unit tests) stops here, so it never starts a battle.
-	if btn_attack == null:
-		return
 
 	# Connect button signals (for legacy mode)
 	btn_attack.pressed.connect(_on_attack_pressed)

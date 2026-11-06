@@ -64,12 +64,21 @@ func test_the_real_battle_scene_still_starts_its_battle() -> void:
 		"the real BattleScene must still load its default autobattle script")
 
 
-func test_leaving_the_tree_disconnects_every_battle_manager_signal() -> void:
+## A bare scene has no UI to answer with, so a leaked battle_ended from another file must not reach it (main 22467).
+func test_a_bare_battle_scene_hears_no_battle_manager_signal() -> void:
 	var scene: Node = load("res://src/battle/BattleScene.gd").new()
+	add_child_autofree(scene)
+	await get_tree().process_frame
+	assert_not_null(scene._command_menu, "CONTROL: _ready ran far enough to build what the tests use")
+	assert_eq(_connections_to(scene), 0, "a bare BattleScene listens to BattleManager, so a stray victory runs its handlers on null UI")
+
+
+func test_leaving_the_tree_disconnects_every_battle_manager_signal() -> void:
+	var scene: Node = load("res://src/battle/BattleScene.tscn").instantiate()
 	add_child(scene)
 	await get_tree().process_frame
 	var live := _connections_to(scene)
-	assert_gt(live, 10, "CONTROL: the bare _ready connected BattleManager signals before stopping (%d)" % live)
+	assert_gt(live, 10, "CONTROL: the real _ready connected BattleManager signals (%d)" % live)
 	remove_child(scene)
 	var left := _connections_to(scene)
 	scene.free()
