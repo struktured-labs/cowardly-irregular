@@ -4,6 +4,16 @@ class_name BattleUIManager
 ## BattleUIManager - Handles battle UI status display (party/enemy status boxes, action buttons, log)
 ## Extracted from BattleScene to reduce god class complexity
 
+## True when the job IS the name (W1 calls the party by class title), so a label says it once; every surface asks this.
+static func job_is_name(member_name: String, job_name: String) -> bool:
+	return member_name.strip_edges().to_lower() == job_name.strip_edges().to_lower()
+
+
+## "Name (Job Lv.N)", with the job said once when it IS the name: "Fighter (Lv.14)".
+static func name_with_job(member_name: String, job_name: String, level_text: String = "") -> String:
+	var inner: String = level_text.strip_edges() if job_is_name(member_name, job_name) else job_name + level_text
+	return member_name if inner == "" else "%s (%s)" % [member_name, inner]
+
 const CharacterPortraitClass = preload("res://src/ui/CharacterPortrait.gd")
 
 var _scene  # Reference to parent BattleScene (untyped to avoid circular dependency)
@@ -298,7 +308,7 @@ func _create_character_status_box(idx: int, member: Combatant) -> VBoxContainer:
 	if auto_indicator == "" and "player_trust" in member and member.player_trust:
 		auto_indicator = " [T]"
 		tag_color = Color(0.4, 0.85, 1.0)
-	name_label.text = "%s (%s)%s" % [member.combatant_name, job_name, auto_indicator]
+	name_label.text = name_with_job(member.combatant_name, job_name) + auto_indicator
 	name_label.add_theme_font_size_override("font_size", TextScale.scaled(15))
 	if auto_indicator != "":
 		name_label.add_theme_color_override("font_color", tag_color)
@@ -416,7 +426,7 @@ func _update_member_status(idx: int, member: Combatant) -> void:
 			auto_indicator = " [T]"
 			name_color = Color(0.4, 0.85, 1.0)
 
-		name_label.text = "%s (%s%s)%s" % [member.combatant_name, job_name, level_text, auto_indicator]
+		name_label.text = name_with_job(member.combatant_name, job_name, level_text) + auto_indicator
 		# Color the name based on autobattle state
 		if auto_indicator != "":
 			name_label.add_theme_color_override("font_color", name_color)
