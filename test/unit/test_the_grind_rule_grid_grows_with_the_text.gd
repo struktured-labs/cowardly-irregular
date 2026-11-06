@@ -141,15 +141,44 @@ func test_no_grid_text_spills_sideways_at_any_preset() -> void:
 				continue
 			var cell: Control = pair["cell"]
 			if cell != null and str(cell.get_meta("cell_type")) in ["condition", "action"]:
-				var wrapped: float = fnt.get_multiline_string_size(l.text, HORIZONTAL_ALIGNMENT_CENTER, l.size.x, px, -1, _break_flags_of(l)).x
-				if wrapped > l.size.x + 1.0:
-					bad.append("%sx: '%s' wraps to %.0f in %.0f" % [scale, l.text.replace("\n", "/"), wrapped, l.size.x])
+				## Wrapped at the CELL's inner width, never l.size.x: that is the width that clamps up, and it always "fits" itself.
+				var inner: float = _cell_inner()
+				var wrapped: float = fnt.get_multiline_string_size(l.text, HORIZONTAL_ALIGNMENT_CENTER, inner, px, -1, _break_flags_of(l)).x
+				if wrapped > inner + 1.0:
+					bad.append("%sx: '%s' wraps to %.0f in %.0f" % [scale, l.text.replace("\n", "/"), wrapped, inner])
 			elif cell != null:
 				var room: float = cell.custom_minimum_size.x - l.position.x
 				var w: float = fnt.get_string_size(l.text, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x
 				if w > room + 1.0:
 					bad.append("%sx: '%s' is %.0f wide with %.0f of room" % [scale, l.text, w, room])
 	assert_eq(bad, [], "grid text must stay inside its box: %s" % [bad])
+
+
+## The cell's inner width, read off the script (CELL_WIDTH - 12, the cell labels' authored inset), not off any label.
+func _cell_inner() -> float:
+	var w: int = int((load(GE) as GDScript).get_script_constant_map().get("CELL_WIDTH", -1))
+	assert_gt(w, 0, "FLOOR: CELL_WIDTH must resolve")
+	return float(w - 12)
+
+
+## The BUILT label keeps the cell's width. A Label sized while not yet wrapping clamps to its whole line (201 px in a 108 px
+## cell at 1.5x, .781's red), and every arm that measures at the label's own width agrees with that clamp.
+func test_every_built_cell_label_keeps_the_cell_width() -> void:
+	var bad: Array = []
+	var judged := 0
+	for scale in _presets():
+		var ed: Control = await _editor_at(float(scale))
+		var inner := _cell_inner()
+		for pair in _grid_labels(ed):
+			var cell: Control = pair["cell"]
+			if cell == null or not (str(cell.get_meta("cell_type")) in ["condition", "action"]):
+				continue
+			var l: Label = pair["label"] as Label
+			judged += 1
+			if l.size.x > inner + 1.0:
+				bad.append("%sx: '%s' is %.0f wide in a %.0f cell" % [scale, l.text.replace("\n", "/"), l.size.x, inner])
+	assert_gt(judged, 20, "CONTROL: %d cell labels measured" % judged)
+	assert_eq(bad, [], "a cell label clamped wider than its cell: %s" % [bad])
 
 
 ## The floor holds only in its own direction: no preset renders a cell under the authored 44, and the height never shrinks as the setting rises.
