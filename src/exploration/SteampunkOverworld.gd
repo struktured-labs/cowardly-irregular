@@ -618,14 +618,14 @@ func _setup_npcs() -> void:
 	])
 	npcs.add_child(sprocket)
 
-	# === Cogsworth - plaza clocktower keeper ===
-	var cogsworth = _create_npc("Cogsworth", "guard", Vector2(22 * MAP_SCALE * TILE_SIZE, 17 * MAP_SCALE * TILE_SIZE), [
+	# === Pendle - plaza clocktower keeper (not Cogsworth: that is Brasston's clockwork cat) ===
+	var pendle = _create_npc("Pendle", "guard", Vector2(22 * MAP_SCALE * TILE_SIZE, 17 * MAP_SCALE * TILE_SIZE), [
 		"The fountain plaza runs like clockwork. Literally.",
 		"Every gear, every pipe, every cobblestone — synchronized.",
 		"I maintain the central clock. If it stops, Brasston stops.",
 		"Don't touch the gears. I mean it."
 	])
-	npcs.add_child(cogsworth)
+	npcs.add_child(pendle)
 
 	# === Ember - park area, southern gardens ===
 	var ember = _create_npc("Ember", "villager", Vector2(6 * MAP_SCALE * TILE_SIZE, 35 * MAP_SCALE * TILE_SIZE), [
