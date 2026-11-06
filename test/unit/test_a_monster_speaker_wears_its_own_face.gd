@@ -111,8 +111,11 @@ func test_a_namesake_still_shares_the_name() -> void:
 	var still := {}
 	for k in _offenders():
 		still[_offenders()[k]] = true
+	var gone: Array = []
 	for s in NAMESAKES:
-		assert_true(still.has(s), "'%s' no longer wears a stock face; drop it from NAMESAKES (%s)" % [s, NAMESAKES[s]])
+		if not still.has(s):
+			gone.append(s)
+	assert_eq(gone, [], "a namesake that no longer wears a stock face comes off NAMESAKES")
 
 
 func test_the_goblin_remembers_its_face() -> void:
