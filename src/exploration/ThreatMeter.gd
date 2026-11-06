@@ -14,6 +14,11 @@ var _spawner_ref: Node  # MonsterSpawner
 const DETECTION_RANGE: float = 300.0  # Start showing when monster within this range
 const BAR_WIDTH: float = 80.0
 const BAR_HEIGHT: float = 6.0
+const ICON_FONT_SIZE := 12
+const ICON_BOX := 16  ## the authored "!" box; it grows by the Text Size factor, upward from its authored bottom edge
+const ICON_BOTTOM_GAP: float = 20.0  ## the icon's bottom sits this far above the screen's bottom edge at every size
+
+var _vp_size := Vector2(1280, 720)
 
 
 func setup(parent: Node, player: Node2D, spawner: Node) -> void:
@@ -28,6 +33,7 @@ func setup(parent: Node, player: Node2D, spawner: Node) -> void:
 	var vp_size = parent.get_viewport().get_visible_rect().size
 	if vp_size.x == 0:
 		vp_size = Vector2(1280, 720)
+	_vp_size = vp_size
 
 	var cx = vp_size.x / 2.0
 
@@ -35,9 +41,9 @@ func setup(parent: Node, player: Node2D, spawner: Node) -> void:
 	_icon_label = Label.new()
 	_icon_label.text = "!"
 	_icon_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_icon_label.position = Vector2(cx - 8, vp_size.y - 36)
-	_icon_label.size = Vector2(16, 16)
-	_icon_label.add_theme_font_size_override("font_size", 12)
+	_icon_label.add_theme_font_size_override("font_size", ICON_FONT_SIZE)
+	TextScale.apply(_icon_label)
+	_layout_icon()
 	_icon_label.add_theme_color_override("font_color", Color(0.9, 0.3, 0.2, 0.0))
 	_icon_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_canvas.add_child(_icon_label)
@@ -57,6 +63,26 @@ func setup(parent: Node, player: Node2D, spawner: Node) -> void:
 	_bar_fill.size = Vector2(0, BAR_HEIGHT)
 	_bar_fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_canvas.add_child(_bar_fill)
+	if not GameState.text_size_scale_changed.is_connected(_on_text_size_changed):
+		GameState.text_size_scale_changed.connect(_on_text_size_changed)
+
+
+## The "!" box scales with the font and grows UPWARD, so a larger icon never lands on the bar below it.
+func _layout_icon() -> void:
+	var box := float(TextScale.scaled(ICON_BOX))
+	_icon_label.size = Vector2(box, box)
+	_icon_label.position = Vector2(_vp_size.x / 2.0 - box / 2.0, _vp_size.y - ICON_BOTTOM_GAP - box)
+
+
+func _on_text_size_changed(_scale: float) -> void:
+	if _icon_label == null:
+		return
+	TextScale.apply(_icon_label)
+	_layout_icon()
+
+func _exit_tree() -> void:
+	if GameState.text_size_scale_changed.is_connected(_on_text_size_changed):
+		GameState.text_size_scale_changed.disconnect(_on_text_size_changed)
 
 
 func update(player_pos: Vector2) -> void:
