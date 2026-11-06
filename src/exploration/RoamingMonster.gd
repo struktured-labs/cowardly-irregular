@@ -589,8 +589,8 @@ func _repel_active() -> bool:
 	return es != null and int(es.repel_steps_remaining) > 0
 
 
-## Same predicate the player sprite uses: cutscene state, an input lock, or the dialogue flag.
-func _cannot_step(who: Node) -> bool:
+## Same predicate the player sprite uses (cutscene, input lock, dialogue flag); `who` is UNTYPED so a freed player reaches the guard.
+func _cannot_step(who) -> bool:
 	if who == null or not is_instance_valid(who):
 		return false
 	if who.has_method("_can_move"):

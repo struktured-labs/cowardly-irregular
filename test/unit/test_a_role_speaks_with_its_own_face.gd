@@ -2,13 +2,13 @@ extends GutTest
 
 ## Nine NPC roles BORROW another role's walk sheet (a knight walks as a soldier, the inn's maid as a young woman) and
 ## each has a portrait drawn for the role itself. The dialogue face followed the borrowed sheet, so twelve named NPCs
-## spoke with someone else's face and nine portraits were never seen: Tilly the maid, Sir Corvath, Pilgrim Lael, Aldric.
+## spoke with someone else's face and nine portraits were never seen: Tilly the maid, Sir Corvath, Pilgrim Lael, Silas (then named Aldric).
 ## A role with its own portrait speaks with it; an explicit sprite override still decides the face (Phil's rule).
 
 const NpcScript := preload("res://src/exploration/OverworldNPC.gd")
 const Dialogue := preload("res://src/cutscene/CutsceneDialogue.gd")
 const NAMED := {
-	"Tilly": "maid", "Sir Corvath": "knight", "Pilgrim Lael": "pilgrim", "Aldric": "hooded_mage", "Vex": "nervous",
+	"Tilly": "maid", "Sir Corvath": "knight", "Pilgrim Lael": "pilgrim", "Silas": "hooded_mage", "Vex": "nervous",
 	"Gethena": "herbalist", "Jend": "apprentice", "Osric": "bartender", "Kael": "adventurer",
 }
 
