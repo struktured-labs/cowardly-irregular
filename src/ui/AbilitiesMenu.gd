@@ -410,7 +410,7 @@ func _create_ability_row(ability: Dictionary, index: int) -> Control:
 	if mp_cost > 0:
 		var mp_label = Label.new()
 		mp_label.text = "%d MP" % mp_cost
-		mp_label.position = Vector2(184, 2)  # clears the longest name now the icon moved names 18px right
+		mp_label.position = Vector2(184, 2) * _k  # clears the longest name (the icon moved names 18px right); grows with it
 		mp_label.add_theme_font_size_override("font_size", TextScale.scaled(10))
 		mp_label.add_theme_color_override("font_color", SUBTITLE_COLOR)
 		row.add_child(mp_label)
