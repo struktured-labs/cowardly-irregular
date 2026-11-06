@@ -67,7 +67,7 @@ func _layout(vp_size: Vector2) -> void:
 		var font: Font = lbl.get_theme_font("font")
 		var px: int = lbl.get_theme_font_size("font_size")
 		var text_w: float = font.get_string_size(lbl.text, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x if font else MIN_LABEL.x
-		var box := Vector2(maxf(MIN_LABEL.x, text_w + 8.0), maxf(MIN_LABEL.y, font.get_height(px) if font else 0.0))
+		var box := Vector2(maxf(MIN_LABEL.x, text_w), maxf(MIN_LABEL.y, font.get_height(px) if font else 0.0))  ## a centred Label needs no padding
 		var c: float = clampf(vp_size.x * cfg["anchor_x"] + cfg["offset"].x, 4.0 + text_w * 0.5, vp_size.x - 4.0 - text_w * 0.5)
 		var y: float = vp_size.y * cfg["anchor_y"] + cfg["offset"].y
 		lbl.size = box
