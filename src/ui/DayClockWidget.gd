@@ -31,12 +31,29 @@ func _ready() -> void:
 	layer = 45
 	_dial = Control.new()
 	_dial.name = "DayClockDial"
-	_dial.custom_minimum_size = DIAL_SIZE
-	_dial.size = DIAL_SIZE
 	_dial.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_dial.position = dial_position()
 	_dial.draw.connect(_draw_dial)
 	add_child(_dial)
+	_place_dial()
+	if not GameState.text_size_scale_changed.is_connected(_on_text_size_changed):
+		GameState.text_size_scale_changed.connect(_on_text_size_changed)
+
+
+func _place_dial() -> void:
+	_dial.custom_minimum_size = dial_size()
+	_dial.size = dial_size()
+	_dial.position = dial_position()
+	_dial.queue_redraw()
+
+
+func _on_text_size_changed(_scale: float) -> void:
+	if _dial:
+		_place_dial()
+
+
+func _exit_tree() -> void:
+	if GameState.text_size_scale_changed.is_connected(_on_text_size_changed):
+		GameState.text_size_scale_changed.disconnect(_on_text_size_changed)
 
 
 ## ⛔ IT SAT HALF OFF THE RIGHT EDGE FROM 2026-07-18 UNTIL struktured REPORTED IT. It set a CENTER_TOP
@@ -46,11 +63,23 @@ func _ready() -> void:
 ## just left of the minimap, derived from the minimap's own constants so the two can never overlap.
 const DIAL_SIZE := Vector2(72, 88)
 const DIAL_GAP := 8.0
+const GLYPH_FONT_SIZE := 15
+const BAND_FONT_SIZE := 12
 
 
+## The Text Size factor the whole dial scales by (main 22711: the dial GROWS so its text fits); exactly 1.0 at 100%.
+static func dial_scale() -> float:
+	return float(TextScale.scaled(1000)) / 1000.0
+
+
+static func dial_size() -> Vector2:
+	return DIAL_SIZE * dial_scale()
+
+
+## Derived from the live size every time, so a larger dial grows LEFT, away from the minimap. Nothing may cache it.
 static func dial_position() -> Vector2:
 	var mm: Rect2 = OverworldMinimap.panel_rect()
-	return Vector2(mm.position.x - DIAL_GAP - DIAL_SIZE.x, mm.position.y)
+	return Vector2(mm.position.x - DIAL_GAP - dial_size().x, mm.position.y)
 
 
 func set_outdoor(outdoor: bool) -> void:
@@ -78,19 +107,20 @@ func _process(_delta: float) -> void:
 
 func _draw_dial() -> void:
 	var theme_c: Dictionary = WORLD_THEMES.get(_world, WORLD_THEMES[1])
-	var center := Vector2(36, 36)
+	var k: float = dial_scale()
+	var center := Vector2(36, 36) * k
 	var band: String = GameState.get_time_of_day_name() if GameState.has_method("get_time_of_day_name") else "day"
 	# Face tinted faintly toward the current sky color so the clock agrees with the world
 	var sky: Color = DayNightOverlay.tint_for_phase(fposmod(float(GameState.day_phase), 1.0))
-	_dial.draw_circle(center, 30.0, theme_c["face"])
-	_dial.draw_arc(center, 30.0, 0, TAU, 40, theme_c["ring"], 3.0)
-	_dial.draw_arc(center, 25.0, 0, TAU, 40, Color(sky.r, sky.g, sky.b, 0.35), 2.0)
+	_dial.draw_circle(center, 30.0 * k, theme_c["face"])
+	_dial.draw_arc(center, 30.0 * k, 0, TAU, 40, theme_c["ring"], 3.0 * k)
+	_dial.draw_arc(center, 25.0 * k, 0, TAU, 40, Color(sky.r, sky.g, sky.b, 0.35), 2.0 * k)
 	# Hand: phase 0 at top, sweeping clockwise through the full day
 	var angle: float = fposmod(float(GameState.day_phase), 1.0) * TAU - PI / 2.0
-	_dial.draw_line(center, center + Vector2(cos(angle), sin(angle)) * 22.0, theme_c["ring"].lightened(0.3), 2.5)
-	_dial.draw_circle(center, 3.0, theme_c["ring"])
+	_dial.draw_line(center, center + Vector2(cos(angle), sin(angle)) * 22.0 * k, theme_c["ring"].lightened(0.3), 2.5 * k)
+	_dial.draw_circle(center, 3.0 * k, theme_c["ring"])
 	# Phase glyph inside the face (FontFallbacks makes the emoji real on web)
 	var font := ThemeDB.fallback_font
-	_dial.draw_string(font, Vector2(24, 30), BAND_GLYPH.get(band, "☀"), HORIZONTAL_ALIGNMENT_LEFT, -1, 15, Color.WHITE)
+	_dial.draw_string(font, Vector2(24, 30) * k, BAND_GLYPH.get(band, "☀"), HORIZONTAL_ALIGNMENT_LEFT, -1, TextScale.scaled(GLYPH_FONT_SIZE), Color.WHITE)
 	# Band label under the dial
-	_dial.draw_string(font, Vector2(0, 82), band.capitalize(), HORIZONTAL_ALIGNMENT_CENTER, 72, 12, theme_c["ring"].lightened(0.4))
+	_dial.draw_string(font, Vector2(0, 82) * k, band.capitalize(), HORIZONTAL_ALIGNMENT_CENTER, DIAL_SIZE.x * k, TextScale.scaled(BAND_FONT_SIZE), theme_c["ring"].lightened(0.4))
