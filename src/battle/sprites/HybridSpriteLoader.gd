@@ -292,7 +292,11 @@ static func figure_rect(sheet_path: String) -> Rect2i:
 ## A head-and-shoulders box around the FIGURE, square so every job renders at one aspect.
 ## `ratio` is the fraction of the FIGURE's height the bust keeps (0.55 = head + torso).
 ## Falls back to the old frame-relative crop when the sheet has no opaque pixels to measure.
+## A monster sheet may declare `bust_rect` [x, y, w, h]: a wide boss's figure square is its whole body (storm dragon, .774).
 static func bust_region(sheet_path: String, frame: int, ratio: float) -> Rect2i:
+	var declared := declared_bust_rect(sheet_path)
+	if declared.size.x > 0:
+		return declared
 	var fig := figure_rect(sheet_path)
 	if fig.size.x <= 0 or fig.size.y <= 0:
 		return Rect2i(0, 0, frame, int(float(frame) * ratio))
@@ -302,6 +306,19 @@ static func bust_region(sheet_path: String, frame: int, ratio: float) -> Rect2i:
 	var x: int = clampi(fig.position.x + fig.size.x / 2 - side / 2, 0, frame - side)
 	var y: int = clampi(fig.position.y - headroom, 0, frame - side)
 	return Rect2i(x, y, side, side)
+
+
+## The monster_sheets entry whose path is `sheet_path` and its `bust_rect`, or an empty rect.
+static func declared_bust_rect(sheet_path: String) -> Rect2i:
+	_load_manifest()
+	for id in _monster_manifest:
+		var e = _monster_manifest[id]
+		if e is Dictionary and str(e.get("path", "")) == sheet_path:
+			var r = e.get("bust_rect", [])
+			if r is Array and r.size() == 4:
+				return Rect2i(int(r[0]), int(r[1]), int(r[2]), int(r[3]))
+			return Rect2i()
+	return Rect2i()
 
 
 static func has_artist_sheet(job_id: String) -> bool:

@@ -2141,6 +2141,15 @@ const TRUST_INTERRUPT_WINDOW_SECONDS: float = 1.0
 ## Above this engine scale (and in turbo) there is no window and no offer: the player chose not to watch.
 const TRUST_WINDOW_MAX_SCALE: float = 1.0  # "4x" inclusive (main 21841); one number if he wants it higher
 var _trust_window_pc: Combatant = null
+## The window's own timer, kept so its offer can drain on the clock that closes it.
+var _trust_window_timer: SceneTreeTimer = null
+
+
+## Seconds left in the open trust window, read off the timer that closes it; -1.0 when no window is open.
+func trust_window_time_left() -> float:
+	if _trust_window_timer == null:
+		return -1.0
+	return maxf(0.0, _trust_window_timer.time_left)
 
 
 ## The window is claimed with ui_cancel, which is button index 0 — the SOUTH face. "B" is that face
@@ -2170,7 +2179,7 @@ func trust_window_offered() -> bool:
 ## "BattleScene renders the take-control affordance and captures CANCEL input". The CAPTURE is real
 ## — BattleScene:4964 routes ui_cancel to request_trust_interrupt() and :3250 has the menu watchdog
 ## stand down while the window is open. The RENDER was `pass` in both handlers until 2026-11-05; they now
-## show a TrustTurnPill over the member ("<cancel> Take this turn", a wall-time bar for the window) beside
+## show a TrustTurnPill over the member ("<cancel> Take this turn", a bar draining on the window's own timer) beside
 ## the log line below, and free it on close (controller, cowir-main 21910). (cowir-sfx measured the audio:
 ## `player_turn` fires earlier in the same function.)
 ## If request_trust_interrupt() fired during the window, _trust_window_pc
@@ -2178,11 +2187,16 @@ func trust_window_offered() -> bool:
 ## PLAYER_SELECTING and BattleScene's normal command-menu path picks up.
 func _run_trust_interrupt_window(pc: Combatant) -> void:
 	_trust_window_pc = pc
+	## Kept in _trust_window_timer, the clock the offer's bar reads (trust_window_time_left).
+	var tree: SceneTree = get_tree()
+	var timer: SceneTreeTimer = tree.create_timer(TRUST_INTERRUPT_WINDOW_SECONDS, true, false, true) if tree else null
+	_trust_window_timer = timer
 	trust_interrupt_window_opened.emit(pc, TRUST_INTERRUPT_WINDOW_SECONDS)
 	battle_log_message.emit("[color=cyan]%s: Trusted — press %s to take this turn[/color]" % [pc.combatant_name, _trust_interrupt_token()])
-	var tree: SceneTree = get_tree()
-	if tree:
-		await tree.create_timer(TRUST_INTERRUPT_WINDOW_SECONDS, true, false, true).timeout
+	if timer:
+		await timer.timeout
+	if _trust_window_timer == timer:
+		_trust_window_timer = null
 	# Untrust intervened → early out (state / menu are handled there).
 	if _trust_window_pc != pc:
 		trust_interrupt_window_closed.emit(pc, true)
@@ -2209,6 +2223,7 @@ func request_trust_interrupt() -> bool:
 		return false
 	var pc: Combatant = _trust_window_pc
 	_trust_window_pc = null
+	_trust_window_timer = null  # the window is over now, not when its timer would have run out
 	if "player_trust" in pc:
 		pc.player_trust = false
 	battle_log_message.emit("[color=cyan]%s: Trust released. Take it.[/color]" % pc.combatant_name)
