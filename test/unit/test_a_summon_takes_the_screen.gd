@@ -124,3 +124,16 @@ func test_no_art_no_summon_and_foes_stay_plain() -> void:
 	assert_not_null(scene.get_node_or_null("SignatureTint"), "CONTROL: Firaga still took the stage")
 	assert_null(scene.get_node_or_null("SummonSplash"), "but nothing rose: Firaga has no summon art")
 	Engine.time_scale = saved
+
+
+## A splash raised over another in one frame replaces it by name, so the beat's end can still find and dismiss it.
+func test_a_second_splash_replaces_the_first_by_name() -> void:
+	var scene = await _scene_with_party()
+	var art: Dictionary = BattleSceneClassRef.summon_art_for("summon_ifrit")
+	assert_false(art.is_empty(), "CONTROL: summon_ifrit has art")
+	scene._show_summon_splash(art, 0.5)
+	var first: Node = scene.get_node_or_null("SummonSplash")
+	scene._show_summon_splash(art, 0.5)
+	var second: Node = scene.get_node_or_null("SummonSplash")
+	assert_not_null(second, "the second splash answers to its own name")
+	assert_ne(second, first, "and it is the NEW splash, not the queued first one")

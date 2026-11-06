@@ -80,6 +80,9 @@ func _battle_rows(party: Array) -> Array:
 		typed.append(m)
 	scene.party_members.assign(typed)
 	BattleManager.player_party.assign(typed)
+	# A living foe on the autoload too: an empty enemy_party reads as a won fight to any leaked victory check.
+	var foes: Array[Combatant] = [enemy]
+	BattleManager.enemy_party.assign(foes)
 	var menu = MenuClass.new(scene)
 	return menu.build_command_menu_items_with_targets(party[0])
 

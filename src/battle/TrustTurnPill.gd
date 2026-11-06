@@ -5,8 +5,8 @@ class_name TrustTurnPill
 ## member, with a bar draining for the window. The window was announced by one battle-log line only, and since
 ## .770 it lasts 1.0 WALL second, so a line in a scrolling log was easy to miss.
 ##
-## ⛔ THE BAR DRAINS IN WALL TIME (Time.get_ticks_msec), like the window it shows: a battle-time drain would empty
-## 4x late at engine 0.25 and keep telling the player there was time after the offer had closed.
+## ⛔ THE BAR DRAINS ON THE WINDOW'S OWN TIMER (BattleManager.trust_window_time_left): battle time emptied it 4x late at
+## 0.25, and a private wall-clock deadline drifted from the window whenever frames ran off real time (Movie Maker).
 
 const BASE_FONT_SIZE := 12
 ## Over the speech bubbles (95), under the target highlight (99) and the command menu (100).
@@ -18,12 +18,14 @@ var label: Label
 var _bar: ProgressBar
 var _deadline_ms: int = 0
 var _total_ms: int = 1
+## Returns the window's seconds left (negative once closed). Unset only for a pill built outside a battle.
+var _time_left_source: Callable = Callable()
 
 
 ## Builds the pill under `parent`, above `head` (scene coordinates), clear of every rect in `keep_out`.
-static func show_over(parent: Node, head: Vector2, token: String, seconds: float, keep_out: Array) -> TrustTurnPill:
+static func show_over(parent: Node, head: Vector2, token: String, seconds: float, keep_out: Array, time_left_source: Callable = Callable()) -> TrustTurnPill:
 	var p := TrustTurnPill.new()
-	p.setup(token, seconds)
+	p.setup(token, seconds, time_left_source)
 	parent.add_child(p)
 	var vp: Vector2 = (parent as CanvasItem).get_viewport_rect().size if parent is CanvasItem else Vector2(1280, 720)
 	var size_now: Vector2 = p.get_combined_minimum_size()
@@ -32,7 +34,7 @@ static func show_over(parent: Node, head: Vector2, token: String, seconds: float
 	return p
 
 
-func setup(token: String, seconds: float) -> void:
+func setup(token: String, seconds: float, time_left_source: Callable = Callable()) -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	z_index = Z
 	var box := VBoxContainer.new()
@@ -50,6 +52,7 @@ func setup(token: String, seconds: float) -> void:
 	box.add_child(_bar)
 	_total_ms = maxi(1, int(round(seconds * 1000.0)))
 	_deadline_ms = Time.get_ticks_msec() + _total_ms
+	_time_left_source = time_left_source
 
 
 func _process(_delta: float) -> void:
@@ -57,8 +60,10 @@ func _process(_delta: float) -> void:
 		_bar.value = remaining_fraction()
 
 
-## The share of the window still open, read off the wall clock.
+## The share of the window still open: off the window's own timer when it has one, else off the wall clock.
 func remaining_fraction() -> float:
+	if _time_left_source.is_valid():
+		return clampf(float(_time_left_source.call()) * 1000.0 / float(_total_ms), 0.0, 1.0)
 	return clampf(float(_deadline_ms - Time.get_ticks_msec()) / float(_total_ms), 0.0, 1.0)
 
 
