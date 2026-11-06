@@ -1415,11 +1415,11 @@ func _setup_npcs() -> void:
 				"Pip: *stares at floor* His name was Mr. Biscuit.",
 			])
 		ShopType.BLACK_MAGIC:
-			_create_npc("Aldric", "hooded_mage", Vector2(4, 8), [
-				"Aldric: *browsing* ...no, no, that fire tome is obsolete.",
-				"Aldric: I require something that rhymes with 'CORRUPTED SAVE'.",
-				"Aldric: Don't judge me. Necromancy has excellent DPS.",
-				"Aldric: *glances at you* Well? Keep walking.",
+			_create_npc("Silas", "hooded_mage", Vector2(4, 8), [
+				"Silas: *browsing* ...no, no, that fire tome is obsolete.",
+				"Silas: I require something that rhymes with 'CORRUPTED SAVE'.",
+				"Silas: Don't judge me. Necromancy has excellent DPS.",
+				"Silas: *glances at you* Well? Keep walking.",
 			])
 			_create_npc("Vex", "nervous", Vector2(12, 9), [
 				"Vex: *near the door* I shouldn't be here.",
