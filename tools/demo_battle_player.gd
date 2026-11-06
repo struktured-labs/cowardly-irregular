@@ -224,9 +224,14 @@ func _plan(scene: Node, pc) -> Dictionary:
 	# Heal the lowest ally under 40%, or under 50% once two are that low (a spread hit is coming again).
 	var low_count := party.filter(func(m): return _hp_frac(m) < 0.50).size()
 	var heal_at: float = 0.50 if low_count >= 2 else 0.40
+	# The thin members (max HP under the party median: the Bard and the Mage every run) are kept above 55%; a boss hit takes them from half to KO.
+	var hps: Array = party.map(func(m): return m.max_hp)
+	hps.sort()
+	var median: int = int(hps[hps.size() / 2]) if not hps.is_empty() else 0
 	var hurt = null
 	for m in party:
-		if _hp_frac(m) < heal_at and not _claimed.has(m.get_instance_id()) and (hurt == null or _hp_frac(m) < _hp_frac(hurt)):
+		var at: float = maxf(heal_at, 0.55) if m.max_hp < median else heal_at
+		if _hp_frac(m) < at and not _claimed.has(m.get_instance_id()) and (hurt == null or _hp_frac(m) < _hp_frac(hurt)):
 			hurt = m
 	if hurt != null:
 		var h_idx: int = _bm().player_party.find(hurt)
