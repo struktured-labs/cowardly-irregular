@@ -109,7 +109,7 @@
     "body_sha256": "5e606fbed2046328920ba954108cc645743f4bf6de9337ed87b960909d880161",
     "verdict": "match",
     "reason": "All broad traits\u2014elderly male, balding gray hair, glasses, blue outfit\u2014match.",
-    "who": "Aldric @ ShopInterior.gd [Mortimer]"
+    "who": "Silas @ ShopInterior.gd [Mortimer]"
   },
   "innkeeper|innkeeper": {
     "face_sha256": "e4c97e7e528d16b22fbff8401a21fcadcf669adfc69eff941adc39454f1f6c8f",

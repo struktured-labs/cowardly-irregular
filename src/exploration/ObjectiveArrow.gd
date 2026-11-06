@@ -12,6 +12,8 @@ var _player_ref: Node2D
 var _pulse_time: float = 0.0
 
 const ARROW_MARGIN: float = 60.0
+const ARROW_FONT_SIZE := 14
+const MIN_BOX := Vector2(120, 20)  ## the authored box; it only grows when the scaled text needs it
 const ARROW_COLOR = Color(1.0, 0.85, 0.3)
 const ARROWS = {
 	"up": "^ Objective",
@@ -34,7 +36,8 @@ func setup(parent: Node, player: Node2D) -> void:
 
 	_arrow_label = Label.new()
 	_arrow_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_arrow_label.add_theme_font_size_override("font_size", 14)
+	_arrow_label.add_theme_font_size_override("font_size", ARROW_FONT_SIZE)
+	TextScale.apply(_arrow_label)
 	_arrow_label.add_theme_color_override("font_color", ARROW_COLOR)
 	_arrow_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.7))
 	_arrow_label.add_theme_constant_override("shadow_offset_x", 1)
@@ -42,6 +45,8 @@ func setup(parent: Node, player: Node2D) -> void:
 	_arrow_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_arrow_label.visible = false
 	_canvas.add_child(_arrow_label)
+	if not GameState.text_size_scale_changed.is_connected(_on_text_size_changed):
+		GameState.text_size_scale_changed.connect(_on_text_size_changed)
 
 
 func set_target(world_pos: Vector2) -> void:
@@ -90,12 +95,34 @@ func update(player_pos: Vector2) -> void:
 
 	# Position at screen edge
 	var norm_dir = dir.normalized()
-	var edge_x = clampf(vp_size.x / 2.0 + norm_dir.x * (vp_size.x / 2.0 - ARROW_MARGIN), ARROW_MARGIN, vp_size.x - ARROW_MARGIN - 80)
+	var box := box_size()
+	var edge_x = clampf(vp_size.x / 2.0 + norm_dir.x * (vp_size.x / 2.0 - ARROW_MARGIN), ARROW_MARGIN, vp_size.x - ARROW_MARGIN - (box.x - 40.0))  ## the authored 20px right inset at any box width
 	var edge_y = clampf(vp_size.y / 2.0 + norm_dir.y * (vp_size.y / 2.0 - ARROW_MARGIN), ARROW_MARGIN, vp_size.y - ARROW_MARGIN)
 
-	_arrow_label.position = clear_of_hud(Rect2(edge_x, edge_y, 120, 20), _reserved_rects(), vp_size)
-	_arrow_label.size = Vector2(120, 20)
+	_arrow_label.position = clear_of_hud(Rect2(edge_x, edge_y, box.x, box.y), _reserved_rects(), vp_size)
+	_arrow_label.size = box
 	_arrow_label.visible = true
+
+
+## The arrow's box: the widest arrow text at the live font size, never smaller than the authored box.
+func box_size() -> Vector2:
+	var font: Font = _arrow_label.get_theme_font("font") if _arrow_label else null
+	if font == null:
+		return MIN_BOX
+	var px: int = _arrow_label.get_theme_font_size("font_size")
+	var w: float = 0.0
+	for t in ARROWS.values():
+		w = maxf(w, font.get_string_size(str(t), HORIZONTAL_ALIGNMENT_LEFT, -1, px).x)
+	return Vector2(maxf(MIN_BOX.x, w + 8.0), maxf(MIN_BOX.y, font.get_height(px)))
+
+
+func _on_text_size_changed(_scale: float) -> void:
+	TextScale.apply(_arrow_label)
+
+
+func _exit_tree() -> void:
+	if GameState.text_size_scale_changed.is_connected(_on_text_size_changed):
+		GameState.text_size_scale_changed.disconnect(_on_text_size_changed)
 
 
 func _reserved_rects() -> Array:

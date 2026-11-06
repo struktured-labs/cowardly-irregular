@@ -280,7 +280,7 @@ func _create_character_panel(panel_size: Vector2) -> Control:
 
 	var job_name = character.job_display_name()
 	var job_label = Label.new()
-	job_label.text = "Lv %d %s" % [character.job_level, job_name]
+	job_label.text = ("Lv %d" % character.job_level) if BattleUIManager.job_is_name(character.combatant_name, job_name) else ("Lv %d %s" % [character.job_level, job_name])
 	job_label.position = Vector2(12, 26)
 	job_label.add_theme_font_size_override("font_size", 10)
 	job_label.add_theme_color_override("font_color", DISABLED_COLOR)

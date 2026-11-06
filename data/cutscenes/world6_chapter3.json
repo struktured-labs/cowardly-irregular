@@ -169,7 +169,7 @@
                 "speaker": "Calibrant",
                 "text": "You never automated. You never optimized—",
                 "theme": "enemy",
-                "portrait": "mysterious"
+                "portrait": "calibrant"
               },
               {
                 "speaker": "Mage",
@@ -181,7 +181,7 @@
                 "speaker": "Calibrant",
                 "text": "Show me. The script. Your best one.",
                 "theme": "enemy",
-                "portrait": "mysterious"
+                "portrait": "calibrant"
               },
               {
                 "speaker": "Mage",
@@ -193,7 +193,7 @@
                 "speaker": "Calibrant",
                 "text": "You built something better. Out of the ruins of something I built wrong. That's what the system is for. Not challenge. Understanding.",
                 "theme": "enemy",
-                "portrait": "mysterious"
+                "portrait": "calibrant"
               }
             ]
           }
@@ -216,7 +216,7 @@
                 "speaker": "Calibrant",
                 "text": "You ground every world to dust. You over-leveled every boss. You turned every challenge into a formality through sheer, stubborn repetition.",
                 "theme": "enemy",
-                "portrait": "mysterious"
+                "portrait": "calibrant"
               },
               {
                 "speaker": "Cleric",
@@ -228,7 +228,7 @@
                 "speaker": "Calibrant",
                 "text": "I designed the grind to be tedious. As a tradeoff. And you found the friction pleasant.",
                 "theme": "enemy",
-                "portrait": "mysterious"
+                "portrait": "calibrant"
               },
               {
                 "speaker": "Cleric",
@@ -240,7 +240,7 @@
                 "speaker": "Calibrant",
                 "text": "I thought rest was dead time. Wasted time. It isn't. It's the thing that makes the happening make sense.",
                 "theme": "enemy",
-                "portrait": "mysterious"
+                "portrait": "calibrant"
               }
             ]
           }
@@ -263,7 +263,7 @@
                 "speaker": "Calibrant",
                 "text": "You think I can't run out of challenges?",
                 "theme": "enemy",
-                "portrait": "mysterious"
+                "portrait": "calibrant"
               },
               {
                 "speaker": "Rogue",
@@ -275,7 +275,7 @@
                 "speaker": "Calibrant",
                 "text": "The collision bug in the Whispering Cave. The stack overflow in Node Prime. The race condition you used a mutex to solve. You found a glitch in the nothing.",
                 "theme": "enemy",
-                "portrait": "mysterious"
+                "portrait": "calibrant"
               },
               {
                 "speaker": "Rogue",
@@ -287,7 +287,7 @@
                 "speaker": "Calibrant",
                 "text": "Of course you did. Why would you stop? Why would you ever stop?",
                 "theme": "enemy",
-                "portrait": "mysterious"
+                "portrait": "calibrant"
               }
             ]
           }
@@ -310,7 +310,7 @@
                 "speaker": "Calibrant",
                 "text": "You played every battle yourself. You never automated. You did it the hard way, every time.",
                 "theme": "enemy",
-                "portrait": "mysterious"
+                "portrait": "calibrant"
               },
               {
                 "speaker": "Fighter",
@@ -322,7 +322,7 @@
                 "speaker": "Calibrant",
                 "text": "But you've won. There are no more moments like that.",
                 "theme": "enemy",
-                "portrait": "mysterious"
+                "portrait": "calibrant"
               },
               {
                 "speaker": "Fighter",
@@ -334,7 +334,7 @@
                 "speaker": "Calibrant",
                 "text": "I have not been present in a very long time. Always anticipating. Always behind the monitor. I don't know if I remember how.",
                 "theme": "enemy",
-                "portrait": "mysterious"
+                "portrait": "calibrant"
               },
               {
                 "speaker": "Fighter",
@@ -365,7 +365,7 @@
                 "speaker": "Calibrant",
                 "text": "Nobody plays a game to be measured. They play because something in the playing is worth the playing.",
                 "theme": "enemy",
-                "portrait": "mysterious"
+                "portrait": "calibrant"
               }
             ]
           }

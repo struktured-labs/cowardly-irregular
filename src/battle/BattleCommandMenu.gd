@@ -203,6 +203,7 @@ func show_win98_command_menu(combatant: Combatant) -> void:
 	_scene.active_win98_menu.item_selected.connect(_on_win98_menu_selection)
 	_scene.active_win98_menu.menu_closed.connect(_on_win98_menu_closed.bind(_scene.active_win98_menu))
 	_scene.active_win98_menu.actions_submitted.connect(_on_win98_actions_submitted)
+	_scene.active_win98_menu.turnless_row_activated.connect(_on_win98_turnless_row)
 	_scene.active_win98_menu.defer_requested.connect(_on_win98_defer_requested)
 	_scene.active_win98_menu.go_back_requested.connect(_on_win98_go_back_requested)
 	## Tap-vs-hold on Auto (struktured 2026-10-03): the menu has no scene access, so it emits the
@@ -511,21 +512,24 @@ func build_command_menu_items_with_targets(combatant: Combatant) -> Array:
 			"label": "All-Out Attack",
 			"tooltip": "All party members strike together (costs 1 AP each)",
 			"data": {"group_type": "all_out_attack"},
-			"reject_reason": all_out_reason
+			"reject_reason": all_out_reason,
+			"commits_alone": true,
 		})
 		group_items.append({
 			"id": "group_combo_magic",
 			"label": "Combo Magic",
 			"tooltip": combo_tooltip,
 			"data": {"group_type": "combo_magic"},
-			"reject_reason": combo_reason
+			"reject_reason": combo_reason,
+			"commits_alone": true,
 		})
 		group_items.append({
 			"id": "group_limit",
 			"label": "Limit Break",
 			"tooltip": "Ultimate combined assault — requires 4 AP from all members",
 			"data": {"group_type": "limit_break"},
-			"reject_reason": limit_reason
+			"reject_reason": limit_reason,
+			"commits_alone": true,
 		})
 		# Formation Special — unlocked by specific party job compositions
 		var formation = _detect_formation(participants)
@@ -542,7 +546,8 @@ func build_command_menu_items_with_targets(combatant: Combatant) -> Array:
 				"label": formation["name"],
 				"tooltip": formation["tooltip"],
 				"data": {"group_type": "formation", "formation_id": formation["id"]},
-				"reject_reason": formation_reason
+				"reject_reason": formation_reason,
+				"commits_alone": true,
 			})
 		items.append({
 			"id": "group_menu",
@@ -640,8 +645,9 @@ func build_command_menu_items_with_targets(combatant: Combatant) -> Array:
 	items.append({
 		"id": "cycle_formation",
 		"label": "Formation: %s" % _scene.FORMATION_NAMES[_scene.current_formation],
-		"tooltip": "Reposition the party. Costs no turn — the menu reopens.",
+		"tooltip": "Reposition the party. Confirm or Advance cycles it. Costs no turn and is not queued.",
 		"data": null,
+		"turnless": true,
 	})
 
 	return items
@@ -1283,13 +1289,14 @@ func _on_win98_menu_selection(item_id: String, item_data: Variant) -> void:
 			_scene._update_ui()
 		return
 
-	# Formation costs no turn, so the menu must come back or the turn is left with no input
-	# surface. Deferred for the same re-entrancy reason as the Trust OFF path above.
+	# Formation costs no turn. A lone selection still calls cycle_formation(), the same function as F.
 	if item_id == "cycle_formation":
 		if _scene.has_method("cycle_formation"):
 			_scene.cycle_formation()
-		if current:
+		if current and (_scene.active_win98_menu == null or not is_instance_valid(_scene.active_win98_menu)):
 			call_deferred("show_win98_command_menu", current)
+		elif _scene.active_win98_menu and is_instance_valid(_scene.active_win98_menu) and _scene.active_win98_menu.has_method("rename_item"):
+			_scene.active_win98_menu.rename_item("cycle_formation", "Formation: %s" % _scene.FORMATION_NAMES[_scene.current_formation])
 		return
 
 	# Unreachable via the menu since struktured's 2026-10-03 ruling removed the Auto Rules
@@ -1527,9 +1534,25 @@ func _on_win98_actions_submitted(actions: Array) -> void:
 			print("[CMD MEM] %s -> item_menu / %s (advance)" % [current.combatant_name, current.last_item_selection])
 
 	# Convert menu actions to battle actions. Rows with no picker (Cleave, Channel, Mega Potion) resolve here the same way a single confirm does.
+	# A formation cycle is not an action: applying it here used to drop it, and a queue of only those rows deferred the turn.
+	# A formation special is the party's move. One launch, never a personal Advance slot, and never stacked with attacks.
 	var alive_enemies := get_alive_enemies()
 	var battle_actions: Array[Dictionary] = []
+	var formation_cycles := 0
+	var solo_group: Dictionary = {}
+	var convertible: Array = []
 	for action in actions:
+		var raw_id := str(action.get("id", ""))
+		if raw_id == "cycle_formation":
+			formation_cycles += 1
+		elif raw_id.begins_with("group_") and action.get("data", null) is Dictionary:
+			if solo_group.is_empty():
+				solo_group = action
+		else:
+			convertible.append(action)
+	for _i in formation_cycles:
+		_cycle_formation_in_place()
+	for action in convertible:
 		var action_id: String = action.get("id", "")
 		var action_data = action.get("data", null)
 
@@ -1585,15 +1608,48 @@ func _on_win98_actions_submitted(actions: Array) -> void:
 					battle_actions.append({"type": "item", "item_id": item_id, "targets": resolved_item})
 
 	if battle_actions.size() > 0:
+		if not solo_group.is_empty():
+			_scene.log_message("[color=gray]The party move stays out of this queue — Confirm it on its own.[/color]")
 		_scene.log_message("[color=yellow]%s advances with %d actions![/color]" % [current.combatant_name, battle_actions.size()])
 		_scene.show_brave_quip(current, battle_actions.size())
 		BattleManager.player_advance(battle_actions)
 		_scene._update_ui()
+	elif not solo_group.is_empty():
+		var group_data: Dictionary = solo_group.get("data", {})
+		var group_type := str(group_data.get("group_type", "all_out_attack"))
+		var formation_id := str(group_data.get("formation_id", ""))
+		var label := formation_id.replace("_", " ").capitalize() if group_type == "formation" else group_type.replace("_", " ").capitalize()
+		_scene.log_message("[color=cyan]★ %s initiated! ★[/color]" % label)
+		BattleManager.player_group_attack(group_type, formation_id)
+		_scene._update_ui()
+	elif formation_cycles > 0:
+		if current:
+			call_deferred("_reopen_command_menu", current)
 	else:
 		# All queued actions failed conversion — end the turn as a defer or selection softlocks (mirrors the autobattle zero-valid fallback)
 		_scene.log_message("[color=gray]No valid actions left — %s defers.[/color]" % current.combatant_name)
 		BattleManager.player_defer()
 		_scene._update_ui()
+
+
+func _reopen_command_menu(current: Combatant) -> void:
+	if _scene and _scene.has_method("show_win98_command_menu"):
+		_scene.show_win98_command_menu(current)
+	else:
+		show_win98_command_menu(current)
+
+
+func _cycle_formation_in_place() -> void:
+	if _scene and _scene.has_method("cycle_formation"):
+		_scene.cycle_formation()
+	var menu = _scene.active_win98_menu if _scene else null
+	if menu and is_instance_valid(menu) and menu.has_method("rename_item") and _scene:
+		menu.rename_item("cycle_formation", "Formation: %s" % _scene.FORMATION_NAMES[_scene.current_formation])
+
+
+func _on_win98_turnless_row(item_id: String, _item_data: Variant) -> void:
+	if item_id == "cycle_formation":
+		_cycle_formation_in_place()
 
 
 func _on_win98_defer_requested() -> void:

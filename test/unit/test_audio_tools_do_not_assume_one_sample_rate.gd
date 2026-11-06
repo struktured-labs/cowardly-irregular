@@ -48,6 +48,7 @@ const NOT_A_REWRITER := {
 	"gen_pickup_small.sh": "GENERATES pickup_small.ogg from sox synthesis; same",
 	"gen_steam_bed.py": "GENERATES; same",
 	"seam_loop_beds.py": "reads and reports seam figures",
+	"demo_capture.sh": "encodes a DEMO capture of the engine's own mix (Movie Maker AVIs) to mp4; no master is its input or output, and it reads the capture's sample rate rather than assuming one",
 	"soundscape_capture.sh": "encodes a REVIEW capture of the engine's own mix into tmp/soundscape; no master is its input or output, and it passes no -ar",
 	"suno_api.py": "DOWNLOADS a new track",
 	"suno_browser.py": "DOWNLOADS a new track",

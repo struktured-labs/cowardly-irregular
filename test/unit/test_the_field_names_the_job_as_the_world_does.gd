@@ -64,5 +64,6 @@ func test_the_abilities_panel_shows_this_worlds_name() -> void:
 ## Both field-menu job labels (the party row and its in-place refresh) go through the shared helper.
 func test_both_field_menu_job_labels_use_the_helper() -> void:
 	var src := FileAccess.get_file_as_string("res://src/ui/OverworldMenu.gd")
-	assert_eq(src.count("text = member.job_display_name()"), 2, "the party row and its refresh must both ask Combatant.job_display_name")
+	assert_eq(src.count("text = card_job_text(member)"), 2, "the party row and its refresh must both go through card_job_text")
+	assert_eq(src.count("var job_name: String = member.job_display_name()"), 1, "and card_job_text asks Combatant.job_display_name")
 	assert_eq(src.count('job.get("name", "Fighter") if member.job'), 0, "no field job label reads the base name directly")

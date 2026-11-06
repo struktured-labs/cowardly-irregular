@@ -82,13 +82,13 @@ func _build_ui() -> void:
 	_panel.add_child(vbox)
 
 	_title_label = Label.new()
-	_title_label.add_theme_font_size_override("font_size", 16)
+	_title_label.add_theme_font_size_override("font_size", TextScale.scaled(16))
 	_title_label.add_theme_color_override("font_color", Color(0.95, 0.85, 0.5))
 	_title_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	vbox.add_child(_title_label)
 
 	_body_label = Label.new()
-	_body_label.add_theme_font_size_override("font_size", 13)
+	_body_label.add_theme_font_size_override("font_size", TextScale.scaled(13))
 	_body_label.add_theme_color_override("font_color", Color(0.85, 0.82, 0.75))
 	_body_label.autowrap_mode = TextServer.AUTOWRAP_WORD
 	_body_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -96,7 +96,7 @@ func _build_ui() -> void:
 
 	_dismiss_label = Label.new()
 	_dismiss_label.text = "Press any button to dismiss"
-	_dismiss_label.add_theme_font_size_override("font_size", 10)
+	_dismiss_label.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	_dismiss_label.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5, 0.7))
 	_dismiss_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	_dismiss_label.mouse_filter = Control.MOUSE_FILTER_IGNORE

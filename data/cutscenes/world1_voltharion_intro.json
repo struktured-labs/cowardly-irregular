@@ -40,19 +40,19 @@
           "speaker": "Voltharion",
           "text": "FINALLYFINALLYFINALLYFINALLY!!!",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "lightning_dragon"
         },
         {
           "speaker": "Voltharion",
           "text": "Do you KNOW how BORING it is waiting?!",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "lightning_dragon"
         },
         {
           "speaker": "Voltharion",
           "text": "I've been counting milliseconds! 847,293,461 of them! Give or take!",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "lightning_dragon"
         },
         {
           "speaker": "Fighter",
@@ -64,19 +64,19 @@
           "speaker": "Voltharion",
           "text": "SLOW?! SLOW IS FOR CPUS WITH THERMAL THROTTLING!",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "lightning_dragon"
         },
         {
           "speaker": "Voltharion",
           "text": "I run at CLOCK SPEED baby!",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "lightning_dragon"
         },
         {
           "speaker": "Voltharion",
           "text": "Your turn timer starts NOW! Actually it started 3 lines ago! YOU'RE ALREADY BEHIND!",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "lightning_dragon"
         }
       ]
     },

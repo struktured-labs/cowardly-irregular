@@ -47,7 +47,16 @@ func _fixture_stats() -> Dictionary:
 		"rules_authored": 14, "rules_that_fired": 12, "rule_checks": 9999,
 		"per_character_exp": {"Bram": 41230, "Marta": 38110, "Phil": 36500, "Theron": 35980, "Milo": 32500},
 		"achievements_earned_this_session": [],
+		## The "did nothing" rows at their CAP: as many as the Summary shows, each exactly as long as it keeps, in its widest glyph.
+		"rule_noops": _widest_noops(),
 	}
+
+
+func _widest_noops() -> Dictionary:
+	var out := {}
+	for i in SummaryScript.RULE_NOOP_ROWS_MAX:
+		out["W%d" % i + "W".repeat(SummaryScript.RULE_NOOP_REASON_CHARS - 2)] = 9 - i
+	return out
 
 
 func _screen(scale: float, rule: String = "hp_threshold") -> Node:
@@ -127,6 +136,17 @@ func test_no_clipped_value_loses_characters() -> void:
 				cut.append("%s: %dpx of text in a %dpx clipped box" % [_short(l), int(w), int(l.size.x)])
 		assert_gt(clipped, 0, "FLOOR: at %sx no clipped label was found, so nothing was judged" % scale)
 		assert_eq(cut, [], "at %sx Text Size, %d value(s) are CUT, not overflowing: %s" % [scale, cut.size(), str(cut.slice(0, 4))])
+
+
+## CONTROL for the arms below: the cap-width "did nothing" rows really render at every size, or a collision there is never judged.
+func test_the_widest_skip_reasons_are_on_the_summary() -> void:
+	for scale in SettingsMenuScript.TEXT_SIZE_PRESETS:
+		var s: Node = await _screen(float(scale))
+		var found := 0
+		for l in _labels(s, []):
+			if (l as Label).text.contains("W0W"):
+				found += 1
+		assert_eq(found, 1, "at %sx the widest skip reason must be on the Summary exactly once" % scale)
 
 
 func test_no_two_labels_collide_at_any_text_size() -> void:

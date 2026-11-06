@@ -39,6 +39,12 @@ from PIL import Image, ImageChops
 LEVEL = 24
 MIN_MOVED = 0.01
 NOISE_FACTOR = 3.0
+## A NOISE verdict is promoted to MOVED when this share of the frame changed OUTSIDE the shot's own animation (the
+## pixels where its two runs disagree, dilated by NOISE_GROW px). Measured on the .773 recheck: sandrift read NOISE
+## (0.66% vs 0.35% run noise) yet 3714 px (0.40%) of its change lay outside the noise, and at .774 they were the
+## villagers .773 had moved; battle and tavern (noise, 0 changed px) stay SAME. 0.05% leaves an 8x margin under it.
+MIN_STABLE = 0.0005
+NOISE_GROW = 9
 
 
 def delta(a_path, b_path):
@@ -54,7 +60,53 @@ def delta(a_path, b_path):
     return over / (a.size[0] * a.size[1])
 
 
-def verdict(d, noise):
+def where(a_path, b_path):
+    """(pixel count over LEVEL, bbox (x0, y0, x1, y1) inclusive) of the change, or (0, None).
+
+    A share says HOW MUCH moved, never WHERE. Measured on the .772 recheck: three frames read MOVED,
+    and it took hand-made crops to learn that title_screen was 15 px in a 5x6 box at the corner (the
+    version label), tavern_interior the fireplace flame's phase, harmonia_village the pond water.
+    A villager, a sign and a label corner all read as one percentage; a box tells them apart."""
+    a = Image.open(a_path).convert("RGB")
+    b = Image.open(b_path).convert("RGB")
+    if a.size != b.size:
+        return 0, None
+    diff = ImageChops.difference(a, b)
+    mx = ImageChops.lighter(ImageChops.lighter(diff.getchannel(0), diff.getchannel(1)), diff.getchannel(2))
+    mask = mx.point(lambda v: 255 if v > LEVEL else 0)
+    bb = mask.getbbox()
+    if bb is None:
+        return 0, None
+    return mask.histogram()[255], (bb[0], bb[1], bb[2] - 1, bb[3] - 1)
+
+
+def fmt_where(count, bb):
+    if not bb:
+        return ""
+    x0, y0, x1, y1 = bb
+    return f"   {count} px in {x0},{y0}-{x1},{y1} ({x1 - x0 + 1}x{y1 - y0 + 1})"
+
+
+def stable_change(fresh_a, stored, fresh_b):
+    """Share of pixels that changed vs the stored frame OUTSIDE the shot's own animation (A vs B, dilated)."""
+    from PIL import ImageFilter
+    a = Image.open(fresh_a).convert("RGB")
+    s = Image.open(stored).convert("RGB")
+    b = Image.open(fresh_b).convert("RGB")
+    if a.size != s.size or a.size != b.size:
+        return None
+
+    def mask(x, y):
+        d = ImageChops.difference(x, y)
+        m = ImageChops.lighter(ImageChops.lighter(d.getchannel(0), d.getchannel(1)), d.getchannel(2))
+        return m.point(lambda v: 255 if v > LEVEL else 0)
+
+    moving = mask(a, b).filter(ImageFilter.MaxFilter(NOISE_GROW))
+    outside = ImageChops.multiply(mask(a, s), ImageChops.invert(moving))
+    return outside.histogram()[255] / (a.size[0] * a.size[1])
+
+
+def verdict(d, noise, stable=None):
     if d is None or noise is None:
         return "SIZE"
     if d == 0:
@@ -63,6 +115,8 @@ def verdict(d, noise):
         return "MOVED"
     if d >= MIN_MOVED and d > NOISE_FACTOR * noise:
         return "MOVED"
+    if stable is not None and stable >= MIN_STABLE:
+        return "MOVED"   # the change sits where the shot does NOT animate, so its run noise cannot explain it
     return "NOISE"
 
 
@@ -76,7 +130,8 @@ def judge(stored, fa, fb):
             continue
         d = delta(paths[1], paths[0])
         noise = delta(paths[1], paths[2])
-        rows.append((n, verdict(d, noise), d, noise))
+        st = stable_change(paths[1], paths[0], paths[2]) if (d and noise) else None
+        rows.append((n, verdict(d, noise, st), d, noise))
     return rows
 
 
@@ -84,7 +139,44 @@ def fmt(x):
     return "   n/a" if x is None else f"{x:7.2%}"
 
 
+def overlay(fresh, stored, out_dir, name):
+    """Write <name>_mask.png (the fresh frame, every pixel changed vs stored painted red) and <name>_mask_zoom.png
+    (that box padded 40 px, scaled 2x). Returns the red pixel count, or 0 when nothing changed.
+
+    A box names a REGION, never a cause: on the .775 recheck one box overlapped the command panel and the hero
+    sprite, a crop was read as "the panel got wider", and five lanes chased a layout drift that a mask showed was
+    the hero's pose (every red pixel on the sprite, none on the border). Look at what the red sits on."""
+    a = Image.open(fresh).convert("RGB")
+    s = Image.open(stored).convert("RGB")
+    if a.size != s.size:
+        return 0
+    d = ImageChops.difference(a, s)
+    mx = ImageChops.lighter(ImageChops.lighter(d.getchannel(0), d.getchannel(1)), d.getchannel(2))
+    mask = mx.point(lambda v: 255 if v > LEVEL else 0)
+    bb = mask.getbbox()
+    if bb is None:
+        return 0
+    red = Image.new("RGB", a.size, (255, 0, 0))
+    painted = Image.composite(red, a, mask)
+    painted.save(os.path.join(out_dir, name + "_mask.png"))
+    x0, y0, x1, y1 = bb
+    pad = 40
+    box = (max(0, x0 - pad), max(0, y0 - pad), min(a.size[0], x1 + pad), min(a.size[1], y1 + pad))
+    z = painted.crop(box)
+    z.resize((z.width * 2, z.height * 2), Image.NEAREST).save(os.path.join(out_dir, name + "_mask_zoom.png"))
+    return mask.histogram()[255]
+
+
 def main(argv):
+    ov_dir = None
+    if "--overlays" in argv:
+        i = argv.index("--overlays")
+        if i + 1 >= len(argv):
+            print("[pixels] BLOCKED: --overlays needs a directory", file=sys.stderr)
+            return 2
+        ov_dir = argv[i + 1]
+        argv = argv[:i] + argv[i + 2:]
+        os.makedirs(ov_dir, exist_ok=True)
     if len(argv) != 3:
         print(__doc__.split("WHY")[0].strip(), file=sys.stderr)
         return 2
@@ -99,7 +191,12 @@ def main(argv):
         return 2
     print(f"[pixels] {len(rows)} shot(s) · share of pixels over {LEVEL} levels · MOVED = any change when noise is 0, else >= {MIN_MOVED:.0%} and > {NOISE_FACTOR:g}x noise")
     for n, v, d, noise in rows:
-        print(f"  {v:<7} {n:<30} vs stored {fmt(d)}   noise a/b {fmt(noise)}")
+        loc = fmt_where(*where(os.path.join(fa, n + ".png"), os.path.join(stored, n + ".png"))) if v in ("MOVED", "NOISE") else ""
+        print(f"  {v:<7} {n:<30} vs stored {fmt(d)}   noise a/b {fmt(noise)}{loc}")
+        if ov_dir and v in ("MOVED", "NOISE"):
+            k = overlay(os.path.join(fa, n + ".png"), os.path.join(stored, n + ".png"), ov_dir, n)
+            if k:
+                print(f"          mask: {os.path.join(ov_dir, n + '_mask_zoom.png')} ({k} px red: say what they sit ON before naming the change)")
     counts = {}
     for _, v, _, _ in rows:
         counts[v] = counts.get(v, 0) + 1
@@ -138,15 +235,19 @@ def selftest():
     # tiny, DETERMINISTIC: 0.5% changed, identical in both runs (noise 0) -> MOVED. The door-sign case.
     tiny = patch(base, (0, 0, 50, 1), (250, 250, 250))
     put(S, "tiny", base); put(A, "tiny", tiny); put(B, "tiny", tiny)
-    # tiny, NOISY: 0.5% changed, but the runs disagree by 0.3% elsewhere -> under the 1% floor -> NOISE
+    # tiny, the runs disagree ELSEWHERE: 0.5% changed identically in both runs, the animation is a far-off row -> the
+    # change sits outside the animation -> MOVED. This arm read NOISE until .775: the 1% floor excused it, and that is
+    # how sandrift's moved villagers read NOISE at .773 (its water animated, the villagers did not).
     put(S, "tinynoisy", base); put(A, "tinynoisy", tiny); put(B, "tinynoisy", patch(tiny, (0, 99, 30, 100), (0, 250, 0)))
+    # the change sits INSIDE the animation: both runs change the same strip, differently -> the noise explains it -> NOISE
+    put(S, "animoverlap", base); put(A, "animoverlap", patch(base, (0, 0, 50, 2), (250, 0, 0))); put(B, "animoverlap", patch(base, (0, 0, 50, 2), (0, 250, 0)))
     # size: a resized capture
     put(S, "resized", base); put(A, "resized", Image.new("RGB", (100, 90), (40, 80, 120))); put(B, "resized", Image.new("RGB", (100, 90), (40, 80, 120)))
     # missing from one run
     put(S, "gone", base); put(A, "gone", base)
 
     got = {n: (v, d) for n, v, d, _ in judge(S, A, B)}
-    want = {"same": "SAME", "moved": "MOVED", "noisy": "NOISE", "jitter": "SAME", "tiny": "MOVED", "tinynoisy": "NOISE", "resized": "SIZE", "gone": "MISSING"}
+    want = {"same": "SAME", "moved": "MOVED", "noisy": "NOISE", "jitter": "SAME", "tiny": "MOVED", "tinynoisy": "MOVED", "animoverlap": "NOISE", "resized": "SIZE", "gone": "MISSING"}
     for n, w in want.items():
         v = got.get(n, ("absent", None))[0]
         ok = v == w
@@ -156,6 +257,39 @@ def selftest():
     ok = d is not None and abs(d - 0.30) < 1e-9
     fails += 0 if ok else 1; ran += 1
     print(f"  {'ok  ' if ok else 'FAIL'}  the moved block measures exactly 30.00% (got {fmt(d)})")
+    # WHERE: the box and count, exact on fixtures whose geometry is known
+    for name, want_w, label in (("moved", (3000, (0, 0, 99, 29)), "the moved block is located: 3000 px in 0,0-99,29"),
+                                ("tiny", (50, (0, 0, 49, 0)), "a one-row strip is located: 50 px in 0,0-49,0"),
+                                ("same", (0, None), "an identical frame has no box")):
+        got_w = where(os.path.join(A, name + ".png"), os.path.join(S, name + ".png"))
+        ok = got_w == want_w
+        fails += 0 if ok else 1; ran += 1
+        print(f"  {'ok  ' if ok else 'FAIL'}  {label} (got {got_w})")
+    import io, contextlib
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf):
+        main([S, A, B])
+    lines = {ln.split()[1]: ln for ln in buf.getvalue().splitlines() if ln.startswith("  ") and len(ln.split()) > 1}
+    ok = "3000 px in 0,0-99,29 (100x30)" in lines.get("moved", "") and " px in " not in lines.get("same", "x px in ")
+    fails += 0 if ok else 1; ran += 1
+    print(f"  {'ok  ' if ok else 'FAIL'}  the report prints the box on a MOVED row and none on a SAME row")
+    # OVERLAYS: the mask paints exactly the changed pixels red, and only for frames that moved
+    ov = os.path.join(t, "ov")
+    with contextlib.redirect_stdout(io.StringIO()):
+        main([S, A, B, "--overlays", ov])
+    mp = os.path.join(ov, "moved_mask.png")
+    reds = sum(1 for px in Image.open(mp).convert("RGB").getdata() if px == (255, 0, 0)) if os.path.isfile(mp) else -1
+    ok = reds == 3000
+    fails += 0 if ok else 1; ran += 1
+    print(f"  {'ok  ' if ok else 'FAIL'}  the moved frame's mask paints exactly its 3000 changed px red (got {reds})")
+    ok = not os.path.exists(os.path.join(ov, "same_mask.png"))
+    fails += 0 if ok else 1; ran += 1
+    print(f"  {'ok  ' if ok else 'FAIL'}  a SAME frame gets no mask")
+    with contextlib.redirect_stderr(io.StringIO()):
+        rc = main([S, A, B, "--overlays"])
+    ok = rc == 2
+    fails += 0 if ok else 1; ran += 1
+    print(f"  {'ok  ' if ok else 'FAIL'}  --overlays without a directory BLOCKS (exit {rc})")
     rc = main([S, A, os.path.join(t, "nowhere")])
     ok = rc == 2
     fails += 0 if ok else 1; ran += 1

@@ -220,6 +220,11 @@ func _build_ui() -> void:
 		if panel_h > max_h:
 			row_h = maxf(18.0, (max_h - head_h - badge_header_h - badge_row_h - 50.0) / maxf(rows_per_col, 1))
 			panel_h = head_h + rows_per_col * row_h + badge_header_h + badge_row_h + 50.0
+		## At the 18 px floor the rule notes pushed ACHIEVEMENTS onto the continue prompt (2.0x); they give way first.
+		var two_col: bool = rows_per_col < stats_data.size()
+		while panel_h > max_h and _drop_last_noop_row(stats_data):
+			rows_per_col = int(ceil(stats_data.size() / 2.0)) if two_col else stats_data.size()
+			panel_h = head_h + rows_per_col * row_h + badge_header_h + badge_row_h + 50.0
 	panel_h = min(panel_h, max_h)
 	var col_w: float = panel_w if rows_per_col >= stats_data.size() else (panel_w - 20.0) / 2.0
 	## ⛔ THE ROW FONT FOLLOWS THE ROW. row_h shrinks (floor 18) when a long session will not fit the
@@ -301,6 +306,13 @@ func _build_ui() -> void:
 		if s.has("fit_items"):
 			val.text = _fit_items(val, s["fit_items"], box_w)
 			val.size = Vector2(box_w, _grew(20.0))
+		if s.has("fit_reason"):
+			var font: Font = lbl.get_theme_font("font")
+			## The value's box shrinks to its text, so the reason gets the room up to the drawn value, not up to an empty box.
+			var val_w: float = minf(box_w, ceilf(font.get_string_size(val.text, HORIZONTAL_ALIGNMENT_LEFT, -1, stats_px).x) + 2.0) if font else box_w
+			val.position.x += box_w - val_w
+			val.size = Vector2(val_w, _grew(20.0))
+			lbl.text = fit_noop_reason(str(s["fit_reason"]), font, stats_px, val.position.x - _grew(8.0) - lbl.position.x)
 
 	y = head_h + rows_per_col * row_h
 
@@ -422,6 +434,16 @@ const RULE_NOOP_ROWS_MAX := 3
 const RULE_NOOP_REASON_CHARS := 36
 
 
+## Too long for the row: drop the generic action prefix ("Member Casts: ") before cutting, so the named spell survives.
+static func noop_reason_label(reason: String) -> String:
+	if reason.length() <= RULE_NOOP_REASON_CHARS:
+		return reason
+	var at := reason.find(": ")
+	if at > 0 and reason.length() - (at + 2) <= RULE_NOOP_REASON_CHARS:
+		return reason.substr(at + 2)
+	return reason.substr(0, RULE_NOOP_REASON_CHARS - 1) + "…"
+
+
 ## A rule that fired and changed nothing (no potions, a silenced healer) counted as fired above; these rows say what stopped it.
 func _rule_noop_rows() -> Array:
 	var noops: Dictionary = _stats.get("rule_noops", {})
@@ -429,11 +451,39 @@ func _rule_noop_rows() -> Array:
 	reasons.sort_custom(func(a, b): return int(noops[a]) > int(noops[b]))
 	var rows: Array = []
 	for reason in reasons.slice(0, RULE_NOOP_ROWS_MAX):
-		var text: String = str(reason)
-		if text.length() > RULE_NOOP_REASON_CHARS:
-			text = text.substr(0, RULE_NOOP_REASON_CHARS - 1) + "…"
-		rows.append({"label": "  " + text, "value": "did nothing ×%d" % int(noops[reason]), "color": BAD_COLOR})
+		var text: String = noop_reason_label(str(reason))
+		rows.append({"label": "  " + text, "value": "did nothing ×%d" % int(noops[reason]), "color": BAD_COLOR, "fit_reason": str(reason)})
 	return rows
+
+
+## Fits a reason, indented, into max_w in the row's own font: the generic "Action: " prefix goes first, then the tail.
+static func fit_noop_reason(reason: String, font: Font, px: int, max_w: float) -> String:
+	if font == null:
+		return "  " + noop_reason_label(reason)
+	var fits := func(t: String) -> bool: return font.get_string_size("  " + t, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x <= max_w
+	if fits.call(reason):
+		return "  " + reason
+	var base := reason
+	var at := reason.find(": ")
+	if at > 0:
+		base = reason.substr(at + 2)
+	for n in range(base.length(), 0, -1):
+		var t: String = base if n == base.length() else base.substr(0, n) + "…"
+		if fits.call(t):
+			return "  " + t
+	return "  …"
+
+
+## Removes the last rule-note row while more than one is left: the most frequent reason always stays.
+static func _drop_last_noop_row(stats_data: Array) -> bool:
+	var at: Array = []
+	for i in stats_data.size():
+		if stats_data[i].has("fit_reason"):
+			at.append(i)
+	if at.size() <= 1:
+		return false
+	stats_data.remove_at(at[at.size() - 1])
+	return true
 
 
 ## Only flag the case that is actually a problem: rules exist, they were evaluated many times, and

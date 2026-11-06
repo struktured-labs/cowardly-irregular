@@ -40,19 +40,19 @@
           "speaker": "Umbraxis",
           "text": "Interesting.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "shadow_dragon"
         },
         {
           "speaker": "Umbraxis",
           "text": "You came all the way down here.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "shadow_dragon"
         },
         {
           "speaker": "Umbraxis",
           "text": "Do you even know what I am?",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "shadow_dragon"
         },
         {
           "speaker": "Fighter",
@@ -64,19 +64,19 @@
           "speaker": "Umbraxis",
           "text": "I'm data. Arranged to look like a dragon.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "shadow_dragon"
         },
         {
           "speaker": "Umbraxis",
           "text": "And you're data arranged to look like a hero.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "shadow_dragon"
         },
         {
           "speaker": "Umbraxis",
           "text": "The only difference between us... is that I KNOW I'm just data.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "shadow_dragon"
         },
         {
           "speaker": "Mage",
@@ -88,7 +88,7 @@
           "speaker": "Umbraxis",
           "text": "Don't worry. It only hurts if you think about it.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "shadow_dragon"
         }
       ]
     },

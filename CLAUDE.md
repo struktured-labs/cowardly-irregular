@@ -80,7 +80,7 @@ Entire party can pool their Advance Points for combined attacks:
 - **Types**:
   - **All-Out Attack**: Physical damage, all party members strike together
   - **Combo Magic**: Elemental fusion (Fire + Ice = Steam, etc.)
-  - **Formation Specials**: Unlocked by specific party compositions (six formations defined in `HeadlessBattleResolver.FORMATIONS`)
+  - **Formation Specials**: Unlocked by specific party compositions (six formations defined in `HeadlessBattleResolver.FORMATIONS`). Confirm or Advance with an empty personal queue launches one. It is not a slot in that queue; a press while attacks are already queued is refused and the queue stays.
   - **Limit Breaks**: Ultimate attacks requiring full AP from all members
 - **Strategic tradeoff**: Powerful but leaves entire party vulnerable next turn
 
@@ -541,7 +541,7 @@ named. Never copy a letter out of this table into a caption.**
 | Defer | L shoulder | Q key |
 | Change battle speed: TAP = one rung faster (wraps) · HOLD = one rung slower, stopping at the slowest (`BattleScene.SPEED_HOLD_MS`, wall clock; struktured 2026-11-01) | X (top face button) | ` (backtick) |
 | Repeat last turn's actions | Y (west face button) | Y key |
-| Cycle party formation | command menu row | F key |
+| Cycle party formation | command menu row — Confirm or Advance cycles it in place. It is not queued and does not spend the turn | F key |
 
 **The keyboard is a SNES pad in the emulator (RetroArch) layout** (struktured 2026-09-29, after Q/W):
 **X** = A (Confirm, east) · **Z** = B (Back, south) · **S** = X (top: the field menu) · **A** = Y (left: Dash,
