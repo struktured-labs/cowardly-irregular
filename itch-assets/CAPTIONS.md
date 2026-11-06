@@ -6,14 +6,24 @@
 |---|---|---|
 | `v3.33.750-alpha` | `battle_storm` · `field_elite_medieval` · `field_elite_prompt_medieval` · `field_elite_steampunk` · `grimhollow_spiral` · `infernal_grotto_f3` · `warren_lever_portals` · `warren_wrap_field` | commit `1df31b2fb` |
 | `v3.33.752-alpha` | (none left: both re-shot at `.767`) | commits `438ff3e68`, `21f990b47` |
-| `v3.33.767-alpha` | `battle` | "re-shot at `v3.33.767-alpha`" |
-| `v3.33.770-alpha` | `ironhaven_village` · `sandrift_village` · `eldertree_village` · the three interiors · `whispering_cave` | "re-shot at `v3.33.770-alpha`, door labels hidden" |
-| `v3.33.773-alpha` | `harmonia_village` · `frosthold_village` · `grimhollow_village` · `title_screen` | "re-shot at `v3.33.773-alpha`, villagers on whole ground" |
+| `v3.33.767-alpha` | (none left: `battle` re-shot at `.774`) | "re-shot at `v3.33.767-alpha`" |
+| `v3.33.770-alpha` | `ironhaven_village` · `eldertree_village` · the three interiors · `whispering_cave` | "re-shot at `v3.33.770-alpha`, door labels hidden" |
+| `v3.33.773-alpha` | `harmonia_village` · `frosthold_village` · `grimhollow_village` | "re-shot at `v3.33.773-alpha`, villagers on whole ground" |
+| `v3.33.774-alpha` | `battle` · `sandrift_village` · `title_screen` | "re-shot at `v3.33.774-alpha`, a name said once" |
 
 Re-derive it rather than trusting this table: `git log -1 --format=%h -- itch-assets/screenshots/<shot>.png`
 names the commit, and that commit's message names the tag it was shot from. Which of them have gone
 stale since: `tools/store_shot_staleness.py --from <capture tag> --to <store tag>` (a candidate list,
 never a verdict; decide in pixels with `--compare`).
+
+**2026-11-06: re-shot at `v3.33.774-alpha`, a name said once.** Judged in pixels against the shipped set with two runs
+of the tag (noise 0.00% on each), the changed region read off store_shot_pixels' own boxes (new at `.774`):
+`battle` 0.16%, 1519 px in the top-right party panel: "Fighter (Fighter)" / "Cleric (Cleric)" now read "Fighter" / "Cleric"
+(`.774`'s name-once fix; the shipped frame showed the doubled name the demo QC flagged) · `sandrift_village` 0.66% in a 726x500
+box: the villagers `.773` moved onto whole ground (at `.773` this read NOISE because its two runs differed by 0.35%; at `.774`
+they agree, so the move shows) · `title_screen`: the label reads `.774`. Kept: `tavern_interior` (0.31%, exactly the fireplace
+box: the flame's animation phase, as at `.772`) and the other eight (SAME, including the four re-shot at `.773`). Each moved
+frame was compared by eye with the one it replaces.
 
 **2026-11-05: re-shot at `v3.33.773-alpha`, villagers on whole ground.** `.773` moved nine villagers
 off blocked cells (overworld `e6a845267`), and four store frames show it, judged in pixels against
