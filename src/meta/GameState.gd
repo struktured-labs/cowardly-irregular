@@ -77,6 +77,8 @@ var screen_shake_enabled: bool = true  # Master gate for camera/screen shake eff
 ## Advance/Confirm split (work order 2026-09-14). OFF: Advance only queues and Confirm commits.
 ## ON: the Advance press that fills the queue also commits it — the only behaviour before that date.
 var advance_commits_at_limit: bool = false
+## Left/Right as confirm and back (Carmelo, 2026-11-06). Off unless settings.json says otherwise.
+var left_right_confirm: bool = false
 var battle_fx_flags: Dictionary = {}  # Sparse per-feature juice overrides (BattleJuice.flag) — the 'ridiculous menu of toggles'
 ## Wave C: dynamic-dialogue master switch persisted to user settings. Off by
 ## default on web (no HTTP backend reachable from WASM); on by default on

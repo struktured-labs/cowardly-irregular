@@ -33,6 +33,15 @@ var _hint_label: Label = null
 var _title_label: Label = null
 var _playing: bool = false
 var _cutscene_director: CutsceneDirector = null
+## The panel as built at the live Text Size: geometry grows with the fonts, and the height is clamped to the screen
+## (the list scrolls, so a shorter panel loses nothing). 1.0x is the authored 520x420.
+var _pw: float = PANEL_W
+var _ph: float = PANEL_H
+
+
+## A length at the current Text Size, by the same rounded ratio as TextScale.scaled: identity at 1.0x.
+static func k(v: float) -> float:
+	return roundf(v * float(TextScale.scaled(100)) / 100.0)
 
 
 func _ready() -> void:
@@ -60,25 +69,25 @@ func _ready() -> void:
 
 
 func _build_panel() -> void:
+	var vp: Vector2 = get_viewport_rect().size
+	_pw = minf(k(PANEL_W), vp.x - 32.0)
+	_ph = minf(k(PANEL_H), vp.y - 32.0)
 	var panel: Control = RetroPanel.create_panel(
-		PANEL_W, PANEL_H,
+		int(_pw), int(_ph),
 		Color(0.06, 0.08, 0.14, 0.96),
 		Color(0.7, 0.85, 1.0),
 		Color(0.15, 0.2, 0.4),
 	)
 	# Center panel on screen
-	panel.position = Vector2(
-		(get_viewport_rect().size.x - PANEL_W) / 2,
-		(get_viewport_rect().size.y - PANEL_H) / 2,
-	)
+	panel.position = Vector2((vp.x - _pw) / 2, (vp.y - _ph) / 2)
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(panel)
 
 	_title_label = Label.new()
 	_title_label.text = "Party Chat"
-	_title_label.position = Vector2(20, 12)
-	_title_label.size = Vector2(PANEL_W - 40, 32)
-	_title_label.add_theme_font_size_override("font_size", 22)
+	_title_label.position = Vector2(k(20), k(12))
+	_title_label.size = Vector2(_pw - k(40), k(32))
+	_title_label.add_theme_font_size_override("font_size", TextScale.scaled(22))
 	_title_label.add_theme_color_override("font_color", Color(0.9, 0.95, 1.0))
 	_title_label.clip_text = false
 	_title_label.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
@@ -86,13 +95,13 @@ func _build_panel() -> void:
 
 	var divider := ColorRect.new()
 	divider.color = Color(0.3, 0.4, 0.6, 0.8)
-	divider.position = Vector2(20, 48)
-	divider.size = Vector2(PANEL_W - 40, 2)
+	divider.position = Vector2(k(20), k(48))
+	divider.size = Vector2(_pw - k(40), 2)
 	panel.add_child(divider)
 
 	_scroll = ScrollContainer.new()
-	_scroll.position = Vector2(12, 58)
-	_scroll.size = Vector2(PANEL_W - 24, PANEL_H - 98)
+	_scroll.position = Vector2(k(12), k(58))
+	_scroll.size = Vector2(_pw - k(24), _ph - k(98))
 	_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	panel.add_child(_scroll)
 
@@ -110,15 +119,15 @@ func _build_panel() -> void:
 		InputProfileManager.hint_for_action("battle_advance"),
 		InputProfileManager.hint_for_action("ui_cancel"),
 	]
-	_hint_label.position = Vector2(20, PANEL_H - 32)
-	_hint_label.add_theme_font_size_override("font_size", 13)
+	_hint_label.position = Vector2(k(20), _ph - k(32))
+	_hint_label.add_theme_font_size_override("font_size", TextScale.scaled(13))
 	_hint_label.add_theme_color_override("font_color", Color(0.6, 0.7, 0.85))
 	_hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_hint_label.clip_text = false
 	_hint_label.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
 	panel.add_child(_hint_label)
 	# Size once IN the tree: detached, the 13px override is not in the theme cache, so the minimum is still the 16px width (544) and the size clamps to it.
-	_hint_label.size = Vector2(PANEL_W - 40, 24)
+	_hint_label.size = Vector2(_pw - k(40), k(24))
 
 
 func _populate() -> void:
@@ -130,11 +139,11 @@ func _populate() -> void:
 	if _chats.is_empty():
 		var empty := Label.new()
 		empty.text = "No party chats available right now.\nProgress the story to unlock more."
-		empty.add_theme_font_size_override("font_size", 16)
+		empty.add_theme_font_size_override("font_size", TextScale.scaled(16))
 		empty.add_theme_color_override("font_color", Color(0.6, 0.65, 0.75))
 		empty.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		empty.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		empty.custom_minimum_size = Vector2(PANEL_W - 40, 80)
+		empty.custom_minimum_size = Vector2(_pw - k(40), k(80))
 		_rows_container.add_child(empty)
 		return
 
@@ -144,15 +153,15 @@ func _populate() -> void:
 			last_world = chat.world
 			var header := Label.new()
 			header.text = WORLD_NAMES.get(chat.world, "World %d" % chat.world)
-			header.add_theme_font_size_override("font_size", 16)
+			header.add_theme_font_size_override("font_size", TextScale.scaled(16))
 			header.add_theme_color_override("font_color", Color(0.55, 0.75, 1.0))
-			header.custom_minimum_size = Vector2(0, WORLD_HEADER_H)
+			header.custom_minimum_size = Vector2(0, k(WORLD_HEADER_H))
 			_rows_container.add_child(header)
 		var row := Label.new()
 		row.text = "  " + chat.title
-		row.add_theme_font_size_override("font_size", 18)
+		row.add_theme_font_size_override("font_size", TextScale.scaled(18))
 		row.add_theme_color_override("font_color", Color(0.85, 0.9, 1.0))
-		row.custom_minimum_size = Vector2(0, ROW_H)
+		row.custom_minimum_size = Vector2(0, k(ROW_H))
 		row.mouse_filter = Control.MOUSE_FILTER_STOP
 		row.clip_text = false
 		row.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING

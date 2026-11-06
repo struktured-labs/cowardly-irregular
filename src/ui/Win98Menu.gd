@@ -18,6 +18,8 @@ signal queue_changed(count: int, max_size: int)
 ## threshold opens the rule editor for the combatant instead. Win98Menu has no scene access, so
 ## it emits the combatant and the caller (BattleCommandMenu) opens the editor.
 signal auto_hold_editor_requested(combatant: Variant)
+## A row that is not a queued action (the battle Formation cycle). The menu and any real queue stay.
+signal turnless_row_activated(item_id: String, item_data: Variant)
 
 
 ## Get currently selected item ID (for hold detection)
@@ -1645,6 +1647,16 @@ func _handle_advance_input() -> void:
 
 	var current_item = menu_items[selected_index] if selected_index >= 0 and selected_index < menu_items.size() else {}
 
+	# Formation cycle costs no turn. Advance used to enqueue it, and the commit then dropped it or deferred the turn.
+	if bool(current_item.get("turnless", false)):
+		_activate_turnless(current_item)
+		return
+
+	# A party move (formation special, all-out, and the rest) is not one slot of a personal queue.
+	if bool(current_item.get("commits_alone", false)):
+		_advance_solo_commit(current_item)
+		return
+
 	# Auto can't advance — pressing Advance on it just runs auto, same as Confirm.
 	if _is_autobattle_row(current_item):
 		if _row_unavailable(current_item):
@@ -1717,6 +1729,38 @@ func _confirm_turn_with_queue() -> void:
 		_play_defer_sound()
 		root.defer_requested.emit()
 		root._close_entire_tree()
+
+
+func _activate_turnless(item: Dictionary) -> void:
+	_play_select_sound()
+	_get_root_menu().turnless_row_activated.emit(str(item.get("id", "")), item.get("data", null))
+
+
+## Empty personal queue: launch the party move the way Confirm does. A queue already held stays put.
+func _advance_solo_commit(item: Dictionary) -> void:
+	var root = _get_root_menu()
+	if _row_unavailable(item):
+		_reject_selection(item)
+		return
+	if root._queued_actions.size() > 0:
+		_reject_selection({"reject_reason": "That move uses the whole party — clear this queue first"})
+		return
+	_play_select_sound()
+	root.item_selected.emit(str(item.get("id", "")), item.get("data", null))
+	root.force_close()
+
+
+func rename_item(item_id: String, label: String) -> void:
+	for i in range(menu_items.size()):
+		if str(menu_items[i].get("id", "")) != item_id:
+			continue
+		menu_items[i]["label"] = label
+		var container := find_child("Items", true, false)
+		if container and i < container.get_child_count():
+			var text_label := container.get_child(i).get_node_or_null("LabelClip/Label")
+			if text_label:
+				text_label.text = label
+		return
 
 
 func _queue_current_action(item: Dictionary) -> void:
@@ -1839,6 +1883,11 @@ func _advance_commits_at_limit() -> bool:
 			and bool(GameState.advance_commits_at_limit)
 
 
+## Off unless the player opted in. A missing GameState is off, same as a missing settings key.
+func _left_right_confirm_enabled() -> bool:
+	return GameState != null and "left_right_confirm" in GameState and bool(GameState.left_right_confirm)
+
+
 ## A full queue always holds at least one action — the > 0 clause stops a zero max from reading as full
 ## and committing an empty advance, which BattleManager treats as the EXECUTE-freeze class.
 func _queue_is_full() -> bool:
@@ -1905,12 +1954,20 @@ func _submit_actions() -> void:
 		_reject_selection(current_item)
 		return
 
-	if current_item.has("submenu"):
-		# Can't submit a submenu item directly
+	if bool(current_item.get("turnless", false)):
+		_activate_turnless(current_item)
 		return
 
 	# Get root menu for queued actions
 	var root = _get_root_menu()
+
+	if bool(current_item.get("commits_alone", false)) and root._queued_actions.size() > 0:
+		_reject_selection({"reject_reason": "That move uses the whole party — clear this queue first"})
+		return
+
+	if current_item.has("submenu"):
+		# Can't submit a submenu item directly
+		return
 
 	# Build final action list from root's queue
 	var all_actions = root._queued_actions.duplicate()
@@ -2475,72 +2532,63 @@ func _input(event: InputEvent) -> void:
 		# In battle mode at root with no queue and can't go back: B is a no-op
 		get_viewport().set_input_as_handled()
 
-	# D-pad LEFT = confirm/accept (for left-expanding menus), back (for right-expanding)
-	elif nav == "ui_left":
-		if expand_left:
-			var current_item = menu_items[selected_index] if selected_index >= 0 and selected_index < menu_items.size() else {}
-			if _queue_is_full():
-				_commit_queue_exactly()
-			elif _row_unavailable(current_item) and not current_item.has("submenu"):
-				_reject_selection(current_item)
-			elif current_item.has("submenu"):
-				# Item has submenu - expand it
-				_play_expand_sound()
-				if not submenu:
-					_do_open_submenu(selected_index, current_item)
-			elif _is_autobattle_row(current_item):
-				_begin_auto_hold(selected_index)
-			else:
-				# No submenu - submit all queued + current
-				_play_select_sound()
-				_submit_actions()
-		else:
-			if parent_menu:
+	# Left confirms and Right goes back on a left-expanding menu, swapped if it expands right. Off unless opted in; the press is still consumed.
+	elif nav == "ui_left" or nav == "ui_right":
+		if _left_right_confirm_enabled() and nav == "ui_left":
+			if expand_left:
+				var current_item = menu_items[selected_index] if selected_index >= 0 and selected_index < menu_items.size() else {}
+				if _queue_is_full():
+					_commit_queue_exactly()
+				elif _row_unavailable(current_item) and not current_item.has("submenu"):
+					_reject_selection(current_item)
+				elif current_item.has("submenu"):
+					_play_expand_sound()
+					if not submenu:
+						_do_open_submenu(selected_index, current_item)
+				elif _is_autobattle_row(current_item):
+					_begin_auto_hold(selected_index)
+				else:
+					_play_select_sound()
+					_submit_actions()
+			elif parent_menu:
 				_play_move_sound()
 				_cleanup_target_highlight()
 				parent_menu.submenu = null
 				queue_free()
-		get_viewport().set_input_as_handled()
-
-	# D-pad RIGHT = back/cancel (for left-expanding menus), confirm (for right-expanding)
-	elif nav == "ui_right":
-		if expand_left:
-			# RIGHT = back for left-expanding menus
-			if parent_menu:
-				_play_move_sound()
-				_cleanup_target_highlight()
-				parent_menu.submenu = null
-				queue_free()
-			elif is_root_menu:
-				# At root - same as cancel
-				var root = _get_root_menu()
-				if root._queued_actions.size() > 0:
-					_undo_last_action()
-					if submenu and is_instance_valid(submenu):
-						submenu.queue_free()
-						submenu = null
-				elif _can_go_back:
-					_play_cancel_sound()
-					go_back_requested.emit()
-					force_close()
-				elif not battle_mode:
-					# Non-battle root menu - close on back
-					_play_cancel_sound()
-					force_close()
-		else:
-			# RIGHT = confirm for right-expanding menus
-			var current_item = menu_items[selected_index] if selected_index >= 0 and selected_index < menu_items.size() else {}
-			if _queue_is_full():
-				_commit_queue_exactly()
-			elif _row_unavailable(current_item) and not current_item.has("submenu"):
-				_reject_selection(current_item)
-			elif current_item.has("submenu"):
-				_play_expand_sound()
-				if not submenu:
-					_do_open_submenu(selected_index, current_item)
+		elif _left_right_confirm_enabled() and nav == "ui_right":
+			if expand_left:
+				if parent_menu:
+					_play_move_sound()
+					_cleanup_target_highlight()
+					parent_menu.submenu = null
+					queue_free()
+				elif is_root_menu:
+					var root = _get_root_menu()
+					if root._queued_actions.size() > 0:
+						_undo_last_action()
+						if submenu and is_instance_valid(submenu):
+							submenu.queue_free()
+							submenu = null
+					elif _can_go_back:
+						_play_cancel_sound()
+						go_back_requested.emit()
+						force_close()
+					elif not battle_mode:
+						_play_cancel_sound()
+						force_close()
 			else:
-				_play_select_sound()
-				_submit_actions()
+				var current_item = menu_items[selected_index] if selected_index >= 0 and selected_index < menu_items.size() else {}
+				if _queue_is_full():
+					_commit_queue_exactly()
+				elif _row_unavailable(current_item) and not current_item.has("submenu"):
+					_reject_selection(current_item)
+				elif current_item.has("submenu"):
+					_play_expand_sound()
+					if not submenu:
+						_do_open_submenu(selected_index, current_item)
+				else:
+					_play_select_sound()
+					_submit_actions()
 		get_viewport().set_input_as_handled()
 
 	# Root menus don't close on click outside
