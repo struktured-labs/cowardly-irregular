@@ -4,6 +4,7 @@ class_name HarmoniaChapelInterior
 ## HarmoniaChapelInterior - Cathedral-depth chapel in Harmonia Village.
 ## Sister Concord foreshadows the Mordaine fight: she remembers when
 ## the Chancellor used to come here, and she's worried what's changed.
+## After the fight she reads the answer on the party's faces.
 ## Stone/marble nave, stained glass, altar, pews, bell tower, censer,
 ## prayer candles, choir loft, and a small cast of worshipers.
 
@@ -1427,13 +1428,24 @@ func _create_sister_concord(NPCScript) -> void:
 	sister.npc_name = "Sister Concord"
 	sister.npc_type = "scholar"
 	sister.position = Vector2(6.5 * TILE_SIZE, 1.5 * TILE_SIZE)
-	sister.dialogue_lines = [
+	var concord_before := [
 		"Welcome, traveler. Rest your soul a moment.",
 		"This chapel used to be full on the holy days.",
 		"The Chancellor would sit there, third pew from the back. Always alone.",
-		"He hasn't been here in months. Not since the cave started... whispering.",
-		"If you go to the castle, look him in the eye. Tell me what you see there.",
+		"She hasn't been here in months. Not since the cave started... whispering.",
+		"If you go to the castle, look her in the eye. Tell me what you see there.",
 	]
+	# After Mordaine: the party came back from the castle, and Concord gets her answer without asking for it.
+	var concord_after := [
+		"You came back. I asked you to look her in the eye.",
+		"*studies your faces* No. You don't have to tell me. I can see it on you.",
+		"Third pew from the back. I always thought she sat alone.",
+		"Now I wonder who was sitting beside her that I never saw.",
+		"Stay a while. The chapel can hold whatever you carried out of that castle.",
+	]
+	var gs = get_node_or_null("/root/GameState")
+	var chancellor_gone: bool = gs != null and gs.is_story_flag_set("world1_mordaine_defeated")
+	sister.dialogue_lines = concord_after if chancellor_gone else concord_before
 	npcs.add_child(sister)
 
 
