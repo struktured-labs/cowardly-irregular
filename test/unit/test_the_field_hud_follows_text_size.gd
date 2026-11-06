@@ -133,6 +133,15 @@ func test_a_live_change_reaches_every_built_surface() -> void:
 	var l: Label = b._labels["west"]
 	var cx: float = l.position.x + l.size.x * 0.5
 	assert_gte(cx - _text_w(l, l.text) * 0.5, 0.0, "after the live change the border is re-laid-out on screen")
+	## Each BOX against its text measured off the font at the NEW size (controller 22729: a Label's minimum refreshes a frame late).
+	z._label.text = "The Heartlands"
+	z._fit_banner_to(z._label.text)
+	assert_lte(_text_w(z._label, z._label.text), z._bg.offset_right - z._bg.offset_left, "the banner box holds its text at the NEW size")
+	assert_lte(z._label.get_theme_font("font").get_height(_px(z._label)), z._bg.offset_bottom - z._bg.offset_top, "and is tall enough for it")
+	var widest := 0.0
+	for t in ArrowScript.ARROWS.values():
+		widest = maxf(widest, _text_w(a._arrow_label, str(t)))
+	assert_lte(widest, a._arrow_label.size.x, "the arrow box holds its widest text at the NEW size")
 
 
 func test_the_authored_layout_holds_at_1x() -> void:
