@@ -199,7 +199,9 @@ func _build_ui() -> void:
 			-1, TextServer.BREAK_MANDATORY | TextServer.BREAK_WORD_BOUND | TextServer.BREAK_ADAPTIVE).y
 	var head_h: float = _grew(68.0) if advice == "" else _grew(56.0) + maxf(advice_h, float(TextScale.scaled(ADVICE_FONT_SIZE))) + _grew(14.0)
 	var rows_per_col: int = stats_data.size()
-	var panel_h = head_h + rows_per_col * row_h + badge_header_h + badge_row_h + 50.0
+	## The footer (separator at -40, prompt at -30) scales with Text Size; a literal 50 reserved 1.0x's footer at 2.0x and overflowed onto it.
+	var footer_h: float = _grew(50.0)
+	var panel_h = head_h + rows_per_col * row_h + badge_header_h + badge_row_h + footer_h
 	## A long session (full party, rule notes, permadeath, badges) stacked past 720 px and hid the grade and the achievements.
 	var max_h: float = vp_size.y - 40
 	if panel_h > max_h:
@@ -216,15 +218,20 @@ func _build_ui() -> void:
 		badge_layout = _layout_badges(all_badges, panel_w)
 		badge_rows = int(badge_layout[badge_layout.size() - 1]["row"]) + 1 if badge_layout.size() > 0 else 0
 		badge_row_h = _grew(40.0) * badge_rows
-		panel_h = head_h + rows_per_col * row_h + badge_header_h + badge_row_h + 50.0
+		panel_h = head_h + rows_per_col * row_h + badge_header_h + badge_row_h + footer_h
+		## Hidden badges are counted in their header, so badge ROWS give way before a stats row shrinks onto the prompt (2.0x).
+		if panel_h > max_h and badge_rows > 0:
+			var spare: float = max_h - (head_h + rows_per_col * row_h + badge_header_h + footer_h)
+			badge_row_h = clampf(floorf(spare / _grew(40.0)), 0.0, float(badge_rows)) * _grew(40.0)
+			panel_h = head_h + rows_per_col * row_h + badge_header_h + badge_row_h + footer_h
 		if panel_h > max_h:
-			row_h = maxf(18.0, (max_h - head_h - badge_header_h - badge_row_h - 50.0) / maxf(rows_per_col, 1))
-			panel_h = head_h + rows_per_col * row_h + badge_header_h + badge_row_h + 50.0
+			row_h = maxf(18.0, (max_h - head_h - badge_header_h - badge_row_h - footer_h) / maxf(rows_per_col, 1))
+			panel_h = head_h + rows_per_col * row_h + badge_header_h + badge_row_h + footer_h
 		## At the 18 px floor the rule notes pushed ACHIEVEMENTS onto the continue prompt (2.0x); they give way first.
 		var two_col: bool = rows_per_col < stats_data.size()
 		while panel_h > max_h and _drop_last_noop_row(stats_data):
 			rows_per_col = int(ceil(stats_data.size() / 2.0)) if two_col else stats_data.size()
-			panel_h = head_h + rows_per_col * row_h + badge_header_h + badge_row_h + 50.0
+			panel_h = head_h + rows_per_col * row_h + badge_header_h + badge_row_h + footer_h
 	panel_h = min(panel_h, max_h)
 	var col_w: float = panel_w if rows_per_col >= stats_data.size() else (panel_w - 20.0) / 2.0
 	## ⛔ THE ROW FONT FOLLOWS THE ROW. row_h shrinks (floor 18) when a long session will not fit the

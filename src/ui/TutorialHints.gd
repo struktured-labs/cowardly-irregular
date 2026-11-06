@@ -168,6 +168,10 @@ static func show(parent: Node, hint_id: String, dedupe_key: String = "") -> void
 	if not HINTS.has(hint_id):
 		push_warning("TutorialHints: Unknown hint '%s'" % hint_id)
 		return
+	## A parent outside the tree never runs the hint's _ready, so its labels are never built and show_hint aborts on Nil,
+	## AFTER marking the hint seen: lost for good. Refuse first, so the next trigger with a live parent still shows it.
+	if parent == null or not is_instance_valid(parent) or not parent.is_inside_tree():
+		return
 	# dedupe_key: shared catalog entry, once-ness per key (spotlight_unlock fired only for the FIRST duel win ever — later duel victories silently swallowed, struktured cap 2026-07-16)
 	var key: String = dedupe_key if dedupe_key != "" else hint_id
 
