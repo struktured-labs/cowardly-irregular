@@ -139,7 +139,44 @@ def fmt(x):
     return "   n/a" if x is None else f"{x:7.2%}"
 
 
+def overlay(fresh, stored, out_dir, name):
+    """Write <name>_mask.png (the fresh frame, every pixel changed vs stored painted red) and <name>_mask_zoom.png
+    (that box padded 40 px, scaled 2x). Returns the red pixel count, or 0 when nothing changed.
+
+    A box names a REGION, never a cause: on the .775 recheck one box overlapped the command panel and the hero
+    sprite, a crop was read as "the panel got wider", and five lanes chased a layout drift that a mask showed was
+    the hero's pose (every red pixel on the sprite, none on the border). Look at what the red sits on."""
+    a = Image.open(fresh).convert("RGB")
+    s = Image.open(stored).convert("RGB")
+    if a.size != s.size:
+        return 0
+    d = ImageChops.difference(a, s)
+    mx = ImageChops.lighter(ImageChops.lighter(d.getchannel(0), d.getchannel(1)), d.getchannel(2))
+    mask = mx.point(lambda v: 255 if v > LEVEL else 0)
+    bb = mask.getbbox()
+    if bb is None:
+        return 0
+    red = Image.new("RGB", a.size, (255, 0, 0))
+    painted = Image.composite(red, a, mask)
+    painted.save(os.path.join(out_dir, name + "_mask.png"))
+    x0, y0, x1, y1 = bb
+    pad = 40
+    box = (max(0, x0 - pad), max(0, y0 - pad), min(a.size[0], x1 + pad), min(a.size[1], y1 + pad))
+    z = painted.crop(box)
+    z.resize((z.width * 2, z.height * 2), Image.NEAREST).save(os.path.join(out_dir, name + "_mask_zoom.png"))
+    return mask.histogram()[255]
+
+
 def main(argv):
+    ov_dir = None
+    if "--overlays" in argv:
+        i = argv.index("--overlays")
+        if i + 1 >= len(argv):
+            print("[pixels] BLOCKED: --overlays needs a directory", file=sys.stderr)
+            return 2
+        ov_dir = argv[i + 1]
+        argv = argv[:i] + argv[i + 2:]
+        os.makedirs(ov_dir, exist_ok=True)
     if len(argv) != 3:
         print(__doc__.split("WHY")[0].strip(), file=sys.stderr)
         return 2
@@ -156,6 +193,10 @@ def main(argv):
     for n, v, d, noise in rows:
         loc = fmt_where(*where(os.path.join(fa, n + ".png"), os.path.join(stored, n + ".png"))) if v in ("MOVED", "NOISE") else ""
         print(f"  {v:<7} {n:<30} vs stored {fmt(d)}   noise a/b {fmt(noise)}{loc}")
+        if ov_dir and v in ("MOVED", "NOISE"):
+            k = overlay(os.path.join(fa, n + ".png"), os.path.join(stored, n + ".png"), ov_dir, n)
+            if k:
+                print(f"          mask: {os.path.join(ov_dir, n + '_mask_zoom.png')} ({k} px red: say what they sit ON before naming the change)")
     counts = {}
     for _, v, _, _ in rows:
         counts[v] = counts.get(v, 0) + 1
@@ -232,6 +273,23 @@ def selftest():
     ok = "3000 px in 0,0-99,29 (100x30)" in lines.get("moved", "") and " px in " not in lines.get("same", "x px in ")
     fails += 0 if ok else 1; ran += 1
     print(f"  {'ok  ' if ok else 'FAIL'}  the report prints the box on a MOVED row and none on a SAME row")
+    # OVERLAYS: the mask paints exactly the changed pixels red, and only for frames that moved
+    ov = os.path.join(t, "ov")
+    with contextlib.redirect_stdout(io.StringIO()):
+        main([S, A, B, "--overlays", ov])
+    mp = os.path.join(ov, "moved_mask.png")
+    reds = sum(1 for px in Image.open(mp).convert("RGB").getdata() if px == (255, 0, 0)) if os.path.isfile(mp) else -1
+    ok = reds == 3000
+    fails += 0 if ok else 1; ran += 1
+    print(f"  {'ok  ' if ok else 'FAIL'}  the moved frame's mask paints exactly its 3000 changed px red (got {reds})")
+    ok = not os.path.exists(os.path.join(ov, "same_mask.png"))
+    fails += 0 if ok else 1; ran += 1
+    print(f"  {'ok  ' if ok else 'FAIL'}  a SAME frame gets no mask")
+    with contextlib.redirect_stderr(io.StringIO()):
+        rc = main([S, A, B, "--overlays"])
+    ok = rc == 2
+    fails += 0 if ok else 1; ran += 1
+    print(f"  {'ok  ' if ok else 'FAIL'}  --overlays without a directory BLOCKS (exit {rc})")
     rc = main([S, A, os.path.join(t, "nowhere")])
     ok = rc == 2
     fails += 0 if ok else 1; ran += 1
