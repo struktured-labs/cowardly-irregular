@@ -1870,6 +1870,8 @@
     },
     "lightning_dragon": {
       "path": "res://assets/sprites/monsters/lightning_dragon.png",
+      "bust_rect": [92, 28, 120, 120],
+      "bust_rect_reason": "head-and-shoulders square around horns, eye (172,108) and snout (192,125) on frame 0; the measured figure square is the whole 211px body, and at the 72px cutscene cell the head was lost among the bolts (cowir-cutscenes render, .774). Re-measure if the art is redrawn",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 6,
