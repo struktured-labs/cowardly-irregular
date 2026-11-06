@@ -491,14 +491,15 @@ func _create_condition_cell(row_idx: int, cond_idx: int, condition: Dictionary) 
 	_add_pixel_border(cell, CELL_WIDTH, _cell_h())
 
 	var label = Label.new()
+	## Wrap FIRST: a Label that is not yet wrapping has its whole line as a minimum width, so a grown font clamps the box wider than the cell.
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	label.text = _format_condition(condition)
 	label.position = Vector2(6, 4)
-	label.size = Vector2(CELL_WIDTH - 12, _cell_h() - 8)
 	label.add_theme_font_size_override("font_size", TextScale.scaled(CELL_FONT))
 	label.add_theme_color_override("font_color", style.text)
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	label.size = Vector2(CELL_WIDTH - 12, _cell_h() - 8)
 	cell.add_child(label)
 
 	# Mouse: click to edit, hover to highlight
@@ -529,14 +530,15 @@ func _create_action_cell(row_idx: int, act_idx: int, action: Dictionary) -> Cont
 	_add_pixel_border(cell, CELL_WIDTH, _cell_h())
 
 	var label = Label.new()
+	## Wrap FIRST: a Label that is not yet wrapping has its whole line as a minimum width, so a grown font clamps the box wider than the cell.
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	label.text = _format_action(action)
 	label.position = Vector2(6, 2)
-	label.size = Vector2(CELL_WIDTH - 12, _cell_h() - 4)
 	label.add_theme_font_size_override("font_size", TextScale.scaled(CELL_FONT))
 	label.add_theme_color_override("font_color", style.text)
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	label.size = Vector2(CELL_WIDTH - 12, _cell_h() - 4)
 	cell.add_child(label)
 	if action.get("type", "") == "member_ability" and str(action.get("ability", "")) != "":
 		AbilityIcons.attach_to_cell(cell, str(action.get("ability", "")))
