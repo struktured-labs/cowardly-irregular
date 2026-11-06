@@ -67,7 +67,8 @@ func test_one_unusable_rule_no_longer_discards_the_others() -> void:
 	var notes: Array[String] = _rc()._drop_unusable_rules(rules, "fighter", sys)
 	assert_eq(rules.size(), 2, "the two usable rules must survive; only the bad one goes")
 	assert_eq(notes.size(), 1, "and exactly one note must be produced")
-	assert_true(str(notes[0]).find("esuna") != -1,
+	## The note is in the player's words (cowir-ai, via ScriptShareManager.player_text_for_finding): the menu's name, not the id.
+	assert_true(str(notes[0]).find(AbilityIcons.name_of("esuna")) != -1,
 		"the note must name what was dropped — silent edits are the thing notes exist to prevent")
 
 

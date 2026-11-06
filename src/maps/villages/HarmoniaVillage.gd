@@ -462,7 +462,8 @@ func _setup_npcs() -> void:
 	# Scholar (hints about automation)
 	# Wave D showcase NPC #2 — fourth-wall-aware autobattle townie.
 	# Persona text + fallback lines hydrated from the same JSON cache.
-	var scholar = _create_npc("Scholar Milo", "villager", Vector2(24 * TILE_SIZE, 10 * TILE_SIZE), [
+	## (25,11), not (24,10): centred on the pond's edge, half of him stood in the water under the tier wall (the .771 store frame).
+	var scholar = _create_npc("Scholar Milo", "villager", Vector2(25 * TILE_SIZE, 11 * TILE_SIZE), [
 		"Ah, a fellow seeker of knowledge!",
 		"I've been studying an ancient art called 'AUTOBATTLE'.",
 		"F5 opens the Autobattle Editor. On a pad it's the start button mid-battle — Start, Options or Plus, depending whose plastic you're holding — or pick Auto Rules from the menu!",
@@ -640,7 +641,7 @@ func _setup_npcs() -> void:
 		"*checks over shoulder*",
 		"I'm still gonna be just like you when I grow up. But I'm never writing anybody down in a ledger. Ever."
 	]
-	var kid = _create_npc("Young Pip", "child", Vector2(24 * TILE_SIZE, 14 * TILE_SIZE), _pip_after_chancellor if _chancellor_gone else (_pip_post if _after_cave_done else _pip_pre))
+	var kid = _create_npc("Young Pip", "child", Vector2(25 * TILE_SIZE, 14 * TILE_SIZE), _pip_after_chancellor if _chancellor_gone else (_pip_post if _after_cave_done else _pip_pre))
 	npcs.add_child(kid)
 
 	# === SIDE-QUEST GIVERS (dialogue owned by QuestSystem when quest business exists) ===

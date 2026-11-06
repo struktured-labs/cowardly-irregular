@@ -286,7 +286,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(kid)
 
 	# Dorrit — giver for world4_form_exception_alpha. Counts her own words; twelve is quota.
-	var dorrit = _create_npc("Dorrit", "villager", Vector2(14 * TILE_SIZE,9 * TILE_SIZE), [
+	var dorrit = _create_npc("Dorrit", "villager", Vector2(14 * TILE_SIZE,10 * TILE_SIZE), [
 		"Twelve words is optimal. I'm already over.",
 		"The line runs. I watch it run. That's the role now.",
 		"I asked a question last spring. They scheduled me for training.",
@@ -299,7 +299,7 @@ func _setup_npcs() -> void:
 
 	# Madame Orrery — giver for world4_deviation_report. Same merchant, W4 consulting office.
 	# (8,12) was the Union Hall door's press zone, under its gate; one cell west, same row.
-	var orrery = _create_npc("Madame Orrery", "mysterious", Vector2(7 * TILE_SIZE,12 * TILE_SIZE), [
+	var orrery = _create_npc("Madame Orrery", "mysterious", Vector2(8 * TILE_SIZE,11 * TILE_SIZE), [
 		"Close the door. Doors are the last technology in this building that still works for the occupant.",
 		"I sold goods across worlds. Here they gave me a title and an office and called it a promotion.",
 		"'Consultant.' It means they file what I write and never read it.",
