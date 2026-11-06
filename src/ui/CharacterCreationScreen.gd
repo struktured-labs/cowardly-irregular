@@ -27,6 +27,8 @@ const PANEL_WIDTH: int = 620
 ## option reds rather than silently overlapping again.
 const PANEL_HEIGHT: int = 460
 const OPTION_HEIGHT: int = 24
+## The least gap the scaled panel keeps from each screen edge.
+const SCREEN_EDGE := 10.0
 const MAX_NAME_LENGTH: int = 8
 
 ## Available options per character
@@ -89,6 +91,16 @@ func _ready() -> void:
 	_input_blocked = false
 
 
+## The panel's scale for Text Size: the WHOLE panel grows (every row, value and arrow sits at an absolute x, so text
+## alone would collide), capped where it still fits the screen. 1.0 at 100%; on 1280x720, 2.0 caps near 1.52.
+static func panel_scale(vp: Vector2) -> float:
+	var k := float(TextScale.scaled(100)) / 100.0
+	if vp.x <= 0.0 or vp.y <= 0.0:
+		return k
+	var fit := minf((vp.x - 2.0 * SCREEN_EDGE) / float(PANEL_WIDTH), (vp.y - 2.0 * SCREEN_EDGE) / float(PANEL_HEIGHT))
+	return minf(k, fit)
+
+
 func _build_ui() -> void:
 	"""Build the character creation UI"""
 	# Dark background
@@ -101,7 +113,9 @@ func _build_ui() -> void:
 	# Main panel
 	_panel = Control.new()
 	_panel.custom_minimum_size = Vector2(PANEL_WIDTH, PANEL_HEIGHT)
-	_panel.position = (get_viewport_rect().size - Vector2(PANEL_WIDTH, PANEL_HEIGHT)) / 2
+	var k := panel_scale(get_viewport_rect().size)
+	_panel.scale = Vector2.ONE * k
+	_panel.position = (get_viewport_rect().size - Vector2(PANEL_WIDTH, PANEL_HEIGHT) * k) / 2
 	add_child(_panel)
 
 	# Panel background
