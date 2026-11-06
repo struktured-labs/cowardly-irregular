@@ -6,6 +6,10 @@ class_name OverworldMinimap
 ## Helps with navigation on Mode 7 view where landmarks are hard to see.
 
 const MAP_SIZE: float = 120.0  # Minimap display size in pixels
+const LEGEND_FONT_SIZE := 10
+const LEGEND_PITCH := 14  ## the authored row pitch; it grows with the legend's font so rows never overlap
+var _legend_rows: Array = []  ## [dot, label] per row, re-laid-out on a Text Size change
+var _legend_origin := Vector2.ZERO
 
 ## Where the minimap panel sits on the 1280x720 logical screen (top-right corner). The ONE source: the day
 ## clock is placed off this rect, so the two can never overlap however either is resized.
@@ -151,26 +155,49 @@ func setup(parent: Node, player: Node2D, map_w: int, map_h: int, tile_size: int,
 		["Portal", DOT_COLORS["portal"]],
 		["Castle", DOT_COLORS["castle"]],
 	]
-	_legend_rect = Rect2(legend_x, legend_y - 2, _bg.size.x, legend_items.size() * 14 + 4)
+	_legend_origin = Vector2(legend_x, legend_y)
+	_legend_rows.clear()
 	for i in range(legend_items.size()):
 		var item = legend_items[i]
-		var y_off = legend_y + i * 14
 		var dot = ColorRect.new()
 		dot.color = item[1]
 		dot.size = Vector2(6, 6)
-		dot.position = Vector2(legend_x + 4, y_off + 3)
 		dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		_canvas.add_child(dot)
 		var lbl = Label.new()
 		lbl.text = item[0]
 		# 7pt unoutlined was illegible in the 1280x720 smoke shot — match the tick-219 sprite-label scheme
-		lbl.add_theme_font_size_override("font_size", TextScale.scaled(10))
+		lbl.add_theme_font_size_override("font_size", LEGEND_FONT_SIZE)
+		TextScale.apply(lbl)
 		lbl.add_theme_color_override("font_color", item[1].lightened(0.35))
 		lbl.add_theme_constant_override("outline_size", 1)
 		lbl.add_theme_color_override("font_outline_color", Color.BLACK)
-		lbl.position = Vector2(legend_x + 14, y_off - 2)
 		lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		_canvas.add_child(lbl)
+		_legend_rows.append([dot, lbl])
+	_layout_legend()
+	if not GameState.text_size_scale_changed.is_connected(_on_text_size_changed):
+		GameState.text_size_scale_changed.connect(_on_text_size_changed)
+
+
+## Legend rows at a pitch that scales with their font; the reserved rect follows, so HUD avoiding it stays clear.
+func _layout_legend() -> void:
+	var pitch := float(TextScale.scaled(LEGEND_PITCH))
+	for i in range(_legend_rows.size()):
+		var y_off: float = _legend_origin.y + i * pitch
+		_legend_rows[i][0].position = Vector2(_legend_origin.x + 4, y_off + (pitch - 6.0) / 2.0 - 1.0)
+		_legend_rows[i][1].position = Vector2(_legend_origin.x + 14, y_off - 2)
+	_legend_rect = Rect2(_legend_origin.x, _legend_origin.y - 2, _bg.size.x, _legend_rows.size() * pitch + 4)
+
+
+func _on_text_size_changed(_scale: float) -> void:
+	for row in _legend_rows:
+		TextScale.apply(row[1])
+	_layout_legend()
+
+func _exit_tree() -> void:
+	if GameState.text_size_scale_changed.is_connected(_on_text_size_changed):
+		GameState.text_size_scale_changed.disconnect(_on_text_size_changed)
 
 
 func _get_dot_type(key: String) -> String:
