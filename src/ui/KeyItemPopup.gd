@@ -28,6 +28,12 @@ const NAME_COLOR := Color(1.0, 1.0, 1.0)
 const DESC_COLOR := Color(0.85, 0.85, 0.95)
 const HINT_COLOR := Color(0.6, 0.6, 0.7)
 
+
+## The card's geometry at the current Text Size: every box grows by the same factor as its font, so a slot sized for its
+## text at 1.0x still holds it at 2.0x, and 1.0x is the authored layout to the pixel.
+static func k(v: float) -> float:
+	return roundf(v * float(TextScale.scaled(100)) / 100.0)
+
 var _bg: ColorRect = null
 var _panel: Control = null
 var _hint: Label = null
@@ -122,23 +128,24 @@ func _present(item: Dictionary) -> void:
 	## Measured with the label's OWN resolved font rather than a default: a throwaway Label is
 	## parented here first so the theme chain is the one it will actually have inside the panel.
 	var desc_text: String = str(item.get("description", ""))
-	var desc_h: float = DESC_BAND_H
+	var desc_h: float = k(DESC_BAND_H)
 	if desc_text != "":
 		var probe := Label.new()
-		probe.add_theme_font_size_override("font_size", DESC_FONT_SIZE)
+		probe.add_theme_font_size_override("font_size", TextScale.scaled(DESC_FONT_SIZE))
 		add_child(probe)
 		var pf: Font = probe.get_theme_font("font")
 		if pf != null:
-			desc_h = maxf(DESC_BAND_H, pf.get_multiline_string_size(
-				desc_text, HORIZONTAL_ALIGNMENT_CENTER, PANEL_W - 40.0, DESC_FONT_SIZE).y)
+			desc_h = maxf(k(DESC_BAND_H), pf.get_multiline_string_size(
+				desc_text, HORIZONTAL_ALIGNMENT_CENTER, k(PANEL_W) - k(40.0), TextScale.scaled(DESC_FONT_SIZE)).y)
 		remove_child(probe)
 		probe.queue_free()
-	var panel_h: float = PANEL_H + (EXTRA_LINE_H if show_bag else 0.0) + (desc_h - DESC_BAND_H)
+	var pw: float = k(PANEL_W)
+	var panel_h: float = k(PANEL_H) + (k(EXTRA_LINE_H) if show_bag else 0.0) + (desc_h - k(DESC_BAND_H))
 
 	# Panel
 	_panel = Control.new()
-	_panel.size = Vector2(PANEL_W, panel_h)
-	_panel.position = Vector2((vp_size.x - PANEL_W) / 2.0, (vp_size.y - panel_h) / 2.0 - 20)
+	_panel.size = Vector2(pw, panel_h)
+	_panel.position = Vector2((vp_size.x - pw) / 2.0, maxf(8.0, (vp_size.y - panel_h) / 2.0 - k(20)))
 	add_child(_panel)
 
 	var panel_bg := ColorRect.new()
@@ -151,14 +158,14 @@ func _present(item: Dictionary) -> void:
 	var title := Label.new()
 	title.text = "Key Item Obtained!"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.position = Vector2(0, 16)
-	title.size = Vector2(PANEL_W, 28)
-	title.add_theme_font_size_override("font_size", 20)
+	title.position = Vector2(0, k(16))
+	title.size = Vector2(pw, k(28))
+	title.add_theme_font_size_override("font_size", TextScale.scaled(20))
 	title.add_theme_color_override("font_color", TITLE_COLOR)
 	_panel.add_child(title)
 
 	# Item sprite (optional)
-	var sprite_y := 56.0
+	var sprite_y := k(56.0)
 	var sprite_path := str(item.get("sprite_path", ""))
 	if sprite_path != "" and ResourceLoader.exists(sprite_path):
 		var tex := load(sprite_path) as Texture2D
@@ -169,8 +176,8 @@ func _present(item: Dictionary) -> void:
 			## 96 back up to the texture's own size and overflows the panel.
 			sprite_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 			sprite_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-			sprite_rect.size = Vector2(96, 96)
-			sprite_rect.position = Vector2((PANEL_W - 96) / 2.0, sprite_y)
+			sprite_rect.size = Vector2(k(96), k(96))
+			sprite_rect.position = Vector2((pw - k(96)) / 2.0, sprite_y)
 			_panel.add_child(sprite_rect)
 			_icon = sprite_rect
 	if _icon == null:
@@ -182,8 +189,8 @@ func _present(item: Dictionary) -> void:
 			icon_rect.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 			icon_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 			icon_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-			icon_rect.size = Vector2(64, 64)
-			icon_rect.position = Vector2((PANEL_W - 64) / 2.0, sprite_y + 16)
+			icon_rect.size = Vector2(k(64), k(64))
+			icon_rect.position = Vector2((pw - k(64)) / 2.0, sprite_y + k(16))
 			_panel.add_child(icon_rect)
 			_icon = icon_rect
 	if _icon == null:
@@ -192,9 +199,9 @@ func _present(item: Dictionary) -> void:
 		emblem.text = emblem_glyph(str(item.get("item_id", "")))
 		emblem.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		emblem.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		emblem.position = Vector2((PANEL_W - 96) / 2.0, sprite_y)
-		emblem.size = Vector2(96, 96)
-		emblem.add_theme_font_size_override("font_size", 64)
+		emblem.position = Vector2((pw - k(96)) / 2.0, sprite_y)
+		emblem.size = Vector2(k(96), k(96))
+		emblem.add_theme_font_size_override("font_size", TextScale.scaled(64))
 		emblem.add_theme_color_override("font_color", BORDER_LIGHT)
 		_panel.add_child(emblem)
 		_icon = emblem
@@ -203,9 +210,9 @@ func _present(item: Dictionary) -> void:
 	var name_label := Label.new()
 	name_label.text = str(item.get("name", "???"))
 	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	name_label.position = Vector2(0, 160)
-	name_label.size = Vector2(PANEL_W, 24)
-	name_label.add_theme_font_size_override("font_size", 18)
+	name_label.position = Vector2(0, k(160))
+	name_label.size = Vector2(pw, k(24))
+	name_label.add_theme_font_size_override("font_size", TextScale.scaled(18))
 	name_label.add_theme_color_override("font_color", NAME_COLOR)
 	_panel.add_child(name_label)
 
@@ -216,26 +223,26 @@ func _present(item: Dictionary) -> void:
 	# WHICH name is canonical is cowir-story's call; that the player can FIND it is not. So when the
 	# two differ, the bag's name goes under the flavour name — and this line DISAPPEARS on its own if
 	# the names are ever aligned, because equal names render nothing.
-	var desc_y := 188.0
+	var desc_y := k(188.0)
 	if show_bag:
 		var bag := Label.new()
 		bag.text = "In your bag: %s" % bag_name
 		bag.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		bag.position = Vector2(0, 184)
-		bag.size = Vector2(PANEL_W, EXTRA_LINE_H)
-		bag.add_theme_font_size_override("font_size", 11)
+		bag.position = Vector2(0, k(184))
+		bag.size = Vector2(pw, k(EXTRA_LINE_H))
+		bag.add_theme_font_size_override("font_size", TextScale.scaled(11))
 		bag.add_theme_color_override("font_color", HINT_COLOR)
 		_panel.add_child(bag)
-		desc_y = 184.0 + EXTRA_LINE_H
+		desc_y = k(184.0) + k(EXTRA_LINE_H)
 
 	# Description
 	var desc := Label.new()
 	desc.text = str(item.get("description", ""))
 	desc.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	desc.position = Vector2(20, desc_y)
-	desc.size = Vector2(PANEL_W - 40, desc_h)
-	desc.add_theme_font_size_override("font_size", DESC_FONT_SIZE)
+	desc.position = Vector2(k(20), desc_y)
+	desc.size = Vector2(pw - k(40), desc_h)
+	desc.add_theme_font_size_override("font_size", TextScale.scaled(DESC_FONT_SIZE))
 	desc.add_theme_color_override("font_color", DESC_COLOR)
 	_panel.add_child(desc)
 
@@ -243,9 +250,9 @@ func _present(item: Dictionary) -> void:
 	var hint := Label.new()
 	hint.text = continue_hint_text()
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	hint.position = Vector2(0, panel_h - 22.0)
-	hint.size = Vector2(PANEL_W, 18)
-	hint.add_theme_font_size_override("font_size", 10)
+	hint.position = Vector2(0, panel_h - k(22.0))
+	hint.size = Vector2(pw, k(18))
+	hint.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	hint.add_theme_color_override("font_color", HINT_COLOR)
 	_panel.add_child(hint)
 	_hint = hint

@@ -44,16 +44,43 @@ const FIELDS := [
 	[["CSI", "0.000", 9, 10, 8.0, 176.0, true],
 	 ["Yield:", "100%", 10, 10, 240.0, 280.0, false],
 	 ["Affinity:", "0.000", 10, 10, 340.0, 396.0, false]],
-	[["Corruption:", "0.00", 9, 9, 8.0, 76.0, false],
+	[["Corruption:", "0.00 / 5.0", 9, 9, 8.0, 76.0, false],
 	 ["Adaptation:", "0.00", 9, 9, 140.0, 210.0, false],
 	 ["Region Crack:", "Lv.0", 9, 9, 280.0, 360.0, false]],
 ]
 
 var _used_height: float = 42.0
+## What refresh() last showed, so a rebuild for a live Text Size change shows it again.
+var _last_stats: Dictionary = {}
+var _last_region: String = ""
 
 
 static func _text_w(t: String, fs: int) -> float:
 	return ThemeDB.fallback_font.get_string_size(t, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+
+
+## A field's font at the live Text Size: the authored 9/10 px were literals, so the setting never reached this strip.
+static func font_px(base: int) -> int:
+	return TextScale.scaled(base)
+
+
+## Where the authored CSI bar sits, measured from its title's x.
+const AUTHORED_BAR_DX := 22.0
+
+
+## True while every scaled title still ends before its bar or value, and every value before the next title.
+static func _authored_fits(group: Array, strip_w: float) -> bool:
+	for i in group.size():
+		var f: Array = group[i]
+		var title_end: float = float(f[4]) + _text_w(str(f[0]), font_px(int(f[2])))
+		var stop: float = float(f[4]) + AUTHORED_BAR_DX if bool(f[6]) else float(f[5])
+		if title_end > stop:
+			return false
+		var value_end: float = float(f[5]) + _text_w(str(f[1]), font_px(int(f[3])))
+		var limit: float = float(group[i + 1][4]) if i + 1 < group.size() else strip_w - PAD
+		if value_end > limit:
+			return false
+	return true
 
 
 ## The single layout computation. Both the builder and height_for_width() read it, so a caller's
@@ -63,27 +90,27 @@ static func compute_layout(strip_w: float) -> Dictionary:
 	var y: float = 4.0
 	for g in FIELDS.size():
 		var group: Array = FIELDS[g]
-		var authored_right: float = 0.0
+		var row_h: float = ROW_H
 		for f in group:
-			authored_right = maxf(authored_right, float(f[5]) + _text_w(str(f[1]), int(f[3])))
+			row_h = maxf(row_h, float(maxi(font_px(int(f[2])), font_px(int(f[3])))) + 8.0)
 		var placed: Array = []
-		if authored_right <= strip_w - PAD:
+		if _authored_fits(group, strip_w):
 			for f in group:
-				placed.append({"title_x": float(f[4]), "value_x": float(f[5]), "y": y, "bar": bool(f[6])})
+				placed.append({"title_x": float(f[4]), "value_x": float(f[5]), "bar_x": float(f[4]) + AUTHORED_BAR_DX, "y": y, "bar": bool(f[6])})
 		else:
 			var cx: float = PAD
 			for f in group:
-				var tw: float = _text_w(str(f[0]), int(f[2]))
-				var vw: float = _text_w(str(f[1]), int(f[3]))
+				var tw: float = _text_w(str(f[0]), font_px(int(f[2])))
+				var vw: float = _text_w(str(f[1]), font_px(int(f[3])))
 				var bar: float = (BAR_W + BAR_GAP) if bool(f[6]) else 0.0
 				var fw: float = tw + 4.0 + bar + vw
 				if cx > PAD and cx + fw > strip_w - PAD:
 					cx = PAD
-					y += ROW_H
-				placed.append({"title_x": cx, "value_x": cx + tw + 4.0 + bar, "y": y, "bar": bool(f[6])})
+					y += row_h
+				placed.append({"title_x": cx, "value_x": cx + tw + 4.0 + bar, "bar_x": cx + tw + 4.0, "y": y, "bar": bool(f[6])})
 				cx += fw + GAP
 		rows.append(placed)
-		y += ROW_H
+		y += row_h
 	return {"rows": rows, "height": y + 2.0}
 
 
@@ -98,6 +125,20 @@ func get_used_height() -> float:
 
 func _ready() -> void:
 	call_deferred("_build_strip")
+	## No visibility check: Settings hides the field HUD, so a live change always lands on a hidden strip.
+	if GameState and GameState.has_signal("text_size_scale_changed") and not GameState.text_size_scale_changed.is_connected(_on_text_size_changed):
+		GameState.text_size_scale_changed.connect(_on_text_size_changed)
+
+
+func _exit_tree() -> void:
+	if GameState and GameState.has_signal("text_size_scale_changed") and GameState.text_size_scale_changed.is_connected(_on_text_size_changed):
+		GameState.text_size_scale_changed.disconnect(_on_text_size_changed)
+
+
+func _on_text_size_changed(_scale: float = 1.0) -> void:
+	_build_strip()
+	if not _last_stats.is_empty() or _last_region != "":
+		refresh(_last_stats, _last_region)
 
 
 func _build_strip() -> void:
@@ -107,15 +148,18 @@ func _build_strip() -> void:
 	var strip_size = size
 	if strip_size.x < 10:
 		strip_size = Vector2(get_viewport().get_visible_rect().size.x - 16, 42)
+	var lay: Dictionary = compute_layout(strip_size.x)
+	_used_height = float(lay["height"])
+	## The box holds the text: a larger Text Size wraps or grows the rows, and the panel grows with them.
+	if strip_size.y < _used_height:
+		strip_size.y = _used_height
+		size.y = _used_height
 
 	var bg = ColorRect.new()
 	bg.color = PANEL_BG
 	bg.size = strip_size
 	add_child(bg)
 	_add_border(strip_size)
-
-	var lay: Dictionary = compute_layout(strip_size.x)
-	_used_height = float(lay["height"])
 	var rows: Array = lay["rows"]
 	var colors: Array = [[LABEL_COLOR, TEXT_COLOR], [LABEL_COLOR, COLOR_GOOD], [LABEL_COLOR, COLOR_NEUTRAL]]
 	var value_sink: Array = []
@@ -126,13 +170,13 @@ func _build_strip() -> void:
 			var title := Label.new()
 			title.text = str(f[0])
 			title.position = Vector2(float(at["title_x"]), float(at["y"]))
-			title.add_theme_font_size_override("font_size", int(f[2]))
+			title.add_theme_font_size_override("font_size", font_px(int(f[2])))
 			title.add_theme_color_override("font_color", LABEL_COLOR)
 			add_child(title)
 			if bool(at["bar"]):
 				var bar_bg := ColorRect.new()
 				bar_bg.color = Color(0.1, 0.1, 0.15)
-				bar_bg.position = Vector2(float(at["title_x"]) + 22.0, float(at["y"]))
+				bar_bg.position = Vector2(float(at["bar_x"]), float(at["y"]))
 				bar_bg.size = Vector2(BAR_W, 12)
 				add_child(bar_bg)
 				_csi_bar_fill = ColorRect.new()
@@ -143,7 +187,7 @@ func _build_strip() -> void:
 			var val := Label.new()
 			val.text = str(f[1])
 			val.position = Vector2(float(at["value_x"]), float(at["y"]) - (2.0 if g == 0 and i == 0 else 0.0))
-			val.add_theme_font_size_override("font_size", int(f[3]))
+			val.add_theme_font_size_override("font_size", font_px(int(f[3])))
 			val.add_theme_color_override("font_color", colors[i][1] if g == 0 else (COLOR_GOOD if i == 0 else COLOR_NEUTRAL))
 			add_child(val)
 			value_sink.append(val)
@@ -156,6 +200,8 @@ func _build_strip() -> void:
 
 
 func refresh(stats: Dictionary, region_id: String) -> void:
+	_last_stats = stats
+	_last_region = region_id
 	if not is_inside_tree():
 		return
 

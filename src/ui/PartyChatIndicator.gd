@@ -41,6 +41,9 @@ func _ready() -> void:
 		PartyChatSystem.chats_changed.connect(_refresh)
 	# A pad plugged in or pulled out changes which button the chip names.
 	Input.joy_connection_changed.connect(_on_joy_connection_changed)
+	# A kept node: a Text Size change made in Settings must reach it, even while the field HUD hides it.
+	if GameState and GameState.has_signal("text_size_scale_changed"):
+		GameState.text_size_scale_changed.connect(_on_text_size_changed)
 
 	# Position bottom-right of viewport
 	_reposition()
@@ -115,7 +118,8 @@ static func chat_button(device_name: String = "") -> String:
 
 ## Grows the panel to the text it now holds (never below PANEL_W x PANEL_H), so a large Text Size or a long pad name fits.
 func _fit() -> void:
-	var need := Vector2(maxf(PANEL_W, _label.get_combined_minimum_size().x + PAD.x), maxf(PANEL_H, _label.get_combined_minimum_size().y + PAD.y))
+	var text := _text_size()
+	var need := Vector2(maxf(PANEL_W, text.x + PAD.x), maxf(PANEL_H, text.y + PAD.y))
 	if _panel == null or _panel.size != need:
 		var old := _panel
 		_panel = RetroPanel.create_panel(int(need.x), int(need.y), Color(0.08, 0.08, 0.18, 0.92), Color(0.6, 0.8, 1.0, 1.0), Color(0.15, 0.2, 0.4, 1.0))
@@ -130,8 +134,29 @@ func _fit() -> void:
 	_reposition()
 
 
+## The label's text measured off its font at the size it holds NOW. A Label's own minimum size refreshes on a deferred
+## pass, so read in the same call as a font change it is the OLD size (measured: 190 px panel round 292 px of text).
+func _text_size() -> Vector2:
+	var px: int = _label.get_theme_font_size("font_size")
+	var f: Font = _label.get_theme_font("font")
+	var measured := Vector2.ZERO
+	if f:
+		measured = Vector2(f.get_string_size(_label.text, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x, f.get_height(px))
+	var m := _label.get_combined_minimum_size()
+	return Vector2(maxf(measured.x, m.x), maxf(measured.y, m.y))
+
+
 func _on_joy_connection_changed(_device: int, _connected: bool) -> void:
 	_refresh()
+
+
+## Re-reads the live scale and re-fits the panel. No visibility check: Settings is reached through the overworld menu,
+## which hides the field HUD, so the chip is hidden at the very moment this fires.
+func _on_text_size_changed(_scale: float) -> void:
+	if _label == null:
+		return
+	_label.add_theme_font_size_override("font_size", TextScale.scaled(BASE_FONT_SIZE))
+	_fit()
 
 
 func _gui_input(event: InputEvent) -> void:
