@@ -67,6 +67,12 @@ func test_the_title_menu_stays_on_screen_and_its_rows_hold_their_text() -> void:
 	for s in _presets():
 		GameState.set_text_size_scale(s)
 		var t := _title()
+		## The sandbox has no saves, so its menu lacks Continue and Load: four rows fit even unlifted at 2.0x. Add the two
+		## subtitle rows a save brings, as a player with saves sees, so the arm judges the TALLEST real menu.
+		var n0 := _rows(t).size()
+		for i in 2:
+			t._menu_container.add_child(t._create_menu_row(n0 + i, {"label": "CONTINUE", "subtitle": "Chapter 3 — Harmonia · 2026-11-06", "enabled": true}))
+		t._place_menu()
 		var vp: Vector2 = t.get_viewport_rect().size
 		var sep := float(t._menu_container.get_theme_constant("separation"))
 		var h := 0.0
