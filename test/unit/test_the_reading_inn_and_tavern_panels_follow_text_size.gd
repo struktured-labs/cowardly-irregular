@@ -118,6 +118,25 @@ func test_the_text_fits_its_built_panel_at_every_preset() -> void:
 				"the tavern panel cannot hold '%s' at %s" % [t.left(40), str(p)])
 
 
+## The fit arm judges the sizing functions; this one judges that the BUILT panels use them, or a builder ignoring them stays green.
+func test_the_built_panels_use_the_sizes_the_fit_arm_judged() -> void:
+	var longest: String = ""
+	for m in _inn_messages():
+		if str(m).length() > longest.length():
+			longest = str(m)
+	var tav: String = TAVERN_LINES[2]
+	for p in _presets():
+		GameState.text_size_scale = float(p)
+		var inn_panel: Panel = autofree(InnScript.new())._make_inn_dialog(longest).get_child(0).get_child(0)
+		assert_eq(inn_panel.size, InnScript.dialog_size(longest), "the built rest panel must take dialog_size() at %s" % str(p))
+		var tav_panel: Panel = autofree(TavernScript.new())._make_dialogue_layer(tav).get_child(0).get_child(0)
+		assert_eq(tav_panel.size, TavernScript.dialogue_size(tav), "the built tavern panel must take dialogue_size() at %s" % str(p))
+		var rp := _reading_panel()
+		var body: Label = rp.get_child(1)
+		assert_eq(body.size.x, ReadableProp.body_box().x, "the built reading body must wrap at body_box() width at %s" % str(p))
+		assert_lte(body.position.y + ReadableProp.body_box().y, rp.size.y, "the reading body band must sit inside its built panel at %s" % str(p))
+
+
 func test_the_tavern_dialogue_is_screen_space() -> void:
 	var layer = autofree(TavernScript.new())._make_dialogue_layer("*hm*")
 	assert_true(layer is CanvasLayer, "the tavern's panel must sit on a CanvasLayer, or the camera leaves it behind (the Inn's 2026-07-25 bug)")
