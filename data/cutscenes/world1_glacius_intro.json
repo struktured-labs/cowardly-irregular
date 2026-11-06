@@ -40,25 +40,25 @@
           "speaker": "Glacius",
           "text": "You know what I've been waiting for?",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "ice_dragon"
         },
         {
           "speaker": "Glacius",
           "text": "Three save files. THREE.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "ice_dragon"
         },
         {
           "speaker": "Glacius",
           "text": "One for each difficulty. One for each 'perfect' run.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "ice_dragon"
         },
         {
           "speaker": "Glacius",
           "text": "And every single one of you does the same thing.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "ice_dragon"
         },
         {
           "speaker": "Fighter",
@@ -70,13 +70,13 @@
           "speaker": "Glacius",
           "text": "I've been frozen here since the TUTORIAL. I've had time to read the documentation.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "ice_dragon"
         },
         {
           "speaker": "Glacius",
           "text": "Let's see how your autobattle handles THIS.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "ice_dragon"
         }
       ]
     },

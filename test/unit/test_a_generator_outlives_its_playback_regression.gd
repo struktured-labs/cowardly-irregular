@@ -80,24 +80,43 @@ func test_no_test_drops_a_kept_generator() -> void:
 	assert_eq(offenders, [] as Array[String], "a test drops a kept generator, so a player can outlive it mid-fade: %s" % [offenders])
 
 
-func test_nothing_else_in_src_builds_a_generator() -> void:
-	## A second construction site would bring the raw-pointer lifetime back; only the keeper may build one.
+## Test files allowed to build a generator, each with why it can never reach a mixing player. The list can only shrink:
+## an entry whose file no longer builds one reds as stale. (The #224 hang came from a TEST, which this walk once skipped.)
+const TEST_GENERATOR_SITES := {
+	"res://test/unit/test_a_cast_boss_speaks_its_last_words_live.gd": "hands it only to play_line_stream, which REFUSES a generator (returns 0.0, never assigns it), and asserts that",
+}
+
+
+func test_nothing_else_builds_a_generator() -> void:
+	## A second construction site would bring the raw-pointer lifetime back; only the keeper may build one, in src or in a test.
+	var strings := RegEx.create_from_string("\"(?:[^\"\\\\]|\\\\.)*\"")
 	var offenders: Array[String] = []
-	for f in _gd_files("res://src"):
-		var src: String = FileAccess.get_file_as_string(f)
-		var from: int = 0
-		while true:
-			var at: int = src.find("AudioStreamGenerator.new()", from)
-			if at < 0:
-				break
-			var fn_at: int = src.rfind("\nfunc ", at)
-			var fn_line: String = src.substr(fn_at + 1, src.find("\n", fn_at + 1) - fn_at - 1)
-			if not fn_line.begins_with("func _procedural_generator_for("):
-				offenders.append("%s: %s" % [f, fn_line])
-			from = at + 1
+	var seen_allowed := {}
+	var walked: int = 0
+	for f in _gd_files("res://src") + _gd_files("res://test"):
+		walked += 1
+		var func_line: String = ""
+		for line in FileAccess.get_file_as_string(f).split("\n"):
+			if line.begins_with("func "):
+				func_line = line
+			var code: String = strings.sub(line, "\"\"", true)
+			if code.strip_edges().begins_with("#") or not code.contains("AudioStreamGenerator.new()"):
+				continue
+			if f.begins_with("res://src") and func_line.begins_with("func _procedural_generator_for("):
+				continue
+			if TEST_GENERATOR_SITES.has(f):
+				seen_allowed[f] = true
+				continue
+			offenders.append("%s: %s" % [f, func_line])
+	assert_gt(walked, 500, "SCOPE: the walk reached src and test (%d files)" % walked)
 	assert_true(FileAccess.get_file_as_string("res://src/audio/SoundManager.gd").contains("func _procedural_generator_for("),
 		"SCOPE: the keeper function exists, so the walk below judges something")
 	assert_eq(offenders, [] as Array[String], "AudioStreamGenerator built outside the keeper: %s" % [offenders])
+	var stale: Array[String] = []
+	for f in TEST_GENERATOR_SITES:
+		if not seen_allowed.has(f):
+			stale.append(f)
+	assert_eq(stale, [] as Array[String], "these allowed test sites no longer build a generator; remove the entry: %s" % [stale])
 
 
 func _gd_files(root: String) -> Array[String]:

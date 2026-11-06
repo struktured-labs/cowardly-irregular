@@ -656,7 +656,7 @@ func _show_abilities_view() -> void:
 		job_name = member.job_display_name("Unknown")
 
 	var header = Label.new()
-	header.text = "Abilities - %s (%s)" % [member.combatant_name, job_name]
+	header.text = "Abilities - " + BattleUIManager.name_with_job(member.combatant_name, job_name)
 	header.add_theme_font_size_override("font_size", 16)
 	vbox.add_child(header)
 
