@@ -54,6 +54,33 @@ def delta(a_path, b_path):
     return over / (a.size[0] * a.size[1])
 
 
+def where(a_path, b_path):
+    """(pixel count over LEVEL, bbox (x0, y0, x1, y1) inclusive) of the change, or (0, None).
+
+    A share says HOW MUCH moved, never WHERE. Measured on the .772 recheck: three frames read MOVED,
+    and it took hand-made crops to learn that title_screen was 15 px in a 5x6 box at the corner (the
+    version label), tavern_interior the fireplace flame's phase, harmonia_village the pond water.
+    A villager, a sign and a label corner all read as one percentage; a box tells them apart."""
+    a = Image.open(a_path).convert("RGB")
+    b = Image.open(b_path).convert("RGB")
+    if a.size != b.size:
+        return 0, None
+    diff = ImageChops.difference(a, b)
+    mx = ImageChops.lighter(ImageChops.lighter(diff.getchannel(0), diff.getchannel(1)), diff.getchannel(2))
+    mask = mx.point(lambda v: 255 if v > LEVEL else 0)
+    bb = mask.getbbox()
+    if bb is None:
+        return 0, None
+    return mask.histogram()[255], (bb[0], bb[1], bb[2] - 1, bb[3] - 1)
+
+
+def fmt_where(count, bb):
+    if not bb:
+        return ""
+    x0, y0, x1, y1 = bb
+    return f"   {count} px in {x0},{y0}-{x1},{y1} ({x1 - x0 + 1}x{y1 - y0 + 1})"
+
+
 def verdict(d, noise):
     if d is None or noise is None:
         return "SIZE"
@@ -99,7 +126,8 @@ def main(argv):
         return 2
     print(f"[pixels] {len(rows)} shot(s) · share of pixels over {LEVEL} levels · MOVED = any change when noise is 0, else >= {MIN_MOVED:.0%} and > {NOISE_FACTOR:g}x noise")
     for n, v, d, noise in rows:
-        print(f"  {v:<7} {n:<30} vs stored {fmt(d)}   noise a/b {fmt(noise)}")
+        loc = fmt_where(*where(os.path.join(fa, n + ".png"), os.path.join(stored, n + ".png"))) if v in ("MOVED", "NOISE") else ""
+        print(f"  {v:<7} {n:<30} vs stored {fmt(d)}   noise a/b {fmt(noise)}{loc}")
     counts = {}
     for _, v, _, _ in rows:
         counts[v] = counts.get(v, 0) + 1
@@ -156,6 +184,22 @@ def selftest():
     ok = d is not None and abs(d - 0.30) < 1e-9
     fails += 0 if ok else 1; ran += 1
     print(f"  {'ok  ' if ok else 'FAIL'}  the moved block measures exactly 30.00% (got {fmt(d)})")
+    # WHERE: the box and count, exact on fixtures whose geometry is known
+    for name, want_w, label in (("moved", (3000, (0, 0, 99, 29)), "the moved block is located: 3000 px in 0,0-99,29"),
+                                ("tiny", (50, (0, 0, 49, 0)), "a one-row strip is located: 50 px in 0,0-49,0"),
+                                ("same", (0, None), "an identical frame has no box")):
+        got_w = where(os.path.join(A, name + ".png"), os.path.join(S, name + ".png"))
+        ok = got_w == want_w
+        fails += 0 if ok else 1; ran += 1
+        print(f"  {'ok  ' if ok else 'FAIL'}  {label} (got {got_w})")
+    import io, contextlib
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf):
+        main([S, A, B])
+    lines = {ln.split()[1]: ln for ln in buf.getvalue().splitlines() if ln.startswith("  ") and len(ln.split()) > 1}
+    ok = "3000 px in 0,0-99,29 (100x30)" in lines.get("moved", "") and " px in " not in lines.get("same", "x px in ")
+    fails += 0 if ok else 1; ran += 1
+    print(f"  {'ok  ' if ok else 'FAIL'}  the report prints the box on a MOVED row and none on a SAME row")
     rc = main([S, A, os.path.join(t, "nowhere")])
     ok = rc == 2
     fails += 0 if ok else 1; ran += 1
