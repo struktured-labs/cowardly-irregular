@@ -422,6 +422,16 @@ const RULE_NOOP_ROWS_MAX := 3
 const RULE_NOOP_REASON_CHARS := 36
 
 
+## Too long for the row: drop the generic action prefix ("Member Casts: ") before cutting, so the named spell survives.
+static func noop_reason_label(reason: String) -> String:
+	if reason.length() <= RULE_NOOP_REASON_CHARS:
+		return reason
+	var at := reason.find(": ")
+	if at > 0 and reason.length() - (at + 2) <= RULE_NOOP_REASON_CHARS:
+		return reason.substr(at + 2)
+	return reason.substr(0, RULE_NOOP_REASON_CHARS - 1) + "…"
+
+
 ## A rule that fired and changed nothing (no potions, a silenced healer) counted as fired above; these rows say what stopped it.
 func _rule_noop_rows() -> Array:
 	var noops: Dictionary = _stats.get("rule_noops", {})
@@ -429,9 +439,7 @@ func _rule_noop_rows() -> Array:
 	reasons.sort_custom(func(a, b): return int(noops[a]) > int(noops[b]))
 	var rows: Array = []
 	for reason in reasons.slice(0, RULE_NOOP_ROWS_MAX):
-		var text: String = str(reason)
-		if text.length() > RULE_NOOP_REASON_CHARS:
-			text = text.substr(0, RULE_NOOP_REASON_CHARS - 1) + "…"
+		var text: String = noop_reason_label(str(reason))
 		rows.append({"label": "  " + text, "value": "did nothing ×%d" % int(noops[reason]), "color": BAD_COLOR})
 	return rows
 
