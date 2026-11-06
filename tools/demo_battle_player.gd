@@ -19,11 +19,14 @@ var _seen_line := -1
 var _busy := false
 ## Members whose command menu this player drove: a member missing here acted on AI, not by hand.
 var played: Dictionary = {}
+## Revive/heal targets already chosen this selection phase: everyone picks before anyone acts, so without this 4 members revive one ally.
+var _claimed: Dictionary = {}
 
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_rng.randomize()
+	_bm().execution_phase_started.connect(func(): _claimed.clear())
 	_run()
 
 
@@ -188,15 +191,17 @@ func _plan(scene: Node, pc) -> Dictionary:
 	# A member down first: Raise, else a Phoenix Down (Mordaine's lv30 take lost the Mage and the Bard with no way back).
 	var down = null
 	for m in _bm().player_party:
-		if is_instance_valid(m) and not m.is_alive:
+		if is_instance_valid(m) and not m.is_alive and not _claimed.has(m.get_instance_id()):
 			down = m
 			break
 	if down != null:
 		var d_idx: int = _bm().player_party.find(down)
 		if _knows(pc, "raise"):
+			_claimed[down.get_instance_id()] = true
 			return {"why": "%s is down, raise" % down.combatant_name,
 				"steps": [{"path": ["ability_menu", ["ability_menu_raise", "ability_raise"], "ability_raise_dead_%d" % d_idx], "commit": "accept"}]}
 		if _is().party_item_count(_bm().consumable_bag(pc), "phoenix_down") > 0:
+			_claimed[down.get_instance_id()] = true
 			return {"why": "%s is down, phoenix down" % down.combatant_name,
 				"steps": [{"path": ["item_menu", "item_menu_phoenix_down", "item_phoenix_down_ally_%d" % d_idx], "commit": "accept"}]}
 	# Heal the lowest ally under 40%, or under 50% once two are that low (a spread hit is coming again).
@@ -204,16 +209,18 @@ func _plan(scene: Node, pc) -> Dictionary:
 	var heal_at: float = 0.50 if low_count >= 2 else 0.40
 	var hurt = null
 	for m in party:
-		if _hp_frac(m) < heal_at and (hurt == null or _hp_frac(m) < _hp_frac(hurt)):
+		if _hp_frac(m) < heal_at and not _claimed.has(m.get_instance_id()) and (hurt == null or _hp_frac(m) < _hp_frac(hurt)):
 			hurt = m
 	if hurt != null:
 		var h_idx: int = _bm().player_party.find(hurt)
 		for aid in ["curaga", "cura", "cure"]:
 			if _knows(pc, aid):
+				_claimed[hurt.get_instance_id()] = true
 				return {"why": "%s at %d%%, heal" % [hurt.combatant_name, int(_hp_frac(hurt) * 100)],
 					"steps": [{"path": ["ability_menu", ["ability_menu_" + aid, "ability_" + aid], "ability_%s_ally_%d" % [aid, h_idx]], "commit": "accept"}]}
 		for iid in ["hi_potion", "potion"]:
 			if _is().party_item_count(_bm().consumable_bag(pc), iid) > 0:
+				_claimed[hurt.get_instance_id()] = true
 				return {"why": "%s at %d%%, potion" % [hurt.combatant_name, int(_hp_frac(hurt) * 100)],
 					"steps": [{"path": ["item_menu", "item_menu_" + iid, "item_%s_ally_%d" % [iid, h_idx]], "commit": "accept"}]}
 	# A telegraphed big hit, or AP in debt: Defer and take it on the chin.
