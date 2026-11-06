@@ -38,7 +38,7 @@ func _toast_labels() -> Array:
 
 
 func test_the_floor_names_every_member_this_file_drives() -> void:
-	assert_true(Toast.has_method("show"), "Toast.show must exist")
+	assert_true(Toast.new().has_method("show"), "Toast.show must exist")
 	assert_true("_active_layers" in Toast, "Toast._active_layers must exist")
 	var o: Control = autofree(CO.new())
 	for m in ["overlay_scale", "drawn_size", "_on_text_size_changed", "_reanchor"]:
