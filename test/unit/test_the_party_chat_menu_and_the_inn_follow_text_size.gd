@@ -78,8 +78,11 @@ func test_the_grown_text_fits_the_built_panel() -> void:
 		var menu = await _open(float(p))
 		var title: Label = menu._title_label
 		var hint: Label = menu._hint_label
-		assert_lte(_width(title), title.size.x, "the title fits its box at Text Size %s" % p)
-		assert_lte(_width(hint), hint.size.x, "the control hint fits the panel at Text Size %s (%.0f > %.0f)" % [p, _width(hint), hint.size.x])
+		## Judged against the PANEL's inner width, not the label's: a Label with trimming off grows its own size to its
+		## text, so `size.x` always holds it and an arm against it can never fail (cowir-controller 22795).
+		var inner: float = (title.get_parent() as Control).size.x - 2.0 * title.position.x
+		assert_lte(_width(title), inner, "the title fits inside the panel at Text Size %s" % p)
+		assert_lte(_width(hint), inner, "the control hint fits inside the panel at Text Size %s (%.0f > %.0f)" % [p, _width(hint), inner])
 		assert_lte(hint.position.y + hint.get_theme_font("font").get_height(_px(hint)), menu._ph,
 			"the hint stays inside the panel at Text Size %s" % p)
 		var widest := 0.0
