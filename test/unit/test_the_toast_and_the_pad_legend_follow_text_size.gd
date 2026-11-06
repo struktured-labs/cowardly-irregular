@@ -57,7 +57,9 @@ func test_a_toast_grows_with_the_text() -> void:
 		assert_gt(sizes[i], sizes[i - 1], "the toast's font must grow at every Text Size step: %s" % [sizes])
 
 
-## Judged off the FONT at the size the label holds, never the label's own (deferred) minimum.
+## The band the STACK uses (LINE_BAND + the layer's recorded extra), judged against the text measured off the font. Not
+## label.size: a Label grows to its own content, so its size holds the text even when the recorded band is short (the
+## .780 slot's M2 left that version green while the next toast printed through it).
 func test_a_toast_band_holds_its_wrapped_text_at_every_size() -> void:
 	for s in _presets():
 		GameState.set_text_size_scale(s)
@@ -65,7 +67,8 @@ func test_a_toast_band_holds_its_wrapped_text_at_every_size() -> void:
 		var label: Label = _toast_labels()[1]
 		var px: int = label.get_theme_font_size("font_size")
 		var need: float = label.get_theme_font("font").get_multiline_string_size(LONG, HORIZONTAL_ALIGNMENT_CENTER, label.size.x, px).y
-		assert_gte(label.size.y, need - 0.5, "at Text Size %s the band (%.0f) holds the wrapped text (%.0f)" % [s, label.size.y, need])
+		var band: float = Toast.LINE_BAND + float(Toast._active_layers.back().get_meta("toast_extra_h", 0.0))
+		assert_gte(band, need - 0.5, "at Text Size %s the recorded band (%.0f) holds the wrapped text (%.0f)" % [s, band, need])
 
 
 func test_two_large_toasts_do_not_print_through_each_other() -> void:
@@ -91,7 +94,8 @@ func test_the_legend_grows_with_the_text_and_stays_on_screen() -> void:
 		var o := _overlay()
 		scales.append(o.scale.x)
 		var vp: Vector2 = o.get_viewport().get_visible_rect().size
-		var drawn := Rect2(o.position, o.drawn_size())
+		## The footprint from the TEST's arithmetic, not drawn_size(), so a wrong drawn_size() cannot vouch for itself.
+		var drawn := Rect2(o.position, CO.OVERLAY_SIZE * o.scale)
 		assert_true(Rect2(Vector2.ZERO, vp).encloses(drawn), "at Text Size %s the scaled legend stays on screen: %s in %s" % [s, drawn, vp])
 		assert_almost_eq(o.drawn_size().x, CO.OVERLAY_SIZE.x * o.scale.x, 0.01, "its anchor uses the size it DRAWS at (%s)" % s)
 	for i in range(1, scales.size()):
@@ -107,7 +111,7 @@ func test_a_live_change_reaches_the_hidden_legend() -> void:
 	assert_almost_eq(o.scale.x, CO.overlay_scale(), 0.001, "the hidden legend took the new scale")
 	assert_gt(o.scale.x, 1.5, "and actually grew")
 	var vp: Vector2 = o.get_viewport().get_visible_rect().size
-	assert_true(Rect2(Vector2.ZERO, vp).encloses(Rect2(o.position, o.drawn_size())), "and was re-anchored on screen at its new size")
+	assert_true(Rect2(Vector2.ZERO, vp).encloses(Rect2(o.position, CO.OVERLAY_SIZE * o.scale)), "and was re-anchored on screen at its new size")
 
 
 func test_one_x_is_the_authored_legend() -> void:
