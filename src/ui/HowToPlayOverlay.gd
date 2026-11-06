@@ -230,7 +230,7 @@ static func _face_cell_for_index(button_index: int, fallback_face: String) -> St
 static func _close_glyph() -> String:
 	if InputProfileManager:
 		return InputProfileManager.hint_for_action("ui_cancel")
-	return "X"
+	return KeyLabel.first_key("ui_cancel", "Back")
 
 
 func _gui_input(event: InputEvent) -> void:
