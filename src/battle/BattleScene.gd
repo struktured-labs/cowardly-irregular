@@ -6853,7 +6853,7 @@ func _on_trust_interrupt_window_opened(pc: Combatant, seconds: float) -> void:
 	if sprite is AnimatedSprite2D:
 		head.y -= BattleSpeechBubble.head_lift(sprite)
 		head.x += BattleSpeechBubble.head_dx(sprite)
-	_trust_pill = TrustTurnPill.show_over(self, head, BattleManager._trust_interrupt_token(), seconds, _trust_pill_keep_out())
+	_trust_pill = TrustTurnPill.show_over(self, head, BattleManager._trust_interrupt_token(), seconds, _trust_pill_keep_out(), BattleManager.trust_window_time_left)
 
 
 func _on_trust_interrupt_window_closed(_pc: Combatant, _interrupted: bool) -> void:
