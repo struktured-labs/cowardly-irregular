@@ -32,7 +32,7 @@ var _line_voice_sec: float = 0.0
 static func confirm_glyph(device_name: String = "") -> String:
 	if InputProfileManager:
 		return InputProfileManager.glyph_for_action("ui_accept", device_name)
-	return "A"
+	return "Confirm"  # no autoload, so no pad family to name a cap for: the meaning, not a Nintendo letter
 
 
 ## The pad's share of a hint, empty with no pad so a keyboard player is not shown a cap they do not have.
@@ -44,7 +44,7 @@ static func confirm_pad_segment(device_name: String = "") -> String:
 
 ## The Confirm KEY, from the binding — it was a literal "Z" until Confirm moved to X (emulator layout).
 static func confirm_key() -> String:
-	return InputProfileManager.first_key_label("ui_accept", "X") if InputProfileManager else "X"
+	return KeyLabel.first_key("ui_accept", "Confirm")
 
 
 static func advance_hint_text(device_name: String = "") -> String:

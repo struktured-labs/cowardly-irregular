@@ -697,23 +697,7 @@ func first_key_label(action: String, fallback: String) -> String:
 ## Returns "—" if the action has no key event. Joins multiple keys with
 ## " / " (matches the gamepad label format).
 func get_action_key_label(action: String) -> String:
-	if not InputMap.has_action(action):
-		return "—"
-	var events := InputMap.action_get_events(action)
-	var labels: Array[String] = []
-	for ev in events:
-		if ev is InputEventKey:
-			var ke := ev as InputEventKey
-			# Prefer keycode (logical) over physical_keycode for display so
-			# users see the printed key name, e.g. "L" instead of "OS-keycode-76".
-			var kc: Key = ke.keycode if ke.keycode != 0 else ke.physical_keycode
-			if kc == 0:
-				continue
-			var name := OS.get_keycode_string(kc)
-			if name == "":
-				continue
-			labels.append(name)
-	return " / ".join(labels) if labels.size() > 0 else "—"
+	return KeyLabel.all_keys(action)
 
 
 ## Read-only: same idea for mouse bindings. Returns "—" if no mouse event

@@ -947,14 +947,14 @@ func _build_loot_strip(results: Dictionary, flourish: bool) -> void:
 
 ## The prompt a player reads after EVERY battle. `ui_accept` advances it (GameLoop's
 ## _wait_for_confirm_victory), and this game puts Confirm on the EAST face — Ⓐ on a Switch pad, Ⓑ on
-## Xbox, ○ on PlayStation, and Z/Enter/Space on a keyboard. The frozen "A" was right on exactly one
+## Xbox, ○ on PlayStation, and X/Enter/Space on a keyboard. The frozen "A" was right on exactly one
 ## family and named a button keyboard players do not have.
 func _confirm_token() -> String:
 	var ipm = Engine.get_main_loop().root.get_node_or_null("InputProfileManager")
 	if ipm == null:
-		return "Z"
+		return KeyLabel.first_key("ui_accept", "Confirm")
 	var hint: String = ipm.hint_for_action("ui_accept")
-	return hint if hint != "" else "Z"
+	return hint if hint != "" else KeyLabel.first_key("ui_accept", "Confirm")
 
 
 static func tally_prompt(tok: String) -> String:
