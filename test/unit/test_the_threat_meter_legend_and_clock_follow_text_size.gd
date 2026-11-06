@@ -77,19 +77,18 @@ func test_every_surface_grows_at_every_preset() -> void:
 			last[k] = now[k]
 
 
-## How far the drawn "!" reaches below the bar's top edge; a Label draws at least its font's height, whatever its box says.
-func _icon_overlap(t: Node) -> float:
+## Where the "!" glyph's baseline sits: its label's top plus the font's ascent at the live size.
+func _baseline(t: Node) -> float:
 	var icon: Label = t._icon_label
-	return icon.position.y + maxf(icon.size.y, _h(icon)) - t._bar_bg.position.y
+	return icon.position.y + icon.get_theme_font("font").get_ascent(_px(icon))
 
 
 func test_the_text_fits_its_built_layout_at_every_preset() -> void:
-	GameState.text_size_scale = 1.0
-	var authored_overlap := _icon_overlap(_threat())
 	for p in _presets():
 		GameState.text_size_scale = float(p)
 		var t := _threat()
-		assert_lte(_icon_overlap(t), authored_overlap + 1.0, "the '!' grows down onto the bar at %s (%.1f px past the authored %.1f)" % [str(p), _icon_overlap(t), authored_overlap])
+		assert_almost_eq(_baseline(t), t.authored_baseline(), 0.5, "the '!' baseline moved off its authored line at %s, so it grows down onto the bar" % str(p))
+		assert_lte(t._icon_label.get_theme_font("font").get_string_size("!", HORIZONTAL_ALIGNMENT_LEFT, -1, _px(t._icon_label)).x, t._icon_label.size.x, "the '!' box is narrower than its glyph at %s" % str(p))
 		var m := _minimap()
 		var rows: Array = m._legend_rows
 		assert_gt(rows.size(), 1, "FLOOR: the legend must have rows")
@@ -119,12 +118,11 @@ func test_a_live_change_reaches_every_built_surface() -> void:
 	var dial_before: float = dial.size.x
 	GameState.set_text_size_scale(2.0)
 	assert_gt(_px(t._icon_label), icon_before, "the '!' follows the live change")
-	assert_eq(t._icon_label.size.y, float(TextScale.scaled(ThreatScript.ICON_BOX)), "and its box is re-laid-out")
+	assert_almost_eq(_baseline(t), t.authored_baseline(), 0.5, "and is re-laid-out on its authored baseline")
 	var pitch_after: float = m._legend_rows[1][1].position.y - m._legend_rows[0][1].position.y
 	assert_gt(pitch_after, pitch_before, "the legend re-pitches its rows")
 	## Against the font measured at the NEW size (controller 22729: a Label's minimum refreshes a frame late).
 	assert_gte(pitch_after, _h(m._legend_rows[0][1]) - 2.0, "the new pitch clears a row of text at the NEW size")
-	assert_lte(_h(t._icon_label), t._icon_label.size.y + 1.0, "the '!' box holds its glyph at the NEW size")
 	assert_gt(dial.size.x, dial_before, "the dial grows")
 	assert_eq(dial.position, DayClockWidget.dial_position(), "and sits where its rule says, at the live size")
 
@@ -133,7 +131,7 @@ func test_the_authored_layout_holds_at_1x() -> void:
 	GameState.text_size_scale = 1.0
 	var t := _threat()
 	var vp: Vector2 = t._vp_size
-	assert_eq(t._icon_label.size, Vector2(16, 16), "at 1.0x the '!' keeps its authored 16x16")
+	assert_eq(t._icon_label.size.x, 16.0, "at 1.0x the '!' keeps its authored 16 px width (a Label clamps its height to the line)")
 	assert_eq(t._icon_label.position, Vector2(vp.x / 2.0 - 8.0, vp.y - 36.0), "and its authored position")
 	var m := _minimap()
 	assert_almost_eq(m._legend_rows[1][1].position.y - m._legend_rows[0][1].position.y, 14.0, 0.01, "the legend keeps its 14px pitch")

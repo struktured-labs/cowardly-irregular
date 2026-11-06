@@ -15,8 +15,8 @@ const DETECTION_RANGE: float = 300.0  # Start showing when monster within this r
 const BAR_WIDTH: float = 80.0
 const BAR_HEIGHT: float = 6.0
 const ICON_FONT_SIZE := 12
-const ICON_BOX := 16  ## the authored "!" box; it grows by the Text Size factor, upward from its authored bottom edge
-const ICON_BOTTOM_GAP: float = 20.0  ## the icon's bottom sits this far above the screen's bottom edge at every size
+const ICON_BOX := 16  ## the authored "!" width; it grows by the Text Size factor
+const ICON_TOP: float = 36.0  ## the authored label top above the screen's bottom edge, at 100%
 
 var _vp_size := Vector2(1280, 720)
 
@@ -67,11 +67,20 @@ func setup(parent: Node, player: Node2D, spawner: Node) -> void:
 		GameState.text_size_scale_changed.connect(_on_text_size_changed)
 
 
-## The "!" box scales with the font and grows UPWARD, so a larger icon never lands on the bar below it.
+## The glyph's BASELINE stays where it was authored at every size, so a larger "!" grows UPWARD, never onto the bar.
+## (A Label clamps up to its line height, 23 px for 12 px in this theme, so the box was never the thing to anchor.)
 func _layout_icon() -> void:
 	var box := float(TextScale.scaled(ICON_BOX))
+	var font: Font = _icon_label.get_theme_font("font")
+	var asc: float = font.get_ascent(_icon_label.get_theme_font_size("font_size")) if font else 0.0
+	var baseline: float = authored_baseline()
 	_icon_label.size = Vector2(box, box)
-	_icon_label.position = Vector2(_vp_size.x / 2.0 - box / 2.0, _vp_size.y - ICON_BOTTOM_GAP - box)
+	_icon_label.position = Vector2(_vp_size.x / 2.0 - box / 2.0, baseline - asc)
+
+
+func authored_baseline() -> float:
+	var font: Font = _icon_label.get_theme_font("font") if _icon_label else null
+	return _vp_size.y - ICON_TOP + (font.get_ascent(ICON_FONT_SIZE) if font else 0.0)
 
 
 func _on_text_size_changed(_scale: float) -> void:
