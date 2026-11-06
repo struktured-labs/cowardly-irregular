@@ -131,6 +131,7 @@ func _step() -> void:
 	var bd = scene.get("_battle_dialogue")
 	if bd != null and is_instance_valid(bd) and bd.visible:
 		await _beat(1.6, 2.4)
+		await _voice_done()
 		await press("ui_accept")
 		return
 	if scene.get_node_or_null("VictoryResults") != null:
@@ -164,9 +165,19 @@ func _read_line(dlg: Node) -> void:
 		# Still the line already confirmed: the index advances a frame late, and a second press here cut the NEXT voice line 0.4 s in (sfx 22756).
 		await _beat(0.1)
 		return
+	await _voice_done()
 	_pressed_at_ms = Time.get_ticks_msec()
 	await press("ui_accept")
 	await _beat(0.25)
+
+
+## A Confirm closes the box on a batch's last line, and closing it stops the recording (cutscenes 22759): let the line finish, 10 s at most.
+func _voice_done() -> void:
+	var sm = get_tree().root.get_node_or_null("SoundManager")
+	var waited := 0.0
+	while sm != null and sm.has_method("is_voiced_line_playing") and sm.is_voiced_line_playing() and waited < 10.0:
+		await _beat(0.1)
+		waited += 0.1
 
 
 # ── Policy ───────────────────────────────────────────────────────────────────
