@@ -24,15 +24,19 @@ const WIN98 := "res://src/ui/Win98Menu.gd"
 const GdSource := preload("res://test/unit/helpers/gd_source.gd")
 
 var _saved_setting: bool = false
+var _saved_left_right: bool = false
 
 
 func before_each() -> void:
 	_saved_setting = bool(GameState.advance_commits_at_limit)
 	GameState.advance_commits_at_limit = false
+	_saved_left_right = bool(GameState.left_right_confirm)
+	GameState.left_right_confirm = false
 
 
 func after_each() -> void:
 	GameState.advance_commits_at_limit = _saved_setting
+	GameState.left_right_confirm = _saved_left_right
 
 
 func _items() -> Array:
@@ -148,8 +152,9 @@ func test_confirm_at_a_full_queue_commits_exactly_the_queue() -> void:
 		assert_ne(a.id, "guard", "the highlighted item must NOT ride along with a full queue")
 
 
-## The d-pad-left confirm on a left-expanding menu is the same commit — the battle menu expands left.
+## The d-pad-left confirm on a left-expanding menu is the same commit — only after Left/Right Confirm is on.
 func test_dpad_left_confirm_commits_exactly_the_queue_too() -> void:
+	GameState.left_right_confirm = true
 	var m = _menu(4, true)
 	for i in range(4):
 		_advance(m)
