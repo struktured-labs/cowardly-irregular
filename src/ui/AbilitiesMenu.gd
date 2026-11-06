@@ -502,11 +502,13 @@ func _create_ability_details_panel(panel_size: Vector2) -> Control:
 
 	# Description
 	var desc_label = Label.new()
+	# Wrap BEFORE text: a Label given its text unwrapped caches the whole line as its minimum width, and a later size
+	# cannot shrink it (measured: a 586 px description box held at 777 px, running past its panel's edge).
+	desc_label.autowrap_mode = TextServer.AUTOWRAP_WORD
 	desc_label.text = data.get("description", "No description available")
 	desc_label.position = Vector2(12, 88) * _k
 	desc_label.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	desc_label.add_theme_color_override("font_color", TEXT_COLOR)
-	desc_label.autowrap_mode = TextServer.AUTOWRAP_WORD
 	var desc_w: float = panel_size.x - _s(24)
 	desc_label.size = Vector2(desc_w, maxf(100.0, wrapped_height(desc_label, desc_w)))
 	panel.add_child(desc_label)
@@ -714,11 +716,11 @@ func _create_passive_details_panel(panel_size: Vector2) -> Control:
 
 	# Description
 	var desc_label = Label.new()
+	desc_label.autowrap_mode = TextServer.AUTOWRAP_WORD   # before text, as the ability description above
 	desc_label.text = data.get("description", "No description available")
 	desc_label.position = Vector2(12, 88) * _k
 	desc_label.add_theme_font_size_override("font_size", TextScale.scaled(11))
 	desc_label.add_theme_color_override("font_color", TEXT_COLOR)
-	desc_label.autowrap_mode = TextServer.AUTOWRAP_WORD
 	var pdesc_w: float = panel_size.x - _s(24)
 	desc_label.size = Vector2(pdesc_w, maxf(60.0, wrapped_height(desc_label, pdesc_w)))
 	panel.add_child(desc_label)

@@ -69,7 +69,9 @@ func _text_rect(lb: Label) -> Rect2:
 	if lb.autowrap_mode != TextServer.AUTOWRAP_OFF:
 		sz = f.get_multiline_string_size(lb.text, HORIZONTAL_ALIGNMENT_LEFT, lb.size.x, px)
 	else:
-		sz = f.get_string_size(lb.text, HORIZONTAL_ALIGNMENT_LEFT, -1, px)
+		## A single line by its glyphs' ASCENT, not its full line box: at 100% the 14 px name's line box (descent
+		## included) already reaches the job line under it, while the glyphs never touch.
+		sz = Vector2(f.get_string_size(lb.text, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x, f.get_ascent(px))
 	return Rect2(lb.global_position, sz)
 
 
