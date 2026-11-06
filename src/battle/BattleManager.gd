@@ -2158,9 +2158,9 @@ func trust_window_time_left() -> float:
 func _trust_interrupt_token() -> String:
 	var ipm = get_node_or_null("/root/InputProfileManager")
 	if ipm == null:
-		return "X"
+		return KeyLabel.first_key("ui_cancel", "Back")
 	var tok: String = ipm.hint_for_action("ui_cancel")
-	return tok if tok != "" else "X"
+	return tok if tok != "" else KeyLabel.first_key("ui_cancel", "Back")
 
 
 ## Whether a trusted turn offers its take-it-back window at the speed the PLAYER chose. Not Engine.time_scale:
