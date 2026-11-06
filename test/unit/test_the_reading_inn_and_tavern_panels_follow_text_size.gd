@@ -30,6 +30,10 @@ func _presets() -> Array:
 	return SettingsMenu.TEXT_SIZE_PRESETS
 
 
+func k_of(base: int) -> float:
+	return float(TextScale.scaled(base)) / float(base)
+
+
 func _wrapped_h(text: String, width: float, px: int, align: int) -> float:
 	return ThemeDB.fallback_font.get_multiline_string_size(text, align, width, px, -1, InnScript.WRAP_FLAGS).y
 
@@ -116,6 +120,31 @@ func test_the_text_fits_its_built_panel_at_every_preset() -> void:
 			var tin := tsz - Vector2(TavernScript.DIALOGUE_PAD, TavernScript.DIALOGUE_PAD) * 2.0 * ktav
 			assert_lte(_wrapped_h(t, tin.x, TextScale.scaled(TavernScript.DIALOGUE_FONT), HORIZONTAL_ALIGNMENT_LEFT), tin.y + 0.5,
 				"the tavern panel cannot hold '%s' at %s" % [t.left(40), str(p)])
+
+
+## The fit arm judges the sizing functions; this one judges that the BUILT panels use them, or a builder ignoring them stays green.
+func test_the_built_panels_use_the_sizes_the_fit_arm_judged() -> void:
+	var longest: String = ""
+	for m in _inn_messages():
+		if str(m).length() > longest.length():
+			longest = str(m)
+	var tav: String = TAVERN_LINES[2]
+	for p in _presets():
+		GameState.text_size_scale = float(p)
+		var inn_panel: Panel = autofree(InnScript.new())._make_inn_dialog(longest).get_child(0).get_child(0)
+		assert_eq(inn_panel.size, InnScript.dialog_size(longest), "the built rest panel must take dialog_size() at %s" % str(p))
+		var inn_label: Label = inn_panel.get_child(0)
+		assert_almost_eq(inn_label.size.x, inn_panel.size.x - InnScript.DIALOG_PAD * 2.0 * k_of(InnScript.DIALOG_FONT), 0.01, "the built rest label must wrap at its panel's inner width at %s" % str(p))
+		var tav_panel: Panel = autofree(TavernScript.new())._make_dialogue_layer(tav).get_child(0).get_child(0)
+		assert_eq(tav_panel.size, TavernScript.dialogue_size(tav), "the built tavern panel must take dialogue_size() at %s" % str(p))
+		for t in TAVERN_LINES:
+			var tp: Panel = autofree(TavernScript.new())._make_dialogue_layer(t).get_child(0).get_child(0)
+			var tl: Label = tp.get_child(0)
+			assert_almost_eq(tl.size.x, tp.size.x - TavernScript.DIALOGUE_PAD * 2.0 * k_of(TavernScript.DIALOGUE_FONT), 0.01, "the built tavern label must wrap at its panel's inner width, not its line ('%s' at %s)" % [t.left(30), str(p)])
+		var rp := _reading_panel()
+		var body: Label = rp.get_child(1)
+		assert_eq(body.size.x, ReadableProp.body_box().x, "the built reading body must wrap at body_box() width at %s" % str(p))
+		assert_lte(body.position.y + ReadableProp.body_box().y, rp.size.y, "the reading body band must sit inside its built panel at %s" % str(p))
 
 
 func test_the_tavern_dialogue_is_screen_space() -> void:
