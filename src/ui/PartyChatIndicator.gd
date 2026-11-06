@@ -41,6 +41,9 @@ func _ready() -> void:
 		PartyChatSystem.chats_changed.connect(_refresh)
 	# A pad plugged in or pulled out changes which button the chip names.
 	Input.joy_connection_changed.connect(_on_joy_connection_changed)
+	# A kept node: a Text Size change made in Settings must reach it, even while the field HUD hides it.
+	if GameState and GameState.has_signal("text_size_scale_changed"):
+		GameState.text_size_scale_changed.connect(_on_text_size_changed)
 
 	# Position bottom-right of viewport
 	_reposition()
@@ -132,6 +135,15 @@ func _fit() -> void:
 
 func _on_joy_connection_changed(_device: int, _connected: bool) -> void:
 	_refresh()
+
+
+## Re-reads the live scale and re-fits the panel. No visibility check: Settings is reached through the overworld menu,
+## which hides the field HUD, so the chip is hidden at the very moment this fires.
+func _on_text_size_changed(_scale: float) -> void:
+	if _label == null:
+		return
+	_label.add_theme_font_size_override("font_size", TextScale.scaled(BASE_FONT_SIZE))
+	_fit()
 
 
 func _gui_input(event: InputEvent) -> void:
