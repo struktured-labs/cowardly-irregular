@@ -92,8 +92,10 @@ func _rows() -> Array:
 func _ui_cancel_letters() -> Array:
 	var out: Array = []
 	for ev in InputMap.action_get_events("ui_cancel"):
-		if ev is InputEventKey and (ev as InputEventKey).keycode != 0:
-			out.append(OS.get_keycode_string((ev as InputEventKey).keycode))
+		if ev is InputEventKey:
+			var kc: int = (ev as InputEventKey).keycode if (ev as InputEventKey).keycode != 0 else (ev as InputEventKey).physical_keycode
+			if kc != 0:
+				out.append(OS.get_keycode_string(kc))
 	return out
 
 
