@@ -308,8 +308,11 @@ func _build_ui() -> void:
 			val.size = Vector2(box_w, _grew(20.0))
 		if s.has("fit_reason"):
 			var font: Font = lbl.get_theme_font("font")
-			var val_w: float = minf(box_w, font.get_string_size(val.text, HORIZONTAL_ALIGNMENT_LEFT, -1, stats_px).x) if font else box_w
-			lbl.text = fit_noop_reason(str(s["fit_reason"]), font, stats_px, val.position.x + box_w - val_w - _grew(8.0) - lbl.position.x)
+			## The value's box shrinks to its text, so the reason gets the room up to the drawn value, not up to an empty box.
+			var val_w: float = minf(box_w, ceilf(font.get_string_size(val.text, HORIZONTAL_ALIGNMENT_LEFT, -1, stats_px).x) + 2.0) if font else box_w
+			val.position.x += box_w - val_w
+			val.size = Vector2(val_w, _grew(20.0))
+			lbl.text = fit_noop_reason(str(s["fit_reason"]), font, stats_px, val.position.x - _grew(8.0) - lbl.position.x)
 
 	y = head_h + rows_per_col * row_h
 
@@ -471,13 +474,16 @@ static func fit_noop_reason(reason: String, font: Font, px: int, max_w: float) -
 	return "  …"
 
 
-## Removes the last rule-note row, if any; false when none is left to give up.
+## Removes the last rule-note row while more than one is left: the most frequent reason always stays.
 static func _drop_last_noop_row(stats_data: Array) -> bool:
-	for i in range(stats_data.size() - 1, -1, -1):
+	var at: Array = []
+	for i in stats_data.size():
 		if stats_data[i].has("fit_reason"):
-			stats_data.remove_at(i)
-			return true
-	return false
+			at.append(i)
+	if at.size() <= 1:
+		return false
+	stats_data.remove_at(at[at.size() - 1])
+	return true
 
 
 ## Only flag the case that is actually a problem: rules exist, they were evaluated many times, and
