@@ -82,7 +82,11 @@ seg)
       fi
       sleep 2; k=$((k+1)); done ) & sampler=$!
   rm -f "$O/.stop_$NAME"
-  ( cd "$W" && env -u WAYLAND_DISPLAY XDG_DATA_HOME="$X" timeout "$MAX" xvfb-run -a -s "-screen 0 1280x720x24" \
+  # His pads are hidden from the capture the same way the smokes hide them (test_the_smoke_cannot_see_his_pad_regression):
+  # a pad he is holding while it records would drive the demo. No usable bwrap = refuse, not record beside his pad.
+  SJ=(); if command -v bwrap > /dev/null && bwrap --dev-bind / / --tmpfs /dev/input true 2> /dev/null; then SJ=(bwrap --dev-bind / / --tmpfs /dev/input); fi
+  [ ${#SJ[@]} -gt 0 ] || { echo "[demo] BLOCKED: no usable bwrap to hide the host's pads from the capture" >&2; exit 2; }
+  ( cd "$W" && env -u WAYLAND_DISPLAY XDG_DATA_HOME="$X" "${SJ[@]}" timeout "$MAX" xvfb-run -a -s "-screen 0 1280x720x24" \
       godot --display-driver x11 --rendering-driver opengl3 --resolution 1280x720 --write-movie "$AVI" --fixed-fps 30 \
       -s "res://tools/demo_$NAME.gd" ${UARGS[@]+-- "${UARGS[@]}"} ) < /dev/null > "$O/$NAME.log" 2>&1 || ec=$?
   touch "$O/.stop_$NAME"; wait "$sampler" 2>/dev/null; rm -f "$O/.stop_$NAME"
@@ -106,7 +110,7 @@ seg)
   case "$probe" in *codec_type=video*codec_type=audio*|*codec_type=audio*codec_type=video*) ;; *) echo "[demo] FAIL: the AVI lacks a video or an audio stream"; exit 1 ;; esac
   [ "$ec" = 0 ] && [ "$done_line" -ge 1 ] || exit 1
   # the QC lanes want an mp4 the moment a segment lands; stitch reuses it (same settings)
-  ffmpeg -v error -y -i "$AVI" -c:v libx264 -preset slow -crf 18 -pix_fmt yuv420p -c:a aac -b:a 192k -ar 48000 "$O/$NAME.mp4" || exit 1
+  ffmpeg -v error -y -i "$AVI" -c:v libx264 -preset slow -crf 18 -pix_fmt yuv420p -c:a aac -b:a 192k "$O/$NAME.mp4" || exit 1   # keeps the capture's own rate
   dur="$(ffprobe -v error -show_entries format=duration -of csv=p=0 "$AVI")"
   echo "[demo]   ratio wall/video $(python3 -c "print(f'{$(( $(date +%s)-s ))/max($dur,0.001):.2f}')") over the whole run (boot included, so it OVERSTATES; above 1.0 a mid-fight boss line's wall-clock read cap can cut it short on video, controller 22314)"
   echo "[demo]   QC copy: $O/$NAME.mp4 ($(ffprobe -v error -show_entries format=duration -of csv=p=0 "$O/$NAME.mp4")s)" ;;
@@ -116,6 +120,10 @@ stitch)
   shift 2; LN=""; parts=()
   while [ $# -gt 0 ]; do case "$1" in --loudnorm) LN="${2:?--loudnorm <filter>}"; shift 2 ;; *) parts+=("$1"); shift ;; esac; done
   [ ${#parts[@]} -gt 0 ] || { echo "[demo] BLOCKED: name the segments in order" >&2; exit 2; }
+  # ONE sample rate for every part (concat copies, so parts must agree), READ from the first part's capture, never assumed
+  # (test_audio_tools_do_not_assume_one_sample_rate). Every capture comes from the same engine mix, so they share it.
+  first="${parts[0]%%:*}"; RATE="$(ffprobe -v error -select_streams a:0 -show_entries stream=sample_rate -of csv=p=0 "$O/$first.avi" 2> /dev/null)"
+  case "$RATE" in ''|*[!0-9]*) echo "[demo] BLOCKED: could not read the audio sample rate of $O/$first.avi" >&2; exit 2 ;; esac
   mkdir -p "$FINAL"; : > "$O/concat.txt"; k=0
   for spec in "${parts[@]}"; do
     n="${spec%%:*}"; rng=""; [ "$spec" != "$n" ] && rng="${spec#*:}"
@@ -129,13 +137,13 @@ stitch)
       d="$(python3 -c "print(f'{($b)-($a)-0.15:.3f}')")"; af=(-af "afade=t=in:st=0:d=0.15,afade=t=out:st=$d:d=0.15")
     fi
     k=$((k+1)); out="$O/part_${k}_$n.mp4"
-    ffmpeg -v error -y "${tr[@]}" -i "$O/$n.avi" "${af[@]}" -c:v libx264 -preset slow -crf 18 -pix_fmt yuv420p -r 30 -c:a aac -b:a 192k -ar 48000 -ac 2 "$out" || exit 1
+    ffmpeg -v error -y "${tr[@]}" -i "$O/$n.avi" "${af[@]}" -c:v libx264 -preset slow -crf 18 -pix_fmt yuv420p -r 30 -c:a aac -b:a 192k -ar "$RATE" -ac 2 "$out" || exit 1
     echo "[demo]   part $k: $n ${rng:-whole} -> $(ffprobe -v error -show_entries format=duration -of csv=p=0 "$out")s"
     echo "file '$out'" >> "$O/concat.txt"
   done
   ffmpeg -v error -y -f concat -safe 0 -i "$O/concat.txt" -c copy "$O/stitched_raw.mp4" || exit 1
   if [ -n "$LN" ]; then
-    ffmpeg -v error -y -i "$O/stitched_raw.mp4" -c:v copy -af "$LN" -c:a aac -b:a 192k -ar 48000 "$FINAL/highlight_$N.mp4" || exit 1
+    ffmpeg -v error -y -i "$O/stitched_raw.mp4" -c:v copy -af "$LN" -c:a aac -b:a 192k -ar "$RATE" "$FINAL/highlight_$N.mp4" || exit 1
   else cp "$O/stitched_raw.mp4" "$FINAL/highlight_$N.mp4"; fi
   echo "[demo] stitched ${#parts[@]} part(s)$( [ -n "$LN" ] && echo ' + loudnorm') -> $FINAL/highlight_$N.mp4 · $(ffprobe -v error -show_entries format=duration -of csv=p=0 "$FINAL/highlight_$N.mp4")s" ;;
 --selftest)
@@ -164,6 +172,8 @@ stitch)
     arm "part 1 (2.0-5.0) is exactly 3.0 s" "$(dur "$T/part_1_sa.mp4")" 3.0
     arm "part 3 (1.5-4.0) is exactly 2.5 s" "$(dur "$T/part_3_sb.mp4")" 2.5
     arm "the whole cut is 3.0 + 6.0 + 2.5 s" "$(dur "$T/final/highlight_0.mp4")" 11.5
+    sr="$(ffprobe -v error -select_streams a:0 -show_entries stream=sample_rate -of csv=p=0 "$T/sa.avi")"
+    arm "the cut keeps the CAPTURE's own rate ($sr Hz), not an assumed one" "$(ffprobe -v error -select_streams a:0 -show_entries stream=sample_rate -of csv=p=0 "$T/final/highlight_0.mp4")" "$sr"
     for p in part_1_sa part_3_sb; do
       h="$(ffmpeg -hide_banner -nostats -i "$T/$p.mp4" -af silencedetect=n=-50dB:d=0.4 -vn -f null - 2>&1 | command grep -a -c 'silence_start')"
       arm "$p (trimmed off zero) has NO silent hole" "$h" 0
