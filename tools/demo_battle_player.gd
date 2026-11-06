@@ -16,6 +16,7 @@ var enabled: bool = true
 var _rng := RandomNumberGenerator.new()
 var _group_used := false
 var _seen_line := -1
+var _pressed_at_ms := -100000
 var _busy := false
 ## Members whose command menu this player drove: a member missing here acted on AI, not by hand.
 var played: Dictionary = {}
@@ -159,6 +160,11 @@ func _read_line(dlg: Node) -> void:
 			await _beat(maxf(voice, 0.0) + _rng.randf_range(1.4, 2.2))
 		else:
 			await _beat(maxf(voice * 0.6, 0.0) + _rng.randf_range(0.5, 0.8))
+	elif Time.get_ticks_msec() - _pressed_at_ms < 4000:
+		# Still the line already confirmed: the index advances a frame late, and a second press here cut the NEXT voice line 0.4 s in (sfx 22756).
+		await _beat(0.1)
+		return
+	_pressed_at_ms = Time.get_ticks_msec()
 	await press("ui_accept")
 	await _beat(0.25)
 
