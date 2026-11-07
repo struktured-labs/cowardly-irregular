@@ -244,3 +244,22 @@ func test_the_footer_names_the_zoom_button_as_derived() -> void:
 	await _act(m, AbilityZoom.ACTION)
 	footer = _live(m, "Footer") as Label
 	assert_true(footer.text.contains(hint), "zoomed, it names the same button to go back: %s" % footer.text)
+
+
+## A passive's flat stat mod is read as the description reads it: every fractional one in passives.json renders as a
+## percent ("+25%"), never a raw "0.25" (main 23293: "Crit Chance +0.25" under "+25% critical hit chance").
+func test_a_chance_mod_reads_as_a_percent() -> void:
+	var seen := 0
+	for pid in PassiveSystem.passives:
+		var mods: Dictionary = PassiveSystem.passives[pid].get("stat_mods", {})
+		for k in mods:
+			if str(k).ends_with("_multiplier"):
+				continue
+			var v := float(mods[k])
+			if absf(v) < 1.0 and not is_zero_approx(v):
+				seen += 1
+				var text: String = MENU.flat_mod_text(v)
+				assert_true(text.ends_with("%") and not text.contains("0."), "%s.%s = %s reads '%s'" % [pid, k, v, text])
+	assert_gt(seen, 0, "CONTROL: passives.json has fractional flat mods (crit_chance 0.25 and friends)")
+	assert_eq(MENU.flat_mod_text(0.25), "+25%", "the critical_strike case exactly")
+	assert_eq(MENU.flat_mod_text(5.0), "+5", "CONTROL: a whole-number mod stays a number")
