@@ -68,11 +68,23 @@ func test_the_aftermath_waits_for_brasston() -> void:
 	assert_ne(_pending_on("steampunk_overworld"), SCENE, "the aftermath plays where the crates were held, not on the overworld")
 
 
-func test_the_aftermath_comes_before_chapter_three() -> void:
-	# Chapter 3's gate names no map, so a defeat beat placed after it would lose the return from the fight.
+## The Requisition's fight needs chapter 3 done (BrasstonVillage's prereq), so chapter 3 can never be pending on the
+## return from it. What CAN be pending then is a map-less W3 chapter: chapter 4 (once the Mechanism's Tempo falls) or
+## chapter 5. Each is driven here from a state the game produces, with a CONTROL that the chapter really answers.
+func test_the_aftermath_comes_before_the_map_less_chapters() -> void:
+	var flags := _completion_flags()
 	GameState.game_constants[DEFEAT_FLAG] = true
-	GameState.game_constants.erase(str(_completion_flags().get("world3_chapter3", "")))
-	assert_eq(_pending_on(HOME), SCENE, "the aftermath plays on the return from the fight, ahead of chapter 3")
+	GameState.game_constants["cutscene_flag_tempo_steampunk_defeated"] = true
+	for chapter in ["world3_chapter4", "world3_chapter5"]:
+		var saved: Dictionary = GameState.game_constants.duplicate(true)
+		GameState.game_constants.erase(str(flags.get(chapter, "")))
+		if chapter == "world3_chapter5":
+			GameState.game_constants[str(flags.get("world3_chapter4", ""))] = true
+		GameState.game_constants[str(flags.get(SCENE, "x"))] = true
+		assert_eq(_pending_on(HOME), chapter, "CONTROL: with the aftermath seen, %s is the live competitor" % chapter)
+		GameState.game_constants.erase(str(flags.get(SCENE, "x")))
+		assert_eq(_pending_on(HOME), SCENE, "the aftermath plays on the return from the fight, ahead of %s" % chapter)
+		GameState.game_constants = saved
 
 
 func test_the_scene_belongs_to_the_requisition() -> void:
