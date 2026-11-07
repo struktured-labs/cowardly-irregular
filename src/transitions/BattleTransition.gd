@@ -110,7 +110,7 @@ func _create_screen_rect() -> TextureRect:
 func _play_encounter_flash() -> void:
 	_overlay.color = Color.WHITE
 	_overlay.modulate.a = 1.0
-	await get_tree().create_timer(0.05).timeout
+	await get_tree().create_timer(0.05, true, false, true).timeout
 	_overlay.modulate.a = 0.0
 	_overlay.color = Color.BLACK
 
@@ -140,6 +140,11 @@ func _await_tween_safe(tween: Tween, max_wall_ms: int = 6000) -> void:
 	while is_instance_valid(tween) and tween.is_valid() and tween.is_running() \
 			and Time.get_ticks_msec() < deadline:
 		await get_tree().process_frame
+
+
+## A transition is presentation on the WALL clock: battle speed and hitlag scale Engine.time_scale, which slowed a chained reveal to seconds.
+func _wall_tween() -> Tween:
+	return create_tween().set_ignore_time_scale(true)
 
 
 func play_battle_transition(enemy_types: Array) -> void:
@@ -247,7 +252,7 @@ void fragment() {
 		_overlay.modulate.a = 1.0
 
 		# Expand iris from 0 to 1.2 (past corners) over 0.35s
-		var tween = create_tween()
+		var tween = _wall_tween()
 		tween.tween_method(
 			func(r: float) -> void:
 				if is_instance_valid(_iris_shader):
@@ -265,7 +270,7 @@ void fragment() {
 		# Battle is already visible through the transparent overlay — just clean up
 		# any lingering fragment particles with a quick fade if needed
 		if _fragments.size() > 0:
-			var tween = create_tween()
+			var tween = _wall_tween()
 			tween.set_parallel(true)
 			for frag in _fragments:
 				if is_instance_valid(frag):
@@ -304,7 +309,7 @@ func _play_victory_exit() -> void:
 	# Brief gold flash for victory feel
 	_overlay.color = Color(1.0, 0.9, 0.3, 0.0)
 	_overlay.modulate.a = 1.0
-	var flash_tween = create_tween()
+	var flash_tween = _wall_tween()
 	flash_tween.tween_property(_overlay, "color:a", 0.4, 0.1)
 	flash_tween.tween_property(_overlay, "color:a", 0.0, 0.2)
 	await _await_tween_safe(flash_tween)
@@ -338,7 +343,7 @@ void fragment() {
 	_overlay.modulate.a = 1.0
 
 	# Shrink iris from 1.3 to 0 over 0.5s
-	var tween = create_tween()
+	var tween = _wall_tween()
 	tween.tween_method(
 		func(r: float) -> void:
 			if is_instance_valid(_iris_shader):
@@ -354,20 +359,20 @@ void fragment() {
 	_overlay.material = null
 	_overlay.color = Color.BLACK
 	_overlay.modulate.a = 1.0
-	await get_tree().create_timer(0.2).timeout
+	await get_tree().create_timer(0.2, true, false, true).timeout
 
 
 func _play_defeat_exit() -> void:
 	"""Simple fade to black for defeat"""
 	_overlay.color = Color(0.0, 0.0, 0.0, 0.0)
 	_overlay.modulate.a = 1.0
-	var tween = create_tween()
+	var tween = _wall_tween()
 	tween.tween_property(_overlay, "color:a", 1.0, 0.5)
 	await _await_tween_safe(tween)
 
 	if not is_instance_valid(self):
 		return
-	await get_tree().create_timer(0.3).timeout
+	await get_tree().create_timer(0.3, true, false, true).timeout
 
 
 func reveal_exploration() -> void:
@@ -376,7 +381,7 @@ func reveal_exploration() -> void:
 		return
 	_overlay.color = Color.BLACK
 	_overlay.modulate.a = 1.0
-	var tween = create_tween()
+	var tween = _wall_tween()
 	tween.tween_property(_overlay, "modulate:a", 0.0, 0.4).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 	await _await_tween_safe(tween)
 	if is_instance_valid(self):
@@ -660,13 +665,13 @@ func _play_shatter() -> void:
 			randf_range(-5.0, 5.0),
 			randf_range(-5.0, 5.0)
 		)
-		await get_tree().create_timer(0.1).timeout
+		await get_tree().create_timer(0.1, true, false, true).timeout
 	_effect_container.position = original_offset
 
 	# Phase 1: fragments explode outward with rotation and gravity (0.75s)
 	# EASE_IN + TRANS_QUAD gives strong gravity acceleration feel
 	var phase_duration = transition_duration * 0.75
-	var tween = create_tween()
+	var tween = _wall_tween()
 	tween.set_parallel(true)
 
 	for i in range(_fragments.size()):
@@ -691,7 +696,7 @@ func _play_shatter() -> void:
 	# Brief white impact flash — overlay returns to transparent so battle shows through
 	_overlay.color = Color.WHITE
 	_overlay.modulate.a = 0.6
-	await get_tree().create_timer(0.04).timeout
+	await get_tree().create_timer(0.04, true, false, true).timeout
 	_overlay.color = Color.BLACK
 	_overlay.modulate.a = 0.0
 
@@ -729,7 +734,7 @@ func _play_spiral() -> void:
 
 	# Tween: rotate 720 degrees, shrink to zero, tint purple
 	# EASE_IN_OUT + TRANS_SINE gives smooth spin-up and spin-down
-	var tween = create_tween()
+	var tween = _wall_tween()
 	tween.set_parallel(true)
 	tween.tween_property(_screen_rect, "rotation", TAU * 2.0, phase_duration).set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
 	tween.tween_property(_screen_rect, "scale", Vector2(0.02, 0.02), phase_duration).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_EXPO)
@@ -752,7 +757,7 @@ func _play_spiral() -> void:
 	# Implosion flash — overlay returns to transparent so battle shows through
 	_overlay.color = Color(0.6, 0.4, 0.9)
 	_overlay.modulate.a = 0.7
-	await get_tree().create_timer(0.04).timeout
+	await get_tree().create_timer(0.04, true, false, true).timeout
 	_overlay.color = Color.BLACK
 	_overlay.modulate.a = 0.0
 
@@ -770,7 +775,7 @@ func _play_zoom_burst() -> void:
 
 	# Zoom in hard and fade to white
 	# EASE_IN + TRANS_EXPO gives dramatic exponential acceleration
-	var tween = create_tween()
+	var tween = _wall_tween()
 	tween.set_parallel(true)
 	tween.tween_property(_screen_rect, "scale", Vector2(3.0, 3.0), phase_duration).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_EXPO)
 	tween.tween_property(_screen_rect, "modulate", Color(2.0, 2.0, 2.0, 0.0), phase_duration).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_EXPO)
@@ -780,7 +785,7 @@ func _play_zoom_burst() -> void:
 	# Bright white flash, then back to transparent so battle shows through
 	_overlay.color = Color.WHITE
 	_overlay.modulate.a = 1.0
-	await get_tree().create_timer(0.05).timeout
+	await get_tree().create_timer(0.05, true, false, true).timeout
 	_overlay.color = Color.BLACK
 	_overlay.modulate.a = 0.0
 
@@ -809,14 +814,14 @@ func _play_shake_flash() -> void:
 				_overlay.color = Color(1.0, 0.5, 0.1)
 				_overlay.modulate.a = 0.8
 
-		await get_tree().create_timer(0.1).timeout
+		await get_tree().create_timer(0.1, true, false, true).timeout
 		shake_intensity *= 1.4
 
 	# Final slam flash — back to transparent so battle shows through
 	_effect_container.position = original_offset
 	_overlay.color = Color.WHITE
 	_overlay.modulate.a = 1.0
-	await get_tree().create_timer(0.04).timeout
+	await get_tree().create_timer(0.04, true, false, true).timeout
 	_overlay.color = Color.BLACK
 	_overlay.modulate.a = 0.0
 
@@ -848,7 +853,7 @@ func _play_drip() -> void:
 
 	# Animate strips sliding down at different speeds - wave pattern
 	# EASE_IN + TRANS_CUBIC gives natural gravity drip acceleration
-	var tween = create_tween()
+	var tween = _wall_tween()
 	tween.set_parallel(true)
 
 	var phase_duration = transition_duration * 0.75
@@ -904,7 +909,7 @@ func _play_curtain() -> void:
 
 	# Curtains slam shut with bounce over ~0.75s
 	var curtain_duration = transition_duration * 0.75
-	var tween = create_tween()
+	var tween = _wall_tween()
 	tween.set_parallel(true)
 	tween.tween_property(left_curtain, "position:x", 0, curtain_duration).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
 	tween.tween_property(right_curtain, "position:x", _viewport_size.x / 2, curtain_duration).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
@@ -952,7 +957,7 @@ func _play_pixelate() -> void:
 		var dark_factor = float(step) / (steps - 1)
 		_screen_rect.modulate = Color(1.0 - dark_factor * 0.7, 1.0 - dark_factor * 0.7, 1.0 - dark_factor * 0.7, 1.0)
 
-		await get_tree().create_timer(step_time).timeout
+		await get_tree().create_timer(step_time, true, false, true).timeout
 
 		if not is_instance_valid(self):
 			return
@@ -960,7 +965,7 @@ func _play_pixelate() -> void:
 	# Ethereal flash — overlay returns to transparent so battle shows through
 	_overlay.color = Color(0.7, 0.8, 1.0)
 	_overlay.modulate.a = 0.8
-	await get_tree().create_timer(0.04).timeout
+	await get_tree().create_timer(0.04, true, false, true).timeout
 	_overlay.color = Color.BLACK
 	_overlay.modulate.a = 0.0
 
@@ -992,7 +997,7 @@ func _play_slice() -> void:
 
 	# Alternate slices slide left/right off screen
 	# EASE_IN_OUT + TRANS_BACK gives overshoot-and-settle feel
-	var tween = create_tween()
+	var tween = _wall_tween()
 	tween.set_parallel(true)
 	var phase_duration = transition_duration * 0.75
 
@@ -1040,7 +1045,7 @@ func _play_radial_wipe() -> void:
 
 	# Clockwise reveal over ~0.75s
 	var wipe_duration = transition_duration * 0.75
-	var tween = create_tween()
+	var tween = _wall_tween()
 	for i in range(_fragments.size()):
 		var fragment = _fragments[i]
 		var delay = float(i) / _fragments.size() * wipe_duration
@@ -1072,7 +1077,7 @@ func _play_shockwave() -> void:
 
 	# Rings explode outward rapidly over ~0.75s
 	var ring_duration = transition_duration * 0.75
-	var tween = create_tween()
+	var tween = _wall_tween()
 	tween.set_parallel(true)
 
 	for i in range(_fragments.size()):
@@ -1084,12 +1089,12 @@ func _play_shockwave() -> void:
 		tween.tween_property(ring, "scale", Vector2(target_scale, target_scale), ring_duration * 0.6).set_delay(delay).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_EXPO)
 		tween.tween_property(ring, "modulate:a", 0.3, ring_duration * 0.4).set_delay(delay + ring_duration * 0.3)
 
-	await get_tree().create_timer(ring_duration * 0.6).timeout
+	await get_tree().create_timer(ring_duration * 0.6, true, false, true).timeout
 
 	# Bright energy flash — overlay returns to transparent so battle shows through
 	_overlay.color = Color(0.9, 0.7, 1.0)
 	_overlay.modulate.a = 1.0
-	await get_tree().create_timer(0.04).timeout
+	await get_tree().create_timer(0.04, true, false, true).timeout
 	_overlay.color = Color.BLACK
 	_overlay.modulate.a = 0.0
 
