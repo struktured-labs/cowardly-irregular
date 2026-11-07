@@ -53,9 +53,8 @@ func test_the_built_line_stays_in_its_room_at_every_text_size() -> void:
 		assert_lte(l.size.x, room + 0.5,
 			"THE DEFECT: at %.2fx the empty-state line is %.0f px in %.0f px of room (it clamped to the unwrapped sentence)" % [float(p), l.size.x, room])
 		assert_gt(l.get_line_count(), 1, "at %.2fx the sentence wraps rather than running on" % float(p))
-		## The wrapped lines grow the Label DOWN; judged on what draws (lines x font height + the theme's line gaps).
+		## The wrapped lines grow the Label DOWN; it draws exactly lines x font height (autogrind's probe 22941: no line gap).
 		var px: int = TextScale.scaled(PanelScript.EMPTY_FONT)
-		var gap: int = l.get_theme_constant("line_spacing")
-		var drawn: float = l.get_line_count() * ThemeDB.fallback_font.get_height(px) + (l.get_line_count() - 1) * gap
+		var drawn: float = l.get_line_count() * ThemeDB.fallback_font.get_height(px)
 		assert_lt(l.position.y + drawn, panel._reset_btn.position.y,
 			"at %.2fx the wrapped line (%.0f px tall) reaches the Reset button" % [float(p), drawn])
