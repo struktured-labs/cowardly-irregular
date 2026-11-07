@@ -264,7 +264,9 @@ func test_every_real_ability_fits_the_cell_it_derives() -> void:
 		if fnt == null:
 			continue
 		var px: int = TextScale.scaled(11)
-		var inner: float = float(ed.CELL_WIDTH - 12)
+		## The width an ABILITY's text really wraps at: right of its icon (_action_text_box), narrower than CELL_WIDTH - 12.
+		var inner: float = ed._action_text_box({"type": "ability", "id": "x"}).y
+		assert_lt(inner, float(ed.CELL_WIDTH - 12), "CONTROL: an ability's text box is narrower than the cell's")
 		var brk: int = (load(GE) as GDScript).get_script_constant_map()["CELL_TEXT_BREAK"]
 		var probe := Label.new()
 		probe.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART

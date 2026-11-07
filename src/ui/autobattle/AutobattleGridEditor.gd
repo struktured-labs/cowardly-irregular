@@ -1310,6 +1310,16 @@ func _action_text_box(action: Dictionary) -> Vector2:
 	return Vector2(6.0, CELL_WIDTH - 12.0)
 
 
+## A WORD_SMART Label's wrapped height, which NEITHER break set reproduces alone (cowir-autogrind 22941/22947): ADAPTIVE
+## under-counts a word wider than its box (the Label force-breaks it), GRAPHEME under-counts ordinary text (it splits
+## words the Label keeps whole; the .690 defect). The larger of the two covers both.
+func _wrapped_h(fnt: Font, text: String, width: float, px: int) -> float:
+	var adaptive: float = fnt.get_multiline_string_size(text, HORIZONTAL_ALIGNMENT_CENTER, width, px, -1, CELL_TEXT_BREAK).y
+	var grapheme: float = fnt.get_multiline_string_size(text, HORIZONTAL_ALIGNMENT_CENTER, width, px, -1,
+		TextServer.BREAK_MANDATORY | TextServer.BREAK_WORD_BOUND | TextServer.BREAK_GRAPHEME_BOUND).y
+	return maxf(adaptive, grapheme)
+
+
 func _cell_h() -> int:
 	if _cell_h_cache > 0:
 		return _cell_h_cache
@@ -1321,12 +1331,10 @@ func _cell_h() -> int:
 		for rule in rules:
 			var r: Dictionary = rule as Dictionary
 			for cond in r.get("conditions", []):
-				tallest = maxf(tallest, fnt.get_multiline_string_size(_format_condition(cond),
-					HORIZONTAL_ALIGNMENT_CENTER, inner, px, -1, CELL_TEXT_BREAK).y)
+				tallest = maxf(tallest, _wrapped_h(fnt, _format_condition(cond), inner, px))
 			for act in r.get("actions", []):
 				var box_w: float = _action_text_box(act as Dictionary).y   # an ability's text is narrower: it sits right of its icon
-				tallest = maxf(tallest, fnt.get_multiline_string_size(_format_action(act),
-					HORIZONTAL_ALIGNMENT_CENTER, box_w, px, -1, CELL_TEXT_BREAK).y)
+				tallest = maxf(tallest, _wrapped_h(fnt, _format_action(act), box_w, px))
 	_cell_h_cache = int(ceil(maxf(float(CELL_HEIGHT), tallest + 8.0)))
 	return _cell_h_cache
 
