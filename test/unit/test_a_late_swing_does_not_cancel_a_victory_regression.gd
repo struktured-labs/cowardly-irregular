@@ -4,7 +4,7 @@ extends GutTest
 ## swung, the Mage's Fulmen landed the kill, and victory began while the Fighter's lunge was still in flight; its contact
 ## callback then played the attack over the Celebration, and the attack's finish dropped him to idle. The earlier fix
 ## (test_victory_pose_survives_attack_snap_regression) only guarded the snap-home timer. Now the animator itself holds
-## victory against any late swing, cast, steal or named animation, while death and defeat may still follow it.
+## victory against any late swing, cast, steal or named animation, while death, defeat and an explicit set_idle may still follow it.
 
 func _animator() -> BattleAnimator:
 	var frames := SpriteFrames.new()
@@ -36,8 +36,7 @@ func test_a_swing_landing_after_the_win_keeps_the_celebration() -> void:
 	a.play_steal()
 	a.play_mug()
 	a.play_backstab()
-	a.set_idle()
-	assert_eq(a.current_state, BattleAnimator.AnimState.VICTORY, "a late swing, cast, hit, steal or idle must not replace the win")
+	assert_eq(a.current_state, BattleAnimator.AnimState.VICTORY, "a late swing, cast, hit or steal must not replace the win")
 	assert_eq(a.sprite.animation, &"victory", "the sprite still plays the Celebration")
 	assert_true(ran[0], "the refused swing's on_complete still runs, so its action chain does not stall")
 
@@ -55,3 +54,10 @@ func test_death_still_follows_a_win() -> void:
 	a.play_victory()
 	a.play_animation(BattleAnimator.AnimState.DEAD)
 	assert_eq(a.current_state, BattleAnimator.AnimState.DEAD, "a fall is never refused, even mid-celebration")
+
+
+func test_an_explicit_rest_still_leaves_the_win() -> void:
+	var a := _animator()
+	a.play_victory()
+	a.set_idle()
+	assert_eq(a.current_state, BattleAnimator.AnimState.IDLE, "set_idle is the scene's own rest call, so it hands the sprite back")

@@ -242,6 +242,8 @@ func rest_anim_name() -> String:
 func set_idle() -> void:
 	"""Return the sprite to its REST state — idle, or weak/dead when the provider says so."""
 	var want := rest_anim_name()
+	if current_state == AnimState.VICTORY:
+		current_state = AnimState.IDLE  # an explicit rest leaves the win; only late swings are refused
 	if want == "idle":
 		play_animation(AnimState.IDLE, true)
 		return
