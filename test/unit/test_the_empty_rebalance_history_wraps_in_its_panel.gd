@@ -33,10 +33,18 @@ func _built_panel():
 	return panel
 
 
-func test_the_sentence_cannot_fit_one_line() -> void:
+func _one_line(scale: float) -> float:
+	GameState.text_size_scale = scale
 	var px: int = TextScale.scaled(PanelScript.EMPTY_FONT)
-	var one_line: float = ThemeDB.fallback_font.get_string_size(PanelScript.EMPTY_TEXT, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x
-	assert_gt(one_line, _room(), "CONTROL: unwrapped, the empty-state sentence is wider than its room, so the case is live")
+	return ThemeDB.fallback_font.get_string_size(PanelScript.EMPTY_TEXT, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x
+
+
+func test_the_sentence_outgrows_one_line_at_some_text_size() -> void:
+	var wider: int = 0
+	for p in PRESETS:
+		if _one_line(float(p)) > _room():
+			wider += 1
+	assert_gt(wider, 0, "CONTROL: at some preset the unwrapped sentence is wider than its room, so the wrap case is live")
 
 
 func test_the_built_line_stays_in_its_room_at_every_text_size() -> void:
@@ -52,7 +60,8 @@ func test_the_built_line_stays_in_its_room_at_every_text_size() -> void:
 		assert_eq(l.text, PanelScript.EMPTY_TEXT, "CONTROL: it holds the empty-state sentence")
 		assert_lte(l.size.x, room + 0.5,
 			"THE DEFECT: at %.2fx the empty-state line is %.0f px in %.0f px of room (it clamped to the unwrapped sentence)" % [float(p), l.size.x, room])
-		assert_gt(l.get_line_count(), 1, "at %.2fx the sentence wraps rather than running on" % float(p))
+		if _one_line(float(p)) > room:
+			assert_gt(l.get_line_count(), 1, "at %.2fx the sentence is wider than its room, so it must wrap" % float(p))
 		## The wrapped lines grow the Label DOWN; it draws exactly lines x font height (autogrind's probe 22941: no line gap).
 		var px: int = TextScale.scaled(PanelScript.EMPTY_FONT)
 		var drawn: float = l.get_line_count() * ThemeDB.fallback_font.get_height(px)
