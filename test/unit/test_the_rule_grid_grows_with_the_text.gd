@@ -123,10 +123,10 @@ func _break_flags_of(l: Label) -> int:
 		TextServer.AUTOWRAP_WORD:
 			return TextServer.BREAK_MANDATORY | TextServer.BREAK_WORD_BOUND
 		TextServer.AUTOWRAP_WORD_SMART:
-			# Godot's Label draws WORD_SMART as WORD_BOUND | ADAPTIVE (a word too long for the line breaks inside it);
-			# this said GRAPHEME_BOUND, a different wrap from the one the label draws (cowir-autogrind 22869).
+			# MEASURED (cowir-autogrind's probe 22941): a real WORD_SMART Label force-breaks a word wider than its box, and
+			# WORD_BOUND | GRAPHEME_BOUND is the set that reproduces its line count; WORD | ADAPTIVE under-counts.
 			return TextServer.BREAK_MANDATORY | TextServer.BREAK_WORD_BOUND \
-				| TextServer.BREAK_ADAPTIVE
+				| TextServer.BREAK_GRAPHEME_BOUND
 		_:
 			return TextServer.BREAK_MANDATORY
 
