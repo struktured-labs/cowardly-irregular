@@ -148,6 +148,32 @@ func test_both_stay_on_screen() -> void:
 			"the hint's title fits its panel at Text Size %s" % p)
 
 
+## The BUILT description label never runs wider than the card: a Label sized before it wraps clamps its width to the
+## whole line, and the wrapped-height relation above measures at the label's own width, so only this probe sees it.
+func test_the_built_description_stays_inside_the_card() -> void:
+	for p in _presets():
+		var pop = await _reveal(float(p))
+		var panel: Control = pop.get("_panel")
+		var desc: Label = null
+		for l in _labels(pop):
+			if (l as Label).autowrap_mode != TextServer.AUTOWRAP_OFF:
+				desc = l
+		assert_not_null(desc, "CONTROL: the description label was found")
+		if desc != null:
+			assert_lte(desc.position.x + desc.size.x, panel.size.x - desc.position.x + 0.5,
+				"the built description (%.0f px wide) stays inside the card at Text Size %s" % [desc.size.x, p])
+			assert_gt(desc.get_line_count(), 1, "CONTROL: the longest description wraps at Text Size %s" % p)
+			## As DRAWN: a Label's height is its line count x the font height (measured, cowir-autogrind 22941: the theme's
+			## line_spacing is NOT added), so the count it actually wrapped to must clear the hint.
+			var hint: Label = pop.get("_hint")
+			var drawn: float = desc.get_line_count() * desc.get_theme_font("font").get_height(_px(desc))
+			assert_lte(desc.position.y + drawn, hint.position.y,
+				"the drawn description (%d lines, %.0f px) clears the continue hint at Text Size %s" % [desc.get_line_count(), drawn, p])
+		pop.queue_free()
+		_host.queue_free()
+		_host = null
+
+
 ## 1.0x is the authored card to the pixel: the boxes grow WITH the text, they do not move at the default.
 func test_the_default_size_is_the_authored_card() -> void:
 	GameState.text_size_scale = 1.0
