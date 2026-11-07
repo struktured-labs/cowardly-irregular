@@ -6774,8 +6774,8 @@ func _open_autogrind_ui() -> void:
 	_autogrind_ui.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_autogrind_ui_layer.add_child(_autogrind_ui)
 
-	# Get region name from current map
-	var region_name = _current_map_id.replace("_", " ").capitalize()
+	## The place's own name (locations.json), as the area banner and the save slot show it: "Cogsworth Junction", not "Steampunk Overworld".
+	var region_name: String = SaveSystem.location_display_name(_current_map_id)
 	_autogrind_ui.setup(party, region_name)
 
 	# Connect signals
