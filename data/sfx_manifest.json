@@ -1953,10 +1953,9 @@
     },
     "victory_slam_s": {
       "file": "assets/audio/sfx/victory_slam_s.ogg",
-      "prompt": "PLACEHOLDER (struktured via cowir-main 20637: a labelled local synth now, a real asset later). The S-rank one-shot slam, one tier heavier than victory_slam: victory_slam itself + a 75->38 Hz sine sub-thump + a 2.5 kHz-highpassed noise crack + a 1760/2640 Hz ring that dies in 0.25 s, mixed with sox at 0.4 each and normalised to -17 LUFS under a -1 dBTP limiter (measured -16.0 LUFS vs the ordinary slam's -19.5). Replace with a designed asset; the selector in VictoryOverlay._slam_key only needs this key and file to exist.",
-      "duration_seconds": 0.6,
-      "source": "sox_synth",
-      "placeholder": true
+      "prompt": "S-rank one-shot slam, the designed asset (replaces the 2026-10-29 labelled placeholder). The ordinary victory_slam as the hit, made one tier heavier by a falling 95->38 Hz sub, an inharmonic bronze body under 1 kHz (196/297/413/553/731 Hz, slightly detuned L/R) and a dark low-passed room tail; 0.9 s, 0% energy above 4 kHz, so no sparkle. Levelled by MOMENTARY peak, the fair measure for a short hit: -17.0 LUFS Mmax, between the ordinary slam (-19.5) and the victory stinger (-15.9, which it must stay under: cowir-main 23030); true peak -2.4 dBFS. Both play at the same -6 dB battle level, so the files compare directly.",
+      "duration_seconds": 0.9,
+      "source": "numpy_synth"
     },
     "victory_stinger": {
       "file": "assets/audio/sfx/victory_stinger.ogg",
