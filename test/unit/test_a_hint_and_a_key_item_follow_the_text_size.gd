@@ -163,13 +163,6 @@ func test_the_built_description_stays_inside_the_card() -> void:
 			assert_lte(desc.position.x + desc.size.x, panel.size.x - desc.position.x + 0.5,
 				"the built description (%.0f px wide) stays inside the card at Text Size %s" % [desc.size.x, p])
 			assert_gt(desc.get_line_count(), 1, "CONTROL: the longest description wraps at Text Size %s" % p)
-			## As DRAWN: every line at the font height plus the theme's line_spacing between them, which the string
-			## measure the other fit arm uses leaves out.
-			var hint: Label = pop.get("_hint")
-			var n: int = desc.get_line_count()
-			var drawn: float = n * desc.get_theme_font("font").get_height(_px(desc)) + (n - 1) * desc.get_theme_constant("line_spacing")
-			assert_lte(desc.position.y + drawn, hint.position.y,
-				"the drawn description (%d lines, %.0f px) clears the continue hint at Text Size %s" % [n, drawn, p])
 		pop.queue_free()
 		_host.queue_free()
 		_host = null

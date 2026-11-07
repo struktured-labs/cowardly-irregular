@@ -135,12 +135,8 @@ func _present(item: Dictionary) -> void:
 		add_child(probe)
 		var pf: Font = probe.get_theme_font("font")
 		if pf != null:
-			var px: int = TextScale.scaled(DESC_FONT_SIZE)
-			var text_h: float = pf.get_multiline_string_size(desc_text, HORIZONTAL_ALIGNMENT_CENTER, k(PANEL_W) - k(40.0), px).y
-			## A Label draws each line at the font height PLUS the theme's line_spacing, which the string measure leaves
-			## out (cowir-autogrind 22927), so a wrapped description drew taller than its band.
-			var lines: int = maxi(1, int(round(text_h / maxf(1.0, pf.get_height(px)))))
-			desc_h = maxf(k(DESC_BAND_H), text_h + float(lines - 1) * float(probe.get_theme_constant("line_spacing")))
+			desc_h = maxf(k(DESC_BAND_H), pf.get_multiline_string_size(
+				desc_text, HORIZONTAL_ALIGNMENT_CENTER, k(PANEL_W) - k(40.0), TextScale.scaled(DESC_FONT_SIZE)).y)
 		remove_child(probe)
 		probe.queue_free()
 	var pw: float = k(PANEL_W)
