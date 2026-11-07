@@ -1068,6 +1068,8 @@ func _create_empty_condition_hint(row_idx: int, cond_idx: int, h: float = -1.0) 
 
 	var label = Label.new()
 	label.text = "+AND"
+	## Clipped: a Label sized before it enters the tree takes its minimum at the DEFAULT 16 px, so its box can clamp wider than the cell.
+	label.clip_text = true
 	label.position = Vector2(4, _grew(8))
 	label.size = Vector2(CELL_WIDTH / 2 - 8, h - _grew(16))
 	label.add_theme_font_size_override("font_size", TextScale.scaled(9))
@@ -1101,6 +1103,7 @@ func _create_empty_action_hint(row_idx: int, act_idx: int, h: float = -1.0) -> C
 
 	var label = Label.new()
 	label.text = "[+A]"
+	label.clip_text = true
 	label.position = Vector2(4, _grew(8))
 	label.size = Vector2(CELL_WIDTH / 2 - 8, h - _grew(16))
 	label.add_theme_font_size_override("font_size", TextScale.scaled(9))
@@ -1146,6 +1149,7 @@ func _create_toggle_cell(row_idx: int, is_enabled: bool, h: float = -1.0) -> Con
 
 	var label = Label.new()
 	label.text = "[ON]" if is_enabled else "[OFF]"
+	label.clip_text = true
 	label.position = Vector2(4, _grew(8))
 	label.size = Vector2(tog_w - 8.0, h - _grew(16))
 	label.add_theme_font_size_override("font_size", TextScale.scaled(11))
@@ -1180,6 +1184,7 @@ func _create_add_rule_button(row_idx: int, h: float = -1.0) -> Control:
 
 	var label = Label.new()
 	label.text = "[+ Add Rule]"
+	label.clip_text = true
 	label.position = Vector2(4, _grew(8))
 	label.size = Vector2(add_w - 8.0, h - _grew(16))
 	label.add_theme_font_size_override("font_size", TextScale.scaled(10))
