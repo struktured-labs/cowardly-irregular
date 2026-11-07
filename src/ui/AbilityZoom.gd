@@ -16,3 +16,17 @@ static func hint() -> String:
 
 static func pressed(event: InputEvent) -> bool:
 	return InputMap.has_action(ACTION) and event.is_action_pressed(ACTION) and not event.is_echo()
+
+
+## The largest px whose wrapped `text` fits `box`, measured off `font` (binary search; 1 if nothing fits).
+static func fit_px(font: Font, text: String, box: Vector2, max_px: int = 400) -> int:
+	var lo := 1
+	var hi := max_px
+	while lo < hi:
+		var mid := (lo + hi + 1) / 2
+		var sz: Vector2 = font.get_multiline_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, box.x, mid)
+		if sz.y <= box.y and sz.x <= box.x:
+			lo = mid
+		else:
+			hi = mid - 1
+	return lo

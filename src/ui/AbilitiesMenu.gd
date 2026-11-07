@@ -169,20 +169,6 @@ var _zoomed := false
 const ZOOM_DESC_SHARE := 0.42
 
 
-## The largest px whose wrapped `text` fits `box`, measured off `font` (binary search; 1 if nothing fits).
-static func fit_px(font: Font, text: String, box: Vector2, max_px: int = 400) -> int:
-	var lo := 1
-	var hi := max_px
-	while lo < hi:
-		var mid := (lo + hi + 1) / 2
-		var sz: Vector2 = font.get_multiline_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, box.x, mid)
-		if sz.y <= box.y and sz.x <= box.x:
-			lo = mid
-		else:
-			hi = mid - 1
-	return lo
-
-
 ## The fact rows for the highlighted entry: AbilityFacts for an ability, the passive's own status/category/mods for a passive.
 func _zoom_facts() -> Array:
 	if current_tab != Tab.PASSIVES:
@@ -252,7 +238,7 @@ func _create_zoomed_panel(panel_size: Vector2) -> Control:
 	var desc := Label.new()
 	desc.name = "Description"
 	desc.autowrap_mode = TextServer.AUTOWRAP_WORD
-	desc.add_theme_font_size_override("font_size", fit_px(font, desc_text, desc_box))
+	desc.add_theme_font_size_override("font_size", AbilityZoom.fit_px(font, desc_text, desc_box))
 	desc.add_theme_color_override("font_color", TEXT_COLOR)
 	desc.text = desc_text
 	panel.add_child(desc)

@@ -87,9 +87,10 @@ func _snapshot(m: Control) -> Array:
 
 func test_the_floor_names_every_member_this_file_drives() -> void:
 	var m: Control = await _menu()
-	for f in ["_set_zoom", "_create_zoomed_panel", "fit_px", "_zoom_facts", "_back", "_has_selection", "_build_ui"]:
+	for f in ["_set_zoom", "_create_zoomed_panel", "_zoom_facts", "_back", "_has_selection", "_build_ui"]:
 		assert_true(m.has_method(f), "AbilitiesMenu.%s must exist" % f)
 	assert_true("_zoomed" in m, "AbilitiesMenu._zoomed must exist")
+	assert_true(AbilityZoom.new().has_method("fit_px"), "AbilityZoom.fit_px must exist (the one fill rule, shared with battle)")
 	assert_gt(m._abilities_list.size(), 1, "PRECONDITION: the mage has abilities to read")
 	assert_true(InputMap.has_action(AbilityZoom.ACTION), "the ability_zoom action exists")
 	var west := InputEventJoypadButton.new()
