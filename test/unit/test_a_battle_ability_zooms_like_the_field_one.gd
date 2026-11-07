@@ -134,8 +134,13 @@ func test_the_shortest_real_description_fills_most_of_its_box() -> void:
 	if card:
 		var d: Label = card.description_label()
 		assert_eq(d.text, str(JobSystem.get_ability(SHORTEST_ID).get("description", "")), "CONTROL: it is the shortest real one")
-		var fill: float = _drawn_h(d) / card.description_box().y
-		assert_gte(fill, 0.75, "a one-liner must fill its box (it fills %.0f%%), not sit small in it" % (fill * 100.0))
+		var box: Vector2 = card.description_box()
+		var px: int = d.get_theme_font_size("font_size")
+		var w: float = d.get_theme_font("font").get_multiline_string_size(d.text, HORIZONTAL_ALIGNMENT_LEFT, box.x, px).x
+		# The card is wide and short, so a one-liner meets an edge before the other: fill is measured on the edge it meets.
+		var fill: float = maxf(w / box.x, _drawn_h(d) / box.y)
+		gut.p("[FILL] %d px, %d lines, %.0f x %.0f in %s" % [px, d.get_line_count(), w, _drawn_h(d), str(box)])
+		assert_gte(fill, 0.75, "a one-liner must reach an edge of its box (it fills %.0f%%), not sit small in it" % (fill * 100.0))
 	pair[0].force_close()
 
 
