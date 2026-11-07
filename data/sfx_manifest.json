@@ -1401,7 +1401,7 @@
     "menu_error": {
       "file": "assets/audio/sfx/menu_error.ogg",
       "source": "sox_synth",
-      "prompt": "Two-tone descending error blip (A4->E4 square waves lowpassed 1000-1200Hz, 85ms) attenuated -12dB. Soft negative feedback for invalid actions — distinct from menu_cancel (deliberate back-out).",
+      "prompt": "Two-tone descending error blip (A4->E4 square waves lowpassed 1000-1200Hz, 85ms). Negative feedback for invalid actions, distinct from menu_cancel (deliberate back-out). RAISED +11.6 dB, gain only (struktured via cowir-main 23457: \"the you-can't-do-this sound is kinda quiet... the noise is fine, just louder\"): the -12 dB attenuation it was rendered with is gone. Before -22.6 dB rms / -18.9 peak; after -11.0 rms, true peak -10.3 dBFS, 5.2 dB over menu_cancel (-16.2) and 8.1 over menu_select (-19.1). Through a 200 Hz laptop highpass it is -15.8, only 1.4 dB over menu_cancel, because the blip sits low (A4->E4); a brighter redesign would fix that, gain alone cannot.",
       "duration_seconds": 0.085,
       "prompt_influence": 0.0,
       "fallback_to": "menu_cancel"
