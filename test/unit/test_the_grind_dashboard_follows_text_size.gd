@@ -34,10 +34,16 @@ func _presets() -> Array:
 ## The widest content the Dashboard shows: big numbers, PAUSED, LUDICROUS, permadeath ON, a full log, a five-line readout.
 func _dashboard_at(scale: float) -> Control:
 	GameState.text_size_scale = scale
+	## Hosted in a 1280x720 SubViewport: the Dashboard lays out from its viewport, and a bare host can measure 2560x1440,
+	## where the ~20 px rows double and no cap ever binds (main 23143). The CONTROL below proves the screen is the player's.
+	var vp := SubViewport.new()
+	vp.size = Vector2i(1280, 720)
+	add_child_autofree(vp)
 	var d: Control = load(DASHBOARD).new()
 	d.size = Vector2(1280, 720)
-	add_child_autofree(d)
+	vp.add_child(d)
 	await wait_frames(3)
+	assert_eq(d.get_viewport().get_visible_rect().size, Vector2(1280, 720), "CONTROL: the Dashboard is laid out on the player's 1280x720 screen")
 	d.refresh({"battles_won": 9999, "total_exp": 9999999, "total_gold": 9999999, "consecutive_wins": 999}, "")
 	d.set_paused(true)
 	d.set_ludicrous_mode(true)
