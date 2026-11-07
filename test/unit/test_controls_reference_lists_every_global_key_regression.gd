@@ -134,6 +134,7 @@ const ADVERTISED_AS := {
 	# header, so a bare token would pass with the row gone.
 	"party_chat": "Party Chat (in the field)",
 	"dash": "1.7x",
+	"ability_zoom": "Zoom in on an ability",
 	"battle_open_log": "Battle log",  # the multiplier, unique to its row — "Run" also matches "Turbo — run it faster"
 }
 

@@ -170,3 +170,23 @@ func test_one_x_is_the_authored_layout() -> void:
 			tops.append((c as Control).position.y)
 	assert_true(132.0 in tops, "the list panel sits at its authored y 132: %s" % [tops])
 	assert_true(64.0 in tops, "and the character strip at its authored y 64: %s" % [tops])
+
+
+## The menu's panels each sit inside the screen and none overlaps another, at every preset. The character panel and the
+## lists were placed at an already-scaled y multiplied by the factor AGAIN, so at 2.0x they slid down past the details
+## panel and off the bottom; 100% was untouched, which is why nothing else saw it (found on the .788 zoom collage).
+func test_every_panel_is_on_screen_and_apart_at_every_preset() -> void:
+	for s in _presets():
+		GameState.set_text_size_scale(s)
+		var m: Control = await _menu()
+		var vp: Vector2 = m.get_viewport_rect().size
+		var rects: Array = []
+		for c in m.get_children():
+			if c is Control and not (c is Label) and not (c is ColorRect) and not c.is_queued_for_deletion() and (c as Control).size.x < vp.x:
+				rects.append(Rect2((c as Control).position, (c as Control).size))
+		assert_gte(rects.size(), 3, "CONTROL @%s: the tabs, character, list and details panels were found" % s)
+		for r in rects:
+			assert_true(Rect2(Vector2.ZERO, vp).encloses(r), "@%s panel %s is on the %s screen" % [s, r, vp])
+		for a in rects.size():
+			for b in range(a + 1, rects.size()):
+				assert_false((rects[a] as Rect2).grow(-0.5).intersects(rects[b]), "@%s panels %s and %s overlap" % [s, rects[a], rects[b]])
