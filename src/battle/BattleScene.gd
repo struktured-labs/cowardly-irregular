@@ -811,8 +811,8 @@ func _update_speed_indicator() -> void:
 			text = "[color=#cc2222]▸▸▸▸[/color] [color=#ff3300]%s[/color] [color=#aa1100]◂◂◂◂[/color]" % speed_label
 		6:  # 32x - very extreme (magenta)
 			text = "[color=#cc22cc]▸▸▸▸▸[/color] [color=#ff00ff]%s[/color] [color=#aa00aa]◂◂◂◂◂[/color]" % speed_label
-		7:  # 64x - maximum (bright magenta)
-			text = "[color=#ff22ff]▸▸▸▸▸▸[/color] [color=#ff44ff]%s[/color] [color=#cc00cc]◂◂◂◂◂◂[/color]" % speed_label
+		7:  # 64x - maximum (bright magenta). Five arrows like 32x: a sixth pair wrapped the PARTY header at 100% and pushed the panel down (struktured 2026-11-07)
+			text = "[color=#ff22ff]▸▸▸▸▸[/color] [color=#ff44ff]%s[/color] [color=#cc00cc]◂◂◂◂◂[/color]" % speed_label
 		_:
 			## An eighth tier would render BLANK here, not wrong: no arm sets `text`, so the readout
 			## empties while the battle genuinely runs faster. Degrade to the plain label instead --
@@ -832,7 +832,25 @@ func _update_speed_indicator() -> void:
 	else:
 		if _speed_indicator:
 			_speed_indicator.add_theme_font_size_override("normal_font_size", TextScale.scaled(16))
-			_speed_indicator.custom_minimum_size = Vector2(80, 24)
+			_speed_indicator.custom_minimum_size = Vector2(maxf(80.0, speed_readout_width()), 24)
+
+
+## The widest rung's readout at the current Text Size: every rung reserves it, so changing speed can never re-flow the PARTY header.
+func speed_readout_width() -> float:
+	if _speed_indicator == null:
+		return 0.0
+	var font: Font = _speed_indicator.get_theme_font("normal_font")
+	var px: int = TextScale.scaled(16)
+	var widest := 0.0
+	for i in BATTLE_SPEED_LABELS.size():
+		var plain := "%s %s %s" % [_speed_arrows(i, "▸"), BATTLE_SPEED_LABELS[i], _speed_arrows(i, "◂")]
+		widest = maxf(widest, font.get_string_size(plain, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x)
+	return ceilf(widest) + 4.0
+
+
+## The arrows each rung draws either side of its label (1, 1, 2, 2, 3, 4, 5, 5), mirroring _update_speed_indicator's arms.
+static func _speed_arrows(index: int, glyph: String) -> String:
+	return glyph.repeat([1, 1, 2, 2, 3, 4, 5, 5][clampi(index, 0, 7)])
 
 
 func _create_dialogue_system() -> void:
