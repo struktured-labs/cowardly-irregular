@@ -179,8 +179,21 @@ func _exit_tree() -> void:
 			sprite.animation_finished.disconnect(_on_sprite_animation_finished)
 
 
+## A win is the fight's last pose: a swing, cast or steal queued before it but landing after (a melee lunge's contact
+## callback) must not replace it, or that member "just sat there" through the fanfare (struktured 2026-11-07). Only death,
+## defeat or another victory may follow. The caller's on_complete still runs, so action chains don't stall.
+func _celebrating(on_complete: Callable) -> bool:
+	if current_state != AnimState.VICTORY:
+		return false
+	if on_complete.is_valid():
+		on_complete.call()
+	return true
+
+
 func play_animation(state: AnimState, loop: bool = false, on_complete: Callable = Callable()) -> void:
 	"""Play an animation state"""
+	if state != AnimState.VICTORY and state != AnimState.DEFEAT and state != AnimState.DEAD and _celebrating(on_complete):
+		return
 	if not sprite:
 		push_warning("BattleAnimator: No sprite assigned!")
 		# Invoke callback so queued action chains don't stall on a missing sprite.
@@ -280,6 +293,8 @@ func play_defeat(on_complete: Callable = Callable()) -> void:
 
 func play_backstab(on_complete: Callable = Callable()) -> void:
 	"""Quick diagonal lunge attack animation"""
+	if _celebrating(on_complete):
+		return
 	if not sprite:
 		if on_complete.is_valid():
 			on_complete.call()
@@ -321,6 +336,8 @@ func play_backstab(on_complete: Callable = Callable()) -> void:
 
 func play_steal(on_complete: Callable = Callable()) -> void:
 	"""Stealth-travel steal (struktured 2026-08-14: 'something stealthy to travel to the monster and back')"""
+	if _celebrating(on_complete):
+		return
 	if not sprite:
 		if on_complete.is_valid():
 			on_complete.call()
@@ -333,6 +350,8 @@ func play_steal(on_complete: Callable = Callable()) -> void:
 
 func play_mug(on_complete: Callable = Callable()) -> void:
 	"""Mug = the loud cousin: same stealth travel plus spin and a gold grab-flash"""
+	if _celebrating(on_complete):
+		return
 	if not sprite:
 		if on_complete.is_valid():
 			on_complete.call()
@@ -500,6 +519,8 @@ func has_named_animation(anim_name: String) -> bool:
 
 
 func play_named_animation(anim_name: String, on_complete: Callable = Callable()) -> void:
+	if _celebrating(on_complete):
+		return
 	if not sprite:
 		if on_complete.is_valid():
 			on_complete.call()
