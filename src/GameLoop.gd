@@ -2712,6 +2712,11 @@ func _get_pending_story_cutscene() -> String:
 	if flags.get("cutscene_flag_world3_prologue_complete", false) and not flags.get("cutscene_flag_world3_chapter1_complete", false):
 		if _current_map_id == "brasston_village":
 			return "world3_chapter1"
+	# The Standing Order's aftermath: Brasston's street Warden plays its defeat beat IN Brasston on return from the
+	# victory, the same in-place pattern as the W2 warden gate. Ahead of chapter3, whose gate names no map.
+	if flags.get("cutscene_flag_warden_steampunk_defeated", false) and not flags.get("cutscene_flag_world3_standing_order_defeat_complete", false):
+		if _current_map_id == "brasston_village":
+			return "world3_standing_order_defeat"
 	if flags.get("cutscene_flag_world3_chapter1_complete", false) and not flags.get("cutscene_flag_world3_chapter2_complete", false):
 		if _current_map_id == "steampunk_overworld":
 			return "world3_chapter2"
@@ -3066,6 +3071,7 @@ const _CUTSCENE_COMPLETION_FLAGS := {
 	# Tick 102: W3 Tempo of the Shift post-defeat dialogue
 	"world3_tempo_defeat":              "cutscene_flag_world3_tempo_defeat_complete",
 	"world3_grand_schedule_defeat":     "cutscene_flag_world3_grand_schedule_defeat_complete",
+	"world3_standing_order_defeat":     "cutscene_flag_world3_standing_order_defeat_complete",
 	"world3_transition":                "cutscene_flag_world3_transition_complete",
 	# Masterite fragment reveals (gated by _FRAGMENT_GATES; the loop returns the id, so the static audit does not see these)
 	"world1_fragment_arbiter":         "cutscene_flag_world1_fragment_arbiter_complete",

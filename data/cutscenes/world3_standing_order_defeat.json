@@ -1,0 +1,83 @@
+{
+  "id": "world3_standing_order_defeat",
+  "title": "The Standing Order — Aftermath",
+  "world": 3,
+  "trigger": "boss_warden_steampunk_defeated",
+  "background": "brasston_square",
+  "description": "The Standing Order's needle leaves the red for the first time. It said rescission needed an authority above the order and that none had presented itself; the party is that authority, and the order has no instruction for a reading it was never told to expect. Still impersonal, never 'I' — until one word at the end.",
+  "steps": [
+    { "type": "stop_music" },
+    { "type": "letterbox_in", "duration": 0.5 },
+    { "type": "play_sfx", "sfx": "boss_defeat_stinger" },
+    { "type": "wait", "duration": 1.0 },
+    {
+      "type": "narration",
+      "text": "The glass over the gauge had cracked straight across. Behind it the needle shivered, and then, for the first time since the pavement had worn pale around it, it came away from the red."
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "The Standing Order",
+          "text": "Reading... not red.",
+          "theme": "enemy",
+          "portrait": "masterite_warden_steampunk"
+        },
+        {
+          "speaker": "The Standing Order",
+          "text": "There is no instruction for this reading.",
+          "theme": "enemy",
+          "portrait": "masterite_warden_steampunk"
+        },
+        { "speaker": "Rogue", "text": "Yeah. You mentioned. Somebody didn't expect to be wrong.", "theme": "rogue" },
+        {
+          "speaker": "The Standing Order",
+          "text": "The order was written once, by a hand that did not stay to read the gauge.",
+          "theme": "enemy",
+          "portrait": "masterite_warden_steampunk"
+        },
+        { "speaker": "Cleric", "text": "Then who lifts it now?", "theme": "cleric" },
+        {
+          "speaker": "The Standing Order",
+          "text": "Rescission requires an authority above the order. An authority has presented itself in this district. It numbers five.",
+          "theme": "enemy",
+          "portrait": "masterite_warden_steampunk"
+        },
+        { "speaker": "Mage", "text": "We're not an authority. We just hit you until you stopped.", "theme": "mage" },
+        {
+          "speaker": "The Standing Order",
+          "text": "The distinction is not operative.",
+          "theme": "enemy",
+          "portrait": "masterite_warden_steampunk"
+        },
+        { "speaker": "Bard", "text": "Oh, that's MY line now. So the street's open?", "theme": "bard" },
+        {
+          "speaker": "The Standing Order",
+          "text": "The street is open. The order is rescinded. There is no instruction for a street that is open.",
+          "theme": "enemy",
+          "portrait": "masterite_warden_steampunk"
+        },
+        { "speaker": "Fighter", "text": "Then stand somewhere else. Somewhere you pick.", "theme": "fighter" },
+        {
+          "speaker": "The Standing Order",
+          "text": "Picking is not among the instructions.",
+          "theme": "enemy",
+          "portrait": "masterite_warden_steampunk"
+        },
+        {
+          "speaker": "The Standing Order",
+          "text": "...Noted.",
+          "theme": "enemy",
+          "portrait": "masterite_warden_steampunk"
+        }
+      ]
+    },
+    {
+      "type": "narration",
+      "text": "It took one step off the pale ring, then another, and stopped at the curb to read its own gauge. The needle was still moving. Nobody in Brasston had a word for what it read."
+    },
+    { "type": "wait", "duration": 0.8 },
+    { "type": "set_flag", "flag": "warden_steampunk_defeated", "value": true },
+    { "type": "letterbox_out", "duration": 0.5 }
+  ]
+}
