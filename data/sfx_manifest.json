@@ -8753,6 +8753,13 @@
       "duration_seconds": 0.74,
       "prompt_influence": 0.0
     },
+    "ability_steal": {
+      "file": "assets/audio/sfx/ability_steal.ogg",
+      "source": "numpy_synth",
+      "prompt": "The Rogue's Steal cast. It was HAND-MAPPED to ability_physical (a sword unsheathing) since the sound system's first commit, so the support-cue sweep that gave the other eight reachable support abilities their own voice never saw it: the reachable-support guard only asked whether an id had a mapping, and the sword is a mapping. A quick sleight-of-hand swipe: a rising band-passed cloth whisk (1.3->2.6 kHz) over a lower flick, and a soft 170 Hz pocket pat at 0.19 s. POLARITY-NEUTRAL on purpose: BattleManager already cues the outcome (gold_pickup on a take, attack_miss on a whiff), so the cast must not promise either. 2-4 kHz dominant (44%, centroid 2.7 kHz), unlike the low Rogue cues (shadow_step, smoke_bomb) and the mid scan. rms -17.4 / peak -1.4 dBFS, Mmax -14.5 LUFS, inside the ability family (rms -12.8..-17.8); left at the bright end's rms because its energy sits where the ear is most sensitive. Mug stays on ability_physical: it is a physical hit that also steals.",
+      "duration_seconds": 0.46,
+      "prompt_influence": 0.0
+    },
     "ability_smoke_bomb": {
       "file": "assets/audio/sfx/ability_smoke_bomb.ogg",
       "source": "sox_synth",
