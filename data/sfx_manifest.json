@@ -70,6 +70,13 @@
       "prompt_influence": 0.7,
       "source": "tools/gen_chiptune_sfx.py fire_roar"
     },
+    "escape_run": {
+      "file": "assets/audio/sfx/escape_run.ogg",
+      "prompt": "PLACEHOLDER (struktured via cowir-main 23483: the flee should have a sound; cowir-sfx 23484 / cowir-battle 23486). A SUCCESSFUL escape only, played where _lost_battle_is_escape resolves true; ability_flee stays the ATTEMPT, so a failed flee sounds like an attempt and nothing more. Timed to cowir-adhoc 23522's sprint on the wall clock: member k (0-4) hops at 0.12*k s then sprints off for 0.45 s, so five scampers (a hop, then five light footfalls fading as they leave) start 0.12 s apart under a whoosh of the party clearing out, done by ~1.1 s. Soft-saturated so the sparse footfalls don't set the level: -17.1 dB rms, a step under ability_flee (-14.2). A labelled synth until struktured playtests it.",
+      "duration_seconds": 1.12,
+      "source": "tools/gen_chiptune_sfx.py escape_run",
+      "placeholder": true
+    },
     "ability_flee": {
       "file": "assets/audio/sfx/ability_flee.ogg",
       "prompt": "SYNTHESISED, not generated — three DISCRETE descending blips plus a scuff. The Rogue's escape; type=escape was the last type with no cue arm. Stepped, never slid: a descending slide is a whoop in the other direction, which is the blind spot that let struktured hear it a fourth time. Run the tool.",
