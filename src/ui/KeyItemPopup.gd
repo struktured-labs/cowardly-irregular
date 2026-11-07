@@ -237,11 +237,12 @@ func _present(item: Dictionary) -> void:
 
 	# Description
 	var desc := Label.new()
-	desc.text = str(item.get("description", ""))
-	desc.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	## Wrap BEFORE size and text: a Label sized while unwrapped clamps its width to the whole line (overworld 22858).
 	desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	desc.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	desc.position = Vector2(k(20), desc_y)
 	desc.size = Vector2(pw - k(40), desc_h)
+	desc.text = str(item.get("description", ""))
 	desc.add_theme_font_size_override("font_size", TextScale.scaled(DESC_FONT_SIZE))
 	desc.add_theme_color_override("font_color", DESC_COLOR)
 	_panel.add_child(desc)
