@@ -1259,8 +1259,8 @@
       "fps": 8,
       "animations": {
         "idle": {
-          "start": 0,
-          "end": 1
+          "start": 3,
+          "end": 4
         },
         "attack": {
           "start": 2,
@@ -1286,8 +1286,8 @@
       "fps": 8,
       "animations": {
         "idle": {
-          "start": 0,
-          "end": 1
+          "start": 2,
+          "end": 2
         },
         "attack": {
           "start": 2,
@@ -1341,8 +1341,8 @@
       "fps": 8,
       "animations": {
         "idle": {
-          "start": 0,
-          "end": 1
+          "start": 3,
+          "end": 4
         },
         "attack": {
           "start": 2,
@@ -1500,8 +1500,8 @@
       "fps": 8,
       "animations": {
         "idle": {
-          "start": 0,
-          "end": 1
+          "start": 3,
+          "end": 4
         },
         "attack": {
           "start": 2,
@@ -1607,8 +1607,8 @@
       "fps": 8,
       "animations": {
         "idle": {
-          "start": 0,
-          "end": 1
+          "start": 2,
+          "end": 2
         },
         "attack": {
           "start": 2,
@@ -1713,8 +1713,8 @@
       "fps": 8,
       "animations": {
         "idle": {
-          "start": 0,
-          "end": 1
+          "start": 3,
+          "end": 4
         },
         "attack": {
           "start": 2,
@@ -1955,8 +1955,8 @@
       "fps": 8,
       "animations": {
         "idle": {
-          "start": 0,
-          "end": 1
+          "start": 3,
+          "end": 4
         },
         "attack": {
           "start": 2,
@@ -2269,8 +2269,8 @@
       "fps": 8,
       "animations": {
         "idle": {
-          "start": 0,
-          "end": 1
+          "start": 2,
+          "end": 2
         },
         "attack": {
           "start": 2,
@@ -2399,8 +2399,8 @@
       "fps": 8,
       "animations": {
         "idle": {
-          "start": 0,
-          "end": 1
+          "start": 3,
+          "end": 4
         },
         "attack": {
           "start": 2,
@@ -2425,8 +2425,8 @@
       "fps": 8,
       "animations": {
         "idle": {
-          "start": 0,
-          "end": 1
+          "start": 3,
+          "end": 4
         },
         "attack": {
           "start": 2,
@@ -2555,8 +2555,8 @@
       "fps": 8,
       "animations": {
         "idle": {
-          "start": 0,
-          "end": 1
+          "start": 2,
+          "end": 2
         },
         "attack": {
           "start": 2,
@@ -2661,8 +2661,8 @@
       "fps": 8,
       "animations": {
         "idle": {
-          "start": 0,
-          "end": 1
+          "start": 3,
+          "end": 3
         },
         "attack": {
           "start": 2,
@@ -2687,8 +2687,8 @@
       "fps": 8,
       "animations": {
         "idle": {
-          "start": 0,
-          "end": 1
+          "start": 2,
+          "end": 2
         },
         "attack": {
           "start": 2,
@@ -2739,8 +2739,8 @@
       "fps": 8,
       "animations": {
         "idle": {
-          "start": 0,
-          "end": 1
+          "start": 2,
+          "end": 2
         },
         "attack": {
           "start": 2,
@@ -2895,8 +2895,8 @@
       "fps": 8,
       "animations": {
         "idle": {
-          "start": 0,
-          "end": 1
+          "start": 2,
+          "end": 2
         },
         "attack": {
           "start": 2,
@@ -3315,8 +3315,8 @@
       "fps": 8,
       "animations": {
         "idle": {
-          "start": 0,
-          "end": 1
+          "start": 3,
+          "end": 3
         },
         "attack": {
           "start": 2,
@@ -3419,8 +3419,8 @@
       "fps": 8,
       "animations": {
         "idle": {
-          "start": 0,
-          "end": 1
+          "start": 2,
+          "end": 2
         },
         "attack": {
           "start": 2,

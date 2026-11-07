@@ -63,10 +63,11 @@ func test_no_soundscape_bed_also_carries_a_gain() -> void:
 	assert_eq(stacked, [], "a recipe bed with a bed_gain_db stacks it on the loudness trim; fold it into bed_lufs instead")
 
 
-func test_the_s_rank_slam_is_a_labelled_placeholder_that_loads() -> void:
+func test_the_s_rank_slam_is_a_designed_asset_that_loads() -> void:
 	var e: Dictionary = SoundManager._sfx_manifest.get("victory_slam_s", {})
 	assert_false(e.is_empty(), "the S-rank slam key must exist, or VictoryOverlay._slam_key falls back to the ordinary slam")
-	assert_true(bool(e.get("placeholder", false)), "struktured ruled a LABELLED placeholder; the label is what tells the next lane to replace it")
+	assert_false(bool(e.get("placeholder", false)), "the designed asset replaced the labelled placeholder (cowir-main 23030); a placeholder label here would send the next lane to replace it again")
+	assert_ne(str(e.get("file", "")), str((SoundManager._sfx_manifest.get("victory_slam", {}) as Dictionary).get("file", "")), "the S-rank slam must be its own file, not the ordinary slam re-pointed")
 	var s = load("res://" + str(e.get("file", "")))
 	assert_not_null(s, "the slam file must load")
 	if s:
