@@ -889,19 +889,14 @@ func _cell_h() -> int:
 	var inner: float = float(CELL_WIDTH - 12)
 	var tallest: float = 0.0
 	if fnt:
-		## A Label draws each line at the font's height PLUS the theme's line_spacing; the font's own multiline height leaves that out.
-		var font_h: float = maxf(1.0, fnt.get_height(px))
-		var line_h: float = font_h + float(get_theme_constant("line_spacing", "Label"))
-		var texts: Array = []
 		for rule in rules:
 			var r: Dictionary = rule as Dictionary
 			for cond in r.get("conditions", []):
-				texts.append(_format_condition(cond))
+				tallest = maxf(tallest, fnt.get_multiline_string_size(_format_condition(cond),
+					HORIZONTAL_ALIGNMENT_CENTER, inner, px, -1, CELL_TEXT_BREAK).y)
 			for act in r.get("actions", []):
-				texts.append(_format_action(act))
-		for t in texts:
-			var lines: float = roundf(fnt.get_multiline_string_size(str(t), HORIZONTAL_ALIGNMENT_CENTER, inner, px, -1, CELL_TEXT_BREAK).y / font_h)
-			tallest = maxf(tallest, maxf(1.0, lines) * line_h)
+				tallest = maxf(tallest, fnt.get_multiline_string_size(_format_action(act),
+					HORIZONTAL_ALIGNMENT_CENTER, inner, px, -1, CELL_TEXT_BREAK).y)
 	_cell_h_cache = int(ceil(maxf(float(CELL_HEIGHT), tallest + 8.0)))
 	return _cell_h_cache
 
