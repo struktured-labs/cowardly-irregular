@@ -8230,6 +8230,8 @@ const ENEMY_BRACE_COLOR: Color = Color(0.55, 0.68, 0.85)
 
 ## The cue the last Advance flourish played, so a test can tell a monster's from a PC's without hearing it.
 var _last_advance_cue: String = ""
+## Rungs the last selection-time ladder scheduled; 0 when sound was gated off.
+var _enemy_ladder_played: int = 0
 
 
 ## The size of the Advance `combatant` has queued this round (its latest pending action), 0 when it queued anything else.
@@ -8270,7 +8272,11 @@ func _tell_enemy_advance(combatant: Combatant) -> void:
 		return
 	EnemyAdvanceTell.on(sprite).show_queue(n, combatant, ADVANCE_FLOURISH_ENEMY_COLOR,
 		AdvanceAuraClass.should_show(_tier(), BattleJuice.flag("advance_aura")))
+	_enemy_ladder_played = 0
+	if not signature_sound_allowed():
+		return  # a turbo/console grind would stack every monster's ladder into a drone (autogrind 23371); the tell still shows
 	for k in range(2, mini(n, 4) + 1):
+		_enemy_ladder_played += 1
 		if k == 2:
 			_play_enemy_advance_cue(k)
 		else:

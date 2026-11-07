@@ -141,3 +141,17 @@ func test_a_monster_defer_braces() -> void:
 	scene._on_action_executing(foe, {"type": "defer", "combatant": foe})
 	assert_eq(before, 0, "CONTROL: no brace before")
 	assert_eq(scene.find_children("EnemyBrace", "Line2D", false, false).size(), 1, "a monster's Defer shows its brace")
+
+
+func test_turbo_and_the_grind_console_keep_the_tell_but_not_the_ladder() -> void:
+	var spr := _sprite()
+	var foe := _foe("Goblin")
+	var scene := _scene_with(foe, spr)
+	BattleManager.pending_actions = [_advance(foe, 4)]
+	scene._on_selection_turn_ended(foe)
+	assert_eq(scene._enemy_ladder_played, 3, "CONTROL: at normal speed a ×4 climbs three rungs")
+	scene.turbo_mode = true
+	scene._on_selection_turn_ended(foe)
+	assert_eq(scene._enemy_ladder_played, 0, "at turbo the ladder is quiet, like a boss signature (autogrind 23371)")
+	var t := spr.get_node_or_null(EnemyAdvanceTell.NODE_NAME) as EnemyAdvanceTell
+	assert_true(t != null and t.is_showing(), "but the tell still shows: it is state, so it reads at any speed")
