@@ -106,7 +106,11 @@ func test_the_cue_that_actually_plays_is_the_authored_one() -> void:
 			continue
 		var want: float = float((sfx.get("ability_" + id, {}) as Dictionary).get("duration_seconds", -1.0))
 		var got: float = p.stream.get_length()
-		if absf(got - want) > 0.06:
+		## Length alone is blind when a cue is as long as the sword (steal 0.46 vs 0.48): judge the FILE too.
+		var file: String = str((sfx.get("ability_" + id, {}) as Dictionary).get("file", "?"))
+		if not p.stream.resource_path.ends_with(file):
+			wrong.append("%s played %s, not its own %s" % [id, p.stream.resource_path, file])
+		elif absf(got - want) > 0.06:
 			wrong.append("%s played %.2fs, authored %.2fs%s" % [id, got, want,
 				"  <- that is the SWORD" if absf(got - sword_len) < 0.06 else ""])
 		SoundManager._sfx_cooldowns.erase("ability_" + id)
