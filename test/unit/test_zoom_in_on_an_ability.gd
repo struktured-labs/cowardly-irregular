@@ -27,11 +27,11 @@ func _presets() -> Array:
 
 
 ## A mage (spells with real descriptions), the cursor on the LONGEST description, so the fit arm judges the worst case.
-func _menu(s: float = 1.0) -> Control:
+func _menu(s: float = 1.0, job: String = "mage") -> Control:
 	GameState.set_text_size_scale(s)
 	var pc = CombatantScript.new()
 	pc.combatant_name = "Mira"
-	pc.job = JobSystem.get_job("mage")
+	pc.job = JobSystem.get_job(job)
 	add_child_autofree(pc)
 	var m: Control = MENU.new()
 	m.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -120,6 +120,26 @@ func test_zoom_grows_the_description_and_it_still_fits() -> void:
 		assert_lte(d.position.x + d.size.x, panel.size.x, "@%s and stays inside its width" % s)
 
 
+## A description far longer than any shipped one, so the cap has to bind: the zoom shrinks back until it fits.
+func test_a_description_too_long_for_full_zoom_is_capped_to_fit() -> void:
+	var long_text := " ".join(PackedStringArray(range(160).map(func(i): return "word%d" % i)))
+	for s in _presets():
+		var m: Control = await _menu(s)
+		var row: Dictionary = m._abilities_list[m.selected_index]
+		row["data"] = (row["data"] as Dictionary).duplicate()
+		row["data"]["description"] = long_text
+		m._build_ui()
+		await get_tree().process_frame
+		var before: int = _desc(m).get_theme_font_size("font_size")
+		await _act(m, AbilityZoom.ACTION)
+		var panel := _live(m, "ZoomedDetails")
+		var d := _desc(m)
+		var px: int = d.get_theme_font_size("font_size")
+		var bottom: float = d.position.y + d.get_line_count() * d.get_theme_font("font").get_height(px)
+		assert_gte(px, before, "@%s the capped zoom never shrinks below the unzoomed text" % s)
+		assert_lte(bottom, panel.size.y, "@%s the long description (%d lines at %d px, ends %.0f) fits its panel (%.0f)" % [s, d.get_line_count(), px, bottom, panel.size.y])
+
+
 func test_the_toggle_restores_the_exact_layout() -> void:
 	var m: Control = await _menu(1.25)
 	var before := _snapshot(m)
@@ -143,7 +163,15 @@ func test_back_unzooms_and_never_closes() -> void:
 
 
 func test_confirm_casts_nothing_while_zoomed_and_up_down_still_step() -> void:
-	var m: Control = await _menu()
+	var m: Control = await _menu(1.0, "cleric")
+	var cure := -1
+	for i in m._abilities_list.size():
+		if FieldCast.castable(m._abilities_list[i]["data"]):
+			cure = i
+	assert_gt(cure, -1, "CONTROL: the cleric has a field-castable spell, so Confirm WOULD cast")
+	m.selected_index = cure
+	m._build_ui()
+	await get_tree().process_frame
 	var mp: int = m.character.current_mp
 	await _act(m, AbilityZoom.ACTION)
 	await _act(m, "ui_accept")
