@@ -165,29 +165,41 @@ static func force_danger_seconds(args: Array) -> float:
 	return -1.0
 
 
-## The one-shot dip. Theme time is SUMMED while SoundManager's current track is a boss_ bed (music's definition: a
-## danger break pauses the count, a resume continues it), on game time, so it matches the recorded video.
+## The one-shot dip, judged by THE THEME'S OWN CLOCK (cowir-main 23059): the boss bed's playback position, read from
+## SoundManager's playing music player while the current track is a boss_ bed. Not summed `delta` (BattleScene scales it
+## by Engine.time_scale, 0.375 at the demo rung: cowir-music 23055) and not the wall clock (the camera is Movie Maker,
+## where wall time is not video time: cowir-battle 23057). A danger break pauses the position and a resume continues it.
 class ForceDanger extends Node:
 	const TARGET := 0.20
 	var min_theme_s := 30.0
-	var theme_s := 0.0
 	var done := false
+	## where the position comes from: the live bed by default; a test injects a Callable returning seconds
+	var position_source: Callable = Callable()
 
 	func _ready() -> void:
 		var bm = get_node_or_null("/root/BattleManager")
 		if bm and bm.has_signal("selection_phase_started"):
 			bm.selection_phase_started.connect(_on_selection)
 
-	func _process(delta: float) -> void:
+	## seconds into the boss bed, or -1.0 when no boss_ bed is the current, playing track
+	func theme_position() -> float:
+		if position_source.is_valid():
+			return float(position_source.call())
 		var sm = get_node_or_null("/root/SoundManager")
-		if sm and str(sm.get("_current_music")).begins_with("boss_"):
-			theme_s += delta
+		if not (sm and str(sm.get("_current_music")).begins_with("boss_")):
+			return -1.0
+		for k in ["_music_player", "_music_player_b"]:
+			var p = sm.get(k)
+			if p and p is AudioStreamPlayer and p.playing and not p.stream_paused:
+				return p.get_playback_position()
+		return -1.0
 
 	func _on_selection() -> void:
 		if done:
 			return
-		if theme_s < min_theme_s:
-			print("[DEMO] force-danger: Selection Phase at %.1f s of boss theme (< %.0f), deferring" % [theme_s, min_theme_s])
+		var pos := theme_position()
+		if pos < min_theme_s:
+			print("[DEMO] force-danger: Selection Phase at %.1f s of boss theme (< %.0f), deferring" % [pos, min_theme_s])
 			return
 		done = true
 		var bm = get_node_or_null("/root/BattleManager")
@@ -217,4 +229,4 @@ class ForceDanger extends Node:
 				hi = mid - 1
 		var before: int = f.current_hp
 		f.take_damage(lo, false)
-		print("[DEMO] force-danger: %s %d -> %d / %d (%.0f%%) at %.1f s of boss theme" % [f.combatant_name, before, f.current_hp, f.max_hp, 100.0 * f.current_hp / max(1, f.max_hp), theme_s])
+		print("[DEMO] force-danger: %s %d -> %d / %d (%.0f%%) at %.1f s of boss theme" % [f.combatant_name, before, f.current_hp, f.max_hp, 100.0 * f.current_hp / max(1, f.max_hp), pos])
