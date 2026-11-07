@@ -196,13 +196,14 @@ func _build_ui() -> void:
 		if tab_x > 24.0 and tab_x + tab_w > viewport.x - 24.0:
 			tab_x = 24.0
 			tab_y += 32.0 * _k
-		tab.position = Vector2(tab_x, tab_y)
-		tab.size = Vector2(tab_w, 28.0 * _k)
 		tab.mouse_filter = Control.MOUSE_FILTER_STOP
 		tab.add_theme_font_size_override("font_size", tab_px)
 		tab.clip_text = false
 		tab.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
 		add_child(tab)
+		# Sized only once in the tree: outside it a Label's minimum is measured at the default 16 px and clamps the box wider.
+		tab.position = Vector2(tab_x, tab_y)
+		tab.size = Vector2(tab_w, 28.0 * _k)
 		_world_tabs.append(tab)
 		# Click switches the active world tab
 		var btn := Button.new()
@@ -236,11 +237,11 @@ func _build_ui() -> void:
 	var foot_h: float = maxf(20.0, wrapped_h(_footer.text, viewport.x - 48, foot_px))
 	_footer.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_footer.add_theme_font_size_override("font_size", foot_px)
-	_footer.position = Vector2(24, viewport.y - 12 - foot_h)
-	_footer.size = Vector2(viewport.x - 48, foot_h)
 	_footer.add_theme_color_override("font_color", DIM_COLOR)
 	_footer.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	add_child(_footer)
+	_footer.position = Vector2(24, viewport.y - 12 - foot_h)
+	_footer.size = Vector2(viewport.x - 48, foot_h)
 	_item_scroll.size = Vector2(viewport.x - 48, _footer.position.y - 8 - _item_scroll.position.y)
 
 
