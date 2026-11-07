@@ -36,6 +36,7 @@ const MODIFIERS_FONT := 12
 const LIST_FONT := 13
 const EMPTY_FONT := 13
 const HINT_FONT := 12
+const EMPTY_TEXT := "No applied history yet. Defeat a boss or wipe a few times (with auto-rebalance ON) to start seeing entries here."
 const RESET_COLOR := Color(0.55, 0.75, 0.95)
 
 var _list_label: RichTextLabel
@@ -130,13 +131,14 @@ func _build_ui() -> void:
 	add_child(_list_label)
 
 	_empty_label = Label.new()
-	_empty_label.text = "No applied history yet. Defeat a boss or wipe a few times (with auto-rebalance ON) to start seeing entries here."
+	## Wrap BEFORE size and text: a Label sized while unwrapped clamps its width to the whole line (overworld 22866).
+	_empty_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_empty_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_empty_label.add_theme_font_size_override("font_size", TextScale.scaled(EMPTY_FONT))
 	_empty_label.add_theme_color_override("font_color", DIM_COLOR)
 	_empty_label.position = Vector2(panel_x + 40, panel_y + (panel_h / 2.0) - 20)
 	_empty_label.size = Vector2(panel_w - 80, _box(EMPTY_FONT, 40.0))
-	_empty_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_empty_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_empty_label.text = EMPTY_TEXT
 	add_child(_empty_label)
 
 	# tick 57: Reset button — restores ALLOWED_CONSTANTS to 1.0 in one
