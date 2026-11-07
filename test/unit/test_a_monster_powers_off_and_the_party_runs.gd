@@ -62,8 +62,11 @@ func test_every_style_ends_hidden_on_the_wall_clock_without_a_pop() -> void:
 	for style in _table().get("styles", []):
 		var s := _sprite()
 		var cued := [false]
+		var flashed_before_cue := [false]
 		var t0 := Time.get_ticks_msec()
-		EnemyDeathFx.play(s, str(style), func() -> void: cued[0] = true)
+		EnemyDeathFx.play(s, str(style), func() -> void:
+			cued[0] = true
+			flashed_before_cue[0] = Time.get_ticks_msec() - t0 >= 70)
 		var alphas: Array = []
 		while s.visible and Time.get_ticks_msec() - t0 < 2000:
 			alphas.append(s.modulate.a)
@@ -71,6 +74,7 @@ func test_every_style_ends_hidden_on_the_wall_clock_without_a_pop() -> void:
 		var took := (Time.get_ticks_msec() - t0) / 1000.0
 		assert_false(s.visible, "%s never hid the sprite" % style)
 		assert_true(cued[0], "%s never fired the death cue" % style)
+		assert_true(flashed_before_cue[0], "%s fired its cue before the white flash, where the killing blow's hit sound stomps it" % style)
 		assert_lt(took, 1.0, "%s took %.2fs of wall time at 0.1x: it ran on battle time" % [style, took])
 		var tail: Array = alphas.slice(maxi(0, alphas.size() - 4))
 		for i in range(1, tail.size()):
