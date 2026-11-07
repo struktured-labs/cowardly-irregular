@@ -166,7 +166,7 @@ func _s(v: float) -> float:
 ## fact rows (AbilityFacts for abilities, the passive's own data for passives). Every size is measured off the font.
 var _zoomed := false
 ## Share of the zoomed panel (under its header) the description gets; the fact rows take the rest.
-const ZOOM_DESC_SHARE := 0.42
+const ZOOM_DESC_SHARE := 0.34
 
 
 ## The fact rows for the highlighted entry: AbilityFacts for an ability, the passive's own status/category/mods for a passive.
@@ -249,7 +249,7 @@ func _create_zoomed_panel(panel_size: Vector2) -> Control:
 	var facts := _zoom_facts()
 	var rows_top: float = top + desc_box.y + _s(12)
 	var rows_h: float = panel_size.y - rows_top - pad
-	var row_px: int = TextScale.scaled(24)
+	var row_px: int = TextScale.scaled(40)   # as large as the rows' share allows (main 23237: rows read small beside the description)
 	var label_w := 0.0
 	while row_px > 1:
 		label_w = 0.0
