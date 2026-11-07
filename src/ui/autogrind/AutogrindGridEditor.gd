@@ -874,8 +874,11 @@ func _get_profile_name_for(char_id: String, profile_idx: int) -> String:
 ## Keep the selected rule row on screen. Ported from AutobattleGridEditor, which solved this for
 ## the same hand-positioned (non-ScrollContainer) grid: shift _grid_container.position.y and the
 ## cursor follows for free, because _update_cursor derives cell_pos from that same position.
-## The flags that reproduce AUTOWRAP_WORD_SMART's line count: it force-breaks an over-long word, which ADAPTIVE does not (probed 2026-11-07).
+## No one flag set reproduces AUTOWRAP_WORD_SMART: ADAPTIVE never splits an over-long word (the Label does), GRAPHEME splits words
+## the Label keeps whole. _cell_h takes the larger count of the two, so neither shape is under-budgeted.
 const CELL_TEXT_BREAK := TextServer.BREAK_MANDATORY | TextServer.BREAK_WORD_BOUND \
+	| TextServer.BREAK_ADAPTIVE
+const CELL_TEXT_BREAK_LONG_WORD := TextServer.BREAK_MANDATORY | TextServer.BREAK_WORD_BOUND \
 	| TextServer.BREAK_GRAPHEME_BOUND
 
 
@@ -889,14 +892,16 @@ func _cell_h() -> int:
 	var inner: float = float(CELL_WIDTH - 12)
 	var tallest: float = 0.0
 	if fnt:
+		var texts: Array = []
 		for rule in rules:
 			var r: Dictionary = rule as Dictionary
 			for cond in r.get("conditions", []):
-				tallest = maxf(tallest, fnt.get_multiline_string_size(_format_condition(cond),
-					HORIZONTAL_ALIGNMENT_CENTER, inner, px, -1, CELL_TEXT_BREAK).y)
+				texts.append(_format_condition(cond))
 			for act in r.get("actions", []):
-				tallest = maxf(tallest, fnt.get_multiline_string_size(_format_action(act),
-					HORIZONTAL_ALIGNMENT_CENTER, inner, px, -1, CELL_TEXT_BREAK).y)
+				texts.append(_format_action(act))
+		for t in texts:
+			for flags in [CELL_TEXT_BREAK, CELL_TEXT_BREAK_LONG_WORD]:
+				tallest = maxf(tallest, fnt.get_multiline_string_size(str(t), HORIZONTAL_ALIGNMENT_CENTER, inner, px, -1, flags).y)
 	_cell_h_cache = int(ceil(maxf(float(CELL_HEIGHT), tallest + 8.0)))
 	return _cell_h_cache
 
