@@ -533,12 +533,13 @@ func _create_action_cell(row_idx: int, act_idx: int, action: Dictionary) -> Cont
 	## Wrap FIRST: a Label that is not yet wrapping has its whole line as a minimum width, so a grown font clamps the box wider than the cell.
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	label.text = _format_action(action)
-	label.position = Vector2(6, 2)
+	var box := _action_text_box(action)
+	label.position = Vector2(box.x, 2)
 	label.add_theme_font_size_override("font_size", TextScale.scaled(CELL_FONT))
 	label.add_theme_color_override("font_color", style.text)
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	label.size = Vector2(CELL_WIDTH - 12, _cell_h() - 4)
+	label.size = Vector2(box.y, _cell_h() - 4)
 	cell.add_child(label)
 	if action.get("type", "") == "member_ability" and str(action.get("ability", "")) != "":
 		AbilityIcons.attach_to_cell(cell, str(action.get("ability", "")))
@@ -896,14 +897,22 @@ func _cell_h() -> int:
 		for rule in rules:
 			var r: Dictionary = rule as Dictionary
 			for cond in r.get("conditions", []):
-				texts.append(_format_condition(cond))
+				texts.append([_format_condition(cond), inner])
 			for act in r.get("actions", []):
-				texts.append(_format_action(act))
+				texts.append([_format_action(act), _action_text_box(act as Dictionary).y])
 		for t in texts:
 			for flags in [CELL_TEXT_BREAK, CELL_TEXT_BREAK_LONG_WORD]:
-				tallest = maxf(tallest, fnt.get_multiline_string_size(str(t), HORIZONTAL_ALIGNMENT_CENTER, inner, px, -1, flags).y)
+				tallest = maxf(tallest, fnt.get_multiline_string_size(str(t[0]), HORIZONTAL_ALIGNMENT_CENTER, float(t[1]), px, -1, flags).y)
 	_cell_h_cache = int(ceil(maxf(float(CELL_HEIGHT), tallest + 8.0)))
 	return _cell_h_cache
+
+
+## Where an action's text sits: a cast carries its ability icon at x 4..20, so its text starts right of it and wraps narrower.
+const ICON_TEXT_X := 22.0
+func _action_text_box(action: Dictionary) -> Vector2:
+	if str(action.get("type", "")) == "member_ability" and str(action.get("ability", "")) != "":
+		return Vector2(ICON_TEXT_X, CELL_WIDTH - ICON_TEXT_X - 6.0)
+	return Vector2(6.0, CELL_WIDTH - 12.0)
 
 
 func _row_stride() -> int:

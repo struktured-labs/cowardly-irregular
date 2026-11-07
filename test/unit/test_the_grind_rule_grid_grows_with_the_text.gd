@@ -182,6 +182,31 @@ func test_every_built_cell_label_keeps_the_cell_width() -> void:
 	assert_eq(bad, [], "a cell label clamped wider than its cell: %s" % [bad])
 
 
+## A cast's text starts right of its ability icon at every preset: centred across the full cell, a wrapped line ran under it.
+func test_a_cast_label_clears_its_icon() -> void:
+	var casts := 0
+	var bad: Array = []
+	for scale in _presets():
+		var ed: Control = await _editor_at(float(scale))
+		for c in ed._grid_container.get_children():
+			if not (c is Control) or not (c as Control).has_meta("cell_type") or str((c as Control).get_meta("cell_type")) != "action":
+				continue
+			var icon: Control = null
+			var label: Label = null
+			for k in (c as Control).get_children():
+				if k is TextureRect:
+					icon = k
+				elif k is Label:
+					label = k
+			if icon == null or label == null:
+				continue
+			casts += 1
+			if label.position.x < icon.position.x + icon.size.x:
+				bad.append("%sx: '%s' starts at %.0f under an icon ending at %.0f" % [scale, label.text.replace("\n", "/"), label.position.x, icon.position.x + icon.size.x])
+	assert_gt(casts, 4, "CONTROL: %d cast cells carried an icon" % casts)
+	assert_eq(bad, [], "a cast's text starts under its icon: %s" % [bad])
+
+
 ## The floor holds only in its own direction: no preset renders a cell under the authored 44, and the height never shrinks as the setting rises.
 func test_the_cell_height_only_ever_grows() -> void:
 	var consts: Dictionary = (load(GE) as GDScript).get_script_constant_map()
