@@ -182,7 +182,9 @@ func test_no_cell_text_spills_sideways_at_any_preset() -> void:
 			var px: int = l.get_theme_font_size("font_size")
 			## Wrapped at the CELL's inner width, not l.size.x: a Label that cached its unwrapped line clamps size.x UP to
 			## it, so measuring against its own width can never find the spill (cowir-autogrind 22869).
-			var inner: float = float(_cell_width(ed)) - 12.0
+			## The smaller of the label's width and the cell's inner width: a clamped label (wider than its cell) is judged at
+			## the cell, and an ability label narrowed beside its icon is judged at the width it really has.
+			var inner: float = minf(l.size.x, float(_cell_width(ed)) - 12.0)
 			var wrapped: float = fnt.get_multiline_string_size(l.text,
 				HORIZONTAL_ALIGNMENT_CENTER, inner, px, -1, _break_flags_of(l)).x
 			if wrapped > inner + 1.0:
