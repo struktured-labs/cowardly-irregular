@@ -211,6 +211,10 @@ static var _last_advance_ms: int = 0
 static var _last_defer_ms: int = 0
 static var _defer_axis_held: bool = false  # release-edge gate: an L2 analog ramp emits many pressed events with no echo flag
 static var _advance_axis_held: bool = false  # same gate for R2 — the 4th advance auto-submits and opens the NEXT member's menu (struktured 2026-09-06 asked)
+## The zoomed description band (battle ability list): kept off the screen edges and above the menu, which sits low.
+const ZOOM_EDGE: float = 16.0
+const ZOOM_MAX_WIDTH: float = 760.0
+const ZOOM_TOP: float = 64.0
 const ADVANCE_DEBOUNCE_MS: int = 120
 const DEFER_DEBOUNCE_MS: int = 120
 var _current_ap: int = 0  # Current AP for display
@@ -230,6 +234,8 @@ var _auto_hold_start_ms: int = 0
 var _auto_hold_row_idx: int = -1
 const AUTO_HOLD_THRESHOLD_MS: int = 500
 var _tooltip_label: Label = null  # Ability tooltip shown below menu
+## The battle ability list's reading view (design 23190): the description grows AbilityZoom.FACTOR, Up/Down still step, Confirm is inert, Back un-zooms.
+var _zoomed: bool = false
 var _panel_fill: ColorRect = null
 
 ## Pixel tile size (scaled 1.5x for readability)
@@ -554,6 +560,11 @@ func _update_tooltip() -> void:
 
 	_tooltip_label.text = tooltip_text
 	_tooltip_label.visible = true
+	_place_zoom_chip()
+	if _zoomed:
+		_layout_zoomed_tooltip()
+		return
+	_tooltip_label.add_theme_font_size_override("font_size", TextScale.scaled(13))
 	_tooltip_label.position = Vector2(position.x, position.y + size.y + 4)
 	_tooltip_label.size = Vector2(maxi(int(size.x), 160), 0)  # height fits the wrapped text
 
@@ -571,6 +582,71 @@ func _tooltip_backing() -> StyleBoxFlat:
 	sb.content_margin_top = 4
 	sb.content_margin_bottom = 4
 	return sb
+
+
+## A battle submenu listing abilities (rows ability_menu_<id>): the one place the zoom applies.
+func is_ability_list() -> bool:
+	if not battle_mode:
+		return false
+	for item in menu_items:
+		if str(item.get("id", "")).begins_with("ability_menu_"):
+			return true
+	return false
+
+
+func is_zoomed() -> bool:
+	return _zoomed
+
+
+## The derived button that zooms, riding the description's top-right corner on the ability list only.
+func _place_zoom_chip() -> void:
+	var chip := _tooltip_label.get_node_or_null("ZoomChip") as Label
+	if not is_ability_list():
+		if chip:
+			chip.queue_free()
+		return
+	if chip == null:
+		chip = Label.new()
+		chip.name = "ZoomChip"
+		chip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		chip.add_theme_color_override("font_color", style.get("text", Color.WHITE).darkened(0.15))
+		_tooltip_label.add_child(chip)
+	chip.add_theme_font_size_override("font_size", TextScale.scaled(11))
+	chip.text = "%s: %s" % [AbilityZoom.hint(), "Back" if _zoomed else "Zoom"]
+	chip.anchor_left = 1.0
+	chip.anchor_right = 1.0
+	chip.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	chip.offset_right = 0.0
+	chip.offset_top = -float(TextScale.scaled(11)) - 8.0
+
+
+func _toggle_zoom() -> void:
+	var on := not _zoomed
+	if on and str(menu_items[selected_index].get("tooltip", "") if selected_index >= 0 and selected_index < menu_items.size() else "") == "":
+		return
+	_zoomed = on
+	if SoundManager:
+		SoundManager.play_ui("menu_expand" if on else "menu_close")
+	_update_tooltip()
+
+
+## Zoomed: a band across the screen's upper middle, AbilityZoom.FACTOR on top of Text Size, stepped down until the wrapped text fits.
+func _layout_zoomed_tooltip() -> void:
+	var vp: Vector2 = get_viewport_rect().size
+	var width: float = minf(vp.x - ZOOM_EDGE * 2.0, ZOOM_MAX_WIDTH)
+	var room: float = maxf(vp.y * 0.5 - ZOOM_TOP, 60.0)
+	var base: int = TextScale.scaled(13)
+	var font := _tooltip_label.get_theme_font("font")
+	var sb := _tooltip_label.get_theme_stylebox("normal")
+	var inner: float = floorf(width - (sb.get_minimum_size().x if sb else 0.0))
+	var k: float = AbilityZoom.FACTOR
+	var px: int = maxi(base, int(round(base * k)))
+	while px > base and font and font.get_multiline_string_size(_tooltip_label.text, HORIZONTAL_ALIGNMENT_LEFT, inner, px).y > room:
+		k -= 0.05
+		px = maxi(base, int(round(base * k)))
+	_tooltip_label.add_theme_font_size_override("font_size", px)
+	_tooltip_label.size = Vector2(width, 0)
+	_tooltip_label.position = Vector2((vp.x - width) * 0.5, ZOOM_TOP)
 
 
 func _add_tooltip_to_parent() -> void:
@@ -2422,6 +2498,20 @@ func _input(event: InputEvent) -> void:
 	# DON'T consume battle_toggle_auto - let it pass through to BattleScene
 	if event.is_action_pressed("battle_toggle_auto"):
 		return
+
+	# The ability list's reading view: the zoom toggles, and while zoomed Confirm is inert and Back un-zooms (design 23190).
+	if is_ability_list():
+		if AbilityZoom.pressed(event):
+			_toggle_zoom()
+			get_viewport().set_input_as_handled()
+			return
+		if _zoomed and (event.is_action_pressed("ui_accept") or event.is_action_pressed("battle_advance")) and not event.is_echo():
+			get_viewport().set_input_as_handled()
+			return
+		if _zoomed and event.is_action_pressed("ui_cancel") and not event.is_echo():
+			_toggle_zoom()
+			get_viewport().set_input_as_handled()
+			return
 
 	# Handle input actions (gamepad + keyboard unified) - only in battle mode
 	if battle_mode:
