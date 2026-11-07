@@ -230,6 +230,9 @@ var _auto_hold_start_ms: int = 0
 var _auto_hold_row_idx: int = -1
 const AUTO_HOLD_THRESHOLD_MS: int = 500
 var _tooltip_label: Label = null  # Ability tooltip shown below menu
+## The battle ability list's reading view (design 23190, v2 23219): AbilityZoomCard over a dimmed battle; Up/Down still step, Confirm is inert, Back un-zooms.
+var _zoomed: bool = false
+var _zoom_card: AbilityZoomCard = null
 var _panel_fill: ColorRect = null
 
 ## Pixel tile size (scaled 1.5x for readability)
@@ -554,6 +557,12 @@ func _update_tooltip() -> void:
 
 	_tooltip_label.text = tooltip_text
 	_tooltip_label.visible = true
+	_place_zoom_chip()
+	if _zoomed:
+		_tooltip_label.visible = false
+		_refresh_zoom_card()
+		return
+	_tooltip_label.add_theme_font_size_override("font_size", TextScale.scaled(13))
 	_tooltip_label.position = Vector2(position.x, position.y + size.y + 4)
 	_tooltip_label.size = Vector2(maxi(int(size.x), 160), 0)  # height fits the wrapped text
 
@@ -571,6 +580,78 @@ func _tooltip_backing() -> StyleBoxFlat:
 	sb.content_margin_top = 4
 	sb.content_margin_bottom = 4
 	return sb
+
+
+## A battle SUBMENU listing abilities (rows ability_menu_<id>). The root carries quick-slot rows with the same ids, and must stay Repeat's.
+func is_ability_list() -> bool:
+	if not battle_mode or parent_menu == null:
+		return false
+	for item in menu_items:
+		if str(item.get("id", "")).begins_with("ability_menu_"):
+			return true
+	return false
+
+
+func is_zoomed() -> bool:
+	return _zoomed
+
+
+## The derived button that zooms, riding the description's top-right corner on the ability list only.
+func _place_zoom_chip() -> void:
+	var chip := _tooltip_label.get_node_or_null("ZoomChip") as Label
+	if not is_ability_list():
+		if chip:
+			chip.queue_free()
+		return
+	if chip == null:
+		chip = Label.new()
+		chip.name = "ZoomChip"
+		chip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		chip.add_theme_color_override("font_color", style.get("text", Color.WHITE).darkened(0.15))
+		_tooltip_label.add_child(chip)
+	chip.add_theme_font_size_override("font_size", TextScale.scaled(11))
+	chip.text = "%s: Zoom" % AbilityZoom.hint()
+	chip.anchor_left = 1.0
+	chip.anchor_right = 1.0
+	chip.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	chip.offset_right = 0.0
+	chip.offset_top = -float(TextScale.scaled(11)) - 8.0
+
+
+func _toggle_zoom() -> void:
+	var on := not _zoomed
+	if on and str(menu_items[selected_index].get("tooltip", "") if selected_index >= 0 and selected_index < menu_items.size() else "") == "":
+		return
+	_zoomed = on
+	if not on:
+		_free_zoom_card()
+	print("[ZOOM] %s on '%s' row %s" % ["in" if on else "out", menu_title, str(menu_items[selected_index].get("id", "")) if selected_index >= 0 and selected_index < menu_items.size() else "?"])
+	if SoundManager:
+		SoundManager.play_ui("menu_expand" if on else "menu_close")
+	_update_tooltip()
+
+
+## The card for the highlighted ability, as the acting combatant would cast it; built on the first zoom, re-filled on every step.
+func _refresh_zoom_card() -> void:
+	if selected_index < 0 or selected_index >= menu_items.size():
+		return
+	var row: Dictionary = menu_items[selected_index]
+	if _zoom_card == null or not is_instance_valid(_zoom_card):
+		_zoom_card = AbilityZoomCard.new(style)
+		_zoom_card.z_index = z_index + 20
+		(get_parent() if get_parent() else self).add_child(_zoom_card)
+	var bm = get_tree().root.get_node_or_null("BattleManager") if is_inside_tree() else null
+	_zoom_card.show_for(str(row.get("id", "")).trim_prefix("ability_menu_"), str(row.get("tooltip", "")), bm.current_combatant if bm else null)
+
+
+func zoom_card() -> AbilityZoomCard:
+	return _zoom_card if _zoom_card and is_instance_valid(_zoom_card) else null
+
+
+func _free_zoom_card() -> void:
+	if _zoom_card and is_instance_valid(_zoom_card):
+		_zoom_card.queue_free()
+	_zoom_card = null
 
 
 func _add_tooltip_to_parent() -> void:
@@ -1533,6 +1614,7 @@ func _cleanup_target_highlight() -> void:
 
 func _cleanup_tooltip() -> void:
 	"""Remove tooltip label from scene"""
+	_free_zoom_card()
 	if _tooltip_label and is_instance_valid(_tooltip_label):
 		_tooltip_label.queue_free()
 		_tooltip_label = null
@@ -2422,6 +2504,20 @@ func _input(event: InputEvent) -> void:
 	# DON'T consume battle_toggle_auto - let it pass through to BattleScene
 	if event.is_action_pressed("battle_toggle_auto"):
 		return
+
+	# The ability list's reading view: the zoom toggles, and while zoomed Confirm is inert and Back un-zooms (design 23190).
+	if is_ability_list():
+		if AbilityZoom.pressed(event):
+			_toggle_zoom()
+			get_viewport().set_input_as_handled()
+			return
+		if _zoomed and (event.is_action_pressed("ui_accept") or event.is_action_pressed("battle_advance")) and not event.is_echo():
+			get_viewport().set_input_as_handled()
+			return
+		if _zoomed and event.is_action_pressed("ui_cancel") and not event.is_echo():
+			_toggle_zoom()
+			get_viewport().set_input_as_handled()
+			return
 
 	# Handle input actions (gamepad + keyboard unified) - only in battle mode
 	if battle_mode:
