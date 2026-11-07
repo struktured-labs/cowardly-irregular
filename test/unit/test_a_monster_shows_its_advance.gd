@@ -3,7 +3,7 @@ extends GutTest
 ## struktured via main 23349: "make it obvious when a monster Advances or Defers". Measured on .788 (battle 23350): an
 ## enemy's Advance was chosen at selection with nothing shown, executed with the PARTY's cue, and its Defer had no sound
 ## and no visual. Now the monster powers up at selection (aura + "×N" pip, kept until it acts, so it reads at 64x),
-## spends a pip per sub-action, plays its own enemy_advance_N / enemy_defer cue, and braces on a Defer.
+## spends a pip per sub-action, plays cowir-sfx's enemy_advance_N / enemy_defer, and braces on a Defer.
 
 const SCENE := "res://src/battle/BattleScene.tscn"
 const BattleState := preload("res://test/unit/helpers/battle_state.gd")
@@ -109,17 +109,15 @@ func test_an_enemy_advance_powers_up_at_selection_and_spends_as_it_acts() -> voi
 	assert_false(t.is_showing(), "the Advance's own resolution clears the rest")
 
 
-func test_a_monster_cue_is_never_silent_and_never_the_partys_once_its_own_exists() -> void:
+func test_each_rung_plays_the_monsters_own_cue() -> void:
 	var spr := _sprite()
 	var scene := _scene_with(_foe("Goblin"), spr)
+	var manifest: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/sfx_manifest.json"))["sfx"]
 	for n in [2, 3, 4]:
-		var own: String = "enemy_advance_%d" % n
 		var played: String = scene._play_enemy_advance_cue(n)
-		if SoundManager.resolves(own):
-			assert_eq(played, own, "×%d plays the monster's own cue once cowir-sfx authors it" % n)
-		else:
-			assert_eq(played, "advance_flourish_%d" % n, "×%d falls back to the party's step, pitched down" % n)
-		assert_true(SoundManager.resolves(played), "×%d plays something real (%s)" % [n, played])
+		assert_eq(played, "enemy_advance_%d" % n, "×%d plays its own rung of the monster ladder" % n)
+		assert_true(manifest.has(played), "and that cue is authored (%s)" % played)
+	assert_eq(scene._play_enemy_advance_cue(6), "enemy_advance_4", "a longer queue tops out at the last rung")
 
 
 func test_the_execution_flourish_is_a_monsters_not_a_pcs() -> void:
@@ -132,9 +130,7 @@ func test_the_execution_flourish_is_a_monsters_not_a_pcs() -> void:
 	scene._spawn_advance_flourish(pc, spr, 3, false)
 	assert_eq(scene._last_advance_cue, "advance_flourish_3", "CONTROL: a PC's Advance plays the party cue")
 	scene._spawn_advance_flourish(foe, spr, 3, false)
-	assert_ne(scene._last_advance_cue, "advance_flourish_3", "a monster's Advance must not play the PC's own cue at full pitch")
-	assert_true(scene._last_advance_cue in ["enemy_advance_3", "advance_flourish_3"] or scene._last_advance_cue.begins_with("enemy_advance"),
-		"it plays the enemy ladder (%s)" % scene._last_advance_cue)
+	assert_eq(scene._last_advance_cue, "enemy_advance_3", "a monster's Advance plays the monster ladder, not the PC's cue")
 
 
 func test_a_monster_defer_braces() -> void:

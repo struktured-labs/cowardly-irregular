@@ -8223,8 +8223,6 @@ static func advance_flourish_color(combatant: Combatant, party_color: Color) -> 
 
 ## ─── A monster's Advance and Defer, readable at a glance (struktured via main 23349) ───
 
-## The party's cue an unauthored enemy cue falls back to, pitched down so it still reads as not-the-party.
-const ENEMY_CUE_FALLBACK_PITCH: float = 0.8
 ## Wall-clock gap between the rising steps of an enemy's selection-time ladder, so a ×4 is heard climbing at any speed.
 const ENEMY_LADDER_STEP_S: float = 0.12
 const ENEMY_BRACE_COLOR: Color = Color(0.55, 0.68, 0.85)
@@ -8247,12 +8245,9 @@ static func enemy_advance_cue(n: int) -> String:
 	return "enemy_advance_%d" % clampi(n, 2, 4)
 
 
-## Literal keys at each call so test_sfx_key_orphan_audit sees them; returns the key that played.
+## cowir-sfx's monster ladder (lower, minor, darker than the party's); literal keys so test_sfx_key_orphan_audit sees each.
 func _play_enemy_advance_cue(n: int) -> String:
 	var key: String = enemy_advance_cue(n)
-	if not SoundManager.resolves(key):
-		SoundManager.play_battle_scaled("advance_flourish_%d" % clampi(n, 2, 4), 0.0, ENEMY_CUE_FALLBACK_PITCH)
-		return "advance_flourish_%d" % clampi(n, 2, 4)
 	match key:
 		"enemy_advance_2":
 			SoundManager.play_battle("enemy_advance_2")
@@ -8298,10 +8293,7 @@ func _spend_enemy_tell(combatant: Combatant, action: Dictionary) -> void:
 
 ## A monster's Defer: it hunkers behind a brief grey-blue shimmer, with its own cue (enemies have no menu to play one).
 func _spawn_enemy_brace(sprite: Node2D) -> void:
-	if SoundManager.resolves("enemy_defer"):
-		SoundManager.play_battle("enemy_defer")
-	else:
-		SoundManager.play_battle_scaled("defer", 0.0, ENEMY_CUE_FALLBACK_PITCH)
+	SoundManager.play_battle("enemy_defer")
 	if sprite == null or not is_instance_valid(sprite) or _tier() == BattleJuice.Tier.MINIMAL:
 		return
 	BattleJuice.squash(sprite, 1.06, 0.92, 0.05, 0.18)
