@@ -3,9 +3,11 @@ extends GutTest
 ## struktured's show-floor ask (main 23186), battle half of design 23190: the ability submenu's description zooms on
 ## AbilityZoom's button (west + A), grows AbilityZoom.FACTOR on top of Text Size, keeps Up/Down, makes Confirm and Advance
 ## inert, and un-zooms on Back without closing. West is Repeat elsewhere in battle; on the ability list it must zoom.
+## v2 (main 23219): the zoom is AbilityZoomCard, a centred card whose description FILLS its box and whose rows are AbilityFacts.
 
 const Win98MenuClass = preload("res://src/ui/Win98Menu.gd")
 const LONG := "Calls down a pillar of lightning that strikes every foe at once, then lingers as static that may stun anything still standing when it clears."
+const SHORTEST_ID := "slash"  # the shortest real description in abilities.json ("Slash with weapon")
 
 var _saved_scale = null
 
@@ -31,9 +33,10 @@ func _presets() -> Array:
 
 
 func _ability_rows() -> Array:
+	var short: String = str(JobSystem.get_ability(SHORTEST_ID).get("description", ""))
 	return [
 		{"id": "ability_menu_thundaga", "label": "Thundaga", "tooltip": LONG, "submenu": [{"id": "ability_thundaga_enemy_0", "label": "Goblin"}]},
-		{"id": "ability_menu_cure", "label": "Cure", "tooltip": "Restores HP to one ally.", "submenu": [{"id": "ability_cure_ally_0", "label": "Bram"}]},
+		{"id": "ability_menu_" + SHORTEST_ID, "label": "Slash", "tooltip": short, "submenu": [{"id": "ability_slash_enemy_0", "label": "Goblin"}]},
 	]
 
 
@@ -82,7 +85,14 @@ func test_the_zoom_action_is_the_shared_one() -> void:
 	assert_true(west and key_a, "the battle zoom reads the same west + A as the field one")
 
 
-func test_the_zoomed_description_grows_and_fits_at_every_text_size() -> void:
+func _zoom_and_settle(sub) -> AbilityZoomCard:
+	sub._input(_action(AbilityZoom.ACTION))
+	for i in 4:
+		await get_tree().process_frame
+	return sub.zoom_card()
+
+
+func test_the_card_description_fills_its_box_at_every_text_size() -> void:
 	var problems: Array = []
 	for scale in _presets():
 		GameState.text_size_scale = scale
@@ -90,23 +100,43 @@ func test_the_zoomed_description_grows_and_fits_at_every_text_size() -> void:
 		var sub = pair[1]
 		if sub == null:
 			continue
-		sub._update_tooltip()
-		var label: Label = sub._tooltip_label
-		assert_not_null(label, "CONTROL: the description label exists at %s" % str(scale))
-		var unzoomed: int = label.get_theme_font_size("font_size")
-		sub._input(_action(AbilityZoom.ACTION))
-		await get_tree().process_frame
-		await get_tree().process_frame
-		assert_true(sub.is_zoomed(), "CONTROL: the zoom took at %s" % str(scale))
-		var zoomed: int = label.get_theme_font_size("font_size")
-		if zoomed <= unzoomed:
-			problems.append("@%s zoomed %d px is not larger than %d" % [str(scale), zoomed, unzoomed])
-		var vp: Vector2 = sub.get_viewport_rect().size
-		var r := Rect2(label.global_position, Vector2(label.size.x, _drawn_h(label)))
-		if r.position.x < 0.0 or r.end.x > vp.x + 0.5 or r.position.y < 0.0 or r.end.y > vp.y * 0.5 + 0.5:
-			problems.append("@%s the zoomed text %s leaves its band (screen %s)" % [str(scale), str(r), str(vp)])
+		var card := await _zoom_and_settle(sub)
+		assert_not_null(card, "CONTROL: the zoom built its card at %s" % str(scale))
+		if card == null:
+			continue
+		var d: Label = card.description_label()
+		var px: int = d.get_theme_font_size("font_size")
+		if px <= AbilityZoomCard.unzoomed_px():
+			problems.append("@%s the card's %d px is not larger than the list's %d" % [str(scale), px, AbilityZoomCard.unzoomed_px()])
+		if is_equal_approx(float(scale), 1.0) and px < int(AbilityZoom.MIN_FACTOR * AbilityZoomCard.unzoomed_px()):
+			problems.append("@100%% the card's %d px is under %.1fx the list's %d" % [px, AbilityZoom.MIN_FACTOR, AbilityZoomCard.unzoomed_px()])
+		if _drawn_h(d) > card.description_box().y + 0.5:
+			problems.append("@%s the description draws %d px in a %d px box" % [str(scale), int(_drawn_h(d)), int(card.description_box().y)])
+		var vp: Vector2 = card.get_viewport_rect().size
+		for l in card.row_labels():
+			var r := Rect2((l as Control).global_position, (l as Control).get_combined_minimum_size())
+			if r.end.x > vp.x * 0.8 + 1.0 or r.end.y > vp.y * 0.83 + 1.0:
+				problems.append("@%s fact '%s' leaves the card %s" % [str(scale), (l as Label).text, str(r)])
+		if card.row_labels().size() < 4:
+			problems.append("@%s the card shows %d fact labels" % [str(scale), card.row_labels().size()])
 		pair[0].force_close()
-	assert_eq(problems, [], "the zoomed description must grow at every Text Size and fit its band")
+	assert_eq(problems, [], "the zoomed card's description must fill its box at every Text Size, with its facts inside the card")
+
+
+func test_the_shortest_real_description_fills_most_of_its_box() -> void:
+	GameState.text_size_scale = 1.0
+	var pair: Array = await _opened()
+	var sub = pair[1]
+	sub.selected_index = 1
+	sub._update_tooltip()
+	var card := await _zoom_and_settle(sub)
+	assert_not_null(card, "CONTROL: the card opened on the shortest description")
+	if card:
+		var d: Label = card.description_label()
+		assert_eq(d.text, str(JobSystem.get_ability(SHORTEST_ID).get("description", "")), "CONTROL: it is the shortest real one")
+		var fill: float = _drawn_h(d) / card.description_box().y
+		assert_gte(fill, 0.75, "a one-liner must fill its box (it fills %.0f%%), not sit small in it" % (fill * 100.0))
+	pair[0].force_close()
 
 
 func test_up_down_step_while_zoomed() -> void:
@@ -119,7 +149,12 @@ func test_up_down_step_while_zoomed() -> void:
 	await get_tree().process_frame
 	assert_ne(sub.selected_index, before, "Down steps to the next ability while zoomed")
 	assert_true(sub.is_zoomed(), "and the reading view stays zoomed")
-	assert_eq(sub._tooltip_label.text, "Restores HP to one ally.", "showing the newly highlighted ability")
+	for i in 3:
+		await get_tree().process_frame
+	var card: AbilityZoomCard = sub.zoom_card()
+	assert_not_null(card, "the card stays up while stepping")
+	if card:
+		assert_eq(card.description_label().text, str(JobSystem.get_ability(SHORTEST_ID).get("description", "")), "and shows the newly highlighted ability")
 	pair[0].force_close()
 
 
