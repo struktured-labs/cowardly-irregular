@@ -235,10 +235,14 @@ func test_both_button_readers_apply_the_face_convention() -> void:
 	## ⛔ PER FUNCTION, NOT A GLOBAL COUNT. My first version counted the call across the file and
 	## required >= 2 — and apply_profile supplies a THIRD occurrence, so reverting
 	## button_name_for_action left 2 and the arm passed on the mutation.
+	## Since 2026-11-07 both readers share ONE resolver, _pad_indices_for, which applies the swap for a profile action and
+	## reads the live binding for one the profile does not carry (the pad-hint fix). So: both route through it, and IT swaps.
+	var helper: String = _func_body(src, "func _pad_indices_for(")
+	assert_true(helper.contains("face_convention_indices("), "_pad_indices_for must apply the face convention for a profile action")
 	for fn in ["func glyph_for_action(", "func button_name_for_action("]:
 		var body: String = _func_body(src, fn)
 		assert_gt(body.length(), 0, "CONTROL: %s must exist to have a body" % fn)
-		assert_true(body.contains("face_convention_indices("),
+		assert_true(body.contains("_pad_indices_for("),
 			"%s reads the PRE-convention table and must apply the swap — its twin does, and one " % fn
 			+ "naming a face the other does not is the asymmetry that put the wrong button on the "
 			+ "Controls screen")
