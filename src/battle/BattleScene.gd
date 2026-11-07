@@ -6290,11 +6290,24 @@ func _input(event: InputEvent) -> void:
 			_speed_button(true)
 			get_viewport().set_input_as_handled()
 			return
-		# X button - repeat previous actions
+		# X button - repeat previous actions, except on the ability list, where west is AbilityZoom's (design 23190)
 		elif event.button_index == JOY_BUTTON_X:
+			if ability_list_open():
+				print("[ZOOM] west left to the open ability list, not Repeat")
+				return
 			_repeat_previous_actions()
 			get_viewport().set_input_as_handled()
 			return
+
+
+## An open battle ability list anywhere down the command menu's submenu chain: west belongs to its zoom there, not to Repeat.
+func ability_list_open() -> bool:
+	var m = active_win98_menu
+	while m != null and is_instance_valid(m):
+		if m.has_method("is_ability_list") and m.is_ability_list():
+			return true
+		m = m.get("submenu")
+	return false
 
 
 func _unhandled_input(event: InputEvent) -> void:
