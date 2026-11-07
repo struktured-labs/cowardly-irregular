@@ -989,9 +989,10 @@
     },
     "enemy_death": {
       "file": "assets/audio/sfx/enemy_death.ogg",
-      "prompt": "Gentle organic scorch with a wispy smoke plume, soft ember sizzle as flesh quietly combusts into vapor, warm crackling dissolve with breath-like tail, natural living-thing unraveling into air, no bass no tones",
-      "duration_seconds": 1.0,
-      "prompt_influence": 0.4
+      "source": "supplied_audition",
+      "prompt": "SELECTED audition file, copied in byte for byte (2026-11-07). Solo F_whoosh.ogg, the airy burn, kept over a rumbling rubble take and over any blend. sha256 99346040269494fdbd937621dec8ba8b44798c34712c2ffc7f6861029c1a6db6, 0.84s, mono Vorbis. Replaces the retired gentle organic scorch on this same cue. The cue name stays enemy_death. play_death still fires it inside the death tween after the white flash, and this shorter file is not a gameplay delay. The existing +6 dB death boost and the sub thud stay; they were measured for the quiet scorch and were not retuned for this file (peak -0.9 dBFS, mean -17.4 dB, so the shared death player at +2 dB sits about 1 dB over full scale). W4 keeps its own w4_enemy_death.ogg. Bosses use this cue because _on_enemy_died has one death cry; ally KO stays party_ko and injury_sting stays on the victory overlay.",
+      "duration_seconds": 0.84,
+      "prompt_influence": 0.0
     },
     "exp_bar_tick_ramp_hi": {
       "file": "assets/audio/sfx/exp_bar_tick_ramp_hi.ogg",

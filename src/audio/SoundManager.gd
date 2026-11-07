@@ -131,7 +131,7 @@ const JINGLE_PLAYER_BASE_DB: float = -8.0
 const CRIT_THUD_FREQ: float = 62.0
 const CRIT_THUD_DURATION: float = 0.18
 const CRIT_THUD_TRIM_DB: float = -4.0
-## Death punctuation (struktured 2026-08-20: "cant hear the sfx when a monster dies"). The authored cue is a gentle scorch ("no bass no tones") measured at the SAME mean level as a plain hit (-22.8 vs -21.8 dB) — it cannot read as a climax. Boost the cue and give it the low body it was authored without.
+## Death punctuation (struktured 2026-08-20: "cant hear the sfx when a monster dies"). The boost and the thud were measured on the retired gentle scorch ("no bass no tones", mean -22.8 dB, level with a plain hit at -21.8). The shipped enemy_death file is now the selected whoosh (sfx_manifest); this player gain was not retuned with that swap, because the same boost covers every play_death cue.
 const DEATH_PLAYER_BASE_DB: float = SFX_BATTLE_BASE_DB + 2.0
 ## Battle quips do not duck music, so voice sits ~2.4 dB over the bed (voice -18.3 LUFS vs music -14.7 at -10 dB); at -16 it was 9.6 dB under (struktured 2026-09-24).
 const VOICE_PLAYER_BASE_DB: float = -4.0
@@ -1253,7 +1253,7 @@ func play_battle(sound_key: String) -> void:
 	_play_sound(_battle_player, _synth_params(sound_key, level))
 
 
-## Death cries on their OWN voice — on the shared _battle_player the 1s scorch was stomped by the killing blow's hit sound, then (post-fix) by the NEXT action's sounds at 2x+ speed. Never audible either way (struktured 2026-08-15 + 2026-08-18).
+## Death cries on their OWN voice — on the shared _battle_player the death cry was stomped by the killing blow's hit sound, then (post-fix) by the NEXT action's sounds at 2x+ speed. Never audible either way (struktured 2026-08-15 + 2026-08-18). The cue's file length is not a delay: playback starts at the fade and the tween does not wait it out.
 func play_death(sound_key: String) -> void:
 	var world_key: String = _get_world_sfx_prefix() + sound_key
 	# A group kill drops 2-3 enemies inside SFX_MIN_INTERVAL_MS; the per-key cooldown would swallow every death but the first (and its `return true` suppresses the fallback too). Deaths are the one cue that must never dedupe.
