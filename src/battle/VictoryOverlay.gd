@@ -260,68 +260,203 @@ func _headline_foe() -> String:
 	return ""
 
 
+## struktured 2026-11-07: the yellow sweep line was the wrong language, "make it more SNES-like, similar to the damage numbers".
+## The title is PixelText now: letters drop in one at a time on whole pixels, a pixel starburst lands with the last one,
+## glints play on the letters through the hold, and a one-shot rank is stamped in on the slam's frame.
+const TITLE_TEXT := "VICTORY!"
+const LETTER_STAGGER := 0.05
+const LETTER_DROP := 0.18
+## How far a letter falls, in its own glyph pixels.
+const LETTER_FALL_CELLS := 14
+## Docked, the title steps down to this share of its slam size, in whole glyph pixels.
+const DOCK_SHARE := 0.55
+const STAMP_TINT_S := Color(1.0, 0.85, 0.2)
+const STAMP_TINT := Color(0.92, 0.95, 1.0)
+
+## When the last letter lands: the slam's frame. Everything after the drop is timed from here.
+var _title_land := 0.0
+## The title's glyph pixel at the slam, so the starburst is drawn in the same pixel.
+var _title_px := 4
+var _impact_done := false
+
+
+## A row of pixel letters that the overlay's rects, modulate and child lookups treat like the Label it replaced.
+class PixelBanner extends Control:
+	var text: String = ""
+	var glyphs: PixelText = null
+
+	func _init(t: String, px: int, tint: Color) -> void:
+		text = t
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+		glyphs = PixelText.new(t, px)
+		glyphs.modulate = tint
+		add_child(glyphs)
+		set_px(px)
+
+	## PixelText centres on its origin, so it sits at half the extent and the glyphs start at this Control's corner.
+	func set_px(px: int) -> void:
+		glyphs.set_pixel_scale(px)
+		var cell: Vector2i = glyphs.base_size()
+		size = Vector2(cell * px)
+		glyphs.position = Vector2(int(cell.x * px / 2), int(cell.y * px / 2))
+
+	func settle() -> void:
+		glyphs.set_pixel_scale(glyphs.pixel_scale.x)
+		for s in glyphs.glyph_sprites:
+			s.visible = true
+
+
+## Rays of chunky square chips, each with its dark rim, flying out on the glyph pixel grid and blinking out at the end.
+class PixelBurst extends Node2D:
+	var px := 4
+	var rays := 8
+	var reach := 160.0
+	var trail := 2
+	var tint := Color.WHITE
+	var progress := 0.0
+
+	func set_progress(v: float) -> void:
+		progress = v
+		queue_redraw()
+
+	func _draw() -> void:
+		for r in rays:
+			var dir := Vector2.from_angle(TAU * float(r) / float(rays) - PI / 2.0)
+			var length: float = reach * (1.0 if r % 2 == 0 else 0.62)
+			for k in trail:
+				var p: float = progress - 0.08 * float(k)
+				if p <= 0.0 or p >= 1.0 or (p > 0.7 and int(p * 24.0) % 2 == 1):
+					continue
+				var cells: int = maxi(1, 3 - k - int(p * 3.0))
+				var mid: Vector2 = (dir * length * (1.0 - pow(1.0 - p, 3.0)) / float(px)).round() * float(px)
+				var at: Vector2 = mid - Vector2(float((cells / 2) * px), float((cells / 2) * px))
+				var side := Vector2(float(cells * px), float(cells * px))
+				draw_rect(Rect2(at - Vector2(px, px), side + Vector2(px, px) * 2.0), PixelText.OUTLINE)
+				draw_rect(Rect2(at, side), Color.WHITE if k == 0 and p < 0.35 else tint)
+
+
+## The glyph pixel for a grade: the old point size over the glyph's cell, never wider than the screen allows.
+func _title_px_for(grade: int, vp_x: float) -> int:
+	var px: int = roundi(float(TextScale.scaled(int(GRADE_FONT[grade]))) / 8.0)
+	return clampi(px, 2, maxi(2, int((vp_x - 64.0) / float(PixelText.measure(TITLE_TEXT).x))))
+
+
 func _build_slam(flourish: bool) -> void:
 	var grade: int = _victory_grade()
 	var vp := get_viewport_rect().size
 	var tint: Color = GRADE_TINT[grade]
+	var px: int = _title_px_for(grade, vp.x)
+	var dock_px: int = maxi(2, roundi(float(px) * DOCK_SHARE))
+	_title_px = px
 
-	var title := Label.new()
-	title.text = "V I C T O R Y"
-	title.add_theme_font_size_override("font_size", TextScale.scaled(int(GRADE_FONT[grade])))
-	title.add_theme_color_override("font_color", tint)
-	title.add_theme_constant_override("outline_size", 3 if grade == Grade.NORMAL else 5)
-	title.add_theme_color_override("font_outline_color", Color(0.15, 0.08, 0.0))
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var title := PixelBanner.new(TITLE_TEXT, px, tint)
+	title.name = "VictoryTitle"
 	add_child(title)
-	title.reset_size()
-	var center := Vector2((vp.x - title.size.x) / 2.0 - 120.0, vp.y * 0.30)
+	var center := Vector2((vp.x - title.size.x) / 2.0 - 120.0, vp.y * 0.30).round()
 	var docked := Vector2(center.x, 28.0)
+	var dock_size := Vector2(PixelText.measure(TITLE_TEXT) * dock_px)
+	var dock_at: Vector2 = (docked + (title.size - dock_size) / 2.0).round()
 	_occupied.append(Rect2(center, title.size))
-	_occupied.append(Rect2(docked, title.size * 0.55))
-	title.pivot_offset = title.size / 2.0
-	_title_docked = Rect2(docked + title.pivot_offset * 0.45, title.size * 0.55)
+	_occupied.append(Rect2(dock_at, dock_size))
+	_title_docked = Rect2(dock_at, dock_size)
+	_title_land = LETTER_STAGGER * float(title.glyphs.glyph_sprites.size() - 1) + LETTER_DROP
 	_snaps.append(func() -> void:
 		if is_instance_valid(title):
-			title.position = docked
-			title.scale = Vector2(0.55, 0.55)
+			title.set_px(dock_px)
+			title.position = dock_at
+			title.settle()
 			title.modulate.a = 1.0)
 
-	var impact_at := title.position + title.pivot_offset if not flourish else center + title.pivot_offset
-	var sub: Label = null
+	var impact_at := title.position + title.size / 2.0 if not flourish else center + title.size / 2.0
+	var sub: Control = null
 	if grade >= Grade.BOSS:
 		sub = _build_subtitle(center, title.size, tint, flourish)
+	var stamp: Control = _build_stamp(center, title.size, px, flourish)
 	if grade >= Grade.ELITE:
 		_build_letterbox(vp, grade, flourish)
 
 	if not flourish:
 		return
 
-	# Slam in (0.20 + 0.09 + 0.11), hold, dock (0.3). The footprint is the rest spot, a boss subtitle beneath it, and the path up to the dock.
-	_title_rest = Rect2(center, title.size).merge(Rect2(docked + title.pivot_offset * 0.45, title.size * 0.55))
+	# Letters drop (stagger x7 + drop), hold, dock (0.3). The footprint is the rest spot, the bill and stamp beside it, and the path up to the dock.
+	_title_rest = Rect2(center, title.size).merge(_title_docked)
 	if sub != null:
 		_title_rest = _title_rest.merge(Rect2(sub.position, sub.size))
-	_title_clear_at = 0.40 + float(GRADE_HOLD[grade]) + 0.3
+	if stamp != null:
+		_title_rest = _title_rest.merge(Rect2(stamp.position, stamp.size))
+	_title_clear_at = _title_land + float(GRADE_HOLD[grade]) + 0.3
 	title.position = center
-	title.scale = Vector2(2.6 if grade >= Grade.BOSS else 2.2, 2.6 if grade >= Grade.BOSS else 2.2)
-	title.modulate.a = 0.0
+	var letters: Array[Sprite2D] = title.glyphs.glyph_sprites
+	for i in letters.size():
+		var spr: Sprite2D = letters[i]
+		var rest: Vector2 = title.glyphs.rest_position(spr)
+		spr.visible = false
+		var lt := _track(create_tween())
+		lt.tween_interval(LETTER_STAGGER * float(i))
+		lt.tween_callback(spr.show)
+		lt.tween_method(_drop_letter.bind(spr, rest, px), 0.0, 1.0, LETTER_DROP)
 
 	var tw := _track(create_tween())
-	tw.tween_property(title, "modulate:a", 1.0, 0.07)
-	tw.parallel().tween_property(title, "scale", Vector2(0.92, 1.08), 0.20) \
-		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	tw.tween_property(title, "scale", Vector2(1.04, 0.96), 0.09).set_trans(Tween.TRANS_SINE)
-	tw.tween_property(title, "scale", Vector2.ONE, 0.11) \
-		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tw.tween_interval(_title_land)
+	tw.tween_callback(func() -> void: _spawn_impact(impact_at, grade, tint))
 	tw.tween_interval(float(GRADE_HOLD[grade]))
-	tw.tween_property(title, "position", docked, 0.3).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN_OUT)
-	tw.parallel().tween_property(title, "scale", Vector2(0.55, 0.55), 0.3)
-	if sub != null:
-		var st := _track(create_tween())
-		st.tween_interval(0.20 + float(GRADE_HOLD[grade]) + 0.30)
-		st.tween_property(sub, "modulate:a", 0.0, 0.25)
+	tw.tween_method(_dock_step.bind(title, center, dock_at, px, dock_px), 0.0, 1.0, 0.3)
+	_snaps.append(func() -> void:
+		if not _impact_done:
+			_play_slam())
+	_spawn_glints(title, grade)
 
-	_spawn_impact(impact_at, grade, tint)
+
+## One letter's fall: a bounce eased in whole glyph pixels, so no frame of it sits between pixels.
+func _drop_letter(t: float, spr: Sprite2D, rest: Vector2, px: int) -> void:
+	if not is_instance_valid(spr):
+		return
+	var e: float = Tween.interpolate_value(0.0, 1.0, t, 1.0, Tween.TRANS_BOUNCE, Tween.EASE_OUT)
+	spr.position = rest - Vector2(0.0, float(roundi(float(LETTER_FALL_CELLS) * (1.0 - e)) * px))
+
+
+## The dock steps the glyph pixel down one whole size at a time while the title slides up on whole screen pixels.
+func _dock_step(t: float, title: PixelBanner, from: Vector2, to: Vector2, px0: int, px1: int) -> void:
+	if not is_instance_valid(title):
+		return
+	var e: float = Tween.interpolate_value(0.0, 1.0, t, 1.0, Tween.TRANS_CUBIC, Tween.EASE_IN_OUT)
+	var px: int = roundi(lerpf(float(px0), float(px1), e))
+	if title.glyphs.pixel_scale.x != px:
+		title.set_px(px)
+	title.position = from.lerp(to, e).round()
+
+
+## Glints on the letters through the hold: a pixel "+" pops on a glyph's corner, grows a pixel, shrinks, and goes.
+func _spawn_glints(title: PixelBanner, grade: int) -> void:
+	var letters: Array[Sprite2D] = title.glyphs.glyph_sprites
+	if letters.is_empty():
+		return
+	var gpx: int = maxi(2, _title_px / 2)
+	var count: int = 2 + 2 * grade
+	var step: float = float(GRADE_HOLD[grade]) / float(count)
+	for i in count:
+		var spr: Sprite2D = letters[(i * 3 + 1) % letters.size()]
+		var at: Vector2 = title.glyphs.position + title.glyphs.rest_position(spr) \
+				+ Vector2(float(((i % 2) * 4 + 1) * _title_px), float(((i / 2) % 2) * 5 * _title_px))
+		var glint := PixelText.new("+", gpx)
+		glint.name = "VictoryGlint"
+		glint.position = at.round()
+		glint.visible = false
+		title.add_child(glint)
+		var ref: WeakRef = weakref(glint)
+		_snaps.append(func() -> void:
+			var g: Object = ref.get_ref()
+			if g != null:
+				g.queue_free())
+		var gt := _track(create_tween())
+		gt.tween_interval(_title_land + step * float(i))
+		gt.tween_callback(glint.show)
+		gt.tween_interval(0.05)
+		gt.tween_callback(glint.set_pixel_scale.bind(gpx + 1))
+		gt.tween_interval(0.06)
+		gt.tween_callback(glint.set_pixel_scale.bind(gpx))
+		gt.tween_interval(0.05)
+		gt.tween_callback(glint.queue_free)
 
 
 ## S-rank earns its own slam; absent that asset the ordinary one still lands.
@@ -339,108 +474,113 @@ func _one_shot_rank_of(bonuses: Array, reported_rank: String = "") -> String:
 	return reported_rank
 
 
-## The sweep + punch that makes the landing read as an IMPACT rather than a fade-in. struktured
-## 2026-10-03: "the victory Circle with victory text in the middle is also amateur imho — we need
-## VISUALS" — replaces the old expanding-ring with a bolder band that sweeps the full screen width.
+## The slam's frame: shake, punch, sparks, a pixel starburst from where the title landed, and its own voice.
+## struktured 2026-10-03 retired the ring ("amateur"), and 2026-11-07 retired the yellow sweep band that replaced it.
 func _spawn_impact(at: Vector2, grade: int, tint: Color) -> void:
 	BattleJuice.add_trauma(float(GRADE_TRAUMA[grade]))
 	BattleJuice.punch_zoom(get_viewport_rect().size / 2.0, float(GRADE_ZOOM[grade]), 0.22)
 	BattleJuice.spawn_burst(at, Vector2(0, -1), 10 + 8 * grade, tint, 180.0 + 60.0 * grade)
-	_spawn_sweep_band(at, tint, grade)
-	## Its OWN voice: on _battle_player this slam replaced the victory fanfare it lands on, and
-	## in W1/W2 (no agreed downbeat, so no wait) it did so in the same frame.
+	_spawn_starburst(at, tint, grade)
+	_play_slam()
+
+
+## Its OWN voice: on _battle_player this slam replaced the victory fanfare it lands on, and
+## in W1/W2 (no agreed downbeat, so no wait) it did so in the same frame.
+func _play_slam() -> void:
+	_impact_done = true
 	var slam := _slam_key()
 	if SoundManager and SoundManager._sfx_manifest.has(slam):
 		SoundManager.play_victory_sfx(slam)
 
 
-## A bolder banner than a ring: a tinted band sweeps the full screen width through the impact
-## point, then narrows and fades as the title finishes its punch-in — a "whoosh", not a circle.
-func _spawn_sweep_band(at: Vector2, tint: Color, grade: int) -> void:
-	var vp := get_viewport_rect().size
-	var h: float = 26.0 + 10.0 * grade
-	var band := ColorRect.new()
-	band.name = "VictorySweepBand"
-	band.color = Color(tint.r, tint.g, tint.b, 0.0)
-	band.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	band.size = Vector2(vp.x * 1.6, h)
-	band.rotation = deg_to_rad(-3.0)
-	band.pivot_offset = Vector2(band.size.x / 2.0, h / 2.0)
-	band.position = Vector2(-vp.x * 0.8, at.y - h / 2.0)
-	add_child(band)
-	## Same as the old ring: the band frees itself at the tween's end, so the snap uses a WeakRef.
-	var band_ref: WeakRef = weakref(band)
+## Rays of pixel chips from the impact, more and longer per grade, drawn in the title's own glyph pixel.
+func _spawn_starburst(at: Vector2, tint: Color, grade: int) -> void:
+	var burst := PixelBurst.new()
+	burst.name = "VictoryStarburst"
+	burst.px = maxi(2, _title_px / 2)
+	burst.rays = 8 + 4 * mini(grade, Grade.BOSS)
+	burst.trail = int(GRADE_RINGS[grade]) + 1
+	burst.reach = get_viewport_rect().size.y * 0.22 + 40.0 * float(grade)
+	burst.tint = tint
+	burst.position = at.round()
+	add_child(burst)
+	## The burst frees itself at the tween's end, so the snap holds a WeakRef.
+	var burst_ref: WeakRef = weakref(burst)
 	_snaps.append(func() -> void:
-		var b: Object = band_ref.get_ref()
+		var b: Object = burst_ref.get_ref()
 		if b != null:
 			b.queue_free())
 	var t := _track(create_tween())
-	t.tween_property(band, "color:a", 0.85, 0.05)
-	t.parallel().tween_property(band, "position:x", vp.x * 0.5 - band.size.x / 2.0, 0.16) \
-		.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
-	t.tween_property(band, "color:a", 0.0, 0.22 + 0.05 * grade)
-	t.parallel().tween_property(band, "position:x", vp.x * 1.3 - band.size.x / 2.0, 0.26 + 0.05 * grade) \
-		.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
-	t.tween_callback(band.queue_free)
+	t.tween_method(burst.set_progress, 0.0, 1.0, 0.34 + 0.04 * float(grade))
+	t.tween_callback(burst.queue_free)
 
-	# A thinner counter-sweep for elite+ grades, same timing, opposite direction — more banner, less circle.
-	if grade < Grade.ELITE:
-		return
-	var band2 := ColorRect.new()
-	band2.name = "VictorySweepBandCounter"
-	band2.color = Color(1.0, 1.0, 1.0, 0.0)
-	band2.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	band2.size = Vector2(vp.x * 1.6, h * 0.4)
-	band2.rotation = deg_to_rad(3.0)
-	band2.pivot_offset = Vector2(band2.size.x / 2.0, band2.size.y / 2.0)
-	band2.position = Vector2(vp.x * 1.3, at.y - band2.size.y / 2.0)
-	add_child(band2)
-	var band2_ref: WeakRef = weakref(band2)
+
+## A one-shot's rank, stamped over the title's last corner on the slam's frame: it starts three times its size and
+## lands in two whole steps. An S rank stamps in gold with its own burst; the S slam is its voice (_slam_key).
+func _build_stamp(center: Vector2, title_size: Vector2, px: int, flourish: bool) -> Control:
+	if _one_shot_rank == "":
+		return null
+	var spx: int = maxi(2, px / 2)
+	var is_s: bool = _one_shot_rank == "S"
+	var stamp := PixelBanner.new("%s-RANK!" % _one_shot_rank, spx, STAMP_TINT_S if is_s else STAMP_TINT)
+	stamp.name = "VictoryRankStamp"
+	add_child(stamp)
+	var vp := get_viewport_rect().size
+	var x: float = minf(center.x + title_size.x - stamp.size.x / 2.0, vp.x - 8.0 - stamp.size.x)
+	stamp.position = Vector2(x, center.y - stamp.size.y / 2.0).round()
+	var mid: Vector2 = stamp.position + stamp.size / 2.0
 	_snaps.append(func() -> void:
-		var b2: Object = band2_ref.get_ref()
-		if b2 != null:
-			b2.queue_free())
-	var t2 := _track(create_tween())
-	t2.tween_interval(0.05)
-	t2.tween_property(band2, "color:a", 0.6, 0.05)
-	t2.parallel().tween_property(band2, "position:x", vp.x * 0.5 - band2.size.x / 2.0, 0.16) \
-		.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
-	t2.tween_property(band2, "color:a", 0.0, 0.2)
-	t2.parallel().tween_property(band2, "position:x", -vp.x * 0.8, 0.24) \
-		.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
-	t2.tween_callback(band2.queue_free)
+		if is_instance_valid(stamp):
+			stamp.modulate.a = 0.0)
+	stamp.modulate.a = 0.0
+	if not flourish:
+		return stamp
+	var t := _track(create_tween())
+	t.tween_interval(maxf(0.0, _title_land - 0.08))
+	t.tween_callback(func() -> void:
+		stamp.set_px(spx * 3)
+		stamp.position = (mid - stamp.size / 2.0).round()
+		stamp.modulate.a = 1.0)
+	for k in [2, 1]:
+		t.tween_interval(0.04)
+		t.tween_callback(func() -> void:
+			stamp.set_px(spx * k)
+			stamp.position = (mid - stamp.size / 2.0).round())
+	if is_s:
+		t.tween_callback(func() -> void: _spawn_starburst(mid, STAMP_TINT_S, Grade.NORMAL))
+	t.tween_interval(float(GRADE_HOLD[_victory_grade()]))
+	t.tween_callback(func() -> void: stamp.modulate.a = 0.0)
+	return stamp
 
 
-## Boss kills get billed: the foe's name under the title
-func _build_subtitle(center: Vector2, title_size: Vector2, tint: Color, flourish: bool) -> Label:
+## Boss kills get billed: the foe's name under the title, in the same pixel letters.
+func _build_subtitle(center: Vector2, title_size: Vector2, tint: Color, flourish: bool) -> Control:
 	var foe := _headline_foe()
 	if foe == "" and spotlight_duelist == "":
 		return null
-	var sub := Label.new()
-	sub.text = "%s FELLED" % foe.to_upper()
+	var text := "%s FELLED" % foe.to_upper()
 	if spotlight_duelist != "":
-		sub.text = "%s TAKES THE SPOTLIGHT" % spotlight_duelist.to_upper()
+		text = "%s TAKES THE SPOTLIGHT" % spotlight_duelist.to_upper()
 		if foe != "":
-			sub.text += " — %s FELLED" % foe.to_upper()
-	sub.add_theme_font_size_override("font_size", TextScale.scaled(20))
-	sub.add_theme_color_override("font_color", tint)
-	sub.add_theme_constant_override("outline_size", 4)
-	sub.add_theme_color_override("font_outline_color", Color(0.15, 0.08, 0.0))
-	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	sub.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			text += " — %s FELLED" % foe.to_upper()
+	var vp := get_viewport_rect().size
+	var spx: int = clampi(roundi(float(TextScale.scaled(20)) / 8.0), 2,
+			maxi(2, int((vp.x - 32.0) / float(PixelText.measure(text).x))))
+	var sub := PixelBanner.new(text, spx, tint)
+	sub.name = "VictorySubtitle"
 	add_child(sub)
-	sub.reset_size()
-	sub.position = Vector2(center.x + (title_size.x - sub.size.x) / 2.0, center.y + title_size.y + 6.0)
+	sub.position = Vector2(center.x + (title_size.x - sub.size.x) / 2.0, center.y + title_size.y + 6.0).round()
 	_snaps.append(func() -> void:
 		if is_instance_valid(sub):
 			sub.modulate.a = 0.0)
-	if not flourish:
-		sub.modulate.a = 0.0
-		return sub
 	sub.modulate.a = 0.0
+	if not flourish:
+		return sub
 	var t := _track(create_tween())
-	t.tween_interval(0.34)
-	t.tween_property(sub, "modulate:a", 1.0, 0.18)
+	t.tween_interval(_title_land)
+	t.tween_callback(func() -> void: sub.modulate.a = 1.0)
+	t.tween_interval(float(GRADE_HOLD[_victory_grade()]))
+	t.tween_callback(func() -> void: sub.modulate.a = 0.0)
 	return sub
 
 
@@ -466,7 +606,7 @@ func _build_letterbox(vp: Vector2, grade: int, flourish: bool) -> void:
 			continue
 		var t := _track(create_tween())
 		t.tween_property(bar, "position", shown, 0.18).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
-		t.tween_interval(float(GRADE_HOLD[grade]) + 0.30)
+		t.tween_interval(_title_land - 0.18 + float(GRADE_HOLD[grade]) + 0.08)
 		t.tween_property(bar, "position", hidden, 0.26).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
 		t.tween_callback(bar.queue_free)
 
