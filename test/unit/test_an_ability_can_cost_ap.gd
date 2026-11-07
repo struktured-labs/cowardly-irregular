@@ -92,3 +92,25 @@ func test_a_slot_that_no_longer_fits_the_floor_fizzles_before_any_spend() -> voi
 	assert_string_contains("\n".join(lines), "doesn't have the AP for", "a slot that would cross the floor is named")
 	assert_eq(c.current_ap, -3, "no AP spent")
 	assert_eq(c.current_mp, 50, "and no MP")
+
+
+## A fizzle is NOT a miss: its own signal and cue, never hit_negated (whose scene handler plays attack_miss).
+func test_a_fizzle_has_its_own_channel_and_cue() -> void:
+	var c := _actor(0, 0)
+	c.learned_abilities.append("fire")
+	var fizzles: Array = []
+	var negated: Array = []
+	var f := func(_c, b): fizzles.append(b)
+	var n := func(_t, b): negated.append(b)
+	BattleManager.cast_fizzled.connect(f)
+	BattleManager.hit_negated.connect(n)
+	await BattleManager._execute_ability(c, "fire", [_actor(0)])
+	BattleManager.cast_fizzled.disconnect(f)
+	BattleManager.hit_negated.disconnect(n)
+	assert_eq(fizzles, ["NOT ENOUGH MP!"], "the fizzle goes through cast_fizzled")
+	assert_eq(negated, [], "and never through hit_negated, which would play attack_miss")
+	var scene := FileAccess.get_file_as_string("res://src/battle/BattleScene.gd")
+	var body := scene.substr(scene.find("func _on_cast_fizzled("), 400)
+	assert_true(body.contains('"cast_fizzle"') and not body.contains("attack_miss"), "the scene plays cast_fizzle, not attack_miss")
+	var neg := scene.substr(scene.find("func _on_hit_negated("), 300)
+	assert_true(neg.contains("attack_miss"), "CONTROL: a real negated hit still plays attack_miss")

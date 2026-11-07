@@ -29,6 +29,8 @@ signal damage_dealt(target: Combatant, amount: int, is_crit: bool, element: Stri
 signal attack_missed(target: Combatant)
 ## A hit that never connected for a reason other than a miss. Banner is the sprite text: "IMMUNE" or "BLOCK".
 signal hit_negated(target: Combatant, banner: String)
+## A cast that could not pay (MP short, or past the AP floor). Its own channel: hit_negated also plays attack_miss.
+signal cast_fizzled(caster: Combatant, banner: String)
 ## A harmful support roll (an ailment or a stat drop) failed on this target, so the miss is heard and logged, not silent.
 signal status_resisted(target: Combatant, effect: String)
 signal healing_done(target: Combatant, amount: int)
@@ -5687,8 +5689,7 @@ func _execute_ability(caster: Combatant, ability_id: String, targets: Array, for
 		var mp_need: int = JobSystem.get_ability_mp_cost(caster, ability_id) if caster != null else 0
 		if caster != null and caster.knows_ability(ability_id) and caster.current_mp < mp_need:
 			battle_log_message.emit("[color=gray]%s doesn't have enough MP for %s! (needs %d, has %d)%s[/color]" % [caster.combatant_name, ability["name"], mp_need, caster.current_mp, " (forced)" if forced else ""])
-			hit_negated.emit(caster, "NOT ENOUGH MP!")   # the floating-banner channel BattleResultsDisplay already draws
-			SoundManager.play_battle("cast_fizzle")
+			cast_fizzled.emit(caster, "NOT ENOUGH MP!")
 			return
 		## Tick 173: surface in the log. Pre-fix the ability was
 		## blocked (insufficient MP, missing prerequisite, etc.) and
@@ -5775,8 +5776,7 @@ func _execute_ability(caster: Combatant, ability_id: String, targets: Array, for
 	var slot_ap: int = 1 + AbilityCost.ap_for(caster, ability_id)
 	if slot_ap > 1 and not caster.can_brave(slot_ap):
 		battle_log_message.emit("[color=gray]%s doesn't have the AP for %s! (needs %d)[/color]" % [caster.combatant_name, ability["name"], slot_ap])
-		hit_negated.emit(caster, "NOT ENOUGH AP!")
-		SoundManager.play_battle("cast_fizzle")
+		cast_fizzled.emit(caster, "NOT ENOUGH AP!")
 		return
 	var mp_cost = JobSystem.get_ability_mp_cost(caster, ability_id)
 	if not caster.spend_mp(mp_cost):
