@@ -160,6 +160,64 @@ func _s(v: float) -> float:
 	return v * _k
 
 
+## ZOOM (struktured 2026-11-07): one button blows the highlighted description up to the whole content area, AbilityZoom.FACTOR
+## larger on top of Text Size, capped where it still fits. The details panels build through _px/_ds, so 1.0 is the unzoomed panel.
+var _zoomed := false
+var _dz := 1.0
+var _dk: float:
+	get:
+		return _k * _dz
+
+
+func _px(base: int) -> int:
+	return maxi(1, roundi(TextScale.scaled(base) * _dz))
+
+
+func _ds(v: float) -> float:
+	return v * _k * _dz
+
+
+## The largest zoom up to AbilityZoom.FACTOR whose description still fits the expanded panel, measured off the font.
+func _fit_zoom(panel_size: Vector2) -> float:
+	var f: Font = ThemeDB.fallback_font
+	var passive := current_tab == Tab.PASSIVES
+	var list: Array = _passives_list if passive else _abilities_list
+	if f == null or selected_index < 0 or selected_index >= list.size():
+		return AbilityZoom.FACTOR
+	var data: Dictionary = list[selected_index]["data"]
+	var mods: int = (data.get("stat_mods", {}) as Dictionary).size() if passive else 0
+	var dz := AbilityZoom.FACTOR
+	while dz > 1.0:
+		_dz = dz
+		var w: float = panel_size.x - _ds(24)
+		var px := _px(11 if passive else 10)
+		var h: float = f.get_multiline_string_size(str(data.get("description", "No description available")), HORIZONTAL_ALIGNMENT_LEFT, w, px).y
+		var bottom: float
+		if passive:
+			bottom = maxf(150.0, _ds(88) + maxf(60.0, h) + _ds(2)) + (_ds(16) + _ds(14) * mods if mods > 0 else 0.0)
+		else:
+			bottom = maxf(196.0, _ds(88) + maxf(100.0, h) + _ds(8)) + f.get_height(_px(10))
+		if bottom <= panel_size.y - _ds(4):
+			break
+		dz -= 0.05
+	_dz = 1.0
+	return maxf(1.0, dz)
+
+
+func _set_zoom(on: bool) -> void:
+	_zoomed = on
+	_build_ui()
+	SoundManager.play_ui("menu_expand" if on else "menu_close")
+
+
+## Back from the menu's background: un-zooms first, closes only when not zoomed.
+func _back() -> void:
+	if _zoomed:
+		_set_zoom(false)
+	else:
+		_close_menu()
+
+
 ## (The description floors stay at their AUTHORED px: they reproduce 100% exactly, and a scaled floor would push the
 ## line after it below a 2.0x panel. Past 100% the next line follows the measured text.)
 ## A wrapped label's height measured off its FONT at the width it wraps to (a Label's own minimum lags a pass).
@@ -193,6 +251,54 @@ func _build_ui() -> void:
 	tabs_panel.position = Vector2(16, 16) * _k
 	add_child(tabs_panel)
 
+	_dz = 1.0
+	if _zoomed and not _picking:
+		# Zoomed: the list and the character panel step aside; the description takes everything under the tabs.
+		var ztop: float = (16 + _s(48)) * _k
+		var zsize := Vector2(viewport_size.x - 32, viewport_size.y - ztop - _s(48))
+		_dz = _fit_zoom(zsize)
+		var zpanel: Control = _create_passive_details_panel(zsize) if current_tab == Tab.PASSIVES else _create_ability_details_panel(zsize)
+		zpanel.name = "ZoomedDetails"
+		zpanel.position = Vector2(16, ztop)
+		add_child(zpanel)
+	else:
+		_build_content(viewport_size)
+	_dz = 1.0
+
+	# Right-click cancel
+	MenuMouseHelper.add_right_click_cancel(bg, _back)
+
+	# Footer
+	var accept_hint := InputProfileManager.hint_for_action("ui_accept")
+	var cancel_hint := InputProfileManager.hint_for_action("ui_cancel")
+	var zoom_hint := AbilityZoom.hint()
+	var footer_text = "←→/Click: Tab  ↑↓: Select  %s/RClick: Back" % cancel_hint
+	if _zoomed and not _picking:
+		footer_text = "↑↓: Next  %s/%s: Back" % [zoom_hint, cancel_hint] if zoom_hint != "" else "↑↓: Next  %s: Back" % cancel_hint
+	elif current_tab == Tab.ABILITIES and _picking:
+		footer_text = "↑↓: Target  %s: Cast  %s: Back" % [accept_hint, cancel_hint]
+	elif current_tab == Tab.ABILITIES and _selected_castable():
+		footer_text = "←→/Click: Tab  ↑↓: Select  %s: Cast  %s/RClick: Back" % [accept_hint, cancel_hint]
+	elif current_tab == Tab.PASSIVES:
+		footer_text = "←→/Click: Tab  ↑↓: Select  %s/Click: Equip/Unequip  %s/RClick: Back" % [accept_hint, cancel_hint]
+	if not _zoomed and not _picking and zoom_hint != "" and _has_selection():
+		footer_text += "  %s: Zoom" % zoom_hint
+	var footer = Label.new()
+	footer.name = "Footer"
+	footer.text = footer_text
+	footer.position = Vector2(16, viewport_size.y - _s(32))
+	footer.add_theme_font_size_override("font_size", TextScale.scaled(12))
+	footer.add_theme_color_override("font_color", DISABLED_COLOR)
+	add_child(footer)
+
+
+func _has_selection() -> bool:
+	var list: Array = _passives_list if current_tab == Tab.PASSIVES else _abilities_list
+	return selected_index >= 0 and selected_index < list.size()
+
+
+## The unzoomed layout: character panel, then the list beside its details (or the target picker).
+func _build_content(viewport_size: Vector2) -> void:
 	# Character info (below tabs)
 	var char_panel = _create_character_panel(Vector2(viewport_size.x - 32, _s(60)))
 	char_panel.position = Vector2(16, 16 + _s(48)) * _k
@@ -225,26 +331,6 @@ func _build_ui() -> void:
 		var details_panel = _create_passive_details_panel(Vector2(viewport_size.x * 0.5 - 24, content_height))
 		details_panel.position = Vector2(viewport_size.x * 0.5 + 8, content_top)
 		add_child(details_panel)
-
-	# Right-click cancel
-	MenuMouseHelper.add_right_click_cancel(bg, _close_menu)
-
-	# Footer
-	var accept_hint := InputProfileManager.hint_for_action("ui_accept")
-	var cancel_hint := InputProfileManager.hint_for_action("ui_cancel")
-	var footer_text = "←→/Click: Tab  ↑↓: Select  %s/RClick: Back" % cancel_hint
-	if current_tab == Tab.ABILITIES and _picking:
-		footer_text = "↑↓: Target  %s: Cast  %s: Back" % [accept_hint, cancel_hint]
-	elif current_tab == Tab.ABILITIES and _selected_castable():
-		footer_text = "←→/Click: Tab  ↑↓: Select  %s: Cast  %s/RClick: Back" % [accept_hint, cancel_hint]
-	elif current_tab == Tab.PASSIVES:
-		footer_text = "←→/Click: Tab  ↑↓: Select  %s/Click: Equip/Unequip  %s/RClick: Back" % [accept_hint, cancel_hint]
-	var footer = Label.new()
-	footer.text = footer_text
-	footer.position = Vector2(16, viewport_size.y - _s(32))
-	footer.add_theme_font_size_override("font_size", TextScale.scaled(12))
-	footer.add_theme_color_override("font_color", DISABLED_COLOR)
-	add_child(footer)
 
 
 func _create_tabs_panel(panel_size: Vector2) -> Control:
@@ -459,16 +545,16 @@ func _create_ability_details_panel(panel_size: Vector2) -> Control:
 	# Title
 	var title = Label.new()
 	title.text = "DETAILS"
-	title.position = Vector2(8, 4) * _k
-	title.add_theme_font_size_override("font_size", TextScale.scaled(12))
+	title.position = Vector2(8, 4) * _dk
+	title.add_theme_font_size_override("font_size", _px(12))
 	title.add_theme_color_override("font_color", TEXT_COLOR)
 	panel.add_child(title)
 
 	if _abilities_list.is_empty() or selected_index >= _abilities_list.size():
 		var empty_label = Label.new()
 		empty_label.text = "Select an ability"
-		empty_label.position = Vector2(16, 32) * _k
-		empty_label.add_theme_font_size_override("font_size", TextScale.scaled(11))
+		empty_label.position = Vector2(16, 32) * _dk
+		empty_label.add_theme_font_size_override("font_size", _px(11))
 		empty_label.add_theme_color_override("font_color", DISABLED_COLOR)
 		panel.add_child(empty_label)
 		return panel
@@ -479,24 +565,24 @@ func _create_ability_details_panel(panel_size: Vector2) -> Control:
 	# Ability name
 	var name_label = Label.new()
 	name_label.text = data.get("name", str(ability["id"]).replace("_", " ").capitalize())
-	name_label.position = Vector2(12, 28) * _k
-	name_label.add_theme_font_size_override("font_size", TextScale.scaled(14))
+	name_label.position = Vector2(12, 28) * _dk
+	name_label.add_theme_font_size_override("font_size", _px(14))
 	name_label.add_theme_color_override("font_color", _get_ability_color(data))
 	panel.add_child(name_label)
 
 	# Type
 	var type_label = Label.new()
 	type_label.text = "Type: %s" % data.get("type", "physical").capitalize()
-	type_label.position = Vector2(12, 48) * _k
-	type_label.add_theme_font_size_override("font_size", TextScale.scaled(10))
+	type_label.position = Vector2(12, 48) * _dk
+	type_label.add_theme_font_size_override("font_size", _px(10))
 	type_label.add_theme_color_override("font_color", DISABLED_COLOR)
 	panel.add_child(type_label)
 
 	# MP Cost
 	var mp_label = Label.new()
 	mp_label.text = "MP Cost: %d" % _charged_mp(ability, data)
-	mp_label.position = Vector2(12, 64) * _k
-	mp_label.add_theme_font_size_override("font_size", TextScale.scaled(10))
+	mp_label.position = Vector2(12, 64) * _dk
+	mp_label.add_theme_font_size_override("font_size", _px(10))
 	mp_label.add_theme_color_override("font_color", DISABLED_COLOR)
 	panel.add_child(mp_label)
 
@@ -505,19 +591,20 @@ func _create_ability_details_panel(panel_size: Vector2) -> Control:
 	# Wrap BEFORE text: a Label given its text unwrapped caches the whole line as its minimum width, and a later size
 	# cannot shrink it (measured: a 586 px description box held at 777 px, running past its panel's edge).
 	desc_label.autowrap_mode = TextServer.AUTOWRAP_WORD
+	desc_label.name = "Description"
 	desc_label.text = data.get("description", "No description available")
-	desc_label.position = Vector2(12, 88) * _k
-	desc_label.add_theme_font_size_override("font_size", TextScale.scaled(10))
+	desc_label.position = Vector2(12, 88) * _dk
+	desc_label.add_theme_font_size_override("font_size", _px(10))
 	desc_label.add_theme_color_override("font_color", TEXT_COLOR)
-	var desc_w: float = panel_size.x - _s(24)
+	var desc_w: float = panel_size.x - _ds(24)
 	desc_label.size = Vector2(desc_w, maxf(100.0, wrapped_height(desc_label, desc_w)))
 	panel.add_child(desc_label)
 
 	var field_label = Label.new()
 	field_label.name = "FieldUse"
 	field_label.text = "Usable here" if FieldCast.castable(data) else "Battle only"
-	field_label.position = Vector2(_s(12), maxf(196.0, desc_label.position.y + desc_label.size.y + _s(8)))
-	field_label.add_theme_font_size_override("font_size", TextScale.scaled(10))
+	field_label.position = Vector2(_ds(12), maxf(196.0, desc_label.position.y + desc_label.size.y + _ds(8)))
+	field_label.add_theme_font_size_override("font_size", _px(10))
 	field_label.add_theme_color_override("font_color", SUPPORT_COLOR if FieldCast.castable(data) else DISABLED_COLOR)
 	panel.add_child(field_label)
 
@@ -666,16 +753,16 @@ func _create_passive_details_panel(panel_size: Vector2) -> Control:
 	# Title
 	var title = Label.new()
 	title.text = "PASSIVE DETAILS"
-	title.position = Vector2(8, 4) * _k
-	title.add_theme_font_size_override("font_size", TextScale.scaled(12))
+	title.position = Vector2(8, 4) * _dk
+	title.add_theme_font_size_override("font_size", _px(12))
 	title.add_theme_color_override("font_color", TEXT_COLOR)
 	panel.add_child(title)
 
 	if _passives_list.is_empty() or selected_index >= _passives_list.size():
 		var empty_label = Label.new()
 		empty_label.text = "Select a passive"
-		empty_label.position = Vector2(16, 32) * _k
-		empty_label.add_theme_font_size_override("font_size", TextScale.scaled(11))
+		empty_label.position = Vector2(16, 32) * _dk
+		empty_label.add_theme_font_size_override("font_size", _px(11))
 		empty_label.add_theme_color_override("font_color", DISABLED_COLOR)
 		panel.add_child(empty_label)
 		return panel
@@ -686,8 +773,8 @@ func _create_passive_details_panel(panel_size: Vector2) -> Control:
 	# Passive name
 	var name_label = Label.new()
 	name_label.text = data.get("name", str(passive["id"]).replace("_", " ").capitalize())
-	name_label.position = Vector2(12, 28) * _k
-	name_label.add_theme_font_size_override("font_size", TextScale.scaled(14))
+	name_label.position = Vector2(12, 28) * _dk
+	name_label.add_theme_font_size_override("font_size", _px(14))
 	name_label.add_theme_color_override("font_color", PASSIVE_EQUIPPED if passive["equipped"] else TEXT_COLOR)
 	panel.add_child(name_label)
 
@@ -699,8 +786,8 @@ func _create_passive_details_panel(panel_size: Vector2) -> Control:
 		status_label.text = "Available"
 	else:
 		status_label.text = "Not learned"
-	status_label.position = Vector2(12, 48) * _k
-	status_label.add_theme_font_size_override("font_size", TextScale.scaled(10))
+	status_label.position = Vector2(12, 48) * _dk
+	status_label.add_theme_font_size_override("font_size", _px(10))
 	status_label.add_theme_color_override("font_color", PASSIVE_EQUIPPED if passive["equipped"] else DISABLED_COLOR)
 	panel.add_child(status_label)
 
@@ -709,32 +796,33 @@ func _create_passive_details_panel(panel_size: Vector2) -> Control:
 	var cat_idx = data.get("category", 0)
 	var category_label = Label.new()
 	category_label.text = "Category: %s" % (category_names[cat_idx] if cat_idx < category_names.size() else "Unknown")
-	category_label.position = Vector2(12, 64) * _k
-	category_label.add_theme_font_size_override("font_size", TextScale.scaled(10))
+	category_label.position = Vector2(12, 64) * _dk
+	category_label.add_theme_font_size_override("font_size", _px(10))
 	category_label.add_theme_color_override("font_color", DISABLED_COLOR)
 	panel.add_child(category_label)
 
 	# Description
 	var desc_label = Label.new()
 	desc_label.autowrap_mode = TextServer.AUTOWRAP_WORD   # before text, as the ability description above
+	desc_label.name = "Description"
 	desc_label.text = data.get("description", "No description available")
-	desc_label.position = Vector2(12, 88) * _k
-	desc_label.add_theme_font_size_override("font_size", TextScale.scaled(11))
+	desc_label.position = Vector2(12, 88) * _dk
+	desc_label.add_theme_font_size_override("font_size", _px(11))
 	desc_label.add_theme_color_override("font_color", TEXT_COLOR)
-	var pdesc_w: float = panel_size.x - _s(24)
+	var pdesc_w: float = panel_size.x - _ds(24)
 	desc_label.size = Vector2(pdesc_w, maxf(60.0, wrapped_height(desc_label, pdesc_w)))
 	panel.add_child(desc_label)
 
 	# Stat mods breakdown, below the description however far it wrapped
-	var y_offset = maxf(150.0, desc_label.position.y + desc_label.size.y + _s(2))
+	var y_offset = maxf(150.0, desc_label.position.y + desc_label.size.y + _ds(2))
 	if data.has("stat_mods"):
 		var mods_title = Label.new()
 		mods_title.text = "Effects:"
-		mods_title.position = Vector2(_s(12), y_offset)
-		mods_title.add_theme_font_size_override("font_size", TextScale.scaled(10))
+		mods_title.position = Vector2(_ds(12), y_offset)
+		mods_title.add_theme_font_size_override("font_size", _px(10))
 		mods_title.add_theme_color_override("font_color", DISABLED_COLOR)
 		panel.add_child(mods_title)
-		y_offset += _s(16)
+		y_offset += _ds(16)
 
 		for mod_name in data["stat_mods"]:
 			var mod_value = data["stat_mods"][mod_name]
@@ -750,11 +838,11 @@ func _create_passive_details_panel(panel_size: Vector2) -> Control:
 
 			var mod_label = Label.new()
 			mod_label.text = mod_text
-			mod_label.position = Vector2(_s(20), y_offset)
-			mod_label.add_theme_font_size_override("font_size", TextScale.scaled(10))
+			mod_label.position = Vector2(_ds(20), y_offset)
+			mod_label.add_theme_font_size_override("font_size", _px(10))
 			mod_label.add_theme_color_override("font_color", SUPPORT_COLOR if mod_value > 1.0 or (not mod_name.ends_with("_multiplier") and mod_value > 0) else PHYSICAL_COLOR)
 			panel.add_child(mod_label)
-			y_offset += _s(14)
+			y_offset += _ds(14)
 
 	return panel
 
@@ -798,6 +886,28 @@ func _input(event: InputEvent) -> void:
 	if _picking:
 		_picking_input(event, nav)
 		return
+
+	if AbilityZoom.pressed(event):
+		if _zoomed or _has_selection():
+			_set_zoom(not _zoomed)
+		else:
+			SoundManager.play_ui("menu_error")
+		get_viewport().set_input_as_handled()
+		return
+
+	# Zoomed is a READING view: Back un-zooms (never closes), Confirm is refused out loud, the tabs hold still.
+	if _zoomed:
+		if event.is_action_pressed("ui_cancel") and not event.is_echo():
+			_set_zoom(false)
+			get_viewport().set_input_as_handled()
+			return
+		if event.is_action_pressed("ui_accept") and not event.is_echo():
+			SoundManager.play_ui("menu_error")
+			get_viewport().set_input_as_handled()
+			return
+		if nav == "ui_left" or nav == "ui_right":
+			get_viewport().set_input_as_handled()
+			return
 
 	# Tab switching. The 2026-04-30 fix echo-guarded this because holding Left/Right rebuilt the
 	# whole UI per echo and spammed menu_move — and a stick ramp did exactly that anyway, because
