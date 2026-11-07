@@ -97,6 +97,12 @@ static func apply(root: Node, gl: Node) -> Dictionary:
 			if g or c or l or t:
 				locked.append(nm)
 		out["locked"] = locked
+	# FORCE DANGER, only with `-- --force-danger=S` (cowir-main 23026/23029, sfx 23027, music 23031): ONE dip, to verify the
+	# danger bed hands the boss theme back where it cut (6fabbfc7f) in a real take. At the first Selection Phase after S
+	# seconds of boss theme, the Fighter takes ONE real hit (take_damage, sized by the game's own damage_preview) to 20%
+	# of max HP, alive; the party's own heal policy recovers him. Absent flag = no node, no hook, nothing touched.
+	var fdn := arm_force_danger(root, OS.get_cmdline_user_args())
+	out["force_danger"] = fdn.min_theme_s if fdn else "off"
 	out["llm_service"] = llm.llm_enabled if llm and "llm_enabled" in llm else "absent"
 	print("[DEMO] prep: %d hint(s) seen · %d story flag(s) · trust off on %d member(s) · LLMService.llm_enabled=%s · debug overlay %s · routed to AI: %s" % [out.hints, out.flags, out.trust_off, str(out.llm_service), out.debug_overlay, str(out.get("locked", "n/a"))])
 	return out
@@ -134,3 +140,81 @@ static func clear_pending_story(gl: Node, max_steps: int = 20) -> Array:
 		print("[DEMO] cleared %s" % id)
 		cleared.append(id)
 	return cleared + ["ABORT:story chain did not converge in %d steps" % max_steps]
+
+
+## The hook apply() arms, separate so a test can drive it without apply()'s GameState writes. No flag = null, and
+## nothing is added to the tree.
+static func arm_force_danger(root: Node, args: Array) -> Node:
+	var fd := force_danger_seconds(args)
+	if fd <= 0.0:
+		return null
+	var node := ForceDanger.new()
+	node.name = "DemoForceDanger"
+	node.min_theme_s = fd
+	root.add_child(node)
+	print("[DEMO] force-danger: armed, the Fighter to 20%% at the first Selection Phase after %.0f s of boss theme" % fd)
+	return node
+
+
+## -1.0 unless the args carry `--force-danger=S` with S > 0.
+static func force_danger_seconds(args: Array) -> float:
+	for a in args:
+		if str(a).begins_with("--force-danger="):
+			var v := float(str(a).get_slice("=", 1))
+			return v if v > 0.0 else -1.0
+	return -1.0
+
+
+## The one-shot dip. Theme time is SUMMED while SoundManager's current track is a boss_ bed (music's definition: a
+## danger break pauses the count, a resume continues it), on game time, so it matches the recorded video.
+class ForceDanger extends Node:
+	const TARGET := 0.20
+	var min_theme_s := 30.0
+	var theme_s := 0.0
+	var done := false
+
+	func _ready() -> void:
+		var bm = get_node_or_null("/root/BattleManager")
+		if bm and bm.has_signal("selection_phase_started"):
+			bm.selection_phase_started.connect(_on_selection)
+
+	func _process(delta: float) -> void:
+		var sm = get_node_or_null("/root/SoundManager")
+		if sm and str(sm.get("_current_music")).begins_with("boss_"):
+			theme_s += delta
+
+	func _on_selection() -> void:
+		if done:
+			return
+		if theme_s < min_theme_s:
+			print("[DEMO] force-danger: Selection Phase at %.1f s of boss theme (< %.0f), deferring" % [theme_s, min_theme_s])
+			return
+		done = true
+		var bm = get_node_or_null("/root/BattleManager")
+		var f = null
+		for m in (bm.player_party if bm and "player_party" in bm else []):
+			if m and is_instance_valid(m) and m.is_alive and m.job is Dictionary and str(m.job.get("id", "")) == "fighter":
+				f = m
+				break
+		if f == null:
+			print("[DEMO] force-danger: no living Fighter in the party, nothing touched")
+			return
+		var target := int(floor(f.max_hp * TARGET))
+		var need: int = f.current_hp - target
+		if need <= 0:
+			print("[DEMO] force-danger: %s already at %d / %d, nothing touched" % [f.combatant_name, f.current_hp, f.max_hp])
+			return
+		# the LARGEST raw hit whose real damage (damage_preview, the same owner take_damage uses) is <= need: never a KO
+		var hi := need
+		while f.damage_preview(hi, false) <= need and hi < (1 << 24):
+			hi *= 2
+		var lo := 0
+		while lo < hi:
+			var mid := (lo + hi + 1) / 2
+			if f.damage_preview(mid, false) <= need:
+				lo = mid
+			else:
+				hi = mid - 1
+		var before: int = f.current_hp
+		f.take_damage(lo, false)
+		print("[DEMO] force-danger: %s %d -> %d / %d (%.0f%%) at %.1f s of boss theme" % [f.combatant_name, before, f.current_hp, f.max_hp, 100.0 * f.current_hp / max(1, f.max_hp), theme_s])
