@@ -323,6 +323,7 @@ func _build_ui() -> void:
 	"""Build the menu UI"""
 	_k = float(TextScale.scaled(100)) / 100.0
 	for child in get_children():
+		child.name = "Freed%d" % child.get_instance_id()   # so this build's named nodes (Footer, ZoomedDetails) keep their names
 		child.queue_free()
 	_ability_labels.clear()
 	_passive_labels.clear()

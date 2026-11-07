@@ -188,6 +188,10 @@ func test_a_description_too_long_for_full_zoom_is_capped_to_fit() -> void:
 
 func test_the_toggle_restores_the_exact_layout() -> void:
 	var m: Control = await _menu(1.25)
+	m.selected_index = 1 if m.selected_index != 1 else 2   # off row 0, so a restore that resets the cursor is visible
+	m._build_ui()
+	await get_tree().process_frame
+	assert_ne(m.selected_index, 0, "CONTROL: the cursor is not on the first row")
 	var before := _snapshot(m)
 	await _act(m, AbilityZoom.ACTION)
 	assert_ne(_snapshot(m), before, "CONTROL: zoomed is a different layout")
@@ -202,8 +206,10 @@ func test_back_unzooms_and_never_closes() -> void:
 	m.closed.connect(func(): closes[0] += 1)
 	await _act(m, AbilityZoom.ACTION)
 	await _act(m, "ui_cancel")
-	assert_false(m._zoomed, "Back un-zooms")
-	assert_eq(closes[0], 0, "and does not close the menu")
+	assert_eq(closes[0], 0, "Back while zoomed does not close the menu")   # first: a closed menu is freed and cannot be read
+	if closes[0] > 0:
+		return
+	assert_false(m._zoomed, "and it un-zooms")
 	m._input(_ev("ui_cancel"))
 	assert_eq(closes[0], 1, "CONTROL: unzoomed, Back closes the menu")
 
