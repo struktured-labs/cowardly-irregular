@@ -169,6 +169,15 @@ var _zoomed := false
 const ZOOM_DESC_SHARE := 0.34
 
 
+## A non-multiplier stat mod as a player reads it: a fraction (crit_chance 0.25, evasion 0.15) is a percent, "+25%",
+## matching the description beside it; a whole-number mod stays a number.
+static func flat_mod_text(v: float) -> String:
+	var sign := "+" if v > 0 else ""
+	if absf(v) < 1.0 and not is_zero_approx(v):
+		return "%s%d%%" % [sign, roundi(v * 100.0)]
+	return "%s%s" % [sign, str(int(v)) if is_equal_approx(v, roundf(v)) else "%.2f" % v]
+
+
 ## The fact rows for the highlighted entry: AbilityFacts for an ability, the passive's own status/category/mods for a passive.
 func _zoom_facts() -> Array:
 	if current_tab != Tab.PASSIVES:
@@ -190,7 +199,7 @@ func _zoom_facts() -> Array:
 			var pct := int((float(v) - 1.0) * 100)
 			out.append({"icon": null, "label": StatNames.display_name(str(mod_name).replace("_multiplier", "")), "value": "%s%d%%" % ["+" if pct > 0 else "", pct]})
 		else:
-			out.append({"icon": null, "label": StatNames.display_name(str(mod_name)), "value": "%s%.2f" % ["+" if float(v) > 0 else "", float(v)]})
+			out.append({"icon": null, "label": StatNames.display_name(str(mod_name)), "value": flat_mod_text(float(v))})
 	return out
 
 
@@ -923,7 +932,7 @@ func _create_passive_details_panel(panel_size: Vector2) -> Control:
 				# Tick 211: shared StatNames preserves HP/MP acronyms.
 				mod_text = "%s%d%% %s" % ["+" if pct > 0 else "", pct, StatNames.display_name(stat)]
 			else:
-				mod_text = "%s%.2f %s" % ["+" if mod_value > 0 else "", mod_value, StatNames.display_name(mod_name)]
+				mod_text = "%s %s" % [flat_mod_text(float(mod_value)), StatNames.display_name(mod_name)]
 
 			var mod_label = Label.new()
 			mod_label.text = mod_text
