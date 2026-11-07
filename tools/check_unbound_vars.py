@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-"""Find variables a bash script EXPANDS but never ASSIGNS — fatal under `set -u`.
+""":"
+echo "$0 is a Python script: run it with python3, not bash" >&2; exit 2
+":"""
+__doc__ = """Find variables a bash script EXPANDS but never ASSIGNS — fatal under `set -u`.
 
 WHY THIS EXISTS
   v3.33.409-alpha went RED with nothing published on:

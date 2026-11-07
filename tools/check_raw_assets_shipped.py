@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+""":"
+echo "$0 is a Python script: run it with python3, not bash" >&2; exit 2
+":"""
 """Does every asset the game reads AS RAW BYTES actually ship raw in the built pck?
 
 WHY THIS EXISTS

@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+""":"
+echo "$0 is a Python script: run it with python3, not bash" >&2; exit 2
+":"""
 # check_ambient_is_unpitched.py — an ambient bed plays UNDER music, so it must not carry a pitch.
 #
 # 2026-10-30, struktured in Harmonia: "I hear a 2nd melody behind the main village melody." The W1
