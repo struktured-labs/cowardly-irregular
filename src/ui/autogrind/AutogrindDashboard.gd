@@ -502,7 +502,8 @@ func _build_session_stats_panel(panel_size: Vector2, pos: Vector2) -> void:
 		{"key": "time_mult", "label": "Time Bonus:", "default": "1.0x"},
 	]
 
-	var row_h = (panel_size.y - 20) / stats.size()
+	## The PERMADEATH line is a row of its own: at 4 px past the last stat it started 2 px BELOW the panel and printed into the stats strip.
+	var row_h = (panel_size.y - 20) / (stats.size() + 1)
 	for i in range(stats.size()):
 		var s = stats[i]
 		var y = 18 + i * row_h
@@ -526,7 +527,7 @@ func _build_session_stats_panel(panel_size: Vector2, pos: Vector2) -> void:
 	var last_y = 18 + stats.size() * row_h
 	_permadeath_label = Label.new()
 	_permadeath_label.text = "PERMADEATH: OFF"
-	_permadeath_label.position = Vector2(12, last_y + 4)
+	_permadeath_label.position = Vector2(12, last_y)
 	_permadeath_label.add_theme_font_size_override("font_size", 12)
 	_permadeath_label.add_theme_color_override("font_color", Color(0.5, 0.5, 0.6))
 	panel.add_child(_permadeath_label)
