@@ -26,7 +26,7 @@ func _presets() -> Array:
 func _kbd(s: float) -> Control:
 	GameState.set_text_size_scale(s)
 	var k: Control = KBD.new()
-	k.set_anchors_preset(Control.PRESET_FULL_RECT)
+	## A size and NO anchors: full-rect anchors plus a size spans anchors + offsets, i.e. TWICE the screen (the .786 fixture did).
 	k.size = get_viewport().get_visible_rect().size
 	add_child_autofree(k)
 	return k
@@ -45,6 +45,8 @@ func _panel_rect(k: Control) -> Rect2:
 
 func test_the_floor_names_every_member_this_file_drives() -> void:
 	var k := _kbd(1.0)
+	print("[VP] viewport %s · visible %s · keyboard %s" % [k.get_viewport_rect().size, get_viewport().get_visible_rect().size, k.size])
+	assert_almost_eq(k.size, k.get_viewport_rect().size, Vector2.ONE, "CONTROL: the keyboard spans exactly the screen it is judged on")
 	assert_true(k.has_method("panel_scale"), "VirtualKeyboard.panel_scale must exist")
 	assert_true(_container(k) != null and _container(k).get_child(0) is ColorRect, "PRECONDITION: the container's first child is the panel")
 	assert_true(k._help_label != null and k._input_display != null and k._key_grid != null, "the labels this file reads exist")
