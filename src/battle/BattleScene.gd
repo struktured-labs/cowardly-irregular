@@ -5010,8 +5010,10 @@ func _on_action_executing(combatant: Combatant, action: Dictionary) -> void:
 		"retreat":
 			## A grind's safety retreat is a flee attempt and had no cue at all; gated like the other
 			## grind-noisy cues so a turbo/console retreat doesn't stack (cowir-sfx 23484, battle 23486).
+			## The cue KEY, not the ability id: the orphan audit reads every play_* literal as a sound key,
+			## and "flee" is none (cowir-sfx 23570). Plays at the battle level, like the escape items.
 			if signature_sound_allowed():
-				SoundManager.play_ability("flee")
+				SoundManager.play_battle("ability_flee")
 		"defer":
 			animator.play_named_animation("defer")
 
