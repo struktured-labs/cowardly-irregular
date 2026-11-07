@@ -394,6 +394,34 @@
       "source": "tools/gen_chiptune_sfx.py cast_fizzle",
       "placeholder": true
     },
+    "enemy_advance_2": {
+      "file": "assets/audio/sfx/enemy_advance_2.ogg",
+      "prompt": "PLACEHOLDER (cowir-main 23349: an ENEMY Advance must read as a monster powering up, with escalating sounds clearly NOT the party's). Enemy advance at 2 queued actions, played by cowir-battle's telegraph and execution flourish via play_battle; the AI caps at 4, so there is no 5. SYNTHESISED from _enemy_flourish, the SAME skeleton as advance_flourish_N so the rising shape matches and only the colour differs. Measured beside the party ladder: a fourth lower, minor-third/tritone stack, centroid ~170 Hz (party ~430); an octave down was rejected at 89% energy under 250 Hz, inaudible through a 200 Hz laptop highpass. Through that highpass the enemy ladder sits 2-3 dB under the party's and still climbs 2.7 dB from 2 to 4. A labelled synth until struktured playtests it.",
+      "duration_seconds": 0.34,
+      "source": "tools/gen_chiptune_sfx.py enemy_advance_2",
+      "placeholder": true
+    },
+    "enemy_advance_3": {
+      "file": "assets/audio/sfx/enemy_advance_3.ogg",
+      "prompt": "PLACEHOLDER (cowir-main 23349: an ENEMY Advance must read as a monster powering up, with escalating sounds clearly NOT the party's). Enemy advance at 3 queued actions, played by cowir-battle's telegraph and execution flourish via play_battle; the AI caps at 4, so there is no 5. SYNTHESISED from _enemy_flourish, the SAME skeleton as advance_flourish_N so the rising shape matches and only the colour differs. Measured beside the party ladder: a fourth lower, minor-third/tritone stack, centroid ~170 Hz (party ~430); an octave down was rejected at 89% energy under 250 Hz, inaudible through a 200 Hz laptop highpass. Through that highpass the enemy ladder sits 2-3 dB under the party's and still climbs 2.7 dB from 2 to 4. A labelled synth until struktured playtests it.",
+      "duration_seconds": 0.42,
+      "source": "tools/gen_chiptune_sfx.py enemy_advance_3",
+      "placeholder": true
+    },
+    "enemy_advance_4": {
+      "file": "assets/audio/sfx/enemy_advance_4.ogg",
+      "prompt": "PLACEHOLDER (cowir-main 23349: an ENEMY Advance must read as a monster powering up, with escalating sounds clearly NOT the party's). Enemy advance at 4 queued actions, played by cowir-battle's telegraph and execution flourish via play_battle; the AI caps at 4, so there is no 5. SYNTHESISED from _enemy_flourish, the SAME skeleton as advance_flourish_N so the rising shape matches and only the colour differs. Measured beside the party ladder: a fourth lower, minor-third/tritone stack, centroid ~170 Hz (party ~430); an octave down was rejected at 89% energy under 250 Hz, inaudible through a 200 Hz laptop highpass. Through that highpass the enemy ladder sits 2-3 dB under the party's and still climbs 2.7 dB from 2 to 4. A labelled synth until struktured playtests it.",
+      "duration_seconds": 0.52,
+      "source": "tools/gen_chiptune_sfx.py enemy_advance_4",
+      "placeholder": true
+    },
+    "enemy_defer": {
+      "file": "assets/audio/sfx/enemy_defer.ogg",
+      "prompt": "PLACEHOLDER (cowir-main 23349/23350: an enemy Defer gets a sound of its own; the party's defer is a menu press and never played for a monster). A hunker: falling stone grind, a muted armoured thunk plus a dull 660/934 Hz clank, and a low 98/104 Hz semitone rub that fades. The clank exists because without it the cue lost 10 dB through a 200 Hz laptop highpass. Soft-saturated and trimmed to sit beside the party defer: -13.8 dB rms full range (party -15.7), -20.9 through the laptop highpass (party -20.2). A labelled synth until struktured playtests it.",
+      "duration_seconds": 0.55,
+      "source": "tools/gen_chiptune_sfx.py enemy_defer",
+      "placeholder": true
+    },
     "advance_generic_1": {
       "file": "assets/audio/sfx/advance_generic_1.ogg",
       "prompt": "SYNTHESISED — generic Advance press ladder, rung 1 of 5. 9 of 14 jobs have no per-job ladder (only the 5 starters do) and repeated ONE flat arcade credit at every press, including at a full bank — struktured 2026-09-09 asked for a new sound at the 4th press. Escalates CATEGORICALLY: one note, one per press, so the step does not rest on loudness or on pitch (the manifest path adds ±5% random pitch, wider than any musical per-press step). NOT advance_flourish_*: that family is the wind-up at RESOLUTION and reusing it while queueing would blur two moments. Run the tool.",
