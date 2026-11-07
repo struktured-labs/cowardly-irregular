@@ -4,7 +4,7 @@ extends RefCounted
 ## screen's guard: battle, field HUD, menus, grind, cutscenes (main 23393/23398). Nobody writes a second one.
 ##
 ## A SURFACE is a visible Control that draws its own background (Panel, PanelContainer, ColorRect, TextureRect,
-## NinePatchRect, or a Control carrying a "panel" stylebox), or a text Control (Label, RichTextLabel, Button) with no
+## NinePatchRect, a script that overrides _draw, or a Control carrying a "panel" stylebox), or a text Control (Label, RichTextLabel, Button) with no
 ## surface above it. A surface's descendants are its content, never a collision. A surface covering most of the screen
 ## is a BACKDROP (a dim layer, a full-screen background) and is reported apart, since it covers everything by design.
 ##
@@ -130,6 +130,9 @@ static func _draws_background(c: Control) -> bool:
 		return (c as ColorRect).color.a > 0.02
 	if c is TextureRect:
 		return (c as TextureRect).texture != null
+	# A Control that paints itself (the victory PixelBanner, cutscenes 23487) is a surface even with no stylebox.
+	if c.get_script() != null and (c.get_script() as Script).has_method("_draw"):
+		return true
 	return c.has_theme_stylebox_override("panel")
 
 
