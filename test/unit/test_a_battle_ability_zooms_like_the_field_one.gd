@@ -44,7 +44,9 @@ func _opened() -> Array:
 	holder.size = Vector2(1280, 720)
 	var root = Win98MenuClass.new()
 	holder.add_child(root)
-	var items := [{"id": "ability_menu", "label": "Ability", "submenu": _ability_rows()}, {"id": "attack_menu", "label": "Attack"}]
+	# The ROOT carries quick-slot ability rows with the same ids (BattleCommandMenu's MRU/pins), as a real command menu does.
+	var items := [{"id": "ability_menu", "label": "Ability", "submenu": _ability_rows()}, {"id": "attack_menu", "label": "Attack"},
+		{"id": "ability_menu_thundaga", "label": "Thundaga", "tooltip": LONG, "submenu": [{"id": "ability_thundaga_enemy_0", "label": "Goblin"}]}]
 	root.setup("Fighter", items, Vector2(400, 420), "fighter")
 	for i in 3:
 		await get_tree().process_frame
@@ -169,6 +171,7 @@ func test_west_zooms_on_the_ability_list_and_repeats_everywhere_else() -> void:
 	assert_eq(scene.repeats, 0, "west on the ability list must not Repeat last turn")
 	root.submenu.queue_free()
 	root.submenu = null
+	assert_false(root.is_ability_list(), "a command menu holding quick-slot ability rows is not the ability list")
 	assert_false(scene.ability_list_open(), "CONTROL: back on the command menu")
 	scene._input(west)
 	assert_eq(scene.repeats, 1, "CONTROL: west on the command menu still Repeats")

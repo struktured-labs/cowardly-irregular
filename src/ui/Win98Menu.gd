@@ -584,9 +584,9 @@ func _tooltip_backing() -> StyleBoxFlat:
 	return sb
 
 
-## A battle submenu listing abilities (rows ability_menu_<id>): the one place the zoom applies.
+## A battle SUBMENU listing abilities (rows ability_menu_<id>). The root carries quick-slot rows with the same ids, and must stay Repeat's.
 func is_ability_list() -> bool:
-	if not battle_mode:
+	if not battle_mode or parent_menu == null:
 		return false
 	for item in menu_items:
 		if str(item.get("id", "")).begins_with("ability_menu_"):
@@ -625,6 +625,7 @@ func _toggle_zoom() -> void:
 	if on and str(menu_items[selected_index].get("tooltip", "") if selected_index >= 0 and selected_index < menu_items.size() else "") == "":
 		return
 	_zoomed = on
+	print("[ZOOM] %s on '%s' row %s" % ["in" if on else "out", menu_title, str(menu_items[selected_index].get("id", "")) if selected_index >= 0 and selected_index < menu_items.size() else "?"])
 	if SoundManager:
 		SoundManager.play_ui("menu_expand" if on else "menu_close")
 	_update_tooltip()

@@ -6293,6 +6293,7 @@ func _input(event: InputEvent) -> void:
 		# X button - repeat previous actions, except on the ability list, where west is AbilityZoom's (design 23190)
 		elif event.button_index == JOY_BUTTON_X:
 			if ability_list_open():
+				print("[ZOOM] west left to the open ability list, not Repeat")
 				return
 			_repeat_previous_actions()
 			get_viewport().set_input_as_handled()
