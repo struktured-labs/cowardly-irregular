@@ -161,6 +161,7 @@ func _refresh_battle_readout() -> void:
 		return
 	if _readout_round <= 0 and _readout_action.is_empty():
 		_battle_readout.text = _BATTLE_READOUT_IDLE
+		_fit_readout()
 		return
 	var lines: Array[String] = ["Round %d" % _readout_round]
 	if not _readout_action.is_empty():
@@ -170,6 +171,7 @@ func _refresh_battle_readout() -> void:
 	lines.append(_readout_party_line())
 	lines.append(_readout_enemy_line())
 	_battle_readout.text = "\n".join(lines)
+	_fit_readout()
 
 
 func _readout_party_line() -> String:
@@ -207,7 +209,9 @@ const HEADER_ROOM_H := 28.0
 const TITLE_BAND_H := 16.0
 ## The widest value a stats/projection row shows; the cap is measured on it, not on the "0"/"--" it is built with.
 const VALUE_SAMPLE := "9999999 (+100%)"
-const READOUT_MAX_LINES := 5
+const READOUT_BASE_PX := 11
+## The readout's authored box, kept apart from its size: an unwrapped Label grows its own size to its longest line.
+var _readout_box: Vector2 = Vector2.ZERO
 
 
 ## Text Size px for a label in a fixed box: the setting, capped where `sample` still fits `box`; never below its authored px.
@@ -222,15 +226,27 @@ func _fit_px(sample: String, base: int, box: Vector2) -> int:
 	return px
 
 
-## The same cap for a multi-line label: `lines` lines of the font must fit `room_h`.
-func _fit_lines_px(base: int, lines: int, room_h: float) -> int:
-	var px: int = TextScale.scaled(base)
+## The readout's text changes every round, so its px is re-fitted to its CURRENT lines: every line must fit the box's width
+## and all of them its height (at 1.5x its widest line was 337 px in a 296 px panel when only the height was budgeted).
+func _fit_readout() -> void:
+	if not is_instance_valid(_battle_readout):
+		return
+	var lines: PackedStringArray = _battle_readout.text.split("\n")
+	var px: int = TextScale.scaled(READOUT_BASE_PX)
 	var fnt: Font = get_theme_font("font", "Label")
-	if fnt == null:
-		return px
-	while px > base and fnt.get_height(px) * lines > room_h:
-		px -= 1
-	return px
+	if fnt != null:
+		while px > READOUT_BASE_PX and not _readout_fits(fnt, px, lines):
+			px -= 1
+	_battle_readout.add_theme_font_size_override("font_size", px)
+
+
+func _readout_fits(fnt: Font, px: int, lines: PackedStringArray) -> bool:
+	if fnt.get_height(px) * maxi(lines.size(), 1) > _readout_box.y:
+		return false
+	for line in lines:
+		if fnt.get_string_size(line, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x > _readout_box.x:
+			return false
+	return true
 
 
 func _build_ui() -> void:
@@ -374,8 +390,9 @@ func _build_mini_battle_panel(panel_size: Vector2, pos: Vector2) -> void:
 	_battle_readout = Label.new()
 	_battle_readout.position = _battle_viewport_container.position + Vector2(6, 6)
 	_battle_readout.size = _battle_viewport_container.size - Vector2(12, 12)
+	_readout_box = _battle_readout.size
 	_battle_readout.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_battle_readout.add_theme_font_size_override("font_size", _fit_lines_px(11, READOUT_MAX_LINES, _battle_readout.size.y))
+	_fit_readout()
 	_battle_readout.add_theme_color_override("font_color", TEXT_COLOR)
 	_battle_readout.text = _BATTLE_READOUT_IDLE
 	panel.add_child(_battle_readout)
