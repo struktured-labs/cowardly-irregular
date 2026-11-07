@@ -43,6 +43,8 @@ var _item_scroll: ScrollContainer
 var _item_container: VBoxContainer
 var _playing: bool = false
 var _cutscene_director: Node = null
+## Text Size factor this build was laid out at; geometry scales by it, 1.0 is the authored layout.
+var _k := 1.0
 
 
 func _ready() -> void:
@@ -154,6 +156,7 @@ func _build_ui() -> void:
 	var viewport := get_viewport_rect().size
 	if viewport.x == 0:
 		viewport = Vector2(1280, 720)
+	_k = TextScale.scaled(100) / 100.0
 
 	var bg := ColorRect.new()
 	bg.color = BG_COLOR
@@ -164,8 +167,8 @@ func _build_ui() -> void:
 	_title_label = Label.new()
 	_title_label.text = "Theater"
 	_title_label.position = Vector2(24, 16)
-	_title_label.size = Vector2(300, 32)
-	_title_label.add_theme_font_size_override("font_size", 26)
+	_title_label.size = Vector2(300, 32) * _k
+	_title_label.add_theme_font_size_override("font_size", TextScale.scaled(26))
 	_title_label.add_theme_color_override("font_color", ACCENT)
 	_title_label.clip_text = false
 	_title_label.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
@@ -174,26 +177,33 @@ func _build_ui() -> void:
 	_count_label = Label.new()
 	_count_label.position = Vector2(viewport.x - 260, 22)
 	_count_label.size = Vector2(240, 24)
-	_count_label.add_theme_font_size_override("font_size", 15)
+	_count_label.add_theme_font_size_override("font_size", TextScale.scaled(15))
 	_count_label.add_theme_color_override("font_color", DIM_COLOR)
-	_count_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	## Left-aligned and placed by its measured width in _place_count: a right-aligned box grows rightward off screen.
 	_count_label.clip_text = false
 	_count_label.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
 	add_child(_count_label)
 
-	# World tab row — clickable with hover-to-select
+	# World tab row — clickable with hover-to-select. Tabs size to their text and flow onto a second row when they run out of width.
 	var tab_x := 24.0
+	var tab_y := 16.0 + 40.0 * _k
+	var tab_px := TextScale.scaled(14)
 	for i in _world_order.size():
 		var w: int = _world_order[i]
 		var tab := Label.new()
 		tab.text = "W%d · %s" % [w, WORLD_NAMES.get(w, "?")]
-		tab.position = Vector2(tab_x, 56)
-		tab.size = Vector2(140, 28)
+		var tab_w: float = maxf(140.0 * _k, _text_w(tab.text, tab_px) + 10.0 * _k)
+		if tab_x > 24.0 and tab_x + tab_w > viewport.x - 24.0:
+			tab_x = 24.0
+			tab_y += 32.0 * _k
 		tab.mouse_filter = Control.MOUSE_FILTER_STOP
-		tab.add_theme_font_size_override("font_size", 14)
+		tab.add_theme_font_size_override("font_size", tab_px)
 		tab.clip_text = false
 		tab.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
 		add_child(tab)
+		# Sized only once in the tree: outside it a Label's minimum is measured at the default 16 px and clamps the box wider.
+		tab.position = Vector2(tab_x, tab_y)
+		tab.size = Vector2(tab_w, 28.0 * _k)
 		_world_tabs.append(tab)
 		# Click switches the active world tab
 		var btn := Button.new()
@@ -203,12 +213,11 @@ func _build_ui() -> void:
 		btn.pressed.connect(_on_tab_click.bind(i))
 		btn.mouse_entered.connect(_on_tab_hover.bind(i))
 		tab.add_child(btn)
-		tab_x += 150.0
+		tab_x += tab_w + 10.0 * _k
 
 	# Scrollable list
 	_item_scroll = ScrollContainer.new()
-	_item_scroll.position = Vector2(24, 92)
-	_item_scroll.size = Vector2(viewport.x - 48, viewport.y - 92 - 40)
+	_item_scroll.position = Vector2(24, tab_y + 36.0 * _k)
 	_item_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	add_child(_item_scroll)
 
@@ -224,12 +233,44 @@ func _build_ui() -> void:
 	_footer.text = "←/→: World   ↑/↓ / Wheel: Select   %s/%s: Page   %s / Enter / Click: Replay   %s / Esc / RClick: Close" % [
 		InputProfileManager.hint_for_action("battle_defer"), InputProfileManager.hint_for_action("battle_advance"),
 		InputProfileManager.hint_for_action("ui_accept"), InputProfileManager.hint_for_action("ui_cancel")]
-	_footer.position = Vector2(24, viewport.y - 32)
-	_footer.size = Vector2(viewport.x - 48, 20)
-	_footer.add_theme_font_size_override("font_size", 13)
+	var foot_px := TextScale.scaled(13)
+	var foot_h: float = maxf(20.0, wrapped_h(_footer.text, viewport.x - 48, foot_px))
+	_footer.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_footer.add_theme_font_size_override("font_size", foot_px)
 	_footer.add_theme_color_override("font_color", DIM_COLOR)
 	_footer.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	add_child(_footer)
+	_footer.position = Vector2(24, viewport.y - 12 - foot_h)
+	_footer.size = Vector2(viewport.x - 48, foot_h)
+	_item_scroll.size = Vector2(viewport.x - 48, _footer.position.y - 8 - _item_scroll.position.y)
+
+
+static func _font() -> Font:
+	return ThemeDB.fallback_font
+
+
+static func _text_w(text: String, px: int) -> float:
+	return _font().get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x
+
+
+## Height WORD_SMART wraps `text` to: neither break set matches it alone, so the larger of the two.
+static func wrapped_h(text: String, width: float, px: int) -> float:
+	var f := _font()
+	var a: float = f.get_multiline_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, width, px, -1,
+		TextServer.BREAK_MANDATORY | TextServer.BREAK_WORD_BOUND | TextServer.BREAK_ADAPTIVE).y
+	var b: float = f.get_multiline_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, width, px, -1,
+		TextServer.BREAK_MANDATORY | TextServer.BREAK_GRAPHEME_BOUND).y
+	return maxf(a, b)
+
+
+func _place_count() -> void:
+	var px: int = _count_label.get_theme_font_size("font_size")
+	var w: float = _text_w(_count_label.text, px)
+	var vw: float = get_viewport_rect().size.x
+	if vw == 0:
+		vw = 1280.0
+	_count_label.size = Vector2(w, _font().get_height(px))
+	_count_label.position.x = vw - 20.0 - w
 
 
 func _populate_items() -> void:
@@ -240,11 +281,11 @@ func _populate_items() -> void:
 	if _world_order.is_empty():
 		var empty := Label.new()
 		empty.text = "No cutscenes available — play through the story to unlock entries."
-		empty.add_theme_font_size_override("font_size", 15)
+		empty.add_theme_font_size_override("font_size", TextScale.scaled(15))
 		empty.add_theme_color_override("font_color", DIM_COLOR)
 		empty.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		empty.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		empty.custom_minimum_size = Vector2(0, 80)
+		empty.custom_minimum_size = Vector2(0, 80.0 * _k)
 		_item_container.add_child(empty)
 		return
 
@@ -254,9 +295,10 @@ func _populate_items() -> void:
 	for i in items.size():
 		var entry: Dictionary = items[i]
 		var row := Label.new()
-		row.custom_minimum_size = Vector2(0, 28)
+		var row_px := TextScale.scaled(17)
+		row.custom_minimum_size = Vector2(0, maxf(28.0, ceilf(_font().get_height(row_px)) + 4.0))
 		row.mouse_filter = Control.MOUSE_FILTER_STOP
-		row.add_theme_font_size_override("font_size", 17)
+		row.add_theme_font_size_override("font_size", row_px)
 		row.clip_text = false
 		row.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
 		_item_container.add_child(row)
@@ -283,6 +325,7 @@ func _update_display() -> void:
 			if item.unlocked:
 				unlocked += 1
 	_count_label.text = "%d / %d unlocked" % [unlocked, total]
+	_place_count()
 
 	# Tab highlighting
 	for i in _world_tabs.size():
