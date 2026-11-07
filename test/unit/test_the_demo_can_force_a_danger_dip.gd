@@ -67,6 +67,9 @@ func test_under_the_theme_floor_it_defers_and_touches_nothing() -> void:
 func test_past_the_floor_one_real_hit_leaves_the_fighter_in_danger_and_alive() -> void:
 	var cleric := _member("cleric")
 	var f := _member("fighter")
+	# real armour: with defense 10 a raw hit of `need` already lands at 22%, so a missing damage_preview search went
+	# unseen (this slot's M2). At 200 the raw hit leaves him at ~47%, and only the search reaches the 20-25% band.
+	f.defense = 200
 	BattleManager.player_party = [cleric, f]
 	watch_signals(f)
 	var n = DemoPrep.arm_force_danger(get_tree().root, ["--force-danger=30"])
