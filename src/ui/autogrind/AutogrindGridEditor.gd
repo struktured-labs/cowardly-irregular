@@ -875,8 +875,8 @@ func _get_profile_name_for(char_id: String, profile_idx: int) -> String:
 ## Keep the selected rule row on screen. Ported from AutobattleGridEditor, which solved this for
 ## the same hand-positioned (non-ScrollContainer) grid: shift _grid_container.position.y and the
 ## cursor follows for free, because _update_cursor derives cell_pos from that same position.
-## No one flag set reproduces AUTOWRAP_WORD_SMART: ADAPTIVE never splits an over-long word (the Label does), GRAPHEME splits words
-## the Label keeps whole. _cell_h takes the larger count of the two, so neither shape is under-budgeted.
+## Measured, not a general rule (tmp/wrapprobe, 2026-11-07): a 22-char word 113-214 px wide in a 108 px box stays WHOLE under ADAPTIVE at
+## 9-17 px while the Label breaks it (a 46-char word at 4x the box does break). _cell_h takes the larger of the two counts, so that case is covered.
 const CELL_TEXT_BREAK := TextServer.BREAK_MANDATORY | TextServer.BREAK_WORD_BOUND \
 	| TextServer.BREAK_ADAPTIVE
 const CELL_TEXT_BREAK_LONG_WORD := TextServer.BREAK_MANDATORY | TextServer.BREAK_WORD_BOUND \
