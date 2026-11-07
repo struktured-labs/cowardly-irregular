@@ -1,0 +1,77 @@
+{
+  "id": "world3_tolerance_limit_defeat",
+  "title": "The Tolerance Limit — Aftermath",
+  "world": 3,
+  "trigger": "boss_arbiter_steampunk_defeated",
+  "background": "brasston_square",
+  "description": "The Tolerance Limit measures the party one last time and reads a deviation it has no procedure for: positive. The condition the Bard asked about in its intro has arisen. The caliper concludes the specification itself is out of tolerance, and starts engraving numbers past the end of its scale. Still never 'I'.",
+  "steps": [
+    { "type": "stop_music" },
+    { "type": "letterbox_in", "duration": 0.5 },
+    { "type": "play_sfx", "sfx": "boss_defeat_stinger" },
+    { "type": "wait", "duration": 1.0 },
+    {
+      "type": "narration",
+      "text": "The caliper's arms had sprung open past the last engraved number. It closed them on the Bard, slowly, and read the scale, and read it again."
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "The Tolerance Limit",
+          "text": "MEASURING. Deviation... positive.",
+          "theme": "enemy",
+          "portrait": "masterite_arbiter_steampunk"
+        },
+        { "speaker": "Bard", "text": "Told you. Better than your specification.", "theme": "bard" },
+        {
+          "speaker": "The Tolerance Limit",
+          "text": "No procedure is held for that condition.",
+          "theme": "enemy",
+          "portrait": "masterite_arbiter_steampunk"
+        },
+        {
+          "speaker": "The Tolerance Limit",
+          "text": "The condition has arisen.",
+          "theme": "enemy",
+          "portrait": "masterite_arbiter_steampunk"
+        },
+        { "speaker": "Rogue", "text": "So, what, you scrap us for being the wrong kind of wrong?", "theme": "rogue" },
+        {
+          "speaker": "The Tolerance Limit",
+          "text": "Out of tolerance is out of tolerance. The specification is out of tolerance.",
+          "theme": "enemy",
+          "portrait": "masterite_arbiter_steampunk"
+        },
+        { "speaker": "Mage", "text": "...Did it just measure its own spec?", "theme": "mage" },
+        {
+          "speaker": "The Tolerance Limit",
+          "text": "The specification was written to a part that no longer exists. REVISION IS REQUIRED.",
+          "theme": "enemy",
+          "portrait": "masterite_arbiter_steampunk"
+        },
+        { "speaker": "Fighter", "text": "Revised to what?", "theme": "fighter" },
+        {
+          "speaker": "The Tolerance Limit",
+          "text": "Revision requires a measurement of what is. Five parts have been measured.",
+          "theme": "enemy",
+          "portrait": "masterite_arbiter_steampunk"
+        },
+        { "speaker": "Cleric", "text": "We're still not parts.", "theme": "cleric" },
+        {
+          "speaker": "The Tolerance Limit",
+          "text": "Objection recorded. The term is under revision.",
+          "theme": "enemy",
+          "portrait": "masterite_arbiter_steampunk"
+        }
+      ]
+    },
+    {
+      "type": "narration",
+      "text": "It lowered its arms and began, very carefully, to engrave new numbers past the end of the old scale. There was not much metal left. It used it anyway."
+    },
+    { "type": "wait", "duration": 0.8 },
+    { "type": "set_flag", "flag": "arbiter_steampunk_defeated", "value": true },
+    { "type": "letterbox_out", "duration": 0.5 }
+  ]
+}
