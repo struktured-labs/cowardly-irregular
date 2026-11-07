@@ -225,6 +225,8 @@ func show_win98_command_menu(combatant: Combatant) -> void:
 	var bag: Dictionary = ItemSystem.party_inventory(BattleManager.consumable_bag(combatant))
 	for item_id in bag:
 		budget["item:" + str(item_id)] = int(bag[item_id])
+	## AP the queue may spend before the debt floor; each slot bills AbilityCost.slot_ap (1 + an ability's own ap_cost).
+	budget["ap"] = combatant.current_ap - AbilityCost.AP_FLOOR
 	_scene.active_win98_menu.set_queue_budget(budget, _queued_cost.bind(combatant))
 
 	# Allow going back if not the first player in selection order
@@ -264,7 +266,7 @@ func _queued_cost(data, combatant: Combatant) -> Dictionary:
 		return {}
 	if data.has("ability_id"):
 		var aid := str(data["ability_id"])
-		var out: Dictionary = {}
+		var out: Dictionary = {"ap": AbilityCost.slot_ap(combatant, {"type": "ability", "ability_id": aid})}
 		var mp: int = JobSystem.get_ability_mp_cost(combatant, aid)
 		if mp > 0:
 			out["mp"] = mp
@@ -275,8 +277,8 @@ func _queued_cost(data, combatant: Combatant) -> Dictionary:
 			out["mp_gain"] = BattleManager._mp_restore_amount(ability)
 		return out
 	if data.has("item_id"):
-		return {"item:" + str(data["item_id"]): 1}
-	return {}
+		return {"item:" + str(data["item_id"]): 1, "ap": 1}
+	return {"ap": 1}
 
 
 func _restore_reaches(ability: Dictionary, data: Dictionary, combatant: Combatant) -> bool:
@@ -714,6 +716,9 @@ func _build_ability_row(ability_id: String, combatant: Combatant, alive_enemies:
 	## (struktured 2026-11-07: the player may know an earlier slot restores the MP). Silence and the rest stay hard.
 	var mp_short: bool = not can_afford and not combatant.has_status("silence") and combatant.knows_ability(ability_id)
 	var offerable: bool = can_afford or mp_short
+	## An ability's own AP cost beyond its slot's 1 (AbilityCost), named on the row so the Advance budget is legible.
+	var extra_ap: int = AbilityCost.ap_for(combatant, ability_id)
+	var ap_tag: String = "  +%d AP" % extra_ap if extra_ap > 0 else ""
 	var target_type: String = ability.get("target_type", "single_enemy")
 
 	var ability_desc: String = ability.get("description", "")
@@ -750,7 +755,7 @@ func _build_ability_row(ability_id: String, combatant: Combatant, alive_enemies:
 			enemy_targets.append(row)
 		return {
 			"id": "ability_menu_" + ability_id,
-			"label": str(ability["name"]),
+			"label": str(ability["name"]) + ap_tag,
 			"cost": mp_cost,
 			"cost_affordable": can_afford,
 			"tooltip": ability_tooltip,
@@ -785,7 +790,7 @@ func _build_ability_row(ability_id: String, combatant: Combatant, alive_enemies:
 			})
 		return {
 			"id": "ability_menu_" + ability_id,
-			"label": str(ability["name"]),
+			"label": str(ability["name"]) + ap_tag,
 			"cost": mp_cost,
 			"cost_affordable": can_afford,
 			"tooltip": ability_tooltip,
@@ -813,7 +818,7 @@ func _build_ability_row(ability_id: String, combatant: Combatant, alive_enemies:
 		if dead_targets.size() > 0:
 			return {
 				"id": "ability_menu_" + ability_id,
-				"label": str(ability["name"]),
+				"label": str(ability["name"]) + ap_tag,
 			"cost": mp_cost,
 			"cost_affordable": can_afford,
 				"tooltip": ability_tooltip,
@@ -823,7 +828,7 @@ func _build_ability_row(ability_id: String, combatant: Combatant, alive_enemies:
 			}
 		return {
 			"id": "ability_" + ability_id,
-			"label": str(ability["name"]),
+			"label": str(ability["name"]) + ap_tag,
 			"cost": mp_cost,
 			"cost_affordable": can_afford,
 			"tooltip": ability_tooltip,
@@ -847,7 +852,7 @@ func _build_ability_row(ability_id: String, combatant: Combatant, alive_enemies:
 			aoe_label = "%s [AoE] ~%d total%s" % [ability["name"], total_est, ", %d KO" % kos if kos > 0 else ""]
 		return {
 			"id": "ability_" + ability_id,
-			"label": aoe_label,
+			"label": aoe_label + ap_tag,
 			"cost": mp_cost,
 			"cost_affordable": can_afford,
 			"tooltip": ability_tooltip + " (hits all enemies)",
@@ -869,7 +874,7 @@ func _build_ability_row(ability_id: String, combatant: Combatant, alive_enemies:
 			all_label = "%s [All]%s" % [ability["name"], _heal_span_suffix(ests)]
 		return {
 			"id": "ability_" + ability_id,
-			"label": all_label,
+			"label": all_label + ap_tag,
 			"cost": mp_cost,
 			"cost_affordable": can_afford,
 			"tooltip": ability_tooltip + " (affects all allies)",
@@ -881,7 +886,7 @@ func _build_ability_row(ability_id: String, combatant: Combatant, alive_enemies:
 	# Default: single-target, self, or unaffordable — flat entry
 	return {
 		"id": "ability_" + ability_id,
-		"label": str(ability["name"]),
+		"label": str(ability["name"]) + ap_tag,
 			"cost": mp_cost,
 			"cost_affordable": can_afford,
 		"tooltip": ability_tooltip,

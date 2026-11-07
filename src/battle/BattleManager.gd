@@ -4377,7 +4377,7 @@ func _execute_next_action() -> void:
 		"attack":
 			_execute_attack(combatant, action.get("target"))
 		"ability":
-			await _execute_ability(combatant, action.get("ability_id", ""), action.get("targets", []))
+			await _execute_ability(combatant, action.get("ability_id", ""), action.get("targets", []), bool(action.get("forced", false)))
 		"item":
 			_execute_item(combatant, action.get("item_id", ""), action.get("targets", []))
 		"defer":
@@ -5193,7 +5193,7 @@ func _execute_advance(combatant: Combatant, advance_action: Dictionary) -> void:
 				_execute_attack(combatant, action.get("target"))
 				combatant.spend_restriction_clocks()
 			"ability":
-				await _execute_ability(combatant, action.get("ability_id", ""), action.get("targets", []))
+				await _execute_ability(combatant, action.get("ability_id", ""), action.get("targets", []), bool(action.get("forced", false)))
 				if not is_instance_valid(self) or not is_instance_valid(combatant):
 					return
 				combatant.spend_restriction_clocks()
@@ -5649,7 +5649,7 @@ func _apply_equipment_on_hit_status(attacker: Combatant, target: Combatant) -> v
 			SoundManager.play_status(entry["status"])
 
 
-func _execute_ability(caster: Combatant, ability_id: String, targets: Array) -> void:
+func _execute_ability(caster: Combatant, ability_id: String, targets: Array, forced: bool = false) -> void:
 	"""Execute an ability (costs 1 AP)"""
 	if caster in player_party:
 		_c3_nonbasic_used = true
@@ -5681,6 +5681,14 @@ func _execute_ability(caster: Combatant, ability_id: String, targets: Array) -> 
 		if caster != null and caster.has_status("silence"):
 			battle_log_message.emit("[color=gray]%s is silenced — %s won't come out![/color]" % [caster.combatant_name, ability["name"]])
 			print("%s is silenced and cannot cast %s" % [caster.combatant_name, ability["name"]])
+			return
+		## MP short: named with the numbers, a banner on the caster and its own fizzle cue, and "(forced)" when the player
+		## pressed past the menu's warning (struktured 2026-11-07). Nothing is spent; the next slot runs.
+		var mp_need: int = JobSystem.get_ability_mp_cost(caster, ability_id) if caster != null else 0
+		if caster != null and caster.knows_ability(ability_id) and caster.current_mp < mp_need:
+			battle_log_message.emit("[color=gray]%s doesn't have enough MP for %s! (needs %d, has %d)%s[/color]" % [caster.combatant_name, ability["name"], mp_need, caster.current_mp, " (forced)" if forced else ""])
+			hit_negated.emit(caster, "NOT ENOUGH MP!")   # the floating-banner channel BattleResultsDisplay already draws
+			SoundManager.play_battle("cast_fizzle")
 			return
 		## Tick 173: surface in the log. Pre-fix the ability was
 		## blocked (insufficient MP, missing prerequisite, etc.) and
@@ -5763,6 +5771,13 @@ func _execute_ability(caster: Combatant, ability_id: String, targets: Array) -> 
 	# bare ability.mp_cost while can_use_ability (post-tick-374) checks
 	# the multiplied cost — a divergence that would let mp_efficiency
 	# pass the affordability gate then spend the unmultiplied amount.
+	## An ability's own ap_cost: a slot that no longer fits above the floor fizzles before anything is spent.
+	var slot_ap: int = 1 + AbilityCost.ap_for(caster, ability_id)
+	if slot_ap > 1 and not caster.can_brave(slot_ap):
+		battle_log_message.emit("[color=gray]%s doesn't have the AP for %s! (needs %d)[/color]" % [caster.combatant_name, ability["name"], slot_ap])
+		hit_negated.emit(caster, "NOT ENOUGH AP!")
+		SoundManager.play_battle("cast_fizzle")
+		return
 	var mp_cost = JobSystem.get_ability_mp_cost(caster, ability_id)
 	if not caster.spend_mp(mp_cost):
 		# Tick 221: surface MP shortfall to battle_log + push_warning. If we reach here, can_use_ability (line ~2653) said yes but spend_mp said no — that's a real divergence worth surfacing. Pre-fix print-only and the player saw nothing.
@@ -5774,8 +5789,8 @@ func _execute_ability(caster: Combatant, ability_id: String, targets: Array) -> 
 	if mp_cost > 0:
 		_apply_lens_mp_tithe(caster)
 
-	# Actions cost 1 AP (cancels out natural gain for net 0)
-	caster.spend_ap(1)
+	# Actions cost 1 AP (cancels out natural gain for net 0), plus the ability's own ap_cost (checked before the MP spend).
+	caster.spend_ap(slot_ap)
 
 	action_executing.emit(caster, {"type": "ability", "ability_id": ability_id, "targets": retargeted})
 	var ability_log = "[color=white]%s[/color] uses [color=aqua]%s[/color]!" % [caster.combatant_name, ability["name"]]

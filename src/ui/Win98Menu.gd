@@ -2142,6 +2142,9 @@ func _queue_shortfall(data) -> String:
 			spent[k] = int(spent.get(k, 0)) + int(cost[k])
 	for k in spent:
 		if _queue_budget.has(k) and spent[k] > int(_queue_budget[k]):
+			## AP is never exempt, forced or not (struktured: "they can't advance more than they are allowed to").
+			if k == "ap":
+				return "Not enough AP for the queue (%d more than the floor allows)" % (spent[k] - int(_queue_budget[k]))
 			return "Only %d of that item to queue" % int(_queue_budget[k])
 	return ""
 
