@@ -1420,14 +1420,7 @@ func _on_win98_menu_selection(item_id: String, item_data: Variant) -> void:
 	if item_id.begins_with("group_") and item_data is Dictionary:
 		var group_type: String = item_data.get("group_type", "all_out_attack")
 		var formation_id: String = item_data.get("formation_id", "")
-		var label = item_data.get("group_type", "All-Out Attack")
-		match group_type:
-			"limit_break": label = "Limit Break"
-			"combo_magic": label = "Combo Magic"
-			"formation": label = formation_id.replace("_", " ").capitalize()
-			_: label = "All-Out Attack"
-		var color = "magenta" if group_type == "combo_magic" else ("cyan" if group_type == "formation" else "orange")
-		_scene.log_message("[color=%s]★ %s initiated! ★[/color]" % [color, label])
+		_scene.log_message(group_attack_banner(group_type, formation_id))
 		BattleManager.player_group_attack(group_type, formation_id)
 		_scene._update_ui()
 		return
@@ -1618,8 +1611,7 @@ func _on_win98_actions_submitted(actions: Array) -> void:
 		var group_data: Dictionary = solo_group.get("data", {})
 		var group_type := str(group_data.get("group_type", "all_out_attack"))
 		var formation_id := str(group_data.get("formation_id", ""))
-		var label := formation_id.replace("_", " ").capitalize() if group_type == "formation" else group_type.replace("_", " ").capitalize()
-		_scene.log_message("[color=cyan]★ %s initiated! ★[/color]" % label)
+		_scene.log_message(group_attack_banner(group_type, formation_id))
 		BattleManager.player_group_attack(group_type, formation_id)
 		_scene._update_ui()
 	elif formation_cycles > 0:
@@ -1630,6 +1622,17 @@ func _on_win98_actions_submitted(actions: Array) -> void:
 		_scene.log_message("[color=gray]No valid actions left — %s defers.[/color]" % current.combatant_name)
 		BattleManager.player_defer()
 		_scene._update_ui()
+
+
+## The log line a party move opens with, one spelling for every path that launches one (Confirm, and Advance on an empty queue).
+static func group_attack_banner(group_type: String, formation_id: String = "") -> String:
+	var label := "All-Out Attack"
+	match group_type:
+		"limit_break": label = "Limit Break"
+		"combo_magic": label = "Combo Magic"
+		"formation": label = formation_id.replace("_", " ").capitalize()
+	var color := "magenta" if group_type == "combo_magic" else ("cyan" if group_type == "formation" else "orange")
+	return "[color=%s]★ %s initiated! ★[/color]" % [color, label]
 
 
 func _reopen_command_menu(current: Combatant) -> void:

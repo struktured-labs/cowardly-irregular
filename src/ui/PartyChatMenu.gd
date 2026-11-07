@@ -138,12 +138,12 @@ func _populate() -> void:
 
 	if _chats.is_empty():
 		var empty := Label.new()
+		empty.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		empty.custom_minimum_size = Vector2(_pw - k(40), k(80))
 		empty.text = "No party chats available right now.\nProgress the story to unlock more."
 		empty.add_theme_font_size_override("font_size", TextScale.scaled(16))
 		empty.add_theme_color_override("font_color", Color(0.6, 0.65, 0.75))
 		empty.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		empty.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		empty.custom_minimum_size = Vector2(_pw - k(40), k(80))
 		_rows_container.add_child(empty)
 		return
 
