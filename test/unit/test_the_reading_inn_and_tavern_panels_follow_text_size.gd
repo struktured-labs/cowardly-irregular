@@ -178,6 +178,40 @@ func test_the_drawn_lines_of_the_built_label_fit_its_panel() -> void:
 	assert_gte(most_lines, 3, "CONTROL: some real inn message must wrap to 3+ lines, or the line count is never tested (%d)" % most_lines)
 
 
+## A line built to sit on the tavern's rounding edge at 0.8x (inner 233.33): wider than the box, yet kept whole by the unfloored measure.
+func _tavern_edge_line(px: int, inner: float) -> String:
+	var font: Font = ThemeDB.fallback_font
+	var target := ceilf(inner)
+	var s := "x x"
+	for _i in range(400):
+		var grown := false
+		for c in ["m", "w", "o", "a", "e", "n", "t", "r", "s", "i", "l", "."]:
+			if font.get_string_size(s + c, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x <= target:
+				s += c
+				grown = true
+				break
+		if not grown:
+			break
+	return s
+
+
+func test_a_tavern_line_on_the_rounding_edge_fits_its_panel() -> void:
+	GameState.text_size_scale = 0.8
+	var px := TextScale.scaled(TavernScript.DIALOGUE_FONT)
+	var k := k_of(TavernScript.DIALOGUE_FONT)
+	var inner := TavernScript.DIALOGUE_MIN.x * k - TavernScript.DIALOGUE_PAD * 2.0 * k
+	var edge := _tavern_edge_line(px, inner)
+	var font: Font = ThemeDB.fallback_font
+	var whole_h := font.get_multiline_string_size(edge, HORIZONTAL_ALIGNMENT_LEFT, inner, px, -1, TavernScript.WRAP_FLAGS).y
+	var floored_h := font.get_multiline_string_size(edge, HORIZONTAL_ALIGNMENT_LEFT, floorf(inner), px, -1, TavernScript.WRAP_FLAGS).y
+	assert_gt(floored_h, whole_h, "CONTROL: the fixture must sit on the edge, kept whole at %.2f px and wrapped at %d (got %.1f vs %.1f for '%s')" % [inner, int(floorf(inner)), whole_h, floored_h, edge])
+	var text := "*A regular raises a mug.*\n*Another one does too.*\n*The barkeep sighs.*\n" + edge
+	var l := _on_screen(autofree(TavernScript.new())._make_dialogue_layer(text))
+	var panel: Panel = l.get_parent()
+	assert_lte(_drawn_h(l), panel.size.y - TavernScript.DIALOGUE_PAD * 2.0 * k + 0.5,
+		"a tavern line on the rounding edge draws %d lines in a panel sized for fewer at 0.8x" % l.get_line_count())
+
+
 func test_the_tavern_dialogue_is_screen_space() -> void:
 	var layer = autofree(TavernScript.new())._make_dialogue_layer("*hm*")
 	assert_true(layer is CanvasLayer, "the tavern's panel must sit on a CanvasLayer, or the camera leaves it behind (the Inn's 2026-07-25 bug)")
