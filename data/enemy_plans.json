@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "_comment": "EnemyTactics' prebaked short plans (struktured: 'short plans', 'cache and have some prebaked plans'). A plan only TILTS the scorer's state-first scores for `turns` turns; it can never lift an illegal or suicidal option or sink a reachable kill. Bump version when a plan changes: cowir-ai's cached picks key on it.",
+  "plans": {
+    "steady": {"turns": 3, "weights": {}, "desc": "No tilt: the battle state alone decides."},
+    "bank_then_burst": {"turns": 3, "weights": {"defer": 1.8, "advance": 1.6, "attack": 0.8}, "desc": "Bank AP behind a guard, then spend it all at once."},
+    "punish_defer": {"turns": 2, "weights": {"advance": 1.7, "defer": 0.6}, "desc": "The party is turtling: hit hard while it does."},
+    "finish_weakest": {"turns": 2, "weights": {"attack": 1.4, "advance": 1.3, "defer": 0.5}, "desc": "Press the most wounded foe."},
+    "hold_the_line": {"turns": 3, "weights": {"defer": 1.6, "advance": 0.7}, "desc": "Weather the storm and wait for an opening."}
+  },
+  "personality": {
+    "brute": "punish_defer",
+    "assassin": "finish_weakest",
+    "tank": "hold_the_line",
+    "caster": "bank_then_burst",
+    "debuffer": "steady",
+    "healer": "hold_the_line",
+    "_default": "steady"
+  },
+  "events": {
+    "party_banked": "hold_the_line",
+    "target_killable": "finish_weakest",
+    "ally_fell": "punish_defer",
+    "hp_band_crossed": "bank_then_burst"
+  }
+}

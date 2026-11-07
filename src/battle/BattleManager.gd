@@ -2744,36 +2744,27 @@ func _process_ai_selection(combatant: Combatant) -> void:
 		_process_grid_autobattle(combatant)
 		return
 
-	# AI can advance with a small random chance to pressure the party.
-	# NOTE: Enemies do NOT defer. Deferring caused stall bugs (battles frozen
-	# when all party members deferred and enemies also randomly deferred).
-	# Enemies always attack — defer is a player-only mechanic.
-	## Enemies only. A player character routed here (trusted / spotlight-locked) used to take
-	## this branch too, and it hardcodes basic attacks — a Cleric spent 3 AP on ~41-damage
-	## swings instead of casting. PCs fall through to the ability-aware decision below.
-	var should_advance = not is_player_controlled and randf() < 0.15 and combatant.current_ap >= 0
-
-	if should_advance and combatant.current_ap >= 1:
-		# Queue multiple attacks as advance (each action costs 1 AP)
-		# Max 4 actions per advance, but limited by AP (can't go below -4)
-		var ap_limit = combatant.current_ap + 4  # How many actions AP allows
-		var max_actions = mini(4, ap_limit)  # Cap at 4
-		var num_actions = mini(randi_range(2, 3), max_actions)
-		var advance_actions: Array[Dictionary] = []
-		for i in range(num_actions):
-			var target = _choose_target(combatant, alive_enemies, {})
-			advance_actions.append({"type": "attack", "target": target})
-
-		var advance_action = {
-			"type": "advance",
-			"combatant": combatant,
-			"actions": advance_actions,
-			"speed": _compute_action_speed(combatant, "attack")
-		}
-		_queue_action(advance_action)
-		print("%s (AI) chooses to advance (%d actions)" % [combatant.combatant_name, num_actions])
-		_end_selection_turn()
-		return
+	# The turn's SHAPE is EnemyTactics' scored choice (struktured via main 23352), replacing the 15% advance roll and
+	# the old "enemies never defer" rule; its stall bounds keep the .5xx frozen-battle bug dead. PCs routed here and
+	# bossbound enemies keep the ability-aware path below.
+	if not is_player_controlled and not (combatant.has_status("controlled") or combatant.has_status("mind_swap")):
+		var tactic: Dictionary = EnemyTactics.decide(combatant, alive_allies, alive_enemies,
+			_get_ai_archetype(combatant, _ai_available_abilities(combatant)), _tactics_bias(combatant), _tactics_rng(), _queued_defers_of(alive_allies))
+		match str(tactic.get("shape", "attack")):
+			"defer":
+				_queue_action({"type": "defer", "combatant": combatant, "speed": _compute_action_speed(combatant, "defer")})
+				_end_selection_turn()
+				return
+			"advance":
+				var focus: Combatant = alive_enemies[int(tactic["target"])] if int(tactic.get("target", -1)) >= 0 and int(tactic["target"]) < alive_enemies.size() else null
+				var advance_actions: Array[Dictionary] = []
+				for i in range(int(tactic.get("count", 2))):
+					advance_actions.append({"type": "attack", "target": focus if focus != null else _choose_target(combatant, alive_enemies, {})})
+				_queue_action({"type": "advance", "combatant": combatant, "actions": advance_actions,
+					"speed": _compute_action_speed(combatant, "attack")})
+				print("%s (AI) advances ×%d (%s, plan %s)" % [combatant.combatant_name, advance_actions.size(), tactic.get("why", ""), tactic.get("plan", "")])
+				_end_selection_turn()
+				return
 
 	# Check if monster wants to summon reinforcements
 	var can_summon = _can_monster_summon(combatant)
@@ -2795,9 +2786,8 @@ func _process_ai_selection(combatant: Combatant) -> void:
 	_end_selection_turn()
 
 
-func _make_ai_decision(combatant: Combatant, alive_allies: Array, alive_enemies: Array) -> Dictionary:
-	"""Make AI decision for action selection — behavior varies by monster archetype"""
-	# Get available abilities
+## What a monster can cast right now; shared by the role ladder and EnemyTactics' personality, so both read one archetype.
+func _ai_available_abilities(combatant: Combatant) -> Array:
 	var available_abilities = []
 	if combatant.job and combatant.job.has("abilities"):
 		for ability_id in combatant.job["abilities"]:
@@ -2808,6 +2798,35 @@ func _make_ai_decision(combatant: Combatant, alive_allies: Array, alive_enemies:
 			# their affordability check too.
 			if not ability.is_empty() and combatant.current_mp >= JobSystem.get_ability_mp_cost(combatant, ability_id):
 				available_abilities.append(ability)
+	return available_abilities
+
+
+## The posture bias EnemyTactics reads (defer_weight / advance_weight, optionally a plan tag): the code arms' intent
+## bias overlaid with the boss's authored one. {} with no intent, which is the base scorer.
+func _tactics_bias(combatant: Combatant) -> Dictionary:
+	var out: Dictionary = _bias_by_intent(str(combatant.get_meta("llm_intent", ""))).duplicate()
+	out.merge(_intent_ability_bias(combatant), true)
+	return out
+
+
+## This round's defers already queued by `side` (EnemyTactics' all-deferring stall rule).
+func _queued_defers_of(side: Array) -> int:
+	var n := 0
+	for a in pending_actions:
+		if str(a.get("type", "")) == "defer" and a.get("combatant") in side:
+			n += 1
+	return n
+
+
+func _tactics_rng() -> RandomNumberGenerator:
+	var r := RandomNumberGenerator.new()
+	r.seed = randi()
+	return r
+
+
+func _make_ai_decision(combatant: Combatant, alive_allies: Array, alive_enemies: Array) -> Dictionary:
+	"""Make AI decision for action selection — behavior varies by monster archetype"""
+	var available_abilities = _ai_available_abilities(combatant)
 
 	# Wave E — BossDialogue intent picker. Fires for ANY boss with a
 	# data/boss_dialogue.json entry (Masterites OR bespoke bosses like
