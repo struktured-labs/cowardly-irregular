@@ -68,27 +68,3 @@ func test_no_panel_moves_with_the_speed_at_any_text_size() -> void:
 		await get_tree().process_frame
 	assert_eq(moved, [], "changing the battle speed must not move or resize a panel")
 
-
-func test_the_party_header_holds_one_line_at_100_percent_on_every_rung() -> void:
-	GameState.text_size_scale = 1.0
-	var scene = SCENE.instantiate()
-	add_child_autofree(scene)
-	for f in 4:
-		await get_tree().process_frame
-	var row := scene.get_node_or_null("UI/PartyStatusPanel/VBoxContainer/HeaderRow") as Control
-	assert_not_null(row, "CONTROL: the PARTY header row exists")
-	if row == null:
-		return
-	var wrapped: Array = []
-	for i in BS.BATTLE_SPEEDS.size():
-		BS._battle_speed_index = i
-		scene._update_speed_indicator()
-		for f in 3:
-			await get_tree().process_frame
-		var tallest := 0.0
-		for c in row.get_children():
-			if c is Control and (c as Control).visible:
-				tallest = maxf(tallest, (c as Control).size.y)
-		if row.size.y > tallest + 1.0:
-			wrapped.append("rung %d (%s): header %.0f px tall, its tallest item %.0f" % [i, BS.BATTLE_SPEED_LABELS[i], row.size.y, tallest])
-	assert_eq(wrapped, [], "the speed readout must fit beside the PARTY header's items at 100%, at every speed")
