@@ -294,21 +294,22 @@ func _build_card(world: Dictionary, sz: Vector2) -> Control:
 	# Current world indicator
 	if is_current:
 		var marker := Label.new()
-		# Font BEFORE text: a Label caches its minimum when its text is set, and that cache is still the default 16 px's
-		# (113 px) when the size below is applied, so a smaller font after the text left a 113 px box past a 0.8x card.
-		marker.add_theme_font_size_override("font_size", px(11, k))
 		marker.text = "YOU ARE HERE"
-		marker.position = Vector2(sz.x - 140.0 * k, 10.0 * k)
-		marker.size = Vector2(120, 18) * k
+		marker.add_theme_font_size_override("font_size", px(11, k))
 		marker.add_theme_color_override("font_color", world.color)
-		marker.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		# RIGHT-ANCHORED BY MEASUREMENT, not by a right-aligned box: a Label's box can hold a minimum cached at the default
+		# 16 px (measured 113 px for a 96 px box at 0.8x), and right-aligning inside it pushed the text past the card. Placed
+		# left-aligned at (box right edge - text width), the drawn text ends where the authored 120 px box did.
+		var f: Font = title.get_theme_font("font")
+		var mw: float = f.get_string_size(marker.text, HORIZONTAL_ALIGNMENT_LEFT, -1, px(11, k)).x if f else 120.0 * k
+		var right_edge: float = sz.x - 20.0 * k
+		marker.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+		marker.position = Vector2(right_edge - mw, 10.0 * k)
 		# A long title reaches the marker once Text Size grows (W2's at the 2.0 cap): drop the marker to the subtitle row,
 		# whose world themes are short, ONLY then, so every title that already fits keeps the authored corner.
-		var f: Font = title.get_theme_font("font")
 		if f:
 			var title_end: float = title.position.x + f.get_string_size(title.text, HORIZONTAL_ALIGNMENT_LEFT, -1, title.get_theme_font_size("font_size")).x
-			var marker_start: float = marker.position.x + marker.size.x - f.get_string_size(marker.text, HORIZONTAL_ALIGNMENT_LEFT, -1, marker.get_theme_font_size("font_size")).x
-			if title_end + 8.0 * k > marker_start:
+			if title_end + 8.0 * k > marker.position.x:
 				marker.position.y = sub.position.y
 		card.add_child(marker)
 
