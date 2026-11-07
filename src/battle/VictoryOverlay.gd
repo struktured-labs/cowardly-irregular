@@ -280,6 +280,11 @@ var _title_px := 4
 var _impact_done := false
 
 
+## The beat reads the same at every battle speed (cowir-music 23438): its tweens run on the wall clock.
+func _wall(t: Tween) -> Tween:
+	return _track(t.set_ignore_time_scale(true))
+
+
 ## A row of pixel letters that the overlay's rects, modulate and child lookups treat like the Label it replaced.
 class PixelBanner extends Control:
 	var text: String = ""
@@ -384,19 +389,22 @@ func _build_slam(flourish: bool) -> void:
 		_title_rest = _title_rest.merge(Rect2(sub.position, sub.size))
 	if stamp != null:
 		_title_rest = _title_rest.merge(Rect2(stamp.position, stamp.size))
-	_title_clear_at = _title_land + float(GRADE_HOLD[grade]) + 0.3
+	## The beat runs on the wall clock and the cards on game time, so the wait is the real duration in game seconds.
+	_title_clear_at = (_title_land + float(GRADE_HOLD[grade]) + 0.3) * Engine.time_scale
 	title.position = center
 	var letters: Array[Sprite2D] = title.glyphs.glyph_sprites
 	for i in letters.size():
 		var spr: Sprite2D = letters[i]
 		var rest: Vector2 = title.glyphs.rest_position(spr)
 		spr.visible = false
-		var lt := _track(create_tween())
+		var lt := _wall(create_tween())
 		lt.tween_interval(LETTER_STAGGER * float(i))
 		lt.tween_callback(spr.show)
 		lt.tween_method(_drop_letter.bind(spr, rest, px), 0.0, 1.0, LETTER_DROP)
+		if i < letters.size() - 1:
+			lt.tween_callback(_tick_letter.bind(i + 1))
 
-	var tw := _track(create_tween())
+	var tw := _wall(create_tween())
 	tw.tween_interval(_title_land)
 	tw.tween_callback(func() -> void: _spawn_impact(impact_at, grade, tint))
 	tw.tween_interval(float(GRADE_HOLD[grade]))
@@ -405,6 +413,14 @@ func _build_slam(flourish: bool) -> void:
 		if not _impact_done:
 			_play_slam())
 	_spawn_glints(title, grade)
+
+
+## A tick per landing, rising, for every letter but the last: its landing is the slam's frame and the slam is its voice.
+## One key per letter (cowir-sfx 23489): a single key replayed 50 ms apart would be swallowed by the per-key cooldown.
+func _tick_letter(n: int) -> void:
+	var key := "victory_letter_%d" % n
+	if SoundManager and SoundManager._sfx_manifest.has(key):
+		SoundManager.play_ui(key)
 
 
 ## One letter's fall: a bounce eased in whole glyph pixels, so no frame of it sits between pixels.
@@ -448,7 +464,7 @@ func _spawn_glints(title: PixelBanner, grade: int) -> void:
 			var g: Object = ref.get_ref()
 			if g != null:
 				g.queue_free())
-		var gt := _track(create_tween())
+		var gt := _wall(create_tween())
 		gt.tween_interval(_title_land + step * float(i))
 		gt.tween_callback(glint.show)
 		gt.tween_interval(0.05)
@@ -510,7 +526,7 @@ func _spawn_starburst(at: Vector2, tint: Color, grade: int) -> void:
 		var b: Object = burst_ref.get_ref()
 		if b != null:
 			b.queue_free())
-	var t := _track(create_tween())
+	var t := _wall(create_tween())
 	t.tween_method(burst.set_progress, 0.0, 1.0, 0.34 + 0.04 * float(grade))
 	t.tween_callback(burst.queue_free)
 
@@ -535,7 +551,7 @@ func _build_stamp(center: Vector2, title_size: Vector2, px: int, flourish: bool)
 	stamp.modulate.a = 0.0
 	if not flourish:
 		return stamp
-	var t := _track(create_tween())
+	var t := _wall(create_tween())
 	t.tween_interval(maxf(0.0, _title_land - 0.08))
 	t.tween_callback(func() -> void:
 		stamp.set_px(spx * 3)
@@ -576,7 +592,7 @@ func _build_subtitle(center: Vector2, title_size: Vector2, tint: Color, flourish
 	sub.modulate.a = 0.0
 	if not flourish:
 		return sub
-	var t := _track(create_tween())
+	var t := _wall(create_tween())
 	t.tween_interval(_title_land)
 	t.tween_callback(func() -> void: sub.modulate.a = 1.0)
 	t.tween_interval(float(GRADE_HOLD[_victory_grade()]))
@@ -604,7 +620,7 @@ func _build_letterbox(vp: Vector2, grade: int, flourish: bool) -> void:
 				b.queue_free())
 		if not flourish:
 			continue
-		var t := _track(create_tween())
+		var t := _wall(create_tween())
 		t.tween_property(bar, "position", shown, 0.18).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 		t.tween_interval(_title_land - 0.18 + float(GRADE_HOLD[grade]) + 0.08)
 		t.tween_property(bar, "position", hidden, 0.26).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)

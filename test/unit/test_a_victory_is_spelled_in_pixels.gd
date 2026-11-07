@@ -16,9 +16,15 @@ class FakeScene:
 
 
 var _overlay: Control = null
+var _saved_time_scale := 1.0
+
+
+func before_each() -> void:
+	_saved_time_scale = Engine.time_scale
 
 
 func after_each() -> void:
+	Engine.time_scale = _saved_time_scale
 	if _overlay != null and is_instance_valid(_overlay):
 		_overlay.queue_free()
 	_overlay = null
@@ -144,12 +150,33 @@ func test_the_word_lands_inside_a_second_and_the_cards_wait_for_it() -> void:
 	var o = _build()
 	assert_gt(o._title_land, 0.0, "CONTROL: the landing time was computed")
 	assert_lte(o._title_land, 1.0, "the whole word is down within a second (cowir-music 23438)")
-	assert_almost_eq(o._title_clear_at, o._title_land + float(OverlayScript.GRADE_HOLD[OverlayScript.Grade.NORMAL]) + 0.3, 0.001,
-		"a card under the title waits for the landing, the hold and the dock")
+	assert_almost_eq(o._title_clear_at, (o._title_land + float(OverlayScript.GRADE_HOLD[OverlayScript.Grade.NORMAL]) + 0.3) * Engine.time_scale,
+		0.001, "a card under the title waits for the landing, the hold and the dock, in game seconds")
 	assert_true(o._title_rest.encloses(o._title_docked), "the title's footprint includes its dock")
 
 
 ## One press snaps the beat to its end: the word docked where the cards and strip expect it, every letter shown at rest.
+## The beat runs on the WALL clock (cowir-music 23438, main 23488): at 2x the word still takes its full real time to land,
+## where on game time it would be down in half. Measured as real ms until the last letter first shows.
+func test_at_double_speed_the_word_lands_on_real_time() -> void:
+	Engine.time_scale = 2.0
+	var o = _build()
+	var title = _title(o)
+	if title == null:
+		assert_not_null(title, "CONTROL: at 2x the flourish still plays")
+		return
+	var last: Sprite2D = title.glyphs.glyph_sprites[-1]
+	var want_ms: float = float(OverlayScript.LETTER_STAGGER) * float(title.glyphs.glyph_sprites.size() - 1) * 1000.0
+	var start := Time.get_ticks_msec()
+	while not last.visible and Time.get_ticks_msec() - start < 2000:
+		await get_tree().process_frame
+	var took: float = float(Time.get_ticks_msec() - start)
+	assert_true(last.visible, "CONTROL: the last letter appeared")
+	assert_gt(took, want_ms * 0.8, "the last letter starts after ~%.0f ms of REAL time at 2x, not half that (took %.0f)" % [want_ms, took])
+	assert_almost_eq(o._title_clear_at, (o._title_land + float(OverlayScript.GRADE_HOLD[OverlayScript.Grade.NORMAL]) + 0.3) * 2.0, 0.001,
+		"so the cards' game-time wait doubles to cover the same real beat")
+
+
 func test_a_press_snaps_the_word_to_its_dock() -> void:
 	var o = _build()
 	var title = _title(o)
