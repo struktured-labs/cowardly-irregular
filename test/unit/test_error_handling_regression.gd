@@ -168,7 +168,7 @@ func test_battle_animator_kills_existing_tween() -> void:
 	# Check that animation methods kill existing tween
 	var backstab_idx = content.find("func play_backstab")
 	if backstab_idx > 0:
-		var context = content.substr(backstab_idx, 300)
+		var context = content.substr(backstab_idx, content.find("\nfunc ", backstab_idx + 1) - backstab_idx)
 		assert_true(context.contains("_current_tween.kill()"),
 			"play_backstab should kill existing tween")
 
