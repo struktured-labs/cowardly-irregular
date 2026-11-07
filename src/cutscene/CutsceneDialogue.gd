@@ -1784,7 +1784,7 @@ func _create_bust_from_monster_sheet(monster_id: String) -> Texture2D:
 	var box := HybridSpriteLoader.bust_region(sheet_path, frame, BUST_CROP_RATIO)
 	var atlas := AtlasTexture.new()
 	atlas.atlas = frame_tex.atlas
-	# bust_region measures frame 0; offset into whichever frame the idle animation starts on.
+	# bust_region measures the frame the idle starts on (figure_rect reads it); offset into that same frame.
 	atlas.region = Rect2(frame_tex.region.position + Vector2(box.position), Vector2(box.size))
 	_portrait_cache[cache_key] = atlas
 	return atlas

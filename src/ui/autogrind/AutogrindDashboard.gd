@@ -161,6 +161,7 @@ func _refresh_battle_readout() -> void:
 		return
 	if _readout_round <= 0 and _readout_action.is_empty():
 		_battle_readout.text = _BATTLE_READOUT_IDLE
+		_fit_readout()
 		return
 	var lines: Array[String] = ["Round %d" % _readout_round]
 	if not _readout_action.is_empty():
@@ -170,6 +171,7 @@ func _refresh_battle_readout() -> void:
 	lines.append(_readout_party_line())
 	lines.append(_readout_enemy_line())
 	_battle_readout.text = "\n".join(lines)
+	_fit_readout()
 
 
 func _readout_party_line() -> String:
@@ -200,6 +202,51 @@ func _readout_enemy_line() -> String:
 			if c.is_alive:
 				alive += 1
 	return "Enemies %d/%d" % [alive, total]
+
+
+## Room the header's labels have below y 14 (the header ends at 44); a panel title's band above its first row (y 2..18).
+const HEADER_ROOM_H := 28.0
+const TITLE_BAND_H := 16.0
+## The widest value a stats/projection row shows; the cap is measured on it, not on the "0"/"--" it is built with.
+const VALUE_SAMPLE := "9999999 (+100%)"
+const READOUT_BASE_PX := 11
+## The readout's authored box, kept apart from its size: an unwrapped Label grows its own size to its longest line.
+var _readout_box: Vector2 = Vector2.ZERO
+
+
+## Text Size px for a label in a fixed box: the setting, capped where `sample` still fits `box`; never below its authored px.
+## The Dashboard is a full-screen layout of fixed bands, so text grows only into the room each band already has.
+func _fit_px(sample: String, base: int, box: Vector2) -> int:
+	var px: int = TextScale.scaled(base)
+	var fnt: Font = get_theme_font("font", "Label")
+	if fnt == null:
+		return px
+	while px > base and (fnt.get_string_size(sample, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x > box.x or fnt.get_height(px) > box.y):
+		px -= 1
+	return px
+
+
+## The readout's text changes every round, so its px is re-fitted to its CURRENT lines: every line must fit the box's width
+## and all of them its height (at 1.5x its widest line was 337 px in a 296 px panel when only the height was budgeted).
+func _fit_readout() -> void:
+	if not is_instance_valid(_battle_readout):
+		return
+	var lines: PackedStringArray = _battle_readout.text.split("\n")
+	var px: int = TextScale.scaled(READOUT_BASE_PX)
+	var fnt: Font = get_theme_font("font", "Label")
+	if fnt != null:
+		while px > READOUT_BASE_PX and not _readout_fits(fnt, px, lines):
+			px -= 1
+	_battle_readout.add_theme_font_size_override("font_size", px)
+
+
+func _readout_fits(fnt: Font, px: int, lines: PackedStringArray) -> bool:
+	if fnt.get_height(px) * maxi(lines.size(), 1) > _readout_box.y:
+		return false
+	for line in lines:
+		if fnt.get_string_size(line, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x > _readout_box.x:
+			return false
+	return true
 
 
 func _build_ui() -> void:
@@ -271,28 +318,28 @@ func _build_header(vp_size: Vector2) -> void:
 	var title = Label.new()
 	title.text = "AUTOGRIND DASHBOARD"
 	title.position = Vector2(16, 14)
-	title.add_theme_font_size_override("font_size", 14)
+	title.add_theme_font_size_override("font_size", _fit_px(title.text, 14, Vector2(240 - 16 - 8, HEADER_ROOM_H)))
 	title.add_theme_color_override("font_color", HEADER_COLOR)
 	add_child(title)
 
 	var tier_lbl = Label.new()
 	tier_lbl.text = "[Tier 2]"
 	tier_lbl.position = Vector2(vp_size.x - 200, 14)
-	tier_lbl.add_theme_font_size_override("font_size", 13)
+	tier_lbl.add_theme_font_size_override("font_size", _fit_px(tier_lbl.text, 13, Vector2(80 - 8, HEADER_ROOM_H)))
 	tier_lbl.add_theme_color_override("font_color", COLOR_WARN)
 	add_child(tier_lbl)
 
 	_ludicrous_label = Label.new()
 	_ludicrous_label.text = ""
 	_ludicrous_label.position = Vector2(vp_size.x - 380, 14)
-	_ludicrous_label.add_theme_font_size_override("font_size", 13)
+	_ludicrous_label.add_theme_font_size_override("font_size", _fit_px("LUDICROUS SPEED", 13, Vector2(180 - 8, HEADER_ROOM_H)))
 	_ludicrous_label.add_theme_color_override("font_color", Color(0.8, 0.4, 1.0))
 	_ludicrous_label.visible = false
 	add_child(_ludicrous_label)
 
 	_paused_label = Label.new()
 	_paused_label.position = Vector2(240, 14)
-	_paused_label.add_theme_font_size_override("font_size", 13)
+	_paused_label.add_theme_font_size_override("font_size", _fit_px("|| PAUSED — %s to resume" % AutogrindInputHelper.hint_for("pause"), 13, Vector2(vp_size.x - 380 - 240 - 8, HEADER_ROOM_H)))
 	_paused_label.add_theme_color_override("font_color", Color(1.0, 0.7, 0.3))
 	add_child(_paused_label)
 	set_paused(_paused)
@@ -300,7 +347,7 @@ func _build_header(vp_size: Vector2) -> void:
 	_elapsed_label = Label.new()
 	_elapsed_label.text = "00:00:00"
 	_elapsed_label.position = Vector2(vp_size.x - 120, 14)
-	_elapsed_label.add_theme_font_size_override("font_size", 13)
+	_elapsed_label.add_theme_font_size_override("font_size", _fit_px("88:88:88", 13, Vector2(120 - 16, HEADER_ROOM_H)))
 	_elapsed_label.add_theme_color_override("font_color", LABEL_COLOR)
 	add_child(_elapsed_label)
 
@@ -320,7 +367,7 @@ func _build_mini_battle_panel(panel_size: Vector2, pos: Vector2) -> void:
 	var title = Label.new()
 	title.text = "BATTLE VIEW"
 	title.position = Vector2(8, 2)
-	title.add_theme_font_size_override("font_size", 10)
+	title.add_theme_font_size_override("font_size", _fit_px(title.text, 10, Vector2(panel_size.x - 16, TITLE_BAND_H)))
 	title.add_theme_color_override("font_color", DISABLED_COLOR)
 	panel.add_child(title)
 
@@ -343,8 +390,9 @@ func _build_mini_battle_panel(panel_size: Vector2, pos: Vector2) -> void:
 	_battle_readout = Label.new()
 	_battle_readout.position = _battle_viewport_container.position + Vector2(6, 6)
 	_battle_readout.size = _battle_viewport_container.size - Vector2(12, 12)
+	_readout_box = _battle_readout.size
 	_battle_readout.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_battle_readout.add_theme_font_size_override("font_size", 11)
+	_fit_readout()
 	_battle_readout.add_theme_color_override("font_color", TEXT_COLOR)
 	_battle_readout.text = _BATTLE_READOUT_IDLE
 	panel.add_child(_battle_readout)
@@ -419,7 +467,7 @@ func _build_sparkline_panel(panel_size: Vector2, pos: Vector2) -> void:
 	var title = Label.new()
 	title.text = "PERFORMANCE GRAPHS"
 	title.position = Vector2(8, 2)
-	title.add_theme_font_size_override("font_size", 10)
+	title.add_theme_font_size_override("font_size", _fit_px(title.text, 10, Vector2(panel_size.x - 132 - 16, TITLE_BAND_H)))
 	title.add_theme_color_override("font_color", DISABLED_COLOR)
 	panel.add_child(title)
 
@@ -427,7 +475,7 @@ func _build_sparkline_panel(panel_size: Vector2, pos: Vector2) -> void:
 	var legend = Label.new()
 	legend.text = "| = monsters adapted"
 	legend.position = Vector2(panel_size.x - 132, 2)
-	legend.add_theme_font_size_override("font_size", 9)
+	legend.add_theme_font_size_override("font_size", _fit_px(legend.text, 9, Vector2(132 - 8, TITLE_BAND_H)))
 	legend.add_theme_color_override("font_color", Color(1.0, 0.55, 0.15, 0.85))
 	panel.add_child(legend)
 
@@ -448,7 +496,7 @@ func _build_sparkline_panel(panel_size: Vector2, pos: Vector2) -> void:
 		var lbl = Label.new()
 		lbl.text = data["label"]
 		lbl.position = Vector2(8, y + chart_h * 0.3)
-		lbl.add_theme_font_size_override("font_size", 10)
+		lbl.add_theme_font_size_override("font_size", _fit_px(lbl.text, 10, Vector2(72 - 8 - 4, chart_h * 0.7)))
 		lbl.add_theme_color_override("font_color", LABEL_COLOR)
 		panel.add_child(lbl)
 
@@ -486,7 +534,7 @@ func _build_session_stats_panel(panel_size: Vector2, pos: Vector2) -> void:
 	var title = Label.new()
 	title.text = "SESSION STATS"
 	title.position = Vector2(8, 2)
-	title.add_theme_font_size_override("font_size", 10)
+	title.add_theme_font_size_override("font_size", _fit_px(title.text, 10, Vector2(panel_size.x - 16, TITLE_BAND_H)))
 	title.add_theme_color_override("font_color", DISABLED_COLOR)
 	panel.add_child(title)
 
@@ -511,14 +559,14 @@ func _build_session_stats_panel(panel_size: Vector2, pos: Vector2) -> void:
 		var lbl = Label.new()
 		lbl.text = s["label"]
 		lbl.position = Vector2(12, y)
-		lbl.add_theme_font_size_override("font_size", 11)
+		lbl.add_theme_font_size_override("font_size", _fit_px(lbl.text, 11, Vector2(panel_size.x * 0.55 - 12 - 4, row_h)))
 		lbl.add_theme_color_override("font_color", LABEL_COLOR)
 		panel.add_child(lbl)
 
 		var val = Label.new()
 		val.text = s["default"]
 		val.position = Vector2(panel_size.x * 0.55, y)
-		val.add_theme_font_size_override("font_size", 11)
+		val.add_theme_font_size_override("font_size", _fit_px(VALUE_SAMPLE, 11, Vector2(panel_size.x * 0.45 - 8, row_h)))
 		val.add_theme_color_override("font_color", TEXT_COLOR)
 		panel.add_child(val)
 
@@ -528,7 +576,7 @@ func _build_session_stats_panel(panel_size: Vector2, pos: Vector2) -> void:
 	_permadeath_label = Label.new()
 	_permadeath_label.text = "PERMADEATH: OFF"
 	_permadeath_label.position = Vector2(12, last_y)
-	_permadeath_label.add_theme_font_size_override("font_size", 12)
+	_permadeath_label.add_theme_font_size_override("font_size", _fit_px(permadeath_label_text(true), 12, Vector2(panel_size.x - 24, row_h)))
 	_permadeath_label.add_theme_color_override("font_color", Color(0.5, 0.5, 0.6))
 	panel.add_child(_permadeath_label)
 
@@ -548,7 +596,7 @@ func _build_projections_panel(panel_size: Vector2, pos: Vector2) -> void:
 	var title = Label.new()
 	title.text = "PROJECTIONS"
 	title.position = Vector2(8, 2)
-	title.add_theme_font_size_override("font_size", 10)
+	title.add_theme_font_size_override("font_size", _fit_px(title.text, 10, Vector2(panel_size.x - 16, TITLE_BAND_H)))
 	title.add_theme_color_override("font_color", DISABLED_COLOR)
 	panel.add_child(title)
 
@@ -569,14 +617,14 @@ func _build_projections_panel(panel_size: Vector2, pos: Vector2) -> void:
 		var lbl = Label.new()
 		lbl.text = p["label"]
 		lbl.position = Vector2(12, y)
-		lbl.add_theme_font_size_override("font_size", 11)
+		lbl.add_theme_font_size_override("font_size", _fit_px(lbl.text, 11, Vector2(panel_size.x * 0.55 - 12 - 4, row_h)))
 		lbl.add_theme_color_override("font_color", LABEL_COLOR)
 		panel.add_child(lbl)
 
 		var val = Label.new()
 		val.text = p["default"]
 		val.position = Vector2(panel_size.x * 0.55, y)
-		val.add_theme_font_size_override("font_size", 11)
+		val.add_theme_font_size_override("font_size", _fit_px(VALUE_SAMPLE, 11, Vector2(panel_size.x * 0.45 - 8, row_h)))
 		val.add_theme_color_override("font_color", COLOR_GOOD)
 		panel.add_child(val)
 
@@ -609,7 +657,7 @@ func _build_footer(vp_size: Vector2) -> void:
 		lbl.text = btn_data[i]["text"]
 		lbl.position = Vector2(bx, 6)
 		lbl.size = Vector2(btn_w - 4, 16)
-		lbl.add_theme_font_size_override("font_size", 10)
+		lbl.add_theme_font_size_override("font_size", _fit_px(lbl.text, 10, Vector2(btn_w - 4, footer.size.y - 6)))
 		lbl.add_theme_color_override("font_color", TEXT_COLOR)
 		lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		footer.add_child(lbl)
@@ -630,7 +678,7 @@ func _build_battle_log_panel(panel_size: Vector2, pos: Vector2) -> void:
 	var title = Label.new()
 	title.text = "BATTLE LOG"
 	title.position = Vector2(8, 2)
-	title.add_theme_font_size_override("font_size", 10)
+	title.add_theme_font_size_override("font_size", _fit_px(title.text, 10, Vector2(panel_size.x - 16, TITLE_BAND_H)))
 	title.add_theme_color_override("font_color", DISABLED_COLOR)
 	panel.add_child(title)
 
@@ -661,7 +709,7 @@ func _refresh_battle_log() -> void:
 	for entry in _battle_log_entries:
 		var lbl = Label.new()
 		lbl.text = "%s  %d turns  +%d EXP" % ["WIN" if entry["victory"] else "LOSS", entry["turns"], entry["exp"]]
-		lbl.add_theme_font_size_override("font_size", 11)
+		lbl.add_theme_font_size_override("font_size", _fit_px(lbl.text, 11, _battle_log_scroll.size if _battle_log_scroll else Vector2(1e6, 1e6)))
 		lbl.add_theme_color_override("font_color", Color(0.4, 0.9, 0.4) if entry["victory"] else Color(0.9, 0.3, 0.3))
 		_battle_log_container.add_child(lbl)
 
