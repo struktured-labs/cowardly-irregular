@@ -301,6 +301,9 @@ var _battle_dialogue: BattleDialogueClass = null
 var _boss_dialogue_data: Dictionary = {}  # Stores dialogue for current boss
 var _waiting_for_dialogue: bool = false  # Pauses battle during dialogue
 var _base_music_track: String = "battle"  # battle/boss/per-monster/per-face id; "" = authored silence (unmasking)
+## Where the base bed was when danger took the channel, so recovery RESUMES it instead of replaying its intro (Mordaine lv35 take, 2026-11-06).
+var _danger_resume_track: String = ""
+var _danger_resume_position: float = 0.0
 var _masterite_phase2_swapped: bool = false  # One-shot: latch when phase2 music kicks in
 const DANGER_HP_THRESHOLD: float = 0.25  # The low-HP beat: danger music, player quip, boss wounded line. 0-1; BattleManager.LOW_HP_PCT_THRESHOLD is the 0-100 twin.
 
@@ -7816,6 +7819,9 @@ func _check_danger_music() -> void:
 	# Once in danger (dead or critical), stay in danger until healed above threshold
 	if any_in_danger and not _is_danger_music:
 		_is_danger_music = true
+		var held: Dictionary = SoundManager.capture_music_state()
+		_danger_resume_track = _base_music_track if str(held.get("track", "")) == _base_music_track else ""
+		_danger_resume_position = float(held.get("position", 0.0))
 		SoundManager.play_music("danger")
 		if any_dead:
 			print("[MUSIC] Switched to DANGER music - party member down!")
@@ -7830,7 +7836,9 @@ func _check_danger_music() -> void:
 			SoundManager.fade_out_music(1.2)
 			print("[MUSIC] party recovered into authored silence - staying quiet")
 		else:
-			SoundManager.play_music(_base_music_track)
+			## A face swap during danger changed the base, so only the SAME bed resumes; a new one starts at its top.
+			var resume_at: float = _danger_resume_position if _danger_resume_track == _base_music_track else 0.0
+			SoundManager.play_music(_base_music_track, false, resume_at)
 			## SECOND announcement site. The battle-start one was fixed in .669 and this was left
 			## naming the REQUEST: his 2026-10-05 log reads "Switched back to battle_dark_knight
 			## music" on the line after battle_medieval loaded, because 27 pool-reachable monsters

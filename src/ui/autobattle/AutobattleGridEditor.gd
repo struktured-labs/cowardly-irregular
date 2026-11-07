@@ -773,14 +773,16 @@ func _create_condition_cell(row_idx: int, cond_idx: int, condition: Dictionary) 
 
 	# Text
 	var label = Label.new()
+	# Wrap FIRST: given text and a size while unwrapped, a Label caches the whole line as its minimum width and a later
+	# size cannot shrink it (the grind twin measured a 201 px label in its 108 px cell; overworld scan 22866).
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	label.text = _format_condition(condition)
 	label.position = Vector2(6, 4)
-	label.size = Vector2(CELL_WIDTH - 12, _cell_h() - 8)
 	label.add_theme_font_size_override("font_size", TextScale.scaled(11))
 	label.add_theme_color_override("font_color", style.text)
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	label.size = Vector2(CELL_WIDTH - 12, _cell_h() - 8)
 	cell.add_child(label)
 
 	# Mouse: click to edit, hover to highlight
@@ -815,19 +817,20 @@ func _create_action_cell(row_idx: int, act_idx: int, action: Dictionary, count: 
 
 	# Text with cycle indicator
 	var label = Label.new()
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART   # first, as the condition cell above
 	var action_text = _format_action(action)
 	if count > 1:
 		# Add cycle indicator
 		label.text = "%s\n×%d" % [action_text.split("\n")[0], count]
 	else:
 		label.text = action_text
-	label.position = Vector2(6, 2)
-	label.size = Vector2(CELL_WIDTH - 12, _cell_h() - 4)
+	var box := _action_text_box(action)
+	label.position = Vector2(box.x, 2)
 	label.add_theme_font_size_override("font_size", TextScale.scaled(11))
 	label.add_theme_color_override("font_color", style.text)
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	label.size = Vector2(box.y, _cell_h() - 4)
 	cell.add_child(label)
 	if action.get("type", "") == "ability" and str(action.get("id", "")) != "":
 		AbilityIcons.attach_to_cell(cell, str(action.get("id", "")))
@@ -869,17 +872,19 @@ func _create_collapsed_action_cell(row_idx: int, first_action: Dictionary, total
 
 	# Text showing first action type + total count
 	var label = Label.new()
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART   # first, as the cells above: a long name + "… ×N" must wrap, not spill
 	var first_type = first_action.get("type", "attack")
 	var type_text = first_type.capitalize()
 	if first_type == "ability":
 		type_text = AbilityIcons.name_of(str(first_action.get("id", "Ability")))
 	label.text = "%s... ×%d" % [type_text, total_count]
-	label.position = Vector2(6, 4)
-	label.size = Vector2(CELL_WIDTH - 12, _cell_h() - 8)
+	var box := _action_text_box(first_action)
+	label.position = Vector2(box.x, 4)
 	label.add_theme_font_size_override("font_size", TextScale.scaled(11))
 	label.add_theme_color_override("font_color", style.text)
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.size = Vector2(box.y, _cell_h() - 8)
 	cell.add_child(label)
 	if first_type == "ability" and str(first_action.get("id", "")) != "":
 		AbilityIcons.attach_to_cell(cell, str(first_action.get("id", "")))
@@ -1295,6 +1300,16 @@ const CELL_TEXT_BREAK := TextServer.BREAK_MANDATORY | TextServer.BREAK_WORD_BOUN
 	| TextServer.BREAK_ADAPTIVE
 
 
+## The x and width an action's text box takes in its cell. An ability action draws its icon at the cell's left edge
+## (AbilityIcons.attach_to_cell, 4..20 px), so its text starts right of it: centred in the full width, a long name
+## began UNDER the icon once the label stopped clamping wider than its cell (test_every_ability_surface_draws_its_icon).
+const ICON_TEXT_X := 22.0
+func _action_text_box(action: Dictionary) -> Vector2:
+	if str(action.get("type", "")) == "ability" and str(action.get("id", "")) != "":
+		return Vector2(ICON_TEXT_X, CELL_WIDTH - ICON_TEXT_X - 6.0)
+	return Vector2(6.0, CELL_WIDTH - 12.0)
+
+
 func _cell_h() -> int:
 	if _cell_h_cache > 0:
 		return _cell_h_cache
@@ -1309,8 +1324,9 @@ func _cell_h() -> int:
 				tallest = maxf(tallest, fnt.get_multiline_string_size(_format_condition(cond),
 					HORIZONTAL_ALIGNMENT_CENTER, inner, px, -1, CELL_TEXT_BREAK).y)
 			for act in r.get("actions", []):
+				var box_w: float = _action_text_box(act as Dictionary).y   # an ability's text is narrower: it sits right of its icon
 				tallest = maxf(tallest, fnt.get_multiline_string_size(_format_action(act),
-					HORIZONTAL_ALIGNMENT_CENTER, inner, px, -1, CELL_TEXT_BREAK).y)
+					HORIZONTAL_ALIGNMENT_CENTER, box_w, px, -1, CELL_TEXT_BREAK).y)
 	_cell_h_cache = int(ceil(maxf(float(CELL_HEIGHT), tallest + 8.0)))
 	return _cell_h_cache
 

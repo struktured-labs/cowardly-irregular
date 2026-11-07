@@ -66,6 +66,8 @@ const LOCKED_COLOR := Color(0.3, 0.3, 0.4)
 var _selected: int = 0
 var _world_cards: Array[Control] = []
 var _current_world: int = 1
+## The Text Size layout factor this menu was last built at (layout_k).
+var _k: float = 1.0
 
 
 func _ready() -> void:
@@ -106,6 +108,21 @@ func _get_completion(world_id: int) -> Vector2i:
 	return Vector2i(done, flags.size())
 
 
+## The layout factor for Text Size: the setting's factor, capped where the header, three card rows and two bottom lines
+## still fit the screen height (their authored stack is 382 px per unit plus a 16 px top). Fonts AND geometry use it, so
+## the text always fits the boxes it is drawn in. Exactly 1.0 at 100%; on 1280x720, 2.0 caps near 1.84.
+static func layout_k(vp: Vector2) -> float:
+	var k := float(TextScale.scaled(100)) / 100.0
+	if vp.y <= 0.0:
+		return k
+	return minf(k, (vp.y - 16.0) / 382.0)
+
+
+## A base font size at the layout factor.
+static func px(base: int, k: float) -> int:
+	return maxi(1, int(round(base * k)))
+
+
 func _build_ui() -> void:
 	for child in get_children():
 		child.queue_free()
@@ -114,6 +131,8 @@ func _build_ui() -> void:
 	var vp := get_viewport_rect().size
 	if vp.x <= 0:
 		vp = Vector2(1280, 720)
+	_k = layout_k(vp)
+	var k := _k
 
 	var bg := ColorRect.new()
 	bg.color = BG_COLOR
@@ -125,8 +144,8 @@ func _build_ui() -> void:
 	var header := Label.new()
 	header.text = "World Map"
 	header.position = Vector2(24, 16)
-	header.size = Vector2(300, 32)
-	header.add_theme_font_size_override("font_size", 26)
+	header.add_theme_font_size_override("font_size", px(26, k))
+	header.size = Vector2(300, 32) * k
 	header.add_theme_color_override("font_color", Color(0.7, 0.85, 1.0))
 	header.clip_text = false
 	header.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
@@ -134,10 +153,10 @@ func _build_ui() -> void:
 
 	# Build world cards — 2 columns, 3 rows
 	var card_w := int((vp.x - 72) / 2)
-	var card_h := 82
-	var gap := 12
+	var card_h := 82.0 * k
+	var gap := 12.0 * k
 	var start_x := 24
-	var start_y := 64
+	var start_y := 16.0 + 48.0 * k
 
 	for i in WORLD_DATA.size():
 		var world: Dictionary = WORLD_DATA[i]
@@ -159,9 +178,9 @@ func _build_ui() -> void:
 	# stale in interiors, so the footer said "World 1 — Unknown" under a card titled The Old Kingdom.
 	var loc := Label.new()
 	loc.text = "Current: World %d — %s" % [_current_world, world_name(_current_world)]
-	loc.position = Vector2(24, vp.y - 56)
-	loc.size = Vector2(vp.x - 48, 20)
-	loc.add_theme_font_size_override("font_size", 14)
+	loc.position = Vector2(24, vp.y - 56.0 * k)
+	loc.add_theme_font_size_override("font_size", px(14, k))
+	loc.size = Vector2(vp.x - 48, 20.0 * k)
 	loc.add_theme_color_override("font_color", DIM_COLOR)
 	add_child(loc)
 
@@ -169,9 +188,9 @@ func _build_ui() -> void:
 	var footer := Label.new()
 	## Frozen Nintendo letter — see BestiaryMenu; same footer shape, same defect (2026-09-16).
 	footer.text = "↑↓←→ / Wheel: Select   %s / RClick: Close" % InputProfileManager.hint_for_action("ui_cancel")
-	footer.position = Vector2(24, vp.y - 32)
-	footer.size = Vector2(vp.x - 48, 20)
-	footer.add_theme_font_size_override("font_size", 13)
+	footer.position = Vector2(24, vp.y - 32.0 * k)
+	footer.add_theme_font_size_override("font_size", px(13, k))
+	footer.size = Vector2(vp.x - 48, 20.0 * k)
 	footer.add_theme_color_override("font_color", DIM_COLOR)
 	footer.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	add_child(footer)
@@ -191,6 +210,7 @@ func _build_card(world: Dictionary, sz: Vector2) -> Control:
 	var pct: int = int(float(completion.x) / float(max(completion.y, 1)) * 100.0)
 	var is_current: bool = world_id == _current_world
 
+	var k := _k
 	var card := Control.new()
 	card.custom_minimum_size = sz
 	card.size = sz
@@ -228,9 +248,9 @@ func _build_card(world: Dictionary, sz: Vector2) -> Control:
 		title.text = "W%d  %s" % [world_id, world.name]
 	else:
 		title.text = "W%d  ???" % world_id
-	title.position = Vector2(16, 8)
-	title.size = Vector2(sz.x - 32, 24)
-	title.add_theme_font_size_override("font_size", 18)
+	title.position = Vector2(16, 8) * k
+	title.add_theme_font_size_override("font_size", px(18, k))
+	title.size = Vector2(sz.x - 32.0 * k, 24.0 * k)
 	title.add_theme_color_override("font_color", TEXT_COLOR if unlocked else LOCKED_COLOR)
 	title.clip_text = false
 	title.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
@@ -239,35 +259,35 @@ func _build_card(world: Dictionary, sz: Vector2) -> Control:
 	# Theme subtitle
 	var sub := Label.new()
 	sub.text = world.theme if unlocked else "Locked"
-	sub.position = Vector2(16, 34)
-	sub.size = Vector2(sz.x - 32, 18)
-	sub.add_theme_font_size_override("font_size", 13)
+	sub.position = Vector2(16, 34) * k
+	sub.add_theme_font_size_override("font_size", px(13, k))
+	sub.size = Vector2(sz.x - 32.0 * k, 18.0 * k)
 	sub.add_theme_color_override("font_color", DIM_COLOR if unlocked else LOCKED_COLOR)
 	card.add_child(sub)
 
 	# Progress bar + percentage
 	if unlocked and completion.y > 0:
-		var bar_w: float = sz.x - 100
-		var bar_x: float = 16
-		var bar_y: float = 58
+		var bar_w: float = sz.x - 100.0 * k
+		var bar_x: float = 16.0 * k
+		var bar_y: float = 58.0 * k
 
 		var bar_bg := ColorRect.new()
 		bar_bg.color = Color(0.15, 0.15, 0.2)
 		bar_bg.position = Vector2(bar_x, bar_y)
-		bar_bg.size = Vector2(bar_w, 10)
+		bar_bg.size = Vector2(bar_w, 10.0 * k)
 		card.add_child(bar_bg)
 
 		var bar_fill := ColorRect.new()
 		bar_fill.color = world.color.darkened(0.2)
 		bar_fill.position = Vector2(bar_x, bar_y)
-		bar_fill.size = Vector2(bar_w * float(completion.x) / float(completion.y), 10)
+		bar_fill.size = Vector2(bar_w * float(completion.x) / float(completion.y), 10.0 * k)
 		card.add_child(bar_fill)
 
 		var pct_label := Label.new()
 		pct_label.text = "%d%%" % pct
-		pct_label.position = Vector2(bar_x + bar_w + 8, bar_y - 4)
-		pct_label.size = Vector2(60, 18)
-		pct_label.add_theme_font_size_override("font_size", 14)
+		pct_label.position = Vector2(bar_x + bar_w + 8.0 * k, bar_y - 4.0 * k)
+		pct_label.add_theme_font_size_override("font_size", px(14, k))
+		pct_label.size = Vector2(60, 18) * k
 		pct_label.add_theme_color_override("font_color", TEXT_COLOR)
 		card.add_child(pct_label)
 
@@ -275,11 +295,22 @@ func _build_card(world: Dictionary, sz: Vector2) -> Control:
 	if is_current:
 		var marker := Label.new()
 		marker.text = "YOU ARE HERE"
-		marker.position = Vector2(sz.x - 140, 10)
-		marker.size = Vector2(120, 18)
-		marker.add_theme_font_size_override("font_size", 11)
+		marker.add_theme_font_size_override("font_size", px(11, k))
 		marker.add_theme_color_override("font_color", world.color)
-		marker.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		# RIGHT-ANCHORED BY MEASUREMENT, not by a right-aligned box: a Label's box can hold a minimum cached at the default
+		# 16 px (measured 113 px for a 96 px box at 0.8x), and right-aligning inside it pushed the text past the card. Placed
+		# left-aligned at (box right edge - text width), the drawn text ends where the authored 120 px box did.
+		var f: Font = title.get_theme_font("font")
+		var mw: float = f.get_string_size(marker.text, HORIZONTAL_ALIGNMENT_LEFT, -1, px(11, k)).x if f else 120.0 * k
+		var right_edge: float = sz.x - 20.0 * k
+		marker.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+		marker.position = Vector2(right_edge - mw, 10.0 * k)
+		# A long title reaches the marker once Text Size grows (W2's at the 2.0 cap): drop the marker to the subtitle row,
+		# whose world themes are short, ONLY then, so every title that already fits keeps the authored corner.
+		if f:
+			var title_end: float = title.position.x + f.get_string_size(title.text, HORIZONTAL_ALIGNMENT_LEFT, -1, title.get_theme_font_size("font_size")).x
+			if title_end + 8.0 * k > marker.position.x:
+				marker.position.y = sub.position.y
 		card.add_child(marker)
 
 	return card
