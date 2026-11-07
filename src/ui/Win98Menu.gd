@@ -1619,6 +1619,7 @@ func _cleanup_target_highlight() -> void:
 
 func _cleanup_tooltip() -> void:
 	"""Remove tooltip label from scene"""
+	_zoomed = false  # every caller is a teardown; a latched zoom would rebuild the card on the next refresh
 	_free_zoom_card()
 	if _tooltip_label and is_instance_valid(_tooltip_label):
 		_tooltip_label.queue_free()
