@@ -188,6 +188,10 @@ func test_back_unzooms_without_closing() -> void:
 	await get_tree().process_frame
 	sub._input(_action("ui_cancel"))
 	await get_tree().process_frame
+	# A method call on a freed list from a resumed await segfaults (main 23304's stack), so liveness is asserted first.
+	assert_true(is_instance_valid(sub), "Back while zoomed must not close the ability list")
+	if not is_instance_valid(sub):
+		return
 	assert_false(sub.is_zoomed(), "Back un-zooms")
 	assert_eq(root.submenu, sub, "and the ability list stays open")
 	sub._input(_action("ui_cancel"))
