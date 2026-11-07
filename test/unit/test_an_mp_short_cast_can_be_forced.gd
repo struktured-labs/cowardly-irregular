@@ -66,9 +66,13 @@ func test_three_presses_arm_it_and_the_first_two_say_how_many_remain() -> void:
 func test_moving_the_cursor_or_waiting_resets_the_count() -> void:
 	var row := _row(_caster(0))
 	var m := _menu(row)
+	var other := {"id": "attack", "label": "Attack", "data": {}}
+	m.menu_items = [row, other]
 	m._press_toward_force(row)
 	m._press_toward_force(row)
-	m._reset_force()   # what _nav_step does on a cursor move
+	m._nav_step(1)    # a REAL cursor move away and back, through the menu's own step
+	m._nav_step(-1)
+	assert_eq(m.selected_index, 0, "CONTROL: the cursor is back on the MP-short row")
 	assert_false(m._press_toward_force(row), "after a move, a press is press 1 again")
 	m._press_toward_force(row)
 	m._force_last_ms -= m.FORCE_WINDOW_MS + 1   # the window lapses
@@ -110,3 +114,12 @@ func test_forcing_never_lifts_an_advance_limit() -> void:
 	var item_forced := {"id": "item_e", "data": {"item_id": "ether", "forced": true}, "label": "Ether"}
 	m._queue_current_action(item_forced)
 	assert_eq(m._queued_actions.size(), 2, "and forced cannot spend a second of a one-item stock")
+
+
+## A single (non-Advance) forced cast carries the flag into the queued action too, so execution names it either way.
+func test_a_single_forced_cast_carries_the_flag() -> void:
+	var src := FileAccess.get_file_as_string("res://src/battle/BattleManager.gd")
+	assert_true(src.contains("func player_use_ability(ability_id: String, targets: Array, forced: bool = false)"), "player_use_ability takes forced")
+	assert_true(src.contains('"forced": forced'), "and puts it in the queued action")
+	var menu := FileAccess.get_file_as_string("res://src/battle/BattleCommandMenu.gd")
+	assert_eq(menu.count('bool(item_data.get("forced", false))'), 4, "every single-action ability call passes it (4 sites)")

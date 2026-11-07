@@ -2294,7 +2294,7 @@ func player_attack(target: Combatant) -> void:
 	_end_selection_turn()
 
 
-func player_use_ability(ability_id: String, targets: Array) -> void:
+func player_use_ability(ability_id: String, targets: Array, forced: bool = false) -> void:
 	"""Queue an ability"""
 	if not _check_player_selecting_state("player_use_ability"):
 		return
@@ -2306,7 +2306,8 @@ func player_use_ability(ability_id: String, targets: Array) -> void:
 		"combatant": current_combatant,
 		"ability_id": ability_id,
 		"targets": targets,
-		"speed": _compute_action_speed(current_combatant, "ability", ability)
+		"speed": _compute_action_speed(current_combatant, "ability", ability),
+		"forced": forced   # the player pressed past "Not enough MP"; execution re-checks it
 	}
 	_queue_action(action)
 	# Track MRU so this ability surfaces in the top-level quick-access slots next turn.

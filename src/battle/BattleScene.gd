@@ -2811,10 +2811,10 @@ func _on_ability_selected(idx: int, ability_ids: Array) -> void:
 				_execute_ability(ability_id, ally_target)
 
 
-func _execute_ability(ability_id: String, target: Combatant, target_all: bool = false) -> void:
+func _execute_ability(ability_id: String, target: Combatant, target_all: bool = false, forced: bool = false) -> void:
 	"""Queue ability (animation plays during execution phase)"""
 	var targets: Array = _targets_for_queued_ability(ability_id, target, target_all)
-	BattleManager.player_use_ability(ability_id, targets)
+	BattleManager.player_use_ability(ability_id, targets, forced)
 
 
 ## Both menus pass one focus and set target_all only for all_enemies, so an all_allies spell buffed the caster alone.

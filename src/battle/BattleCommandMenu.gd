@@ -1366,7 +1366,7 @@ func _on_win98_menu_selection(item_id: String, item_data: Variant) -> void:
 			var is_valid_target = _is_valid_ability_target(ability_id, target_type, target)
 
 			if is_valid_target:
-				_scene._execute_ability(ability_id, target)
+				_scene._execute_ability(ability_id, target, false, bool(item_data.get("forced", false)))
 			else:
 				_scene.log_message("Target no longer valid!")
 		return
@@ -1381,16 +1381,16 @@ func _on_win98_menu_selection(item_id: String, item_data: Variant) -> void:
 			match target_type:
 				"all_enemies":
 					if alive_enemies.size() > 0:
-						_scene._execute_ability(ability_id, alive_enemies[0], true)
+						_scene._execute_ability(ability_id, alive_enemies[0], true, bool(item_data.get("forced", false)))
 					else:
 						_scene.log_message("No valid targets!")
 				"single_ally", "all_allies", "self":
 					var ab_target = current if current else (_scene.party_members[0] if _scene.party_members.size() > 0 else null)
 					if ab_target:
-						_scene._execute_ability(ability_id, ab_target)
+						_scene._execute_ability(ability_id, ab_target, false, bool(item_data.get("forced", false)))
 				_:
 					if alive_enemies.size() > 0:
-						_scene._execute_ability(ability_id, alive_enemies[0])
+						_scene._execute_ability(ability_id, alive_enemies[0], false, bool(item_data.get("forced", false)))
 		return
 
 	# Item usage with target from menu tree
