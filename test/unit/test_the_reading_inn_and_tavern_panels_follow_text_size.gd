@@ -178,21 +178,23 @@ func test_the_drawn_lines_of_the_built_label_fit_its_panel() -> void:
 	assert_gte(most_lines, 3, "CONTROL: some real inn message must wrap to 3+ lines, or the line count is never tested (%d)" % most_lines)
 
 
-## A line built to sit on the tavern's rounding edge at 0.8x (inner 233.33): wider than the box, yet kept whole by the unfloored measure.
+## SEARCHES for a line whose measure at the fractional inner width and at its floor disagree; "" if no candidate does.
 func _tavern_edge_line(px: int, inner: float) -> String:
 	var font: Font = ThemeDB.fallback_font
-	var target := ceilf(inner)
-	var s := "x x"
-	for _i in range(400):
-		var grown := false
-		for c in ["m", "w", "o", "a", "e", "n", "t", "r", "s", "i", "l", "."]:
-			if font.get_string_size(s + c, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x <= target:
-				s += c
-				grown = true
+	var words := ["the", "barkeep", "polishes", "a", "glass", "slowly", "and", "nods", "at", "nobody", "in", "particular", "today"]
+	for start in range(words.size()):
+		var line := ""
+		for i in range(40):
+			line = (line + " " + words[(start + i) % words.size()]).strip_edges()
+			for tail in ["", ".", "..", "!", "s", "ly"]:
+				var t: String = line + tail
+				var a := font.get_multiline_string_size(t, HORIZONTAL_ALIGNMENT_LEFT, inner, px, -1, TavernScript.WRAP_FLAGS).y
+				var b := font.get_multiline_string_size(t, HORIZONTAL_ALIGNMENT_LEFT, floorf(inner), px, -1, TavernScript.WRAP_FLAGS).y
+				if b > a:
+					return t
+			if font.get_string_size(line, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x > inner * 2.0:
 				break
-		if not grown:
-			break
-	return s
+	return ""
 
 
 func test_a_tavern_line_on_the_rounding_edge_fits_its_panel() -> void:
@@ -201,10 +203,9 @@ func test_a_tavern_line_on_the_rounding_edge_fits_its_panel() -> void:
 	var k := k_of(TavernScript.DIALOGUE_FONT)
 	var inner := TavernScript.DIALOGUE_MIN.x * k - TavernScript.DIALOGUE_PAD * 2.0 * k
 	var edge := _tavern_edge_line(px, inner)
-	var font: Font = ThemeDB.fallback_font
-	var whole_h := font.get_multiline_string_size(edge, HORIZONTAL_ALIGNMENT_LEFT, inner, px, -1, TavernScript.WRAP_FLAGS).y
-	var floored_h := font.get_multiline_string_size(edge, HORIZONTAL_ALIGNMENT_LEFT, floorf(inner), px, -1, TavernScript.WRAP_FLAGS).y
-	assert_gt(floored_h, whole_h, "CONTROL: the fixture must sit on the edge, kept whole at %.2f px and wrapped at %d (got %.1f vs %.1f for '%s')" % [inner, int(floorf(inner)), whole_h, floored_h, edge])
+	assert_ne(edge, "", "CONTROL: no candidate line measures differently at %.2f px and at its floor %d at 0.8x, so the tavern's floor changes nothing there; delete this arm" % [inner, int(floorf(inner))])
+	if edge == "":
+		return
 	var text := "*A regular raises a mug.*\n*Another one does too.*\n*The barkeep sighs.*\n" + edge
 	var l := _on_screen(autofree(TavernScript.new())._make_dialogue_layer(text))
 	var panel: Panel = l.get_parent()
