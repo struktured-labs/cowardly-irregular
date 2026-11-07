@@ -84,7 +84,8 @@ func _break_flags_of(l: Label) -> int:
 		TextServer.AUTOWRAP_WORD:
 			return TextServer.BREAK_MANDATORY | TextServer.BREAK_WORD_BOUND
 		TextServer.AUTOWRAP_WORD_SMART:
-			return TextServer.BREAK_MANDATORY | TextServer.BREAK_WORD_BOUND | TextServer.BREAK_ADAPTIVE
+			## What the Label draws: it force-breaks a word wider than its box (probed: 3 lines where ADAPTIVE measures 2).
+			return TextServer.BREAK_MANDATORY | TextServer.BREAK_WORD_BOUND | TextServer.BREAK_GRAPHEME_BOUND
 		_:
 			return TextServer.BREAK_MANDATORY
 

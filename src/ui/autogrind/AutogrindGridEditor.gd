@@ -874,9 +874,9 @@ func _get_profile_name_for(char_id: String, profile_idx: int) -> String:
 ## Keep the selected rule row on screen. Ported from AutobattleGridEditor, which solved this for
 ## the same hand-positioned (non-ScrollContainer) grid: shift _grid_container.position.y and the
 ## cursor follows for free, because _update_cursor derives cell_pos from that same position.
-## AUTOWRAP_WORD_SMART's own break rule, so the height measured here is the height the cell labels draw.
+## The flags that reproduce AUTOWRAP_WORD_SMART's line count: it force-breaks an over-long word, which ADAPTIVE does not (probed 2026-11-07).
 const CELL_TEXT_BREAK := TextServer.BREAK_MANDATORY | TextServer.BREAK_WORD_BOUND \
-	| TextServer.BREAK_ADAPTIVE
+	| TextServer.BREAK_GRAPHEME_BOUND
 
 
 ## The cell height: the tallest wrapped condition or action at the live Text Size, never under the authored 44.
