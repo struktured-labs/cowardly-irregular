@@ -144,8 +144,8 @@ func _build_ui() -> void:
 	var header := Label.new()
 	header.text = "World Map"
 	header.position = Vector2(24, 16)
-	header.size = Vector2(300, 32) * k
 	header.add_theme_font_size_override("font_size", px(26, k))
+	header.size = Vector2(300, 32) * k
 	header.add_theme_color_override("font_color", Color(0.7, 0.85, 1.0))
 	header.clip_text = false
 	header.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
@@ -179,8 +179,8 @@ func _build_ui() -> void:
 	var loc := Label.new()
 	loc.text = "Current: World %d — %s" % [_current_world, world_name(_current_world)]
 	loc.position = Vector2(24, vp.y - 56.0 * k)
-	loc.size = Vector2(vp.x - 48, 20.0 * k)
 	loc.add_theme_font_size_override("font_size", px(14, k))
+	loc.size = Vector2(vp.x - 48, 20.0 * k)
 	loc.add_theme_color_override("font_color", DIM_COLOR)
 	add_child(loc)
 
@@ -189,8 +189,8 @@ func _build_ui() -> void:
 	## Frozen Nintendo letter — see BestiaryMenu; same footer shape, same defect (2026-09-16).
 	footer.text = "↑↓←→ / Wheel: Select   %s / RClick: Close" % InputProfileManager.hint_for_action("ui_cancel")
 	footer.position = Vector2(24, vp.y - 32.0 * k)
-	footer.size = Vector2(vp.x - 48, 20.0 * k)
 	footer.add_theme_font_size_override("font_size", px(13, k))
+	footer.size = Vector2(vp.x - 48, 20.0 * k)
 	footer.add_theme_color_override("font_color", DIM_COLOR)
 	footer.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	add_child(footer)
@@ -249,8 +249,8 @@ func _build_card(world: Dictionary, sz: Vector2) -> Control:
 	else:
 		title.text = "W%d  ???" % world_id
 	title.position = Vector2(16, 8) * k
-	title.size = Vector2(sz.x - 32.0 * k, 24.0 * k)
 	title.add_theme_font_size_override("font_size", px(18, k))
+	title.size = Vector2(sz.x - 32.0 * k, 24.0 * k)
 	title.add_theme_color_override("font_color", TEXT_COLOR if unlocked else LOCKED_COLOR)
 	title.clip_text = false
 	title.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
@@ -260,8 +260,8 @@ func _build_card(world: Dictionary, sz: Vector2) -> Control:
 	var sub := Label.new()
 	sub.text = world.theme if unlocked else "Locked"
 	sub.position = Vector2(16, 34) * k
-	sub.size = Vector2(sz.x - 32.0 * k, 18.0 * k)
 	sub.add_theme_font_size_override("font_size", px(13, k))
+	sub.size = Vector2(sz.x - 32.0 * k, 18.0 * k)
 	sub.add_theme_color_override("font_color", DIM_COLOR if unlocked else LOCKED_COLOR)
 	card.add_child(sub)
 
@@ -286,8 +286,8 @@ func _build_card(world: Dictionary, sz: Vector2) -> Control:
 		var pct_label := Label.new()
 		pct_label.text = "%d%%" % pct
 		pct_label.position = Vector2(bar_x + bar_w + 8.0 * k, bar_y - 4.0 * k)
-		pct_label.size = Vector2(60, 18) * k
 		pct_label.add_theme_font_size_override("font_size", px(14, k))
+		pct_label.size = Vector2(60, 18) * k
 		pct_label.add_theme_color_override("font_color", TEXT_COLOR)
 		card.add_child(pct_label)
 
@@ -296,10 +296,18 @@ func _build_card(world: Dictionary, sz: Vector2) -> Control:
 		var marker := Label.new()
 		marker.text = "YOU ARE HERE"
 		marker.position = Vector2(sz.x - 140.0 * k, 10.0 * k)
-		marker.size = Vector2(120, 18) * k
 		marker.add_theme_font_size_override("font_size", px(11, k))
+		marker.size = Vector2(120, 18) * k
 		marker.add_theme_color_override("font_color", world.color)
 		marker.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		# A long title reaches the marker once Text Size grows (W2's at the 2.0 cap): drop the marker to the subtitle row,
+		# whose world themes are short, ONLY then, so every title that already fits keeps the authored corner.
+		var f: Font = title.get_theme_font("font")
+		if f:
+			var title_end: float = title.position.x + f.get_string_size(title.text, HORIZONTAL_ALIGNMENT_LEFT, -1, title.get_theme_font_size("font_size")).x
+			var marker_start: float = marker.position.x + marker.size.x - f.get_string_size(marker.text, HORIZONTAL_ALIGNMENT_LEFT, -1, marker.get_theme_font_size("font_size")).x
+			if title_end + 8.0 * k > marker_start:
+				marker.position.y = sub.position.y
 		card.add_child(marker)
 
 	return card
