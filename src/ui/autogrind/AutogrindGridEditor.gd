@@ -77,6 +77,8 @@ const MAX_CONDITIONS = 3
 const CELL_FONT := 11
 const MAX_ACTIONS = 4
 const STATUS_DEFAULT_TEXT := "PARTY RULES"
+## The longest status this editor flashes; its font is capped on this, not on the short default.
+const STATUS_LONGEST_TEXT := "Nothing can follow Stop Grinding -- it ends the session."
 const STATUS_FLASH_SECONDS := 2.5
 
 ## Party-themed color scheme (dark green/amber - system-level feel)
@@ -190,7 +192,7 @@ func _build_ui() -> void:
 	var profile_name = AutogrindSystem.get_active_autogrind_profile_name()
 	_title_label.text = "AUTOGRIND - %s" % profile_name
 	_title_label.position = Vector2(16, 8)
-	_title_label.add_theme_font_size_override("font_size", 14)
+	_title_label.add_theme_font_size_override("font_size", _fit_px(_title_label.text, 14, Vector2(size.x - 200 - 16 - 8, 40)))
 	_title_label.add_theme_color_override("font_color", style.text)
 	add_child(_title_label)
 
@@ -202,8 +204,11 @@ func _build_ui() -> void:
 
 	# Status label
 	_status_label = Label.new()
-	_status_label.position = Vector2(size.x - 140, 28)
-	_status_label.add_theme_font_size_override("font_size", 12)
+	## Right-aligned across the free band right of the details panel: at size.x - 140 the longest flash ran ~200 px off the screen at 100%.
+	_status_label.position = Vector2(GRID_BASE_POS.x, 28)
+	_status_label.size = Vector2(size.x - GRID_BASE_POS.x - 16, 22)
+	_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_status_label.add_theme_font_size_override("font_size", _fit_px(STATUS_LONGEST_TEXT, 12, _status_label.size))
 	_status_label.add_theme_color_override("font_color", style.highlight_text)
 	_status_label.text = STATUS_DEFAULT_TEXT
 	add_child(_status_label)
@@ -256,7 +261,7 @@ func _build_ui() -> void:
 		InputProfileManager.hint_for_action("battle_advance"),
 	]
 	help1.position = Vector2(16, size.y - 44)
-	help1.add_theme_font_size_override("font_size", 10)
+	help1.add_theme_font_size_override("font_size", _fit_px(help1.text, 10, Vector2(size.x - 32, 16)))
 	help1.add_theme_color_override("font_color", style.text.darkened(0.2))
 	add_child(help1)
 
@@ -267,7 +272,7 @@ func _build_ui() -> void:
 	## and ui_cancel's arm is what saves here (it calls _save_rules), so no way to save is lost.
 	help2.text = "C:Cycle  -/= or RStick:Adjust  Tab:Toggle  Sh+Tab:Profile  Sh+D:Defaults  K:Compose%s" % _pad_only_token("ui_menu", "Save")
 	help2.position = Vector2(16, size.y - 28)
-	help2.add_theme_font_size_override("font_size", 10)
+	help2.add_theme_font_size_override("font_size", _fit_px(help2.text, 10, Vector2(size.x - 32, 16)))
 	help2.add_theme_color_override("font_color", style.text.darkened(0.2))
 	add_child(help2)
 
@@ -289,7 +294,7 @@ func _build_profile_panel() -> void:
 	_profile_label = Label.new()
 	_profile_label.text = "◀ %d/%d: %s ▶" % [profile_idx + 1, profiles.size(), profile_name]
 	_profile_label.position = Vector2(size.x - 195, 6)
-	_profile_label.add_theme_font_size_override("font_size", 11)
+	_profile_label.add_theme_font_size_override("font_size", _fit_px(_profile_label.text, 11, Vector2(185, 20)))
 	_profile_label.add_theme_color_override("font_color", Color.YELLOW)
 	add_child(_profile_label)
 
@@ -316,7 +321,7 @@ func _build_details_panel() -> void:
 	var icon_label = Label.new()
 	icon_label.text = "AG"
 	icon_label.position = Vector2(8, 8)
-	icon_label.add_theme_font_size_override("font_size", 20)
+	icon_label.add_theme_font_size_override("font_size", _fit_px(icon_label.text, 20, Vector2(36, 36)))
 	icon_label.add_theme_color_override("font_color", style.highlight_text)
 	_details_panel.add_child(icon_label)
 
@@ -324,14 +329,14 @@ func _build_details_panel() -> void:
 	var type_label = Label.new()
 	type_label.text = "Autogrind"
 	type_label.position = Vector2(48, 4)
-	type_label.add_theme_font_size_override("font_size", 10)
+	type_label.add_theme_font_size_override("font_size", _fit_px(type_label.text, 10, Vector2(115 - 48 - 4, 14)))
 	type_label.add_theme_color_override("font_color", style.text.darkened(0.2))
 	_details_panel.add_child(type_label)
 
 	var scope_label = Label.new()
 	scope_label.text = "Party Rules"
 	scope_label.position = Vector2(48, 18)
-	scope_label.add_theme_font_size_override("font_size", 12)
+	scope_label.add_theme_font_size_override("font_size", _fit_px(scope_label.text, 12, Vector2(115 - 48 - 4, 30)))
 	scope_label.add_theme_color_override("font_color", style.text)
 	_details_panel.add_child(scope_label)
 
@@ -344,14 +349,14 @@ func _build_details_panel() -> void:
 		var name_lbl = Label.new()
 		name_lbl.text = "%s" % char_name
 		name_lbl.position = Vector2(4, y_offset)
-		name_lbl.add_theme_font_size_override("font_size", 10)
+		name_lbl.add_theme_font_size_override("font_size", _fit_px(name_lbl.text, 10, Vector2(115 - 8, 13)))
 		name_lbl.add_theme_color_override("font_color", Color.WHITE)
 		_details_panel.add_child(name_lbl)
 
 		var prof_lbl = Label.new()
 		prof_lbl.text = "→ %s" % profile_name
 		prof_lbl.position = Vector2(8, y_offset + 12)
-		prof_lbl.add_theme_font_size_override("font_size", 9)
+		prof_lbl.add_theme_font_size_override("font_size", _fit_px(prof_lbl.text, 9, Vector2(115 - 12, 15)))
 		prof_lbl.add_theme_color_override("font_color", Color(0.6, 0.8, 0.4))
 		_details_panel.add_child(prof_lbl)
 
@@ -568,6 +573,7 @@ func _create_empty_condition_hint(row_idx: int, cond_idx: int) -> Control:
 
 	var label = Label.new()
 	label.text = "+AND"
+	label.clip_text = true
 	label.position = Vector2(2, 4)
 	label.size = Vector2(CELL_WIDTH / 2 - 4, _cell_h() - 8)
 	label.add_theme_font_size_override("font_size", _fit_px(label.text, 9, label.size))
@@ -600,6 +606,7 @@ func _create_empty_action_hint(row_idx: int, act_idx: int) -> Control:
 
 	var label = Label.new()
 	label.text = "[+R]"
+	label.clip_text = true
 	label.position = Vector2(4, 4)
 	label.size = Vector2(CELL_WIDTH - 8, _cell_h() - 8)
 	label.add_theme_font_size_override("font_size", _fit_px(label.text, 11, label.size))
@@ -669,6 +676,7 @@ func _create_row_insert_hint(row_idx: int) -> Control:
 
 	var label = Label.new()
 	label.text = "[++]"
+	label.clip_text = true
 	label.position = Vector2(2, 4)
 	label.size = Vector2(36, _cell_h() - 8)
 	label.add_theme_font_size_override("font_size", _fit_px(label.text, 10, label.size))
@@ -1958,12 +1966,13 @@ func _show_reset_confirmation() -> void:
 	var msg = Label.new()
 	msg.text = "Restore the shipped autogrind profiles?\nThis discards all three rule sets."
 	msg.position = Vector2(box.position.x + 20, box.position.y + 22)
+	msg.add_theme_font_size_override("font_size", _fit_px("Restore the shipped autogrind profiles?", 16, Vector2(320, 30)))
 	_reset_confirm.add_child(msg)
 
 	var hint = Label.new()
 	hint.text = "Enter: restore   Esc: cancel"
 	hint.position = Vector2(box.position.x + 20, box.position.y + 92)
-	hint.add_theme_font_size_override("font_size", 12)
+	hint.add_theme_font_size_override("font_size", _fit_px(hint.text, 12, Vector2(320, 30)))
 	_reset_confirm.add_child(hint)
 
 	SoundManager.play_ui("menu_select")
