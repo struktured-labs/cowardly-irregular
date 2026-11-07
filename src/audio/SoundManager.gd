@@ -131,12 +131,24 @@ const JINGLE_PLAYER_BASE_DB: float = -8.0
 const CRIT_THUD_FREQ: float = 62.0
 const CRIT_THUD_DURATION: float = 0.18
 const CRIT_THUD_TRIM_DB: float = -4.0
-## Death punctuation (struktured 2026-08-20: "cant hear the sfx when a monster dies"). The boost and the thud were measured on the retired gentle scorch ("no bass no tones", mean -22.8 dB, level with a plain hit at -21.8). The shipped enemy_death file is now the selected whoosh (sfx_manifest); this player gain was not retuned with that swap, because the same boost covers every play_death cue.
+## Death punctuation (struktured 2026-08-20: "cant hear the sfx when a monster dies"). The +6 dB boost and the thud were measured on the retired gentle scorch ("no bass no tones", mean -22.8 dB, level with a plain hit at -21.8). That boost stays on every play_death cue. The selected whoosh is hotter, so enemy_death alone takes _DEATH_FILE_HEADROOM_DB on the file path.
 const DEATH_PLAYER_BASE_DB: float = SFX_BATTLE_BASE_DB + 2.0
 ## Battle quips do not duck music, so voice sits ~2.4 dB over the bed (voice -18.3 LUFS vs music -14.7 at -10 dB); at -16 it was 9.6 dB under (struktured 2026-09-24).
 const VOICE_PLAYER_BASE_DB: float = -4.0
 const PICKUP_PLAYER_BASE_DB: float = SFX_UI_BASE_DB
 const DEATH_CUE_BOOST_DB: float = 6.0
+## File-path headroom, keyed by the cue that actually plays. Empty for every other death cry.
+## Measured 2026-11-07 on Godot 4.4.1, Dummy driver, AudioEffectCapture on Master and on SFX
+## (both buses 0 dB, zero effects, so nothing limits). play_death's file level is
+## DEATH_PLAYER_BASE_DB + DEATH_CUE_BOOST_DB = -4 + 6 = +2 dB. The whoosh plus the death thud:
+##   pitch 1.00  peak 1.129  +1.06 dBFS
+##   pitch 1.05  peak 1.143  +1.16 dBFS  (SFX_PITCH_JITTER ceiling)
+## -2.2 dB on enemy_death only puts that worst sample at about -1.0 dBFS. The asset bytes
+## are untouched. party_ko and w4_enemy_death are absent here, so they keep +2 dB.
+## The procedural fallback does not use this table: it has no file peak to correct.
+const _DEATH_FILE_HEADROOM_DB: Dictionary = {
+	"enemy_death": -2.2,
+}
 ## The procedural crit's boost, RELATIVE like DEATH_CUE_BOOST_DB. It was a bare `volume_db = 2.0`
 ## from when _play_sound defaulted to 0 dB; as an absolute it sat 8 dB over the battle channel.
 const CRIT_SYNTH_BOOST_DB: float = 2.0
@@ -1262,11 +1274,12 @@ func play_death(sound_key: String) -> void:
 	# Low body under the cue, on the sub channel — NOT the battle player, whose hit tail is exactly why the cry got its own voice
 	if _sub_player != null:
 		_play_sound(_sub_player, {"freq": DEATH_THUD_FREQ, "duration": DEATH_THUD_DURATION, "type": "thud"})
-	# ABSOLUTE from the base const, never from the live player: the override persists on the player, so `volume_db + boost` would ratchet +6 dB per death
+	# ABSOLUTE from the base const, never from the live player: the override persists on the player, so `volume_db + boost` would ratchet +6 dB per death.
+	# The headroom is per FILE, looked up on the key about to play, so a world variant and party_ko stay at the shared boost.
 	var boosted_db: float = DEATH_PLAYER_BASE_DB + DEATH_CUE_BOOST_DB
-	if world_key != sound_key and _try_play_sfx_from_manifest(_death_player, world_key, boosted_db):
+	if world_key != sound_key and _try_play_sfx_from_manifest(_death_player, world_key, boosted_db + float(_DEATH_FILE_HEADROOM_DB.get(world_key, 0.0))):
 		return
-	if _try_play_sfx_from_manifest(_death_player, sound_key, boosted_db):
+	if _try_play_sfx_from_manifest(_death_player, sound_key, boosted_db + float(_DEATH_FILE_HEADROOM_DB.get(sound_key, 0.0))):
 		return
 	if SOUNDS.has(sound_key):
 		_play_sound(_death_player, _synth_params(sound_key, boosted_db))

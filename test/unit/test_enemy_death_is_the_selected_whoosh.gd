@@ -35,8 +35,10 @@ func test_the_shipped_file_is_the_audition_ogg() -> void:
 		"enemy_death.ogg is not the selected F_whoosh audition (sha256 %s)" % AUDITION_SHA)
 	var stream := load(ASSET) as AudioStream
 	assert_not_null(stream, "enemy_death.ogg did not import as audio — reimport before trusting playback")
-	assert_almost_eq(stream.get_length(), AUDITION_SECONDS, 0.05,
-		"Godot's decoded length must stay the audition's 0.84s; a different length means the imported bytes are not this file")
+	## 0.84 is the container length (ffprobe and get_length()). A raw s16 dump is 37952/44100 = 0.861s
+	## because the decoder emits Vorbis padding the stream duration does not include. 0.86 is that dump.
+	assert_almost_eq(stream.get_length(), AUDITION_SECONDS, 0.001,
+		"Godot's length must be the 0.84s container duration, not the 0.86s padded PCM dump")
 
 
 func test_the_manifest_records_that_selection_on_the_same_cue() -> void:
@@ -80,3 +82,63 @@ func test_the_death_tween_still_fires_the_same_cue_without_a_file_length_hold() 
 	var ally := src.find('play_death("party_ko")')
 	assert_gt(ally, -1, "ally KO must stay on party_ko")
 	assert_lt(ally, fn, "party_ko stays on the ally path, before _on_enemy_died")
+
+
+func test_only_enemy_death_gives_up_headroom() -> void:
+	var sm := get_node_or_null("/root/SoundManager")
+	assert_not_null(sm, "CONTROL: SoundManager autoload must be present")
+	if sm == null:
+		return
+	var table: Dictionary = sm.get_script().get_script_constant_map()["_DEATH_FILE_HEADROOM_DB"]
+	assert_eq(table.keys(), ["enemy_death"],
+		"headroom must name enemy_death and nothing else — party_ko and w4_enemy_death keep the shared boost")
+	assert_almost_eq(float(table["enemy_death"]), -2.2, 0.001, "the measured trim is -2.2 dB")
+	var base: float = float(sm.DEATH_PLAYER_BASE_DB)
+	var boost: float = float(sm.DEATH_CUE_BOOST_DB)
+	sm._sfx_cooldowns.clear()
+	sm.play_death("enemy_death")
+	assert_almost_eq(sm._death_player.volume_db, base + boost - 2.2, 0.001,
+		"enemy_death plays at the shared +2 dB level minus its own headroom")
+	sm._sfx_cooldowns.clear()
+	sm.play_death("party_ko")
+	assert_almost_eq(sm._death_player.volume_db, base + boost, 0.001,
+		"party_ko must stay at the shared boost — the whoosh trim does not belong to it")
+
+
+func test_the_mixed_whoosh_stays_under_full_scale_at_the_jitter_edge() -> void:
+	## The +6 dB boost is real, and so is the +2 dB player level: -4 dB rest + 6 dB = +2 dB.
+	## Master and the SFX bus are 0 dB and have no limiter, so a file peak of -0.9 dBFS at +2 dB
+	## clips. This captures that mix at pitch 1.05, the top of SFX_PITCH_JITTER, with the thud
+	## play_death layers under the cue.
+	var sm := get_node_or_null("/root/SoundManager")
+	assert_not_null(sm, "CONTROL: SoundManager autoload must be present")
+	if sm == null:
+		return
+	var master := AudioServer.get_bus_index("Master")
+	var sfx := AudioServer.get_bus_index("SFX")
+	assert_eq(AudioServer.get_bus_effect_count(master), 0, "CONTROL: Master already has an effect, so this capture is not the shipping mix")
+	var cap := AudioEffectCapture.new()
+	cap.buffer_length = 2.0
+	AudioServer.add_bus_effect(master, cap)
+	var level: float = float(sm.DEATH_PLAYER_BASE_DB) + float(sm.DEATH_CUE_BOOST_DB) - 2.2
+	sm._sfx_cooldowns.clear()
+	sm._play_sound(sm._sub_player, {"freq": sm.DEATH_THUD_FREQ, "duration": sm.DEATH_THUD_DURATION, "type": "thud"})
+	var played: bool = sm._try_play_sfx_from_manifest(sm._death_player, "enemy_death", level, 1.05, false)
+	if not played:
+		AudioServer.remove_bus_effect(master, AudioServer.get_bus_effect_count(master) - 1)
+	assert_true(played, "the whoosh did not play — the capture would measure silence")
+	var peak := 0.0
+	var frames := 0
+	for _i in 90:
+		await get_tree().process_frame
+		var n: int = cap.get_frames_available()
+		if n > 0:
+			for s in cap.get_buffer(n):
+				peak = maxf(peak, maxf(absf(s.x), absf(s.y)))
+			frames += n
+	AudioServer.remove_bus_effect(master, AudioServer.get_bus_effect_count(master) - 1)
+	assert_gt(frames, 1000, "the mix produced %d frames — Dummy did not run, so a quiet peak would be a lie" % frames)
+	assert_lt(peak, 1.0, "mixed whoosh peaked at %.3f (%.2f dBFS) — still clipping" % [peak, linear_to_db(peak)])
+	assert_gt(peak, 0.5, "mixed whoosh peaked at %.3f — the headroom silenced it" % peak)
+	if sfx >= 0:
+		assert_eq(AudioServer.get_bus_effect_count(sfx), 0, "this test must not leave an effect on the SFX bus")
