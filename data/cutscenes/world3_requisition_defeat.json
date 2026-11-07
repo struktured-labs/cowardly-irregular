@@ -1,0 +1,92 @@
+{
+  "id": "world3_requisition_defeat",
+  "title": "The Requisition — Aftermath",
+  "world": 3,
+  "trigger": "boss_curator_steampunk_defeated",
+  "background": "brasston_square",
+  "description": "The Requisition held everything and refused nothing, because it had no stamp for refused. The party's draw empties its column, and a held thing with no line to be held against is only a thing on a street. It turns the crates round itself, unasked, and enters the one word it never had a stamp for. Still the ledger's voice, never 'I'.",
+  "steps": [
+    { "type": "stop_music" },
+    { "type": "letterbox_in", "duration": 0.5 },
+    { "type": "play_sfx", "sfx": "boss_defeat_stinger" },
+    { "type": "wait", "duration": 1.0 },
+    {
+      "type": "narration",
+      "text": "The ledger frame had gone over in the fight, and its pages lay fanned across the cobbles, every column still adding. The Requisition stood among the stacks with its pen raised over a line it had not yet headed."
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "The Requisition",
+          "text": "ENTRY: one unauthorised draw. Amount: the column.",
+          "theme": "enemy",
+          "portrait": "masterite_curator_steampunk"
+        },
+        {
+          "speaker": "The Requisition",
+          "text": "The column does not balance. The column has never not balanced.",
+          "theme": "enemy",
+          "portrait": "masterite_curator_steampunk"
+        },
+        { "speaker": "Rogue", "text": "So write 'robbed'. You've got a stencil for everything else.", "theme": "rogue" },
+        {
+          "speaker": "The Requisition",
+          "text": "There is no stamp for refused. There is no stamp for lost. The stamps were cut before either was needed.",
+          "theme": "enemy",
+          "portrait": "masterite_curator_steampunk"
+        },
+        { "speaker": "Cleric", "text": "What happens to all these crates now?", "theme": "cleric" },
+        {
+          "speaker": "The Requisition",
+          "text": "HELD. Held pending funding. Funding is... drawn. The line they were held against is closed.",
+          "theme": "enemy",
+          "portrait": "masterite_curator_steampunk"
+        },
+        { "speaker": "Mage", "text": "Then nothing's holding them. They're just crates.", "theme": "mage" },
+        {
+          "speaker": "The Requisition",
+          "text": "A held thing with no line is not held. It is a thing on a street.",
+          "theme": "enemy",
+          "portrait": "masterite_curator_steampunk"
+        },
+        { "speaker": "Bard", "text": "A whole street of things on a street. Somebody write a song.", "theme": "bard" },
+        { "speaker": "Fighter", "text": "Or just turn them round. Approved side out.", "theme": "fighter" },
+        {
+          "speaker": "The Requisition",
+          "text": "Orientation is not recorded. Which way round a thing was set down was never a line.",
+          "theme": "enemy",
+          "portrait": "masterite_curator_steampunk"
+        }
+      ]
+    },
+    {
+      "type": "narration",
+      "text": "It went to the nearest crate, set its hand flat on the stencil, and turned it so that APPROVED faced the street. Then the next one, and the one after that. Nobody had asked it to. There was no line for it."
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "The Requisition",
+          "text": "ENTRY: crates, the top street, all of them. Disposition...",
+          "theme": "enemy",
+          "portrait": "masterite_curator_steampunk"
+        },
+        {
+          "speaker": "The Requisition",
+          "text": "...Released.",
+          "theme": "enemy",
+          "portrait": "masterite_curator_steampunk"
+        }
+      ]
+    },
+    {
+      "type": "narration",
+      "text": "Down the top street, a shopkeeper who had waited a very long time for a crate of nails began, carefully, to look hopeful."
+    },
+    { "type": "wait", "duration": 0.8 },
+    { "type": "set_flag", "flag": "curator_steampunk_defeated", "value": true },
+    { "type": "letterbox_out", "duration": 0.5 }
+  ]
+}

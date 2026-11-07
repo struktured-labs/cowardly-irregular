@@ -2717,6 +2717,10 @@ func _get_pending_story_cutscene() -> String:
 	if flags.get("cutscene_flag_warden_steampunk_defeated", false) and not flags.get("cutscene_flag_world3_standing_order_defeat_complete", false):
 		if _current_map_id == "brasston_village":
 			return "world3_standing_order_defeat"
+	# The Requisition's aftermath, the same in-place pattern: its crates are released IN Brasston, ahead of chapter3.
+	if flags.get("cutscene_flag_curator_steampunk_defeated", false) and not flags.get("cutscene_flag_world3_requisition_defeat_complete", false):
+		if _current_map_id == "brasston_village":
+			return "world3_requisition_defeat"
 	if flags.get("cutscene_flag_world3_chapter1_complete", false) and not flags.get("cutscene_flag_world3_chapter2_complete", false):
 		if _current_map_id == "steampunk_overworld":
 			return "world3_chapter2"
@@ -3072,6 +3076,7 @@ const _CUTSCENE_COMPLETION_FLAGS := {
 	"world3_tempo_defeat":              "cutscene_flag_world3_tempo_defeat_complete",
 	"world3_grand_schedule_defeat":     "cutscene_flag_world3_grand_schedule_defeat_complete",
 	"world3_standing_order_defeat":     "cutscene_flag_world3_standing_order_defeat_complete",
+	"world3_requisition_defeat":        "cutscene_flag_world3_requisition_defeat_complete",
 	"world3_transition":                "cutscene_flag_world3_transition_complete",
 	# Masterite fragment reveals (gated by _FRAGMENT_GATES; the loop returns the id, so the static audit does not see these)
 	"world1_fragment_arbiter":         "cutscene_flag_world1_fragment_arbiter_complete",
