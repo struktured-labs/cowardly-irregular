@@ -14,6 +14,7 @@ extends RefCounted
 ## DECLARED = {"a|b": "reason"}: an intended overlap, keyed by the two ids in either order. An id ending in "*" matches
 ## any id with that prefix. Every entry needs a reason, and stale() names entries that matched nothing.
 
+const AdvanceAuraClass = preload("res://src/battle/AdvanceAura.gd")
 const BACKDROP_SHARE := 0.85
 const MIN_PX := 1.0
 
@@ -103,6 +104,18 @@ static func _walk(n: Node, under: bool, out: Array, vp: Vector2, want_backdrops:
 					out.append({"id": id_of(c), "rect": r, "node": c})
 	for ch in n.get_children():
 		_walk(ch, under or is_surf, out, vp, want_backdrops)
+
+
+## A battler's FIGURE as a surface: its opaque idle body in screen space, not its texture box (main 23419: a menu over
+## the monster being targeted is a finding). Node2D sprites are not Controls, so a guard adds these to surfaces() itself.
+static func sprite_surface(id: String, sprite: AnimatedSprite2D) -> Dictionary:
+	var fr: Rect2 = AdvanceAuraClass.figure_rect_in_sprite(sprite, &"idle")
+	var s: Vector2 = sprite.scale.abs()
+	var local := Rect2(fr.position / Vector2(maxf(s.x, 0.001), maxf(s.y, 0.001)), fr.size / Vector2(maxf(s.x, 0.001), maxf(s.y, 0.001)))
+	var xf: Transform2D = sprite.get_global_transform_with_canvas()
+	var a: Vector2 = xf * local.position
+	var b: Vector2 = xf * local.end
+	return {"id": id, "rect": Rect2(a, b - a).abs(), "node": sprite}
 
 
 static func screen_rect(c: Control) -> Rect2:
