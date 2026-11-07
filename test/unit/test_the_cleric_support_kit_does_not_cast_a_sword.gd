@@ -19,7 +19,7 @@ extends GutTest
 const SfxState := preload("res://test/unit/helpers/sfx_state.gd")
 const SWORD := "ability_physical"
 const KIT := ["protect", "shell", "regen", "esuna",
-		"scan", "shadow_step", "smoke_bomb", "provoke"]
+		"scan", "shadow_step", "smoke_bomb", "provoke", "steal"]
 
 ## Still unmapped, so still thumping. A LEDGER, not an aspiration: it reds when someone maps one of
 ## these, which is the point — the next lane to fix a Rogue or Fighter cue must update this line, and
@@ -152,9 +152,10 @@ func test_every_support_ability_a_PLAYER_can_cast_has_a_cue_of_its_own() -> void
 	assert_gt(reachable.size(), 4,
 		"CONTROL: derived only %d reachable support abilities — the derivation broke and this arm is vacuous, which is exactly what the hand-list it replaced became" % reachable.size())
 
+	## ⛔ `has(aid)` passed Steal for ten months: it was hand-mapped TO the sword, and a mapping is a mapping. Judge the value.
 	var thumping: Array[String] = []
 	for aid in reachable:
-		if not SoundManager._ability_sounds.has(aid):
+		if str(SoundManager._ability_sounds.get(aid, SWORD)) == SWORD:
 			thumping.append(aid)
 	assert_eq(thumping, [],
 		"these support abilities are castable by a starter job and have no id-keyed cue, so play_ability falls back to ability_physical and they cast a SWORD: %s" % [thumping])
