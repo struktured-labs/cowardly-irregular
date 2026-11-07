@@ -810,16 +810,17 @@ func _setup_default_ability_sounds() -> void:
 	_ability_sounds["regen"] = "ability_regen"
 	_ability_sounds["esuna"] = "ability_esuna"
 
-	# Rogue utility + the Fighter's taunt — the rest of the EIGHT support abilities reachable in
+	# Rogue utility + the Fighter's taunt — the rest of the NINE support abilities reachable in
 	# normal play. Same id-keyed route; 65 monster-only and 11 debug-gated ones still thump.
 	_ability_sounds["scan"] = "ability_scan"
 	_ability_sounds["shadow_step"] = "ability_shadow_step"
 	_ability_sounds["smoke_bomb"] = "ability_smoke_bomb"
 	_ability_sounds["provoke"] = "ability_provoke"
+	# Steal was hand-mapped to the sword in Jan; the gold/miss outcome is cued in BattleManager.
+	_ability_sounds["steal"] = "ability_steal"
 
 	# Physical abilities
 	_ability_sounds["slash"] = "ability_physical"
-	_ability_sounds["steal"] = "ability_physical"
 	_ability_sounds["mug"] = "ability_physical"
 	# Meta-job signature cues (cowir-sfx 2026-07-11) — reality edits must not sound like sword hits.
 	# ⚠️ MOST meta-typed abilities are NOT mapped here and fall through
