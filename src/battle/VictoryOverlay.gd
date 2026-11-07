@@ -416,11 +416,19 @@ func _build_slam(flourish: bool) -> void:
 
 
 ## A tick per landing, rising, for every letter but the last: its landing is the slam's frame and the slam is its voice.
-## One key per letter (cowir-sfx 23489): a single key replayed 50 ms apart would be swallowed by the per-key cooldown.
+## Pitched to what is sounding under it (cowir-sfx 23509, music 23503); SoundManager skips a key it does not have.
 func _tick_letter(n: int) -> void:
-	var key := "victory_letter_%d" % n
-	if SoundManager and SoundManager._sfx_manifest.has(key):
-		SoundManager.play_ui(key)
+	if SoundManager:
+		SoundManager.play_victory_letter(n, _letters_under_key())
+
+
+## What the letters land over, read off the LIVE stream like seconds_until_victory_downbeat: the boss stinger plays for
+## minibosses too (BattleScene._check_for_boss), so the grade cannot say. Nothing playing: the world's victory bed.
+func _letters_under_key() -> String:
+	var mp: AudioStreamPlayer = SoundManager._music_player
+	if mp != null and mp.playing and mp.stream != null and str(mp.stream.resource_path) != "":
+		return str(mp.stream.resource_path).get_file().get_basename()
+	return "victory_" + SoundManager.get_current_world_suffix()
 
 
 ## One letter's fall: a bounce eased in whole glyph pixels, so no frame of it sits between pixels.

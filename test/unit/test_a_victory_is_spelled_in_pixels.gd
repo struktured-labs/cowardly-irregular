@@ -221,3 +221,19 @@ func test_every_boss_name_is_drawable() -> void:
 			if not PixelText.can_draw(ch) and not missing.has(ch):
 				missing.append(ch)
 	assert_eq(missing, [], "characters in a billed boss line with no glyph")
+
+
+## The ticks are pitched by what plays under them (cowir-sfx 23509). With no bed playing, the key falls back to this world's
+## victory bed, and that key is one the transpose table knows, so the fallback lands on a real row rather than a silent 0.
+func test_the_ticks_key_to_a_bed_the_transpose_table_knows() -> void:
+	var o = _build()
+	var mp: AudioStreamPlayer = SoundManager._music_player
+	var was_playing := mp != null and mp.playing
+	if was_playing:
+		mp.stop()
+	var key: String = o._letters_under_key()
+	var table = JSON.parse_string(FileAccess.get_file_as_string("res://data/victory_letter_transpose.json"))
+	assert_true(table is Dictionary and (table as Dictionary).has("transpose"), "CONTROL: the transpose table was read")
+	assert_eq(key, "victory_" + SoundManager.get_current_world_suffix(), "nothing playing: this world's victory bed")
+	if table is Dictionary:
+		assert_true(((table as Dictionary).get("transpose", {}) as Dictionary).has(key), "'%s' has a row in the transpose table" % key)
