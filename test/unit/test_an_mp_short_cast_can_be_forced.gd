@@ -92,3 +92,21 @@ func test_the_advance_queue_takes_a_forced_cast_past_its_shortfall() -> void:
 	m._queue_current_action({"id": "ability_x", "data": {"ability_id": ABILITY, "forced": true}, "label": "Acid Spray"})
 	assert_eq(m._queued_actions.size(), 1, "a forced one is queued")
 	assert_true(str(m._queued_actions[0]["label"]).ends_with("!"), "and marked forced in the queue")
+
+
+## struktured: "of course they can't advance more than they are allowed to, no matter what." Forcing lifts the MP check
+## ONLY: a full queue and an item-count limit refuse a forced cast exactly as an ordinary one.
+func test_forcing_never_lifts_an_advance_limit() -> void:
+	var m: Win98Menu = autofree(Win98Menu.new())
+	m.set_queue_budget({"mp": 0, "ether": 1}, func(d): return {"mp": 10} if str(d.get("ability_id", "")) != "" else {"ether": 1})
+	var forced := {"id": "ability_x", "data": {"ability_id": ABILITY, "forced": true}, "label": "Acid Spray"}
+	m._queue_current_action(forced)
+	assert_eq(m._queued_actions.size(), 1, "CONTROL: within the limits, the forced cast queues")
+	m._max_queue_size = 1
+	m._queue_current_action(forced.duplicate(true))
+	assert_eq(m._queued_actions.size(), 1, "a full queue refuses a forced cast")
+	m._max_queue_size = 4
+	m._queue_current_action({"id": "item_e", "data": {"item_id": "ether"}, "label": "Ether"})
+	var item_forced := {"id": "item_e", "data": {"item_id": "ether", "forced": true}, "label": "Ether"}
+	m._queue_current_action(item_forced)
+	assert_eq(m._queued_actions.size(), 2, "and forced cannot spend a second of a one-item stock")

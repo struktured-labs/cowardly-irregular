@@ -1862,8 +1862,8 @@ func _queue_current_action(item: Dictionary) -> void:
 	## Advance used to queue a cast the turn could not pay for; it then failed at execution and the AP was lost.
 	var data = item.get("data", null)
 	var forced: bool = data is Dictionary and bool(data.get("forced", false))
-	## A FORCED cast skips the shortfall check: the player overrode it, and execution re-checks MP.
-	var shortfall: String = "" if forced else root._queue_shortfall(data)
+	## A FORCED cast is exempt from the MP walk ONLY (_queue_shortfall); the queue cap above and item counts stay hard.
+	var shortfall: String = root._queue_shortfall(data)
 	if shortfall != "":
 		_reject_selection({"reject_reason": shortfall})
 		return
@@ -2128,7 +2128,9 @@ func _queue_shortfall(data) -> String:
 		var cost = _queue_cost_fn.call(d)
 		if not (cost is Dictionary):
 			continue
-		if has_mp and cost.has("mp"):
+		## The player FORCED this cast past MP (struktured: forcing overrides the MP check, never an Advance limit).
+		var forced_past_mp: bool = d is Dictionary and bool(d.get("forced", false))
+		if has_mp and cost.has("mp") and not forced_past_mp:
 			mp -= int(cost["mp"])
 			if mp < 0:
 				return "Not enough MP for the queue (%d short)" % -mp
