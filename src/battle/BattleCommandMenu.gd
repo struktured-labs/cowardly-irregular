@@ -710,6 +710,10 @@ func _build_ability_row(ability_id: String, combatant: Combatant, alive_enemies:
 	## so a passive's mp_cost_multiplier moved what was charged and not what was quoted or gated.
 	var mp_cost: int = JobSystem.get_ability_mp_cost(combatant, ability_id)
 	var can_afford: bool = combatant.current_mp >= mp_cost
+	## MP is the ONLY thing short: the row is landable and keeps its targets, and Win98Menu lets three presses force it
+	## (struktured 2026-11-07: the player may know an earlier slot restores the MP). Silence and the rest stay hard.
+	var mp_short: bool = not can_afford and not combatant.has_status("silence") and combatant.knows_ability(ability_id)
+	var offerable: bool = can_afford or mp_short
 	var target_type: String = ability.get("target_type", "single_enemy")
 
 	var ability_desc: String = ability.get("description", "")
@@ -720,7 +724,7 @@ func _build_ability_row(ability_id: String, combatant: Combatant, alive_enemies:
 		ability_tooltip = "%s · %s" % [str(element_val).capitalize(), ability_tooltip]
 
 	# Single-enemy targeting: build per-enemy submenu with damage estimates
-	if target_type == "single_enemy" and alive_enemies.size() > 0 and can_afford:
+	if target_type == "single_enemy" and alive_enemies.size() > 0 and offerable:
 		var enemy_targets: Array = []
 		for enemy in alive_enemies:
 			var enemy_idx: int = _scene.test_enemies.find(enemy)
@@ -751,14 +755,15 @@ func _build_ability_row(ability_id: String, combatant: Combatant, alive_enemies:
 			"cost_affordable": can_afford,
 			"tooltip": ability_tooltip,
 			"submenu": enemy_targets,
-			"disabled": not can_afford
+			"disabled": not offerable,
+			"mp_short": mp_short
 		}
 
 	# Single-ally targeting (heal/buff) with party submenu. CTB ruling (struktured
 	# 2026-10-03): a `healing`-typed ability's target list includes EVERY ally, dead or
 	# full-HP — selection happens before execution, so the player is guessing. Non-heal
 	# single_ally abilities (protect/shell/esuna/pray/etc) keep the alive-only filter.
-	if target_type == "single_ally" and can_afford:
+	if target_type == "single_ally" and offerable:
 		var is_heal_ability: bool = str(ability.get("type", "")) == "healing"
 		var ally_targets: Array = []
 		for i in range(_scene.party_members.size()):
@@ -785,13 +790,14 @@ func _build_ability_row(ability_id: String, combatant: Combatant, alive_enemies:
 			"cost_affordable": can_afford,
 			"tooltip": ability_tooltip,
 			"submenu": ally_targets,
-			"disabled": not can_afford
+			"disabled": not offerable,
+			"mp_short": mp_short
 		}
 
 	# Dead-ally targeting (Raise) — CTB ruling (struktured 2026-10-03): shows EVERY
 	# ally, living or KO'd, tagged by state. The player can't know who will still be
 	# standing when a queued Raise resolves, so the guess is theirs to make.
-	if target_type == "dead_ally" and can_afford:
+	if target_type == "dead_ally" and offerable:
 		var dead_targets: Array = []
 		for i in range(_scene.party_members.size()):
 			var member = _scene.party_members[i]
@@ -812,7 +818,8 @@ func _build_ability_row(ability_id: String, combatant: Combatant, alive_enemies:
 			"cost_affordable": can_afford,
 				"tooltip": ability_tooltip,
 				"submenu": dead_targets,
-				"disabled": not can_afford
+				"disabled": not offerable,
+			"mp_short": mp_short
 			}
 		return {
 			"id": "ability_" + ability_id,
@@ -825,7 +832,7 @@ func _build_ability_row(ability_id: String, combatant: Combatant, alive_enemies:
 		}
 
 	# AoE on all enemies — show [AoE] tag with total estimated damage
-	if target_type == "all_enemies" and can_afford:
+	if target_type == "all_enemies" and offerable:
 		var aoe_label: String = "%s [AoE]" % ability["name"]
 		if alive_enemies.size() > 0:
 			## Each foe counts at most what it has left: summing full estimates read two 5-HP slimes as
@@ -845,11 +852,12 @@ func _build_ability_row(ability_id: String, combatant: Combatant, alive_enemies:
 			"cost_affordable": can_afford,
 			"tooltip": ability_tooltip + " (hits all enemies)",
 			"data": {"ability_id": ability_id},
-			"disabled": not can_afford
+			"disabled": not offerable,
+			"mp_short": mp_short
 		}
 
 	# Party-wide buff/heal — show [All] tag
-	if target_type == "all_allies" and can_afford:
+	if target_type == "all_allies" and offerable:
 		var all_label: String = "%s [All]" % ability["name"]
 		if ability.has("heal_amount"):
 			## "each" is one number for N receivers, and a curse or a passive on one of them makes it a
@@ -866,7 +874,8 @@ func _build_ability_row(ability_id: String, combatant: Combatant, alive_enemies:
 			"cost_affordable": can_afford,
 			"tooltip": ability_tooltip + " (affects all allies)",
 			"data": {"ability_id": ability_id},
-			"disabled": not can_afford
+			"disabled": not offerable,
+			"mp_short": mp_short
 		}
 
 	# Default: single-target, self, or unaffordable — flat entry
@@ -877,7 +886,8 @@ func _build_ability_row(ability_id: String, combatant: Combatant, alive_enemies:
 			"cost_affordable": can_afford,
 		"tooltip": ability_tooltip,
 		"data": {"ability_id": ability_id},
-		"disabled": not can_afford
+		"disabled": not offerable,
+			"mp_short": mp_short
 	}
 
 
@@ -1573,11 +1583,11 @@ func _on_win98_actions_submitted(actions: Array) -> void:
 					target = _scene.test_enemies[target_idx]
 
 				if is_instance_valid(target):
-					battle_actions.append({"type": "ability", "ability_id": ability_id, "targets": [target]})
+					battle_actions.append({"type": "ability", "ability_id": ability_id, "targets": [target], "forced": bool(action_data.get("forced", false))})
 			elif str(ability_id) != "":
 				var resolved: Array = _targets_for_ability_without_picker(str(ability_id), current, alive_enemies)
 				if not resolved.is_empty():
-					battle_actions.append({"type": "ability", "ability_id": ability_id, "targets": resolved})
+					battle_actions.append({"type": "ability", "ability_id": ability_id, "targets": resolved, "forced": bool(action_data.get("forced", false))})
 
 		# Handle item actions (enemy or ally targets)
 		elif action_id.begins_with("item_") and action_data is Dictionary:
