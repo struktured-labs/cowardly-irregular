@@ -12,8 +12,8 @@ judges every RETURN of a non-stinger bed against where THAT bed last stopped, ev
     FLAG: RESTART anything else, e.g. back to its top from mid-track (the 6fabbfc7f defect)
 With no keys, the candidates are every W1-reachable manifest track (aliases skipped).
 
-KNOWN ARTIFACT: a stinger whose start straddles a 4 s window reads "?" or "ends early". Confirm a stinger at 1 s
-resolution before calling it truncated (stinger_boss_defeated -> victory bed start must be +9.2 s).
+A stinger is judged at 1 s resolution, start to the next bed's start (STINGER WHOLE / STINGER CUT): its 4 s windows
+straddle its start and read short, which is why every take before this needed a hand probe.
 
 --selftest touches nothing: no file opened, no directory walked, no subprocess, nothing written. It builds synthetic
 masters in numpy and checks RESUME, RESTART, WRAP and a lone first play (no verdict) through the same functions.
@@ -114,6 +114,53 @@ def judge(runs, masters):
     return verdicts, flags
 
 
+def stinger_gaps(audio, masters, runs):
+    """Every stinger PLAY, found by a whole-take 1 s scan (a stinger cut under 4 s never fills a 4 s window, so the
+    runs cannot be trusted to contain it), with the next non-stinger bed after it: (stinger, start, bed, bed start,
+    gap, stinger dur). Whole when gap >= dur - 0.5. A bed from its top is placed exactly (t - offset); a bed that
+    RESUMES mid-track is placed at its first matching 1 s window, so its gap reads up to 1 s long."""
+    n = int(SR)
+    sec = [(float(t), audio[t * n:(t + 1) * n]) for t in range(int(len(audio) / SR))]
+    beds = {k: m for k, m in masters.items() if not m[2]}
+    out = []
+    for k, (m, dur, stinger) in masters.items():
+        if not stinger:
+            continue
+        plays = []  # clusters of 1 s windows agreeing on where the stinger's t=0 is
+        for t, w in sec:
+            sc, off = best_offset(w, m)
+            if sc < SOLID_SCORE:
+                continue
+            s0 = t - off
+            if plays and abs(s0 - plays[-1][-1]) < 0.5:
+                plays[-1].append(s0)
+            else:
+                plays.append([s0])
+        for p in plays:
+            s0 = float(np.median(p))
+            b0, bed = None, None
+            for t, w in sec:
+                if t < s0 + 0.5:
+                    continue
+                best = (0.0, None, 0.0)
+                for bk, (bm, _, _) in beds.items():
+                    sc, off = best_offset(w, bm)
+                    if sc > best[0]:
+                        best = (sc, bk, off)
+                if best[0] >= SOLID_SCORE:
+                    bed = best[1]
+                    b0 = t - best[2] if best[2] < 2 * WIN else t
+                    break
+            out.append((k, s0, bed, b0, (b0 - s0) if b0 is not None else None, dur))
+    out.sort(key=lambda g: g[1])
+    return out
+
+
+def stinger_whole(gap, dur):
+    """The one rule both the report and the selftest use: whole when the next bed starts no earlier than dur - 0.5."""
+    return gap is not None and gap >= dur - 0.5
+
+
 def w1_keys(tracks):
     return [k for k, v in tracks.items() if not v.get("alias_of") and any(m in k for m in W1_MARKERS)
             and not any(w in k for w in OTHER_WORLDS)]
@@ -143,9 +190,21 @@ def selftest():
         got_f = [x[0] for x in f]
         if got_v != want_v or got_f != want_f:
             bad.append("%s: verdicts %s flags %s, wanted %s %s" % (name, got_v, got_f, want_v, want_f))
+    ## A stinger whose start STRADDLES a 4 s window (it starts at 10 s): the 1 s onsets must still read its full length.
+    st = rng.standard_normal(int(6 * SR))
+    vic = rng.standard_normal(int(16 * SR))
+    sm = {"bed": (a, 40.0, False), "sting": (st, 6.0, True), "victory": (vic, 16.0, False)}
+    for name, cut, whole in (("stinger whole", 6, True), ("stinger cut at 3 s", 3, False)):
+        seg = np.concatenate([s(a, 0, 10), s(st, 0, cut), s(vic, 0, 16)])
+        g = stinger_gaps(seg, sm, runs_of(windows(seg, sm)))
+        if len(g) != 1 or g[0][4] is None:
+            bad.append("%s: found %d stinger gap(s) %s, wanted 1 resolved" % (name, len(g), g))
+            continue
+        if abs(g[0][4] - cut) > 0.5 or stinger_whole(g[0][4], g[0][5]) != whole:
+            bad.append("%s: gap %.2f s, wanted %d s (%s)" % (name, g[0][4], cut, "whole" if whole else "cut"))
     for b_ in bad:
         print("SELFTEST FAIL:", b_)
-    print("demo_music_id selftest: %d of %d cases %s" % (len(cases) - len(bad), len(cases), "ok" if not bad else "FAILED"))
+    print("demo_music_id selftest: %d of %d cases %s" % (len(cases) + 2 - len(bad), len(cases) + 2, "ok" if not bad else "FAILED"))
     return 0 if not bad else 1
 
 
@@ -169,6 +228,14 @@ def main():
         ms = float(np.mean(r["scores"])) if r["scores"] else 0.0
         print("  %6.1f-%6.1f s  %-24s offset %6.1f-%6.1f s  score %.2f" % (r["t0"], r["t1"] + WIN, r["k"], r["off0"], r["off1"] + WIN, ms))
     verdicts, flags = judge(runs, masters)
+    flags = [f for f in flags if f[0] != "STINGER"]  # the 4 s reading straddles; judged at 1 s below instead
+    for k, s0, bed, b0, gap, dur in stinger_gaps(audio, masters, runs):
+        if gap is None:
+            flags.append(("STINGER", k, s0, "no bed follows it at 1 s (the take may end inside it)"))
+        elif stinger_whole(gap, dur):
+            verdicts.append(("STINGER WHOLE", k, s0, "%s starts %.2f s after it, of %.1f" % (bed, gap, dur)))
+        else:
+            flags.append(("STINGER CUT", k, s0, "%s starts %.2f s after it, of %.1f" % (bed, gap, dur)))
     for kind, k, t0, detail in verdicts:
         print("  OK: %s %s at %.1f s: %s" % (kind, k, t0, detail))
     for kind, k, t0, detail in flags:
