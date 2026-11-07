@@ -4260,6 +4260,84 @@ func _lost_battle_is_escape() -> bool:
 	return party_members.any(func(m): return is_instance_valid(m) and m.is_alive)
 
 
+## The escape beat (struktured 2026-11-07: "still a bit rough/abrupt … slowing it down slightly and adding more
+## flair"). On a SUCCESSFUL escape only, every standing member gives a startled hop, turns away and sprints off
+## the right edge, one after another with dust and speed lines, while the monsters lean in. Wall clock, so it
+## reads the same at every speed; GameLoop awaits it before its exit transition, capped so it can never stall.
+const ESCAPE_STAGGER := 0.12
+const ESCAPE_HOP := 0.12
+const ESCAPE_SPRINT := 0.45
+const ESCAPE_CAP := 1.5
+var _escape_beat_played := false
+
+
+## Seconds the beat lasts for `runners` members: the last one's hop + sprint, never past the cap.
+static func escape_beat_length(runners: int) -> float:
+	if runners <= 0:
+		return 0.0
+	return minf(ESCAPE_STAGGER * float(runners - 1) + ESCAPE_HOP + ESCAPE_SPRINT, ESCAPE_CAP)
+
+
+func play_escape_beat() -> void:
+	if _escape_beat_played or turbo_mode or autogrind_console_mode or not _lost_battle_is_escape():
+		return
+	_escape_beat_played = true
+	SoundManager.play_battle("escape_run")
+	var edge := get_viewport_rect().size.x + 160.0
+	var runners := 0
+	for i in party_sprite_nodes.size():
+		var s: AnimatedSprite2D = party_sprite_nodes[i]
+		if not is_instance_valid(s) or not s.visible:
+			continue
+		if i < party_members.size() and (not is_instance_valid(party_members[i]) or not party_members[i].is_alive):
+			continue
+		_run_off(s, ESCAPE_STAGGER * float(runners), edge)
+		runners += 1
+	for e in enemy_sprite_nodes:
+		if is_instance_valid(e) and e.visible and not e.has_meta("dying"):
+			var lean := e.create_tween().set_ignore_time_scale(true)
+			var x0: float = e.position.x
+			lean.tween_property(e, "position:x", x0 + 10.0, 0.08).set_ease(Tween.EASE_OUT)
+			lean.tween_property(e, "position:x", x0, 0.07).set_ease(Tween.EASE_IN)
+	if runners > 0:
+		await get_tree().create_timer(escape_beat_length(runners), true, false, true).timeout
+
+
+func _run_off(s: AnimatedSprite2D, delay: float, edge: float) -> void:
+	var p0 := s.position
+	var dx := edge - s.global_position.x
+	var t := s.create_tween().set_ignore_time_scale(true)
+	if delay > 0.0:
+		t.tween_interval(delay)
+	t.tween_property(s, "position:y", p0.y - 16.0, ESCAPE_HOP * 0.5).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	t.tween_callback(func() -> void:
+		if is_instance_valid(s):
+			s.flip_h = not s.flip_h
+	)
+	t.tween_property(s, "position:y", p0.y, ESCAPE_HOP * 0.5).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	t.tween_callback(func() -> void:
+		if is_instance_valid(s):
+			BattleJuice.spawn_burst(s.global_position + Vector2(0, 18), Vector2(-1, -0.2), 8, Color(0.78, 0.72, 0.6, 0.85), 140.0)
+			_spawn_speed_lines(s)
+	)
+	t.tween_property(s, "position:x", p0.x + dx, ESCAPE_SPRINT).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+
+
+func _spawn_speed_lines(s: Node2D) -> void:
+	for j in range(3):
+		var line := ColorRect.new()
+		line.name = "EscapeSpeedLine"
+		line.color = Color(1, 1, 1, 0.7)
+		line.size = Vector2(28, 2)
+		line.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		line.position = s.global_position - global_position + Vector2(-34, -14 + 12 * j)
+		add_child(line)
+		var lt := line.create_tween().set_ignore_time_scale(true)
+		lt.tween_property(line, "position:x", line.position.x - 40.0, 0.25)
+		lt.parallel().tween_property(line, "modulate:a", 0.0, 0.25)
+		lt.tween_callback(line.queue_free)
+
+
 func _process(delta: float) -> void:
 	"""Handle post-battle input and danger music"""
 	# Check for danger music (player about to die)
@@ -4929,6 +5007,11 @@ func _on_action_executing(combatant: Combatant, action: Dictionary) -> void:
 		"item":
 			SoundManager.play_item(str(action.get("item_id", "")))
 			animator.play_item()
+		"retreat":
+			## A grind's safety retreat is a flee attempt and had no cue at all; gated like the other
+			## grind-noisy cues so a turbo/console retreat doesn't stack (cowir-sfx 23484, battle 23486).
+			if signature_sound_allowed():
+				SoundManager.play_ability("flee")
 		"defer":
 			animator.play_named_animation("defer")
 
@@ -6167,6 +6250,12 @@ func _on_enemy_died(enemy_idx: int) -> void:
 					BattleJuice.spawn_burst(_stable_sprite_anchor(sprite), Vector2(0, -0.5), 14, Color(1.0, 0.82, 0.45))
 					BattleJuice.hitstop([sprite], 0.12)
 					BattleJuice.punch_zoom(_stable_sprite_anchor(sprite), 0.03, 0.2)
+				## An ordinary monster leaves in its world's death style (data/enemy_death_styles.json, on the
+				## wall clock, struktured 2026-11-07); a boss keeps the death below, and so does the OFF tier.
+				if EnemyDeathFx.applies_to(enemy) and death_tier != BattleJuice.Tier.OFF:
+					EnemyDeathFx.play(sprite, EnemyDeathFx.current_style(), func() -> void: SoundManager.play_death("enemy_death"))
+					_fade_dying_name(sprite)
+					return
 				var tween = sprite.create_tween()  # dies with the sprite a grind restart frees
 				tween.tween_property(sprite, "modulate", Color(3.0, 3.0, 3.0, 1.0), 0.1)
 				tween.tween_property(sprite, "modulate", Color(1.0, 1.0, 1.0, 1.0), 0.1)
