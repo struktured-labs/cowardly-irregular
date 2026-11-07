@@ -1,9 +1,9 @@
 extends GutTest
 
-## ZOOM (struktured 2026-11-07, design 23190): in the field Abilities menu one button (west face / keyboard A, the
-## `ability_zoom` action) blows the highlighted description up to the whole content area, AbilityZoom.FACTOR larger on
-## top of Text Size and capped where it still fits. Up/Down still step while zoomed; Back un-zooms and never closes;
-## Confirm casts nothing. The same button or Back returns to the exact prior layout.
+## ZOOM (struktured 2026-11-07, design 23190, v2 23219): in the field Abilities menu one button (west face / keyboard A,
+## the `ability_zoom` action) turns the highlighted entry into a reading view: its description at the largest size that
+## fills its box (at least AbilityZoom.MIN_FACTOR the unzoomed text at 100%), and its mechanics as fact rows. Up/Down
+## still step while zoomed; Back un-zooms and never closes; Confirm casts nothing; the same button restores the layout.
 ## Fit is judged on the BUILT label's own line count against its panel, never on a size the code computed.
 
 const MENU := preload("res://src/ui/AbilitiesMenu.gd")
@@ -87,9 +87,10 @@ func _snapshot(m: Control) -> Array:
 
 func test_the_floor_names_every_member_this_file_drives() -> void:
 	var m: Control = await _menu()
-	for f in ["_set_zoom", "_fit_zoom", "_back", "_has_selection", "_build_ui"]:
+	for f in ["_set_zoom", "_create_zoomed_panel", "_zoom_facts", "_back", "_has_selection", "_build_ui"]:
 		assert_true(m.has_method(f), "AbilitiesMenu.%s must exist" % f)
 	assert_true("_zoomed" in m, "AbilitiesMenu._zoomed must exist")
+	assert_true(AbilityZoom.new().has_method("fit_px"), "AbilityZoom.fit_px must exist (the one fill rule, shared with battle)")
 	assert_gt(m._abilities_list.size(), 1, "PRECONDITION: the mage has abilities to read")
 	assert_true(InputMap.has_action(AbilityZoom.ACTION), "the ability_zoom action exists")
 	var west := InputEventJoypadButton.new()
@@ -112,15 +113,66 @@ func test_zoom_grows_the_description_and_it_still_fits() -> void:
 		assert_not_null(panel, "@%s the zoomed panel is built" % s)
 		var d := _desc(m)
 		var px: int = d.get_theme_font_size("font_size")
-		assert_gt(px, before, "@%s the zoomed description is larger (%d -> %d)" % [s, before, px])
-		var lines: int = d.get_line_count()
-		var bottom: float = d.position.y + lines * d.get_theme_font("font").get_height(px)
-		assert_gt(lines, 0, "CONTROL @%s: the built label has lines" % s)
-		assert_lte(bottom, panel.size.y, "@%s the zoomed description (%d lines, ends %.0f) fits its panel (%.0f)" % [s, lines, bottom, panel.size.y])
-		assert_lte(d.position.x + d.size.x, panel.size.x, "@%s and stays inside its width" % s)
+		if is_equal_approx(float(s), 1.0):
+			assert_gte(float(px), AbilityZoom.MIN_FACTOR * before, "@100%% the zoomed description is >= %.1fx the unzoomed (%d -> %d)" % [AbilityZoom.MIN_FACTOR, before, px])
+		else:
+			assert_gt(px, before, "@%s the zoomed description is larger (%d -> %d)" % [s, before, px])
+		_assert_desc_fits(d, panel, s)
 
 
-## A description far longer than any shipped one, so the cap has to bind: the zoom shrinks back until it fits.
+## The BUILT label's own lines, against the box it was given and the panel.
+func _assert_desc_fits(d: Label, panel: Control, s) -> void:
+	var lines: int = d.get_line_count()
+	var drawn: float = lines * d.get_theme_font("font").get_height(d.get_theme_font_size("font_size"))
+	assert_gt(lines, 0, "CONTROL @%s: the built label has lines" % s)
+	assert_lte(drawn, d.size.y + 0.5, "@%s the description (%d lines, %.0f tall) fits its box (%.0f)" % [s, lines, drawn, d.size.y])
+	assert_lte(d.position.y + d.size.y, panel.size.y, "@%s its box is inside the panel" % s)
+	assert_lte(d.position.x + d.size.x, panel.size.x, "@%s and inside its width" % s)
+
+
+## The SHORTEST description in abilities.json fills at least 75% of its box: a one-liner is huge, not lost in a big box.
+func test_the_shortest_description_fills_its_box() -> void:
+	var shortest := ""
+	for id in JobSystem.abilities:
+		var t := str(JobSystem.abilities[id].get("description", ""))
+		if t != "" and (shortest == "" or t.length() < shortest.length()):
+			shortest = t
+	assert_gt(shortest.length(), 0, "CONTROL: abilities.json has descriptions")
+	var m: Control = await _menu(1.0)
+	var row: Dictionary = m._abilities_list[m.selected_index]
+	row["data"] = (row["data"] as Dictionary).duplicate()
+	row["data"]["description"] = shortest
+	await _act(m, AbilityZoom.ACTION)
+	var d := _desc(m)
+	var drawn: float = d.get_line_count() * d.get_theme_font("font").get_height(d.get_theme_font_size("font_size"))
+	assert_gte(drawn / d.size.y, 0.75, "'%s' fills %.0f%% of its %.0f px box at %d px" % [shortest, 100.0 * drawn / d.size.y, d.size.y, d.get_theme_font_size("font_size")])
+
+
+## The mechanics: at least Type and Target, every row a readable pair, every row inside the panel at every preset.
+func test_the_zoomed_panel_states_the_mechanics() -> void:
+	for s in _presets():
+		var m: Control = await _menu(s)
+		await _act(m, AbilityZoom.ACTION)
+		var panel := _live(m, "ZoomedDetails")
+		var rows := 0
+		var bad: Array = []
+		for i in 64:
+			var l := panel.get_node_or_null("FactLabel%d" % i) as Label
+			var v := panel.get_node_or_null("FactValue%d" % i) as Label
+			if l == null or v == null:
+				break
+			rows += 1
+			var f: Font = v.get_theme_font("font")
+			var px: int = v.get_theme_font_size("font_size")
+			var end_x: float = v.position.x + f.get_string_size(v.text, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x
+			if l.text.strip_edges() == "" or v.text.strip_edges() == "":
+				bad.append("row %d is blank" % i)
+			if end_x > panel.size.x or v.position.y + f.get_height(px) > panel.size.y:
+				bad.append("@%s row '%s: %s' leaves the panel (ends %.0f, %.0f)" % [s, l.text, v.text, end_x, v.position.y + f.get_height(px)])
+		assert_gte(rows, 2, "@%s the zoomed panel shows at least Type and Target" % s)
+		assert_eq(bad.size(), 0, "every fact row is readable and inside the panel: %s" % [bad])
+
+## A description far longer than any shipped one, so the fit has to bind below MIN_FACTOR: it still fits.
 func test_a_description_too_long_for_full_zoom_is_capped_to_fit() -> void:
 	var long_text := " ".join(PackedStringArray(range(160).map(func(i): return "word%d" % i)))
 	for s in _presets():
@@ -130,14 +182,8 @@ func test_a_description_too_long_for_full_zoom_is_capped_to_fit() -> void:
 		row["data"]["description"] = long_text
 		m._build_ui()
 		await get_tree().process_frame
-		var before: int = _desc(m).get_theme_font_size("font_size")
 		await _act(m, AbilityZoom.ACTION)
-		var panel := _live(m, "ZoomedDetails")
-		var d := _desc(m)
-		var px: int = d.get_theme_font_size("font_size")
-		var bottom: float = d.position.y + d.get_line_count() * d.get_theme_font("font").get_height(px)
-		assert_gte(px, before, "@%s the capped zoom never shrinks below the unzoomed text" % s)
-		assert_lte(bottom, panel.size.y, "@%s the long description (%d lines at %d px, ends %.0f) fits its panel (%.0f)" % [s, d.get_line_count(), px, bottom, panel.size.y])
+		_assert_desc_fits(_desc(m), _live(m, "ZoomedDetails"), s)
 
 
 func test_the_toggle_restores_the_exact_layout() -> void:
