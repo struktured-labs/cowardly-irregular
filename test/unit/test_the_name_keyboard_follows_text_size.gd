@@ -65,6 +65,9 @@ func test_the_panel_stays_on_screen_and_holds_its_help_line() -> void:
 		var vp: Vector2 = k.size
 		var panel := _panel_rect(k)
 		assert_true(Rect2(Vector2.ZERO, vp).encloses(panel), "at %s the panel %s is on a %s screen" % [s, panel, vp])
+		## Centred as a relationship, not inferred from fitting: the test screen can be wider than a player's.
+		var c := _container(k)
+		assert_almost_eq(c.position + c.size * c.scale.x / 2.0, vp / 2.0, Vector2.ONE, "at %s the keyboard is centred on a %s screen" % [s, vp])
 		var h: Label = k._help_label
 		var px: int = h.get_theme_font_size("font_size")
 		var w: float = h.get_theme_font("font").get_string_size(h.text, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x
