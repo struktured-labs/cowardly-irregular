@@ -294,9 +294,11 @@ func _build_card(world: Dictionary, sz: Vector2) -> Control:
 	# Current world indicator
 	if is_current:
 		var marker := Label.new()
+		# Font BEFORE text: a Label caches its minimum when its text is set, and that cache is still the default 16 px's
+		# (113 px) when the size below is applied, so a smaller font after the text left a 113 px box past a 0.8x card.
+		marker.add_theme_font_size_override("font_size", px(11, k))
 		marker.text = "YOU ARE HERE"
 		marker.position = Vector2(sz.x - 140.0 * k, 10.0 * k)
-		marker.add_theme_font_size_override("font_size", px(11, k))
 		marker.size = Vector2(120, 18) * k
 		marker.add_theme_color_override("font_color", world.color)
 		marker.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
