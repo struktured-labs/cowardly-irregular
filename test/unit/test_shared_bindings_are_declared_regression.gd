@@ -30,6 +30,9 @@ const PROJECT := "res://project.godot"
 
 ## key/button signature -> the reason the collision is safe. Keep the reason, not just the pair.
 const DECLARED := {
+	"ability_zoom+dash":
+		"A key / west face. dash only scales WALKING speed (OverworldPlayer reads it while moving); " +
+		"ability_zoom is read only by the field Abilities menu and the battle ability submenu, where nobody walks.",
 	"battle_open_log+party_chat":
 		"L key. party_chat is gated on LoopState.EXPLORATION in GameLoop; battle_open_log is read only by " +
 		"BattleScene._input, which exists only in battle. Never both live.",

@@ -118,6 +118,9 @@ const UNREAD_EFFECT_KEYS := {
 	## — this line comes back and the wiring goes.
 }
 
+## Files that name every key to DESCRIBE it to the player, so their reads are not the engine consuming it (controller 23290).
+const DISPLAY_ONLY := ["AbilityFacts.gd"]
+
 ## Keys that are structure rather than effect, and are read by the loader or by name.
 const NON_EFFECT_KEYS := ["id"]
 
@@ -157,7 +160,7 @@ func _src_blob() -> String:
 			if dir.current_is_dir():
 				if not name.begins_with("."):
 					stack.append(full)
-			elif name.ends_with(".gd"):
+			elif name.ends_with(".gd") and not DISPLAY_ONLY.has(name):
 				blob += FileAccess.get_file_as_string(full)
 			name = dir.get_next()
 		dir.list_dir_end()

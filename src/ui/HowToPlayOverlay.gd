@@ -65,6 +65,8 @@ static func _bound_rows() -> String:
 		"%s / Escape" % _keys(OverworldMenu.FIELD_MENU_ACTION, OS.get_keycode_string(OverworldMenu.TOGGLE_KEY))] \
 		+ "%-17s %-17s —                [color=lime]Run — hold to move 1.7x faster[/color]\n" % [
 			_face_cell("dash", "West"), _keys("dash", "Shift")] \
+		+ "%-17s %-17s —                Zoom in on an ability (in an ability menu)\n" % [
+			_face_cell(String(AbilityZoom.ACTION), "West"), _keys(String(AbilityZoom.ACTION), "A")] \
 		+ "L Shoulder        %-17s —                Defer (in battle)\n" % _keys("battle_defer", "Q") \
 		+ "L Shoulder        %-17s —                Party Chat (in the field)\n" % _keys("party_chat", "L") \
 		+ "R Shoulder        %-17s —                Advance (queue action)" % _keys("battle_advance", "W")
