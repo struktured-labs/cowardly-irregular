@@ -48,13 +48,19 @@ func _editor_at(scale: float) -> Control:
 	return ed
 
 
-## Where a frame label's text is DRAWN, in the editor's coordinates: a right-aligned label draws at the right end of its box.
+## Where a frame label's GLYPHS are drawn, in the editor's coordinates: a right-aligned label draws at the right end of its box,
+## and the height is the font's ascent per line, not the line box, which already touches its neighbour in the authored 100% layout
+## (the details panel stacks a 10 px name and its profile 12 px apart: line boxes overlap 2 px, ink does not).
 func _drawn(l: Label, ed: Control) -> Rect2:
 	var origin: Vector2 = l.global_position - ed.global_position
 	var m: Vector2 = l.get_minimum_size()
 	if l.horizontal_alignment == HORIZONTAL_ALIGNMENT_RIGHT:
 		origin.x += l.size.x - m.x
-	return Rect2(origin, m)
+	var fnt: Font = l.get_theme_font("font")
+	var px: int = l.get_theme_font_size("font_size")
+	var lines: int = maxi(1, l.get_line_count())
+	var ink_h: float = m.y if fnt == null else fnt.get_ascent(px) + (lines - 1) * fnt.get_height(px)
+	return Rect2(origin, Vector2(m.x, ink_h))
 
 
 ## The frame: every visible Label that is not inside a grid cell.
