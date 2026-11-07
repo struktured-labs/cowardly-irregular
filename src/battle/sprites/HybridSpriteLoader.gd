@@ -255,7 +255,7 @@ static func load_battle_effect_texture(key: String) -> Texture2D:
 	return tex if tex is Texture2D else null
 
 
-## Where the FIGURE sits inside frame 0, not where the frame is. Job sheets place their
+## Where the FIGURE sits inside the frame a sheet idles on (frame 0, or a monster's idle start), not where the frame is. Job sheets place their
 ## figures very differently — measured 2026-09-16, the Fighter fills 0.38 of its 256px frame
 ## with its head at y=66, the Cleric's head at y=10 — so any geometry cut from the FRAME is
 ## framing empty space for some jobs and the character for others.
@@ -284,9 +284,21 @@ static func figure_rect(sheet_path: String) -> Rect2i:
 	if frame <= 0 or img.get_width() < frame:
 		_figure_rect_cache[sheet_path] = empty
 		return empty
-	var used: Rect2i = img.get_region(Rect2i(0, 0, frame, frame)).get_used_rect()
+	var at: int = clampi(_idle_start_frame(sheet_path), 0, img.get_width() / frame - 1)
+	var used: Rect2i = img.get_region(Rect2i(at * frame, 0, frame, frame)).get_used_rect()
 	_figure_rect_cache[sheet_path] = used
 	return used
+
+
+## The frame a monster sheet's idle starts on, which a bust is offset into; 0 for any other sheet.
+static func _idle_start_frame(sheet_path: String) -> int:
+	_load_manifest()
+	for id in _monster_manifest:
+		var e = _monster_manifest[id]
+		if e is Dictionary and str(e.get("path", "")) == sheet_path:
+			var idle = (e.get("animations", {}) as Dictionary).get("idle", {}) if e.get("animations", {}) is Dictionary else {}
+			return int(idle.get("start", 0)) if idle is Dictionary else 0
+	return 0
 
 
 ## A head-and-shoulders box around the FIGURE, square so every job renders at one aspect.
