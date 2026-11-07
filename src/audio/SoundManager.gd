@@ -1217,6 +1217,25 @@ func play_ui(sound_key: String, player: AudioStreamPlayer = null) -> void:
 	_play_sound(target, params)
 
 
+## One VICTORY! letter landing (cowir-cutscenes 23487): its own key, pitched to the music under it, never deduped.
+func play_victory_letter(n: int, under_key: String) -> void:
+	var key: String = "victory_letter_%d" % n
+	if not _sfx_manifest.has(key):
+		return
+	_sfx_cooldowns.erase(key)
+	_try_play_sfx_from_manifest(_ui_player, key, SFX_UI_BASE_DB, pow(2.0, victory_letter_semitones(under_key) / 12.0), false)
+
+
+## Semitones the letter ticks shift under `under_key`, from data/victory_letter_transpose.json; unlisted is 0.
+func victory_letter_semitones(under_key: String) -> float:
+	if not _victory_letter_transpose_read:
+		_victory_letter_transpose_read = true
+		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/victory_letter_transpose.json"))
+		if parsed is Dictionary:
+			_victory_letter_transpose = (parsed as Dictionary).get("transpose", {})
+	return float(_victory_letter_transpose.get(under_key, 0.0))
+
+
 ## The battle channel's level for a cue: its base plus any authored trim. ONE owner, because
 ## volume_db PERSISTS on the shared player — a caller passing NAN inherits whatever the previous
 ## cue left. Measured 2026-09-17: SEVEN of the eight authored trims reach THIS player and all seven
@@ -1590,6 +1609,8 @@ var _combo_step: int = 0
 ## Set by _try_play_sfx_from_manifest: its `true` means HANDLED, and the cooldown branch returns
 ## true without sounding anything. Only the combo ramp needs the distinction.
 var _sfx_suppressed_by_cooldown: bool = false
+var _victory_letter_transpose: Dictionary = {}
+var _victory_letter_transpose_read: bool = false
 
 
 ## The ramp counts hits the player HEARD, not play_attack_hit CALLS.
