@@ -171,8 +171,9 @@ func test_the_control_hint_fits_its_row_at_every_preset() -> void:
 			"the hint trims now, so this arm is measuring the wrong thing")
 		assert_lte(ink, room + 0.5,
 			"at %.2fx the control hint needs %.0fpx of the %.0fpx the panel gives it, and has nothing to trim" % [scale, ink, room])
-		assert_lte(ThemeDB.fallback_font.get_height(px), h.size.y + 0.5,
-			"at %.2fx the hint's glyphs are taller than its row" % scale)
+		# Against the PITCH the menu gives the hint row (hint_h), not h.size.y, which clamps up to the glyphs it holds.
+		assert_lte(ThemeDB.fallback_font.get_height(px), float(DialogueChoiceMenu.hint_h()) + 0.5,
+			"at %.2fx the hint's %dpx glyphs are taller than the %dpx row the menu gives it" % [scale, px, DialogueChoiceMenu.hint_h()])
 
 
 func test_nothing_is_drawn_outside_the_panel_or_the_screen() -> void:
