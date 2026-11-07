@@ -87,6 +87,19 @@ func test_the_aftermath_comes_before_the_map_less_chapters() -> void:
 		GameState.game_constants = saved
 
 
+## Both Brasston Masterites beaten, neither aftermath seen: reachable from a save made before these beats existed.
+## They play in the order the fights unlock, the Tolerance Limit's first, then this one, never both skipped.
+func test_two_pending_aftermaths_play_in_fight_order() -> void:
+	var flags := _completion_flags()
+	GameState.game_constants[DEFEAT_FLAG] = true
+	GameState.game_constants["cutscene_flag_arbiter_steampunk_defeated"] = true
+	GameState.game_constants.erase(str(flags.get("world3_tolerance_limit_defeat", "")))
+	assert_true(flags.has("world3_tolerance_limit_defeat"), "CONTROL: the Tolerance Limit's aftermath is wired beside this one")
+	assert_eq(_pending_on(HOME), "world3_tolerance_limit_defeat", "the earlier fight's aftermath plays first")
+	GameState.game_constants[str(flags.get("world3_tolerance_limit_defeat", "x"))] = true
+	assert_eq(_pending_on(HOME), SCENE, "and this one plays next")
+
+
 func test_the_scene_belongs_to_the_requisition() -> void:
 	var d := _scene()
 	assert_eq(str(d.get("trigger", "")), "boss_curator_steampunk_defeated", "the scene names the boss whose defeat it follows")
