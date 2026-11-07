@@ -76,6 +76,18 @@ const KEY_SIZE = Vector2(40, 40)
 const KEY_SPACING = 4
 ## Where the key grid starts inside the container — under the title and the input field.
 const KEY_GRID_TOP := 60.0
+## How far the panel overhangs its container, both sides: 20 left/right, and the 40 below (help line) counted above too since the container is what gets centred.
+const PANEL_PAD := Vector2(40, 80)
+const SCREEN_EDGE := 10.0
+
+
+## Text Size reaches the keyboard by scaling its whole panel, capped where the panel still fits the screen.
+static func panel_scale(vp: Vector2, container: Vector2) -> float:
+	var k := float(TextScale.scaled(100)) / 100.0
+	if vp.x <= 0.0 or vp.y <= 0.0:
+		return k
+	var outer := container + PANEL_PAD
+	return minf(k, minf((vp.x - 2.0 * SCREEN_EDGE) / outer.x, (vp.y - 2.0 * SCREEN_EDGE) / outer.y))
 
 
 func _ready() -> void:
@@ -127,8 +139,11 @@ func _build_ui() -> void:
 	## fifth row cannot reintroduce it either.
 	var _rows: int = maxi(1, _get_current_layout().size())
 	var container_height = int(KEY_GRID_TOP + float(_rows) * KEY_SIZE.y + float(_rows - 1) * KEY_SPACING)
-	container.position = Vector2((size.x - container_width) / 2, (size.y - container_height) / 2)
-	container.size = Vector2(container_width, container_height)
+	var box := Vector2(container_width, container_height)
+	var k := panel_scale(size, box)
+	container.scale = Vector2.ONE * k
+	container.position = (size - box * k) / 2
+	container.size = box
 	add_child(container)
 
 	# Panel background

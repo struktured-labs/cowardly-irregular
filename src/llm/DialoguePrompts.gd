@@ -1918,16 +1918,19 @@ static func _format_party_state(party_state: Dictionary) -> String:
 	var members: Array = party_state.get("members", []) as Array
 	if not members.is_empty():
 		var rows: PackedStringArray = PackedStringArray()
+		var jobs: Array = []
 		for m in members:
 			if not (m is Dictionary):
 				continue
+			var job: String = str(m.get("job", "adventurer"))
+			jobs.append(job)
 			rows.append("  - %s the %s, %s" % [
 				str(m.get("name", "?")),
-				str(m.get("job", "adventurer")),
+				_job_named(job),
 				str(m.get("condition", "unhurt")),
 			])
 		if not rows.is_empty():
-			out += "\nThe party standing in front of you:\n" + "\n".join(rows) + "\n" + PARTY_GENDER_RULE
+			out += "\nThe party standing in front of you:\n" + "\n".join(rows) + "\n" + PARTY_GENDER_RULE + _name_rule(jobs)
 	if party_state.has("gold"):
 		out += "They are carrying %d gold.\n" % int(party_state["gold"])
 	var items: Array = party_state.get("notable_items", []) as Array
