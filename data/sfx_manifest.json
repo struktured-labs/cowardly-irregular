@@ -380,6 +380,20 @@
       "prompt_influence": 0.8,
       "source": "tools/gen_chiptune_sfx.py advance_flourish_5"
     },
+    "menu_force_queue": {
+      "file": "assets/audio/sfx/menu_force_queue.ogg",
+      "prompt": "PLACEHOLDER (cowir-main 23445: a third press on an MP-short ability row queues it anyway). Played by cowir-controller via play_ui on that third press. Accepted over an objection: a 110/116 Hz refusal buzz, a two-note accept chime (G5, C6) pushed through it, then a low stamp. Distinct from menu_select (a clean chime) and menu_error (the buzz alone). Levelled to menu_select: -19.0 dB rms (menu_select -19.1). A labelled synth until struktured playtests it.",
+      "duration_seconds": 0.3,
+      "source": "tools/gen_chiptune_sfx.py menu_force_queue",
+      "placeholder": true
+    },
+    "cast_fizzle": {
+      "file": "assets/audio/sfx/cast_fizzle.ogg",
+      "prompt": "PLACEHOLDER (cowir-battle 23447/23448: a forced MP-short cast that is still short at execution). Played via play_battle on the frame of the 'Not enough MP!' banner in BattleManager._execute_ability; no MP is spent. The spell gathers and sputters: a rising arcane pulse that stalls and droops, sparse crackle, and a hiss whose filter falls 2.6 kHz -> 260 Hz. Deliberately NOT corruption_misfire, which means the Corruption mechanic misfired a cast. Levelled to attack_miss: -16.6 dB rms (attack_miss -16.6). A labelled synth until struktured playtests it.",
+      "duration_seconds": 0.5,
+      "source": "tools/gen_chiptune_sfx.py cast_fizzle",
+      "placeholder": true
+    },
     "advance_generic_1": {
       "file": "assets/audio/sfx/advance_generic_1.ogg",
       "prompt": "SYNTHESISED — generic Advance press ladder, rung 1 of 5. 9 of 14 jobs have no per-job ladder (only the 5 starters do) and repeated ONE flat arcade credit at every press, including at a full bank — struktured 2026-09-09 asked for a new sound at the 4th press. Escalates CATEGORICALLY: one note, one per press, so the step does not rest on loudness or on pitch (the manifest path adds ±5% random pitch, wider than any musical per-press step). NOT advance_flourish_*: that family is the wind-up at RESOLUTION and reusing it while queueing would blur two moments. Run the tool.",

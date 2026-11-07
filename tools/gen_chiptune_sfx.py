@@ -546,6 +546,43 @@ def advance_flourish_4(dur=0.0, seed=313): return _flourish(4, seed)
 def advance_flourish_5(dur=0.0, seed=317): return _flourish(5, seed)
 
 
+def menu_force_queue(dur=0.30, seed=443):
+    """The THIRD press on an MP-short row (struktured via cowir-main 23445: "screw you computer, I'm doing it
+    anyhow"). Accepted, but over an objection: a two-note accept chime pushed THROUGH a short refusal buzz, then a
+    firm low stamp. Distinct from menu_select (a clean chime) and menu_error (the buzz alone)."""
+    rng = np.random.default_rng(seed)
+    n = int(SR * dur)
+    out = np.zeros(n)
+    _place(out, _held(int(SR * 0.09), 110.0, 1.4, 0.55, duty=0.5), 0)                  # the objection: a short buzz
+    _place(out, _held(int(SR * 0.09), 116.5, 1.4, 0.45, duty=0.25), 0)
+    _place(out, _held(int(SR * 0.12), 784.0, 2.2, 0.60, duty=0.25), int(SR * 0.05))     # the chime pushes through it
+    _place(out, _held(int(SR * 0.20), 1046.5, 2.6, 0.70, duty=0.25), int(SR * 0.11))
+    stamp = _sweep_lowpass(rng.uniform(-1, 1, int(SR * 0.08)), 900.0, 200.0) * _env(int(SR * 0.08), 0.01, 3.0)
+    _place(out, stamp * 0.8, int(SR * 0.11))                                             # and lands with a stamp
+    _place(out, _held(int(SR * 0.10), 98.0, 3.0, 0.5, duty=0.5), int(SR * 0.11))
+    out = _bitcrush(out, bits=6, hold=2); out = _sweep_lowpass(out, 4200.0, 3000.0)
+    out /= max(np.max(np.abs(out)), 1e-9)
+    return (out * 0.42).astype(np.float32)   # menu_select sits at -19 dB rms; this lands at ~-19
+
+
+def cast_fizzle(dur=0.50, seed=449):
+    """An MP-short cast that reaches execution still short (cowir-battle 23447/23448): the spell gathers and
+    sputters out. A rising arcane tone that stalls and droops, crackles, and a deflating hiss whose filter
+    falls. NOT corruption_misfire, which means the Corruption mechanic misfired a cast."""
+    rng = np.random.default_rng(seed)
+    n = int(SR * dur)
+    t = np.arange(n) / SR
+    f = np.where(t < 0.16, 330.0 + 900.0 * t, 474.0 * np.exp(-(t - 0.16) * 2.6))
+    ph = np.cumsum(f) / SR
+    tone = np.where((ph % 1.0) < 0.3, 1.0, -1.0) * _env(n, 0.05, 1.6) * 0.55
+    crack = (rng.uniform(0, 1, n) > 0.9965).astype(float) * rng.uniform(-1, 1, n) * 0.9 * (t > 0.14)
+    hiss = _sweep_lowpass(rng.uniform(-1, 1, n), 2600.0, 260.0) * _env(n, 0.25, 1.4) * 0.45
+    out = tone + crack + hiss
+    out = _bitcrush(out, bits=5, hold=3); out = _sweep_lowpass(out, 3000.0, 900.0)
+    out /= max(np.max(np.abs(out)), 1e-9)
+    return (out * 0.36).astype(np.float32)   # attack_miss sits at -16.6 dB rms; this lands at ~-16.6
+
+
 def full_bank_unleash(dur=0.85, seed=331):
     """NOT a louder advance_flourish_5 — cowir-battle was right to flag that, and it is the same
     distinction as ability_mp_restore vs ability_heal. The flourish is the character WINDING UP; this
@@ -666,6 +703,7 @@ VOICES = {"ui_toggle_on": ui_toggle_on, "staff_hit": staff_hit, "ui_confirm": ui
           "advance_flourish_2": advance_flourish_2, "advance_flourish_3": advance_flourish_3,
           "advance_flourish_4": advance_flourish_4, "advance_flourish_5": advance_flourish_5,
           "full_bank_unleash": full_bank_unleash,
+          "menu_force_queue": menu_force_queue, "cast_fizzle": cast_fizzle,
           "full_bank_charged": full_bank_charged, "advance_queue_full": advance_queue_full,
           "advance_generic_1": advance_generic_1,
           "advance_generic_2": advance_generic_2, "advance_generic_3": advance_generic_3,
