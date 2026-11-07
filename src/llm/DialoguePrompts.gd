@@ -1855,7 +1855,7 @@ static func _format_events(events: Array, limit: int) -> String:
 		if typeof(events[i]) != TYPE_DICTIONARY:
 			continue
 		var entry: Dictionary = events[i]
-		var summary: String = str(entry.get("summary", ""))
+		var summary: String = _event_summary(entry)
 		var etype: String = str(entry.get("type", ""))
 		if summary.is_empty():
 			continue
@@ -1866,6 +1866,25 @@ static func _format_events(events: Array, limit: int) -> String:
 		return ""
 
 	return "\nRecent events:\n" + "\n".join(lines) + "\n"
+
+
+## A finished cutscene is logged as "Cutscene complete: <file id>", which an NPC could say aloud; show its title instead, or nothing.
+static func _event_summary(entry: Dictionary) -> String:
+	var data: Variant = entry.get("data", {})
+	var cid: String = str((data as Dictionary).get("cutscene_id", "")) if data is Dictionary else ""
+	if cid == "":
+		return str(entry.get("summary", ""))
+	var title: String = cutscene_title(cid)
+	return ("Witnessed \"%s\"" % title) if title != "" else ""
+
+
+## A story cutscene's authored title from data/cutscenes/<id>.json; "" when it cannot be read.
+static func cutscene_title(cutscene_id: String) -> String:
+	var path: String = "res://data/cutscenes/%s.json" % cutscene_id
+	if not cutscene_id.is_valid_filename() or not FileAccess.file_exists(path):
+		return ""
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
+	return str((parsed as Dictionary).get("title", "")).strip_edges() if parsed is Dictionary else ""
 
 
 ## Milo v2 (msg 2600): fold quest_state_lines into the prompt as "recent voice notes" so the LLM matches Milo's current-quest-phase tone.

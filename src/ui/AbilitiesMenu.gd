@@ -166,7 +166,7 @@ func _s(v: float) -> float:
 ## fact rows (AbilityFacts for abilities, the passive's own data for passives). Every size is measured off the font.
 var _zoomed := false
 ## Share of the zoomed panel (under its header) the description gets; the fact rows take the rest.
-const ZOOM_DESC_SHARE := 0.42
+const ZOOM_DESC_SHARE := 0.34
 
 
 ## The fact rows for the highlighted entry: AbilityFacts for an ability, the passive's own status/category/mods for a passive.
@@ -249,7 +249,7 @@ func _create_zoomed_panel(panel_size: Vector2) -> Control:
 	var facts := _zoom_facts()
 	var rows_top: float = top + desc_box.y + _s(12)
 	var rows_h: float = panel_size.y - rows_top - pad
-	var row_px: int = TextScale.scaled(24)
+	var row_px: int = TextScale.scaled(40)   # as large as the rows' share allows (main 23237: rows read small beside the description)
 	var label_w := 0.0
 	while row_px > 1:
 		label_w = 0.0
@@ -323,6 +323,7 @@ func _build_ui() -> void:
 	"""Build the menu UI"""
 	_k = float(TextScale.scaled(100)) / 100.0
 	for child in get_children():
+		child.name = "Freed%d" % child.get_instance_id()   # so this build's named nodes (Footer, ZoomedDetails) keep their names
 		child.queue_free()
 	_ability_labels.clear()
 	_passive_labels.clear()
@@ -344,7 +345,7 @@ func _build_ui() -> void:
 
 	if _zoomed and not _picking:
 		# Zoomed: the list and the character panel step aside; the description takes everything under the tabs.
-		var ztop: float = (16 + _s(48)) * _k
+		var ztop: float = 16 + _s(48)
 		var zsize := Vector2(viewport_size.x - 32, viewport_size.y - ztop - _s(48))
 		var zpanel: Control = _create_zoomed_panel(zsize)
 		zpanel.name = "ZoomedDetails"
@@ -389,7 +390,7 @@ func _has_selection() -> bool:
 func _build_content(viewport_size: Vector2) -> void:
 	# Character info (below tabs)
 	var char_panel = _create_character_panel(Vector2(viewport_size.x - 32, _s(60)))
-	char_panel.position = Vector2(16, 16 + _s(48)) * _k
+	char_panel.position = Vector2(16, 16 + _s(48))   # _s already scales; a second * _k pushed it down the screen at 2.0x
 	add_child(char_panel)
 
 	# Main content (below character info)
@@ -397,7 +398,7 @@ func _build_content(viewport_size: Vector2) -> void:
 	var content_height = viewport_size.y - content_top - _s(48)
 	if current_tab == Tab.ABILITIES and _picking:
 		var abilities_panel = _create_abilities_panel(Vector2(viewport_size.x * 0.5 - 24, content_height))
-		abilities_panel.position = Vector2(16, content_top) * _k
+		abilities_panel.position = Vector2(16, content_top)
 		add_child(abilities_panel)
 
 		var target_panel = _create_target_panel(Vector2(viewport_size.x * 0.5 - 24, content_height))
@@ -405,7 +406,7 @@ func _build_content(viewport_size: Vector2) -> void:
 		add_child(target_panel)
 	elif current_tab == Tab.ABILITIES:
 		var abilities_panel = _create_abilities_panel(Vector2(viewport_size.x * 0.5 - 24, content_height))
-		abilities_panel.position = Vector2(16, content_top) * _k
+		abilities_panel.position = Vector2(16, content_top)
 		add_child(abilities_panel)
 
 		var details_panel = _create_ability_details_panel(Vector2(viewport_size.x * 0.5 - 24, content_height))
@@ -413,7 +414,7 @@ func _build_content(viewport_size: Vector2) -> void:
 		add_child(details_panel)
 	else:
 		var passives_panel = _create_passives_panel(Vector2(viewport_size.x * 0.5 - 24, content_height))
-		passives_panel.position = Vector2(16, content_top) * _k
+		passives_panel.position = Vector2(16, content_top)
 		add_child(passives_panel)
 
 		var details_panel = _create_passive_details_panel(Vector2(viewport_size.x * 0.5 - 24, content_height))

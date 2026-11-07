@@ -37,6 +37,11 @@ const VOICE_CAST := "res://data/voice_cast.json"
 ## res://data paths and fails if one is not in this list.
 const AUTHORED_FILES := [BOSS_DATA, JOB_PERSONAS, NPC_PERSONAS, CONVERSATION_REWARDS, VOICE_CAST]
 
+## Another lane's files this lane reads ONE key from, so their other keys are not this census's; excused by the read site.
+const ONE_KEY_READS := {
+	"res://data/cutscenes/%s.json": {"key": "title", "file": "res://src/llm/DialoguePrompts.gd", "site": ".get(\"title\", \"\")"},
+}
+
 ## Keys whose CHILDREN are entry ids rather than fields, at any depth.
 const ID_MAP_KEYS := ["bosses", "jobs", "npcs", "by_npc", "voices", "bias"]
 
@@ -284,8 +289,14 @@ func test_the_census_covers_every_data_file_this_lane_loads() -> void:
 	assert_gt(loaded.size(), 2, "CONTROL: src/llm must load several data files, or this arm is vacuous")
 	var uncensused: Array = []
 	for path in loaded:
-		if not (str(path) in AUTHORED_FILES):
+		if str(path) in ONE_KEY_READS:
+			var r: Dictionary = ONE_KEY_READS[str(path)]
+			assert_true(FileAccess.get_file_as_string(str(r["file"])).contains(str(r["site"])),
+				"%s is excused as a one-key read of '%s', but %s no longer reads it that way" % [path, r["key"], r["file"]])
+		elif not (str(path) in AUTHORED_FILES):
 			uncensused.append("%s (loaded by %s)" % [str(path), str(loaded[path])])
+	for path in ONE_KEY_READS:
+		assert_true(loaded.has(path), "%s is excused as a one-key read but src/llm no longer loads it: drop the excuse" % path)
 	assert_eq(uncensused, [],
 		"src/llm loads these and the census does not cover them: %s" % str(uncensused))
 
