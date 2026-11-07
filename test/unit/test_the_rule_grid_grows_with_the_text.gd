@@ -218,6 +218,33 @@ func test_every_built_cell_label_keeps_the_cells_width() -> void:
 	assert_eq(bad, [], "a built cell Label must keep its cell's width: %s" % [bad.slice(0, 6)])
 
 
+## A word WIDER than its cell: the Label force-breaks it across several lines, which ADAPTIVE alone does not count
+## (cowir-autogrind 22941/22947). The RULES fixture's token is too short to show it, so this arm brings a longer one
+## and judges the REAL built cell Label's drawn lines against the cell height _cell_h derived.
+const OVERLONG_RULES: Array = [
+	{"conditions": [{"type": "always"}],
+	 "actions": [{"type": "ability", "id": "unbreakablethaumaturgicaloverconvergencespiral", "target": "enemy"}]},
+]
+
+
+func test_a_word_wider_than_its_cell_still_fits_the_derived_height() -> void:
+	var bad: Array = []
+	var judged := 0
+	for scale in _presets():
+		var ed: Control = await _editor_at(float(scale), OVERLONG_RULES)
+		var h: float = float(ed._cell_h())
+		for pair in _cell_labels(ed):
+			var l: Label = pair["label"] as Label
+			if not l.text.to_lower().begins_with("unbreakable"):
+				continue
+			judged += 1
+			var drawn: float = float(l.get_line_count()) * float(l.get_line_height())
+			if drawn > h:
+				bad.append("%.2fx: the over-long word draws %.0f in a %.0f cell (%d lines)" % [scale, drawn, h, l.get_line_count()])
+	assert_gt(judged, 0, "CONTROL: the over-long word's cell was built and measured")
+	assert_eq(bad, [], "a word wider than its cell must still fit the height _cell_h derives: %s" % [bad])
+
+
 ## ARM 4 — the floor, in the ONE direction it is actually a claim. This arm first asserted that
 ## 100% renders the authored 44 exactly, and the fixture's long token red it at 56. The measurement
 ## settled which was wrong, and it was the ARM: across all 289 real abilities the tallest action
