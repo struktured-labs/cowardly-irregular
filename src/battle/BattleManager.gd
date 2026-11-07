@@ -8297,7 +8297,9 @@ func _execute_meta_ability(caster: Combatant, ability: Dictionary, targets: Arra
 					var pk_type: String = str(target.get_meta("monster_type", "")) if target.has_meta("monster_type") else ""
 					if pk_type != "" and GameState and not pk_type in GameState.permakilled_monster_types:
 						GameState.permakilled_monster_types.append(pk_type)
-						battle_log_message.emit("[color=magenta]The %s species has been UNWRITTEN. It will not respawn.[/color]" % pk_type.capitalize())
+						## Named from its data, as its panel names it: "cartographer_wraith".capitalize() read "The Cartographer Wraith species", and a The-name doubled its article.
+						var pk_name := _monster_display_name(pk_type)
+						battle_log_message.emit("[color=magenta]%s%s species has been UNWRITTEN. It will not respawn.[/color]" % ["" if pk_name.begins_with("The ") else "The ", pk_name])
 					print("  → %s has been PERMANENTLY KILLED!" % target.combatant_name)
 					# Tick 238: penalty BBCode (permadeath).
 					battle_log_message.emit("[color=%s]☠ %s has been PERMANENTLY KILLED![/color]" % [AccessibilityPalette.penalty_bbcode(), target.combatant_name])

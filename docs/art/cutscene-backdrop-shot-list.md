@@ -45,15 +45,17 @@ HIGH: wrong world or wrong place, visible to the player
 - suburban_school -> world2_oak_street_npcs: "Oak Street smelled of hot concrete" (-> maple_heights_street)
 - industrial_factory -> world4_prologue "Welcome to Rivet Row", world4_rivet_row_npcs (housing
   blocks and streets) (-> rivet_row_factory, or NEW rivet_row_street)
-- industrial_factory -> world3_arbiter_intro: "the foreman's office" (-> director_office)
+- industrial_factory -> world3_arbiter_intro (a WORLD 4 scene despite its name): "the foreman's office", overlooking
+  the floor through smudged glass, a drafting table of charts. NOT director_office: that key is the Director's own
+  office, and world4_chapter4 calls his wooden desk "the only warm thing in the entire world", so lending it to the
+  foreman contradicts the text (-> NEW foreman_office, art)
 MEDIUM: generic but not wrong
 - cave_entrance carries all 4 dragon intros (pyrroth/glacius/voltharion/umbraxis): fire, ice,
   lightning and shadow caves share one cave mouth. Candidates: 4 NEW elemental cave keys
 - vertex_village -> world6_null_chamber_boss ("the chamber had no inventory"): a room, not a village
 - event_chat_level_10 on prologue_village: a field scene ("between the tenth slime and the eleventh")
   (-> prologue_forest)
-- no background at all (capture/gradient fallback): world6_orrery (-> vertex_village),
-  world3_transition (fallback is arguably right for a transform), npc_showcase_personas (dev)
+- no background at all (capture/gradient fallback): world3_transition (fallback is arguably right for a transform), npc_showcase_personas (dev)
 DATA (fixed): event_chat_dragon_cave was tagged world 3 in both its JSON and PartyChatSystem.REGISTRY.
   It fires from W1's dragon caves (DragonCave.gd), and the registry world only sorts the Party Chat list.
   Both are now 1.
@@ -64,7 +66,8 @@ brasston_square; grand_schedule intro/defeat -> mechanism_interior; the W2 stree
 maple_heights_street (Oak Street -> suburban_neighborhood); Rivet Row prologue/npcs -> rivet_row_factory;
 event_chat_level_10 -> prologue_forest. Guard: test_a_backdrop_belongs_to_one_world (cross-world half only).
 Left for art: world1_tempo_intro, Scriptura chapter7/8, the 4 dragon intros, world6_null_chamber_boss,
-world3_arbiter_intro, world6_orrery (no background key at all).
+world3_arbiter_intro (needs its own foreman_office, see section 2). world6_orrery got vertex_village in d2326eee4
+(2026-10-31) and is done.
 steampunk_airship now has 0 scenes. Its art is still on disk, unused.
 
 ## 2c. Four PNG stills are bare gradients
@@ -75,7 +78,8 @@ The still is only what a missing or undecodable video falls back to. Worth redra
 ## 3. Ask of cowir-sprites, in priority order
 1. harmonia_square, harmonia_square_portal, harmonia_inn, harmonia_shop  (NEW: no .ogv needed)
 2. Redraws of an existing key: also replace or delete its .ogv (section 0)
-3. Optional NEW: scriptura_guild, a W1 city street for the Tempo, 4 elemental dragon caves
+3. Optional NEW: scriptura_guild, a W1 city street for the Tempo, 4 elemental dragon caves, foreman_office (W4: a
+   cold glass-walled office over the factory floor; the Director's warm office must stay his alone)
 4. NEW for the first-entry village intros (cowir-story 29317ebdb, cowir-overworld c9a85e699, 2026-11-02), each borrowing a generic W1 key today:
    | key | shows (from the scene's own narration) | scene, current stand-in |
    |---|---|---|
