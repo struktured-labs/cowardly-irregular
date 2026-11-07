@@ -583,6 +583,64 @@ def cast_fizzle(dur=0.50, seed=449):
     return (out * 0.36).astype(np.float32)   # attack_miss sits at -16.6 dB rms; this lands at ~-16.6
 
 
+
+def _enemy_flourish(level, seed):
+    """An ENEMY Advance, enemy_advance_2..4 (the AI queues at most 4; struktured via cowir-main 23349: monsters must read as
+    powering up, "escalating sounds"). Built from the SAME skeleton as _flourish so the rising shape
+    is identical and only the colour differs, which is what makes it read as "theirs" rather than a
+    new kind of event: a fourth lower (an octave down measured 89% under 250 Hz, inaudible on a laptop), a MINOR-THIRD/TRITONE stack instead of the
+    party's major steps, a narrow nasal pulse, a slow menacing waver, more sub and grit, darker
+    filter. Every step still adds one held voice, so the bank is heard filling.
+    """
+    rng = np.random.default_rng(seed)
+    dur = {2: 0.34, 3: 0.42, 4: 0.52}[level]
+    n = int(SR * dur)
+    root = {2: 261.63, 3: 293.66, 4: 329.63}[level] * 2.0 ** (-5.0 / 12.0)
+    ratios = [1.0, 6.0 / 5.0, math.sqrt(2.0), 8.0 / 5.0]
+    voices = {2: 2, 3: 3, 4: 4}[level]
+    out = np.zeros(n)
+    step = int(n / (voices + 1))
+    for i in range(voices):
+        amp = 0.30 + 0.05 * i
+        off = i * step
+        _place(out, _held(n - off, root * ratios[i], 2.0, amp, duty=0.125 if i % 2 else 0.25,
+                          vib_hz=5.0, vib_cents=18.0), off)
+    sub = {2: 0.10, 3: 0.14, 4: 0.20}[level]
+    out += _held(n, root * 0.5, 1.4, sub)
+    grit = {2: 0.10, 3: 0.15, 4: 0.21}[level]
+    out += _sweep_lowpass(rng.uniform(-1, 1, n), 1600.0, 1100.0) * _env(n, 0.03, 1.8) * grit
+    out = _bitcrush(out, bits=5, hold=5); out = _sweep_lowpass(out, 2200.0, 1500.0)
+    out /= max(np.max(np.abs(out)), 1e-9)
+    return (out * {2: 0.62, 3: 0.70, 4: 0.78}[level]).astype(np.float32)
+
+
+def enemy_advance_2(dur=0.0, seed=401): return _enemy_flourish(2, seed)
+def enemy_advance_3(dur=0.0, seed=409): return _enemy_flourish(3, seed)
+def enemy_advance_4(dur=0.0, seed=419): return _enemy_flourish(4, seed)
+
+
+def enemy_defer(dur=0.55, seed=431):
+    """An ENEMY Defer: it HUNKERS. A falling stone grind, a muted armoured thunk + dull clank, and a low
+    semitone-rub drone that fades, so the brace sounds like a threat waiting rather than the party's
+    clean shield-plant (defer.ogg)."""
+    rng = np.random.default_rng(seed)
+    n = int(SR * dur)
+    out = np.zeros(n)
+    grind = _sweep_lowpass(rng.uniform(-1, 1, n), 1600.0, 420.0) * _env(n, 0.02, 2.6) * 0.55
+    out += grind
+    ## A dull mid CLANK on the brace: without it the cue lost 10 dB through a 200 Hz laptop highpass (party defer: 4.5).
+    _place(out, _held(int(SR * 0.16), 660.0, 3.2, 0.95, duty=0.125), int(SR * 0.03))
+    _place(out, _held(int(SR * 0.16), 934.0, 3.6, 0.60, duty=0.25), int(SR * 0.03))
+    _place(out, _held(int(SR * 0.22), 82.0, 3.0, 0.55, duty=0.5), int(SR * 0.03))
+    _place(out, _held(n - int(SR * 0.10), 98.0, 1.3, 0.20, duty=0.25), int(SR * 0.10))
+    _place(out, _held(n - int(SR * 0.10), 103.8, 1.3, 0.17, duty=0.125), int(SR * 0.10))
+    out = _bitcrush(out, bits=5, hold=5); out = _sweep_lowpass(out, 2000.0, 900.0)
+    ## Soft-saturate: the clank peak set the level and left the body ~5 dB under the party defer on a laptop.
+    out = np.tanh(3.0 * out / max(np.max(np.abs(out)), 1e-9))
+    out /= max(np.max(np.abs(out)), 1e-9)
+    return (out * 0.65).astype(np.float32)
+
+
 def full_bank_unleash(dur=0.85, seed=331):
     """NOT a louder advance_flourish_5 — cowir-battle was right to flag that, and it is the same
     distinction as ability_mp_restore vs ability_heal. The flourish is the character WINDING UP; this
@@ -702,6 +760,8 @@ VOICES = {"ui_toggle_on": ui_toggle_on, "staff_hit": staff_hit, "ui_confirm": ui
           "mp_restore": mp_restore, "flee": flee, "cure": cure,
           "advance_flourish_2": advance_flourish_2, "advance_flourish_3": advance_flourish_3,
           "advance_flourish_4": advance_flourish_4, "advance_flourish_5": advance_flourish_5,
+          "enemy_advance_2": enemy_advance_2, "enemy_advance_3": enemy_advance_3,
+          "enemy_advance_4": enemy_advance_4, "enemy_defer": enemy_defer,
           "full_bank_unleash": full_bank_unleash,
           "menu_force_queue": menu_force_queue, "cast_fizzle": cast_fizzle,
           "full_bank_charged": full_bank_charged, "advance_queue_full": advance_queue_full,
