@@ -2717,6 +2717,15 @@ func _get_pending_story_cutscene() -> String:
 	if flags.get("cutscene_flag_warden_steampunk_defeated", false) and not flags.get("cutscene_flag_world3_standing_order_defeat_complete", false):
 		if _current_map_id == "brasston_village":
 			return "world3_standing_order_defeat"
+	# The Tolerance Limit's aftermath: its fight unlocks after chapter 2, exactly when chapter 3's map-less gate below
+	# would otherwise win, so it must sit above it. In Brasston, on return from the victory, once.
+	if flags.get("cutscene_flag_arbiter_steampunk_defeated", false) and not flags.get("cutscene_flag_world3_tolerance_limit_defeat_complete", false):
+		if _current_map_id == "brasston_village":
+			return "world3_tolerance_limit_defeat"
+	# The Requisition's aftermath, the same in-place pattern: its crates are released IN Brasston, ahead of chapter3.
+	if flags.get("cutscene_flag_curator_steampunk_defeated", false) and not flags.get("cutscene_flag_world3_requisition_defeat_complete", false):
+		if _current_map_id == "brasston_village":
+			return "world3_requisition_defeat"
 	if flags.get("cutscene_flag_world3_chapter1_complete", false) and not flags.get("cutscene_flag_world3_chapter2_complete", false):
 		if _current_map_id == "steampunk_overworld":
 			return "world3_chapter2"
@@ -3072,6 +3081,8 @@ const _CUTSCENE_COMPLETION_FLAGS := {
 	"world3_tempo_defeat":              "cutscene_flag_world3_tempo_defeat_complete",
 	"world3_grand_schedule_defeat":     "cutscene_flag_world3_grand_schedule_defeat_complete",
 	"world3_standing_order_defeat":     "cutscene_flag_world3_standing_order_defeat_complete",
+	"world3_tolerance_limit_defeat":    "cutscene_flag_world3_tolerance_limit_defeat_complete",
+	"world3_requisition_defeat":        "cutscene_flag_world3_requisition_defeat_complete",
 	"world3_transition":                "cutscene_flag_world3_transition_complete",
 	# Masterite fragment reveals (gated by _FRAGMENT_GATES; the loop returns the id, so the static audit does not see these)
 	"world1_fragment_arbiter":         "cutscene_flag_world1_fragment_arbiter_complete",
@@ -6777,8 +6788,8 @@ func _open_autogrind_ui() -> void:
 	_autogrind_ui.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_autogrind_ui_layer.add_child(_autogrind_ui)
 
-	# Get region name from current map
-	var region_name = _current_map_id.replace("_", " ").capitalize()
+	## The place's own name (locations.json), as the area banner and the save slot show it: "Cogsworth Junction", not "Steampunk Overworld".
+	var region_name: String = SaveSystem.location_display_name(_current_map_id)
 	_autogrind_ui.setup(party, region_name)
 
 	# Connect signals
