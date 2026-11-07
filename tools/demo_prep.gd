@@ -166,7 +166,7 @@ static func force_danger_seconds(args: Array) -> float:
 
 
 ## The one-shot dip, judged by THE THEME'S OWN CLOCK (cowir-main 23059): the boss bed's playback position, read from
-## SoundManager's playing music player while the current track is a boss_ bed. Not summed `delta` (BattleScene scales it
+## SoundManager's _music_player while the current track is a boss_ bed. Not summed `delta` (BattleScene scales it
 ## by Engine.time_scale, 0.375 at the demo rung: cowir-music 23055) and not the wall clock (the camera is Movie Maker,
 ## where wall time is not video time: cowir-battle 23057). A danger break pauses the position and a resume continues it.
 class ForceDanger extends Node:
@@ -188,10 +188,11 @@ class ForceDanger extends Node:
 		var sm = get_node_or_null("/root/SoundManager")
 		if not (sm and str(sm.get("_current_music")).begins_with("boss_")):
 			return -1.0
-		for k in ["_music_player", "_music_player_b"]:
-			var p = sm.get(k)
-			if p and p is AudioStreamPlayer and p.playing and not p.stream_paused:
-				return p.get_playback_position()
+		# _music_player ONLY: play_music hands the OUTGOING bed to _music_player_b to fade, so B is never the boss theme
+		# while boss_ is current, and reading it would report the dungeon bed's position (cowir-music 23064)
+		var p = sm.get("_music_player")
+		if p and p is AudioStreamPlayer and p.playing and not p.stream_paused:
+			return p.get_playback_position()
 		return -1.0
 
 	func _on_selection() -> void:
