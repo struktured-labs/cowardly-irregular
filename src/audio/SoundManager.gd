@@ -1237,6 +1237,11 @@ func _synth_params(sound_key: String, level: float) -> Dictionary:
 	return params
 
 
+## Whether play_battle(key) would make a sound: an authored manifest entry or a procedural SOUNDS entry.
+func resolves(sound_key: String) -> bool:
+	return _sfx_manifest.has(sound_key) or SOUNDS.has(sound_key)
+
+
 func play_battle(sound_key: String) -> void:
 	"""Play a battle sound effect — world variant first, then default, else procedural"""
 	# Cycle #13: play_ability was the ONLY prefix-aware path, so an authored

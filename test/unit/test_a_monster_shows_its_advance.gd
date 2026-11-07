@@ -1,0 +1,147 @@
+extends GutTest
+
+## struktured via main 23349: "make it obvious when a monster Advances or Defers". Measured on .788 (battle 23350): an
+## enemy's Advance was chosen at selection with nothing shown, executed with the PARTY's cue, and its Defer had no sound
+## and no visual. Now the monster powers up at selection (aura + "×N" pip, kept until it acts, so it reads at 64x),
+## spends a pip per sub-action, plays its own enemy_advance_N / enemy_defer cue, and braces on a Defer.
+
+const SCENE := "res://src/battle/BattleScene.tscn"
+const BattleState := preload("res://test/unit/helpers/battle_state.gd")
+
+var _guard: RefCounted = null
+
+
+func before_each() -> void:
+	_guard = BattleState.new()
+	_guard.snapshot()
+
+
+func after_each() -> void:
+	if _guard != null:
+		_guard.restore()
+
+
+func _sprite() -> AnimatedSprite2D:
+	var img := Image.create(64, 64, false, Image.FORMAT_RGBA8)
+	img.fill(Color(1, 1, 1, 1))
+	var frames := SpriteFrames.new()
+	frames.add_animation(&"idle")
+	frames.add_frame(&"idle", ImageTexture.create_from_image(img))
+	var s := AnimatedSprite2D.new()
+	s.sprite_frames = frames
+	s.animation = &"idle"
+	add_child_autofree(s)
+	return s
+
+
+func _foe(nm: String) -> Combatant:
+	var c := Combatant.new()
+	c.initialize({"name": nm, "max_hp": 10, "max_mp": 0, "attack": 1, "defense": 1, "magic": 1, "speed": 1})
+	add_child_autofree(c)
+	return c
+
+
+func _advance(c: Combatant, n: int) -> Dictionary:
+	var acts: Array = []
+	for i in n:
+		acts.append({"type": "attack", "target": null})
+	return {"type": "advance", "combatant": c, "actions": acts}
+
+
+## A real scene with one enemy on one sprite, wired the way _on_enemy_died's guard wires it.
+func _scene_with(foe: Combatant, spr: AnimatedSprite2D) -> Node:
+	var scene = load(SCENE).instantiate()
+	add_child_autofree(scene)
+	scene.test_enemies.assign([foe] as Array[Combatant])
+	scene.enemy_sprite_nodes.assign([spr])
+	BattleManager.enemy_party.assign([foe])
+	var animator = load("res://src/battle/BattleAnimator.gd").new()
+	animator.setup(spr)
+	scene.add_child(animator)
+	scene.enemy_animators.assign([animator])
+	return scene
+
+
+func test_the_tell_counts_down_and_clears() -> void:
+	var spr := _sprite()
+	var foe := _foe("Goblin")
+	var t := EnemyAdvanceTell.on(spr)
+	t.show_queue(3, foe, Color.WHITE)
+	assert_true(t.is_showing(), "CONTROL: a ×3 queue shows")
+	assert_eq(t.pip().text, "×3", "the pip says how many are coming")
+	assert_true(t.aura().visible, "and the aura is up")
+	t.spend()
+	assert_eq(t.pip().text, "×2", "each resolved action spends one")
+	t.spend()
+	assert_false(t.is_showing(), "a ×1 is no longer an Advance, so the tell clears")
+	assert_false(t.aura().visible, "aura included")
+	assert_eq(EnemyAdvanceTell.on(spr), t, "one tell per sprite, reused")
+
+
+func test_the_tell_leaves_with_a_fallen_monster() -> void:
+	var spr := _sprite()
+	var foe := _foe("Goblin")
+	var t := EnemyAdvanceTell.on(spr)
+	t.show_queue(4, foe, Color.WHITE)
+	assert_true(t.is_showing(), "CONTROL: shown")
+	foe.is_alive = false
+	await get_tree().process_frame
+	assert_false(t.is_showing(), "a monster that falls mid-queue does not keep promising its Advance")
+
+
+func test_an_enemy_advance_powers_up_at_selection_and_spends_as_it_acts() -> void:
+	var spr := _sprite()
+	var foe := _foe("Goblin")
+	var scene := _scene_with(foe, spr)
+	BattleManager.pending_actions = [{"type": "attack", "combatant": foe, "target": null}]
+	scene._on_selection_turn_ended(foe)
+	assert_null(spr.get_node_or_null(EnemyAdvanceTell.NODE_NAME), "CONTROL: a plain attack shows no tell")
+	BattleManager.pending_actions = [_advance(foe, 3)]
+	scene._on_selection_turn_ended(foe)
+	var t := spr.get_node_or_null(EnemyAdvanceTell.NODE_NAME) as EnemyAdvanceTell
+	assert_not_null(t, "choosing an Advance raises the tell on that monster")
+	if t == null:
+		return
+	assert_eq(t.pip().text, "×3", "sized to the queue it chose")
+	scene._on_action_executed(foe, {"type": "attack", "target": null}, [])
+	assert_eq(t.pip().text, "×2", "a resolved sub-action spends one")
+	scene._on_action_executed(foe, {"type": "advance", "actions": []}, [])
+	assert_false(t.is_showing(), "the Advance's own resolution clears the rest")
+
+
+func test_a_monster_cue_is_never_silent_and_never_the_partys_once_its_own_exists() -> void:
+	var spr := _sprite()
+	var scene := _scene_with(_foe("Goblin"), spr)
+	for n in [2, 3, 4]:
+		var own: String = "enemy_advance_%d" % n
+		var played: String = scene._play_enemy_advance_cue(n)
+		if SoundManager.resolves(own):
+			assert_eq(played, own, "×%d plays the monster's own cue once cowir-sfx authors it" % n)
+		else:
+			assert_eq(played, "advance_flourish_%d" % n, "×%d falls back to the party's step, pitched down" % n)
+		assert_true(SoundManager.resolves(played), "×%d plays something real (%s)" % [n, played])
+
+
+func test_the_execution_flourish_is_a_monsters_not_a_pcs() -> void:
+	var spr := _sprite()
+	var foe := _foe("Goblin")
+	var scene := _scene_with(foe, spr)
+	var pc := _foe("Fighter")
+	pc.job = {"id": "fighter"}
+	scene.party_members.assign([pc] as Array[Combatant])
+	scene._spawn_advance_flourish(pc, spr, 3, false)
+	assert_eq(scene._last_advance_cue, "advance_flourish_3", "CONTROL: a PC's Advance plays the party cue")
+	scene._spawn_advance_flourish(foe, spr, 3, false)
+	assert_ne(scene._last_advance_cue, "advance_flourish_3", "a monster's Advance must not play the PC's own cue at full pitch")
+	assert_true(scene._last_advance_cue in ["enemy_advance_3", "advance_flourish_3"] or scene._last_advance_cue.begins_with("enemy_advance"),
+		"it plays the enemy ladder (%s)" % scene._last_advance_cue)
+
+
+func test_a_monster_defer_braces() -> void:
+	var spr := _sprite()
+	var foe := _foe("Goblin")
+	var scene := _scene_with(foe, spr)
+	var before: int = scene.find_children("EnemyBrace", "Line2D", false, false).size()
+	scene._on_action_executing(foe, {"type": "defer", "combatant": foe})
+	assert_eq(before, 0, "CONTROL: no brace before")
+	assert_eq(scene.find_children("EnemyBrace", "Line2D", false, false).size(), 1, "a monster's Defer shows its brace")
