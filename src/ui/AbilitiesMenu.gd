@@ -160,6 +160,155 @@ func _s(v: float) -> float:
 	return v * _k
 
 
+## ZOOM (struktured 2026-11-07, v2 per cowir-main 23219): one button turns the highlighted entry into a reading view
+## under the tabs: its name and icon, the description at the LARGEST size that fills its box (never below
+## AbilityZoom.MIN_FACTOR x the unzoomed text, unless the text is too long to fit even then), and the entry's mechanics as
+## fact rows (AbilityFacts for abilities, the passive's own data for passives). Every size is measured off the font.
+var _zoomed := false
+## Share of the zoomed panel (under its header) the description gets; the fact rows take the rest.
+const ZOOM_DESC_SHARE := 0.34
+
+
+## The fact rows for the highlighted entry: AbilityFacts for an ability, the passive's own status/category/mods for a passive.
+func _zoom_facts() -> Array:
+	if current_tab != Tab.PASSIVES:
+		var a := _selected_ability()
+		return [] if a.is_empty() else AbilityFacts.rows(str(a["id"]), character)
+	if selected_index < 0 or selected_index >= _passives_list.size():
+		return []
+	var passive: Dictionary = _passives_list[selected_index]
+	var data: Dictionary = passive["data"]
+	var category_names = ["Offensive", "Defensive", "Utility", "Trade-off", "Meta"]
+	var cat_idx: int = int(data.get("category", 0))
+	var out: Array = [
+		{"icon": null, "label": "Status", "value": "Equipped" if passive["equipped"] else ("Available" if passive.get("learned", false) else "Not learned")},
+		{"icon": null, "label": "Category", "value": category_names[cat_idx] if cat_idx < category_names.size() else "Unknown"},
+	]
+	for mod_name in data.get("stat_mods", {}):
+		var v = data["stat_mods"][mod_name]
+		if str(mod_name).ends_with("_multiplier"):
+			var pct := int((float(v) - 1.0) * 100)
+			out.append({"icon": null, "label": StatNames.display_name(str(mod_name).replace("_multiplier", "")), "value": "%s%d%%" % ["+" if pct > 0 else "", pct]})
+		else:
+			out.append({"icon": null, "label": StatNames.display_name(str(mod_name)), "value": "%s%.2f" % ["+" if float(v) > 0 else "", float(v)]})
+	return out
+
+
+func _create_zoomed_panel(panel_size: Vector2) -> Control:
+	var panel := Control.new()
+	panel.size = panel_size
+	var panel_bg := ColorRect.new()
+	panel_bg.color = PANEL_COLOR
+	panel_bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	panel.add_child(panel_bg)
+	RetroPanel.add_border(panel, panel_size, BORDER_LIGHT, BORDER_SHADOW)
+	var font: Font = ThemeDB.fallback_font
+	var passive := current_tab == Tab.PASSIVES
+	var list: Array = _passives_list if passive else _abilities_list
+	if selected_index < 0 or selected_index >= list.size():
+		return panel
+	var entry: Dictionary = list[selected_index]
+	var data: Dictionary = entry["data"]
+	var pad: float = _s(16)
+	var inner_w: float = panel_size.x - 2.0 * pad
+
+	# Header: the icon and the name, twice the details panel's name size.
+	var head_px: int = TextScale.scaled(28)
+	var head_h: float = font.get_height(head_px)
+	var x: float = pad
+	if not passive:
+		var icon := AbilityIcons.make_rect(str(entry["id"]), int(head_h))
+		icon.name = "ZoomIcon"
+		panel.add_child(icon)
+		icon.position = Vector2(pad, pad)
+		x += head_h + _s(8)
+	var name_label := Label.new()
+	name_label.name = "ZoomName"
+	name_label.add_theme_font_size_override("font_size", head_px)
+	name_label.add_theme_color_override("font_color", PASSIVE_EQUIPPED if passive and entry["equipped"] else (TEXT_COLOR if passive else _get_ability_color(data)))
+	name_label.text = data.get("name", str(entry["id"]).replace("_", " ").capitalize())
+	panel.add_child(name_label)
+	name_label.position = Vector2(x, pad)
+
+	# Description: the largest size that fills its box.
+	var top: float = pad + head_h + _s(10)
+	var body_h: float = panel_size.y - top - pad
+	var desc_box := Vector2(inner_w, floorf(body_h * ZOOM_DESC_SHARE))
+	var desc_text := str(data.get("description", "No description available"))
+	var desc := Label.new()
+	desc.name = "Description"
+	desc.autowrap_mode = TextServer.AUTOWRAP_WORD
+	desc.add_theme_font_size_override("font_size", AbilityZoom.fit_px(font, desc_text, desc_box))
+	desc.add_theme_color_override("font_color", TEXT_COLOR)
+	desc.text = desc_text
+	panel.add_child(desc)
+	desc.position = Vector2(pad, top)
+	desc.size = desc_box
+
+	# Fact rows: one per mechanic, label column then value, shrunk only as far as they must to fit what is left.
+	var facts := _zoom_facts()
+	var rows_top: float = top + desc_box.y + _s(12)
+	var rows_h: float = panel_size.y - rows_top - pad
+	var row_px: int = TextScale.scaled(40)   # as large as the rows' share allows (main 23237: rows read small beside the description)
+	var label_w := 0.0
+	while row_px > 1:
+		label_w = 0.0
+		for f in facts:
+			label_w = maxf(label_w, font.get_string_size(str(f.get("label", "")), HORIZONTAL_ALIGNMENT_LEFT, -1, row_px).x)
+		var widest := 0.0
+		for f in facts:
+			widest = maxf(widest, font.get_string_size(str(f.get("value", "")), HORIZONTAL_ALIGNMENT_LEFT, -1, row_px).x)
+		var row_h: float = font.get_height(row_px) * 1.15
+		if facts.size() * row_h <= rows_h and font.get_height(row_px) + _s(8) + label_w + _s(16) + widest <= inner_w:
+			break
+		row_px -= 1
+	var rh: float = font.get_height(row_px) * 1.15
+	for i in facts.size():
+		var f: Dictionary = facts[i]
+		var y: float = rows_top + i * rh
+		var fx: float = pad
+		var tex = f.get("icon", null)
+		if tex is Texture2D:
+			var ic := TextureRect.new()
+			ic.texture = tex
+			ic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			ic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+			ic.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+			panel.add_child(ic)
+			ic.position = Vector2(fx, y)
+			ic.size = Vector2.ONE * font.get_height(row_px)
+		fx += font.get_height(row_px) + _s(8)
+		var l := Label.new()
+		l.name = "FactLabel%d" % i
+		l.add_theme_font_size_override("font_size", row_px)
+		l.add_theme_color_override("font_color", SUBTITLE_COLOR)
+		l.text = str(f.get("label", ""))
+		panel.add_child(l)
+		l.position = Vector2(fx, y)
+		var v := Label.new()
+		v.name = "FactValue%d" % i
+		v.add_theme_font_size_override("font_size", row_px)
+		v.add_theme_color_override("font_color", TEXT_COLOR)
+		v.text = str(f.get("value", ""))
+		panel.add_child(v)
+		v.position = Vector2(fx + label_w + _s(16), y)
+	return panel
+
+
+func _set_zoom(on: bool) -> void:
+	_zoomed = on
+	_build_ui()
+	SoundManager.play_ui("menu_expand" if on else "menu_close")
+
+
+## Back from the menu's background: un-zooms first, closes only when not zoomed.
+func _back() -> void:
+	if _zoomed:
+		_set_zoom(false)
+	else:
+		_close_menu()
+
+
 ## (The description floors stay at their AUTHORED px: they reproduce 100% exactly, and a scaled floor would push the
 ## line after it below a 2.0x panel. Past 100% the next line follows the measured text.)
 ## A wrapped label's height measured off its FONT at the width it wraps to (a Label's own minimum lags a pass).
@@ -174,6 +323,7 @@ func _build_ui() -> void:
 	"""Build the menu UI"""
 	_k = float(TextScale.scaled(100)) / 100.0
 	for child in get_children():
+		child.name = "Freed%d" % child.get_instance_id()   # so this build's named nodes (Footer, ZoomedDetails) keep their names
 		child.queue_free()
 	_ability_labels.clear()
 	_passive_labels.clear()
@@ -193,9 +343,54 @@ func _build_ui() -> void:
 	tabs_panel.position = Vector2(16, 16) * _k
 	add_child(tabs_panel)
 
+	if _zoomed and not _picking:
+		# Zoomed: the list and the character panel step aside; the description takes everything under the tabs.
+		var ztop: float = 16 + _s(48)
+		var zsize := Vector2(viewport_size.x - 32, viewport_size.y - ztop - _s(48))
+		var zpanel: Control = _create_zoomed_panel(zsize)
+		zpanel.name = "ZoomedDetails"
+		zpanel.position = Vector2(16, ztop)
+		add_child(zpanel)
+	else:
+		_build_content(viewport_size)
+
+	# Right-click cancel
+	MenuMouseHelper.add_right_click_cancel(bg, _back)
+
+	# Footer
+	var accept_hint := InputProfileManager.hint_for_action("ui_accept")
+	var cancel_hint := InputProfileManager.hint_for_action("ui_cancel")
+	var zoom_hint := AbilityZoom.hint()
+	var footer_text = "←→/Click: Tab  ↑↓: Select  %s/RClick: Back" % cancel_hint
+	if _zoomed and not _picking:
+		footer_text = "↑↓: Next  %s/%s: Back" % [zoom_hint, cancel_hint] if zoom_hint != "" else "↑↓: Next  %s: Back" % cancel_hint
+	elif current_tab == Tab.ABILITIES and _picking:
+		footer_text = "↑↓: Target  %s: Cast  %s: Back" % [accept_hint, cancel_hint]
+	elif current_tab == Tab.ABILITIES and _selected_castable():
+		footer_text = "←→/Click: Tab  ↑↓: Select  %s: Cast  %s/RClick: Back" % [accept_hint, cancel_hint]
+	elif current_tab == Tab.PASSIVES:
+		footer_text = "←→/Click: Tab  ↑↓: Select  %s/Click: Equip/Unequip  %s/RClick: Back" % [accept_hint, cancel_hint]
+	if not _zoomed and not _picking and zoom_hint != "" and _has_selection():
+		footer_text += "  %s: Zoom" % zoom_hint
+	var footer = Label.new()
+	footer.name = "Footer"
+	footer.text = footer_text
+	footer.position = Vector2(16, viewport_size.y - _s(32))
+	footer.add_theme_font_size_override("font_size", TextScale.scaled(12))
+	footer.add_theme_color_override("font_color", DISABLED_COLOR)
+	add_child(footer)
+
+
+func _has_selection() -> bool:
+	var list: Array = _passives_list if current_tab == Tab.PASSIVES else _abilities_list
+	return selected_index >= 0 and selected_index < list.size()
+
+
+## The unzoomed layout: character panel, then the list beside its details (or the target picker).
+func _build_content(viewport_size: Vector2) -> void:
 	# Character info (below tabs)
 	var char_panel = _create_character_panel(Vector2(viewport_size.x - 32, _s(60)))
-	char_panel.position = Vector2(16, 16 + _s(48)) * _k
+	char_panel.position = Vector2(16, 16 + _s(48))   # _s already scales; a second * _k pushed it down the screen at 2.0x
 	add_child(char_panel)
 
 	# Main content (below character info)
@@ -203,7 +398,7 @@ func _build_ui() -> void:
 	var content_height = viewport_size.y - content_top - _s(48)
 	if current_tab == Tab.ABILITIES and _picking:
 		var abilities_panel = _create_abilities_panel(Vector2(viewport_size.x * 0.5 - 24, content_height))
-		abilities_panel.position = Vector2(16, content_top) * _k
+		abilities_panel.position = Vector2(16, content_top)
 		add_child(abilities_panel)
 
 		var target_panel = _create_target_panel(Vector2(viewport_size.x * 0.5 - 24, content_height))
@@ -211,7 +406,7 @@ func _build_ui() -> void:
 		add_child(target_panel)
 	elif current_tab == Tab.ABILITIES:
 		var abilities_panel = _create_abilities_panel(Vector2(viewport_size.x * 0.5 - 24, content_height))
-		abilities_panel.position = Vector2(16, content_top) * _k
+		abilities_panel.position = Vector2(16, content_top)
 		add_child(abilities_panel)
 
 		var details_panel = _create_ability_details_panel(Vector2(viewport_size.x * 0.5 - 24, content_height))
@@ -219,32 +414,12 @@ func _build_ui() -> void:
 		add_child(details_panel)
 	else:
 		var passives_panel = _create_passives_panel(Vector2(viewport_size.x * 0.5 - 24, content_height))
-		passives_panel.position = Vector2(16, content_top) * _k
+		passives_panel.position = Vector2(16, content_top)
 		add_child(passives_panel)
 
 		var details_panel = _create_passive_details_panel(Vector2(viewport_size.x * 0.5 - 24, content_height))
 		details_panel.position = Vector2(viewport_size.x * 0.5 + 8, content_top)
 		add_child(details_panel)
-
-	# Right-click cancel
-	MenuMouseHelper.add_right_click_cancel(bg, _close_menu)
-
-	# Footer
-	var accept_hint := InputProfileManager.hint_for_action("ui_accept")
-	var cancel_hint := InputProfileManager.hint_for_action("ui_cancel")
-	var footer_text = "←→/Click: Tab  ↑↓: Select  %s/RClick: Back" % cancel_hint
-	if current_tab == Tab.ABILITIES and _picking:
-		footer_text = "↑↓: Target  %s: Cast  %s: Back" % [accept_hint, cancel_hint]
-	elif current_tab == Tab.ABILITIES and _selected_castable():
-		footer_text = "←→/Click: Tab  ↑↓: Select  %s: Cast  %s/RClick: Back" % [accept_hint, cancel_hint]
-	elif current_tab == Tab.PASSIVES:
-		footer_text = "←→/Click: Tab  ↑↓: Select  %s/Click: Equip/Unequip  %s/RClick: Back" % [accept_hint, cancel_hint]
-	var footer = Label.new()
-	footer.text = footer_text
-	footer.position = Vector2(16, viewport_size.y - _s(32))
-	footer.add_theme_font_size_override("font_size", TextScale.scaled(12))
-	footer.add_theme_color_override("font_color", DISABLED_COLOR)
-	add_child(footer)
 
 
 func _create_tabs_panel(panel_size: Vector2) -> Control:
@@ -505,6 +680,7 @@ func _create_ability_details_panel(panel_size: Vector2) -> Control:
 	# Wrap BEFORE text: a Label given its text unwrapped caches the whole line as its minimum width, and a later size
 	# cannot shrink it (measured: a 586 px description box held at 777 px, running past its panel's edge).
 	desc_label.autowrap_mode = TextServer.AUTOWRAP_WORD
+	desc_label.name = "Description"
 	desc_label.text = data.get("description", "No description available")
 	desc_label.position = Vector2(12, 88) * _k
 	desc_label.add_theme_font_size_override("font_size", TextScale.scaled(10))
@@ -717,6 +893,7 @@ func _create_passive_details_panel(panel_size: Vector2) -> Control:
 	# Description
 	var desc_label = Label.new()
 	desc_label.autowrap_mode = TextServer.AUTOWRAP_WORD   # before text, as the ability description above
+	desc_label.name = "Description"
 	desc_label.text = data.get("description", "No description available")
 	desc_label.position = Vector2(12, 88) * _k
 	desc_label.add_theme_font_size_override("font_size", TextScale.scaled(11))
@@ -798,6 +975,28 @@ func _input(event: InputEvent) -> void:
 	if _picking:
 		_picking_input(event, nav)
 		return
+
+	if AbilityZoom.pressed(event):
+		if _zoomed or _has_selection():
+			_set_zoom(not _zoomed)
+		else:
+			SoundManager.play_ui("menu_error")
+		get_viewport().set_input_as_handled()
+		return
+
+	# Zoomed is a READING view: Back un-zooms (never closes), Confirm is refused out loud, the tabs hold still.
+	if _zoomed:
+		if event.is_action_pressed("ui_cancel") and not event.is_echo():
+			_set_zoom(false)
+			get_viewport().set_input_as_handled()
+			return
+		if event.is_action_pressed("ui_accept") and not event.is_echo():
+			SoundManager.play_ui("menu_error")
+			get_viewport().set_input_as_handled()
+			return
+		if nav == "ui_left" or nav == "ui_right":
+			get_viewport().set_input_as_handled()
+			return
 
 	# Tab switching. The 2026-04-30 fix echo-guarded this because holding Left/Right rebuilt the
 	# whole UI per echo and spammed menu_move — and a stick ramp did exactly that anyway, because
