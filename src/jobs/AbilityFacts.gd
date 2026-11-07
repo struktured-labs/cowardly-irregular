@@ -24,6 +24,8 @@ const NON_FACT := {
 	"animation": "presentation", "vfx": "presentation", "family": "an icon family, not a mechanic",
 	"tier": "an icon tier, not a mechanic", "cost": "a SHOP price, not a cost to cast (controller 23224)",
 	"summon_message": "the flavour line printed when it summons", "threat_class": "an AI targeting hint, not something the player reads",
+	"bp_cost": "the BP bank is unbuilt, so the game charges nothing (BattleManager default_stance)",
+	"bp_gain": "the BP bank is unbuilt, so the game grants nothing (BattleManager default_stance)",
 }
 
 
@@ -115,10 +117,6 @@ static func rows(ability_id: String, caster = null) -> Array:
 			["damage_to_self_pct", "recoil_pct"]))
 	if a.has("ap_gain"):
 		out.append(_row(null, "Grants", "+%d AP" % int(a["ap_gain"]), ["ap_gain"]))
-	if a.has("bp_cost"):
-		out.append(_row(null, "BP cost", str(int(a["bp_cost"])), ["bp_cost"]))
-	if a.has("bp_gain"):
-		out.append(_row(null, "Grants", "+%d BP" % int(a["bp_gain"]), ["bp_gain"]))
 	if bool(a.get("ignores_defense", false)):
 		out.append(_row(null, "Ignores", "defense", ["ignores_defense"]))
 	if bool(a.get("ignores_evasion", false)):

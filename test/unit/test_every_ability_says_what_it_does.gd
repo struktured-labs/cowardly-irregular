@@ -74,3 +74,20 @@ func test_a_caster_sees_the_cost_and_heal_the_game_charges() -> void:
 	var healed: int = BattleManager.heal_cast_amount(cleric, JobSystem.get_ability("cure"))
 	assert_gt(healed, 0, "CONTROL: cure heals this caster for something")
 	assert_eq(by_label.get("Heals", ""), "~%d HP" % healed, "the heal row is BattleManager's own estimate")
+
+
+func test_a_row_never_promises_what_the_engine_does_not_do() -> void:
+	var unread: Dictionary = load("res://test/unit/test_ability_effect_keys_reach_the_engine_regression.gd").get_script_constant_map().get("UNREAD_EFFECT_KEYS", {})
+	var unbuilt: Array = []
+	for k in unread:
+		if str(unread[k]).begins_with("DEFERRED") or str(unread[k]).begins_with("MISSING"):
+			unbuilt.append(str(k))
+	assert_true(unbuilt.has("bp_gain"), "CONTROL: the engine guard still lists the unbuilt BP bank (%s)" % str(unbuilt))
+	var all := _abilities()
+	var promised: Array = []
+	for id in all:
+		for r in AbilityFacts.rows(str(id)):
+			for k in r["keys"]:
+				if unbuilt.has(str(k)):
+					promised.append("%s: %s %s" % [id, r["label"], r["value"]])
+	assert_eq(promised, [], "a zoom row describes a mechanic the engine does not perform (controller 23290)")
