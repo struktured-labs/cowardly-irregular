@@ -147,6 +147,37 @@ func test_the_built_panels_use_the_sizes_the_fit_arm_judged() -> void:
 		assert_lte(body.position.y + ReadableProp.body_box().y, rp.size.y, "the reading body band must sit inside its built panel at %s" % str(p))
 
 
+## The BUILT Label's own line count times its line height (no spacing term: autogrind 22941 measured none drawn); judges the sizing's WRAP_FLAGS against what the Label draws.
+func _drawn_h(label: Label) -> float:
+	return label.get_line_count() * label.get_line_height()
+
+
+func _on_screen(layer: CanvasLayer) -> Label:
+	if layer.get_parent() != null:
+		layer.get_parent().remove_child(layer)
+	add_child_autofree(layer)
+	return layer.get_child(0).get_child(0).get_child(0)
+
+
+func test_the_drawn_lines_of_the_built_label_fit_its_panel() -> void:
+	var messages := _inn_messages()
+	var most_lines := 0
+	for p in _presets():
+		GameState.text_size_scale = float(p)
+		for m in messages:
+			var l := _on_screen(autofree(InnScript.new())._make_inn_dialog(str(m)))
+			var panel: Panel = l.get_parent()
+			most_lines = maxi(most_lines, l.get_line_count())
+			assert_lte(_drawn_h(l), panel.size.y - InnScript.DIALOG_PAD * 2.0 * k_of(InnScript.DIALOG_FONT) + 0.5,
+				"the rest panel's drawn text (%d lines) overruns its padding: '%s' at %s" % [l.get_line_count(), str(m).left(40), str(p)])
+		for t in TAVERN_LINES:
+			var tl := _on_screen(autofree(TavernScript.new())._make_dialogue_layer(t))
+			var tp: Panel = tl.get_parent()
+			assert_lte(_drawn_h(tl), tp.size.y - TavernScript.DIALOGUE_PAD * 2.0 * k_of(TavernScript.DIALOGUE_FONT) + 0.5,
+				"the tavern panel's drawn text (%d lines) overruns its padding: '%s' at %s" % [tl.get_line_count(), t.left(30), str(p)])
+	assert_gte(most_lines, 3, "CONTROL: some real inn message must wrap to 3+ lines, or the line count is never tested (%d)" % most_lines)
+
+
 func test_the_tavern_dialogue_is_screen_space() -> void:
 	var layer = autofree(TavernScript.new())._make_dialogue_layer("*hm*")
 	assert_true(layer is CanvasLayer, "the tavern's panel must sit on a CanvasLayer, or the camera leaves it behind (the Inn's 2026-07-25 bug)")

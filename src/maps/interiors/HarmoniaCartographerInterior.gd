@@ -8,6 +8,7 @@ class_name HarmoniaCartographerInterior
 ## actual attuned-crystal count when examined (meta-aware flavor, composed
 ## fresh on every entry). Wendel Inkhand, the cartographer, has opinions
 ## about mapping a world that keeps being edited.
+## After Mordaine falls, the map unfolds the next world and Wendel finds a road he never drew.
 
 const ROOM_LAYOUT = [
 	"WWWWWWWWWWWWWW",
@@ -120,13 +121,24 @@ func _setup_npcs() -> void:
 	wendel.npc_name = "Wendel Inkhand"
 	wendel.npc_type = "scholar"
 	wendel.position = Vector2(4 * TILE_SIZE, 3 * TILE_SIZE)
-	wendel.dialogue_lines = [
+	# After Mordaine: the map knows before Wendel does. Reads every flag namespace, like the spine gate.
+	var gs = get_node_or_null("/root/GameState")
+	var chancellor_gone: bool = gs != null and gs.is_story_flag_set("world1_mordaine_defeated")
+	var wendel_before := [
 		"Cartography used to be honest work. You draw the mountain. The mountain stays drawn.",
 		"Now? I inked the Whispering Cave twice and it grew a floor between drafts.",
 		"The castle appeared on my map before anyone had SEEN it. I don't draw fast. Something draws first.",
 		"My master said a good map is a promise. This world keeps renegotiating.",
 		"Take the roads slowly. They're the only lines that have never moved on me.",
 	]
+	var wendel_after := [
+		"The castle's still on my map. But the ink went grey this morning, like it forgot it was important.",
+		"They say the Chancellor's gone. Then who's been holding the pen?",
+		"And this. A road I never drew, running straight off the edge of the sheet.",
+		"My master said a good map is a promise. I think somebody just kept one.",
+		"Take the roads slowly. Even the new one. ESPECIALLY the new one.",
+	]
+	wendel.dialogue_lines = wendel_after if chancellor_gone else wendel_before
 	npcs.add_child(wendel)
 
 	# The Living Map — the room's memorable thing. Composed fresh each
@@ -136,6 +148,10 @@ func _setup_npcs() -> void:
 		attuned = GameState.activated_crystals.size()
 	var crystal_line: String = "No crystals attuned yet. The map is patient." if attuned == 0 \
 		else "%d crystal%s attuned. The map marked them before you touched them." % [attuned, "" if attuned == 1 else "s"]
+	# After Mordaine, the next world comes unfolded: W2's suburb, drawn before anyone has been there.
+	var folded_line: String = "In the bottom corner, in fresh ink: five more worlds, folded very small, as if embarrassed to be early."
+	if chancellor_gone:
+		folded_line = "In the bottom corner: four more worlds, folded very small. A fifth has come unfolded, its ink still wet: rows of identical little houses."
 	var map_obj = OverworldNPCScript.new()
 	map_obj.npc_name = "The Living Map"
 	map_obj.is_object = true  ## the room draws it; no person stands here
@@ -145,7 +161,7 @@ func _setup_npcs() -> void:
 		"A hand-inked map of the realm. A red pin reads YOU ARE HERE.",
 		"The pin is in the Cartographer's attic. You are in the Cartographer's attic. It is correct.",
 		crystal_line,
-		"In the bottom corner, in fresh ink: five more worlds, folded very small, as if embarrassed to be early.",
+		folded_line,
 	]
 	npcs.add_child(map_obj)
 
