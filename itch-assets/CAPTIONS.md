@@ -9,12 +9,23 @@
 | `v3.33.767-alpha` | (none left: `battle` re-shot at `.774`) | "re-shot at `v3.33.767-alpha`" |
 | `v3.33.770-alpha` | `ironhaven_village` · `eldertree_village` · the three interiors · `whispering_cave` | "re-shot at `v3.33.770-alpha`, door labels hidden" |
 | `v3.33.773-alpha` | `harmonia_village` · `frosthold_village` · `grimhollow_village` | "re-shot at `v3.33.773-alpha`, villagers on whole ground" |
-| `v3.33.774-alpha` | `battle` · `sandrift_village` · `title_screen` | "re-shot at `v3.33.774-alpha`, a name said once" |
+| `v3.33.774-alpha` | `sandrift_village` · `title_screen` (`battle` re-shot at `.788`) | "re-shot at `v3.33.774-alpha`, a name said once" |
+| `v3.33.788-alpha` | `battle` | "re-shot at `v3.33.788-alpha`, the speed readout keeps its width" |
 
 Re-derive it rather than trusting this table: `git log -1 --format=%h -- itch-assets/screenshots/<shot>.png`
 names the commit, and that commit's message names the tag it was shot from. Which of them have gone
 stale since: `tools/store_shot_staleness.py --from <capture tag> --to <store tag>` (a candidate list,
 never a verdict; decide in pixels with `--compare`).
+
+**2026-11-07: re-shot at `v3.33.788-alpha`, the speed readout keeps its width.** Judged in pixels against the shipped
+set with two runs of the tag (noise 0.00% on each), the changed region read off store_shot_pixels' own box and its mask:
+`battle` 0.14%, 1326 px in (1089,45)-(1266,71): the PARTY header label and the battle-speed readout. `.788`'s
+`e9da75266` reserves the widest rung's readout width at every rung (so 64x no longer wraps the header row), which widens the
+default rung's box ~15 px and moves the centred "PARTY" left. Predicted before the tag (deploy `tmp/pred788`, cowir-battle
+23249); party, command menu and AUTO: OFF untouched in the mask. Kept: every other frame (`harmonia_village`,
+`sandrift_village`, `tavern_interior` moved only inside their known animation regions; `title_screen` moved in its version
+digit plus 29 isolated sky pixels whose cause is not determined, and it is not re-shot on that). Compared by eye with the
+frame it replaces.
 
 **2026-11-06: re-shot at `v3.33.774-alpha`, a name said once.** Judged in pixels against the shipped set with two runs
 of the tag (noise 0.00% on each), the changed region read off store_shot_pixels' own boxes (new at `.774`):

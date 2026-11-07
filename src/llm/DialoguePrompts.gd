@@ -1868,10 +1868,13 @@ static func _format_events(events: Array, limit: int) -> String:
 	return "\nRecent events:\n" + "\n".join(lines) + "\n"
 
 
-## A finished cutscene is logged as "Cutscene complete: <file id>", which an NPC could say aloud; show its title instead, or nothing.
+## Some summaries are logged with ids an NPC could say aloud (a cutscene's file id, a wipe's map id); show the player's names instead.
 static func _event_summary(entry: Dictionary) -> String:
 	var data: Variant = entry.get("data", {})
 	var cid: String = str((data as Dictionary).get("cutscene_id", "")) if data is Dictionary else ""
+	var wiped_in: String = str((data as Dictionary).get("map_id", "")) if data is Dictionary else ""
+	if str(entry.get("type", "")) == "party_wipe" and wiped_in != "":
+		return "Party wiped in %s" % SaveSystem.location_display_name(wiped_in)  # the place's name, as "Entered ..." uses
 	if cid == "":
 		return str(entry.get("summary", ""))
 	var title: String = cutscene_title(cid)
