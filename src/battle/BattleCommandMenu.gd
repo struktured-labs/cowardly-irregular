@@ -278,7 +278,9 @@ func _queued_cost(data, combatant: Combatant) -> Dictionary:
 		return out
 	if data.has("item_id"):
 		return {"item:" + str(data["item_id"]): 1, "ap": 1}
-	return {"ap": 1}
+	if str(data.get("action", "")) == "attack":
+		return {"ap": 1}
+	return {}   # a defer, a toggle or a group row: no slot AP here (AbilityCost bills a defer 0)
 
 
 func _restore_reaches(ability: Dictionary, data: Dictionary, combatant: Combatant) -> bool:
