@@ -135,7 +135,7 @@ func spawn_ability_effect(ability: Variant, target_position: Vector2, on_complet
 ## Plays a data/vfx_sequences.json sequence from `from` to `to` (#399, struktured via cowir-main 2026-10-31:
 ## "wire it into Fire first, playable"). Returns {"total", "impact"} in battle seconds: impact is when the
 ## sequence first lands on the target, so a caller can hold the damage numbers for it. {} if the id is unknown.
-func spawn_sequence(seq_id: String, from: Vector2, to: Vector2, power: float = 1.0, actors: Dictionary = {}, tier: int = 1) -> Dictionary:
+func spawn_sequence(seq_id: String, from: Vector2, to: Vector2, power: float = 1.0, actors: Dictionary = {}, tier: int = 1, compact: bool = false) -> Dictionary:
 	var seq: Dictionary = FractalFX.load_sequence(seq_id)
 	if seq.is_empty() or _effects_container == null:
 		return {}
@@ -145,8 +145,88 @@ func spawn_sequence(seq_id: String, from: Vector2, to: Vector2, power: float = 1
 	fx.reduce_flashes = _reduce_flashes()
 	fx.on_shake = _trigger_screen_shake
 	fx.on_sfx = play_phase_sfx
-	var total: float = fx.play(seq, from, to, clampf(power, POWER_MIN, POWER_MAX))
-	return {"total": total, "impact": FractalFX.impact_time(seq)}
+	fx.on_element_phase = run_element_phase
+	var total: float = fx.play(seq, from, to, clampf(power, POWER_MIN, POWER_MAX), compact)
+	return {"total": total, "impact": 0.01 if compact else FractalFX.impact_time(seq)}
+
+
+## A sequence phase in an element's OWN visual language (struktured via main 23405/23406: Fire keeps its original look,
+## in phases). FractalFX calls this for eruption / pillar / gather / embers; the particles are _animate_fire's own.
+func run_element_phase(kind: String, at: Vector2, _from: Vector2, power: float, phase: Dictionary) -> void:
+	if _effects_container == null:
+		return
+	var boost := float(phase.get("boost", 1.0))
+	match kind:
+		"eruption":
+			var e := _create_effect(EffectType.FIRE)
+			e.position = at
+			_effects_container.add_child(e)
+			# No strike cue here: the phase's own per-tier impact beat is the sound (cowir-sfx 23592).
+			_animate_fire(e, Callable(), clampf(power * float(phase.get("power", 1.0)), POWER_MIN, POWER_MAX), boost)
+		"pillar":
+			_fire_column(at, power * boost, float(phase.get("dur", 0.36)), float(phase.get("height", 220.0)))
+		"gather":
+			_fire_gather(at, power, float(phase.get("dur", 0.3)), int(phase.get("count", 18)))
+		"embers":
+			_fire_embers(at, power, float(phase.get("dur", 0.6)), int(phase.get("count", 16)))
+
+
+## A rising column of flame particles, the eruption's particles stood upright.
+func _fire_column(at: Vector2, k: float, dur: float, height: float) -> void:
+	var n := int(26.0 * clampf(k, 0.5, 4.0))
+	var tween := create_tween()
+	tween.set_parallel(true)
+	for i in n:
+		var p := _create_fire_particle()
+		p.position = at + Vector2(randf_range(-14.0, 14.0) * k, randf_range(-6.0, 6.0))
+		p.scale = Vector2.ONE * randf_range(0.8, 1.6) * k
+		_effects_container.add_child(p)
+		var delay := float(i) / float(n) * dur * 0.5
+		var rise := randf_range(0.55, 1.0) * height * k
+		tween.tween_property(p, "position:y", p.position.y - rise, dur).set_delay(delay).set_ease(Tween.EASE_OUT)
+		tween.tween_property(p, "scale", p.scale * Vector2(0.6, 2.2), dur).set_delay(delay)
+		tween.tween_property(p, "modulate:a", 0.0, dur * 0.5).set_delay(delay + dur * 0.5)
+		tween.tween_callback(p.queue_free).set_delay(delay + dur)
+
+
+## Heat gathering at the caster's hand: motes drawn in from a ring, so the cast reads as charging before it flies.
+func _fire_gather(at: Vector2, k: float, dur: float, count: int) -> void:
+	var tween := create_tween()
+	tween.set_parallel(true)
+	for i in count:
+		var p := _create_fire_particle()
+		var ang := TAU * float(i) / float(count) + randf_range(-0.2, 0.2)
+		p.position = at + Vector2(cos(ang), sin(ang)) * randf_range(60.0, 96.0) * clampf(k, 0.8, 2.5)
+		p.scale = Vector2.ONE * 0.7
+		p.modulate.a = 0.0
+		_effects_container.add_child(p)
+		var delay := randf() * dur * 0.3
+		tween.tween_property(p, "modulate:a", 0.95, dur * 0.25).set_delay(delay)
+		tween.tween_property(p, "position", at, dur - delay).set_delay(delay).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
+		tween.tween_property(p, "scale", Vector2.ONE * 1.4, dur - delay).set_delay(delay)
+		tween.tween_callback(p.queue_free).set_delay(dur)
+
+
+## The aftermath: sparks drifting down and a scorch glow that fades on the ground under the target.
+func _fire_embers(at: Vector2, k: float, dur: float, count: int) -> void:
+	var tween := create_tween()
+	tween.set_parallel(true)
+	var scorch := _create_fire_particle()
+	scorch.position = at + Vector2(0, 28)
+	scorch.scale = Vector2(4.0, 1.2) * clampf(k, 0.8, 2.5)
+	scorch.modulate = Color(0.9, 0.35, 0.1, 0.7)
+	_effects_container.add_child(scorch)
+	tween.tween_property(scorch, "modulate:a", 0.0, dur)
+	tween.tween_callback(scorch.queue_free).set_delay(dur)
+	for i in int(float(count) * clampf(k, 0.8, 2.5)):
+		var p := _create_fire_particle()
+		p.position = at + Vector2(randf_range(-40.0, 40.0), randf_range(-70.0, -10.0)) * clampf(k, 0.8, 2.0)
+		p.scale = Vector2.ONE * randf_range(0.3, 0.6)
+		_effects_container.add_child(p)
+		var delay := randf() * dur * 0.3
+		tween.tween_property(p, "position", p.position + Vector2(randf_range(-20.0, 20.0), randf_range(30.0, 60.0)), dur - delay).set_delay(delay)
+		tween.tween_property(p, "modulate:a", 0.0, dur - delay).set_delay(delay)
+		tween.tween_callback(p.queue_free).set_delay(dur)
 
 
 ## A sequence phase's "sfx" cue; false when muted (autogrind/turbo, via the battle's own gate) or the key is unknown.
@@ -292,9 +372,11 @@ func _tint_battle_background(tint_color: Color, duration: float = 0.3) -> void:
 	tween.tween_property(battle_background, "modulate", Color.WHITE, duration * 0.85).set_trans(Tween.TRANS_SINE)
 
 
-func _animate_fire(effect: Node2D, on_complete: Callable, power: float = 1.0) -> void:
+func _animate_fire(effect: Node2D, on_complete: Callable, power: float = 1.0, boost: float = 1.0) -> void:
 	"""Fire spell — FF6-style eruption: screen flash, explosion ring, flame columns, massive particles"""
 	var power_t = clampf((power - POWER_MIN) / (POWER_MAX - POWER_MIN), 0.0, 1.0)
+	# boost > 1 is a sequence's "over the top" knob (struktured via main 23591): more of the same eruption, never a new look.
+	boost = maxf(boost, 1.0)
 
 	# Environmental reaction: warm orange-red background tint
 	_tint_battle_background(Color(1.3, 0.7, 0.5, 1.0), 0.4)
@@ -303,7 +385,7 @@ func _animate_fire(effect: Node2D, on_complete: Callable, power: float = 1.0) ->
 	var flash := _make_screen_flash(effect, Color(1.0, 0.5, 0.0, 0.0))
 
 	# Big screen shake
-	var shake_intensity = lerp(6.0, 20.0, power_t)
+	var shake_intensity = lerp(6.0, 20.0, power_t) * boost
 	var shake_duration = lerp(0.3, 0.7, power_t)
 	_trigger_screen_shake(shake_intensity, shake_duration)
 
@@ -317,7 +399,7 @@ func _animate_fire(effect: Node2D, on_complete: Callable, power: float = 1.0) ->
 
 	# Massive particle burst — 40-100 particles in two waves
 	var particles: Array[Sprite2D] = []
-	var particle_count = int(lerp(40, 100, power_t))
+	var particle_count = int(lerp(40, 100, power_t) * boost)
 	var base_spread = lerp(25, 60, power_t)
 	for i in range(particle_count):
 		var particle = _create_fire_particle()
@@ -334,12 +416,12 @@ func _animate_fire(effect: Node2D, on_complete: Callable, power: float = 1.0) ->
 
 	# Screen flash: bright burst then fade. No rect when Reduce Flashes is on.
 	if flash:
-		var flash_alpha = lerp(0.5, 0.9, power_t)
+		var flash_alpha = minf(lerp(0.5, 0.9, power_t) * sqrt(boost), 1.0)
 		tween.tween_property(flash, "color:a", flash_alpha, 0.04)
 		tween.tween_property(flash, "color:a", 0.0, 0.2).set_delay(0.04)
 
 	# Double ring expansion
-	var ring_scale = lerp(3.0, 6.0, power_t)
+	var ring_scale = lerp(3.0, 6.0, power_t) * sqrt(boost)
 	tween.tween_property(ring1, "scale", Vector2(ring_scale, ring_scale), 0.25)
 	tween.tween_property(ring1, "modulate:a", 0.0, 0.2).set_delay(0.1)
 	tween.tween_property(ring2, "scale", Vector2(ring_scale * 1.3, ring_scale * 1.3), 0.4).set_delay(0.08)
