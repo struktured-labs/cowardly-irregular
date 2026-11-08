@@ -20,15 +20,17 @@ EC=0
 env -u WAYLAND_DISPLAY XDG_DATA_HOME="$_XDG" "${JAIL[@]}" timeout 300 xvfb-run -a -s "-screen 0 1280x720x24" \
   godot --display-driver x11 --rendering-driver opengl3 --resolution 1280x720 --write-movie "$AVI" --fixed-fps 30 \
   -s tools/death_clip.gd -- "$@" < /dev/null > "$LOG" 2>&1 || EC=$?
-command grep -a -E '^\[VCLIP\]|SCRIPT ERROR|Parse Error' "$LOG" || true
+command grep -a -E '^\[DCLIP\]|SCRIPT ERROR|Parse Error' "$LOG" || true
 [ -e "$_XDG/godot" ] || { echo "[dclip] BLOCKED: the sandbox at $_XDG is empty, so the redirect did not fire." >&2; exit 4; }
 [ "$EC" -eq 0 ] && [ -s "$AVI" ] || { echo "[dclip] $LABEL FAILED (exit $EC) - $LOG" >&2; exit 1; }
-command grep -a -q '^\[VCLIP\] built' "$LOG" || { echo "[dclip] $LABEL: no build line in $LOG" >&2; exit 1; }
+command grep -a -q '^\[DCLIP\] built' "$LOG" || { echo "[dclip] $LABEL: no build line in $LOG" >&2; exit 1; }
 PROBE="$(ffprobe -v error -show_entries stream=codec_type -of csv=p=0 "$AVI" | sort -u | tr '\n' ' ')"
 case "$PROBE" in *audio*video*) ;; *) echo "[dclip] $LABEL FAILED: the AVI lacks a video or an audio stream ($PROBE)" >&2; exit 1 ;; esac
 # The battle's setup precedes the build; keep the last <seconds> of the run, which is the beat.
 SECS="3.4"
 for a in "$@"; do case "$a" in --seconds=*) SECS="${a#--seconds=}" ;; esac; done
+# Plus a 0.6 s lead-in, so the clip opens on the monsters standing (or the party at rest) before the beat starts.
+SECS="$(python3 -c "print(float('$SECS') + 0.6)")"
 ffmpeg -loglevel error -y -sseof "-$SECS" -i "$AVI" -c:v libx264 -pix_fmt yuv420p -crf 18 -c:a aac -b:a 192k "tmp/death_clip/$LABEL.mp4"
 ffmpeg -loglevel error -y -sseof "-$SECS" -i "$AVI" \
   -vf "fps=30,scale=960:-1:flags=neighbor,split[a][b];[a]palettegen=max_colors=192[p];[b][p]paletteuse=dither=none" "tmp/death_clip/$LABEL.gif"

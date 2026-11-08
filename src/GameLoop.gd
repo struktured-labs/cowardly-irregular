@@ -4282,8 +4282,8 @@ func _on_battle_ended(victory: bool) -> void:
 		for _m in party:
 			if _m is Combatant and _m.is_alive:
 				_escape_survivors += 1
+		## An escape: the party's run-off beat plays BEFORE the exit transition, not under it (capped in the scene).
 		if _escape_survivors > 0:
-			## The party's escape beat plays before the exit transition, not under it (capped in the scene).
 			if is_instance_valid(current_scene) and current_scene.has_method("play_escape_beat"):
 				await current_scene.play_escape_beat()
 			if BattleTransition:

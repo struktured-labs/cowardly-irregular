@@ -48,7 +48,9 @@ func _init() -> void:
 	var dbg = root.get_node_or_null("DebugLogOverlay")
 	if dbg and dbg.has_method("set_enabled"):
 		dbg.set_enabled(false)
-	await create_timer(0.6).timeout
+	## Waits in REAL (video) seconds: the battle runs below 1x, so a plain game-time timer ran ~2.7x long and
+	## the encode's last-N-seconds window missed the deaths.
+	await create_timer(0.6 * Engine.time_scale).timeout
 	print("[DCLIP] built mode=%s" % mode)
 	match mode:
 		"compare":
@@ -66,14 +68,14 @@ func _init() -> void:
 					e.is_alive = false
 					e.current_hp = 0
 				scene._on_enemy_died(i)
-				await create_timer(0.35).timeout
+				await create_timer(0.35 * Engine.time_scale).timeout
 		"flee":
 			if scene.has_method("play_escape_beat"):
 				scene.play_escape_beat()
 				print("[DCLIP] escape beat")
 			else:
 				print("[DCLIP] this tree has no escape beat (the before)")
-	await create_timer(seconds).timeout
+	await create_timer(seconds * Engine.time_scale).timeout
 	print("[DCLIP] done")
 	quit(0)
 
