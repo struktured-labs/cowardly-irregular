@@ -56,10 +56,27 @@ static func applies_to(enemy: Object) -> bool:
 
 
 ## The same REAL length at every battle speed, but stepped by game frames: speed_scale 1/time_scale, never
-## set_ignore_time_scale, which reads the OS clock, so a Movie Maker capture (slower than real time) showed
-## the death already over (cowir-cutscenes 23594). The escape beat uses it too.
+## set_ignore_time_scale (a Movie Maker capture showed the death already over, cowir-cutscenes 23594).
+## Re-read EVERY frame, not once: a killing crit's hitlag drops time_scale to 0.1 for ~80 ms, and a scale
+## locked in during it ran the whole death ~4x fast once the battle speed came back (cowir-main 23618).
+## The escape beat uses it too.
 static func real_time(t: Tween) -> Tween:
-	return t.set_speed_scale(1.0 / maxf(Engine.time_scale, 0.01))
+	t.set_speed_scale(_real_speed())
+	var tree := Engine.get_main_loop() as SceneTree
+	if tree == null:
+		return t
+	var follow := [Callable()]
+	follow[0] = func() -> void:
+		if t.is_valid():
+			t.set_speed_scale(_real_speed())
+		elif tree.process_frame.is_connected(follow[0]):
+			tree.process_frame.disconnect(follow[0])
+	tree.process_frame.connect(follow[0])
+	return t
+
+
+static func _real_speed() -> float:
+	return 1.0 / maxf(Engine.time_scale, 0.01)
 
 
 ## Plays `style` on `sprite`. `on_cue` fires at the moment the death sound belongs (right after the

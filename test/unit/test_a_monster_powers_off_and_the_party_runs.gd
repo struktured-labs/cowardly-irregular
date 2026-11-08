@@ -135,3 +135,25 @@ func test_every_style_steps_with_game_frames_at_its_real_length() -> void:
 	assert_false(beat.contains(".set_ignore_time_scale("), "the escape beat is back on the OS clock: a capture shows the party already gone")
 	assert_false(beat.contains(", true, false, true)"), "the escape beat's wait is back on the OS clock")
 	assert_gt(beat.count("EnemyDeathFx.real_time("), 2, "the escape beat's tweens aren't on the game-frame clock")
+
+
+## A killing crit starts the death INSIDE its hitlag (time_scale 0.1 for ~80 ms). A speed fixed at that moment
+## (x10) then ran the whole death ~4x fast at the battle speed. The speed must follow time_scale every frame.
+func test_a_death_that_starts_in_a_hitlag_keeps_its_real_length() -> void:
+	var saved := Engine.time_scale
+	Engine.time_scale = 1.0
+	var length := _game_seconds_to_hide("crt_off")
+	var s := _sprite()
+	Engine.time_scale = 0.1
+	var t0 := Time.get_ticks_msec()
+	EnemyDeathFx.play(s, "crt_off")
+	await get_tree().process_frame
+	await get_tree().process_frame
+	Engine.time_scale = 0.375
+	while s.visible and Time.get_ticks_msec() - t0 < 4000:
+		await get_tree().process_frame
+	var took := (Time.get_ticks_msec() - t0) / 1000.0
+	Engine.time_scale = saved
+	assert_false(s.visible, "VOID: the death never finished")
+	assert_gt(took, length * 0.75, "a death begun in a hitlag took %.2fs of real time, its length is %.2fs: the speed was locked at the hitlag's" % [took, length])
+	assert_lt(took, length * 1.6, "a death begun in a hitlag took %.2fs, its length is %.2fs" % [took, length])
