@@ -6,6 +6,17 @@ extends GutTest
 
 const GL := preload("res://src/GameLoop.gd")
 
+var _saved: Dictionary = {}
+
+
+func after_each() -> void:
+	if _saved.is_empty():
+		return
+	GameState.event_log = _saved["log"]
+	BattleManager.enemy_party.assign(_saved["party"])
+	GameState.llm_rebalance_enabled = _saved["rebalance"]
+	_saved = {}
+
 
 func _enemy(shown: String, boss: bool) -> Combatant:
 	var c := Combatant.new()
@@ -34,3 +45,19 @@ func test_with_no_marked_boss_the_flag_still_reads() -> void:
 	assert_eq(GL.defeated_boss_name([_enemy("Slime", false)], "cave_rat_king_defeated"), "Cave Rat King",
 		"CONTROL: the old humanized flag is the fallback when no enemy is marked")
 	assert_eq(GL.defeated_boss_name([], "cave_rat_king_defeated"), "Cave Rat King", "and an empty party falls back the same way")
+
+
+func test_the_logged_defeat_names_the_boss_the_battle_marked() -> void:
+	_saved = {"log": GameState.event_log, "party": BattleManager.enemy_party.duplicate(), "rebalance": GameState.llm_rebalance_enabled}
+	var ev: EventLog = EventLog.new()
+	GameState.event_log = ev
+	GameState.llm_rebalance_enabled = false
+	BattleManager.enemy_party.assign([_enemy("Ember Imp", false), _enemy("Pyrroth, the Ember Wyrm", true)])
+	var gl = autofree(GL.new())
+	gl._record_boss_defeat_event({"dungeon_flag": "fire_dragon_defeated"})
+	var entries: Array = ev.recent(1)
+	assert_eq(entries.size(), 1, "CONTROL: the real call site recorded one defeat")
+	if entries.is_empty():
+		return
+	assert_eq(str(entries[0].get("summary", "")), "Defeated Pyrroth, the Ember Wyrm",
+		"THE DEFECT at the call site: the logged defeat named the flag, not the marked boss")

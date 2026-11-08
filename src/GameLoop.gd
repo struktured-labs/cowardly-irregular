@@ -4420,6 +4420,47 @@ func _kick_off_rebalance_fetch(proposal_idx: int) -> void:
 			Toast.show(self, "Auto-rebalance proposal needs your review (Settings → review queue)", Toast.WARNING_COLOR)
 
 
+## The boss defeat as an EventLog fact for NPC prompts (+ the rebalance trigger); split out so a test can drive it without the auto-save.
+func _record_boss_defeat_event(spec: Dictionary) -> void:
+	# ── EventLog: record boss defeat fact ────────────────────────────────────
+	if GameState and "event_log" in GameState and GameState.event_log != null:
+		var boss_id: String = spec.get("dungeon_flag", "")
+		if boss_id.is_empty():
+			var flags: Array = spec.get("story_flags", [])
+			boss_id = flags[0] if flags.size() > 0 else "unknown_boss"
+		var boss_name: String = defeated_boss_name(BattleManager.enemy_party, boss_id)
+		var defeat_data: Dictionary = {
+			"boss_id":    boss_id,
+			"boss_name":  boss_name,
+			"map_id":     _current_map_id,
+			# Tick 313: world = current_world (where THIS boss was beaten),
+			# worlds_unlocked carries progression. See matching comment
+			# in _on_party_leveled_up.
+			"world":      GameState.current_world,
+			"worlds_unlocked": GameState.worlds_unlocked,
+		}
+		# Tactics snapshot — HOW the player won, not just THAT they won. NPC
+		# dialogue prompts pull this from EventLog so future chats can react
+		# ("you autobattled your way past the Rat King?"). BattleManager's
+		# tracking flags are still live at this point — they reset on the next
+		# start_battle, not on end_battle.
+		if BattleManager and BattleManager.has_method("get_battle_tactics_snapshot"):
+			defeat_data["tactics"] = BattleManager.get_battle_tactics_snapshot()
+		GameState.event_log.record(
+			EventLog.TYPE_BOSS_DEFEAT,
+			"Defeated %s" % boss_name,
+			defeat_data
+		)
+		# Rebalance trigger: a boss victory is a 'curve looks right' signal
+		# (or 'too easy' if the player one-shot it). Daemon decides whether
+		# to nudge based on the tactics snapshot — opt-in flag gates the
+		# whole call so vanilla play isn't affected.
+		if GameState.llm_rebalance_enabled and GameState.rebalance_daemon != null:
+			var fired: bool = GameState.rebalance_daemon.consider(RebalanceDaemonScript.TRIGGER_BOSS_DEFEAT, defeat_data)
+			if fired:
+				_kick_off_rebalance_fetch.call_deferred(GameState.rebalance_daemon.pending.size() - 1)
+
+
 ## The boss the battle itself marked (is_miniboss, as BattleScene._check_for_boss reads), by the name it was shown under; else the flag, humanized.
 static func defeated_boss_name(enemies: Array, flag: String) -> String:
 	for e in enemies:
@@ -4475,43 +4516,7 @@ func _apply_pending_boss_defeat() -> void:
 	# Defeat cutscene — left for the dungeon to play after re-instantiation
 	# (we don't play it here because the battle scene is still up)
 	print("[BOSS] Applied pending defeat: %s" % spec)
-	# ── EventLog: record boss defeat fact ────────────────────────────────────
-	if GameState and "event_log" in GameState and GameState.event_log != null:
-		var boss_id: String = spec.get("dungeon_flag", "")
-		if boss_id.is_empty():
-			var flags: Array = spec.get("story_flags", [])
-			boss_id = flags[0] if flags.size() > 0 else "unknown_boss"
-		var boss_name: String = defeated_boss_name(BattleManager.enemy_party, boss_id)
-		var defeat_data: Dictionary = {
-			"boss_id":    boss_id,
-			"boss_name":  boss_name,
-			"map_id":     _current_map_id,
-			# Tick 313: world = current_world (where THIS boss was beaten),
-			# worlds_unlocked carries progression. See matching comment
-			# in _on_party_leveled_up.
-			"world":      GameState.current_world,
-			"worlds_unlocked": GameState.worlds_unlocked,
-		}
-		# Tactics snapshot — HOW the player won, not just THAT they won. NPC
-		# dialogue prompts pull this from EventLog so future chats can react
-		# ("you autobattled your way past the Rat King?"). BattleManager's
-		# tracking flags are still live at this point — they reset on the next
-		# start_battle, not on end_battle.
-		if BattleManager and BattleManager.has_method("get_battle_tactics_snapshot"):
-			defeat_data["tactics"] = BattleManager.get_battle_tactics_snapshot()
-		GameState.event_log.record(
-			EventLog.TYPE_BOSS_DEFEAT,
-			"Defeated %s" % boss_name,
-			defeat_data
-		)
-		# Rebalance trigger: a boss victory is a 'curve looks right' signal
-		# (or 'too easy' if the player one-shot it). Daemon decides whether
-		# to nudge based on the tactics snapshot — opt-in flag gates the
-		# whole call so vanilla play isn't affected.
-		if GameState.llm_rebalance_enabled and GameState.rebalance_daemon != null:
-			var fired: bool = GameState.rebalance_daemon.consider(RebalanceDaemonScript.TRIGGER_BOSS_DEFEAT, defeat_data)
-			if fired:
-				_kick_off_rebalance_fetch.call_deferred(GameState.rebalance_daemon.pending.size() - 1)
+	_record_boss_defeat_event(spec)
 	# One-shot: clear after applying
 	GameState.pending_boss_defeat = {}
 	# Auto-save immediately after boss flags land. Without this, a crash or
