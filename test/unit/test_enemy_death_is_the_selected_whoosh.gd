@@ -75,8 +75,8 @@ func test_the_death_tween_still_fires_the_same_cue_without_a_file_length_hold() 
 	assert_gt(fn, -1, "_on_enemy_died missing")
 	var next_fn := src.find("\nfunc ", fn + 1)
 	var body := src.substr(fn, (next_fn - fn) if next_fn > -1 else -1)
-	assert_eq(body.count('play_death("enemy_death")'), 2,
-		"the spriteless fallback and the fade callback are the only enemy_death plays — a new cue name or a dropped call changes who hears the whoosh")
+	assert_eq(body.count('play_death("enemy_death")'), 3,
+		"the spriteless fallback, the EnemyDeathFx style callback and the boss/OFF fade callback are the only enemy_death plays — a new cue name or a dropped call changes who hears the whoosh")
 	assert_false("0.84" in body, "the audition length must not become a tween hold")
 	assert_false("F_whoosh" in body, "battle code keeps the cue name; the file is what changed")
 	var ally := src.find('play_death("party_ko")')
