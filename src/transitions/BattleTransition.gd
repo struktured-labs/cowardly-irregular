@@ -110,7 +110,7 @@ func _create_screen_rect() -> TextureRect:
 func _play_encounter_flash() -> void:
 	_overlay.color = Color.WHITE
 	_overlay.modulate.a = 1.0
-	await get_tree().create_timer(0.05, true, false, true).timeout
+	await _wall_timer(0.05).timeout
 	_overlay.modulate.a = 0.0
 	_overlay.color = Color.BLACK
 
@@ -142,9 +142,14 @@ func _await_tween_safe(tween: Tween, max_wall_ms: int = 6000) -> void:
 		await get_tree().process_frame
 
 
-## A transition is presentation on the WALL clock: battle speed and hitlag scale Engine.time_scale, which slowed a chained reveal to seconds.
+## Same REAL time at every battle speed, on GAME time: the OS clock (ignore_time_scale) ran ahead of Movie Maker and of a hitched frame.
 func _wall_tween() -> Tween:
-	return create_tween().set_ignore_time_scale(true)
+	return create_tween().set_speed_scale(1.0 / maxf(Engine.time_scale, 0.01))
+
+
+## A timer of the same real length at the current battle speed, on game time for the same reason.
+func _wall_timer(sec: float) -> SceneTreeTimer:
+	return get_tree().create_timer(sec * maxf(Engine.time_scale, 0.01))
 
 
 func play_battle_transition(enemy_types: Array) -> void:
@@ -359,7 +364,7 @@ void fragment() {
 	_overlay.material = null
 	_overlay.color = Color.BLACK
 	_overlay.modulate.a = 1.0
-	await get_tree().create_timer(0.2, true, false, true).timeout
+	await _wall_timer(0.2).timeout
 
 
 func _play_defeat_exit() -> void:
@@ -372,7 +377,7 @@ func _play_defeat_exit() -> void:
 
 	if not is_instance_valid(self):
 		return
-	await get_tree().create_timer(0.3, true, false, true).timeout
+	await _wall_timer(0.3).timeout
 
 
 func reveal_exploration() -> void:
@@ -665,7 +670,7 @@ func _play_shatter() -> void:
 			randf_range(-5.0, 5.0),
 			randf_range(-5.0, 5.0)
 		)
-		await get_tree().create_timer(0.1, true, false, true).timeout
+		await _wall_timer(0.1).timeout
 	_effect_container.position = original_offset
 
 	# Phase 1: fragments explode outward with rotation and gravity (0.75s)
@@ -696,7 +701,7 @@ func _play_shatter() -> void:
 	# Brief white impact flash — overlay returns to transparent so battle shows through
 	_overlay.color = Color.WHITE
 	_overlay.modulate.a = 0.6
-	await get_tree().create_timer(0.04, true, false, true).timeout
+	await _wall_timer(0.04).timeout
 	_overlay.color = Color.BLACK
 	_overlay.modulate.a = 0.0
 
@@ -757,7 +762,7 @@ func _play_spiral() -> void:
 	# Implosion flash — overlay returns to transparent so battle shows through
 	_overlay.color = Color(0.6, 0.4, 0.9)
 	_overlay.modulate.a = 0.7
-	await get_tree().create_timer(0.04, true, false, true).timeout
+	await _wall_timer(0.04).timeout
 	_overlay.color = Color.BLACK
 	_overlay.modulate.a = 0.0
 
@@ -785,7 +790,7 @@ func _play_zoom_burst() -> void:
 	# Bright white flash, then back to transparent so battle shows through
 	_overlay.color = Color.WHITE
 	_overlay.modulate.a = 1.0
-	await get_tree().create_timer(0.05, true, false, true).timeout
+	await _wall_timer(0.05).timeout
 	_overlay.color = Color.BLACK
 	_overlay.modulate.a = 0.0
 
@@ -814,14 +819,14 @@ func _play_shake_flash() -> void:
 				_overlay.color = Color(1.0, 0.5, 0.1)
 				_overlay.modulate.a = 0.8
 
-		await get_tree().create_timer(0.1, true, false, true).timeout
+		await _wall_timer(0.1).timeout
 		shake_intensity *= 1.4
 
 	# Final slam flash — back to transparent so battle shows through
 	_effect_container.position = original_offset
 	_overlay.color = Color.WHITE
 	_overlay.modulate.a = 1.0
-	await get_tree().create_timer(0.04, true, false, true).timeout
+	await _wall_timer(0.04).timeout
 	_overlay.color = Color.BLACK
 	_overlay.modulate.a = 0.0
 
@@ -957,7 +962,7 @@ func _play_pixelate() -> void:
 		var dark_factor = float(step) / (steps - 1)
 		_screen_rect.modulate = Color(1.0 - dark_factor * 0.7, 1.0 - dark_factor * 0.7, 1.0 - dark_factor * 0.7, 1.0)
 
-		await get_tree().create_timer(step_time, true, false, true).timeout
+		await _wall_timer(step_time).timeout
 
 		if not is_instance_valid(self):
 			return
@@ -965,7 +970,7 @@ func _play_pixelate() -> void:
 	# Ethereal flash — overlay returns to transparent so battle shows through
 	_overlay.color = Color(0.7, 0.8, 1.0)
 	_overlay.modulate.a = 0.8
-	await get_tree().create_timer(0.04, true, false, true).timeout
+	await _wall_timer(0.04).timeout
 	_overlay.color = Color.BLACK
 	_overlay.modulate.a = 0.0
 
@@ -1089,12 +1094,12 @@ func _play_shockwave() -> void:
 		tween.tween_property(ring, "scale", Vector2(target_scale, target_scale), ring_duration * 0.6).set_delay(delay).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_EXPO)
 		tween.tween_property(ring, "modulate:a", 0.3, ring_duration * 0.4).set_delay(delay + ring_duration * 0.3)
 
-	await get_tree().create_timer(ring_duration * 0.6, true, false, true).timeout
+	await _wall_timer(ring_duration * 0.6).timeout
 
 	# Bright energy flash — overlay returns to transparent so battle shows through
 	_overlay.color = Color(0.9, 0.7, 1.0)
 	_overlay.modulate.a = 1.0
-	await get_tree().create_timer(0.04, true, false, true).timeout
+	await _wall_timer(0.04).timeout
 	_overlay.color = Color.BLACK
 	_overlay.modulate.a = 0.0
 
