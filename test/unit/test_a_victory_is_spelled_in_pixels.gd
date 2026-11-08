@@ -67,19 +67,29 @@ func test_the_title_is_drawn_in_pixel_glyphs() -> void:
 
 ## The one the band failed: nothing in the beat may sit between pixels or scale by a fraction on ANY frame.
 func test_every_frame_of_the_beat_is_on_whole_pixels() -> void:
+	## The beat runs on the wall clock, so a build before the engine's first frame would land in that frame's
+	## boot-long delta and the arm would judge only the settled word (measured: 320 frames, 0 mid-drop).
+	await get_tree().process_frame
+	await get_tree().process_frame
 	var o = _build("S")
 	var title = _title(o)
 	assert_not_null(title, "CONTROL: a title to watch")
 	if title == null:
 		return
 	var frames := 0
+	var falling := 0
 	var bad := ""
 	var start := Time.get_ticks_msec()
 	while Time.get_ticks_msec() - start < 2200 and bad == "":
 		await get_tree().process_frame
 		frames += 1
+		for spr in title.glyphs.glyph_sprites:
+			if spr.visible and spr.position != title.glyphs.rest_position(spr):
+				falling += 1
+				break
 		bad = _off_grid(o)
 	assert_gt(frames, 20, "the beat was actually sampled (%d frames)" % frames)
+	assert_gt(falling, 0, "CONTROL: some sampled frame caught a letter mid-drop, so the motion itself was judged")
 	assert_eq(bad, "", "integer position and integer glyph scale on every frame")
 
 
