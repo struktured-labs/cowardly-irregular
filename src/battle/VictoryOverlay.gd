@@ -280,9 +280,10 @@ var _title_px := 4
 var _impact_done := false
 
 
-## The beat reads the same at every battle speed (cowir-music 23438): its tweens run on the wall clock.
+## The beat takes the same REAL time at every battle speed (cowir-music 23438): game-time tweens sped by 1/time_scale.
+## Not set_ignore_time_scale, which reads the OS clock: a Movie Maker capture or a hitched frame then finishes it at once.
 func _wall(t: Tween) -> Tween:
-	return _track(t.set_ignore_time_scale(true))
+	return _track(t.set_speed_scale(1.0 / maxf(Engine.time_scale, 0.01)))
 
 
 ## A row of pixel letters that the overlay's rects, modulate and child lookups treat like the Label it replaced.
@@ -539,7 +540,7 @@ func _spawn_starburst(at: Vector2, tint: Color, grade: int) -> void:
 	t.tween_callback(burst.queue_free)
 
 
-## A one-shot's rank, stamped over the title's last corner on the slam's frame: it starts three times its size and
+## A one-shot's rank, stamped above the title's last letters on the slam's frame: it starts three times its size and
 ## lands in two whole steps. An S rank stamps in gold with its own burst; the S slam is its voice (_slam_key).
 func _build_stamp(center: Vector2, title_size: Vector2, px: int, flourish: bool) -> Control:
 	if _one_shot_rank == "":
@@ -550,8 +551,9 @@ func _build_stamp(center: Vector2, title_size: Vector2, px: int, flourish: bool)
 	stamp.name = "VictoryRankStamp"
 	add_child(stamp)
 	var vp := get_viewport_rect().size
-	var x: float = minf(center.x + title_size.x - stamp.size.x / 2.0, vp.x - 8.0 - stamp.size.x)
-	stamp.position = Vector2(x, center.y - stamp.size.y / 2.0).round()
+	## Above the title's right end, clear of the word: over the corner it hid "RY!" for the whole hold (2026-11-08 clip).
+	var x: float = minf(center.x + title_size.x - stamp.size.x, vp.x - 8.0 - stamp.size.x)
+	stamp.position = Vector2(x, center.y - stamp.size.y - float(px)).round()
 	var mid: Vector2 = stamp.position + stamp.size / 2.0
 	_snaps.append(func() -> void:
 		if is_instance_valid(stamp):

@@ -70,8 +70,11 @@ func _init() -> void:
 	overlay.name = "VictoryResults"
 	scene.add_child(overlay)
 	overlay.build({"char_results": cr, "total_gold": 40, "item_drops": [], "bonuses": bonuses, "injuries": []}, scene)
-	print("[VCLIP] built rank=%s boss=%s grade=%d" % [rank, boss, overlay._victory_grade()])
-	await create_timer(seconds).timeout
+	print("[VCLIP] built rank=%s boss=%s grade=%d flourish=%s complete=%s time_scale=%.3f" % [rank, boss,
+		overlay._victory_grade(), overlay.wants_flourish(scene), overlay.is_complete(), Engine.time_scale])
+	## Frames, not a game-time timer: under --fixed-fps 30 a frame is 1/30 s of VIDEO, whatever the battle speed.
+	for i in int(round(seconds * 30.0)):
+		await process_frame
 	print("[VCLIP] done")
 	quit(0)
 
