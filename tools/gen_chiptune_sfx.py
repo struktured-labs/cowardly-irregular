@@ -730,6 +730,33 @@ def advance_queue_full(dur=0.17, seed=349):
     out /= max(np.max(np.abs(out)), 1e-9); return (out * 0.72).astype(np.float32)
 
 
+_LETTER_NOTES = [783.99, 880.00, 1046.50, 1174.66, 1318.51, 1567.98, 1760.00]   # G5 A5 C6 D6 E6 G6 A6, pentatonic
+
+
+def _victory_letter(k, seed):
+    """victory_letter_1..7: one dry chip blip per VICTORY! letter as it lands (cowir-cutscenes 23487: landings 50 ms
+    apart). SEVEN files rather than one cue re-pitched: SoundManager's per-key cooldown would swallow ticks 50 ms
+    apart and its play calls take no pitch. Each rises a pentatonic step so the seventh leads into the slam, which
+    voices the eighth letter. 35 ms, so ticks 50 ms apart never overlap."""
+    rng = np.random.default_rng(seed)
+    n = int(SR * 0.035)
+    out = _held(n, _LETTER_NOTES[k - 1], 2.0, 1.0, duty=0.25)
+    click = rng.uniform(-1, 1, int(SR * 0.004)) * np.linspace(1, 0, int(SR * 0.004)) * 0.6
+    out[:len(click)] += click
+    out = _bitcrush(out, bits=6, hold=2)
+    out /= max(np.max(np.abs(out)), 1e-9)
+    return (out * 0.42).astype(np.float32)
+
+
+def victory_letter_1(dur=0.0, seed=461): return _victory_letter(1, seed)
+def victory_letter_2(dur=0.0, seed=463): return _victory_letter(2, seed)
+def victory_letter_3(dur=0.0, seed=467): return _victory_letter(3, seed)
+def victory_letter_4(dur=0.0, seed=479): return _victory_letter(4, seed)
+def victory_letter_5(dur=0.0, seed=487): return _victory_letter(5, seed)
+def victory_letter_6(dur=0.0, seed=491): return _victory_letter(6, seed)
+def victory_letter_7(dur=0.0, seed=499): return _victory_letter(7, seed)
+
+
 def party_ko(dur=0.52, seed=241):
     """party_ko — a party member falling. The battle LOG closed this parity at tick 176 ("X has
     fallen!", matching _on_enemy_died's line); the AUDIO parity was never closed — an enemy death
@@ -768,7 +795,8 @@ VOICES = {"ui_toggle_on": ui_toggle_on, "staff_hit": staff_hit, "ui_confirm": ui
           "advance_generic_1": advance_generic_1,
           "advance_generic_2": advance_generic_2, "advance_generic_3": advance_generic_3,
           "advance_generic_4": advance_generic_4, "advance_generic_5": advance_generic_5,
-          "party_ko": party_ko}
+          "party_ko": party_ko,
+          "victory_letter_1": victory_letter_1, "victory_letter_2": victory_letter_2, "victory_letter_3": victory_letter_3, "victory_letter_4": victory_letter_4, "victory_letter_5": victory_letter_5, "victory_letter_6": victory_letter_6, "victory_letter_7": victory_letter_7}
 
 
 def _refuse_if_degenerate(voice, y):

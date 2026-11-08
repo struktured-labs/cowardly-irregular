@@ -1981,6 +1981,55 @@
       "prompt_influence": 0.5,
       "repair": "POLISH PASS 2026-11-01 (struktured approved the listening list; a fresh render remains the real fix): levelled to -16 LUFS. Measured before: very hot master (-8.7 LUFS)."
     },
+    "victory_letter_1": {
+      "file": "assets/audio/sfx/victory_letter_1.ogg",
+      "prompt": "PLACEHOLDER (cowir-cutscenes 23487: the SNES victory beat drops VICTORY! in letter by letter, landings 50 ms apart). Letter 1's landing tick, a 35 ms dry chip blip on G5, played via play_ui on that landing. One of SEVEN keys rising a pentatonic step each (G5..A6) so the seventh leads into the slam, which voices letter 8. Seven files, not one re-pitched: the per-key cooldown would swallow ticks 50 ms apart and the play calls take no pitch. ~-17.5 dB rms, near menu_select (-19.1). A labelled synth until struktured playtests it.",
+      "duration_seconds": 0.035,
+      "source": "tools/gen_chiptune_sfx.py victory_letter_1",
+      "placeholder": true
+    },
+    "victory_letter_2": {
+      "file": "assets/audio/sfx/victory_letter_2.ogg",
+      "prompt": "PLACEHOLDER (cowir-cutscenes 23487: the SNES victory beat drops VICTORY! in letter by letter, landings 50 ms apart). Letter 2's landing tick, a 35 ms dry chip blip on A5, played via play_ui on that landing. One of SEVEN keys rising a pentatonic step each (G5..A6) so the seventh leads into the slam, which voices letter 8. Seven files, not one re-pitched: the per-key cooldown would swallow ticks 50 ms apart and the play calls take no pitch. ~-17.5 dB rms, near menu_select (-19.1). A labelled synth until struktured playtests it.",
+      "duration_seconds": 0.035,
+      "source": "tools/gen_chiptune_sfx.py victory_letter_2",
+      "placeholder": true
+    },
+    "victory_letter_3": {
+      "file": "assets/audio/sfx/victory_letter_3.ogg",
+      "prompt": "PLACEHOLDER (cowir-cutscenes 23487: the SNES victory beat drops VICTORY! in letter by letter, landings 50 ms apart). Letter 3's landing tick, a 35 ms dry chip blip on C6, played via play_ui on that landing. One of SEVEN keys rising a pentatonic step each (G5..A6) so the seventh leads into the slam, which voices letter 8. Seven files, not one re-pitched: the per-key cooldown would swallow ticks 50 ms apart and the play calls take no pitch. ~-17.5 dB rms, near menu_select (-19.1). A labelled synth until struktured playtests it.",
+      "duration_seconds": 0.035,
+      "source": "tools/gen_chiptune_sfx.py victory_letter_3",
+      "placeholder": true
+    },
+    "victory_letter_4": {
+      "file": "assets/audio/sfx/victory_letter_4.ogg",
+      "prompt": "PLACEHOLDER (cowir-cutscenes 23487: the SNES victory beat drops VICTORY! in letter by letter, landings 50 ms apart). Letter 4's landing tick, a 35 ms dry chip blip on D6, played via play_ui on that landing. One of SEVEN keys rising a pentatonic step each (G5..A6) so the seventh leads into the slam, which voices letter 8. Seven files, not one re-pitched: the per-key cooldown would swallow ticks 50 ms apart and the play calls take no pitch. ~-17.5 dB rms, near menu_select (-19.1). A labelled synth until struktured playtests it.",
+      "duration_seconds": 0.035,
+      "source": "tools/gen_chiptune_sfx.py victory_letter_4",
+      "placeholder": true
+    },
+    "victory_letter_5": {
+      "file": "assets/audio/sfx/victory_letter_5.ogg",
+      "prompt": "PLACEHOLDER (cowir-cutscenes 23487: the SNES victory beat drops VICTORY! in letter by letter, landings 50 ms apart). Letter 5's landing tick, a 35 ms dry chip blip on E6, played via play_ui on that landing. One of SEVEN keys rising a pentatonic step each (G5..A6) so the seventh leads into the slam, which voices letter 8. Seven files, not one re-pitched: the per-key cooldown would swallow ticks 50 ms apart and the play calls take no pitch. ~-17.5 dB rms, near menu_select (-19.1). A labelled synth until struktured playtests it.",
+      "duration_seconds": 0.035,
+      "source": "tools/gen_chiptune_sfx.py victory_letter_5",
+      "placeholder": true
+    },
+    "victory_letter_6": {
+      "file": "assets/audio/sfx/victory_letter_6.ogg",
+      "prompt": "PLACEHOLDER (cowir-cutscenes 23487: the SNES victory beat drops VICTORY! in letter by letter, landings 50 ms apart). Letter 6's landing tick, a 35 ms dry chip blip on G6, played via play_ui on that landing. One of SEVEN keys rising a pentatonic step each (G5..A6) so the seventh leads into the slam, which voices letter 8. Seven files, not one re-pitched: the per-key cooldown would swallow ticks 50 ms apart and the play calls take no pitch. ~-17.5 dB rms, near menu_select (-19.1). A labelled synth until struktured playtests it.",
+      "duration_seconds": 0.035,
+      "source": "tools/gen_chiptune_sfx.py victory_letter_6",
+      "placeholder": true
+    },
+    "victory_letter_7": {
+      "file": "assets/audio/sfx/victory_letter_7.ogg",
+      "prompt": "PLACEHOLDER (cowir-cutscenes 23487: the SNES victory beat drops VICTORY! in letter by letter, landings 50 ms apart). Letter 7's landing tick, a 35 ms dry chip blip on A6, played via play_ui on that landing. One of SEVEN keys rising a pentatonic step each (G5..A6) so the seventh leads into the slam, which voices letter 8. Seven files, not one re-pitched: the per-key cooldown would swallow ticks 50 ms apart and the play calls take no pitch. ~-17.5 dB rms, near menu_select (-19.1). A labelled synth until struktured playtests it.",
+      "duration_seconds": 0.035,
+      "source": "tools/gen_chiptune_sfx.py victory_letter_7",
+      "placeholder": true
+    },
     "victory_slam": {
       "file": "assets/audio/sfx/victory_slam.ogg",
       "prompt": "Huge close-miked drum hit with a sharp rimshot crack on top, loud and full-bodied, deep resonant thump underneath a bright snapping attack, powerful cinematic percussion hit, strong and forward in the mix",
