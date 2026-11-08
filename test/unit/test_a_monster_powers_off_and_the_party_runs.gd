@@ -101,3 +101,37 @@ func test_the_escape_beat_runs_only_on_a_clean_escape() -> void:
 	var bs := FileAccess.get_file_as_string("res://src/battle/BattleScene.gd")
 	var fn := bs.substr(bs.find("func play_escape_beat"), 300)
 	assert_true(fn.contains("not _lost_battle_is_escape()"), "the beat isn't gated on a real escape, so a wipe would run it")
+
+
+## Game seconds a style needs to hide its sprite, stepped by hand in 1/60 s frames with the tween paused,
+## the way Movie Maker steps a capture: a fixed delta per frame, whatever the OS clock says.
+func _game_seconds_to_hide(style: String) -> float:
+	var s := _sprite()
+	var tween := EnemyDeathFx.play(s, style)
+	tween.pause()
+	var stepped := 0.0
+	while s.visible and stepped < 5.0:
+		tween.custom_step(1.0 / 60.0)
+		stepped += 1.0 / 60.0
+	return stepped
+
+
+## cowir-cutscenes 23594: an OS-clock tween (set_ignore_time_scale) finishes in ~2 frames of a Movie Maker
+## capture, so a clip showed the monster already gone. Stepped by game frames, the death at 0.25x must take
+## a quarter of the game time it takes at 1x: the same REAL length, and every frame of it drawn.
+func test_every_style_steps_with_game_frames_at_its_real_length() -> void:
+	var saved := Engine.time_scale
+	for style in _table().get("styles", []):
+		Engine.time_scale = 1.0
+		var at_1x := _game_seconds_to_hide(str(style))
+		Engine.time_scale = 0.25
+		var at_quarter := _game_seconds_to_hide(str(style))
+		Engine.time_scale = saved
+		assert_between(at_1x, 0.3, 1.5, "CONTROL: %s took %.2f game s at 1x stepped by hand" % [style, at_1x])
+		assert_almost_eq(at_quarter, at_1x * 0.25, 0.05, "%s took %.2f game s at 0.25x vs %.2f at 1x: it is not stepped by game frames at its real length" % [style, at_quarter, at_1x])
+	Engine.time_scale = saved
+	var bs := FileAccess.get_file_as_string("res://src/battle/BattleScene.gd")
+	var beat := bs.substr(bs.find("func play_escape_beat"), bs.find("func _process(") - bs.find("func play_escape_beat"))
+	assert_false(beat.contains(".set_ignore_time_scale("), "the escape beat is back on the OS clock: a capture shows the party already gone")
+	assert_false(beat.contains(", true, false, true)"), "the escape beat's wait is back on the OS clock")
+	assert_gt(beat.count("EnemyDeathFx.real_time("), 2, "the escape beat's tweens aren't on the game-frame clock")

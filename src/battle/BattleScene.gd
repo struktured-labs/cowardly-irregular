@@ -4295,18 +4295,18 @@ func play_escape_beat() -> void:
 		runners += 1
 	for e in enemy_sprite_nodes:
 		if is_instance_valid(e) and e.visible and not e.has_meta("dying"):
-			var lean := e.create_tween().set_ignore_time_scale(true)
+			var lean := EnemyDeathFx.real_time(e.create_tween())
 			var x0: float = e.position.x
 			lean.tween_property(e, "position:x", x0 + 10.0, 0.08).set_ease(Tween.EASE_OUT)
 			lean.tween_property(e, "position:x", x0, 0.07).set_ease(Tween.EASE_IN)
 	if runners > 0:
-		await get_tree().create_timer(escape_beat_length(runners), true, false, true).timeout
+		await get_tree().create_timer(escape_beat_length(runners) * Engine.time_scale).timeout
 
 
 func _run_off(s: AnimatedSprite2D, delay: float, edge: float) -> void:
 	var p0 := s.position
 	var dx := edge - s.global_position.x
-	var t := s.create_tween().set_ignore_time_scale(true)
+	var t := EnemyDeathFx.real_time(s.create_tween())
 	if delay > 0.0:
 		t.tween_interval(delay)
 	t.tween_property(s, "position:y", p0.y - 16.0, ESCAPE_HOP * 0.5).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
@@ -4332,7 +4332,7 @@ func _spawn_speed_lines(s: Node2D) -> void:
 		line.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		line.position = s.global_position - global_position + Vector2(-34, -14 + 12 * j)
 		add_child(line)
-		var lt := line.create_tween().set_ignore_time_scale(true)
+		var lt := EnemyDeathFx.real_time(line.create_tween())
 		lt.tween_property(line, "position:x", line.position.x - 40.0, 0.25)
 		lt.parallel().tween_property(line, "modulate:a", 0.0, 0.25)
 		lt.tween_callback(line.queue_free)

@@ -55,10 +55,17 @@ static func applies_to(enemy: Object) -> bool:
 	return enemy != null and not enemy.has_meta("is_boss")
 
 
+## The same REAL length at every battle speed, but stepped by game frames: speed_scale 1/time_scale, never
+## set_ignore_time_scale, which reads the OS clock, so a Movie Maker capture (slower than real time) showed
+## the death already over (cowir-cutscenes 23594). The escape beat uses it too.
+static func real_time(t: Tween) -> Tween:
+	return t.set_speed_scale(1.0 / maxf(Engine.time_scale, 0.01))
+
+
 ## Plays `style` on `sprite`. `on_cue` fires at the moment the death sound belongs (right after the
 ## flash); `on_done` after the sprite is hidden. Returns the tween so a caller can chain onto it.
 static func play(sprite: Node2D, style: String, on_cue: Callable = Callable(), on_done: Callable = Callable()) -> Tween:
-	var tween := sprite.create_tween().set_ignore_time_scale(true)
+	var tween := real_time(sprite.create_tween())
 	match style:
 		"pixel_dissolve":
 			_pixel_dissolve(sprite, tween, on_cue)
