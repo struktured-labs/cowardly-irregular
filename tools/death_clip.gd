@@ -69,6 +69,8 @@ func _init() -> void:
 					e.current_hp = 0
 				scene._on_enemy_died(i)
 				await create_timer(0.35 * Engine.time_scale).timeout
+			## The stagger is part of the kept window, so the clip still opens 0.6 s before the first death.
+			seconds = maxf(seconds - 0.35 * scene.test_enemies.size(), 1.0)
 		"flee":
 			if scene.has_method("play_escape_beat"):
 				scene.play_escape_beat()
