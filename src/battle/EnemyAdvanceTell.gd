@@ -59,6 +59,12 @@ func aura() -> Node2D:
 
 ## Show a queue of `n` (n < 2 is not an Advance and clears). `show_aura` is false at the MINIMAL juice tier; the pip stays.
 func show_queue(n: int, for_combatant: Combatant, color: Color, show_aura: bool = true) -> void:
+	if combatant != for_combatant:
+		if is_instance_valid(combatant) and combatant.died.is_connected(clear):
+			combatant.died.disconnect(clear)
+		if is_instance_valid(for_combatant) and not for_combatant.died.is_connected(clear):
+			# The owner's own death clears the tell, so it never depends on this node being processed.
+			for_combatant.died.connect(clear)
 	combatant = for_combatant
 	_count = n
 	if n < MIN_SHOWN:
