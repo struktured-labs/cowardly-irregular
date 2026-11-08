@@ -85,7 +85,8 @@ func test_the_tell_leaves_with_a_fallen_monster() -> void:
 	t.show_queue(4, foe, Color.WHITE)
 	assert_true(t.is_showing(), "CONTROL: shown")
 	foe.is_alive = false
-	await get_tree().process_frame
+	# process_frame is emitted BEFORE nodes run _process, so one awaited frame can resume before the tell has looked.
+	await wait_frames(3)
 	assert_false(t.is_showing(), "a monster that falls mid-queue does not keep promising its Advance")
 
 
