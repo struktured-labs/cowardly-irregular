@@ -4420,6 +4420,14 @@ func _kick_off_rebalance_fetch(proposal_idx: int) -> void:
 			Toast.show(self, "Auto-rebalance proposal needs your review (Settings → review queue)", Toast.WARNING_COLOR)
 
 
+## The boss the battle itself marked (is_miniboss, as BattleScene._check_for_boss reads), by the name it was shown under; else the flag, humanized.
+static func defeated_boss_name(enemies: Array, flag: String) -> String:
+	for e in enemies:
+		if e is Combatant and is_instance_valid(e) and bool(e.get_meta("is_miniboss", false)) and str(e.combatant_name) != "":
+			return str(e.combatant_name)
+	return flag.replace("_defeated", "").replace("_", " ").capitalize()
+
+
 func _apply_pending_boss_defeat() -> void:
 	"""Apply GameState.pending_boss_defeat on battle victory.
 	Set by dungeon._trigger_boss_battle() before emitting battle_triggered.
@@ -4473,7 +4481,7 @@ func _apply_pending_boss_defeat() -> void:
 		if boss_id.is_empty():
 			var flags: Array = spec.get("story_flags", [])
 			boss_id = flags[0] if flags.size() > 0 else "unknown_boss"
-		var boss_name: String = boss_id.replace("_defeated", "").replace("_", " ").capitalize()
+		var boss_name: String = defeated_boss_name(BattleManager.enemy_party, boss_id)
 		var defeat_data: Dictionary = {
 			"boss_id":    boss_id,
 			"boss_name":  boss_name,
