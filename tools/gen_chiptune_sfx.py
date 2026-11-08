@@ -482,6 +482,35 @@ def mp_restore(dur=0.70, seed=211):
     out /= max(np.max(np.abs(out)), 1e-9); return (out * 0.74).astype(np.float32)
 
 
+def escape_run(dur=1.12, seed=503):
+    """A SUCCESSFUL escape only (struktured via cowir-main 23483; ability_flee is the ATTEMPT, so a failed flee stays
+    that alone). Timed to cowir-adhoc 23522's sprint, wall clock: member k (0-4) hops at 0.12*k s, then sprints off
+    for 0.45 s. So five scampers start 0.12 s apart, each a hop plus quick light footfalls getting quieter as they
+    leave, under a rising-then-falling whoosh of the party clearing out, done by ~1.1 s."""
+    rng = np.random.default_rng(seed)
+    n = int(SR * dur)
+    out = np.zeros(n)
+    for k in range(5):
+        t0 = 0.12 * k
+        hop = _held(int(SR * 0.05), 196.0 * (1.0 + 0.06 * k), 3.0, 0.45, duty=0.25)      # the startled hop
+        _place(out, hop, int(SR * t0))
+        for j in range(5):                                                                  # the sprint: 5 steps in 0.45 s
+            tt = t0 + 0.12 + j * 0.085
+            m = int(SR * 0.045)
+            step = _sweep_lowpass(rng.uniform(-1, 1, m), 2400.0 - 120.0 * k, 900.0) * _env(m, 0.002, 1.8)
+            step += _held(m, 110.0 - 6.0 * k, 3.0, 0.5, duty=0.5)
+            step = step * (0.75 - 0.12 * j) * (1.0 if j % 2 == 0 else 0.8)
+            _place(out, step, int(SR * tt))
+    t = np.arange(n) / SR
+    whoosh_env = np.clip(t / 0.35, 0, 1) * np.clip((1.05 - t) / 0.45, 0, 1)
+    out += _sweep_lowpass(rng.uniform(-1, 1, n), 700.0, 3000.0) * whoosh_env * 0.38
+    out = _bitcrush(out, bits=6, hold=2)
+    ## Soft-saturate: sparse footfall peaks set the level and left the body ~6 dB under ability_flee.
+    out = np.tanh(2.6 * out / max(np.max(np.abs(out)), 1e-9))
+    out /= max(np.max(np.abs(out)), 1e-9)
+    return (out * 0.57).astype(np.float32)   # ~-17 dB rms: a step under the attempt cue (-14.2) it follows
+
+
 def flee(dur=0.48, seed=223):
     """ability_flee — the Rogue's escape, type=escape, the last type with no arm. Three DISCRETE
     descending blips (a scamper) plus a scuff. Stepped, never slid: a descending slide is a whoop
@@ -785,6 +814,7 @@ VOICES = {"ui_toggle_on": ui_toggle_on, "staff_hit": staff_hit, "ui_confirm": ui
           "song": song, "summon": summon, "revive": revive, "riff": riff,
           "poison": poison, "earth": earth, "wind": wind, "arcane": arcane,
           "mp_restore": mp_restore, "flee": flee, "cure": cure,
+          "escape_run": escape_run,
           "advance_flourish_2": advance_flourish_2, "advance_flourish_3": advance_flourish_3,
           "advance_flourish_4": advance_flourish_4, "advance_flourish_5": advance_flourish_5,
           "enemy_advance_2": enemy_advance_2, "enemy_advance_3": enemy_advance_3,
