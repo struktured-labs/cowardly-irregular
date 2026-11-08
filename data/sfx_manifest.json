@@ -380,6 +380,20 @@
       "prompt_influence": 0.8,
       "source": "tools/gen_chiptune_sfx.py advance_flourish_5"
     },
+    "menu_force_queue": {
+      "file": "assets/audio/sfx/menu_force_queue.ogg",
+      "prompt": "PLACEHOLDER (cowir-main 23445: a third press on an MP-short ability row queues it anyway). Played by cowir-controller via play_ui on that third press. Accepted over an objection: a 110/116 Hz refusal buzz, a two-note accept chime (G5, C6) pushed through it, then a low stamp. Distinct from menu_select (a clean chime) and menu_error (the buzz alone). Levelled to menu_select: -19.0 dB rms (menu_select -19.1). A labelled synth until struktured playtests it.",
+      "duration_seconds": 0.3,
+      "source": "tools/gen_chiptune_sfx.py menu_force_queue",
+      "placeholder": true
+    },
+    "cast_fizzle": {
+      "file": "assets/audio/sfx/cast_fizzle.ogg",
+      "prompt": "PLACEHOLDER (cowir-battle 23447/23448: a forced MP-short cast that is still short at execution). Played via play_battle on the frame of the 'Not enough MP!' banner in BattleManager._execute_ability; no MP is spent. The spell gathers and sputters: a rising arcane pulse that stalls and droops, sparse crackle, and a hiss whose filter falls 2.6 kHz -> 260 Hz. Deliberately NOT corruption_misfire, which means the Corruption mechanic misfired a cast. Levelled to attack_miss: -16.6 dB rms (attack_miss -16.6). A labelled synth until struktured playtests it.",
+      "duration_seconds": 0.5,
+      "source": "tools/gen_chiptune_sfx.py cast_fizzle",
+      "placeholder": true
+    },
     "enemy_advance_2": {
       "file": "assets/audio/sfx/enemy_advance_2.ogg",
       "prompt": "PLACEHOLDER (cowir-main 23349: an ENEMY Advance must read as a monster powering up, with escalating sounds clearly NOT the party's). Enemy advance at 2 queued actions, played by cowir-battle's telegraph and execution flourish via play_battle; the AI caps at 4, so there is no 5. SYNTHESISED from _enemy_flourish, the SAME skeleton as advance_flourish_N so the rising shape matches and only the colour differs. Measured beside the party ladder: a fourth lower, minor-third/tritone stack, centroid ~170 Hz (party ~430); an octave down was rejected at 89% energy under 250 Hz, inaudible through a 200 Hz laptop highpass. Through that highpass the enemy ladder sits 2-3 dB under the party's and still climbs 2.7 dB from 2 to 4. A labelled synth until struktured playtests it.",
@@ -1416,7 +1430,7 @@
     "menu_error": {
       "file": "assets/audio/sfx/menu_error.ogg",
       "source": "sox_synth",
-      "prompt": "Two-tone descending error blip (A4->E4 square waves lowpassed 1000-1200Hz, 85ms) attenuated -12dB. Soft negative feedback for invalid actions — distinct from menu_cancel (deliberate back-out).",
+      "prompt": "Two-tone descending error blip (A4->E4 square waves lowpassed 1000-1200Hz, 85ms). Negative feedback for invalid actions, distinct from menu_cancel (deliberate back-out). RAISED +11.6 dB, gain only (struktured via cowir-main 23457: \"the you-can't-do-this sound is kinda quiet... the noise is fine, just louder\"): the -12 dB attenuation it was rendered with is gone. Before -22.6 dB rms / -18.9 peak; after -11.0 rms, true peak -10.3 dBFS, 5.2 dB over menu_cancel (-16.2) and 8.1 over menu_select (-19.1). Through a 200 Hz laptop highpass it is -15.8, only 1.4 dB over menu_cancel, because the blip sits low (A4->E4); a brighter redesign would fix that, gain alone cannot.",
       "duration_seconds": 0.085,
       "prompt_influence": 0.0,
       "fallback_to": "menu_cancel"
