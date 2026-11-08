@@ -989,9 +989,10 @@
     },
     "enemy_death": {
       "file": "assets/audio/sfx/enemy_death.ogg",
-      "prompt": "Gentle organic scorch with a wispy smoke plume, soft ember sizzle as flesh quietly combusts into vapor, warm crackling dissolve with breath-like tail, natural living-thing unraveling into air, no bass no tones",
-      "duration_seconds": 1.0,
-      "prompt_influence": 0.4
+      "source": "supplied_audition",
+      "prompt": "SELECTED audition file, copied in byte for byte (2026-11-07). Solo F_whoosh.ogg, the airy burn, kept over a rumbling rubble take and over any blend. sha256 99346040269494fdbd937621dec8ba8b44798c34712c2ffc7f6861029c1a6db6, mono Vorbis. duration_seconds is 0.84 because that is the container length ffprobe and Godot AudioStream.get_length() both report (0.840000). A raw s16 dump is 37952 samples / 44100 = 0.861s; that extra is Vorbis padding, not a longer cue, so 0.86 is the wrong number to author. The retired scorch is kept at assets/audio/sfx/enemy_death_scorch.ogg and is not a cue. The cue name stays enemy_death. play_death still fires it inside the death tween after the white flash, and this length is not a gameplay delay. The shared death boost is still +6 dB on a -4 dB player (+2 dB). This file peaks at -0.9 dBFS, and with the death thud the mix measured +1.16 dBFS at the +5% pitch-jitter edge (Master and SFX buses at 0 dB, no limiter). enemy_death alone takes -2.2 dB of file headroom so that edge lands near -1 dBFS. W4 keeps w4_enemy_death.ogg at the untrimmed boost. Ally KO stays party_ko.",
+      "duration_seconds": 0.84,
+      "prompt_influence": 0.0
     },
     "exp_bar_tick_ramp_hi": {
       "file": "assets/audio/sfx/exp_bar_tick_ramp_hi.ogg",

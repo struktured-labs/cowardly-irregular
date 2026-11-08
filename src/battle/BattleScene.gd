@@ -6170,7 +6170,7 @@ func _on_enemy_died(enemy_idx: int) -> void:
 				var tween = sprite.create_tween()  # dies with the sprite a grind restart frees
 				tween.tween_property(sprite, "modulate", Color(3.0, 3.0, 3.0, 1.0), 0.1)
 				tween.tween_property(sprite, "modulate", Color(1.0, 1.0, 1.0, 1.0), 0.1)
-				# The burned-away scorch starts WITH the fade — after the killing blow's hit sound, not under it.
+				# The death cue starts WITH the fade — after the killing blow's hit sound, not under it. Its file length is not a hold.
 				tween.tween_callback(func() -> void: SoundManager.play_death("enemy_death"))
 				if has_dissolve:
 					tween.tween_method(func(v: float) -> void:
