@@ -515,6 +515,7 @@ func _ready() -> void:
 	BattleManager.damage_dealt.connect(_on_damage_dealt)
 	BattleManager.attack_missed.connect(_on_attack_missed)
 	BattleManager.hit_negated.connect(_on_hit_negated)
+	BattleManager.cast_fizzled.connect(_on_cast_fizzled)
 	BattleManager.status_resisted.connect(_on_status_resisted)
 	BattleManager.healing_done.connect(_on_healing_done)
 	BattleManager.mp_restored.connect(_on_mp_restored)
@@ -629,6 +630,8 @@ func _exit_tree() -> void:
 		BattleManager.status_resisted.disconnect(_on_status_resisted)
 	if BattleManager.hit_negated.is_connected(_on_hit_negated):
 		BattleManager.hit_negated.disconnect(_on_hit_negated)
+	if BattleManager.cast_fizzled.is_connected(_on_cast_fizzled):
+		BattleManager.cast_fizzled.disconnect(_on_cast_fizzled)
 	if BattleManager.healing_done.is_connected(_on_healing_done):
 		BattleManager.healing_done.disconnect(_on_healing_done)
 	if BattleManager.mp_restored.is_connected(_on_mp_restored):
@@ -2811,10 +2814,10 @@ func _on_ability_selected(idx: int, ability_ids: Array) -> void:
 				_execute_ability(ability_id, ally_target)
 
 
-func _execute_ability(ability_id: String, target: Combatant, target_all: bool = false) -> void:
+func _execute_ability(ability_id: String, target: Combatant, target_all: bool = false, forced: bool = false) -> void:
 	"""Queue ability (animation plays during execution phase)"""
 	var targets: Array = _targets_for_queued_ability(ability_id, target, target_all)
-	BattleManager.player_use_ability(ability_id, targets)
+	BattleManager.player_use_ability(ability_id, targets, forced)
 
 
 ## Both menus pass one focus and set target_all only for all_enemies, so an all_allies spell buffed the caster alone.
@@ -6597,6 +6600,13 @@ func _on_hit_negated(target: Combatant, banner: String) -> void:
 		return
 	_results_display.on_hit_negated(target, banner)
 	SoundManager.play_battle("attack_miss")
+
+
+## A cast that could not pay: the banner and cast_fizzle, never attack_miss (a fizzle is not a miss; sfx 23446).
+func _on_cast_fizzled(caster: Combatant, banner: String) -> void:
+	if is_instance_valid(_results_display):
+		_results_display.on_hit_negated(caster, banner)
+	SoundManager.play_battle("cast_fizzle")
 
 
 ## A status that failed to land: a soft glancing tink and a RESIST banner, never silence (struktured 2026-11-01).
