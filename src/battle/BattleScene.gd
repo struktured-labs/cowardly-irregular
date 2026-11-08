@@ -4766,6 +4766,7 @@ func _on_selection_turn_ended(combatant: Combatant) -> void:
 	_close_win98_menu()
 	# Return the active PC to formation (no-op for enemies).
 	_step_active_pc(combatant, false)
+	_tell_enemy_advance(combatant)
 	_update_ui()
 
 
@@ -4931,6 +4932,8 @@ func _on_action_executing(combatant: Combatant, action: Dictionary) -> void:
 			animator.play_item()
 		"defer":
 			animator.play_named_animation("defer")
+			if not (combatant in party_members):
+				_spawn_enemy_brace(attacker_sprite)
 
 
 func _on_group_attack_executing(participants: Array, group_type: String, targets: Array, formation_id: String = "") -> void:
@@ -5694,6 +5697,7 @@ func _show_round_banner(round_num: int) -> void:
 func _on_action_executed(combatant: Combatant, action: Dictionary, targets: Array) -> void:
 	"""Handle action execution — play buff/debuff/status sounds based on ability effect"""
 	_track_advance_run_step(combatant, action, targets)
+	_spend_enemy_tell(combatant, action)
 	_update_ui()
 	_check_masterite_phase2_music_swap()
 	# msg 2749 cycle 12: clear the acting-combatant cache once the action fully resolves. Damage_dealt emits from status ticks / reactive counters that fire OUTSIDE an action window now attribute to null, matching the "no acting combatant" fact rather than the last completed action.
@@ -8135,7 +8139,11 @@ func _spawn_advance_flourish(combatant: Combatant, sprite: Node2D, count: int, f
 	_spawn_advance_shape(shape, origin, color, n)
 	## cowir-sfx: five escalating cues, advance_flourish_2..5. The full-bank beat has its own
 	## (full_bank_unleash) rather than a louder fifth — it is a different moment, not a bigger one.
-	SoundManager.play_battle("advance_flourish_%d" % n)
+	if combatant in party_members:
+		SoundManager.play_battle("advance_flourish_%d" % n)
+		_last_advance_cue = "advance_flourish_%d" % n
+	else:
+		_last_advance_cue = _play_enemy_advance_cue(n)
 	## The full-bank beat rides BattleManager.full_bank_unleashed, NOT a call from here — the signal
 	## already reaches _on_full_bank_unleashed and calling it too would double the flash and the cue.
 
@@ -8211,6 +8219,107 @@ static func advance_flourish_color(combatant: Combatant, party_color: Color) -> 
 	if combatant == null or not combatant.job:
 		return ADVANCE_FLOURISH_ENEMY_COLOR
 	return party_color
+
+
+## ─── A monster's Advance and Defer, readable at a glance (struktured via main 23349) ───
+
+## Wall-clock gap between the rising steps of an enemy's selection-time ladder, so a ×4 is heard climbing at any speed.
+const ENEMY_LADDER_STEP_S: float = 0.12
+const ENEMY_BRACE_COLOR: Color = Color(0.55, 0.68, 0.85)
+
+
+## The cue the last Advance flourish played, so a test can tell a monster's from a PC's without hearing it.
+var _last_advance_cue: String = ""
+## Rungs the last selection-time ladder scheduled; 0 when sound was gated off.
+var _enemy_ladder_played: int = 0
+
+
+## The size of the Advance `combatant` has queued this round (its latest pending action), 0 when it queued anything else.
+static func enemy_advance_count(combatant: Combatant, pending: Array) -> int:
+	for i in range(pending.size() - 1, -1, -1):
+		var a = pending[i]
+		if a is Dictionary and a.get("combatant") == combatant:
+			return (a.get("actions", []) as Array).size() if str(a.get("type", "")) == "advance" else 0
+	return 0
+
+
+static func enemy_advance_cue(n: int) -> String:
+	return "enemy_advance_%d" % clampi(n, 2, 4)
+
+
+## cowir-sfx's monster ladder (lower, minor, darker than the party's); literal keys so test_sfx_key_orphan_audit sees each.
+func _play_enemy_advance_cue(n: int) -> String:
+	var key: String = enemy_advance_cue(n)
+	match key:
+		"enemy_advance_2":
+			SoundManager.play_battle("enemy_advance_2")
+		"enemy_advance_3":
+			SoundManager.play_battle("enemy_advance_3")
+		_:
+			SoundManager.play_battle("enemy_advance_4")
+	return key
+
+
+## At selection: the monster powers up for the Advance it just chose, and its ladder climbs to N.
+func _tell_enemy_advance(combatant: Combatant) -> void:
+	if combatant == null or combatant in party_members:
+		return
+	var n: int = enemy_advance_count(combatant, BattleManager.pending_actions)
+	if n < EnemyAdvanceTell.MIN_SHOWN:
+		return
+	var sprite: Node2D = _get_combatant_sprite(combatant)
+	if sprite == null or not is_instance_valid(sprite):
+		return
+	EnemyAdvanceTell.on(sprite).show_queue(n, combatant, ADVANCE_FLOURISH_ENEMY_COLOR,
+		AdvanceAuraClass.should_show(_tier(), BattleJuice.flag("advance_aura")))
+	_enemy_ladder_played = 0
+	if not signature_sound_allowed():
+		return  # a turbo/console grind would stack every monster's ladder into a drone (autogrind 23371); the tell still shows
+	for k in range(2, mini(n, 4) + 1):
+		_enemy_ladder_played += 1
+		if k == 2:
+			_play_enemy_advance_cue(k)
+		else:
+			get_tree().create_timer(ENEMY_LADDER_STEP_S * float(k - 2), true, false, true).timeout.connect(_play_enemy_advance_cue.bind(k))
+
+
+## Each resolved sub-action spends one; the Advance's own resolution clears what is left.
+func _spend_enemy_tell(combatant: Combatant, action: Dictionary) -> void:
+	if combatant == null or combatant in party_members:
+		return
+	var sprite: Node2D = _get_combatant_sprite(combatant)
+	var t: EnemyAdvanceTell = sprite.get_node_or_null(EnemyAdvanceTell.NODE_NAME) as EnemyAdvanceTell if sprite and is_instance_valid(sprite) else null
+	if t == null:
+		return
+	if str(action.get("type", "")) == "advance":
+		t.clear()
+	else:
+		t.spend()
+
+
+## A monster's Defer: it hunkers behind a brief grey-blue shimmer, with its own cue (enemies have no menu to play one).
+func _spawn_enemy_brace(sprite: Node2D) -> void:
+	SoundManager.play_battle("enemy_defer")
+	if sprite == null or not is_instance_valid(sprite) or _tier() == BattleJuice.Tier.MINIMAL:
+		return
+	BattleJuice.squash(sprite, 1.06, 0.92, 0.05, 0.18)
+	var ring := Line2D.new()
+	ring.name = "EnemyBrace"
+	ring.width = 4.0
+	ring.default_color = ENEMY_BRACE_COLOR
+	ring.z_index = 60
+	for i in 25:
+		var ang: float = PI * (0.15 + 0.7 * float(i) / 24.0) + PI
+		ring.add_point(Vector2(cos(ang), sin(ang) * 0.6) * 64.0)
+	ring.position = sprite.global_position
+	add_child(ring)
+	var tw := create_tween()
+	tw.set_parallel(true)
+	tw.tween_property(ring, "scale", Vector2.ONE * 1.15, 0.45)
+	tw.tween_property(ring, "modulate:a", 0.0, 0.5)
+	tw.chain().tween_callback(func():
+		if is_instance_valid(ring):
+			ring.queue_free())
 
 
 func _get_job_quip_color(combatant: Combatant) -> Color:
