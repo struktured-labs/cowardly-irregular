@@ -44,3 +44,29 @@ func test_after_the_reveal_the_screen_is_clear() -> void:
 	await _handoff_ms(0.375)
 	assert_null(BattleTransition._overlay.material, "the iris material outlived the reveal")
 	assert_lt(BattleTransition._overlay.modulate.a, 0.05, "the overlay still covers battle 2 after the reveal")
+
+## Movie Maker steps the game by whole frames; a transition must take the same number of FRAMES at every battle speed, so a
+## capture shows it (main 23604). Emulates the SceneTree: each frame advances a tween by (1/60 x Engine.time_scale).
+func _frames_to_finish(scale: float) -> int:
+	Engine.time_scale = scale
+	var probe := Node.new()
+	add_child_autofree(probe)
+	probe.set_meta("v", 0.0)
+	var t: Tween = BattleTransition._wall_tween()
+	t.tween_method(func(v: float) -> void: probe.set_meta("v", v), 0.0, 1.0, 0.35)
+	t.pause()
+	var n := 0
+	while t.is_valid() and n < 1000:
+		t.custom_step(1.0 / 60.0 * Engine.time_scale)
+		n += 1
+		if float(probe.get_meta("v")) >= 1.0:
+			break
+	t.kill()
+	return n
+
+
+func test_a_transition_takes_the_same_frames_at_every_battle_speed() -> void:
+	var at_full := _frames_to_finish(1.0)
+	var at_quarter := _frames_to_finish(0.25)
+	assert_between(at_full, 19, 23, "CONTROL: 0.35 s is ~21 frames at 60 fps at engine 1.0 (got %d)" % at_full)
+	assert_eq(at_quarter, at_full, "at battle speed 0.25 the transition took %d frames vs %d: it must run on game time scaled by 1/time_scale" % [at_quarter, at_full])
