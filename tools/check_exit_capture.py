@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+""":"
+echo "$0 is a Python script: run it with python3, not bash" >&2; exit 2
+":"""
 """`cmd; VAR=$?` in a `set -e` script makes every non-zero arm dead code. Assert it never ships.
 
 WHY THIS EXISTS
