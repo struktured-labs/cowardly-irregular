@@ -314,8 +314,13 @@ func test_no_selection_route_escapes_this_file_unnoticed() -> void:
 	var at: int = code.find("func _selection_phase")
 	assert_gt(at, 0, "CONTROL: the selection phase must be locatable")
 	var body: String = code.substr(at, code.find("\nfunc ", at + 10) - at)
-	var in_body: int = body.count("_speed_for(")
-	var everywhere: int = code.count("_speed_for(") - 1   ## minus its own declaration
+	## A route is a _speed_for call or an _append_single call (which gives its action a speed through _speed_for).
+	var single_at: int = code.find("func _append_single")
+	assert_gt(single_at, 0, "CONTROL: the single-action helper must be locatable")
+	var single_body: String = code.substr(single_at, code.find("\nfunc ", single_at + 10) - single_at)
+	assert_eq(single_body.count("_speed_for("), 1, "_append_single must give its action a speed through _speed_for, or none of its routes carries a priority")
+	var in_body: int = body.count("_speed_for(") + body.count("_append_single(")
+	var everywhere: int = code.count("_speed_for(") - 2 + code.count("_append_single(") - 1   ## minus both declarations and the helper's own call
 	gut.p("    _speed_for call sites: %d in _selection_phase, %d in the file" % [in_body, everywhere])
 	assert_eq(in_body, SPEED_ROUTES_IN_SELECTION,
 		"the number of selection routes changed — drive the new one in an arm here, or raise this count with the reason it cannot carry a priority ability")
