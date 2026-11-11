@@ -3609,7 +3609,7 @@ func _play_change_beats() -> void:
 		var sprite = _get_combatant_sprite(who)
 		if sprite == null or not is_instance_valid(sprite):
 			continue
-		var at := _stable_sprite_anchor(sprite)
+		var at := _figure_anchor(sprite)
 		var delay: float = wait + CHANGE_STAGGER * float(i)
 		_last_change_plan.append({"seq": asked[i]["seq"], "delay": delay, "power": power})
 		if delay > 0.0:
@@ -5588,7 +5588,16 @@ func _delayed_play_hit_fx(target_anim, target_sprite) -> void:
 		else:
 			## Reduce Flashes: the spark stays (it says which weapon hit) but never grows past a light hit's size.
 			var spark_w: float = minf(w, HIT_SPARK_REDUCED_MAX) if _flashes_suppressed() else w
-			EffectSystem.spawn_hit_spark(_stable_sprite_anchor(target_sprite), hit_spark_for(_last_acting_combatant), spark_w, kb_dir, _hit_spark_tint(_last_acting_combatant), jt == BattleJuice.Tier.MINIMAL)
+			## Drawn on the FIGURE (cutscenes' _figure_anchor): a hero stands ~95 px off its frame's centre.
+			var struck: Vector2 = _figure_anchor(target_sprite)
+			var spark: String = hit_spark_for(_last_acting_combatant)
+			match hit_mark(str(_current_ability_id), spark):
+				"overlay":
+					pass  # the ability's own melee overlay owns the cut (sprites 24010); the weight still lands below
+				"family":
+					EffectSystem.spawn_sequence(HIT_FAMILY_PREFIX + spark, struck, struck, 1.0 + spark_w, {}, 1, not signature_sound_allowed())
+				_:
+					EffectSystem.spawn_hit_spark(struck, spark, spark_w, kb_dir, _hit_spark_tint(_last_acting_combatant), jt == BattleJuice.Tier.MINIMAL)
 		_apply_hit_knockback(target_sprite, kb_dir, lerpf(HIT_KNOCKBACK.x, HIT_KNOCKBACK.y, w))
 		_apply_hit_flash(target_sprite)
 		if jt <= BattleJuice.Tier.REDUCED:
@@ -5597,7 +5606,7 @@ func _delayed_play_hit_fx(target_anim, target_sprite) -> void:
 				var sparks: int = int(lerpf(HIT_SPARKS.x, HIT_SPARKS.y, w)) if jt == BattleJuice.Tier.FULL else 6
 				if _flashes_suppressed():
 					sparks = mini(sparks, 12)
-				BattleJuice.spawn_burst(_stable_sprite_anchor(target_sprite), Vector2(kb_dir, -0.35), sparks, Color(1.0, 0.9, 0.55), lerpf(250.0, 420.0, w))
+				BattleJuice.spawn_burst(_figure_anchor(target_sprite), Vector2(kb_dir, -0.35), sparks, Color(1.0, 0.9, 0.55), lerpf(250.0, 420.0, w))
 			BattleJuice.punch_zoom(_stable_sprite_anchor(target_sprite), lerpf(HIT_ZOOM.x, HIT_ZOOM.y, w) if jt == BattleJuice.Tier.FULL else HIT_ZOOM.x, 0.12 + 0.10 * w)
 		## The shake (and the pad's rumble) belong to hits that MATTER: nothing under HIT_TRAUMA_FROM, so a
 		## chip hit is as quiet as it was. The camera rig honours the Screen Shake setting, BattleJuice the rumble one.
@@ -5882,6 +5891,21 @@ func hit_spark_for(attacker: Combatant) -> String:
 		var row = _load_monsters_data().get(str(attacker.get_meta("monster_type", "")), {})
 		return str(row.get("hit_spark", "")) if row is Dictionary else ""
 	return _weapon_type_for(attacker)
+
+
+## What a hit DRAWS at contact: "overlay" when the acting ability has its own melee overlay (it owns the cut, so
+## no weapon spark is drawn under it), "family" when a plain attack's `hit_spark` names a family sequence that
+## exists (a wolf bites, a golem slams), else "spark": the code-drawn weapon shape, the claw for anything unnamed.
+const HIT_FAMILY_PREFIX := "family_"
+static func hit_mark(ability_id: String, spark: String) -> String:
+	if ability_id != "":
+		var ability: Dictionary = JobSystem.get_ability(ability_id)
+		if melee_overlay(ability, "melee") != "" or melee_overlay(ability, "melee_each") != "":
+			return "overlay"
+		return "spark"
+	if spark != "" and not FractalFX.load_sequence(HIT_FAMILY_PREFIX + spark).is_empty():
+		return "family"
+	return "spark"
 
 
 ## A weapon that carries an element tints its spark with that element's weakness colour, toned toward white.

@@ -189,3 +189,62 @@ func test_a_stance_and_a_cure_play_no_beat() -> void:
 	scene._on_status_lapsed("no_such_status", foe)
 	plan = await _plan(scene)
 	assert_eq(plan.size(), 0, "a status with no landed beat wore off with one")
+
+
+## cowir-sprites 24010: an ability with its own melee overlay owns the cut, so the hit path draws NO weapon spark
+## under it (Power Strike's crack had a sword arc beneath it); a plain attack still draws its weapon's spark, or
+## its monster's family sequence when the row names one that exists.
+func test_an_overlay_owns_the_cut_and_a_family_replaces_the_spark() -> void:
+	var parsed: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/abilities.json"))
+	var abilities: Dictionary = parsed.get("abilities", parsed)
+	var with_overlay := ""
+	var without := ""
+	for id in abilities.keys():
+		var row = abilities[id]
+		if not (row is Dictionary) or str(row.get("type", "")) != "physical":
+			continue
+		if SCENE.melee_overlay(row, "melee") != "" or SCENE.melee_overlay(row, "melee_each") != "":
+			with_overlay = str(id) if with_overlay == "" else with_overlay
+		elif without == "":
+			without = str(id)
+	assert_ne(with_overlay, "", "VOID: no physical ability carries a melee overlay")
+	assert_ne(without, "", "VOID: every physical ability carries a melee overlay")
+	assert_eq(SCENE.hit_mark(with_overlay, "sword"), "overlay", "%s has its own overlay and still draws the weapon spark" % with_overlay)
+	assert_eq(SCENE.hit_mark(without, "sword"), "spark", "CONTROL: %s has no overlay and must draw the weapon spark" % without)
+	assert_eq(SCENE.hit_mark("", "sword"), "spark", "CONTROL: a plain attack draws its weapon's spark")
+	assert_eq(SCENE.hit_mark("", "no_such_family"), "spark", "an unnamed family must fall back to the spark")
+	## A family that exists as a sequence replaces the spark on a PLAIN attack only.
+	var family := ""
+	var seqs: Dictionary = (JSON.parse_string(FileAccess.get_file_as_string("res://data/vfx_sequences.json")) as Dictionary).get("sequences", {})
+	for id in seqs.keys():
+		if str(id).begins_with(SCENE.HIT_FAMILY_PREFIX) and not str(id).trim_prefix(SCENE.HIT_FAMILY_PREFIX).contains("_"):
+			family = str(id).trim_prefix(SCENE.HIT_FAMILY_PREFIX)
+			break
+	assert_ne(family, "", "VOID: no family_<name> sequence exists")
+	assert_eq(SCENE.hit_mark("", family), "family", "a plain attack whose row names family '%s' still rakes like a claw" % family)
+	assert_eq(SCENE.hit_mark(without, family), "spark", "an ABILITY must not take the attacker's plain-attack family")
+	## And the hit path obeys it: with an overlay ability acting, no weapon spark node is drawn.
+	var f := _fixture(1)
+	var scene = f[0]; var foe: Combatant = f[1][0]
+	var es: AnimatedSprite2D = scene.enemy_sprite_nodes[0]
+	var frames := SpriteFrames.new()
+	var img := Image.create(8, 8, false, Image.FORMAT_RGBA8)
+	img.fill(Color.WHITE)
+	for anim in ["idle", "hit"]:
+		if not frames.has_animation(anim):
+			frames.add_animation(anim)
+		frames.add_frame(anim, ImageTexture.create_from_image(img))
+	es.sprite_frames = frames
+	var animator = preload("res://src/battle/BattleAnimator.gd").new()
+	animator.setup(es)
+	scene.add_child(animator)
+	for case in [[with_overlay, 0], ["", 1]]:
+		scene._current_ability_id = case[0]
+		var earlier: Array = EffectSystem._effects_container.get_children()
+		scene._delayed_play_hit_fx(animator, es)
+		var sparks := 0
+		for child in EffectSystem._effects_container.get_children():
+			if not (child in earlier) and child.has_meta("shape"):
+				sparks += 1
+		assert_eq(sparks, case[1], "with ability '%s' acting the hit drew %d weapon sparks, not %d" % [case[0], sparks, case[1]])
+	scene._current_ability_id = ""
