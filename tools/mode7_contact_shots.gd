@@ -50,11 +50,24 @@ func _init() -> void:
 			if c.has_signal("touched"):
 				roamer = c
 				break
+	if roamer == null and spawner:
+		for c in spawner.get("_monsters"):
+			if is_instance_valid(c):
+				roamer = c
+				break
+	if roamer == null and p != null:  # none spawned yet: stand a real slime roamer up
+		roamer = load("res://src/exploration/RoamingMonster.gd").new()
+		roamer.monster_id = "slime"
+		scene.add_child(roamer)
+		roamer.set_player_ref(p)
+		print("[M7C] no spawned roamer; built a slime roamer")
 	if p == null or roamer == null:
 		push_error("no player (%s) or no roamer (%s)" % [str(p), str(roamer)])
 		quit(3)
 		return
 	p.global_position = at
+	for i in range(60):  # let the camera settle on the moved player before the first frame
+		await process_frame
 	p.set_physics_process(false)
 	p.set_process_input(false)
 	roamer.process_mode = Node.PROCESS_MODE_DISABLED
@@ -76,7 +89,9 @@ func _init() -> void:
 	for d in ["N", "S", "E", "W"]:
 		for dist in [240, 180, 140, 100, 60, 40]:
 			roamer.global_position = at + dirs[d] * float(dist)
-			if roamer.has_method("_align_touch_to_the_drawn_player") and not before:
+			if before and roamer.get("_collision") is Node2D:
+				roamer.get("_collision").position = Vector2.ZERO
+			elif roamer.has_method("_align_touch_to_the_drawn_player"):
 				roamer.call("_align_touch_to_the_drawn_player")
 			for i in range(4):
 				await process_frame
