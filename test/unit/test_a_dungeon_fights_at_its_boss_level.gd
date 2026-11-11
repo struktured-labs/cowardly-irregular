@@ -5,6 +5,7 @@ extends GutTest
 
 const DUNGEONS := ["FireDragonCave", "IceDragonCave", "LightningDragonCave", "ShadowDragonCave", "CastleHarmonia"]
 const MAX_GAP := 5
+const MAX_OFFENSE_SHARE := 0.7
 
 var _es: Node
 
@@ -78,7 +79,7 @@ func test_a_level_mark_scales_the_species_on_the_level_curve() -> void:
 	assert_eq(int(up.get("level", 0)), 14, "the spawn fights at the floor's level")
 	var growth := Combatant.level_multiplier(14) / Combatant.level_multiplier(4)
 	assert_eq(int(up["max_hp"]), int(round(float(base["max_hp"]) * growth)), "HP rides the level curve the party's does")
-	assert_eq(int(up["attack"]), int(round(float(base["attack"]) * growth)), "and attack")
+	assert_eq(int(up["attack"]), int(round(float(base["attack"]) * growth * _es.SPAWN_OFFENSE_DIAL)), "attack rides it too, under the offense dial")
 	assert_eq(int(up["speed"]), int(base["speed"]), "speed is left alone")
 	assert_eq(int(up["exp_reward"]), int(round(float(base["exp_reward"]) * 14.0 / 4.0)), "EXP scales with the level, as a level's cost does")
 	assert_eq(_es.spawn_level_of("goblin"), 0, "CONTROL: an unmarked id carries no level")
@@ -103,3 +104,35 @@ func test_an_exterminated_species_stays_gone_from_a_marked_pool() -> void:
 	for t in was:
 		GameState.permakilled_monster_types.append(t)
 	assert_eq(kept, ["imp@L14"], "permakill reads the species under the level mark")
+
+
+## cowir-main 2026-11-11: "trash must not out-stat its own boss." A floor's hardest regular hits well under the boss it guards.
+func test_floor_trash_hits_well_under_its_boss() -> void:
+	var over: Array = []
+	var checked := 0
+	for d in DUNGEONS:
+		var p := _pools_of(d)
+		var boss: Dictionary = (_es.monster_database.get(p["boss"], {}) as Dictionary).get("stats", {})
+		for f in p["floors"]:
+			for id in p["floors"][f]:
+				var foe: Dictionary = _es._create_enemy_data(id)
+				checked += 1
+				for stat in ["attack", "magic"]:
+					if float(foe.get(stat, 0)) > MAX_OFFENSE_SHARE * float(boss.get(stat, 0)):
+						over.append("%s F%d %s %s %d > %d%% of the boss's %d" % [d, f, id, stat, int(foe[stat]), int(MAX_OFFENSE_SHARE * 100), int(boss.get(stat, 0))])
+				if int(foe.get("max_hp", 0)) >= int(boss.get("max_hp", 0)):
+					over.append("%s F%d %s has its boss's HP or more" % [d, f, id])
+	assert_gt(checked, 30, "CONTROL: the spawns were built (%d)" % checked)
+	assert_eq(over, [], "no floor spawn out-stats the boss it guards")
+
+
+func test_a_relevelled_spawn_converts_flat_values_at_its_own_level() -> void:
+	var foe := Combatant.new()
+	foe.initialize({"name": "Goblin", "max_hp": 10, "max_mp": 0, "attack": 1, "defense": 1, "magic": 1, "speed": 1})
+	add_child_autofree(foe)
+	foe.set_meta("monster_type", "goblin")
+	var catalog: float = foe.x10_ratio()
+	assert_gt(catalog, 0.0, "CONTROL: the catalog goblin has a ratio")
+	foe.set_meta("spawn_level", 14)
+	assert_almost_eq(foe.x10_ratio(), catalog * Combatant.level_multiplier(14) / Combatant.level_multiplier(4), 0.0001,
+		"a L14 goblin's flat heals and items convert at L14, not at the catalog's L4")

@@ -162,7 +162,7 @@ func _init() -> void:
 	floor_encounter_pools = {
 		1: ["skeleton@L21", "specter@L21"],
 		2: ["shadow_knight@L22", "skeleton@L22"],
-		3: ["shadow_knight@L23", "meta_knight@L23"],  # the Meta Knight is steampunk's L36 row, re-levelled DOWN to the castle's floor
+		3: ["shadow_knight@L22", "meta_knight@L23"],  # the Meta Knight is steampunk's L36 row, re-levelled DOWN to the castle's floor
 		4: [],
 	}
 

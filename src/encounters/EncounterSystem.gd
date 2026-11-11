@@ -666,6 +666,8 @@ func reset_for_new_game() -> void:
 
 ## An id suffix marking THIS SPAWN's level ("imp@L13"): a dungeon floor re-levels the species it draws so its trash sits near its boss.
 const LEVEL_MARK: String = "@L"
+## A re-levelled spawn's attack and magic, as a share of the curve: floor trash must hit well under its own boss (cowir-main 2026-11-11).
+const SPAWN_OFFENSE_DIAL: float = 0.5
 
 
 ## The level a spawn id asks for, or 0 when it carries no level mark.
@@ -690,7 +692,8 @@ static func apply_spawn_level(data: Dictionary, level: int) -> Dictionary:
 	var growth := Combatant.level_multiplier(level) / Combatant.level_multiplier(base_level)
 	for key in ["max_hp", "attack", "defense", "magic", "magic_defense"]:
 		if data.has(key):
-			data[key] = maxi(1, int(round(float(data[key]) * growth)))
+			var dial := SPAWN_OFFENSE_DIAL if key in ["attack", "magic"] else 1.0
+			data[key] = maxi(1, int(round(float(data[key]) * growth * dial)))
 	var pay := float(level) / float(base_level)
 	data["exp_reward"] = int(round(float(data.get("exp_reward", 0)) * pay))
 	data["gold_reward"] = int(round(float(data.get("gold_reward", 0)) * pay))

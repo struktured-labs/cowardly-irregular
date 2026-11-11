@@ -167,7 +167,11 @@ func x10_ratio() -> float:
 	if has_meta("monster_type") and es != null:
 		var row: Variant = es.monster_database.get(str(get_meta("monster_type", "")), null)
 		if row is Dictionary and (row as Dictionary).has("spectrum_ratio"):
-			return float((row as Dictionary)["spectrum_ratio"])
+			var catalog_ratio := float((row as Dictionary)["spectrum_ratio"])
+			## A floor's re-levelled spawn converts flat values at ITS level, not the catalog row's.
+			if has_meta("spawn_level"):
+				return catalog_ratio * level_multiplier(int(get_meta("spawn_level"))) / level_multiplier(int((row as Dictionary).get("level", 1)))
+			return catalog_ratio
 	return party_x10_ratio(job_level)
 
 ## Current state
