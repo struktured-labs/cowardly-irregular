@@ -26,7 +26,7 @@ SHOT_JAIL=(); if command -v bwrap > /dev/null && bwrap --dev-bind / / --tmpfs /d
 _LOG="tmp/screens/m7contact.log"
 _EC=0
 XDG_DATA_HOME="$_SHOT_XDG" timeout 600 "${SHOT_JAIL[@]}" xvfb-run -a godot --audio-driver Dummy --rendering-driver opengl3 --resolution 1280x720 \
-  -s tools/mode7_contact_shots.gd -- "--world=$W" ${AT:+--at=$AT} "--tag=$TAG" ${ZOOM:+--zoom=$ZOOM} \
+  -s tools/mode7_contact_shots.gd -- "--world=$W" ${AT:+--at=$AT} "--tag=$TAG" ${ZOOM:+--zoom=$ZOOM} ${M7C_BEFORE:+--before} \
   > "$_LOG" 2>&1 || _EC=$?
 command grep -a -E "SHOT|ERROR|SCRIPT ERROR|shot-guard" "$_LOG" || true
 if [ "$_EC" -ne 0 ]; then
