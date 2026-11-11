@@ -5337,7 +5337,7 @@ func _delayed_play_hit_fx(target_anim, target_sprite) -> void:
 			EffectSystem.spawn_effect(EffectSystem.EffectType.PHYSICAL, _stable_sprite_anchor(target_sprite), Callable(), 1.0, _weapon_type_for(_last_acting_combatant))
 		else:
 			## Reduce Flashes: the spark stays (it says which weapon hit) but never grows past a light hit's size.
-			var spark_w: float = minf(w, HIT_SPARK_REDUCED_MAX) if _reduce_flashes() else w
+			var spark_w: float = minf(w, HIT_SPARK_REDUCED_MAX) if _flashes_suppressed() else w
 			EffectSystem.spawn_hit_spark(_stable_sprite_anchor(target_sprite), hit_spark_for(_last_acting_combatant), spark_w, kb_dir, _hit_spark_tint(_last_acting_combatant), jt == BattleJuice.Tier.MINIMAL)
 		_apply_hit_knockback(target_sprite, kb_dir, lerpf(HIT_KNOCKBACK.x, HIT_KNOCKBACK.y, w))
 		_apply_hit_flash(target_sprite)
@@ -5345,7 +5345,7 @@ func _delayed_play_hit_fx(target_anim, target_sprite) -> void:
 			BattleJuice.squash(target_sprite, 1.12 + HIT_SQUASH * w, 0.88 - HIT_SQUASH * 0.75 * w)
 			if BattleJuice.flag("hit_sparks"):
 				var sparks: int = int(lerpf(HIT_SPARKS.x, HIT_SPARKS.y, w)) if jt == BattleJuice.Tier.FULL else 6
-				if _reduce_flashes():
+				if _flashes_suppressed():
 					sparks = mini(sparks, 12)
 				BattleJuice.spawn_burst(_stable_sprite_anchor(target_sprite), Vector2(kb_dir, -0.35), sparks, Color(1.0, 0.9, 0.55), lerpf(250.0, 420.0, w))
 			BattleJuice.punch_zoom(_stable_sprite_anchor(target_sprite), lerpf(HIT_ZOOM.x, HIT_ZOOM.y, w) if jt == BattleJuice.Tier.FULL else HIT_ZOOM.x, 0.12 + 0.10 * w)
