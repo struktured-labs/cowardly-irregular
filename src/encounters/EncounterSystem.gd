@@ -355,7 +355,7 @@ func _create_enemy_data(enemy_id: String) -> Dictionary:
 	# A spawn-marked level ("goblin@L14"): build the ordinary species, then re-level it for the floor that asked.
 	var marked_level := spawn_level_of(enemy_id)
 	if marked_level > 0:
-		var relevelled: Dictionary = apply_spawn_level(_create_enemy_data(spawn_base_id(enemy_id)), marked_level)
+		var relevelled: Dictionary = apply_spawn_level(_create_enemy_data(spawn_base_id(enemy_id)), marked_level, monster_database)
 		relevelled["id"] = enemy_id
 		return relevelled
 	# A spawn-marked elite: strip the marker, build the ordinary species, then scale it.
@@ -666,7 +666,7 @@ func reset_for_new_game() -> void:
 
 ## An id suffix marking THIS SPAWN's level ("imp@L13"): a dungeon floor re-levels the species it draws so its trash sits near its boss.
 const LEVEL_MARK: String = "@L"
-## A re-levelled spawn's attack and magic, as a share of the curve: floor trash must hit well under its own boss (cowir-main 2026-11-11).
+## A re-levelled spawn's attack and magic, as a share of its band: floor trash must hit well under its own boss (cowir-main 2026-11-11).
 const SPAWN_OFFENSE_DIAL: float = 0.5
 
 
@@ -684,16 +684,79 @@ static func spawn_base_id(enemy_id: String) -> String:
 	return enemy_id.substr(0, enemy_id.rfind(LEVEL_MARK)) if spawn_level_of(enemy_id) > 0 else enemy_id
 
 
-## Re-levels built enemy data: stats ride the level curve the party's do, EXP and gold scale with the level (a level costs L*100).
-static func apply_spawn_level(data: Dictionary, level: int) -> Dictionary:
+## The catalog's own ordinary monsters set what a level's stats are: median stat per unit of the level curve, by authored level.
+const BAND_STATS: Array = ["max_hp", "attack", "defense", "magic", "magic_defense"]
+## Levels above this have no ordinary W1 rows to read (bosses and other worlds' dials), so the band holds its last value.
+const BAND_TOP_LEVEL: int = 15
+## How much of the native band's HP a re-levelled spawn carries; the floor fights are tuned with this one number.
+const SPAWN_HP_DIAL: float = 1.0
+
+
+## {stat: {level: median(stat / level_multiplier(level))}} over ordinary rows (no boss, miniboss or elite) up to BAND_TOP_LEVEL.
+static func native_bands(db: Dictionary) -> Dictionary:
+	var samples: Dictionary = {}
+	for id in db:
+		var row: Variant = db[id]
+		if not (row is Dictionary) or row.get("boss", false) or row.get("miniboss", false) or row.get("field_elite", false):
+			continue
+		var lv := int(row.get("level", 0))
+		if lv < 1 or lv > BAND_TOP_LEVEL or spawn_level_of(str(id)) > 0:
+			continue
+		var stats: Dictionary = row.get("stats", {})
+		for stat in BAND_STATS:
+			if stats.has(stat):
+				if not samples.has(stat):
+					samples[stat] = {}
+				if not samples[stat].has(lv):
+					samples[stat][lv] = []
+				samples[stat][lv].append(float(stats[stat]) / Combatant.level_multiplier(lv))
+	var bands: Dictionary = {}
+	for stat in samples:
+		bands[stat] = {}
+		for lv in samples[stat]:
+			var vals: Array = samples[stat][lv]
+			vals.sort()
+			var mid := vals.size() / 2
+			bands[stat][lv] = vals[mid] if vals.size() % 2 == 1 else (vals[mid - 1] + vals[mid]) / 2.0
+	return bands
+
+
+## A band's value at any level: linear between the authored levels around it, held flat past either end.
+static func band_at(band: Dictionary, level: int) -> float:
+	if band.is_empty():
+		return 0.0
+	var levels: Array = band.keys()
+	levels.sort()
+	if level <= int(levels[0]):
+		return float(band[levels[0]])
+	if level >= int(levels[-1]):
+		return float(band[levels[-1]])
+	for i in range(1, levels.size()):
+		if level <= int(levels[i]):
+			var lo := int(levels[i - 1])
+			var hi := int(levels[i])
+			return lerpf(float(band[lo]), float(band[hi]), float(level - lo) / float(hi - lo))
+	return float(band[levels[-1]])
+
+
+## Re-levels built enemy data to the TARGET level's native band: the species keeps its share of its own level's median (cowir-battle 2026-11-11).
+static func apply_spawn_level(data: Dictionary, level: int, db: Dictionary) -> Dictionary:
 	var base_level := maxi(1, int(data.get("level", 1)))
 	if level <= 0 or level == base_level:
 		return data
-	var growth := Combatant.level_multiplier(level) / Combatant.level_multiplier(base_level)
-	for key in ["max_hp", "attack", "defense", "magic", "magic_defense"]:
-		if data.has(key):
-			var dial := SPAWN_OFFENSE_DIAL if key in ["attack", "magic"] else 1.0
-			data[key] = maxi(1, int(round(float(data[key]) * growth * dial)))
+	var bands := native_bands(db)
+	for key in BAND_STATS:
+		if not data.has(key):
+			continue
+		var band: Dictionary = bands.get(key, {})
+		var own := band_at(band, base_level) * Combatant.level_multiplier(base_level)
+		var target := band_at(band, level) * Combatant.level_multiplier(level)
+		var grown: float = float(data[key]) * (target / own if own > 0.0 else Combatant.level_multiplier(level) / Combatant.level_multiplier(base_level))
+		if key in ["attack", "magic"]:
+			grown *= SPAWN_OFFENSE_DIAL
+		elif key == "max_hp":
+			grown *= SPAWN_HP_DIAL
+		data[key] = maxi(1, int(round(grown)))
 	var pay := float(level) / float(base_level)
 	data["exp_reward"] = int(round(float(data.get("exp_reward", 0)) * pay))
 	data["gold_reward"] = int(round(float(data.get("gold_reward", 0)) * pay))

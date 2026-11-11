@@ -71,19 +71,33 @@ func test_a_cave_never_gets_easier_as_it_descends() -> void:
 				last = maxi(last, _level_of(id))
 
 
-func test_a_level_mark_scales_the_species_on_the_level_curve() -> void:
+func test_a_level_mark_relevels_the_species_into_the_target_levels_band() -> void:
 	var base: Dictionary = _es._create_enemy_data("goblin")
 	var up: Dictionary = _es._create_enemy_data("goblin@L14")
 	assert_eq(int(base.get("level", 0)), 4, "CONTROL: the catalog goblin is L4")
 	assert_eq(str(up.get("id", "")), "goblin@L14", "the mark survives in the id, so the battle spawner re-levels it too")
 	assert_eq(int(up.get("level", 0)), 14, "the spawn fights at the floor's level")
-	var growth := Combatant.level_multiplier(14) / Combatant.level_multiplier(4)
-	assert_eq(int(up["max_hp"]), int(round(float(base["max_hp"]) * growth)), "HP rides the level curve the party's does")
-	assert_eq(int(up["attack"]), int(round(float(base["attack"]) * growth * _es.SPAWN_OFFENSE_DIAL)), "attack rides it too, under the offense dial")
+	var bands: Dictionary = _es.native_bands(_es.monster_database)
+	for stat in ["max_hp", "defense", "attack"]:
+		var own: float = _es.band_at(bands[stat], 4) * Combatant.level_multiplier(4)
+		var target: float = _es.band_at(bands[stat], 14) * Combatant.level_multiplier(14)
+		var dial: float = _es.SPAWN_HP_DIAL if stat == "max_hp" else (_es.SPAWN_OFFENSE_DIAL if stat == "attack" else 1.0)
+		assert_eq(int(up[stat]), int(round(float(base[stat]) * target / own * dial)), "%s keeps the goblin's share of its level's median, at L14's median" % stat)
 	assert_eq(int(up["speed"]), int(base["speed"]), "speed is left alone")
 	assert_eq(int(up["exp_reward"]), int(round(float(base["exp_reward"]) * 14.0 / 4.0)), "EXP scales with the level, as a level's cost does")
 	assert_eq(_es.spawn_level_of("goblin"), 0, "CONTROL: an unmarked id carries no level")
 	assert_eq(_es.spawn_base_id("goblin@L14"), "goblin", "and a marked one names its species")
+
+
+## cowir-battle 2026-11-11: along its OWN line an early species carried 1/3 to 1/6 of a native's HP, so every floor died in a round.
+func test_a_relevelled_spawn_stands_beside_a_native_of_that_level() -> void:
+	var native: Dictionary = _es._create_enemy_data("bone_warden")
+	assert_eq(int(native.get("level", 0)), 11, "CONTROL: bone_warden is an ordinary catalog L11")
+	var imp_share := float(_es._create_enemy_data("imp")["max_hp"]) / float(_es._create_enemy_data("goblin")["max_hp"])
+	var imp: Dictionary = _es._create_enemy_data("imp@L11")
+	gut.p("    imp@L11 hp %d vs bone_warden (native L11) hp %d" % [int(imp["max_hp"]), int(native["max_hp"])])
+	assert_gt(float(imp["max_hp"]), 0.4 * float(native["max_hp"]) * _es.SPAWN_HP_DIAL, "a small species at L11 still carries a real share of a native L11's HP")
+	assert_lt(float(imp["max_hp"]), float(native["max_hp"]) * _es.SPAWN_HP_DIAL * 1.01, "and the imp stays the smaller monster (its L4 share is %.2f of a goblin)" % imp_share)
 
 
 func test_a_relevelled_spawn_pays_exp_at_its_own_level() -> void:
