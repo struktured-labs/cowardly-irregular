@@ -122,6 +122,9 @@
       "frame_width": 256,
       "frame_height": 256,
       "fps": 8,
+      "impact_frames": {
+        "attack": 4
+      },
       "animations": [
         "advance",
         "attack",
@@ -267,6 +270,9 @@
       "frame_width": 256,
       "frame_height": 256,
       "fps": 8,
+      "impact_frames": {
+        "attack": 5
+      },
       "animations": [
         "attack",
         "cast",
@@ -974,7 +980,8 @@
         },
         "attack": {
           "start": 4,
-          "end": 12
+          "end": 12,
+          "impact": 5
         },
         "hit": {
           "start": 10,
@@ -1137,7 +1144,8 @@
         },
         "attack": {
           "start": 4,
-          "end": 16
+          "end": 16,
+          "impact": 6
         },
         "hit": {
           "start": 0,
@@ -3779,7 +3787,8 @@
         },
         "attack": {
           "start": 4,
-          "end": 16
+          "end": 16,
+          "impact": 6
         },
         "hit": {
           "start": 0,
