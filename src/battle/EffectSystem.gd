@@ -119,8 +119,14 @@ static func hit_spark_shape(weapon_type: String) -> String:
 
 ## `w` is the hit's weight (0-1): the spark grows and lingers with it. `dir` is the way the target is knocked
 ## (-1 left, +1 right). `brief` = the shortest read, for fast battle speeds.
-func spawn_hit_spark(position: Vector2, weapon_type: String, w: float = 0.0, dir: float = -1.0, tint: Color = Color.WHITE, brief: bool = false) -> Node2D:
+## The weapon's hit cue alone, for a hit whose picture is drawn by something else (an ability's melee overlay,
+## a monster's family sequence): the hit must never lose its sound because it changed its spark.
+func play_hit_cue(weapon_type: String) -> void:
 	_play_effect_sound(EffectType.PHYSICAL, 1.0, weapon_type)
+
+
+func spawn_hit_spark(position: Vector2, weapon_type: String, w: float = 0.0, dir: float = -1.0, tint: Color = Color.WHITE, brief: bool = false) -> Node2D:
+	play_hit_cue(weapon_type)
 	var spark := Node2D.new()
 	spark.name = "HitSpark_" + hit_spark_shape(weapon_type)
 	spark.position = position
