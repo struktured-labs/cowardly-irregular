@@ -3059,6 +3059,27 @@ func _play_ability_full_render(caster: Combatant, caster_sprite: Node2D, animato
 		_full_render_set_dim(false)
 
 
+## Where a battler's BODY is. Its stable anchor is the centre of its FRAME, and a figure can stand well off that, so an
+## effect aimed at the anchor lands beside the hero it hits (cowir-cutscenes 24028; the name is cowir-sprites', 24038).
+## The anchor plus the idle figure's centre; the plain anchor when the frame cannot be read. Numbers and bars keep the frame.
+func _figure_anchor(sprite: Node2D) -> Vector2:
+	var anchor := _stable_sprite_anchor(sprite)
+	if not is_instance_valid(sprite) or not (sprite is AnimatedSprite2D):
+		return anchor
+	var figure: Rect2 = AdvanceAuraClass.figure_rect_in_sprite(sprite as AnimatedSprite2D, &"idle")
+	return anchor + figure.get_center() if figure.size.x > 0.0 else anchor
+
+
+## Where a caster's HAND is, for what leaves it (a bolt, a staff's glow): the figure's leading edge, a little above its middle.
+func _hand_anchor(sprite: Node2D, facing: float) -> Vector2:
+	if not is_instance_valid(sprite) or not (sprite is AnimatedSprite2D):
+		return _stable_sprite_anchor(sprite) + Vector2(40.0 * facing, -20.0)
+	var figure: Rect2 = AdvanceAuraClass.figure_rect_in_sprite(sprite as AnimatedSprite2D, &"idle")
+	if figure.size.x <= 0.0:
+		return _stable_sprite_anchor(sprite) + Vector2(40.0 * facing, -20.0)
+	return _figure_anchor(sprite) + Vector2(figure.size.x * 0.5 * facing, -figure.size.y * 0.15)
+
+
 ## A data/vfx_sequences.json id the ability names (AbilityVFX), or "" for the ordinary effects.
 ## A boss's fx_signature, cast BY that boss, plays sig_<monster_id> ("all the bosses need their own animated attacks").
 func signature_sequence(caster: Combatant, ability_id: String) -> String:
@@ -3496,9 +3517,11 @@ func _play_ability_sequence(caster: Combatant, caster_sprite: Node2D, animator: 
 	if animator:
 		_play_ability_animation(_ability_anim_name(ability, animator), animator)
 	var from := Vector2.ZERO
+	var caster_centre := Vector2.INF
 	if caster_sprite != null and is_instance_valid(caster_sprite):
 		var facing: float = -1.0 if party_sprite_nodes.has(caster_sprite) else 1.0
-		from = _stable_sprite_anchor(caster_sprite) + Vector2(40.0 * facing, -20.0)
+		from = _hand_anchor(caster_sprite, facing)
+		caster_centre = _figure_anchor(caster_sprite)
 	var impact := 0.0
 	var first := true
 	var intensity := cast_intensity(caster, ability)
@@ -3509,8 +3532,8 @@ func _play_ability_sequence(caster: Combatant, caster_sprite: Node2D, animator: 
 		# Sprite-moving phases (lunge, hitstop, impact frames) act once, on the first target, not once per target.
 		var actors: Dictionary = {"caster": caster_sprite, "target": ts} if first else {}
 		first = false
-		var played: Dictionary = EffectSystem.spawn_sequence(seq_id, from, _stable_sprite_anchor(ts),
-			float(AbilityVFX.resolve(ability)["power"]) * float(intensity["k"]), actors, int(intensity["tier"]), not signature_sound_allowed())
+		var played: Dictionary = EffectSystem.spawn_sequence(seq_id, from, _figure_anchor(ts),
+			float(AbilityVFX.resolve(ability)["power"]) * float(intensity["k"]), actors, int(intensity["tier"]), not signature_sound_allowed(), -1.0, caster_centre)
 		impact = maxf(impact, float(played.get("impact", 0.0)))
 	if impact <= 0.0:
 		_spawn_ability_effects(ability, targets)
