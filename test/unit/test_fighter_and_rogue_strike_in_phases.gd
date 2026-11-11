@@ -202,12 +202,29 @@ func test_a_landed_effect_and_a_failed_one_never_share_a_beat() -> void:
 	assert_true(kinds.call("fizzle").has("puff"), "a fizzle is dust")
 
 
+func _drawn_by(action: Dictionary) -> int:
+	## Nodes an action adds to the effects layer by 0.4 s: the plain hit's own fx, plus whatever is drawn around it.
+	var host := Node2D.new()
+	add_child_autofree(host)
+	var was: Node2D = EffectSystem._effects_container
+	EffectSystem._effects_container = host
+	_scene._on_action_executing(_hero, action)
+	var most := 0
+	for i in 24:
+		await get_tree().process_frame
+		most = maxi(most, host.get_child_count())
+	EffectSystem._effects_container = was
+	return most
+
+
 func test_the_scene_draws_the_move_and_the_outcome() -> void:
+	## A plain attack draws the hit's own fx into the same layer, so the move is judged against it, not against nothing.
+	var plain: int = await _drawn_by({"type": "attack", "target": _foe})
+	await get_tree().create_timer(0.8).timeout
+	var strike: int = await _drawn_by({"type": "ability", "ability_id": "power_strike", "targets": [_foe]})
+	assert_gt(strike, plain + 5, "Power Strike draws its sequence around the hit (%d nodes vs a plain attack's %d)" % [strike, plain])
+	await get_tree().create_timer(0.5).timeout
 	var before := _fx_count()
-	_scene._on_action_executing(_hero, {"type": "ability", "ability_id": "power_strike", "targets": [_foe]})
-	await get_tree().create_timer(0.35).timeout
-	assert_gt(_fx_count(), before, "Power Strike draws into the effects layer")
-	before = _fx_count()
 	_scene._on_steal_resolved(_hero, _foe, true)
 	assert_gt(_fx_count(), before, "a landed steal draws its take")
 	before = _fx_count()
@@ -238,14 +255,11 @@ func test_an_outcome_of_a_melee_move_waits_for_the_blow_to_arrive() -> void:
 
 func test_an_overlay_starts_at_its_own_lunges_contact() -> void:
 	## main 23818: below the FULL tier the approach is 0.05 s shorter, and an overlay timed to a constant landed late.
-	_scene._on_action_executing(_hero, {"type": "ability", "ability_id": "power_strike", "targets": [_foe]})
-	assert_gt(_scene._last_contact_in, 0.0, "CONTROL: the lunge reports when it lands (%.3f)" % _scene._last_contact_in)
-	assert_almost_eq(_scene._melee_contact_timer.time_left, _scene._last_contact_in, 0.02, "the contact clock is the lunge's, not a constant")
+	## First, with nothing else in flight: a given start_at replaces the sequence's authored 0.17.
 	var host := Node2D.new()
 	add_child_autofree(host)
 	var was: Node2D = EffectSystem._effects_container
 	EffectSystem._effects_container = host
-	## A flash at the impact (at 0.0) must not exist before the given start and must exist just after it.
 	EffectSystem.spawn_sequence("melee_slash", Vector2(600, 300), Vector2(200, 300), 1.0, {}, 1, false, 0.3)
 	await get_tree().create_timer(0.2).timeout
 	var early := host.get_child_count()
@@ -254,6 +268,10 @@ func test_an_overlay_starts_at_its_own_lunges_contact() -> void:
 	EffectSystem._effects_container = was
 	assert_eq(early, 0, "with start_at 0.3, nothing of Slash is drawn at 0.2 (its first phase is 0.04 before contact)")
 	assert_gt(late, 0, "CONTROL: it is drawn once that contact has come")
+	## Then the scene: the contact clock is the lunge's own figure, not a constant.
+	_scene._on_action_executing(_hero, {"type": "ability", "ability_id": "power_strike", "targets": [_foe]})
+	assert_gt(_scene._last_contact_in, 0.0, "CONTROL: the lunge reports when it lands (%.3f)" % _scene._last_contact_in)
+	assert_almost_eq(_scene._melee_contact_timer.time_left, _scene._last_contact_in, 0.02, "the contact clock is the lunge's, not a constant")
 
 
 func test_a_drawn_in_order_phase_is_as_long_as_its_last_flame() -> void:
