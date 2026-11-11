@@ -882,6 +882,7 @@
   "monster_sheets": {
     "adaptive_slime": {
       "path": "res://assets/sprites/monsters/adaptive_slime.png",
+      "source": "attack 2-3, hit 4-5, dead 6-7 -> frame 0, the idle picture: this legacy sheet holds a different creature in those frames (cowir-main ruling 23683, option a, tip 2; manifest only, PNG untouched; a regen swaps the ranges back).",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 8,
@@ -891,16 +892,16 @@
           "end": 0
         },
         "attack": {
-          "start": 2,
-          "end": 3
+          "start": 0,
+          "end": 0
         },
         "hit": {
-          "start": 4,
-          "end": 5
+          "start": 0,
+          "end": 0
         },
         "dead": {
-          "start": 6,
-          "end": 7
+          "start": 0,
+          "end": 0
         }
       },
       "tier": "T1",
@@ -908,6 +909,7 @@
     },
     "assembly_line_automaton": {
       "path": "res://assets/sprites/monsters/assembly_line_automaton.png",
+      "source": "attack 2-3, hit 4-5, dead 6-7 -> frame 0, the idle picture: this legacy sheet holds a different creature in those frames (cowir-main ruling 23683, option a, tip 2; manifest only, PNG untouched; a regen swaps the ranges back).",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 8,
@@ -917,16 +919,16 @@
           "end": 1
         },
         "attack": {
-          "start": 2,
-          "end": 3
+          "start": 0,
+          "end": 0
         },
         "hit": {
-          "start": 4,
-          "end": 5
+          "start": 0,
+          "end": 0
         },
         "dead": {
-          "start": 6,
-          "end": 7
+          "start": 0,
+          "end": 0
         }
       },
       "tier": "T1",
@@ -1017,6 +1019,7 @@
     },
     "brass_golem": {
       "path": "res://assets/sprites/monsters/brass_golem.png",
+      "source": "attack 2-3, hit 4-5, dead 6-7 -> frame 0, the idle picture: this legacy sheet holds a different creature in those frames (cowir-main ruling 23683, option a, tip 2; manifest only, PNG untouched; a regen swaps the ranges back).",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 8,
@@ -1026,16 +1029,16 @@
           "end": 1
         },
         "attack": {
-          "start": 2,
-          "end": 3
+          "start": 0,
+          "end": 0
         },
         "hit": {
-          "start": 4,
-          "end": 5
+          "start": 0,
+          "end": 0
         },
         "dead": {
-          "start": 6,
-          "end": 7
+          "start": 0,
+          "end": 0
         }
       },
       "tier": "T1",
@@ -1176,6 +1179,7 @@
     },
     "clockwork_sentinel": {
       "path": "res://assets/sprites/monsters/clockwork_sentinel.png",
+      "source": "attack 2-3, hit 4-5, dead 6-7 -> frame 0, the idle picture: this legacy sheet holds a different creature in those frames (cowir-main ruling 23683, option a, tip 2; manifest only, PNG untouched; a regen swaps the ranges back).",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 8,
@@ -1185,16 +1189,16 @@
           "end": 1
         },
         "attack": {
-          "start": 2,
-          "end": 3
+          "start": 0,
+          "end": 0
         },
         "hit": {
-          "start": 4,
-          "end": 5
+          "start": 0,
+          "end": 0
         },
         "dead": {
-          "start": 6,
-          "end": 7
+          "start": 0,
+          "end": 0
         }
       },
       "tier": "T1",
@@ -1202,6 +1206,7 @@
     },
     "cog_swarm": {
       "path": "res://assets/sprites/monsters/cog_swarm.png",
+      "source": "attack 2-3, hit 4-5, dead 6-7 -> frame 0, the idle picture: this legacy sheet holds a different creature in those frames (cowir-main ruling 23683, option a, tip 2; manifest only, PNG untouched; a regen swaps the ranges back).",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 8,
@@ -1211,16 +1216,16 @@
           "end": 1
         },
         "attack": {
-          "start": 2,
-          "end": 3
+          "start": 0,
+          "end": 0
         },
         "hit": {
-          "start": 4,
-          "end": 5
+          "start": 0,
+          "end": 0
         },
         "dead": {
-          "start": 6,
-          "end": 7
+          "start": 0,
+          "end": 0
         }
       },
       "tier": "T1",
@@ -1266,24 +1271,25 @@
           "end": 4
         },
         "attack": {
-          "start": 2,
+          "start": 3,
           "end": 3
         },
         "hit": {
-          "start": 4,
-          "end": 5
+          "start": 3,
+          "end": 3
         },
         "dead": {
-          "start": 6,
-          "end": 7
+          "start": 3,
+          "end": 3
         }
       },
       "tier": "T1",
       "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)",
-      "source": "2026-09-06 facing audit (struktured: 'lots of backward sprites'): drawn facing LEFT, flip baked into the pixels per-frame; monsters face RIGHT."
+      "source": "2026-09-06 facing audit (struktured: 'lots of backward sprites'): drawn facing LEFT, flip baked into the pixels per-frame; monsters face RIGHT. attack 2-3, hit 4-5, dead 6-7 -> frame 3, the idle picture: this legacy sheet holds a different creature in those frames (cowir-main ruling 23683, option a, tip 2; manifest only, PNG untouched; a regen swaps the ranges back)."
     },
     "corrupted_sprite": {
       "path": "res://assets/sprites/monsters/corrupted_sprite.png",
+      "source": "attack 2-3, hit 4-5, dead 6-7 -> frame 2, the idle picture: this legacy sheet holds a different creature in those frames (cowir-main ruling 23683, option a, tip 2; manifest only, PNG untouched; a regen swaps the ranges back).",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 8,
@@ -1294,15 +1300,15 @@
         },
         "attack": {
           "start": 2,
-          "end": 3
+          "end": 2
         },
         "hit": {
-          "start": 4,
-          "end": 5
+          "start": 2,
+          "end": 2
         },
         "dead": {
-          "start": 6,
-          "end": 7
+          "start": 2,
+          "end": 2
         }
       },
       "tier": "T1",
@@ -1339,6 +1345,7 @@
     },
     "crystal_golem": {
       "path": "res://assets/sprites/monsters/crystal_golem.png",
+      "source": "attack 2-3, hit 4-5, dead 6-7 -> frame 3, the idle picture: this legacy sheet holds a different creature in those frames (cowir-main ruling 23683, option a, tip 2; manifest only, PNG untouched; a regen swaps the ranges back).",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 8,
@@ -1348,16 +1355,16 @@
           "end": 4
         },
         "attack": {
-          "start": 2,
+          "start": 3,
           "end": 3
         },
         "hit": {
-          "start": 4,
-          "end": 5
+          "start": 3,
+          "end": 3
         },
         "dead": {
-          "start": 6,
-          "end": 7
+          "start": 3,
+          "end": 3
         }
       },
       "tier": "T1",
@@ -1365,6 +1372,7 @@
     },
     "cursed_armor": {
       "path": "res://assets/sprites/monsters/cursed_armor.png",
+      "source": "attack 2-3, hit 4-5, dead 6-7 -> frame 3, the idle picture: this legacy sheet holds a different creature in those frames (cowir-main ruling 23683, option a, tip 2; manifest only, PNG untouched; a regen swaps the ranges back).",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 8,
@@ -1374,16 +1382,16 @@
           "end": 4
         },
         "attack": {
-          "start": 2,
+          "start": 3,
           "end": 3
         },
         "hit": {
-          "start": 4,
-          "end": 5
+          "start": 3,
+          "end": 3
         },
         "dead": {
-          "start": 6,
-          "end": 7
+          "start": 3,
+          "end": 3
         }
       },
       "tier": "T1",
@@ -1393,6 +1401,7 @@
     },
     "data_wraith": {
       "path": "res://assets/sprites/monsters/data_wraith.png",
+      "source": "attack 2-3, hit 4-5, dead 6-7 -> frame 0, the idle picture: this legacy sheet holds a different creature in those frames (cowir-main ruling 23683, option a, tip 2; manifest only, PNG untouched; a regen swaps the ranges back).",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 8,
@@ -1402,16 +1411,16 @@
           "end": 1
         },
         "attack": {
-          "start": 2,
-          "end": 3
+          "start": 0,
+          "end": 0
         },
         "hit": {
-          "start": 4,
-          "end": 5
+          "start": 0,
+          "end": 0
         },
         "dead": {
-          "start": 6,
-          "end": 7
+          "start": 0,
+          "end": 0
         }
       },
       "tier": "T1",
@@ -1473,6 +1482,7 @@
     },
     "elemental": {
       "path": "res://assets/sprites/monsters/elemental.png",
+      "source": "attack 2-3, hit 4-5, dead 6-7 -> frame 0, the idle picture: this legacy sheet holds a different creature in those frames (cowir-main ruling 23683, option a, tip 2; manifest only, PNG untouched; a regen swaps the ranges back).",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 8,
@@ -1482,16 +1492,16 @@
           "end": 1
         },
         "attack": {
-          "start": 2,
-          "end": 3
+          "start": 0,
+          "end": 0
         },
         "hit": {
-          "start": 4,
-          "end": 5
+          "start": 0,
+          "end": 0
         },
         "dead": {
-          "start": 6,
-          "end": 7
+          "start": 0,
+          "end": 0
         }
       },
       "tier": "T1",
@@ -1499,6 +1509,7 @@
     },
     "empty_set": {
       "path": "res://assets/sprites/monsters/empty_set.png",
+      "source": "attack 2-3, hit 4-5, dead 6-7 -> frame 3, the idle picture: this legacy sheet holds a different creature in those frames (cowir-main ruling 23683, option a, tip 2; manifest only, PNG untouched; a regen swaps the ranges back).",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 8,
@@ -1508,16 +1519,16 @@
           "end": 4
         },
         "attack": {
-          "start": 2,
+          "start": 3,
           "end": 3
         },
         "hit": {
-          "start": 4,
-          "end": 5
+          "start": 3,
+          "end": 3
         },
         "dead": {
-          "start": 6,
-          "end": 7
+          "start": 3,
+          "end": 3
         }
       },
       "tier": "T1",
@@ -1580,6 +1591,7 @@
     },
     "firewall_sentinel": {
       "path": "res://assets/sprites/monsters/firewall_sentinel.png",
+      "source": "attack 2-3, hit 4-5, dead 6-7 -> frame 0, the idle picture: this legacy sheet holds a different creature in those frames (cowir-main ruling 23683, option a, tip 2; manifest only, PNG untouched; a regen swaps the ranges back).",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 8,
@@ -1589,16 +1601,16 @@
           "end": 1
         },
         "attack": {
-          "start": 2,
-          "end": 3
+          "start": 0,
+          "end": 0
         },
         "hit": {
-          "start": 4,
-          "end": 5
+          "start": 0,
+          "end": 0
         },
         "dead": {
-          "start": 6,
-          "end": 7
+          "start": 0,
+          "end": 0
         }
       },
       "tier": "T1",
@@ -1606,6 +1618,7 @@
     },
     "forgotten_variable": {
       "path": "res://assets/sprites/monsters/forgotten_variable.png",
+      "source": "attack 2-3, hit 4-5, dead 6-7 -> frame 2, the idle picture: this legacy sheet holds a different creature in those frames (cowir-main ruling 23683, option a, tip 2; manifest only, PNG untouched; a regen swaps the ranges back).",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 8,
@@ -1616,15 +1629,15 @@
         },
         "attack": {
           "start": 2,
-          "end": 3
+          "end": 2
         },
         "hit": {
-          "start": 4,
-          "end": 5
+          "start": 2,
+          "end": 2
         },
         "dead": {
-          "start": 6,
-          "end": 7
+          "start": 2,
+          "end": 2
         }
       },
       "tier": "T1",
@@ -1659,7 +1672,7 @@
     },
     "ghost": {
       "path": "res://assets/sprites/monsters/ghost.png",
-      "source": "idle 0-1 -> 3-4: frames 0-1 are a grey blob, not the spirit (cowir-sprites audit 2026-11-11, manifest only, PNG untouched).",
+      "source": "idle 0-1 -> 3-4: frames 0-1 are a grey blob, not the spirit (cowir-sprites audit 2026-11-11, manifest only, PNG untouched). attack 2-3 -> 3 and hit 4-5 -> 4, the idle spirit: frames 2 and 5 are different ghosts (ruling 23683; dead 6-7, the wisp, is the design and stays).",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 8,
@@ -1669,12 +1682,12 @@
           "end": 4
         },
         "attack": {
-          "start": 2,
+          "start": 3,
           "end": 3
         },
         "hit": {
           "start": 4,
-          "end": 5
+          "end": 4
         },
         "dead": {
           "start": 6,
@@ -1713,6 +1726,7 @@
     },
     "glitch_entity": {
       "path": "res://assets/sprites/monsters/glitch_entity.png",
+      "source": "attack 2-3, hit 4-5, dead 6-7 -> frame 3, the idle picture: this legacy sheet holds a different creature in those frames (cowir-main ruling 23683, option a, tip 2; manifest only, PNG untouched; a regen swaps the ranges back).",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 8,
@@ -1722,16 +1736,16 @@
           "end": 4
         },
         "attack": {
-          "start": 2,
+          "start": 3,
           "end": 3
         },
         "hit": {
-          "start": 4,
-          "end": 5
+          "start": 3,
+          "end": 3
         },
         "dead": {
-          "start": 6,
-          "end": 7
+          "start": 3,
+          "end": 3
         }
       },
       "tier": "T1",
@@ -1803,21 +1817,21 @@
           "end": 1
         },
         "attack": {
-          "start": 2,
-          "end": 3
+          "start": 0,
+          "end": 0
         },
         "hit": {
-          "start": 4,
-          "end": 5
+          "start": 0,
+          "end": 0
         },
         "dead": {
-          "start": 6,
-          "end": 7
+          "start": 0,
+          "end": 0
         }
       },
       "tier": "T1",
       "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)",
-      "source": "Playtest audit 2026-07-15: single-frame multi-subject defect fixed by clone-adjacent (fix_broken_frames pattern), no regen — main body art retained."
+      "source": "Playtest audit 2026-07-15: single-frame multi-subject defect fixed by clone-adjacent (fix_broken_frames pattern), no regen — main body art retained. attack 2-3, hit 4-5, dead 6-7 -> frame 0, the idle picture: this legacy sheet holds a different creature in those frames (cowir-main ruling 23683, option a, tip 2; manifest only, PNG untouched; a regen swaps the ranges back)."
     },
     "imp": {
       "path": "res://assets/sprites/monsters/imp.png",
@@ -1847,6 +1861,7 @@
     },
     "ironback_beetle": {
       "path": "res://assets/sprites/monsters/ironback_beetle.png",
+      "source": "attack 2-3, hit 4-5, dead 6-7 -> frame 3, the idle picture: this legacy sheet holds a different creature in those frames (cowir-main ruling 23683, option a, tip 2; manifest only, PNG untouched; a regen swaps the ranges back).",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 8,
@@ -1856,16 +1871,16 @@
           "end": 4
         },
         "attack": {
-          "start": 2,
+          "start": 3,
           "end": 3
         },
         "hit": {
-          "start": 4,
-          "end": 5
+          "start": 3,
+          "end": 3
         },
         "dead": {
-          "start": 6,
-          "end": 7
+          "start": 3,
+          "end": 3
         }
       },
       "tier": "T1",
@@ -1929,7 +1944,7 @@
     },
     "masterite_arbiter_abstract": {
       "path": "res://assets/sprites/monsters/masterite_arbiter_abstract.png",
-      "source": "dead 6-7 -> 7: frame 6 is an opaque panel of ~30 thumbnail sprites (cowir-sprites audit 2026-11-11, manifest only, PNG untouched).",
+      "source": "dead 6-7 -> 7: frame 6 is an opaque panel of ~30 thumbnail sprites (cowir-sprites audit 2026-11-11, manifest only, PNG untouched). attack 2-3, hit 4-5, dead 7-7 -> frame 0, the idle picture: this legacy sheet holds a different creature in those frames (cowir-main ruling 23683, option a, tip 2; manifest only, PNG untouched; a regen swaps the ranges back).",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 8,
@@ -1939,16 +1954,16 @@
           "end": 1
         },
         "attack": {
-          "start": 2,
-          "end": 3
+          "start": 0,
+          "end": 0
         },
         "hit": {
-          "start": 4,
-          "end": 5
+          "start": 0,
+          "end": 0
         },
         "dead": {
-          "start": 7,
-          "end": 7
+          "start": 0,
+          "end": 0
         }
       },
       "tier": "T1",
@@ -1956,6 +1971,7 @@
     },
     "masterite_arbiter_futuristic": {
       "path": "res://assets/sprites/monsters/masterite_arbiter_futuristic.png",
+      "source": "attack 2-3, hit 4-5, dead 6-7 -> frame 3, the idle picture: this legacy sheet holds a different creature in those frames (cowir-main ruling 23683, option a, tip 2; manifest only, PNG untouched; a regen swaps the ranges back).",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 8,
@@ -1965,16 +1981,16 @@
           "end": 4
         },
         "attack": {
-          "start": 2,
+          "start": 3,
           "end": 3
         },
         "hit": {
-          "start": 4,
-          "end": 5
+          "start": 3,
+          "end": 3
         },
         "dead": {
-          "start": 6,
-          "end": 7
+          "start": 3,
+          "end": 3
         }
       },
       "tier": "T1",
@@ -1982,6 +1998,7 @@
     },
     "masterite_arbiter_industrial": {
       "path": "res://assets/sprites/monsters/masterite_arbiter_industrial.png",
+      "source": "attack 2-3, hit 4-5, dead 6-7 -> frame 0, the idle picture: this legacy sheet holds a different creature in those frames (cowir-main ruling 23683, option a, tip 2; manifest only, PNG untouched; a regen swaps the ranges back).",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 8,
@@ -1991,16 +2008,16 @@
           "end": 1
         },
         "attack": {
-          "start": 2,
-          "end": 3
+          "start": 0,
+          "end": 0
         },
         "hit": {
-          "start": 4,
-          "end": 5
+          "start": 0,
+          "end": 0
         },
         "dead": {
-          "start": 6,
-          "end": 7
+          "start": 0,
+          "end": 0
         }
       },
       "tier": "T1",
@@ -2008,7 +2025,7 @@
     },
     "masterite_arbiter_medieval": {
       "path": "res://assets/sprites/monsters/masterite_arbiter_medieval.png",
-      "source": "idle 0-1 -> 3-4: frames 0-1 are a sword and a crescent with a tiny figure; the swordmaster is 3-4 (cowir-sprites audit 2026-11-11, manifest only, PNG untouched).",
+      "source": "idle 0-1 -> 3-4: frames 0-1 are a sword and a crescent with a tiny figure; the swordmaster is 3-4 (cowir-sprites audit 2026-11-11, manifest only, PNG untouched). attack 2-3, hit 4-5, dead 6-7 -> frame 3, the idle picture: this legacy sheet holds a different creature in those frames (cowir-main ruling 23683, option a, tip 2; manifest only, PNG untouched; a regen swaps the ranges back).",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 8,
@@ -2018,16 +2035,16 @@
           "end": 4
         },
         "attack": {
-          "start": 2,
+          "start": 3,
           "end": 3
         },
         "hit": {
-          "start": 4,
-          "end": 5
+          "start": 3,
+          "end": 3
         },
         "dead": {
-          "start": 6,
-          "end": 7
+          "start": 3,
+          "end": 3
         }
       },
       "tier": "T1",
@@ -2061,6 +2078,7 @@
     },
     "masterite_arbiter_suburban": {
       "path": "res://assets/sprites/monsters/masterite_arbiter_suburban.png",
+      "source": "attack 2-3, hit 4-5, dead 6-7 -> frame 0, the idle picture: this legacy sheet holds a different creature in those frames (cowir-main ruling 23683, option a, tip 2; manifest only, PNG untouched; a regen swaps the ranges back).",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 8,
@@ -2070,16 +2088,16 @@
           "end": 1
         },
         "attack": {
-          "start": 2,
-          "end": 3
+          "start": 0,
+          "end": 0
         },
         "hit": {
-          "start": 4,
-          "end": 5
+          "start": 0,
+          "end": 0
         },
         "dead": {
-          "start": 6,
-          "end": 7
+          "start": 0,
+          "end": 0
         }
       },
       "tier": "T1",
@@ -2113,6 +2131,7 @@
     },
     "masterite_curator_futuristic": {
       "path": "res://assets/sprites/monsters/masterite_curator_futuristic.png",
+      "source": "attack 2-3, hit 4-5, dead 6-7 -> frame 0, the idle picture: this legacy sheet holds a different creature in those frames (cowir-main ruling 23683, option a, tip 2; manifest only, PNG untouched; a regen swaps the ranges back).",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 8,
@@ -2124,16 +2143,16 @@
           "end": 1
         },
         "attack": {
-          "start": 2,
-          "end": 3
+          "start": 0,
+          "end": 0
         },
         "hit": {
-          "start": 4,
-          "end": 5
+          "start": 0,
+          "end": 0
         },
         "dead": {
-          "start": 6,
-          "end": 7
+          "start": 0,
+          "end": 0
         }
       },
       "tier": "T1",
@@ -2141,6 +2160,7 @@
     },
     "masterite_curator_industrial": {
       "path": "res://assets/sprites/monsters/masterite_curator_industrial.png",
+      "source": "attack 2-3, hit 4-5, dead 6-7 -> frame 0, the idle picture: this legacy sheet holds a different creature in those frames (cowir-main ruling 23683, option a, tip 2; manifest only, PNG untouched; a regen swaps the ranges back).",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 8,
@@ -2150,16 +2170,16 @@
           "end": 1
         },
         "attack": {
-          "start": 2,
-          "end": 3
+          "start": 0,
+          "end": 0
         },
         "hit": {
-          "start": 4,
-          "end": 5
+          "start": 0,
+          "end": 0
         },
         "dead": {
-          "start": 6,
-          "end": 7
+          "start": 0,
+          "end": 0
         }
       },
       "tier": "T1",
@@ -2167,6 +2187,7 @@
     },
     "masterite_curator_medieval": {
       "path": "res://assets/sprites/monsters/masterite_curator_medieval.png",
+      "source": "attack 2-3, hit 4-5, dead 6-7 -> frame 0, the idle picture: this legacy sheet holds a different creature in those frames (cowir-main ruling 23683, option a, tip 2; manifest only, PNG untouched; a regen swaps the ranges back).",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 8,
@@ -2176,16 +2197,16 @@
           "end": 1
         },
         "attack": {
-          "start": 2,
-          "end": 3
+          "start": 0,
+          "end": 0
         },
         "hit": {
-          "start": 4,
-          "end": 5
+          "start": 0,
+          "end": 0
         },
         "dead": {
-          "start": 6,
-          "end": 7
+          "start": 0,
+          "end": 0
         }
       },
       "tier": "T1",
@@ -2219,6 +2240,7 @@
     },
     "masterite_curator_suburban": {
       "path": "res://assets/sprites/monsters/masterite_curator_suburban.png",
+      "source": "attack 2-3, hit 4-5, dead 6-7 -> frame 0, the idle picture: this legacy sheet holds a different creature in those frames (cowir-main ruling 23683, option a, tip 2; manifest only, PNG untouched; a regen swaps the ranges back).",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 8,
@@ -2228,16 +2250,16 @@
           "end": 1
         },
         "attack": {
-          "start": 2,
-          "end": 3
+          "start": 0,
+          "end": 0
         },
         "hit": {
-          "start": 4,
-          "end": 5
+          "start": 0,
+          "end": 0
         },
         "dead": {
-          "start": 6,
-          "end": 7
+          "start": 0,
+          "end": 0
         }
       },
       "tier": "T1",
@@ -2271,7 +2293,7 @@
     },
     "masterite_tempo_futuristic": {
       "path": "res://assets/sprites/monsters/masterite_tempo_futuristic.png",
-      "source": "dead 6-7 -> 7 and hit 4-5 -> 5: frame 6 is a thumbnail panel, frame 4 a design sheet with UI chrome (cowir-sprites audit 2026-11-11, manifest only, PNG untouched).",
+      "source": "dead 6-7 -> 7 and hit 4-5 -> 5: frame 6 is a thumbnail panel, frame 4 a design sheet with UI chrome (cowir-sprites audit 2026-11-11, manifest only, PNG untouched). attack 2-3, hit 5-5, dead 7-7 -> frame 2, the idle picture: this legacy sheet holds a different creature in those frames (cowir-main ruling 23683, option a, tip 2; manifest only, PNG untouched; a regen swaps the ranges back).",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 8,
@@ -2282,15 +2304,15 @@
         },
         "attack": {
           "start": 2,
-          "end": 3
+          "end": 2
         },
         "hit": {
-          "start": 5,
-          "end": 5
+          "start": 2,
+          "end": 2
         },
         "dead": {
-          "start": 7,
-          "end": 7
+          "start": 2,
+          "end": 2
         }
       },
       "tier": "T1",
@@ -2298,6 +2320,7 @@
     },
     "masterite_tempo_industrial": {
       "path": "res://assets/sprites/monsters/masterite_tempo_industrial.png",
+      "source": "attack 2-3, hit 4-5, dead 6-7 -> frame 0, the idle picture: this legacy sheet holds a different creature in those frames (cowir-main ruling 23683, option a, tip 2; manifest only, PNG untouched; a regen swaps the ranges back).",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 8,
@@ -2307,16 +2330,16 @@
           "end": 1
         },
         "attack": {
-          "start": 2,
-          "end": 3
+          "start": 0,
+          "end": 0
         },
         "hit": {
-          "start": 4,
-          "end": 5
+          "start": 0,
+          "end": 0
         },
         "dead": {
-          "start": 6,
-          "end": 7
+          "start": 0,
+          "end": 0
         }
       },
       "tier": "T1",
@@ -2324,6 +2347,7 @@
     },
     "masterite_tempo_medieval": {
       "path": "res://assets/sprites/monsters/masterite_tempo_medieval.png",
+      "source": "attack 2-3, hit 4-5, dead 6-7 -> frame 0, the idle picture: this legacy sheet holds a different creature in those frames (cowir-main ruling 23683, option a, tip 2; manifest only, PNG untouched; a regen swaps the ranges back).",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 8,
@@ -2333,16 +2357,16 @@
           "end": 1
         },
         "attack": {
-          "start": 2,
-          "end": 3
+          "start": 0,
+          "end": 0
         },
         "hit": {
-          "start": 4,
-          "end": 5
+          "start": 0,
+          "end": 0
         },
         "dead": {
-          "start": 6,
-          "end": 7
+          "start": 0,
+          "end": 0
         }
       },
       "tier": "T1",
@@ -2376,6 +2400,7 @@
     },
     "masterite_tempo_suburban": {
       "path": "res://assets/sprites/monsters/masterite_tempo_suburban.png",
+      "source": "attack 2-3, hit 4-5, dead 6-7 -> frame 3, the idle picture: this legacy sheet holds a different creature in those frames (cowir-main ruling 23683, option a, tip 2; manifest only, PNG untouched; a regen swaps the ranges back).",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 8,
@@ -2385,16 +2410,16 @@
           "end": 4
         },
         "attack": {
-          "start": 2,
+          "start": 3,
           "end": 3
         },
         "hit": {
-          "start": 4,
-          "end": 5
+          "start": 3,
+          "end": 3
         },
         "dead": {
-          "start": 6,
-          "end": 7
+          "start": 3,
+          "end": 3
         }
       },
       "tier": "T1",
@@ -2402,7 +2427,7 @@
     },
     "masterite_warden_abstract": {
       "path": "res://assets/sprites/monsters/masterite_warden_abstract.png",
-      "source": "dead 6-7 -> 7: frame 6 is an opaque panel of thumbnail sprites (cowir-sprites audit 2026-11-11, manifest only, PNG untouched).",
+      "source": "dead 6-7 -> 7: frame 6 is an opaque panel of thumbnail sprites (cowir-sprites audit 2026-11-11, manifest only, PNG untouched). attack 2-3, hit 4-5, dead 7-7 -> frame 3, the idle picture: this legacy sheet holds a different creature in those frames (cowir-main ruling 23683, option a, tip 2; manifest only, PNG untouched; a regen swaps the ranges back).",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 8,
@@ -2412,16 +2437,16 @@
           "end": 4
         },
         "attack": {
-          "start": 2,
+          "start": 3,
           "end": 3
         },
         "hit": {
-          "start": 4,
-          "end": 5
+          "start": 3,
+          "end": 3
         },
         "dead": {
-          "start": 7,
-          "end": 7
+          "start": 3,
+          "end": 3
         }
       },
       "tier": "T1",
@@ -2429,6 +2454,7 @@
     },
     "masterite_warden_futuristic": {
       "path": "res://assets/sprites/monsters/masterite_warden_futuristic.png",
+      "source": "attack 2-3, hit 4-5, dead 6-7 -> frame 3, the idle picture: this legacy sheet holds a different creature in those frames (cowir-main ruling 23683, option a, tip 2; manifest only, PNG untouched; a regen swaps the ranges back).",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 8,
@@ -2438,16 +2464,16 @@
           "end": 4
         },
         "attack": {
-          "start": 2,
+          "start": 3,
           "end": 3
         },
         "hit": {
-          "start": 4,
-          "end": 5
+          "start": 3,
+          "end": 3
         },
         "dead": {
-          "start": 6,
-          "end": 7
+          "start": 3,
+          "end": 3
         }
       },
       "tier": "T1",
@@ -2455,6 +2481,7 @@
     },
     "masterite_warden_industrial": {
       "path": "res://assets/sprites/monsters/masterite_warden_industrial.png",
+      "source": "attack 2-3, hit 4-5, dead 6-7 -> frame 0, the idle picture: this legacy sheet holds a different creature in those frames (cowir-main ruling 23683, option a, tip 2; manifest only, PNG untouched; a regen swaps the ranges back).",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 8,
@@ -2464,16 +2491,16 @@
           "end": 1
         },
         "attack": {
-          "start": 2,
-          "end": 3
+          "start": 0,
+          "end": 0
         },
         "hit": {
-          "start": 4,
-          "end": 5
+          "start": 0,
+          "end": 0
         },
         "dead": {
-          "start": 6,
-          "end": 7
+          "start": 0,
+          "end": 0
         }
       },
       "tier": "T1",
@@ -2481,6 +2508,7 @@
     },
     "masterite_warden_medieval": {
       "path": "res://assets/sprites/monsters/masterite_warden_medieval.png",
+      "source": "attack 2-3, hit 4-5, dead 6-7 -> frame 0, the idle picture: this legacy sheet holds a different creature in those frames (cowir-main ruling 23683, option a, tip 2; manifest only, PNG untouched; a regen swaps the ranges back).",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 8,
@@ -2490,16 +2518,16 @@
           "end": 1
         },
         "attack": {
-          "start": 2,
-          "end": 3
+          "start": 0,
+          "end": 0
         },
         "hit": {
-          "start": 4,
-          "end": 5
+          "start": 0,
+          "end": 0
         },
         "dead": {
-          "start": 6,
-          "end": 7
+          "start": 0,
+          "end": 0
         }
       },
       "tier": "T1",
@@ -2533,6 +2561,7 @@
     },
     "masterite_warden_suburban": {
       "path": "res://assets/sprites/monsters/masterite_warden_suburban.png",
+      "source": "attack 2-3, hit 4-5, dead 6-7 -> frame 0, the idle picture: this legacy sheet holds a different creature in those frames (cowir-main ruling 23683, option a, tip 2; manifest only, PNG untouched; a regen swaps the ranges back).",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 8,
@@ -2542,16 +2571,16 @@
           "end": 1
         },
         "attack": {
-          "start": 2,
-          "end": 3
+          "start": 0,
+          "end": 0
         },
         "hit": {
-          "start": 4,
-          "end": 5
+          "start": 0,
+          "end": 0
         },
         "dead": {
-          "start": 6,
-          "end": 7
+          "start": 0,
+          "end": 0
         }
       },
       "tier": "T1",
@@ -2559,6 +2588,7 @@
     },
     "memory_leak": {
       "path": "res://assets/sprites/monsters/memory_leak.png",
+      "source": "attack 2-3, hit 4-5, dead 6-7 -> frame 2, the idle picture: this legacy sheet holds a different creature in those frames (cowir-main ruling 23683, option a, tip 2; manifest only, PNG untouched; a regen swaps the ranges back).",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 8,
@@ -2569,15 +2599,15 @@
         },
         "attack": {
           "start": 2,
-          "end": 3
+          "end": 2
         },
         "hit": {
-          "start": 4,
-          "end": 5
+          "start": 2,
+          "end": 2
         },
         "dead": {
-          "start": 6,
-          "end": 7
+          "start": 2,
+          "end": 2
         }
       },
       "tier": "T1",
@@ -2585,6 +2615,7 @@
     },
     "meta_knight": {
       "path": "res://assets/sprites/monsters/meta_knight.png",
+      "source": "attack 2-3, hit 4-5, dead 6-7 -> frame 1, the idle picture: this legacy sheet holds a different creature in those frames (cowir-main ruling 23683, option a, tip 2; manifest only, PNG untouched; a regen swaps the ranges back).",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 8,
@@ -2594,16 +2625,16 @@
           "end": 1
         },
         "attack": {
-          "start": 2,
-          "end": 3
+          "start": 1,
+          "end": 1
         },
         "hit": {
-          "start": 4,
-          "end": 5
+          "start": 1,
+          "end": 1
         },
         "dead": {
-          "start": 6,
-          "end": 7
+          "start": 1,
+          "end": 1
         }
       },
       "tier": "T1",
@@ -2613,7 +2644,7 @@
     },
     "mushroom": {
       "path": "res://assets/sprites/monsters/mushroom.png",
-      "source": "dead 6-7 -> 7: frame 6 sits in a white framed box (cowir-sprites audit 2026-11-11, manifest only, PNG untouched).",
+      "source": "dead 6-7 -> 7: frame 6 sits in a white framed box (cowir-sprites audit 2026-11-11, manifest only, PNG untouched). attack 2-3, hit 4-5, dead 7-7 -> frame 0, the idle picture: this legacy sheet holds a different creature in those frames (cowir-main ruling 23683, option a, tip 2; manifest only, PNG untouched; a regen swaps the ranges back).",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 5,
@@ -2624,16 +2655,16 @@
           "end": 1
         },
         "attack": {
-          "start": 2,
-          "end": 3
+          "start": 0,
+          "end": 0
         },
         "hit": {
-          "start": 4,
-          "end": 5
+          "start": 0,
+          "end": 0
         },
         "dead": {
-          "start": 7,
-          "end": 7
+          "start": 0,
+          "end": 0
         }
       },
       "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
@@ -2667,6 +2698,7 @@
     },
     "null_entity": {
       "path": "res://assets/sprites/monsters/null_entity.png",
+      "source": "attack 2-3, hit 4-5, dead 6-7 -> frame 3, the idle picture: this legacy sheet holds a different creature in those frames (cowir-main ruling 23683, option a, tip 2; manifest only, PNG untouched; a regen swaps the ranges back).",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 8,
@@ -2676,16 +2708,16 @@
           "end": 3
         },
         "attack": {
-          "start": 2,
+          "start": 3,
           "end": 3
         },
         "hit": {
-          "start": 4,
-          "end": 5
+          "start": 3,
+          "end": 3
         },
         "dead": {
-          "start": 6,
-          "end": 7
+          "start": 3,
+          "end": 3
         }
       },
       "tier": "T1",
@@ -2693,6 +2725,7 @@
     },
     "optimization_itself": {
       "path": "res://assets/sprites/monsters/optimization_itself.png",
+      "source": "attack 2-3, hit 4-5, dead 6-7 -> frame 2, the idle picture: this legacy sheet holds a different creature in those frames (cowir-main ruling 23683, option a, tip 2; manifest only, PNG untouched; a regen swaps the ranges back).",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 8,
@@ -2703,15 +2736,15 @@
         },
         "attack": {
           "start": 2,
-          "end": 3
+          "end": 2
         },
         "hit": {
-          "start": 4,
-          "end": 5
+          "start": 2,
+          "end": 2
         },
         "dead": {
-          "start": 6,
-          "end": 7
+          "start": 2,
+          "end": 2
         }
       },
       "tier": "T1",
@@ -2719,6 +2752,7 @@
     },
     "permadeath_reaper": {
       "path": "res://assets/sprites/monsters/permadeath_reaper.png",
+      "source": "attack 2-3, hit 4-5, dead 6-7 -> frame 0, the idle picture: this legacy sheet holds a different creature in those frames (cowir-main ruling 23683, option a, tip 2; manifest only, PNG untouched; a regen swaps the ranges back).",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 8,
@@ -2728,16 +2762,16 @@
           "end": 1
         },
         "attack": {
-          "start": 2,
-          "end": 3
+          "start": 0,
+          "end": 0
         },
         "hit": {
-          "start": 4,
-          "end": 5
+          "start": 0,
+          "end": 0
         },
         "dead": {
-          "start": 6,
-          "end": 7
+          "start": 0,
+          "end": 0
         }
       },
       "tier": "T1",
@@ -2745,6 +2779,7 @@
     },
     "pipe_phantom": {
       "path": "res://assets/sprites/monsters/pipe_phantom.png",
+      "source": "attack 2-3, hit 4-5, dead 6-7 -> frame 2, the idle picture: this legacy sheet holds a different creature in those frames (cowir-main ruling 23683, option a, tip 2; manifest only, PNG untouched; a regen swaps the ranges back).",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 8,
@@ -2755,15 +2790,15 @@
         },
         "attack": {
           "start": 2,
-          "end": 3
+          "end": 2
         },
         "hit": {
-          "start": 4,
-          "end": 5
+          "start": 2,
+          "end": 2
         },
         "dead": {
-          "start": 6,
-          "end": 7
+          "start": 2,
+          "end": 2
         }
       },
       "tier": "T1",
@@ -2797,6 +2832,7 @@
     },
     "recursive_loop": {
       "path": "res://assets/sprites/monsters/recursive_loop.png",
+      "source": "attack 2-3, hit 4-5, dead 6-7 -> frame 0, the idle picture: this legacy sheet holds a different creature in those frames (cowir-main ruling 23683, option a, tip 2; manifest only, PNG untouched; a regen swaps the ranges back).",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 8,
@@ -2806,16 +2842,16 @@
           "end": 1
         },
         "attack": {
-          "start": 2,
-          "end": 3
+          "start": 0,
+          "end": 0
         },
         "hit": {
-          "start": 4,
-          "end": 5
+          "start": 0,
+          "end": 0
         },
         "dead": {
-          "start": 6,
-          "end": 7
+          "start": 0,
+          "end": 0
         }
       },
       "tier": "T1",
@@ -2901,6 +2937,7 @@
     },
     "rogue_process": {
       "path": "res://assets/sprites/monsters/rogue_process.png",
+      "source": "attack 2-3, hit 4-5, dead 6-7 -> frame 2, the idle picture: this legacy sheet holds a different creature in those frames (cowir-main ruling 23683, option a, tip 2; manifest only, PNG untouched; a regen swaps the ranges back).",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 8,
@@ -2911,15 +2948,15 @@
         },
         "attack": {
           "start": 2,
-          "end": 3
+          "end": 2
         },
         "hit": {
-          "start": 4,
-          "end": 5
+          "start": 2,
+          "end": 2
         },
         "dead": {
-          "start": 6,
-          "end": 7
+          "start": 2,
+          "end": 2
         }
       },
       "tier": "T1",
@@ -2927,6 +2964,7 @@
     },
     "rust_elemental": {
       "path": "res://assets/sprites/monsters/rust_elemental.png",
+      "source": "attack 2-3, hit 4-5, dead 6-7 -> frame 0, the idle picture: this legacy sheet holds a different creature in those frames (cowir-main ruling 23683, option a, tip 2; manifest only, PNG untouched; a regen swaps the ranges back).",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 8,
@@ -2936,16 +2974,16 @@
           "end": 1
         },
         "attack": {
-          "start": 2,
-          "end": 3
+          "start": 0,
+          "end": 0
         },
         "hit": {
-          "start": 4,
-          "end": 5
+          "start": 0,
+          "end": 0
         },
         "dead": {
-          "start": 6,
-          "end": 7
+          "start": 0,
+          "end": 0
         }
       },
       "tier": "T1",
@@ -2955,6 +2993,7 @@
     },
     "script_error": {
       "path": "res://assets/sprites/monsters/script_error.png",
+      "source": "attack 2-3, hit 4-5, dead 6-7 -> frame 0, the idle picture: this legacy sheet holds a different creature in those frames (cowir-main ruling 23683, option a, tip 2; manifest only, PNG untouched; a regen swaps the ranges back).",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 8,
@@ -2964,16 +3003,16 @@
           "end": 1
         },
         "attack": {
-          "start": 2,
-          "end": 3
+          "start": 0,
+          "end": 0
         },
         "hit": {
-          "start": 4,
-          "end": 5
+          "start": 0,
+          "end": 0
         },
         "dead": {
-          "start": 6,
-          "end": 7
+          "start": 0,
+          "end": 0
         }
       },
       "tier": "T1",
@@ -3007,6 +3046,7 @@
     },
     "shadow_knight": {
       "path": "res://assets/sprites/monsters/shadow_knight.png",
+      "source": "hit 4-5, dead 6-7 -> frame 0, the idle picture: this legacy sheet holds a different creature in those frames (cowir-main ruling 23683, option a, tip 2; manifest only, PNG untouched; a regen swaps the ranges back).",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 6,
@@ -3021,18 +3061,19 @@
           "end": 3
         },
         "hit": {
-          "start": 4,
-          "end": 5
+          "start": 0,
+          "end": 0
         },
         "dead": {
-          "start": 6,
-          "end": 7
+          "start": 0,
+          "end": 0
         }
       },
       "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
     },
     "shift_supervisor": {
       "path": "res://assets/sprites/monsters/shift_supervisor.png",
+      "source": "attack 2-3, hit 4-5, dead 6-7 -> frame 0, the idle picture: this legacy sheet holds a different creature in those frames (cowir-main ruling 23683, option a, tip 2; manifest only, PNG untouched; a regen swaps the ranges back).",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 8,
@@ -3042,16 +3083,16 @@
           "end": 1
         },
         "attack": {
-          "start": 2,
-          "end": 3
+          "start": 0,
+          "end": 0
         },
         "hit": {
-          "start": 4,
-          "end": 5
+          "start": 0,
+          "end": 0
         },
         "dead": {
-          "start": 6,
-          "end": 7
+          "start": 0,
+          "end": 0
         }
       },
       "tier": "T1",
@@ -3322,6 +3363,7 @@
     },
     "specter": {
       "path": "res://assets/sprites/monsters/specter.png",
+      "source": "attack 2-3, hit 4-5, dead 6-7 -> frame 3, the idle picture: this legacy sheet holds a different creature in those frames (cowir-main ruling 23683, option a, tip 2; manifest only, PNG untouched; a regen swaps the ranges back).",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 8,
@@ -3331,16 +3373,16 @@
           "end": 3
         },
         "attack": {
-          "start": 2,
+          "start": 3,
           "end": 3
         },
         "hit": {
-          "start": 4,
-          "end": 5
+          "start": 3,
+          "end": 3
         },
         "dead": {
-          "start": 6,
-          "end": 7
+          "start": 3,
+          "end": 3
         }
       },
       "tier": "T1",
@@ -3374,6 +3416,7 @@
     },
     "spiteful_crow": {
       "path": "res://assets/sprites/monsters/spiteful_crow.png",
+      "source": "hit 4-5, dead 6-7 -> frame 3, the idle picture: this legacy sheet holds a different creature in those frames (cowir-main ruling 23683, option a, tip 2; manifest only, PNG untouched; a regen swaps the ranges back).",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 8,
@@ -3387,12 +3430,12 @@
           "end": 3
         },
         "hit": {
-          "start": 4,
-          "end": 5
+          "start": 3,
+          "end": 3
         },
         "dead": {
-          "start": 6,
-          "end": 7
+          "start": 3,
+          "end": 3
         }
       },
       "tier": "T1",
@@ -3427,6 +3470,7 @@
     },
     "the_absence": {
       "path": "res://assets/sprites/monsters/the_absence.png",
+      "source": "attack 2-3, hit 4-5, dead 6-7 -> frame 2, the idle picture: this legacy sheet holds a different creature in those frames (cowir-main ruling 23683, option a, tip 2; manifest only, PNG untouched; a regen swaps the ranges back).",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 8,
@@ -3437,15 +3481,15 @@
         },
         "attack": {
           "start": 2,
-          "end": 3
+          "end": 2
         },
         "hit": {
-          "start": 4,
-          "end": 5
+          "start": 2,
+          "end": 2
         },
         "dead": {
-          "start": 6,
-          "end": 7
+          "start": 2,
+          "end": 2
         }
       },
       "tier": "T1",
@@ -3869,16 +3913,16 @@
           "end": 3
         },
         "hit": {
-          "start": 4,
-          "end": 5
+          "start": 0,
+          "end": 0
         },
         "dead": {
-          "start": 6,
-          "end": 7
+          "start": 0,
+          "end": 0
         }
       },
       "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)",
-      "source": "reuses shadow_knight sheet — the Warden wears the guard's own plate; freed when Mordaine got her T2 sheet | 2026-09-06 facing audit (struktured: 'lots of backward sprites'): drawn facing LEFT, flip baked into the pixels per-frame; monsters face RIGHT."
+      "source": "reuses shadow_knight sheet — the Warden wears the guard's own plate; freed when Mordaine got her T2 sheet | 2026-09-06 facing audit (struktured: 'lots of backward sprites'): drawn facing LEFT, flip baked into the pixels per-frame; monsters face RIGHT. hit 4-5, dead 6-7 -> frame 0, the idle picture: this legacy sheet holds a different creature in those frames (cowir-main ruling 23683, option a, tip 2; manifest only, PNG untouched; a regen swaps the ranges back)."
     },
     "dark_knight": {
       "path": "res://assets/sprites/monsters/dark_knight.png",
@@ -3970,20 +4014,20 @@
           "end": 1
         },
         "attack": {
-          "start": 2,
-          "end": 3
+          "start": 0,
+          "end": 0
         },
         "hit": {
-          "start": 4,
-          "end": 5
+          "start": 0,
+          "end": 0
         },
         "dead": {
-          "start": 7,
-          "end": 7
+          "start": 0,
+          "end": 0
         }
       },
       "tier": "T1",
-      "source": "DELIBERATE REUSE of masterite_arbiter_abstract.png — the Margin is the ONE-SHOT trial in the Vertex Antechamber, and one more face of the Calibrant, which wears the masks it has already spent on you. Same call as the_calibrant reusing chancellor_mordaine.png, and modelled on that entry down to this field: tier T1 is the REUSED art's tier, not a generation of mine — no PNG was written or touched. The bespoke sheet is cowir-sprites' call, briefed by this monster's _META_trial line in monsters.json and its bestiary entry; replace this entry when it ships. Registering SOMETHING here is not optional polish: without an entry test_monster_sprite_coverage_derived is right that a sub-final boss renders as a SLIME, so this is the floor, not the plan. dead 6-7 -> 7: frame 6 is an opaque panel of ~30 thumbnail sprites (cowir-sprites audit 2026-11-11, manifest only, PNG untouched)."
+      "source": "DELIBERATE REUSE of masterite_arbiter_abstract.png — the Margin is the ONE-SHOT trial in the Vertex Antechamber, and one more face of the Calibrant, which wears the masks it has already spent on you. Same call as the_calibrant reusing chancellor_mordaine.png, and modelled on that entry down to this field: tier T1 is the REUSED art's tier, not a generation of mine — no PNG was written or touched. The bespoke sheet is cowir-sprites' call, briefed by this monster's _META_trial line in monsters.json and its bestiary entry; replace this entry when it ships. Registering SOMETHING here is not optional polish: without an entry test_monster_sprite_coverage_derived is right that a sub-final boss renders as a SLIME, so this is the floor, not the plan. dead 6-7 -> 7: frame 6 is an opaque panel of ~30 thumbnail sprites (cowir-sprites audit 2026-11-11, manifest only, PNG untouched). attack 2-3, hit 4-5, dead 7-7 -> frame 0, the idle picture: this legacy sheet holds a different creature in those frames (cowir-main ruling 23683, option a, tip 2; manifest only, PNG untouched; a regen swaps the ranges back)."
     }
   },
   "npc_sheets": {

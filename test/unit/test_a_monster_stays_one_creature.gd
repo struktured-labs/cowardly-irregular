@@ -1,7 +1,7 @@
 extends GutTest
 
 ## Sprite audit 2026-11-11 (cowir-sprites 23682 S4, cowir-main ruling 23683). About 48 legacy AI sheets hold a different
-## creature in almost every frame: the unassuming dog attacked as a husky, was hit as a bulldog and died as a corgi.
+## creature in almost every frame (17 early-game sheets in tip 1, 53 from the later worlds in tip 2): the unassuming dog attacked as a husky, was hit as a bulldog and died as a corgi.
 ## Each frame is a legal 256 px frame, so nothing failed. Until those sheets are redrawn, a sheet on this REVIEWED list
 ## plays its idle picture for attack, hit and dead (manifest only; the engine's lunge, knockback and death fade carry the
 ## motion), and this guard keeps every frame it shows on that one creature. The list is by eye, not by tier: a sheet
@@ -12,7 +12,18 @@ const MIN_OVERLAP := 0.70
 const ONE_CREATURE_BY_REPOINT := [
 	"unassuming_dog", "cave_rat_king", "troll", "snake", "viper", "toxic_sludge", "cranky_lady", "skate_punk",
 	"new_age_retro_hippie", "treasure_mimic", "fungoid", "diseased_rat", "elder_mushroom", "giant_bat",
-	"blood_wolf_alpha", "steam_rat", "conveyor_gremlin",
+	"blood_wolf_alpha", "steam_rat", "conveyor_gremlin", "adaptive_slime", "assembly_line_automaton", "brass_golem",
+	"castle_warden", "clockwork_sentinel", "cog_swarm", "corrupted_guardian", "corrupted_sprite", "crystal_golem",
+	"cursed_armor", "data_wraith", "elemental", "empty_set", "firewall_sentinel", "forgotten_variable",
+	"glitch_entity", "ice_wolf", "ironback_beetle", "masterite_arbiter_abstract", "masterite_arbiter_futuristic",
+	"masterite_arbiter_industrial", "masterite_arbiter_medieval", "masterite_arbiter_suburban",
+	"masterite_curator_futuristic", "masterite_curator_industrial", "masterite_curator_medieval",
+	"masterite_curator_suburban", "masterite_tempo_futuristic", "masterite_tempo_industrial",
+	"masterite_tempo_medieval", "masterite_tempo_suburban", "masterite_warden_abstract",
+	"masterite_warden_futuristic", "masterite_warden_industrial", "masterite_warden_medieval",
+	"masterite_warden_suburban", "memory_leak", "meta_knight", "mushroom", "null_entity", "optimization_itself",
+	"permadeath_reaper", "pipe_phantom", "recursive_loop", "rogue_process", "rust_elemental", "script_error",
+	"shadow_knight", "shift_supervisor", "specter", "spiteful_crow", "the_absence", "the_margin",
 ]
 
 
