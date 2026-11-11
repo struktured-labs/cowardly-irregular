@@ -1,11 +1,12 @@
 extends GutTest
 
-## Sprite audit 2026-11-11 (cowir-sprites 23682 S4, cowir-main ruling 23683). About 48 legacy AI sheets hold a different
-## creature in almost every frame (17 early-game sheets in tip 1, 53 from the later worlds in tip 2): the unassuming dog attacked as a husky, was hit as a bulldog and died as a corgi.
-## Each frame is a legal 256 px frame, so nothing failed. Until those sheets are redrawn, a sheet on this REVIEWED list
-## plays its idle picture for attack, hit and dead (manifest only; the engine's lunge, knockback and death fade carry the
-## motion), and this guard keeps every frame it shows on that one creature. The list is by eye, not by tier: a sheet
-## whose other frames ARE the same creature stays off it. Re-review an entry when its art is redrawn.
+## Sprite audit 2026-11-11 (cowir-sprites 23682 S4, cowir-main ruling 23683). 70 legacy AI sheets (17 early-game ones in
+## tip 1, 53 from the later worlds in tip 2) hold a different creature in almost every frame: the unassuming dog attacked
+## as a husky, was hit as a bulldog and died as a corgi. Each frame is a legal 256 px frame, so nothing failed. Until those
+## sheets are redrawn, a sheet on this REVIEWED list plays its idle picture for attack, hit and dead (manifest only; the
+## engine's lunge, knockback and death fade carry the motion), and this guard keeps every frame it shows on that one
+## creature. The list is by eye, not by tier: a sheet whose other frames ARE the same creature stays off it, and so does
+## the ghost, whose wisp death is the design. Re-review an entry when its art is redrawn.
 
 ## A live frame must overlap one of its sheet's idle frames by at least this much (the idle guard's own floor).
 const MIN_OVERLAP := 0.70
