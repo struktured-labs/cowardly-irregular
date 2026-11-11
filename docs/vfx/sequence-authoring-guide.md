@@ -23,13 +23,13 @@ and an ability names it in `data/abilities.json`:
 ```json
 "fire_battle": {
   "label": "one line: what the player sees",
-  "start": 0.75,
-  "impact": 0.58,
+  "start": 0.15,
+  "impact": 0.88,
   "phases": [
-    {"kind": "gather", "origin": "caster", "at": 0.0, "dur": 0.30, "count": 18, "palette": "flame"},
-    {"kind": "bolt", "at": 0.30, "dur": 0.28, "palette": "flame", "sfx": "beat_fire_burst"},
-    {"kind": "eruption", "at": 0.58, "element": "fire", "power": 1.0, "boost": 1.6, "sfx": "beat_fire_impact"},
-    {"kind": "fall", "at": 0.70, "dur": 0.60, "count": 18, "palette": "ember"}
+    {"kind": "gather", "origin": "hand", "at": 0.0, "dur": 0.60, "count": 18, "palette": "flame"},
+    {"kind": "bolt", "at": 0.60, "dur": 0.28, "palette": "flame", "sfx": "beat_fire_burst"},
+    {"kind": "eruption", "at": 0.88, "element": "fire", "power": 1.0, "boost": 1.6, "sfx": "beat_fire_impact"},
+    {"kind": "fall", "at": 1.00, "dur": 0.60, "count": 18, "palette": "ember"}
   ]
 }
 ```
@@ -38,8 +38,13 @@ All times are **battle seconds**. They scale with battle speed like every other
 battle animation, so nothing here is a wall-clock number.
 
 - `start` is the delay from the action's start to the sequence's first phase.
-  For a cast it is the caster's release frame (the Mage's cast releases on
-  frame 6, 0.75 s). For a melee overlay it is the lunge's contact, 0.17 s.
+  **The wind-up starts WITH the cast pose** (`start` about 0.15), and the
+  launch lands on the pose's release frame (the Mage's cast releases on frame
+  6, 0.75 s after the action). A sequence that waits for the release before
+  drawing anything leaves 2 real seconds of nothing at the default speed. For
+  a melee overlay `start` is the lunge's contact, passed in by the engine.
+- A showcase with a title card may name a sequence-level `windup` phase (a
+  `gather` at the caster): it plays under the card, for the card's length.
 - The ability's cast sound plays at the **action's** start, `start` seconds
   before your first phase. A phase at `at: 0.0` is not doubled by it.
 - `impact` is when the hit lands, measured from `start`. See rule 1 below.
@@ -62,7 +67,7 @@ counts for size, and a new phase for each tier.
 
 ## 3. Phase kinds
 
-Every phase takes: `kind`, `at`, `dur`, `origin` (`"caster"` or `"target"`,
+Every phase takes: `kind`, `at`, `dur`, `origin` (`"target"`: the target's body, the default; `"caster"`: the caster's body; `"hand"`: the caster's hand, where a bolt leaves from. All three are measured on the FIGURE, not its frame,
 default target), `offset` `[x, y]`, `sfx`, `min_tier` (1-3), `palette` and
 `palette_t3` (the palette at intensity tier 3).
 
@@ -114,17 +119,19 @@ Add a row there. Never put a colour in a phase.
 
 ## 5. Timing budgets
 
-The battle holds for `impact + 0.35` s, then the next action starts while your
-aftermath finishes. Keep the impact inside these, from `start`:
+The battle holds until 0.35 s after the impact, then the next action starts while your
+aftermath finishes. Keep the impact inside these:
 
-| Tier | Phases | Impact at | Example |
+Measured from the action's start (`start` + `impact`):
+
+| Tier | Phases | Impact by | Example |
 |---|---|---|---|
-| 1 | 3-4 | ≤ 0.60 s | Fire 0.58 |
-| 2 | 4-5 | ≤ 0.65 s | Fira 0.62 |
-| 3 / showcase | 5-6+ | ≤ 0.70 s | Firaga 0.66, second blast at 0.98 |
+| 1 | 3-4 | 1.35 s | Fire 1.03 |
+| 2 | 4-5 | 1.40 s | Fira 1.03 |
+| 3 / showcase | 5-6+ | 1.45 s after its card | Firaga 1.03, second blast at 1.35 |
 
 A free or 0-MP move (Pray, Channel, Riff) stays small: two or three phases,
-impact by 0.40 s.
+impact within 0.40 s of its release.
 
 ## 6. Outcomes read apart
 
