@@ -143,7 +143,22 @@ func _init() -> void:
 	var mdb: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/monsters.json"))
 	if mdb == null or mdb.is_empty():
 		_die("monsters.json did not parse"); quit(1); return
+	## A floor's re-levelled spawn ("imp@L13") becomes its own row here, scaled by the game's own EncounterSystem.apply_spawn_level.
+	var es_script: Script = load("res://src/encounters/EncounterSystem.gd")
+	var catalog: Dictionary = mdb.duplicate(true)
 	for eid in enemy_ids:
+		var want_level: int = es_script.spawn_level_of(str(eid))
+		if want_level > 0 and mdb.has(es_script.spawn_base_id(str(eid))):
+			var row: Dictionary = (mdb[es_script.spawn_base_id(str(eid))] as Dictionary).duplicate(true)
+			var flat: Dictionary = (row.get("stats", {}) as Dictionary).duplicate()
+			for k in ["level", "exp_reward", "gold_reward"]:
+				flat[k] = row.get(k, 1)
+			flat = es_script.apply_spawn_level(flat, want_level, catalog)
+			for k in ["level", "exp_reward", "gold_reward"]:
+				row[k] = flat[k]
+			for k in row["stats"]:
+				row["stats"][k] = flat.get(k, row["stats"][k])
+			mdb[str(eid)] = row
 		if not mdb.has(eid):
 			_die("no monster '%s' in monsters.json" % eid); quit(1); return
 

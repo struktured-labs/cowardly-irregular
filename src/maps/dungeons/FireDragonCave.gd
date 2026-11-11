@@ -112,11 +112,12 @@ func _init() -> void:
 		1: {"entrance": Vector2(10, 13)},
 	}
 
+	## Each floor re-levels its species ("@L<n>") toward the boss, so the cave is a fight and pays its level's EXP.
 	floor_encounter_pools = {
-		1: ["imp", "skeleton"],
-		2: ["imp", "skeleton", "goblin"],
-		3: ["imp", "goblin"],
-		4: ["imp", "skeleton", "goblin"],
+		1: ["imp@L13", "skeleton@L13"],
+		2: ["imp@L14", "skeleton@L14", "goblin@L14"],
+		3: ["imp@L14", "goblin@L14"],
+		4: ["imp@L15", "skeleton@L15", "goblin@L15"],
 		5: [],
 	}
 
