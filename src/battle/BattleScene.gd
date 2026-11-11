@@ -1974,6 +1974,10 @@ func _setup_status_icons(combatant: Combatant, sprite: AnimatedSprite2D) -> void
 		combatant.status_removed.connect(_on_combatant_status_changed.bind(combatant))
 	if not combatant.status_added.is_connected(_on_status_landed):
 		combatant.status_added.connect(_on_status_landed.bind(combatant))
+	if not combatant.status_removed.is_connected(_on_status_lapsed):
+		combatant.status_removed.connect(_on_status_lapsed.bind(combatant))
+	if not combatant.buff_changed.is_connected(_on_buff_changed):
+		combatant.buff_changed.connect(_on_buff_changed.bind(combatant))
 
 	# Show any existing statuses
 	_refresh_status_icons(combatant)
@@ -3344,7 +3348,11 @@ const FAMILY_SCALE_MAX := 2.0
 const FAMILY_ELEMENT_TINTS := {"dark": "void", "ice": "frost", "fire": "flame", "holy": "holy", "poison": "rot"}
 const FAMILY_EFFECT_TINTS := {"poison": "rot", "curse": "void"}
 ## A status that LANDS plays its own beat at the target; anything not listed lands with its aura alone.
-const LANDED_BEATS := {"stun": "landed_stun", "blind": "landed_blind", "sleep": "landed_sleep"}
+const LANDED_BEATS := {"stun": "landed_stun", "blind": "landed_blind", "sleep": "landed_sleep",
+	## Every status the game TINTS lands with a beat (adhoc, main 24001): afflictions rise off the body, the
+	## mind-benders close in on the head, a boon lifts. Derived guard: test_a_buff_lands_where_you_can_see_it.
+	"poison": "landed_poison", "burning": "landed_burning", "curse": "landed_curse",
+	"confuse": "landed_confuse", "fear": "landed_fear", "charm": "landed_charm", "regen": "landed_regen"}
 const FIZZLE_BEAT := "fizzle"
 ## A melee move resolves its damage and statuses at the action's START and arrives `_last_contact_in` later
 ## (0.17 s at the FULL tier, 0.12 below it: _animate_melee_attack). Outcome beats wait out what is left of this, so
@@ -3589,6 +3597,99 @@ func _crit_bloom() -> String:
 
 func _on_status_landed(status: String, combatant: Combatant) -> void:
 	_play_outcome_beat(landed_beat(status), combatant)
+
+
+## ---- A CHANGE YOU CAN SEE: a stat going up or down, and anything wearing off (adhoc, main 23993/24001). ----
+## One beat per change, at the combatant it happened to, through the same gates as an outcome beat (nothing
+## at turbo or in the console; it waits out a melee contact). Changes that arrive in ONE frame (a Battle Hymn
+## on five, a howl on the pack) are played as one gesture: staggered, and each drawn smaller, so five beats
+## are never five times one.
+const WORE_OFF_BEAT := "wore_off"
+const CHANGE_STAGGER := 0.06
+const CHANGE_BEATS_PER_COMBATANT := 2
+var _change_beats: Array = []       # [{seq, combatant}] asked for this frame
+var _last_change_plan: Array = []   # [{seq, delay, power}] as last played, for the guard
+
+
+## The beat for a stat moving: its own colour when the stat has one, else the plain up / down.
+static func stat_beat(stat: String, direction: int) -> String:
+	var base: String = "stat_up" if direction > 0 else "stat_down"
+	var own: String = "%s_%s" % [base, stat]
+	return own if not FractalFX.load_sequence(own).is_empty() else base
+
+
+## A formation stance (Front Line / Back Row) arrives as a buff AND a debuff; it is a posture, not a spell landing.
+func _on_buff_changed(stat: String, direction: int, added: bool, combatant: Combatant) -> void:
+	if combatant == null or not is_instance_valid(combatant) or not combatant.is_alive:
+		return
+	if added and _is_stance_change(combatant, stat, direction):
+		return
+	_queue_change_beat(stat_beat(stat, direction) if added else WORE_OFF_BEAT, combatant)
+
+
+func _is_stance_change(combatant: Combatant, stat: String, direction: int) -> bool:
+	var entries: Array = combatant.active_buffs if direction > 0 else combatant.active_debuffs
+	if entries.is_empty():
+		return false
+	var newest: Dictionary = entries[entries.size() - 1]
+	return str(newest.get("stat", "")) == stat and Combatant.is_formation_stance(newest)
+
+
+## A status that ends by itself (its turns ran out) gets the quiet wore-off beat. One removed INSIDE an action
+## was cured or dispelled, and that action's own effect is the read; a death takes its statuses silently.
+func _on_status_lapsed(status: String, combatant: Combatant) -> void:
+	if combatant == null or not is_instance_valid(combatant) or not combatant.is_alive:
+		return
+	if _last_acting_combatant != null or landed_beat(status) == "":
+		return
+	_queue_change_beat(WORE_OFF_BEAT, combatant)
+
+
+func _queue_change_beat(seq_id: String, combatant: Combatant) -> void:
+	if seq_id == "" or not signature_sound_allowed():
+		return
+	var mine := 0
+	for asked in _change_beats:
+		if asked["combatant"] == combatant:
+			mine += 1
+			## Two stats falling off one member at once is ONE wore-off, not two puffs.
+			if asked["seq"] == seq_id:
+				return
+	if mine >= CHANGE_BEATS_PER_COMBATANT:
+		return
+	_change_beats.append({"seq": seq_id, "combatant": combatant})
+	if _change_beats.size() == 1:
+		_play_change_beats.call_deferred()
+
+
+## Scale for N beats in one gesture: 1/sqrt(N), or 1/N under Reduce Flashes (the whole gesture no brighter than one).
+static func change_beat_power(count: int, reduced: bool) -> float:
+	var n: float = maxf(1.0, float(count))
+	return 1.0 / n if reduced else 1.0 / sqrt(n)
+
+
+func _play_change_beats() -> void:
+	var asked: Array = _change_beats
+	_change_beats = []
+	_last_change_plan = []
+	if not is_inside_tree():
+		return
+	var power: float = change_beat_power(asked.size(), _flashes_suppressed())
+	var wait: float = _melee_contact_timer.time_left if _melee_contact_timer != null else 0.0
+	for i in asked.size():
+		var who: Combatant = asked[i]["combatant"]
+		if who == null or not is_instance_valid(who):
+			continue
+		var sprite = _get_combatant_sprite(who)
+		if sprite == null or not is_instance_valid(sprite):
+			continue
+		var at := _figure_anchor(sprite)
+		var delay: float = wait + CHANGE_STAGGER * float(i)
+		_last_change_plan.append({"seq": asked[i]["seq"], "delay": delay, "power": power})
+		if delay > 0.0:
+			get_tree().create_timer(delay).timeout.connect(_spawn_outcome_sequence.bind(asked[i]["seq"], at, at, power))
+		else:
+			_spawn_outcome_sequence(asked[i]["seq"], at, at, power)
 
 
 func _on_steal_resolved(caster: Combatant, target: Combatant, success: bool) -> void:
@@ -5569,7 +5670,16 @@ func _delayed_play_hit_fx(target_anim, target_sprite) -> void:
 		else:
 			## Reduce Flashes: the spark stays (it says which weapon hit) but never grows past a light hit's size.
 			var spark_w: float = minf(w, HIT_SPARK_REDUCED_MAX) if _flashes_suppressed() else w
-			EffectSystem.spawn_hit_spark(_stable_sprite_anchor(target_sprite), hit_spark_for(_last_acting_combatant), spark_w, kb_dir, _hit_spark_tint(_last_acting_combatant), jt == BattleJuice.Tier.MINIMAL)
+			## Drawn on the FIGURE (cutscenes' _figure_anchor): a hero stands ~95 px off its frame's centre.
+			var struck: Vector2 = _figure_anchor(target_sprite)
+			var spark: String = hit_spark_for(_last_acting_combatant)
+			match hit_mark(str(_current_ability_id), spark):
+				"overlay":
+					pass  # the ability's own melee overlay owns the cut (sprites 24010); the weight still lands below
+				"family":
+					EffectSystem.spawn_sequence(HIT_FAMILY_PREFIX + spark, struck, struck, 1.0 + spark_w, {}, 1, not signature_sound_allowed())
+				_:
+					EffectSystem.spawn_hit_spark(struck, spark, spark_w, kb_dir, _hit_spark_tint(_last_acting_combatant), jt == BattleJuice.Tier.MINIMAL)
 		_apply_hit_knockback(target_sprite, kb_dir, lerpf(HIT_KNOCKBACK.x, HIT_KNOCKBACK.y, w))
 		_apply_hit_flash(target_sprite)
 		if jt <= BattleJuice.Tier.REDUCED:
@@ -5578,7 +5688,7 @@ func _delayed_play_hit_fx(target_anim, target_sprite) -> void:
 				var sparks: int = int(lerpf(HIT_SPARKS.x, HIT_SPARKS.y, w)) if jt == BattleJuice.Tier.FULL else 6
 				if _flashes_suppressed():
 					sparks = mini(sparks, 12)
-				BattleJuice.spawn_burst(_stable_sprite_anchor(target_sprite), Vector2(kb_dir, -0.35), sparks, Color(1.0, 0.9, 0.55), lerpf(250.0, 420.0, w))
+				BattleJuice.spawn_burst(_figure_anchor(target_sprite), Vector2(kb_dir, -0.35), sparks, Color(1.0, 0.9, 0.55), lerpf(250.0, 420.0, w))
 			BattleJuice.punch_zoom(_stable_sprite_anchor(target_sprite), lerpf(HIT_ZOOM.x, HIT_ZOOM.y, w) if jt == BattleJuice.Tier.FULL else HIT_ZOOM.x, 0.12 + 0.10 * w)
 		## The shake (and the pad's rumble) belong to hits that MATTER: nothing under HIT_TRAUMA_FROM, so a
 		## chip hit is as quiet as it was. The camera rig honours the Screen Shake setting, BattleJuice the rumble one.
@@ -5863,6 +5973,21 @@ func hit_spark_for(attacker: Combatant) -> String:
 		var row = _load_monsters_data().get(str(attacker.get_meta("monster_type", "")), {})
 		return str(row.get("hit_spark", "")) if row is Dictionary else ""
 	return _weapon_type_for(attacker)
+
+
+## What a hit DRAWS at contact: "overlay" when the acting ability has its own melee overlay (it owns the cut, so
+## no weapon spark is drawn under it), "family" when a plain attack's `hit_spark` names a family sequence that
+## exists (a wolf bites, a golem slams), else "spark": the code-drawn weapon shape, the claw for anything unnamed.
+const HIT_FAMILY_PREFIX := "family_"
+static func hit_mark(ability_id: String, spark: String) -> String:
+	if ability_id != "":
+		var ability: Dictionary = JobSystem.get_ability(ability_id)
+		if melee_overlay(ability, "melee") != "" or melee_overlay(ability, "melee_each") != "":
+			return "overlay"
+		return "spark"
+	if spark != "" and not FractalFX.load_sequence(HIT_FAMILY_PREFIX + spark).is_empty():
+		return "family"
+	return "spark"
 
 
 ## A weapon that carries an element tints its spark with that element's weakness colour, toned toward white.
@@ -6539,32 +6664,27 @@ func _apply_status_visual(sprite: Node2D, combatant: Combatant) -> void:
 const KO_MODULATE := Color(0.3, 0.3, 0.3, 0.7)
 
 
+const STATUS_TINTS := {
+	"poison": Color(0.7, 1.0, 0.7),     # Green tint
+	"burning": Color(1.0, 0.6, 0.4),    # Orange-red
+	"curse": Color(0.7, 0.4, 0.8),      # Purple
+	"stun": Color(1.0, 1.0, 0.5),       # Yellow
+	"sleep": Color(0.8, 0.8, 1.0),      # Pale blue
+	"blind": Color(0.6, 0.6, 0.7),      # Dark blue-gray
+	"confuse": Color(0.9, 0.6, 1.0),    # Light purple
+	"fear": Color(0.6, 0.6, 0.6),       # Desaturated gray
+	"charm": Color(1.0, 0.7, 0.8),      # Pink
+	"regen": Color(0.8, 1.0, 0.9),      # Soft green-white glow
+}
+
+
 ## The tint a living combatant's statuses give its sprite; the first matching status wins. The ONE table:
 ## BattleUIManager kept a second with six of these ten, so confuse, fear, charm and regen tints on a party
 ## member were wiped to white by the next UI refresh.
 static func status_tint(effects: Array) -> Color:
 	for effect in effects:
-		match effect:
-			"poison":
-				return Color(0.7, 1.0, 0.7)   # Green tint
-			"burning":
-				return Color(1.0, 0.6, 0.4)   # Orange-red
-			"curse":
-				return Color(0.7, 0.4, 0.8)   # Purple
-			"stun":
-				return Color(1.0, 1.0, 0.5)   # Yellow
-			"sleep":
-				return Color(0.8, 0.8, 1.0)   # Pale blue
-			"blind":
-				return Color(0.6, 0.6, 0.7)   # Dark blue-gray
-			"confuse":
-				return Color(0.9, 0.6, 1.0)  # Light purple
-			"fear":
-				return Color(0.6, 0.6, 0.6)  # Desaturated gray
-			"charm":
-				return Color(1.0, 0.7, 0.8)  # Pink
-			"regen":
-				return Color(0.8, 1.0, 0.9)  # Soft green-white glow
+		if STATUS_TINTS.has(effect):
+			return STATUS_TINTS[effect]
 	return Color.WHITE
 
 
