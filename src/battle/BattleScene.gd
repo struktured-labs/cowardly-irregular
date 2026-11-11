@@ -3075,6 +3075,18 @@ func glory_sequence(caster: Combatant, ability: Dictionary) -> String:
 	return seq_id if seq_id != "" and not FractalFX.load_sequence(seq_id).is_empty() else ""
 
 
+## The title card is not dead air (main 23890): a sequence's optional `windup` phase plays at the caster's hand for the
+## card's whole length, so a Firaga is already gathering heat while its name is on screen. Not at turbo or in the console.
+func _play_signature_windup(seq_id: String, caster_sprite: Node2D, windup: float, quiet: bool) -> bool:
+	var phase = FractalFX.load_sequence(seq_id).get("windup", {})
+	if quiet or not (phase is Dictionary) or (phase as Dictionary).is_empty() or caster_sprite == null or not is_instance_valid(caster_sprite):
+		return false
+	var facing: float = -1.0 if party_sprite_nodes.has(caster_sprite) else 1.0
+	var hand: Vector2 = _stable_sprite_anchor(caster_sprite) + Vector2(40.0 * facing, -20.0)
+	EffectSystem.run_element_phase(str(phase.get("kind", "gather")), hand, hand, 1.0, (phase as Dictionary).merged({"dur": windup}, true))
+	return true
+
+
 ## The card, the bark and the push, then the sequence. Damage numbers wait for its impact like Fire's.
 func _play_signature(caster: Combatant, caster_sprite: Node2D, animator: BattleAnimatorClass, ability: Dictionary, targets: Array, seq_id: String) -> void:
 	_flush_full_render_damage()
@@ -3117,6 +3129,7 @@ func _play_signature(caster: Combatant, caster_sprite: Node2D, animator: BattleA
 	_signature_stage(true, signature_tint(seq_id))
 	if caster_sprite != null and is_instance_valid(caster_sprite) and BattleJuice.camera_rig != null:
 		BattleJuice.camera_rig.punch_zoom(_stable_sprite_anchor(caster_sprite), SIGNATURE_PUSH, windup)
+	_play_signature_windup(seq_id, caster_sprite, windup, quiet)
 	await get_tree().create_timer(windup).timeout
 	if not is_instance_valid(self):
 		return

@@ -273,21 +273,21 @@
     },
     "fire_battle": {
       "label": "Fire: heat gathers, a flame flies, the original eruption, embers (main 23590)",
-      "start": 0.75,
-      "impact": 0.58,
-      "start_note": "mage/cast releases on f6 at 750 ms; damage lands at the eruption",
+      "start": 0.15,
+      "impact": 0.88,
+      "start_note": "the gather starts WITH the cast pose (main 23890) and the flame leaves on the pose's release frame, 0.75 s after the action",
       "phases": [
         {
           "kind": "gather",
           "origin": "caster",
           "at": 0.0,
-          "dur": 0.3,
+          "dur": 0.6,
           "count": 18,
           "palette": "flame"
         },
         {
           "kind": "bolt",
-          "at": 0.3,
+          "at": 0.6,
           "dur": 0.28,
           "arc_height": 44,
           "palette": "flame",
@@ -299,7 +299,7 @@
         },
         {
           "kind": "eruption",
-          "at": 0.58,
+          "at": 0.88,
           "power": 1.0,
           "boost": 1.6,
           "sfx": "beat_fire_impact",
@@ -307,20 +307,20 @@
         },
         {
           "kind": "flash",
-          "at": 0.58,
+          "at": 0.88,
           "dur": 0.16,
           "size": 6.0
         },
         {
           "kind": "fall",
-          "at": 0.7,
+          "at": 1.0,
           "dur": 0.6,
           "count": 18,
           "palette": "ember"
         },
         {
           "kind": "ring",
-          "at": 0.58,
+          "at": 0.88,
           "dur": 0.32,
           "min_tier": 3,
           "palette": "fire",
@@ -958,20 +958,20 @@
     },
     "glory_firaga": {
       "label": "Firaga: a huge gather, flames on every foe, the eruption, a pillar, a SECOND detonation, embers (main 23590)",
-      "start": 0.75,
-      "start_note": "mage/cast releases on f6 at 750 ms, like fire_battle",
+      "start": 0.15,
+      "start_note": "the gather starts WITH the cast pose (main 23890) and the flame leaves on the pose's release frame, 0.75 s after the action",
       "phases": [
         {
           "kind": "gather",
           "origin": "caster",
           "at": 0.0,
-          "dur": 0.38,
+          "dur": 0.6,
           "count": 34,
           "palette": "flame"
         },
         {
           "kind": "bolt",
-          "at": 0.38,
+          "at": 0.6,
           "dur": 0.28,
           "arc_height": 64,
           "palette": "flame",
@@ -983,21 +983,21 @@
         },
         {
           "kind": "eruption",
-          "at": 0.66,
+          "at": 0.88,
           "power": 2.0,
           "boost": 2.6,
           "element": "fire"
         },
         {
           "kind": "flash",
-          "at": 0.66,
+          "at": 0.88,
           "dur": 0.2,
           "size": 8.0,
           "sfx": "beat_fire_impact"
         },
         {
           "kind": "pillar",
-          "at": 0.7,
+          "at": 0.92,
           "dur": 0.36,
           "height": 320,
           "sfx": "beat_fire_bloom",
@@ -1005,7 +1005,7 @@
         },
         {
           "kind": "eruption",
-          "at": 0.98,
+          "at": 1.2,
           "power": 2.0,
           "boost": 3.0,
           "offset": [
@@ -1016,13 +1016,13 @@
         },
         {
           "kind": "flash",
-          "at": 0.98,
+          "at": 1.2,
           "dur": 0.24,
           "size": 10.0
         },
         {
           "kind": "ring",
-          "at": 0.98,
+          "at": 1.2,
           "dur": 0.4,
           "palette": "flame",
           "scale": 6.0,
@@ -1030,20 +1030,20 @@
         },
         {
           "kind": "shake",
-          "at": 0.98,
+          "at": 1.2,
           "dur": 0.3,
           "intensity": 14
         },
         {
           "kind": "fall",
-          "at": 1.05,
+          "at": 1.27,
           "dur": 0.65,
           "count": 32,
           "palette": "ember"
         },
         {
           "kind": "bolt",
-          "at": 0.42,
+          "at": 0.64,
           "dur": 0.24,
           "min_tier": 2,
           "arc_height": 110,
@@ -1055,7 +1055,7 @@
         },
         {
           "kind": "bolt",
-          "at": 0.46,
+          "at": 0.68,
           "dur": 0.2,
           "min_tier": 3,
           "arc_height": 20,
@@ -1066,7 +1066,7 @@
         },
         {
           "kind": "ring",
-          "at": 0.98,
+          "at": 1.2,
           "dur": 0.5,
           "min_tier": 3,
           "palette": "fire",
@@ -1078,7 +1078,13 @@
         0.25,
         0.04
       ],
-      "impact": 0.66
+      "impact": 0.88,
+      "windup": {
+        "kind": "gather",
+        "origin": "caster",
+        "count": 28,
+        "palette": "flame"
+      }
     },
     "glory_blizzaga": {
       "label": "Blizzaga: the air freezes, a crystal bloom, a held breath, the shatter",
@@ -2010,20 +2016,20 @@
     },
     "fira_battle": {
       "label": "Fira: a bigger gather, flame, eruption, a pillar of fire, embers (main 23590)",
-      "start": 0.75,
-      "impact": 0.62,
+      "start": 0.15,
+      "impact": 0.88,
       "phases": [
         {
           "kind": "gather",
           "origin": "caster",
           "at": 0.0,
-          "dur": 0.34,
+          "dur": 0.6,
           "count": 26,
           "palette": "flame"
         },
         {
           "kind": "bolt",
-          "at": 0.34,
+          "at": 0.6,
           "dur": 0.28,
           "arc_height": 52,
           "palette": "flame",
@@ -2035,20 +2041,20 @@
         },
         {
           "kind": "eruption",
-          "at": 0.62,
+          "at": 0.88,
           "power": 1.5,
           "boost": 2.0,
           "element": "fire"
         },
         {
           "kind": "flash",
-          "at": 0.62,
+          "at": 0.88,
           "dur": 0.18,
           "size": 7.0
         },
         {
           "kind": "pillar",
-          "at": 0.66,
+          "at": 0.92,
           "dur": 0.36,
           "height": 260,
           "sfx": "beat_fire_bloom",
@@ -2056,14 +2062,14 @@
         },
         {
           "kind": "fall",
-          "at": 0.8,
+          "at": 1.06,
           "dur": 0.65,
           "count": 24,
           "palette": "ember"
         },
         {
           "kind": "ring",
-          "at": 0.62,
+          "at": 0.88,
           "dur": 0.34,
           "min_tier": 2,
           "palette": "flame",
@@ -2072,7 +2078,7 @@
         },
         {
           "kind": "bolt",
-          "at": 0.38,
+          "at": 0.64,
           "dur": 0.24,
           "min_tier": 3,
           "arc_height": 90,
@@ -2081,7 +2087,8 @@
           "trail_spacing": 8,
           "size": 1.3
         }
-      ]
+      ],
+      "start_note": "the gather starts WITH the cast pose (main 23890) and the flame leaves on the pose's release frame, 0.75 s after the action"
     }
   }
 }
