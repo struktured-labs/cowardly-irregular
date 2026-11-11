@@ -1297,12 +1297,12 @@
     "animation": "cast_ice",
     "mp_cost": 35,
     "description": "Drops temperature to absolute zero, freezing all enemies solid.",
-    "damage_multiplier": 4.0,
+    "damage_multiplier": 2.8,
     "element": "ice",
     "target_type": "all_enemies",
     "effect": "freeze",
-    "effect_chance": 0.5,
-    "duration": 2
+    "effect_chance": 0.35,
+    "duration": 1
   },
   "absorb_meaning": {
     "id": "absorb_meaning",
@@ -1449,7 +1449,7 @@
     "animation": "cast_ice",
     "mp_cost": 25,
     "description": "Exhales a devastating blizzard that freezes all enemies.",
-    "damage_multiplier": 3.0,
+    "damage_multiplier": 2.3,
     "element": "ice",
     "target_type": "all_enemies",
     "effect": "freeze",
@@ -1822,7 +1822,7 @@
     "animation": "cast_dark",
     "mp_cost": 28,
     "description": "Unleashes dark matter that crushes all enemies with gravitational force.",
-    "damage_multiplier": 3.5,
+    "damage_multiplier": 2.4,
     "element": "dark",
     "target_type": "all_enemies"
   },
@@ -3290,7 +3290,7 @@
     "animation": "cast_lightning",
     "mp_cost": 22,
     "description": "Breathes a devastating bolt of lightning at all enemies.",
-    "damage_multiplier": 3.0,
+    "damage_multiplier": 2.5,
     "element": "lightning",
     "target_type": "all_enemies",
     "effect": "stun",
@@ -3381,7 +3381,7 @@
     "animation": "cast_dark",
     "mp_cost": 28,
     "description": "Breathes the void itself, erasing all that it touches.",
-    "damage_multiplier": 3.5,
+    "damage_multiplier": 2.6,
     "element": "dark",
     "target_type": "all_enemies",
     "effect": "dispel"
