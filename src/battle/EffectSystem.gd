@@ -592,6 +592,8 @@ func _animate_fire(effect: Node2D, on_complete: Callable, power: float = 1.0, bo
 		tween.tween_property(p, "rotation", randf_range(-PI, PI), duration).set_delay(delay)
 
 	tween.chain().tween_callback(func():
+		if not is_instance_valid(effect):
+			return  # freed with its battle (or a test) before the eruption ended
 		effect.queue_free()
 		if on_complete.is_valid():
 			on_complete.call()
