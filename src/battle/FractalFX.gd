@@ -64,6 +64,8 @@ var reduce_flashes: bool = false
 ## The caster's intensity tier (1-3, BattleScene.cast_intensity): a phase with `min_tier` waits for it, `palette_t3` recolours at 3.
 var tier: int = 1
 ## (intensity_px, duration_s) — the caller owns the camera.
+## The caster's BODY, for `origin: "caster"`; `from` is its HAND, for bolts and `origin: "hand"`. Unset (INF) = the hand, as before.
+var caster_centre: Vector2 = Vector2.INF
 var on_shake: Callable = Callable()
 ## (sound_key) — a phase's optional "sfx" fires here when that phase runs, in battle time, so it lands on the beat at any speed.
 var on_sfx: Callable = Callable()
@@ -183,7 +185,12 @@ static func _emit_duration(spec: Dictionary, depth_left: int) -> float:
 func _run(phase: Dictionary, from: Vector2, to: Vector2, power: float) -> void:
 	if not is_instance_valid(host):
 		return
-	var at_pos: Vector2 = from if str(phase.get("origin", "target")) == "caster" else to
+	var origin := str(phase.get("origin", "target"))
+	var at_pos: Vector2 = to
+	if origin == "hand":
+		at_pos = from
+	elif origin == "caster":
+		at_pos = caster_centre if caster_centre != Vector2.INF else from
 	at_pos += _vec(phase.get("offset", [0, 0]))
 	if str(phase.get("sfx", "")) != "" and on_sfx.is_valid():
 		on_sfx.call(str(phase["sfx"]))
