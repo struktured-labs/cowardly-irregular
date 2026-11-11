@@ -45,9 +45,13 @@ func _known_kinds() -> Array:
 	body = body.substr(0, body.find("\nfunc ", 1))
 	var kinds: Array = []
 	var re := RegEx.new()
-	re.compile("(?m)^\\t\\t\"([a-z_]+)\":")
+	## An arm may name several kinds ("eruption", "pillar", "gather": …): every quoted name on an arm line counts.
+	re.compile("(?m)^\\t\\t(\"[a-z_]+\"(?:, \"[a-z_]+\")*):")
+	var name := RegEx.new()
+	name.compile("\"([a-z_]+)\"")
 	for m in re.search_all(body):
-		kinds.append(m.get_string(1))
+		for k in name.search_all(m.get_string(1)):
+			kinds.append(k.get_string(1))
 	return kinds
 
 
