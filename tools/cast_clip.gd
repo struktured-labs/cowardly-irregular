@@ -86,6 +86,20 @@ func _init() -> void:
 	var targets: Array = bm.enemy_party.duplicate() if str(data.get("target_type", "")) == "all_enemies" else [bm.enemy_party[0]]
 	if str(data.get("target_type", "")) in ["self", "single_ally", "all_allies"]:
 		targets = [caster] if str(data.get("target_type", "")) != "all_allies" else bm.player_party.duplicate()
+	## An ally spell is filmed on ANOTHER member, so the light is seen to travel; a revive on a member felled for the shot.
+	if str(data.get("target_type", "")) in ["single_ally", "dead_ally"]:
+		for m in bm.player_party:
+			if m != caster:
+				targets = [m]
+				break
+		if str(data.get("target_type", "")) == "dead_ally":
+			(targets[0] as Combatant).current_hp = 1
+			(targets[0] as Combatant).take_damage(999999)
+			await create_timer(1.2 * Engine.time_scale).timeout
+		elif ability in ["cure", "cura", "regen", "esuna"]:
+			(targets[0] as Combatant).current_hp = maxi(1, int((targets[0] as Combatant).max_hp * 0.3))
+			if ability == "esuna":
+				(targets[0] as Combatant).add_status("poison", 3)
 	await create_timer(0.6 * Engine.time_scale).timeout
 	print("[CCLIP] built ability=%s caster=%s targets=%d time_scale=%.3f sequence=%s" % [ability, caster.combatant_name, targets.size(), Engine.time_scale, str(data.get("vfx", ""))])
 	bm.execution_order = [{"type": "ability", "combatant": caster, "ability_id": ability, "targets": targets, "speed": 99}]
