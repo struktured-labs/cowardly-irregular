@@ -55,10 +55,11 @@ static func applies_to(enemy: Object) -> bool:
 	return enemy != null and not enemy.has_meta("is_boss")
 
 
-## The same REAL length at every battle speed, but stepped by game frames: speed_scale 1/time_scale, never
-## set_ignore_time_scale (a Movie Maker capture showed the death already over, cowir-cutscenes 23594).
-## Re-read EVERY frame, not once: a killing crit's hitlag drops time_scale to 0.1 for ~80 ms, and a scale
-## locked in during it ran the whole death ~4x fast once the battle speed came back (cowir-main 23618).
+## The same REAL length at every battle speed, stepped by game frames: speed_scale 1/time_scale, re-read EVERY
+## frame, not once: a killing crit's hitlag drops time_scale to 0.1 for ~80 ms, and a scale locked in during
+## it ran the whole death ~4x fast once the battle speed came back (cowir-main 23618). Measured 2026-11-11
+## (cowir-adhoc 23963): under --write-movie this and set_ignore_time_scale(true) are frame-for-frame the same;
+## the earlier comment here blamed "the OS clock" for a clip that a clip tool had trimmed wrong.
 ## The escape beat uses it too.
 static func real_time(t: Tween) -> Tween:
 	t.set_speed_scale(_real_speed())
