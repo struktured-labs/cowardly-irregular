@@ -180,3 +180,37 @@ func test_a_killing_flash_ends_when_the_death_begins() -> void:
 	assert_false(es.visible, "VOID: the death never finished")
 	for i in range(1, alphas.size()):
 		assert_lte(float(alphas[i]), float(alphas[i - 1]) + 0.001, "alpha rose during the death: %s" % str(alphas.slice(maxi(0, i - 2), i + 1)))
+
+
+## cowir-main 23728: a BOSS keeps its own death (the inline tween in _on_enemy_died, not EnemyDeathFx), and
+## that death ends a flash and a knockback in flight too. The real handler, on the built scene.
+func test_a_boss_killed_mid_flash_is_owned_by_its_death() -> void:
+	var guard = preload("res://test/unit/helpers/battle_state.gd").new()
+	guard.snapshot()
+	var scene = load("res://src/battle/BattleScene.tscn").instantiate()
+	add_child_autofree(scene)
+	var boss := Combatant.new()
+	boss.initialize({"name": "Boss", "max_hp": 10, "max_mp": 0, "attack": 1, "defense": 1, "magic": 1, "speed": 1})
+	boss.set_meta("is_boss", true)
+	add_child_autofree(boss)
+	var spr := AnimatedSprite2D.new()
+	spr.sprite_frames = _frames()
+	add_child_autofree(spr)
+	spr.set_meta("home_position", spr.position)
+	scene.test_enemies.assign([boss] as Array[Combatant])
+	scene.enemy_sprite_nodes.assign([spr])
+	var animator = ANIMATOR.new()
+	animator.setup(spr)
+	scene.add_child(animator)
+	scene.enemy_animators.assign([animator])
+	assert_false(EnemyDeathFx.applies_to(boss), "CONTROL: a boss must take the inline death, not the world's style")
+	scene._apply_weakness_hit_visuals(spr, "fire", 2.0)
+	scene._apply_weakness_hit_knockback(spr, -1.0, 2.0)
+	var flash: Tween = spr.get_meta("flash_tween")
+	var knock: Tween = spr.get_meta("knockback_tween")
+	assert_true(flash.is_valid() and knock.is_valid(), "CONTROL: the flash and the knockback must be in flight when the boss dies")
+	boss.is_alive = false
+	scene._on_enemy_died(0)
+	assert_false(flash.is_valid(), "the weakness flash is still writing modulate under the boss's death")
+	assert_false(knock.is_valid(), "the knockback is still writing position under the boss's death")
+	guard.restore()

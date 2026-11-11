@@ -6466,6 +6466,7 @@ func _on_enemy_died(enemy_idx: int) -> void:
 					EnemyDeathFx.play(sprite, EnemyDeathFx.current_style(), func() -> void: SoundManager.play_death("enemy_death"))
 					_fade_dying_name(sprite)
 					return
+				EnemyDeathFx.own(sprite)  # a boss killed mid-flash: the death ends the flash and the knockback too
 				var tween = sprite.create_tween()  # dies with the sprite a grind restart frees
 				tween.tween_property(sprite, "modulate", Color(3.0, 3.0, 3.0, 1.0), 0.1)
 				tween.tween_property(sprite, "modulate", Color(1.0, 1.0, 1.0, 1.0), 0.1)
