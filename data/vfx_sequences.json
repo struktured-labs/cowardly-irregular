@@ -2022,6 +2022,1005 @@
         }
       ]
     },
+    "melee_power_strike": {
+      "label": "Power Strike: blade glint, one heavy vertical arc, a ground crack that fills the enemy side (sprites 23767, main 23768)",
+      "start": 0.17,
+      "start_note": "the lunge's contact: 0.05 pull-back + 0.12 approach (BattleScene._animate_melee_attack)",
+      "impact": 0.0,
+      "phases": [
+        {
+          "kind": "flash",
+          "origin": "caster",
+          "at": -0.16,
+          "dur": 0.14,
+          "size": 2.4,
+          "alpha": 0.7
+        },
+        {
+          "kind": "arc",
+          "at": -0.05,
+          "dur": 0.09,
+          "radius": 150,
+          "from": -75,
+          "to": -285,
+          "width": 3.6,
+          "life": 0.34,
+          "palette": "steel",
+          "offset": [
+            36,
+            -6
+          ]
+        },
+        {
+          "kind": "arc",
+          "at": 0.04,
+          "dur": 0.02,
+          "radius": 150,
+          "from": -75,
+          "to": -285,
+          "width": 2.0,
+          "life": 0.5,
+          "palette": "spark",
+          "glow": false,
+          "offset": [
+            36,
+            -6
+          ],
+          "min_tier": 1
+        },
+        {
+          "kind": "flash",
+          "at": 0.04,
+          "dur": 0.2,
+          "size": 11.0
+        },
+        {
+          "kind": "ring",
+          "at": 0.04,
+          "dur": 0.5,
+          "scale": 11.0,
+          "palette": "steel",
+          "offset": [
+            0,
+            46
+          ]
+        },
+        {
+          "kind": "ring",
+          "at": 0.1,
+          "dur": 0.6,
+          "scale": 17.0,
+          "palette": "ember",
+          "offset": [
+            0,
+            46
+          ]
+        },
+        {
+          "kind": "shake",
+          "at": 0.04,
+          "intensity": 13,
+          "dur": 0.32
+        },
+        {
+          "kind": "emit",
+          "at": 0.04,
+          "count": 10,
+          "arc": 150,
+          "heading": -90,
+          "radius": 120,
+          "life": 0.34,
+          "size": 1.3,
+          "palette": "steel",
+          "bloom": false,
+          "offset": [
+            0,
+            40
+          ]
+        },
+        {
+          "kind": "fall",
+          "at": 0.12,
+          "dur": 0.6,
+          "count": 22,
+          "palette": "steel",
+          "ground_glow": false
+        },
+        {
+          "kind": "puff",
+          "at": 0.06,
+          "dur": 0.55,
+          "count": 10,
+          "spread": [
+            130,
+            10
+          ],
+          "size": 2.6,
+          "drift": [
+            0,
+            -18
+          ],
+          "offset": [
+            0,
+            50
+          ]
+        }
+      ]
+    },
+    "melee_cleave": {
+      "label": "Cleave: one wide crescent swept across the whole enemy line (played ONCE, at the line's centre)",
+      "start": 0.17,
+      "start_note": "the lunge's contact: 0.05 pull-back + 0.12 approach (BattleScene._animate_melee_attack)",
+      "impact": 0.0,
+      "phases": [
+        {
+          "kind": "arc",
+          "at": -0.06,
+          "dur": 0.24,
+          "radius": 300,
+          "from": -118,
+          "to": -242,
+          "width": 4.6,
+          "life": 0.42,
+          "palette": "steel",
+          "offset": [
+            190,
+            10
+          ]
+        },
+        {
+          "kind": "arc",
+          "at": 0.0,
+          "dur": 0.24,
+          "radius": 270,
+          "from": -118,
+          "to": -242,
+          "width": 2.2,
+          "life": 0.55,
+          "palette": "spark",
+          "glow": false,
+          "offset": [
+            190,
+            10
+          ]
+        },
+        {
+          "kind": "shake",
+          "at": 0.06,
+          "intensity": 7,
+          "dur": 0.3
+        },
+        {
+          "kind": "puff",
+          "at": 0.1,
+          "dur": 0.5,
+          "count": 12,
+          "spread": [
+            240,
+            12
+          ],
+          "size": 2.2,
+          "drift": [
+            -30,
+            -14
+          ],
+          "offset": [
+            0,
+            54
+          ]
+        }
+      ]
+    },
+    "melee_cleave_cut": {
+      "label": "Cleave: the cut on EACH foe as the edge passes it (the hook staggers them along the line)",
+      "phases": [
+        {
+          "kind": "slash",
+          "at": 0.0,
+          "from": -140,
+          "to": -220,
+          "radius": 58,
+          "count": 12,
+          "dur": 0.05,
+          "life": 0.24,
+          "size": 1.5,
+          "palette": "spark"
+        },
+        {
+          "kind": "flash",
+          "at": 0.03,
+          "dur": 0.12,
+          "size": 3.4,
+          "alpha": 0.7
+        },
+        {
+          "kind": "emit",
+          "at": 0.03,
+          "count": 5,
+          "arc": 70,
+          "heading": 180,
+          "radius": 60,
+          "life": 0.22,
+          "size": 0.9,
+          "palette": "steel",
+          "bloom": false
+        }
+      ]
+    },
+    "melee_shield_bash": {
+      "label": "Shield Bash: a dash streak, then a blunt star and a flat ring (a wall, not a cut)",
+      "start": 0.17,
+      "start_note": "the lunge's contact: 0.05 pull-back + 0.12 approach (BattleScene._animate_melee_attack)",
+      "impact": 0.0,
+      "phases": [
+        {
+          "kind": "streak",
+          "at": -0.14,
+          "dur": 0.12,
+          "width": 2.2,
+          "life": 0.2,
+          "palette": "steel",
+          "b_offset": [
+            24,
+            0
+          ]
+        },
+        {
+          "kind": "flash",
+          "at": 0.0,
+          "dur": 0.16,
+          "size": 6.5
+        },
+        {
+          "kind": "emit",
+          "at": 0.0,
+          "count": 8,
+          "arc": 360,
+          "radius": 64,
+          "life": 0.2,
+          "size": 1.9,
+          "stretch": 0.4,
+          "palette": "spark",
+          "bloom": false
+        },
+        {
+          "kind": "ring",
+          "at": 0.0,
+          "dur": 0.26,
+          "scale": 6.0,
+          "palette": "steel"
+        },
+        {
+          "kind": "ring",
+          "at": 0.05,
+          "dur": 0.34,
+          "scale": 9.0,
+          "palette": "steel"
+        },
+        {
+          "kind": "shake",
+          "at": 0.0,
+          "intensity": 10,
+          "dur": 0.24
+        }
+      ]
+    },
+    "melee_slash": {
+      "label": "Slash: a fast X, two crossed diagonal cuts 0.06 s apart",
+      "start": 0.17,
+      "start_note": "the lunge's contact: 0.05 pull-back + 0.12 approach (BattleScene._animate_melee_attack)",
+      "impact": 0.0,
+      "phases": [
+        {
+          "kind": "streak",
+          "at": -0.04,
+          "dur": 0.05,
+          "width": 2.0,
+          "life": 0.26,
+          "palette": "steel",
+          "a": "target",
+          "a_offset": [
+            70,
+            -76
+          ],
+          "b_offset": [
+            -70,
+            64
+          ]
+        },
+        {
+          "kind": "streak",
+          "at": 0.02,
+          "dur": 0.05,
+          "width": 2.0,
+          "life": 0.26,
+          "palette": "spark",
+          "a": "target",
+          "a_offset": [
+            -70,
+            -76
+          ],
+          "b_offset": [
+            70,
+            64
+          ]
+        },
+        {
+          "kind": "flash",
+          "at": 0.04,
+          "dur": 0.12,
+          "size": 4.2,
+          "alpha": 0.75
+        },
+        {
+          "kind": "emit",
+          "at": 0.04,
+          "count": 8,
+          "arc": 360,
+          "radius": 70,
+          "life": 0.2,
+          "size": 0.8,
+          "stretch": 2.6,
+          "palette": "steel",
+          "bloom": false
+        },
+        {
+          "kind": "shake",
+          "at": 0.04,
+          "intensity": 6,
+          "dur": 0.18
+        }
+      ]
+    },
+    "melee_backstab": {
+      "label": "Backstab: the Rogue's shadow streaks BEHIND the target, then one thin stab from behind",
+      "start": 0.17,
+      "start_note": "the lunge's contact: 0.05 pull-back + 0.12 approach (BattleScene._animate_melee_attack)",
+      "impact": 0.0,
+      "phases": [
+        {
+          "kind": "streak",
+          "at": -0.16,
+          "dur": 0.13,
+          "width": 1.5,
+          "life": 0.3,
+          "palette": "void",
+          "b_offset": [
+            -84,
+            6
+          ]
+        },
+        {
+          "kind": "puff",
+          "at": -0.03,
+          "dur": 0.3,
+          "count": 4,
+          "spread": [
+            10,
+            14
+          ],
+          "size": 1.6,
+          "palette": "void",
+          "drift": [
+            0,
+            -10
+          ],
+          "offset": [
+            -84,
+            6
+          ]
+        },
+        {
+          "kind": "streak",
+          "at": 0.0,
+          "dur": 0.04,
+          "width": 1.1,
+          "life": 0.2,
+          "palette": "spark",
+          "a": "target",
+          "a_offset": [
+            -96,
+            2
+          ],
+          "b_offset": [
+            26,
+            0
+          ]
+        },
+        {
+          "kind": "flash",
+          "at": 0.03,
+          "dur": 0.1,
+          "size": 3.0,
+          "alpha": 0.8
+        },
+        {
+          "kind": "shake",
+          "at": 0.03,
+          "intensity": 5,
+          "dur": 0.14
+        }
+      ]
+    },
+    "melee_backstab_crit": {
+      "label": "Backstab on a CRIT: a second, delayed slash bloom",
+      "phases": [
+        {
+          "kind": "arc",
+          "at": 0.0,
+          "dur": 0.07,
+          "radius": 92,
+          "from": -200,
+          "to": -340,
+          "width": 2.6,
+          "life": 0.34,
+          "palette": "void"
+        },
+        {
+          "kind": "flash",
+          "at": 0.05,
+          "dur": 0.16,
+          "size": 6.0
+        },
+        {
+          "kind": "emit",
+          "at": 0.05,
+          "count": 10,
+          "arc": 360,
+          "radius": 84,
+          "life": 0.26,
+          "size": 1.1,
+          "palette": "spark",
+          "bloom": false
+        },
+        {
+          "kind": "shake",
+          "at": 0.05,
+          "intensity": 9,
+          "dur": 0.22
+        }
+      ]
+    },
+    "melee_mug": {
+      "label": "Mug: two quick cuts, then the take pops out of the target and arcs back to the Rogue",
+      "start": 0.17,
+      "start_note": "the lunge's contact: 0.05 pull-back + 0.12 approach (BattleScene._animate_melee_attack)",
+      "impact": 0.0,
+      "phases": [
+        {
+          "kind": "streak",
+          "at": -0.02,
+          "dur": 0.04,
+          "width": 1.4,
+          "life": 0.2,
+          "palette": "steel",
+          "a": "target",
+          "a_offset": [
+            50,
+            -44
+          ],
+          "b_offset": [
+            -46,
+            40
+          ]
+        },
+        {
+          "kind": "streak",
+          "at": 0.03,
+          "dur": 0.04,
+          "width": 1.4,
+          "life": 0.2,
+          "palette": "steel",
+          "a": "target",
+          "a_offset": [
+            50,
+            40
+          ],
+          "b_offset": [
+            -46,
+            -44
+          ]
+        },
+        {
+          "kind": "flash",
+          "at": 0.04,
+          "dur": 0.1,
+          "size": 3.0,
+          "alpha": 0.7
+        },
+        {
+          "kind": "rise",
+          "at": 0.12,
+          "dur": 0.3,
+          "count": 8,
+          "palette": "verdict"
+        },
+        {
+          "kind": "bolt",
+          "reverse": true,
+          "at": 0.2,
+          "dur": 0.34,
+          "arc_height": 86,
+          "size": 0.9,
+          "palette": "verdict",
+          "trail_palette": "verdict",
+          "trail_spacing": 7
+        },
+        {
+          "kind": "flash",
+          "origin": "caster",
+          "at": 0.54,
+          "dur": 0.12,
+          "size": 2.2,
+          "alpha": 0.6
+        }
+      ]
+    },
+    "landed_stun": {
+      "label": "A stun LANDS: three stars orbit in over the target's head",
+      "phases": [
+        {
+          "kind": "spin_fling",
+          "at": 0.0,
+          "count": 3,
+          "radius": 34,
+          "inner": 30,
+          "turns": 1.5,
+          "spin": 0.5,
+          "fling": 0.12,
+          "distance": 10,
+          "size": 0.9,
+          "palette": "verdict",
+          "offset": [
+            0,
+            -70
+          ]
+        }
+      ]
+    },
+    "landed_blind": {
+      "label": "A blind LANDS: the smoke closes over the target's eyes",
+      "phases": [
+        {
+          "kind": "puff",
+          "at": 0.0,
+          "dur": 0.6,
+          "count": 7,
+          "spread": [
+            22,
+            10
+          ],
+          "size": 2.4,
+          "drift": [
+            0,
+            4
+          ],
+          "offset": [
+            0,
+            -40
+          ]
+        },
+        {
+          "kind": "ring",
+          "at": 0.05,
+          "dur": 0.3,
+          "scale": 2.2,
+          "palette": "smoke",
+          "offset": [
+            0,
+            -40
+          ]
+        }
+      ]
+    },
+    "landed_taunt": {
+      "label": "Provoke LANDS: a crosshair pulse settles on the target",
+      "phases": [
+        {
+          "kind": "ring",
+          "at": 0.0,
+          "dur": 0.3,
+          "scale": 3.4,
+          "palette": "taunt"
+        },
+        {
+          "kind": "ring",
+          "at": 0.14,
+          "dur": 0.3,
+          "scale": 1.6,
+          "palette": "taunt"
+        },
+        {
+          "kind": "emit",
+          "at": 0.0,
+          "count": 4,
+          "arc": 360,
+          "twist": 45,
+          "radius": 56,
+          "life": 0.2,
+          "size": 0.9,
+          "stretch": 2.4,
+          "palette": "taunt",
+          "bloom": false
+        }
+      ]
+    },
+    "fizzle": {
+      "label": "An effect FAILS or is resisted: a grey fizzle to dust, never the landed beat",
+      "phases": [
+        {
+          "kind": "puff",
+          "at": 0.0,
+          "dur": 0.4,
+          "count": 5,
+          "spread": [
+            16,
+            8
+          ],
+          "size": 1.5,
+          "drift": [
+            0,
+            22
+          ]
+        },
+        {
+          "kind": "fall",
+          "at": 0.05,
+          "dur": 0.4,
+          "count": 6,
+          "palette": "smoke",
+          "ground_glow": false
+        }
+      ]
+    },
+    "steal_take": {
+      "label": "Steal SUCCEEDS: the take glints and arcs back to the Rogue",
+      "phases": [
+        {
+          "kind": "flash",
+          "at": 0.0,
+          "dur": 0.12,
+          "size": 2.6,
+          "alpha": 0.7
+        },
+        {
+          "kind": "rise",
+          "at": 0.0,
+          "dur": 0.25,
+          "count": 6,
+          "palette": "verdict"
+        },
+        {
+          "kind": "bolt",
+          "reverse": true,
+          "at": 0.06,
+          "dur": 0.34,
+          "arc_height": 86,
+          "size": 0.9,
+          "palette": "verdict",
+          "trail_palette": "verdict",
+          "trail_spacing": 7
+        },
+        {
+          "kind": "flash",
+          "origin": "caster",
+          "at": 0.4,
+          "dur": 0.12,
+          "size": 2.2,
+          "alpha": 0.6
+        }
+      ]
+    },
+    "rogue_steal": {
+      "label": "Steal: a quick hand-swipe at the target (the outcome beat follows: steal_take or fizzle)",
+      "start": 0.1,
+      "impact": 0.14,
+      "phases": [
+        {
+          "kind": "streak",
+          "at": 0.0,
+          "dur": 0.1,
+          "width": 0.9,
+          "life": 0.16,
+          "palette": "spark",
+          "b_offset": [
+            10,
+            -6
+          ]
+        },
+        {
+          "kind": "arc",
+          "at": 0.1,
+          "dur": 0.05,
+          "radius": 44,
+          "from": -60,
+          "to": -200,
+          "width": 1.3,
+          "life": 0.2,
+          "palette": "spark",
+          "glow": false
+        }
+      ]
+    },
+    "fighter_provoke": {
+      "label": "Provoke: a red shout-ring from the Fighter and a tether that snaps to the target (landed_taunt or fizzle follows)",
+      "start": 0.08,
+      "impact": 0.25,
+      "phases": [
+        {
+          "kind": "ring",
+          "origin": "caster",
+          "at": 0.0,
+          "dur": 0.26,
+          "scale": 7.5,
+          "palette": "taunt"
+        },
+        {
+          "kind": "ring",
+          "origin": "caster",
+          "at": 0.07,
+          "dur": 0.3,
+          "scale": 11.0,
+          "palette": "taunt"
+        },
+        {
+          "kind": "shake",
+          "at": 0.0,
+          "intensity": 5,
+          "dur": 0.2
+        },
+        {
+          "kind": "streak",
+          "at": 0.12,
+          "dur": 0.12,
+          "width": 1.2,
+          "life": 0.3,
+          "palette": "taunt"
+        }
+      ]
+    },
+    "rogue_scan": {
+      "label": "Scan: a green scanline sweeps down the target and three brackets lock on",
+      "start": 0.1,
+      "impact": 0.35,
+      "phases": [
+        {
+          "kind": "streak",
+          "at": 0.0,
+          "dur": 0.05,
+          "width": 0.8,
+          "life": 0.14,
+          "palette": "nature",
+          "a": "target",
+          "a_offset": [
+            -64,
+            -84
+          ],
+          "b_offset": [
+            64,
+            -84
+          ]
+        },
+        {
+          "kind": "streak",
+          "at": 0.09,
+          "dur": 0.05,
+          "width": 0.8,
+          "life": 0.14,
+          "palette": "nature",
+          "a": "target",
+          "a_offset": [
+            -64,
+            -42
+          ],
+          "b_offset": [
+            64,
+            -42
+          ]
+        },
+        {
+          "kind": "streak",
+          "at": 0.18,
+          "dur": 0.05,
+          "width": 0.8,
+          "life": 0.14,
+          "palette": "nature",
+          "a": "target",
+          "a_offset": [
+            -64,
+            0
+          ],
+          "b_offset": [
+            64,
+            0
+          ]
+        },
+        {
+          "kind": "streak",
+          "at": 0.27,
+          "dur": 0.05,
+          "width": 0.8,
+          "life": 0.14,
+          "palette": "nature",
+          "a": "target",
+          "a_offset": [
+            -64,
+            42
+          ],
+          "b_offset": [
+            64,
+            42
+          ]
+        },
+        {
+          "kind": "emit",
+          "at": 0.35,
+          "count": 4,
+          "arc": 360,
+          "twist": 45,
+          "radius": -30,
+          "life": 0.18,
+          "size": 1.0,
+          "stretch": 2.0,
+          "palette": "nature",
+          "bloom": false
+        },
+        {
+          "kind": "ring",
+          "at": 0.35,
+          "dur": 0.24,
+          "scale": 3.0,
+          "palette": "nature"
+        }
+      ]
+    },
+    "rogue_smoke_bomb": {
+      "label": "Smoke Bomb: a small arc toss, then a grey cloud that billows over the enemy line and thins",
+      "start": 0.1,
+      "impact": 0.22,
+      "phases": [
+        {
+          "kind": "bolt",
+          "at": 0.0,
+          "dur": 0.22,
+          "arc_height": 70,
+          "size": 0.8,
+          "palette": "smoke",
+          "trail_palette": "smoke",
+          "trail_spacing": 9
+        },
+        {
+          "kind": "flash",
+          "at": 0.22,
+          "dur": 0.12,
+          "size": 3.0,
+          "alpha": 0.45
+        },
+        {
+          "kind": "puff",
+          "at": 0.22,
+          "dur": 0.75,
+          "count": 16,
+          "spread": [
+            150,
+            46
+          ],
+          "size": 5.0,
+          "drift": [
+            0,
+            -30
+          ]
+        },
+        {
+          "kind": "puff",
+          "at": 0.34,
+          "dur": 0.6,
+          "count": 10,
+          "spread": [
+            190,
+            30
+          ],
+          "size": 3.6,
+          "drift": [
+            -20,
+            -44
+          ]
+        }
+      ]
+    },
+    "rogue_shadow_step": {
+      "label": "Shadow Step: the Rogue smears into three fading afterimages and re-forms over a dark ground ripple",
+      "start": 0.1,
+      "impact": 0.28,
+      "phases": [
+        {
+          "kind": "streak",
+          "origin": "caster",
+          "at": 0.0,
+          "dur": 0.08,
+          "width": 2.6,
+          "life": 0.3,
+          "palette": "void",
+          "a": "caster",
+          "a_offset": [
+            0,
+            -20
+          ],
+          "b": "caster",
+          "b_offset": [
+            70,
+            -20
+          ]
+        },
+        {
+          "kind": "streak",
+          "origin": "caster",
+          "at": 0.1,
+          "dur": 0.08,
+          "width": 2.6,
+          "life": 0.3,
+          "palette": "void",
+          "a": "caster",
+          "a_offset": [
+            70,
+            -20
+          ],
+          "b": "caster",
+          "b_offset": [
+            -50,
+            -20
+          ]
+        },
+        {
+          "kind": "streak",
+          "origin": "caster",
+          "at": 0.2,
+          "dur": 0.08,
+          "width": 2.6,
+          "life": 0.3,
+          "palette": "void",
+          "a": "caster",
+          "a_offset": [
+            -50,
+            -20
+          ],
+          "b": "caster",
+          "b_offset": [
+            0,
+            -20
+          ]
+        },
+        {
+          "kind": "ring",
+          "origin": "caster",
+          "at": 0.2,
+          "dur": 0.4,
+          "scale": 5.0,
+          "palette": "void",
+          "offset": [
+            0,
+            44
+          ]
+        },
+        {
+          "kind": "puff",
+          "origin": "caster",
+          "at": 0.28,
+          "dur": 0.4,
+          "count": 6,
+          "spread": [
+            24,
+            20
+          ],
+          "size": 2.0,
+          "palette": "void",
+          "drift": [
+            0,
+            -16
+          ]
+        }
+      ]
+    },
     "cure_battle": {
       "label": "Cure: light gathers at her staff, arcs to the ally, a soft column rises with sparkles (cutscenes 23771)",
       "start": 0.5,

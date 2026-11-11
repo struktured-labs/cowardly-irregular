@@ -517,6 +517,7 @@ func _ready() -> void:
 	BattleManager.hit_negated.connect(_on_hit_negated)
 	BattleManager.cast_fizzled.connect(_on_cast_fizzled)
 	BattleManager.status_resisted.connect(_on_status_resisted)
+	BattleManager.steal_resolved.connect(_on_steal_resolved)
 	BattleManager.healing_done.connect(_on_healing_done)
 	BattleManager.mp_restored.connect(_on_mp_restored)
 	BattleManager.ap_granted.connect(_on_ap_granted)
@@ -628,6 +629,8 @@ func _exit_tree() -> void:
 		BattleManager.attack_missed.disconnect(_on_attack_missed)
 	if BattleManager.status_resisted.is_connected(_on_status_resisted):
 		BattleManager.status_resisted.disconnect(_on_status_resisted)
+	if BattleManager.steal_resolved.is_connected(_on_steal_resolved):
+		BattleManager.steal_resolved.disconnect(_on_steal_resolved)
 	if BattleManager.hit_negated.is_connected(_on_hit_negated):
 		BattleManager.hit_negated.disconnect(_on_hit_negated)
 	if BattleManager.cast_fizzled.is_connected(_on_cast_fizzled):
@@ -1964,6 +1967,8 @@ func _setup_status_icons(combatant: Combatant, sprite: AnimatedSprite2D) -> void
 		combatant.status_added.connect(_on_combatant_status_changed.bind(combatant))
 	if not combatant.status_removed.is_connected(_on_combatant_status_changed):
 		combatant.status_removed.connect(_on_combatant_status_changed.bind(combatant))
+	if not combatant.status_added.is_connected(_on_status_landed):
+		combatant.status_added.connect(_on_status_landed.bind(combatant))
 
 	# Show any existing statuses
 	_refresh_status_icons(combatant)
@@ -3288,6 +3293,20 @@ static func sequence_total(seq_id: String) -> float:
 
 
 ## Signature sounds play at every speed the player picks, 4x included; only autogrind/turbo is silent (cowir-main 21194).
+## Seconds between one target's cut and the next as a line-wide melee move passes along the enemies.
+const MELEE_EACH_STAGGER := 0.05
+## A status that LANDS plays its own beat at the target; anything not listed lands with its aura alone.
+const LANDED_BEATS := {"stun": "landed_stun", "blind": "landed_blind"}
+const FIZZLE_BEAT := "fizzle"
+
+
+## Provoke's status carries the taunter's name ("taunted_<name>"), so it is matched by its prefix.
+static func landed_beat(status: String) -> String:
+	if status.begins_with("taunted_"):
+		return "landed_taunt"
+	return str(LANDED_BEATS.get(status, ""))
+
+
 func signature_sound_allowed() -> bool:
 	return not turbo_mode and not autogrind_console_mode
 
@@ -3369,6 +3388,80 @@ func _show_signature_card(card: Dictionary, ability: Dictionary, hold: float) ->
 
 func _ability_sequence(ability: Dictionary) -> String:
 	return str(AbilityVFX.resolve(ability).get("sequence", ""))
+
+
+## A physical ability's `vfx.<key>` sequence ("melee", "melee_each", "melee_crit"), or "" when it names none that exists.
+static func melee_overlay(ability: Dictionary, key: String) -> String:
+	var vfx = ability.get("vfx", {})
+	var id := str(vfx.get(key, "")) if vfx is Dictionary else ""
+	return id if id != "" and not FractalFX.load_sequence(id).is_empty() else ""
+
+
+## Fighter and Rogue physical abilities (sprites 23767): the lunge, the hit and the damage stay _animate_melee_attack's;
+## this draws the move AROUND them. A sequence's `start` is the lunge's contact delay, so its phases are authored from
+## contact and nothing here waits. `melee` plays once (at its target, or at the centre of the line for an all-enemies
+## move); `melee_each` plays on every target, staggered along the line as the edge passes. Turbo/console: impact only.
+func _play_melee_overlay(caster: Combatant, caster_sprite: Node2D, ability: Dictionary, targets: Array) -> void:
+	var seq_id := melee_overlay(ability, "melee")
+	if seq_id == "" or caster_sprite == null or not is_instance_valid(caster_sprite):
+		return
+	var anchors: Array[Vector2] = []
+	for target in targets:
+		var ts = _get_combatant_sprite(target)
+		if ts != null and is_instance_valid(ts):
+			anchors.append(_stable_sprite_anchor(ts))
+	if anchors.is_empty():
+		return
+	var centre := Vector2.ZERO
+	for a in anchors:
+		centre += a
+	centre /= float(anchors.size())
+	var intensity := cast_intensity(caster, ability)
+	var power := float(AbilityVFX.resolve(ability)["power"]) * float(intensity["k"])
+	var tier := int(intensity["tier"])
+	var compact := not signature_sound_allowed()
+	var from := _stable_sprite_anchor(caster_sprite)
+	EffectSystem.spawn_sequence(seq_id, from, centre, power, {}, tier, compact)
+	var each := melee_overlay(ability, "melee_each")
+	if each == "":
+		return
+	## Nearest the attacker first: the edge reaches the party's side of the line before the far side.
+	anchors.sort_custom(func(a: Vector2, b: Vector2) -> bool: return a.distance_squared_to(from) < b.distance_squared_to(from))
+	for i in anchors.size():
+		var delay := 0.0 if compact else MELEE_EACH_STAGGER * float(i)
+		if delay <= 0.0:
+			EffectSystem.spawn_sequence(each, from, anchors[i], power, {}, tier, compact)
+		else:
+			get_tree().create_timer(delay).timeout.connect(_spawn_outcome_sequence.bind(each, from, anchors[i], power, tier))
+
+
+func _spawn_outcome_sequence(seq_id: String, from: Vector2, to: Vector2, power: float = 1.0, tier: int = 1) -> void:
+	if is_instance_valid(self) and is_inside_tree():
+		EffectSystem.spawn_sequence(seq_id, from, to, power, {}, tier)
+
+
+## A landed effect gets its own beat and a failed one a visibly different fizzle (main 23768), at the combatant it
+## happened to. Not at turbo or in the grind console: an outcome beat is never the impact.
+func _play_outcome_beat(seq_id: String, combatant: Combatant, from_combatant: Combatant = null) -> void:
+	if seq_id == "" or not signature_sound_allowed() or combatant == null or not is_instance_valid(combatant):
+		return
+	var sprite = _get_combatant_sprite(combatant)
+	if sprite == null or not is_instance_valid(sprite):
+		return
+	var to := _stable_sprite_anchor(sprite)
+	var from := to
+	var from_sprite = _get_combatant_sprite(from_combatant) if from_combatant != null and is_instance_valid(from_combatant) else null
+	if from_sprite != null and is_instance_valid(from_sprite):
+		from = _stable_sprite_anchor(from_sprite)
+	EffectSystem.spawn_sequence(seq_id, from, to)
+
+
+func _on_status_landed(status: String, combatant: Combatant) -> void:
+	_play_outcome_beat(landed_beat(status), combatant)
+
+
+func _on_steal_resolved(caster: Combatant, target: Combatant, success: bool) -> void:
+	_play_outcome_beat("steal_take" if success else FIZZLE_BEAT, target, caster)
 
 
 ## #399 (struktured via cowir-main, 2026-10-31: "wire it into Fire first, playable"). The cast plays, the
@@ -4990,6 +5083,7 @@ func _on_action_executing(combatant: Combatant, action: Dictionary) -> void:
 				var target_animator = _get_combatant_animator(targets[0])
 				if attacker_sprite and target_sprite:
 					_animate_melee_attack(attacker_sprite, target_sprite, animator, target_animator, 0.0, _ability_sheet_anim(ability, animator))
+					_play_melee_overlay(combatant, attacker_sprite, ability, targets)
 				else:
 					_play_ability_animation(anim_type, animator)
 					_spawn_ability_effects(ability, targets)
@@ -6526,6 +6620,7 @@ func _on_damage_dealt(target: Combatant, amount: int, is_crit: bool, element: St
 	# deplete the floating enemy HP bar in sync with the damage number — it lagged to the next _update_ui (action boundary)
 	_update_enemy_hp_bars()
 	if is_crit:
+		_play_outcome_beat(melee_overlay(JobSystem.get_ability(_current_ability_id), "melee_crit") if _current_ability_id != "" else "", target)
 		_crit_visual_burst(target, amount)
 		_show_hint("first_crit", "CRITICAL HIT! Fast characters and Rogues crit more often. Equip gear with crit bonuses to increase your chances.")
 		# Crit quip from the attacker (msg 2749 cycle 12: read the cached action-executing arg, not the stale current_combatant field).
@@ -6706,6 +6801,7 @@ func _on_status_resisted(target: Combatant, _effect: String) -> void:
 	if is_instance_valid(_results_display):
 		_results_display.on_hit_negated(target, "RESIST")
 	SoundManager.play_battle("resist_deflect")
+	_play_outcome_beat(FIZZLE_BEAT, target)
 
 
 func _on_healing_done(target: Combatant, amount: int) -> void:

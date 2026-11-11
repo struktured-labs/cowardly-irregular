@@ -7,7 +7,10 @@
     "mp_cost": 8,
     "description": "A powerful physical attack dealing 1.5x damage",
     "damage_multiplier": 1.5,
-    "target_type": "single_enemy"
+    "target_type": "single_enemy",
+    "vfx": {
+      "melee": "melee_power_strike"
+    }
   },
   "cleave": {
     "id": "cleave",
@@ -17,7 +20,11 @@
     "mp_cost": 12,
     "description": "Attack all enemies for reduced damage",
     "damage_multiplier": 0.8,
-    "target_type": "all_enemies"
+    "target_type": "all_enemies",
+    "vfx": {
+      "melee": "melee_cleave",
+      "melee_each": "melee_cleave_cut"
+    }
   },
   "provoke": {
     "id": "provoke",
@@ -28,7 +35,10 @@
     "description": "Force an enemy to target you for 2 turns",
     "target_type": "single_enemy",
     "effect": "taunt",
-    "duration": 2
+    "duration": 2,
+    "vfx": {
+      "sequence": "fighter_provoke"
+    }
   },
   "cure": {
     "id": "cure",
@@ -277,7 +287,10 @@
     "mp_cost": 4,
     "description": "Attempt to steal an item or gold from enemy",
     "target_type": "single_enemy",
-    "success_rate": 0.5
+    "success_rate": 0.5,
+    "vfx": {
+      "sequence": "rogue_steal"
+    }
   },
   "flee": {
     "id": "flee",
@@ -332,7 +345,11 @@
     "description": "High damage attack with critical chance",
     "damage_multiplier": 2.0,
     "crit_chance": 0.3,
-    "target_type": "single_enemy"
+    "target_type": "single_enemy",
+    "vfx": {
+      "melee": "melee_backstab",
+      "melee_crit": "melee_backstab_crit"
+    }
   },
   "mug": {
     "id": "mug",
@@ -344,7 +361,10 @@
     "damage_multiplier": 1.2,
     "target_type": "single_enemy",
     "success_rate": 0.4,
-    "steals": true
+    "steals": true,
+    "vfx": {
+      "melee": "melee_mug"
+    }
   },
   "edit_formula": {
     "id": "edit_formula",
@@ -546,7 +566,10 @@
     "mp_cost": 0,
     "description": "Slash with weapon",
     "damage_multiplier": 1.2,
-    "target_type": "single_enemy"
+    "target_type": "single_enemy",
+    "vfx": {
+      "melee": "melee_slash"
+    }
   },
   "rat_swarm": {
     "id": "rat_swarm",
@@ -616,7 +639,10 @@
     "damage_multiplier": 1.1,
     "target_type": "single_enemy",
     "effect": "stun",
-    "effect_chance": 0.3
+    "effect_chance": 0.3,
+    "vfx": {
+      "melee": "melee_shield_bash"
+    }
   },
   "defensive_stance": {
     "id": "defensive_stance",
@@ -748,7 +774,10 @@
     "target_type": "all_enemies",
     "effect": "blind",
     "duration": 2,
-    "guaranteed_escape": true
+    "guaranteed_escape": true,
+    "vfx": {
+      "sequence": "rogue_smoke_bomb"
+    }
   },
   "scan": {
     "id": "scan",
@@ -758,7 +787,10 @@
     "mp_cost": 3,
     "description": "Read a foe's elemental weaknesses, immunities, and resistances for the rest of the battle.",
     "target_type": "single_enemy",
-    "effect": "scan"
+    "effect": "scan",
+    "vfx": {
+      "sequence": "rogue_scan"
+    }
   },
   "shadow_step": {
     "id": "shadow_step",
@@ -771,7 +803,10 @@
     "effect": "shadow_step",
     "evasion_bonus": 1.0,
     "next_crit": true,
-    "duration": 1
+    "duration": 1,
+    "vfx": {
+      "sequence": "rogue_shadow_step"
+    }
   },
   "quick_strike": {
     "id": "quick_strike",
