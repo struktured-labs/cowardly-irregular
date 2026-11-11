@@ -985,7 +985,6 @@
         },
         {
           "kind": "eruption",
-          "sfx": "beat_firaga_impact",
           "at": 0.66,
           "power": 2.0,
           "boost": 2.6,
@@ -996,7 +995,7 @@
           "at": 0.66,
           "dur": 0.2,
           "size": 8.0,
-          "sfx": "beat_fire_impact"
+          "sfx": "beat_firaga_impact"
         },
         {
           "kind": "pillar",

@@ -8,7 +8,7 @@ const MANIFEST := "res://data/sfx_manifest.json"
 ## sequence id -> [phase kind, the cue that phase must name]
 const KEYED := {
 	"fire_battle": ["eruption", "beat_fire_impact"], "fira_battle": ["eruption", "beat_fira_impact"],
-	"glory_firaga": ["eruption", "beat_firaga_impact"], "melee_power_strike": ["ring", "beat_power_strike_impact"],
+	"glory_firaga": ["flash", "beat_firaga_impact"], "melee_power_strike": ["ring", "beat_power_strike_impact"],
 	"melee_cleave": ["arc", "beat_cleave_sweep"], "melee_shield_bash": ["emit", "beat_shield_bash_impact"],
 	"melee_backstab_crit": ["arc", "beat_backstab_crit"], "rogue_scan": ["emit", "beat_scan_lock"],
 	"rogue_smoke_bomb": ["puff", "beat_smoke_bomb_puff"], "raise_battle": ["flash", "beat_raise_halo"],
