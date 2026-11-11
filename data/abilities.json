@@ -183,6 +183,7 @@
     "description": "Ice magic damage to one enemy",
     "damage_multiplier": 2.0,
     "element": "ice",
+    "vfx": {"sequence": "blizzard_battle"},
     "target_type": "single_enemy",
     "magic_school": "black",
     "cost": 300
@@ -198,6 +199,7 @@
     "description": "Stronger ice magic damage to one enemy",
     "damage_multiplier": 3.5,
     "element": "ice",
+    "vfx": {"sequence": "blizzara_battle"},
     "target_type": "single_enemy",
     "magic_school": "black",
     "cost": 1200
@@ -213,6 +215,7 @@
     "description": "Lightning magic damage to one enemy",
     "damage_multiplier": 2.0,
     "element": "lightning",
+    "vfx": {"sequence": "thunder_battle"},
     "target_type": "single_enemy",
     "magic_school": "black",
     "cost": 300
@@ -228,6 +231,7 @@
     "description": "Stronger lightning magic damage to one enemy",
     "damage_multiplier": 3.5,
     "element": "lightning",
+    "vfx": {"sequence": "thundara_battle"},
     "target_type": "single_enemy",
     "magic_school": "black",
     "cost": 1200
@@ -1656,6 +1660,7 @@
     "description": "Lightning arcs between all enemies, dealing full damage to each.",
     "damage_multiplier": 2.2,
     "element": "lightning",
+    "vfx": {"sequence": "chain_lightning_battle"},
     "target_type": "all_enemies"
   },
   "chill": {
@@ -1864,6 +1869,7 @@
     "description": "A bolt of dark energy fired at one enemy.",
     "damage_multiplier": 1.6,
     "element": "dark",
+    "vfx": {"sequence": "dark_bolt_battle"},
     "target_type": "single_enemy"
   },
   "dark_matter": {
