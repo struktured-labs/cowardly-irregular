@@ -414,12 +414,14 @@ func _base_data_for_id(enemy_id: String) -> Dictionary:
 ## Candidate draw pool as base_data dicts — region pool preferred, MONSTER_TYPES const as fallback.
 func _grind_draw_candidates() -> Array:
 	var candidates: Array = []
+	var standing: bool = not _advanced_from_start and not _standing_pool_ids().is_empty()
 	for enemy_id in _region_pool_ids():
 		var data: Dictionary = _base_data_for_id(str(enemy_id))
 		if not data.is_empty():
 			candidates.append(data)
 	if not candidates.is_empty():
-		return candidates
+		## The place's own pool is its own danger; a region-wide union is not, so it is held to the party's reach.
+		return candidates if standing else _within_party_reach(candidates)
 	# Fallback: no pool for this region, unknown region id, or the data layer failed to load.
 	for base_type in BattleEnemySpawner.MONSTER_TYPES:
 		candidates.append({
@@ -430,7 +432,33 @@ func _grind_draw_candidates() -> Array:
 			"weaknesses": base_type.get("weaknesses", []).duplicate(),
 			"resistances": base_type.get("resistances", []).duplicate(),
 		})
-	return candidates
+	return _within_party_reach(candidates)
+
+
+## How far above the party's best level a pool with no place behind it (a village, an unknown region) may reach.
+const FALLBACK_LEVEL_REACH: int = 2
+
+
+## A fallback roster held to the party's level: a grind started in a village drew cave_troll (L10) and shadow_knight (L11) for a L1 party.
+func _within_party_reach(candidates: Array) -> Array:
+	var es: Node = get_node_or_null("/root/EncounterSystem")
+	if es == null or not ("monster_database" in es):
+		return candidates
+	var cap: int = ExpRules.party_top_level(_party) + FALLBACK_LEVEL_REACH
+	var kept: Array = []
+	var lowest: int = 1 << 30
+	var weakest: Array = []
+	for c in candidates:
+		var lv: int = int((es.monster_database.get(str(c.get("id", "")), {}) as Dictionary).get("level", 1))
+		if lv <= cap:
+			kept.append(c)
+		if lv < lowest:
+			lowest = lv
+			weakest = [c]
+		elif lv == lowest:
+			weakest.append(c)
+	## Nothing within reach (a strong region, a weak party): the weakest of what is there, never an empty grind.
+	return kept if not kept.is_empty() else weakest
 
 
 ## Generate enemies with adaptation scaling

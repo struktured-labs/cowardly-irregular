@@ -61,16 +61,42 @@ func test_a_grind_in_a_harder_zone_draws_that_zones_monsters() -> void:
 	assert_eq(_top_level(_c._grind_draw_candidates()), _zone_top("overworld_volcanic"), "standing in the volcanic zone, the grind draws its monsters")
 
 
+func _party_at(level: int) -> void:
+	var hero := Combatant.new()
+	hero.initialize({"name": "Reach", "max_hp": 100, "max_mp": 10, "attack": 10, "defense": 10, "magic": 10, "speed": 10})
+	add_child_autofree(hero)
+	hero.job_level = level
+	_c._party = [hero]
+
+
 func test_no_live_pool_falls_back_to_the_regions_union() -> void:
 	var none: Array[String] = []
 	_es.current_enemy_pool = none
+	_party_at(20)
 	assert_gt(_top_level(_c._grind_draw_candidates()), _zone_top("overworld_central"),
-		"with no live pool (a safe zone) the region's union still supplies the grind")
+		"with no live pool (a safe zone) the region's union still supplies a party that can face it")
+
+
+## Villages and interiors push an EMPTY pool, so a grind started in the first village had no place to read and drew the fallbacks whole.
+func test_a_village_grind_stays_within_a_fresh_partys_reach() -> void:
+	var none: Array[String] = []
+	_es.current_enemy_pool = none
+	_party_at(1)
+	var cap: int = 1 + _c.FALLBACK_LEVEL_REACH
+	for region in ["Overworld", "Harmonia Village"]:
+		AutogrindSystem.current_region_id = region
+		var drawn: Array = _c._grind_draw_candidates()
+		assert_gt(drawn.size(), 0, "CONTROL: a %s grind still finds something to fight" % region)
+		assert_lte(_top_level(drawn), cap, "a L1 party grinding from %s never draws above L%d" % [region, cap])
+	_party_at(12)
+	AutogrindSystem.current_region_id = "Harmonia Village"
+	assert_gt(_top_level(_c._grind_draw_candidates()), cap, "CONTROL: a L12 party in the same village reaches further")
 
 
 func test_an_auto_advanced_grind_reads_its_new_region_not_where_it_started() -> void:
 	_stand_in("overworld_central")
 	_c._advanced_from_start = true
+	_party_at(20)
 	assert_gt(_top_level(_c._grind_draw_candidates()), _zone_top("overworld_central"),
 		"after Auto-Advance the party no longer stands in the starting zone, so the region lookup answers")
 
