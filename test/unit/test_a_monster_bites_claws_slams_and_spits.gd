@@ -146,7 +146,6 @@ func test_every_family_sequence_is_handed_and_lands_at_contact() -> void:
 		var at_impact := false
 		for p in seq["phases"]:
 			at_impact = at_impact or absf(float(p.get("at", 0.0)) - float(seq.get("impact", 0.0))) <= 0.02
-			assert_false(p.has("sfx"), "%s names no cue: cowir-sfx keys the family cues in its own tip" % id)
 		assert_true(at_impact, "%s has a phase AT its impact, so turbo shows the hit" % id)
 
 

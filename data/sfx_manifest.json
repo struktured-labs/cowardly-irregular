@@ -13859,6 +13859,90 @@
       "duration_seconds": 1.1,
       "source": "tools/gen_sequence_beats.py beat_raise_halo"
     },
+    "family_bite": {
+      "file": "assets/audio/sfx/family_bite.ogg",
+      "prompt": "Fired by the flash phase of family_bite through its \"sfx\" key (battle time; one beat per key per frame). A monster's BITE at contact: two closing jaw clicks over a short crunch. -19.7 dB active-RMS, -22.1 through a 200 Hz high-pass. numpy synthesis, not heard by struktured yet.",
+      "duration_seconds": 0.16,
+      "source": "tools/gen_family_cues.py family_bite"
+    },
+    "family_bite_big": {
+      "file": "assets/audio/sfx/family_bite_big.ogg",
+      "prompt": "Fired by the flash phase of family_bite_big through its \"sfx\" key (battle time; one beat per key per frame). The heavier bite (desperate_bite, chomp): the same jaws, a longer crunch and a short tearing shake after the snap. -18.1 dB active-RMS, -20.7 through a 200 Hz high-pass. numpy synthesis, not heard by struktured yet.",
+      "duration_seconds": 0.26,
+      "source": "tools/gen_family_cues.py family_bite_big"
+    },
+    "family_claw": {
+      "file": "assets/audio/sfx/family_claw.ogg",
+      "prompt": "Fired by the streak phase of family_claw through its \"sfx\" key (battle time; one beat per key per frame). A CLAW rake: three staggered tearing swipes. -19.8 dB active-RMS, -20.2 through a 200 Hz high-pass. numpy synthesis, not heard by struktured yet.",
+      "duration_seconds": 0.34,
+      "source": "tools/gen_family_cues.py family_claw"
+    },
+    "family_slam": {
+      "file": "assets/audio/sfx/family_slam.ogg",
+      "prompt": "Fired by the flash phase of family_slam through its \"sfx\" key (battle time; one beat per key per frame). A body SLAM: a dull thump with a mid smack so it survives a laptop speaker, a short low boom, dust. -18.5 dB active-RMS, -23.8 through a 200 Hz high-pass. numpy synthesis, not heard by struktured yet.",
+      "duration_seconds": 0.5,
+      "source": "tools/gen_family_cues.py family_slam"
+    },
+    "family_slam_quake": {
+      "file": "assets/audio/sfx/family_slam_quake.ogg",
+      "prompt": "Fired by the flash phase of family_slam_quake through its \"sfx\" key (battle time; one beat per key per frame). A ground-pound slam: the slam, then a rumble rolling out and stones settling. -17.5 dB active-RMS, -22.6 through a 200 Hz high-pass. numpy synthesis, not heard by struktured yet.",
+      "duration_seconds": 0.73,
+      "source": "tools/gen_family_cues.py family_slam_quake"
+    },
+    "family_spit": {
+      "file": "assets/audio/sfx/family_spit.ogg",
+      "prompt": "Fired by the flash phase of family_spit through its \"sfx\" key (battle time; one beat per key per frame). A SPIT landing: the splat only. The flight is the bolt phase, drawn in battle time, so the file holds one event. -20.2 dB active-RMS, -22.5 through a 200 Hz high-pass. numpy synthesis, not heard by struktured yet.",
+      "duration_seconds": 0.2,
+      "source": "tools/gen_family_cues.py family_spit"
+    },
+    "family_spray": {
+      "file": "assets/audio/sfx/family_spray.ogg",
+      "prompt": "Fired by the puff phase of family_spray through its \"sfx\" key (battle time; one beat per key per frame). A SPRAY: a pressurised hiss that thins, droplets pattering at the end. -20.8 dB active-RMS, -21.1 through a 200 Hz high-pass. numpy synthesis, not heard by struktured yet.",
+      "duration_seconds": 0.42,
+      "source": "tools/gen_family_cues.py family_spray"
+    },
+    "family_screech": {
+      "file": "assets/audio/sfx/family_screech.ogg",
+      "prompt": "Fired by the ring phase of family_screech through its \"sfx\" key (battle time; one beat per key per frame). A SCREECH leaving the mouth: a rasping cry that rises and falls. -20.3 dB active-RMS, -20.6 through a 200 Hz high-pass. numpy synthesis, not heard by struktured yet.",
+      "duration_seconds": 0.6,
+      "source": "tools/gen_family_cues.py family_screech"
+    },
+    "family_drain": {
+      "file": "assets/audio/sfx/family_drain.ogg",
+      "prompt": "Fired by the bolt phase of family_drain through its \"sfx\" key (battle time; one beat per key per frame). A DRAIN's life flying BACK to the monster (the reversed bolt): a rising return over a breath. The outgoing dark keeps the void beats. -20.0 dB active-RMS, -21.8 through a 200 Hz high-pass. numpy synthesis, not heard by struktured yet.",
+      "duration_seconds": 0.46,
+      "source": "tools/gen_family_cues.py family_drain"
+    },
+    "family_cloud": {
+      "file": "assets/audio/sfx/family_cloud.ogg",
+      "prompt": "Fired by the flash phase of family_cloud through its \"sfx\" key (battle time; one beat per key per frame). A poison CLOUD landing: a wet thup, then a slow breathy swell with bubbles. -20.7 dB active-RMS, -21.3 through a 200 Hz high-pass. numpy synthesis, not heard by struktured yet.",
+      "duration_seconds": 0.84,
+      "source": "tools/gen_family_cues.py family_cloud"
+    },
+    "family_dust": {
+      "file": "assets/audio/sfx/family_dust.ogg",
+      "prompt": "Fired by the flash phase of family_dust through its \"sfx\" key (battle time; one beat per key per frame). A DUST storm hitting: a gritty hit and a fine patter raining back. -23.0 dB active-RMS, -23.3 through a 200 Hz high-pass. numpy synthesis, not heard by struktured yet.",
+      "duration_seconds": 0.53,
+      "source": "tools/gen_family_cues.py family_dust"
+    },
+    "beat_blizzara_impact": {
+      "file": "assets/audio/sfx/beat_blizzara_impact.ogg",
+      "prompt": "Fired by the eruption phase of blizzara_battle through its \"sfx\" key (battle time; one beat per key per frame). Blizzara's impact, the tier heard AT the hit as Fira's is: a harder crack, glass shards ringing up, a longer frost hiss, a low drop. -17.9 dB active-RMS, -19.3 through a 200 Hz high-pass. numpy synthesis, not heard by struktured yet.",
+      "duration_seconds": 0.88,
+      "source": "tools/gen_family_cues.py beat_blizzara_impact"
+    },
+    "beat_thundara_impact": {
+      "file": "assets/audio/sfx/beat_thundara_impact.ogg",
+      "prompt": "Fired by the eruption phase of thundara_battle through its \"sfx\" key (battle time; one beat per key per frame). Thundara's FIRST strike, one bigger crack with a longer roll. Its second strike is its own eruption phase and keeps the tier-1 crack. -18.0 dB active-RMS, -19.8 through a 200 Hz high-pass. numpy synthesis, not heard by struktured yet.",
+      "duration_seconds": 1.12,
+      "source": "tools/gen_family_cues.py beat_thundara_impact"
+    },
+    "status_wore_off": {
+      "file": "assets/audio/sfx/status_wore_off.ogg",
+      "prompt": "Fired by the puff phase of wore_off through its \"sfx\" key (battle time; one beat per key per frame). A status, buff or debuff WEARING OFF: a quiet falling two-note release over a breath of air. Quiet on purpose, well under debuff. -24.0 dB active-RMS, -24.6 through a 200 Hz high-pass. numpy synthesis, not heard by struktured yet.",
+      "duration_seconds": 0.36,
+      "source": "tools/gen_family_cues.py status_wore_off"
+    },
     "beat_fire_bloom": {
       "file": "assets/audio/sfx/beat_fire_bloom.ogg",
       "source": "numpy_synth",
