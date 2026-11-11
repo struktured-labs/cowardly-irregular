@@ -997,21 +997,21 @@
           "end": 0
         },
         "attack": {
-          "start": 2,
-          "end": 3
+          "start": 0,
+          "end": 0
         },
         "hit": {
-          "start": 4,
-          "end": 5
+          "start": 0,
+          "end": 0
         },
         "dead": {
-          "start": 6,
-          "end": 7
+          "start": 0,
+          "end": 0
         }
       },
       "tier": "T1",
       "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)",
-      "source": "2026-09-06 facing audit (struktured: 'lots of backward sprites'): drawn facing LEFT, flip baked into the pixels per-frame; monsters face RIGHT. idle 0-1 -> 0: frame 1 is a different wolf (no white mane) (cowir-sprites audit 2026-11-11, manifest only, PNG untouched).",
+      "source": "2026-09-06 facing audit (struktured: 'lots of backward sprites'): drawn facing LEFT, flip baked into the pixels per-frame; monsters face RIGHT. idle 0-1 -> 0: frame 1 is a different wolf (no white mane) (cowir-sprites audit 2026-11-11, manifest only, PNG untouched). attack 2-3, hit 4-5, dead 6-7 -> frame 0, the idle picture: this legacy sheet holds a different creature in those frames, so the monster changed species when it acted (cowir-main ruling 23683, option a; manifest only, PNG untouched; a regen swaps the ranges back).",
       "flip_h": true,
       "flip_h_reason": "idle drawn facing LEFT, away from the party at screen right, unlike the 256px convention; judged by eye at zoom 2026-10-12 (re-review if the art is redrawn)"
     },
@@ -1069,6 +1069,7 @@
     },
     "cave_rat_king": {
       "path": "res://assets/sprites/monsters/cave_rat_king.png",
+      "source": "attack 2-3, hit 4-5, dead 6-7 -> frame 0, the idle picture: this legacy sheet holds a different creature in those frames, so the monster changed species when it acted (cowir-main ruling 23683, option a; manifest only, PNG untouched; a regen swaps the ranges back).",
       "flip_h": true,
       "flip_h_reason": "authored facing LEFT unlike the other 256px sheets; without this it renders backwards in battle (playtest 2026-07-25)",
       "frame_width": 256,
@@ -1080,16 +1081,16 @@
           "end": 1
         },
         "attack": {
-          "start": 2,
-          "end": 3
+          "start": 0,
+          "end": 0
         },
         "hit": {
-          "start": 4,
-          "end": 5
+          "start": 0,
+          "end": 0
         },
         "dead": {
-          "start": 6,
-          "end": 7
+          "start": 0,
+          "end": 0
         }
       },
       "tier": "T1",
@@ -1227,7 +1228,7 @@
     },
     "conveyor_gremlin": {
       "path": "res://assets/sprites/monsters/conveyor_gremlin.png",
-      "source": "idle 0-1 -> 0: frame 1 is a different gremlin on a different cart (cowir-sprites audit 2026-11-11, manifest only, PNG untouched).",
+      "source": "idle 0-1 -> 0: frame 1 is a different gremlin on a different cart (cowir-sprites audit 2026-11-11, manifest only, PNG untouched). attack 2-3, hit 4-5, dead 6-7 -> frame 0, the idle picture: this legacy sheet holds a different creature in those frames, so the monster changed species when it acted (cowir-main ruling 23683, option a; manifest only, PNG untouched; a regen swaps the ranges back).",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 8,
@@ -1237,16 +1238,16 @@
           "end": 0
         },
         "attack": {
-          "start": 2,
-          "end": 3
+          "start": 0,
+          "end": 0
         },
         "hit": {
-          "start": 4,
-          "end": 5
+          "start": 0,
+          "end": 0
         },
         "dead": {
-          "start": 6,
-          "end": 7
+          "start": 0,
+          "end": 0
         }
       },
       "tier": "T1",
@@ -1318,21 +1319,21 @@
           "end": 1
         },
         "attack": {
-          "start": 2,
-          "end": 3
+          "start": 0,
+          "end": 0
         },
         "hit": {
-          "start": 4,
-          "end": 5
+          "start": 0,
+          "end": 0
         },
         "dead": {
-          "start": 6,
-          "end": 7
+          "start": 0,
+          "end": 0
         }
       },
       "tier": "T1",
       "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)",
-      "source": "2026-09-06 facing audit (struktured: 'lots of backward sprites'): drawn facing LEFT, flip baked into the pixels per-frame; monsters face RIGHT.",
+      "source": "2026-09-06 facing audit (struktured: 'lots of backward sprites'): drawn facing LEFT, flip baked into the pixels per-frame; monsters face RIGHT. attack 2-3, hit 4-5, dead 6-7 -> frame 0, the idle picture: this legacy sheet holds a different creature in those frames, so the monster changed species when it acted (cowir-main ruling 23683, option a; manifest only, PNG untouched; a regen swaps the ranges back).",
       "flip_h": true,
       "flip_h_reason": "idle drawn facing LEFT, away from the party at screen right, unlike the 256px convention; judged by eye at zoom 2026-10-12 (re-review if the art is redrawn)"
     },
@@ -1427,25 +1428,25 @@
           "end": 1
         },
         "attack": {
-          "start": 2,
-          "end": 3
+          "start": 0,
+          "end": 0
         },
         "hit": {
-          "start": 4,
-          "end": 5
+          "start": 0,
+          "end": 0
         },
         "dead": {
-          "start": 6,
-          "end": 7
+          "start": 0,
+          "end": 0
         }
       },
       "tier": "T1",
       "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)",
-      "source": "Playtest audit 2026-07-15: single-frame multi-subject defect fixed by clone-adjacent (fix_broken_frames pattern), no regen — main body art retained. | 2026-09-06 facing audit (struktured: 'lots of backward sprites'): drawn facing LEFT, flip baked into the pixels per-frame; monsters face RIGHT."
+      "source": "Playtest audit 2026-07-15: single-frame multi-subject defect fixed by clone-adjacent (fix_broken_frames pattern), no regen — main body art retained. | 2026-09-06 facing audit (struktured: 'lots of backward sprites'): drawn facing LEFT, flip baked into the pixels per-frame; monsters face RIGHT. attack 2-3, hit 4-5, dead 6-7 -> frame 0, the idle picture: this legacy sheet holds a different creature in those frames, so the monster changed species when it acted (cowir-main ruling 23683, option a; manifest only, PNG untouched; a regen swaps the ranges back)."
     },
     "elder_mushroom": {
       "path": "res://assets/sprites/monsters/elder_mushroom.png",
-      "source": "idle 0-1 -> 0: frame 1 is a different creature (a lizard-mushroom), so the idle flipped between two (cowir-sprites audit 2026-11-11, manifest only, PNG untouched).",
+      "source": "idle 0-1 -> 0: frame 1 is a different creature (a lizard-mushroom), so the idle flipped between two (cowir-sprites audit 2026-11-11, manifest only, PNG untouched). attack 2-3, hit 4-5, dead 6-7 -> frame 0, the idle picture: this legacy sheet holds a different creature in those frames, so the monster changed species when it acted (cowir-main ruling 23683, option a; manifest only, PNG untouched; a regen swaps the ranges back).",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 8,
@@ -1455,16 +1456,16 @@
           "end": 0
         },
         "attack": {
-          "start": 2,
-          "end": 3
+          "start": 0,
+          "end": 0
         },
         "hit": {
-          "start": 4,
-          "end": 5
+          "start": 0,
+          "end": 0
         },
         "dead": {
-          "start": 6,
-          "end": 7
+          "start": 0,
+          "end": 0
         }
       },
       "tier": "T1",
@@ -1640,21 +1641,21 @@
           "end": 1
         },
         "attack": {
-          "start": 2,
-          "end": 3
+          "start": 0,
+          "end": 0
         },
         "hit": {
-          "start": 4,
-          "end": 5
+          "start": 0,
+          "end": 0
         },
         "dead": {
-          "start": 6,
-          "end": 7
+          "start": 0,
+          "end": 0
         }
       },
       "tier": "T1",
       "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)",
-      "source": "Playtest audit 2026-07-15: single-frame multi-subject defect fixed by clone-adjacent (fix_broken_frames pattern), no regen — main body art retained."
+      "source": "Playtest audit 2026-07-15: single-frame multi-subject defect fixed by clone-adjacent (fix_broken_frames pattern), no regen — main body art retained. attack 2-3, hit 4-5, dead 6-7 -> frame 0, the idle picture: this legacy sheet holds a different creature in those frames, so the monster changed species when it acted (cowir-main ruling 23683, option a; manifest only, PNG untouched; a regen swaps the ranges back)."
     },
     "ghost": {
       "path": "res://assets/sprites/monsters/ghost.png",
@@ -1694,21 +1695,21 @@
           "end": 0
         },
         "attack": {
-          "start": 2,
-          "end": 3
+          "start": 0,
+          "end": 0
         },
         "hit": {
-          "start": 4,
-          "end": 5
+          "start": 0,
+          "end": 0
         },
         "dead": {
-          "start": 6,
-          "end": 7
+          "start": 0,
+          "end": 0
         }
       },
       "tier": "T1",
       "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)",
-      "source": "Playtest audit 2026-07-15: single-frame multi-subject defect fixed by clone-adjacent (fix_broken_frames pattern), no regen — main body art retained. idle 0-1 -> 0: frame 1 is a different bat (frontal vs profile) (cowir-sprites audit 2026-11-11, manifest only, PNG untouched)."
+      "source": "Playtest audit 2026-07-15: single-frame multi-subject defect fixed by clone-adjacent (fix_broken_frames pattern), no regen — main body art retained. idle 0-1 -> 0: frame 1 is a different bat (frontal vs profile) (cowir-sprites audit 2026-11-11, manifest only, PNG untouched). attack 2-3, hit 4-5, dead 6-7 -> frame 0, the idle picture: this legacy sheet holds a different creature in those frames, so the monster changed species when it acted (cowir-main ruling 23683, option a; manifest only, PNG untouched; a regen swaps the ranges back)."
     },
     "glitch_entity": {
       "path": "res://assets/sprites/monsters/glitch_entity.png",
@@ -2639,6 +2640,7 @@
     },
     "new_age_retro_hippie": {
       "path": "res://assets/sprites/monsters/new_age_retro_hippie.png",
+      "source": "attack 2-3, hit 4-5, dead 6-7 -> frame 0, the idle picture: this legacy sheet holds a different creature in those frames, so the monster changed species when it acted (cowir-main ruling 23683, option a; manifest only, PNG untouched; a regen swaps the ranges back).",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 8,
@@ -2648,16 +2650,16 @@
           "end": 1
         },
         "attack": {
-          "start": 2,
-          "end": 3
+          "start": 0,
+          "end": 0
         },
         "hit": {
-          "start": 4,
-          "end": 5
+          "start": 0,
+          "end": 0
         },
         "dead": {
-          "start": 6,
-          "end": 7
+          "start": 0,
+          "end": 0
         }
       },
       "tier": "T1",
@@ -3066,21 +3068,21 @@
           "end": 1
         },
         "attack": {
-          "start": 2,
-          "end": 3
+          "start": 0,
+          "end": 0
         },
         "hit": {
-          "start": 4,
-          "end": 5
+          "start": 0,
+          "end": 0
         },
         "dead": {
-          "start": 6,
-          "end": 7
+          "start": 0,
+          "end": 0
         }
       },
       "tier": "T1",
       "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)",
-      "source": "2026-09-06 facing audit (struktured: 'lots of backward sprites'): drawn facing LEFT, flip baked into the pixels per-frame; monsters face RIGHT."
+      "source": "2026-09-06 facing audit (struktured: 'lots of backward sprites'): drawn facing LEFT, flip baked into the pixels per-frame; monsters face RIGHT. attack 2-3, hit 4-5, dead 6-7 -> frame 0, the idle picture: this legacy sheet holds a different creature in those frames, so the monster changed species when it acted (cowir-main ruling 23683, option a; manifest only, PNG untouched; a regen swaps the ranges back)."
     },
     "skeleton": {
       "path": "res://assets/sprites/monsters/skeleton.png",
@@ -3266,6 +3268,7 @@
     },
     "snake": {
       "path": "res://assets/sprites/monsters/snake.png",
+      "source": "attack 2-3, hit 4-5, dead 6-7 -> frame 0, the idle picture: this legacy sheet holds a different creature in those frames, so the monster changed species when it acted (cowir-main ruling 23683, option a; manifest only, PNG untouched; a regen swaps the ranges back).",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 8,
@@ -3275,16 +3278,16 @@
           "end": 1
         },
         "attack": {
-          "start": 2,
-          "end": 3
+          "start": 0,
+          "end": 0
         },
         "hit": {
-          "start": 4,
-          "end": 5
+          "start": 0,
+          "end": 0
         },
         "dead": {
-          "start": 6,
-          "end": 7
+          "start": 0,
+          "end": 0
         }
       },
       "tier": "T1",
@@ -3397,7 +3400,7 @@
     },
     "steam_rat": {
       "path": "res://assets/sprites/monsters/steam_rat.png",
-      "source": "idle 0-1 -> 0: frame 1 is a different rat (cowir-sprites audit 2026-11-11, manifest only, PNG untouched).",
+      "source": "idle 0-1 -> 0: frame 1 is a different rat (cowir-sprites audit 2026-11-11, manifest only, PNG untouched). attack 2-3, hit 4-5, dead 6-7 -> frame 0, the idle picture: this legacy sheet holds a different creature in those frames, so the monster changed species when it acted (cowir-main ruling 23683, option a; manifest only, PNG untouched; a regen swaps the ranges back).",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 8,
@@ -3407,16 +3410,16 @@
           "end": 0
         },
         "attack": {
-          "start": 2,
-          "end": 3
+          "start": 0,
+          "end": 0
         },
         "hit": {
-          "start": 4,
-          "end": 5
+          "start": 0,
+          "end": 0
         },
         "dead": {
-          "start": 6,
-          "end": 7
+          "start": 0,
+          "end": 0
         }
       },
       "tier": "T1",
@@ -3557,6 +3560,7 @@
     },
     "toxic_sludge": {
       "path": "res://assets/sprites/monsters/toxic_sludge.png",
+      "source": "attack 2-3, hit 4-5, dead 6-7 -> frame 0, the idle picture: this legacy sheet holds a different creature in those frames, so the monster changed species when it acted (cowir-main ruling 23683, option a; manifest only, PNG untouched; a regen swaps the ranges back).",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 8,
@@ -3566,16 +3570,16 @@
           "end": 1
         },
         "attack": {
-          "start": 2,
-          "end": 3
+          "start": 0,
+          "end": 0
         },
         "hit": {
-          "start": 4,
-          "end": 5
+          "start": 0,
+          "end": 0
         },
         "dead": {
-          "start": 6,
-          "end": 7
+          "start": 0,
+          "end": 0
         }
       },
       "tier": "T1",
@@ -3583,6 +3587,7 @@
     },
     "treasure_mimic": {
       "path": "res://assets/sprites/monsters/treasure_mimic.png",
+      "source": "attack 2-3 and dead 6-7 -> frame 0, the idle picture (hit 4-5 is the same chest and stays): this legacy sheet holds a different creature in those frames, so the monster changed species when it acted (cowir-main ruling 23683, option a; manifest only, PNG untouched; a regen swaps the ranges back).",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 8,
@@ -3592,16 +3597,16 @@
           "end": 1
         },
         "attack": {
-          "start": 2,
-          "end": 3
+          "start": 0,
+          "end": 0
         },
         "hit": {
           "start": 4,
           "end": 5
         },
         "dead": {
-          "start": 6,
-          "end": 7
+          "start": 0,
+          "end": 0
         }
       },
       "tier": "T1",
@@ -3609,6 +3614,7 @@
     },
     "troll": {
       "path": "res://assets/sprites/monsters/troll.png",
+      "source": "attack 2-3, hit 4-5, dead 6-7 -> frame 0, the idle picture: this legacy sheet holds a different creature in those frames, so the monster changed species when it acted (cowir-main ruling 23683, option a; manifest only, PNG untouched; a regen swaps the ranges back).",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 8,
@@ -3618,16 +3624,16 @@
           "end": 1
         },
         "attack": {
-          "start": 2,
-          "end": 3
+          "start": 0,
+          "end": 0
         },
         "hit": {
-          "start": 4,
-          "end": 5
+          "start": 0,
+          "end": 0
         },
         "dead": {
-          "start": 6,
-          "end": 7
+          "start": 0,
+          "end": 0
         }
       },
       "tier": "T1",
@@ -3646,24 +3652,25 @@
           "end": 1
         },
         "attack": {
-          "start": 2,
-          "end": 3
+          "start": 0,
+          "end": 0
         },
         "hit": {
-          "start": 4,
-          "end": 5
+          "start": 0,
+          "end": 0
         },
         "dead": {
-          "start": 6,
-          "end": 7
+          "start": 0,
+          "end": 0
         }
       },
       "tier": "T1",
       "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)",
-      "source": "2026-09-06 facing audit (struktured: 'lots of backward sprites'): drawn facing LEFT, flip baked into the pixels per-frame; monsters face RIGHT."
+      "source": "2026-09-06 facing audit (struktured: 'lots of backward sprites'): drawn facing LEFT, flip baked into the pixels per-frame; monsters face RIGHT. attack 2-3, hit 4-5, dead 6-7 -> frame 0, the idle picture: this legacy sheet holds a different creature in those frames, so the monster changed species when it acted (cowir-main ruling 23683, option a; manifest only, PNG untouched; a regen swaps the ranges back)."
     },
     "viper": {
       "path": "res://assets/sprites/monsters/viper.png",
+      "source": "attack 2-3, hit 4-5, dead 6-7 -> frame 0, the idle picture: this legacy sheet holds a different creature in those frames, so the monster changed species when it acted (cowir-main ruling 23683, option a; manifest only, PNG untouched; a regen swaps the ranges back).",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 8,
@@ -3673,16 +3680,16 @@
           "end": 1
         },
         "attack": {
-          "start": 2,
-          "end": 3
+          "start": 0,
+          "end": 0
         },
         "hit": {
-          "start": 4,
-          "end": 5
+          "start": 0,
+          "end": 0
         },
         "dead": {
-          "start": 6,
-          "end": 7
+          "start": 0,
+          "end": 0
         }
       },
       "tier": "T1",
