@@ -156,3 +156,27 @@ func test_a_recovery_reposes_the_member_at_once() -> void:
 	var at := src.find("func _on_party_hp_changed(")
 	var body := src.substr(at, src.find("\nfunc ", at + 1) - at)
 	assert_true(body.contains("elif new_value > old_value:\n\t\t_rest_after_recovery(member_idx)"), "_on_party_hp_changed doesn't re-pose a member whose HP rose")
+
+
+## cowir-battle 23726: a crit or weakness KILL. The flash was still driving modulate to an opaque colour while
+## the death faded the same sprite; the death now ends the flash (and a knockback) at its first frame.
+func test_a_killing_flash_ends_when_the_death_begins() -> void:
+	var f := _fixture()
+	var scene = f[0]; var es: AnimatedSprite2D = f[4]
+	es.set_meta("home_position", es.position)
+	scene._apply_weakness_hit_visuals(es, "fire", 2.0)
+	scene._apply_weakness_hit_knockback(es, -1.0, 2.0)
+	var flash: Tween = es.get_meta("flash_tween")
+	var knock: Tween = es.get_meta("knockback_tween")
+	assert_true(flash.is_valid() and knock.is_valid(), "CONTROL: the flash and the knockback must be in flight when the death starts")
+	EnemyDeathFx.play(es, "crt_off")
+	assert_false(flash.is_valid(), "the weakness flash is still writing modulate under the death")
+	assert_false(knock.is_valid(), "the knockback is still writing position under the death")
+	var alphas: Array = []
+	var t0 := Time.get_ticks_msec()
+	while es.visible and Time.get_ticks_msec() - t0 < 3000:
+		alphas.append(es.modulate.a)
+		await get_tree().process_frame
+	assert_false(es.visible, "VOID: the death never finished")
+	for i in range(1, alphas.size()):
+		assert_lte(float(alphas[i]), float(alphas[i - 1]) + 0.001, "alpha rose during the death: %s" % str(alphas.slice(maxi(0, i - 2), i + 1)))
