@@ -67,7 +67,12 @@ func test_a_real_fast_grind_pause_reaches_the_dashboard() -> void:
 	## before the CONTROL below (flaky in the full suite). A fixed seed plus an unkillable party keeps the grind running,
 	## so this test checks the pause, not the dice. Nothing about the dashboard or the pause path is stubbed.
 	seed(193764)
+	## The stats alone were NOT unkillable: a fast grind levels the party in two battles, and a level-up's recalculate_stats
+	## rebuilds max_hp and defense from the job, so the third battle was fought by a mortal L2 party (.791 gate: "Party defeated").
+	## At the level cap nothing levels, so nothing recalculates, and the written stats hold for the whole grind.
 	for m in _gl.party:
+		m.job_level = 99
+		m.job_exp = 0
 		m.max_hp = 999999
 		m.current_hp = 999999
 		m.defense = 99999
@@ -87,6 +92,8 @@ func test_a_real_fast_grind_pause_reaches_the_dashboard() -> void:
 	assert_true(_gl._autogrind_dashboard != null and is_instance_valid(_gl._autogrind_dashboard),
 		"CONTROL: fast mode must show the dashboard (grinding=%s, corruption=%.2f, rules=%d)"
 		% [_gl._is_autogrinding, AutogrindSystem.meta_corruption_level, AutogrindSystem.get_autogrind_rules().size()])
+	for m in _gl.party:
+		assert_eq(m.max_hp, 999999, "CONTROL: %s is still the unkillable fixture after the grind's first battles (a level-up would have rebuilt it)" % m.combatant_name)
 	_gl._toggle_autogrind_pause()
 	var t0 := Time.get_ticks_msec()
 	while Time.get_ticks_msec() - t0 < 5000 and not _gl._autogrind_controller.is_paused():
