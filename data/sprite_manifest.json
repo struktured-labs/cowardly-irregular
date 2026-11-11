@@ -6,6 +6,9 @@
       "frame_width": 256,
       "frame_height": 256,
       "fps": 8,
+      "impact_frames": {
+        "attack": 1
+      },
       "animations": [
         "advance",
         "attack",
@@ -380,6 +383,9 @@
       "frame_width": 256,
       "frame_height": 256,
       "fps": 8,
+      "impact_frames": {
+        "attack": 1
+      },
       "animations": [
         "advance",
         "attack",
@@ -1060,7 +1066,8 @@
         },
         "attack": {
           "start": 4,
-          "end": 9
+          "end": 9,
+          "impact": 1
         },
         "hit": {
           "start": 4,
@@ -1753,7 +1760,8 @@
         },
         "attack": {
           "start": 3,
-          "end": 8
+          "end": 8,
+          "impact": 2
         },
         "hit": {
           "start": 3,
@@ -3094,7 +3102,8 @@
         },
         "attack": {
           "start": 4,
-          "end": 9
+          "end": 9,
+          "impact": 3
         },
         "hit": {
           "start": 0,
@@ -3120,7 +3129,8 @@
         },
         "attack": {
           "start": 4,
-          "end": 10
+          "end": 10,
+          "impact": 4
         },
         "hit": {
           "start": 8,
@@ -3146,7 +3156,8 @@
         },
         "attack": {
           "start": 4,
-          "end": 10
+          "end": 10,
+          "impact": 4
         },
         "hit": {
           "start": 8,
@@ -3172,7 +3183,8 @@
         },
         "attack": {
           "start": 4,
-          "end": 10
+          "end": 10,
+          "impact": 4
         },
         "hit": {
           "start": 8,
@@ -3198,7 +3210,8 @@
         },
         "attack": {
           "start": 4,
-          "end": 10
+          "end": 10,
+          "impact": 4
         },
         "hit": {
           "start": 8,
@@ -3224,7 +3237,8 @@
         },
         "attack": {
           "start": 4,
-          "end": 10
+          "end": 10,
+          "impact": 4
         },
         "hit": {
           "start": 8,
@@ -3250,7 +3264,8 @@
         },
         "attack": {
           "start": 4,
-          "end": 10
+          "end": 10,
+          "impact": 4
         },
         "hit": {
           "start": 8,
@@ -3780,7 +3795,8 @@
         },
         "attack": {
           "start": 4,
-          "end": 9
+          "end": 9,
+          "impact": 3
         },
         "hit": {
           "start": 0,

@@ -513,6 +513,7 @@ func _ready() -> void:
 	BattleManager.round_started.connect(_on_round_started_corruption_glitch)  # save-corruption visual_glitch stutter
 	BattleManager.round_ended.connect(_on_round_ended)
 	BattleManager.damage_dealt.connect(_on_damage_dealt)
+	BattleManager.damage_dealt.connect(_note_hit_weight)
 	BattleManager.attack_missed.connect(_on_attack_missed)
 	BattleManager.hit_negated.connect(_on_hit_negated)
 	BattleManager.cast_fizzled.connect(_on_cast_fizzled)
@@ -624,6 +625,8 @@ func _exit_tree() -> void:
 		BattleManager.round_started.disconnect(_on_round_started_corruption_glitch)
 	if BattleManager.damage_dealt.is_connected(_on_damage_dealt):
 		BattleManager.damage_dealt.disconnect(_on_damage_dealt)
+	if BattleManager.damage_dealt.is_connected(_note_hit_weight):
+		BattleManager.damage_dealt.disconnect(_note_hit_weight)
 	if BattleManager.attack_missed.is_connected(_on_attack_missed):
 		BattleManager.attack_missed.disconnect(_on_attack_missed)
 	if BattleManager.status_resisted.is_connected(_on_status_resisted):
@@ -5320,18 +5323,27 @@ func _spawn_impact_now(target_sprite: Node2D, weapon_type: String) -> void:
 
 func _delayed_play_hit_fx(target_anim, target_sprite) -> void:
 	if target_anim and is_instance_valid(target_anim) and is_instance_valid(target_sprite):
+		var hit: Dictionary = _take_hit_weight(target_sprite)
+		var w: float = float(hit["w"])
 		target_anim.play_hit()
 		# Stable anchor: multi-hit chains can arrive while target is still tweening back from the previous hit (msg 2569 #1). weapon_type from the cycle-12 signal cache — solo melee = _last_acting_combatant is the attacker (msg 2754 cycle 14).
 		EffectSystem.spawn_effect(EffectSystem.EffectType.PHYSICAL, _stable_sprite_anchor(target_sprite), Callable(), 1.0, _weapon_type_for(_last_acting_combatant))
 		var kb_dir = -1.0 if enemy_sprite_nodes.has(target_sprite) else 1.0
-		_apply_hit_knockback(target_sprite, kb_dir)
+		_apply_hit_knockback(target_sprite, kb_dir, lerpf(HIT_KNOCKBACK.x, HIT_KNOCKBACK.y, w))
 		_apply_hit_flash(target_sprite)
 		var jt := _tier()
 		if jt <= BattleJuice.Tier.REDUCED:
-			BattleJuice.squash(target_sprite)
+			BattleJuice.squash(target_sprite, 1.12 + HIT_SQUASH * w, 0.88 - HIT_SQUASH * 0.75 * w)
 			if BattleJuice.flag("hit_sparks"):
-				BattleJuice.spawn_burst(_stable_sprite_anchor(target_sprite), Vector2(kb_dir, -0.35), 12 if jt == BattleJuice.Tier.FULL else 6, Color(1.0, 0.9, 0.55))
-			BattleJuice.punch_zoom(_stable_sprite_anchor(target_sprite), 0.02, 0.12)
+				var sparks: int = int(lerpf(HIT_SPARKS.x, HIT_SPARKS.y, w)) if jt == BattleJuice.Tier.FULL else 6
+				if _reduce_flashes():
+					sparks = mini(sparks, 12)
+				BattleJuice.spawn_burst(_stable_sprite_anchor(target_sprite), Vector2(kb_dir, -0.35), sparks, Color(1.0, 0.9, 0.55), lerpf(250.0, 420.0, w))
+			BattleJuice.punch_zoom(_stable_sprite_anchor(target_sprite), lerpf(HIT_ZOOM.x, HIT_ZOOM.y, w) if jt == BattleJuice.Tier.FULL else HIT_ZOOM.x, 0.12 + 0.10 * w)
+		## The shake (and the pad's rumble) belong to hits that MATTER: nothing under HIT_TRAUMA_FROM, so a
+		## chip hit is as quiet as it was. The camera rig honours the Screen Shake setting, BattleJuice the rumble one.
+		if jt == BattleJuice.Tier.FULL and w >= HIT_TRAUMA_FROM:
+			BattleJuice.add_trauma(hit_trauma(w), Vector2(kb_dir, -0.3))
 
 
 func _delayed_play_victory(animator) -> void:
@@ -5494,8 +5506,11 @@ func _animate_melee_attack(attacker_sprite: Node2D, target_sprite: Node2D, attac
 	impact_at = minf(impact_at, hold)
 	var approach: float = 0.12 + (0.05 if _tier() == BattleJuice.Tier.FULL and BattleJuice.flag("anticipation") else 0.0)
 	_last_lunge_length = lead_in + approach + hold + 0.18
+	## A plain single attack at spotlight pace holds its number, sound and death until the hit LANDS (contact,
+	## or the impact frame). Unheld, a kill's death fx began at the action's start and had finished before the
+	## attacker arrived.
 	var held_hit: int = 0
-	if impact_at > 0.0:
+	if spotlight and land_on_impact:
 		held_hit = _hold_melee_damage(lead_in + approach + impact_at)
 	## The stagger, as an interval on the tween rather than an await in the caller's loop —
 	## CLAUDE.md: "`await` in a loop SERIALIZES what should be simultaneous", and the same trap
@@ -5541,8 +5556,9 @@ func _animate_melee_attack(attacker_sprite: Node2D, target_sprite: Node2D, attac
 				attacker_anim.play_attack()
 		if impact_at > 0.0:
 			return
-		_apply_hitstop(attacker_sprite, target_sprite)
+		_apply_hitstop(attacker_sprite, target_sprite, hitstop_for(_peek_hit_weight(target_sprite)))
 		_delayed_play_hit_fx(target_anim, target_sprite)
+		_land_melee_damage(held_hit)
 	)
 	## An authored impact frame: the swing winds up first, and the hit lands when the art does.
 	if impact_at > 0.0:
@@ -5550,7 +5566,7 @@ func _animate_melee_attack(attacker_sprite: Node2D, target_sprite: Node2D, attac
 		tween.tween_callback(func():
 			if not is_instance_valid(self):
 				return
-			_apply_hitstop(attacker_sprite, target_sprite)
+			_apply_hitstop(attacker_sprite, target_sprite, hitstop_for(_peek_hit_weight(target_sprite)))
 			_delayed_play_hit_fx(target_anim, target_sprite)
 			_land_melee_damage(held_hit)
 		)
@@ -5563,6 +5579,74 @@ func _animate_melee_attack(attacker_sprite: Node2D, target_sprite: Node2D, attac
 	tween.set_trans(Tween.TRANS_QUAD)
 	tween.set_ease(Tween.EASE_OUT)
 	tween.tween_property(attacker_sprite, "position", home_pos, 0.18)
+
+
+## ---- THE HIT'S WEIGHT: one number per hit, and the ranges everything scales from. Tune by feel HERE. ----
+## w = damage ÷ the target's max HP, plus a crit and a weakness bonus, capped at 1; a KILL is always 1.
+## Each range is [a chip hit (w 0, exactly .790's hit), the heaviest hit (w 1)].
+const HIT_CRIT_BONUS := 0.25
+const HIT_WEAKNESS_BONUS := 0.30         # per +1.0 of elemental modifier (a x1.5 weakness adds 0.15)
+const HIT_HITSTOP := Vector2(0.07, 0.18)  # seconds both sprites freeze
+const HIT_KILL_HITSTOP := 0.28           # the killing blow's own beat, before the death takes the sprite
+const HIT_KNOCKBACK := Vector2(6.0, 24.0) # px
+const HIT_SQUASH := 0.22                 # added to the target's squash at w 1
+const HIT_SPARKS := Vector2(12.0, 44.0)   # particles in the burst (FULL tier)
+const HIT_ZOOM := Vector2(0.02, 0.04)     # camera punch; BattleCameraRig.ZOOM_CEILING caps it at 0.04 while the UI shares the canvas
+const HIT_TRAUMA_FROM := 0.10            # no shake or rumble below this weight
+const HIT_TRAUMA := Vector2(0.10, 0.65)   # camera trauma from HIT_TRAUMA_FROM up to w 1
+const HIT_WEIGHT_TTL_MSEC := 1500
+
+
+static func hit_weight(amount: int, max_hp: int, is_crit: bool = false, elemental_mod: float = 1.0, kill: bool = false) -> float:
+	if kill:
+		return 1.0
+	var w: float = clampf(float(amount) / maxf(1.0, float(max_hp)), 0.0, 1.0)
+	if is_crit:
+		w += HIT_CRIT_BONUS
+	if elemental_mod > 1.0:
+		w += HIT_WEAKNESS_BONUS * (elemental_mod - 1.0)
+	return clampf(w, 0.0, 1.0)
+
+
+static func hit_trauma(w: float) -> float:
+	if w < HIT_TRAUMA_FROM:
+		return 0.0
+	return lerpf(HIT_TRAUMA.x, HIT_TRAUMA.y, inverse_lerp(HIT_TRAUMA_FROM, 1.0, w))
+
+
+static func hitstop_for(hit: Dictionary) -> float:
+	if bool(hit.get("kill", false)):
+		return HIT_KILL_HITSTOP
+	return lerpf(HIT_HITSTOP.x, HIT_HITSTOP.y, clampf(float(hit.get("w", 0.0)), 0.0, 1.0))
+
+
+## damage_dealt fires when the hit RESOLVES (the action's start); the swing lands later. The weight waits on
+## the target's sprite for the contact that spends it. The heaviest unspent hit wins, and it goes stale.
+func _note_hit_weight(target: Combatant, amount: int, is_crit: bool, _element: String = "", elemental_mod: float = 1.0) -> void:
+	if target == null or not is_instance_valid(target) or amount <= 0:
+		return
+	var sprite: Node2D = _get_combatant_sprite(target)
+	if sprite == null or not is_instance_valid(sprite):
+		return
+	var kill: bool = not target.is_alive or target.current_hp <= 0
+	var w: float = hit_weight(amount, target.max_hp, is_crit, elemental_mod, kill)
+	var waiting: Dictionary = _peek_hit_weight(sprite)
+	sprite.set_meta("hit_weight", {"w": maxf(w, float(waiting["w"])), "kill": kill or bool(waiting["kill"]), "at": Time.get_ticks_msec()})
+
+
+func _peek_hit_weight(sprite: Node2D) -> Dictionary:
+	if sprite != null and is_instance_valid(sprite) and sprite.has_meta("hit_weight"):
+		var noted: Dictionary = sprite.get_meta("hit_weight")
+		if Time.get_ticks_msec() - int(noted.get("at", 0)) <= HIT_WEIGHT_TTL_MSEC * maxf(1.0, 1.0 / maxf(Engine.time_scale, 0.01)):
+			return noted
+	return {"w": 0.0, "kill": false}
+
+
+func _take_hit_weight(sprite: Node2D) -> Dictionary:
+	var hit: Dictionary = _peek_hit_weight(sprite)
+	if sprite != null and is_instance_valid(sprite) and sprite.has_meta("hit_weight"):
+		sprite.remove_meta("hit_weight")
+	return hit
 
 
 ## What a one-shot pose (a swing, a cast) may take before the next beat, in game seconds. Sheets longer than
@@ -5620,7 +5704,7 @@ func _land_held_hit() -> void:
 
 
 ## Fable-pass hitstop: freeze both combatants' anim playback ~70ms at contact. Visual-only (no Engine.time_scale touch — timers/music unaffected); restore is validity-guarded so mid-stop frees are safe.
-func _apply_hitstop(attacker_sprite: Node2D, target_sprite: Node2D) -> void:
+func _apply_hitstop(attacker_sprite: Node2D, target_sprite: Node2D, duration: float = 0.07) -> void:
 	if not BattleJuice.flag("hit_stop"):
 		return
 	var frozen: Array = []
@@ -5630,10 +5714,17 @@ func _apply_hitstop(attacker_sprite: Node2D, target_sprite: Node2D) -> void:
 			frozen.append(s)
 	if frozen.is_empty():
 		return
-	get_tree().create_timer(0.07).timeout.connect(func():
+	## A heavy hit's longer stop holds the attacker's LUNGE too, so the swing and the walk home stay in step.
+	var lunge = attacker_sprite.get_meta("attack_tween", null) if is_instance_valid(attacker_sprite) else null
+	var held_lunge: bool = duration > 0.07 and lunge is Tween and lunge.is_valid() and lunge.is_running()
+	if held_lunge:
+		lunge.pause()
+	get_tree().create_timer(duration).timeout.connect(func():
 		for s in frozen:
 			if is_instance_valid(s):
 				(s as AnimatedSprite2D).speed_scale = 1.0
+		if held_lunge and lunge.is_valid():
+			lunge.play()
 	, CONNECT_ONE_SHOT)
 
 
@@ -5641,13 +5732,13 @@ func _spawn_lunge_ghost(src: AnimatedSprite2D) -> void:
 	BattleJuice.spawn_ghost(src)
 
 
-func _apply_hit_knockback(sprite: Node2D, direction: float = 1.0) -> void:
+func _apply_hit_knockback(sprite: Node2D, direction: float = 1.0, magnitude: float = 6.0) -> void:
 	if not is_instance_valid(sprite):
 		return
 	var rest: Vector2 = _knockback_rest(sprite)
 	var original_x = rest.x
 	var original_y = rest.y
-	var knockback_x = original_x + (6.0 * direction)
+	var knockback_x = original_x + (magnitude * direction)
 	# Vertical pop reads as weight; x-only knockback reads as a slide
 	var pop: float = 4.0 if _tier() <= BattleJuice.Tier.REDUCED else 0.0
 	var tween = _knockback_tween(sprite)
