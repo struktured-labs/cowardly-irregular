@@ -5336,7 +5336,9 @@ func _delayed_play_hit_fx(target_anim, target_sprite) -> void:
 		if jt == BattleJuice.Tier.OFF:
 			EffectSystem.spawn_effect(EffectSystem.EffectType.PHYSICAL, _stable_sprite_anchor(target_sprite), Callable(), 1.0, _weapon_type_for(_last_acting_combatant))
 		else:
-			EffectSystem.spawn_hit_spark(_stable_sprite_anchor(target_sprite), hit_spark_for(_last_acting_combatant), w, kb_dir, _hit_spark_tint(_last_acting_combatant), jt == BattleJuice.Tier.MINIMAL)
+			## Reduce Flashes: the spark stays (it says which weapon hit) but never grows past a light hit's size.
+			var spark_w: float = minf(w, HIT_SPARK_REDUCED_MAX) if _reduce_flashes() else w
+			EffectSystem.spawn_hit_spark(_stable_sprite_anchor(target_sprite), hit_spark_for(_last_acting_combatant), spark_w, kb_dir, _hit_spark_tint(_last_acting_combatant), jt == BattleJuice.Tier.MINIMAL)
 		_apply_hit_knockback(target_sprite, kb_dir, lerpf(HIT_KNOCKBACK.x, HIT_KNOCKBACK.y, w))
 		_apply_hit_flash(target_sprite)
 		if jt <= BattleJuice.Tier.REDUCED:
@@ -5601,6 +5603,7 @@ const HIT_KILL_HITSTOP := 0.28           # the killing blow's own beat, before t
 const HIT_KNOCKBACK := Vector2(6.0, 24.0) # px
 const HIT_SQUASH := 0.22                 # added to the target's squash at w 1
 const HIT_SPARKS := Vector2(12.0, 44.0)   # particles in the burst (FULL tier)
+const HIT_SPARK_REDUCED_MAX := 0.25   # the weapon spark's weight cap under Reduce Flashes
 const HIT_ZOOM := Vector2(0.02, 0.04)     # camera punch; BattleCameraRig.ZOOM_CEILING caps it at 0.04 while the UI shares the canvas
 const HIT_TRAUMA_FROM := 0.10            # no shake or rumble below this weight
 const HIT_TRAUMA := Vector2(0.10, 0.65)   # camera trauma from HIT_TRAUMA_FROM up to w 1
