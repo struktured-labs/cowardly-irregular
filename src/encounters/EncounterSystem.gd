@@ -268,7 +268,7 @@ func _filter_permakilled(pool: Array) -> Array:
 	if GameState == null or not ("permakilled_monster_types" in GameState) \
 			or GameState.permakilled_monster_types.is_empty():
 		return pool
-	return pool.filter(func(id): return not str(id) in GameState.permakilled_monster_types)
+	return pool.filter(func(id): return not spawn_base_id(str(id)) in GameState.permakilled_monster_types)
 
 
 func _try_generate_miniboss() -> Array:
@@ -352,6 +352,12 @@ func _generate_hero_mimics_party() -> Array:
 
 func _create_enemy_data(enemy_id: String) -> Dictionary:
 	"""Create enemy data from monster database or fallback"""
+	# A spawn-marked level ("goblin@L14"): build the ordinary species, then re-level it for the floor that asked.
+	var marked_level := spawn_level_of(enemy_id)
+	if marked_level > 0:
+		var relevelled: Dictionary = apply_spawn_level(_create_enemy_data(spawn_base_id(enemy_id)), marked_level)
+		relevelled["id"] = enemy_id
+		return relevelled
 	# A spawn-marked elite: strip the marker, build the ordinary species, then scale it.
 	var spawn_is_elite := enemy_id.ends_with(ELITE_SUFFIX)
 	if spawn_is_elite:
@@ -656,6 +662,41 @@ func reset_for_new_game() -> void:
 	repel_steps_remaining = 0
 	steps_since_last_encounter = 0
 	forced_encounter_next_step = false
+
+
+## An id suffix marking THIS SPAWN's level ("imp@L13"): a dungeon floor re-levels the species it draws so its trash sits near its boss.
+const LEVEL_MARK: String = "@L"
+
+
+## The level a spawn id asks for, or 0 when it carries no level mark.
+static func spawn_level_of(enemy_id: String) -> int:
+	var at := enemy_id.rfind(LEVEL_MARK)
+	if at <= 0:
+		return 0
+	var tail := enemy_id.substr(at + LEVEL_MARK.length())
+	return int(tail) if tail.is_valid_int() and int(tail) > 0 else 0
+
+
+## The catalog species of a spawn id: the id with its level mark removed.
+static func spawn_base_id(enemy_id: String) -> String:
+	return enemy_id.substr(0, enemy_id.rfind(LEVEL_MARK)) if spawn_level_of(enemy_id) > 0 else enemy_id
+
+
+## Re-levels built enemy data: stats ride the level curve the party's do, EXP and gold scale with the level (a level costs L*100).
+static func apply_spawn_level(data: Dictionary, level: int) -> Dictionary:
+	var base_level := maxi(1, int(data.get("level", 1)))
+	if level <= 0 or level == base_level:
+		return data
+	var growth := Combatant.level_multiplier(level) / Combatant.level_multiplier(base_level)
+	for key in ["max_hp", "attack", "defense", "magic", "magic_defense"]:
+		if data.has(key):
+			data[key] = maxi(1, int(round(float(data[key]) * growth)))
+	var pay := float(level) / float(base_level)
+	data["exp_reward"] = int(round(float(data.get("exp_reward", 0)) * pay))
+	data["gold_reward"] = int(round(float(data.get("gold_reward", 0)) * pay))
+	data["level"] = level
+	data["spawn_level"] = level
+	return data
 
 
 ## An id suffix marking THIS SPAWN as a field elite. Elite-ness belongs to the spawn, not the
