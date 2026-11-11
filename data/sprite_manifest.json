@@ -994,7 +994,7 @@
       "animations": {
         "idle": {
           "start": 0,
-          "end": 1
+          "end": 0
         },
         "attack": {
           "start": 2,
@@ -1011,7 +1011,7 @@
       },
       "tier": "T1",
       "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)",
-      "source": "2026-09-06 facing audit (struktured: 'lots of backward sprites'): drawn facing LEFT, flip baked into the pixels per-frame; monsters face RIGHT.",
+      "source": "2026-09-06 facing audit (struktured: 'lots of backward sprites'): drawn facing LEFT, flip baked into the pixels per-frame; monsters face RIGHT. idle 0-1 -> 0: frame 1 is a different wolf (no white mane) (cowir-sprites audit 2026-11-11, manifest only, PNG untouched).",
       "flip_h": true,
       "flip_h_reason": "idle drawn facing LEFT, away from the party at screen right, unlike the 256px convention; judged by eye at zoom 2026-10-12 (re-review if the art is redrawn)"
     },
@@ -1227,13 +1227,14 @@
     },
     "conveyor_gremlin": {
       "path": "res://assets/sprites/monsters/conveyor_gremlin.png",
+      "source": "idle 0-1 -> 0: frame 1 is a different gremlin on a different cart (cowir-sprites audit 2026-11-11, manifest only, PNG untouched).",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 8,
       "animations": {
         "idle": {
           "start": 0,
-          "end": 1
+          "end": 0
         },
         "attack": {
           "start": 2,
@@ -1444,13 +1445,14 @@
     },
     "elder_mushroom": {
       "path": "res://assets/sprites/monsters/elder_mushroom.png",
+      "source": "idle 0-1 -> 0: frame 1 is a different creature (a lizard-mushroom), so the idle flipped between two (cowir-sprites audit 2026-11-11, manifest only, PNG untouched).",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 8,
       "animations": {
         "idle": {
           "start": 0,
-          "end": 1
+          "end": 0
         },
         "attack": {
           "start": 2,
@@ -1656,13 +1658,14 @@
     },
     "ghost": {
       "path": "res://assets/sprites/monsters/ghost.png",
+      "source": "idle 0-1 -> 3-4: frames 0-1 are a grey blob, not the spirit (cowir-sprites audit 2026-11-11, manifest only, PNG untouched).",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 8,
       "animations": {
         "idle": {
-          "start": 0,
-          "end": 1
+          "start": 3,
+          "end": 4
         },
         "attack": {
           "start": 2,
@@ -1688,7 +1691,7 @@
       "animations": {
         "idle": {
           "start": 0,
-          "end": 1
+          "end": 0
         },
         "attack": {
           "start": 2,
@@ -1705,7 +1708,7 @@
       },
       "tier": "T1",
       "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)",
-      "source": "Playtest audit 2026-07-15: single-frame multi-subject defect fixed by clone-adjacent (fix_broken_frames pattern), no regen — main body art retained."
+      "source": "Playtest audit 2026-07-15: single-frame multi-subject defect fixed by clone-adjacent (fix_broken_frames pattern), no regen — main body art retained. idle 0-1 -> 0: frame 1 is a different bat (frontal vs profile) (cowir-sprites audit 2026-11-11, manifest only, PNG untouched)."
     },
     "glitch_entity": {
       "path": "res://assets/sprites/monsters/glitch_entity.png",
@@ -1925,6 +1928,7 @@
     },
     "masterite_arbiter_abstract": {
       "path": "res://assets/sprites/monsters/masterite_arbiter_abstract.png",
+      "source": "dead 6-7 -> 7: frame 6 is an opaque panel of ~30 thumbnail sprites (cowir-sprites audit 2026-11-11, manifest only, PNG untouched).",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 8,
@@ -1942,7 +1946,7 @@
           "end": 5
         },
         "dead": {
-          "start": 6,
+          "start": 7,
           "end": 7
         }
       },
@@ -2003,13 +2007,14 @@
     },
     "masterite_arbiter_medieval": {
       "path": "res://assets/sprites/monsters/masterite_arbiter_medieval.png",
+      "source": "idle 0-1 -> 3-4: frames 0-1 are a sword and a crescent with a tiny figure; the swordmaster is 3-4 (cowir-sprites audit 2026-11-11, manifest only, PNG untouched).",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 8,
       "animations": {
         "idle": {
-          "start": 0,
-          "end": 1
+          "start": 3,
+          "end": 4
         },
         "attack": {
           "start": 2,
@@ -2265,6 +2270,7 @@
     },
     "masterite_tempo_futuristic": {
       "path": "res://assets/sprites/monsters/masterite_tempo_futuristic.png",
+      "source": "dead 6-7 -> 7 and hit 4-5 -> 5: frame 6 is a thumbnail panel, frame 4 a design sheet with UI chrome (cowir-sprites audit 2026-11-11, manifest only, PNG untouched).",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 8,
@@ -2278,11 +2284,11 @@
           "end": 3
         },
         "hit": {
-          "start": 4,
+          "start": 5,
           "end": 5
         },
         "dead": {
-          "start": 6,
+          "start": 7,
           "end": 7
         }
       },
@@ -2395,6 +2401,7 @@
     },
     "masterite_warden_abstract": {
       "path": "res://assets/sprites/monsters/masterite_warden_abstract.png",
+      "source": "dead 6-7 -> 7: frame 6 is an opaque panel of thumbnail sprites (cowir-sprites audit 2026-11-11, manifest only, PNG untouched).",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 8,
@@ -2412,7 +2419,7 @@
           "end": 5
         },
         "dead": {
-          "start": 6,
+          "start": 7,
           "end": 7
         }
       },
@@ -2605,6 +2612,7 @@
     },
     "mushroom": {
       "path": "res://assets/sprites/monsters/mushroom.png",
+      "source": "dead 6-7 -> 7: frame 6 sits in a white framed box (cowir-sprites audit 2026-11-11, manifest only, PNG untouched).",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 5,
@@ -2623,7 +2631,7 @@
           "end": 5
         },
         "dead": {
-          "start": 6,
+          "start": 7,
           "end": 7
         }
       },
@@ -3389,13 +3397,14 @@
     },
     "steam_rat": {
       "path": "res://assets/sprites/monsters/steam_rat.png",
+      "source": "idle 0-1 -> 0: frame 1 is a different rat (cowir-sprites audit 2026-11-11, manifest only, PNG untouched).",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 8,
       "animations": {
         "idle": {
           "start": 0,
-          "end": 1
+          "end": 0
         },
         "attack": {
           "start": 2,
@@ -3962,12 +3971,12 @@
           "end": 5
         },
         "dead": {
-          "start": 6,
+          "start": 7,
           "end": 7
         }
       },
       "tier": "T1",
-      "source": "DELIBERATE REUSE of masterite_arbiter_abstract.png — the Margin is the ONE-SHOT trial in the Vertex Antechamber, and one more face of the Calibrant, which wears the masks it has already spent on you. Same call as the_calibrant reusing chancellor_mordaine.png, and modelled on that entry down to this field: tier T1 is the REUSED art's tier, not a generation of mine — no PNG was written or touched. The bespoke sheet is cowir-sprites' call, briefed by this monster's _META_trial line in monsters.json and its bestiary entry; replace this entry when it ships. Registering SOMETHING here is not optional polish: without an entry test_monster_sprite_coverage_derived is right that a sub-final boss renders as a SLIME, so this is the floor, not the plan."
+      "source": "DELIBERATE REUSE of masterite_arbiter_abstract.png — the Margin is the ONE-SHOT trial in the Vertex Antechamber, and one more face of the Calibrant, which wears the masks it has already spent on you. Same call as the_calibrant reusing chancellor_mordaine.png, and modelled on that entry down to this field: tier T1 is the REUSED art's tier, not a generation of mine — no PNG was written or touched. The bespoke sheet is cowir-sprites' call, briefed by this monster's _META_trial line in monsters.json and its bestiary entry; replace this entry when it ships. Registering SOMETHING here is not optional polish: without an entry test_monster_sprite_coverage_derived is right that a sub-final boss renders as a SLIME, so this is the floor, not the plan. dead 6-7 -> 7: frame 6 is an opaque panel of ~30 thumbnail sprites (cowir-sprites audit 2026-11-11, manifest only, PNG untouched)."
     }
   },
   "npc_sheets": {

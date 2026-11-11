@@ -9,7 +9,9 @@ extends GutTest
 ## The suburban Tempo masterite (two couriers in one frame) is fixed the same way but neither measure here can see
 ## it: its two figures overlap in height.
 
-const MIN_IDLE_OVERLAP := 0.45
+## Raised 0.45 -> 0.70 on 2026-11-11: five idles flipped between two creatures at 0.52-0.61 (giant_bat, conveyor_gremlin,
+## elder_mushroom, steam_rat, blood_wolf_alpha). The next real pair measures 0.76 (the mimic opening its mouth).
+const MIN_IDLE_OVERLAP := 0.70
 ## A second band of rows at least this share of the frame's height, with clear rows between, is a second creature.
 const BAND_SHARE := 0.15
 const BAND_GAP := 8
