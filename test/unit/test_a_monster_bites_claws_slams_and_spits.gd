@@ -204,6 +204,29 @@ func test_a_family_is_tinted_by_the_move_and_sized_to_the_creature() -> void:
 	assert_almost_eq(_scene._attacker_scale(spr), BattleSceneScript.FAMILY_SCALE_MAX, 0.001, "a dragon's is capped")
 
 
+func test_a_move_is_aimed_at_the_body_not_at_the_frame() -> void:
+	## cutscenes 24028: a battler's anchor is its FRAME centre, and the Fighter's figure stands ~95 px off it. A figure
+	## drawn in the left third of a 96 px frame, at 2x: the body is 2 x (16 - 48) = 64 px left of the anchor.
+	var img := Image.create(96, 96, false, Image.FORMAT_RGBA8)
+	img.fill_rect(Rect2i(0, 16, 32, 64), Color.WHITE)
+	var sf := SpriteFrames.new()
+	sf.add_animation("idle")
+	sf.add_frame("idle", ImageTexture.create_from_image(img))
+	var spr := AnimatedSprite2D.new()
+	spr.sprite_frames = sf
+	spr.position = Vector2(700, 300)
+	spr.scale = Vector2(2, 2)
+	_scene.add_child(spr)
+	var anchor: Vector2 = _scene._stable_sprite_anchor(spr)
+	var body: Vector2 = _scene._figure_anchor(spr)
+	assert_almost_eq(body.x - anchor.x, -64.0, 2.0, "the aim follows the figure, not the frame (%.1f px)" % (body.x - anchor.x))
+	spr.flip_h = true
+	assert_almost_eq(_scene._figure_anchor(spr).x - anchor.x, 64.0, 2.0, "and its mirror when the sprite is flipped")
+	## CONTROL: a figure that fills its frame is aimed at its anchor.
+	var full: AnimatedSprite2D = _scene.enemy_sprite_nodes[0]
+	assert_almost_eq(_scene._figure_anchor(full).x, _scene._stable_sprite_anchor(full).x, 1.0, "a centred figure is aimed at its anchor")
+
+
 func test_a_thrown_move_does_not_walk_up_to_its_target() -> void:
 	var foe_sprite: AnimatedSprite2D = _scene.enemy_sprite_nodes[0]
 	## A melee move just before it, so a stale contact clock exists to be cleared.

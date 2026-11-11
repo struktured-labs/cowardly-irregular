@@ -3424,6 +3424,25 @@ static func melee_overlay(ability: Dictionary, key: String) -> String:
 	return id if id != "" and not FractalFX.load_sequence(id).is_empty() else ""
 
 
+## Where a battler's BODY is: its stable anchor is the centre of its FRAME, and a figure can stand well off that (the
+## Fighter's is ~95 px left of it, cutscenes 24028), so an effect aimed at the anchor lands beside the hero it hits.
+## The anchor plus the idle frame's figure centre, on screen; the plain anchor when the frame cannot be read.
+func _figure_anchor(sprite: Node2D) -> Vector2:
+	var anchor := _stable_sprite_anchor(sprite)
+	if not (sprite is AnimatedSprite2D):
+		return anchor
+	var spr := sprite as AnimatedSprite2D
+	if spr.sprite_frames == null or not spr.sprite_frames.has_animation(&"idle") or spr.sprite_frames.get_frame_count(&"idle") == 0:
+		return anchor
+	var tex := spr.sprite_frames.get_frame_texture(&"idle", 0)
+	if tex == null:
+		return anchor
+	var off: Vector2 = AdvanceAuraClass.figure_rect_of(tex).get_center() - Vector2(tex.get_size()) * 0.5
+	if spr.flip_h:
+		off.x = -off.x
+	return anchor + off * Vector2(absf(spr.scale.x), absf(spr.scale.y))
+
+
 ## The accent a family sequence is drawn in for this ability: its own `vfx.palette`, else its element, else its rider.
 static func family_tint(ability: Dictionary) -> String:
 	var vfx = ability.get("vfx", {})
@@ -3460,7 +3479,7 @@ func _play_melee_overlay(caster: Combatant, caster_sprite: Node2D, ability: Dict
 	for target in targets:
 		var ts = _get_combatant_sprite(target)
 		if ts != null and is_instance_valid(ts):
-			anchors.append(_stable_sprite_anchor(ts))
+			anchors.append(_figure_anchor(ts))
 	if anchors.is_empty():
 		return
 	var centre := Vector2.ZERO
@@ -3476,7 +3495,7 @@ func _play_melee_overlay(caster: Combatant, caster_sprite: Node2D, ability: Dict
 		tint = family_tint(ability)
 	var tier := int(intensity["tier"])
 	var compact := not signature_sound_allowed()
-	var from := _stable_sprite_anchor(caster_sprite)
+	var from := _figure_anchor(caster_sprite)
 	## The lunge's own contact, not the sequence's authored 0.17: below the FULL tier the approach is 0.05 s shorter,
 	## and an effect that lands after its hit is the jank this exists to remove (main 23818).
 	var contact := _last_contact_in
@@ -3513,11 +3532,11 @@ func _play_melee_cloud(caster: Combatant, caster_sprite: Node2D, ability: Dictio
 	for target in targets:
 		var ts = _get_combatant_sprite(target)
 		if ts != null and is_instance_valid(ts):
-			centre += _stable_sprite_anchor(ts)
+			centre += _figure_anchor(ts)
 			n += 1
 	if n == 0:
 		return
-	EffectSystem.spawn_sequence(seq_id, _stable_sprite_anchor(caster_sprite), centre / float(n),
+	EffectSystem.spawn_sequence(seq_id, _figure_anchor(caster_sprite), centre / float(n),
 		_attacker_scale(caster_sprite), {}, 1, not signature_sound_allowed(), -1.0, family_tint(ability))
 
 
@@ -3534,11 +3553,11 @@ func _play_outcome_beat(seq_id: String, combatant: Combatant, from_combatant: Co
 	var sprite = _get_combatant_sprite(combatant)
 	if sprite == null or not is_instance_valid(sprite):
 		return
-	var to := _stable_sprite_anchor(sprite)
+	var to := _figure_anchor(sprite)
 	var from := to
 	var from_sprite = _get_combatant_sprite(from_combatant) if from_combatant != null and is_instance_valid(from_combatant) else null
 	if from_sprite != null and is_instance_valid(from_sprite):
-		from = _stable_sprite_anchor(from_sprite)
+		from = _figure_anchor(from_sprite)
 	var wait := _melee_contact_timer.time_left if _melee_contact_timer != null else 0.0
 	if wait > 0.0:
 		get_tree().create_timer(wait).timeout.connect(_spawn_outcome_sequence.bind(seq_id, from, to))
