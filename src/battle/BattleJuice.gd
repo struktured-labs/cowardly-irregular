@@ -88,9 +88,13 @@ func add_trauma(amount: float, dir: Vector2 = Vector2.ZERO, sustain: float = 0.0
 	rumble(amount)
 	if camera_rig:
 		camera_rig.add_trauma(amount, dir, sustain)
-	# Heavy hits thump the arena itself (bass-thump pulse; struktured "try it" 2026-08-14)
-	if amount >= 0.3 and env_background and is_instance_valid(env_background) and flag("env_pulse") and battle_tier() != Tier.OFF:
+	# Heavy hits thump the arena itself (bass-thump pulse; struktured "try it" 2026-08-14). Whole-screen motion, so it follows Screen Shake (main 23982).
+	if amount >= 0.3 and _shake_allowed() and env_background and is_instance_valid(env_background) and flag("env_pulse") and battle_tier() != Tier.OFF:
 		env_background.pulse(amount)
+
+
+func _shake_allowed() -> bool:
+	return not (GameState and "screen_shake_enabled" in GameState and not GameState.screen_shake_enabled)
 
 
 func punch_zoom(pivot: Vector2, strength: float = 0.03, duration: float = 0.14) -> void:

@@ -9,6 +9,7 @@ extends GutTest
 var _shake_before := true
 var _flags_before: Dictionary = {}
 var _rig_before = null
+var _env_before = null
 var _wanted: Array = []
 
 
@@ -16,6 +17,7 @@ func before_each() -> void:
 	_shake_before = GameState.screen_shake_enabled
 	_flags_before = GameState.battle_fx_flags.duplicate(true)
 	_rig_before = BattleJuice.camera_rig
+	_env_before = BattleJuice.env_background
 	BattleJuice._last_rumble_at = -1.0
 	BattleJuice._last_rumble_amount = 0.0
 	BattleJuice.burst_host = null
@@ -29,12 +31,26 @@ func after_each() -> void:
 	GameState.screen_shake_enabled = _shake_before
 	GameState.battle_fx_flags = _flags_before
 	BattleJuice.camera_rig = _rig_before
+	BattleJuice.env_background = _env_before
 	BattleJuice._last_rumble_at = -1.0
 	Engine.time_scale = 1.0
 
 
 func _on_wanted(amount: float) -> void:
 	_wanted.append(amount)
+
+
+class FakeArena extends Node:
+	var pulses: Array = []
+	func pulse(amount: float) -> void:
+		pulses.append(amount)
+
+
+func _arena() -> FakeArena:
+	var a := FakeArena.new()
+	add_child_autofree(a)
+	BattleJuice.env_background = a
+	return a
 
 
 func _rig() -> BattleCameraRig:
@@ -67,6 +83,26 @@ func test_with_shake_off_a_spell_still_rumbles_and_the_camera_stays() -> void:
 	EffectSystem._trigger_screen_shake(12.0, 0.3)
 	assert_eq(_wanted.size(), 1, "Screen Shake off: the spell's hit still reaches the pad")
 	assert_eq(rig._trauma, 0.0, "and the camera rig took no trauma")
+
+
+## The arena's bass-thump pulse is whole-screen motion: it follows Screen Shake, for a spell and for a melee hit alike
+## (cowir-main 23982). The pad is a separate sense and still fires.
+func test_the_arena_pulse_follows_screen_shake_and_the_pad_does_not() -> void:
+	_rig()
+	var arena := _arena()
+	assert_true(BattleJuice.flag("env_pulse"), "PRECONDITION: the arena pulse toggle is on")
+	GameState.screen_shake_enabled = true
+	EffectSystem._trigger_screen_shake(20.0, 0.3)   # 20/25 = 0.8 trauma, a heavy hit
+	assert_eq(arena.pulses.size(), 1, "CONTROL: shake on, a heavy spell pulses the arena")
+	BattleJuice._last_rumble_at = -1.0
+	_wanted = []
+	arena.pulses = []
+	GameState.screen_shake_enabled = false
+	EffectSystem._trigger_screen_shake(20.0, 0.3)
+	BattleJuice._last_rumble_at = -1.0
+	BattleJuice.add_trauma(0.8)   # the melee route
+	assert_eq(arena.pulses.size(), 0, "Screen Shake off: no arena pulse from a spell or a melee hit")
+	assert_eq(_wanted.size(), 2, "and both hits still want the pad")
 
 
 ## The pad's own switch still gates it: Pad Rumble off is silent whatever Screen Shake says.
