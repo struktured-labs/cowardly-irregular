@@ -515,6 +515,7 @@ func _ready() -> void:
 	BattleManager.damage_dealt.connect(_on_damage_dealt)
 	BattleManager.attack_missed.connect(_on_attack_missed)
 	BattleManager.hit_negated.connect(_on_hit_negated)
+	BattleManager.cast_fizzled.connect(_on_cast_fizzled)
 	BattleManager.status_resisted.connect(_on_status_resisted)
 	BattleManager.healing_done.connect(_on_healing_done)
 	BattleManager.mp_restored.connect(_on_mp_restored)
@@ -629,6 +630,8 @@ func _exit_tree() -> void:
 		BattleManager.status_resisted.disconnect(_on_status_resisted)
 	if BattleManager.hit_negated.is_connected(_on_hit_negated):
 		BattleManager.hit_negated.disconnect(_on_hit_negated)
+	if BattleManager.cast_fizzled.is_connected(_on_cast_fizzled):
+		BattleManager.cast_fizzled.disconnect(_on_cast_fizzled)
 	if BattleManager.healing_done.is_connected(_on_healing_done):
 		BattleManager.healing_done.disconnect(_on_healing_done)
 	if BattleManager.mp_restored.is_connected(_on_mp_restored):
@@ -2811,10 +2814,10 @@ func _on_ability_selected(idx: int, ability_ids: Array) -> void:
 				_execute_ability(ability_id, ally_target)
 
 
-func _execute_ability(ability_id: String, target: Combatant, target_all: bool = false) -> void:
+func _execute_ability(ability_id: String, target: Combatant, target_all: bool = false, forced: bool = false) -> void:
 	"""Queue ability (animation plays during execution phase)"""
 	var targets: Array = _targets_for_queued_ability(ability_id, target, target_all)
-	BattleManager.player_use_ability(ability_id, targets)
+	BattleManager.player_use_ability(ability_id, targets, forced)
 
 
 ## Both menus pass one focus and set target_all only for all_enemies, so an all_allies spell buffed the caster alone.
@@ -4260,6 +4263,84 @@ func _lost_battle_is_escape() -> bool:
 	return party_members.any(func(m): return is_instance_valid(m) and m.is_alive)
 
 
+## The escape beat (struktured 2026-11-07: "still a bit rough/abrupt … slowing it down slightly and adding more
+## flair"). On a SUCCESSFUL escape only, every standing member gives a startled hop, turns away and sprints off
+## the right edge, one after another with dust and speed lines, while the monsters lean in. Wall clock, so it
+## reads the same at every speed; GameLoop awaits it before its exit transition, capped so it can never stall.
+const ESCAPE_STAGGER := 0.12
+const ESCAPE_HOP := 0.12
+const ESCAPE_SPRINT := 0.45
+const ESCAPE_CAP := 1.5
+var _escape_beat_played := false
+
+
+## Seconds the beat lasts for `runners` members: the last one's hop + sprint, never past the cap.
+static func escape_beat_length(runners: int) -> float:
+	if runners <= 0:
+		return 0.0
+	return minf(ESCAPE_STAGGER * float(runners - 1) + ESCAPE_HOP + ESCAPE_SPRINT, ESCAPE_CAP)
+
+
+func play_escape_beat() -> void:
+	if _escape_beat_played or turbo_mode or autogrind_console_mode or not _lost_battle_is_escape():
+		return
+	_escape_beat_played = true
+	SoundManager.play_battle("escape_run")
+	var edge := get_viewport_rect().size.x + 160.0
+	var runners := 0
+	for i in party_sprite_nodes.size():
+		var s: AnimatedSprite2D = party_sprite_nodes[i]
+		if not is_instance_valid(s) or not s.visible:
+			continue
+		if i < party_members.size() and (not is_instance_valid(party_members[i]) or not party_members[i].is_alive):
+			continue
+		_run_off(s, ESCAPE_STAGGER * float(runners), edge)
+		runners += 1
+	for e in enemy_sprite_nodes:
+		if is_instance_valid(e) and e.visible and not e.has_meta("dying"):
+			var lean := EnemyDeathFx.real_time(e.create_tween())
+			var x0: float = e.position.x
+			lean.tween_property(e, "position:x", x0 + 10.0, 0.08).set_ease(Tween.EASE_OUT)
+			lean.tween_property(e, "position:x", x0, 0.07).set_ease(Tween.EASE_IN)
+	if runners > 0:
+		await get_tree().create_timer(escape_beat_length(runners) * Engine.time_scale).timeout
+
+
+func _run_off(s: AnimatedSprite2D, delay: float, edge: float) -> void:
+	var p0 := s.position
+	var dx := edge - s.global_position.x
+	var t := EnemyDeathFx.real_time(s.create_tween())
+	if delay > 0.0:
+		t.tween_interval(delay)
+	t.tween_property(s, "position:y", p0.y - 16.0, ESCAPE_HOP * 0.5).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	t.tween_callback(func() -> void:
+		if is_instance_valid(s):
+			s.flip_h = not s.flip_h
+	)
+	t.tween_property(s, "position:y", p0.y, ESCAPE_HOP * 0.5).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	t.tween_callback(func() -> void:
+		if is_instance_valid(s):
+			BattleJuice.spawn_burst(s.global_position + Vector2(0, 18), Vector2(-1, -0.2), 8, Color(0.78, 0.72, 0.6, 0.85), 140.0)
+			_spawn_speed_lines(s)
+	)
+	t.tween_property(s, "position:x", p0.x + dx, ESCAPE_SPRINT).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+
+
+func _spawn_speed_lines(s: Node2D) -> void:
+	for j in range(3):
+		var line := ColorRect.new()
+		line.name = "EscapeSpeedLine"
+		line.color = Color(1, 1, 1, 0.7)
+		line.size = Vector2(28, 2)
+		line.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		line.position = s.global_position - global_position + Vector2(-34, -14 + 12 * j)
+		add_child(line)
+		var lt := EnemyDeathFx.real_time(line.create_tween())
+		lt.tween_property(line, "position:x", line.position.x - 40.0, 0.25)
+		lt.parallel().tween_property(line, "modulate:a", 0.0, 0.25)
+		lt.tween_callback(line.queue_free)
+
+
 func _process(delta: float) -> void:
 	"""Handle post-battle input and danger music"""
 	# Check for danger music (player about to die)
@@ -4766,6 +4847,7 @@ func _on_selection_turn_ended(combatant: Combatant) -> void:
 	_close_win98_menu()
 	# Return the active PC to formation (no-op for enemies).
 	_step_active_pc(combatant, false)
+	_tell_enemy_advance(combatant)
 	_update_ui()
 
 
@@ -4929,8 +5011,18 @@ func _on_action_executing(combatant: Combatant, action: Dictionary) -> void:
 		"item":
 			SoundManager.play_item(str(action.get("item_id", "")))
 			animator.play_item()
+		"retreat":
+			## A grind's safety retreat is a flee attempt and had no cue at all; gated like the other
+			## grind-noisy cues so a turbo/console retreat doesn't stack (cowir-sfx 23484, battle 23486).
+			## The cue KEY, not the ability id: the orphan audit reads every play_* literal as a sound key,
+			## and "flee" is none (cowir-sfx 23570). Trimmed -6 dB onto the -12 a cast Flee plays at, so a
+			## grind retreat is never louder than the ability it is (cowir-main 23577, autogrind 23578).
+			if signature_sound_allowed():
+				SoundManager.play_battle_scaled("ability_flee", -6.0)
 		"defer":
 			animator.play_named_animation("defer")
+			if not (combatant in party_members):
+				_spawn_enemy_brace(attacker_sprite)
 
 
 func _on_group_attack_executing(participants: Array, group_type: String, targets: Array, formation_id: String = "") -> void:
@@ -5694,6 +5786,7 @@ func _show_round_banner(round_num: int) -> void:
 func _on_action_executed(combatant: Combatant, action: Dictionary, targets: Array) -> void:
 	"""Handle action execution — play buff/debuff/status sounds based on ability effect"""
 	_track_advance_run_step(combatant, action, targets)
+	_spend_enemy_tell(combatant, action)
 	_update_ui()
 	_check_masterite_phase2_music_swap()
 	# msg 2749 cycle 12: clear the acting-combatant cache once the action fully resolves. Damage_dealt emits from status ticks / reactive counters that fire OUTSIDE an action window now attribute to null, matching the "no acting combatant" fact rather than the last completed action.
@@ -6167,10 +6260,16 @@ func _on_enemy_died(enemy_idx: int) -> void:
 					BattleJuice.spawn_burst(_stable_sprite_anchor(sprite), Vector2(0, -0.5), 14, Color(1.0, 0.82, 0.45))
 					BattleJuice.hitstop([sprite], 0.12)
 					BattleJuice.punch_zoom(_stable_sprite_anchor(sprite), 0.03, 0.2)
+				## An ordinary monster leaves in its world's death style (data/enemy_death_styles.json, on the
+				## wall clock, struktured 2026-11-07); a boss keeps the death below, and so does the OFF tier.
+				if EnemyDeathFx.applies_to(enemy) and death_tier != BattleJuice.Tier.OFF:
+					EnemyDeathFx.play(sprite, EnemyDeathFx.current_style(), func() -> void: SoundManager.play_death("enemy_death"))
+					_fade_dying_name(sprite)
+					return
 				var tween = sprite.create_tween()  # dies with the sprite a grind restart frees
 				tween.tween_property(sprite, "modulate", Color(3.0, 3.0, 3.0, 1.0), 0.1)
 				tween.tween_property(sprite, "modulate", Color(1.0, 1.0, 1.0, 1.0), 0.1)
-				# The burned-away scorch starts WITH the fade — after the killing blow's hit sound, not under it.
+				# The death cue starts WITH the fade — after the killing blow's hit sound, not under it. Its file length is not a hold.
 				tween.tween_callback(func() -> void: SoundManager.play_death("enemy_death"))
 				if has_dissolve:
 					tween.tween_method(func(v: float) -> void:
@@ -6593,6 +6692,13 @@ func _on_hit_negated(target: Combatant, banner: String) -> void:
 		return
 	_results_display.on_hit_negated(target, banner)
 	SoundManager.play_battle("attack_miss")
+
+
+## A cast that could not pay: the banner and cast_fizzle, never attack_miss (a fizzle is not a miss; sfx 23446).
+func _on_cast_fizzled(caster: Combatant, banner: String) -> void:
+	if is_instance_valid(_results_display):
+		_results_display.on_hit_negated(caster, banner)
+	SoundManager.play_battle("cast_fizzle")
 
 
 ## A status that failed to land: a soft glancing tink and a RESIST banner, never silence (struktured 2026-11-01).
@@ -8135,7 +8241,11 @@ func _spawn_advance_flourish(combatant: Combatant, sprite: Node2D, count: int, f
 	_spawn_advance_shape(shape, origin, color, n)
 	## cowir-sfx: five escalating cues, advance_flourish_2..5. The full-bank beat has its own
 	## (full_bank_unleash) rather than a louder fifth — it is a different moment, not a bigger one.
-	SoundManager.play_battle("advance_flourish_%d" % n)
+	if combatant in party_members:
+		SoundManager.play_battle("advance_flourish_%d" % n)
+		_last_advance_cue = "advance_flourish_%d" % n
+	else:
+		_last_advance_cue = _play_enemy_advance_cue(n)
 	## The full-bank beat rides BattleManager.full_bank_unleashed, NOT a call from here — the signal
 	## already reaches _on_full_bank_unleashed and calling it too would double the flash and the cue.
 
@@ -8211,6 +8321,107 @@ static func advance_flourish_color(combatant: Combatant, party_color: Color) -> 
 	if combatant == null or not combatant.job:
 		return ADVANCE_FLOURISH_ENEMY_COLOR
 	return party_color
+
+
+## ─── A monster's Advance and Defer, readable at a glance (struktured via main 23349) ───
+
+## Wall-clock gap between the rising steps of an enemy's selection-time ladder, so a ×4 is heard climbing at any speed.
+const ENEMY_LADDER_STEP_S: float = 0.12
+const ENEMY_BRACE_COLOR: Color = Color(0.55, 0.68, 0.85)
+
+
+## The cue the last Advance flourish played, so a test can tell a monster's from a PC's without hearing it.
+var _last_advance_cue: String = ""
+## Rungs the last selection-time ladder scheduled; 0 when sound was gated off.
+var _enemy_ladder_played: int = 0
+
+
+## The size of the Advance `combatant` has queued this round (its latest pending action), 0 when it queued anything else.
+static func enemy_advance_count(combatant: Combatant, pending: Array) -> int:
+	for i in range(pending.size() - 1, -1, -1):
+		var a = pending[i]
+		if a is Dictionary and a.get("combatant") == combatant:
+			return (a.get("actions", []) as Array).size() if str(a.get("type", "")) == "advance" else 0
+	return 0
+
+
+static func enemy_advance_cue(n: int) -> String:
+	return "enemy_advance_%d" % clampi(n, 2, 4)
+
+
+## cowir-sfx's monster ladder (lower, minor, darker than the party's); literal keys so test_sfx_key_orphan_audit sees each.
+func _play_enemy_advance_cue(n: int) -> String:
+	var key: String = enemy_advance_cue(n)
+	match key:
+		"enemy_advance_2":
+			SoundManager.play_battle("enemy_advance_2")
+		"enemy_advance_3":
+			SoundManager.play_battle("enemy_advance_3")
+		_:
+			SoundManager.play_battle("enemy_advance_4")
+	return key
+
+
+## At selection: the monster powers up for the Advance it just chose, and its ladder climbs to N.
+func _tell_enemy_advance(combatant: Combatant) -> void:
+	if combatant == null or combatant in party_members:
+		return
+	var n: int = enemy_advance_count(combatant, BattleManager.pending_actions)
+	if n < EnemyAdvanceTell.MIN_SHOWN:
+		return
+	var sprite: Node2D = _get_combatant_sprite(combatant)
+	if sprite == null or not is_instance_valid(sprite):
+		return
+	EnemyAdvanceTell.on(sprite).show_queue(n, combatant, ADVANCE_FLOURISH_ENEMY_COLOR,
+		AdvanceAuraClass.should_show(_tier(), BattleJuice.flag("advance_aura")))
+	_enemy_ladder_played = 0
+	if not signature_sound_allowed():
+		return  # a turbo/console grind would stack every monster's ladder into a drone (autogrind 23371); the tell still shows
+	for k in range(2, mini(n, 4) + 1):
+		_enemy_ladder_played += 1
+		if k == 2:
+			_play_enemy_advance_cue(k)
+		else:
+			get_tree().create_timer(ENEMY_LADDER_STEP_S * float(k - 2), true, false, true).timeout.connect(_play_enemy_advance_cue.bind(k))
+
+
+## Each resolved sub-action spends one; the Advance's own resolution clears what is left.
+func _spend_enemy_tell(combatant: Combatant, action: Dictionary) -> void:
+	if combatant == null or combatant in party_members:
+		return
+	var sprite: Node2D = _get_combatant_sprite(combatant)
+	var t: EnemyAdvanceTell = sprite.get_node_or_null(EnemyAdvanceTell.NODE_NAME) as EnemyAdvanceTell if sprite and is_instance_valid(sprite) else null
+	if t == null:
+		return
+	if str(action.get("type", "")) == "advance":
+		t.clear()
+	else:
+		t.spend()
+
+
+## A monster's Defer: it hunkers behind a brief grey-blue shimmer, with its own cue (enemies have no menu to play one).
+func _spawn_enemy_brace(sprite: Node2D) -> void:
+	SoundManager.play_battle("enemy_defer")
+	if sprite == null or not is_instance_valid(sprite) or _tier() == BattleJuice.Tier.MINIMAL:
+		return
+	BattleJuice.squash(sprite, 1.06, 0.92, 0.05, 0.18)
+	var ring := Line2D.new()
+	ring.name = "EnemyBrace"
+	ring.width = 4.0
+	ring.default_color = ENEMY_BRACE_COLOR
+	ring.z_index = 60
+	for i in 25:
+		var ang: float = PI * (0.15 + 0.7 * float(i) / 24.0) + PI
+		ring.add_point(Vector2(cos(ang), sin(ang) * 0.6) * 64.0)
+	ring.position = sprite.global_position
+	add_child(ring)
+	var tw := create_tween()
+	tw.set_parallel(true)
+	tw.tween_property(ring, "scale", Vector2.ONE * 1.15, 0.45)
+	tw.tween_property(ring, "modulate:a", 0.0, 0.5)
+	tw.chain().tween_callback(func():
+		if is_instance_valid(ring):
+			ring.queue_free())
 
 
 func _get_job_quip_color(combatant: Combatant) -> Color:

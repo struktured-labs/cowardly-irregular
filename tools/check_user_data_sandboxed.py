@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+""":"
+echo "$0 is a Python script: run it with python3, not bash" >&2; exit 2
+":"""
 """Every deploy invocation that can write user:// must redirect it, or say why it cannot.
 
 WHY THIS EXISTS
