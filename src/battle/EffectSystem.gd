@@ -640,12 +640,12 @@ func _make_screen_flash(parent: Node, color: Color) -> ColorRect:
 
 func _trigger_screen_shake(intensity: float, duration: float) -> void:
 	"""Trigger screen shake effect. Kills any running shake first to prevent camera drift."""
-	# Settings gate - skip entirely if user disabled screen shake
-	if GameState and "screen_shake_enabled" in GameState and not GameState.screen_shake_enabled:
-		return
-	# In battle the camera rig owns the camera (single writer) — trauma model replaces the 30Hz steps; legacy path below stays for CutsceneDirector's exploration shakes
+	# In battle the rig owns the camera and gates the SHAKE on its own; asked first, so Screen Shake off still leaves the pad rumble.
 	if BattleJuice.camera_rig != null:
 		BattleJuice.add_trauma(clampf(intensity / 25.0, 0.1, 1.0), Vector2.ZERO, maxf(duration - 0.3, 0.0))
+		return
+	# Settings gate for the legacy camera steps below (CutsceneDirector's exploration shakes).
+	if GameState and "screen_shake_enabled" in GameState and not GameState.screen_shake_enabled:
 		return
 	var viewport = get_viewport()
 	if not viewport:

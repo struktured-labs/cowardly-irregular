@@ -16,6 +16,8 @@ var flags: Dictionary = {}
 
 ## Shortest gap between two rumbles — a flurry of hits must not restart the motors every frame.
 const RUMBLE_MIN_GAP := 0.06
+## Emitted when a rumble passed every gate, before the pad lookup: headless has no pads, so this is what a test can see.
+signal rumble_wanted(amount: float)
 var _last_rumble_at: float = -1.0
 var _last_rumble_amount: float = 0.0
 
@@ -71,6 +73,7 @@ func should_rumble(amount: float, now: float = -1.0) -> bool:
 func rumble(amount: float) -> void:
 	if not should_rumble(amount):
 		return
+	rumble_wanted.emit(amount)
 	var pads := Input.get_connected_joypads()
 	if pads.is_empty():
 		return
