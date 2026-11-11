@@ -24,6 +24,8 @@ command grep -a -E '^\[VCLIP\]|SCRIPT ERROR|Parse Error' "$LOG" || true
 [ -e "$_XDG/godot" ] || { echo "[vclip] BLOCKED: the sandbox at $_XDG is empty, so the redirect did not fire." >&2; exit 4; }
 [ "$EC" -eq 0 ] && [ -s "$AVI" ] || { echo "[vclip] $LABEL FAILED (exit $EC) - $LOG" >&2; exit 1; }
 command grep -a -q '^\[VCLIP\] built' "$LOG" || { echo "[vclip] $LABEL: no build line in $LOG" >&2; exit 1; }
+# The clip is for judging the beat WITH its music: refuse one whose overlay was built over anything but a victory bed or the stinger.
+command grep -a -qE '^\[VCLIP\] under=(victory|stinger_boss_defeated)' "$LOG" || { echo "[vclip] $LABEL FAILED: no victory music under the letters ($(command grep -a '^\[VCLIP\] under=' "$LOG"))" >&2; exit 1; }
 PROBE="$(ffprobe -v error -show_entries stream=codec_type -of csv=p=0 "$AVI" | sort -u | tr '\n' ' ')"
 case "$PROBE" in *audio*video*) ;; *) echo "[vclip] $LABEL FAILED: the AVI lacks a video or an audio stream ($PROBE)" >&2; exit 1 ;; esac
 # The battle's setup precedes the build; keep the last <seconds> of the run, which is the beat.
