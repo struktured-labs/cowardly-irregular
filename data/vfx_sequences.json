@@ -2813,7 +2813,7 @@
       ]
     },
     "fighter_provoke": {
-      "label": "Provoke: a red shout-ring from the Fighter and a tether that snaps to the target (landed_taunt or fizzle follows)",
+      "label": "Provoke: a red shout-ring from the Fighter and a tether that snaps to the target (landed_taunt or fizzle follows) The caster phases sit 80 px toward the enemy: a cast's origin is the caster's hand anchor, right of the Fighter's body (measured on the clip).",
       "start": 0.08,
       "impact": 0.25,
       "phases": [
@@ -2823,7 +2823,11 @@
           "at": 0.0,
           "dur": 0.26,
           "scale": 7.5,
-          "palette": "taunt"
+          "palette": "taunt",
+          "offset": [
+            -80,
+            0
+          ]
         },
         {
           "kind": "ring",
@@ -2831,7 +2835,11 @@
           "at": 0.07,
           "dur": 0.3,
           "scale": 11.0,
-          "palette": "taunt"
+          "palette": "taunt",
+          "offset": [
+            -80,
+            0
+          ]
         },
         {
           "kind": "shake",
@@ -2845,7 +2853,11 @@
           "dur": 0.12,
           "width": 1.2,
           "life": 0.3,
-          "palette": "taunt"
+          "palette": "taunt",
+          "a_offset": [
+            -80,
+            0
+          ]
         },
         {
           "kind": "flash",
