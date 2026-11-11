@@ -92,3 +92,26 @@ func test_a_dungeon_floors_level_mark_reaches_the_grind() -> void:
 	add_child_autofree(foe)
 	assert_eq(int(foe.get_meta("spawn_level", 0)), 13, "the headless combatant carries the level, so ExpRules and x10_ratio read it")
 	assert_eq(int(foe.get_meta("exp_reward", 0)), int(imp["exp_reward"]), "and its own reward, which the resolver pays")
+
+
+## The resolver pays a spawn's own reward over its species' catalog row (live's _authored_reward does the same).
+func test_the_headless_battle_pays_a_relevelled_spawns_own_reward() -> void:
+	var hero := Combatant.new()
+	hero.initialize({"name": "Payee", "max_hp": 9999, "max_mp": 99, "attack": 9999, "defense": 999, "magic": 10, "speed": 50})
+	add_child_autofree(hero)
+	var paid: Array = []
+	for own_reward in [0, 777]:
+		var foe := Combatant.new()
+		foe.initialize({"name": "Imp", "max_hp": 5, "max_mp": 0, "attack": 1, "defense": 0, "magic": 1, "speed": 1})
+		add_child_autofree(foe)
+		foe.set_meta("monster_type", "imp")
+		if own_reward > 0:
+			foe.set_meta("spawn_level", 13)
+			foe.set_meta("exp_reward", own_reward)
+		hero.current_hp = hero.max_hp
+		var result: Dictionary = HeadlessBattleResolver.new().resolve_battle([hero], [foe])
+		assert_true(bool(result.get("victory", false)), "CONTROL: the fight was won")
+		paid.append(int(result.get("exp_gained", 0)))
+	gut.p("    catalog imp paid %d, the re-levelled one %d" % [paid[0], paid[1]])
+	assert_gt(paid[0], 0, "CONTROL: a catalog imp pays its row's EXP")
+	assert_gt(paid[1], paid[0] * 5, "a spawn carrying its own EXP is paid that, not the catalog L4 row's")
