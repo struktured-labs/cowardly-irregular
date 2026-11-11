@@ -2868,6 +2868,8 @@ const TANK_HP_PER_CURVE := 120.0
 
 ## An enemy's authored level (combatants never store it), else its job level.
 func _archetype_level(combatant: Combatant) -> int:
+	if combatant.has_meta("spawn_level"):
+		return int(combatant.get_meta("spawn_level"))   # a floor's re-levelled spawn is judged at the level it fights at
 	if combatant.has_meta("monster_type") and EncounterSystem:
 		var row: Variant = EncounterSystem.monster_database.get(combatant.get_meta("monster_type", ""), null)
 		if row is Dictionary:
