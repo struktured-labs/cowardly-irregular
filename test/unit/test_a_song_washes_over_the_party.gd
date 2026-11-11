@@ -30,7 +30,9 @@ func _draw(phase: Dictionary, from := Vector2(700, 300), to := Vector2(300, 300)
 	var host := Node2D.new()
 	add_child_autofree(host)
 	var fx = FX.new(host, 11)
-	fx.play({"phases": [phase]}, from, to)
+	var now: Dictionary = phase.duplicate()
+	now["at"] = 0.0
+	fx.play({"phases": [now]}, from, to)
 	return host
 
 
@@ -65,6 +67,8 @@ func test_a_ward_assembles_plate_by_plate() -> void:
 		if c is Polygon2D:
 			first = c
 			break
+	if first == null:
+		return
 	var began: Vector2 = first.position
 	var frames := 0
 	var start := Time.get_ticks_msec()

@@ -3550,7 +3550,7 @@
           "radius": 52,
           "palette": "holy",
           "offset": [
-            -44,
+            -140,
             -6
           ]
         },
@@ -3561,7 +3561,7 @@
           "size": 4.0,
           "alpha": 0.55,
           "offset": [
-            -44,
+            -140,
             -6
           ]
         },
@@ -3572,7 +3572,7 @@
           "scale": 2.8,
           "palette": "holy",
           "offset": [
-            -44,
+            -140,
             -6
           ]
         },
@@ -3608,7 +3608,7 @@
           "radius": 64,
           "palette": "ward",
           "offset": [
-            0,
+            -90,
             10
           ]
         },
@@ -3619,7 +3619,7 @@
           "size": 4.0,
           "alpha": 0.5,
           "offset": [
-            0,
+            -90,
             -50
           ]
         },
@@ -3630,7 +3630,7 @@
           "scale": 3.2,
           "palette": "ward",
           "offset": [
-            0,
+            -90,
             30
           ]
         },
@@ -3642,7 +3642,7 @@
           "palette": "ward",
           "ground_glow": false,
           "offset": [
-            0,
+            -90,
             -60
           ]
         }
