@@ -256,7 +256,7 @@ func spawn_sequence(seq_id: String, from: Vector2, to: Vector2, power: float = 1
 	fx.on_sfx = play_phase_sfx
 	fx.on_element_phase = run_element_phase
 	var total: float = fx.play(seq, from, to, clampf(power, POWER_MIN, POWER_MAX), compact)
-	return {"total": total, "impact": 0.01 if compact else FractalFX.impact_time(seq)}
+	return {"total": total, "impact": 0.01 if compact else FractalFX.impact_time(seq) + FractalFX.travel_delay(seq, from, to)}
 
 
 ## Sequence phases drawn here, not in FractalFX: an element's ORIGINAL burst (struktured via main 23405: Fire keeps
