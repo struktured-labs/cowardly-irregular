@@ -110,6 +110,20 @@ func test_a_party_wide_song_reaches_the_far_end_later() -> void:
 		"play() starts the far target's phases later by the travel")
 
 
+## Turbo and the grind console (compact) play the impact at once: the wash adds NO time there, near or far (autogrind 23825).
+func test_at_turbo_the_wash_costs_no_time() -> void:
+	var singer := Vector2(900, 300)
+	var seq := _seq("battle_hymn_battle")
+	var host := Node2D.new()
+	add_child_autofree(host)
+	var t_near: float = FX.new(host, 3).play(seq, singer, Vector2(800, 320), 1.0, true)
+	var t_far: float = FX.new(host, 3).play(seq, singer, Vector2(500, 360), 1.0, true)
+	assert_almost_eq(t_far, t_near, 0.001, "compact: the far target ends when the near one does")
+	var src := FileAccess.get_file_as_string("res://src/battle/EffectSystem.gd")
+	assert_true(src.contains('"impact": 0.01 if compact else FractalFX.impact_time(seq) + FractalFX.travel_delay(seq, from, to)'),
+		"and spawn_sequence reports the compact impact without the travel")
+
+
 func test_a_ribbon_and_its_notes_are_drawn() -> void:
 	var ribbon: Dictionary = _phases(_seq("battle_hymn_battle"), "ribbon")[0]
 	var host := _draw(ribbon)
