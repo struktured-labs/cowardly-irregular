@@ -45,10 +45,10 @@ func test_no_card_is_drawn_under_the_resting_title() -> void:
 	var overlay: Control = OverlayScript.new()
 	add_child_autofree(overlay)
 	overlay.build(_results(SPRITES.size()), scene)
-	var title: Label = null
+	var title: Control = null
 	var cards: Array = []
 	for c in overlay.get_children():
-		if c is Label and (c as Label).text.replace(" ", "") == "VICTORY":
+		if c is Control and c.name == "VictoryTitle":
 			title = c
 		elif c is Control and absf((c as Control).custom_minimum_size.x - OverlayScript.CARD_W) < 0.5:
 			cards.append(c)

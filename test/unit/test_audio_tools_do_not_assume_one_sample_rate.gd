@@ -49,6 +49,7 @@ const NOT_A_REWRITER := {
 	"gen_steam_bed.py": "GENERATES; same",
 	"seam_loop_beds.py": "reads and reports seam figures",
 	"demo_capture.sh": "encodes a DEMO capture of the engine's own mix (Movie Maker AVIs) to mp4; no master is its input or output, and it reads the capture's sample rate rather than assuming one",
+	"victory_clip.sh": "encodes a REVIEW clip of the engine's own mix (a Movie Maker AVI) to mp4; no master is its input or output, and it passes no -ar, so the capture keeps its own rate",
 	"soundscape_capture.sh": "encodes a REVIEW capture of the engine's own mix into tmp/soundscape; no master is its input or output, and it passes no -ar",
 	"suno_api.py": "DOWNLOADS a new track",
 	"suno_browser.py": "DOWNLOADS a new track",
@@ -57,6 +58,7 @@ const NOT_A_REWRITER := {
 	"make_web_audio.sh": "derives a WEB TIER beside the masters and never writes one (cowir-deploy's)",
 	"make_web_voice.sh": "derives the web VOICE tier; 24 kHz is the deliberate tier rate, not an assumption",
 	"voice_spectrum.py": "DECODES only, for analysis — writes no audio",
+	"death_clip.sh": "encodes a REVIEW clip of the engine's own mix (a Movie Maker AVI) to mp4; no master is its input or output, and it passes no -ar, so the capture keeps its own rate",
 }
 
 

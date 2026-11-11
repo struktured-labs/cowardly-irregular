@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+""":"
+echo "$0 is a Python script: run it with python3, not bash" >&2; exit 2
+":"""
 """Arms for check_unbound_vars.py, refereed by BASH ITSELF.
 
 Every arm is a RUNNABLE straight-line fixture. Each is judged three ways and

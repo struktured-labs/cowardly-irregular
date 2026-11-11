@@ -76,6 +76,8 @@ const DYNAMIC_PREFIXES := {
 	"boss_line_": "voiced_line_clip",
 	# A door style's own cue, composed from the record's style in VillageDoor.play; test_every_door_style_has_its_own_voice proves each resolves.
 	"door_shop_": "\"door_%s_%s\"",
+	# The VICTORY! letter ticks, built as "victory_letter_%d" by SoundManager.play_victory_letter; test_each_victory_letter_ticks proves all seven resolve.
+	"victory_letter_": "\"victory_letter_%d\"",
 	"w2_": "_get_world_sfx_prefix",
 	"w3_": "_get_world_sfx_prefix",
 	"w4_": "_get_world_sfx_prefix",

@@ -125,6 +125,16 @@ func test_premise_the_tool_walk_finds_the_instruments() -> void:
 			"%s is exempted for runtime but the walk no longer finds it — delete the exemption, or fix the walk. An exemption for an absent file asserts nothing." % str(k))
 
 
+## Why a tool failed, in its own words: its last non-empty lines. The text after the last "\n" was empty for every tool
+## whose output ends in a newline (all of them), so a red named the tool and dropped the reason (music 23372, sfx 23382).
+func _reason(text: String, lines: int = 2, width: int = 180) -> String:
+	var kept := PackedStringArray()
+	for l in text.strip_edges().split("\n"):
+		if l.strip_edges() != "":
+			kept.append(l.strip_edges())
+	return " | ".join(kept.slice(maxi(0, kept.size() - lines))).substr(0, width)
+
+
 ## THE FLOOR. Every instrument still runs and its own controls still hold.
 func test_every_tool_that_offers_a_selftest_passes_it() -> void:
 	var probe := _run(["-c", "print('alive')"])
@@ -148,9 +158,9 @@ func test_every_tool_that_offers_a_selftest_passes_it() -> void:
 		# A missing optional dependency is an environment gap, not a broken instrument. Any
 		# other non-zero exit is the tool failing its own controls.
 		if text.contains("ModuleNotFoundError") or text.contains("ImportError"):
-			env_gaps.append("%s (%s)" % [name, text.split("\n")[-1].substr(0, 60)])
+			env_gaps.append("%s (%s)" % [name, _reason(text, 1, 60)])
 		else:
-			broken.append("%s exit=%d: %s" % [name, code, text.split("\n")[-1].substr(0, 90)])
+			broken.append("%s exit=%d: %s" % [name, code, _reason(text)])
 
 	broken.sort()
 	env_gaps.sort()
@@ -160,3 +170,16 @@ func test_every_tool_that_offers_a_selftest_passes_it() -> void:
 		"an instrument fails its OWN selftest — its controls no longer hold, and every number it has produced since is suspect: %s" % ", ".join(broken))
 	assert_lte(env_gaps.size(), 1,
 		"more instruments are unrunnable for missing dependencies than the 1 known (audit_whoop needs soundfile): %s — each is an instrument nobody is checking" % ", ".join(env_gaps))
+
+
+func test_a_failing_tools_own_reason_reaches_the_message() -> void:
+	## The shape every selftest prints on a failure: its detail, then a summary line, then a trailing newline.
+	var failed := "SELFTEST FAIL: resume: verdicts ['RESUME'] flags [], wanted ['WRAP'] []\ndemo_music_id selftest: 5 of 6 cases FAILED\n"
+	assert_eq(failed.split("\n")[-1], "",
+		"CONTROL: the old extraction (text after the last newline) must read empty here, or this arm does not reproduce the defect")
+	var why := _reason(failed)
+	assert_true(why.contains("cases FAILED") and why.contains("SELFTEST FAIL: resume"),
+		"a failing tool's message must carry its own FAILED line and the detail above it, got '%s'" % why)
+	var missing_dep := "Traceback (most recent call last):\n  File \"tools/x.py\", line 3\nModuleNotFoundError: No module named 'soundfile'\n"
+	assert_true(_reason(missing_dep, 1, 60).contains("ModuleNotFoundError"),
+		"an environment gap must name the missing module, got '%s'" % _reason(missing_dep, 1, 60))

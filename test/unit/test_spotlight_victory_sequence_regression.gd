@@ -58,12 +58,12 @@ func test_spotlight_spectacle_is_at_least_boss_scale_in_every_table() -> void:
 func test_the_subtitle_bills_the_duelist_by_name() -> void:
 	var ov := _overlay(false)
 	ov.spotlight_duelist = "Bard"
-	var sub: Label = ov._build_subtitle(Vector2(100, 100), Vector2(300, 60), Color.WHITE, false)
+	var sub = ov._build_subtitle(Vector2(100, 100), Vector2(300, 60), Color.WHITE, false)
 	assert_not_null(sub, "a spotlight win gets a subtitle even when no boss meta names a foe")
 	assert_true(sub.text.contains("BARD"), "the duelist is the headline: %s" % sub.text)
 	var boss := _overlay(true)
 	boss.spotlight_duelist = "Cleric"
-	var sub2: Label = boss._build_subtitle(Vector2(100, 100), Vector2(300, 60), Color.WHITE, false)
+	var sub2 = boss._build_subtitle(Vector2(100, 100), Vector2(300, 60), Color.WHITE, false)
 	assert_true(sub2.text.contains("CLERIC") and sub2.text.contains("SKELETON KNIGHT"),
 		"with a named foe both are billed: %s" % sub2.text)
 

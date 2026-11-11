@@ -1,0 +1,13 @@
+{
+  "_doc": "How an ordinary monster leaves the battle when it dies, per world (struktured 2026-11-07: 'a digital-like fading out to fit the meta of the game, like a TV station turning off, but maybe that could vary per overworld; need to decide on that later'). Read by src/battle/EnemyDeathFx.gd. Every world points at the default until he picks per-world styles; changing the default is this one line. Bosses keep their own death (EnemyDeathFx.applies_to).",
+  "default": "crt_off",
+  "styles": ["crt_off", "pixel_dissolve", "glitch_out"],
+  "by_world": {
+    "medieval": "default",
+    "suburban": "default",
+    "steampunk": "default",
+    "industrial": "default",
+    "digital": "default",
+    "abstract": "default"
+  }
+}

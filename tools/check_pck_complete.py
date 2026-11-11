@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+""":"
+echo "$0 is a Python script: run it with python3, not bash" >&2; exit 2
+":"""
 """Prove the web pck contains everything the export OWES, by derivation not by size.
 
 WHY THIS EXISTS
