@@ -127,7 +127,10 @@ func test_every_w1_physical_ability_draws_a_move() -> void:
 	assert_eq(BattleSceneScript.melee_overlay(abilities["bite"], "melee"), "family_bite")
 	assert_eq(BattleSceneScript.melee_overlay(abilities["power_strike"], "melee"), "melee_power_strike", "the Fighter's own sequence wins")
 	assert_eq(BattleSceneScript.melee_overlay(abilities["fire"], "melee"), "", "a spell names no family")
-	assert_eq(BattleSceneScript.melee_overlay({"family": "no_such_family"}, "melee"), "", "a family with no sequence draws nothing")
+	assert_eq(BattleSceneScript.melee_overlay({"vfx": {"family": "no_such_family"}}, "melee"), "", "a family with no sequence draws nothing")
+	## The row's OWN `family` is the spell line a shop sells by (battle 24017): it never names a sequence.
+	assert_eq(BattleSceneScript.melee_overlay({"family": "bite"}, "melee"), "", "a top-level family is not a move")
+	assert_eq(str(abilities["fire"].get("family", "")), "fire", "CONTROL: Fire's row still carries its spell line")
 	assert_eq(BattleSceneScript.melee_overlay(abilities["filth_spray"], "melee_each"), "family_spray_hit", "a line-wide spray splats each target")
 
 

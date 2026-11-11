@@ -3300,7 +3300,8 @@ static func sequence_total(seq_id: String) -> float:
 ## Signature sounds play at every speed the player picks, 4x included; only autogrind/turbo is silent (cowir-main 21194).
 ## Seconds between one target's cut and the next as a line-wide melee move passes along the enemies.
 const MELEE_EACH_STAGGER := 0.05
-## The ability-row key that names a monster's physical family (cowir-battle's table; sprites 23997).
+## The key INSIDE an ability's `vfx` that names a monster's physical family. Not the row's own `family`: that one is the
+## spell line a shop sells by (ShopScene, AbilityFacts), and one key with two meanings bites the first hybrid row (battle 24017).
 const FAMILY_KEY := "family"
 ## A family sequence authored at 1.0 fits a figure this tall on screen; a bigger or smaller attacker scales it, within bounds.
 const FAMILY_REFERENCE_PX := 150.0
@@ -3411,14 +3412,15 @@ func _ability_sequence(ability: Dictionary) -> String:
 static func melee_overlay(ability: Dictionary, key: String) -> String:
 	var vfx = ability.get("vfx", {})
 	var id := str(vfx.get(key, "")) if vfx is Dictionary else ""
-	## A monster's physical move names a FAMILY instead (bite, claw, slam, spit …): `family_<name>` draws the move, and
+	## A monster's physical move names a FAMILY in its vfx instead (bite, claw, slam, spit …): `family_<name>` draws the move, and
 	## `family_<name>_hit` each target of a line-wide one. An authored `vfx.melee` always wins.
-	if id == "" and str(ability.get(FAMILY_KEY, "")) != "":
+	var family := str(vfx.get(FAMILY_KEY, "")) if vfx is Dictionary else ""
+	if id == "" and family != "":
 		match key:
 			"melee":
-				id = "family_" + str(ability[FAMILY_KEY])
+				id = "family_" + family
 			"melee_each":
-				id = "family_" + str(ability[FAMILY_KEY]) + "_hit"
+				id = "family_" + family + "_hit"
 	return id if id != "" and not FractalFX.load_sequence(id).is_empty() else ""
 
 
@@ -3492,10 +3494,11 @@ func _play_melee_overlay(caster: Combatant, caster_sprite: Node2D, ability: Dict
 			get_tree().create_timer(delay).timeout.connect(_spawn_outcome_sequence.bind(each, from, anchors[i], power, tier))
 
 
-## The sequence a `"ranged": true` physical move delivers with ("" when it is not one, or names none): each target's
+## The sequence a `vfx.ranged` physical move delivers with ("" when it is not one, or names none): each target's
 ## own splat for a line-wide move, the single projectile otherwise.
 static func _ranged_sequence(ability: Dictionary, targets: Array) -> String:
-	if not bool(ability.get("ranged", false)) or targets.is_empty():
+	var vfx = ability.get("vfx", {})
+	if not (vfx is Dictionary) or not bool(vfx.get("ranged", false)) or targets.is_empty():
 		return ""
 	return melee_overlay(ability, "melee_each" if targets.size() > 1 else "melee")
 
