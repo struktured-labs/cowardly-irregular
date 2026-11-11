@@ -203,8 +203,12 @@ func test_a_family_is_tinted_by_the_move_and_sized_to_the_creature() -> void:
 
 func test_a_thrown_move_does_not_walk_up_to_its_target() -> void:
 	var foe_sprite: AnimatedSprite2D = _scene.enemy_sprite_nodes[0]
+	## A melee move just before it, so a stale contact clock exists to be cleared.
+	_scene._on_action_executing(_hero, {"type": "ability", "ability_id": "power_strike", "targets": [_foe]})
+	assert_not_null(_scene._melee_contact_timer, "CONTROL: the melee move armed its contact clock")
 	_scene._on_action_executing(_foe, {"type": "ability", "ability_id": "bone_throw", "targets": [_hero]})
 	assert_false(foe_sprite.has_meta("attack_tween"), "a bone throw starts no lunge")
+	assert_null(_scene._melee_contact_timer, "and leaves no contact clock for its outcome beat to wait on")
 	assert_gt(BattleManager.impact_hold, 0.1, "its hit waits for the bone to land (%.2f s)" % BattleManager.impact_hold)
 	BattleManager.impact_hold = 0.0
 	await get_tree().create_timer(0.8).timeout

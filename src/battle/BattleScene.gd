@@ -3492,6 +3492,14 @@ func _play_melee_overlay(caster: Combatant, caster_sprite: Node2D, ability: Dict
 			get_tree().create_timer(delay).timeout.connect(_spawn_outcome_sequence.bind(each, from, anchors[i], power, tier))
 
 
+## The sequence a `"ranged": true` physical move delivers with ("" when it is not one, or names none): each target's
+## own splat for a line-wide move, the single projectile otherwise.
+static func _ranged_sequence(ability: Dictionary, targets: Array) -> String:
+	if not bool(ability.get("ranged", false)) or targets.is_empty():
+		return ""
+	return melee_overlay(ability, "melee_each" if targets.size() > 1 else "melee")
+
+
 ## A ranged line-wide move's one cloud over the whole target line; each target's own splat is the cast path's.
 func _play_melee_cloud(caster: Combatant, caster_sprite: Node2D, ability: Dictionary, targets: Array) -> void:
 	var seq_id := melee_overlay(ability, "melee")
@@ -5175,12 +5183,12 @@ func _on_action_executing(combatant: Combatant, action: Dictionary) -> void:
 				_play_signature(combatant, attacker_sprite, animator, ability, targets, sig_seq)
 			## A thrown or spat physical move does not walk up to its target (sprites 23997, adhoc 24012): its family
 			## sequence is the delivery, played like a cast, so the hit waits for the projectile to land.
-			elif ability_type == "physical" and bool(ability.get("ranged", false)) and targets.size() > 0 \
-					and melee_overlay(ability, "melee_each" if targets.size() > 1 else "melee") != "":
+			elif ability_type == "physical" and _ranged_sequence(ability, targets) != "":
+				## Not a lunge: a landed or fizzled beat must not wait out the PREVIOUS melee's contact clock (adhoc 24015).
+				_melee_contact_timer = null
 				if targets.size() > 1:
 					_play_melee_cloud(combatant, attacker_sprite, ability, targets)
-				_play_ability_sequence(combatant, attacker_sprite, animator, ability, targets,
-					melee_overlay(ability, "melee_each" if targets.size() > 1 else "melee"))
+				_play_ability_sequence(combatant, attacker_sprite, animator, ability, targets, _ranged_sequence(ability, targets))
 			# Physical abilities move to target
 			elif ability_type == "physical" and targets.size() > 0:
 				var target_sprite = _get_combatant_sprite(targets[0])
