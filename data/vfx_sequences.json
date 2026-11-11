@@ -279,6 +279,7 @@
       "phases": [
         {
           "kind": "gather",
+          "sfx": "beat_fire_open",
           "origin": "caster",
           "at": 0.0,
           "dur": 0.3,
@@ -954,6 +955,7 @@
       "phases": [
         {
           "kind": "gather",
+          "sfx": "beat_fire_open",
           "origin": "caster",
           "at": 0.0,
           "dur": 0.38,
@@ -1974,6 +1976,7 @@
       "phases": [
         {
           "kind": "gather",
+          "sfx": "beat_fire_open",
           "origin": "caster",
           "at": 0.0,
           "dur": 0.34,
@@ -2076,6 +2079,7 @@
         },
         {
           "kind": "ring",
+          "sfx": "beat_power_strike_impact",
           "at": 0.04,
           "dur": 0.5,
           "scale": 11.0,
@@ -2155,6 +2159,7 @@
       "phases": [
         {
           "kind": "arc",
+          "sfx": "beat_cleave_sweep",
           "at": -0.06,
           "dur": 0.24,
           "radius": 300,
@@ -2273,6 +2278,7 @@
         },
         {
           "kind": "emit",
+          "sfx": "beat_shield_bash_impact",
           "at": 0.0,
           "count": 8,
           "arc": 360,
@@ -2447,6 +2453,7 @@
       "phases": [
         {
           "kind": "arc",
+          "sfx": "beat_backstab_crit",
           "at": 0.0,
           "dur": 0.07,
           "radius": 92,
@@ -2854,6 +2861,7 @@
         },
         {
           "kind": "emit",
+          "sfx": "beat_scan_lock",
           "at": 0.35,
           "count": 4,
           "arc": 360,
@@ -2898,6 +2906,7 @@
         },
         {
           "kind": "puff",
+          "sfx": "beat_smoke_bomb_puff",
           "at": 0.22,
           "dur": 0.75,
           "count": 16,
@@ -3398,6 +3407,7 @@
         },
         {
           "kind": "flash",
+          "sfx": "beat_raise_halo",
           "at": 0.7,
           "dur": 0.22,
           "size": 11.0,
