@@ -3472,6 +3472,13 @@ func _play_outcome_beat(seq_id: String, combatant: Combatant, from_combatant: Co
 		EffectSystem.spawn_sequence(seq_id, from, to)
 
 
+## The acting ability's `vfx.melee_crit` sequence (Backstab's delayed bloom), or "" for a plain attack or a move without one.
+func _crit_bloom() -> String:
+	if str(_current_ability_id) == "":
+		return ""
+	return melee_overlay(JobSystem.get_ability(_current_ability_id), "melee_crit")
+
+
 func _on_status_landed(status: String, combatant: Combatant) -> void:
 	_play_outcome_beat(landed_beat(status), combatant)
 
@@ -6995,7 +7002,7 @@ func _on_damage_dealt(target: Combatant, amount: int, is_crit: bool, element: St
 	# deplete the floating enemy HP bar in sync with the damage number — it lagged to the next _update_ui (action boundary)
 	_update_enemy_hp_bars()
 	if is_crit:
-		_play_outcome_beat(melee_overlay(JobSystem.get_ability(_current_ability_id), "melee_crit") if _current_ability_id != "" else "", target)
+		_play_outcome_beat(_crit_bloom(), target)
 		_crit_visual_burst(target, amount)
 		_show_hint("first_crit", "CRITICAL HIT! Fast characters and Rogues crit more often. Equip gear with crit bonuses to increase your chances.")
 		# Crit quip from the attacker (msg 2749 cycle 12: read the cached action-executing arg, not the stale current_combatant field).
