@@ -447,7 +447,9 @@ func _arc(center: Vector2, p: Dictionary, k: float) -> void:
 	var a1 := deg_to_rad(float(p.get("to", 30.0)))
 	var sweep := float(p.get("dur", 0.16))
 	var life := float(p.get("life", 0.3))
-	var width := float(p.get("width", 2.2)) * k
+	## Reduce Flashes keeps the sweep but thins the band and drops its glow, as `_flash` shrinks (controller 23883):
+	## a 300 px additive crescent is not a flash, but it is the brightest moving shape these sequences draw.
+	var width := float(p.get("width", 2.2)) * k * (0.6 if reduce_flashes else 1.0)
 	var ramp := _ramp(str(p.get("palette", "steel")))
 	## Dense enough that neighbouring flames overlap into a band at any radius.
 	var n := clampi(int(absf(a1 - a0) * radius / 14.0), 8, 90)
@@ -460,7 +462,7 @@ func _arc(center: Vector2, p: Dictionary, k: float) -> void:
 		## Thin at both tips, full in the middle: a crescent, not a ring segment.
 		var thick := width * (0.25 + 0.75 * sin(PI * t))
 		host.get_tree().create_timer(sweep * t).timeout.connect(_arc_flame.bind(pos, a, thick, life, ramp))
-	if bool(p.get("glow", true)):
+	if bool(p.get("glow", true)) and not reduce_flashes:
 		_bloom(center + Vector2.from_angle((a0 + a1) * 0.5) * radius * 0.8, width * 3.0, sweep + life * 0.6, ramp)
 
 

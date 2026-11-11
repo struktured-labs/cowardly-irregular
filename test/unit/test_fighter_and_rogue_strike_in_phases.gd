@@ -254,6 +254,20 @@ func test_an_overlay_starts_at_its_own_lunges_contact() -> void:
 	assert_gt(late, 0, "CONTROL: it is drawn once that contact has come")
 
 
+func test_reduce_flashes_thins_an_arc_and_drops_its_glow() -> void:
+	## controller 23883: the new kinds never read the setting. An arc keeps its sweep (the move still reads) but its
+	## glow, the one soft full-size bloom it draws at once, is gone.
+	var drawn_at_once := func(reduce: bool) -> int:
+		var host := Node2D.new()
+		add_child_autofree(host)
+		var fx := FractalFX.new(host, 7)
+		fx.reduce_flashes = reduce
+		fx.play({"phases": [{"kind": "arc", "at": 0.0, "dur": 0.05}]}, Vector2(600, 300), Vector2(200, 300))
+		return fx.spawned
+	assert_eq(drawn_at_once.call(false), 1, "CONTROL: an arc's glow is drawn the moment it starts")
+	assert_eq(drawn_at_once.call(true), 0, "under Reduce Flashes it is not")
+
+
 func test_a_drawn_in_order_phase_is_as_long_as_its_last_flame() -> void:
 	assert_almost_eq(FractalFX.phase_duration({"kind": "arc", "dur": 0.2, "life": 0.4}), 0.6, 0.001, "an arc outlasts its sweep by its life")
 	assert_almost_eq(FractalFX.phase_duration({"kind": "streak", "dur": 0.1, "life": 0.3}), 0.4, 0.001, "so does a streak")
