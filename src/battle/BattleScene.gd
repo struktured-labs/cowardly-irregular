@@ -5621,6 +5621,7 @@ func _animate_melee_attack(attacker_sprite: Node2D, target_sprite: Node2D, attac
 	impact_at = minf(impact_at, hold)
 	var approach: float = 0.12 + (0.05 if _tier() == BattleJuice.Tier.FULL and BattleJuice.flag("anticipation") else 0.0)
 	_last_lunge_length = lead_in + approach + hold + 0.18
+	_last_contact_in = lead_in + approach  # seconds until this lunge makes contact: an overlay times itself from it
 	## A plain single attack at spotlight pace holds its number, sound and death until the hit LANDS (contact,
 	## or the impact frame). Unheld, a kill's death fx began at the action's start and had finished before the
 	## attacker arrived.
@@ -5813,6 +5814,7 @@ const STRIKE_HOLD := 0.22
 ## The idle snap waits for a swing in flight, but never longer than this past its 0.7 s.
 const SNAP_WAIT_MAX := 2.0
 var _last_lunge_length: float = 0.0
+var _last_contact_in: float = 0.17
 var _melee_hold_token: int = 0
 var _melee_hold_live: bool = false
 var _melee_hold_extra: float = 0.0
