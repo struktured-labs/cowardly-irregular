@@ -13867,7 +13867,7 @@
     },
     "family_bite_big": {
       "file": "assets/audio/sfx/family_bite_big.ogg",
-      "prompt": "Fired by the flash phase of family_bite_big through its \"sfx\" key (battle time; one beat per key per frame). The heavier bite (desperate_bite, chomp): the same jaws, a longer crunch and a short tearing shake after the snap. -18.1 dB active-RMS, -20.7 through a 200 Hz high-pass. numpy synthesis, not heard by struktured yet.",
+      "prompt": "Fired by the flash phase of family_bite_big through its \"sfx\" key (battle time; one beat per key per frame). The heavier bite (desperate_bite, chomp): the same jaws, a longer crunch and a short tearing shake after the snap. -19.7 dB active-RMS, -22.4 through a 200 Hz high-pass. numpy synthesis, not heard by struktured yet.",
       "duration_seconds": 0.26,
       "source": "tools/gen_family_cues.py family_bite_big"
     },
@@ -13879,13 +13879,13 @@
     },
     "family_slam": {
       "file": "assets/audio/sfx/family_slam.ogg",
-      "prompt": "Fired by the flash phase of family_slam through its \"sfx\" key (battle time; one beat per key per frame). A body SLAM: a dull thump with a mid smack so it survives a laptop speaker, a short low boom, dust. -18.5 dB active-RMS, -23.8 through a 200 Hz high-pass. numpy synthesis, not heard by struktured yet.",
+      "prompt": "Fired by the flash phase of family_slam through its \"sfx\" key (battle time; one beat per key per frame). A body SLAM: a dull thump with a mid smack so it survives a laptop speaker, a short low boom, dust. -21.5 dB active-RMS, -26.8 through a 200 Hz high-pass. numpy synthesis, not heard by struktured yet.",
       "duration_seconds": 0.5,
       "source": "tools/gen_family_cues.py family_slam"
     },
     "family_slam_quake": {
       "file": "assets/audio/sfx/family_slam_quake.ogg",
-      "prompt": "Fired by the flash phase of family_slam_quake through its \"sfx\" key (battle time; one beat per key per frame). A ground-pound slam: the slam, then a rumble rolling out and stones settling. -17.5 dB active-RMS, -22.6 through a 200 Hz high-pass. numpy synthesis, not heard by struktured yet.",
+      "prompt": "Fired by the flash phase of family_slam_quake through its \"sfx\" key (battle time; one beat per key per frame). A ground-pound slam: the slam, then a rumble rolling out and stones settling. -20.0 dB active-RMS, -25.1 through a 200 Hz high-pass. numpy synthesis, not heard by struktured yet.",
       "duration_seconds": 0.73,
       "source": "tools/gen_family_cues.py family_slam_quake"
     },

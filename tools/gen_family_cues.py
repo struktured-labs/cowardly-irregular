@@ -7,7 +7,8 @@
 
 Each cue is ONE event, keyed on the phase where that event is drawn. A phase runs on battle time and a file plays on
 real time, so a cue that held two events (a spit's pop and its splat) would drift apart as the battle speed changes.
-The families sound UNDER the ordinary hit: a monster's plain attack plays its family, so these are heard every turn.
+The families sound ON TOP of the ordinary hit cue (adhoc 24063), which still plays: each is levelled so hit + family is at
+most ~+4 dB over the hit alone, because a monster's plain attack plays its family and these are heard every turn.
 numpy synthesis at 44.1 kHz mono, deterministic seeds; it reads no master and rewrites none.
 """
 import math
@@ -162,10 +163,10 @@ def status_wore_off(rng):
 # key: (generator, seed, active-RMS target dB, tanh drive). Drive lifts a short transient's body under its own peak.
 CUES = {
     "family_bite": (family_bite, 7201, -19.5, 2.5),
-    "family_bite_big": (family_bite_big, 7206, -18.0, 2.5),
+    "family_bite_big": (family_bite_big, 7206, -19.5, 2.5),
     "family_claw": (family_claw, 7202, -19.5, 0.0),
-    "family_slam": (family_slam, 7203, -18.5, 2.0),
-    "family_slam_quake": (family_slam_quake, 7207, -17.5, 2.0),
+    "family_slam": (family_slam, 7203, -21.5, 2.0),
+    "family_slam_quake": (family_slam_quake, 7207, -20.0, 2.0),
     "family_spit": (family_spit, 7204, -20.0, 0.0),
     "family_spray": (family_spray, 7208, -20.5, 0.0),
     "family_screech": (family_screech, 7205, -20.0, 0.0),
