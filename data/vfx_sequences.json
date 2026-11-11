@@ -2114,7 +2114,7 @@
         },
         {
           "kind": "arc",
-          "at": 0.04,
+          "at": 0.0,
           "dur": 0.02,
           "radius": 150,
           "from": -75,
@@ -2131,13 +2131,13 @@
         },
         {
           "kind": "flash",
-          "at": 0.04,
+          "at": 0.0,
           "dur": 0.2,
           "size": 11.0
         },
         {
           "kind": "ring",
-          "at": 0.04,
+          "at": 0.0,
           "dur": 0.5,
           "scale": 11.0,
           "palette": "steel",
@@ -2148,7 +2148,7 @@
         },
         {
           "kind": "ring",
-          "at": 0.1,
+          "at": 0.07,
           "dur": 0.6,
           "scale": 17.0,
           "palette": "ember",
@@ -2159,13 +2159,13 @@
         },
         {
           "kind": "shake",
-          "at": 0.04,
+          "at": 0.0,
           "intensity": 13,
           "dur": 0.32
         },
         {
           "kind": "emit",
-          "at": 0.04,
+          "at": 0.0,
           "count": 10,
           "arc": 150,
           "heading": -90,
@@ -2189,7 +2189,7 @@
         },
         {
           "kind": "puff",
-          "at": 0.06,
+          "at": 0.03,
           "dur": 0.55,
           "count": 10,
           "spread": [
@@ -2791,7 +2791,7 @@
         },
         {
           "kind": "arc",
-          "at": 0.1,
+          "at": 0.14,
           "dur": 0.05,
           "radius": 44,
           "from": -60,
@@ -2837,6 +2837,13 @@
           "width": 1.2,
           "life": 0.3,
           "palette": "taunt"
+        },
+        {
+          "kind": "flash",
+          "at": 0.25,
+          "dur": 0.14,
+          "size": 2.8,
+          "alpha": 0.6
         }
       ]
     },
