@@ -74,6 +74,39 @@ func test_every_heal_still_shows_its_landing_at_turbo() -> void:
 		assert_lte(FX.impact_time(seq), float(BattleManager.IMPACT_HOLD_MAX), "%s lands inside the engine's hold cap" % id)
 
 
+## The wind-up rule (cowir-main 23890): the first beat starts WITH the cast pose, not after it, and no hold grows.
+## PRE_WINDUP is each sequence's start + impact as .792 shipped it: the bound a re-time may not pass.
+const PRE_WINDUP := {"cure_battle": 0.95, "cura_battle": 1.0, "crystal_heal_battle": 0.75, "regen_battle": 0.9, "esuna_battle": 0.9,
+	"pray_battle": 0.75, "raise_battle": 1.2, "protect_battle": 0.95, "shell_battle": 0.95, "battle_hymn_battle": 0.9,
+	"inspiring_melody_battle": 0.9, "lullaby_battle": 1.1, "discord_battle": 0.8}
+
+
+func test_a_cast_gathers_while_the_caster_poses() -> void:
+	for id in PRE_WINDUP:
+		var seq := _seq(id)
+		assert_false(seq.is_empty(), "CONTROL: %s exists" % id)
+		assert_lte(float(seq.get("start", 9.0)), 0.2, "%s starts with the pose (start %.2f)" % [id, float(seq.get("start", 9.0))])
+		var opens := 0
+		for ph in seq.get("phases", []):
+			opens += 1 if float((ph as Dictionary).get("at", 1.0)) <= 0.05 else 0
+		assert_gt(opens, 0, "%s has a beat in its first 0.05 s" % id)
+		assert_lte(FX.impact_time(seq), float(PRE_WINDUP[id]) + 0.001, "%s lands no later than it did in .792 (%.2f vs %.2f)" % [id, FX.impact_time(seq), float(PRE_WINDUP[id])])
+	assert_gt(float(_seq("melee_riff").get("start", 0.0)), 0.0, "CONTROL: a melee overlay still starts at contact, not with the pose")
+
+
+## The two W1 machine self-heals battle's family table left to this family (24017) mend in sparks.
+func test_a_construct_mends_itself_in_the_heal_family() -> void:
+	for id in ["emergency_repair", "reconstruct"]:
+		assert_eq(str(AbilityVFX.resolve(JobSystem.get_ability(id)).get("sequence", "")), "family_heal_self", "%s plays the self-heal family" % id)
+	var seq := _seq("family_heal_self")
+	assert_false(seq.is_empty(), "family_heal_self exists")
+	var impact: float = FX.impact_time(seq) - float(seq.get("start", 0.0))
+	var at_impact := 0
+	for ph in seq.get("phases", []):
+		at_impact += 1 if absf(float((ph as Dictionary).get("at", 0.0)) - impact) <= 0.02 else 0
+	assert_gt(at_impact, 0, "and it shows at turbo")
+
+
 func test_cura_is_cure_one_tier_up() -> void:
 	var cure := _seq("cure_battle")
 	var cura := _seq("cura_battle")
