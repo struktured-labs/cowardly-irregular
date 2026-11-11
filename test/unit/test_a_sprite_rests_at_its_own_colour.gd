@@ -10,14 +10,20 @@ const SCENE := preload("res://src/battle/BattleScene.gd")
 const ANIMATOR := preload("res://src/battle/BattleAnimator.gd")
 const POISON := Color(0.7, 1.0, 0.7)
 var _saved_scale := 1.0
+var _battle = preload("res://test/unit/helpers/battle_state.gd").new()
 
 
 func before_each() -> void:
 	_saved_scale = Engine.time_scale
+	_battle.snapshot()
+	## The scene reads a sprite's combatant from BattleManager's parties first: establish them, don't inherit.
+	BattleManager.player_party.clear()
+	BattleManager.enemy_party.clear()
 
 
 func after_each() -> void:
 	Engine.time_scale = _saved_scale
+	_battle.restore()
 
 
 func _frames() -> SpriteFrames:
@@ -46,6 +52,7 @@ func _fixture() -> Array:
 	scene.add_child(ps)
 	scene.party_members.append(pc)
 	scene.party_sprite_nodes.append(ps)
+	BattleManager.player_party.append(pc)
 	var foe := Combatant.new()
 	autofree(foe)
 	foe.combatant_name = "Bat"
@@ -54,6 +61,7 @@ func _fixture() -> Array:
 	scene.add_child(es)
 	scene.test_enemies.append(foe)
 	scene.enemy_sprite_nodes.append(es)
+	BattleManager.enemy_party.append(foe)
 	return [scene, pc, ps, foe, es]
 
 
@@ -170,6 +178,10 @@ func test_a_killing_flash_ends_when_the_death_begins() -> void:
 	var knock: Tween = es.get_meta("knockback_tween")
 	assert_true(flash.is_valid() and knock.is_valid(), "CONTROL: the flash and the knockback must be in flight when the death starts")
 	EnemyDeathFx.play(es, "crt_off")
+	## Tween.kill() stops it at once; is_valid() turns false when the tree drops it, a frame later.
+	assert_false(flash.is_running() or knock.is_running(), "a killed tween is still running under the death")
+	await get_tree().process_frame
+	await get_tree().process_frame
 	assert_false(flash.is_valid(), "the weakness flash is still writing modulate under the death")
 	assert_false(knock.is_valid(), "the knockback is still writing position under the death")
 	var alphas: Array = []
@@ -185,8 +197,6 @@ func test_a_killing_flash_ends_when_the_death_begins() -> void:
 ## cowir-main 23728: a BOSS keeps its own death (the inline tween in _on_enemy_died, not EnemyDeathFx), and
 ## that death ends a flash and a knockback in flight too. The real handler, on the built scene.
 func test_a_boss_killed_mid_flash_is_owned_by_its_death() -> void:
-	var guard = preload("res://test/unit/helpers/battle_state.gd").new()
-	guard.snapshot()
 	var scene = load("res://src/battle/BattleScene.tscn").instantiate()
 	add_child_autofree(scene)
 	var boss := Combatant.new()
@@ -211,6 +221,8 @@ func test_a_boss_killed_mid_flash_is_owned_by_its_death() -> void:
 	assert_true(flash.is_valid() and knock.is_valid(), "CONTROL: the flash and the knockback must be in flight when the boss dies")
 	boss.is_alive = false
 	scene._on_enemy_died(0)
+	assert_false(flash.is_running() or knock.is_running(), "a killed tween is still running under the boss's death")
+	await get_tree().process_frame
+	await get_tree().process_frame
 	assert_false(flash.is_valid(), "the weakness flash is still writing modulate under the boss's death")
 	assert_false(knock.is_valid(), "the knockback is still writing position under the boss's death")
-	guard.restore()
