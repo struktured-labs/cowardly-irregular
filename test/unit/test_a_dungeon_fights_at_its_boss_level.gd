@@ -127,12 +127,22 @@ func test_floor_trash_hits_well_under_its_boss() -> void:
 
 
 func test_a_relevelled_spawn_converts_flat_values_at_its_own_level() -> void:
+	## Judged against a REAL catalog monster authored at the spawned level, not against the formula the ratio is built from.
+	var peer_id := ""
+	for id in _es.monster_database:
+		var row: Dictionary = _es.monster_database[id]
+		if int(row.get("level", 0)) == 15 and row.has("spectrum_ratio"):
+			peer_id = str(id)
+			break
+	assert_ne(peer_id, "", "CONTROL: the catalog authors a monster at L15 to compare against")
+	var peer_ratio := float((_es.monster_database[peer_id] as Dictionary)["spectrum_ratio"])
 	var foe := Combatant.new()
-	foe.initialize({"name": "Goblin", "max_hp": 10, "max_mp": 0, "attack": 1, "defense": 1, "magic": 1, "speed": 1})
+	foe.initialize({"name": "Imp", "max_hp": 10, "max_mp": 0, "attack": 1, "defense": 1, "magic": 1, "speed": 1})
 	add_child_autofree(foe)
-	foe.set_meta("monster_type", "goblin")
+	foe.set_meta("monster_type", "imp")
 	var catalog: float = foe.x10_ratio()
-	assert_gt(catalog, 0.0, "CONTROL: the catalog goblin has a ratio")
-	foe.set_meta("spawn_level", 14)
-	assert_almost_eq(foe.x10_ratio(), catalog * Combatant.level_multiplier(14) / Combatant.level_multiplier(4), 0.0001,
-		"a L14 goblin's flat heals and items convert at L14, not at the catalog's L4")
+	assert_lt(catalog, peer_ratio * 0.5, "CONTROL: the catalog imp (L4) converts far below a L15 monster")
+	foe.set_meta("spawn_level", 15)
+	gut.p("    imp@L15 ratio %.4f vs %s (L15) %.4f" % [foe.x10_ratio(), peer_id, peer_ratio])
+	assert_almost_eq(foe.x10_ratio(), peer_ratio, peer_ratio * 0.03,
+		"an imp@L15's flat heals and items convert as a catalog L15 monster's do")
