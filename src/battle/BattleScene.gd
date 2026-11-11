@@ -4172,6 +4172,9 @@ func _get_terrain_battle_track() -> String:
 
 func _on_battle_ended(victory: bool) -> void:
 	"""Handle battle end"""
+	## A hit still held for its impact frame lands NOW (number, then its death), before the defeat scene or the
+	## victory flow: an escape or a wipe mid-swing must not lean on the safety timer (cowir-battle 23687).
+	_land_held_hit()
 	_end_advance_run()
 	_clear_advance_aura()
 	## Tick 428: boss defeat dialogue line. Pre-fix only `intro` was
@@ -5570,6 +5573,7 @@ const STRIKE_HOLD := 0.22
 const SNAP_WAIT_MAX := 2.0
 var _last_lunge_length: float = 0.0
 var _melee_hold_token: int = 0
+var _melee_hold_live: bool = false
 
 
 ## Spotlight speeds (1x-2x, not turbo, not the console): the same gate the per-action stage hold uses.
@@ -5594,6 +5598,7 @@ func _hold_melee_damage(lands_in: float) -> int:
 	_full_render_dmg_buffer = []
 	_full_render_dmg_attacker = _last_acting_combatant
 	_melee_hold_token += 1
+	_melee_hold_live = true
 	get_tree().create_timer(lands_in + 0.25).timeout.connect(_land_melee_damage.bind(_melee_hold_token))
 	return _melee_hold_token
 
@@ -5602,7 +5607,14 @@ func _land_melee_damage(token: int) -> void:
 	if token != _melee_hold_token or token == 0:
 		return
 	_melee_hold_token += 1  # spent: the safety timer (or the tween) finds a different token and does nothing
+	_melee_hold_live = false
 	_flush_full_render_damage()
+
+
+## Land a swing's held hit at once, if one is waiting on its impact frame.
+func _land_held_hit() -> void:
+	if _melee_hold_live:
+		_land_melee_damage(_melee_hold_token)
 
 
 ## Fable-pass hitstop: freeze both combatants' anim playback ~70ms at contact. Visual-only (no Engine.time_scale touch — timers/music unaffected); restore is validity-guarded so mid-stop frees are safe.

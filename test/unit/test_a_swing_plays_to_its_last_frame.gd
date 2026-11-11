@@ -241,3 +241,22 @@ func test_an_impact_frame_holds_the_hit_until_the_art_lands() -> void:
 				assert_not_null(scene._full_render_dmg_buffer, "a plain attack at spotlight pace didn't hold its damage for the impact frame")
 				await wait_seconds(1.6)
 				assert_null(scene._full_render_dmg_buffer, "the held hit never landed")
+
+
+## cowir-battle 23687: a battle that ends mid-swing (the killing blow, an escape, a wipe) lands the held hit at
+## once, before the defeat scene and the victory flow, and the swing's own callback then finds nothing to land.
+func test_a_battle_that_ends_mid_swing_lands_the_held_hit_first() -> void:
+	var scene := _scene()
+	var token: int = scene._hold_melee_damage(5.0)
+	assert_not_null(scene._full_render_dmg_buffer, "CONTROL: the hold must open the damage buffer")
+	scene._land_held_hit()
+	assert_null(scene._full_render_dmg_buffer, "ending the battle left the swing's hit in the buffer")
+	scene._full_render_dmg_buffer = []  # a later Full Render cast's buffer: the spent swing must not flush it
+	scene._land_melee_damage(token)
+	assert_not_null(scene._full_render_dmg_buffer, "the spent swing landed a second time, into another cast's buffer")
+	scene._full_render_dmg_buffer = null
+	var src := FileAccess.get_file_as_string("res://src/battle/BattleScene.gd")
+	var at := src.find("func _on_battle_ended")
+	var body := src.substr(at, src.find("\nfunc ", at + 1) - at)
+	assert_gt(body.find("_land_held_hit()"), -1, "_on_battle_ended never lands a held hit")
+	assert_lt(body.find("_land_held_hit()"), body.find("_stage_defeat_scene("), "the held hit must land before the defeat scene")
