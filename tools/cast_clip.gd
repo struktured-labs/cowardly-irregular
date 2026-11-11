@@ -102,7 +102,9 @@ func _init() -> void:
 				(targets[0] as Combatant).add_status("poison", 3)
 	await create_timer(0.6 * Engine.time_scale).timeout
 	print("[CCLIP] built ability=%s caster=%s targets=%d time_scale=%.3f sequence=%s" % [ability, caster.combatant_name, targets.size(), Engine.time_scale, str(data.get("vfx", ""))])
-	bm.execution_order = [{"type": "ability", "combatant": caster, "ability_id": ability, "targets": targets, "speed": 99}]
+	## A typed array: assigning a fresh untyped one is a script error that aborts this function (and the clip times out).
+	bm.execution_order.clear()
+	bm.execution_order.append({"type": "ability", "combatant": caster, "ability_id": ability, "targets": targets, "speed": 99})
 	bm.current_state = bm.BattleState.EXECUTION_PHASE
 	bm._execute_next_action()
 	await create_timer(seconds * Engine.time_scale).timeout
