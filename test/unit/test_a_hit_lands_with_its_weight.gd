@@ -166,15 +166,15 @@ func _knocked(scene, foe: Combatant, es: AnimatedSprite2D, animator, damage: int
 		scene._note_hit_weight(foe, damage, false, "", 1.0)
 	scene._land_hit_weight(es, scene._last_acting_combatant, scene._action_serial)
 	scene._delayed_play_hit_fx(animator, es)
-	## Sampled by TIME: headless frames are unthrottled, so a dozen of them pass in a few milliseconds.
-	var far := 0.0
-	var t0 := Time.get_ticks_msec()
-	while Time.get_ticks_msec() - t0 < 300:
-		await get_tree().process_frame
-		far = maxf(far, absf(es.position.x - 300.0))
+	## Stepped by hand to the knockback's peak (its first 0.05 s): a sampled maximum misses it whenever one
+	## headless frame is long, which the first frame after a spark spawns is.
+	var knock: Tween = es.get_meta("knockback_tween")
+	knock.pause()
+	knock.custom_step(0.05)
+	var far: float = absf(es.position.x - 300.0)
+	knock.play()
 	await wait_seconds(0.4)
 	return far
-
 
 func test_a_heavy_hit_knocks_further_and_shakes_and_a_chip_hit_does_neither() -> void:
 	Engine.time_scale = 0.5
@@ -223,7 +223,9 @@ func test_turbo_and_the_console_get_the_old_hit() -> void:
 	Engine.time_scale = 4.0
 	assert_eq(BattleJuice.battle_tier(), BattleJuice.Tier.OFF, "VOID: 16x must be the OFF tier")
 	## At the OFF tier the hit is .790's: the old effect and its one fixed shake, whatever the hit weighed.
-	var before: int = EffectSystem._effects_container.get_child_count()
+	## Only what THIS arm draws: an earlier arm's sparks free themselves on a timer and may still be here.
+	var earlier: Array = EffectSystem._effects_container.get_children()
+	var before: int = earlier.size()
 	scene._delayed_play_hit_fx(f[3], es)
 	var chip_trauma: float = rig._trauma
 	rig._trauma = 0.0
@@ -233,15 +235,16 @@ func test_turbo_and_the_console_get_the_old_hit() -> void:
 	assert_almost_eq(rig._trauma, chip_trauma, 0.0001, "at 16x a heavy hit shook differently (%.2f) from a chip hit (%.2f)" % [rig._trauma, chip_trauma])
 	var sparks := 0
 	for child in EffectSystem._effects_container.get_children():
-		if str(child.name).begins_with("HitSpark_"):
+		if not (child in earlier) and child.has_meta("shape"):
 			sparks += 1
 	assert_eq(sparks, 0, "the weapon spark drew at 16x")
 	assert_gt(EffectSystem._effects_container.get_child_count(), before, "CONTROL: the old hit effect must still draw at 16x")
 	Engine.time_scale = 0.5
+	var at_16x: Array = EffectSystem._effects_container.get_children()
 	scene._delayed_play_hit_fx(f[3], es)
 	var drawn := 0
 	for child in EffectSystem._effects_container.get_children():
-		if str(child.name).begins_with("HitSpark_"):
+		if not (child in at_16x) and child.has_meta("shape"):
 			drawn += 1
 	assert_gt(drawn, 0, "CONTROL: at 2x the weapon spark must draw")
 
@@ -319,10 +322,14 @@ func test_a_plain_attack_holds_its_hit_until_contact() -> void:
 				assert_null(scene._full_render_dmg_buffer, "turbo held a plain hit; it must resolve at once as in .790")
 			false:
 				assert_not_null(scene._full_render_dmg_buffer, "a plain attack at spotlight pace didn't hold its hit for contact")
-				await wait_seconds(0.1)
+				## The lunge stepped by hand: 0.1 s in, the attacker is still on its way (contact is at 0.12-0.17 s).
+				var lunge: Tween = attacker.get_meta("attack_tween")
+				lunge.pause()
+				lunge.custom_step(0.1)
 				assert_not_null(scene._full_render_dmg_buffer, "the held hit landed before the attacker arrived")
-				await wait_seconds(0.5)
+				lunge.custom_step(0.2)
 				assert_null(scene._full_render_dmg_buffer, "the held hit never landed at contact")
+				lunge.kill()
 
 
 ## Every weapon type the game can equip draws its OWN spark; bare hands and monsters rake like a claw.
