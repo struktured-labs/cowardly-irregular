@@ -79,9 +79,21 @@ static func _real_speed() -> float:
 	return 1.0 / maxf(Engine.time_scale, 0.01)
 
 
+## The death owns the sprite from its first frame: a crit or weakness flash still tweening `modulate` to an
+## opaque rest colour (0.2-0.36 s) wrote over the fade's alpha, and a knockback still wrote its position
+## (cowir-battle 23726). Both live on the sprite's meta, so the death ends them here.
+static func own(sprite: Node2D) -> void:
+	for key in ["flash_tween", "knockback_tween"]:
+		if sprite.has_meta(key):
+			var running = sprite.get_meta(key)
+			if running is Tween and running.is_valid():
+				running.kill()
+
+
 ## Plays `style` on `sprite`. `on_cue` fires at the moment the death sound belongs (right after the
 ## flash); `on_done` after the sprite is hidden. Returns the tween so a caller can chain onto it.
 static func play(sprite: Node2D, style: String, on_cue: Callable = Callable(), on_done: Callable = Callable()) -> Tween:
+	own(sprite)
 	var tween := real_time(sprite.create_tween())
 	match style:
 		"pixel_dissolve":

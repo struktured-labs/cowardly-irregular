@@ -2870,6 +2870,8 @@ const TANK_HP_PER_CURVE := 120.0
 
 ## An enemy's authored level (combatants never store it), else its job level.
 func _archetype_level(combatant: Combatant) -> int:
+	if combatant.has_meta("spawn_level"):
+		return int(combatant.get_meta("spawn_level"))   # a floor's re-levelled spawn is judged at the level it fights at
 	if combatant.has_meta("monster_type") and EncounterSystem:
 		var row: Variant = EncounterSystem.monster_database.get(combatant.get_meta("monster_type", ""), null)
 		if row is Dictionary:
@@ -7051,9 +7053,10 @@ func _execute_healing_ability(caster: Combatant, ability: Dictionary, targets: A
 			continue  # already at full HP — skip the "recovers 0 HP" log + +0 popup (parity with the MP-restore fix)
 		any_healed = true
 		healing_done.emit(target, healed)
-		var heal_log = "  → [color=white]%s[/color] recovers [color=%s]%d[/color] HP!" % [target.combatant_name, AccessibilityPalette.bonus_bbcode(), healed]
+		var full: String = " (full)" if target.current_hp >= target.max_hp else ""
+		var heal_log = "  → [color=white]%s[/color] recovers [color=%s]%d[/color] HP%s!" % [target.combatant_name, AccessibilityPalette.bonus_bbcode(), healed, full]
 		battle_log_message.emit(heal_log)
-		print("  → %s recovers %d HP!" % [target.combatant_name, healed])
+		print("  → %s recovers %d HP%s!" % [target.combatant_name, healed, full])
 	if not any_healed:
 		battle_log_message.emit("[color=gray]%s's heal fizzles — no one needed it.[/color]" % caster.combatant_name)
 

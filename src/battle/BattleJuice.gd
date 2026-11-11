@@ -17,6 +17,7 @@ var flags: Dictionary = {}
 ## Shortest gap between two rumbles — a flurry of hits must not restart the motors every frame.
 const RUMBLE_MIN_GAP := 0.06
 var _last_rumble_at: float = -1.0
+var _last_rumble_amount: float = 0.0
 
 
 func flag(feature: String) -> bool:
@@ -62,7 +63,9 @@ func should_rumble(amount: float, now: float = -1.0) -> bool:
 	if battle_tier() == Tier.OFF:
 		return false
 	var t: float = now if now >= 0.0 else Time.get_ticks_msec() / 1000.0
-	return t - _last_rumble_at >= RUMBLE_MIN_GAP
+	## Inside the gap a HEAVIER hit still rumbles: the gap dropped everything after a combo's first hit,
+	## so its big finisher was the silent one (cowir-controller 23764).
+	return t - _last_rumble_at >= RUMBLE_MIN_GAP or amount > _last_rumble_amount + 0.05
 
 
 func rumble(amount: float) -> void:
@@ -72,6 +75,7 @@ func rumble(amount: float) -> void:
 	if pads.is_empty():
 		return
 	_last_rumble_at = Time.get_ticks_msec() / 1000.0
+	_last_rumble_amount = clampf(amount, 0.0, 1.0)
 	var a := clampf(amount, 0.0, 1.0)
 	for device in pads:
 		Input.start_joy_vibration(device, a * 0.35, a * 0.7, clampf(0.08 + a * 0.18, 0.08, 0.3))
