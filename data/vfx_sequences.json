@@ -995,7 +995,8 @@
           "kind": "flash",
           "at": 0.66,
           "dur": 0.2,
-          "size": 8.0
+          "size": 8.0,
+          "sfx": "beat_fire_impact"
         },
         {
           "kind": "pillar",
