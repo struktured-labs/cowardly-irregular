@@ -3303,10 +3303,9 @@ const MELEE_EACH_STAGGER := 0.05
 ## A status that LANDS plays its own beat at the target; anything not listed lands with its aura alone.
 const LANDED_BEATS := {"stun": "landed_stun", "blind": "landed_blind"}
 const FIZZLE_BEAT := "fizzle"
-## A melee move resolves its damage and statuses at the action's START and arrives 0.17 s later (0.05 pull-back +
-## 0.12 approach, _animate_melee_attack). Outcome beats wait out what is left of this, so Shield Bash's stars never
-## pop before the shield lands (battle 23786).
-const MELEE_CONTACT_S := 0.17
+## A melee move resolves its damage and statuses at the action's START and arrives `_last_contact_in` later
+## (0.17 s at the FULL tier, 0.12 below it: _animate_melee_attack). Outcome beats wait out what is left of this, so
+## Shield Bash's stars never pop before the shield lands (battle 23786).
 var _melee_contact_timer: SceneTreeTimer = null
 
 
@@ -3408,8 +3407,8 @@ static func melee_overlay(ability: Dictionary, key: String) -> String:
 
 
 ## Fighter and Rogue physical abilities (sprites 23767): the lunge, the hit and the damage stay _animate_melee_attack's;
-## this draws the move AROUND them. A sequence's `start` is the lunge's contact delay, so its phases are authored from
-## contact and nothing here waits. `melee` plays once (at its target, or at the centre of the line for an all-enemies
+## this draws the move AROUND them. A sequence's phases are authored from CONTACT; its `start` is replaced by the
+## lunge's own contact time, so the move lands on the hit at every tier and nothing here waits. `melee` plays once (at its target, or at the centre of the line for an all-enemies
 ## move); `melee_each` plays on every target, staggered along the line as the edge passes. Turbo/console: impact only.
 func _play_melee_overlay(caster: Combatant, caster_sprite: Node2D, ability: Dictionary, targets: Array) -> void:
 	var seq_id := melee_overlay(ability, "melee")
@@ -3431,14 +3430,17 @@ func _play_melee_overlay(caster: Combatant, caster_sprite: Node2D, ability: Dict
 	var tier := int(intensity["tier"])
 	var compact := not signature_sound_allowed()
 	var from := _stable_sprite_anchor(caster_sprite)
-	EffectSystem.spawn_sequence(seq_id, from, centre, power, {}, tier, compact)
+	## The lunge's own contact, not the sequence's authored 0.17: below the FULL tier the approach is 0.05 s shorter,
+	## and an effect that lands after its hit is the jank this exists to remove (main 23818).
+	var contact := _last_contact_in
+	EffectSystem.spawn_sequence(seq_id, from, centre, power, {}, tier, compact, contact)
 	var each := melee_overlay(ability, "melee_each")
 	if each == "":
 		return
 	## Nearest the attacker first: the edge reaches the party's side of the line before the far side.
 	anchors.sort_custom(func(a: Vector2, b: Vector2) -> bool: return a.distance_squared_to(from) < b.distance_squared_to(from))
 	for i in anchors.size():
-		var delay := 0.0 if compact else MELEE_EACH_STAGGER * float(i)
+		var delay := 0.0 if compact else contact + MELEE_EACH_STAGGER * float(i)
 		if delay <= 0.0:
 			EffectSystem.spawn_sequence(each, from, anchors[i], power, {}, tier, compact)
 		else:
@@ -5109,7 +5111,7 @@ func _on_action_executing(combatant: Combatant, action: Dictionary) -> void:
 					_animate_melee_attack(attacker_sprite, target_sprite, animator, target_animator, 0.0, _ability_sheet_anim(ability, animator))
 					if BattleManager.presentation_hold > 0.0:
 						BattleManager.presentation_hold = maxf(BattleManager.presentation_hold, _last_lunge_length + 0.05)
-					_melee_contact_timer = get_tree().create_timer(MELEE_CONTACT_S)
+					_melee_contact_timer = get_tree().create_timer(_last_contact_in)
 					_play_melee_overlay(combatant, attacker_sprite, ability, targets)
 				else:
 					_play_ability_animation(anim_type, animator)
