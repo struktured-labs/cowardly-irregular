@@ -568,7 +568,7 @@ func _balanced_templates() -> Dictionary:
 	if typeof(raw) != TYPE_DICTIONARY:
 		return out
 	for e in ((raw as Dictionary).get("templates", []) as Array):
-		if e is Dictionary and str((e as Dictionary).get("stance", "")) == "balanced":
+		if e is Dictionary and str((e as Dictionary).get("stance", "")) == _env("BAL_STANCE", "balanced"):   # BAL_STANCE=defensive|aggressive for the auto path
 			out[str((e as Dictionary).get("job_id", ""))] = e
 	return out
 
