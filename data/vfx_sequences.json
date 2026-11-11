@@ -280,7 +280,7 @@
         {
           "kind": "gather",
           "sfx": "beat_fire_open",
-          "origin": "caster",
+          "origin": "hand",
           "at": 0.0,
           "dur": 0.6,
           "count": 18,
@@ -965,7 +965,7 @@
         {
           "kind": "gather",
           "sfx": "beat_fire_open",
-          "origin": "caster",
+          "origin": "hand",
           "at": 0.0,
           "dur": 0.6,
           "count": 34,
@@ -2025,7 +2025,7 @@
         {
           "kind": "gather",
           "sfx": "beat_fire_open",
-          "origin": "caster",
+          "origin": "hand",
           "at": 0.0,
           "dur": 0.6,
           "count": 26,
@@ -4009,7 +4009,7 @@
         {
           "kind": "gather",
           "sfx": "beat_ice_open",
-          "origin": "caster",
+          "origin": "hand",
           "at": 0.0,
           "dur": 0.6,
           "count": 18,
@@ -4066,7 +4066,7 @@
         {
           "kind": "gather",
           "sfx": "beat_ice_open",
-          "origin": "caster",
+          "origin": "hand",
           "at": 0.0,
           "dur": 0.6,
           "count": 26,
@@ -4148,7 +4148,7 @@
         {
           "kind": "gather",
           "sfx": "beat_thunder_open",
-          "origin": "caster",
+          "origin": "hand",
           "at": 0.0,
           "dur": 0.6,
           "count": 18,
@@ -4156,7 +4156,7 @@
         },
         {
           "kind": "ring",
-          "origin": "caster",
+          "origin": "hand",
           "at": 0.6,
           "dur": 0.18000000000000002,
           "scale": 1.6,
@@ -4222,7 +4222,7 @@
         {
           "kind": "gather",
           "sfx": "beat_thunder_open",
-          "origin": "caster",
+          "origin": "hand",
           "at": 0.0,
           "dur": 0.6,
           "count": 26,
@@ -4230,7 +4230,7 @@
         },
         {
           "kind": "ring",
-          "origin": "caster",
+          "origin": "hand",
           "at": 0.6,
           "dur": 0.18000000000000002,
           "scale": 2.0,
@@ -4329,7 +4329,7 @@
         {
           "kind": "gather",
           "sfx": "beat_void_open",
-          "origin": "caster",
+          "origin": "hand",
           "at": 0.0,
           "dur": 0.6,
           "count": 16,
@@ -4385,7 +4385,7 @@
         {
           "kind": "gather",
           "sfx": "beat_thunder_open",
-          "origin": "caster",
+          "origin": "hand",
           "at": 0.0,
           "dur": 0.6,
           "count": 22,
@@ -4393,7 +4393,7 @@
         },
         {
           "kind": "ring",
-          "origin": "caster",
+          "origin": "hand",
           "at": 0.6,
           "dur": 0.13999999999999999,
           "scale": 1.8,
@@ -4461,7 +4461,7 @@
         {
           "kind": "gather",
           "sfx": "beat_ice_open",
-          "origin": "caster",
+          "origin": "hand",
           "at": 0.0,
           "dur": 0.34,
           "count": 20,
@@ -4469,7 +4469,7 @@
         },
         {
           "kind": "ring",
-          "origin": "caster",
+          "origin": "hand",
           "at": 0.3,
           "dur": 0.2,
           "scale": 2.2,
@@ -4518,7 +4518,7 @@
         {
           "kind": "gather",
           "sfx": "beat_thunder_open",
-          "origin": "caster",
+          "origin": "hand",
           "at": 0.0,
           "dur": 0.34,
           "count": 20,
@@ -4526,7 +4526,7 @@
         },
         {
           "kind": "ring",
-          "origin": "caster",
+          "origin": "hand",
           "at": 0.3,
           "dur": 0.2,
           "scale": 2.2,
@@ -4575,7 +4575,7 @@
         {
           "kind": "gather",
           "sfx": "beat_void_open",
-          "origin": "caster",
+          "origin": "hand",
           "at": 0.0,
           "dur": 0.34,
           "count": 20,
@@ -4583,7 +4583,7 @@
         },
         {
           "kind": "ring",
-          "origin": "caster",
+          "origin": "hand",
           "at": 0.3,
           "dur": 0.2,
           "scale": 2.2,
@@ -4736,7 +4736,7 @@
         {
           "kind": "gather",
           "sfx": "beat_void_open",
-          "origin": "caster",
+          "origin": "hand",
           "at": 0.0,
           "dur": 0.2,
           "count": 10,
@@ -4813,7 +4813,7 @@
       "phases": [
         {
           "kind": "ring",
-          "origin": "caster",
+          "origin": "hand",
           "at": 0.0,
           "dur": 0.26,
           "scale": 2.0,
@@ -4821,7 +4821,7 @@
         },
         {
           "kind": "ring",
-          "origin": "caster",
+          "origin": "hand",
           "at": 0.1,
           "dur": 0.28,
           "scale": 3.2,
@@ -4829,7 +4829,7 @@
         },
         {
           "kind": "ring",
-          "origin": "caster",
+          "origin": "hand",
           "at": 0.2,
           "dur": 0.3,
           "scale": 4.6,

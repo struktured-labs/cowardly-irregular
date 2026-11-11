@@ -3111,7 +3111,7 @@ func _play_signature_windup(seq_id: String, caster_sprite: Node2D, windup: float
 	if quiet or not (phase is Dictionary) or (phase as Dictionary).is_empty() or caster_sprite == null or not is_instance_valid(caster_sprite):
 		return false
 	var facing: float = -1.0 if party_sprite_nodes.has(caster_sprite) else 1.0
-	var hand: Vector2 = _stable_sprite_anchor(caster_sprite) + Vector2(40.0 * facing, -20.0)
+	var hand: Vector2 = _hand_anchor(caster_sprite, facing)
 	EffectSystem.run_element_phase(str(phase.get("kind", "gather")), hand, hand, 1.0, (phase as Dictionary).merged({"dur": windup}, true))
 	return true
 
