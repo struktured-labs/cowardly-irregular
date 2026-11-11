@@ -112,8 +112,6 @@ func test_an_element_phase_draws_and_boost_draws_more() -> void:
 	var boosted := _eruption_particles(3.0)
 	assert_gt(base, 0, "CONTROL: an eruption has particles")
 	assert_gt(boosted, base * 2, "boost 3.0 erupts with far more flame than boost 1.0 (%d vs %d)" % [boosted, base])
-	for c in container.get_children():
-		c.queue_free()
 
 
 func _eruption_particles(boost: float) -> int:
@@ -129,21 +127,33 @@ func _eruption_particles(boost: float) -> int:
 
 
 ## Turbo and the grind console (autogrind 23412): only the impact's own phases, at once, so a cast costs no wall time.
+var _ran: Array = []
+
+
+func _note_phase(kind: String, _at: Vector2, _from: Vector2, _power: float, phase: Dictionary) -> void:
+	_ran.append("%s:%s" % [kind, phase.get("palette", "")] if phase.has("note_palette") else kind)
+
+
 func test_compact_plays_only_the_impact() -> void:
 	var host := Node2D.new()
 	add_child_autofree(host)
 	var seq := _seq("glory_firaga")
-	var ran: Array = []
+	_ran = []
 	var fx := FractalFX.new(host, 7)
-	fx.on_element_phase = func(kind, _at, _from, _power, _phase): ran.append(kind)
+	fx.on_element_phase = _note_phase
 	fx.play(seq, Vector2(900, 300), Vector2(300, 300), 1.0, true)
-	assert_eq(ran, ["eruption"], "compact runs the impact eruption at once and nothing else of Fire's own (no gather, pillar, second blast or embers)")
+	assert_eq(_ran, ["eruption"], "compact runs the impact eruption at once and nothing else of Fire's own (no gather, pillar, second blast or embers)")
+	_ran = []
+	var full := FractalFX.new(host, 7)
+	full.on_element_phase = _note_phase
+	full.play({"phases": [{"kind": "gather", "at": 0.0}, {"kind": "eruption", "at": 0.3}]}, Vector2(900, 300), Vector2(300, 300), 1.0, false)
+	assert_eq(_ran, ["gather"], "CONTROL: a full sequence starts with its first phase and waits for the rest")
+	_ran = []
 	var cold := FractalFX.new(host, 7)
-	cold.on_element_phase = func(kind, _at, _from, _power, phase): ran.append("%s:%s" % [kind, phase.get("palette", "")])
-	cold.play({"phases": [{"kind": "rise", "at": 0.0, "palette": "frost"}]}, Vector2.ZERO, Vector2.ZERO)
-	assert_true("rise:frost" in ran, "the shared mote phases carry their palette, so another lane's sequence is not fire-coloured")
-	var ran_full: Array = []
-	var fx2 := FractalFX.new(host, 7)
-	fx2.on_element_phase = func(kind, _at, _from, _power, _phase): ran_full.append(kind)
-	fx2.play(seq.merged({"start": 0.0}, true), Vector2(900, 300), Vector2(300, 300), 1.0, false)
-	assert_eq(ran_full, ["gather"], "CONTROL: the full sequence starts with its gather and waits for the rest")
+	cold.on_element_phase = _note_phase
+	cold.play({"phases": [{"kind": "rise", "at": 0.0, "palette": "frost", "note_palette": true}]}, Vector2.ZERO, Vector2.ZERO)
+	assert_true("rise:frost" in _ran, "the shared mote phases carry their palette, so another lane's sequence is not fire-coloured")
+	## A sequence outlives this arm on its own timers: it must not keep a callback into a finished test.
+	for f in [fx, full, cold]:
+		f.on_element_phase = Callable()
+	await get_tree().create_timer(0.5).timeout
