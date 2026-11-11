@@ -3045,7 +3045,7 @@ func _play_ability_full_render(caster: Combatant, caster_sprite: Node2D, animato
 		var settle := create_tween()
 		caster_sprite.set_meta("attack_tween", settle)
 		settle.tween_property(caster_sprite, "position", caster_home, 0.14).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-		settle.parallel().tween_property(caster_sprite, "modulate", Color.WHITE, 0.18)
+		settle.parallel().tween_property(caster_sprite, "modulate", rest_modulate(caster_sprite), 0.18)
 	_full_render_depth = maxi(0, _full_render_depth - 1)
 	if _full_render_depth == 0:
 		_full_render_set_dim(false)
@@ -4822,8 +4822,10 @@ func _dim_inactive_party(active_idx: int, dim_others: bool) -> void:
 		var target_mod: Color = Color.WHITE
 		if dim_others and i != active_idx:
 			target_mod = ACTIVE_PC_DIM_COLOR
-		var t = create_tween()
-		t.tween_property(s, "modulate", target_mod, ACTIVE_PC_STEP_TWEEN_TIME)
+		## The dim is a FACTOR on the rest colour, so a poisoned or fallen member keeps its tint under it.
+		s.set_meta("dim_modulate", target_mod)
+		var t = _flash_tween(s)
+		t.tween_property(s, "modulate", rest_modulate(s), ACTIVE_PC_STEP_TWEEN_TIME)
 
 
 func _on_selection_turn_started(combatant: Combatant) -> void:
@@ -5717,10 +5719,10 @@ func _apply_weakness_hit_visuals(sprite: Node2D, element: String, elemental_mod:
 	var boost: float = clampf((elemental_mod - 1.0) * 0.6, 0.0, 0.4)
 	var flash_color: Color = Color(base_color.r * (1.0 + boost), base_color.g * (1.0 + boost), base_color.b * (1.0 + boost), 1.0)
 	sprite.modulate = flash_color
-	var tween = sprite.create_tween()  # on the sprite: it dies with a monster a grind restart frees
+	var tween = _flash_tween(sprite)  # on the sprite: it dies with a monster a grind restart frees
 	# Longer settle than the 0.12s white hit flash — reads as "it HURT". Two-phase: hold the color briefly, then ease back so the settle isn't a hard cut.
 	tween.tween_interval(0.08)
-	tween.tween_property(sprite, "modulate", Color.WHITE, 0.28).set_ease(Tween.EASE_OUT)
+	tween.tween_property(sprite, "modulate", rest_modulate(sprite), 0.28).set_ease(Tween.EASE_OUT)
 
 
 func _apply_weakness_hit_knockback(sprite: Node2D, direction: float = 1.0, elemental_mod: float = 1.0) -> void:
@@ -6072,6 +6074,8 @@ func _on_party_hp_changed(old_value: int, new_value: int, member_idx: int) -> vo
 	if new_value < old_value and member_idx < party_animators.size():
 		# Play hit animation when taking damage
 		party_animators[member_idx].play_hit()
+	elif new_value > old_value:
+		_rest_after_recovery(member_idx)
 	# Ally KO quip — when a party member drops to 0 HP, a living ally reacts
 	if new_value <= 0 and old_value > 0:
 		# Tick 176 closed this moment's LOG parity with _on_enemy_died and left its AUDIO open: the enemy plays enemy_death, the ally played nothing. Fires before the index guard so a bad idx still sounds.
@@ -6092,6 +6096,26 @@ func _on_party_hp_changed(old_value: int, new_value: int, member_idx: int) -> vo
 		if alive_allies.size() > 0:
 			var reactor = alive_allies[randi() % alive_allies.size()]
 			_try_combat_quip(ALLY_KO_QUIPS, reactor)
+
+
+## A Raise, a Phoenix Down or a heal over the danger line changes what "at rest" means (dead → weak or idle,
+## weak → idle), and only a FALL in HP re-posed a member, so a revived one lay there, alive, until the next
+## round began. Re-resolve now, unless the pose is already right, a swing or cast is drawing, or the party
+## is celebrating (set_idle would end the win).
+func _rest_after_recovery(member_idx: int) -> void:
+	if _battle_victory or member_idx < 0 or member_idx >= party_animators.size():
+		return
+	var animator: BattleAnimatorClass = party_animators[member_idx]
+	if animator == null or not is_instance_valid(animator) or animator.sprite == null or not is_instance_valid(animator.sprite):
+		return
+	if animator.current_state == BattleAnimatorClass.AnimState.VICTORY:
+		return
+	var now: StringName = animator.sprite.animation
+	if now == StringName(animator.rest_anim_name()):
+		return
+	if animator.one_shot_running() and now != &"dead":
+		return
+	animator.set_idle()
 
 
 func _on_party_ap_changed(old_value: int, new_value: int, member_idx: int) -> void:
@@ -6121,45 +6145,80 @@ func _apply_status_visual(sprite: Node2D, combatant: Combatant) -> void:
 	for living combatants so we check is_alive before touching modulate."""
 	if not combatant.is_alive:
 		return
-	var effects: Array = combatant.status_effects
-	if effects.is_empty():
-		sprite.modulate = Color.WHITE
-		return
-	# Priority order: first matching status wins
+	sprite.modulate = rest_modulate(sprite)
+
+
+## A fallen party member is greyed where it lies.
+const KO_MODULATE := Color(0.3, 0.3, 0.3, 0.7)
+
+
+## The tint a living combatant's statuses give its sprite; the first matching status wins. The ONE table:
+## BattleUIManager kept a second with six of these ten, so confuse, fear, charm and regen tints on a party
+## member were wiped to white by the next UI refresh.
+static func status_tint(effects: Array) -> Color:
 	for effect in effects:
 		match effect:
 			"poison":
-				sprite.modulate = Color(0.7, 1.0, 0.7)   # Green tint
-				return
+				return Color(0.7, 1.0, 0.7)   # Green tint
 			"burning":
-				sprite.modulate = Color(1.0, 0.6, 0.4)   # Orange-red
-				return
+				return Color(1.0, 0.6, 0.4)   # Orange-red
 			"curse":
-				sprite.modulate = Color(0.7, 0.4, 0.8)   # Purple
-				return
+				return Color(0.7, 0.4, 0.8)   # Purple
 			"stun":
-				sprite.modulate = Color(1.0, 1.0, 0.5)   # Yellow
-				return
+				return Color(1.0, 1.0, 0.5)   # Yellow
 			"sleep":
-				sprite.modulate = Color(0.8, 0.8, 1.0)   # Pale blue
-				return
+				return Color(0.8, 0.8, 1.0)   # Pale blue
 			"blind":
-				sprite.modulate = Color(0.6, 0.6, 0.7)   # Dark blue-gray
-				return
+				return Color(0.6, 0.6, 0.7)   # Dark blue-gray
 			"confuse":
-				sprite.modulate = Color(0.9, 0.6, 1.0)  # Light purple
-				return
+				return Color(0.9, 0.6, 1.0)  # Light purple
 			"fear":
-				sprite.modulate = Color(0.6, 0.6, 0.6)  # Desaturated gray
-				return
+				return Color(0.6, 0.6, 0.6)  # Desaturated gray
 			"charm":
-				sprite.modulate = Color(1.0, 0.7, 0.8)  # Pink
-				return
+				return Color(1.0, 0.7, 0.8)  # Pink
 			"regen":
-				sprite.modulate = Color(0.8, 1.0, 0.9)  # Soft green-white glow
-				return
-	# Unknown status — leave tint neutral
-	sprite.modulate = Color.WHITE
+				return Color(0.8, 1.0, 0.9)  # Soft green-white glow
+	return Color.WHITE
+
+
+func _combatant_of_sprite(sprite: Node2D) -> Combatant:
+	var pi: int = party_sprite_nodes.find(sprite)
+	if pi != -1:
+		return party_members[pi] if pi < party_members.size() else null
+	var ei: int = enemy_sprite_nodes.find(sprite)
+	if ei != -1:
+		return test_enemies[ei] if ei < test_enemies.size() else null
+	return null
+
+
+## The colour a sprite RESTS at: its status tint times the inactive-party dim (KO grey for a fallen member).
+## Every flash, dim step and cast settle returns HERE. Each used to return to white (or to whatever colour it
+## found mid-flash), so a poison tint died with the next weakness flash or turn step and nothing brought it
+## back, and a second crit inside the first's flash left its target over-bright for the rest of the fight.
+func rest_modulate(sprite: Node2D) -> Color:
+	if not is_instance_valid(sprite):
+		return Color.WHITE
+	var who: Combatant = _combatant_of_sprite(sprite)
+	var tint := Color.WHITE
+	if who != null and is_instance_valid(who):
+		if not who.is_alive and party_sprite_nodes.has(sprite):
+			return KO_MODULATE
+		if who.is_alive:
+			tint = status_tint(who.status_effects)
+	var dim: Color = sprite.get_meta("dim_modulate", Color.WHITE)
+	return tint * dim
+
+
+## One colour flash per sprite, on the sprite: a new flash replaces the old tween (two wrote modulate at once),
+## and the tween dies with a sprite a grind restart frees.
+func _flash_tween(sprite: Node2D) -> Tween:
+	if sprite.has_meta("flash_tween"):
+		var old = sprite.get_meta("flash_tween")
+		if old is Tween and old.is_valid():
+			old.kill()
+	var tween := sprite.create_tween()
+	sprite.set_meta("flash_tween", tween)
+	return tween
 
 
 ## Buff/debuff visual overlay system
@@ -6948,15 +7007,20 @@ func _crit_visual_burst(target: Combatant, _amount: int) -> void:
 	# 3. Target sprite white flash
 	var sprite = _get_combatant_sprite(target)
 	if sprite and is_instance_valid(sprite):
-		var orig_modulate = sprite.modulate
-		sprite.modulate = Color(3.0, 3.0, 3.0, 1.0)  # Bright white flash (HDR)
-		var flash_tween = create_tween()
-		flash_tween.tween_property(sprite, "modulate", orig_modulate, 0.15).set_delay(0.05)
+		_crit_flash(sprite)
 
 	# 4. "CRITICAL!" banner above target
 	var pos = _results_display._get_combatant_sprite_position(target)
 	if pos != Vector2.ZERO:
 		_spawn_crit_banner(pos)
+
+
+## The crit's white flash settles to the sprite's REST colour. It used to settle to whatever colour it found,
+## so a second crit inside the first's 0.2 s captured the flash itself and stayed there.
+func _crit_flash(sprite: Node2D) -> void:
+	sprite.modulate = Color(3.0, 3.0, 3.0, 1.0)  # Bright white flash (HDR)
+	var flash_tween = _flash_tween(sprite)
+	flash_tween.tween_property(sprite, "modulate", rest_modulate(sprite), 0.15).set_delay(0.05)
 
 
 func _spawn_crit_banner(pos: Vector2) -> void:

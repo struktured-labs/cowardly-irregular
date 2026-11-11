@@ -473,10 +473,10 @@ func _update_member_status(idx: int, member: Combatant) -> void:
 	if idx < _scene.party_sprite_nodes.size():
 		var sprite = _scene.party_sprite_nodes[idx]
 		if is_instance_valid(sprite):
-			if not member.is_alive:
-				sprite.modulate = Color(0.3, 0.3, 0.3, 0.7)  # Dark gray, semi-transparent
-			else:
-				sprite.modulate = _get_status_modulate(member.status_effects)
+			## The scene owns the rest colour (KO grey, the status tint, the inactive-party dim). This refresh
+			## used to write its own, from a shorter status table, and wiped the dim and four tints.
+			if _scene.has_method("rest_modulate"):
+				sprite.modulate = _scene.rest_modulate(sprite)
 
 	# Update MP
 	var mp_bar = box.get_node_or_null("MP")
@@ -665,26 +665,6 @@ func _enemy_stat_mods_hint(enemy: Combatant) -> String:
 				continue
 			parts.append("[color=%s]%s%+d%%(%d)[/color]" % [AccessibilityPalette.penalty_bbcode(), StatNames.short_code(s), int((m - 1.0) * 100), int(debuff.get("remaining_turns", 0))])
 	return (" · " + " ".join(parts)) if parts.size() > 0 else ""
-
-
-func _get_status_modulate(status_effects: Array) -> Color:
-	"""Return sprite modulate color for the highest-priority active status effect.
-	Returns Color.WHITE when no relevant statuses are present."""
-	for effect in status_effects:
-		match effect:
-			"poison":
-				return Color(0.7, 1.0, 0.7)   # Green tint
-			"burning":
-				return Color(1.0, 0.6, 0.4)   # Orange-red
-			"curse":
-				return Color(0.7, 0.4, 0.8)   # Purple
-			"stun":
-				return Color(1.0, 1.0, 0.5)   # Yellow
-			"sleep":
-				return Color(0.8, 0.8, 1.0)   # Pale blue
-			"blind":
-				return Color(0.6, 0.6, 0.7)   # Dark blue-gray
-	return Color.WHITE
 
 
 ## Status name plus its remaining turns ("Poison 3"). Permanent (-1) or absent
