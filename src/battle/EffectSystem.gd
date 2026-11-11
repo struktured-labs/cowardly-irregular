@@ -246,7 +246,7 @@ func spawn_ability_effect(ability: Variant, target_position: Vector2, on_complet
 ## sequence first lands on the target, so a caller can hold the damage numbers for it. {} if the id is unknown.
 ## `start_at` >= 0 replaces the sequence's authored `start`: a melee overlay passes its lunge's own contact time.
 ## `tint` recolours a family sequence's `spark` accent (FractalFX.tint).
-func spawn_sequence(seq_id: String, from: Vector2, to: Vector2, power: float = 1.0, actors: Dictionary = {}, tier: int = 1, compact: bool = false, start_at: float = -1.0, tint: String = "") -> Dictionary:
+func spawn_sequence(seq_id: String, from: Vector2, to: Vector2, power: float = 1.0, actors: Dictionary = {}, tier: int = 1, compact: bool = false, start_at: float = -1.0, caster_centre: Vector2 = Vector2.INF, tint: String = "") -> Dictionary:
 	var seq: Dictionary = FractalFX.load_sequence(seq_id)
 	if seq.is_empty() or _effects_container == null:
 		return {}
@@ -255,6 +255,7 @@ func spawn_sequence(seq_id: String, from: Vector2, to: Vector2, power: float = 1
 		seq["start"] = start_at
 	var fx := FractalFX.new(_effects_container)
 	fx.actors = actors
+	fx.caster_centre = caster_centre
 	fx.tier = tier
 	fx.tint = tint
 	fx.reduce_flashes = _reduce_flashes()
@@ -262,7 +263,7 @@ func spawn_sequence(seq_id: String, from: Vector2, to: Vector2, power: float = 1
 	fx.on_sfx = play_phase_sfx
 	fx.on_element_phase = run_element_phase
 	var total: float = fx.play(seq, from, to, clampf(power, POWER_MIN, POWER_MAX), compact)
-	return {"total": total, "impact": 0.01 if compact else FractalFX.impact_time(seq)}
+	return {"total": total, "impact": 0.01 if compact else FractalFX.impact_time(seq) + FractalFX.travel_delay(seq, from, to)}
 
 
 ## Sequence phases drawn here, not in FractalFX: an element's ORIGINAL burst (struktured via main 23405: Fire keeps
