@@ -518,7 +518,8 @@
     "mp_cost": 0,
     "description": "Basic tackle attack",
     "damage_multiplier": 1.0,
-    "target_type": "single_enemy"
+    "target_type": "single_enemy",
+    "family": "slam"
   },
   "bite": {
     "id": "bite",
@@ -528,7 +529,8 @@
     "mp_cost": 0,
     "description": "Vicious bite attack",
     "damage_multiplier": 1.1,
-    "target_type": "single_enemy"
+    "target_type": "single_enemy",
+    "family": "bite"
   },
   "scratch": {
     "id": "scratch",
@@ -538,7 +540,8 @@
     "mp_cost": 0,
     "description": "Quick scratching attack",
     "damage_multiplier": 0.9,
-    "target_type": "single_enemy"
+    "target_type": "single_enemy",
+    "family": "claw"
   },
   "screech": {
     "id": "screech",
@@ -587,7 +590,9 @@
     "damage_multiplier": 0.8,
     "target_type": "all_enemies",
     "effect": "poison",
-    "duration": 3
+    "duration": 3,
+    "family": "spray",
+    "ranged": true
   },
   "crown_authority": {
     "id": "crown_authority",
@@ -611,7 +616,8 @@
     "damage_multiplier": 2.0,
     "target_type": "single_enemy",
     "condition": "low_hp_threshold",
-    "threshold": 0.3
+    "threshold": 0.3,
+    "family": "bite_big"
   },
   "dive_attack": {
     "id": "dive_attack",
@@ -621,7 +627,8 @@
     "mp_cost": 5,
     "description": "Dive from above for increased damage",
     "damage_multiplier": 1.4,
-    "target_type": "single_enemy"
+    "target_type": "single_enemy",
+    "family": "slam"
   },
   "shield_bash": {
     "id": "shield_bash",
@@ -659,7 +666,8 @@
     "description": "Counter-attack that scales with defense",
     "damage_multiplier": 1.3,
     "scales_with": "defense",
-    "target_type": "single_enemy"
+    "target_type": "single_enemy",
+    "family": "slam"
   },
   "plague_bite": {
     "id": "plague_bite",
@@ -672,7 +680,8 @@
     "target_type": "single_enemy",
     "effect": "poison",
     "effect_chance": 1.0,
-    "duration": 4
+    "duration": 4,
+    "family": "bite"
   },
   "disease_cloud": {
     "id": "disease_cloud",
@@ -1155,7 +1164,8 @@
     "mp_cost": 15,
     "description": "A devastating overhead strike",
     "damage_multiplier": 2.0,
-    "target_type": "single_enemy"
+    "target_type": "single_enemy",
+    "family": "slam"
   },
   "masterite_endurance_test": {
     "id": "masterite_endurance_test",
@@ -1165,7 +1175,8 @@
     "mp_cost": 12,
     "description": "Tests the party's ability to endure sustained pressure",
     "damage_multiplier": 0.7,
-    "target_type": "all_enemies"
+    "target_type": "all_enemies",
+    "family": "slam_quake"
   },
   "masterite_judgment": {
     "id": "masterite_judgment",
@@ -1186,7 +1197,8 @@
     "mp_cost": 20,
     "description": "A precisely measured strike targeting the weakest point",
     "damage_multiplier": 1.8,
-    "target_type": "single_enemy"
+    "target_type": "single_enemy",
+    "family": "claw"
   },
   "masterite_measured_blow": {
     "id": "masterite_measured_blow",
@@ -1196,7 +1208,8 @@
     "mp_cost": 14,
     "description": "Each strike is calibrated to test party coordination",
     "damage_multiplier": 0.8,
-    "target_type": "all_enemies"
+    "target_type": "all_enemies",
+    "family": "slam_quake"
   },
   "masterite_counter_stance": {
     "id": "masterite_counter_stance",
@@ -1256,7 +1269,8 @@
     "mp_cost": 6,
     "description": "A rapid strike that lands before the opponent can react",
     "damage_multiplier": 1.3,
-    "target_type": "single_enemy"
+    "target_type": "single_enemy",
+    "family": "claw"
   },
   "masterite_time_tax": {
     "id": "masterite_time_tax",
@@ -1418,7 +1432,8 @@
     "target_type": "single_enemy",
     "effect": "defense_down",
     "stat_modifier": 0.5,
-    "duration": 3
+    "duration": 3,
+    "family": "claw"
   },
   "assembly_slam": {
     "id": "assembly_slam",
@@ -1539,7 +1554,9 @@
     "mp_cost": 4,
     "description": "Hurls a bone at high speed for moderate damage.",
     "damage_multiplier": 1.2,
-    "target_type": "single_enemy"
+    "target_type": "single_enemy",
+    "family": "spit",
+    "ranged": true
   },
   "boulder_throw": {
     "id": "boulder_throw",
@@ -1549,7 +1566,9 @@
     "mp_cost": 10,
     "description": "Hurls a massive boulder dealing heavy damage.",
     "damage_multiplier": 2.0,
-    "target_type": "single_enemy"
+    "target_type": "single_enemy",
+    "family": "spit",
+    "ranged": true
   },
   "buffer_overflow": {
     "id": "buffer_overflow",
@@ -1680,7 +1699,8 @@
     "mp_cost": 5,
     "description": "The Mimic snaps its chest-lid shut on an enemy for heavy damage.",
     "damage_multiplier": 1.8,
-    "target_type": "single_enemy"
+    "target_type": "single_enemy",
+    "family": "bite_big"
   },
   "clipboard_smack": {
     "id": "clipboard_smack",
@@ -1792,7 +1812,8 @@
     "description": "Reacts to an attack with a swift physical counter.",
     "damage_multiplier": 1.3,
     "target_type": "last_attacker",
-    "trigger": "on_hit"
+    "trigger": "on_hit",
+    "family": "slam"
   },
   "crystal_heal": {
     "id": "crystal_heal",
@@ -1825,7 +1846,8 @@
     "target_type": "single_enemy",
     "effect": "stun",
     "effect_chance": 0.25,
-    "duration": 1
+    "duration": 1,
+    "family": "slam"
   },
   "cursed_strike": {
     "id": "cursed_strike",
@@ -1839,7 +1861,8 @@
     "element": "dark",
     "target_type": "single_enemy",
     "effect": "curse",
-    "duration": 3
+    "duration": 3,
+    "family": "claw"
   },
   "dark_bolt": {
     "id": "dark_bolt",
@@ -1873,7 +1896,8 @@
     "damage_multiplier": 1.5,
     "element": "dark",
     "target_type": "single_enemy",
-    "drain_percentage": 30
+    "drain_percentage": 30,
+    "family": "claw"
   },
   "data_absorb": {
     "id": "data_absorb",
@@ -2156,7 +2180,12 @@
     "mp_cost": 12,
     "description": "Shatters crystal gems in all directions, hitting all enemies.",
     "damage_multiplier": 1.6,
-    "target_type": "all_enemies"
+    "target_type": "all_enemies",
+    "family": "spray",
+    "ranged": true,
+    "vfx": {
+      "palette": "frost"
+    }
   },
   "glitch_bolt": {
     "id": "glitch_bolt",
@@ -2179,7 +2208,11 @@
     "damage_multiplier": 1.5,
     "element": "dark",
     "target_type": "single_enemy",
-    "ignores_evasion": true
+    "ignores_evasion": true,
+    "family": "claw",
+    "vfx": {
+      "palette": "glitch"
+    }
   },
   "gold_scatter": {
     "id": "gold_scatter",
@@ -2190,7 +2223,12 @@
     "description": "Scatters gold coins at high velocity, hitting all enemies.",
     "damage_multiplier": 0.8,
     "target_type": "all_enemies",
-    "hits": 3
+    "hits": 3,
+    "family": "spray",
+    "ranged": true,
+    "vfx": {
+      "palette": "verdict"
+    }
   },
   "grind_rail": {
     "id": "grind_rail",
@@ -2213,7 +2251,8 @@
     "target_type": "all_enemies",
     "effect": "stun",
     "effect_chance": 0.3,
-    "duration": 1
+    "duration": 1,
+    "family": "slam_quake"
   },
   "hallucination_spores": {
     "id": "hallucination_spores",
@@ -2262,7 +2301,8 @@
     "target_type": "single_enemy",
     "effect": "stun",
     "effect_chance": 0.35,
-    "duration": 1
+    "duration": 1,
+    "family": "slam"
   },
   "howl": {
     "id": "howl",
@@ -2386,7 +2426,8 @@
     "target_type": "single_enemy",
     "effect": "stun",
     "effect_chance": 0.35,
-    "duration": 1
+    "duration": 1,
+    "family": "slam"
   },
   "life_drain": {
     "id": "life_drain",
@@ -2734,7 +2775,8 @@
     "target_type": "single_enemy",
     "effect": "poison",
     "effect_chance": 1.0,
-    "duration": 3
+    "duration": 3,
+    "family": "claw"
   },
   "port_block": {
     "id": "port_block",
@@ -2879,7 +2921,8 @@
     "target_type": "single_enemy",
     "effect": "defense_down",
     "stat_modifier": 0.7,
-    "duration": 2
+    "duration": 2,
+    "family": "bite"
   },
   "repetitive_strike": {
     "id": "repetitive_strike",
@@ -2951,7 +2994,11 @@
     "target_type": "single_enemy",
     "effect": "blind",
     "effect_chance": 0.4,
-    "duration": 2
+    "duration": 2,
+    "family": "claw",
+    "vfx": {
+      "palette": "smoke"
+    }
   },
   "sandstorm": {
     "id": "sandstorm",
@@ -3013,7 +3060,11 @@
     "mp_cost": 12,
     "description": "A slash that accesses forbidden memory, dealing massive damage.",
     "damage_multiplier": 2.5,
-    "target_type": "single_enemy"
+    "target_type": "single_enemy",
+    "family": "claw",
+    "vfx": {
+      "palette": "glitch"
+    }
   },
   "shadow_bind": {
     "id": "shadow_bind",
@@ -3059,7 +3110,8 @@
     "mp_cost": 5,
     "description": "A powerful slam attack that deals heavy physical damage.",
     "damage_multiplier": 1.5,
-    "target_type": "single_enemy"
+    "target_type": "single_enemy",
+    "family": "slam"
   },
   "smash": {
     "id": "smash",
@@ -3072,7 +3124,8 @@
     "target_type": "single_enemy",
     "effect": "stun",
     "effect_chance": 0.2,
-    "duration": 1
+    "duration": 1,
+    "family": "slam"
   },
   "soul_drain": {
     "id": "soul_drain",
@@ -3318,7 +3371,9 @@
     "target_type": "single_enemy",
     "effect": "stun",
     "effect_chance": 0.25,
-    "duration": 1
+    "duration": 1,
+    "family": "spit",
+    "ranged": true
   },
   "thunder_breath": {
     "id": "thunder_breath",
@@ -3408,7 +3463,8 @@
     "target_type": "single_enemy",
     "effect": "poison",
     "effect_chance": 1.0,
-    "duration": 4
+    "duration": 4,
+    "family": "bite"
   },
   "void_breath": {
     "id": "void_breath",

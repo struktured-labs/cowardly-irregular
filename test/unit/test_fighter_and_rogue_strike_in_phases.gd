@@ -126,7 +126,7 @@ func test_each_ability_names_its_sequence_and_the_rest_do_not() -> void:
 	## CONTROLs: the escape beat owns Flee, and a monster's physical move is still on the plain path.
 	assert_eq(BattleSceneScript.melee_overlay(abilities["flee"], "melee"), "", "Flee names no melee sequence")
 	assert_eq(AbilityVFX.resolve(abilities["flee"]).get("sequence"), "", "Flee names no cast sequence")
-	assert_eq(BattleSceneScript.melee_overlay(abilities["bite"], "melee"), "", "a monster's bite names none")
+	assert_eq(BattleSceneScript.melee_overlay(abilities["fire"], "melee"), "", "a spell names none")
 	assert_eq(BattleSceneScript.melee_overlay({"vfx": {"melee": "no_such_sequence"}}, "melee"), "", "a sequence that does not exist is not played")
 
 
