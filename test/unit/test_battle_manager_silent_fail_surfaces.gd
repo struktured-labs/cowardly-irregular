@@ -38,7 +38,7 @@ func _read(p: String) -> String:
 
 func test_ability_mp_shortfall_emits_battle_log() -> void:
 	var src := _read(BATTLE_MANAGER)
-	var fn_idx: int = src.find("func _execute_ability(caster: Combatant, ability_id: String, targets: Array) -> void:")
+	var fn_idx: int = src.find("func _execute_ability(caster: Combatant, ability_id: String, targets: Array")
 	assert_gt(fn_idx, -1)
 	var next_fn: int = src.find("\nfunc ", fn_idx + 1)
 	var body: String = src.substr(fn_idx, next_fn - fn_idx)
@@ -51,7 +51,7 @@ func test_ability_mp_shortfall_pushes_warning_on_divergence() -> void:
 	# true but spend_mp returned false. That's a divergence worth
 	# pushing as a warning.
 	var src := _read(BATTLE_MANAGER)
-	var fn_idx: int = src.find("func _execute_ability(caster: Combatant, ability_id: String, targets: Array) -> void:")
+	var fn_idx: int = src.find("func _execute_ability(caster: Combatant, ability_id: String, targets: Array")
 	var next_fn: int = src.find("\nfunc ", fn_idx + 1)
 	var body: String = src.substr(fn_idx, next_fn - fn_idx)
 	assert_true(body.contains("[BattleManager] _execute_ability: '%s' insufficient MP after can_use_ability check passed"),

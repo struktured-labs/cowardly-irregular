@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+""":"
+echo "$0 is a Python script: run it with python3, not bash" >&2; exit 2
+":"""
 """Arms for check_web_audio_tier.py, each proved to fire AND to stay quiet.
 
 Fixtures are synthetic GDPC v2 files — a real header and a real file table, sizes declared, no

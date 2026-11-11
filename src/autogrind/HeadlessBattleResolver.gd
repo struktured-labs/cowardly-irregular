@@ -301,15 +301,9 @@ func _selection_phase() -> Array[Dictionary]:
 			var skip = _check_status_skip(enemy)
 			if skip != "":
 				if skip == "confuse_attack":
-					var confused_action = _confused_attack(enemy)
-					confused_action["combatant"] = enemy
-					confused_action["speed"] = _speed_for(confused_action, enemy)
-					actions.append(confused_action)
+					_append_single(actions, enemy, _confused_attack(enemy))
 				continue
-			var a = _select_enemy_action(enemy)
-			a["combatant"] = enemy
-			a["speed"] = _speed_for(a, enemy)
-			actions.append(a)
+			_append_single(actions, enemy, _select_enemy_action(enemy))
 		return actions
 
 	for combatant in _player_party:
@@ -345,10 +339,7 @@ func _selection_phase() -> Array[Dictionary]:
 		if skip != "":
 			if skip == "confuse_attack":
 				# Confused: attack random target (ally or enemy)
-				var confused_action = _confused_attack(combatant)
-				confused_action["combatant"] = combatant
-				confused_action["speed"] = _speed_for(confused_action, combatant)
-				actions.append(confused_action)
+				_append_single(actions, combatant, _confused_attack(combatant))
 			continue
 
 		var abs_node = _get_autoload("AutobattleSystem")
@@ -359,10 +350,7 @@ func _selection_phase() -> Array[Dictionary]:
 			raw = [_default_attack_action(combatant, _enemy_party)]
 
 		if raw.size() == 1:
-			var a = raw[0].duplicate()
-			a["combatant"] = combatant
-			a["speed"] = _speed_for(a, combatant)
-			actions.append(a)
+			_append_single(actions, combatant, raw[0].duplicate())
 		elif raw.size() > 1:
 			## ASK the live rule, never restate it. BattleManager.billed_ap is declared the one
 			## authority ("Every readout must ask this rather than computing `queued` itself") after
@@ -379,8 +367,9 @@ func _selection_phase() -> Array[Dictionary]:
 			raw = kept
 			## A queued defer costs no AP in the live engine, so the lump must not bill it either:
 			## this charged 2 for [attack, defer] where live charges 1.
-			var ap_cost: int = BattleManager.billed_ap(combatant.current_ap, raw.size(),
-					BattleManager.billable_actions(raw))
+			var billable: int = BattleManager.billable_actions(raw)
+			var ap_cost: int = BattleManager.billed_ap(combatant.current_ap, raw.size(), billable) - billable \
+					+ _slots_ap(combatant, raw, billable)
 			if combatant.can_brave(ap_cost):
 				combatant.spend_ap(ap_cost)
 				for sub in raw:
@@ -389,10 +378,7 @@ func _selection_phase() -> Array[Dictionary]:
 					a["speed"] = _speed_for(a, combatant)
 					actions.append(a)
 			else:
-				var a = raw[0].duplicate()
-				a["combatant"] = combatant
-				a["speed"] = _speed_for(a, combatant)
-				actions.append(a)
+				_append_single(actions, combatant, raw[0].duplicate())
 
 	for enemy in _enemy_party:
 		if not enemy.is_alive:
@@ -411,18 +397,20 @@ func _selection_phase() -> Array[Dictionary]:
 		var skip = _check_status_skip(enemy)
 		if skip != "":
 			if skip == "confuse_attack":
-				var confused_action = _confused_attack(enemy)
-				confused_action["combatant"] = enemy
-				confused_action["speed"] = _speed_for(confused_action, enemy)
-				actions.append(confused_action)
+				_append_single(actions, enemy, _confused_attack(enemy))
 			continue
 
-		var a = _select_enemy_action(enemy)
-		a["combatant"] = enemy
-		a["speed"] = _speed_for(a, enemy)
-		actions.append(a)
+		_append_single(actions, enemy, _select_enemy_action(enemy))
 
 	return actions
+
+
+## One action for its turn, tagged with what live's executor charges for it: slot_ap (attack/item 1, ability 1 + ap_cost, defer 0).
+func _append_single(actions: Array[Dictionary], combatant, a: Dictionary) -> void:
+	a["ap_bill"] = AbilityCost.slot_ap(combatant, a)
+	a["combatant"] = combatant
+	a["speed"] = _speed_for(a, combatant)
+	actions.append(a)
 
 
 func _speed_for(action: Dictionary, combatant) -> int:
@@ -904,6 +892,13 @@ func _execute_action(action: Dictionary) -> void:
 	var combatant = action.get("combatant")
 	if not combatant or not combatant.is_alive:
 		return
+	## A single action pays at execution, as live's executors do; an Advance's slots were billed in the lump.
+	var bill: int = int(action.get("ap_bill", 0))
+	if bill > 1 and not combatant.can_brave(bill):
+		_log("%s doesn't have the AP for that (needs %d)" % [combatant.combatant_name, bill])
+		return
+	if bill > 0:
+		combatant.spend_ap(bill)
 
 	var acted := false
 	match action.get("type", "attack"):
@@ -939,6 +934,13 @@ func _execute_action(action: Dictionary) -> void:
 	if acted and is_instance_valid(combatant):
 		combatant.spend_restriction_clocks()
 
+
+## What live's executors charge for the billed slots, each its AbilityCost.slot_ap (1 + an ability's own ap_cost).
+func _slots_ap(combatant, raw: Array, billable: int) -> int:
+	var total := 0
+	for i in mini(billable, raw.size()):
+		total += AbilityCost.slot_ap(combatant, raw[i])
+	return total
 
 ## Twin of Combatant._has_equipment_resistance. PRESENCE across the three slots, not a sum: live
 ## tests `> 0.0` and multiplies by a flat 0.5, and both authoring pieces carry `true`, so a sum

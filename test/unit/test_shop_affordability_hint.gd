@@ -77,6 +77,10 @@ func test_win98_menu_honors_text_color_without_breaking_disabled() -> void:
 	var fn := src.find("func _row_unavailable")
 	assert_gt(fn, -1, "_row_unavailable must be the shared grey/reject check")
 	var fn_body := src.substr(fn, src.find("\nfunc ", fn + 1) - fn)
+	## Since the MP force-queue the disabled check lives in _row_blocked, which _row_unavailable calls.
+	if "_row_blocked(" in fn_body:
+		var blk := src.find("func _row_blocked")
+		fn_body = src.substr(blk, src.find("\nfunc ", blk + 1) - blk)
 	assert_true('get("disabled", false)' in fn_body,
 		"a disabled row must still grey out — the tint is not allowed to paint over it")
 	var i := 0

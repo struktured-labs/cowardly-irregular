@@ -131,12 +131,24 @@ const JINGLE_PLAYER_BASE_DB: float = -8.0
 const CRIT_THUD_FREQ: float = 62.0
 const CRIT_THUD_DURATION: float = 0.18
 const CRIT_THUD_TRIM_DB: float = -4.0
-## Death punctuation (struktured 2026-08-20: "cant hear the sfx when a monster dies"). The authored cue is a gentle scorch ("no bass no tones") measured at the SAME mean level as a plain hit (-22.8 vs -21.8 dB) — it cannot read as a climax. Boost the cue and give it the low body it was authored without.
+## Death punctuation (struktured 2026-08-20: "cant hear the sfx when a monster dies"). The +6 dB boost and the thud were measured on the retired gentle scorch ("no bass no tones", mean -22.8 dB, level with a plain hit at -21.8). That boost stays on every play_death cue. The selected whoosh is hotter, so enemy_death alone takes _DEATH_FILE_HEADROOM_DB on the file path.
 const DEATH_PLAYER_BASE_DB: float = SFX_BATTLE_BASE_DB + 2.0
 ## Battle quips do not duck music, so voice sits ~2.4 dB over the bed (voice -18.3 LUFS vs music -14.7 at -10 dB); at -16 it was 9.6 dB under (struktured 2026-09-24).
 const VOICE_PLAYER_BASE_DB: float = -4.0
 const PICKUP_PLAYER_BASE_DB: float = SFX_UI_BASE_DB
 const DEATH_CUE_BOOST_DB: float = 6.0
+## File-path headroom, keyed by the cue that actually plays. Empty for every other death cry.
+## Measured 2026-11-07 on Godot 4.4.1, Dummy driver, AudioEffectCapture on Master and on SFX
+## (both buses 0 dB, zero effects, so nothing limits). play_death's file level is
+## DEATH_PLAYER_BASE_DB + DEATH_CUE_BOOST_DB = -4 + 6 = +2 dB. The whoosh plus the death thud:
+##   pitch 1.00  peak 1.129  +1.06 dBFS
+##   pitch 1.05  peak 1.143  +1.16 dBFS  (SFX_PITCH_JITTER ceiling)
+## -2.2 dB on enemy_death only puts that worst sample at about -1.0 dBFS. The asset bytes
+## are untouched. party_ko and w4_enemy_death are absent here, so they keep +2 dB.
+## The procedural fallback does not use this table: it has no file peak to correct.
+const _DEATH_FILE_HEADROOM_DB: Dictionary = {
+	"enemy_death": -2.2,
+}
 ## The procedural crit's boost, RELATIVE like DEATH_CUE_BOOST_DB. It was a bare `volume_db = 2.0`
 ## from when _play_sound defaulted to 0 dB; as an absolute it sat 8 dB over the battle channel.
 const CRIT_SYNTH_BOOST_DB: float = 2.0
@@ -1140,8 +1152,7 @@ func _try_play_sfx_from_manifest(player: AudioStreamPlayer, sound_key: String, v
 ## 2026-07-14 playtest: menu_select was ~25% too loud vs the rest of the UI bank. Per-key offset in dB — 20*log10(0.75) ≈ -2.5.
 const _UI_VOLUME_TRIM_DB: Dictionary = {
 	"menu_select": -2.5,
-	## menu_error's asset is deliberately attenuated -12 dB ("soft negative feedback", its own provenance note) but that lands it 28.5 dB under the music bed against menu_select's 22.0 — soft became masked. +6.6 restores parity with menu_select, keeping it the quietest UI cue without making it inaudible. Measured 2026-09-09; the asset is untouched so its note stays true.
-	"menu_error": 6.6,
+	## menu_error carries its own gain since 2026-11-07 (struktured: "kinda quiet... just louder"): its -12 dB render attenuation was removed in the asset, so its old +6.6 trim is gone too. Keeping both would double-boost it.
 	## chest_open CONTRADICTS ITS OWN PROMPT, which asks for a "satisfying metal latch... physical mechanical feeling". Measured on the loudest 250ms window (mean rms is the wrong instrument for a 1.48s cue whose prompt authors a deliberate pause: it reads 11.5 dB low where the window reads 7.0): -22.2 against a world-event median of -15.1 across 12 cues, the QUIETEST of them, 7.0 dB under and 1.6 under the next quietest (chalk_tap, which is a chalk tap). A chest is a reward beat and the five dungeon cues authored this week all sit at that median. +7.0 lands it there; asset peak is -1.7 dBFS so base -16 + 7 = -9 puts the peak at -10.7, no clipping. Same shape and magnitude as advance_undo and status_cannot_act: a pre-attenuated asset restored to its family, asset untouched so its provenance note stays true.
 	"chest_open": 7.0,
 }
@@ -1217,6 +1228,25 @@ func play_ui(sound_key: String, player: AudioStreamPlayer = null) -> void:
 	_play_sound(target, params)
 
 
+## One VICTORY! letter landing (cowir-cutscenes 23487): its own key, pitched to the music under it, never deduped.
+func play_victory_letter(n: int, under_key: String) -> void:
+	var key: String = "victory_letter_%d" % n
+	if not _sfx_manifest.has(key):
+		return
+	_sfx_cooldowns.erase(key)
+	_try_play_sfx_from_manifest(_ui_player, key, SFX_UI_BASE_DB, pow(2.0, victory_letter_semitones(under_key) / 12.0), false)
+
+
+## Semitones the letter ticks shift under `under_key`, from data/victory_letter_transpose.json; unlisted is 0.
+func victory_letter_semitones(under_key: String) -> float:
+	if not _victory_letter_transpose_read:
+		_victory_letter_transpose_read = true
+		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/victory_letter_transpose.json"))
+		if parsed is Dictionary:
+			_victory_letter_transpose = (parsed as Dictionary).get("transpose", {})
+	return float(_victory_letter_transpose.get(under_key, 0.0))
+
+
 ## The battle channel's level for a cue: its base plus any authored trim. ONE owner, because
 ## volume_db PERSISTS on the shared player — a caller passing NAN inherits whatever the previous
 ## cue left. Measured 2026-09-17: SEVEN of the eight authored trims reach THIS player and all seven
@@ -1253,7 +1283,7 @@ func play_battle(sound_key: String) -> void:
 	_play_sound(_battle_player, _synth_params(sound_key, level))
 
 
-## Death cries on their OWN voice — on the shared _battle_player the 1s scorch was stomped by the killing blow's hit sound, then (post-fix) by the NEXT action's sounds at 2x+ speed. Never audible either way (struktured 2026-08-15 + 2026-08-18).
+## Death cries on their OWN voice — on the shared _battle_player the death cry was stomped by the killing blow's hit sound, then (post-fix) by the NEXT action's sounds at 2x+ speed. Never audible either way (struktured 2026-08-15 + 2026-08-18). The cue's file length is not a delay: playback starts at the fade and the tween does not wait it out.
 func play_death(sound_key: String) -> void:
 	var world_key: String = _get_world_sfx_prefix() + sound_key
 	# A group kill drops 2-3 enemies inside SFX_MIN_INTERVAL_MS; the per-key cooldown would swallow every death but the first (and its `return true` suppresses the fallback too). Deaths are the one cue that must never dedupe.
@@ -1262,11 +1292,12 @@ func play_death(sound_key: String) -> void:
 	# Low body under the cue, on the sub channel — NOT the battle player, whose hit tail is exactly why the cry got its own voice
 	if _sub_player != null:
 		_play_sound(_sub_player, {"freq": DEATH_THUD_FREQ, "duration": DEATH_THUD_DURATION, "type": "thud"})
-	# ABSOLUTE from the base const, never from the live player: the override persists on the player, so `volume_db + boost` would ratchet +6 dB per death
+	# ABSOLUTE from the base const, never from the live player: the override persists on the player, so `volume_db + boost` would ratchet +6 dB per death.
+	# The headroom is per FILE, looked up on the key about to play, so a world variant and party_ko stay at the shared boost.
 	var boosted_db: float = DEATH_PLAYER_BASE_DB + DEATH_CUE_BOOST_DB
-	if world_key != sound_key and _try_play_sfx_from_manifest(_death_player, world_key, boosted_db):
+	if world_key != sound_key and _try_play_sfx_from_manifest(_death_player, world_key, boosted_db + float(_DEATH_FILE_HEADROOM_DB.get(world_key, 0.0))):
 		return
-	if _try_play_sfx_from_manifest(_death_player, sound_key, boosted_db):
+	if _try_play_sfx_from_manifest(_death_player, sound_key, boosted_db + float(_DEATH_FILE_HEADROOM_DB.get(sound_key, 0.0))):
 		return
 	if SOUNDS.has(sound_key):
 		_play_sound(_death_player, _synth_params(sound_key, boosted_db))
@@ -1590,6 +1621,8 @@ var _combo_step: int = 0
 ## Set by _try_play_sfx_from_manifest: its `true` means HANDLED, and the cooldown branch returns
 ## true without sounding anything. Only the combo ramp needs the distinction.
 var _sfx_suppressed_by_cooldown: bool = false
+var _victory_letter_transpose: Dictionary = {}
+var _victory_letter_transpose_read: bool = false
 
 
 ## The ramp counts hits the player HEARD, not play_attack_hit CALLS.
