@@ -65,7 +65,7 @@ func should_rumble(amount: float, now: float = -1.0) -> bool:
 	var t: float = now if now >= 0.0 else Time.get_ticks_msec() / 1000.0
 	## Inside the gap a HEAVIER hit still rumbles: the gap dropped everything after a combo's first hit,
 	## so its big finisher was the silent one (cowir-controller 23764).
-	return t - _last_rumble_at >= RUMBLE_MIN_GAP or amount > _last_rumble_amount + 0.05
+	return t - _last_rumble_at >= RUMBLE_MIN_GAP or (_last_rumble_amount > 0.0 and amount > _last_rumble_amount + 0.05)
 
 
 func rumble(amount: float) -> void:

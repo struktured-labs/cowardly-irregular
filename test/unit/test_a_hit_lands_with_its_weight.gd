@@ -25,15 +25,21 @@ const NO_IMPACT := {
 var _saved_scale := 1.0
 var _saved_rig = null
 var _saved_shake = true
+var _battle = preload("res://test/unit/helpers/battle_state.gd").new()
 
 
 func before_each() -> void:
+	_battle.snapshot()
+	## The scene finds a combatant's sprite through BattleManager's parties: establish them, don't inherit.
+	BattleManager.player_party.clear()
+	BattleManager.enemy_party.clear()
 	_saved_scale = Engine.time_scale
 	_saved_rig = BattleJuice.camera_rig
 	_saved_shake = GameState.screen_shake_enabled if "screen_shake_enabled" in GameState else true
 
 
 func after_each() -> void:
+	_battle.restore()
 	Engine.time_scale = _saved_scale
 	BattleJuice.camera_rig = _saved_rig
 	if "screen_shake_enabled" in GameState:
@@ -71,6 +77,7 @@ func _fixture() -> Array:
 	es.play("idle")
 	scene.test_enemies.append(foe)
 	scene.enemy_sprite_nodes.append(es)
+	BattleManager.enemy_party.append(foe)
 	var animator: ANIMATOR = ANIMATOR.new()
 	animator.setup(es)
 	scene.add_child(animator)
@@ -159,8 +166,10 @@ func _knocked(scene, foe: Combatant, es: AnimatedSprite2D, animator, damage: int
 		scene._note_hit_weight(foe, damage, false, "", 1.0)
 	scene._land_hit_weight(es, scene._last_acting_combatant, scene._action_serial)
 	scene._delayed_play_hit_fx(animator, es)
+	## Sampled by TIME: headless frames are unthrottled, so a dozen of them pass in a few milliseconds.
 	var far := 0.0
-	for i in 12:
+	var t0 := Time.get_ticks_msec()
+	while Time.get_ticks_msec() - t0 < 300:
 		await get_tree().process_frame
 		far = maxf(far, absf(es.position.x - 300.0))
 	await wait_seconds(0.4)
@@ -199,6 +208,7 @@ func test_a_heavy_hit_knocks_further_and_shakes_and_a_chip_hit_does_neither() ->
 	var body := src.substr(at, src.find("\nfunc ", at + 1) - at)
 	assert_false(body.contains("_trigger_screen_shake("), "the hit path shakes outside the camera rig, past the Screen Shake setting")
 	assert_true(body.contains("if _flashes_suppressed():"), "the hit's sparks ignore Reduce Flashes")
+	assert_true(src.contains("func _apply_hitstop(attacker_sprite: Node2D, target_sprite: Node2D) -> void:\n\t## The stop's length is the hit's"), "the hitstop no longer takes the hit's length")
 	assert_true(body.contains("minf(w, HIT_SPARK_REDUCED_MAX) if _flashes_suppressed() else w"), "the weapon spark grows to full size under Reduce Flashes")
 
 
@@ -240,6 +250,8 @@ func test_a_heavier_hit_still_rumbles_inside_the_gap() -> void:
 	var at: float = BattleJuice._last_rumble_at
 	var amount: float = BattleJuice._last_rumble_amount
 	BattleJuice._last_rumble_at = 100.0
+	BattleJuice._last_rumble_amount = 0.0
+	assert_false(BattleJuice.should_rumble(0.6, 100.0 + BattleJuice.RUMBLE_MIN_GAP * 0.5), "CONTROL: with no rumble on record the gap holds for any hit")
 	BattleJuice._last_rumble_amount = 0.2
 	assert_false(BattleJuice.should_rumble(0.2, 100.0 + BattleJuice.RUMBLE_MIN_GAP * 0.5), "CONTROL: an equal hit inside the gap must stay dropped")
 	assert_true(BattleJuice.should_rumble(0.6, 100.0 + BattleJuice.RUMBLE_MIN_GAP * 0.5), "a combo's heavy finisher was dropped by the rumble gap")
