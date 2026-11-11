@@ -5654,7 +5654,8 @@ func _knockback_rest(sprite: Node2D) -> Vector2:
 		var lunge = sprite.get_meta("attack_tween")
 		if lunge is Tween and lunge.is_valid() and lunge.is_running():
 			return sprite.position
-	return sprite.get_meta("home_position", sprite.position)
+	var home: Vector2 = sprite.get_meta("home_position", sprite.position)
+	return home
 
 
 ## One knockback per sprite, on the sprite: a new hit replaces the old tween (two wrote position at once), and
