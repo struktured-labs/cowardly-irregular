@@ -280,10 +280,9 @@ var _title_px := 4
 var _impact_done := false
 
 
-## The beat takes the same REAL time at every battle speed (cowir-music 23438): game-time tweens sped by 1/time_scale.
-## Not set_ignore_time_scale: measured under --write-movie at 30 fps, that beat landed in ~3 video frames, not ~16 (cause unmeasured).
+## Real time at every battle speed, kept across a mid-beat speed change; under a fixed-fps capture it steps 1/fps per frame (adhoc 23963).
 func _wall(t: Tween) -> Tween:
-	return _track(t.set_speed_scale(1.0 / maxf(Engine.time_scale, 0.01)))
+	return _track(t.set_ignore_time_scale(true))
 
 
 ## A row of pixel letters that the overlay's rects, modulate and child lookups treat like the Label it replaced.
