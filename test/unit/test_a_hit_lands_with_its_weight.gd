@@ -54,7 +54,7 @@ func _frames() -> SpriteFrames:
 	return frames
 
 
-## [scene, monster, its sprite, its animator]
+## [scene, monster, its sprite, its animator, the attacker whose action is resolving]
 func _fixture() -> Array:
 	var scene = SCENE.new()
 	add_child_autofree(scene)
@@ -75,7 +75,11 @@ func _fixture() -> Array:
 	animator.setup(es)
 	scene.add_child(animator)
 	scene.enemy_animators.append(animator)
-	return [scene, foe, es, animator]
+	var hero := Combatant.new()
+	autofree(hero)
+	hero.combatant_name = "Rogue"
+	scene._last_acting_combatant = hero
+	return [scene, foe, es, animator, hero]
 
 
 func test_the_weight_grows_with_damage_crit_and_weakness_and_stays_bounded() -> void:
@@ -98,28 +102,60 @@ func test_the_weight_grows_with_damage_crit_and_weakness_and_stays_bounded() -> 
 	assert_gt(SCENE.hitstop_for({"w": 1.0, "kill": true}), SCENE.hitstop_for({"w": 1.0, "kill": false}), "the killing blow has no beat of its own")
 
 
-func test_a_weight_waits_on_the_sprite_for_the_swing_that_spends_it() -> void:
+func test_a_weight_waits_on_the_sprite_for_the_attacker_that_dealt_it() -> void:
 	var f := _fixture()
-	var scene = f[0]; var foe: Combatant = f[1]; var es: AnimatedSprite2D = f[2]
-	assert_eq(scene._peek_hit_weight(es)["w"], 0.0, "CONTROL: no hit is waiting")
+	var scene = f[0]; var foe: Combatant = f[1]; var es: AnimatedSprite2D = f[2]; var hero: Combatant = f[4]
+	assert_eq(scene._peek_hit_weight(es, hero)["w"], 0.0, "CONTROL: no hit is waiting")
 	scene._note_hit_weight(foe, 50, false, "", 1.0)
-	assert_almost_eq(float(scene._peek_hit_weight(es)["w"]), 0.5, 0.001, "half the monster's HP didn't weigh 0.5")
+	assert_almost_eq(float(scene._peek_hit_weight(es, hero)["w"]), 0.5, 0.001, "half the monster's HP didn't weigh 0.5")
 	scene._note_hit_weight(foe, 5, false, "", 1.0)
-	assert_almost_eq(float(scene._peek_hit_weight(es)["w"]), 0.5, 0.001, "a lighter hit replaced the heavier one still waiting")
-	var taken: Dictionary = scene._take_hit_weight(es)
-	assert_almost_eq(float(taken["w"]), 0.5, 0.001)
-	assert_eq(scene._peek_hit_weight(es)["w"], 0.0, "the weight was not spent by the hit that took it")
+	assert_almost_eq(float(scene._peek_hit_weight(es, hero)["w"]), 0.5, 0.001, "a lighter hit of the same action replaced the heavier one")
+	## cowir-battle 23777: a cast's 50% must not land on the NEXT attacker's chip, and a tick nobody dealt notes nothing.
+	var other := Combatant.new()
+	autofree(other)
+	assert_eq(scene._peek_hit_weight(es, other)["w"], 0.0, "another attacker's contact would spend this attacker's weight")
+	assert_eq(scene._land_hit_weight(es, other)["w"], 0.0, "another attacker's contact landed with this attacker's weight")
+	var landed: Dictionary = scene._land_hit_weight(es, hero)
+	assert_almost_eq(float(landed["w"]), 0.5, 0.001, "the attacker's own contact didn't get its weight")
+	assert_eq(scene._peek_hit_weight(es, hero)["w"], 0.0, "the weight was not spent by the hit that took it")
+	scene._last_acting_combatant = null
+	scene._note_hit_weight(foe, 90, false, "", 1.0)
+	assert_false(es.has_meta("hit_weight"), "a hit with no acting combatant (a poison tick) left a weight waiting")
+	scene._last_acting_combatant = hero
 	foe.current_hp = 0
 	foe.is_alive = false
 	scene._note_hit_weight(foe, 3, false, "", 1.0)
-	assert_true(bool(scene._peek_hit_weight(es)["kill"]), "a killing blow isn't marked as one")
-	assert_eq(scene._peek_hit_weight(es)["w"], 1.0, "a killing blow for 3 damage isn't weight 1")
+	assert_true(bool(scene._peek_hit_weight(es, hero)["kill"]), "a killing blow isn't marked as one")
+	assert_eq(scene._peek_hit_weight(es, hero)["w"], 1.0, "a killing blow for 3 damage isn't weight 1")
 
+
+## A heavy stop pauses the lunge, so a held attack's stage hold grows by the stop's extra (once per action).
+func test_a_killing_blow_holds_the_stage_for_its_stop() -> void:
+	var saved: float = BattleManager.presentation_hold
+	var f := _fixture()
+	var scene = f[0]; var foe: Combatant = f[1]
+	scene._hold_melee_damage(5.0)
+	BattleManager.presentation_hold = 1.0
+	scene._note_hit_weight(foe, 3, false, "", 1.0)
+	assert_almost_eq(BattleManager.presentation_hold, 1.0 + SCENE.hitstop_for({"w": 0.03}) - SCENE.HIT_HITSTOP.x, 0.0001, "a chip hit's stage hold moved by more than its own stop")
+	foe.current_hp = 0
+	foe.is_alive = false
+	scene._note_hit_weight(foe, 3, false, "", 1.0)
+	scene._note_hit_weight(foe, 3, false, "", 1.0)
+	assert_almost_eq(BattleManager.presentation_hold, 1.0 + SCENE.HIT_KILL_HITSTOP - SCENE.HIT_HITSTOP.x, 0.0001, "a killing blow's stage hold is %.3f, not the lunge plus its 0.28 s stop (added once)" % BattleManager.presentation_hold)
+	scene._land_held_hit()
+	BattleManager.presentation_hold = 0.0
+	scene._hold_melee_damage(5.0)
+	scene._note_hit_weight(foe, 3, false, "", 1.0)
+	assert_eq(BattleManager.presentation_hold, 0.0, "a stage hold appeared where none was set (turbo, 4x+)")
+	scene._land_held_hit()
+	BattleManager.presentation_hold = saved
 
 func _knocked(scene, foe: Combatant, es: AnimatedSprite2D, animator, damage: int) -> float:
 	es.position = Vector2(300, 200)
 	if damage > 0:
 		scene._note_hit_weight(foe, damage, false, "", 1.0)
+	scene._land_hit_weight(es, scene._last_acting_combatant)
 	scene._delayed_play_hit_fx(animator, es)
 	var far := 0.0
 	for i in 12:
@@ -147,11 +183,13 @@ func test_a_heavy_hit_knocks_further_and_shakes_and_a_chip_hit_does_neither() ->
 	## The Screen Shake setting is the one switch.
 	rig._trauma = 0.0
 	scene._note_hit_weight(foe, 80, false, "", 1.0)
+	scene._land_hit_weight(es, f[4])
 	scene._delayed_play_hit_fx(f[3], es)
 	assert_gt(rig._trauma, 0.2, "CONTROL: a heavy hit must shake the screen when the setting is on (trauma %.2f)" % rig._trauma)
 	rig._trauma = 0.0
 	GameState.screen_shake_enabled = false
 	scene._note_hit_weight(foe, 80, false, "", 1.0)
+	scene._land_hit_weight(es, f[4])
 	scene._delayed_play_hit_fx(f[3], es)
 	assert_eq(rig._trauma, 0.0, "a heavy hit shook the screen with Screen Shake OFF")
 	var src := FileAccess.get_file_as_string("res://src/battle/BattleScene.gd")
@@ -177,6 +215,7 @@ func test_turbo_and_the_console_get_the_old_hit() -> void:
 	var chip_trauma: float = rig._trauma
 	rig._trauma = 0.0
 	scene._note_hit_weight(foe, 80, false, "", 1.0)
+	scene._land_hit_weight(es, f[4])
 	scene._delayed_play_hit_fx(f[3], es)
 	assert_almost_eq(rig._trauma, chip_trauma, 0.0001, "at 16x a heavy hit shook differently (%.2f) from a chip hit (%.2f)" % [rig._trauma, chip_trauma])
 	var sparks := 0
