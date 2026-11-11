@@ -13,8 +13,9 @@ extends GutTest
 ##   AP debt is REAL          can_brave permits current_ap - cost >= -4, and spend_ap clamps to
 ##                            [-4, 4]. Only spending AP descends, and only a MULTI-ACTION
 ##                            (Advance) rule spends it.
-##   single-action scripts     never spend, so AP climbs to the +4 cap and stays there. `ap < 0`
-##                            cannot become true — which is exactly the three templates' shape.
+##   single-action scripts     spend 1 per action against the natural +1, so AP stays where it
+##                            started (it climbed to +4 until 2026-11-07, when the grind billed lone
+##                            actions nothing). `ap < 0` cannot become true — the three templates' shape.
 ##
 ## So the condition is sound and the three shipped rules are unreachable WITHIN THEIR OWN TEMPLATE.
 ## That is a content decision for the catalog owner (drop the rule, or give the template an Advance
@@ -102,7 +103,7 @@ func test_ap_debt_is_reachable_with_an_advance_rule() -> void:
 
 
 func test_a_single_action_script_never_reaches_debt() -> void:
-	## The three shipped templates' shape. Nothing spends, so AP rises to the cap and stays.
+	## The three shipped templates' shape. Each action pays 1 against the natural +1, as live's do, so AP holds.
 	var hero := _hero("Single Hero")
 	_install(hero, [
 		{"conditions": [{"type": "always"}], "actions": [_attack()], "enabled": true},
@@ -110,9 +111,9 @@ func test_a_single_action_script_never_reaches_debt() -> void:
 	var resolver := HeadlessBattleResolver.new()
 	resolver.resolve_battle([hero], [_punching_bag()])
 	assert_gte(hero.current_ap, 0,
-		"a script that never Advances cannot spend AP, so it can never owe any")
-	assert_eq(hero.current_ap, 4,
-		"and it parks at the +4 cap — which is why `ap < 0` in those templates is unreachable, not merely rare")
+		"a script that never Advances never spends past its natural gain, so it can never owe any")
+	assert_eq(hero.current_ap, 0,
+		"and it holds where it started, as live does — which is why `ap < 0` in those templates is unreachable, not merely rare")
 
 
 func test_the_condition_itself_reads_the_debt_when_it_exists() -> void:

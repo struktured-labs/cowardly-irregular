@@ -482,6 +482,35 @@ def mp_restore(dur=0.70, seed=211):
     out /= max(np.max(np.abs(out)), 1e-9); return (out * 0.74).astype(np.float32)
 
 
+def escape_run(dur=1.12, seed=503):
+    """A SUCCESSFUL escape only (struktured via cowir-main 23483; ability_flee is the ATTEMPT, so a failed flee stays
+    that alone). Timed to cowir-adhoc 23522's sprint, wall clock: member k (0-4) hops at 0.12*k s, then sprints off
+    for 0.45 s. So five scampers start 0.12 s apart, each a hop plus quick light footfalls getting quieter as they
+    leave, under a rising-then-falling whoosh of the party clearing out, done by ~1.1 s."""
+    rng = np.random.default_rng(seed)
+    n = int(SR * dur)
+    out = np.zeros(n)
+    for k in range(5):
+        t0 = 0.12 * k
+        hop = _held(int(SR * 0.05), 196.0 * (1.0 + 0.06 * k), 3.0, 0.45, duty=0.25)      # the startled hop
+        _place(out, hop, int(SR * t0))
+        for j in range(5):                                                                  # the sprint: 5 steps in 0.45 s
+            tt = t0 + 0.12 + j * 0.085
+            m = int(SR * 0.045)
+            step = _sweep_lowpass(rng.uniform(-1, 1, m), 2400.0 - 120.0 * k, 900.0) * _env(m, 0.002, 1.8)
+            step += _held(m, 110.0 - 6.0 * k, 3.0, 0.5, duty=0.5)
+            step = step * (0.75 - 0.12 * j) * (1.0 if j % 2 == 0 else 0.8)
+            _place(out, step, int(SR * tt))
+    t = np.arange(n) / SR
+    whoosh_env = np.clip(t / 0.35, 0, 1) * np.clip((1.05 - t) / 0.45, 0, 1)
+    out += _sweep_lowpass(rng.uniform(-1, 1, n), 700.0, 3000.0) * whoosh_env * 0.38
+    out = _bitcrush(out, bits=6, hold=2)
+    ## Soft-saturate: sparse footfall peaks set the level and left the body ~6 dB under ability_flee.
+    out = np.tanh(2.6 * out / max(np.max(np.abs(out)), 1e-9))
+    out /= max(np.max(np.abs(out)), 1e-9)
+    return (out * 0.57).astype(np.float32)   # ~-17 dB rms: a step under the attempt cue (-14.2) it follows
+
+
 def flee(dur=0.48, seed=223):
     """ability_flee — the Rogue's escape, type=escape, the last type with no arm. Three DISCRETE
     descending blips (a scamper) plus a scuff. Stepped, never slid: a descending slide is a whoop
@@ -544,6 +573,101 @@ def advance_flourish_2(dur=0.0, seed=307): return _flourish(2, seed)
 def advance_flourish_3(dur=0.0, seed=311): return _flourish(3, seed)
 def advance_flourish_4(dur=0.0, seed=313): return _flourish(4, seed)
 def advance_flourish_5(dur=0.0, seed=317): return _flourish(5, seed)
+
+
+def menu_force_queue(dur=0.30, seed=443):
+    """The THIRD press on an MP-short row (struktured via cowir-main 23445: "screw you computer, I'm doing it
+    anyhow"). Accepted, but over an objection: a two-note accept chime pushed THROUGH a short refusal buzz, then a
+    firm low stamp. Distinct from menu_select (a clean chime) and menu_error (the buzz alone)."""
+    rng = np.random.default_rng(seed)
+    n = int(SR * dur)
+    out = np.zeros(n)
+    _place(out, _held(int(SR * 0.09), 110.0, 1.4, 0.55, duty=0.5), 0)                  # the objection: a short buzz
+    _place(out, _held(int(SR * 0.09), 116.5, 1.4, 0.45, duty=0.25), 0)
+    _place(out, _held(int(SR * 0.12), 784.0, 2.2, 0.60, duty=0.25), int(SR * 0.05))     # the chime pushes through it
+    _place(out, _held(int(SR * 0.20), 1046.5, 2.6, 0.70, duty=0.25), int(SR * 0.11))
+    stamp = _sweep_lowpass(rng.uniform(-1, 1, int(SR * 0.08)), 900.0, 200.0) * _env(int(SR * 0.08), 0.01, 3.0)
+    _place(out, stamp * 0.8, int(SR * 0.11))                                             # and lands with a stamp
+    _place(out, _held(int(SR * 0.10), 98.0, 3.0, 0.5, duty=0.5), int(SR * 0.11))
+    out = _bitcrush(out, bits=6, hold=2); out = _sweep_lowpass(out, 4200.0, 3000.0)
+    out /= max(np.max(np.abs(out)), 1e-9)
+    return (out * 0.42).astype(np.float32)   # menu_select sits at -19 dB rms; this lands at ~-19
+
+
+def cast_fizzle(dur=0.50, seed=449):
+    """An MP-short cast that reaches execution still short (cowir-battle 23447/23448): the spell gathers and
+    sputters out. A rising arcane tone that stalls and droops, crackles, and a deflating hiss whose filter
+    falls. NOT corruption_misfire, which means the Corruption mechanic misfired a cast."""
+    rng = np.random.default_rng(seed)
+    n = int(SR * dur)
+    t = np.arange(n) / SR
+    f = np.where(t < 0.16, 330.0 + 900.0 * t, 474.0 * np.exp(-(t - 0.16) * 2.6))
+    ph = np.cumsum(f) / SR
+    tone = np.where((ph % 1.0) < 0.3, 1.0, -1.0) * _env(n, 0.05, 1.6) * 0.55
+    crack = (rng.uniform(0, 1, n) > 0.9965).astype(float) * rng.uniform(-1, 1, n) * 0.9 * (t > 0.14)
+    hiss = _sweep_lowpass(rng.uniform(-1, 1, n), 2600.0, 260.0) * _env(n, 0.25, 1.4) * 0.45
+    out = tone + crack + hiss
+    out = _bitcrush(out, bits=5, hold=3); out = _sweep_lowpass(out, 3000.0, 900.0)
+    out /= max(np.max(np.abs(out)), 1e-9)
+    return (out * 0.36).astype(np.float32)   # attack_miss sits at -16.6 dB rms; this lands at ~-16.6
+
+
+
+def _enemy_flourish(level, seed):
+    """An ENEMY Advance, enemy_advance_2..4 (the AI queues at most 4; struktured via cowir-main 23349: monsters must read as
+    powering up, "escalating sounds"). Built from the SAME skeleton as _flourish so the rising shape
+    is identical and only the colour differs, which is what makes it read as "theirs" rather than a
+    new kind of event: a fourth lower (an octave down measured 89% under 250 Hz, inaudible on a laptop), a MINOR-THIRD/TRITONE stack instead of the
+    party's major steps, a narrow nasal pulse, a slow menacing waver, more sub and grit, darker
+    filter. Every step still adds one held voice, so the bank is heard filling.
+    """
+    rng = np.random.default_rng(seed)
+    dur = {2: 0.34, 3: 0.42, 4: 0.52}[level]
+    n = int(SR * dur)
+    root = {2: 261.63, 3: 293.66, 4: 329.63}[level] * 2.0 ** (-5.0 / 12.0)
+    ratios = [1.0, 6.0 / 5.0, math.sqrt(2.0), 8.0 / 5.0]
+    voices = {2: 2, 3: 3, 4: 4}[level]
+    out = np.zeros(n)
+    step = int(n / (voices + 1))
+    for i in range(voices):
+        amp = 0.30 + 0.05 * i
+        off = i * step
+        _place(out, _held(n - off, root * ratios[i], 2.0, amp, duty=0.125 if i % 2 else 0.25,
+                          vib_hz=5.0, vib_cents=18.0), off)
+    sub = {2: 0.10, 3: 0.14, 4: 0.20}[level]
+    out += _held(n, root * 0.5, 1.4, sub)
+    grit = {2: 0.10, 3: 0.15, 4: 0.21}[level]
+    out += _sweep_lowpass(rng.uniform(-1, 1, n), 1600.0, 1100.0) * _env(n, 0.03, 1.8) * grit
+    out = _bitcrush(out, bits=5, hold=5); out = _sweep_lowpass(out, 2200.0, 1500.0)
+    out /= max(np.max(np.abs(out)), 1e-9)
+    return (out * {2: 0.62, 3: 0.70, 4: 0.78}[level]).astype(np.float32)
+
+
+def enemy_advance_2(dur=0.0, seed=401): return _enemy_flourish(2, seed)
+def enemy_advance_3(dur=0.0, seed=409): return _enemy_flourish(3, seed)
+def enemy_advance_4(dur=0.0, seed=419): return _enemy_flourish(4, seed)
+
+
+def enemy_defer(dur=0.55, seed=431):
+    """An ENEMY Defer: it HUNKERS. A falling stone grind, a muted armoured thunk + dull clank, and a low
+    semitone-rub drone that fades, so the brace sounds like a threat waiting rather than the party's
+    clean shield-plant (defer.ogg)."""
+    rng = np.random.default_rng(seed)
+    n = int(SR * dur)
+    out = np.zeros(n)
+    grind = _sweep_lowpass(rng.uniform(-1, 1, n), 1600.0, 420.0) * _env(n, 0.02, 2.6) * 0.55
+    out += grind
+    ## A dull mid CLANK on the brace: without it the cue lost 10 dB through a 200 Hz laptop highpass (party defer: 4.5).
+    _place(out, _held(int(SR * 0.16), 660.0, 3.2, 0.95, duty=0.125), int(SR * 0.03))
+    _place(out, _held(int(SR * 0.16), 934.0, 3.6, 0.60, duty=0.25), int(SR * 0.03))
+    _place(out, _held(int(SR * 0.22), 82.0, 3.0, 0.55, duty=0.5), int(SR * 0.03))
+    _place(out, _held(n - int(SR * 0.10), 98.0, 1.3, 0.20, duty=0.25), int(SR * 0.10))
+    _place(out, _held(n - int(SR * 0.10), 103.8, 1.3, 0.17, duty=0.125), int(SR * 0.10))
+    out = _bitcrush(out, bits=5, hold=5); out = _sweep_lowpass(out, 2000.0, 900.0)
+    ## Soft-saturate: the clank peak set the level and left the body ~5 dB under the party defer on a laptop.
+    out = np.tanh(3.0 * out / max(np.max(np.abs(out)), 1e-9))
+    out /= max(np.max(np.abs(out)), 1e-9)
+    return (out * 0.65).astype(np.float32)
 
 
 def full_bank_unleash(dur=0.85, seed=331):
@@ -635,6 +759,33 @@ def advance_queue_full(dur=0.17, seed=349):
     out /= max(np.max(np.abs(out)), 1e-9); return (out * 0.72).astype(np.float32)
 
 
+_LETTER_NOTES = [783.99, 880.00, 1046.50, 1174.66, 1318.51, 1567.98, 1760.00]   # G5 A5 C6 D6 E6 G6 A6, pentatonic
+
+
+def _victory_letter(k, seed):
+    """victory_letter_1..7: one dry chip blip per VICTORY! letter as it lands (cowir-cutscenes 23487: landings 50 ms
+    apart). SEVEN files rather than one cue re-pitched: SoundManager's per-key cooldown would swallow ticks 50 ms
+    apart and its play calls take no pitch. Each rises a pentatonic step so the seventh leads into the slam, which
+    voices the eighth letter. 35 ms, so ticks 50 ms apart never overlap."""
+    rng = np.random.default_rng(seed)
+    n = int(SR * 0.035)
+    out = _held(n, _LETTER_NOTES[k - 1], 2.0, 1.0, duty=0.25)
+    click = rng.uniform(-1, 1, int(SR * 0.004)) * np.linspace(1, 0, int(SR * 0.004)) * 0.6
+    out[:len(click)] += click
+    out = _bitcrush(out, bits=6, hold=2)
+    out /= max(np.max(np.abs(out)), 1e-9)
+    return (out * 0.42).astype(np.float32)
+
+
+def victory_letter_1(dur=0.0, seed=461): return _victory_letter(1, seed)
+def victory_letter_2(dur=0.0, seed=463): return _victory_letter(2, seed)
+def victory_letter_3(dur=0.0, seed=467): return _victory_letter(3, seed)
+def victory_letter_4(dur=0.0, seed=479): return _victory_letter(4, seed)
+def victory_letter_5(dur=0.0, seed=487): return _victory_letter(5, seed)
+def victory_letter_6(dur=0.0, seed=491): return _victory_letter(6, seed)
+def victory_letter_7(dur=0.0, seed=499): return _victory_letter(7, seed)
+
+
 def party_ko(dur=0.52, seed=241):
     """party_ko — a party member falling. The battle LOG closed this parity at tick 176 ("X has
     fallen!", matching _on_enemy_died's line); the AUDIO parity was never closed — an enemy death
@@ -663,14 +814,19 @@ VOICES = {"ui_toggle_on": ui_toggle_on, "staff_hit": staff_hit, "ui_confirm": ui
           "song": song, "summon": summon, "revive": revive, "riff": riff,
           "poison": poison, "earth": earth, "wind": wind, "arcane": arcane,
           "mp_restore": mp_restore, "flee": flee, "cure": cure,
+          "escape_run": escape_run,
           "advance_flourish_2": advance_flourish_2, "advance_flourish_3": advance_flourish_3,
           "advance_flourish_4": advance_flourish_4, "advance_flourish_5": advance_flourish_5,
+          "enemy_advance_2": enemy_advance_2, "enemy_advance_3": enemy_advance_3,
+          "enemy_advance_4": enemy_advance_4, "enemy_defer": enemy_defer,
           "full_bank_unleash": full_bank_unleash,
+          "menu_force_queue": menu_force_queue, "cast_fizzle": cast_fizzle,
           "full_bank_charged": full_bank_charged, "advance_queue_full": advance_queue_full,
           "advance_generic_1": advance_generic_1,
           "advance_generic_2": advance_generic_2, "advance_generic_3": advance_generic_3,
           "advance_generic_4": advance_generic_4, "advance_generic_5": advance_generic_5,
-          "party_ko": party_ko}
+          "party_ko": party_ko,
+          "victory_letter_1": victory_letter_1, "victory_letter_2": victory_letter_2, "victory_letter_3": victory_letter_3, "victory_letter_4": victory_letter_4, "victory_letter_5": victory_letter_5, "victory_letter_6": victory_letter_6, "victory_letter_7": victory_letter_7}
 
 
 def _refuse_if_degenerate(voice, y):
