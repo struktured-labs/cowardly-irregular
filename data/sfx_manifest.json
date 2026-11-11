@@ -70,6 +70,13 @@
       "prompt_influence": 0.7,
       "source": "tools/gen_chiptune_sfx.py fire_roar"
     },
+    "escape_run": {
+      "file": "assets/audio/sfx/escape_run.ogg",
+      "prompt": "PLACEHOLDER (struktured via cowir-main 23483: the flee should have a sound; cowir-sfx 23484 / cowir-battle 23486). A SUCCESSFUL escape only, played where _lost_battle_is_escape resolves true; ability_flee stays the ATTEMPT, so a failed flee sounds like an attempt and nothing more. Timed to cowir-adhoc 23522's sprint on the wall clock: member k (0-4) hops at 0.12*k s then sprints off for 0.45 s, so five scampers (a hop, then five light footfalls fading as they leave) start 0.12 s apart under a whoosh of the party clearing out, done by ~1.1 s. Soft-saturated so the sparse footfalls don't set the level: -17.1 dB rms, a step under ability_flee (-14.2). A labelled synth until struktured playtests it.",
+      "duration_seconds": 1.12,
+      "source": "tools/gen_chiptune_sfx.py escape_run",
+      "placeholder": true
+    },
     "ability_flee": {
       "file": "assets/audio/sfx/ability_flee.ogg",
       "prompt": "SYNTHESISED, not generated — three DISCRETE descending blips plus a scuff. The Rogue's escape; type=escape was the last type with no cue arm. Stepped, never slid: a descending slide is a whoop in the other direction, which is the blind spot that let struktured hear it a fourth time. Run the tool.",
@@ -379,6 +386,48 @@
       "duration_seconds": 0.78,
       "prompt_influence": 0.8,
       "source": "tools/gen_chiptune_sfx.py advance_flourish_5"
+    },
+    "menu_force_queue": {
+      "file": "assets/audio/sfx/menu_force_queue.ogg",
+      "prompt": "PLACEHOLDER (cowir-main 23445: a third press on an MP-short ability row queues it anyway). Played by cowir-controller via play_ui on that third press. Accepted over an objection: a 110/116 Hz refusal buzz, a two-note accept chime (G5, C6) pushed through it, then a low stamp. Distinct from menu_select (a clean chime) and menu_error (the buzz alone). Levelled to menu_select: -19.0 dB rms (menu_select -19.1). A labelled synth until struktured playtests it.",
+      "duration_seconds": 0.3,
+      "source": "tools/gen_chiptune_sfx.py menu_force_queue",
+      "placeholder": true
+    },
+    "cast_fizzle": {
+      "file": "assets/audio/sfx/cast_fizzle.ogg",
+      "prompt": "PLACEHOLDER (cowir-battle 23447/23448: a forced MP-short cast that is still short at execution). Played via play_battle on the frame of the 'Not enough MP!' banner in BattleManager._execute_ability; no MP is spent. The spell gathers and sputters: a rising arcane pulse that stalls and droops, sparse crackle, and a hiss whose filter falls 2.6 kHz -> 260 Hz. Deliberately NOT corruption_misfire, which means the Corruption mechanic misfired a cast. Levelled to attack_miss: -16.6 dB rms (attack_miss -16.6). A labelled synth until struktured playtests it.",
+      "duration_seconds": 0.5,
+      "source": "tools/gen_chiptune_sfx.py cast_fizzle",
+      "placeholder": true
+    },
+    "enemy_advance_2": {
+      "file": "assets/audio/sfx/enemy_advance_2.ogg",
+      "prompt": "PLACEHOLDER (cowir-main 23349: an ENEMY Advance must read as a monster powering up, with escalating sounds clearly NOT the party's). Enemy advance at 2 queued actions, played by cowir-battle's telegraph and execution flourish via play_battle; the AI caps at 4, so there is no 5. SYNTHESISED from _enemy_flourish, the SAME skeleton as advance_flourish_N so the rising shape matches and only the colour differs. Measured beside the party ladder: a fourth lower, minor-third/tritone stack, centroid ~170 Hz (party ~430); an octave down was rejected at 89% energy under 250 Hz, inaudible through a 200 Hz laptop highpass. Through that highpass the enemy ladder sits 2-3 dB under the party's and still climbs 2.7 dB from 2 to 4. A labelled synth until struktured playtests it.",
+      "duration_seconds": 0.34,
+      "source": "tools/gen_chiptune_sfx.py enemy_advance_2",
+      "placeholder": true
+    },
+    "enemy_advance_3": {
+      "file": "assets/audio/sfx/enemy_advance_3.ogg",
+      "prompt": "PLACEHOLDER (cowir-main 23349: an ENEMY Advance must read as a monster powering up, with escalating sounds clearly NOT the party's). Enemy advance at 3 queued actions, played by cowir-battle's telegraph and execution flourish via play_battle; the AI caps at 4, so there is no 5. SYNTHESISED from _enemy_flourish, the SAME skeleton as advance_flourish_N so the rising shape matches and only the colour differs. Measured beside the party ladder: a fourth lower, minor-third/tritone stack, centroid ~170 Hz (party ~430); an octave down was rejected at 89% energy under 250 Hz, inaudible through a 200 Hz laptop highpass. Through that highpass the enemy ladder sits 2-3 dB under the party's and still climbs 2.7 dB from 2 to 4. A labelled synth until struktured playtests it.",
+      "duration_seconds": 0.42,
+      "source": "tools/gen_chiptune_sfx.py enemy_advance_3",
+      "placeholder": true
+    },
+    "enemy_advance_4": {
+      "file": "assets/audio/sfx/enemy_advance_4.ogg",
+      "prompt": "PLACEHOLDER (cowir-main 23349: an ENEMY Advance must read as a monster powering up, with escalating sounds clearly NOT the party's). Enemy advance at 4 queued actions, played by cowir-battle's telegraph and execution flourish via play_battle; the AI caps at 4, so there is no 5. SYNTHESISED from _enemy_flourish, the SAME skeleton as advance_flourish_N so the rising shape matches and only the colour differs. Measured beside the party ladder: a fourth lower, minor-third/tritone stack, centroid ~170 Hz (party ~430); an octave down was rejected at 89% energy under 250 Hz, inaudible through a 200 Hz laptop highpass. Through that highpass the enemy ladder sits 2-3 dB under the party's and still climbs 2.7 dB from 2 to 4. A labelled synth until struktured playtests it.",
+      "duration_seconds": 0.52,
+      "source": "tools/gen_chiptune_sfx.py enemy_advance_4",
+      "placeholder": true
+    },
+    "enemy_defer": {
+      "file": "assets/audio/sfx/enemy_defer.ogg",
+      "prompt": "PLACEHOLDER (cowir-main 23349/23350: an enemy Defer gets a sound of its own; the party's defer is a menu press and never played for a monster). A hunker: falling stone grind, a muted armoured thunk plus a dull 660/934 Hz clank, and a low 98/104 Hz semitone rub that fades. The clank exists because without it the cue lost 10 dB through a 200 Hz laptop highpass. Soft-saturated and trimmed to sit beside the party defer: -13.8 dB rms full range (party -15.7), -20.9 through the laptop highpass (party -20.2). A labelled synth until struktured playtests it.",
+      "duration_seconds": 0.55,
+      "source": "tools/gen_chiptune_sfx.py enemy_defer",
+      "placeholder": true
     },
     "advance_generic_1": {
       "file": "assets/audio/sfx/advance_generic_1.ogg",
@@ -989,9 +1038,10 @@
     },
     "enemy_death": {
       "file": "assets/audio/sfx/enemy_death.ogg",
-      "prompt": "Gentle organic scorch with a wispy smoke plume, soft ember sizzle as flesh quietly combusts into vapor, warm crackling dissolve with breath-like tail, natural living-thing unraveling into air, no bass no tones",
-      "duration_seconds": 1.0,
-      "prompt_influence": 0.4
+      "source": "supplied_audition",
+      "prompt": "SELECTED audition file, copied in byte for byte (2026-11-07). Solo F_whoosh.ogg, the airy burn, kept over a rumbling rubble take and over any blend. sha256 99346040269494fdbd937621dec8ba8b44798c34712c2ffc7f6861029c1a6db6, mono Vorbis. duration_seconds is 0.84 because that is the container length ffprobe and Godot AudioStream.get_length() both report (0.840000). A raw s16 dump is 37952 samples / 44100 = 0.861s; that extra is Vorbis padding, not a longer cue, so 0.86 is the wrong number to author. The retired scorch is kept at assets/audio/sfx/enemy_death_scorch.ogg and is not a cue. The cue name stays enemy_death. play_death still fires it inside the death tween after the white flash, and this length is not a gameplay delay. The shared death boost is still +6 dB on a -4 dB player (+2 dB). This file peaks at -0.9 dBFS, and with the death thud the mix measured +1.16 dBFS at the +5% pitch-jitter edge (Master and SFX buses at 0 dB, no limiter). enemy_death alone takes -2.2 dB of file headroom so that edge lands near -1 dBFS. W4 keeps w4_enemy_death.ogg at the untrimmed boost. Ally KO stays party_ko.",
+      "duration_seconds": 0.84,
+      "prompt_influence": 0.0
     },
     "exp_bar_tick_ramp_hi": {
       "file": "assets/audio/sfx/exp_bar_tick_ramp_hi.ogg",
@@ -1387,7 +1437,7 @@
     "menu_error": {
       "file": "assets/audio/sfx/menu_error.ogg",
       "source": "sox_synth",
-      "prompt": "Two-tone descending error blip (A4->E4 square waves lowpassed 1000-1200Hz, 85ms) attenuated -12dB. Soft negative feedback for invalid actions — distinct from menu_cancel (deliberate back-out).",
+      "prompt": "Two-tone descending error blip (A4->E4 square waves lowpassed 1000-1200Hz, 85ms). Negative feedback for invalid actions, distinct from menu_cancel (deliberate back-out). RAISED +11.6 dB, gain only (struktured via cowir-main 23457: \"the you-can't-do-this sound is kinda quiet... the noise is fine, just louder\"): the -12 dB attenuation it was rendered with is gone. Before -22.6 dB rms / -18.9 peak; after -11.0 rms, true peak -10.3 dBFS, 5.2 dB over menu_cancel (-16.2) and 8.1 over menu_select (-19.1). Through a 200 Hz laptop highpass it is -15.8, only 1.4 dB over menu_cancel, because the blip sits low (A4->E4); a brighter redesign would fix that, gain alone cannot.",
       "duration_seconds": 0.085,
       "prompt_influence": 0.0,
       "fallback_to": "menu_cancel"
@@ -1937,6 +1987,55 @@
       "duration_seconds": 3.0,
       "prompt_influence": 0.5,
       "repair": "POLISH PASS 2026-11-01 (struktured approved the listening list; a fresh render remains the real fix): levelled to -16 LUFS. Measured before: very hot master (-8.7 LUFS)."
+    },
+    "victory_letter_1": {
+      "file": "assets/audio/sfx/victory_letter_1.ogg",
+      "prompt": "PLACEHOLDER (cowir-cutscenes 23487: the SNES victory beat drops VICTORY! in letter by letter, landings 50 ms apart). Letter 1's landing tick, a 35 ms dry chip blip on G5, played via play_ui on that landing. One of SEVEN keys rising a pentatonic step each (G5..A6) so the seventh leads into the slam, which voices letter 8. Seven files, not one re-pitched: the per-key cooldown would swallow ticks 50 ms apart and the play calls take no pitch. ~-17.5 dB rms, near menu_select (-19.1). A labelled synth until struktured playtests it.",
+      "duration_seconds": 0.035,
+      "source": "tools/gen_chiptune_sfx.py victory_letter_1",
+      "placeholder": true
+    },
+    "victory_letter_2": {
+      "file": "assets/audio/sfx/victory_letter_2.ogg",
+      "prompt": "PLACEHOLDER (cowir-cutscenes 23487: the SNES victory beat drops VICTORY! in letter by letter, landings 50 ms apart). Letter 2's landing tick, a 35 ms dry chip blip on A5, played via play_ui on that landing. One of SEVEN keys rising a pentatonic step each (G5..A6) so the seventh leads into the slam, which voices letter 8. Seven files, not one re-pitched: the per-key cooldown would swallow ticks 50 ms apart and the play calls take no pitch. ~-17.5 dB rms, near menu_select (-19.1). A labelled synth until struktured playtests it.",
+      "duration_seconds": 0.035,
+      "source": "tools/gen_chiptune_sfx.py victory_letter_2",
+      "placeholder": true
+    },
+    "victory_letter_3": {
+      "file": "assets/audio/sfx/victory_letter_3.ogg",
+      "prompt": "PLACEHOLDER (cowir-cutscenes 23487: the SNES victory beat drops VICTORY! in letter by letter, landings 50 ms apart). Letter 3's landing tick, a 35 ms dry chip blip on C6, played via play_ui on that landing. One of SEVEN keys rising a pentatonic step each (G5..A6) so the seventh leads into the slam, which voices letter 8. Seven files, not one re-pitched: the per-key cooldown would swallow ticks 50 ms apart and the play calls take no pitch. ~-17.5 dB rms, near menu_select (-19.1). A labelled synth until struktured playtests it.",
+      "duration_seconds": 0.035,
+      "source": "tools/gen_chiptune_sfx.py victory_letter_3",
+      "placeholder": true
+    },
+    "victory_letter_4": {
+      "file": "assets/audio/sfx/victory_letter_4.ogg",
+      "prompt": "PLACEHOLDER (cowir-cutscenes 23487: the SNES victory beat drops VICTORY! in letter by letter, landings 50 ms apart). Letter 4's landing tick, a 35 ms dry chip blip on D6, played via play_ui on that landing. One of SEVEN keys rising a pentatonic step each (G5..A6) so the seventh leads into the slam, which voices letter 8. Seven files, not one re-pitched: the per-key cooldown would swallow ticks 50 ms apart and the play calls take no pitch. ~-17.5 dB rms, near menu_select (-19.1). A labelled synth until struktured playtests it.",
+      "duration_seconds": 0.035,
+      "source": "tools/gen_chiptune_sfx.py victory_letter_4",
+      "placeholder": true
+    },
+    "victory_letter_5": {
+      "file": "assets/audio/sfx/victory_letter_5.ogg",
+      "prompt": "PLACEHOLDER (cowir-cutscenes 23487: the SNES victory beat drops VICTORY! in letter by letter, landings 50 ms apart). Letter 5's landing tick, a 35 ms dry chip blip on E6, played via play_ui on that landing. One of SEVEN keys rising a pentatonic step each (G5..A6) so the seventh leads into the slam, which voices letter 8. Seven files, not one re-pitched: the per-key cooldown would swallow ticks 50 ms apart and the play calls take no pitch. ~-17.5 dB rms, near menu_select (-19.1). A labelled synth until struktured playtests it.",
+      "duration_seconds": 0.035,
+      "source": "tools/gen_chiptune_sfx.py victory_letter_5",
+      "placeholder": true
+    },
+    "victory_letter_6": {
+      "file": "assets/audio/sfx/victory_letter_6.ogg",
+      "prompt": "PLACEHOLDER (cowir-cutscenes 23487: the SNES victory beat drops VICTORY! in letter by letter, landings 50 ms apart). Letter 6's landing tick, a 35 ms dry chip blip on G6, played via play_ui on that landing. One of SEVEN keys rising a pentatonic step each (G5..A6) so the seventh leads into the slam, which voices letter 8. Seven files, not one re-pitched: the per-key cooldown would swallow ticks 50 ms apart and the play calls take no pitch. ~-17.5 dB rms, near menu_select (-19.1). A labelled synth until struktured playtests it.",
+      "duration_seconds": 0.035,
+      "source": "tools/gen_chiptune_sfx.py victory_letter_6",
+      "placeholder": true
+    },
+    "victory_letter_7": {
+      "file": "assets/audio/sfx/victory_letter_7.ogg",
+      "prompt": "PLACEHOLDER (cowir-cutscenes 23487: the SNES victory beat drops VICTORY! in letter by letter, landings 50 ms apart). Letter 7's landing tick, a 35 ms dry chip blip on A6, played via play_ui on that landing. One of SEVEN keys rising a pentatonic step each (G5..A6) so the seventh leads into the slam, which voices letter 8. Seven files, not one re-pitched: the per-key cooldown would swallow ticks 50 ms apart and the play calls take no pitch. ~-17.5 dB rms, near menu_select (-19.1). A labelled synth until struktured playtests it.",
+      "duration_seconds": 0.035,
+      "source": "tools/gen_chiptune_sfx.py victory_letter_7",
+      "placeholder": true
     },
     "victory_slam": {
       "file": "assets/audio/sfx/victory_slam.ogg",

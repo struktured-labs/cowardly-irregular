@@ -72,9 +72,10 @@ func test_the_battle_menu_prices_actions_as_the_engine_charges() -> void:
 	c.initialize({"name": "Caster", "max_hp": 100, "max_mp": 99, "attack": 10, "defense": 10, "magic": 10, "speed": 10})
 	add_child_autofree(c)
 	var cmd = BattleCommandMenu.new(null)
-	assert_eq(cmd._queued_cost(FIRE, c), {"mp": JobSystem.get_ability_mp_cost(c, "fire")},
+	## Each slot also bills its AP (AbilityCost.slot_ap: 1 for a spell or item with no ap_cost), against the debt floor.
+	assert_eq(cmd._queued_cost(FIRE, c), {"mp": JobSystem.get_ability_mp_cost(c, "fire"), "ap": 1},
 		"the queue must price a spell at get_ability_mp_cost, the number _execute_ability spends")
-	assert_eq(cmd._queued_cost(POTION, c), {"item:potion": 1}, "an item costs one of itself")
+	assert_eq(cmd._queued_cost(POTION, c), {"item:potion": 1, "ap": 1}, "an item costs one of itself, and its slot's AP")
 	assert_eq(cmd._queued_cost({"action": "defer"}, c), {}, "anything else costs nothing")
 
 

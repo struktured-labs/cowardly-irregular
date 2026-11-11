@@ -73,8 +73,8 @@ func test_the_floor_this_guard_stands_on() -> void:
 	## A CONTENT floor, not a size one: naming the table's other documented pre-attenuation case
 	## means a read that returned some unrelated dictionary cannot satisfy it.
 	var trims: Dictionary = _trims()
-	assert_true(trims.has("menu_error"),
-		"CONTENT FLOOR: _UI_VOLUME_TRIM_DB must be readable through the class and hold its documented pre-attenuation case. Got %s — a size-only floor would pass on any one row." % [trims.keys()])
+	assert_true(trims.has("menu_select"),
+		"CONTENT FLOOR: _UI_VOLUME_TRIM_DB must be readable through the class and hold its other documented row (menu_select; menu_error left the table 2026-11-07 when its asset took the gain). Got %s — a size-only floor would pass on any one row." % [trims.keys()])
 	assert_true(_manifest().has(CUE),
 		"CONTROL: %s must be in the sfx manifest, or the trim applies to nothing" % CUE)
 

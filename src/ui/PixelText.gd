@@ -56,6 +56,10 @@ const GLYPHS := {
 	"!": ["#", "#", "#", "#", "#", ".", "#"],
 	"?": [".###.", "#...#", "....#", "...#.", "..#..", ".....", "..#.."],
 	".": [".", ".", ".", ".", ".", ".", "#"],
+	",": [".", ".", ".", ".", ".", "#", "#"],
+	"'": ["#", "#", ".", ".", ".", ".", "."],
+	":": [".", "#", ".", ".", ".", "#", "."],
+	"—": [".....", ".....", ".....", "#####", ".....", ".....", "....."],
 	"x": [".....", ".....", "#...#", ".#.#.", "..#..", ".#.#.", "#...#"],
 }
 
@@ -117,6 +121,14 @@ static func glyph_texture(ch: String) -> ImageTexture:
 	var tex := ImageTexture.create_from_image(img)
 	_cache[ch] = tex
 	return tex
+
+
+## The unscaled cell extent of a string, for laying out before (or without) building it; base_size() of a built one.
+static func measure(t: String) -> Vector2i:
+	var w := 0
+	for i in t.length():
+		w += SPACE_COLS if t[i] == " " else str(_rows_for(t[i])[0]).length() + 1
+	return Vector2i(maxi(0, w - 1) + 2, ROWS + 2)
 
 
 func set_text(t: String) -> void:

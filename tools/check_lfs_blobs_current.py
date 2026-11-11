@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+""":"
+echo "$0 is a Python script: run it with python3, not bash" >&2; exit 2
+":"""
 """Every LFS-tracked file's working bytes must match the oid its pointer pins at HEAD.
 
 WHY THIS EXISTS, AND WHY NO OTHER GATE IN THIS LANE CAN DO IT

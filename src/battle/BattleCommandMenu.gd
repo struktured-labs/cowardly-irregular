@@ -225,6 +225,8 @@ func show_win98_command_menu(combatant: Combatant) -> void:
 	var bag: Dictionary = ItemSystem.party_inventory(BattleManager.consumable_bag(combatant))
 	for item_id in bag:
 		budget["item:" + str(item_id)] = int(bag[item_id])
+	## AP the queue may spend before the debt floor; each slot bills AbilityCost.slot_ap (1 + an ability's own ap_cost).
+	budget["ap"] = combatant.current_ap - AbilityCost.AP_FLOOR
 	_scene.active_win98_menu.set_queue_budget(budget, _queued_cost.bind(combatant))
 
 	# Allow going back if not the first player in selection order
@@ -264,7 +266,7 @@ func _queued_cost(data, combatant: Combatant) -> Dictionary:
 		return {}
 	if data.has("ability_id"):
 		var aid := str(data["ability_id"])
-		var out: Dictionary = {}
+		var out: Dictionary = {"ap": AbilityCost.slot_ap(combatant, {"type": "ability", "ability_id": aid})}
 		var mp: int = JobSystem.get_ability_mp_cost(combatant, aid)
 		if mp > 0:
 			out["mp"] = mp
@@ -275,8 +277,10 @@ func _queued_cost(data, combatant: Combatant) -> Dictionary:
 			out["mp_gain"] = BattleManager._mp_restore_amount(ability)
 		return out
 	if data.has("item_id"):
-		return {"item:" + str(data["item_id"]): 1}
-	return {}
+		return {"item:" + str(data["item_id"]): 1, "ap": 1}
+	if str(data.get("action", "")) == "attack":
+		return {"ap": 1}
+	return {}   # a defer, a toggle or a group row: no slot AP here (AbilityCost bills a defer 0)
 
 
 func _restore_reaches(ability: Dictionary, data: Dictionary, combatant: Combatant) -> bool:
@@ -710,6 +714,13 @@ func _build_ability_row(ability_id: String, combatant: Combatant, alive_enemies:
 	## so a passive's mp_cost_multiplier moved what was charged and not what was quoted or gated.
 	var mp_cost: int = JobSystem.get_ability_mp_cost(combatant, ability_id)
 	var can_afford: bool = combatant.current_mp >= mp_cost
+	## MP is the ONLY thing short: the row is landable and keeps its targets, and Win98Menu lets three presses force it
+	## (struktured 2026-11-07: the player may know an earlier slot restores the MP). Silence and the rest stay hard.
+	var mp_short: bool = not can_afford and not combatant.has_status("silence") and combatant.knows_ability(ability_id)
+	var offerable: bool = can_afford or mp_short
+	## An ability's own AP cost beyond its slot's 1 (AbilityCost), named on the row so the Advance budget is legible.
+	var extra_ap: int = AbilityCost.ap_for(combatant, ability_id)
+	var ap_tag: String = "  +%d AP" % extra_ap if extra_ap > 0 else ""
 	var target_type: String = ability.get("target_type", "single_enemy")
 
 	var ability_desc: String = ability.get("description", "")
@@ -720,7 +731,7 @@ func _build_ability_row(ability_id: String, combatant: Combatant, alive_enemies:
 		ability_tooltip = "%s · %s" % [str(element_val).capitalize(), ability_tooltip]
 
 	# Single-enemy targeting: build per-enemy submenu with damage estimates
-	if target_type == "single_enemy" and alive_enemies.size() > 0 and can_afford:
+	if target_type == "single_enemy" and alive_enemies.size() > 0 and offerable:
 		var enemy_targets: Array = []
 		for enemy in alive_enemies:
 			var enemy_idx: int = _scene.test_enemies.find(enemy)
@@ -746,19 +757,20 @@ func _build_ability_row(ability_id: String, combatant: Combatant, alive_enemies:
 			enemy_targets.append(row)
 		return {
 			"id": "ability_menu_" + ability_id,
-			"label": str(ability["name"]),
+			"label": str(ability["name"]) + ap_tag,
 			"cost": mp_cost,
 			"cost_affordable": can_afford,
 			"tooltip": ability_tooltip,
 			"submenu": enemy_targets,
-			"disabled": not can_afford
+			"disabled": not offerable,
+			"mp_short": mp_short
 		}
 
 	# Single-ally targeting (heal/buff) with party submenu. CTB ruling (struktured
 	# 2026-10-03): a `healing`-typed ability's target list includes EVERY ally, dead or
 	# full-HP — selection happens before execution, so the player is guessing. Non-heal
 	# single_ally abilities (protect/shell/esuna/pray/etc) keep the alive-only filter.
-	if target_type == "single_ally" and can_afford:
+	if target_type == "single_ally" and offerable:
 		var is_heal_ability: bool = str(ability.get("type", "")) == "healing"
 		var ally_targets: Array = []
 		for i in range(_scene.party_members.size()):
@@ -780,18 +792,19 @@ func _build_ability_row(ability_id: String, combatant: Combatant, alive_enemies:
 			})
 		return {
 			"id": "ability_menu_" + ability_id,
-			"label": str(ability["name"]),
+			"label": str(ability["name"]) + ap_tag,
 			"cost": mp_cost,
 			"cost_affordable": can_afford,
 			"tooltip": ability_tooltip,
 			"submenu": ally_targets,
-			"disabled": not can_afford
+			"disabled": not offerable,
+			"mp_short": mp_short
 		}
 
 	# Dead-ally targeting (Raise) — CTB ruling (struktured 2026-10-03): shows EVERY
 	# ally, living or KO'd, tagged by state. The player can't know who will still be
 	# standing when a queued Raise resolves, so the guess is theirs to make.
-	if target_type == "dead_ally" and can_afford:
+	if target_type == "dead_ally" and offerable:
 		var dead_targets: Array = []
 		for i in range(_scene.party_members.size()):
 			var member = _scene.party_members[i]
@@ -807,16 +820,17 @@ func _build_ability_row(ability_id: String, combatant: Combatant, alive_enemies:
 		if dead_targets.size() > 0:
 			return {
 				"id": "ability_menu_" + ability_id,
-				"label": str(ability["name"]),
+				"label": str(ability["name"]) + ap_tag,
 			"cost": mp_cost,
 			"cost_affordable": can_afford,
 				"tooltip": ability_tooltip,
 				"submenu": dead_targets,
-				"disabled": not can_afford
+				"disabled": not offerable,
+			"mp_short": mp_short
 			}
 		return {
 			"id": "ability_" + ability_id,
-			"label": str(ability["name"]),
+			"label": str(ability["name"]) + ap_tag,
 			"cost": mp_cost,
 			"cost_affordable": can_afford,
 			"tooltip": ability_tooltip,
@@ -825,7 +839,7 @@ func _build_ability_row(ability_id: String, combatant: Combatant, alive_enemies:
 		}
 
 	# AoE on all enemies — show [AoE] tag with total estimated damage
-	if target_type == "all_enemies" and can_afford:
+	if target_type == "all_enemies" and offerable:
 		var aoe_label: String = "%s [AoE]" % ability["name"]
 		if alive_enemies.size() > 0:
 			## Each foe counts at most what it has left: summing full estimates read two 5-HP slimes as
@@ -840,16 +854,17 @@ func _build_ability_row(ability_id: String, combatant: Combatant, alive_enemies:
 			aoe_label = "%s [AoE] ~%d total%s" % [ability["name"], total_est, ", %d KO" % kos if kos > 0 else ""]
 		return {
 			"id": "ability_" + ability_id,
-			"label": aoe_label,
+			"label": aoe_label + ap_tag,
 			"cost": mp_cost,
 			"cost_affordable": can_afford,
 			"tooltip": ability_tooltip + " (hits all enemies)",
 			"data": {"ability_id": ability_id},
-			"disabled": not can_afford
+			"disabled": not offerable,
+			"mp_short": mp_short
 		}
 
 	# Party-wide buff/heal — show [All] tag
-	if target_type == "all_allies" and can_afford:
+	if target_type == "all_allies" and offerable:
 		var all_label: String = "%s [All]" % ability["name"]
 		if ability.has("heal_amount"):
 			## "each" is one number for N receivers, and a curse or a passive on one of them makes it a
@@ -861,23 +876,25 @@ func _build_ability_row(ability_id: String, combatant: Combatant, alive_enemies:
 			all_label = "%s [All]%s" % [ability["name"], _heal_span_suffix(ests)]
 		return {
 			"id": "ability_" + ability_id,
-			"label": all_label,
+			"label": all_label + ap_tag,
 			"cost": mp_cost,
 			"cost_affordable": can_afford,
 			"tooltip": ability_tooltip + " (affects all allies)",
 			"data": {"ability_id": ability_id},
-			"disabled": not can_afford
+			"disabled": not offerable,
+			"mp_short": mp_short
 		}
 
 	# Default: single-target, self, or unaffordable — flat entry
 	return {
 		"id": "ability_" + ability_id,
-		"label": str(ability["name"]),
+		"label": str(ability["name"]) + ap_tag,
 			"cost": mp_cost,
 			"cost_affordable": can_afford,
 		"tooltip": ability_tooltip,
 		"data": {"ability_id": ability_id},
-		"disabled": not can_afford
+		"disabled": not offerable,
+			"mp_short": mp_short
 	}
 
 
@@ -1356,7 +1373,7 @@ func _on_win98_menu_selection(item_id: String, item_data: Variant) -> void:
 			var is_valid_target = _is_valid_ability_target(ability_id, target_type, target)
 
 			if is_valid_target:
-				_scene._execute_ability(ability_id, target)
+				_scene._execute_ability(ability_id, target, false, bool(item_data.get("forced", false)))
 			else:
 				_scene.log_message("Target no longer valid!")
 		return
@@ -1371,16 +1388,16 @@ func _on_win98_menu_selection(item_id: String, item_data: Variant) -> void:
 			match target_type:
 				"all_enemies":
 					if alive_enemies.size() > 0:
-						_scene._execute_ability(ability_id, alive_enemies[0], true)
+						_scene._execute_ability(ability_id, alive_enemies[0], true, bool(item_data.get("forced", false)))
 					else:
 						_scene.log_message("No valid targets!")
 				"single_ally", "all_allies", "self":
 					var ab_target = current if current else (_scene.party_members[0] if _scene.party_members.size() > 0 else null)
 					if ab_target:
-						_scene._execute_ability(ability_id, ab_target)
+						_scene._execute_ability(ability_id, ab_target, false, bool(item_data.get("forced", false)))
 				_:
 					if alive_enemies.size() > 0:
-						_scene._execute_ability(ability_id, alive_enemies[0])
+						_scene._execute_ability(ability_id, alive_enemies[0], false, bool(item_data.get("forced", false)))
 		return
 
 	# Item usage with target from menu tree
@@ -1573,11 +1590,11 @@ func _on_win98_actions_submitted(actions: Array) -> void:
 					target = _scene.test_enemies[target_idx]
 
 				if is_instance_valid(target):
-					battle_actions.append({"type": "ability", "ability_id": ability_id, "targets": [target]})
+					battle_actions.append({"type": "ability", "ability_id": ability_id, "targets": [target], "forced": bool(action_data.get("forced", false))})
 			elif str(ability_id) != "":
 				var resolved: Array = _targets_for_ability_without_picker(str(ability_id), current, alive_enemies)
 				if not resolved.is_empty():
-					battle_actions.append({"type": "ability", "ability_id": ability_id, "targets": resolved})
+					battle_actions.append({"type": "ability", "ability_id": ability_id, "targets": resolved, "forced": bool(action_data.get("forced", false))})
 
 		# Handle item actions (enemy or ally targets)
 		elif action_id.begins_with("item_") and action_data is Dictionary:

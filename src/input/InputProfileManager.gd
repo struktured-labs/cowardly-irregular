@@ -320,6 +320,17 @@ func face_family_for_device(device_name: String) -> String:
 	return "xbox"
 
 
+## The pad buttons an action fires from. A profile action reads its profile row, with the face convention applied
+## (the table stores PRE-convention indices). An action the profile does not carry (dash, ability_zoom) reads its live
+## InputMap binding, which IS the physical button: it had NO pad answer here, so every hint fell to the keyboard key
+## and a pad player was told "A: Zoom" (struktured's .788 playtest, 2026-11-07).
+func _pad_indices_for(action: String) -> Array:
+	var bindings := get_profile_bindings(active_profile)
+	if bindings.has(action):
+		return face_convention_indices(action, bindings[action])
+	return get_current_button_indices(action)
+
+
 ## The glyph printed on the physical button an action currently fires from.
 func glyph_for_action(action: String, device_name: String = "") -> String:
 	var name := device_name
@@ -327,10 +338,7 @@ func glyph_for_action(action: String, device_name: String = "") -> String:
 		var pads := Input.get_connected_joypads()
 		name = Input.get_joy_name(pads[0]) if not pads.is_empty() else ""
 	var family: String = face_family_for_device(name)
-	var bindings := get_profile_bindings(active_profile)
-	if not bindings.has(action):
-		return "?"
-	var indices := face_convention_indices(action, bindings[action])
+	var indices := _pad_indices_for(action)
 	if indices.is_empty():
 		return "?"
 	var table: Dictionary = FACE_GLYPHS[family]
@@ -386,13 +394,7 @@ func button_name_for_action(action: String, device_name: String = "") -> String:
 	if name == "":
 		var pads := Input.get_connected_joypads()
 		name = Input.get_joy_name(pads[0]) if not pads.is_empty() else ""
-	var bindings := get_profile_bindings(active_profile)
-	if not bindings.has(action):
-		return ""
-	## ⛔ THE CONVENTION, LIKE ITS TWIN glyph_for_action DIRECTLY ABOVE. The table stores
-	## PRE-convention indices; without this the name is the button the player would press only
-	## while nintendo_mode is on. Two siblings reading one table, one of them applying the swap.
-	var indices: Array = face_convention_indices(action, bindings[action])
+	var indices: Array = _pad_indices_for(action)
 	if indices.is_empty():
 		return ""
 	var table: Dictionary = BUTTON_NAMES[face_family_for_device(name)]
