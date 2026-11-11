@@ -272,108 +272,61 @@
       "start_note": "fighter/attack contacts on f3 at 375 ms; f0 carries the artist's own slash smear, so afterimages start at f1 (cowir-sprites)"
     },
     "fire_battle": {
-      "label": "Fire, battle pacing: bolt, burst, fan, re-burst, fling",
+      "label": "Fire: heat gathers, a flame flies, the original eruption, embers (main 23590)",
       "start": 0.75,
-      "start_note": "mage/cast releases on f6 at 750 ms; the battle holds only until the burst, the fling overlaps the next action",
+      "impact": 0.58,
+      "start_note": "mage/cast releases on f6 at 750 ms; damage lands at the eruption",
       "phases": [
         {
+          "kind": "gather",
+          "origin": "caster",
           "at": 0.0,
+          "dur": 0.3,
+          "count": 18,
+          "palette": "flame"
+        },
+        {
           "kind": "bolt",
-          "dur": 0.32,
+          "at": 0.3,
+          "dur": 0.28,
           "arc_height": 44,
-          "size": 1.2,
+          "palette": "flame",
+          "trail_palette": "ember",
           "trail_spacing": 9,
-          "palette": "flame",
-          "palette_t3": "fire",
-          "trail_palette": "ember"
+          "size": 1.4,
+          "sfx": "beat_fire_burst",
+          "palette_t3": "fire"
         },
         {
-          "at": 0.32,
+          "kind": "eruption",
+          "at": 0.58,
+          "power": 1.0,
+          "boost": 1.6,
+          "sfx": "beat_fire_impact",
+          "element": "fire"
+        },
+        {
           "kind": "flash",
+          "at": 0.58,
           "dur": 0.16,
-          "size": 5.5
+          "size": 6.0
         },
         {
-          "at": 0.32,
-          "kind": "ring",
-          "dur": 0.26,
-          "scale": 2.8,
-          "palette": "flame",
-          "palette_t3": "fire"
-        },
-        {
-          "at": 0.32,
-          "kind": "shake",
-          "intensity": 6,
-          "dur": 0.2
-        },
-        {
-          "at": 0.32,
-          "kind": "emit",
-          "count": 8,
-          "arc": 360,
-          "radius": 64,
-          "life": 0.26,
-          "size": 1.15,
-          "child_at": 0.75,
-          "decay": 0.62,
-          "twist": 22.5,
-          "child": {
-            "count": 3,
-            "arc": 56,
-            "radius": 46,
-            "life": 0.22,
-            "size": 0.95,
-            "child_at": 0.8,
-            "decay": 0.6,
-            "bloom": false,
-            "palette": "flame",
-            "child": {
-              "count": 5,
-              "arc": 360,
-              "radius": 22,
-              "life": 0.18,
-              "size": 0.8,
-              "twist": 30,
-              "palette": "flame"
-            }
-          },
-          "palette": "flame",
-          "palette_t3": "fire"
-        },
-        {
+          "kind": "fall",
           "at": 0.7,
-          "kind": "spin_fling",
-          "count": 10,
-          "radius": 70,
-          "inner": 20,
-          "turns": 1.0,
-          "spin": 0.28,
-          "fling": 0.24,
-          "distance": 140,
-          "size": 0.95,
-          "child": {
-            "count": 4,
-            "arc": 360,
-            "radius": 16,
-            "life": 0.15,
-            "size": 0.6,
-            "scale": 1.0,
-            "palette": "flame"
-          },
-          "palette": "flame",
-          "palette_t3": "fire"
+          "dur": 0.6,
+          "count": 18,
+          "palette": "ember"
         },
         {
-          "at": 0.32,
           "kind": "ring",
+          "at": 0.58,
           "dur": 0.32,
-          "scale": 4.0,
+          "min_tier": 3,
           "palette": "fire",
-          "min_tier": 3
+          "scale": 4.0
         }
-      ],
-      "palette_note": "flame (orange-red) until the caster's intensity tier 3, where it goes white-hot: struktured didn't read the white bolt as fire"
+      ]
     },
     "sig_cave_rat_king": {
       "label": "Rat King: Rat Swarm, the court spills out of him in rings of rot",
@@ -1004,121 +957,129 @@
       ]
     },
     "glory_firaga": {
-      "label": "Firaga: a sun drops on the field, bursts, and rains three rings of fire",
+      "label": "Firaga: a huge gather, flames on every foe, the eruption, a pillar, a SECOND detonation, embers (main 23590)",
       "start": 0.75,
       "start_note": "mage/cast releases on f6 at 750 ms, like fire_battle",
       "phases": [
         {
-          "at": 0.0,
-          "kind": "ring",
+          "kind": "gather",
           "origin": "caster",
-          "dur": 0.3,
-          "scale": 2.2,
-          "palette": "flame",
-          "palette_t3": "fire",
-          "sfx": "beat_fire_open"
+          "at": 0.0,
+          "dur": 0.38,
+          "count": 34,
+          "palette": "flame"
         },
         {
-          "at": 0.05,
           "kind": "bolt",
-          "dur": 0.36,
-          "arc_height": 70,
-          "size": 1.6,
-          "trail_spacing": 8,
+          "at": 0.38,
+          "dur": 0.28,
+          "arc_height": 64,
           "palette": "flame",
-          "palette_t3": "fire",
-          "trail_palette": "ember"
+          "trail_palette": "ember",
+          "trail_spacing": 7,
+          "size": 2.1,
+          "sfx": "beat_fire_burst",
+          "palette_t3": "fire"
         },
         {
-          "at": 0.41,
+          "kind": "eruption",
+          "at": 0.66,
+          "power": 2.0,
+          "boost": 2.6,
+          "sfx": "beat_firaga_impact",
+          "element": "fire"
+        },
+        {
           "kind": "flash",
-          "dur": 0.18,
-          "size": 7.0,
-          "sfx": "beat_fire_impact"
-        },
-        {
-          "at": 0.41,
-          "kind": "ring",
-          "dur": 0.3,
-          "scale": 3.4,
-          "palette": "fire"
-        },
-        {
-          "at": 0.41,
-          "kind": "shake",
-          "intensity": 8,
-          "dur": 0.24
-        },
-        {
-          "at": 0.41,
-          "kind": "emit",
-          "count": 10,
-          "arc": 360,
-          "radius": 80,
-          "life": 0.3,
-          "size": 1.2,
-          "twist": 18,
-          "palette": "flame",
-          "palette_t3": "fire",
-          "child_at": 0.75,
-          "decay": 0.6,
-          "child": {
-            "count": 3,
-            "arc": 60,
-            "radius": 40,
-            "life": 0.22,
-            "size": 0.9,
-            "palette": "flame"
-          }
-        },
-        {
-          "at": 0.65,
-          "kind": "emit",
-          "count": 14,
-          "arc": 360,
-          "radius": 130,
-          "life": 0.3,
-          "size": 1.0,
-          "twist": 13,
-          "palette": "flame",
-          "palette_t3": "fire",
-          "min_tier": 2
-        },
-        {
-          "at": 0.65,
-          "kind": "shake",
-          "intensity": 9,
+          "at": 0.66,
           "dur": 0.2,
-          "min_tier": 2,
-          "sfx": "beat_fire_burst"
+          "size": 8.0
         },
         {
-          "at": 0.9,
+          "kind": "pillar",
+          "at": 0.7,
+          "dur": 0.36,
+          "height": 320,
+          "sfx": "beat_fire_bloom",
+          "palette": "flame"
+        },
+        {
+          "kind": "eruption",
+          "at": 0.98,
+          "power": 2.0,
+          "boost": 3.0,
+          "offset": [
+            0,
+            -24
+          ],
+          "sfx": "beat_firaga_detonate",
+          "element": "fire"
+        },
+        {
+          "kind": "flash",
+          "at": 0.98,
+          "dur": 0.24,
+          "size": 10.0
+        },
+        {
           "kind": "ring",
-          "dur": 0.35,
-          "scale": 5.5,
-          "palette": "fire",
-          "min_tier": 3,
-          "sfx": "beat_fire_bloom"
+          "at": 0.98,
+          "dur": 0.4,
+          "palette": "flame",
+          "scale": 6.0,
+          "palette_t3": "fire"
         },
         {
-          "at": 0.9,
-          "kind": "emit",
-          "count": 18,
-          "arc": 360,
-          "radius": 180,
-          "life": 0.32,
-          "size": 0.9,
-          "twist": 10,
+          "kind": "shake",
+          "at": 0.98,
+          "dur": 0.3,
+          "intensity": 14
+        },
+        {
+          "kind": "fall",
+          "at": 1.05,
+          "dur": 0.65,
+          "count": 32,
+          "palette": "ember"
+        },
+        {
+          "kind": "bolt",
+          "at": 0.42,
+          "dur": 0.24,
+          "min_tier": 2,
+          "arc_height": 110,
+          "palette": "flame",
+          "palette_t3": "fire",
+          "trail_palette": "ember",
+          "trail_spacing": 7,
+          "size": 1.6
+        },
+        {
+          "kind": "bolt",
+          "at": 0.46,
+          "dur": 0.2,
+          "min_tier": 3,
+          "arc_height": 20,
           "palette": "fire",
-          "min_tier": 3
+          "trail_palette": "ember",
+          "trail_spacing": 6,
+          "size": 1.6
+        },
+        {
+          "kind": "ring",
+          "at": 0.98,
+          "dur": 0.5,
+          "min_tier": 3,
+          "palette": "fire",
+          "scale": 8.0
         }
       ],
       "tint": [
         0.75,
         0.25,
         0.04
-      ]
+      ],
+      "impact": 0.66
     },
     "glory_blizzaga": {
       "label": "Blizzaga: the air freezes, a crystal bloom, a held breath, the shatter",
@@ -1955,6 +1916,173 @@
         0.45,
         0.3,
         0.7
+      ]
+    },
+    "edit_formula_battle": {
+      "label": "Edit Formula: the fractal that was Fire's (main 23590): bolt, burst, fan, re-burst, fling, in glitch cyan",
+      "start": 0.75,
+      "phases": [
+        {
+          "at": 0.0,
+          "kind": "bolt",
+          "dur": 0.32,
+          "arc_height": 44,
+          "size": 1.2,
+          "trail_spacing": 9,
+          "palette": "glitch",
+          "trail_palette": "glitch"
+        },
+        {
+          "at": 0.32,
+          "kind": "flash",
+          "dur": 0.16,
+          "size": 5.5
+        },
+        {
+          "at": 0.32,
+          "kind": "ring",
+          "dur": 0.26,
+          "scale": 2.8,
+          "palette": "glitch"
+        },
+        {
+          "at": 0.32,
+          "kind": "shake",
+          "intensity": 6,
+          "dur": 0.2
+        },
+        {
+          "at": 0.32,
+          "kind": "emit",
+          "count": 8,
+          "arc": 360,
+          "radius": 64,
+          "life": 0.26,
+          "size": 1.15,
+          "child_at": 0.75,
+          "decay": 0.62,
+          "twist": 22.5,
+          "child": {
+            "count": 3,
+            "arc": 56,
+            "radius": 46,
+            "life": 0.22,
+            "size": 0.95,
+            "child_at": 0.8,
+            "decay": 0.6,
+            "bloom": false,
+            "palette": "glitch",
+            "child": {
+              "count": 5,
+              "arc": 360,
+              "radius": 22,
+              "life": 0.18,
+              "size": 0.8,
+              "twist": 30,
+              "palette": "glitch"
+            }
+          },
+          "palette": "glitch"
+        },
+        {
+          "at": 0.7,
+          "kind": "spin_fling",
+          "count": 10,
+          "radius": 70,
+          "inner": 20,
+          "turns": 1.0,
+          "spin": 0.28,
+          "fling": 0.24,
+          "distance": 140,
+          "size": 0.95,
+          "child": {
+            "count": 4,
+            "arc": 360,
+            "radius": 16,
+            "life": 0.15,
+            "size": 0.6,
+            "scale": 1.0,
+            "palette": "glitch"
+          },
+          "palette": "glitch"
+        }
+      ],
+      "palette_note": "glitch: the game rewriting itself; no fire tones (struktured preferred Fire's original eruption)"
+    },
+    "fira_battle": {
+      "label": "Fira: a bigger gather, flame, eruption, a pillar of fire, embers (main 23590)",
+      "start": 0.75,
+      "impact": 0.62,
+      "phases": [
+        {
+          "kind": "gather",
+          "origin": "caster",
+          "at": 0.0,
+          "dur": 0.34,
+          "count": 26,
+          "palette": "flame"
+        },
+        {
+          "kind": "bolt",
+          "at": 0.34,
+          "dur": 0.28,
+          "arc_height": 52,
+          "palette": "flame",
+          "trail_palette": "ember",
+          "trail_spacing": 8,
+          "size": 1.7,
+          "sfx": "beat_fire_burst",
+          "palette_t3": "fire"
+        },
+        {
+          "kind": "eruption",
+          "at": 0.62,
+          "power": 1.5,
+          "boost": 2.0,
+          "sfx": "beat_fira_impact",
+          "element": "fire"
+        },
+        {
+          "kind": "flash",
+          "at": 0.62,
+          "dur": 0.18,
+          "size": 7.0
+        },
+        {
+          "kind": "pillar",
+          "at": 0.66,
+          "dur": 0.36,
+          "height": 260,
+          "sfx": "beat_fire_bloom",
+          "palette": "flame"
+        },
+        {
+          "kind": "fall",
+          "at": 0.8,
+          "dur": 0.65,
+          "count": 24,
+          "palette": "ember"
+        },
+        {
+          "kind": "ring",
+          "at": 0.62,
+          "dur": 0.34,
+          "min_tier": 2,
+          "palette": "flame",
+          "palette_t3": "fire",
+          "scale": 4.5
+        },
+        {
+          "kind": "bolt",
+          "at": 0.38,
+          "dur": 0.24,
+          "min_tier": 3,
+          "arc_height": 90,
+          "palette": "fire",
+          "trail_palette": "ember",
+          "trail_spacing": 8,
+          "size": 1.3
+        }
       ]
     }
   }

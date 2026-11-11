@@ -39,7 +39,7 @@
     "animation": "heal",
     "mp_cost": 6,
     "description": "Restore HP to one ally",
-    "heal_amount": 650,
+    "heal_amount": 8,
     "target_type": "single_ally",
     "magic_school": "white",
     "cost": 200
@@ -53,7 +53,7 @@
     "animation": "heal",
     "mp_cost": 12,
     "description": "Restore a lot of HP to one ally",
-    "heal_amount": 1500,
+    "heal_amount": 18,
     "target_type": "single_ally",
     "magic_school": "white",
     "cost": 800
@@ -146,6 +146,7 @@
     "tier": 2,
     "type": "magic",
     "animation": "cast_fire",
+    "vfx": {"sequence": "fira_battle"},
     "mp_cost": 16,
     "description": "Stronger fire magic damage to one enemy",
     "damage_multiplier": 3.5,
@@ -344,6 +345,7 @@
     "name": "Edit Formula",
     "type": "meta",
     "animation": "cast_meta",
+    "vfx": {"sequence": "edit_formula_battle"},
     "mp_cost": 30,
     "description": "Attempt to rewrite a damage formula. The formulas resist. The corruption is real.",
     "target_type": "self",

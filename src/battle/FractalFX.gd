@@ -36,6 +36,13 @@ const PALETTES := {
 		[1.0, Color(0.15, 0.0, 0.35, 0.0)]],
 	"verdict": [[0.0, Color(1.0, 1.0, 0.95, 1.0)], [0.3, Color(1.0, 0.85, 0.35, 0.95)],
 		[1.0, Color(0.6, 0.35, 0.05, 0.0)]],
+	## Shared by the heal, buff and song sequences (cutscenes 23771): white-gold light, regen green, MP blue.
+	"holy": [[0.0, Color(1.0, 1.0, 1.0, 1.0)], [0.35, Color(1.0, 0.92, 0.6, 0.95)], [1.0, Color(0.9, 0.7, 0.25, 0.0)]],
+	"nature": [[0.0, Color(0.9, 1.0, 0.8, 1.0)], [0.35, Color(0.45, 0.9, 0.45, 0.95)], [1.0, Color(0.1, 0.4, 0.15, 0.0)]],
+	"mana": [[0.0, Color(0.9, 0.95, 1.0, 1.0)], [0.35, Color(0.45, 0.65, 1.0, 0.95)], [1.0, Color(0.15, 0.2, 0.6, 0.0)]],
+	## Edit Formula's (main 23590): the game rewriting itself, white to cyan with a magenta edge, no fire tones.
+	"glitch": [[0.0, Color(1.0, 1.0, 1.0, 1.0)], [0.3, Color(0.4, 1.0, 1.0, 0.95)],
+		[0.7, Color(1.0, 0.3, 0.9, 0.6)], [1.0, Color(0.1, 0.2, 0.6, 0.0)]],
 }
 
 static var _tex_cache: Dictionary = {}
@@ -54,6 +61,8 @@ var tier: int = 1
 var on_shake: Callable = Callable()
 ## (sound_key) — a phase's optional "sfx" fires here when that phase runs, in battle time, so it lands on the beat at any speed.
 var on_sfx: Callable = Callable()
+## (kind, at, from, power, phase) — the shared phases EffectSystem draws: eruption (an element's original burst), pillar, gather, fall, rise.
+var on_element_phase: Callable = Callable()
 var spawned: int = 0
 var rng := RandomNumberGenerator.new()
 var _ramps: Dictionary = {}
@@ -74,11 +83,17 @@ static func load_sequence(id: String) -> Dictionary:
 
 ## Starts every phase at its `at` (battle seconds) and returns when the last one ends.
 ## `start` shifts every phase so the sequence lands on the caster's authored release frame.
-func play(seq: Dictionary, from: Vector2, to: Vector2, power: float = 1.0) -> float:
+func play(seq: Dictionary, from: Vector2, to: Vector2, power: float = 1.0, compact: bool = false) -> float:
 	var total := 0.0
 	var start := float(seq.get("start", 0.0))
+	## Turbo / the grind console (autogrind 23412): only the impact's own phases, at once, so a cast costs no wall time there.
+	var impact_at := impact_time(seq) - start
+	if compact:
+		start = -impact_at
 	for phase in seq.get("phases", []):
 		if not (phase is Dictionary) or int(phase.get("min_tier", 1)) > tier:
+			continue
+		if compact and absf(float(phase.get("at", 0.0)) - impact_at) > 0.02:
 			continue
 		if tier >= 3 and phase.has("palette_t3"):
 			phase = (phase as Dictionary).duplicate()
@@ -175,6 +190,9 @@ func _run(phase: Dictionary, from: Vector2, to: Vector2, power: float) -> void:
 			_slash(at_pos, phase, power)
 		"cue":
 			pass  # a sound-only beat: its "sfx" already fired above
+		"eruption", "pillar", "gather", "fall", "rise":
+			if on_element_phase.is_valid():
+				on_element_phase.call(str(phase["kind"]), at_pos, from, power, phase)
 		_:
 			push_warning("[FractalFX] unknown phase kind '%s'" % str(phase.get("kind", "")))
 

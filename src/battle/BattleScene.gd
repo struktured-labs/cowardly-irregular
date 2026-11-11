@@ -3399,7 +3399,7 @@ func _play_ability_sequence(caster: Combatant, caster_sprite: Node2D, animator: 
 		var actors: Dictionary = {"caster": caster_sprite, "target": ts} if first else {}
 		first = false
 		var played: Dictionary = EffectSystem.spawn_sequence(seq_id, from, _stable_sprite_anchor(ts),
-			float(AbilityVFX.resolve(ability)["power"]) * float(intensity["k"]), actors, int(intensity["tier"]))
+			float(AbilityVFX.resolve(ability)["power"]) * float(intensity["k"]), actors, int(intensity["tier"]), not signature_sound_allowed())
 		impact = maxf(impact, float(played.get("impact", 0.0)))
 	if impact <= 0.0:
 		_spawn_ability_effects(ability, targets)

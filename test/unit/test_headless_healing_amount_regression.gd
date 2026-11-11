@@ -25,8 +25,13 @@ func test_a_heal_uses_the_authored_amount() -> void:
 	patient.current_hp = 100
 	resolver._resolve_ability(healer, "cure", [patient])
 	var restored: int = patient.current_hp - 100
-	assert_gt(restored, 200,
-		"cure authors heal_amount 650 — restoring %d means the 1.0 power default is being read" % restored)
+	## The relationship, not a magnitude (the amount was 650, and 8 since the 2026-11-11 nerf): the grind restores what
+	## the live engine's own cast does, which is not the magic*1 the power default gave.
+	var live: int = BattleManager.heal_cast_amount(healer, JobSystem.get_ability("cure"))
+	assert_gt(live, 0, "CONTROL: the live engine's cure heals something")
+	assert_ne(live, healer.magic, "CONTROL: the authored amount and the 1.0 power default give different heals")
+	assert_eq(restored, live,
+		"cure restores its authored heal_amount as the live engine casts it; %d means the 1.0 power default is being read" % restored)
 
 
 func test_the_heal_scales_with_the_casters_magic() -> void:
