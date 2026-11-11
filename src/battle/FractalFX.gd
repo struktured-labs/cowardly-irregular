@@ -40,6 +40,9 @@ const PALETTES := {
 	"holy": [[0.0, Color(1.0, 1.0, 1.0, 1.0)], [0.35, Color(1.0, 0.92, 0.6, 0.95)], [1.0, Color(0.9, 0.7, 0.25, 0.0)]],
 	"nature": [[0.0, Color(0.9, 1.0, 0.8, 1.0)], [0.35, Color(0.45, 0.9, 0.45, 0.95)], [1.0, Color(0.1, 0.4, 0.15, 0.0)]],
 	"mana": [[0.0, Color(0.9, 0.95, 1.0, 1.0)], [0.35, Color(0.45, 0.65, 1.0, 0.95)], [1.0, Color(0.15, 0.2, 0.6, 0.0)]],
+	## The Fighter's and Rogue's physical sequences (sprites 23767): smoke for a bomb or a fizzle, taunt for Provoke's red.
+	"smoke": [[0.0, Color(0.92, 0.92, 0.95, 0.85)], [0.4, Color(0.6, 0.62, 0.68, 0.6)], [1.0, Color(0.3, 0.3, 0.35, 0.0)]],
+	"taunt": [[0.0, Color(1.0, 0.9, 0.8, 1.0)], [0.3, Color(1.0, 0.25, 0.2, 0.95)], [1.0, Color(0.5, 0.0, 0.05, 0.0)]],
 	## Edit Formula's (main 23590): the game rewriting itself, white to cyan with a magenta edge, no fire tones.
 	"glitch": [[0.0, Color(1.0, 1.0, 1.0, 1.0)], [0.3, Color(0.4, 1.0, 1.0, 0.95)],
 		[0.7, Color(1.0, 0.3, 0.9, 0.6)], [1.0, Color(0.1, 0.2, 0.6, 0.0)]],
@@ -163,7 +166,17 @@ func _run(phase: Dictionary, from: Vector2, to: Vector2, power: float) -> void:
 		on_sfx.call(str(phase["sfx"]))
 	match str(phase.get("kind", "")):
 		"bolt":
-			_bolt(from, to, phase, power)
+			## `reverse` flies target -> caster (a stolen glint coming back) without forking the bolt (battle 23774).
+			if bool(phase.get("reverse", false)):
+				_bolt(to, from, phase, power)
+			else:
+				_bolt(from, to, phase, power)
+		"arc":
+			_arc(at_pos, phase, power)
+		"streak":
+			_streak(from, to, phase, power)
+		"puff":
+			_puff(at_pos, phase, power)
 		"emit":
 			var heading := deg_to_rad(float(phase.get("heading", 0.0)))
 			if bool(phase.get("aim", false)):
@@ -417,6 +430,105 @@ func _slash(center: Vector2, p: Dictionary, k: float) -> void:
 				if is_instance_valid(s):
 					s.modulate = ramp.sample(u), 0.0, 1.0, float(p.get("life", 0.22)))
 			tw.tween_callback(s.queue_free))
+
+
+## A swept blade crescent: one solid band drawn in order along an arc, wider and longer-lived than `slash`'s cut lines,
+## with a soft glow behind it. `radius` is in px before power, so a cleave can span the whole enemy side.
+func _arc(center: Vector2, p: Dictionary, k: float) -> void:
+	var radius := float(p.get("radius", 120.0)) * k
+	var a0 := deg_to_rad(float(p.get("from", -150.0)))
+	var a1 := deg_to_rad(float(p.get("to", 30.0)))
+	var sweep := float(p.get("dur", 0.16))
+	var life := float(p.get("life", 0.3))
+	var width := float(p.get("width", 2.2)) * k
+	var ramp := _ramp(str(p.get("palette", "steel")))
+	## Dense enough that neighbouring flames overlap into a band at any radius.
+	var n := clampi(int(absf(a1 - a0) * radius / 14.0), 8, 90)
+	for i in n:
+		if spawned >= FLAME_CAP:
+			return
+		var t := float(i) / float(maxi(n - 1, 1))
+		var a := lerpf(a0, a1, t)
+		var pos := center + Vector2.from_angle(a) * radius
+		## Thin at both tips, full in the middle: a crescent, not a ring segment.
+		var thick := width * (0.25 + 0.75 * sin(PI * t))
+		host.get_tree().create_timer(sweep * t).timeout.connect(_arc_flame.bind(pos, a, thick, life, ramp))
+	if bool(p.get("glow", true)):
+		_bloom(center + Vector2.from_angle((a0 + a1) * 0.5) * radius * 0.8, width * 3.0, sweep + life * 0.6, ramp)
+
+
+func _arc_flame(pos: Vector2, a: float, thick: float, life: float, ramp: Gradient) -> void:
+	if not is_instance_valid(host):
+		return
+	var s := _flame(pos, thick, ramp)
+	s.rotation = a + PI * 0.5
+	s.scale = Vector2(thick * 2.2, thick)
+	var tw := s.create_tween()
+	tw.tween_method(func(u: float) -> void:
+		if is_instance_valid(s):
+			s.modulate = ramp.sample(u)
+			s.scale = Vector2(thick * 2.2, thick * (1.0 - 0.7 * u)), 0.0, 1.0, life)
+	tw.tween_callback(s.queue_free)
+
+
+## A dash line between two points that draws head-first and fades tail-first. `a` and `b` name its ends
+## ("caster" | "target"); `a_offset` / `b_offset` move them, so a backstab can end BEHIND its target.
+func _streak(from: Vector2, to: Vector2, p: Dictionary, k: float) -> void:
+	var a: Vector2 = (to if str(p.get("a", "caster")) == "target" else from) + _vec(p.get("a_offset", [0, 0]))
+	var b: Vector2 = (from if str(p.get("b", "target")) == "caster" else to) + _vec(p.get("b_offset", [0, 0]))
+	var dur := float(p.get("dur", 0.12))
+	var life := float(p.get("life", 0.22))
+	var width := float(p.get("width", 1.0)) * k
+	var ramp := _ramp(str(p.get("palette", "steel")))
+	var n := clampi(int(a.distance_to(b) / 12.0), 4, 60)
+	var angle := (b - a).angle()
+	for i in n:
+		if spawned >= FLAME_CAP:
+			return
+		var t := float(i) / float(maxi(n - 1, 1))
+		host.get_tree().create_timer(dur * t).timeout.connect(_streak_flame.bind(a.lerp(b, t), angle, width, life, ramp))
+
+
+func _streak_flame(pos: Vector2, angle: float, width: float, life: float, ramp: Gradient) -> void:
+	if not is_instance_valid(host):
+		return
+	var s := _flame(pos, width, ramp)
+	s.rotation = angle
+	s.scale = Vector2(width * 2.4, width * 0.45)
+	var tw := s.create_tween()
+	tw.tween_method(func(u: float) -> void:
+		if is_instance_valid(s):
+			s.modulate = ramp.sample(u), 0.0, 1.0, life)
+	tw.tween_callback(s.queue_free)
+
+
+## Soft blobs that swell, drift and thin: smoke, dust, a fizzle. NOT additive, so a cloud covers what is behind it.
+## `spread` [x, y] is the half-size of the area the blobs start in; `drift` [x, y] is where they wander over `dur`.
+func _puff(center: Vector2, p: Dictionary, k: float) -> void:
+	var count := int(p.get("count", 8))
+	var spread := _vec(p.get("spread", [40, 16])) * k
+	var drift := _vec(p.get("drift", [0, -26]))
+	var dur := float(p.get("dur", 0.6))
+	var size := float(p.get("size", 2.4)) * k
+	var ramp := _ramp(str(p.get("palette", "smoke")))
+	for i in count:
+		if spawned >= FLAME_CAP:
+			return
+		var g := Sprite2D.new()
+		g.texture = _tex("soft")
+		g.position = center + Vector2(rng.randf_range(-spread.x, spread.x), rng.randf_range(-spread.y, spread.y))
+		g.scale = Vector2.ONE * size * 0.3
+		g.modulate = ramp.sample(0.0)
+		host.add_child(g)
+		spawned += 1
+		var life := dur * rng.randf_range(0.7, 1.0)
+		var tw := g.create_tween().set_parallel(true)
+		tw.tween_property(g, "scale", Vector2.ONE * size * rng.randf_range(0.8, 1.25), life).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		tw.tween_property(g, "position", g.position + drift + Vector2(rng.randf_range(-14, 14), rng.randf_range(-8, 8)), life)
+		tw.tween_method(func(u: float) -> void:
+			if is_instance_valid(g):
+				g.modulate = ramp.sample(u), 0.0, 1.0, life)
+		tw.chain().tween_callback(g.queue_free)
 
 
 func _lunge(p: Dictionary) -> void:
