@@ -44,8 +44,8 @@ func test_every_heal_names_a_sequence_that_exists() -> void:
 		assert_false(ability.is_empty(), "CONTROL: %s is an ability" % id)
 		assert_eq(str(AbilityVFX.resolve(ability).get("sequence", "")), str(HEALS[id]), "%s plays its sequence" % id)
 		assert_false(_seq(str(HEALS[id])).is_empty(), "%s exists in vfx_sequences.json" % HEALS[id])
-	assert_eq(str(AbilityVFX.resolve(JobSystem.get_ability("protect")).get("sequence", "")), "",
-		"CONTROL: an ability with no vfx row (protect, until its tip) resolves to no sequence")
+	assert_eq(str(AbilityVFX.resolve(JobSystem.get_ability("dark_bolt")).get("sequence", "")), "",
+		"CONTROL: an ability on the plain path resolves to no sequence")
 
 
 func test_every_phase_uses_the_shared_palettes() -> void:
@@ -111,17 +111,37 @@ func test_a_cure_lands_without_a_second_sound() -> void:
 	assert_gt(fire_sfx, 0, "CONTROL: a sequence CAN carry phase sounds (Fire does)")
 
 
-## Every heal actually runs through the player: each phase reaches a drawer, and none is an unknown kind.
+var _drawn: Array = []
+
+
+func _record_phase(kind: String, _at: Vector2, _from: Vector2, _power: float, _phase: Dictionary) -> void:
+	_drawn.append(kind)
+
+
+func _record_shake(_intensity: float, _dur: float) -> void:
+	_drawn.append("shake")
+
+
+## Every heal actually runs through the player: played with every phase already due, each element phase and shake in its
+## data reaches a drawer at once, and the rest put sprites on the host. Method callbacks, cleared before the arm ends: a
+## lambda held by a FractalFX that outlives the test aborted godot at exit (cowir-battle 23864, and this arm's first run).
 func test_every_heal_plays_through_the_runner() -> void:
 	var host := Node2D.new()
 	add_child_autofree(host)
 	for id in HEALS.values():
 		var fx = FX.new(host, 7)
-		var drawn: Array = []
-		fx.on_element_phase = func(kind: String, _at: Vector2, _from: Vector2, _power: float, _phase: Dictionary) -> void: drawn.append(kind)
-		fx.on_shake = func(_i: float, _d: float) -> void: drawn.append("shake")
+		_drawn = []
+		fx.on_element_phase = _record_phase
+		fx.on_shake = _record_shake
 		var seq := _seq(id)
 		seq["start"] = -10.0
-		var total: float = fx.play(seq, Vector2(600, 300), Vector2(300, 300))
-		assert_gt(drawn.size() + int(fx.spawned), 0, "%s drew something (%d element phases, %d sprites)" % [id, drawn.size(), fx.spawned])
-		assert_true(total < 0.0, "CONTROL: %s was played with every phase already due (total %.2f)" % [id, total])
+		var want := 0
+		for ph in seq.get("phases", []):
+			want += 1 if str((ph as Dictionary).get("kind", "")) in ["eruption", "pillar", "gather", "fall", "rise", "shake"] else 0
+		var before: int = host.get_child_count()
+		fx.play(seq, Vector2(600, 300), Vector2(300, 300))
+		fx.on_element_phase = Callable()
+		fx.on_shake = Callable()
+		assert_gt(want, 0, "CONTROL: %s has element phases to reach" % id)
+		assert_eq(_drawn.size(), want, "%s: every element phase and shake reached its drawer at once (%d of %d)" % [id, _drawn.size(), want])
+		assert_gt(host.get_child_count(), before, "%s: and the runner's own kinds (bolt, ring, flash) put nodes on the host" % id)
