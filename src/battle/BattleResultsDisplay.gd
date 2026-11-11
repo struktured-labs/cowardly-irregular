@@ -38,6 +38,14 @@ func on_healing_done(target: Combatant, amount: int) -> void:
 	if pos != Vector2.ZERO:
 		spawn_damage_number(pos, amount, true, false)
 		spawn_heal_glow(pos)
+		# struktured read a capped "+3" as a weak Cure (main 23431); a heal that tops the target off says so.
+		if healed_to_full(target):
+			spawn_banner(pos, "FULL")
+
+
+## True when the target ends the heal at max HP, so the number shown is the gap it closed, not the heal's power.
+static func healed_to_full(target: Combatant) -> bool:
+	return target != null and is_instance_valid(target) and target.is_alive and target.current_hp >= target.max_hp
 
 
 ## struktured 2026-09-07: "if some ability gains MP it should be differently colored (purple) than HP (green) and AP should be another color (red)".

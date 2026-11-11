@@ -217,6 +217,30 @@ func test_the_scene_draws_the_move_and_the_outcome() -> void:
 	assert_eq(_fx_count(), before, "CONTROL: a status with no beat draws nothing")
 
 
+func test_an_outcome_of_a_melee_move_waits_for_the_blow_to_arrive() -> void:
+	## A melee move's status resolves at the action's start; its beat must not pop before the lunge lands.
+	_scene._on_action_executing(_hero, {"type": "ability", "ability_id": "shield_bash", "targets": [_foe]})
+	assert_not_null(_scene._melee_contact_timer, "a melee ability arms the contact clock")
+	var host := Node2D.new()
+	add_child_autofree(host)
+	var was: Node2D = EffectSystem._effects_container
+	EffectSystem._effects_container = host
+	_scene._on_status_landed("stun", _foe)
+	var at_once := host.get_child_count()
+	await get_tree().create_timer(BattleScene.MELEE_CONTACT_S + 0.1).timeout
+	var after := host.get_child_count()
+	EffectSystem._effects_container = was
+	assert_eq(at_once, 0, "the stars do not appear while the shield is still on its way")
+	assert_gt(after, 0, "CONTROL: they do appear once it has landed")
+
+
+func test_a_drawn_in_order_phase_is_as_long_as_its_last_flame() -> void:
+	assert_almost_eq(FractalFX.phase_duration({"kind": "arc", "dur": 0.2, "life": 0.4}), 0.6, 0.001, "an arc outlasts its sweep by its life")
+	assert_almost_eq(FractalFX.phase_duration({"kind": "streak", "dur": 0.1, "life": 0.3}), 0.4, 0.001, "so does a streak")
+	assert_almost_eq(FractalFX.phase_duration({"kind": "puff", "dur": 0.7}), 0.7, 0.001, "a puff is its dur")
+	assert_almost_eq(FractalFX.phase_duration({"kind": "ring", "dur": 0.3}), 0.3, 0.001, "CONTROL: a ring is its dur")
+
+
 func test_turbo_draws_no_outcome_beat() -> void:
 	_scene.turbo_mode = true
 	var before := _fx_count()
