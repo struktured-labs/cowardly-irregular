@@ -2820,7 +2820,7 @@
       ]
     },
     "fighter_provoke": {
-      "label": "Provoke: a red shout-ring from the Fighter and a tether that snaps to the target (landed_taunt or fizzle follows)",
+      "label": "Provoke: a red shout-ring from the Fighter and a tether that snaps to the target (landed_taunt or fizzle follows) The caster phases sit 80 px toward the enemy: a cast's origin is the caster's hand anchor, right of the Fighter's body (measured on the clip).",
       "start": 0.08,
       "impact": 0.25,
       "phases": [
@@ -3114,7 +3114,7 @@
       "phases": [
         {
           "kind": "gather",
-          "origin": "caster",
+          "origin": "hand",
           "at": 0.0,
           "dur": 0.25,
           "count": 14,
@@ -3160,7 +3160,7 @@
       "phases": [
         {
           "kind": "gather",
-          "origin": "caster",
+          "origin": "hand",
           "at": 0.0,
           "dur": 0.3,
           "count": 24,
@@ -3270,7 +3270,7 @@
       "phases": [
         {
           "kind": "gather",
-          "origin": "caster",
+          "origin": "hand",
           "at": 0.0,
           "dur": 0.25,
           "count": 12,
@@ -3317,7 +3317,7 @@
       "phases": [
         {
           "kind": "gather",
-          "origin": "caster",
+          "origin": "hand",
           "at": 0.0,
           "dur": 0.2,
           "count": 12,
@@ -3418,7 +3418,7 @@
       "phases": [
         {
           "kind": "gather",
-          "origin": "caster",
+          "origin": "hand",
           "at": 0.0,
           "dur": 0.3,
           "count": 30,
@@ -3542,7 +3542,7 @@
       "phases": [
         {
           "kind": "gather",
-          "origin": "caster",
+          "origin": "hand",
           "at": 0.0,
           "dur": 0.25,
           "count": 14,
@@ -3557,7 +3557,7 @@
           "radius": 52,
           "palette": "holy",
           "offset": [
-            -140,
+            -44,
             -6
           ]
         },
@@ -3568,7 +3568,7 @@
           "size": 4.0,
           "alpha": 0.55,
           "offset": [
-            -140,
+            -44,
             -6
           ]
         },
@@ -3579,7 +3579,7 @@
           "scale": 2.8,
           "palette": "holy",
           "offset": [
-            -140,
+            -44,
             -6
           ]
         },
@@ -3599,7 +3599,7 @@
       "phases": [
         {
           "kind": "gather",
-          "origin": "caster",
+          "origin": "hand",
           "at": 0.0,
           "dur": 0.25,
           "count": 14,
@@ -3615,7 +3615,7 @@
           "radius": 64,
           "palette": "ward",
           "offset": [
-            -90,
+            0,
             10
           ]
         },
@@ -3626,7 +3626,7 @@
           "size": 4.0,
           "alpha": 0.5,
           "offset": [
-            -90,
+            0,
             -50
           ]
         },
@@ -3637,7 +3637,7 @@
           "scale": 3.2,
           "palette": "ward",
           "offset": [
-            -90,
+            0,
             30
           ]
         },
@@ -3649,7 +3649,7 @@
           "palette": "ward",
           "ground_glow": false,
           "offset": [
-            -90,
+            0,
             -60
           ]
         }
