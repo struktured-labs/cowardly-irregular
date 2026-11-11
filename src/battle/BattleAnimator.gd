@@ -726,16 +726,13 @@ func _on_sprite_animation_finished() -> void:
 		on_animation_complete.call()
 		on_animation_complete = Callable()
 
-	## A bespoke one-shot carries current_state IDLE, so the rule below skipped it and it held its last frame
-	## until the scene's idle snap. It rests like the base poses, unless its callback already started another.
-	if named and sprite and is_instance_valid(sprite) and sprite.animation == ended and not sprite.is_playing() \
-			and current_state == AnimState.IDLE:
-		set_idle()
-		is_playing = false
-		return
-
 	# Return to idle unless it's a looping animation — the finished DEAD fall is the rest state itself; re-entering set_idle here replayed it forever.
 	if not loop_animation and current_state != AnimState.IDLE and current_state != AnimState.DEAD:
+		set_idle()
+	## A bespoke one-shot carries current_state IDLE, so the rule above skipped it and it held its last frame
+	## until the scene's idle snap. It rests like the base poses, unless its callback already started another.
+	elif named and current_state == AnimState.IDLE and sprite and is_instance_valid(sprite) \
+			and sprite.animation == ended and not sprite.is_playing():
 		set_idle()
 
 	is_playing = false

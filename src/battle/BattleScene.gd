@@ -4172,11 +4172,11 @@ func _get_terrain_battle_track() -> String:
 
 func _on_battle_ended(victory: bool) -> void:
 	"""Handle battle end"""
+	_end_advance_run()
+	_clear_advance_aura()
 	## A hit still held for its impact frame lands NOW (number, then its death), before the defeat scene or the
 	## victory flow: an escape or a wipe mid-swing must not lean on the safety timer (cowir-battle 23687).
 	_land_held_hit()
-	_end_advance_run()
-	_clear_advance_aura()
 	## Tick 428: boss defeat dialogue line. Pre-fix only `intro` was
 	## wired — cave_rat_king, the dragons, etc. never spoke their
 	## "you've bested me" beat. Fires on player victory ONLY if the
