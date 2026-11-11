@@ -7051,9 +7051,10 @@ func _execute_healing_ability(caster: Combatant, ability: Dictionary, targets: A
 			continue  # already at full HP — skip the "recovers 0 HP" log + +0 popup (parity with the MP-restore fix)
 		any_healed = true
 		healing_done.emit(target, healed)
-		var heal_log = "  → [color=white]%s[/color] recovers [color=%s]%d[/color] HP!" % [target.combatant_name, AccessibilityPalette.bonus_bbcode(), healed]
+		var full: String = " (full)" if target.current_hp >= target.max_hp else ""
+		var heal_log = "  → [color=white]%s[/color] recovers [color=%s]%d[/color] HP%s!" % [target.combatant_name, AccessibilityPalette.bonus_bbcode(), healed, full]
 		battle_log_message.emit(heal_log)
-		print("  → %s recovers %d HP!" % [target.combatant_name, healed])
+		print("  → %s recovers %d HP%s!" % [target.combatant_name, healed, full])
 	if not any_healed:
 		battle_log_message.emit("[color=gray]%s's heal fizzles — no one needed it.[/color]" % caster.combatant_name)
 
