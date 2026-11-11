@@ -1407,6 +1407,7 @@ func _create_battle_sprites() -> void:
 
 		var animator = BattleAnimatorClass.new()
 		animator.setup(sprite)
+		animator.swing_budget_provider = swing_budget
 		# Rest state follows the combatant: dead when down, weak below the danger line (strict <,
 		# same beat as danger music), else idle. Leo's weak/dead sheets shipped for five jobs with
 		# no player (struktured 2026-09-02: neither visible in the live build).
@@ -1474,6 +1475,7 @@ func _create_battle_sprites() -> void:
 
 		var animator = BattleAnimatorClass.new()
 		animator.setup(sprite)
+		animator.swing_budget_provider = swing_budget
 		add_child(animator)
 		enemy_animators.append(animator)
 
@@ -4172,6 +4174,9 @@ func _on_battle_ended(victory: bool) -> void:
 	"""Handle battle end"""
 	_end_advance_run()
 	_clear_advance_aura()
+	## A hit still held for its impact frame lands NOW (number, then its death), before the defeat scene or the
+	## victory flow: an escape or a wipe mid-swing must not lean on the safety timer (cowir-battle 23687).
+	_land_held_hit()
 	## Tick 428: boss defeat dialogue line. Pre-fix only `intro` was
 	## wired — cave_rat_king, the dragons, etc. never spoke their
 	## "you've bested me" beat. Fires on player victory ONLY if the
@@ -4958,7 +4963,11 @@ func _on_action_executing(combatant: Combatant, action: Dictionary) -> void:
 
 			# Move attacker toward target, attack, then return
 			if attacker_sprite and target_sprite:
-				_animate_melee_attack(attacker_sprite, target_sprite, animator, target_animator)
+				_animate_melee_attack(attacker_sprite, target_sprite, animator, target_animator, 0.0, "", true)
+				## The stage is held for the whole lunge, so the next actor doesn't start under a long swing.
+				## Only raised where a hold was set above: turbo, console and 4x+ keep .790's per-action wait.
+				if BattleManager.presentation_hold > 0.0:
+					BattleManager.presentation_hold = maxf(BattleManager.presentation_hold, _last_lunge_length + 0.05)
 			else:
 				# Fallback if no sprites
 				animator.play_attack(func():
@@ -4990,6 +4999,8 @@ func _on_action_executing(combatant: Combatant, action: Dictionary) -> void:
 				var target_animator = _get_combatant_animator(targets[0])
 				if attacker_sprite and target_sprite:
 					_animate_melee_attack(attacker_sprite, target_sprite, animator, target_animator, 0.0, _ability_sheet_anim(ability, animator))
+					if BattleManager.presentation_hold > 0.0:
+						BattleManager.presentation_hold = maxf(BattleManager.presentation_hold, _last_lunge_length + 0.05)
 				else:
 					_play_ability_animation(anim_type, animator)
 					_spawn_ability_effects(ability, targets)
@@ -5262,9 +5273,14 @@ func _reset_attacker_home(combatant: Combatant) -> void:
 
 
 ## Timer-safe helpers: bound methods auto-disconnect when self frees, so battle teardown can't fire them with freed captures (smoke-log engine-error class, 2026-07-11).
-func _delayed_snap_and_idle(sprite, animator) -> void:
+func _delayed_snap_and_idle(sprite, animator, waited: float = 0.0) -> void:
 	# F12 2026-09-20: this snap fired after play_victory and froze the rogue on idle.
 	if _battle_victory:
+		return
+	## A flat 0.7 s cut every swing longer than 0.53 s at frame 4 (a 10-frame staff, a 13-frame boss). The snap
+	## is a safety net for a STUCK pose, so it waits while the pose is still drawing or the lunge still moving.
+	if waited < SNAP_WAIT_MAX and _swing_in_flight(sprite, animator):
+		get_tree().create_timer(0.1).timeout.connect(_delayed_snap_and_idle.bind(sprite, animator, waited + 0.1))
 		return
 	if sprite and is_instance_valid(sprite) and sprite.has_meta("home_position"):
 		var home = sprite.get_meta("home_position")
@@ -5272,6 +5288,16 @@ func _delayed_snap_and_idle(sprite, animator) -> void:
 			sprite.position = home
 	if animator and is_instance_valid(animator):
 		animator.set_idle()
+
+
+func _swing_in_flight(sprite, animator) -> bool:
+	if animator and is_instance_valid(animator) and animator.one_shot_running():
+		return true
+	if sprite and is_instance_valid(sprite) and sprite.has_meta("attack_tween"):
+		var lunge = sprite.get_meta("attack_tween")
+		if lunge is Tween and lunge.is_valid() and lunge.is_running():
+			return true
+	return false
 
 
 ## Impact effect for a staggered lunge. Timer-and-connect, the idiom this file already uses at
@@ -5423,7 +5449,7 @@ func _spawn_screen_flash(color: Color, fade_duration: float, delay: float = 0.0)
 	t.tween_callback(flash.queue_free)
 
 
-func _animate_melee_attack(attacker_sprite: Node2D, target_sprite: Node2D, attacker_anim: BattleAnimatorClass, target_anim: BattleAnimatorClass, lead_in: float = 0.0, ability_anim: String = "") -> void:
+func _animate_melee_attack(attacker_sprite: Node2D, target_sprite: Node2D, attacker_anim: BattleAnimatorClass, target_anim: BattleAnimatorClass, lead_in: float = 0.0, ability_anim: String = "", land_on_impact: bool = false) -> void:
 	"""Animate attacker moving to target, attacking, then returning"""
 	# Store home position as metadata to ensure we can always return
 	if not attacker_sprite.has_meta("home_position"):
@@ -5448,6 +5474,27 @@ func _animate_melee_attack(attacker_sprite: Node2D, target_sprite: Node2D, attac
 	## scene-owned tween then ran its contact callback with freed captures ("Lambda capture ... was freed").
 	var tween = attacker_sprite.create_tween()
 	attacker_sprite.set_meta("attack_tween", tween)
+	## The swing as it will be played: paced into swing_budget() by the animator, so every frame is drawn.
+	## At spotlight speeds the attacker HOLDS at the target for the swing's length, and a sheet with an authored
+	## impact frame lands its hit (fx, number, sound, death) on that frame. Turbo, console and 4x+ keep .790's
+	## timeline exactly: a 0.22 s hold and the hit at contact.
+	var spotlight: bool = _spotlight_pace()
+	var swing_len: float = 0.0
+	var impact_at: float = 0.0
+	if attacker_anim and is_instance_valid(attacker_anim):
+		var swing_name: String = attacker_anim.swing_anim_name(ability_anim)
+		swing_len = attacker_anim.played_length(swing_name)
+		## Only a plain single attack holds its hit for the impact frame: a cascade or a multi-target ability
+		## resolves several hits at once on the one damage buffer.
+		if spotlight and land_on_impact:
+			impact_at = attacker_anim.impact_time(swing_name)
+	var hold: float = strike_hold(swing_len, spotlight)
+	impact_at = minf(impact_at, hold)
+	var approach: float = 0.12 + (0.05 if _tier() == BattleJuice.Tier.FULL and BattleJuice.flag("anticipation") else 0.0)
+	_last_lunge_length = lead_in + approach + hold + 0.18
+	var held_hit: int = 0
+	if impact_at > 0.0:
+		held_hit = _hold_melee_damage(lead_in + approach + impact_at)
 	## The stagger, as an interval on the tween rather than an await in the caller's loop —
 	## CLAUDE.md: "`await` in a loop SERIALIZES what should be simultaneous", and the same trap
 	## inverted would turn a 5-member cascade into 5 sequential full lunges.
@@ -5490,17 +5537,84 @@ func _animate_melee_attack(attacker_sprite: Node2D, target_sprite: Node2D, attac
 				attacker_anim.play_named_animation(ability_anim)
 			else:
 				attacker_anim.play_attack()
+		if impact_at > 0.0:
+			return
 		_apply_hitstop(attacker_sprite, target_sprite)
 		_delayed_play_hit_fx(target_anim, target_sprite)
 	)
+	## An authored impact frame: the swing winds up first, and the hit lands when the art does.
+	if impact_at > 0.0:
+		tween.tween_interval(impact_at)
+		tween.tween_callback(func():
+			if not is_instance_valid(self):
+				return
+			_apply_hitstop(attacker_sprite, target_sprite)
+			_delayed_play_hit_fx(target_anim, target_sprite)
+			_land_melee_damage(held_hit)
+		)
 
-	# Hold at strike (0.3→0.22 — the hitstop supplies the emphasis the dead air used to fake).
-	tween.tween_interval(0.22)
+	# Hold at strike (0.3→0.22 — the hitstop supplies the emphasis the dead air used to fake), or the swing's
+	# own length at spotlight speeds.
+	tween.tween_interval(hold - impact_at)
 
 	# Settle home: decelerating ease-out (use stored home, not where we started this attack).
 	tween.set_trans(Tween.TRANS_QUAD)
 	tween.set_ease(Tween.EASE_OUT)
 	tween.tween_property(attacker_sprite, "position", home_pos, 0.18)
+
+
+## What a one-shot pose (a swing, a cast) may take before the next beat, in game seconds. Sheets longer than
+## this play FASTER, so all their frames are drawn: at spotlight speeds a 13-frame boss swing takes 0.75 s, not
+## 1.62, and at 4x+/turbo/console every swing fits the 0.5 s it had in .790 before the idle snap cut it.
+const SWING_CAP := 0.75
+const SWING_WINDOW := 0.5
+const STRIKE_HOLD := 0.22
+## The idle snap waits for a swing in flight, but never longer than this past its 0.7 s.
+const SNAP_WAIT_MAX := 2.0
+var _last_lunge_length: float = 0.0
+var _melee_hold_token: int = 0
+var _melee_hold_live: bool = false
+
+
+## Spotlight speeds (1x-2x, not turbo, not the console): the same gate the per-action stage hold uses.
+func _spotlight_pace() -> bool:
+	return not turbo_mode and not autogrind_console_mode and Engine.time_scale <= 0.55
+
+
+func swing_budget() -> float:
+	return SWING_CAP if _spotlight_pace() else SWING_WINDOW
+
+
+## Seconds the attacker stays at the target: the swing's played length at spotlight speeds, .790's 0.22 otherwise
+## (and for a 1-2 frame sheet, whose "swing" is shorter than that).
+static func strike_hold(played: float, spotlight: bool) -> float:
+	return maxf(STRIKE_HOLD, played) if spotlight else STRIKE_HOLD
+
+
+## Hold this swing's damage presentation (number, HP bar, hit sound, death) until its impact frame, on the
+## buffer Full Render casts already use. Returns a token; a safety timer lands it if the lunge tween dies.
+func _hold_melee_damage(lands_in: float) -> int:
+	_flush_full_render_damage()
+	_full_render_dmg_buffer = []
+	_full_render_dmg_attacker = _last_acting_combatant
+	_melee_hold_token += 1
+	_melee_hold_live = true
+	get_tree().create_timer(lands_in + 0.25).timeout.connect(_land_melee_damage.bind(_melee_hold_token))
+	return _melee_hold_token
+
+
+func _land_melee_damage(token: int) -> void:
+	if token != _melee_hold_token or token == 0:
+		return
+	_melee_hold_token += 1  # spent: the safety timer (or the tween) finds a different token and does nothing
+	_melee_hold_live = false
+	_flush_full_render_damage()
+
+
+## Land a swing's held hit at once, if one is waiting on its impact frame.
+func _land_held_hit() -> void:
+	if _melee_hold_live:
+		_land_melee_damage(_melee_hold_token)
 
 
 ## Fable-pass hitstop: freeze both combatants' anim playback ~70ms at contact. Visual-only (no Engine.time_scale touch — timers/music unaffected); restore is validity-guarded so mid-stop frees are safe.
@@ -5528,18 +5642,44 @@ func _spawn_lunge_ghost(src: AnimatedSprite2D) -> void:
 func _apply_hit_knockback(sprite: Node2D, direction: float = 1.0) -> void:
 	if not is_instance_valid(sprite):
 		return
-	var original_x = sprite.position.x
-	var original_y = sprite.position.y
+	var rest: Vector2 = _knockback_rest(sprite)
+	var original_x = rest.x
+	var original_y = rest.y
 	var knockback_x = original_x + (6.0 * direction)
 	# Vertical pop reads as weight; x-only knockback reads as a slide
 	var pop: float = 4.0 if _tier() <= BattleJuice.Tier.REDUCED else 0.0
-	var tween = create_tween()
+	var tween = _knockback_tween(sprite)
 	tween.tween_property(sprite, "position:x", knockback_x, 0.05)
 	if pop > 0.0:
 		tween.parallel().tween_property(sprite, "position:y", original_y - pop, 0.05)
 	tween.tween_property(sprite, "position:x", original_x, 0.15).set_ease(Tween.EASE_OUT)
 	if pop > 0.0:
 		tween.parallel().tween_property(sprite, "position:y", original_y, 0.15).set_ease(Tween.EASE_OUT)
+
+
+## Where a knocked sprite comes to rest: its HOME, not wherever the hit found it. A second hit inside the
+## first's 0.2 s captured a displaced origin and parked the monster 6-16 px off until it next acted (the
+## round-start reset only corrects enemies over 20 px out). A sprite mid-lunge keeps its own position: its
+## lunge tween owns the way home.
+func _knockback_rest(sprite: Node2D) -> Vector2:
+	if sprite.has_meta("attack_tween"):
+		var lunge = sprite.get_meta("attack_tween")
+		if lunge is Tween and lunge.is_valid() and lunge.is_running():
+			return sprite.position
+	var home: Vector2 = sprite.get_meta("home_position", sprite.position)
+	return home
+
+
+## One knockback per sprite, on the sprite: a new hit replaces the old tween (two wrote position at once), and
+## the tween dies with a sprite a grind restart frees.
+func _knockback_tween(sprite: Node2D) -> Tween:
+	if sprite.has_meta("knockback_tween"):
+		var old = sprite.get_meta("knockback_tween")
+		if old is Tween and old.is_valid():
+			old.kill()
+	var tween := sprite.create_tween()
+	sprite.set_meta("knockback_tween", tween)
+	return tween
 
 
 ## Delegate kept for the existing callers and their pins; new consumers call BattleJuice.battle_tier() directly (cowir-main ruling, msg 6501).
@@ -5577,7 +5717,7 @@ func _apply_weakness_hit_visuals(sprite: Node2D, element: String, elemental_mod:
 	var boost: float = clampf((elemental_mod - 1.0) * 0.6, 0.0, 0.4)
 	var flash_color: Color = Color(base_color.r * (1.0 + boost), base_color.g * (1.0 + boost), base_color.b * (1.0 + boost), 1.0)
 	sprite.modulate = flash_color
-	var tween = create_tween()
+	var tween = sprite.create_tween()  # on the sprite: it dies with a monster a grind restart frees
 	# Longer settle than the 0.12s white hit flash — reads as "it HURT". Two-phase: hold the color briefly, then ease back so the settle isn't a hard cut.
 	tween.tween_interval(0.08)
 	tween.tween_property(sprite, "modulate", Color.WHITE, 0.28).set_ease(Tween.EASE_OUT)
@@ -5589,11 +5729,12 @@ func _apply_weakness_hit_knockback(sprite: Node2D, direction: float = 1.0, eleme
 		return
 	# Regular knockback is 6.0 px. Weakness escalates to 12-16 depending on the mod (1.5x → 12, 2.0x → 16). Capped so an omega-weakness (uncommon but authored elsewhere) doesn't rocket the sprite off-screen.
 	var kb_magnitude: float = clampf(6.0 + 12.0 * (elemental_mod - 1.0), 6.0, 16.0)
-	var original_x = sprite.position.x
-	var original_y = sprite.position.y
+	var rest: Vector2 = _knockback_rest(sprite)
+	var original_x = rest.x
+	var original_y = rest.y
 	var knockback_x = original_x + (kb_magnitude * direction)
 	var pop: float = 7.0 if _tier() <= BattleJuice.Tier.REDUCED else 0.0
-	var tween = create_tween()
+	var tween = _knockback_tween(sprite)
 	tween.tween_property(sprite, "position:x", knockback_x, 0.08).set_ease(Tween.EASE_OUT)
 	if pop > 0.0:
 		tween.parallel().tween_property(sprite, "position:y", original_y - pop, 0.08).set_ease(Tween.EASE_OUT)
@@ -7863,6 +8004,7 @@ func _present_summoned_enemy(enemy: Combatant, monster_type: String, new_idx: in
 	# Create animator
 	var animator = BattleAnimatorClass.new()
 	animator.setup(sprite)
+	animator.swing_budget_provider = swing_budget
 	add_child(animator)
 	enemy_animators.append(animator)
 
