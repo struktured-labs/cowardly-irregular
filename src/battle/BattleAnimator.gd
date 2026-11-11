@@ -141,6 +141,8 @@ var frame_timer: float = 0.0
 var is_playing: bool = false
 var loop_animation: bool = true
 var _real_time_victory: bool = false
+## A bespoke one-shot (an ability's own art) is in flight: it returns to rest when it ends, like the base poses do.
+var _named_one_shot: bool = false
 var on_animation_complete: Callable
 
 ## Reference to the sprite node
@@ -211,8 +213,9 @@ func play_animation(state: AnimState, loop: bool = false, on_complete: Callable 
 	var anim_name = _resolve_animation(_get_animation_name(state))
 
 	_sync_victory_rate()
+	_named_one_shot = false
 	if sprite.sprite_frames and sprite.sprite_frames.has_animation(anim_name):
-		sprite.play(anim_name)
+		sprite.play(anim_name, rate_for(anim_name))
 		animation_started.emit(state)
 	else:
 		push_warning("BattleAnimator: Animation '%s' not found!" % anim_name)
@@ -222,6 +225,76 @@ func play_animation(state: AnimState, loop: bool = false, on_complete: Callable 
 		# silently stall when an animation is missing.
 		if on_complete.is_valid():
 			on_complete.call()
+
+
+## Poses that keep their own clock: rest loops, the death fall, and victory (real time, _sync_victory_rate).
+const UNPACED: Array[String] = ["idle", "weak", "walk", "dead", "defeat", "victory"]
+
+## Seconds of game time the owner gives a one-shot (a swing, a cast) before the next beat. Unset = no pacing.
+## A sheet longer than the budget plays FASTER so every frame is drawn, instead of being cut by the idle snap.
+var swing_budget_provider: Callable = Callable()
+
+
+## Game seconds `anim_name` takes at its authored rate; 0 when the sheet lacks it.
+func animation_length(anim_name: String) -> float:
+	if sprite == null or sprite.sprite_frames == null or not sprite.sprite_frames.has_animation(anim_name):
+		return 0.0
+	var frames: SpriteFrames = sprite.sprite_frames
+	var fps: float = frames.get_animation_speed(anim_name)
+	if fps <= 0.0:
+		return 0.0
+	var total := 0.0
+	for i in frames.get_frame_count(anim_name):
+		total += frames.get_frame_duration(anim_name, i)
+	return total / fps
+
+
+## The playback rate that fits `anim_name` into the owner's budget; never slower than authored.
+func rate_for(anim_name: String) -> float:
+	if anim_name in UNPACED or not swing_budget_provider.is_valid():
+		return 1.0
+	var budget: float = float(swing_budget_provider.call())
+	if budget <= 0.0:
+		return 1.0
+	return maxf(1.0, animation_length(anim_name) / budget)
+
+
+## Game seconds `anim_name` takes as it will be PLAYED (paced into the budget).
+func played_length(anim_name: String) -> float:
+	return animation_length(anim_name) / rate_for(anim_name)
+
+
+## Game seconds from a swing's first frame to its IMPACT frame as played; 0 = it lands at once (the default,
+## and every sheet without an authored `impact_frames` entry in sprite_manifest.json).
+func impact_time(anim_name: String) -> float:
+	if sprite == null or sprite.sprite_frames == null or not sprite.sprite_frames.has_animation(anim_name):
+		return 0.0
+	var frames: SpriteFrames = sprite.sprite_frames
+	var authored: Dictionary = frames.get_meta("impact_frames", {})
+	var at: int = clampi(int(authored.get(anim_name, 0)), 0, frames.get_frame_count(anim_name) - 1)
+	var fps: float = frames.get_animation_speed(anim_name)
+	if at <= 0 or fps <= 0.0:
+		return 0.0
+	var total := 0.0
+	for i in at:
+		total += frames.get_frame_duration(anim_name, i)
+	return total / fps / rate_for(anim_name)
+
+
+## The animation a melee swing will actually play: the ability's own art when the sheet has it, else the attack.
+func swing_anim_name(ability_anim: String = "") -> String:
+	if ability_anim != "" and has_named_animation(ability_anim):
+		return ability_anim
+	return _resolve_animation("attack")
+
+
+## A one-shot pose is still drawing its frames (a swing, a cast, a hit), so an idle snap now would cut it.
+func one_shot_running() -> bool:
+	if sprite == null or not is_instance_valid(sprite) or sprite.sprite_frames == null:
+		return false
+	if not sprite.is_playing() or not sprite.sprite_frames.has_animation(sprite.animation):
+		return false
+	return not sprite.sprite_frames.get_animation_loop(sprite.animation)
 
 
 ## Asks the owner what "at rest" means for this combatant: "idle", "weak" or "dead".
@@ -532,7 +605,8 @@ func play_named_animation(anim_name: String, on_complete: Callable = Callable())
 		loop_animation = false
 		on_animation_complete = on_complete
 		is_playing = true
-		sprite.play(anim_name)
+		_named_one_shot = not sprite.sprite_frames.get_animation_loop(anim_name) and not (anim_name in UNPACED)
+		sprite.play(anim_name, rate_for(anim_name))
 	else:
 		match anim_name:
 			"power_strike", "cleave", "provoke":
@@ -643,11 +717,22 @@ func _sync_victory_rate() -> void:
 func _on_sprite_animation_finished() -> void:
 	"""Handle animation completion"""
 	animation_finished.emit(current_state)
+	var ended: StringName = sprite.animation if sprite and is_instance_valid(sprite) else &""
+	var named: bool = _named_one_shot
+	_named_one_shot = false
 
 	# Call completion callback if set
 	if on_animation_complete.is_valid():
 		on_animation_complete.call()
 		on_animation_complete = Callable()
+
+	## A bespoke one-shot carries current_state IDLE, so the rule below skipped it and it held its last frame
+	## until the scene's idle snap. It rests like the base poses, unless its callback already started another.
+	if named and sprite and is_instance_valid(sprite) and sprite.animation == ended and not sprite.is_playing() \
+			and current_state == AnimState.IDLE:
+		set_idle()
+		is_playing = false
+		return
 
 	# Return to idle unless it's a looping animation — the finished DEAD fall is the rest state itself; re-entering set_idle here replayed it forever.
 	if not loop_animation and current_state != AnimState.IDLE and current_state != AnimState.DEAD:
