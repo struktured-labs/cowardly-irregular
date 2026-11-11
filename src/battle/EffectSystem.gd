@@ -514,11 +514,21 @@ func _animate_effect(effect: Node2D, effect_type: EffectType, on_complete: Calla
 
 ## Effect Animations
 
+var _background_tint_tween: Tween = null
+
+
 func _tint_battle_background(tint_color: Color, duration: float = 0.3) -> void:
 	"""Briefly tint the battle background then restore it (environmental spell reaction)"""
 	if not battle_background or not is_instance_valid(battle_background):
 		return
+	# Reduce Flashes: a whole-background colour snap IS a full-screen flash, and Firaga's eruptions fire several in a third of a second (controller 23883).
+	if _reduce_flashes():
+		return
+	# One tint at a time: a cast with an eruption per foe stacked tweens that fought over the same modulate.
+	if _background_tint_tween != null and _background_tint_tween.is_valid():
+		_background_tint_tween.kill()
 	var tween = create_tween()
+	_background_tint_tween = tween
 	# Snap to tint color then fade back to neutral over duration
 	tween.tween_property(battle_background, "modulate", tint_color, duration * 0.15).set_trans(Tween.TRANS_SINE)
 	tween.tween_property(battle_background, "modulate", Color.WHITE, duration * 0.85).set_trans(Tween.TRANS_SINE)
