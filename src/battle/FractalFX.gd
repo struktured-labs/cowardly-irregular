@@ -143,6 +143,13 @@ static func phase_duration(phase: Dictionary) -> float:
 			if phase.get("child") is Dictionary:
 				tail = _emit_duration(phase["child"], int(phase["child"].get("depth", 0)))
 			return float(phase.get("spin", 0.5)) + float(phase.get("fling", 0.35)) + tail
+		## These draw in order over `dur` and each flame then lives `life`, so the phase outlasts its sweep (battle 23786).
+		"arc":
+			return float(phase.get("dur", 0.16)) + float(phase.get("life", 0.3))
+		"streak":
+			return float(phase.get("dur", 0.12)) + float(phase.get("life", 0.22))
+		"puff":
+			return float(phase.get("dur", 0.6))
 		_:
 			return float(phase.get("dur", 0.2))
 

@@ -3298,6 +3298,11 @@ const MELEE_EACH_STAGGER := 0.05
 ## A status that LANDS plays its own beat at the target; anything not listed lands with its aura alone.
 const LANDED_BEATS := {"stun": "landed_stun", "blind": "landed_blind"}
 const FIZZLE_BEAT := "fizzle"
+## A melee move resolves its damage and statuses at the action's START and arrives 0.17 s later (0.05 pull-back +
+## 0.12 approach, _animate_melee_attack). Outcome beats wait out what is left of this, so Shield Bash's stars never
+## pop before the shield lands (battle 23786).
+const MELEE_CONTACT_S := 0.17
+var _melee_contact_timer: SceneTreeTimer = null
 
 
 ## Provoke's status carries the taunter's name ("taunted_<name>"), so it is matched by its prefix.
@@ -3453,7 +3458,11 @@ func _play_outcome_beat(seq_id: String, combatant: Combatant, from_combatant: Co
 	var from_sprite = _get_combatant_sprite(from_combatant) if from_combatant != null and is_instance_valid(from_combatant) else null
 	if from_sprite != null and is_instance_valid(from_sprite):
 		from = _stable_sprite_anchor(from_sprite)
-	EffectSystem.spawn_sequence(seq_id, from, to)
+	var wait := _melee_contact_timer.time_left if _melee_contact_timer != null else 0.0
+	if wait > 0.0:
+		get_tree().create_timer(wait).timeout.connect(_spawn_outcome_sequence.bind(seq_id, from, to))
+	else:
+		EffectSystem.spawn_sequence(seq_id, from, to)
 
 
 func _on_status_landed(status: String, combatant: Combatant) -> void:
@@ -5083,6 +5092,7 @@ func _on_action_executing(combatant: Combatant, action: Dictionary) -> void:
 				var target_animator = _get_combatant_animator(targets[0])
 				if attacker_sprite and target_sprite:
 					_animate_melee_attack(attacker_sprite, target_sprite, animator, target_animator, 0.0, _ability_sheet_anim(ability, animator))
+					_melee_contact_timer = get_tree().create_timer(MELEE_CONTACT_S)
 					_play_melee_overlay(combatant, attacker_sprite, ability, targets)
 				else:
 					_play_ability_animation(anim_type, animator)
