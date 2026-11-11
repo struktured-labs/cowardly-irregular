@@ -106,6 +106,115 @@ func spawn_effect(effect_type: EffectType, position: Vector2, on_complete: Calla
 	_animate_effect(effect, effect_type, on_complete, power)
 
 
+## ---- THE HIT SPARK: what a plain hit draws, by the weapon that made it. Code-drawn, no assets. ----
+## The scene owns the hit's weight (shake, knockback, hitstop); this only draws, and plays the weapon's hit cue.
+const HIT_SPARK_SHAPES: Array[String] = ["sword", "dagger", "axe", "staff", "piano_scythe", "claw"]
+const HIT_SPARK_DEFAULT := "claw"
+
+
+## The shape a weapon type draws; anything unknown (bare hands, a monster) rakes like a claw.
+static func hit_spark_shape(weapon_type: String) -> String:
+	return weapon_type if weapon_type in HIT_SPARK_SHAPES else HIT_SPARK_DEFAULT
+
+
+## `w` is the hit's weight (0-1): the spark grows and lingers with it. `dir` is the way the target is knocked
+## (-1 left, +1 right). `brief` = the shortest read, for fast battle speeds.
+func spawn_hit_spark(position: Vector2, weapon_type: String, w: float = 0.0, dir: float = -1.0, tint: Color = Color.WHITE, brief: bool = false) -> Node2D:
+	_play_effect_sound(EffectType.PHYSICAL, 1.0, weapon_type)
+	var spark := Node2D.new()
+	spark.name = "HitSpark_" + hit_spark_shape(weapon_type)
+	spark.position = position
+	spark.set_meta("shape", hit_spark_shape(weapon_type))
+	_effects_container.add_child(spark)
+	w = clampf(w, 0.0, 1.0)
+	var size: float = 1.0 + 1.3 * w
+	var life: float = 0.12 if brief else 0.20 + 0.16 * w
+	var flip: float = -1.0 if dir < 0.0 else 1.0
+	match hit_spark_shape(weapon_type):
+		"sword":
+			_spark_arc(spark, Vector2(-30, -34) * size, Vector2(34, 30) * size, 18.0 * size, 7.0 + 5.0 * w, tint, life, 0.0, flip)
+		"dagger":
+			_spark_line(spark, Vector2(-16, -20) * size, Vector2(18, 16) * size, 4.0 + 3.0 * w, tint, life * 0.8, 0.0, flip)
+			if not brief:
+				_spark_line(spark, Vector2(16, -20) * size, Vector2(-18, 16) * size, 4.0 + 3.0 * w, tint, life * 0.8, 0.05, flip)
+		"axe":
+			for i in 6:
+				var a: float = TAU * float(i) / 6.0 + 0.26
+				_spark_line(spark, Vector2(cos(a), sin(a)) * 6.0 * size, Vector2(cos(a), sin(a)) * 26.0 * size, 7.0 + 5.0 * w, tint, life, 0.0, flip)
+			if not brief:
+				_spark_ring(spark, Vector2(0, 26) * size, Vector2(34, 9) * size, 3.0 + 2.0 * w, tint, life * 1.2, 0.03)
+		"staff":
+			_spark_ring(spark, Vector2.ZERO, Vector2(22, 22) * size, 4.0 + 3.0 * w, tint, life, 0.0)
+			if not brief:
+				for i in 5:
+					var a2: float = -PI * (0.15 + 0.175 * float(i))
+					_spark_line(spark, Vector2(cos(a2), sin(a2)) * 14.0 * size, Vector2(cos(a2), sin(a2)) * 30.0 * size, 3.0, tint, life, 0.04, flip)
+		"piano_scythe":
+			_spark_arc(spark, Vector2(-44, -18) * size, Vector2(44, -6) * size, 34.0 * size, 9.0 + 6.0 * w, tint, life * 1.15, 0.0, flip)
+			if not brief:
+				for i in 3:
+					_spark_line(spark, Vector2(-20 + 20 * i, -30 - 6 * i) * size, Vector2(-20 + 20 * i, -22 - 6 * i) * size, 5.0, tint, life, 0.05 + 0.03 * i, flip)
+		_:
+			for i in (1 if brief else 3):
+				var off := Vector2(-12 + 12 * i, 0) * size
+				_spark_arc(spark, off + Vector2(-8, -26) * size, off + Vector2(8, 26) * size, 7.0 * size, 4.0 + 3.0 * w, tint, life * 0.85, 0.03 * i, flip)
+	get_tree().create_timer(life + 0.25).timeout.connect(spark.queue_free)
+	return spark
+
+
+func _spark_stroke(parent: Node2D, points: PackedVector2Array, width: float, tint: Color, life: float, delay: float, grow: bool = true) -> Line2D:
+	var line := Line2D.new()
+	line.points = points
+	line.width = width
+	line.default_color = Color(tint.r, tint.g, tint.b, 0.0)
+	line.begin_cap_mode = Line2D.LINE_CAP_ROUND
+	line.end_cap_mode = Line2D.LINE_CAP_ROUND
+	line.antialiased = false
+	## Thin at both ends, full in the middle: a cut, not a bar.
+	var taper := Curve.new()
+	taper.add_point(Vector2(0.0, 0.15))
+	taper.add_point(Vector2(0.5, 1.0))
+	taper.add_point(Vector2(1.0, 0.15))
+	line.width_curve = taper
+	parent.add_child(line)
+	var t := line.create_tween()
+	if delay > 0.0:
+		t.tween_interval(delay)
+	t.tween_property(line, "default_color:a", 1.0, 0.02)
+	if grow:
+		line.scale = Vector2(0.55, 0.55)
+		t.parallel().tween_property(line, "scale", Vector2.ONE, life * 0.35).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	t.tween_property(line, "default_color:a", 0.0, life * 0.65).set_ease(Tween.EASE_IN)
+	t.parallel().tween_property(line, "width", width * 0.2, life * 0.65)
+	return line
+
+
+func _spark_line(parent: Node2D, from: Vector2, to: Vector2, width: float, tint: Color, life: float, delay: float, flip: float) -> void:
+	_spark_stroke(parent, PackedVector2Array([Vector2(from.x * flip, from.y), Vector2(to.x * flip, to.y)]), width, tint, life, delay)
+
+
+## A curved cut from `from` to `to`, bowed `bulge` px to one side.
+func _spark_arc(parent: Node2D, from: Vector2, to: Vector2, bulge: float, width: float, tint: Color, life: float, delay: float, flip: float) -> void:
+	var pts := PackedVector2Array()
+	var normal: Vector2 = (to - from).orthogonal().normalized()
+	for i in 9:
+		var k: float = float(i) / 8.0
+		var p: Vector2 = from.lerp(to, k) + normal * bulge * sin(PI * k)
+		pts.append(Vector2(p.x * flip, p.y))
+	_spark_stroke(parent, pts, width, tint, life, delay)
+
+
+func _spark_ring(parent: Node2D, center: Vector2, radius: Vector2, width: float, tint: Color, life: float, delay: float) -> void:
+	var pts := PackedVector2Array()
+	for i in 21:
+		var a: float = TAU * float(i) / 20.0
+		pts.append(center + Vector2(cos(a) * radius.x, sin(a) * radius.y))
+	var ring := _spark_stroke(parent, pts, width, tint, life, delay, false)
+	ring.width_curve = null
+	ring.scale = Vector2(0.35, 0.35)
+	ring.create_tween().tween_property(ring, "scale", Vector2(1.25, 1.25), life + delay).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+
+
 func spawn_effect_on_target(effect_type: EffectType, target_sprite: Node2D, on_complete: Callable = Callable(), power: float = 1.0, weapon_type: String = "") -> void:
 	"""Spawn effect on a target sprite with power scaling"""
 	if not is_instance_valid(target_sprite):

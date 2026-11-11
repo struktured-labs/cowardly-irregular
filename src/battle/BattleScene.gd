@@ -5327,11 +5327,16 @@ func _delayed_play_hit_fx(target_anim, target_sprite) -> void:
 		var w: float = float(hit["w"])
 		target_anim.play_hit()
 		# Stable anchor: multi-hit chains can arrive while target is still tweening back from the previous hit (msg 2569 #1). weapon_type from the cycle-12 signal cache — solo melee = _last_acting_combatant is the attacker (msg 2754 cycle 14).
-		EffectSystem.spawn_effect(EffectSystem.EffectType.PHYSICAL, _stable_sprite_anchor(target_sprite), Callable(), 1.0, _weapon_type_for(_last_acting_combatant))
 		var kb_dir = -1.0 if enemy_sprite_nodes.has(target_sprite) else 1.0
+		var jt := _tier()
+		## The OFF tier (16x+, turbo, the console) keeps .790's effect; below it the hit draws its WEAPON's spark,
+		## sized by the weight, and the weight (not the effect) owns the shake.
+		if jt == BattleJuice.Tier.OFF:
+			EffectSystem.spawn_effect(EffectSystem.EffectType.PHYSICAL, _stable_sprite_anchor(target_sprite), Callable(), 1.0, _weapon_type_for(_last_acting_combatant))
+		else:
+			EffectSystem.spawn_hit_spark(_stable_sprite_anchor(target_sprite), hit_spark_for(_last_acting_combatant), w, kb_dir, _hit_spark_tint(_last_acting_combatant), jt == BattleJuice.Tier.MINIMAL)
 		_apply_hit_knockback(target_sprite, kb_dir, lerpf(HIT_KNOCKBACK.x, HIT_KNOCKBACK.y, w))
 		_apply_hit_flash(target_sprite)
-		var jt := _tier()
 		if jt <= BattleJuice.Tier.REDUCED:
 			BattleJuice.squash(target_sprite, 1.12 + HIT_SQUASH * w, 0.88 - HIT_SQUASH * 0.75 * w)
 			if BattleJuice.flag("hit_sparks"):
@@ -5606,6 +5611,27 @@ static func hit_weight(amount: int, max_hp: int, is_crit: bool = false, elementa
 	if elemental_mod > 1.0:
 		w += HIT_WEAKNESS_BONUS * (elemental_mod - 1.0)
 	return clampf(w, 0.0, 1.0)
+
+
+## The spark an attacker's hit draws: its weapon type, or a monster row's optional `hit_spark`; EffectSystem
+## falls back to the claw for bare hands and anything unnamed.
+func hit_spark_for(attacker: Combatant) -> String:
+	if attacker == null or not is_instance_valid(attacker):
+		return ""
+	if attacker.has_meta("monster_type") and _enemy_spawner != null:
+		var row = _load_monsters_data().get(str(attacker.get_meta("monster_type", "")), {})
+		return str(row.get("hit_spark", "")) if row is Dictionary else ""
+	return _weapon_type_for(attacker)
+
+
+## A weapon that carries an element tints its spark with that element's weakness colour, toned toward white.
+func _hit_spark_tint(attacker: Combatant) -> Color:
+	var element: String = _weapon_element_for(attacker) if attacker != null and is_instance_valid(attacker) and not attacker.has_meta("monster_type") else ""
+	if element == "" or not WEAKNESS_ELEMENT_COLORS.has(element):
+		return Color.WHITE
+	var c: Color = WEAKNESS_ELEMENT_COLORS[element]
+	var peak: float = maxf(c.r, maxf(c.g, c.b))
+	return Color(c.r / peak, c.g / peak, c.b / peak).lerp(Color.WHITE, 0.25)
 
 
 static func hit_trauma(w: float) -> float:

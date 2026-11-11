@@ -252,3 +252,49 @@ func test_a_plain_attack_holds_its_hit_until_contact() -> void:
 				assert_not_null(scene._full_render_dmg_buffer, "the held hit landed before the attacker arrived")
 				await wait_seconds(0.5)
 				assert_null(scene._full_render_dmg_buffer, "the held hit never landed at contact")
+
+
+## Every weapon type the game can equip draws its OWN spark; bare hands and monsters rake like a claw.
+func test_every_weapon_type_draws_its_own_spark() -> void:
+	var equipment: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/equipment.json"))
+	var types := {}
+	var stack: Array = [equipment]
+	while not stack.is_empty():
+		var node = stack.pop_back()
+		if node is Dictionary:
+			if node.has("weapon_type"):
+				types[str(node["weapon_type"])] = true
+			stack.append_array(node.values())
+		elif node is Array:
+			stack.append_array(node)
+	assert_gt(types.size(), 3, "VOID: only %d weapon types found in equipment.json" % types.size())
+	for weapon_type in types.keys():
+		assert_eq(EffectSystem.hit_spark_shape(weapon_type), weapon_type, "weapon type '%s' has no spark of its own and rakes like a claw" % weapon_type)
+	assert_eq(EffectSystem.hit_spark_shape(""), "claw", "CONTROL: bare hands fall back to the claw")
+	assert_eq(EffectSystem.hit_spark_shape("no_such_weapon"), "claw", "CONTROL: an unknown type falls back to the claw")
+	## Each shape really draws, differently, and bigger for a heavier hit.
+	var strokes := {}
+	for shape in EffectSystem.HIT_SPARK_SHAPES:
+		var light: Node2D = EffectSystem.spawn_hit_spark(Vector2(200, 200), shape, 0.0)
+		var heavy: Node2D = EffectSystem.spawn_hit_spark(Vector2(200, 200), shape, 1.0)
+		assert_eq(light.get_meta("shape"), shape)
+		assert_gt(light.get_child_count(), 0, "%s draws nothing" % shape)
+		strokes[shape] = "%d:%s" % [light.get_child_count(), str((light.get_child(0) as Line2D).points)]
+		assert_gt(_reach(heavy), _reach(light) * 1.5, "%s is no bigger at weight 1 than at weight 0" % shape)
+		var brief: Node2D = EffectSystem.spawn_hit_spark(Vector2(200, 200), shape, 0.5, -1.0, Color.WHITE, true)
+		assert_lte(brief.get_child_count(), light.get_child_count(), "%s draws MORE in its brief form" % shape)
+		for n in [light, heavy, brief]:
+			n.queue_free()
+	var distinct := {}
+	for shape in strokes.keys():
+		distinct[strokes[shape]] = true
+	assert_eq(distinct.size(), EffectSystem.HIT_SPARK_SHAPES.size(), "two weapon types draw the same spark")
+
+
+func _reach(spark: Node2D) -> float:
+	var far := 0.0
+	for child in spark.get_children():
+		if child is Line2D:
+			for p in (child as Line2D).points:
+				far = maxf(far, p.length())
+	return far
