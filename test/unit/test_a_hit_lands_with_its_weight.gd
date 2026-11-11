@@ -171,10 +171,27 @@ func test_turbo_and_the_console_get_the_old_hit() -> void:
 	GameState.screen_shake_enabled = true
 	Engine.time_scale = 4.0
 	assert_eq(BattleJuice.battle_tier(), BattleJuice.Tier.OFF, "VOID: 16x must be the OFF tier")
+	## At the OFF tier the hit is .790's: the old effect and its one fixed shake, whatever the hit weighed.
+	var before: int = EffectSystem._effects_container.get_child_count()
+	scene._delayed_play_hit_fx(f[3], es)
+	var chip_trauma: float = rig._trauma
+	rig._trauma = 0.0
 	scene._note_hit_weight(foe, 80, false, "", 1.0)
 	scene._delayed_play_hit_fx(f[3], es)
-	assert_eq(rig._trauma, 0.0, "a heavy hit shook the screen at 16x")
-
+	assert_almost_eq(rig._trauma, chip_trauma, 0.0001, "at 16x a heavy hit shook differently (%.2f) from a chip hit (%.2f)" % [rig._trauma, chip_trauma])
+	var sparks := 0
+	for child in EffectSystem._effects_container.get_children():
+		if str(child.name).begins_with("HitSpark_"):
+			sparks += 1
+	assert_eq(sparks, 0, "the weapon spark drew at 16x")
+	assert_gt(EffectSystem._effects_container.get_child_count(), before, "CONTROL: the old hit effect must still draw at 16x")
+	Engine.time_scale = 0.5
+	scene._delayed_play_hit_fx(f[3], es)
+	var drawn := 0
+	for child in EffectSystem._effects_container.get_children():
+		if str(child.name).begins_with("HitSpark_"):
+			drawn += 1
+	assert_gt(drawn, 0, "CONTROL: at 2x the weapon spark must draw")
 
 func test_a_heavier_hit_still_rumbles_inside_the_gap() -> void:
 	Engine.time_scale = 0.5
