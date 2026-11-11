@@ -4928,6 +4928,7 @@ func _on_action_executing(combatant: Combatant, action: Dictionary) -> void:
 	"""Handle action executing - play animations here"""
 	# msg 2749 cycle 12: cache the signal-arg combatant so _on_damage_dealt / _play_ability_animation don't have to read the stale BattleManager.current_combatant. Cleared in _on_action_executed so a status-tick damage_dealt emit outside an action (poison at round-end, reactive counter) never carries a stale attribution.
 	_last_acting_combatant = combatant
+	_action_serial += 1  # a hit's weight belongs to ONE action (see _note_hit_weight)
 	if combatant in BattleManager.enemy_party and str(action.get("type", "")) in ["attack", "ability"] \
 			and randf() < float(BossBarks.data().get("windup_chance", 0.5)):
 		_boss_bark(combatant, "windup")
@@ -5500,6 +5501,7 @@ func _animate_melee_attack(attacker_sprite: Node2D, target_sprite: Node2D, attac
 	## timeline exactly: a 0.22 s hold and the hit at contact.
 	var spotlight: bool = _spotlight_pace()
 	var attacker: Combatant = _combatant_of_sprite(attacker_sprite)
+	var action: int = _action_serial  # this lunge's own action, captured for its contact
 	var swing_len: float = 0.0
 	var impact_at: float = 0.0
 	if attacker_anim and is_instance_valid(attacker_anim):
@@ -5563,7 +5565,7 @@ func _animate_melee_attack(attacker_sprite: Node2D, target_sprite: Node2D, attac
 				attacker_anim.play_attack()
 		if impact_at > 0.0:
 			return
-		_apply_hitstop(attacker_sprite, target_sprite, hitstop_for(_land_hit_weight(target_sprite, attacker)))
+		_apply_hitstop(attacker_sprite, target_sprite, hitstop_for(_land_hit_weight(target_sprite, attacker, action)))
 		_delayed_play_hit_fx(target_anim, target_sprite)
 		_land_melee_damage(held_hit)
 	)
@@ -5573,7 +5575,7 @@ func _animate_melee_attack(attacker_sprite: Node2D, target_sprite: Node2D, attac
 		tween.tween_callback(func():
 			if not is_instance_valid(self):
 				return
-			_apply_hitstop(attacker_sprite, target_sprite, hitstop_for(_land_hit_weight(target_sprite, attacker)))
+			_apply_hitstop(attacker_sprite, target_sprite, hitstop_for(_land_hit_weight(target_sprite, attacker, action)))
 			_delayed_play_hit_fx(target_anim, target_sprite)
 			_land_melee_damage(held_hit)
 		)
@@ -5663,8 +5665,8 @@ func _note_hit_weight(target: Combatant, amount: int, is_crit: bool, _element: S
 		return
 	var kill: bool = not target.is_alive or target.current_hp <= 0
 	var w: float = hit_weight(amount, target.max_hp, is_crit, elemental_mod, kill)
-	var waiting: Dictionary = _peek_hit_weight(sprite, by)
-	var hit := {"w": maxf(w, float(waiting["w"])), "kill": kill or bool(waiting["kill"]), "at": Time.get_ticks_msec(), "by": by.get_instance_id()}
+	var waiting: Dictionary = _peek_hit_weight(sprite, by, _action_serial)
+	var hit := {"w": maxf(w, float(waiting["w"])), "kill": kill or bool(waiting["kill"]), "at": Time.get_ticks_msec(), "by": by.get_instance_id(), "act": _action_serial}
 	sprite.set_meta("hit_weight", hit)
 	## A heavy stop pauses the lunge, so the stage is held that much longer for a held single attack: the next
 	## actor must not start while this one is frozen at its target. Only where a hold was set (spotlight pace).
@@ -5674,19 +5676,21 @@ func _note_hit_weight(target: Combatant, amount: int, is_crit: bool, _element: S
 		_melee_hold_extra = extra
 
 
-func _peek_hit_weight(sprite: Node2D, attacker: Combatant) -> Dictionary:
+## `action` = the serial of the action whose lunge is landing: the same attacker's EARLIER action (a Fira
+## before a swing in one Advance) must not lend this swing its weight.
+func _peek_hit_weight(sprite: Node2D, attacker: Combatant, action: int) -> Dictionary:
 	if sprite != null and is_instance_valid(sprite) and sprite.has_meta("hit_weight") and attacker != null and is_instance_valid(attacker):
 		var noted: Dictionary = sprite.get_meta("hit_weight")
 		var fresh: bool = Time.get_ticks_msec() - int(noted.get("at", 0)) <= HIT_WEIGHT_TTL_MSEC * maxf(1.0, 1.0 / maxf(Engine.time_scale, 0.01))
-		if fresh and int(noted.get("by", 0)) == attacker.get_instance_id():
+		if fresh and int(noted.get("by", 0)) == attacker.get_instance_id() and int(noted.get("act", -1)) == action:
 			return noted
 	return {"w": 0.0, "kill": false}
 
 
 ## The contact: spend the weight this attacker's action left on the target, and leave it where
 ## _delayed_play_hit_fx reads it. No weight (a miss, another attacker's note) = a chip hit, .790's recipe.
-func _land_hit_weight(target_sprite: Node2D, attacker: Combatant) -> Dictionary:
-	var hit: Dictionary = _peek_hit_weight(target_sprite, attacker)
+func _land_hit_weight(target_sprite: Node2D, attacker: Combatant, action: int) -> Dictionary:
+	var hit: Dictionary = _peek_hit_weight(target_sprite, attacker, action)
 	if target_sprite != null and is_instance_valid(target_sprite):
 		if float(hit["w"]) > 0.0:
 			target_sprite.remove_meta("hit_weight")
@@ -5706,6 +5710,7 @@ var _last_lunge_length: float = 0.0
 var _melee_hold_token: int = 0
 var _melee_hold_live: bool = false
 var _melee_hold_extra: float = 0.0
+var _action_serial: int = 0
 
 
 ## Spotlight speeds (1x-2x, not turbo, not the console): the same gate the per-action stage hold uses.
