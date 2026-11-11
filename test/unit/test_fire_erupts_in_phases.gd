@@ -23,6 +23,15 @@ func _kinds(seq: Dictionary) -> Array:
 	return out
 
 
+## Phases a tier-1 caster sees.
+func _base(seq: Dictionary) -> int:
+	var n := 0
+	for ph in seq.get("phases", []):
+		if int(ph.get("min_tier", 1)) <= 1:
+			n += 1
+	return n
+
+
 func _first(seq: Dictionary, kind: String) -> Dictionary:
 	for ph in seq.get("phases", []):
 		if str(ph.get("kind", "")) == kind:
@@ -64,8 +73,8 @@ func test_each_tier_is_visibly_bigger_than_the_last() -> void:
 	assert_false("pillar" in _kinds(fire), "CONTROL: plain Fire has no pillar")
 	assert_true("pillar" in _kinds(fira), "Fira adds a pillar of flame")
 	assert_eq(_kinds(firaga).count("eruption"), 2, "Firaga adds a SECOND detonation")
-	assert_gt(_kinds(fira).size(), _kinds(fire).size(), "more phases per tier")
-	assert_gt(_kinds(firaga).size(), _kinds(fira).size(), "more phases per tier")
+	assert_gt(_base(fira), _base(fire), "more phases per tier (for the same caster)")
+	assert_gt(_base(firaga), _base(fira), "more phases per tier (for the same caster)")
 	assert_gt(int(_first(firaga, "gather").get("count", 0)), int(_first(fire, "gather").get("count", 0)), "and a bigger gather")
 
 

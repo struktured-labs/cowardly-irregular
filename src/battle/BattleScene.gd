@@ -513,6 +513,7 @@ func _ready() -> void:
 	BattleManager.round_started.connect(_on_round_started_corruption_glitch)  # save-corruption visual_glitch stutter
 	BattleManager.round_ended.connect(_on_round_ended)
 	BattleManager.damage_dealt.connect(_on_damage_dealt)
+	BattleManager.damage_dealt.connect(_note_hit_weight)
 	BattleManager.attack_missed.connect(_on_attack_missed)
 	BattleManager.hit_negated.connect(_on_hit_negated)
 	BattleManager.cast_fizzled.connect(_on_cast_fizzled)
@@ -625,6 +626,8 @@ func _exit_tree() -> void:
 		BattleManager.round_started.disconnect(_on_round_started_corruption_glitch)
 	if BattleManager.damage_dealt.is_connected(_on_damage_dealt):
 		BattleManager.damage_dealt.disconnect(_on_damage_dealt)
+	if BattleManager.damage_dealt.is_connected(_note_hit_weight):
+		BattleManager.damage_dealt.disconnect(_note_hit_weight)
 	if BattleManager.attack_missed.is_connected(_on_attack_missed):
 		BattleManager.attack_missed.disconnect(_on_attack_missed)
 	if BattleManager.status_resisted.is_connected(_on_status_resisted):
@@ -1410,6 +1413,7 @@ func _create_battle_sprites() -> void:
 
 		var animator = BattleAnimatorClass.new()
 		animator.setup(sprite)
+		animator.swing_budget_provider = swing_budget
 		# Rest state follows the combatant: dead when down, weak below the danger line (strict <,
 		# same beat as danger music), else idle. Leo's weak/dead sheets shipped for five jobs with
 		# no player (struktured 2026-09-02: neither visible in the live build).
@@ -1477,6 +1481,7 @@ func _create_battle_sprites() -> void:
 
 		var animator = BattleAnimatorClass.new()
 		animator.setup(sprite)
+		animator.swing_budget_provider = swing_budget
 		add_child(animator)
 		enemy_animators.append(animator)
 
@@ -3048,7 +3053,7 @@ func _play_ability_full_render(caster: Combatant, caster_sprite: Node2D, animato
 		var settle := create_tween()
 		caster_sprite.set_meta("attack_tween", settle)
 		settle.tween_property(caster_sprite, "position", caster_home, 0.14).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-		settle.parallel().tween_property(caster_sprite, "modulate", Color.WHITE, 0.18)
+		settle.parallel().tween_property(caster_sprite, "modulate", rest_modulate(caster_sprite), 0.18)
 	_full_render_depth = maxi(0, _full_render_depth - 1)
 	if _full_render_depth == 0:
 		_full_render_set_dim(false)
@@ -3298,6 +3303,11 @@ const MELEE_EACH_STAGGER := 0.05
 ## A status that LANDS plays its own beat at the target; anything not listed lands with its aura alone.
 const LANDED_BEATS := {"stun": "landed_stun", "blind": "landed_blind"}
 const FIZZLE_BEAT := "fizzle"
+## A melee move resolves its damage and statuses at the action's START and arrives 0.17 s later (0.05 pull-back +
+## 0.12 approach, _animate_melee_attack). Outcome beats wait out what is left of this, so Shield Bash's stars never
+## pop before the shield lands (battle 23786).
+const MELEE_CONTACT_S := 0.17
+var _melee_contact_timer: SceneTreeTimer = null
 
 
 ## Provoke's status carries the taunter's name ("taunted_<name>"), so it is matched by its prefix.
@@ -3453,7 +3463,11 @@ func _play_outcome_beat(seq_id: String, combatant: Combatant, from_combatant: Co
 	var from_sprite = _get_combatant_sprite(from_combatant) if from_combatant != null and is_instance_valid(from_combatant) else null
 	if from_sprite != null and is_instance_valid(from_sprite):
 		from = _stable_sprite_anchor(from_sprite)
-	EffectSystem.spawn_sequence(seq_id, from, to)
+	var wait := _melee_contact_timer.time_left if _melee_contact_timer != null else 0.0
+	if wait > 0.0:
+		get_tree().create_timer(wait).timeout.connect(_spawn_outcome_sequence.bind(seq_id, from, to))
+	else:
+		EffectSystem.spawn_sequence(seq_id, from, to)
 
 
 func _on_status_landed(status: String, combatant: Combatant) -> void:
@@ -4265,6 +4279,9 @@ func _on_battle_ended(victory: bool) -> void:
 	"""Handle battle end"""
 	_end_advance_run()
 	_clear_advance_aura()
+	## A hit still held for its impact frame lands NOW (number, then its death), before the defeat scene or the
+	## victory flow: an escape or a wipe mid-swing must not lean on the safety timer (cowir-battle 23687).
+	_land_held_hit()
 	## Tick 428: boss defeat dialogue line. Pre-fix only `intro` was
 	## wired — cave_rat_king, the dragons, etc. never spoke their
 	## "you've bested me" beat. Fires on player victory ONLY if the
@@ -4910,8 +4927,10 @@ func _dim_inactive_party(active_idx: int, dim_others: bool) -> void:
 		var target_mod: Color = Color.WHITE
 		if dim_others and i != active_idx:
 			target_mod = ACTIVE_PC_DIM_COLOR
-		var t = create_tween()
-		t.tween_property(s, "modulate", target_mod, ACTIVE_PC_STEP_TWEEN_TIME)
+		## The dim is a FACTOR on the rest colour, so a poisoned or fallen member keeps its tint under it.
+		s.set_meta("dim_modulate", target_mod)
+		var t = _flash_tween(s)
+		t.tween_property(s, "modulate", rest_modulate(s), ACTIVE_PC_STEP_TWEEN_TIME)
 
 
 func _on_selection_turn_started(combatant: Combatant) -> void:
@@ -5011,6 +5030,7 @@ func _on_action_executing(combatant: Combatant, action: Dictionary) -> void:
 	"""Handle action executing - play animations here"""
 	# msg 2749 cycle 12: cache the signal-arg combatant so _on_damage_dealt / _play_ability_animation don't have to read the stale BattleManager.current_combatant. Cleared in _on_action_executed so a status-tick damage_dealt emit outside an action (poison at round-end, reactive counter) never carries a stale attribution.
 	_last_acting_combatant = combatant
+	_action_serial += 1  # a hit's weight belongs to ONE action (see _note_hit_weight)
 	if combatant in BattleManager.enemy_party and str(action.get("type", "")) in ["attack", "ability"] \
 			and randf() < float(BossBarks.data().get("windup_chance", 0.5)):
 		_boss_bark(combatant, "windup")
@@ -5051,7 +5071,11 @@ func _on_action_executing(combatant: Combatant, action: Dictionary) -> void:
 
 			# Move attacker toward target, attack, then return
 			if attacker_sprite and target_sprite:
-				_animate_melee_attack(attacker_sprite, target_sprite, animator, target_animator)
+				_animate_melee_attack(attacker_sprite, target_sprite, animator, target_animator, 0.0, "", true)
+				## The stage is held for the whole lunge, so the next actor doesn't start under a long swing.
+				## Only raised where a hold was set above: turbo, console and 4x+ keep .790's per-action wait.
+				if BattleManager.presentation_hold > 0.0:
+					BattleManager.presentation_hold = maxf(BattleManager.presentation_hold, _last_lunge_length + 0.05)
 			else:
 				# Fallback if no sprites
 				animator.play_attack(func():
@@ -5083,6 +5107,9 @@ func _on_action_executing(combatant: Combatant, action: Dictionary) -> void:
 				var target_animator = _get_combatant_animator(targets[0])
 				if attacker_sprite and target_sprite:
 					_animate_melee_attack(attacker_sprite, target_sprite, animator, target_animator, 0.0, _ability_sheet_anim(ability, animator))
+					if BattleManager.presentation_hold > 0.0:
+						BattleManager.presentation_hold = maxf(BattleManager.presentation_hold, _last_lunge_length + 0.05)
+					_melee_contact_timer = get_tree().create_timer(MELEE_CONTACT_S)
 					_play_melee_overlay(combatant, attacker_sprite, ability, targets)
 				else:
 					_play_ability_animation(anim_type, animator)
@@ -5356,9 +5383,14 @@ func _reset_attacker_home(combatant: Combatant) -> void:
 
 
 ## Timer-safe helpers: bound methods auto-disconnect when self frees, so battle teardown can't fire them with freed captures (smoke-log engine-error class, 2026-07-11).
-func _delayed_snap_and_idle(sprite, animator) -> void:
+func _delayed_snap_and_idle(sprite, animator, waited: float = 0.0) -> void:
 	# F12 2026-09-20: this snap fired after play_victory and froze the rogue on idle.
 	if _battle_victory:
+		return
+	## A flat 0.7 s cut every swing longer than 0.53 s at frame 4 (a 10-frame staff, a 13-frame boss). The snap
+	## is a safety net for a STUCK pose, so it waits while the pose is still drawing or the lunge still moving.
+	if waited < SNAP_WAIT_MAX and _swing_in_flight(sprite, animator):
+		get_tree().create_timer(0.1).timeout.connect(_delayed_snap_and_idle.bind(sprite, animator, waited + 0.1))
 		return
 	if sprite and is_instance_valid(sprite) and sprite.has_meta("home_position"):
 		var home = sprite.get_meta("home_position")
@@ -5366,6 +5398,16 @@ func _delayed_snap_and_idle(sprite, animator) -> void:
 			sprite.position = home
 	if animator and is_instance_valid(animator):
 		animator.set_idle()
+
+
+func _swing_in_flight(sprite, animator) -> bool:
+	if animator and is_instance_valid(animator) and animator.one_shot_running():
+		return true
+	if sprite and is_instance_valid(sprite) and sprite.has_meta("attack_tween"):
+		var lunge = sprite.get_meta("attack_tween")
+		if lunge is Tween and lunge.is_valid() and lunge.is_running():
+			return true
+	return false
 
 
 ## Impact effect for a staggered lunge. Timer-and-connect, the idiom this file already uses at
@@ -5386,18 +5428,33 @@ func _spawn_impact_now(target_sprite: Node2D, weapon_type: String) -> void:
 
 func _delayed_play_hit_fx(target_anim, target_sprite) -> void:
 	if target_anim and is_instance_valid(target_anim) and is_instance_valid(target_sprite):
+		var hit: Dictionary = target_sprite.get_meta("hit_landing", {"w": 0.0, "kill": false})
+		target_sprite.remove_meta("hit_landing")
+		var w: float = float(hit["w"])
 		target_anim.play_hit()
 		# Stable anchor: multi-hit chains can arrive while target is still tweening back from the previous hit (msg 2569 #1). weapon_type from the cycle-12 signal cache — solo melee = _last_acting_combatant is the attacker (msg 2754 cycle 14).
-		EffectSystem.spawn_effect(EffectSystem.EffectType.PHYSICAL, _stable_sprite_anchor(target_sprite), Callable(), 1.0, _weapon_type_for(_last_acting_combatant))
 		var kb_dir = -1.0 if enemy_sprite_nodes.has(target_sprite) else 1.0
-		_apply_hit_knockback(target_sprite, kb_dir)
-		_apply_hit_flash(target_sprite)
 		var jt := _tier()
+		## The OFF tier (16x+, turbo, the console) keeps .790's effect; below it the hit draws its WEAPON's spark,
+		## sized by the weight, and the weight (not the effect) owns the shake.
+		if jt == BattleJuice.Tier.OFF:
+			EffectSystem.spawn_effect(EffectSystem.EffectType.PHYSICAL, _stable_sprite_anchor(target_sprite), Callable(), 1.0, _weapon_type_for(_last_acting_combatant))
+		else:
+			EffectSystem.spawn_hit_spark(_stable_sprite_anchor(target_sprite), hit_spark_for(_last_acting_combatant), w, kb_dir, _hit_spark_tint(_last_acting_combatant), jt == BattleJuice.Tier.MINIMAL)
+		_apply_hit_knockback(target_sprite, kb_dir, lerpf(HIT_KNOCKBACK.x, HIT_KNOCKBACK.y, w))
+		_apply_hit_flash(target_sprite)
 		if jt <= BattleJuice.Tier.REDUCED:
-			BattleJuice.squash(target_sprite)
+			BattleJuice.squash(target_sprite, 1.12 + HIT_SQUASH * w, 0.88 - HIT_SQUASH * 0.75 * w)
 			if BattleJuice.flag("hit_sparks"):
-				BattleJuice.spawn_burst(_stable_sprite_anchor(target_sprite), Vector2(kb_dir, -0.35), 12 if jt == BattleJuice.Tier.FULL else 6, Color(1.0, 0.9, 0.55))
-			BattleJuice.punch_zoom(_stable_sprite_anchor(target_sprite), 0.02, 0.12)
+				var sparks: int = int(lerpf(HIT_SPARKS.x, HIT_SPARKS.y, w)) if jt == BattleJuice.Tier.FULL else 6
+				if _reduce_flashes():
+					sparks = mini(sparks, 12)
+				BattleJuice.spawn_burst(_stable_sprite_anchor(target_sprite), Vector2(kb_dir, -0.35), sparks, Color(1.0, 0.9, 0.55), lerpf(250.0, 420.0, w))
+			BattleJuice.punch_zoom(_stable_sprite_anchor(target_sprite), lerpf(HIT_ZOOM.x, HIT_ZOOM.y, w) if jt == BattleJuice.Tier.FULL else HIT_ZOOM.x, 0.12 + 0.10 * w)
+		## The shake (and the pad's rumble) belong to hits that MATTER: nothing under HIT_TRAUMA_FROM, so a
+		## chip hit is as quiet as it was. The camera rig honours the Screen Shake setting, BattleJuice the rumble one.
+		if jt == BattleJuice.Tier.FULL and w >= HIT_TRAUMA_FROM:
+			BattleJuice.add_trauma(hit_trauma(w), Vector2(kb_dir, -0.3))
 
 
 func _delayed_play_victory(animator) -> void:
@@ -5517,7 +5574,7 @@ func _spawn_screen_flash(color: Color, fade_duration: float, delay: float = 0.0)
 	t.tween_callback(flash.queue_free)
 
 
-func _animate_melee_attack(attacker_sprite: Node2D, target_sprite: Node2D, attacker_anim: BattleAnimatorClass, target_anim: BattleAnimatorClass, lead_in: float = 0.0, ability_anim: String = "") -> void:
+func _animate_melee_attack(attacker_sprite: Node2D, target_sprite: Node2D, attacker_anim: BattleAnimatorClass, target_anim: BattleAnimatorClass, lead_in: float = 0.0, ability_anim: String = "", land_on_impact: bool = false) -> void:
 	"""Animate attacker moving to target, attacking, then returning"""
 	# Store home position as metadata to ensure we can always return
 	if not attacker_sprite.has_meta("home_position"):
@@ -5542,6 +5599,32 @@ func _animate_melee_attack(attacker_sprite: Node2D, target_sprite: Node2D, attac
 	## scene-owned tween then ran its contact callback with freed captures ("Lambda capture ... was freed").
 	var tween = attacker_sprite.create_tween()
 	attacker_sprite.set_meta("attack_tween", tween)
+	## The swing as it will be played: paced into swing_budget() by the animator, so every frame is drawn.
+	## At spotlight speeds the attacker HOLDS at the target for the swing's length, and a sheet with an authored
+	## impact frame lands its hit (fx, number, sound, death) on that frame. Turbo, console and 4x+ keep .790's
+	## timeline exactly: a 0.22 s hold and the hit at contact.
+	var spotlight: bool = _spotlight_pace()
+	var attacker: Combatant = _combatant_of_sprite(attacker_sprite)
+	var action: int = _action_serial  # this lunge's own action, captured for its contact
+	var swing_len: float = 0.0
+	var impact_at: float = 0.0
+	if attacker_anim and is_instance_valid(attacker_anim):
+		var swing_name: String = attacker_anim.swing_anim_name(ability_anim)
+		swing_len = attacker_anim.played_length(swing_name)
+		## Only a plain single attack holds its hit for the impact frame: a cascade or a multi-target ability
+		## resolves several hits at once on the one damage buffer.
+		if spotlight and land_on_impact:
+			impact_at = attacker_anim.impact_time(swing_name)
+	var hold: float = strike_hold(swing_len, spotlight)
+	impact_at = minf(impact_at, hold)
+	var approach: float = 0.12 + (0.05 if _tier() == BattleJuice.Tier.FULL and BattleJuice.flag("anticipation") else 0.0)
+	_last_lunge_length = lead_in + approach + hold + 0.18
+	## A plain single attack at spotlight pace holds its number, sound and death until the hit LANDS (contact,
+	## or the impact frame). Unheld, a kill's death fx began at the action's start and had finished before the
+	## attacker arrived.
+	var held_hit: int = 0
+	if spotlight and land_on_impact:
+		held_hit = _hold_melee_damage(lead_in + approach + impact_at)
 	## The stagger, as an interval on the tween rather than an await in the caller's loop —
 	## CLAUDE.md: "`await` in a loop SERIALIZES what should be simultaneous", and the same trap
 	## inverted would turn a 5-member cascade into 5 sequential full lunges.
@@ -5584,12 +5667,26 @@ func _animate_melee_attack(attacker_sprite: Node2D, target_sprite: Node2D, attac
 				attacker_anim.play_named_animation(ability_anim)
 			else:
 				attacker_anim.play_attack()
-		_apply_hitstop(attacker_sprite, target_sprite)
+		if impact_at > 0.0:
+			return
+		_apply_hitstop(attacker_sprite, target_sprite, hitstop_for(_land_hit_weight(target_sprite, attacker, action)))
 		_delayed_play_hit_fx(target_anim, target_sprite)
+		_land_melee_damage(held_hit)
 	)
+	## An authored impact frame: the swing winds up first, and the hit lands when the art does.
+	if impact_at > 0.0:
+		tween.tween_interval(impact_at)
+		tween.tween_callback(func():
+			if not is_instance_valid(self):
+				return
+			_apply_hitstop(attacker_sprite, target_sprite, hitstop_for(_land_hit_weight(target_sprite, attacker, action)))
+			_delayed_play_hit_fx(target_anim, target_sprite)
+			_land_melee_damage(held_hit)
+		)
 
-	# Hold at strike (0.3→0.22 — the hitstop supplies the emphasis the dead air used to fake).
-	tween.tween_interval(0.22)
+	# Hold at strike (0.3→0.22 — the hitstop supplies the emphasis the dead air used to fake), or the swing's
+	# own length at spotlight speeds.
+	tween.tween_interval(hold - impact_at)
 
 	# Settle home: decelerating ease-out (use stored home, not where we started this attack).
 	tween.set_trans(Tween.TRANS_QUAD)
@@ -5597,8 +5694,173 @@ func _animate_melee_attack(attacker_sprite: Node2D, target_sprite: Node2D, attac
 	tween.tween_property(attacker_sprite, "position", home_pos, 0.18)
 
 
+## ---- THE HIT'S WEIGHT: one number per hit, and the ranges everything scales from. Tune by feel HERE. ----
+## w = damage ÷ the target's max HP, plus a crit and a weakness bonus, capped at 1; a KILL is always 1.
+## Each range is [a chip hit (w 0, exactly .790's hit), the heaviest hit (w 1)].
+const HIT_CRIT_BONUS := 0.25
+const HIT_WEAKNESS_BONUS := 0.30         # per +1.0 of elemental modifier (a x1.5 weakness adds 0.15)
+const HIT_HITSTOP := Vector2(0.07, 0.18)  # seconds both sprites freeze
+const HIT_KILL_HITSTOP := 0.28           # the killing blow's own beat, before the death takes the sprite
+const HIT_KNOCKBACK := Vector2(6.0, 24.0) # px
+const HIT_SQUASH := 0.22                 # added to the target's squash at w 1
+const HIT_SPARKS := Vector2(12.0, 44.0)   # particles in the burst (FULL tier)
+const HIT_ZOOM := Vector2(0.02, 0.04)     # camera punch; BattleCameraRig.ZOOM_CEILING caps it at 0.04 while the UI shares the canvas
+const HIT_TRAUMA_FROM := 0.10            # no shake or rumble below this weight
+const HIT_TRAUMA := Vector2(0.10, 0.65)   # camera trauma from HIT_TRAUMA_FROM up to w 1
+const HIT_WEIGHT_TTL_MSEC := 1500
+
+
+static func hit_weight(amount: int, max_hp: int, is_crit: bool = false, elemental_mod: float = 1.0, kill: bool = false) -> float:
+	if kill:
+		return 1.0
+	var w: float = clampf(float(amount) / maxf(1.0, float(max_hp)), 0.0, 1.0)
+	if is_crit:
+		w += HIT_CRIT_BONUS
+	if elemental_mod > 1.0:
+		w += HIT_WEAKNESS_BONUS * (elemental_mod - 1.0)
+	return clampf(w, 0.0, 1.0)
+
+
+## The spark an attacker's hit draws: its weapon type, or a monster row's optional `hit_spark`; EffectSystem
+## falls back to the claw for bare hands and anything unnamed.
+func hit_spark_for(attacker: Combatant) -> String:
+	if attacker == null or not is_instance_valid(attacker):
+		return ""
+	if attacker.has_meta("monster_type") and _enemy_spawner != null:  # _load_monsters_data reads through the spawner
+		var row = _load_monsters_data().get(str(attacker.get_meta("monster_type", "")), {})
+		return str(row.get("hit_spark", "")) if row is Dictionary else ""
+	return _weapon_type_for(attacker)
+
+
+## A weapon that carries an element tints its spark with that element's weakness colour, toned toward white.
+func _hit_spark_tint(attacker: Combatant) -> Color:
+	var element: String = _weapon_element_for(attacker) if attacker != null and is_instance_valid(attacker) and not attacker.has_meta("monster_type") else ""
+	if element == "" or not WEAKNESS_ELEMENT_COLORS.has(element):
+		return Color.WHITE
+	var c: Color = WEAKNESS_ELEMENT_COLORS[element]
+	var peak: float = maxf(c.r, maxf(c.g, c.b))
+	return Color(c.r / peak, c.g / peak, c.b / peak).lerp(Color.WHITE, 0.25)
+
+
+static func hit_trauma(w: float) -> float:
+	if w < HIT_TRAUMA_FROM:
+		return 0.0
+	return lerpf(HIT_TRAUMA.x, HIT_TRAUMA.y, inverse_lerp(HIT_TRAUMA_FROM, 1.0, w))
+
+
+static func hitstop_for(hit: Dictionary) -> float:
+	if bool(hit.get("kill", false)):
+		return HIT_KILL_HITSTOP
+	return lerpf(HIT_HITSTOP.x, HIT_HITSTOP.y, clampf(float(hit.get("w", 0.0)), 0.0, 1.0))
+
+
+## damage_dealt fires when the hit RESOLVES (the action's start); the swing lands later. The weight waits on
+## the target's sprite, signed by the ATTACKER whose action dealt it, and only that attacker's contact spends
+## it: a cast's 60% or a poison tick must never land on the next rogue's chip (cowir-battle 23777). The
+## heaviest hit of one action wins; another attacker's note replaces it; it goes stale as a backstop.
+func _note_hit_weight(target: Combatant, amount: int, is_crit: bool, _element: String = "", elemental_mod: float = 1.0) -> void:
+	if target == null or not is_instance_valid(target) or amount <= 0:
+		return
+	var by: Combatant = _last_acting_combatant
+	if by == null or not is_instance_valid(by):
+		return
+	var sprite: Node2D = _get_combatant_sprite(target)
+	if sprite == null or not is_instance_valid(sprite):
+		return
+	var kill: bool = not target.is_alive or target.current_hp <= 0
+	var w: float = hit_weight(amount, target.max_hp, is_crit, elemental_mod, kill)
+	var waiting: Dictionary = _peek_hit_weight(sprite, by, _action_serial)
+	var hit := {"w": maxf(w, float(waiting["w"])), "kill": kill or bool(waiting["kill"]), "at": Time.get_ticks_msec(), "by": by.get_instance_id(), "act": _action_serial}
+	sprite.set_meta("hit_weight", hit)
+	## A heavy stop pauses the lunge, so the stage is held that much longer for a held single attack: the next
+	## actor must not start while this one is frozen at its target. Only where a hold was set (spotlight pace).
+	var extra: float = hitstop_for(hit) - HIT_HITSTOP.x
+	if _melee_hold_live and BattleManager.presentation_hold > 0.0 and extra > _melee_hold_extra:
+		BattleManager.presentation_hold += extra - _melee_hold_extra
+		_melee_hold_extra = extra
+
+
+## `action` = the serial of the action whose lunge is landing: the same attacker's EARLIER action (a Fira
+## before a swing in one Advance) must not lend this swing its weight.
+func _peek_hit_weight(sprite: Node2D, attacker: Combatant, action: int) -> Dictionary:
+	if sprite != null and is_instance_valid(sprite) and sprite.has_meta("hit_weight") and attacker != null and is_instance_valid(attacker):
+		var noted: Dictionary = sprite.get_meta("hit_weight")
+		var fresh: bool = Time.get_ticks_msec() - int(noted.get("at", 0)) <= HIT_WEIGHT_TTL_MSEC * maxf(1.0, 1.0 / maxf(Engine.time_scale, 0.01))
+		if fresh and int(noted.get("by", 0)) == attacker.get_instance_id() and int(noted.get("act", -1)) == action:
+			return noted
+	return {"w": 0.0, "kill": false}
+
+
+## The contact: spend the weight this attacker's action left on the target, and leave it where
+## _delayed_play_hit_fx reads it. No weight (a miss, another attacker's note) = a chip hit, .790's recipe.
+func _land_hit_weight(target_sprite: Node2D, attacker: Combatant, action: int) -> Dictionary:
+	var hit: Dictionary = _peek_hit_weight(target_sprite, attacker, action)
+	if target_sprite != null and is_instance_valid(target_sprite):
+		if float(hit["w"]) > 0.0:
+			target_sprite.remove_meta("hit_weight")
+		target_sprite.set_meta("hit_landing", hit)
+	return hit
+
+
+## What a one-shot pose (a swing, a cast) may take before the next beat, in game seconds. Sheets longer than
+## this play FASTER, so all their frames are drawn: at spotlight speeds a 13-frame boss swing takes 0.75 s, not
+## 1.62, and at 4x+/turbo/console every swing fits the 0.5 s it had in .790 before the idle snap cut it.
+const SWING_CAP := 0.75
+const SWING_WINDOW := 0.5
+const STRIKE_HOLD := 0.22
+## The idle snap waits for a swing in flight, but never longer than this past its 0.7 s.
+const SNAP_WAIT_MAX := 2.0
+var _last_lunge_length: float = 0.0
+var _melee_hold_token: int = 0
+var _melee_hold_live: bool = false
+var _melee_hold_extra: float = 0.0
+var _action_serial: int = 0
+
+
+## Spotlight speeds (1x-2x, not turbo, not the console): the same gate the per-action stage hold uses.
+func _spotlight_pace() -> bool:
+	return not turbo_mode and not autogrind_console_mode and Engine.time_scale <= 0.55
+
+
+func swing_budget() -> float:
+	return SWING_CAP if _spotlight_pace() else SWING_WINDOW
+
+
+## Seconds the attacker stays at the target: the swing's played length at spotlight speeds, .790's 0.22 otherwise
+## (and for a 1-2 frame sheet, whose "swing" is shorter than that).
+static func strike_hold(played: float, spotlight: bool) -> float:
+	return maxf(STRIKE_HOLD, played) if spotlight else STRIKE_HOLD
+
+
+## Hold this swing's damage presentation (number, HP bar, hit sound, death) until its impact frame, on the
+## buffer Full Render casts already use. Returns a token; a safety timer lands it if the lunge tween dies.
+func _hold_melee_damage(lands_in: float) -> int:
+	_flush_full_render_damage()
+	_full_render_dmg_buffer = []
+	_full_render_dmg_attacker = _last_acting_combatant
+	_melee_hold_token += 1
+	_melee_hold_live = true
+	_melee_hold_extra = 0.0
+	get_tree().create_timer(lands_in + 0.25).timeout.connect(_land_melee_damage.bind(_melee_hold_token))
+	return _melee_hold_token
+
+
+func _land_melee_damage(token: int) -> void:
+	if token != _melee_hold_token or token == 0:
+		return
+	_melee_hold_token += 1  # spent: the safety timer (or the tween) finds a different token and does nothing
+	_melee_hold_live = false
+	_flush_full_render_damage()
+
+
+## Land a swing's held hit at once, if one is waiting on its impact frame.
+func _land_held_hit() -> void:
+	if _melee_hold_live:
+		_land_melee_damage(_melee_hold_token)
+
+
 ## Fable-pass hitstop: freeze both combatants' anim playback ~70ms at contact. Visual-only (no Engine.time_scale touch — timers/music unaffected); restore is validity-guarded so mid-stop frees are safe.
-func _apply_hitstop(attacker_sprite: Node2D, target_sprite: Node2D) -> void:
+func _apply_hitstop(attacker_sprite: Node2D, target_sprite: Node2D, duration: float = 0.07) -> void:
 	if not BattleJuice.flag("hit_stop"):
 		return
 	var frozen: Array = []
@@ -5608,10 +5870,17 @@ func _apply_hitstop(attacker_sprite: Node2D, target_sprite: Node2D) -> void:
 			frozen.append(s)
 	if frozen.is_empty():
 		return
-	get_tree().create_timer(0.07).timeout.connect(func():
+	## A heavy hit's longer stop holds the attacker's LUNGE too, so the swing and the walk home stay in step.
+	var lunge = attacker_sprite.get_meta("attack_tween", null) if is_instance_valid(attacker_sprite) else null
+	var held_lunge: bool = duration > 0.07 and lunge is Tween and lunge.is_valid() and lunge.is_running()
+	if held_lunge:
+		lunge.pause()
+	get_tree().create_timer(duration).timeout.connect(func():
 		for s in frozen:
 			if is_instance_valid(s):
 				(s as AnimatedSprite2D).speed_scale = 1.0
+		if held_lunge and lunge.is_valid():
+			lunge.play()
 	, CONNECT_ONE_SHOT)
 
 
@@ -5619,21 +5888,47 @@ func _spawn_lunge_ghost(src: AnimatedSprite2D) -> void:
 	BattleJuice.spawn_ghost(src)
 
 
-func _apply_hit_knockback(sprite: Node2D, direction: float = 1.0) -> void:
+func _apply_hit_knockback(sprite: Node2D, direction: float = 1.0, magnitude: float = 6.0) -> void:
 	if not is_instance_valid(sprite):
 		return
-	var original_x = sprite.position.x
-	var original_y = sprite.position.y
-	var knockback_x = original_x + (6.0 * direction)
+	var rest: Vector2 = _knockback_rest(sprite)
+	var original_x = rest.x
+	var original_y = rest.y
+	var knockback_x = original_x + (magnitude * direction)
 	# Vertical pop reads as weight; x-only knockback reads as a slide
 	var pop: float = 4.0 if _tier() <= BattleJuice.Tier.REDUCED else 0.0
-	var tween = create_tween()
+	var tween = _knockback_tween(sprite)
 	tween.tween_property(sprite, "position:x", knockback_x, 0.05)
 	if pop > 0.0:
 		tween.parallel().tween_property(sprite, "position:y", original_y - pop, 0.05)
 	tween.tween_property(sprite, "position:x", original_x, 0.15).set_ease(Tween.EASE_OUT)
 	if pop > 0.0:
 		tween.parallel().tween_property(sprite, "position:y", original_y, 0.15).set_ease(Tween.EASE_OUT)
+
+
+## Where a knocked sprite comes to rest: its HOME, not wherever the hit found it. A second hit inside the
+## first's 0.2 s captured a displaced origin and parked the monster 6-16 px off until it next acted (the
+## round-start reset only corrects enemies over 20 px out). A sprite mid-lunge keeps its own position: its
+## lunge tween owns the way home.
+func _knockback_rest(sprite: Node2D) -> Vector2:
+	if sprite.has_meta("attack_tween"):
+		var lunge = sprite.get_meta("attack_tween")
+		if lunge is Tween and lunge.is_valid() and lunge.is_running():
+			return sprite.position
+	var home: Vector2 = sprite.get_meta("home_position", sprite.position)
+	return home
+
+
+## One knockback per sprite, on the sprite: a new hit replaces the old tween (two wrote position at once), and
+## the tween dies with a sprite a grind restart frees.
+func _knockback_tween(sprite: Node2D) -> Tween:
+	if sprite.has_meta("knockback_tween"):
+		var old = sprite.get_meta("knockback_tween")
+		if old is Tween and old.is_valid():
+			old.kill()
+	var tween := sprite.create_tween()
+	sprite.set_meta("knockback_tween", tween)
+	return tween
 
 
 ## Delegate kept for the existing callers and their pins; new consumers call BattleJuice.battle_tier() directly (cowir-main ruling, msg 6501).
@@ -5671,10 +5966,10 @@ func _apply_weakness_hit_visuals(sprite: Node2D, element: String, elemental_mod:
 	var boost: float = clampf((elemental_mod - 1.0) * 0.6, 0.0, 0.4)
 	var flash_color: Color = Color(base_color.r * (1.0 + boost), base_color.g * (1.0 + boost), base_color.b * (1.0 + boost), 1.0)
 	sprite.modulate = flash_color
-	var tween = create_tween()
+	var tween = _flash_tween(sprite)  # on the sprite: it dies with a monster a grind restart frees
 	# Longer settle than the 0.12s white hit flash — reads as "it HURT". Two-phase: hold the color briefly, then ease back so the settle isn't a hard cut.
 	tween.tween_interval(0.08)
-	tween.tween_property(sprite, "modulate", Color.WHITE, 0.28).set_ease(Tween.EASE_OUT)
+	tween.tween_property(sprite, "modulate", rest_modulate(sprite), 0.28).set_ease(Tween.EASE_OUT)
 
 
 func _apply_weakness_hit_knockback(sprite: Node2D, direction: float = 1.0, elemental_mod: float = 1.0) -> void:
@@ -5683,11 +5978,12 @@ func _apply_weakness_hit_knockback(sprite: Node2D, direction: float = 1.0, eleme
 		return
 	# Regular knockback is 6.0 px. Weakness escalates to 12-16 depending on the mod (1.5x → 12, 2.0x → 16). Capped so an omega-weakness (uncommon but authored elsewhere) doesn't rocket the sprite off-screen.
 	var kb_magnitude: float = clampf(6.0 + 12.0 * (elemental_mod - 1.0), 6.0, 16.0)
-	var original_x = sprite.position.x
-	var original_y = sprite.position.y
+	var rest: Vector2 = _knockback_rest(sprite)
+	var original_x = rest.x
+	var original_y = rest.y
 	var knockback_x = original_x + (kb_magnitude * direction)
 	var pop: float = 7.0 if _tier() <= BattleJuice.Tier.REDUCED else 0.0
-	var tween = create_tween()
+	var tween = _knockback_tween(sprite)
 	tween.tween_property(sprite, "position:x", knockback_x, 0.08).set_ease(Tween.EASE_OUT)
 	if pop > 0.0:
 		tween.parallel().tween_property(sprite, "position:y", original_y - pop, 0.08).set_ease(Tween.EASE_OUT)
@@ -6025,6 +6321,8 @@ func _on_party_hp_changed(old_value: int, new_value: int, member_idx: int) -> vo
 	if new_value < old_value and member_idx < party_animators.size():
 		# Play hit animation when taking damage
 		party_animators[member_idx].play_hit()
+	elif new_value > old_value:
+		_rest_after_recovery(member_idx)
 	# Ally KO quip — when a party member drops to 0 HP, a living ally reacts
 	if new_value <= 0 and old_value > 0:
 		# Tick 176 closed this moment's LOG parity with _on_enemy_died and left its AUDIO open: the enemy plays enemy_death, the ally played nothing. Fires before the index guard so a bad idx still sounds.
@@ -6045,6 +6343,26 @@ func _on_party_hp_changed(old_value: int, new_value: int, member_idx: int) -> vo
 		if alive_allies.size() > 0:
 			var reactor = alive_allies[randi() % alive_allies.size()]
 			_try_combat_quip(ALLY_KO_QUIPS, reactor)
+
+
+## A Raise, a Phoenix Down or a heal over the danger line changes what "at rest" means (dead → weak or idle,
+## weak → idle), and only a FALL in HP re-posed a member, so a revived one lay there, alive, until the next
+## round began. Re-resolve now, unless the pose is already right, a swing or cast is drawing, or the party
+## is celebrating (set_idle would end the win).
+func _rest_after_recovery(member_idx: int) -> void:
+	if _battle_victory or member_idx < 0 or member_idx >= party_animators.size():
+		return
+	var animator: BattleAnimatorClass = party_animators[member_idx]
+	if animator == null or not is_instance_valid(animator) or animator.sprite == null or not is_instance_valid(animator.sprite):
+		return
+	if animator.current_state == BattleAnimatorClass.AnimState.VICTORY:
+		return
+	var now: StringName = animator.sprite.animation
+	if now == StringName(animator.rest_anim_name()):
+		return
+	if animator.one_shot_running() and now != &"dead":
+		return
+	animator.set_idle()
 
 
 func _on_party_ap_changed(old_value: int, new_value: int, member_idx: int) -> void:
@@ -6074,45 +6392,80 @@ func _apply_status_visual(sprite: Node2D, combatant: Combatant) -> void:
 	for living combatants so we check is_alive before touching modulate."""
 	if not combatant.is_alive:
 		return
-	var effects: Array = combatant.status_effects
-	if effects.is_empty():
-		sprite.modulate = Color.WHITE
-		return
-	# Priority order: first matching status wins
+	sprite.modulate = rest_modulate(sprite)
+
+
+## A fallen party member is greyed where it lies.
+const KO_MODULATE := Color(0.3, 0.3, 0.3, 0.7)
+
+
+## The tint a living combatant's statuses give its sprite; the first matching status wins. The ONE table:
+## BattleUIManager kept a second with six of these ten, so confuse, fear, charm and regen tints on a party
+## member were wiped to white by the next UI refresh.
+static func status_tint(effects: Array) -> Color:
 	for effect in effects:
 		match effect:
 			"poison":
-				sprite.modulate = Color(0.7, 1.0, 0.7)   # Green tint
-				return
+				return Color(0.7, 1.0, 0.7)   # Green tint
 			"burning":
-				sprite.modulate = Color(1.0, 0.6, 0.4)   # Orange-red
-				return
+				return Color(1.0, 0.6, 0.4)   # Orange-red
 			"curse":
-				sprite.modulate = Color(0.7, 0.4, 0.8)   # Purple
-				return
+				return Color(0.7, 0.4, 0.8)   # Purple
 			"stun":
-				sprite.modulate = Color(1.0, 1.0, 0.5)   # Yellow
-				return
+				return Color(1.0, 1.0, 0.5)   # Yellow
 			"sleep":
-				sprite.modulate = Color(0.8, 0.8, 1.0)   # Pale blue
-				return
+				return Color(0.8, 0.8, 1.0)   # Pale blue
 			"blind":
-				sprite.modulate = Color(0.6, 0.6, 0.7)   # Dark blue-gray
-				return
+				return Color(0.6, 0.6, 0.7)   # Dark blue-gray
 			"confuse":
-				sprite.modulate = Color(0.9, 0.6, 1.0)  # Light purple
-				return
+				return Color(0.9, 0.6, 1.0)  # Light purple
 			"fear":
-				sprite.modulate = Color(0.6, 0.6, 0.6)  # Desaturated gray
-				return
+				return Color(0.6, 0.6, 0.6)  # Desaturated gray
 			"charm":
-				sprite.modulate = Color(1.0, 0.7, 0.8)  # Pink
-				return
+				return Color(1.0, 0.7, 0.8)  # Pink
 			"regen":
-				sprite.modulate = Color(0.8, 1.0, 0.9)  # Soft green-white glow
-				return
-	# Unknown status — leave tint neutral
-	sprite.modulate = Color.WHITE
+				return Color(0.8, 1.0, 0.9)  # Soft green-white glow
+	return Color.WHITE
+
+
+func _combatant_of_sprite(sprite: Node2D) -> Combatant:
+	var pi: int = party_sprite_nodes.find(sprite)
+	if pi != -1:
+		return party_members[pi] if pi < party_members.size() else null
+	var ei: int = enemy_sprite_nodes.find(sprite)
+	if ei != -1:
+		return test_enemies[ei] if ei < test_enemies.size() else null
+	return null
+
+
+## The colour a sprite RESTS at: its status tint times the inactive-party dim (KO grey for a fallen member).
+## Every flash, dim step and cast settle returns HERE. Each used to return to white (or to whatever colour it
+## found mid-flash), so a poison tint died with the next weakness flash or turn step and nothing brought it
+## back, and a second crit inside the first's flash left its target over-bright for the rest of the fight.
+func rest_modulate(sprite: Node2D) -> Color:
+	if not is_instance_valid(sprite):
+		return Color.WHITE
+	var who: Combatant = _combatant_of_sprite(sprite)
+	var tint := Color.WHITE
+	if who != null and is_instance_valid(who):
+		if not who.is_alive and party_sprite_nodes.has(sprite):
+			return KO_MODULATE
+		if who.is_alive:
+			tint = status_tint(who.status_effects)
+	var dim: Color = sprite.get_meta("dim_modulate", Color.WHITE)
+	return tint * dim
+
+
+## One colour flash per sprite, on the sprite: a new flash replaces the old tween (two wrote modulate at once),
+## and the tween dies with a sprite a grind restart frees.
+func _flash_tween(sprite: Node2D) -> Tween:
+	if sprite.has_meta("flash_tween"):
+		var old = sprite.get_meta("flash_tween")
+		if old is Tween and old.is_valid():
+			old.kill()
+	var tween := sprite.create_tween()
+	sprite.set_meta("flash_tween", tween)
+	return tween
 
 
 ## Buff/debuff visual overlay system
@@ -6360,6 +6713,7 @@ func _on_enemy_died(enemy_idx: int) -> void:
 					EnemyDeathFx.play(sprite, EnemyDeathFx.current_style(), func() -> void: SoundManager.play_death("enemy_death"))
 					_fade_dying_name(sprite)
 					return
+				EnemyDeathFx.own(sprite)  # a boss killed mid-flash: the death ends the flash and the knockback too
 				var tween = sprite.create_tween()  # dies with the sprite a grind restart frees
 				tween.tween_property(sprite, "modulate", Color(3.0, 3.0, 3.0, 1.0), 0.1)
 				tween.tween_property(sprite, "modulate", Color(1.0, 1.0, 1.0, 1.0), 0.1)
@@ -6903,15 +7257,20 @@ func _crit_visual_burst(target: Combatant, _amount: int) -> void:
 	# 3. Target sprite white flash
 	var sprite = _get_combatant_sprite(target)
 	if sprite and is_instance_valid(sprite):
-		var orig_modulate = sprite.modulate
-		sprite.modulate = Color(3.0, 3.0, 3.0, 1.0)  # Bright white flash (HDR)
-		var flash_tween = create_tween()
-		flash_tween.tween_property(sprite, "modulate", orig_modulate, 0.15).set_delay(0.05)
+		_crit_flash(sprite)
 
 	# 4. "CRITICAL!" banner above target
 	var pos = _results_display._get_combatant_sprite_position(target)
 	if pos != Vector2.ZERO:
 		_spawn_crit_banner(pos)
+
+
+## The crit's white flash settles to the sprite's REST colour. It used to settle to whatever colour it found,
+## so a second crit inside the first's 0.2 s captured the flash itself and stayed there.
+func _crit_flash(sprite: Node2D) -> void:
+	sprite.modulate = Color(3.0, 3.0, 3.0, 1.0)  # Bright white flash (HDR)
+	var flash_tween = _flash_tween(sprite)
+	flash_tween.tween_property(sprite, "modulate", rest_modulate(sprite), 0.15).set_delay(0.05)
 
 
 func _spawn_crit_banner(pos: Vector2) -> void:
@@ -7959,6 +8318,7 @@ func _present_summoned_enemy(enemy: Combatant, monster_type: String, new_idx: in
 	# Create animator
 	var animator = BattleAnimatorClass.new()
 	animator.setup(sprite)
+	animator.swing_budget_provider = swing_budget
 	add_child(animator)
 	enemy_animators.append(animator)
 

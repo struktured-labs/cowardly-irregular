@@ -9,7 +9,7 @@ extends GutTest
 
 const MAX_GROUND_REGION := 40
 ## Sheets whose generated ground was cleared, judged by eye. Re-review an entry when its art is redrawn.
-const CLEARED_OF_GROUND := ["spider"]
+const CLEARED_OF_GROUND := ["spider", "the_coordinator", "the_regulator"]
 
 
 static func is_ground(c: Color) -> bool:

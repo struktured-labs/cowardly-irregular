@@ -295,7 +295,8 @@
           "trail_palette": "ember",
           "trail_spacing": 9,
           "size": 1.4,
-          "sfx": "beat_fire_burst"
+          "sfx": "beat_fire_burst",
+          "palette_t3": "fire"
         },
         {
           "kind": "eruption",
@@ -317,6 +318,14 @@
           "dur": 0.6,
           "count": 18,
           "palette": "ember"
+        },
+        {
+          "kind": "ring",
+          "at": 0.58,
+          "dur": 0.32,
+          "min_tier": 3,
+          "palette": "fire",
+          "scale": 4.0
         }
       ]
     },
@@ -971,7 +980,8 @@
           "trail_palette": "ember",
           "trail_spacing": 7,
           "size": 2.1,
-          "sfx": "beat_fire_burst"
+          "sfx": "beat_fire_burst",
+          "palette_t3": "fire"
         },
         {
           "kind": "eruption",
@@ -1018,7 +1028,8 @@
           "at": 0.98,
           "dur": 0.4,
           "palette": "flame",
-          "scale": 6.0
+          "scale": 6.0,
+          "palette_t3": "fire"
         },
         {
           "kind": "shake",
@@ -1032,6 +1043,37 @@
           "dur": 0.65,
           "count": 32,
           "palette": "ember"
+        },
+        {
+          "kind": "bolt",
+          "at": 0.42,
+          "dur": 0.24,
+          "min_tier": 2,
+          "arc_height": 110,
+          "palette": "flame",
+          "palette_t3": "fire",
+          "trail_palette": "ember",
+          "trail_spacing": 7,
+          "size": 1.6
+        },
+        {
+          "kind": "bolt",
+          "at": 0.46,
+          "dur": 0.2,
+          "min_tier": 3,
+          "arc_height": 20,
+          "palette": "fire",
+          "trail_palette": "ember",
+          "trail_spacing": 6,
+          "size": 1.6
+        },
+        {
+          "kind": "ring",
+          "at": 0.98,
+          "dur": 0.5,
+          "min_tier": 3,
+          "palette": "fire",
+          "scale": 8.0
         }
       ],
       "tint": [
@@ -1992,7 +2034,8 @@
           "trail_palette": "ember",
           "trail_spacing": 8,
           "size": 1.7,
-          "sfx": "beat_fire_burst"
+          "sfx": "beat_fire_burst",
+          "palette_t3": "fire"
         },
         {
           "kind": "eruption",
@@ -2022,6 +2065,26 @@
           "dur": 0.65,
           "count": 24,
           "palette": "ember"
+        },
+        {
+          "kind": "ring",
+          "at": 0.62,
+          "dur": 0.34,
+          "min_tier": 2,
+          "palette": "flame",
+          "palette_t3": "fire",
+          "scale": 4.5
+        },
+        {
+          "kind": "bolt",
+          "at": 0.38,
+          "dur": 0.24,
+          "min_tier": 3,
+          "arc_height": 90,
+          "palette": "fire",
+          "trail_palette": "ember",
+          "trail_spacing": 8,
+          "size": 1.3
         }
       ]
     },
