@@ -204,6 +204,27 @@ func test_a_family_is_tinted_by_the_move_and_sized_to_the_creature() -> void:
 	assert_almost_eq(_scene._attacker_scale(spr), BattleSceneScript.FAMILY_SCALE_MAX, 0.001, "a dragon's is capped")
 
 
+func test_a_plain_attack_takes_the_family_the_creature_fights_in() -> void:
+	## adhoc 24048: a monster row's `hit_spark` names the family its PLAIN attack plays at contact (a wolf bites, a
+	## slime slams). Each row's value is the family most of its own physical moves belong to.
+	var monsters := _json("res://data/monsters.json")
+	var seqs: Dictionary = _json("res://data/vfx_sequences.json")["sequences"]
+	var named := 0
+	for id in monsters:
+		var row = monsters[id]
+		if not (row is Dictionary) or not row.has("hit_spark"):
+			continue
+		named += 1
+		assert_true(str(row["hit_spark"]) in ["bite", "claw", "slam"], "%s: '%s' is not a contact family" % [id, row["hit_spark"]])
+		assert_true(seqs.has("family_" + str(row["hit_spark"])), "%s names family_%s, which does not exist" % [id, row["hit_spark"]])
+		assert_eq(BattleSceneScript.hit_mark("", str(row["hit_spark"])), "family", "%s's plain attack plays its family" % id)
+	assert_gt(named, 30, "CONTROL: the W1 monsters' rows were found (%d)" % named)
+	assert_eq(str(monsters["wolf"].get("hit_spark", "")), "bite", "a wolf bites")
+	assert_eq(str(monsters["slime"].get("hit_spark", "")), "slam", "a slime slams")
+	assert_false(monsters["goblin"].has("hit_spark"), "CONTROL: a goblin swings a sword, so it keeps the weapon spark")
+	assert_eq(BattleSceneScript.hit_mark("", ""), "spark", "CONTROL: a row naming nothing rakes")
+
+
 func test_a_move_is_aimed_at_the_body_not_at_the_frame() -> void:
 	## cutscenes 24028: a battler's anchor is its FRAME centre, and the Fighter's figure stands ~95 px off it. A figure
 	## drawn in the left third of a 96 px frame, at 2x: the body is 2 x (16 - 48) = 64 px left of the anchor.
