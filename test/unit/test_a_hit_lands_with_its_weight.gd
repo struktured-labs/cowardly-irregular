@@ -198,7 +198,8 @@ func test_a_heavy_hit_knocks_further_and_shakes_and_a_chip_hit_does_neither() ->
 	var at := src.find("func _delayed_play_hit_fx(")
 	var body := src.substr(at, src.find("\nfunc ", at + 1) - at)
 	assert_false(body.contains("_trigger_screen_shake("), "the hit path shakes outside the camera rig, past the Screen Shake setting")
-	assert_true(body.contains("if _reduce_flashes():"), "the hit's sparks ignore Reduce Flashes")
+	assert_true(body.contains("if _flashes_suppressed():"), "the hit's sparks ignore Reduce Flashes")
+	assert_true(body.contains("minf(w, HIT_SPARK_REDUCED_MAX) if _flashes_suppressed() else w"), "the weapon spark grows to full size under Reduce Flashes")
 
 
 func test_turbo_and_the_console_get_the_old_hit() -> void:
