@@ -6329,12 +6329,18 @@ static func status_tint(effects: Array) -> Color:
 	return Color.WHITE
 
 
+## The inverse of _get_combatant_sprite, so it reads the SAME arrays: BattleManager's parties are the objects
+## the engine acts on (and signs a hit with); the scene's own lists are the fallback for a scene built by hand.
 func _combatant_of_sprite(sprite: Node2D) -> Combatant:
 	var pi: int = party_sprite_nodes.find(sprite)
 	if pi != -1:
+		if pi < BattleManager.player_party.size():
+			return BattleManager.player_party[pi]
 		return party_members[pi] if pi < party_members.size() else null
 	var ei: int = enemy_sprite_nodes.find(sprite)
 	if ei != -1:
+		if ei < BattleManager.enemy_party.size():
+			return BattleManager.enemy_party[ei]
 		return test_enemies[ei] if ei < test_enemies.size() else null
 	return null
 
