@@ -67,3 +67,19 @@ func test_every_fire_tier_gathers_out_loud() -> void:
 	for seq_id in ["fire_battle", "fira_battle", "glory_firaga"]:
 		assert_true(_keys_of(seq_id, "gather").has("beat_fire_open"), "%s gathers in silence before its bolt" % seq_id)
 		assert_gt(float(FX.load_sequence(seq_id).get("start", 0.0)), 0.0, "CONTROL: %s still starts after the cast pose; if not, the gather doubles the cast cue" % seq_id)
+
+
+## Firaga on three foes runs three sequences in one frame (BattleScene spawns one per target); the impact must sound once.
+func test_a_spell_on_three_targets_sounds_its_beat_once() -> void:
+	assert_true(SoundManager.has_method("play_sequence_beat"), "PREMISE: the beat pool exists")
+	assert_gt(SoundManager._beat_players.size(), 0, "PREMISE: the pool has voices")
+	SoundManager._beat_frame_keys.clear()
+	var before: int = SoundManager._beat_next
+	for i in 3:
+		SoundManager.play_sequence_beat("beat_firaga_impact")
+	assert_eq(SoundManager._beat_next - before, 1, "three targets in one frame take ONE voice, not three")
+	SoundManager.play_sequence_beat("beat_fire_bloom")
+	assert_eq(SoundManager._beat_next - before, 2, "CONTROL: a different beat in the same frame still plays")
+	await get_tree().process_frame
+	SoundManager.play_sequence_beat("beat_firaga_impact")
+	assert_eq(SoundManager._beat_next - before, 3, "CONTROL: the same beat on a later frame plays again (Thundaga cracks twice)")
