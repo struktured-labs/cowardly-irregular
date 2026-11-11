@@ -7,6 +7,8 @@ extends GutTest
 ## steal never looks like a failed one. Flee is not here: the escape beat (.790) owns it.
 
 const SCENE := preload("res://src/battle/BattleScene.tscn")
+## BattleScene.gd has no class_name, so its statics and consts are reached through the script.
+const BattleSceneScript := preload("res://src/battle/BattleScene.gd")
 const ABILITIES := "res://data/abilities.json"
 const SEQUENCES := "res://data/vfx_sequences.json"
 const BattleStateGuard := preload("res://test/unit/helpers/battle_state.gd")
@@ -112,20 +114,20 @@ func test_each_ability_names_its_sequence_and_the_rest_do_not() -> void:
 	var abilities: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(ABILITIES))
 	var seqs := _seqs()
 	for id in MELEE:
-		assert_eq(BattleScene.melee_overlay(abilities[id], "melee"), MELEE[id], "%s draws its melee sequence" % id)
+		assert_eq(BattleSceneScript.melee_overlay(abilities[id], "melee"), MELEE[id], "%s draws its melee sequence" % id)
 		assert_eq(AbilityVFX.resolve(abilities[id]).get("sequence"), "", "%s keeps the melee path: no cast sequence" % id)
 	for id in CASTS:
 		assert_eq(AbilityVFX.resolve(abilities[id]).get("sequence"), CASTS[id], "%s plays its sequence" % id)
 		assert_true(seqs.has(CASTS[id]), "%s exists" % CASTS[id])
 	for id in OUTCOMES:
 		assert_true(seqs.has(id), "the outcome beat %s exists" % id)
-	assert_eq(BattleScene.melee_overlay(abilities["cleave"], "melee_each"), "melee_cleave_cut", "Cleave cuts each foe")
-	assert_eq(BattleScene.melee_overlay(abilities["backstab"], "melee_crit"), "melee_backstab_crit", "Backstab blooms on a crit")
+	assert_eq(BattleSceneScript.melee_overlay(abilities["cleave"], "melee_each"), "melee_cleave_cut", "Cleave cuts each foe")
+	assert_eq(BattleSceneScript.melee_overlay(abilities["backstab"], "melee_crit"), "melee_backstab_crit", "Backstab blooms on a crit")
 	## CONTROLs: the escape beat owns Flee, and a monster's physical move is still on the plain path.
-	assert_eq(BattleScene.melee_overlay(abilities["flee"], "melee"), "", "Flee names no melee sequence")
+	assert_eq(BattleSceneScript.melee_overlay(abilities["flee"], "melee"), "", "Flee names no melee sequence")
 	assert_eq(AbilityVFX.resolve(abilities["flee"]).get("sequence"), "", "Flee names no cast sequence")
-	assert_eq(BattleScene.melee_overlay(abilities["bite"], "melee"), "", "a monster's bite names none")
-	assert_eq(BattleScene.melee_overlay({"vfx": {"melee": "no_such_sequence"}}, "melee"), "", "a sequence that does not exist is not played")
+	assert_eq(BattleSceneScript.melee_overlay(abilities["bite"], "melee"), "", "a monster's bite names none")
+	assert_eq(BattleSceneScript.melee_overlay({"vfx": {"melee": "no_such_sequence"}}, "melee"), "", "a sequence that does not exist is not played")
 
 
 func test_the_three_new_phase_kinds_draw_and_an_unknown_one_does_not() -> void:
@@ -186,12 +188,12 @@ func test_the_big_moves_fill_the_enemy_side() -> void:
 
 
 func test_a_landed_effect_and_a_failed_one_never_share_a_beat() -> void:
-	assert_eq(BattleScene.landed_beat("stun"), "landed_stun")
-	assert_eq(BattleScene.landed_beat("blind"), "landed_blind")
-	assert_eq(BattleScene.landed_beat("taunted_Fighter"), "landed_taunt", "Provoke's status carries the taunter's name")
-	assert_eq(BattleScene.landed_beat("poison"), "", "CONTROL: a status without a beat lands with its aura alone")
+	assert_eq(BattleSceneScript.landed_beat("stun"), "landed_stun")
+	assert_eq(BattleSceneScript.landed_beat("blind"), "landed_blind")
+	assert_eq(BattleSceneScript.landed_beat("taunted_Fighter"), "landed_taunt", "Provoke's status carries the taunter's name")
+	assert_eq(BattleSceneScript.landed_beat("poison"), "", "CONTROL: a status without a beat lands with its aura alone")
 	for s in ["stun", "blind", "taunted_x"]:
-		assert_ne(BattleScene.landed_beat(s), BattleScene.FIZZLE_BEAT, "%s landing is not the fizzle" % s)
+		assert_ne(BattleSceneScript.landed_beat(s), BattleSceneScript.FIZZLE_BEAT, "%s landing is not the fizzle" % s)
 	var seqs := _seqs()
 	var kinds := func(id: String) -> Array:
 		return (seqs[id]["phases"] as Array).map(func(p): return str(p["kind"]))
