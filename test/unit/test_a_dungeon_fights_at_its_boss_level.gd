@@ -79,8 +79,8 @@ func test_a_level_mark_relevels_the_species_into_the_target_levels_band() -> voi
 	assert_eq(int(up.get("level", 0)), 14, "the spawn fights at the floor's level")
 	var bands: Dictionary = _es.native_bands(_es.monster_database)
 	for stat in ["max_hp", "defense", "attack"]:
-		var own: float = _es.band_at(bands[stat], 4) * Combatant.level_multiplier(4)
-		var target: float = _es.band_at(bands[stat], 14) * Combatant.level_multiplier(14)
+		var own: float = _es.band_at(bands[stat], 4, stat == "max_hp") * Combatant.level_multiplier(4)
+		var target: float = _es.band_at(bands[stat], 14, stat == "max_hp") * Combatant.level_multiplier(14)
 		var dial: float = _es.SPAWN_HP_DIAL if stat == "max_hp" else (_es.SPAWN_OFFENSE_DIAL if stat == "attack" else 1.0)
 		assert_eq(int(up[stat]), int(round(float(base[stat]) * target / own * dial)), "%s keeps the goblin's share of its level's median, at L14's median" % stat)
 	assert_eq(int(up["speed"]), int(base["speed"]), "speed is left alone")
@@ -160,3 +160,15 @@ func test_a_relevelled_spawn_converts_flat_values_at_its_own_level() -> void:
 	gut.p("    imp@L15 ratio %.4f vs %s (L15) %.4f" % [foe.x10_ratio(), peer_id, peer_ratio])
 	assert_almost_eq(foe.x10_ratio(), peer_ratio, peer_ratio * 0.03,
 		"an imp@L15's flat heals and items convert as a catalog L15 monster's do")
+
+
+## Measured 2026-11-11: with HP held flat past L11 a L22 party killed 8,637 HP of castle guards in one round; the band keeps rising.
+func test_the_hp_band_keeps_its_slope_past_the_last_ordinary_level() -> void:
+	var hp: Dictionary = _es.native_bands(_es.monster_database)["max_hp"]
+	var levels: Array = hp.keys()
+	levels.sort()
+	var top := int(levels[-1])
+	assert_lt(top, 20, "CONTROL: the catalog's ordinary rows stop below the castle's levels (top L%d)" % top)
+	assert_eq(_es.band_at(hp, top + 10), float(hp[top]), "CONTROL: an unextended band holds flat past its top")
+	assert_gt(_es.band_at(hp, top + 10, true), float(hp[top]) * 1.3, "HP's band carries its own slope on past its top")
+	assert_eq(_es.band_at(hp, top, true), float(hp[top]), "and meets the authored value at the top")

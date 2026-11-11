@@ -722,7 +722,8 @@ static func native_bands(db: Dictionary) -> Dictionary:
 
 
 ## A band's value at any level: linear between the authored levels around it, held flat past either end.
-static func band_at(band: Dictionary, level: int) -> float:
+## `extend` carries the band's own end-to-end slope past its top (HP: the catalog's ordinary rows stop at L11, and party burst does not).
+static func band_at(band: Dictionary, level: int, extend: bool = false) -> float:
 	if band.is_empty():
 		return 0.0
 	var levels: Array = band.keys()
@@ -730,7 +731,11 @@ static func band_at(band: Dictionary, level: int) -> float:
 	if level <= int(levels[0]):
 		return float(band[levels[0]])
 	if level >= int(levels[-1]):
-		return float(band[levels[-1]])
+		var top := float(band[levels[-1]])
+		if not extend or levels.size() < 2:
+			return top
+		var slope := (top - float(band[levels[0]])) / float(int(levels[-1]) - int(levels[0]))
+		return top + maxf(0.0, slope) * float(level - int(levels[-1]))
 	for i in range(1, levels.size()):
 		if level <= int(levels[i]):
 			var lo := int(levels[i - 1])
@@ -749,8 +754,8 @@ static func apply_spawn_level(data: Dictionary, level: int, db: Dictionary) -> D
 		if not data.has(key):
 			continue
 		var band: Dictionary = bands.get(key, {})
-		var own := band_at(band, base_level) * Combatant.level_multiplier(base_level)
-		var target := band_at(band, level) * Combatant.level_multiplier(level)
+		var own := band_at(band, base_level, key == "max_hp") * Combatant.level_multiplier(base_level)
+		var target := band_at(band, level, key == "max_hp") * Combatant.level_multiplier(level)
 		var grown: float = float(data[key]) * (target / own if own > 0.0 else Combatant.level_multiplier(level) / Combatant.level_multiplier(base_level))
 		if key in ["attack", "magic"]:
 			grown *= SPAWN_OFFENSE_DIAL
