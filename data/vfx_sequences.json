@@ -282,7 +282,8 @@
           "origin": "caster",
           "at": 0.0,
           "dur": 0.3,
-          "count": 18
+          "count": 18,
+          "palette": "flame"
         },
         {
           "kind": "bolt",
@@ -300,7 +301,8 @@
           "at": 0.58,
           "power": 1.0,
           "boost": 1.6,
-          "sfx": "beat_fire_impact"
+          "sfx": "beat_fire_impact",
+          "element": "fire"
         },
         {
           "kind": "flash",
@@ -309,10 +311,11 @@
           "size": 6.0
         },
         {
-          "kind": "embers",
+          "kind": "fall",
           "at": 0.7,
           "dur": 0.6,
-          "count": 18
+          "count": 18,
+          "palette": "ember"
         }
       ]
     },
@@ -954,7 +957,8 @@
           "origin": "caster",
           "at": 0.0,
           "dur": 0.38,
-          "count": 34
+          "count": 34,
+          "palette": "flame"
         },
         {
           "kind": "bolt",
@@ -972,7 +976,8 @@
           "at": 0.66,
           "power": 2.0,
           "boost": 2.6,
-          "sfx": "beat_firaga_impact"
+          "sfx": "beat_firaga_impact",
+          "element": "fire"
         },
         {
           "kind": "flash",
@@ -985,7 +990,8 @@
           "at": 0.7,
           "dur": 0.36,
           "height": 320,
-          "sfx": "beat_fire_bloom"
+          "sfx": "beat_fire_bloom",
+          "palette": "flame"
         },
         {
           "kind": "eruption",
@@ -996,7 +1002,8 @@
             0,
             -24
           ],
-          "sfx": "beat_firaga_detonate"
+          "sfx": "beat_firaga_detonate",
+          "element": "fire"
         },
         {
           "kind": "flash",
@@ -1018,10 +1025,11 @@
           "intensity": 14
         },
         {
-          "kind": "embers",
+          "kind": "fall",
           "at": 1.05,
           "dur": 0.65,
-          "count": 32
+          "count": 32,
+          "palette": "ember"
         }
       ],
       "tint": [
@@ -1969,7 +1977,8 @@
           "origin": "caster",
           "at": 0.0,
           "dur": 0.34,
-          "count": 26
+          "count": 26,
+          "palette": "flame"
         },
         {
           "kind": "bolt",
@@ -1987,7 +1996,8 @@
           "at": 0.62,
           "power": 1.5,
           "boost": 2.0,
-          "sfx": "beat_fira_impact"
+          "sfx": "beat_fira_impact",
+          "element": "fire"
         },
         {
           "kind": "flash",
@@ -2000,13 +2010,15 @@
           "at": 0.66,
           "dur": 0.36,
           "height": 260,
-          "sfx": "beat_fire_bloom"
+          "sfx": "beat_fire_bloom",
+          "palette": "flame"
         },
         {
-          "kind": "embers",
+          "kind": "fall",
           "at": 0.8,
           "dur": 0.65,
-          "count": 24
+          "count": 24,
+          "palette": "ember"
         }
       ]
     }

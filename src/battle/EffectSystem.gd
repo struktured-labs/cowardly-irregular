@@ -150,34 +150,69 @@ func spawn_sequence(seq_id: String, from: Vector2, to: Vector2, power: float = 1
 	return {"total": total, "impact": 0.01 if compact else FractalFX.impact_time(seq)}
 
 
-## A sequence phase in an element's OWN visual language (struktured via main 23405/23406: Fire keeps its original look,
-## in phases). FractalFX calls this for eruption / pillar / gather / embers; the particles are _animate_fire's own.
+## Sequence phases drawn here, not in FractalFX: an element's ORIGINAL burst (struktured via main 23405: Fire keeps
+## its own look, in phases) and the palette-driven mote phases every lane's sequences share (the guide's vocabulary).
+const ERUPTION_TYPES := {"fire": EffectType.FIRE, "ice": EffectType.ICE, "lightning": EffectType.LIGHTNING,
+	"holy": EffectType.HOLY, "dark": EffectType.DARK, "heal": EffectType.HEAL}
+
+
 func run_element_phase(kind: String, at: Vector2, _from: Vector2, power: float, phase: Dictionary) -> void:
 	if _effects_container == null:
 		return
 	var boost := float(phase.get("boost", 1.0))
+	var palette := str(phase.get("palette", "flame"))
 	match kind:
 		"eruption":
-			var e := _create_effect(EffectType.FIRE)
+			var element := str(phase.get("element", "fire"))
+			var type: EffectType = ERUPTION_TYPES.get(element, EffectType.FIRE)
+			var e := _create_effect(type)
 			e.position = at
 			_effects_container.add_child(e)
+			var p := clampf(power * float(phase.get("power", 1.0)), POWER_MIN, POWER_MAX)
 			# No strike cue here: the phase's own per-tier impact beat is the sound (cowir-sfx 23592).
-			_animate_fire(e, Callable(), clampf(power * float(phase.get("power", 1.0)), POWER_MIN, POWER_MAX), boost)
+			if type == EffectType.FIRE:
+				_animate_fire(e, Callable(), p, boost)
+			else:
+				_animate_effect(e, type, Callable(), p)
 		"pillar":
-			_fire_column(at, power * boost, float(phase.get("dur", 0.36)), float(phase.get("height", 220.0)))
+			_mote_column(at, power * boost, float(phase.get("dur", 0.36)), float(phase.get("height", 220.0)), palette)
 		"gather":
-			_fire_gather(at, power, float(phase.get("dur", 0.3)), int(phase.get("count", 18)))
-		"embers":
-			_fire_embers(at, power, float(phase.get("dur", 0.6)), int(phase.get("count", 16)))
+			_mote_gather(at, power, float(phase.get("dur", 0.3)), int(phase.get("count", 18)), palette)
+		"fall", "rise":
+			_mote_drift(at, power, float(phase.get("dur", 0.6)), int(phase.get("count", 16)), palette, kind == "rise", bool(phase.get("ground_glow", kind == "fall")))
 
 
-## A rising column of flame particles, the eruption's particles stood upright.
-func _fire_column(at: Vector2, k: float, dur: float, height: float) -> void:
+## One mote in a palette's colour: Fire's own particle for the fire palettes, a soft white dot tinted for the rest.
+func _mote(palette: String) -> Sprite2D:
+	if palette in ["flame", "fire", "ember"]:
+		return _create_fire_particle()
+	var sprite := Sprite2D.new()
+	sprite.texture = _get_cached_texture("soft_mote", func(): return _generate_soft_mote_texture())
+	var stops: Array = FractalFX.PALETTES.get(palette, FractalFX.PALETTES["spark"])
+	var c: Color = stops[mini(1, stops.size() - 1)][1]
+	sprite.modulate = Color(c.r, c.g, c.b, 0.9)
+	return sprite
+
+
+static func _generate_soft_mote_texture() -> ImageTexture:
+	var size := 16
+	var img := Image.create(size, size, false, Image.FORMAT_RGBA8)
+	img.fill(Color(0, 0, 0, 0))
+	for y in size:
+		for x in size:
+			var d: float = Vector2(x - 7.5, y - 7.5).length() / 7.5
+			if d < 1.0:
+				img.set_pixel(x, y, Color(1, 1, 1, (1.0 - d) * (1.0 - d)))
+	return ImageTexture.create_from_image(img)
+
+
+## A rising column of motes: Fire's pillar, a heal's light, a song's staff.
+func _mote_column(at: Vector2, k: float, dur: float, height: float, palette: String) -> void:
 	var n := int(26.0 * clampf(k, 0.5, 4.0))
 	var tween := create_tween()
 	tween.set_parallel(true)
 	for i in n:
-		var p := _create_fire_particle()
+		var p := _mote(palette)
 		p.position = at + Vector2(randf_range(-14.0, 14.0) * k, randf_range(-6.0, 6.0))
 		p.scale = Vector2.ONE * randf_range(0.8, 1.6) * k
 		_effects_container.add_child(p)
@@ -189,42 +224,46 @@ func _fire_column(at: Vector2, k: float, dur: float, height: float) -> void:
 		tween.tween_callback(p.queue_free).set_delay(delay + dur)
 
 
-## Heat gathering at the caster's hand: motes drawn in from a ring, so the cast reads as charging before it flies.
-func _fire_gather(at: Vector2, k: float, dur: float, count: int) -> void:
+## Motes drawn in from a ring to a point: a cast charging before it flies.
+func _mote_gather(at: Vector2, k: float, dur: float, count: int, palette: String) -> void:
 	var tween := create_tween()
 	tween.set_parallel(true)
 	for i in count:
-		var p := _create_fire_particle()
+		var p := _mote(palette)
 		var ang := TAU * float(i) / float(count) + randf_range(-0.2, 0.2)
 		p.position = at + Vector2(cos(ang), sin(ang)) * randf_range(60.0, 96.0) * clampf(k, 0.8, 2.5)
 		p.scale = Vector2.ONE * 0.7
+		var rest_a: float = p.modulate.a
 		p.modulate.a = 0.0
 		_effects_container.add_child(p)
 		var delay := randf() * dur * 0.3
-		tween.tween_property(p, "modulate:a", 0.95, dur * 0.25).set_delay(delay)
+		tween.tween_property(p, "modulate:a", rest_a, dur * 0.25).set_delay(delay)
 		tween.tween_property(p, "position", at, dur - delay).set_delay(delay).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
 		tween.tween_property(p, "scale", Vector2.ONE * 1.4, dur - delay).set_delay(delay)
 		tween.tween_callback(p.queue_free).set_delay(dur)
 
 
-## The aftermath: sparks drifting down and a scorch glow that fades on the ground under the target.
-func _fire_embers(at: Vector2, k: float, dur: float, count: int) -> void:
+## Motes drifting down (embers, snow, ash) or up (heal light, notes), with an optional glow on the ground under them.
+func _mote_drift(at: Vector2, k: float, dur: float, count: int, palette: String, upward: bool, ground_glow: bool) -> void:
 	var tween := create_tween()
 	tween.set_parallel(true)
-	var scorch := _create_fire_particle()
-	scorch.position = at + Vector2(0, 28)
-	scorch.scale = Vector2(4.0, 1.2) * clampf(k, 0.8, 2.5)
-	scorch.modulate = Color(0.9, 0.35, 0.1, 0.7)
-	_effects_container.add_child(scorch)
-	tween.tween_property(scorch, "modulate:a", 0.0, dur)
-	tween.tween_callback(scorch.queue_free).set_delay(dur)
+	if ground_glow:
+		var glow := _mote(palette)
+		glow.position = at + Vector2(0, 28)
+		glow.scale = Vector2(4.0, 1.2) * clampf(k, 0.8, 2.5)
+		glow.modulate.a = 0.7
+		_effects_container.add_child(glow)
+		tween.tween_property(glow, "modulate:a", 0.0, dur)
+		tween.tween_callback(glow.queue_free).set_delay(dur)
+	var dir: float = -1.0 if upward else 1.0
 	for i in int(float(count) * clampf(k, 0.8, 2.5)):
-		var p := _create_fire_particle()
-		p.position = at + Vector2(randf_range(-40.0, 40.0), randf_range(-70.0, -10.0)) * clampf(k, 0.8, 2.0)
+		var p := _mote(palette)
+		var start_y: float = randf_range(-10.0, 30.0) if upward else randf_range(-70.0, -10.0)
+		p.position = at + Vector2(randf_range(-40.0, 40.0), start_y) * clampf(k, 0.8, 2.0)
 		p.scale = Vector2.ONE * randf_range(0.3, 0.6)
 		_effects_container.add_child(p)
 		var delay := randf() * dur * 0.3
-		tween.tween_property(p, "position", p.position + Vector2(randf_range(-20.0, 20.0), randf_range(30.0, 60.0)), dur - delay).set_delay(delay)
+		tween.tween_property(p, "position", p.position + Vector2(randf_range(-20.0, 20.0), dir * randf_range(30.0, 60.0)), dur - delay).set_delay(delay)
 		tween.tween_property(p, "modulate:a", 0.0, dur - delay).set_delay(delay)
 		tween.tween_callback(p.queue_free).set_delay(dur)
 
