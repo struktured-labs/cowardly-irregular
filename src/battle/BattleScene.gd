@@ -5674,7 +5674,8 @@ func _animate_melee_attack(attacker_sprite: Node2D, target_sprite: Node2D, attac
 				attacker_anim.play_attack()
 		if impact_at > 0.0:
 			return
-		_apply_hitstop(attacker_sprite, target_sprite, hitstop_for(_land_hit_weight(target_sprite, attacker, action)))
+		_hitstop_seconds = hitstop_for(_land_hit_weight(target_sprite, attacker, action))
+		_apply_hitstop(attacker_sprite, target_sprite)
 		_delayed_play_hit_fx(target_anim, target_sprite)
 		_land_melee_damage(held_hit)
 	)
@@ -5684,7 +5685,8 @@ func _animate_melee_attack(attacker_sprite: Node2D, target_sprite: Node2D, attac
 		tween.tween_callback(func():
 			if not is_instance_valid(self):
 				return
-			_apply_hitstop(attacker_sprite, target_sprite, hitstop_for(_land_hit_weight(target_sprite, attacker, action)))
+			_hitstop_seconds = hitstop_for(_land_hit_weight(target_sprite, attacker, action))
+			_apply_hitstop(attacker_sprite, target_sprite)
 			_delayed_play_hit_fx(target_anim, target_sprite)
 			_land_melee_damage(held_hit)
 		)
@@ -5822,6 +5824,7 @@ var _melee_hold_token: int = 0
 var _melee_hold_live: bool = false
 var _melee_hold_extra: float = 0.0
 var _action_serial: int = 0
+var _hitstop_seconds: float = 0.07
 
 
 ## Spotlight speeds (1x-2x, not turbo, not the console): the same gate the per-action stage hold uses.
@@ -5867,7 +5870,10 @@ func _land_held_hit() -> void:
 
 
 ## Fable-pass hitstop: freeze both combatants' anim playback ~70ms at contact. Visual-only (no Engine.time_scale touch — timers/music unaffected); restore is validity-guarded so mid-stop frees are safe.
-func _apply_hitstop(attacker_sprite: Node2D, target_sprite: Node2D, duration: float = 0.07) -> void:
+func _apply_hitstop(attacker_sprite: Node2D, target_sprite: Node2D) -> void:
+	## The stop's length is the hit's (see hitstop_for): the caller leaves it in _hitstop_seconds, spent here.
+	var duration: float = _hitstop_seconds
+	_hitstop_seconds = HIT_HITSTOP.x
 	if not BattleJuice.flag("hit_stop"):
 		return
 	var frozen: Array = []
@@ -5878,7 +5884,9 @@ func _apply_hitstop(attacker_sprite: Node2D, target_sprite: Node2D, duration: fl
 	if frozen.is_empty():
 		return
 	## A heavy hit's longer stop holds the attacker's LUNGE too, so the swing and the walk home stay in step.
-	var lunge = attacker_sprite.get_meta("attack_tween", null) if is_instance_valid(attacker_sprite) else null
+	var lunge = null
+	if is_instance_valid(attacker_sprite) and attacker_sprite.has_meta("attack_tween"):
+		lunge = attacker_sprite.get_meta("attack_tween")
 	var held_lunge: bool = duration > 0.07 and lunge is Tween and lunge.is_valid() and lunge.is_running()
 	if held_lunge:
 		lunge.pause()
@@ -6435,12 +6443,18 @@ static func status_tint(effects: Array) -> Color:
 	return Color.WHITE
 
 
+## The inverse of _get_combatant_sprite, so it reads the SAME arrays: BattleManager's parties are the objects
+## the engine acts on (and signs a hit with); the scene's own lists are the fallback for a scene built by hand.
 func _combatant_of_sprite(sprite: Node2D) -> Combatant:
 	var pi: int = party_sprite_nodes.find(sprite)
 	if pi != -1:
+		if pi < BattleManager.player_party.size():
+			return BattleManager.player_party[pi]
 		return party_members[pi] if pi < party_members.size() else null
 	var ei: int = enemy_sprite_nodes.find(sprite)
 	if ei != -1:
+		if ei < BattleManager.enemy_party.size():
+			return BattleManager.enemy_party[ei]
 		return test_enemies[ei] if ei < test_enemies.size() else null
 	return null
 
