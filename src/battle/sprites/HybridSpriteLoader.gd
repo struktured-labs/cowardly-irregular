@@ -529,6 +529,9 @@ static func load_monster_sprite_frames(monster_id: String, base_id: String = "")
 				base_anims = ba
 
 	var sprite_frames = SpriteFrames.new()
+	## An animation's optional "impact": the frame (0-based, within the animation) its hit lands on.
+	## BattleAnimator.impact_time reads it; absent = the hit lands on the first frame, as it always has.
+	var impact_frames: Dictionary = {}
 	# maxi() floors a NARROW sheet at one column; a ZERO declaration is refused above, because this division runs first.
 	var cols_per_row: int = maxi(1, texture.get_width() / frame_width)
 
@@ -536,6 +539,8 @@ static func load_monster_sprite_frames(monster_id: String, base_id: String = "")
 		var anim_data = animations[anim_name]
 		var start_frame: int = anim_data.get("start", 0)
 		var end_frame: int = anim_data.get("end", start_frame)
+		if anim_data.has("impact"):
+			impact_frames[anim_name] = int(anim_data["impact"])
 
 		sprite_frames.add_animation(anim_name)
 		var anim_fps: float = fps
@@ -558,6 +563,7 @@ static func load_monster_sprite_frames(monster_id: String, base_id: String = "")
 
 	if not has_usable_frames(sprite_frames):
 		return null
+	sprite_frames.set_meta("impact_frames", impact_frames)
 
 	print("[SPRITES] Loaded monster sheet for '%s' (%d animations)" % [monster_id, usable_animation_count(sprite_frames)])
 	return sprite_frames
@@ -781,4 +787,7 @@ static func _load_external_sheet(sheet_data: Dictionary, job_id: String) -> Spri
 
 		loaded_any = true
 
+	## The sheet's optional "impact_frames": {animation: the frame its hit lands on}. See BattleAnimator.impact_time.
+	var impacts = sheet_data.get("impact_frames", {})
+	sprite_frames.set_meta("impact_frames", impacts if impacts is Dictionary else {})
 	return sprite_frames if loaded_any else null
