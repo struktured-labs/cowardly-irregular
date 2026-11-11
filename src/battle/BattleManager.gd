@@ -2798,7 +2798,14 @@ func _process_ai_selection(combatant: Combatant) -> void:
 	_end_selection_turn()
 
 
-func _make_ai_decision(combatant: Combatant, alive_allies: Array, alive_enemies: Array) -> Dictionary:
+## The action the live ladder picks for an enemy, with none of the theatre: HeadlessBattleResolver asks this, so a grind
+## fights the boss a player does. Its own picker cast the highest-multiplier ability every round (Glacius: Absolute Zero
+## on all five, four rounds running) where this ladder rolls utility, a power-weighted spell or a plain attack.
+func enemy_choice(combatant: Combatant, alive_allies: Array, alive_enemies: Array) -> Dictionary:
+	return _make_ai_decision(combatant, alive_allies, alive_enemies, true)
+
+
+func _make_ai_decision(combatant: Combatant, alive_allies: Array, alive_enemies: Array, quiet: bool = false) -> Dictionary:
 	"""Make AI decision for action selection — behavior varies by monster archetype"""
 	# Get available abilities
 	var available_abilities = []
@@ -2820,7 +2827,7 @@ func _make_ai_decision(combatant: Combatant, alive_allies: Array, alive_enemies:
 	# Result of pick_intent feeds the existing archetype/masterite match
 	# ladders via combatant.get_meta("llm_intent"); those ladders read
 	# the meta to bias their weighted choices (no abilities invented).
-	_update_boss_dialogue_phase(combatant)
+	_update_boss_dialogue_phase(combatant, quiet)
 
 	# Masterite bosses use specialized AI
 	if combatant.has_meta("masterite") and combatant.get_meta("masterite"):
@@ -2854,7 +2861,8 @@ func _make_ai_decision(combatant: Combatant, alive_allies: Array, alive_enemies:
 		if randf() < counter_chance:
 			var counter_action = _get_counter_action(combatant, counter_strategy, alive_allies, alive_enemies, available_abilities)
 			if not counter_action.is_empty():
-				battle_log_message.emit("The enemy anticipates your strategy...")
+				if not quiet:
+					battle_log_message.emit("The enemy anticipates your strategy...")
 				return _lock_action_to_taunter(combatant, counter_action, alive_enemies)
 
 	# Determine AI archetype from stats and abilities
@@ -9556,7 +9564,7 @@ func _intent_ability_bias(combatant: Combatant) -> Dictionary:
 	return boss_dlg.intent_bias(_boss_persona_id(combatant), intent)
 
 
-func _update_boss_dialogue_phase(combatant: Combatant) -> void:
+func _update_boss_dialogue_phase(combatant: Combatant, quiet: bool = false) -> void:
 	var boss_dlg = get_node_or_null("/root/BossDialogue")
 	if boss_dlg == null:
 		return
@@ -9589,6 +9597,9 @@ func _update_boss_dialogue_phase(combatant: Combatant) -> void:
 	var intent_id: String = pick.get("intent_id", "")
 	if intent_id != "":
 		combatant.set_meta("llm_intent", intent_id)
+	## The grind asks for the posture alone: no taunt, no log line, and never the model (headless never calls it).
+	if quiet:
+		return
 	var taunt: String = pick.get("taunt_line", "")
 	# On the very first phase advance also surface a phase-transition line
 	# from data (if authored) — gives bosses a vocal "you bleed me twice"
