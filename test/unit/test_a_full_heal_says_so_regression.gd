@@ -1,9 +1,10 @@
 extends GutTest
 
 ## struktured on .788 (main 23431): "Lv 2 Cleric healing with Sanatio was like 3-ish per cure, that's kinda terrible".
-## Measured on his save (battle 23433): Sanatio's raw heal is ~683 HP against party max HP of 32-148, and the log
-## printed what it RESTORED, capped at missing HP, so a full heal on a near-full ally read "+3". Now a heal that tops
-## its target off says so: "(full)" in the log, a FULL banner on the popup.
+## Measured on his save (battle 23433): Sanatio's raw heal was ~683 HP against party max HP of 32-148, and the log
+## printed what it RESTORED, capped at missing HP, so a full heal on a near-full ally read "+3". The heal is nerfed
+## since (test_a_cure_heals_about_a_fighters_hit), and a heal that tops its target off still says so: "(full)" in the
+## log, a FULL banner on the popup.
 
 const BattleState := preload("res://test/unit/helpers/battle_state.gd")
 
@@ -56,7 +57,7 @@ func test_full_means_the_target_ended_at_max_hp() -> void:
 func test_a_capped_sanatio_says_full_and_a_partial_one_does_not() -> void:
 	var cleric := _unit("Cleric", 60, 20)
 	var cure: Dictionary = JobSystem.get_ability("cure")
-	assert_gt(BattleManager.heal_cast_amount(cleric, cure), 100, "CONTROL: Sanatio's raw heal dwarfs a 3 HP gap")
+	assert_gt(BattleManager.heal_cast_amount(cleric, cure), 3, "CONTROL: Sanatio's raw heal is more than the 3 HP gap it is about to close")
 	var near := _unit("Rogue", 80, 5)
 	near.current_hp = 77
 	BattleManager._execute_healing_ability(cleric, cure, [near])
