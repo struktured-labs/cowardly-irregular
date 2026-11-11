@@ -26,7 +26,7 @@ and an ability names it in `data/abilities.json`:
   "start": 0.15,
   "impact": 0.88,
   "phases": [
-    {"kind": "gather", "origin": "caster", "at": 0.0, "dur": 0.60, "count": 18, "palette": "flame"},
+    {"kind": "gather", "origin": "hand", "at": 0.0, "dur": 0.60, "count": 18, "palette": "flame"},
     {"kind": "bolt", "at": 0.60, "dur": 0.28, "palette": "flame", "sfx": "beat_fire_burst"},
     {"kind": "eruption", "at": 0.88, "element": "fire", "power": 1.0, "boost": 1.6, "sfx": "beat_fire_impact"},
     {"kind": "fall", "at": 1.00, "dur": 0.60, "count": 18, "palette": "ember"}
@@ -67,7 +67,7 @@ counts for size, and a new phase for each tier.
 
 ## 3. Phase kinds
 
-Every phase takes: `kind`, `at`, `dur`, `origin` (`"caster"` or `"target"`,
+Every phase takes: `kind`, `at`, `dur`, `origin` (`"target"`: the target's body, the default; `"caster"`: the caster's body; `"hand"`: the caster's hand, where a bolt leaves from. All three are measured on the FIGURE, not its frame,
 default target), `offset` `[x, y]`, `sfx`, `min_tier` (1-3), `palette` and
 `palette_t3` (the palette at intensity tier 3).
 
