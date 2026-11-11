@@ -3301,7 +3301,7 @@ static func sequence_total(seq_id: String) -> float:
 ## Seconds between one target's cut and the next as a line-wide melee move passes along the enemies.
 const MELEE_EACH_STAGGER := 0.05
 ## A status that LANDS plays its own beat at the target; anything not listed lands with its aura alone.
-const LANDED_BEATS := {"stun": "landed_stun", "blind": "landed_blind"}
+const LANDED_BEATS := {"stun": "landed_stun", "blind": "landed_blind", "sleep": "landed_sleep"}
 const FIZZLE_BEAT := "fizzle"
 ## A melee move resolves its damage and statuses at the action's START and arrives `_last_contact_in` later
 ## (0.17 s at the FULL tier, 0.12 below it: _animate_melee_attack). Outcome beats wait out what is left of this, so
