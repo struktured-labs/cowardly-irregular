@@ -227,11 +227,31 @@ func test_an_outcome_of_a_melee_move_waits_for_the_blow_to_arrive() -> void:
 	EffectSystem._effects_container = host
 	_scene._on_status_landed("stun", _foe)
 	var at_once := host.get_child_count()
-	await get_tree().create_timer(BattleScene.MELEE_CONTACT_S + 0.1).timeout
+	await get_tree().create_timer(_scene._last_contact_in + 0.1).timeout
 	var after := host.get_child_count()
 	EffectSystem._effects_container = was
 	assert_eq(at_once, 0, "the stars do not appear while the shield is still on its way")
 	assert_gt(after, 0, "CONTROL: they do appear once it has landed")
+
+
+func test_an_overlay_starts_at_its_own_lunges_contact() -> void:
+	## main 23818: below the FULL tier the approach is 0.05 s shorter, and an overlay timed to a constant landed late.
+	_scene._on_action_executing(_hero, {"type": "ability", "ability_id": "power_strike", "targets": [_foe]})
+	assert_gt(_scene._last_contact_in, 0.0, "CONTROL: the lunge reports when it lands (%.3f)" % _scene._last_contact_in)
+	assert_almost_eq(_scene._melee_contact_timer.time_left, _scene._last_contact_in, 0.02, "the contact clock is the lunge's, not a constant")
+	var host := Node2D.new()
+	add_child_autofree(host)
+	var was: Node2D = EffectSystem._effects_container
+	EffectSystem._effects_container = host
+	## A flash at the impact (at 0.0) must not exist before the given start and must exist just after it.
+	EffectSystem.spawn_sequence("melee_slash", Vector2(600, 300), Vector2(200, 300), 1.0, {}, 1, false, 0.3)
+	await get_tree().create_timer(0.2).timeout
+	var early := host.get_child_count()
+	await get_tree().create_timer(0.25).timeout
+	var late := host.get_child_count()
+	EffectSystem._effects_container = was
+	assert_eq(early, 0, "with start_at 0.3, nothing of Slash is drawn at 0.2 (its first phase is 0.04 before contact)")
+	assert_gt(late, 0, "CONTROL: it is drawn once that contact has come")
 
 
 func test_a_drawn_in_order_phase_is_as_long_as_its_last_flame() -> void:

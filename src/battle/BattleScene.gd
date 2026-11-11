@@ -3301,12 +3301,11 @@ static func sequence_total(seq_id: String) -> float:
 ## Seconds between one target's cut and the next as a line-wide melee move passes along the enemies.
 const MELEE_EACH_STAGGER := 0.05
 ## A status that LANDS plays its own beat at the target; anything not listed lands with its aura alone.
-const LANDED_BEATS := {"stun": "landed_stun", "blind": "landed_blind"}
+const LANDED_BEATS := {"stun": "landed_stun", "blind": "landed_blind", "sleep": "landed_sleep"}
 const FIZZLE_BEAT := "fizzle"
-## A melee move resolves its damage and statuses at the action's START and arrives 0.17 s later (0.05 pull-back +
-## 0.12 approach, _animate_melee_attack). Outcome beats wait out what is left of this, so Shield Bash's stars never
-## pop before the shield lands (battle 23786).
-const MELEE_CONTACT_S := 0.17
+## A melee move resolves its damage and statuses at the action's START and arrives `_last_contact_in` later
+## (0.17 s at the FULL tier, 0.12 below it: _animate_melee_attack). Outcome beats wait out what is left of this, so
+## Shield Bash's stars never pop before the shield lands (battle 23786).
 var _melee_contact_timer: SceneTreeTimer = null
 
 
@@ -3408,8 +3407,8 @@ static func melee_overlay(ability: Dictionary, key: String) -> String:
 
 
 ## Fighter and Rogue physical abilities (sprites 23767): the lunge, the hit and the damage stay _animate_melee_attack's;
-## this draws the move AROUND them. A sequence's `start` is the lunge's contact delay, so its phases are authored from
-## contact and nothing here waits. `melee` plays once (at its target, or at the centre of the line for an all-enemies
+## this draws the move AROUND them. A sequence's phases are authored from CONTACT; its `start` is replaced by the
+## lunge's own contact time, so the move lands on the hit at every tier and nothing here waits. `melee` plays once (at its target, or at the centre of the line for an all-enemies
 ## move); `melee_each` plays on every target, staggered along the line as the edge passes. Turbo/console: impact only.
 func _play_melee_overlay(caster: Combatant, caster_sprite: Node2D, ability: Dictionary, targets: Array) -> void:
 	var seq_id := melee_overlay(ability, "melee")
@@ -3431,14 +3430,17 @@ func _play_melee_overlay(caster: Combatant, caster_sprite: Node2D, ability: Dict
 	var tier := int(intensity["tier"])
 	var compact := not signature_sound_allowed()
 	var from := _stable_sprite_anchor(caster_sprite)
-	EffectSystem.spawn_sequence(seq_id, from, centre, power, {}, tier, compact)
+	## The lunge's own contact, not the sequence's authored 0.17: below the FULL tier the approach is 0.05 s shorter,
+	## and an effect that lands after its hit is the jank this exists to remove (main 23818).
+	var contact := _last_contact_in
+	EffectSystem.spawn_sequence(seq_id, from, centre, power, {}, tier, compact, contact)
 	var each := melee_overlay(ability, "melee_each")
 	if each == "":
 		return
 	## Nearest the attacker first: the edge reaches the party's side of the line before the far side.
 	anchors.sort_custom(func(a: Vector2, b: Vector2) -> bool: return a.distance_squared_to(from) < b.distance_squared_to(from))
 	for i in anchors.size():
-		var delay := 0.0 if compact else MELEE_EACH_STAGGER * float(i)
+		var delay := 0.0 if compact else contact + MELEE_EACH_STAGGER * float(i)
 		if delay <= 0.0:
 			EffectSystem.spawn_sequence(each, from, anchors[i], power, {}, tier, compact)
 		else:
@@ -5109,7 +5111,7 @@ func _on_action_executing(combatant: Combatant, action: Dictionary) -> void:
 					_animate_melee_attack(attacker_sprite, target_sprite, animator, target_animator, 0.0, _ability_sheet_anim(ability, animator))
 					if BattleManager.presentation_hold > 0.0:
 						BattleManager.presentation_hold = maxf(BattleManager.presentation_hold, _last_lunge_length + 0.05)
-					_melee_contact_timer = get_tree().create_timer(MELEE_CONTACT_S)
+					_melee_contact_timer = get_tree().create_timer(_last_contact_in)
 					_play_melee_overlay(combatant, attacker_sprite, ability, targets)
 				else:
 					_play_ability_animation(anim_type, animator)
@@ -5619,6 +5621,7 @@ func _animate_melee_attack(attacker_sprite: Node2D, target_sprite: Node2D, attac
 	impact_at = minf(impact_at, hold)
 	var approach: float = 0.12 + (0.05 if _tier() == BattleJuice.Tier.FULL and BattleJuice.flag("anticipation") else 0.0)
 	_last_lunge_length = lead_in + approach + hold + 0.18
+	_last_contact_in = lead_in + approach  # seconds until this lunge makes contact: an overlay times itself from it
 	## A plain single attack at spotlight pace holds its number, sound and death until the hit LANDS (contact,
 	## or the impact frame). Unheld, a kill's death fx began at the action's start and had finished before the
 	## attacker arrived.
@@ -5811,6 +5814,7 @@ const STRIKE_HOLD := 0.22
 ## The idle snap waits for a swing in flight, but never longer than this past its 0.7 s.
 const SNAP_WAIT_MAX := 2.0
 var _last_lunge_length: float = 0.0
+var _last_contact_in: float = 0.17
 var _melee_hold_token: int = 0
 var _melee_hold_live: bool = false
 var _melee_hold_extra: float = 0.0

@@ -3520,6 +3520,471 @@
           "palette": "holy"
         }
       ]
+    },
+    "protect_battle": {
+      "label": "Protect: gold plates fly in and lock into a honeycomb wall in front of the ally",
+      "start": 0.5,
+      "impact": 0.45,
+      "phases": [
+        {
+          "kind": "gather",
+          "origin": "caster",
+          "at": 0.0,
+          "dur": 0.25,
+          "count": 14,
+          "palette": "holy"
+        },
+        {
+          "kind": "plates",
+          "at": 0.1,
+          "dur": 0.35,
+          "hold": 0.5,
+          "shape": "wall",
+          "radius": 52,
+          "palette": "holy",
+          "offset": [
+            -44,
+            -6
+          ]
+        },
+        {
+          "kind": "flash",
+          "at": 0.45,
+          "dur": 0.14,
+          "size": 4.0,
+          "alpha": 0.55,
+          "offset": [
+            -44,
+            -6
+          ]
+        },
+        {
+          "kind": "ring",
+          "at": 0.45,
+          "dur": 0.3,
+          "scale": 2.8,
+          "palette": "holy",
+          "offset": [
+            -44,
+            -6
+          ]
+        },
+        {
+          "kind": "rise",
+          "at": 0.5,
+          "dur": 0.5,
+          "count": 8,
+          "palette": "holy"
+        }
+      ]
+    },
+    "shell_battle": {
+      "label": "Shell: violet plates arch into a dome that closes over the ally",
+      "start": 0.5,
+      "impact": 0.45,
+      "phases": [
+        {
+          "kind": "gather",
+          "origin": "caster",
+          "at": 0.0,
+          "dur": 0.25,
+          "count": 14,
+          "palette": "ward"
+        },
+        {
+          "kind": "plates",
+          "at": 0.1,
+          "dur": 0.35,
+          "hold": 0.5,
+          "shape": "dome",
+          "count": 9,
+          "radius": 64,
+          "palette": "ward",
+          "offset": [
+            0,
+            10
+          ]
+        },
+        {
+          "kind": "flash",
+          "at": 0.45,
+          "dur": 0.14,
+          "size": 4.0,
+          "alpha": 0.5,
+          "offset": [
+            0,
+            -50
+          ]
+        },
+        {
+          "kind": "ring",
+          "at": 0.45,
+          "dur": 0.34,
+          "scale": 3.2,
+          "palette": "ward",
+          "offset": [
+            0,
+            30
+          ]
+        },
+        {
+          "kind": "fall",
+          "at": 0.5,
+          "dur": 0.5,
+          "count": 8,
+          "palette": "ward",
+          "ground_glow": false,
+          "offset": [
+            0,
+            -60
+          ]
+        }
+      ]
+    },
+    "battle_hymn_battle": {
+      "label": "Battle Hymn: a red-gold staff ribbon runs from the Bard down the party line and a rising note bursts on each ally as it arrives",
+      "start": 0.5,
+      "impact": 0.4,
+      "travel": 0.05,
+      "phases": [
+        {
+          "kind": "gather",
+          "origin": "caster",
+          "at": 0.0,
+          "dur": 0.2,
+          "count": 16,
+          "palette": "hymn"
+        },
+        {
+          "kind": "glyphs",
+          "origin": "caster",
+          "at": 0.0,
+          "dur": 0.5,
+          "count": 5,
+          "glyph": "note",
+          "palette": "hymn",
+          "spread": [
+            40,
+            20
+          ],
+          "drift": [
+            0,
+            -90
+          ],
+          "size": 3.0
+        },
+        {
+          "kind": "ribbon",
+          "at": 0.1,
+          "dur": 0.3,
+          "life": 0.45,
+          "lines": 3,
+          "wave": 16,
+          "palette": "hymn"
+        },
+        {
+          "kind": "flash",
+          "at": 0.4,
+          "dur": 0.16,
+          "size": 5.0,
+          "alpha": 0.5
+        },
+        {
+          "kind": "ring",
+          "at": 0.4,
+          "dur": 0.34,
+          "scale": 3.4,
+          "palette": "hymn",
+          "offset": [
+            0,
+            30
+          ]
+        },
+        {
+          "kind": "pillar",
+          "at": 0.4,
+          "dur": 0.4,
+          "height": 200,
+          "palette": "hymn"
+        },
+        {
+          "kind": "glyphs",
+          "at": 0.4,
+          "dur": 0.7,
+          "count": 4,
+          "glyph": "note",
+          "palette": "hymn",
+          "drift": [
+            0,
+            -110
+          ],
+          "size": 3.4
+        }
+      ]
+    },
+    "inspiring_melody_battle": {
+      "label": "Inspiring Melody: a blue staff ribbon washes down the party line; notes and blue light rise from each ally",
+      "start": 0.5,
+      "impact": 0.4,
+      "travel": 0.05,
+      "phases": [
+        {
+          "kind": "gather",
+          "origin": "caster",
+          "at": 0.0,
+          "dur": 0.2,
+          "count": 16,
+          "palette": "mana"
+        },
+        {
+          "kind": "glyphs",
+          "origin": "caster",
+          "at": 0.0,
+          "dur": 0.5,
+          "count": 5,
+          "glyph": "note",
+          "palette": "mana",
+          "spread": [
+            40,
+            20
+          ],
+          "drift": [
+            0,
+            -90
+          ],
+          "size": 3.0
+        },
+        {
+          "kind": "ribbon",
+          "at": 0.1,
+          "dur": 0.3,
+          "life": 0.45,
+          "lines": 3,
+          "wave": 10,
+          "palette": "mana"
+        },
+        {
+          "kind": "ring",
+          "at": 0.4,
+          "dur": 0.34,
+          "scale": 3.0,
+          "palette": "mana",
+          "offset": [
+            0,
+            30
+          ]
+        },
+        {
+          "kind": "rise",
+          "at": 0.4,
+          "dur": 0.7,
+          "count": 16,
+          "palette": "mana"
+        },
+        {
+          "kind": "glyphs",
+          "at": 0.4,
+          "dur": 0.7,
+          "count": 3,
+          "glyph": "note",
+          "palette": "mana",
+          "drift": [
+            0,
+            -100
+          ],
+          "size": 3.0
+        },
+        {
+          "kind": "rise",
+          "at": 0.6,
+          "dur": 0.6,
+          "count": 10,
+          "palette": "holy"
+        }
+      ]
+    },
+    "lullaby_battle": {
+      "label": "Lullaby: three slow notes drift from the Bard to the foe and settle on it (the sleep itself is the landed beat)",
+      "start": 0.5,
+      "impact": 0.6,
+      "phases": [
+        {
+          "kind": "glyphs",
+          "origin": "caster",
+          "at": 0.0,
+          "dur": 0.6,
+          "count": 3,
+          "glyph": "note",
+          "palette": "mana",
+          "to_target": true,
+          "spread": [
+            10,
+            18
+          ],
+          "size": 2.8
+        },
+        {
+          "kind": "ribbon",
+          "at": 0.05,
+          "dur": 0.5,
+          "life": 0.3,
+          "lines": 1,
+          "wave": 22,
+          "width": 0.5,
+          "palette": "mana"
+        },
+        {
+          "kind": "ring",
+          "at": 0.6,
+          "dur": 0.4,
+          "scale": 2.2,
+          "palette": "mana"
+        },
+        {
+          "kind": "rise",
+          "at": 0.6,
+          "dur": 0.5,
+          "count": 6,
+          "palette": "mana"
+        }
+      ]
+    },
+    "discord_battle": {
+      "label": "Discord: a jagged violet ribbon snaps across to each foe and the notes shatter on it",
+      "start": 0.5,
+      "impact": 0.3,
+      "travel": 0.03,
+      "phases": [
+        {
+          "kind": "gather",
+          "origin": "caster",
+          "at": 0.0,
+          "dur": 0.12,
+          "count": 12,
+          "palette": "void"
+        },
+        {
+          "kind": "ribbon",
+          "at": 0.05,
+          "dur": 0.2,
+          "life": 0.3,
+          "lines": 3,
+          "wave": 20,
+          "jagged": true,
+          "palette": "void"
+        },
+        {
+          "kind": "flash",
+          "at": 0.3,
+          "dur": 0.12,
+          "size": 4.5,
+          "alpha": 0.5
+        },
+        {
+          "kind": "glyphs",
+          "at": 0.3,
+          "dur": 0.35,
+          "count": 6,
+          "glyph": "note",
+          "palette": "void",
+          "spread": [
+            30,
+            30
+          ],
+          "drift": [
+            0,
+            50
+          ],
+          "size": 2.6
+        },
+        {
+          "kind": "slash",
+          "at": 0.3,
+          "dur": 0.2,
+          "palette": "void"
+        },
+        {
+          "kind": "ring",
+          "at": 0.3,
+          "dur": 0.26,
+          "scale": 3.0,
+          "palette": "void"
+        },
+        {
+          "kind": "shake",
+          "at": 0.3,
+          "intensity": 5,
+          "dur": 0.2
+        }
+      ]
+    },
+    "melee_riff": {
+      "label": "Riff, at contact: a sour chord rings off the instrument and its notes scatter (the hit itself is the melee path's)",
+      "start": 0.17,
+      "impact": 0.0,
+      "phases": [
+        {
+          "kind": "ring",
+          "at": 0.0,
+          "dur": 0.24,
+          "scale": 2.6,
+          "palette": "void"
+        },
+        {
+          "kind": "glyphs",
+          "at": 0.0,
+          "dur": 0.35,
+          "count": 3,
+          "glyph": "note",
+          "palette": "void",
+          "spread": [
+            20,
+            20
+          ],
+          "drift": [
+            0,
+            -40
+          ],
+          "size": 2.4
+        }
+      ]
+    },
+    "landed_sleep": {
+      "label": "A sleep LANDS: Z's drift up from the sleeper",
+      "phases": [
+        {
+          "kind": "glyphs",
+          "at": 0.0,
+          "dur": 0.9,
+          "count": 3,
+          "glyph": "z",
+          "palette": "mana",
+          "spread": [
+            8,
+            4
+          ],
+          "drift": [
+            26,
+            -70
+          ],
+          "size": 3.0,
+          "offset": [
+            10,
+            -50
+          ]
+        },
+        {
+          "kind": "ring",
+          "at": 0.0,
+          "dur": 0.4,
+          "scale": 2.0,
+          "palette": "mana",
+          "offset": [
+            0,
+            -40
+          ]
+        }
+      ]
     }
   }
 }
