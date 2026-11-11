@@ -576,6 +576,9 @@ func _announce_boss_banner(body: Array[String], title: String = "[color=orange] 
 func _encounter_base_id(enemy_id: String, monsters_data: Dictionary) -> String:
 	if EncounterSystem == null:
 		return ""
+	if EncounterSystem.spawn_level_of(enemy_id) > 0:
+		var species: String = EncounterSystem.spawn_base_id(enemy_id)
+		return species if monsters_data.has(species) else ""
 	var suffix := str(EncounterSystem.ELITE_SUFFIX)
 	if suffix == "" or not enemy_id.ends_with(suffix):
 		return ""
@@ -624,7 +627,9 @@ func spawn_encounter_enemies() -> void:
 		var enemy_id: String = str(valid_ids[i])
 		var base_id := _encounter_base_id(enemy_id, monsters_data)
 		var elite_data: Dictionary = {}
-		if base_id != "":
+		if base_id != "" and EncounterSystem.spawn_level_of(enemy_id) > 0:
+			elite_data = EncounterSystem._create_enemy_data(enemy_id)   # a floor's re-levelled spawn
+		elif base_id != "":
 			elite_data = _scaled_field_elite_data(base_id)
 		else:
 			base_id = enemy_id
@@ -677,6 +682,8 @@ func spawn_encounter_enemies() -> void:
 		if not elite_data.is_empty():
 			enemy.set_meta("exp_reward", int(elite_data.get("exp_reward", 0)))
 			enemy.set_meta("gold_reward", int(elite_data.get("gold_reward", 0)))
+			if int(elite_data.get("spawn_level", 0)) > 0:
+				enemy.set_meta("spawn_level", int(elite_data["spawn_level"]))
 
 		# Set abilities from monster data so AI can use them
 		var ability_source: Dictionary = elite_data if not elite_data.is_empty() else monster_data
