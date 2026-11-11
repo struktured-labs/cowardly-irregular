@@ -244,10 +244,14 @@ func spawn_ability_effect(ability: Variant, target_position: Vector2, on_complet
 ## Plays a data/vfx_sequences.json sequence from `from` to `to` (#399, struktured via cowir-main 2026-10-31:
 ## "wire it into Fire first, playable"). Returns {"total", "impact"} in battle seconds: impact is when the
 ## sequence first lands on the target, so a caller can hold the damage numbers for it. {} if the id is unknown.
-func spawn_sequence(seq_id: String, from: Vector2, to: Vector2, power: float = 1.0, actors: Dictionary = {}, tier: int = 1, compact: bool = false) -> Dictionary:
+## `start_at` >= 0 replaces the sequence's authored `start`: a melee overlay passes its lunge's own contact time.
+func spawn_sequence(seq_id: String, from: Vector2, to: Vector2, power: float = 1.0, actors: Dictionary = {}, tier: int = 1, compact: bool = false, start_at: float = -1.0) -> Dictionary:
 	var seq: Dictionary = FractalFX.load_sequence(seq_id)
 	if seq.is_empty() or _effects_container == null:
 		return {}
+	if start_at >= 0.0:
+		seq = seq.duplicate()
+		seq["start"] = start_at
 	var fx := FractalFX.new(_effects_container)
 	fx.actors = actors
 	fx.tier = tier
