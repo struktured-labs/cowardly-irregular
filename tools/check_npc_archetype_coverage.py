@@ -1,12 +1,15 @@
 #!/usr/bin/env python3
-"""Walk every assets/sprites/npcs/<archetype>/overworld.png and check each
-direction row (0=down, 1=left, 2=right, 3=up) at each frame for being mostly
-transparent. Mostly-transparent frames in an archetype sheet cause the
-WanderingNPC to silently render as invisible when facing that direction
-(WanderingNPC._update_archetype_frame is a no-op when the sprite frame's
-texture has no opaque pixels — the prior frame's texture just sticks).
-Run: python3 tools/check_npc_archetype_coverage.py
-"""
+""":"
+echo "$0 is a Python script: run it with python3, not bash" >&2; exit 2
+":"""
+# Walk every assets/sprites/npcs/<archetype>/overworld.png and check each
+# direction row (0=down, 1=left, 2=right, 3=up) at each frame for being mostly
+# transparent. Mostly-transparent frames in an archetype sheet cause the
+# WanderingNPC to silently render as invisible when facing that direction
+# (WanderingNPC._update_archetype_frame is a no-op when the sprite frame's
+# texture has no opaque pixels — the prior frame's texture just sticks).
+# Run: python3 tools/check_npc_archetype_coverage.py
+
 
 from __future__ import annotations
 

@@ -1,9 +1,12 @@
 extends GutTest
 
 ## struktured 2026-08-20, live: "I still cant hear the sfx when a monster dies its too low
-## or subtle." Measured cause (ffmpeg volumedetect): the authored cue is a gentle scorch
-## ("no bass no tones") at -22.8 dB mean — the same level as a plain attack_hit (-21.8).
-## A death cue that is no louder than the hit that caused it cannot read as a climax.
+## or subtle." Measured cause (ffmpeg volumedetect), on the scorch this cue used to be:
+## a gentle scorch ("no bass no tones") at -22.8 dB mean — the same level as a plain
+## attack_hit (-21.8). A death cue that is no louder than the hit that caused it cannot
+## read as a climax. The +6 dB boost stayed for every death cry, including party_ko.
+## The whoosh is a hotter file, so enemy_death alone subtracts _DEATH_FILE_HEADROOM_DB
+## after that boost. The expression this file pins is still the shared boost.
 ## Second defect: SFX_MIN_INTERVAL_MS is per-key and its early-return suppresses the
 ## fallback, so a group kill played ONE death and swallowed the rest.
 

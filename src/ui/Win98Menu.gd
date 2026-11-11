@@ -797,7 +797,7 @@ func _on_submenu_timer_timeout() -> void:
 		return
 
 	var item = menu_items[selected_index]
-	if item.has("submenu") and not item.get("disabled", false):
+	if item.has("submenu") and not _row_blocked(item):
 		_do_open_submenu(selected_index, item)
 
 
@@ -1327,12 +1327,17 @@ func _on_item_pressed(index: int) -> void:
 
 	var item = menu_items[index]
 
-	if _row_unavailable(item):
+	if index != selected_index:
+		_reset_force()
+	selected_index = index
+	if _row_unavailable(item) and not _press_toward_force(item):
 		_reject_selection(item)
 		return
 
 	if item.has("submenu"):
-		# Already showing submenu from hover
+		# Already showing submenu from hover; a just-forced row opens it now.
+		if not submenu:
+			_do_open_submenu(index, item)
 		return
 
 	# Update selection and submit (handles queued actions)
@@ -1374,7 +1379,7 @@ func _auto_expand_submenu() -> void:
 		return
 
 	var item = menu_items[selected_index]
-	if item.has("submenu") and not item.get("disabled", false):
+	if item.has("submenu") and not _row_blocked(item):
 		# Start delay timer before expanding
 		if _submenu_timer:
 			_submenu_timer.wait_time = SUBMENU_DELAY
@@ -1614,6 +1619,7 @@ func _cleanup_target_highlight() -> void:
 
 func _cleanup_tooltip() -> void:
 	"""Remove tooltip label from scene"""
+	_zoomed = false  # every caller is a teardown; a latched zoom would rebuild the card on the next refresh
 	_free_zoom_card()
 	if _tooltip_label and is_instance_valid(_tooltip_label):
 		_tooltip_label.queue_free()
@@ -1855,15 +1861,18 @@ func _queue_current_action(item: Dictionary) -> void:
 		return
 
 	## Advance used to queue a cast the turn could not pay for; it then failed at execution and the AP was lost.
-	var shortfall: String = root._queue_shortfall(item.get("data", null))
+	var data = item.get("data", null)
+	var forced: bool = data is Dictionary and bool(data.get("forced", false))
+	## A FORCED cast is exempt from the MP walk ONLY (_queue_shortfall); the queue cap above and item counts stay hard.
+	var shortfall: String = root._queue_shortfall(data)
 	if shortfall != "":
 		_reject_selection({"reject_reason": shortfall})
 		return
 
 	var action = {
 		"id": item.get("id", ""),
-		"data": item.get("data", null),
-		"label": item.get("label", "")
+		"data": data,
+		"label": str(item.get("label", "")) + (" !" if forced else "")
 	}
 	root._queued_actions.append(action)
 	_play_advance_sound(root._queued_actions.size())
@@ -2120,7 +2129,9 @@ func _queue_shortfall(data) -> String:
 		var cost = _queue_cost_fn.call(d)
 		if not (cost is Dictionary):
 			continue
-		if has_mp and cost.has("mp"):
+		## The player FORCED this cast past MP (struktured: forcing overrides the MP check, never an Advance limit).
+		var forced_past_mp: bool = d is Dictionary and bool(d.get("forced", false))
+		if has_mp and cost.has("mp") and not forced_past_mp:
 			mp -= int(cost["mp"])
 			if mp < 0:
 				return "Not enough MP for the queue (%d short)" % -mp
@@ -2132,6 +2143,9 @@ func _queue_shortfall(data) -> String:
 			spent[k] = int(spent.get(k, 0)) + int(cost[k])
 	for k in spent:
 		if _queue_budget.has(k) and spent[k] > int(_queue_budget[k]):
+			## AP is never exempt, forced or not (struktured: "they can't advance more than they are allowed to").
+			if k == "ap":
+				return "Not enough AP for the queue (%d more than the floor allows)" % (spent[k] - int(_queue_budget[k]))
 			return "Only %d of that item to queue" % int(_queue_budget[k])
 	return ""
 
@@ -2278,23 +2292,79 @@ var _hint_showing_reason: bool = false
 ## (cowir-sfx, 21 existing call sites, falls back to menu_cancel if the asset ever fails).
 ## disabled rows are skipped by the cursor. reject_reason rows stay landable: the player can move onto a full-HP ally and hear why confirm did nothing.
 func _row_unavailable(item: Dictionary) -> bool:
-	return bool(item.get("disabled", false)) or str(item.get("reject_reason", "")) != ""
+	return _row_blocked(item) or str(item.get("reject_reason", "")) != ""
+
+
+## A row the player cannot open or confirm yet: disabled, or MP-short and not yet forced (three presses).
+func _row_blocked(item: Dictionary) -> bool:
+	return bool(item.get("disabled", false)) or (bool(item.get("mp_short", false)) and not bool(item.get("force_armed", false)))
+
+
+## FORCE an MP-short row (struktured 2026-11-07: "hit the button 3+ times to say 'screw you computer, I'm doing it
+## anyhow'"). Confirm presses on the SAME row within FORCE_WINDOW_MS of each other count; moving the cursor resets.
+## The third arms the row: its target rows carry `forced`, and it proceeds like any other row. Execution re-checks MP.
+const FORCE_PRESSES := 3
+const FORCE_WINDOW_MS := 1500
+var _force_index := -1
+var _force_count := 0
+var _force_last_ms := 0
+
+
+## Counts a press on an MP-short row; true when THIS press arms it.
+func _press_toward_force(item: Dictionary) -> bool:
+	if not bool(item.get("mp_short", false)) or bool(item.get("force_armed", false)):
+		return false
+	var now := Time.get_ticks_msec()
+	if _force_index != selected_index or now - _force_last_ms > FORCE_WINDOW_MS:
+		_force_count = 0
+	_force_index = selected_index
+	_force_last_ms = now
+	_force_count += 1
+	if _force_count < FORCE_PRESSES:
+		return false
+	_force_count = 0
+	item["force_armed"] = true
+	_mark_forced(item)
+	SoundManager.play_ui("menu_force_queue")
+	return true
+
+
+func _mark_forced(item: Dictionary) -> void:
+	if item.get("data", null) is Dictionary:
+		item["data"]["forced"] = true
+	for sub in item.get("submenu", []):
+		if sub is Dictionary and sub.get("data", null) is Dictionary:
+			sub["data"]["forced"] = true
+
+
+func _reset_force() -> void:
+	_force_index = -1
+	_force_count = 0
 
 
 func _reject_selection(item: Dictionary) -> void:
 	SoundManager.play_ui("menu_error")
-	var reason := "Can't use that right now"
-	var custom := str(item.get("reject_reason", ""))
-	if custom != "":
-		reason = custom
-	elif item.has("cost") and not bool(item.get("cost_affordable", true)):
-		reason = "Not enough MP (%d needed)" % int(item.get("cost", 0))
-	elif item.has("ap_cost"):
-		reason = "Not enough AP"
+	var reason := _reject_text(item)
 	var label := _find_hint_label()
 	if label:
 		label.text = reason
 		_hint_showing_reason = true
+
+
+## What a refused confirm says, so the hint and a test read the same words.
+func _reject_text(item: Dictionary) -> String:
+	var reason := "Can't use that right now"
+	var custom := str(item.get("reject_reason", ""))
+	if custom != "":
+		reason = custom
+	elif bool(item.get("mp_short", false)):
+		var left: int = FORCE_PRESSES - _force_count
+		reason = "Not enough MP (%d needed): press %s more to force" % [int(item.get("cost", 0)), "once" if left == 1 else ("twice" if left == 2 else "%d times" % left)]
+	elif item.has("cost") and not bool(item.get("cost_affordable", true)):
+		reason = "Not enough MP (%d needed)" % int(item.get("cost", 0))
+	elif item.has("ap_cost"):
+		reason = "Not enough AP"
+	return reason
 
 
 ## Restore the hint bar as soon as the player moves — no timer, so it cannot drift with
@@ -2424,6 +2494,7 @@ func _step_selection(delta: int) -> void:
 ## One navigation step plus its feedback. Extracted so a HELD direction repeats through
 ## the exact same path a keypress takes — a second implementation would drift.
 func _nav_step(dir: int) -> void:
+	_reset_force()
 	_step_selection(dir)
 	_play_move_sound()
 	_update_selection()
@@ -2586,7 +2657,7 @@ func _input(event: InputEvent) -> void:
 		var current_item = menu_items[selected_index] if selected_index >= 0 and selected_index < menu_items.size() else {}
 		if _queue_is_full():
 			_commit_queue_exactly()
-		elif _row_unavailable(current_item) and not current_item.has("submenu"):
+		elif _row_unavailable(current_item) and (not current_item.has("submenu") or _row_blocked(current_item)) and not _press_toward_force(current_item):
 			_reject_selection(current_item)
 		elif current_item.has("submenu"):
 			_play_expand_sound()

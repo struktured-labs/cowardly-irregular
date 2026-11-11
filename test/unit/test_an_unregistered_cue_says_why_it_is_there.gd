@@ -15,6 +15,7 @@ const SFX_DIR := "res://assets/audio/sfx"
 ## Files on disk that NO manifest key names, with the reason each is deliberate.
 ## Both retirement triggers below: gaining a key reds, vanishing from disk reds.
 const KNOWN_UNREGISTERED := {
+	"enemy_death_scorch.ogg": "retired gentle organic scorch that enemy_death.ogg played until the 2026-11-07 F_whoosh selection; kept so the replaced asset is not deleted. No cue names it",
 	"heal.ogg": "superseded by heal_v4.ogg, which the `heal` key names; kept as the pre-v4 render",
 	"w2_ability_heal.ogg": "struktured rejected it for BRIGHTNESS 2026-09-10 (9735 Hz / 97.6% >4kHz vs ability_heal's 437 Hz); w2_ability_heal points back at the W1 cue. Re-land only when it measures warm",
 	"w3_ability_heal.ogg": "same 2026-09-10 rejection (9404 Hz / 94.8%); see the prompt on w3_ability_heal",

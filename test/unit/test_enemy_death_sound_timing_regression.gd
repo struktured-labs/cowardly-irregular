@@ -1,12 +1,12 @@
 extends GutTest
 
 ## struktured 2026-08-15: "I don't hear any [sound] when the monster fades out
-## on final blow" — the burned-away scorch (enemy_death.ogg, the agreed FF4-6
-## guide) was wired but NEVER audible: it fired inside take_damage's died
-## signal, then the killing blow's own hit sound stomped it milliseconds later
-## on the shared _battle_player (one voice). It now starts WITH the fade —
-## inside the death tween, after the white-flash — so it plays after the hit
-## sound instead of under it.
+## on final blow" — the death cue (enemy_death.ogg; then the burned-away scorch,
+## now the selected whoosh on the same key) was wired but NEVER audible: it fired
+## inside take_damage's died signal, then the killing blow's own hit sound stomped
+## it milliseconds later on the shared _battle_player (one voice). It starts WITH
+## the fade — inside the death tween, after the white-flash — so it plays after
+## the hit sound instead of under it. The file's length is not a tween hold.
 
 func test_death_cry_fires_inside_the_fade_tween_not_before_the_hit_sound() -> void:
 	var src := FileAccess.get_file_as_string("res://src/battle/BattleScene.gd")
