@@ -11,7 +11,9 @@ var _bg: ColorRect = null
 
 func before_each() -> void:
 	_saved_flag = GameState.reduce_flashes
-	_saved_bg = EffectSystem.battle_background
+	## An earlier file can leave this pointing at a freed node; holding that and writing it back is a script error (.793 sweeps).
+	var found = EffectSystem.battle_background
+	_saved_bg = found if is_instance_valid(found) else null
 	_bg = ColorRect.new()
 	add_child_autofree(_bg)
 	_bg.modulate = Color.WHITE
@@ -20,7 +22,7 @@ func before_each() -> void:
 
 func after_each() -> void:
 	GameState.reduce_flashes = _saved_flag
-	EffectSystem.battle_background = _saved_bg
+	EffectSystem.battle_background = _saved_bg if is_instance_valid(_saved_bg) else null
 
 
 func _tinted_after(frames: int) -> bool:
@@ -62,3 +64,33 @@ func test_a_second_tint_replaces_the_first() -> void:
 	assert_false(first.is_valid() and first.is_running(), "an eruption per foe must not leave tweens fighting over the background")
 	assert_true(EffectSystem._background_tint_tween.is_valid(), "CONTROL: the newest tint is the live one")
 	EffectSystem._background_tint_tween.kill()
+
+
+func test_a_battle_that_ends_takes_its_backdrop_out_of_the_autoload() -> void:
+	AutobattleSystem._test_disable_persistence = true
+	var guard = load("res://test/unit/helpers/battle_state.gd").new()
+	guard.snapshot()
+	var scene: Node = load("res://src/battle/BattleScene.tscn").instantiate()
+	add_child(scene)
+	await get_tree().process_frame
+	assert_true(is_instance_valid(EffectSystem.battle_background) and EffectSystem.battle_background != _bg,
+		"CONTROL: a live battle hands EffectSystem its own backdrop")
+	remove_child(scene)  # _exit_tree runs here, as it does when a battle ends
+	scene.queue_free()
+	guard.restore()
+	assert_null(EffectSystem.battle_background, "freed with its battle, the backdrop is not left in the autoload as a dead reference")
+	EffectSystem.battle_background = _bg
+
+
+func test_a_menu_taken_out_of_the_tree_mid_build_stops_quietly() -> void:
+	var src := FileAccess.get_file_as_string("res://src/ui/Win98Menu.gd")
+	var at := src.find("func _build_menu(")
+	assert_gt(at, -1, "CONTROL: the menu build exists")
+	var body := src.substr(at, src.find("\nfunc ", at + 1) - at)
+	assert_eq(body.count("await get_tree().create_timer("), 2, "CONTROL: the build waits twice before it takes input")
+	var first := body.find("await get_tree().create_timer(")
+	var second := body.find("await get_tree().create_timer(", first + 1)
+	assert_true("is_inside_tree()" in body.substr(0, first), "it does not start the first wait from outside the tree")
+	assert_true("not is_inside_tree()" in body.substr(first, second - first),
+		"and after the first wait it stops if its battle left the tree meanwhile (was: get_tree() on a null value)")
+
