@@ -244,8 +244,18 @@ func _try_spawn_monster() -> void:
 	_monsters.append(monster)
 
 
+## Where the player is DRAWN: Mode 7 shows them north of their true point, and a roamer touches them there.
+func _player_seen_pos() -> Vector2:
+	return _player.global_position + RoamingMonsterScript.seen_offset()
+
+
+## The roamers alive right now, for the HUD (they live under a sibling node, not under this one).
+func live_monsters() -> Array:
+	return _monsters.filter(func(m): return is_instance_valid(m))
+
+
 func _find_spawn_position() -> Vector2:
-	var player_pos = _player.global_position
+	var player_pos = _player_seen_pos()
 	var map_px_w = map_width * TILE_SIZE
 	var map_px_h = map_height * TILE_SIZE
 
@@ -305,7 +315,7 @@ func _too_close_to_others(pos: Vector2) -> bool:
 func _cull_far_monsters() -> void:
 	if not _player or not is_instance_valid(_player):
 		return
-	var player_pos = _player.global_position
+	var player_pos = _player_seen_pos()
 	var alive: Array = []
 	for m in _monsters:
 		if not is_instance_valid(m):
