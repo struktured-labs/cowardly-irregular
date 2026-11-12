@@ -1,11 +1,10 @@
 extends GutTest
 
 ## struktured playing .792 (2026-11-12): "Teleport btw doesnt quite fit in the border of the settings screen it bleeds
-## toward bottom". Teleport lives in three places: the field menu's LAST row (25 rows, no scroll), Settings' debug row,
-## and the Teleport list itself. No guard compared a row with the PANEL it sits in: the Text Size arms compare rows with
-## each other and labels with their own row. This is that arm, as a CENSUS first: every built row of the three screens,
-## at every Text Size step, measured on the built nodes in a 1280x720 viewport. A scrolling list is judged with each row
-## SELECTED (the list follows the cursor); a list with no scroll is judged as it stands.
+## toward bottom". Measured: the field menu's 21 rows, Teleport LAST, ran 22 px past its panel at 1.0 (no scroll, and no
+## guard compared a row with the PANEL it sits in). The rows now wrap into columns, or a cursor-following window where
+## columns cannot fit. Every arm measures built nodes. The Settings and Teleport-list censuses that ran beside this one
+## found other things (a long header at 1.5+, toggle text at 1.5+) and live on their own tip.
 
 const SETTINGS := "res://src/ui/SettingsMenu.gd"
 const FIELD := "res://src/ui/OverworldMenu.gd"
@@ -33,9 +32,9 @@ func _presets() -> Array:
 	return p
 
 
-func _host() -> CanvasLayer:
+func _host(px: Vector2i = Vector2i(1280, 720)) -> CanvasLayer:
 	var vp := SubViewport.new()
-	vp.size = Vector2i(1280, 720)
+	vp.size = px
 	add_child_autofree(vp)
 	var layer := CanvasLayer.new()
 	vp.add_child(layer)
@@ -75,31 +74,23 @@ func _text_rect(l: Label) -> Rect2:
 
 
 func test_the_floor_names_every_member_this_file_drives() -> void:
-	var layer := _host()
-	var s: Control = load(SETTINGS).new()
-	s.set_anchors_preset(Control.PRESET_FULL_RECT)
-	layer.add_child(s)
-	var t: Control = load(TELEPORT).new()
-	t.set_anchors_preset(Control.PRESET_FULL_RECT)
-	layer.add_child(t)
 	var f: Control = load(FIELD).new()
 	f.set_anchors_preset(Control.PRESET_FULL_RECT)
-	layer.add_child(f)
+	_host().add_child(f)
 	await _settle()
-	assert_true("_settings_items" in s and "_scroll" in s and "selected_index" in s and "_footer" in s and s.has_method("_update_selection"), "SettingsMenu's rows, scroll, cursor and footer must exist")
-	assert_true("_row_refs" in t and "_scroll" in t and "_selected" in t and t.has_method("_update_selection"), "TeleportMenu's rows, scroll and cursor must exist")
-	assert_true("_menu_labels" in f and "_menu_windowed" in f and "_menu_window" in f and f.has_method("setup") and f.has_method("_nav_step") and f.has_method("_update_selection"), "OverworldMenu's rows, layout state and navigation must exist")
-	assert_true("debug_log_enabled" in GameState and "text_size_scale" in GameState, "GameState carries both settings")
+	assert_true("_menu_labels" in f and "_menu_options" in f and "_menu_windowed" in f and "_menu_window" in f and "_menu_more_up" in f and "_menu_more_down" in f, "OverworldMenu's rows and layout state must exist")
+	assert_true(f.has_method("setup") and f.has_method("_nav_step") and f.has_method("_update_selection"), "OverworldMenu's navigation must exist")
+	assert_true("text_size_scale" in GameState, "GameState carries the Text Size")
 
 
-func _field_menu(s: float) -> Control:
+func _field_menu(s: float, px: Vector2i = Vector2i(1280, 720)) -> Control:
 	GameState.text_size_scale = s
 	var pc = CombatantScript.new()
 	pc.combatant_name = "Bram"
 	add_child_autofree(pc)
 	var m: Control = load(FIELD).new()
 	m.set_anchors_preset(Control.PRESET_FULL_RECT)
-	_host().add_child(m)
+	_host(px).add_child(m)
 	m.setup([pc])
 	await _settle()
 	return m
@@ -176,75 +167,29 @@ func test_down_reaches_every_option_in_order() -> void:
 		assert_eq(m.selected_index, at, "@%s Right is the party card, not a menu row" % s)
 
 
-## Settings scrolls: with each row SELECTED it must be wholly inside the scroll window, its text inside the row, and
-## the window and footer inside the panel. Debug rows on, so Debug Teleport and its subtitle are in the census.
-func test_every_settings_row_is_inside_the_panel_when_selected() -> void:
-	GameState.debug_log_enabled = true
+## The WINDOW, which no shipped Text Size reaches on a 1280x720 screen (three columns fit even at 2.0): forced here by a
+## small screen, so the fallback is exercised rather than trusted. Each row selected is inside the window and the panel,
+## and the markers say which way the hidden rows lie.
+func test_where_columns_cannot_fit_a_window_follows_the_cursor() -> void:
+	var m: Control = await _field_menu(2.0, Vector2i(800, 400))
+	assert_true(m._menu_windowed, "CONTROL: an 800x400 screen at 200% cannot fit the columns")
+	if not m._menu_windowed:
+		return
+	var n: int = m._menu_labels.size()
+	assert_gt(n, m._menu_per_col, "CONTROL: more rows than the window shows")
+	var panel := _panel_of(m._menu_labels[0], m)
 	var bad: Array = []
-	var seen := 0
-	for s in _presets():
-		GameState.text_size_scale = s
-		var m: Control = load(SETTINGS).new()
-		m.set_anchors_preset(Control.PRESET_FULL_RECT)
-		_host().add_child(m)
-		await _settle()
-		var scroll: ScrollContainer = m._scroll
-		var panel: Control = scroll.get_parent()
-		if _below(scroll.get_global_rect(), panel.get_global_rect()) > SLACK:
-			bad.append("@%s the Settings scroll window ends below its panel" % s)
-		if _below(_text_rect(m._footer), panel.get_global_rect()) > SLACK:
-			bad.append("@%s the Settings footer ends below its panel" % s)
-		var ids: Array = []
-		for i in m._settings_items.size():
-			var row: Control = m._settings_items[i].get("control")
-			if row == null:
-				continue
-			var id := str(m._settings_items[i].get("id", m._settings_items[i].get("action", i)))
-			ids.append(id)
-			m.selected_index = i
-			m._update_selection()
-			await get_tree().process_frame
-			seen += 1
-			var rr := row.get_global_rect()
-			var sr := scroll.get_global_rect()
-			if _below(rr, sr) > SLACK or _above(rr, sr) > SLACK:
-				bad.append("@%s Settings row '%s' selected: %.0f below / %.0f above the scroll window" % [s, id, _below(rr, sr), _above(rr, sr)])
-			for l in row.find_children("*", "Label", true, false):
-				var over := _below(_text_rect(l as Label), rr)
-				if over > SLACK:
-					bad.append("@%s Settings row '%s': '%s' runs %.0f px below its row" % [s, id, (l as Label).text.left(28), over])
-		assert_true(ids.any(func(x): return str(x).contains("teleport")), "CONTROL @%s: the Debug Teleport row is in the census: %s" % [s, ids])
-	assert_gt(seen, 60, "CONTROL: the census measured real rows (%d)" % seen)
-	assert_eq(bad.size(), 0, "every Settings row sits inside the panel:\n%s" % "\n".join(PackedStringArray(bad)))
-
-
-## The Teleport list scrolls: with each destination SELECTED its row is inside the scroll window, and the window and the
-## header lines are inside the panel.
-func test_every_teleport_row_is_inside_the_panel_when_selected() -> void:
-	var bad: Array = []
-	var seen := 0
-	for s in _presets():
-		GameState.text_size_scale = s
-		var m: Control = load(TELEPORT).new()
-		m.set_anchors_preset(Control.PRESET_FULL_RECT)
-		_host().add_child(m)
-		await _settle()
-		var scroll: ScrollContainer = m._scroll
-		var panel: Control = scroll.get_parent()
-		var pr := panel.get_global_rect()
-		if _below(scroll.get_global_rect(), pr) > SLACK:
-			bad.append("@%s the Teleport scroll window ends %.0f px below its panel" % [s, _below(scroll.get_global_rect(), pr)])
-		for l in panel.get_children():
-			if l is Label and (l as Label).global_position.x + (l as Label).get_minimum_size().x > pr.end.x + SLACK:
-				bad.append("@%s Teleport header '%s' runs %.0f px past the panel's right edge" % [s, (l as Label).text.left(24), (l as Label).global_position.x + (l as Label).get_minimum_size().x - pr.end.x])
-		for i in m._row_refs.size():
-			m._selected = i
-			m._update_selection()
-			await get_tree().process_frame
-			seen += 1
-			var rr: Rect2 = (m._row_refs[i] as Control).get_global_rect()
-			var sr := scroll.get_global_rect()
-			if _below(rr, sr) > SLACK or _above(rr, sr) > SLACK:
-				bad.append("@%s Teleport row %d selected: %.0f below / %.0f above the scroll window" % [s, i, _below(rr, sr), _above(rr, sr)])
-	assert_gt(seen, 100, "CONTROL: the census measured real rows (%d)" % seen)
-	assert_eq(bad.size(), 0, "every Teleport row sits inside the panel:\n%s" % "\n".join(PackedStringArray(bad)))
+	for i in n:
+		m.selected_index = i
+		m._update_selection()
+		var wr: Rect2 = (m._menu_window as Control).get_global_rect()
+		var rr: Rect2 = (m._menu_labels[i] as Control).get_global_rect()
+		if _below(rr, wr) > SLACK or _above(rr, wr) > SLACK:
+			bad.append("row %d selected is outside the window" % i)
+		if _below(wr, panel.get_global_rect()) > SLACK:
+			bad.append("the window ends below the panel")
+		if i == 0 and (m._menu_more_up.visible or not m._menu_more_down.visible):
+			bad.append("at the top only the down marker shows")
+		if i == n - 1 and (not m._menu_more_up.visible or m._menu_more_down.visible):
+			bad.append("at the bottom only the up marker shows")
+	assert_eq(bad, [], "the window follows the cursor: %s" % [bad])
