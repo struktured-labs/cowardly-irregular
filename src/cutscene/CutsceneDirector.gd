@@ -2259,7 +2259,8 @@ func _step_set_background(step: Dictionary) -> void:
 
 ## A small animated sprite over a panel scene's backdrop (the Rat King's tiny crown, struktured's easter egg): `prop` names
 ## a sprite_manifest `prop_art` row (one horizontal strip: frames, fps), `at` is its bottom-centre as a share of the screen
-## and `scale` whole pixels. It plays its strip once and holds the last frame until hide_prop or the scene's end.
+## and `scale` whole pixels. It plays its strip once and holds the last frame until hide_prop or the scene's end. `sfx` is
+## played when the strip reaches `sfx_at_frame` (cowir-sfx 24248: a cue on the frame the crown lands, not the one it falls on).
 func _step_show_prop(step: Dictionary) -> void:
 	var id := str(step.get("prop", ""))
 	var row: Dictionary = prop_art(id)
@@ -2293,8 +2294,18 @@ func _step_show_prop(step: Dictionary) -> void:
 	spr.position = (get_viewport().get_visible_rect().size * share).round()
 	add_child(spr)
 	move_child(spr, _background_dim.get_index() + 1)
+	var cue := str(step.get("sfx", ""))
+	if cue != "":
+		spr.frame_changed.connect(_prop_frame_cue.bind(spr, cue, int(step.get("sfx_at_frame", 0))))
+		if int(step.get("sfx_at_frame", 0)) <= 0:
+			_step_play_sfx({"sfx": cue})
 	spr.play(&"once")
 	_props[id] = spr
+
+
+func _prop_frame_cue(spr: AnimatedSprite2D, cue: String, at_frame: int) -> void:
+	if is_instance_valid(spr) and at_frame > 0 and spr.frame == at_frame:
+		_step_play_sfx({"sfx": cue})
 
 
 func _step_hide_prop(step: Dictionary) -> void:
