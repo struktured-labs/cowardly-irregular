@@ -140,6 +140,8 @@ var _dynamic_conv: DynamicConversation = null  # LLM-driven conversation, lazy-i
 ## per-character voice for the opening turn (the rest of the conversation
 ## continues to draw from `dialogue_lines`).
 var _persona_openings: Array = []
+## Persona facts gated on a story flag (`flag_facts` in the persona JSON), resolved when a conversation starts.
+var _persona_flag_facts: Array = []
 ## Milo v2 (msg 2600): quest-state bucketed idle lines, populated from
 ## npc_showcase_personas.json's optional quest_state_lines block. Buckets
 ## are keyed pre_task_1 / in_progress / post_quest (matching the 3-state
@@ -275,6 +277,8 @@ func _setup_persona_data() -> void:
 			for line in (op_raw as Array):
 				typed_openings.append(str(line))
 			_persona_openings = typed_openings
+	var facts_raw: Variant = entry.get("flag_facts", [])
+	_persona_flag_facts = (facts_raw as Array).duplicate() if facts_raw is Array else []
 	# Milo v2: capture optional quest_state_lines block (buckets + money-pick indices).
 	if entry.has("quest_state_lines"):
 		var qsl_raw: Variant = entry["quest_state_lines"]
@@ -292,6 +296,11 @@ func _setup_persona_data() -> void:
 				elif (v is int or v is float) and key_str.ends_with("_money_pick_index"):
 					var bucket_name: String = key_str.substr(0, key_str.length() - "_money_pick_index".length())
 					_persona_quest_state_money_picks[bucket_name] = int(v)
+
+
+## The persona the LLM is given: the authored one plus every flag fact whose story flag is set right now.
+func _persona_for_prompt() -> String:
+	return DialoguePrompts.persona_with_flag_facts(persona, _persona_flag_facts)
 
 
 static func _load_persona_cache() -> void:
@@ -1442,7 +1451,7 @@ func _run_dynamic_conversation(player: Node) -> void:
 	var quest_sys_for_llm = get_node_or_null("/root/QuestSystem")
 	var llm_bucket: String = _quest_state_bucket_for_npc(quest_sys_for_llm)
 	var llm_quest_lines: Array = _persona_quest_state_lines.get(llm_bucket, []) if llm_bucket != "" else []
-	_dynamic_conv.setup(npc_name, persona, location, event_log, dialogue_lines, _persona_openings, llm_quest_lines,
+	_dynamic_conv.setup(npc_name, _persona_for_prompt(), location, event_log, dialogue_lines, _persona_openings, llm_quest_lines,
 		ConversationRewards.resolve_npc_id(npc_id, npc_name), llm_bucket)
 	# The same face and theme as this NPC's scripted lines (see _dialogue_lines_for_interact).
 	_dynamic_conv.portrait_key = _portrait_key()
