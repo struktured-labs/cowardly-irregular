@@ -82,6 +82,12 @@ func test_no_room_lets_the_player_out_and_none_seals_anything_off() -> void:
 			if c.x < 0 or c.y < 0 or c.x >= size.x or c.y >= size.y:
 				fail_test("%s: a walker from %s gets OUT of the room at %s" % [f, str(start), str(c)])
 				break
+		# GameLoop places the player at a NAMED spawn after _ready: none may be inside a wall, or the room traps him at the door.
+		for spawn in room.spawn_points:
+			room.spawn_player_at(str(spawn))
+			var at := _cell(player.position)
+			assert_false(solid.has(at), "%s: spawn '%s' puts the player in a solid cell %s" % [f, str(spawn), str(at)])
+			assert_true(reach.has(at), "%s: spawn '%s' at %s is cut off from where the room starts him" % [f, str(spawn), str(at)])
 		for r in InteriorWalls.door_rects(room):
 			var at_door := false
 			for c in reach:
