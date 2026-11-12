@@ -13799,6 +13799,66 @@
       "prompt": "PLACEHOLDER (cowir-main 21004: 'crazy boss attacks', cues paired to cowir-battle's batch-1 signature sequences, timed to their beats at 1x). the 0.55 s title-card wind-up before any boss's signature: a pink-noise riser over a 120->480 Hz sine sweep, -18 LUFS so it sits under the move. Played on the flourish player so the sequence's own hits cannot cut it.",
       "duration_seconds": 0.55
     },
+    "beat_fira_impact": {
+      "file": "assets/audio/sfx/beat_fira_impact.ogg",
+      "prompt": "One beat of an ability sequence, fired by its phase's \"sfx\" key (battle time, so in sync at every speed). Fira's eruption, fired by fira_battle's IMPACT phase (cowir-battle 23590/23593: the tier is heard AT the hit). Fire's impact one tier up: a longer roar, a 66->29 Hz fall, a second crackle. Driven and then low-passed at 3.2 kHz so it stays a rumble. Active-RMS -15.2 dB (Fire's impact -16.6); through a 200 Hz laptop highpass -23.3 (Fire -26.9). numpy synthesis, not heard by struktured yet.",
+      "duration_seconds": 0.95,
+      "source": "tools/gen_sequence_beats.py beat_fira_impact"
+    },
+    "beat_firaga_impact": {
+      "file": "assets/audio/sfx/beat_firaga_impact.ogg",
+      "prompt": "One beat of an ability sequence, fired by its phase's \"sfx\" key (battle time, so in sync at every speed). Firaga's eruption, fired by glory_firaga's IMPACT phase. The widest roar of the tier over a 60->26 Hz fall, a low whump under the first crack, three crackles. Active-RMS -14.3 dB; through a laptop highpass -20.3, so each tier is audibly bigger on any speaker (Fire -26.9, Fira -23.3). numpy synthesis, not heard by struktured yet.",
+      "duration_seconds": 1.05,
+      "source": "tools/gen_sequence_beats.py beat_firaga_impact"
+    },
+    "beat_firaga_detonate": {
+      "file": "assets/audio/sfx/beat_firaga_detonate.ogg",
+      "prompt": "One beat of an ability sequence, fired by its phase's \"sfx\" key (battle time, so in sync at every speed). Firaga's SECOND detonation (glory_firaga, 0.98 s): a 90 ms inward suck, then the biggest boom of the family and a long rumble, 55->22 Hz. Active-RMS -14.0 dB, laptop -20.5. numpy synthesis, not heard by struktured yet.",
+      "duration_seconds": 1.19,
+      "source": "tools/gen_sequence_beats.py beat_firaga_detonate"
+    },
+    "beat_power_strike_impact": {
+      "file": "assets/audio/sfx/beat_power_strike_impact.ogg",
+      "prompt": "One beat of an ability sequence, fired by its phase's \"sfx\" key (battle time, so in sync at every speed). Power Strike's ground crack (melee_power_strike, the ring at contact; cowir-sprites 23770/23781). A stone crack, a 90->38 Hz thud, rubble ticking down. Plays ON TOP of the weapon hit, so it targets -18 dB active-RMS, under the sequence beats' -16.3. numpy synthesis, not heard by struktured yet.",
+      "duration_seconds": 0.52,
+      "source": "tools/gen_sequence_beats.py beat_power_strike_impact"
+    },
+    "beat_cleave_sweep": {
+      "file": "assets/audio/sfx/beat_cleave_sweep.ogg",
+      "prompt": "One beat of an ability sequence, fired by its phase's \"sfx\" key (battle time, so in sync at every speed). Cleave's crescent (melee_cleave, the first arc): one blade whoosh across the whole enemy line, a band-passed sweep 350->1850->350 Hz capped at 2.6 kHz so it is not a hiss. -17.9 dB active-RMS. numpy synthesis, not heard by struktured yet.",
+      "duration_seconds": 0.42,
+      "source": "tools/gen_sequence_beats.py beat_cleave_sweep"
+    },
+    "beat_shield_bash_impact": {
+      "file": "assets/audio/sfx/beat_shield_bash_impact.ogg",
+      "prompt": "One beat of an ability sequence, fired by its phase's \"sfx\" key (battle time, so in sync at every speed). Shield Bash's wall (melee_shield_bash, at contact): blunt, not a cut. A dull thud, a 110->55 Hz body and a short flat clang of plate (318 Hz, inharmonic). On top of the weapon hit, -17 dB active-RMS. numpy synthesis, not heard by struktured yet.",
+      "duration_seconds": 0.45,
+      "source": "tools/gen_sequence_beats.py beat_shield_bash_impact"
+    },
+    "beat_backstab_crit": {
+      "file": "assets/audio/sfx/beat_backstab_crit.ogg",
+      "prompt": "One beat of an ability sequence, fired by its phase's \"sfx\" key (battle time, so in sync at every speed). Backstab's delayed crit bloom (melee_backstab_crit; a crit only): a thin fast slice, then a dark tone dropping 900->280 Hz. 0.29 s, -17.6 dB active-RMS. numpy synthesis, not heard by struktured yet.",
+      "duration_seconds": 0.29,
+      "source": "tools/gen_sequence_beats.py beat_backstab_crit"
+    },
+    "beat_smoke_bomb_puff": {
+      "file": "assets/audio/sfx/beat_smoke_bomb_puff.ogg",
+      "prompt": "One beat of an ability sequence, fired by its phase's \"sfx\" key (battle time, so in sync at every speed). Smoke Bomb's billow at impact (rogue_smoke_bomb, the first puff): a soft burst that opens fast and thins slowly, no click and no tone. The CAST keeps ability_smoke_bomb; this is the cloud arriving. -18.9 dB active-RMS. numpy synthesis, not heard by struktured yet.",
+      "duration_seconds": 0.75,
+      "source": "tools/gen_sequence_beats.py beat_smoke_bomb_puff"
+    },
+    "beat_scan_lock": {
+      "file": "assets/audio/sfx/beat_scan_lock.ogg",
+      "prompt": "One beat of an ability sequence, fired by its phase's \"sfx\" key (battle time, so in sync at every speed). Scan's brackets locking on (rogue_scan, at impact): two quick rising square blips (D6, G6) and a confirm tick. -18.4 dB active-RMS. numpy synthesis, not heard by struktured yet.",
+      "duration_seconds": 0.34,
+      "source": "tools/gen_sequence_beats.py beat_scan_lock"
+    },
+    "beat_raise_halo": {
+      "file": "assets/audio/sfx/beat_raise_halo.ogg",
+      "prompt": "One beat of an ability sequence, fired by its phase's \"sfx\" key (battle time, so in sync at every speed). Raise's ground halo (raise_battle, 0.70 s, the showcase beat; cowir-cutscenes 23771/23775). A warm bell chord (C5 G5 C6 E6) blooming open over a breath of air and a soft low body. Raise is a REVIVE, cast on ability_revive; the heals carry no beat at all (struktured: choir only). -16.2 dB active-RMS. numpy synthesis, not heard by struktured yet.",
+      "duration_seconds": 1.1,
+      "source": "tools/gen_sequence_beats.py beat_raise_halo"
+    },
     "beat_fire_bloom": {
       "file": "assets/audio/sfx/beat_fire_bloom.ogg",
       "source": "numpy_synth",

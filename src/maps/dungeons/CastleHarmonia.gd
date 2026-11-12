@@ -160,9 +160,9 @@ func _init() -> void:
 	# knows who you are" — matches Mordaine's Calibrant facet). F4 is
 	# a boss floor (rate forced to 0 by DragonCave).
 	floor_encounter_pools = {
-		1: ["skeleton", "specter"],
-		2: ["shadow_knight", "skeleton"],
-		3: ["shadow_knight", "meta_knight"],
+		1: ["skeleton@L21", "specter@L21"],
+		2: ["shadow_knight@L22", "skeleton@L22"],
+		3: ["shadow_knight@L22", "meta_knight@L23"],  # the Meta Knight is steampunk's L36 row, re-levelled DOWN to the castle's floor
 		4: [],
 	}
 
