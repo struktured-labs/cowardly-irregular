@@ -75,7 +75,8 @@ func test_a_battle_that_ends_takes_its_backdrop_out_of_the_autoload() -> void:
 	await get_tree().process_frame
 	assert_true(is_instance_valid(EffectSystem.battle_background) and EffectSystem.battle_background != _bg,
 		"CONTROL: a live battle hands EffectSystem its own backdrop")
-	scene.free()
+	remove_child(scene)  # _exit_tree runs here, as it does when a battle ends
+	scene.queue_free()
 	guard.restore()
 	assert_null(EffectSystem.battle_background, "freed with its battle, the backdrop is not left in the autoload as a dead reference")
 	EffectSystem.battle_background = _bg
