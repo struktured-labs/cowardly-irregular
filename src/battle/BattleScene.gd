@@ -4730,7 +4730,8 @@ static func lunge_owns(sprite: Node2D) -> bool:
 	if sprite == null or not is_instance_valid(sprite) or not sprite.has_meta("attack_tween"):
 		return false
 	var tween = sprite.get_meta("attack_tween")
-	return tween is Tween and (tween as Tween).is_valid() and (tween as Tween).is_running()
+	## Valid, not "running": hit-stop PAUSES the lunge at the moment of impact, and the sway took y back for exactly that frame.
+	return tween is Tween and (tween as Tween).is_valid()
 
 
 func _process_idle_animations(delta: float) -> void:

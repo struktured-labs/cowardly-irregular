@@ -114,6 +114,8 @@ func test_the_idle_sway_leaves_a_lunging_sprite_alone() -> void:
 	tween.tween_property(s, "position", Vector2(300, 520), 0.5)
 	s.set_meta("attack_tween", tween)
 	assert_true(BS.lunge_owns(s), "a sprite whose attack tween is running is the lunge's")
+	tween.pause()
+	assert_true(BS.lunge_owns(s), "a hit-stop pauses the lunge at the impact: it is still the lunge's, or the sway takes y back on that frame")
 	tween.kill()
 	assert_false(BS.lunge_owns(s), "and it is handed back when the lunge ends")
 	var src := FileAccess.get_file_as_string("res://src/battle/BattleScene.gd")
