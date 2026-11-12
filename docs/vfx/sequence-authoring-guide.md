@@ -23,13 +23,13 @@ and an ability names it in `data/abilities.json`:
 ```json
 "fire_battle": {
   "label": "one line: what the player sees",
-  "start": 0.75,
-  "impact": 0.58,
+  "start": 0.15,
+  "impact": 0.88,
   "phases": [
-    {"kind": "gather", "origin": "caster", "at": 0.0, "dur": 0.30, "count": 18, "palette": "flame"},
-    {"kind": "bolt", "at": 0.30, "dur": 0.28, "palette": "flame", "sfx": "beat_fire_burst"},
-    {"kind": "eruption", "at": 0.58, "element": "fire", "power": 1.0, "boost": 1.6, "sfx": "beat_fire_impact"},
-    {"kind": "fall", "at": 0.70, "dur": 0.60, "count": 18, "palette": "ember"}
+    {"kind": "gather", "origin": "hand", "at": 0.0, "dur": 0.60, "count": 18, "palette": "flame"},
+    {"kind": "bolt", "at": 0.60, "dur": 0.28, "palette": "flame", "sfx": "beat_fire_burst"},
+    {"kind": "eruption", "at": 0.88, "element": "fire", "power": 1.0, "boost": 1.6, "sfx": "beat_fire_impact"},
+    {"kind": "fall", "at": 1.00, "dur": 0.60, "count": 18, "palette": "ember"}
   ]
 }
 ```
@@ -38,8 +38,13 @@ All times are **battle seconds**. They scale with battle speed like every other
 battle animation, so nothing here is a wall-clock number.
 
 - `start` is the delay from the action's start to the sequence's first phase.
-  For a cast it is the caster's release frame (the Mage's cast releases on
-  frame 6, 0.75 s). For a melee overlay it is the lunge's contact, 0.17 s.
+  **The wind-up starts WITH the cast pose** (`start` about 0.15), and the
+  launch lands on the pose's release frame (the Mage's cast releases on frame
+  6, 0.75 s after the action). A sequence that waits for the release before
+  drawing anything leaves 2 real seconds of nothing at the default speed. For
+  a melee overlay `start` is the lunge's contact, passed in by the engine.
+- A showcase with a title card may name a sequence-level `windup` phase (a
+  `gather` at the caster): it plays under the card, for the card's length.
 - The ability's cast sound plays at the **action's** start, `start` seconds
   before your first phase. A phase at `at: 0.0` is not doubled by it.
 - `impact` is when the hit lands, measured from `start`. See rule 1 below.
@@ -62,9 +67,20 @@ counts for size, and a new phase for each tier.
 
 ## 3. Phase kinds
 
-Every phase takes: `kind`, `at`, `dur`, `origin` (`"caster"` or `"target"`,
-default target), `offset` `[x, y]`, `sfx`, `min_tier` (1-3), `palette` and
-`palette_t3` (the palette at intensity tier 3).
+Every phase takes: `kind`, `at`, `dur`, `origin`, `offset` `[x, y]`, `sfx`,
+`min_tier` (1-3), `palette` and `palette_t3` (the palette at intensity tier 3).
+
+`origin` is one of three points, all measured on the battler's FIGURE, not on
+its frame (a hero can stand 95 px off the centre of their frame):
+
+| `origin` | Point | Use it for |
+|---|---|---|
+| `"target"` (default) | the target's body | the hit, anything that lands |
+| `"caster"` | the caster's body | an aura, a swell, life returning |
+| `"hand"` | the caster's leading edge, a little above the middle | a charge, a mouth, where a `bolt` leaves from |
+
+Do not correct a position with a per-job `offset`: if an effect lands beside a
+figure, the anchor is wrong, and that is fixed once in `BattleScene._figure_anchor`.
 
 | Kind | Draws | Own fields |
 |---|---|---|
@@ -78,21 +94,33 @@ default target), `offset` `[x, y]`, `sfx`, `min_tier` (1-3), `palette` and
 | `flash` | a soft flash at a point | `size` |
 | `shake` | camera shake | `intensity` |
 | `slash` | cut lines | see `strike_impact` |
-| `arc` | a swept blade crescent | `radius`, `from`, `to`, `width`, `life` |
-| `streak` | a dash line between two points | `a`, `b`, `a_offset`, `b_offset`, `life` |
+| `arc` | a swept blade crescent | `radius`, `from`, `to`, `width`, `life`, `glow` (false = no soft bloom behind the band) |
+| `streak` | a dash line between two points | `a`, `b`, `a_offset`, `b_offset`, `width`, `life` |
 | `puff` | soft smoke that covers what is behind it | `count`, `spread`, `drift`, `size` |
+| `plates` | flat panes that assemble and hold: a ward | `shape` (wall or dome), `count` (a dome's plates; a wall is always 7), `radius`, `hold` |
+| `ribbon` | a waving band between two points: a song | `a`, `b`, `a_offset`, `b_offset`, `wave`, `width`, `lines`, `gap` (px between staff lines), `jagged`, `life` |
+| `glyphs` | drifting symbols (notes, Zs) | `glyph`, `count`, `size`, `spread`, `drift`, `to_target` |
 | `emit`, `spin_fling` | the recursive fractal (Edit Formula's look) | see `edit_formula_battle` |
 | `lunge`, `knockback`, `hitstop`, `impact_frame` | move or freeze the SPRITES (first target only) | see `strike_impact` |
 | `cue` | nothing: a sound-only beat | `sfx` |
 
-`arc`, `streak`, `puff` and bolt's `reverse` arrive with cowir-sprites' tip.
+A sequence with a SIDE sets `handed: true`: it is authored for a caster on the
+RIGHT of its target, and every phase offset, `a_offset` / `b_offset`, puff
+drift, arc `from` / `to` and emit heading is reflected when the caster is on
+the left. Anything a monster may use against the party should carry it.
+
+A sequence may also set `travel` (seconds per 100 px): a farther target is
+reached later, so a song washes down the party line instead of landing on all
+five at once. The damage hold follows it.
+
 `eruption`, `pillar`, `gather`, `fall` and `rise` are drawn by
 `EffectSystem.run_element_phase`; the rest by `FractalFX`. To add a kind, add
 its arm in `FractalFX._run` and its length in `FractalFX.phase_duration`, with
 the common fields above. One vocabulary: do not fork a kind, add a field.
 
 **Palettes** are rows in `FractalFX.PALETTES`: fire, flame, ember, spark,
-steel, frost, void, rot, verdict, glitch, holy, nature, mana, smoke, taunt.
+steel, frost, void, rot, verdict, glitch, holy, nature, mana, smoke, taunt,
+hymn, ward.
 Add a row there. Never put a colour in a phase.
 
 ## 4. Rules the engine holds for you
@@ -114,17 +142,19 @@ Add a row there. Never put a colour in a phase.
 
 ## 5. Timing budgets
 
-The battle holds for `impact + 0.35` s, then the next action starts while your
-aftermath finishes. Keep the impact inside these, from `start`:
+The battle holds until 0.35 s after the impact, then the next action starts while your
+aftermath finishes. Keep the impact inside these:
 
-| Tier | Phases | Impact at | Example |
+Measured from the action's start (`start` + `impact`):
+
+| Tier | Phases | Impact by | Example |
 |---|---|---|---|
-| 1 | 3-4 | ≤ 0.60 s | Fire 0.58 |
-| 2 | 4-5 | ≤ 0.65 s | Fira 0.62 |
-| 3 / showcase | 5-6+ | ≤ 0.70 s | Firaga 0.66, second blast at 0.98 |
+| 1 | 3-4 | 1.35 s | Fire 1.03 |
+| 2 | 4-5 | 1.40 s | Fira 1.03 |
+| 3 / showcase | 5-6+ | 1.45 s after its card | Firaga 1.03, second blast at 1.35 |
 
 A free or 0-MP move (Pray, Channel, Riff) stays small: two or three phases,
-impact by 0.40 s.
+impact within 0.40 s of its release.
 
 ## 6. Outcomes read apart
 
@@ -137,23 +167,39 @@ a resist or a failed steal plays the grey `fizzle`.
 ## 7. Monsters: families, not one-offs
 
 208 abilities are monster-only. Most are bites, claws and breaths, so they
-share sequences by FAMILY rather than getting one each:
+share sequences by FAMILY rather than getting one each. A monster has no cast
+pose to wait for: a family starts at 0.1 and lands within 0.8 s.
 
-| Family | Covers | Shape |
-|---|---|---|
-| bite | bite, chomp, gnaw, fang | two jaw `arc`s closing, a `flash` |
-| claw | claw, scratch, rake, slash | three raked `arc`s, staggered |
-| spit | spit, acid, web, venom | `bolt` in the family's palette, `puff` on landing |
-| breath | fire, ice, lightning, void breath | `streak` cone from the mouth, `eruption` by element |
-| screech | screech, howl, roar | `ring`s from the caster, `shake` |
-| slam | slam, stomp, body, tail | `fall` dust, a ground `ring`, `shake` |
-| drain | drain, leech, siphon | `bolt` with `reverse`, `rise` on the caster |
-| buff-self | harden, enrage, focus | `gather` then `pillar` on the caster |
+| Family | Sequence | Covers | Shape |
+|---|---|---|---|
+| bite, claw, slam, spit | `family_bite` … (cowir-sprites) | physical moves, and a plain attack through the monster row's `hit_spark` | an overlay AROUND the lunge, sized to the monster |
+| breath | `family_breath_ice` / `_lightning` / `_dark` | an all-party elemental | `gather` at the mouth, a flat `bolt` to each foe, the element's `eruption` |
+| cloud | `family_cloud` | poison, spores, acid | a lobbed `bolt`, a `puff` that billows over each foe |
+| dust | `family_dust` | sand, roots | grit `rise`s at the feet, is thrown, `fall`s back |
+| drain | `family_drain` | life and mana drains | a dark `bolt`, the burst, then `bolt` with `reverse` and a `rise` on the caster |
+| screech | `family_screech` | screech, rattle | three `ring`s from the mouth, a small `shake` |
+| buff-self | `family_buff_self` | enrage, howl, harden | `gather` and one pulse; the stat beat that follows is the shared landing |
+| heal-self | `family_heal_self` (cowir-cutscenes) | repair, reconstruct | sparks drawn in, a pulse, light rising |
 
-**Proposed, not built yet.** The plan: a monster ability names its family with
-`"vfx": {"family": "<name>"}` and takes its palette from its element. Bosses
-keep their own signatures. Until that lands, a monster ability can name an
-ordinary `sequence` like any other.
+How a row names its family:
+
+- A **cast** (magic, support, healing) names the sequence directly:
+  `"vfx": {"sequence": "family_breath_ice"}`. A single-target cast of an
+  element the Mage has plays the Mage's own tier-1 spell (`blizzard_battle`).
+- A **physical** move names `"vfx": {"family": "bite"}` and is drawn around its
+  lunge (`family_<name>`, and `family_<name>_hit` on each target). Beside it:
+  `"ranged": true` for a move that does NOT lunge (its family sequence is the
+  delivery, so the hit waits on its impact) and `"palette"` for the family's
+  accent (only `spark` phases are recoloured; else the element picks it). The
+  top-level `"family"` key is the SPELL LINE the shops sell by; do not reuse it.
+- A family's power is multiplied by the attacker's size on screen (its idle
+  figure ÷ 150 px, clamped 0.7-2.0): author a family for a goblin-sized attacker.
+- `test_a_w1_monster_casts_in_its_family` holds the census: every cast a W1
+  monster has plays a sequence or is DECLARED there with the reason.
+
+A buff, a debuff or a status LANDING is not yours to draw: one shared beat per
+kind plays at the target (`LANDED_BEATS`, `stat_up_<stat>`, `wore_off`). Author
+the delivery and stop at the impact.
 
 ## 8. Checklist before READY
 

@@ -273,22 +273,22 @@
     },
     "fire_battle": {
       "label": "Fire: heat gathers, a flame flies, the original eruption, embers (main 23590)",
-      "start": 0.75,
-      "impact": 0.58,
-      "start_note": "mage/cast releases on f6 at 750 ms; damage lands at the eruption",
+      "start": 0.15,
+      "impact": 0.88,
+      "start_note": "the gather starts WITH the cast pose (main 23890) and the flame leaves on the pose's release frame, 0.75 s after the action",
       "phases": [
         {
           "kind": "gather",
           "sfx": "beat_fire_open",
-          "origin": "caster",
+          "origin": "hand",
           "at": 0.0,
-          "dur": 0.3,
+          "dur": 0.6,
           "count": 18,
           "palette": "flame"
         },
         {
           "kind": "bolt",
-          "at": 0.3,
+          "at": 0.6,
           "dur": 0.28,
           "arc_height": 44,
           "palette": "flame",
@@ -300,7 +300,7 @@
         },
         {
           "kind": "eruption",
-          "at": 0.58,
+          "at": 0.88,
           "power": 1.0,
           "boost": 1.6,
           "sfx": "beat_fire_impact",
@@ -308,20 +308,20 @@
         },
         {
           "kind": "flash",
-          "at": 0.58,
+          "at": 0.88,
           "dur": 0.16,
           "size": 6.0
         },
         {
           "kind": "fall",
-          "at": 0.7,
+          "at": 1.0,
           "dur": 0.6,
           "count": 18,
           "palette": "ember"
         },
         {
           "kind": "ring",
-          "at": 0.58,
+          "at": 0.88,
           "dur": 0.32,
           "min_tier": 3,
           "palette": "fire",
@@ -959,21 +959,21 @@
     },
     "glory_firaga": {
       "label": "Firaga: a huge gather, flames on every foe, the eruption, a pillar, a SECOND detonation, embers (main 23590)",
-      "start": 0.75,
-      "start_note": "mage/cast releases on f6 at 750 ms, like fire_battle",
+      "start": 0.15,
+      "start_note": "the gather starts WITH the cast pose (main 23890) and the flame leaves on the pose's release frame, 0.75 s after the action",
       "phases": [
         {
           "kind": "gather",
           "sfx": "beat_fire_open",
-          "origin": "caster",
+          "origin": "hand",
           "at": 0.0,
-          "dur": 0.38,
+          "dur": 0.6,
           "count": 34,
           "palette": "flame"
         },
         {
           "kind": "bolt",
-          "at": 0.38,
+          "at": 0.6,
           "dur": 0.28,
           "arc_height": 64,
           "palette": "flame",
@@ -985,21 +985,21 @@
         },
         {
           "kind": "eruption",
-          "at": 0.66,
+          "at": 0.88,
           "power": 2.0,
           "boost": 2.6,
           "element": "fire"
         },
         {
           "kind": "flash",
-          "at": 0.66,
+          "at": 0.88,
           "dur": 0.2,
           "size": 8.0,
           "sfx": "beat_firaga_impact"
         },
         {
           "kind": "pillar",
-          "at": 0.7,
+          "at": 0.92,
           "dur": 0.36,
           "height": 320,
           "sfx": "beat_fire_bloom",
@@ -1008,7 +1008,7 @@
         {
           "kind": "eruption",
           "sfx": "beat_firaga_detonate",
-          "at": 0.98,
+          "at": 1.2,
           "power": 2.0,
           "boost": 3.0,
           "offset": [
@@ -1019,13 +1019,13 @@
         },
         {
           "kind": "flash",
-          "at": 0.98,
+          "at": 1.2,
           "dur": 0.24,
           "size": 10.0
         },
         {
           "kind": "ring",
-          "at": 0.98,
+          "at": 1.2,
           "dur": 0.4,
           "palette": "flame",
           "scale": 6.0,
@@ -1033,20 +1033,20 @@
         },
         {
           "kind": "shake",
-          "at": 0.98,
+          "at": 1.2,
           "dur": 0.3,
           "intensity": 14
         },
         {
           "kind": "fall",
-          "at": 1.05,
+          "at": 1.27,
           "dur": 0.65,
           "count": 32,
           "palette": "ember"
         },
         {
           "kind": "bolt",
-          "at": 0.42,
+          "at": 0.64,
           "dur": 0.24,
           "min_tier": 2,
           "arc_height": 110,
@@ -1058,7 +1058,7 @@
         },
         {
           "kind": "bolt",
-          "at": 0.46,
+          "at": 0.68,
           "dur": 0.2,
           "min_tier": 3,
           "arc_height": 20,
@@ -1069,7 +1069,7 @@
         },
         {
           "kind": "ring",
-          "at": 0.98,
+          "at": 1.2,
           "dur": 0.5,
           "min_tier": 3,
           "palette": "fire",
@@ -1081,7 +1081,13 @@
         0.25,
         0.04
       ],
-      "impact": 0.66
+      "impact": 0.88,
+      "windup": {
+        "kind": "gather",
+        "origin": "caster",
+        "count": 28,
+        "palette": "flame"
+      }
     },
     "glory_blizzaga": {
       "label": "Blizzaga: the air freezes, a crystal bloom, a held breath, the shatter",
@@ -2013,21 +2019,21 @@
     },
     "fira_battle": {
       "label": "Fira: a bigger gather, flame, eruption, a pillar of fire, embers (main 23590)",
-      "start": 0.75,
-      "impact": 0.62,
+      "start": 0.15,
+      "impact": 0.88,
       "phases": [
         {
           "kind": "gather",
           "sfx": "beat_fire_open",
-          "origin": "caster",
+          "origin": "hand",
           "at": 0.0,
-          "dur": 0.34,
+          "dur": 0.6,
           "count": 26,
           "palette": "flame"
         },
         {
           "kind": "bolt",
-          "at": 0.34,
+          "at": 0.6,
           "dur": 0.28,
           "arc_height": 52,
           "palette": "flame",
@@ -2040,20 +2046,20 @@
         {
           "kind": "eruption",
           "sfx": "beat_fira_impact",
-          "at": 0.62,
+          "at": 0.88,
           "power": 1.5,
           "boost": 2.0,
           "element": "fire"
         },
         {
           "kind": "flash",
-          "at": 0.62,
+          "at": 0.88,
           "dur": 0.18,
           "size": 7.0
         },
         {
           "kind": "pillar",
-          "at": 0.66,
+          "at": 0.92,
           "dur": 0.36,
           "height": 260,
           "sfx": "beat_fire_bloom",
@@ -2061,14 +2067,14 @@
         },
         {
           "kind": "fall",
-          "at": 0.8,
+          "at": 1.06,
           "dur": 0.65,
           "count": 24,
           "palette": "ember"
         },
         {
           "kind": "ring",
-          "at": 0.62,
+          "at": 0.88,
           "dur": 0.34,
           "min_tier": 2,
           "palette": "flame",
@@ -2077,7 +2083,7 @@
         },
         {
           "kind": "bolt",
-          "at": 0.38,
+          "at": 0.64,
           "dur": 0.24,
           "min_tier": 3,
           "arc_height": 90,
@@ -2086,7 +2092,8 @@
           "trail_spacing": 8,
           "size": 1.3
         }
-      ]
+      ],
+      "start_note": "the gather starts WITH the cast pose (main 23890) and the flame leaves on the pose's release frame, 0.75 s after the action"
     },
     "melee_power_strike": {
       "label": "Power Strike: blade glint, one heavy vertical arc, a ground crack that fills the enemy side (sprites 23767, main 23768)",
@@ -2823,11 +2830,7 @@
           "at": 0.0,
           "dur": 0.26,
           "scale": 7.5,
-          "palette": "taunt",
-          "offset": [
-            -80,
-            0
-          ]
+          "palette": "taunt"
         },
         {
           "kind": "ring",
@@ -2835,11 +2838,7 @@
           "at": 0.07,
           "dur": 0.3,
           "scale": 11.0,
-          "palette": "taunt",
-          "offset": [
-            -80,
-            0
-          ]
+          "palette": "taunt"
         },
         {
           "kind": "shake",
@@ -2853,11 +2852,7 @@
           "dur": 0.12,
           "width": 1.2,
           "life": 0.3,
-          "palette": "taunt",
-          "a_offset": [
-            -80,
-            0
-          ]
+          "palette": "taunt"
         },
         {
           "kind": "flash",
@@ -3119,7 +3114,7 @@
       "phases": [
         {
           "kind": "gather",
-          "origin": "caster",
+          "origin": "hand",
           "at": 0.0,
           "dur": 0.25,
           "count": 14,
@@ -3165,7 +3160,7 @@
       "phases": [
         {
           "kind": "gather",
-          "origin": "caster",
+          "origin": "hand",
           "at": 0.0,
           "dur": 0.3,
           "count": 24,
@@ -3275,7 +3270,7 @@
       "phases": [
         {
           "kind": "gather",
-          "origin": "caster",
+          "origin": "hand",
           "at": 0.0,
           "dur": 0.25,
           "count": 12,
@@ -3322,7 +3317,7 @@
       "phases": [
         {
           "kind": "gather",
-          "origin": "caster",
+          "origin": "hand",
           "at": 0.0,
           "dur": 0.2,
           "count": 12,
@@ -3423,7 +3418,7 @@
       "phases": [
         {
           "kind": "gather",
-          "origin": "caster",
+          "origin": "hand",
           "at": 0.0,
           "dur": 0.3,
           "count": 30,
@@ -3547,7 +3542,7 @@
       "phases": [
         {
           "kind": "gather",
-          "origin": "caster",
+          "origin": "hand",
           "at": 0.0,
           "dur": 0.25,
           "count": 14,
@@ -3562,7 +3557,7 @@
           "radius": 52,
           "palette": "holy",
           "offset": [
-            -140,
+            -44,
             -6
           ]
         },
@@ -3573,7 +3568,7 @@
           "size": 4.0,
           "alpha": 0.55,
           "offset": [
-            -140,
+            -44,
             -6
           ]
         },
@@ -3584,7 +3579,7 @@
           "scale": 2.8,
           "palette": "holy",
           "offset": [
-            -140,
+            -44,
             -6
           ]
         },
@@ -3604,7 +3599,7 @@
       "phases": [
         {
           "kind": "gather",
-          "origin": "caster",
+          "origin": "hand",
           "at": 0.0,
           "dur": 0.25,
           "count": 14,
@@ -3620,7 +3615,7 @@
           "radius": 64,
           "palette": "ward",
           "offset": [
-            -90,
+            0,
             10
           ]
         },
@@ -3631,7 +3626,7 @@
           "size": 4.0,
           "alpha": 0.5,
           "offset": [
-            -90,
+            0,
             -50
           ]
         },
@@ -3642,7 +3637,7 @@
           "scale": 3.2,
           "palette": "ward",
           "offset": [
-            -90,
+            0,
             30
           ]
         },
@@ -3654,7 +3649,7 @@
           "palette": "ward",
           "ground_glow": false,
           "offset": [
-            -90,
+            0,
             -60
           ]
         }
@@ -4002,6 +3997,895 @@
             0,
             -40
           ]
+        }
+      ]
+    },
+    "blizzard_battle": {
+      "label": "Blizzard: cold gathers, a shard flies, the original ice burst, snow settles (main 23993)",
+      "start": 0.15,
+      "impact": 0.88,
+      "start_note": "the gather starts WITH the cast pose (main 23890) and the spell leaves on the pose's release frame, 0.75 s after the action",
+      "phases": [
+        {
+          "kind": "gather",
+          "sfx": "beat_ice_open",
+          "origin": "hand",
+          "at": 0.0,
+          "dur": 0.6,
+          "count": 18,
+          "palette": "frost"
+        },
+        {
+          "kind": "bolt",
+          "at": 0.6,
+          "dur": 0.28,
+          "arc_height": 26,
+          "palette": "frost",
+          "trail_palette": "frost",
+          "trail_spacing": 9,
+          "size": 1.3,
+          "sfx": "beat_ice_bolt"
+        },
+        {
+          "kind": "eruption",
+          "at": 0.88,
+          "power": 1.0,
+          "element": "ice",
+          "sfx": "beat_ice_impact"
+        },
+        {
+          "kind": "flash",
+          "at": 0.88,
+          "dur": 0.16,
+          "size": 5.5
+        },
+        {
+          "kind": "fall",
+          "at": 1.0,
+          "dur": 0.7,
+          "count": 16,
+          "palette": "frost",
+          "ground_glow": false
+        },
+        {
+          "kind": "ring",
+          "at": 0.88,
+          "dur": 0.32,
+          "min_tier": 3,
+          "palette": "frost",
+          "scale": 4.0
+        }
+      ]
+    },
+    "blizzara_battle": {
+      "label": "Blizzara: a bigger gather, a shard, the ice burst, a spire of frost, a held breath, snow (main 23993)",
+      "start": 0.15,
+      "impact": 0.88,
+      "start_note": "the gather starts WITH the cast pose (main 23890) and the spell leaves on the pose's release frame, 0.75 s after the action",
+      "phases": [
+        {
+          "kind": "gather",
+          "sfx": "beat_ice_open",
+          "origin": "hand",
+          "at": 0.0,
+          "dur": 0.6,
+          "count": 26,
+          "palette": "frost"
+        },
+        {
+          "kind": "bolt",
+          "at": 0.6,
+          "dur": 0.28,
+          "arc_height": 30,
+          "palette": "frost",
+          "trail_palette": "frost",
+          "trail_spacing": 8,
+          "size": 1.6,
+          "sfx": "beat_ice_bolt"
+        },
+        {
+          "kind": "eruption",
+          "at": 0.88,
+          "power": 1.5,
+          "element": "ice",
+          "sfx": "beat_ice_impact"
+        },
+        {
+          "kind": "flash",
+          "at": 0.88,
+          "dur": 0.18,
+          "size": 7.0
+        },
+        {
+          "kind": "pillar",
+          "at": 0.92,
+          "dur": 0.4,
+          "height": 240,
+          "palette": "frost",
+          "sfx": "beat_ice_shatter"
+        },
+        {
+          "kind": "shake",
+          "at": 0.92,
+          "intensity": 6,
+          "dur": 0.2
+        },
+        {
+          "kind": "fall",
+          "at": 1.1,
+          "dur": 0.75,
+          "count": 24,
+          "palette": "frost",
+          "ground_glow": false
+        },
+        {
+          "kind": "ring",
+          "at": 0.88,
+          "dur": 0.34,
+          "min_tier": 2,
+          "palette": "frost",
+          "scale": 4.5
+        },
+        {
+          "kind": "bolt",
+          "at": 0.64,
+          "dur": 0.24,
+          "min_tier": 3,
+          "arc_height": 70,
+          "palette": "frost",
+          "trail_palette": "frost",
+          "trail_spacing": 8,
+          "size": 1.2
+        }
+      ]
+    },
+    "thunder_battle": {
+      "label": "Thunder: sparks gather, a crack of light, the original lightning strike, sparks scatter (main 23993)",
+      "start": 0.15,
+      "impact": 0.88,
+      "start_note": "the gather starts WITH the cast pose (main 23890) and the spell leaves on the pose's release frame, 0.75 s after the action",
+      "phases": [
+        {
+          "kind": "gather",
+          "sfx": "beat_thunder_open",
+          "origin": "hand",
+          "at": 0.0,
+          "dur": 0.6,
+          "count": 18,
+          "palette": "spark"
+        },
+        {
+          "kind": "ring",
+          "origin": "hand",
+          "at": 0.6,
+          "dur": 0.18000000000000002,
+          "scale": 1.6,
+          "palette": "spark"
+        },
+        {
+          "kind": "bolt",
+          "at": 0.74,
+          "dur": 0.14,
+          "arc_height": 8,
+          "palette": "spark",
+          "trail_palette": "spark",
+          "trail_spacing": 6,
+          "size": 1.3,
+          "sfx": "beat_thunder_bolt"
+        },
+        {
+          "kind": "eruption",
+          "at": 0.88,
+          "power": 1.0,
+          "element": "lightning",
+          "sfx": "beat_thunder_crack"
+        },
+        {
+          "kind": "flash",
+          "at": 0.88,
+          "dur": 0.12,
+          "size": 6.0
+        },
+        {
+          "kind": "slash",
+          "at": 0.88,
+          "count": 8,
+          "radius": 52,
+          "dur": 0.1,
+          "life": 0.18,
+          "palette": "spark"
+        },
+        {
+          "kind": "fall",
+          "at": 0.96,
+          "dur": 0.4,
+          "count": 10,
+          "palette": "spark",
+          "ground_glow": false
+        },
+        {
+          "kind": "ring",
+          "at": 0.88,
+          "dur": 0.24,
+          "min_tier": 3,
+          "palette": "spark",
+          "scale": 4.0
+        }
+      ]
+    },
+    "thundara_battle": {
+      "label": "Thundara: a bigger gather, the strike, then the sky answers with a second one (main 23993)",
+      "start": 0.15,
+      "impact": 0.88,
+      "start_note": "the gather starts WITH the cast pose (main 23890) and the spell leaves on the pose's release frame, 0.75 s after the action",
+      "phases": [
+        {
+          "kind": "gather",
+          "sfx": "beat_thunder_open",
+          "origin": "hand",
+          "at": 0.0,
+          "dur": 0.6,
+          "count": 26,
+          "palette": "spark"
+        },
+        {
+          "kind": "ring",
+          "origin": "hand",
+          "at": 0.6,
+          "dur": 0.18000000000000002,
+          "scale": 2.0,
+          "palette": "spark"
+        },
+        {
+          "kind": "bolt",
+          "at": 0.74,
+          "dur": 0.14,
+          "arc_height": 8,
+          "palette": "spark",
+          "trail_palette": "spark",
+          "trail_spacing": 6,
+          "size": 1.6,
+          "sfx": "beat_thunder_bolt"
+        },
+        {
+          "kind": "eruption",
+          "at": 0.88,
+          "power": 1.5,
+          "element": "lightning",
+          "sfx": "beat_thunder_crack"
+        },
+        {
+          "kind": "flash",
+          "at": 0.88,
+          "dur": 0.14,
+          "size": 7.0
+        },
+        {
+          "kind": "slash",
+          "at": 0.88,
+          "count": 12,
+          "radius": 64,
+          "dur": 0.12,
+          "life": 0.2,
+          "palette": "spark"
+        },
+        {
+          "kind": "shake",
+          "at": 0.88,
+          "intensity": 7,
+          "dur": 0.18
+        },
+        {
+          "kind": "eruption",
+          "at": 1.1,
+          "power": 1.2,
+          "element": "lightning",
+          "offset": [
+            18,
+            0
+          ],
+          "sfx": "beat_thunder_crack"
+        },
+        {
+          "kind": "flash",
+          "at": 1.1,
+          "dur": 0.12,
+          "size": 5.5
+        },
+        {
+          "kind": "slash",
+          "at": 1.1,
+          "count": 14,
+          "radius": 84,
+          "dur": 0.12,
+          "life": 0.2,
+          "palette": "spark"
+        },
+        {
+          "kind": "fall",
+          "at": 1.18,
+          "dur": 0.45,
+          "count": 16,
+          "palette": "spark",
+          "ground_glow": false
+        },
+        {
+          "kind": "ring",
+          "at": 1.1,
+          "dur": 0.26,
+          "min_tier": 2,
+          "palette": "spark",
+          "scale": 4.5,
+          "sfx": "beat_thunder_ring"
+        }
+      ]
+    },
+    "dark_bolt_battle": {
+      "label": "Dark Bolt: shadow gathers, a straight bolt, the original dark burst, the dark lifts off the target (main 23993)",
+      "start": 0.15,
+      "impact": 0.88,
+      "start_note": "the gather starts WITH the cast pose (main 23890) and the spell leaves on the pose's release frame, 0.75 s after the action",
+      "phases": [
+        {
+          "kind": "gather",
+          "sfx": "beat_void_open",
+          "origin": "hand",
+          "at": 0.0,
+          "dur": 0.6,
+          "count": 16,
+          "palette": "void"
+        },
+        {
+          "kind": "bolt",
+          "at": 0.6,
+          "dur": 0.28,
+          "arc_height": 0,
+          "palette": "void",
+          "trail_palette": "void",
+          "trail_spacing": 7,
+          "size": 1.3,
+          "sfx": "beat_void_bolt"
+        },
+        {
+          "kind": "eruption",
+          "at": 0.88,
+          "power": 1.0,
+          "element": "dark",
+          "sfx": "beat_void_impact"
+        },
+        {
+          "kind": "flash",
+          "at": 0.88,
+          "dur": 0.16,
+          "size": 5.0
+        },
+        {
+          "kind": "rise",
+          "at": 0.98,
+          "dur": 0.6,
+          "count": 14,
+          "palette": "void"
+        },
+        {
+          "kind": "ring",
+          "at": 0.88,
+          "dur": 0.32,
+          "min_tier": 3,
+          "palette": "void",
+          "scale": 4.0
+        }
+      ]
+    },
+    "chain_lightning_battle": {
+      "label": "Chain Lightning: sparks gather, a flat arc to each foe, a strike on each, the charge crackles on (main 23993)",
+      "start": 0.15,
+      "impact": 0.88,
+      "start_note": "the gather starts WITH the cast pose (main 23890) and the spell leaves on the pose's release frame, 0.75 s after the action",
+      "phases": [
+        {
+          "kind": "gather",
+          "sfx": "beat_thunder_open",
+          "origin": "hand",
+          "at": 0.0,
+          "dur": 0.6,
+          "count": 22,
+          "palette": "spark"
+        },
+        {
+          "kind": "ring",
+          "origin": "hand",
+          "at": 0.6,
+          "dur": 0.13999999999999999,
+          "scale": 1.8,
+          "palette": "spark"
+        },
+        {
+          "kind": "bolt",
+          "at": 0.7,
+          "dur": 0.18,
+          "arc_height": 0,
+          "palette": "spark",
+          "trail_palette": "spark",
+          "trail_spacing": 5,
+          "size": 1.1,
+          "sfx": "beat_thunder_bolt"
+        },
+        {
+          "kind": "eruption",
+          "at": 0.88,
+          "power": 0.9,
+          "element": "lightning",
+          "sfx": "beat_thunder_crack"
+        },
+        {
+          "kind": "flash",
+          "at": 0.88,
+          "dur": 0.1,
+          "size": 4.5
+        },
+        {
+          "kind": "slash",
+          "at": 0.88,
+          "count": 6,
+          "radius": 44,
+          "dur": 0.1,
+          "life": 0.16,
+          "palette": "spark"
+        },
+        {
+          "kind": "slash",
+          "at": 1.04,
+          "count": 8,
+          "radius": 70,
+          "dur": 0.1,
+          "life": 0.18,
+          "palette": "spark",
+          "min_tier": 2
+        },
+        {
+          "kind": "fall",
+          "at": 0.96,
+          "dur": 0.35,
+          "count": 8,
+          "palette": "spark",
+          "ground_glow": false
+        }
+      ]
+    },
+    "family_breath_ice": {
+      "label": "Ice breath: cold drawn in, a flat stream to each foe, the ice burst, snow (monster family, main 23993)",
+      "start": 0.1,
+      "impact": 0.62,
+      "start_note": "a monster has no cast pose to wait for: the breath is drawn in as soon as it acts",
+      "phases": [
+        {
+          "kind": "gather",
+          "sfx": "beat_ice_open",
+          "origin": "hand",
+          "at": 0.0,
+          "dur": 0.34,
+          "count": 20,
+          "palette": "frost"
+        },
+        {
+          "kind": "ring",
+          "origin": "hand",
+          "at": 0.3,
+          "dur": 0.2,
+          "scale": 2.2,
+          "palette": "frost"
+        },
+        {
+          "kind": "bolt",
+          "at": 0.34,
+          "dur": 0.28,
+          "arc_height": 10,
+          "palette": "frost",
+          "trail_palette": "frost",
+          "trail_spacing": 5,
+          "size": 1.5,
+          "sfx": "beat_ice_bolt"
+        },
+        {
+          "kind": "eruption",
+          "at": 0.62,
+          "power": 0.9,
+          "element": "ice",
+          "sfx": "beat_ice_impact"
+        },
+        {
+          "kind": "flash",
+          "at": 0.62,
+          "dur": 0.14,
+          "size": 5.0
+        },
+        {
+          "kind": "fall",
+          "at": 0.72,
+          "dur": 0.55,
+          "count": 12,
+          "palette": "frost",
+          "ground_glow": false
+        }
+      ]
+    },
+    "family_breath_lightning": {
+      "label": "Lightning surge: sparks drawn in, a flat arc to each foe, the strike, sparks drop (monster family, main 23993)",
+      "start": 0.1,
+      "impact": 0.62,
+      "start_note": "a monster has no cast pose to wait for: the breath is drawn in as soon as it acts",
+      "phases": [
+        {
+          "kind": "gather",
+          "sfx": "beat_thunder_open",
+          "origin": "hand",
+          "at": 0.0,
+          "dur": 0.34,
+          "count": 20,
+          "palette": "spark"
+        },
+        {
+          "kind": "ring",
+          "origin": "hand",
+          "at": 0.3,
+          "dur": 0.2,
+          "scale": 2.2,
+          "palette": "spark"
+        },
+        {
+          "kind": "bolt",
+          "at": 0.34,
+          "dur": 0.28,
+          "arc_height": 10,
+          "palette": "spark",
+          "trail_palette": "spark",
+          "trail_spacing": 5,
+          "size": 1.5,
+          "sfx": "beat_thunder_bolt"
+        },
+        {
+          "kind": "eruption",
+          "at": 0.62,
+          "power": 0.9,
+          "element": "lightning",
+          "sfx": "beat_thunder_crack"
+        },
+        {
+          "kind": "flash",
+          "at": 0.62,
+          "dur": 0.14,
+          "size": 5.0
+        },
+        {
+          "kind": "fall",
+          "at": 0.72,
+          "dur": 0.55,
+          "count": 12,
+          "palette": "spark",
+          "ground_glow": false
+        }
+      ]
+    },
+    "family_breath_dark": {
+      "label": "Dark wave: shadow drawn in, a stream to each foe, the dark burst, the dark lifts (monster family, main 23993)",
+      "start": 0.1,
+      "impact": 0.62,
+      "start_note": "a monster has no cast pose to wait for: the breath is drawn in as soon as it acts",
+      "phases": [
+        {
+          "kind": "gather",
+          "sfx": "beat_void_open",
+          "origin": "hand",
+          "at": 0.0,
+          "dur": 0.34,
+          "count": 20,
+          "palette": "void"
+        },
+        {
+          "kind": "ring",
+          "origin": "hand",
+          "at": 0.3,
+          "dur": 0.2,
+          "scale": 2.2,
+          "palette": "void"
+        },
+        {
+          "kind": "bolt",
+          "at": 0.34,
+          "dur": 0.28,
+          "arc_height": 10,
+          "palette": "void",
+          "trail_palette": "void",
+          "trail_spacing": 5,
+          "size": 1.5,
+          "sfx": "beat_void_bolt"
+        },
+        {
+          "kind": "eruption",
+          "at": 0.62,
+          "power": 0.9,
+          "element": "dark",
+          "sfx": "beat_void_impact"
+        },
+        {
+          "kind": "flash",
+          "at": 0.62,
+          "dur": 0.14,
+          "size": 5.0
+        },
+        {
+          "kind": "rise",
+          "at": 0.72,
+          "dur": 0.55,
+          "count": 12,
+          "palette": "void",
+          "ground_glow": false
+        }
+      ]
+    },
+    "family_cloud": {
+      "label": "Cloud: the monster swells, a lobbed glob, a sickly cloud that billows over each foe and thins (monster family, main 23993)",
+      "start": 0.1,
+      "impact": 0.5,
+      "phases": [
+        {
+          "kind": "gather",
+          "origin": "caster",
+          "at": 0.0,
+          "dur": 0.26,
+          "count": 14,
+          "palette": "rot"
+        },
+        {
+          "kind": "bolt",
+          "at": 0.26,
+          "dur": 0.24,
+          "arc_height": 60,
+          "palette": "rot",
+          "trail_palette": "rot",
+          "trail_spacing": 8,
+          "size": 1.0
+        },
+        {
+          "kind": "flash",
+          "at": 0.5,
+          "dur": 0.12,
+          "size": 3.0,
+          "alpha": 0.5
+        },
+        {
+          "kind": "puff",
+          "at": 0.5,
+          "dur": 0.8,
+          "count": 12,
+          "spread": [
+            70,
+            40
+          ],
+          "size": 4.2,
+          "drift": [
+            0,
+            -26
+          ],
+          "palette": "rot"
+        },
+        {
+          "kind": "rise",
+          "at": 0.62,
+          "dur": 0.7,
+          "count": 10,
+          "palette": "rot"
+        }
+      ]
+    },
+    "family_dust": {
+      "label": "Dust: grit whipped up at the monster's feet, thrown, a gold-brown burst that rains back down (monster family, main 23993)",
+      "start": 0.1,
+      "impact": 0.48,
+      "phases": [
+        {
+          "kind": "rise",
+          "origin": "caster",
+          "at": 0.0,
+          "dur": 0.3,
+          "count": 12,
+          "palette": "verdict"
+        },
+        {
+          "kind": "bolt",
+          "at": 0.24,
+          "dur": 0.24,
+          "arc_height": 30,
+          "palette": "verdict",
+          "trail_palette": "verdict",
+          "trail_spacing": 6,
+          "size": 1.2
+        },
+        {
+          "kind": "flash",
+          "at": 0.48,
+          "dur": 0.12,
+          "size": 4.0
+        },
+        {
+          "kind": "ring",
+          "at": 0.48,
+          "dur": 0.28,
+          "scale": 2.6,
+          "palette": "verdict",
+          "offset": [
+            0,
+            30
+          ]
+        },
+        {
+          "kind": "fall",
+          "at": 0.52,
+          "dur": 0.6,
+          "count": 16,
+          "palette": "verdict",
+          "ground_glow": false
+        }
+      ]
+    },
+    "family_drain": {
+      "label": "Drain: a dark thread to the victim, the dark burst, then the stolen life flies BACK and climbs the monster (monster family, main 23993)",
+      "start": 0.1,
+      "impact": 0.4,
+      "phases": [
+        {
+          "kind": "gather",
+          "sfx": "beat_void_open",
+          "origin": "hand",
+          "at": 0.0,
+          "dur": 0.2,
+          "count": 10,
+          "palette": "void"
+        },
+        {
+          "kind": "bolt",
+          "at": 0.16,
+          "dur": 0.24,
+          "arc_height": 0,
+          "palette": "void",
+          "trail_palette": "void",
+          "trail_spacing": 6,
+          "size": 1.0,
+          "sfx": "beat_void_bolt"
+        },
+        {
+          "kind": "eruption",
+          "at": 0.4,
+          "power": 0.8,
+          "element": "dark",
+          "sfx": "beat_void_impact"
+        },
+        {
+          "kind": "flash",
+          "at": 0.4,
+          "dur": 0.12,
+          "size": 4.0
+        },
+        {
+          "kind": "bolt",
+          "reverse": true,
+          "at": 0.52,
+          "dur": 0.34,
+          "arc_height": 36,
+          "palette": "nature",
+          "trail_palette": "nature",
+          "trail_spacing": 7,
+          "size": 0.9
+        },
+        {
+          "kind": "bolt",
+          "reverse": true,
+          "at": 0.6,
+          "dur": 0.34,
+          "arc_height": -28,
+          "palette": "nature",
+          "trail_palette": "nature",
+          "trail_spacing": 7,
+          "size": 0.7
+        },
+        {
+          "kind": "rise",
+          "origin": "caster",
+          "at": 0.86,
+          "dur": 0.6,
+          "count": 12,
+          "palette": "nature"
+        },
+        {
+          "kind": "ring",
+          "origin": "caster",
+          "at": 0.86,
+          "dur": 0.3,
+          "scale": 2.0,
+          "palette": "nature"
+        }
+      ]
+    },
+    "family_screech": {
+      "label": "Screech: three sound rings burst from the monster's mouth and the last one rattles the target (monster family, main 23993)",
+      "start": 0.1,
+      "impact": 0.36,
+      "phases": [
+        {
+          "kind": "ring",
+          "origin": "hand",
+          "at": 0.0,
+          "dur": 0.26,
+          "scale": 2.0,
+          "palette": "steel"
+        },
+        {
+          "kind": "ring",
+          "origin": "hand",
+          "at": 0.1,
+          "dur": 0.28,
+          "scale": 3.2,
+          "palette": "steel"
+        },
+        {
+          "kind": "ring",
+          "origin": "hand",
+          "at": 0.2,
+          "dur": 0.3,
+          "scale": 4.6,
+          "palette": "steel"
+        },
+        {
+          "kind": "flash",
+          "at": 0.36,
+          "dur": 0.12,
+          "size": 3.5,
+          "alpha": 0.6
+        },
+        {
+          "kind": "ring",
+          "at": 0.36,
+          "dur": 0.24,
+          "scale": 1.8,
+          "palette": "steel"
+        },
+        {
+          "kind": "shake",
+          "at": 0.36,
+          "intensity": 4,
+          "dur": 0.16
+        }
+      ]
+    },
+    "family_buff_self": {
+      "label": "Self buff: the monster draws itself up, motes pulled in, one pulse at its feet (the stat beat that follows is the shared landing, adhoc 23998)",
+      "start": 0.1,
+      "impact": 0.34,
+      "phases": [
+        {
+          "kind": "gather",
+          "at": 0.0,
+          "dur": 0.34,
+          "count": 16,
+          "palette": "ember"
+        },
+        {
+          "kind": "ring",
+          "at": 0.34,
+          "dur": 0.3,
+          "scale": 2.4,
+          "palette": "ember",
+          "offset": [
+            0,
+            30
+          ]
+        },
+        {
+          "kind": "flash",
+          "at": 0.34,
+          "dur": 0.12,
+          "size": 3.0,
+          "alpha": 0.5
         }
       ]
     }
