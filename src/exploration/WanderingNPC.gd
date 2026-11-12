@@ -44,6 +44,7 @@ var _in_conversation: bool = false
 
 # Patrol state
 var _patrol_points: Array[Vector2] = []
+var _walk: PatrolWalk = _new_walk()
 var _current_target: int = 0
 var _paused: bool = false
 var _pause_timer: float = 0.0
@@ -85,6 +86,14 @@ func _ready() -> void:
 	_setup_label()
 	body_entered.connect(_on_body_entered)
 	body_exited.connect(_on_body_exited)
+
+
+static func _new_walk() -> PatrolWalk:
+	var w := PatrolWalk.new()
+	w.speed = WANDER_SPEED
+	w.pause_min = PAUSE_MIN
+	w.pause_max = PAUSE_MAX
+	return w
 
 
 func set_patrol(points: Array[Vector2]) -> void:
@@ -131,25 +140,18 @@ func _process(delta: float) -> void:
 	if ilm and ilm.is_locked():
 		return
 
-	if _paused:
-		_pause_timer -= delta
-		if _pause_timer <= 0:
-			_paused = false
-			_current_target = (_current_target + 1) % _patrol_points.size()
+	# The walk itself is PatrolWalk's (shared with an interior NPC's stroll); these fields stay the patrol's own state.
+	_walk.points = _patrol_points
+	_walk.target = _current_target
+	_walk.paused = _paused
+	_walk.pause_left = _pause_timer
+	global_position = _walk.step(global_position, delta)
+	_current_target = _walk.target
+	_paused = _walk.paused
+	_pause_timer = _walk.pause_left
+	if not _walk.moving:
 		return
-
-	var target = _patrol_points[_current_target]
-	var dir = (target - global_position)
-	var dist = dir.length()
-
-	if dist < 4.0:
-		# Reached target — pause
-		_paused = true
-		_pause_timer = randf_range(PAUSE_MIN, PAUSE_MAX)
-		return
-
-	dir = dir.normalized()
-	global_position += dir * WANDER_SPEED * delta
+	var dir: Vector2 = _walk.heading
 	_facing_right = dir.x > 0
 
 	# Pick the dominant axis to set sheet row (0=down, 1=left, 2=right, 3=up).
