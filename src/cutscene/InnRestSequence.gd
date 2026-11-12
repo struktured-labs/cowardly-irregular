@@ -31,6 +31,8 @@ const MIN_NIGHT_SEC := 2.5
 const DITTY_KEY := "inn_rest_ditty"
 const FALLBACK_CUE := "inn_rest"
 const LOCK_ID := "inn_rest"
+## beat -> its cue (cowir-sfx): one voice, so each replaces the last and "stopped" cuts whichever is sounding.
+const BEAT_CUES := {"night_falls": "inn_night_falls", "night": "inn_night_air", "dawn": "inn_dawn"}
 ## Early in "dawn" (GameState bands it 0.0-0.10), so a rest always wakes to first light.
 const MORNING_PHASE := 0.02
 
@@ -66,6 +68,7 @@ static func start(host: Node) -> InnRestSequence:
 func _ready() -> void:
 	layer = 120
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	beat.connect(_sound_beat)
 	_rect = ColorRect.new()
 	_rect.color = NIGHT_TINT
 	_rect.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -101,6 +104,23 @@ func _build_readout() -> void:
 func _room_light(phase: String) -> void:
 	if _host != null and is_instance_valid(_host) and _host.has_method("rest_light"):
 		_host.rest_light(phase)
+
+
+## Static so a test can ask what a beat does without running a night.
+static func cue_for_beat(beat_name: String) -> String:
+	return str(BEAT_CUES.get(beat_name, ""))
+
+
+func _sound_beat(beat_name: String) -> void:
+	if SoundManager == null:
+		return
+	if beat_name == "stopped":
+		if SoundManager.has_method("stop_cutscene_sfx"):
+			SoundManager.stop_cutscene_sfx()
+		return
+	var cue := cue_for_beat(beat_name)
+	if cue != "" and SoundManager.has_method("play_cutscene_sfx"):
+		SoundManager.play_cutscene_sfx(cue)
 
 
 func _run() -> void:

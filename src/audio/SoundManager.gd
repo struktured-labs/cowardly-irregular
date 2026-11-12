@@ -2158,6 +2158,12 @@ func play_cutscene_sfx(sound_key: String) -> void:
 	"""A cutscene's own SFX — same resolution as play_ui, on a voice no menu blip touches."""
 	play_ui(sound_key, _cutscene_player)
 
+
+## A skipped scene takes its sound with it: one voice, so one stop cuts whichever cue is sounding.
+func stop_cutscene_sfx() -> void:
+	if _cutscene_player and _cutscene_player.playing:
+		_cutscene_player.stop()
+
 func play_footstep(terrain: String = "grass") -> void:
 	"""Play a footstep sound for the given terrain type (grass, stone, sand)."""
 	var key = "footstep_" + terrain
