@@ -55,7 +55,7 @@ def build() -> dict[str, Image.Image]:
     face = (ink, shelf[0], shelf[1], shelf[3])
     staves = (shelf[0], shelf[1], shelf[2], floor[4])
     iron = (scaled(shelf[0], 0.55), (58, 54, 52), (86, 80, 76), (120, 112, 104))
-    burlap = ((78, 60, 36), (112, 90, 56), (144, 120, 78), (170, 148, 102))
+    burlap = ((70, 46, 20), (110, 78, 36), (146, 108, 54), (176, 138, 78))
     apple = ((120, 26, 22), (170, 40, 30), (214, 78, 52))
     green = ((36, 66, 34), (60, 100, 48), (96, 138, 70))
     root = ((150, 84, 30), (198, 120, 44), (226, 160, 76))
@@ -87,7 +87,12 @@ def build() -> dict[str, Image.Image]:
     for x in range(26, 44, 5):
         for y in range(25, 36, 3):
             s.put(x, y, burlap[0])
-    s.ellipse(40, 26, 3, 2, (226, 204, 150))                                                # spilled grain at the slumped mouth
+    s.rect(41, 24, 43, 29, (120, 84, 40))                                                   # the slumped sack's tie
+    for x in range(7, 24):
+        s.put(x, 36, burlap[0])
+    for x in range(25, 43):
+        s.put(x, 36, burlap[0])
+    s.ellipse(45, 27, 2, 1.5, (206, 184, 130))                                                # spilled grain at the slumped mouth
     s.outline(ink)
     out["sacks_shop_item"] = s.image()
 
@@ -108,7 +113,7 @@ def build() -> dict[str, Image.Image]:
     out["crate_produce_shop_item"] = c.image()
 
     # --- a striped runner before the counter: lies IN the floor (no outline)
-    stripe = ((58, 84, 64), (86, 118, 88), scaled(honey, 0.9), (132, 52, 40))
+    stripe = ((84, 22, 22), (122, 34, 28), scaled(honey, 0.9), (150, 48, 36))   # the inn rug's reds and its ochre (main 24429)
     m = Canvas(96, 40, 229)
     m.rect(3, 1, 92, 38, stripe[0])
     for y in range(3, 37):
