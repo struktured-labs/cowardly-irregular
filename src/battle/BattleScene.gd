@@ -1893,6 +1893,9 @@ func _add_name_plate(sprite: AnimatedSprite2D, label: Label) -> void:
 
 
 ## Status effect icon display system
+## A badge is bright text on a dark pill: every colour here keeps one channel at or above STATUS_BADGE_MIN_BRIGHT.
+## blind, curse, silence and permakilled were dark text on the dark pill (sprites' render, 2026-11-12).
+const STATUS_BADGE_MIN_BRIGHT := 0.75
 const STATUS_ICON_CONFIG = {
 	# Crowd control / debuffs
 	"exposed": {"label": "EXP", "color": Color(1.0, 0.3, 0.3)},
@@ -1902,10 +1905,10 @@ const STATUS_ICON_CONFIG = {
 	"confuse": {"label": "CONF", "color": Color(0.9, 0.5, 0.9)},
 	"fear": {"label": "FEAR", "color": Color(0.6, 0.3, 0.8)},
 	"charm": {"label": "CHRM", "color": Color(1.0, 0.5, 0.7)},
-	"blind": {"label": "BLND", "color": Color(0.4, 0.4, 0.4)},
-	"curse": {"label": "CURS", "color": Color(0.5, 0.0, 0.5)},
+	"blind": {"label": "BLND", "color": Color(0.78, 0.8, 0.88)},
+	"curse": {"label": "CURS", "color": Color(0.85, 0.4, 0.95)},
 	"regen": {"label": "REGN", "color": Color(0.3, 1.0, 0.3)},
-	"permakilled": {"label": "DEAD", "color": Color(0.3, 0.0, 0.0)},
+	"permakilled": {"label": "DEAD", "color": Color(0.9, 0.3, 0.3)},
 	# Tick 129: common stat buffs/debuffs from abilities.json. Pre-fix,
 	# 25+ distinct statuses fell through to the `status.substr(0, 3).to_upper()`
 	# fallback, giving the player vague "ATT" both for attack_up AND
@@ -1922,7 +1925,7 @@ const STATUS_ICON_CONFIG = {
 	# Standalone damage-over-time + utility effects
 	"burn": {"label": "BURN", "color": Color(1.0, 0.5, 0.1)},
 	"poison": {"label": "PSN", "color": Color(0.6, 0.9, 0.3)},
-	"silence": {"label": "SLNC", "color": Color(0.6, 0.6, 0.6)},
+	"silence": {"label": "SLNC", "color": Color(0.8, 0.8, 0.84)},
 	"barrier": {"label": "BARR", "color": Color(0.4, 0.8, 1.0)},
 	"haste": {"label": "HAST", "color": Color(0.3, 1.0, 0.5)},
 	"slow": {"label": "SLOW", "color": Color(0.7, 0.3, 0.8)},
