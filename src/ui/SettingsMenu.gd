@@ -741,7 +741,7 @@ func _row_font() -> Font:
 
 
 ## The line height the rows' literal offsets were authored around: a 14 px title in the shipped face.
-const DESIGN_TITLE_LINE := 19.0
+const DESIGN_TITLE_LINE := 20.0
 
 
 ## Row geometry factor, upward only, from the title's MEASURED line height (so a larger Text Size and a taller face both make room), in 5% steps.
