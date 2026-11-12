@@ -115,3 +115,16 @@ func test_a_quest_with_no_title_says_nothing() -> void:
 	assert_eq(_quest_events().size(), 0, "an untitled quest logs nothing an NPC could misread")
 	_qs._record_quest_complete_event("zz_titled", {"title": "A Test Errand", "giver": "not a dictionary"})
 	assert_eq(_quest_events().size(), 1, "CONTROL: the same call with a title does log")
+
+
+## cowir-story 24385: the sentence quotes the title, so a title holding a double quote would nest inside it.
+func test_no_quest_title_breaks_the_quoted_sentence() -> void:
+	var nested: Array = []
+	var seen: int = 0
+	for qid in _qs.get_all_ids():
+		var title: String = str(_qs.get_quest(qid).get("title", ""))
+		seen += 1
+		if title.contains("\""):
+			nested.append("%s: %s" % [qid, title])
+	assert_gt(seen, 10, "CONTROL: the quests loaded")
+	assert_eq(nested, [], "a quest title with a double quote in it would read as two quotes in an NPC's prompt")
