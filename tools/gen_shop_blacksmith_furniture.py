@@ -6,8 +6,8 @@ Wood tones are percentiles of counter_shop_blacksmith.png; the steel is sampled 
 racks of blades and helms), so the anvil is the same metal as the stock around it.
 
   anvil 64x40 (on its stump; the procedural anvil's own size) · weapon_crates 64x44 (two crates, hilts showing; the
-  procedural pile's size) · bellows 40x20 (its size) · quench_barrel 28x38 (a cask of water) · coal_pile 44x24 ·
-  door_mat 64x24. The forge stays the room's own animated one.
+  procedural pile's size) · bellows 40x20 (its size) · quench_barrel 28x38 (a cask of water) · coal_bin 72x40 ·
+  door_mat 64x24 · forge 64x64, the BODY under the room's animated flames (main 24436).
 
 Usage:
     uv run --with pillow --with numpy python tools/gen_shop_blacksmith_furniture.py [--check]
@@ -105,28 +105,80 @@ def build() -> dict[str, Image.Image]:
     q.outline(ink)
     out["quench_barrel_shop_blacksmith"] = q.image()
 
-    # --- coal pile: a low heap, a few lumps catching the forge
+    # --- coal bin: a low plank bin heaped with coal, the lumps nearest the fire catching it (the forge is to its right)
     coal = ((16, 15, 18), (36, 34, 40), (62, 60, 68), (96, 92, 100))
-    p = Canvas(44, 24, 337)
-    for (cx, cy, rx, ry) in ((12, 17, 9, 5), (24, 13, 11, 7), (34, 18, 8, 4), (22, 19, 14, 4)):
+    ember = ((150, 50, 20), (214, 96, 40), (250, 170, 70))
+    p = Canvas(72, 40, 337)
+    for (cx, cy, rx, ry) in ((20, 18, 14, 9), (38, 13, 16, 11), (54, 19, 13, 8), (36, 22, 26, 6)):
         p.ellipse(cx, cy, rx, ry, coal[1])
-    for _ in range(26):
-        x, y = int(p.rng.integers(5, 40)), int(p.rng.integers(8, 22))
+    for _ in range(90):                                             # lumps: a lit edge and a dark underside each
+        x, y = int(p.rng.integers(8, 66)), int(p.rng.integers(4, 26))
+        if p.px[y, x, 3] and p.px[y - 1, x, 3]:
+            p.put(x, y, coal[2]); p.put(x + 1, y, coal[1]); p.put(x, y + 1, coal[0])
+            if p.rng.random() < 0.35:
+                p.put(x, y - 1, coal[3])
+    for x, y in ((58, 12), (61, 16), (54, 9), (63, 20), (50, 14), (57, 19)):    # embers on the forge's side
         if p.px[y, x, 3]:
-            p.put(x, y, coal[2]); p.put(x + 1, y, coal[0]); p.put(x, y - 1, coal[3] if p.rng.random() < 0.3 else coal[2])
-    for x, y in ((20, 9), (27, 11), (14, 14)):
-        p.put(x, y, (214, 96, 40))                                  # an ember or two
-    p.outline(coal[0])
-    out["coal_pile_shop_blacksmith"] = p.image()
+            p.put(x, y, ember[1]); p.put(x + 1, y, ember[0]); p.put(x, y - 1, ember[2])
+    p.wood(3, 24, 68, 37, face, vertical=True, boards=9)            # the bin's front, over the heap's foot
+    p.rect(3, 24, 68, 25, wood_r[3])
+    p.rect(3, 36, 68, 37, wood_r[0])
+    p.rect(1, 22, 3, 38, wood_r[1]); p.rect(68, 22, 70, 38, wood_r[1])           # corner posts
+    p.outline(ink)
+    out["coal_bin_shop_blacksmith"] = p.image()
 
-    # --- door mat: a scuffed hide, bound edge (lies in the floor: no outline)
+    # --- door mat: woven rush with a bound edge, the inn's own treatment in this room's wood tones (lies in the floor)
+    rush = (scaled(wood_r[4], 0.62), scaled(wood_r[4], 0.82), wood_r[4])
     dm = Canvas(64, 24, 341)
-    dm.rect(1, 1, 62, 22, leather[0])
-    dm.rect(2, 2, 61, 21, leather[1])
+    dm.rect(1, 1, 62, 22, scaled(wood_r[4], 0.5))
+    dm.rect(2, 2, 61, 21, rush[0])
     for y in range(3, 21):
         for x in range(3, 61):
-            dm.put(x, y, leather[2] if (x * 3 + y * 5) % 7 else leather[1])
+            dm.put(x, y, rush[2] if ((x // 3) + (y // 2)) % 2 == 0 else (rush[1] if dm.rng.random() < 0.8 else rush[0]))
     out["door_mat_shop_blacksmith"] = dm.image()
+
+    # --- the forge's BODY, 64x64: a dressed-stone hearth with an arched mouth and a coal bed; the room's animated
+    #     flames play over the mouth (its centre is at (32, 34) in this image)
+    stone_r = ramp(ART / "wall_shop_blacksmith.png", pcts=(4, 25, 50, 72, 90, 98))
+    stone = (scaled(stone_r[0], 0.8), stone_r[1], stone_r[3], stone_r[5])
+    f = Canvas(64, 64, 347)
+    f.rect(3, 10, 60, 61, stone[1])
+    for row, y0 in enumerate(range(10, 62, 9)):                     # courses of blocks, joints staggered
+        for x in range(3, 61):
+            f.put(x, y0, stone[0])
+        off = 0 if row % 2 else 7
+        for x0 in range(3 + off, 61, 14):
+            for y in range(y0, min(62, y0 + 9)):
+                f.put(x0, y, stone[0])
+        for x in range(4, 60):
+            if f.px[y0 + 1, x, 3] and tuple(f.px[y0 + 1, x][:3]) == stone[1] and (x * 5 + row * 3) % 9 < 5:
+                f.put(x, y0 + 1, stone[2])                           # each block's lit top edge
+    for _ in range(70):
+        x, y = int(f.rng.integers(4, 60)), int(f.rng.integers(12, 60))
+        if tuple(f.px[y, x][:3]) == stone[1]:
+            f.put(x, y, stone[2] if f.rng.random() < 0.5 else stone[0])
+    f.rect(1, 5, 62, 10, stone[2])                                  # the mantel slab
+    f.rect(1, 5, 62, 6, stone[3])
+    f.rect(1, 10, 62, 10, stone[0])
+    for y in range(22, 50):                                         # the arched mouth
+        for x in range(14, 50):
+            inside = (y >= 32 and 16 <= x <= 47) or ((x - 31.5) / 16.0) ** 2 + ((y - 32) / 10.0) ** 2 <= 1.0
+            if inside:
+                f.put(x, y, (18, 12, 12))
+    for x in range(13, 51):                                         # the arch's voussoirs, lit
+        for y in range(19, 34):
+            d = ((x - 31.5) / 18.5) ** 2 + ((y - 32) / 12.5) ** 2
+            if 0.86 <= d <= 1.0 and y <= 32:
+                f.put(x, y, stone[3] if (x // 5) % 2 == 0 else stone[2])
+    for x in range(17, 47):                                         # the coal bed: dark lumps, a glow along its top
+        for y in range(43, 50):
+            f.put(x, y, coal[1] if (x + y) % 3 else coal[0])
+        f.put(x, 43, ember[1] if x % 3 else ember[2])
+        f.put(x, 44, ember[0] if x % 2 else coal[1])
+    f.rect(12, 50, 51, 52, stone[2])                                # the hearth's sill
+    f.rect(12, 50, 51, 50, stone[3])
+    f.outline(scaled(stone[0], 0.7))
+    out["forge_shop_blacksmith"] = f.image()
     return out
 
 
