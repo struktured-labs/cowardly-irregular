@@ -7,7 +7,11 @@ hearth are drawn; its armchairs, table, desk, coat rack and lanterns were still 
 floor_inn.png / back_wall_inn.png, so the furniture cannot drift from the room it stands in.
 
 Each piece is the size of the procedural one it replaces (InnInterior.gd), so it stands on the same cells:
-  armchair 40x44 (one PNG; the second chair is the room's flip) · table 256x64 · desk 96x64 · coat_rack 20x40 · lantern 14x22
+  table 256x64 · desk 96x64 · bench 224x20 · table_things 256x64 (an overlay on the table's rect: what stands ON it)
+and four are new or larger, their footprints agreed with the room's owner (main 24363):
+  armchair 60x66, a wing-back lit from its right (the room flips the second one, so both are lit from the hearth
+  between them) · rug 160x96 · coat_rack 24x44 · barrel 28x38 · crate 30x30
+The four free-hanging lanterns of the first draft are gone: the wall art has its own.
 
 Usage:
     uv run --with pillow --with numpy python tools/gen_inn_furniture.py            # writes the five PNGs
@@ -23,7 +27,6 @@ from PIL import Image
 
 ROOT = Path(__file__).resolve().parent.parent
 ART = ROOT / "assets/sprites/interiors/harmonia"
-PIECES = ["armchair_inn", "table_inn", "desk_inn", "coat_rack_inn", "lantern_inn"]
 
 
 def ramp(path: Path, pcts=(4, 22, 45, 68, 88, 97)) -> list[tuple[int, int, int]]:
@@ -98,6 +101,26 @@ class Canvas:
             self.put(x0, y, light)
             self.put(x1, y, shade)
 
+    def ellipse(self, cx, cy, rx, ry, c):
+        for y in range(int(cy - ry), int(cy + ry) + 1):
+            for x in range(int(cx - rx), int(cx + rx) + 1):
+                if ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2 <= 1.0:
+                    self.put(x, y, c)
+
+    def lit(self, x0, y0, x1, y1, tones, light_from_right=True, mask=None):
+        """A rounded, lit surface: four tones across its width, darkest on the far side, the steps broken by an ordered
+        dither so the form turns instead of banding. `mask(x, y)` keeps only the pixels of the shape."""
+        w = max(1, x1 - x0)
+        for y in range(y0, y1 + 1):
+            for x in range(x0, x1 + 1):
+                if mask is not None and not mask(x, y):
+                    continue
+                f = (x - x0) / w
+                if not light_from_right:
+                    f = 1.0 - f
+                v = f * 3.2 - 0.25 + (0.22 if (x + y) % 2 else -0.22)
+                self.put(x, y, tones[max(0, min(3, int(round(v))))])
+
     def outline(self, c):
         """One dark pixel around everything opaque (4-neighbour), like the drawn set's own edges."""
         solid = self.px[:, :, 3] > 0
@@ -153,74 +176,174 @@ def build() -> dict[str, Image.Image]:
     d.outline(ink)
     out["desk_inn"] = d.image()
 
-    # --- wing-back armchair, 40x44: oxblood leather, the hearth's warm side lit
-    leather = ((74, 20, 18), (112, 30, 26), (150, 44, 36), (186, 72, 54))
-    a = Canvas(40, 44, 37)
-    for y in range(3, 27):                                    # the back: a rounded top
-        inset = max(0, 5 - (y - 3)) if y < 8 else 0
-        for x in range(8 + inset, 32 - inset):
-            a.put(x, y, leather[2] if x < 27 else leather[1])
-    for y in range(6, 13):                                    # a highlight across the top of the back
-        for x in range(12, 22):
-            if (x + y) % 3:
-                a.put(x, y, leather[3])
-    for bx, by in ((14, 14), (20, 12), (26, 14), (17, 19), (23, 19)):   # button tufts
+    # --- wing-back armchair, 60x66: oxblood leather, lit from its right (the hearth's side); the room flips the other
+    leather = ((66, 16, 16), (108, 28, 24), (152, 46, 36), (198, 84, 58))
+    a = Canvas(60, 66, 37)
+
+    def back(x, y):                                           # a tall back with a rounded crown
+        if not (9 <= x <= 50 and 4 <= y <= 44):
+            return False
+        return y >= 12 or ((x - 29.5) / 21.0) ** 2 + ((y - 12) / 8.5) ** 2 <= 1.0
+    a.lit(9, 4, 50, 44, leather, mask=back)
+    for wx0, wx1, right in ((4, 12, False), (47, 55, True)):  # the wings, flaring forward of the back
+        a.lit(wx0, 10, wx1, 46, leather if right else (leather[0], leather[0], leather[1], leather[2]),
+              mask=lambda x, y, r=right: y >= 10 + (2 if (x in (4, 55)) else 0))
+    for bx, by in ((20, 18), (30, 15), (40, 18), (25, 26), (35, 26), (20, 34), (30, 33), (40, 34)):   # deep buttoning
         a.put(bx, by, leather[0])
+        a.put(bx + 1, by, leather[0])
         a.put(bx, by - 1, leather[3])
-    for y in range(8, 33):                                    # the wings and arms
-        for x in list(range(4, 9)) + list(range(31, 36)):
-            a.put(x, y, leather[1] if x >= 31 else leather[2])
-    for x in list(range(3, 10)) + list(range(30, 37)):        # arm rests' rolled tops
-        a.put(x, 20, leather[3])
-        a.put(x, 21, leather[2])
-    for y in range(26, 33):                                   # the seat cushion
-        for x in range(9, 31):
-            a.put(x, y, leather[3] if y == 26 else (leather[2] if y < 31 else leather[1]))
-    for y in range(33, 40):                                   # the front skirt
-        for x in range(4, 36):
-            a.put(x, y, leather[1] if y > 34 else leather[2])
-    for x0 in (5, 31):                                        # turned feet
-        a.rect(x0, 40, x0 + 3, 42, deep[2])
+    a.lit(11, 40, 48, 50, (leather[1], leather[2], leather[3], leather[3]))        # the seat cushion, catching the light
+    for x in range(12, 48):
+        a.put(x, 50, leather[0])
+    for ax0, ax1, right in ((2, 13, False), (46, 57, True)):  # rolled arms: a round front and a lit top
+        tones = leather if right else (leather[0], leather[0], leather[1], leather[2])
+        a.lit(ax0, 34, ax1, 56, tones)
+        a.ellipse((ax0 + ax1) / 2.0, 37, 5.5, 4.0, tones[3] if right else tones[2])
+        a.ellipse((ax0 + ax1) / 2.0, 37, 2.5, 1.8, tones[1])
+    a.lit(8, 51, 51, 60, (leather[0], leather[1], leather[1], leather[2]))         # the front skirt, in the seat's shadow
+    for x in range(10, 50, 4):
+        a.put(x, 60, (150, 120, 60))                          # brass nail heads along the skirt
+    for x0 in (6, 49):
+        a.rect(x0, 61, x0 + 4, 64, deep[2])                   # turned feet
     a.outline(ink)
     out["armchair_inn"] = a.image()
 
-    # --- coat rack, 20x40: a turned pole, four pegs, two travelling cloaks
-    c = Canvas(20, 40, 41)
-    c.wood(9, 2, 10, 35, deep, vertical=True)
-    c.rect(8, 1, 11, 2, deep[3])                              # the finial
-    for x in (4, 5, 6, 13, 14, 15):
-        c.put(x, 6, deep[2])                                  # pegs
-    c.rect(4, 36, 15, 37, deep[2])                            # the foot
-    c.rect(2, 38, 17, 38, deep[1])
-    plum = ((52, 34, 74), (78, 52, 108), (104, 74, 138))
-    moss = ((38, 62, 40), (58, 90, 56), (84, 118, 76))
-    for cloak, x0, y1 in ((plum, 2, 28), (moss, 12, 24)):
-        for y in range(7, y1):
-            w = 5 + (1 if y > 14 else 0)
-            for x in range(x0, x0 + w):
-                tone = cloak[2] if x == x0 else (cloak[0] if x == x0 + w - 1 or (x + y) % 5 == 0 else cloak[1])
+    # --- hearth rug, 5x3 cells: a worn red field, a gold key border, fringe at both ends
+    red = ((84, 22, 22), (122, 34, 28), (150, 48, 36))
+    gold = (scaled(honey, 0.9), honey)
+    r = Canvas(160, 96, 61)
+    r.rect(4, 2, 155, 93, red[0])
+    r.rect(8, 6, 151, 89, gold[0])
+    r.rect(10, 8, 149, 87, red[0])
+    r.rect(13, 11, 146, 84, red[1])
+    for y in range(11, 85):
+        for x in range(13, 147):
+            u, v = (x - 13) % 22, (y - 11) % 18
+            if abs(u - 11) * 9 + abs(v - 9) * 11 in range(86, 100):            # a lattice of diamonds
+                r.put(x, y, gold[0])
+            elif abs(u - 11) + abs(v - 9) < 3:
+                r.put(x, y, red[2])
+            elif r.rng.random() < 0.05:
+                r.put(x, y, red[0])                                             # wear
+    for x in range(10, 150, 6):                                                 # the key border
+        r.rect(x, 7, x + 2, 7, gold[1])
+        r.rect(x + 3, 88, x + 5, 88, gold[1])
+    for y in range(3, 93, 2):                                                   # fringe
+        for x in (1, 2, 3, 156, 157, 158):
+            r.put(x, y, gold[1] if x in (2, 157) else gold[0])
+    out["rug_inn"] = r.image()                                                  # no outline: a rug lies IN the floor
+
+    # --- bench, 7 cells long: a lit board, its edge, three legs
+    bn = Canvas(224, 20, 67)
+    bn.wood(1, 1, 222, 9, top, plank=74)
+    bn.rect(1, 10, 222, 11, ink)
+    for x0 in (6, 106, 208):
+        bn.wood(x0, 12, x0 + 9, 18, deep, vertical=True)
+    bn.outline(ink)
+    out["bench_inn"] = bn.image()
+
+    # --- what stands on the table: plates, mugs, a loaf, a candle (drawn onto a transparent 7-cell strip)
+    cream = wall[5]
+    pewter = ((70, 68, 70), (116, 114, 116), (160, 158, 156))
+    crust = (floor[2], honey)
+    th = Canvas(256, 64, 71)   # an overlay on the table's own rect: everything sits on its top (rows 3-36)
+    OX, OY = 16, 10
+
+    _put = th.put                                             # rect() and ellipse() draw through put(), so one shift moves all
+    th.put = lambda x, y, c, a=255: _put(x + OX, y + OY, c, a)
+
+    def plate(cx):
+        th.ellipse(cx, 11, 7, 3, scaled(cream, 0.72))
+        th.ellipse(cx, 10, 7, 3, cream)
+        th.ellipse(cx, 10, 4, 1.4, scaled(cream, 0.86))
+
+    def mug(x):
+        th.rect(x, 6, x + 4, 12, pewter[1])
+        th.rect(x + 4, 6, x + 4, 12, pewter[0])
+        th.rect(x, 6, x, 12, pewter[2])
+        th.rect(x, 5, x + 4, 5, pewter[2])
+        th.put(x + 5, 8, pewter[0]); th.put(x + 6, 9, pewter[0]); th.put(x + 5, 10, pewter[0])
+
+    def loaf(x):
+        th.ellipse(x + 6, 10, 6.5, 3, crust[0])
+        th.ellipse(x + 6, 9, 5.5, 2, crust[1])
+        for i in (3, 6, 9):
+            th.put(x + i, 9, crust[0])
+
+    def candle(x):
+        th.rect(x - 2, 12, x + 3, 13, pewter[0])
+        th.rect(x, 5, x + 1, 11, cream)
+        th.put(x + 1, 6, scaled(cream, 0.8))
+        th.put(x, 3, flame); th.put(x + 1, 3, glow); th.put(x, 2, glow); th.put(x, 1, flame); th.put(x + 1, 4, ember)
+
+    for cx in (18, 78, 146, 204):
+        plate(cx)
+    for x in (32, 92, 124, 182):
+        mug(x)
+    loaf(48)
+    loaf(158)
+    candle(110)
+    th.put = _put
+    th.outline(ink)
+    out["table_things_inn"] = th.image()
+
+    # --- barrel, 28x38: staves that turn with the light, two iron hoops, a lit lid
+    staves = (wall[0], floor[1], floor[2], floor[4])
+    bl = Canvas(28, 38, 73)
+
+    def belly(x, y):
+        bulge = 2 if 12 <= y <= 30 else (1 if 8 <= y <= 34 else 0)
+        return 3 - bulge <= x <= 24 + bulge and 6 <= y <= 36
+    bl.lit(1, 6, 26, 36, staves, mask=belly)
+    for x in (7, 12, 17, 22):
+        for y in range(8, 36):
+            if belly(x, y):
+                bl.put(x, y, ink)
+    for hy in (11, 31):
+        for x in range(0, 28):
+            if belly(x, hy):
+                bl.put(x, hy, iron[2] if x > 14 else iron[1])
+                bl.put(x, hy + 1, iron[0])
+    bl.ellipse(13.5, 6, 10.5, 3.5, top[2])
+    bl.ellipse(13.5, 6, 8, 2.2, top[1])
+    bl.outline(ink)
+    out["barrel_inn"] = bl.image()
+
+    # --- crate, 30x30: a lit top, a slatted front with one brace
+    cr = Canvas(30, 30, 79)
+    cr.wood(2, 2, 27, 9, top, plank=13)
+    cr.rect(2, 10, 27, 10, ink)
+    cr.wood(2, 11, 27, 27, face, vertical=True, boards=4)
+    for i in range(16):
+        cr.put(4 + i * 22 // 16, 12 + i, floor[3])           # the brace's lit edge
+        cr.put(5 + i * 22 // 16, 12 + i, wall[0])
+    cr.rect(2, 11, 27, 12, floor[1])
+    cr.rect(2, 26, 27, 27, wall[0])
+    cr.outline(ink)
+    out["crate_inn"] = cr.image()
+
+    # --- coat rack, 24x44: a turned pole, pegs, two travelling cloaks that hang in folds, a hat on the finial
+    c = Canvas(24, 44, 41)
+    c.wood(11, 4, 12, 39, deep, vertical=True)
+    c.rect(4, 8, 19, 8, deep[2])                              # the peg bar
+    c.rect(5, 40, 18, 41, deep[2])
+    c.rect(3, 42, 20, 42, deep[1])
+    plum = ((44, 28, 64), (70, 46, 98), (98, 68, 132), (128, 96, 160))
+    moss = ((30, 50, 34), (50, 80, 50), (76, 110, 70), (108, 140, 96))
+    for cloak, x0, w, y1 in ((plum, 1, 10, 33), (moss, 13, 9, 28)):
+        for y in range(9, y1 + 1):
+            spread = min(2, (y - 9) // 7)                     # the cloth widens as it falls
+            for x in range(x0 - (spread if x0 < 12 else 0), x0 + w + (spread if x0 >= 12 else 0)):
+                fold = (x - x0 + (1 if y > 20 else 0)) % 4     # a fold every four pixels: light ridge, dark valley
+                tone = cloak[3] if fold == 0 else (cloak[2] if fold == 1 else (cloak[1] if fold == 2 else cloak[0]))
+                if y >= y1 - 1 and fold == 3:
+                    continue                                   # a scalloped hem
                 c.put(x, y, tone)
+        c.rect(x0 + 2, 9, x0 + w - 3, 10, cloak[3])           # the collar over the peg
+    c.ellipse(11.5, 3.5, 6, 1.6, floor[1])                     # a felt hat's brim
+    c.ellipse(11.5, 2, 3, 2, wall[0])
     c.outline(ink)
     out["coat_rack_inn"] = c.image()
-
-    # --- hanging lantern, 14x22: iron cage, amber glass, the hearth's own flame colours
-    l = Canvas(14, 22, 53)
-    for y in range(0, 5):
-        l.put(6 + (y % 2), y, iron[2])                        # chain links
-    l.rect(4, 5, 9, 5, iron[3])                               # cap
-    l.rect(3, 6, 10, 7, iron[1])
-    for y in range(8, 17):
-        for x in range(4, 10):
-            dist = abs(x - 6.5) + abs(y - 12) * 0.6
-            l.put(x, y, scaled(glow, 1.08) if dist < 2.2 else (glow if dist < 3.4 else flame))
-        l.put(3, y, iron[2])
-        l.put(10, y, iron[1])
-    for y in range(8, 17):
-        l.put(6, y, iron[1]) if y in (8, 16) else None        # the cage's cross bars
-    l.rect(3, 17, 10, 18, iron[1])
-    l.rect(5, 19, 8, 19, iron[2])
-    l.outline(iron[0])
-    out["lantern_inn"] = l.image()
     return out
 
 
