@@ -9,6 +9,8 @@ signal ap_changed(old_value: int, new_value: int)
 signal died()
 signal status_added(status: String)
 signal status_removed(status: String)
+## A stat buff (+1) or debuff (-1) APPEARED (added) or ran out its turns (not added). A refresh, a dispel and a death emit nothing.
+signal buff_changed(stat: String, direction: int, added: bool)
 ## tick 55: emit once per level threshold crossed in gain_exp. The
 ## rebalance daemon listens (via BattleManager → GameLoop) and uses
 ## it as a passive progression signal — distinct from wipe/defeat.
@@ -1000,6 +1002,7 @@ func add_buff(effect: String, stat: String, modifier: float, duration: int, clas
 		"class": class_tag,
 	}
 	active_buffs.append(buff)
+	buff_changed.emit(stat, 1, true)
 	print("%s gained %s (%.1fx %s for %d turns)" % [combatant_name, effect, modifier, stat, duration])
 
 
@@ -1029,6 +1032,7 @@ func add_debuff(effect: String, stat: String, modifier: float, duration: int) ->
 		"remaining_turns": duration
 	}
 	active_debuffs.append(debuff)
+	buff_changed.emit(stat, -1, true)
 	print("%s suffered %s (%.1fx %s for %d turns)" % [combatant_name, effect, modifier, stat, duration])
 
 
@@ -1214,14 +1218,18 @@ func update_buff_durations() -> void:
 		active_buffs[i]["remaining_turns"] -= 1
 		if active_buffs[i]["remaining_turns"] <= 0:
 			print("%s's %s wore off" % [combatant_name, active_buffs[i]["effect"]])
+			var lapsed_stat := str(active_buffs[i].get("stat", ""))
 			active_buffs.remove_at(i)
+			buff_changed.emit(lapsed_stat, 1, false)
 
 	# Update debuffs
 	for i in range(active_debuffs.size() - 1, -1, -1):
 		active_debuffs[i]["remaining_turns"] -= 1
 		if active_debuffs[i]["remaining_turns"] <= 0:
 			print("%s's %s wore off" % [combatant_name, active_debuffs[i]["effect"]])
+			var lapsed_stat := str(active_debuffs[i].get("stat", ""))
 			active_debuffs.remove_at(i)
+			buff_changed.emit(lapsed_stat, -1, false)
 
 	# Update doom counter. Gate on is_alive so a doomed combatant who died
 	# earlier in this same update_buff_durations pass (poison / burn lethal
