@@ -4283,11 +4283,11 @@ func _get_terrain_battle_track() -> String:
 
 func _on_battle_ended(victory: bool) -> void:
 	"""Handle battle end"""
+	_end_advance_run()
+	_clear_advance_aura()
 	_music_follows_hp = false
 	SoundManager.clear_fight_bed()
 	SoundManager.reset_danger()  # a turbo win or an escape starts no new bed, so nothing else would end the speed-up
-	_end_advance_run()
-	_clear_advance_aura()
 	## A hit still held for its impact frame lands NOW (number, then its death), before the defeat scene or the
 	## victory flow: an escape or a wipe mid-swing must not lean on the safety timer (cowir-battle 23687).
 	_land_held_hit()

@@ -143,7 +143,7 @@ func test_a_recovered_party_hears_the_bed_at_exactly_one_again() -> void:
 func test_a_win_with_two_down_plays_the_victory_bed_at_one_through_every_refresh() -> void:
 	_set_party([100, 100, DOWN, DOWN])
 	await _refresh()
-	assert_gt(_pitch(), 1.05, "CONTROL: two KO'd must have sped the battle bed up (%.4f), or this arm proves nothing" % _pitch())
+	assert_gt(_pitch(), 1.02, "CONTROL: two KO'd must have sped the battle bed up (%.4f), or this arm proves nothing" % _pitch())  # two down at full HP is 1.05 exactly
 	BattleSceneScript.play_victory_music(false)
 	assert_eq(_pitch(), 1.0, "the victory bed's first frame is at pitch %.4f" % _pitch())
 	## The latch is deliberately LEFT OPEN here: the mixer must refuse on its own, for a caller that forgets.
