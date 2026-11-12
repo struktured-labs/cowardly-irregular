@@ -128,6 +128,21 @@ func test_at_turbo_the_wash_costs_no_time() -> void:
 		"and spawn_sequence reports the compact impact without the travel")
 
 
+## The shared landing beats are THE landing (cowir-adhoc 24006): a ward or a stat song draws its DELIVERY and leaves the
+## ring and the rising motes at the target to the stat beat, or the target would get two of each in one frame.
+func test_a_buff_cast_leaves_the_landing_to_the_shared_beat() -> void:
+	for id in ["protect_battle", "shell_battle", "battle_hymn_battle", "discord_battle"]:
+		var seq := _seq(id)
+		var impact: float = FX.impact_time(seq) - float(seq.get("start", 0.0))
+		for ph in seq.get("phases", []):
+			var kind := str((ph as Dictionary).get("kind", ""))
+			if absf(float((ph as Dictionary).get("at", 0.0)) - impact) <= 0.1 and str((ph as Dictionary).get("origin", "target")) == "target":
+				assert_false(kind in ["ring", "rise", "pillar"], "%s draws no %s at its landing: that is the stat beat's" % [id, kind])
+	assert_false(_seq("stat_up_defense").is_empty(), "CONTROL: the shared defense-up beat exists to do it")
+	assert_gt(_phases(_seq("stat_up_defense"), "ring").size(), 0, "CONTROL: and it draws the ring")
+	assert_gt(_phases(_seq("cure_battle"), "ring").size(), 0, "CONTROL: a heal, which has no stat beat, keeps its own ring")
+
+
 func test_a_ribbon_and_its_notes_are_drawn() -> void:
 	var ribbon: Dictionary = _phases(_seq("battle_hymn_battle"), "ribbon")[0]
 	var host := _draw(ribbon)

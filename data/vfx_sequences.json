@@ -3116,21 +3116,22 @@
       ]
     },
     "cure_battle": {
-      "label": "Cure: light gathers at her staff, arcs to the ally, a soft column rises with sparkles (cutscenes 23771)",
-      "start": 0.5,
-      "impact": 0.45,
+      "label": "Cure: light gathers at her staff through the pose, arcs to the ally as the orb leaves it, a soft column rises with sparkles",
+      "start": 0.15,
+      "start_note": "the wind-up rule (main 23890): the first beat starts with the cast pose, the launch is on its release frame",
+      "impact": 0.42,
       "phases": [
         {
           "kind": "gather",
           "origin": "hand",
           "at": 0.0,
-          "dur": 0.25,
+          "dur": 0.22,
           "count": 14,
           "palette": "holy"
         },
         {
           "kind": "bolt",
-          "at": 0.25,
+          "at": 0.22,
           "dur": 0.2,
           "arc_height": 70,
           "palette": "holy",
@@ -3140,21 +3141,21 @@
         },
         {
           "kind": "pillar",
-          "at": 0.45,
+          "at": 0.42,
           "dur": 0.4,
           "height": 150,
           "palette": "holy"
         },
         {
           "kind": "ring",
-          "at": 0.45,
+          "at": 0.42,
           "dur": 0.3,
           "scale": 2.2,
           "palette": "holy"
         },
         {
           "kind": "rise",
-          "at": 0.5,
+          "at": 0.47,
           "dur": 0.6,
           "count": 10,
           "palette": "holy"
@@ -3163,20 +3164,21 @@
     },
     "cura_battle": {
       "label": "Cura: cure one tier up: two braided arcs, a wider column, a ground ring and a second wave of sparkles",
-      "start": 0.5,
-      "impact": 0.5,
+      "start": 0.15,
+      "start_note": "the wind-up rule (main 23890): the first beat starts with the cast pose, the launch is on its release frame",
+      "impact": 0.46,
       "phases": [
         {
           "kind": "gather",
           "origin": "hand",
           "at": 0.0,
-          "dur": 0.3,
+          "dur": 0.22,
           "count": 24,
           "palette": "holy"
         },
         {
           "kind": "bolt",
-          "at": 0.26,
+          "at": 0.22,
           "dur": 0.24,
           "arc_height": 110,
           "palette": "holy",
@@ -3186,7 +3188,7 @@
         },
         {
           "kind": "bolt",
-          "at": 0.3,
+          "at": 0.26,
           "dur": 0.2,
           "arc_height": 30,
           "palette": "holy",
@@ -3196,14 +3198,14 @@
         },
         {
           "kind": "flash",
-          "at": 0.5,
+          "at": 0.46,
           "dur": 0.16,
           "size": 4.0,
           "alpha": 0.5
         },
         {
           "kind": "pillar",
-          "at": 0.5,
+          "at": 0.46,
           "dur": 0.45,
           "height": 260,
           "boost": 1.5,
@@ -3211,7 +3213,7 @@
         },
         {
           "kind": "ring",
-          "at": 0.5,
+          "at": 0.46,
           "dur": 0.36,
           "scale": 3.6,
           "palette": "holy",
@@ -3222,14 +3224,14 @@
         },
         {
           "kind": "rise",
-          "at": 0.55,
+          "at": 0.51,
           "dur": 0.6,
           "count": 16,
           "palette": "holy"
         },
         {
           "kind": "rise",
-          "at": 0.7,
+          "at": 0.66,
           "dur": 0.6,
           "count": 14,
           "palette": "mana"
@@ -3238,7 +3240,7 @@
     },
     "crystal_heal_battle": {
       "label": "Crystal Heal: a ring of light closes in on the caster, flashes, and rises",
-      "start": 0.4,
+      "start": 0.15,
       "impact": 0.35,
       "phases": [
         {
@@ -3272,69 +3274,53 @@
       ]
     },
     "regen_battle": {
-      "label": "Regen: green light climbs the ally and leaves leaf motes drifting up",
-      "start": 0.5,
-      "impact": 0.4,
+      "label": "Regen: green light gathers at her staff and climbs the ally (the regen landing itself is the shared beat)",
+      "start": 0.15,
+      "start_note": "the wind-up rule (main 23890): the first beat starts with the cast pose, the launch is on its release frame",
+      "impact": 0.42,
       "phases": [
         {
           "kind": "gather",
           "origin": "hand",
           "at": 0.0,
-          "dur": 0.25,
+          "dur": 0.22,
           "count": 12,
           "palette": "nature"
         },
         {
           "kind": "pillar",
-          "at": 0.1,
+          "at": 0.22,
           "dur": 0.5,
           "height": 130,
           "palette": "nature"
         },
         {
-          "kind": "ring",
-          "at": 0.4,
-          "dur": 0.3,
-          "scale": 2.0,
-          "palette": "nature",
-          "offset": [
-            0,
-            30
-          ]
-        },
-        {
-          "kind": "rise",
-          "at": 0.4,
-          "dur": 0.7,
-          "count": 12,
-          "palette": "nature"
-        },
-        {
-          "kind": "rise",
-          "at": 0.75,
-          "dur": 0.6,
-          "count": 6,
-          "palette": "nature"
+          "kind": "flash",
+          "at": 0.42,
+          "dur": 0.12,
+          "size": 2.6,
+          "alpha": 0.35
         }
       ]
     },
     "esuna_battle": {
       "label": "Esuna: a white ring sweeps down the ally head to foot and the dross falls away",
-      "start": 0.5,
-      "impact": 0.4,
+      "start": 0.15,
+      "start_note": "the wind-up rule (main 23890): the first beat starts with the cast pose, the launch is on its release frame",
+      "impact": 0.42,
       "phases": [
         {
           "kind": "gather",
           "origin": "hand",
           "at": 0.0,
-          "dur": 0.2,
+          "dur": 0.22,
           "count": 12,
           "palette": "holy"
         },
         {
           "kind": "ring",
-          "at": 0.1,
-          "dur": 0.22,
+          "at": 0.18,
+          "dur": 0.2,
           "scale": 1.6,
           "palette": "holy",
           "offset": [
@@ -3344,8 +3330,8 @@
         },
         {
           "kind": "ring",
-          "at": 0.2,
-          "dur": 0.22,
+          "at": 0.26,
+          "dur": 0.2,
           "scale": 1.9,
           "palette": "holy",
           "offset": [
@@ -3355,8 +3341,8 @@
         },
         {
           "kind": "ring",
-          "at": 0.3,
-          "dur": 0.24,
+          "at": 0.34,
+          "dur": 0.22,
           "scale": 2.2,
           "palette": "holy",
           "offset": [
@@ -3366,14 +3352,14 @@
         },
         {
           "kind": "flash",
-          "at": 0.4,
+          "at": 0.42,
           "dur": 0.12,
           "size": 3.0,
           "alpha": 0.45
         },
         {
           "kind": "fall",
-          "at": 0.4,
+          "at": 0.42,
           "dur": 0.5,
           "count": 10,
           "palette": "void",
@@ -3381,7 +3367,7 @@
         },
         {
           "kind": "rise",
-          "at": 0.45,
+          "at": 0.47,
           "dur": 0.5,
           "count": 8,
           "palette": "holy"
@@ -3390,12 +3376,12 @@
     },
     "pray_battle": {
       "label": "Pray: three blue motes drift to the ally and pop (a free move: kept small)",
-      "start": 0.4,
-      "impact": 0.35,
+      "start": 0.15,
+      "impact": 0.4,
       "phases": [
         {
           "kind": "bolt",
-          "at": 0.0,
+          "at": 0.05,
           "dur": 0.35,
           "arc_height": 36,
           "palette": "mana",
@@ -3405,14 +3391,14 @@
         },
         {
           "kind": "ring",
-          "at": 0.35,
+          "at": 0.4,
           "dur": 0.22,
           "scale": 1.4,
           "palette": "mana"
         },
         {
           "kind": "rise",
-          "at": 0.35,
+          "at": 0.4,
           "dur": 0.45,
           "count": 5,
           "palette": "mana"
@@ -3421,7 +3407,7 @@
     },
     "raise_battle": {
       "label": "Raise (the showcase): a shaft of light drops on the fallen ally, feathers fall inside it, a halo bursts and the shaft lifts away",
-      "start": 0.5,
+      "start": 0.15,
       "impact": 0.7,
       "phases": [
         {
@@ -3544,21 +3530,22 @@
       ]
     },
     "protect_battle": {
-      "label": "Protect: gold plates fly in and lock into a honeycomb wall in front of the ally",
-      "start": 0.5,
-      "impact": 0.45,
+      "label": "Protect: gold plates fly in through her charge and lock into a honeycomb wall in front of the ally (the defense-up landing is the shared beat)",
+      "start": 0.15,
+      "start_note": "the wind-up rule (main 23890): the first beat starts with the cast pose, the launch is on its release frame",
+      "impact": 0.5,
       "phases": [
         {
           "kind": "gather",
           "origin": "hand",
           "at": 0.0,
-          "dur": 0.25,
+          "dur": 0.45,
           "count": 14,
           "palette": "holy"
         },
         {
           "kind": "plates",
-          "at": 0.1,
+          "at": 0.15,
           "dur": 0.35,
           "hold": 0.5,
           "shape": "wall",
@@ -3571,7 +3558,7 @@
         },
         {
           "kind": "flash",
-          "at": 0.45,
+          "at": 0.5,
           "dur": 0.14,
           "size": 4.0,
           "alpha": 0.55,
@@ -3579,43 +3566,26 @@
             -44,
             -6
           ]
-        },
-        {
-          "kind": "ring",
-          "at": 0.45,
-          "dur": 0.3,
-          "scale": 2.8,
-          "palette": "holy",
-          "offset": [
-            -44,
-            -6
-          ]
-        },
-        {
-          "kind": "rise",
-          "at": 0.5,
-          "dur": 0.5,
-          "count": 8,
-          "palette": "holy"
         }
       ]
     },
     "shell_battle": {
-      "label": "Shell: violet plates arch into a dome that closes over the ally",
-      "start": 0.5,
-      "impact": 0.45,
+      "label": "Shell: violet plates arch into a dome that closes over the ally as her charge finishes (the landing is the shared beat)",
+      "start": 0.15,
+      "start_note": "the wind-up rule (main 23890): the first beat starts with the cast pose, the launch is on its release frame",
+      "impact": 0.5,
       "phases": [
         {
           "kind": "gather",
           "origin": "hand",
           "at": 0.0,
-          "dur": 0.25,
+          "dur": 0.45,
           "count": 14,
           "palette": "ward"
         },
         {
           "kind": "plates",
-          "at": 0.1,
+          "at": 0.15,
           "dur": 0.35,
           "hold": 0.5,
           "shape": "dome",
@@ -3629,7 +3599,7 @@
         },
         {
           "kind": "flash",
-          "at": 0.45,
+          "at": 0.5,
           "dur": 0.14,
           "size": 4.0,
           "alpha": 0.5,
@@ -3637,43 +3607,21 @@
             0,
             -50
           ]
-        },
-        {
-          "kind": "ring",
-          "at": 0.45,
-          "dur": 0.34,
-          "scale": 3.2,
-          "palette": "ward",
-          "offset": [
-            0,
-            30
-          ]
-        },
-        {
-          "kind": "fall",
-          "at": 0.5,
-          "dur": 0.5,
-          "count": 8,
-          "palette": "ward",
-          "ground_glow": false,
-          "offset": [
-            0,
-            -60
-          ]
         }
       ]
     },
     "battle_hymn_battle": {
-      "label": "Battle Hymn: a red-gold staff ribbon runs from the Bard down the party line and a rising note bursts on each ally as it arrives",
-      "start": 0.5,
-      "impact": 0.4,
+      "label": "Battle Hymn: notes gather as the Bard plays in, a red-gold staff ribbon runs down the party line on the strum and a note bursts on each ally (the attack-up landing is the shared beat)",
+      "start": 0.15,
+      "start_note": "the wind-up rule (main 23890): the first beat starts with the cast pose, the launch is on its release frame",
+      "impact": 0.52,
       "travel": 0.05,
       "phases": [
         {
           "kind": "gather",
           "origin": "caster",
           "at": 0.0,
-          "dur": 0.2,
+          "dur": 0.22,
           "count": 16,
           "palette": "hymn"
         },
@@ -3697,7 +3645,7 @@
         },
         {
           "kind": "ribbon",
-          "at": 0.1,
+          "at": 0.22,
           "dur": 0.3,
           "life": 0.45,
           "lines": 3,
@@ -3706,32 +3654,14 @@
         },
         {
           "kind": "flash",
-          "at": 0.4,
-          "dur": 0.16,
-          "size": 5.0,
-          "alpha": 0.5
-        },
-        {
-          "kind": "ring",
-          "at": 0.4,
-          "dur": 0.34,
-          "scale": 3.4,
-          "palette": "hymn",
-          "offset": [
-            0,
-            30
-          ]
-        },
-        {
-          "kind": "pillar",
-          "at": 0.4,
-          "dur": 0.4,
-          "height": 200,
-          "palette": "hymn"
+          "at": 0.52,
+          "dur": 0.14,
+          "size": 3.5,
+          "alpha": 0.4
         },
         {
           "kind": "glyphs",
-          "at": 0.4,
+          "at": 0.52,
           "dur": 0.7,
           "count": 4,
           "glyph": "note",
@@ -3745,16 +3675,17 @@
       ]
     },
     "inspiring_melody_battle": {
-      "label": "Inspiring Melody: a blue staff ribbon washes down the party line; notes and blue light rise from each ally",
-      "start": 0.5,
-      "impact": 0.4,
+      "label": "Inspiring Melody: a blue staff ribbon washes down the party line on the strum; notes and blue light rise from each ally",
+      "start": 0.15,
+      "start_note": "the wind-up rule (main 23890): the first beat starts with the cast pose, the launch is on its release frame",
+      "impact": 0.56,
       "travel": 0.05,
       "phases": [
         {
           "kind": "gather",
           "origin": "caster",
           "at": 0.0,
-          "dur": 0.2,
+          "dur": 0.26,
           "count": 16,
           "palette": "mana"
         },
@@ -3778,7 +3709,7 @@
         },
         {
           "kind": "ribbon",
-          "at": 0.1,
+          "at": 0.26,
           "dur": 0.3,
           "life": 0.45,
           "lines": 3,
@@ -3787,7 +3718,7 @@
         },
         {
           "kind": "ring",
-          "at": 0.4,
+          "at": 0.56,
           "dur": 0.34,
           "scale": 3.0,
           "palette": "mana",
@@ -3798,14 +3729,14 @@
         },
         {
           "kind": "rise",
-          "at": 0.4,
+          "at": 0.56,
           "dur": 0.7,
           "count": 16,
           "palette": "mana"
         },
         {
           "kind": "glyphs",
-          "at": 0.4,
+          "at": 0.56,
           "dur": 0.7,
           "count": 3,
           "glyph": "note",
@@ -3818,7 +3749,7 @@
         },
         {
           "kind": "rise",
-          "at": 0.6,
+          "at": 0.76,
           "dur": 0.6,
           "count": 10,
           "palette": "holy"
@@ -3826,15 +3757,16 @@
       ]
     },
     "lullaby_battle": {
-      "label": "Lullaby: three slow notes drift from the Bard to the foe and settle on it (the sleep itself is the landed beat)",
-      "start": 0.5,
-      "impact": 0.6,
+      "label": "Lullaby: three slow notes leave the Bard on the held chord, drift to the foe and settle on it (the sleep itself is the landed beat)",
+      "start": 0.15,
+      "start_note": "the wind-up rule (main 23890): the first beat starts with the cast pose, the launch is on its release frame",
+      "impact": 0.65,
       "phases": [
         {
           "kind": "glyphs",
           "origin": "caster",
-          "at": 0.0,
-          "dur": 0.6,
+          "at": 0.2,
+          "dur": 0.45,
           "count": 3,
           "glyph": "note",
           "palette": "mana",
@@ -3847,8 +3779,8 @@
         },
         {
           "kind": "ribbon",
-          "at": 0.05,
-          "dur": 0.5,
+          "at": 0.2,
+          "dur": 0.4,
           "life": 0.3,
           "lines": 1,
           "wave": 22,
@@ -3856,15 +3788,23 @@
           "palette": "mana"
         },
         {
+          "kind": "gather",
+          "origin": "caster",
+          "at": 0.0,
+          "dur": 0.2,
+          "count": 8,
+          "palette": "mana"
+        },
+        {
           "kind": "ring",
-          "at": 0.6,
+          "at": 0.65,
           "dur": 0.4,
           "scale": 2.2,
           "palette": "mana"
         },
         {
           "kind": "rise",
-          "at": 0.6,
+          "at": 0.65,
           "dur": 0.5,
           "count": 6,
           "palette": "mana"
@@ -3872,16 +3812,17 @@
       ]
     },
     "discord_battle": {
-      "label": "Discord: a jagged violet ribbon snaps across to each foe and the notes shatter on it",
-      "start": 0.5,
-      "impact": 0.3,
+      "label": "Discord: a jagged violet ribbon snaps across to each foe on the struck chord and the notes shatter on it (the defense-down landing is the shared beat)",
+      "start": 0.15,
+      "start_note": "the wind-up rule (main 23890): the first beat starts with the cast pose, the launch is on its release frame",
+      "impact": 0.28,
       "travel": 0.03,
       "phases": [
         {
           "kind": "gather",
           "origin": "caster",
           "at": 0.0,
-          "dur": 0.12,
+          "dur": 0.1,
           "count": 12,
           "palette": "void"
         },
@@ -3897,14 +3838,14 @@
         },
         {
           "kind": "flash",
-          "at": 0.3,
+          "at": 0.28,
           "dur": 0.12,
           "size": 4.5,
           "alpha": 0.5
         },
         {
           "kind": "glyphs",
-          "at": 0.3,
+          "at": 0.28,
           "dur": 0.35,
           "count": 6,
           "glyph": "note",
@@ -3921,20 +3862,13 @@
         },
         {
           "kind": "slash",
-          "at": 0.3,
+          "at": 0.28,
           "dur": 0.2,
           "palette": "void"
         },
         {
-          "kind": "ring",
-          "at": 0.3,
-          "dur": 0.26,
-          "scale": 3.0,
-          "palette": "void"
-        },
-        {
           "kind": "shake",
-          "at": 0.3,
+          "at": 0.28,
           "intensity": 5,
           "dur": 0.2
         }
@@ -5958,6 +5892,41 @@
           "size": 0.8,
           "palette": "steel",
           "bloom": false
+        }
+      ]
+    },
+    "family_heal_self": {
+      "label": "A machine or construct mends itself: sparks pulled in, a pulse, light rising off it (cutscenes' heal family; battle 24017)",
+      "start": 0.1,
+      "impact": 0.35,
+      "phases": [
+        {
+          "kind": "gather",
+          "at": 0.0,
+          "dur": 0.35,
+          "count": 20,
+          "palette": "spark"
+        },
+        {
+          "kind": "flash",
+          "at": 0.35,
+          "dur": 0.14,
+          "size": 3.5,
+          "alpha": 0.5
+        },
+        {
+          "kind": "ring",
+          "at": 0.35,
+          "dur": 0.3,
+          "scale": 2.6,
+          "palette": "spark"
+        },
+        {
+          "kind": "rise",
+          "at": 0.38,
+          "dur": 0.6,
+          "count": 14,
+          "palette": "spark"
         }
       ]
     }
