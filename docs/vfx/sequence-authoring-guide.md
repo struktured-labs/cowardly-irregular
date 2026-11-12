@@ -97,9 +97,9 @@ figure, the anchor is wrong, and that is fixed once in `BattleScene._figure_anch
 | `arc` | a swept blade crescent | `radius`, `from`, `to`, `width`, `life` |
 | `streak` | a dash line between two points | `a`, `b`, `a_offset`, `b_offset`, `life` |
 | `puff` | soft smoke that covers what is behind it | `count`, `spread`, `drift`, `size` |
-| `plates` | flat panes that assemble and hold: a ward | `count`, `shape`, `gap`, `hold` |
-| `ribbon` | a waving band between two points: a song | `a`, `b`, `wave`, `width`, `lines`, `jagged`, `life` |
-| `glyphs` | drifting symbols (notes, Zs) | `glyph`, `count`, `spread`, `drift`, `to_target` |
+| `plates` | flat panes that assemble and hold: a ward | `shape` (wall or dome), `count` (a dome's plates; a wall is always 7), `radius`, `hold` |
+| `ribbon` | a waving band between two points: a song | `a`, `b`, `a_offset`, `b_offset`, `wave`, `width`, `lines`, `gap` (px between staff lines), `jagged`, `life` |
+| `glyphs` | drifting symbols (notes, Zs) | `glyph`, `count`, `size`, `spread`, `drift`, `to_target` |
 | `emit`, `spin_fling` | the recursive fractal (Edit Formula's look) | see `edit_formula_battle` |
 | `lunge`, `knockback`, `hitstop`, `impact_frame` | move or freeze the SPRITES (first target only) | see `strike_impact` |
 | `cue` | nothing: a sound-only beat | `sfx` |
