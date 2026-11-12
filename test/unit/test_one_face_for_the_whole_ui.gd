@@ -31,7 +31,7 @@ func test_every_plain_control_draws_the_pixel_face_in_and_out_of_the_tree() -> v
 
 func test_the_face_is_the_damage_numbers_drawing_not_a_lookalike() -> void:
 	var f: FontFile = UiFont.display()
-	var size := Vector2i(UiFont.NOMINAL_SIZE, 0)
+	var size := Vector2i(UiFont.nominal(), 0)
 	var img: Image = f.get_texture_image(0, size, 0)
 	var checked := 0
 	for ch in PixelText.GLYPHS:
@@ -77,7 +77,7 @@ func test_nothing_turns_to_tofu() -> void:
 
 func test_sizes_snap_to_whole_pixels_never_a_blur() -> void:
 	var f: Font = UiFont.display()
-	var one: float = f.get_string_size("Attack", HORIZONTAL_ALIGNMENT_LEFT, -1, UiFont.NOMINAL_SIZE).x
+	var one: float = f.get_string_size("Attack", HORIZONTAL_ALIGNMENT_LEFT, -1, UiFont.nominal()).x
 	assert_gt(one, 0.0, "CONTROL: the face measures")
 	for size in [8, 9, 10, 11, 12, 13, 14, 16, 18, 20, 24, 28, 32, 40]:
 		var w: float = f.get_string_size("Attack", HORIZONTAL_ALIGNMENT_LEFT, -1, size).x

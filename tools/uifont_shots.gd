@@ -25,8 +25,8 @@ func _init() -> void:
 	root.add_child(probe)
 	var rt := RichTextLabel.new()
 	root.add_child(rt)
-	print("[UIFONT-SHOTS] installed=%s read_tier=%s text_scale=%.2f label_font=%s rich_font=%s h10=%.1f h12=%.1f h14=%.1f h16=%.1f h24=%.1f w(Attack)@12=%.1f" % [
-		uf.is_installed(), uf.read_tier, text_scale, probe.get_theme_font("font").get_font_name(),
+	print("[UIFONT-SHOTS] nominal=%d installed=%s read_tier=%s text_scale=%.2f label_font=%s rich_font=%s h10=%.1f h12=%.1f h14=%.1f h16=%.1f h24=%.1f w(Attack)@12=%.1f" % [
+		uf.nominal(), uf.is_installed(), uf.read_tier, text_scale, probe.get_theme_font("font").get_font_name(),
 		rt.get_theme_font("normal_font").get_font_name(),
 		probe.get_theme_font("font").get_height(10), probe.get_theme_font("font").get_height(12),
 		probe.get_theme_font("font").get_height(14), probe.get_theme_font("font").get_height(16),

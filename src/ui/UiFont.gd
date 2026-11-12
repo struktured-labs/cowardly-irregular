@@ -13,15 +13,20 @@ class_name UiFont
 ## BODY (text you read in sentences, text you type) is whatever `read_tier` says: the old face, or the pixel one.
 ##
 ## A 5x7 face is only sharp at whole multiples, so sizes SNAP: a requested size draws at
-## round(size / NOMINAL_SIZE) times the drawn pixels (never below 1x). Measure with the font, not with arithmetic.
+## round(size / nominal()) times the drawn pixels (never below 1x). Measure with the font, not with arithmetic.
 ##
 ## Anything that measures or draws text itself asks here, never ThemeDB.fallback_font:
 ##   UiFont.of(node)      the font that node really draws with (use this when you have the node)
 ##   UiFont.display()     the pixel face     UiFont.body()    the reading face
 
 const FACE_NAME := "Cowir Pixel 5x7"
-## The requested size that draws the glyphs 1:1. 7 px capitals match the old face's capitals at about 10 px.
-const NOMINAL_SIZE := 10
+## The requested size that draws the glyphs 1:1; a size draws at round(size / nominal) times that, never below 1x.
+## It decides where the steps fall: 10 = 1x up to 14 px, 2x from 15 (the first collage: rows and their small
+## print came out one size) · 9 = 2x from 14 · 8 = 2x from 12, 3x from 20. COWIR_UIFONT_NOMINAL overrides it
+## for a render; the shipped value is this constant.
+const NOMINAL_SIZE := 9
+const NOMINAL_CHOICES := [8, 9, 10]
+static var _nominal: int = 0
 const ROWS := 7
 const DESCENT_ROWS := 2
 const ASCENT := 9
@@ -92,8 +97,15 @@ static func as_body(c: Control, slot: StringName = &"font") -> void:
 		c.add_theme_font_override(slot, body())
 
 
+static func nominal() -> int:
+	if _nominal == 0:
+		var asked: int = int(OS.get_environment("COWIR_UIFONT_NOMINAL"))
+		_nominal = asked if asked in NOMINAL_CHOICES else NOMINAL_SIZE
+	return _nominal
+
+
 static func scale_for(font_size: int) -> int:
-	return maxi(1, roundi(float(font_size) / float(NOMINAL_SIZE)))
+	return maxi(1, roundi(float(font_size) / float(nominal())))
 
 
 static func is_installed() -> bool:
@@ -123,7 +135,7 @@ static func install(tier: String = "") -> void:
 	ThemeDB.fallback_font = _display
 	_apply_read_tier(theme)
 	_installed = true
-	print("[UIFONT] face=%s glyphs=%d nominal=%d read_tier=%s" % [FACE_NAME, glyph_table().size(), NOMINAL_SIZE, read_tier])
+	print("[UIFONT] face=%s glyphs=%d nominal=%d read_tier=%s" % [FACE_NAME, glyph_table().size(), nominal(), read_tier])
 
 
 ## Undo install (tests, and the collage's "before" frames).
@@ -181,6 +193,7 @@ static func _ensure_built() -> void:
 
 static func _build(rim: bool) -> FontFile:
 	var table: Dictionary = glyph_table()
+	var nom: int = nominal()
 	var pad: int = 1 if rim else 0
 	var cell := Vector2i(5 + pad * 2 + 2, ROWS + DESCENT_ROWS + pad * 2 + 2)
 	var chars: Array = table.keys()
@@ -193,14 +206,14 @@ static func _build(rim: bool) -> FontFile:
 	f.generate_mipmaps = false
 	f.hinting = TextServer.HINTING_NONE
 	f.subpixel_positioning = TextServer.SUBPIXEL_POSITIONING_DISABLED
-	f.fixed_size = NOMINAL_SIZE
+	f.fixed_size = nom
 	f.fixed_size_scale_mode = TextServer.FIXED_SIZE_SCALE_INTEGER_ONLY
-	var size := Vector2i(NOMINAL_SIZE, 0)
-	f.set_cache_ascent(0, NOMINAL_SIZE, ASCENT)
-	f.set_cache_descent(0, NOMINAL_SIZE, DESCENT)
-	f.set_cache_underline_position(0, NOMINAL_SIZE, 1.0)
-	f.set_cache_underline_thickness(0, NOMINAL_SIZE, 1.0)
-	f.set_cache_scale(0, NOMINAL_SIZE, 1.0)
+	var size := Vector2i(nom, 0)
+	f.set_cache_ascent(0, nom, ASCENT)
+	f.set_cache_descent(0, nom, DESCENT)
+	f.set_cache_underline_position(0, nom, 1.0)
+	f.set_cache_underline_thickness(0, nom, 1.0)
+	f.set_cache_scale(0, nom, 1.0)
 	var rects: Dictionary = {}
 	for i in chars.size():
 		var ch: String = chars[i]
@@ -233,13 +246,13 @@ static func _build(rim: bool) -> FontFile:
 	for ch in rects:
 		var code: int = ch.unicode_at(0)
 		var r: Rect2 = rects[ch]
-		f.set_glyph_advance(0, NOMINAL_SIZE, code, Vector2(str(table[ch][0]).length() + 1, 0))
+		f.set_glyph_advance(0, nom, code, Vector2(str(table[ch][0]).length() + 1, 0))
 		f.set_glyph_offset(0, size, code, Vector2(-pad, -ROWS - pad))
 		f.set_glyph_size(0, size, code, r.size)
 		f.set_glyph_uv_rect(0, size, code, r)
 		f.set_glyph_texture_idx(0, size, code, 0)
 	var space: int = " ".unicode_at(0)
-	f.set_glyph_advance(0, NOMINAL_SIZE, space, Vector2(SPACE_ADVANCE, 0))
+	f.set_glyph_advance(0, nom, space, Vector2(SPACE_ADVANCE, 0))
 	f.set_glyph_offset(0, size, space, Vector2.ZERO)
 	f.set_glyph_size(0, size, space, Vector2.ZERO)
 	f.set_glyph_uv_rect(0, size, space, Rect2())
