@@ -44,7 +44,7 @@ func test_every_heal_names_a_sequence_that_exists() -> void:
 		assert_false(ability.is_empty(), "CONTROL: %s is an ability" % id)
 		assert_eq(str(AbilityVFX.resolve(ability).get("sequence", "")), str(HEALS[id]), "%s plays its sequence" % id)
 		assert_false(_seq(str(HEALS[id])).is_empty(), "%s exists in vfx_sequences.json" % HEALS[id])
-	assert_eq(str(AbilityVFX.resolve(JobSystem.get_ability("dark_bolt")).get("sequence", "")), "",
+	assert_eq(str(AbilityVFX.resolve(JobSystem.get_ability("death_sentence")).get("sequence", "")), "",
 		"CONTROL: an ability on the plain path resolves to no sequence")
 
 
