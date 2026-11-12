@@ -2922,6 +2922,10 @@ func _commit_option_choice(kind: String, chosen_id: String, ctx: Dictionary) -> 
 				_delete_current_cell()
 			else:
 				_apply_condition_type(chosen_id)
+				if chosen_id == "item_count":
+					_open_condition_item_picker()
+		"condition_item_id":
+			_apply_condition_item(chosen_id)
 		"action_type":
 			_apply_action_type(chosen_id, ctx)
 		"ability_id":
@@ -2930,6 +2934,28 @@ func _commit_option_choice(kind: String, chosen_id: String, ctx: Dictionary) -> 
 			_apply_item_id(chosen_id, ctx)
 		"target_type":
 			_apply_target_type(chosen_id, ctx)
+
+
+## "Has Item" asks WHICH item as soon as it is chosen: its dial is the count, so the item had no control and stayed the seed (potion).
+func _open_condition_item_picker() -> void:
+	var conditions: Array = rules[cursor_row].get("conditions", []) if cursor_row >= 0 and cursor_row < rules.size() else []
+	var items := _get_character_consumables()
+	if cursor_col >= conditions.size() or items.size() < 2:
+		return
+	var rows: Array = []
+	var selected := 0
+	for it in items:
+		if str(it["id"]) == str(conditions[cursor_col].get("item_id", "")):
+			selected = rows.size()
+		rows.append({"id": it["id"], "label": it.get("name", it["id"])})
+	_open_option_picker({"title": "Which item", "kind": "condition_item_id", "options": rows, "selected": selected})
+
+
+func _apply_condition_item(item_id: String) -> void:
+	var conditions: Array = rules[cursor_row].get("conditions", []) if cursor_row >= 0 and cursor_row < rules.size() else []
+	if cursor_col < conditions.size() and str(conditions[cursor_col].get("type", "")) == "item_count":
+		conditions[cursor_col]["item_id"] = item_id
+		_refresh_grid()
 
 
 ## Ring presentation of the same spec. Routes through _commit_option_choice so it can never
