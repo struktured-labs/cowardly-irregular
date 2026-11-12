@@ -107,7 +107,7 @@ func _fit_card_width_scale(vp_x: float) -> float:
 ## The first x a card may occupy: past the real right edge of every left-column panel on screen, never left of LOG_CLEAR_X.
 func _left_wall(vp_x: float) -> float:
 	var wall := LOG_CLEAR_X
-	if not (_scene is Node) or not is_instance_valid(_scene):
+	if not is_instance_valid(_scene) or not (_scene is Node):
 		return wall
 	for pname in LEFT_COLUMN:
 		var panel := (_scene as Node).find_child(pname, true, false) as Control
