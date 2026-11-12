@@ -154,7 +154,8 @@ func test_label_lines_never_reach_the_row_beneath_at_any_text_size() -> void:
 					% [scale, i, l.position.y + line_h, row.size.y])
 				break
 			# and clear of the next row's top
-			if i + 1 < rows.size() and text_bottom > (rows[i + 1] as Control).position.y:
+			## "Beneath" is the next row in the SAME column: since the rows wrap into columns, row i+1 may be the top of the next one.
+			if i + 1 < rows.size() and is_equal_approx((rows[i + 1] as Control).position.x, row.position.x) and text_bottom > (rows[i + 1] as Control).position.y:
 				bad.append("%.2fx: row %d text reaches %.0f, row %d starts %.0f"
 					% [scale, i, text_bottom, i + 1, (rows[i + 1] as Control).position.y])
 				break

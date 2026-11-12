@@ -183,6 +183,7 @@
     "description": "Ice magic damage to one enemy",
     "damage_multiplier": 2.0,
     "element": "ice",
+    "vfx": {"sequence": "blizzard_battle"},
     "target_type": "single_enemy",
     "magic_school": "black",
     "cost": 300
@@ -198,6 +199,7 @@
     "description": "Stronger ice magic damage to one enemy",
     "damage_multiplier": 3.5,
     "element": "ice",
+    "vfx": {"sequence": "blizzara_battle"},
     "target_type": "single_enemy",
     "magic_school": "black",
     "cost": 1200
@@ -213,6 +215,7 @@
     "description": "Lightning magic damage to one enemy",
     "damage_multiplier": 2.0,
     "element": "lightning",
+    "vfx": {"sequence": "thunder_battle"},
     "target_type": "single_enemy",
     "magic_school": "black",
     "cost": 300
@@ -228,6 +231,7 @@
     "description": "Stronger lightning magic damage to one enemy",
     "damage_multiplier": 3.5,
     "element": "lightning",
+    "vfx": {"sequence": "thundara_battle"},
     "target_type": "single_enemy",
     "magic_school": "black",
     "cost": 1200
@@ -466,6 +470,7 @@
     "id": "drain_life",
     "name": "Haustus Vitae",
     "type": "magic",
+    "vfx": {"sequence": "family_drain"},
     "animation": "cast_dark",
     "mp_cost": 16,
     "description": "Steal HP from enemy and restore your own",
@@ -527,7 +532,10 @@
     "mp_cost": 0,
     "description": "Basic tackle attack",
     "damage_multiplier": 1.0,
-    "target_type": "single_enemy"
+    "target_type": "single_enemy",
+    "vfx": {
+      "family": "slam"
+    }
   },
   "bite": {
     "id": "bite",
@@ -537,7 +545,10 @@
     "mp_cost": 0,
     "description": "Vicious bite attack",
     "damage_multiplier": 1.1,
-    "target_type": "single_enemy"
+    "target_type": "single_enemy",
+    "vfx": {
+      "family": "bite"
+    }
   },
   "scratch": {
     "id": "scratch",
@@ -547,12 +558,16 @@
     "mp_cost": 0,
     "description": "Quick scratching attack",
     "damage_multiplier": 0.9,
-    "target_type": "single_enemy"
+    "target_type": "single_enemy",
+    "vfx": {
+      "family": "claw"
+    }
   },
   "screech": {
     "id": "screech",
     "name": "Screech",
     "type": "support",
+    "vfx": {"sequence": "family_screech"},
     "animation": "special",
     "mp_cost": 5,
     "description": "Ear-piercing screech that lowers defense",
@@ -596,7 +611,11 @@
     "damage_multiplier": 0.8,
     "target_type": "all_enemies",
     "effect": "poison",
-    "duration": 3
+    "duration": 3,
+    "vfx": {
+      "family": "spray",
+      "ranged": true
+    }
   },
   "crown_authority": {
     "id": "crown_authority",
@@ -620,7 +639,10 @@
     "damage_multiplier": 2.0,
     "target_type": "single_enemy",
     "condition": "low_hp_threshold",
-    "threshold": 0.3
+    "threshold": 0.3,
+    "vfx": {
+      "family": "bite_big"
+    }
   },
   "dive_attack": {
     "id": "dive_attack",
@@ -630,7 +652,10 @@
     "mp_cost": 5,
     "description": "Dive from above for increased damage",
     "damage_multiplier": 1.4,
-    "target_type": "single_enemy"
+    "target_type": "single_enemy",
+    "vfx": {
+      "family": "slam"
+    }
   },
   "shield_bash": {
     "id": "shield_bash",
@@ -651,6 +676,7 @@
     "id": "defensive_stance",
     "name": "Defensive Stance",
     "type": "support",
+    "vfx": {"sequence": "family_buff_self"},
     "animation": "buff",
     "mp_cost": 8,
     "description": "Increase own defense significantly",
@@ -668,7 +694,10 @@
     "description": "Counter-attack that scales with defense",
     "damage_multiplier": 1.3,
     "scales_with": "defense",
-    "target_type": "single_enemy"
+    "target_type": "single_enemy",
+    "vfx": {
+      "family": "slam"
+    }
   },
   "plague_bite": {
     "id": "plague_bite",
@@ -681,12 +710,16 @@
     "target_type": "single_enemy",
     "effect": "poison",
     "effect_chance": 1.0,
-    "duration": 4
+    "duration": 4,
+    "vfx": {
+      "family": "bite"
+    }
   },
   "disease_cloud": {
     "id": "disease_cloud",
     "name": "Disease Cloud",
     "type": "magic",
+    "vfx": {"sequence": "family_cloud"},
     "effect_chance": 0.4,
     "animation": "special",
     "mp_cost": 10,
@@ -700,6 +733,7 @@
     "id": "fester",
     "name": "Fester",
     "type": "magic",
+    "vfx": {"sequence": "family_cloud"},
     "effect_chance": 0.4,
     "animation": "special",
     "mp_cost": 8,
@@ -738,7 +772,7 @@
     "type": "support",
     "animation": "buff",
     "mp_cost": 0,
-    "description": "Advance on banked AP to take extra actions this turn",
+    "description": "Go all in: gain 2 AP at once, banked for a bigger Advance next turn",
     "target_type": "self",
     "effect": "brave_actions",
     "bp_cost": 1
@@ -1168,7 +1202,10 @@
     "mp_cost": 15,
     "description": "A devastating overhead strike",
     "damage_multiplier": 2.0,
-    "target_type": "single_enemy"
+    "target_type": "single_enemy",
+    "vfx": {
+      "family": "slam"
+    }
   },
   "masterite_endurance_test": {
     "id": "masterite_endurance_test",
@@ -1178,7 +1215,10 @@
     "mp_cost": 12,
     "description": "Tests the party's ability to endure sustained pressure",
     "damage_multiplier": 0.7,
-    "target_type": "all_enemies"
+    "target_type": "all_enemies",
+    "vfx": {
+      "family": "slam_quake"
+    }
   },
   "masterite_judgment": {
     "id": "masterite_judgment",
@@ -1199,7 +1239,10 @@
     "mp_cost": 20,
     "description": "A precisely measured strike targeting the weakest point",
     "damage_multiplier": 1.8,
-    "target_type": "single_enemy"
+    "target_type": "single_enemy",
+    "vfx": {
+      "family": "claw"
+    }
   },
   "masterite_measured_blow": {
     "id": "masterite_measured_blow",
@@ -1209,7 +1252,10 @@
     "mp_cost": 14,
     "description": "Each strike is calibrated to test party coordination",
     "damage_multiplier": 0.8,
-    "target_type": "all_enemies"
+    "target_type": "all_enemies",
+    "vfx": {
+      "family": "slam_quake"
+    }
   },
   "masterite_counter_stance": {
     "id": "masterite_counter_stance",
@@ -1269,7 +1315,10 @@
     "mp_cost": 6,
     "description": "A rapid strike that lands before the opponent can react",
     "damage_multiplier": 1.3,
-    "target_type": "single_enemy"
+    "target_type": "single_enemy",
+    "vfx": {
+      "family": "claw"
+    }
   },
   "masterite_time_tax": {
     "id": "masterite_time_tax",
@@ -1288,6 +1337,7 @@
     "id": "masterite_mana_drain",
     "name": "Masterite Mana Drain",
     "type": "magic",
+    "vfx": {"sequence": "family_drain"},
     "animation": "cast",
     "mp_cost": 8,
     "description": "Drains magical energy from the target",
@@ -1309,6 +1359,7 @@
     "id": "masterite_audit",
     "name": "Masterite Audit",
     "type": "magic",
+    "vfx": {"sequence": "thunder_battle"},
     "animation": "cast",
     "mp_cost": 16,
     "description": "Analyzes and exploits resource inefficiencies",
@@ -1397,6 +1448,7 @@
     "id": "acid_spray",
     "name": "Acid Spray",
     "type": "magic",
+    "vfx": {"sequence": "family_cloud"},
     "effect_chance": 0.4,
     "animation": "special",
     "mp_cost": 10,
@@ -1431,7 +1483,10 @@
     "target_type": "single_enemy",
     "effect": "defense_down",
     "stat_modifier": 0.5,
-    "duration": 3
+    "duration": 3,
+    "vfx": {
+      "family": "claw"
+    }
   },
   "assembly_slam": {
     "id": "assembly_slam",
@@ -1522,6 +1577,7 @@
     "id": "blood_howl",
     "name": "Blood Howl",
     "type": "support",
+    "vfx": {"sequence": "family_buff_self"},
     "animation": "special",
     "mp_cost": 8,
     "description": "A bloodcurdling howl that drastically raises the alpha's attack.",
@@ -1552,7 +1608,11 @@
     "mp_cost": 4,
     "description": "Hurls a bone at high speed for moderate damage.",
     "damage_multiplier": 1.2,
-    "target_type": "single_enemy"
+    "target_type": "single_enemy",
+    "vfx": {
+      "family": "spit",
+      "ranged": true
+    }
   },
   "boulder_throw": {
     "id": "boulder_throw",
@@ -1562,12 +1622,17 @@
     "mp_cost": 10,
     "description": "Hurls a massive boulder dealing heavy damage.",
     "damage_multiplier": 2.0,
-    "target_type": "single_enemy"
+    "target_type": "single_enemy",
+    "vfx": {
+      "family": "spit",
+      "ranged": true
+    }
   },
   "buffer_overflow": {
     "id": "buffer_overflow",
     "name": "Buffer Overflow",
     "type": "magic",
+    "vfx": {"sequence": "thunder_battle"},
     "animation": "cast_meta",
     "mp_cost": 18,
     "description": "Overloads the target's processing capacity, dealing chaotic damage.",
@@ -1656,12 +1721,14 @@
     "description": "Lightning arcs between all enemies, dealing full damage to each.",
     "damage_multiplier": 2.2,
     "element": "lightning",
+    "vfx": {"sequence": "chain_lightning_battle"},
     "target_type": "all_enemies"
   },
   "chill": {
     "id": "chill",
     "name": "Chill",
     "type": "magic",
+    "vfx": {"sequence": "blizzard_battle"},
     "effect_chance": 0.4,
     "animation": "cast_ice",
     "mp_cost": 5,
@@ -1677,6 +1744,7 @@
     "id": "chill_touch",
     "name": "Chill Touch",
     "type": "magic",
+    "vfx": {"sequence": "blizzard_battle"},
     "animation": "cast_ice",
     "mp_cost": 8,
     "description": "A spectral hand drains warmth and vitality from the target.",
@@ -1693,7 +1761,10 @@
     "mp_cost": 5,
     "description": "The Mimic snaps its chest-lid shut on an enemy for heavy damage.",
     "damage_multiplier": 1.8,
-    "target_type": "single_enemy"
+    "target_type": "single_enemy",
+    "vfx": {
+      "family": "bite_big"
+    }
   },
   "clipboard_smack": {
     "id": "clipboard_smack",
@@ -1785,6 +1856,7 @@
     "id": "corruption_wave",
     "name": "Corruption Wave",
     "type": "magic",
+    "vfx": {"sequence": "family_breath_dark"},
     "effect_chance": 0.4,
     "animation": "cast_meta",
     "mp_cost": 20,
@@ -1805,7 +1877,10 @@
     "description": "Reacts to an attack with a swift physical counter.",
     "damage_multiplier": 1.3,
     "target_type": "last_attacker",
-    "trigger": "on_hit"
+    "trigger": "on_hit",
+    "vfx": {
+      "family": "slam"
+    }
   },
   "crystal_heal": {
     "id": "crystal_heal",
@@ -1839,7 +1914,10 @@
     "target_type": "single_enemy",
     "effect": "stun",
     "effect_chance": 0.25,
-    "duration": 1
+    "duration": 1,
+    "vfx": {
+      "family": "slam"
+    }
   },
   "cursed_strike": {
     "id": "cursed_strike",
@@ -1853,7 +1931,10 @@
     "element": "dark",
     "target_type": "single_enemy",
     "effect": "curse",
-    "duration": 3
+    "duration": 3,
+    "vfx": {
+      "family": "claw"
+    }
   },
   "dark_bolt": {
     "id": "dark_bolt",
@@ -1864,6 +1945,7 @@
     "description": "A bolt of dark energy fired at one enemy.",
     "damage_multiplier": 1.6,
     "element": "dark",
+    "vfx": {"sequence": "dark_bolt_battle"},
     "target_type": "single_enemy"
   },
   "dark_matter": {
@@ -1887,7 +1969,10 @@
     "damage_multiplier": 1.5,
     "element": "dark",
     "target_type": "single_enemy",
-    "drain_percentage": 30
+    "drain_percentage": 30,
+    "vfx": {
+      "family": "claw"
+    }
   },
   "data_absorb": {
     "id": "data_absorb",
@@ -1903,6 +1988,7 @@
     "id": "data_corruption",
     "name": "Data Corruption",
     "type": "magic",
+    "vfx": {"sequence": "dark_bolt_battle"},
     "animation": "cast_meta",
     "mp_cost": 14,
     "description": "Corrupts the target's data, causing random effects.",
@@ -1916,6 +2002,7 @@
     "id": "data_drain",
     "name": "Data Drain",
     "type": "magic",
+    "vfx": {"sequence": "family_drain"},
     "animation": "cast_dark",
     "mp_cost": 15,
     "description": "Siphons data from the target, dealing damage and restoring MP.",
@@ -1954,6 +2041,7 @@
     "name": "Emergency Repair",
     "type": "healing",
     "animation": "heal",
+    "vfx": {"sequence": "family_heal_self"},
     "mp_cost": 15,
     "description": "Runs an emergency self-repair protocol, restoring significant HP.",
     "heal_amount": 1200,
@@ -1963,6 +2051,7 @@
     "id": "enrage",
     "name": "Enrage",
     "type": "support",
+    "vfx": {"sequence": "family_buff_self"},
     "animation": "buff",
     "mp_cost": 5,
     "description": "Flies into a rage, massively boosting attack at the cost of defense.",
@@ -2088,6 +2177,7 @@
     "id": "frenzy",
     "name": "Frenzy",
     "type": "support",
+    "vfx": {"sequence": "family_buff_self"},
     "animation": "buff",
     "mp_cost": 8,
     "description": "Enters a blood frenzy, greatly boosting attack speed and power.",
@@ -2170,12 +2260,18 @@
     "mp_cost": 12,
     "description": "Shatters crystal gems in all directions, hitting all enemies.",
     "damage_multiplier": 1.6,
-    "target_type": "all_enemies"
+    "target_type": "all_enemies",
+    "vfx": {
+      "family": "spray",
+      "ranged": true,
+      "palette": "frost"
+    }
   },
   "glitch_bolt": {
     "id": "glitch_bolt",
     "name": "Glitch Bolt",
     "type": "magic",
+    "vfx": {"sequence": "dark_bolt_battle"},
     "animation": "cast_meta",
     "mp_cost": 8,
     "description": "Fires a bolt of corrupted data that deals erratic damage.",
@@ -2193,7 +2289,11 @@
     "damage_multiplier": 1.5,
     "element": "dark",
     "target_type": "single_enemy",
-    "ignores_evasion": true
+    "ignores_evasion": true,
+    "vfx": {
+      "family": "claw",
+      "palette": "glitch"
+    }
   },
   "gold_scatter": {
     "id": "gold_scatter",
@@ -2204,7 +2304,12 @@
     "description": "Scatters gold coins at high velocity, hitting all enemies.",
     "damage_multiplier": 0.8,
     "target_type": "all_enemies",
-    "hits": 3
+    "hits": 3,
+    "vfx": {
+      "family": "spray",
+      "ranged": true,
+      "palette": "verdict"
+    }
   },
   "grind_rail": {
     "id": "grind_rail",
@@ -2227,12 +2332,16 @@
     "target_type": "all_enemies",
     "effect": "stun",
     "effect_chance": 0.3,
-    "duration": 1
+    "duration": 1,
+    "vfx": {
+      "family": "slam_quake"
+    }
   },
   "hallucination_spores": {
     "id": "hallucination_spores",
     "name": "Hallucination Spores",
     "type": "magic",
+    "vfx": {"sequence": "family_cloud"},
     "animation": "special",
     "mp_cost": 14,
     "description": "Releases hallucinogenic spores that confuse all enemies.",
@@ -2276,12 +2385,16 @@
     "target_type": "single_enemy",
     "effect": "stun",
     "effect_chance": 0.35,
-    "duration": 1
+    "duration": 1,
+    "vfx": {
+      "family": "slam"
+    }
   },
   "howl": {
     "id": "howl",
     "name": "Howl",
     "type": "support",
+    "vfx": {"sequence": "family_buff_self"},
     "animation": "special",
     "mp_cost": 4,
     "description": "A fearsome howl that raises own attack and may frighten enemies.",
@@ -2297,6 +2410,7 @@
     "id": "ice_breath",
     "name": "Ice Breath",
     "type": "magic",
+    "vfx": {"sequence": "family_breath_ice"},
     "effect_chance": 0.4,
     "animation": "cast_ice",
     "mp_cost": 18,
@@ -2400,12 +2514,16 @@
     "target_type": "single_enemy",
     "effect": "stun",
     "effect_chance": 0.35,
-    "duration": 1
+    "duration": 1,
+    "vfx": {
+      "family": "slam"
+    }
   },
   "life_drain": {
     "id": "life_drain",
     "name": "Life Drain",
     "type": "magic",
+    "vfx": {"sequence": "family_drain"},
     "animation": "cast_dark",
     "mp_cost": 12,
     "description": "Drains the life force from a target, healing self.",
@@ -2520,6 +2638,7 @@
     "id": "null_pointer",
     "name": "Null Pointer",
     "type": "magic",
+    "vfx": {"sequence": "dark_bolt_battle"},
     "animation": "cast_meta",
     "mp_cost": 14,
     "description": "Dereferences a null pointer, dealing catastrophic damage.",
@@ -2719,6 +2838,7 @@
     "id": "pixel_storm",
     "name": "Pixel Storm",
     "type": "magic",
+    "vfx": {"sequence": "family_breath_dark"},
     "animation": "cast_meta",
     "mp_cost": 16,
     "description": "Unleashes a storm of corrupted pixels that hits all enemies.",
@@ -2748,7 +2868,10 @@
     "target_type": "single_enemy",
     "effect": "poison",
     "effect_chance": 1.0,
-    "duration": 3
+    "duration": 3,
+    "vfx": {
+      "family": "claw"
+    }
   },
   "port_block": {
     "id": "port_block",
@@ -2798,6 +2921,7 @@
     "id": "rattle",
     "name": "Rattle",
     "type": "support",
+    "vfx": {"sequence": "family_screech"},
     "animation": "special",
     "mp_cost": 4,
     "description": "Rattles its bones unsettlingly, lowering enemy attack.",
@@ -2822,6 +2946,7 @@
     "name": "Reconstruct",
     "type": "healing",
     "animation": "heal",
+    "vfx": {"sequence": "family_heal_self"},
     "mp_cost": 18,
     "description": "Reconstructs its crystalline form, restoring a significant amount of HP.",
     "heal_amount": 1500,
@@ -2894,7 +3019,10 @@
     "target_type": "single_enemy",
     "effect": "defense_down",
     "stat_modifier": 0.7,
-    "duration": 2
+    "duration": 2,
+    "vfx": {
+      "family": "bite"
+    }
   },
   "repetitive_strike": {
     "id": "repetitive_strike",
@@ -2921,6 +3049,7 @@
     "id": "root_bind",
     "name": "Root Bind",
     "type": "magic",
+    "vfx": {"sequence": "family_dust"},
     "animation": "special",
     "mp_cost": 10,
     "description": "Erupts roots from the ground to bind and damage an enemy.",
@@ -2966,12 +3095,17 @@
     "target_type": "single_enemy",
     "effect": "blind",
     "effect_chance": 0.4,
-    "duration": 2
+    "duration": 2,
+    "vfx": {
+      "family": "claw",
+      "palette": "smoke"
+    }
   },
   "sandstorm": {
     "id": "sandstorm",
     "name": "Sandstorm",
     "type": "magic",
+    "vfx": {"sequence": "family_dust"},
     "animation": "special",
     "mp_cost": 12,
     "description": "Whips up a blinding sandstorm that hits all enemies and may blind.",
@@ -3028,7 +3162,11 @@
     "mp_cost": 12,
     "description": "A slash that accesses forbidden memory, dealing massive damage.",
     "damage_multiplier": 2.5,
-    "target_type": "single_enemy"
+    "target_type": "single_enemy",
+    "vfx": {
+      "family": "claw",
+      "palette": "glitch"
+    }
   },
   "shadow_bind": {
     "id": "shadow_bind",
@@ -3048,6 +3186,7 @@
     "id": "shell_guard",
     "name": "Shell Guard",
     "type": "support",
+    "vfx": {"sequence": "family_buff_self"},
     "animation": "buff",
     "mp_cost": 6,
     "description": "Retreats into its shell, massively boosting defense for one turn.",
@@ -3074,7 +3213,10 @@
     "mp_cost": 5,
     "description": "A powerful slam attack that deals heavy physical damage.",
     "damage_multiplier": 1.5,
-    "target_type": "single_enemy"
+    "target_type": "single_enemy",
+    "vfx": {
+      "family": "slam"
+    }
   },
   "smash": {
     "id": "smash",
@@ -3087,12 +3229,16 @@
     "target_type": "single_enemy",
     "effect": "stun",
     "effect_chance": 0.2,
-    "duration": 1
+    "duration": 1,
+    "vfx": {
+      "family": "slam"
+    }
   },
   "soul_drain": {
     "id": "soul_drain",
     "name": "Soul Drain",
     "type": "magic",
+    "vfx": {"sequence": "family_drain"},
     "animation": "cast_dark",
     "mp_cost": 10,
     "description": "Drains the life force from a target, dealing damage and restoring HP.",
@@ -3116,6 +3262,7 @@
     "id": "soul_wail",
     "name": "Soul Wail",
     "type": "magic",
+    "vfx": {"sequence": "family_breath_dark"},
     "effect_chance": 0.4,
     "animation": "cast_dark",
     "mp_cost": 14,
@@ -3131,6 +3278,7 @@
     "id": "spectral_touch",
     "name": "Spectral Touch",
     "type": "magic",
+    "vfx": {"sequence": "dark_bolt_battle"},
     "effect_chance": 0.4,
     "animation": "cast_dark",
     "mp_cost": 6,
@@ -3146,6 +3294,7 @@
     "id": "spore_cloud",
     "name": "Spore Cloud",
     "type": "magic",
+    "vfx": {"sequence": "family_cloud"},
     "animation": "special",
     "mp_cost": 8,
     "description": "Releases a cloud of toxic spores that poison all enemies.",
@@ -3184,6 +3333,7 @@
     "id": "static_field",
     "name": "Static Field",
     "type": "magic",
+    "vfx": {"sequence": "family_breath_lightning"},
     "effect_chance": 0.4,
     "animation": "cast_lightning",
     "mp_cost": 12,
@@ -3333,7 +3483,11 @@
     "target_type": "single_enemy",
     "effect": "stun",
     "effect_chance": 0.25,
-    "duration": 1
+    "duration": 1,
+    "vfx": {
+      "family": "spit",
+      "ranged": true
+    }
   },
   "thunder_breath": {
     "id": "thunder_breath",
@@ -3365,6 +3519,7 @@
     "id": "toxic_cloud",
     "name": "Toxic Cloud",
     "type": "magic",
+    "vfx": {"sequence": "family_cloud"},
     "animation": "special",
     "mp_cost": 14,
     "description": "Releases a dense toxic cloud that poisons all enemies.",
@@ -3423,7 +3578,10 @@
     "target_type": "single_enemy",
     "effect": "poison",
     "effect_chance": 1.0,
-    "duration": 4
+    "duration": 4,
+    "vfx": {
+      "family": "bite"
+    }
   },
   "void_breath": {
     "id": "void_breath",
@@ -3456,6 +3614,7 @@
     "id": "voltage_surge",
     "name": "Voltage Surge",
     "type": "magic",
+    "vfx": {"sequence": "family_breath_lightning"},
     "animation": "cast_lightning",
     "mp_cost": 14,
     "description": "Surges with excess voltage, shocking all nearby enemies.",
@@ -3475,7 +3634,10 @@
     "stat_modifier": 0.5,
     "duration": 2,
     "secondary_effect": "stun",
-    "secondary_chance": 0.25
+    "secondary_chance": 0.25,
+    "vfx": {
+      "sequence": "family_spit"
+    }
   },
   "whirlwind": {
     "id": "whirlwind",
