@@ -11,7 +11,9 @@ var _bg: ColorRect = null
 
 func before_each() -> void:
 	_saved_flag = GameState.reduce_flashes
-	_saved_bg = EffectSystem.battle_background
+	## An earlier file can leave this pointing at a freed node; holding that and writing it back is a script error (.793 sweeps).
+	var found = EffectSystem.battle_background
+	_saved_bg = found if is_instance_valid(found) else null
 	_bg = ColorRect.new()
 	add_child_autofree(_bg)
 	_bg.modulate = Color.WHITE
@@ -20,7 +22,7 @@ func before_each() -> void:
 
 func after_each() -> void:
 	GameState.reduce_flashes = _saved_flag
-	EffectSystem.battle_background = _saved_bg
+	EffectSystem.battle_background = _saved_bg if is_instance_valid(_saved_bg) else null
 
 
 func _tinted_after(frames: int) -> bool:
@@ -62,3 +64,20 @@ func test_a_second_tint_replaces_the_first() -> void:
 	assert_false(first.is_valid() and first.is_running(), "an eruption per foe must not leave tweens fighting over the background")
 	assert_true(EffectSystem._background_tint_tween.is_valid(), "CONTROL: the newest tint is the live one")
 	EffectSystem._background_tint_tween.kill()
+
+
+func test_a_battle_that_ends_takes_its_backdrop_out_of_the_autoload() -> void:
+	AutobattleSystem._test_disable_persistence = true
+	var guard = load("res://test/unit/helpers/battle_state.gd").new()
+	guard.snapshot()
+	var scene: Node = load("res://src/battle/BattleScene.tscn").instantiate()
+	add_child(scene)
+	await get_tree().process_frame
+	assert_true(is_instance_valid(EffectSystem.battle_background) and EffectSystem.battle_background != _bg,
+		"CONTROL: a live battle hands EffectSystem its own backdrop")
+	remove_child(scene)  # _exit_tree runs here, as it does when a battle ends
+	scene.queue_free()
+	guard.restore()
+	assert_null(EffectSystem.battle_background, "freed with its battle, the backdrop is not left in the autoload as a dead reference")
+	EffectSystem.battle_background = _bg
+
