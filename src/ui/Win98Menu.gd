@@ -1044,7 +1044,7 @@ func _build_menu() -> void:
 		return
 	_can_accept_input = true
 	await get_tree().create_timer(0.05, true, false, true).timeout  # Reduced from 0.1 for faster response
-	if not is_instance_valid(self):
+	if not is_instance_valid(self) or not is_inside_tree():
 		return
 	_can_close_on_click = true
 
