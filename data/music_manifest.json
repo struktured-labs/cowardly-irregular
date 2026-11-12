@@ -395,7 +395,8 @@
       "duration": 39.8,
       "loop": true,
       "generated_at": "2026-03-21",
-      "pinned": true
+      "pinned": true,
+      "reserved_for": "Not played at low HP since 2026-11-11 (the fight's own bed speeds up instead). Reserved by struktured for a party-wiper encounter (a monster or boss beaten only by being smart) or the game's final stretch; do not spend it elsewhere."
     },
     "autogrind": {
       "file": "assets/audio/music/autogrind.ogg",
@@ -421,7 +422,8 @@
       "duration": 148.6,
       "loop": true,
       "generated_at": "2026-03-21",
-      "pinned": true
+      "pinned": true,
+      "reserved_for": "Not played at low HP since 2026-11-11 (the fight's own bed speeds up instead). Reserved by struktured for a party-wiper encounter (a monster or boss beaten only by being smart) or the game's final stretch; do not spend it elsewhere."
     },
     "danger_suburban": {
       "file": "assets/audio/music/danger_suburban.ogg",
@@ -434,7 +436,8 @@
       "duration": 29.39,
       "loop": true,
       "generated_at": "2026-03-21",
-      "pinned": true
+      "pinned": true,
+      "reserved_for": "Not played at low HP since 2026-11-11 (the fight's own bed speeds up instead). Reserved by struktured for a party-wiper encounter (a monster or boss beaten only by being smart) or the game's final stretch; do not spend it elsewhere."
     },
     "danger_steampunk": {
       "file": "assets/audio/music/danger_steampunk.ogg",
@@ -447,7 +450,8 @@
       "duration": 82.7,
       "loop": true,
       "generated_at": "2026-03-21",
-      "pinned": true
+      "pinned": true,
+      "reserved_for": "Not played at low HP since 2026-11-11 (the fight's own bed speeds up instead). Reserved by struktured for a party-wiper encounter (a monster or boss beaten only by being smart) or the game's final stretch; do not spend it elsewhere."
     },
     "danger_industrial": {
       "file": "assets/audio/music/danger_industrial.ogg",
@@ -460,7 +464,8 @@
       "duration": 146.68,
       "loop": true,
       "generated_at": "2026-03-21",
-      "pinned": true
+      "pinned": true,
+      "reserved_for": "Not played at low HP since 2026-11-11 (the fight's own bed speeds up instead). Reserved by struktured for a party-wiper encounter (a monster or boss beaten only by being smart) or the game's final stretch; do not spend it elsewhere."
     },
     "danger_digital": {
       "file": "assets/audio/music/danger_digital.ogg",
@@ -473,7 +478,8 @@
       "duration": 122.84,
       "loop": true,
       "generated_at": "2026-03-21",
-      "pinned": true
+      "pinned": true,
+      "reserved_for": "Not played at low HP since 2026-11-11 (the fight's own bed speeds up instead). Reserved by struktured for a party-wiper encounter (a monster or boss beaten only by being smart) or the game's final stretch; do not spend it elsewhere."
     },
     "danger_abstract": {
       "file": "assets/audio/music/danger_abstract.ogg",
@@ -486,7 +492,8 @@
       "duration": 93.3,
       "loop": true,
       "generated_at": "2026-03-21",
-      "pinned": true
+      "pinned": true,
+      "reserved_for": "Not played at low HP since 2026-11-11 (the fight's own bed speeds up instead). Reserved by struktured for a party-wiper encounter (a monster or boss beaten only by being smart) or the game's final stretch; do not spend it elsewhere."
     },
     "battle_slime": {
       "file": "assets/audio/music/battle_slime.ogg",
