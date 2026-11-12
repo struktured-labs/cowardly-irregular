@@ -105,6 +105,7 @@ const NEWS_TAG_GAP := 8.0
 const MENU_ROW_PAD_X := 24.0
 const MENU_ROW_GAP := 4.0
 const MENU_COL_GAP := 8.0
+const STAT_BAR_W := 60.0
 ## How the rows are laid out this build (see menu_layout); read by _update_selection and by the guards.
 var _menu_windowed := false
 var _menu_per_col := 0
@@ -275,6 +276,11 @@ func _build_ui() -> void:
 	_update_selection()
 
 
+## Party-card geometry factor: the card was laid out in literals for a 10-14 px font, so at 200% its lines overprinted. Upward only, like TeleportMenu._tf.
+func _card_k() -> float:
+	return maxf(1.0, float(TextScale.scaled(100)) / 100.0)
+
+
 func _create_party_panel(panel_size: Vector2) -> Control:
 	"""Create the party status panel"""
 	var panel = Control.new()
@@ -300,22 +306,22 @@ func _create_party_panel(panel_size: Vector2) -> Control:
 	gold_lbl.name = "GoldLabel"
 	gold_lbl.text = "%d G" % (GameState.get_gold() if GameState and GameState.has_method("get_gold") else 0)
 	gold_lbl.position = Vector2(8, 4)
-	gold_lbl.size = Vector2(panel_size.x - 16, 20)
+	gold_lbl.size = Vector2(panel_size.x - 16, 20.0 * _card_k())
 	gold_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	gold_lbl.add_theme_font_size_override("font_size", TextScale.scaled(14))
 	gold_lbl.add_theme_color_override("font_color", Color(1.0, 0.85, 0.2))
 	panel.add_child(gold_lbl)
 
 	# Party member cards
-	var card_height = 100
-	var y_offset = 28
-	var card_pitch = card_height + 8
+	var card_height: float = 100.0 * _card_k()
+	var y_offset: float = 28.0 * _card_k()
+	var card_pitch: float = card_height + 8.0
 
 	# Wrap cards in a ScrollContainer when 5+ party members would overflow the
 	# panel at 480p (5 * 108 + 28 = 568 > 400). The scroll viewport sits below
 	# the PARTY title, so cards still scroll vertically without clipping art.
 	var card_host: Node = panel
-	var needs_scroll: bool = party.size() >= 5
+	var needs_scroll: bool = party.size() >= 5 or y_offset + party.size() * card_pitch > panel_size.y
 	if needs_scroll:
 		var scroll := ScrollContainer.new()
 		scroll.position = Vector2(0, y_offset)
@@ -326,7 +332,7 @@ func _create_party_panel(panel_size: Vector2) -> Control:
 		scroll.add_child(inner)
 		panel.add_child(scroll)
 		card_host = inner
-		y_offset = 0  # cards are now positioned relative to the scroll content
+		y_offset = 0.0  # cards are now positioned relative to the scroll content
 
 	for i in range(party.size()):
 		var member = party[i]
@@ -360,7 +366,8 @@ func _create_character_card(member: Combatant, index: int) -> Control:
 	var leader_label = Label.new()
 	leader_label.name = "LeaderStar"
 	leader_label.text = "★" if is_leader else ""
-	leader_label.position = Vector2(4, 82)
+	var k: float = _card_k()
+	leader_label.position = Vector2(4, 82.0 * k)
 	leader_label.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	leader_label.add_theme_color_override("font_color", Color.YELLOW)
 	card.add_child(leader_label)
@@ -377,7 +384,7 @@ func _create_character_card(member: Combatant, index: int) -> Control:
 	var name_label = Label.new()
 	name_label.name = "NameLabel"
 	name_label.text = member.combatant_name
-	name_label.position = Vector2(58, 4)
+	name_label.position = Vector2(58, 4.0 * k)
 	name_label.add_theme_font_size_override("font_size", TextScale.scaled(14))
 	name_label.add_theme_color_override("font_color", TEXT_COLOR)
 	card.add_child(name_label)
@@ -385,7 +392,7 @@ func _create_character_card(member: Combatant, index: int) -> Control:
 	var job_label = Label.new()
 	job_label.name = "JobLabel"
 	job_label.text = card_job_text(member)
-	job_label.position = Vector2(58, 20)
+	job_label.position = Vector2(58, 20.0 * k)
 	job_label.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	job_label.add_theme_color_override("font_color", SUBTITLE_COLOR)
 	card.add_child(job_label)
@@ -393,19 +400,19 @@ func _create_character_card(member: Combatant, index: int) -> Control:
 	# HP Bar
 	var hp_bar = _create_stat_bar("HP", member.current_hp, member.max_hp, Color.LIME, Color.RED)
 	hp_bar.name = "HPBar"
-	hp_bar.position = Vector2(58, 36)
+	hp_bar.position = Vector2(58, 36.0 * k)
 	card.add_child(hp_bar)
 
 	# MP Bar
 	var mp_bar = _create_stat_bar("MP", member.current_mp, member.max_mp, Color.CYAN, Color.DARK_CYAN)
 	mp_bar.name = "MPBar"
-	mp_bar.position = Vector2(58, 52)
+	mp_bar.position = Vector2(58, 52.0 * k)
 	card.add_child(mp_bar)
 
 	# EXP progress indicator
 	var exp_row = _create_exp_indicator(member)
 	exp_row.name = "EXPRow"
-	exp_row.position = Vector2(58, 68)
+	exp_row.position = Vector2(58, 68.0 * k)
 	card.add_child(exp_row)
 
 	# Dead indicator — always-present, visibility toggled per is_alive so a later Phoenix Down refresh (via _update_party_stats) can clear the overlay without a full rebuild (playtest 2026-07-15: Bard KO status persisted after in-menu revive because the overlay/label were only appended on first build).
@@ -419,7 +426,7 @@ func _create_character_card(member: Combatant, index: int) -> Control:
 	var dead_label = Label.new()
 	dead_label.name = "DeadLabel"
 	dead_label.text = "KO"
-	dead_label.position = Vector2(4, 56)
+	dead_label.position = Vector2(4, 56.0 * k)
 	dead_label.add_theme_font_size_override("font_size", TextScale.scaled(12))
 	dead_label.add_theme_color_override("font_color", Color.RED)
 	dead_label.visible = not member.is_alive
@@ -430,8 +437,8 @@ func _create_character_card(member: Combatant, index: int) -> Control:
 	ailment_label.name = "AilmentLabel"
 	ailment_label.text = StatusNames.list_line(member.status_effects)
 	ailment_label.visible = ailment_label.text != ""
-	ailment_label.position = Vector2(58, 84)
-	ailment_label.size = Vector2(180, 14)
+	ailment_label.position = Vector2(58, 84.0 * k)
+	ailment_label.size = Vector2(180.0 * k, 14.0 * k)
 	ailment_label.clip_text = true
 	ailment_label.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	ailment_label.add_theme_color_override("font_color", Color(0.85, 0.45, 0.9))
@@ -442,8 +449,9 @@ func _create_character_card(member: Combatant, index: int) -> Control:
 
 func _create_stat_bar(label: String, current: int, maximum: int, color_full: Color, color_low: Color) -> Control:
 	"""Create a labeled stat bar"""
+	var k: float = _card_k()
 	var container = Control.new()
-	container.size = Vector2(120, 14)
+	container.size = Vector2(120.0 * k, 14.0 * k)
 
 	# Label
 	var lbl = Label.new()
@@ -456,8 +464,8 @@ func _create_stat_bar(label: String, current: int, maximum: int, color_full: Col
 	# Bar background
 	var bar_bg = ColorRect.new()
 	bar_bg.color = Color(0.1, 0.1, 0.1)
-	bar_bg.position = Vector2(24, 2)
-	bar_bg.size = Vector2(60, 10)
+	bar_bg.position = Vector2(24.0 * k, 2.0 * k)
+	bar_bg.size = Vector2(STAT_BAR_W * k, 10.0 * k)
 	container.add_child(bar_bg)
 
 	# Bar fill
@@ -465,15 +473,15 @@ func _create_stat_bar(label: String, current: int, maximum: int, color_full: Col
 	var bar_fill = ColorRect.new()
 	bar_fill.name = "Fill"
 	bar_fill.color = color_full if fill_pct > 0.3 else color_low
-	bar_fill.position = Vector2(24, 2)
-	bar_fill.size = Vector2(60 * fill_pct, 10)
+	bar_fill.position = Vector2(24.0 * k, 2.0 * k)
+	bar_fill.size = Vector2(STAT_BAR_W * k * fill_pct, 10.0 * k)
 	container.add_child(bar_fill)
 
 	# Value text
 	var value = Label.new()
 	value.name = "Value"
 	value.text = "%d/%d" % [current, maximum]
-	value.position = Vector2(88, 0)
+	value.position = Vector2(88.0 * k, 0)
 	value.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	value.add_theme_color_override("font_color", TEXT_COLOR)
 	container.add_child(value)
@@ -490,7 +498,7 @@ static func card_job_text(member: Combatant) -> String:
 func _create_exp_indicator(member: Combatant) -> Control:
 	"""Create a compact level + EXP pip indicator"""
 	var container = Control.new()
-	container.size = Vector2(160, 14)
+	container.size = Vector2(160.0 * _card_k(), 14.0 * _card_k())
 
 	var job_level = member.job_level if "job_level" in member else 1
 	# Read the REAL Combatant fields. Pre-fix this read member.experience and
@@ -516,7 +524,7 @@ func _create_exp_indicator(member: Combatant) -> Control:
 
 	var pips = Label.new()
 	pips.text = pip_str
-	pips.position = Vector2(30, 0)
+	pips.position = Vector2(30.0 * _card_k(), 0)
 	pips.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	pips.add_theme_color_override("font_color", Color(0.6, 0.9, 0.6))
 	container.add_child(pips)
@@ -852,7 +860,7 @@ func _update_party_stats() -> void:
 			var hp_value = hp_bar.get_node_or_null("Value")
 			var hp_pct = float(member.current_hp) / float(member.max_hp) if member.max_hp > 0 else 0.0
 			if hp_fill:
-				hp_fill.size.x = 60 * hp_pct
+				hp_fill.size.x = STAT_BAR_W * _card_k() * hp_pct
 				hp_fill.color = Color.LIME if hp_pct > 0.3 else Color.RED
 			if hp_value:
 				hp_value.text = "%d/%d" % [member.current_hp, member.max_hp]
@@ -863,7 +871,7 @@ func _update_party_stats() -> void:
 			var mp_value = mp_bar.get_node_or_null("Value")
 			var mp_pct = float(member.current_mp) / float(member.max_mp) if member.max_mp > 0 else 0.0
 			if mp_fill:
-				mp_fill.size.x = 60 * mp_pct
+				mp_fill.size.x = STAT_BAR_W * _card_k() * mp_pct
 				mp_fill.color = Color.CYAN if mp_pct > 0.3 else Color.DARK_CYAN
 			if mp_value:
 				mp_value.text = "%d/%d" % [member.current_mp, member.max_mp]
