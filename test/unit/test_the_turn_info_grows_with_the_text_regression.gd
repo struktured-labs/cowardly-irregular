@@ -58,11 +58,30 @@ func after_each() -> void:
 	## helper's own note says a restore must follow any line that does.
 	if _battle_state != null:
 		_battle_state.restore()
+
+## The roster is PINNED and its size is a named premise: these arms measure the enemy panel's height, and a bare scene
+## rolls 2-3 monsters while an earlier file's leftovers can add rows (.793 sweep: the panel read 420 px where alone it is 280,
+## and the arm said only "the log is hidden"). A leak now reds here, with what it left.
+const ROSTER: Array = ["goblin", "goblin"]
+
+
+func _roster_premise(scene: Node, scale: float) -> void:
+	var rows: Array = []
+	for e in BattleManager.enemy_party:
+		rows.append(str(e.combatant_name) if e != null and is_instance_valid(e) else "<freed>")
+	assert_eq(rows.size(), ROSTER.size(), "PREMISE: the battle holds the pinned roster and nothing left over (found %s)" % str(rows))
+	assert_almost_eq(float(GameState.text_size_scale), scale, 0.001, "PREMISE: Text Size is the step under test, not one an earlier file left")
+	var enemy: Control = scene.get_node_or_null("UI/EnemyStatusPanel")
+	if enemy != null:
+		gut.p("enemy panel at %sx: %d px tall, %d enemies %s" % [str(scale), int(enemy.size.y), rows.size(), str(rows)])
+
 func _build(scale: float) -> Node:
 	GameState.text_size_scale = scale
 	var n: Node = load(SCENE).instantiate()
+	n.forced_enemies = ROSTER.duplicate()
 	add_child(n)
 	await get_tree().process_frame
+	_roster_premise(n, scale)
 	return n
 
 

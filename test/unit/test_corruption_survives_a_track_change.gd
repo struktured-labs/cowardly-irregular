@@ -113,6 +113,7 @@ func test_a_clean_grind_still_plays_clean() -> void:
 	## The restore must be conditional. At corruption 0 a new track is untouched, which is also
 	## what the danger guards pin from the other side.
 	SoundManager.play_music("battle_medieval")
+	SoundManager.declare_fight_bed()
 	await _frames()
 	assert_almost_eq(_pitch(), 1.0, 0.001, "CONTROL: a clean grind starts at 1.0")
 	SoundManager.set_danger_intensity(1.0)

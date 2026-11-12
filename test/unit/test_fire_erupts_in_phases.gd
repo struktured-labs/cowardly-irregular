@@ -86,7 +86,26 @@ func test_damage_lands_on_the_eruption_and_the_hold_stays_in_budget() -> void:
 		assert_almost_eq(impact, float(_first(seq, "eruption").get("at", -1.0)), 0.001, "%s lands its damage when the eruption does" % id)
 		var bolt := _first(seq, "bolt")
 		assert_almost_eq(float(bolt.get("at", 0.0)) + float(bolt.get("dur", 0.0)), impact, 0.001, "%s: the flame arrives as it erupts" % id)
-		assert_lte(impact, 0.70, "%s reaches its impact within 0.7 s of the cast's release, so a turn holds no longer than a boss signature" % id)
+		assert_lte(FractalFX.impact_time(seq), CAST_RELEASE + 0.70, "%s lands within 0.7 s of the cast's release, so a turn holds no longer than a boss signature" % id)
+
+
+## main 23890: nothing happened for the cast pose's first 0.75 s (2 s real at 1.5x). The wind-up now starts WITH the pose
+## and the flame leaves on the pose's release frame.
+const CAST_RELEASE := 0.75
+
+
+func test_the_wind_up_fills_the_cast_pose() -> void:
+	for id in ["fire_battle", "fira_battle", "glory_firaga"]:
+		var seq := _seq(id)
+		var start := float(seq.get("start", 0.0))
+		var gather := _first(seq, "gather")
+		var bolt := _first(seq, "bolt")
+		assert_lte(start + float(gather.get("at", 9.0)), 0.2, "%s: heat gathers from the first frames of the cast, not after it" % id)
+		assert_almost_eq(start + float(bolt.get("at", 0.0)), CAST_RELEASE, 0.02, "%s: the flame leaves on the pose's release frame" % id)
+		assert_almost_eq(float(gather.get("at", 0.0)) + float(gather.get("dur", 0.0)), float(bolt.get("at", 0.0)), 0.02,
+			"%s: the gather lasts until the launch, so the screen is never idle" % id)
+	assert_eq(str(_seq("glory_firaga").get("windup", {}).get("kind", "")), "gather", "Firaga gathers under its title card too")
+	assert_true(_seq("fire_battle").get("windup", {}).is_empty(), "CONTROL: plain Fire has no title card, so no windup phase")
 
 
 func test_the_fractal_moved_to_edit_formula_and_carries_no_fire() -> void:

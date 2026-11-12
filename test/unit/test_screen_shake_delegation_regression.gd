@@ -32,15 +32,21 @@ func test_legacy_path_and_its_state_resets_survive() -> void:
 	assert_eq(body.count("_is_shaking = false"), 3, "both early-return resets + terminal callback still present")
 
 
-func test_settings_gate_precedes_delegation() -> void:
+## Was "the settings gate precedes delegation": that order also silenced the pad (rumble rides add_trauma). The rig gates
+## its own shake (test_a_hit_rumbles_with_screen_shake_off proves trauma stays 0), so the gate now guards the legacy tween only.
+func test_delegation_precedes_the_gate_and_the_gate_precedes_the_legacy_tween() -> void:
 	var src := _src()
 	var i := src.find("func _trigger_screen_shake")
 	var fn_end := src.find("\nfunc ", i + 1)
 	var body := src.substr(i, (fn_end - i) if fn_end > -1 else 4000)
-	var gate := body.find("screen_shake_enabled")
-	var deleg := body.find("BattleJuice.camera_rig")
+	var gate := body.find("GameState.screen_shake_enabled")
+	var deleg := body.find("BattleJuice.camera_rig != null")
+	var legacy := body.find("get_viewport()")
 	assert_gt(gate, -1, "settings gate present")
-	assert_true(gate < deleg, "settings gate runs before delegation — disabled shake never reaches the rig from this path")
+	assert_gt(deleg, -1, "delegation present")
+	assert_gt(legacy, -1, "legacy camera path present")
+	assert_true(deleg < gate, "in battle the hit reaches add_trauma whatever Screen Shake says (the pad still rumbles)")
+	assert_true(gate < legacy, "and the settings gate still runs before the legacy camera steps")
 
 
 func test_cutscene_director_still_calls_through() -> void:
