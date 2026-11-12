@@ -66,6 +66,16 @@ func _init() -> void:
 	var bonuses: Array = []
 	if rank != "":
 		bonuses.append({"type": "one_shot", "rank": rank, "multiplier": 3.0})
+	## As at a real win: the victory bed (and the boss stinger over it) starts BEFORE the overlay, so the letter ticks
+	## key to what the player hears. Without this the clip carried the battle bed and untransposed ticks (cowir-music 23641).
+	scene.play_victory_music(boss)
+	for i in 6:
+		await process_frame
+	var sm = root.get_node_or_null("SoundManager")
+	var under := ""
+	if sm and sm._music_player and sm._music_player.stream:
+		under = str(sm._music_player.stream.resource_path).get_file().get_basename()
+	print("[VCLIP] under=%s" % under)
 	var overlay = load("res://src/battle/VictoryOverlay.gd").new()
 	overlay.name = "VictoryResults"
 	scene.add_child(overlay)
