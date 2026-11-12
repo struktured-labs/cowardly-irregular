@@ -236,7 +236,7 @@
 		"id": "undead_affinity",
 		"name": "Undead Affinity",
 		"category": 0,
-		"description": "+40% dark damage, heal from dark attacks (Currently no effect)",
+		"description": "+40% magic damage; dark attacks heal you instead of harming you",
 		"stat_mods": {
 			"magic_multiplier": 1.4
 		},
@@ -267,7 +267,7 @@
 		"id": "damage_reduction",
 		"name": "Damage Reduction",
 		"category": 1,
-		"description": "Take 15% less damage from all sources",
+		"description": "+15% Defense and Magic Defense",
 		"stat_mods": {
 			"defense_multiplier": 1.15,
 			"magic_defense_multiplier": 1.15

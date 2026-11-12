@@ -32,8 +32,12 @@ const MARK := "(Currently no effect)"
 ## of passives.json, so `"autobattle_advanced"` appeared in src/ as a string literal and the derived
 ## arm read the data's own copy as a consumer. Measured: of 35 meta_effects keys, exactly 2
 ## self-satisfied that way.
+## `undead_affinity` REMOVED 2026-11-12 (cowir-story): it was never unwired. Its +40% is a `magic_multiplier` in
+## MODDABLE_STATS, and its `dark_absorb` is read by Combatant._absorbs_element as `element + "_absorb"`, a key BUILT
+## at the point of use, which _src_reads (a search for the authored string) cannot see. The marker sat on a
+## working passive; test_elemental_absorb_passive_regression is its behavioural proof.
 const UNWIRED := ["double_jump", "wall_climb", "optional_detector", "debug_mode",
-	"undead_affinity", "autobattle_verbs"]
+	"autobattle_verbs"]
 ## Passives that WORK but ignore one authored parameter. Materially different: the promise is
 ## kept, a knob is unread. Not disclosed, because the description is true.
 ##   time_sense      live preview_enemy_actions   dead preview_turns
@@ -142,6 +146,28 @@ func test_the_marker_comes_OFF_the_moment_a_passive_is_wired() -> void:
 	assert_eq(stale, [], "the disclosure has outlived its reason:\n  %s" % "\n  ".join(stale))
 
 
+## THE THIRD CONSUMPTION MECHANISM (cowir-story, 2026-11-12). A key can be BUILT at its point of use:
+## Combatant._absorbs_element asks for `element + "_absorb"`, so `dark_absorb` is never an authored string in src/
+## and both walks above read undead_affinity as unwired while it healed from every dark hit.
+## suffix -> [the file that builds it, the expression that does]
+const BUILT_KEYS := {"_absorb": ["res://src/battle/Combatant.gd", 'element + "_absorb"']}
+
+
+func _built_key_read(key: String) -> bool:
+	for suffix in BUILT_KEYS:
+		if key.ends_with(suffix) and FileAccess.get_file_as_string(BUILT_KEYS[suffix][0]).contains(BUILT_KEYS[suffix][1]):
+			return true
+	return false
+
+
+func test_a_key_built_at_its_point_of_use_reads_as_consumed() -> void:
+	assert_false(_src_reads("dark_absorb"), "CONTROL: no file authors the key as a string, which is what hid it")
+	assert_true(_built_key_read("dark_absorb"), "an <element>_absorb key is consumed by the builder in Combatant")
+	assert_false(_built_key_read("dark_resist"), "a key the builder does not make is not")
+	assert_false(str((_passives().get("undead_affinity", {}) as Dictionary).get("description", "")).contains(MARK),
+		"undead_affinity works, so it does not say it has no effect")
+
+
 func test_a_FIFTH_unwired_passive_cannot_appear_unnoticed() -> void:
 	# The other direction, so the list cannot quietly widen. Derived from the corpus rather than
 	# maintained: every meta_effects key on every passive must either be consumed in src/ or belong
@@ -159,7 +185,7 @@ func test_a_FIFTH_unwired_passive_cannot_appear_unnoticed() -> void:
 		var by_id: bool = _id_consumed(str(pid))
 		for key in (me as Dictionary):
 			scanned += 1
-			if not _src_reads(str(key)) and not by_id:
+			if not _src_reads(str(key)) and not by_id and not _built_key_read(str(key)):
 				offenders.append("%s.%s has no consumer in src/ by key OR by id" % [pid, key])
 	assert_gt(scanned, 10, "positive control — meta_effects keys must actually be walked")
 	assert_eq(offenders, [],
