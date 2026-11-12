@@ -4955,6 +4955,18 @@ static func apply_persisted_formation(members: Array) -> void:
 					member.add_debuff("formation_atk", "attack", 0.9, 999)
 
 
+## True while a sprite's own lunge is moving it. The idle sway below wrote position.y on EVERY sprite EVERY frame, so a
+## lunge only ever moved in x: an attacker slid along its own row and swung at its target's column, a row or two away
+## (struktured 2026-11-12, "attacking someone but aims center"; seen in clips of .792). As old as the sway; the .791 hold
+## for the whole swing is what put it on screen.
+static func lunge_owns(sprite: Node2D) -> bool:
+	if sprite == null or not is_instance_valid(sprite) or not sprite.has_meta("attack_tween"):
+		return false
+	var tween = sprite.get_meta("attack_tween")
+	## Valid, not "running": hit-stop PAUSES the lunge at the moment of impact, and the sway took y back for exactly that frame.
+	return tween is Tween and (tween as Tween).is_valid()
+
+
 func _process_idle_animations(delta: float) -> void:
 	"""Apply subtle idle sway to enemies and breathing to party sprites"""
 	if _battle_ended:
@@ -4972,7 +4984,8 @@ func _process_idle_animations(delta: float) -> void:
 		var freq = 0.8 + float(i) * 0.15
 		var phase = float(i) * 1.1  # Phase offset so they don't move in sync
 		var sway = sin(_idle_time * freq * TAU + phase) * 3.0
-		sprite.position.y = _enemy_base_positions[i].y + sway
+		if not lunge_owns(sprite):
+			sprite.position.y = _enemy_base_positions[i].y + sway
 
 	# Party idle breathing: ±2px Y oscillation at different rates per character
 	for i in range(party_sprite_nodes.size()):
@@ -4985,7 +4998,8 @@ func _process_idle_animations(delta: float) -> void:
 		var freq = 0.4 + float(i) * 0.05
 		var phase = float(i) * 0.9
 		var breathe = sin(_idle_time * freq * TAU + phase) * 2.0
-		sprite.position.y = _party_base_positions[i].y + breathe
+		if not lunge_owns(sprite):
+			sprite.position.y = _party_base_positions[i].y + breathe
 
 	# Update buff/debuff visual overlays for all combatants
 	_update_buff_debuff_visuals(delta)
