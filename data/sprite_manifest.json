@@ -8090,7 +8090,7 @@
       "tier": "T1",
       "source": "gpt-image-2 open-air shop stall, anvil, blades and a coal brazier under dark canvas; 72px wide over the VillageShop's 2-tile footprint, standing where the painted stall stood. struktured 2026-11-01 (via cowir-main 21164): the painted stall looked crappy and the magic shops read in the wrong colours. tools/gen_shop_stalls.py; T1, artist veto applies."
     },
-    "tiny_crown": {"path": "res://assets/sprites/props/common/tiny_crown.png", "tier": "T1", "frames": 4, "fps": 8, "source": "hand-placed pixels, no image model (tools/gen_tiny_crown.py; --check compares the PNG to the generator): the Cave Rat King's crown, 4 frames of 16x16: 0 falling upright, 1 tipped onto its side, 2 rolled a quarter turn, 3 at rest (hold). Golds measured from frame 0 of monsters/cave_rat_king.png. For the briefing-skipped easter egg (struktured via cowir-main 24215/24233; rolls then rests per story 24234); T1, artist veto applies."}
+    "tiny_crown": {"path": "res://assets/sprites/props/common/tiny_crown.png", "tier": "T1", "frames": 4, "fps": 8, "source": "hand-placed pixels, no image model (tools/gen_tiny_crown.py; --check compares the PNG to the generator): the Cave Rat King's crown, 4 frames of 16x16: 0 falling upright, 1 landed and spinning (edge-on), 2 coming round, 3 at rest upright (hold). Golds measured from frame 0 of monsters/cave_rat_king.png. For the briefing-skipped easter egg (struktured via cowir-main 24215/24233; spins to a stop per story 24234; it rests UPRIGHT because on its side it read as a flag on the scene's backdrop); T1, artist veto applies."}
   },
   "summon_art": {
     "recursive_summon": {

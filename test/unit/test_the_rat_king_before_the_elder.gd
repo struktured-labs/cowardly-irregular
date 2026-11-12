@@ -131,20 +131,22 @@ func test_both_orders_reach_the_same_state() -> void:
 		"the conceded list is exactly those keys (talked_to_theron is set beside it)")
 
 
-## The crown is SEEN (cowir-sprites' tiny_crown, cowir-main 24233): the scene shows it as the narration says it lands, the
-## step is one the director handles, and the art it names exists as a strip the step can cut.
+## The crown is SEEN (cowir-sprites' tiny_crown, cowir-main 24233) and heard on the frame it lands (cowir-sfx 24248): the
+## prop step owns the cue, the director handles the step, and the art it names exists as a strip the step can cut.
 func test_the_crown_is_shown_where_it_lands() -> void:
 	var scene = JSON.parse_string(FileAccess.get_file_as_string("res://data/cutscenes/%s.json" % SCENE))
 	var steps: Array = (scene as Dictionary).get("steps", []) if scene is Dictionary else []
-	var shown := -1
-	var sounded := -1
-	for i in steps.size():
-		if str(steps[i].get("type", "")) == "show_prop" and str(steps[i].get("prop", "")) == "tiny_crown":
-			shown = i
-		if str(steps[i].get("type", "")) == "play_sfx" and str(steps[i].get("sfx", "")) == "scene_tiny_crown_lands":
-			sounded = i
-	assert_gt(shown, -1, "the scene shows the crown")
-	assert_eq(sounded, shown + 1, "and it is heard in the step after it is shown")
+	var shown: Dictionary = {}
+	var loose_cues := 0
+	for step in steps:
+		if str(step.get("type", "")) == "show_prop" and str(step.get("prop", "")) == "tiny_crown":
+			shown = step
+		if str(step.get("type", "")) == "play_sfx" and str(step.get("sfx", "")) == "scene_tiny_crown_lands":
+			loose_cues += 1
+	assert_false(shown.is_empty(), "the scene shows the crown")
+	assert_eq(str(shown.get("sfx", "")), "scene_tiny_crown_lands", "the prop itself names its landing cue")
+	assert_eq(int(shown.get("sfx_at_frame", 0)), 1, "on the frame it lands (frame 0 is still falling)")
+	assert_eq(loose_cues, 0, "and no separate play_sfx step plays it a second time, a frame apart")
 	var row: Dictionary = load("res://src/cutscene/CutsceneDirector.gd").prop_art("tiny_crown")
 	assert_true(ResourceLoader.exists(str(row.get("path", ""))), "CONTROL: the crown's strip exists (%s)" % row.get("path", ""))
 	assert_gt(int(row.get("frames", 0)), 1, "it has frames to roll through")
