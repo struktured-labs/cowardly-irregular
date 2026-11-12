@@ -34,8 +34,8 @@ func test_hardcoded_40_removed_from_melee_animation() -> void:
 	var body: String = src.substr(idx, (next - idx) if next > -1 else 2500)
 	assert_false(body.find("direction * 40") > -1,
 		"the pre-fix `direction * 40` hardcode must be gone — replaced by _melee_contact_gap(...)")
-	assert_string_contains(body, "_melee_contact_gap(attacker_sprite, target_sprite)",
-		"attack_pos computation must call the new helper")
+	assert_string_contains(body, "melee_stand_point(attacker_sprite, target_sprite)",
+		"attack_pos comes from the stand point, which measures the same two figure edges as _melee_contact_gap")
 
 
 func test_helper_and_mercy_constant_declared() -> void:
