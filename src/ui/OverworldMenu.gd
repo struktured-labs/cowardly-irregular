@@ -104,6 +104,15 @@ const MENU_LABEL_X := 24.0
 const NEWS_TAG_GAP := 8.0
 const MENU_ROW_PAD_X := 24.0
 const MENU_ROW_GAP := 4.0
+const MENU_COL_GAP := 8.0
+## How the rows are laid out this build (see menu_layout); read by _update_selection and by the guards.
+var _menu_windowed := false
+var _menu_per_col := 0
+var _menu_pitch := 0.0
+var _menu_first := 0
+var _menu_window: Control = null
+var _menu_more_up: Label = null
+var _menu_more_down: Label = null
 const INFO_FONT_SIZE := 11
 const INFO_FX_FONT_SIZE := 10
 
@@ -581,28 +590,56 @@ func _create_menu_panel(panel_size: Vector2) -> Control:
 
 	# Menu items. Pitch and width come from the scaled font, so a larger Text Size moves the rows
 	# apart instead of stacking them on top of each other.
-	var y_offset = 32
 	var row_h: float = _menu_row_h()
+	var y_offset: float = maxf(32.0, 4.0 + row_h)
 	var row_w: float = _menu_row_w(panel_size.x)
 	var item_height: float = row_h + MENU_ROW_GAP
+	var step: float = _info_step()
+	var corr_lines: Array = _corruption_summary(GameState.corruption_level, GameState.corruption_effects)
+
+	## The rows ran off the panel: 25 of them at a 28 px floor need 732 px of a 640 px panel, so the last ones (Teleport
+	## the very last) sat on and past the bottom border (struktured 2026-11-12). The info block is pinned to the panel's
+	## bottom and the rows take the space above it: in as many columns as it needs, or a cursor-following window.
+	var info_y: float = panel_size.y - (2 + corr_lines.size()) * step - 8.0
+	var layout: Dictionary = menu_layout(_menu_options.size(), item_height, row_w, panel_size.x - 16.0, info_y - 8.0 - y_offset)
+	_menu_windowed = bool(layout["windowed"])
+	_menu_per_col = int(layout["per_col"])
+	_menu_pitch = item_height
+	_menu_first = 0
+	_menu_window = null
+	_menu_more_up = null
+	_menu_more_down = null
+	var row_host: Control = panel
+	if _menu_windowed:
+		_menu_window = Control.new()
+		_menu_window.name = "MenuWindow"
+		_menu_window.clip_contents = true
+		_menu_window.position = Vector2(8, y_offset)
+		_menu_window.size = Vector2(row_w, _menu_per_col * item_height - MENU_ROW_GAP)
+		panel.add_child(_menu_window)
+		row_host = _menu_window
+		_menu_more_up = _menu_more_marker("▲", Vector2(8.0 + row_w + 6.0, y_offset))
+		_menu_more_down = _menu_more_marker("▼", Vector2(8.0 + row_w + 6.0, y_offset + _menu_window.size.y - row_h))
+		panel.add_child(_menu_more_up)
+		panel.add_child(_menu_more_down)
 
 	for i in range(_menu_options.size()):
 		var option = _menu_options[i]
 		var item = _create_menu_item(option, i, row_w, row_h)
-		item.position = Vector2(8, y_offset + i * item_height)
-		panel.add_child(item)
+		if _menu_windowed:
+			item.position = Vector2(0, i * item_height)
+		else:
+			item.position = Vector2(8.0 + (i / _menu_per_col) * (row_w + MENU_COL_GAP), y_offset + (i % _menu_per_col) * item_height)
+		row_host.add_child(item)
 		_menu_labels.append(item)
 
-	# Game info at bottom
-	var info_y = y_offset + _menu_options.size() * item_height + 16
+	# Game info, pinned to the panel's bottom
 	var play_time = Label.new()
 	play_time.text = "Play Time: %s" % _format_play_time()
 	play_time.position = Vector2(8, info_y)
 	play_time.add_theme_font_size_override("font_size", TextScale.scaled(11))
 	play_time.add_theme_color_override("font_color", DISABLED_COLOR)
 	panel.add_child(play_time)
-
-	var step: float = _info_step()
 
 	var location = Label.new()
 	location.text = "Location: Overworld"
@@ -614,7 +651,6 @@ func _create_menu_panel(panel_size: Vector2) -> Control:
 	# Corruption readout (2026-07-02): outside autogrind UI the player
 	# had NO surface showing corruption — a save-threatening core
 	# mechanic. Hidden at zero so untouched players meet it diegetically.
-	var corr_lines: Array = _corruption_summary(GameState.corruption_level, GameState.corruption_effects)
 	if corr_lines.size() > 0:
 		var corr = Label.new()
 		corr.text = str(corr_lines[0])
@@ -688,6 +724,42 @@ func _refresh_news_tags() -> void:
 		var tag = _news_tags.get(str(o.get("id", "")))
 		if tag != null and is_instance_valid(tag):
 			tag.visible = _option_has_news(o)
+
+
+## How `count` rows of `pitch` fit a box `avail_w` x `avail_h`: balanced COLUMNS when they fit side by side (every option
+## on screen at once), else ONE column in a window `per_col` rows tall that follows the cursor.
+static func menu_layout(count: int, pitch: float, row_w: float, avail_w: float, avail_h: float) -> Dictionary:
+	var fit: int = maxi(1, int(floor((avail_h + MENU_ROW_GAP) / maxf(pitch, 1.0))))
+	if count <= fit:
+		return {"windowed": false, "cols": 1, "per_col": maxi(count, 1)}
+	var cols: int = int(ceil(float(count) / float(fit)))
+	if cols * row_w + (cols - 1) * MENU_COL_GAP <= avail_w:
+		return {"windowed": false, "cols": cols, "per_col": int(ceil(float(count) / float(cols)))}
+	return {"windowed": true, "cols": 1, "per_col": fit}
+
+
+func _menu_more_marker(glyph: String, at: Vector2) -> Label:
+	var l := Label.new()
+	l.text = glyph
+	l.position = at
+	l.add_theme_font_size_override("font_size", TextScale.scaled(INFO_FONT_SIZE))
+	l.add_theme_color_override("font_color", DISABLED_COLOR)
+	l.visible = false
+	return l
+
+
+## Windowed only: slide the rows so the selected one is inside the window, and show which way more rows lie.
+func _follow_menu_cursor() -> void:
+	if not _menu_windowed or _menu_window == null or not is_instance_valid(_menu_window):
+		return
+	_menu_first = clampi(_menu_first, selected_index - _menu_per_col + 1, selected_index)
+	_menu_first = clampi(_menu_first, 0, maxi(_menu_labels.size() - _menu_per_col, 0))
+	for i in range(_menu_labels.size()):
+		(_menu_labels[i] as Control).position.y = (i - _menu_first) * _menu_pitch
+	if _menu_more_up != null:
+		_menu_more_up.visible = _menu_first > 0
+	if _menu_more_down != null:
+		_menu_more_down.visible = _menu_first + _menu_per_col < _menu_labels.size()
 
 
 func _create_menu_item(option: Dictionary, index: int, row_w: float, row_h: float) -> Control:
@@ -839,6 +911,7 @@ func _update_selection() -> void:
 	for i in range(_highlight_refs.size()):
 		_highlight_refs[i].color = SELECTED_COLOR if i == selected_index else Color.TRANSPARENT
 		_cursor_refs[i].text = "▶" if i == selected_index else " "
+	_follow_menu_cursor()
 
 	for i in range(_card_bg_refs.size()):
 		_card_bg_refs[i].color = SELECTED_COLOR if i == selected_character else Color(0.08, 0.08, 0.12)

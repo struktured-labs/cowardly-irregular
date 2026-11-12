@@ -88,36 +88,92 @@ func test_the_floor_names_every_member_this_file_drives() -> void:
 	await _settle()
 	assert_true("_settings_items" in s and "_scroll" in s and "selected_index" in s and "_footer" in s and s.has_method("_update_selection"), "SettingsMenu's rows, scroll, cursor and footer must exist")
 	assert_true("_row_refs" in t and "_scroll" in t and "_selected" in t and t.has_method("_update_selection"), "TeleportMenu's rows, scroll and cursor must exist")
-	assert_true("_menu_labels" in f and f.has_method("setup"), "OverworldMenu's rows must exist")
+	assert_true("_menu_labels" in f and "_menu_windowed" in f and "_menu_window" in f and f.has_method("setup") and f.has_method("_nav_step") and f.has_method("_update_selection"), "OverworldMenu's rows, layout state and navigation must exist")
 	assert_true("debug_log_enabled" in GameState and "text_size_scale" in GameState, "GameState carries both settings")
 
 
-## The field menu does not scroll: every row, Teleport last, must sit inside the menu panel as built.
+func _field_menu(s: float) -> Control:
+	GameState.text_size_scale = s
+	var pc = CombatantScript.new()
+	pc.combatant_name = "Bram"
+	add_child_autofree(pc)
+	var m: Control = load(FIELD).new()
+	m.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_host().add_child(m)
+	m.setup([pc])
+	await _settle()
+	return m
+
+
+## The field menu, Teleport its last row: in COLUMNS every row is inside the menu panel as built; in the WINDOW (where
+## columns stop fitting) each row is inside the window and the panel when SELECTED, and the window is inside the panel.
 func test_every_field_menu_row_is_inside_its_panel() -> void:
 	var bad: Array = []
 	var seen := 0
+	var modes := {}
 	for s in _presets():
-		GameState.text_size_scale = s
-		var pc = CombatantScript.new()
-		pc.combatant_name = "Bram"
-		add_child_autofree(pc)
-		var m: Control = load(FIELD).new()
-		m.set_anchors_preset(Control.PRESET_FULL_RECT)
-		_host().add_child(m)
-		m.setup([pc])
-		await _settle()
+		var m: Control = await _field_menu(s)
+		modes[bool(m._menu_windowed)] = true
 		var last_id := ""
 		for i in m._menu_labels.size():
 			var row: Control = m._menu_labels[i]
 			var panel := _panel_of(row, m)
 			seen += 1
 			last_id = str(m._menu_options[i].get("id", "?"))
+			if m._menu_windowed:
+				m.selected_index = i
+				m._update_selection()
+				var wr: Rect2 = (m._menu_window as Control).get_global_rect()
+				if _below(wr, panel.get_global_rect()) > SLACK:
+					bad.append("@%s the field menu's window ends below its panel" % s)
+				if _below(row.get_global_rect(), wr) > SLACK or _above(row.get_global_rect(), wr) > SLACK:
+					bad.append("@%s field row '%s' selected is outside the window" % [s, last_id])
+				continue
 			var over := _below(row.get_global_rect(), panel.get_global_rect())
-			if over > SLACK:
-				bad.append("@%s field row '%s' ends %.0f px below its panel (row bottom %.0f, panel bottom %.0f)" % [s, last_id, over, row.get_global_rect().end.y, panel.get_global_rect().end.y])
+			var wide: float = row.get_global_rect().end.x - panel.get_global_rect().end.x
+			if over > SLACK or wide > SLACK:
+				bad.append("@%s field row '%s' ends %.0f px below / %.0f px right of its panel" % [s, last_id, over, wide])
 		assert_eq(last_id, "teleport", "CONTROL @%s: Teleport is the field menu's last row" % s)
+		for l in m.find_children("*", "Label", true, false):
+			var t := str((l as Label).text)
+			if t.begins_with("Play Time:") or t.begins_with("Location:") or t.begins_with("Corruption:"):
+				var panel2 := _panel_of(l as Control, m)
+				if _below(_text_rect(l as Label), panel2.get_global_rect()) > SLACK:
+					bad.append("@%s '%s' runs below the menu panel" % [s, t.left(12)])
 	assert_gt(seen, 100, "CONTROL: the census measured real rows (%d)" % seen)
+	assert_true(modes.has(false), "CONTROL: at some Text Size every option is on screen at once (columns)")
 	assert_eq(bad.size(), 0, "every field-menu row sits inside the menu panel:\n%s" % "\n".join(PackedStringArray(bad)))
+
+
+## Columns only where they fit, the window only where they do not: the rule itself, on plain numbers.
+func test_the_layout_rule() -> void:
+	var W98 = load(FIELD)
+	assert_eq(W98.menu_layout(5, 30.0, 200.0, 660.0, 500.0), {"windowed": false, "cols": 1, "per_col": 5}, "a short list is one column")
+	assert_eq(W98.menu_layout(25, 30.0, 200.0, 660.0, 550.0), {"windowed": false, "cols": 2, "per_col": 13}, "25 rows that fit 18 high become two BALANCED columns")
+	var tight: Dictionary = W98.menu_layout(25, 48.0, 260.0, 660.0, 500.0)
+	assert_true(bool(tight["windowed"]), "three 260 px columns do not fit 660 px: the window takes over")
+	assert_eq(int(tight["per_col"]), 10, "and shows the rows that fit the height")
+	assert_false(bool(W98.menu_layout(25, 48.0, 200.0, 660.0, 500.0)["windowed"]), "CONTROL: the same rows at 200 px wide DO fit as three columns")
+
+
+## Up/Down walk the ONE list in order at every Text Size, column break and window included; Left/Right are not rows.
+func test_down_reaches_every_option_in_order() -> void:
+	for s in _presets():
+		var m: Control = await _field_menu(s)
+		var n: int = m._menu_options.size()
+		m.selected_index = 0
+		m._update_selection()
+		var walked: Array = [0]
+		for k in n - 1:
+			m._nav_step("ui_down")
+			m._update_selection()
+			walked.append(m.selected_index)
+		assert_eq(walked, range(n), "@%s Down visits every option once, in order" % s)
+		m._nav_step("ui_down")
+		assert_eq(m.selected_index, 0, "@%s and wraps to the top" % s)
+		var at: int = m.selected_index
+		m._nav_step("ui_right")
+		assert_eq(m.selected_index, at, "@%s Right is the party card, not a menu row" % s)
 
 
 ## Settings scrolls: with each row SELECTED it must be wholly inside the scroll window, its text inside the row, and
