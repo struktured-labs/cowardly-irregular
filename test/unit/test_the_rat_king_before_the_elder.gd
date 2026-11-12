@@ -129,3 +129,28 @@ func test_both_orders_reach_the_same_state() -> void:
 		assert_true(bool(skipped.get(key, false)), "%s: set by the skipped path, as the ordinary one sets it by the end of the cave" % key)
 	assert_eq(load("res://src/GameLoop.gd").get_script_constant_map()["BRIEFING_SKIPPED_CONCEDES"].size(), ordinary.size() - 1,
 		"the conceded list is exactly those keys (talked_to_theron is set beside it)")
+
+
+## The crown is SEEN (cowir-sprites' tiny_crown, cowir-main 24233) and heard on the frame it lands (cowir-sfx 24248): the
+## prop step owns the cue, the director handles the step, and the art it names exists as a strip the step can cut.
+func test_the_crown_is_shown_where_it_lands() -> void:
+	var scene = JSON.parse_string(FileAccess.get_file_as_string("res://data/cutscenes/%s.json" % SCENE))
+	var steps: Array = (scene as Dictionary).get("steps", []) if scene is Dictionary else []
+	var shown: Dictionary = {}
+	var loose_cues := 0
+	for step in steps:
+		if str(step.get("type", "")) == "show_prop" and str(step.get("prop", "")) == "tiny_crown":
+			shown = step
+		if str(step.get("type", "")) == "play_sfx" and str(step.get("sfx", "")) == "scene_tiny_crown_lands":
+			loose_cues += 1
+	assert_false(shown.is_empty(), "the scene shows the crown")
+	assert_eq(str(shown.get("sfx", "")), "scene_tiny_crown_lands", "the prop itself names its landing cue")
+	assert_eq(int(shown.get("sfx_at_frame", 0)), 1, "on the frame it lands (frame 0 is still falling)")
+	assert_eq(loose_cues, 0, "and no separate play_sfx step plays it a second time, a frame apart")
+	var row: Dictionary = load("res://src/cutscene/CutsceneDirector.gd").prop_art("tiny_crown")
+	assert_true(ResourceLoader.exists(str(row.get("path", ""))), "CONTROL: the crown's strip exists (%s)" % row.get("path", ""))
+	assert_gt(int(row.get("frames", 0)), 1, "it has frames to roll through")
+	assert_true(load("res://src/cutscene/CutsceneDirector.gd").prop_art("no_such_prop").is_empty(), "CONTROL: an unknown prop has no row")
+	var src := FileAccess.get_file_as_string("res://src/cutscene/CutsceneDirector.gd")
+	assert_true(src.contains('"show_prop":') and src.contains('"hide_prop":'), "the director has an arm for both steps")
+
