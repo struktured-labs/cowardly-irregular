@@ -44,6 +44,24 @@ func _count(host: Node, type_name: String) -> int:
 	return n
 
 
+## An ability on the plain path, DERIVED from the data: the first row that names no sequence of any kind. A named one
+## (protect, then dark_bolt) redded each time a lane gave it a sequence (cowir-battle 24140).
+func _plain_ability() -> String:
+	var rows = JSON.parse_string(FileAccess.get_file_as_string("res://data/abilities.json"))
+	if rows is Dictionary and rows.get("abilities") is Dictionary:
+		rows = rows["abilities"]
+	if not (rows is Dictionary):
+		return ""
+	for id in rows:
+		var row = rows[id]
+		if not (row is Dictionary) or not row.has("type"):
+			continue
+		var vfx = row.get("vfx", {})
+		if not (vfx is Dictionary) or vfx.is_empty():
+			return str(id)
+	return ""
+
+
 func test_every_ward_and_song_names_a_sequence_that_exists() -> void:
 	for id in CASTS:
 		var ability: Dictionary = JobSystem.get_ability(id)
@@ -52,8 +70,10 @@ func test_every_ward_and_song_names_a_sequence_that_exists() -> void:
 	var riff = JobSystem.get_ability("riff").get("vfx", {})
 	assert_eq(str(riff.get("melee", "")) if riff is Dictionary else "", "melee_riff", "Riff's chord rides the melee path, not a cast")
 	assert_false(_seq("melee_riff").is_empty(), "melee_riff exists")
-	assert_eq(str(AbilityVFX.resolve(JobSystem.get_ability("death_sentence")).get("sequence", "")), "",
-		"CONTROL: an ability on the plain path resolves to no sequence")
+	var plain := _plain_ability()
+	assert_ne(plain, "", "floor: some ability still has no sequence to be the CONTROL")
+	assert_eq(str(AbilityVFX.resolve(JobSystem.get_ability(plain)).get("sequence", "")), "",
+		"CONTROL: an ability on the plain path (%s) resolves to no sequence" % plain)
 
 
 ## A ward is BUILT in front of you: the plates exist, they start away from their slots, and they arrive.
@@ -126,6 +146,21 @@ func test_at_turbo_the_wash_costs_no_time() -> void:
 	var src := FileAccess.get_file_as_string("res://src/battle/EffectSystem.gd")
 	assert_true(src.contains('"impact": 0.01 if compact else FractalFX.impact_time(seq) + FractalFX.travel_delay(seq, from, to)'),
 		"and spawn_sequence reports the compact impact without the travel")
+
+
+## The shared landing beats are THE landing (cowir-adhoc 24006): a ward or a stat song draws its DELIVERY and leaves the
+## ring and the rising motes at the target to the stat beat, or the target would get two of each in one frame.
+func test_a_buff_cast_leaves_the_landing_to_the_shared_beat() -> void:
+	for id in ["protect_battle", "shell_battle", "battle_hymn_battle", "discord_battle"]:
+		var seq := _seq(id)
+		var impact: float = FX.impact_time(seq) - float(seq.get("start", 0.0))
+		for ph in seq.get("phases", []):
+			var kind := str((ph as Dictionary).get("kind", ""))
+			if absf(float((ph as Dictionary).get("at", 0.0)) - impact) <= 0.1 and str((ph as Dictionary).get("origin", "target")) == "target":
+				assert_false(kind in ["ring", "rise", "pillar"], "%s draws no %s at its landing: that is the stat beat's" % [id, kind])
+	assert_false(_seq("stat_up_defense").is_empty(), "CONTROL: the shared defense-up beat exists to do it")
+	assert_gt(_phases(_seq("stat_up_defense"), "ring").size(), 0, "CONTROL: and it draws the ring")
+	assert_gt(_phases(_seq("cure_battle"), "ring").size(), 0, "CONTROL: a heal, which has no stat beat, keeps its own ring")
 
 
 func test_a_ribbon_and_its_notes_are_drawn() -> void:

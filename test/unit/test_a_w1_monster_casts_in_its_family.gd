@@ -13,7 +13,6 @@ const FAMILIES := {
 ## No sequence yet, and why. An entry that gains a sequence, or names an ability no W1 monster uses, reds.
 const DECLARED := {
 	"pack_call": "a summon: the spawn is its own presentation", "rat_swarm": "a summon", "royal_summon": "a summon",
-	"emergency_repair": "a self heal: cowir-cutscenes' heal family", "reconstruct": "a self heal: cowir-cutscenes' heal family",
 	"masterite_counter_stance": "an ally buff: the shared stat-up landing (adhoc 23998) is its read",
 	"masterite_haste": "an ally buff: the shared landing", "masterite_iron_guard": "an ally buff: the shared landing",
 	"masterite_proclamation": "an ally buff: the shared landing", "crown_authority": "an ally buff: the shared landing",
