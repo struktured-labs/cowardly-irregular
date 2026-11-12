@@ -327,3 +327,29 @@ func test_a_thrown_thing_leaves_on_the_poses_release_frame() -> void:
 	assert_almost_eq(BattleManager.impact_hold, plain_hold + wind_up, 0.02,
 		"the bone lands a wind-up later than it did (%.2f s after %.2f + %.3f)" % [BattleManager.impact_hold, plain_hold, wind_up])
 
+
+## The gap I stated with the .793 tip: each hero's splat of a line-wide spray was steel grey whatever was sprayed.
+func test_a_sprays_splat_on_each_hero_takes_the_moves_colour() -> void:
+	var painted := 0
+	for phase in FractalFX.load_sequence("family_spray_hit").get("phases", []):
+		if phase is Dictionary and phase.has("palette"):
+			painted += 1
+			assert_eq(str(phase["palette"]), "spark", "the per-hero splat's %s is drawn in a fixed colour, so no tint can reach it" % str(phase.get("kind", "")))
+	assert_gt(painted, 1, "CONTROL: the splat has painted phases to tint")
+	var abilities: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/abilities.json"))
+	if abilities.has("abilities"):
+		abilities = abilities["abilities"]
+	var sprays := 0
+	var plain: Array = []
+	for id in abilities:
+		var a: Dictionary = abilities[id]
+		var vfx = a.get("vfx", {})
+		if vfx is Dictionary and bool(vfx.get("ranged", false)) and str(a.get("target_type", "")) == "all_enemies":
+			sprays += 1
+			if BattleSceneScript.family_tint(a) == "":
+				plain.append(id)
+	assert_gt(sprays, 2, "CONTROL: line-wide ranged moves exist (%d)" % sprays)
+	assert_eq(plain, [], "a line-wide ranged move names no colour (vfx.palette, an element or an effect with a tint), so its splats are the bare spark")
+	var src := FileAccess.get_file_as_string("res://src/battle/BattleScene.gd")
+	assert_true(src.contains('family_tint(ability) if seq_override != "" else "")'), "the cast path hands a family delivery its move's tint")
+
