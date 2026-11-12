@@ -1035,12 +1035,18 @@ func _build_menu() -> void:
 
 	# Allow input after a short delay to prevent stray key presses
 	# Use ignore_time_scale=true to keep consistent regardless of battle speed
+	# Built outside the tree there is no timer to wait on: open at once rather than raise and stay deaf.
+	if not is_inside_tree():
+		_can_accept_input = true
+		_can_close_on_click = true
+		return
 	await get_tree().create_timer(0.08, true, false, true).timeout  # Reduced from 0.15 for faster response
-	if not is_instance_valid(self):
+	# A menu whose scene was torn down during the wait is valid but has no tree: get_tree() is null there.
+	if not is_instance_valid(self) or not is_inside_tree():
 		return
 	_can_accept_input = true
 	await get_tree().create_timer(0.05, true, false, true).timeout  # Reduced from 0.1 for faster response
-	if not is_instance_valid(self):
+	if not is_instance_valid(self) or not is_inside_tree():
 		return
 	_can_close_on_click = true
 
