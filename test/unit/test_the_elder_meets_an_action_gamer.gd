@@ -24,7 +24,8 @@ func _lines(steps: Array) -> Array:
 		if not step is Dictionary:
 			continue
 		for line in step.get("lines", []):
-			out.append([str(line.get("speaker", "")), str(line.get("text", "")), str(line.get("portrait", ""))])
+			if line is Dictionary:  # a narration step's "lines" are plain strings; only spoken lines count here
+				out.append([str(line.get("speaker", "")), str(line.get("text", "")), str(line.get("portrait", ""))])
 		var cases = step.get("cases", {})
 		if cases is Dictionary:
 			for key in cases:
