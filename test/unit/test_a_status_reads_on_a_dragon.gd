@@ -119,7 +119,7 @@ func test_a_motif_over_the_head_starts_above_the_badge_row() -> void:
 ## it READS as "hard to hit" is judged on the collage.
 func test_evasion_is_after_images_of_the_sprite_not_a_box() -> void:
 	var code := _code()
-	var arm := code.substr(code.find('"shadow":'), 200)
+	var arm := code.substr(code.rfind('"shadow":'), 120)  # the LAST one is _draw's arm; _color_of has one above it
 	assert_true(arm.contains("_after_images("), "CONTROL: the evasion motif draws after-images")
 	assert_false(arm.contains("draw_rect"), "evasion still outlines the figure's bounding box")
 	assert_gt(StatusAura.AFTER_IMAGES, 1, "one copy is a ghost, not a trail")
