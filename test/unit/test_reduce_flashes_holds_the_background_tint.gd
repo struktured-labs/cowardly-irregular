@@ -81,3 +81,16 @@ func test_a_battle_that_ends_takes_its_backdrop_out_of_the_autoload() -> void:
 	assert_null(EffectSystem.battle_background, "freed with its battle, the backdrop is not left in the autoload as a dead reference")
 	EffectSystem.battle_background = _bg
 
+
+func test_a_menu_taken_out_of_the_tree_mid_build_stops_quietly() -> void:
+	var src := FileAccess.get_file_as_string("res://src/ui/Win98Menu.gd")
+	var at := src.find("func _build_menu(")
+	assert_gt(at, -1, "CONTROL: the menu build exists")
+	var body := src.substr(at, src.find("\nfunc ", at + 1) - at)
+	assert_eq(body.count("await get_tree().create_timer("), 2, "CONTROL: the build waits twice before it takes input")
+	var first := body.find("await get_tree().create_timer(")
+	var second := body.find("await get_tree().create_timer(", first + 1)
+	assert_true("is_inside_tree()" in body.substr(0, first), "it does not start the first wait from outside the tree")
+	assert_true("not is_inside_tree()" in body.substr(first, second - first),
+		"and after the first wait it stops if its battle left the tree meanwhile (was: get_tree() on a null value)")
+
