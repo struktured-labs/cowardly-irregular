@@ -3,11 +3,14 @@ extends SceneTree
 ## A clip of the victory beat (VictoryOverlay) over a REAL battle, for --write-movie capture at a fixed fps.
 ## Run through tools/victory_clip.sh (it owns the sandbox, xvfb, the pad jail and the encode).
 ## Args: --rank=<one-shot rank, e.g. S; empty for none> --boss (bill a boss: the BOSS grade) --seconds=<length>
+## --text_size=<Text Size multiplier, e.g. 2.0> --foes=<how many goblins, default 1>
 
 func _init() -> void:
 	var rank := ""
 	var boss := false
 	var seconds := 3.4
+	var text_size := 1.0
+	var foes := 1
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--rank="):
 			rank = a.get_slice("=", 1)
@@ -15,11 +18,17 @@ func _init() -> void:
 			boss = true
 		elif a.begins_with("--seconds="):
 			seconds = float(a.get_slice("=", 1))
+		elif a.begins_with("--text_size="):
+			text_size = float(a.get_slice("=", 1))
+		elif a.begins_with("--foes="):
+			foes = clampi(int(a.get_slice("=", 1)), 1, 5)
 	await process_frame
 	await process_frame
 	var gs = root.get_node_or_null("GameState")
 	if gs and "debug_log_enabled" in gs:
 		gs.debug_log_enabled = false
+	if gs and "text_size_scale" in gs:
+		gs.text_size_scale = text_size
 	var hints = load("res://src/ui/TutorialHints.gd")
 	if gs and hints and ("HINTS" in hints):
 		for id in hints.HINTS.keys():
@@ -32,7 +41,10 @@ func _init() -> void:
 		gl._close_title_screen()
 	await process_frame
 	gl._create_party()
-	await gl._start_battle_async(["goblin"], true)
+	var roster: Array = []
+	for i in foes:
+		roster.append("goblin")
+	await gl._start_battle_async(roster, true)
 	var scene := _find(root)
 	if scene == null:
 		print("[VCLIP] FAIL: no BattleScene")
