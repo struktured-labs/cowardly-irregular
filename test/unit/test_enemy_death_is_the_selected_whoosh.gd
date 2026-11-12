@@ -105,6 +105,17 @@ func test_only_enemy_death_gives_up_headroom() -> void:
 		"party_ko must stay at the shared boost — the whoosh trim does not belong to it")
 
 
+## Every player still sounding anywhere in the tree, stopped and named: a leftover from an earlier test file.
+func _stop_everything_sounding() -> Array[String]:
+	var stopped: Array[String] = []
+	for node in get_tree().root.find_children("*", "AudioStreamPlayer", true, false):
+		var player := node as AudioStreamPlayer
+		if player and player.playing:
+			stopped.append(str(player.name))
+			player.stop()
+	return stopped
+
+
 func test_the_mixed_whoosh_stays_under_full_scale_at_the_jitter_edge() -> void:
 	## The +6 dB boost is real, and so is the +2 dB player level: -4 dB rest + 6 dB = +2 dB.
 	## Master and the SFX bus are 0 dB and have no limiter, so a file peak of -0.9 dBFS at +2 dB
@@ -120,6 +131,21 @@ func test_the_mixed_whoosh_stays_under_full_scale_at_the_jitter_edge() -> void:
 	var cap := AudioEffectCapture.new()
 	cap.buffer_length = 2.0
 	AudioServer.add_bus_effect(master, cap)
+	## The capture is the MASTER bus, so it measures whatever is sounding. In a long run an earlier file's cue or bed is
+	## still ringing and sums into the peak (1.028 inside a 670-file sweep, 3/3 green alone, cutscenes 24273): the pitch here
+	## is fixed at 1.05 with jitter off, so that was never a pitch draw. Stop the strays, then prove the floor is silent.
+	var strays := _stop_everything_sounding()
+	for _i in 4:
+		await get_tree().process_frame
+	cap.clear_buffer()
+	var floor_peak := 0.0
+	for _i in 6:
+		await get_tree().process_frame
+		var n0: int = cap.get_frames_available()
+		if n0 > 0:
+			for s0 in cap.get_buffer(n0):
+				floor_peak = maxf(floor_peak, maxf(absf(s0.x), absf(s0.y)))
+	assert_lt(floor_peak, 0.01, "PREMISE: the mixer was not silent before the whoosh (%.3f) though %s were stopped; this arm would measure their sum" % [floor_peak, strays])
 	var level: float = float(sm.DEATH_PLAYER_BASE_DB) + float(sm.DEATH_CUE_BOOST_DB) - 2.2
 	sm._sfx_cooldowns.clear()
 	sm._play_sound(sm._sub_player, {"freq": sm.DEATH_THUD_FREQ, "duration": sm.DEATH_THUD_DURATION, "type": "thud"})
