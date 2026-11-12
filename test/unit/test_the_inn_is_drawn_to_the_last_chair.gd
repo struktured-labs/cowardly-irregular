@@ -63,6 +63,17 @@ func _under(node: Node, ancestor: Node) -> bool:
 	return false
 
 
+## True when the player's body (radius + safe margin, 8 px) standing in the middle of `cell` touches no collider.
+func _body_fits(inn: Node, cell: Vector2i) -> bool:
+	var q := PhysicsShapeQueryParameters2D.new()
+	var shape := CircleShape2D.new()
+	shape.radius = 8.0
+	q.shape = shape
+	q.collision_mask = 1
+	q.transform = Transform2D(0.0, (inn as Node2D).to_global((Vector2(cell) + Vector2(0.5, 0.5)) * T))
+	return (inn as Node2D).get_world_2d().direct_space_state.intersect_shape(q, 1).is_empty()
+
+
 func test_the_art_this_file_names_is_on_disk() -> void:
 	for kind in PIECES:
 		assert_true(FileAccess.file_exists(ART % kind), "%s is on disk, or every arm below paints instead of drawing" % (ART % kind))
@@ -113,12 +124,15 @@ func test_what_lies_underfoot_can_be_walked_on_and_the_lane_is_clear() -> void:
 		for a in _art(inn, kind):
 			assert_true(_under(a, inn._floor_pieces), "%s lies on the floor layer" % kind)
 			assert_false(_under(a, inn.decorations), "%s is not furniture" % kind)
-	var walk := InteriorPlacementSweep.walkable_cells(inn, inn.decorations, Inn.INN_LAYOUT)
-	assert_true(walk.has(Vector2i(12, 6)), "the middle of the hearth rug is walkable")
-	assert_true(walk.has(Vector2i(10, 12)), "and the door mat")
-	assert_false(walk.has(Vector2i(5, 9)), "CONTROL: the long table is not")
+	# Judged as the PLAYER meets it (a body against the room's colliders); the NPC sweep's rule also counts wall paintings.
+	await get_tree().physics_frame
+	await get_tree().physics_frame
+	assert_true(_body_fits(inn, Vector2i(12, 6)), "the middle of the hearth rug is walkable")
+	assert_true(_body_fits(inn, Vector2i(10, 12)), "and the door mat")
+	assert_false(_body_fits(inn, Vector2i(5, 9)), "CONTROL: the long table is not")
+	assert_false(_body_fits(inn, Vector2i(0, 4)), "CONTROL: nor a wall cell")
 	for x in range(1, 19):
-		assert_true(walk.has(Vector2i(x, 4)), "row 4 is the walk from the desk past the hearth to the stairs: cell (%d, 4) is clear" % x)
+		assert_true(_body_fits(inn, Vector2i(x, 4)), "row 4 is the walk from the desk past the hearth to the stairs: cell (%d, 4) is clear" % x)
 	assert_eq(InteriorPlacementSweep.relocations, 0, "no guest had to be moved off the new furniture")
 	assert_gt(inn.decorations.find_children("*", "StaticBody2D", true, false).size(), 6, "the standing pieces are solid to the player")
 

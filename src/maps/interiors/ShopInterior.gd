@@ -1107,7 +1107,7 @@ func _decorate_blacksmith_shop() -> void:
 		_create_weapon_wall_rack(Vector2(13 * TILE_SIZE, 2 * TILE_SIZE))
 
 	# Weapon crates at x=1, y=9
-	_piece("weapon_crates", Vector2(2 * TILE_SIZE, 9 * TILE_SIZE + 28), _create_weapon_crates.bind(Vector2(1 * TILE_SIZE, 9 * TILE_SIZE)), Vector2(52, 14))
+	_piece("weapon_crates", Vector2(2 * TILE_SIZE, 11 * TILE_SIZE - 6), _create_weapon_crates.bind(Vector2(1 * TILE_SIZE, 9 * TILE_SIZE)), Vector2(52, 14))
 
 	# Bellows near forge; Jend stands at them, so they block nobody
 	_piece("bellows", Vector2(6 * TILE_SIZE, 8.5 * TILE_SIZE + 10), _create_bellows.bind(Vector2(6 * TILE_SIZE, 8.5 * TILE_SIZE)))

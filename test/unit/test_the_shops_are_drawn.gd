@@ -16,6 +16,10 @@ const UNDERFOOT := {"shop_item": ["mat", "door_mat"], "shop_blacksmith": ["door_
 const T := 32
 
 
+func before_each() -> void:
+	InteriorPlacementSweep.relocations = 0
+
+
 func after_each() -> void:
 	VillageProp.prop_art_override = null
 
@@ -106,6 +110,7 @@ func test_nobody_stands_in_a_piece_and_the_way_in_is_clear() -> void:
 		for spawn in shop.spawn_points:
 			stand_points.append(["spawn " + str(spawn), (shop.spawn_points[spawn] as Vector2) * T])
 		assert_gt(stand_points.size(), 3, "%s: CONTROL: NPCs and spawns were found (%d)" % [room, stand_points.size()])
+		assert_eq(InteriorPlacementSweep.relocations, 0, "%s: nobody had to be moved off the new pieces (the first run moved Sir Corvath off the weapon crates)" % room)
 		for sp in stand_points:
 			for b in blocked:
 				assert_false((b[1] as Rect2).grow(10.0).has_point(sp[1]), "%s: %s at %s stands clear of the %s's footprint %s" % [room, sp[0], str(sp[1]), b[0], str(b[1])])
