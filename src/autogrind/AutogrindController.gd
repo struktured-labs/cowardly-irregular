@@ -121,6 +121,7 @@ func start_grind(party: Array, config: Dictionary, terrain: String = "plains") -
 
 	_config = config
 	_terrain = terrain
+	_advanced_from_start = false
 	var tier_val = config.get("tier", 0)
 	_current_tier = tier_val as GrindTier
 	headless_mode = config.get("ludicrous_speed", false)
@@ -321,8 +322,28 @@ func _launch_collapse_boss_battle() -> void:
 	grind_battle_requested.emit([boss_data], _terrain)
 
 
-## Resolve the current region's encounter pool as enemy ids ([] = no pool, caller falls back).
+## True once Auto-Advance has moved the grind to another region: the party is no longer "standing" where it started.
+var _advanced_from_start: bool = false
+
+
+## What live play would roll where the party stands: EncounterSystem's current pool ([] = none, e.g. a safe zone).
+func _standing_pool_ids() -> Array:
+	var es: Node = get_node_or_null("/root/EncounterSystem")
+	if es == null or not ("current_enemy_pool" in es):
+		return []
+	var ids: Array = []
+	for id in es.current_enemy_pool:
+		ids.append(str(id))
+	return ids
+
+
+## Resolve the grind's encounter pool as enemy ids ([] = no pool, caller falls back).
+## A fresh party grinding at the first village drew the whole region's union (L1-9); it now draws the zone it stands in (cowir-main 2026-11-11).
 func _region_pool_ids() -> Array:
+	if not _advanced_from_start:
+		var standing := _standing_pool_ids()
+		if not standing.is_empty():
+			return standing
 	var es: Node = get_node_or_null("/root/EncounterSystem")
 	if es == null or not ("enemy_pools" in es):
 		return []
@@ -351,12 +372,34 @@ func _base_data_for_id(enemy_id: String) -> Dictionary:
 	if es == null or not ("monster_database" in es):
 		return {}
 	var db: Dictionary = es.monster_database
+	## A dungeon floor's pool marks the level it wants ("imp@L13"): the species' row, re-levelled as the live spawn is.
+	var marked_level: int = es.spawn_level_of(enemy_id)
+	enemy_id = es.spawn_base_id(enemy_id)
 	if not db.has(enemy_id):
 		return {}
 	var row: Dictionary = db[enemy_id]
 	var stats: Dictionary = row.get("stats", {})
 	if stats.is_empty():
 		return {}
+	if marked_level > 0:
+		var flat: Dictionary = stats.duplicate()
+		for k in ["level", "exp_reward", "gold_reward"]:
+			flat[k] = row.get(k, 1)
+		flat = es.apply_spawn_level(flat, marked_level, db)
+		var relevelled: Dictionary = {}
+		for k in stats:
+			relevelled[k] = flat.get(k, stats[k])
+		return {
+			"id": str(row.get("id", enemy_id)),
+			"name": str(row.get("name", enemy_id.capitalize())),
+			"color": row.get("color", Color.WHITE),
+			"stats": relevelled,
+			"weaknesses": (row.get("weaknesses", []) as Array).duplicate(),
+			"resistances": (row.get("resistances", []) as Array).duplicate(),
+			"spawn_level": marked_level,
+			"exp_reward": int(flat["exp_reward"]),
+			"gold_reward": int(flat["gold_reward"]),
+		}
 	# color carried so pool- and roster-drawn dicts are interchangeable — nothing reads it today, and two producers disagreeing on a field nobody reads is how that stops being true quietly (cowir-battle msg 3026).
 	return {
 		"id": str(row.get("id", enemy_id)),
@@ -371,12 +414,14 @@ func _base_data_for_id(enemy_id: String) -> Dictionary:
 ## Candidate draw pool as base_data dicts — region pool preferred, MONSTER_TYPES const as fallback.
 func _grind_draw_candidates() -> Array:
 	var candidates: Array = []
+	var standing: bool = not _advanced_from_start and not _standing_pool_ids().is_empty()
 	for enemy_id in _region_pool_ids():
 		var data: Dictionary = _base_data_for_id(str(enemy_id))
 		if not data.is_empty():
 			candidates.append(data)
 	if not candidates.is_empty():
-		return candidates
+		## The place's own pool is its own danger; a region-wide union is not, so it is held to the party's reach.
+		return candidates if standing else _within_party_reach(candidates)
 	# Fallback: no pool for this region, unknown region id, or the data layer failed to load.
 	for base_type in BattleEnemySpawner.MONSTER_TYPES:
 		candidates.append({
@@ -387,7 +432,33 @@ func _grind_draw_candidates() -> Array:
 			"weaknesses": base_type.get("weaknesses", []).duplicate(),
 			"resistances": base_type.get("resistances", []).duplicate(),
 		})
-	return candidates
+	return _within_party_reach(candidates)
+
+
+## How far above the party's best level a pool with no place behind it (a village, an unknown region) may reach.
+const FALLBACK_LEVEL_REACH: int = 2
+
+
+## A fallback roster held to the party's level: a grind started in a village drew cave_troll (L10) and shadow_knight (L11) for a L1 party.
+func _within_party_reach(candidates: Array) -> Array:
+	var es: Node = get_node_or_null("/root/EncounterSystem")
+	if es == null or not ("monster_database" in es):
+		return candidates
+	var cap: int = ExpRules.party_top_level(_party) + FALLBACK_LEVEL_REACH
+	var kept: Array = []
+	var lowest: int = 1 << 30
+	var weakest: Array = []
+	for c in candidates:
+		var lv: int = int((es.monster_database.get(str(c.get("id", "")), {}) as Dictionary).get("level", 1))
+		if lv <= cap:
+			kept.append(c)
+		if lv < lowest:
+			lowest = lv
+			weakest = [c]
+		elif lv == lowest:
+			weakest.append(c)
+	## Nothing within reach (a strong region, a weak party): the weakest of what is there, never an empty grind.
+	return kept if not kept.is_empty() else weakest
 
 
 ## Generate enemies with adaptation scaling
@@ -530,6 +601,7 @@ func _on_region_cracked(region_id: String, crack_level: int) -> void:
 		return
 
 	_terrain = next["region"]
+	_advanced_from_start = true
 	region_advanced.emit(region_id, next["region"], next["world"])
 
 	# Give extra delay for the warp transition to play (~3s animation)
