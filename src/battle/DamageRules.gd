@@ -6,10 +6,13 @@ extends RefCounted
 ## them per run, and the shipped values are the defaults below.
 
 ## Each hero's share when an ENEMY ability lands on more than one of them: a breath is party-wide pressure, not five
-## single-target nukes. 1.0 = every hero takes the full hit.
-static var enemy_spread: float = 1.0
+## single-target nukes. 1.0 = every hero takes the full hit. 0.3 was picked from the LIVE table (cowir-main 24528,
+## 2026-11-12): the only value at which a top kit beat all five W1 bosses 10/10 with 56-74% HP left and a mid kit
+## still beat Mordaine; at 1.0 Voltharion fell 3/10 and Mordaine 2/10.
+const ENEMY_SPREAD_SHIPPED := 0.3
+static var enemy_spread: float = ENEMY_SPREAD_SHIPPED
 
-## How speed becomes crit chance. "shipped" is speed x 0.01 (everyone at the cap since the re-level); "comment" is what
+## How speed becomes crit chance. "shipped" is speed x 0.01 (measured: Fighter 10-15%, Mage 15-20%, Bard 21-29%, Rogue at the 50% cap); "comment" is what
 ## that line's own comment says, each 10 speed = +1%; "level" compares speed with the attacker's level, capped lower.
 static var crit_mode: String = "shipped"
 const CRIT_BASE := 0.05

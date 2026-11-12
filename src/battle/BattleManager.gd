@@ -6725,7 +6725,7 @@ func _calculate_crit_chance(attacker: Combatant) -> float:
 	# Base crit chance is 5%
 	var base_crit = 0.05
 
-	# Speed adds to crit chance; HOW is DamageRules.crit_mode (shipped: speed x 0.01, which is not what this comment said).
+	# Speed adds to crit chance: each point of speed is +1% in the shipped mode (DamageRules.crit_mode), on a 5% base, capped at 50%.
 	var speed_bonus = DamageRules.speed_crit_bonus(float(attacker.speed), _archetype_level(attacker))
 
 	## Tick 375: read PassiveSystem's accumulated crit_chance mod

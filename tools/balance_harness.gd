@@ -191,7 +191,8 @@ func _init() -> void:
 	## BAL_SPREAD / BAL_CRIT_MODE / BAL_ABILITY_CRIT set the dials both engines read (DamageRules); the same names as the live probe.
 	var rules: Script = load("res://src/battle/DamageRules.gd") if ResourceLoader.exists("res://src/battle/DamageRules.gd") else null
 	if rules != null:
-		rules.enemy_spread = float(_env("BAL_SPREAD", "1.0"))
+		if _env("BAL_SPREAD", "") != "":   # unset: the rule's own shipped default (0.3), not 1.0
+			rules.enemy_spread = float(_env("BAL_SPREAD", ""))
 		rules.crit_mode = _env("BAL_CRIT_MODE", "shipped")
 		if _env("BAL_ABILITY_CRIT", "") != "":   # unset: the rule's own shipped default
 			rules.abilities_inherit_swing_crit = _env("BAL_ABILITY_CRIT", "") == "1"

@@ -111,6 +111,15 @@ func test_the_spread_dial_scales_a_party_wide_hit_and_nothing_else() -> void:
 	assert_lt(float(soft), float(full) * 0.7, "at 0.4 a hero takes far less than at 1.0 (%d vs %d)" % [soft, full])
 
 
+func test_the_spread_ships_at_the_value_the_live_table_picked() -> void:
+	assert_almost_eq(DamageRules.ENEMY_SPREAD_SHIPPED, 0.3, 0.0001, "0.3, from the live boss table (main 24528)")
+	assert_almost_eq(_saved_spread, DamageRules.ENEMY_SPREAD_SHIPPED, 0.0001, "PREMISE: this file found the dial at its shipped value, not one an earlier file left")
+	assert_almost_eq(DamageRules.spread_factor(5, true), 0.3, 0.0001, "so each of five heroes takes 30% of an enemy's all-party hit")
+	assert_almost_eq(DamageRules.spread_factor(1, true), 1.0, 0.0001, "CONTROL: a single-target hit is whole")
+	var src := FileAccess.get_file_as_string("res://src/battle/BattleManager.gd")
+	assert_true("each point of speed is +1%" in src and not ("each 10 speed" in src), "and the crit comment says what the code does")
+
+
 func test_the_crit_dials_ship_as_the_game_plays_today() -> void:
 	assert_eq(DamageRules.crit_mode, "shipped", "the shipped formula until the live table picks one")
 	assert_true(DamageRules.abilities_inherit_swing_crit, "shipped since .794: a signature move crits as its user's swing does (main 24513)")
