@@ -597,9 +597,7 @@ func _create_menu_panel(panel_size: Vector2) -> Control:
 	var step: float = _info_step()
 	var corr_lines: Array = _corruption_summary(GameState.corruption_level, GameState.corruption_effects)
 
-	## The rows ran off the panel: 25 of them at a 28 px floor need 732 px of a 640 px panel, so the last ones (Teleport
-	## the very last) sat on and past the bottom border (struktured 2026-11-12). The info block is pinned to the panel's
-	## bottom and the rows take the space above it: in as many columns as it needs, or a cursor-following window.
+	## The rows ran past the panel's bottom border (25 at a 28 px floor need 732 px of 640; struktured 2026-11-12): the info block is pinned to the bottom and the rows fit above it.
 	var info_y: float = panel_size.y - (2 + corr_lines.size()) * step - 8.0
 	var layout: Dictionary = menu_layout(_menu_options.size(), item_height, row_w, panel_size.x - 16.0, info_y - 8.0 - y_offset)
 	_menu_windowed = bool(layout["windowed"])
@@ -618,8 +616,8 @@ func _create_menu_panel(panel_size: Vector2) -> Control:
 		_menu_window.size = Vector2(row_w, _menu_per_col * item_height - MENU_ROW_GAP)
 		panel.add_child(_menu_window)
 		row_host = _menu_window
-		_menu_more_up = _menu_more_marker("▲", Vector2(8.0 + row_w + 6.0, y_offset))
-		_menu_more_down = _menu_more_marker("▼", Vector2(8.0 + row_w + 6.0, y_offset + _menu_window.size.y - row_h))
+		_menu_more_up = _menu_more_marker("▲", Vector2(8.0 + row_w - 18.0, y_offset))
+		_menu_more_down = _menu_more_marker("▼", Vector2(8.0 + row_w - 18.0, y_offset + _menu_window.size.y - row_h))
 		panel.add_child(_menu_more_up)
 		panel.add_child(_menu_more_down)
 
@@ -629,7 +627,7 @@ func _create_menu_panel(panel_size: Vector2) -> Control:
 		if _menu_windowed:
 			item.position = Vector2(0, i * item_height)
 		else:
-			item.position = Vector2(8.0 + (i / _menu_per_col) * (row_w + MENU_COL_GAP), y_offset + (i % _menu_per_col) * item_height)
+			item.position = Vector2(8.0 + floori(float(i) / _menu_per_col) * (row_w + MENU_COL_GAP), y_offset + (i % _menu_per_col) * item_height)
 		row_host.add_child(item)
 		_menu_labels.append(item)
 
@@ -726,8 +724,7 @@ func _refresh_news_tags() -> void:
 			tag.visible = _option_has_news(o)
 
 
-## How `count` rows of `pitch` fit a box `avail_w` x `avail_h`: balanced COLUMNS when they fit side by side (every option
-## on screen at once), else ONE column in a window `per_col` rows tall that follows the cursor.
+## How `count` rows fit a box: balanced COLUMNS when they fit side by side (every option visible), else ONE column in a window `per_col` rows tall.
 static func menu_layout(count: int, pitch: float, row_w: float, avail_w: float, avail_h: float) -> Dictionary:
 	var fit: int = maxi(1, int(floor((avail_h + MENU_ROW_GAP) / maxf(pitch, 1.0))))
 	if count <= fit:
