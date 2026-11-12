@@ -4888,6 +4888,511 @@
           "alpha": 0.5
         }
       ]
+    },
+    "landed_poison": {
+      "label": "Poison LANDS: it rises off the body over a low ring",
+      "phases": [
+        {
+          "kind": "rise",
+          "at": 0.0,
+          "dur": 0.5,
+          "count": 9,
+          "palette": "rot"
+        },
+        {
+          "kind": "ring",
+          "at": 0.0,
+          "dur": 0.3,
+          "scale": 1.8,
+          "palette": "rot",
+          "offset": [
+            0,
+            26
+          ]
+        }
+      ]
+    },
+    "landed_burning": {
+      "label": "A burn LANDS: it rises off the body over a low ring",
+      "phases": [
+        {
+          "kind": "rise",
+          "at": 0.0,
+          "dur": 0.5,
+          "count": 9,
+          "palette": "ember"
+        },
+        {
+          "kind": "ring",
+          "at": 0.0,
+          "dur": 0.3,
+          "scale": 1.8,
+          "palette": "ember",
+          "offset": [
+            0,
+            26
+          ]
+        }
+      ]
+    },
+    "landed_curse": {
+      "label": "A curse LANDS: it rises off the body over a low ring",
+      "phases": [
+        {
+          "kind": "rise",
+          "at": 0.0,
+          "dur": 0.5,
+          "count": 9,
+          "palette": "void"
+        },
+        {
+          "kind": "ring",
+          "at": 0.0,
+          "dur": 0.3,
+          "scale": 1.8,
+          "palette": "void",
+          "offset": [
+            0,
+            26
+          ]
+        }
+      ]
+    },
+    "landed_confuse": {
+      "label": "Confusion LANDS: it closes in on the head",
+      "phases": [
+        {
+          "kind": "gather",
+          "at": 0.0,
+          "dur": 0.3,
+          "count": 10,
+          "palette": "ward",
+          "offset": [
+            0,
+            -58
+          ]
+        },
+        {
+          "kind": "flash",
+          "at": 0.3,
+          "dur": 0.12,
+          "size": 2.0,
+          "alpha": 0.45,
+          "offset": [
+            0,
+            -58
+          ]
+        },
+        {
+          "kind": "ring",
+          "at": 0.3,
+          "dur": 0.25,
+          "scale": 1.4,
+          "palette": "ward",
+          "offset": [
+            0,
+            -58
+          ]
+        }
+      ]
+    },
+    "landed_fear": {
+      "label": "Fear LANDS: it closes in on the head",
+      "phases": [
+        {
+          "kind": "gather",
+          "at": 0.0,
+          "dur": 0.3,
+          "count": 10,
+          "palette": "steel",
+          "offset": [
+            0,
+            -58
+          ]
+        },
+        {
+          "kind": "flash",
+          "at": 0.3,
+          "dur": 0.12,
+          "size": 2.0,
+          "alpha": 0.45,
+          "offset": [
+            0,
+            -58
+          ]
+        },
+        {
+          "kind": "ring",
+          "at": 0.3,
+          "dur": 0.25,
+          "scale": 1.4,
+          "palette": "steel",
+          "offset": [
+            0,
+            -58
+          ]
+        }
+      ]
+    },
+    "landed_charm": {
+      "label": "A charm LANDS: it closes in on the head",
+      "phases": [
+        {
+          "kind": "gather",
+          "at": 0.0,
+          "dur": 0.3,
+          "count": 10,
+          "palette": "hymn",
+          "offset": [
+            0,
+            -58
+          ]
+        },
+        {
+          "kind": "flash",
+          "at": 0.3,
+          "dur": 0.12,
+          "size": 2.0,
+          "alpha": 0.45,
+          "offset": [
+            0,
+            -58
+          ]
+        },
+        {
+          "kind": "ring",
+          "at": 0.3,
+          "dur": 0.25,
+          "scale": 1.4,
+          "palette": "hymn",
+          "offset": [
+            0,
+            -58
+          ]
+        }
+      ]
+    },
+    "landed_regen": {
+      "label": "Regen LANDS: a soft green lift",
+      "phases": [
+        {
+          "kind": "rise",
+          "at": 0.0,
+          "dur": 0.55,
+          "count": 8,
+          "palette": "nature"
+        }
+      ]
+    },
+    "stat_up": {
+      "label": "A stat goes UP: a ring at the feet, motes rise",
+      "phases": [
+        {
+          "kind": "ring",
+          "at": 0.0,
+          "dur": 0.32,
+          "scale": 2.2,
+          "palette": "holy",
+          "offset": [
+            0,
+            26
+          ]
+        },
+        {
+          "kind": "rise",
+          "at": 0.04,
+          "dur": 0.45,
+          "count": 10,
+          "palette": "holy"
+        }
+      ]
+    },
+    "stat_down": {
+      "label": "A stat goes DOWN: the same ring, and the motes fall",
+      "phases": [
+        {
+          "kind": "ring",
+          "at": 0.0,
+          "dur": 0.32,
+          "scale": 2.2,
+          "palette": "void",
+          "offset": [
+            0,
+            26
+          ]
+        },
+        {
+          "kind": "fall",
+          "at": 0.04,
+          "dur": 0.45,
+          "count": 10,
+          "palette": "smoke",
+          "ground_glow": false
+        }
+      ]
+    },
+    "stat_up_attack": {
+      "label": "Attack goes UP: a ring at the feet, motes rise",
+      "phases": [
+        {
+          "kind": "ring",
+          "at": 0.0,
+          "dur": 0.32,
+          "scale": 2.2,
+          "palette": "ember",
+          "offset": [
+            0,
+            26
+          ]
+        },
+        {
+          "kind": "rise",
+          "at": 0.04,
+          "dur": 0.45,
+          "count": 10,
+          "palette": "ember"
+        }
+      ]
+    },
+    "stat_down_attack": {
+      "label": "Attack goes DOWN: the same ring, and the motes fall",
+      "phases": [
+        {
+          "kind": "ring",
+          "at": 0.0,
+          "dur": 0.32,
+          "scale": 2.2,
+          "palette": "void",
+          "offset": [
+            0,
+            26
+          ]
+        },
+        {
+          "kind": "fall",
+          "at": 0.04,
+          "dur": 0.45,
+          "count": 10,
+          "palette": "ember",
+          "ground_glow": false
+        }
+      ]
+    },
+    "stat_up_defense": {
+      "label": "Defense goes UP: a ring at the feet, motes rise",
+      "phases": [
+        {
+          "kind": "ring",
+          "at": 0.0,
+          "dur": 0.32,
+          "scale": 2.2,
+          "palette": "steel",
+          "offset": [
+            0,
+            26
+          ]
+        },
+        {
+          "kind": "rise",
+          "at": 0.04,
+          "dur": 0.45,
+          "count": 10,
+          "palette": "steel"
+        }
+      ]
+    },
+    "stat_down_defense": {
+      "label": "Defense goes DOWN: the same ring, and the motes fall",
+      "phases": [
+        {
+          "kind": "ring",
+          "at": 0.0,
+          "dur": 0.32,
+          "scale": 2.2,
+          "palette": "void",
+          "offset": [
+            0,
+            26
+          ]
+        },
+        {
+          "kind": "fall",
+          "at": 0.04,
+          "dur": 0.45,
+          "count": 10,
+          "palette": "steel",
+          "ground_glow": false
+        }
+      ]
+    },
+    "stat_up_magic": {
+      "label": "Magic goes UP: a ring at the feet, motes rise",
+      "phases": [
+        {
+          "kind": "ring",
+          "at": 0.0,
+          "dur": 0.32,
+          "scale": 2.2,
+          "palette": "mana",
+          "offset": [
+            0,
+            26
+          ]
+        },
+        {
+          "kind": "rise",
+          "at": 0.04,
+          "dur": 0.45,
+          "count": 10,
+          "palette": "mana"
+        }
+      ]
+    },
+    "stat_down_magic": {
+      "label": "Magic goes DOWN: the same ring, and the motes fall",
+      "phases": [
+        {
+          "kind": "ring",
+          "at": 0.0,
+          "dur": 0.32,
+          "scale": 2.2,
+          "palette": "void",
+          "offset": [
+            0,
+            26
+          ]
+        },
+        {
+          "kind": "fall",
+          "at": 0.04,
+          "dur": 0.45,
+          "count": 10,
+          "palette": "mana",
+          "ground_glow": false
+        }
+      ]
+    },
+    "stat_up_magic_defense": {
+      "label": "Magic defense goes UP: a ring at the feet, motes rise",
+      "phases": [
+        {
+          "kind": "ring",
+          "at": 0.0,
+          "dur": 0.32,
+          "scale": 2.2,
+          "palette": "ward",
+          "offset": [
+            0,
+            26
+          ]
+        },
+        {
+          "kind": "rise",
+          "at": 0.04,
+          "dur": 0.45,
+          "count": 10,
+          "palette": "ward"
+        }
+      ]
+    },
+    "stat_down_magic_defense": {
+      "label": "Magic defense goes DOWN: the same ring, and the motes fall",
+      "phases": [
+        {
+          "kind": "ring",
+          "at": 0.0,
+          "dur": 0.32,
+          "scale": 2.2,
+          "palette": "void",
+          "offset": [
+            0,
+            26
+          ]
+        },
+        {
+          "kind": "fall",
+          "at": 0.04,
+          "dur": 0.45,
+          "count": 10,
+          "palette": "ward",
+          "ground_glow": false
+        }
+      ]
+    },
+    "stat_up_speed": {
+      "label": "Speed goes UP: a ring at the feet, motes rise",
+      "phases": [
+        {
+          "kind": "ring",
+          "at": 0.0,
+          "dur": 0.32,
+          "scale": 2.2,
+          "palette": "nature",
+          "offset": [
+            0,
+            26
+          ]
+        },
+        {
+          "kind": "rise",
+          "at": 0.04,
+          "dur": 0.45,
+          "count": 10,
+          "palette": "nature"
+        }
+      ]
+    },
+    "stat_down_speed": {
+      "label": "Speed goes DOWN: the same ring, and the motes fall",
+      "phases": [
+        {
+          "kind": "ring",
+          "at": 0.0,
+          "dur": 0.32,
+          "scale": 2.2,
+          "palette": "void",
+          "offset": [
+            0,
+            26
+          ]
+        },
+        {
+          "kind": "fall",
+          "at": 0.04,
+          "dur": 0.45,
+          "count": 10,
+          "palette": "nature",
+          "ground_glow": false
+        }
+      ]
+    },
+    "wore_off": {
+      "label": "Something WEARS OFF: a small grey puff and a few motes fall. Quiet on purpose.",
+      "phases": [
+        {
+          "kind": "puff",
+          "at": 0.0,
+          "dur": 0.3,
+          "count": 3,
+          "spread": [
+            12,
+            6
+          ],
+          "size": 1.0,
+          "drift": [
+            0,
+            14
+          ]
+        },
+        {
+          "kind": "fall",
+          "at": 0.03,
+          "dur": 0.35,
+          "count": 3,
+          "palette": "smoke",
+          "ground_glow": false
+        }
+      ]
     }
   }
 }
