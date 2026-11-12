@@ -39,7 +39,8 @@ func test_melee_tween_reads_target_home_meta_not_transient_position() -> void:
 	assert_gt(i, -1)
 	var next: int = src.find("\nfunc ", i + 1)
 	var body := src.substr(i, (next - i) if next > -1 else 800)
-	assert_true("target_sprite.get_meta(\"home_position\"" in body,
+	## The read moved into melee_stand_point -> _sprite_home (.793); the body must go through it, and it must read the meta.
+	assert_true("melee_stand_point(attacker_sprite, target_sprite)" in body and "sprite.get_meta(\"home_position\", sprite.position)" in src,
 		"melee tween must resolve target position via home_position meta — target_sprite.position is transient during the target's own attack tween")
 	assert_false("var target_pos = target_sprite.position" in body,
 		"the raw target_sprite.position read is the bug — must use the meta form so mid-tween targets don't cause visual chase")

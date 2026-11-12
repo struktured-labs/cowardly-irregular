@@ -119,8 +119,14 @@ static func hit_spark_shape(weapon_type: String) -> String:
 
 ## `w` is the hit's weight (0-1): the spark grows and lingers with it. `dir` is the way the target is knocked
 ## (-1 left, +1 right). `brief` = the shortest read, for fast battle speeds.
-func spawn_hit_spark(position: Vector2, weapon_type: String, w: float = 0.0, dir: float = -1.0, tint: Color = Color.WHITE, brief: bool = false) -> Node2D:
+## The weapon's hit cue alone, for a hit whose picture is drawn by something else (an ability's melee overlay,
+## a monster's family sequence): the hit must never lose its sound because it changed its spark.
+func play_hit_cue(weapon_type: String) -> void:
 	_play_effect_sound(EffectType.PHYSICAL, 1.0, weapon_type)
+
+
+func spawn_hit_spark(position: Vector2, weapon_type: String, w: float = 0.0, dir: float = -1.0, tint: Color = Color.WHITE, brief: bool = false) -> Node2D:
+	play_hit_cue(weapon_type)
 	var spark := Node2D.new()
 	spark.name = "HitSpark_" + hit_spark_shape(weapon_type)
 	spark.position = position
@@ -245,7 +251,8 @@ func spawn_ability_effect(ability: Variant, target_position: Vector2, on_complet
 ## "wire it into Fire first, playable"). Returns {"total", "impact"} in battle seconds: impact is when the
 ## sequence first lands on the target, so a caller can hold the damage numbers for it. {} if the id is unknown.
 ## `start_at` >= 0 replaces the sequence's authored `start`: a melee overlay passes its lunge's own contact time.
-func spawn_sequence(seq_id: String, from: Vector2, to: Vector2, power: float = 1.0, actors: Dictionary = {}, tier: int = 1, compact: bool = false, start_at: float = -1.0) -> Dictionary:
+## `tint` recolours a family sequence's `spark` accent (FractalFX.tint).
+func spawn_sequence(seq_id: String, from: Vector2, to: Vector2, power: float = 1.0, actors: Dictionary = {}, tier: int = 1, compact: bool = false, start_at: float = -1.0, caster_centre: Vector2 = Vector2.INF, tint: String = "") -> Dictionary:
 	var seq: Dictionary = FractalFX.load_sequence(seq_id)
 	if seq.is_empty() or _effects_container == null:
 		return {}
@@ -254,7 +261,9 @@ func spawn_sequence(seq_id: String, from: Vector2, to: Vector2, power: float = 1
 		seq["start"] = start_at
 	var fx := FractalFX.new(_effects_container)
 	fx.actors = actors
+	fx.caster_centre = caster_centre
 	fx.tier = tier
+	fx.tint = tint
 	fx.reduce_flashes = _reduce_flashes()
 	fx.on_shake = _trigger_screen_shake
 	fx.on_sfx = play_phase_sfx
@@ -514,11 +523,21 @@ func _animate_effect(effect: Node2D, effect_type: EffectType, on_complete: Calla
 
 ## Effect Animations
 
+var _background_tint_tween: Tween = null
+
+
 func _tint_battle_background(tint_color: Color, duration: float = 0.3) -> void:
 	"""Briefly tint the battle background then restore it (environmental spell reaction)"""
 	if not battle_background or not is_instance_valid(battle_background):
 		return
+	# Reduce Flashes: a whole-background colour snap IS a full-screen flash, and Firaga's eruptions fire several in a third of a second (controller 23883).
+	if _reduce_flashes():
+		return
+	# One tint at a time: a cast with an eruption per foe stacked tweens that fought over the same modulate.
+	if _background_tint_tween != null and _background_tint_tween.is_valid():
+		_background_tint_tween.kill()
 	var tween = create_tween()
+	_background_tint_tween = tween
 	# Snap to tint color then fade back to neutral over duration
 	tween.tween_property(battle_background, "modulate", tint_color, duration * 0.15).set_trans(Tween.TRANS_SINE)
 	tween.tween_property(battle_background, "modulate", Color.WHITE, duration * 0.85).set_trans(Tween.TRANS_SINE)
@@ -596,9 +615,8 @@ func _animate_fire(effect: Node2D, on_complete: Callable, power: float = 1.0, bo
 		tween.tween_property(p, "rotation", randf_range(-PI, PI), duration).set_delay(delay)
 
 	tween.chain().tween_callback(func():
-		if not is_instance_valid(effect):
-			return  # freed with its battle (or a test) before the eruption ended
-		effect.queue_free()
+		if is_instance_valid(effect):  # may be freed with its battle (or a test) before the eruption ended
+			effect.queue_free()
 		if on_complete.is_valid():
 			on_complete.call()
 	)
@@ -644,12 +662,12 @@ func _make_screen_flash(parent: Node, color: Color) -> ColorRect:
 
 func _trigger_screen_shake(intensity: float, duration: float) -> void:
 	"""Trigger screen shake effect. Kills any running shake first to prevent camera drift."""
-	# Settings gate - skip entirely if user disabled screen shake
-	if GameState and "screen_shake_enabled" in GameState and not GameState.screen_shake_enabled:
-		return
-	# In battle the camera rig owns the camera (single writer) — trauma model replaces the 30Hz steps; legacy path below stays for CutsceneDirector's exploration shakes
+	# In battle the rig owns the camera and gates the SHAKE on its own; asked first, so Screen Shake off still leaves the pad rumble.
 	if BattleJuice.camera_rig != null:
 		BattleJuice.add_trauma(clampf(intensity / 25.0, 0.1, 1.0), Vector2.ZERO, maxf(duration - 0.3, 0.0))
+		return
+	# Settings gate for the legacy camera steps below (CutsceneDirector's exploration shakes).
+	if GameState and "screen_shake_enabled" in GameState and not GameState.screen_shake_enabled:
 		return
 	var viewport = get_viewport()
 	if not viewport:
@@ -802,7 +820,10 @@ func _animate_ice(effect: Node2D, on_complete: Callable, power: float = 1.0) -> 
 		tween.tween_property(p, "scale", p.scale * 2.0, duration * 0.4).set_delay(duration * 0.4)
 
 	tween.chain().tween_callback(func():
-		effect.queue_free()
+		## The effect can be freed before its tween ends (a battle torn down, a grind restart, a test's cleanup);
+		## the callback must still finish, so whoever waits on on_complete is not left hanging.
+		if is_instance_valid(effect):
+			effect.queue_free()
 		if on_complete.is_valid():
 			on_complete.call()
 	)
@@ -905,7 +926,10 @@ func _animate_lightning(effect: Node2D, on_complete: Callable, power: float = 1.
 		tween.tween_property(spark, "scale", spark.scale * 0.3, 0.2).set_delay(spark_delay + 0.1)
 
 	tween.chain().tween_callback(func():
-		effect.queue_free()
+		## The effect can be freed before its tween ends (a battle torn down, a grind restart, a test's cleanup);
+		## the callback must still finish, so whoever waits on on_complete is not left hanging.
+		if is_instance_valid(effect):
+			effect.queue_free()
 		if on_complete.is_valid():
 			on_complete.call()
 	)
@@ -1004,7 +1028,10 @@ func _animate_holy(effect: Node2D, on_complete: Callable, power: float = 1.0) ->
 		tween.tween_property(ray, "modulate:a", 0.0, duration * 0.3).set_delay(delay + duration * 0.5)
 
 	tween.chain().tween_callback(func():
-		effect.queue_free()
+		## The effect can be freed before its tween ends (a battle torn down, a grind restart, a test's cleanup);
+		## the callback must still finish, so whoever waits on on_complete is not left hanging.
+		if is_instance_valid(effect):
+			effect.queue_free()
 		if on_complete.is_valid():
 			on_complete.call()
 	)
@@ -1084,7 +1111,10 @@ func _animate_dark(effect: Node2D, on_complete: Callable, power: float = 1.0) ->
 		tween.tween_property(p, "modulate:a", 0.0, duration * 0.3).set_delay(delay + duration * 0.6)
 
 	tween.chain().tween_callback(func():
-		effect.queue_free()
+		## The effect can be freed before its tween ends (a battle torn down, a grind restart, a test's cleanup);
+		## the callback must still finish, so whoever waits on on_complete is not left hanging.
+		if is_instance_valid(effect):
+			effect.queue_free()
 		if on_complete.is_valid():
 			on_complete.call()
 	)
@@ -1135,7 +1165,10 @@ func _animate_heal(effect: Node2D, on_complete: Callable, power: float = 1.0) ->
 		tween.tween_property(p, "modulate:a", 0.0, duration * 0.3).set_delay(delay + duration * 0.5)
 
 	tween.chain().tween_callback(func():
-		effect.queue_free()
+		## The effect can be freed before its tween ends (a battle torn down, a grind restart, a test's cleanup);
+		## the callback must still finish, so whoever waits on on_complete is not left hanging.
+		if is_instance_valid(effect):
+			effect.queue_free()
 		if on_complete.is_valid():
 			on_complete.call()
 	)
@@ -1188,7 +1221,10 @@ func _animate_buff(effect: Node2D, on_complete: Callable, power: float = 1.0) ->
 		tween.tween_property(p, "modulate:a", 0.0, duration * 0.3).set_delay(delay + duration * 0.5)
 
 	tween.chain().tween_callback(func():
-		effect.queue_free()
+		## The effect can be freed before its tween ends (a battle torn down, a grind restart, a test's cleanup);
+		## the callback must still finish, so whoever waits on on_complete is not left hanging.
+		if is_instance_valid(effect):
+			effect.queue_free()
 		if on_complete.is_valid():
 			on_complete.call()
 	)
@@ -1242,7 +1278,10 @@ func _animate_debuff(effect: Node2D, on_complete: Callable, power: float = 1.0) 
 		tween.tween_property(p, "modulate:a", 0.0, duration * 0.3).set_delay(delay + duration * 0.5)
 
 	tween.chain().tween_callback(func():
-		effect.queue_free()
+		## The effect can be freed before its tween ends (a battle torn down, a grind restart, a test's cleanup);
+		## the callback must still finish, so whoever waits on on_complete is not left hanging.
+		if is_instance_valid(effect):
+			effect.queue_free()
 		if on_complete.is_valid():
 			on_complete.call()
 	)
@@ -1295,7 +1334,10 @@ func _animate_poison(effect: Node2D, on_complete: Callable, power: float = 1.0) 
 		tween.tween_property(p, "scale", Vector2(0.0, 0.0), duration * 0.2).set_delay(delay + duration * 0.6)
 
 	tween.chain().tween_callback(func():
-		effect.queue_free()
+		## The effect can be freed before its tween ends (a battle torn down, a grind restart, a test's cleanup);
+		## the callback must still finish, so whoever waits on on_complete is not left hanging.
+		if is_instance_valid(effect):
+			effect.queue_free()
 		if on_complete.is_valid():
 			on_complete.call()
 	)
@@ -1378,7 +1420,10 @@ func _animate_physical(effect: Node2D, on_complete: Callable, power: float = 1.0
 		tween.tween_property(spark, "modulate:a", 0.0, 0.1).set_delay(0.15)
 
 	tween.chain().tween_callback(func():
-		effect.queue_free()
+		## The effect can be freed before its tween ends (a battle torn down, a grind restart, a test's cleanup);
+		## the callback must still finish, so whoever waits on on_complete is not left hanging.
+		if is_instance_valid(effect):
+			effect.queue_free()
 		if on_complete.is_valid():
 			on_complete.call()
 	)
@@ -1482,7 +1527,10 @@ func _animate_mp_restore(effect: Node2D, on_complete: Callable, power: float = 1
 		tween.tween_property(p, "rotation", randf_range(-0.5, 0.5), duration).set_delay(delay)
 
 	tween.chain().tween_callback(func():
-		effect.queue_free()
+		## The effect can be freed before its tween ends (a battle torn down, a grind restart, a test's cleanup);
+		## the callback must still finish, so whoever waits on on_complete is not left hanging.
+		if is_instance_valid(effect):
+			effect.queue_free()
 		if on_complete.is_valid():
 			on_complete.call()
 	)
