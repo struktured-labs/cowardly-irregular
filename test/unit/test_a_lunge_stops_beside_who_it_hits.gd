@@ -6,6 +6,7 @@ extends GutTest
 ## .791 it holds there for the whole swing. It now stands beside the target figure, feet level with the target's feet.
 
 const BS := preload("res://src/battle/BattleScene.gd")
+const AdvanceAura := preload("res://src/battle/AdvanceAura.gd")
 const FRAME := 96
 
 
