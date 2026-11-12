@@ -5371,7 +5371,7 @@ func _on_action_executing(combatant: Combatant, action: Dictionary) -> void:
 				## Not a lunge: a landed or fizzled beat must not wait out the PREVIOUS melee's contact clock (adhoc 24015).
 				_melee_contact_timer = null
 				## The thing leaves the hand on the throwing pose's own impact frame, not on the pose's first one.
-				var release: float = animator.impact_time(animator._resolve_animation(_ability_anim_name(ability, animator))) if animator else 0.0
+				var release: float = animator.impact_time(animator.shown_animation_for(_ability_anim_name(ability, animator))) if animator else 0.0
 				if targets.size() > 1:
 					_play_melee_cloud(combatant, attacker_sprite, ability, targets, release)
 				_play_ability_sequence(combatant, attacker_sprite, animator, ability, targets, _ranged_sequence(ability, targets), false, release)

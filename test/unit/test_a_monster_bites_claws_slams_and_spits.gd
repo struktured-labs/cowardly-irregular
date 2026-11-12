@@ -321,6 +321,7 @@ func test_a_thrown_thing_leaves_on_the_poses_release_frame() -> void:
 		sf.add_frame("attack", _solid(64))
 	sf.set_animation_speed("attack", 8.0)
 	sf.set_meta("impact_frames", {"attack": 3})
+	assert_eq(fa.shown_animation_for("special"), "attack", "a monster's 'special' move is drawn with its attack frames (no special, no cast on the sheet)")
 	var wind_up: float = fa.impact_time("attack")
 	assert_gt(wind_up, 0.05, "CONTROL: the pose now has a wind-up before its impact frame (%.3f s)" % wind_up)
 	_scene._on_action_executing(_foe, {"type": "ability", "ability_id": "bone_throw", "targets": [_hero]})
