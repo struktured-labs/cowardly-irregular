@@ -295,9 +295,14 @@ func _setup_decorations() -> void:
 			bench.set_meta("furniture", true)
 	if things != null:
 		_candle_light(Vector2(64.0 + CANDLE_X, 290.0))
+	# A second, small table for the two adventurers who stand in the east half, and a mat inside the door.
+	_piece("round_table", Vector2(480.0, 352.0), none, Vector2(56, 22))
+	_piece("stool", Vector2(435.0, 333.0), none)
+	_piece("stool", Vector2(528.0, 355.0), none)
+	_floor_piece("door_mat", Vector2(10.0 * TILE_SIZE, 414.0), none)
 	_create_stairs_up()
 	_piece("coat_rack", Vector2(42.0, 340.0), _create_coat_rack, Vector2.ZERO)
-	_create_travel_gear_pile()
+	_piece("gear_pile", Vector2(17.0 * TILE_SIZE, 340.0), _create_travel_gear_pile, Vector2(56, 18))
 	_create_wall_paintings()
 	_create_tapestry()
 	_create_lanterns()
@@ -1252,6 +1257,7 @@ func _innkeeper() -> Dictionary:
 func _setup_npcs() -> void:
 	npcs = Node2D.new()
 	npcs.name = "NPCs"
+	npcs.y_sort_enabled = true
 	add_child(npcs)
 
 	# Local innkeeper at the registration desk — identity follows the world.
