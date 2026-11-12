@@ -3497,13 +3497,27 @@ var _danger_tween: Tween = null
 var _corruption_intensity: float = 0.0  # 0.0 = clean, 1.0 = fully corrupted
 var _corruption_tween: Tween = null
 
+## The low-HP speed-up belongs to a fight's own bed, and every bed a battle starts is a `battle*` or `boss*` id.
+static func bed_takes_danger(track: String) -> bool:
+	return track.begins_with("battle") or track.begins_with("boss")
+
+
 func set_danger_intensity(intensity: float) -> void:
-	"""Set danger intensity (0.0 = safe, 1.0 = critical)
-	   This affects music pitch, tempo feel, and adds urgency"""
+	"""Set danger intensity (0.0 = safe, 1.0 = critical). The game's ONE low-HP music signal:
+	   the playing bed speeds up to 1.15x and +3 dB (struktured 2026-11-11); no bed is swapped in."""
 	var new_intensity = clamp(intensity, 0.0, 1.0)
+	## Whoever calls: victory, a stinger, game over and the field are never sped up (his "victory music should not change pace").
+	if not bed_takes_danger(str(_current_music)):
+		new_intensity = 0.0
 
 	# Skip if no change
 	if abs(new_intensity - _danger_intensity) < 0.05:
+		## Safe lands EXACTLY: the deadband used to park a recovered party at up to 0.049 (pitch 1.007) for the rest of the fight.
+		if new_intensity == 0.0 and _danger_intensity > 0.0:
+			if _danger_tween and _danger_tween.is_valid():
+				_danger_tween.kill()
+			_danger_tween = null
+			_apply_danger_intensity(0.0)
 		return
 
 	# Smooth transition

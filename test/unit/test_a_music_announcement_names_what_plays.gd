@@ -92,7 +92,7 @@ func test_the_accessor_is_empty_when_nothing_plays() -> void:
 ## parsing the `%` args missed the WRAPPED print whose operator is on the next line. Parsing
 ## GDScript interpolation inside GDScript is more machinery than a diagnostic guard earns. The
 ## floor below is what keeps this honest: if either text moves, the arm reds and names it.
-const ANNOUNCEMENTS := ["battle theme", "party recovered"]
+const ANNOUNCEMENTS := ["battle theme"]  # the danger-recovery announcement left with the bed swap (2026-11-11)
 
 
 func test_EVERY_music_announcement_derives_from_the_accessor() -> void:

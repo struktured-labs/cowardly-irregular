@@ -17,6 +17,7 @@ func after_each() -> void:
 
 
 func test_a_track_switch_ends_the_danger_envelope() -> void:
+	SoundManager.play_music("battle_medieval")  # the envelope only arms on a fight's own bed
 	SoundManager.set_danger_intensity(1.0)
 	await get_tree().process_frame
 	assert_true(SoundManager._danger_tween != null and SoundManager._danger_tween.is_valid(),
@@ -39,6 +40,7 @@ func test_the_switch_kills_the_tween_not_just_the_pitch() -> void:
 	# is reset_danger() since 8a15eef1, and a field-only check let "drop the kill()" stay green.)
 	var envelope: Tween = null
 	for attempt in range(5):
+		SoundManager.play_music("battle_medieval")
 		SoundManager.reset_danger()
 		SoundManager.set_danger_intensity(1.0)
 		await get_tree().process_frame

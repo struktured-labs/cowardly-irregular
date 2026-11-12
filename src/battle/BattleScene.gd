@@ -273,10 +273,8 @@ var _autogrind_console: RichTextLabel = null
 var _autobattle_toggle_ui: AutobattleToggleUIClass = null
 var _active_inline_editor: Control = null  # 2026-07-14 (cowir-music msg 2539): tracked so battle hotkeys don't leak into open autobattle grid editor
 
-## Danger music state
-var _is_danger_music: bool = false
-var _danger_baseline: Dictionary = {}  # instance_id -> carried-in danger state (1 low, 2 down)
-var _danger_baseline_taken: bool = false
+## The low-HP speed-up is fed only from this battle's music start to its end, so a win or a wipe with members down is not pitched.
+var _music_follows_hp: bool = false
 
 ## Idle animation state (sway/breathing)
 var _idle_time: float = 0.0
@@ -301,11 +299,8 @@ var _battle_dialogue: BattleDialogueClass = null
 var _boss_dialogue_data: Dictionary = {}  # Stores dialogue for current boss
 var _waiting_for_dialogue: bool = false  # Pauses battle during dialogue
 var _base_music_track: String = "battle"  # battle/boss/per-monster/per-face id; "" = authored silence (unmasking)
-## Where the base bed was when danger took the channel, so recovery RESUMES it instead of replaying its intro (Mordaine lv35 take, 2026-11-06).
-var _danger_resume_track: String = ""
-var _danger_resume_position: float = 0.0
 var _masterite_phase2_swapped: bool = false  # One-shot: latch when phase2 music kicks in
-const DANGER_HP_THRESHOLD: float = 0.25  # The low-HP beat: danger music, player quip, boss wounded line. 0-1; BattleManager.LOW_HP_PCT_THRESHOLD is the 0-100 twin.
+const DANGER_HP_THRESHOLD: float = 0.25  # The low-HP beat: player quip, boss wounded line (the music speeds up by party HP instead, struktured 2026-11-11). 0-1; BattleManager.LOW_HP_PCT_THRESHOLD is the 0-100 twin.
 
 ## Tick 428: per-battle latches so the boss `low_hp` and `defeat`
 ## dialogue lines fire ONCE per battle. Pre-fix monsters.json
@@ -1415,7 +1410,7 @@ func _create_battle_sprites() -> void:
 		animator.setup(sprite)
 		animator.swing_budget_provider = swing_budget
 		# Rest state follows the combatant: dead when down, weak below the danger line (strict <,
-		# same beat as danger music), else idle. Leo's weak/dead sheets shipped for five jobs with
+		# same beat as the low-HP quip), else idle. Leo's weak/dead sheets shipped for five jobs with
 		# no player (struktured 2026-09-02: neither visible in the live build).
 		var _rest_member = member
 		animator.rest_state_provider = func() -> String:
@@ -2198,7 +2193,9 @@ func _update_ui() -> void:
 
 
 func _update_danger_music() -> void:
-	"""Update music danger intensity based on party HP"""
+	"""The ONE low-HP music signal: the playing bed speeds up with party danger (struktured 2026-11-11); no bed swap."""
+	if not _music_follows_hp:
+		return
 	var members = BattleManager.live_party_or(party_members)
 	if members.size() == 0:
 		return
@@ -4168,8 +4165,7 @@ func _on_battle_started() -> void:
 			SoundManager.play_music(terrain_track)
 			if terrain_track != "battle":
 				print("[MUSIC] Playing %s terrain battle theme" % _current_terrain)
-	_is_danger_music = false
-	_take_danger_baseline()
+	_music_follows_hp = true
 	_masterite_phase2_swapped = false
 	if _battle_background and is_instance_valid(_battle_background):
 		_battle_background.set_unrest(0.0)
@@ -4286,6 +4282,8 @@ func _get_terrain_battle_track() -> String:
 
 func _on_battle_ended(victory: bool) -> void:
 	"""Handle battle end"""
+	_music_follows_hp = false
+	SoundManager.reset_danger()  # a turbo win or an escape starts no new bed, so nothing else would end the speed-up
 	_end_advance_run()
 	_clear_advance_aura()
 	## A hit still held for its impact frame lands NOW (number, then its death), before the defeat scene or the
@@ -4461,10 +4459,7 @@ func _spawn_speed_lines(s: Node2D) -> void:
 
 
 func _process(delta: float) -> void:
-	"""Handle post-battle input and danger music"""
-	# Check for danger music (player about to die)
-	_check_danger_music()
-
+	"""Handle post-battle input"""
 	# Idle sway/breathing animations
 	_process_idle_animations(delta)
 
@@ -6271,19 +6266,13 @@ func _on_boss_face_changed(combatant: Combatant, _face_name: String, face: Dicti
 	if face_music == "silence":
 		# The unmasking is scored by silence — deliberate fade, never play_music("silence"),
 		# which would produce silence by ACCIDENT (failed lookup + poisoned _current_music).
-		# Clear the danger baseline too, or a dip-and-recover replays the PREVIOUS face's
-		# theme over the silence, permanently (cowir-sfx, msg 4223 — both halves or neither).
+		# Clear the base id too: it is what later readers take for "the bed this fight plays".
 		_base_music_track = ""
-		# Danger OWNS the channel while in force (cowir-battle, msg 4231): if the party is
-		# critical, keep the you're-about-to-die cue; recovery delivers the silence instead.
-		if SoundManager and not _is_danger_music:
+		if SoundManager:
 			SoundManager.fade_out_music(1.2)
 	elif face_music != "":
-		# Keep the danger-swap baseline in step or it reverts to the pre-fight bed.
 		_base_music_track = face_music
-		# Same rule: a swap mid-danger must not stomp the critical-HP cue — the baseline is
-		# set, and the existing recovery path plays the new theme once the party is safe.
-		if SoundManager and not _is_danger_music:
+		if SoundManager:
 			SoundManager.play_music(face_music)
 	var sheet_id := str(face.get("sheet_id", ""))
 	if sheet_id == "":
@@ -6318,7 +6307,7 @@ func _on_boss_face_changed(combatant: Combatant, _face_name: String, face: Dicti
 
 func _check_masterite_phase2_music_swap() -> void:
 	# Latch once per battle when a Masterite boss escalates to phase 2.
-	if _masterite_phase2_swapped or _is_danger_music:
+	if _masterite_phase2_swapped:
 		return
 	for enemy in test_enemies:
 		if enemy == null or not is_instance_valid(enemy):
@@ -8380,96 +8369,6 @@ func _present_summoned_enemy(enemy: Combatant, monster_type: String, new_idx: in
 
 func _spawn_damage_number(pos: Vector2, amount: int, is_heal: bool, is_crit: bool) -> void:
 	_results_display.spawn_damage_number(pos, amount, is_heal, is_crit)
-
-
-## 0 = fine, 1 = below DANGER_HP_THRESHOLD, 2 = down.
-func _danger_state_of(member) -> int:
-	if not member.is_alive:
-		return 2
-	if member.max_hp > 0 and float(member.current_hp) / float(member.max_hp) < DANGER_HP_THRESHOLD:
-		return 1
-	return 0
-
-
-## Snapshot what the party brought INTO this battle, so only new trouble triggers danger.
-func _take_danger_baseline() -> void:
-	_danger_baseline = {}
-	for member in party_members:
-		if member and is_instance_valid(member):
-			var st: int = _danger_state_of(member)
-			if st > 0:
-				_danger_baseline[member.get_instance_id()] = st
-	_danger_baseline_taken = party_members.size() > 0
-
-
-## Pure: highest danger state that is NEW this battle (worse than the carried-in baseline).
-## A member that recovers lowers its baseline, so falling back into danger later counts.
-## Mutates baseline. Returns 0 (none), 1 (fresh low HP), 2 (fresh KO).
-static func fresh_danger_level(now: Dictionary, baseline: Dictionary) -> int:
-	var fresh: int = 0
-	for key in now:
-		var st: int = int(now[key])
-		var base: int = int(baseline.get(key, 0))
-		if st < base:
-			if st == 0:
-				baseline.erase(key)
-			else:
-				baseline[key] = st
-		elif st > base:
-			fresh = maxi(fresh, st)
-	return fresh
-
-
-func _check_danger_music() -> void:
-	"""Switch to danger music when a party member goes down or drops below the low-HP line DURING
-	this battle. Carried-in state does not count (Carmelo 2026-11-03, .765 demo ruling): a member
-	still KO'd or low from an earlier fight must not flip the bed to danger at battle start."""
-	if _battle_ended:
-		return
-	if not _danger_baseline_taken:
-		_take_danger_baseline()
-	var now: Dictionary = {}
-	for member in party_members:
-		if member and is_instance_valid(member):
-			now[member.get_instance_id()] = _danger_state_of(member)
-	var fresh: int = fresh_danger_level(now, _danger_baseline)
-	var any_in_danger: bool = fresh > 0
-	var any_dead: bool = fresh >= 2
-
-	# Switch music if danger state changed
-	# Once in danger (dead or critical), stay in danger until healed above threshold
-	if any_in_danger and not _is_danger_music:
-		_is_danger_music = true
-		var held: Dictionary = SoundManager.capture_music_state()
-		_danger_resume_track = _base_music_track if str(held.get("track", "")) == _base_music_track else ""
-		_danger_resume_position = float(held.get("position", 0.0))
-		SoundManager.play_music("danger")
-		if any_dead:
-			print("[MUSIC] Switched to DANGER music - party member down!")
-		else:
-			print("[MUSIC] Switched to DANGER music - player critically low!")
-	elif not any_in_danger and (_is_danger_music or str(SoundManager._current_music) == "danger"):
-		# Stateless check: a duel-retry rebuilds this scene with the flag fresh while SoundManager still plays danger — the flag-only check left doom music over a full-HP party (struktured 2026-07-11).
-		_is_danger_music = false
-		# An EMPTY baseline is authored silence (the unmasking) — play_music("") would be
-		# the accidental-silence failed lookup; fade out instead and stay quiet.
-		if _base_music_track == "":
-			SoundManager.fade_out_music(1.2)
-			print("[MUSIC] party recovered into authored silence - staying quiet")
-		else:
-			## A face swap during danger changed the base, so only the SAME bed resumes; a new one starts at its top.
-			var resume_at: float = _danger_resume_position if _danger_resume_track == _base_music_track else 0.0
-			SoundManager.play_music(_base_music_track, false, resume_at)
-			## SECOND announcement site. The battle-start one was fixed in .669 and this was left
-			## naming the REQUEST: his 2026-10-05 log reads "Switched back to battle_dark_knight
-			## music" on the line after battle_medieval loaded, because 27 pool-reachable monsters
-			## have no bed of their own and _base_music_track keeps the id that was asked for.
-			var heard: String = SoundManager.playing_track_stem()
-			if heard != "" and heard != _base_music_track:
-				print("[MUSIC] Switched back to %s music - party recovered (%s playing)"
-					% [_base_music_track, heard])
-			else:
-				print("[MUSIC] Switched back to %s music - party recovered" % _base_music_track)
 
 
 ## ======================== BATTLE QUIPS ========================

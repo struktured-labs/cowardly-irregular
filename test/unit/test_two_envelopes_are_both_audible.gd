@@ -18,10 +18,11 @@ extends GutTest
 ## detunes, not two opinions), volume adds both offsets to the user's base. Each envelope alone is
 ## bit-identical to before, which the two solo arms below pin.
 
-const BED := "overworld_medieval"
+const BED := "battle_medieval"  # the danger envelope refuses any bed that is not a fight's own
 
 
 func before_each() -> void:
+	SoundManager._current_music = BED
 	SoundManager.reset_danger()
 	SoundManager.reset_corruption()
 	SoundManager.set_music_volume(1.0)
