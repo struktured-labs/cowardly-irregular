@@ -36,6 +36,7 @@ func after_each() -> void:
 
 func _raise_danger() -> void:
 	SoundManager.play_music("battle_medieval")
+	SoundManager.declare_fight_bed()
 	await get_tree().process_frame
 	SoundManager.set_danger_intensity(1.0)
 	await get_tree().process_frame
