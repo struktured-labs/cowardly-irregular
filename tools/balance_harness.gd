@@ -210,6 +210,8 @@ func _init() -> void:
 		_fill_bag(party)
 		var enemies := _build_enemies(gl, mdb, enemy_ids)
 		var resolver = ResolverScript.new()
+		if "use_live_enemy_ladder" in resolver:
+			resolver.use_live_enemy_ladder = _env("BAL_LADDER", "1") != "0"   # BAL_LADDER=0: the resolver's own picker (strongest ability every round)
 		var result: Dictionary = resolver.resolve_battle(party, enemies)
 		## BAL_CHAIN=N: N links back to back, HP carried, BattleManager's between-battle rest between them (cowir-overworld's chained encounters).
 		var link_rounds: int = int(result.get("rounds", 0))
@@ -223,6 +225,8 @@ func _init() -> void:
 				c.queue_free()
 			enemies = _build_enemies(gl, mdb, enemy_ids)
 			resolver = ResolverScript.new()
+			if "use_live_enemy_ladder" in resolver:
+				resolver.use_live_enemy_ladder = _env("BAL_LADDER", "1") != "0"   # BAL_LADDER=0: the resolver's own picker (strongest ability every round)
 			result = resolver.resolve_battle(party, enemies)
 			link_rounds += int(result.get("rounds", 0))
 		if chain_links > 1:
@@ -460,6 +464,8 @@ func _build_enemies(gl, mdb: Dictionary, enemy_ids: PackedStringArray) -> Array:
 	for eid in enemy_ids:
 		var row: Dictionary = (mdb[str(eid)] as Dictionary).duplicate(true)
 		row["id"] = str(eid)
+		if _env("BAL_NO_KIT", "0") != "0":
+			row["abilities"] = []   # BAL_NO_KIT=1: the roster row a grind shipped with through .792 (no abilities: basic attacks only)
 		out.append(gl._combatant_for_headless(row))
 	return out
 
