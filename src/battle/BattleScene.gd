@@ -3338,6 +3338,11 @@ static func sequence_total(seq_id: String) -> float:
 ## Signature sounds play at every speed the player picks, 4x included; only autogrind/turbo is silent (cowir-main 21194).
 ## Seconds between one target's cut and the next as a line-wide melee move passes along the enemies.
 const MELEE_EACH_STAGGER := 0.05
+## A line-wide sequence names the `span` (px) it was authored for; it is scaled to (the targets' extent + PAD) / span,
+## within these bounds, so it covers the foes it hits and no more.
+const LINE_SPAN_PAD := 160.0
+const LINE_SPAN_MIN := 0.45
+const LINE_SPAN_MAX := 1.3
 ## The key INSIDE an ability's `vfx` that names a monster's physical family. Not the row's own `family`: that one is the
 ## spell line a shop sells by (ShopScene, AbilityFacts), and one key with two meanings bites the first hybrid row (battle 24017).
 const FAMILY_KEY := "family"
@@ -3505,12 +3510,16 @@ func _play_melee_overlay(caster: Combatant, caster_sprite: Node2D, ability: Dict
 			anchors.append(_figure_anchor(ts))
 	if anchors.is_empty():
 		return
-	var centre := Vector2.ZERO
-	for a in anchors:
-		centre += a
-	centre /= float(anchors.size())
+	var span := line_span(anchors)
+	var centre: Vector2 = span.get_center()
 	var intensity := cast_intensity(caster, ability)
 	var power := float(AbilityVFX.resolve(ability)["power"]) * float(intensity["k"])
+	## A line-wide move is drawn ACROSS the targets it hits, not at their average: authored for a `span` px line, it
+	## is scaled to the line it actually has, so two foes side by side get a crescent their size and two far apart
+	## get one that reaches both (struktured via main 24179/24186: "aims center").
+	var authored_span := float(FractalFX.load_sequence(seq_id).get("span", 0.0))
+	if authored_span > 0.0:
+		power *= clampf((maxf(span.size.x, span.size.y) + LINE_SPAN_PAD) / authored_span, LINE_SPAN_MIN, LINE_SPAN_MAX)
 	var tint := ""
 	## A family sequence is sized to the creature that throws it and tinted by the move; an authored one is neither.
 	if seq_id.begins_with("family_"):
@@ -3545,22 +3554,35 @@ static func _ranged_sequence(ability: Dictionary, targets: Array) -> String:
 	return melee_overlay(ability, "melee_each" if targets.size() > 1 else "melee")
 
 
+## The box around a set of target points (a zero-size rect at the point for one target).
+static func line_span(points: Array) -> Rect2:
+	if points.is_empty():
+		return Rect2()
+	var box := Rect2(points[0], Vector2.ZERO)
+	for p in points:
+		box = box.expand(p)
+	return box
+
+
 ## A ranged line-wide move's one cloud over the whole target line; each target's own splat is the cast path's.
 func _play_melee_cloud(caster: Combatant, caster_sprite: Node2D, ability: Dictionary, targets: Array) -> void:
 	var seq_id := melee_overlay(ability, "melee")
 	if seq_id == "" or caster_sprite == null or not is_instance_valid(caster_sprite):
 		return
-	var centre := Vector2.ZERO
-	var n := 0
+	var points: Array = []
 	for target in targets:
 		var ts = _get_combatant_sprite(target)
 		if ts != null and is_instance_valid(ts):
-			centre += _figure_anchor(ts)
-			n += 1
-	if n == 0:
+			points.append(_figure_anchor(ts))
+	if points.is_empty():
 		return
-	EffectSystem.spawn_sequence(seq_id, _figure_anchor(caster_sprite), centre / float(n),
-		_attacker_scale(caster_sprite), {}, 1, not signature_sound_allowed(), -1.0, Vector2.INF, family_tint(ability))
+	var span := line_span(points)
+	var k := _attacker_scale(caster_sprite)
+	var authored_span := float(FractalFX.load_sequence(seq_id).get("span", 0.0))
+	if authored_span > 0.0:
+		k *= clampf((maxf(span.size.x, span.size.y) + LINE_SPAN_PAD) / authored_span, LINE_SPAN_MIN, LINE_SPAN_MAX)
+	EffectSystem.spawn_sequence(seq_id, _figure_anchor(caster_sprite), span.get_center(),
+		k, {}, 1, not signature_sound_allowed(), -1.0, Vector2.INF, family_tint(ability))
 
 
 func _spawn_outcome_sequence(seq_id: String, from: Vector2, to: Vector2, power: float = 1.0, tier: int = 1) -> void:
