@@ -85,6 +85,9 @@ const FORGE_SPEED: float = 0.14
 
 ## Wares browse state
 var _wares_layer: CanvasLayer = null
+var _floor_pieces: Node2D
+## How many drawn pieces stand in this room; any at all and the room sorts by feet so the player can walk behind them.
+var _standing_pieces: int = 0
 
 
 func _ready() -> void:
@@ -95,6 +98,10 @@ func _ready() -> void:
 	_setup_tilemap()
 	_setup_decorations()
 	_setup_npcs()
+	if _standing_pieces > 0:
+		y_sort_enabled = true
+		decorations.y_sort_enabled = true
+		npcs.y_sort_enabled = true
 	# msg 2764: NPC-vs-furniture sweep (shared with BaseInterior + InnInterior).
 	InteriorPlacementSweep.sweep(self, npcs, decorations, SHOP_LAYOUT, "shop_interior", SHELF_GLYPHS)
 	_create_browse_interactable()
@@ -346,6 +353,9 @@ func _create_light_texture(radius: int = 128) -> ImageTexture:
 # ---------------------------------------------------------------------------
 
 func _setup_decorations() -> void:
+	_floor_pieces = Node2D.new()
+	_floor_pieces.name = "FloorPieces"
+	add_child(_floor_pieces)
 	decorations = Node2D.new()
 	decorations.name = "Decorations"
 	add_child(decorations)
@@ -613,10 +623,26 @@ func _draw_weapon_rack_row(img: Image) -> void:
 # Per-type decoration
 # ---------------------------------------------------------------------------
 
+## One standing piece through the art seam (InteriorPiece); counts the drawn ones.
+func _piece(kind: String, base: Vector2, painter: Callable, solid: Vector2 = Vector2.ZERO) -> Sprite2D:
+	var art := InteriorPiece.stand(decorations, _floor_pieces, kind, art_room(), base, painter, _art_village(), solid)
+	if art != null:
+		_standing_pieces += 1
+	return art
+
+
 func _decorate_item_shop() -> void:
 	# Barrel cluster at grid x=13..14, y=8..9 (centred, so y=9 keeps it off the right shelf block's rows 6-7)
-	_create_barrel_cluster(Vector2(13.5 * TILE_SIZE, 9 * TILE_SIZE))
+	_piece("barrels", Vector2(13.5 * TILE_SIZE, 10 * TILE_SIZE), _create_barrel_cluster.bind(Vector2(13.5 * TILE_SIZE, 9 * TILE_SIZE)), Vector2(56, 18))
+	# Drawn only: a delivery by the west wall, a runner before the counter, a mat inside the door.
+	_piece("sacks", Vector2(56, 318), InteriorPiece.none(), Vector2(40, 14))
+	_piece("crate_produce", Vector2(102, 316), InteriorPiece.none(), Vector2(30, 12))
+	InteriorPiece.lay(_floor_pieces, "mat", art_room(), Vector2(8.5 * TILE_SIZE, 5 * TILE_SIZE + 44), _art_village())
+	InteriorPiece.lay(_floor_pieces, "door_mat", art_room(), Vector2(8 * TILE_SIZE, 11 * TILE_SIZE - 2), _art_village())
 
+	# A drawn back wall carries its own herb box and bunches; the painted ones would double them.
+	if InteriorArt.path("back_wall", art_room(), _art_village()) != "":
+		return
 	# Herb window box at x=1, y=1 (inside window on west wall)
 	_create_herb_box(Vector2(1.2 * TILE_SIZE, 1.0 * TILE_SIZE))
 
@@ -1066,18 +1092,24 @@ func _decorate_blacksmith_shop() -> void:
 	# Animated forge with glowing embers
 	_setup_forge_anim()
 
+	# The forge's stone body under the flames (drawn only): its mouth, (32, 34) in the image, sits on the embers' centre.
+	_piece("forge", Vector2(8 * TILE_SIZE, 6 * TILE_SIZE + 30), InteriorPiece.none(), Vector2(40, 16))
+	_piece("coal_bin", Vector2(196, 6 * TILE_SIZE + 28), InteriorPiece.none(), Vector2(60, 16))
+	_piece("quench_barrel", Vector2(396, 306), InteriorPiece.none(), Vector2(22, 12))
+	InteriorPiece.lay(_floor_pieces, "door_mat", art_room(), Vector2(8 * TILE_SIZE, 11 * TILE_SIZE - 2), _art_village())
+
 	# Anvil on free floor below the right shelf block, clear of Sir Corvath (3,8), Jend (6,9) and the door path
-	_create_anvil(Vector2(11 * TILE_SIZE, 9 * TILE_SIZE))
+	_piece("anvil", Vector2(11 * TILE_SIZE, 9 * TILE_SIZE + 20), _create_anvil.bind(Vector2(11 * TILE_SIZE, 9 * TILE_SIZE)), Vector2(44, 14))
 
 	# Weapon wall rack on east side; a drawn shelf IS the rack, and the painted one would cover it
 	if InteriorArt.path("shelf", art_room(), _art_village()) == "":
 		_create_weapon_wall_rack(Vector2(13 * TILE_SIZE, 2 * TILE_SIZE))
 
 	# Weapon crates at x=1, y=9
-	_create_weapon_crates(Vector2(1 * TILE_SIZE, 9 * TILE_SIZE))
+	_piece("weapon_crates", Vector2(2 * TILE_SIZE, 9 * TILE_SIZE + 28), _create_weapon_crates.bind(Vector2(1 * TILE_SIZE, 9 * TILE_SIZE)), Vector2(52, 14))
 
-	# Bellows near forge
-	_create_bellows(Vector2(6 * TILE_SIZE, 8.5 * TILE_SIZE))
+	# Bellows near forge; Jend stands at them, so they block nobody
+	_piece("bellows", Vector2(6 * TILE_SIZE, 8.5 * TILE_SIZE + 10), _create_bellows.bind(Vector2(6 * TILE_SIZE, 8.5 * TILE_SIZE)))
 
 	# Forge light — warm orange
 	var forge_light = PointLight2D.new()
