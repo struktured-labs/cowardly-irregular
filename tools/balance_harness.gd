@@ -188,6 +188,15 @@ func _init() -> void:
 				continue
 			js_node.abilities[aid]["damage_multiplier"] = float(ability_mult[aid])
 			_ability_db()[aid]["damage_multiplier"] = float(ability_mult[aid])
+	## BAL_SPREAD / BAL_CRIT_MODE / BAL_ABILITY_CRIT set the dials both engines read (DamageRules); the same names as the live probe.
+	var rules: Script = load("res://src/battle/DamageRules.gd") if ResourceLoader.exists("res://src/battle/DamageRules.gd") else null
+	if rules != null:
+		rules.enemy_spread = float(_env("BAL_SPREAD", "1.0"))
+		rules.crit_mode = _env("BAL_CRIT_MODE", "shipped")
+		rules.abilities_inherit_swing_crit = _env("BAL_ABILITY_CRIT", "0") == "1"
+		print("[BAL] DIALS  enemy_spread=%.2f  crit_mode=%s  abilities_inherit_swing_crit=%s" % [rules.enemy_spread, rules.crit_mode, str(rules.abilities_inherit_swing_crit)])
+	elif _env("BAL_SPREAD", "") != "" or _env("BAL_CRIT_MODE", "") != "" or _env("BAL_ABILITY_CRIT", "") != "":
+		_die("this tree has no DamageRules, so the spread and crit dials would silently do nothing")
 	if foe_mdef > 0.0 or not ability_mult.is_empty():
 		print("[BAL] WHAT-IF  enemy_mdef_from_def=%.2f  ability_mult=%s" % [foe_mdef, str(ability_mult)])
 	if not party_scale.is_empty() or not enemy_scale.is_empty() or mdef_from_def > 0.0 or level_rate >= 0.0:

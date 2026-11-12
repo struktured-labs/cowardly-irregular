@@ -1093,8 +1093,7 @@ func _resolve_attack(attacker, target) -> int:
 	## equipment critical_bonus, clamped at 0.50 on its own and then folded in UNDER the same total
 	## cap live applies (BattleManager:5423 caps base+speed+passive+equip+buff at 0.50) — added after
 	## the min would let gear exceed a ceiling live never lets it cross.
-	var equip_crit: float = clampf(_sum_equipment_special_effect(attacker, "critical_bonus"), 0.0, 0.50)
-	var crit_chance = min(0.50, 0.05 + attacker.speed * 0.01 + equip_crit)
+	var crit_chance: float = _swing_crit_chance(attacker)
 	var is_crit = randf() < crit_chance
 	if attacker.has_status("shadow_step"):
 		is_crit = true
@@ -1378,6 +1377,14 @@ func _is_same_side(a, b) -> bool:
 	return (a in _player_party) == (b in _player_party)
 
 
+## A plain swing's crit chance by the rule both engines read (DamageRules); gear's share is clamped on its own first.
+func _swing_crit_chance(attacker) -> float:
+	var equip_crit: float = clampf(_sum_equipment_special_effect(attacker, "critical_bonus"), 0.0, 0.50)
+	var bm = _get_autoload("BattleManager")
+	var level: int = int(bm._archetype_level(attacker)) if bm != null and bm.has_method("_archetype_level") else int(attacker.job_level)
+	return minf(DamageRules.crit_cap(), DamageRules.CRIT_BASE + DamageRules.speed_crit_bonus(float(attacker.speed), level) + equip_crit)
+
+
 ## Live's _retarget_enemy: a blow whose target fell earlier this round goes to the lowest-HP foe still standing.
 func _retarget_foe(attacker, original):
 	if original != null and is_instance_valid(original) and original.is_alive:
@@ -1507,7 +1514,7 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 						target.remove_status("magic_block")
 						_log("%s's Magic Block cancels the spell!" % target.combatant_name)
 						continue
-					var base_dmg = int(caster.get_buffed_stat("magic", caster.magic) * power)
+					var base_dmg = int(caster.get_buffed_stat("magic", caster.magic) * power * DamageRules.spread_factor(targets.size(), caster in _enemy_party))
 					## Doubles, mirroring BattleManager:5054 — live's own comment calls it "a rough
 					## compensation for take_damage's defense formula" rather than a true-damage path, and
 					## the grind must compensate the same way or phantom_byte lands at half strength here.
@@ -1613,7 +1620,7 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 					var scaled: int = _scaled_base(caster, ability)
 					if caster.has_status("fear"):
 						scaled = int(scaled * 0.5)
-					var base_dmg = int(scaled * power)
+					var base_dmg = int(scaled * power * DamageRules.spread_factor(targets.size(), caster in _enemy_party))
 					## Second call site, mirroring BattleManager:4915. Live applies Familiar Weight to a
 					## physical ABILITY's damage as well as a basic swing, and wiring only one site is
 					## the mistake this file's dodge fix was written for an hour ago.
@@ -1636,7 +1643,7 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 					## a repair: it changes party strength and therefore the reward economy, which is
 					## struktured's call — the same reasoning that left summon_* declared.
 					## Shadow Step forces a crit on top of the authored roll, matching the basic swing's guarantee.
-					if randf() < float(ability.get("crit_chance", 0.0)) or caster.has_status("shadow_step"):
+					if randf() < DamageRules.ability_crit_chance(ability, _swing_crit_chance(caster)) or caster.has_status("shadow_step"):
 						base_dmg = int(base_dmg * 1.5)
 						_log("%s crits with %s" % [caster.combatant_name, ability_id])
 					## One barrier eats the whole ability, including a multi-hit, then breaks. Live checks
