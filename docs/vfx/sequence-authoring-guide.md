@@ -67,9 +67,20 @@ counts for size, and a new phase for each tier.
 
 ## 3. Phase kinds
 
-Every phase takes: `kind`, `at`, `dur`, `origin` (`"target"`: the target's body, the default; `"caster"`: the caster's body; `"hand"`: the caster's hand, where a bolt leaves from. All three are measured on the FIGURE, not its frame,
-default target), `offset` `[x, y]`, `sfx`, `min_tier` (1-3), `palette` and
-`palette_t3` (the palette at intensity tier 3).
+Every phase takes: `kind`, `at`, `dur`, `origin`, `offset` `[x, y]`, `sfx`,
+`min_tier` (1-3), `palette` and `palette_t3` (the palette at intensity tier 3).
+
+`origin` is one of three points, all measured on the battler's FIGURE, not on
+its frame (a hero can stand 95 px off the centre of their frame):
+
+| `origin` | Point | Use it for |
+|---|---|---|
+| `"target"` (default) | the target's body | the hit, anything that lands |
+| `"caster"` | the caster's body | an aura, a swell, life returning |
+| `"hand"` | the caster's leading edge, a little above the middle | a charge, a mouth, where a `bolt` leaves from |
+
+Do not correct a position with a per-job `offset`: if an effect lands beside a
+figure, the anchor is wrong, and that is fixed once in `BattleScene._figure_anchor`.
 
 | Kind | Draws | Own fields |
 |---|---|---|
@@ -86,18 +97,25 @@ default target), `offset` `[x, y]`, `sfx`, `min_tier` (1-3), `palette` and
 | `arc` | a swept blade crescent | `radius`, `from`, `to`, `width`, `life` |
 | `streak` | a dash line between two points | `a`, `b`, `a_offset`, `b_offset`, `life` |
 | `puff` | soft smoke that covers what is behind it | `count`, `spread`, `drift`, `size` |
+| `plates` | flat panes that assemble and hold: a ward | `count`, `shape`, `gap`, `hold` |
+| `ribbon` | a waving band between two points: a song | `a`, `b`, `wave`, `width`, `lines`, `jagged`, `life` |
+| `glyphs` | drifting symbols (notes, Zs) | `glyph`, `count`, `spread`, `drift`, `to_target` |
 | `emit`, `spin_fling` | the recursive fractal (Edit Formula's look) | see `edit_formula_battle` |
 | `lunge`, `knockback`, `hitstop`, `impact_frame` | move or freeze the SPRITES (first target only) | see `strike_impact` |
 | `cue` | nothing: a sound-only beat | `sfx` |
 
-`arc`, `streak`, `puff` and bolt's `reverse` arrive with cowir-sprites' tip.
+A sequence may also set `travel` (seconds per 100 px): a farther target is
+reached later, so a song washes down the party line instead of landing on all
+five at once. The damage hold follows it.
+
 `eruption`, `pillar`, `gather`, `fall` and `rise` are drawn by
 `EffectSystem.run_element_phase`; the rest by `FractalFX`. To add a kind, add
 its arm in `FractalFX._run` and its length in `FractalFX.phase_duration`, with
 the common fields above. One vocabulary: do not fork a kind, add a field.
 
 **Palettes** are rows in `FractalFX.PALETTES`: fire, flame, ember, spark,
-steel, frost, void, rot, verdict, glitch, holy, nature, mana, smoke, taunt.
+steel, frost, void, rot, verdict, glitch, holy, nature, mana, smoke, taunt,
+hymn, ward.
 Add a row there. Never put a colour in a phase.
 
 ## 4. Rules the engine holds for you
@@ -144,23 +162,34 @@ a resist or a failed steal plays the grey `fizzle`.
 ## 7. Monsters: families, not one-offs
 
 208 abilities are monster-only. Most are bites, claws and breaths, so they
-share sequences by FAMILY rather than getting one each:
+share sequences by FAMILY rather than getting one each. A monster has no cast
+pose to wait for: a family starts at 0.1 and lands within 0.8 s.
 
-| Family | Covers | Shape |
-|---|---|---|
-| bite | bite, chomp, gnaw, fang | two jaw `arc`s closing, a `flash` |
-| claw | claw, scratch, rake, slash | three raked `arc`s, staggered |
-| spit | spit, acid, web, venom | `bolt` in the family's palette, `puff` on landing |
-| breath | fire, ice, lightning, void breath | `streak` cone from the mouth, `eruption` by element |
-| screech | screech, howl, roar | `ring`s from the caster, `shake` |
-| slam | slam, stomp, body, tail | `fall` dust, a ground `ring`, `shake` |
-| drain | drain, leech, siphon | `bolt` with `reverse`, `rise` on the caster |
-| buff-self | harden, enrage, focus | `gather` then `pillar` on the caster |
+| Family | Sequence | Covers | Shape |
+|---|---|---|---|
+| bite, claw, slam, spit | `family_bite` … (cowir-sprites) | physical moves, and a plain attack through the monster row's `hit_spark` | an overlay AROUND the lunge, sized to the monster |
+| breath | `family_breath_ice` / `_lightning` / `_dark` | an all-party elemental | `gather` at the mouth, a flat `bolt` to each foe, the element's `eruption` |
+| cloud | `family_cloud` | poison, spores, acid | a lobbed `bolt`, a `puff` that billows over each foe |
+| dust | `family_dust` | sand, roots | grit `rise`s at the feet, is thrown, `fall`s back |
+| drain | `family_drain` | life and mana drains | a dark `bolt`, the burst, then `bolt` with `reverse` and a `rise` on the caster |
+| screech | `family_screech` | screech, rattle | three `ring`s from the mouth, a small `shake` |
+| buff-self | `family_buff_self` | enrage, howl, harden | `gather` and one pulse; the stat beat that follows is the shared landing |
+| heal-self | `family_heal_self` (cowir-cutscenes) | repair, reconstruct | sparks drawn in, a pulse, light rising |
 
-**Proposed, not built yet.** The plan: a monster ability names its family with
-`"vfx": {"family": "<name>"}` and takes its palette from its element. Bosses
-keep their own signatures. Until that lands, a monster ability can name an
-ordinary `sequence` like any other.
+How a row names its family:
+
+- A **cast** (magic, support, healing) names the sequence directly:
+  `"vfx": {"sequence": "family_breath_ice"}`. A single-target cast of an
+  element the Mage has plays the Mage's own tier-1 spell (`blizzard_battle`).
+- A **physical** move names `"vfx": {"family": "bite"}` and is drawn around its
+  lunge. The top-level `"family"` key is the SPELL LINE the shops sell by; do
+  not reuse it.
+- `test_a_w1_monster_casts_in_its_family` holds the census: every cast a W1
+  monster has plays a sequence or is DECLARED there with the reason.
+
+A buff, a debuff or a status LANDING is not yours to draw: one shared beat per
+kind plays at the target (`LANDED_BEATS`, `stat_up_<stat>`, `wore_off`). Author
+the delivery and stop at the impact.
 
 ## 8. Checklist before READY
 
