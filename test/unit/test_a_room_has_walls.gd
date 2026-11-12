@@ -46,13 +46,24 @@ func _touches(reach: Dictionary, cell: Vector2i) -> bool:
 	return false
 
 
+## Every cell a body of half-width `r` standing at `pos` reaches into.
+func _cells_under(pos: Vector2, r: float) -> Array:
+	var out: Array = []
+	var a := _cell(pos - Vector2(r, r))
+	var b := _cell(pos + Vector2(r - 0.01, r - 0.01))
+	for y in range(a.y, b.y + 1):
+		for x in range(a.x, b.x + 1):
+			out.append(Vector2i(x, y))
+	return out
+
+
 func test_the_builder_seals_a_box_and_leaves_a_door_open() -> void:
-	var layout := ["WWWWW", "W...W", "W.T.W", "WWDWW"]
+	var layout := ["WWWWW", "W...W", "W.T.W", "WDWWW"]
 	var solid := InteriorWalls.solid_cells(layout, "T")
 	assert_true(solid.has(Vector2i(0, 0)) and solid.has(Vector2i(4, 2)), "a 'W' cell is solid")
 	assert_true(solid.has(Vector2i(2, 2)), "a named furniture glyph is solid")
-	assert_false(solid.has(Vector2i(2, 3)), "a door glyph on the outer row is not")
-	assert_true(solid.has(Vector2i(2, 4)), "the ring outside the map seals what lies beyond the door")
+	assert_false(solid.has(Vector2i(1, 3)), "a door glyph on the outer row is not")
+	assert_true(solid.has(Vector2i(1, 4)), "the ring outside the map seals what lies beyond the door")
 	var reach := InteriorWalls.reach(solid, Vector2i(1, 1))
 	assert_eq(reach.size(), 6, "from inside, a walker reaches the five floor cells and the door cell, nothing else")
 	var carved := InteriorWalls.solid_cells(["WWW", "W.W", "WWW"], "", [Rect2(32, 64, 32, 32)])
@@ -88,6 +99,8 @@ func test_no_room_lets_the_player_out_and_none_seals_anything_off() -> void:
 			var at := _cell(player.position)
 			assert_false(solid.has(at), "%s: spawn '%s' puts the player in a solid cell %s" % [f, str(spawn), str(at)])
 			assert_true(reach.has(at), "%s: spawn '%s' at %s is cut off from where the room starts him" % [f, str(spawn), str(at)])
+			for c in _cells_under(player.position, InteriorWalls.BODY_CLEARANCE):
+				assert_false(solid.has(c), "%s: spawn '%s' leaves the player's body touching the solid cell %s" % [f, str(spawn), str(c)])
 		for r in InteriorWalls.door_rects(room):
 			var at_door := false
 			for c in reach:
@@ -128,3 +141,21 @@ func test_every_room_script_builds_its_walls_and_a_village_does_not() -> void:
 		assert_gt(walls, src.find("_setup_transitions()"), "%s builds its walls after its doors exist (a door's trigger opens its cell)" % path.get_file())
 		assert_gt(walls, src.find("_setup_player()"), "%s builds them after the player stands in the room" % path.get_file())
 	assert_eq(FileAccess.get_file_as_string("res://src/maps/villages/BaseVillage.gd").find("InteriorWalls"), -1, "CONTROL: a village keeps its own tile collision and never builds these")
+
+
+class CornerRoom:
+	extends Node2D
+	var spawn_points := {"desk": Vector2(2, 2)}
+
+
+func test_a_spawn_on_a_cell_corner_opens_the_furniture_it_touches() -> void:
+	var layout := ["WWWWW", "WTT.W", "W...W", "WWWWW"]
+	var room := CornerRoom.new()
+	add_child_autofree(room)
+	var solid: Dictionary = InteriorWalls.build(room, layout, "T").get_meta("solid_cells")
+	assert_false(solid.has(Vector2i(1, 1)) or solid.has(Vector2i(2, 1)), "the two table cells the standing body reaches into are open")
+	assert_true(solid.has(Vector2i(0, 1)) and solid.has(Vector2i(2, 0)), "the walls a cell away are not")
+	room.spawn_points = {"desk": Vector2(3.5, 2.5)}
+	room.get_node(InteriorWalls.BODY_NAME).free()
+	var plain: Dictionary = InteriorWalls.build(room, layout, "T").get_meta("solid_cells")
+	assert_true(plain.has(Vector2i(1, 1)) and plain.has(Vector2i(2, 1)), "CONTROL: with the spawn in the middle of a floor cell the table is whole")

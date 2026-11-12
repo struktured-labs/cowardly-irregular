@@ -143,12 +143,11 @@ func _ready() -> void:
 	_setup_player()
 	_setup_camera()
 	_setup_controller()
-	# Walls, the bar, tables, kitchen, hearth and the locked stairs are solid; the stage is walked on.
-	InteriorWalls.build(self, TAVERN_LAYOUT, SOLID_GLYPHS)
 
 	# Cold start has nothing to inherit; this room exists only in Harmonia.
 	if SoundManager:
 		SoundManager.play_area_music("interior_tavern", 0.0, "harmonia_village")
+	InteriorWalls.build(self, TAVERN_LAYOUT, SOLID_GLYPHS)
 
 
 func _process(delta: float) -> void:

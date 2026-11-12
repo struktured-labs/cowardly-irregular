@@ -8,6 +8,7 @@ extends RefCounted
 
 const TILE: int = 32
 const BODY_NAME := "RoomWalls"
+const BODY_CLEARANCE: float = 8.0
 const NEIGHBOURS: Array = [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]
 
 
@@ -82,13 +83,24 @@ static func door_rects(room: Node) -> Array:
 	return out
 
 
+## The room a standing player needs: the body's radius plus the solver's safe margin, as the spawn guard measures it.
+static func _body_rect(at: Vector2) -> Rect2:
+	return Rect2(at - Vector2(BODY_CLEARANCE, BODY_CLEARANCE), Vector2(BODY_CLEARANCE, BODY_CLEARANCE) * 2.0)
+
+
 ## Build the room's wall body. Call it once the doors and the player exist: the cell the player starts in and the
-## cells a door's trigger covers are left open.
+## cells a door's trigger covers are left open, and so is every cell a NAMED spawn's body touches (GameLoop places
+## the player at one after _ready, and some sit on a cell corner beside a desk, counter, bar or piano).
 static func build(room: Node2D, layout: Array, glyphs: String = "") -> StaticBody2D:
 	var open: Array = door_rects(room)
 	var player = room.get("player")
 	if player != null and is_instance_valid(player) and player is Node2D:
-		open.append(Rect2((player as Node2D).position - Vector2(4, 4), Vector2(8, 8)))
+		open.append(_body_rect((player as Node2D).position))
+	var spawns = room.get("spawn_points")
+	if spawns is Dictionary:
+		for v in (spawns as Dictionary).values():
+			if v is Vector2:
+				open.append(_body_rect((v as Vector2) * TILE))
 	var solid := solid_cells(layout, glyphs, open)
 	var body := StaticBody2D.new()
 	body.name = BODY_NAME
