@@ -26,7 +26,7 @@ func after_each() -> void:
 
 func _all_drawn(room: String) -> Dictionary:
 	var o := {}
-	for kind in (STANDING[room] as Dictionary).keys() + (UNDERFOOT[room] as Array):
+	for kind in (STANDING[room] as Dictionary).keys() + (UNDERFOOT[room] as Array) + ["back_wall"]:
 		o["%s_%s" % [kind, room]] = {"path": ART % [kind, room]}
 	return o
 
@@ -72,7 +72,7 @@ func test_every_piece_stands_on_open_floor_with_a_shadow_and_a_footprint() -> vo
 			var feet := _feet(spr, shop)
 			var cell := Vector2i(int(floor(feet.x / T)), int(floor((feet.y - 1.0) / T)))
 			assert_false(solid.has(cell), "%s: %s's feet %s are on open floor, not in a wall, shelf or counter cell" % [room, kind, str(feet)])
-			assert_true(Rect2(T, T, (shop.MAP_WIDTH - 2) * T, (shop.MAP_HEIGHT - 2) * T).encloses(Rect2(shop.to_local(spr.global_position), spr.texture.get_size())), "%s: %s is drawn inside the walls" % [room, kind])
+			assert_true(Rect2(T, 0, (shop.MAP_WIDTH - 2) * T, (shop.MAP_HEIGHT - 1) * T).encloses(Rect2(shop.to_local(spr.global_position), spr.texture.get_size())), "%s: %s is drawn inside the side and south walls (a piece may rise against the north one)" % [room, kind])
 			var body := spr.get_parent().get_node_or_null("Footprint")
 			assert_eq(body != null, bool(STANDING[room][kind]), "%s: %s %s" % [room, kind, "blocks the player at its feet" if STANDING[room][kind] else "blocks nobody"])
 		var shadows := 0
@@ -136,3 +136,40 @@ func test_a_shop_with_no_art_paints_what_it_always_did() -> void:
 			assert_not_null(shop.decorations.get_node_or_null("WeaponCrates"), "and its painted crates")
 		shop.free()
 		await get_tree().process_frame
+
+
+## main 24577, from the first stills: the drawn back wall was sorted under the wall tiles, a plank hung across it,
+## and the blacksmith's stone forge stood ON the painted one in front of the counter.
+func test_the_back_wall_is_the_rooms_north_face_and_there_is_one_forge() -> void:
+	for type in ROOMS:
+		var room: String = ROOMS[type]
+		var shop: Node = await _shop(type, _all_drawn(room))
+		var wall := _art(shop, "back_wall")
+		assert_not_null(wall, "%s: the back wall stands" % room)
+		if wall != null:
+			assert_eq(wall.get_parent(), shop._floor_pieces, "%s: on the floor layer, which draws after the wall tiles and is not sorted by y" % room)
+			assert_lt(wall.position.y, 0.0, "%s: CONTROL: the strip's origin is above the map, which is what a y-sort buried" % room)
+		assert_eq(shop.camera.limit_top, -T, "%s: the camera can show the part of the wall above the map" % room)
+		var planks := 0
+		for n in shop.decorations.get_children():
+			if n is Label and str((n as Label).text) == str(shop.shop_name):
+				planks += 1
+		assert_eq(planks, 0, "%s: no plank naming the shop hangs across its drawn wall" % room)
+		shop.free()
+		await get_tree().process_frame
+	var smith: Node = await _shop(3, _all_drawn("shop_blacksmith"))
+	var frame: Image = (smith._forge_frames[0] as ImageTexture).get_image()
+	assert_eq(frame.get_pixel(2, 60).a, 0.0, "with the stone body drawn, the painted forge's own stonework is not painted under it")
+	assert_gt(frame.get_pixel(20, 44).a, 0.5, "CONTROL: its embers still are")
+	var body := _art(smith, "forge")
+	assert_almost_eq(smith._forge_sprite.position.x, _feet(body, smith).x, 0.5, "the flames play in the drawn body, wherever it stands")
+	assert_almost_eq(smith.decorations.get_node("ForgeLight").position.x, _feet(body, smith).x, 0.5, "and its light is there too")
+	var door := (smith.spawn_points["entrance"] as Vector2) * T
+	var counter := Vector2(8.5 * T, 5 * T)
+	assert_false(Rect2(door.x - 24, counter.y, 48, door.y - counter.y).has_point(_feet(body, smith)), "the forge is not on the walk from the door to the counter")
+	smith.free()
+	await get_tree().process_frame
+	var plain: Node = await _shop(3, {})
+	assert_gt(((plain._forge_frames[0] as ImageTexture).get_image()).get_pixel(2, 60).a, 0.5, "CONTROL: a painted blacksmith still paints its whole forge")
+	assert_eq(plain.camera.limit_top, 0, "CONTROL: and its camera stops at the map's edge")
+	assert_eq(plain._forge_sprite.position, Vector2(8 * T, 6 * T), "where it always stood")

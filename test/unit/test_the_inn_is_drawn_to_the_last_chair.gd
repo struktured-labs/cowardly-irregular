@@ -74,6 +74,20 @@ func _body_fits(inn: Node, cell: Vector2i) -> bool:
 	return (inn as Node2D).get_world_2d().direct_space_state.intersect_shape(q, 1).is_empty()
 
 
+func test_the_drawn_back_wall_is_the_rooms_north_face() -> void:
+	var inn: Node = await _inn(_all_drawn())
+	var wall := inn.find_child("Art_back_wall", true, false) as Sprite2D
+	assert_not_null(wall, "the back wall stands")
+	if wall != null:
+		assert_eq(wall.get_parent(), inn._floor_pieces, "on the floor layer: among the sorted pieces its origin, above the map, put it UNDER the wall tiles")
+		assert_lt(wall.position.y, 0.0, "CONTROL: the strip's origin is above the map")
+	assert_eq(inn.camera.limit_top, -T, "the camera can show the part of the wall above the map")
+	assert_eq(inn.find_children("*", "Sprite2D", true, false).filter(func(n): return n.get_parent().name == "StairsUp").size(), 0, "the painted stair block does not stand beside the wall's drawn stair")
+	var bare: Node = await _inn({})
+	assert_eq(bare.camera.limit_top, 0, "CONTROL: a painted inn's camera stops at the map's edge")
+	assert_gt(bare.find_children("*", "Sprite2D", true, false).filter(func(n): return n.get_parent().name == "StairsUp").size(), 0, "CONTROL: and its painted stairs stand")
+
+
 func test_the_art_this_file_names_is_on_disk() -> void:
 	for kind in PIECES:
 		assert_true(FileAccess.file_exists(ART % kind), "%s is on disk, or every arm below paints instead of drawing" % (ART % kind))

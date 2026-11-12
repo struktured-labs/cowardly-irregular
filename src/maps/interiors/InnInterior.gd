@@ -276,7 +276,8 @@ func _setup_decorations() -> void:
 	lighting = InteriorLighting.new()
 	lighting.name = "Lighting"
 	add_child(lighting)
-	InteriorArt.back_wall(decorations, "inn", MAP_WIDTH, InteriorArt.village_key(_origin_map_id()))
+	# On the floor layer, not among the sorted pieces: a strip whose origin is above the map sorted UNDER the wall tiles.
+	InteriorArt.back_wall(_floor_pieces, "inn", MAP_WIDTH, InteriorArt.village_key(_origin_map_id()))
 
 	var none := func() -> Node: return null
 	_floor_piece("rug", Vector2(12.5, 8.0) * TILE_SIZE, none)
@@ -307,8 +308,10 @@ func _setup_decorations() -> void:
 	_create_stairs_up()
 	_piece("coat_rack", Vector2(42.0, 340.0), _create_coat_rack, Vector2.ZERO)
 	_piece("gear_pile", Vector2(17.0 * TILE_SIZE, 340.0), _create_travel_gear_pile, Vector2(56, 18))
-	_create_wall_paintings()
-	_create_tapestry()
+	# A drawn back wall has its own painting, antlers and stair: the painted ones would cover or double them.
+	if not _is_drawn("back_wall"):
+		_create_wall_paintings()
+		_create_tapestry()
 	_create_lanterns()
 	_create_ambient_light()
 
@@ -889,7 +892,8 @@ func _create_stairs_up() -> void:
 
 	stair.texture = ImageTexture.create_from_image(img)
 	stair.position = Vector2(17.5 * TILE_SIZE, 2.5 * TILE_SIZE)
-	node.add_child(stair)
+	if not _is_drawn("back_wall"):
+		node.add_child(stair)
 
 	# 2026-07-25 playtest: "it says upstairs but no idea how to get up there." The U tiles are a
 	# BLOCKER — there is no second floor — so the label was advertising a destination that does not
@@ -1428,7 +1432,7 @@ func _setup_camera() -> void:
 	camera.position_smoothing_speed = 8.0
 
 	camera.limit_left   = 0
-	camera.limit_top    = 0
+	camera.limit_top    = -TILE_SIZE if _is_drawn("back_wall") else 0  # a drawn back wall rises one tile above the map
 	camera.limit_right  = MAP_WIDTH  * TILE_SIZE
 	camera.limit_bottom = MAP_HEIGHT * TILE_SIZE
 
