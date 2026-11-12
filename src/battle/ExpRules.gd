@@ -34,6 +34,9 @@ static func area_level_of(enemies: Array) -> int:
 	for e in enemies:
 		if e == null or not is_instance_valid(e) or not (e is Object) or not e.has_meta("monster_type"):
 			continue
+		if e.has_meta("spawn_level"):
+			best = maxi(best, int(e.get_meta("spawn_level", 0)))   # a floor's re-levelled spawn fights at the floor's level
+			continue
 		if es != null:
 			var row: Variant = es.monster_database.get(str(e.get_meta("monster_type", "")), null)
 			if row is Dictionary:

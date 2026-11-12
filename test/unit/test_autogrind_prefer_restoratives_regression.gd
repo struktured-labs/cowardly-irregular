@@ -64,9 +64,11 @@ func test_a_regen_style_ability_is_not_treated_as_a_heal() -> void:
 
 
 func test_the_heal_uses_the_authored_amount_not_the_magic_stat() -> void:
-	## The bug this guards: healing abilities author `heal_amount` (6/7) and author
-	## `power`/`damage_multiplier` 0/7. Reading `power` yields the 1.0 default, healing
-	## magic*1 = 20 where the live formula gives ~1300. A 65x silent nerf.
+	## The bug this guards: healing abilities author `heal_amount` and author `power`/`damage_multiplier`
+	## 0/7. Reading `power` yields the 1.0 default. The expected value is READ from abilities.json, since
+	## the amount is tuned (650 until 2026-11-11, when struktured's heal ruling made it 8).
+	var authored: int = int(JobSystem.get_ability("cure").get("heal_amount", 0))
+	assert_gt(authored, 1, "CONTROL: cure authors a heal_amount above the 1.0 power default, or this arm cannot tell them apart")
 	var found: Dictionary = _system._find_restorative_caster(_party)
-	assert_gt(int(found.get("heal_amount", 0)), 100,
-		"must carry cure's authored heal_amount (650), not a 1.0 power default")
+	assert_eq(int(found.get("heal_amount", 0)), authored,
+		"must carry cure's authored heal_amount, not a 1.0 power default")

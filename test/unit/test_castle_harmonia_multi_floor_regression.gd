@@ -67,7 +67,8 @@ func test_boss_pool_and_encounter_escalation() -> void:
 	var src := _read(CASTLE_PATH)
 	# Pool arms per floor, exactly the ids we have monsters.json entries for.
 	for expected in ["skeleton", "specter", "shadow_knight", "meta_knight"]:
-		assert_true(src.contains("\"" + expected + "\""),
+		## A floor may mark the level it wants on the id ("skeleton@L21"); the species is what must be named.
+		assert_true(src.contains("\"" + expected + "\"") or src.contains("\"" + expected + "@L"),
 			"encounter pool references '%s'" % expected)
 	# Boss floor is empty pool (rate forced to 0 by DragonCave)
 	assert_true(src.contains("4: [],"),
