@@ -93,7 +93,7 @@ func test_the_pop_leaves_from_the_swayed_y_and_lands_on_it() -> void:
 		assert_almost_eq(sprite.position.y, found_y, 0.05, "%s: the pop's first frame is at the swayed y it found, not at home (home is %.2f px away)" % [kind, off])
 		tween.custom_step(up)
 		var lifted: float = found_y - sprite.position.y
-		assert_between(lifted, 0.0, 7.5, "%s: at the top the sprite is lifted from the SWAYED y by the pop alone (%.2f)" % [kind, lifted])
+		assert_between(lifted, 3.5 if kind == "plain" else 6.5, 4.5 if kind == "plain" else 7.5, "%s: at the top the sprite is lifted from the SWAYED y by the pop alone, 4 px plain / 7 px on a weakness (%.2f)" % [kind, lifted])
 		assert_ne(sprite.position.x, BASE.x, "CONTROL (%s): it was knocked sideways" % kind)
 		## The idle writer must not take y back while the knock-back owns the sprite.
 		var held: float = sprite.position.y
