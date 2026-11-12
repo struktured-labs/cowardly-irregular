@@ -920,6 +920,12 @@ func _update_selection() -> void:
 
 	for i in range(_card_bg_refs.size()):
 		_card_bg_refs[i].color = SELECTED_COLOR if i == selected_character else Color(0.08, 0.08, 0.12)
+	# A party that scrolls keeps the selected card in view.
+	if selected_character >= 0 and selected_character < _party_panels.size():
+		var card: Control = _party_panels[selected_character]
+		var scroller := card.get_parent().get_parent() as ScrollContainer if is_instance_valid(card) and card.get_parent() != null else null
+		if scroller != null:
+			scroller.ensure_control_visible(card)
 
 
 ## One navigation step plus its feedback, shared by a keypress and a held repeat so the

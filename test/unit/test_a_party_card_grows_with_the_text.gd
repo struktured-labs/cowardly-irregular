@@ -65,6 +65,7 @@ func _row_tops(card: Control) -> Array:
 func test_the_floor_names_every_member_this_file_drives() -> void:
 	var m: Control = await _menu(1.0)
 	assert_true("_party_panels" in m and "party" in m and m.has_method("setup") and m.has_method("_card_k") and m.has_method("_update_party_stats"), "OverworldMenu._party_panels / party / setup / _card_k / _update_party_stats must exist")
+	assert_true("selected_character" in m and m.has_method("_update_selection"), "OverworldMenu.selected_character / _update_selection must exist")
 	assert_eq(m._party_panels.size(), 4, "PRECONDITION: one card per member")
 	var card: Control = m._party_panels[0]
 	for n in ROWS + ["JobLabel", "LeaderStar", "AilmentLabel", "Background"]:
@@ -165,3 +166,20 @@ func test_a_stat_bar_keeps_its_label_bar_and_value_apart() -> void:
 		assert_gt(who.max_hp, 3, "PRECONDITION @%s: the member has HP to lose" % s)
 		assert_almost_eq(fill.size.x / bg.size.x, float(who.current_hp) / float(who.max_hp), 0.02, "@%s after a refresh the fill is the HP share of the trough" % s)
 	assert_eq(bad, [], "a stat bar's parts keep apart: %s" % [bad])
+
+
+## Five members at 200% no longer fit the panel, so the cards scroll: the SELECTED card must be the one in view.
+func test_a_scrolling_party_keeps_the_selected_card_in_view() -> void:
+	var m: Control = await _menu(2.0, 5)
+	var scroller := (m._party_panels[0] as Control).get_parent().get_parent() as ScrollContainer
+	assert_not_null(scroller, "CONTROL: five cards at 200% scroll")
+	if scroller == null:
+		return
+	var last: Control = m._party_panels[4]
+	assert_gt(last.get_global_rect().end.y, scroller.get_global_rect().end.y, "CONTROL: the fifth card starts out of view")
+	m.selected_character = 4
+	m._update_selection()
+	await get_tree().process_frame
+	await get_tree().process_frame
+	assert_lte(last.get_global_rect().end.y, scroller.get_global_rect().end.y + 1.5, "selected, the fifth card is inside the window")
+	assert_gte(last.get_global_rect().position.y, scroller.get_global_rect().position.y - 1.5, "from its top")
