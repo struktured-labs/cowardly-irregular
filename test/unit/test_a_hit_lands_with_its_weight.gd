@@ -26,10 +26,12 @@ var _saved_scale := 1.0
 var _saved_rig = null
 var _saved_shake = true
 var _battle = preload("res://test/unit/helpers/battle_state.gd").new()
+var _fx_before: Array = []
 
 
 func before_each() -> void:
 	_battle.snapshot()
+	_fx_before = EffectSystem._effects_container.get_children()
 	## The scene finds a combatant's sprite through BattleManager's parties: establish them, don't inherit.
 	BattleManager.player_party.clear()
 	BattleManager.enemy_party.clear()
@@ -40,6 +42,11 @@ func before_each() -> void:
 
 func after_each() -> void:
 	_battle.restore()
+	## Leave the shared effects layer as this arm found it: a spark or a beat frees itself on a game-time timer, and
+	## one still dying when the NEXT file takes a child-count baseline makes its "the layer grew" arm red by order.
+	for child in EffectSystem._effects_container.get_children():
+		if not (child in _fx_before):
+			child.free()
 	Engine.time_scale = _saved_scale
 	BattleJuice.camera_rig = _saved_rig
 	if "screen_shake_enabled" in GameState:
