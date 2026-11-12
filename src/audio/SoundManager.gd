@@ -3282,6 +3282,15 @@ func capture_music_state() -> Dictionary:
 	return {"track": _current_music, "area": _current_area, "playing": _music_playing and not fading_out, "position": pos}
 
 
+## Seconds into `track` as it is HEARD, or -1.0 while it is not the stream sounding (not started, missing, replaced, ended): the clock for a scene timed to its own cue.
+func music_position_of(track: String) -> float:
+	if track == "" or str(_current_music) != track:
+		return -1.0
+	if _music_player == null or _music_player.stream == null or not _music_player.playing:
+		return -1.0
+	return _music_player.get_playback_position()
+
+
 ## A state to RESTORE, shaped like capture_music_state: the bed play_area_music armed and has not started. "playing" means owed, never audible.
 func armed_area_state() -> Dictionary:
 	if not _area_start_armed or _pending_music_area == "":

@@ -152,3 +152,53 @@ func test_a_room_with_a_lighting_rig_is_told_night_and_dawn() -> void:
 	seq.request_skip()
 	await seq.finished
 	assert_eq(room.seen, ["night", "dawn"], "and dawn as it comes")
+
+
+## A sequence that is not running, with a 5.7 s ditty and a position the arm dictates.
+func _clocked(position: Array) -> InnRestSequence:
+	var seq := InnRestSequence.new()
+	autofree(seq)
+	seq._ditty_len = 5.7
+	seq.night_sec = 5.7
+	seq._ditty_position = func() -> float: return float(position[0])
+	return seq
+
+
+## The night is as long as the ditty is HEARD (cowir-music 24561), not as long as a clock says.
+func test_the_night_follows_the_ditty_not_the_clock() -> void:
+	var at := [2.85]
+	var seq := _clocked(at)
+	assert_almost_eq(seq.night_progress(0.1), 0.5, 0.001, "half the ditty heard is half the night, though the clock says 0.1 s")
+	assert_almost_eq(seq.night_progress(5.0), 0.5, 0.001, "and still half when the clock says 5 s (a slow or a fast capture)")
+	at[0] = 4.104
+	assert_almost_eq(seq.night_progress(5.0), 4.104 / 5.7, 0.001, "dawn (0.72) lands where the music is")
+	assert_gt(4.104 / 5.7, InnNightSky.DAWN_AT - 0.001, "CONTROL: that position is dawn")
+	at[0] = 4.0
+	assert_almost_eq(seq.night_progress(5.0), 4.104 / 5.7, 0.001, "a stair backwards in the mixer's position does not move the moon back")
+
+
+func test_a_ditty_that_was_heard_and_stopped_ends_the_night() -> void:
+	var at := [3.0]
+	var seq := _clocked(at)
+	assert_lt(seq.night_progress(3.0), 1.0, "CONTROL: mid-ditty the night is not over")
+	at[0] = -1.0
+	assert_eq(seq.night_progress(3.1), 1.0, "the ditty ended and the room's bed is back: that is morning, not a reason to start a clock")
+	var looped := [5.0]
+	var again := _clocked(looped)
+	again.night_progress(5.0)
+	looped[0] = 0.2
+	assert_eq(again.night_progress(5.3), 1.0, "a ditty that starts over does not give a second night")
+
+
+func test_a_ditty_that_never_sounds_still_reaches_dawn() -> void:
+	var seq := _clocked([-1.0])
+	assert_eq(seq.night_progress(0.2), 0.0, "inside the grace the night waits for the first note")
+	assert_almost_eq(seq.night_progress(2.85), 0.5, 0.001, "past it the frame clock carries the night")
+	assert_eq(seq.night_progress(5.7), 1.0, "to its end")
+	var silent := InnRestSequence.new()
+	autofree(silent)
+	silent.night_sec = InnRestSequence.MIN_NIGHT_SEC
+	assert_almost_eq(silent.night_progress(InnRestSequence.MIN_NIGHT_SEC / 2.0), 0.5, 0.001, "with no ditty at all the clock runs the minimum night")
+	var stuck := _clocked([0.0])
+	assert_eq(stuck.night_progress(5.7 + InnRestSequence.NIGHT_OVERRUN_SEC + 0.1), 1.0, "and a ditty stuck at its first sample cannot hold the night open")
+	assert_lt(stuck.night_progress(1.0), 1.0, "CONTROL: before the bound it does hold it")

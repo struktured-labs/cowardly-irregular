@@ -29,6 +29,9 @@ func _init() -> void:
 		gl._close_title_screen()
 	await process_frame
 	gl._create_party()
+	## A fresh game opens Harmonia on the prologue; the clip is of the inn, so the opening is marked seen.
+	for flag in ["prologue_complete", "chapter1_complete"]:
+		gs.game_constants["cutscene_flag_" + flag] = true
 	gl._current_map_id = "harmonia_village"
 	gl._start_exploration()
 	for i in 20:
@@ -58,17 +61,18 @@ func _init() -> void:
 	var under := ""
 	if sm and sm._music_player and sm._music_player.stream:
 		under = str(sm._music_player.stream.resource_path).get_file().get_basename()
-	print("[ICLIP] room=%s under=%s" % [str(gl.get("_current_map_id")), under])
+	var director = gl.get_cutscene_director() if gl.has_method("get_cutscene_director") else null
+	print("[ICLIP] room=%s under=%s cutscene_playing=%s" % [str(gl.get("_current_map_id")), under, str(director.is_active()) if director and director.has_method("is_active") else "?"])
 	inn._do_rest()
 	var seq: Node = null
 	for n in root.get_children():
-		if n is InnRestSequence:
+		if n.has_signal("beat") and n.has_method("request_skip"):  # by shape: a -s script compiles before the autoloads a class_name leans on
 			seq = n
 	if seq == null:
 		print("[ICLIP] FAIL: the rest started no night")
 		quit(1)
 		return
-	seq.beat.connect(func(b: String) -> void: print("[ICLIP] beat=%s frame=%d" % [b, Engine.get_process_frames()]))
+	seq.beat.connect(func(b: String) -> void: print("[ICLIP] beat=%s frame=%d time_scale=%.3f" % [b, Engine.get_process_frames(), Engine.time_scale]))
 	print("[ICLIP] built frame=%d" % Engine.get_process_frames())
 	## Frames, not a timer: under --fixed-fps 30 a frame is 1/30 s of VIDEO.
 	var skip_frame := int(round(skip_at * 30.0))
