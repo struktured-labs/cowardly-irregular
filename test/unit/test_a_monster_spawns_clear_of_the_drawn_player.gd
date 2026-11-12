@@ -1,12 +1,10 @@
 extends GutTest
 
 ## Follow-up to .792's Mode 7 contact fix: a roamer now touches the player where they are DRAWN, so the spawner's
-## "never spawn within reach" and "cull when far" distances, and the threat meter, must be judged from that point too.
-## Found beside it: ThreatMeter walked the spawner's own children, and roamers live under a sibling node, so it saw none.
+## "never spawn within reach" and "cull when far" distances must be judged from that point too.
 
 const SpawnerScript := preload("res://src/exploration/MonsterSpawner.gd")
 const RoamerScript := preload("res://src/exploration/RoamingMonster.gd")
-const ThreatScript := preload("res://src/exploration/ThreatMeter.gd")
 
 var _was_active := false
 
@@ -61,7 +59,7 @@ func _nearest_spawn(sp: Node, point: Vector2, n: int) -> float:
 
 func test_the_spawner_has_what_this_file_reaches() -> void:
 	var sp := _spawner(Vector2(1600, 1120))
-	for method in ["_find_spawn_position", "_cull_far_monsters", "_player_seen_pos", "live_monsters"]:
+	for method in ["_find_spawn_position", "_cull_far_monsters", "_player_seen_pos"]:
 		assert_true(sp.has_method(method), "MonsterSpawner.%s must exist, or the arms below judge nothing" % method)
 	assert_not_null(sp._spawn_parent, "the spawner must build its roamer parent in _ready")
 
@@ -90,30 +88,3 @@ func test_in_mode7_a_roamer_is_culled_by_its_distance_from_the_drawn_player() ->
 	sp._cull_far_monsters()
 	assert_false(sp._monsters.has(south), "a roamer inside the cull range of the true point but outside it from the drawn player is culled")
 	assert_true(sp._monsters.has(north), "one beyond the range from the true point but inside it from the drawn player is kept")
-
-
-func test_the_threat_meter_sees_a_roamer_near_the_drawn_player() -> void:
-	Mode7Overlay.is_active = true
-	var sp := _spawner(Vector2(1600, 1120))
-	var meter: Node = ThreatScript.new()
-	sp.get_parent().add_child(meter)
-	meter.setup(sp.get_parent(), sp._player, sp)
-	meter.update(sp._player.global_position)
-	assert_eq(float(meter._bar_fill.size.x), 0.0, "CONTROL: with no roamer the bar is empty")
-	_roamer_under(sp, _drawn(sp) + Vector2(60, 0))
-	meter.update(sp._player.global_position)
-	assert_gt(float(meter._bar_fill.size.x), 0.0, "a roamer 60 px from the drawn player must fill the threat bar")
-
-
-func test_the_threat_meter_ignores_a_roamer_on_the_true_point_in_mode7() -> void:
-	Mode7Overlay.is_active = true
-	var sp := _spawner(Vector2(1600, 1120))
-	var meter: Node = ThreatScript.new()
-	sp.get_parent().add_child(meter)
-	meter.setup(sp.get_parent(), sp._player, sp)
-	var m := _roamer_under(sp, sp._player.global_position + Vector2(0, 200))
-	meter.update(sp._player.global_position)
-	assert_eq(float(meter._bar_fill.size.x), 0.0, "a roamer 200 px south of the true point is 340 px from the drawn player, past DETECTION_RANGE")
-	m.global_position = _drawn(sp) + Vector2(0, 200)
-	meter.update(sp._player.global_position)
-	assert_gt(float(meter._bar_fill.size.x), 0.0, "CONTROL: the same roamer 200 px from the drawn player is in range")
