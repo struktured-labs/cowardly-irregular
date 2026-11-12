@@ -27,6 +27,13 @@ var _guard
 var _saved_flash := false
 
 
+var _arrived := 0
+
+
+func _note_arrival(_n: Node) -> void:
+	_arrived += 1
+
+
 func before_all() -> void:
 	_monsters = JSON.parse_string(FileAccess.get_file_as_string("res://data/monsters.json"))
 	var raw = JSON.parse_string(FileAccess.get_file_as_string("res://data/vfx_sequences.json"))
@@ -163,15 +170,18 @@ func test_a_self_aimed_signature_rolls_onto_the_party() -> void:
 	assert_not_null(host, "CONTROL: the effects layer exists")
 	if host == null:
 		return
-	var before := host.get_child_count()
+	## Counted by ARRIVAL: the layer's size also falls as earlier effects expire, which read as -1 in a long sweep (.793).
+	_arrived = 0
+	host.child_entered_tree.connect(_note_arrival)
 	scene._spawn_signature_wave(boss, scene.enemy_sprite_nodes[0], JobSystem.get_ability("rat_swarm"), [boss], "sig_cave_rat_king")
 	await get_tree().process_frame
 	var living := BattleManager.player_party.filter(func(m): return m.is_alive).size()
-	assert_gte(host.get_child_count() - before, living, "one wave per living member (%d members)" % living)
-	before = host.get_child_count()
+	assert_gte(_arrived, living, "one wave per living member (%d members)" % living)
+	_arrived = 0
 	scene._spawn_signature_wave(boss, scene.enemy_sprite_nodes[0], JobSystem.get_ability("thundaga"), [BattleManager.player_party[0]], "sig_chancellor_mordaine")
 	await get_tree().process_frame
-	assert_eq(host.get_child_count() - before, 0, "CONTROL: a party-aimed signature needs no wave")
+	host.child_entered_tree.disconnect(_note_arrival)
+	assert_eq(_arrived, 0, "CONTROL: a party-aimed signature needs no wave")
 
 
 func test_the_verdict_card_carries_its_title_and_bark() -> void:

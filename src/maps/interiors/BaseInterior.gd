@@ -47,6 +47,7 @@ func _ready() -> void:
 	_setup_player()
 	_setup_camera()
 	_setup_controller()
+	InteriorWalls.build(self, _get_layout(), _get_solid_glyphs())
 	var music_track := _get_music_track()
 	if music_track != "" and SoundManager:
 		SoundManager.play_area_music(music_track, 0.0, _get_music_home_area())
@@ -108,6 +109,11 @@ func _get_layout() -> Array:
 				s += "."
 		rows.append(s)
 	return rows
+
+
+## Virtual: layout glyphs that are furniture the player cannot walk through (its 'W' cells always are). Default: none.
+func _get_solid_glyphs() -> String:
+	return ""
 
 
 ## Virtual: subclass populates spawn_points (entrance + any internal
