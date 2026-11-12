@@ -90,6 +90,36 @@ var _ok := 0
 var _fail := 0
 
 
+## Things that MOVE in a room, held still for the capture: the recheck compares these frames pixel by pixel every
+## release, so an NPC strolling or a lamp wavering reads as "the room changed" and hides a real change behind it.
+## Each is a static switch its owner built for this tool (cowir-overworld 24225, 24357). A tree without the switch
+## (before those tips fold) has nothing to hold and says so. SHOTS_NO_HOLD=1 leaves them moving: the control.
+const HELD_STILL := [
+	["res://src/exploration/OverworldNPC.gd", "strolling_enabled"],
+	["res://src/maps/InteriorLighting.gd", "flicker_enabled"],
+]
+
+
+func _hold_still() -> void:
+	if OS.get_environment("SHOTS_NO_HOLD") != "":
+		print("[SHOT] held still: nothing (SHOTS_NO_HOLD)")
+		return
+	var held: Array = []
+	var absent: Array = []
+	for pair in HELD_STILL:
+		var script = load(pair[0]) if ResourceLoader.exists(pair[0]) else null
+		if script == null or script.get(pair[1]) == null:
+			absent.append(pair[1])
+			continue
+		script.set(pair[1], false)
+		if script.get(pair[1]) != false:
+			print("[SHOT] FAIL: %s did not take false: the switch is not a static this tool can set" % pair[1])
+			_fail += 1
+			continue
+		held.append(pair[1])
+	print("[SHOT] held still: %s · not in this tree: %s" % [", ".join(held) if not held.is_empty() else "nothing", ", ".join(absent) if not absent.is_empty() else "nothing"])
+
+
 ## Stands in for GameLoop for the ONE question a room asks it. A room guards the call with has_method, so nothing else
 ## is answered and nothing else is pretended.
 func _stand_in_origin(origin: String) -> Node:
@@ -109,6 +139,7 @@ func _init() -> void:
 	await process_frame
 
 	_suppress_furniture()
+	_hold_still()
 
 	DirAccess.make_dir_recursive_absolute("res://tmp/marketing")
 	for entry in SCENES:
