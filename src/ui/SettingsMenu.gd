@@ -644,7 +644,7 @@ func _build_ui() -> void:
 		var idx = _settings_items.size()
 		var item = (_create_action_button(label, desc, idx)
 			if primary else _create_action_button_neutral(label, desc, idx))
-		item.custom_minimum_size = Vector2(400, 56)  # Action row with breathing room
+		item.custom_minimum_size = Vector2(400, 56.0 * _row_k())  # Action row with breathing room
 		actions_box.add_child(item)
 		_settings_items.append({"control": item, "type": "action", "id": id})
 		MenuMouseHelper.make_clickable(item, idx, 400, 56,
@@ -740,6 +740,11 @@ func _row_font() -> Font:
 	return ThemeDB.fallback_font
 
 
+## Row geometry factor, upward only: the rows were laid out in literals (subtitle at y 22, toggle chips at 40 in a 60 px row) around fonts that scale.
+func _row_k() -> float:
+	return maxf(1.0, float(TextScale.scaled(100)) / 100.0)
+
+
 func _line_h(font_size: int) -> float:
 	var f: Font = _row_font()
 	return float(font_size) * 1.4 if f == null else f.get_height(font_size)
@@ -767,7 +772,7 @@ func _create_option_setting(label_text: String, description: String, options: Ar
 	## the container has to be created with its final minimum size.
 	var opt_fs: int = TextScale.scaled(10)
 	var chip: Vector2 = _chip_size(options, 40.0, 24.0, opt_fs)
-	var options_y: float = 22.0 + _line_h(opt_fs) + DESC_TO_OPTIONS_GAP
+	var options_y: float = 22.0 * _row_k() + _line_h(opt_fs) + DESC_TO_OPTIONS_GAP
 	var row_h: float = maxf(80.0, options_y + chip.y + 8.0)
 
 	var container = Control.new()
@@ -798,7 +803,7 @@ func _create_option_setting(label_text: String, description: String, options: Ar
 	# Description
 	var desc = Label.new()
 	desc.text = description
-	desc.position = Vector2(8, 22)
+	desc.position = Vector2(8, 22.0 * _row_k())
 	desc.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	desc.add_theme_color_override("font_color", SUBTITLE_COLOR)
 	container.add_child(desc)
@@ -851,7 +856,7 @@ func _create_volume_setting(label_text: String, description: String, options: Ar
 	for o in options:
 		shown.append(str(o) + "%")
 	var chip: Vector2 = _chip_size(shown, 50.0, 20.0, opt_fs)
-	var options_y: float = 22.0 + _line_h(opt_fs) + DESC_TO_OPTIONS_GAP
+	var options_y: float = 22.0 * _row_k() + _line_h(opt_fs) + DESC_TO_OPTIONS_GAP
 	var row_h: float = maxf(60.0, options_y + chip.y + 8.0)
 
 	var container = Control.new()
@@ -875,7 +880,7 @@ func _create_volume_setting(label_text: String, description: String, options: Ar
 	# Description
 	var desc = Label.new()
 	desc.text = description
-	desc.position = Vector2(8, 22)
+	desc.position = Vector2(8, 22.0 * _row_k())
 	desc.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	desc.add_theme_color_override("font_color", SUBTITLE_COLOR)
 	container.add_child(desc)
@@ -927,7 +932,7 @@ func _create_option_setting_small(label_text: String, description: String, optio
 	"""Create a smaller option selector setting control"""
 	var opt_fs: int = TextScale.scaled(10)
 	var chip: Vector2 = _chip_size(options, float(chip_w), 20.0, opt_fs)
-	var options_y: float = 22.0 + _line_h(opt_fs) + DESC_TO_OPTIONS_GAP
+	var options_y: float = 22.0 * _row_k() + _line_h(opt_fs) + DESC_TO_OPTIONS_GAP
 	var row_h: float = maxf(60.0, options_y + chip.y + 8.0)
 
 	var container = Control.new()
@@ -951,7 +956,7 @@ func _create_option_setting_small(label_text: String, description: String, optio
 	# Description
 	var desc = Label.new()
 	desc.text = description
-	desc.position = Vector2(8, 22)
+	desc.position = Vector2(8, 22.0 * _row_k())
 	desc.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	desc.add_theme_color_override("font_color", SUBTITLE_COLOR)
 	container.add_child(desc)
@@ -995,7 +1000,8 @@ func _create_option_setting_small(label_text: String, description: String, optio
 func _create_toggle_setting(label_text: String, description: String, is_on: bool, index: int) -> Control:
 	"""Create a toggle (on/off) setting control"""
 	var container = Control.new()
-	container.custom_minimum_size = Vector2(400, 60)
+	var k: float = _row_k()
+	container.custom_minimum_size = Vector2(400, 60.0 * k)
 
 	# Selection highlight
 	var highlight = ColorRect.new()
@@ -1015,20 +1021,20 @@ func _create_toggle_setting(label_text: String, description: String, is_on: bool
 	# Description
 	var desc = Label.new()
 	desc.text = description
-	desc.position = Vector2(8, 22)
+	desc.position = Vector2(8, 22.0 * _row_k())
 	desc.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	desc.add_theme_color_override("font_color", SUBTITLE_COLOR)
 	container.add_child(desc)
 
 	# Toggle display
 	var toggle_container = HBoxContainer.new()
-	toggle_container.position = Vector2(8, 40)
+	toggle_container.position = Vector2(8, 40.0 * k)
 	toggle_container.name = "ToggleContainer"
 	container.add_child(toggle_container)
 
 	# OFF option
 	var off_bg = ColorRect.new()
-	off_bg.custom_minimum_size = Vector2(50, 20)
+	off_bg.custom_minimum_size = Vector2(50.0 * k, 20.0 * k)
 	off_bg.color = OPTION_BG if is_on else OPTION_SELECTED
 	off_bg.name = "OffBG"
 	toggle_container.add_child(off_bg)
@@ -1037,7 +1043,7 @@ func _create_toggle_setting(label_text: String, description: String, is_on: bool
 	off_label.text = "OFF"
 	off_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	off_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	off_label.size = Vector2(50, 20)
+	off_label.size = Vector2(50.0 * k, 20.0 * k)
 	off_label.add_theme_font_size_override("font_size", TextScale.scaled(11))
 	off_label.add_theme_color_override("font_color", TEXT_COLOR if is_on else Color.YELLOW)
 	off_label.name = "OffLabel"
@@ -1050,7 +1056,7 @@ func _create_toggle_setting(label_text: String, description: String, is_on: bool
 
 	# ON option
 	var on_bg = ColorRect.new()
-	on_bg.custom_minimum_size = Vector2(50, 20)
+	on_bg.custom_minimum_size = Vector2(50.0 * k, 20.0 * k)
 	on_bg.color = OPTION_SELECTED if is_on else OPTION_BG
 	on_bg.name = "OnBG"
 	toggle_container.add_child(on_bg)
@@ -1059,7 +1065,7 @@ func _create_toggle_setting(label_text: String, description: String, is_on: bool
 	on_label.text = "ON"
 	on_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	on_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	on_label.size = Vector2(50, 20)
+	on_label.size = Vector2(50.0 * k, 20.0 * k)
 	on_label.add_theme_font_size_override("font_size", TextScale.scaled(11))
 	on_label.add_theme_color_override("font_color", Color.YELLOW if is_on else TEXT_COLOR)
 	on_label.name = "OnLabel"
@@ -1068,10 +1074,20 @@ func _create_toggle_setting(label_text: String, description: String, is_on: bool
 	return container
 
 
+## The "[Confirm]" hint sits right of the row's own text: 310 as shipped, further when a grown title or subtitle reaches it.
+func _action_hint_x(label_text: String, description: String) -> float:
+	var f: Font = _row_font()
+	if f == null:
+		return 310.0
+	var title_w: float = f.get_string_size(label_text, HORIZONTAL_ALIGNMENT_LEFT, -1, TextScale.scaled(14)).x
+	var desc_w: float = f.get_string_size(description, HORIZONTAL_ALIGNMENT_LEFT, -1, TextScale.scaled(10)).x
+	return maxf(310.0, 8.0 + maxf(title_w, desc_w) + 12.0)
+
+
 func _create_action_button_neutral(label_text: String, description: String, index: int) -> Control:
 	"""Create a neutral action button (non-destructive, like Controls)"""
 	var container = Control.new()
-	container.custom_minimum_size = Vector2(400, 56)
+	container.custom_minimum_size = Vector2(400, 56.0 * _row_k())
 
 	var highlight = ColorRect.new()
 	highlight.color = SELECTED_COLOR if index == selected_index else Color.TRANSPARENT
@@ -1088,14 +1104,14 @@ func _create_action_button_neutral(label_text: String, description: String, inde
 
 	var desc = Label.new()
 	desc.text = description
-	desc.position = Vector2(8, 22)
+	desc.position = Vector2(8, 22.0 * _row_k())
 	desc.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	desc.add_theme_color_override("font_color", SUBTITLE_COLOR)
 	container.add_child(desc)
 
 	var hint = Label.new()
 	hint.text = "[%s]" % InputProfileManager.hint_for_action("ui_accept")
-	hint.position = Vector2(310, 16)
+	hint.position = Vector2(_action_hint_x(label_text, description), 16.0 * _row_k())
 	hint.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	hint.add_theme_color_override("font_color", Color.YELLOW)
 	hint.name = "ActionHint"
@@ -1107,7 +1123,7 @@ func _create_action_button_neutral(label_text: String, description: String, inde
 func _create_action_button(label_text: String, description: String, index: int) -> Control:
 	"""Create an action button setting (press A to activate)"""
 	var container = Control.new()
-	container.custom_minimum_size = Vector2(400, 56)
+	container.custom_minimum_size = Vector2(400, 56.0 * _row_k())
 
 	# Selection highlight
 	var highlight = ColorRect.new()
@@ -1127,7 +1143,7 @@ func _create_action_button(label_text: String, description: String, index: int) 
 	# Description
 	var desc = Label.new()
 	desc.text = description
-	desc.position = Vector2(8, 22)
+	desc.position = Vector2(8, 22.0 * _row_k())
 	desc.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	desc.add_theme_color_override("font_color", SUBTITLE_COLOR)
 	container.add_child(desc)
@@ -1135,7 +1151,7 @@ func _create_action_button(label_text: String, description: String, index: int) 
 	# Action hint — right-aligned with the title row, no vertical overlap
 	var hint = Label.new()
 	hint.text = "[%s]" % InputProfileManager.hint_for_action("ui_accept")
-	hint.position = Vector2(310, 16)
+	hint.position = Vector2(_action_hint_x(label_text, description), 16.0 * _row_k())
 	hint.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	hint.add_theme_color_override("font_color", Color.YELLOW)
 	hint.name = "ActionHint"
