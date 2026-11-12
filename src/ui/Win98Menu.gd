@@ -1035,8 +1035,11 @@ func _build_menu() -> void:
 
 	# Allow input after a short delay to prevent stray key presses
 	# Use ignore_time_scale=true to keep consistent regardless of battle speed
+	if not is_inside_tree():
+		return
 	await get_tree().create_timer(0.08, true, false, true).timeout  # Reduced from 0.15 for faster response
-	if not is_instance_valid(self):
+	# Out of the tree is as gone as freed: a battle torn down mid-build left this calling get_tree() on nothing.
+	if not is_instance_valid(self) or not is_inside_tree():
 		return
 	_can_accept_input = true
 	await get_tree().create_timer(0.05, true, false, true).timeout  # Reduced from 0.1 for faster response
