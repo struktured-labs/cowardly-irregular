@@ -33,13 +33,13 @@ func _code() -> String:
 
 
 func test_a_motif_grows_with_the_figure_and_never_shrinks() -> void:
-	assert_eq(StatusAura.scale_for(StatusAura.REFERENCE_BODY_PX), 1.0, "CONTROL: a figure of the reference height draws at 1x")
-	assert_eq(StatusAura.scale_for(40.0), 1.0, "a small figure keeps the 1x motif: 1x is the readable floor")
+	assert_gt(StatusAura.SCALE_MIN, 1.0, "CONTROL: the floor is above the drawn size (a slime's motif was a speck at 1.0)")
+	assert_eq(StatusAura.scale_for(40.0), StatusAura.SCALE_MIN, "a small figure gets the floor, never less")
 	assert_almost_eq(StatusAura.scale_for(StatusAura.REFERENCE_BODY_PX * 2.0), 2.0, 0.001, "a figure twice as tall draws its motifs twice as large")
 	assert_eq(StatusAura.scale_for(5000.0), StatusAura.SCALE_MAX, "the growth is capped, so a screen-filling boss is not buried in its own status")
 	var small := _aura(["sleep"], Rect2(-24, -64, 48, 64))
 	var big := _aura(["sleep"], Rect2(-90, -192, 180, 192))
-	assert_eq(small.motif_scale(), 1.0, "CONTROL: a party-sized body is 1x")
+	assert_eq(small.motif_scale(), StatusAura.SCALE_MIN, "CONTROL: a 64 px body is at the floor")
 	assert_gt(big.motif_scale(), 1.9, "a 192 px body draws its motifs about twice as large; got %.2f" % big.motif_scale())
 
 
@@ -54,9 +54,9 @@ func test_arrow_columns_spread_with_the_scale_so_big_arrows_do_not_overlap() -> 
 		assert_gt(float(xs[i]) - float(xs[i - 1]), 12.0 * k - 0.1,
 			"an arrow is 12 px wide at 1x, so at %.2fx columns %d and %d overlap: %s" % [k, i - 1, i, str(xs)])
 	var small := _aura(["attack_up", "defense_down", "magic_up", "speed_down"], Rect2(-24, -64, 48, 64))
-	var lead_1x: float = small.arrow_x(0, 4) - small.body.end.x
-	assert_almost_eq(float(xs[0]) - big.body.end.x, lead_1x * k, 0.01,
-		"the first column keeps its 1x place beside the figure's edge, scaled (%.1f px at 1x)" % lead_1x)
+	var lead_drawn: float = (small.arrow_x(0, 4) - small.body.end.x) / small.motif_scale()
+	assert_almost_eq((float(xs[0]) - big.body.end.x) / k, lead_drawn, 0.01,
+		"the first column keeps its drawn place beside the figure's edge at every scale (%.1f px before scaling)" % lead_drawn)
 
 
 func test_every_motif_has_a_rim_that_contrasts_with_it() -> void:

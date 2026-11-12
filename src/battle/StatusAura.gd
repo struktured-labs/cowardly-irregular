@@ -52,9 +52,10 @@ const STAT_COLOR := {
 
 const FALLBACK := "mote"
 
-## A motif is drawn at 1x on a figure this tall or shorter (a party member) and grows with a taller one, to a cap.
+## A motif's scale is the figure's height on screen over this, between a floor and a cap. Measured in the first render:
+## a slime stands ~70 px, a party member ~170, Pyrroth ~250; at 1.0 a slime's Z was an 8 px speck, hence the floor.
 const REFERENCE_BODY_PX := 96.0
-const SCALE_MIN := 1.0
+const SCALE_MIN := 1.3
 const SCALE_MAX := 2.2
 const RIM_DARK := Color(0.05, 0.04, 0.08)
 const RIM_LIGHT := Color(0.95, 0.95, 1.0)
@@ -94,7 +95,7 @@ static func motif_for(status: String) -> String:
 	return str(MOTIF.get(status, FALLBACK))
 
 
-## How much larger than 1x a motif is drawn on a figure this tall (screen px). Never smaller: 1x is the readable floor.
+## How much larger than its drawn size a motif is on a figure this tall (screen px). Never below SCALE_MIN.
 static func scale_for(body_height: float) -> float:
 	return clampf(body_height / REFERENCE_BODY_PX, SCALE_MIN, SCALE_MAX)
 
@@ -192,7 +193,7 @@ func _draw() -> void:
 	var t := float(Time.get_ticks_msec()) / 1000.0
 	var k := motif_scale()
 	var unit := Vector2.ONE * k
-	var px := maxi(1, roundi(k))  # a glyph's pixel, whole so it never shimmers
+	var px := maxi(2, roundi(k * 1.2))  # a glyph's pixel, whole so it never shimmers
 	var head := Vector2(body.get_center().x, body.position.y - head_clear)
 	var heads := 0
 	for e in _shown:
@@ -204,7 +205,7 @@ func _draw() -> void:
 				for i in 3:
 					var p := fmod(t * 0.55 + float(i) / 3.0, 1.0)
 					var at := head + Vector2(10.0 + p * 18.0 + sin(t * 2.0 + i) * 2.0, -14.0 - p * 26.0) * k
-					_glyph("Z", at, px * (1 if p < 0.5 else 2), Color(c, 1.0 - p))
+					_glyph("Z", at, px + (0 if p < 0.5 else 1), Color(c, 1.0 - p))
 			"bubbles":
 				_tint(c, t)
 				for i in 5:
@@ -222,7 +223,7 @@ func _draw() -> void:
 					_shape(STAR, head + Vector2(cos(a) * 16.0, -6.0 + sin(a) * 5.0) * k, unit, Color(c, 0.95), rim, k)
 			"swirl":
 				var off := Vector2(-14.0 + 10.0 * float(heads), -24.0) * k
-				_glyph("?", head + off + Vector2(sin(t * 4.0) * 3.0 * k, 0), px * 2, c)
+				_glyph("?", head + off + Vector2(sin(t * 4.0) * 3.0 * k, 0), px + 1, c)
 				heads += 1
 			"hearts":
 				for i in 3:
