@@ -20,6 +20,8 @@ var _bm_guard
 var _saved_scale := 1.0
 var _hero: Combatant
 var _foe: Combatant
+## The shared effects layer's children when an arm starts: after_each frees whatever the arm left there.
+var _fx_before: Array = []
 
 
 func _c(n: String) -> Combatant:
@@ -77,10 +79,18 @@ func before_each() -> void:
 	_scene.enemy_animators.assign([fa])
 	_scene.turbo_mode = false
 	_scene.autogrind_console_mode = false
+	_fx_before = EffectSystem._effects_container.get_children() if is_instance_valid(EffectSystem._effects_container) else []
 	BattleManager.impact_hold = 0.0
 
 
 func after_each() -> void:
+	## Leave the shared effects layer as this arm found it. A sequence's flames free themselves on battle-time timers,
+	## and ones still dying when the NEXT file takes a child-count baseline red its "the layer grew" arm by order
+	## (autogrind 24109: test_fire_is_fractal, which sorts right after this file).
+	if is_instance_valid(EffectSystem._effects_container):
+		for child in EffectSystem._effects_container.get_children():
+			if not (child in _fx_before):
+				child.free()
 	Engine.time_scale = _saved_scale
 	BattleManager.impact_hold = 0.0
 	_bm_guard.restore()
