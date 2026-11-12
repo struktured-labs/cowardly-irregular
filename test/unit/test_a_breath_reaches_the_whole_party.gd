@@ -4,6 +4,8 @@ extends GutTest
 ## The enemy ladder queued one target and nothing widened it. An all-enemies move now lands on the whole opposing side,
 ## with one spread dial (DamageRules.enemy_spread) both engines read, and two crit rules behind dials beside it.
 
+const BattleStateGuard := preload("res://test/unit/helpers/battle_state.gd")
+
 var _guard
 var _saved_spread: float
 var _saved_mode: String
