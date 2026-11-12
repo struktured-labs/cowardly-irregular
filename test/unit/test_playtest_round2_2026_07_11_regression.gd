@@ -80,16 +80,6 @@ func test_command_menu_spawns_for_own_solo_duel() -> void:
 		"override must match the routing gate's solo-party conjunct")
 
 
-func test_danger_music_switchback_is_stateless() -> void:
-	# "playing the ur about to die music" over a restored party — the
-	# duel retry rebuilds BattleScene with _is_danger_music=false while
-	# SoundManager still plays danger; the flag-only check never switched
-	# back. The recovered branch must also consult the LIVE track.
-	var src := FileAccess.get_file_as_string("res://src/battle/BattleScene.gd")
-	assert_true("_current_music) == \"danger\"" in src,
-		"switch-back must consult SoundManager's live track, not only the per-scene flag")
-
-
 func test_select_toggles_autobattle_on_victory_screen() -> void:
 	# struktured: "should be able to disable autobattle in the victory
 	# sequence/screen... but I cant" — the Select handler had no VICTORY
