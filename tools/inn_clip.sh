@@ -25,6 +25,7 @@ command grep -a -E '^\[ICLIP\]|SCRIPT ERROR|Parse Error' "$LOG" || true
 [ "$EC" -eq 0 ] && [ -s "$AVI" ] || { echo "[iclip] $LABEL FAILED (exit $EC) - $LOG" >&2; exit 1; }
 command grep -a -q '^\[ICLIP\] built' "$LOG" || { echo "[iclip] $LABEL: no build line in $LOG" >&2; exit 1; }
 command grep -a -q '^\[ICLIP\] beat=dawn' "$LOG" || { echo "[iclip] $LABEL FAILED: the night never reached dawn" >&2; exit 1; }
+command grep -a -q 'cutscene_playing=false' "$LOG" || { echo "[iclip] $LABEL FAILED: a cutscene was playing over the room" >&2; exit 1; }
 PROBE="$(ffprobe -v error -show_entries stream=codec_type -of csv=p=0 "$AVI" | sort -u | tr '\n' ' ')"
 case "$PROBE" in *audio*video*) ;; *) echo "[iclip] $LABEL FAILED: the AVI lacks a video or an audio stream ($PROBE)" >&2; exit 1 ;; esac
 # The boot and the walk into the room precede the rest; keep the last <seconds> of the run, which is the night.
