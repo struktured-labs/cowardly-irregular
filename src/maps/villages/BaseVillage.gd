@@ -1285,7 +1285,7 @@ func _examine_offset_for(examine_id: String) -> Vector2i:
 	return _EXAMINE_OFFSETS.get(examine_id, Vector2i.ZERO)
 
 
-## Virtual: the cell of the drawn thing this examine describes (a well, a statue), or (-1, -1) for none.
+## Virtual: the walkable cell beside the drawn thing this examine describes (a well, a statue), where it is read from; (-1, -1) for none.
 func _examine_anchor_cell(_examine_id: String) -> Vector2i:
 	return Vector2i(-1, -1)
 
@@ -1357,7 +1357,7 @@ func _place_authored_examines() -> void:
 		if text == "":
 			push_warning("[%s] examine '%s' is authored with no text" % [_get_area_id(), examine_id])
 			continue
-		# An examine anchored to something the village DRAWS stands on that thing's cell and is read from beside it.
+		# An examine anchored to something the village DRAWS stands on the authored cell beside it, not by offset from the spawn.
 		var anchor: Vector2i = _examine_anchor_cell(str(examine_id))
 		if anchor.x < 0 and not _EXAMINE_OFFSETS.has(examine_id):
 			push_warning("[%s] examine '%s' has no offset, so it has no cell" % [_get_area_id(), examine_id])

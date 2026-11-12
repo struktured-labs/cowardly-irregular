@@ -95,13 +95,13 @@ func test_the_stone_well_is_read_at_the_drawn_well() -> void:
 	if well == null or examine == null:
 		return
 	var foot: Array = well.footprint_cells(Harmonia.WELL_CELL)
-	assert_true(foot.has(_cell(examine)), "the Stone Well text is on the well's own cell, not %s" % str(_cell(examine)))
-	var reach := _reach(v)
-	var approach := false
+	var beside := false
 	for d in N4:
-		if reach.has(_cell(examine) + d):
-			approach = true
-	assert_true(approach, "and a player can stand beside it")
+		if foot.has(_cell(examine) + d):
+			beside = true
+	assert_true(beside, "the Stone Well text is read from a cell touching the drawn well, not from %s" % str(_cell(examine)))
+	assert_true(_reach(v).has(_cell(examine)), "and that cell is one a player can walk to")
+	assert_false(foot.has(_cell(examine)), "never ON the well: the village's own sweep moves a readable off a solid cell (the first run's red)")
 	var statue := _named(v, "Examine_harmonia_statue")
 	assert_not_null(statue, "CONTROL: an examine with no drawn thing is still placed by its offset")
 	if statue != null:

@@ -59,9 +59,9 @@ func _get_save_point_position() -> Vector2:
 const WELL_CELL := Vector2i(25, 20)
 
 
-## The "Stone Well" text is read at the drawn well, on the footprint cell nearer Phil.
+## The "Stone Well" text is read from the road cell in front of the drawn well (the village sweep keeps a readable off solid cells).
 func _examine_anchor_cell(examine_id: String) -> Vector2i:
-	return WELL_CELL + Vector2i(1, 0) if examine_id == "harmonia_well" else Vector2i(-1, -1)
+	return WELL_CELL + Vector2i(0, 1) if examine_id == "harmonia_well" else Vector2i(-1, -1)
 
 
 func _get_player_spawn_fallback() -> Vector2:
