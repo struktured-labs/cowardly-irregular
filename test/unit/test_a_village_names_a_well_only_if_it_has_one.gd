@@ -2,7 +2,9 @@ extends GutTest
 
 ## Harmonia's text put a well in the square six times (Phil the Lost sits at it, the Elder says "Look east. Past the
 ## well.") while the village placed a fountain and no well. A village's authored text, its own script's and the
-## scenes the story gate plays there, may name a well only if that village places one.
+## scenes the story plays there, may name a well only if that village places one. A scene belongs to a village
+## by either route: the story gate plays it on that map, or (quest-triggered scenes such as world1_orrery, which
+## the gate never plays) one of its backgrounds is that village's, e.g. harmonia_square for harmonia_village.
 
 const VILLAGES := "res://src/maps/villages/"
 const CUTSCENES := "res://data/cutscenes/"
@@ -54,11 +56,34 @@ func _villages() -> Dictionary:
 			names.append(f)
 		out[map_id] = {"file": f, "places": code.contains("Kind.WELL"), "names": names}
 	var maps := _scene_maps()
+	var background := RegEx.create_from_string("\"background\"\\s*:\\s*\"([a-z0-9_]+)\"")
 	for f in DirAccess.get_files_at(CUTSCENES):
+		if not f.ends_with(".json"):
+			continue
 		var cid := f.get_basename()
-		if f.ends_with(".json") and out.has(maps.get(cid, "")) and _names_a_well(FileAccess.get_file_as_string(CUTSCENES + f)):
-			out[maps[cid]]["names"].append(cid)
+		var text := FileAccess.get_file_as_string(CUTSCENES + f)
+		if not _names_a_well(text):
+			continue
+		var homes := {}
+		if out.has(maps.get(cid, "")):
+			homes[maps[cid]] = true
+		for m in background.search_all(text):
+			var home := _village_of_background(m.get_string(1), out)
+			if home != "":
+				homes[home] = true
+		for home in homes:
+			out[home]["names"].append(cid)
 	return out
+
+
+## The village a backdrop belongs to: the one whose stem ("harmonia" of harmonia_village) begins its id.
+## A shared backdrop (prologue_village, cave_entrance) is nobody's.
+func _village_of_background(bg: String, villages: Dictionary) -> String:
+	for map_id in villages:
+		var stem := str(map_id).trim_suffix("_village")
+		if bg == stem or bg.begins_with(stem + "_"):
+			return map_id
+	return ""
 
 
 func test_the_scan_can_tell_a_well_from_an_adverb() -> void:
@@ -66,6 +91,15 @@ func test_the_scan_can_tell_a_well_from_an_adverb() -> void:
 	assert_true(_names_a_well("on the well kerb beside him"), "CONTROL: its kerb counts")
 	assert_false(_names_a_well("You fought well, and the others as well."), "an adverb is not a well")
 	assert_false(_names_a_well("the well-known cartographer"), "nor is a well-known anything")
+
+
+func test_a_quest_scene_is_read_through_its_backdrop() -> void:
+	var villages := _villages()
+	assert_eq(_village_of_background("harmonia_square", villages), "harmonia_village", "a village's square is that village")
+	assert_eq(_village_of_background("node_prime", villages), "node_prime_village", "a bare stem is that village")
+	assert_eq(_village_of_background("prologue_village", villages), "", "CONTROL: a shared backdrop is nobody's")
+	assert_false(_scene_maps().has("world1_orrery"), "CONTROL: the gate never plays the orrery scene, so only the backdrop route can reach it")
+	assert_has(villages["harmonia_village"]["names"], "world1_orrery", "Phil's well in the orrery scene is Harmonia's")
 
 
 func test_a_village_names_a_well_only_if_it_places_one() -> void:
