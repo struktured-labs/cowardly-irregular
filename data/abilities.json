@@ -738,7 +738,7 @@
     "type": "support",
     "animation": "buff",
     "mp_cost": 0,
-    "description": "Brave the moment: gain 2 AP at once, banked for a bigger Advance next turn",
+    "description": "Go all in: gain 2 AP at once, banked for a bigger Advance next turn",
     "target_type": "self",
     "effect": "brave_actions",
     "bp_cost": 1
