@@ -772,7 +772,7 @@
     "type": "support",
     "animation": "buff",
     "mp_cost": 0,
-    "description": "Advance on banked AP to take extra actions this turn",
+    "description": "Go all in: gain 2 AP at once, banked for a bigger Advance next turn",
     "target_type": "self",
     "effect": "brave_actions",
     "bp_cost": 1
