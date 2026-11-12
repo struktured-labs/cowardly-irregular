@@ -595,6 +595,9 @@ func _exit_tree() -> void:
 	# Our gate leaves with us (adhoc 21681); a newer battle's gate is not ours to clear.
 	if EffectSystem.phase_sfx_gate == Callable(self, "signature_sound_allowed"):
 		EffectSystem.phase_sfx_gate = Callable()
+	# Our backdrop leaves with us too: the autoload kept pointing at a freed node (found by a test that saved and restored it).
+	if EffectSystem.battle_background == _battle_background:
+		EffectSystem.battle_background = null
 	if SoundManager:
 		SoundManager.stop_voiced_line(self)
 	# Disconnect from BattleManager signals to prevent memory leaks
