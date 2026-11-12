@@ -8,6 +8,7 @@
 #                                `godot --path <dir>` alone: a preview build), 1 = not
 #   tools/box_busy.sh --others   exit 0 = another lane has an engine up (count printed) · 1 = none
 #   tools/box_busy.sh --marker   print the BOX_MARKER path every box-protocol script must use
+#   tools/box_busy.sh --slot-marker  print the path tools/box_hold.sh writes a lane's claimed slot to
 #   tools/box_busy.sh --roots    print each _detached dir the publish scan reads (exit 1 = none exist)
 #   tools/box_busy.sh --selftest watch each arm flip (exit 0 = every arm RAN and held;
 #                                the run prints the count it derived, not a literal)
@@ -32,6 +33,21 @@ FOLD_TREE="${FOLD_TREE:-/home/struktured/projects/cowir-main}"
 ## measured. A no-op for production: /usr/bin/godot is a real file, not a symlink.
 ENGINE_EXE="$(readlink -f "${BOX_BUSY_ENGINE:-/usr/bin/godot}" 2>/dev/null || echo "${BOX_BUSY_ENGINE:-/usr/bin/godot}")"
 BOX_MARKER="${BOX_MARKER:-$FOLD_TREE/tmp/BOX_BUSY}"
+## A LANE'S CLAIMED SLOT (tools/box_hold.sh writes it). 2026-11-11: this said "FREE (other lanes' godot up: 2)" while
+## cowir-adhoc's claimed slot was mid-run, and cowir-battle started an engine on that reading. A slot is invisible BETWEEN
+## its steps to any process count, so it gets a marker of its own, beside the fold's and resolved the same way.
+BOX_SLOT_MARKER="${BOX_SLOT_MARKER:-$(dirname "$BOX_MARKER")/BOX_SLOT}"
+## Is PID $1 this process or one of its ancestors? A slot's own steps (run_publish_selftests, pre_ready_guards) ask
+## box_busy first, and must not be refused by the hold they run under. Ancestry, not an env var: a variable survives into
+## a detached child and would exempt it for ever.
+_is_self_or_ancestor() {
+  local p="$$" n=0
+  while [ -n "$p" ] && [ "$p" != 0 ] && [ "$n" -lt 64 ]; do
+    [ "$p" = "$1" ] && return 0
+    p="$(awk '{print $4}' "/proc/$p/stat" 2>/dev/null)"; n=$((n + 1))
+  done
+  return 1
+}
 ## DEPLOY_DIR named ONE publisher, so a publish launched from any other lane's worktree was
 ## INVISIBLE: measured 2026-10-17, this said FREE while v3.33.697-alpha published from
 ## cowir-sprites. A glob over every lane adds 1 true positive and 0 false ones (270 marker
@@ -111,6 +127,14 @@ busy_reason() {
     fi
     echo "box_busy: stale marker (pid ${pid:-?} not alive), ignoring: $BOX_MARKER" >&2
   fi
+  if [ -f "$BOX_SLOT_MARKER" ]; then
+    local spid; spid="$(sed -n 's/^pid=//p' "$BOX_SLOT_MARKER" | head -1)"
+    if [ -n "$spid" ] && kill -0 "$spid" 2>/dev/null; then
+      _is_self_or_ancestor "$spid" || { echo "slot $(sed -n 's/^lane=//p' "$BOX_SLOT_MARKER" | head -1) running: $(tr '\n' ' ' < "$BOX_SLOT_MARKER")"; return 0; }
+    else
+      echo "box_busy: stale slot marker (pid ${spid:-?} not alive), ignoring: $BOX_SLOT_MARKER" >&2
+    fi
+  fi
   ## A godot running in the fold tree IS the chain or gate, marker or not — so a missing marker
   ## cannot turn a running gate into FREE (cowir-autogrind: it said FREE beside the .692 chain).
   ## EXCEPT struktured's own game: launch.sh starts it as bare `godot &` from this very tree, so
@@ -159,7 +183,7 @@ if [ "${1:-}" = "--selftest" ]; then  # watch the answer flip, so a FREE is neve
   ## the grouping into arms is a judgement the output cannot settle, which is half of why the old
   ## literal went unexamined for so long.
   arms=0
-  EXPECT_ARMS=15
+  EXPECT_ARMS=19
   A() { arms=$((arms + 1)); }
   A  # arm 1  nothing set -> FREE
   BOX_MARKER="$T/m" DEPLOY_DIR="$T/d" FOLD_TREE="$T/none" "$0" >/dev/null || { echo "FAIL: not FREE with nothing set"; fails=1; }
@@ -336,6 +360,32 @@ if [ "${1:-}" = "--selftest" ]; then  # watch the answer flip, so a FREE is neve
   FOLD_TREE="$TA/fold" argv_is_player "$TA/pv/argv.empty" "$TA/pv/cwd" && { echo "FAIL arm15 empty: an empty cmdline read as a player"; fails=1; }
   FOLD_TREE="$TA/fold" argv_is_player "$TA/pv/argv.gone" "$TA/pv/cwd" && { echo "FAIL arm15 gone: an unreadable cmdline read as a player"; fails=1; }
 
+  A  # arm 16  a HELD slot reads BUSY, names its lane; a dead one does not block
+  sleep 30 & hp=$!
+  printf 'pid=%s\nlane=cowir-zz\nwhat=slot.sh\nsince=00:00:00Z\n' "$hp" > "$T/slot"
+  out="$(BOX_SLOT_MARKER="$T/slot" BOX_MARKER="$T/none.m" DEPLOY_DIR="$T/d" FOLD_TREE="$T/none" "$0")"; e=$?
+  case "$e/$out" in "1/BUSY: slot cowir-zz running"*) ;; *) echo "FAIL arm16a: a live slot marker did not read BUSY naming its lane (ec=$e): $out"; fails=1 ;; esac
+  kill "$hp" 2>/dev/null; wait "$hp" 2>/dev/null
+  BOX_SLOT_MARKER="$T/slot" BOX_MARKER="$T/none.m" DEPLOY_DIR="$T/d" FOLD_TREE="$T/none" "$0" >/dev/null 2>&1 || { echo "FAIL arm16b: a dead slot marker blocked"; fails=1; }
+  A  # arm 17  the holder's OWN descendants still read free (a slot's steps ask box_busy first)
+  printf 'pid=%s\nlane=cowir-zz\n' "$$" > "$T/slot"
+  BOX_SLOT_MARKER="$T/slot" BOX_MARKER="$T/none.m" DEPLOY_DIR="$T/d" FOLD_TREE="$T/none" "$0" >/dev/null 2>&1 || { echo "FAIL arm17: a process inside its own hold read BUSY"; fails=1; }
+  A  # arm 18  another lane's engine with no hold: exit 0, and never the bare word FREE
+  ## the stand-in keeps the NAME sleep: on this box coreutils is one multi-call binary that dispatches on argv[0], so a copy
+  ## named anything else exits "function/utility not found" at once (my first arm 18 read FREE for that reason)
+  "$STANDIN" 25 & ep=$!; sleep 1
+  out="$(BOX_BUSY_ENGINE="$STANDIN" BOX_SLOT_MARKER="$T/none.s" BOX_MARKER="$T/none.m" DEPLOY_DIR="$T/d" FOLD_TREE="$T/none" "$0")"; e=$?
+  kill "$ep" 2>/dev/null; wait "$ep" 2>/dev/null
+  case "$e/$out" in "0/NO GATE/PUBLISH/HELD SLOT (lanes' godot up: 1;"*) ;; *) echo "FAIL arm18a: an unheld lane engine was not reported as such (ec=$e): $out"; fails=1 ;; esac
+  out="$(BOX_BUSY_ENGINE="$STANDIN" BOX_SLOT_MARKER="$T/none.s" BOX_MARKER="$T/none.m" DEPLOY_DIR="$T/d" FOLD_TREE="$T/none" "$0")"
+  case "$out" in "FREE (other lanes' godot up: 0)") ;; *) echo "FAIL arm18b: with no engine up it did not read plain FREE: $out"; fails=1 ;; esac
+
+  A  # arm 19  the tool that WRITES the slot marker passes its own selftest against THIS box_busy (so the pair cannot drift)
+  if [ -x "$(dirname "$0")/box_hold.sh" ]; then
+    hs="$(BOX_HOLD_BUSY="$(cd "$(dirname "$0")" && pwd)/box_busy.sh" "$(dirname "$0")/box_hold.sh" --selftest 2>&1)" \
+      || { echo "FAIL arm19: tools/box_hold.sh --selftest failed: $(printf '%s' "$hs" | tail -3)"; fails=1; }
+  else echo "FAIL arm19: tools/box_hold.sh is missing or not executable beside box_busy.sh"; fails=1; fi
+
   [ "$arms" = "$EXPECT_ARMS" ] \
     || { echo "FAIL: $arms of $EXPECT_ARMS arms ran — one was dropped, never wired, or an earlier arm exited"; fails=1; }
   [ "$fails" = 0 ] && echo "box_busy selftest: $arms/$EXPECT_ARMS arms ran, every assertion held"
@@ -357,6 +407,7 @@ case "${1:-}" in
   --is-player) [ -n "${2:-}" ] && is_player "$2" && exit 0; exit 1 ;;
   --others) n="$(others)"; [ "${n:-0}" -gt 0 ] && { echo "other lanes' engines up: $n"; exit 0; }; exit 1 ;;
   --marker) printf '%s\n' "$BOX_MARKER"; exit 0 ;;
+  --slot-marker) printf '%s\n' "$BOX_SLOT_MARKER"; exit 0 ;;
   --roots) n=0; for r in $(deploy_roots); do [ -d "$r" ] && { echo "$r"; n=$((n+1)); }; done
            [ "$n" -gt 0 ] || { echo "no existing dir in: $(deploy_roots)"; exit 1; }; exit 0 ;;
   *) echo "usage: tools/box_busy.sh [--wait SECONDS | --publish | --marker | --roots]" >&2; exit 2 ;;
@@ -381,4 +432,11 @@ busy_reason >/dev/null || true
 if [ -n "${PLAYER_PIDS:-}" ]; then
   echo "FREE (struktured's game is up: pid $PLAYER_PIDS — a player instance, not a gate; other lanes' godot up: $(others))"; exit 0
 fi
-echo "FREE (other lanes' godot up: $(others))"; exit 0
+## Never a bare FREE beside another lane's engine (main 23935): the verdict covers a gate, a publish and a HELD slot; an
+## engine in a lane tree with no hold is reported, not judged, and the reader is told what that means. Exit 0 either way:
+## callers decide on the exit code, and --others is the mode that judges engines.
+_n="$(others)"
+if [ "${_n:-0}" -gt 0 ]; then
+  echo "NO GATE/PUBLISH/HELD SLOT (lanes' godot up: $_n; an unheld slot may be running: the channel RELEASE is the gate, and tools/box_hold.sh makes a slot visible here)"; exit 0
+fi
+echo "FREE (other lanes' godot up: 0)"; exit 0
