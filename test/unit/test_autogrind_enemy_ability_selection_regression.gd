@@ -34,6 +34,8 @@ const HBR := "res://src/autogrind/HeadlessBattleResolver.gd"
 
 func _resolver() -> Object:
 	var r: Object = load(HBR).new()
+	## These arms pin this file's OWN rules, the fallback: the live ladder rolls its pick (test_a_grind_fights_the_boss_a_player_does).
+	r.use_live_enemy_ladder = false
 	if r is Node:
 		add_child_autofree(r)
 	return r

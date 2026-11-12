@@ -141,3 +141,30 @@ func test_the_headless_battle_pays_a_relevelled_spawns_own_reward() -> void:
 	gut.p("    catalog imp paid %d, the re-levelled one %d" % [paid[0], paid[1]])
 	assert_gt(paid[0], 0, "CONTROL: a catalog imp pays its row's EXP")
 	assert_gt(paid[1], paid[0] * 5, "a spawn carrying its own EXP is paid that, not the catalog L4 row's")
+
+
+## A grind's roster row dropped the species' abilities, so a headless grind's monsters only ever basic-attacked while the
+## same monster in play (and in the balance harness, which feeds raw catalog rows) used its kit.
+func test_a_grind_monster_keeps_its_kit() -> void:
+	var with_kit := ""
+	for id in _es.monster_database:
+		var row: Dictionary = _es.monster_database[id]
+		if not (row.get("abilities", []) as Array).is_empty() and not row.get("boss", false):
+			with_kit = str(id)
+			break
+	assert_ne(with_kit, "", "CONTROL: the catalog has an ordinary monster with abilities")
+	var one: Array[String] = [with_kit]
+	_es.current_enemy_pool = one
+	var drawn: Array = _c._grind_draw_candidates()
+	assert_eq(drawn.size(), 1, "CONTROL: the grind drew it")
+	var catalog_kit: Array = _es.monster_database[with_kit]["abilities"]
+	assert_eq(drawn[0].get("abilities", []), catalog_kit, "the grind's row carries the species' abilities")
+	var gl: Node = load("res://src/GameLoop.gd").new()
+	add_child_autofree(gl)
+	var foe: Combatant = gl._combatant_for_headless(drawn[0])
+	add_child_autofree(foe)
+	assert_eq(foe.learned_abilities.size(), catalog_kit.size(), "and the headless combatant has learned them, so the picker has a kit to choose from")
+	assert_true(foe.job is Dictionary and (foe.job as Dictionary).get("abilities", []) == catalog_kit, "under job.abilities too, where the live ladder reads them")
+	var marked: Array[String] = [with_kit + "@L13"]
+	_es.current_enemy_pool = marked
+	assert_eq(_c._grind_draw_candidates()[0].get("abilities", []), catalog_kit, "a floor's re-levelled spawn keeps the kit as well")
