@@ -1979,8 +1979,8 @@ func _setup_status_icons(combatant: Combatant, sprite: AnimatedSprite2D) -> void
 	_refresh_status_icons(combatant)
 
 
-## The animated overlay, counter-scaled to screen pixels and fitted to the idle frame's FIGURE, so a motif is the same
-## size on a 0.5x hero and a 2.5x dragon and stands on the body, not on the frame's empty margin.
+## The animated overlay, counter-scaled to screen pixels and fitted to the idle frame's FIGURE, so a motif stands on
+## the body, not on the frame's empty margin; StatusAura sizes it from that figure's height (scale_for).
 func _make_status_aura(sprite: AnimatedSprite2D) -> Node2D:
 	var aura = StatusAuraClass.new()
 	aura.name = "StatusAura"
