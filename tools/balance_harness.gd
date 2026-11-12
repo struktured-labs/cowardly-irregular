@@ -296,6 +296,8 @@ func _build_party(gl, want_jobs: PackedStringArray, level: int, gear: bool) -> A
 			c.secondary_job = null
 			c.secondary_job_id = ""
 		c.job_level = level
+		if gear:
+			_wear_shop_kit(c, jid)
 		c.recalculate_stats()
 		c.current_hp = c.max_hp
 		c.current_mp = c.max_mp
@@ -304,6 +306,41 @@ func _build_party(gl, want_jobs: PackedStringArray, level: int, gear: bool) -> A
 	gl.party.clear()
 	_equip_lens(party)
 	return party
+
+
+## BAL_KIT=top|mid: the blacksmith's shelf in place of the starting kit (every W1 smith stocks the whole catalog, so gold is the gate).
+## top = the best piece per slot for the member's role; mid = the best piece costing <= 1000. Unset = the starting kit, as before.
+func _wear_shop_kit(c, job_id: String) -> void:
+	var kit := _env("BAL_KIT", "")
+	if kit == "":
+		return
+	var es = root.get_node_or_null("EquipmentSystem")
+	var shop: Script = load("res://src/exploration/VillageShop.gd")
+	if es == null or shop == null:
+		_die("BAL_KIT asked for but EquipmentSystem / VillageShop is absent"); return
+	var cap: int = 1000 if kit == "mid" else 1 << 30
+	var offense: String = "attack" if job_id in ["fighter", "rogue"] else "magic"
+	var best_w := ""
+	var best_w_v := -1.0
+	for id in shop.BLACKSMITH_WEAPONS:
+		var w: Dictionary = es.get_weapon(str(id))
+		var v := float((w.get("stat_mods", {}) as Dictionary).get(offense, 0))
+		if not w.is_empty() and int(w.get("cost", 0)) <= cap and v > best_w_v:
+			best_w = str(id); best_w_v = v
+	var best_a := ""
+	var best_a_v := -1.0
+	for id in shop.BLACKSMITH_ARMOR:
+		var a: Dictionary = es.get_armor(str(id))
+		var m: Dictionary = a.get("stat_mods", {})
+		var v := float(m.get("defense", 0)) + float(m.get("max_hp", 0)) * 0.5
+		if not a.is_empty() and int(a.get("cost", 0)) <= cap and v > best_a_v:
+			best_a = str(id); best_a_v = v
+	if best_w != "":
+		c.equipped_weapon = best_w
+	if best_a != "":
+		c.equipped_armor = best_a
+	if kit == "top":
+		c.equipped_accessory = "hp_amulet"
 
 
 ## BAL_LENS=<axis>[:<job>] equips one Lens, because the party this harness built was MISSING THE
@@ -531,7 +568,7 @@ func _balanced_templates() -> Dictionary:
 	if typeof(raw) != TYPE_DICTIONARY:
 		return out
 	for e in ((raw as Dictionary).get("templates", []) as Array):
-		if e is Dictionary and str((e as Dictionary).get("stance", "")) == "balanced":
+		if e is Dictionary and str((e as Dictionary).get("stance", "")) == _env("BAL_STANCE", "balanced"):   # BAL_STANCE=defensive|aggressive for the auto path
 			out[str((e as Dictionary).get("job_id", ""))] = e
 	return out
 

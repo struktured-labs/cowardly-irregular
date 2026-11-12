@@ -7,7 +7,10 @@
     "mp_cost": 8,
     "description": "A powerful physical attack dealing 1.5x damage",
     "damage_multiplier": 1.5,
-    "target_type": "single_enemy"
+    "target_type": "single_enemy",
+    "vfx": {
+      "melee": "melee_power_strike"
+    }
   },
   "cleave": {
     "id": "cleave",
@@ -17,7 +20,11 @@
     "mp_cost": 12,
     "description": "Attack all enemies for reduced damage",
     "damage_multiplier": 0.8,
-    "target_type": "all_enemies"
+    "target_type": "all_enemies",
+    "vfx": {
+      "melee": "melee_cleave",
+      "melee_each": "melee_cleave_cut"
+    }
   },
   "provoke": {
     "id": "provoke",
@@ -28,7 +35,10 @@
     "description": "Force an enemy to target you for 2 turns",
     "target_type": "single_enemy",
     "effect": "taunt",
-    "duration": 2
+    "duration": 2,
+    "vfx": {
+      "sequence": "fighter_provoke"
+    }
   },
   "cure": {
     "id": "cure",
@@ -37,6 +47,7 @@
     "tier": 1,
     "type": "healing",
     "animation": "heal",
+    "vfx": {"sequence": "cure_battle"},
     "mp_cost": 6,
     "description": "Restore HP to one ally",
     "heal_amount": 8,
@@ -51,6 +62,7 @@
     "tier": 2,
     "type": "healing",
     "animation": "heal",
+    "vfx": {"sequence": "cura_battle"},
     "mp_cost": 12,
     "description": "Restore a lot of HP to one ally",
     "heal_amount": 18,
@@ -63,6 +75,7 @@
     "name": "Anima Reddita",
     "type": "revival",
     "animation": "heal",
+    "vfx": {"sequence": "raise_battle"},
     "mp_cost": 20,
     "description": "Revive a fallen ally with 50% HP",
     "target_type": "dead_ally",
@@ -75,6 +88,7 @@
     "name": "Purgatio",
     "type": "support",
     "animation": "heal",
+    "vfx": {"sequence": "esuna_battle"},
     "mp_cost": 10,
     "description": "Cleanse all negative status effects from one ally",
     "target_type": "single_ally",
@@ -87,6 +101,7 @@
     "name": "Recreatio Lenta",
     "type": "support",
     "animation": "heal",
+    "vfx": {"sequence": "regen_battle"},
     "mp_cost": 12,
     "description": "Restore HP gradually over 5 turns (5% max HP per turn)",
     "target_type": "single_ally",
@@ -100,6 +115,7 @@
     "name": "Praesidium",
     "type": "support",
     "animation": "buff",
+    "vfx": {"sequence": "protect_battle"},
     "mp_cost": 8,
     "description": "Increase ally's defense by 50% for 3 turns",
     "target_type": "single_ally",
@@ -114,6 +130,7 @@
     "name": "Velamen",
     "type": "support",
     "animation": "buff",
+    "vfx": {"sequence": "shell_battle"},
     "mp_cost": 8,
     "description": "Increase ally's magic defense by 50% for 3 turns",
     "target_type": "single_ally",
@@ -146,6 +163,7 @@
     "tier": 2,
     "type": "magic",
     "animation": "cast_fire",
+    "vfx": {"sequence": "fira_battle"},
     "mp_cost": 16,
     "description": "Stronger fire magic damage to one enemy",
     "damage_multiplier": 3.5,
@@ -224,7 +242,7 @@
     "animation": "cast_fire",
     "mp_cost": 32,
     "description": "Devastating fire magic damage to all enemies",
-    "damage_multiplier": 5.0,
+    "damage_multiplier": 3.0,
     "element": "fire",
     "target_type": "all_enemies",
     "magic_school": "black",
@@ -240,7 +258,7 @@
     "animation": "cast_ice",
     "mp_cost": 32,
     "description": "Devastating ice magic damage to all enemies",
-    "damage_multiplier": 5.0,
+    "damage_multiplier": 3.0,
     "element": "ice",
     "target_type": "all_enemies",
     "magic_school": "black",
@@ -256,7 +274,7 @@
     "animation": "cast_lightning",
     "mp_cost": 32,
     "description": "Devastating lightning magic damage to all enemies",
-    "damage_multiplier": 5.0,
+    "damage_multiplier": 3.0,
     "element": "lightning",
     "target_type": "all_enemies",
     "magic_school": "black",
@@ -271,7 +289,10 @@
     "mp_cost": 4,
     "description": "Attempt to steal an item or gold from enemy",
     "target_type": "single_enemy",
-    "success_rate": 0.5
+    "success_rate": 0.5,
+    "vfx": {
+      "sequence": "rogue_steal"
+    }
   },
   "flee": {
     "id": "flee",
@@ -298,6 +319,7 @@
     "name": "Pray",
     "type": "mp_restore",
     "animation": "pray",
+    "vfx": {"sequence": "pray_battle"},
     "mp_cost": 0,
     "description": "Offer a brief prayer — restore a small amount of MP to one ally",
     "target_type": "single_ally",
@@ -308,6 +330,7 @@
     "name": "Riff",
     "type": "physical",
     "animation": "riff",
+    "vfx": {"melee": "melee_riff"},
     "mp_cost": 0,
     "description": "A sour, clashing chord struck like a weapon. It lands as hard as a swing and leaves the target seeing double.",
     "damage_multiplier": 1.0,
@@ -325,7 +348,11 @@
     "description": "High damage attack with critical chance",
     "damage_multiplier": 2.0,
     "crit_chance": 0.3,
-    "target_type": "single_enemy"
+    "target_type": "single_enemy",
+    "vfx": {
+      "melee": "melee_backstab",
+      "melee_crit": "melee_backstab_crit"
+    }
   },
   "mug": {
     "id": "mug",
@@ -337,13 +364,17 @@
     "damage_multiplier": 1.2,
     "target_type": "single_enemy",
     "success_rate": 0.4,
-    "steals": true
+    "steals": true,
+    "vfx": {
+      "melee": "melee_mug"
+    }
   },
   "edit_formula": {
     "id": "edit_formula",
     "name": "Edit Formula",
     "type": "meta",
     "animation": "cast_meta",
+    "vfx": {"sequence": "edit_formula_battle"},
     "mp_cost": 30,
     "description": "Attempt to rewrite a damage formula. The formulas resist. The corruption is real.",
     "target_type": "self",
@@ -538,7 +569,10 @@
     "mp_cost": 0,
     "description": "Slash with weapon",
     "damage_multiplier": 1.2,
-    "target_type": "single_enemy"
+    "target_type": "single_enemy",
+    "vfx": {
+      "melee": "melee_slash"
+    }
   },
   "rat_swarm": {
     "id": "rat_swarm",
@@ -608,7 +642,10 @@
     "damage_multiplier": 1.1,
     "target_type": "single_enemy",
     "effect": "stun",
-    "effect_chance": 0.3
+    "effect_chance": 0.3,
+    "vfx": {
+      "melee": "melee_shield_bash"
+    }
   },
   "defensive_stance": {
     "id": "defensive_stance",
@@ -740,7 +777,10 @@
     "target_type": "all_enemies",
     "effect": "blind",
     "duration": 2,
-    "guaranteed_escape": true
+    "guaranteed_escape": true,
+    "vfx": {
+      "sequence": "rogue_smoke_bomb"
+    }
   },
   "scan": {
     "id": "scan",
@@ -750,7 +790,10 @@
     "mp_cost": 3,
     "description": "Read a foe's elemental weaknesses, immunities, and resistances for the rest of the battle.",
     "target_type": "single_enemy",
-    "effect": "scan"
+    "effect": "scan",
+    "vfx": {
+      "sequence": "rogue_scan"
+    }
   },
   "shadow_step": {
     "id": "shadow_step",
@@ -763,7 +806,10 @@
     "effect": "shadow_step",
     "evasion_bonus": 1.0,
     "next_crit": true,
-    "duration": 1
+    "duration": 1,
+    "vfx": {
+      "sequence": "rogue_shadow_step"
+    }
   },
   "quick_strike": {
     "id": "quick_strike",
@@ -1041,6 +1087,7 @@
     "name": "Battle Hymn",
     "type": "song",
     "animation": "buff",
+    "vfx": {"sequence": "battle_hymn_battle"},
     "mp_cost": 8,
     "description": "A rousing war song that boosts all allies' attack by 25% for 3 turns",
     "target_type": "all_allies",
@@ -1053,6 +1100,7 @@
     "name": "Lullaby",
     "type": "song",
     "animation": "cast_meta",
+    "vfx": {"sequence": "lullaby_battle"},
     "mp_cost": 12,
     "description": "A soothing melody that has a 60% chance to put a single enemy to sleep for 2 turns",
     "target_type": "single_enemy",
@@ -1065,6 +1113,7 @@
     "name": "Discord",
     "type": "song",
     "animation": "cast_meta",
+    "vfx": {"sequence": "discord_battle"},
     "mp_cost": 10,
     "description": "A dissonant chord that lowers all enemies' defense by 20% for 3 turns",
     "target_type": "all_enemies",
@@ -1077,6 +1126,7 @@
     "name": "Inspiring Melody",
     "type": "song",
     "animation": "buff",
+    "vfx": {"sequence": "inspiring_melody_battle"},
     "mp_cost": 15,
     "description": "An uplifting tune that restores 5% max MP and grants +1 AP to all allies",
     "target_type": "all_allies",
@@ -1762,6 +1812,7 @@
     "name": "Sanatio Crystalli",
     "type": "healing",
     "animation": "heal",
+    "vfx": {"sequence": "crystal_heal_battle"},
     "mp_cost": 8,
     "description": "Channels crystal energy to restore HP.",
     "heal_amount": 600,
@@ -2813,6 +2864,7 @@
     "name": "Recreatio",
     "type": "healing",
     "animation": "heal",
+    "vfx": {"sequence": "regen_battle"},
     "mp_cost": 10,
     "description": "Regrows damaged tissue, restoring HP each turn for 3 turns.",
     "target_type": "self",

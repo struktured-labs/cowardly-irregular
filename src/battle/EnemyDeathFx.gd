@@ -55,10 +55,11 @@ static func applies_to(enemy: Object) -> bool:
 	return enemy != null and not enemy.has_meta("is_boss")
 
 
-## The same REAL length at every battle speed, but stepped by game frames: speed_scale 1/time_scale, never
-## set_ignore_time_scale (a Movie Maker capture showed the death already over, cowir-cutscenes 23594).
-## Re-read EVERY frame, not once: a killing crit's hitlag drops time_scale to 0.1 for ~80 ms, and a scale
-## locked in during it ran the whole death ~4x fast once the battle speed came back (cowir-main 23618).
+## The same REAL length at every battle speed, stepped by game frames: speed_scale 1/time_scale, re-read EVERY
+## frame, not once: a killing crit's hitlag drops time_scale to 0.1 for ~80 ms, and a scale locked in during
+## it ran the whole death ~4x fast once the battle speed came back (cowir-main 23618). Measured 2026-11-11
+## (cowir-adhoc 23963): under --write-movie this and set_ignore_time_scale(true) are frame-for-frame the same;
+## the earlier comment here blamed "the OS clock" for a clip that a clip tool had trimmed wrong.
 ## The escape beat uses it too.
 static func real_time(t: Tween) -> Tween:
 	t.set_speed_scale(_real_speed())
@@ -79,9 +80,21 @@ static func _real_speed() -> float:
 	return 1.0 / maxf(Engine.time_scale, 0.01)
 
 
+## The death owns the sprite from its first frame: a crit or weakness flash still tweening `modulate` to an
+## opaque rest colour (0.2-0.36 s) wrote over the fade's alpha, and a knockback still wrote its position
+## (cowir-battle 23726). Both live on the sprite's meta, so the death ends them here.
+static func own(sprite: Node2D) -> void:
+	for key in ["flash_tween", "knockback_tween"]:
+		if sprite.has_meta(key):
+			var running = sprite.get_meta(key)
+			if running is Tween and running.is_valid():
+				running.kill()
+
+
 ## Plays `style` on `sprite`. `on_cue` fires at the moment the death sound belongs (right after the
 ## flash); `on_done` after the sprite is hidden. Returns the tween so a caller can chain onto it.
 static func play(sprite: Node2D, style: String, on_cue: Callable = Callable(), on_done: Callable = Callable()) -> Tween:
+	own(sprite)
 	var tween := real_time(sprite.create_tween())
 	match style:
 		"pixel_dissolve":
