@@ -49,11 +49,9 @@ func _width(l: Label) -> float:
 	return l.get_theme_font("font").get_string_size(l.text, HORIZONTAL_ALIGNMENT_LEFT, -1, _px(l)).x
 
 
-func _moon(scale: float) -> Label:
+func _readout_px(scale: float) -> int:
 	GameState.text_size_scale = scale
-	var seq = INN.new()
-	add_child_autofree(seq)
-	return seq._moon
+	return INN.readout_px()
 
 
 func test_the_corpus_was_read() -> void:
@@ -66,10 +64,10 @@ func test_every_font_grows_at_every_preset() -> void:
 	var last: Array = []
 	for p in _presets():
 		var menu = await _open(float(p))
-		var now: Array = [_px(menu._title_label), _px(menu._hint_label), _px(menu._row_nodes[0]), _px(_moon(float(p)))]
+		var now: Array = [_px(menu._title_label), _px(menu._hint_label), _px(menu._row_nodes[0]), _readout_px(float(p))]
 		if not last.is_empty():
 			for i in now.size():
-				assert_gt(now[i], last[i], "font %d (title/hint/row/moon) grows past %d at Text Size %s" % [i, last[i], p])
+				assert_gt(now[i], last[i], "font %d (title/hint/row/the inn's readout pixel) grows past %d at Text Size %s" % [i, last[i], p])
 		last = now
 
 
@@ -100,16 +98,6 @@ func test_the_panel_stays_on_screen() -> void:
 		assert_gte(panel.position.y, 0.0, "the panel's top is on screen at Text Size %s" % p)
 		assert_lte(panel.position.y + panel.size.y, vp.y, "the panel's bottom is on screen at Text Size %s" % p)
 		assert_lte(panel.position.x + panel.size.x, vp.x, "the panel's right edge is on screen at Text Size %s" % p)
-
-
-## The moon was anchored at the centre with zero size and grew RIGHT, so its text started at the middle of the screen.
-func test_the_inn_moon_is_centred() -> void:
-	for p in [1.0, 2.0]:
-		var moon := _moon(float(p))
-		await get_tree().process_frame
-		var vp: Vector2 = moon.get_viewport_rect().size
-		var mid: float = moon.global_position.x + moon.size.x / 2.0
-		assert_almost_eq(mid, vp.x / 2.0, 2.0, "the moon's text is centred on the screen at Text Size %s (centre %.0f)" % [p, mid])
 
 
 func test_the_default_size_is_the_authored_menu() -> void:

@@ -2,8 +2,10 @@ extends CanvasLayer
 class_name InnRestSequence
 
 ## A night at the inn as a BEAT, not a dialogue line (struktured 2026-11-01: "when u rest at the inn it should have a
-## satisfying fade out/in sequence with accompanying ditty"): the music dips, the screen fades to black, the rest ditty
-## plays through the night, and the screen fades back in on morning.
+## satisfying fade out/in sequence with accompanying ditty"): the music dips, the room dims to night, the rest ditty
+## plays through the night, and the room comes back on morning. Since 2026-11-12 (the moon glyph and three Z's were
+## "really lame") the night is a small scene: InnNightSky's pixel sky, the moon crossing it for as long as the ditty
+## plays, dawn climbing, and the rest named in the damage numbers' pixel letters as morning arrives.
 ##
 ## THE HEAL IS THE CALLER'S, AND IT LANDS FIRST, in the same step as the payment: nothing on the field shows party HP, so
 ## healing before the fade looks identical to healing in the dark, and a scene change mid-fade can never leave a paid rest
@@ -14,9 +16,16 @@ class_name InnRestSequence
 ## hit-stop can neither stretch nor skip it. Input is held under one InputLockManager lock for the whole beat.
 
 signal finished(skipped: bool)
+## The scene's beats, for whoever scores them (cowir-sfx 24204): "night_falls" as the room dims, "night" as the sky
+## opens, "dawn" as the light climbs, and "stopped" when a skip or an abort cuts the night short.
+signal beat(name: String)
 
 const FADE_OUT_SEC := 0.6
 const FADE_IN_SEC := 0.8
+const SKY_IN_SEC := 0.3
+## The room under the night: dimmed to deep blue, not blacked out, so the fade reads as the lamps going down.
+const NIGHT_TINT := Color(0.02, 0.03, 0.10)
+const READOUT_TINT := Color(1.0, 0.95, 0.75)
 ## The night lasts the ditty, never less than this: a missing or very short cue must not make the beat a blink.
 const MIN_NIGHT_SEC := 2.5
 const DITTY_KEY := "inn_rest_ditty"
@@ -31,7 +40,12 @@ var aborted := false
 var night_sec := 0.0
 
 var _rect: ColorRect
-var _moon: Label
+var _sky: InnNightSky
+var _readout: Node2D
+## What the morning says, one line each; the caller may name who was restored (set it right after start()).
+var restored_lines: PackedStringArray = ["HP + MP RESTORED"]
+var _host: Node = null
+var _dawn_sent := false
 var _skippable := false
 var _skip_requested := false
 var _done := false
@@ -41,6 +55,7 @@ var _lock_held := false
 ## Plays the beat over everything and returns the node; `await seq.finished` for the end.
 static func start(host: Node) -> InnRestSequence:
 	var seq := InnRestSequence.new()
+	seq._host = host
 	host.get_tree().root.add_child(seq)
 	## The inn going away mid-night (a scene change, a freed test room) ends the beat at once: the lock never outlives it.
 	host.tree_exiting.connect(seq._abort, CONNECT_ONE_SHOT)
@@ -52,22 +67,40 @@ func _ready() -> void:
 	layer = 120
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_rect = ColorRect.new()
-	_rect.color = Color.BLACK
+	_rect.color = NIGHT_TINT
 	_rect.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_rect.modulate.a = 0.0
 	add_child(_rect)
-	_moon = Label.new()
-	_moon.text = "☾  z z z"
-	_moon.set_anchors_preset(Control.PRESET_CENTER)
-	# A zero-size label anchored at the centre grows right by default, so its left edge sat on the middle of the screen.
-	_moon.grow_horizontal = Control.GROW_DIRECTION_BOTH
-	_moon.grow_vertical = Control.GROW_DIRECTION_BOTH
-	_moon.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_moon.add_theme_color_override("font_color", Color(0.85, 0.85, 1.0))
-	_moon.add_theme_font_size_override("font_size", TextScale.scaled(28))
-	_moon.modulate.a = 0.0
-	_rect.add_child(_moon)
+	_sky = InnNightSky.new()
+	_sky.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_sky.modulate.a = 0.0
+	add_child(_sky)
+	_readout = Node2D.new()
+	_readout.modulate = Color(READOUT_TINT.r, READOUT_TINT.g, READOUT_TINT.b, 0.0)
+	add_child(_readout)
+
+
+## The readout's glyph pixel: three screen pixels at 100%, stepping up in whole pixels with Text Size.
+static func readout_px() -> int:
+	return maxi(2, roundi(float(TextScale.scaled(30)) / 10.0))
+
+
+## One line of pixel letters per restored line, centred low in the sky on whole pixels.
+func _build_readout() -> void:
+	var vp: Vector2 = get_viewport().get_visible_rect().size
+	_readout.position = Vector2(vp.x / 2.0, vp.y * 0.70).round()
+	var px := readout_px()
+	for i in restored_lines.size():
+		var line := PixelText.new(str(restored_lines[i]).to_upper(), px)
+		line.position = Vector2(0.0, float(i * (PixelText.ROWS + 4) * px))
+		_readout.add_child(line)
+
+
+## The room's own lighting, if it has a rig (cowir-overworld's InteriorLighting, main 24201): "night" and "dawn".
+func _room_light(phase: String) -> void:
+	if _host != null and is_instance_valid(_host) and _host.has_method("rest_light"):
+		_host.rest_light(phase)
 
 
 func _run() -> void:
@@ -80,6 +113,8 @@ func _run() -> void:
 	var bed: Dictionary = SoundManager.capture_music_state() if SoundManager and SoundManager.has_method("capture_music_state") else {}
 	if SoundManager and SoundManager.has_method("fade_out_music"):
 		SoundManager.fade_out_music(FADE_OUT_SEC)
+	beat.emit("night_falls")
+	_room_light("night")
 	await _fade(1.0, FADE_OUT_SEC)
 	if _done:
 		return
@@ -89,21 +124,43 @@ func _run() -> void:
 
 	night_sec = maxf(_play_ditty(), MIN_NIGHT_SEC)
 	_skippable = true
-	var moon_tw := create_tween().set_ignore_time_scale(true)
-	moon_tw.tween_property(_moon, "modulate:a", 1.0, 0.4)
+	_build_readout()
+	_sky.set_night(0.0, 0.0)
+	beat.emit("night")
+	var sky_tw := create_tween().set_ignore_time_scale(true)
+	sky_tw.tween_property(_sky, "modulate:a", 1.0, SKY_IN_SEC)
 	var started := Time.get_ticks_msec()
 	while not _skip_requested and float(Time.get_ticks_msec() - started) / 1000.0 < night_sec:
+		var elapsed: float = float(Time.get_ticks_msec() - started) / 1000.0
+		_show_night(elapsed / night_sec, elapsed)
 		await get_tree().process_frame
 		if _done:
 			return
 	skipped = _skip_requested
 	_skippable = false
-	_moon.modulate.a = 0.0
+	## A skip jumps to the morning it would have reached: the last frame of the night is dawn either way.
+	if skipped:
+		beat.emit("stopped")
+	_show_night(1.0, float(Time.get_ticks_msec() - started) / 1000.0)
 
 	if SoundManager and SoundManager.has_method("restore_music_state"):
 		SoundManager.restore_music_state(bed)
+	var out_tw := create_tween().set_ignore_time_scale(true).set_parallel(true)
+	out_tw.tween_property(_sky, "modulate:a", 0.0, FADE_IN_SEC)
+	out_tw.tween_property(_readout, "modulate:a", 0.0, FADE_IN_SEC * 0.6)
 	await _fade(0.0, FADE_IN_SEC)
 	_finish(skipped)
+
+
+## One frame of the night: the sky at `p`, and the rest named once dawn starts to climb.
+func _show_night(p: float, seconds: float) -> void:
+	_sky.set_night(p, seconds)
+	var d: float = _sky.dawn()
+	if d > 0.0 and not _dawn_sent:
+		_dawn_sent = true
+		beat.emit("dawn")
+		_room_light("dawn")
+	_readout.modulate.a = clampf(d * 2.0, 0.0, 1.0)
 
 
 func _finish(was_skipped: bool) -> void:
@@ -120,6 +177,8 @@ func _finish(was_skipped: bool) -> void:
 
 func _abort() -> void:
 	aborted = true
+	if not _done:
+		beat.emit("stopped")
 	skipped = true
 	_finish(true)
 
