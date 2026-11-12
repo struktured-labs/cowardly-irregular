@@ -224,6 +224,19 @@ func _init() -> void:
 		cids.append(_char_id(c))
 	_print_script_block(probe, bal_path, labels)
 	_free_party(probe)
+	## BAL_CRIT_RATES=1: each member's plain-swing crit chance under every DamageRules mode, from the grind's rule and from live's.
+	if _env("BAL_CRIT_RATES", "0") == "1" and rules != null:
+		var keep_mode: String = rules.crit_mode
+		var rate_party := _build_party(gl, want_jobs, level, gear)
+		var bm_node = root.get_node_or_null("BattleManager")
+		var rate_resolver = ResolverScript.new()
+		for mode in ["shipped", "comment", "level"]:
+			rules.crit_mode = mode
+			for c in rate_party:
+				print("[BAL] CRIT L%d %-8s %-8s speed %-4d grind %.3f  live %.3f" % [level, mode, _job_id(c), int(c.speed),
+						float(rate_resolver._swing_crit_chance(c)), float(bm_node._calculate_crit_chance(c)) if bm_node != null else -1.0])
+		rules.crit_mode = keep_mode
+		_free_party(rate_party)
 	if _fail > 0:
 		print("[BAL] refusing to sweep: the path's own scripts did not install, so every row below would be mislabelled")
 		quit(_fail); return

@@ -113,19 +113,25 @@ func test_an_ability_with_no_crit_chance_never_crits() -> void:
 
 
 func test_live_still_rolls_the_abilitys_own_chance_on_the_physical_path() -> void:
+	## Both engines ask ONE rule (DamageRules.ability_crit_chance): a row's own crit_chance wins, and with no row the shipped default is 0.
 	var live: String = GdSource.code_of(LIVE)
 	assert_gt(live.length(), 50000, "CONTROL: BattleManager was actually read")
-	var at: int = live.find('ability.get("crit_chance"')
-	assert_gt(at, 0, "CONTROL: live must still read the key")
+	var at: int = live.find("DamageRules.ability_crit_chance(ability")
+	assert_gt(at, 0, "CONTROL: live must still ask the shared rule for an ability's crit chance")
 	var owner: int = live.substr(0, at).rfind("func _execute_")
 	assert_true(live.substr(owner, 46).begins_with("func _execute_physical_ability"),
-		"live reads crit_chance outside the physical executor now — the grind rolls it only there")
-	assert_true(live.substr(at, 1600).contains("randf() < crit_chance"),
+		"live asks for an ability's crit chance outside the physical executor now — the grind rolls it only there")
+	assert_true(live.substr(at, 4000).contains("randf() < crit_chance"),
 		"live no longer rolls the ability's own chance — the grind mirrors that roll")
 	var code: String = GdSource.code_of(SRC)
 	assert_gt(code.length(), 5000, "CONTROL: the resolver was actually read")
-	assert_true(code.contains('randf() < float(ability.get("crit_chance", 0.0))'),
-		"the resolver must roll the AUTHORED chance with a 0.0 default, so an ability opts in as it does live")
+	assert_true(code.contains("randf() < DamageRules.ability_crit_chance(ability,"),
+		"the resolver must roll the chance the shared rule gives, so an ability opts in as it does live")
+	var rule: String = GdSource.code_of("res://src/battle/DamageRules.gd")
+	assert_true(rule.contains('ability.has("crit_chance")') and rule.contains('float(ability["crit_chance"])'),
+		"the shared rule must read the row's own crit_chance first")
+	assert_eq(DamageRules.ability_crit_chance({}, 0.4), 0.0, "shipped default: a row with no crit_chance never crits")
+	assert_eq(DamageRules.ability_crit_chance({"crit_chance": 0.3}, 0.0), 0.3, "a row's own chance is the chance")
 
 
 func test_the_declared_multiplier_divergence_is_still_true() -> void:
