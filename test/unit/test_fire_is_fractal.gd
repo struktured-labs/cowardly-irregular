@@ -1,6 +1,7 @@
 extends GutTest
 
-## #399, struktured via cowir-main 2026-10-31: "wire it into Fire first, playable". An ability whose vfx
+## #399, struktured via cowir-main 2026-10-31: "wire it into Fire first, playable" (Fire's own look since 2026-11-11,
+## test_fire_erupts_in_phases; the fractal is Edit Formula's). An ability whose vfx
 ## names a data/vfx_sequences.json sequence plays it (bolt from the caster, burst on the target), the
 ## damage numbers wait for the burst, and the battle holds until just past it. Blizzard (no sequence)
 ## is the control: the ordinary path, unchanged.
@@ -89,7 +90,7 @@ func _cast(id: String) -> void:
 
 
 func test_fire_names_its_sequence_and_every_named_sequence_exists() -> void:
-	assert_eq(AbilityVFX.resolve(JobSystem.get_ability("fire")).get("sequence"), "fire_battle", "Fire plays the fractal")
+	assert_eq(AbilityVFX.resolve(JobSystem.get_ability("fire")).get("sequence"), "fire_battle", "Fire plays its sequence")
 	var abilities: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(ABILITIES))
 	var seqs: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(SEQUENCES))["sequences"]
 	var named := 0
@@ -103,7 +104,12 @@ func test_fire_names_its_sequence_and_every_named_sequence_exists() -> void:
 
 func test_the_impact_is_the_end_of_the_bolt() -> void:
 	var seq := FractalFX.load_sequence("fire_battle")
-	assert_almost_eq(FractalFX.impact_time(seq), 0.75 + 0.32, 0.001, "lands when the bolt arrives, after the cast's release frame")
+	var bolt_end := 0.0
+	for p in seq.get("phases", []):
+		if str(p.get("kind", "")) == "bolt" and int(p.get("min_tier", 1)) <= 1:
+			bolt_end = float(p.get("at", 0.0)) + float(p.get("dur", 0.0))
+	assert_gt(bolt_end, 0.0, "CONTROL: Fire has a bolt")
+	assert_almost_eq(FractalFX.impact_time(seq), float(seq.get("start", 0.0)) + bolt_end, 0.001, "lands when the bolt arrives, after the cast's release frame")
 
 
 func test_a_fire_cast_plays_the_sequence_and_holds_the_damage_for_the_burst() -> void:
@@ -113,10 +119,11 @@ func test_a_fire_cast_plays_the_sequence_and_holds_the_damage_for_the_burst() ->
 	_cast("fire")
 	## #763: the wait moved from the damage NUMBERS to the whole resolution — BattleManager holds the
 	## HP drop / death until the impact, so the scene hands it the impact time instead of buffering.
-	assert_almost_eq(BattleManager.impact_hold, 1.07, 0.05, "the HP drop and death must wait for the burst, not land on the cast")
+	var lands: float = FractalFX.impact_time(FractalFX.load_sequence("fire_battle"))
+	assert_almost_eq(BattleManager.impact_hold, lands, 0.05, "the HP drop and death must wait for the burst, not land on the cast")
 	assert_eq(_scene._full_render_dmg_buffer, null, "damage arrives at the impact itself, nothing to buffer")
 	BattleManager.impact_hold = 0.0
-	assert_gte(BattleManager.presentation_hold, 1.07, "the battle must hold until the fire lands (hold %.2f)" % BattleManager.presentation_hold)
+	assert_gte(BattleManager.presentation_hold, lands, "the battle must hold until the fire lands (hold %.2f)" % BattleManager.presentation_hold)
 	assert_true(await _until(func() -> bool: return host.get_child_count() > before, 2.0), "the sequence must draw into the effects layer")
 	assert_true(await _until(func() -> bool: return _scene._full_render_dmg_buffer == null, 3.0),
 		"the held damage must be released at the burst")

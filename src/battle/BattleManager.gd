@@ -33,6 +33,8 @@ signal hit_negated(target: Combatant, banner: String)
 signal cast_fizzled(caster: Combatant, banner: String)
 ## A harmful support roll (an ailment or a stat drop) failed on this target, so the miss is heard and logged, not silent.
 signal status_resisted(target: Combatant, effect: String)
+## A Steal's outcome, so the scene can show the take arcing back or a fizzle (the log line and the cue were the only tells).
+signal steal_resolved(caster: Combatant, target: Combatant, success: bool)
 signal healing_done(target: Combatant, amount: int)
 ## struktured 2026-09-07: MP gains and ability AP grants get their own popups (purple / red) — never healing_done's green.
 signal mp_restored(target: Combatant, amount: int)
@@ -7686,11 +7688,13 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 				if target and is_instance_valid(target) and target.is_alive:
 					if _first_steal_guaranteed(target) or randf() < effective_rate:
 						_award_stolen_gold(caster, target)
+						steal_resolved.emit(caster, target, true)
 						# Boss-specific steal_response (msg 2474): a successful steal against a target with a monsters.json steal_response definition triggers its mechanical effect exactly once per fight (Lockward's vault-crack = defense-break to 50%). Cowir-main's Option 2. Subsequent steals still succeed for gold; only the response is one-shot.
 						_apply_steal_response(target)
 					else:
 						print("  → %s failed to steal from %s!" % [caster.combatant_name, target.combatant_name])
 						battle_log_message.emit("[color=gray]%s couldn't steal anything from %s.[/color]" % [caster.combatant_name, target.combatant_name])
+						steal_resolved.emit(caster, target, false)
 						# A whiff, and it sounded the same as a success — BattleScene picks by effect name and cannot know which happened.
 						if SoundManager:
 							SoundManager.play_battle("attack_miss")
