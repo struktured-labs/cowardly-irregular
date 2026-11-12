@@ -60,9 +60,12 @@ const SCALE_MAX := 2.2
 const RIM_DARK := Color(0.05, 0.04, 0.08)
 const RIM_LIGHT := Color(0.95, 0.95, 1.0)
 ## The motifs that are themselves dark: a dark rim on them is no rim.
-const LIGHT_RIMMED := ["visor", "shadow"]
+const LIGHT_RIMMED := ["visor"]
 ## Every letter this file draws; each must be a real PixelText glyph (test_a_status_reads_on_a_dragon).
 const TEXT_GLYPHS := ["Z", "?"]
+## Evasion's trailing copies: how many, and how far apart at 1x (screen px).
+const AFTER_IMAGES := 3
+const AFTER_IMAGE_STEP := 9.0
 const RIM_OFFSETS := [Vector2(1, 0), Vector2(-1, 0), Vector2(0, 1), Vector2(0, -1)]
 
 static var ARROW := PackedVector2Array([Vector2(0, -7), Vector2(6, 0), Vector2(2, 0), Vector2(2, 7), Vector2(-2, 7), Vector2(-2, 0), Vector2(-6, 0)])
@@ -264,9 +267,7 @@ func _draw() -> void:
 				draw_arc(body.get_center(), r, 0.0, TAU, 48, Color(rim, 0.45), 2.0 * k + 2.0)
 				draw_arc(body.get_center(), r, 0.0, TAU, 48, Color(c, 0.75), 2.0 * k)
 			"shadow":
-				var pulse := 0.1 * sin(t * 4.0)
-				draw_rect(body.grow(-2.0), Color(rim, 0.22 + pulse), false, 2.0 * k + 2.0)
-				draw_rect(body.grow(-2.0), Color(c, 0.55 + pulse), false, 2.0 * k)
+				_after_images(c, t, k)
 			"lines":
 				for i in 3:
 					var y := body.position.y + body.size.y * (0.3 + 0.2 * float(i))
@@ -303,6 +304,27 @@ func _shape(points: PackedVector2Array, at: Vector2, sc: Vector2, color: Color, 
 func _dot(at: Vector2, radius: float, color: Color, rim: Color, k: float) -> void:
 	draw_circle(at, radius + maxf(1.0, k), Color(rim, color.a * 0.9))
 	draw_circle(at, radius, color)
+
+
+## Evasion: two or three faint copies of the sprite's OWN current frame, trailing to the side it is not facing, with a
+## slow shimmer. No box: the old outline of the figure's bounding rect read as a selection cursor (struktured's
+## collage, main 24548). Drawn from the parent sprite's live frame, so the copies breathe and swing with it.
+func _after_images(c: Color, t: float, k: float) -> void:
+	var spr := get_parent() as AnimatedSprite2D
+	if spr == null or spr.sprite_frames == null or not spr.sprite_frames.has_animation(spr.animation):
+		return
+	var tex: Texture2D = spr.sprite_frames.get_frame_texture(spr.animation, spr.frame)
+	if tex == null:
+		return
+	var size := Vector2(tex.get_size()) * Vector2(absf(spr.scale.x), absf(spr.scale.y))
+	var away := -1.0 if spr.flip_h else 1.0  # this node is not flipped with its parent, so the copy is mirrored by hand
+	for i in AFTER_IMAGES:
+		var step := float(i + 1)
+		var drift := (AFTER_IMAGE_STEP * step + sin(t * 1.6 + step * 1.3) * 3.0) * k
+		var alpha := (0.34 - 0.09 * float(i)) * (0.75 + 0.25 * sin(t * 2.2 + step))
+		var at := Vector2(-size.x * 0.5 + drift * away, -size.y * 0.5)
+		var rect := Rect2(at + Vector2(size.x, 0), Vector2(-size.x, size.y)) if spr.flip_h else Rect2(at, size)
+		draw_texture_rect(tex, rect, false, Color(c.lerp(Color.WHITE, 0.45), maxf(alpha, 0.05)))
 
 
 ## One PixelText glyph, its top-left at `at`, each glyph pixel `px` screen pixels: the texture carries its own dark rim.

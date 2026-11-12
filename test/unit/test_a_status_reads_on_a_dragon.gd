@@ -113,3 +113,32 @@ func test_a_motif_over_the_head_starts_above_the_badge_row() -> void:
 	assert_true(code.contains("body.position.y - head_clear"), "the head anchor is lifted by the band")
 	assert_eq(_aura([], Rect2(-24, -64, 48, 64)).head_clear, 0.0, "an aura nobody placed (a test, a preview) keeps the bare head anchor")
 
+
+## main 24548: evasion's outline of the figure's bounding box read as a selection cursor. It is now after-images of
+## the sprite's own frame. What this can pin is that no box is drawn and the copies come from the live sprite; whether
+## it READS as "hard to hit" is judged on the collage.
+func test_evasion_is_after_images_of_the_sprite_not_a_box() -> void:
+	var code := _code()
+	var arm := code.substr(code.find('"shadow":'), 200)
+	assert_true(arm.contains("_after_images("), "CONTROL: the evasion motif draws after-images")
+	assert_false(arm.contains("draw_rect"), "evasion still outlines the figure's bounding box")
+	assert_gt(StatusAura.AFTER_IMAGES, 1, "one copy is a ghost, not a trail")
+	var tex := ImageTexture.create_from_image(Image.create(32, 32, false, Image.FORMAT_RGBA8))
+	var sf := SpriteFrames.new()
+	sf.add_animation("idle")
+	sf.add_frame("idle", tex)
+	var spr := AnimatedSprite2D.new()
+	spr.sprite_frames = sf
+	spr.animation = "idle"
+	add_child_autofree(spr)
+	var a := StatusAura.new()
+	spr.add_child(a)
+	a.set_statuses(["evasion"])
+	assert_eq(a.shown_kinds(), ["shadow"], "CONTROL: evasion is shown on a real sprite")
+	await get_tree().process_frame
+	await get_tree().process_frame
+	assert_true(a.visible and a.is_processing(), "the after-images are still drawing after two frames on a live sprite")
+	var bare := _aura(["evasion"], Rect2(-24, -64, 48, 64))
+	await get_tree().process_frame
+	assert_true(bare.visible, "an aura with no sprite above it draws nothing for evasion and does not stop")
+
