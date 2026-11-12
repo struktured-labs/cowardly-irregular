@@ -52,7 +52,7 @@ func test_every_ward_and_song_names_a_sequence_that_exists() -> void:
 	var riff = JobSystem.get_ability("riff").get("vfx", {})
 	assert_eq(str(riff.get("melee", "")) if riff is Dictionary else "", "melee_riff", "Riff's chord rides the melee path, not a cast")
 	assert_false(_seq("melee_riff").is_empty(), "melee_riff exists")
-	assert_eq(str(AbilityVFX.resolve(JobSystem.get_ability("dark_bolt")).get("sequence", "")), "",
+	assert_eq(str(AbilityVFX.resolve(JobSystem.get_ability("death_sentence")).get("sequence", "")), "",
 		"CONTROL: an ability on the plain path resolves to no sequence")
 
 
