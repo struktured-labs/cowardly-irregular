@@ -1382,7 +1382,17 @@ func _swing_crit_chance(attacker) -> float:
 	var equip_crit: float = clampf(_sum_equipment_special_effect(attacker, "critical_bonus"), 0.0, 0.50)
 	var bm = _get_autoload("BattleManager")
 	var level: int = int(bm._archetype_level(attacker)) if bm != null and bm.has_method("_archetype_level") else int(attacker.job_level)
-	return minf(DamageRules.crit_cap(), DamageRules.CRIT_BASE + DamageRules.speed_crit_bonus(float(attacker.speed), level) + equip_crit)
+	## A passive's crit_chance and a crit_rate buff count too, as live counts them (critical_strike; an enraged boss's spike).
+	var passive_crit: float = 0.0
+	var ps = _get_autoload("PassiveSystem")
+	if ps != null and ps.has_method("get_passive_mods"):
+		passive_crit = clampf(float((ps.get_passive_mods(attacker) as Dictionary).get("crit_chance", 0.0)), 0.0, 0.50)
+	var buff_crit: float = 0.0
+	if "active_buffs" in attacker:
+		for b in attacker.active_buffs:
+			if str(b.get("stat", "")) == "crit_rate":
+				buff_crit += float(b.get("modifier", 1.0)) - 1.0
+	return minf(DamageRules.crit_cap(), DamageRules.CRIT_BASE + DamageRules.speed_crit_bonus(float(attacker.speed), level) + passive_crit + equip_crit + buff_crit)
 
 
 ## Live's _retarget_enemy: a blow whose target fell earlier this round goes to the lowest-HP foe still standing.

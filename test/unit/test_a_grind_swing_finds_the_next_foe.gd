@@ -178,3 +178,18 @@ func test_a_swing_crits_by_the_rule_live_reads() -> void:
 	assert_almost_eq(_res._swing_crit_chance(hero), 0.25, 0.0001, "CONTROL: shipped is 5% + speed x 1%")
 	DamageRules.crit_mode = "comment"
 	assert_lt(_res._swing_crit_chance(hero), 0.25, "and the modes differ, so the arm above can tell them apart")
+
+
+func test_a_passive_and_a_crit_buff_count_in_the_grind_as_they_do_live() -> void:
+	DamageRules.crit_mode = "comment"
+	var hero := _body("Keen", 9999)
+	var bare: float = _res._swing_crit_chance(hero)
+	hero.active_buffs.append({"stat": "crit_rate", "modifier": 1.2, "duration": 3})
+	var buffed: float = _res._swing_crit_chance(hero)
+	assert_gt(buffed, bare, "a crit_rate buff raises the grind's swing crit")
+	assert_almost_eq(buffed, float(BattleManager._calculate_crit_chance(hero)), 0.0001, "to what live gives the same hero")
+	hero.active_buffs.clear()
+	hero.equipped_passives.append("critical_strike")
+	var live: float = float(BattleManager._calculate_crit_chance(hero))
+	assert_gt(live, bare, "CONTROL: live counts the critical_strike passive for this hero")
+	assert_almost_eq(_res._swing_crit_chance(hero), live, 0.0001, "and the grind counts it the same")
