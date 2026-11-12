@@ -2800,7 +2800,14 @@ func _process_ai_selection(combatant: Combatant) -> void:
 	_end_selection_turn()
 
 
-func _make_ai_decision(combatant: Combatant, alive_allies: Array, alive_enemies: Array) -> Dictionary:
+## The action the live ladder picks for an enemy, with none of the theatre: HeadlessBattleResolver asks this, so a grind
+## fights the boss a player does. Its own picker cast the highest-multiplier ability every round (Glacius: Absolute Zero
+## on all five, four rounds running) where this ladder rolls utility, a power-weighted spell or a plain attack.
+func enemy_choice(combatant: Combatant, alive_allies: Array, alive_enemies: Array) -> Dictionary:
+	return _make_ai_decision(combatant, alive_allies, alive_enemies, true)
+
+
+func _make_ai_decision(combatant: Combatant, alive_allies: Array, alive_enemies: Array, quiet: bool = false) -> Dictionary:
 	"""Make AI decision for action selection — behavior varies by monster archetype"""
 	# Get available abilities
 	var available_abilities = []
@@ -2811,7 +2818,8 @@ func _make_ai_decision(combatant: Combatant, alive_allies: Array, alive_enemies:
 			# any passive mp_cost_multiplier on enemy combatants (rare
 			# but possible for bosses with equipped passives) affects
 			# their affordability check too.
-			if not ability.is_empty() and combatant.current_mp >= JobSystem.get_ability_mp_cost(combatant, ability_id):
+			if not ability.is_empty() and combatant.current_mp >= JobSystem.get_ability_mp_cost(combatant, ability_id) \
+					and not _self_buff_is_already_worn(combatant, ability):
 				available_abilities.append(ability)
 
 	# Wave E — BossDialogue intent picker. Fires for ANY boss with a
@@ -2822,7 +2830,7 @@ func _make_ai_decision(combatant: Combatant, alive_allies: Array, alive_enemies:
 	# Result of pick_intent feeds the existing archetype/masterite match
 	# ladders via combatant.get_meta("llm_intent"); those ladders read
 	# the meta to bias their weighted choices (no abilities invented).
-	_update_boss_dialogue_phase(combatant)
+	_update_boss_dialogue_phase(combatant, quiet)
 
 	# Masterite bosses use specialized AI
 	if combatant.has_meta("masterite") and combatant.get_meta("masterite"):
@@ -2856,12 +2864,33 @@ func _make_ai_decision(combatant: Combatant, alive_allies: Array, alive_enemies:
 		if randf() < counter_chance:
 			var counter_action = _get_counter_action(combatant, counter_strategy, alive_allies, alive_enemies, available_abilities)
 			if not counter_action.is_empty():
-				battle_log_message.emit("The enemy anticipates your strategy...")
+				if not quiet:
+					battle_log_message.emit("The enemy anticipates your strategy...")
 				return _lock_action_to_taunter(combatant, counter_action, alive_enemies)
 
 	# Determine AI archetype from stats and abilities
 	var archetype = _get_ai_archetype(combatant, available_abilities)
 	return _execute_archetype_ai(combatant, archetype, available_abilities, alive_allies, alive_enemies)
+
+
+## The stat each self-buff effect raises, as `_execute_support_ability` applies it.
+const SELF_BUFF_STAT := {"defense_up": "defense", "magic_defense_up": "magic_defense", "attack_up": "attack"}
+## A worn buff with this many turns left or fewer may be renewed.
+const SELF_BUFF_RENEW_TURNS := 1
+
+
+## True when a self-targeted stat buff would change nothing: the caster already wears one at least as strong with turns left.
+## Glacius rolled Frost Armor on 41% of turns whether or not it was up, spending 15 MP and the turn to refresh a 3-turn buff.
+func _self_buff_is_already_worn(combatant: Combatant, ability: Dictionary) -> bool:
+	if str(ability.get("target_type", "")) != "self" or not SELF_BUFF_STAT.has(str(ability.get("effect", ""))):
+		return false
+	var stat: String = SELF_BUFF_STAT[str(ability.get("effect", ""))]
+	var strength: float = float(ability.get("stat_modifier", 1.0))
+	for buff in combatant.active_buffs:
+		if str(buff.get("stat", "")) == stat and float(buff.get("modifier", 1.0)) >= strength \
+				and int(buff.get("remaining_turns", 0)) > SELF_BUFF_RENEW_TURNS:
+			return true
+	return false
 
 
 ## HP per point of the level curve that makes an enemy a tank. 120 keeps all 66 gate-reaching monsters on their x10-era archetype.
@@ -9565,7 +9594,7 @@ func _intent_ability_bias(combatant: Combatant) -> Dictionary:
 	return boss_dlg.intent_bias(_boss_persona_id(combatant), intent)
 
 
-func _update_boss_dialogue_phase(combatant: Combatant) -> void:
+func _update_boss_dialogue_phase(combatant: Combatant, quiet: bool = false) -> void:
 	var boss_dlg = get_node_or_null("/root/BossDialogue")
 	if boss_dlg == null:
 		return
@@ -9598,6 +9627,9 @@ func _update_boss_dialogue_phase(combatant: Combatant) -> void:
 	var intent_id: String = pick.get("intent_id", "")
 	if intent_id != "":
 		combatant.set_meta("llm_intent", intent_id)
+	## The grind asks for the posture alone: no taunt, no log line, and never the model (headless never calls it).
+	if quiet:
+		return
 	var taunt: String = pick.get("taunt_line", "")
 	# On the very first phase advance also surface a phase-transition line
 	# from data (if authored) — gives bosses a vocal "you bleed me twice"

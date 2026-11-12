@@ -12,6 +12,8 @@ var _res
 
 func before_each() -> void:
 	_res = ResolverScript.new()
+	## These arms pin this file's OWN rules, the fallback: the live ladder rolls its pick (test_a_grind_fights_the_boss_a_player_does).
+	_res.use_live_enemy_ladder = false
 
 
 func _fighter(cname: String) -> Combatant:
