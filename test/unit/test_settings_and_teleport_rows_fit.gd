@@ -4,7 +4,8 @@ extends GutTest
 ## literal offsets (subtitle at y 22, toggle chips at y 40 in a 60 px row, action rows 56 px) around fonts that scale,
 ## so from 150% the ON/OFF text ran below its row (4 px, then 11) and a grown title sat on its subtitle; (2) the
 ## Teleport list's instruction line is one long line that ran past the panel's right edge from 150% (31 px, then 268).
-## Rows now scale by one upward-only factor and the instruction line wraps. Built nodes, every Text Size step.
+## Rows now scale by one upward-only factor taken from the title's MEASURED line height (cowir-main 24493: a larger
+## Text Size and a taller face both make room) and the instruction line wraps. Built nodes, every Text Size step.
 
 const SETTINGS := "res://src/ui/SettingsMenu.gd"
 const TELEPORT := "res://src/ui/TeleportMenu.gd"
@@ -90,7 +91,6 @@ func test_a_settings_row_holds_its_text_at_every_size() -> void:
 	var seen := 0
 	for s in _presets():
 		var m: Control = await _screen(SETTINGS, s)
-		var k: float = maxf(1.0, float(s))
 		for item in m._settings_items:
 			var row: Control = item.get("control")
 			if row == null:
@@ -102,8 +102,13 @@ func test_a_settings_row_holds_its_text_at_every_size() -> void:
 				if (l as Label).visible and (l as Label).text != "" and _ink_bottom(l as Label) > bottom + SLACK:
 					bad.append("@%s '%s': '%s' ends %.0f px below its row" % [s, id, (l as Label).text.left(20), _ink_bottom(l as Label) - bottom])
 			var own: Array = row.find_children("*", "Label", false, false)
-			if own.size() >= 2 and (own[1] as Label).position.y - (own[0] as Label).position.y < 18.0 * k - SLACK:
-				bad.append("@%s '%s': the subtitle starts %.0f px under the title; the 100%% step grown with the text is %.0f" % [s, id, (own[1] as Label).position.y - (own[0] as Label).position.y, 18.0 * k])
+			## Against the title's MEASURED line, not the setting: the shipped row lets the two line boxes share a pixel.
+			if own.size() >= 2:
+				var title := own[0] as Label
+				var line: float = title.get_theme_font("font").get_height(title.get_theme_font_size("font_size"))
+				var step: float = (own[1] as Label).position.y - title.position.y
+				if step < line - 2.0:
+					bad.append("@%s '%s': the subtitle starts %.0f px under a title whose line is %.0f px" % [s, id, step, line])
 	assert_gt(seen, 100, "CONTROL: the sweep measured real rows (%d)" % seen)
 	assert_eq(bad.size(), 0, "a Settings row holds its text:\n%s" % "\n".join(PackedStringArray(bad)))
 
@@ -165,3 +170,15 @@ func test_the_teleport_list_holds_its_header_and_its_rows() -> void:
 	assert_gt(seen, 100, "CONTROL: the sweep selected real destinations (%d)" % seen)
 	assert_true(wrapped, "CONTROL: at some Text Size the instruction line is longer than the panel and wraps")
 	assert_eq(bad.size(), 0, "the Teleport list holds its header and rows:\n%s" % "\n".join(PackedStringArray(bad)))
+
+
+## The factor reads the FONT, not the setting: a face whose 14 px line is taller makes room at 100% too.
+func test_the_row_factor_follows_the_measured_line() -> void:
+	var m: Control = await _screen(SETTINGS, 1.0)
+	assert_eq(m._row_k(), 1.0, "CONTROL: the shipped face at 100% is the design, factor 1")
+	var big: Control = await _screen(SETTINGS, 2.0)
+	assert_almost_eq(big._row_k(), 2.0, 0.11, "at 200% the title's line is about twice the design line")
+	var src := FileAccess.get_file_as_string(SETTINGS)
+	var at := src.find("func _row_k(")
+	var body := src.substr(at, src.find("\nfunc ", at + 1) - at)
+	assert_true(body.contains("_line_h(") and not body.contains("scaled(100)"), "and it is computed from a measured line, never from the setting alone")

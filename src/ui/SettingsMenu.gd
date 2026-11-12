@@ -740,9 +740,13 @@ func _row_font() -> Font:
 	return ThemeDB.fallback_font
 
 
-## Row geometry factor, upward only: the rows were laid out in literals (subtitle at y 22, toggle chips at 40 in a 60 px row) around fonts that scale.
+## The line height the rows' literal offsets were authored around: a 14 px title in the shipped face.
+const DESIGN_TITLE_LINE := 19.0
+
+
+## Row geometry factor, upward only, from the title's MEASURED line height (so a larger Text Size and a taller face both make room), in 5% steps.
 func _row_k() -> float:
-	return maxf(1.0, float(TextScale.scaled(100)) / 100.0)
+	return maxf(1.0, snappedf(_line_h(TextScale.scaled(14)) / DESIGN_TITLE_LINE, 0.05))
 
 
 func _line_h(font_size: int) -> float:
