@@ -1007,8 +1007,10 @@ func test_tier3_spells_exist_and_are_aoe() -> void:
 			"%s should be AOE (all_enemies)" % spell_id)
 		assert_eq(abilities[spell_id]["mp_cost"], 32,
 			"%s should cost 32 MP" % spell_id)
-		assert_eq(abilities[spell_id]["damage_multiplier"], 5.0,
-			"%s should have 5.0x damage" % spell_id)
+		## The tier's PLACE, not a magnitude (it was 5.0, and 3.0 since test_a_spell_for_all_hits_softer_than_one_for_one):
+		## it out-hits the Mage's earlier all-enemies spell.
+		assert_gt(float(abilities[spell_id]["damage_multiplier"]), float(abilities["chain_lightning"]["damage_multiplier"]),
+			"%s should out-hit chain_lightning, the tier below it" % spell_id)
 
 
 func test_mage_has_all_tier3_spells() -> void:

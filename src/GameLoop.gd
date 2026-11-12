@@ -1004,7 +1004,12 @@ func _smoke_player_path_battle() -> void:
 		print("[SMOKE] FAIL: player-path battle leg has no player to move")
 		_smoke_failed = true
 		return
-	p.global_position = roamer.global_position
+	## Stand where the roamer's TOUCH is, not on its origin: in Mode 7 the touch circle sits where the player is drawn (.792).
+	var touch_at: Vector2 = roamer.global_position
+	var touch_shape = roamer.get("_collision")
+	if touch_shape is Node2D and is_instance_valid(touch_shape):
+		touch_at = (touch_shape as Node2D).global_position
+	p.global_position = touch_at
 	var settle: float = 0.0
 	while not fired[0] and settle < 4.0:
 		await get_tree().physics_frame
@@ -7101,6 +7106,11 @@ func _combatant_for_headless(data: Dictionary) -> Combatant:
 	var mtype: String = str(data.get("id", ""))
 	if mtype != "":
 		enemy.set_meta("monster_type", mtype)
+	## A dungeon floor's re-levelled spawn carries its level and scaled rewards, as BattleEnemySpawner's does.
+	if int(data.get("spawn_level", 0)) > 0:
+		enemy.set_meta("spawn_level", int(data["spawn_level"]))
+		enemy.set_meta("exp_reward", int(data.get("exp_reward", 0)))
+		enemy.set_meta("gold_reward", int(data.get("gold_reward", 0)))
 	# The spawner row carries these and the live spawner applies them; dropped here, every ground monster only ever
 	# basic-attacked and had no elemental weakness or resistance.
 	for w in data.get("weaknesses", []):

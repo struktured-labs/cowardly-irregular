@@ -2417,8 +2417,12 @@ func _build_results(victory: bool, termination_reason: String = "") -> Dictionar
 		for enemy in _enemy_party:
 			var mt_key: String = str(enemy.get_meta("monster_type", "")) if enemy.has_method("get_meta") and enemy.has_meta("monster_type") else ""
 			var mrow: Dictionary = mdb.get(mt_key, {})
-			exp += int(float(mrow.get("exp_reward", 25)) * reward_multiplier)
-			gold += int(float(mrow.get("gold_reward", int(enemy.max_hp * 0.3 + enemy.defense))) * reward_multiplier)
+			## A spawn's own reward meta (a re-levelled floor spawn) outranks its catalog row, as live's _authored_reward reads it.
+			var has_meta_fn: bool = enemy.has_method("has_meta")
+			var exp_row: float = float(enemy.get_meta("exp_reward")) if has_meta_fn and enemy.has_meta("exp_reward") else float(mrow.get("exp_reward", 25))
+			var gold_row: float = float(enemy.get_meta("gold_reward")) if has_meta_fn and enemy.has_meta("gold_reward") else float(mrow.get("gold_reward", int(enemy.max_hp * 0.3 + enemy.defense)))
+			exp += int(exp_row * reward_multiplier)
+			gold += int(gold_row * reward_multiplier)
 			## Tick 146: mark defeated. mark_seen happened at the top
 			## of resolve_battle (tick 145); this is the kill credit.
 			# Tick 260: forward location through the defeat call too.

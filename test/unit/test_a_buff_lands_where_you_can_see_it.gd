@@ -248,3 +248,9 @@ func test_an_overlay_owns_the_cut_and_a_family_replaces_the_spark() -> void:
 				sparks += 1
 		assert_eq(sparks, case[1], "with ability '%s' acting the hit drew %d weapon sparks, not %d" % [case[0], sparks, case[1]])
 	scene._current_ability_id = ""
+	## Whatever draws the hit, it keeps its sound: every branch of the hit path reaches the weapon's hit cue.
+	var src := FileAccess.get_file_as_string("res://src/battle/BattleScene.gd")
+	var at := src.find("match hit_mark(")
+	var block := src.substr(at, src.find("_apply_hit_knockback(", at) - at)
+	assert_eq(block.count("EffectSystem.play_hit_cue("), 2, "an overlay or family hit lost the weapon's hit cue")
+	assert_true(block.contains("EffectSystem.spawn_hit_spark("), "CONTROL: the plain spark (which plays the cue itself) is the third branch")
