@@ -100,9 +100,11 @@ func update(player_pos: Vector2) -> void:
 
 	# Find nearest monster distance
 	var nearest_dist = DETECTION_RANGE + 1.0
-	for child in _spawner_ref.get_children():
-		if child.has_method("get_global_position"):
-			var dist = player_pos.distance_to(child.global_position)
+	var seen: Vector2 = player_pos + RoamingMonster.seen_offset()
+	var roamers: Array = _spawner_ref.live_monsters() if _spawner_ref.has_method("live_monsters") else _spawner_ref.get_children()
+	for child in roamers:
+		if child is Node2D and child.get("_active") != false:
+			var dist = seen.distance_to(child.global_position)
 			nearest_dist = minf(nearest_dist, dist)
 
 	if nearest_dist > DETECTION_RANGE:

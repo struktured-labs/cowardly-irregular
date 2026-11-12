@@ -249,6 +249,11 @@ func _player_seen_pos() -> Vector2:
 	return _player.global_position + RoamingMonsterScript.seen_offset()
 
 
+## The roamers alive right now, for the HUD (they live under a sibling node, not under this one).
+func live_monsters() -> Array:
+	return _monsters.filter(func(m): return is_instance_valid(m))
+
+
 func _find_spawn_position() -> Vector2:
 	var player_pos = _player_seen_pos()
 	var map_px_w = map_width * TILE_SIZE
