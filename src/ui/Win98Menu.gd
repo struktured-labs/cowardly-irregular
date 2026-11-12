@@ -1021,7 +1021,8 @@ func _build_menu() -> void:
 
 	# Ensure menu stays on screen
 	await get_tree().process_frame
-	if not is_instance_valid(self):
+	# Removed with its battle during that frame: valid, but no viewport to clamp to and no tree for the submenu timer.
+	if not is_instance_valid(self) or not is_inside_tree():
 		return
 	_clamp_to_screen()
 
@@ -1035,10 +1036,7 @@ func _build_menu() -> void:
 
 	# Allow input after a short delay to prevent stray key presses
 	# Use ignore_time_scale=true to keep consistent regardless of battle speed
-	# Built outside the tree there is no timer to wait on: listen at once rather than stay deaf for good.
 	if not is_inside_tree():
-		_can_accept_input = true
-		_can_close_on_click = true
 		return
 	await get_tree().create_timer(0.08, true, false, true).timeout  # Reduced from 0.15 for faster response
 	# Out of the tree is as gone as freed: a battle torn down mid-build left this calling get_tree() on nothing.
