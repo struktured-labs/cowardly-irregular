@@ -69,6 +69,7 @@ var mirror: bool = false
 ## A family sequence's accent colour: a phase authored in `spark` draws in this palette instead (a dark slash in void,
 ## a venomous bite in rot), so one sequence serves every member of its family.
 var tint: String = ""
+var _offset_k: float = 1.0
 ## (intensity_px, duration_s) — the caller owns the camera.
 ## The caster's BODY, for `origin: "caster"`; `from` is its HAND, for bolts and `origin: "hand"`. Unset (INF) = the hand, as before.
 var caster_centre: Vector2 = Vector2.INF
@@ -100,6 +101,9 @@ static func load_sequence(id: String) -> Dictionary:
 func play(seq: Dictionary, from: Vector2, to: Vector2, power: float = 1.0, compact: bool = false) -> float:
 	var total := 0.0
 	mirror = bool(seq.get("handed", false)) and from.x < to.x
+	## A line-wide move is authored for one span of targets and scaled to the span it is cast on: its phase offsets
+	## must grow and shrink with its shapes, or the crescent's centre stays put while its radius changes.
+	_offset_k = power if bool(seq.get("scale_offsets", false)) else 1.0
 	var start := float(seq.get("start", 0.0))
 	## Turbo / the grind console (autogrind 23412): only the impact's own phases, at once, so a cast costs no wall time there.
 	var impact_at := impact_time(seq) - start
@@ -198,7 +202,7 @@ func _run(phase: Dictionary, from: Vector2, to: Vector2, power: float) -> void:
 		at_pos = from
 	elif origin == "caster":
 		at_pos = caster_centre if caster_centre != Vector2.INF else from
-	at_pos += _side(_vec(phase.get("offset", [0, 0])))
+	at_pos += _side(_vec(phase.get("offset", [0, 0]))) * _offset_k
 	if str(phase.get("sfx", "")) != "" and on_sfx.is_valid():
 		on_sfx.call(str(phase["sfx"]))
 	match str(phase.get("kind", "")):

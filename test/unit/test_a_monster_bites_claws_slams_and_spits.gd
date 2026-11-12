@@ -234,6 +234,35 @@ func test_a_plain_attack_takes_the_family_the_creature_fights_in() -> void:
 	assert_eq(BattleSceneScript.hit_mark("", ""), "spark", "CONTROL: a row naming nothing rakes")
 
 
+func test_a_line_wide_move_spans_the_targets_it_hits() -> void:
+	## struktured via main 24179/24186 ("aims center"): Cleave's crescent played at the MEAN of its targets, the same
+	## size whatever they were, so with two foes far apart it sat between them on nobody.
+	var near: Rect2 = BattleSceneScript.line_span([Vector2(300, 200), Vector2(310, 280)])
+	var far: Rect2 = BattleSceneScript.line_span([Vector2(300, 80), Vector2(320, 560)])
+	assert_almost_eq(near.size.y, 80.0, 0.01, "the span is the targets' extent")
+	assert_almost_eq(far.get_center().y, 320.0, 0.01, "and its centre is the middle of that extent")
+	assert_eq(BattleSceneScript.line_span([Vector2(5, 7)]).size, Vector2.ZERO, "one target is a point")
+	var seqs: Dictionary = _json("res://data/vfx_sequences.json")["sequences"]
+	for id in ["melee_cleave", "family_slam_quake", "family_spray"]:
+		assert_gt(float(seqs[id].get("span", 0.0)), 0.0, "%s names the span it was authored for" % id)
+		assert_true(bool(seqs[id].get("scale_offsets", false)), "%s moves its offsets with its size" % id)
+	assert_false(seqs["family_bite"].has("span"), "CONTROL: a single-target family names no span")
+	## The scale a span gets, floor to cap, and what it does to a phase: a puff 100 px off its target at power 0.5.
+	var k_of := func(extent: float, authored: float) -> float:
+		return clampf((extent + BattleSceneScript.LINE_SPAN_PAD) / authored, BattleSceneScript.LINE_SPAN_MIN, BattleSceneScript.LINE_SPAN_MAX)
+	assert_lt(k_of.call(near.size.y, 530.0), k_of.call(far.size.y, 530.0), "two foes far apart get a bigger crescent than two side by side")
+	assert_almost_eq(k_of.call(0.0, 530.0), BattleSceneScript.LINE_SPAN_MIN, 0.001, "one foe gets the floor")
+	var host := Node2D.new()
+	add_child_autofree(host)
+	var puff := {"kind": "puff", "at": 0.0, "count": 1, "spread": [0, 0], "offset": [100, 0]}
+	var fx := FractalFX.new(host, 7)
+	fx.play({"scale_offsets": true, "phases": [puff]}, Vector2(900, 300), Vector2(500, 300), 0.5)
+	assert_almost_eq((host.get_child(0) as Node2D).position.x, 550.0, 1.0, "a scaled sequence's offset shrinks with it")
+	var fx2 := FractalFX.new(host, 7)
+	fx2.play({"phases": [puff]}, Vector2(900, 300), Vector2(500, 300), 0.5)
+	assert_almost_eq((host.get_child(1) as Node2D).position.x, 600.0, 1.0, "CONTROL: an ordinary sequence's offset does not")
+
+
 func test_a_move_is_aimed_at_the_body_not_at_the_frame() -> void:
 	## cutscenes 24028: a battler's anchor is its FRAME centre, and the Fighter's figure stands ~95 px off it. A figure
 	## drawn in the left third of a 96 px frame, at 2x: the body is 2 x (16 - 48) = 64 px left of the anchor.

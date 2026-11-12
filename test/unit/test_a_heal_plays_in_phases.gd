@@ -38,14 +38,34 @@ func _length(seq: Dictionary) -> float:
 	return end
 
 
+## An ability on the plain path, DERIVED from the data: the first row that names no sequence of any kind. A named one
+## (protect, then dark_bolt) redded each time a lane gave it a sequence (cowir-battle 24140).
+func _plain_ability() -> String:
+	var rows = JSON.parse_string(FileAccess.get_file_as_string("res://data/abilities.json"))
+	if rows is Dictionary and rows.get("abilities") is Dictionary:
+		rows = rows["abilities"]
+	if not (rows is Dictionary):
+		return ""
+	for id in rows:
+		var row = rows[id]
+		if not (row is Dictionary) or not row.has("type"):
+			continue
+		var vfx = row.get("vfx", {})
+		if not (vfx is Dictionary) or vfx.is_empty():
+			return str(id)
+	return ""
+
+
 func test_every_heal_names_a_sequence_that_exists() -> void:
 	for id in HEALS:
 		var ability: Dictionary = JobSystem.get_ability(id)
 		assert_false(ability.is_empty(), "CONTROL: %s is an ability" % id)
 		assert_eq(str(AbilityVFX.resolve(ability).get("sequence", "")), str(HEALS[id]), "%s plays its sequence" % id)
 		assert_false(_seq(str(HEALS[id])).is_empty(), "%s exists in vfx_sequences.json" % HEALS[id])
-	assert_eq(str(AbilityVFX.resolve(JobSystem.get_ability("dark_bolt")).get("sequence", "")), "",
-		"CONTROL: an ability on the plain path resolves to no sequence")
+	var plain := _plain_ability()
+	assert_ne(plain, "", "floor: some ability still has no sequence to be the CONTROL")
+	assert_eq(str(AbilityVFX.resolve(JobSystem.get_ability(plain)).get("sequence", "")), "",
+		"CONTROL: an ability on the plain path (%s) resolves to no sequence" % plain)
 
 
 func test_every_phase_uses_the_shared_palettes() -> void:

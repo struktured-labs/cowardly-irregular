@@ -2225,6 +2225,8 @@
     "melee_cleave": {
       "label": "Cleave: one wide crescent swept across the whole enemy line (played ONCE, at the line's centre)",
       "handed": true,
+      "span": 530,
+      "scale_offsets": true,
       "start": 0.17,
       "start_note": "the lunge's contact: 0.05 pull-back + 0.12 approach (BattleScene._animate_melee_attack)",
       "impact": 0.0,
@@ -5677,6 +5679,8 @@
     "family_slam_quake": {
       "label": "Monster family SLAM on the whole line (ground pound): the crack runs under every hero (played ONCE, at the line's centre)",
       "handed": true,
+      "span": 440,
+      "scale_offsets": true,
       "start": 0.17,
       "start_note": "the lunge's contact (the hook passes the lunge's own figure)",
       "impact": 0.0,
@@ -5824,6 +5828,8 @@
     "family_spray": {
       "label": "Monster family SPIT on the whole line (filth spray, gold scatter): a cloud breaks over the party (played ONCE); the per-foe splat is family_spray_hit",
       "handed": true,
+      "span": 380,
+      "scale_offsets": true,
       "start": 0.17,
       "start_note": "the lunge's contact (the hook passes the lunge's own figure)",
       "impact": 0.0,
