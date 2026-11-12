@@ -770,6 +770,12 @@ func _select_enemy_action(enemy) -> Dictionary:
 	if alive_players.is_empty():
 		return {"type": "defer"}
 
+	## ONE picker: the live ladder's own choice (cowir-battle, main 23910). The rules below are the fallback for a choice
+	## this engine cannot play (a summon) or a tree with no BattleManager.
+	var live: Dictionary = _live_choice(enemy, alive_players)
+	if not live.is_empty():
+		return live
+
 	if enemy.current_hp < enemy.max_hp * 0.30:
 		var heal_ability = _find_heal_ability(enemy)
 		if heal_ability != "":
@@ -791,6 +797,34 @@ func _select_enemy_action(enemy) -> Dictionary:
 				return {"type": "ability", "ability_id": atk_ability, "targets": _foe_ability_targets(atk_ability, focus, alive_players)}
 
 	return {"type": "attack", "target": focus}
+
+
+## False plays this file's own rules alone: the fallback's tests drive it, and a parity table can show both columns.
+var use_live_enemy_ladder: bool = true
+
+
+## The live engine's pick, in this engine's action shape; {} when there is none to play here.
+func _live_choice(enemy, alive_players: Array) -> Dictionary:
+	var bm = _get_autoload("BattleManager")
+	if not use_live_enemy_ladder or bm == null or not bm.has_method("enemy_choice"):
+		return {}
+	var allies: Array = _enemy_party.filter(func(e): return e.is_alive)
+	var pick: Dictionary = bm.enemy_choice(enemy, allies, alive_players)
+	match str(pick.get("type", "")):
+		"attack":
+			var target = pick.get("target")
+			return {"type": "attack", "target": target} if target != null and is_instance_valid(target) and target.is_alive else {}
+		"defer":
+			return {"type": "defer"}
+		"ability":
+			var ability_id := str(pick.get("ability_id", ""))
+			var targets: Array = pick.get("targets", [])
+			if ability_id == "" or targets.is_empty() or targets[0] == null or not is_instance_valid(targets[0]):
+				return {}
+			## The live pick names ONE target; an all-enemies ability reaches the whole party here as it does there.
+			var reach: Array = _foe_ability_targets(ability_id, targets[0], alive_players) if targets[0] in alive_players else targets
+			return {"type": "ability", "ability_id": ability_id, "targets": reach}
+	return {}
 
 
 ## ⛔ THIS FILE BUILT A ONE-ELEMENT TARGET LIST WHATEVER `target_type` SAID, SO EVERY ENEMY AoE HIT
