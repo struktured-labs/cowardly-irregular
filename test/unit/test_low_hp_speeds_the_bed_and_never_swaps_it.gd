@@ -164,6 +164,19 @@ func test_only_a_fights_own_bed_takes_the_speed_up() -> void:
 		assert_eq(_pitch(), 1.0, "%s was pitched to %.4f by a direct danger call" % [id, _pitch()])
 
 
+## The mixer's test is a PREFIX, so a fight bed named from data under another prefix would lose its speed-up silently (cowir-sfx 24194).
+func test_every_fight_bed_the_monster_data_names_takes_the_speed_up() -> void:
+	var rx := RegEx.create_from_string("\"music(?:_track)?\"\\s*:\\s*\"([^\"]*)\"")
+	var seen: int = 0
+	for m in rx.search_all(FileAccess.get_file_as_string("res://data/monsters.json")):
+		var id: String = m.get_string(1)
+		if id == "silence":
+			continue  # the unmasking's authored fade, not a bed
+		seen += 1
+		assert_true(SoundManager.bed_takes_danger(id), "monsters.json names %s as fight music and the mixer would never speed it up" % id)
+	assert_gte(seen, 10, "FLOOR: only %d fight-music ids read from monsters.json; the reader has gone blind" % seen)
+
+
 func test_the_feed_closes_when_the_battle_ends() -> void:
 	_set_party([10, 10, DOWN, DOWN])
 	_scene._music_follows_hp = false  # what _on_battle_ended does first
