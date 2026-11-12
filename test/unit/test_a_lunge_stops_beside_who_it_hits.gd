@@ -117,7 +117,10 @@ func test_the_idle_sway_leaves_a_lunging_sprite_alone() -> void:
 	tween.pause()
 	assert_true(BS.lunge_owns(s), "a hit-stop pauses the lunge at the impact: it is still the lunge's, or the sway takes y back on that frame")
 	tween.kill()
-	assert_false(BS.lunge_owns(s), "and it is handed back when the lunge ends")
+	## A killed tween reads valid until the engine has processed it: a frame, as it does in play.
+	await get_tree().process_frame
+	await get_tree().process_frame
+	assert_false(BS.lunge_owns(s), "and it is handed back once the lunge has ended")
 	var src := FileAccess.get_file_as_string("res://src/battle/BattleScene.gd")
 	var at := src.find("func _process_idle_animations(")
 	var body := src.substr(at, src.find("\nfunc ", at + 1) - at)
