@@ -193,7 +193,8 @@ func _init() -> void:
 	if rules != null:
 		rules.enemy_spread = float(_env("BAL_SPREAD", "1.0"))
 		rules.crit_mode = _env("BAL_CRIT_MODE", "shipped")
-		rules.abilities_inherit_swing_crit = _env("BAL_ABILITY_CRIT", "0") == "1"
+		if _env("BAL_ABILITY_CRIT", "") != "":   # unset: the rule's own shipped default
+			rules.abilities_inherit_swing_crit = _env("BAL_ABILITY_CRIT", "") == "1"
 		print("[BAL] DIALS  enemy_spread=%.2f  crit_mode=%s  abilities_inherit_swing_crit=%s" % [rules.enemy_spread, rules.crit_mode, str(rules.abilities_inherit_swing_crit)])
 	elif _env("BAL_SPREAD", "") != "" or _env("BAL_CRIT_MODE", "") != "" or _env("BAL_ABILITY_CRIT", "") != "":
 		_die("this tree has no DamageRules, so the spread and crit dials would silently do nothing")

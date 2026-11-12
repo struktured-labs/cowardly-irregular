@@ -113,9 +113,10 @@ func test_the_spread_dial_scales_a_party_wide_hit_and_nothing_else() -> void:
 
 func test_the_crit_dials_ship_as_the_game_plays_today() -> void:
 	assert_eq(DamageRules.crit_mode, "shipped", "the shipped formula until the live table picks one")
-	assert_false(DamageRules.abilities_inherit_swing_crit, "an ability crits only if its row says so, until the table picks")
+	assert_true(DamageRules.abilities_inherit_swing_crit, "shipped since .794: a signature move crits as its user's swing does (main 24513)")
+	DamageRules.abilities_inherit_swing_crit = false
 	assert_almost_eq(DamageRules.speed_crit_bonus(40.0, 10), 0.40, 0.0001, "shipped: speed x 0.01")
-	assert_almost_eq(DamageRules.ability_crit_chance({}, 0.5), 0.0, 0.0001, "shipped: Power Strike never crits")
+	assert_almost_eq(DamageRules.ability_crit_chance({}, 0.5), 0.0, 0.0001, "dial off: Power Strike never crits")
 	assert_almost_eq(DamageRules.ability_crit_chance({"crit_chance": 0.3}, 0.5), 0.3, 0.0001, "a row's own chance always wins")
 	DamageRules.crit_mode = "comment"
 	assert_almost_eq(DamageRules.speed_crit_bonus(40.0, 10), 0.04, 0.0001, "comment: each 10 speed = +1%")

@@ -18,9 +18,9 @@ const CRIT_LEVEL_CAP := 0.25
 ## Speed per level a combatant of average speed has; "level" mode pays for speed above it.
 const CRIT_SPEED_PER_LEVEL := 10.0
 
-## True: a physical ability with no `crit_chance` of its own crits as its user's plain swing does (a row opts OUT with
-## `"crit_chance": 0`). False is the shipped rule: an ability crits only if its row says so.
-static var abilities_inherit_swing_crit: bool = false
+## True (shipped since .794): a physical ability with no `crit_chance` of its own crits as its user's plain swing does, so a signature move
+## beats a free swing; a row opts OUT with `"crit_chance": 0`. False was the rule through .793: an ability crit only if its row said so.
+static var abilities_inherit_swing_crit: bool = true
 
 
 ## The multiplier on one target's damage when `caster_is_enemy` lands an ability on `target_count` targets.

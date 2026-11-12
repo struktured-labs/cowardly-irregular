@@ -100,14 +100,17 @@ func test_the_crit_is_the_authored_multiplier_not_a_bigger_one() -> void:
 
 
 func test_an_ability_with_no_crit_chance_never_crits() -> void:
-	## The default must stay 0.0. A non-zero default would make every physical ability in the game
-	## start critting, which is a far larger change than the one being made.
+	## The ROW's default stays 0.0: with the dial off, an ability that authors no crit_chance never crits.
 	var ab: Dictionary = _authored("power_strike")
 	if ab.is_empty():
 		pass_test("JobSystem autoload unavailable")
 		return
 	assert_false(ab.has("crit_chance"), "CONTROL: power_strike must author no crit_chance")
+	## Under the pre-.794 rule (the dial OFF). With it ON, as shipped since .794, the same move crits as its user's swing does.
+	var was: bool = DamageRules.abilities_inherit_swing_crit
+	DamageRules.abilities_inherit_swing_crit = false
 	var rolls: Array = _spread("power_strike", 40)
+	DamageRules.abilities_inherit_swing_crit = was
 	assert_eq(_distinct(rolls), 1,
 		"power_strike produced %d distinct damages over 40 casts — an ability authoring no crit_chance must never crit" % _distinct(rolls))
 
@@ -130,8 +133,13 @@ func test_live_still_rolls_the_abilitys_own_chance_on_the_physical_path() -> voi
 	var rule: String = GdSource.code_of("res://src/battle/DamageRules.gd")
 	assert_true(rule.contains('ability.has("crit_chance")') and rule.contains('float(ability["crit_chance"])'),
 		"the shared rule must read the row's own crit_chance first")
-	assert_eq(DamageRules.ability_crit_chance({}, 0.4), 0.0, "shipped default: a row with no crit_chance never crits")
+	var was: bool = DamageRules.abilities_inherit_swing_crit
+	DamageRules.abilities_inherit_swing_crit = false
+	assert_eq(DamageRules.ability_crit_chance({}, 0.4), 0.0, "dial off: a row with no crit_chance never crits")
+	DamageRules.abilities_inherit_swing_crit = true
+	assert_eq(DamageRules.ability_crit_chance({}, 0.4), 0.4, "dial on: it crits as its user's swing does")
 	assert_eq(DamageRules.ability_crit_chance({"crit_chance": 0.3}, 0.0), 0.3, "a row's own chance is the chance")
+	DamageRules.abilities_inherit_swing_crit = was
 
 
 func test_the_declared_multiplier_divergence_is_still_true() -> void:

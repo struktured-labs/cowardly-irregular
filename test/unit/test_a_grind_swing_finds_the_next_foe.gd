@@ -6,17 +6,20 @@ extends GutTest
 const ResolverScript = preload("res://src/autogrind/HeadlessBattleResolver.gd")
 
 var _res
+var _dials: Array = []
 
 
 func before_each() -> void:
 	_res = ResolverScript.new()
 	_res.use_live_enemy_ladder = false
+	_dials = [DamageRules.enemy_spread, DamageRules.crit_mode, DamageRules.abilities_inherit_swing_crit]
+	DamageRules.enemy_spread = 1.0
 
 
 func after_each() -> void:
-	DamageRules.enemy_spread = 1.0
-	DamageRules.crit_mode = "shipped"
-	DamageRules.abilities_inherit_swing_crit = false
+	DamageRules.enemy_spread = _dials[0]
+	DamageRules.crit_mode = _dials[1]
+	DamageRules.abilities_inherit_swing_crit = _dials[2]
 
 
 func _body(who: String, hp: int) -> Combatant:
@@ -210,6 +213,7 @@ func test_a_physical_move_meets_the_defence_once() -> void:
 	var twice: int = foe.damage_preview(once)
 	assert_gt(amount, 0, "CONTROL: power_strike has a multiplier and the hero an attack")
 	assert_lt(twice, once, "CONTROL: a second pass through the defence would show")
+	DamageRules.abilities_inherit_swing_crit = false   # this arm is about the defence, so the strike must not crit
 	_res._resolve_ability(f["hero"], "power_strike", [foe])
 	assert_eq(9000 - foe.current_hp, once, "Power Strike lands what one pass through the defence leaves")
 
