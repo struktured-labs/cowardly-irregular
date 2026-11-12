@@ -53,7 +53,10 @@ func test_arrow_columns_spread_with_the_scale_so_big_arrows_do_not_overlap() -> 
 	for i in range(1, xs.size()):
 		assert_gt(float(xs[i]) - float(xs[i - 1]), 12.0 * k - 0.1,
 			"an arrow is 12 px wide at 1x, so at %.2fx columns %d and %d overlap: %s" % [k, i - 1, i, str(xs)])
-	assert_gt(float(xs[0]), big.body.end.x, "the first column stands outside the figure")
+	var small := _aura(["attack_up", "defense_down", "magic_up", "speed_down"], Rect2(-24, -64, 48, 64))
+	var lead_1x: float = small.arrow_x(0, 4) - small.body.end.x
+	assert_almost_eq(float(xs[0]) - big.body.end.x, lead_1x * k, 0.01,
+		"the first column keeps its 1x place beside the figure's edge, scaled (%.1f px at 1x)" % lead_1x)
 
 
 func test_every_motif_has_a_rim_that_contrasts_with_it() -> void:
