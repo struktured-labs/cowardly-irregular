@@ -105,3 +105,20 @@ func test_the_lunge_goes_to_the_stand_point_and_a_summon_has_a_home() -> void:
 	var spawn := src.find("_enemy_base_positions.append(sprite.position)")
 	assert_gt(spawn, -1, "CONTROL: the summon spawn keeps its base position")
 	assert_true("set_meta(\"home_position\", sprite.position)" in src.substr(spawn, 400), "a summoned enemy is given its home where it spawns")
+
+
+func test_the_idle_sway_leaves_a_lunging_sprite_alone() -> void:
+	var s := _sprite(Rect2i(10, 20, 40, 70), Vector2(900, 200))
+	assert_false(BS.lunge_owns(s), "CONTROL: a resting sprite is the sway's to move")
+	var tween := s.create_tween()
+	tween.tween_property(s, "position", Vector2(300, 520), 0.5)
+	s.set_meta("attack_tween", tween)
+	assert_true(BS.lunge_owns(s), "a sprite whose attack tween is running is the lunge's")
+	tween.kill()
+	assert_false(BS.lunge_owns(s), "and it is handed back when the lunge ends")
+	var src := FileAccess.get_file_as_string("res://src/battle/BattleScene.gd")
+	var at := src.find("func _process_idle_animations(")
+	var body := src.substr(at, src.find("\nfunc ", at + 1) - at)
+	assert_eq(body.count("if not lunge_owns(sprite):"), 2, "both idle writes, the enemies' sway and the party's breathing, ask first")
+	assert_eq(body.count("sprite.position.y = "), 2, "CONTROL: there are exactly two such writes to guard")
+
