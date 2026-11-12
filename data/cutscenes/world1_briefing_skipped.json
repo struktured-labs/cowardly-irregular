@@ -23,8 +23,8 @@
       "type": "narration",
       "text": "Something small and metal landed on the rim of the well, spun once, and stopped. It was a crown. It was a very small crown."
     },
-    { "type": "show_prop", "prop": "tiny_crown", "at": [0.9, 0.635], "scale": 3, "sfx": "scene_tiny_crown_lands", "sfx_at_frame": 1 },
-    { "type": "wait", "duration": 0.5 },
+    { "type": "show_prop", "prop": "tiny_crown", "at": [0.9, 0.665], "scale": 3, "sfx": "scene_tiny_crown_lands", "sfx_at_frame": 1 },
+    { "type": "wait", "duration": 0.6 },
     {
       "type": "dialogue",
       "lines": [
