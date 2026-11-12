@@ -1,0 +1,81 @@
+{
+  "id": "world1_briefing_skipped",
+  "title": "The Briefing Nobody Heard",
+  "world": 1,
+  "trigger": "harmonia_first_entry_rat_king_before_theron",
+  "background": "prologue_village",
+  "description": "EASTER EGG (struktured, 2026-11-11). The party beat the Cave Rat King without ever speaking to Elder Theron. On their first return to Harmonia he is in the square rehearsing the briefing he never got to give; they are already holding the Rat King's crown. It REPLACES world1_chapter1 for that save: he concedes the lesson, hands the whole party manual control, and offers the skipped trials as optional sparring. He is put out and privately impressed; the speedrunner is teased, never scolded. 'Clearly you're an action gamer.' is struktured's own line and the beat the scene turns on.",
+  "steps": [
+    { "type": "letterbox_in", "duration": 0.4 },
+    { "type": "play_music", "track": "village_medieval" },
+    {
+      "type": "narration",
+      "text": "Elder Theron stood in the village square, back to the road, addressing a patch of empty cobblestones in the voice of someone who had practised."
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        { "speaker": "Elder Theron", "text": "\"You'll do.\" No. Too warm. \"You'll... do.\" Better.", "theme": "elder", "portrait": "theron" },
+        { "speaker": "Elder Theron", "text": "\"The cave to the north. Something's changed in there. The monsters are organized. Deliberate. You need to—\"", "theme": "elder", "portrait": "theron" }
+      ]
+    },
+    {
+      "type": "narration",
+      "text": "Something small and metal landed on the rim of the well, rolled once, and stopped. It was a crown. It was a very small crown."
+    },
+    { "type": "wait", "duration": 0.5 },
+    {
+      "type": "dialogue",
+      "lines": [
+        { "speaker": "Elder Theron", "text": "...That is the Rat King's crown.", "theme": "elder", "portrait": "theron" }
+      ]
+    },
+    {
+      "type": "branch",
+      "condition": "lead_job",
+      "cases": {
+        "fighter": [
+          { "type": "dialogue", "lines": [ { "speaker": "Fighter", "text": "There was trouble in the cave. We stood in front of it.", "theme": "fighter", "portrait": "fighter" } ] }
+        ],
+        "cleric": [
+          { "type": "dialogue", "lines": [ { "speaker": "Cleric", "text": "We would have asked first. Nobody was at the gate to ask.", "theme": "cleric", "portrait": "cleric" } ] }
+        ],
+        "mage": [
+          { "type": "dialogue", "lines": [ { "speaker": "Mage", "text": "The cave was the obvious variable. We tested it.", "theme": "mage", "portrait": "mage" } ] }
+        ],
+        "rogue": [
+          { "type": "dialogue", "lines": [ { "speaker": "Rogue", "text": "It was never really that heavy.", "theme": "rogue", "portrait": "rogue" } ] }
+        ],
+        "bard": [
+          { "type": "dialogue", "lines": [ { "speaker": "Bard", "text": "We skipped the first act. It's a bold structure. I'm defending it.", "theme": "bard", "portrait": "bard" } ] }
+        ],
+        "default": [
+          { "type": "dialogue", "lines": [ { "speaker": "Rogue", "text": "It was never really that heavy.", "theme": "rogue", "portrait": "rogue" } ] }
+        ]
+      }
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        { "speaker": "Elder Theron", "text": "I had a briefing. There were pauses in it. I had decided where to look at each of you, and in what order.", "theme": "elder", "portrait": "theron" },
+        { "speaker": "Elder Theron", "text": "Clearly you're an action gamer.", "theme": "elder", "portrait": "theron" },
+        { "speaker": "Bard", "text": "Is that a compliment?", "theme": "bard", "portrait": "bard" },
+        { "speaker": "Elder Theron", "text": "It is a category. I keep lists. You have just changed lists.", "theme": "elder", "portrait": "theron" },
+        { "speaker": "Elder Theron", "text": "Fine. You plainly don't need the lesson. Fight however you like, all five of you, by your own hands. Nobody will say I made you ask.", "theme": "elder", "portrait": "theron" },
+        { "speaker": "Elder Theron", "text": "And if you ever want to know what you skipped, come and find me. The trials are where I left them. Somebody ought to use them.", "theme": "elder", "portrait": "theron" }
+      ]
+    },
+    {
+      "type": "narration",
+      "text": "The Elder did not finish the briefing. It was folded, small, and held out instead. In case, said the Elder, of a slower hero."
+    },
+    {
+      "type": "grant_item",
+      "item": "unread_briefing",
+      "name": "The Unread Briefing",
+      "description": "Elder Theron's briefing on the menace in the cave, with the pauses marked. Never delivered: you had already dealt with the menace."
+    },
+    { "type": "set_flag", "flag": "rat_king_fell_before_the_briefing", "value": true },
+    { "type": "letterbox_out", "duration": 0.5 }
+  ]
+}
