@@ -16,6 +16,11 @@ var _bm_guard
 var _saved_scale := 1.0
 var _hero: Combatant
 var _foe: Combatant
+var _drawn := 0
+
+
+func _note_drawn(_n: Node) -> void:
+	_drawn += 1
 
 
 func _c(n: String) -> Combatant:
@@ -72,6 +77,9 @@ func before_each() -> void:
 
 
 func after_each() -> void:
+	var layer: Node = EffectSystem._effects_container
+	if layer != null and is_instance_valid(layer) and layer.child_entered_tree.is_connected(_note_drawn):
+		layer.child_entered_tree.disconnect(_note_drawn)
 	Engine.time_scale = _saved_scale
 	_bm_guard.restore()
 
@@ -114,7 +122,9 @@ func test_the_impact_is_the_end_of_the_bolt() -> void:
 
 func test_a_fire_cast_plays_the_sequence_and_holds_the_damage_for_the_burst() -> void:
 	var host: Node = EffectSystem._effects_container
-	var before: int = host.get_child_count()
+	## Counted by ARRIVAL, not by the layer's size: an earlier file's sparks dying in this window cancelled the cast's own nodes (.793 sweep).
+	_drawn = 0
+	host.child_entered_tree.connect(_note_drawn)
 	BattleManager.presentation_hold = 0.0
 	_cast("fire")
 	## #763: the wait moved from the damage NUMBERS to the whole resolution — BattleManager holds the
@@ -124,7 +134,7 @@ func test_a_fire_cast_plays_the_sequence_and_holds_the_damage_for_the_burst() ->
 	assert_eq(_scene._full_render_dmg_buffer, null, "damage arrives at the impact itself, nothing to buffer")
 	BattleManager.impact_hold = 0.0
 	assert_gte(BattleManager.presentation_hold, lands, "the battle must hold until the fire lands (hold %.2f)" % BattleManager.presentation_hold)
-	assert_true(await _until(func() -> bool: return host.get_child_count() > before, 2.0), "the sequence must draw into the effects layer")
+	assert_true(await _until(func() -> bool: return _drawn > 0, 2.0), "the sequence must draw into the effects layer")
 	assert_true(await _until(func() -> bool: return _scene._full_render_dmg_buffer == null, 3.0),
 		"the held damage must be released at the burst")
 
