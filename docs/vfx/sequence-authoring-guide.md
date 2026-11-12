@@ -94,8 +94,8 @@ figure, the anchor is wrong, and that is fixed once in `BattleScene._figure_anch
 | `flash` | a soft flash at a point | `size` |
 | `shake` | camera shake | `intensity` |
 | `slash` | cut lines | see `strike_impact` |
-| `arc` | a swept blade crescent | `radius`, `from`, `to`, `width`, `life` |
-| `streak` | a dash line between two points | `a`, `b`, `a_offset`, `b_offset`, `life` |
+| `arc` | a swept blade crescent | `radius`, `from`, `to`, `width`, `life`, `glow` (false = no soft bloom behind the band) |
+| `streak` | a dash line between two points | `a`, `b`, `a_offset`, `b_offset`, `width`, `life` |
 | `puff` | soft smoke that covers what is behind it | `count`, `spread`, `drift`, `size` |
 | `plates` | flat panes that assemble and hold: a ward | `shape` (wall or dome), `count` (a dome's plates; a wall is always 7), `radius`, `hold` |
 | `ribbon` | a waving band between two points: a song | `a`, `b`, `a_offset`, `b_offset`, `wave`, `width`, `lines`, `gap` (px between staff lines), `jagged`, `life` |
@@ -103,6 +103,11 @@ figure, the anchor is wrong, and that is fixed once in `BattleScene._figure_anch
 | `emit`, `spin_fling` | the recursive fractal (Edit Formula's look) | see `edit_formula_battle` |
 | `lunge`, `knockback`, `hitstop`, `impact_frame` | move or freeze the SPRITES (first target only) | see `strike_impact` |
 | `cue` | nothing: a sound-only beat | `sfx` |
+
+A sequence with a SIDE sets `handed: true`: it is authored for a caster on the
+RIGHT of its target, and every phase offset, `a_offset` / `b_offset`, puff
+drift, arc `from` / `to` and emit heading is reflected when the caster is on
+the left. Anything a monster may use against the party should carry it.
 
 A sequence may also set `travel` (seconds per 100 px): a farther target is
 reached later, so a song washes down the party line instead of landing on all
@@ -182,8 +187,13 @@ How a row names its family:
   `"vfx": {"sequence": "family_breath_ice"}`. A single-target cast of an
   element the Mage has plays the Mage's own tier-1 spell (`blizzard_battle`).
 - A **physical** move names `"vfx": {"family": "bite"}` and is drawn around its
-  lunge. The top-level `"family"` key is the SPELL LINE the shops sell by; do
-  not reuse it.
+  lunge (`family_<name>`, and `family_<name>_hit` on each target). Beside it:
+  `"ranged": true` for a move that does NOT lunge (its family sequence is the
+  delivery, so the hit waits on its impact) and `"palette"` for the family's
+  accent (only `spark` phases are recoloured; else the element picks it). The
+  top-level `"family"` key is the SPELL LINE the shops sell by; do not reuse it.
+- A family's power is multiplied by the attacker's size on screen (its idle
+  figure ÷ 150 px, clamped 0.7-2.0): author a family for a goblin-sized attacker.
 - `test_a_w1_monster_casts_in_its_family` holds the census: every cast a W1
   monster has plays a sequence or is DECLARED there with the reason.
 
