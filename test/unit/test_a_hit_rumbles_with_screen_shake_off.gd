@@ -64,7 +64,7 @@ func test_the_floor_names_every_member_this_file_drives() -> void:
 	assert_true(EffectSystem.has_method("_trigger_screen_shake"), "EffectSystem._trigger_screen_shake must exist")
 	assert_true(BattleJuice.has_signal("rumble_wanted"), "BattleJuice.rumble_wanted must exist")
 	assert_true("camera_rig" in BattleJuice and "_last_rumble_at" in BattleJuice, "BattleJuice.camera_rig / _last_rumble_at must exist")
-	assert_true("_trauma" in BattleCameraRig.new(), "BattleCameraRig._trauma must exist")
+	assert_true("_trauma" in autofree(BattleCameraRig.new()), "BattleCameraRig._trauma must exist")
 	assert_true("screen_shake_enabled" in GameState and "battle_fx_flags" in GameState, "GameState carries both settings")
 
 
