@@ -40,7 +40,7 @@ func test_eviction_loop_present() -> void:
 	assert_gt(fn_idx, -1)
 	var next_fn: int = src.find("\nstatic func show_save", fn_idx + 1)
 	var body: String = src.substr(fn_idx, next_fn - fn_idx)
-	assert_true(body.contains("while _active_layers.size() >= MAX_STACK:"),
+	assert_true(body.contains("while not _active_layers.is_empty() and (_active_layers.size() >= MAX_STACK or _free_y(band_h) < 0.0):"),
 		"eviction must use a while-loop (handles N events catching up after a cap-violation)")
 	assert_true(body.contains("var oldest: Node = _active_layers.pop_front()"),
 		"eviction must pop_front (oldest first) — FIFO eviction")
@@ -60,8 +60,9 @@ func test_eviction_runs_after_prune_before_offset() -> void:
 	var next_fn: int = src.find("\nstatic func show_save", fn_idx + 1)
 	var body: String = src.substr(fn_idx, next_fn - fn_idx)
 	var prune_idx: int = body.find("_active_layers = _active_layers.filter")
-	var evict_idx: int = body.find("while _active_layers.size() >= MAX_STACK:")
-	var offset_idx: int = body.find("var stack_offset: float = _active_layers.size()")
+	## Since the free-row placement (2026-11-11) the offset is `_free_y`'s row, taken after the eviction loop.
+	var evict_idx: int = body.find("while not _active_layers.is_empty() and (_active_layers.size() >= MAX_STACK")
+	var offset_idx: int = body.find("var y: float = maxf(BASE_Y, _free_y(band_h))")
 	assert_gt(prune_idx, -1)
 	assert_gt(evict_idx, -1)
 	assert_gt(offset_idx, -1)
@@ -168,10 +169,11 @@ func test_tick_205_stacking_preserved() -> void:
 	var src := _read(TOAST)
 	assert_true(src.contains("const STACK_ROW_HEIGHT := 48.0"),
 		"tick 205 STACK_ROW_HEIGHT preserved")
-	assert_true(src.contains("var stack_offset: float = _active_layers.size() * STACK_ROW_HEIGHT"),
-		"tick 205 stack_offset formula preserved")
-	assert_true(src.contains("var y: float = BASE_Y + stack_offset"),
-		"tick 205 y computation preserved")
+	## Was `size() * STACK_ROW_HEIGHT`: placing by COUNT put a new toast on a live row (test_a_toast_takes_a_free_row).
+	assert_true(src.contains("var y: float = BASE_Y + row * STACK_ROW_HEIGHT"),
+		"rows still step by STACK_ROW_HEIGHT from BASE_Y")
+	assert_true(src.contains("var y: float = maxf(BASE_Y, _free_y(band_h))"),
+		"and a toast takes the first free row")
 
 
 func test_tick_205_lifecycle_preserved() -> void:

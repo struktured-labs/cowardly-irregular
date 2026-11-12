@@ -90,12 +90,15 @@ func _measure(path: String) -> Dictionary:
 
 	if not ("spawn_points" in m and m.spawn_points is Dictionary):
 		return out
+	# A room authors its spawns in CELLS (spawn_player_at multiplies by TILE_SIZE); villages and dungeons in pixels.
+	var unit: float = 32.0 if path.contains("/interiors/") else 1.0
 	var names: Array = m.spawn_points.keys()
 	names.sort()
 	for k in names:
 		var p = m.spawn_points[k]
 		if not (p is Vector2):
 			continue
+		p = (p as Vector2) * unit
 		out["spawns"] = int(out["spawns"]) + 1
 		if _clear_at(space, p as Vector2, SAFE_RADIUS):
 			continue
