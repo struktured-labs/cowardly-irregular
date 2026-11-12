@@ -376,7 +376,8 @@ def build() -> dict[str, Image.Image]:
     # --- door mat, 64x24: coarse woven straw, a dark bound edge; like the rug it lies IN the floor (no outline)
     straw = (scaled(honey, 0.62), scaled(honey, 0.8), honey)
     dm = Canvas(64, 24, 97)
-    dm.rect(1, 1, 62, 22, wall[0])
+    dm.rect(1, 1, 62, 22, scaled(honey, 0.5))                 # a bound edge one step under the straw, never the furniture's ink
+    dm.rect(2, 2, 61, 21, straw[0])
     for y in range(3, 21):
         for x in range(3, 61):
             dm.put(x, y, straw[2] if ((x // 3) + (y // 2)) % 2 == 0 else (straw[1] if dm.rng.random() < 0.8 else straw[0]))
