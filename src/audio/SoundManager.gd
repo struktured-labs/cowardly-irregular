@@ -3497,9 +3497,21 @@ var _danger_tween: Tween = null
 var _corruption_intensity: float = 0.0  # 0.0 = clean, 1.0 = fully corrupted
 var _corruption_tween: Tween = null
 
-## The low-HP speed-up belongs to a fight's own bed, and every bed a battle starts is a `battle*` or `boss*` id.
-static func bed_takes_danger(track: String) -> bool:
-	return track.begins_with("battle") or track.begins_with("boss")
+## The low-HP speed-up belongs to the bed the LIVE battle declared as its own, whatever its id (a grind fights on "autogrind").
+var _fight_bed: String = ""
+
+
+## Called by the battle right after it starts (or swaps) its music: what plays NOW is this fight's bed.
+func declare_fight_bed() -> void:
+	_fight_bed = str(_current_music)
+
+
+func clear_fight_bed() -> void:
+	_fight_bed = ""
+
+
+func takes_danger() -> bool:
+	return _fight_bed != "" and str(_current_music) == _fight_bed
 
 
 func set_danger_intensity(intensity: float) -> void:
@@ -3507,7 +3519,7 @@ func set_danger_intensity(intensity: float) -> void:
 	   the playing bed speeds up to 1.15x and +3 dB (struktured 2026-11-11); no bed is swapped in."""
 	var new_intensity = clamp(intensity, 0.0, 1.0)
 	## Whoever calls: victory, a stinger, game over and the field are never sped up (his "victory music should not change pace").
-	if not bed_takes_danger(str(_current_music)):
+	if not takes_danger():
 		new_intensity = 0.0
 
 	# Skip if no change

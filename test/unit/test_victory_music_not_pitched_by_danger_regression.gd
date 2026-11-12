@@ -11,13 +11,15 @@ func before_each() -> void:
 
 
 func after_each() -> void:
+	SoundManager.clear_fight_bed()
 	SoundManager.reset_corruption()
 	SoundManager.reset_danger()
 	SoundManager.stop_music()
 
 
 func test_a_track_switch_ends_the_danger_envelope() -> void:
-	SoundManager.play_music("battle_medieval")  # the envelope only arms on a fight's own bed
+	SoundManager.play_music("battle_medieval")  # the envelope only arms on the bed a battle declared
+	SoundManager.declare_fight_bed()
 	SoundManager.set_danger_intensity(1.0)
 	await get_tree().process_frame
 	assert_true(SoundManager._danger_tween != null and SoundManager._danger_tween.is_valid(),
@@ -41,6 +43,7 @@ func test_the_switch_kills_the_tween_not_just_the_pitch() -> void:
 	var envelope: Tween = null
 	for attempt in range(5):
 		SoundManager.play_music("battle_medieval")
+		SoundManager.declare_fight_bed()
 		SoundManager.reset_danger()
 		SoundManager.set_danger_intensity(1.0)
 		await get_tree().process_frame

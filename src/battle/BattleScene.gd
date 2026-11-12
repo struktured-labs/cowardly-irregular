@@ -4166,6 +4166,7 @@ func _on_battle_started() -> void:
 			if terrain_track != "battle":
 				print("[MUSIC] Playing %s terrain battle theme" % _current_terrain)
 	_music_follows_hp = true
+	SoundManager.declare_fight_bed()
 	_masterite_phase2_swapped = false
 	if _battle_background and is_instance_valid(_battle_background):
 		_battle_background.set_unrest(0.0)
@@ -4283,6 +4284,7 @@ func _get_terrain_battle_track() -> String:
 func _on_battle_ended(victory: bool) -> void:
 	"""Handle battle end"""
 	_music_follows_hp = false
+	SoundManager.clear_fight_bed()
 	SoundManager.reset_danger()  # a turbo win or an escape starts no new bed, so nothing else would end the speed-up
 	_end_advance_run()
 	_clear_advance_aura()
@@ -6274,6 +6276,7 @@ func _on_boss_face_changed(combatant: Combatant, _face_name: String, face: Dicti
 		_base_music_track = face_music
 		if SoundManager:
 			SoundManager.play_music(face_music)
+			SoundManager.declare_fight_bed()
 	var sheet_id := str(face.get("sheet_id", ""))
 	if sheet_id == "":
 		# A sheetless face KEEPS the worn body — for the unmasking that is the honest
@@ -6318,6 +6321,7 @@ func _check_masterite_phase2_music_swap() -> void:
 			var track: String = "boss_phase2_%s" % mtype
 			_base_music_track = track
 			SoundManager.play_music(track)
+			SoundManager.declare_fight_bed()
 			_masterite_phase2_swapped = true
 			# Phase 2: the arena itself stops being trustworthy (struktured "try it" 2026-08-14)
 			if _battle_background and is_instance_valid(_battle_background) and BattleJuice.flag("arena_unrest"):

@@ -50,12 +50,14 @@ func before_each() -> void:
 		SoundManager._danger_tween.kill()
 	SoundManager._danger_intensity = 0.0
 	_was_music = SoundManager._current_music
-	SoundManager._current_music = "battle_medieval"  # the envelope refuses any bed that is not a fight's own
+	SoundManager._current_music = "battle_medieval"  # the envelope refuses any bed a live battle did not declare
+	SoundManager.declare_fight_bed()
 
 
 func after_each() -> void:
 	Engine.time_scale = 1.0
 	SoundManager._current_music = _was_music
+	SoundManager.clear_fight_bed()
 	if SoundManager._danger_tween and SoundManager._danger_tween.is_valid():
 		SoundManager._danger_tween.kill()
 	SoundManager._danger_intensity = 0.0
