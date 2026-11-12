@@ -14,6 +14,7 @@ var _flourish_player: AudioStreamPlayer  # dedicated voice: a group attack's own
 const SEQUENCE_BEAT_VOICES := 3
 var _beat_players: Array[AudioStreamPlayer] = []
 var _beat_next: int = 0
+var _beat_frame_keys: Dictionary = {}
 var _voice_player: AudioStreamPlayer  # dedicated voice: party lines are SECONDS long and every menu blip on _ui_player cut them (2026-09-11)
 var _line_player: AudioStreamPlayer  # dedicated voice: a recorded dialogue line (boss/NPC); never the party voice player, which the victory slam shares
 var _line_owner_id: int = 0
@@ -1318,6 +1319,11 @@ func play_sequence_beat(sound_key: String) -> void:
 	if _beat_players.is_empty():
 		play_flourish(sound_key)
 		return
+	# A spell on N targets runs N sequences in one frame; one beat per key per frame, or N copies stack ~+9 dB and eat the pool.
+	var frame := Engine.get_process_frames()
+	if _beat_frame_keys.get(sound_key, -1) == frame:
+		return
+	_beat_frame_keys[sound_key] = frame
 	var p: AudioStreamPlayer = _beat_players[_beat_next % _beat_players.size()]
 	_beat_next += 1
 	_sfx_cooldowns.erase(sound_key)

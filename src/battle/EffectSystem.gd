@@ -106,6 +106,115 @@ func spawn_effect(effect_type: EffectType, position: Vector2, on_complete: Calla
 	_animate_effect(effect, effect_type, on_complete, power)
 
 
+## ---- THE HIT SPARK: what a plain hit draws, by the weapon that made it. Code-drawn, no assets. ----
+## The scene owns the hit's weight (shake, knockback, hitstop); this only draws, and plays the weapon's hit cue.
+const HIT_SPARK_SHAPES: Array[String] = ["sword", "dagger", "axe", "staff", "piano_scythe", "claw"]
+const HIT_SPARK_DEFAULT := "claw"
+
+
+## The shape a weapon type draws; anything unknown (bare hands, a monster) rakes like a claw.
+static func hit_spark_shape(weapon_type: String) -> String:
+	return weapon_type if weapon_type in HIT_SPARK_SHAPES else HIT_SPARK_DEFAULT
+
+
+## `w` is the hit's weight (0-1): the spark grows and lingers with it. `dir` is the way the target is knocked
+## (-1 left, +1 right). `brief` = the shortest read, for fast battle speeds.
+func spawn_hit_spark(position: Vector2, weapon_type: String, w: float = 0.0, dir: float = -1.0, tint: Color = Color.WHITE, brief: bool = false) -> Node2D:
+	_play_effect_sound(EffectType.PHYSICAL, 1.0, weapon_type)
+	var spark := Node2D.new()
+	spark.name = "HitSpark_" + hit_spark_shape(weapon_type)
+	spark.position = position
+	spark.set_meta("shape", hit_spark_shape(weapon_type))
+	_effects_container.add_child(spark)
+	w = clampf(w, 0.0, 1.0)
+	var size: float = 1.0 + 1.3 * w
+	var life: float = 0.12 if brief else 0.20 + 0.16 * w
+	var flip: float = -1.0 if dir < 0.0 else 1.0
+	match hit_spark_shape(weapon_type):
+		"sword":
+			_spark_arc(spark, Vector2(-30, -34) * size, Vector2(34, 30) * size, 18.0 * size, 7.0 + 5.0 * w, tint, life, 0.0, flip)
+		"dagger":
+			_spark_line(spark, Vector2(-16, -20) * size, Vector2(18, 16) * size, 4.0 + 3.0 * w, tint, life * 0.8, 0.0, flip)
+			if not brief:
+				_spark_line(spark, Vector2(16, -20) * size, Vector2(-18, 16) * size, 4.0 + 3.0 * w, tint, life * 0.8, 0.05, flip)
+		"axe":
+			for i in 6:
+				var a: float = TAU * float(i) / 6.0 + 0.26
+				_spark_line(spark, Vector2(cos(a), sin(a)) * 6.0 * size, Vector2(cos(a), sin(a)) * 26.0 * size, 7.0 + 5.0 * w, tint, life, 0.0, flip)
+			if not brief:
+				_spark_ring(spark, Vector2(0, 26) * size, Vector2(34, 9) * size, 3.0 + 2.0 * w, tint, life * 1.2, 0.03)
+		"staff":
+			_spark_ring(spark, Vector2.ZERO, Vector2(22, 22) * size, 4.0 + 3.0 * w, tint, life, 0.0)
+			if not brief:
+				for i in 5:
+					var a2: float = -PI * (0.15 + 0.175 * float(i))
+					_spark_line(spark, Vector2(cos(a2), sin(a2)) * 14.0 * size, Vector2(cos(a2), sin(a2)) * 30.0 * size, 3.0, tint, life, 0.04, flip)
+		"piano_scythe":
+			_spark_arc(spark, Vector2(-44, -18) * size, Vector2(44, -6) * size, 34.0 * size, 9.0 + 6.0 * w, tint, life * 1.15, 0.0, flip)
+			if not brief:
+				for i in 3:
+					_spark_line(spark, Vector2(-20 + 20 * i, -30 - 6 * i) * size, Vector2(-20 + 20 * i, -22 - 6 * i) * size, 5.0, tint, life, 0.05 + 0.03 * i, flip)
+		_:
+			for i in (1 if brief else 3):
+				var off := Vector2(-12 + 12 * i, 0) * size
+				_spark_arc(spark, off + Vector2(-8, -26) * size, off + Vector2(8, 26) * size, 7.0 * size, 4.0 + 3.0 * w, tint, life * 0.85, 0.03 * i, flip)
+	get_tree().create_timer(life + 0.25).timeout.connect(spark.queue_free)
+	return spark
+
+
+func _spark_stroke(parent: Node2D, points: PackedVector2Array, width: float, tint: Color, life: float, delay: float, grow: bool = true) -> Line2D:
+	var line := Line2D.new()
+	line.points = points
+	line.width = width
+	line.default_color = Color(tint.r, tint.g, tint.b, 0.0)
+	line.begin_cap_mode = Line2D.LINE_CAP_ROUND
+	line.end_cap_mode = Line2D.LINE_CAP_ROUND
+	line.antialiased = false
+	## Thin at both ends, full in the middle: a cut, not a bar.
+	var taper := Curve.new()
+	taper.add_point(Vector2(0.0, 0.15))
+	taper.add_point(Vector2(0.5, 1.0))
+	taper.add_point(Vector2(1.0, 0.15))
+	line.width_curve = taper
+	parent.add_child(line)
+	var t := line.create_tween()
+	if delay > 0.0:
+		t.tween_interval(delay)
+	t.tween_property(line, "default_color:a", 1.0, 0.02)
+	if grow:
+		line.scale = Vector2(0.55, 0.55)
+		t.parallel().tween_property(line, "scale", Vector2.ONE, life * 0.35).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	t.tween_property(line, "default_color:a", 0.0, life * 0.65).set_ease(Tween.EASE_IN)
+	t.parallel().tween_property(line, "width", width * 0.2, life * 0.65)
+	return line
+
+
+func _spark_line(parent: Node2D, from: Vector2, to: Vector2, width: float, tint: Color, life: float, delay: float, flip: float) -> void:
+	_spark_stroke(parent, PackedVector2Array([Vector2(from.x * flip, from.y), Vector2(to.x * flip, to.y)]), width, tint, life, delay)
+
+
+## A curved cut from `from` to `to`, bowed `bulge` px to one side.
+func _spark_arc(parent: Node2D, from: Vector2, to: Vector2, bulge: float, width: float, tint: Color, life: float, delay: float, flip: float) -> void:
+	var pts := PackedVector2Array()
+	var normal: Vector2 = (to - from).orthogonal().normalized()
+	for i in 9:
+		var k: float = float(i) / 8.0
+		var p: Vector2 = from.lerp(to, k) + normal * bulge * sin(PI * k)
+		pts.append(Vector2(p.x * flip, p.y))
+	_spark_stroke(parent, pts, width, tint, life, delay)
+
+
+func _spark_ring(parent: Node2D, center: Vector2, radius: Vector2, width: float, tint: Color, life: float, delay: float) -> void:
+	var pts := PackedVector2Array()
+	for i in 21:
+		var a: float = TAU * float(i) / 20.0
+		pts.append(center + Vector2(cos(a) * radius.x, sin(a) * radius.y))
+	var ring := _spark_stroke(parent, pts, width, tint, life, delay, false)
+	ring.width_curve = null
+	ring.scale = Vector2(0.35, 0.35)
+	ring.create_tween().tween_property(ring, "scale", Vector2(1.25, 1.25), life + delay).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+
+
 func spawn_effect_on_target(effect_type: EffectType, target_sprite: Node2D, on_complete: Callable = Callable(), power: float = 1.0, weapon_type: String = "") -> void:
 	"""Spawn effect on a target sprite with power scaling"""
 	if not is_instance_valid(target_sprite):
@@ -135,18 +244,141 @@ func spawn_ability_effect(ability: Variant, target_position: Vector2, on_complet
 ## Plays a data/vfx_sequences.json sequence from `from` to `to` (#399, struktured via cowir-main 2026-10-31:
 ## "wire it into Fire first, playable"). Returns {"total", "impact"} in battle seconds: impact is when the
 ## sequence first lands on the target, so a caller can hold the damage numbers for it. {} if the id is unknown.
-func spawn_sequence(seq_id: String, from: Vector2, to: Vector2, power: float = 1.0, actors: Dictionary = {}, tier: int = 1) -> Dictionary:
+## `start_at` >= 0 replaces the sequence's authored `start`: a melee overlay passes its lunge's own contact time.
+func spawn_sequence(seq_id: String, from: Vector2, to: Vector2, power: float = 1.0, actors: Dictionary = {}, tier: int = 1, compact: bool = false, start_at: float = -1.0) -> Dictionary:
 	var seq: Dictionary = FractalFX.load_sequence(seq_id)
 	if seq.is_empty() or _effects_container == null:
 		return {}
+	if start_at >= 0.0:
+		seq = seq.duplicate()
+		seq["start"] = start_at
 	var fx := FractalFX.new(_effects_container)
 	fx.actors = actors
 	fx.tier = tier
 	fx.reduce_flashes = _reduce_flashes()
 	fx.on_shake = _trigger_screen_shake
 	fx.on_sfx = play_phase_sfx
-	var total: float = fx.play(seq, from, to, clampf(power, POWER_MIN, POWER_MAX))
-	return {"total": total, "impact": FractalFX.impact_time(seq)}
+	fx.on_element_phase = run_element_phase
+	var total: float = fx.play(seq, from, to, clampf(power, POWER_MIN, POWER_MAX), compact)
+	return {"total": total, "impact": 0.01 if compact else FractalFX.impact_time(seq) + FractalFX.travel_delay(seq, from, to)}
+
+
+## Sequence phases drawn here, not in FractalFX: an element's ORIGINAL burst (struktured via main 23405: Fire keeps
+## its own look, in phases) and the palette-driven mote phases every lane's sequences share (the guide's vocabulary).
+const ERUPTION_TYPES := {"fire": EffectType.FIRE, "ice": EffectType.ICE, "lightning": EffectType.LIGHTNING,
+	"holy": EffectType.HOLY, "dark": EffectType.DARK, "heal": EffectType.HEAL}
+
+
+func run_element_phase(kind: String, at: Vector2, _from: Vector2, power: float, phase: Dictionary) -> void:
+	if _effects_container == null:
+		return
+	var boost := float(phase.get("boost", 1.0))
+	var palette := str(phase.get("palette", "flame"))
+	match kind:
+		"eruption":
+			var element := str(phase.get("element", "fire"))
+			var type: EffectType = ERUPTION_TYPES.get(element, EffectType.FIRE)
+			var e := _create_effect(type)
+			e.position = at
+			_effects_container.add_child(e)
+			var p := clampf(power * float(phase.get("power", 1.0)), POWER_MIN, POWER_MAX)
+			# No strike cue here: the phase's own per-tier impact beat is the sound (cowir-sfx 23592).
+			if type == EffectType.FIRE:
+				_animate_fire(e, Callable(), p, boost)
+			else:
+				_animate_effect(e, type, Callable(), p)
+		"pillar":
+			_mote_column(at, power * boost, float(phase.get("dur", 0.36)), float(phase.get("height", 220.0)), palette)
+		"gather":
+			_mote_gather(at, power, float(phase.get("dur", 0.3)), int(phase.get("count", 18)), palette)
+		"fall", "rise":
+			_mote_drift(at, power, float(phase.get("dur", 0.6)), int(phase.get("count", 16)), palette, kind == "rise", bool(phase.get("ground_glow", kind == "fall")))
+
+
+## One mote in a palette's colour: Fire's own particle for the fire palettes, a soft white dot tinted for the rest.
+func _mote(palette: String) -> Sprite2D:
+	if palette in ["flame", "fire", "ember"]:
+		return _create_fire_particle()
+	var sprite := Sprite2D.new()
+	sprite.texture = _get_cached_texture("soft_mote", func(): return _generate_soft_mote_texture())
+	var stops: Array = FractalFX.PALETTES.get(palette, FractalFX.PALETTES["spark"])
+	var c: Color = stops[mini(1, stops.size() - 1)][1]
+	sprite.modulate = Color(c.r, c.g, c.b, 0.9)
+	return sprite
+
+
+static func _generate_soft_mote_texture() -> ImageTexture:
+	var size := 16
+	var img := Image.create(size, size, false, Image.FORMAT_RGBA8)
+	img.fill(Color(0, 0, 0, 0))
+	for y in size:
+		for x in size:
+			var d: float = Vector2(x - 7.5, y - 7.5).length() / 7.5
+			if d < 1.0:
+				img.set_pixel(x, y, Color(1, 1, 1, (1.0 - d) * (1.0 - d)))
+	return ImageTexture.create_from_image(img)
+
+
+## A rising column of motes: Fire's pillar, a heal's light, a song's staff.
+func _mote_column(at: Vector2, k: float, dur: float, height: float, palette: String) -> void:
+	var n := int(26.0 * clampf(k, 0.5, 4.0))
+	var tween := create_tween()
+	tween.set_parallel(true)
+	for i in n:
+		var p := _mote(palette)
+		p.position = at + Vector2(randf_range(-14.0, 14.0) * k, randf_range(-6.0, 6.0))
+		p.scale = Vector2.ONE * randf_range(0.8, 1.6) * k
+		_effects_container.add_child(p)
+		var delay := float(i) / float(n) * dur * 0.5
+		var rise := randf_range(0.55, 1.0) * height * k
+		tween.tween_property(p, "position:y", p.position.y - rise, dur).set_delay(delay).set_ease(Tween.EASE_OUT)
+		tween.tween_property(p, "scale", p.scale * Vector2(0.6, 2.2), dur).set_delay(delay)
+		tween.tween_property(p, "modulate:a", 0.0, dur * 0.5).set_delay(delay + dur * 0.5)
+		tween.tween_callback(p.queue_free).set_delay(delay + dur)
+
+
+## Motes drawn in from a ring to a point: a cast charging before it flies.
+func _mote_gather(at: Vector2, k: float, dur: float, count: int, palette: String) -> void:
+	var tween := create_tween()
+	tween.set_parallel(true)
+	for i in count:
+		var p := _mote(palette)
+		var ang := TAU * float(i) / float(count) + randf_range(-0.2, 0.2)
+		p.position = at + Vector2(cos(ang), sin(ang)) * randf_range(60.0, 96.0) * clampf(k, 0.8, 2.5)
+		p.scale = Vector2.ONE * 0.7
+		var rest_a: float = p.modulate.a
+		p.modulate.a = 0.0
+		_effects_container.add_child(p)
+		var delay := randf() * dur * 0.3
+		tween.tween_property(p, "modulate:a", rest_a, dur * 0.25).set_delay(delay)
+		tween.tween_property(p, "position", at, dur - delay).set_delay(delay).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
+		tween.tween_property(p, "scale", Vector2.ONE * 1.4, dur - delay).set_delay(delay)
+		tween.tween_callback(p.queue_free).set_delay(dur)
+
+
+## Motes drifting down (embers, snow, ash) or up (heal light, notes), with an optional glow on the ground under them.
+func _mote_drift(at: Vector2, k: float, dur: float, count: int, palette: String, upward: bool, ground_glow: bool) -> void:
+	var tween := create_tween()
+	tween.set_parallel(true)
+	if ground_glow:
+		var glow := _mote(palette)
+		glow.position = at + Vector2(0, 28)
+		glow.scale = Vector2(4.0, 1.2) * clampf(k, 0.8, 2.5)
+		glow.modulate.a = 0.7
+		_effects_container.add_child(glow)
+		tween.tween_property(glow, "modulate:a", 0.0, dur)
+		tween.tween_callback(glow.queue_free).set_delay(dur)
+	var dir: float = -1.0 if upward else 1.0
+	for i in int(float(count) * clampf(k, 0.8, 2.5)):
+		var p := _mote(palette)
+		var start_y: float = randf_range(-10.0, 30.0) if upward else randf_range(-70.0, -10.0)
+		p.position = at + Vector2(randf_range(-40.0, 40.0), start_y) * clampf(k, 0.8, 2.0)
+		p.scale = Vector2.ONE * randf_range(0.3, 0.6)
+		_effects_container.add_child(p)
+		var delay := randf() * dur * 0.3
+		tween.tween_property(p, "position", p.position + Vector2(randf_range(-20.0, 20.0), dir * randf_range(30.0, 60.0)), dur - delay).set_delay(delay)
+		tween.tween_property(p, "modulate:a", 0.0, dur - delay).set_delay(delay)
+		tween.tween_callback(p.queue_free).set_delay(dur)
 
 
 ## A sequence phase's "sfx" cue; false when muted (autogrind/turbo, via the battle's own gate) or the key is unknown.
@@ -292,9 +524,11 @@ func _tint_battle_background(tint_color: Color, duration: float = 0.3) -> void:
 	tween.tween_property(battle_background, "modulate", Color.WHITE, duration * 0.85).set_trans(Tween.TRANS_SINE)
 
 
-func _animate_fire(effect: Node2D, on_complete: Callable, power: float = 1.0) -> void:
+func _animate_fire(effect: Node2D, on_complete: Callable, power: float = 1.0, boost: float = 1.0) -> void:
 	"""Fire spell — FF6-style eruption: screen flash, explosion ring, flame columns, massive particles"""
 	var power_t = clampf((power - POWER_MIN) / (POWER_MAX - POWER_MIN), 0.0, 1.0)
+	# boost > 1 is a sequence's "over the top" knob (struktured via main 23591): more of the same eruption, never a new look.
+	boost = maxf(boost, 1.0)
 
 	# Environmental reaction: warm orange-red background tint
 	_tint_battle_background(Color(1.3, 0.7, 0.5, 1.0), 0.4)
@@ -303,7 +537,7 @@ func _animate_fire(effect: Node2D, on_complete: Callable, power: float = 1.0) ->
 	var flash := _make_screen_flash(effect, Color(1.0, 0.5, 0.0, 0.0))
 
 	# Big screen shake
-	var shake_intensity = lerp(6.0, 20.0, power_t)
+	var shake_intensity = lerp(6.0, 20.0, power_t) * boost
 	var shake_duration = lerp(0.3, 0.7, power_t)
 	_trigger_screen_shake(shake_intensity, shake_duration)
 
@@ -317,7 +551,7 @@ func _animate_fire(effect: Node2D, on_complete: Callable, power: float = 1.0) ->
 
 	# Massive particle burst — 40-100 particles in two waves
 	var particles: Array[Sprite2D] = []
-	var particle_count = int(lerp(40, 100, power_t))
+	var particle_count = int(lerp(40, 100, power_t) * boost)
 	var base_spread = lerp(25, 60, power_t)
 	for i in range(particle_count):
 		var particle = _create_fire_particle()
@@ -334,12 +568,12 @@ func _animate_fire(effect: Node2D, on_complete: Callable, power: float = 1.0) ->
 
 	# Screen flash: bright burst then fade. No rect when Reduce Flashes is on.
 	if flash:
-		var flash_alpha = lerp(0.5, 0.9, power_t)
+		var flash_alpha = minf(lerp(0.5, 0.9, power_t) * sqrt(boost), 1.0)
 		tween.tween_property(flash, "color:a", flash_alpha, 0.04)
 		tween.tween_property(flash, "color:a", 0.0, 0.2).set_delay(0.04)
 
 	# Double ring expansion
-	var ring_scale = lerp(3.0, 6.0, power_t)
+	var ring_scale = lerp(3.0, 6.0, power_t) * sqrt(boost)
 	tween.tween_property(ring1, "scale", Vector2(ring_scale, ring_scale), 0.25)
 	tween.tween_property(ring1, "modulate:a", 0.0, 0.2).set_delay(0.1)
 	tween.tween_property(ring2, "scale", Vector2(ring_scale * 1.3, ring_scale * 1.3), 0.4).set_delay(0.08)
@@ -362,6 +596,8 @@ func _animate_fire(effect: Node2D, on_complete: Callable, power: float = 1.0) ->
 		tween.tween_property(p, "rotation", randf_range(-PI, PI), duration).set_delay(delay)
 
 	tween.chain().tween_callback(func():
+		if not is_instance_valid(effect):
+			return  # freed with its battle (or a test) before the eruption ended
 		effect.queue_free()
 		if on_complete.is_valid():
 			on_complete.call()
