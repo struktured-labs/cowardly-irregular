@@ -100,19 +100,34 @@ func test_the_elder_knows_once_the_scene_has_played() -> void:
 	assert_string_contains(reply, fact, "and his reply prompt")
 
 
-func test_nobody_else_is_told() -> void:
+## The gate guard saw them go (cowir-story): a fact reaches exactly the NPCs it is authored for, in their own words.
+func test_only_those_it_is_authored_for_are_told() -> void:
 	GameState.set_story_flag(FLAG)
-	var told: Array = []
-	var checked: int = 0
+	var wrong: Array = []
+	var untold: int = 0
+	var told: int = 0
 	for npc_name in _personas():
 		var entry: Variant = _personas()[npc_name]
-		if not (entry is Dictionary) or not (entry as Dictionary).has("persona") or str(npc_name) == "Elder Theron":
+		if not (entry is Dictionary) or not (entry as Dictionary).has("persona"):
 			continue
-		checked += 1
-		if _prompt_persona(str(npc_name)) != str((entry as Dictionary)["persona"]):
-			told.append(str(npc_name))
-	assert_gt(checked, 0, "CONTROL: another showcase NPC exists to check")
-	assert_eq(told, [], "the fact is the Elder's alone; these personas changed when the flag was set")
+		var authored: String = str((entry as Dictionary)["persona"])
+		var fact: String = _authored_fact(str(npc_name))
+		var handed: String = _prompt_persona(str(npc_name))
+		if fact == "":
+			untold += 1
+			if handed != authored:
+				wrong.append("%s was told and authors no fact" % npc_name)
+		else:
+			told += 1
+			if not (handed.begins_with(authored) and handed.contains(fact)):
+				wrong.append("%s authors a fact and was not handed it" % npc_name)
+			for other in _personas():
+				var theirs: String = _authored_fact(str(other))
+				if str(other) != str(npc_name) and theirs != "" and theirs != fact and handed.contains(theirs):
+					wrong.append("%s was handed %s's fact" % [npc_name, other])
+	assert_gt(untold, 0, "CONTROL: a showcase NPC with no fact exists, and stays as authored")
+	assert_gt(told, 1, "CONTROL: more than the Elder is told (the gate guard watched them go)")
+	assert_eq(wrong, [], "a flag fact reaches the NPCs it is authored for, each their own, and nobody else")
 
 
 func test_a_flag_fact_keys_on_a_flag_a_scene_sets() -> void:
