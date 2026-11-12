@@ -201,6 +201,26 @@ A buff, a debuff or a status LANDING is not yours to draw: one shared beat per
 kind plays at the target (`LANDED_BEATS`, `stat_up_<stat>`, `wore_off`). Author
 the delivery and stop at the impact.
 
+### Sound on a phase (cowir-sfx)
+
+- **A cue is ONE event, keyed on the phase where that event is drawn.** A phase
+  runs on battle time and a file plays on real time, so a file holding two
+  events (a spit's pop and its splat) is in sync at one speed and wrong at the
+  rest. Key the launch and the landing separately, or key only the landing.
+- **At runtime a missing key is silent; in the suite it is red.** The
+  phase-sound guards fail on an `sfx` value the manifest lacks. Leave the key
+  off and say which phase wants a cue; cowir-sfx adds the key with the asset.
+- **One beat per key per frame.** A sequence spawned on N targets asks for the
+  same cue N times in one frame and it plays once. Targets staggered across
+  frames are not merged: key the first target's sequence only.
+- **A melee or family cue sits ON the weapon hit cue, which still plays.**
+  It is levelled so hit + cue stays within about 4 dB of the hit alone; a
+  monster's plain attack plays its family, so those are heard every turn.
+- **The engine already sounds a landing.** `buff`, `debuff`, `status_<name>`
+  and `resist_deflect` play when the ability's effect resolves, so a landed
+  beat names none of them. `status_wore_off` is the one cue on that layer.
+- **Heals carry no beat.** The choir is the only heal sound (struktured).
+
 ## 8. Checklist before READY
 
 - The ability names its sequence, and a test pins that it resolves.
