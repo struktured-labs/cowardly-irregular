@@ -28,6 +28,9 @@ const NIGHT_TINT := Color(0.02, 0.03, 0.10)
 const READOUT_TINT := Color(1.0, 0.95, 0.75)
 ## The night lasts the ditty, never less than this: a missing or very short cue must not make the beat a blink.
 const MIN_NIGHT_SEC := 2.5
+## How long the ditty may take to start sounding before the night stops waiting for it, and how far past its length the night may run.
+const DITTY_GRACE_SEC := 0.5
+const NIGHT_OVERRUN_SEC := 1.5
 const DITTY_KEY := "inn_rest_ditty"
 const FALLBACK_CUE := "inn_rest"
 const LOCK_ID := "inn_rest"
@@ -38,6 +41,14 @@ var skipped := false
 ## True when the inn went away mid-night: the caller must not carry on as if the morning arrived.
 var aborted := false
 var night_sec := 0.0
+## The night's clock is the ditty itself (cowir-music 24561): where it is HEARD is how far the night has come.
+var _ditty_len := 0.0
+var _ditty_heard := false
+var _ditty_at := 0.0
+var _on_frame_clock := false
+## Seconds into the ditty as heard, or -1.0 when it is not the stream sounding. A test hands in its own.
+var _ditty_position: Callable = func() -> float:
+	return SoundManager.music_position_of(DITTY_KEY) if SoundManager and SoundManager.has_method("music_position_of") else -1.0
 
 var _rect: ColorRect
 var _sky: InnNightSky
@@ -122,26 +133,31 @@ func _run() -> void:
 	if GameState and GameState.has_method("set_day_phase"):
 		GameState.set_day_phase(MORNING_PHASE)
 
-	night_sec = maxf(_play_ditty(), MIN_NIGHT_SEC)
+	_ditty_len = _play_ditty()
+	night_sec = maxf(_ditty_len, MIN_NIGHT_SEC)
 	_skippable = true
 	_build_readout()
 	_sky.set_night(0.0, 0.0)
 	beat.emit("night")
 	var sky_tw := create_tween().set_ignore_time_scale(true)
 	sky_tw.tween_property(_sky, "modulate:a", 1.0, SKY_IN_SEC)
-	var started := Time.get_ticks_msec()
-	while not _skip_requested and float(Time.get_ticks_msec() - started) / 1000.0 < night_sec:
-		var elapsed: float = float(Time.get_ticks_msec() - started) / 1000.0
-		_show_night(elapsed / night_sec, elapsed)
+	## `elapsed` is frame time with the battle-speed scale divided out: the fallback clock, and the bound on the night.
+	var elapsed := 0.0
+	while not _skip_requested:
+		var p: float = night_progress(elapsed)
+		if p >= 1.0:
+			break
+		_show_night(p, p * night_sec)
 		await get_tree().process_frame
 		if _done:
 			return
+		elapsed += get_process_delta_time() / maxf(Engine.time_scale, 0.01)
 	skipped = _skip_requested
 	_skippable = false
 	## A skip jumps to the morning it would have reached: the last frame of the night is dawn either way.
 	if skipped:
 		beat.emit("stopped")
-	_show_night(1.0, float(Time.get_ticks_msec() - started) / 1000.0)
+	_show_night(1.0, night_sec)
 
 	if SoundManager and SoundManager.has_method("restore_music_state"):
 		SoundManager.restore_music_state(bed)
@@ -150,6 +166,29 @@ func _run() -> void:
 	out_tw.tween_property(_readout, "modulate:a", 0.0, FADE_IN_SEC * 0.6)
 	await _fade(0.0, FADE_IN_SEC)
 	_finish(skipped)
+
+
+## How far the night has come, 0..1. While the ditty sounds, its own position; once it has been heard and stops, the
+## night is over; if it never starts (no file, muted, a browser that has not unlocked audio), the frame clock.
+func night_progress(elapsed: float) -> float:
+	if night_sec <= 0.0 or elapsed > night_sec + NIGHT_OVERRUN_SEC:
+		return 1.0
+	if _on_frame_clock or _ditty_len < MIN_NIGHT_SEC:
+		return clampf(elapsed / night_sec, 0.0, 1.0)
+	var at: float = float(_ditty_position.call())
+	if at < 0.0:
+		if _ditty_heard:
+			return 1.0
+		if elapsed > DITTY_GRACE_SEC:
+			_on_frame_clock = true
+			return clampf(elapsed / night_sec, 0.0, 1.0)
+		return 0.0
+	_ditty_heard = true
+	## A position that goes backwards is the stream starting over: the night does not.
+	if at + 0.25 < _ditty_at:
+		return 1.0
+	_ditty_at = maxf(_ditty_at, at)
+	return clampf(_ditty_at / _ditty_len, 0.0, 1.0)
 
 
 ## One frame of the night: the sky at `p`, and the rest named once dawn starts to climb.
