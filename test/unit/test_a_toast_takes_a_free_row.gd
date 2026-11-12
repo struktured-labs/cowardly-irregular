@@ -50,6 +50,10 @@ func test_a_burst_past_the_cap_never_draws_two_toasts_on_one_row() -> void:
 	assert_eq(_overlaps(bands), [], "no two visible toasts share a row")
 	var texts: Array = bands.map(func(b): return b[2])
 	assert_true("chat 8" in texts and not ("chat 0" in texts), "the newest are the ones kept")
+	## An evicted toast is freed at the END of the frame, so until then it is still in the tree: it must already be hidden.
+	var layers := _parent.get_children().filter(func(l): return l is CanvasLayer)
+	assert_eq(layers.size(), 9, "CONTROL: all nine layers are still in the tree this frame, four of them evicted")
+	assert_eq(layers.filter(func(l): return (l as CanvasLayer).visible).size(), ToastCls.MAX_STACK, "an evicted toast is hidden at once, not drawn under the new one for a frame")
 
 
 func test_a_toast_after_an_older_one_fades_takes_the_free_row_not_a_live_one() -> void:

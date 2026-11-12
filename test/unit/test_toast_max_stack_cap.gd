@@ -169,10 +169,11 @@ func test_tick_205_stacking_preserved() -> void:
 	var src := _read(TOAST)
 	assert_true(src.contains("const STACK_ROW_HEIGHT := 48.0"),
 		"tick 205 STACK_ROW_HEIGHT preserved")
-	assert_true(src.contains("var stack_offset: float = _active_layers.size() * STACK_ROW_HEIGHT"),
-		"tick 205 stack_offset formula preserved")
-	assert_true(src.contains("var y: float = BASE_Y + stack_offset"),
-		"tick 205 y computation preserved")
+	## Was `size() * STACK_ROW_HEIGHT`: placing by COUNT put a new toast on a live row (test_a_toast_takes_a_free_row).
+	assert_true(src.contains("var y: float = BASE_Y + row * STACK_ROW_HEIGHT"),
+		"rows still step by STACK_ROW_HEIGHT from BASE_Y")
+	assert_true(src.contains("var y: float = maxf(BASE_Y, _free_y(band_h))"),
+		"and a toast takes the first free row")
 
 
 func test_tick_205_lifecycle_preserved() -> void:
