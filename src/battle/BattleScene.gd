@@ -5591,8 +5591,7 @@ func _animate_melee_attack(attacker_sprite: Node2D, target_sprite: Node2D, attac
 	if not attacker_sprite.has_meta("home_position"):
 		attacker_sprite.set_meta("home_position", attacker_sprite.position)
 	var home_pos = attacker_sprite.get_meta("home_position")
-	# 2026-07-14 playtest: don't chase the target's transient tween position — if the target is still returning home from its own attack, aim at where it settles.
-	var target_pos = target_sprite.get_meta("home_position", target_sprite.position)
+	## The target's HOME, never its transient tween position (2026-07-14 playtest): melee_stand_point reads it.
 
 	# Kill any existing tween on this sprite to prevent conflicts
 	if attacker_sprite.has_meta("attack_tween"):
@@ -5601,9 +5600,9 @@ func _animate_melee_attack(attacker_sprite: Node2D, target_sprite: Node2D, attac
 			old_tween.kill()
 
 	# Calculate attack position (close to target but not overlapping). msg 2634 Fable-pass: the 40-pixel hardcode overshoots into wide artist monsters (e.g. 256-frame goblin @ scale 1.0 → half-width 128px → attacker stops 88px INSIDE the goblin) and undershoots against thin procedurals — the contact-frame reads misaligned. Compute the gap from both sprites' visible half-widths + a small mercy margin. (Composite resolution: cowir-battle's tested gap math won over cowir-main's parallel 0.35-overlap draft; hitstop/nonlinear timing below is cowir-main's.)
-	var direction = (target_pos - home_pos).normalized()
-	var contact_gap: float = _melee_contact_gap(attacker_sprite, target_sprite)
-	var attack_pos = target_pos - direction * contact_gap
+	## Beside the target, on the target's own row: the stop used to lie on the frame-to-frame diagonal, short of a target in another row.
+	var attack_pos: Vector2 = melee_stand_point(attacker_sprite, target_sprite)
+	var direction = (attack_pos - home_pos).normalized()
 
 	# Create movement tween — Fable pass (struktured: "timing and emphasis... should be nonlinear — the attack slows down slightly during impact"). Shape: ACCELERATING approach → HITSTOP at contact → eased settle home.
 	## On the attacker, not the scene: the scene outlives a grind restart that frees this sprite, and a
@@ -6065,6 +6064,29 @@ static func _melee_contact_gap(attacker_sprite: Node2D, target_sprite: Node2D) -
 	if attacker_lead <= 0.0 or target_lead <= 0.0:
 		return MELEE_CONTACT_FALLBACK_PX
 	return attacker_lead + target_lead + MELEE_CONTACT_MERCY_PX
+
+
+## Where a melee attacker STANDS to hit its target: its figure's leading edge a mercy short of the target figure's facing
+## edge, its feet level with the target's feet. The old stop was `target_home - direction * gap` along the line between
+## the two FRAME homes, so an attacker aimed at another row halted up to a figure's width short AND off the target's row,
+## toward the middle of the field; since .791 it holds there for the whole swing (struktured 2026-11-12: "attacking
+## someone but aims center"). Unreadable frames keep the old point.
+static func melee_stand_point(attacker_sprite: Node2D, target_sprite: Node2D) -> Vector2:
+	var a_home: Vector2 = _sprite_home(attacker_sprite)
+	var t_home: Vector2 = _sprite_home(target_sprite)
+	var a_fig := Rect2()
+	var t_fig := Rect2()
+	if attacker_sprite is AnimatedSprite2D and target_sprite is AnimatedSprite2D:
+		a_fig = AdvanceAuraClass.figure_rect_in_sprite(attacker_sprite as AnimatedSprite2D, &"idle")
+		t_fig = AdvanceAuraClass.figure_rect_in_sprite(target_sprite as AnimatedSprite2D, &"idle")
+	if a_fig.size.x <= 0.0 or t_fig.size.x <= 0.0:
+		return t_home - (t_home - a_home).normalized() * _melee_contact_gap(attacker_sprite, target_sprite)
+	var toward: float = signf(t_home.x - a_home.x)
+	if toward == 0.0:
+		toward = 1.0
+	var target_edge: float = t_home.x + (t_fig.position.x if toward > 0.0 else t_fig.end.x)
+	var own_lead: float = a_fig.end.x if toward > 0.0 else a_fig.position.x
+	return Vector2(target_edge - toward * MELEE_CONTACT_MERCY_PX - own_lead, t_home.y + t_fig.end.y - a_fig.end.y)
 
 
 ## Where a sprite comes to rest — the same home_position the lunge itself aims at, so the facing this gap
@@ -8342,6 +8364,7 @@ func _present_summoned_enemy(enemy: Combatant, monster_type: String, new_idx: in
 	enemy_sprite_nodes.append(sprite)
 	# Keep sway bookkeeping aligned — summons were skipped by the idle-sway index guard
 	_enemy_base_positions.append(sprite.position)
+	sprite.set_meta("home_position", sprite.position)  # a summon had none, so its first lunge stamped wherever a hit had pushed it
 
 	# Create animator
 	var animator = BattleAnimatorClass.new()
