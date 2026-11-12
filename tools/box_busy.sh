@@ -196,7 +196,7 @@ if [ "${1:-}" = "--selftest" ]; then  # watch the answer flip, so a FREE is neve
   ## the grouping into arms is a judgement the output cannot settle, which is half of why the old
   ## literal went unexamined for so long.
   arms=0
-  EXPECT_ARMS=19
+  EXPECT_ARMS=20
   A() { arms=$((arms + 1)); }
   A  # arm 1  nothing set -> FREE
   BOX_MARKER="$T/m" DEPLOY_DIR="$T/d" FOLD_TREE="$T/none" "$0" >/dev/null || { echo "FAIL: not FREE with nothing set"; fails=1; }
@@ -335,6 +335,24 @@ if [ "${1:-}" = "--selftest" ]; then  # watch the answer flip, so a FREE is neve
   [ "$e" = 1 ] || { echo "FAIL arm14: a FLAGGED engine in the fold tree read FREE (ec=$e) — the player skip is too wide: $out"; fails=1; }
   case "$out" in *"fold-tree godot running"*) ;; *) echo "FAIL arm14b: BUSY did not name the fold-tree engine: $out"; fails=1 ;; esac
   "$0" --is-player "$GATE" && { echo "FAIL arm14c: --is-player said yes to a flagged engine"; fails=1; }
+  kill "$GATE" 2>/dev/null; wait "$GATE" 2>/dev/null
+
+  A  # arm 20 the player OUTSIDE the fold tree (his .793 preview ran from ../cowir-preview793, 2026-11-12): FREE, NAMED
+     #        with its cwd, and not counted as a lane's engine. CONTROL: the same binary with one flag, same place, IS counted.
+  mkdir -p "$TA/elsewhere"
+  ( cd "$TA/elsewhere" && exec "$TA/bin/cat" ) < "$TA/fifo" & PLAYER=$!
+  sleep 1
+  SENV=("${PENV[@]}" BOX_SLOT_MARKER="$TA/none.s")
+  out="$(env "${SENV[@]}" "$0")"; e=$?
+  case "$e/$out" in "0/FREE (struktured's game is up: $PLAYER($TA/elsewhere) — a player instance, not a gate; other lanes' godot up: 0)") ;;
+    *) echo "FAIL arm20a: a player outside the fold tree was not named as his (ec=$e): $out"; fails=1 ;; esac
+  env "${SENV[@]}" "$0" --others >/dev/null && { echo "FAIL arm20b: --others counted the player as a lane's engine"; fails=1; }
+  kill "$PLAYER" 2>/dev/null; wait "$PLAYER" 2>/dev/null
+  ( cd "$TA/elsewhere" && exec "$TA/bin/cat" -u ) < "$TA/fifo" & GATE=$!
+  sleep 1
+  out="$(env "${SENV[@]}" "$0")"; e=$?
+  case "$e/$out" in "0/NO GATE/PUBLISH/HELD SLOT (lanes' godot up: 1;"*) ;; *) echo "FAIL arm20c (CONTROL): a FLAGGED engine outside the fold tree was not counted (ec=$e): $out"; fails=1 ;; esac
+  env "${SENV[@]}" "$0" --others >/dev/null || { echo "FAIL arm20d (CONTROL): --others did not count a flagged engine"; fails=1; }
   kill "$GATE" 2>/dev/null; wait "$GATE" 2>/dev/null
   exec 9>&-
 
