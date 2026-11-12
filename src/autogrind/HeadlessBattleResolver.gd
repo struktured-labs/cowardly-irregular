@@ -938,7 +938,7 @@ func _execute_action(action: Dictionary) -> void:
 	match action.get("type", "attack"):
 		"attack":
 			acted = true
-			var target = action.get("target")
+			var target = _retarget_foe(combatant, action.get("target"))
 			if target and target.is_alive:
 				var dmg = _resolve_attack(combatant, target)
 				_log("%s attacks %s for %d" % [combatant.combatant_name, target.combatant_name, dmg])
@@ -946,7 +946,7 @@ func _execute_action(action: Dictionary) -> void:
 		"ability":
 			acted = true
 			var ability_id = action.get("ability_id", "")
-			var targets = action.get("targets", [])
+			var targets = _retarget_ability_targets(combatant, ability_id, action.get("targets", []))
 			if ability_id != "" and targets.size() > 0:
 				_resolve_ability(combatant, ability_id, targets)
 
@@ -1376,6 +1376,36 @@ func _effect_to_stat(effect: String) -> String:
 ## ability type this resolver does not model.
 func _is_same_side(a, b) -> bool:
 	return (a in _player_party) == (b in _player_party)
+
+
+## Live's _retarget_enemy: a blow whose target fell earlier this round goes to the lowest-HP foe still standing.
+func _retarget_foe(attacker, original):
+	if original != null and is_instance_valid(original) and original.is_alive:
+		return original
+	var foes: Array = _enemy_party if attacker in _player_party else _player_party
+	var best = null
+	for f in foes:
+		if f == null or not is_instance_valid(f) or not f.is_alive:
+			continue
+		if best == null or f.current_hp < best.current_hp:
+			best = f
+	if best != null and original != null and is_instance_valid(original):
+		_log("%s's target %s is gone, retargeting to %s" % [attacker.combatant_name, original.combatant_name, best.combatant_name])
+	return best
+
+
+## Only a one-target move aimed at a foe follows it; a heal, a revive and a pre-expanded list keep their own rules.
+func _retarget_ability_targets(caster, ability_id: String, targets: Array) -> Array:
+	if targets.size() != 1:
+		return targets
+	var js = _get_autoload("JobSystem")
+	var ability: Dictionary = js.get_ability(ability_id) if js and js.has_method("get_ability") else {}
+	var offensive: bool = str(ability.get("type", "")) in ["physical", "magic"]
+	var at_foes: bool = str(ability.get("target_type", "")) in ["single_enemy", "all_enemies"]
+	if not (offensive or at_foes):
+		return targets
+	var one = _retarget_foe(caster, targets[0])
+	return [one] if one != null else []
 
 
 func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
