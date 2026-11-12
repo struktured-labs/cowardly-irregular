@@ -14,15 +14,23 @@ for the tree to start and then load()s each file, so autoload names and class_na
 
 Exit 0 = every file loaded · 1 = at least one did not (the errors are printed) · 2 = bad invocation
      3 = REFUSED: the tree is unimported (.godot has no class cache), where every class_name reads as an error
+     4 = REFUSED: the box is not yours (tools/box_busy.sh says a gate, a publish or ANOTHER lane's held slot is up,
+         or could not answer). No godot is started. The holder is named.
      124 = godot did not finish inside the bound.
-It starts ONE short headless godot (about 6 s) on a sandboxed user:// (tmp/xdg_parse), so it is allowed outside a
-box turn when no gate or publish is running; say in the channel that you ran it.
+It starts ONE short headless godot (about 6 s) on a sandboxed user:// (tmp/xdg_parse). That is still an engine on a
+shared box: on 2026-11-11/12 five "4-second" probes landed inside other lanes' claimed slots, announced each time, and
+the holder cannot tell a probe from its own measurement (cowir-main 24116: a claimed box means NO godot from anyone
+else, a parse_probe included). So this asks tools/box_busy.sh FIRST and refuses unless the box is free or the hold is
+your own: run it as a step of your slot, under `tools/box_hold.sh <lane> -- ...`, where box_busy reads free by ancestry.
+`--box` asks only that question (exit 0 = you may probe now, 4 = refused, with the reason) and starts nothing.
 
 --selftest is ENGINE-FREE (no godot, no git, nothing written outside a temp dir it removes): it checks the verdict
-this tool draws from a driver's output, and the unimported refusal. --selftest-live plants a script that calls a
+this tool draws from a driver's output, the unimported refusal, and the box refusal: against stub box_busy answers
+with a stand-in `godot` on PATH that records being started, and against the REAL box_busy + box_hold on scratch
+markers (a real hold by another lane refuses; the same question from inside that hold does not). --selftest-live plants a script that calls a
 function it does not have beside a healthy one, runs the real driver on both, and must red on exactly the planted one.
 """
-USAGE = "usage: python3 tools/parse_probe.py <file.gd> [...] | --selftest | --selftest-live   (exit 0 loads, 1 does not, 3 unimported tree)"
+USAGE = "usage: python3 tools/parse_probe.py <file.gd> [...] | --box | --selftest | --selftest-live   (exit 0 loads, 1 does not, 3 unimported tree, 4 the box is not yours)"
 import os
 import re
 import shutil
@@ -32,6 +40,7 @@ import tempfile
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BOUND_S = 180
+BOX_BOUND_S = 120
 ERROR = re.compile(r"SCRIPT ERROR|Parse Error|Compile Error")
 LINE = re.compile(r"^\[PARSE\] (\S+) (OK|FAILED)$")
 
@@ -42,6 +51,23 @@ def unimported(root):
     if not os.path.isfile(cache) or os.path.getsize(cache) == 0:
         return "%s is missing or empty: import first (godot --headless --import), or every class_name reads as an error" % cache
     return ""
+
+
+def box_refusal(root):
+    """Why this probe may not start an engine now, or "" when it may. Fails CLOSED: no answer is a refusal."""
+    bb = os.path.join(root, "tools", "box_busy.sh")
+    if not os.path.isfile(bb):
+        return "tools/box_busy.sh is missing from this tree, so nothing can say whose the box is"
+    try:
+        p = subprocess.run(["bash", bb], cwd=root, capture_output=True, text=True, timeout=BOX_BOUND_S, stdin=subprocess.DEVNULL)
+    except subprocess.TimeoutExpired:
+        return "tools/box_busy.sh did not answer in %d s" % BOX_BOUND_S
+    if p.returncode == 0:
+        return ""
+    said = [l for l in p.stdout.splitlines() if l.strip()]
+    if p.returncode == 1 and said:
+        return said[-1].strip()
+    return "tools/box_busy.sh exited %d without a reason this tool can read (0 = free, 1 = busy + why)" % p.returncode
 
 
 def verdict(output, wanted):
@@ -79,6 +105,11 @@ def run(files, root=ROOT):
     if missing:
         print("[parse_probe] no such file: " + " ".join(missing), file=sys.stderr)
         return 2
+    held = box_refusal(root)
+    if held:
+        print("[parse_probe] REFUSED (the box is not yours, no godot started): " + held, file=sys.stderr)
+        print("[parse_probe] run it as a step of your own slot: tools/box_hold.sh <lane> -- python3 tools/parse_probe.py ...", file=sys.stderr)
+        return 4
     xdg = os.path.join(root, "tmp", "xdg_parse")
     os.makedirs(xdg, exist_ok=True)
     env = dict(os.environ, XDG_DATA_HOME=xdg)
@@ -124,6 +155,62 @@ def selftest():
         check("an EMPTY class cache is refused too", bool(unimported(t)), True)
         open(os.path.join(t, ".godot", "global_script_class_cache.cfg"), "w").write("list=[]\n")
         check("CONTROL: an imported tree is not refused", unimported(t), "")
+        ## ---- the box refusal, on a stand-in tree: stub box_busy answers, and a `godot` on PATH that records a start ----
+        mark = os.path.join(t, "godot.started")
+        os.makedirs(os.path.join(t, "tools"))
+        os.makedirs(os.path.join(t, "bin"))
+        open(os.path.join(t, "a.gd"), "w").write("extends Node\n")
+        open(os.path.join(t, "bin", "godot"), "w").write("#!/bin/sh\n: > '%s'\necho '[PARSE] res://a.gd OK'\necho '[PARSE] done'\n" % mark)
+        os.chmod(os.path.join(t, "bin", "godot"), 0o755)
+        bb = os.path.join(t, "tools", "box_busy.sh")
+        old_path = os.environ["PATH"]
+        os.environ["PATH"] = os.path.join(t, "bin") + os.pathsep + old_path
+
+        def probe(stub):
+            """(exit code, was the engine started) for one stub box_busy; None = no box_busy at all."""
+            if os.path.exists(mark):
+                os.remove(mark)
+            if os.path.exists(bb):
+                os.remove(bb)
+            if stub is not None:
+                open(bb, "w").write(stub)
+            return run(["a.gd"], root=t), os.path.exists(mark)
+
+        try:
+            check("CONTROL: a free box runs the probe, and the engine starts", probe("echo 'FREE (other lanes godot up: 0)'; exit 0\n"), (0, True))
+            check("another lane's held slot is refused, and NO engine starts", probe("echo 'BUSY: slot cowir-zz running: pid=1 lane=cowir-zz'; exit 1\n"), (4, False))
+            check("the refusal names the holder", "cowir-zz" in box_refusal(t), True)
+            check("a tree with no box_busy is refused, and no engine starts", probe(None), (4, False))
+            check("a box_busy that cannot answer (exit 2) is refused, not read as free", probe("echo usage >&2; exit 2\n"), (4, False))
+            check("a busy answer with no reason is refused too", probe("exit 1\n"), (4, False))
+        finally:
+            os.environ["PATH"] = old_path
+        ## ---- the REAL box_busy + box_hold, scratch markers only (box_hold's own selftest isolates the same way) ----
+        hold = os.path.join(ROOT, "tools", "box_hold.sh")
+        if os.path.isfile(hold):
+            e = dict(os.environ, BOX_SLOT_MARKER=os.path.join(t, "slot"), BOX_MARKER=os.path.join(t, "none.m"), DEPLOY_DIR=os.path.join(t, "d"),
+                     DEPLOY_GLOB=os.path.join(t, "none"), FOLD_TREE=os.path.join(t, "none"), BOX_BUSY_ENGINE=os.path.join(t, "no-engine"))
+            me = os.path.abspath(__file__)
+            inner = 'python3 "%s" --box > "%s/in.out" 2>&1; echo $? > "%s/in.ec"; n=0; while [ ! -e "%s/go" ] && [ $n -lt 600 ]; do sleep 0.2; n=$((n+1)); done' % (me, t, t, t)
+            check("CONTROL: with no hold anywhere, the real box_busy lets a probe through", subprocess.run([sys.executable, me, "--box"], env=e, capture_output=True, text=True).returncode, 0)
+            h = subprocess.Popen(["bash", hold, "cowir-zz", "--", "sh", "-c", inner], env=e, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, stdin=subprocess.DEVNULL)
+            try:
+                import time
+                n = 0
+                while not os.path.exists(os.path.join(t, "in.ec")) and n < 600:
+                    time.sleep(0.2)
+                    n += 1
+                out = subprocess.run([sys.executable, me, "--box"], env=e, capture_output=True, text=True)
+                check("a REAL hold by another lane refuses a probe from outside it", out.returncode, 4)
+                check("and that refusal names the lane holding", "cowir-zz" in (out.stdout + out.stderr), True)
+                got = open(os.path.join(t, "in.ec")).read().strip() if os.path.exists(os.path.join(t, "in.ec")) else "never ran"
+                check("the SAME question from inside that hold is allowed (your own slot)", got, "0")
+            finally:
+                open(os.path.join(t, "go"), "w").write("")
+                h.wait(timeout=180)
+            check("the hold's marker is gone afterwards", os.path.exists(os.path.join(t, "slot")), False)
+        else:
+            fails.append("tools/box_hold.sh is missing: the real-hold arms did not run")
     finally:
         shutil.rmtree(t, ignore_errors=True)
     for f in fails:
@@ -155,6 +242,10 @@ if __name__ == "__main__":
         sys.exit(selftest())
     if args == ["--selftest-live"]:
         sys.exit(selftest_live())
+    if args == ["--box"]:
+        why = box_refusal(ROOT)
+        print("[parse_probe] " + ("REFUSED (the box is not yours): " + why if why else "the box is free or the hold is yours: a probe may run"))
+        sys.exit(4 if why else 0)
     if not args or any(a.startswith("--") for a in args):
         print(USAGE, file=sys.stderr)
         sys.exit(2)

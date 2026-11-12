@@ -105,8 +105,15 @@ func test_the_lunge_aims_at_that_gap() -> void:
 	var at: int = code.find("func _animate_melee_attack(")
 	assert_gt(at, -1, "CONTROL: the melee animation survives stripping")
 	var body: String = code.substr(at, 2500)
-	assert_true(body.contains("_melee_contact_gap(attacker_sprite, target_sprite)"), "the stop distance comes from the gap helper")
-	assert_true(body.contains("target_pos - direction * contact_gap"), "and the lunge stops that far short of the target's home")
+	## .793: the stop is melee_stand_point, which measures the same two figure edges and mercy as _melee_contact_gap
+	## and equals the old `target_home - direction * gap` point whenever the two stand on one row (pinned in
+	## test_a_lunge_stops_beside_who_it_hits). The old diagonal expression lives on only as its unreadable-frame fallback.
+	assert_true(body.contains("melee_stand_point(attacker_sprite, target_sprite)"), "the stop comes from the stand point, figure edge to figure edge")
+	var stand_at: int = code.find("static func melee_stand_point(")
+	assert_gt(stand_at, -1, "CONTROL: the stand point exists")
+	var stand: String = code.substr(stand_at, 1600)
+	assert_true(stand.contains("MELEE_CONTACT_MERCY_PX") and stand.contains("_melee_contact_gap(attacker_sprite, target_sprite)"),
+		"and it keeps the mercy and falls back to the gap helper when a frame cannot be read")
 	assert_false(body.contains("direction * 40"), "the pre-fix 40 px hardcode stays gone")
 
 

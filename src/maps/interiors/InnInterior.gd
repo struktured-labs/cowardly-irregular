@@ -55,6 +55,7 @@ var spawn_points: Dictionary = {
 ## W = half-timbered wall, . = wood plank floor
 ## h = stone hearth tile, c = carpet runner tile
 ## D = entrance door (south), U = stairs-up blocker
+const SOLID_GLYPHS := "DU"
 const INN_LAYOUT = [
 	"WWWWWWWWWWWWWWWWWWWW",
 	"W..................W",
@@ -103,6 +104,8 @@ func _ready() -> void:
 	_setup_player()
 	_setup_camera()
 	_setup_controller()
+	# Walls, the desk block and the stairs are solid; the hearth keeps its own body.
+	InteriorWalls.build(self, INN_LAYOUT, SOLID_GLYPHS)
 
 	if SoundManager:
 		SoundManager.play_area_music("interior_inn")
