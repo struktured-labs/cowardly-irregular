@@ -57,6 +57,8 @@ func _kv(spec: String) -> Dictionary:
 		var bits := str(pair).split("=", false)
 		if bits.size() == 2:
 			out[str(bits[0]).strip_edges()] = float(bits[1])
+		else:
+			_die("'%s' is not key=value, so the knob it names would silently do nothing" % str(pair))
 	return out
 
 
@@ -167,6 +169,27 @@ func _init() -> void:
 	_apply_job_whatifs(party_scale, mdef_from_def, rate_ratio)
 	for eid in enemy_ids:
 		_apply_enemy_whatif(mdb, str(eid), enemy_scale)
+	## BAL_ENEMY_MDEF_FROM_DEF=0.75: every foe's magic defence becomes that share of its defence. BAL_ABILITY_MULT=fire=1.5,fira=2.5: damage multipliers, in JobSystem's loaded rows.
+	var foe_mdef: float = float(_env("BAL_ENEMY_MDEF_FROM_DEF", "0"))
+	var ability_mult := _kv(_env("BAL_ABILITY_MULT", ""))
+	if foe_mdef > 0.0:
+		var done: Dictionary = {}
+		for eid in enemy_ids:
+			if done.has(str(eid)):
+				continue
+			done[str(eid)] = true
+			var st: Dictionary = (mdb[str(eid)] as Dictionary).get("stats", {})
+			st["magic_defense"] = int(round(float(st.get("defense", 0)) * foe_mdef))
+	if not ability_mult.is_empty():
+		var js_node = root.get_node_or_null("JobSystem")
+		for aid in ability_mult:
+			if js_node == null or not js_node.abilities.has(aid) or not _ability_db().has(aid):
+				_die("BAL_ABILITY_MULT names '%s', which is not a loaded ability" % aid)
+				continue
+			js_node.abilities[aid]["damage_multiplier"] = float(ability_mult[aid])
+			_ability_db()[aid]["damage_multiplier"] = float(ability_mult[aid])
+	if foe_mdef > 0.0 or not ability_mult.is_empty():
+		print("[BAL] WHAT-IF  enemy_mdef_from_def=%.2f  ability_mult=%s" % [foe_mdef, str(ability_mult)])
 	if not party_scale.is_empty() or not enemy_scale.is_empty() or mdef_from_def > 0.0 or level_rate >= 0.0:
 		print("[BAL] WHAT-IF  level_rate=%.3f (x%.4f on job mods)  party_scale=%s  mdef_from_def=%.2f  enemy_scale=%s" % [
 			level_rate, rate_ratio, str(party_scale), mdef_from_def, str(enemy_scale)])
@@ -244,6 +267,9 @@ func _init() -> void:
 		if want_tally:
 			_tally_close(trial_state, jobs_by_name.values())
 		if t == 0 and want_log:
+			for c in party:
+				print("[BAL] buffed attack %-8s %d (attack %d)  buffed magic %d" % [str(c.combatant_name),
+						int(c.get_buffed_stat("attack", c.attack)), int(c.attack), int(c.get_buffed_stat("magic", c.magic))])
 			print("[BAL] --- battle log, trial 0 ---")
 			for line in (result.get("log", []) as Array):
 				print("[BAL] | %s" % str(line))
