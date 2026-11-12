@@ -102,6 +102,7 @@ var _piano_playing: bool = false
 ## Every row is exactly MAP_WIDTH (28) characters — pre-fix rows 1-15 had 3
 ## trailing chars past 28 (`.W`/`WW`) that the render loop silently truncated;
 ## test_village_map_data_ragged_row_lint didn't cover interiors, so it slipped.
+const SOLID_GLYPHS := "BTKHU"
 const TAVERN_LAYOUT = [
 	"WWWWWWWWWWWWWWWWWWWWWWWWWWWW",
 	"W..........................W",
@@ -142,6 +143,8 @@ func _ready() -> void:
 	_setup_player()
 	_setup_camera()
 	_setup_controller()
+	# Walls, the bar, tables, kitchen, hearth and the locked stairs are solid; the stage is walked on.
+	InteriorWalls.build(self, TAVERN_LAYOUT, SOLID_GLYPHS)
 
 	# Cold start has nothing to inherit; this room exists only in Harmonia.
 	if SoundManager:
