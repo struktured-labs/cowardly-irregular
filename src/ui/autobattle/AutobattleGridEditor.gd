@@ -2360,6 +2360,51 @@ func _handle_value_stick(event: InputEventJoypadMotion) -> bool:
 	return true
 
 
+## The stats a buff or debuff sits on (`Combatant.add_buff`'s `stat`), the seed first.
+const BUFF_STATS := ["defense", "attack", "magic", "magic_defense", "speed"]
+static var _payload_vocab: Dictionary = {}
+
+
+## What a condition's NAMED payload may be, per field, the seed first, derived from the game's own data so the dial offers what the evaluator can meet.
+static func payload_vocabulary(field: String) -> Array:
+	if _payload_vocab.has(field):
+		return _payload_vocab[field]
+	var out: Array = []
+	match field:
+		"element":
+			out.append("fire")
+			var counts: Dictionary = {}
+			var monsters = JSON.parse_string(FileAccess.get_file_as_string("res://data/monsters.json"))
+			if monsters is Dictionary:
+				for m in (monsters.get("monsters", monsters) as Dictionary).values():
+					if m is Dictionary:
+						for w in m.get("weaknesses", []):
+							counts[str(w)] = int(counts.get(str(w), 0)) + 1
+			var by_count: Array = counts.keys()
+			by_count.sort_custom(func(a, b): return counts[a] > counts[b] if counts[a] != counts[b] else str(a) < str(b))
+			var abilities = JSON.parse_string(FileAccess.get_file_as_string("res://data/abilities.json"))
+			var from_abilities: Array = []
+			if abilities is Dictionary:
+				for a in (abilities.get("abilities", abilities) as Dictionary).values():
+					if a is Dictionary and str(a.get("element", "")) != "":
+						from_abilities.append(str(a["element"]))
+			from_abilities.sort()
+			for e in by_count + from_abilities:
+				if e != "" and not out.has(e):
+					out.append(e)
+		"status":
+			out.append("poison")
+			var scene: GDScript = load("res://src/battle/BattleScene.gd")
+			var icons = scene.get_script_constant_map().get("STATUS_ICON_CONFIG", {}) if scene != null else {}
+			for st in (icons as Dictionary).keys():
+				if not out.has(str(st)):
+					out.append(str(st))
+		"stat":
+			out = BUFF_STATS.duplicate()
+	_payload_vocab[field] = out
+	return out
+
+
 func _adjust_condition_value(delta: int) -> void:
 	"""Adjust condition value up/down - used with shoulder buttons"""
 	var rule = rules[cursor_row] if cursor_row >= 0 and cursor_row < rules.size() else {}
@@ -2389,7 +2434,13 @@ func _adjust_condition_value(delta: int) -> void:
 		## left `value: 55` on it that no evaluator reads, in the saved script and in share codes.
 		## item_count is in the same map and DOES keep op/value, so it must keep dialling; the
 		## discriminator is the condition's own shape, not a second list to maintain.
+		## ...and the NAME itself could not be chosen at all: the seed (fire / poison / defense) was the only value a grid-written rule could ever hold. The same dial now walks the payload's vocabulary.
 		if AutobattleSystem.CONDITION_REQUIRED_FIELD.has(cond_type) and not cond.has("value"):
+			var field: String = str(AutobattleSystem.CONDITION_REQUIRED_FIELD[cond_type])
+			var names: Array = payload_vocabulary(field)
+			if names.size() > 1:
+				cond[field] = names[wrapi(names.find(str(cond.get(field, ""))) + delta, 0, names.size())]
+				_refresh_grid()
 			return
 
 		var current_value = cond.get("value", 50)
