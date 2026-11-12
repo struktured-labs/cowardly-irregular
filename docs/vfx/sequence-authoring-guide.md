@@ -218,7 +218,7 @@ the delivery and stop at the impact.
   monster's plain attack plays its family, so those are heard every turn.
 - **The engine already sounds a landing.** `buff`, `debuff`, `status_<name>`
   and `resist_deflect` play when the ability's effect resolves, so a landed
-  beat names none of them. `status_wore_off` is the one cue on that layer.
+  beat names none of them. `effect_wore_off` is the one cue on that layer.
 - **Heals carry no beat.** The choir is the only heal sound (struktured).
 
 ## 8. Checklist before READY

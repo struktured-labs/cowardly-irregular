@@ -152,7 +152,7 @@ def beat_thundara_impact(rng):
     return mix(_click(rng, N(.05), 900, 200), 0.6 * zap, at(roll, .02), 0.7 * snap)
 
 
-def status_wore_off(rng):
+def effect_wore_off(rng):
     d = .34
     tt = t(d)
     tone = sum(w * np.sin(2 * np.pi * np.cumsum(f * (1 - .18 * tt / d)) / SR) for f, w in ((880, 1.0), (1318.5, .45))) * np.minimum(1, tt / .02) * np.exp(-tt * 11)
@@ -175,7 +175,7 @@ CUES = {
     "family_dust": (family_dust, 7211, -20.5, 2.0),
     "beat_blizzara_impact": (beat_blizzara_impact, 7401, -17.8, 0.0),
     "beat_thundara_impact": (beat_thundara_impact, 7402, -17.4, 2.2),
-    "status_wore_off": (status_wore_off, 7301, -24.0, 0.0),
+    "effect_wore_off": (effect_wore_off, 7301, -24.0, 0.0),
 }
 
 

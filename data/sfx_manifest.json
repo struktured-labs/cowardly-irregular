@@ -13937,11 +13937,11 @@
       "duration_seconds": 1.12,
       "source": "tools/gen_family_cues.py beat_thundara_impact"
     },
-    "status_wore_off": {
-      "file": "assets/audio/sfx/status_wore_off.ogg",
+    "effect_wore_off": {
+      "file": "assets/audio/sfx/effect_wore_off.ogg",
       "prompt": "Fired by the puff phase of wore_off through its \"sfx\" key (battle time; one beat per key per frame). A status, buff or debuff WEARING OFF: a quiet falling two-note release over a breath of air. Quiet on purpose, well under debuff. -24.0 dB active-RMS, -24.6 through a 200 Hz high-pass. numpy synthesis, not heard by struktured yet.",
       "duration_seconds": 0.36,
-      "source": "tools/gen_family_cues.py status_wore_off"
+      "source": "tools/gen_family_cues.py effect_wore_off"
     },
     "beat_fire_bloom": {
       "file": "assets/audio/sfx/beat_fire_bloom.ogg",

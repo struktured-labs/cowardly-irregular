@@ -12,7 +12,7 @@ const KEYED := {
 	"family_spray": ["puff", "family_spray"], "family_screech": ["ring", "family_screech"], "family_drain": ["bolt", "family_drain"],
 	"family_cloud": ["flash", "family_cloud"], "family_dust": ["flash", "family_dust"],
 	"blizzara_battle": ["eruption", "beat_blizzara_impact"], "thundara_battle": ["eruption", "beat_thundara_impact"],
-	"wore_off": ["puff", "status_wore_off"],
+	"wore_off": ["puff", "effect_wore_off"],
 }
 ## [tier 1 sequence, tier 2 sequence, the phase kind that lands the spell]
 const TIERS := [["blizzard_battle", "blizzara_battle", "eruption"], ["thunder_battle", "thundara_battle", "eruption"]]
@@ -95,10 +95,10 @@ func test_a_family_sequence_names_one_new_cue() -> void:
 ## A wore-off is a footnote: authored quieter than the debuff cue it follows (the manifest rows carry the measured level).
 func test_the_wore_off_cue_is_its_own_short_file() -> void:
 	var sfx := _sfx()
-	assert_true(sfx.has("status_wore_off"), "PREMISE: status_wore_off is in the manifest")
-	assert_ne(_file(sfx, "status_wore_off"), _file(sfx, "debuff"), "wearing off is not the debuff landing again")
-	assert_lt(_dur(sfx, "status_wore_off"), _dur(sfx, "debuff"), "it is shorter than the debuff cue")
-	var s = load(_file(sfx, "status_wore_off"))
+	assert_true(sfx.has("effect_wore_off"), "PREMISE: effect_wore_off is in the manifest")
+	assert_ne(_file(sfx, "effect_wore_off"), _file(sfx, "debuff"), "wearing off is not the debuff landing again")
+	assert_lt(_dur(sfx, "effect_wore_off"), _dur(sfx, "debuff"), "it is shorter than the debuff cue")
+	var s = load(_file(sfx, "effect_wore_off"))
 	assert_not_null(s, "the wore-off file must load")
 	if s:
-		assert_almost_eq(s.get_length(), _dur(sfx, "status_wore_off"), 0.05, "its authored duration describes the asset")
+		assert_almost_eq(s.get_length(), _dur(sfx, "effect_wore_off"), 0.05, "its authored duration describes the asset")

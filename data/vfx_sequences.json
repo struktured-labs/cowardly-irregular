@@ -5319,7 +5319,7 @@
       "phases": [
         {
           "kind": "puff",
-          "sfx": "status_wore_off",
+          "sfx": "effect_wore_off",
           "at": 0.0,
           "dur": 0.3,
           "count": 3,
