@@ -168,6 +168,18 @@ var _dialogue_visit_count: int = 0
 var _ready_done: bool = false
 
 ## Animation
+## Indoor stroll (struktured 2026-11-12: "no one moves inside houses/buildings, but they should be able to move sometimes").
+## "" = derived from the role by InteriorStroll; "fixed" / "stroll" is an authored override.
+@export var stroll: String = ""
+## False freezes every stroller where it stands (the store screenshots compare frames pixel by pixel).
+static var strolling_enabled: bool = true
+const STROLL_FPS: float = 4.0
+var _stroll: PatrolWalk = null
+var _stroll_player: Node2D = null
+var _walk_col: int = 0
+var _walk_anim_t: float = 0.0
+var _frame_cache: Dictionary = {}
+
 var _is_dancing: bool = false
 var _dance_frame: int = 0
 var _dance_timer: float = 0.0
@@ -359,6 +371,59 @@ func _process(delta: float) -> void:
 	if _quest_marker != null and _quest_marker.visible:
 		_quest_bob_t += delta * 3.0
 		_quest_marker.position.y = _quest_marker_y + sin(_quest_bob_t) * 3.0
+	_step_stroll(delta)
+
+
+## Give this NPC a route: `points` in the room's own space, `rests[i]` true where it stops a while; point 0 is its mark.
+func set_stroll(points: Array[Vector2], rests: Array, walk_seed: int) -> void:
+	_stroll = PatrolWalk.new()
+	_stroll.points = points
+	_stroll.rests = rests
+	_stroll.pause_min = 4.0
+	_stroll.pause_max = 9.0
+	_stroll.hold_at = 0
+	_stroll.rng = RandomNumberGenerator.new()
+	_stroll.rng.seed = walk_seed
+	_stroll.paused = true
+	_stroll.pause_left = _stroll.rng.randf_range(1.0, _stroll.pause_max)
+
+
+func is_strolling() -> bool:
+	return _stroll != null and _stroll.points.size() >= 2
+
+
+## One tick of the stroll. It stands still while talking, while the player is beside it (and turns to them), under an
+## input lock, and it walks back to its mark and stays there while it has quest business to offer.
+func _step_stroll(delta: float) -> void:
+	if not is_strolling() or not strolling_enabled or _is_talking:
+		return
+	if _player_nearby:
+		if _stroll_player != null and is_instance_valid(_stroll_player):
+			face_toward(_stroll_player.global_position)
+		_set_walk_col(0)
+		return
+	var ilm = get_tree().root.get_node_or_null("InputLockManager") if is_inside_tree() else null
+	if ilm and ilm.is_locked():
+		return
+	_stroll.holding = _quest_marker != null and is_instance_valid(_quest_marker) and _quest_marker.visible
+	position = _stroll.step(position, delta)
+	if not _stroll.moving:
+		_set_walk_col(0)
+		return
+	var h: Vector2 = _stroll.heading
+	var dir: int = (3 if h.x > 0.0 else 2) if absf(h.x) > absf(h.y) else (0 if h.y > 0.0 else 1)
+	_walk_anim_t += delta * STROLL_FPS
+	var col: int = int(_walk_anim_t) % 4
+	if dir != facing_direction or col != _walk_col:
+		facing_direction = dir
+		_walk_col = col
+		_apply_facing()
+
+
+func _set_walk_col(col: int) -> void:
+	if col != _walk_col:
+		_walk_col = col
+		_apply_facing()
 
 
 ## Returns the sprite scale for our current scene context — same logic as
@@ -509,9 +574,11 @@ func _apply_facing() -> void:
 		2: anim = "walk_left"
 		3: anim = "walk_right"
 	var sheet_row := int(_archetype_rows.get(anim, 0))
-	var region := Rect2i(0, sheet_row * _archetype_frame.y, _archetype_frame.x, _archetype_frame.y)
-	var frame_img := _archetype_sheet.get_region(region)
-	sprite.texture = ImageTexture.create_from_image(frame_img)
+	var key := Vector2i(_walk_col, sheet_row)
+	if not _frame_cache.has(key):
+		var region := Rect2i(_walk_col * _archetype_frame.x, sheet_row * _archetype_frame.y, _archetype_frame.x, _archetype_frame.y)
+		_frame_cache[key] = ImageTexture.create_from_image(_archetype_sheet.get_region(region))
+	sprite.texture = _frame_cache[key]
 	# A cell taller than 32px is lifted so the feet stand where a 32px walker's do
 	sprite.offset.y = -(_archetype_frame.y - 32) / 2.0
 
@@ -1146,6 +1213,7 @@ func _setup_dialogue_box() -> void:
 func _on_body_entered(body: Node2D) -> void:
 	if body.has_method("set_can_move"):  # It's the player
 		_player_nearby = true
+		_stroll_player = body
 		# Scenery stays unlabelled — a name tag promises a conversation.
 		name_label.visible = interactable
 

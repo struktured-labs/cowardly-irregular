@@ -345,6 +345,7 @@ func _maybe_apply_night_modulation() -> void:
 ## TavernInterior) all share the same code path (struktured msg 2764).
 func _validate_placements() -> void:
 	InteriorPlacementSweep.sweep(self, npcs, decorations, _get_layout(), _get_area_id())
+	InteriorStroll.assign.call_deferred(self, npcs, decorations, _get_layout())
 
 
 ## ---- Authored examines (data/examine_texts.json) ----

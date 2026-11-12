@@ -86,6 +86,7 @@ func _ready() -> void:
 	# msg 2764: sweep NPCs off walls + furniture footprints so no one
 	# ends up standing on a table. Shared utility with BaseInterior.
 	InteriorPlacementSweep.sweep(self, npcs, decorations, INN_LAYOUT, "inn_interior")
+	InteriorStroll.assign.call_deferred(self, npcs, decorations, INN_LAYOUT)
 	_create_rest_interactable()
 	_create_fireplace_secret()
 	_setup_transitions()
