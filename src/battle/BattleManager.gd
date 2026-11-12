@@ -2818,7 +2818,8 @@ func _make_ai_decision(combatant: Combatant, alive_allies: Array, alive_enemies:
 			# any passive mp_cost_multiplier on enemy combatants (rare
 			# but possible for bosses with equipped passives) affects
 			# their affordability check too.
-			if not ability.is_empty() and combatant.current_mp >= JobSystem.get_ability_mp_cost(combatant, ability_id):
+			if not ability.is_empty() and combatant.current_mp >= JobSystem.get_ability_mp_cost(combatant, ability_id) \
+					and not _self_buff_is_already_worn(combatant, ability):
 				available_abilities.append(ability)
 
 	# Wave E — BossDialogue intent picker. Fires for ANY boss with a
@@ -2870,6 +2871,26 @@ func _make_ai_decision(combatant: Combatant, alive_allies: Array, alive_enemies:
 	# Determine AI archetype from stats and abilities
 	var archetype = _get_ai_archetype(combatant, available_abilities)
 	return _execute_archetype_ai(combatant, archetype, available_abilities, alive_allies, alive_enemies)
+
+
+## The stat each self-buff effect raises, as `_execute_support_ability` applies it.
+const SELF_BUFF_STAT := {"defense_up": "defense", "magic_defense_up": "magic_defense", "attack_up": "attack"}
+## A worn buff with this many turns left or fewer may be renewed.
+const SELF_BUFF_RENEW_TURNS := 1
+
+
+## True when a self-targeted stat buff would change nothing: the caster already wears one at least as strong with turns left.
+## Glacius rolled Frost Armor on 41% of turns whether or not it was up, spending 15 MP and the turn to refresh a 3-turn buff.
+func _self_buff_is_already_worn(combatant: Combatant, ability: Dictionary) -> bool:
+	if str(ability.get("target_type", "")) != "self" or not SELF_BUFF_STAT.has(str(ability.get("effect", ""))):
+		return false
+	var stat: String = SELF_BUFF_STAT[str(ability.get("effect", ""))]
+	var strength: float = float(ability.get("stat_modifier", 1.0))
+	for buff in combatant.active_buffs:
+		if str(buff.get("stat", "")) == stat and float(buff.get("modifier", 1.0)) >= strength \
+				and int(buff.get("remaining_turns", 0)) > SELF_BUFF_RENEW_TURNS:
+			return true
+	return false
 
 
 ## HP per point of the level curve that makes an enemy a tank. 120 keeps all 66 gate-reaching monsters on their x10-era archetype.
