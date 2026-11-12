@@ -63,7 +63,8 @@ func test_the_floor_names_every_member_this_file_drives() -> void:
 	var e: Node = await _editor()
 	for f in ["_apply_condition_type", "_adjust_condition_value", "_handle_value_stick", "_format_condition", "_input", "_is_on_condition_cell"]:
 		assert_true(e.has_method(f), "AutobattleGridEditor.%s must exist" % f)
-	assert_true(load(EDITOR).new().has_method("payload_vocabulary") or "payload_vocabulary" in (load(EDITOR) as GDScript).get_script_method_list().map(func(m): return m["name"]), "AutobattleGridEditor.payload_vocabulary must exist")
+	assert_true(e.has_method("payload_vocabulary"), "AutobattleGridEditor.payload_vocabulary must exist")
+	assert_true(_abs.has_method("set_character_script") and "character_profiles" in _abs, "AutobattleSystem can hold a script to share")
 	assert_true("CONDITION_REQUIRED_FIELD" in _abs and "CONDITION_TYPES" in _abs and _abs.has_method("validate_rule"), "AutobattleSystem's grammar maps and validator must exist")
 	assert_true(e._is_on_condition_cell(), "PRECONDITION: the fixture's cursor is on a condition cell")
 
@@ -100,19 +101,44 @@ func test_the_dial_walks_every_named_payload() -> void:
 		assert_false(_cond(e).has("op"), "%s: nor an operator" % t)
 
 
-## By KEYBOARD (- / =) and by PAD (the right stick), through the editor's own input handlers.
+## By KEYBOARD (- / =) and by PAD (the right stick), through the editor's own input handlers, for EVERY named type.
 func test_keyboard_and_pad_both_reach_the_second_value() -> void:
-	var names: Array = load(EDITOR).payload_vocabulary("element")
-	var by_key: Node = await _editor("enemy_weak_to")
-	by_key._input(_key(KEY_EQUAL))
-	assert_eq(str(_cond(by_key)["element"]), str(names[1]), "= steps the element forward")
-	by_key._input(_key(KEY_MINUS))
-	assert_eq(str(_cond(by_key)["element"]), str(names[0]), "- steps it back")
-	var by_pad: Node = await _editor("enemy_weak_to")
-	assert_true(by_pad._handle_value_stick(_stick(1.0)), "CONTROL: the stick push is taken")
-	assert_eq(str(_cond(by_pad)["element"]), str(names[1]), "the right stick steps the element")
-	by_pad._handle_value_stick(_stick(1.0))
-	assert_eq(str(_cond(by_pad)["element"]), str(names[1]), "CONTROL: a held stick steps once, not every frame")
+	var types: Array = await _named_types()
+	assert_gt(types.size(), 5, "CONTROL: the walk has types (%s)" % [types])
+	for t in types:
+		var field: String = str(_abs.CONDITION_REQUIRED_FIELD[t])
+		var names: Array = load(EDITOR).payload_vocabulary(field)
+		var by_key: Node = await _editor(t)
+		by_key._input(_key(KEY_EQUAL))
+		assert_eq(str(_cond(by_key)[field]), str(names[1]), "%s: = steps its %s forward" % [t, field])
+		by_key._input(_key(KEY_MINUS))
+		assert_eq(str(_cond(by_key)[field]), str(names[0]), "%s: - steps it back" % t)
+		var by_pad: Node = await _editor(t)
+		assert_true(by_pad._handle_value_stick(_stick(1.0)), "CONTROL %s: the stick push is taken" % t)
+		assert_eq(str(_cond(by_pad)[field]), str(names[1]), "%s: the right stick steps its %s" % [t, field])
+		by_pad._handle_value_stick(_stick(1.0))
+		assert_eq(str(_cond(by_pad)[field]), str(names[1]), "CONTROL %s: a held stick steps once, not every frame" % t)
+
+
+## A script holding a payload the dial chose survives the share code: what a player writes, a friend can paste.
+func test_a_chosen_payload_survives_the_share_code() -> void:
+	var cid := "payload_probe_hero"
+	var was_persist = _abs.get("_test_disable_persistence")
+	_abs.set("_test_disable_persistence", true)
+	var rules: Array = []
+	for t in await _named_types():
+		var field: String = str(_abs.CONDITION_REQUIRED_FIELD[t])
+		var names: Array = load(EDITOR).payload_vocabulary(field)
+		rules.append({"conditions": [{"type": t, field: names[names.size() - 1]}], "actions": [{"type": "attack", "target": "lowest_hp_enemy"}], "enabled": true})
+	_abs.set_character_script(cid, {"character_id": cid, "name": "Named", "rules": rules.duplicate(true)})
+	var decoded: Dictionary = ScriptShareManager.decode_share_code(ScriptShareManager.encode_share_code(cid))
+	_abs.character_profiles.erase(cid)
+	_abs.set("_test_disable_persistence", was_persist)
+	assert_false(decoded.is_empty(), "CONTROL: the code decodes")
+	var back: Array = decoded.get("script", decoded).get("rules", [])
+	assert_eq(back.size(), rules.size(), "every rule came back")
+	for i in mini(back.size(), rules.size()):
+		assert_eq(back[i]["conditions"][0], rules[i]["conditions"][0], "rule %d keeps its payload, the LAST of its vocabulary" % i)
 
 
 ## The element list is the game's own: every weakness a monster carries and every element an ability has can be chosen.
