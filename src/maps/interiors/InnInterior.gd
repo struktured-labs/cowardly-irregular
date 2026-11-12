@@ -38,6 +38,9 @@ const FIRE_SPEED: float = 0.12
 var _fire_light: PointLight2D
 var _fire_time: float = 0.0
 
+## The room's one light rig: darkness for the lamps to read against, the day clock, the night.
+var lighting: InteriorLighting
+
 ## Spawn points (grid coords)
 var spawn_points: Dictionary = {
 	"entrance": Vector2(10, 12),
@@ -253,6 +256,9 @@ func _setup_decorations() -> void:
 	decorations = Node2D.new()
 	decorations.name = "Decorations"
 	add_child(decorations)
+	lighting = InteriorLighting.new()
+	lighting.name = "Lighting"
+	add_child(lighting)
 	InteriorArt.back_wall(decorations, "inn", MAP_WIDTH, InteriorArt.village_key(_origin_map_id()))
 
 	_create_registration_desk()
@@ -509,6 +515,8 @@ func _setup_fireplace_anim() -> void:
 	_fire_light.energy = 0.9
 	_fire_light.texture = _create_light_texture(160)
 	add_child(_fire_light)
+	if lighting:
+		lighting.adopt(_fire_light, 0.25)
 
 
 func _draw_flame_frame(img: Image, frame: int) -> void:
@@ -557,10 +565,15 @@ func _animate_fireplace(delta: float) -> void:
 			_fire_sprite.texture = _fire_frames[_fire_frame]
 
 
+## The hearth's flicker is the rig's now (it also follows the room's darkness); this only keeps the fire's clock.
 func _flicker_fire_light(delta: float) -> void:
 	_fire_time += delta
-	if _fire_light:
-		_fire_light.energy = 0.75 + 0.25 * sin(_fire_time * 7.3) + 0.10 * sin(_fire_time * 13.1)
+
+
+## The rest scene's hook (cutscenes' InnRestSequence calls it by this name): "night" as the room dims, "dawn" after.
+func rest_light(moment: String) -> void:
+	if lighting:
+		lighting.rest_light(moment)
 
 
 func _create_armchairs() -> void:
@@ -1038,6 +1051,7 @@ func _create_lanterns() -> void:
 		light.energy = 0.40
 		light.texture = light_tex
 		decorations.add_child(light)
+		lighting.adopt(light, 0.06)
 
 
 func _create_ambient_light() -> void:
@@ -1051,6 +1065,7 @@ func _create_ambient_light() -> void:
 		light.energy = 0.15
 		light.texture = light_tex
 		decorations.add_child(light)
+		lighting.adopt(light)
 
 
 # ---------------------------------------------------------------------------
