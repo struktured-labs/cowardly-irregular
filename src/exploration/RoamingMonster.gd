@@ -291,7 +291,23 @@ func _setup_collision() -> void:
 	monitorable = true
 
 
+## Where the player is DRAWN on the ground: Mode 7 shows them over ground this far north of their true point.
+static func seen_offset() -> Vector2:
+	return Vector2(0.0, -InteractGeometry.MODE7_GROUND_DISPLACEMENT_PX) if InteractGeometry.is_mode7() else Vector2.ZERO
+
+
+func _player_seen_pos() -> Vector2:
+	return _player_ref.global_position + seen_offset()
+
+
+## The touch circle sits where it meets the player's true body when the monster is drawn at their feet.
+func _align_touch_to_the_drawn_player() -> void:
+	if _collision:
+		_collision.position = -seen_offset()
+
+
 func _process(delta: float) -> void:
+	_align_touch_to_the_drawn_player()
 	if not _active:
 		if _cannot_step(_player_ref):
 			return  # do not respawn onto a player who still cannot move
@@ -342,7 +358,7 @@ func _tick_mood(delta: float) -> void:
 			_show_tell()
 		return
 
-	var dist := global_position.distance_to(_player_ref.global_position)
+	var dist := global_position.distance_to(_player_seen_pos())
 	if _mood == Mood.CALM and dist <= ALERT_RADIUS:
 		_mood = Mood.ALERTED
 		_mood_timer = ALERT_DURATION
@@ -397,7 +413,7 @@ func _monster_level() -> int:
 func _face_player() -> void:
 	if not _player_ref or not is_instance_valid(_player_ref):
 		return
-	_update_row_from_move_dir((_player_ref.global_position - global_position).normalized())
+	_update_row_from_move_dir((_player_seen_pos() - global_position).normalized())
 	_apply_frame(_row, 0)
 
 
@@ -444,7 +460,7 @@ func _tick_state(delta: float) -> void:
 			_state = 0
 			_pick_wander_dir()
 	elif _player_ref and is_instance_valid(_player_ref):
-		var dist = global_position.distance_to(_player_ref.global_position)
+		var dist = global_position.distance_to(_player_seen_pos())
 		# An afraid monster is still in state 2 -- _move reverses it, so fleeing reuses the
 		# chase plumbing (bounds, animation, row) instead of duplicating it.
 		if dist <= CHASE_RADIUS and _state != 2:
@@ -457,7 +473,7 @@ func _tick_state(delta: float) -> void:
 			_state = 0
 			_pick_wander_dir()
 			return
-		var dist = global_position.distance_to(_player_ref.global_position)
+		var dist = global_position.distance_to(_player_seen_pos())
 		if dist > CHASE_RADIUS * 1.5:
 			_state = 0
 			_pick_wander_dir()
@@ -500,7 +516,7 @@ func _move(delta: float) -> void:
 	var speed: float
 
 	if _state == 2 and _player_ref and is_instance_valid(_player_ref):
-		move_dir = ((_player_ref.global_position - global_position).normalized())
+		move_dir = ((_player_seen_pos() - global_position).normalized())
 		speed = CHASE_SPEED
 		if _mood == Mood.AFRAID:
 			move_dir = -move_dir       # same plumbing, opposite sign
@@ -674,7 +690,7 @@ func _tick_elite_watch() -> void:
 		return
 	var near: bool = false
 	if _player_ref and is_instance_valid(_player_ref):
-		near = global_position.distance_to(_player_ref.global_position) <= ALERT_RADIUS
+		near = global_position.distance_to(_player_seen_pos()) <= ALERT_RADIUS
 		if near:
 			_face_player()
 	if near and not _prompt_open:
