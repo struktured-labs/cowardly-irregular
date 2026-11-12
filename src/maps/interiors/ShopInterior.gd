@@ -42,6 +42,7 @@ var spawn_points: Dictionary = {
 ## W = wall, . = floor, C = counter, S = shelf/display, D = entrance door
 ## Shelves are drawn as tiles, so the sweep is told they are furniture; the counter is not: the keeper stands in its back row.
 const SHELF_GLYPHS := "S"
+const SOLID_GLYPHS := "CS"
 const SHOP_LAYOUT = [
 	"WWWWWWWWWWWWWWWW",
 	"W..............W",
@@ -101,6 +102,8 @@ func _ready() -> void:
 	_setup_player()
 	_setup_camera()
 	_setup_controller()
+	# Walls, the counter and the shelves are solid.
+	InteriorWalls.build(self, SHOP_LAYOUT, SOLID_GLYPHS)
 
 	if SoundManager:
 		if SoundManager.has_method("play_area_music"):

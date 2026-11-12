@@ -396,6 +396,7 @@ func _base_data_for_id(enemy_id: String) -> Dictionary:
 			"stats": relevelled,
 			"weaknesses": (row.get("weaknesses", []) as Array).duplicate(),
 			"resistances": (row.get("resistances", []) as Array).duplicate(),
+			"abilities": (row.get("abilities", []) as Array).duplicate(),
 			"spawn_level": marked_level,
 			"exp_reward": int(flat["exp_reward"]),
 			"gold_reward": int(flat["gold_reward"]),
@@ -408,6 +409,8 @@ func _base_data_for_id(enemy_id: String) -> Dictionary:
 		"stats": stats.duplicate(true),
 		"weaknesses": (row.get("weaknesses", []) as Array).duplicate(),
 		"resistances": (row.get("resistances", []) as Array).duplicate(),
+		## The kit rides with the row: without it a grind's monster only ever basic-attacked (GameLoop._combatant_for_headless reads this key).
+		"abilities": (row.get("abilities", []) as Array).duplicate(),
 	}
 
 
