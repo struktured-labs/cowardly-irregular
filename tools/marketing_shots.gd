@@ -142,11 +142,18 @@ func _init() -> void:
 	_hold_still()
 
 	DirAccess.make_dir_recursive_absolute("res://tmp/marketing")
+	## SHOTS_ONLY=a,b shoots just those scenes and skips the title and the battle: for a tool's own controls (shoot three
+	## rooms six ways), never for the store set. The summary line says so, so a partial run cannot pass for a full one.
+	var only: PackedStringArray = OS.get_environment("SHOTS_ONLY").split(",", false)
 	for entry in SCENES:
-		await _shoot(entry[0], entry[1])
+		if only.is_empty() or entry[0] in only:
+			await _shoot(entry[0], entry[1])
 
-	await _shoot_title()
-	await _shoot_battle()
+	if only.is_empty():
+		await _shoot_title()
+		await _shoot_battle()
+	else:
+		print("[SHOT] PARTIAL run (SHOTS_ONLY=%s): not a store set" % ",".join(only))
 
 	print("[SHOT] done: %d captured, %d failed" % [_ok, _fail])
 	quit(0 if _fail == 0 else 1)
