@@ -196,6 +196,7 @@ func _init() -> void:
 		print("[BAL] refusing to sweep: the path's own scripts did not install, so every row below would be mislabelled")
 		quit(_fail); return
 
+	var want_tally: bool = _env("BAL_TALLY", "0") == "1"   # BAL_TALLY=1: per-job damage share, damage per action, per-move weak/plain means
 	var wins := 0
 	var rounds_total := 0
 	var rounds_n := 0
@@ -212,7 +213,14 @@ func _init() -> void:
 		var resolver = ResolverScript.new()
 		if "use_live_enemy_ladder" in resolver:
 			resolver.use_live_enemy_ladder = _env("BAL_LADDER", "1") != "0"   # BAL_LADDER=0: the resolver's own picker (strongest ability every round)
+		var jobs_by_name: Dictionary = {}
+		for c in party:
+			jobs_by_name[str(c.combatant_name)] = _job_id(c)
+		var trial_state: Dictionary = {}
+		var mods: Dictionary = _elemental_mods(enemies)
 		var result: Dictionary = resolver.resolve_battle(party, enemies)
+		if want_tally:
+			_tally_log(result.get("log", []) as Array, jobs_by_name, mods, trial_state)
 		## BAL_CHAIN=N: N links back to back, HP carried, BattleManager's between-battle rest between them (cowir-overworld's chained encounters).
 		var link_rounds: int = int(result.get("rounds", 0))
 		for link in range(1, chain_links):
@@ -228,9 +236,13 @@ func _init() -> void:
 			if "use_live_enemy_ladder" in resolver:
 				resolver.use_live_enemy_ladder = _env("BAL_LADDER", "1") != "0"   # BAL_LADDER=0: the resolver's own picker (strongest ability every round)
 			result = resolver.resolve_battle(party, enemies)
+			if want_tally:
+				_tally_log(result.get("log", []) as Array, jobs_by_name, mods, trial_state)
 			link_rounds += int(result.get("rounds", 0))
 		if chain_links > 1:
 			result["rounds"] = link_rounds
+		if want_tally:
+			_tally_close(trial_state, jobs_by_name.values())
 		if t == 0 and want_log:
 			print("[BAL] --- battle log, trial 0 ---")
 			for line in (result.get("log", []) as Array):
@@ -274,6 +286,8 @@ func _init() -> void:
 	for r in reasons:
 		print("[BAL] termination   %-16s %d" % [("(none)" if r == "" else r), reasons[r]])
 	print("")
+	if want_tally:
+		_print_tally(trials)
 	_print_fire_counts(bal_path, cids)
 	quit(_fail)
 
@@ -553,7 +567,7 @@ func _print_enemy_block(mdb: Dictionary, enemy_ids: PackedStringArray) -> void:
 ##   auto     each job's stance=balanced row from data/autobattle_rule_templates.json, UNMODIFIED
 ##   manual   Bravely Default banking: Default (defer) to AP 3, then Brave the bank into one phase
 ##   oneshot  zero damage until the bank is full and the buffs are up, then one burst phase
-const BAL_PATHS: Array[String] = ["default", "auto", "manual", "oneshot"]
+const BAL_PATHS: Array[String] = ["default", "auto", "manual", "oneshot", "best"]
 
 var _abilities: Dictionary = {}
 
@@ -745,6 +759,160 @@ func _oneshot_script(c) -> Dictionary:
 	return {"rules": rules}
 
 
+## One action a turn: the hardest single-target move the member can pay for (BAL_SPELL names it for whoever knows it), else Channel (BAL_CHANNEL=0: a swing).
+func _best_script(c) -> Dictionary:
+	var rules: Array = []
+	var best: Dictionary = _best_damage_ability(c)
+	var forced: String = _env("BAL_SPELL", "")
+	if forced != "" and c.knows_ability(forced) and _ability_db().has(forced):
+		best = _ability_db()[forced]
+		best["id"] = forced
+	if c.knows_ability("cure"):
+		rules.append(_rule([_cond("ally_hp_percent", {"op": "<=", "value": 50}),
+				_cond("mp_percent", {"op": ">=", "value": 20})],
+				[{"type": "ability", "id": "cure", "target": "lowest_hp_ally", "upgrades": ["cura"]}]))
+	if not best.is_empty():
+		var conds: Array = [_cond("always")]
+		if int(best.get("mp_cost", 0)) > 0:
+			conds = [_cond("mp_percent", {"op": ">=", "value": _mp_gate(c, best, 1)})]
+		rules.append(_rule(conds, [{"type": "ability", "id": str(best["id"]), "target": "lowest_hp_enemy"}]))
+	if _env("BAL_CHANNEL", "1") != "0" and c.knows_ability("channel"):
+		rules.append(_rule([_cond("always")], [{"type": "ability", "id": "channel", "target": "self"}]))
+	else:
+		rules.append(_rule([_cond("always")], [{"type": "attack", "target": "lowest_hp_enemy"}]))
+	return {"rules": rules}
+
+
+## Per-job damage out of the resolver's own log lines. A hit is credited to the name the line starts with; group and formation hits go to one shared row.
+var _tally: Dictionary = {}
+var _tally_actions: Dictionary = {}
+var _tally_other: Dictionary = {}
+var _tally_last: String = ""
+var _dry: Dictionary = {}
+var _rx: Dictionary = {}
+
+func _tally_rx() -> void:
+	if not _rx.is_empty():
+		return
+	for k in [["attack", "^(.+?) attacks (.+) for (\\d+)$"], ["cast", "^(.+?) (?:casts|uses) (\\w+) on (.+) for (\\d+)$"],
+			["nomp", "^(.+?) has no MP for (\\w+)$"], ["mp", "^(.+?) restores (\\d+) MP to (.+)$"],
+			["defer", "^(.+?) defers$"], ["group", "^(.+?) (?:hits|strikes|blasts|crushes) (.+) for (\\d+)!$"]]:
+		_rx[k[0]] = RegEx.create_from_string(k[1])
+
+
+func _tally_hit(job: String, move: String, weak: String, dmg: int, new_action: bool) -> void:
+	var by_move: Dictionary = _tally.get(job, {})
+	var row: Dictionary = by_move.get(move + "|" + weak, {"dmg": 0, "hits": 0})
+	row["dmg"] = int(row["dmg"]) + dmg
+	row["hits"] = int(row["hits"]) + 1
+	by_move[move + "|" + weak] = row
+	_tally[job] = by_move
+	if new_action:
+		_tally_actions[job] = int(_tally_actions.get(job, 0)) + 1
+
+
+func _tally_note(job: String, what: String) -> void:
+	var d: Dictionary = _tally_other.get(job, {})
+	d[what] = int(d.get(what, 0)) + 1
+	_tally_other[job] = d
+
+
+## `state` is one trial's {job: casts so far, job+"!": true once it stopped casting}; it outlives the chain's links.
+func _tally_log(log: Array, jobs_by_name: Dictionary, mods_by_name: Dictionary, state: Dictionary) -> void:
+	_tally_rx()
+	_tally_last = ""
+	for raw in log:
+		var line: String = str(raw)
+		var m: RegExMatch = _rx["cast"].search(line)
+		if m != null and jobs_by_name.has(m.get_string(1)):
+			var job: String = jobs_by_name[m.get_string(1)]
+			var aid: String = m.get_string(2)
+			var row: Dictionary = _ability_db().get(aid, {})
+			var elem: String = str(row.get("element", ""))
+			var mod: float = float((mods_by_name.get(m.get_string(3), {}) as Dictionary).get(elem, 1.0)) if elem != "" else 1.0
+			var weak: String = "weak" if mod > 1.0 else ("resist" if mod < 1.0 else "plain")
+			var key: String = m.get_string(1) + ">" + aid
+			var spread: bool = str(row.get("target_type", "")) == "all_enemies"
+			var fresh: bool = not (spread and _tally_last == key)
+			_tally_hit(job, aid, weak, int(m.get_string(4)), fresh)
+			_tally_last = key
+			if fresh and int(row.get("mp_cost", 0)) > 0 and not state.has(job + "!"):
+				state[job] = int(state.get(job, 0)) + 1
+			continue
+		_tally_last = ""
+		m = _rx["attack"].search(line)
+		if m != null and jobs_by_name.has(m.get_string(1)):
+			_tally_hit(jobs_by_name[m.get_string(1)], "attack", "plain", int(m.get_string(3)), true)
+			state[str(jobs_by_name[m.get_string(1)]) + "!"] = true
+			continue
+		m = _rx["nomp"].search(line)
+		if m != null and jobs_by_name.has(m.get_string(1)):
+			_tally_note(jobs_by_name[m.get_string(1)], "no-MP fizzle")
+			_tally_actions[jobs_by_name[m.get_string(1)]] = int(_tally_actions.get(jobs_by_name[m.get_string(1)], 0)) + 1
+			state[str(jobs_by_name[m.get_string(1)]) + "!"] = true
+			continue
+		m = _rx["mp"].search(line)
+		if m != null and jobs_by_name.has(m.get_string(1)):
+			_tally_note(jobs_by_name[m.get_string(1)], "MP restore")
+			_tally_actions[jobs_by_name[m.get_string(1)]] = int(_tally_actions.get(jobs_by_name[m.get_string(1)], 0)) + 1
+			state[str(jobs_by_name[m.get_string(1)]) + "!"] = true
+			continue
+		m = _rx["defer"].search(line)
+		if m != null and jobs_by_name.has(m.get_string(1)):
+			_tally_note(jobs_by_name[m.get_string(1)], "defer")
+			continue
+		m = _rx["group"].search(line)
+		if m != null:
+			_tally_hit("(group/formation)", m.get_string(1), "plain", int(m.get_string(3)), false)
+
+
+func _tally_close(state: Dictionary, jobs: Array) -> void:
+	for job in jobs:
+		var d: Dictionary = _dry.get(job, {"casts": 0, "trials": 0, "dry": 0})
+		d["casts"] = int(d["casts"]) + int(state.get(job, 0))
+		d["trials"] = int(d["trials"]) + 1
+		if state.has(str(job) + "!"):
+			d["dry"] = int(d["dry"]) + 1
+		_dry[job] = d
+
+
+func _print_tally(trials: int) -> void:
+	var totals: Dictionary = {}
+	var grand: int = 0
+	for job in _tally:
+		var t: int = 0
+		for k in _tally[job]:
+			t += int(_tally[job][k]["dmg"])
+		totals[job] = t
+		grand += t
+	print("[BAL] ===== DAMAGE by job, %d trials (credited by the log line's first name) =====" % trials)
+	for job in totals:
+		var acts: int = int(_tally_actions.get(job, 0))
+		print("[BAL] %-18s share %5.1f%%  total %7d  actions %5d  dmg/action %7.1f  other %s" % [job,
+				100.0 * totals[job] / maxi(1, grand), totals[job], acts,
+				(float(totals[job]) / acts if acts > 0 else 0.0), str(_tally_other.get(job, {}))])
+		for k in _tally[job]:
+			var r: Dictionary = _tally[job][k]
+			print("[BAL]     %-22s hits %5d  mean %7.1f" % [k, int(r["hits"]), float(r["dmg"]) / maxi(1, int(r["hits"]))])
+	for job in _dry:
+		var d: Dictionary = _dry[job]
+		if int(d["casts"]) > 0:
+			print("[BAL] %-18s paid casts before the first swing/restore/fizzle: %.2f mean; stopped casting in %d/%d trials" % [job,
+					float(d["casts"]) / maxi(1, int(d["trials"])), int(d["dry"]), int(d["trials"])])
+	print("")
+
+
+## {enemy name: {element: modifier}} read off the spawned foes, so a logged hit can be called weak or plain.
+func _elemental_mods(enemies: Array) -> Dictionary:
+	var out: Dictionary = {}
+	for e in enemies:
+		var d: Dictionary = {}
+		for el in ["fire", "ice", "lightning", "dark", "holy", "earth", "wind", "water", "poison"]:
+			d[el] = float(e.calculate_elemental_modifier(el))
+		out[str(e.combatant_name)] = d
+	return out
+
+
 ## Installs the path's script per member and VERIFIES IT TOOK. Returns {character_id: label}.
 func _install_path_scripts(path: String, party: Array) -> Dictionary:
 	var picked: Dictionary = {}
@@ -779,6 +947,9 @@ func _install_path_scripts(path: String, party: Array) -> Dictionary:
 			"oneshot":
 				script = _oneshot_script(c)
 				label = "zero damage until setup_complete, then x4"
+			"best":
+				script = _best_script(c)
+				label = "best single-target move every turn"
 		## Grammar only. NOT the deep check: AutobattleSystem's own comment records that four
 		## SHIPPED presets fail it, because a per-rule scope cannot see the 0-MP rule above the
 		## catch-all. Behaviour is judged by the FIRE COUNTS after the sweep instead.
