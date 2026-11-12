@@ -29,10 +29,18 @@ func _init() -> void:
 		gl._close_title_screen()
 	await process_frame
 	gl._create_party()
-	## A fresh game opens Harmonia on the prologue; the clip is of the inn, so the opening is marked seen.
-	for flag in ["prologue_complete", "chapter1_complete"]:
-		gs.game_constants["cutscene_flag_" + flag] = true
+	## A fresh game opens Harmonia on a story scene; the clip is of the inn, so every story scene is marked seen.
+	for flag in gl._CUTSCENE_COMPLETION_FLAGS.values():
+		gs.game_constants[str(flag)] = true
+	for job in ["fighter", "cleric", "mage", "rogue", "bard"]:
+		gs.game_constants["cutscene_flag_spotlight_unlocked_" + job] = true
 	gl._current_map_id = "harmonia_village"
+	## Refuse the clip rather than film the night over a story panel (it did, twice): nothing may be pending here.
+	var pending: String = gl._get_pending_story_cutscene()
+	if pending != "":
+		print("[ICLIP] FAIL: a story scene is still pending in Harmonia: %s" % pending)
+		quit(1)
+		return
 	gl._start_exploration()
 	for i in 20:
 		await process_frame
