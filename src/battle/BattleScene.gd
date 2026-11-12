@@ -3557,6 +3557,13 @@ static func _ranged_sequence(ability: Dictionary, targets: Array) -> String:
 	return melee_overlay(ability, "melee_each" if targets.size() > 1 else "melee")
 
 
+## The `start_at` that plays a sequence `lead` seconds later than it is authored (a thrower's wind-up); -1 = as authored.
+static func sequence_start_after(seq_id: String, lead: float) -> float:
+	if lead <= 0.0:
+		return -1.0
+	return float(FractalFX.load_sequence(seq_id).get("start", 0.0)) + lead
+
+
 ## The box around a set of target points (a zero-size rect at the point for one target).
 static func line_span(points: Array) -> Rect2:
 	if points.is_empty():
@@ -3568,7 +3575,7 @@ static func line_span(points: Array) -> Rect2:
 
 
 ## A ranged line-wide move's one cloud over the whole target line; each target's own splat is the cast path's.
-func _play_melee_cloud(caster: Combatant, caster_sprite: Node2D, ability: Dictionary, targets: Array) -> void:
+func _play_melee_cloud(caster: Combatant, caster_sprite: Node2D, ability: Dictionary, targets: Array, lead: float = 0.0) -> void:
 	var seq_id := melee_overlay(ability, "melee")
 	if seq_id == "" or caster_sprite == null or not is_instance_valid(caster_sprite):
 		return
@@ -3585,7 +3592,7 @@ func _play_melee_cloud(caster: Combatant, caster_sprite: Node2D, ability: Dictio
 	if authored_span > 0.0:
 		k *= clampf((maxf(span.size.x, span.size.y) + LINE_SPAN_PAD) / authored_span, LINE_SPAN_MIN, LINE_SPAN_MAX)
 	EffectSystem.spawn_sequence(seq_id, _figure_anchor(caster_sprite), span.get_center(),
-		k, {}, 1, not signature_sound_allowed(), -1.0, Vector2.INF, family_tint(ability))
+		k, {}, 1, not signature_sound_allowed(), sequence_start_after(seq_id, lead), Vector2.INF, family_tint(ability))
 
 
 func _spawn_outcome_sequence(seq_id: String, from: Vector2, to: Vector2, power: float = 1.0, tier: int = 1) -> void:
@@ -3725,8 +3732,9 @@ func _on_steal_resolved(caster: Combatant, target: Combatant, success: bool) -> 
 ## sequence flies from the caster to each target, and the damage numbers wait for the burst rather than
 ## landing on the first frame of the cast. The battle holds until just after the burst; the closing fling
 ## overlaps whatever acts next, so a Fire turn costs about what a spotlight turn did.
-func _play_ability_sequence(caster: Combatant, caster_sprite: Node2D, animator: BattleAnimatorClass, ability: Dictionary, targets: Array, seq_override: String = "", buffering: bool = false) -> void:
+func _play_ability_sequence(caster: Combatant, caster_sprite: Node2D, animator: BattleAnimatorClass, ability: Dictionary, targets: Array, seq_override: String = "", buffering: bool = false, lead: float = 0.0) -> void:
 	var seq_id := seq_override if seq_override != "" else _ability_sequence(ability)
+	var start_at := sequence_start_after(seq_id, lead)
 	if animator:
 		_play_ability_animation(_ability_anim_name(ability, animator), animator)
 	var from := Vector2.ZERO
@@ -3746,7 +3754,7 @@ func _play_ability_sequence(caster: Combatant, caster_sprite: Node2D, animator: 
 		var actors: Dictionary = {"caster": caster_sprite, "target": ts} if first else {}
 		first = false
 		var played: Dictionary = EffectSystem.spawn_sequence(seq_id, from, _figure_anchor(ts),
-			float(AbilityVFX.resolve(ability)["power"]) * float(intensity["k"]), actors, int(intensity["tier"]), not signature_sound_allowed(), -1.0, caster_centre)
+			float(AbilityVFX.resolve(ability)["power"]) * float(intensity["k"]), actors, int(intensity["tier"]), not signature_sound_allowed(), start_at, caster_centre)
 		impact = maxf(impact, float(played.get("impact", 0.0)))
 	if impact <= 0.0:
 		_spawn_ability_effects(ability, targets)
@@ -5365,9 +5373,11 @@ func _on_action_executing(combatant: Combatant, action: Dictionary) -> void:
 			elif ability_type == "physical" and _ranged_sequence(ability, targets) != "":
 				## Not a lunge: a landed or fizzled beat must not wait out the PREVIOUS melee's contact clock (adhoc 24015).
 				_melee_contact_timer = null
+				## The thing leaves the hand on the throwing pose's own impact frame, not on the pose's first one.
+				var release: float = animator.impact_time(animator._resolve_animation(_ability_anim_name(ability, animator))) if animator else 0.0
 				if targets.size() > 1:
-					_play_melee_cloud(combatant, attacker_sprite, ability, targets)
-				_play_ability_sequence(combatant, attacker_sprite, animator, ability, targets, _ranged_sequence(ability, targets))
+					_play_melee_cloud(combatant, attacker_sprite, ability, targets, release)
+				_play_ability_sequence(combatant, attacker_sprite, animator, ability, targets, _ranged_sequence(ability, targets), false, release)
 			# Physical abilities move to target
 			elif ability_type == "physical" and targets.size() > 0:
 				var target_sprite = _get_combatant_sprite(targets[0])
