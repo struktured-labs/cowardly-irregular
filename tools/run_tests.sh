@@ -229,7 +229,10 @@ run_gut() {
   # spun 1h57m at 100% on ONE thread with its log frozen for 1h49m, and nothing in this script or
   # in gate.sh would ever have stopped it. Measured suites are 268-689s, so 1800s is ~2.6x the
   # worst observed and cannot cut a healthy run.
-  local _budget="${RUN_TESTS_TIMEOUT:-1800}" _t0 _elapsed
+  # 2026-11-11: the default was 1800 from when the suite took 268-689 s. The full suite now takes 1725-1735 s on a quiet box
+  # (.790-.791, 3086 scripts), and the .791 gate hit 1800 at file 3008 of 3086 with 0 failures. 2700 is ~1.55x today's time;
+  # re-measure from the gate's own Time row when the suite grows, do not guess.
+  local _budget="${RUN_TESTS_TIMEOUT:-2700}" _t0 _elapsed
   _t0=$SECONDS
   # ⛔ PLAIN `timeout`, DELIBERATELY — NO `--kill-after`. THIS BINARY CANNOT DELIVER SIGKILL.
   # Measured five lanes independently, identical cooperative child, only the signal varying:

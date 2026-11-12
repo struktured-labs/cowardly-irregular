@@ -97,8 +97,9 @@ func test_the_battle_entry_leg_uses_the_player_path() -> void:
 		"the leg must NOT start the battle itself — then it measures the same path as the goblin leg")
 	assert_true(leg.contains("battle_triggered"),
 		"it must observe the SCENE's own signal, which is what proves the chain ran")
-	assert_true(leg.contains("global_position = roamer.global_position"),
-		"the touch must be a real physics overlap, not a handler call")
+	## .792: the player stands on the roamer's TOUCH shape (in Mode 7 it sits where the player is drawn), not on its origin.
+	assert_true(leg.contains("p.global_position = touch_at") and leg.contains('roamer.get("_collision")'),
+		"the touch must be a real physics overlap on the roamer's own touch shape, not a handler call")
 	assert_true(leg.contains("set_enabled(true)"),
 		"the spawner must be re-armed: _smoke_enter_map despawns every roamer, so without this the leg measures an empty map")
 	assert_true(leg.contains("_smoke_failed = true"),
