@@ -333,7 +333,7 @@
 		"id": "summon_boost",
 		"name": "Summon Boost",
 		"category": 0,
-		"description": "+35% summon damage and duration",
+		"description": "+35% magic damage, and summons last 1 turn longer",
 		"stat_mods": {
 			"magic_multiplier": 1.35
 		},
