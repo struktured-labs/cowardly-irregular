@@ -50,6 +50,7 @@ const NOT_A_REWRITER := {
 	"gen_family_cues.py": "GENERATES the monster-family, tier-2 impact and wore-off cues from numpy synthesis at 44.1 kHz, the rate the samples are MADE at; no master is its input",
 	"gen_sequence_beats.py": "GENERATES the ability-sequence beat cues from numpy synthesis at 44.1 kHz, the rate the samples are MADE at; no master is its input",
 	"seam_loop_beds.py": "reads and reports seam figures",
+	"inn_clip.sh": "encodes a REVIEW clip of a night at the inn from the engine's own mix (a Movie Maker AVI) to mp4; no master is its input or output, and it passes no -ar",
 	"demo_capture.sh": "encodes a DEMO capture of the engine's own mix (Movie Maker AVIs) to mp4; no master is its input or output, and it reads the capture's sample rate rather than assuming one",
 	"victory_clip.sh": "encodes a REVIEW clip of the engine's own mix (a Movie Maker AVI) to mp4; no master is its input or output, and it passes no -ar, so the capture keeps its own rate",
 	"soundscape_capture.sh": "encodes a REVIEW capture of the engine's own mix into tmp/soundscape; no master is its input or output, and it passes no -ar",
