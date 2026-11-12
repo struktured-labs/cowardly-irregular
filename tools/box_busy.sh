@@ -162,9 +162,22 @@ others() {  # other lanes' engines: reported, not judged
   for p in /proc/[0-9]*; do
     [ "$(readlink "$p/exe" 2>/dev/null)" = "$ENGINE_EXE" ] || continue
     c="$(readlink "$p/cwd" 2>/dev/null)"; case "$c" in "$FOLD_TREE"|"$FOLD_TREE"/*) continue ;; esac
+    ## His game is not a lane's engine wherever it runs: 2026-11-12 main relaunched it from ../cowir-preview793 and
+    ## every lane read "lanes' godot up: 1" for a box that held only the player. Same test the gate asks (--is-player).
+    is_player "${p#/proc/}" && continue
     n=$((n+1))
   done
   echo "$n"
+}
+
+players_elsewhere() {  # player instances OUTSIDE the fold tree, as "pid(cwd)" words: named in the verdict, never counted
+  local p c out=""
+  for p in /proc/[0-9]*; do
+    [ "$(readlink "$p/exe" 2>/dev/null)" = "$ENGINE_EXE" ] || continue
+    c="$(readlink "$p/cwd" 2>/dev/null)"; case "$c" in "$FOLD_TREE"|"$FOLD_TREE"/*) continue ;; esac
+    is_player "${p#/proc/}" && out="$out ${p#/proc/}($c)"
+  done
+  echo "${out# }"
 }
 
 if [ "${1:-}" = "--selftest" ]; then  # watch the answer flip, so a FREE is never trusted unseen
@@ -436,6 +449,10 @@ fi
 ## engine in a lane tree with no hold is reported, not judged, and the reader is told what that means. Exit 0 either way:
 ## callers decide on the exit code, and --others is the mode that judges engines.
 _n="$(others)"
+_pe="$(players_elsewhere)"
+if [ -n "$_pe" ] && [ "${_n:-0}" -eq 0 ]; then
+  echo "FREE (struktured's game is up: $_pe — a player instance, not a gate; other lanes' godot up: 0)"; exit 0
+fi
 if [ "${_n:-0}" -gt 0 ]; then
   echo "NO GATE/PUBLISH/HELD SLOT (lanes' godot up: $_n; an unheld slot may be running: the channel RELEASE is the gate, and tools/box_hold.sh makes a slot visible here)"; exit 0
 fi
