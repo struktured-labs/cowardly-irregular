@@ -64,7 +64,7 @@ func _row_tops(card: Control) -> Array:
 
 func test_the_floor_names_every_member_this_file_drives() -> void:
 	var m: Control = await _menu(1.0)
-	assert_true("_party_panels" in m and m.has_method("setup") and m.has_method("_card_k"), "OverworldMenu._party_panels / setup / _card_k must exist")
+	assert_true("_party_panels" in m and "party" in m and m.has_method("setup") and m.has_method("_card_k") and m.has_method("_update_party_stats"), "OverworldMenu._party_panels / party / setup / _card_k / _update_party_stats must exist")
 	assert_eq(m._party_panels.size(), 4, "PRECONDITION: one card per member")
 	var card: Control = m._party_panels[0]
 	for n in ROWS + ["JobLabel", "LeaderStar", "AilmentLabel", "Background"]:
@@ -158,5 +158,10 @@ func test_a_stat_bar_keeps_its_label_bar_and_value_apart() -> void:
 			bad.append("@%s 'HP' is %.0f px wide and the bar starts at %.0f" % [s, ink, bg.position.x])
 		if bg.position.x + bg.size.x > value.position.x + SLACK:
 			bad.append("@%s the bar ends %.0f, the number starts %.0f" % [s, bg.position.x + bg.size.x, value.position.x])
-		assert_almost_eq(fill.size.x / bg.size.x, 77.0 / 120.0, 0.01, "@%s the fill is the HP share of the trough" % s)
+		## Through the live refresh, so the fill it writes is judged against the same trough the build drew.
+		var who = m.party[0]
+		who.current_hp = int(who.max_hp / 4)
+		m._update_party_stats()
+		assert_gt(who.max_hp, 3, "PRECONDITION @%s: the member has HP to lose" % s)
+		assert_almost_eq(fill.size.x / bg.size.x, float(who.current_hp) / float(who.max_hp), 0.02, "@%s after a refresh the fill is the HP share of the trough" % s)
 	assert_eq(bad, [], "a stat bar's parts keep apart: %s" % [bad])
