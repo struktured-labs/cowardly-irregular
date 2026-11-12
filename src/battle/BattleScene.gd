@@ -2381,26 +2381,26 @@ func _show_hint(hint_id: String, text: String) -> void:
 ## its EXP cards were drawn over their status cards; struktured 2026-11-12, "the exp cards still overlap with the enemy cards").
 const HUD_SURFACES := {"enemy_panel": "UI/EnemyStatusPanel", "log": "UI/BattleLogPanel", "turn_info": "UI/TurnInfoPanel",
 	"action_menu": "UI/ActionMenuPanel", "hint_bar": "UI/InputHintBar"}
-var _hud_stood_down: Dictionary = {}  # owner id -> [nodes that owner hid]
+var _hud_stood_down: Dictionary = {}  # caller id -> [nodes that caller hid]
 
 
-## Hides the named surfaces for `owner` until hud_return(owner). Only surfaces that were showing are taken, so the
-## return restores exactly what this owner hid and never reveals something another state had hidden.
-func hud_stand_down(owner: String, surfaces: Array) -> void:
-	var taken: Array = _hud_stood_down.get(owner, [])
+## Hides the named surfaces for `who` until hud_return(who). Only surfaces that were showing are taken, so the
+## return restores exactly what this caller hid and never reveals something another state had hidden.
+func hud_stand_down(who: String, surfaces: Array) -> void:
+	var taken: Array = _hud_stood_down.get(who, [])
 	for key in surfaces:
 		var node := get_node_or_null(str(HUD_SURFACES.get(str(key), ""))) as CanvasItem
 		if node != null and node.visible and not taken.has(node):
 			node.visible = false
 			taken.append(node)
-	_hud_stood_down[owner] = taken
+	_hud_stood_down[who] = taken
 
 
-func hud_return(owner: String) -> void:
-	for node in _hud_stood_down.get(owner, []):
+func hud_return(who: String) -> void:
+	for node in _hud_stood_down.get(who, []):
 		if node != null and is_instance_valid(node):
 			(node as CanvasItem).visible = true
-	_hud_stood_down.erase(owner)
+	_hud_stood_down.erase(who)
 
 
 func _refresh_input_hint_bar(_connected: bool = true) -> void:

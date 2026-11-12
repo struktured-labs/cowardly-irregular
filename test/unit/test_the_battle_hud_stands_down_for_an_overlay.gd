@@ -36,29 +36,29 @@ func test_every_named_surface_is_a_real_node_in_the_scene() -> void:
 
 func test_an_overlay_takes_what_it_names_and_gets_it_back() -> void:
 	var enemy := _node("enemy_panel")
-	var log := _node("log")
+	var log_panel := _node("log")
 	var hint := _node("hint_bar")
 	enemy.visible = true
-	log.visible = true
+	log_panel.visible = true
 	hint.visible = true
 	_scene.hud_stand_down("victory", ["enemy_panel", "log"])
 	assert_true(hint.visible, "CONTROL: a surface it did not name is not touched")
 	assert_false(enemy.visible, "the enemy panel stands down")
-	assert_false(log.visible, "and the log")
+	assert_false(log_panel.visible, "and the log")
 	_scene.hud_return("victory")
 	assert_true(enemy.visible, "returned on close")
-	assert_true(log.visible, "both")
+	assert_true(log_panel.visible, "both")
 
 
 func test_it_does_not_reveal_what_something_else_had_hidden() -> void:
-	var log := _node("log")
+	var log_panel := _node("log")
 	var enemy := _node("enemy_panel")
 	enemy.visible = true
-	log.visible = false  # hidden by the layout (a tall roster at a big Text Size), not by the overlay
+	log_panel.visible = false  # hidden by the layout (a tall roster at a big Text Size), not by the overlay
 	_scene.hud_stand_down("victory", ["enemy_panel", "log"])
 	_scene.hud_return("victory")
 	assert_true(enemy.visible, "CONTROL: what the overlay took comes back")
-	assert_false(log.visible, "what was already hidden stays hidden: the overlay never owned it")
+	assert_false(log_panel.visible, "what was already hidden stays hidden: the overlay never owned it")
 
 
 func test_two_owners_do_not_return_each_others_surfaces() -> void:
