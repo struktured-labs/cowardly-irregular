@@ -116,6 +116,9 @@ static func install(tier: String = "") -> void:
 	if _display == null or theme == null:
 		push_error("[UIFONT] NOT installed: face=%s theme=%s. The UI is drawing the engine default." % [_display, theme])
 		return
+	# Before the default changes: a read slot the engine left empty resolves to the default font, so read
+	# afterwards it would "be" the pixel face and the read tier could never keep the old one.
+	_capture_stock(theme)
 	theme.default_font = _display
 	ThemeDB.fallback_font = _display
 	_apply_read_tier(theme)
@@ -140,17 +143,25 @@ static func uninstall() -> void:
 	_installed = false
 
 
+static func _capture_stock(theme: Theme) -> void:
+	for type in READ_SLOTS:
+		for slot in READ_SLOTS[type]:
+			var key := "%s/%s" % [type, slot]
+			if _stock.has(key):
+				continue
+			var f: Font = theme.get_font(slot, type) if theme.has_font(slot, type) else null
+			_stock[key] = f if (f != null and f != _display) else null
+
+
 static func _apply_read_tier(theme: Theme) -> void:
 	for type in READ_SLOTS:
 		for slot in READ_SLOTS[type]:
 			var key := "%s/%s" % [type, slot]
-			if not _stock.has(key):
-				_stock[key] = theme.get_font(slot, type) if theme.has_font(slot, type) else null
 			match read_tier:
 				READ_TIER_PIXEL:
 					theme.set_font(slot, type, _display)
 				_:
-					theme.set_font(slot, type, _stock[key] if _stock[key] != null else _body)
+					theme.set_font(slot, type, _stock.get(key) if _stock.get(key) != null else _body)
 
 
 static func _ensure_built() -> void:

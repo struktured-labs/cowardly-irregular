@@ -4,7 +4,7 @@ extends GutTest
 ## ... lets use that as much as we are able for all fonts as general theme". One face, one source (UiFont),
 ## built from the SAME drawings the damage numbers use, with the old face and the symbols behind it.
 
-const DISPLAY_CLASSES := ["Label", "Button", "CheckBox", "OptionButton", "ItemList", "TabBar", "PopupMenu"]
+const DISPLAY_CLASSES := ["Label", "Button", "CheckBox", "OptionButton", "ItemList", "TabBar"]  # Controls only: PopupMenu is a Window
 
 
 func after_each() -> void:
