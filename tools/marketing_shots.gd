@@ -73,8 +73,34 @@ const SCENES := [
 	# rendered nothing, and it exits 0 either way.
 ]
 
+## The village a shared interior is photographed AS. A room asks GameLoop which village it was entered from and draws
+## that village's art; this tool builds the room alone, so with no answer every shared room fell back to its PAINTED
+## look, and the store's inn was a room no player in Harmonia has seen (found 2026-11-12 on overworld's contact sheet:
+## the stored frame has the painted slab table and no drawn back wall or hearth). Harmonia is the first village a
+## player enters. A room with no entry here is shot as before.
+const ORIGINS := {
+	"inn_interior": "harmonia_village",
+	"shop_interior": "harmonia_village",
+	"tavern_interior": "harmonia_village",
+}
+## Rooms whose village HAS drawn art today: an origin that yields none is a silent fallback, and reds the shot.
+const MUST_BE_DRAWN := ["inn_interior"]
+
 var _ok := 0
 var _fail := 0
+
+
+## Stands in for GameLoop for the ONE question a room asks it. A room guards the call with has_method, so nothing else
+## is answered and nothing else is pretended.
+func _stand_in_origin(origin: String) -> Node:
+	var src := GDScript.new()
+	src.source_code = "extends Node\nvar origin := \"\"\nfunc get_village_origin_id() -> String:\n\treturn origin\n"
+	if src.reload() != OK:
+		return null
+	var n: Node = src.new()
+	n.name = "GameLoop"
+	n.set("origin", origin)
+	return n
 
 
 func _init() -> void:
@@ -242,11 +268,32 @@ func _shoot(name: String, paths: Array) -> void:
 		_fail += 1
 		return
 
+	var origin := str(ORIGINS.get(name, ""))
+	var stand_in: Node = null
+	if origin != "" and OS.get_environment("SHOTS_NO_ORIGIN") == "":
+		if root.get_node_or_null("GameLoop") != null:
+			print("[SHOT] FAIL: %s — a GameLoop is already in the tree, so the origin cannot be stood in" % name)
+			_fail += 1
+			scene.free()
+			return
+		stand_in = _stand_in_origin(origin)
+		if stand_in == null:
+			print("[SHOT] FAIL: %s — the origin stand-in did not compile" % name)
+			_fail += 1
+			scene.free()
+			return
+		root.add_child(stand_in)
 	root.add_child(scene)
 	# 12 frames: villages stream tiles and spawn NPCs over several frames; 8 was enough for
 	# the older single-village tool but caught half-populated markets here.
 	for i in range(12):
 		await process_frame
+	if origin != "":
+		var drawn := scene.find_children("Art_*", "Sprite2D", true, false).size()
+		print("[SHOT] %s origin: %s · drawn pieces: %d" % [name, origin if stand_in != null else "(none: SHOTS_NO_ORIGIN)", drawn])
+		if stand_in != null and name in MUST_BE_DRAWN and drawn == 0:
+			print("[SHOT] FAIL: %s — shot as %s and no drawn piece stands in it: the painted fallback" % [name, origin])
+			_fail += 1
 
 	var framing := _frame_on_houses(scene)
 	if framing != "":
@@ -270,6 +317,8 @@ func _shoot(name: String, paths: Array) -> void:
 	_ok += 1
 
 	scene.queue_free()
+	if stand_in != null:
+		stand_in.queue_free()
 	await process_frame
 
 
