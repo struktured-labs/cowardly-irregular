@@ -100,3 +100,16 @@ func test_a_big_battler_with_every_motif_draws_a_frame() -> void:
 	await get_tree().process_frame
 	assert_true(a.visible and a.is_processing(), "the aura is still drawing after two frames with every motif on a large body")
 	assert_eq(a.texture_filter, CanvasItem.TEXTURE_FILTER_NEAREST, "pixel glyphs scaled with a smoothing filter blur")
+
+
+func test_a_motif_over_the_head_starts_above_the_badge_row() -> void:
+	var scene_src := FileAccess.get_file_as_string("res://src/battle/BattleScene.gd")
+	assert_true(scene_src.contains("aura.head_clear = (STATUS_ROW_LIFT + STATUS_ROW_CLEAR) * STATUS_ROW_ZOOM"),
+		"the scene tells each aura how tall the badge band above its figure is, from the badge row's own constants")
+	var consts: Dictionary = load("res://src/battle/BattleScene.gd").get_script_constant_map()
+	var band: float = (float(consts.get("STATUS_ROW_LIFT", 0.0)) + float(consts.get("STATUS_ROW_CLEAR", 0.0))) * float(consts.get("STATUS_ROW_ZOOM", 0.0))
+	assert_gt(band, 20.0, "CONTROL: the badge row's constants read; band = %.1f px" % band)
+	var code := _code()
+	assert_true(code.contains("body.position.y - head_clear"), "the head anchor is lifted by the band")
+	assert_eq(_aura([], Rect2(-24, -64, 48, 64)).head_clear, 0.0, "an aura nobody placed (a test, a preview) keeps the bare head anchor")
+

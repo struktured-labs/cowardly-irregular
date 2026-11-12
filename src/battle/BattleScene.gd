@@ -73,6 +73,7 @@ const ENEMY_HP_BAR_FADE := 0.4  # under the 0.5s dissolve it leaves with
 const STATUS_ROW_WIDTH := 120.0  # badges centre in it over the figure (row units, x STATUS_ROW_ZOOM on screen)
 const STATUS_ROW_ZOOM := 1.6  # the badges' ~9px text, read at ~14px on every monster
 const STATUS_ROW_LIFT := 16.0  # row units from the figure's top to the badge row's top
+const STATUS_ROW_CLEAR := 3.0  # row units of air between the badge row's top and a motif floating over the head
 const NAME_LABEL_Z := 5  # over every monster (0), under the damage popups (DamageNumber.POPUP_Z)
 const NAME_PLATE_COLOR := Color(0.04, 0.03, 0.08, 0.72)  # reads over sky, floor grid and a neighbour's body alike
 const NAME_PLATE_PAD_X := 5.0
@@ -1994,6 +1995,7 @@ func _make_status_aura(sprite: AnimatedSprite2D) -> Node2D:
 			if sprite.flip_h:
 				origin.x = -(origin.x + fig.size.x)
 			aura.body = Rect2(origin * Vector2(absf(sc.x), absf(sc.y)), fig.size * Vector2(absf(sc.x), absf(sc.y)))
+	aura.head_clear = (STATUS_ROW_LIFT + STATUS_ROW_CLEAR) * STATUS_ROW_ZOOM
 	sprite.add_child(aura)
 	return aura
 

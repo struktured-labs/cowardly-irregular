@@ -75,10 +75,14 @@ static var PLUS := PackedVector2Array([Vector2(-1.5, -5), Vector2(1.5, -5), Vect
 	Vector2(1.5, 5), Vector2(-1.5, 5), Vector2(-1.5, 1.5), Vector2(-5, 1.5), Vector2(-5, -1.5), Vector2(-1.5, -1.5)])
 static var SKULL := PackedVector2Array([Vector2(-5, -2), Vector2(-4, -5), Vector2(-2, -6.5), Vector2(2, -6.5), Vector2(4, -5), Vector2(5, -2),
 	Vector2(4.5, 1), Vector2(3, 2), Vector2(3, 5), Vector2(-3, 5), Vector2(-3, 2), Vector2(-4.5, 1)])
+static var EYE := PackedVector2Array([Vector2(-8, 0), Vector2(-4, -3.5), Vector2(0, -4.5), Vector2(4, -3.5), Vector2(8, 0), Vector2(4, 3.5), Vector2(0, 4.5), Vector2(-4, 3.5)])
 static var HOURGLASS := PackedVector2Array([Vector2(-4, -6), Vector2(4, -6), Vector2(0.6, 0), Vector2(4, 6), Vector2(-4, 6), Vector2(-0.6, 0)])
 
 ## The figure on screen, in this node's units (screen px): set by the scene from the sprite's idle frame.
 var body := Rect2(-24, -64, 48, 64)
+## Screen px above the figure's top that belong to the BADGE row (the scene sets it): a motif that floats over the head
+## starts above that band, so a Z never lands on its own "SLP 3" label.
+var head_clear := 0.0
 ## Shown motifs, rebuilt only when the status set changes: [{status, kind, color, up, slot, slots}].
 var _shown: Array = []
 var _clock_ms: int = -1
@@ -189,7 +193,7 @@ func _draw() -> void:
 	var k := motif_scale()
 	var unit := Vector2.ONE * k
 	var px := maxi(1, roundi(k))  # a glyph's pixel, whole so it never shimmers
-	var head := Vector2(body.get_center().x, body.position.y)
+	var head := Vector2(body.get_center().x, body.position.y - head_clear)
 	var heads := 0
 	for e in _shown:
 		var kind: String = e["kind"]
@@ -226,17 +230,18 @@ func _draw() -> void:
 					_shape(HEART, head + Vector2(-12.0 + 12.0 * float(i), -2.0 - p * 18.0) * k, unit * (0.8 + 0.4 * p), Color(c, 1.0 - p), rim, k)
 			"sweat":
 				var p := fmod(t * 0.9, 1.0)
-				_shape(DROP, head + Vector2(body.size.x * 0.35, (6.0 + p * 10.0) * k), unit, Color(c, 1.0 - p), rim, k)
+				_shape(DROP, Vector2(body.get_center().x + body.size.x * 0.35, body.position.y + (6.0 + p * 10.0) * k), unit, Color(c, 1.0 - p), rim, k)  # on the brow, not over the badges
 			"wisps":
 				for i in 3:
 					var p := fmod(t * 0.45 + float(i) / 3.0, 1.0)
 					var x := body.get_center().x + sin(t * 2.0 + float(i) * 2.1) * body.size.x * 0.4
 					_dot(Vector2(x, body.end.y - p * body.size.y), (3.0 * (1.0 - p) + 1.0) * k, Color(c, 0.7 * (1.0 - p)), rim, k)
 			"visor":
-				var eye_y := body.position.y + body.size.y * 0.16
-				var band := Rect2(body.position.x + body.size.x * 0.18, eye_y - 3.0 * k + sin(t * 2.0) * k, body.size.x * 0.64, 6.0 * k)
-				draw_rect(band.grow(k), Color(rim, 0.8))
-				draw_rect(band, Color(c, 0.9))
+				var at := head + Vector2(16.0, -10.0 + sin(t * 2.0)) * k
+				_shape(EYE, at, unit, Color(c, 0.95), rim, k)
+				draw_circle(at, 2.0 * k, Color(rim, 0.95))
+				draw_line(at + Vector2(-8, 6) * k, at + Vector2(8, -6) * k, Color(c, 0.95), 2.0 * k + 2.0)
+				draw_line(at + Vector2(-8, 6) * k, at + Vector2(8, -6) * k, Color(rim, 0.95), 2.0 * k)
 			"mute":
 				var at := head + Vector2(-16.0, -8.0) * k
 				draw_arc(at, 6.0 * k, 0.0, TAU, 16, Color(rim, 0.9), 1.5 * k + 2.0)
