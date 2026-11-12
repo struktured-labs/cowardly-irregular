@@ -9,7 +9,7 @@ const TILE := 32
 ## Tile kinds a room asks for by name; anything else a room passes is furniture.
 const TILE_KINDS := ["floor", "wall", "counter", "shelf", "hearth", "carpet"]
 ## Furniture kinds wired to the seam so far (each one names its own place_or_paint call).
-const FURNITURE_KINDS := ["shelf_goods", "back_wall", "armchair", "table_things", "table", "desk", "coat_rack", "rug", "bench", "barrel", "crate", "round_table", "stool", "door_mat", "gear_pile"]
+const FURNITURE_KINDS := ["shelf_goods", "back_wall", "armchair", "table_things", "table", "desk", "coat_rack", "rug", "bench", "barrel", "crate", "round_table", "stool", "door_mat", "gear_pile", "barrels", "sacks", "crate_produce", "mat", "anvil", "weapon_crates", "bellows", "quench_barrel", "coal_bin", "forge"]
 const WORLDS := ["medieval", "suburban", "steampunk", "industrial", "futuristic", "abstract"]
 const INTERIORS_DIR := "res://src/maps/interiors"
 ## Shared rooms, keyed by what they ARE; a village-specific variant adds "_<village>" (e.g. counter_shop_item_harmonia).
