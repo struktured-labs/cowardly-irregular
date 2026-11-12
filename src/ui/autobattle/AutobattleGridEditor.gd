@@ -2393,16 +2393,34 @@ static func payload_vocabulary(field: String) -> Array:
 				if e != "" and not out.has(e):
 					out.append(e)
 		"status":
+			## What a fight can PRODUCE: every status an ability, item or equipment row applies (aliases resolved), kept when the battle can badge it as a status. Not the badge table itself: a third of that is stat labels no has_status can be true of (cowir-battle 24542).
 			out.append("poison")
 			var scene: GDScript = load("res://src/battle/BattleScene.gd")
-			var icons = scene.get_script_constant_map().get("STATUS_ICON_CONFIG", {}) if scene != null else {}
-			for st in (icons as Dictionary).keys():
-				if not out.has(str(st)):
-					out.append(str(st))
+			var icons: Dictionary = scene.get_script_constant_map().get("STATUS_ICON_CONFIG", {}) if scene != null else {}
+			var applied: Array = []
+			for path in ["res://data/abilities.json", "res://data/items.json", "res://data/equipment.json"]:
+				_collect_applied(JSON.parse_string(FileAccess.get_file_as_string(path)), applied)
+			applied.sort()
+			for raw in applied:
+				var st: String = Combatant.resolve_status_alias(str(raw))
+				if icons.has(st) and not st.ends_with("_up") and not st.ends_with("_down") and not out.has(st):
+					out.append(st)
 		"stat":
 			out = BUFF_STATS.duplicate()
 	_payload_vocab[field] = out
 	return out
+
+
+## Every string a data row names under an applying key, at any depth.
+static func _collect_applied(node, out: Array) -> void:
+	if node is Dictionary:
+		for k in node:
+			if str(k) in ["effect", "status", "status_effect"] and node[k] is String and not out.has(node[k]):
+				out.append(node[k])
+			_collect_applied(node[k], out)
+	elif node is Array:
+		for v in node:
+			_collect_applied(v, out)
 
 
 func _adjust_condition_value(delta: int) -> void:

@@ -164,6 +164,36 @@ func test_every_element_the_game_has_can_be_chosen() -> void:
 	assert_false(names.has(""), "and no blank")
 
 
+func _applied(node, out: Dictionary) -> void:
+	if node is Dictionary:
+		for k in node:
+			if str(k) in ["effect", "status", "status_effect"] and node[k] is String:
+				out[Combatant.resolve_status_alias(str(node[k]))] = true
+			_applied(node[k], out)
+	elif node is Array:
+		for v in node:
+			_applied(v, out)
+
+
+## The status list is what a fight can PRODUCE: each one is applied by some ability, item or equipment row. A status no
+## row applies, or a stat label, would be a rule that can never fire (cowir-battle 24542, cowir-main 24543).
+func test_every_status_offered_is_one_something_applies() -> void:
+	var names: Array = load(EDITOR).payload_vocabulary("status")
+	var applied: Dictionary = {}
+	for path in ["res://data/abilities.json", "res://data/items.json", "res://data/equipment.json"]:
+		_applied(JSON.parse_string(FileAccess.get_file_as_string(path)), applied)
+	assert_gt(applied.size(), 10, "CONTROL: the data applies statuses (%d names)" % applied.size())
+	assert_eq(names[0], "poison", "the seed comes first")
+	assert_gt(names.size(), 8, "CONTROL: a real list (%s)" % [names])
+	for n in names:
+		assert_true(applied.has(n), "'%s' is offered, so some ability, item or equipment row must apply it" % n)
+	for want in ["stun", "sleep", "blind", "silence"]:
+		assert_true(names.has(want), "'%s' is a status a rule would be written on" % want)
+	for never in ["attack_up", "defense_down", "permakilled", "exposed", "cannot_defer"]:
+		assert_false(names.has(never), "CONTROL: '%s' is a badge, not a status a rule can meet" % never)
+	assert_true(applied.has("attack_up"), "CONTROL: and attack_up IS applied by the data, so the filter is what keeps it out")
+
+
 ## A rule holding any reachable payload is one the validator accepts: what the dial writes, the game can run.
 func test_every_reachable_payload_validates() -> void:
 	var types: Array = await _named_types()
