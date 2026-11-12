@@ -55,6 +55,15 @@ func _get_save_point_position() -> Vector2:
 	return Vector2(16 * TILE_SIZE, 15 * TILE_SIZE)
 
 
+## Harmonia's well: Phil the Lost (28, 21) and his notebook (27, 21) are at its south-east kerb.
+const WELL_CELL := Vector2i(25, 20)
+
+
+## The "Stone Well" text is read at the drawn well, on the footprint cell nearer Phil.
+func _examine_anchor_cell(examine_id: String) -> Vector2i:
+	return WELL_CELL + Vector2i(1, 0) if examine_id == "harmonia_well" else Vector2i(-1, -1)
+
+
 func _get_player_spawn_fallback() -> Vector2:
 	return Vector2(752, 768)
 
@@ -343,6 +352,8 @@ func _setup_buildings() -> void:
 	_add_prop(VillagePropScript.Kind.BARREL, Vector2i(38, 10))
 	_add_prop(VillagePropScript.Kind.CRATE, Vector2i(39, 10))
 	_add_prop(VillagePropScript.Kind.FENCE, Vector2i(12, 16))
+	# The well six shipped lines talk about and Phil sits at (main 24238): north of the road, at his kerb.
+	_add_prop(VillagePropScript.Kind.WELL, WELL_CELL)
 	# Market + gate (tier 0): stalls either side of the entrance, a cart, crates, lamps on the road
 	_add_prop(VillagePropScript.Kind.STALL, Vector2i(17, 25))
 	_add_prop(VillagePropScript.Kind.STALL, Vector2i(26, 25))
