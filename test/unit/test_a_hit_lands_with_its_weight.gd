@@ -383,3 +383,32 @@ func _reach(spark: Node2D) -> float:
 			for p in (child as Line2D).points:
 				far = maxf(far, p.length())
 	return far
+
+
+## An effect freed before its tween ends (a battle torn down, a grind restart mid-spark, a test's cleanup) must
+## not break its own finishing callback: the callback called queue_free on the freed node, raised a script error
+## and never reached on_complete. Driven through every effect type, so every builder's callback is exercised.
+func test_an_effect_freed_mid_flight_still_finishes() -> void:
+	var saved: float = Engine.time_scale
+	Engine.time_scale = 1.0
+	var was: Node2D = EffectSystem._effects_container
+	var host := Node2D.new()
+	add_child_autofree(host)
+	EffectSystem._effects_container = host
+	var done := {}
+	var types: Array = EffectSystem.EffectType.values()
+	assert_gt(types.size(), 8, "VOID: the effect type list shrank to %d" % types.size())
+	for t in types:
+		done[t] = 0
+		EffectSystem.spawn_effect(t, Vector2(200, 200), func(): done[t] += 1)
+	assert_eq(host.get_child_count(), types.size(), "CONTROL: every type put one effect on the layer")
+	## The control: one type left alone finishes by itself, so "finished" below is the callback, not the test.
+	var kept: Node = host.get_child(0)
+	for child in host.get_children():
+		if child != kept:
+			child.free()
+	await get_tree().create_timer(2.5, true, false, true).timeout
+	EffectSystem._effects_container = was
+	Engine.time_scale = saved
+	for t in types:
+		assert_eq(done[t], 1, "effect type %s: its finishing callback ran %d times after the effect was freed mid-flight" % [EffectSystem.EffectType.keys()[t], done[t]])

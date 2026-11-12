@@ -613,9 +613,8 @@ func _animate_fire(effect: Node2D, on_complete: Callable, power: float = 1.0, bo
 		tween.tween_property(p, "rotation", randf_range(-PI, PI), duration).set_delay(delay)
 
 	tween.chain().tween_callback(func():
-		if not is_instance_valid(effect):
-			return  # freed with its battle (or a test) before the eruption ended
-		effect.queue_free()
+		if is_instance_valid(effect):  # may be freed with its battle (or a test) before the eruption ended
+			effect.queue_free()
 		if on_complete.is_valid():
 			on_complete.call()
 	)
@@ -819,7 +818,10 @@ func _animate_ice(effect: Node2D, on_complete: Callable, power: float = 1.0) -> 
 		tween.tween_property(p, "scale", p.scale * 2.0, duration * 0.4).set_delay(duration * 0.4)
 
 	tween.chain().tween_callback(func():
-		effect.queue_free()
+		## The effect can be freed before its tween ends (a battle torn down, a grind restart, a test's cleanup);
+		## the callback must still finish, so whoever waits on on_complete is not left hanging.
+		if is_instance_valid(effect):
+			effect.queue_free()
 		if on_complete.is_valid():
 			on_complete.call()
 	)
@@ -922,7 +924,10 @@ func _animate_lightning(effect: Node2D, on_complete: Callable, power: float = 1.
 		tween.tween_property(spark, "scale", spark.scale * 0.3, 0.2).set_delay(spark_delay + 0.1)
 
 	tween.chain().tween_callback(func():
-		effect.queue_free()
+		## The effect can be freed before its tween ends (a battle torn down, a grind restart, a test's cleanup);
+		## the callback must still finish, so whoever waits on on_complete is not left hanging.
+		if is_instance_valid(effect):
+			effect.queue_free()
 		if on_complete.is_valid():
 			on_complete.call()
 	)
@@ -1021,7 +1026,10 @@ func _animate_holy(effect: Node2D, on_complete: Callable, power: float = 1.0) ->
 		tween.tween_property(ray, "modulate:a", 0.0, duration * 0.3).set_delay(delay + duration * 0.5)
 
 	tween.chain().tween_callback(func():
-		effect.queue_free()
+		## The effect can be freed before its tween ends (a battle torn down, a grind restart, a test's cleanup);
+		## the callback must still finish, so whoever waits on on_complete is not left hanging.
+		if is_instance_valid(effect):
+			effect.queue_free()
 		if on_complete.is_valid():
 			on_complete.call()
 	)
@@ -1101,7 +1109,10 @@ func _animate_dark(effect: Node2D, on_complete: Callable, power: float = 1.0) ->
 		tween.tween_property(p, "modulate:a", 0.0, duration * 0.3).set_delay(delay + duration * 0.6)
 
 	tween.chain().tween_callback(func():
-		effect.queue_free()
+		## The effect can be freed before its tween ends (a battle torn down, a grind restart, a test's cleanup);
+		## the callback must still finish, so whoever waits on on_complete is not left hanging.
+		if is_instance_valid(effect):
+			effect.queue_free()
 		if on_complete.is_valid():
 			on_complete.call()
 	)
@@ -1152,7 +1163,10 @@ func _animate_heal(effect: Node2D, on_complete: Callable, power: float = 1.0) ->
 		tween.tween_property(p, "modulate:a", 0.0, duration * 0.3).set_delay(delay + duration * 0.5)
 
 	tween.chain().tween_callback(func():
-		effect.queue_free()
+		## The effect can be freed before its tween ends (a battle torn down, a grind restart, a test's cleanup);
+		## the callback must still finish, so whoever waits on on_complete is not left hanging.
+		if is_instance_valid(effect):
+			effect.queue_free()
 		if on_complete.is_valid():
 			on_complete.call()
 	)
@@ -1205,7 +1219,10 @@ func _animate_buff(effect: Node2D, on_complete: Callable, power: float = 1.0) ->
 		tween.tween_property(p, "modulate:a", 0.0, duration * 0.3).set_delay(delay + duration * 0.5)
 
 	tween.chain().tween_callback(func():
-		effect.queue_free()
+		## The effect can be freed before its tween ends (a battle torn down, a grind restart, a test's cleanup);
+		## the callback must still finish, so whoever waits on on_complete is not left hanging.
+		if is_instance_valid(effect):
+			effect.queue_free()
 		if on_complete.is_valid():
 			on_complete.call()
 	)
@@ -1259,7 +1276,10 @@ func _animate_debuff(effect: Node2D, on_complete: Callable, power: float = 1.0) 
 		tween.tween_property(p, "modulate:a", 0.0, duration * 0.3).set_delay(delay + duration * 0.5)
 
 	tween.chain().tween_callback(func():
-		effect.queue_free()
+		## The effect can be freed before its tween ends (a battle torn down, a grind restart, a test's cleanup);
+		## the callback must still finish, so whoever waits on on_complete is not left hanging.
+		if is_instance_valid(effect):
+			effect.queue_free()
 		if on_complete.is_valid():
 			on_complete.call()
 	)
@@ -1312,7 +1332,10 @@ func _animate_poison(effect: Node2D, on_complete: Callable, power: float = 1.0) 
 		tween.tween_property(p, "scale", Vector2(0.0, 0.0), duration * 0.2).set_delay(delay + duration * 0.6)
 
 	tween.chain().tween_callback(func():
-		effect.queue_free()
+		## The effect can be freed before its tween ends (a battle torn down, a grind restart, a test's cleanup);
+		## the callback must still finish, so whoever waits on on_complete is not left hanging.
+		if is_instance_valid(effect):
+			effect.queue_free()
 		if on_complete.is_valid():
 			on_complete.call()
 	)
@@ -1395,7 +1418,10 @@ func _animate_physical(effect: Node2D, on_complete: Callable, power: float = 1.0
 		tween.tween_property(spark, "modulate:a", 0.0, 0.1).set_delay(0.15)
 
 	tween.chain().tween_callback(func():
-		effect.queue_free()
+		## The effect can be freed before its tween ends (a battle torn down, a grind restart, a test's cleanup);
+		## the callback must still finish, so whoever waits on on_complete is not left hanging.
+		if is_instance_valid(effect):
+			effect.queue_free()
 		if on_complete.is_valid():
 			on_complete.call()
 	)
@@ -1499,7 +1525,10 @@ func _animate_mp_restore(effect: Node2D, on_complete: Callable, power: float = 1
 		tween.tween_property(p, "rotation", randf_range(-0.5, 0.5), duration).set_delay(delay)
 
 	tween.chain().tween_callback(func():
-		effect.queue_free()
+		## The effect can be freed before its tween ends (a battle torn down, a grind restart, a test's cleanup);
+		## the callback must still finish, so whoever waits on on_complete is not left hanging.
+		if is_instance_valid(effect):
+			effect.queue_free()
 		if on_complete.is_valid():
 			on_complete.call()
 	)
