@@ -3341,6 +3341,20 @@ static func sequence_total(seq_id: String) -> float:
 ## Signature sounds play at every speed the player picks, 4x included; only autogrind/turbo is silent (cowir-main 21194).
 ## Seconds between one target's cut and the next as a line-wide melee move passes along the enemies.
 const MELEE_EACH_STAGGER := 0.05
+## A line-wide sequence names the `span` (px) it was authored for; it is scaled to (the targets' extent + PAD) / span,
+## within these bounds, so it covers the foes it hits and no more.
+const LINE_SPAN_PAD := 160.0
+const LINE_SPAN_MIN := 0.45
+const LINE_SPAN_MAX := 1.3
+## The key INSIDE an ability's `vfx` that names a monster's physical family. Not the row's own `family`: that one is the
+## spell line a shop sells by (ShopScene, AbilityFacts), and one key with two meanings bites the first hybrid row (battle 24017).
+const FAMILY_KEY := "family"
+## A family sequence authored at 1.0 fits a figure this tall on screen; a bigger or smaller attacker scales it, within bounds.
+const FAMILY_REFERENCE_PX := 150.0
+const FAMILY_SCALE_MIN := 0.7
+const FAMILY_SCALE_MAX := 2.0
+const FAMILY_ELEMENT_TINTS := {"dark": "void", "ice": "frost", "fire": "flame", "holy": "holy", "poison": "rot"}
+const FAMILY_EFFECT_TINTS := {"poison": "rot", "curse": "void"}
 ## A status that LANDS plays its own beat at the target; anything not listed lands with its aura alone.
 const LANDED_BEATS := {"stun": "landed_stun", "blind": "landed_blind", "sleep": "landed_sleep",
 	## Every status the game TINTS lands with a beat (adhoc, main 24001): afflictions rise off the body, the
@@ -3448,7 +3462,40 @@ func _ability_sequence(ability: Dictionary) -> String:
 static func melee_overlay(ability: Dictionary, key: String) -> String:
 	var vfx = ability.get("vfx", {})
 	var id := str(vfx.get(key, "")) if vfx is Dictionary else ""
+	## A monster's physical move names a FAMILY in its vfx instead (bite, claw, slam, spit …): `family_<name>` draws the move, and
+	## `family_<name>_hit` each target of a line-wide one. An authored `vfx.melee` always wins.
+	var family := str(vfx.get(FAMILY_KEY, "")) if vfx is Dictionary else ""
+	if id == "" and family != "":
+		match key:
+			"melee":
+				id = "family_" + family
+			"melee_each":
+				id = "family_" + family + "_hit"
 	return id if id != "" and not FractalFX.load_sequence(id).is_empty() else ""
+
+
+## The accent a family sequence is drawn in for this ability: its own `vfx.palette`, else its element, else its rider.
+static func family_tint(ability: Dictionary) -> String:
+	var vfx = ability.get("vfx", {})
+	if vfx is Dictionary and str(vfx.get("palette", "")) != "":
+		return str(vfx["palette"])
+	var by_element: String = str(FAMILY_ELEMENT_TINTS.get(str(ability.get("element", "")), ""))
+	return by_element if by_element != "" else str(FAMILY_EFFECT_TINTS.get(str(ability.get("effect", "")), ""))
+
+
+## How much bigger than a hero-sized attacker this one is drawn: a rat's bite and a dragon's are not the same size
+## (main 23999). The idle frame's FIGURE on screen against FAMILY_REFERENCE_PX, floored and capped.
+func _attacker_scale(sprite: Node2D) -> float:
+	if not (sprite is AnimatedSprite2D):
+		return 1.0
+	var spr := sprite as AnimatedSprite2D
+	if spr.sprite_frames == null or not spr.sprite_frames.has_animation(&"idle") or spr.sprite_frames.get_frame_count(&"idle") == 0:
+		return 1.0
+	var tex := spr.sprite_frames.get_frame_texture(&"idle", 0)
+	if tex == null:
+		return 1.0
+	var tall: float = AdvanceAuraClass.figure_rect_of(tex).size.y * absf(spr.scale.y)
+	return clampf(tall / FAMILY_REFERENCE_PX, FAMILY_SCALE_MIN, FAMILY_SCALE_MAX)
 
 
 ## Fighter and Rogue physical abilities (sprites 23767): the lunge, the hit and the damage stay _animate_melee_attack's;
@@ -3463,22 +3510,31 @@ func _play_melee_overlay(caster: Combatant, caster_sprite: Node2D, ability: Dict
 	for target in targets:
 		var ts = _get_combatant_sprite(target)
 		if ts != null and is_instance_valid(ts):
-			anchors.append(_stable_sprite_anchor(ts))
+			anchors.append(_figure_anchor(ts))
 	if anchors.is_empty():
 		return
-	var centre := Vector2.ZERO
-	for a in anchors:
-		centre += a
-	centre /= float(anchors.size())
+	var span := line_span(anchors)
+	var centre: Vector2 = span.get_center()
 	var intensity := cast_intensity(caster, ability)
 	var power := float(AbilityVFX.resolve(ability)["power"]) * float(intensity["k"])
+	## A line-wide move is drawn ACROSS the targets it hits, not at their average: authored for a `span` px line, it
+	## is scaled to the line it actually has, so two foes side by side get a crescent their size and two far apart
+	## get one that reaches both (struktured via main 24179/24186: "aims center").
+	var authored_span := float(FractalFX.load_sequence(seq_id).get("span", 0.0))
+	if authored_span > 0.0:
+		power *= clampf((maxf(span.size.x, span.size.y) + LINE_SPAN_PAD) / authored_span, LINE_SPAN_MIN, LINE_SPAN_MAX)
+	var tint := ""
+	## A family sequence is sized to the creature that throws it and tinted by the move; an authored one is neither.
+	if seq_id.begins_with("family_"):
+		power *= _attacker_scale(caster_sprite)
+		tint = family_tint(ability)
 	var tier := int(intensity["tier"])
 	var compact := not signature_sound_allowed()
-	var from := _stable_sprite_anchor(caster_sprite)
+	var from := _figure_anchor(caster_sprite)
 	## The lunge's own contact, not the sequence's authored 0.17: below the FULL tier the approach is 0.05 s shorter,
 	## and an effect that lands after its hit is the jank this exists to remove (main 23818).
 	var contact := _last_contact_in
-	EffectSystem.spawn_sequence(seq_id, from, centre, power, {}, tier, compact, contact)
+	EffectSystem.spawn_sequence(seq_id, from, centre, power, {}, tier, compact, contact, Vector2.INF, tint)
 	var each := melee_overlay(ability, "melee_each")
 	if each == "":
 		return
@@ -3490,6 +3546,46 @@ func _play_melee_overlay(caster: Combatant, caster_sprite: Node2D, ability: Dict
 			EffectSystem.spawn_sequence(each, from, anchors[i], power, {}, tier, compact)
 		else:
 			get_tree().create_timer(delay).timeout.connect(_spawn_outcome_sequence.bind(each, from, anchors[i], power, tier))
+
+
+## The sequence a `vfx.ranged` physical move delivers with ("" when it is not one, or names none): each target's
+## own splat for a line-wide move, the single projectile otherwise.
+static func _ranged_sequence(ability: Dictionary, targets: Array) -> String:
+	var vfx = ability.get("vfx", {})
+	if not (vfx is Dictionary) or not bool(vfx.get("ranged", false)) or targets.is_empty():
+		return ""
+	return melee_overlay(ability, "melee_each" if targets.size() > 1 else "melee")
+
+
+## The box around a set of target points (a zero-size rect at the point for one target).
+static func line_span(points: Array) -> Rect2:
+	if points.is_empty():
+		return Rect2()
+	var box := Rect2(points[0], Vector2.ZERO)
+	for p in points:
+		box = box.expand(p)
+	return box
+
+
+## A ranged line-wide move's one cloud over the whole target line; each target's own splat is the cast path's.
+func _play_melee_cloud(caster: Combatant, caster_sprite: Node2D, ability: Dictionary, targets: Array) -> void:
+	var seq_id := melee_overlay(ability, "melee")
+	if seq_id == "" or caster_sprite == null or not is_instance_valid(caster_sprite):
+		return
+	var points: Array = []
+	for target in targets:
+		var ts = _get_combatant_sprite(target)
+		if ts != null and is_instance_valid(ts):
+			points.append(_figure_anchor(ts))
+	if points.is_empty():
+		return
+	var span := line_span(points)
+	var k := _attacker_scale(caster_sprite)
+	var authored_span := float(FractalFX.load_sequence(seq_id).get("span", 0.0))
+	if authored_span > 0.0:
+		k *= clampf((maxf(span.size.x, span.size.y) + LINE_SPAN_PAD) / authored_span, LINE_SPAN_MIN, LINE_SPAN_MAX)
+	EffectSystem.spawn_sequence(seq_id, _figure_anchor(caster_sprite), span.get_center(),
+		k, {}, 1, not signature_sound_allowed(), -1.0, Vector2.INF, family_tint(ability))
 
 
 func _spawn_outcome_sequence(seq_id: String, from: Vector2, to: Vector2, power: float = 1.0, tier: int = 1) -> void:
@@ -3505,11 +3601,11 @@ func _play_outcome_beat(seq_id: String, combatant: Combatant, from_combatant: Co
 	var sprite = _get_combatant_sprite(combatant)
 	if sprite == null or not is_instance_valid(sprite):
 		return
-	var to := _stable_sprite_anchor(sprite)
+	var to := _figure_anchor(sprite)
 	var from := to
 	var from_sprite = _get_combatant_sprite(from_combatant) if from_combatant != null and is_instance_valid(from_combatant) else null
 	if from_sprite != null and is_instance_valid(from_sprite):
-		from = _stable_sprite_anchor(from_sprite)
+		from = _figure_anchor(from_sprite)
 	var wait := _melee_contact_timer.time_left if _melee_contact_timer != null else 0.0
 	if wait > 0.0:
 		get_tree().create_timer(wait).timeout.connect(_spawn_outcome_sequence.bind(seq_id, from, to))
@@ -5264,6 +5360,14 @@ func _on_action_executing(combatant: Combatant, action: Dictionary) -> void:
 				sig_seq = glory_sequence(combatant, ability)
 			if sig_seq != "":
 				_play_signature(combatant, attacker_sprite, animator, ability, targets, sig_seq)
+			## A thrown or spat physical move does not walk up to its target (sprites 23997, adhoc 24012): its family
+			## sequence is the delivery, played like a cast, so the hit waits for the projectile to land.
+			elif ability_type == "physical" and _ranged_sequence(ability, targets) != "":
+				## Not a lunge: a landed or fizzled beat must not wait out the PREVIOUS melee's contact clock (adhoc 24015).
+				_melee_contact_timer = null
+				if targets.size() > 1:
+					_play_melee_cloud(combatant, attacker_sprite, ability, targets)
+				_play_ability_sequence(combatant, attacker_sprite, animator, ability, targets, _ranged_sequence(ability, targets))
 			# Physical abilities move to target
 			elif ability_type == "physical" and targets.size() > 0:
 				var target_sprite = _get_combatant_sprite(targets[0])

@@ -2097,6 +2097,7 @@
     },
     "melee_power_strike": {
       "label": "Power Strike: blade glint, one heavy vertical arc, a ground crack that fills the enemy side (sprites 23767, main 23768)",
+      "handed": true,
       "start": 0.17,
       "start_note": "the lunge's contact: 0.05 pull-back + 0.12 approach (BattleScene._animate_melee_attack)",
       "impact": 0.0,
@@ -2223,6 +2224,9 @@
     },
     "melee_cleave": {
       "label": "Cleave: one wide crescent swept across the whole enemy line (played ONCE, at the line's centre)",
+      "handed": true,
+      "span": 530,
+      "scale_offsets": true,
       "start": 0.17,
       "start_note": "the lunge's contact: 0.05 pull-back + 0.12 approach (BattleScene._animate_melee_attack)",
       "impact": 0.0,
@@ -2288,6 +2292,7 @@
     },
     "melee_cleave_cut": {
       "label": "Cleave: the cut on EACH foe as the edge passes it (the hook staggers them along the line)",
+      "handed": true,
       "phases": [
         {
           "kind": "slash",
@@ -2324,6 +2329,7 @@
     },
     "melee_shield_bash": {
       "label": "Shield Bash: a dash streak, then a blunt star and a flat ring (a wall, not a cut)",
+      "handed": true,
       "start": 0.17,
       "start_note": "the lunge's contact: 0.05 pull-back + 0.12 approach (BattleScene._animate_melee_attack)",
       "impact": 0.0,
@@ -2383,6 +2389,7 @@
     },
     "melee_slash": {
       "label": "Slash: a fast X, two crossed diagonal cuts 0.06 s apart",
+      "handed": true,
       "start": 0.17,
       "start_note": "the lunge's contact: 0.05 pull-back + 0.12 approach (BattleScene._animate_melee_attack)",
       "impact": 0.0,
@@ -2450,6 +2457,7 @@
     },
     "melee_backstab": {
       "label": "Backstab: the Rogue's shadow streaks BEHIND the target, then one thin stab from behind",
+      "handed": true,
       "start": 0.17,
       "start_note": "the lunge's contact: 0.05 pull-back + 0.12 approach (BattleScene._animate_melee_attack)",
       "impact": 0.0,
@@ -2520,6 +2528,7 @@
     },
     "melee_backstab_crit": {
       "label": "Backstab on a CRIT: a second, delayed slash bloom",
+      "handed": true,
       "phases": [
         {
           "kind": "arc",
@@ -2560,6 +2569,7 @@
     },
     "melee_mug": {
       "label": "Mug: two quick cuts, then the take pops out of the target and arcs back to the Rogue",
+      "handed": true,
       "start": 0.17,
       "start_note": "the lunge's contact: 0.05 pull-back + 0.12 approach (BattleScene._animate_melee_attack)",
       "impact": 0.0,
@@ -5391,6 +5401,557 @@
           "count": 3,
           "palette": "smoke",
           "ground_glow": false
+        }
+      ]
+    },
+    "family_bite": {
+      "label": "Monster family BITE: two jaws close on the target and snap (sprites 23997, main 23999)",
+      "handed": true,
+      "start": 0.17,
+      "start_note": "the lunge's contact (the hook passes the lunge's own figure)",
+      "impact": 0.0,
+      "phases": [
+        {
+          "kind": "arc",
+          "at": -0.07,
+          "dur": 0.07,
+          "radius": 58,
+          "from": -160,
+          "to": -20,
+          "width": 2.6,
+          "life": 0.22,
+          "palette": "spark",
+          "glow": false,
+          "offset": [
+            0,
+            -54
+          ]
+        },
+        {
+          "kind": "arc",
+          "at": -0.07,
+          "dur": 0.07,
+          "radius": 58,
+          "from": 160,
+          "to": 20,
+          "width": 2.6,
+          "life": 0.22,
+          "palette": "spark",
+          "glow": false,
+          "offset": [
+            0,
+            54
+          ]
+        },
+        {
+          "kind": "flash",
+          "at": 0.0,
+          "dur": 0.12,
+          "size": 4.4,
+          "alpha": 0.8
+        },
+        {
+          "kind": "emit",
+          "at": 0.0,
+          "count": 8,
+          "arc": 360,
+          "radius": 52,
+          "life": 0.18,
+          "size": 0.8,
+          "stretch": 2.2,
+          "palette": "spark",
+          "bloom": false
+        },
+        {
+          "kind": "shake",
+          "at": 0.0,
+          "intensity": 5,
+          "dur": 0.14
+        }
+      ]
+    },
+    "family_bite_big": {
+      "label": "Monster family BITE, the heavy tier (chomp, desperate bite): wider jaws, a second snap, a ground ring",
+      "handed": true,
+      "start": 0.17,
+      "start_note": "the lunge's contact (the hook passes the lunge's own figure)",
+      "impact": 0.0,
+      "phases": [
+        {
+          "kind": "arc",
+          "at": -0.09,
+          "dur": 0.09,
+          "radius": 86,
+          "from": -165,
+          "to": -15,
+          "width": 3.6,
+          "life": 0.28,
+          "palette": "spark",
+          "offset": [
+            0,
+            -80
+          ]
+        },
+        {
+          "kind": "arc",
+          "at": -0.09,
+          "dur": 0.09,
+          "radius": 86,
+          "from": 165,
+          "to": 15,
+          "width": 3.6,
+          "life": 0.28,
+          "palette": "spark",
+          "offset": [
+            0,
+            80
+          ]
+        },
+        {
+          "kind": "flash",
+          "at": 0.0,
+          "dur": 0.16,
+          "size": 7.0
+        },
+        {
+          "kind": "emit",
+          "at": 0.0,
+          "count": 12,
+          "arc": 360,
+          "radius": 84,
+          "life": 0.22,
+          "size": 1.0,
+          "stretch": 2.4,
+          "palette": "spark",
+          "bloom": false
+        },
+        {
+          "kind": "ring",
+          "at": 0.0,
+          "dur": 0.32,
+          "scale": 6.0,
+          "palette": "steel"
+        },
+        {
+          "kind": "arc",
+          "at": 0.08,
+          "dur": 0.05,
+          "radius": 70,
+          "from": -150,
+          "to": -30,
+          "width": 2.2,
+          "life": 0.2,
+          "palette": "steel",
+          "glow": false,
+          "offset": [
+            0,
+            -52
+          ]
+        },
+        {
+          "kind": "arc",
+          "at": 0.08,
+          "dur": 0.05,
+          "radius": 70,
+          "from": 150,
+          "to": 30,
+          "width": 2.2,
+          "life": 0.2,
+          "palette": "steel",
+          "glow": false,
+          "offset": [
+            0,
+            52
+          ]
+        },
+        {
+          "kind": "shake",
+          "at": 0.0,
+          "intensity": 9,
+          "dur": 0.2
+        }
+      ]
+    },
+    "family_claw": {
+      "label": "Monster family CLAW: three parallel rakes torn across the target, top to bottom",
+      "handed": true,
+      "start": 0.17,
+      "start_note": "the lunge's contact (the hook passes the lunge's own figure)",
+      "impact": 0.0,
+      "phases": [
+        {
+          "kind": "streak",
+          "at": -0.03,
+          "dur": 0.05,
+          "width": 1.9,
+          "life": 0.26,
+          "palette": "spark",
+          "a": "target",
+          "a_offset": [
+            52,
+            -74
+          ],
+          "b_offset": [
+            -36,
+            58
+          ]
+        },
+        {
+          "kind": "streak",
+          "at": 0.0,
+          "dur": 0.05,
+          "width": 2.2,
+          "life": 0.26,
+          "palette": "spark",
+          "a": "target",
+          "a_offset": [
+            26,
+            -80
+          ],
+          "b_offset": [
+            -62,
+            52
+          ]
+        },
+        {
+          "kind": "streak",
+          "at": 0.03,
+          "dur": 0.05,
+          "width": 1.9,
+          "life": 0.26,
+          "palette": "spark",
+          "a": "target",
+          "a_offset": [
+            0,
+            -74
+          ],
+          "b_offset": [
+            -88,
+            58
+          ]
+        },
+        {
+          "kind": "flash",
+          "at": 0.0,
+          "dur": 0.1,
+          "size": 3.6,
+          "alpha": 0.7
+        },
+        {
+          "kind": "emit",
+          "at": 0.03,
+          "count": 7,
+          "arc": 80,
+          "heading": 200,
+          "radius": 70,
+          "life": 0.2,
+          "size": 0.8,
+          "stretch": 2.4,
+          "palette": "steel",
+          "bloom": false
+        },
+        {
+          "kind": "shake",
+          "at": 0.0,
+          "intensity": 5,
+          "dur": 0.14
+        }
+      ]
+    },
+    "family_slam": {
+      "label": "Monster family SLAM: a body blow, a blunt star, a ground ring and dust under the target",
+      "handed": true,
+      "start": 0.17,
+      "start_note": "the lunge's contact (the hook passes the lunge's own figure)",
+      "impact": 0.0,
+      "phases": [
+        {
+          "kind": "streak",
+          "at": -0.1,
+          "dur": 0.09,
+          "width": 2.4,
+          "life": 0.18,
+          "palette": "steel",
+          "b_offset": [
+            30,
+            0
+          ]
+        },
+        {
+          "kind": "flash",
+          "at": 0.0,
+          "dur": 0.16,
+          "size": 6.0
+        },
+        {
+          "kind": "emit",
+          "at": 0.0,
+          "count": 8,
+          "arc": 360,
+          "radius": 60,
+          "life": 0.2,
+          "size": 1.8,
+          "stretch": 0.4,
+          "palette": "spark",
+          "bloom": false
+        },
+        {
+          "kind": "ring",
+          "at": 0.0,
+          "dur": 0.34,
+          "scale": 6.5,
+          "palette": "steel",
+          "offset": [
+            0,
+            44
+          ]
+        },
+        {
+          "kind": "puff",
+          "at": 0.02,
+          "dur": 0.5,
+          "count": 8,
+          "spread": [
+            70,
+            8
+          ],
+          "size": 2.2,
+          "drift": [
+            -10,
+            -16
+          ],
+          "offset": [
+            0,
+            50
+          ]
+        },
+        {
+          "kind": "shake",
+          "at": 0.0,
+          "intensity": 9,
+          "dur": 0.22
+        }
+      ]
+    },
+    "family_slam_quake": {
+      "label": "Monster family SLAM on the whole line (ground pound): the crack runs under every hero (played ONCE, at the line's centre)",
+      "handed": true,
+      "span": 440,
+      "scale_offsets": true,
+      "start": 0.17,
+      "start_note": "the lunge's contact (the hook passes the lunge's own figure)",
+      "impact": 0.0,
+      "phases": [
+        {
+          "kind": "flash",
+          "at": 0.0,
+          "dur": 0.2,
+          "size": 10.0
+        },
+        {
+          "kind": "ring",
+          "at": 0.0,
+          "dur": 0.5,
+          "scale": 11.0,
+          "palette": "steel",
+          "offset": [
+            0,
+            46
+          ]
+        },
+        {
+          "kind": "ring",
+          "at": 0.07,
+          "dur": 0.6,
+          "scale": 17.0,
+          "palette": "ember",
+          "offset": [
+            0,
+            46
+          ]
+        },
+        {
+          "kind": "emit",
+          "at": 0.0,
+          "count": 12,
+          "arc": 160,
+          "heading": -90,
+          "radius": 130,
+          "life": 0.34,
+          "size": 1.3,
+          "palette": "steel",
+          "bloom": false,
+          "offset": [
+            0,
+            40
+          ]
+        },
+        {
+          "kind": "puff",
+          "at": 0.03,
+          "dur": 0.6,
+          "count": 14,
+          "spread": [
+            220,
+            10
+          ],
+          "size": 2.8,
+          "drift": [
+            0,
+            -20
+          ],
+          "offset": [
+            0,
+            52
+          ]
+        },
+        {
+          "kind": "fall",
+          "at": 0.12,
+          "dur": 0.6,
+          "count": 22,
+          "palette": "steel",
+          "ground_glow": false
+        },
+        {
+          "kind": "shake",
+          "at": 0.0,
+          "intensity": 13,
+          "dur": 0.34
+        }
+      ]
+    },
+    "family_spit": {
+      "label": "Monster family SPIT / THROW: a projectile from the monster and a splat where it lands",
+      "handed": true,
+      "start": 0.17,
+      "start_note": "the lunge's contact (the hook passes the lunge's own figure)",
+      "impact": 0.0,
+      "phases": [
+        {
+          "kind": "bolt",
+          "at": -0.17,
+          "dur": 0.17,
+          "arc_height": 34,
+          "size": 0.9,
+          "palette": "steel",
+          "trail_palette": "smoke",
+          "trail_spacing": 10
+        },
+        {
+          "kind": "flash",
+          "at": 0.0,
+          "dur": 0.1,
+          "size": 3.2,
+          "alpha": 0.7
+        },
+        {
+          "kind": "emit",
+          "at": 0.0,
+          "count": 7,
+          "arc": 200,
+          "heading": 180,
+          "radius": 54,
+          "life": 0.2,
+          "size": 0.9,
+          "palette": "steel",
+          "bloom": false
+        },
+        {
+          "kind": "puff",
+          "at": 0.0,
+          "dur": 0.36,
+          "count": 5,
+          "spread": [
+            18,
+            12
+          ],
+          "size": 1.7,
+          "drift": [
+            -8,
+            -10
+          ]
+        },
+        {
+          "kind": "shake",
+          "at": 0.0,
+          "intensity": 4,
+          "dur": 0.12
+        }
+      ]
+    },
+    "family_spray": {
+      "label": "Monster family SPIT on the whole line (filth spray, gold scatter): a cloud breaks over the party (played ONCE); the per-foe splat is family_spray_hit",
+      "handed": true,
+      "span": 380,
+      "scale_offsets": true,
+      "start": 0.17,
+      "start_note": "the lunge's contact (the hook passes the lunge's own figure)",
+      "impact": 0.0,
+      "phases": [
+        {
+          "kind": "puff",
+          "at": -0.06,
+          "dur": 0.6,
+          "count": 14,
+          "spread": [
+            190,
+            60
+          ],
+          "size": 3.4,
+          "drift": [
+            -20,
+            -24
+          ]
+        },
+        {
+          "kind": "flash",
+          "at": 0.0,
+          "dur": 0.12,
+          "size": 5.0,
+          "alpha": 0.5
+        },
+        {
+          "kind": "shake",
+          "at": 0.0,
+          "intensity": 5,
+          "dur": 0.16
+        }
+      ]
+    },
+    "family_spray_hit": {
+      "label": "Monster family SPIT on the whole line: the splat on EACH hero (the hook staggers them)",
+      "handed": true,
+      "impact": 0.17,
+      "phases": [
+        {
+          "kind": "bolt",
+          "at": 0.0,
+          "dur": 0.17,
+          "arc_height": 46,
+          "size": 0.7,
+          "palette": "steel",
+          "trail_palette": "smoke",
+          "trail_spacing": 12
+        },
+        {
+          "kind": "flash",
+          "at": 0.17,
+          "dur": 0.1,
+          "size": 2.6,
+          "alpha": 0.6
+        },
+        {
+          "kind": "emit",
+          "at": 0.17,
+          "count": 5,
+          "arc": 200,
+          "heading": 180,
+          "radius": 44,
+          "life": 0.18,
+          "size": 0.8,
+          "palette": "steel",
+          "bloom": false
         }
       ]
     }

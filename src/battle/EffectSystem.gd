@@ -251,7 +251,8 @@ func spawn_ability_effect(ability: Variant, target_position: Vector2, on_complet
 ## "wire it into Fire first, playable"). Returns {"total", "impact"} in battle seconds: impact is when the
 ## sequence first lands on the target, so a caller can hold the damage numbers for it. {} if the id is unknown.
 ## `start_at` >= 0 replaces the sequence's authored `start`: a melee overlay passes its lunge's own contact time.
-func spawn_sequence(seq_id: String, from: Vector2, to: Vector2, power: float = 1.0, actors: Dictionary = {}, tier: int = 1, compact: bool = false, start_at: float = -1.0, caster_centre: Vector2 = Vector2.INF) -> Dictionary:
+## `tint` recolours a family sequence's `spark` accent (FractalFX.tint).
+func spawn_sequence(seq_id: String, from: Vector2, to: Vector2, power: float = 1.0, actors: Dictionary = {}, tier: int = 1, compact: bool = false, start_at: float = -1.0, caster_centre: Vector2 = Vector2.INF, tint: String = "") -> Dictionary:
 	var seq: Dictionary = FractalFX.load_sequence(seq_id)
 	if seq.is_empty() or _effects_container == null:
 		return {}
@@ -262,6 +263,7 @@ func spawn_sequence(seq_id: String, from: Vector2, to: Vector2, power: float = 1
 	fx.actors = actors
 	fx.caster_centre = caster_centre
 	fx.tier = tier
+	fx.tint = tint
 	fx.reduce_flashes = _reduce_flashes()
 	fx.on_shake = _trigger_screen_shake
 	fx.on_sfx = play_phase_sfx

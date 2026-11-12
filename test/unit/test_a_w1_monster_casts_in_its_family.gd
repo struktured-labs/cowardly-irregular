@@ -17,7 +17,7 @@ const DECLARED := {
 	"masterite_counter_stance": "an ally buff: the shared stat-up landing (adhoc 23998) is its read",
 	"masterite_haste": "an ally buff: the shared landing", "masterite_iron_guard": "an ally buff: the shared landing",
 	"masterite_proclamation": "an ally buff: the shared landing", "crown_authority": "an ally buff: the shared landing",
-	"coil": "a constrict: no beat drawn yet (sprites 24018)", "web_shot": "a thrown bind: cowir-sprites' spit family",
+	"coil": "a constrict: no beat drawn yet (sprites 24018)",
 	"lure": "a taunt: sprites' landed_taunt is its read", "masterite_dispel": "a strip: no family yet",
 	"masterite_slow": "a debuff: the shared stat-down landing", "masterite_time_tax": "a debuff: the shared stat-down landing",
 	"system_crash": "a party stun with no element: sprites' landed_stun is its read",

@@ -26,6 +26,8 @@ var _bm_guard
 var _saved_scale := 1.0
 var _hero: Combatant
 var _foe: Combatant
+## The shared effects layer's children when an arm starts: after_each frees whatever the arm left there.
+var _fx_before: Array = []
 
 
 func _c(n: String) -> Combatant:
@@ -79,9 +81,17 @@ func before_each() -> void:
 	_scene.enemy_animators.assign([fa])
 	_scene.turbo_mode = false
 	_scene.autogrind_console_mode = false
+	_fx_before = EffectSystem._effects_container.get_children() if is_instance_valid(EffectSystem._effects_container) else []
 
 
 func after_each() -> void:
+	## Leave the shared effects layer as this arm found it. A sequence's flames free themselves on battle-time timers,
+	## and ones still dying when the NEXT file takes a child-count baseline red its "the layer grew" arm by order
+	## (autogrind 24109: test_fire_is_fractal, which sorts right after this file).
+	if is_instance_valid(EffectSystem._effects_container):
+		for child in EffectSystem._effects_container.get_children():
+			if not (child in _fx_before):
+				child.free()
 	Engine.time_scale = _saved_scale
 	_bm_guard.restore()
 
@@ -126,7 +136,7 @@ func test_each_ability_names_its_sequence_and_the_rest_do_not() -> void:
 	## CONTROLs: the escape beat owns Flee, and a monster's physical move is still on the plain path.
 	assert_eq(BattleSceneScript.melee_overlay(abilities["flee"], "melee"), "", "Flee names no melee sequence")
 	assert_eq(AbilityVFX.resolve(abilities["flee"]).get("sequence"), "", "Flee names no cast sequence")
-	assert_eq(BattleSceneScript.melee_overlay(abilities["bite"], "melee"), "", "a monster's bite names none")
+	assert_eq(BattleSceneScript.melee_overlay(abilities["fire"], "melee"), "", "a spell names none")
 	assert_eq(BattleSceneScript.melee_overlay({"vfx": {"melee": "no_such_sequence"}}, "melee"), "", "a sequence that does not exist is not played")
 
 

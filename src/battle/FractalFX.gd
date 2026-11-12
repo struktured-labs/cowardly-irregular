@@ -63,6 +63,13 @@ var actors: Dictionary = {}
 var reduce_flashes: bool = false
 ## The caster's intensity tier (1-3, BattleScene.cast_intensity): a phase with `min_tier` waits for it, `palette_t3` recolours at 3.
 var tier: int = 1
+## Set by play() for a sequence that says `"handed": true` when its caster stands LEFT of its target: such a sequence is
+## authored for an attacker on the right (the party), and a monster using it needs every x offset and angle reflected.
+var mirror: bool = false
+## A family sequence's accent colour: a phase authored in `spark` draws in this palette instead (a dark slash in void,
+## a venomous bite in rot), so one sequence serves every member of its family.
+var tint: String = ""
+var _offset_k: float = 1.0
 ## (intensity_px, duration_s) — the caller owns the camera.
 ## The caster's BODY, for `origin: "caster"`; `from` is its HAND, for bolts and `origin: "hand"`. Unset (INF) = the hand, as before.
 var caster_centre: Vector2 = Vector2.INF
@@ -93,6 +100,10 @@ static func load_sequence(id: String) -> Dictionary:
 ## `start` shifts every phase so the sequence lands on the caster's authored release frame.
 func play(seq: Dictionary, from: Vector2, to: Vector2, power: float = 1.0, compact: bool = false) -> float:
 	var total := 0.0
+	mirror = bool(seq.get("handed", false)) and from.x < to.x
+	## A line-wide move is authored for one span of targets and scaled to the span it is cast on: its phase offsets
+	## must grow and shrink with its shapes, or the crescent's centre stays put while its radius changes.
+	_offset_k = power if bool(seq.get("scale_offsets", false)) else 1.0
 	var start := float(seq.get("start", 0.0))
 	## Turbo / the grind console (autogrind 23412): only the impact's own phases, at once, so a cast costs no wall time there.
 	var impact_at := impact_time(seq) - start
@@ -191,7 +202,7 @@ func _run(phase: Dictionary, from: Vector2, to: Vector2, power: float) -> void:
 		at_pos = from
 	elif origin == "caster":
 		at_pos = caster_centre if caster_centre != Vector2.INF else from
-	at_pos += _vec(phase.get("offset", [0, 0]))
+	at_pos += _side(_vec(phase.get("offset", [0, 0]))) * _offset_k
 	if str(phase.get("sfx", "")) != "" and on_sfx.is_valid():
 		on_sfx.call(str(phase["sfx"]))
 	match str(phase.get("kind", "")):
@@ -208,7 +219,7 @@ func _run(phase: Dictionary, from: Vector2, to: Vector2, power: float) -> void:
 		"puff":
 			_puff(at_pos, phase, power)
 		"emit":
-			var heading := deg_to_rad(float(phase.get("heading", 0.0)))
+			var heading := _angle(float(phase.get("heading", 0.0)))
 			if bool(phase.get("aim", false)):
 				heading = (to - from).angle()
 			_emit(at_pos, phase, heading, power, int(phase.get("depth", 0)))
@@ -472,8 +483,8 @@ func _slash(center: Vector2, p: Dictionary, k: float) -> void:
 ## with a soft glow behind it. `radius` is in px before power, so a cleave can span the whole enemy side.
 func _arc(center: Vector2, p: Dictionary, k: float) -> void:
 	var radius := float(p.get("radius", 120.0)) * k
-	var a0 := deg_to_rad(float(p.get("from", -150.0)))
-	var a1 := deg_to_rad(float(p.get("to", 30.0)))
+	var a0 := _angle(float(p.get("from", -150.0)))
+	var a1 := _angle(float(p.get("to", 30.0)))
 	var sweep := float(p.get("dur", 0.16))
 	var life := float(p.get("life", 0.3))
 	var width := float(p.get("width", 2.2)) * k
@@ -510,8 +521,8 @@ func _arc_flame(pos: Vector2, a: float, thick: float, life: float, ramp: Gradien
 ## A dash line between two points that draws head-first and fades tail-first. `a` and `b` name its ends
 ## ("caster" | "target"); `a_offset` / `b_offset` move them, so a backstab can end BEHIND its target.
 func _streak(from: Vector2, to: Vector2, p: Dictionary, k: float) -> void:
-	var a: Vector2 = (to if str(p.get("a", "caster")) == "target" else from) + _vec(p.get("a_offset", [0, 0]))
-	var b: Vector2 = (from if str(p.get("b", "target")) == "caster" else to) + _vec(p.get("b_offset", [0, 0]))
+	var a: Vector2 = (to if str(p.get("a", "caster")) == "target" else from) + _side(_vec(p.get("a_offset", [0, 0])))
+	var b: Vector2 = (from if str(p.get("b", "target")) == "caster" else to) + _side(_vec(p.get("b_offset", [0, 0])))
 	var dur := float(p.get("dur", 0.12))
 	var life := float(p.get("life", 0.22))
 	var width := float(p.get("width", 1.0)) * k
@@ -543,7 +554,7 @@ func _streak_flame(pos: Vector2, angle: float, width: float, life: float, ramp: 
 func _puff(center: Vector2, p: Dictionary, k: float) -> void:
 	var count := int(p.get("count", 8))
 	var spread := _vec(p.get("spread", [40, 16])) * k
-	var drift := _vec(p.get("drift", [0, -26]))
+	var drift := _side(_vec(p.get("drift", [0, -26])))
 	var dur := float(p.get("dur", 0.6))
 	var size := float(p.get("size", 2.4)) * k
 	var ramp := _ramp(str(p.get("palette", "smoke")))
@@ -809,6 +820,8 @@ func _flame(pos: Vector2, size: float, ramp: Gradient) -> Sprite2D:
 
 
 func _ramp(name: String) -> Gradient:
+	if tint != "" and name == "spark" and PALETTES.has(tint):
+		name = tint
 	if _ramps.has(name):
 		return _ramps[name]
 	var g := Gradient.new()
@@ -857,6 +870,16 @@ static func _tex(kind: String) -> Texture2D:
 	var t := ImageTexture.create_from_image(img)
 	_tex_cache[kind] = t
 	return t
+
+
+## A handed sequence's x offset, reflected for a caster on the left.
+func _side(v: Vector2) -> Vector2:
+	return Vector2(-v.x, v.y) if mirror else v
+
+
+## A handed sequence's angle in degrees, as radians, reflected about the vertical for a caster on the left.
+func _angle(deg: float) -> float:
+	return PI - deg_to_rad(deg) if mirror else deg_to_rad(deg)
 
 
 const GLYPH_ROWS := {
