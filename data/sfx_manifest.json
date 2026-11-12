@@ -13861,7 +13861,7 @@
     },
     "scene_tiny_crown_lands": {
       "file": "assets/audio/sfx/scene_tiny_crown_lands.ogg",
-      "prompt": "The Rat King's very small crown landing on the rim of Harmonia's fountain (world1_briefing_skipped, the `play_sfx` step after the narration). A thin metal ring on stone, then a roll that spins down to rest: the taps end by ~0.33 s, inside the prop's own roll (tiny_crown.png, frames 1-3 at 8 fps). Quiet on purpose, -23 dB active-RMS; the Elder's next line is left bare. numpy synthesis, not heard by struktured yet.",
+      "prompt": "The Rat King's very small crown landing on the rim of Harmonia's well (world1_briefing_skipped, the `play_sfx` step after the narration). A thin metal ring on stone, then a roll that spins down to rest: the taps end by ~0.33 s, inside the prop's own roll (tiny_crown.png, frames 1-3 at 8 fps). Quiet on purpose, -23 dB active-RMS; the Elder's next line is left bare. numpy synthesis, not heard by struktured yet.",
       "duration_seconds": 0.37,
       "source": "tools/gen_scene_cues.py scene_tiny_crown_lands"
     },

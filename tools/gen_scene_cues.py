@@ -5,7 +5,7 @@
     python3 tools/gen_scene_cues.py --all assets/audio/sfx
     python3 tools/gen_scene_cues.py --list
 
-scene_tiny_crown_lands: the Rat King's crown on the fountain's rim (world1_briefing_skipped). Thin metal on stone, then a
+scene_tiny_crown_lands: the Rat King's crown on the well's rim (world1_briefing_skipped). Thin metal on stone, then a
 roll that spins down inside the prop's own animation: tiny_crown.png lands on its frame 0 -> 1 change and is at rest two
 frames later at 8 fps (0.25 s), so the last tap falls by ~0.33 s and the ring's tail carries the hold.
 numpy synthesis at 44.1 kHz mono, deterministic seeds; it reads no master and rewrites none.
