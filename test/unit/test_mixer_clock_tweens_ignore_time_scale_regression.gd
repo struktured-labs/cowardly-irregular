@@ -42,15 +42,22 @@ const CLASSIFIED: Dictionary = {
 const NOMINAL_MS: float = 500.0
 const WARMUP_FRAMES: int = 30
 
+var _was_music = ""
+
 
 func before_each() -> void:
 	if SoundManager._danger_tween and SoundManager._danger_tween.is_valid():
 		SoundManager._danger_tween.kill()
 	SoundManager._danger_intensity = 0.0
+	_was_music = SoundManager._current_music
+	SoundManager._current_music = "battle_medieval"  # the envelope refuses any bed a live battle did not declare
+	SoundManager.declare_fight_bed()
 
 
 func after_each() -> void:
 	Engine.time_scale = 1.0
+	SoundManager._current_music = _was_music
+	SoundManager.clear_fight_bed()
 	if SoundManager._danger_tween and SoundManager._danger_tween.is_valid():
 		SoundManager._danger_tween.kill()
 	SoundManager._danger_intensity = 0.0
