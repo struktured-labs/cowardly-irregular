@@ -281,7 +281,7 @@ var _impact_done := false
 
 
 ## The beat takes the same REAL time at every battle speed (cowir-music 23438): game-time tweens sped by 1/time_scale.
-## Not set_ignore_time_scale, which reads the OS clock: a Movie Maker capture or a hitched frame then finishes it at once.
+## Not set_ignore_time_scale: measured under --write-movie at 30 fps, that beat landed in ~3 video frames, not ~16 (cause unmeasured).
 func _wall(t: Tween) -> Tween:
 	return _track(t.set_speed_scale(1.0 / maxf(Engine.time_scale, 0.01)))
 

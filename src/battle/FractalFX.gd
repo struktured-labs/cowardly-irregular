@@ -36,6 +36,19 @@ const PALETTES := {
 		[1.0, Color(0.15, 0.0, 0.35, 0.0)]],
 	"verdict": [[0.0, Color(1.0, 1.0, 0.95, 1.0)], [0.3, Color(1.0, 0.85, 0.35, 0.95)],
 		[1.0, Color(0.6, 0.35, 0.05, 0.0)]],
+	## Shared by the heal, buff and song sequences (cutscenes 23771): white-gold light, regen green, MP blue.
+	"holy": [[0.0, Color(1.0, 1.0, 1.0, 1.0)], [0.35, Color(1.0, 0.92, 0.6, 0.95)], [1.0, Color(0.9, 0.7, 0.25, 0.0)]],
+	"nature": [[0.0, Color(0.9, 1.0, 0.8, 1.0)], [0.35, Color(0.45, 0.9, 0.45, 0.95)], [1.0, Color(0.1, 0.4, 0.15, 0.0)]],
+	"mana": [[0.0, Color(0.9, 0.95, 1.0, 1.0)], [0.35, Color(0.45, 0.65, 1.0, 0.95)], [1.0, Color(0.15, 0.2, 0.6, 0.0)]],
+	## The Fighter's and Rogue's physical sequences (sprites 23767): smoke for a bomb or a fizzle, taunt for Provoke's red.
+	"smoke": [[0.0, Color(0.92, 0.92, 0.95, 0.85)], [0.4, Color(0.6, 0.62, 0.68, 0.6)], [1.0, Color(0.3, 0.3, 0.35, 0.0)]],
+	"taunt": [[0.0, Color(1.0, 0.9, 0.8, 1.0)], [0.3, Color(1.0, 0.25, 0.2, 0.95)], [1.0, Color(0.5, 0.0, 0.05, 0.0)]],
+	## The Bard's songs and the Cleric's wards (cutscenes 23771): a war song's red-gold, a ward's violet.
+	"hymn": [[0.0, Color(1.0, 0.95, 0.7, 1.0)], [0.35, Color(1.0, 0.55, 0.25, 0.95)], [1.0, Color(0.6, 0.1, 0.1, 0.0)]],
+	"ward": [[0.0, Color(1.0, 0.95, 1.0, 1.0)], [0.35, Color(0.75, 0.55, 1.0, 0.95)], [1.0, Color(0.3, 0.15, 0.6, 0.0)]],
+	## Edit Formula's (main 23590): the game rewriting itself, white to cyan with a magenta edge, no fire tones.
+	"glitch": [[0.0, Color(1.0, 1.0, 1.0, 1.0)], [0.3, Color(0.4, 1.0, 1.0, 0.95)],
+		[0.7, Color(1.0, 0.3, 0.9, 0.6)], [1.0, Color(0.1, 0.2, 0.6, 0.0)]],
 }
 
 static var _tex_cache: Dictionary = {}
@@ -54,6 +67,8 @@ var tier: int = 1
 var on_shake: Callable = Callable()
 ## (sound_key) — a phase's optional "sfx" fires here when that phase runs, in battle time, so it lands on the beat at any speed.
 var on_sfx: Callable = Callable()
+## (kind, at, from, power, phase) — the shared phases EffectSystem draws: eruption (an element's original burst), pillar, gather, fall, rise.
+var on_element_phase: Callable = Callable()
 var spawned: int = 0
 var rng := RandomNumberGenerator.new()
 var _ramps: Dictionary = {}
@@ -74,11 +89,19 @@ static func load_sequence(id: String) -> Dictionary:
 
 ## Starts every phase at its `at` (battle seconds) and returns when the last one ends.
 ## `start` shifts every phase so the sequence lands on the caster's authored release frame.
-func play(seq: Dictionary, from: Vector2, to: Vector2, power: float = 1.0) -> float:
+func play(seq: Dictionary, from: Vector2, to: Vector2, power: float = 1.0, compact: bool = false) -> float:
 	var total := 0.0
 	var start := float(seq.get("start", 0.0))
+	## Turbo / the grind console (autogrind 23412): only the impact's own phases, at once, so a cast costs no wall time there.
+	var impact_at := impact_time(seq) - start
+	if compact:
+		start = -impact_at
+	else:
+		start += travel_delay(seq, from, to)
 	for phase in seq.get("phases", []):
 		if not (phase is Dictionary) or int(phase.get("min_tier", 1)) > tier:
+			continue
+		if compact and absf(float(phase.get("at", 0.0)) - impact_at) > 0.02:
 			continue
 		if tier >= 3 and phase.has("palette_t3"):
 			phase = (phase as Dictionary).duplicate()
@@ -92,6 +115,11 @@ func play(seq: Dictionary, from: Vector2, to: Vector2, power: float = 1.0) -> fl
 	_live.append(self)
 	host.get_tree().create_timer(total + 0.5).timeout.connect(_release)
 	return total
+
+
+## A sequence with `travel` (s per 100 px) reaches a farther target later: a song washing down the party line.
+static func travel_delay(seq: Dictionary, from: Vector2, to: Vector2) -> float:
+	return float(seq.get("travel", 0.0)) * from.distance_to(to) / 100.0
 
 
 func _release() -> void:
@@ -125,6 +153,19 @@ static func phase_duration(phase: Dictionary) -> float:
 			if phase.get("child") is Dictionary:
 				tail = _emit_duration(phase["child"], int(phase["child"].get("depth", 0)))
 			return float(phase.get("spin", 0.5)) + float(phase.get("fling", 0.35)) + tail
+		## These draw in order over `dur` and each flame then lives `life`, so the phase outlasts its sweep (battle 23786).
+		"arc":
+			return float(phase.get("dur", 0.16)) + float(phase.get("life", 0.3))
+		"streak":
+			return float(phase.get("dur", 0.12)) + float(phase.get("life", 0.22))
+		"puff":
+			return float(phase.get("dur", 0.6))
+		"ribbon":
+			return float(phase.get("dur", 0.3)) + float(phase.get("life", 0.3))
+		"glyphs":
+			return float(phase.get("dur", 0.6))
+		"plates":
+			return float(phase.get("dur", 0.35)) + float(phase.get("hold", 0.4)) + PLATE_FADE
 		_:
 			return float(phase.get("dur", 0.2))
 
@@ -148,7 +189,17 @@ func _run(phase: Dictionary, from: Vector2, to: Vector2, power: float) -> void:
 		on_sfx.call(str(phase["sfx"]))
 	match str(phase.get("kind", "")):
 		"bolt":
-			_bolt(from, to, phase, power)
+			## `reverse` flies target -> caster (a stolen glint coming back) without forking the bolt (battle 23774).
+			if bool(phase.get("reverse", false)):
+				_bolt(to, from, phase, power)
+			else:
+				_bolt(from, to, phase, power)
+		"arc":
+			_arc(at_pos, phase, power)
+		"streak":
+			_streak(from, to, phase, power)
+		"puff":
+			_puff(at_pos, phase, power)
 		"emit":
 			var heading := deg_to_rad(float(phase.get("heading", 0.0)))
 			if bool(phase.get("aim", false)):
@@ -173,8 +224,17 @@ func _run(phase: Dictionary, from: Vector2, to: Vector2, power: float) -> void:
 			_knockback(phase)
 		"slash":
 			_slash(at_pos, phase, power)
+		"ribbon":
+			_ribbon(from, to, phase, power)
+		"glyphs":
+			_glyphs(at_pos, to, phase, power)
+		"plates":
+			_plates(at_pos, phase, power)
 		"cue":
 			pass  # a sound-only beat: its "sfx" already fired above
+		"eruption", "pillar", "gather", "fall", "rise":
+			if on_element_phase.is_valid():
+				on_element_phase.call(str(phase["kind"]), at_pos, from, power, phase)
 		_:
 			push_warning("[FractalFX] unknown phase kind '%s'" % str(phase.get("kind", "")))
 
@@ -401,6 +461,225 @@ func _slash(center: Vector2, p: Dictionary, k: float) -> void:
 			tw.tween_callback(s.queue_free))
 
 
+## A swept blade crescent: one solid band drawn in order along an arc, wider and longer-lived than `slash`'s cut lines,
+## with a soft glow behind it. `radius` is in px before power, so a cleave can span the whole enemy side.
+func _arc(center: Vector2, p: Dictionary, k: float) -> void:
+	var radius := float(p.get("radius", 120.0)) * k
+	var a0 := deg_to_rad(float(p.get("from", -150.0)))
+	var a1 := deg_to_rad(float(p.get("to", 30.0)))
+	var sweep := float(p.get("dur", 0.16))
+	var life := float(p.get("life", 0.3))
+	var width := float(p.get("width", 2.2)) * k
+	var ramp := _ramp(str(p.get("palette", "steel")))
+	## Dense enough that neighbouring flames overlap into a band at any radius.
+	var n := clampi(int(absf(a1 - a0) * radius / 14.0), 8, 90)
+	for i in n:
+		if spawned >= FLAME_CAP:
+			return
+		var t := float(i) / float(maxi(n - 1, 1))
+		var a := lerpf(a0, a1, t)
+		var pos := center + Vector2.from_angle(a) * radius
+		## Thin at both tips, full in the middle: a crescent, not a ring segment.
+		var thick := width * (0.25 + 0.75 * sin(PI * t))
+		host.get_tree().create_timer(sweep * t).timeout.connect(_arc_flame.bind(pos, a, thick, life, ramp))
+	if bool(p.get("glow", true)):
+		_bloom(center + Vector2.from_angle((a0 + a1) * 0.5) * radius * 0.8, width * 3.0, sweep + life * 0.6, ramp)
+
+
+func _arc_flame(pos: Vector2, a: float, thick: float, life: float, ramp: Gradient) -> void:
+	if not is_instance_valid(host):
+		return
+	var s := _flame(pos, thick, ramp)
+	s.rotation = a + PI * 0.5
+	s.scale = Vector2(thick * 2.2, thick)
+	var tw := s.create_tween()
+	tw.tween_method(func(u: float) -> void:
+		if is_instance_valid(s):
+			s.modulate = ramp.sample(u)
+			s.scale = Vector2(thick * 2.2, thick * (1.0 - 0.7 * u)), 0.0, 1.0, life)
+	tw.tween_callback(s.queue_free)
+
+
+## A dash line between two points that draws head-first and fades tail-first. `a` and `b` name its ends
+## ("caster" | "target"); `a_offset` / `b_offset` move them, so a backstab can end BEHIND its target.
+func _streak(from: Vector2, to: Vector2, p: Dictionary, k: float) -> void:
+	var a: Vector2 = (to if str(p.get("a", "caster")) == "target" else from) + _vec(p.get("a_offset", [0, 0]))
+	var b: Vector2 = (from if str(p.get("b", "target")) == "caster" else to) + _vec(p.get("b_offset", [0, 0]))
+	var dur := float(p.get("dur", 0.12))
+	var life := float(p.get("life", 0.22))
+	var width := float(p.get("width", 1.0)) * k
+	var ramp := _ramp(str(p.get("palette", "steel")))
+	var n := clampi(int(a.distance_to(b) / 12.0), 4, 60)
+	var angle := (b - a).angle()
+	for i in n:
+		if spawned >= FLAME_CAP:
+			return
+		var t := float(i) / float(maxi(n - 1, 1))
+		host.get_tree().create_timer(dur * t).timeout.connect(_streak_flame.bind(a.lerp(b, t), angle, width, life, ramp))
+
+
+func _streak_flame(pos: Vector2, angle: float, width: float, life: float, ramp: Gradient) -> void:
+	if not is_instance_valid(host):
+		return
+	var s := _flame(pos, width, ramp)
+	s.rotation = angle
+	s.scale = Vector2(width * 2.4, width * 0.45)
+	var tw := s.create_tween()
+	tw.tween_method(func(u: float) -> void:
+		if is_instance_valid(s):
+			s.modulate = ramp.sample(u), 0.0, 1.0, life)
+	tw.tween_callback(s.queue_free)
+
+
+## Soft blobs that swell, drift and thin: smoke, dust, a fizzle. NOT additive, so a cloud covers what is behind it.
+## `spread` [x, y] is the half-size of the area the blobs start in; `drift` [x, y] is where they wander over `dur`.
+func _puff(center: Vector2, p: Dictionary, k: float) -> void:
+	var count := int(p.get("count", 8))
+	var spread := _vec(p.get("spread", [40, 16])) * k
+	var drift := _vec(p.get("drift", [0, -26]))
+	var dur := float(p.get("dur", 0.6))
+	var size := float(p.get("size", 2.4)) * k
+	var ramp := _ramp(str(p.get("palette", "smoke")))
+	for i in count:
+		if spawned >= FLAME_CAP:
+			return
+		var g := Sprite2D.new()
+		g.texture = _tex("soft")
+		g.position = center + Vector2(rng.randf_range(-spread.x, spread.x), rng.randf_range(-spread.y, spread.y))
+		g.scale = Vector2.ONE * size * 0.3
+		g.modulate = ramp.sample(0.0)
+		host.add_child(g)
+		spawned += 1
+		var life := dur * rng.randf_range(0.7, 1.0)
+		var tw := g.create_tween().set_parallel(true)
+		tw.tween_property(g, "scale", Vector2.ONE * size * rng.randf_range(0.8, 1.25), life).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		tw.tween_property(g, "position", g.position + drift + Vector2(rng.randf_range(-14, 14), rng.randf_range(-8, 8)), life)
+		tw.tween_method(func(u: float) -> void:
+			if is_instance_valid(g):
+				g.modulate = ramp.sample(u), 0.0, 1.0, life)
+		tw.chain().tween_callback(g.queue_free)
+
+
+## Staff lines drawn from a to b over `dur` (a/b and their offsets as `streak`): `lines` of them `gap` px apart, riding a
+## sine of `wave` px, or a zigzag when `jagged` (a sour chord). Each stroke then lives `life`.
+func _ribbon(from: Vector2, to: Vector2, p: Dictionary, k: float) -> void:
+	var a: Vector2 = (to if str(p.get("a", "caster")) == "target" else from) + _vec(p.get("a_offset", [0, 0]))
+	var b: Vector2 = (from if str(p.get("b", "target")) == "caster" else to) + _vec(p.get("b_offset", [0, 0]))
+	var dur := float(p.get("dur", 0.3))
+	var life := float(p.get("life", 0.3))
+	var width := float(p.get("width", 0.7)) * k
+	var lines := int(p.get("lines", 3))
+	var gap := float(p.get("gap", 7.0))
+	var wave := float(p.get("wave", 12.0))
+	var jagged := bool(p.get("jagged", false))
+	var ramp := _ramp(str(p.get("palette", "hymn")))
+	var n := clampi(int(a.distance_to(b) / 14.0), 6, 30)
+	var along := (b - a).normalized()
+	var normal := along.orthogonal()
+	for i in n:
+		var t := float(i) / float(n - 1)
+		var sway: float = (wave if i % 2 == 0 else -wave) if jagged else sin(t * TAU * 1.5) * wave
+		for l in lines:
+			if spawned >= FLAME_CAP:
+				return
+			var pos: Vector2 = a.lerp(b, t) + normal * (sway + (float(l) - float(lines - 1) / 2.0) * gap)
+			host.get_tree().create_timer(dur * t).timeout.connect(_streak_flame.bind(pos, along.angle(), width, life, ramp))
+
+
+## Glyphs that pop one after another and drift: `glyph` note|z, `count`, `spread` [x, y] around the point, `drift` [x, y]
+## over `dur` (or all the way to the target with `to_target`), `size`. A song's notes, a sleeper's Z's.
+func _glyphs(center: Vector2, to: Vector2, p: Dictionary, k: float) -> void:
+	var count := int(p.get("count", 3))
+	var dur := float(p.get("dur", 0.6))
+	var spread := _vec(p.get("spread", [26, 14]))
+	var drift := _vec(p.get("drift", [0, -60]))
+	if bool(p.get("to_target", false)):
+		drift = to - center
+	var size := float(p.get("size", 2.0)) * clampf(k, 0.8, 2.0)
+	var ramp := _ramp(str(p.get("palette", "hymn")))
+	var tex := _glyph_tex(str(p.get("glyph", "note")))
+	for i in count:
+		if spawned >= FLAME_CAP:
+			return
+		spawned += 1
+		var delay := dur * 0.4 * float(i) / float(maxi(count, 1))
+		var start: Vector2 = center + Vector2(rng.randf_range(-spread.x, spread.x), rng.randf_range(-spread.y, spread.y))
+		var sway := Vector2(rng.randf_range(-12.0, 12.0), 0.0)
+		host.get_tree().create_timer(delay).timeout.connect(_glyph.bind(tex, start, drift + sway, dur - delay, size, ramp))
+
+
+func _glyph(tex: Texture2D, start: Vector2, drift: Vector2, life: float, size: float, ramp: Gradient) -> void:
+	if not is_instance_valid(host):
+		return
+	var g := Sprite2D.new()
+	g.texture = tex
+	g.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	g.position = start
+	g.scale = Vector2.ONE * size * 0.4
+	g.modulate = ramp.sample(0.0)
+	host.add_child(g)
+	var tw := g.create_tween().set_parallel(true)
+	tw.tween_property(g, "scale", Vector2.ONE * size, minf(0.12, life)).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tw.tween_property(g, "position", start + drift, life).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	tw.tween_method(func(u: float) -> void:
+		if is_instance_valid(g):
+			g.modulate = ramp.sample(u * u), 0.0, 1.0, life)
+	tw.chain().tween_callback(g.queue_free)
+
+
+const PLATE_FADE := 0.25
+
+## Hex plates that fly in over `dur` and lock into a `shape`: a "wall" (a honeycomb at the point) or a "dome" (an arch of
+## `count` plates of `radius` over it). They flash as they lock, hold `hold`, then fade. A ward you can see being built.
+func _plates(center: Vector2, p: Dictionary, k: float) -> void:
+	var dome := str(p.get("shape", "wall")) == "dome"
+	var radius := float(p.get("radius", 46.0)) * clampf(k, 0.8, 2.0)
+	var dur := float(p.get("dur", 0.35))
+	var hold := float(p.get("hold", 0.4))
+	var ramp := _ramp(str(p.get("palette", "holy")))
+	var slots: Array[Vector2] = []
+	if dome:
+		var n := maxi(3, int(p.get("count", 9)))
+		for i in n:
+			var ang := PI + PI * float(i) / float(n - 1)
+			slots.append(Vector2(cos(ang), sin(ang) * 1.15) * radius)
+	else:
+		slots.append(Vector2.ZERO)
+		for i in 6:
+			slots.append(Vector2.from_angle(TAU * float(i) / 6.0 + PI / 6.0) * radius * 0.62)
+	var plate_r: float = radius * (0.36 if dome else 0.34)
+	for i in slots.size():
+		if spawned >= FLAME_CAP:
+			return
+		spawned += 1
+		var hexagon := Polygon2D.new()
+		var pts := PackedVector2Array()
+		for c in 6:
+			pts.append(Vector2.from_angle(TAU * float(c) / 6.0) * plate_r)
+		hexagon.polygon = pts
+		hexagon.material = _additive()
+		var rest_colour: Color = ramp.sample(0.3)
+		hexagon.color = Color(rest_colour.r, rest_colour.g, rest_colour.b, 0.0)
+		var slot: Vector2 = center + slots[i]
+		var out: Vector2 = slots[i].normalized() if slots[i] != Vector2.ZERO else Vector2.UP
+		hexagon.position = slot + out * 90.0
+		hexagon.scale = Vector2.ONE * 0.4
+		host.add_child(hexagon)
+		var fly: float = dur * 0.6
+		var delay: float = (dur - fly) * float(i) / float(maxi(slots.size() - 1, 1))
+		var tw := hexagon.create_tween()
+		tw.tween_interval(delay)
+		tw.tween_property(hexagon, "position", slot, fly).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		tw.parallel().tween_property(hexagon, "scale", Vector2.ONE, fly)
+		tw.parallel().tween_property(hexagon, "color:a", 0.75, fly * 0.5)
+		tw.tween_interval(maxf(0.0, dur - delay - fly))
+		tw.tween_property(hexagon, "color", Color(1, 1, 1, 0.95), 0.05)
+		tw.tween_property(hexagon, "color", Color(rest_colour.r, rest_colour.g, rest_colour.b, 0.55), 0.12)
+		tw.tween_interval(maxf(0.0, hold - 0.17))
+		tw.tween_property(hexagon, "color:a", 0.0, PLATE_FADE)
+		tw.tween_callback(hexagon.queue_free)
+
+
 func _lunge(p: Dictionary) -> void:
 	var who: Node2D = actors.get(str(p.get("actor", "caster")))
 	var toward: Node2D = actors.get(str(p.get("toward", "target")))
@@ -570,6 +849,27 @@ static func _tex(kind: String) -> Texture2D:
 			img.set_pixel(x, y, Color(1, 1, 1, clampf(a, 0.0, 1.0)))
 	var t := ImageTexture.create_from_image(img)
 	_tex_cache[kind] = t
+	return t
+
+
+const GLYPH_ROWS := {
+	"note": ["...###", "...#.#", "...#..", "...#..", "...#..", ".###..", "####..", ".##..."],
+	"z": ["#####", "...#.", "..#..", ".#...", "#####"],
+}
+
+
+## A chunky pixel glyph (white; the palette tints it), cached like the other textures.
+static func _glyph_tex(glyph: String) -> Texture2D:
+	var key := "glyph_" + glyph
+	if _tex_cache.has(key):
+		return _tex_cache[key]
+	var rows: Array = GLYPH_ROWS.get(glyph, GLYPH_ROWS["note"])
+	var img := Image.create(str(rows[0]).length(), rows.size(), false, Image.FORMAT_RGBA8)
+	for y in rows.size():
+		for x in str(rows[y]).length():
+			img.set_pixel(x, y, Color(1, 1, 1, 1.0 if str(rows[y])[x] == "#" else 0.0))
+	var t := ImageTexture.create_from_image(img)
+	_tex_cache[key] = t
 	return t
 
 
