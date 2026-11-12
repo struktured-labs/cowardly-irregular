@@ -11,6 +11,7 @@ Each piece is the size of the procedural one it replaces (InnInterior.gd), so it
 and four are new or larger, their footprints agreed with the room's owner (main 24363):
   armchair 60x66, a wing-back lit from its right (the room flips the second one, so both are lit from the hearth
   between them) · rug 160x96 · coat_rack 24x44 · barrel 28x38 · crate 30x30
+  third pass (main 24370, overworld 24367): round_table 64x52 · stool 20x20 · door_mat 64x24 · gear_pile 64x40
 The four free-hanging lanterns of the first draft are gone: the wall art has its own.
 
 Usage:
@@ -344,6 +345,68 @@ def build() -> dict[str, Image.Image]:
     c.ellipse(11.5, 2, 3, 2, wall[0])
     c.outline(ink)
     out["coat_rack_inn"] = c.image()
+
+    # --- round table, 64x52: a lit top seen from above, a pedestal and a cross foot
+    rt = Canvas(64, 52, 83)
+    rt.ellipse(31.5, 20, 29, 16, top[1])                      # the top's rim, in shadow
+    rt.ellipse(31.5, 18, 29, 16, top[2])
+    rt.ellipse(34, 15, 20, 9, top[3])                          # where the fire's light lies on it
+    for bx in (20, 32, 44):
+        for y in range(4, 33):
+            if ((bx - 31.5) / 29) ** 2 + ((y - 18) / 16) ** 2 <= 0.92:
+                rt.put(bx, y, top[0])                          # board seams
+    rt.lit(27, 34, 36, 45, deep)
+    rt.rect(16, 46, 47, 48, deep[2])
+    rt.rect(14, 49, 49, 49, deep[1])
+    rt.outline(ink)
+    out["round_table_inn"] = rt.image()
+
+    # --- stool, 20x20: a round seat on three legs
+    st = Canvas(20, 20, 89)
+    st.ellipse(9.5, 6, 8, 4, top[1])
+    st.ellipse(9.5, 5, 8, 4, top[2])
+    st.ellipse(10.5, 4, 4.5, 1.8, top[3])
+    for x0 in (3, 9, 15):
+        st.rect(x0, 9, x0 + 1, 17, deep[2])
+        st.put(x0, 17, deep[1])
+    st.rect(4, 13, 15, 13, deep[1])                            # the stretcher
+    st.outline(ink)
+    out["stool_inn"] = st.image()
+
+    # --- door mat, 64x24: coarse woven straw, a dark bound edge; like the rug it lies IN the floor (no outline)
+    straw = (scaled(honey, 0.62), scaled(honey, 0.8), honey)
+    dm = Canvas(64, 24, 97)
+    dm.rect(1, 1, 62, 22, scaled(honey, 0.5))                 # a bound edge one step under the straw, never the furniture's ink
+    dm.rect(2, 2, 61, 21, straw[0])
+    for y in range(3, 21):
+        for x in range(3, 61):
+            dm.put(x, y, straw[2] if ((x // 3) + (y // 2)) % 2 == 0 else (straw[1] if dm.rng.random() < 0.8 else straw[0]))
+    for x in range(3, 61):
+        dm.put(x, 3, straw[0])
+        dm.put(x, 20, straw[0])
+    out["door_mat_inn"] = dm.image()
+
+    # --- travellers' gear pile, 64x40: two packs, a bedroll, a sword leant across them
+    canvas_t = ((70, 58, 40), (104, 88, 60), (136, 118, 82), (166, 148, 106))
+    wool = ((58, 70, 96), (84, 100, 132), (112, 130, 164), (140, 158, 190))
+    gp = Canvas(64, 40, 101)
+    gp.lit(4, 12, 28, 37, canvas_t, mask=lambda x, y: ((x - 16) / 12.5) ** 2 + ((y - 26) / 12.5) ** 2 <= 1.0 or y > 26)
+    gp.rect(6, 20, 26, 21, canvas_t[0])                         # the big pack's flap and strap
+    gp.rect(15, 21, 17, 30, (150, 120, 60))
+    gp.lit(30, 20, 50, 37, canvas_t, mask=lambda x, y: ((x - 40) / 10.5) ** 2 + ((y - 30) / 9.5) ** 2 <= 1.0 or y > 30)
+    gp.rect(32, 26, 48, 26, canvas_t[0])
+    gp.lit(8, 4, 34, 13, wool, mask=lambda x, y: ((y - 8.5) / 4.8) ** 2 <= 1.0)   # a bedroll across the top
+    for x in (13, 21, 29):
+        gp.rect(x, 4, x, 13, wool[0])                           # its ties
+    gp.ellipse(8, 8.5, 2.2, 4.4, wool[3])
+    gp.ellipse(8, 8.5, 1.0, 2.2, wool[1])
+    for i in range(30):                                         # a scabbarded sword leaning from the floor to the packs
+        x, y = 60 - i, 37 - int(i * 0.95)
+        gp.put(x, y, iron[1]); gp.put(x + 1, y, iron[2])
+    gp.rect(28, 8, 33, 9, (150, 120, 60))                       # its guard
+    gp.rect(26, 4, 28, 7, deep[2])                              # and grip
+    gp.outline(ink)
+    out["gear_pile_inn"] = gp.image()
     return out
 
 
