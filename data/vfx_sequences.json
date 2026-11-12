@@ -4032,7 +4032,7 @@
           "at": 0.88,
           "power": 1.5,
           "element": "ice",
-          "sfx": "beat_ice_impact"
+          "sfx": "beat_blizzara_impact"
         },
         {
           "kind": "flash",
@@ -4196,7 +4196,7 @@
           "at": 0.88,
           "power": 1.5,
           "element": "lightning",
-          "sfx": "beat_thunder_crack"
+          "sfx": "beat_thundara_impact"
         },
         {
           "kind": "flash",
@@ -4592,6 +4592,7 @@
         },
         {
           "kind": "flash",
+          "sfx": "family_cloud",
           "at": 0.5,
           "dur": 0.12,
           "size": 3.0,
@@ -4647,6 +4648,7 @@
         },
         {
           "kind": "flash",
+          "sfx": "family_dust",
           "at": 0.48,
           "dur": 0.12,
           "size": 4.0
@@ -4712,6 +4714,7 @@
         },
         {
           "kind": "bolt",
+          "sfx": "family_drain",
           "reverse": true,
           "at": 0.52,
           "dur": 0.34,
@@ -4757,6 +4760,7 @@
       "phases": [
         {
           "kind": "ring",
+          "sfx": "family_screech",
           "origin": "hand",
           "at": 0.0,
           "dur": 0.26,
@@ -5315,6 +5319,7 @@
       "phases": [
         {
           "kind": "puff",
+          "sfx": "effect_wore_off",
           "at": 0.0,
           "dur": 0.3,
           "count": 3,
@@ -5379,6 +5384,7 @@
         },
         {
           "kind": "flash",
+          "sfx": "family_bite",
           "at": 0.0,
           "dur": 0.12,
           "size": 4.4,
@@ -5443,6 +5449,7 @@
         },
         {
           "kind": "flash",
+          "sfx": "family_bite_big",
           "at": 0.0,
           "dur": 0.16,
           "size": 7.0
@@ -5532,6 +5539,7 @@
         },
         {
           "kind": "streak",
+          "sfx": "family_claw",
           "at": 0.0,
           "dur": 0.05,
           "width": 2.2,
@@ -5613,6 +5621,7 @@
         },
         {
           "kind": "flash",
+          "sfx": "family_slam",
           "at": 0.0,
           "dur": 0.16,
           "size": 6.0
@@ -5678,6 +5687,7 @@
       "phases": [
         {
           "kind": "flash",
+          "sfx": "family_slam_quake",
           "at": 0.0,
           "dur": 0.2,
           "size": 10.0
@@ -5774,6 +5784,7 @@
         },
         {
           "kind": "flash",
+          "sfx": "family_spit",
           "at": 0.0,
           "dur": 0.1,
           "size": 3.2,
@@ -5825,6 +5836,7 @@
       "phases": [
         {
           "kind": "puff",
+          "sfx": "family_spray",
           "at": -0.06,
           "dur": 0.6,
           "count": 14,
