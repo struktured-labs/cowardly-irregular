@@ -54,7 +54,7 @@ func test_phase2_latch_is_declared_and_reset_at_battle_start() -> void:
 	var src: String = _load_source()
 	assert_true(src.contains("var _masterite_phase2_swapped"),
 		"BattleScene must declare the _masterite_phase2_swapped state var")
-	# Reset at battle music setup, alongside _is_danger_music.
+	# Reset at battle music setup.
 	assert_true(src.contains("_masterite_phase2_swapped = false"),
 		"latch must be cleared between battles or summons would inherit stale state")
 

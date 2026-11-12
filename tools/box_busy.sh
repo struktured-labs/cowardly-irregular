@@ -118,6 +118,13 @@ argv_is_player() {  # <cmdline file> <cwd of that process>
   return 1
 }
 is_player() { argv_is_player "/proc/$1/cmdline" "$(readlink "/proc/$1/cwd" 2>/dev/null)"; }
+## 2026-11-12: cowir-main relaunched his game from ../cowir-preview793 (a SIBLING of the fold tree: the tested branches of a
+## release not yet tagged), and every lane read "lanes' godot up: 1" for it and had to tell it from a lane's engine by pid.
+## A preview tree is a sibling of the fold tree named <fold tree's name minus its last word>-preview*; override the glob
+## with BOX_PREVIEW_GLOB. Only a PLAYER-shaped engine there is his: an import or a test run in a preview tree passes flags
+## and is still counted as an engine.
+PREVIEW_GLOB="${BOX_PREVIEW_GLOB:-$(dirname "$FOLD_TREE")/$(basename "$FOLD_TREE" | sed 's/-[^-]*$//')-preview*}"
+in_preview_tree() { case "$1/" in $PREVIEW_GLOB/*) return 0 ;; esac; return 1; }  # <cwd>; the glob is meant to expand as a pattern
 
 busy_reason() {
   if [ -f "$BOX_MARKER" ]; then
@@ -148,8 +155,10 @@ busy_reason() {
   for p in /proc/[0-9]*; do
     [ "$(readlink "$p/exe" 2>/dev/null)" = "$ENGINE_EXE" ] || continue
     c="$(readlink "$p/cwd" 2>/dev/null)"
-    case "$c" in "$FOLD_TREE"|"$FOLD_TREE"/*) ;; *) continue ;; esac
     pid="${p#/proc/}"
+    case "$c" in "$FOLD_TREE"|"$FOLD_TREE"/*) ;; *)
+      if in_preview_tree "$c" && is_player "$pid"; then PLAYER_PIDS="${PLAYER_PIDS}${PLAYER_PIDS:+ }$pid"; fi
+      continue ;; esac
     if is_player "$pid"; then PLAYER_PIDS="${PLAYER_PIDS}${PLAYER_PIDS:+ }$pid"; continue; fi
     echo "fold-tree godot running: pid $pid cwd=$c"; return 0
   done
@@ -162,6 +171,7 @@ others() {  # other lanes' engines: reported, not judged
   for p in /proc/[0-9]*; do
     [ "$(readlink "$p/exe" 2>/dev/null)" = "$ENGINE_EXE" ] || continue
     c="$(readlink "$p/cwd" 2>/dev/null)"; case "$c" in "$FOLD_TREE"|"$FOLD_TREE"/*) continue ;; esac
+    in_preview_tree "$c" && is_player "${p#/proc/}" && continue  # his game in a preview tree is not a lane's engine
     n=$((n+1))
   done
   echo "$n"
@@ -183,7 +193,7 @@ if [ "${1:-}" = "--selftest" ]; then  # watch the answer flip, so a FREE is neve
   ## the grouping into arms is a judgement the output cannot settle, which is half of why the old
   ## literal went unexamined for so long.
   arms=0
-  EXPECT_ARMS=19
+  EXPECT_ARMS=20
   A() { arms=$((arms + 1)); }
   A  # arm 1  nothing set -> FREE
   BOX_MARKER="$T/m" DEPLOY_DIR="$T/d" FOLD_TREE="$T/none" "$0" >/dev/null || { echo "FAIL: not FREE with nothing set"; fails=1; }
@@ -379,6 +389,28 @@ if [ "${1:-}" = "--selftest" ]; then  # watch the answer flip, so a FREE is neve
   case "$e/$out" in "0/NO GATE/PUBLISH/HELD SLOT (lanes' godot up: 1;"*) ;; *) echo "FAIL arm18a: an unheld lane engine was not reported as such (ec=$e): $out"; fails=1 ;; esac
   out="$(BOX_BUSY_ENGINE="$STANDIN" BOX_SLOT_MARKER="$T/none.s" BOX_MARKER="$T/none.m" DEPLOY_DIR="$T/d" FOLD_TREE="$T/none" "$0")"
   case "$out" in "FREE (other lanes' godot up: 0)") ;; *) echo "FAIL arm18b: with no engine up it did not read plain FREE: $out"; fails=1 ;; esac
+
+  A  # arm 20  his game in a PREVIEW tree (a sibling of the fold tree) is named as his, never counted as a lane's engine;
+     #         an engine WITH arguments in that same tree is still counted
+  ## a player is argv of exactly 1, so the stand-in is a copy of the multi-call binary named `cat`, blocked on a fifo
+  TA="$(cd "$T" && pwd)"   # this arm changes directory, so it needs the absolute path
+  mkdir -p "$TA/pv/cowir-preview1" "$TA/pv/cowir-zz" "$TA/catbin"; cp "$(readlink -f "$(command -v cat)")" "$TA/catbin/cat"; mkfifo "$TA/pv/fifo"
+  exec 9<>"$TA/pv/fifo"
+  PE=(BOX_BUSY_ENGINE="$TA/catbin/cat" BOX_SLOT_MARKER="$TA/none.s" BOX_MARKER="$TA/none.m" DEPLOY_DIR="$TA/d" FOLD_TREE="$TA/pv/cowir-zz")
+  (cd "$TA/pv/cowir-preview1" && exec "$TA/catbin/cat" <&9) & pp=$!; sleep 1
+  out="$(env "${PE[@]}" "$0")"; e=$?
+  case "$e/$out" in "0/FREE (struktured's game is up: pid $pp "*"other lanes' godot up: 0)") ;; *) echo "FAIL arm20a: a player in a preview tree was not named as his (ec=$e): $out"; fails=1 ;; esac
+  env "${PE[@]}" "$0" --others >/dev/null; e=$?
+  [ "$e" = 1 ] || { echo "FAIL arm20b: --others counted his preview game as a lane's engine (ec=$e, want 1)"; fails=1; }
+  kill "$pp" 2>/dev/null; wait "$pp" 2>/dev/null
+  (cd "$TA/pv/cowir-preview1" && exec "$TA/catbin/cat" - <&9) & pp=$!; sleep 1   # CONTROL: the same binary and tree, WITH an argument
+  out="$(env "${PE[@]}" "$0")"
+  case "$out" in "NO GATE/PUBLISH/HELD SLOT (lanes' godot up: 1;"*) ;; *) echo "FAIL arm20c: an engine with arguments in a preview tree was not counted: $out"; fails=1 ;; esac
+  kill "$pp" 2>/dev/null; wait "$pp" 2>/dev/null
+  (cd "$TA/pv" && exec "$TA/catbin/cat" <&9) & pp=$!; sleep 1                     # CONTROL: player-shaped, but NOT in a preview tree
+  out="$(env "${PE[@]}" "$0")"
+  case "$out" in "NO GATE/PUBLISH/HELD SLOT (lanes' godot up: 1;"*) ;; *) echo "FAIL arm20d: a bare engine outside any preview tree was waved through as his: $out"; fails=1 ;; esac
+  kill "$pp" 2>/dev/null; wait "$pp" 2>/dev/null; exec 9>&-
 
   A  # arm 19  the tool that WRITES the slot marker passes its own selftest against THIS box_busy (so the pair cannot drift)
   if [ -x "$(dirname "$0")/box_hold.sh" ]; then
