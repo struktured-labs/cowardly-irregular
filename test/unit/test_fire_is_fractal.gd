@@ -140,6 +140,7 @@ func test_a_fire_cast_plays_the_sequence_and_holds_the_damage_for_the_burst() ->
 
 
 func test_a_spell_without_a_sequence_takes_the_ordinary_path() -> void:
-	assert_eq(AbilityVFX.resolve(JobSystem.get_ability("blizzard")).get("sequence"), "", "CONTROL: Blizzard names no sequence")
-	_cast("blizzard")
+	## Blizzard was this arm's plain spell until it got its own sequence (.793); Death Sentence still has none.
+	assert_eq(AbilityVFX.resolve(JobSystem.get_ability("death_sentence")).get("sequence"), "", "CONTROL: Death Sentence names no sequence")
+	_cast("death_sentence")
 	assert_eq(_scene._full_render_dmg_buffer, null, "an ordinary spell must not hold its damage")
