@@ -273,10 +273,8 @@ var _autogrind_console: RichTextLabel = null
 var _autobattle_toggle_ui: AutobattleToggleUIClass = null
 var _active_inline_editor: Control = null  # 2026-07-14 (cowir-music msg 2539): tracked so battle hotkeys don't leak into open autobattle grid editor
 
-## Danger music state
-var _is_danger_music: bool = false
-var _danger_baseline: Dictionary = {}  # instance_id -> carried-in danger state (1 low, 2 down)
-var _danger_baseline_taken: bool = false
+## The low-HP speed-up is fed only from this battle's music start to its end, so a win or a wipe with members down is not pitched.
+var _music_follows_hp: bool = false
 
 ## Idle animation state (sway/breathing)
 var _idle_time: float = 0.0
@@ -301,11 +299,8 @@ var _battle_dialogue: BattleDialogueClass = null
 var _boss_dialogue_data: Dictionary = {}  # Stores dialogue for current boss
 var _waiting_for_dialogue: bool = false  # Pauses battle during dialogue
 var _base_music_track: String = "battle"  # battle/boss/per-monster/per-face id; "" = authored silence (unmasking)
-## Where the base bed was when danger took the channel, so recovery RESUMES it instead of replaying its intro (Mordaine lv35 take, 2026-11-06).
-var _danger_resume_track: String = ""
-var _danger_resume_position: float = 0.0
 var _masterite_phase2_swapped: bool = false  # One-shot: latch when phase2 music kicks in
-const DANGER_HP_THRESHOLD: float = 0.25  # The low-HP beat: danger music, player quip, boss wounded line. 0-1; BattleManager.LOW_HP_PCT_THRESHOLD is the 0-100 twin.
+const DANGER_HP_THRESHOLD: float = 0.25  # The low-HP beat: player quip, boss wounded line (the music speeds up by party HP instead, struktured 2026-11-11). 0-1; BattleManager.LOW_HP_PCT_THRESHOLD is the 0-100 twin.
 
 ## Tick 428: per-battle latches so the boss `low_hp` and `defeat`
 ## dialogue lines fire ONCE per battle. Pre-fix monsters.json
@@ -595,6 +590,9 @@ func _exit_tree() -> void:
 	# Our gate leaves with us (adhoc 21681); a newer battle's gate is not ours to clear.
 	if EffectSystem.phase_sfx_gate == Callable(self, "signature_sound_allowed"):
 		EffectSystem.phase_sfx_gate = Callable()
+	# Our backdrop leaves with us too: the autoload kept pointing at a freed node (found by a test that saved and restored it).
+	if EffectSystem.battle_background == _battle_background:
+		EffectSystem.battle_background = null
 	if SoundManager:
 		SoundManager.stop_voiced_line(self)
 	# Disconnect from BattleManager signals to prevent memory leaks
@@ -1415,7 +1413,7 @@ func _create_battle_sprites() -> void:
 		animator.setup(sprite)
 		animator.swing_budget_provider = swing_budget
 		# Rest state follows the combatant: dead when down, weak below the danger line (strict <,
-		# same beat as danger music), else idle. Leo's weak/dead sheets shipped for five jobs with
+		# same beat as the low-HP quip), else idle. Leo's weak/dead sheets shipped for five jobs with
 		# no player (struktured 2026-09-02: neither visible in the live build).
 		var _rest_member = member
 		animator.rest_state_provider = func() -> String:
@@ -1974,6 +1972,10 @@ func _setup_status_icons(combatant: Combatant, sprite: AnimatedSprite2D) -> void
 		combatant.status_removed.connect(_on_combatant_status_changed.bind(combatant))
 	if not combatant.status_added.is_connected(_on_status_landed):
 		combatant.status_added.connect(_on_status_landed.bind(combatant))
+	if not combatant.status_removed.is_connected(_on_status_lapsed):
+		combatant.status_removed.connect(_on_status_lapsed.bind(combatant))
+	if not combatant.buff_changed.is_connected(_on_buff_changed):
+		combatant.buff_changed.connect(_on_buff_changed.bind(combatant))
 
 	# Show any existing statuses
 	_refresh_status_icons(combatant)
@@ -2198,7 +2200,9 @@ func _update_ui() -> void:
 
 
 func _update_danger_music() -> void:
-	"""Update music danger intensity based on party HP"""
+	"""The ONE low-HP music signal: the playing bed speeds up with party danger (struktured 2026-11-11); no bed swap."""
+	if not _music_follows_hp:
+		return
 	var members = BattleManager.live_party_or(party_members)
 	if members.size() == 0:
 		return
@@ -3059,6 +3063,27 @@ func _play_ability_full_render(caster: Combatant, caster_sprite: Node2D, animato
 		_full_render_set_dim(false)
 
 
+## Where a battler's BODY is. Its stable anchor is the centre of its FRAME, and a figure can stand well off that, so an
+## effect aimed at the anchor lands beside the hero it hits (cowir-cutscenes 24028; the name is cowir-sprites', 24038).
+## The anchor plus the idle figure's centre; the plain anchor when the frame cannot be read. Numbers and bars keep the frame.
+func _figure_anchor(sprite: Node2D) -> Vector2:
+	var anchor := _stable_sprite_anchor(sprite)
+	if not is_instance_valid(sprite) or not (sprite is AnimatedSprite2D):
+		return anchor
+	var figure: Rect2 = AdvanceAuraClass.figure_rect_in_sprite(sprite as AnimatedSprite2D, &"idle")
+	return anchor + figure.get_center() if figure.size.x > 0.0 else anchor
+
+
+## Where a caster's HAND is, for what leaves it (a bolt, a staff's glow): the figure's leading edge, a little above its middle.
+func _hand_anchor(sprite: Node2D, facing: float) -> Vector2:
+	if not is_instance_valid(sprite) or not (sprite is AnimatedSprite2D):
+		return _stable_sprite_anchor(sprite) + Vector2(40.0 * facing, -20.0)
+	var figure: Rect2 = AdvanceAuraClass.figure_rect_in_sprite(sprite as AnimatedSprite2D, &"idle")
+	if figure.size.x <= 0.0:
+		return _stable_sprite_anchor(sprite) + Vector2(40.0 * facing, -20.0)
+	return _figure_anchor(sprite) + Vector2(figure.size.x * 0.5 * facing, -figure.size.y * 0.15)
+
+
 ## A data/vfx_sequences.json id the ability names (AbilityVFX), or "" for the ordinary effects.
 ## A boss's fx_signature, cast BY that boss, plays sig_<monster_id> ("all the bosses need their own animated attacks").
 func signature_sequence(caster: Combatant, ability_id: String) -> String:
@@ -3081,6 +3106,18 @@ func glory_sequence(caster: Combatant, ability: Dictionary) -> String:
 	var vfx = ability.get("vfx", {})
 	var seq_id := str(vfx.get("glory", "")) if vfx is Dictionary else ""
 	return seq_id if seq_id != "" and not FractalFX.load_sequence(seq_id).is_empty() else ""
+
+
+## The title card is not dead air (main 23890): a sequence's optional `windup` phase plays at the caster's hand for the
+## card's whole length, so a Firaga is already gathering heat while its name is on screen. Not at turbo or in the console.
+func _play_signature_windup(seq_id: String, caster_sprite: Node2D, windup: float, quiet: bool) -> bool:
+	var phase = FractalFX.load_sequence(seq_id).get("windup", {})
+	if quiet or not (phase is Dictionary) or (phase as Dictionary).is_empty() or caster_sprite == null or not is_instance_valid(caster_sprite):
+		return false
+	var facing: float = -1.0 if party_sprite_nodes.has(caster_sprite) else 1.0
+	var hand: Vector2 = _hand_anchor(caster_sprite, facing)
+	EffectSystem.run_element_phase(str(phase.get("kind", "gather")), hand, hand, 1.0, (phase as Dictionary).merged({"dur": windup}, true))
+	return true
 
 
 ## The card, the bark and the push, then the sequence. Damage numbers wait for its impact like Fire's.
@@ -3125,6 +3162,7 @@ func _play_signature(caster: Combatant, caster_sprite: Node2D, animator: BattleA
 	_signature_stage(true, signature_tint(seq_id))
 	if caster_sprite != null and is_instance_valid(caster_sprite) and BattleJuice.camera_rig != null:
 		BattleJuice.camera_rig.punch_zoom(_stable_sprite_anchor(caster_sprite), SIGNATURE_PUSH, windup)
+	_play_signature_windup(seq_id, caster_sprite, windup, quiet)
 	await get_tree().create_timer(windup).timeout
 	if not is_instance_valid(self):
 		return
@@ -3300,8 +3338,26 @@ static func sequence_total(seq_id: String) -> float:
 ## Signature sounds play at every speed the player picks, 4x included; only autogrind/turbo is silent (cowir-main 21194).
 ## Seconds between one target's cut and the next as a line-wide melee move passes along the enemies.
 const MELEE_EACH_STAGGER := 0.05
+## A line-wide sequence names the `span` (px) it was authored for; it is scaled to (the targets' extent + PAD) / span,
+## within these bounds, so it covers the foes it hits and no more.
+const LINE_SPAN_PAD := 160.0
+const LINE_SPAN_MIN := 0.45
+const LINE_SPAN_MAX := 1.3
+## The key INSIDE an ability's `vfx` that names a monster's physical family. Not the row's own `family`: that one is the
+## spell line a shop sells by (ShopScene, AbilityFacts), and one key with two meanings bites the first hybrid row (battle 24017).
+const FAMILY_KEY := "family"
+## A family sequence authored at 1.0 fits a figure this tall on screen; a bigger or smaller attacker scales it, within bounds.
+const FAMILY_REFERENCE_PX := 150.0
+const FAMILY_SCALE_MIN := 0.7
+const FAMILY_SCALE_MAX := 2.0
+const FAMILY_ELEMENT_TINTS := {"dark": "void", "ice": "frost", "fire": "flame", "holy": "holy", "poison": "rot"}
+const FAMILY_EFFECT_TINTS := {"poison": "rot", "curse": "void"}
 ## A status that LANDS plays its own beat at the target; anything not listed lands with its aura alone.
-const LANDED_BEATS := {"stun": "landed_stun", "blind": "landed_blind", "sleep": "landed_sleep"}
+const LANDED_BEATS := {"stun": "landed_stun", "blind": "landed_blind", "sleep": "landed_sleep",
+	## Every status the game TINTS lands with a beat (adhoc, main 24001): afflictions rise off the body, the
+	## mind-benders close in on the head, a boon lifts. Derived guard: test_a_buff_lands_where_you_can_see_it.
+	"poison": "landed_poison", "burning": "landed_burning", "curse": "landed_curse",
+	"confuse": "landed_confuse", "fear": "landed_fear", "charm": "landed_charm", "regen": "landed_regen"}
 const FIZZLE_BEAT := "fizzle"
 ## A melee move resolves its damage and statuses at the action's START and arrives `_last_contact_in` later
 ## (0.17 s at the FULL tier, 0.12 below it: _animate_melee_attack). Outcome beats wait out what is left of this, so
@@ -3403,7 +3459,40 @@ func _ability_sequence(ability: Dictionary) -> String:
 static func melee_overlay(ability: Dictionary, key: String) -> String:
 	var vfx = ability.get("vfx", {})
 	var id := str(vfx.get(key, "")) if vfx is Dictionary else ""
+	## A monster's physical move names a FAMILY in its vfx instead (bite, claw, slam, spit …): `family_<name>` draws the move, and
+	## `family_<name>_hit` each target of a line-wide one. An authored `vfx.melee` always wins.
+	var family := str(vfx.get(FAMILY_KEY, "")) if vfx is Dictionary else ""
+	if id == "" and family != "":
+		match key:
+			"melee":
+				id = "family_" + family
+			"melee_each":
+				id = "family_" + family + "_hit"
 	return id if id != "" and not FractalFX.load_sequence(id).is_empty() else ""
+
+
+## The accent a family sequence is drawn in for this ability: its own `vfx.palette`, else its element, else its rider.
+static func family_tint(ability: Dictionary) -> String:
+	var vfx = ability.get("vfx", {})
+	if vfx is Dictionary and str(vfx.get("palette", "")) != "":
+		return str(vfx["palette"])
+	var by_element: String = str(FAMILY_ELEMENT_TINTS.get(str(ability.get("element", "")), ""))
+	return by_element if by_element != "" else str(FAMILY_EFFECT_TINTS.get(str(ability.get("effect", "")), ""))
+
+
+## How much bigger than a hero-sized attacker this one is drawn: a rat's bite and a dragon's are not the same size
+## (main 23999). The idle frame's FIGURE on screen against FAMILY_REFERENCE_PX, floored and capped.
+func _attacker_scale(sprite: Node2D) -> float:
+	if not (sprite is AnimatedSprite2D):
+		return 1.0
+	var spr := sprite as AnimatedSprite2D
+	if spr.sprite_frames == null or not spr.sprite_frames.has_animation(&"idle") or spr.sprite_frames.get_frame_count(&"idle") == 0:
+		return 1.0
+	var tex := spr.sprite_frames.get_frame_texture(&"idle", 0)
+	if tex == null:
+		return 1.0
+	var tall: float = AdvanceAuraClass.figure_rect_of(tex).size.y * absf(spr.scale.y)
+	return clampf(tall / FAMILY_REFERENCE_PX, FAMILY_SCALE_MIN, FAMILY_SCALE_MAX)
 
 
 ## Fighter and Rogue physical abilities (sprites 23767): the lunge, the hit and the damage stay _animate_melee_attack's;
@@ -3418,22 +3507,31 @@ func _play_melee_overlay(caster: Combatant, caster_sprite: Node2D, ability: Dict
 	for target in targets:
 		var ts = _get_combatant_sprite(target)
 		if ts != null and is_instance_valid(ts):
-			anchors.append(_stable_sprite_anchor(ts))
+			anchors.append(_figure_anchor(ts))
 	if anchors.is_empty():
 		return
-	var centre := Vector2.ZERO
-	for a in anchors:
-		centre += a
-	centre /= float(anchors.size())
+	var span := line_span(anchors)
+	var centre: Vector2 = span.get_center()
 	var intensity := cast_intensity(caster, ability)
 	var power := float(AbilityVFX.resolve(ability)["power"]) * float(intensity["k"])
+	## A line-wide move is drawn ACROSS the targets it hits, not at their average: authored for a `span` px line, it
+	## is scaled to the line it actually has, so two foes side by side get a crescent their size and two far apart
+	## get one that reaches both (struktured via main 24179/24186: "aims center").
+	var authored_span := float(FractalFX.load_sequence(seq_id).get("span", 0.0))
+	if authored_span > 0.0:
+		power *= clampf((maxf(span.size.x, span.size.y) + LINE_SPAN_PAD) / authored_span, LINE_SPAN_MIN, LINE_SPAN_MAX)
+	var tint := ""
+	## A family sequence is sized to the creature that throws it and tinted by the move; an authored one is neither.
+	if seq_id.begins_with("family_"):
+		power *= _attacker_scale(caster_sprite)
+		tint = family_tint(ability)
 	var tier := int(intensity["tier"])
 	var compact := not signature_sound_allowed()
-	var from := _stable_sprite_anchor(caster_sprite)
+	var from := _figure_anchor(caster_sprite)
 	## The lunge's own contact, not the sequence's authored 0.17: below the FULL tier the approach is 0.05 s shorter,
 	## and an effect that lands after its hit is the jank this exists to remove (main 23818).
 	var contact := _last_contact_in
-	EffectSystem.spawn_sequence(seq_id, from, centre, power, {}, tier, compact, contact)
+	EffectSystem.spawn_sequence(seq_id, from, centre, power, {}, tier, compact, contact, Vector2.INF, tint)
 	var each := melee_overlay(ability, "melee_each")
 	if each == "":
 		return
@@ -3445,6 +3543,46 @@ func _play_melee_overlay(caster: Combatant, caster_sprite: Node2D, ability: Dict
 			EffectSystem.spawn_sequence(each, from, anchors[i], power, {}, tier, compact)
 		else:
 			get_tree().create_timer(delay).timeout.connect(_spawn_outcome_sequence.bind(each, from, anchors[i], power, tier))
+
+
+## The sequence a `vfx.ranged` physical move delivers with ("" when it is not one, or names none): each target's
+## own splat for a line-wide move, the single projectile otherwise.
+static func _ranged_sequence(ability: Dictionary, targets: Array) -> String:
+	var vfx = ability.get("vfx", {})
+	if not (vfx is Dictionary) or not bool(vfx.get("ranged", false)) or targets.is_empty():
+		return ""
+	return melee_overlay(ability, "melee_each" if targets.size() > 1 else "melee")
+
+
+## The box around a set of target points (a zero-size rect at the point for one target).
+static func line_span(points: Array) -> Rect2:
+	if points.is_empty():
+		return Rect2()
+	var box := Rect2(points[0], Vector2.ZERO)
+	for p in points:
+		box = box.expand(p)
+	return box
+
+
+## A ranged line-wide move's one cloud over the whole target line; each target's own splat is the cast path's.
+func _play_melee_cloud(caster: Combatant, caster_sprite: Node2D, ability: Dictionary, targets: Array) -> void:
+	var seq_id := melee_overlay(ability, "melee")
+	if seq_id == "" or caster_sprite == null or not is_instance_valid(caster_sprite):
+		return
+	var points: Array = []
+	for target in targets:
+		var ts = _get_combatant_sprite(target)
+		if ts != null and is_instance_valid(ts):
+			points.append(_figure_anchor(ts))
+	if points.is_empty():
+		return
+	var span := line_span(points)
+	var k := _attacker_scale(caster_sprite)
+	var authored_span := float(FractalFX.load_sequence(seq_id).get("span", 0.0))
+	if authored_span > 0.0:
+		k *= clampf((maxf(span.size.x, span.size.y) + LINE_SPAN_PAD) / authored_span, LINE_SPAN_MIN, LINE_SPAN_MAX)
+	EffectSystem.spawn_sequence(seq_id, _figure_anchor(caster_sprite), span.get_center(),
+		k, {}, 1, not signature_sound_allowed(), -1.0, Vector2.INF, family_tint(ability))
 
 
 func _spawn_outcome_sequence(seq_id: String, from: Vector2, to: Vector2, power: float = 1.0, tier: int = 1) -> void:
@@ -3460,11 +3598,11 @@ func _play_outcome_beat(seq_id: String, combatant: Combatant, from_combatant: Co
 	var sprite = _get_combatant_sprite(combatant)
 	if sprite == null or not is_instance_valid(sprite):
 		return
-	var to := _stable_sprite_anchor(sprite)
+	var to := _figure_anchor(sprite)
 	var from := to
 	var from_sprite = _get_combatant_sprite(from_combatant) if from_combatant != null and is_instance_valid(from_combatant) else null
 	if from_sprite != null and is_instance_valid(from_sprite):
-		from = _stable_sprite_anchor(from_sprite)
+		from = _figure_anchor(from_sprite)
 	var wait := _melee_contact_timer.time_left if _melee_contact_timer != null else 0.0
 	if wait > 0.0:
 		get_tree().create_timer(wait).timeout.connect(_spawn_outcome_sequence.bind(seq_id, from, to))
@@ -3483,6 +3621,99 @@ func _on_status_landed(status: String, combatant: Combatant) -> void:
 	_play_outcome_beat(landed_beat(status), combatant)
 
 
+## ---- A CHANGE YOU CAN SEE: a stat going up or down, and anything wearing off (adhoc, main 23993/24001). ----
+## One beat per change, at the combatant it happened to, through the same gates as an outcome beat (nothing
+## at turbo or in the console; it waits out a melee contact). Changes that arrive in ONE frame (a Battle Hymn
+## on five, a howl on the pack) are played as one gesture: staggered, and each drawn smaller, so five beats
+## are never five times one.
+const WORE_OFF_BEAT := "wore_off"
+const CHANGE_STAGGER := 0.06
+const CHANGE_BEATS_PER_COMBATANT := 2
+var _change_beats: Array = []       # [{seq, combatant}] asked for this frame
+var _last_change_plan: Array = []   # [{seq, delay, power}] as last played, for the guard
+
+
+## The beat for a stat moving: its own colour when the stat has one, else the plain up / down.
+static func stat_beat(stat: String, direction: int) -> String:
+	var base: String = "stat_up" if direction > 0 else "stat_down"
+	var own: String = "%s_%s" % [base, stat]
+	return own if not FractalFX.load_sequence(own).is_empty() else base
+
+
+## A formation stance (Front Line / Back Row) arrives as a buff AND a debuff; it is a posture, not a spell landing.
+func _on_buff_changed(stat: String, direction: int, added: bool, combatant: Combatant) -> void:
+	if combatant == null or not is_instance_valid(combatant) or not combatant.is_alive:
+		return
+	if added and _is_stance_change(combatant, stat, direction):
+		return
+	_queue_change_beat(stat_beat(stat, direction) if added else WORE_OFF_BEAT, combatant)
+
+
+func _is_stance_change(combatant: Combatant, stat: String, direction: int) -> bool:
+	var entries: Array = combatant.active_buffs if direction > 0 else combatant.active_debuffs
+	if entries.is_empty():
+		return false
+	var newest: Dictionary = entries[entries.size() - 1]
+	return str(newest.get("stat", "")) == stat and Combatant.is_formation_stance(newest)
+
+
+## A status that ends by itself (its turns ran out) gets the quiet wore-off beat. One removed INSIDE an action
+## was cured or dispelled, and that action's own effect is the read; a death takes its statuses silently.
+func _on_status_lapsed(status: String, combatant: Combatant) -> void:
+	if combatant == null or not is_instance_valid(combatant) or not combatant.is_alive:
+		return
+	if _last_acting_combatant != null or landed_beat(status) == "":
+		return
+	_queue_change_beat(WORE_OFF_BEAT, combatant)
+
+
+func _queue_change_beat(seq_id: String, combatant: Combatant) -> void:
+	if seq_id == "" or not signature_sound_allowed():
+		return
+	var mine := 0
+	for asked in _change_beats:
+		if asked["combatant"] == combatant:
+			mine += 1
+			## Two stats falling off one member at once is ONE wore-off, not two puffs.
+			if asked["seq"] == seq_id:
+				return
+	if mine >= CHANGE_BEATS_PER_COMBATANT:
+		return
+	_change_beats.append({"seq": seq_id, "combatant": combatant})
+	if _change_beats.size() == 1:
+		_play_change_beats.call_deferred()
+
+
+## Scale for N beats in one gesture: 1/sqrt(N), or 1/N under Reduce Flashes (the whole gesture no brighter than one).
+static func change_beat_power(count: int, reduced: bool) -> float:
+	var n: float = maxf(1.0, float(count))
+	return 1.0 / n if reduced else 1.0 / sqrt(n)
+
+
+func _play_change_beats() -> void:
+	var asked: Array = _change_beats
+	_change_beats = []
+	_last_change_plan = []
+	if not is_inside_tree():
+		return
+	var power: float = change_beat_power(asked.size(), _flashes_suppressed())
+	var wait: float = _melee_contact_timer.time_left if _melee_contact_timer != null else 0.0
+	for i in asked.size():
+		var who: Combatant = asked[i]["combatant"]
+		if who == null or not is_instance_valid(who):
+			continue
+		var sprite = _get_combatant_sprite(who)
+		if sprite == null or not is_instance_valid(sprite):
+			continue
+		var at := _figure_anchor(sprite)
+		var delay: float = wait + CHANGE_STAGGER * float(i)
+		_last_change_plan.append({"seq": asked[i]["seq"], "delay": delay, "power": power})
+		if delay > 0.0:
+			get_tree().create_timer(delay).timeout.connect(_spawn_outcome_sequence.bind(asked[i]["seq"], at, at, power))
+		else:
+			_spawn_outcome_sequence(asked[i]["seq"], at, at, power)
+
+
 func _on_steal_resolved(caster: Combatant, target: Combatant, success: bool) -> void:
 	_play_outcome_beat("steal_take" if success else FIZZLE_BEAT, target, caster)
 
@@ -3496,9 +3727,11 @@ func _play_ability_sequence(caster: Combatant, caster_sprite: Node2D, animator: 
 	if animator:
 		_play_ability_animation(_ability_anim_name(ability, animator), animator)
 	var from := Vector2.ZERO
+	var caster_centre := Vector2.INF
 	if caster_sprite != null and is_instance_valid(caster_sprite):
 		var facing: float = -1.0 if party_sprite_nodes.has(caster_sprite) else 1.0
-		from = _stable_sprite_anchor(caster_sprite) + Vector2(40.0 * facing, -20.0)
+		from = _hand_anchor(caster_sprite, facing)
+		caster_centre = _figure_anchor(caster_sprite)
 	var impact := 0.0
 	var first := true
 	var intensity := cast_intensity(caster, ability)
@@ -3509,8 +3742,8 @@ func _play_ability_sequence(caster: Combatant, caster_sprite: Node2D, animator: 
 		# Sprite-moving phases (lunge, hitstop, impact frames) act once, on the first target, not once per target.
 		var actors: Dictionary = {"caster": caster_sprite, "target": ts} if first else {}
 		first = false
-		var played: Dictionary = EffectSystem.spawn_sequence(seq_id, from, _stable_sprite_anchor(ts),
-			float(AbilityVFX.resolve(ability)["power"]) * float(intensity["k"]), actors, int(intensity["tier"]), not signature_sound_allowed())
+		var played: Dictionary = EffectSystem.spawn_sequence(seq_id, from, _figure_anchor(ts),
+			float(AbilityVFX.resolve(ability)["power"]) * float(intensity["k"]), actors, int(intensity["tier"]), not signature_sound_allowed(), -1.0, caster_centre)
 		impact = maxf(impact, float(played.get("impact", 0.0)))
 	if impact <= 0.0:
 		_spawn_ability_effects(ability, targets)
@@ -4168,8 +4401,8 @@ func _on_battle_started() -> void:
 			SoundManager.play_music(terrain_track)
 			if terrain_track != "battle":
 				print("[MUSIC] Playing %s terrain battle theme" % _current_terrain)
-	_is_danger_music = false
-	_take_danger_baseline()
+	_music_follows_hp = true
+	SoundManager.declare_fight_bed()
 	_masterite_phase2_swapped = false
 	if _battle_background and is_instance_valid(_battle_background):
 		_battle_background.set_unrest(0.0)
@@ -4288,6 +4521,9 @@ func _on_battle_ended(victory: bool) -> void:
 	"""Handle battle end"""
 	_end_advance_run()
 	_clear_advance_aura()
+	_music_follows_hp = false
+	SoundManager.clear_fight_bed()
+	SoundManager.reset_danger()  # a turbo win or an escape starts no new bed, so nothing else would end the speed-up
 	## A hit still held for its impact frame lands NOW (number, then its death), before the defeat scene or the
 	## victory flow: an escape or a wipe mid-swing must not lean on the safety timer (cowir-battle 23687).
 	_land_held_hit()
@@ -4462,10 +4698,7 @@ func _spawn_speed_lines(s: Node2D) -> void:
 
 
 func _process(delta: float) -> void:
-	"""Handle post-battle input and danger music"""
-	# Check for danger music (player about to die)
-	_check_danger_music()
-
+	"""Handle post-battle input"""
 	# Idle sway/breathing animations
 	_process_idle_animations(delta)
 
@@ -5140,6 +5373,14 @@ func _on_action_executing(combatant: Combatant, action: Dictionary) -> void:
 				sig_seq = glory_sequence(combatant, ability)
 			if sig_seq != "":
 				_play_signature(combatant, attacker_sprite, animator, ability, targets, sig_seq)
+			## A thrown or spat physical move does not walk up to its target (sprites 23997, adhoc 24012): its family
+			## sequence is the delivery, played like a cast, so the hit waits for the projectile to land.
+			elif ability_type == "physical" and _ranged_sequence(ability, targets) != "":
+				## Not a lunge: a landed or fizzled beat must not wait out the PREVIOUS melee's contact clock (adhoc 24015).
+				_melee_contact_timer = null
+				if targets.size() > 1:
+					_play_melee_cloud(combatant, attacker_sprite, ability, targets)
+				_play_ability_sequence(combatant, attacker_sprite, animator, ability, targets, _ranged_sequence(ability, targets))
 			# Physical abilities move to target
 			elif ability_type == "physical" and targets.size() > 0:
 				var target_sprite = _get_combatant_sprite(targets[0])
@@ -5481,7 +5722,19 @@ func _delayed_play_hit_fx(target_anim, target_sprite) -> void:
 		else:
 			## Reduce Flashes: the spark stays (it says which weapon hit) but never grows past a light hit's size.
 			var spark_w: float = minf(w, HIT_SPARK_REDUCED_MAX) if _flashes_suppressed() else w
-			EffectSystem.spawn_hit_spark(_stable_sprite_anchor(target_sprite), hit_spark_for(_last_acting_combatant), spark_w, kb_dir, _hit_spark_tint(_last_acting_combatant), jt == BattleJuice.Tier.MINIMAL)
+			## Drawn on the FIGURE (cutscenes' _figure_anchor): a hero stands ~95 px off its frame's centre.
+			var struck: Vector2 = _figure_anchor(target_sprite)
+			var spark: String = hit_spark_for(_last_acting_combatant)
+			match hit_mark(str(_current_ability_id), spark):
+				"overlay":
+					## The ability's own melee overlay owns the CUT (sprites 24010); the weight still lands below.
+					## The weapon's hit cue still sounds: an overlay's own cue is authored to sit on top of it (sfx 23790).
+					EffectSystem.play_hit_cue(_weapon_type_for(_last_acting_combatant))
+				"family":
+					EffectSystem.play_hit_cue(_weapon_type_for(_last_acting_combatant))
+					EffectSystem.spawn_sequence(HIT_FAMILY_PREFIX + spark, struck, struck, 1.0 + spark_w, {}, 1, not signature_sound_allowed())
+				_:
+					EffectSystem.spawn_hit_spark(struck, spark, spark_w, kb_dir, _hit_spark_tint(_last_acting_combatant), jt == BattleJuice.Tier.MINIMAL)
 		_apply_hit_knockback(target_sprite, kb_dir, lerpf(HIT_KNOCKBACK.x, HIT_KNOCKBACK.y, w))
 		_apply_hit_flash(target_sprite)
 		if jt <= BattleJuice.Tier.REDUCED:
@@ -5490,7 +5743,7 @@ func _delayed_play_hit_fx(target_anim, target_sprite) -> void:
 				var sparks: int = int(lerpf(HIT_SPARKS.x, HIT_SPARKS.y, w)) if jt == BattleJuice.Tier.FULL else 6
 				if _flashes_suppressed():
 					sparks = mini(sparks, 12)
-				BattleJuice.spawn_burst(_stable_sprite_anchor(target_sprite), Vector2(kb_dir, -0.35), sparks, Color(1.0, 0.9, 0.55), lerpf(250.0, 420.0, w))
+				BattleJuice.spawn_burst(_figure_anchor(target_sprite), Vector2(kb_dir, -0.35), sparks, Color(1.0, 0.9, 0.55), lerpf(250.0, 420.0, w))
 			BattleJuice.punch_zoom(_stable_sprite_anchor(target_sprite), lerpf(HIT_ZOOM.x, HIT_ZOOM.y, w) if jt == BattleJuice.Tier.FULL else HIT_ZOOM.x, 0.12 + 0.10 * w)
 		## The shake (and the pad's rumble) belong to hits that MATTER: nothing under HIT_TRAUMA_FROM, so a
 		## chip hit is as quiet as it was. The camera rig honours the Screen Shake setting, BattleJuice the rumble one.
@@ -5774,6 +6027,21 @@ func hit_spark_for(attacker: Combatant) -> String:
 		var row = _load_monsters_data().get(str(attacker.get_meta("monster_type", "")), {})
 		return str(row.get("hit_spark", "")) if row is Dictionary else ""
 	return _weapon_type_for(attacker)
+
+
+## What a hit DRAWS at contact: "overlay" when the acting ability has its own melee overlay (it owns the cut, so
+## no weapon spark is drawn under it), "family" when a plain attack's `hit_spark` names a family sequence that
+## exists (a wolf bites, a golem slams), else "spark": the code-drawn weapon shape, the claw for anything unnamed.
+const HIT_FAMILY_PREFIX := "family_"
+static func hit_mark(ability_id: String, spark: String) -> String:
+	if ability_id != "":
+		var ability: Dictionary = JobSystem.get_ability(ability_id)
+		if melee_overlay(ability, "melee") != "" or melee_overlay(ability, "melee_each") != "":
+			return "overlay"
+		return "spark"
+	if spark != "" and not FractalFX.load_sequence(HIT_FAMILY_PREFIX + spark).is_empty():
+		return "family"
+	return "spark"
 
 
 ## A weapon that carries an element tints its spark with that element's weakness colour, toned toward white.
@@ -6323,20 +6591,15 @@ func _on_boss_face_changed(combatant: Combatant, _face_name: String, face: Dicti
 	if face_music == "silence":
 		# The unmasking is scored by silence — deliberate fade, never play_music("silence"),
 		# which would produce silence by ACCIDENT (failed lookup + poisoned _current_music).
-		# Clear the danger baseline too, or a dip-and-recover replays the PREVIOUS face's
-		# theme over the silence, permanently (cowir-sfx, msg 4223 — both halves or neither).
+		# Clear the base id too: it is what later readers take for "the bed this fight plays".
 		_base_music_track = ""
-		# Danger OWNS the channel while in force (cowir-battle, msg 4231): if the party is
-		# critical, keep the you're-about-to-die cue; recovery delivers the silence instead.
-		if SoundManager and not _is_danger_music:
+		if SoundManager:
 			SoundManager.fade_out_music(1.2)
 	elif face_music != "":
-		# Keep the danger-swap baseline in step or it reverts to the pre-fight bed.
 		_base_music_track = face_music
-		# Same rule: a swap mid-danger must not stomp the critical-HP cue — the baseline is
-		# set, and the existing recovery path plays the new theme once the party is safe.
-		if SoundManager and not _is_danger_music:
+		if SoundManager:
 			SoundManager.play_music(face_music)
+			SoundManager.declare_fight_bed()
 	var sheet_id := str(face.get("sheet_id", ""))
 	if sheet_id == "":
 		# A sheetless face KEEPS the worn body — for the unmasking that is the honest
@@ -6370,7 +6633,7 @@ func _on_boss_face_changed(combatant: Combatant, _face_name: String, face: Dicti
 
 func _check_masterite_phase2_music_swap() -> void:
 	# Latch once per battle when a Masterite boss escalates to phase 2.
-	if _masterite_phase2_swapped or _is_danger_music:
+	if _masterite_phase2_swapped:
 		return
 	for enemy in test_enemies:
 		if enemy == null or not is_instance_valid(enemy):
@@ -6381,6 +6644,7 @@ func _check_masterite_phase2_music_swap() -> void:
 			var track: String = "boss_phase2_%s" % mtype
 			_base_music_track = track
 			SoundManager.play_music(track)
+			SoundManager.declare_fight_bed()
 			_masterite_phase2_swapped = true
 			# Phase 2: the arena itself stops being trustworthy (struktured "try it" 2026-08-14)
 			if _battle_background and is_instance_valid(_battle_background) and BattleJuice.flag("arena_unrest"):
@@ -6473,32 +6737,27 @@ func _apply_status_visual(sprite: Node2D, combatant: Combatant) -> void:
 const KO_MODULATE := Color(0.3, 0.3, 0.3, 0.7)
 
 
+const STATUS_TINTS := {
+	"poison": Color(0.7, 1.0, 0.7),     # Green tint
+	"burning": Color(1.0, 0.6, 0.4),    # Orange-red
+	"curse": Color(0.7, 0.4, 0.8),      # Purple
+	"stun": Color(1.0, 1.0, 0.5),       # Yellow
+	"sleep": Color(0.8, 0.8, 1.0),      # Pale blue
+	"blind": Color(0.6, 0.6, 0.7),      # Dark blue-gray
+	"confuse": Color(0.9, 0.6, 1.0),    # Light purple
+	"fear": Color(0.6, 0.6, 0.6),       # Desaturated gray
+	"charm": Color(1.0, 0.7, 0.8),      # Pink
+	"regen": Color(0.8, 1.0, 0.9),      # Soft green-white glow
+}
+
+
 ## The tint a living combatant's statuses give its sprite; the first matching status wins. The ONE table:
 ## BattleUIManager kept a second with six of these ten, so confuse, fear, charm and regen tints on a party
 ## member were wiped to white by the next UI refresh.
 static func status_tint(effects: Array) -> Color:
 	for effect in effects:
-		match effect:
-			"poison":
-				return Color(0.7, 1.0, 0.7)   # Green tint
-			"burning":
-				return Color(1.0, 0.6, 0.4)   # Orange-red
-			"curse":
-				return Color(0.7, 0.4, 0.8)   # Purple
-			"stun":
-				return Color(1.0, 1.0, 0.5)   # Yellow
-			"sleep":
-				return Color(0.8, 0.8, 1.0)   # Pale blue
-			"blind":
-				return Color(0.6, 0.6, 0.7)   # Dark blue-gray
-			"confuse":
-				return Color(0.9, 0.6, 1.0)  # Light purple
-			"fear":
-				return Color(0.6, 0.6, 0.6)  # Desaturated gray
-			"charm":
-				return Color(1.0, 0.7, 0.8)  # Pink
-			"regen":
-				return Color(0.8, 1.0, 0.9)  # Soft green-white glow
+		if STATUS_TINTS.has(effect):
+			return STATUS_TINTS[effect]
 	return Color.WHITE
 
 
@@ -8433,96 +8692,6 @@ func _present_summoned_enemy(enemy: Combatant, monster_type: String, new_idx: in
 
 func _spawn_damage_number(pos: Vector2, amount: int, is_heal: bool, is_crit: bool) -> void:
 	_results_display.spawn_damage_number(pos, amount, is_heal, is_crit)
-
-
-## 0 = fine, 1 = below DANGER_HP_THRESHOLD, 2 = down.
-func _danger_state_of(member) -> int:
-	if not member.is_alive:
-		return 2
-	if member.max_hp > 0 and float(member.current_hp) / float(member.max_hp) < DANGER_HP_THRESHOLD:
-		return 1
-	return 0
-
-
-## Snapshot what the party brought INTO this battle, so only new trouble triggers danger.
-func _take_danger_baseline() -> void:
-	_danger_baseline = {}
-	for member in party_members:
-		if member and is_instance_valid(member):
-			var st: int = _danger_state_of(member)
-			if st > 0:
-				_danger_baseline[member.get_instance_id()] = st
-	_danger_baseline_taken = party_members.size() > 0
-
-
-## Pure: highest danger state that is NEW this battle (worse than the carried-in baseline).
-## A member that recovers lowers its baseline, so falling back into danger later counts.
-## Mutates baseline. Returns 0 (none), 1 (fresh low HP), 2 (fresh KO).
-static func fresh_danger_level(now: Dictionary, baseline: Dictionary) -> int:
-	var fresh: int = 0
-	for key in now:
-		var st: int = int(now[key])
-		var base: int = int(baseline.get(key, 0))
-		if st < base:
-			if st == 0:
-				baseline.erase(key)
-			else:
-				baseline[key] = st
-		elif st > base:
-			fresh = maxi(fresh, st)
-	return fresh
-
-
-func _check_danger_music() -> void:
-	"""Switch to danger music when a party member goes down or drops below the low-HP line DURING
-	this battle. Carried-in state does not count (Carmelo 2026-11-03, .765 demo ruling): a member
-	still KO'd or low from an earlier fight must not flip the bed to danger at battle start."""
-	if _battle_ended:
-		return
-	if not _danger_baseline_taken:
-		_take_danger_baseline()
-	var now: Dictionary = {}
-	for member in party_members:
-		if member and is_instance_valid(member):
-			now[member.get_instance_id()] = _danger_state_of(member)
-	var fresh: int = fresh_danger_level(now, _danger_baseline)
-	var any_in_danger: bool = fresh > 0
-	var any_dead: bool = fresh >= 2
-
-	# Switch music if danger state changed
-	# Once in danger (dead or critical), stay in danger until healed above threshold
-	if any_in_danger and not _is_danger_music:
-		_is_danger_music = true
-		var held: Dictionary = SoundManager.capture_music_state()
-		_danger_resume_track = _base_music_track if str(held.get("track", "")) == _base_music_track else ""
-		_danger_resume_position = float(held.get("position", 0.0))
-		SoundManager.play_music("danger")
-		if any_dead:
-			print("[MUSIC] Switched to DANGER music - party member down!")
-		else:
-			print("[MUSIC] Switched to DANGER music - player critically low!")
-	elif not any_in_danger and (_is_danger_music or str(SoundManager._current_music) == "danger"):
-		# Stateless check: a duel-retry rebuilds this scene with the flag fresh while SoundManager still plays danger — the flag-only check left doom music over a full-HP party (struktured 2026-07-11).
-		_is_danger_music = false
-		# An EMPTY baseline is authored silence (the unmasking) — play_music("") would be
-		# the accidental-silence failed lookup; fade out instead and stay quiet.
-		if _base_music_track == "":
-			SoundManager.fade_out_music(1.2)
-			print("[MUSIC] party recovered into authored silence - staying quiet")
-		else:
-			## A face swap during danger changed the base, so only the SAME bed resumes; a new one starts at its top.
-			var resume_at: float = _danger_resume_position if _danger_resume_track == _base_music_track else 0.0
-			SoundManager.play_music(_base_music_track, false, resume_at)
-			## SECOND announcement site. The battle-start one was fixed in .669 and this was left
-			## naming the REQUEST: his 2026-10-05 log reads "Switched back to battle_dark_knight
-			## music" on the line after battle_medieval loaded, because 27 pool-reachable monsters
-			## have no bed of their own and _base_music_track keeps the id that was asked for.
-			var heard: String = SoundManager.playing_track_stem()
-			if heard != "" and heard != _base_music_track:
-				print("[MUSIC] Switched back to %s music - party recovered (%s playing)"
-					% [_base_music_track, heard])
-			else:
-				print("[MUSIC] Switched back to %s music - party recovered" % _base_music_track)
 
 
 ## ======================== BATTLE QUIPS ========================

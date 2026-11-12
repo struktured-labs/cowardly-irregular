@@ -16,6 +16,8 @@ var flags: Dictionary = {}
 
 ## Shortest gap between two rumbles — a flurry of hits must not restart the motors every frame.
 const RUMBLE_MIN_GAP := 0.06
+## Emitted when a rumble passed every gate, before the pad lookup: headless has no pads, so this is what a test can see.
+signal rumble_wanted(amount: float)
 var _last_rumble_at: float = -1.0
 var _last_rumble_amount: float = 0.0
 
@@ -71,6 +73,7 @@ func should_rumble(amount: float, now: float = -1.0) -> bool:
 func rumble(amount: float) -> void:
 	if not should_rumble(amount):
 		return
+	rumble_wanted.emit(amount)
 	var pads := Input.get_connected_joypads()
 	if pads.is_empty():
 		return
@@ -85,9 +88,13 @@ func add_trauma(amount: float, dir: Vector2 = Vector2.ZERO, sustain: float = 0.0
 	rumble(amount)
 	if camera_rig:
 		camera_rig.add_trauma(amount, dir, sustain)
-	# Heavy hits thump the arena itself (bass-thump pulse; struktured "try it" 2026-08-14)
-	if amount >= 0.3 and env_background and is_instance_valid(env_background) and flag("env_pulse") and battle_tier() != Tier.OFF:
+	# Heavy hits thump the arena itself (bass-thump pulse; struktured "try it" 2026-08-14). Whole-screen motion, so it follows Screen Shake (main 23982).
+	if amount >= 0.3 and _shake_allowed() and env_background and is_instance_valid(env_background) and flag("env_pulse") and battle_tier() != Tier.OFF:
 		env_background.pulse(amount)
+
+
+func _shake_allowed() -> bool:
+	return not (GameState and "screen_shake_enabled" in GameState and not GameState.screen_shake_enabled)
 
 
 func punch_zoom(pivot: Vector2, strength: float = 0.03, duration: float = 0.14) -> void:

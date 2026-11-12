@@ -4,6 +4,7 @@
     "name": "Slime",
     "description": "A gelatinous blob. Weak but numerous.",
     "level": 1,
+    "hit_spark": "slam",
     "stats": {
       "max_hp": 34,
       "max_mp": 20,
@@ -37,6 +38,7 @@
     "name": "Bat",
     "description": "A flying menace. Very fast but fragile.",
     "level": 2,
+    "hit_spark": "bite",
     "stats": {
       "max_hp": 26,
       "max_mp": 15,
@@ -70,6 +72,7 @@
     "name": "Mushroom",
     "description": "A toxic mushroom creature. Slow but poisonous.",
     "level": 2,
+    "hit_spark": "claw",
     "stats": {
       "max_hp": 44,
       "max_mp": 25,
@@ -184,6 +187,7 @@
     "name": "Wolf",
     "description": "A forest predator. Hunts in packs and strikes with surprising ferocity.",
     "level": 4,
+    "hit_spark": "bite",
     "stats": {
       "max_hp": 70,
       "max_mp": 10,
@@ -216,6 +220,7 @@
     "name": "Giant Spider",
     "description": "A venomous arachnid that lurks in forests and caves. Its webs slow movement.",
     "level": 4,
+    "hit_spark": "bite",
     "stats": {
       "max_hp": 65,
       "max_mp": 25,
@@ -250,6 +255,7 @@
     "name": "Fungoid",
     "description": "A shambling mushroom creature. Releases toxic spores when threatened.",
     "level": 4,
+    "hit_spark": "slam",
     "stats": {
       "max_hp": 76,
       "max_mp": 35,
@@ -286,6 +292,7 @@
     "name": "Swamp Viper",
     "description": "A venomous serpent that thrives in wetlands. Quick to strike, quick to flee.",
     "level": 5,
+    "hit_spark": "bite",
     "stats": {
       "max_hp": 72,
       "max_mp": 20,
@@ -356,6 +363,7 @@
     "name": "Desert Viper",
     "description": "A sand-colored serpent that buries itself and strikes from below. Extremely fast.",
     "level": 6,
+    "hit_spark": "bite",
     "stats": {
       "max_hp": 109,
       "max_mp": 15,
@@ -393,6 +401,7 @@
     "name": "Sand Elemental",
     "description": "A whirling column of desert sand animated by ancient magic. Resistant to physical blows.",
     "level": 6,
+    "hit_spark": "slam",
     "stats": {
       "max_hp": 157,
       "max_mp": 40,
@@ -430,6 +439,7 @@
     "name": "Volcanic Troll",
     "description": "A brutish creature hardened by volcanic heat. Slow but devastating.",
     "level": 7,
+    "hit_spark": "slam",
     "stats": {
       "max_hp": 299,
       "max_mp": 15,
@@ -541,6 +551,7 @@
     "name": "Cave Rat",
     "description": "A large rat that infests caves. Faster than slimes but just as weak.",
     "level": 4,
+    "hit_spark": "bite",
     "stats": {
       "max_hp": 69,
       "max_mp": 15,
@@ -573,6 +584,7 @@
     "name": "Giant Bat",
     "description": "An unusually large bat. Still fragile but hits harder.",
     "level": 6,
+    "hit_spark": "bite",
     "stats": {
       "max_hp": 103,
       "max_mp": 20,
@@ -608,6 +620,7 @@
     "name": "Rat Guard",
     "description": "An armored rat soldier serving the Rat King. Surprisingly well-equipped.",
     "level": 7,
+    "hit_spark": "slam",
     "stats": {
       "max_hp": 239,
       "max_mp": 25,
@@ -647,6 +660,7 @@
     "name": "Diseased Rat",
     "description": "A plague-ridden rat. Its attacks can poison and sicken.",
     "level": 9,
+    "hit_spark": "bite",
     "stats": {
       "max_hp": 317,
       "max_mp": 30,
@@ -690,6 +704,7 @@
     "name": "Cave Rat King",
     "description": "The self-proclaimed ruler of all cave rats. Just a disappointingly large rat with a tiny crown. Surprisingly dangerous.",
     "level": 12,
+    "hit_spark": "bite",
     "boss": true,
     "stats": {
       "max_hp": 2321,
@@ -816,6 +831,7 @@
     "name": "Ice Wolf",
     "description": "A wolf imbued with ice magic. Fast and hits hard.",
     "level": 9,
+    "hit_spark": "bite",
     "stats": {
       "max_hp": 407,
       "max_mp": 35,
@@ -898,6 +914,7 @@
     "name": "Ogre",
     "description": "Enormous, slow, and entirely uninterested in your plan. Hits once; that is usually enough.",
     "level": 9,
+    "hit_spark": "slam",
     "stats": {
       "max_hp": 588,
       "max_mp": 12,
@@ -938,6 +955,7 @@
     "name": "Barbarian Raider",
     "description": "A human who solved every previous problem with an axe and sees no reason to change method.",
     "level": 9,
+    "hit_spark": "claw",
     "stats": {
       "max_hp": 396,
       "max_mp": 20,
@@ -976,6 +994,7 @@
     "name": "Cave Troll",
     "description": "A hulking brute that guards the cave depths. Miniboss.",
     "level": 10,
+    "hit_spark": "slam",
     "miniboss": true,
     "stats": {
       "max_hp": 1068,
@@ -1024,6 +1043,7 @@
     "name": "Shadow Knight",
     "description": "A fallen warrior consumed by darkness. Miniboss.",
     "level": 11,
+    "hit_spark": "claw",
     "miniboss": true,
     "stats": {
       "max_hp": 1087,
@@ -1073,6 +1093,7 @@
     "name": "Treasure Mimic",
     "description": "You thought it was a treasure chest. It was not a treasure chest. Miniboss.",
     "level": 9,
+    "hit_spark": "bite",
     "miniboss": true,
     "stats": {
       "max_hp": 724,
@@ -1186,6 +1207,7 @@
     "name": "Ironback Beetle",
     "description": "A beetle the size of a horse with armor-plated carapace. Miniboss.",
     "level": 7,
+    "hit_spark": "slam",
     "miniboss": true,
     "stats": {
       "max_hp": 419,
@@ -1236,6 +1258,7 @@
     "name": "Cursed Armor",
     "description": "A suit of armor animated by a vengeful spirit. It clanks ominously. Miniboss.",
     "level": 10,
+    "hit_spark": "claw",
     "miniboss": true,
     "stats": {
       "max_hp": 1014,
@@ -1292,6 +1315,7 @@
     "name": "Blood Wolf Alpha",
     "description": "The leader of a dire wolf pack. Its howl freezes the blood. Miniboss.",
     "level": 9,
+    "hit_spark": "bite",
     "miniboss": true,
     "stats": {
       "max_hp": 678,
@@ -1352,6 +1376,7 @@
     "name": "Crystal Golem",
     "description": "A construct of living crystal. Reflects magic at random. Miniboss.",
     "level": 11,
+    "hit_spark": "slam",
     "miniboss": true,
     "stats": {
       "max_hp": 1398,
@@ -1409,6 +1434,7 @@
     "name": "Rogue Automaton",
     "description": "A malfunctioning machine that speaks in error codes. Its attacks glitch reality. Miniboss.",
     "level": 12,
+    "hit_spark": "claw",
     "miniboss": true,
     "stats": {
       "max_hp": 1428,
@@ -1526,6 +1552,7 @@
     "name": "Corrupted Guardian",
     "description": "A boss enemy born from save corruption. Unpredictable and dangerous.",
     "level": 12,
+    "hit_spark": "claw",
     "boss": true,
     "stats": {
       "max_hp": 1785,
@@ -1695,6 +1722,7 @@
     "name": "Adaptive Slime",
     "description": "A slime that evolved from autogrind exposure. Learns from your tactics.",
     "level": 10,
+    "hit_spark": "slam",
     "stats": {
       "max_hp": 667,
       "max_mp": 50,
@@ -3406,6 +3434,7 @@
     "name": "Warden of the Old Guard",
     "description": "An ancient knight who has guarded the world's balance since its creation. Its armor is scarred from a thousand tests of strength.",
     "level": 9,
+    "hit_spark": "slam",
     "boss": true,
     "masterite": true,
     "masterite_type": "warden",
@@ -3464,6 +3493,7 @@
     "name": "Arbiter of Steel",
     "description": "A dual-wielding swordmaster who measures every blow with mathematical precision. It seeks the perfect strike.",
     "level": 10,
+    "hit_spark": "claw",
     "boss": true,
     "masterite": true,
     "masterite_type": "arbiter",
@@ -3520,6 +3550,7 @@
     "name": "Tempo of the Hunt",
     "description": "A swift ranger who appears and vanishes like the wind. It tests whether you can match its relentless pace.",
     "level": 9,
+    "hit_spark": "claw",
     "boss": true,
     "masterite": true,
     "masterite_type": "tempo",
@@ -5046,6 +5077,7 @@
     "name": "The Grinding Wound",
     "description": "A slow, relentless miasma that presses on the wounded villager. It cannot be defeated — only outlasted. The Cleric's grace-under-pressure is the answer. Faith as endurance, not violence.",
     "level": 2,
+    "hit_spark": "bite",
     "boss": true,
     "spotlight_duel": true,
     "spotlight_pc": "cleric",
@@ -5118,6 +5150,7 @@
     "name": "The Lockward",
     "description": "A treasure-guardian construct that ambushes any who reach for the vault. Every round it briefly exposes its flank — the Rogue's Steal, Backstab, and speed are the answer.",
     "level": 6,
+    "hit_spark": "claw",
     "boss": true,
     "spotlight_duel": true,
     "spotlight_pc": "rogue",
@@ -5342,6 +5375,7 @@
     "name": "Rogue Mailbox",
     "description": "A regulation blue mailbox that has stopped accepting the concept of routes. It keeps what it's given. The mail carrier wants her package back.",
     "level": 6,
+    "hit_spark": "slam",
     "stats": {
       "max_hp": 157,
       "max_mp": 20,
@@ -5582,6 +5616,7 @@
     "name": "Bone Warden",
     "description": "A skeleton that kept its rank. Fights bare-handed because it buried its sword with someone it respected.",
     "level": 11,
+    "hit_spark": "bite",
     "stats": {
       "max_hp": 808,
       "max_mp": 70,
