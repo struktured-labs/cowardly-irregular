@@ -3,13 +3,14 @@
 
 struktured's easter egg (cowir-main 24215/24233): beat the Rat King before ever talking to Elder Theron and the party
 arrives while he rehearses his briefing; the crown lands on the Harmony Fountain's rim. Story 24234: it is the SAME
-crown the defeat scene names ("the tiny crown rolls off and spins to a stop"), so it ROLLS, then rests on its side.
+crown the defeat scene names ("the tiny crown rolls off and spins to a stop"), so it SPINS down and stops upright.
+(The first sheet rested it on its side; composited on the scene's backdrop that read as a small flag, not a crown.)
 
 No image model: every pixel is placed below. The golds and the jewel red are MEASURED from frame 0 of
 assets/sprites/monsters/cave_rat_king.png (the most common opaque gold / red pixels there), so it reads as his.
 
 4 frames of 16x16, a horizontal strip (the prop_art convention: `frames`, `fps`):
-  0 falling, upright   1 tipped onto its side   2 rolled a quarter turn on   3 at rest on its side (hold this one)
+  0 falling, upright   1 landed, spinning, edge-on   2 coming round   3 at rest, upright (hold this one)
 
 Usage:
     uv run --with pillow python tools/gen_tiny_crown.py            # writes the PNG
@@ -43,21 +44,23 @@ UPRIGHT = [
     "YRYYYRYYYRs",
     "sssssssssss",
 ]
-# The band seen a quarter turn on: the jewels have moved round, so the roll reads as a turn and not a slide.
-UPRIGHT_TURNED = [
-    "h....h....h",
-    "L....L....L",
-    "LY..YLY..YY",
-    "LYYYYYYYYYs",
-    "YYYRYYYRYYs",
-    "sssssssssss",
+# The same crown part-way round a spin about its upright axis: narrower, the jewels moved round the band.
+EDGE_ON = [
+    "h.h.h",
+    "L.L.L",
+    "LYLYY",
+    "LYYYs",
+    "YYRYs",
+    "sssss",
 ]
-
-
-def rot_cw(rows: list[str]) -> list[str]:
-    """Quarter turn clockwise: the crown on its side, points to the right."""
-    h, w = len(rows), len(rows[0])
-    return ["".join(rows[h - 1 - y][x] for y in range(h)) for x in range(w)]
+THREE_QUARTER = [
+    "h..h..h",
+    "L..L..L",
+    "LY.L.YY",
+    "LYYYYYs",
+    "YYRYYRs",
+    "sssssss",
+]
 
 
 def outlined(rows: list[str]) -> list[str]:
@@ -88,13 +91,10 @@ def stamp(strip: Image.Image, frame: int, rows: list[str], left: int, bottom: in
 
 def build() -> Image.Image:
     strip = Image.new("RGBA", (CELL * 4, CELL), (0, 0, 0, 0))
-    up = outlined(UPRIGHT)                    # 13 x 8
-    side = outlined(rot_cw(UPRIGHT))          # 8 x 13
-    side_turned = outlined(rot_cw(UPRIGHT_TURNED))
-    stamp(strip, 0, up, 1, 9)                 # in the air: five rows above the ground line
-    stamp(strip, 1, side, 2, 14)              # tipped over, left of where it stops
-    stamp(strip, 2, side_turned, 4, 14)       # rolled on, the jewels a quarter turn round
-    stamp(strip, 3, side, 5, 14)              # at rest
+    stamp(strip, 0, outlined(UPRIGHT), 2, 9)          # in the air: five rows above the ground line
+    stamp(strip, 1, outlined(EDGE_ON), 4, 14)         # landed, spinning: seen edge-on
+    stamp(strip, 2, outlined(THREE_QUARTER), 4, 14)   # coming round
+    stamp(strip, 3, outlined(UPRIGHT), 2, 14)         # at rest, facing us
     return strip
 
 
