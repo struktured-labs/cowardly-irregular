@@ -5747,6 +5747,11 @@ func _execute_ability(caster: Combatant, ability_id: String, targets: Array, for
 			if new_target:
 				retargeted.append(new_target)
 
+	## An all-enemies move lands on the whole opposing side, whoever queued it: the enemy ladder names one target.
+	if is_offensive and not retargeted.is_empty():
+		var first: Combatant = retargeted[0]
+		retargeted = DamageRules.landing_targets(ability, retargeted, player_party if first in player_party else enemy_party)
+
 	## Cover Ally fired on BASIC ATTACKS ONLY, so a protector was bypassed by any
 	## monster leading with an ability — 66 of 99 carry a single-target physical,
 	## and against those the passive was inert. A single-target offensive ability
@@ -5955,8 +5960,8 @@ func _execute_physical_ability(caster: Combatant, ability: Dictionary, targets: 
 	## defense tank dealt poverty damage instead of leveraging the
 	## tank's signature stat.
 	## One owner for the pre-crit amount, so estimate_ability_breakdown quotes the stat this strike uses.
-	var pre_crit: int = _physical_ability_amount(caster, ability)
-	var crit_chance = ability.get("crit_chance", 0.0)
+	var pre_crit: int = int(_physical_ability_amount(caster, ability) * DamageRules.spread_factor(targets.size(), caster in enemy_party))
+	var crit_chance = DamageRules.ability_crit_chance(ability, _calculate_crit_chance(caster))
 	# Shadow Step guarantees the next attack, including a physical ability. A basic swing already does this.
 	if caster != null and caster.has_status("shadow_step"):
 		crit_chance = 1.0
@@ -6351,7 +6356,7 @@ func _execute_magic_ability(caster: Combatant, ability: Dictionary, targets: Arr
 			_trigger_monster_counter(target, caster)
 			continue
 
-		var damage = int(base_damage * multiplier)
+		var damage = int(base_damage * multiplier * DamageRules.spread_factor(targets.size(), caster in enemy_party))
 		var mag_vrange = volatility.get_variance_range(caster) if volatility else Vector2(0.9, 1.1)
 		damage = int(damage * randf_range(mag_vrange.x, mag_vrange.y))
 		## Tick 437: damage_variance amplifies the magic-damage roll
@@ -6699,8 +6704,8 @@ func _calculate_crit_chance(attacker: Combatant) -> float:
 	# Base crit chance is 5%
 	var base_crit = 0.05
 
-	# Speed adds to crit chance (each 10 speed = +1% crit)
-	var speed_bonus = attacker.speed * 0.01
+	# Speed adds to crit chance; HOW is DamageRules.crit_mode (shipped: speed x 0.01, which is not what this comment said).
+	var speed_bonus = DamageRules.speed_crit_bonus(float(attacker.speed), _archetype_level(attacker))
 
 	## Tick 375: read PassiveSystem's accumulated crit_chance mod
 	## instead of hardcoding a check for the "critical_strike" passive.
@@ -6743,7 +6748,7 @@ func _calculate_crit_chance(attacker: Combatant) -> float:
 				crit_buff += (float(b.get("modifier", 1.0)) - 1.0)
 
 	# Cap at 50% crit chance
-	return min(base_crit + speed_bonus + passive_bonus + equip_bonus + crit_buff, 0.50)
+	return min(base_crit + speed_bonus + passive_bonus + equip_bonus + crit_buff, DamageRules.crit_cap())
 
 
 ## Tick 457: walk the attacker's three equipment slots, look up
