@@ -48,6 +48,12 @@ const CUTSCENE_DIR := "res://data/cutscenes"
 const GATE_FN := "func _get_pending_story_cutscene"
 ## A floor, not a count — the extractor must keep finding gates or its silence means nothing.
 const MIN_GATES := 40
+## A scene that REPLACES another is gated on that other's flag by design. Declared here with the reason, and only
+## honoured while the replacing scene concedes the flag itself (so either order ends with it set).
+const REPLACEMENTS := {
+	"world1_briefing_skipped": {"flag": "chapter1_complete", "concedes_in": "BRIEFING_SKIPPED_CONCEDES",
+		"reason": "the Rat King fell before the Elder's briefing: this scene plays INSTEAD of chapter 1 (struktured 2026-11-11)"},
+}
 
 var _src_blob: String = ""
 
@@ -233,9 +239,40 @@ func test_no_reachable_scene_cancels_another_scenes_gate() -> void:
 		for writer in writers.get(flag, []):
 			if str(writer) == scene:
 				continue  # a scene writing its own completion flag is the normal case
+			if _is_declared_replacement(scene, flag):
+				continue
 			if _is_reachable(str(writer)):
 				offenders.append("%s is gated on NOT %s, which reachable scene %s sets" % [scene, flag, writer])
 	assert_eq(offenders, [], "a scene must not cancel another scene's gate:\n  %s" % "\n  ".join(PackedStringArray(offenders)))
+
+
+func _is_declared_replacement(scene: String, flag: String) -> bool:
+	var row: Dictionary = REPLACEMENTS.get(scene, {})
+	return not row.is_empty() and str(row.get("flag", "")) == flag and _concedes(str(row.get("concedes_in", "")), flag)
+
+
+## True when the const array named `list_name` in GameLoop holds this flag's full key.
+func _concedes(list_name: String, flag: String) -> bool:
+	var src := _src()
+	var i := src.find("const %s" % list_name)
+	if list_name == "" or i < 0:
+		return false
+	var j := src.find("]", i)
+	return j > i and src.substr(i, j - i).contains('"cutscene_flag_%s"' % flag)
+
+
+func test_a_declared_replacement_concedes_the_flag_it_is_gated_on() -> void:
+	assert_gt(REPLACEMENTS.size(), 0, "CONTROL: a replacement is declared")
+	var gated := {}
+	for pair in _gates():
+		gated["%s|%s" % [pair[1], pair[0]]] = true
+	for scene in REPLACEMENTS:
+		var row: Dictionary = REPLACEMENTS[scene]
+		assert_ne(str(row.get("reason", "")), "", "%s says why it replaces another scene" % scene)
+		assert_true(gated.has("%s|%s" % [scene, row.get("flag", "")]), "%s is still gated on NOT %s: a row for a gate that is gone is stale" % [scene, row.get("flag", "")])
+		assert_true(_is_declared_replacement(scene, str(row.get("flag", ""))), "%s concedes %s itself, in %s" % [scene, row.get("flag", ""), row.get("concedes_in", "")])
+	assert_false(_is_declared_replacement("world1_briefing_skipped", "chapter2_complete"), "CONTROL: the row excuses one flag, not the scene")
+	assert_false(_concedes("NO_SUCH_LIST", "chapter1_complete"), "CONTROL: a list that does not exist concedes nothing")
 
 
 func test_the_detector_sees_the_defect_it_was_written_for() -> void:
