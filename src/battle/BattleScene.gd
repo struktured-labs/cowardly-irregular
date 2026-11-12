@@ -5675,8 +5675,11 @@ func _delayed_play_hit_fx(target_anim, target_sprite) -> void:
 			var spark: String = hit_spark_for(_last_acting_combatant)
 			match hit_mark(str(_current_ability_id), spark):
 				"overlay":
-					pass  # the ability's own melee overlay owns the cut (sprites 24010); the weight still lands below
+					## The ability's own melee overlay owns the CUT (sprites 24010); the weight still lands below.
+					## The weapon's hit cue still sounds: an overlay's own cue is authored to sit on top of it (sfx 23790).
+					EffectSystem.play_hit_cue(_weapon_type_for(_last_acting_combatant))
 				"family":
+					EffectSystem.play_hit_cue(_weapon_type_for(_last_acting_combatant))
 					EffectSystem.spawn_sequence(HIT_FAMILY_PREFIX + spark, struck, struck, 1.0 + spark_w, {}, 1, not signature_sound_allowed())
 				_:
 					EffectSystem.spawn_hit_spark(struck, spark, spark_w, kb_dir, _hit_spark_tint(_last_acting_combatant), jt == BattleJuice.Tier.MINIMAL)
