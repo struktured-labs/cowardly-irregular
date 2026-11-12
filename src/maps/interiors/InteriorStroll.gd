@@ -56,16 +56,26 @@ static func flood(walk: Dictionary, blocked: Dictionary, seeds: Array) -> Dictio
 	return seen
 
 
-## True when blocking `blocked` leaves every other cell of `whole` still reachable from `seeds`.
-static func stays_whole(walk: Dictionary, blocked: Dictionary, seeds: Array, whole: Dictionary) -> bool:
-	var live_seeds: Array = []
-	for s in seeds:
-		if not blocked.has(s):
-			live_seeds.append(s)
-	var now := flood(walk, blocked, live_seeds)
+## True when blocking `blocked` cuts nothing apart: every group of cells of `whole` that was connected before is still
+## connected among its unblocked cells. (Flooding from every door at once would pass a corridor cut in two with a door
+## on each side: measured in this tip's first run.)
+static func stays_whole(walk: Dictionary, blocked: Dictionary, _seeds: Array, whole: Dictionary) -> bool:
+	var grouped := {}
 	for c in whole:
-		if not blocked.has(c) and not now.has(c):
-			return false
+		if grouped.has(c):
+			continue
+		var group := flood(walk, {}, [c])
+		var first: Variant = null
+		for k in group:
+			grouped[k] = true
+			if first == null and not blocked.has(k):
+				first = k
+		if first == null:
+			continue
+		var now := flood(walk, blocked, [first])
+		for k in group:
+			if not blocked.has(k) and not now.has(k):
+				return false
 	return true
 
 
