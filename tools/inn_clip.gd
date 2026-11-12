@@ -62,7 +62,7 @@ func _init() -> void:
 	if sm and sm._music_player and sm._music_player.stream:
 		under = str(sm._music_player.stream.resource_path).get_file().get_basename()
 	var director = gl.get_cutscene_director() if gl.has_method("get_cutscene_director") else null
-	print("[ICLIP] room=%s under=%s cutscene_playing=%s" % [str(gl.get("_current_map_id")), under, str(director.is_playing()) if director and director.has_method("is_playing") else "?"])
+	print("[ICLIP] room=%s under=%s cutscene_playing=%s" % [str(gl.get("_current_map_id")), under, str(director.is_active()) if director and director.has_method("is_active") else "?"])
 	inn._do_rest()
 	var seq: Node = null
 	for n in root.get_children():
