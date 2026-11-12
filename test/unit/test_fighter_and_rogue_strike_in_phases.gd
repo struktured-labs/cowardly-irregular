@@ -191,7 +191,8 @@ func test_a_landed_effect_and_a_failed_one_never_share_a_beat() -> void:
 	assert_eq(BattleSceneScript.landed_beat("stun"), "landed_stun")
 	assert_eq(BattleSceneScript.landed_beat("blind"), "landed_blind")
 	assert_eq(BattleSceneScript.landed_beat("taunted_Fighter"), "landed_taunt", "Provoke's status carries the taunter's name")
-	assert_eq(BattleSceneScript.landed_beat("poison"), "", "CONTROL: a status without a beat lands with its aura alone")
+	## Poison was this CONTROL until every tinted status got a landing beat (adhoc, .793); haste is untinted.
+	assert_eq(BattleSceneScript.landed_beat("haste"), "", "CONTROL: a status without a beat lands with its aura alone")
 	for s in ["stun", "blind", "taunted_x"]:
 		assert_ne(BattleSceneScript.landed_beat(s), BattleSceneScript.FIZZLE_BEAT, "%s landing is not the fizzle" % s)
 	var seqs := _seqs()
@@ -232,7 +233,7 @@ func test_the_scene_draws_the_move_and_the_outcome() -> void:
 	await get_tree().process_frame
 	assert_gt(_fx_count(), before, "a landed stun draws its stars")
 	before = _fx_count()
-	_scene._on_status_landed("poison", _foe)
+	_scene._on_status_landed("haste", _foe)
 	assert_eq(_fx_count(), before, "CONTROL: a status with no beat draws nothing")
 
 

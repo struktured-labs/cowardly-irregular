@@ -147,15 +147,27 @@ func test_a_party_wide_buff_is_one_gesture() -> void:
 
 ## Turbo and the grind console play nothing (cowir-autogrind 24003): a buff landing or lapsing draws 0 nodes.
 func test_turbo_and_the_console_play_no_change_beat() -> void:
-	for mode in ["normal", "turbo", "console"]:
+	## Counted in a container of this arm's own, after earlier arms' phased beats have finished: the shared
+	## effects layer's child count moves by itself (a sequence spawns its later phases, an old one expires),
+	## which read as "drew 8 nodes in turbo" whenever this file ran alone. The CONTROL runs LAST for the same
+	## reason: its own later phases must not land in a turbo measurement.
+	await get_tree().create_timer(1.2).timeout
+	var was: Node2D = EffectSystem._effects_container
+	for mode in ["turbo", "console", "normal"]:
+		## One foe at a time: the scene finds a sprite by the foe's INDEX in BattleManager's party, so a second
+		## fixture's foe (index 1, in a scene with one sprite) has none and plans nothing whatever the mode. The
+		## first cut of this arm passed turbo and console that way, with the gate cut out.
+		BattleManager.enemy_party.clear()
 		var f := _fixture(1)
 		var scene = f[0]; var foe: Combatant = f[1][0]
 		scene.turbo_mode = mode == "turbo"
 		scene.autogrind_console_mode = mode == "console"
-		var before: int = EffectSystem._effects_container.get_child_count()
+		var host := Node2D.new()
+		add_child_autofree(host)
+		EffectSystem._effects_container = host
 		foe.add_buff("iron_guard", "defense", 1.5, 1)
 		var plan: Array = await _plan(scene)
-		var drew: int = EffectSystem._effects_container.get_child_count() - before
+		var drew: int = host.get_child_count()
 		match mode:
 			"normal":
 				assert_eq(plan.size(), 1, "CONTROL: at 2x a buff landing must plan a beat")
@@ -169,6 +181,8 @@ func test_turbo_and_the_console_play_no_change_beat() -> void:
 		plan = await _plan(scene)
 		if mode != "normal":
 			assert_eq(plan.size(), 0, "a buff wearing off planned a beat in %s" % mode)
+			assert_eq(host.get_child_count(), 0, "a buff wearing off drew in %s" % mode)
+		EffectSystem._effects_container = was
 
 
 ## A formation stance is a posture, not a spell: it lands with no beat. A status that runs out by itself gets
