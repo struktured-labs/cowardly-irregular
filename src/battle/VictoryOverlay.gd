@@ -47,6 +47,10 @@ const LOG_CLEAR_X := 190.0
 const LEFT_COLUMN: Array[String] = ["EnemyStatusPanel", "BattleLogPanel", "CTBTimeline"]
 const LEFT_COLUMN_GAP := 10.0
 const STRIP_BOTTOM_MARGIN := 64.0
+## The continue prompt: its base size, its resting distance from the bottom, and the air it keeps from the hint bar and the cards.
+const PROMPT_FONT := 14
+const PROMPT_REST := 58.0
+const PROMPT_GAP := 4.0
 
 var _scene = null
 var _one_shot_rank: String = ""
@@ -76,13 +80,35 @@ func _fit_card_scale(count: int, vp_y: float) -> float:
 	var want: float = maxf(1.0, _raw_text_scale())
 	if count <= 0:
 		return want
-	var room: float = vp_y - _stack_top() - STRIP_BOTTOM_MARGIN - float(maxi(0, count - 1)) * CARD_GAP
+	var room: float = vp_y - _stack_top() - _bottom_margin(vp_y) - float(maxi(0, count - 1)) * CARD_GAP
 	var cap: float = room / (float(count) * CARD_H)
 	return clampf(want, 1.0, maxf(1.0, cap))
 
 
 ## The first y a card may occupy: below the docked title, and below the loot strip if there is one.
 ## Both of those grow with Text Size, which is why this is derived rather than the old literal 150.
+## Where the continue prompt will sit, reserved BEFORE the cards are placed: at its resting line, lifted clear of the hint bar when the text has grown into it.
+var _prompt_rect := Rect2()
+
+
+func _reserve_prompt() -> void:
+	var vp := get_viewport_rect().size
+	var px: int = TextScale.scaled(PROMPT_FONT)
+	var h: float = get_theme_default_font().get_height(px) if get_theme_default_font() else float(px) * 1.4
+	var top: float = vp.y - PROMPT_REST
+	var hint: Control = (_scene as Node).get_node_or_null("UI/InputHintBar") as Control if is_instance_valid(_scene) and _scene is Node else null
+	if hint != null and hint.is_visible_in_tree() and hint.get_global_rect().has_area():
+		top = minf(top, hint.get_global_rect().position.y - PROMPT_GAP - h)
+	_prompt_rect = Rect2((vp.x - 320.0) / 2.0, top, 320.0, h)
+
+
+## How much of the bottom the card column leaves: the shipped margin, or more when the prompt has been lifted.
+func _bottom_margin(vp_y: float) -> float:
+	if not _prompt_rect.has_area():
+		return STRIP_BOTTOM_MARGIN
+	return maxf(STRIP_BOTTOM_MARGIN, vp_y - _prompt_rect.position.y + PROMPT_GAP + 2.0)
+
+
 func _stack_top() -> float:
 	var y := 56.0
 	if _title_docked.has_area():
@@ -170,6 +196,7 @@ func build(results: Dictionary, scene) -> void:
 	_one_shot_rank = _one_shot_rank_of(results.get("bonuses", []), str(results.get("one_shot_rank", "")))
 	_build_slam(flourish)
 	_build_loot_strip(results, flourish)
+	_reserve_prompt()
 	_build_cards(results.get("char_results", []), flourish)
 	_build_prompt()
 	if BattleManager and BattleManager.last_post_battle_restore_serial == BattleManager.battle_serial:
@@ -741,7 +768,7 @@ func _column_positions(count: int, vp: Vector2) -> Array[Vector2]:
 	for i in range(count):
 		out.append(Vector2(x, clampf(top + i * (_ch() + CARD_GAP), _stack_top(), vp.y)))
 	## Pushed past the bottom: lift the whole column, keeping the spacing.
-	var bottom_limit := vp.y - STRIP_BOTTOM_MARGIN - _ch()
+	var bottom_limit := vp.y - _bottom_margin(vp.y) - _ch()
 	if out.size() > 0 and out[out.size() - 1].y > bottom_limit:
 		var lift := out[out.size() - 1].y - bottom_limit
 		for i in range(out.size()):
@@ -1149,7 +1176,8 @@ func _build_prompt() -> void:
 	var prompt := Label.new()
 	# One key, one job at a time: the old line named the confirm button twice, for finish and then for continue.
 	prompt.text = tally_prompt(_confirm_token())
-	prompt.add_theme_font_size_override("font_size", TextScale.scaled(14))
+	prompt.name = "ContinuePrompt"
+	prompt.add_theme_font_size_override("font_size", TextScale.scaled(PROMPT_FONT))
 	prompt.add_theme_color_override("font_color", Color(0.92, 0.92, 0.85))
 	prompt.add_theme_constant_override("outline_size", 3)
 	prompt.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.85))
@@ -1159,7 +1187,7 @@ func _build_prompt() -> void:
 	var vp := get_viewport_rect().size
 	# Bottom-centre above the hint bar; it sat at 11px grey on the grass under the party panel's corner.
 	prompt.size = Vector2(320.0, 0.0)
-	prompt.position = Vector2((vp.x - 320.0) / 2.0, vp.y - 58.0)
+	prompt.position = Vector2((vp.x - 320.0) / 2.0, _prompt_rect.position.y if _prompt_rect.has_area() else vp.y - PROMPT_REST)
 	_snaps.append(func() -> void:
 		if is_instance_valid(prompt):
 			prompt.text = "%s: continue" % _confirm_token()
