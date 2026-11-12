@@ -1655,6 +1655,28 @@ func _is_autobattle_row(item: Dictionary) -> bool:
 	return data is Dictionary and str((data as Dictionary).get("action", "")) == "autobattle"
 
 
+## Rows that hand the turn to the script (Auto: this turn, Trust: every turn). Never a queue slot (struktured 2026-11-12).
+const HANDS_TURN_ACTIONS := ["autobattle", "trust_toggle"]
+## The `data.action` words a personal queue may hold. A NEW word is in neither list, so it cannot be queued until it is classified.
+const QUEUEABLE_ACTIONS := ["attack", "address"]
+const HANDS_TURN_REASON := "Clear the queue first: the script picks the whole turn"
+
+
+## What a command row IS to the queue: submenu / turnless / commits_alone / hands_turn / action / unclassified.
+static func row_kind(item: Dictionary) -> String:
+	if item.has("submenu"):
+		return "submenu"
+	if bool(item.get("turnless", false)):
+		return "turnless"
+	if bool(item.get("commits_alone", false)):
+		return "commits_alone"
+	var data = item.get("data", null)
+	var word := str((data as Dictionary).get("action", "")) if data is Dictionary else ""
+	if word in HANDS_TURN_ACTIONS:
+		return "hands_turn"
+	return "action" if (word == "" or word in QUEUEABLE_ACTIONS) else "unclassified"
+
+
 ## Confirm PRESSED on Auto: do not act yet. _process (below) decides tap vs hold on RELEASE or
 ## on crossing the threshold, whichever comes first — acting here on press would make every hold
 ## a tap (struktured's required mutant: a press-fired arm must red the hold test).
@@ -1748,8 +1770,8 @@ func _handle_advance_input() -> void:
 		_advance_solo_commit(current_item)
 		return
 
-	# Auto can't advance — pressing Advance on it just runs auto, same as Confirm.
-	if _is_autobattle_row(current_item):
+	# Auto and Trust can't advance — pressing Advance on one does what Confirm does.
+	if row_kind(current_item) == "hands_turn":
 		if _row_unavailable(current_item):
 			_reject_selection(current_item)
 		else:
@@ -1863,6 +1885,11 @@ func _queue_current_action(item: Dictionary) -> void:
 		# Queue full - play error sound or ignore
 		return
 
+	# Fail closed: only an action is a queue slot. A row that hands the turn over, or one nobody classified, never is.
+	if row_kind(item) != "action":
+		_reject_selection(item)
+		return
+
 	## Advance used to queue a cast the turn could not pay for; it then failed at execution and the AP was lost.
 	var data = item.get("data", null)
 	var forced: bool = data is Dictionary and bool(data.get("forced", false))
@@ -1944,16 +1971,18 @@ func _cancel_all_queued() -> void:
 ## row's `disabled` flag live — `_row_unavailable`/`_step_selection`/`_opening_index` all read it
 ## straight off menu_items, so this is the one place that needs to touch it.
 func _sync_auto_row_disabled() -> void:
-	var auto_idx := -1
-	for i in range(menu_items.size()):
-		if _is_autobattle_row(menu_items[i]):
-			auto_idx = i
-			break
-	if auto_idx < 0:
-		return
 	var disabled: bool = _queued_actions.size() > 0
-	menu_items[auto_idx]["disabled"] = disabled
-	if disabled and selected_index == auto_idx:
+	var found := false
+	var on_one := false
+	for i in range(menu_items.size()):
+		if row_kind(menu_items[i]) != "hands_turn":
+			continue
+		found = true
+		menu_items[i]["disabled"] = disabled
+		on_one = on_one or selected_index == i
+	if not found:
+		return
+	if disabled and on_one:
 		_step_selection(1)
 	_update_selection()
 
@@ -2054,6 +2083,10 @@ func _submit_actions() -> void:
 
 	# Get root menu for queued actions
 	var root = _get_root_menu()
+
+	if row_kind(current_item) == "hands_turn" and root._queued_actions.size() > 0:
+		_reject_selection({"reject_reason": HANDS_TURN_REASON})
+		return
 
 	if bool(current_item.get("commits_alone", false)) and root._queued_actions.size() > 0:
 		_reject_selection({"reject_reason": "That move uses the whole party — clear this queue first"})
@@ -2360,6 +2393,8 @@ func _reject_text(item: Dictionary) -> String:
 	var custom := str(item.get("reject_reason", ""))
 	if custom != "":
 		reason = custom
+	elif row_kind(item) == "hands_turn" and bool(item.get("disabled", false)):
+		reason = HANDS_TURN_REASON
 	elif bool(item.get("mp_short", false)):
 		var left: int = FORCE_PRESSES - _force_count
 		reason = "Not enough MP (%d needed): press %s more to force" % [int(item.get("cost", 0)), "once" if left == 1 else ("twice" if left == 2 else "%d times" % left)]
