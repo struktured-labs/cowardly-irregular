@@ -12,9 +12,19 @@ const EDITOR := "res://src/ui/autobattle/AutobattleGridEditor.gd"
 var _abs
 
 
+var _persist_before = false
+
+
+## Persistence OFF for the whole file: an editor that saves on change must never write a fixture over a player's script.
 func before_each() -> void:
 	_abs = get_tree().root.get_node_or_null("AutobattleSystem")
 	assert_not_null(_abs, "CONTROL: AutobattleSystem autoload must exist")
+	_persist_before = _abs._test_disable_persistence
+	_abs._test_disable_persistence = true
+
+
+func after_each() -> void:
+	_abs._test_disable_persistence = _persist_before
 
 
 func _editor(type: String = "hp_percent") -> Node:
@@ -123,8 +133,6 @@ func test_keyboard_and_pad_both_reach_the_second_value() -> void:
 ## A script holding a payload the dial chose survives the share code: what a player writes, a friend can paste.
 func test_a_chosen_payload_survives_the_share_code() -> void:
 	var cid := "payload_probe_hero"
-	var was_persist = _abs.get("_test_disable_persistence")
-	_abs.set("_test_disable_persistence", true)
 	var rules: Array = []
 	for t in await _named_types():
 		var field: String = str(_abs.CONDITION_REQUIRED_FIELD[t])
@@ -133,7 +141,6 @@ func test_a_chosen_payload_survives_the_share_code() -> void:
 	_abs.set_character_script(cid, {"character_id": cid, "name": "Named", "rules": rules.duplicate(true)})
 	var decoded: Dictionary = ScriptShareManager.decode_share_code(ScriptShareManager.encode_share_code(cid))
 	_abs.character_profiles.erase(cid)
-	_abs.set("_test_disable_persistence", was_persist)
 	assert_false(decoded.is_empty(), "CONTROL: the code decodes")
 	var back: Array = decoded.get("script", decoded).get("rules", [])
 	assert_eq(back.size(), rules.size(), "every rule came back")
