@@ -6,7 +6,8 @@ extends GutTest
 
 const Inn := preload("res://src/maps/interiors/InnInterior.gd")
 const NOON := 0.5
-const MIDNIGHT := 0.0
+## The sky is darkest between 0.70 and 0.90 of the day (DayNightOverlay.TINT_ANCHORS); 0.0 is already turning to dawn.
+const MIDNIGHT := 0.8
 
 var _flicker := true
 
