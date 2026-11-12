@@ -129,3 +129,26 @@ func test_both_orders_reach_the_same_state() -> void:
 		assert_true(bool(skipped.get(key, false)), "%s: set by the skipped path, as the ordinary one sets it by the end of the cave" % key)
 	assert_eq(load("res://src/GameLoop.gd").get_script_constant_map()["BRIEFING_SKIPPED_CONCEDES"].size(), ordinary.size() - 1,
 		"the conceded list is exactly those keys (talked_to_theron is set beside it)")
+
+
+## The crown is SEEN (cowir-sprites' tiny_crown, cowir-main 24233): the scene shows it as the narration says it lands, the
+## step is one the director handles, and the art it names exists as a strip the step can cut.
+func test_the_crown_is_shown_where_it_lands() -> void:
+	var scene = JSON.parse_string(FileAccess.get_file_as_string("res://data/cutscenes/%s.json" % SCENE))
+	var steps: Array = (scene as Dictionary).get("steps", []) if scene is Dictionary else []
+	var shown := -1
+	var sounded := -1
+	for i in steps.size():
+		if str(steps[i].get("type", "")) == "show_prop" and str(steps[i].get("prop", "")) == "tiny_crown":
+			shown = i
+		if str(steps[i].get("type", "")) == "play_sfx" and str(steps[i].get("sfx", "")) == "scene_tiny_crown_lands":
+			sounded = i
+	assert_gt(shown, -1, "the scene shows the crown")
+	assert_eq(sounded, shown + 1, "and it is heard in the step after it is shown")
+	var row: Dictionary = load("res://src/cutscene/CutsceneDirector.gd").prop_art("tiny_crown")
+	assert_true(ResourceLoader.exists(str(row.get("path", ""))), "CONTROL: the crown's strip exists (%s)" % row.get("path", ""))
+	assert_gt(int(row.get("frames", 0)), 1, "it has frames to roll through")
+	assert_true(load("res://src/cutscene/CutsceneDirector.gd").prop_art("no_such_prop").is_empty(), "CONTROL: an unknown prop has no row")
+	var src := FileAccess.get_file_as_string("res://src/cutscene/CutsceneDirector.gd")
+	assert_true(src.contains('"show_prop":') and src.contains('"hide_prop":'), "the director has an arm for both steps")
+
