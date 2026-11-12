@@ -1123,19 +1123,8 @@ func _resolve_attack(attacker, target) -> int:
 		_log("%s's Reflect bounces %d damage back to %s!" % [target.combatant_name, bounced, attacker.combatant_name])
 		return 0
 
-	var def_val = float(target.get_buffed_stat("defense", target.defense))
-	# Guard divisor (mirrors Combatant.take_damage). attack 0 + defense 0
-	# combinations are reachable: get_buffed_stat returns 0 for base 0
-	# (the maxi(1, …) clamp only applies when base > 0), so a base-0
-	# attack stat × base-0 defense produces a 0/0 NaN that int() casts
-	# to a sentinel — silent garbage damage in autogrind sims.
-	var denom = maxf(1.0, damage + def_val)
-	var actual = int((damage * damage) / denom)
-	actual = max(1, actual)
-	if target.is_defending:
-		actual = actual / 2
-
-	var dealt: int = target.take_damage(actual)
+	## take_damage owns the one defence formula (and defending, vulnerability, exposed), as in live's _execute_attack. This file used to run the formula here AND there, so every swing in a grind met the defence twice.
+	var dealt: int = target.take_damage(int(damage))
 	## the_absence authors heals_from_damage. Live heals from the number that landed, after the hit.
 	_maybe_heal_from_damage(target, dealt, "")
 	## Live calls this from _execute_attack ONLY — the BASIC attack. Deliberately NOT added to
@@ -1143,7 +1132,7 @@ func _resolve_attack(attacker, target) -> int:
 	## deal physical damage does not proc a weapon's on-hit status in live, and wiring it there would
 	## be the axis-2 error this lane's ledger exists to catch — a key read on the wrong executor.
 	_apply_equipment_on_hit_status(attacker, target)
-	return actual
+	return dealt
 
 
 ## Twin of BattleManager._apply_familiar_weight_bonus (:3120). returned_sword's "Familiar Weight":
@@ -2338,16 +2327,8 @@ func _resolve_attack_with_power(attacker, target, base_damage: int) -> int:
 		return 0
 	## Live's _execute_physical_ability applies it to the pre-mitigation damage; this file's defense
 	## formula is quadratic, so scaling the mitigated number would not be the same port.
-	var def_val = float(target.get_buffed_stat("defense", target.defense))
-	var dmg = float(_apply_lens_execute_bonus(attacker, target, base_damage))
-	# Same divisor guard as _resolve_attack — see comment there.
-	var denom = maxf(1.0, dmg + def_val)
-	var actual = int((dmg * dmg) / denom)
-	actual = max(1, actual)
-	if target.is_defending:
-		actual = actual / 2
-	target.take_damage(actual)
-	return actual
+	## One defence formula, take_damage's, as in live's _execute_physical_ability; see _resolve_attack.
+	return target.take_damage(int(_apply_lens_execute_bonus(attacker, target, base_damage)))
 
 
 func _grind_item_revives(item_id: String) -> bool:

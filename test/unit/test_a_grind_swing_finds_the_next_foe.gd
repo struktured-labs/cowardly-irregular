@@ -29,6 +29,12 @@ func _body(who: String, hp: int) -> Combatant:
 	return c
 
 
+## A swing can miss, so one blow proves nothing: twelve at the same target, and at least one lands.
+func _swing(who: Combatant, at: Combatant) -> void:
+	for _i in range(12):
+		_res._execute_action({"type": "attack", "combatant": who, "target": at})
+
+
 ## One hero, a second hero, and three foes: one fallen, one hurt, one fresh.
 func _field() -> Dictionary:
 	var f := {"hero": _body("Hero", 9999), "ally": _body("Ally", 9999),
@@ -39,7 +45,7 @@ func _field() -> Dictionary:
 
 
 func test_the_subject_exposes_what_these_arms_drive() -> void:
-	for m in ["_execute_action", "_retarget_foe", "_retarget_ability_targets", "_resolve_ability", "_foe_ability_targets", "_swing_crit_chance"]:
+	for m in ["_execute_action", "_retarget_foe", "_retarget_ability_targets", "_resolve_ability", "_foe_ability_targets", "_swing_crit_chance", "_resolve_attack"]:
 		assert_true(_res.has_method(m), "%s is driven below; a rename would abort an arm" % m)
 	assert_true("_player_party" in _res and "_enemy_party" in _res, "the two party arrays are set by hand below")
 	assert_eq(str(JobSystem.get_ability("fire").get("target_type", "")), "single_enemy", "CONTROL: fire is the one-foe spell these arms cast")
@@ -49,14 +55,14 @@ func test_the_subject_exposes_what_these_arms_drive() -> void:
 
 func test_a_swing_at_a_fallen_foe_lands_on_the_weakest_one_standing() -> void:
 	var f := _field()
-	_res._execute_action({"type": "attack", "combatant": f["hero"], "target": f["fallen"]})
+	_swing(f["hero"], f["fallen"])
 	assert_lt(f["hurt"].current_hp, 4000, "the swing went to the lowest-HP foe still standing")
 	assert_eq(f["fresh"].current_hp, 9000, "and to nobody else")
 
 
 func test_a_swing_at_a_standing_foe_stays_on_it() -> void:
 	var f := _field()
-	_res._execute_action({"type": "attack", "combatant": f["hero"], "target": f["fresh"]})
+	_swing(f["hero"], f["fresh"])
 	assert_lt(f["fresh"].current_hp, 9000, "CONTROL: a living target keeps the blow")
 	assert_eq(f["hurt"].current_hp, 4000, "CONTROL: the weaker foe is not preferred over a living target")
 
@@ -95,7 +101,7 @@ func test_a_foe_whose_mark_fell_turns_on_the_weakest_hero() -> void:
 	f["ally"].current_hp = 3000
 	var dead_hero := _body("Gone", 0)
 	_res._player_party = [dead_hero, f["hero"], f["ally"]]
-	_res._execute_action({"type": "attack", "combatant": f["fresh"], "target": dead_hero})
+	_swing(f["fresh"], dead_hero)
 	assert_lt(f["ally"].current_hp, 3000, "a foe's blow follows the same rule onto the party")
 	assert_eq(f["hero"].current_hp, 9999, "and lands on one hero only")
 
@@ -193,3 +199,39 @@ func test_a_passive_and_a_crit_buff_count_in_the_grind_as_they_do_live() -> void
 	var live: float = float(BattleManager._calculate_crit_chance(hero))
 	assert_gt(live, bare, "CONTROL: live counts the critical_strike passive for this hero")
 	assert_almost_eq(_res._swing_crit_chance(hero), live, 0.0001, "and the grind counts it the same")
+
+
+## The grind ran the defence formula in its own helper and again inside take_damage, so every swing and physical move met the defence twice (a L20 Power Strike landed 341 where live lands 486).
+func test_a_physical_move_meets_the_defence_once() -> void:
+	var f := _field()
+	var foe: Combatant = f["fresh"]
+	var amount: int = int(float(f["hero"].get_buffed_stat("attack", f["hero"].attack)) * float(JobSystem.get_ability("power_strike").get("damage_multiplier", 0.0)))
+	var once: int = foe.damage_preview(amount)
+	var twice: int = foe.damage_preview(once)
+	assert_gt(amount, 0, "CONTROL: power_strike has a multiplier and the hero an attack")
+	assert_lt(twice, once, "CONTROL: a second pass through the defence would show")
+	_res._resolve_ability(f["hero"], "power_strike", [foe])
+	assert_eq(9000 - foe.current_hp, once, "Power Strike lands what one pass through the defence leaves")
+
+
+func test_a_swing_reports_the_hp_it_took() -> void:
+	var f := _field()
+	var foe: Combatant = f["fresh"]
+	var landed := 0
+	for _i in range(12):
+		var before: int = foe.current_hp
+		var said: int = _res._resolve_attack(f["hero"], foe)
+		assert_eq(before - foe.current_hp, said, "a swing's reported damage is the HP the foe lost")
+		landed += said
+	assert_gt(landed, 0, "CONTROL: at least one of twelve swings landed")
+	## Against a defence as large as the attack, a second pass would put even a strong roll under the weakest single one.
+	foe.defense = int(f["hero"].attack)
+	var weakest: int = foe.damage_preview(int(float(f["hero"].attack) * 0.85))
+	foe.current_hp = 9000
+	var hits: Array = []
+	for _i in range(12):
+		var took: int = _res._resolve_attack(f["hero"], foe)
+		if took > 0:
+			hits.append(took)
+	assert_gt(hits.size(), 0, "CONTROL: a landed swing to judge")
+	assert_gte(int(hits.min()), weakest - 1, "no landed swing is under one pass of the defence on its weakest roll")
