@@ -1285,6 +1285,11 @@ func _examine_offset_for(examine_id: String) -> Vector2i:
 	return _EXAMINE_OFFSETS.get(examine_id, Vector2i.ZERO)
 
 
+## Virtual: the cell of the drawn thing this examine describes (a well, a statue), or (-1, -1) for none.
+func _examine_anchor_cell(_examine_id: String) -> Vector2i:
+	return Vector2i(-1, -1)
+
+
 ## Only this village's entries, so a pack-wide key change cannot pull another scene's text in.
 func _load_examine_pack() -> Dictionary:
 	if not FileAccess.file_exists(_EXAMINE_PACK):
@@ -1352,10 +1357,12 @@ func _place_authored_examines() -> void:
 		if text == "":
 			push_warning("[%s] examine '%s' is authored with no text" % [_get_area_id(), examine_id])
 			continue
-		if not _EXAMINE_OFFSETS.has(examine_id):
+		# An examine anchored to something the village DRAWS stands on that thing's cell and is read from beside it.
+		var anchor: Vector2i = _examine_anchor_cell(str(examine_id))
+		if anchor.x < 0 and not _EXAMINE_OFFSETS.has(examine_id):
 			push_warning("[%s] examine '%s' has no offset, so it has no cell" % [_get_area_id(), examine_id])
 			continue
-		var cell := _resolve_examine_cell(spawn_cell + _examine_offset_for(str(examine_id)), taken)
+		var cell: Vector2i = anchor if anchor.x >= 0 else _resolve_examine_cell(spawn_cell + _examine_offset_for(str(examine_id)), taken)
 		if cell.x < 0:
 			push_warning("[%s] examine '%s' found no walkable free cell near %s" % [
 				_get_area_id(), examine_id, str(spawn_cell + _examine_offset_for(str(examine_id)))])
