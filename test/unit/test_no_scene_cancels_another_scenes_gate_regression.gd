@@ -257,8 +257,10 @@ func _concedes(list_name: String, flag: String) -> bool:
 	var i := src.find("const %s" % list_name)
 	if list_name == "" or i < 0:
 		return false
-	var j := src.find("]", i)
-	return j > i and src.substr(i, j - i).contains('"cutscene_flag_%s"' % flag)
+	## From the list's own "= [" (the type hint `Array[String]` holds a "]" of its own) to the bracket that closes it.
+	var open := src.find("= [", i)
+	var j := src.find("]", open)
+	return open > i and j > open and src.substr(open, j - open).contains('"cutscene_flag_%s"' % flag)
 
 
 func test_a_declared_replacement_concedes_the_flag_it_is_gated_on() -> void:
