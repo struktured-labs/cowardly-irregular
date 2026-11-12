@@ -43,6 +43,9 @@ var _wscale: float = 1.0
 ## Artist party frames display ~315px centred on the slot; a left flourish reaches ~157px past origin (F12 2026-09-20).
 const CARD_SPRITE_GAP := 200.0
 const LOG_CLEAR_X := 190.0
+## The battle's left column (struktured 2026-11-12: "the exp cards still overlap with the enemy cards"): the cards start right of whichever of these is showing.
+const LEFT_COLUMN: Array[String] = ["EnemyStatusPanel", "BattleLogPanel", "CTBTimeline"]
+const LEFT_COLUMN_GAP := 10.0
 const STRIP_BOTTOM_MARGIN := 64.0
 
 var _scene = null
@@ -97,8 +100,24 @@ func _stack_top() -> float:
 ## that the column still starts clear of the log.
 func _fit_card_width_scale(vp_x: float) -> float:
 	var want: float = maxf(1.0, _raw_text_scale())
-	var cap: float = (vp_x - 8.0 - LOG_CLEAR_X) / CARD_W
+	var cap: float = (vp_x - 8.0 - _left_wall(vp_x)) / CARD_W
 	return clampf(want, 1.0, maxf(1.0, cap))
+
+
+## The first x a card may occupy: past the real right edge of every left-column panel on screen, never left of LOG_CLEAR_X.
+func _left_wall(vp_x: float) -> float:
+	var wall := LOG_CLEAR_X
+	if not is_instance_valid(_scene) or not (_scene is Node):
+		return wall
+	for pname in LEFT_COLUMN:
+		var panel := (_scene as Node).find_child(pname, true, false) as Control
+		if panel == null or not panel.is_visible_in_tree():
+			continue
+		var r: Rect2 = panel.get_global_rect()
+		## A panel that reaches past mid-screen is not a column (a widened log overlay): it is no wall.
+		if r.has_area() and r.end.x <= vp_x * 0.5:
+			wall = maxf(wall, r.end.x + LEFT_COLUMN_GAP)
+	return wall
 
 
 func _cw() -> float:
@@ -280,10 +299,9 @@ var _title_px := 4
 var _impact_done := false
 
 
-## The beat takes the same REAL time at every battle speed (cowir-music 23438): game-time tweens sped by 1/time_scale.
-## Not set_ignore_time_scale: measured under --write-movie at 30 fps, that beat landed in ~3 video frames, not ~16 (cause unmeasured).
+## Real time at every battle speed, kept across a mid-beat speed change; under a fixed-fps capture it steps 1/fps per frame (adhoc 23963).
 func _wall(t: Tween) -> Tween:
-	return _track(t.set_speed_scale(1.0 / maxf(Engine.time_scale, 0.01)))
+	return _track(t.set_ignore_time_scale(true))
 
 
 ## A row of pixel letters that the overlay's rects, modulate and child lookups treat like the Label it replaced.
@@ -690,7 +708,7 @@ func _card_position(i: int, count: int, vp: Vector2) -> Vector2:
 				if home is Vector2:
 					sp += (home - sprite.position)
 			pos = Vector2(sp.x - _cw() - CARD_SPRITE_GAP, sp.y - _ch() / 2.0)
-	pos.x = clampf(pos.x, LOG_CLEAR_X, vp.x - _cw() - 8.0)
+	pos.x = clampf(pos.x, maxf(LOG_CLEAR_X, _left_wall(vp.x)), vp.x - _cw() - 8.0)
 	## ⚠️ FLOOR STAYS AT 56, NOT _stack_top(). This function PLACES NOTHING — `_column_positions`
 	## calls it only to average the party's anchored ys into the column's centre. Raising this floor
 	## lifted the topmost sprite's y and dragged that average with it, moving the whole 100% column

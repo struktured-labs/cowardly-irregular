@@ -3,7 +3,7 @@ extends SceneTree
 ## A clip of one ability cast over a REAL battle, for --write-movie capture at a fixed fps: the mage's (or any job's)
 ## cast through BattleManager's own execution path, so the clip shows what a player sees and hears.
 ## Run through tools/cast_clip.sh (it owns the sandbox, xvfb, the pad jail and the encode).
-## Args: --ability=<id> --job=<caster job, default mage> --foes=<n, default 3> --level=<party level, default 16>
+## Args: --ability=<id | attack> [--target=<foe index>] [--foe_hits=<job>: that foe swings at the hero] --job=<caster job, default mage> --foes=<n, default 3> --level=<party level, default 16>
 ##       --seconds=<length kept by the encode> --speed=<engine time_scale, default: the game's own>
 
 func _init() -> void:
@@ -13,6 +13,8 @@ func _init() -> void:
 	var level := 16
 	var seconds := 3.4
 	var speed := 0.0
+	var target_idx := 0   # which foe a single-target cast or a plain `--ability=attack` aims at (rows differ, so the lunge does)
+	var foe_hits := ""    # a job id: the foe at --target swings at that hero instead
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--ability="):
 			ability = a.get_slice("=", 1)
@@ -26,6 +28,10 @@ func _init() -> void:
 			seconds = float(a.get_slice("=", 1))
 		elif a.begins_with("--speed="):
 			speed = float(a.get_slice("=", 1))
+		elif a.begins_with("--target="):
+			target_idx = int(a.get_slice("=", 1))
+		elif a.begins_with("--foe_hits="):
+			foe_hits = a.get_slice("=", 1)
 	await process_frame
 	await process_frame
 	var gs = root.get_node_or_null("GameState")
@@ -83,7 +89,8 @@ func _init() -> void:
 		e.max_hp = 999999
 		e.current_hp = 999999
 	var data: Dictionary = js.get_ability(ability)
-	var targets: Array = bm.enemy_party.duplicate() if str(data.get("target_type", "")) == "all_enemies" else [bm.enemy_party[0]]
+	var aimed: Combatant = bm.enemy_party[clampi(target_idx, 0, bm.enemy_party.size() - 1)]
+	var targets: Array = bm.enemy_party.duplicate() if str(data.get("target_type", "")) == "all_enemies" else [aimed]
 	if str(data.get("target_type", "")) in ["self", "single_ally", "all_allies"]:
 		targets = [caster] if str(data.get("target_type", "")) != "all_allies" else bm.player_party.duplicate()
 	## An ally spell is filmed on ANOTHER member, so the light is seen to travel; a revive on a member felled for the shot.
@@ -104,7 +111,18 @@ func _init() -> void:
 	print("[CCLIP] built ability=%s caster=%s targets=%d time_scale=%.3f sequence=%s" % [ability, caster.combatant_name, targets.size(), Engine.time_scale, str(data.get("vfx", ""))])
 	## A typed array: assigning a fresh untyped one is a script error that aborts this function (and the clip times out).
 	bm.execution_order.clear()
-	bm.execution_order.append({"type": "ability", "combatant": caster, "ability_id": ability, "targets": targets, "speed": 99})
+	if foe_hits != "":
+		var struck: Combatant = caster
+		for m in bm.player_party:
+			if m.job and str(m.job.get("id", "")) == foe_hits:
+				struck = m
+		struck.max_hp = 999999
+		struck.current_hp = 999999
+		bm.execution_order.append({"type": "attack", "combatant": aimed, "target": struck, "speed": 99})
+	elif ability == "attack":
+		bm.execution_order.append({"type": "attack", "combatant": caster, "target": aimed, "speed": 99})
+	else:
+		bm.execution_order.append({"type": "ability", "combatant": caster, "ability_id": ability, "targets": targets, "speed": 99})
 	bm.current_state = bm.BattleState.EXECUTION_PHASE
 	bm._execute_next_action()
 	await create_timer(seconds * Engine.time_scale).timeout

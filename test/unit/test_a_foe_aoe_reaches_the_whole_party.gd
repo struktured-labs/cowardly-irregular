@@ -27,6 +27,8 @@ const PARTY_SIZE := 5
 
 func _resolver_with_party(size: int) -> Array:
 	var r = RESOLVER.new()
+	## These arms pin this file's OWN rules, the fallback: the live ladder rolls its pick (test_a_grind_fights_the_boss_a_player_does).
+	r.use_live_enemy_ladder = false
 	var party: Array = []
 	for i in range(size):
 		var c := Combatant.new()
@@ -57,6 +59,8 @@ func _foe(ability_id: String) -> Combatant:
 
 func test_the_subject_exposes_what_these_arms_drive() -> void:
 	var r = RESOLVER.new()
+	## These arms pin this file's OWN rules, the fallback: the live ladder rolls its pick (test_a_grind_fights_the_boss_a_player_does).
+	r.use_live_enemy_ladder = false
 	assert_true(r.has_method("_select_enemy_action"),
 		"_select_enemy_action is the subject; a rename would abort each arm below silently")
 	assert_true(r.has_method("_foe_ability_targets"),

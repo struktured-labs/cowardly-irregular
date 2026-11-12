@@ -22,29 +22,30 @@ const MAX_STACK := 5
 static var _active_layers: Array = []
 
 
+## The y of the first row (BASE_Y + n rows, n < MAX_STACK) where a band `band_h` tall overlaps no live toast; -1 if none.
+static func _free_y(band_h: float) -> float:
+	for row in MAX_STACK:
+		var y: float = BASE_Y + row * STACK_ROW_HEIGHT
+		var clear := true
+		for live in _active_layers:
+			if not is_instance_valid(live):
+				continue
+			var ly: float = float(live.get_meta("toast_y", BASE_Y))
+			var lh: float = float(live.get_meta("toast_h", LINE_BAND))
+			if y < ly + lh and ly < y + band_h:
+				clear = false
+				break
+		if clear:
+			return y
+	return -1.0
+
+
 static func show(parent: Node, text: String, color: Color = DEFAULT_COLOR, hold_s: float = 2.0) -> void:
 	if parent == null or not is_instance_valid(parent):
 		return
 
 	# Tick 205: prune dead layers (parent freed, manual queue_free elsewhere) before computing stack offset so a finished toast doesn't keep its slot.
 	_active_layers = _active_layers.filter(func(l): return is_instance_valid(l))
-	# Tick 206: evict oldest while at cap so the new toast can spawn without pushing the stack off-screen. Hard queue_free is fine — by the time we hit cap, the user can't read all 5+ anyway.
-	while _active_layers.size() >= MAX_STACK:
-		var oldest: Node = _active_layers.pop_front()
-		if is_instance_valid(oldest):
-			oldest.queue_free()
-	var stack_offset: float = _active_layers.size() * STACK_ROW_HEIGHT
-	# Tick 207: a wrapped message is taller than one row, so the count above under-counts the
-	# space already taken and the next toast printed through it. Each layer records what it used
-	# beyond one row; a single-line toast records 0, leaving the stride exactly as it was.
-	for live in _active_layers:
-		stack_offset += float(live.get_meta("toast_extra_h", 0.0))
-
-	var layer := CanvasLayer.new()
-	layer.layer = 80
-	parent.add_child(layer)
-	_active_layers.append(layer)
-
 	var vp_size := Vector2(1280, 720)
 	if parent.has_method("get_viewport"):
 		var vp := parent.get_viewport()
@@ -53,9 +54,31 @@ static func show(parent: Node, text: String, color: Color = DEFAULT_COLOR, hold_
 			if vp_size.x <= 0:
 				vp_size = Vector2(1280, 720)
 
-	var y: float = BASE_Y + stack_offset
 	# Text Size: built per show, so the live scale is read here; the band below is measured at it.
 	var px: int = TextScale.scaled(FONT_SIZE)
+	var band_h: float = LINE_BAND
+	var font: Font = ThemeDB.fallback_font
+	if font != null:
+		band_h = maxf(LINE_BAND, font.get_multiline_string_size(
+			text, HORIZONTAL_ALIGNMENT_CENTER, vp_size.x, px).y)
+
+	## A toast takes the first ROW whose band is clear of every live toast, by their recorded rects. The stack used to
+	## place by COUNT (`size() * row`), so once an older toast had faded the next one landed on a row still in use, and
+	## a burst past MAX_STACK put every extra toast on the last row, one on top of another (struktured 2026-11-11).
+	## At the cap, or with no clear row, the oldest goes at once (hidden this frame, not just queued) and its row is free.
+	while not _active_layers.is_empty() and (_active_layers.size() >= MAX_STACK or _free_y(band_h) < 0.0):
+		var oldest: Node = _active_layers.pop_front()
+		if is_instance_valid(oldest):
+			oldest.visible = false
+			oldest.queue_free()
+	var y: float = maxf(BASE_Y, _free_y(band_h))
+
+	var layer := CanvasLayer.new()
+	layer.layer = 80
+	layer.set_meta("toast_y", y)
+	layer.set_meta("toast_h", band_h)
+	parent.add_child(layer)
+	_active_layers.append(layer)
 
 	var shadow := Label.new()
 	shadow.text = text
@@ -78,12 +101,6 @@ static func show(parent: Node, text: String, color: Color = DEFAULT_COLOR, hold_
 	## content win (measured: 1280 became 1331, and it then wrapped at 1331 and still clipped),
 	## and assigning the size AFTER add_child leaves the minimum size that was cached at width
 	## zero, giving a correct 2-line draw inside a 3892px rect.
-	var band_h: float = LINE_BAND
-	var font: Font = shadow.get_theme_font("font")
-	if font != null:
-		band_h = maxf(LINE_BAND, font.get_multiline_string_size(
-			text, HORIZONTAL_ALIGNMENT_CENTER, vp_size.x, px).y)
-
 	shadow.size = Vector2(vp_size.x, band_h)
 	shadow.modulate.a = 0.0
 	layer.add_child(shadow)
