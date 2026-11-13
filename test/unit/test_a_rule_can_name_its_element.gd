@@ -118,6 +118,9 @@ func test_keyboard_and_pad_both_reach_the_second_value() -> void:
 	for t in types:
 		var field: String = str(_abs.CONDITION_REQUIRED_FIELD[t])
 		var names: Array = load(EDITOR).payload_vocabulary(field)
+		assert_gt(names.size(), 1, "%s: its %s has a second value to reach" % [t, field])
+		if names.size() < 2:
+			continue   # red above, by name; indexing [1] would abort the arm instead
 		var by_key: Node = await _editor(t)
 		by_key._input(_key(KEY_EQUAL))
 		assert_eq(str(_cond(by_key)[field]), str(names[1]), "%s: = steps its %s forward" % [t, field])
