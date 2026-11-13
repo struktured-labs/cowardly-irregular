@@ -6432,9 +6432,7 @@ func _execute_magic_ability(caster: Combatant, ability: Dictionary, targets: Arr
 	## ability is element-less (matches "no fire scroll, no fire
 	## bonus" intent).
 	if element != "":
-		var elem_bonus: float = _sum_equipment_special_effect(caster, element + "_damage_bonus")
-		if elem_bonus > 0.0:
-			multiplier *= elem_bonus
+		multiplier *= _element_damage_bonus(caster, element)
 		## Buff-side twin of the gear bonus — element_boost, from a support ability.
 		var elem_buff: float = _element_buff_bonus(caster, element)
 		if elem_buff > 0.0:
@@ -6757,9 +6755,7 @@ func estimate_ability_breakdown(attacker: Combatant, target: Combatant, ability:
 	if is_magical:
 		var gear_element := str(ability.get("element", ""))
 		if gear_element != "":
-			var gear_bonus := _sum_equipment_special_effect(attacker, gear_element + "_damage_bonus")
-			if gear_bonus > 0.0:
-				gear_mult = gear_bonus
+			gear_mult = _element_damage_bonus(attacker, gear_element)
 			var elem_buff := _element_buff_bonus(attacker, gear_element)
 			if elem_buff > 0.0:
 				buff_mult = elem_buff
@@ -6880,6 +6876,19 @@ func _calculate_crit_chance(attacker: Combatant) -> float:
 ## (evasion_bonus, poison_chance, sleep_chance, status_resistance,
 ## steal_bonus, <elem>_damage_bonus, <elem>_resistance) can reuse
 ## the same helper as they get wired in follow-up ticks.
+## One element's damage scale for a caster: gear's <element>_damage_bonus times a passive's (undead_affinity's dark), each only when authored.
+func _element_damage_bonus(caster: Combatant, element: String) -> float:
+	var out := 1.0
+	var gear := _sum_equipment_special_effect(caster, element + "_damage_bonus")
+	if gear > 0.0:
+		out *= gear
+	if caster != null and is_instance_valid(caster) and caster.has_method("_get_passive_meta_effect_sum"):
+		var passive: float = caster._get_passive_meta_effect_sum(element + "_damage_bonus")
+		if passive > 0.0:
+			out *= passive
+	return out
+
+
 func _sum_equipment_special_effect(combatant: Combatant, key: String) -> float:
 	if combatant == null or not is_instance_valid(combatant):
 		return 0.0

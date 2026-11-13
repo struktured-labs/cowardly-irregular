@@ -236,11 +236,9 @@
 		"id": "undead_affinity",
 		"name": "Undead Affinity",
 		"category": 0,
-		"description": "+40% dark damage, heal from dark attacks (Currently no effect)",
-		"stat_mods": {
-			"magic_multiplier": 1.4
-		},
+		"description": "+40% dark damage, heal from dark attacks",
 		"meta_effects": {
+			"dark_damage_bonus": 1.4,
 			"dark_absorb": true
 		}
 	},
