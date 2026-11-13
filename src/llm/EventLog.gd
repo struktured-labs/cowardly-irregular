@@ -26,7 +26,15 @@ const TYPE_AREA_ENTERED   := "area_entered"
 const TYPE_ITEM_OBTAINED  := "item_obtained"
 const TYPE_LEVEL_UP       := "level_up"
 const TYPE_STORY_FLAG     := "story_flag"
+const TYPE_QUEST_COMPLETE := "quest_complete"
 const TYPE_CUSTOM         := "custom"
+
+
+## How a finished quest reads in the log: by the title the Quest Log shows; "" for a quest with none.
+static func quest_complete_summary(title: String) -> String:
+	var shown: String = title.strip_edges()
+	return ("Finished the quest \"%s\"" % shown) if shown != "" else ""
+
 
 # ── Configuration ─────────────────────────────────────────────────────────────
 const RING_CAP: int = 50  # Maximum number of entries retained.
