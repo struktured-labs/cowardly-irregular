@@ -139,6 +139,7 @@ func _ready() -> void:
 	_setup_npcs()
 	# msg 2764: NPC-vs-furniture sweep (shared with BaseInterior + InnInterior + ShopInterior).
 	InteriorPlacementSweep.sweep(self, npcs, decorations, TAVERN_LAYOUT, "tavern_interior")
+	InteriorStroll.assign.call_deferred(self, npcs, decorations, TAVERN_LAYOUT)
 	_setup_transitions()
 	_setup_player()
 	_setup_camera()

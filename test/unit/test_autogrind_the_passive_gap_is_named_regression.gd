@@ -74,7 +74,7 @@ func test_the_gap_is_still_the_size_it_is_declared_to_be() -> void:
 		if typeof(s) == TYPE_DICTIONARY:
 			for k in (s as Dictionary):
 				mods[k] = true
-	gut.p("    %d passives authored · %d distinct stat_mods keys · 0 modelled in the grind" % [p.size(), mods.size()])
+	gut.p("    %d passives authored · %d distinct stat_mods keys · see the modelled arm for the grind's share" % [p.size(), mods.size()])
 	var unnamed: Array = []
 	for k in mods:
 		if not KNOWN_STAT_MODS.has(k):
@@ -83,18 +83,29 @@ func test_the_gap_is_still_the_size_it_is_declared_to_be() -> void:
 		"a NEW KIND of passive modifier is authored and not named here, so the open question just got bigger without anyone saying so: %s" % str(unnamed))
 
 
-func test_the_grind_still_models_none_of_them() -> void:
-	## ⛔ THE ARM THAT RETIRES THIS FILE. It reds the day somebody wires passives into the resolver —
-	## which means the ruling was made and this note is stale, not that anything broke. Read through
-	## GdSource so the prose at :998 describing the gap cannot be mistaken for code closing it.
+## The keys the grind DOES model, each by the decider's rule. crit_chance (2026-11-12): once speed stops capping everyone at 50%, critical_strike moves what a swing is expected to do.
+const MODELLED := ["crit_chance"]
+
+
+func test_the_grind_models_only_what_is_declared() -> void:
+	## Read through GdSource so prose describing the gap cannot be mistaken for code closing it.
 	var code: String = GdSource.code_of(GRIND)
 	assert_gt(code.length(), 10000, "CONTROL: the resolver was actually read")
-	var reads: Array = []
-	for probe in ["PassiveSystem", "stat_mods", "get_passive_mods", "equipped_passives"]:
-		if code.contains(probe):
-			reads.append(probe)
-	assert_eq(reads, [],
-		"the resolver now reads passives — the scoping call was answered, so retire this file and move the entry into the parity ledger's closed set: %s" % str(reads))
+	for probe in ["stat_mods", "equipped_passives"]:
+		assert_false(code.contains(probe), "the resolver reads '%s' directly; a passive reaches it through get_passive_mods and a declared key only" % probe)
+	var rx := RegEx.create_from_string("get_passive_mods\\([^\\n]*\\.get\\(\"(\\w+)\"")
+	var read: Array = []
+	for m in rx.search_all(code):
+		if not read.has(m.get_string(1)):
+			read.append(m.get_string(1))
+	assert_eq(code.count("get_passive_mods("), rx.search_all(code).size(),
+		"every get_passive_mods call in the resolver must name the ONE key it reads on its own line, or this arm cannot say what is modelled")
+	read.sort()
+	assert_eq(read, MODELLED,
+		"the passive keys the resolver reads are not the declared MODELLED set: a new one needs the decider's reason beside it")
+	for k in MODELLED:
+		assert_true(KNOWN_STAT_MODS.has(k), "CONTROL: a modelled key is one passives.json authors (%s)" % k)
+	gut.p("    %d of %d stat_mods keys modelled in the grind: %s" % [MODELLED.size(), KNOWN_STAT_MODS.size(), str(MODELLED)])
 
 
 func test_the_decision_is_recorded_with_its_decider() -> void:
