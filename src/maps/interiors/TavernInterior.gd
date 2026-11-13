@@ -203,7 +203,14 @@ func _setup_tilemap() -> void:
 	_generate_floor()
 
 
+## The tile kinds the art seam knows (InteriorArt.TILE_KINDS) by this room's variant name; the rest stay painted.
+const _DRAWN_TILES := {"wood": ["floor", "_draw_floor_tile"], "wall": ["wall", "_draw_wall_tile"], "hearth": ["hearth", "_draw_hearth_floor"]}
+
+
 func _make_floor_source(variant: String) -> TileSetAtlasSource:
+	if _DRAWN_TILES.has(variant):
+		var kind: Array = _DRAWN_TILES[variant]
+		return InteriorArt.source(InteriorArt.tile(kind[0], "tavern", Callable(self, kind[1])))
 	var src = TileSetAtlasSource.new()
 	var img = Image.create(TILE_SIZE, TILE_SIZE, false, Image.FORMAT_RGBA8)
 	match variant:
@@ -415,24 +422,29 @@ func _generate_floor() -> void:
 		var row_str = TAVERN_LAYOUT[y]
 		for x in range(MAP_WIDTH):
 			if x >= row_str.length():
-				tilemap.set_cell(Vector2i(x, y), 1, Vector2i(0, 0))
+				_set_tile(x, y, 1)
 				continue
 			var ch = row_str[x]
 			match ch:
 				"W":
-					tilemap.set_cell(Vector2i(x, y), 1, Vector2i(0, 0))
+					_set_tile(x, y, 1)
 				"S":
-					tilemap.set_cell(Vector2i(x, y), 2, Vector2i(0, 0))
+					_set_tile(x, y, 2)
 				"K":
-					tilemap.set_cell(Vector2i(x, y), 3, Vector2i(0, 0))
+					_set_tile(x, y, 3)
 				"H":
-					tilemap.set_cell(Vector2i(x, y), 4, Vector2i(0, 0))
+					_set_tile(x, y, 4)
 				"D":
-					tilemap.set_cell(Vector2i(x, y), 5, Vector2i(0, 0))
+					_set_tile(x, y, 5)
 				"U":
-					tilemap.set_cell(Vector2i(x, y), 6, Vector2i(0, 0))
+					_set_tile(x, y, 6)
 				_:
-					tilemap.set_cell(Vector2i(x, y), 0, Vector2i(0, 0))
+					_set_tile(x, y, 0)
+
+
+## A drawn tile is a pattern the map samples by position; a painted one is a single cell.
+func _set_tile(x: int, y: int, source_id: int) -> void:
+	tilemap.set_cell(Vector2i(x, y), source_id, InteriorArt.cell_in(tilemap, source_id, Vector2i(x, y)))
 
 
 # ---------------------------------------------------------------------------

@@ -9,21 +9,24 @@ const NPC_SCRIPT := "res://src/exploration/OverworldNPC.gd"
 const PERSONAS := "res://data/cutscenes/npc_showcase_personas.json"
 const CUTSCENES := "res://data/cutscenes"
 const FLAG := "rat_king_fell_before_the_briefing"
+const DONE := "theron_sparring_done"
 
-var _had_flag: bool = false
-var _flag_was: Variant = null
+var _was: Dictionary = {}
 
 
 func before_each() -> void:
-	_had_flag = GameState.story_flags.has(FLAG)
-	_flag_was = GameState.story_flags.get(FLAG)
-	GameState.story_flags.erase(FLAG)
+	_was = {}
+	for f in [FLAG, DONE]:
+		if GameState.story_flags.has(f):
+			_was[f] = GameState.story_flags[f]
+		GameState.story_flags.erase(f)
 
 
 func after_each() -> void:
-	GameState.story_flags.erase(FLAG)
-	if _had_flag:
-		GameState.story_flags[FLAG] = _flag_was
+	for f in [FLAG, DONE]:
+		GameState.story_flags.erase(f)
+	for f in _was:
+		GameState.story_flags[f] = _was[f]
 
 
 func _personas() -> Dictionary:
@@ -31,13 +34,13 @@ func _personas() -> Dictionary:
 	return parsed as Dictionary if parsed is Dictionary else {}
 
 
-## The fact as authored for `npc_name` under FLAG; "" when that NPC carries none.
-func _authored_fact(npc_name: String) -> String:
+## The fact as authored for `npc_name` under `flag`; "" when that NPC carries none.
+func _authored_fact(npc_name: String, flag: String = FLAG) -> String:
 	var entry: Variant = _personas().get(npc_name, {})
 	if not (entry is Dictionary):
 		return ""
 	for f in (entry as Dictionary).get("flag_facts", []):
-		if f is Dictionary and str((f as Dictionary).get("when_flag", "")) == FLAG:
+		if f is Dictionary and str((f as Dictionary).get("when_flag", "")) == flag:
 			return str((f as Dictionary).get("fact", ""))
 	return ""
 
@@ -98,6 +101,23 @@ func test_the_elder_knows_once_the_scene_has_played() -> void:
 	var reply: String = DP.build_npc_reply("Elder Theron", after, "Harmonia Village", [], "Hm.", "We killed the rat.")
 	assert_string_contains(opening, fact, "the fact reaches his opening prompt")
 	assert_string_contains(reply, fact, "and his reply prompt")
+
+
+
+## He offers the skipped trials as sparring (cutscenes 10d212f3e); once all five are won the LLM Elder knows that too, not only that he was skipped.
+func test_the_elder_knows_his_trials_were_won() -> void:
+	var fact: String = _authored_fact("Elder Theron", DONE)
+	assert_ne(fact, "", "CONTROL: the Elder's persona carries a fact for %s" % DONE)
+	if fact == "":
+		return
+	GameState.set_story_flag(FLAG)
+	var skipped: String = _prompt_persona("Elder Theron")
+	assert_string_contains(skipped, _authored_fact("Elder Theron"), "CONTROL: skipped, he is told he was skipped")
+	assert_false(skipped.contains(fact), "trials still open: he is not told they were all won")
+	GameState.set_story_flag(DONE)
+	var done: String = _prompt_persona("Elder Theron")
+	assert_true(done.begins_with(skipped) and done.contains(fact), "all five won: his persona keeps the skip and adds the win")
+	assert_string_contains(DP.build_npc_opening("Elder Theron", done, "Harmonia Village", []), fact, "the win reaches his opening prompt")
 
 
 ## The gate guard saw them go (cowir-story): a fact reaches exactly the NPCs it is authored for, in their own words.

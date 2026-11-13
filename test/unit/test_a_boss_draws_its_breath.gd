@@ -125,6 +125,28 @@ func test_an_unauthored_boss_gets_the_generic_line() -> void:
 	assert_string_contains(str(params[0]) if not params.is_empty() else "", "is gathering power for")
 
 
+## .795 shipped Glacius's breath with no authored words, so the player read the generic line (adhoc 24876): a clocked boss says its own.
+func test_every_clocked_boss_says_its_charge_and_its_break_in_its_own_words() -> void:
+	var clocked: Array = []
+	for id in EncounterSystem.monster_database:
+		var row: Variant = EncounterSystem.monster_database[id]
+		if row is Dictionary and not BossCadence.config(row).is_empty():
+			clocked.append(id)
+	assert_gt(clocked.size(), 0, "CONTROL: monsters.json authors at least one cadence row")
+	var silent: Array = []
+	for id in clocked:
+		var c: Combatant = Combatant.new()
+		add_child_autofree(c)
+		c.set_meta("monster_type", id)
+		var persona := BattleManager._boss_persona_id(c)
+		var lines: Dictionary = BossDialogue.get_charge_lines(persona)
+		if str(lines.get("charge_line", "")) == "":
+			silent.append("%s (%s).charge_line" % [id, persona])
+		if str(lines.get("interrupted_log", "")) == "":
+			silent.append("%s (%s).interrupted_line.log" % [id, persona])
+	assert_eq(silent, [], "a clocked boss with no words of its own falls back to the generic log line")
+
+
 func test_a_stun_on_a_charging_boss_breaks_it_through_the_battle_manager() -> void:
 	var boss := _glacius()
 	var cfg: Dictionary = BattleManager._cadence_config(boss)
