@@ -40,6 +40,15 @@ const CARD_GAP := 8.0
 ## the width has most of the screen spare to the right of the column.
 var _cscale: float = 1.0
 var _wscale: float = 1.0
+## The tallest a card's own content can draw (a level-up card with its gains line); a card is never shorter, whatever the fit cap allows.
+var _card_min_h: float = 0.0
+## The air between cards: CARD_GAP when the column has room, down to MIN_CARD_GAP when cards at their content height must still fit.
+var _gap: float = CARD_GAP
+const MIN_CARD_GAP := 2.0
+## When cards at their content height still overflow the column, their padding gives way, never the text Text Size grew.
+var _compact := false
+const CARD_PAD := 5
+const COMPACT_PAD := 1
 ## Artist party frames display ~315px centred on the slot; a left flourish reaches ~157px past origin (F12 2026-09-20).
 const CARD_SPRITE_GAP := 200.0
 const LOG_CLEAR_X := 190.0
@@ -47,6 +56,10 @@ const LOG_CLEAR_X := 190.0
 const LEFT_COLUMN: Array[String] = ["EnemyStatusPanel", "BattleLogPanel", "CTBTimeline"]
 const LEFT_COLUMN_GAP := 10.0
 const STRIP_BOTTOM_MARGIN := 64.0
+## The continue prompt: its base size, its resting distance from the bottom, and the air it keeps from the hint bar and the cards.
+const PROMPT_FONT := 14
+const PROMPT_REST := 58.0
+const PROMPT_GAP := 4.0
 
 var _scene = null
 var _one_shot_rank: String = ""
@@ -76,13 +89,35 @@ func _fit_card_scale(count: int, vp_y: float) -> float:
 	var want: float = maxf(1.0, _raw_text_scale())
 	if count <= 0:
 		return want
-	var room: float = vp_y - _stack_top() - STRIP_BOTTOM_MARGIN - float(maxi(0, count - 1)) * CARD_GAP
+	var room: float = vp_y - _stack_top() - _bottom_margin(vp_y) - float(maxi(0, count - 1)) * CARD_GAP
 	var cap: float = room / (float(count) * CARD_H)
 	return clampf(want, 1.0, maxf(1.0, cap))
 
 
 ## The first y a card may occupy: below the docked title, and below the loot strip if there is one.
 ## Both of those grow with Text Size, which is why this is derived rather than the old literal 150.
+## Where the continue prompt will sit, reserved BEFORE the cards are placed: at its resting line, lifted clear of the hint bar when the text has grown into it.
+var _prompt_rect := Rect2()
+
+
+func _reserve_prompt() -> void:
+	var vp := get_viewport_rect().size
+	var px: int = TextScale.scaled(PROMPT_FONT)
+	var h: float = get_theme_default_font().get_height(px) if get_theme_default_font() else float(px) * 1.4
+	var top: float = vp.y - PROMPT_REST
+	var hint: Control = (_scene as Node).get_node_or_null("UI/InputHintBar") as Control if is_instance_valid(_scene) and _scene is Node else null
+	if hint != null and hint.is_visible_in_tree() and hint.get_global_rect().has_area():
+		top = minf(top, hint.get_global_rect().position.y - PROMPT_GAP - h)
+	_prompt_rect = Rect2((vp.x - 320.0) / 2.0, top, 320.0, h)
+
+
+## How much of the bottom the card column leaves: the shipped margin, or more when the prompt has been lifted.
+func _bottom_margin(vp_y: float) -> float:
+	if not _prompt_rect.has_area():
+		return STRIP_BOTTOM_MARGIN
+	return maxf(STRIP_BOTTOM_MARGIN, vp_y - _prompt_rect.position.y + PROMPT_GAP + 2.0)
+
+
 func _stack_top() -> float:
 	var y := 56.0
 	if _title_docked.has_area():
@@ -125,7 +160,49 @@ func _cw() -> float:
 
 
 func _ch() -> float:
-	return CARD_H * _cscale
+	return maxf(CARD_H * _cscale, _card_min_h)
+
+
+## The tallest card this victory will settle into, measured on each real card built in the tree with its FINAL text (the "★ Lv." top line and the gains line), not a stand-in.
+func _measure_card_min_h(char_results: Array) -> float:
+	var h := 0.0
+	for cr in char_results:
+		if not (cr is Dictionary):
+			continue
+		var probe := _make_card(cr)
+		probe.custom_minimum_size = Vector2.ZERO
+		var top := probe.find_child("TopLine", true, false) as Label
+		if top != null:
+			top.text = _final_top_text(cr)
+		var gains := probe.find_child("GainsLine", true, false) as Label
+		if gains != null and _gains_line(cr) != "":
+			gains.text = _gains_line(cr)
+			gains.visible = true
+		add_child(probe)
+		h = maxf(h, probe.get_combined_minimum_size().y)
+		remove_child(probe)
+		probe.free()
+	return h
+
+
+## The top line a card settles on; the build's roll-up ends here and the snap jumps here.
+func _final_top_text(cr: Dictionary) -> String:
+	var leveled: bool = bool(cr.get("leveled_up", false))
+	var ko_mark := "" if bool(cr.get("is_alive", true)) else "  KO"
+	return "%s  +%d EXP%s%s" % [cr.get("name", "?"), int(cr.get("exp_gained", 0)), "  ★ Lv.%d" % int(cr.get("job_level", 1)) if leveled else "", ko_mark]
+
+
+## True when `count` cards of _ch() at MIN_CARD_GAP cannot fit between the stack top and the bottom margin.
+func _overflows(count: int, vp_y: float) -> bool:
+	return float(count) * _ch() + float(maxi(0, count - 1)) * MIN_CARD_GAP > vp_y - _stack_top() - _bottom_margin(vp_y)
+
+
+## The gap that lets `count` cards of _ch() fit between the stack top and the bottom margin, never above CARD_GAP.
+func _fit_gap(count: int, vp_y: float) -> float:
+	if count <= 1:
+		return CARD_GAP
+	var spare: float = vp_y - _stack_top() - _bottom_margin(vp_y) - float(count) * _ch()
+	return clampf(spare / float(count - 1), MIN_CARD_GAP, CARD_GAP)
 
 
 func occupied_rects() -> Array[Rect2]:
@@ -170,6 +247,7 @@ func build(results: Dictionary, scene) -> void:
 	_one_shot_rank = _one_shot_rank_of(results.get("bonuses", []), str(results.get("one_shot_rank", "")))
 	_build_slam(flourish)
 	_build_loot_strip(results, flourish)
+	_reserve_prompt()
 	_build_cards(results.get("char_results", []), flourish)
 	_build_prompt()
 	if BattleManager and BattleManager.last_post_battle_restore_serial == BattleManager.battle_serial:
@@ -661,6 +739,12 @@ func _build_cards(char_results: Array, flourish: bool) -> void:
 	var _vp_for_scale := get_viewport().get_visible_rect().size if get_viewport() else Vector2(1280, 720)
 	_cscale = _fit_card_scale(char_results.size(), _vp_for_scale.y)
 	_wscale = _fit_card_width_scale(_vp_for_scale.x)
+	_compact = false
+	_card_min_h = _measure_card_min_h(char_results)
+	if _overflows(char_results.size(), _vp_for_scale.y):
+		_compact = true
+		_card_min_h = _measure_card_min_h(char_results)
+	_gap = _fit_gap(char_results.size(), _vp_for_scale.y)
 	var vp := get_viewport_rect().size
 	var column := _column_positions(char_results.size(), vp)
 	## The column enters as ONE cascade, top to bottom. Per-card waits let a card clear of the title slam
@@ -694,7 +778,7 @@ func _build_cards(char_results: Array, flourish: bool) -> void:
 
 ## Card hangs LEFT of its sprite (party faces left). CARD_SPRITE_GAP clears the centred 315px flourish.
 func _card_position(i: int, count: int, vp: Vector2) -> Vector2:
-	var y_fallback := _stack_top() + i * (_ch() + CARD_GAP)
+	var y_fallback := _stack_top() + i * (_ch() + _gap)
 	var pos := Vector2(vp.x * 0.42, y_fallback)
 	if _scene and i < _scene.party_sprite_nodes.size():
 		var sprite = _scene.party_sprite_nodes[i]
@@ -733,19 +817,20 @@ func _column_positions(count: int, vp: Vector2) -> Array[Vector2]:
 	for p in raw:
 		mid += p.y
 	mid /= maxf(1.0, float(raw.size()))
-	var block_h := float(count) * _ch() + float(maxi(0, count - 1)) * CARD_GAP
+	var block_h := float(count) * _ch() + float(maxi(0, count - 1)) * _gap
 	var top := mid + _ch() / 2.0 - block_h / 2.0
 	## Never up into the docked title and the loot strip that hangs under it.
 	top = maxf(top, _stack_top())
 	var out: Array[Vector2] = []
 	for i in range(count):
-		out.append(Vector2(x, clampf(top + i * (_ch() + CARD_GAP), _stack_top(), vp.y)))
+		out.append(Vector2(x, clampf(top + i * (_ch() + _gap), _stack_top(), vp.y)))
 	## Pushed past the bottom: lift the whole column, keeping the spacing.
-	var bottom_limit := vp.y - STRIP_BOTTOM_MARGIN - _ch()
+	var bottom_limit := vp.y - _bottom_margin(vp.y) - _ch()
 	if out.size() > 0 and out[out.size() - 1].y > bottom_limit:
-		var lift := out[out.size() - 1].y - bottom_limit
+		## One block, never squeezed: a per-card clamp at the stack top collapsed the upper cards onto each other.
+		var lift := minf(out[out.size() - 1].y - bottom_limit, maxf(0.0, out[0].y - _stack_top()))
 		for i in range(out.size()):
-			out[i].y = maxf(_stack_top(), out[i].y - lift)
+			out[i].y -= lift
 	return out
 
 
@@ -760,8 +845,8 @@ func _make_card(cr: Dictionary) -> PanelContainer:
 	style.set_corner_radius_all(4)
 	style.content_margin_left = 8
 	style.content_margin_right = 8
-	style.content_margin_top = 5
-	style.content_margin_bottom = 5
+	style.content_margin_top = COMPACT_PAD if _compact else CARD_PAD
+	style.content_margin_bottom = COMPACT_PAD if _compact else CARD_PAD
 	card.add_theme_stylebox_override("panel", style)
 
 	var h := HBoxContainer.new()
@@ -885,7 +970,7 @@ func _animate_card_content(card: PanelContainer, cr: Dictionary, idx: int, delay
 
 	var gains_text := _gains_line(cr)
 	var ko_mark := "" if alive else "  KO"
-	var final_top := "%s  +%d EXP%s%s" % [cr.get("name", "?"), exp_gained, "  ★ Lv.%d" % int(cr.get("job_level", 1)) if leveled else "", ko_mark]
+	var final_top := _final_top_text(cr)
 	_snaps.append(func() -> void:
 		if is_instance_valid(fill):
 			fill.size = Vector2(bar_w * end_ratio, 8)
@@ -1149,7 +1234,8 @@ func _build_prompt() -> void:
 	var prompt := Label.new()
 	# One key, one job at a time: the old line named the confirm button twice, for finish and then for continue.
 	prompt.text = tally_prompt(_confirm_token())
-	prompt.add_theme_font_size_override("font_size", TextScale.scaled(14))
+	prompt.name = "ContinuePrompt"
+	prompt.add_theme_font_size_override("font_size", TextScale.scaled(PROMPT_FONT))
 	prompt.add_theme_color_override("font_color", Color(0.92, 0.92, 0.85))
 	prompt.add_theme_constant_override("outline_size", 3)
 	prompt.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.85))
@@ -1159,7 +1245,7 @@ func _build_prompt() -> void:
 	var vp := get_viewport_rect().size
 	# Bottom-centre above the hint bar; it sat at 11px grey on the grass under the party panel's corner.
 	prompt.size = Vector2(320.0, 0.0)
-	prompt.position = Vector2((vp.x - 320.0) / 2.0, vp.y - 58.0)
+	prompt.position = Vector2((vp.x - 320.0) / 2.0, _prompt_rect.position.y if _prompt_rect.has_area() else vp.y - PROMPT_REST)
 	_snaps.append(func() -> void:
 		if is_instance_valid(prompt):
 			prompt.text = "%s: continue" % _confirm_token()
