@@ -173,3 +173,32 @@ func test_the_back_wall_is_the_rooms_north_face_and_there_is_one_forge() -> void
 	assert_gt(((plain._forge_frames[0] as ImageTexture).get_image()).get_pixel(2, 60).a, 0.5, "CONTROL: a painted blacksmith still paints its whole forge")
 	assert_eq(plain.camera.limit_top, 0, "CONTROL: and its camera stops at the map's edge")
 	assert_eq(plain._forge_sprite.position, Vector2(8 * T, 6 * T), "where it always stood")
+
+
+## main 24590 (.795 nit): the forge's flames were still the painted yellow bars. With a drawn flame strip named, each
+## frame IS the strip's cell, laid over the drawn body at its centre; without one, the painted flames stay.
+func test_a_drawn_forge_burns_with_the_drawn_flames() -> void:
+	var art := _all_drawn("shop_blacksmith")
+	art["forge_flames_shop_blacksmith"] = {"path": ART % ["forge_flames", "shop_blacksmith"]}
+	var strip: Image = (load(ART % ["forge_flames", "shop_blacksmith"]) as Texture2D).get_image()
+	strip.convert(Image.FORMAT_RGBA8)
+	assert_eq(strip.get_size(), Vector2i(256, 64), "CONTROL: the strip is four 64x64 frames")
+	var smith: Node = await _shop(3, art)
+	assert_eq(smith._forge_frames.size(), 4, "four frames, one per cell")
+	var differ := 0
+	for f in smith._forge_frames.size():
+		var got: Image = (smith._forge_frames[f] as ImageTexture).get_image()
+		got.convert(Image.FORMAT_RGBA8)
+		var cell := strip.get_region(Rect2i(f * 64, 0, 64, 64))
+		assert_eq(got.get_data(), cell.get_data(), "frame %d is the strip's cell %d, not a painted one" % [f, f])
+		if f > 0 and got.get_data() != (smith._forge_frames[0] as ImageTexture).get_image().get_data():
+			differ += 1
+	assert_eq(differ, 3, "the fire moves: no two frames are the first")
+	var body := _art(smith, "forge")
+	assert_almost_eq(smith._forge_sprite.position.x, _feet(body, smith).x, 0.5, "the flames sit in the drawn body's mouth")
+	smith.free()
+	await get_tree().process_frame
+	var painted: Node = await _shop(3, _all_drawn("shop_blacksmith"))
+	var p0: Image = (painted._forge_frames[0] as ImageTexture).get_image()
+	assert_gt(p0.get_pixel(20, 44).a, 0.5, "CONTROL: with no strip named, the drawn body still gets the painted flames")
+	assert_eq(p0.get_pixel(2, 60).a, 0.0, "CONTROL: and still no painted stonework")

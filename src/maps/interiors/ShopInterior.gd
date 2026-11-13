@@ -1141,7 +1141,12 @@ func _setup_forge_anim(at: Vector2, flames_only: bool) -> void:
 	add_child(_forge_sprite)
 
 	_forge_frames.clear()
-	for f in range(4):
+	var drawn := InteriorArt.path("forge_flames", art_room(), _art_village()) if flames_only else ""
+	if drawn != "":
+		var strip := (load(drawn) as Texture2D).get_image()  # a strip of 64x64 frames for the drawn body's mouth
+		for f in range(strip.get_width() / (TILE_SIZE * 2)):
+			_forge_frames.append(ImageTexture.create_from_image(strip.get_region(Rect2i(f * TILE_SIZE * 2, 0, TILE_SIZE * 2, TILE_SIZE * 2))))
+	for f in range(4 if _forge_frames.is_empty() else 0):
 		var img = Image.create(TILE_SIZE * 2, TILE_SIZE * 2, false, Image.FORMAT_RGBA8)
 		_draw_forge_frame(img, f, flames_only)
 		_forge_frames.append(ImageTexture.create_from_image(img))
