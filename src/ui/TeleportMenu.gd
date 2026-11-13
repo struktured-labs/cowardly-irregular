@@ -154,6 +154,12 @@ func _build_ui() -> void:
 		InputProfileManager.hint_for_action("ui_cancel"),
 	]
 	sub.position = Vector2(16, _sub_y())
+	## One long line ran past the panel's right edge from 150% up (31 px, then 268): it wraps inside the panel and the list starts under it.
+	sub.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	sub.size = Vector2(panel.size.x - 32.0, 0)
+	var sub_font: Font = get_theme_font("font", "Label")
+	_sub_h = sub_font.get_multiline_string_size(sub.text, HORIZONTAL_ALIGNMENT_LEFT, panel.size.x - 32.0, TextScale.scaled(11)).y if sub_font else 0.0
+	sub.name = "Instructions"
 	sub.add_theme_font_size_override("font_size", TextScale.scaled(11))
 	sub.add_theme_color_override("font_color", DISABLED_COLOR)
 	panel.add_child(sub)
@@ -261,8 +267,12 @@ func _sub_y() -> float:
 	return 32.0 * _tf()
 
 
+## Height of the wrapped instruction line, set while the header is built (0 until then).
+var _sub_h: float = 0.0
+
+
 func _list_top() -> float:
-	return maxf(56.0, _sub_y() + _line_h(11) + 6.0)
+	return maxf(56.0, _sub_y() + maxf(_line_h(11), _sub_h) + 6.0)
 
 
 func _add_row(idx: int, y: float) -> void:

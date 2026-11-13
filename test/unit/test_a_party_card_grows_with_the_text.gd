@@ -85,9 +85,19 @@ func test_at_100_percent_the_card_is_the_shipped_card() -> void:
 	assert_eq(small.size.y, 100.0, "and 80% never shrinks the shipped card")
 
 
-## THE DEFECT: the rows kept a fixed step while their fonts grew. Each step between rows must grow with the text.
+## The name's drawn line height: what the card grows by. Not the setting (a 200% font draws a 39 px line, not 40).
+func _name_line(card: Control) -> float:
+	var l := card.get_node("NameLabel") as Label
+	return l.get_theme_font("font").get_height(l.get_theme_font_size("font_size"))
+
+
+## THE DEFECT: the rows kept a fixed step while their fonts grew. Each step between rows must grow with the text's line.
+## SNAP: the card's factor is rounded to the nearest 0.05, so it may sit up to 0.025 under the line's own growth.
 func test_the_rows_step_apart_as_the_text_grows() -> void:
-	var base: Array = _row_tops((await _menu(1.0))._party_panels[0])
+	const SNAP := 0.025
+	var card0: Control = (await _menu(1.0))._party_panels[0]
+	var base: Array = _row_tops(card0)
+	var line0: float = _name_line(card0)
 	for s in _presets():
 		if float(s) <= 1.0:
 			continue
@@ -95,9 +105,11 @@ func test_the_rows_step_apart_as_the_text_grows() -> void:
 		var tops: Array = _row_tops(m._party_panels[0])
 		var name_px: int = (m._party_panels[0].get_node("NameLabel") as Label).get_theme_font_size("font_size")
 		assert_gt(name_px, 14, "CONTROL @%s: the name's font grew (%d px)" % [s, name_px])
+		var grow: float = _name_line(m._party_panels[0]) / line0
+		assert_gt(grow, 1.1, "CONTROL @%s: the name's line grew (x%.3f)" % [s, grow])
 		for i in range(1, tops.size()):
 			var step: float = tops[i] - tops[i - 1]
-			var want: float = (base[i] - base[i - 1]) * float(s)
+			var want: float = (base[i] - base[i - 1]) * (grow - SNAP)
 			assert_gte(step, want - SLACK, "@%s %s starts %.0f px under %s; its 100%% step grown with the text is %.0f" % [s, ROWS[i], step, ROWS[i - 1], want])
 
 
