@@ -1430,8 +1430,8 @@ func _create_battle_sprites() -> void:
 
 		# No floating name label for party members — the PARTY panel already names them, and the label drifted off-sprite in the stacked formation (struktured cap 2026-08-15). Enemies keep theirs (targeting aid).
 
-		# Setup status icons for this party member
-		_setup_status_icons(member, sprite)
+		# Setup status icons for this party member (the party stands right, facing left: evasion trails right)
+		_setup_status_icons(member, sprite, 1.0)
 	_place_party(false)
 
 	# Create enemy sprites
@@ -1943,7 +1943,7 @@ const STATUS_ICON_CONFIG = {
 }
 
 
-func _setup_status_icons(combatant: Combatant, sprite: AnimatedSprite2D) -> void:
+func _setup_status_icons(combatant: Combatant, sprite: AnimatedSprite2D, trail: float = -1.0) -> void:
 	"""Create status icon container above a combatant's sprite and connect signals"""
 	var container = HBoxContainer.new()
 	container.add_theme_constant_override("separation", 2)
@@ -1967,7 +1967,7 @@ func _setup_status_icons(combatant: Combatant, sprite: AnimatedSprite2D) -> void
 	container.position = Vector2(centre_x - STATUS_ROW_WIDTH * unscale.x * 0.5, top - STATUS_ROW_LIFT * unscale.y)
 	sprite.add_child(container)
 	_status_icon_containers[combatant] = container
-	_status_auras[combatant] = _make_status_aura(sprite)
+	_status_auras[combatant] = _make_status_aura(sprite, trail)
 
 	# Connect signals for reactive updates
 	if not combatant.status_added.is_connected(_on_combatant_status_changed):
@@ -1987,9 +1987,10 @@ func _setup_status_icons(combatant: Combatant, sprite: AnimatedSprite2D) -> void
 
 ## The animated overlay, counter-scaled to screen pixels and fitted to the idle frame's FIGURE, so a motif stands on
 ## the body, not on the frame's empty margin; StatusAura sizes it from that figure's height (scale_for).
-func _make_status_aura(sprite: AnimatedSprite2D) -> Node2D:
+func _make_status_aura(sprite: AnimatedSprite2D, trail: float = -1.0) -> Node2D:
 	var aura = StatusAuraClass.new()
 	aura.name = "StatusAura"
+	aura.trail = trail
 	var sc := sprite.scale
 	aura.scale = Vector2(1.0 / maxf(absf(sc.x), 0.01), 1.0 / maxf(absf(sc.y), 0.01))
 	if sprite.sprite_frames and sprite.sprite_frames.has_animation(&"idle") and sprite.sprite_frames.get_frame_count(&"idle") > 0:
