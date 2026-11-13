@@ -2508,10 +2508,11 @@ func _evaluate_party_condition(party: Array, condition: Dictionary) -> bool:
 			return total > alive  # True if any member is dead
 
 		"member_hp":
-			return _member_predicate(party, condition, func(c): return _compare_op(c.get_hp_percentage(), op, value))
+			## A KO'd member reads 0% and is not "low": the row would shadow member_dead below it, and heal_party skips the dead.
+			return _member_predicate(party, condition, func(c): return c.is_alive and _compare_op(c.get_hp_percentage(), op, value))
 
 		"member_mp":
-			return _member_predicate(party, condition, func(c): return _compare_op(c.get_mp_percentage(), op, value))
+			return _member_predicate(party, condition, func(c): return c.is_alive and _compare_op(c.get_mp_percentage(), op, value))
 
 		"member_status":
 			var want_status := Combatant.resolve_status_alias(str(condition.get("value", "")))
