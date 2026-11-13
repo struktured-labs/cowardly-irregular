@@ -2855,9 +2855,19 @@ func _cadence_action(boss: Combatant, alive_enemies: Array, quiet: bool) -> Dict
 	return {}
 
 
-## The charge turn: the boss spends it gathering, and says so.
+## The boss's authored charge words from boss_dialogue.json; every key present, empty when unauthored.
+func _charge_lines(boss: Combatant) -> Dictionary:
+	var dlg = get_node_or_null("/root/BossDialogue")
+	if dlg == null or not dlg.has_method("get_charge_lines"):
+		return {}
+	return dlg.get_charge_lines(_boss_persona_id(boss))
+
+
+## The charge turn: the boss spends it gathering, and says so in its own words when story authored them.
 func _execute_boss_charge(boss: Combatant, ability_id: String) -> void:
-	battle_log_message.emit("[color=cyan]%s is gathering power for %s![/color]" % [boss.combatant_name, _ability_display_name(ability_id)])
+	var authored := str(_charge_lines(boss).get("charge_line", ""))
+	battle_log_message.emit("[color=cyan]%s[/color]" % authored if authored != "" \
+		else "[color=cyan]%s is gathering power for %s![/color]" % [boss.combatant_name, _ability_display_name(ability_id)])
 
 
 ## A status landed on a cadence boss; an interrupting one mid-charge breaks the breath.
@@ -2865,7 +2875,9 @@ func _on_cadence_status(status: String, boss: Combatant) -> void:
 	var after := BossCadence.on_status(boss.get_meta("_cadence", {}), _cadence_config(boss), status)
 	boss.set_meta("_cadence", after)
 	if bool(after.get("interrupted", false)):
-		battle_log_message.emit("[color=yellow]%s's %s is broken![/color]" % [boss.combatant_name, "charge"])
+		var broken_log := str(_charge_lines(boss).get("interrupted_log", ""))
+		battle_log_message.emit("[color=yellow]%s[/color]" % broken_log if broken_log != "" \
+			else "[color=yellow]%s's charge is broken![/color]" % boss.combatant_name)
 		boss_charge_broken.emit(boss, status)
 		boss_charge_changed.emit(boss, false)
 

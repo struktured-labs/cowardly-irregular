@@ -68,3 +68,13 @@ static func on_status(state: Dictionary, cfg: Dictionary, status: String) -> Dic
 	s["charge_left"] = 0
 	s["interrupted"] = true
 	return s
+
+
+## Boss turns until the signature releases: 1 means its next turn. -1 when there is no clock.
+static func turns_to_release(state: Dictionary, cfg: Dictionary) -> int:
+	if cfg.is_empty():
+		return -1
+	var s: Dictionary = state if not state.is_empty() else fresh_state()
+	if is_charging(s):
+		return maxi(1, int(s.get("charge_left", 1)))
+	return maxi(0, int(cfg["every"]) - int(s.get("count", 0))) + int(cfg["charge_turns"]) + 1
