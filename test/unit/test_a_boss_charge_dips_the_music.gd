@@ -4,6 +4,7 @@ extends GutTest
 ## broken, or the boss dies (main 23917, on cowir-battle's boss_charge_changed edges). Silent at turbo/console.
 
 const BattleSceneScript := preload("res://src/battle/BattleScene.gd")
+const GdSource := preload("res://test/unit/helpers/gd_source.gd")
 const BOUND_MS := 3000
 
 var _scene = null
@@ -113,6 +114,23 @@ func test_the_scene_dips_on_the_real_signal_at_full_tier() -> void:
 	BattleManager.boss_charge_changed.disconnect(_scene._on_boss_charge_changed)
 	assert_true(SoundManager.is_music_ducked_for_charge(), "a FULL-tier battle hearing boss_charge_changed(true) must take the charge duck")
 	assert_almost_eq(await _settle(SoundManager.CHARGE_DUCK_TARGET_DB), SoundManager.CHARGE_DUCK_TARGET_DB, 0.05, "and the bed must actually dip")
+
+
+func _body_of(code: String, fn: String) -> String:
+	var at: int = code.find("\nfunc %s(" % fn)
+	assert_gt(at, -1, "FLOOR: BattleScene.%s is gone" % fn)
+	var end: int = code.find("\nfunc ", at + 1)
+	return code.substr(at) if end < 0 else code.substr(at, end - at)
+
+
+## The arms above drive the handler directly; this is what proves a REAL battle ever reaches it, and lets go when it ends.
+func test_the_scene_wires_the_charge_in_and_clears_it_on_the_way_out() -> void:
+	var code: String = GdSource.code_of("res://src/battle/BattleScene.gd")
+	assert_true(_body_of(code, "_ready").contains("BattleManager.boss_charge_changed.connect(_on_boss_charge_changed)"), "BattleScene._ready must connect boss_charge_changed, or no battle ever dips")
+	var leaving: String = _body_of(code, "_exit_tree")
+	assert_true(leaving.contains("boss_charge_changed.disconnect(_on_boss_charge_changed)"), "a freed scene must stop listening")
+	assert_true(leaving.contains("SoundManager.clear_charge_duck()"), "a scene freed mid-charge must clear the dip")
+	assert_true(_body_of(code, "_on_battle_ended").contains("SoundManager.clear_charge_duck()"), "battle end must clear the dip whatever path ended it")
 
 
 func test_turbo_and_the_console_never_dip_but_always_release() -> void:
