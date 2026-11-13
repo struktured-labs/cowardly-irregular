@@ -258,3 +258,16 @@ func test_the_enemy_column_carries_its_shift() -> void:
 	var scene = await _build(["goblin"])
 	assert_almost_eq(scene.get_node("BattleField/EnemyArea").offset_left, authored + BS.ENEMY_EDGE_SHIFT, 0.5,
 		"the enemy column stands ENEMY_EDGE_SHIFT from where the scene authors it")
+
+
+## The column settles at build and re-seats the party once: that seat must SNAP, not slide in over the opening frames.
+func test_the_party_is_already_seated_a_few_frames_in() -> void:
+	for ts in SettingsMenuScript.TEXT_SIZE_PRESETS:
+		GameState.set_text_size_scale(ts)
+		var scene = await _build(["goblin"])
+		assert_true(scene._party_relaid_once, "CONTROL text %.2f: the column's build-time re-seat ran" % ts)
+		for s in scene.party_sprite_nodes:
+			var home: Vector2 = s.get_meta("home_position", Vector2.INF)
+			assert_almost_eq(s.position.x, home.x, 0.5, "text %.2f: %s still sliding to its seat (%.1f -> %.1f)" % [ts, s.name, s.position.x, home.x])
+		scene.queue_free()
+		await get_tree().process_frame

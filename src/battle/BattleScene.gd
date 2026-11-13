@@ -1095,6 +1095,7 @@ func _party_home(i: int) -> Vector2:
 
 
 var _party_relayout_queued := false
+var _party_relaid_once := false
 
 
 ## The PARTY panel grows LEFT, so its new position can land after `resized`; re-seat once, next frame, from final values.
@@ -1108,7 +1109,9 @@ func _queue_party_relayout() -> void:
 func _run_party_relayout() -> void:
 	_party_relayout_queued = false
 	if is_inside_tree():
-		_place_party(true)
+		## The first re-seat is the column settling at build: snap, or the opening frames show the party sliding into place.
+		_place_party(_party_relaid_once)
+		_party_relaid_once = true
 
 
 ## Lays the party out and seats every member at its home: battle start, a formation change, the PARTY panel resizing.
