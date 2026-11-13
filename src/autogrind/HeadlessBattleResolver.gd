@@ -1077,24 +1077,40 @@ func _resolve_attack(attacker, target) -> int:
 		return 0
 
 	## The same strikes live loops over (Combatant.basic_attack_strikes), each with its own miss and crit roll.
+	## Defence meets the attack ONCE: each strike meets the share of it that its raw is of the attack's (twin of live).
 	var total: int = 0
-	var strikes: Array = attacker.basic_attack_strikes()
-	for i in strikes.size():
+	var rolls: Array = []
+	var barrier_left: bool = target.has_status("barrier")
+	var reflecting: bool = target.has_status("reflect") or target.has_status("physical_reflect")
+	for st in attacker.basic_attack_strikes():
+		var roll: Dictionary = _roll_attack_strike(attacker, target, float(st["scale"]))
+		if roll["fate"] == "hit" and barrier_left:
+			roll["fate"] = "barrier"
+			barrier_left = false
+		elif roll["fate"] == "hit" and reflecting:
+			roll["fate"] = "reflect"
+		rolls.append(roll)
+	var raw_total: int = 0
+	for roll in rolls:
+		if roll["fate"] == "hit":
+			raw_total += int(roll["damage"])
+	for i in rolls.size():
 		if i > 0 and not target.is_alive:
 			break
-		total += _resolve_attack_strike(attacker, target, float(strikes[i]["scale"]))
+		var share: float = float(rolls[i]["damage"]) / raw_total if raw_total > 0 and rolls[i]["fate"] == "hit" else 1.0
+		total += _land_attack_strike(attacker, target, rolls[i], share)
 	return total
 
 
-## One strike of a basic attack, from the miss roll on. Twin of BattleManager._resolve_attack_strike.
-func _resolve_attack_strike(attacker, target, scale: float) -> int:
+## One strike's rolls, before it meets the target. Twin of BattleManager._roll_attack_strike.
+func _roll_attack_strike(attacker, target, scale: float) -> Dictionary:
 	var base_miss: float = 0.10
 	if attacker.has_status("blind"):
 		base_miss += 0.40
 	var miss_chance = max(0.02, min(0.60, base_miss - (attacker.speed - target.speed) * 0.05))
 	if randf() < miss_chance:
 		_log("%s misses %s!" % [attacker.combatant_name, target.combatant_name])
-		return 0
+		return {"fate": "miss", "damage": 0}
 
 	var damage = float(attacker.get_buffed_stat("attack", attacker.attack))
 	## A feared swing that was not skipped still happens, at half. Live halves the base stat before variance.
@@ -1126,23 +1142,31 @@ func _resolve_attack_strike(attacker, target, scale: float) -> int:
 	## damage, exactly where live applies it, because this file's defense formula is quadratic and
 	## scaling `actual` instead would give a different number for the same gear.
 	damage = float(_apply_familiar_weight_bonus(attacker, target, int(damage)))
+	return {"fate": "hit", "damage": int(damage)}
+
+
+## Land one rolled strike; `defence_share` is the share of the target's defence it meets. Twin of BattleManager._land_attack_strike.
+func _land_attack_strike(attacker, target, roll: Dictionary, defence_share: float) -> int:
+	if roll["fate"] == "miss":
+		return 0
+	var damage: float = float(roll["damage"])
 
 	## guardian_wall nullifies this one swing and breaks. Checked after the number exists, before
 	## take_damage, and the on-hit riders below do not run — same place live returns.
-	if target.has_status("barrier"):
+	if roll["fate"] == "barrier" and target.has_status("barrier"):
 		target.remove_status("barrier")
 		_log("%s's Barrier absorbs the attack!" % target.combatant_name)
 		return 0
 
 	## reflect and physical_reflect bounce the pre-defense swing onto the attacker. Live does not
 	## remove them here; the duration tick does. A spell is not bounced — that is prismatic_reflect.
-	if target.has_status("reflect") or target.has_status("physical_reflect"):
+	if roll["fate"] == "reflect":
 		var bounced: int = attacker.take_damage(int(damage), false)
 		_log("%s's Reflect bounces %d damage back to %s!" % [target.combatant_name, bounced, attacker.combatant_name])
 		return 0
 
 	## take_damage owns the one defence formula (and defending, vulnerability, exposed), as in live's _execute_attack. This file used to run the formula here AND there, so every swing in a grind met the defence twice.
-	var dealt: int = target.take_damage(int(damage))
+	var dealt: int = target.take_damage(int(damage), false, defence_share)
 	## the_absence authors heals_from_damage. Live heals from the number that landed, after the hit.
 	_maybe_heal_from_damage(target, dealt, "")
 	## Live calls this from _execute_attack ONLY — the BASIC attack. Deliberately NOT added to

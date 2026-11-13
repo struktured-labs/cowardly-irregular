@@ -16,9 +16,9 @@ var _saved_scale := 1.0
 ## A target that counts the strikes that reach it, in either engine.
 class CountingTarget extends Combatant:
 	var hits: int = 0
-	func take_damage(amount: int, is_magical: bool = false) -> int:
+	func take_damage(amount: int, is_magical: bool = false, defence_scale: float = 1.0) -> int:
 		hits += 1
-		return super(amount, is_magical)
+		return super(amount, is_magical, defence_scale)
 
 
 ## Records when each held number actually lands, in game seconds.
@@ -46,10 +46,10 @@ func _job(job_id: String) -> Dictionary:
 	return j if j is Dictionary else {}
 
 
-func _make(name_str: String, job_id: String, counting: bool = false) -> Combatant:
+func _make(name_str: String, job_id: String, counting: bool = false, defense: int = 0, speed: int = 10) -> Combatant:
 	var c: Combatant = CountingTarget.new() if counting else Combatant.new()
 	c.initialize({"name": name_str, "max_hp": 999999, "max_mp": 50,
-		"attack": 60, "defense": 0, "magic": 10, "speed": 10})
+		"attack": 60, "defense": defense, "magic": 10, "speed": speed})
 	add_child_autofree(c)
 	c.current_hp = c.max_hp
 	if job_id != "":
@@ -93,7 +93,7 @@ func test_a_second_impact_frame_lands_after_the_first_and_inside_the_swing() -> 
 	assert_gt(authored, 0, "VOID: no sheet authors a second impact; the Rogue's bolt has no beat")
 
 
-## Live: two damage_dealt per attack, independent miss rolls, and each strike 0.6 of a full swing's damage.
+## Live: up to two numbers per attack, and each strike rolls its own miss and its own crit.
 func test_live_strikes_twice_with_its_own_rolls() -> void:
 	var bm = Engine.get_main_loop().root.get_node_or_null("BattleManager")
 	assert_not_null(bm, "CONTROL: BattleManager autoload")
@@ -108,8 +108,8 @@ func test_live_strikes_twice_with_its_own_rolls() -> void:
 	var rogue := _make("Rogue", "rogue")
 	var target := _make("Dummy", "", true)
 	var per_attack: Array = []
-	var one_landed := 0
 	var crit_split := 0
+	var one_landed := 0
 	for i in TRIALS:
 		var before: int = hits.size()
 		bm._execute_attack(rogue, target)
@@ -117,12 +117,6 @@ func test_live_strikes_twice_with_its_own_rolls() -> void:
 		per_attack.append(n)
 		if n == 2 and crits[before] != crits[before + 1]:
 			crit_split += 1
-	var rogue_hits: Array = hits.duplicate()
-	hits.clear()
-	var plain := _make("Plain", "")
-	for i in TRIALS:
-		bm._execute_attack(plain, target)
-	var plain_hits: Array = hits.duplicate()
 	rogue.add_status("blind", 99)
 	for i in TRIALS:
 		var b: int = hits.size()
@@ -134,29 +128,56 @@ func test_live_strikes_twice_with_its_own_rolls() -> void:
 	assert_gt(_mean(per_attack), 1.6, "most Rogue attacks land both strikes (misses are ~10%% each)")
 	assert_gt(one_landed, 0, "blinded, some attacks must land exactly one strike — each strike rolls its own miss")
 	assert_gt(crit_split, 0, "some attacks must crit on one strike and not the other — each strike rolls its own crit")
-	var ratio: float = _mean(rogue_hits) / maxf(1.0, _mean(plain_hits))
-	assert_between(ratio, 0.5, 0.7, "a strike must deal ~0.6 of a full swing; measured %.2f" % ratio)
 
 
-## The grind resolves the same two strikes: twice the hits reach the target, at ~1.2x the total.
-func test_the_grind_strikes_twice_like_live() -> void:
+## The ruling is 0.6 of an Attack's DAMAGE per strike, so the attack is ~1.2x a swing at EVERY defence, not only at 0
+## (autogrind 25200: two strikes each meeting the full defence came to 0.97x on W1 armour). Defence meets the attack once.
+## A kill ends the attack; the dummy's HP outlasts every trial so no total here is cut short by one.
+const DEF_PER_ATK := [0.0, 0.5, 1.0, 2.0]
+
+
+func _live_mean_per_attack(bm, attacker: Combatant, target: Combatant) -> float:
+	var total := [0]
+	var cb := func(t, amount, _c, _e, _m):
+		if t == target:
+			total[0] += int(amount)
+	bm.damage_dealt.connect(cb)
+	for i in TRIALS:
+		bm._execute_attack(attacker, target)
+	bm.damage_dealt.disconnect(cb)
+	return float(total[0]) / TRIALS
+
+
+func test_live_deals_six_tenths_per_strike_at_every_defence() -> void:
+	var bm = Engine.get_main_loop().root.get_node_or_null("BattleManager")
+	assert_not_null(bm, "CONTROL: BattleManager autoload")
+	if bm == null:
+		return
+	var rogue := _make("Rogue", "rogue", false, 0, 100)
+	var plain := _make("Plain", "", false, 0, 100)
+	for d in DEF_PER_ATK:
+		var target := _make("Dummy", "", false, int(60 * d))
+		var ratio: float = _live_mean_per_attack(bm, rogue, target) / maxf(1.0, _live_mean_per_attack(bm, plain, target))
+		assert_between(ratio, 1.05, 1.35, "live: the Rogue's attack must deal ~1.2x a swing at DEF/ATK %.1f; measured %.2f" % [d, ratio])
+
+
+func test_the_grind_deals_six_tenths_per_strike_at_every_defence() -> void:
 	var res = RESOLVER.new()
-	var rogue := _make("Rogue", "rogue")
-	var plain := _make("Plain", "")
-	var target := _make("Dummy", "", true) as CountingTarget
-	var rogue_total := 0
-	for i in TRIALS:
-		rogue_total += res._resolve_attack(rogue, target)
-	var rogue_hits: int = target.hits
-	target.hits = 0
-	var plain_total := 0
-	for i in TRIALS:
-		plain_total += res._resolve_attack(plain, target)
-	var plain_hits: int = target.hits
-	assert_gt(plain_hits, int(TRIALS * 0.7), "CONTROL: a plain swing lands most of the time")
-	assert_gt(float(rogue_hits) / plain_hits, 1.7, "the grind's Rogue must land ~2 strikes per attack (%d vs %d)" % [rogue_hits, plain_hits])
-	var total_ratio: float = float(rogue_total) / maxf(1.0, plain_total)
-	assert_between(total_ratio, 1.0, 1.4, "two 0.6 strikes total ~1.2x a swing; measured %.2f" % total_ratio)
+	var rogue := _make("Rogue", "rogue", false, 0, 100)
+	var plain := _make("Plain", "", false, 0, 100)
+	for d in DEF_PER_ATK:
+		var target := _make("Dummy", "", true, int(60 * d)) as CountingTarget
+		var rogue_total := 0
+		for i in TRIALS:
+			rogue_total += res._resolve_attack(rogue, target)
+		var rogue_hits: int = target.hits
+		target.hits = 0
+		var plain_total := 0
+		for i in TRIALS:
+			plain_total += res._resolve_attack(plain, target)
+		assert_gt(float(rogue_hits) / maxf(1.0, target.hits), 1.7, "the grind's Rogue must land ~2 strikes per attack at DEF/ATK %.1f (%d vs %d)" % [d, rogue_hits, target.hits])
+		var ratio: float = float(rogue_total) / maxf(1.0, plain_total)
+		assert_between(ratio, 1.05, 1.35, "grind: the Rogue's attack must deal ~1.2x a swing at DEF/ATK %.1f; measured %.2f" % [d, ratio])
 	res.free()
 
 

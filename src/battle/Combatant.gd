@@ -406,7 +406,7 @@ func execute_defer() -> void:
 
 ## Combat actions
 ## What take_damage will remove for this incoming amount, before a damage_absorb ward and the HP floor, with no side effect.
-func damage_preview(amount: int, is_magical: bool = false) -> int:
+func damage_preview(amount: int, is_magical: bool = false, defence_scale: float = 1.0) -> int:
 	"""The target's side of every hit: vulnerability, defense, defending, exposed, and the
 	damage_multiplier dial. take_damage and BattleManager's estimators both call this."""
 	amount = max(0, amount)
@@ -418,6 +418,7 @@ func damage_preview(amount: int, is_magical: bool = false) -> int:
 			amount = max(0, amount)
 
 	var def_value = get_buffed_stat("magic_defense", magic_defense) if is_magical else get_buffed_stat("defense", defense)
+	def_value = def_value * clampf(defence_scale, 0.0, 1.0)
 	var denom = max(1, amount + def_value)
 	var actual_damage = int((amount * amount) / float(denom))
 	actual_damage = max(1, actual_damage)  # Always at least 1 damage
@@ -447,7 +448,8 @@ func damage_preview(amount: int, is_magical: bool = false) -> int:
 	return actual_damage
 
 
-func take_damage(amount: int, is_magical: bool = false) -> int:
+## defence_scale: the share of the target's defence this hit meets (a multi-strike attack's strike, see BattleManager._execute_attack).
+func take_damage(amount: int, is_magical: bool = false, defence_scale: float = 1.0) -> int:
 	"""Apply damage considering defense/magic defense and defending state"""
 	if not is_alive:
 		return 0
@@ -489,7 +491,7 @@ func take_damage(amount: int, is_magical: bool = false) -> int:
 					print("[SHARED_DAMAGE] %d redirected to controller %s" % [redirect_amount, ctrl.combatant_name])
 
 	## One owner for the target's side of a hit, so the command menu quotes this instead of stopping at defense.
-	var actual_damage: int = damage_preview(amount, is_magical)
+	var actual_damage: int = damage_preview(amount, is_magical, defence_scale)
 
 	## Tick 386: damage_absorb status converts incoming damage to
 	## healing 1:1 while active. Applied by the fill_the_void ability

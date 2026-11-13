@@ -149,7 +149,7 @@ func test_the_declared_multiplier_divergence_is_still_true() -> void:
 	## two grind paths disagree with each other, which is worse than both differing from live.
 	var code: String = GdSource.code_of(SRC)
 	## The swing's arithmetic lives in the per-strike function since the Rogue's two strikes (2026-11-13).
-	var attack_at: int = code.find("func _resolve_attack_strike(")
+	var attack_at: int = code.find("func _roll_attack_strike(")
 	assert_gt(attack_at, 0, "CONTROL: the basic-attack strike must be locatable")
 	var attack_body: String = code.substr(attack_at, code.find("\nfunc ", attack_at + 10) - attack_at)
 	assert_true(attack_body.contains("damage *= 1.5"),

@@ -49,13 +49,13 @@ func _read(path: String) -> String:
 func test_resolve_attack_guards_divisor() -> void:
 	var text := _read(RESOLVER_PATH)
 	## The swing's damage lives in the per-strike function since the Rogue's two strikes (2026-11-13).
-	var idx := text.find("func _resolve_attack_strike(attacker")
-	assert_gt(idx, -1, "_resolve_attack_strike must exist")
+	var idx := text.find("func _land_attack_strike(attacker")
+	assert_gt(idx, -1, "_land_attack_strike must exist")
 	var rest := text.substr(idx)
 	var next_fn := rest.find("\nfunc ", 1)
 	var body := rest.substr(0, next_fn) if next_fn > -1 else rest
 	## The swing no longer divides here: it hands its amount to Combatant.take_damage, whose formula carries the guard.
-	assert_true(body.contains("target.take_damage(int(damage))") and not body.contains("/ denom"),
+	assert_true(body.contains("target.take_damage(int(damage), false, defence_share)") and not body.contains("/ denom"),
 		"_resolve_attack must hand the raw amount to take_damage and run no defence formula of its own")
 	assert_true(_read("res://src/battle/Combatant.gd").contains("var denom = max(1, amount + def_value)"),
 		"the one defence formula (Combatant.damage_preview) must guard `amount + def_value` to avoid 0/0")
