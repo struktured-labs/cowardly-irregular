@@ -110,6 +110,8 @@ func test_spine_survives_a_midcampaign_save_load() -> void:
 			break
 		beat_idx = _walk(gl, seen, beat_idx, 1)
 	assert_true(seen.has("world2_prologue"), "mid-campaign checkpoint reached before saving")
+	assert_true(seen.has("world3_prologue"), "the first half stopped where W3 opens")
+	assert_false(seen.has("world6_ending"), "the save is taken mid-campaign, not after the ending")
 
 	# Save, wipe the live flags, load — the JSON round-trip the real save uses
 	var save: Dictionary = GameState.to_dict()
