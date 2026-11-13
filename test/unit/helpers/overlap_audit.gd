@@ -23,6 +23,8 @@ const FRAME_PX := 4.0
 ## A panel that does not hold a node can still own it (the node drifted off it) only if it is a PANEL to that node, at least
 ## this many times its area: a 28x20 badge beside a 16x20 arrow is a neighbour, not the arrow's panel (autogrind 25092).
 const OWNER_AREA := 2.0
+## A text shadow: the same string drawn again by a sibling Label at most this far off (cutscenes 25130, overworld 25128).
+const SHADOW_PX := 2.0
 
 
 ## [{"id", "rect", "node"}] for every surface under `root` (and {"backdrops": ...} via backdrops()).
@@ -60,12 +62,28 @@ static func collisions(surfs: Array, declared: Dictionary, used: Dictionary = {}
 				continue
 			if owner[i] == owner[j] and is_frame_joint(a["rect"], b["rect"]):
 				continue
+			if is_shadow_twin(a.get("node"), b.get("node"), a["rect"], b["rect"]):
+				continue
 			var key := _declared_key(declared, str(a["id"]), str(b["id"]))
 			if key != "":
 				used[key] = true
 				continue
 			out.append("%s ∩ %s at %s" % [a["id"], b["id"], str(hit)])
 	return out
+
+
+## Two sibling Labels with the same text and size, one offset from the other by at most SHADOW_PX on each axis (and not
+## at all on neither): one string and its drop shadow. A different string, a farther offset, another parent, or an exact
+## duplicate (drawn twice) still reports.
+static func is_shadow_twin(na, nb, ra: Rect2, rb: Rect2) -> bool:
+	if not (na is Label) or not (nb is Label):
+		return false
+	if (na as Node).get_parent() != (nb as Node).get_parent() or (na as Label).text != (nb as Label).text:
+		return false
+	if absf(ra.size.x - rb.size.x) > CONTAIN_SLACK or absf(ra.size.y - rb.size.y) > CONTAIN_SLACK:
+		return false
+	var d: Vector2 = (ra.position - rb.position).abs()
+	return d.x <= SHADOW_PX + CONTAIN_SLACK and d.y <= SHADOW_PX + CONTAIN_SLACK and maxf(d.x, d.y) >= MIN_PX
 
 
 ## Two frame lines (each at most FRAME_PX thick) of one owner that meet only where BOTH end, in a square no thicker than
