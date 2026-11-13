@@ -7790,7 +7790,7 @@ const GRIND_STOP_BANNER_SEC := 0.12 + 0.55
 func _show_grind_stop_notification(reason: String) -> void:
 	if "manual" in reason.to_lower():
 		return
-	SoundManager.play_ui("autogrind_stop_sting")
+	SoundManager.play_alert("autogrind_stop_sting")
 	# No-op on headless / unsupported platforms.
 	if DisplayServer.has_method("window_request_attention"):
 		DisplayServer.window_request_attention()
