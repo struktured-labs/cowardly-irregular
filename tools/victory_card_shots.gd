@@ -2,7 +2,7 @@ extends SceneTree
 
 ## Before/after frames of the post-battle results (VictoryOverlay) over a REAL battle, with fixed
 ## results so two runs are comparable: five members, two level-ups (one learns an ability), one KO,
-## gold + items + a bonus. Run through tools/victory_card_shots.sh (sandboxed). Arg: an output label.
+## gold + items + a bonus. Run through tools/victory_card_shots.sh (sandboxed). Args: an output label [, a Text Size].
 ## Writes tmp/victory_card/<label>_entering.png (mid-entrance) and <label>_settled.png.
 
 const OUT := "res://tmp/victory_card"
