@@ -171,12 +171,24 @@ func test_a_rule_reads_the_charge_and_the_countdown() -> void:
 	BattleManager.player_party = saved_players
 	BattleManager.enemy_party = saved_enemies
 	assert_false(a_far, "a fresh boss is not charging")
-	assert_false(b_far, "and its breath is five turns off, not one")
+	assert_false(b_far, "and its breath is more than one turn off")
 	assert_true(a_near, "a charging boss reads as charging")
 	assert_true(b_near, "and its release is the next turn")
 
 
-## The clock is in the real decision: five turns of Glacius through the battle manager's own picker.
+## Glacius's own clock as BossCadence plays it, n turns from fresh: the beat each turn lands on.
+func _authored_beats(boss: Combatant, n: int) -> Array:
+	var cfg: Dictionary = BattleManager._cadence_config(boss)
+	var st := BossCadence.fresh_state()
+	var out: Array = []
+	for i in n:
+		var r: Dictionary = BossCadence.next(st, cfg)
+		out.append(r["beat"])
+		st = r["state"]
+	return out
+
+
+## The clock is in the real decision: Glacius's turns through the battle manager's own picker, up to his first release.
 func test_glacius_charges_then_breathes_through_the_live_picker() -> void:
 	var boss := _glacius()
 	var hero: Combatant = Combatant.new()
@@ -184,22 +196,28 @@ func test_glacius_charges_then_breathes_through_the_live_picker() -> void:
 	hero.initialize({"name": "Hero", "max_hp": 100, "max_mp": 10, "attack": 10, "defense": 10, "magic": 10, "speed": 10})
 	boss.job = {"abilities": ["absolute_zero", "frost_armor"], "name": "Glacius"}
 	boss.set_meta("boss_dialogue_phase", 99)
+	var expect: Array = _authored_beats(boss, 12)
+	var first_release: int = expect.find("release")
+	assert_gt(first_release, 0, "CONTROL: Glacius's authored clock releases within 12 turns: %s" % str(expect))
 	var kinds: Array = []
 	var sigs: Array = []
-	for i in 5:
+	for i in first_release + 1:
 		boss.current_mp = boss.max_mp
 		var a: Dictionary = BattleManager._make_ai_decision(boss, [boss], [hero], true)
 		kinds.append(str(a.get("type", "")))
 		sigs.append(str(a.get("ability_id", "")) == "absolute_zero" and str(a.get("type", "")) == "ability")
-		if i == 4:
-			assert_eq(str(a.get("ability_id", "")), "absolute_zero", "the fifth turn is the breath itself")
+		if i == first_release:
+			assert_eq(str(a.get("ability_id", "")), "absolute_zero", "the release turn is the breath itself")
 			assert_eq((a.get("targets", []) as Array).size(), 1, "on everyone the boss can reach (one hero here)")
-	assert_eq(kinds[3], "charge", "the fourth turn is the visible charge: %s" % str(kinds))
-	assert_eq(kinds[4], "ability", "and the fifth releases: %s" % str(kinds))
-	assert_eq(sigs, [false, false, false, false, true], "the breath is the clock's alone: the ladder never casts it unannounced")
+	assert_eq(kinds[first_release - 1], "charge", "the turn before is the visible charge: %s" % str(kinds))
+	assert_eq(kinds[first_release], "ability", "and then it releases: %s" % str(kinds))
+	var want: Array = []
+	for b in expect.slice(0, first_release + 1):
+		want.append(b == "release")
+	assert_eq(sigs, want, "the breath is the clock's alone: the ladder never casts it unannounced")
 
 
-## Many build turns, one breath per clock: over 25 turns the signature lands only on release beats (every 3, charge 1 = turns 5, 10, ...).
+## Many build turns, one breath per clock: over 25 turns the signature lands exactly on the authored release beats.
 func test_the_ladder_never_casts_a_clocked_signature() -> void:
 	var boss := _glacius()
 	var hero: Combatant = Combatant.new()
@@ -207,10 +225,16 @@ func test_the_ladder_never_casts_a_clocked_signature() -> void:
 	hero.initialize({"name": "Hero", "max_hp": 100, "max_mp": 10, "attack": 10, "defense": 10, "magic": 10, "speed": 10})
 	boss.job = {"abilities": ["absolute_zero"], "name": "Glacius"}
 	boss.set_meta("boss_dialogue_phase", 99)
+	var want: Array = []
+	var expect: Array = _authored_beats(boss, 25)
+	for i in expect.size():
+		if expect[i] == "release":
+			want.append(i + 1)
+	assert_gt(want.size(), 1, "CONTROL: the authored clock releases more than once in 25 turns: %s" % str(want))
 	var cast_on: Array = []
 	for i in 25:
 		boss.current_mp = boss.max_mp
 		var a: Dictionary = BattleManager._make_ai_decision(boss, [boss], [hero], true)
 		if str(a.get("type", "")) == "ability" and str(a.get("ability_id", "")) == "absolute_zero":
 			cast_on.append(i + 1)
-	assert_eq(cast_on, [5, 10, 15, 20, 25], "only the release beats cast it")
+	assert_eq(cast_on, want, "only the release beats cast it")
