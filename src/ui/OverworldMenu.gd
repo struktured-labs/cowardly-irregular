@@ -101,6 +101,7 @@ const SUBTITLE_COLOR = Color(0.72, 0.75, 0.85)
 ## derived from it — see _menu_row_h.
 const MENU_FONT_SIZE := 14
 const MENU_LABEL_X := 24.0
+const MENU_CURSOR_X := 4.0
 const NEWS_TAG_GAP := 8.0
 const MENU_ROW_PAD_X := 24.0
 const MENU_ROW_GAP := 4.0
@@ -311,8 +312,10 @@ func _create_party_panel(panel_size: Vector2) -> Control:
 	var gold_lbl = Label.new()
 	gold_lbl.name = "GoldLabel"
 	gold_lbl.text = "%d G" % (GameState.get_gold() if GameState and GameState.has_method("get_gold") else 0)
-	gold_lbl.position = Vector2(8, 4)
-	gold_lbl.size = Vector2(panel_size.x - 16, 20.0 * _card_k())
+	var mf: Font = _menu_font()
+	var title_w: float = mf.get_string_size(title.text, HORIZONTAL_ALIGNMENT_LEFT, -1, TextScale.scaled(14)).x if mf != null else title.get_minimum_size().x
+	gold_lbl.position = Vector2(8 + title_w + 8, 4)
+	gold_lbl.size = Vector2(maxf(0.0, panel_size.x - 24 - title_w), 20.0 * _card_k())
 	gold_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	gold_lbl.add_theme_font_size_override("font_size", TextScale.scaled(14))
 	gold_lbl.add_theme_color_override("font_color", Color(1.0, 0.85, 0.2))
@@ -398,7 +401,7 @@ func _create_character_card(member: Combatant, index: int) -> Control:
 	var job_label = Label.new()
 	job_label.name = "JobLabel"
 	job_label.text = card_job_text(member)
-	job_label.position = Vector2(58, 20.0 * k)
+	job_label.position = Vector2(58, 22.0 * k)  # 2 below the name's 20-line: a name's g/y touched the job's capitals at 20 (ink-measured)
 	job_label.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	job_label.add_theme_color_override("font_color", SUBTITLE_COLOR)
 	card.add_child(job_label)
@@ -558,6 +561,14 @@ func _menu_row_h() -> float:
 	return maxf(24.0, line + 6.0)
 
 
+## Where a row's label starts: MENU_LABEL_X, or past the cursor arrow when a larger Text Size makes the arrow wider than that.
+func _menu_label_x() -> float:
+	var f: Font = _menu_font()
+	if f == null:
+		return MENU_LABEL_X
+	return maxf(MENU_LABEL_X, MENU_CURSOR_X + f.get_string_size("▶", HORIZONTAL_ALIGNMENT_LEFT, -1, TextScale.scaled(MENU_FONT_SIZE)).x + 2.0)
+
+
 ## Wide enough for the longest option at the current scale, bounded by the panel.
 func _menu_row_w(panel_w: float) -> float:
 	var fs: int = TextScale.scaled(MENU_FONT_SIZE)
@@ -569,7 +580,7 @@ func _menu_row_w(panel_w: float) -> float:
 			if _option_has_news(o):
 				w += NEWS_TAG_GAP + NewItemTag.width(MENU_FONT_SIZE)
 			widest = maxf(widest, w)
-	return clampf(MENU_LABEL_X + widest + MENU_ROW_PAD_X, 200.0, maxf(200.0, panel_w - 16.0))
+	return clampf(_menu_label_x() + widest + MENU_ROW_PAD_X, 200.0, maxf(200.0, panel_w - 16.0))
 
 
 ## Line step for the info block under the rows (play time, location, corruption). Same reason as
@@ -790,8 +801,8 @@ func _create_menu_item(option: Dictionary, index: int, row_w: float, row_h: floa
 	# Cursor indicator
 	var cursor = Label.new()
 	cursor.text = "▶" if index == selected_index else " "
-	cursor.position = Vector2(4, 2)
-	cursor.add_theme_font_size_override("font_size", TextScale.scaled(14))
+	cursor.position = Vector2(MENU_CURSOR_X, 2)
+	cursor.add_theme_font_size_override("font_size", TextScale.scaled(MENU_FONT_SIZE))
 	cursor.add_theme_color_override("font_color", Color.YELLOW if option["enabled"] else DISABLED_COLOR)
 	cursor.name = "Cursor"
 	item.add_child(cursor)
@@ -799,7 +810,7 @@ func _create_menu_item(option: Dictionary, index: int, row_w: float, row_h: floa
 	# Label
 	var label = Label.new()
 	label.text = option["label"]
-	label.position = Vector2(MENU_LABEL_X, 2)
+	label.position = Vector2(_menu_label_x(), 2)
 	label.add_theme_font_size_override("font_size", TextScale.scaled(14))
 	label.add_theme_color_override("font_color", TEXT_COLOR if option["enabled"] else DISABLED_COLOR)
 	label.name = "Label"
@@ -810,7 +821,7 @@ func _create_menu_item(option: Dictionary, index: int, row_w: float, row_h: floa
 		var fs: int = TextScale.scaled(MENU_FONT_SIZE)
 		var f: Font = _menu_font()
 		var label_w: float = float(str(option["label"]).length() * fs) if f == null else f.get_string_size(str(option["label"]), HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
-		tag.position = Vector2(MENU_LABEL_X + label_w + NEWS_TAG_GAP, 2)
+		tag.position = Vector2(_menu_label_x() + label_w + NEWS_TAG_GAP, 2)
 		tag.visible = _option_has_news(option)
 		item.add_child(tag)
 		_news_tags[str(option["id"])] = tag
