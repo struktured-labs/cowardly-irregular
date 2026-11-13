@@ -31,9 +31,8 @@ const AWAITING_HIS_CALL: Array[String] = []
 ## authored 2026-10-28 and sat here unvoiced; all sixty were cut 2026-10-29 — 48 on the free engine
 ## in each job's own cast voice, 12 Fighter lines on ElevenLabs Harry per the ruling above — so this
 ## list is empty and the arms below now check every line against a clip that exists.
-## 2026-11-13: one enemy_charging turn_start line per starter job (a boss gathering its signature), authored ahead of its clip.
-const AWAITING_RECORDING: Array[String] = ["voice_fighter_turn_start_16", "voice_cleric_turn_start_56",
-	"voice_mage_turn_start_56", "voice_rogue_turn_start_56", "voice_bard_turn_start_56"]
+## 2026-11-13: the enemy_charging Fighter line waits on ElevenLabs Harry (the ruling above); the other four are cut on the free engine.
+const AWAITING_RECORDING: Array[String] = ["voice_fighter_turn_start_16"]
 
 
 func _sfx() -> Dictionary:
