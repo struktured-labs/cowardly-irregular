@@ -190,7 +190,21 @@ func _complete_quest(quest_id: String) -> void:
 		SoundManager.play_music("stinger_quest_complete")
 	# Chain-quest cinematic (Orrery): stash only — the dialogue tail flushes it from a clean stack
 	_pending_completion_cutscene = chained
+	_record_quest_complete_event(quest_id, q)
 	quest_state_changed.emit(quest_id, "complete")
+
+
+## The finished quest as an EventLog fact, so an NPC's prompt can name it.
+func _record_quest_complete_event(quest_id: String, q: Dictionary) -> void:
+	var summary: String = EventLog.quest_complete_summary(str(q.get("title", "")))
+	if summary == "" or GameState.event_log == null:
+		return
+	var giver: Variant = q.get("giver", {})
+	GameState.event_log.record(
+		EventLog.TYPE_QUEST_COMPLETE,
+		summary,
+		{"quest_id": quest_id, "giver": str((giver as Dictionary).get("npc_id", "")) if giver is Dictionary else ""}
+	)
 
 
 ## Fires the stashed turn-in cinematic. Awaitable: holds the caller (and its movement lock) until the cutscene ends. Idempotent — clears the stash before playing.
