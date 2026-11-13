@@ -57,6 +57,7 @@ var _last_t: float = -1.0
 
 func _ready() -> void:
 	layer = 98  # Above game, below game over
+	add_to_group(Toast.HINT_GROUP)
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_build_ui()
 	visible = false
@@ -128,6 +129,7 @@ func show_hint(hint_id: String, title: String, body: String, min_dismiss: float 
 	_update_dismiss_label()
 	visible = true
 	_panel.position.y = PANEL_TOP
+	_seat()  # sized and placed before its first draw: a 0.8 census caught it 776 px tall on frame one
 
 	# Input is blocked by _input consuming all events while _active
 	_active = true
@@ -172,8 +174,7 @@ func _process(delta: float) -> void:
 	if not _active:
 		return
 	# Down only while shown: the arrival banner fades out under the hint, and a panel that climbed back would jump.
-	_panel.size = Vector2(_panel.size.x, 0.0)  # A PanelContainer only grows; measure its real content height each frame.
-	_panel.position.y = fit_on_screen(maxf(_panel.position.y, top_clear_of(_panel.position.x, _panel.size, _reserved_rects())), _panel.size.y, get_viewport().get_visible_rect().size.y)
+	_seat()
 
 	var now: float = float(clock.call())
 	var real_dt: float = delta if _last_t < 0.0 else maxf(0.0, now - _last_t)
@@ -208,6 +209,25 @@ func _input(event: InputEvent) -> void:
 		_dismiss()
 	elif event is InputEventMouseButton and event.pressed:
 		_dismiss()
+
+
+## Size the panel to its content at its own width and seat it below the reserved HUD. A PanelContainer only grows, and an
+## autowrap Label not yet sorted measures at width 0 (one word a line), so the labels get the panel's inner width first.
+func _seat() -> void:
+	if not is_inside_tree() or not is_instance_valid(_panel):
+		return
+	var inner_w: float = _panel.size.x - _panel.get_theme_stylebox("panel").get_minimum_size().x
+	for l in [_title_label, _body_label, _dismiss_label]:
+		(l as Label).size.x = inner_w
+	_panel.size = Vector2(_panel.size.x, 0.0)
+	_panel.position.y = fit_on_screen(maxf(_panel.position.y, top_clear_of(_panel.position.x, _panel.size, _reserved_rects())), _panel.size.y, get_viewport().get_visible_rect().size.y)
+
+
+## The open panel's screen rect (empty when no hint is showing), so a toast can settle below it.
+func panel_rect() -> Rect2:
+	if not _active or not visible or not is_instance_valid(_panel):
+		return Rect2()
+	return Rect2(_panel.position, _panel.size)
 
 
 ## The panel's resting top; on a world arrival it shares that band with the quest tracker and the zone banner.

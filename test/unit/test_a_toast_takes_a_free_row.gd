@@ -28,7 +28,7 @@ func _visible_bands() -> Array:
 		if not (layer is CanvasLayer) or not (layer as CanvasLayer).visible or layer.is_queued_for_deletion():
 			continue
 		for c in layer.get_children():
-			if c is Label and c.position.x == 0:
+			if c is Label and c.name == "Text":  # the label, not its shadow; a toast is centred on its own width now
 				out.append([c.position.y, c.position.y + ToastCls.LINE_BAND, c.text])
 	return out
 

@@ -151,7 +151,7 @@ func test_runtime_two_simultaneous_toasts_have_different_y() -> void:
 	var y_values: Array = []
 	for layer in ToastCls._active_layers:
 		for child in layer.get_children():
-			if child is Label and child.text in ["first", "second"] and child.position.x == 0:
+			if child is Label and child.text in ["first", "second"] and child.name == "Text":
 				y_values.append(child.position.y)
 	# Should have 2 distinct y values.
 	var unique: Dictionary = {}
@@ -181,7 +181,7 @@ func test_runtime_isolated_toast_uses_base_y() -> void:
 	var layer = ToastCls._active_layers[0]
 	# Filter to the non-shadow label (label at x=0, shadow at x=2).
 	for child in layer.get_children():
-		if child is Label and child.text == "lone" and child.position.x == 0:
+		if child is Label and child.text == "lone" and child.name == "Text":
 			assert_eq(child.position.y, ToastCls.BASE_Y,
 				"first toast spawns at BASE_Y, not BASE_Y + offset")
 
