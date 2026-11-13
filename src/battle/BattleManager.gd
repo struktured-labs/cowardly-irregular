@@ -27,6 +27,8 @@ signal round_started(round_num: int)
 signal round_ended(round_num: int)
 signal damage_dealt(target: Combatant, amount: int, is_crit: bool, element: String, elemental_mod: float)
 signal attack_missed(target: Combatant)
+## A basic attack's strike `index` (0-based) of `count` is about to resolve; the scene times each strike's number to its own beat.
+signal strike_starting(attacker: Combatant, index: int, count: int, weapon: String)
 ## A hit that never connected for a reason other than a miss. Banner is the sprite text: "IMMUNE" or "BLOCK".
 signal hit_negated(target: Combatant, banner: String)
 ## A cast that could not pay (MP short, or past the AP floor). Its own channel: hit_negated also plays attack_miss.
@@ -5579,6 +5581,17 @@ func _execute_attack(attacker: Combatant, target: Combatant) -> void:
 
 	action_executing.emit(attacker, {"type": "attack", "target": actual_target})
 
+	## Each strike rolls its own miss and crit; a strike that kills ends the attack.
+	var strikes: Array = attacker.basic_attack_strikes()
+	for i in strikes.size():
+		if i > 0 and not actual_target.is_alive:
+			break
+		strike_starting.emit(attacker, i, strikes.size(), str(strikes[i]["weapon"]))
+		_resolve_attack_strike(attacker, actual_target, float(strikes[i]["scale"]))
+
+
+## One strike of a basic attack: the miss roll onward. `scale` is the strike's share of a full swing.
+func _resolve_attack_strike(attacker: Combatant, actual_target: Combatant, scale: float) -> void:
 	# Miss check: base 10% miss rate, reduced by attacker speed vs target speed
 	var base_miss_rate = 0.10
 	if attacker.has_status("blind"):
@@ -5598,7 +5611,7 @@ func _execute_attack(attacker: Combatant, target: Combatant) -> void:
 		base_damage = int(base_damage * 0.5)
 	var vrange = volatility.get_variance_range(attacker) if volatility else Vector2(0.85, 1.15)
 	var variance = randf_range(vrange.x, vrange.y)
-	var damage = int(base_damage * variance)
+	var damage = int(base_damage * variance * scale)
 
 	# Critical hit calculation (physical attacks can crit)
 	var is_crit = false
@@ -6704,6 +6717,16 @@ func estimate_attack_breakdown(attacker: Combatant, target: Combatant) -> Dictio
 	## The number is take_damage's own; the formula above is its defense step, the suffix the rest.
 	var landed: int = target.damage_preview(incoming, false)
 	formula += _target_side_clause(target, dmg, landed)
+	## A multi-strike attack (the Rogue) previews the sum of its strikes, each meeting the defence on its own.
+	var strikes: Array = attacker.basic_attack_strikes()
+	if strikes.size() > 1:
+		var total: int = 0
+		var parts: PackedStringArray = []
+		for st in strikes:
+			var each: int = target.damage_preview(int(incoming * float(st["scale"])), false)
+			total += each
+			parts.append(str(each))
+		return {"damage": total, "formula": formula + "; %d strikes ×%s = %s = %d, then ×variance ×crit each" % [strikes.size(), str(strikes[0]["scale"]), " + ".join(parts), total]}
 	return {"damage": landed, "formula": formula + ", then ×variance ×crit"}
 
 

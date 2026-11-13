@@ -207,6 +207,18 @@ var elemental_immunities: Array[String] = []   # Takes 0x damage from these
 var job = null
 
 
+## The basic attack's strikes, as [{scale, weapon}]: one full swing unless the job authors `basic_attack_strikes` (the Rogue's blade + bolt).
+## Live (_execute_attack) and the grind (_resolve_attack) both loop over THIS, so the two engines cannot disagree on it.
+func basic_attack_strikes() -> Array:
+	var authored = job.get("basic_attack_strikes", []) if job is Dictionary else []
+	var out: Array = []
+	if authored is Array:
+		for s in authored:
+			if s is Dictionary and float(s.get("scale", 0.0)) > 0.0:
+				out.append({"scale": float(s["scale"]), "weapon": str(s.get("weapon", ""))})
+	return out if not out.is_empty() else [{"scale": 1.0, "weapon": ""}]
+
+
 ## The job's name as the player reads it in the CURRENT world (data/job_world_names.json; W1 is the base name). Story's
 ## canon ruling 21964: W2-W6 show the world's name everywhere. The one display read of a job name; KEY reads use the id.
 static func job_display_name_for_id(job_id: String) -> String:

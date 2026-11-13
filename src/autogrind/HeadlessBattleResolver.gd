@@ -1076,6 +1076,18 @@ func _resolve_attack(attacker, target) -> int:
 		_log("%s is immune to physical — %s's attack passes through!" % [target.combatant_name, attacker.combatant_name])
 		return 0
 
+	## The same strikes live loops over (Combatant.basic_attack_strikes), each with its own miss and crit roll.
+	var total: int = 0
+	var strikes: Array = attacker.basic_attack_strikes()
+	for i in strikes.size():
+		if i > 0 and not target.is_alive:
+			break
+		total += _resolve_attack_strike(attacker, target, float(strikes[i]["scale"]))
+	return total
+
+
+## One strike of a basic attack, from the miss roll on. Twin of BattleManager._resolve_attack_strike.
+func _resolve_attack_strike(attacker, target, scale: float) -> int:
 	var base_miss: float = 0.10
 	if attacker.has_status("blind"):
 		base_miss += 0.40
@@ -1091,7 +1103,7 @@ func _resolve_attack(attacker, target) -> int:
 	## ONE-SHOT, consumed as live consumes it (BattleManager:4374-4377) — a charged strike pays off
 	## once, not on every swing for the rest of the battle.
 	damage *= _take_charged_multiplier(attacker)
-	damage *= randf_range(0.85, 1.15)
+	damage *= randf_range(0.85, 1.15) * scale
 
 	## SHADOW_STEP on the ATTACKER: a guaranteed crit live (_calculate_crit_chance returns 1.0 up
 	## front). The Ninja's whole setup move is "step into the shadows so the next swing crits", and

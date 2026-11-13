@@ -512,6 +512,7 @@ func _ready() -> void:
 	BattleManager.damage_dealt.connect(_on_damage_dealt)
 	BattleManager.damage_dealt.connect(_note_hit_weight)
 	BattleManager.attack_missed.connect(_on_attack_missed)
+	BattleManager.strike_starting.connect(_on_strike_starting)
 	BattleManager.hit_negated.connect(_on_hit_negated)
 	BattleManager.cast_fizzled.connect(_on_cast_fizzled)
 	BattleManager.status_resisted.connect(_on_status_resisted)
@@ -636,6 +637,8 @@ func _exit_tree() -> void:
 		BattleManager.damage_dealt.disconnect(_note_hit_weight)
 	if BattleManager.attack_missed.is_connected(_on_attack_missed):
 		BattleManager.attack_missed.disconnect(_on_attack_missed)
+	if BattleManager.strike_starting.is_connected(_on_strike_starting):
+		BattleManager.strike_starting.disconnect(_on_strike_starting)
 	if BattleManager.status_resisted.is_connected(_on_status_resisted):
 		BattleManager.status_resisted.disconnect(_on_status_resisted)
 	if BattleManager.steal_resolved.is_connected(_on_steal_resolved):
@@ -5960,6 +5963,8 @@ func _animate_melee_attack(attacker_sprite: Node2D, target_sprite: Node2D, attac
 	var held_hit: int = 0
 	if spotlight and land_on_impact:
 		held_hit = _hold_melee_damage(lead_in + approach + impact_at)
+		if attacker_anim and is_instance_valid(attacker_anim):
+			_melee_second_beat = minf(attacker_anim.second_impact_time(attacker_anim.swing_anim_name(ability_anim)), hold) - impact_at
 	## The stagger, as an interval on the tween rather than an await in the caller's loop —
 	## CLAUDE.md: "`await` in a loop SERIALIZES what should be simultaneous", and the same trap
 	## inverted would turn a 5-member cascade into 5 sequential full lunges.
@@ -6168,6 +6173,14 @@ var _last_contact_in: float = 0.17
 var _melee_hold_token: int = 0
 var _melee_hold_live: bool = false
 var _melee_hold_extra: float = 0.0
+## A two-strike attack (the Rogue): where the held buffer splits, how long after the first beat the rest lands, and its hit sound.
+var _melee_cut: int = -1
+var _melee_cut_weapon: String = ""
+var _melee_second_beat: float = 0.0
+var _melee_weapon_override: String = ""
+var _hit_weapon_override: String = ""
+## Game seconds between two strikes' numbers when the swing has no authored second beat (turbo, console, 4x+, procedural sheets).
+const STRIKE_STAGGER := 0.12
 var _action_serial: int = 0
 var _hitstop_seconds: float = 0.07
 
@@ -6189,15 +6202,31 @@ static func strike_hold(played: float, spotlight: bool) -> float:
 
 ## Hold this swing's damage presentation (number, HP bar, hit sound, death) until its impact frame, on the
 ## buffer Full Render casts already use. Returns a token; a safety timer lands it if the lunge tween dies.
-func _hold_melee_damage(lands_in: float) -> int:
+func _hold_melee_damage(lands_in: float, safety: float = 0.25) -> int:
 	_flush_full_render_damage()
 	_full_render_dmg_buffer = []
 	_full_render_dmg_attacker = _last_acting_combatant
 	_melee_hold_token += 1
 	_melee_hold_live = true
 	_melee_hold_extra = 0.0
-	get_tree().create_timer(lands_in + 0.25).timeout.connect(_land_melee_damage.bind(_melee_hold_token))
+	_melee_cut = -1
+	_melee_cut_weapon = ""
+	_melee_second_beat = 0.0
+	_melee_weapon_override = ""
+	get_tree().create_timer(lands_in + safety).timeout.connect(_land_melee_damage.bind(_melee_hold_token))
 	return _melee_hold_token
+
+
+## A later strike of a basic attack: its number waits for its own beat, split off the held swing or staggered after the first.
+func _on_strike_starting(_attacker: Combatant, index: int, _count: int, weapon: String) -> void:
+	if index <= 0:
+		return
+	if _melee_hold_live and _full_render_dmg_buffer != null:
+		_melee_cut = (_full_render_dmg_buffer as Array).size()
+		_melee_cut_weapon = weapon
+		return
+	_hold_melee_damage(STRIKE_STAGGER, 0.0)
+	_melee_weapon_override = weapon
 
 
 func _land_melee_damage(token: int) -> void:
@@ -6205,7 +6234,34 @@ func _land_melee_damage(token: int) -> void:
 		return
 	_melee_hold_token += 1  # spent: the safety timer (or the tween) finds a different token and does nothing
 	_melee_hold_live = false
+	if _melee_cut >= 0 and _full_render_dmg_buffer is Array and _melee_cut < (_full_render_dmg_buffer as Array).size():
+		_land_first_strike_then_hold_rest()
+		return
+	_hit_weapon_override = _melee_weapon_override
 	_flush_full_render_damage()
+	_hit_weapon_override = ""
+	_melee_weapon_override = ""
+
+
+## Land the first strike's entries now; the rest (and any death they caused) waits _melee_second_beat for its own beat.
+func _land_first_strike_then_hold_rest() -> void:
+	var buffered: Array = _full_render_dmg_buffer
+	var attacker: Combatant = _full_render_dmg_attacker
+	var rest: Array = buffered.slice(_melee_cut)
+	var rest_weapon: String = _melee_cut_weapon
+	var deaths: Array = _deaths_after_impact
+	_deaths_after_impact = []
+	_full_render_dmg_buffer = buffered.slice(0, _melee_cut)
+	_flush_full_render_damage()
+	_full_render_dmg_buffer = rest
+	_full_render_dmg_attacker = attacker
+	_deaths_after_impact = deaths
+	_melee_cut = -1
+	_melee_cut_weapon = ""
+	_melee_weapon_override = rest_weapon
+	_melee_hold_token += 1
+	_melee_hold_live = true
+	get_tree().create_timer(maxf(_melee_second_beat, STRIKE_STAGGER)).timeout.connect(_land_melee_damage.bind(_melee_hold_token))
 
 
 ## Land a swing's held hit at once, if one is waiting on its impact frame.
@@ -7456,7 +7512,14 @@ func _on_damage_dealt(target: Combatant, amount: int, is_crit: bool, element: St
 	var attacker = _last_acting_combatant
 	if attacker == null:
 		return
-	var weapon_type = EquipmentSystem.get_weapon_type(attacker)
+	## The Rogue's second strike is the crossbow bolt, on its own voice so it layers over the blade's cue.
+	if _hit_weapon_override == "bolt":
+		if is_crit:
+			SoundManager.play_second_hit("attack_hit_bolt_crit")
+		else:
+			SoundManager.play_second_hit("attack_hit_bolt")
+		return
+	var weapon_type = _hit_weapon_override if _hit_weapon_override != "" else EquipmentSystem.get_weapon_type(attacker)
 	SoundManager.play_attack_hit(weapon_type, is_crit)
 	# msg 2796 cycle 20: layer the elemental strike voice ON TOP of the weapon hit, per cowir-sfx's shape — the sword still sounds like a sword, the element rides over it. THIS site is basic attacks only; a PHYSICAL ability reaches the same cue from the block above the early-return, because the weapon strikes there too. A MAGIC ability still never does — it already played its own cast sound, so a Fire spell won't also fire strike_fire, which is the part of this note that is load-bearing.
 	var weapon_element: String = _weapon_element_for(attacker)
