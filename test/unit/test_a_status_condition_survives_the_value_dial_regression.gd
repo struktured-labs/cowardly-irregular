@@ -20,7 +20,9 @@ const EDITOR_SRC := "res://src/ui/autogrind/AutogrindGridEditor.gd"
 ## 🔑 TWO HALVES, AND ONLY ONE IS A BUG. That the status CANNOT BE CHANGED is a missing picker —
 ## @cowir-ai measured the same shape in the autobattle twin (8 conditions stuck on their seed) and
 ## routed it to struktured as a scope call, because adding one is a feature. That every press raises
-## a TYPE ERROR is not a scope call at all. This fixes the second and leaves the first declared.
+## a TYPE ERROR is not a scope call at all. The type error was fixed first; the picker followed
+## (2026-11-13): the dial now walks the console's MEMBER_STATUS_RING, the same list the console's
+## OPTIONS cycler uses, so a grid-written rule can watch for blind or silence and not only poison.
 ##
 ## ⚠️ THE SYMPTOM THIS CANNOT ASSERT ON: GUT exposes no `assert_no_script_errors` to GDScript
 ## (`test_quest_examine_point_bounds_regression` documents the same limit; `tools/gate.sh` counts
@@ -151,3 +153,58 @@ func test_the_dial_derives_its_nullary_set_from_the_grammar() -> void:
 		"NULLARY_CONDITIONS already owns that set, and a hand-list beside it covered 3 of 5")
 	assert_gte(AutogrindSystem.NULLARY_CONDITIONS.size(), 5,
 		"CONTROL: the grammar must still declare the nullary set this guard defers to")
+
+
+const UI := "res://src/ui/autogrind/AutogrindUI.gd"
+
+
+func _dial(value, delta: int) -> String:
+	var ed := _editor()
+	ed.rules = [{"conditions": [{"type": "member_status", "member": "cleric", "value": value}], "actions": [{"type": "stop_grinding"}]}]
+	ed.cursor_row = 0
+	ed.cursor_col = 0
+	ed._adjust_condition_value(delta)
+	return str(ed.rules[0]["conditions"][0]["value"])
+
+
+## ⛔ THE PICKER. The grid could write only the seeded poison; one press must move to the ring's next status.
+func test_the_dial_picks_the_next_status_on_the_ring() -> void:
+	var ring: Array = load(UI).MEMBER_STATUS_RING
+	assert_gte(ring.size(), 2, "CONTROL: the console's status ring must offer a choice")
+	var got := _dial(ring[0], 1)
+	gut.p("    %s +1 -> %s" % [ring[0], got])
+	assert_eq(got, str(ring[1]),
+		"the value dial left a Member Has Status condition on '%s' — the grid editor cannot choose which status a rule watches for" % ring[0])
+
+
+## Both directions wrap, and every press lands on a ring entry the evaluator can match.
+func test_the_dial_wraps_both_ways_on_the_ring() -> void:
+	var ring: Array = load(UI).MEMBER_STATUS_RING
+	assert_eq(_dial(ring[0], -1), str(ring[ring.size() - 1]), "dialling down from the first status must wrap to the last")
+	assert_eq(_dial(ring[ring.size() - 1], 1), str(ring[0]), "dialling up from the last status must wrap to the first")
+
+
+## A value the ring does not hold (an old save's retired `slow`) is replaced by the ring's first entry, never kept or numbered.
+func test_an_off_ring_status_is_brought_back_onto_the_ring() -> void:
+	var ring: Array = load(UI).MEMBER_STATUS_RING
+	assert_false(ring.has("slow"), "CONTROL: slow must still be off the ring for this arm to mean anything")
+	assert_eq(_dial("slow", 1), str(ring[0]), "an off-ring status must land on the ring, not stay a rule that can never fire")
+
+
+## End to end: the status the dial chose is the one the real evaluator matches.
+func test_a_dialled_status_rule_fires_on_that_status() -> void:
+	var ring: Array = load(UI).MEMBER_STATUS_RING
+	var chosen := _dial(ring[0], 1)
+	assert_ne(chosen, str(ring[0]), "precondition: the dial moved off the seed")
+	var cleric := Combatant.new()
+	cleric.initialize({"name": "Dial Cleric", "max_hp": 1000, "max_mp": 100, "attack": 20, "defense": 20, "magic": 20, "speed": 20})
+	cleric.job = JobSystem.get_job("cleric")
+	add_child_autofree(cleric)
+	var cond := {"type": "member_status", "member": "cleric", "value": chosen}
+	cleric.add_status(str(ring[0]), 3)
+	assert_false(AutogrindSystem._evaluate_party_condition([cleric], cond),
+		"control: the seed status must not satisfy a rule that now names %s" % chosen)
+	cleric.add_status(chosen, 3)
+	assert_true(cleric.has_status(chosen), "precondition: %s landed on the member" % chosen)
+	assert_true(AutogrindSystem._evaluate_party_condition([cleric], cond),
+		"a grid-dialled rule naming %s must fire once the member has it" % chosen)
