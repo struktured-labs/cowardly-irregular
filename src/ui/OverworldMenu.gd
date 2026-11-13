@@ -276,9 +276,15 @@ func _build_ui() -> void:
 	_update_selection()
 
 
-## Party-card geometry factor: the card was laid out in literals for a 10-14 px font, so at 200% its lines overprinted. Upward only, like TeleportMenu._tf.
+## The line height the card's literal offsets were authored around: a 14 px name in the shipped face.
+const CARD_DESIGN_NAME_LINE := 20.0
+
+
+## Party-card geometry factor, from the name's MEASURED line height (a larger Text Size and a taller face both make room), in 5% steps: the card was laid out in literals for a 10-14 px font, so at 200% its lines overprinted. Upward only, like TeleportMenu._tf.
 func _card_k() -> float:
-	return maxf(1.0, float(TextScale.scaled(100)) / 100.0)
+	var f: Font = _menu_font()
+	var line: float = float(TextScale.scaled(14)) * 1.36 if f == null else f.get_height(TextScale.scaled(14))
+	return maxf(1.0, snappedf(line / CARD_DESIGN_NAME_LINE, 0.05))
 
 
 func _create_party_panel(panel_size: Vector2) -> Control:

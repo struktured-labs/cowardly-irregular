@@ -73,6 +73,7 @@ const ENEMY_HP_BAR_FADE := 0.4  # under the 0.5s dissolve it leaves with
 const STATUS_ROW_WIDTH := 120.0  # badges centre in it over the figure (row units, x STATUS_ROW_ZOOM on screen)
 const STATUS_ROW_ZOOM := 1.6  # the badges' ~9px text, read at ~14px on every monster
 const STATUS_ROW_LIFT := 16.0  # row units from the figure's top to the badge row's top
+const STATUS_ROW_CLEAR := 3.0  # row units of air between the badge row's top and a motif floating over the head
 const NAME_LABEL_Z := 5  # over every monster (0), under the damage popups (DamageNumber.POPUP_Z)
 const NAME_PLATE_COLOR := Color(0.04, 0.03, 0.08, 0.72)  # reads over sky, floor grid and a neighbour's body alike
 const NAME_PLATE_PAD_X := 5.0
@@ -1895,6 +1896,9 @@ func _add_name_plate(sprite: AnimatedSprite2D, label: Label) -> void:
 
 
 ## Status effect icon display system
+## A badge is bright text on a dark pill: every colour here keeps one channel at or above STATUS_BADGE_MIN_BRIGHT.
+## blind, curse, silence and permakilled were dark text on the dark pill (sprites' render, 2026-11-12).
+const STATUS_BADGE_MIN_BRIGHT := 0.75
 const STATUS_ICON_CONFIG = {
 	# Crowd control / debuffs
 	"exposed": {"label": "EXP", "color": Color(1.0, 0.3, 0.3)},
@@ -1904,10 +1908,10 @@ const STATUS_ICON_CONFIG = {
 	"confuse": {"label": "CONF", "color": Color(0.9, 0.5, 0.9)},
 	"fear": {"label": "FEAR", "color": Color(0.6, 0.3, 0.8)},
 	"charm": {"label": "CHRM", "color": Color(1.0, 0.5, 0.7)},
-	"blind": {"label": "BLND", "color": Color(0.4, 0.4, 0.4)},
-	"curse": {"label": "CURS", "color": Color(0.5, 0.0, 0.5)},
+	"blind": {"label": "BLND", "color": Color(0.78, 0.8, 0.88)},
+	"curse": {"label": "CURS", "color": Color(0.85, 0.4, 0.95)},
 	"regen": {"label": "REGN", "color": Color(0.3, 1.0, 0.3)},
-	"permakilled": {"label": "DEAD", "color": Color(0.3, 0.0, 0.0)},
+	"permakilled": {"label": "DEAD", "color": Color(0.9, 0.3, 0.3)},
 	# Tick 129: common stat buffs/debuffs from abilities.json. Pre-fix,
 	# 25+ distinct statuses fell through to the `status.substr(0, 3).to_upper()`
 	# fallback, giving the player vague "ATT" both for attack_up AND
@@ -1924,7 +1928,7 @@ const STATUS_ICON_CONFIG = {
 	# Standalone damage-over-time + utility effects
 	"burn": {"label": "BURN", "color": Color(1.0, 0.5, 0.1)},
 	"poison": {"label": "PSN", "color": Color(0.6, 0.9, 0.3)},
-	"silence": {"label": "SLNC", "color": Color(0.6, 0.6, 0.6)},
+	"silence": {"label": "SLNC", "color": Color(0.8, 0.8, 0.84)},
 	"barrier": {"label": "BARR", "color": Color(0.4, 0.8, 1.0)},
 	"haste": {"label": "HAST", "color": Color(0.3, 1.0, 0.5)},
 	"slow": {"label": "SLOW", "color": Color(0.7, 0.3, 0.8)},
@@ -1986,8 +1990,8 @@ func _setup_status_icons(combatant: Combatant, sprite: AnimatedSprite2D) -> void
 	_refresh_status_icons(combatant)
 
 
-## The animated overlay, counter-scaled to screen pixels and fitted to the idle frame's FIGURE, so a motif is the same
-## size on a 0.5x hero and a 2.5x dragon and stands on the body, not on the frame's empty margin.
+## The animated overlay, counter-scaled to screen pixels and fitted to the idle frame's FIGURE, so a motif stands on
+## the body, not on the frame's empty margin; StatusAura sizes it from that figure's height (scale_for).
 func _make_status_aura(sprite: AnimatedSprite2D) -> Node2D:
 	var aura = StatusAuraClass.new()
 	aura.name = "StatusAura"
@@ -2001,6 +2005,7 @@ func _make_status_aura(sprite: AnimatedSprite2D) -> Node2D:
 			if sprite.flip_h:
 				origin.x = -(origin.x + fig.size.x)
 			aura.body = Rect2(origin * Vector2(absf(sc.x), absf(sc.y)), fig.size * Vector2(absf(sc.x), absf(sc.y)))
+	aura.head_clear = (STATUS_ROW_LIFT + STATUS_ROW_CLEAR) * STATUS_ROW_ZOOM
 	sprite.add_child(aura)
 	return aura
 
@@ -3559,6 +3564,13 @@ static func _ranged_sequence(ability: Dictionary, targets: Array) -> String:
 	return melee_overlay(ability, "melee_each" if targets.size() > 1 else "melee")
 
 
+## The `start_at` that plays a sequence `lead` seconds later than it is authored (a thrower's wind-up); -1 = as authored.
+static func sequence_start_after(seq_id: String, lead: float) -> float:
+	if lead <= 0.0:
+		return -1.0
+	return float(FractalFX.load_sequence(seq_id).get("start", 0.0)) + lead
+
+
 ## The box around a set of target points (a zero-size rect at the point for one target).
 static func line_span(points: Array) -> Rect2:
 	if points.is_empty():
@@ -3570,7 +3582,7 @@ static func line_span(points: Array) -> Rect2:
 
 
 ## A ranged line-wide move's one cloud over the whole target line; each target's own splat is the cast path's.
-func _play_melee_cloud(caster: Combatant, caster_sprite: Node2D, ability: Dictionary, targets: Array) -> void:
+func _play_melee_cloud(caster: Combatant, caster_sprite: Node2D, ability: Dictionary, targets: Array, lead: float = 0.0) -> void:
 	var seq_id := melee_overlay(ability, "melee")
 	if seq_id == "" or caster_sprite == null or not is_instance_valid(caster_sprite):
 		return
@@ -3587,7 +3599,7 @@ func _play_melee_cloud(caster: Combatant, caster_sprite: Node2D, ability: Dictio
 	if authored_span > 0.0:
 		k *= clampf((maxf(span.size.x, span.size.y) + LINE_SPAN_PAD) / authored_span, LINE_SPAN_MIN, LINE_SPAN_MAX)
 	EffectSystem.spawn_sequence(seq_id, _figure_anchor(caster_sprite), span.get_center(),
-		k, {}, 1, not signature_sound_allowed(), -1.0, Vector2.INF, family_tint(ability))
+		k, {}, 1, not signature_sound_allowed(), sequence_start_after(seq_id, lead), Vector2.INF, family_tint(ability))
 
 
 func _spawn_outcome_sequence(seq_id: String, from: Vector2, to: Vector2, power: float = 1.0, tier: int = 1) -> void:
@@ -3727,8 +3739,9 @@ func _on_steal_resolved(caster: Combatant, target: Combatant, success: bool) -> 
 ## sequence flies from the caster to each target, and the damage numbers wait for the burst rather than
 ## landing on the first frame of the cast. The battle holds until just after the burst; the closing fling
 ## overlaps whatever acts next, so a Fire turn costs about what a spotlight turn did.
-func _play_ability_sequence(caster: Combatant, caster_sprite: Node2D, animator: BattleAnimatorClass, ability: Dictionary, targets: Array, seq_override: String = "", buffering: bool = false) -> void:
+func _play_ability_sequence(caster: Combatant, caster_sprite: Node2D, animator: BattleAnimatorClass, ability: Dictionary, targets: Array, seq_override: String = "", buffering: bool = false, lead: float = 0.0) -> void:
 	var seq_id := seq_override if seq_override != "" else _ability_sequence(ability)
+	var start_at := sequence_start_after(seq_id, lead)
 	if animator:
 		_play_ability_animation(_ability_anim_name(ability, animator), animator)
 	var from := Vector2.ZERO
@@ -3748,7 +3761,7 @@ func _play_ability_sequence(caster: Combatant, caster_sprite: Node2D, animator: 
 		var actors: Dictionary = {"caster": caster_sprite, "target": ts} if first else {}
 		first = false
 		var played: Dictionary = EffectSystem.spawn_sequence(seq_id, from, _figure_anchor(ts),
-			float(AbilityVFX.resolve(ability)["power"]) * float(intensity["k"]), actors, int(intensity["tier"]), not signature_sound_allowed(), -1.0, caster_centre)
+			float(AbilityVFX.resolve(ability)["power"]) * float(intensity["k"]), actors, int(intensity["tier"]), not signature_sound_allowed(), start_at, caster_centre, family_tint(ability) if seq_override != "" else "")
 		impact = maxf(impact, float(played.get("impact", 0.0)))
 	if impact <= 0.0:
 		_spawn_ability_effects(ability, targets)
@@ -4671,6 +4684,7 @@ func _run_off(s: AnimatedSprite2D, delay: float, edge: float) -> void:
 	var p0 := s.position
 	var dx := edge - s.global_position.x
 	var t := EnemyDeathFx.real_time(s.create_tween())
+	s.set_meta("motion_tween", t)  # the hop is the runner's own; see motion_owns
 	if delay > 0.0:
 		t.tween_interval(delay)
 	t.tween_property(s, "position:y", p0.y - 16.0, ESCAPE_HOP * 0.5).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
@@ -4961,16 +4975,50 @@ static func apply_persisted_formation(members: Array) -> void:
 					member.add_debuff("formation_atk", "attack", 0.9, 999)
 
 
-## True while a sprite's own lunge is moving it. The idle sway below wrote position.y on EVERY sprite EVERY frame, so a
-## lunge only ever moved in x: an attacker slid along its own row and swung at its target's column, a row or two away
-## (struktured 2026-11-12, "attacking someone but aims center"; seen in clips of .792). As old as the sway; the .791 hold
-## for the whole swing is what put it on screen.
+## Tweens that move a sprite keep themselves on it under one of these metas; while any is alive, the sprite's position is theirs.
+const MOTION_METAS: Array[StringName] = [&"attack_tween", &"knockback_tween", &"motion_tween"]
+
+
+## True while something is moving this sprite: a lunge or a group rush (attack_tween), a knock-back pop (knockback_tween),
+## an escape hop (motion_tween). The idle sway below wrote position.y on EVERY sprite EVERY frame, so a lunge only ever
+## moved in x and a pop's lift was taken back the same frame (struktured 2026-11-12, "attacking someone but aims center").
+## Valid, not "running": hit-stop PAUSES a lunge at the impact, and the sway took y back for exactly that frame.
+static func motion_owns(sprite: Node2D) -> bool:
+	if sprite == null or not is_instance_valid(sprite):
+		return false
+	for key in MOTION_METAS:
+		if sprite.has_meta(key):
+			var tween = sprite.get_meta(key)
+			if tween is Tween and (tween as Tween).is_valid():
+				return true
+	return false
+
+
+## Kept for .793's callers and pins: the lunge's own question.
 static func lunge_owns(sprite: Node2D) -> bool:
 	if sprite == null or not is_instance_valid(sprite) or not sprite.has_meta("attack_tween"):
 		return false
 	var tween = sprite.get_meta("attack_tween")
-	## Valid, not "running": hit-stop PAUSES the lunge at the moment of impact, and the sway took y back for exactly that frame.
 	return tween is Tween and (tween as Tween).is_valid()
+
+
+## The idle motion in px at time t: enemies sway ±3 (0.8, 0.95, 1.1 Hz…), the party breathes ±2 (0.4-0.55 Hz),
+## each out of step with its neighbours. ONE function, because a knock-back leaves from and lands on this y.
+static func idle_offset(is_enemy: bool, index: int, t: float) -> float:
+	if is_enemy:
+		return sin(t * (0.8 + float(index) * 0.15) * TAU + float(index) * 1.1) * 3.0
+	return sin(t * (0.4 + float(index) * 0.05) * TAU + float(index) * 0.9) * 2.0
+
+
+## Where the idle motion has this sprite's y right now; `fallback` for a sprite the idle writer does not move.
+func idle_y(sprite: Node2D, fallback: float) -> float:
+	var ei: int = enemy_sprite_nodes.find(sprite)
+	if ei >= 0 and ei < _enemy_base_positions.size():
+		return _enemy_base_positions[ei].y + idle_offset(true, ei, _idle_time)
+	var pi: int = party_sprite_nodes.find(sprite)
+	if pi >= 0 and pi < _party_base_positions.size():
+		return _party_base_positions[pi].y + idle_offset(false, pi, _idle_time)
+	return fallback
 
 
 func _process_idle_animations(delta: float) -> void:
@@ -4987,11 +5035,8 @@ func _process_idle_animations(delta: float) -> void:
 		if i >= _enemy_base_positions.size():
 			continue
 		# Each enemy has a slightly different frequency (0.8, 0.95, 1.1 Hz)
-		var freq = 0.8 + float(i) * 0.15
-		var phase = float(i) * 1.1  # Phase offset so they don't move in sync
-		var sway = sin(_idle_time * freq * TAU + phase) * 3.0
-		if not lunge_owns(sprite):
-			sprite.position.y = _enemy_base_positions[i].y + sway
+		if not motion_owns(sprite):
+			sprite.position.y = _enemy_base_positions[i].y + idle_offset(true, i, _idle_time)
 
 	# Party idle breathing: ±2px Y oscillation at different rates per character
 	for i in range(party_sprite_nodes.size()):
@@ -5001,11 +5046,8 @@ func _process_idle_animations(delta: float) -> void:
 		if i >= _party_base_positions.size():
 			continue
 		# Party members breathe at slightly different rates (0.4-0.55 Hz, slower = calmer)
-		var freq = 0.4 + float(i) * 0.05
-		var phase = float(i) * 0.9
-		var breathe = sin(_idle_time * freq * TAU + phase) * 2.0
-		if not lunge_owns(sprite):
-			sprite.position.y = _party_base_positions[i].y + breathe
+		if not motion_owns(sprite):
+			sprite.position.y = _party_base_positions[i].y + idle_offset(false, i, _idle_time)
 
 	# Update buff/debuff visual overlays for all combatants
 	_update_buff_debuff_visuals(delta)
@@ -5368,9 +5410,11 @@ func _on_action_executing(combatant: Combatant, action: Dictionary) -> void:
 			elif ability_type == "physical" and _ranged_sequence(ability, targets) != "":
 				## Not a lunge: a landed or fizzled beat must not wait out the PREVIOUS melee's contact clock (adhoc 24015).
 				_melee_contact_timer = null
+				## The thing leaves the hand on the throwing pose's own impact frame, not on the pose's first one.
+				var release: float = animator.impact_time(animator.shown_animation_for(_ability_anim_name(ability, animator))) if animator else 0.0
 				if targets.size() > 1:
-					_play_melee_cloud(combatant, attacker_sprite, ability, targets)
-				_play_ability_sequence(combatant, attacker_sprite, animator, ability, targets, _ranged_sequence(ability, targets))
+					_play_melee_cloud(combatant, attacker_sprite, ability, targets, release)
+				_play_ability_sequence(combatant, attacker_sprite, animator, ability, targets, _ranged_sequence(ability, targets), false, release)
 			# Physical abilities move to target
 			elif ability_type == "physical" and targets.size() > 0:
 				var target_sprite = _get_combatant_sprite(targets[0])
@@ -6208,11 +6252,9 @@ func _apply_hit_knockback(sprite: Node2D, direction: float = 1.0, magnitude: flo
 	var pop: float = 4.0 if _tier() <= BattleJuice.Tier.REDUCED else 0.0
 	var tween = _knockback_tween(sprite)
 	tween.tween_property(sprite, "position:x", knockback_x, 0.05)
-	if pop > 0.0:
-		tween.parallel().tween_property(sprite, "position:y", original_y - pop, 0.05)
+	_knock_y_leg(tween, sprite, original_y, pop, 0.0, 1.0, 0.05)
 	tween.tween_property(sprite, "position:x", original_x, 0.15).set_ease(Tween.EASE_OUT)
-	if pop > 0.0:
-		tween.parallel().tween_property(sprite, "position:y", original_y, 0.15).set_ease(Tween.EASE_OUT)
+	_knock_y_leg(tween, sprite, original_y, pop, 1.0, 0.0, 0.15)
 
 
 ## Where a knocked sprite comes to rest: its HOME, not wherever the hit found it. A second hit inside the
@@ -6222,10 +6264,28 @@ func _apply_hit_knockback(sprite: Node2D, direction: float = 1.0, magnitude: flo
 func _knockback_rest(sprite: Node2D) -> Vector2:
 	if sprite.has_meta("attack_tween"):
 		var lunge = sprite.get_meta("attack_tween")
-		if lunge is Tween and lunge.is_valid() and lunge.is_running():
+		if lunge is Tween and lunge.is_valid():  # valid, not running: a hit-stop pauses the lunge, and a hit landing then sent the attacker home
 			return sprite.position
 	var home: Vector2 = sprite.get_meta("home_position", sprite.position)
 	return home
+
+
+## The knock-back's y, in step with its x leg. While the knock-back owns the sprite (motion_owns) the idle writer
+## leaves y alone, so the pop carries the sway itself: y = where the idle motion is NOW, minus the lift. It leaves
+## from the swayed y the hit found and lands on the y the sway resumes at; a fixed home y jumped by up to 3 px at
+## both ends, most of a 4 px pop. Runs with no lift too (a tier with no pop): the sway must not freeze for 0.2 s.
+## A sprite mid-lunge is the lunge's: its y is lifted from where the hit found it, as before.
+func _knock_y_leg(tween: Tween, sprite: Node2D, found_y: float, pop: float, from: float, to: float, seconds: float) -> void:
+	if lunge_owns(sprite):
+		if pop > 0.0:
+			tween.parallel().tween_property(sprite, "position:y", found_y - pop * to, seconds).set_ease(Tween.EASE_OUT)
+		return
+	tween.parallel().tween_method(_knock_y.bind(sprite, found_y, pop), from, to, seconds).set_ease(Tween.EASE_OUT)
+
+
+func _knock_y(lift: float, sprite: Node2D, found_y: float, pop: float) -> void:
+	if is_instance_valid(sprite):
+		sprite.position.y = idle_y(sprite, found_y) - pop * lift
 
 
 ## One knockback per sprite, on the sprite: a new hit replaces the old tween (two wrote position at once), and
@@ -6294,11 +6354,9 @@ func _apply_weakness_hit_knockback(sprite: Node2D, direction: float = 1.0, eleme
 	var pop: float = 7.0 if _tier() <= BattleJuice.Tier.REDUCED else 0.0
 	var tween = _knockback_tween(sprite)
 	tween.tween_property(sprite, "position:x", knockback_x, 0.08).set_ease(Tween.EASE_OUT)
-	if pop > 0.0:
-		tween.parallel().tween_property(sprite, "position:y", original_y - pop, 0.08).set_ease(Tween.EASE_OUT)
+	_knock_y_leg(tween, sprite, original_y, pop, 0.0, 1.0, 0.08)
 	tween.tween_property(sprite, "position:x", original_x, 0.22).set_ease(Tween.EASE_OUT)
-	if pop > 0.0:
-		tween.parallel().tween_property(sprite, "position:y", original_y, 0.22).set_ease(Tween.EASE_OUT)
+	_knock_y_leg(tween, sprite, original_y, pop, 1.0, 0.0, 0.22)
 
 
 func _get_combatant_sprite(combatant: Combatant) -> Node2D:
