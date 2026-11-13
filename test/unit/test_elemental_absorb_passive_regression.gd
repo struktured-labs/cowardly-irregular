@@ -127,3 +127,35 @@ func test_runtime_absorb_clamps_to_max_hp() -> void:
 	c.take_elemental_damage(50, "dark")
 	assert_eq(c.current_hp, 100,
 		"absorb heal must clamp to max_hp — no overheal")
+
+
+## The "+40% dark damage" half: it was faked as +40% to ALL magic (stat_mods.magic_multiplier); it is dark-only now.
+func test_data_scales_dark_only_not_every_spell() -> void:
+	var data: Dictionary = JSON.parse_string(_read("res://data/passives.json"))
+	var ua: Dictionary = data["undead_affinity"]
+	assert_gt(float((ua.get("meta_effects", {}) as Dictionary).get("dark_damage_bonus", 0.0)), 1.0,
+		"undead_affinity must author meta_effects.dark_damage_bonus > 1")
+	assert_false((ua.get("stat_mods", {}) as Dictionary).has("magic_multiplier"),
+		"a magic_multiplier would scale fire and ice too — the passive promises DARK damage")
+	assert_false(str(ua.get("description", "")).contains("no effect"), "both halves are wired; the tag must go")
+
+
+func _bonus(passives: Array, element: String) -> float:
+	var bm: Node = Engine.get_main_loop().root.get_node_or_null("BattleManager")
+	var c: Combatant = _make("Necro", 100)
+	for p in passives:
+		c.equipped_passives.append(str(p))
+	return float(bm._element_damage_bonus(c, element))
+
+
+func test_runtime_passive_scales_dark_by_its_authored_bonus() -> void:
+	assert_almost_eq(_bonus(["undead_affinity"], "dark"), 1.4, 0.001, "undead_affinity must make dark hit 1.4x")
+
+
+func test_runtime_passive_leaves_other_elements_alone() -> void:
+	assert_almost_eq(_bonus(["undead_affinity"], "fire"), 1.0, 0.001, "undead_affinity must not touch fire")
+
+
+## CONTROL: the 1.4 must come from the passive — without it dark is 1.0, so a helper that hard-codes 1.4 reds here.
+func test_runtime_no_passive_dark_is_unscaled() -> void:
+	assert_almost_eq(_bonus([], "dark"), 1.0, 0.001, "no passive, no bonus")
