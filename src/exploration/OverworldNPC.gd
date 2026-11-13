@@ -1267,6 +1267,12 @@ func _start_dialogue() -> void:
 	var story_pending: bool = gl_story != null \
 		and gl_story.has_method("_get_pending_story_cutscene") \
 		and str(gl_story._get_pending_story_cutscene()) != ""
+	# A save that skipped the briefing: Theron's talk IS the sparring offer while a trial is open (main 24221). Played before the talk ends, so the pending-scene check it fires stands down.
+	if npc_name == "Elder Theron" and not story_pending and gl_story != null and gl_story.has_method("theron_sparring_scene_now"):
+		var spar_id: String = str(gl_story.theron_sparring_scene_now())
+		if spar_id != "" and gl_story.play_theron_sparring(spar_id):
+			_end_dialogue()
+			return
 	if dynamic and persona != "" and not story_pending and _llm_conversation_available():
 		var player := _get_nearby_player()
 		await _run_dynamic_conversation(player)
