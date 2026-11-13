@@ -1204,6 +1204,10 @@ func _format_condition(condition: Dictionary) -> String:
 			return "Enemy weak to %s" % str(condition.get("element", "?")).capitalize()
 		"enemy_resists":
 			return "Enemy resists %s" % str(condition.get("element", "?")).capitalize()
+		"enemy_charging":
+			return "Enemy charging"
+		"enemy_signature_in":
+			return "Enemy signature in %s %d" % [op, value]
 		"enemy_hp_percent":
 			return "Enemy HP %s %d%%" % [op, value]
 		"ally_hp_percent":
