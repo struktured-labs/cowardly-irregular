@@ -17,6 +17,7 @@ extends RefCounted
 const AdvanceAuraClass = preload("res://src/battle/AdvanceAura.gd")
 const BACKDROP_SHARE := 0.85
 const MIN_PX := 1.0
+const CONTAIN_SLACK := 0.5
 
 
 ## [{"id", "rect", "node"}] for every surface under `root` (and {"backdrops": ...} via backdrops()).
@@ -35,6 +36,9 @@ static func backdrops(root: Node) -> Array:
 
 
 ## "a ∩ b at rect" for every intersecting pair not DECLARED. `used` collects the declared keys that matched, for stale().
+## surfs is in draw order (tree order). Menus paint panels FLAT: a ColorRect, then its border strips and labels as later
+## siblings. Such a pair is content, not a collision (_is_content). Text over text, a later surface covering an earlier one,
+## a partial overlap, another container's node landing on the panel, and any sprite_surface all still report.
 static func collisions(surfs: Array, declared: Dictionary, used: Dictionary = {}) -> Array:
 	var out: Array = []
 	for i in surfs.size():
@@ -43,6 +47,8 @@ static func collisions(surfs: Array, declared: Dictionary, used: Dictionary = {}
 			var b: Dictionary = surfs[j]
 			var hit: Rect2 = (a["rect"] as Rect2).intersection(b["rect"])
 			if hit.size.x < MIN_PX or hit.size.y < MIN_PX:
+				continue
+			if _is_content(a, b):
 				continue
 			var key := _declared_key(declared, str(a["id"]), str(b["id"]))
 			if key != "":
@@ -142,6 +148,19 @@ static func _is_text(c: Control) -> bool:
 	if c is RichTextLabel:
 		return (c as RichTextLabel).get_parsed_text().strip_edges() != ""
 	return c is Button and (c as Button).text.strip_edges() != ""
+
+
+## b (drawn later) is content of a: a is a Control that paints a background (never a text-only node), b is a Control under
+## a's own parent (battle 24944, adhoc 24943), and a wholly encloses b. A sprite_surface's node is not a Control: never.
+static func _is_content(a: Dictionary, b: Dictionary) -> bool:
+	var na = a.get("node")
+	var nb = b.get("node")
+	if not (na is Control and nb is Control) or not _draws_background(na):
+		return false
+	var parent: Node = (na as Node).get_parent()
+	if parent == null or not parent.is_ancestor_of(nb):
+		return false
+	return (a["rect"] as Rect2).grow(CONTAIN_SLACK).encloses(b["rect"])
 
 
 static func _declared_key(declared: Dictionary, a: String, b: String) -> String:

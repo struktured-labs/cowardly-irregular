@@ -66,6 +66,41 @@ func test_a_planted_overlap_is_reported() -> void:
 	assert_true(hits.any(func(h): return str(h).contains("Planted")), "a label over %s is a finding: %s" % [surfs[0]["id"], hits])
 
 
+func _surf(id: String, node: Node, r: Rect2) -> Dictionary:
+	return {"id": id, "rect": r, "node": node}
+
+
+func _label(t: String, parent: Node) -> Label:
+	var l := Label.new()
+	l.text = t
+	parent.add_child(l)
+	return l
+
+
+## The flat-panel rule, and every shape it must still catch (battle 24944, adhoc 24943). Each finding arm is one hole.
+func test_a_flat_panel_owns_its_labels_and_nothing_else() -> void:
+	var root := Control.new()
+	add_child_autofree(root)
+	var card := Control.new()
+	root.add_child(card)
+	var other := Control.new()
+	root.add_child(other)
+	var bg := ColorRect.new()
+	bg.color = Color.BLACK
+	card.add_child(bg)
+	var panel := _surf("Bg", bg, Rect2(0, 0, 200, 100))
+	var on := _surf("On", _label("on", card), Rect2(10, 10, 50, 20))
+	assert_eq(OverlapAudit.collisions([panel, on], {}), [], "a label wholly on its own panel, drawn after it, is content")
+	assert_eq(OverlapAudit.collisions([panel, _surf("Edge", _label("edge", card), Rect2(180, 10, 50, 20))], {}).size(), 1, "a label hanging off the panel's edge is a finding")
+	assert_eq(OverlapAudit.collisions([on, panel], {}).size(), 1, "a panel drawn AFTER a label covers it: a finding")
+	assert_eq(OverlapAudit.collisions([panel, _surf("Stray", _label("stray", other), Rect2(10, 40, 50, 20))], {}).size(), 1, "another container's label on this panel is a finding")
+	var wide := _surf("Wide", _label("a wide line of text", card), Rect2(0, 0, 200, 20))
+	assert_eq(OverlapAudit.collisions([wide, _surf("Over", _label("over", card), Rect2(10, 2, 40, 16))], {}).size(), 1, "text printed over text is a finding")
+	var fig := Node2D.new()
+	card.add_child(fig)
+	assert_eq(OverlapAudit.collisions([panel, _surf("Figure", fig, Rect2(20, 20, 40, 40))], {}).size(), 1, "a figure under a panel is a finding")
+
+
 func test_nothing_in_the_field_menu_overlaps_at_any_text_size() -> void:
 	var used := {}
 	var found: Array = []
