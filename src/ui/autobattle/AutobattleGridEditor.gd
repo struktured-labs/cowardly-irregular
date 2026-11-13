@@ -97,6 +97,7 @@ const NUMERIC_BOUNDS := {
 	"ap": [-4, 4],                 # Combatant.gd clamps current_ap to this, debt included
 	"volatility_band": [0, 3],     # Stable / Shifting / Unstable / Fractured
 	"ally_count": [0, 5],          # _get_allies_for = alive party INCLUDING self, cap 5
+	"enemy_signature_in": [1, 9],  # BossCadence.turns_to_release: 1 = the boss's next turn; the top is every + charge_turns + 1
 }
 
 ## These share the 0-100 percentage scale, so a number carried BETWEEN them still means what the
@@ -2302,6 +2303,13 @@ func _apply_condition_type(new_type: String) -> void:
 			cond["op"] = ">="
 		if not cond.has("value"):
 			cond["value"] = 2
+	elif new_type == "enemy_signature_in":
+		## Turns to a boss's release run 1..every+charge_turns+1. The generic `< 50` is true on every turn of every cadence
+		## fight. Seed the play the condition exists for: guard (Defer, Shell) on the turn before it lands.
+		if not cond.has("op"):
+			cond["op"] = "<="
+		if not cond.has("value"):
+			cond["value"] = 1
 	elif _nullary_condition_types().has(new_type):
 		## Nullary by the owner's own list — the evaluator reads neither field.
 		cond.erase("op")
@@ -2470,8 +2478,8 @@ func _adjust_condition_value(delta: int) -> void:
 		var current_value = cond.get("value", 50)
 		var step = 5  # Adjust by 5 for percentages, 1 for counts
 
-		# Use smaller steps for AP and counts
-		if cond_type in ["ap", "enemy_count", "ally_count", "turn"]:
+		# Use smaller steps for AP and counts; any small bounded scale steps by 1, or a step of 5 skips its middle
+		if cond_type in ["ap", "enemy_count", "ally_count", "turn"] or NUMERIC_BOUNDS.has(cond_type):
 			step = 1
 
 		var lo: int = 0
