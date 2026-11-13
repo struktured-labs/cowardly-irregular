@@ -814,9 +814,10 @@ func _column_positions(count: int, vp: Vector2) -> Array[Vector2]:
 	## Pushed past the bottom: lift the whole column, keeping the spacing.
 	var bottom_limit := vp.y - _bottom_margin(vp.y) - _ch()
 	if out.size() > 0 and out[out.size() - 1].y > bottom_limit:
-		var lift := out[out.size() - 1].y - bottom_limit
+		## One block, never squeezed: a per-card clamp at the stack top collapsed the upper cards onto each other.
+		var lift := minf(out[out.size() - 1].y - bottom_limit, maxf(0.0, out[0].y - _stack_top()))
 		for i in range(out.size()):
-			out[i].y = maxf(_stack_top(), out[i].y - lift)
+			out[i].y -= lift
 	return out
 
 
