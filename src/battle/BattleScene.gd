@@ -497,8 +497,6 @@ func _ready() -> void:
 	BattleManager.action_executing.connect(_on_action_executing)
 	BattleManager.action_executed.connect(_on_action_executed)
 	BattleManager.boss_face_changed.connect(_on_boss_face_changed)
-	BattleManager.boss_charge_changed.connect(_on_boss_charge_changed)
-	BattleManager.boss_charge_broken.connect(_on_boss_charge_broken)
 	# Item 19: user report "bard was briefly stuck for a turn next to
 	# the monsters on the left he presumably recently attacked" —
 	# stray displaced sprite from an interrupted return-home tween.
@@ -527,6 +525,8 @@ func _ready() -> void:
 		BattleManager.trust_interrupt_window_closed.connect(_on_trust_interrupt_window_closed)
 	BattleManager.battle_log_message.connect(_on_battle_log_message)
 	BattleManager.monster_summoned.connect(_on_monster_summoned)
+	BattleManager.boss_charge_changed.connect(_on_boss_charge_sound)
+	BattleManager.boss_charge_broken.connect(_on_boss_charge_broken)
 	## Tick 409: Scriptweaver's create_autobattle_script meta-ability
 	## surfaces the autobattle editor for the caster. Wired via
 	## has_signal guard for partial-autoload boot scenarios.
@@ -616,10 +616,6 @@ func _exit_tree() -> void:
 		BattleManager.action_executed.disconnect(_on_action_executed)
 	if BattleManager.boss_face_changed.is_connected(_on_boss_face_changed):
 		BattleManager.boss_face_changed.disconnect(_on_boss_face_changed)
-	if BattleManager.boss_charge_changed.is_connected(_on_boss_charge_changed):
-		BattleManager.boss_charge_changed.disconnect(_on_boss_charge_changed)
-	if BattleManager.boss_charge_broken.is_connected(_on_boss_charge_broken):
-		BattleManager.boss_charge_broken.disconnect(_on_boss_charge_broken)
 	if BattleManager.round_ended.is_connected(_on_round_ended):
 		BattleManager.round_ended.disconnect(_on_round_ended)
 	if BattleManager.round_started.is_connected(_on_round_started_snap_home):
@@ -654,6 +650,10 @@ func _exit_tree() -> void:
 		BattleManager.battle_log_message.disconnect(_on_battle_log_message)
 	if BattleManager.monster_summoned.is_connected(_on_monster_summoned):
 		BattleManager.monster_summoned.disconnect(_on_monster_summoned)
+	if BattleManager.boss_charge_changed.is_connected(_on_boss_charge_sound):
+		BattleManager.boss_charge_changed.disconnect(_on_boss_charge_sound)
+	if BattleManager.boss_charge_broken.is_connected(_on_boss_charge_broken):
+		BattleManager.boss_charge_broken.disconnect(_on_boss_charge_broken)
 	if BattleManager.one_shot_achieved.is_connected(_on_one_shot_achieved):
 		BattleManager.one_shot_achieved.disconnect(_on_one_shot_achieved)
 	if BattleManager.autobattle_victory.is_connected(_on_autobattle_victory):
@@ -7473,7 +7473,7 @@ func _on_hit_negated(target: Combatant, banner: String) -> void:
 
 
 ## A boss drawing its breath is heard once, on the rising edge; the release keeps the signature's own cue.
-func _on_boss_charge_changed(_boss: Combatant, charging: bool) -> void:
+func _on_boss_charge_sound(_boss: Combatant, charging: bool) -> void:
 	if charging:
 		SoundManager.play_battle("boss_charge_gather")
 

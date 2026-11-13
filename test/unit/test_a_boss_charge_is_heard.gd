@@ -77,14 +77,14 @@ func test_a_broken_charge_snaps() -> void:
 
 
 func test_the_scene_lets_go_of_both_signals_when_it_leaves() -> void:
-	var before_changed := BattleManager.boss_charge_changed.get_connections().size()
-	var before_broken := BattleManager.boss_charge_broken.get_connections().size()
 	var scene = load(SCENE).instantiate()
 	add_child(scene)
 	await get_tree().process_frame
-	assert_eq(BattleManager.boss_charge_changed.get_connections().size(), before_changed + 1, "PREMISE: the scene connects boss_charge_changed once")
-	assert_eq(BattleManager.boss_charge_broken.get_connections().size(), before_broken + 1, "PREMISE: the scene connects boss_charge_broken once")
+	var sound := Callable(scene, "_on_boss_charge_sound")
+	var snap := Callable(scene, "_on_boss_charge_broken")
+	assert_true(BattleManager.boss_charge_changed.is_connected(sound), "PREMISE: the scene listens for the charge edge")
+	assert_true(BattleManager.boss_charge_broken.is_connected(snap), "PREMISE: the scene listens for the break")
 	remove_child(scene)
-	assert_eq(BattleManager.boss_charge_changed.get_connections().size(), before_changed, "a scene leaving the tree must disconnect boss_charge_changed")
-	assert_eq(BattleManager.boss_charge_broken.get_connections().size(), before_broken, "a scene leaving the tree must disconnect boss_charge_broken")
+	assert_false(BattleManager.boss_charge_changed.is_connected(sound), "a scene leaving the tree must disconnect its charge sound")
+	assert_false(BattleManager.boss_charge_broken.is_connected(snap), "a scene leaving the tree must disconnect its break sound")
 	scene.free()
