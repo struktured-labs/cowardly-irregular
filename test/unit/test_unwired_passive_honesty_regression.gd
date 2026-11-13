@@ -33,7 +33,11 @@ const MARK := "(Currently no effect)"
 ## arm read the data's own copy as a consumer. Measured: of 35 meta_effects keys, exactly 2
 ## self-satisfied that way.
 const UNWIRED := ["double_jump", "wall_climb", "optional_detector", "debug_mode",
-	"undead_affinity", "autobattle_verbs"]
+	"autobattle_verbs"]
+## Keys read by CONSTRUCTION (element + suffix), so no literal names them. Each counts as read only while
+## src still holds that construction; undead_affinity left UNWIRED when .797 wired its dark bonus.
+const CONSTRUCTED := {"dark_absorb": '_get_passive_meta_effect_sum(element + "_absorb")',
+	"dark_damage_bonus": '_get_passive_meta_effect_sum(element + "_damage_bonus")'}
 ## Passives that WORK but ignore one authored parameter. Materially different: the promise is
 ## kept, a knob is unread. Not disclosed, because the description is true.
 ##   time_sense      live preview_enemy_actions   dead preview_turns
@@ -62,6 +66,9 @@ const DATA_NOT_CONSUMER := "PassiveSystem.gd"
 
 func _src_reads(key: String) -> bool:
 	# Walks src/ for the key as an authored string, the way any consumer would name it.
+	var needle: String = '"%s"' % key
+	if CONSTRUCTED.has(key):
+		needle = str(CONSTRUCTED[key])
 	var dirs: Array = ["res://src"]
 	while not dirs.is_empty():
 		var d: String = dirs.pop_back()
@@ -75,7 +82,7 @@ func _src_reads(key: String) -> bool:
 				continue
 			if f == DATA_NOT_CONSUMER:
 				continue
-			if FileAccess.get_file_as_string(d + "/" + f).contains('"%s"' % key):
+			if FileAccess.get_file_as_string(d + "/" + f).contains(needle):
 				return true
 	return false
 

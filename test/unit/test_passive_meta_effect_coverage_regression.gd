@@ -26,7 +26,8 @@ const HANDLED := [
 # Consumed via a runtime-constructed key, so no literal string appears in src:
 # undead_affinity's dark_absorb is read as `element + "_absorb"` in
 # Combatant.take_elemental_damage (covered by test_elemental_absorb_passive).
-const DYNAMIC := ["dark_absorb"]
+## dark_damage_bonus: read as element + "_damage_bonus" in BattleManager._element_damage_bonus (.797).
+const DYNAMIC := ["dark_absorb", "dark_damage_bonus"]
 
 # Authored but deliberately not wired yet — meta/advanced-job stubs (Skiptrotter
 # overworld traversal, Speculator/debug HUD read-outs). Gated behind debug mode,
