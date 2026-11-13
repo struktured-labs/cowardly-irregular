@@ -279,8 +279,8 @@ circuit_breaker spends a level for AP. So
 enemy_weak_to takes an 'element' field and no op/value. True when ANY living
 enemy is weak to that element — the oldest decision in the genre, and until now
 unsayable in a rule. Elements that actually appear as a weakness in the
-bestiary: fire (38 of 106 monsters), holy (32), lightning (30), ice (27),
-water, physical, dark. Pair it with an ability of the SAME element, e.g.
+bestiary: fire, holy, lightning and ice (the four most monsters carry), then
+physical, dark, water. Pair it with an ability of the SAME element, e.g.
 {\"type\":\"enemy_weak_to\",\"element\":\"fire\"} + 'fire'.
 An element nothing is weak to simply never fires.
 item_count takes an 'item_id' field NAMING the item to count, alongside op and
