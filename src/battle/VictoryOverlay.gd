@@ -159,19 +159,33 @@ func _ch() -> float:
 	return maxf(CARD_H * _cscale, _card_min_h)
 
 
-## Measured on a built worst-case card in the tree, so it follows the fonts and the stylebox rather than a literal.
-func _measure_card_min_h() -> float:
-	var probe := _make_card({"name": "Scriptweaver", "is_alive": true, "exp_gained": 1, "leveled_up": true})
-	probe.custom_minimum_size = Vector2.ZERO
-	var gains := probe.find_child("GainsLine", true, false) as Label
-	if gains != null:
-		gains.text = "HP +46"
-		gains.visible = true
-	add_child(probe)
-	var h: float = probe.get_combined_minimum_size().y
-	remove_child(probe)
-	probe.free()
+## The tallest card this victory will settle into, measured on each real card built in the tree with its FINAL text (the "★ Lv." top line and the gains line), not a stand-in.
+func _measure_card_min_h(char_results: Array) -> float:
+	var h := 0.0
+	for cr in char_results:
+		if not (cr is Dictionary):
+			continue
+		var probe := _make_card(cr)
+		probe.custom_minimum_size = Vector2.ZERO
+		var top := probe.find_child("TopLine", true, false) as Label
+		if top != null:
+			top.text = _final_top_text(cr)
+		var gains := probe.find_child("GainsLine", true, false) as Label
+		if gains != null and _gains_line(cr) != "":
+			gains.text = _gains_line(cr)
+			gains.visible = true
+		add_child(probe)
+		h = maxf(h, probe.get_combined_minimum_size().y)
+		remove_child(probe)
+		probe.free()
 	return h
+
+
+## The top line a card settles on; the build's roll-up ends here and the snap jumps here.
+func _final_top_text(cr: Dictionary) -> String:
+	var leveled: bool = bool(cr.get("leveled_up", false))
+	var ko_mark := "" if bool(cr.get("is_alive", true)) else "  KO"
+	return "%s  +%d EXP%s%s" % [cr.get("name", "?"), int(cr.get("exp_gained", 0)), "  ★ Lv.%d" % int(cr.get("job_level", 1)) if leveled else "", ko_mark]
 
 
 ## The gap that lets `count` cards of _ch() fit between the stack top and the bottom margin, never above CARD_GAP.
@@ -716,7 +730,7 @@ func _build_cards(char_results: Array, flourish: bool) -> void:
 	var _vp_for_scale := get_viewport().get_visible_rect().size if get_viewport() else Vector2(1280, 720)
 	_cscale = _fit_card_scale(char_results.size(), _vp_for_scale.y)
 	_wscale = _fit_card_width_scale(_vp_for_scale.x)
-	_card_min_h = _measure_card_min_h()
+	_card_min_h = _measure_card_min_h(char_results)
 	_gap = _fit_gap(char_results.size(), _vp_for_scale.y)
 	var vp := get_viewport_rect().size
 	var column := _column_positions(char_results.size(), vp)
@@ -942,7 +956,7 @@ func _animate_card_content(card: PanelContainer, cr: Dictionary, idx: int, delay
 
 	var gains_text := _gains_line(cr)
 	var ko_mark := "" if alive else "  KO"
-	var final_top := "%s  +%d EXP%s%s" % [cr.get("name", "?"), exp_gained, "  ★ Lv.%d" % int(cr.get("job_level", 1)) if leveled else "", ko_mark]
+	var final_top := _final_top_text(cr)
 	_snaps.append(func() -> void:
 		if is_instance_valid(fill):
 			fill.size = Vector2(bar_w * end_ratio, 8)
