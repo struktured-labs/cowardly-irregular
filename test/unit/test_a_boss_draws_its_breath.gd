@@ -174,3 +174,23 @@ func test_a_rule_reads_the_charge_and_the_countdown() -> void:
 	assert_false(b_far, "and its breath is five turns off, not one")
 	assert_true(a_near, "a charging boss reads as charging")
 	assert_true(b_near, "and its release is the next turn")
+
+
+## The clock is in the real decision: five turns of Glacius through the battle manager's own picker.
+func test_glacius_charges_then_breathes_through_the_live_picker() -> void:
+	var boss := _glacius()
+	var hero: Combatant = Combatant.new()
+	add_child_autofree(hero)
+	hero.initialize({"name": "Hero", "max_hp": 100, "max_mp": 10, "attack": 10, "defense": 10, "magic": 10, "speed": 10})
+	boss.job = {"abilities": ["absolute_zero", "frost_armor"], "name": "Glacius"}
+	boss.set_meta("boss_dialogue_phase", 99)
+	var kinds: Array = []
+	for i in 5:
+		boss.current_mp = boss.max_mp
+		var a: Dictionary = BattleManager._make_ai_decision(boss, [boss], [hero], true)
+		kinds.append(str(a.get("type", "")))
+		if i == 4:
+			assert_eq(str(a.get("ability_id", "")), "absolute_zero", "the fifth turn is the breath itself")
+			assert_eq((a.get("targets", []) as Array).size(), 1, "on everyone the boss can reach (one hero here)")
+	assert_eq(kinds[3], "charge", "the fourth turn is the visible charge: %s" % str(kinds))
+	assert_eq(kinds[4], "ability", "and the fifth releases: %s" % str(kinds))
