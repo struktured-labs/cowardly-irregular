@@ -942,9 +942,10 @@ static func build_party_line(
 	for foe in enemies:
 		if not (foe is Dictionary):
 			continue
-		enemy_lines.append("  - %s: HP %d%%" % [
+		enemy_lines.append("  - %s: HP %d%%%s" % [
 			str(foe.get("name", "?")),
 			int(foe.get("hp_pct", 100)),
+			", GATHERING POWER: its signature move is coming" if bool(foe.get("charging", false)) else "",
 		])
 
 	var recent_lines: PackedStringArray = PackedStringArray()
