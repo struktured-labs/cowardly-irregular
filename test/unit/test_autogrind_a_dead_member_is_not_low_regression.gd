@@ -76,3 +76,40 @@ func test_the_revive_row_is_reached_while_a_member_is_dead() -> void:
 	_party[1].current_hp = 8  # revived at 10%
 	_system.evaluate_autogrind_rules(_party)
 	assert_eq(int(_system.last_fired_rule_index), 0, "CONTROL: once the mage is up and low, the heal row fires first again")
+
+
+## Statuses clear at the NEXT battle's start, so a member who died poisoned is still poisoned between fights.
+func test_a_dead_member_has_no_ailment_to_match() -> void:
+	_party[1].add_status("poison")
+	_kill(_party[1])
+	assert_true(_party[1].has_status("poison"), "PREMISE: death leaves the poison on the corpse until the next battle")
+	assert_false(_cond({"type": "member_status", "value": "poison"}),
+		"the mage is DEAD, not poisoned: an any-member status row must not fire for a corpse")
+	assert_false(_cond({"type": "member_status", "member": "mage", "value": "poison"}),
+		"'if mage is poisoned' is false for a dead mage")
+	_party[2].add_status("poison")
+	assert_true(_cond({"type": "member_status", "value": "poison"}),
+		"CONTROL: a LIVING poisoned member still satisfies it beside the corpse")
+
+
+func test_a_poisoned_corpse_reaches_the_revive_row() -> void:
+	var applied: bool = _system.set_autogrind_rules([
+		{"enabled": true, "conditions": [{"type": "member_status", "value": "poison"}], "actions": [{"type": "heal_party"}]},
+		{"enabled": true, "conditions": [{"type": "member_dead"}], "actions": [{"type": "revive_fallen"}]},
+		{"enabled": true, "conditions": [{"type": "always"}], "actions": [{"type": "stop_grinding"}]},
+	])
+	assert_true(applied, "FLOOR: the validator accepted the three rows, or this reads the default set")
+	_party[1].add_status("poison")
+	_kill(_party[1])
+	_system.evaluate_autogrind_rules(_party)
+	assert_eq(int(_system.last_fired_rule_index), 1, "a mage who died poisoned must reach the revive row this interval")
+	_party[1].is_alive = true
+	_party[1].current_hp = 8
+	_system.evaluate_autogrind_rules(_party)
+	assert_eq(int(_system.last_fired_rule_index), 0, "CONTROL: once the mage is up and still poisoned, the status row fires first again")
+
+
+func test_the_composer_is_told_a_corpse_has_no_status() -> void:
+	var g: String = preload("res://src/llm/DialoguePrompts.gd").AUTOGRIND_GRAMMAR_DESCRIPTION
+	assert_string_contains(g, "member_status reads only LIVING members",
+		"the grammar must say what the evaluator does, or the model writes a status row as a death check")

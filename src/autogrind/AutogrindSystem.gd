@@ -2516,7 +2516,8 @@ func _evaluate_party_condition(party: Array, condition: Dictionary) -> bool:
 
 		"member_status":
 			var want_status := Combatant.resolve_status_alias(str(condition.get("value", "")))
-			return _member_predicate(party, condition, func(c): return c.has_status(want_status))
+			## Statuses clear at the NEXT battle's start, so a corpse still wears its poison between fights; the dead are member_dead.
+			return _member_predicate(party, condition, func(c): return c.is_alive and c.has_status(want_status))
 
 		"member_injured":
 			return check_new_injuries() > 0  # True if any new injury this session
