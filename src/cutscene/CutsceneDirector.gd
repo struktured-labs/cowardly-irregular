@@ -615,29 +615,24 @@ func _step_choice(step: Dictionary) -> void:
 		return
 
 	# Build the choice text list alongside the options that own those texts — an option with no text cannot be the answer.
+	var presented := _presented_options(options)
 	var choice_texts: Array[String] = []
-	var presented: Array[Dictionary] = []
-	for opt in options:
-		if not (opt is Dictionary):
-			continue
-		var t: String = str((opt as Dictionary).get("text", ""))
-		if t.strip_edges() != "":
-			choice_texts.append(t)
-			presented.append(opt as Dictionary)
+	for opt in presented:
+		choice_texts.append(str(opt.get("text", "")))
 	if choice_texts.is_empty():
 		push_warning("CutsceneDirector._step_choice: no valid option texts after filtering — skipping")
 		return
 
-	# Skip path: answer with the first option the player WOULD have been shown, never one filtered out.
+	# Skip path: answer among the options the player WOULD have been shown, never one filtered out.
 	if _skipping:
-		_set_choice_flag(presented[0])
+		_set_choice_flag(skip_answer(presented))
 		return
 
 	# Present the menu and await selection.
 	var DialogueChoiceMenuScript = load("res://src/llm/DialogueChoiceMenu.gd")
 	if DialogueChoiceMenuScript == null:
-		push_warning("CutsceneDirector._step_choice: DialogueChoiceMenu script unloadable — setting first presented option's flag and continuing")
-		_set_choice_flag(presented[0])
+		push_warning("CutsceneDirector._step_choice: DialogueChoiceMenu script unloadable — answering as a skip would and continuing")
+		_set_choice_flag(skip_answer(presented))
 		return
 	var menu: Node = DialogueChoiceMenuScript.new()
 	# Anchor to a CanvasLayer so it renders above the cutscene UI.
@@ -1700,15 +1695,45 @@ func _apply_skipped_step_side_effects(step: Dictionary) -> void:
 			_step_branch(step)
 
 
-## Same answer _step_choice gives a skip that lands on the menu: the first option the player would have been shown.
+## Same answer _step_choice gives a skip that lands on the menu.
 func _apply_skipped_choice(step: Dictionary) -> void:
-	for opt in step.get("options", []):
-		if not (opt is Dictionary):
+	var presented := _presented_options(step.get("options", []))
+	if not presented.is_empty():
+		_set_choice_flag(skip_answer(presented))
+
+
+## The options the menu shows: dictionaries with text, minus any whose "unless_flag" is set.
+func _presented_options(options: Array) -> Array[Dictionary]:
+	var out: Array[Dictionary] = []
+	for opt in options:
+		if not (opt is Dictionary) or _choice_option_hidden(opt as Dictionary):
 			continue
-		if str((opt as Dictionary).get("text", "")).strip_edges() == "":
-			continue
-		_set_choice_flag(opt)
-		return
+		if str((opt as Dictionary).get("text", "")).strip_edges() != "":
+			out.append(opt as Dictionary)
+	return out
+
+
+## A skip answers with the option marked "skip_answer" (a refusal, so a skipped offer cannot commit what the player never chose), else the first one shown.
+static func skip_answer(presented: Array[Dictionary]) -> Dictionary:
+	for opt in presented:
+		if bool(opt.get("skip_answer", false)):
+			return opt
+	return presented[0]
+
+
+## An option with "unless_flag" (one name or a list) is left off the menu once any of those cutscene flags is set: a trial already won is not offered again.
+static func choice_option_hidden_by(option: Dictionary, flags: Dictionary) -> bool:
+	var names: Variant = option.get("unless_flag", [])
+	if names is String:
+		names = [names]
+	for f in (names as Array):
+		if str(f) != "" and bool(flags.get("cutscene_flag_" + str(f), false)):
+			return true
+	return false
+
+
+func _choice_option_hidden(option: Dictionary) -> bool:
+	return GameState != null and choice_option_hidden_by(option, GameState.game_constants)
 
 
 ## ⛔ THE LARGEST TEXT IN THE GAME DID NOT SCALE, AND ITS SUBTITLE OFFSET WAS A HARDCODED GUESS AT

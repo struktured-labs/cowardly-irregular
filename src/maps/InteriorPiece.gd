@@ -13,8 +13,8 @@ static func none() -> Callable:
 	return func() -> Node: return null
 
 
-## Stand `kind` in `decorations`. `solid` is the footprint's size, resting on `base`.
-static func stand(decorations: Node, floor_layer: Node, kind: String, room: String, base: Vector2, painter: Callable, village: String = "", solid: Vector2 = Vector2.ZERO, with_shadow: bool = true) -> Sprite2D:
+## Stand `kind` in `decorations`. `solid` is the footprint's size, resting on `base` unless `solid_at` places its centre.
+static func stand(decorations: Node, floor_layer: Node, kind: String, room: String, base: Vector2, painter: Callable, village: String = "", solid: Vector2 = Vector2.ZERO, with_shadow: bool = true, solid_at: Vector2 = Vector2.ZERO) -> Sprite2D:
 	var holder := Node2D.new()
 	holder.name = "Piece_" + kind
 	holder.position = base
@@ -34,7 +34,7 @@ static func stand(decorations: Node, floor_layer: Node, kind: String, room: Stri
 		var rect := RectangleShape2D.new()
 		rect.size = solid
 		shape.shape = rect
-		shape.position = Vector2(0, -solid.y / 2.0)
+		shape.position = solid_at if solid_at != Vector2.ZERO else Vector2(0, -solid.y / 2.0)
 		body.add_child(shape)
 		holder.add_child(body)
 	return art

@@ -179,7 +179,55 @@ def build() -> dict[str, Image.Image]:
     f.rect(12, 50, 51, 50, stone[3])
     f.outline(scaled(stone[0], 0.7))
     out["forge_shop_blacksmith"] = f.image()
+    out["forge_flames_shop_blacksmith"] = forge_flames(ember)
     return out
+
+
+def mouth(x: int, y: int) -> bool:
+    """The forge body's arched mouth (the same test that cut it above), so a flame never paints the stone."""
+    return 14 <= x < 50 and 22 <= y < 50 and (
+        (y >= 32 and 16 <= x <= 47) or ((x - 31.5) / 16.0) ** 2 + ((y - 32) / 10.0) ** 2 <= 1.0)
+
+
+def forge_flames(ember) -> Image.Image:
+    """4 frames of 64x64 in a 256x64 strip, laid over the body at the same origin: tongues of fire rising off the coal
+    bed inside the arched mouth, and nothing outside it (main 24590: a drawn flame strip, not painted yellow bars)."""
+    core = (255, 236, 160)
+    tones = (ember[0], ember[1], ember[2], core)                     # outer edge -> white-hot core
+    strip = Image.new("RGBA", (256, 64), (0, 0, 0, 0))
+    # (base x, height, phase): five tongues across the bed, the middle ones tallest
+    tongues = ((20, 9, 0), (25, 14, 1), (31, 18, 2), (37, 13, 3), (43, 8, 1))
+    for frame in range(4):
+        c = Canvas(64, 64, 401 + frame)
+        for x in range(17, 47):                                      # the bed's lit crust, shimmering per frame
+            hot = (x * 7 + frame * 5) % 11
+            c.put(x, 43, tones[2] if hot < 3 else tones[1])
+            for y in range(38, 43):                                  # a low sheet of fire joining the tongues' roots
+                if (y - 38) * 3 + ((x * 5 + frame * 3) % 7) >= 6:
+                    c.put(x, y, tones[1] if y >= 41 or hot < 5 else tones[0])
+        for bx, h, ph in tongues:
+            k = (frame + ph) % 4
+            hh = h + (0, 3, 1, -2)[k]                                # each tongue breathes on its own beat
+            sway = (0, 1, 0, -1)[k]
+            for i in range(hh):                                      # i = 0 at the bed, hh-1 at the tip
+                y = 42 - i
+                t = i / max(1, hh - 1)
+                half = 3.8 * (1.0 - t) ** 0.8 * (0.6 + 0.4 * (1.0 - t))
+                cx = bx + sway * t * 2 + (0.5 if (i + frame) % 5 == 0 else 0.0)
+                for x in range(int(cx - half - 0.5), int(cx + half + 1.5)):
+                    d = abs(x - cx) / max(half, 0.6)
+                    if d > 1.0 or not mouth(x, y):
+                        continue
+                    lvl = 3 if (d < 0.35 and t < 0.55) else 2 if d < 0.6 else 1 if d < 0.85 else 0
+                    if t > 0.8:
+                        lvl = min(lvl, 1)
+                    c.put(x, y, tones[lvl])
+        for s in range(3):                                           # a few sparks above the tongues
+            sx, sy = 20 + (s * 9 + frame * 5) % 26, 26 + (s * 5 + frame * 3) % 8
+            if mouth(sx, sy):
+                c.put(sx, sy, tones[2])
+        strip.paste(c.image(), (frame * 64, 0))
+    return strip
 
 
 def main() -> int:

@@ -34,6 +34,16 @@ const POS_START = Vector2(190, 100)
 const POS_PLUS = Vector2(210, 55)
 const POS_MINUS = Vector2(110, 55)
 
+## Every text the legend draws is 11 px, the title at this baseline; their rects come from ONE measure (drawn_text_rects).
+const TEXT_PX := 11
+const TITLE := "CONTROLS"
+const TITLE_BASELINE := 16.0
+
+const BUTTON_POS = {
+	"dpad": POS_DPAD, "a": POS_A, "b": POS_B, "x": POS_X, "y": POS_Y, "l": POS_L, "r": POS_R,
+	"select": POS_SELECT, "start": POS_START, "plus": POS_PLUS, "minus": POS_MINUS,
+}
+
 const LABEL_OFFSETS = {
 	"dpad": Vector2(-55, -25),
 	"a": Vector2(15, -8),
@@ -168,7 +178,32 @@ func _draw() -> void:
 
 	var title_font = ThemeDB.fallback_font
 	if title_font:
-		draw_string(title_font, Vector2(10, 16), "CONTROLS", HORIZONTAL_ALIGNMENT_LEFT, -1, 11, HINT_COLOR)
+		draw_string(title_font, title_pos(title_font), TITLE, HORIZONTAL_ALIGNMENT_LEFT, -1, TEXT_PX, HINT_COLOR)
+
+
+## Centred over the pad, between the two shoulder labels: at (10, 16) it printed through the L shoulder's "Tier (L+R)".
+static func title_pos(font: Font) -> Vector2:
+	var w: float = font.get_string_size(TITLE, HORIZONTAL_ALIGNMENT_LEFT, -1, TEXT_PX).x
+	return Vector2(roundf((OVERLAY_SIZE.x - w) / 2.0), TITLE_BASELINE)
+
+
+static func label_pos(button_id: String) -> Vector2:
+	return BUTTON_POS.get(button_id, Vector2.ZERO) + LABEL_OFFSETS.get(button_id, Vector2(15, -5))
+
+
+static func _text_rect(font: Font, baseline: Vector2, text: String) -> Rect2:
+	var w: float = font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, TEXT_PX).x
+	return Rect2(baseline.x, baseline.y - font.get_ascent(TEXT_PX), w, font.get_height(TEXT_PX))
+
+
+## Local rects of every string this context draws ("title" plus one per labelled button), as _draw places them.
+static func drawn_text_rects(context: Dictionary, font: Font = null) -> Dictionary:
+	var f: Font = font if font != null else ThemeDB.fallback_font
+	var out := {"title": _text_rect(f, title_pos(f), TITLE)}
+	for id in context:
+		if str(context[id]) != "" and BUTTON_POS.has(id):
+			out[id] = _text_rect(f, label_pos(id), str(context[id]))
+	return out
 
 
 ## What THIS pad prints at a face position. With no pad the position itself is the only true
@@ -235,18 +270,17 @@ func _draw_label_for(button_id: String, button_pos: Vector2) -> void:
 		return
 
 	var label_text = _button_labels[button_id]
-	var offset = LABEL_OFFSETS.get(button_id, Vector2(15, -5))
-	var label_pos = button_pos + offset
+	var at: Vector2 = label_pos(button_id)
 
 	var font = ThemeDB.fallback_font
 	if font:
 		# Connecting line + small dot at button end
-		var line_end = label_pos + Vector2(0, 6)
+		var line_end = at + Vector2(0, 6)
 		draw_line(button_pos, line_end, LINE_COLOR, 1.0)
 		draw_circle(button_pos, 2.0, LINE_COLOR)
 		# Label text with shadow for readability
-		draw_string(font, label_pos + Vector2(1, 1), label_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color(0, 0, 0, 0.5))
-		draw_string(font, label_pos, label_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 11, LABEL_COLOR)
+		draw_string(font, at + Vector2(1, 1), label_text, HORIZONTAL_ALIGNMENT_LEFT, -1, TEXT_PX, Color(0, 0, 0, 0.5))
+		draw_string(font, at, label_text, HORIZONTAL_ALIGNMENT_LEFT, -1, TEXT_PX, LABEL_COLOR)
 
 
 ## Tier 0: the overlay is the ONLY thing on screen, so every label here must be reachable from

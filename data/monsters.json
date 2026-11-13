@@ -2042,6 +2042,11 @@
     "counter_abilities": [
       "counter"
     ],
+    "cadence": {
+      "signature": "absolute_zero",
+      "every": 1,
+      "charge_turns": 1
+    },
     "spectrum_ratio": 0.779744
   },
   "lightning_dragon": {

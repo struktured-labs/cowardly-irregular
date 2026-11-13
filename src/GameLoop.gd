@@ -2356,6 +2356,7 @@ const _VILLAGE_INTROS := {
 	"maple_heights_village": "world2_maple_heights_npcs",
 	"brasston_village": "world3_brasston_npcs",
 	"rivet_row_village": "world4_rivet_row_npcs",
+	"node_prime_village": "world5_node_prime_npcs",
 }
 
 
@@ -2998,6 +2999,54 @@ func _concede_the_briefing() -> void:
 		_set_cutscene_flag_and_mirror(flag)
 
 
+## Theron's optional sparring (main 24221) for a save that skipped the briefing: the trials it conceded, offered from his talk until each is won.
+const THERON_SPARRING_OFFER_ID := "world1_theron_sparring_offer"
+const THERON_SPARRING_DONE_ID := "world1_theron_sparring_done"
+const THERON_TRIAL_JOBS: Array[String] = ["cleric", "rogue", "mage", "fighter", "bard"]
+
+
+## Which scene Theron's talk plays: the offer while an unwon trial has a living duelist, the farewell once all are won, else none (his ordinary talk).
+static func theron_sparring_scene(flags: Dictionary, runnable_jobs: Array) -> String:
+	if not bool(flags.get("cutscene_flag_rat_king_fell_before_the_briefing", false)):
+		return ""
+	var unwon: Array = THERON_TRIAL_JOBS.filter(func(j): return not bool(flags.get("cutscene_flag_theron_trial_won_" + j, false)))
+	if unwon.is_empty():
+		return "" if bool(flags.get("cutscene_flag_theron_sparring_done", false)) else THERON_SPARRING_DONE_ID
+	return THERON_SPARRING_OFFER_ID if unwon.any(func(j): return runnable_jobs.has(j)) else ""
+
+
+func theron_sparring_scene_now() -> String:
+	if not GameState:
+		return ""
+	return theron_sparring_scene(GameState.game_constants, THERON_TRIAL_JOBS.filter(func(j): return _party_member_with_job(j) != null))
+
+
+## Plays one of the two sparring scenes. Not _play_story_cutscene: neither is one-shot, and that path refuses a scene when ANY of its five duelists is absent, where only that trial should leave the menu.
+func play_theron_sparring(scene_id: String) -> bool:
+	if not _cutscene_director:
+		_cutscene_director = CutsceneDirector.new()
+		add_child(_cutscene_director)
+	if scene_id == "" or not _cutscene_director.can_play(scene_id):
+		return false
+	if GameState:
+		for j in THERON_TRIAL_JOBS:
+			var key: String = "cutscene_flag_theron_trial_unrunnable_" + j
+			if _party_member_with_job(j) == null:
+				GameState.game_constants[key] = true
+			else:
+				GameState.game_constants.erase(key)
+	current_state = LoopState.CUTSCENE
+	_cutscene_cooldown = true
+	_remove_party_chat_indicator()
+	_cutscene_director.cutscene_finished.connect(func(_id: String):
+		_reconcile_spotlight_locks()
+		_resume_exploration_after_cutscene()
+		_flush_chat_toasts()
+	, CONNECT_ONE_SHOT)
+	_cutscene_director.play_cutscene(scene_id)
+	return true
+
+
 func _set_cutscene_flag_and_mirror(flag: String) -> void:
 	if not GameState or flag == "":
 		return
@@ -3052,6 +3101,7 @@ const _CUTSCENE_COMPLETION_FLAGS := {
 	"world2_maple_heights_npcs":        "cutscene_flag_world2_maple_heights_npcs_complete",
 	"world3_brasston_npcs":             "cutscene_flag_world3_brasston_npcs_complete",
 	"world4_rivet_row_npcs":            "cutscene_flag_world4_rivet_row_npcs_complete",
+	"world5_node_prime_npcs":           "cutscene_flag_world5_node_prime_npcs_complete",
 	# Mordaine escalation — a missing entry here does NOT fail loudly, it re-fires the beat on
 	# every qualifying entry (the original Elder Theron loop). Four beats, four entries.
 	"world1_mordaine_watch_road":       "cutscene_flag_world1_mordaine_watch_road_complete",
