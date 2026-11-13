@@ -73,6 +73,7 @@ const ENEMY_HP_BAR_FADE := 0.4  # under the 0.5s dissolve it leaves with
 const STATUS_ROW_WIDTH := 120.0  # badges centre in it over the figure (row units, x STATUS_ROW_ZOOM on screen)
 const STATUS_ROW_ZOOM := 1.6  # the badges' ~9px text, read at ~14px on every monster
 const STATUS_ROW_LIFT := 16.0  # row units from the figure's top to the badge row's top
+const STATUS_ROW_CLEAR := 3.0  # row units of air between the badge row's top and a motif floating over the head
 const NAME_LABEL_Z := 5  # over every monster (0), under the damage popups (DamageNumber.POPUP_Z)
 const NAME_PLATE_COLOR := Color(0.04, 0.03, 0.08, 0.72)  # reads over sky, floor grid and a neighbour's body alike
 const NAME_PLATE_PAD_X := 5.0
@@ -1890,6 +1891,9 @@ func _add_name_plate(sprite: AnimatedSprite2D, label: Label) -> void:
 
 
 ## Status effect icon display system
+## A badge is bright text on a dark pill: every colour here keeps one channel at or above STATUS_BADGE_MIN_BRIGHT.
+## blind, curse, silence and permakilled were dark text on the dark pill (sprites' render, 2026-11-12).
+const STATUS_BADGE_MIN_BRIGHT := 0.75
 const STATUS_ICON_CONFIG = {
 	# Crowd control / debuffs
 	"exposed": {"label": "EXP", "color": Color(1.0, 0.3, 0.3)},
@@ -1899,10 +1903,10 @@ const STATUS_ICON_CONFIG = {
 	"confuse": {"label": "CONF", "color": Color(0.9, 0.5, 0.9)},
 	"fear": {"label": "FEAR", "color": Color(0.6, 0.3, 0.8)},
 	"charm": {"label": "CHRM", "color": Color(1.0, 0.5, 0.7)},
-	"blind": {"label": "BLND", "color": Color(0.4, 0.4, 0.4)},
-	"curse": {"label": "CURS", "color": Color(0.5, 0.0, 0.5)},
+	"blind": {"label": "BLND", "color": Color(0.78, 0.8, 0.88)},
+	"curse": {"label": "CURS", "color": Color(0.85, 0.4, 0.95)},
 	"regen": {"label": "REGN", "color": Color(0.3, 1.0, 0.3)},
-	"permakilled": {"label": "DEAD", "color": Color(0.3, 0.0, 0.0)},
+	"permakilled": {"label": "DEAD", "color": Color(0.9, 0.3, 0.3)},
 	# Tick 129: common stat buffs/debuffs from abilities.json. Pre-fix,
 	# 25+ distinct statuses fell through to the `status.substr(0, 3).to_upper()`
 	# fallback, giving the player vague "ATT" both for attack_up AND
@@ -1919,7 +1923,7 @@ const STATUS_ICON_CONFIG = {
 	# Standalone damage-over-time + utility effects
 	"burn": {"label": "BURN", "color": Color(1.0, 0.5, 0.1)},
 	"poison": {"label": "PSN", "color": Color(0.6, 0.9, 0.3)},
-	"silence": {"label": "SLNC", "color": Color(0.6, 0.6, 0.6)},
+	"silence": {"label": "SLNC", "color": Color(0.8, 0.8, 0.84)},
 	"barrier": {"label": "BARR", "color": Color(0.4, 0.8, 1.0)},
 	"haste": {"label": "HAST", "color": Color(0.3, 1.0, 0.5)},
 	"slow": {"label": "SLOW", "color": Color(0.7, 0.3, 0.8)},
@@ -1981,8 +1985,8 @@ func _setup_status_icons(combatant: Combatant, sprite: AnimatedSprite2D) -> void
 	_refresh_status_icons(combatant)
 
 
-## The animated overlay, counter-scaled to screen pixels and fitted to the idle frame's FIGURE, so a motif is the same
-## size on a 0.5x hero and a 2.5x dragon and stands on the body, not on the frame's empty margin.
+## The animated overlay, counter-scaled to screen pixels and fitted to the idle frame's FIGURE, so a motif stands on
+## the body, not on the frame's empty margin; StatusAura sizes it from that figure's height (scale_for).
 func _make_status_aura(sprite: AnimatedSprite2D) -> Node2D:
 	var aura = StatusAuraClass.new()
 	aura.name = "StatusAura"
@@ -1996,6 +2000,7 @@ func _make_status_aura(sprite: AnimatedSprite2D) -> Node2D:
 			if sprite.flip_h:
 				origin.x = -(origin.x + fig.size.x)
 			aura.body = Rect2(origin * Vector2(absf(sc.x), absf(sc.y)), fig.size * Vector2(absf(sc.x), absf(sc.y)))
+	aura.head_clear = (STATUS_ROW_LIFT + STATUS_ROW_CLEAR) * STATUS_ROW_ZOOM
 	sprite.add_child(aura)
 	return aura
 
