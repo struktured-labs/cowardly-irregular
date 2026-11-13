@@ -279,8 +279,8 @@ circuit_breaker spends a level for AP. So
 enemy_weak_to takes an 'element' field and no op/value. True when ANY living
 enemy is weak to that element — the oldest decision in the genre, and until now
 unsayable in a rule. Elements that actually appear as a weakness in the
-bestiary: fire (38 of 106 monsters), holy (32), lightning (30), ice (27),
-water, physical, dark. Pair it with an ability of the SAME element, e.g.
+bestiary: fire, holy, lightning and ice (the four most monsters carry), then
+physical, dark, water. Pair it with an ability of the SAME element, e.g.
 {\"type\":\"enemy_weak_to\",\"element\":\"fire\"} + 'fire'.
 An element nothing is weak to simply never fires.
 item_count takes an 'item_id' field NAMING the item to count, alongside op and
@@ -1879,6 +1879,22 @@ static func _event_summary(entry: Dictionary) -> String:
 		return str(entry.get("summary", ""))
 	var title: String = cutscene_title(cid)
 	return ("Witnessed \"%s\"" % title) if title != "" else ""
+
+
+## A persona plus each `{when_flag, fact}` whose story flag is set; `flag_set` replaces GameState's check in tests.
+static func persona_with_flag_facts(persona: String, facts: Array, flag_set: Callable = Callable()) -> String:
+	var out: String = persona
+	for f in facts:
+		if not (f is Dictionary):
+			continue
+		var flag: String = str((f as Dictionary).get("when_flag", ""))
+		var fact: String = str((f as Dictionary).get("fact", "")).strip_edges()
+		if flag == "" or fact == "":
+			continue
+		var is_set: bool = bool(flag_set.call(flag)) if flag_set.is_valid() else GameState.is_story_flag_set(flag)
+		if is_set:
+			out += " " + fact
+	return out
 
 
 ## A story cutscene's authored title from data/cutscenes/<id>.json; "" when it cannot be read.
