@@ -51,6 +51,10 @@
 					{
 						"line": "Just me left. Still enough.",
 						"when": "last_standing"
+					},
+					{
+						"line": "It's drawing breath. Shield up before it lets go.",
+						"when": "enemy_charging"
 					}
 				],
 				"low_hp": [
@@ -244,6 +248,10 @@
 					{
 						"line": "All of them down. I keep counting.",
 						"when": "last_standing"
+					},
+					{
+						"line": "Something's gathering over there. Brace. I'll mend what it breaks.",
+						"when": "enemy_charging"
 					}
 				],
 				"low_hp": [
@@ -477,6 +485,10 @@
 					{
 						"line": "No variables left but me.",
 						"when": "last_standing"
+					},
+					{
+						"line": "Power's pooling on their side. Interrupt the sum, or survive it.",
+						"when": "enemy_charging"
 					}
 				],
 				"low_hp": [
@@ -710,6 +722,10 @@
 					{
 						"line": "Alone. Fine. I prefer the room quiet.",
 						"when": "last_standing"
+					},
+					{
+						"line": "Big wind-up. Somebody knock it off its count.",
+						"when": "enemy_charging"
 					}
 				],
 				"low_hp": [
@@ -937,6 +953,10 @@
 					{
 						"line": "Last one standing. Dramatic. Typical.",
 						"when": "last_standing"
+					},
+					{
+						"line": "Ooh, a crescendo. Somebody stop the conductor.",
+						"when": "enemy_charging"
 					}
 				],
 				"low_hp": [

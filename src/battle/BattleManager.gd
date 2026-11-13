@@ -10861,6 +10861,7 @@ func _build_party_line_context(combatant: Combatant, event_kind: String, event_d
 		ctx.enemies.append({
 			"name":   str(e.combatant_name),
 			"hp_pct": e.get_hp_percentage(),
+			"charging": BossCadence.is_charging(e.get_meta("_cadence", {})),
 		})
 
 	for entry_dict in _battle_action_log:
