@@ -259,6 +259,21 @@ func test_a_frame_corner_is_not_an_overlap() -> void:
 	assert_eq(thick.size(), 1, "two thick bars meeting at a corner are not a frame line: %s" % [thick])
 
 
+## A small chip beside a label is the label's NEIGHBOUR, not its panel (autogrind 25092: the OR badge, 28x20, claimed the 16x20
+## arrow next to it, so the arrow was reported on the rules panel that holds them both).
+func test_a_neighbouring_chip_does_not_own_a_label() -> void:
+	var host := Control.new()
+	add_child_autofree(host)
+	var bg := ColorRect.new()
+	host.add_child(bg)
+	var chip := ColorRect.new()
+	host.add_child(chip)
+	var panel := _surf("Rules", bg, Rect2(0, 0, 300, 200))
+	var badge := _surf("Badge", chip, Rect2(20, 40, 28, 20))
+	var arrow := _surf("Arrow", _label(">", host), Rect2(52, 40, 16, 20))
+	assert_eq(OverlapAudit.collisions([panel, badge, arrow], {}), [], "a badge and the arrow beside it both sit on the panel that holds them")
+
+
 func test_nothing_in_the_field_menu_overlaps_at_any_text_size() -> void:
 	var used := {}
 	var found: Array = []

@@ -20,6 +20,9 @@ const MIN_PX := 1.0
 const CONTAIN_SLACK := 0.5
 ## A frame line is at most this thick: RetroPanel's 4 px tiles, the grind console's 2 px strips.
 const FRAME_PX := 4.0
+## A panel that does not hold a node can still own it (the node drifted off it) only if it is a PANEL to that node, at least
+## this many times its area: a 28x20 badge beside a 16x20 arrow is a neighbour, not the arrow's panel (autogrind 25092).
+const OWNER_AREA := 2.0
 
 
 ## [{"id", "rect", "node"}] for every surface under `root` (and {"backdrops": ...} via backdrops()).
@@ -223,7 +226,7 @@ static func _owner_of(surfs: Array, j: int) -> int:
 		if rk.grow(CONTAIN_SLACK).encloses(rj):
 			return k
 		var have: Vector2 = rk.size
-		if have.x + CONTAIN_SLACK >= need.x and have.y + CONTAIN_SLACK >= need.y and minf(have.x, have.y) > minf(need.x, need.y) + CONTAIN_SLACK:
+		if have.x + CONTAIN_SLACK >= need.x and have.y + CONTAIN_SLACK >= need.y and minf(have.x, have.y) > minf(need.x, need.y) + CONTAIN_SLACK and have.x * have.y >= OWNER_AREA * need.x * need.y:
 			return k
 	return -1
 
