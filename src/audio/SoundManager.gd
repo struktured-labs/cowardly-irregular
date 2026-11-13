@@ -2158,6 +2158,12 @@ func play_cutscene_sfx(sound_key: String) -> void:
 	"""A cutscene's own SFX — same resolution as play_ui, on a voice no menu blip touches."""
 	play_ui(sound_key, _cutscene_player)
 
+
+## A skipped scene takes its sound with it: one voice, so one stop cuts whichever cue is sounding.
+func stop_cutscene_sfx() -> void:
+	if _cutscene_player and _cutscene_player.playing:
+		_cutscene_player.stop()
+
 func play_footstep(terrain: String = "grass") -> void:
 	"""Play a footstep sound for the given terrain type (grass, stone, sand)."""
 	var key = "footstep_" + terrain
@@ -3274,6 +3280,15 @@ func capture_music_state() -> Dictionary:
 	## and only is_running() drops on the spot — which is what makes this derived rather than latched.
 	var fading_out: bool = _fade_out_tween != null and _fade_out_tween.is_valid() and _fade_out_tween.is_running()
 	return {"track": _current_music, "area": _current_area, "playing": _music_playing and not fading_out, "position": pos}
+
+
+## Seconds into `track` as it is HEARD, or -1.0 while it is not the stream sounding (not started, missing, replaced, ended): the clock for a scene timed to its own cue.
+func music_position_of(track: String) -> float:
+	if track == "" or str(_current_music) != track:
+		return -1.0
+	if _music_player == null or _music_player.stream == null or not _music_player.playing:
+		return -1.0
+	return _music_player.get_playback_position()
 
 
 ## A state to RESTORE, shaped like capture_music_state: the bed play_area_music armed and has not started. "playing" means owed, never audible.

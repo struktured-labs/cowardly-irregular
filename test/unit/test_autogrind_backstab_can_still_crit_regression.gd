@@ -100,32 +100,46 @@ func test_the_crit_is_the_authored_multiplier_not_a_bigger_one() -> void:
 
 
 func test_an_ability_with_no_crit_chance_never_crits() -> void:
-	## The default must stay 0.0. A non-zero default would make every physical ability in the game
-	## start critting, which is a far larger change than the one being made.
+	## The ROW's default stays 0.0: with the dial off, an ability that authors no crit_chance never crits.
 	var ab: Dictionary = _authored("power_strike")
 	if ab.is_empty():
 		pass_test("JobSystem autoload unavailable")
 		return
 	assert_false(ab.has("crit_chance"), "CONTROL: power_strike must author no crit_chance")
+	## Under the pre-.794 rule (the dial OFF). With it ON, as shipped since .794, the same move crits as its user's swing does.
+	var was: bool = DamageRules.abilities_inherit_swing_crit
+	DamageRules.abilities_inherit_swing_crit = false
 	var rolls: Array = _spread("power_strike", 40)
+	DamageRules.abilities_inherit_swing_crit = was
 	assert_eq(_distinct(rolls), 1,
 		"power_strike produced %d distinct damages over 40 casts — an ability authoring no crit_chance must never crit" % _distinct(rolls))
 
 
 func test_live_still_rolls_the_abilitys_own_chance_on_the_physical_path() -> void:
+	## Both engines ask ONE rule (DamageRules.ability_crit_chance): a row's own crit_chance wins, and with no row the shipped default is 0.
 	var live: String = GdSource.code_of(LIVE)
 	assert_gt(live.length(), 50000, "CONTROL: BattleManager was actually read")
-	var at: int = live.find('ability.get("crit_chance"')
-	assert_gt(at, 0, "CONTROL: live must still read the key")
+	var at: int = live.find("DamageRules.ability_crit_chance(ability")
+	assert_gt(at, 0, "CONTROL: live must still ask the shared rule for an ability's crit chance")
 	var owner: int = live.substr(0, at).rfind("func _execute_")
 	assert_true(live.substr(owner, 46).begins_with("func _execute_physical_ability"),
-		"live reads crit_chance outside the physical executor now — the grind rolls it only there")
-	assert_true(live.substr(at, 1600).contains("randf() < crit_chance"),
+		"live asks for an ability's crit chance outside the physical executor now — the grind rolls it only there")
+	assert_true(live.substr(at, 4000).contains("randf() < crit_chance"),
 		"live no longer rolls the ability's own chance — the grind mirrors that roll")
 	var code: String = GdSource.code_of(SRC)
 	assert_gt(code.length(), 5000, "CONTROL: the resolver was actually read")
-	assert_true(code.contains('randf() < float(ability.get("crit_chance", 0.0))'),
-		"the resolver must roll the AUTHORED chance with a 0.0 default, so an ability opts in as it does live")
+	assert_true(code.contains("randf() < DamageRules.ability_crit_chance(ability,"),
+		"the resolver must roll the chance the shared rule gives, so an ability opts in as it does live")
+	var rule: String = GdSource.code_of("res://src/battle/DamageRules.gd")
+	assert_true(rule.contains('ability.has("crit_chance")') and rule.contains('float(ability["crit_chance"])'),
+		"the shared rule must read the row's own crit_chance first")
+	var was: bool = DamageRules.abilities_inherit_swing_crit
+	DamageRules.abilities_inherit_swing_crit = false
+	assert_eq(DamageRules.ability_crit_chance({}, 0.4), 0.0, "dial off: a row with no crit_chance never crits")
+	DamageRules.abilities_inherit_swing_crit = true
+	assert_eq(DamageRules.ability_crit_chance({}, 0.4), 0.4, "dial on: it crits as its user's swing does")
+	assert_eq(DamageRules.ability_crit_chance({"crit_chance": 0.3}, 0.0), 0.3, "a row's own chance is the chance")
+	DamageRules.abilities_inherit_swing_crit = was
 
 
 func test_the_declared_multiplier_divergence_is_still_true() -> void:
