@@ -103,13 +103,15 @@ func test_spine_survives_a_midcampaign_save_load() -> void:
 	var saved := _clean_story_state()
 	var gl = GameLoopScript.new()
 	var seen := {}
-	# First half: walk until W2 opens (a fixed round count broke each time a village intro joined the walk)
+	# First half: walk until W3 opens, so the save carries the suburb flags (a fixed round count broke on each new village intro)
 	var beat_idx := 0
 	for i in range(160):
-		if seen.has("world2_prologue"):
+		if seen.has("world3_prologue"):
 			break
 		beat_idx = _walk(gl, seen, beat_idx, 1)
 	assert_true(seen.has("world2_prologue"), "mid-campaign checkpoint reached before saving")
+	assert_true(seen.has("world3_prologue"), "the first half stopped where W3 opens")
+	assert_false(seen.has("world6_ending"), "the save is taken mid-campaign, not after the ending")
 
 	# Save, wipe the live flags, load — the JSON round-trip the real save uses
 	var save: Dictionary = GameState.to_dict()
