@@ -105,10 +105,10 @@ func test_every_id_offered_is_one_the_console_also_offers() -> void:
 	## which can never be true. That is AutogrindUI's to remove and is reported, not
 	## asserted here, because a red arm in someone else's file is a worse handover than a
 	## message. The direction that IS asserted is the one this file can be wrong about.
-	var ring: Array = AUTOGRIND_UI.MEMBER_STATUS_RING
+	var ring: Array = AUTOGRIND_UI.member_status_ring()
 	var absent: Array = []
 	for id in DP.STATUS_VOCABULARY.keys():
-		if not ring.has(str(id)):
+		if not ring.has(Combatant.resolve_status_alias(str(id))):
 			absent.append(str(id))
 	assert_eq(absent, [],
 		"the prompt offers ids the console ring does not: %s" % str(absent))

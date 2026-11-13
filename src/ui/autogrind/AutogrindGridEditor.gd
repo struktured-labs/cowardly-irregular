@@ -1488,9 +1488,9 @@ func _adjust_condition_value(delta: int) -> void:
 	if AutogrindSystem.NULLARY_CONDITIONS.has(cond_type):
 		return
 
-	## A named-value condition walks the console's status ring, so the grid can write blind or silence and not only the seed poison.
+	## A named-value condition walks the autobattle grid's status list, so both grids offer one list and a rule can watch for blind or silence, not only poison.
 	if AutogrindSystem.NAMED_VALUE_CONDITIONS.has(cond_type):
-		var ring: Array = load("res://src/ui/autogrind/AutogrindUI.gd").MEMBER_STATUS_RING  # load, not preload: the console already reaches this editor
+		var ring: Array = AutobattleGridEditor.payload_vocabulary("status")
 		var at: int = ring.find(Combatant.resolve_status_alias(str(cond.get("value", ""))))
 		cond["value"] = ring[wrapi(at + delta, 0, ring.size())] if at >= 0 else ring[0]
 		_refresh_grid()
