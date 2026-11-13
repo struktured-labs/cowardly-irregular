@@ -47,6 +47,8 @@ var _choice_menu: Node = null
 ## Background layer (captured screenshot or solid color behind dialogue)
 var _background_texture: TextureRect
 var _background_dim: ColorRect
+## Small sprites shown over the backdrop by `show_prop`, by prop id; freed with the backdrop.
+var _props: Dictionary = {}
 
 ## Screen effects overlay
 var _effects_rect: ColorRect
@@ -487,6 +489,10 @@ func _execute_step(step: Dictionary) -> void:
 			_step_stop_timer(step)
 		"set_background":
 			_step_set_background(step)
+		"show_prop":
+			_step_show_prop(step)
+		"hide_prop":
+			_step_hide_prop(step)
 		"branch":
 			await _step_branch(step)
 		"chapter_title":
@@ -2251,8 +2257,78 @@ func _step_set_background(step: Dictionary) -> void:
 		_background_dim.visible = false
 
 
+## A small animated sprite over a panel scene's backdrop (the Rat King's tiny crown, struktured's easter egg): `prop` names
+## a sprite_manifest `prop_art` row (one horizontal strip: frames, fps), `at` is its bottom-centre as a share of the screen
+## and `scale` whole pixels. It plays its strip once and holds the last frame until hide_prop or the scene's end. `sfx` is
+## played when the strip reaches `sfx_at_frame` (cowir-sfx 24248: a cue on the frame the crown lands, not the one it falls on).
+func _step_show_prop(step: Dictionary) -> void:
+	var id := str(step.get("prop", ""))
+	var row: Dictionary = prop_art(id)
+	var path := str(row.get("path", ""))
+	if path == "" or not ResourceLoader.exists(path):
+		push_warning("[CutsceneDirector] show_prop: no prop_art '%s'" % id)
+		return
+	_step_hide_prop(step)
+	var tex: Texture2D = load(path)
+	var count: int = maxi(1, int(row.get("frames", 1)))
+	var cell := Vector2(float(tex.get_width()) / float(count), float(tex.get_height()))
+	var frames := SpriteFrames.new()
+	frames.add_animation(&"once")
+	frames.set_animation_loop(&"once", false)
+	frames.set_animation_speed(&"once", float(row.get("fps", 8)))
+	for i in count:
+		var atlas := AtlasTexture.new()
+		atlas.atlas = tex
+		atlas.region = Rect2(cell.x * float(i), 0.0, cell.x, cell.y)
+		frames.add_frame(&"once", atlas)
+	var spr := AnimatedSprite2D.new()
+	spr.name = "Prop_" + id
+	spr.sprite_frames = frames
+	spr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	spr.centered = false
+	spr.offset = Vector2(-cell.x / 2.0, -cell.y)
+	var px: int = maxi(1, int(step.get("scale", 3)))
+	spr.scale = Vector2(px, px)
+	var at = step.get("at", [0.5, 0.5])
+	var share := Vector2(float(at[0]), float(at[1])) if at is Array and at.size() >= 2 else Vector2(0.5, 0.5)
+	spr.position = (get_viewport().get_visible_rect().size * share).round()
+	add_child(spr)
+	move_child(spr, _background_dim.get_index() + 1)
+	var cue := str(step.get("sfx", ""))
+	if cue != "":
+		spr.frame_changed.connect(_prop_frame_cue.bind(spr, cue, int(step.get("sfx_at_frame", 0))))
+		if int(step.get("sfx_at_frame", 0)) <= 0:
+			_step_play_sfx({"sfx": cue})
+	spr.play(&"once")
+	_props[id] = spr
+
+
+func _prop_frame_cue(spr: AnimatedSprite2D, cue: String, at_frame: int) -> void:
+	if is_instance_valid(spr) and at_frame > 0 and spr.frame == at_frame:
+		_step_play_sfx({"sfx": cue})
+
+
+func _step_hide_prop(step: Dictionary) -> void:
+	var id := str(step.get("prop", ""))
+	var old = _props.get(id, null)
+	if old != null and is_instance_valid(old):
+		old.queue_free()
+	_props.erase(id)
+
+
+static func prop_art(id: String) -> Dictionary:
+	var manifest = JSON.parse_string(FileAccess.get_file_as_string("res://data/sprite_manifest.json"))
+	var rows = (manifest as Dictionary).get("prop_art", {}) if manifest is Dictionary else {}
+	var row = (rows as Dictionary).get(id, {}) if rows is Dictionary else {}
+	return row if row is Dictionary else {}
+
+
 func _clear_background() -> void:
 	"""Hide the background capture."""
+	for id in _props.keys():
+		if is_instance_valid(_props[id]):
+			_props[id].queue_free()
+	_props.clear()
 	_background_texture.visible = false
 	_background_dim.visible = false
 	_background_texture.texture = null
