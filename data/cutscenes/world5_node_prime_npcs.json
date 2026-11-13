@@ -26,19 +26,19 @@
           "speaker": "ADMIN-01",
           "text": "> NEW PROCESS DETECTED IN NODE PRIME.",
           "theme": "system",
-          "portrait": "system"
+          "portrait": "guard"
         },
         {
           "speaker": "ADMIN-01",
           "text": "> CLASSIFICATION: adventurer. CLASSIFICATION CONFIDENCE: 61%.",
           "theme": "system",
-          "portrait": "system"
+          "portrait": "guard"
         },
         {
           "speaker": "ADMIN-01",
           "text": "> The remaining 39% has been logged. Please do not do anything that would raise it.",
           "theme": "system",
-          "portrait": "system"
+          "portrait": "guard"
         },
         {
           "speaker": "Rogue",
@@ -50,7 +50,7 @@
           "speaker": "ADMIN-01",
           "text": "> Anything unscheduled.",
           "theme": "system",
-          "portrait": "system"
+          "portrait": "guard"
         }
       ]
     },
@@ -65,13 +65,13 @@
           "speaker": "DEBUG-7",
           "text": "Ignore the admin. The admin reads everything as a schedule, including you.",
           "theme": "villager",
-          "portrait": "young_woman"
+          "portrait": "young_man"
         },
         {
           "speaker": "DEBUG-7",
           "text": "I find bugs for a living. Down here a bug is just a thing the system did not plan for, so technically the four of you are my workload now.",
           "theme": "villager",
-          "portrait": "young_woman"
+          "portrait": "young_man"
         },
         {
           "speaker": "Mage",
@@ -83,7 +83,7 @@
           "speaker": "DEBUG-7",
           "text": "It's a request. Nothing has surprised me in three cycles. Please walk in at least one crooked line before you leave.",
           "theme": "villager",
-          "portrait": "young_woman"
+          "portrait": "young_man"
         }
       ]
     },
