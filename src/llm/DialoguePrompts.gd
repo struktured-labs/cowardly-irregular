@@ -362,6 +362,7 @@ member_hp / member_mp / member_status / member_dead accept an OPTIONAL "member" 
 such as "cleric", or a character name). With it the condition asks about that character;
 without it, about ANY party member. member_hp and member_mp read only LIVING members:
 a fallen member is member_dead, never low HP, so put revive_fallen on a member_dead row.
+member_status reads only LIVING members too: a fallen member matches no status.
 member_status takes the status NAME in "value";
 the only ids that exist are listed below.
 
