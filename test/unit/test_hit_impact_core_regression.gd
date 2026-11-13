@@ -50,10 +50,13 @@ func test_base_scale_meta_set_at_spawn() -> void:
 func test_knockback_has_vertical_pop() -> void:
 	var src := _scene_src()
 	var body := _fn_body(src, "_apply_hit_knockback")
-	assert_true("position:y" in body, "knockback gained a vertical component")
+	## The lift is carried by _knock_y_leg since .794 (it rides the idle sway; the sizes are measured on a real
+	## sprite in test_a_knock_back_leaves_from_the_sway): the pin is that both knock-backs hand it a pop.
+	assert_true("_knock_y_leg(tween, sprite, original_y, pop," in body, "knockback gained a vertical component")
 	assert_true("Tier.REDUCED" in body, "pop is tier-gated")
 	var wbody := _fn_body(src, "_apply_weakness_hit_knockback")
-	assert_true("position:y" in wbody, "weakness knockback pops too")
+	assert_true("_knock_y_leg(tween, sprite, original_y, pop," in wbody, "weakness knockback pops too")
+	assert_true("position.y = idle_y(sprite, found_y) - pop * lift" in _fn_body(src, "_knock_y("), "the lift is taken off the swayed y")  # "(": a bare _knock_y finds _knock_y_leg first
 
 
 func test_round_reset_restores_presentation_state() -> void:

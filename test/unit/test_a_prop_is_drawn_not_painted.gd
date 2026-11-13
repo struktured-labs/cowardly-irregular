@@ -29,6 +29,41 @@ func _props(v: Node, kind: int) -> Array:
 	return out
 
 
+const CUTSCENES := "res://data/cutscenes"
+
+
+## Every `prop` a `show_prop` step names, at any depth of a step list (a choice's or a branch's steps included).
+static func props_shown_in(node) -> Array:
+	var out: Array = []
+	if node is Dictionary:
+		if str(node.get("type", "")) == "show_prop" and str(node.get("prop", "")) != "":
+			out.append(str(node["prop"]))
+		for v in node.values():
+			out.append_array(props_shown_in(v))
+	elif node is Array:
+		for v in node:
+			out.append_array(props_shown_in(v))
+	return out
+
+
+func _props_shown_by_cutscenes() -> Dictionary:
+	var out := {}
+	for f in DirAccess.get_files_at(CUTSCENES):
+		if f.ends_with(".json"):
+			for key in props_shown_in(JSON.parse_string(FileAccess.get_file_as_string(CUTSCENES + "/" + f))):
+				out[key] = f
+	return out
+
+
+func test_a_cutscene_prop_is_found_wherever_its_step_sits() -> void:
+	var scene := {"steps": [{"type": "dialogue", "prop": "not_a_prop"}, {"type": "show_prop", "prop": "top_level"},
+		{"type": "choice", "options": [{"steps": [{"type": "show_prop", "prop": "in_a_branch"}]}]}, {"type": "show_prop", "prop": ""}]}
+	var found := props_shown_in(scene)
+	found.sort()
+	assert_eq(found, ["in_a_branch", "top_level"], "a show_prop step's prop is read at the top level and inside a branch; another step's `prop` field and an empty one are not")
+	assert_gt(DirAccess.get_files_at(CUTSCENES).size(), 20, "CONTROL: the cutscene folder is read")
+
+
 func _tex_size(p: Node) -> Vector2i:
 	var spr := p.get_node("Sprite") as Sprite2D
 	return Vector2i(spr.texture.get_width(), spr.texture.get_height())
@@ -113,6 +148,8 @@ func test_every_shipped_entry_names_a_real_prop_world_and_file() -> void:
 			kinds.append(str(k).to_lower())
 	for t in VillageShop.ShopType.values():
 		kinds.append("shop_stall_" + VillageShop.stall_key_for(t))
+	## A third reader (2026-11-12): CutsceneDirector's `show_prop` step draws a prop_art strip over a panel scene.
+	var scene_props := _props_shown_by_cutscenes()
 	for key in sec:
 		var e: Dictionary = sec[key]
 		assert_true(ResourceLoader.exists(str(e.get("path", ""))), "prop_art '%s' has no file: %s" % [key, e.get("path", "")])
@@ -121,8 +158,8 @@ func test_every_shipped_entry_names_a_real_prop_world_and_file() -> void:
 		for k in kinds:
 			if key == k or (str(key).begins_with(k + "_") and str(key).trim_prefix(k + "_") in WORLDS + _village_keys()):
 				ok = true
-		ok = ok or InteriorArt.accepts_key(str(key))
-		assert_true(ok, "prop_art '%s' is not <kind>, <kind>_<world>, <kind>_<village> or an interior key, so nothing will ever read it" % key)
+		ok = ok or InteriorArt.accepts_key(str(key)) or scene_props.has(str(key))
+		assert_true(ok, "prop_art '%s' is not <kind>, <kind>_<world>, <kind>_<village>, an interior key or a prop some cutscene's show_prop step names, so nothing will ever read it" % key)
 	assert_true(sec is Dictionary, "prop_art did not parse as a section")
 
 

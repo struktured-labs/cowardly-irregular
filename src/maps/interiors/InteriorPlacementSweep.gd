@@ -67,6 +67,19 @@ static func sweep(scene_root: Node, npcs: Node, decorations: Node, layout: Array
 		taken[_cell_of((n as Node2D).position)] = true
 
 
+## Every cell an NPC could stand at the centre of: floor, off every furniture footprint. The stroll plans over this.
+static func walkable_cells(scene_root: Node, decorations: Node, layout: Array, blocked_glyphs: String = "") -> Dictionary:
+	var furniture := _collect_furniture_rects(scene_root, decorations)
+	var blocked := blocked_cells(layout, blocked_glyphs)
+	var out := {}
+	for y in layout.size():
+		for x in str(layout[y]).length():
+			var probe := Vector2((x + 0.5) * TILE_SIZE, (y + 0.5) * TILE_SIZE)
+			if _is_position_clear(probe, layout, furniture, blocked):
+				out[Vector2i(x, y)] = true
+	return out
+
+
 static func _collect_furniture_rects(scene_root: Node, decorations: Node) -> Array:
 	var rects: Array = []
 	if decorations != null:
