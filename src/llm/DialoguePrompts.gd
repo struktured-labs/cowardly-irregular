@@ -1881,6 +1881,22 @@ static func _event_summary(entry: Dictionary) -> String:
 	return ("Witnessed \"%s\"" % title) if title != "" else ""
 
 
+## A persona plus each `{when_flag, fact}` whose story flag is set; `flag_set` replaces GameState's check in tests.
+static func persona_with_flag_facts(persona: String, facts: Array, flag_set: Callable = Callable()) -> String:
+	var out: String = persona
+	for f in facts:
+		if not (f is Dictionary):
+			continue
+		var flag: String = str((f as Dictionary).get("when_flag", ""))
+		var fact: String = str((f as Dictionary).get("fact", "")).strip_edges()
+		if flag == "" or fact == "":
+			continue
+		var is_set: bool = bool(flag_set.call(flag)) if flag_set.is_valid() else GameState.is_story_flag_set(flag)
+		if is_set:
+			out += " " + fact
+	return out
+
+
 ## A story cutscene's authored title from data/cutscenes/<id>.json; "" when it cannot be read.
 static func cutscene_title(cutscene_id: String) -> String:
 	var path: String = "res://data/cutscenes/%s.json" % cutscene_id
