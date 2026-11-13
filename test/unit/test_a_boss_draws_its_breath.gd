@@ -185,12 +185,32 @@ func test_glacius_charges_then_breathes_through_the_live_picker() -> void:
 	boss.job = {"abilities": ["absolute_zero", "frost_armor"], "name": "Glacius"}
 	boss.set_meta("boss_dialogue_phase", 99)
 	var kinds: Array = []
+	var sigs: Array = []
 	for i in 5:
 		boss.current_mp = boss.max_mp
 		var a: Dictionary = BattleManager._make_ai_decision(boss, [boss], [hero], true)
 		kinds.append(str(a.get("type", "")))
+		sigs.append(str(a.get("ability_id", "")) == "absolute_zero" and str(a.get("type", "")) == "ability")
 		if i == 4:
 			assert_eq(str(a.get("ability_id", "")), "absolute_zero", "the fifth turn is the breath itself")
 			assert_eq((a.get("targets", []) as Array).size(), 1, "on everyone the boss can reach (one hero here)")
 	assert_eq(kinds[3], "charge", "the fourth turn is the visible charge: %s" % str(kinds))
 	assert_eq(kinds[4], "ability", "and the fifth releases: %s" % str(kinds))
+	assert_eq(sigs, [false, false, false, false, true], "the breath is the clock's alone: the ladder never casts it unannounced")
+
+
+## Many build turns, one breath per clock: over 25 turns the signature lands only on release beats (every 3, charge 1 = turns 5, 10, ...).
+func test_the_ladder_never_casts_a_clocked_signature() -> void:
+	var boss := _glacius()
+	var hero: Combatant = Combatant.new()
+	add_child_autofree(hero)
+	hero.initialize({"name": "Hero", "max_hp": 100, "max_mp": 10, "attack": 10, "defense": 10, "magic": 10, "speed": 10})
+	boss.job = {"abilities": ["absolute_zero"], "name": "Glacius"}
+	boss.set_meta("boss_dialogue_phase", 99)
+	var cast_on: Array = []
+	for i in 25:
+		boss.current_mp = boss.max_mp
+		var a: Dictionary = BattleManager._make_ai_decision(boss, [boss], [hero], true)
+		if str(a.get("type", "")) == "ability" and str(a.get("ability_id", "")) == "absolute_zero":
+			cast_on.append(i + 1)
+	assert_eq(cast_on, [5, 10, 15, 20, 25], "only the release beats cast it")
