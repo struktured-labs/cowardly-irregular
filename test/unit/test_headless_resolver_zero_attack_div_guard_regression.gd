@@ -48,8 +48,9 @@ func _read(path: String) -> String:
 
 func test_resolve_attack_guards_divisor() -> void:
 	var text := _read(RESOLVER_PATH)
-	var idx := text.find("func _resolve_attack(attacker")
-	assert_gt(idx, -1, "_resolve_attack must exist")
+	## The swing's damage lives in the per-strike function since the Rogue's two strikes (2026-11-13).
+	var idx := text.find("func _resolve_attack_strike(attacker")
+	assert_gt(idx, -1, "_resolve_attack_strike must exist")
 	var rest := text.substr(idx)
 	var next_fn := rest.find("\nfunc ", 1)
 	var body := rest.substr(0, next_fn) if next_fn > -1 else rest

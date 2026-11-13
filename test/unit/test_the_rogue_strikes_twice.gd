@@ -28,7 +28,7 @@ class TimedScene extends "res://src/battle/BattleScene.gd":
 		if _full_render_dmg_buffer != null:
 			super(target, amount, is_crit, element, elemental_mod)
 			return
-		landed.append([amount, Time.get_ticks_msec() * 0.001 * Engine.time_scale])
+		landed.append([amount, Time.get_ticks_msec() * 0.001 * Engine.time_scale, Engine.get_process_frames()])
 
 
 func before_each() -> void:
@@ -218,8 +218,9 @@ func test_turbo_still_lands_two_separate_numbers() -> void:
 	assert_eq(landed.size(), 2, "both strikes' numbers must land in turbo")
 	if landed.size() < 2:
 		return
-	var gap: float = landed[1][1] - landed[0][1]
-	assert_gt(gap, SCENE.STRIKE_STAGGER * 0.6, "turbo must still stagger the bolt's number off the blade's (%.3f s)" % gap)
+	assert_eq([landed[0][0], landed[1][0]], [11, 22], "the blade's number first, the bolt's second")
+	var frames: int = int(landed[1][2]) - int(landed[0][2])
+	assert_gt(frames, 1, "turbo must land the bolt's number on a later frame than the blade's, not the same one (%d frames apart)" % frames)
 
 
 func _mean(a: Array) -> float:

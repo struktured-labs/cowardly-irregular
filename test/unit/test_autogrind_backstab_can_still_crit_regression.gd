@@ -148,8 +148,9 @@ func test_the_declared_multiplier_divergence_is_still_true() -> void:
 	## ever learns the accumulator, the ability path must learn it in the same change — otherwise the
 	## two grind paths disagree with each other, which is worse than both differing from live.
 	var code: String = GdSource.code_of(SRC)
-	var attack_at: int = code.find("func _resolve_attack(")
-	assert_gt(attack_at, 0, "CONTROL: the basic-attack path must be locatable")
+	## The swing's arithmetic lives in the per-strike function since the Rogue's two strikes (2026-11-13).
+	var attack_at: int = code.find("func _resolve_attack_strike(")
+	assert_gt(attack_at, 0, "CONTROL: the basic-attack strike must be locatable")
 	var attack_body: String = code.substr(attack_at, code.find("\nfunc ", attack_at + 10) - attack_at)
 	assert_true(attack_body.contains("damage *= 1.5"),
 		"the basic-attack crit no longer uses a flat 1.5 — the ability crit still does, and the two grind paths now disagree")
