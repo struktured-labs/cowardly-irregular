@@ -90,6 +90,26 @@ func test_the_prompt_and_the_cards_stay_off_the_hint_bar_and_each_other() -> voi
 	assert_gt(lifted, 0, "CONTROL: at some Text Size the hint bar, not the resting line, is what places the prompt")
 
 
+## At 200% a level-up card's content (89 px) outgrew the fit cap's card height, so each card drew taller than the column spaced it.
+func test_no_card_draws_on_the_next_one_at_any_text_size() -> void:
+	var judged := 0
+	for scale in _presets():
+		var s: Array = await _settled(float(scale), 5)
+		var o: Control = s[1]
+		var cards: Array = []
+		_cards(o, cards)
+		assert_eq(cards.size(), 5, "CONTROL: five cards at %s" % scale)
+		cards.sort_custom(func(a, b): return (a as Control).global_position.y < (b as Control).global_position.y)
+		for i in range(cards.size() - 1):
+			var a: Rect2 = (cards[i] as Control).get_global_rect()
+			var b: Rect2 = (cards[i + 1] as Control).get_global_rect()
+			judged += 1
+			assert_lte(a.end.y, b.position.y, "Text Size %s: card %d (bottom %.1f) draws on card %d (top %.1f)" % [scale, i, a.end.y, i + 1, b.position.y])
+		for c in cards:
+			assert_gte((c as Control).size.y, o._ch() - 0.5, "CONTROL: a card is at least the height the column spaced it for (%s)" % scale)
+	assert_gt(judged, 0, "card pairs were judged")
+
+
 func test_at_100_percent_nothing_moves() -> void:
 	var s: Array = await _settled(1.0, 5)
 	var o: Control = s[1]
@@ -100,6 +120,8 @@ func test_at_100_percent_nothing_moves() -> void:
 		return
 	assert_almost_eq(prompt.position.y, vp.y - OverlayScript.PROMPT_REST, 0.01, "the prompt rests where .792 put it")
 	assert_almost_eq(o._bottom_margin(vp.y), OverlayScript.STRIP_BOTTOM_MARGIN, 0.01, "and the column keeps .792's bottom margin")
+	assert_almost_eq(o._ch(), OverlayScript.CARD_H, 0.01, "a card keeps its .792 height: its content fits inside it")
+	assert_almost_eq(o._gap, OverlayScript.CARD_GAP, 0.01, "and the cards keep their .792 gap")
 
 
 func test_with_no_hint_bar_the_prompt_rests() -> void:

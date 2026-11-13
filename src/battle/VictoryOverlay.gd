@@ -40,6 +40,11 @@ const CARD_GAP := 8.0
 ## the width has most of the screen spare to the right of the column.
 var _cscale: float = 1.0
 var _wscale: float = 1.0
+## The tallest a card's own content can draw (a level-up card with its gains line); a card is never shorter, whatever the fit cap allows.
+var _card_min_h: float = 0.0
+## The air between cards: CARD_GAP when the column has room, down to MIN_CARD_GAP when cards at their content height must still fit.
+var _gap: float = CARD_GAP
+const MIN_CARD_GAP := 2.0
 ## Artist party frames display ~315px centred on the slot; a left flourish reaches ~157px past origin (F12 2026-09-20).
 const CARD_SPRITE_GAP := 200.0
 const LOG_CLEAR_X := 190.0
@@ -151,7 +156,30 @@ func _cw() -> float:
 
 
 func _ch() -> float:
-	return CARD_H * _cscale
+	return maxf(CARD_H * _cscale, _card_min_h)
+
+
+## Measured on a built worst-case card in the tree, so it follows the fonts and the stylebox rather than a literal.
+func _measure_card_min_h() -> float:
+	var probe := _make_card({"name": "Scriptweaver", "is_alive": true, "exp_gained": 1, "leveled_up": true})
+	probe.custom_minimum_size = Vector2.ZERO
+	var gains := probe.find_child("GainsLine", true, false) as Label
+	if gains != null:
+		gains.text = "HP +46"
+		gains.visible = true
+	add_child(probe)
+	var h: float = probe.get_combined_minimum_size().y
+	remove_child(probe)
+	probe.free()
+	return h
+
+
+## The gap that lets `count` cards of _ch() fit between the stack top and the bottom margin, never above CARD_GAP.
+func _fit_gap(count: int, vp_y: float) -> float:
+	if count <= 1:
+		return CARD_GAP
+	var spare: float = vp_y - _stack_top() - _bottom_margin(vp_y) - float(count) * _ch()
+	return clampf(spare / float(count - 1), MIN_CARD_GAP, CARD_GAP)
 
 
 func occupied_rects() -> Array[Rect2]:
@@ -688,6 +716,8 @@ func _build_cards(char_results: Array, flourish: bool) -> void:
 	var _vp_for_scale := get_viewport().get_visible_rect().size if get_viewport() else Vector2(1280, 720)
 	_cscale = _fit_card_scale(char_results.size(), _vp_for_scale.y)
 	_wscale = _fit_card_width_scale(_vp_for_scale.x)
+	_card_min_h = _measure_card_min_h()
+	_gap = _fit_gap(char_results.size(), _vp_for_scale.y)
 	var vp := get_viewport_rect().size
 	var column := _column_positions(char_results.size(), vp)
 	## The column enters as ONE cascade, top to bottom. Per-card waits let a card clear of the title slam
@@ -721,7 +751,7 @@ func _build_cards(char_results: Array, flourish: bool) -> void:
 
 ## Card hangs LEFT of its sprite (party faces left). CARD_SPRITE_GAP clears the centred 315px flourish.
 func _card_position(i: int, count: int, vp: Vector2) -> Vector2:
-	var y_fallback := _stack_top() + i * (_ch() + CARD_GAP)
+	var y_fallback := _stack_top() + i * (_ch() + _gap)
 	var pos := Vector2(vp.x * 0.42, y_fallback)
 	if _scene and i < _scene.party_sprite_nodes.size():
 		var sprite = _scene.party_sprite_nodes[i]
@@ -760,13 +790,13 @@ func _column_positions(count: int, vp: Vector2) -> Array[Vector2]:
 	for p in raw:
 		mid += p.y
 	mid /= maxf(1.0, float(raw.size()))
-	var block_h := float(count) * _ch() + float(maxi(0, count - 1)) * CARD_GAP
+	var block_h := float(count) * _ch() + float(maxi(0, count - 1)) * _gap
 	var top := mid + _ch() / 2.0 - block_h / 2.0
 	## Never up into the docked title and the loot strip that hangs under it.
 	top = maxf(top, _stack_top())
 	var out: Array[Vector2] = []
 	for i in range(count):
-		out.append(Vector2(x, clampf(top + i * (_ch() + CARD_GAP), _stack_top(), vp.y)))
+		out.append(Vector2(x, clampf(top + i * (_ch() + _gap), _stack_top(), vp.y)))
 	## Pushed past the bottom: lift the whole column, keeping the spacing.
 	var bottom_limit := vp.y - _bottom_margin(vp.y) - _ch()
 	if out.size() > 0 and out[out.size() - 1].y > bottom_limit:
