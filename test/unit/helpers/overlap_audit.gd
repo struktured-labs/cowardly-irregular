@@ -37,7 +37,7 @@ static func backdrops(root: Node) -> Array:
 
 ## "a ∩ b at rect" for every intersecting pair not DECLARED. `used` collects the declared keys that matched, for stale().
 ## surfs is in draw order (tree order). Menus paint panels FLAT: a ColorRect, then its border strips and labels as later
-## siblings. Such a pair is content, not a collision (_is_content). Text over text, a later surface covering an earlier one,
+## siblings. Such a pair is content, not a collision (_owned_by). Text over text, a later surface covering an earlier one,
 ## a partial overlap, another container's node landing on the panel, and any sprite_surface all still report.
 static func collisions(surfs: Array, declared: Dictionary, used: Dictionary = {}) -> Array:
 	var out: Array = []
@@ -51,7 +51,7 @@ static func collisions(surfs: Array, declared: Dictionary, used: Dictionary = {}
 			var hit: Rect2 = (a["rect"] as Rect2).intersection(b["rect"])
 			if hit.size.x < MIN_PX or hit.size.y < MIN_PX:
 				continue
-			if owner[j] == i and (a["rect"] as Rect2).grow(CONTAIN_SLACK).encloses(b["rect"]):
+			if _owned_by(surfs, owner, i, j):
 				continue
 			var key := _declared_key(declared, str(a["id"]), str(b["id"]))
 			if key != "":
@@ -105,7 +105,7 @@ static func _walk(n: Node, under: bool, out: Array, vp: Vector2, want_backdrops:
 		if not c.is_visible_in_tree():
 			return
 		if c.modulate.a > 0.02 and (_draws_background(c) or (not under and _is_text(c))):
-			var r := screen_rect(c)
+			var r := visible_rect(c)
 			if r.size.x >= MIN_PX and r.size.y >= MIN_PX:
 				is_surf = true
 				var backdrop: bool = r.size.x * r.size.y >= BACKDROP_SHARE * vp.x * vp.y
@@ -125,6 +125,18 @@ static func sprite_surface(id: String, sprite: AnimatedSprite2D) -> Dictionary:
 	var a: Vector2 = xf * local.position
 	var b: Vector2 = xf * local.end
 	return {"id": id, "rect": Rect2(a, b - a).abs(), "node": sprite}
+
+
+## The part of c a player can see: its screen rect cut by every clipping ancestor (a ScrollContainer, clip_contents), so a
+## card scrolled out of its list is not judged where it would be if nothing clipped it.
+static func visible_rect(c: Control) -> Rect2:
+	var r := screen_rect(c)
+	var p: Node = c.get_parent()
+	while p != null:
+		if p is Control and ((p as Control).clip_contents or p is ScrollContainer):
+			r = r.intersection(screen_rect(p as Control))
+		p = p.get_parent()
+	return r
 
 
 static func screen_rect(c: Control) -> Rect2:
@@ -157,6 +169,18 @@ static func _is_text(c: Control) -> bool:
 ## under whose own parent j lies, and is big enough to hold j (so border strips are skipped). -1 = none; a sprite_surface's
 ## node is not a Control, so it has none. Only that owner, and only wholly enclosing j, makes the pair content: a label that
 ## drifted off its own panel onto another sibling panel is a finding (battle 24944, adhoc 24943/24948).
+## j is content of i when j's own OWNER holds it whole and i is further up that owner chain (a card's label -> the card
+## -> the panel) and holds it too. A label that drifted off its own panel fails at the first link, so it is still a finding
+## on the panel it lies on; a card hanging off its panel is reported once, as the card, not again for each row inside it.
+static func _owned_by(surfs: Array, owner: Array, i: int, j: int) -> bool:
+	var k: int = owner[j]
+	if k == -1 or not (surfs[k]["rect"] as Rect2).grow(CONTAIN_SLACK).encloses(surfs[j]["rect"]):
+		return false
+	while k != -1 and k != i:
+		k = owner[k]
+	return k == i and (surfs[i]["rect"] as Rect2).grow(CONTAIN_SLACK).encloses(surfs[j]["rect"])
+
+
 static func _owner_of(surfs: Array, j: int) -> int:
 	var nb = surfs[j].get("node")
 	if not (nb is Control):

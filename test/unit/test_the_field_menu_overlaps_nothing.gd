@@ -42,7 +42,7 @@ func _menu_at(scale: float) -> Control:
 func test_the_floor_names_every_member_this_file_drives() -> void:
 	assert_gte(_presets().size(), 2, "SettingsMenu.TEXT_SIZE_PRESETS must exist and offer a choice (%s)" % [_presets()])
 	var audit: Array = (OverlapAudit as GDScript).get_script_method_list().map(func(m): return str(m["name"]))
-	for f in ["surfaces", "collisions", "stale"]:
+	for f in ["surfaces", "collisions", "stale", "visible_rect"]:
 		assert_has(audit, f, "overlap_audit.%s must exist" % f)
 	var menu: Array = (OverworldMenuScript as GDScript).get_script_method_list().map(func(m): return str(m["name"]))
 	assert_has(menu, "setup", "OverworldMenu.setup must exist")
@@ -123,6 +123,59 @@ func test_a_label_that_drifts_onto_another_flat_panel_is_a_finding() -> void:
 	var hits: Array = OverlapAudit.collisions([a, s, la, b, drift], {})
 	assert_eq(hits.size(), 1, "panel B's label lying on panel A is a finding, not A's content: %s" % [hits])
 	assert_true(hits.size() == 1 and str(hits[0]).contains("BgA") and str(hits[0]).contains("Drifted"), "and it names the two: %s" % [hits])
+
+
+## A card inside a panel: the card's bar fill belongs to the bar, the bar to the card, the card to the panel. Every link
+## encloses the next, so the fill is the PANEL's content too. A card hanging off the panel's foot breaks the chain.
+func test_content_of_content_is_content() -> void:
+	var menu := Control.new()
+	add_child_autofree(menu)
+	var panel_bg := ColorRect.new()
+	menu.add_child(panel_bg)
+	var card := Control.new()
+	menu.add_child(card)
+	var card_bg := ColorRect.new()
+	card.add_child(card_bg)
+	var bar := Control.new()
+	card.add_child(bar)
+	var bar_bg := ColorRect.new()
+	bar.add_child(bar_bg)
+	var fill := ColorRect.new()
+	bar.add_child(fill)
+	var p := _surf("Panel", panel_bg, Rect2(0, 0, 300, 300))
+	var c := _surf("Card", card_bg, Rect2(10, 10, 280, 100))
+	var b := _surf("Bar", bar_bg, Rect2(60, 40, 100, 10))
+	var f := _surf("Fill", fill, Rect2(60, 40, 50, 10))
+	assert_eq(OverlapAudit.collisions([p, c, b, f], {}), [], "CONTROL: a fill in a bar in a card in a panel is all content")
+	var low := _surf("Card", card_bg, Rect2(10, 250, 280, 100))
+	var hits: Array = OverlapAudit.collisions([p, low, _surf("Fill", fill, Rect2(60, 260, 50, 10))], {})
+	assert_eq(hits.size(), 1, "a card hanging off the panel's foot is a finding on the panel, and only the card is: %s" % [hits])
+
+
+## A row scrolled out of its list is not on screen, so it is not judged where it would be; the visible part still is.
+func test_a_clipped_node_is_judged_by_what_shows() -> void:
+	var host := Control.new()
+	add_child_autofree(host)
+	var scroll := ScrollContainer.new()
+	scroll.position = Vector2(0, 0)
+	scroll.size = Vector2(200, 100)
+	host.add_child(scroll)
+	var inner := Control.new()
+	inner.custom_minimum_size = Vector2(200, 400)
+	scroll.add_child(inner)
+	var row := ColorRect.new()
+	row.color = Color.BLACK
+	row.position = Vector2(0, 300)
+	row.size = Vector2(200, 40)
+	inner.add_child(row)
+	var half := ColorRect.new()
+	half.color = Color.BLACK
+	half.position = Vector2(0, 80)
+	half.size = Vector2(200, 40)
+	inner.add_child(half)
+	await get_tree().process_frame
+	assert_eq(OverlapAudit.visible_rect(row).size, Vector2.ZERO, "a row scrolled out of view shows nothing (%s)" % OverlapAudit.visible_rect(row))
+	assert_almost_eq(OverlapAudit.visible_rect(half).size.y, 20.0, 0.5, "a row half in view is judged by its visible half (%s)" % OverlapAudit.visible_rect(half))
 
 
 func test_nothing_in_the_field_menu_overlaps_at_any_text_size() -> void:
