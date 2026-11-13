@@ -3372,6 +3372,7 @@ func _simulate_states() -> Array:
 ## undecidable instead of guessed.
 const _BATTLEFIELD_CONDITIONS: Array[String] = [
 	"enemy_count", "enemy_has_status", "not_enemy_has_status", "enemy_weak_to", "enemy_resists", "enemy_hp_percent",
+	"enemy_charging", "enemy_signature_in",
 	"ally_count", "ally_has_status", "ally_hp_percent", "ally_mp_percent",
 	"ally_dead",
 ]
