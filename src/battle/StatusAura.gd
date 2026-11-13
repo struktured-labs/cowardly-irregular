@@ -63,9 +63,10 @@ const RIM_LIGHT := Color(0.95, 0.95, 1.0)
 const LIGHT_RIMMED := ["visor"]
 ## Every letter this file draws; each must be a real PixelText glyph (test_a_status_reads_on_a_dragon).
 const TEXT_GLYPHS := ["Z", "?"]
-## Evasion's trailing copies: how many, and how far apart at 1x (screen px).
+## Evasion's trailing copies: how many, how far apart at 1x (screen px), and the nearest one's opacity.
 const AFTER_IMAGES := 3
 const AFTER_IMAGE_STEP := 9.0
+const AFTER_IMAGE_ALPHA := 0.55
 const RIM_OFFSETS := [Vector2(1, 0), Vector2(-1, 0), Vector2(0, 1), Vector2(0, -1)]
 
 static var ARROW := PackedVector2Array([Vector2(0, -7), Vector2(6, 0), Vector2(2, 0), Vector2(2, 7), Vector2(-2, 7), Vector2(-2, 0), Vector2(-6, 0)])
@@ -87,10 +88,14 @@ var body := Rect2(-24, -64, 48, 64)
 ## Screen px above the figure's top that belong to the BADGE row (the scene sets it): a motif that floats over the head
 ## starts above that band, so a Z never lands on its own "SLP 3" label.
 var head_clear := 0.0
+## Screen-x side evasion's copies trail to (-1 left, +1 right): the scene sets it from the battler's SIDE, since flip_h cannot say which way a sheet faces.
+var trail := -1.0
 ## Shown motifs, rebuilt only when the status set changes: [{status, kind, color, up, slot, slots}].
 var _shown: Array = []
 var _clock_ms: int = -1
 var _reduce_flashes := false
+var _ghost_root: Node2D = null
+static var _silhouette: Shader = null
 
 
 ## The motif a status draws, or FALLBACK for a status nobody mapped: a runtime battler never shows nothing.
@@ -139,6 +144,7 @@ func set_statuses(statuses: Array) -> void:
 	visible = not _shown.is_empty()
 	set_process(visible)
 	queue_redraw()
+	_sync_after_images()
 
 
 func shown_kinds() -> Array:
@@ -167,6 +173,13 @@ func _ready() -> void:
 
 func _process(_delta: float) -> void:
 	queue_redraw()
+	_sync_after_images()
+
+
+func _exit_tree() -> void:
+	if _ghost_root != null and is_instance_valid(_ghost_root):
+		_ghost_root.queue_free()
+	_ghost_root = null
 
 
 func _color_of(status: String, kind: String) -> Color:
@@ -267,7 +280,7 @@ func _draw() -> void:
 				draw_arc(body.get_center(), r, 0.0, TAU, 48, Color(rim, 0.45), 2.0 * k + 2.0)
 				draw_arc(body.get_center(), r, 0.0, TAU, 48, Color(c, 0.75), 2.0 * k)
 			"shadow":
-				_after_images(c, t, k)
+				pass  # evasion's copies are mirror sprites BEHIND the body (_sync_after_images), not drawn over it here
 			"lines":
 				for i in 3:
 					var y := body.position.y + body.size.y * (0.3 + 0.2 * float(i))
@@ -306,25 +319,61 @@ func _dot(at: Vector2, radius: float, color: Color, rim: Color, k: float) -> voi
 	draw_circle(at, radius, color)
 
 
-## Evasion: two or three faint copies of the sprite's OWN current frame, trailing to the side it is not facing, with a
-## slow shimmer. No box: the old outline of the figure's bounding rect read as a selection cursor (struktured's
-## collage, main 24548). Drawn from the parent sprite's live frame, so the copies breathe and swing with it.
-func _after_images(c: Color, t: float, k: float) -> void:
+## Evasion: faint copies of the sprite's OWN live frame trailing behind it (toward `trail`), with a slow shimmer. No box:
+## the old outline read as a selection cursor (main 24548). Each copy is a mirror sprite BEHIND the body drawn as a flat
+## silhouette, because a sheet's own colours vanish over it and a hand-flipped rect painted nothing (the .795 render).
+func _sync_after_images() -> void:
 	var spr := get_parent() as AnimatedSprite2D
-	if spr == null or spr.sprite_frames == null or not spr.sprite_frames.has_animation(spr.animation):
+	if spr == null or spr.sprite_frames == null or not shown_kinds().has("shadow"):
+		if _ghost_root != null and is_instance_valid(_ghost_root):
+			_ghost_root.visible = false
 		return
-	var tex: Texture2D = spr.sprite_frames.get_frame_texture(spr.animation, spr.frame)
-	if tex == null:
-		return
-	var size := Vector2(tex.get_size()) * Vector2(absf(spr.scale.x), absf(spr.scale.y))
-	var away := -1.0 if spr.flip_h else 1.0  # this node is not flipped with its parent, so the copy is mirrored by hand
-	for i in AFTER_IMAGES:
+	if _ghost_root == null or not is_instance_valid(_ghost_root):
+		_ghost_root = Node2D.new()
+		_ghost_root.name = "EvasionAfterImages"
+		_ghost_root.show_behind_parent = true
+		for i in AFTER_IMAGES:
+			var g := AnimatedSprite2D.new()
+			var mat := ShaderMaterial.new()
+			mat.shader = _silhouette_shader()
+			g.material = mat
+			_ghost_root.add_child(g)
+		spr.add_child(_ghost_root)
+	var t := float(Time.get_ticks_msec()) / 1000.0
+	var k := motif_scale()
+	var tint := _color_of("evasion", "shadow").lerp(Color.WHITE, 0.45)
+	_ghost_root.visible = true
+	_ghost_root.position = position
+	_ghost_root.scale = scale
+	for j in AFTER_IMAGES:
+		var g := _ghost_root.get_child(j) as AnimatedSprite2D
+		var i := AFTER_IMAGES - 1 - j  # the farthest copy is the first child, so the nearest draws over it
 		var step := float(i + 1)
-		var drift := (AFTER_IMAGE_STEP * step + sin(t * 1.6 + step * 1.3) * 3.0) * k
-		var alpha := (0.34 - 0.09 * float(i)) * (0.75 + 0.25 * sin(t * 2.2 + step))
-		var at := Vector2(-size.x * 0.5 + drift * away, -size.y * 0.5)
-		var rect := Rect2(at + Vector2(size.x, 0), Vector2(-size.x, size.y)) if spr.flip_h else Rect2(at, size)
-		draw_texture_rect(tex, rect, false, Color(c.lerp(Color.WHITE, 0.45), maxf(alpha, 0.05)))
+		g.sprite_frames = spr.sprite_frames
+		if g.animation != spr.animation:
+			g.animation = spr.animation
+		g.frame = spr.frame
+		g.flip_h = spr.flip_h
+		g.flip_v = spr.flip_v
+		g.centered = spr.centered
+		g.offset = spr.offset
+		g.scale = spr.scale
+		g.position = Vector2((AFTER_IMAGE_STEP * step + sin(t * 1.6 + step * 1.3) * 2.0) * k * signf(trail), 0.0)
+		var alpha := AFTER_IMAGE_ALPHA * (1.0 - 0.3 * float(i)) * (0.85 + 0.15 * sin(t * 2.2 + step))
+		(g.material as ShaderMaterial).set_shader_parameter("tint", Color(tint, alpha))
+
+
+## The sprite's alpha in one flat colour: an evasion copy reads on any sheet, dark or bright.
+static func _silhouette_shader() -> Shader:
+	if _silhouette == null:
+		_silhouette = Shader.new()
+		_silhouette.code = """shader_type canvas_item;
+uniform vec4 tint : source_color = vec4(1.0);
+void fragment() {
+	COLOR = vec4(tint.rgb, texture(TEXTURE, UV).a * tint.a);
+}
+"""
+	return _silhouette
 
 
 ## One PixelText glyph, its top-left at `at`, each glyph pixel `px` screen pixels: the texture carries its own dark rim.

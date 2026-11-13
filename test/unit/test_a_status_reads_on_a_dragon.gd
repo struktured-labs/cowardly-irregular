@@ -10,6 +10,25 @@ extends GutTest
 ## eye on the rendered collage (tmp/statusrender), not here.
 
 const AURA_SRC := "res://src/battle/StatusAura.gd"
+const SCENE := "res://src/battle/BattleScene.tscn"
+const BattleState := preload("res://test/unit/helpers/battle_state.gd")
+const SoundState := preload("res://test/unit/helpers/sound_state.gd")
+
+var _guard: RefCounted = null
+
+
+func before_each() -> void:
+	_guard = BattleState.new()
+	_guard.snapshot()
+
+
+func after_each() -> void:
+	if _guard != null:
+		_guard.restore()
+
+
+func after_all() -> void:
+	SoundState.restore()
 
 
 func _aura(statuses: Array, body: Rect2) -> StatusAura:
@@ -119,26 +138,85 @@ func test_a_motif_over_the_head_starts_above_the_badge_row() -> void:
 ## it READS as "hard to hit" is judged on the collage.
 func test_evasion_is_after_images_of_the_sprite_not_a_box() -> void:
 	var code := _code()
-	var arm := code.substr(code.rfind('"shadow":'), 120)  # the LAST one is _draw's arm; _color_of has one above it
-	assert_true(arm.contains("_after_images("), "CONTROL: the evasion motif draws after-images")
+	var arm := code.substr(code.rfind('"shadow":'), 60)  # the LAST one is _draw's arm; _color_of has one above it
+	assert_true(arm.begins_with('"shadow":'), "CONTROL: found _draw's evasion arm")
 	assert_false(arm.contains("draw_rect"), "evasion still outlines the figure's bounding box")
 	assert_gt(StatusAura.AFTER_IMAGES, 1, "one copy is a ghost, not a trail")
-	var tex := ImageTexture.create_from_image(Image.create(32, 32, false, Image.FORMAT_RGBA8))
-	var sf := SpriteFrames.new()
-	sf.add_animation("idle")
-	sf.add_frame("idle", tex)
-	var spr := AnimatedSprite2D.new()
-	spr.sprite_frames = sf
-	spr.animation = "idle"
-	add_child_autofree(spr)
-	var a := StatusAura.new()
-	spr.add_child(a)
-	a.set_statuses(["evasion"])
-	assert_eq(a.shown_kinds(), ["shadow"], "CONTROL: evasion is shown on a real sprite")
-	await get_tree().process_frame
-	await get_tree().process_frame
-	assert_true(a.visible and a.is_processing(), "the after-images are still drawing after two frames on a live sprite")
 	var bare := _aura(["evasion"], Rect2(-24, -64, 48, 64))
 	await get_tree().process_frame
 	assert_true(bare.visible, "an aura with no sprite above it draws nothing for evasion and does not stop")
 
+
+func _evasive_sprite(flipped: bool) -> AnimatedSprite2D:
+	var sf := SpriteFrames.new()
+	sf.add_animation("idle")
+	for n in 2:
+		sf.add_frame("idle", ImageTexture.create_from_image(Image.create(64, 64, false, Image.FORMAT_RGBA8)))
+	var spr := AnimatedSprite2D.new()
+	spr.sprite_frames = sf
+	spr.animation = "idle"
+	spr.frame = 1
+	spr.flip_h = flipped
+	spr.scale = Vector2(2.5, 2.5)
+	add_child_autofree(spr)
+	return spr
+
+
+## The .795 render: evasion painted NOTHING on every flipped monster (a hand-mirrored copy was a negative-width rect) and
+## a dark sheet's own-coloured copy vanished over it. The copies are now mirror sprites behind the body, drawn as a flat
+## silhouette; this pins what a mirror must copy (frame, facing, scale), the side it trails to, and that it stays on the figure.
+func test_evasion_copies_mirror_the_body_behind_it_on_either_facing() -> void:
+	for flipped in [false, true]:
+		for side in [-1.0, 1.0]:
+			var tag := "flip_h=%s trail=%d" % [flipped, int(side)]
+			var spr := _evasive_sprite(flipped)
+			var a := StatusAura.new()
+			a.scale = Vector2(0.4, 0.4)
+			a.body = Rect2(-80, -160, 160, 160)
+			a.trail = side
+			spr.add_child(a)
+			a.set_statuses(["evasion"])
+			await get_tree().process_frame
+			var root := spr.get_node_or_null("EvasionAfterImages") as Node2D
+			assert_not_null(root, "%s: no after-images hang off the sprite, so evasion paints nothing" % tag)
+			if root == null:
+				continue
+			assert_true(root.visible and root.show_behind_parent, "%s: the copies are drawn, BEHIND the body" % tag)
+			assert_eq(root.get_child_count(), StatusAura.AFTER_IMAGES, "%s: one mirror per copy" % tag)
+			var last := 0.0
+			for j in range(root.get_child_count() - 1, -1, -1):
+				var g := root.get_child(j) as AnimatedSprite2D
+				assert_not_null(g, "%s: a copy is a sprite of the body's own frames" % tag)
+				if g == null:
+					continue
+				assert_eq([g.sprite_frames, g.animation, g.frame, g.flip_h, g.scale], [spr.sprite_frames, spr.animation, spr.frame, spr.flip_h, spr.scale],
+					"%s: a copy shows the body's live frame, facing and size" % tag)
+				assert_eq(signf(g.position.x), side, "%s: a copy trails to the wrong side (x %.1f)" % [tag, g.position.x])
+				assert_lt(absf(g.position.x), a.body.size.x * 0.5, "%s: a copy floats free of its figure (x %.1f)" % [tag, g.position.x])
+				assert_gt(absf(g.position.x), last, "%s: each copy trails further than the one in front of it" % tag)
+				last = absf(g.position.x)
+				var mat := g.material as ShaderMaterial
+				assert_true(mat != null and mat.shader != null, "%s: a copy is drawn as a silhouette" % tag)
+				if mat != null:
+					assert_gt((mat.get_shader_parameter("tint") as Color).a, 0.12, "%s: a copy too faint to see" % tag)
+			a.set_statuses([])
+			assert_false(root.visible, "%s: the copies go when evasion does" % tag)
+
+
+## Which side a copy trails to is the battler's SIDE (the party stands right facing left, monsters left facing right):
+## flip_h cannot say it, since the artist and procedural sheets are authored facing opposite ways.
+func test_the_party_trails_right_and_the_monsters_left() -> void:
+	var scene = load(SCENE).instantiate()
+	add_child_autofree(scene)
+	assert_gt(scene.party_members.size(), 0, "CONTROL: the scene must build a party")
+	assert_gt(scene.test_enemies.size(), 0, "CONTROL: and enemies")
+	for m in scene.party_members:
+		var a = scene._status_auras.get(m)
+		assert_not_null(a, "CONTROL: %s has an aura" % m.combatant_name)
+		if a != null:
+			assert_eq(a.trail, 1.0, "%s (party, on the right) must trail right" % m.combatant_name)
+	for e in scene.test_enemies:
+		var a = scene._status_auras.get(e)
+		assert_not_null(a, "CONTROL: %s has an aura" % e.combatant_name)
+		if a != null:
+			assert_eq(a.trail, -1.0, "%s (monster, on the left) must trail left" % e.combatant_name)
