@@ -1613,6 +1613,7 @@ func _do_rest() -> void:
 	## The night (struktured 2026-11-01): fade out, the rest ditty, morning, fade in. The heal above already landed, in
 	## the same step as the payment, so a scene change mid-fade can never leave a paid rest unhealed.
 	var seq := InnRestSequence.start(self)
+	seq.restored_lines = rest_readout(beyond_rest)
 	await seq.finished
 	if seq.aborted:
 		return
@@ -1620,14 +1621,29 @@ func _do_rest() -> void:
 	var done: String = InnDialogue.line(_origin_map_id(), "rest_complete")
 	if done == "":
 		done = "Your party is rested." if not beyond_rest.is_empty() else "Your party is fully rested!"
-	var rest_tail: String = "\nHP and MP restored. (-%d G)" % REST_COST
-	if not beyond_rest.is_empty():
-		rest_tail += "\n%s cannot be roused — that death is permanent." % ", ".join(beyond_rest)
-	_rest_dialog = _make_inn_dialog(done + rest_tail)
+	_rest_dialog = _make_inn_dialog(morning_text(done, beyond_rest))
 	await get_tree().create_timer(1.6).timeout
 	if _rest_dialog and is_instance_valid(_rest_dialog):
 		_rest_dialog.queue_free()
 		_rest_dialog = null
+
+
+## What the night's sky says at dawn: the restore, and who did not wake (one name, or a count so six rows never overflow it).
+static func rest_readout(beyond_rest: Array[String]) -> PackedStringArray:
+	var lines := PackedStringArray(["HP + MP RESTORED"])
+	if beyond_rest.size() == 1:
+		lines.append("%s DID NOT WAKE" % beyond_rest[0].to_upper())
+	elif beyond_rest.size() > 1:
+		lines.append("%d DID NOT WAKE" % beyond_rest.size())
+	return lines
+
+
+## The innkeeper's morning box: her line, the receipt and the permanent dead; the restore itself is the sky's to say.
+static func morning_text(done: String, beyond_rest: Array[String]) -> String:
+	var text := done + "\n(-%d G)" % REST_COST
+	if not beyond_rest.is_empty():
+		text += "\n%s cannot be roused — that death is permanent." % ", ".join(beyond_rest)
+	return text
 
 
 ## revive() refuses a permakilled ally, so topping HP off afterwards fills a corpse's bar. Ailments and temporary modifiers clear; the marker, injuries, and the formation row stay.
