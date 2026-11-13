@@ -497,6 +497,7 @@ func _ready() -> void:
 	BattleManager.action_executing.connect(_on_action_executing)
 	BattleManager.action_executed.connect(_on_action_executed)
 	BattleManager.boss_face_changed.connect(_on_boss_face_changed)
+	BattleManager.boss_charge_changed.connect(_on_boss_charge_changed)
 	# Item 19: user report "bard was briefly stuck for a turn next to
 	# the monsters on the left he presumably recently attacked" —
 	# stray displaced sprite from an interrupted return-home tween.
@@ -614,6 +615,10 @@ func _exit_tree() -> void:
 		BattleManager.action_executed.disconnect(_on_action_executed)
 	if BattleManager.boss_face_changed.is_connected(_on_boss_face_changed):
 		BattleManager.boss_face_changed.disconnect(_on_boss_face_changed)
+	if BattleManager.boss_charge_changed.is_connected(_on_boss_charge_changed):
+		BattleManager.boss_charge_changed.disconnect(_on_boss_charge_changed)
+	if SoundManager:
+		SoundManager.clear_charge_duck()  # a scene freed mid-charge must not leave the field music leaning back
 	if BattleManager.round_ended.is_connected(_on_round_ended):
 		BattleManager.round_ended.disconnect(_on_round_ended)
 	if BattleManager.round_started.is_connected(_on_round_started_snap_home):
@@ -4524,6 +4529,7 @@ func _on_battle_ended(victory: bool) -> void:
 	_music_follows_hp = false
 	SoundManager.clear_fight_bed()
 	SoundManager.reset_danger()  # a turbo win or an escape starts no new bed, so nothing else would end the speed-up
+	SoundManager.clear_charge_duck()  # BattleManager settles its charging bosses too; this holds even if a path skips that
 	## A hit still held for its impact frame lands NOW (number, then its death), before the defeat scene or the
 	## victory flow: an escape or a wipe mid-swing must not lean on the safety timer (cowir-battle 23687).
 	_land_held_hit()
@@ -6559,6 +6565,13 @@ func _on_action_executed(combatant: Combatant, action: Dictionary, targets: Arra
 							SoundManager.play_battle("buff")
 					else:
 						SoundManager.play_status(effect)
+
+
+## A charging boss leans the music back (main 23917): only a FULL-tier battle dips, and a release always passes.
+func _on_boss_charge_changed(boss: Combatant, charging: bool) -> void:
+	if charging and not (_intent_tier() == BattleJuice.Tier.FULL):
+		return
+	SoundManager.duck_for_charge(charging, boss)
 
 
 ## A phase_faces boss (the Calibrant) swaps its visible body when a face lands. The spawn path
