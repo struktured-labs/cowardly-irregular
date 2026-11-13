@@ -945,7 +945,8 @@ static func build_party_line(
 		enemy_lines.append("  - %s: HP %d%%%s" % [
 			str(foe.get("name", "?")),
 			int(foe.get("hp_pct", 100)),
-			", GATHERING POWER: its signature move is coming" if bool(foe.get("charging", false)) else "",
+			", GATHERING POWER: its signature move is coming" if bool(foe.get("charging", false)) \
+				else (", CHARGE BROKEN: the party just knocked its signature move out of it" if bool(foe.get("charge_broken", false)) else ""),
 		])
 
 	var recent_lines: PackedStringArray = PackedStringArray()
