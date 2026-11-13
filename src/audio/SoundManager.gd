@@ -19,6 +19,7 @@ var _voice_player: AudioStreamPlayer  # dedicated voice: party lines are SECONDS
 var _line_player: AudioStreamPlayer  # dedicated voice: a recorded dialogue line (boss/NPC); never the party voice player, which the victory slam shares
 var _line_owner_id: int = 0
 var _line_ducked: bool = false
+var _alert_player: AudioStreamPlayer  # dedicated voice: the autogrind stop sting replaced the stop-REASON cue on _ui_player in the same frame, so an automatic stop never said why (2026-11-13)
 var _jingle_player: AudioStreamPlayer  # dedicated voice: the quest-accept ditty died on the next line's menu_select on _ui_player and sat at -16 dB under the bed (2026-11-02, struktured: "didn't hear an accept quest ditty")
 var _pickup_player: AudioStreamPlayer  # dedicated voice: a reward cue always follows the action that earned it, and replaced it on _ui_player (2026-09-12)
 var _bank_player: AudioStreamPlayer  # dedicated voice: full_bank_unleash replaced advance_flourish_5 in the same frame, every full bank (2026-09-14)
@@ -692,6 +693,12 @@ func _setup_audio_players() -> void:
 	_jingle_player.volume_db = JINGLE_PLAYER_BASE_DB
 	_jingle_player.bus = SFX_BUS
 	add_child(_jingle_player)
+
+	_alert_player = AudioStreamPlayer.new()
+	_alert_player.name = "AlertPlayer"
+	_alert_player.volume_db = SFX_UI_BASE_DB
+	_alert_player.bus = SFX_BUS
+	add_child(_alert_player)
 
 	_pickup_player = AudioStreamPlayer.new()
 	_pickup_player.name = "PickupPlayer"
@@ -2089,6 +2096,12 @@ func duck_music_for_kill() -> void:
 
 
 var _jingle_duck_tween: Tween = null
+
+
+## A UI-channel cue that must LAYER over whatever play_ui just started, not replace it: the autogrind stop sting
+## lands in the same frame as the stop-reason cue. Same trim, variant lookup and cooldown as play_ui, on its own voice.
+func play_alert(sound_key: String) -> void:
+	play_ui(sound_key, _alert_player)
 
 
 ## A short musical ditty over the bed (quest accepted): its own player so no menu blip cuts it, and a
