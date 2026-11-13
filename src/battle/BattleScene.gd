@@ -4665,6 +4665,7 @@ func _run_off(s: AnimatedSprite2D, delay: float, edge: float) -> void:
 	var p0 := s.position
 	var dx := edge - s.global_position.x
 	var t := EnemyDeathFx.real_time(s.create_tween())
+	s.set_meta("motion_tween", t)  # the hop is the runner's own; see motion_owns
 	if delay > 0.0:
 		t.tween_interval(delay)
 	t.tween_property(s, "position:y", p0.y - 16.0, ESCAPE_HOP * 0.5).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
@@ -4955,16 +4956,50 @@ static func apply_persisted_formation(members: Array) -> void:
 					member.add_debuff("formation_atk", "attack", 0.9, 999)
 
 
-## True while a sprite's own lunge is moving it. The idle sway below wrote position.y on EVERY sprite EVERY frame, so a
-## lunge only ever moved in x: an attacker slid along its own row and swung at its target's column, a row or two away
-## (struktured 2026-11-12, "attacking someone but aims center"; seen in clips of .792). As old as the sway; the .791 hold
-## for the whole swing is what put it on screen.
+## Tweens that move a sprite keep themselves on it under one of these metas; while any is alive, the sprite's position is theirs.
+const MOTION_METAS: Array[StringName] = [&"attack_tween", &"knockback_tween", &"motion_tween"]
+
+
+## True while something is moving this sprite: a lunge or a group rush (attack_tween), a knock-back pop (knockback_tween),
+## an escape hop (motion_tween). The idle sway below wrote position.y on EVERY sprite EVERY frame, so a lunge only ever
+## moved in x and a pop's lift was taken back the same frame (struktured 2026-11-12, "attacking someone but aims center").
+## Valid, not "running": hit-stop PAUSES a lunge at the impact, and the sway took y back for exactly that frame.
+static func motion_owns(sprite: Node2D) -> bool:
+	if sprite == null or not is_instance_valid(sprite):
+		return false
+	for key in MOTION_METAS:
+		if sprite.has_meta(key):
+			var tween = sprite.get_meta(key)
+			if tween is Tween and (tween as Tween).is_valid():
+				return true
+	return false
+
+
+## Kept for .793's callers and pins: the lunge's own question.
 static func lunge_owns(sprite: Node2D) -> bool:
 	if sprite == null or not is_instance_valid(sprite) or not sprite.has_meta("attack_tween"):
 		return false
 	var tween = sprite.get_meta("attack_tween")
-	## Valid, not "running": hit-stop PAUSES the lunge at the moment of impact, and the sway took y back for exactly that frame.
 	return tween is Tween and (tween as Tween).is_valid()
+
+
+## The idle motion in px at time t: enemies sway ±3 (0.8, 0.95, 1.1 Hz…), the party breathes ±2 (0.4-0.55 Hz),
+## each out of step with its neighbours. ONE function, because a knock-back leaves from and lands on this y.
+static func idle_offset(is_enemy: bool, index: int, t: float) -> float:
+	if is_enemy:
+		return sin(t * (0.8 + float(index) * 0.15) * TAU + float(index) * 1.1) * 3.0
+	return sin(t * (0.4 + float(index) * 0.05) * TAU + float(index) * 0.9) * 2.0
+
+
+## Where the idle motion has this sprite's y right now; `fallback` for a sprite the idle writer does not move.
+func idle_y(sprite: Node2D, fallback: float) -> float:
+	var ei: int = enemy_sprite_nodes.find(sprite)
+	if ei >= 0 and ei < _enemy_base_positions.size():
+		return _enemy_base_positions[ei].y + idle_offset(true, ei, _idle_time)
+	var pi: int = party_sprite_nodes.find(sprite)
+	if pi >= 0 and pi < _party_base_positions.size():
+		return _party_base_positions[pi].y + idle_offset(false, pi, _idle_time)
+	return fallback
 
 
 func _process_idle_animations(delta: float) -> void:
@@ -4981,11 +5016,8 @@ func _process_idle_animations(delta: float) -> void:
 		if i >= _enemy_base_positions.size():
 			continue
 		# Each enemy has a slightly different frequency (0.8, 0.95, 1.1 Hz)
-		var freq = 0.8 + float(i) * 0.15
-		var phase = float(i) * 1.1  # Phase offset so they don't move in sync
-		var sway = sin(_idle_time * freq * TAU + phase) * 3.0
-		if not lunge_owns(sprite):
-			sprite.position.y = _enemy_base_positions[i].y + sway
+		if not motion_owns(sprite):
+			sprite.position.y = _enemy_base_positions[i].y + idle_offset(true, i, _idle_time)
 
 	# Party idle breathing: ±2px Y oscillation at different rates per character
 	for i in range(party_sprite_nodes.size()):
@@ -4995,11 +5027,8 @@ func _process_idle_animations(delta: float) -> void:
 		if i >= _party_base_positions.size():
 			continue
 		# Party members breathe at slightly different rates (0.4-0.55 Hz, slower = calmer)
-		var freq = 0.4 + float(i) * 0.05
-		var phase = float(i) * 0.9
-		var breathe = sin(_idle_time * freq * TAU + phase) * 2.0
-		if not lunge_owns(sprite):
-			sprite.position.y = _party_base_positions[i].y + breathe
+		if not motion_owns(sprite):
+			sprite.position.y = _party_base_positions[i].y + idle_offset(false, i, _idle_time)
 
 	# Update buff/debuff visual overlays for all combatants
 	_update_buff_debuff_visuals(delta)
@@ -6202,11 +6231,9 @@ func _apply_hit_knockback(sprite: Node2D, direction: float = 1.0, magnitude: flo
 	var pop: float = 4.0 if _tier() <= BattleJuice.Tier.REDUCED else 0.0
 	var tween = _knockback_tween(sprite)
 	tween.tween_property(sprite, "position:x", knockback_x, 0.05)
-	if pop > 0.0:
-		tween.parallel().tween_property(sprite, "position:y", original_y - pop, 0.05)
+	_knock_y_leg(tween, sprite, original_y, pop, 0.0, 1.0, 0.05)
 	tween.tween_property(sprite, "position:x", original_x, 0.15).set_ease(Tween.EASE_OUT)
-	if pop > 0.0:
-		tween.parallel().tween_property(sprite, "position:y", original_y, 0.15).set_ease(Tween.EASE_OUT)
+	_knock_y_leg(tween, sprite, original_y, pop, 1.0, 0.0, 0.15)
 
 
 ## Where a knocked sprite comes to rest: its HOME, not wherever the hit found it. A second hit inside the
@@ -6216,10 +6243,28 @@ func _apply_hit_knockback(sprite: Node2D, direction: float = 1.0, magnitude: flo
 func _knockback_rest(sprite: Node2D) -> Vector2:
 	if sprite.has_meta("attack_tween"):
 		var lunge = sprite.get_meta("attack_tween")
-		if lunge is Tween and lunge.is_valid() and lunge.is_running():
+		if lunge is Tween and lunge.is_valid():  # valid, not running: a hit-stop pauses the lunge, and a hit landing then sent the attacker home
 			return sprite.position
 	var home: Vector2 = sprite.get_meta("home_position", sprite.position)
 	return home
+
+
+## The knock-back's y, in step with its x leg. While the knock-back owns the sprite (motion_owns) the idle writer
+## leaves y alone, so the pop carries the sway itself: y = where the idle motion is NOW, minus the lift. It leaves
+## from the swayed y the hit found and lands on the y the sway resumes at; a fixed home y jumped by up to 3 px at
+## both ends, most of a 4 px pop. Runs with no lift too (a tier with no pop): the sway must not freeze for 0.2 s.
+## A sprite mid-lunge is the lunge's: its y is lifted from where the hit found it, as before.
+func _knock_y_leg(tween: Tween, sprite: Node2D, found_y: float, pop: float, from: float, to: float, seconds: float) -> void:
+	if lunge_owns(sprite):
+		if pop > 0.0:
+			tween.parallel().tween_property(sprite, "position:y", found_y - pop * to, seconds).set_ease(Tween.EASE_OUT)
+		return
+	tween.parallel().tween_method(_knock_y.bind(sprite, found_y, pop), from, to, seconds).set_ease(Tween.EASE_OUT)
+
+
+func _knock_y(lift: float, sprite: Node2D, found_y: float, pop: float) -> void:
+	if is_instance_valid(sprite):
+		sprite.position.y = idle_y(sprite, found_y) - pop * lift
 
 
 ## One knockback per sprite, on the sprite: a new hit replaces the old tween (two wrote position at once), and
@@ -6288,11 +6333,9 @@ func _apply_weakness_hit_knockback(sprite: Node2D, direction: float = 1.0, eleme
 	var pop: float = 7.0 if _tier() <= BattleJuice.Tier.REDUCED else 0.0
 	var tween = _knockback_tween(sprite)
 	tween.tween_property(sprite, "position:x", knockback_x, 0.08).set_ease(Tween.EASE_OUT)
-	if pop > 0.0:
-		tween.parallel().tween_property(sprite, "position:y", original_y - pop, 0.08).set_ease(Tween.EASE_OUT)
+	_knock_y_leg(tween, sprite, original_y, pop, 0.0, 1.0, 0.08)
 	tween.tween_property(sprite, "position:x", original_x, 0.22).set_ease(Tween.EASE_OUT)
-	if pop > 0.0:
-		tween.parallel().tween_property(sprite, "position:y", original_y, 0.22).set_ease(Tween.EASE_OUT)
+	_knock_y_leg(tween, sprite, original_y, pop, 1.0, 0.0, 0.22)
 
 
 func _get_combatant_sprite(combatant: Combatant) -> Node2D:
