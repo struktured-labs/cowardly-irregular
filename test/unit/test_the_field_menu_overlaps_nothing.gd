@@ -11,6 +11,7 @@ const CombatantScript = preload("res://src/battle/Combatant.gd")
 ## Intended overlaps, {"a|b": "reason"}, each from a census and each backed by an arm that measures what the reason claims.
 const DECLARED := {
 	"GutRunner/NameLabel|GutRunner/JobLabel": "the name's 20-line keeps descender room 2*k px into the job row; the letters clear by a pixel at every Text Size (test_a_name_and_its_job_line_do_not_touch_in_ink)",
+	"GutRunner/JobLabel|HPBar/Label#0": "at 150% the job line's box grazes the HP label's box by 1 px of descender room; the letters clear by a pixel (test_a_name_and_its_job_line_do_not_touch_in_ink)",
 }
 
 
@@ -187,13 +188,13 @@ func test_a_clipped_node_is_judged_by_what_shows() -> void:
 
 
 ## Ink rows [top, bottom] of `text` drawn by `l` at its own position: each glyph's rendered bitmap against the baseline.
-func _ink_rows(l: Label, text: String) -> Vector2:
+func _ink_rows(l: Label, text: String, y0: float = 0.0) -> Vector2:
 	var f: Font = l.get_theme_font("font")
 	var px: int = l.get_theme_font_size("font_size")
 	var ts := TextServerManager.get_primary_interface()
 	var rid := ts.create_shaped_text()
 	ts.shaped_text_add_string(rid, text, f.get_rids(), px)
-	var base: float = l.position.y + f.get_ascent(px)
+	var base: float = y0 + l.position.y + f.get_ascent(px)
 	var top := INF
 	var bottom := -INF
 	for g in ts.shaped_text_get_glyphs(rid):
@@ -222,9 +223,14 @@ func test_a_name_and_its_job_line_do_not_touch_in_ink() -> void:
 		var job_l := card.get_node("JobLabel") as Label
 		var low: Vector2 = _ink_rows(name_l, "gjpqy")
 		var high: Vector2 = _ink_rows(job_l, "ABDEFHKLTbdfhklt")
+		var job_low: Vector2 = _ink_rows(job_l, "gjpqy")
+		var hp := card.get_node("HPBar") as Control
+		var hp_top: Vector2 = _ink_rows(hp.get_child(0) as Label, "HP", hp.position.y)
 		assert_gt(low.y - low.x, 2.0, "CONTROL: the name's glyphs have ink at %s%% (%s)" % [s, low])
 		gaps.append("at %s%%, %.1f px (name ink to %.1f, job ink from %.1f; boxes overlap %.1f)" % [int(roundf(float(s) * 100.0)), high.x - low.y, low.y, high.x, name_l.position.y + name_l.size.y - job_l.position.y])
 		assert_gte(high.x - low.y, 0.99, "a name's descender clears the job line's tallest letter by a pixel at %s%%: %s" % [s, gaps.back()])
+		gaps.append("job->HP at %s%%, %.1f px" % [int(roundf(float(s) * 100.0)), hp_top.x - job_low.y])
+		assert_gte(hp_top.x - job_low.y, 0.99, "a job's descender (Fighter's g) clears the HP label by a pixel at %s%%: %s" % [s, gaps.back()])
 		m.queue_free()
 		await get_tree().process_frame
 	gut.p("ink gaps, name descender -> job letter: %s" % [gaps])
