@@ -298,6 +298,23 @@ func test_a_neighbouring_chip_does_not_own_a_label() -> void:
 	assert_eq(OverlapAudit.collisions([panel, big_badge, small_arrow], {}), [], "a chip more than twice the label's size is still a neighbour on their shared panel")
 
 
+## No panel holds both: the chip hangs off the panel's edge while the label beside it sits inside. The chip is reported, once;
+## the label is the panel's content, so the chip (not twice its size) must not claim it (the OWNER_AREA rule's own arm).
+func test_a_chip_off_its_panel_owns_no_neighbour() -> void:
+	var host := Control.new()
+	add_child_autofree(host)
+	var bg := ColorRect.new()
+	host.add_child(bg)
+	var chip := ColorRect.new()
+	host.add_child(chip)
+	var panel := _surf("Panel", bg, Rect2(0, 0, 100, 60))
+	var badge := _surf("Badge", chip, Rect2(80, 30, 28, 20))
+	var arrow := _surf("Arrow", _label(">", host), Rect2(60, 30, 16, 20))
+	var found: Array = OverlapAudit.collisions([panel, badge, arrow], {})
+	assert_eq(found.size(), 1, "CONTROL: the chip hanging off the panel is one finding: %s" % [found])
+	assert_eq(found.filter(func(f): return "Arrow" in str(f)), [], "the arrow inside the panel is its content, not the off-panel chip's: %s" % [found])
+
+
 func test_nothing_in_the_field_menu_overlaps_at_any_text_size() -> void:
 	var used := {}
 	var found: Array = []
