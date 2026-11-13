@@ -233,7 +233,7 @@ Each rule shape:
 Conditions (AND-chained). type is one of:
   hp_percent, mp_percent, ap, has_status, not_has_status, enemy_hp_percent, ally_hp_percent,
   turn, enemy_count, ally_count, item_count, setup_complete,
-  ally_has_status, enemy_has_status, not_enemy_has_status, enemy_weak_to,
+  ally_has_status, enemy_has_status, not_enemy_has_status, enemy_weak_to, enemy_resists,
   ally_mp_percent,
   ally_dead, is_night, weather,
   always, has_buff, not_has_buff, volatility_band
@@ -283,6 +283,10 @@ bestiary: fire (38 of 106 monsters), holy (32), lightning (30), ice (27),
 water, physical, dark. Pair it with an ability of the SAME element, e.g.
 {\"type\":\"enemy_weak_to\",\"element\":\"fire\"} + 'fire'.
 An element nothing is weak to simply never fires.
+enemy_resists takes the same 'element' field and no op/value. True when ANY
+living enemy resists that element — the guard on the other side: put it on a
+rule ABOVE your fire rule to switch spells before you waste a turn, e.g.
+{\"type\":\"enemy_resists\",\"element\":\"fire\"} + 'blizzard'.
 item_count takes an 'item_id' field NAMING the item to count, alongside op and
 value — {\"type\":\"item_count\",\"item_id\":\"potion\",\"op\":\">\",\"value\":0}.
 Omit item_id and the count is always 0, so the rule never fires.

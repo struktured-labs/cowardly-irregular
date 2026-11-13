@@ -86,3 +86,91 @@ func test_every_authored_cadence_names_a_signature_its_boss_can_cast() -> void:
 		assert_true(abil.has(sig), "%s: %s resolves in abilities.json" % [id, sig])
 	assert_true(mons.has("ice_dragon") and (mons["ice_dragon"] as Dictionary).has("cadence"), "Glacius carries the first cadence")
 	assert_gt(seen, 0, "floor: the walk found an authored cadence")
+
+
+func _glacius() -> Combatant:
+	var c: Combatant = Combatant.new()
+	add_child_autofree(c)
+	c.initialize({"name": "Glacius", "max_hp": 100, "max_mp": 100, "attack": 10, "defense": 10, "magic": 10, "speed": 10})
+	c.set_meta("monster_type", "ice_dragon")
+	return c
+
+
+## The charge turn reads boss_dialogue.json, so the accessor story authors against has a reader (ai 24683, main 24685).
+func test_an_authored_charge_line_is_what_the_log_says() -> void:
+	var boss := _glacius()
+	assert_eq(BattleManager._boss_persona_id(boss), "glacius", "CONTROL: Glacius resolves to the persona boss_dialogue.json keys")
+	var entry: Dictionary = BossDialogue._data.get("glacius", {})
+	var had: Variant = entry.get("charge_line", null)
+	entry["charge_line"] = "PLANTED: the cavern holds its breath."
+	BossDialogue._data["glacius"] = entry
+	watch_signals(BattleManager)
+	BattleManager._execute_boss_charge(boss, "absolute_zero")
+	if had == null:
+		entry.erase("charge_line")
+	else:
+		entry["charge_line"] = had
+	var params: Array = get_signal_parameters(BattleManager, "battle_log_message")
+	assert_false(params.is_empty(), "the charge turn logs a line")
+	assert_string_contains(str(params[0]) if not params.is_empty() else "", "PLANTED: the cavern holds its breath.")
+
+
+func test_an_unauthored_boss_gets_the_generic_line() -> void:
+	var boss := _glacius()
+	boss.set_meta("llm_persona_id", "nobody_authored_this_boss")
+	watch_signals(BattleManager)
+	BattleManager._execute_boss_charge(boss, "absolute_zero")
+	var params: Array = get_signal_parameters(BattleManager, "battle_log_message")
+	assert_false(params.is_empty(), "the charge turn logs a line")
+	assert_string_contains(str(params[0]) if not params.is_empty() else "", "is gathering power for")
+
+
+func test_a_stun_on_a_charging_boss_breaks_it_through_the_battle_manager() -> void:
+	var boss := _glacius()
+	var cfg: Dictionary = BattleManager._cadence_config(boss)
+	assert_false(cfg.is_empty(), "CONTROL: Glacius's row reaches the battle manager's cadence reader")
+	boss.set_meta("_cadence", {"phase": "charging", "count": 0, "charge_left": 1, "interrupted": false})
+	watch_signals(BattleManager)
+	BattleManager._on_cadence_status("stun", boss)
+	assert_signal_emitted_with_parameters(BattleManager, "boss_charge_broken", [boss, "stun"])
+	assert_signal_emitted_with_parameters(BattleManager, "boss_charge_changed", [boss, false])
+	assert_false(BossCadence.is_charging(boss.get_meta("_cadence", {})), "the boss is no longer charging")
+
+
+func test_turns_to_release_counts_down_to_the_breath() -> void:
+	var cfg := _cfg(3, 1)
+	var st := BossCadence.fresh_state()
+	var seen: Array = [BossCadence.turns_to_release(st, cfg)]
+	for i in 4:
+		st = BossCadence.next(st, cfg)["state"]
+		seen.append(BossCadence.turns_to_release(st, cfg))
+	assert_eq(seen, [5, 4, 3, 2, 1], "plain, plain, plain, charge, then the release is the next turn")
+	assert_eq(BossCadence.next(st, cfg)["beat"], "release", "and it is")
+	assert_eq(BossCadence.turns_to_release(st, {}), -1, "no clock, no countdown")
+
+
+## A rule can see the breath coming: both conditions read the live boss through AutobattleSystem's own evaluator.
+func test_a_rule_reads_the_charge_and_the_countdown() -> void:
+	var hero: Combatant = Combatant.new()
+	add_child_autofree(hero)
+	hero.initialize({"name": "Hero", "max_hp": 100, "max_mp": 10, "attack": 10, "defense": 10, "magic": 10, "speed": 10})
+	var boss := _glacius()
+	var saved_players: Array[Combatant] = BattleManager.player_party.duplicate()
+	var saved_enemies: Array[Combatant] = BattleManager.enemy_party.duplicate()
+	var players: Array[Combatant] = [hero]
+	var enemies: Array[Combatant] = [boss]
+	BattleManager.player_party = players
+	BattleManager.enemy_party = enemies
+	var charging := {"type": "enemy_charging"}
+	var soon := {"type": "enemy_signature_in", "op": "<=", "value": 1}
+	var a_far := AutobattleSystem._evaluate_grid_condition(hero, charging)
+	var b_far := AutobattleSystem._evaluate_grid_condition(hero, soon)
+	boss.set_meta("_cadence", {"phase": "charging", "count": 0, "charge_left": 1, "interrupted": false})
+	var a_near := AutobattleSystem._evaluate_grid_condition(hero, charging)
+	var b_near := AutobattleSystem._evaluate_grid_condition(hero, soon)
+	BattleManager.player_party = saved_players
+	BattleManager.enemy_party = saved_enemies
+	assert_false(a_far, "a fresh boss is not charging")
+	assert_false(b_far, "and its breath is five turns off, not one")
+	assert_true(a_near, "a charging boss reads as charging")
+	assert_true(b_near, "and its release is the next turn")
