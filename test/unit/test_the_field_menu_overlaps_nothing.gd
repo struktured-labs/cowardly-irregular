@@ -46,6 +46,8 @@ func test_the_floor_names_every_member_this_file_drives() -> void:
 		assert_has(audit, f, "overlap_audit.%s must exist" % f)
 	var menu: Array = (OverworldMenuScript as GDScript).get_script_method_list().map(func(m): return str(m["name"]))
 	assert_has(menu, "setup", "OverworldMenu.setup must exist")
+	var props: Array = (OverworldMenuScript as GDScript).get_script_property_list().map(func(p): return str(p["name"]))
+	assert_has(props, "_party_panels", "OverworldMenu._party_panels must exist (the ink arm reads the built cards)")
 
 
 ## CONTROL: the judge can say yes. A label planted over the menu's first surface is reported, so a clean sweep below means
@@ -179,6 +181,50 @@ func test_a_clipped_node_is_judged_by_what_shows() -> void:
 	await get_tree().process_frame
 	assert_eq(OverlapAudit.visible_rect(row).size, Vector2.ZERO, "a row scrolled out of view shows nothing (%s)" % OverlapAudit.visible_rect(row))
 	assert_almost_eq(OverlapAudit.visible_rect(half).size.y, 20.0, 0.5, "a row half in view is judged by its visible half (%s)" % OverlapAudit.visible_rect(half))
+
+
+## Ink rows [top, bottom] of `text` drawn by `l` at its own position: each glyph's rendered bitmap against the baseline.
+func _ink_rows(l: Label, text: String) -> Vector2:
+	var f: Font = l.get_theme_font("font")
+	var px: int = l.get_theme_font_size("font_size")
+	var ts := TextServerManager.get_primary_interface()
+	var rid := ts.create_shaped_text()
+	ts.shaped_text_add_string(rid, text, f.get_rids(), px)
+	var base: float = l.position.y + f.get_ascent(px)
+	var top := INF
+	var bottom := -INF
+	for g in ts.shaped_text_get_glyphs(rid):
+		var fr: RID = g["font_rid"]
+		if not fr.is_valid():
+			continue
+		ts.font_render_glyph(fr, Vector2i(px, 0), int(g["index"]))
+		var off: Vector2 = ts.font_get_glyph_offset(fr, Vector2i(px, 0), int(g["index"]))
+		var sz: Vector2 = ts.font_get_glyph_size(fr, Vector2i(px, 0), int(g["index"]))
+		if sz.y <= 0.0:
+			continue
+		top = minf(top, base + off.y)
+		bottom = maxf(bottom, base + off.y + sz.y)
+	ts.free_rid(rid)
+	return Vector2(top, bottom)
+
+
+## MEASUREMENT for NameLabel ∩ JobLabel (the name's line box reaches 4·k px into the job row): do the LETTERS touch? The
+## lowest descender a name can have against the tallest letter a job name has (job names are ASCII), at every Text Size.
+func test_a_name_and_its_job_line_do_not_touch_in_ink() -> void:
+	var gaps: Array = []
+	for s in _presets():
+		var m := await _menu_at(float(s))
+		var card: Control = m._party_panels[0]
+		var name_l := card.get_node("NameLabel") as Label
+		var job_l := card.get_node("JobLabel") as Label
+		var low: Vector2 = _ink_rows(name_l, "gjpqy")
+		var high: Vector2 = _ink_rows(job_l, "ABDEFHKLTbdfhklt")
+		assert_gt(low.y - low.x, 2.0, "CONTROL: the name's glyphs have ink at %s%% (%s)" % [s, low])
+		gaps.append("at %s%%, %.1f px (name ink to %.1f, job ink from %.1f; boxes overlap %.1f)" % [int(roundf(float(s) * 100.0)), high.x - low.y, low.y, high.x, name_l.position.y + name_l.size.y - job_l.position.y])
+		assert_gt(high.x - low.y, 0.0, "a name's descender clears the job line's tallest letter at %s%%: %s" % [s, gaps.back()])
+		m.queue_free()
+		await get_tree().process_frame
+	gut.p("ink gaps, name descender -> job letter: %s" % [gaps])
 
 
 func test_nothing_in_the_field_menu_overlaps_at_any_text_size() -> void:
