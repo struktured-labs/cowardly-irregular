@@ -21,6 +21,10 @@ func after_each() -> void:
 	if _stub and is_instance_valid(_stub):
 		_stub.free()
 	_stub = null
+	## A night outlives its test (it runs for seconds); left in root, the next arm's lookup found the PREVIOUS night.
+	for n in get_tree().root.get_children():
+		if n is InnRestSequence:
+			n.free()
 	InputLockManager.pop_lock(InnRestSequence.LOCK_ID)
 	if SoundManager:
 		SoundManager.stop_music()
@@ -52,9 +56,10 @@ func _night_for(party: Array) -> InnRestSequence:
 	var inn: Node2D = load(INN_PATH).new()
 	add_child_autofree(inn)
 	GameState.party_gold = 500
+	var before: Array = get_tree().root.get_children().filter(func(n): return n is InnRestSequence)
 	inn._do_rest()
 	for n in get_tree().root.get_children():
-		if n is InnRestSequence:
+		if n is InnRestSequence and not before.has(n):
 			return n
 	return null
 
