@@ -180,9 +180,11 @@ func setup(parent: Node, player: Node2D, map_w: int, map_h: int, tile_size: int,
 		GameState.text_size_scale_changed.connect(_on_text_size_changed)
 
 
-## Legend rows at a pitch that scales with their font; the reserved rect follows, so HUD avoiding it stays clear.
+## Legend rows at a pitch that scales with their font, never shorter than a row's own text; the reserved rect follows.
 func _layout_legend() -> void:
 	var pitch := float(TextScale.scaled(LEGEND_PITCH))
+	for row in _legend_rows:
+		pitch = maxf(pitch, ceilf((row[1] as Label).get_combined_minimum_size().y))
 	for i in range(_legend_rows.size()):
 		var y_off: float = _legend_origin.y + i * pitch
 		_legend_rows[i][0].position = Vector2(_legend_origin.x + 4, y_off + (pitch - 6.0) / 2.0 - 1.0)

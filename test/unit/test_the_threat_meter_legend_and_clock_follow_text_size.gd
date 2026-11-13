@@ -137,3 +137,16 @@ func test_the_authored_layout_holds_at_1x() -> void:
 	assert_almost_eq(m._legend_rows[1][1].position.y - m._legend_rows[0][1].position.y, 14.0, 0.01, "the legend keeps its 14px pitch")
 	assert_almost_eq(m._legend_rows[0][0].position.y - m._legend_origin.y, 3.0, 0.01, "and its dot offset")
 	assert_eq(DayClockWidget.dial_size(), DayClockWidget.DIAL_SIZE, "the dial keeps its authored 72x88")
+
+
+## .801 field census: at 80% and 150% each legend row's box ran 1 px into the next (pitch 11 vs a 12 px row, 21 vs 22).
+func test_legend_row_boxes_never_touch_the_next_row() -> void:
+	for p in _presets():
+		GameState.text_size_scale = float(p)
+		var rows: Array = _minimap()._legend_rows
+		assert_gt(rows.size(), 1, "FLOOR: the legend must have rows")
+		for i in range(rows.size() - 1):
+			var a: Label = rows[i][1]
+			var b: Label = rows[i + 1][1]
+			var box_h: float = a.get_combined_minimum_size().y
+			assert_gte(b.position.y - a.position.y, box_h, "legend row %d's %.0f px box runs into row %d at %s" % [i, box_h, i + 1, str(p)])
