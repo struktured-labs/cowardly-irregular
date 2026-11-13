@@ -2925,6 +2925,10 @@ func _make_ai_decision(combatant: Combatant, alive_allies: Array, alive_enemies:
 	var cadence_action := _cadence_action(combatant, alive_enemies, quiet)
 	if not cadence_action.is_empty():
 		return cadence_action
+	## A clocked signature is the clock's alone: the ladder casting it unannounced would make the charge and enemy_signature_in lie.
+	var clocked_sig := str(_cadence_config(combatant).get("signature", ""))
+	if clocked_sig != "":
+		available_abilities = available_abilities.filter(func(a): return str(a.get("id", "")) != clocked_sig)
 
 	# Masterite bosses use specialized AI
 	if combatant.has_meta("masterite") and combatant.get_meta("masterite"):
