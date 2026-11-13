@@ -1488,13 +1488,16 @@ func _adjust_condition_value(delta: int) -> void:
 	if AutogrindSystem.NULLARY_CONDITIONS.has(cond_type):
 		return
 
+	## A named-value condition walks the console's status ring, so the grid can write blind or silence and not only the seed poison.
+	if AutogrindSystem.NAMED_VALUE_CONDITIONS.has(cond_type):
+		var ring: Array = load("res://src/ui/autogrind/AutogrindUI.gd").MEMBER_STATUS_RING  # load, not preload: the console already reaches this editor
+		var at: int = ring.find(Combatant.resolve_status_alias(str(cond.get("value", ""))))
+		cond["value"] = ring[wrapi(at + delta, 0, ring.size())] if at >= 0 else ring[0]
+		_refresh_grid()
+		return
+
 	var current_value = cond.get("value", 50)
-	## ⛔ A NAMED-VALUE CONDITION HAS NO NUMERIC DIAL. member_status carries a status id ("poison"),
-	## and `current_value + delta * step` below threw "Invalid operands 'String' and 'int'" on EVERY
-	## press — an abort, so the write and _refresh_grid never ran either. The player already saw a
-	## dial that does nothing; this removes the type error behind it rather than changing what they
-	## see. Choosing WHICH status needs a picker this editor does not have, and that half is a scope
-	## call (@cowir-ai measured the same shape across 8 autobattle conditions and routed it up).
+	## A value that is not a number has no numeric dial; `+ delta * step` on a String aborts.
 	if not (current_value is int or current_value is float):
 		return
 	var step = 5
