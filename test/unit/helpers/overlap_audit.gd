@@ -18,6 +18,8 @@ const AdvanceAuraClass = preload("res://src/battle/AdvanceAura.gd")
 const BACKDROP_SHARE := 0.85
 const MIN_PX := 1.0
 const CONTAIN_SLACK := 0.5
+## A frame line is at most this thick: RetroPanel's 4 px tiles, the grind console's 2 px strips.
+const FRAME_PX := 4.0
 
 
 ## [{"id", "rect", "node"}] for every surface under `root` (and {"backdrops": ...} via backdrops()).
@@ -53,12 +55,34 @@ static func collisions(surfs: Array, declared: Dictionary, used: Dictionary = {}
 				continue
 			if _owned_by(surfs, owner, i, j):
 				continue
+			if owner[i] == owner[j] and is_frame_joint(a["rect"], b["rect"]):
+				continue
 			var key := _declared_key(declared, str(a["id"]), str(b["id"]))
 			if key != "":
 				used[key] = true
 				continue
 			out.append("%s ∩ %s at %s" % [a["id"], b["id"], str(hit)])
 	return out
+
+
+## Two frame lines (each at most FRAME_PX thick) of one owner that meet only where BOTH end, in a square no thicker than
+## the lines: a frame's corner, drawn as two strips. A strip crossing another's MIDDLE is still a finding.
+static func is_frame_joint(ra: Rect2, rb: Rect2) -> bool:
+	var ta := minf(ra.size.x, ra.size.y)
+	var tb := minf(rb.size.x, rb.size.y)
+	if ta > FRAME_PX + CONTAIN_SLACK or tb > FRAME_PX + CONTAIN_SLACK:
+		return false
+	var hit := ra.intersection(rb)
+	var t := maxf(ta, tb) + CONTAIN_SLACK
+	if hit.size.x > t or hit.size.y > t:
+		return false
+	return _hit_at_an_end(ra, hit) and _hit_at_an_end(rb, hit)
+
+
+static func _hit_at_an_end(r: Rect2, hit: Rect2) -> bool:
+	if r.size.x >= r.size.y:
+		return hit.position.x <= r.position.x + CONTAIN_SLACK or hit.end.x >= r.end.x - CONTAIN_SLACK
+	return hit.position.y <= r.position.y + CONTAIN_SLACK or hit.end.y >= r.end.y - CONTAIN_SLACK
 
 
 ## Declared entries that matched no collision in any phase fed through `used`, or that carry no reason.

@@ -45,7 +45,7 @@ func _menu_at(scale: float) -> Control:
 func test_the_floor_names_every_member_this_file_drives() -> void:
 	assert_gte(_presets().size(), 2, "SettingsMenu.TEXT_SIZE_PRESETS must exist and offer a choice (%s)" % [_presets()])
 	var audit: Array = (OverlapAudit as GDScript).get_script_method_list().map(func(m): return str(m["name"]))
-	for f in ["surfaces", "collisions", "stale", "visible_rect"]:
+	for f in ["surfaces", "collisions", "stale", "visible_rect", "is_frame_joint"]:
 		assert_has(audit, f, "overlap_audit.%s must exist" % f)
 	var menu: Array = (OverworldMenuScript as GDScript).get_script_method_list().map(func(m): return str(m["name"]))
 	assert_has(menu, "setup", "OverworldMenu.setup must exist")
@@ -234,6 +234,29 @@ func test_a_name_and_its_job_line_do_not_touch_in_ink() -> void:
 		m.queue_free()
 		await get_tree().process_frame
 	gut.p("ink gaps, name descender -> job letter: %s" % [gaps])
+
+
+## A frame drawn as four full-length 2 px strips meets itself at its corners (the grind console, autogrind 25071): those
+## joints are one frame, not four collisions. A strip crossing another's MIDDLE, or two thick bars meeting, still report.
+func test_a_frame_corner_is_not_an_overlap() -> void:
+	var host := Control.new()
+	add_child_autofree(host)
+	var parts: Array = []
+	for r in [Rect2(0, 0, 200, 2), Rect2(0, 98, 200, 2), Rect2(0, 0, 2, 100), Rect2(198, 0, 2, 100)]:
+		var c := ColorRect.new()
+		host.add_child(c)
+		parts.append(_surf("Strip%d" % parts.size(), c, r))
+	assert_eq(OverlapAudit.collisions(parts, {}), [], "CONTROL: four strips meeting at their ends are one frame")
+	var cross := ColorRect.new()
+	host.add_child(cross)
+	var mid: Array = OverlapAudit.collisions([parts[0], _surf("Cross", cross, Rect2(100, -10, 2, 20))], {})
+	assert_eq(mid.size(), 1, "a strip crossing another's middle is a finding: %s" % [mid])
+	var bar_a := ColorRect.new()
+	host.add_child(bar_a)
+	var bar_b := ColorRect.new()
+	host.add_child(bar_b)
+	var thick: Array = OverlapAudit.collisions([_surf("BarA", bar_a, Rect2(0, 0, 200, 10)), _surf("BarB", bar_b, Rect2(0, 0, 10, 100))], {})
+	assert_eq(thick.size(), 1, "two thick bars meeting at a corner are not a frame line: %s" % [thick])
 
 
 func test_nothing_in_the_field_menu_overlaps_at_any_text_size() -> void:
