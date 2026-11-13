@@ -963,6 +963,44 @@ func _elemental_mods(enemies: Array) -> Dictionary:
 	return out
 
 
+## BAL_READS=1: the rows a player who reads the weakness writes above the preset's own attack rows, with conditions the grid editor already has:
+## for each element the member has a one-foe damage spell of, "an enemy is weak to it -> the best such spell, at the weak foe". Returns how many rows went in.
+func _add_weakness_rules(c, rules: Array) -> int:
+	var best: Dictionary = {}
+	for aid in _ability_db():
+		var raw: Variant = _ability_db()[aid]
+		if not raw is Dictionary:
+			continue
+		var row: Dictionary = raw
+		var el: String = str(row.get("element", ""))
+		if el == "" or not (str(row.get("type", "")) in ["magic", "physical"]) or not row.has("damage_multiplier"):
+			continue
+		if str(row.get("target_type", "")) != "single_enemy" or not c.knows_ability(str(aid)):
+			continue
+		if not best.has(el) or float(row["damage_multiplier"]) > float(best[el]["damage_multiplier"]):
+			var keep: Dictionary = row.duplicate()
+			keep["id"] = str(aid)
+			best[el] = keep
+	var at: int = rules.size()
+	for i in range(rules.size()):
+		var acts: Array = (rules[i] as Dictionary).get("actions", [])
+		if acts.is_empty():
+			continue
+		var first: Dictionary = acts[0]
+		if str(first.get("type", "")) == "attack" or str(first.get("target", "")).contains("enemy") or str(first.get("target", "")) == "weakest_to_ability":
+			at = i
+			break
+	var added: int = 0
+	for el in best:
+		var r: Dictionary = best[el]
+		var conds: Array = [_cond("enemy_weak_to", {"element": el})]
+		if int(r.get("mp_cost", 0)) > 0:
+			conds.append(_cond("mp_percent", {"op": ">=", "value": _mp_gate(c, r, 1)}))
+		rules.insert(at + added, _rule(conds, [{"type": "ability", "id": str(r["id"]), "target": "weakest_to_ability"}]))
+		added += 1
+	return added
+
+
 ## Installs the path's script per member and VERIFIES IT TOOK. Returns {character_id: label}.
 func _install_path_scripts(path: String, party: Array) -> Dictionary:
 	var picked: Dictionary = {}
@@ -991,6 +1029,9 @@ func _install_path_scripts(path: String, party: Array) -> Dictionary:
 				var tpl: Dictionary = templates[jid]
 				script = {"rules": (tpl.get("rules", []) as Array).duplicate(true)}
 				label = str(tpl.get("id", "?"))
+				if _env("BAL_READS", "0") == "1":
+					var added: int = _add_weakness_rules(c, script["rules"])
+					label += " + reads the weakness (%d row(s))" % added
 			"manual":
 				script = _manual_script(c)
 				label = "Default to AP3 then Brave x3"
