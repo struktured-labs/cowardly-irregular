@@ -1553,9 +1553,17 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 					## 1.5 is a 1.5x scale rather than +150%. Skipped for element-less abilities, matching
 					## live's "no fire scroll, no fire bonus" intent.
 					if element != "":
+						var elem_scale: float = 1.0
 						var elem_bonus: float = _sum_equipment_special_effect(caster, element + "_damage_bonus")
 						if elem_bonus > 0.0:
-							base_dmg = int(base_dmg * elem_bonus)
+							elem_scale *= elem_bonus
+						## A passive's own <element>_damage_bonus (undead_affinity's dark) times the gear's, as BattleManager._element_damage_bonus does.
+						if caster.has_method("_get_passive_meta_effect_sum"):
+							var passive_bonus: float = caster._get_passive_meta_effect_sum(element + "_damage_bonus")
+							if passive_bonus > 0.0:
+								elem_scale *= passive_bonus
+						if elem_scale != 1.0:
+							base_dmg = int(base_dmg * elem_scale)
 					## Same one-hit ward as the basic swing. A blocked spell does not reach elemental math.
 					if target.has_status("barrier"):
 						target.remove_status("barrier")

@@ -207,6 +207,11 @@ func _setup_tilemap() -> void:
 const _DRAWN_TILES := {"wood": ["floor", "_draw_floor_tile"], "wall": ["wall", "_draw_wall_tile"], "hearth": ["hearth", "_draw_hearth_floor"]}
 
 
+## True when art draws this room's back wall (InteriorArt "back_wall_tavern" or a wider key).
+func back_wall_drawn() -> bool:
+	return InteriorArt.path("back_wall", "tavern") != ""
+
+
 func _make_floor_source(variant: String) -> TileSetAtlasSource:
 	if _DRAWN_TILES.has(variant):
 		var kind: Array = _DRAWN_TILES[variant]
@@ -454,6 +459,11 @@ func _set_tile(x: int, y: int, source_id: int) -> void:
 func _setup_decorations() -> void:
 	decorations = Node2D.new()
 	decorations.name = "Decorations"
+	# On a floor layer over the tiles, not among the decorations: the strip rises one tile above the map.
+	var floor_pieces := Node2D.new()
+	floor_pieces.name = "FloorPieces"
+	add_child(floor_pieces)
+	InteriorArt.back_wall(floor_pieces, "tavern", MAP_WIDTH)
 	add_child(decorations)
 
 	_create_bar_counter()
@@ -462,7 +472,9 @@ func _setup_decorations() -> void:
 	_create_piano()
 	_create_fireplace()
 	_create_kitchen_area()
-	_create_wall_banner()
+	# A drawn back wall carries its own banner and wall art: the painted ones would cover or double them.
+	if not back_wall_drawn():
+		_create_wall_banner()
 	_create_wall_art()
 	_create_stairs_archway()
 	_create_floor_clutter()
@@ -1621,6 +1633,7 @@ func _create_wall_banner() -> void:
 	banner.texture = ImageTexture.create_from_image(img)
 	banner.position = Vector2(13.5 * TILE_SIZE, 1.5 * TILE_SIZE)
 	banner.z_index = 2
+	banner.name = "WallBanner"
 	decorations.add_child(banner)
 
 
@@ -1629,9 +1642,10 @@ func _create_wall_banner() -> void:
 # ---------------------------------------------------------------------------
 
 func _create_wall_art() -> void:
-	_create_framed_painting(Vector2(7 * TILE_SIZE, 1.5 * TILE_SIZE))
-	_create_dartboard(Vector2(19 * TILE_SIZE, 1.5 * TILE_SIZE))
-	_create_hung_copper_pots(Vector2(24 * TILE_SIZE, 1.2 * TILE_SIZE))
+	if not back_wall_drawn():
+		_create_framed_painting(Vector2(7 * TILE_SIZE, 1.5 * TILE_SIZE))
+		_create_dartboard(Vector2(19 * TILE_SIZE, 1.5 * TILE_SIZE))
+		_create_hung_copper_pots(Vector2(24 * TILE_SIZE, 1.2 * TILE_SIZE))
 	_create_weapon_rack(Vector2(1.2 * TILE_SIZE, 6.5 * TILE_SIZE))
 
 
@@ -1677,6 +1691,7 @@ func _create_framed_painting(pos: Vector2) -> void:
 	frame_sp.texture = ImageTexture.create_from_image(img)
 	frame_sp.position = pos
 	frame_sp.z_index = 2
+	frame_sp.name = "WallPainting"
 	decorations.add_child(frame_sp)
 
 
@@ -1728,6 +1743,7 @@ func _create_dartboard(pos: Vector2) -> void:
 	dart_sp.texture = ImageTexture.create_from_image(img)
 	dart_sp.position = pos
 	dart_sp.z_index = 2
+	dart_sp.name = "Dartboard"
 	decorations.add_child(dart_sp)
 
 
@@ -1784,6 +1800,7 @@ func _create_hung_copper_pots(pos: Vector2) -> void:
 	pots_sp.texture = ImageTexture.create_from_image(img)
 	pots_sp.position = pos
 	pots_sp.z_index = 2
+	pots_sp.name = "CopperPots"
 	decorations.add_child(pots_sp)
 
 
@@ -2466,7 +2483,7 @@ func _setup_camera() -> void:
 	camera.position_smoothing_speed = 8.0
 
 	camera.limit_left = 0
-	camera.limit_top = 0
+	camera.limit_top = -TILE_SIZE if back_wall_drawn() else 0  # a drawn back wall rises one tile above the map
 	camera.limit_right = MAP_WIDTH * TILE_SIZE
 	camera.limit_bottom = MAP_HEIGHT * TILE_SIZE
 

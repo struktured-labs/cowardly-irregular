@@ -257,3 +257,30 @@ func test_live_still_applies_it_on_the_magic_path() -> void:
 	var combatant: String = GdSource.code_of("res://src/battle/Combatant.gd")
 	assert_true(combatant.contains("elemental_mod *= 0.5"),
 		"take_elemental_damage no longer halves for equipment resistance — the mirrored 0.5 in the resolver is stale")
+
+
+## undead_affinity's +40% dark is a PASSIVE meta_effect (battle 7656f5ac2); live multiplies it after the gear's, and so must the grind.
+func test_a_passive_element_bonus_lands_on_its_own_element_only() -> void:
+	var ps: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/passives.json"))
+	var authored: float = float(((ps.get("undead_affinity", {}) as Dictionary).get("meta_effects", {}) as Dictionary).get("dark_damage_bonus", 0.0))
+	assert_gt(authored, 1.0, "PREMISE: undead_affinity authors meta_effects.dark_damage_bonus, or this arm has nothing to measure")
+	var ab: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/abilities.json"))
+	var dark_spell: String = ""
+	for aid in ab:
+		var a: Dictionary = ab[aid]
+		if str(a.get("type", "")) == "magic" and str(a.get("element", "")) == "dark" and not a.has("hits") \
+				and str(a.get("target_type", "")) == "single_enemy" and not a.has("effect") and not str(aid).contains("drain") \
+				and float(a.get("damage_multiplier", 0.0)) > 0.0:
+			dark_spell = str(aid)
+			break
+	assert_ne(dark_spell, "", "CONTROL: a single-hit dark magic spell must exist to drive it")
+	var affine := _caster("Affine")
+	affine.equipped_passives = ["undead_affinity"]
+	var plain := _caster("Plain")
+	var dark_ratio: float = _median_cast(affine, dark_spell, 60) / maxf(_median_cast(plain, dark_spell, 60), 1.0)
+	var fire_ratio: float = _median_cast(affine, "fire", 60) / maxf(_median_cast(plain, "fire", 60), 1.0)
+	gut.p("    %s ×%.2f with undead_affinity (authored %.2f) · fire ×%.2f (expect 1.00)" % [dark_spell, dark_ratio, authored, fire_ratio])
+	assert_almost_eq(dark_ratio, authored, 0.15,
+		"a grinding caster with undead_affinity must hit dark at its authored scale, as live's _element_damage_bonus does")
+	assert_almost_eq(fire_ratio, 1.0, 0.1,
+		"CONTROL: the passive is DARK only — fire must not gain it (the old magic_multiplier boosted every element)")

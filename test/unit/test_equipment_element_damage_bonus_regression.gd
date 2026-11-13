@@ -27,13 +27,16 @@ func test_magic_consults_helper_with_dynamic_key() -> void:
 	assert_gt(fn_idx, -1)
 	var next_fn: int = src.find("\nfunc ", fn_idx + 1)
 	var body: String = src.substr(fn_idx, next_fn - fn_idx) if next_fn > 0 else src.substr(fn_idx)
-	# Dynamic key construction so all five (fire/ice/light/dark/holy)
-	# inherit the same wire with no per-element conditionals.
-	assert_true(body.contains("_sum_equipment_special_effect(caster, element + \"_damage_bonus\")"),
-		"_execute_magic_ability must consult <element>_damage_bonus dynamically by element string")
-	# Bake into multiplier so all targets in the loop pick it up.
-	assert_true(body.contains("multiplier *= elem_bonus"),
-		"the elem_bonus must multiply the cast's damage_multiplier (so all per-target hits scale)")
+	# Bake into multiplier so all targets in the loop pick it up; the element scale lives in one helper the preview shares.
+	assert_true(body.contains("multiplier *= _element_damage_bonus(caster, element)"),
+		"_execute_magic_ability must multiply the cast's damage_multiplier by _element_damage_bonus (so all per-target hits scale)")
+	var h_idx: int = src.find("func _element_damage_bonus")
+	assert_gt(h_idx, -1, "_element_damage_bonus must exist")
+	var h_next: int = src.find("\nfunc ", h_idx + 1)
+	var helper: String = src.substr(h_idx, h_next - h_idx) if h_next > 0 else src.substr(h_idx)
+	# Dynamic key construction so all five (fire/ice/light/dark/holy) inherit the same wire with no per-element conditionals.
+	assert_true(helper.contains("_sum_equipment_special_effect(caster, element + \"_damage_bonus\")"),
+		"_element_damage_bonus must consult the gear's <element>_damage_bonus dynamically by element string")
 
 
 func test_skip_for_element_less_abilities() -> void:
@@ -126,3 +129,6 @@ func test_runtime_authored_element_returns_bonus() -> void:
 	var ice_bonus: float = bm._sum_equipment_special_effect(c, "ice_damage_bonus")
 	assert_eq(ice_bonus, 0.0,
 		"fire weapon must not contribute to ice_damage_bonus")
+	# The executor and preview read the gear through _element_damage_bonus: the weapon's own scale must arrive there whole.
+	assert_almost_eq(float(bm._element_damage_bonus(c, "fire")), bonus, 0.001,
+		"_element_damage_bonus must carry the fire weapon's bonus to the hit")
