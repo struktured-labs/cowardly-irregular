@@ -522,6 +522,7 @@ func test_the_trim_follows_the_finished_scenes_not_a_list() -> void:
 		"world2_maple_heights_npcs": ["world2_prologue", "world2_chapter1"],
 		"world3_brasston_npcs": ["world3_prologue", "world3_chapter1"],
 		"world4_rivet_row_npcs": ["world4_prologue", "world4_chapter1"],
+		"world5_node_prime_npcs": ["world5_prologue", "world5_chapter1"],
 	}
 	var party: Array = _loop._party_speaker_names()
 	var trimmed_any := false
