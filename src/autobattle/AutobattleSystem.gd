@@ -97,6 +97,7 @@ const CONDITION_TYPES = {
 	"enemy_has_status": "Enemy Has Status",
 	"not_enemy_has_status": "No Enemy Has Status",
 	"enemy_weak_to": "Enemy Weak To",
+	"enemy_resists": "Enemy Resists",
 	"ally_mp_percent": "Ally MP %",
 	"ally_dead": "Ally Is Down",
 	"is_night": "Is Night",
@@ -409,6 +410,16 @@ func _evaluate_grid_condition(combatant: Combatant, condition: Dictionary) -> bo
 					return true
 			return false
 
+		## The other half of the weakness read: don't open with fire when anything on the field shrugs it off.
+		"enemy_resists":
+			var resisted: String = str(condition.get("element", ""))
+			if resisted == "":
+				return false
+			for enemy in _get_enemies_for(combatant):
+				if resisted in enemy.elemental_resistances:
+					return true
+			return false
+
 		"enemy_hp_percent":
 			var target = _get_lowest_hp_enemy(combatant)
 			if target:
@@ -521,6 +532,7 @@ const CONDITION_REQUIRED_FIELD := {
 	"enemy_has_status": "status",
 	"not_enemy_has_status": "status",
 	"enemy_weak_to": "element",
+	"enemy_resists": "element",
 	"item_count": "item_id",
 	"has_buff": "stat",
 	"not_has_buff": "stat",

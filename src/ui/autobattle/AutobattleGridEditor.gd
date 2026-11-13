@@ -1202,6 +1202,8 @@ func _format_condition(condition: Dictionary) -> String:
 			return "No enemy has %s" % StatusNames.display(condition.get("status", ""))
 		"enemy_weak_to":
 			return "Enemy weak to %s" % str(condition.get("element", "?")).capitalize()
+		"enemy_resists":
+			return "Enemy resists %s" % str(condition.get("element", "?")).capitalize()
 		"enemy_hp_percent":
 			return "Enemy HP %s %d%%" % [op, value]
 		"ally_hp_percent":
@@ -2272,7 +2274,7 @@ func _apply_condition_type(new_type: String) -> void:
 			cond["weather"] = "rain"
 		cond.erase("op")
 		cond.erase("value")
-	elif new_type == "enemy_weak_to":
+	elif new_type == "enemy_weak_to" or new_type == "enemy_resists":
 		## fire is the most common weakness in the bestiary (38 of 106), so it is the seed that
 		## fires for the most players on the first press.
 		if not cond.has("element"):
@@ -2360,6 +2362,69 @@ func _handle_value_stick(event: InputEventJoypadMotion) -> bool:
 	return true
 
 
+## The stats a buff or debuff sits on (`Combatant.add_buff`'s `stat`), the seed first.
+const BUFF_STATS := ["defense", "attack", "magic", "magic_defense", "speed"]
+static var _payload_vocab: Dictionary = {}
+
+
+## What a condition's NAMED payload may be, per field, the seed first, derived from the game's own data so the dial offers what the evaluator can meet.
+static func payload_vocabulary(field: String) -> Array:
+	if _payload_vocab.has(field):
+		return _payload_vocab[field]
+	var out: Array = []
+	match field:
+		"element":
+			out.append("fire")
+			var counts: Dictionary = {}
+			var monsters = JSON.parse_string(FileAccess.get_file_as_string("res://data/monsters.json"))
+			if monsters is Dictionary:
+				for m in (monsters.get("monsters", monsters) as Dictionary).values():
+					if m is Dictionary:
+						for w in m.get("weaknesses", []):
+							counts[str(w)] = int(counts.get(str(w), 0)) + 1
+			var by_count: Array = counts.keys()
+			by_count.sort_custom(func(a, b): return counts[a] > counts[b] if counts[a] != counts[b] else str(a) < str(b))
+			var abilities = JSON.parse_string(FileAccess.get_file_as_string("res://data/abilities.json"))
+			var from_abilities: Array = []
+			if abilities is Dictionary:
+				for a in (abilities.get("abilities", abilities) as Dictionary).values():
+					if a is Dictionary and str(a.get("element", "")) != "":
+						from_abilities.append(str(a["element"]))
+			from_abilities.sort()
+			for e in by_count + from_abilities:
+				if e != "" and not out.has(e):
+					out.append(e)
+		"status":
+			## What a fight can PRODUCE: every status an ability, item or equipment row applies (aliases resolved), kept when the battle can badge it as a status. Not the badge table itself: a third of that is stat labels no has_status can be true of (cowir-battle 24542).
+			out.append("poison")
+			var scene: GDScript = load("res://src/battle/BattleScene.gd")
+			var icons: Dictionary = scene.get_script_constant_map().get("STATUS_ICON_CONFIG", {}) if scene != null else {}
+			var applied: Array = []
+			for path in ["res://data/abilities.json", "res://data/items.json", "res://data/equipment.json"]:
+				_collect_applied(JSON.parse_string(FileAccess.get_file_as_string(path)), applied)
+			applied.sort()
+			for raw in applied:
+				var st: String = Combatant.resolve_status_alias(str(raw))
+				if icons.has(st) and not st.ends_with("_up") and not st.ends_with("_down") and not out.has(st):
+					out.append(st)
+		"stat":
+			out = BUFF_STATS.duplicate()
+	_payload_vocab[field] = out
+	return out
+
+
+## Every string a data row names under an applying key, at any depth.
+static func _collect_applied(node, out: Array) -> void:
+	if node is Dictionary:
+		for k in node:
+			if str(k) in ["effect", "status", "status_effect"] and node[k] is String and not out.has(node[k]):
+				out.append(node[k])
+			_collect_applied(node[k], out)
+	elif node is Array:
+		for v in node:
+			_collect_applied(v, out)
+
+
 func _adjust_condition_value(delta: int) -> void:
 	"""Adjust condition value up/down - used with shoulder buttons"""
 	var rule = rules[cursor_row] if cursor_row >= 0 and cursor_row < rules.size() else {}
@@ -2389,7 +2454,13 @@ func _adjust_condition_value(delta: int) -> void:
 		## left `value: 55` on it that no evaluator reads, in the saved script and in share codes.
 		## item_count is in the same map and DOES keep op/value, so it must keep dialling; the
 		## discriminator is the condition's own shape, not a second list to maintain.
+		## ...and the NAME itself could not be chosen at all: the seed (fire / poison / defense) was the only value a grid-written rule could ever hold. The same dial now walks the payload's vocabulary.
 		if AutobattleSystem.CONDITION_REQUIRED_FIELD.has(cond_type) and not cond.has("value"):
+			var field: String = str(AutobattleSystem.CONDITION_REQUIRED_FIELD[cond_type])
+			var names: Array = payload_vocabulary(field)
+			if names.size() > 1:
+				cond[field] = names[wrapi(names.find(str(cond.get(field, ""))) + delta, 0, names.size())]
+				_refresh_grid()
 			return
 
 		var current_value = cond.get("value", 50)
@@ -3296,7 +3367,7 @@ func _simulate_states() -> Array:
 ## exact "the UI says something the engine doesn't do" defect. They are reported as
 ## undecidable instead of guessed.
 const _BATTLEFIELD_CONDITIONS: Array[String] = [
-	"enemy_count", "enemy_has_status", "not_enemy_has_status", "enemy_weak_to", "enemy_hp_percent",
+	"enemy_count", "enemy_has_status", "not_enemy_has_status", "enemy_weak_to", "enemy_resists", "enemy_hp_percent",
 	"ally_count", "ally_has_status", "ally_hp_percent", "ally_mp_percent",
 	"ally_dead",
 ]
