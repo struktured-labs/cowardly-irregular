@@ -11,10 +11,11 @@ const SLACK := 0.5
 
 func _contexts() -> Dictionary:
 	var out := {}
-	for m in (CO as GDScript).get_script_method_list():
+	var script: GDScript = CO
+	for m in script.get_script_method_list():
 		var n: String = str(m.get("name", ""))
 		if n.ends_with("_context") and int(m.get("flags", 0)) & METHOD_FLAG_STATIC:
-			out[n] = CO.call(n)
+			out[n] = script.call(n)
 	return out
 
 
