@@ -53,8 +53,11 @@ func test_resolve_attack_guards_divisor() -> void:
 	var rest := text.substr(idx)
 	var next_fn := rest.find("\nfunc ", 1)
 	var body := rest.substr(0, next_fn) if next_fn > -1 else rest
-	assert_true(body.contains("maxf(1.0, damage + def_val)"),
-		"_resolve_attack must guard `damage + def_val` with maxf(1.0, …) to avoid 0/0")
+	## The swing no longer divides here: it hands its amount to Combatant.take_damage, whose formula carries the guard.
+	assert_true(body.contains("target.take_damage(int(damage))") and not body.contains("/ denom"),
+		"_resolve_attack must hand the raw amount to take_damage and run no defence formula of its own")
+	assert_true(_read("res://src/battle/Combatant.gd").contains("var denom = max(1, amount + def_value)"),
+		"the one defence formula (Combatant.damage_preview) must guard `amount + def_value` to avoid 0/0")
 
 
 func test_resolve_attack_with_power_guards_divisor() -> void:
@@ -64,8 +67,8 @@ func test_resolve_attack_with_power_guards_divisor() -> void:
 	var rest := text.substr(idx)
 	var next_fn := rest.find("\nfunc ", 1)
 	var body := rest.substr(0, next_fn) if next_fn > -1 else rest
-	assert_true(body.contains("maxf(1.0, dmg + def_val)"),
-		"_resolve_attack_with_power must guard `dmg + def_val` with maxf(1.0, …)")
+	assert_true(body.contains("target.take_damage(") and not body.contains("/ denom"),
+		"_resolve_attack_with_power must hand the raw amount to take_damage and run no defence formula of its own")
 
 
 func test_no_bare_division_by_damage_plus_def_in_either_resolver() -> void:

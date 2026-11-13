@@ -593,6 +593,17 @@ func has_named_animation(anim_name: String) -> bool:
 	return sprite != null and sprite.sprite_frames != null and sprite.sprite_frames.has_animation(anim_name)
 
 
+## The sheet animation `play_named_animation(anim_name)` ends up SHOWING, for a caller that times something to the pose:
+## the name itself when the sheet has it, else the swing for the names that fall back to an attack, else the cast
+## (which a sheet with no cast draws as its attack). The few bespoke fallbacks (steal, backstab, mug, flee, defer) read as cast.
+func shown_animation_for(anim_name: String) -> String:
+	if sprite != null and sprite.sprite_frames != null and sprite.sprite_frames.has_animation(anim_name):
+		return anim_name
+	if anim_name in ["power_strike", "cleave", "provoke", "strike", "riff", "advance", "lunge", "dash"]:
+		return _resolve_animation("attack")
+	return _resolve_animation("cast")
+
+
 func play_named_animation(anim_name: String, on_complete: Callable = Callable()) -> void:
 	if _celebrating(on_complete):
 		return

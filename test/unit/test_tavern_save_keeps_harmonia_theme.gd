@@ -43,7 +43,10 @@ func _tavern_call() -> Array:
 	var src := FileAccess.get_file_as_string(TAVERN)
 	var ready_at := src.find("func _ready(")
 	assert_gt(ready_at, -1, "FLOOR: TavernInterior must still have _ready")
-	var body := src.substr(ready_at, 900)
+	## The whole of _ready, to the next top-level func: a 900-character window went red when a room gained two lines above the call (the walls tip, 2026-11-12).
+	var ready_end := src.find("\nfunc ", ready_at + 1)
+	var body := src.substr(ready_at) if ready_end < 0 else src.substr(ready_at, ready_end - ready_at)
+	assert_false(body.contains("\nfunc "), "FLOOR: the body read must stop at _ready's end, or a later function's call would satisfy this")
 	var m := RegEx.create_from_string("play_area_music\\(\\s*\"([^\"]+)\"(?:\\s*,\\s*([0-9.]+)\\s*,\\s*\"([^\"]+)\")?\\s*\\)").search(body)
 	assert_not_null(m, "FLOOR: TavernInterior._ready must call play_area_music")
 	var resume := 0.0
