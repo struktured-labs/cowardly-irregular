@@ -56,6 +56,7 @@ const HIDDEN := {
 	"world3_brasston_npcs": "LIVE",              # GameLoop._VILLAGE_INTROS, brasston_village
 	"world4_rivet_row_npcs": "LIVE",             # GameLoop._VILLAGE_INTROS, rivet_row_village
 	"world5_node_prime_npcs": "LIVE",            # GameLoop._VILLAGE_INTROS, node_prime_village
+	"world6_vertex_npcs": "LIVE",                # GameLoop._VILLAGE_INTROS, vertex_village
 }
 
 const SRC_DIRS := ["res://src/"]
