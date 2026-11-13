@@ -119,13 +119,16 @@ func test_the_grown_bar_clears_the_party_panel() -> void:
 		await get_tree().process_frame
 		var bar := scene.get_node_or_null("UI/InputHintBar") as Control
 		var party := scene.get_node_or_null("UI/PartyStatusPanel") as Control
-		if bar == null or party == null:
+		if bar == null or party == null or scene.party_members.size() < 5:
 			continue
 		measured += 1
 		var b: Rect2 = bar.get_global_rect()
 		var p: Rect2 = party.get_global_rect()
-		gut.p("%sx: bar %s · party %s" % [str(s), str(b), str(p)])
+		var screen_h: float = party.get_parent_area_size().y
+		gut.p("%sx: bar %s · party %s · screen h %d" % [str(s), str(b), str(p), int(screen_h)])
 		if b.intersects(p):
 			bad.append("%sx: bar %s over party %s" % [str(s), str(b), str(p)])
-	assert_eq(measured, _presets().size(), "CONTROL: the bar and the party panel must exist at every preset")
-	assert_eq(bad, [], "the hint bar must not cover the party panel at any Text Size: %s" % [bad])
+		if p.end.y > screen_h + 0.5:
+			bad.append("%sx: party panel bottom %d past the %d-tall screen (the last rows are not shown)" % [str(s), int(p.end.y), int(screen_h)])
+	assert_eq(measured, _presets().size(), "CONTROL: the bar, the party panel and a five-member party must exist at every preset")
+	assert_eq(bad, [], "the hint bar must not cover the party panel, and the panel must fit the screen, at every Text Size: %s" % [bad])
