@@ -227,7 +227,25 @@ static func _owner_of(surfs: Array, j: int) -> int:
 			return k
 		var have: Vector2 = rk.size
 		if have.x + CONTAIN_SLACK >= need.x and have.y + CONTAIN_SLACK >= need.y and minf(have.x, have.y) > minf(need.x, need.y) + CONTAIN_SLACK and have.x * have.y >= OWNER_AREA * need.x * need.y:
-			return k
+			var holder := _holder_of_both(surfs, k, rk, rj, nb)
+			return holder if holder != -1 else k
+	return -1
+
+
+## An earlier panel that holds BOTH the candidate k and the node: then k is a chip on that panel beside the node, not the
+## node's panel, at any Text Size (autogrind 25121: the OR badge vs its arrow passed the area ratio at 80% and 200%).
+## A drifted label's own panel is held by nothing, so the drift still breaks at it.
+static func _holder_of_both(surfs: Array, k: int, rk: Rect2, rj: Rect2, nb: Node) -> int:
+	for m in range(k - 1, -1, -1):
+		var nm = surfs[m].get("node")
+		if not (nm is Control) or not _draws_background(nm):
+			continue
+		var parent: Node = (nm as Node).get_parent()
+		if parent == null or not parent.is_ancestor_of(nb):
+			continue
+		var rm: Rect2 = (surfs[m]["rect"] as Rect2).grow(CONTAIN_SLACK)
+		if rm.encloses(rk) and rm.encloses(rj):
+			return m
 	return -1
 
 

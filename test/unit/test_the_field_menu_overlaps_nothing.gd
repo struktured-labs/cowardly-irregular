@@ -272,6 +272,10 @@ func test_a_neighbouring_chip_does_not_own_a_label() -> void:
 	var badge := _surf("Badge", chip, Rect2(20, 40, 28, 20))
 	var arrow := _surf("Arrow", _label(">", host), Rect2(52, 40, 16, 20))
 	assert_eq(OverlapAudit.collisions([panel, badge, arrow], {}), [], "a badge and the arrow beside it both sit on the panel that holds them")
+	# At other Text Sizes the badge is more than twice the arrow (the area ratio passes): it is still a neighbour, not the panel.
+	var big_badge := _surf("Badge", chip, Rect2(20, 40, 40, 24))
+	var small_arrow := _surf("Arrow", _label(">", host), Rect2(64, 42, 12, 18))
+	assert_eq(OverlapAudit.collisions([panel, big_badge, small_arrow], {}), [], "a chip more than twice the label's size is still a neighbour on their shared panel")
 
 
 func test_nothing_in_the_field_menu_overlaps_at_any_text_size() -> void:
