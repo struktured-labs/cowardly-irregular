@@ -963,7 +963,12 @@
       "Glacius: 'Back to serialized hibernation, then. Pity. You were almost interesting.'",
       "*The frost closes over the party like a save file sealing shut.*",
       "Glacius: 'See you next save file. Maybe you'll be more fun then.'"
-    ]
+    ],
+    "charge_line": "*Glacius draws the cavern's cold into one long breath. The frost on the floor creeps toward him.* Glacius: 'Let's see if you've learned anything since last time.'",
+    "interrupted_line": {
+      "bark": "...Oh. That was new.",
+      "log": "*The gathered frost scatters across the floor. Glacius's breath is broken, and for once he looks interested.*"
+    }
   },
   "voltharion": {
     "automation_lines": {
