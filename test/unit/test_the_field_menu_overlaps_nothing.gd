@@ -102,8 +102,8 @@ func test_a_flat_panel_owns_its_labels_and_nothing_else() -> void:
 
 
 ## The FLAT shape OverworldMenu really has (adhoc 24948): two panels, their borders and labels all siblings. A label that
-## drifted off panel B onto panel A belongs to B, so it is a finding on A; each panel's own label, and a thin border strip
-## before a label, change nothing.
+## drifted off panel B onto panel A belongs to B, so it is a finding on A; each panel's own label, and a border ring whose
+## strips are the same shape as each other, change nothing.
 func test_a_label_that_drifts_onto_another_flat_panel_is_a_finding() -> void:
 	var menu := Control.new()
 	add_child_autofree(menu)
@@ -113,14 +113,17 @@ func test_a_label_that_drifts_onto_another_flat_panel_is_a_finding() -> void:
 	var strip := ColorRect.new()
 	menu.add_child(strip)
 	var s := _surf("StripA", strip, Rect2(0, 0, 200, 4))
+	var strip2 := ColorRect.new()
+	menu.add_child(strip2)
+	var s2 := _surf("StripA2", strip2, Rect2(0, 96, 200, 4))
 	var la := _surf("LabelA", _label("a", menu), Rect2(10, 10, 50, 20))
 	var bg_b := ColorRect.new()
 	menu.add_child(bg_b)
 	var b := _surf("BgB", bg_b, Rect2(0, 120, 200, 100))
 	var stays := _surf("LabelB", _label("b", menu), Rect2(10, 130, 50, 20))
-	assert_eq(OverlapAudit.collisions([a, s, la, b, stays], {}), [], "CONTROL: each flat panel owns its own label, past a border strip")
+	assert_eq(OverlapAudit.collisions([a, s, s2, la, b, stays], {}), [], "CONTROL: each flat panel owns its own label and its border ring, past a strip of the same shape")
 	var drift := _surf("Drifted", _label("b", menu), Rect2(10, 40, 50, 20))
-	var hits: Array = OverlapAudit.collisions([a, s, la, b, drift], {})
+	var hits: Array = OverlapAudit.collisions([a, s, s2, la, b, drift], {})
 	assert_eq(hits.size(), 1, "panel B's label lying on panel A is a finding, not A's content: %s" % [hits])
 	assert_true(hits.size() == 1 and str(hits[0]).contains("BgA") and str(hits[0]).contains("Drifted"), "and it names the two: %s" % [hits])
 

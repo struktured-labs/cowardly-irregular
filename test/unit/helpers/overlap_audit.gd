@@ -165,10 +165,6 @@ static func _is_text(c: Control) -> bool:
 	return c is Button and (c as Button).text.strip_edges() != ""
 
 
-## The one surface j may be content of: the NEAREST earlier Control that paints a background (never a text-only node), sits
-## under whose own parent j lies, and is big enough to hold j (so border strips are skipped). -1 = none; a sprite_surface's
-## node is not a Control, so it has none. Only that owner, and only wholly enclosing j, makes the pair content: a label that
-## drifted off its own panel onto another sibling panel is a finding (battle 24944, adhoc 24943/24948).
 ## j is content of i when j's own OWNER holds it whole and i is further up that owner chain (a card's label -> the card
 ## -> the panel) and holds it too. A label that drifted off its own panel fails at the first link, so it is still a finding
 ## on the panel it lies on; a card hanging off its panel is reported once, as the card, not again for each row inside it.
@@ -181,11 +177,17 @@ static func _owned_by(surfs: Array, owner: Array, i: int, j: int) -> bool:
 	return k == i and (surfs[i]["rect"] as Rect2).grow(CONTAIN_SLACK).encloses(surfs[j]["rect"])
 
 
+## The one surface j may be content of: the NEAREST earlier Control that paints a background (never a text-only node), under
+## whose own parent j lies, and that either holds j whole or is big enough AND thicker than j, so one strip of a border ring
+## never owns the next while a panel a label drifted off still does. -1 = none; a sprite_surface's
+## node is not a Control, so it has none. Only that owner, and only wholly enclosing j, makes the pair content: a label that
+## drifted off its own panel onto another sibling panel is a finding (battle 24944, adhoc 24943/24948).
 static func _owner_of(surfs: Array, j: int) -> int:
 	var nb = surfs[j].get("node")
 	if not (nb is Control):
 		return -1
-	var need: Vector2 = (surfs[j]["rect"] as Rect2).size
+	var rj: Rect2 = surfs[j]["rect"]
+	var need: Vector2 = rj.size
 	for k in range(j - 1, -1, -1):
 		var na = surfs[k].get("node")
 		if not (na is Control) or not _draws_background(na):
@@ -193,8 +195,11 @@ static func _owner_of(surfs: Array, j: int) -> int:
 		var parent: Node = (na as Node).get_parent()
 		if parent == null or not parent.is_ancestor_of(nb):
 			continue
-		var have: Vector2 = (surfs[k]["rect"] as Rect2).size
-		if have.x + CONTAIN_SLACK >= need.x and have.y + CONTAIN_SLACK >= need.y:
+		var rk: Rect2 = surfs[k]["rect"]
+		if rk.grow(CONTAIN_SLACK).encloses(rj):
+			return k
+		var have: Vector2 = rk.size
+		if have.x + CONTAIN_SLACK >= need.x and have.y + CONTAIN_SLACK >= need.y and minf(have.x, have.y) > minf(need.x, need.y) + CONTAIN_SLACK:
 			return k
 	return -1
 
