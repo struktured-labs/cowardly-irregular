@@ -312,7 +312,8 @@ func _create_party_panel(panel_size: Vector2) -> Control:
 	var gold_lbl = Label.new()
 	gold_lbl.name = "GoldLabel"
 	gold_lbl.text = "%d G" % (GameState.get_gold() if GameState and GameState.has_method("get_gold") else 0)
-	var title_w: float = title.get_minimum_size().x
+	var mf: Font = _menu_font()
+	var title_w: float = mf.get_string_size(title.text, HORIZONTAL_ALIGNMENT_LEFT, -1, TextScale.scaled(14)).x if mf != null else title.get_minimum_size().x
 	gold_lbl.position = Vector2(8 + title_w + 8, 4)
 	gold_lbl.size = Vector2(maxf(0.0, panel_size.x - 24 - title_w), 20.0 * _card_k())
 	gold_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
@@ -400,7 +401,7 @@ func _create_character_card(member: Combatant, index: int) -> Control:
 	var job_label = Label.new()
 	job_label.name = "JobLabel"
 	job_label.text = card_job_text(member)
-	job_label.position = Vector2(58, 20.0 * k)
+	job_label.position = Vector2(58, 22.0 * k)  # 2 below the name's 20-line: a name's g/y touched the job's capitals at 20 (ink-measured)
 	job_label.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	job_label.add_theme_color_override("font_color", SUBTITLE_COLOR)
 	card.add_child(job_label)

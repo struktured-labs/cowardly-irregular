@@ -8,8 +8,10 @@ const OverlapAudit = preload("res://test/unit/helpers/overlap_audit.gd")
 const OverworldMenuScript = preload("res://src/ui/OverworldMenu.gd")
 const CombatantScript = preload("res://src/battle/Combatant.gd")
 
-## Intended overlaps, {"a|b": "reason"}. Empty until the first census names what the menu draws on purpose.
-const DECLARED := {}
+## Intended overlaps, {"a|b": "reason"}, each from a census and each backed by an arm that measures what the reason claims.
+const DECLARED := {
+	"GutRunner/NameLabel|GutRunner/JobLabel": "the name's 20-line keeps descender room 2*k px into the job row; the letters clear by a pixel at every Text Size (test_a_name_and_its_job_line_do_not_touch_in_ink)",
+}
 
 
 func after_each() -> void:
@@ -105,7 +107,8 @@ func test_a_flat_panel_owns_its_labels_and_nothing_else() -> void:
 
 ## The FLAT shape OverworldMenu really has (adhoc 24948): two panels, their borders and labels all siblings. A label that
 ## drifted off panel B onto panel A belongs to B, so it is a finding on A; each panel's own label, and a border ring whose
-## strips are the same shape as each other, change nothing.
+## strips are the same shape as each other, change nothing. Panel B is smaller than A, so A could own B: the drifted label must
+## still fail at its own first link (B does not hold it), not be passed up the chain to A.
 func test_a_label_that_drifts_onto_another_flat_panel_is_a_finding() -> void:
 	var menu := Control.new()
 	add_child_autofree(menu)
@@ -121,7 +124,7 @@ func test_a_label_that_drifts_onto_another_flat_panel_is_a_finding() -> void:
 	var la := _surf("LabelA", _label("a", menu), Rect2(10, 10, 50, 20))
 	var bg_b := ColorRect.new()
 	menu.add_child(bg_b)
-	var b := _surf("BgB", bg_b, Rect2(0, 120, 200, 100))
+	var b := _surf("BgB", bg_b, Rect2(0, 120, 180, 80))
 	var stays := _surf("LabelB", _label("b", menu), Rect2(10, 130, 50, 20))
 	assert_eq(OverlapAudit.collisions([a, s, s2, la, b, stays], {}), [], "CONTROL: each flat panel owns its own label and its border ring, past a strip of the same shape")
 	var drift := _surf("Drifted", _label("b", menu), Rect2(10, 40, 50, 20))
@@ -208,7 +211,7 @@ func _ink_rows(l: Label, text: String) -> Vector2:
 	return Vector2(top, bottom)
 
 
-## MEASUREMENT for NameLabel ∩ JobLabel (the name's line box reaches 4·k px into the job row): do the LETTERS touch? The
+## NameLabel ∩ JobLabel: at a 20·k job line the letters DID touch (-1.0 px at 100%, -1.2 at 125%, measured .798). The
 ## lowest descender a name can have against the tallest letter a job name has (job names are ASCII), at every Text Size.
 func test_a_name_and_its_job_line_do_not_touch_in_ink() -> void:
 	var gaps: Array = []
@@ -221,7 +224,7 @@ func test_a_name_and_its_job_line_do_not_touch_in_ink() -> void:
 		var high: Vector2 = _ink_rows(job_l, "ABDEFHKLTbdfhklt")
 		assert_gt(low.y - low.x, 2.0, "CONTROL: the name's glyphs have ink at %s%% (%s)" % [s, low])
 		gaps.append("at %s%%, %.1f px (name ink to %.1f, job ink from %.1f; boxes overlap %.1f)" % [int(roundf(float(s) * 100.0)), high.x - low.y, low.y, high.x, name_l.position.y + name_l.size.y - job_l.position.y])
-		assert_gt(high.x - low.y, 0.0, "a name's descender clears the job line's tallest letter at %s%%: %s" % [s, gaps.back()])
+		assert_gte(high.x - low.y, 0.99, "a name's descender clears the job line's tallest letter by a pixel at %s%%: %s" % [s, gaps.back()])
 		m.queue_free()
 		await get_tree().process_frame
 	gut.p("ink gaps, name descender -> job letter: %s" % [gaps])
