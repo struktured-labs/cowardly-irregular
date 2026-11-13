@@ -15180,6 +15180,18 @@
       "seed": 42,
       "whisper_heard": "Carry on, I will be taking notes.",
       "whisper_score": 1.0
+    },
+    "boss_charge_gather": {
+      "file": "assets/audio/sfx/boss_charge_gather.ogg",
+      "prompt": "Fired by BattleScene on BattleManager.boss_charge_changed(boss, true), once per charge (the edge, never the quiet turns). A boss DRAWING ITS BREATH: air pulled in with its band opening upward over a low body climbing 70->155 Hz, a fast-tremolo shimmer at the top; it rises and never resolves, because the signature that follows keeps its own cue. -19 dB active-RMS. numpy synthesis, not heard by struktured yet.",
+      "duration_seconds": 1.15,
+      "source": "tools/gen_charge_cues.py boss_charge_gather"
+    },
+    "boss_charge_broken": {
+      "file": "assets/audio/sfx/boss_charge_broken.ogg",
+      "prompt": "Fired by BattleScene on BattleManager.boss_charge_broken(boss, status), when a stun or silence lands on a charging boss. The gathered power SNAPS and spills: a bright crack, the gather's climb run backwards (240->55 Hz) and a scatter of thinning sparks, so the pair reads as one breath taken and lost. -17.5 dB active-RMS. numpy synthesis, not heard by struktured yet.",
+      "duration_seconds": 0.51,
+      "source": "tools/gen_charge_cues.py boss_charge_broken"
     }
   }
 }

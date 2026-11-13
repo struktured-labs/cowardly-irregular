@@ -47,6 +47,7 @@ const NOT_A_REWRITER := {
 	"gen_quest_accept_jingle.sh": "GENERATES quest_accept.ogg from sox synthesis; 44.1 kHz is the rate the samples are MADE at, so no master can disagree with it",
 	"gen_pickup_small.sh": "GENERATES pickup_small.ogg from sox synthesis; same",
 	"gen_steam_bed.py": "GENERATES; same",
+	"gen_charge_cues.py": "GENERATES the boss-charge gather and break cues from numpy synthesis at 44.1 kHz, the rate the samples are MADE at; no master is its input",
 	"gen_family_cues.py": "GENERATES the monster-family, tier-2 impact and wore-off cues from numpy synthesis at 44.1 kHz, the rate the samples are MADE at; no master is its input",
 	"gen_sequence_beats.py": "GENERATES the ability-sequence beat cues from numpy synthesis at 44.1 kHz, the rate the samples are MADE at; no master is its input",
 	"seam_loop_beds.py": "reads and reports seam figures",

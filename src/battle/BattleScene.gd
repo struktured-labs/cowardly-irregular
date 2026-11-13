@@ -497,6 +497,8 @@ func _ready() -> void:
 	BattleManager.action_executing.connect(_on_action_executing)
 	BattleManager.action_executed.connect(_on_action_executed)
 	BattleManager.boss_face_changed.connect(_on_boss_face_changed)
+	BattleManager.boss_charge_changed.connect(_on_boss_charge_changed)
+	BattleManager.boss_charge_broken.connect(_on_boss_charge_broken)
 	# Item 19: user report "bard was briefly stuck for a turn next to
 	# the monsters on the left he presumably recently attacked" —
 	# stray displaced sprite from an interrupted return-home tween.
@@ -614,6 +616,10 @@ func _exit_tree() -> void:
 		BattleManager.action_executed.disconnect(_on_action_executed)
 	if BattleManager.boss_face_changed.is_connected(_on_boss_face_changed):
 		BattleManager.boss_face_changed.disconnect(_on_boss_face_changed)
+	if BattleManager.boss_charge_changed.is_connected(_on_boss_charge_changed):
+		BattleManager.boss_charge_changed.disconnect(_on_boss_charge_changed)
+	if BattleManager.boss_charge_broken.is_connected(_on_boss_charge_broken):
+		BattleManager.boss_charge_broken.disconnect(_on_boss_charge_broken)
 	if BattleManager.round_ended.is_connected(_on_round_ended):
 		BattleManager.round_ended.disconnect(_on_round_ended)
 	if BattleManager.round_started.is_connected(_on_round_started_snap_home):
@@ -7464,6 +7470,17 @@ func _on_hit_negated(target: Combatant, banner: String) -> void:
 		return
 	_results_display.on_hit_negated(target, banner)
 	SoundManager.play_battle("attack_miss")
+
+
+## A boss drawing its breath is heard once, on the rising edge; the release keeps the signature's own cue.
+func _on_boss_charge_changed(_boss: Combatant, charging: bool) -> void:
+	if charging:
+		SoundManager.play_battle("boss_charge_gather")
+
+
+## A stun or silence that breaks the charge: the gathered power snaps and spills.
+func _on_boss_charge_broken(_boss: Combatant, _status: String) -> void:
+	SoundManager.play_battle("boss_charge_broken")
 
 
 ## A cast that could not pay: the banner and cast_fizzle, never attack_miss (a fizzle is not a miss; sfx 23446).
