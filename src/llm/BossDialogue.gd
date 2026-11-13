@@ -217,6 +217,28 @@ func get_backstab_widens_crack_line(boss_id: String) -> String:
 	return _random_pool_line(boss_id, "backstab_widens_crack_lines")
 
 
+## A boss's charge-turn words (main 24676: the text lives here; monsters.json's cadence row is mechanics only). Empty fields when unauthored.
+func get_charge_lines(boss_id: String) -> Dictionary:
+	var barks: Array[String] = []
+	var out := {"charge_line": "", "charge_barks": barks, "interrupted_bark": "", "interrupted_log": ""}
+	if not has_entry(boss_id) or not (_data[boss_id] is Dictionary):
+		return out
+	var entry: Dictionary = _data[boss_id]
+	if entry.get("charge_line") is String:
+		out["charge_line"] = str(entry["charge_line"]).strip_edges()
+	var authored = entry.get("charge_barks", [])
+	if authored is Array:
+		for b in authored:
+			if b is String and not (b as String).strip_edges().is_empty():
+				barks.append((b as String).strip_edges())
+	var interrupted = entry.get("interrupted_line", {})
+	if interrupted is Dictionary:
+		for k in ["bark", "log"]:
+			if (interrupted as Dictionary).get(k) is String:
+				out["interrupted_" + k] = str((interrupted as Dictionary)[k]).strip_edges()
+	return out
+
+
 ## Shared helper for the optional victory_lines / defeat_lines pools. Returns a
 ## random non-empty string from the named pool, or "" when the boss has no
 ## section, the pool key is absent, the value is not an Array, or the Array is
