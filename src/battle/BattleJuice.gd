@@ -21,6 +21,31 @@ signal rumble_wanted(amount: float)
 var _last_rumble_at: float = -1.0
 var _last_rumble_amount: float = 0.0
 
+## A boss drawing its breath is felt as well as seen: a soft pulse when the charge starts, a sharper tick when the
+## party breaks it (the payoff). The release needs nothing here; the signature's own hit already rumbles.
+const CHARGE_RUMBLE := 0.25
+const BREAK_RUMBLE := 0.5
+
+
+## BattleManager is an earlier autoload, so its charge signals exist here; listening here keeps every rumble in one owner.
+func _ready() -> void:
+	var bm: Node = get_node_or_null("/root/BattleManager")
+	if bm == null:
+		return
+	if bm.has_signal("boss_charge_changed") and not bm.boss_charge_changed.is_connected(_on_boss_charge_changed):
+		bm.boss_charge_changed.connect(_on_boss_charge_changed)
+	if bm.has_signal("boss_charge_broken") and not bm.boss_charge_broken.is_connected(_on_boss_charge_broken):
+		bm.boss_charge_broken.connect(_on_boss_charge_broken)
+
+
+func _on_boss_charge_changed(_boss: Node, charging: bool) -> void:
+	if charging:
+		rumble(CHARGE_RUMBLE)
+
+
+func _on_boss_charge_broken(_boss: Node, _status: String) -> void:
+	rumble(BREAK_RUMBLE)
+
 
 func flag(feature: String) -> bool:
 	if GameState and "battle_fx_flags" in GameState and GameState.battle_fx_flags.has(feature):

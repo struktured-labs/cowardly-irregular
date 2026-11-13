@@ -255,6 +255,7 @@ func test_keep_music_defaults_off_for_every_other_scene() -> void:
 			"world2_oak_street_npcs.json",
 			"world3_brasston_npcs.json",
 			"world4_rivet_row_npcs.json",
+			"world5_node_prime_npcs.json",
 		],
 		"a new keep_music opt-in is fine, but it is a deliberate audio change worth noticing — declare it here: %s" % str(opted))
 

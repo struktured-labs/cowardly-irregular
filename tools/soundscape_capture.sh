@@ -27,8 +27,10 @@ for V in "${VILLAGES[@]}"; do
     -s tools/soundscape_capture.gd -- "--village=$V" "--take=$T" > "$LOG" 2>&1 || EC=$?
   command grep -a -E '^\[SCAPECAP\] (source|soundscape_place|nightfall|done)|SCAPECAP\]|ERROR' "$LOG" | command grep -av 'event ' || true
   N=$(find "$D" -name 'f*.png' | wc -l)
-  if [ "$EC" -ne 0 ] || [ "$N" -lt 100 ] || [ ! -s "$D/f.wav" ]; then
-    echo "[scape] $N_ FAILED (exit $EC, $N frames, wav=$( [ -s "$D/f.wav" ] && echo yes || echo no )) — $LOG" >&2
+  # Judged by its artifacts, not $?: a windowed godot under xvfb exits 1 even on quit(0) (cowir-cutscenes 24639); 124 is the timeout.
+  DONE=$(command grep -ac '^\[SCAPECAP\] done' "$LOG" || true)
+  if [ "$EC" -eq 124 ] || [ "$DONE" -lt 1 ] || [ "$N" -lt 100 ] || [ ! -s "$D/f.wav" ]; then
+    echo "[scape] $N_ FAILED (exit $EC, done=$DONE, $N frames, wav=$( [ -s "$D/f.wav" ] && echo yes || echo no )) — $LOG" >&2
     _FAILED=1; continue
   fi
   ffmpeg -v error -y -framerate "$FPS" -i "$D/f%08d.png" -i "$D/f.wav" -c:v libx264 -pix_fmt yuv420p -c:a aac -b:a 160k -shortest "tmp/soundscape/$N_.mp4"

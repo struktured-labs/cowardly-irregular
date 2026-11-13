@@ -64,6 +64,10 @@ signal party_combat_line(combatant: Combatant, line: String, voice_trigger: Stri
 ## taunt or when a jailbreak narration line is generated. BattleScene listens
 ## and pops a small bubble above the enemy sprite (non-blocking).
 signal boss_taunt(boss: Combatant, line: String)
+## A cadence boss started or stopped charging its signature (edges only: a two-turn charge emits true once).
+signal boss_charge_changed(boss: Combatant, charging: bool)
+## A stun/silence/sleep landing mid-charge broke the breath.
+signal boss_charge_broken(boss: Combatant, status: String)
 ## boss_jailbreak_landed: emitted after a player directive trips a
 ## vulnerability and the consequence has been applied to the boss. The UI
 ## shows the diegetic '⚠ DIRECTIVE OVERRIDE ACCEPTED' banner.
@@ -317,6 +321,7 @@ var _all_enemies_initial_count: int = 0  # Total enemies at battle start
 ## fanned out N times after N battles.
 var _died_callbacks: Dictionary = {}
 var _doom_callbacks: Dictionary = {}
+var _cadence_callbacks: Dictionary = {}
 var _hp_callbacks: Dictionary = {}
 ## Lowest HP% any PC REACHED this battle. Final-frame state cannot see a dip that was healed back.
 var _battle_low_water_pct: float = 100.0
@@ -395,7 +400,7 @@ var _battle_action_log: Array[Dictionary] = []  # Log every player action per ba
 const PER_BATTLE_METAS: Array[String] = [
 	"_summon_followup", "_damage_absorb_budget", "_regen_per_turn", "_next_attack_multiplier",
 	"_mind_swap_controller", "_steal_response_consumed", "_swayed_stacks", "_utility_spent",
-	"_signature_fired", "_base_speed", "_boss_face_index", "_calibrant_recalibrated",
+	"_signature_fired", "_cadence", "_base_speed", "_boss_face_index", "_calibrant_recalibrated",
 	"_learned_adaptation", "_learns_element_counts", "_last_ability_against", "_bark_n",
 	"_in_shared_damage_redirect", "_shadow_step_unswung", "_armor_thorns_element",
 	## ⚠️ TRAILING UNDERSCORE = PREFIX, and these two are why the clear cannot be exact-match only:
@@ -748,6 +753,10 @@ func start_battle(players: Array[Combatant], enemies: Array[Combatant]) -> void:
 			var dcb = _on_doom_ticked.bind(combatant)
 			_doom_callbacks[combatant] = dcb
 			combatant.doom_ticked.connect(dcb)
+		if not _cadence_config(combatant).is_empty():
+			var ccb = _on_cadence_status.bind(combatant)
+			_cadence_callbacks[combatant] = ccb
+			combatant.status_added.connect(ccb)
 
 	# Clear action log for adaptive AI
 	_battle_action_log.clear()
@@ -989,6 +998,7 @@ func apply_post_battle_restore(party: Array) -> Dictionary:
 func end_battle(victory: bool) -> void:
 	"""End the current battle"""
 	_wd_armed = false
+	_settle_cadence_edges()
 	# Read before clearing. A grind that stopped mid-fight must still be paid here — its settler is gone.
 	var defer_payout: bool = victory and _defer_victory_payout()
 	defer_victory_payout = false
@@ -1432,9 +1442,16 @@ func _disconnect_combatant_signals() -> void:
 		var hcb = _hp_callbacks[combatant]
 		if hcb and combatant.has_signal("hp_changed") and combatant.hp_changed.is_connected(hcb):
 			combatant.hp_changed.disconnect(hcb)
+	for combatant in _cadence_callbacks.keys():
+		if not is_instance_valid(combatant):
+			continue
+		var ccb = _cadence_callbacks[combatant]
+		if ccb and combatant.status_added.is_connected(ccb):
+			combatant.status_added.disconnect(ccb)
 	_died_callbacks.clear()
 	_doom_callbacks.clear()
 	_hp_callbacks.clear()
+	_cadence_callbacks.clear()
 
 
 func _cleanup_battle() -> void:
@@ -2756,7 +2773,8 @@ func _process_ai_selection(combatant: Combatant) -> void:
 	## Enemies only. A player character routed here (trusted / spotlight-locked) used to take
 	## this branch too, and it hardcodes basic attacks — a Cleric spent 3 AP on ~41-damage
 	## swings instead of casting. PCs fall through to the ability-aware decision below.
-	var should_advance = not is_player_controlled and randf() < 0.15 and combatant.current_ap >= 0
+	var should_advance = not is_player_controlled and randf() < 0.15 and combatant.current_ap >= 0 \
+			and not BossCadence.is_charging(combatant.get_meta("_cadence", {}))
 
 	if should_advance and combatant.current_ap >= 1:
 		# Queue multiple attacks as advance (each action costs 1 AP)
@@ -2782,7 +2800,7 @@ func _process_ai_selection(combatant: Combatant) -> void:
 
 	# Check if monster wants to summon reinforcements
 	var can_summon = _can_monster_summon(combatant)
-	if can_summon and randf() < 0.12:  # 12% chance to summon
+	if can_summon and randf() < 0.12 and not BossCadence.is_charging(combatant.get_meta("_cadence", {})):  # 12% chance to summon
 		var summon_action = {
 			"type": "summon",
 			"combatant": combatant,
@@ -2798,6 +2816,78 @@ func _process_ai_selection(combatant: Combatant) -> void:
 	var action = _make_ai_decision(combatant, alive_allies, alive_enemies)
 	_queue_action(action)
 	_end_selection_turn()
+
+
+## The `cadence` row of this combatant's monster, normalised; {} for anyone without one.
+func _cadence_config(combatant: Combatant) -> Dictionary:
+	if combatant == null or not combatant.has_meta("monster_type") or not EncounterSystem:
+		return {}
+	var row: Variant = EncounterSystem.monster_database.get(str(combatant.get_meta("monster_type", "")), null)
+	return BossCadence.config(row) if row is Dictionary else {}
+
+
+## Steps the boss's clock: a charge beat telegraphs, a release casts the signature at its full reach. {} plays the ladder.
+func _cadence_action(boss: Combatant, alive_enemies: Array, quiet: bool) -> Dictionary:
+	var cfg := _cadence_config(boss)
+	if cfg.is_empty() or alive_enemies.is_empty():
+		return {}
+	var before: Dictionary = boss.get_meta("_cadence", {})
+	var step: Dictionary = BossCadence.next(before, cfg)
+	var after: Dictionary = step["state"]
+	boss.set_meta("_cadence", after)
+	var now_charging := BossCadence.is_charging(after)
+	if not quiet and BossCadence.is_charging(before) != now_charging:
+		boss_charge_changed.emit(boss, now_charging)
+	var sig := str(cfg["signature"])
+	match str(step["beat"]):
+		BossCadence.BEAT_CHARGE:
+			return {"type": "charge", "combatant": boss, "ability_id": sig, "speed": _compute_action_speed(boss, "attack")}
+		BossCadence.BEAT_RELEASE:
+			var ability: Dictionary = JobSystem.get_ability(sig)
+			if ability.is_empty():
+				return {}
+			## The breath was drawn on the charge turn, so the release never fizzles for MP.
+			boss.current_mp = maxi(boss.current_mp, JobSystem.get_ability_mp_cost(boss, sig))
+			var targets: Array = alive_enemies.duplicate() if str(ability.get("target_type", "")) == "all_enemies" \
+				else [_choose_target(boss, alive_enemies, ability)]
+			return {"type": "ability", "combatant": boss, "ability_id": sig, "targets": targets,
+				"speed": _compute_action_speed(boss, "ability", ability)}
+	return {}
+
+
+## The boss's authored charge words from boss_dialogue.json; every key present, empty when unauthored.
+func _charge_lines(boss: Combatant) -> Dictionary:
+	var dlg = get_node_or_null("/root/BossDialogue")
+	if dlg == null or not dlg.has_method("get_charge_lines"):
+		return {}
+	return dlg.get_charge_lines(_boss_persona_id(boss))
+
+
+## The charge turn: the boss spends it gathering, and says so in its own words when story authored them.
+func _execute_boss_charge(boss: Combatant, ability_id: String) -> void:
+	var authored := str(_charge_lines(boss).get("charge_line", ""))
+	battle_log_message.emit("[color=cyan]%s[/color]" % authored if authored != "" \
+		else "[color=cyan]%s is gathering power for %s![/color]" % [boss.combatant_name, _ability_display_name(ability_id)])
+
+
+## A status landed on a cadence boss; an interrupting one mid-charge breaks the breath.
+func _on_cadence_status(status: String, boss: Combatant) -> void:
+	var after := BossCadence.on_status(boss.get_meta("_cadence", {}), _cadence_config(boss), status)
+	boss.set_meta("_cadence", after)
+	if bool(after.get("interrupted", false)):
+		var broken_log := str(_charge_lines(boss).get("interrupted_log", ""))
+		battle_log_message.emit("[color=yellow]%s[/color]" % broken_log if broken_log != "" \
+			else "[color=yellow]%s's charge is broken![/color]" % boss.combatant_name)
+		boss_charge_broken.emit(boss, status)
+		boss_charge_changed.emit(boss, false)
+
+
+## Battle over: every boss still charging stops, once, so a listener never holds its charge state into the next fight.
+func _settle_cadence_edges() -> void:
+	for c in enemy_party:
+		if is_instance_valid(c) and c.has_meta("_cadence") and BossCadence.is_charging(c.get_meta("_cadence", {})):
+			c.set_meta("_cadence", BossCadence.fresh_state())
+			boss_charge_changed.emit(c, false)
 
 
 ## The action the live ladder picks for an enemy, with none of the theatre: HeadlessBattleResolver asks this, so a grind
@@ -2831,6 +2921,14 @@ func _make_ai_decision(combatant: Combatant, alive_allies: Array, alive_enemies:
 	# ladders via combatant.get_meta("llm_intent"); those ladders read
 	# the meta to bias their weighted choices (no abilities invented).
 	_update_boss_dialogue_phase(combatant, quiet)
+
+	var cadence_action := _cadence_action(combatant, alive_enemies, quiet)
+	if not cadence_action.is_empty():
+		return cadence_action
+	## A clocked signature is the clock's alone: the ladder casting it unannounced would make the charge and enemy_signature_in lie.
+	var clocked_sig := str(_cadence_config(combatant).get("signature", ""))
+	if clocked_sig != "":
+		available_abilities = available_abilities.filter(func(a): return str(a.get("id", "")) != clocked_sig)
 
 	# Masterite bosses use specialized AI
 	if combatant.has_meta("masterite") and combatant.get_meta("masterite"):
@@ -4421,6 +4519,8 @@ func _execute_next_action() -> void:
 			_execute_escape_ability(combatant, JobSystem.get_ability("flee"))
 		"summon":
 			_execute_summon(combatant, action.get("monster_type", "slime"))
+		"charge":
+			_execute_boss_charge(combatant, str(action.get("ability_id", "")))
 		"advance":
 			_execute_advance(combatant, action)
 			return  # Advance handles its own continuation
@@ -8829,6 +8929,9 @@ func _roll_permanent_injury(combatant: Combatant) -> Dictionary:
 
 
 func _on_combatant_died(combatant: Combatant) -> void:
+	if combatant.has_meta("_cadence") and BossCadence.is_charging(combatant.get_meta("_cadence", {})):
+		combatant.set_meta("_cadence", BossCadence.fresh_state())
+		boss_charge_changed.emit(combatant, false)
 	# deferred: died fires inside take_damage, before the killing blow's damage line prints
 	call_deferred("_print_defeat_line", combatant.combatant_name)
 	# Track party member KOs for permanent injury system
@@ -9774,6 +9877,12 @@ func _build_boss_intent_context(
 	if gs_clock != null and gs_clock.has_method("get_time_of_day_name"):
 		ctx.time_of_day = str(gs_clock.get_time_of_day_name())
 	ctx.party_automation = _resolve_party_automation_tier()
+	var cadence_cfg := _cadence_config(combatant)
+	if not cadence_cfg.is_empty():
+		var clock: Dictionary = combatant.get_meta("_cadence", {})
+		ctx.signature_id = str(cadence_cfg["signature"])
+		ctx.signature_in = BossCadence.turns_to_release(clock, cadence_cfg)
+		ctx.charging = BossCadence.is_charging(clock)
 
 	for member in player_party:
 		if member == null:

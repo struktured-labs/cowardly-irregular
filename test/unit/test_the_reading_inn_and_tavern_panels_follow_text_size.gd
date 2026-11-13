@@ -42,6 +42,7 @@ func _wrapped_h(text: String, width: float, px: int, align: int) -> float:
 func _inn_messages() -> Array:
 	var inn: Node = autofree(InnScript.new())
 	var out: Array = []
+	var dead: Array[String] = ["Fighter", "Cleric"]
 	for key in InnDialogue.village_keys():
 		var map_id: String = str(key) + "_village"
 		for purse in [-1, 5, 100000]:
@@ -51,7 +52,7 @@ func _inn_messages() -> Array:
 			var v = lines.get(kind, [])
 			for line in (v if v is Array else [v]):
 				if str(line) != "":
-					out.append(str(line) + "\nHP and MP restored. (-%d G)\nFighter, Cleric cannot be roused — that death is permanent." % InnScript.REST_COST)
+					out.append(InnScript.morning_text(str(line), dead))
 					out.append(str(line) + "\nNeed %d G, you have %d G." % [InnScript.REST_COST, 3])
 	out.append("Not enough gold!\nNeed %d G, you have %d G." % [InnScript.REST_COST, 3])
 	return out

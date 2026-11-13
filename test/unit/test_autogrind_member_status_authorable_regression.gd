@@ -50,7 +50,7 @@ func test_every_offered_status_is_one_the_game_can_actually_show() -> void:
 	## their party.
 	var displayable: Dictionary = load(BATTLE_SCENE).STATUS_ICON_CONFIG
 	assert_gt(displayable.size(), 0, "control: the icon config must be readable, or this proves nothing")
-	var ring: Array = load(UI).MEMBER_STATUS_RING
+	var ring: Array = load(UI).member_status_ring()
 	assert_gt(ring.size(), 0, "control: the ring must be non-empty")
 	var undisplayable: Array = []
 	for st in ring:
@@ -74,7 +74,7 @@ func test_a_freshly_typed_member_status_condition_is_not_numeric() -> void:
 	var dv = AutogrindSystem.condition_defaults_for("member_status").get("value", 0)
 	assert_eq(typeof(dv), TYPE_STRING,
 		"a member_status condition seeded with a NUMBER asks has_status('0') and can never fire")
-	assert_true(load(UI).MEMBER_STATUS_RING.has(str(dv)),
+	assert_true(load(UI).member_status_ring().has(str(dv)),
 		"the seeded default must be a status the ring can cycle from, or the first press jumps")
 
 
@@ -89,7 +89,7 @@ func test_cycling_the_status_writes_a_name_the_evaluator_can_use() -> void:
 	u._cycle_status_on_cursor_cell()
 	var after: String = str(u.rules[0]["conditions"][0]["value"])
 	assert_ne(after, before, "cycling must change the status")
-	assert_true(load(UI).MEMBER_STATUS_RING.has(after),
+	assert_true(load(UI).member_status_ring().has(after),
 		"cycling must land on a ring entry, not an arbitrary value: %s" % after)
 
 
@@ -106,7 +106,7 @@ func test_a_console_authored_status_rule_fires_when_the_member_has_it() -> void:
 	## add_status("0") / has_status("0") round-trips happily and this test would pass while the
 	## condition was dead in practice. Pin the value's shape here as well.
 	assert_eq(typeof(seeded), TYPE_STRING, "precondition: the seeded default is a status NAME")
-	assert_true(load(UI).MEMBER_STATUS_RING.has(seeded),
+	assert_true(load(UI).member_status_ring().has(seeded),
 		"precondition: the seeded default is a real affliction, not any string that round-trips")
 	var cond := {"type": "member_status", "member": "cleric", "value": seeded}
 

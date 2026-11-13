@@ -22,7 +22,11 @@ env -u WAYLAND_DISPLAY XDG_DATA_HOME="$_XDG" "${JAIL[@]}" timeout 300 xvfb-run -
   -s tools/inn_clip.gd -- "$@" < /dev/null > "$LOG" 2>&1 || EC=$?
 command grep -a -E '^\[ICLIP\]|SCRIPT ERROR|Parse Error' "$LOG" || true
 [ -e "$_XDG/godot" ] || { echo "[iclip] BLOCKED: the sandbox at $_XDG is empty, so the redirect did not fire." >&2; exit 4; }
-[ "$EC" -eq 0 ] && [ -s "$AVI" ] || { echo "[iclip] $LABEL FAILED (exit $EC) - $LOG" >&2; exit 1; }
+# Not on godot's exit code: on this box a windowed godot under xvfb-run exits 1 even on quit(0) (measured 2026-11-13); the artifacts below are the verdict.
+echo "[iclip] $LABEL godot exit $EC (recorded, not judged)"
+[ -s "$AVI" ] || { echo "[iclip] $LABEL FAILED: no movie written (exit $EC) - $LOG" >&2; exit 1; }
+command grep -a -q '^\[ICLIP\] done' "$LOG" || { echo "[iclip] $LABEL FAILED: the clip script never finished (exit $EC) - $LOG" >&2; exit 1; }
+command grep -a -q '^\[ICLIP\] FAIL' "$LOG" && { echo "[iclip] $LABEL FAILED: $(command grep -a '^\[ICLIP\] FAIL' "$LOG" | head -1)" >&2; exit 1; }
 command grep -a -q '^\[ICLIP\] built' "$LOG" || { echo "[iclip] $LABEL: no build line in $LOG" >&2; exit 1; }
 command grep -a -q '^\[ICLIP\] beat=dawn' "$LOG" || { echo "[iclip] $LABEL FAILED: the night never reached dawn" >&2; exit 1; }
 command grep -a -q 'cutscene_playing=false' "$LOG" || { echo "[iclip] $LABEL FAILED: a cutscene was playing over the room" >&2; exit 1; }
