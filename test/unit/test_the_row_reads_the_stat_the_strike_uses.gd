@@ -6,8 +6,9 @@ extends GutTest
 ## and quoted ONE hit. So a tank's Guard Strike quoted its attack stat instead of its defense, and
 ## Thread Slash's row showed a third of what three hits delivered, which hid [KILL] on a killing volley.
 ##
-## The oracle is the executor itself, with volatility's variance band pinned to 1.0 so the only
-## randomness left is crit, which no ability in this file authors.
+## The oracle is the executor itself, with volatility's variance band pinned to 1.0 and crit switched off: since .794
+## a physical ability with no crit_chance of its own crits as its user's swing does (DamageRules), and this Striker's
+## SPD 150 is the 50% cap. The row quotes the strike BEFORE a crit, so the oracle must not roll one.
 
 class NoVariance extends VolatilitySystem:
 	func get_variance_range(_c) -> Vector2:
@@ -15,15 +16,19 @@ class NoVariance extends VolatilitySystem:
 
 
 var _saved_vol = null
+var _saved_inherit: bool = true
 
 
 func before_each() -> void:
 	_saved_vol = BattleManager.volatility
 	BattleManager.volatility = NoVariance.new()
+	_saved_inherit = DamageRules.abilities_inherit_swing_crit
+	DamageRules.abilities_inherit_swing_crit = false
 
 
 func after_each() -> void:
 	BattleManager.volatility = _saved_vol
+	DamageRules.abilities_inherit_swing_crit = _saved_inherit
 
 
 func _c(atk: int, def_v: int, spd: int, hp: int) -> Combatant:
