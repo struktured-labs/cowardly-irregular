@@ -15256,6 +15256,46 @@
       "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
       "seed": 98768637,
       "gain_db": -0.4
+    },
+    "voice_cleric_turn_start_57": {
+      "description": "Cleric party voice line — turn start (variant 57)",
+      "file": "assets/audio/sfx/voice_cleric_turn_start_57.ogg",
+      "source_sha": "58f410cab90748eb",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 872501780,
+      "gain_db": 0.8
+    },
+    "voice_mage_turn_start_57": {
+      "description": "Mage party voice line — turn start (variant 57)",
+      "file": "assets/audio/sfx/voice_mage_turn_start_57.ogg",
+      "source_sha": "76d6b269e9bd6fb7",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 941160001,
+      "gain_db": -2.1
+    },
+    "voice_rogue_turn_start_57": {
+      "description": "Rogue party voice line — turn start (variant 57)",
+      "file": "assets/audio/sfx/voice_rogue_turn_start_57.ogg",
+      "source_sha": "2295680cc585ae59",
+      "voice": "Chatterbox clone of LibriTTS-R speaker 8224 (CC BY 4.0), reference +1.5 st, voice_refs/rogue.wav",
+      "voice_gender": "ambiguous",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.55 cfg 0.4",
+      "seed": 621986703,
+      "gain_db": 0.8
+    },
+    "voice_bard_turn_start_57": {
+      "description": "Bard party voice line — turn start (variant 57)",
+      "file": "assets/audio/sfx/voice_bard_turn_start_57.ogg",
+      "source_sha": "578c09c5c0df8a16",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 655082082,
+      "gain_db": -2.1
     }
   }
 }
