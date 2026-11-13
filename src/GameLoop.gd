@@ -2492,6 +2492,11 @@ func _get_pending_story_cutscene() -> String:
 	if not flags.get("cutscene_flag_prologue_complete", false):
 		if _current_map_id == "harmonia_village":
 			return "world1_prologue"
+	# The Rat King before the Elder (struktured 2026-11-11): the briefing nobody heard replaces chapter1 on the first return.
+	if flags.get("cutscene_flag_rat_king_defeated", false) and not flags.get("cutscene_flag_chapter1_complete", false) \
+			and not flags.get("cutscene_flag_world1_briefing_skipped_complete", false):
+		if _current_map_id == "harmonia_village":
+			return "world1_briefing_skipped"
 	# Chapter 1: triggers when player talks to Elder Theron (flag set by NPC interaction)
 	if flags.get("talked_to_theron", false) and not flags.get("cutscene_flag_chapter1_complete", false):
 		if _current_map_id == "harmonia_village":
@@ -2976,6 +2981,24 @@ func _is_known_defeat_flag(flag: String) -> bool:
 
 
 # Tick 220: set a cutscene_flag_X game_constant AND mirror to story_flags as bare 'X'. QuestLog reads story_flags — without the mirror, objective lines stay stale even after the cutscene fires and the game_constants flag is set. Pre-fix this mirror lived only in _play_story_cutscene; direct game_constants writes elsewhere (boss defeats via _apply_pending_boss_defeat, chapter auto-advance gates) silently skipped it. Same bug class as 2026-06-04 Elder Theron.
+## What the alternate briefing concedes (cowir-main 24221): everything chapter1, the cave's first entry and the five duels
+## would have set, so nothing downstream waits on a scene or a trial that save will never be made to play.
+const BRIEFING_SKIPPED_CONCEDES: Array[String] = [
+	"cutscene_flag_chapter1_complete", "cutscene_flag_chapter2_complete", "cutscene_flag_chapter3_complete",
+	"cutscene_flag_spotlight_unlocked_cleric", "cutscene_flag_spotlight_unlocked_rogue", "cutscene_flag_spotlight_unlocked_mage",
+	"cutscene_flag_spotlight_unlocked_fighter", "cutscene_flag_spotlight_unlocked_bard",
+]
+
+
+func _concede_the_briefing() -> void:
+	if not GameState:
+		return
+	GameState.game_constants["talked_to_theron"] = true
+	GameState.set_story_flag("talked_to_theron")
+	for flag in BRIEFING_SKIPPED_CONCEDES:
+		_set_cutscene_flag_and_mirror(flag)
+
+
 func _set_cutscene_flag_and_mirror(flag: String) -> void:
 	if not GameState or flag == "":
 		return
@@ -3017,6 +3040,7 @@ const _CUTSCENE_COMPLETION_FLAGS := {
 	# World 1 (medieval) — flags drop the "world1_" prefix
 	"world1_prologue":                  "cutscene_flag_prologue_complete",
 	"world1_chapter1":                  "cutscene_flag_chapter1_complete",
+	"world1_briefing_skipped":          "cutscene_flag_world1_briefing_skipped_complete",
 	"world1_bram_shield":               "cutscene_flag_world1_bram_shield_complete",
 	"world1_scriptura_rogue_door":      "cutscene_flag_world1_scriptura_rogue_door_complete",
 	## Village introductions — without these the gate that fires them never sees a completion flag and loops.
@@ -3183,6 +3207,8 @@ func _play_story_cutscene(cutscene_id: String) -> bool:
 			# Tick 220: route through the shared helper so the constant + story_flags mirror always travel together (this site WAS the only mirror pre-fix; the other 8 game_constants writes silently skipped it — see ticks 212/214 audit + the 2026-06-04 Elder Theron user report that prompted the original mirror here).
 			_set_cutscene_flag_and_mirror(completion_flag)
 			print("[CUTSCENE] %s complete → set flag %s" % [cutscene_id, completion_flag])
+			if cutscene_id == "world1_briefing_skipped":
+				_concede_the_briefing()
 			# W1 spotlight completion also unlocks the matching PC's
 			# manual control. Reconcile is idempotent so a no-op for
 			# non-spotlight cutscenes.

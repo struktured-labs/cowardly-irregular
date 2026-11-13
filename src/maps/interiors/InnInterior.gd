@@ -38,6 +38,12 @@ const FIRE_SPEED: float = 0.12
 var _fire_light: PointLight2D
 var _fire_time: float = 0.0
 
+## The room's one light rig: darkness for the lamps to read against, the day clock, the night.
+var lighting: InteriorLighting
+## Flat things underfoot (a rug, a door mat, contact shadows): drawn after the floor and before anyone who stands on them.
+var _floor_pieces: Node2D
+var _shadow_cache: Dictionary = {}
+
 ## Spawn points (grid coords)
 var spawn_points: Dictionary = {
 	"entrance": Vector2(10, 12),
@@ -80,13 +86,19 @@ func _ready() -> void:
 	# Interiors are never Mode 7 — clear the static so the overworld boost cannot leak in.
 	Mode7Overlay.is_active = false
 	Mode7Overlay.camera_angle = 0.0  # Defense-in-depth: OverworldPlayer reads this UNCONDITIONALLY, so a leaked non-zero angle would rotate interior movement.
+	# Furniture and people sort by their feet, so the player walks BEHIND a chair and in front of it (the village pass, indoors).
+	y_sort_enabled = true
 	_setup_tilemap()
+	_floor_pieces = Node2D.new()
+	_floor_pieces.name = "FloorPieces"
+	add_child(_floor_pieces)
 	_setup_decorations()
 	_setup_fireplace_anim()
 	_setup_npcs()
 	# msg 2764: sweep NPCs off walls + furniture footprints so no one
 	# ends up standing on a table. Shared utility with BaseInterior.
 	InteriorPlacementSweep.sweep(self, npcs, decorations, INN_LAYOUT, "inn_interior")
+	InteriorStroll.assign.call_deferred(self, npcs, decorations, INN_LAYOUT)
 	_create_rest_interactable()
 	_create_fireplace_secret()
 	_setup_transitions()
@@ -243,7 +255,11 @@ func _generate_floor() -> void:
 				"h":
 					tilemap.set_cell(Vector2i(x, y), 2, InteriorArt.cell_in(tilemap, 2, Vector2i(x, y)))
 				"c":
-					tilemap.set_cell(Vector2i(x, y), 3, InteriorArt.cell_in(tilemap, 3, Vector2i(x, y)))
+					# Where the hearth rug is drawn, the old runner beside the table is plain floor.
+					if _is_drawn("rug"):
+						tilemap.set_cell(Vector2i(x, y), 0, InteriorArt.cell_in(tilemap, 0, Vector2i(x, y)))
+					else:
+						tilemap.set_cell(Vector2i(x, y), 3, InteriorArt.cell_in(tilemap, 3, Vector2i(x, y)))
 				_:
 					tilemap.set_cell(Vector2i(x, y), 0, InteriorArt.cell_in(tilemap, 0, Vector2i(x, y)))
 
@@ -255,20 +271,125 @@ func _generate_floor() -> void:
 func _setup_decorations() -> void:
 	decorations = Node2D.new()
 	decorations.name = "Decorations"
+	decorations.y_sort_enabled = true
 	add_child(decorations)
-	InteriorArt.back_wall(decorations, "inn", MAP_WIDTH, InteriorArt.village_key(_origin_map_id()))
+	lighting = InteriorLighting.new()
+	lighting.name = "Lighting"
+	add_child(lighting)
+	# On the floor layer, not among the sorted pieces: a strip whose origin is above the map sorted UNDER the wall tiles.
+	InteriorArt.back_wall(_floor_pieces, "inn", MAP_WIDTH, InteriorArt.village_key(_origin_map_id()))
 
-	_create_registration_desk()
+	var none := func() -> Node: return null
+	_floor_piece("rug", Vector2(12.5, 8.0) * TILE_SIZE, none)
+	_piece("desk", Vector2(2.5, 3.5) * TILE_SIZE, _create_registration_desk, Vector2(92, 40))
+	_piece("barrel", Vector2(5.5, 4.0) * TILE_SIZE, none, Vector2(24, 14))
+	_piece("crate", Vector2(6.5, 4.0) * TILE_SIZE, none, Vector2(26, 14))
 	_create_fireplace_surround()
-	_create_armchairs()
-	_create_communal_table()
+	# Two wing-backs on the rug, lit from the fire between them; with no art the painter stands today's pair.
+	_piece("armchair", Vector2(10.5, 7.0) * TILE_SIZE, _create_armchairs, Vector2(40, 18))
+	var east_chair := _piece("armchair", Vector2(14.5, 7.0) * TILE_SIZE, none, Vector2(40, 18))
+	if east_chair != null:
+		east_chair.flip_h = true
+	# The long table, its benches and what is laid on it; one footprint for the three.
+	var bench_n := _piece("bench", Vector2(6.0 * TILE_SIZE, 282.0), none, Vector2.ZERO, false)
+	_piece("table", Vector2(6.0, 10.5) * TILE_SIZE, _create_communal_table, Vector2(248, 94), true, Vector2(0, -23))
+	var things := _piece("table_things", Vector2(6.0, 10.5) * TILE_SIZE, none, Vector2.ZERO, false)
+	var bench_s := _piece("bench", Vector2(6.0 * TILE_SIZE, 362.0), none, Vector2.ZERO, false)
+	for bench in [bench_n, bench_s]:
+		if bench != null:
+			bench.set_meta("furniture", true)
+	if things != null:
+		_candle_light(Vector2(64.0 + CANDLE_X, 290.0))
+	# A second, small table for the two adventurers who stand in the east half, and a mat inside the door.
+	_piece("round_table", Vector2(480.0, 352.0), none, Vector2(56, 22))
+	_piece("stool", Vector2(435.0, 333.0), none)
+	_piece("stool", Vector2(528.0, 355.0), none)
+	_floor_piece("door_mat", Vector2(10.0 * TILE_SIZE, 414.0), none)
 	_create_stairs_up()
-	_create_coat_rack()
-	_create_travel_gear_pile()
-	_create_wall_paintings()
-	_create_tapestry()
+	_piece("coat_rack", Vector2(42.0, 340.0), _create_coat_rack, Vector2.ZERO)
+	_piece("gear_pile", Vector2(17.0 * TILE_SIZE, 340.0), _create_travel_gear_pile, Vector2(56, 18))
+	# A drawn back wall has its own painting, antlers and stair: the painted ones would cover or double them.
+	if not _is_drawn("back_wall"):
+		_create_wall_paintings()
+		_create_tapestry()
 	_create_lanterns()
 	_create_ambient_light()
+
+
+## Where the candle stands on the laid table's art, from its left edge (sprites 24365).
+const CANDLE_X := 126.0
+## The drawn back wall's own lanterns, x in room px (sprites' strip is the room's width); the room's four lights hang there.
+const WALL_LANTERN_X: Array = [65.0, 260.0, 470.0, 540.0]
+
+
+func _art_village() -> String:
+	return InteriorArt.village_key(_origin_map_id())
+
+
+func _is_drawn(kind: String) -> bool:
+	return InteriorArt.path(kind, "inn", _art_village()) != ""
+
+
+## One piece of furniture through the art seam. Drawn: it stands with its feet on `base`, sorts by them, casts a
+## contact shadow and, given `solid`, blocks the player there. No art: the room's own `painter` runs exactly as before.
+func _piece(kind: String, base: Vector2, painter: Callable, solid: Vector2 = Vector2.ZERO, shadow: bool = true, solid_at: Vector2 = Vector2.ZERO) -> Sprite2D:
+	var holder := Node2D.new()
+	holder.name = "Piece_" + kind
+	holder.position = base
+	decorations.add_child(holder, true)
+	var art := InteriorArt.place_or_paint(holder, kind, "inn", Vector2.ZERO, painter, _art_village()) as Sprite2D
+	if art == null or art.get_parent() != holder:
+		holder.queue_free()  # painted: the painter put its own nodes where it always has
+		return null
+	if shadow:
+		_contact_shadow(base, art.texture.get_width())
+	if solid != Vector2.ZERO:
+		var body := StaticBody2D.new()
+		body.collision_layer = 1
+		body.collision_mask = 0
+		var shape := CollisionShape2D.new()
+		var rect := RectangleShape2D.new()
+		rect.size = solid
+		shape.shape = rect
+		shape.position = solid_at if solid_at != Vector2.ZERO else Vector2(0, -solid.y / 2.0)
+		body.add_child(shape)
+		holder.add_child(body)
+	return art
+
+
+## A flat piece underfoot (a rug): through the same seam, on the floor layer, walkable.
+func _floor_piece(kind: String, base: Vector2, painter: Callable) -> Node:
+	return InteriorArt.place_or_paint(_floor_pieces, kind, "inn", base, painter, _art_village())
+
+
+## A soft dark ellipse under a standing piece, on the floor layer so nobody is ever drawn beneath it.
+func _contact_shadow(base: Vector2, piece_width: int) -> void:
+	var w: int = maxi(12, int(piece_width * 0.9))
+	if not _shadow_cache.has(w):
+		var h: int = clampi(w / 5, 6, 14)
+		var img := Image.create(w, h, false, Image.FORMAT_RGBA8)
+		for y in range(h):
+			for x in range(w):
+				var d: float = Vector2((x + 0.5 - w / 2.0) / (w / 2.0), (y + 0.5 - h / 2.0) / (h / 2.0)).length()
+				img.set_pixel(x, y, Color(0, 0, 0, 0.32 * clampf(1.0 - d * d, 0.0, 1.0)))
+		_shadow_cache[w] = ImageTexture.create_from_image(img)
+	var sh := Sprite2D.new()
+	sh.name = "Shadow"
+	sh.texture = _shadow_cache[w]
+	sh.position = base + Vector2(0, -2)
+	_floor_pieces.add_child(sh, true)
+
+
+## The candle on the laid table: a small warm pool that wavers.
+func _candle_light(at: Vector2) -> void:
+	var light := PointLight2D.new()
+	light.name = "CandleLight"
+	light.position = at
+	light.color = Color(1.0, 0.82, 0.50)
+	light.energy = 0.35
+	light.texture = _create_light_texture(64)
+	decorations.add_child(light)
+	lighting.adopt(light, 0.12)
 
 
 func _create_light_texture(radius: int = 128) -> ImageTexture:
@@ -512,6 +633,8 @@ func _setup_fireplace_anim() -> void:
 	_fire_light.energy = 0.9
 	_fire_light.texture = _create_light_texture(160)
 	add_child(_fire_light)
+	if lighting:
+		lighting.adopt(_fire_light, 0.25)
 
 
 func _draw_flame_frame(img: Image, frame: int) -> void:
@@ -560,10 +683,15 @@ func _animate_fireplace(delta: float) -> void:
 			_fire_sprite.texture = _fire_frames[_fire_frame]
 
 
+## The hearth's flicker is the rig's now (it also follows the room's darkness); this only keeps the fire's clock.
 func _flicker_fire_light(delta: float) -> void:
 	_fire_time += delta
-	if _fire_light:
-		_fire_light.energy = 0.75 + 0.25 * sin(_fire_time * 7.3) + 0.10 * sin(_fire_time * 13.1)
+
+
+## The rest scene's hook (cutscenes' InnRestSequence calls it by this name): "night" as the room dims, "dawn" after.
+func rest_light(moment: String) -> void:
+	if lighting:
+		lighting.rest_light(moment)
 
 
 func _create_armchairs() -> void:
@@ -764,7 +892,8 @@ func _create_stairs_up() -> void:
 
 	stair.texture = ImageTexture.create_from_image(img)
 	stair.position = Vector2(17.5 * TILE_SIZE, 2.5 * TILE_SIZE)
-	node.add_child(stair)
+	if not _is_drawn("back_wall"):
+		node.add_child(stair)
 
 	# 2026-07-25 playtest: "it says upstairs but no idea how to get up there." The U tiles are a
 	# BLOCKER — there is no second floor — so the label was advertising a destination that does not
@@ -994,6 +1123,18 @@ func _create_lanterns() -> void:
 	]
 	var light_tex = _create_light_texture(96)
 
+	# A drawn back wall carries its own lanterns: the room's four lights hang under those, and no second set floats.
+	if _is_drawn("back_wall"):
+		for lx in WALL_LANTERN_X:
+			var wall_light = PointLight2D.new()
+			wall_light.position = Vector2(float(lx), 1.75 * TILE_SIZE)
+			wall_light.color = Color(1.0, 0.88, 0.60)
+			wall_light.energy = 0.40
+			wall_light.texture = light_tex
+			decorations.add_child(wall_light)
+			lighting.adopt(wall_light, 0.06)
+		return
+
 	for lp in lantern_positions:
 		var lantern = Sprite2D.new()
 		var img = Image.create(14, 22, false, Image.FORMAT_RGBA8)
@@ -1041,6 +1182,7 @@ func _create_lanterns() -> void:
 		light.energy = 0.40
 		light.texture = light_tex
 		decorations.add_child(light)
+		lighting.adopt(light, 0.06)
 
 
 func _create_ambient_light() -> void:
@@ -1054,6 +1196,7 @@ func _create_ambient_light() -> void:
 		light.energy = 0.15
 		light.texture = light_tex
 		decorations.add_child(light)
+		lighting.adopt(light)
 
 
 # ---------------------------------------------------------------------------
@@ -1122,6 +1265,7 @@ func _innkeeper() -> Dictionary:
 func _setup_npcs() -> void:
 	npcs = Node2D.new()
 	npcs.name = "NPCs"
+	npcs.y_sort_enabled = true
 	add_child(npcs)
 
 	# Local innkeeper at the registration desk — identity follows the world.
@@ -1288,7 +1432,7 @@ func _setup_camera() -> void:
 	camera.position_smoothing_speed = 8.0
 
 	camera.limit_left   = 0
-	camera.limit_top    = 0
+	camera.limit_top    = -TILE_SIZE if _is_drawn("back_wall") else 0  # a drawn back wall rises one tile above the map
 	camera.limit_right  = MAP_WIDTH  * TILE_SIZE
 	camera.limit_bottom = MAP_HEIGHT * TILE_SIZE
 
