@@ -266,8 +266,10 @@ func test_the_party_is_already_seated_a_few_frames_in() -> void:
 		GameState.set_text_size_scale(ts)
 		var scene = await _build(["goblin"])
 		assert_true(scene._party_relaid_once, "CONTROL text %.2f: the column's build-time re-seat ran" % ts)
-		for s in scene.party_sprite_nodes:
-			var home: Vector2 = s.get_meta("home_position", Vector2.INF)
-			assert_almost_eq(s.position.x, home.x, 0.5, "text %.2f: %s still sliding to its seat (%.1f -> %.1f)" % [ts, s.name, s.position.x, home.x])
+		for i in scene.party_sprite_nodes.size():
+			var s = scene.party_sprite_nodes[i]
+			## The member whose turn it is stands stepped out of its seat, on purpose.
+			var rest: Vector2 = s.get_meta("home_position", Vector2.INF) + (scene._stepped_out_shift if i == scene._stepped_out_idx else Vector2.ZERO)
+			assert_almost_eq(s.position.x, rest.x, 1.5, "text %.2f: member %d still sliding to its seat (%.1f -> %.1f)" % [ts, i, s.position.x, rest.x])
 		scene.queue_free()
 		await get_tree().process_frame
