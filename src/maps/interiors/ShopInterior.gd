@@ -85,6 +85,9 @@ const FORGE_SPEED: float = 0.14
 
 ## Wares browse state
 var _wares_layer: CanvasLayer = null
+var _floor_pieces: Node2D
+## How many drawn pieces stand in this room; any at all and the room sorts by feet so the player can walk behind them.
+var _standing_pieces: int = 0
 
 
 func _ready() -> void:
@@ -95,8 +98,13 @@ func _ready() -> void:
 	_setup_tilemap()
 	_setup_decorations()
 	_setup_npcs()
+	if _standing_pieces > 0:
+		y_sort_enabled = true
+		decorations.y_sort_enabled = true
+		npcs.y_sort_enabled = true
 	# msg 2764: NPC-vs-furniture sweep (shared with BaseInterior + InnInterior).
 	InteriorPlacementSweep.sweep(self, npcs, decorations, SHOP_LAYOUT, "shop_interior", SHELF_GLYPHS)
+	InteriorStroll.assign.call_deferred(self, npcs, decorations, SHOP_LAYOUT, SHELF_GLYPHS)
 	_create_browse_interactable()
 	_setup_transitions()
 	_setup_player()
@@ -305,6 +313,10 @@ func art_room() -> String:
 	return InteriorArt.SHOP_ROOMS[clampi(shop_type, 0, InteriorArt.SHOP_ROOMS.size() - 1)]
 
 
+func _back_wall_drawn() -> bool:
+	return InteriorArt.path("back_wall", art_room(), _art_village()) != ""
+
+
 func _art_village() -> String:
 	var gl: Node = get_node_or_null("/root/GameLoop") if is_inside_tree() else null
 	return InteriorArt.village_key(str(gl.get_village_origin_id())) if gl and gl.has_method("get_village_origin_id") else ""
@@ -346,13 +358,19 @@ func _create_light_texture(radius: int = 128) -> ImageTexture:
 # ---------------------------------------------------------------------------
 
 func _setup_decorations() -> void:
+	_floor_pieces = Node2D.new()
+	_floor_pieces.name = "FloorPieces"
+	add_child(_floor_pieces)
 	decorations = Node2D.new()
 	decorations.name = "Decorations"
 	add_child(decorations)
 
-	InteriorArt.back_wall(decorations, art_room(), MAP_WIDTH, _art_village())
+	# On the floor layer, not among the sorted pieces: a strip whose origin is above the map sorted UNDER the wall tiles.
+	InteriorArt.back_wall(_floor_pieces, art_room(), MAP_WIDTH, _art_village())
 	_create_counter_dressing()
-	_create_hanging_sign()
+	# A drawn wall is the room's face; a plank naming the shop you are standing in would hang across it.
+	if not _back_wall_drawn():
+		_create_hanging_sign()
 	_create_shelf_goods()
 	_create_lighting()
 
@@ -613,10 +631,26 @@ func _draw_weapon_rack_row(img: Image) -> void:
 # Per-type decoration
 # ---------------------------------------------------------------------------
 
+## One standing piece through the art seam (InteriorPiece); counts the drawn ones.
+func _piece(kind: String, base: Vector2, painter: Callable, solid: Vector2 = Vector2.ZERO) -> Sprite2D:
+	var art := InteriorPiece.stand(decorations, _floor_pieces, kind, art_room(), base, painter, _art_village(), solid)
+	if art != null:
+		_standing_pieces += 1
+	return art
+
+
 func _decorate_item_shop() -> void:
 	# Barrel cluster at grid x=13..14, y=8..9 (centred, so y=9 keeps it off the right shelf block's rows 6-7)
-	_create_barrel_cluster(Vector2(13.5 * TILE_SIZE, 9 * TILE_SIZE))
+	_piece("barrels", Vector2(13.5 * TILE_SIZE, 10 * TILE_SIZE), _create_barrel_cluster.bind(Vector2(13.5 * TILE_SIZE, 9 * TILE_SIZE)), Vector2(56, 18))
+	# Drawn only: a delivery by the west wall, a runner before the counter, a mat inside the door.
+	_piece("sacks", Vector2(56, 318), InteriorPiece.none(), Vector2(40, 14))
+	_piece("crate_produce", Vector2(102, 316), InteriorPiece.none(), Vector2(30, 12))
+	InteriorPiece.lay(_floor_pieces, "mat", art_room(), Vector2(8.5 * TILE_SIZE, 5 * TILE_SIZE + 44), _art_village())
+	InteriorPiece.lay(_floor_pieces, "door_mat", art_room(), Vector2(8 * TILE_SIZE, 11 * TILE_SIZE - 2), _art_village())
 
+	# A drawn back wall carries its own herb box and bunches; the painted ones would double them.
+	if InteriorArt.path("back_wall", art_room(), _art_village()) != "":
+		return
 	# Herb window box at x=1, y=1 (inside window on west wall)
 	_create_herb_box(Vector2(1.2 * TILE_SIZE, 1.0 * TILE_SIZE))
 
@@ -1063,49 +1097,65 @@ func _create_divine_banner(pos: Vector2) -> void:
 
 
 func _decorate_blacksmith_shop() -> void:
-	# Animated forge with glowing embers
-	_setup_forge_anim()
+	# Drawn: ONE forge, the stone body under the wall's hood (north-west) with its bellows and coal, flames only in its
+	# mouth, and the way from the door to the counter clear. Painted: the old forge in the middle of the floor.
+	var forge_at := Vector2(8 * TILE_SIZE, 6 * TILE_SIZE)
+	var body := _piece("forge", Vector2(3 * TILE_SIZE, 2 * TILE_SIZE), InteriorPiece.none(), Vector2(56, 14))
+	if body != null:
+		forge_at = Vector2(3 * TILE_SIZE, TILE_SIZE)  # the image's centre; its mouth is (32, 34)
+		for beside in [_piece("bellows", Vector2(152, 60), InteriorPiece.none()), _piece("coal_bin", Vector2(212, 62), InteriorPiece.none(), Vector2(60, 14))]:
+			if beside != null:
+				beside.flip_h = true  # drawn facing right; the forge is on their left
+	else:
+		# Bellows near the painted forge; Jend stands at them, so they block nobody
+		_piece("bellows", Vector2(6 * TILE_SIZE, 8.5 * TILE_SIZE + 10), _create_bellows.bind(Vector2(6 * TILE_SIZE, 8.5 * TILE_SIZE)))
+	_setup_forge_anim(forge_at, body != null)
+	_piece("quench_barrel", Vector2(396, 306), InteriorPiece.none(), Vector2(22, 12))
+	InteriorPiece.lay(_floor_pieces, "door_mat", art_room(), Vector2(8 * TILE_SIZE, 11 * TILE_SIZE - 2), _art_village())
 
 	# Anvil on free floor below the right shelf block, clear of Sir Corvath (3,8), Jend (6,9) and the door path
-	_create_anvil(Vector2(11 * TILE_SIZE, 9 * TILE_SIZE))
+	_piece("anvil", Vector2(11 * TILE_SIZE, 9 * TILE_SIZE + 20), _create_anvil.bind(Vector2(11 * TILE_SIZE, 9 * TILE_SIZE)), Vector2(44, 14))
 
 	# Weapon wall rack on east side; a drawn shelf IS the rack, and the painted one would cover it
 	if InteriorArt.path("shelf", art_room(), _art_village()) == "":
 		_create_weapon_wall_rack(Vector2(13 * TILE_SIZE, 2 * TILE_SIZE))
 
 	# Weapon crates at x=1, y=9
-	_create_weapon_crates(Vector2(1 * TILE_SIZE, 9 * TILE_SIZE))
-
-	# Bellows near forge
-	_create_bellows(Vector2(6 * TILE_SIZE, 8.5 * TILE_SIZE))
+	_piece("weapon_crates", Vector2(2 * TILE_SIZE, 11 * TILE_SIZE - 6), _create_weapon_crates.bind(Vector2(1 * TILE_SIZE, 9 * TILE_SIZE)), Vector2(52, 14))
 
 	# Forge light — warm orange
 	var forge_light = PointLight2D.new()
-	forge_light.position = Vector2(8 * TILE_SIZE, 6 * TILE_SIZE)
+	forge_light.name = "ForgeLight"
+	forge_light.position = forge_at
 	forge_light.color = Color(1.0, 0.55, 0.15)
 	forge_light.energy = 1.0
 	forge_light.texture = _create_light_texture(180)
 	decorations.add_child(forge_light)
 
 
-func _setup_forge_anim() -> void:
+func _setup_forge_anim(at: Vector2, flames_only: bool) -> void:
 	_forge_sprite = Sprite2D.new()
 	_forge_sprite.name = "ForgeEmbers"
 	_forge_sprite.z_index = 5
-	_forge_sprite.position = Vector2(8 * TILE_SIZE, 6 * TILE_SIZE)
+	_forge_sprite.position = at
 	add_child(_forge_sprite)
 
 	_forge_frames.clear()
-	for f in range(4):
+	var drawn := InteriorArt.path("forge_flames", art_room(), _art_village()) if flames_only else ""
+	if drawn != "":
+		var strip := (load(drawn) as Texture2D).get_image()  # a strip of 64x64 frames for the drawn body's mouth
+		for f in range(strip.get_width() / (TILE_SIZE * 2)):
+			_forge_frames.append(ImageTexture.create_from_image(strip.get_region(Rect2i(f * TILE_SIZE * 2, 0, TILE_SIZE * 2, TILE_SIZE * 2))))
+	for f in range(4 if _forge_frames.is_empty() else 0):
 		var img = Image.create(TILE_SIZE * 2, TILE_SIZE * 2, false, Image.FORMAT_RGBA8)
-		_draw_forge_frame(img, f)
+		_draw_forge_frame(img, f, flames_only)
 		_forge_frames.append(ImageTexture.create_from_image(img))
 
 	if _forge_frames.size() > 0:
 		_forge_sprite.texture = _forge_frames[0]
 
 
-func _draw_forge_frame(img: Image, frame: int) -> void:
+func _draw_forge_frame(img: Image, frame: int, flames_only: bool = false) -> void:
 	img.fill(Color.TRANSPARENT)
 	var stone_c  := Color(0.45, 0.40, 0.36)
 	var stone_hi := Color(0.58, 0.52, 0.48)
@@ -1117,8 +1167,8 @@ func _draw_forge_frame(img: Image, frame: int) -> void:
 	var W = TILE_SIZE * 2
 	var H = TILE_SIZE * 2
 
-	# Stone forge body
-	for y in range(H / 2, H):
+	# Stone forge body (a drawn body stands in for it: then only the embers and flames are painted)
+	for y in range(H / 2, H if not flames_only else 0):
 		for x in range(0, W):
 			var block_r = (y - H / 2) / 10
 			var block_c = x / 16
@@ -1133,7 +1183,7 @@ func _draw_forge_frame(img: Image, frame: int) -> void:
 	# Forge opening (dark hole)
 	var ox = W / 2 - 16
 	var oy = H / 2 - 4
-	for y in range(oy, H / 2 + 16):
+	for y in range(oy, H / 2 + 16 if not flames_only else 0):
 		for x in range(ox, ox + 32):
 			img.set_pixel(x, y, Color(0.08, 0.06, 0.04))
 
@@ -1598,7 +1648,7 @@ func _setup_camera() -> void:
 	camera.position_smoothing_speed = 8.0
 
 	camera.limit_left   = 0
-	camera.limit_top    = 0
+	camera.limit_top    = -TILE_SIZE if _back_wall_drawn() else 0  # a drawn back wall rises one tile above the map
 	camera.limit_right  = MAP_WIDTH  * TILE_SIZE
 	camera.limit_bottom = MAP_HEIGHT * TILE_SIZE
 

@@ -37,14 +37,7 @@ func _authored_effects() -> Dictionary:
 
 
 func _ring() -> Array:
-	var code: String = GdSource.code_of(UI_PATH)
-	var at: int = code.find("const MEMBER_STATUS_RING")
-	assert_gt(at, 0, "CONTROL: the ring must be locatable in AutogrindUI")
-	var close: int = code.find("]", at)
-	var out: Array = []
-	for m in RegEx.create_from_string('"([a-z_]+)"').search_all(code.substr(at, close - at)):
-		out.append(m.get_string(1))
-	return out
+	return load(UI_PATH).member_status_ring()
 
 
 func test_every_status_the_ring_offers_can_actually_be_applied() -> void:

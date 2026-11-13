@@ -97,6 +97,7 @@ const NUMERIC_BOUNDS := {
 	"ap": [-4, 4],                 # Combatant.gd clamps current_ap to this, debt included
 	"volatility_band": [0, 3],     # Stable / Shifting / Unstable / Fractured
 	"ally_count": [0, 5],          # _get_allies_for = alive party INCLUDING self, cap 5
+	"enemy_signature_in": [1, 9],  # BossCadence.turns_to_release: 1 = the boss's next turn; the top is every + charge_turns + 1
 }
 
 ## These share the 0-100 percentage scale, so a number carried BETWEEN them still means what the
@@ -1202,6 +1203,12 @@ func _format_condition(condition: Dictionary) -> String:
 			return "No enemy has %s" % StatusNames.display(condition.get("status", ""))
 		"enemy_weak_to":
 			return "Enemy weak to %s" % str(condition.get("element", "?")).capitalize()
+		"enemy_resists":
+			return "Enemy resists %s" % str(condition.get("element", "?")).capitalize()
+		"enemy_charging":
+			return "Enemy charging"
+		"enemy_signature_in":
+			return "Enemy signature in %s %d" % [op, value]
 		"enemy_hp_percent":
 			return "Enemy HP %s %d%%" % [op, value]
 		"ally_hp_percent":
@@ -2272,7 +2279,7 @@ func _apply_condition_type(new_type: String) -> void:
 			cond["weather"] = "rain"
 		cond.erase("op")
 		cond.erase("value")
-	elif new_type == "enemy_weak_to":
+	elif new_type == "enemy_weak_to" or new_type == "enemy_resists":
 		## fire is the most common weakness in the bestiary (38 of 106), so it is the seed that
 		## fires for the most players on the first press.
 		if not cond.has("element"):
@@ -2296,6 +2303,13 @@ func _apply_condition_type(new_type: String) -> void:
 			cond["op"] = ">="
 		if not cond.has("value"):
 			cond["value"] = 2
+	elif new_type == "enemy_signature_in":
+		## Turns to a boss's release run 1..every+charge_turns+1. The generic `< 50` is true on every turn of every cadence
+		## fight. Seed the play the condition exists for: guard (Defer, Shell) on the turn before it lands.
+		if not cond.has("op"):
+			cond["op"] = "<="
+		if not cond.has("value"):
+			cond["value"] = 1
 	elif _nullary_condition_types().has(new_type):
 		## Nullary by the owner's own list — the evaluator reads neither field.
 		cond.erase("op")
@@ -2360,6 +2374,69 @@ func _handle_value_stick(event: InputEventJoypadMotion) -> bool:
 	return true
 
 
+## The stats a buff or debuff sits on (`Combatant.add_buff`'s `stat`), the seed first.
+const BUFF_STATS := ["defense", "attack", "magic", "magic_defense", "speed"]
+static var _payload_vocab: Dictionary = {}
+
+
+## What a condition's NAMED payload may be, per field, the seed first, derived from the game's own data so the dial offers what the evaluator can meet.
+static func payload_vocabulary(field: String) -> Array:
+	if _payload_vocab.has(field):
+		return _payload_vocab[field]
+	var out: Array = []
+	match field:
+		"element":
+			out.append("fire")
+			var counts: Dictionary = {}
+			var monsters = JSON.parse_string(FileAccess.get_file_as_string("res://data/monsters.json"))
+			if monsters is Dictionary:
+				for m in (monsters.get("monsters", monsters) as Dictionary).values():
+					if m is Dictionary:
+						for w in m.get("weaknesses", []):
+							counts[str(w)] = int(counts.get(str(w), 0)) + 1
+			var by_count: Array = counts.keys()
+			by_count.sort_custom(func(a, b): return counts[a] > counts[b] if counts[a] != counts[b] else str(a) < str(b))
+			var abilities = JSON.parse_string(FileAccess.get_file_as_string("res://data/abilities.json"))
+			var from_abilities: Array = []
+			if abilities is Dictionary:
+				for a in (abilities.get("abilities", abilities) as Dictionary).values():
+					if a is Dictionary and str(a.get("element", "")) != "":
+						from_abilities.append(str(a["element"]))
+			from_abilities.sort()
+			for e in by_count + from_abilities:
+				if e != "" and not out.has(e):
+					out.append(e)
+		"status":
+			## What a fight can PRODUCE: every status an ability, item or equipment row applies (aliases resolved), kept when the battle can badge it as a status. Not the badge table itself: a third of that is stat labels no has_status can be true of (cowir-battle 24542).
+			out.append("poison")
+			var scene: GDScript = load("res://src/battle/BattleScene.gd")
+			var icons: Dictionary = scene.get_script_constant_map().get("STATUS_ICON_CONFIG", {}) if scene != null else {}
+			var applied: Array = []
+			for path in ["res://data/abilities.json", "res://data/items.json", "res://data/equipment.json"]:
+				_collect_applied(JSON.parse_string(FileAccess.get_file_as_string(path)), applied)
+			applied.sort()
+			for raw in applied:
+				var st: String = Combatant.resolve_status_alias(str(raw))
+				if icons.has(st) and not st.ends_with("_up") and not st.ends_with("_down") and not out.has(st):
+					out.append(st)
+		"stat":
+			out = BUFF_STATS.duplicate()
+	_payload_vocab[field] = out
+	return out
+
+
+## Every string a data row names under an applying key, at any depth.
+static func _collect_applied(node, out: Array) -> void:
+	if node is Dictionary:
+		for k in node:
+			if str(k) in ["effect", "status", "status_effect"] and node[k] is String and not out.has(node[k]):
+				out.append(node[k])
+			_collect_applied(node[k], out)
+	elif node is Array:
+		for v in node:
+			_collect_applied(v, out)
+
+
 func _adjust_condition_value(delta: int) -> void:
 	"""Adjust condition value up/down - used with shoulder buttons"""
 	var rule = rules[cursor_row] if cursor_row >= 0 and cursor_row < rules.size() else {}
@@ -2389,14 +2466,20 @@ func _adjust_condition_value(delta: int) -> void:
 		## left `value: 55` on it that no evaluator reads, in the saved script and in share codes.
 		## item_count is in the same map and DOES keep op/value, so it must keep dialling; the
 		## discriminator is the condition's own shape, not a second list to maintain.
+		## ...and the NAME itself could not be chosen at all: the seed (fire / poison / defense) was the only value a grid-written rule could ever hold. The same dial now walks the payload's vocabulary.
 		if AutobattleSystem.CONDITION_REQUIRED_FIELD.has(cond_type) and not cond.has("value"):
+			var field: String = str(AutobattleSystem.CONDITION_REQUIRED_FIELD[cond_type])
+			var names: Array = payload_vocabulary(field)
+			if names.size() > 1:
+				cond[field] = names[wrapi(names.find(str(cond.get(field, ""))) + delta, 0, names.size())]
+				_refresh_grid()
 			return
 
 		var current_value = cond.get("value", 50)
 		var step = 5  # Adjust by 5 for percentages, 1 for counts
 
-		# Use smaller steps for AP and counts
-		if cond_type in ["ap", "enemy_count", "ally_count", "turn"]:
+		# Use smaller steps for AP and counts; any small bounded scale steps by 1, or a step of 5 skips its middle
+		if cond_type in ["ap", "enemy_count", "ally_count", "turn"] or NUMERIC_BOUNDS.has(cond_type):
 			step = 1
 
 		var lo: int = 0
@@ -2853,6 +2936,10 @@ func _commit_option_choice(kind: String, chosen_id: String, ctx: Dictionary) -> 
 				_delete_current_cell()
 			else:
 				_apply_condition_type(chosen_id)
+				if chosen_id == "item_count":
+					_open_condition_item_picker()
+		"condition_item_id":
+			_apply_condition_item(chosen_id)
 		"action_type":
 			_apply_action_type(chosen_id, ctx)
 		"ability_id":
@@ -2861,6 +2948,28 @@ func _commit_option_choice(kind: String, chosen_id: String, ctx: Dictionary) -> 
 			_apply_item_id(chosen_id, ctx)
 		"target_type":
 			_apply_target_type(chosen_id, ctx)
+
+
+## "Has Item" asks WHICH item as soon as it is chosen: its dial is the count, so the item had no control and stayed the seed (potion).
+func _open_condition_item_picker() -> void:
+	var conditions: Array = rules[cursor_row].get("conditions", []) if cursor_row >= 0 and cursor_row < rules.size() else []
+	var items := _get_character_consumables()
+	if cursor_col >= conditions.size() or items.size() < 2:
+		return
+	var rows: Array = []
+	var selected := 0
+	for it in items:
+		if str(it["id"]) == str(conditions[cursor_col].get("item_id", "")):
+			selected = rows.size()
+		rows.append({"id": it["id"], "label": it.get("name", it["id"])})
+	_open_option_picker({"title": "Which item", "kind": "condition_item_id", "options": rows, "selected": selected})
+
+
+func _apply_condition_item(item_id: String) -> void:
+	var conditions: Array = rules[cursor_row].get("conditions", []) if cursor_row >= 0 and cursor_row < rules.size() else []
+	if cursor_col < conditions.size() and str(conditions[cursor_col].get("type", "")) == "item_count":
+		conditions[cursor_col]["item_id"] = item_id
+		_refresh_grid()
 
 
 ## Ring presentation of the same spec. Routes through _commit_option_choice so it can never
@@ -3296,7 +3405,8 @@ func _simulate_states() -> Array:
 ## exact "the UI says something the engine doesn't do" defect. They are reported as
 ## undecidable instead of guessed.
 const _BATTLEFIELD_CONDITIONS: Array[String] = [
-	"enemy_count", "enemy_has_status", "not_enemy_has_status", "enemy_weak_to", "enemy_hp_percent",
+	"enemy_count", "enemy_has_status", "not_enemy_has_status", "enemy_weak_to", "enemy_resists", "enemy_hp_percent",
+	"enemy_charging", "enemy_signature_in",
 	"ally_count", "ally_has_status", "ally_hp_percent", "ally_mp_percent",
 	"ally_dead",
 ]

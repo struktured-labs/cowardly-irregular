@@ -127,6 +127,11 @@ const JINGLE_DUCK_EFFECT_SLOT: int = 2
 const JINGLE_DUCK_TARGET_DB: float = -8.0
 const JINGLE_DUCK_ATTACK_TIME: float = 0.08
 const JINGLE_DUCK_RELEASE_TIME: float = 0.6
+## Charge duck (main 23917), slot 3 beside dialogue 0 / kill 1 / jingle 2: ONE depth constant, his ear decides it.
+const CHARGE_DUCK_EFFECT_SLOT: int = 3
+const CHARGE_DUCK_TARGET_DB: float = -4.0
+const CHARGE_DUCK_ATTACK_TIME: float = 0.6
+const CHARGE_DUCK_RELEASE_TIME: float = 0.35
 const JINGLE_PLAYER_BASE_DB: float = -8.0
 ## Crit sub-layer: sits UNDER the existing crit cue (which already carries pitch/echo identity in its OGG) so crits land in the chest without doubling the transient.
 const CRIT_THUD_FREQ: float = 62.0
@@ -2123,6 +2128,72 @@ func _duck_music_for_jingle(length: float) -> void:
 	_jingle_duck_tween.tween_property(amp, "volume_db", 0.0, JINGLE_DUCK_RELEASE_TIME)
 
 
+var _charge_duck_tween: Tween = null
+## Every boss currently charging. A set, like _duck_holders: one boss's release must not lift another's charge.
+var _charge_holders: Array = []
+
+
+func _ensure_charge_duck_effect() -> int:
+	var idx: int = _ensure_kill_duck_effect()
+	if idx == -1:
+		return -1
+	while AudioServer.get_bus_effect_count(idx) <= CHARGE_DUCK_EFFECT_SLOT:
+		var a := AudioEffectAmplify.new()
+		a.volume_db = 0.0
+		AudioServer.add_bus_effect(idx, a)
+		AudioServer.set_bus_effect_enabled(idx, AudioServer.get_bus_effect_count(idx) - 1, true)
+	return idx
+
+
+## The bed dips while ANY boss charges; the caller tier-gates the dip only, so a release always lands.
+func duck_for_charge(charging: bool, boss: Object = null) -> void:
+	var idx: int = _ensure_charge_duck_effect()
+	if idx == -1 or AudioServer.get_bus_effect_count(idx) <= CHARGE_DUCK_EFFECT_SLOT:
+		return
+	var amp = AudioServer.get_bus_effect(idx, CHARGE_DUCK_EFFECT_SLOT)
+	if amp == null:
+		return
+	var live: Array = []
+	for h in _charge_holders:
+		if h != null and is_instance_valid(h):
+			live.append(h)
+	_charge_holders = live
+	if charging:
+		if not _charge_holders.has(boss):
+			_charge_holders.append(boss)
+	else:
+		_charge_holders.erase(boss)
+	var target: float = CHARGE_DUCK_TARGET_DB if not _charge_holders.is_empty() else 0.0
+	if _charge_duck_tween and _charge_duck_tween.is_valid():
+		_charge_duck_tween.kill()
+	if is_equal_approx(amp.volume_db, target):
+		return
+	_charge_duck_tween = create_tween()
+	_charge_duck_tween.set_ignore_time_scale(true)  # the bed runs on the mixer clock; see duck_music_for_kill
+	var t: float = CHARGE_DUCK_ATTACK_TIME if target < 0.0 else CHARGE_DUCK_RELEASE_TIME
+	_charge_duck_tween.tween_property(amp, "volume_db", target, t).set_trans(Tween.TRANS_SINE)
+
+
+## Battle over or left: no boss is charging any more, whoever forgot to say so.
+func clear_charge_duck() -> void:
+	_charge_holders.clear()
+	duck_for_charge(false)
+
+
+## True while any boss holds the charge duck. Test seam.
+func is_music_ducked_for_charge() -> bool:
+	return not _charge_holders.is_empty()
+
+
+## Public: current charge-duck attenuation in dB (0.0 at rest). Test seam.
+func get_charge_duck_db() -> float:
+	var idx: int = AudioServer.get_bus_index(MUSIC_DUCK_BUS)
+	if idx == -1 or AudioServer.get_bus_effect_count(idx) <= CHARGE_DUCK_EFFECT_SLOT:
+		return 0.0
+	var amp = AudioServer.get_bus_effect(idx, CHARGE_DUCK_EFFECT_SLOT)
+	return amp.volume_db if amp else 0.0
+
+
 ## Public: current jingle-duck attenuation in dB (0.0 at rest). Test seam.
 func get_jingle_duck_db() -> float:
 	var idx: int = AudioServer.get_bus_index(MUSIC_DUCK_BUS)
@@ -2157,6 +2228,12 @@ func get_kill_duck_db() -> float:
 func play_cutscene_sfx(sound_key: String) -> void:
 	"""A cutscene's own SFX — same resolution as play_ui, on a voice no menu blip touches."""
 	play_ui(sound_key, _cutscene_player)
+
+
+## A skipped scene takes its sound with it: one voice, so one stop cuts whichever cue is sounding.
+func stop_cutscene_sfx() -> void:
+	if _cutscene_player and _cutscene_player.playing:
+		_cutscene_player.stop()
 
 func play_footstep(terrain: String = "grass") -> void:
 	"""Play a footstep sound for the given terrain type (grass, stone, sand)."""
@@ -3274,6 +3351,15 @@ func capture_music_state() -> Dictionary:
 	## and only is_running() drops on the spot — which is what makes this derived rather than latched.
 	var fading_out: bool = _fade_out_tween != null and _fade_out_tween.is_valid() and _fade_out_tween.is_running()
 	return {"track": _current_music, "area": _current_area, "playing": _music_playing and not fading_out, "position": pos}
+
+
+## Seconds into `track` as it is HEARD, or -1.0 while it is not the stream sounding (not started, missing, replaced, ended): the clock for a scene timed to its own cue.
+func music_position_of(track: String) -> float:
+	if track == "" or str(_current_music) != track:
+		return -1.0
+	if _music_player == null or _music_player.stream == null or not _music_player.playing:
+		return -1.0
+	return _music_player.get_playback_position()
 
 
 ## A state to RESTORE, shaped like capture_music_state: the bed play_area_music armed and has not started. "playing" means owed, never audible.

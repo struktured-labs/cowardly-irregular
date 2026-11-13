@@ -13859,6 +13859,30 @@
       "duration_seconds": 1.1,
       "source": "tools/gen_sequence_beats.py beat_raise_halo"
     },
+    "scene_tiny_crown_lands": {
+      "file": "assets/audio/sfx/scene_tiny_crown_lands.ogg",
+      "prompt": "The Rat King's very small crown landing on the rim of Harmonia's well (world1_briefing_skipped, the `play_sfx` step after the narration). A thin metal ring on stone, then a roll that spins down to rest: the taps end by ~0.33 s, inside the prop's own roll (tiny_crown.png, frames 1-3 at 8 fps). Quiet on purpose, -23 dB active-RMS; the Elder's next line is left bare. numpy synthesis, not heard by struktured yet.",
+      "duration_seconds": 0.37,
+      "source": "tools/gen_scene_cues.py scene_tiny_crown_lands"
+    },
+    "inn_night_falls": {
+      "file": "assets/audio/sfx/inn_night_falls.ogg",
+      "prompt": "The inn night's first beat (InnRestSequence beat \"night_falls\"): the lamp turned down and the room settling, a small click, a falling wick tone, a breath and one floorboard. It fits the 0.6 s fade before the ditty's first note. -21.1 dB active-RMS. numpy synthesis, not heard by struktured yet.",
+      "duration_seconds": 0.52,
+      "source": "tools/gen_inn_night_cues.py inn_night_falls"
+    },
+    "inn_night_air": {
+      "file": "assets/audio/sfx/inn_night_air.ogg",
+      "prompt": "The inn night's bed (beat \"night\"): three cricket voices and a breath of air, written entirely above 3 kHz because inn_rest_ditty keeps 89% of its energy under 800 Hz. Quiet on purpose; dawn replaces it on the same voice. -31.1 dB active-RMS. numpy synthesis, not heard by struktured yet.",
+      "duration_seconds": 4.0,
+      "source": "tools/gen_inn_night_cues.py inn_night_air"
+    },
+    "inn_dawn": {
+      "file": "assets/audio/sfx/inn_dawn.ogg",
+      "prompt": "The inn night's dawn (beat \"dawn\", where the rest is named): two birds over a warm rising chord, landing on the ditty's last note and tail. It carries the restore, in place of the five menu_open ticks. -21.1 dB active-RMS. numpy synthesis, not heard by struktured yet.",
+      "duration_seconds": 1.3,
+      "source": "tools/gen_inn_night_cues.py inn_dawn"
+    },
     "family_bite": {
       "file": "assets/audio/sfx/family_bite.ogg",
       "prompt": "Fired by the flash phase of family_bite through its \"sfx\" key (battle time; one beat per key per frame). A monster's BITE at contact: two closing jaw clicks over a short crunch. -19.7 dB active-RMS, -22.1 through a 200 Hz high-pass. numpy synthesis, not heard by struktured yet.",
@@ -15180,6 +15204,18 @@
       "seed": 42,
       "whisper_heard": "Carry on, I will be taking notes.",
       "whisper_score": 1.0
+    },
+    "boss_charge_gather": {
+      "file": "assets/audio/sfx/boss_charge_gather.ogg",
+      "prompt": "Fired by BattleScene on BattleManager.boss_charge_changed(boss, true), once per charge (the edge, never the quiet turns). A boss DRAWING ITS BREATH: air pulled in with its band opening upward over a low body climbing 70->155 Hz, a fast-tremolo shimmer at the top; it rises and never resolves, because the signature that follows keeps its own cue. -19 dB active-RMS. numpy synthesis, not heard by struktured yet.",
+      "duration_seconds": 1.15,
+      "source": "tools/gen_charge_cues.py boss_charge_gather"
+    },
+    "boss_charge_broken": {
+      "file": "assets/audio/sfx/boss_charge_broken.ogg",
+      "prompt": "Fired by BattleScene on BattleManager.boss_charge_broken(boss, status), when a stun or silence lands on a charging boss. The gathered power SNAPS and spills: a bright crack, the gather's climb run backwards (240->55 Hz) and a scatter of thinning sparks, so the pair reads as one breath taken and lost. -17.5 dB active-RMS. numpy synthesis, not heard by struktured yet.",
+      "duration_seconds": 0.51,
+      "source": "tools/gen_charge_cues.py boss_charge_broken"
     }
   }
 }
