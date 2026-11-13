@@ -73,8 +73,69 @@ const SCENES := [
 	# rendered nothing, and it exits 0 either way.
 ]
 
+## The village a shared interior is photographed AS. A room asks GameLoop which village it was entered from and draws
+## that village's art; this tool builds the room alone, so with no answer every shared room fell back to its PAINTED
+## look, and the store's inn was a room no player in Harmonia has seen (found 2026-11-12 on overworld's contact sheet:
+## the stored frame has the painted slab table and no drawn back wall or hearth). Harmonia is the first village a
+## player enters. A room with no entry here is shot as before.
+const ORIGINS := {
+	"inn_interior": "harmonia_village",
+	"shop_interior": "harmonia_village",
+	"tavern_interior": "harmonia_village",
+}
+## Rooms whose village HAS drawn art today: an origin that yields none is a silent fallback, and reds the shot.
+const MUST_BE_DRAWN := ["inn_interior"]
+
 var _ok := 0
 var _fail := 0
+
+
+## Things that MOVE in a room, held still for the capture: the recheck compares these frames pixel by pixel every
+## release, so an NPC strolling or a lamp wavering reads as "the room changed" and hides a real change behind it.
+## Each is a static switch its owner built for this tool (cowir-overworld 24225, 24357). A tree without the switch
+## (before those tips fold) has nothing to hold and says so. SHOTS_NO_HOLD=1 leaves them moving: the control.
+const HELD_STILL := [
+	["res://src/exploration/OverworldNPC.gd", "strolling_enabled"],
+	["res://src/maps/InteriorLighting.gd", "flicker_enabled"],
+]
+
+
+func _hold_still() -> void:
+	if OS.get_environment("SHOTS_NO_HOLD") != "":
+		print("[SHOT] held still: nothing (SHOTS_NO_HOLD)")
+		return
+	var held: Array = []
+	var absent: Array = []
+	for pair in HELD_STILL:
+		var script = load(pair[0]) if ResourceLoader.exists(pair[0]) else null
+		if script == null or script.get(pair[1]) == null:
+			absent.append(pair[1])
+			continue
+		script.set(pair[1], false)
+		if script.get(pair[1]) != false:
+			print("[SHOT] FAIL: %s did not take false: the switch is not a static this tool can set" % pair[1])
+			_fail += 1
+			continue
+		held.append(pair[1])
+	print("[SHOT] held still: %s · not in this tree: %s" % [", ".join(held) if not held.is_empty() else "nothing", ", ".join(absent) if not absent.is_empty() else "nothing"])
+
+
+## Stands in for GameLoop for the questions a shot's room asks it. A room guards get_village_origin_id with has_method.
+## OverworldPlayer._can_move does NOT guard: every frame it reads current_state against LoopState.EXPLORATION on
+## whatever sits at /root/GameLoop. Without these two the .794 slot logged 51-56 SCRIPT ERRORs per run (cowir-deploy 24657).
+## LoopState copies GameLoop's first three names; the state is TITLE, so _can_move answers false ON PURPOSE: a store
+## shot wants the hero standing where the room put him.
+const STAND_IN_SRC := "extends Node\nenum LoopState { TITLE, BATTLE, EXPLORATION }\nvar current_state: int = LoopState.TITLE\nvar origin := \"\"\nfunc get_village_origin_id() -> String:\n\treturn origin\n"
+
+func _stand_in_origin(origin: String) -> Node:
+	var src := GDScript.new()
+	src.source_code = STAND_IN_SRC
+	if src.reload() != OK:
+		return null
+	var n: Node = src.new()
+	n.name = "GameLoop"
+	n.set("origin", origin)
+	return n
 
 
 func _init() -> void:
@@ -83,13 +144,21 @@ func _init() -> void:
 	await process_frame
 
 	_suppress_furniture()
+	_hold_still()
 
 	DirAccess.make_dir_recursive_absolute("res://tmp/marketing")
+	## SHOTS_ONLY=a,b shoots just those scenes and skips the title and the battle: for a tool's own controls (shoot three
+	## rooms six ways), never for the store set. The summary line says so, so a partial run cannot pass for a full one.
+	var only: PackedStringArray = OS.get_environment("SHOTS_ONLY").split(",", false)
 	for entry in SCENES:
-		await _shoot(entry[0], entry[1])
+		if only.is_empty() or entry[0] in only:
+			await _shoot(entry[0], entry[1])
 
-	await _shoot_title()
-	await _shoot_battle()
+	if only.is_empty():
+		await _shoot_title()
+		await _shoot_battle()
+	else:
+		print("[SHOT] PARTIAL run (SHOTS_ONLY=%s): not a store set" % ",".join(only))
 
 	print("[SHOT] done: %d captured, %d failed" % [_ok, _fail])
 	quit(0 if _fail == 0 else 1)
@@ -242,11 +311,32 @@ func _shoot(name: String, paths: Array) -> void:
 		_fail += 1
 		return
 
+	var origin := str(ORIGINS.get(name, ""))
+	var stand_in: Node = null
+	if origin != "" and OS.get_environment("SHOTS_NO_ORIGIN") == "":
+		if root.get_node_or_null("GameLoop") != null:
+			print("[SHOT] FAIL: %s — a GameLoop is already in the tree, so the origin cannot be stood in" % name)
+			_fail += 1
+			scene.free()
+			return
+		stand_in = _stand_in_origin(origin)
+		if stand_in == null:
+			print("[SHOT] FAIL: %s — the origin stand-in did not compile" % name)
+			_fail += 1
+			scene.free()
+			return
+		root.add_child(stand_in)
 	root.add_child(scene)
 	# 12 frames: villages stream tiles and spawn NPCs over several frames; 8 was enough for
 	# the older single-village tool but caught half-populated markets here.
 	for i in range(12):
 		await process_frame
+	if origin != "":
+		var drawn := scene.find_children("Art_*", "Sprite2D", true, false).size()
+		print("[SHOT] %s origin: %s · drawn pieces: %d" % [name, origin if stand_in != null else "(none: SHOTS_NO_ORIGIN)", drawn])
+		if stand_in != null and name in MUST_BE_DRAWN and drawn == 0:
+			print("[SHOT] FAIL: %s — shot as %s and no drawn piece stands in it: the painted fallback" % [name, origin])
+			_fail += 1
 
 	var framing := _frame_on_houses(scene)
 	if framing != "":
@@ -270,6 +360,8 @@ func _shoot(name: String, paths: Array) -> void:
 	_ok += 1
 
 	scene.queue_free()
+	if stand_in != null:
+		stand_in.queue_free()
 	await process_frame
 
 

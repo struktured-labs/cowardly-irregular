@@ -816,6 +816,8 @@ func _live_choice(enemy, alive_players: Array) -> Dictionary:
 			return {"type": "attack", "target": target} if target != null and is_instance_valid(target) and target.is_alive else {}
 		"defer":
 			return {"type": "defer"}
+		"charge":
+			return {"type": "charge"}   # a cadence boss spends the turn gathering, as live does
 		"ability":
 			var ability_id := str(pick.get("ability_id", ""))
 			var targets: Array = pick.get("targets", [])
@@ -961,6 +963,10 @@ func _execute_action(action: Dictionary) -> void:
 			acted = true
 			combatant.is_defending = true
 			_log("%s defers" % combatant.combatant_name)
+
+		"charge":
+			acted = true
+			_log("%s gathers power" % combatant.combatant_name)
 
 		"group_done":
 			pass  # Already executed during selection phase

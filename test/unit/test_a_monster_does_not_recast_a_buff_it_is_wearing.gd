@@ -40,6 +40,7 @@ func _picks(boss: Combatant, foes: Array, ability_id: String) -> int:
 	var n := 0
 	for i in DRAWS:
 		boss.current_mp = boss.max_mp
+		boss.remove_meta("_cadence")  # every draw a ladder turn: Glacius's clock would spend 2 in 5 on its breath
 		var a: Dictionary = BattleManager._make_ai_decision(boss, [boss], foes)
 		if str(a.get("ability_id", "")) == ability_id:
 			n += 1

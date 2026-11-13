@@ -498,6 +498,7 @@ func _ready() -> void:
 	BattleManager.action_executing.connect(_on_action_executing)
 	BattleManager.action_executed.connect(_on_action_executed)
 	BattleManager.boss_face_changed.connect(_on_boss_face_changed)
+	BattleManager.boss_charge_changed.connect(_on_boss_charge_changed)
 	# Item 19: user report "bard was briefly stuck for a turn next to
 	# the monsters on the left he presumably recently attacked" —
 	# stray displaced sprite from an interrupted return-home tween.
@@ -526,6 +527,8 @@ func _ready() -> void:
 		BattleManager.trust_interrupt_window_closed.connect(_on_trust_interrupt_window_closed)
 	BattleManager.battle_log_message.connect(_on_battle_log_message)
 	BattleManager.monster_summoned.connect(_on_monster_summoned)
+	BattleManager.boss_charge_changed.connect(_on_boss_charge_sound)
+	BattleManager.boss_charge_broken.connect(_on_boss_charge_broken)
 	## Tick 409: Scriptweaver's create_autobattle_script meta-ability
 	## surfaces the autobattle editor for the caster. Wired via
 	## has_signal guard for partial-autoload boot scenarios.
@@ -615,6 +618,10 @@ func _exit_tree() -> void:
 		BattleManager.action_executed.disconnect(_on_action_executed)
 	if BattleManager.boss_face_changed.is_connected(_on_boss_face_changed):
 		BattleManager.boss_face_changed.disconnect(_on_boss_face_changed)
+	if BattleManager.boss_charge_changed.is_connected(_on_boss_charge_changed):
+		BattleManager.boss_charge_changed.disconnect(_on_boss_charge_changed)
+	if SoundManager:
+		SoundManager.clear_charge_duck()  # a scene freed mid-charge must not leave the field music leaning back
 	if BattleManager.round_ended.is_connected(_on_round_ended):
 		BattleManager.round_ended.disconnect(_on_round_ended)
 	if BattleManager.round_started.is_connected(_on_round_started_snap_home):
@@ -649,6 +656,10 @@ func _exit_tree() -> void:
 		BattleManager.battle_log_message.disconnect(_on_battle_log_message)
 	if BattleManager.monster_summoned.is_connected(_on_monster_summoned):
 		BattleManager.monster_summoned.disconnect(_on_monster_summoned)
+	if BattleManager.boss_charge_changed.is_connected(_on_boss_charge_sound):
+		BattleManager.boss_charge_changed.disconnect(_on_boss_charge_sound)
+	if BattleManager.boss_charge_broken.is_connected(_on_boss_charge_broken):
+		BattleManager.boss_charge_broken.disconnect(_on_boss_charge_broken)
 	if BattleManager.one_shot_achieved.is_connected(_on_one_shot_achieved):
 		BattleManager.one_shot_achieved.disconnect(_on_one_shot_achieved)
 	if BattleManager.autobattle_victory.is_connected(_on_autobattle_victory):
@@ -1430,8 +1441,8 @@ func _create_battle_sprites() -> void:
 
 		# No floating name label for party members — the PARTY panel already names them, and the label drifted off-sprite in the stacked formation (struktured cap 2026-08-15). Enemies keep theirs (targeting aid).
 
-		# Setup status icons for this party member
-		_setup_status_icons(member, sprite)
+		# Setup status icons for this party member (the party stands right, facing left: evasion trails right)
+		_setup_status_icons(member, sprite, 1.0)
 	_place_party(false)
 
 	# Create enemy sprites
@@ -1943,7 +1954,7 @@ const STATUS_ICON_CONFIG = {
 }
 
 
-func _setup_status_icons(combatant: Combatant, sprite: AnimatedSprite2D) -> void:
+func _setup_status_icons(combatant: Combatant, sprite: AnimatedSprite2D, trail: float = -1.0) -> void:
 	"""Create status icon container above a combatant's sprite and connect signals"""
 	var container = HBoxContainer.new()
 	container.add_theme_constant_override("separation", 2)
@@ -1967,7 +1978,7 @@ func _setup_status_icons(combatant: Combatant, sprite: AnimatedSprite2D) -> void
 	container.position = Vector2(centre_x - STATUS_ROW_WIDTH * unscale.x * 0.5, top - STATUS_ROW_LIFT * unscale.y)
 	sprite.add_child(container)
 	_status_icon_containers[combatant] = container
-	_status_auras[combatant] = _make_status_aura(sprite)
+	_status_auras[combatant] = _make_status_aura(sprite, trail)
 
 	# Connect signals for reactive updates
 	if not combatant.status_added.is_connected(_on_combatant_status_changed):
@@ -1987,9 +1998,10 @@ func _setup_status_icons(combatant: Combatant, sprite: AnimatedSprite2D) -> void
 
 ## The animated overlay, counter-scaled to screen pixels and fitted to the idle frame's FIGURE, so a motif stands on
 ## the body, not on the frame's empty margin; StatusAura sizes it from that figure's height (scale_for).
-func _make_status_aura(sprite: AnimatedSprite2D) -> Node2D:
+func _make_status_aura(sprite: AnimatedSprite2D, trail: float = -1.0) -> Node2D:
 	var aura = StatusAuraClass.new()
 	aura.name = "StatusAura"
+	aura.trail = trail
 	var sc := sprite.scale
 	aura.scale = Vector2(1.0 / maxf(absf(sc.x), 0.01), 1.0 / maxf(absf(sc.y), 0.01))
 	if sprite.sprite_frames and sprite.sprite_frames.has_animation(&"idle") and sprite.sprite_frames.get_frame_count(&"idle") > 0:
@@ -4537,6 +4549,7 @@ func _on_battle_ended(victory: bool) -> void:
 	_music_follows_hp = false
 	SoundManager.clear_fight_bed()
 	SoundManager.reset_danger()  # a turbo win or an escape starts no new bed, so nothing else would end the speed-up
+	SoundManager.clear_charge_duck()  # BattleManager settles its charging bosses too; this holds even if a path skips that
 	## A hit still held for its impact frame lands NOW (number, then its death), before the defeat scene or the
 	## victory flow: an escape or a wipe mid-swing must not lean on the safety timer (cowir-battle 23687).
 	_land_held_hit()
@@ -6619,6 +6632,13 @@ func _on_action_executed(combatant: Combatant, action: Dictionary, targets: Arra
 						SoundManager.play_status(effect)
 
 
+## A charging boss leans the music back (main 23917): only a FULL-tier battle dips, and a release always passes.
+func _on_boss_charge_changed(boss: Combatant, charging: bool) -> void:
+	if charging and not (_intent_tier() == BattleJuice.Tier.FULL):
+		return
+	SoundManager.duck_for_charge(charging, boss)
+
+
 ## A phase_faces boss (the Calibrant) swaps its visible body when a face lands. The spawn path
 ## latches _small_frame/size_bump/flip_h from the sheet worn at spawn — recompute ALL THREE from
 ## the NEW sheet or a 128px base wearing 256px faces renders 2.5x too big and facing backwards
@@ -7522,6 +7542,17 @@ func _on_hit_negated(target: Combatant, banner: String) -> void:
 		return
 	_results_display.on_hit_negated(target, banner)
 	SoundManager.play_battle("attack_miss")
+
+
+## A boss drawing its breath is heard once, on the rising edge; the release keeps the signature's own cue.
+func _on_boss_charge_sound(_boss: Combatant, charging: bool) -> void:
+	if charging:
+		SoundManager.play_battle("boss_charge_gather")
+
+
+## A stun or silence that breaks the charge: the gathered power snaps and spills.
+func _on_boss_charge_broken(_boss: Combatant, _status: String) -> void:
+	SoundManager.play_battle("boss_charge_broken")
 
 
 ## A cast that could not pay: the banner and cast_fizzle, never attack_miss (a fizzle is not a miss; sfx 23446).
