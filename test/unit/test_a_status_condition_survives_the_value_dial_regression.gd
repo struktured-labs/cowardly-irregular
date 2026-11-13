@@ -247,3 +247,22 @@ func test_the_grind_and_autobattle_dials_offer_one_list() -> void:
 	assert_eq(battle, vocab.map(func(n): return str(n)), "CONTROL: the autobattle dial walks its own derived list")
 	assert_eq(grind, battle, "the grind grid's status dial offers a different list from the autobattle grid's")
 	assert_eq(cycler, battle, "the console's OPTIONS cycler offers a different list from the autobattle grid's")
+
+
+## The list now carries snake_case ids (damage_absorb, shadow_step); every grind surface names them the way the battle grid does.
+func test_a_dialled_status_reads_as_words_on_every_grind_surface() -> void:
+	var vocab: Array = AutobattleGridEditor.payload_vocabulary("status")
+	var snake: Array = vocab.filter(func(v): return str(v).contains("_"))
+	assert_gt(snake.size(), 0, "CONTROL: the list holds a snake_case id, or this arm proves nothing (%s)" % [vocab])
+	var id: String = str(snake[0])
+	var cond := {"type": "member_status", "member": "cleric", "value": id}
+	var ed := _editor()
+	var console = load(UI).new()
+	add_child_autofree(console)
+	console.rules = [{"conditions": [cond.duplicate()], "actions": [{"type": "stop_grinding"}], "enabled": true}]
+	console.cursor_row = 0
+	var texts := {"grid": ed._format_condition(cond), "console": console._format_condition(cond), "options": console._cursor_status_label()}
+	gut.p("    %s -> %s" % [id, texts])
+	for k in texts:
+		assert_false(str(texts[k]).contains(id), "the %s shows the raw id '%s': %s" % [k, id, texts[k]])
+		assert_true(str(texts[k]).contains(StatusNames.display(id)), "the %s must name it as the battle grid does (%s): %s" % [k, StatusNames.display(id), texts[k]])

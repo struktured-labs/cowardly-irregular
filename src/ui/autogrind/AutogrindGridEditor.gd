@@ -810,7 +810,7 @@ func _format_condition(condition: Dictionary) -> String:
 		"member_mp":
 			return "%s MP %s %d" % [_member_label(condition), op, value]
 		"member_status":
-			return "%s has %s" % [_member_label(condition), str(condition.get("value", "status"))]
+			return "%s has %s" % [_member_label(condition), StatusNames.display(str(condition.get("value", "status")))]
 		"win_streak":
 			return "Wins %s %d" % [op, value]
 		"time_elapsed":

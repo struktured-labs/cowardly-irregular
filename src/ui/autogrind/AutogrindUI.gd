@@ -1268,7 +1268,7 @@ func _format_condition(condition: Dictionary) -> String:
 		"member_mp":
 			return "%s MP\n%s %d" % [_member_label(condition), op, value]
 		"member_status":
-			return "%s\n%s" % [_member_label(condition), str(condition.get("value", "status"))]
+			return "%s\n%s" % [_member_label(condition), StatusNames.display(str(condition.get("value", "status")))]
 		"inventory_items":
 			return "Inv Items\n%s %d" % [op, value]
 		"ability_learned":
@@ -2203,7 +2203,7 @@ func _cursor_status_label() -> String:
 	var d := _cursor_cell_dict()
 	if d.is_empty() or str(d.get("type", "")) != "member_status":
 		return "n/a"
-	return str(d.get("value", "?"))
+	return StatusNames.display(str(d.get("value", "?")))
 
 
 ## member_status carries the status NAME in `value` (the evaluator reads it there, and the LLM
