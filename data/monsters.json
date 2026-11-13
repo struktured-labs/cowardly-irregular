@@ -2044,7 +2044,7 @@
     ],
     "cadence": {
       "signature": "absolute_zero",
-      "every": 3,
+      "every": 1,
       "charge_turns": 1
     },
     "spectrum_ratio": 0.779744
