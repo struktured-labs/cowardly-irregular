@@ -120,11 +120,16 @@ func _hold_still() -> void:
 	print("[SHOT] held still: %s · not in this tree: %s" % [", ".join(held) if not held.is_empty() else "nothing", ", ".join(absent) if not absent.is_empty() else "nothing"])
 
 
-## Stands in for GameLoop for the ONE question a room asks it. A room guards the call with has_method, so nothing else
-## is answered and nothing else is pretended.
+## Stands in for GameLoop for the questions a shot's room asks it. A room guards get_village_origin_id with has_method.
+## OverworldPlayer._can_move does NOT guard: every frame it reads current_state against LoopState.EXPLORATION on
+## whatever sits at /root/GameLoop. Without these two the .794 slot logged 51-56 SCRIPT ERRORs per run (cowir-deploy 24657).
+## LoopState copies GameLoop's first three names; the state is TITLE, so _can_move answers false ON PURPOSE: a store
+## shot wants the hero standing where the room put him.
+const STAND_IN_SRC := "extends Node\nenum LoopState { TITLE, BATTLE, EXPLORATION }\nvar current_state: int = LoopState.TITLE\nvar origin := \"\"\nfunc get_village_origin_id() -> String:\n\treturn origin\n"
+
 func _stand_in_origin(origin: String) -> Node:
 	var src := GDScript.new()
-	src.source_code = "extends Node\nvar origin := \"\"\nfunc get_village_origin_id() -> String:\n\treturn origin\n"
+	src.source_code = STAND_IN_SRC
 	if src.reload() != OK:
 		return null
 	var n: Node = src.new()
