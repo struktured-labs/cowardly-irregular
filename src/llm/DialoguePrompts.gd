@@ -236,7 +236,8 @@ Conditions (AND-chained). type is one of:
   ally_has_status, enemy_has_status, not_enemy_has_status, enemy_weak_to, enemy_resists,
   ally_mp_percent,
   ally_dead, is_night, weather,
-  always, has_buff, not_has_buff, volatility_band
+  always, has_buff, not_has_buff, volatility_band,
+  enemy_charging, enemy_signature_in
 Each numeric condition takes op ∈ {<, <=, ==, >=, >, !=} and value.
 ap is the Advance Point bank and runs -4 to +4: 4 is a full bank, negative is debt.
 A value outside that range validates and then never fires.
@@ -287,6 +288,14 @@ enemy_resists takes the same 'element' field and no op/value. True when ANY
 living enemy resists that element — the guard on the other side: put it on a
 rule ABOVE your fire rule to switch spells before you waste a turn, e.g.
 {\"type\":\"enemy_resists\",\"element\":\"fire\"} + 'blizzard'.
+enemy_charging is NULLARY: true while any living enemy is gathering power for
+its signature move. A stun, silence or sleep that lands mid-charge breaks it, so
+{\"type\":\"enemy_charging\"} + 'shield_bash' (stun) or 'lullaby' (sleep)
+is the interrupt; against a lone boss the hit lands on the one charging.
+enemy_signature_in takes op and value: the boss turns until the soonest
+signature release, 1 meaning its very next turn. It never fires in a fight
+with no such boss. {\"type\":\"enemy_signature_in\",\"op\":\"<=\",\"value\":1}
++ a defer braces for the blow, or + 'protect' raises a shield first.
 item_count takes an 'item_id' field NAMING the item to count, alongside op and
 value — {\"type\":\"item_count\",\"item_id\":\"potion\",\"op\":\">\",\"value\":0}.
 Omit item_id and the count is always 0, so the rule never fires.
