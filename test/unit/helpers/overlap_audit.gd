@@ -41,6 +41,9 @@ static func backdrops(root: Node) -> Array:
 ## a partial overlap, another container's node landing on the panel, and any sprite_surface all still report.
 static func collisions(surfs: Array, declared: Dictionary, used: Dictionary = {}) -> Array:
 	var out: Array = []
+	var owner: Array = []
+	for j in surfs.size():
+		owner.append(_owner_of(surfs, j))
 	for i in surfs.size():
 		for j in range(i + 1, surfs.size()):
 			var a: Dictionary = surfs[i]
@@ -48,7 +51,7 @@ static func collisions(surfs: Array, declared: Dictionary, used: Dictionary = {}
 			var hit: Rect2 = (a["rect"] as Rect2).intersection(b["rect"])
 			if hit.size.x < MIN_PX or hit.size.y < MIN_PX:
 				continue
-			if _is_content(a, b):
+			if owner[j] == i and (a["rect"] as Rect2).grow(CONTAIN_SLACK).encloses(b["rect"]):
 				continue
 			var key := _declared_key(declared, str(a["id"]), str(b["id"]))
 			if key != "":
@@ -150,17 +153,26 @@ static func _is_text(c: Control) -> bool:
 	return c is Button and (c as Button).text.strip_edges() != ""
 
 
-## b (drawn later) is content of a: a is a Control that paints a background (never a text-only node), b is a Control under
-## a's own parent (battle 24944, adhoc 24943), and a wholly encloses b. A sprite_surface's node is not a Control: never.
-static func _is_content(a: Dictionary, b: Dictionary) -> bool:
-	var na = a.get("node")
-	var nb = b.get("node")
-	if not (na is Control and nb is Control) or not _draws_background(na):
-		return false
-	var parent: Node = (na as Node).get_parent()
-	if parent == null or not parent.is_ancestor_of(nb):
-		return false
-	return (a["rect"] as Rect2).grow(CONTAIN_SLACK).encloses(b["rect"])
+## The one surface j may be content of: the NEAREST earlier Control that paints a background (never a text-only node), sits
+## under whose own parent j lies, and is big enough to hold j (so border strips are skipped). -1 = none; a sprite_surface's
+## node is not a Control, so it has none. Only that owner, and only wholly enclosing j, makes the pair content: a label that
+## drifted off its own panel onto another sibling panel is a finding (battle 24944, adhoc 24943/24948).
+static func _owner_of(surfs: Array, j: int) -> int:
+	var nb = surfs[j].get("node")
+	if not (nb is Control):
+		return -1
+	var need: Vector2 = (surfs[j]["rect"] as Rect2).size
+	for k in range(j - 1, -1, -1):
+		var na = surfs[k].get("node")
+		if not (na is Control) or not _draws_background(na):
+			continue
+		var parent: Node = (na as Node).get_parent()
+		if parent == null or not parent.is_ancestor_of(nb):
+			continue
+		var have: Vector2 = (surfs[k]["rect"] as Rect2).size
+		if have.x + CONTAIN_SLACK >= need.x and have.y + CONTAIN_SLACK >= need.y:
+			return k
+	return -1
 
 
 static func _declared_key(declared: Dictionary, a: String, b: String) -> String:
