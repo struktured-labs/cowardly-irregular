@@ -42,7 +42,6 @@ var _fire_time: float = 0.0
 var lighting: InteriorLighting
 ## Flat things underfoot (a rug, a door mat, contact shadows): drawn after the floor and before anyone who stands on them.
 var _floor_pieces: Node2D
-var _shadow_cache: Dictionary = {}
 
 ## Spawn points (grid coords)
 var spawn_points: Dictionary = {
@@ -279,8 +278,8 @@ func _setup_decorations() -> void:
 	# On the floor layer, not among the sorted pieces: a strip whose origin is above the map sorted UNDER the wall tiles.
 	InteriorArt.back_wall(_floor_pieces, "inn", MAP_WIDTH, InteriorArt.village_key(_origin_map_id()))
 
-	var none := func() -> Node: return null
-	_floor_piece("rug", Vector2(12.5, 8.0) * TILE_SIZE, none)
+	var none := InteriorPiece.none()
+	_floor_piece("rug", Vector2(12.5, 8.0) * TILE_SIZE)
 	_piece("desk", Vector2(2.5, 3.5) * TILE_SIZE, _create_registration_desk, Vector2(92, 40))
 	_piece("barrel", Vector2(5.5, 4.0) * TILE_SIZE, none, Vector2(24, 14))
 	_piece("crate", Vector2(6.5, 4.0) * TILE_SIZE, none, Vector2(26, 14))
@@ -304,7 +303,7 @@ func _setup_decorations() -> void:
 	_piece("round_table", Vector2(480.0, 352.0), none, Vector2(56, 22))
 	_piece("stool", Vector2(435.0, 333.0), none)
 	_piece("stool", Vector2(528.0, 355.0), none)
-	_floor_piece("door_mat", Vector2(10.0 * TILE_SIZE, 414.0), none)
+	_floor_piece("door_mat", Vector2(10.0 * TILE_SIZE, 414.0))
 	_create_stairs_up()
 	_piece("coat_rack", Vector2(42.0, 340.0), _create_coat_rack, Vector2.ZERO)
 	_piece("gear_pile", Vector2(17.0 * TILE_SIZE, 340.0), _create_travel_gear_pile, Vector2(56, 18))
@@ -330,54 +329,14 @@ func _is_drawn(kind: String) -> bool:
 	return InteriorArt.path(kind, "inn", _art_village()) != ""
 
 
-## One piece of furniture through the art seam. Drawn: it stands with its feet on `base`, sorts by them, casts a
-## contact shadow and, given `solid`, blocks the player there. No art: the room's own `painter` runs exactly as before.
+## One piece of furniture through the shared seam (InteriorPiece); with no art the room's own `painter` runs as before.
 func _piece(kind: String, base: Vector2, painter: Callable, solid: Vector2 = Vector2.ZERO, shadow: bool = true, solid_at: Vector2 = Vector2.ZERO) -> Sprite2D:
-	var holder := Node2D.new()
-	holder.name = "Piece_" + kind
-	holder.position = base
-	decorations.add_child(holder, true)
-	var art := InteriorArt.place_or_paint(holder, kind, "inn", Vector2.ZERO, painter, _art_village()) as Sprite2D
-	if art == null or art.get_parent() != holder:
-		holder.queue_free()  # painted: the painter put its own nodes where it always has
-		return null
-	if shadow:
-		_contact_shadow(base, art.texture.get_width())
-	if solid != Vector2.ZERO:
-		var body := StaticBody2D.new()
-		body.collision_layer = 1
-		body.collision_mask = 0
-		var shape := CollisionShape2D.new()
-		var rect := RectangleShape2D.new()
-		rect.size = solid
-		shape.shape = rect
-		shape.position = solid_at if solid_at != Vector2.ZERO else Vector2(0, -solid.y / 2.0)
-		body.add_child(shape)
-		holder.add_child(body)
-	return art
+	return InteriorPiece.stand(decorations, _floor_pieces, kind, "inn", base, painter, _art_village(), solid, shadow, solid_at)
 
 
-## A flat piece underfoot (a rug): through the same seam, on the floor layer, walkable.
-func _floor_piece(kind: String, base: Vector2, painter: Callable) -> Node:
-	return InteriorArt.place_or_paint(_floor_pieces, kind, "inn", base, painter, _art_village())
-
-
-## A soft dark ellipse under a standing piece, on the floor layer so nobody is ever drawn beneath it.
-func _contact_shadow(base: Vector2, piece_width: int) -> void:
-	var w: int = maxi(12, int(piece_width * 0.9))
-	if not _shadow_cache.has(w):
-		var h: int = clampi(w / 5, 6, 14)
-		var img := Image.create(w, h, false, Image.FORMAT_RGBA8)
-		for y in range(h):
-			for x in range(w):
-				var d: float = Vector2((x + 0.5 - w / 2.0) / (w / 2.0), (y + 0.5 - h / 2.0) / (h / 2.0)).length()
-				img.set_pixel(x, y, Color(0, 0, 0, 0.32 * clampf(1.0 - d * d, 0.0, 1.0)))
-		_shadow_cache[w] = ImageTexture.create_from_image(img)
-	var sh := Sprite2D.new()
-	sh.name = "Shadow"
-	sh.texture = _shadow_cache[w]
-	sh.position = base + Vector2(0, -2)
-	_floor_pieces.add_child(sh, true)
+## A flat piece underfoot (a rug): on the floor layer, walkable.
+func _floor_piece(kind: String, base: Vector2) -> Node:
+	return InteriorPiece.lay(_floor_pieces, kind, "inn", base, _art_village())
 
 
 ## The candle on the laid table: a small warm pool that wavers.
