@@ -100,6 +100,10 @@ func test_no_card_draws_on_the_next_one_at_any_text_size() -> void:
 		_cards(o, cards)
 		assert_eq(cards.size(), 5, "CONTROL: five cards at %s" % scale)
 		cards.sort_custom(func(a, b): return (a as Control).global_position.y < (b as Control).global_position.y)
+		var vp_y: float = o.get_viewport_rect().size.y
+		gut.p("ts %s: ch %.1f (CARD_H*s %.1f, content %.1f) gap %.1f top %.1f bottom_margin %.1f vp %.0f cards %s" % [scale, o._ch(),
+			OverlayScript.CARD_H * o._cscale, o._card_min_h, o._gap, o._stack_top(), o._bottom_margin(vp_y), vp_y,
+			str(cards.map(func(c): return "%.0f+%.0f" % [(c as Control).global_position.y, (c as Control).size.y]))])
 		for i in range(cards.size() - 1):
 			var a: Rect2 = (cards[i] as Control).get_global_rect()
 			var b: Rect2 = (cards[i + 1] as Control).get_global_rect()
