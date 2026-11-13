@@ -156,3 +156,27 @@ func test_the_tavern_reads_its_floor_wall_and_hearth_tiles() -> void:
 		wrong += 1 if got != InteriorArt.cell(floor_src, at) else 0
 	assert_gt(off_origin, 0, "the drawn floor pattern was stamped at one cell instead of repeating across the room")
 	assert_eq(wrong, 0, "%d floor cells do not sample the pattern by their position" % wrong)
+
+
+func test_a_drawn_tavern_back_wall_replaces_the_painted_wall_art() -> void:
+	var wall_art := ["WallBanner", "WallPainting", "Dartboard", "CopperPots"]
+	VillageProp.prop_art_override = {}
+	var plain := TavernInterior.new()
+	add_child_autofree(plain)
+	assert_eq(_art_nodes(plain, "back_wall"), 0, "CONTROL: a tavern with no back wall art grew one")
+	for n in wall_art:
+		assert_not_null(plain.decorations.get_node_or_null(n), "CONTROL: the painted tavern hangs its %s" % n)
+	assert_eq(plain.camera.limit_top, 0, "CONTROL: a painted tavern's camera stops at the map's edge")
+	VillageProp.prop_art_override = {"back_wall_tavern": {"path": ART_A}}
+	var tav := TavernInterior.new()
+	add_child_autofree(tav)
+	assert_eq(_art_nodes(tav, "back_wall"), 1, "the tavern did not stand its back wall")
+	var spr: Sprite2D = tav.find_child("Art_back_wall", true, false)
+	var r: Rect2 = spr.get_rect() if spr else Rect2()
+	r.position += spr.position if spr else Vector2.ZERO
+	assert_almost_eq(r.end.y, float(InteriorArt.TILE), 0.5, "the back wall does not stand on the top wall row's base")
+	assert_almost_eq(r.get_center().x, TavernInterior.MAP_WIDTH * InteriorArt.TILE / 2.0, 0.5, "the back wall is not centred on the room")
+	for n in wall_art:
+		assert_null(tav.decorations.get_node_or_null(n), "the painted %s still hangs over the drawn back wall" % n)
+	assert_gt(tav.decorations.get_child_count(), 0, "the drawn back wall took the rest of the room with it")
+	assert_eq(tav.camera.limit_top, -InteriorArt.TILE, "the camera cannot show the part of the wall above the map")
