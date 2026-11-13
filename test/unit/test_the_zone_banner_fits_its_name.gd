@@ -67,6 +67,7 @@ func test_the_banner_drops_below_a_tracker_built_after_it() -> void:
 	var tracker := QuestTracker.new()
 	host.add_child(tracker)
 	tracker.setup(host)
+	tracker._label.text = "> Find the Dragon Crystals scattered across the four caves"
 	tracker._side_label.visible = true
 	tracker._side_label.text = "Find the thing the long side quest keeps asking about"
 	tracker._apply_plate()

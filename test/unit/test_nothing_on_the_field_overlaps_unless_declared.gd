@@ -102,7 +102,10 @@ func test_nothing_on_the_field_overlaps_unless_declared() -> void:
 		assert_gt(surfaces.size(), 10, "CONTROL: the field HUD was built (%d surfaces at %s)" % [surfaces.size(), str(p)])
 		for s in surfaces:
 			gut.p("[FIELD %s] %s %s" % [str(p), s["id"], str(s["rect"])])
-		assert_eq(Overlap.collisions(surfaces, DECLARED, used), [], "field HUD overlaps at Text Size %s" % str(p))
+		var hits: Array = Overlap.collisions(surfaces, DECLARED, used)
+		for h in hits:
+			gut.p("[OVERLAP %s] %s" % [str(p), str(h)])
+		assert_eq(hits.size(), 0, "field HUD overlaps at Text Size %s: %d (each printed as [OVERLAP])" % [str(p), hits.size()])
 	assert_eq(Overlap.stale(DECLARED, used), [], "a declared overlap matched nothing at any Text Size, or has no reason")
 
 
