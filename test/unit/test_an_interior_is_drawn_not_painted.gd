@@ -132,3 +132,27 @@ func test_each_shelf_row_of_stock_is_centred_on_its_shelf() -> void:
 	xs.sort()
 	assert_eq(xs.size(), 4, "CONTROL: four drawn stock rows")
 	assert_almost_eq(float(xs[0]), 3.5 * InteriorArt.TILE, 0.5, "drawn stock on the left is off its shelf")
+
+
+func test_the_tavern_reads_its_floor_wall_and_hearth_tiles() -> void:
+	VillageProp.prop_art_override = {}
+	var plain := TavernInterior.new()
+	add_child_autofree(plain)
+	var plain_floor := plain.tilemap.tile_set.get_source(0) as TileSetAtlasSource
+	assert_eq(plain_floor.get_atlas_grid_size(), Vector2i.ONE, "CONTROL: an undrawn tavern floor is one painted cell")
+	VillageProp.prop_art_override = {"floor_tavern": {"path": ART_A}, "wall_tavern": {"path": ART_B}, "hearth_tavern": {"path": ART_A}}
+	var tav := TavernInterior.new()
+	add_child_autofree(tav)
+	for pair in [[0, ART_A], [1, ART_B], [4, ART_A]]:
+		var src := tav.tilemap.tile_set.get_source(pair[0]) as TileSetAtlasSource
+		var art := (load(pair[1]) as Texture2D).get_image()
+		assert_eq(src.texture.get_image().get_pixel(40, 40), art.get_pixel(40, 40), "tavern source %d is not the drawn tile" % pair[0])
+	var floor_src := tav.tilemap.tile_set.get_source(0) as TileSetAtlasSource
+	var off_origin := 0
+	var wrong := 0
+	for at in tav.tilemap.get_used_cells_by_id(0):
+		var got := tav.tilemap.get_cell_atlas_coords(at)
+		off_origin += 1 if got != Vector2i.ZERO else 0
+		wrong += 1 if got != InteriorArt.cell(floor_src, at) else 0
+	assert_gt(off_origin, 0, "the drawn floor pattern was stamped at one cell instead of repeating across the room")
+	assert_eq(wrong, 0, "%d floor cells do not sample the pattern by their position" % wrong)

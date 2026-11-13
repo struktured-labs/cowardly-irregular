@@ -185,7 +185,11 @@ selftest() {
     # Any other way of failing to ask (timeout, crash) still runs the asserts, which then fail.
     local why=""
     case "$out" in *"COULD NOT ASK THE REAPER"*)
-        why="$(command grep -a -m1 -E 'cannot reach origin|UNREACHABLE' "$dir/p1.log" 2>/dev/null | cut -c1-140)" ;; esac
+        ## ⛔ AND A SHORT REPLY. origin_tags.sh refuses a tag list older than this repo's newest local tag (a SHORT ls-remote
+        ## reply, ec 0), and the reaper says so as "tag list contradicts this repo's", exit 3. That is the same "origin did
+        ## not answer usably" as an unreachable one, and the grep above did not know it: .795's first publish attempt was
+        ## BLOCKED 15/18 on three plain FAILs that read like a probe bug, and re-passed 18/18 minutes later.
+        why="$(command grep -a -m1 -E 'cannot reach origin|UNREACHABLE|contradicts this repo' "$dir/p1.log" 2>/dev/null | cut -c1-140)" ;; esac
     if [ -n "$why" ]; then
         fail=$((fail+1)); void=$((void+1))
         printf '  VOID  %-56s\n        the real reaper could not reach origin: %s\n        its 5 asserts were NOT run; re-run once `git ls-remote origin` answers.\n' \
@@ -258,6 +262,11 @@ STUB
     lane_case "no tmp component -> itself"          /home/x/other/tools                   /home/x/other/tools
 
     echo
+    ## The blind arm's reaper log dies with the fixture (trap). On ANY failure keep it, so the cause is read, not guessed:
+    ## .795's block could not say whether origin or a timeout was behind it because this file was already gone.
+    if [ "$fail" -gt 0 ] && [ -f "$dir/p1.log" ]; then
+        local keep; keep="$PWD/tmp/reap_probe_blind.$$.log"; cp "$dir/p1.log" "$keep" && echo "  kept the blind arm's reaper log: $keep"
+    fi
     echo "selftest: ${pass} passed, ${fail} failed${void:+$( [ "$void" -gt 0 ] && printf ' (%s of them VOID: origin unreachable, not a probe defect)' "$void")}"
     [ "$fail" -eq 0 ]
 }
