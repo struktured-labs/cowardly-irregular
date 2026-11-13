@@ -2357,6 +2357,7 @@ const _VILLAGE_INTROS := {
 	"brasston_village": "world3_brasston_npcs",
 	"rivet_row_village": "world4_rivet_row_npcs",
 	"node_prime_village": "world5_node_prime_npcs",
+	"vertex_village": "world6_vertex_npcs",
 }
 
 
@@ -3054,6 +3055,7 @@ const _CUTSCENE_COMPLETION_FLAGS := {
 	"world3_brasston_npcs":             "cutscene_flag_world3_brasston_npcs_complete",
 	"world4_rivet_row_npcs":            "cutscene_flag_world4_rivet_row_npcs_complete",
 	"world5_node_prime_npcs":           "cutscene_flag_world5_node_prime_npcs_complete",
+	"world6_vertex_npcs":               "cutscene_flag_world6_vertex_npcs_complete",
 	# Mordaine escalation — a missing entry here does NOT fail loudly, it re-fires the beat on
 	# every qualifying entry (the original Elder Theron loop). Four beats, four entries.
 	"world1_mordaine_watch_road":       "cutscene_flag_world1_mordaine_watch_road_complete",
