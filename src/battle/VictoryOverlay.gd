@@ -45,6 +45,10 @@ var _card_min_h: float = 0.0
 ## The air between cards: CARD_GAP when the column has room, down to MIN_CARD_GAP when cards at their content height must still fit.
 var _gap: float = CARD_GAP
 const MIN_CARD_GAP := 2.0
+## When cards at their content height still overflow the column, their padding gives way, never the text Text Size grew.
+var _compact := false
+const CARD_PAD := 5
+const COMPACT_PAD := 1
 ## Artist party frames display ~315px centred on the slot; a left flourish reaches ~157px past origin (F12 2026-09-20).
 const CARD_SPRITE_GAP := 200.0
 const LOG_CLEAR_X := 190.0
@@ -186,6 +190,11 @@ func _final_top_text(cr: Dictionary) -> String:
 	var leveled: bool = bool(cr.get("leveled_up", false))
 	var ko_mark := "" if bool(cr.get("is_alive", true)) else "  KO"
 	return "%s  +%d EXP%s%s" % [cr.get("name", "?"), int(cr.get("exp_gained", 0)), "  ★ Lv.%d" % int(cr.get("job_level", 1)) if leveled else "", ko_mark]
+
+
+## True when `count` cards of _ch() at MIN_CARD_GAP cannot fit between the stack top and the bottom margin.
+func _overflows(count: int, vp_y: float) -> bool:
+	return float(count) * _ch() + float(maxi(0, count - 1)) * MIN_CARD_GAP > vp_y - _stack_top() - _bottom_margin(vp_y)
 
 
 ## The gap that lets `count` cards of _ch() fit between the stack top and the bottom margin, never above CARD_GAP.
@@ -730,7 +739,11 @@ func _build_cards(char_results: Array, flourish: bool) -> void:
 	var _vp_for_scale := get_viewport().get_visible_rect().size if get_viewport() else Vector2(1280, 720)
 	_cscale = _fit_card_scale(char_results.size(), _vp_for_scale.y)
 	_wscale = _fit_card_width_scale(_vp_for_scale.x)
+	_compact = false
 	_card_min_h = _measure_card_min_h(char_results)
+	if _overflows(char_results.size(), _vp_for_scale.y):
+		_compact = true
+		_card_min_h = _measure_card_min_h(char_results)
 	_gap = _fit_gap(char_results.size(), _vp_for_scale.y)
 	var vp := get_viewport_rect().size
 	var column := _column_positions(char_results.size(), vp)
@@ -832,8 +845,8 @@ func _make_card(cr: Dictionary) -> PanelContainer:
 	style.set_corner_radius_all(4)
 	style.content_margin_left = 8
 	style.content_margin_right = 8
-	style.content_margin_top = 5
-	style.content_margin_bottom = 5
+	style.content_margin_top = COMPACT_PAD if _compact else CARD_PAD
+	style.content_margin_bottom = COMPACT_PAD if _compact else CARD_PAD
 	card.add_theme_stylebox_override("panel", style)
 
 	var h := HBoxContainer.new()

@@ -101,7 +101,7 @@ func test_no_card_draws_on_the_next_one_at_any_text_size() -> void:
 		assert_eq(cards.size(), 5, "CONTROL: five cards at %s" % scale)
 		cards.sort_custom(func(a, b): return (a as Control).global_position.y < (b as Control).global_position.y)
 		var vp_y: float = o.get_viewport_rect().size.y
-		gut.p("ts %s: ch %.1f (CARD_H*s %.1f, content %.1f) gap %.1f top %.1f bottom_margin %.1f vp %.0f cards %s" % [scale, o._ch(),
+		gut.p("ts %s: compact %s ch %.1f (CARD_H*s %.1f, content %.1f) gap %.1f top %.1f bottom_margin %.1f vp %.0f cards %s" % [scale, o._compact, o._ch(),
 			OverlayScript.CARD_H * o._cscale, o._card_min_h, o._gap, o._stack_top(), o._bottom_margin(vp_y), vp_y,
 			str(cards.map(func(c): return "%.0f+%.0f" % [(c as Control).global_position.y, (c as Control).size.y]))])
 		for i in range(cards.size() - 1):
@@ -126,6 +126,7 @@ func test_at_100_percent_nothing_moves() -> void:
 	assert_almost_eq(o._bottom_margin(vp.y), OverlayScript.STRIP_BOTTOM_MARGIN, 0.01, "and the column keeps .792's bottom margin")
 	assert_almost_eq(o._ch(), OverlayScript.CARD_H, 0.01, "a card keeps its .792 height: its content fits inside it")
 	assert_almost_eq(o._gap, OverlayScript.CARD_GAP, 0.01, "and the cards keep their .792 gap")
+	assert_false(o._compact, "and their .792 padding: compact is only for a column that overflows")
 
 
 func test_with_no_hint_bar_the_prompt_rests() -> void:
