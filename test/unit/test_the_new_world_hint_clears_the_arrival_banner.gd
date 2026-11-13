@@ -47,3 +47,17 @@ func test_a_shown_hint_keeps_its_own_height() -> void:
 		GameState.game_constants.erase("tutorial_hint_height_probe")
 	else:
 		GameState.game_constants["tutorial_hint_height_probe"] = saved
+
+
+## .801 field census: a hint shown in the same frame as the banner sat on it, because the banner reserved nothing at alpha 0.
+func test_the_banner_reserves_its_band_from_the_moment_it_is_shown() -> void:
+	var host := Node2D.new()
+	add_child_autofree(host)
+	var zp := ZoneNamePopup.new()
+	host.add_child(zp)
+	zp.setup(host)
+	zp.show_zone("industrial_overworld")
+	assert_almost_eq(zp._bg.modulate.a, 0.0, 0.01, "CONTROL: the fade-in has not drawn anything yet")
+	assert_true(zp.reserved_rect().has_area(), "a banner that has just been shown already reserves its band")
+	var y: float = TutorialHint.top_clear_of(200.0, PANEL_SIZE, [zp.reserved_rect()])
+	assert_gt(y, zp.reserved_rect().end.y - 0.5, "so a hint shown in the same frame starts below it (y %.0f)" % y)
