@@ -1202,6 +1202,8 @@ func _format_condition(condition: Dictionary) -> String:
 			return "No enemy has %s" % StatusNames.display(condition.get("status", ""))
 		"enemy_weak_to":
 			return "Enemy weak to %s" % str(condition.get("element", "?")).capitalize()
+		"enemy_resists":
+			return "Enemy resists %s" % str(condition.get("element", "?")).capitalize()
 		"enemy_hp_percent":
 			return "Enemy HP %s %d%%" % [op, value]
 		"ally_hp_percent":
@@ -2272,7 +2274,7 @@ func _apply_condition_type(new_type: String) -> void:
 			cond["weather"] = "rain"
 		cond.erase("op")
 		cond.erase("value")
-	elif new_type == "enemy_weak_to":
+	elif new_type == "enemy_weak_to" or new_type == "enemy_resists":
 		## fire is the most common weakness in the bestiary (38 of 106), so it is the seed that
 		## fires for the most players on the first press.
 		if not cond.has("element"):
@@ -3391,7 +3393,7 @@ func _simulate_states() -> Array:
 ## exact "the UI says something the engine doesn't do" defect. They are reported as
 ## undecidable instead of guessed.
 const _BATTLEFIELD_CONDITIONS: Array[String] = [
-	"enemy_count", "enemy_has_status", "not_enemy_has_status", "enemy_weak_to", "enemy_hp_percent",
+	"enemy_count", "enemy_has_status", "not_enemy_has_status", "enemy_weak_to", "enemy_resists", "enemy_hp_percent",
 	"ally_count", "ally_has_status", "ally_hp_percent", "ally_mp_percent",
 	"ally_dead",
 ]
