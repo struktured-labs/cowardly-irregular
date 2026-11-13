@@ -104,3 +104,28 @@ func test_the_bar_is_tall_enough_for_its_own_text() -> void:
 			bad.append("%sx: %dpx box for a %dpx line" %
 				[str(s), int(m["bar_h"]), int(m["drawn_h"])])
 	assert_eq(bad, [], "the hint bar must be at least as tall as the text it draws: %s" % [bad])
+
+
+## The grown bar must not draw over the party's HP/MP column (cowir-cutscenes saw it at 200%): measured on the built nodes.
+func test_the_grown_bar_clears_the_party_panel() -> void:
+	var bad: Array = []
+	var measured := 0
+	for s in _presets():
+		if GameState:
+			GameState.text_size_scale = float(s)
+		var scene: Node = load("res://src/battle/BattleScene.tscn").instantiate()
+		add_child_autofree(scene)
+		await get_tree().process_frame
+		await get_tree().process_frame
+		var bar := scene.get_node_or_null("UI/InputHintBar") as Control
+		var party := scene.get_node_or_null("UI/PartyStatusPanel") as Control
+		if bar == null or party == null:
+			continue
+		measured += 1
+		var b: Rect2 = bar.get_global_rect()
+		var p: Rect2 = party.get_global_rect()
+		gut.p("%sx: bar %s · party %s" % [str(s), str(b), str(p)])
+		if b.intersects(p):
+			bad.append("%sx: bar %s over party %s" % [str(s), str(b), str(p)])
+	assert_eq(measured, _presets().size(), "CONTROL: the bar and the party panel must exist at every preset")
+	assert_eq(bad, [], "the hint bar must not cover the party panel at any Text Size: %s" % [bad])
