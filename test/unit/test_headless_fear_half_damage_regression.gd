@@ -10,10 +10,18 @@ const LIVE := "res://src/battle/BattleManager.gd"
 const ResolverScript = preload("res://src/autogrind/HeadlessBattleResolver.gd")
 
 var _res
+var _inherit_was: bool = true
 
 
+## Plain vs feared must differ by fear alone; an inherited swing crit (.794) on either blow would red it at random.
 func before_each() -> void:
 	_res = ResolverScript.new()
+	_inherit_was = DamageRules.abilities_inherit_swing_crit
+	DamageRules.abilities_inherit_swing_crit = false
+
+
+func after_each() -> void:
+	DamageRules.abilities_inherit_swing_crit = _inherit_was
 
 
 func _make(cname: String, attack: int = 80) -> Combatant:

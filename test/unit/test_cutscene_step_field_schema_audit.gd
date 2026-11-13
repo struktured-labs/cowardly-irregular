@@ -60,6 +60,9 @@ const STEP_SCHEMA := {
 	"play_music":   {"required": ["track"], "optional": []},
 	"stop_music":   {"required": [], "optional": []},
 	"play_sfx":     {"required": ["sfx"], "optional": []},
+	# A small animated strip over the backdrop (the tiny crown), with its landing cue on a named frame.
+	"show_prop":    {"required": ["prop"], "optional": ["at", "scale", "sfx", "sfx_at_frame"]},
+	"hide_prop":    {"required": [], "optional": ["prop"]},
 
 	# Control flow
 	# TWO legal forms, both dispatched by _step_branch and both in its own
