@@ -173,7 +173,7 @@ func test_evasion_copies_mirror_the_body_behind_it_on_either_facing() -> void:
 			var a := StatusAura.new()
 			a.scale = Vector2(0.4, 0.4)
 			a.body = Rect2(-80, -160, 160, 160)
-			a.trail = side
+			a.set("trail", side)
 			spr.add_child(a)
 			a.set_statuses(["evasion"])
 			await get_tree().process_frame
@@ -214,9 +214,9 @@ func test_the_party_trails_right_and_the_monsters_left() -> void:
 		var a = scene._status_auras.get(m)
 		assert_not_null(a, "CONTROL: %s has an aura" % m.combatant_name)
 		if a != null:
-			assert_eq(a.trail, 1.0, "%s (party, on the right) must trail right" % m.combatant_name)
+			assert_eq(a.get("trail"), 1.0, "%s (party, on the right) must trail right" % m.combatant_name)
 	for e in scene.test_enemies:
 		var a = scene._status_auras.get(e)
 		assert_not_null(a, "CONTROL: %s has an aura" % e.combatant_name)
 		if a != null:
-			assert_eq(a.trail, -1.0, "%s (monster, on the left) must trail left" % e.combatant_name)
+			assert_eq(a.get("trail"), -1.0, "%s (monster, on the left) must trail left" % e.combatant_name)
