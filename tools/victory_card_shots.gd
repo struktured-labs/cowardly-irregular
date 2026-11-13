@@ -16,6 +16,10 @@ func _init() -> void:
 	if args.size() > 0:
 		label = args[0]
 	var gs = root.get_node_or_null("GameState")
+	## Optional 2nd arg: the Text Size to shoot at (e.g. 2.0), set before the battle is built, as the overlay tests do.
+	if args.size() > 1 and gs and "text_size_scale" in gs:
+		gs.text_size_scale = float(args[1])
+		print("[SHOT] text_size_scale=%s" % gs.text_size_scale)
 	if gs and "debug_log_enabled" in gs:
 		gs.debug_log_enabled = false
 	var hints = load("res://src/ui/TutorialHints.gd")
