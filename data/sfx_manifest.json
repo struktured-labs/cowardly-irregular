@@ -687,6 +687,18 @@
       "duration_seconds": 0.89,
       "prompt_influence": 0.0
     },
+    "attack_hit_bolt": {
+      "file": "assets/audio/sfx/attack_hit_bolt.ogg",
+      "prompt": "The Rogue's SECOND hit (struktured ruling via cowir-main 25159: the basic attack strikes twice), played on the crossbow-release beat, attack frame 4, via play_attack_hit(\"bolt\", is_crit). Point-blank, so the release IS the impact: 25 ms of string-release air, then a dense thunk over a falling 150->85 Hz body (the weight the dagger's whip-crack deliberately lacks, so the two hits read as two weapons) and the shaft's damped 210 Hz quiver. -16.6 LUFS, matched to attack_hit_dagger. numpy synthesis, not heard by struktured yet.",
+      "duration_seconds": 0.36,
+      "source": "tools/gen_bolt_cues.py attack_hit_bolt"
+    },
+    "attack_hit_bolt_crit": {
+      "file": "assets/audio/sfx/attack_hit_bolt_crit.ogg",
+      "prompt": "Crit of the Rogue's crossbow-bolt hit: the same thunk and quiver plus a bright 3.5 kHz+ crack, a 4.2/5.6/6.8 kHz ring (the dagger crit's shimmer partials) and a short double echo. -11.1 LUFS, matched to attack_hit_dagger_crit. numpy synthesis, not heard by struktured yet.",
+      "duration_seconds": 0.64,
+      "source": "tools/gen_bolt_cues.py attack_hit_bolt_crit"
+    },
     "attack_hit_piano_scythe": {
       "file": "assets/audio/sfx/attack_hit_piano_scythe.ogg",
       "prompt": "Quick metallic scythe swoosh slicing through air combined with a DISSONANT piano chord cluster crash, three or four close piano notes hitting together with brief ring, hybrid music-weapon attack (bard signature weapon), sharp blade cut with musical impact, NO bass rumble",

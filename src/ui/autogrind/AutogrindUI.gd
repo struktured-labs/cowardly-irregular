@@ -218,6 +218,8 @@ var _footer_bottom: float = 0.0
 var _grid_scroll: float = 0.0
 var _scrolling: bool = false
 var _status_panel: Control
+## The party rows the status panel holds, so a rebuild removes exactly these and nothing it happens to share a y band with.
+var _party_rows: Array = []
 var _battle_log: RichTextLabel
 var _start_button: Control
 var _monitor: AutogrindMonitor
@@ -367,6 +369,7 @@ func _disconnect_autogrind_signals() -> void:
 func _build_ui() -> void:
 	"""Build the full UI"""
 	for child in get_children():
+		child.name = "Freed%d" % child.get_instance_id()
 		child.queue_free()
 
 	var vp_size = get_viewport().get_visible_rect().size
@@ -394,11 +397,13 @@ func _build_ui() -> void:
 
 	# Grid panel (left)
 	var grid_panel = _build_grid_panel(Vector2(grid_width, content_h))
+	grid_panel.name = "RulesPanel"
 	grid_panel.position = Vector2(8, content_y)
 	add_child(grid_panel)
 
 	# Status panel (right)
 	_status_panel = _build_status_panel(Vector2(status_width, content_h))
+	_status_panel.name = "StatusPanel"
 	_status_panel.position = Vector2(grid_width + 16, content_y)
 	add_child(_status_panel)
 
@@ -413,6 +418,7 @@ func _build_header(vp_size: Vector2) -> void:
 	"""Build header with title and stats"""
 	var header_bg = ColorRect.new()
 	header_bg.color = PANEL_COLOR
+	header_bg.name = "Header"
 	header_bg.position = Vector2(8, 8)
 	header_bg.size = Vector2(vp_size.x - 16, _grew(40))
 	add_child(header_bg)
@@ -469,6 +475,7 @@ func _build_grid_panel(panel_size: Vector2) -> Control:
 
 	# Grid container
 	_grid_container = Control.new()
+	_grid_container.name = "Grid"
 	_grid_container.position = Vector2(8, _grew(28))
 	_grid_container.size = Vector2(panel_size.x - 16, panel_size.y - _grew(80))
 	_grid_container.clip_contents = true
@@ -476,17 +483,20 @@ func _build_grid_panel(panel_size: Vector2) -> Control:
 
 	# Cursor
 	_cursor = Control.new()
+	_cursor.name = "Cursor"
 	_cursor.z_index = 10
 	panel.add_child(_cursor)
 
 	# Resume button (only if snapshot exists, is loadable, and not grinding — cadence #11).
 	if not _is_grinding and AutogrindSystem.is_snapshot_loadable():
 		var resume_btn = _create_resume_button(panel_size)
+		resume_btn.name = "ResumeButton"
 		resume_btn.position = Vector2(8, panel_size.y - _grew(82))
 		panel.add_child(resume_btn)
 
 	# Start/Stop button at bottom
 	_start_button = _create_start_stop_button(panel_size)
+	_start_button.name = "StartButton"
 	_start_button.position = Vector2(8, panel_size.y - _grew(44))
 	panel.add_child(_start_button)
 
@@ -520,8 +530,8 @@ func _create_start_stop_button(panel_size: Vector2) -> Control:
 	label.add_theme_font_size_override("font_size", TextScale.scaled(14))
 	label.add_theme_color_override("font_color", TEXT_COLOR)
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label.position = Vector2(0, _grew(8))
-	label.size = Vector2(btn.size.x, 0)
+	label.position = Vector2(2, _grew(8))
+	label.size = Vector2(btn.size.x - 4, 0)
 	btn.add_child(label)
 
 	# Mouse: click to toggle grinding
@@ -554,8 +564,8 @@ func _create_resume_button(panel_size: Vector2) -> Control:
 	label.add_theme_font_size_override("font_size", TextScale.scaled(13))
 	label.add_theme_color_override("font_color", Color(0.7, 0.9, 1.0))
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label.position = Vector2(0, _grew(6))
-	label.size = Vector2(btn.size.x, 0)
+	label.position = Vector2(2, _grew(6))
+	label.size = Vector2(btn.size.x - 4, 0)
 	btn.add_child(label)
 
 	MenuMouseHelper.make_clickable(btn, 0, btn.size.x, btn.size.y,
@@ -589,12 +599,15 @@ func _build_status_panel(panel_size: Vector2) -> Control:
 	# the 5th member from the autogrind status panel. Same bug class
 	# as tick 268's SaveScreen fix.
 	var y = _grew(28)
+	_party_rows.clear()
 	for i in range(min(_party.size(), 5)):
 		var member = _party[i]
 		if member is Combatant:
 			var row = _create_party_status_row(member, panel_size.x - 16)
+			row.name = "PartyRow%d" % i
 			row.position = Vector2(8, y)
 			panel.add_child(row)
+			_party_rows.append(row)
 			y += _grew(24)
 
 	# Custom presets
@@ -744,6 +757,7 @@ func _build_footer(vp_size: Vector2) -> void:
 
 	# Ludicrous speed toggle button
 	var ls_btn := Control.new()
+	ls_btn.name = "LudicrousToggle"
 	ls_btn.size = Vector2(tog_w, tog_h)
 	ls_btn.position = Vector2(vp_size.x - (tog_w * 2.0 + 20.0), vp_size.y - _grew(32))
 
@@ -771,6 +785,7 @@ func _build_footer(vp_size: Vector2) -> void:
 
 	# Permadeath staking toggle button
 	var pd_btn := Control.new()
+	pd_btn.name = "PermadeathToggle"
 	pd_btn.size = Vector2(tog_w, tog_h)
 	pd_btn.position = Vector2(vp_size.x - (tog_w + 8.0), vp_size.y - _grew(32))
 
@@ -802,6 +817,7 @@ func _refresh_grid() -> void:
 	if _grid_container == null:
 		return  # not built yet (_ready has not run); the rules are drawn when it does
 	for child in _grid_container.get_children():
+		child.name = "Freed%d" % child.get_instance_id()
 		child.queue_free()
 
 	var row_h := _grid_row_height()
@@ -813,10 +829,11 @@ func _refresh_grid() -> void:
 
 		# OR connector between rows
 		if row_idx < rules.size() - 1:
-			_draw_or_connector(y_offset - _grew(ROW_SPACING) / 2.0)
+			_draw_or_connector(y_offset - _grew(ROW_SPACING) / 2.0, row_idx)
 
 	# Add new rule hint [++]
 	var add_btn = _create_add_rule_button(rules.size(), row_h)
+	add_btn.name = "AddRule"
 	add_btn.position = Vector2(0, y_offset)
 	_grid_container.add_child(add_btn)
 
@@ -882,6 +899,7 @@ func _draw_rule_row(row_idx: int, rule: Dictionary, y_offset: float, row_h: floa
 	# Conditions
 	for i in range(conditions.size()):
 		var cell = _create_condition_cell(row_idx, i, conditions[i], row_h)
+		cell.name = "R%dCond%d" % [row_idx, i]
 		cell.position = Vector2(x_offset, y_offset)
 		if not is_enabled:
 			cell.modulate.a = 0.4
@@ -891,6 +909,7 @@ func _draw_rule_row(row_idx: int, rule: Dictionary, y_offset: float, row_h: floa
 		# AND connector
 		if i < conditions.size() - 1:
 			var conn = _create_and_connector(row_h)
+			conn.name = "R%dAnd%d" % [row_idx, i]
 			conn.position = Vector2(x_offset, y_offset)
 			_grid_container.add_child(conn)
 			x_offset += CONNECTOR_WIDTH
@@ -906,12 +925,14 @@ func _draw_rule_row(row_idx: int, rule: Dictionary, y_offset: float, row_h: floa
 
 	if conditions.size() < MAX_CONDITIONS and not has_always:
 		var hint = _create_empty_condition_hint(row_idx, conditions.size(), row_h)
+		hint.name = "R%dAddCond" % row_idx
 		hint.position = Vector2(x_offset, y_offset)
 		_grid_container.add_child(hint)
 		x_offset += CELL_WIDTH / 2 + CELL_PADDING
 
 	# Arrow
 	var arrow = Label.new()
+	arrow.name = "R%dArrow" % row_idx
 	arrow.text = "=>"
 	arrow.position = Vector2(x_offset + 4, y_offset + row_h / 2.0 - _grew(8))
 	arrow.add_theme_font_size_override("font_size", TextScale.scaled(14))
@@ -922,6 +943,7 @@ func _draw_rule_row(row_idx: int, rule: Dictionary, y_offset: float, row_h: floa
 	# Actions
 	for i in range(actions.size()):
 		var cell = _create_action_cell(row_idx, i, actions[i], row_h)
+		cell.name = "R%dAct%d" % [row_idx, i]
 		cell.position = Vector2(x_offset, y_offset)
 		if not is_enabled:
 			cell.modulate.a = 0.4
@@ -931,12 +953,14 @@ func _draw_rule_row(row_idx: int, rule: Dictionary, y_offset: float, row_h: floa
 	# Empty action hint
 	if actions.size() < MAX_ACTIONS:
 		var hint = _create_empty_action_hint(row_idx, actions.size(), row_h)
+		hint.name = "R%dAddAct" % row_idx
 		hint.position = Vector2(x_offset, y_offset)
 		_grid_container.add_child(hint)
 		x_offset += CELL_WIDTH / 2 + CELL_PADDING
 
 	# Toggle cell
 	var toggle = _create_toggle_cell(row_idx, is_enabled, row_h)
+	toggle.name = "R%dToggle" % row_idx
 	toggle.position = Vector2(x_offset, y_offset)
 	_grid_container.add_child(toggle)
 
@@ -1218,15 +1242,17 @@ func _create_and_connector(h: float = -1.0) -> Control:
 	return container
 
 
-func _draw_or_connector(y_pos: float) -> void:
+func _draw_or_connector(y_pos: float, row_idx: int = 0) -> void:
 	"""Draw OR connector between rows"""
 	var bg = ColorRect.new()
+	bg.name = "R%dOr" % row_idx
 	bg.color = Color(0.5, 0.3, 0.1, 0.6)
 	bg.position = Vector2(4, y_pos - _grew(10))
 	bg.size = Vector2(_grew(28), _grew(20))
 	_grid_container.add_child(bg)
 
 	var label = Label.new()
+	label.name = "R%dOrText" % row_idx
 	label.text = "OR"
 	label.position = Vector2(8, y_pos - _grew(8))
 	label.add_theme_font_size_override("font_size", TextScale.scaled(11))
@@ -3238,6 +3264,7 @@ func _show_permadeath_confirmation() -> void:
 	add_child(overlay)
 
 	var dialog := Control.new()
+	dialog.name = "PermadeathDialog"
 	dialog.size = Vector2(_grew(420), _grew(200))
 	var vp_size := get_viewport().get_visible_rect().size
 	if vp_size.x == 0 or vp_size.y == 0:
@@ -3270,6 +3297,7 @@ func _show_permadeath_confirmation() -> void:
 
 	# Confirm button
 	var confirm_btn := Control.new()
+	confirm_btn.name = "ConfirmButton"
 	confirm_btn.size = Vector2(_grew(180), _grew(32))
 	confirm_btn.position = Vector2(16, dialog.size.y - _grew(44))
 
@@ -3298,6 +3326,7 @@ func _show_permadeath_confirmation() -> void:
 
 	# Cancel button
 	var cancel_btn := Control.new()
+	cancel_btn.name = "CancelButton"
 	cancel_btn.size = Vector2(_grew(180), _grew(32))
 	cancel_btn.position = Vector2(dialog.size.x - _grew(196), dialog.size.y - _grew(44))
 
@@ -3628,16 +3657,12 @@ func _rebuild_party_rows() -> void:
 	if not _status_panel or not is_instance_valid(_status_panel):
 		return
 
-	# Remove existing party rows (children between title and log header)
-	var children_to_remove: Array = []
-	for child in _status_panel.get_children():
-		if child is Control and child != _battle_log:
-			# Check if it's a party row (has a specific position range)
-			if child.position.y >= 28 and child.position.y < 120:
-				children_to_remove.append(child)
-
-	for child in children_to_remove:
-		child.queue_free()
+	# Remove the rows this panel built, by identity: a y band missed the 5th row at 100% and took the preset/session lines with a small party.
+	for row in _party_rows:
+		if is_instance_valid(row):
+			row.name = "Freed%d" % row.get_instance_id()
+			row.queue_free()
+	_party_rows.clear()
 
 	# Re-add party rows
 	# Tick 269: strict-5 party — was capped at 4.
@@ -3646,8 +3671,10 @@ func _rebuild_party_rows() -> void:
 		var member = _party[i]
 		if member is Combatant:
 			var row = _create_party_status_row(member, _status_panel.size.x - 16)
+			row.name = "PartyRow%d" % i
 			row.position = Vector2(8, y)
 			_status_panel.add_child(row)
+			_party_rows.append(row)
 			y += _grew(24)
 
 

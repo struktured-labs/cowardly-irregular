@@ -45,7 +45,7 @@ func _menu_at(scale: float) -> Control:
 func test_the_floor_names_every_member_this_file_drives() -> void:
 	assert_gte(_presets().size(), 2, "SettingsMenu.TEXT_SIZE_PRESETS must exist and offer a choice (%s)" % [_presets()])
 	var audit: Array = (OverlapAudit as GDScript).get_script_method_list().map(func(m): return str(m["name"]))
-	for f in ["surfaces", "collisions", "stale", "visible_rect", "is_frame_joint"]:
+	for f in ["surfaces", "collisions", "stale", "visible_rect", "is_frame_joint", "is_shadow_twin"]:
 		assert_has(audit, f, "overlap_audit.%s must exist" % f)
 	var menu: Array = (OverworldMenuScript as GDScript).get_script_method_list().map(func(m): return str(m["name"]))
 	assert_has(menu, "setup", "OverworldMenu.setup must exist")
@@ -259,6 +259,26 @@ func test_a_frame_corner_is_not_an_overlap() -> void:
 	assert_eq(thick.size(), 1, "two thick bars meeting at a corner are not a frame line: %s" % [thick])
 
 
+## A label drawn twice, 2 px apart, is one string and its shadow (the toast stack, overworld 25128). Each other shape still reports.
+func test_a_text_shadow_is_one_string() -> void:
+	var host := Control.new()
+	add_child_autofree(host)
+	var other := Control.new()
+	add_child_autofree(other)
+	var r := Rect2(10, 10, 120, 16)
+	var shadow := _surf("Shadow", _label("Saved.", host), Rect2(r.position + Vector2(2, 2), r.size))
+	var text := _surf("Text", _label("Saved.", host), r)
+	assert_eq(OverlapAudit.collisions([shadow, text], {}), [], "CONTROL: a string and its 2 px shadow are one drawn string")
+	var cases := {
+		"another string": [_surf("A", _label("Saved.", host), r), _surf("B", _label("Loaded.", host), Rect2(r.position + Vector2(2, 2), r.size))],
+		"a farther offset": [_surf("A", _label("Saved.", host), r), _surf("B", _label("Saved.", host), Rect2(r.position + Vector2(6, 0), r.size))],
+		"another parent": [_surf("A", _label("Saved.", host), r), _surf("B", _label("Saved.", other), Rect2(r.position + Vector2(2, 2), r.size))],
+		"an exact duplicate": [_surf("A", _label("Saved.", host), r), _surf("B", _label("Saved.", host), r)],
+	}
+	for name in cases:
+		assert_eq(OverlapAudit.collisions(cases[name], {}).size(), 1, "%s over the same spot is still a finding" % name)
+
+
 ## A small chip beside a label is the label's NEIGHBOUR, not its panel (autogrind 25092: the OR badge, 28x20, claimed the 16x20
 ## arrow next to it, so the arrow was reported on the rules panel that holds them both).
 func test_a_neighbouring_chip_does_not_own_a_label() -> void:
@@ -272,6 +292,10 @@ func test_a_neighbouring_chip_does_not_own_a_label() -> void:
 	var badge := _surf("Badge", chip, Rect2(20, 40, 28, 20))
 	var arrow := _surf("Arrow", _label(">", host), Rect2(52, 40, 16, 20))
 	assert_eq(OverlapAudit.collisions([panel, badge, arrow], {}), [], "a badge and the arrow beside it both sit on the panel that holds them")
+	# At other Text Sizes the badge is more than twice the arrow (the area ratio passes): it is still a neighbour, not the panel.
+	var big_badge := _surf("Badge", chip, Rect2(20, 40, 40, 24))
+	var small_arrow := _surf("Arrow", _label(">", host), Rect2(64, 42, 12, 18))
+	assert_eq(OverlapAudit.collisions([panel, big_badge, small_arrow], {}), [], "a chip more than twice the label's size is still a neighbour on their shared panel")
 
 
 func test_nothing_in_the_field_menu_overlaps_at_any_text_size() -> void:
