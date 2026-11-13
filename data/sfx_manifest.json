@@ -13865,6 +13865,24 @@
       "duration_seconds": 0.37,
       "source": "tools/gen_scene_cues.py scene_tiny_crown_lands"
     },
+    "inn_night_falls": {
+      "file": "assets/audio/sfx/inn_night_falls.ogg",
+      "prompt": "The inn night's first beat (InnRestSequence beat \"night_falls\"): the lamp turned down and the room settling, a small click, a falling wick tone, a breath and one floorboard. It fits the 0.6 s fade before the ditty's first note. -21.1 dB active-RMS. numpy synthesis, not heard by struktured yet.",
+      "duration_seconds": 0.52,
+      "source": "tools/gen_inn_night_cues.py inn_night_falls"
+    },
+    "inn_night_air": {
+      "file": "assets/audio/sfx/inn_night_air.ogg",
+      "prompt": "The inn night's bed (beat \"night\"): three cricket voices and a breath of air, written entirely above 3 kHz because inn_rest_ditty keeps 89% of its energy under 800 Hz. Quiet on purpose; dawn replaces it on the same voice. -31.1 dB active-RMS. numpy synthesis, not heard by struktured yet.",
+      "duration_seconds": 4.0,
+      "source": "tools/gen_inn_night_cues.py inn_night_air"
+    },
+    "inn_dawn": {
+      "file": "assets/audio/sfx/inn_dawn.ogg",
+      "prompt": "The inn night's dawn (beat \"dawn\", where the rest is named): two birds over a warm rising chord, landing on the ditty's last note and tail. It carries the restore, in place of the five menu_open ticks. -21.1 dB active-RMS. numpy synthesis, not heard by struktured yet.",
+      "duration_seconds": 1.3,
+      "source": "tools/gen_inn_night_cues.py inn_dawn"
+    },
     "family_bite": {
       "file": "assets/audio/sfx/family_bite.ogg",
       "prompt": "Fired by the flash phase of family_bite through its \"sfx\" key (battle time; one beat per key per frame). A monster's BITE at contact: two closing jaw clicks over a short crunch. -19.7 dB active-RMS, -22.1 through a 200 Hz high-pass. numpy synthesis, not heard by struktured yet.",
