@@ -9868,6 +9868,12 @@ func _build_boss_intent_context(
 	if gs_clock != null and gs_clock.has_method("get_time_of_day_name"):
 		ctx.time_of_day = str(gs_clock.get_time_of_day_name())
 	ctx.party_automation = _resolve_party_automation_tier()
+	var cadence_cfg := _cadence_config(combatant)
+	if not cadence_cfg.is_empty():
+		var clock: Dictionary = combatant.get_meta("_cadence", {})
+		ctx.signature_id = str(cadence_cfg["signature"])
+		ctx.signature_in = BossCadence.turns_to_release(clock, cadence_cfg)
+		ctx.charging = BossCadence.is_charging(clock)
 
 	for member in player_party:
 		if member == null:

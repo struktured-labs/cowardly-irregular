@@ -828,6 +828,7 @@ static func build_boss_intent(
 		+ _format_time_of_day(str(ctx.get("time_of_day", "")))
 		+ _format_party_automation(str(ctx.get("party_automation", "")))
 		+ "Your state: HP %d%%, MP %d%%, AP %d, status: %s.\n" % [int(hp_pct), int(mp_pct), ap, boss_status_tag]
+		+ _format_signature(str(ctx.get("signature_id", "")), int(ctx.get("signature_in", -1)), bool(ctx.get("charging", false)))
 		# "Party state" alone read as the boss's OWN side. Measured against llama3,
 		# 5 samples: 3 reasons had Mordaine protecting and healing the player's
 		# characters ("Protect Rilla and buy time for Bram to recover"), and all 5
@@ -2000,6 +2001,17 @@ static func _format_time_of_day(time_of_day: String) -> String:
 	if time_of_day == "":
 		return ""
 	return "Time of day: %s\n" % time_of_day
+
+
+## The boss's own signature clock, so its posture can plan around the big blow; "" when it keeps no clock.
+static func _format_signature(signature_id: String, turns: int, charging: bool) -> String:
+	if signature_id == "" or turns < 1:
+		return ""
+	var move: String = _ability_named(signature_id)
+	var when: String = "on your next turn" if turns == 1 else "in %d of your turns" % turns
+	if charging:
+		return "You are gathering power for %s. It releases %s, unless a stun, silence or sleep breaks your focus first.\n" % [move, when]
+	return "Your signature move, %s, comes %s: you will spend a turn gathering power first, and the party will see it coming.\n" % [move, when]
 
 
 ## Tell the boss the player isn't deciding. Spelled out rather than passed as a
