@@ -9,6 +9,8 @@ const SCENE := preload("res://src/battle/BattleScene.gd")
 const ANIMATOR := preload("res://src/battle/BattleAnimator.gd")
 const MANIFEST := "res://data/sprite_manifest.json"
 const TRIALS := 300
+## Two numbers closer than this read as one hit at turbo pace; pinned here, not derived from STRIKE_STAGGER.
+const TURBO_BEAT_FLOOR := 0.1
 
 var _saved_scale := 1.0
 
@@ -242,6 +244,9 @@ func test_turbo_still_lands_two_separate_numbers() -> void:
 	assert_eq([landed[0][0], landed[1][0]], [11, 22], "the blade's number first, the bolt's second")
 	var frames: int = int(landed[1][2]) - int(landed[0][2])
 	assert_gt(frames, 1, "turbo must land the bolt's number on a later frame than the blade's, not the same one (%d frames apart)" % frames)
+	var gap: float = landed[1][1] - landed[0][1]
+	assert_gte(gap, TURBO_BEAT_FLOOR, "turbo's bolt must land a visible beat after the blade (%.3f s apart, floor %.2f)" % [gap, TURBO_BEAT_FLOOR])
+	assert_between(gap, SCENE.STRIKE_STAGGER * 0.9, SCENE.STRIKE_STAGGER + 0.2, "turbo's bolt waits STRIKE_STAGGER, not a safety timer (%.3f s vs %.2f)" % [gap, SCENE.STRIKE_STAGGER])
 
 
 func _mean(a: Array) -> float:
