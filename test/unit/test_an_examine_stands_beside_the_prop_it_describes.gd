@@ -127,3 +127,42 @@ func test_each_door_examine_stands_beside_its_door() -> void:
 		assert_true(_reach(v).has(at), "%s at %s cannot be walked to from %s's arrival spawn" % [id, str(at), scene])
 		checked += 1
 	assert_eq(checked, by_door.size(), "every door examine was judged, not skipped")
+
+
+## Village examines whose object no village draws yet (ruling 24242): each names what it waits for. Anchor one and it must leave this list.
+const AWAITING := {
+	"brasston_clocktower_plaque": "ruling: Brasston has a Clockwork Loft, not a clocktower",
+	"brasston_redundancy_index": "ruling: a card-catalogue drawer, better moved indoors",
+	"eldertree_gravestone": "a GRAVESTONE prop",
+	"frosthold_cairn": "a CAIRN prop",
+	"grimhollow_warning": "a SIGNPOST prop",
+	"harmonia_statue": "a STATUE prop",
+	"ironhaven_furnace_log": "a FURNACE prop",
+	"node_prime_sticky": "a TERMINAL prop (the note is on its monitor)",
+	"node_prime_terminal": "a TERMINAL prop",
+	"sandrift_caravan_post": "a SIGNPOST prop",
+	"vertex_monolith": "a MONOLITH prop",
+}
+## Anchored by a village's own _examine_anchor_cell override rather than a BaseVillage table.
+const BY_OVERRIDE := {"harmonia_well": "res://src/maps/villages/HarmoniaVillage.gd"}
+
+
+func test_every_village_examine_is_anchored_or_says_what_it_waits_for() -> void:
+	var by_prop := _described()
+	var by_door: Dictionary = BV.get_script_constant_map().get("_EXAMINE_BESIDE_DOOR", {})
+	assert_gt(by_prop.size() + by_door.size(), 0, "CONTROL: the anchor tables must be read")
+	for id in BY_OVERRIDE:
+		var src := FileAccess.get_file_as_string(BY_OVERRIDE[id])
+		assert_true(src.contains("func _examine_anchor_cell") and src.contains('"%s"' % id), "%s's override no longer names %s" % [BY_OVERRIDE[id], id])
+	var pack := _pack()
+	var village := 0
+	for id in pack:
+		if not str((pack[id] as Dictionary).get("scene", "")).ends_with("_village"):
+			continue
+		village += 1
+		var anchored: bool = by_prop.has(id) or by_door.has(id) or BY_OVERRIDE.has(id)
+		assert_true(anchored or AWAITING.has(id), "%s is read at an offset from the spawn: anchor it beside what it describes, or add it to AWAITING with what it needs" % id)
+		assert_false(anchored and AWAITING.has(id), "%s is anchored now: take it off AWAITING" % id)
+	assert_gt(village, 0, "CONTROL: the pack has village examines")
+	for id in AWAITING:
+		assert_true(pack.has(id), "AWAITING names %s, which is not in the examine pack" % id)
