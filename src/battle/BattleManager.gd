@@ -5588,8 +5588,10 @@ func _execute_attack(attacker: Combatant, target: Combatant) -> void:
 	var rolls: Array = []
 	var barrier_left: bool = actual_target.has_status("barrier")
 	var reflecting: bool = actual_target.has_status("reflect") or actual_target.has_status("physical_reflect")
+	## A stored "next attack xN" (burrow, storm_gathering) is one charge for the WHOLE attack: every strike that connects carries it.
+	var charge: float = float(attacker.get_meta("_next_attack_multiplier", 0.0))
 	for st in strikes:
-		var roll: Dictionary = _roll_attack_strike(attacker, actual_target, float(st["scale"]))
+		var roll: Dictionary = _roll_attack_strike(attacker, actual_target, float(st["scale"]), charge)
 		roll["weapon"] = str(st["weapon"])
 		if roll["fate"] == "hit" and barrier_left:
 			roll["fate"] = "barrier"
@@ -5597,6 +5599,10 @@ func _execute_attack(attacker: Combatant, target: Combatant) -> void:
 		elif roll["fate"] == "hit" and reflecting:
 			roll["fate"] = "reflect"
 		rolls.append(roll)
+	## Spent once, and only if a strike connected: a full miss keeps it for the next attack.
+	if charge > 0.0 and rolls.any(func(r): return r["fate"] != "miss"):
+		attacker.set_meta("_next_attack_multiplier", 0.0)
+		battle_log_message.emit("[color=cyan]%s emerges with a charged strike![/color] (×%.1f)" % [attacker.combatant_name, charge])
 	var raw_total: int = 0
 	for roll in rolls:
 		if roll["fate"] == "hit":
@@ -5612,7 +5618,7 @@ func _execute_attack(attacker: Combatant, target: Combatant) -> void:
 
 ## One strike's rolls, before it meets the target: miss, then the raw number (variance x scale, crit, the attacker's
 ## one-shot multipliers). `scale` is the strike's share of a full swing. Fate is "miss" or "hit".
-func _roll_attack_strike(attacker: Combatant, actual_target: Combatant, scale: float) -> Dictionary:
+func _roll_attack_strike(attacker: Combatant, actual_target: Combatant, scale: float, charge: float = 0.0) -> Dictionary:
 	# Miss check: base 10% miss rate, reduced by attacker speed vs target speed
 	var base_miss_rate = 0.10
 	if attacker.has_status("blind"):
@@ -5644,16 +5650,9 @@ func _roll_attack_strike(attacker: Combatant, actual_target: Combatant, scale: f
 	damage = _apply_market_sense(attacker, damage)
 	damage = _apply_lens_execute_bonus(attacker, actual_target, damage)
 
-	## Tick 435: consume the next_attack_multiplier set by burrow (or
-	## any future stored-multiplier support ability). One-shot — clear
-	## the meta after applying so subsequent attacks don't keep the
-	## bonus. Distinct emerge log line lets the player see the bonus
-	## land.
-	var stored_nam: float = float(attacker.get_meta("_next_attack_multiplier", 0.0))
-	if stored_nam > 0.0:
-		damage = int(damage * stored_nam)
-		attacker.set_meta("_next_attack_multiplier", 0.0)
-		battle_log_message.emit("[color=cyan]%s emerges with a charged strike![/color] (×%.1f)" % [attacker.combatant_name, stored_nam])
+	## Tick 435: the attack's stored charge (burrow), read and spent once by _execute_attack, multiplies every strike.
+	if charge > 0.0:
+		damage = int(damage * charge)
 
 	# Tail event check
 	if volatility and volatility.check_tail_event():

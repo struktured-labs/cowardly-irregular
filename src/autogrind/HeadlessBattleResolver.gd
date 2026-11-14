@@ -1082,14 +1082,18 @@ func _resolve_attack(attacker, target) -> int:
 	var rolls: Array = []
 	var barrier_left: bool = target.has_status("barrier")
 	var reflecting: bool = target.has_status("reflect") or target.has_status("physical_reflect")
+	## One stored charge for the whole attack, spent only if a strike connects (twin of live).
+	var charge: float = float(attacker.get_meta("_next_attack_multiplier", 0.0)) if attacker.has_method("get_meta") else 0.0
 	for st in attacker.basic_attack_strikes():
-		var roll: Dictionary = _roll_attack_strike(attacker, target, float(st["scale"]))
+		var roll: Dictionary = _roll_attack_strike(attacker, target, float(st["scale"]), charge)
 		if roll["fate"] == "hit" and barrier_left:
 			roll["fate"] = "barrier"
 			barrier_left = false
 		elif roll["fate"] == "hit" and reflecting:
 			roll["fate"] = "reflect"
 		rolls.append(roll)
+	if charge > 0.0 and rolls.any(func(r): return r["fate"] != "miss"):
+		_take_charged_multiplier(attacker)
 	var raw_total: int = 0
 	for roll in rolls:
 		if roll["fate"] == "hit":
@@ -1103,7 +1107,7 @@ func _resolve_attack(attacker, target) -> int:
 
 
 ## One strike's rolls, before it meets the target. Twin of BattleManager._roll_attack_strike.
-func _roll_attack_strike(attacker, target, scale: float) -> Dictionary:
+func _roll_attack_strike(attacker, target, scale: float, charge: float = 0.0) -> Dictionary:
 	var base_miss: float = 0.10
 	if attacker.has_status("blind"):
 		base_miss += 0.40
@@ -1116,9 +1120,9 @@ func _roll_attack_strike(attacker, target, scale: float) -> Dictionary:
 	## A feared swing that was not skipped still happens, at half. Live halves the base stat before variance.
 	if attacker.has_status("fear"):
 		damage = float(int(damage * 0.5))
-	## ONE-SHOT, consumed as live consumes it (BattleManager:4374-4377) — a charged strike pays off
-	## once, not on every swing for the rest of the battle.
-	damage *= _take_charged_multiplier(attacker)
+	## The attack's stored charge, spent once by _resolve_attack (twin of live): every strike of that attack carries it.
+	if charge > 0.0:
+		damage *= charge
 	damage *= randf_range(0.85, 1.15) * scale
 
 	## SHADOW_STEP on the ATTACKER: a guaranteed crit live (_calculate_crit_chance returns 1.0 up

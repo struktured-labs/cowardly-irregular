@@ -16,8 +16,10 @@ var _saved_scale := 1.0
 ## A target that counts the strikes that reach it, in either engine.
 class CountingTarget extends Combatant:
 	var hits: int = 0
+	var amounts: Array = []
 	func take_damage(amount: int, is_magical: bool = false, defence_scale: float = 1.0) -> int:
 		hits += 1
+		amounts.append(amount)
 		return super(amount, is_magical, defence_scale)
 
 
@@ -251,3 +253,72 @@ func _mean(a: Array) -> float:
 	for v in a:
 		t += float(v)
 	return t / a.size()
+
+
+## A stored "next attack xN" (burrow) is ONE charge for the WHOLE attack: both strikes carry it, it is spent once,
+## and an attack that misses with both keeps it (cowir-battle 25289, answering cowir-main 25287).
+const CHARGE := 1.5
+
+
+## Mean blade and bolt numbers over attacks that landed both strikes, charged or not, plus the charge's fate.
+func _per_strike_means(attack: Callable, rogue: Combatant, charged: bool) -> Dictionary:
+	var blade: Array = []
+	var bolt: Array = []
+	var kept_on_full_miss := 0
+	var left_after_a_hit := 0
+	for i in TRIALS:
+		rogue.set_meta("_next_attack_multiplier", CHARGE if charged else 0.0)
+		var landed: Array = attack.call()
+		var left: float = float(rogue.get_meta("_next_attack_multiplier", 0.0))
+		if landed.size() == 2:
+			blade.append(landed[0])
+			bolt.append(landed[1])
+		if charged and landed.is_empty() and is_equal_approx(left, CHARGE):
+			kept_on_full_miss += 1
+		if charged and not landed.is_empty() and left > 0.0:
+			left_after_a_hit += 1
+	return {"blade": _mean(blade), "bolt": _mean(bolt), "kept": kept_on_full_miss, "leaked": left_after_a_hit}
+
+
+func _assert_whole_attack_charge(engine: String, attack: Callable, rogue: Combatant) -> void:
+	var plain: Dictionary = _per_strike_means(attack, rogue, false)
+	var charged: Dictionary = _per_strike_means(attack, rogue, true)
+	assert_gt(float(plain["bolt"]), 0.0, "CONTROL: %s landed both strikes uncharged" % engine)
+	assert_between(float(charged["blade"]) / maxf(1.0, plain["blade"]), 1.3, 1.7, "%s: the charge must multiply the blade (%.1f vs %.1f)" % [engine, charged["blade"], plain["blade"]])
+	assert_between(float(charged["bolt"]) / maxf(1.0, plain["bolt"]), 1.3, 1.7, "%s: the charge must multiply the BOLT too — one charge, the whole attack (%.1f vs %.1f)" % [engine, charged["bolt"], plain["bolt"]])
+	assert_eq(int(charged["leaked"]), 0, "%s: an attack that connects must spend the charge" % engine)
+	assert_gt(int(charged["kept"]), 0, "%s: blinded, some attacks miss with both strikes and must keep the charge" % engine)
+
+
+func test_live_a_stored_charge_carries_both_strikes() -> void:
+	var bm = Engine.get_main_loop().root.get_node_or_null("BattleManager")
+	assert_not_null(bm, "CONTROL: BattleManager autoload")
+	if bm == null:
+		return
+	var rogue := _make("Rogue", "rogue")
+	rogue.add_status("blind", 999)
+	var target := _make("Dummy", "")
+	var nums: Array = []
+	var cb := func(t, amount, _c, _e, _m):
+		if t == target:
+			nums.append(int(amount))
+	bm.damage_dealt.connect(cb)
+	var attack := func() -> Array:
+		nums.clear()
+		bm._execute_attack(rogue, target)
+		return nums.duplicate()
+	_assert_whole_attack_charge("live", attack, rogue)
+	bm.damage_dealt.disconnect(cb)
+
+
+func test_the_grind_a_stored_charge_carries_both_strikes() -> void:
+	var res = RESOLVER.new()
+	var rogue := _make("Rogue", "rogue")
+	rogue.add_status("blind", 999)
+	var target := _make("Dummy", "", true) as CountingTarget
+	var attack := func() -> Array:
+		target.amounts.clear()
+		res._resolve_attack(rogue, target)
+		return target.amounts.duplicate()
+	_assert_whole_attack_charge("grind", attack, rogue)
+	res.free()
