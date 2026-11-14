@@ -687,6 +687,18 @@
       "duration_seconds": 0.89,
       "prompt_influence": 0.0
     },
+    "attack_hit_bolt": {
+      "file": "assets/audio/sfx/attack_hit_bolt.ogg",
+      "prompt": "The Rogue's SECOND hit (struktured ruling via cowir-main 25159: the basic attack strikes twice), played on the crossbow-release beat, attack frame 4, via play_attack_hit(\"bolt\", is_crit). Point-blank, so the release IS the impact: 25 ms of string-release air, then a dense thunk over a falling 150->85 Hz body (the weight the dagger's whip-crack deliberately lacks, so the two hits read as two weapons) and the shaft's damped 210 Hz quiver. -16.6 LUFS, matched to attack_hit_dagger. numpy synthesis, not heard by struktured yet.",
+      "duration_seconds": 0.36,
+      "source": "tools/gen_bolt_cues.py attack_hit_bolt"
+    },
+    "attack_hit_bolt_crit": {
+      "file": "assets/audio/sfx/attack_hit_bolt_crit.ogg",
+      "prompt": "Crit of the Rogue's crossbow-bolt hit: the same thunk and quiver plus a bright 3.5 kHz+ crack, a 4.2/5.6/6.8 kHz ring (the dagger crit's shimmer partials) and a short double echo. -11.1 LUFS, matched to attack_hit_dagger_crit. numpy synthesis, not heard by struktured yet.",
+      "duration_seconds": 0.64,
+      "source": "tools/gen_bolt_cues.py attack_hit_bolt_crit"
+    },
     "attack_hit_piano_scythe": {
       "file": "assets/audio/sfx/attack_hit_piano_scythe.ogg",
       "prompt": "Quick metallic scythe swoosh slicing through air combined with a DISSONANT piano chord cluster crash, three or four close piano notes hitting together with brief ring, hybrid music-weapon attack (bard signature weapon), sharp blade cut with musical impact, NO bass rumble",
@@ -15216,6 +15228,46 @@
       "prompt": "Fired by BattleScene on BattleManager.boss_charge_broken(boss, status), when a stun or silence lands on a charging boss. The gathered power SNAPS and spills: a bright crack, the gather's climb run backwards (240->55 Hz) and a scatter of thinning sparks, so the pair reads as one breath taken and lost. -17.5 dB active-RMS. numpy synthesis, not heard by struktured yet.",
       "duration_seconds": 0.51,
       "source": "tools/gen_charge_cues.py boss_charge_broken"
+    },
+    "voice_cleric_turn_start_56": {
+      "description": "Cleric party voice line — turn start (variant 56)",
+      "file": "assets/audio/sfx/voice_cleric_turn_start_56.ogg",
+      "source_sha": "67eb9a5759905fe8",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 1675629830,
+      "gain_db": -0.3
+    },
+    "voice_mage_turn_start_56": {
+      "description": "Mage party voice line — turn start (variant 56)",
+      "file": "assets/audio/sfx/voice_mage_turn_start_56.ogg",
+      "source_sha": "5e7895defd1b3905",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 619595390,
+      "gain_db": -1.7
+    },
+    "voice_rogue_turn_start_56": {
+      "description": "Rogue party voice line — turn start (variant 56)",
+      "file": "assets/audio/sfx/voice_rogue_turn_start_56.ogg",
+      "source_sha": "330d194d4dd533f6",
+      "voice": "Chatterbox clone of LibriTTS-R speaker 8224 (CC BY 4.0), reference +1.5 st, voice_refs/rogue.wav",
+      "voice_gender": "ambiguous",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.55 cfg 0.4",
+      "seed": 1548784733,
+      "gain_db": -3.4
+    },
+    "voice_bard_turn_start_56": {
+      "description": "Bard party voice line — turn start (variant 56)",
+      "file": "assets/audio/sfx/voice_bard_turn_start_56.ogg",
+      "source_sha": "686cb911edbffc0d",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 98768637,
+      "gain_db": -0.4
     }
   }
 }

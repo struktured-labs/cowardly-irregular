@@ -84,7 +84,15 @@ VOICE_TIER_FILE="tmp/web_stage.voice_tier"
 rm -f "$VOICE_TIER_FILE"
 if [ "$VOICE_KBPS" -ne 0 ]; then
     echo "[stage] 1b voice tier @ ${VOICE_KBPS} kbps / ${VOICE_AR} Hz"
-    VOICE_TIER="$(./tools/make_web_voice.sh "$VOICE_KBPS" "$VOICE_AR" | tail -1)"
+    # ⛔ PRINT THE TOOL'S LINES, KEEP ONLY THE LAST AS THE PATH. This was `$(… | tail -1)`, which
+    # threw away every other stdout line, including make_web_voice.sh's own decode gate verdict
+    # `[audio-decode] N track(s) decoded and matched their master`. The gate ran on every publish
+    # and no publish log ever showed it, so on 2026-11-13 deploy concluded the shipped web voice
+    # was never decoded and main built on that (25112/25116, both withdrawn). A gate FAIL still
+    # stops here: under `set -euo pipefail` a failing substitution in a plain assignment exits.
+    _VOICE_OUT="$(./tools/make_web_voice.sh "$VOICE_KBPS" "$VOICE_AR")"
+    printf '%s\n' "$_VOICE_OUT" | sed '$d'
+    VOICE_TIER="$(printf '%s\n' "$_VOICE_OUT" | tail -1)"
     V_TIER_N=$(find "$VOICE_TIER" -name '*.ogg' | wc -l)
     # The corpus is make_web_voice.sh's own --list: one definition, so this count cannot drift
     # from the tier when the corpus grows (it did: boss_line_* joined voice_* on 2026-11-01).
