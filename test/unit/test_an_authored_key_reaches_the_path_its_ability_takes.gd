@@ -115,6 +115,8 @@ const OUT_OF_SCOPE := {
 	"magic_school": "shop shelf grouping",
 	"priority": "consumed by TURN ORDER, before any executor runs — _compute_action_speed subtracts PRIORITY_OFFSET, which is why quick_strike goes first. An executor could not implement it",
 	"vfx": "presentation — AbilityVFX.resolve reads it (type, power, color, shape, sequence); BattleScene._play_ability_sequence plays a named sequence. No executor's arithmetic changes with it (first authored on Fire, 2026-10-31, #399)",
+	"counter_verb": "the battle LOG only — BattleManager._trigger_monster_counter words its 'X <verb> Y!' line with it; no executor runs differently (Royal Spite, struktured 2026-11-14)",
+	"impact_weight": "presentation — BattleScene.counter_impact floors the counter beat's hit weight (hitstop, shake, zoom) with it; damage is the executor's and never reads it",
 	"element": "ASSESSED, not skipped: a weapon strike's element is flavour BY CONSTRUCTION — the physical executor carries the reasoning in its own body and test_weapon_strike_element_is_flavour pins it. The magic path reads it.",
 }
 

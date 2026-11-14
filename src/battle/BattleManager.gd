@@ -68,6 +68,9 @@ signal party_combat_line(combatant: Combatant, line: String, voice_trigger: Stri
 signal boss_taunt(boss: Combatant, line: String)
 ## A cadence boss started or stopped charging its signature (edges only: a two-turn charge emits true once).
 signal boss_charge_changed(boss: Combatant, charging: bool)
+## A monster counter is about to resolve (started) and has resolved (finished): BattleScene lifts its numbers out of the attacker's swing and lands them on a beat of their own.
+signal monster_counter_started(monster: Combatant, target: Combatant, ability_id: String)
+signal monster_counter_finished(monster: Combatant, target: Combatant, ability_id: String)
 ## A stun/silence/sleep landing mid-charge broke the breath.
 signal boss_charge_broken(boss: Combatant, status: String)
 ## boss_jailbreak_landed: emitted after a player directive trips a
@@ -11428,10 +11431,20 @@ func _trigger_monster_counter(monster: Combatant, attacker: Combatant) -> void:
 	## a Scriptweaver-custom ability without a "name" field would
 	## surface as "monster counters with raw_snake_id!" in the
 	## log. Standard prettifier as fallback.
-	battle_log_message.emit("[color=%s]%s counters with %s![/color]" % [AccessibilityPalette.penalty_bbcode(), monster.combatant_name, ability.get("name", ability_id.replace("_", " ").capitalize())])
+	## A boss's first counter of the battle speaks BEFORE it lands; the combatant is new each battle, so the meta is per battle.
+	var bark_key := "counter_spoken_" + ability_id
+	if not monster.has_meta(bark_key):
+		monster.set_meta(bark_key, true)
+		var boss_dlg = get_node_or_null("/root/BossDialogue")
+		var line: String = boss_dlg.get_counter_first_line(_boss_persona_id(monster)) if boss_dlg != null and boss_dlg.has_method("get_counter_first_line") else ""
+		if line != "":
+			_log_boss_line(monster, line)
+			boss_taunt.emit(monster, line)
+	battle_log_message.emit("[color=%s]%s %s %s![/color]" % [AccessibilityPalette.penalty_bbcode(), monster.combatant_name, str(ability.get("counter_verb", "counters with")), ability.get("name", ability_id.replace("_", " ").capitalize())])
 	## Skipping AP and MP — counters are free. Support (Adapt) must not fall through to a physical strike: the log already named the ability, and that path never applies its effect.
 	var targets: Array = _counter_targets(monster, attacker, ability)
 	var atype: String = str(ability.get("type", "physical"))
+	monster_counter_started.emit(monster, attacker, ability_id)
 	match atype:
 		"magic":
 			_execute_magic_ability(monster, ability, targets)
@@ -11441,6 +11454,7 @@ func _trigger_monster_counter(monster: Combatant, attacker: Combatant) -> void:
 			_execute_support_ability(monster, ability, targets)
 		_:
 			_execute_physical_ability(monster, ability, targets)
+	monster_counter_finished.emit(monster, attacker, ability_id)
 
 
 ## Who a counter actually lands on. Adapt and the duel stances are self/ally buffs; a strike still hits the attacker.

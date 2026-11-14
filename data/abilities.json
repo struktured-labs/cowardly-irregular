@@ -1882,6 +1882,21 @@
       "family": "slam"
     }
   },
+  "royal_spite": {
+    "id": "royal_spite",
+    "name": "Royal Spite",
+    "type": "physical",
+    "animation": "attack",
+    "mp_cost": 0,
+    "description": "The Cave Rat King answers an insult to the crown. Hits exactly as hard as Counter; it only looks like the end of the world.",
+    "damage_multiplier": 1.3,
+    "target_type": "last_attacker",
+    "counter_verb": "answers with",
+    "impact_weight": 1.0,
+    "vfx": {
+      "family": "slam"
+    }
+  },
   "crystal_heal": {
     "id": "crystal_heal",
     "name": "Sanatio Crystalli",

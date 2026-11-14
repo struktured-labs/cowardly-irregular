@@ -548,6 +548,9 @@ func _ready() -> void:
 	# Wave E — Boss dialogue / jailbreak signals.
 	if BattleManager.has_signal("boss_taunt"):
 		BattleManager.boss_taunt.connect(_on_boss_taunt)
+	if BattleManager.has_signal("monster_counter_started"):
+		BattleManager.monster_counter_started.connect(_on_monster_counter_started)
+		BattleManager.monster_counter_finished.connect(_on_monster_counter_finished)
 	if BattleManager.has_signal("boss_jailbreak_landed"):
 		BattleManager.boss_jailbreak_landed.connect(_on_boss_jailbreak_landed)
 	# Wave G — end-of-fight boss gloat line (victory / defeat).
@@ -684,6 +687,9 @@ func _exit_tree() -> void:
 		BattleManager.meta_autobattle_editor_requested.disconnect(_on_meta_autobattle_editor_requested)
 	if BattleManager.has_signal("boss_taunt") and BattleManager.boss_taunt.is_connected(_on_boss_taunt):
 		BattleManager.boss_taunt.disconnect(_on_boss_taunt)
+	if BattleManager.has_signal("monster_counter_started") and BattleManager.monster_counter_started.is_connected(_on_monster_counter_started):
+		BattleManager.monster_counter_started.disconnect(_on_monster_counter_started)
+		BattleManager.monster_counter_finished.disconnect(_on_monster_counter_finished)
 	if BattleManager.has_signal("boss_jailbreak_landed") and BattleManager.boss_jailbreak_landed.is_connected(_on_boss_jailbreak_landed):
 		BattleManager.boss_jailbreak_landed.disconnect(_on_boss_jailbreak_landed)
 
@@ -6158,6 +6164,97 @@ func _land_hit_weight(target_sprite: Node2D, attacker: Combatant, action: int) -
 			target_sprite.remove_meta("hit_weight")
 		target_sprite.set_meta("hit_landing", hit)
 	return hit
+
+
+## ---- A MONSTER COUNTER'S OWN BEAT (Royal Spite): its numbers are lifted out of the attacker's swing and land on a pose -> impact after it. ----
+const COUNTER_GAP := 0.2      # game s between the attacker's contact and the counter's pose
+const COUNTER_WINDUP := 0.3   # game s from the counter's pose to its impact
+const COUNTER_SETTLE := 0.35  # game s the stage stays held after the impact's freeze
+var _counter_mark: int = -1
+var _counter_opened: bool = false
+
+
+## Game seconds from the counter's resolve to its pose: after the attacker's own swing lands, if one is still in flight.
+static func counter_lead(swing_in_flight: bool, contact_in: float) -> float:
+	return (maxf(contact_in, 0.0) if swing_in_flight else 0.0) + COUNTER_GAP
+
+
+## The counter's impact: its numbers' own weight, floored by the ability's authored `impact_weight`.
+static func counter_impact(ability: Dictionary, entries: Array, target: Combatant) -> Dictionary:
+	var w: float = 0.0
+	for args in entries:
+		if args is Array and (args as Array).size() >= 3 and target != null and is_instance_valid(target) and args[0] == target:
+			w = maxf(w, hit_weight(int(args[1]), target.max_hp, bool(args[2])))
+	if not entries.is_empty():
+		w = maxf(w, clampf(float(ability.get("impact_weight", 0.0)), 0.0, 1.0))
+	var kill: bool = target != null and is_instance_valid(target) and not target.is_alive
+	return {"w": w, "kill": kill}
+
+
+func _on_monster_counter_started(_monster: Combatant, _target: Combatant, _ability_id: String) -> void:
+	_counter_mark = -1
+	_counter_opened = false
+	if _tier() == BattleJuice.Tier.OFF:
+		return
+	if _full_render_dmg_buffer == null:
+		_full_render_dmg_buffer = []
+		_counter_opened = true
+	_counter_mark = (_full_render_dmg_buffer as Array).size()
+
+
+func _on_monster_counter_finished(monster: Combatant, target: Combatant, ability_id: String) -> void:
+	if _counter_mark < 0:
+		return
+	var entries: Array = _lift_counter_entries()
+	var lead: float = counter_lead(_melee_hold_live, _last_contact_in)
+	BattleManager.presentation_hold = maxf(BattleManager.presentation_hold, lead + COUNTER_WINDUP + HIT_KILL_HITSTOP + COUNTER_SETTLE)
+	_play_counter_beat(monster, target, ability_id, entries, lead)
+
+
+## The counter's numbers, taken out of the buffer; whatever the attacker's swing holds stays held for its own contact.
+func _lift_counter_entries() -> Array:
+	var buf: Array = _full_render_dmg_buffer if _full_render_dmg_buffer is Array else []
+	var entries: Array = buf.slice(maxi(_counter_mark, 0))
+	_full_render_dmg_buffer = null if _counter_opened else buf.slice(0, maxi(_counter_mark, 0))
+	_counter_mark = -1
+	_counter_opened = false
+	return entries
+
+
+func _play_counter_beat(monster: Combatant, target: Combatant, ability_id: String, entries: Array, lead: float) -> void:
+	await get_tree().create_timer(lead).timeout
+	if not is_instance_valid(self) or not is_inside_tree():
+		return
+	var ability: Dictionary = JobSystem.get_ability(ability_id) if JobSystem else {}
+	var m_sprite: Node2D = _get_combatant_sprite(monster) if is_instance_valid(monster) else null
+	var m_anim: BattleAnimatorClass = _get_combatant_animator(monster) if is_instance_valid(monster) else null
+	if m_anim != null:
+		var named: String = _ability_sheet_anim(ability, m_anim)
+		if named != "":
+			m_anim.play_named_animation(named)
+		else:
+			m_anim.play_attack()
+	if m_sprite != null and is_instance_valid(m_sprite):
+		BattleJuice.flash_sprite(m_sprite, Color(1.6, 0.35, 0.3), 0.0, COUNTER_WINDUP)
+	await get_tree().create_timer(COUNTER_WINDUP).timeout
+	if not is_instance_valid(self) or not is_inside_tree():
+		return
+	var t_sprite: Node2D = _get_combatant_sprite(target) if is_instance_valid(target) else null
+	var t_anim: BattleAnimatorClass = _get_combatant_animator(target) if is_instance_valid(target) else null
+	var hit: Dictionary = counter_impact(ability, entries, target)
+	if not entries.is_empty():
+		SoundManager.play_ability(ability_id)
+		if t_sprite != null and is_instance_valid(t_sprite):
+			t_sprite.set_meta("hit_landing", hit)
+		_hitstop_seconds = hitstop_for(hit)
+		_apply_hitstop(m_sprite, t_sprite)
+	var prev_acting: Combatant = _last_acting_combatant
+	_last_acting_combatant = monster if is_instance_valid(monster) else null
+	if not entries.is_empty():
+		_delayed_play_hit_fx(t_anim, t_sprite)
+	for args in entries:
+		_on_damage_dealt(args[0], args[1], args[2], args[3], args[4])
+	_last_acting_combatant = prev_acting
 
 
 ## What a one-shot pose (a swing, a cast) may take before the next beat, in game seconds. Sheets longer than
