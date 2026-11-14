@@ -35,7 +35,7 @@ class TimedScene extends "res://src/battle/BattleScene.gd":
 		if _full_render_dmg_buffer != null:
 			super(target, amount, is_crit, element, elemental_mod)
 			return
-		landed.append([amount, Time.get_ticks_msec() * 0.001 * Engine.time_scale, Engine.get_process_frames()])
+		landed.append([amount, Time.get_ticks_msec() * 0.001 * Engine.time_scale, Engine.get_process_frames(), get_process_delta_time()])
 
 
 func before_each() -> void:
@@ -258,6 +258,8 @@ func test_turbo_still_lands_two_separate_numbers() -> void:
 	assert_lte(wait, SCENE.STRIKE_STAGGER + 0.05, "turbo's bolt waits STRIKE_STAGGER, not a safety timer (%.3f s vs %.2f)" % [wait, SCENE.STRIKE_STAGGER])
 	var gap: float = landed[1][1] - landed[0][1]
 	assert_lt(gap, SCENE.STRIKE_STAGGER + 0.2, "and on the clock it lands well before any safety timer (%.3f s apart)" % gap)
+	var early: float = maxf(float(landed[0][3]), float(landed[1][3])) + 0.01
+	assert_gte(gap, wait - early, "on the clock the bolt is at most one frame early of what it asked for (%.3f s apart, asked %.3f, frame %.3f)" % [gap, wait, early - 0.01])
 
 
 func _mean(a: Array) -> float:
