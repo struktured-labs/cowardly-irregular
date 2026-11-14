@@ -2,7 +2,7 @@ extends GutTest
 
 ## ⛔ READ THIS BEFORE WIDENING THE FILE. `giver.location.map_id` IS RUNTIME-INERT. Measured again on
 ## today's tree: `src/` reads `giver.npc_id` (QuestSystem:125/425/446, OverworldNPC:1361) and
-## `giver.display_name` (QuestLog:391) and `giver.spawn_flag` — and NOTHING reads `giver.location`.
+## `giver.display_name` (QuestLog:391) — and NOTHING reads `giver.location` (nor `giver.spawn_flag`: see test_a_gated_quest_giver_waits_for_its_spawn_flag).
 ## A previous pass in this lane already found 8 of these mismatches, checked the consumer, and ruled
 ## AGAINST guarding the field: a ratchet on prose enforces consistency in prose and reds on a correct
 ## change. That ruling stands, and this file is deliberately one arm rather than the five I first
