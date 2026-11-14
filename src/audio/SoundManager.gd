@@ -58,6 +58,7 @@ var _music_player: AudioStreamPlayer
 var _music_player_b: AudioStreamPlayer  # Second player for crossfade
 var _ambient_player: AudioStreamPlayer  # Looping weather/environment ambience
 var _sub_player: AudioStreamPlayer  # Crit sub-layer only; separate so the thud LAYERS under the hit instead of replacing it on _battle_player
+var _second_hit_player: AudioStreamPlayer  # dedicated voice: the Rogue's bolt lands within 0.22 s of the dagger outside spotlight pace and replaced it on _battle_player, so two hits sounded as one (2026-11-13)
 var _strike_player: AudioStreamPlayer  # dedicated voice: the elemental strike voice is authored to ride OVER the weapon hit, and replaced it on _battle_player (2026-09-16)
 var _flash_player: AudioStreamPlayer  # dedicated voice: the weakness stinger fires same-frame with the hit by design, so the hit always replaced it (2026-09-16)
 var _current_ambient_key: String = ""
@@ -735,6 +736,12 @@ func _setup_audio_players() -> void:
 	_strike_player.volume_db = SFX_BATTLE_BASE_DB
 	_strike_player.bus = SFX_BUS
 	add_child(_strike_player)
+
+	_second_hit_player = AudioStreamPlayer.new()
+	_second_hit_player.name = "SecondHitPlayer"
+	_second_hit_player.volume_db = SFX_BATTLE_BASE_DB
+	_second_hit_player.bus = SFX_BUS
+	add_child(_second_hit_player)
 
 	_flash_player = AudioStreamPlayer.new()
 	_flash_player.name = "FlashPlayer"
@@ -1649,6 +1656,13 @@ var _victory_letter_transpose_read: bool = false
 ## per-key cooldown sounds the first and suppresses the rest, which is correct — identical
 ## same-frame samples comb-filter. Counting the silent ones drove the bias straight to its cap
 ## with nothing audible causing it: measured 5 calls -> 1 play, _combo_step 5, bias 1.12 = CAP.
+## The second hit of ONE action (the Rogue's bolt after the dagger, struktured 2026-11-13): its own voice, so it layers over
+## the first hit's cue instead of replacing it, and it counts on the same hit chain so the pair ramps like a combo.
+func play_second_hit(sound_key: String) -> void:
+	if _try_play_sfx_from_manifest(_second_hit_player, sound_key, _battle_level(sound_key), _combo_pitch_bias()):
+		_advance_hit_chain()
+
+
 func _advance_hit_chain() -> void:
 	if not _sfx_suppressed_by_cooldown:
 		_combo_step += 1
