@@ -56,6 +56,12 @@ func _authored(canon: String) -> Array:
 	for it in bd.get("scripted_intents", []):
 		for l in it.get("taunt_lines", []):
 			out.append(DialoguePrompts.spoken_line(str(l)))
+	# A cadence boss speaks its charge barks and its broken-charge bark (cowir-ai, BattleManager._speak_boss_bark).
+	for l in bd.get("charge_barks", []):
+		out.append(str(l))
+	var broken := str((bd.get("interrupted_line", {}) as Dictionary).get("bark", ""))
+	if broken != "":
+		out.append(broken)
 	return out
 
 
