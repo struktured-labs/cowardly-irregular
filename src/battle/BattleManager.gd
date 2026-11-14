@@ -10490,8 +10490,10 @@ func _build_gloat_prompt(persona_id: String, boss_name: String, victory: bool, v
 		if persona_text != "":
 			persona_block = "\nPersona — stay in THIS voice, not a generic villain's:\n  %s\n" % DialoguePrompts.unrun_hyphens(persona_text)
 	var sample_block: String = ""
-	if voice_sample.strip_edges() != "":
-		sample_block = "\nOne of this boss's own lines for this moment (match its voice; do not copy it):\n  %s\n" % DialoguePrompts.unrun_hyphens(voice_sample.strip_edges())
+	## Authored lines are "Name: 'text'"; the rules below forbid a speaker label, so the sample must not model one.
+	var sample_said: String = DialoguePrompts.spoken_line(voice_sample).strip_edges()
+	if sample_said != "":
+		sample_block = "\nOne of this boss's own lines for this moment (match its voice; do not copy it):\n  %s\n" % DialoguePrompts.unrun_hyphens(sample_said)
 
 	return (
 		"You are voicing a boss in a meta-aware JRPG called 'Cowardly Irregular'.\n"
