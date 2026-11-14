@@ -90,3 +90,6 @@ func test_the_construct_is_quoted_only_what_it_could_say() -> void:
 	for l in too_long:
 		assert_false(prompt.contains(DP.spoken_line(str(l)).left(60)), "the over-long line stays out of the prompt")
 	assert_string_contains(prompt, "Lines you have said", "CONTROL: its shorter line still sets the voice")
+	var tagged: String = str(lines[0])
+	assert_gt(tagged.length(), DP.MAX_BOSS_TAUNT_CHARS, "CONTROL: its first line is over the cap only with its speaker tag")
+	assert_string_contains(prompt, "  - %s\n" % DP.unrun_hyphens(DP.spoken_line(tagged)), "the cap is measured after the tag is stripped, so that line is quoted")
