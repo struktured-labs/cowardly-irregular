@@ -346,7 +346,7 @@ func _build_ui() -> void:
 func _fit_hint_px(text: String) -> int:
 	var px: int = TextScale.scaled(HINT_FONT_SIZE)
 	var room: float = float(_panel_w - PADDING_SIDE * 2)
-	var font: Font = ThemeDB.fallback_font
+	var font: Font = UiFont.of(_hint_label)
 	while px > HINT_FONT_MIN and font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x > room:
 		px -= 1
 	return px
