@@ -66,7 +66,7 @@ func test_every_cell_holds_a_whole_figure_standing_on_its_floor() -> void:
 	assert_eq(bad, [], "a frame is empty, cut at the top, or floats off the floor")
 
 
-func test_bill_walks_the_gate_road_on_open_ground() -> void:
+func test_bill_walks_the_south_wall_on_open_ground() -> void:
 	var vp := SubViewport.new()
 	vp.world_2d = World2D.new()
 	add_child_autofree(vp)

@@ -884,7 +884,7 @@ func _setup_npcs() -> void:
 	)
 	npcs.add_child(kaya)
 
-	# Bill — the artist's fifth overworld villager (2026-10-25 drop), pacing the gate road with his sword on his back.
+	# Bill — the artist's fifth overworld villager (2026-10-25 drop), pacing the open grass along the south wall, sword on his back.
 	var bill_loop: Array[Vector2] = [
 		Vector2(32 * TILE_SIZE, 31 * TILE_SIZE),
 		Vector2(37 * TILE_SIZE, 31 * TILE_SIZE),
@@ -892,7 +892,7 @@ func _setup_npcs() -> void:
 	var bill = _create_wandering_npc(
 		"Bill",
 		"bill",
-		"I walk the gate road. Nobody asked me to. Nobody's asked me to stop, either.",
+		"I walk the south wall. Nobody asked me to. Nobody's asked me to stop, either.",
 		bill_loop,
 		"villager",
 		"bill"
