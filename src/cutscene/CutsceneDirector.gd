@@ -1762,7 +1762,7 @@ static func card_metrics(title_px: int, sub_px: int, base_title_px: int, base_su
 	## above-base guard `_box_metrics` carries, which I left out here.
 	if title_px <= base_title_px and sub_px <= base_sub_px:
 		return {"title_h": title_h, "gap": gap, "sub_h": sub_h}
-	var font: Font = ThemeDB.fallback_font
+	var font: Font = UiFont.display()
 	if font != null:
 		var th: float = float(font.get_height(title_px))
 		var sh: float = float(font.get_height(sub_px))
@@ -1800,7 +1800,7 @@ static func skip_pill_metrics(label_px: int, base_label_px: int, text: String,
 	}
 	if label_px <= base_label_px:
 		return out
-	var font: Font = ThemeDB.fallback_font
+	var font: Font = UiFont.display()
 	if font == null:
 		return out
 	var h: float = float(font.get_height(label_px))
@@ -1833,7 +1833,7 @@ static func timer_rect(px: int, base_px: int, text: String, viewport_w: float,
 		base_w: float, base_h: float, right_inset: float) -> Rect2:
 	var w: float = base_w
 	var h: float = base_h
-	var font: Font = ThemeDB.fallback_font
+	var font: Font = UiFont.display()
 	if font != null and px > base_px:
 		var m: Vector2 = font.get_string_size(text, HORIZONTAL_ALIGNMENT_RIGHT, -1, px)
 		w = maxf(base_w, m.x + 8.0)
