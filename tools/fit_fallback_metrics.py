@@ -52,11 +52,23 @@ def derive(target: Path, source: Path, family: str) -> None:
             continue
         font["name"].setName(text, nid, 3, 1, 0x409)
         font["name"].setName(text, nid, 1, 0, 0)
+    # Anonymous Pro maps ten private-use codepoints (its own logo glyphs). They are not text, and a fallback that
+    # answers for U+E000 blinds test_every_rendered_glyph_resolves_regression's tofu control. Unmapped, not deleted.
+    for table in font["cmap"].tables:
+        for cp in [c for c in table.cmap if is_private(c)]:
+            del table.cmap[cp]
     font.save(target)
+
+
+def is_private(cp: int) -> bool:
+    return 0xE000 <= cp <= 0xF8FF or cp >= 0xF0000
 
 
 def renamed_ok(path: Path, family: str) -> list[str]:
     bad = []
+    pua = [hex(c) for c in TTFont(path).getBestCmap() if is_private(c)]
+    if pua:
+        bad.append(f"maps private-use {pua[:3]}")
     for rec in TTFont(path)["name"].names:
         if rec.nameID in RENAMED_IDS and "anonymous" in str(rec).lower():
             bad.append(f"name {rec.nameID} still says {rec}")

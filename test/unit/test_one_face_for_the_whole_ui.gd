@@ -84,7 +84,15 @@ func test_the_old_face_is_not_behind_the_pixel_face() -> void:
 	assert_gt(f.fallbacks.size(), 0, "CONTROL: the pixel face has a chain to search")
 	assert_false(f.fallbacks.has(old), "the old face is on the pixel face's chain, so its line box sizes every pixel Label")
 	if old != null:
-		assert_eq(f.fallbacks.size(), old.fallbacks.size(), "the pixel face carries exactly the old face's symbol fonts")
+		assert_eq(f.fallbacks.size(), old.fallbacks.size() + 1, "the pixel face carries the old face's symbol fonts and the Latin fallback")
+		for i in old.fallbacks.size():
+			assert_eq(f.fallbacks[i], old.fallbacks[i], "symbol font %d is the old face's, in its order, so symbols resolve in Noto first" % i)
+		var latin: Font = f.fallbacks.back()
+		assert_eq(latin.resource_path, UiFont.LATIN_FALLBACK, "the Latin fallback is LAST")
+		for fs in [9, 12, 13, 18, 26]:
+			var k: int = UiFont.scale_for(fs)
+			assert_true(latin.get_ascent(fs) <= UiFont.ASCENT * k and latin.get_descent(fs) <= UiFont.DESCENT * k,
+				"the Latin fallback's line box %.0f/%.0f fits the pixel box %d/%d at %d px" % [latin.get_ascent(fs), latin.get_descent(fs), UiFont.ASCENT * k, UiFont.DESCENT * k, fs])
 	var undrawn := ""
 	for ch in "äöéèêëáàâãíìîïóòôõúùûüñýÿç°±²÷§‼":
 		if not (f as FontFile).has_char(ch.unicode_at(0)):
