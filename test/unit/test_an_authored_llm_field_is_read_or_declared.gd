@@ -73,6 +73,7 @@ const PROSE_PREFIXES := ["_comment", "_note", "_META_", "_fallbacks_note"]
 
 var _corpus: String = ""
 var _corpus_files: int = 0
+var _code_by_file: Dictionary = {}
 
 
 func before_each() -> void:
@@ -100,7 +101,9 @@ func _walk(dir_path: String, out: PackedStringArray) -> void:
 			## permanently invisible to the census — the silencing direction, in the guard
 			## whose job is finding unread fields. Latent when found (0 of 78 keys), and
 			## this repo comments densely enough that latent is not the same as safe.
-			out.append(GdSource.code_of(full))
+			var code: String = GdSource.code_of(full)
+			out.append(code)
+			_code_by_file[full] = code
 			_corpus_files += 1
 		name = d.get_next()
 	d.list_dir_end()
@@ -166,6 +169,45 @@ func _read_literally(key: String) -> bool:
 	return _corpus.find("\"%s\"" % key) != -1
 
 
+
+## The function a site sits in, or "" at the top level (a const or a member initialiser is always live).
+func _enclosing_func(src: String, pos: int) -> String:
+	var line_start: int = src.rfind("\n", pos) + 1
+	if not (src[line_start] == "\t" or src[line_start] == " "):
+		return ""
+	var name: String = ""
+	for m in RegEx.create_from_string("(?m)^(?:static\\s+)?func\\s+([A-Za-z_]\\w*)").search_all(src):
+		if (m as RegExMatch).get_start() > pos:
+			break
+		name = (m as RegExMatch).get_string(1)
+	return name
+
+
+## Named anywhere but its own definition. A leading `_` counts as called: engine callbacks are never named.
+func _is_called(fn: String, corpus: String) -> bool:
+	if fn == "" or fn.begins_with("_"):
+		return true
+	var uses: int = RegEx.create_from_string("\\b%s\\b" % fn).search_all(corpus).size()
+	var defs: int = RegEx.create_from_string("func\\s+%s\\b" % fn).search_all(corpus).size()
+	return uses > defs
+
+
+## The functions that read `key`, when EVERY read sits in one nothing calls; [] when any read is live or there is none.
+func _dead_readers(key: String, code_by_file: Dictionary, corpus: String) -> Array:
+	var readers: Array = []
+	var needle: String = "\"%s\"" % key
+	for path in code_by_file:
+		var src: String = str(code_by_file[path])
+		var at: int = src.find(needle)
+		while at != -1:
+			var fn: String = _enclosing_func(src, at)
+			if _is_called(fn, corpus):
+				return []
+			readers.append("%s.%s" % [str(path).get_file().get_basename(), fn])
+			at = src.find(needle, at + 1)
+	return readers
+
+
 # ── the corpus itself, both directions ────────────────────────────────────────
 
 func test_the_corpus_is_real() -> void:
@@ -190,6 +232,33 @@ func test_every_authored_field_is_read_or_declared() -> void:
 	assert_eq(undeclared, [],
 		"authored fields with no reader and no declaration — read them or declare who holds the call: %s"
 			% str(undeclared))
+
+
+
+func test_a_field_read_only_by_dead_code_is_unread() -> void:
+	## boss_dialogue.json's opening_lines passed the rule above for months: get_opening_lines named the key and had no caller.
+	var dead: Array = []
+	for path in AUTHORED_FILES:
+		for key in _keys_of(path):
+			var k: String = str(key)
+			if _is_prose(k) or DECLARED_INERT.has(k):
+				continue
+			var readers: Array = _dead_readers(k, _code_by_file, _corpus)
+			if not readers.is_empty():
+				dead.append("%s:%s (only in %s)" % [path.get_file(), k, ", ".join(readers)])
+	assert_eq(dead, [], "authored fields read only inside functions nothing calls; call the reader or declare the field: %s" % str(dead))
+
+
+func test_the_dead_reader_check_can_say_yes() -> void:
+	var accessor := "func get_zz_lines(id):\n\treturn _data[id].get(\"zz_lines\", [])\n"
+	var unused := {"res://planted/A.gd": accessor}
+	assert_eq(_dead_readers("zz_lines", unused, accessor), ["A.get_zz_lines"], "CONTROL: an accessor nobody calls is reported")
+	var caller := "func f():\n\tvar l = d.get_zz_lines(1)\n"
+	var used := {"res://planted/A.gd": accessor, "res://planted/B.gd": caller}
+	assert_eq(_dead_readers("zz_lines", used, accessor + caller), [], "a caller anywhere makes the read live")
+	var konst := "const K := \"zz_lines\"\n"
+	assert_eq(_dead_readers("zz_lines", {"res://planted/C.gd": konst}, konst), [], "a top-level read is live")
+	assert_gt(_code_by_file.size(), 200, "CONTROL: the per-file corpus is the whole src tree")
 
 
 func test_a_declared_field_that_became_live_must_lose_its_declaration() -> void:
