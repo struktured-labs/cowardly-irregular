@@ -16,6 +16,7 @@ enum ShopType { ITEM = 0, BLACK_MAGIC = 1, WHITE_MAGIC = 2, BLACKSMITH = 3 }
 @export var shop_name: String = "Shop"
 
 const TILE_SIZE: int = 32
+const EntryFocusScript := preload("res://src/maps/interiors/EntryFocus.gd")
 
 ## Sign text shrinks between these to fit the 4-tile board; below the floor it would be unreadable.
 const SIGN_FONT_MAX: int = 11
@@ -31,6 +32,7 @@ var npcs: Node2D
 var transitions: Node2D
 var decorations: Node2D
 var controller: Node
+var _keeper: Node2D
 
 ## Spawn points
 var spawn_points: Dictionary = {
@@ -109,6 +111,7 @@ func _ready() -> void:
 	_setup_transitions()
 	_setup_player()
 	_setup_camera()
+	_attach_entry_focus()
 	_setup_controller()
 	# Walls, the counter and the shelves are solid.
 	InteriorWalls.build(self, SHOP_LAYOUT, SOLID_GLYPHS)
@@ -1447,6 +1450,7 @@ func _setup_npcs() -> void:
 		if child.get("npc_name") == keeper_name:
 			keeper_npc = child
 			break
+	_keeper = keeper_npc as Node2D
 	if keeper_npc:
 		keeper_npc.portrait_override = load("res://src/exploration/ShopScene.gd").pictured_keeper_key(shop_type, keeper_name)
 	if keeper_npc and keeper_npc.has_signal("dialogue_ended"):
@@ -1657,6 +1661,15 @@ func _setup_camera() -> void:
 	else:
 		add_child(camera)
 		camera.position = Vector2(MAP_WIDTH * TILE_SIZE / 2, MAP_HEIGHT * TILE_SIZE / 2)
+
+
+## Walking in, the keeper behind the counter is framed with you instead of cut off at the top edge.
+func _attach_entry_focus() -> void:
+	var focus: Node = EntryFocusScript.new()
+	if focus.setup(camera, player, _keeper):
+		add_child(focus)
+	else:
+		focus.free()
 
 
 func spawn_player_at(spawn_name: String) -> void:
