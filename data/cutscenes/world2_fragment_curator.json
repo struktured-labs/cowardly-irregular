@@ -3,7 +3,7 @@
   "title": "Fragment: Enough",
   "world": 2,
   "trigger": "curator_budget_defeated",
-  "background": "suburban_neighborhood",
+  "background": "community_center",
   "location": "hoa_community_center",
   "description": "Found in the HOA Community Center after defeating the Curator of the Budget. An open ledger on the folding table, the final page blank except for one word, written at the bottom in a hand that was very tired and very clear.",
   "steps": [

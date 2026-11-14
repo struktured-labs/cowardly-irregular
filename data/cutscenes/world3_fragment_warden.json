@@ -3,7 +3,7 @@
   "title": "Fragment: The Threshold",
   "world": 3,
   "trigger": "warden_assembly_line_defeated",
-  "background": "steampunk_workshop",
+  "background": "mechanism_interior",
   "location": "ironhaven_assembly_floor_station_seven",
   "description": "Found at Station Seven on the Assembly Floor after defeating the Warden of the Assembly Line. A pressure gauge mounted to a length of copper pipe, still attached to nothing, reading exactly the number it read when something unexpected happened.",
   "steps": [

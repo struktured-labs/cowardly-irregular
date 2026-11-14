@@ -3,7 +3,7 @@
   "title": "Fragment: The Sword Knows",
   "world": 1,
   "trigger": "arbiter_medieval_defeated",
-  "background": "cave_entrance",
+  "background": "prologue_forest",
   "location": "corrupted_forest_clearing",
   "description": "Found in the forest clearing where the Arbiter fell. A piece of steel holds the shape of a blade that no longer exists. Brief, precise — the way she spoke.",
   "steps": [

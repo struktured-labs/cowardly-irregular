@@ -3,7 +3,7 @@
   "title": "Fragment: The Questions",
   "world": 1,
   "trigger": "curator_medieval_defeated",
-  "background": "cave_entrance",
+  "background": "throne_room",
   "location": "throne_antechamber_hearth",
   "description": "Found before the throne room doors after defeating the Curator. A vial of something warm, labeled in the Curator's handwriting. The flame she carried was already burning when she arrived. This is the moment she finally asked why.",
   "steps": [

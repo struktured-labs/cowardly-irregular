@@ -3,7 +3,7 @@
   "title": "Fragment: The Receipt",
   "world": 2,
   "trigger": "tempo_rush_defeated",
-  "background": "suburban_neighborhood",
+  "background": "maple_heights_street",
   "location": "maple_heights_outroad",
   "description": "Found on the road outside Maple Heights after defeating the Tempo of Rush Hour. A delivery receipt, crumpled in the way of something that was in a pocket through every stop on a route that never ended, with an address that doesn't exist on any map.",
   "steps": [
