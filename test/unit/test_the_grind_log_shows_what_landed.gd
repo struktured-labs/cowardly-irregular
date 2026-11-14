@@ -37,7 +37,7 @@ func _logged_hit(resolver, prefix: String) -> int:
 	for line in resolver._battle_log:
 		var s := str(line)
 		if s.begins_with(prefix) and s.contains(" for "):
-			return int(s.get_slice(" for ", 1).trim_suffix("!"))
+			return int(s.get_slice(" for ", 1).get_slice(" ", 0).trim_suffix("!"))
 	return -1
 
 
