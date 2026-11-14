@@ -11419,7 +11419,8 @@
       "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.5 cfg 0.5",
       "seed": 42,
       "whisper_heard": "Oh, that was new.",
-      "whisper_score": 1.0
+      "whisper_score": 1.0,
+      "gain_db": 0.9
     },
     "boss_line_voltharion_00": {
       "description": "Voltharion voiced line (monsters lightning_dragon.intro)",
