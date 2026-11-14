@@ -121,6 +121,11 @@ func test_premise_barrier_nullifies_whole_hits_and_only_damage_absorb_reads_the_
 			break
 		sites += 1
 		var fn: String = _enclosing_function(src, idx)
+		# The two-strike attack (.802) marks a strike's fate "barrier" in _execute_attack and spends the ward in _land_attack_strike.
+		if not fn.contains("remove_status(\"barrier\")") and fn.contains("[\"fate\"] = \"barrier\""):
+			var land: int = src.find("func _land_attack_strike(")
+			assert_gt(land, -1, "a barrier fate is marked but _land_attack_strike, which spends it, is gone")
+			fn = _enclosing_function(src, land + 1)
 		assert_true(fn.contains("remove_status(\"barrier\")"), "CONTROL: the function around a barrier check must be the one that spends the ward, else this scanned the wrong code")
 		assert_false(fn.contains("absorb_amount"), "barrier's handler now consults absorb_amount — guardian_wall's ward is capped, so its \"outright\" wording is wrong. Fix the description and this test together.")
 		from = idx + 1
