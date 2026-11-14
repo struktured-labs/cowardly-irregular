@@ -207,7 +207,7 @@ const WRAP_FLAGS := TextServer.BREAK_MANDATORY | TextServer.BREAK_WORD_BOUND | T
 ## main-line-only state — the one a player sees most — does not move at 100%.
 static func plate_metrics(main_text: String, side_text: String, side_shown: bool,
 		main_px: int, side_px: int) -> Dictionary:
-	var font: Font = ThemeDB.fallback_font
+	var font: Font = UiFont.display()
 	var out: Dictionary = {
 		"plate_right": PLATE_LEFT + WRAP_W + PLATE_PAD,
 		"plate_bottom": PLATE_BOTTOM_COLLAPSED,
