@@ -809,6 +809,8 @@ func _setup_default_ability_sounds() -> void:
 	## riff is type=physical so derivation cannot reach it, and ability_physical is a sword
 	## unsheathing — its own description says "a sour, clashing chord struck like a weapon".
 	_ability_sounds["riff"] = "ability_riff"
+	## The Rat King's counter (struktured 25439/25451): his own bite, not the shared counter's thump.
+	_ability_sounds["royal_spite"] = "ability_royal_spite"
 	_ability_sounds["fire"] = "ability_fire"
 	_ability_sounds["fira"] = "ability_fire"
 	_ability_sounds["firaga"] = "ability_fire"
