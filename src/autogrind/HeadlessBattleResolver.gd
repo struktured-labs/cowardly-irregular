@@ -943,7 +943,7 @@ func _execute_action(action: Dictionary) -> void:
 			var target = _retarget_foe(combatant, action.get("target"))
 			if target and target.is_alive:
 				var dmg = _resolve_attack(combatant, target)
-				_log("%s attacks %s for %d" % [combatant.combatant_name, target.combatant_name, dmg])
+				_log("%s attacks %s for %d%s" % [combatant.combatant_name, target.combatant_name, dmg, _strike_parts_text()])
 
 		"ability":
 			acted = true
@@ -1041,6 +1041,10 @@ func _sum_equipment_special_effect(combatant, key: String) -> float:
 	return total
 
 
+## Each strike's dealt number from the latest _resolve_attack, in strike order; read by _strike_parts_text.
+var _last_strike_parts: Array = []
+
+
 func _resolve_attack(attacker, target) -> int:
 	if not target or not target.is_alive:
 		return 0
@@ -1079,6 +1083,7 @@ func _resolve_attack(attacker, target) -> int:
 	## The same strikes live loops over (Combatant.basic_attack_strikes), each with its own miss and crit roll.
 	## Defence meets the attack ONCE: each strike meets the share of it that its raw is of the attack's (twin of live).
 	var total: int = 0
+	_last_strike_parts.clear()
 	var rolls: Array = []
 	var barrier_left: bool = target.has_status("barrier")
 	var reflecting: bool = target.has_status("reflect") or target.has_status("physical_reflect")
@@ -1098,8 +1103,17 @@ func _resolve_attack(attacker, target) -> int:
 		if i > 0 and not target.is_alive:
 			break
 		var share: float = float(rolls[i]["damage"]) / raw_total if raw_total > 0 and rolls[i]["fate"] == "hit" else 1.0
-		total += _land_attack_strike(attacker, target, rolls[i], share)
+		var dealt_i: int = _land_attack_strike(attacker, target, rolls[i], share)
+		_last_strike_parts.append(dealt_i)
+		total += dealt_i
 	return total
+
+
+## " (18 + 13)" after a multi-strike attack's total, so a grind log shows each strike as live shows each number; "" for one strike.
+func _strike_parts_text() -> String:
+	if _last_strike_parts.size() < 2:
+		return ""
+	return " (%s)" % " + ".join(PackedStringArray(_last_strike_parts.map(func(n): return str(n))))
 
 
 ## One strike's rolls, before it meets the target. Twin of BattleManager._roll_attack_strike.
