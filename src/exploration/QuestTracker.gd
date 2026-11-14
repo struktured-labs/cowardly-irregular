@@ -212,14 +212,18 @@ static func plate_metrics(main_text: String, side_text: String, side_shown: bool
 		"plate_right": PLATE_LEFT + WRAP_W + PLATE_PAD,
 		"plate_bottom": PLATE_BOTTOM_COLLAPSED,
 		"side_h": SIDE_TOP + 20.0 - SIDE_TOP,
+		"side_top": SIDE_TOP,
 	}
 	if font == null:
 		return out
+	## The side line starts below the main line's own height, which outgrows the authored gap past 125%.
+	var side_top: float = maxf(SIDE_TOP, MAIN_TOP + ceilf(font.get_height(main_px)))
+	out["side_top"] = side_top
 	var main_w: float = font.get_string_size(main_text, HORIZONTAL_ALIGNMENT_LEFT, -1, main_px).x
 	var right: float = LABEL_LEFT + main_w + PLATE_PAD
 	if not side_shown:
 		out["plate_right"] = right
-		out["plate_bottom"] = PLATE_BOTTOM_COLLAPSED
+		out["plate_bottom"] = maxf(PLATE_BOTTOM_COLLAPSED, side_top - SIDE_TOP + PLATE_BOTTOM_COLLAPSED)
 		out["side_h"] = 0.0
 		return out
 	## The side line WRAPS, so its width is bounded and its height is what grows. Measured with the
@@ -230,7 +234,7 @@ static func plate_metrics(main_text: String, side_text: String, side_shown: bool
 	## The plate covers the WIDER of the two lines: the main line's measured text, or the side
 	## line's bounded wrap width. Never narrower than the authored collapsed plate.
 	out["plate_right"] = maxf(right, LABEL_LEFT + WRAP_W + PLATE_PAD)
-	out["plate_bottom"] = SIDE_TOP + float(out["side_h"]) + PLATE_BOTTOM_PAD
+	out["plate_bottom"] = side_top + float(out["side_h"]) + PLATE_BOTTOM_PAD
 	return out
 
 
@@ -272,7 +276,8 @@ func _apply_plate() -> void:
 		_label.get_theme_font_size("font_size"), _side_label.get_theme_font_size("font_size"))
 	_bg.offset_right = float(m["plate_right"])
 	_bg.offset_bottom = float(m["plate_bottom"])
-	_side_label.size.y = float(m["side_h"])
+	_side_label.offset_top = float(m["side_top"])
+	_side_label.offset_bottom = float(m["side_top"]) + float(m["side_h"])
 
 
 ## First active side quest's current objective, shown under the main line.
