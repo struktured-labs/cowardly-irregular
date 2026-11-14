@@ -1,21 +1,32 @@
 # Store screenshot captions — Cowardly Irregular
 
-**Current vintage of every shipped frame (2026-11-05, read from git, not remembered):**
+**Current vintage of every shipped frame (2026-11-14, read from git, not remembered):**
 
 | captured at | shots | section |
 |---|---|---|
 | `v3.33.750-alpha` | `battle_storm` · `field_elite_medieval` · `field_elite_prompt_medieval` · `field_elite_steampunk` · `grimhollow_spiral` · `infernal_grotto_f3` · `warren_lever_portals` · `warren_wrap_field` | commit `1df31b2fb` |
 | `v3.33.752-alpha` | (none left: both re-shot at `.767`) | commits `438ff3e68`, `21f990b47` |
 | `v3.33.767-alpha` | (none left: `battle` re-shot at `.774`) | "re-shot at `v3.33.767-alpha`" |
-| `v3.33.770-alpha` | `ironhaven_village` · `eldertree_village` · the three interiors · `whispering_cave` | "re-shot at `v3.33.770-alpha`, door labels hidden" |
+| `v3.33.770-alpha` | `ironhaven_village` · `eldertree_village` · `tavern_interior` · `whispering_cave` (`inn_interior` · `shop_interior` re-shot at `.802`) | "re-shot at `v3.33.770-alpha`, door labels hidden" |
 | `v3.33.773-alpha` | `harmonia_village` · `frosthold_village` · `grimhollow_village` | "re-shot at `v3.33.773-alpha`, villagers on whole ground" |
 | `v3.33.774-alpha` | `sandrift_village` · `title_screen` (`battle` re-shot at `.788`) | "re-shot at `v3.33.774-alpha`, a name said once" |
+| `v3.33.802-alpha` | `inn_interior` · `shop_interior` | "re-shot at `v3.33.802-alpha`, the rooms are drawn" |
 | `v3.33.788-alpha` | `battle` | "re-shot at `v3.33.788-alpha`, the speed readout keeps its width" |
 
 Re-derive it rather than trusting this table: `git log -1 --format=%h -- itch-assets/screenshots/<shot>.png`
 names the commit, and that commit's message names the tag it was shot from. Which of them have gone
 stale since: `tools/store_shot_staleness.py --from <capture tag> --to <store tag>` (a candidate list,
 never a verdict; decide in pixels with `--compare`).
+
+**2026-11-14: re-shot at `v3.33.802-alpha`, the rooms are drawn.** Since `.795` the inn and the item shop are drawn
+rooms (InteriorArt pieces: the inn's long table, armchairs and rug; the shop's shelves, counter, barrels and sacks) and
+the shipped frames still showed the flat `.770` placeholder floors. Every release recheck since `.795` read them MOVED
+against the stored set: `inn_interior` 74.40% (685680 px), `shop_interior` 95.61% (881145 px), whole frame, run-to-run
+noise 0.00% on both, on `.795` through `.802`. These frames are run A of the `.802` publish's own store recheck
+(`tools/marketing_shots.gd` at the tag, sandboxed, under box_hold; run B pixel-identical). Kept: every other frame
+(villages and battle SAME; `harmonia_village` / `sandrift_village` / `tavern_interior` / `title_screen` moved only inside
+their known animation regions). Compared by eye with the frames they replace: same rooms, same hero at the door, same
+villagers, now furnished.
 
 **2026-11-07: re-shot at `v3.33.788-alpha`, the speed readout keeps its width.** Judged in pixels against the shipped
 set with two runs of the tag (noise 0.00% on each), the changed region read off store_shot_pixels' own box and its mask:
