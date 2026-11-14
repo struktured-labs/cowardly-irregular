@@ -176,7 +176,7 @@ func _draw() -> void:
 	_draw_small_button(POS_PLUS, "plus", "+")
 	_draw_small_button(POS_MINUS, "minus", "-")
 
-	var title_font = ThemeDB.fallback_font
+	var title_font = UiFont.display()
 	if title_font:
 		draw_string(title_font, title_pos(title_font), TITLE, HORIZONTAL_ALIGNMENT_LEFT, -1, TEXT_PX, HINT_COLOR)
 
@@ -198,7 +198,7 @@ static func _text_rect(font: Font, baseline: Vector2, text: String) -> Rect2:
 
 ## Local rects of every string this context draws ("title" plus one per labelled button), as _draw places them.
 static func drawn_text_rects(context: Dictionary, font: Font = null) -> Dictionary:
-	var f: Font = font if font != null else ThemeDB.fallback_font
+	var f: Font = font if font != null else UiFont.display()
 	var out := {"title": _text_rect(f, title_pos(f), TITLE)}
 	for id in context:
 		if str(context[id]) != "" and BUTTON_POS.has(id):
@@ -221,7 +221,7 @@ func _draw_face_button(pos: Vector2, letter: String, button_id: String) -> void:
 	draw_circle(pos, BUTTON_RADIUS, color)
 	draw_arc(pos, BUTTON_RADIUS, 0, TAU, 24, Color(0.4, 0.35, 0.5, 0.5), 1.0)
 
-	var font = ThemeDB.fallback_font
+	var font = UiFont.display()
 	if font:
 		draw_string(font, pos + Vector2(-4, 5), letter, HORIZONTAL_ALIGNMENT_LEFT, -1, 11, TEXT_COLOR)
 
@@ -235,7 +235,7 @@ func _draw_shoulder(pos: Vector2, button_id: String, is_left: bool) -> void:
 	draw_rect(rect, color)
 	draw_rect(rect, Color(0.4, 0.35, 0.5, 0.5), false, 1.0)
 
-	var font = ThemeDB.fallback_font
+	var font = UiFont.display()
 	if font:
 		var letter = "L" if is_left else "R"
 		draw_string(font, pos + Vector2(-3, 5), letter, HORIZONTAL_ALIGNMENT_LEFT, -1, 10, TEXT_COLOR)
@@ -258,7 +258,7 @@ func _draw_small_button(pos: Vector2, button_id: String, symbol: String = "") ->
 	draw_arc(pos, 6, 0, TAU, 16, Color(0.3, 0.25, 0.4, 0.4), 1.0)
 
 	if symbol != "":
-		var font = ThemeDB.fallback_font
+		var font = UiFont.display()
 		if font:
 			draw_string(font, pos + Vector2(-3, 4), symbol, HORIZONTAL_ALIGNMENT_LEFT, -1, 9, TEXT_COLOR)
 
@@ -272,7 +272,7 @@ func _draw_label_for(button_id: String, button_pos: Vector2) -> void:
 	var label_text = _button_labels[button_id]
 	var at: Vector2 = label_pos(button_id)
 
-	var font = ThemeDB.fallback_font
+	var font = UiFont.display()
 	if font:
 		# Connecting line + small dot at button end
 		var line_end = at + Vector2(0, 6)
