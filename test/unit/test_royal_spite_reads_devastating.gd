@@ -75,7 +75,7 @@ func test_royal_spite_hits_exactly_as_hard_as_counter() -> void:
 	var counter: Dictionary = abilities.get("counter", {})
 	assert_eq(str(spite.get("name", "")), "Royal Spite")
 	assert_false(counter.is_empty(), "CONTROL: the generic counter still exists to compare against")
-	for key in ["type", "damage_multiplier", "target_type", "mp_cost"]:
+	for key in ["type", "damage_multiplier", "target_type", "mp_cost", "trigger"]:
 		assert_eq(spite.get(key), counter.get(key), "struktured: no extra damage; Royal Spite matches Counter's %s" % key)
 	assert_false(spite.has("element") or spite.has("crit_bonus") or spite.has("effect"), "nothing on Royal Spite may add to the hit")
 
@@ -124,6 +124,9 @@ func test_the_beat_lands_at_full_weight_and_the_generic_counter_does_not() -> vo
 	assert_eq(float(scene_script.counter_impact(spite, [], hero)["w"]), 0.0, "a miss lands no weight")
 	assert_almost_eq(scene_script.counter_lead(true, 0.4), 0.4 + scene_script.COUNTER_GAP, 0.0001, "the beat waits for the hero's own contact")
 	assert_almost_eq(scene_script.counter_lead(false, 0.4), scene_script.COUNTER_GAP, 0.0001, "and only the gap when no swing is in flight")
+	assert_almost_eq(scene_script.counter_windup(0.125), 0.125, 0.0001, "the hit lands on the art's own lunge frame (sprites: frame 9 of 8-9 at 8 fps)")
+	assert_almost_eq(scene_script.counter_windup(0.0), scene_script.COUNTER_WINDUP, 0.0001, "art with no impact frame poses for the default windup")
+	assert_almost_eq(scene_script.counter_windup(2.0), scene_script.COUNTER_WINDUP_MAX, 0.0001, "and a long sheet cannot hold the stage past the cap")
 
 
 func test_the_counter_number_leaves_the_heros_swing() -> void:

@@ -1891,6 +1891,7 @@
     "description": "The Cave Rat King answers an insult to the crown. Hits exactly as hard as Counter; it only looks like the end of the world.",
     "damage_multiplier": 1.3,
     "target_type": "last_attacker",
+    "trigger": "on_hit",
     "counter_verb": "answers with",
     "impact_weight": 1.0,
     "vfx": {

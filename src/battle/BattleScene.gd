@@ -6168,7 +6168,8 @@ func _land_hit_weight(target_sprite: Node2D, attacker: Combatant, action: int) -
 
 ## ---- A MONSTER COUNTER'S OWN BEAT (Royal Spite): its numbers are lifted out of the attacker's swing and land on a pose -> impact after it. ----
 const COUNTER_GAP := 0.2      # game s between the attacker's contact and the counter's pose
-const COUNTER_WINDUP := 0.3   # game s from the counter's pose to its impact
+const COUNTER_WINDUP := 0.3   # game s from the counter's pose to its impact, when its art authors no impact frame
+const COUNTER_WINDUP_MAX := 0.5  # an authored impact frame later than this is cut to it
 const COUNTER_SETTLE := 0.35  # game s the stage stays held after the impact's freeze
 var _counter_mark: int = -1
 var _counter_opened: bool = false
@@ -6177,6 +6178,11 @@ var _counter_opened: bool = false
 ## Game seconds from the counter's resolve to its pose: after the attacker's own swing lands, if one is still in flight.
 static func counter_lead(swing_in_flight: bool, contact_in: float) -> float:
 	return (maxf(contact_in, 0.0) if swing_in_flight else 0.0) + COUNTER_GAP
+
+
+## The pose's length: the art's authored impact frame when it has one, else COUNTER_WINDUP; never past COUNTER_WINDUP_MAX.
+static func counter_windup(authored_impact: float) -> float:
+	return minf(authored_impact, COUNTER_WINDUP_MAX) if authored_impact > 0.0 else COUNTER_WINDUP
 
 
 ## The counter's impact: its numbers' own weight, floored by the ability's authored `impact_weight`.
@@ -6207,7 +6213,7 @@ func _on_monster_counter_finished(monster: Combatant, target: Combatant, ability
 		return
 	var entries: Array = _lift_counter_entries()
 	var lead: float = counter_lead(_melee_hold_live, _last_contact_in)
-	BattleManager.presentation_hold = maxf(BattleManager.presentation_hold, lead + COUNTER_WINDUP + HIT_KILL_HITSTOP + COUNTER_SETTLE)
+	BattleManager.presentation_hold = maxf(BattleManager.presentation_hold, lead + COUNTER_WINDUP_MAX + HIT_KILL_HITSTOP + COUNTER_SETTLE)
 	_play_counter_beat(monster, target, ability_id, entries, lead)
 
 
@@ -6228,15 +6234,17 @@ func _play_counter_beat(monster: Combatant, target: Combatant, ability_id: Strin
 	var ability: Dictionary = JobSystem.get_ability(ability_id) if JobSystem else {}
 	var m_sprite: Node2D = _get_combatant_sprite(monster) if is_instance_valid(monster) else null
 	var m_anim: BattleAnimatorClass = _get_combatant_animator(monster) if is_instance_valid(monster) else null
+	var windup: float = COUNTER_WINDUP
 	if m_anim != null:
 		var named: String = _ability_sheet_anim(ability, m_anim)
 		if named != "":
 			m_anim.play_named_animation(named)
+			windup = counter_windup(m_anim.impact_time(named))
 		else:
 			m_anim.play_attack()
 	if m_sprite != null and is_instance_valid(m_sprite):
-		BattleJuice.flash_sprite(m_sprite, Color(1.6, 0.35, 0.3), 0.0, COUNTER_WINDUP)
-	await get_tree().create_timer(COUNTER_WINDUP).timeout
+		BattleJuice.flash_sprite(m_sprite, Color(1.6, 0.35, 0.3), 0.0, windup)
+	await get_tree().create_timer(windup).timeout
 	if not is_instance_valid(self) or not is_inside_tree():
 		return
 	var t_sprite: Node2D = _get_combatant_sprite(target) if is_instance_valid(target) else null
