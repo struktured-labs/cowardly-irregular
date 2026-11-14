@@ -6376,6 +6376,10 @@ func _land_held_hit() -> void:
 
 
 ## Fable-pass hitstop: freeze both combatants' anim playback ~70ms at contact. Visual-only (no Engine.time_scale touch — timers/music unaffected); restore is validity-guarded so mid-stop frees are safe.
+## Lunges a hit-stop paused and then played again; a finished one is never played (test seam).
+var _lunges_resumed: int = 0
+
+
 func _apply_hitstop(attacker_sprite: Node2D, target_sprite: Node2D) -> void:
 	## The stop's length is the hit's (see hitstop_for): the caller leaves it in _hitstop_seconds, spent here.
 	var duration: float = _hitstop_seconds
@@ -6394,13 +6398,17 @@ func _apply_hitstop(attacker_sprite: Node2D, target_sprite: Node2D) -> void:
 	if is_instance_valid(attacker_sprite) and attacker_sprite.has_meta("attack_tween"):
 		lunge = attacker_sprite.get_meta("attack_tween")
 	var held_lunge: bool = duration > 0.07 and lunge is Tween and lunge.is_valid() and lunge.is_running()
+	## A stop called from the lunge's own LAST callback pauses it mid-step and the step still finishes it ("Can't play finished Tween").
+	var ended: Array = [false]
 	if held_lunge:
 		lunge.pause()
+		lunge.finished.connect(func(): ended[0] = true, CONNECT_ONE_SHOT)
 	get_tree().create_timer(duration).timeout.connect(func():
 		for s in frozen:
 			if is_instance_valid(s):
 				(s as AnimatedSprite2D).speed_scale = 1.0
-		if held_lunge and lunge.is_valid():
+		if held_lunge and lunge.is_valid() and not ended[0]:
+			_lunges_resumed += 1
 			lunge.play()
 	, CONNECT_ONE_SHOT)
 
