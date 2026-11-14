@@ -11284,6 +11284,20 @@
       "whisper_heard": "A glacier does not choose what it crushes. It spreads evenly, without preference.",
       "whisper_score": 1.0
     },
+    "boss_line_glacius_45": {
+      "description": "Glacius voiced line (boss_dialogue glacius.interrupted_line.bark)",
+      "file": "assets/audio/sfx/boss_line_glacius_45.ogg",
+      "speaker": "Glacius",
+      "line": "...Oh. That was new.",
+      "spoken": "...Oh. That was new.",
+      "source_sha": "0c405fe6014a65b5",
+      "voice": "Chatterbox clone of VCTK p231 (Southern England), reference -2 st formants shifted, voice_refs/glacius.wav (CC BY 4.0)",
+      "voice_gender": "female",
+      "model": "chatterbox 0.1.7 (resemble-ai) local · exaggeration 0.5 cfg 0.5",
+      "seed": 42,
+      "whisper_heard": "Oh, that was new.",
+      "whisper_score": 1.0
+    },
     "boss_line_voltharion_00": {
       "description": "Voltharion voiced line (monsters lightning_dragon.intro)",
       "file": "assets/audio/sfx/boss_line_voltharion_00.ogg",
