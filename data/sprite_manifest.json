@@ -5883,6 +5883,32 @@
         }
       }
     },
+    "bill": {
+      "path": "res://assets/sprites/npcs/bill/overworld.png",
+      "frame_width": 48,
+      "frame_height": 48,
+      "fps": 4,
+      "tier": "T2",
+      "source": "artist aseprite drop 2026-10-25 — Villagers/Villager_Bill.aseprite, 16 frames / 4 tags (South, West, East, North), layers Sword..Head plus Layer 15 (308 px inside his head: drawn detail, not a backdrop, so kept). The artist's FIFTH overworld walker; it sat on the Drive unused until 2026-11-14. Exported at NATIVE size by tools/export_artist_overworld_walker.py: figure 24x39 in 48px cells, 20 colours, no resampling. His East is drawn on its own, NOT a mirror of West (the sword on his back changes sides), and both side rows were checked by eye to face the way they walk. Every row is the artist's frames untouched.",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      }
+    },
     "keeper_willow": {
       "path": "res://assets/sprites/npcs/keeper_willow/overworld.png",
       "frame_width": 48,

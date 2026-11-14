@@ -5,7 +5,7 @@ extends GutTest
 ## nearest scaling only, so every colour in the portrait is a colour of his sheet.
 
 const Dialogue := preload("res://src/cutscene/CutsceneDialogue.gd")
-const WALKERS := ["rotha", "roy", "kid_acrees", "granny_kaya"]
+const WALKERS := ["rotha", "roy", "kid_acrees", "granny_kaya", "bill"]
 
 
 func _img(path: String) -> Image:

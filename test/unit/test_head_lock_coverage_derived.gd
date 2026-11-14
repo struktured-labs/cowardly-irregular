@@ -42,6 +42,7 @@ const EXEMPT := {
 	"roy": "ARTIST-drawn (T2, 2026-10-11): 64px cells and a walk whose head bobs by his hand, as Rotha's does. Never run the head-lock repair over his frames.",
 	"kid_acrees": "ARTIST-drawn (T2, 2026-10-13): 48px cells and a walk whose head bobs by his hand, as Rotha's does. Never run the head-lock repair over his frames.",
 	"granny_kaya": "ARTIST-drawn (T2, 2026-10-15): 48px cells and a walk whose head bobs by her hand, as Rotha's does. Never run the head-lock repair over her frames.",
+	"bill": "ARTIST-drawn (T2, 2026-10-25): 48px cells and a walk whose head bobs by his hand, as Rotha's does. Never run the head-lock repair over his frames.",
 }
 
 

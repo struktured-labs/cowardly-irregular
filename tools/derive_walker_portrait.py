@@ -25,7 +25,7 @@ BUST_SHARE = 0.46
 # Walkers whose hair stands tall enough that the default share ends at the eyes (Granny Kaya's bun, 2026-10-16).
 BUST_SHARE_FOR = {"granny_kaya": 0.62}
 # npc id -> cell size of its 4x4 walk sheet (row 0 = south).
-WALKERS = {"rotha": 48, "roy": 64, "kid_acrees": 48, "granny_kaya": 48}
+WALKERS = {"rotha": 48, "roy": 64, "kid_acrees": 48, "granny_kaya": 48, "bill": 48}
 
 
 def bust(sheet: Image.Image, cell: int, share: float = BUST_SHARE) -> Image.Image:
