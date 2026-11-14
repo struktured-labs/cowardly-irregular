@@ -23,7 +23,8 @@ rooms (InteriorArt pieces: the inn's long table, armchairs and rug; the shop's s
 the shipped frames still showed the flat `.770` placeholder floors. Every release recheck since `.795` read them MOVED
 against the stored set: `inn_interior` 74.40% (685680 px), `shop_interior` 95.61% (881145 px), whole frame, run-to-run
 noise 0.00% on both, on `.795` through `.802`. These frames are run A of the `.802` publish's own store recheck
-(`tools/marketing_shots.gd` at the tag, sandboxed, under box_hold; run B pixel-identical). Kept: every other frame
+(`tools/marketing_shots.gd` at the tag, sandboxed, under box_hold). Run B is NOT byte-for-byte equal: 270 (inn) / 227 (shop) pixels differ, every one by at most 1 in
+one channel, all in a 38x20 box at the door's exit arrow (x 620-657, y 700-719); store_shot_pixels reads that as noise 0.00%. Kept: every other frame
 (villages and battle SAME; `harmonia_village` / `sandrift_village` / `tavern_interior` / `title_screen` moved only inside
 their known animation regions). Compared by eye with the frames they replace: same rooms, same hero at the door, same
 villagers, now furnished.
