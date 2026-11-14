@@ -67,15 +67,22 @@ static func draws(ch: String) -> bool:
 	return ch == " " or glyph_table().has(ch)
 
 
-## The pixel face. `outlined` bakes PixelText's dark rim and shadow in, for light text over art; never use it
-## with a dark text colour (the rim and the ink become one blob).
+## The face a plain Label draws: the pixel face once installed, the engine's own otherwise (COWIR_UIFONT=off, a
+## failed install, after uninstall). Measure with this when there is no node yet; it can never be a different
+## face from the Label it sizes. `outlined` bakes PixelText's dark rim and shadow in, for light text over art;
+## never use it with a dark text colour (the rim and the ink become one blob).
 static func display(outlined: bool = false) -> Font:
+	if not _installed:
+		return ThemeDB.fallback_font
 	_ensure_built()
 	return _outlined if outlined else _display
 
 
-## The reading face: the engine's own, with the symbol chain FontFallbacks hangs behind it.
+## The reading face (RichTextLabel / LineEdit / TextEdit / tooltips): read_tier's pick once installed, the
+## engine's own otherwise. Measure text those nodes draw with this, never with display().
 static func body() -> Font:
+	if not _installed:
+		return ThemeDB.fallback_font
 	_ensure_built()
 	return _display if read_tier == READ_TIER_PIXEL else _body
 

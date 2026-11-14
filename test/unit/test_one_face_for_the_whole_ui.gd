@@ -100,16 +100,74 @@ func test_the_read_tier_is_one_switch() -> void:
 	assert_eq(UiFont.body(), UiFont.display(), "body() follows the switch")
 
 
-func test_no_source_file_names_the_engine_fallback_any_more() -> void:
-	# The debt register: sites that still measure with ThemeDB.fallback_font. They are CORRECT today (install
-	# points it at the pixel face) but each should ask UiFont.of(node); lanes shrink this as they convert.
-	var known := 41
-	var n := 0
-	for path in _gd_files("res://src"):
+## The debt register, per FILE (adhoc census 2026-11-14 on .802: 40 sites in 26 files, 2 of them read-tier misses:
+## CutsceneDialogue._box_metrics and BattleDialogue._dialogue_metrics, where one fallback font sizes a RichTextLabel
+## body). The rest measure a Label or draw_string with the font they draw with, so they are right today; each lane
+## converts its own to UiFont.of(node) / display() / body(). A conversion must lower or delete its row, and a new
+## site anywhere reds: the assert is on the difference, so a stale or emptied table cannot pass quietly.
+const FALLBACK_SITES := {
+	"res://src/GameLoop.gd": 3,
+	"res://src/cutscene/CutsceneDialogue.gd": 2,
+	"res://src/cutscene/CutsceneDirector.gd": 3,
+	"res://src/exploration/QuestTracker.gd": 1,
+	"res://src/llm/DialogueChoiceMenu.gd": 1,
+	"res://src/maps/interiors/InnInterior.gd": 1,
+	"res://src/maps/interiors/TavernInterior.gd": 1,
+	"res://src/ui/AbilitiesMenu.gd": 1,
+	"res://src/ui/BattleDialogue.gd": 1,
+	"res://src/ui/ControllerOverlay.gd": 6,
+	"res://src/ui/CutsceneGallery.gd": 1,
+	"res://src/ui/DayClockWidget.gd": 1,
+	"res://src/ui/EquipmentMenu.gd": 1,
+	"res://src/ui/JobMenu.gd": 3,
+	"res://src/ui/LensMenu.gd": 1,
+	"res://src/ui/MenuChrome.gd": 1,
+	"res://src/ui/OverworldMenu.gd": 1,
+	"res://src/ui/QuestLog.gd": 1,
+	"res://src/ui/RadialPicker.gd": 2,
+	"res://src/ui/SettingsMenu.gd": 1,
+	"res://src/ui/StatusMenu.gd": 1,
+	"res://src/ui/Toast.gd": 1,
+	"res://src/ui/Win98Menu.gd": 1,
+	"res://src/ui/autobattle/AutobattleToggleUI.gd": 1,
+	"res://src/ui/autogrind/AutogrindStatsStrip.gd": 1,
+	"res://src/ui/autogrind/AutogrindSummary.gd": 2,
+}
+
+
+func test_no_new_site_measures_with_the_engine_fallback() -> void:
+	var found := {}
+	var files := _gd_files("res://src")
+	assert_gt(files.size(), 300, "CONTROL: the sweep reads the source tree (%d files)" % files.size())
+	for path in files:
 		if path.ends_with("/UiFont.gd") or path.ends_with("/FontFallbacks.gd"):
 			continue
-		n += FileAccess.get_file_as_string(path).count("ThemeDB.fallback_font")
-	assert_lte(n, known, "sites naming ThemeDB.fallback_font outside UiFont/FontFallbacks may only go DOWN (now %d)" % n)
+		var n: int = FileAccess.get_file_as_string(path).count("ThemeDB.fallback_font")
+		if n > 0:
+			found[path] = n
+	assert_gt(found.size(), 0, "CONTROL: the sweep finds today's sites (a sweep that reads nothing passes everything)")
+	var wrong: Array = []
+	for path in found:
+		if int(found[path]) != int(FALLBACK_SITES.get(path, 0)):
+			wrong.append("%s: %d in source, %d in FALLBACK_SITES" % [path, found[path], FALLBACK_SITES.get(path, 0)])
+	for path in FALLBACK_SITES:
+		if not found.has(path):
+			wrong.append("%s: converted, delete its FALLBACK_SITES row" % path)
+	assert_eq(wrong, [], "measure with UiFont.of(node) / display() / body(), not ThemeDB.fallback_font; keep FALLBACK_SITES exact")
+
+
+## COWIR_UIFONT=off, a failed install, uninstall: a Label draws the ENGINE face, so a site converted to display()
+## or body() must get that face too, or the off path recreates the very mismatch the conversion removes (controller 25431).
+func test_off_the_accessors_hand_back_the_face_that_draws() -> void:
+	UiFont.uninstall()
+	assert_false(UiFont.is_installed(), "CONTROL: uninstalled")
+	var lbl := Label.new()
+	var drawn: Font = lbl.get_theme_font("font")
+	lbl.free()
+	assert_ne(drawn, UiFont._display, "CONTROL: uninstalled, a Label is not drawing the pixel face")
+	assert_eq(UiFont.display(), drawn, "display() is the face a Label draws when the pixel face is off")
+	assert_eq(UiFont.body(), ThemeDB.fallback_font, "body() too")
+	assert_eq(UiFont.of(null), drawn, "of() with no node falls back to that same face")
 
 
 func _gd_files(dir: String) -> Array:
